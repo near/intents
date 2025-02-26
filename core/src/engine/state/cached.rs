@@ -10,7 +10,7 @@ use near_sdk::{AccountId, AccountIdRef};
 use crate::{
     DefuseError, Nonce, Nonces, Result,
     fees::Pips,
-    intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw},
+    intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
     tokens::{Amounts, TokenId},
 };
 
@@ -239,6 +239,20 @@ where
             [(
                 TokenId::Nep141(self.wnear_id().into_owned()),
                 withdraw.amount.as_yoctonear(),
+            )],
+        )
+    }
+
+    fn storage_deposit(
+        &mut self,
+        owner_id: &AccountIdRef,
+        storage_deposit: StorageDeposit,
+    ) -> Result<()> {
+        self.internal_sub_balance(
+            owner_id,
+            [(
+                TokenId::Nep141(self.wnear_id().into_owned()),
+                storage_deposit.amount.as_yoctonear(),
             )],
         )
     }

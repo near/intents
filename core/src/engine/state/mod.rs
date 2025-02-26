@@ -11,7 +11,7 @@ use near_sdk::{AccountId, AccountIdRef};
 use crate::{
     Nonce, Result,
     fees::Pips,
-    intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw},
+    intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
     tokens::TokenId,
 };
 
@@ -88,4 +88,10 @@ pub trait State: StateView {
     fn mt_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: MtWithdraw) -> Result<()>;
 
     fn native_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: NativeWithdraw) -> Result<()>;
+
+    fn storage_deposit(
+        &mut self,
+        owner_id: &AccountIdRef,
+        storage_deposit: StorageDeposit,
+    ) -> Result<()>;
 }

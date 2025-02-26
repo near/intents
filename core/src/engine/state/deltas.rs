@@ -16,7 +16,7 @@ use crate::{
     fees::Pips,
     intents::{
         token_diff::TokenDeltas,
-        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw},
+        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
     },
     tokens::{Amounts, TokenId},
 };
@@ -158,6 +158,15 @@ where
     #[inline]
     fn native_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: NativeWithdraw) -> Result<()> {
         self.state.native_withdraw(owner_id, withdraw)
+    }
+
+    #[inline]
+    fn storage_deposit(
+        &mut self,
+        owner_id: &AccountIdRef,
+        storage_deposit: StorageDeposit,
+    ) -> Result<()> {
+        self.state.storage_deposit(owner_id, storage_deposit)
     }
 }
 
