@@ -6,7 +6,7 @@ use defuse_serde_utils::base58::Base58;
 use derive_more::derive::From;
 use near_sdk::{near, AccountIdRef, CryptoHash};
 use serde_with::serde_as;
-use tokens::NativeWithdraw;
+use tokens::{NativeWithdraw, StorageDeposit};
 
 use crate::{
     engine::{Engine, Inspector, State},
@@ -43,6 +43,8 @@ pub enum Intent {
     NftWithdraw(NftWithdraw),
     MtWithdraw(MtWithdraw),
     NativeWithdraw(NativeWithdraw),
+
+    StorageDeposit(StorageDeposit),
 
     TokenDiff(TokenDiff),
 }
@@ -101,6 +103,7 @@ impl ExecutableIntent for Intent {
             Self::NftWithdraw(intent) => intent.execute_intent(signer_id, engine, intent_hash),
             Self::MtWithdraw(intent) => intent.execute_intent(signer_id, engine, intent_hash),
             Self::NativeWithdraw(intent) => intent.execute_intent(signer_id, engine, intent_hash),
+            Self::StorageDeposit(intent) => intent.execute_intent(signer_id, engine, intent_hash),
             Self::TokenDiff(intent) => intent.execute_intent(signer_id, engine, intent_hash),
         }
     }
