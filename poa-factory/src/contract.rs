@@ -42,12 +42,16 @@ pub enum Role {
     TokenDeployer,
     TokenDepositer,
     PauseManager,
+    UnpauseManager,
 }
 
 #[near(contract_state)]
 #[derive(Pausable, PanicOnDefault)]
 #[access_control(role_type(Role))]
-#[pausable(manager_roles(Role::DAO, Role::PauseManager))]
+#[pausable(
+    pause_roles(Role::DAO, Role::PauseManager),
+    unpause_roles(Role::DAO, Role::UnpauseManager)
+)]
 pub struct Contract {
     tokens: IterableSet<String>,
     bridge_token_storage_deposit_required: NearToken,

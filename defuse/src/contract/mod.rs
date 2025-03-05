@@ -41,11 +41,15 @@ pub enum Role {
 
     PauseManager,
     Upgrader,
+    UnpauseManager,
 }
 
 #[access_control(role_type(Role))]
 #[derive(Pausable, PanicOnDefault)]
-#[pausable(manager_roles(Role::DAO, Role::PauseManager))]
+#[pausable(
+    pause_roles(Role::DAO, Role::PauseManager),
+    unpause_roles(Role::DAO, Role::UnpauseManager)
+)]
 #[near(contract_state, contract_metadata(
     // TODO: remove when this PR is merged:
     // https://github.com/near/near-sdk-rs/pull/1249
