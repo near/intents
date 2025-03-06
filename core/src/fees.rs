@@ -215,10 +215,11 @@ pub struct FeeCollectorChangedEvent<'a> {
 impl BorshDeserialize for Pips {
     fn deserialize_reader<R: std::io::Read>(reader: &mut R) -> std::io::Result<Self> {
         let pips: u32 = near_sdk::borsh::BorshDeserialize::deserialize_reader(reader)?;
-        let pips = Self::from_pips(pips).ok_or(std::io::Error::new(
-            std::io::ErrorKind::InvalidData,
-            format!("Invalid pips value: {pips}"),
-        ))?;
-        Ok(pips)
+        Self::from_pips(pips).ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!("{PipsOutOfRange} - Invalid pips value: {pips}"),
+            )
+        })
     }
 }
