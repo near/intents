@@ -223,11 +223,11 @@ mod tests {
     fn closure_delta(
         #[values(
             (TokenId::Nep141("ft.near".parse().unwrap()), 1_000_000), (TokenId::Nep141("ft.near".parse().unwrap()), -1_000_000),
-            (TokenId::Nep171("nft.near".parse().unwrap(), "1".to_string()), 1), 
+            (TokenId::Nep171("nft.near".parse().unwrap(), "1".to_string()), 1),
             (TokenId::Nep171("nft.near".parse().unwrap(), "1".to_string()), -1),
             (TokenId::Nep245("mt.near".parse().unwrap(), "ft1".to_string()), 1_000_000),
             (TokenId::Nep245("mt.near".parse().unwrap(), "ft1".to_string()), -1_000_000),
-            (TokenId::Nep245("mt.near".parse().unwrap(), "nft1".to_string()), 1), 
+            (TokenId::Nep245("mt.near".parse().unwrap(), "nft1".to_string()), 1),
             (TokenId::Nep245("mt.near".parse().unwrap(), "nft1".to_string()), -1),
         )]
         token_delta: (TokenId, i128),

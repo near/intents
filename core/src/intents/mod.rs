@@ -47,10 +47,6 @@ pub enum Intent {
     TokenDiff(TokenDiff),
 }
 
-pub struct MetaIntent {
-    pub intent: Intent,
-}
-
 pub trait ExecutableIntent {
     fn execute_intent<S, I>(
         self,
