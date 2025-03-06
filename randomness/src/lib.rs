@@ -2,11 +2,9 @@ pub use rand::prelude::SliceRandom;
 pub use rand::{seq, CryptoRng, Rng, RngCore, SeedableRng};
 
 pub mod distributions {
-    pub use rand::distributions::{
-        Alphanumeric, DistString, Distribution, Standard, WeightedIndex,
-    };
+    pub use rand::distr::{weighted::WeightedIndex, Alphanumeric, Distribution, StandardUniform};
     pub mod uniform {
-        pub use rand::distributions::uniform::SampleRange;
+        pub use rand::distr::uniform::SampleRange;
     }
 }
 
@@ -17,7 +15,7 @@ pub mod rngs {
 
 #[must_use]
 pub fn make_true_rng() -> impl Rng + CryptoRng {
-    rand::rngs::StdRng::from_entropy()
+    rand::rngs::StdRng::from_os_rng()
 }
 
 #[must_use]

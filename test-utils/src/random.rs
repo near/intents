@@ -1,5 +1,5 @@
-use rand_chacha::ChaChaRng;
-pub use randomness::{self, seq::IteratorRandom, CryptoRng, Rng, RngCore, SeedableRng};
+use rand_chacha::{rand_core::RngCore, ChaChaRng};
+pub use randomness::{self, seq::IteratorRandom, CryptoRng, Rng, SeedableRng};
 use std::{num::ParseIntError, str::FromStr};
 
 #[derive(Debug, Copy, Clone)]
@@ -8,12 +8,12 @@ pub struct Seed(pub u64);
 impl Seed {
     #[must_use]
     pub fn from_entropy() -> Self {
-        Seed(randomness::make_true_rng().r#gen::<u64>())
+        Seed(randomness::make_true_rng().next_u64())
     }
 
     #[must_use]
     pub fn from_entropy_and_print(test_name: &str) -> Self {
-        let result = Seed(randomness::make_true_rng().r#gen::<u64>());
+        let result = Seed(randomness::make_true_rng().next_u64());
         result.print_with_decoration(test_name);
         result
     }
@@ -48,9 +48,9 @@ impl From<u64> for Seed {
     }
 }
 
-impl randomness::distributions::Distribution<Seed> for randomness::distributions::Standard {
+impl randomness::distributions::Distribution<Seed> for randomness::distributions::StandardUniform {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Seed {
-        let new_seed = rng.r#gen::<u64>();
+        let new_seed = rng.next_u64();
         Seed::from_u64(new_seed)
     }
 }
@@ -66,7 +66,7 @@ impl TestRng {
 
     #[must_use]
     pub fn random(rng: &mut (impl Rng + CryptoRng)) -> Self {
-        Self::new(Seed(rng.r#gen()))
+        Self::new(Seed(rng.next_u64()))
     }
     #[must_use]
     pub fn from_entropy() -> Self {
@@ -86,10 +86,6 @@ impl RngCore for TestRng {
     fn fill_bytes(&mut self, dest: &mut [u8]) {
         self.0.fill_bytes(dest);
     }
-
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_chacha::rand_core::Error> {
-        self.0.try_fill_bytes(dest)
-    }
 }
 
 impl CryptoRng for TestRng {}
@@ -100,7 +96,7 @@ pub fn make_seedable_rng(seed: Seed) -> impl Rng + CryptoRng {
 }
 
 pub fn gen_random_bytes(rng: &mut impl Rng, min_len: usize, max_len: usize) -> Vec<u8> {
-    let data_length = rng.gen_range(min_len..=max_len);
+    let data_length = rng.random_range(min_len..=max_len);
     let mut bytes = vec![0; data_length];
     rng.fill_bytes(&mut bytes);
     bytes

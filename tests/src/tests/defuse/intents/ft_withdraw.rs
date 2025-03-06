@@ -34,7 +34,7 @@ async fn test_ft_withdraw_intent() {
     env.defuse
         .execute_intents([env.user1.sign_defuse_message(
             env.defuse.id(),
-            make_true_rng().gen(),
+            make_true_rng().random(),
             Deadline::timeout(Duration::from_secs(120)),
             DefuseIntents {
                 intents: [FtWithdraw {
@@ -69,7 +69,7 @@ async fn test_ft_withdraw_intent() {
     env.defuse
         .execute_intents([env.user1.sign_defuse_message(
             env.defuse.id(),
-            make_true_rng().gen(),
+            make_true_rng().random(),
             Deadline::MAX,
             DefuseIntents {
                 intents: [FtWithdraw {
@@ -121,7 +121,7 @@ async fn test_ft_withdraw_intent() {
         env.defuse.id(),
         [env.user1.sign_defuse_message(
             env.defuse.id(),
-            make_true_rng().gen(),
+            make_true_rng().random(),
             Deadline::MAX,
             DefuseIntents {
                 intents: [FtWithdraw {
@@ -206,7 +206,7 @@ async fn test_ft_withdraw_intent_msg() {
     env.defuse
         .execute_intents([env.user1.sign_defuse_message(
             env.defuse.id(),
-            make_true_rng().gen(),
+            make_true_rng().random(),
             Deadline::timeout(Duration::from_secs(120)),
             DefuseIntents {
                 intents: [FtWithdraw {

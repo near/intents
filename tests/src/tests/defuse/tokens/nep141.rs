@@ -116,7 +116,7 @@ async fn test_deposit_withdraw_intent() {
                     receiver_id: env.user1.id().clone(),
                     execute_intents: [env.user1.sign_defuse_message(
                         env.defuse.id(),
-                        make_true_rng().gen(),
+                        make_true_rng().random(),
                         Deadline::timeout(Duration::from_secs(120)),
                         DefuseIntents {
                             intents: [
@@ -198,7 +198,7 @@ async fn test_deposit_withdraw_intent_refund() {
                     receiver_id: env.user1.id().clone(),
                     execute_intents: [env.user1.sign_defuse_message(
                         env.defuse.id(),
-                        make_true_rng().gen(),
+                        make_true_rng().random(),
                         Deadline::MAX,
                         DefuseIntents {
                             intents: [FtWithdraw {

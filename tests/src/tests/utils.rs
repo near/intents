@@ -8,7 +8,7 @@ use test_utils::random::{make_seedable_rng, Seed};
 #[trace]
 #[case(Seed::from_entropy())]
 fn pips_borsch_serialization_back_and_forth(#[case] seed: Seed) {
-    let pip_val = make_seedable_rng(seed).gen_range::<u32, _>(0..=Pips::MAX.as_pips());
+    let pip_val = make_seedable_rng(seed).random_range::<u32, _>(0..=Pips::MAX.as_pips());
 
     let pip = Pips::from_pips(pip_val).unwrap();
     let serialized = borsh::to_vec(&pip).unwrap();

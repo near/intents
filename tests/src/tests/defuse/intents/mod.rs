@@ -150,7 +150,7 @@ async fn test_simulate_is_view_method() {
     env.defuse
         .simulate_intents([env.user1.sign_defuse_message(
             env.defuse.id(),
-            make_true_rng().gen(),
+            make_true_rng().random(),
             Deadline::MAX,
             DefuseIntents {
                 intents: [Transfer {

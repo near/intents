@@ -43,9 +43,9 @@ async fn test_upgrade() {
     );
 
     for public_key in [
-        PublicKey::Ed25519(make_true_rng().gen()),
-        PublicKey::Secp256k1(make_true_rng().gen()),
-        PublicKey::P256(make_true_rng().gen()),
+        PublicKey::Ed25519(make_true_rng().random()),
+        PublicKey::Secp256k1(make_true_rng().random()),
+        PublicKey::P256(make_true_rng().random()),
     ] {
         assert!(new_contract
             .has_public_key(&public_key.to_implicit_account_id(), &public_key)
