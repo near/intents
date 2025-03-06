@@ -6,20 +6,24 @@ use std::{num::ParseIntError, str::FromStr};
 pub struct Seed(pub u64);
 
 impl Seed {
+    #[must_use]
     pub fn from_entropy() -> Self {
         Seed(randomness::make_true_rng().r#gen::<u64>())
     }
 
+    #[must_use]
     pub fn from_entropy_and_print(test_name: &str) -> Self {
         let result = Seed(randomness::make_true_rng().r#gen::<u64>());
         result.print_with_decoration(test_name);
         result
     }
 
+    #[must_use]
     pub fn from_u64(v: u64) -> Self {
         Seed(v)
     }
 
+    #[must_use]
     pub fn as_u64(&self) -> u64 {
         self.0
     }
@@ -55,14 +59,16 @@ impl randomness::distributions::Distribution<Seed> for randomness::distributions
 pub struct TestRng(rand_chacha::ChaChaRng);
 
 impl TestRng {
+    #[must_use]
     pub fn new(seed: Seed) -> Self {
         Self(ChaChaRng::seed_from_u64(seed.as_u64()))
     }
 
+    #[must_use]
     pub fn random(rng: &mut (impl Rng + CryptoRng)) -> Self {
         Self::new(Seed(rng.r#gen()))
     }
-
+    #[must_use]
     pub fn from_entropy() -> Self {
         Self::new(Seed::from_entropy())
     }
@@ -78,7 +84,7 @@ impl RngCore for TestRng {
     }
 
     fn fill_bytes(&mut self, dest: &mut [u8]) {
-        self.0.fill_bytes(dest)
+        self.0.fill_bytes(dest);
     }
 
     fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_chacha::rand_core::Error> {
