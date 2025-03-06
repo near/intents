@@ -5,7 +5,10 @@ use core::{
 use std::borrow::Cow;
 
 use defuse_num_utils::{CheckedAdd, CheckedMulDiv, CheckedSub};
-use near_sdk::{near, AccountId, AccountIdRef};
+use near_sdk::{
+    borsh::{BorshDeserialize, BorshSchema, BorshSerialize},
+    near, AccountId, AccountIdRef,
+};
 use thiserror::Error as ThisError;
 
 #[near(serializers = [borsh, json])]
@@ -16,9 +19,12 @@ pub struct FeesConfig {
 }
 
 /// 1 pip == 1/100th of bip == 0.0001%
-#[near(serializers = [borsh, json])]
+#[near(serializers = [json])]
 #[serde(try_from = "u32")]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, BorshSerialize, BorshSchema,
+)]
+#[borsh(crate = "::near_sdk::borsh")]
 pub struct Pips(u32);
 
 impl Pips {
@@ -204,4 +210,15 @@ pub struct FeeChangedEvent {
 pub struct FeeCollectorChangedEvent<'a> {
     pub old_fee_collector: Cow<'a, AccountIdRef>,
     pub new_fee_collector: Cow<'a, AccountIdRef>,
+}
+
+impl BorshDeserialize for Pips {
+    fn deserialize_reader<R: std::io::Read>(reader: &mut R) -> std::io::Result<Self> {
+        let pips: u32 = near_sdk::borsh::BorshDeserialize::deserialize_reader(reader)?;
+        let pips = Self::from_pips(pips).ok_or(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            format!("Invalid pips value: {pips}"),
+        ))?;
+        Ok(pips)
+    }
 }
