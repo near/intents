@@ -39,4 +39,5 @@ chrono = { workspace = true, features = ["now"] }
 
 [dev-dependencies]
 itertools.workspace = true
+near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
