@@ -18,8 +18,10 @@ members = [
     "webauthn",
     "poa-factory",
     "poa-token",
+    "randomness",
     "serde-utils",
     "tests",
+    "test-utils",
     "wnear",
 ]
 default-members = ["defuse"]
@@ -49,6 +51,9 @@ defuse-poa-token.path = "poa-token"
 defuse-serde-utils.path = "serde-utils"
 defuse-wnear.path = "wnear"
 
+randomness.path = "randomness"
+test-utils.path = "test-utils"
+
 anyhow = "1"
 bnum = { version = "0.12", features = ["borsh"] }
 chrono = { version = "0.4", default-features = false }
@@ -64,6 +69,7 @@ near-plugins = { git = "https://github.com/Near-One/near-plugins", rev = "e6e4b0
 near-sdk = "5.7"
 near-workspaces = "0.14"
 p256 = { version = "0.13", default-features = false, features = ["ecdsa"] }
+rand_chacha = "0.3"
 rstest = "0.21.0"
 serde_json = "1"
 serde_with = "3.9"

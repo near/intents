@@ -1,0 +1,12 @@
+[package]
+name = "test-utils"
+version = "0.1.0"
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+randomness.workspace = true
+rand_chacha.workspace = true
+rstest.workspace = true

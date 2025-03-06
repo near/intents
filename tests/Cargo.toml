@@ -18,7 +18,8 @@ near-crypto = "0.26"
 near-sdk = { workspace = true, features = ["unit-testing"] }
 near-workspaces.workspace = true
 near-contract-standards.workspace = true
-rand = "0.8"
+randomness.workspace = true
 rstest.workspace = true
 serde_json.workspace = true
+test-utils.workspace = true
 tokio = { workspace = true, features = ["macros"] }

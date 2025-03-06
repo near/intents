@@ -1,12 +1,14 @@
 use defuse::core::fees::Pips;
 use near_sdk::borsh;
-use rand::Rng;
+use randomness::Rng;
 use rstest::rstest;
+use test_utils::random::{make_seedable_rng, Seed};
 
-#[test]
-fn pips_borsch_serialization_back_and_forth() {
-    // TODO: replace this with deterministic testing
-    let pip_val = rand::thread_rng().gen_range::<u32, _>(0..=Pips::MAX.as_pips());
+#[rstest]
+#[trace]
+#[case(Seed::from_entropy())]
+fn pips_borsch_serialization_back_and_forth(#[case] seed: Seed) {
+    let pip_val = make_seedable_rng(seed).gen_range::<u32, _>(0..=Pips::MAX.as_pips());
 
     let pip = Pips::from_pips(pip_val).unwrap();
     let serialized = borsh::to_vec(&pip).unwrap();

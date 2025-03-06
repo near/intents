@@ -10,7 +10,7 @@ use defuse::{
     tokens::DepositMessage,
 };
 use near_sdk::{json_types::U128, AccountId, NearToken};
-use rand::{thread_rng, Rng};
+use randomness::{make_true_rng, Rng};
 use serde_json::json;
 
 use crate::{
@@ -116,7 +116,7 @@ async fn test_deposit_withdraw_intent() {
                     receiver_id: env.user1.id().clone(),
                     execute_intents: [env.user1.sign_defuse_message(
                         env.defuse.id(),
-                        thread_rng().gen(),
+                        make_true_rng().gen(),
                         Deadline::timeout(Duration::from_secs(120)),
                         DefuseIntents {
                             intents: [
@@ -198,7 +198,7 @@ async fn test_deposit_withdraw_intent_refund() {
                     receiver_id: env.user1.id().clone(),
                     execute_intents: [env.user1.sign_defuse_message(
                         env.defuse.id(),
-                        thread_rng().gen(),
+                        make_true_rng().gen(),
                         Deadline::MAX,
                         DefuseIntents {
                             intents: [FtWithdraw {

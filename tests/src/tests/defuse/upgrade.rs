@@ -1,6 +1,6 @@
 use defuse::core::crypto::PublicKey;
 use near_sdk::AccountId;
-use rand::{thread_rng, Rng};
+use randomness::{make_true_rng, Rng};
 
 use crate::{tests::defuse::accounts::AccountManagerExt, utils::mt::MtExt};
 
@@ -43,9 +43,9 @@ async fn test_upgrade() {
     );
 
     for public_key in [
-        PublicKey::Ed25519(thread_rng().gen()),
-        PublicKey::Secp256k1(thread_rng().gen()),
-        PublicKey::P256(thread_rng().gen()),
+        PublicKey::Ed25519(make_true_rng().gen()),
+        PublicKey::Secp256k1(make_true_rng().gen()),
+        PublicKey::P256(make_true_rng().gen()),
     ] {
         assert!(new_contract
             .has_public_key(&public_key.to_implicit_account_id(), &public_key)

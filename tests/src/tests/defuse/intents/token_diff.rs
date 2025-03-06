@@ -12,7 +12,7 @@ use defuse::core::{
 };
 use near_sdk::AccountId;
 use near_workspaces::Account;
-use rand::{thread_rng, Rng};
+use randomness::{make_true_rng, Rng};
 use rstest::rstest;
 
 use crate::{
@@ -193,7 +193,7 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
             account.diff.iter().cloned().map(|diff| {
                 account.account.sign_defuse_message(
                     env.defuse.id(),
-                    thread_rng().gen(),
+                    make_true_rng().gen(),
                     Deadline::timeout(Duration::from_secs(120)),
                     DefuseIntents {
                         intents: [TokenDiff {
@@ -259,7 +259,7 @@ async fn test_invariant_violated() {
     let signed: Vec<_> = [
         env.user1.sign_defuse_message(
             env.defuse.id(),
-            thread_rng().gen(),
+            make_true_rng().gen(),
             Deadline::MAX,
             DefuseIntents {
                 intents: [TokenDiff {
@@ -275,7 +275,7 @@ async fn test_invariant_violated() {
         ),
         env.user1.sign_defuse_message(
             env.defuse.id(),
-            thread_rng().gen(),
+            make_true_rng().gen(),
             Deadline::MAX,
             DefuseIntents {
                 intents: [TokenDiff {
@@ -366,7 +366,7 @@ async fn test_solver_user_closure(
     // solver signs his intent
     let solver_commitment = solver.sign_defuse_message(
         env.defuse.id(),
-        thread_rng().gen(),
+        make_true_rng().gen(),
         Deadline::timeout(Duration::from_secs(90)),
         DefuseIntents {
             intents: [TokenDiff {
@@ -424,7 +424,7 @@ async fn test_solver_user_closure(
     // user signs the message
     let user_commitment = user.sign_defuse_message(
         env.defuse.id(),
-        thread_rng().gen(),
+        make_true_rng().gen(),
         Deadline::timeout(Duration::from_secs(90)),
         DefuseIntents {
             intents: [TokenDiff {

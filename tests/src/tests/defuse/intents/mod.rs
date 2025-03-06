@@ -8,7 +8,7 @@ use defuse::{
     intents::SimulationOutput,
 };
 use near_sdk::{AccountId, AccountIdRef};
-use rand::{thread_rng, Rng};
+use randomness::{make_true_rng, Rng};
 use serde_json::json;
 
 use crate::utils::mt::MtExt;
@@ -150,7 +150,7 @@ async fn test_simulate_is_view_method() {
     env.defuse
         .simulate_intents([env.user1.sign_defuse_message(
             env.defuse.id(),
-            thread_rng().gen(),
+            make_true_rng().gen(),
             Deadline::MAX,
             DefuseIntents {
                 intents: [Transfer {
