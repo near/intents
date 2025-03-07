@@ -10,7 +10,7 @@ POA_TOKEN_WASM = "${TARGET_DIR}/defuse_poa_token.wasm"
 alias = "build"
 
 [tasks.clippy]
-dependencies = ["build-poa-token"]
+dependencies = ["add-cache-dir-tag", "build-poa-token"]
 command = "cargo"
 args = ["clippy", "--workspace", "--all-targets", "--no-deps"]
 
@@ -18,6 +18,7 @@ args = ["clippy", "--workspace", "--all-targets", "--no-deps"]
 dependencies = ["add-cache-dir-tag", "build-defuse", "build-poa-factory", "contract-stats"]
 
 [tasks.build-defuse]
+dependencies = ["add-cache-dir-tag"]
 command = "cargo"
 args = [
     "near",
@@ -33,7 +34,7 @@ args = [
 ]
 
 [tasks.build-poa-factory]
-dependencies = ["build-poa-token"]
+dependencies = ["add-cache-dir-tag", "build-poa-token"]
 command = "cargo"
 args = [
     "near",
@@ -49,6 +50,7 @@ args = [
 ]
 
 [tasks.build-poa-token]
+dependencies = ["add-cache-dir-tag"]
 command = "cargo"
 args = [
     "near",
