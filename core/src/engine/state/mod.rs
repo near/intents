@@ -10,7 +10,7 @@ use near_sdk::{AccountId, AccountIdRef};
 
 use crate::{
     fees::Pips,
-    intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw},
+    intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
     tokens::TokenId,
     DefuseError, Nonce, Result,
 };
@@ -137,6 +137,20 @@ pub trait State: StateView {
             [(
                 TokenId::Nep141(self.wnear_id().into_owned()),
                 withdraw.amount.as_yoctonear(),
+            )],
+        )
+    }
+
+    fn storage_deposit(
+        &mut self,
+        owner_id: &AccountIdRef,
+        storage_deposit: StorageDeposit,
+    ) -> Result<()> {
+        self.internal_withdraw(
+            owner_id,
+            [(
+                TokenId::Nep141(self.wnear_id().into_owned()),
+                storage_deposit.amount.as_yoctonear(),
             )],
         )
     }
