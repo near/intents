@@ -95,25 +95,27 @@ impl State for Contract {
         self.accounts.get_or_create(account_id).commit_nonce(nonce)
     }
 
-    fn internal_deposit(
+    fn internal_add_balance(
         &mut self,
         owner_id: AccountId,
         tokens: impl IntoIterator<Item = (TokenId, u128)>,
     ) -> Result<()> {
         let owner = self.accounts.get_or_create(owner_id);
+
         for (token_id, amount) in tokens {
             if amount == 0 {
                 return Err(DefuseError::InvalidIntent);
             }
             owner
                 .token_balances
-                .deposit(token_id, amount)
+                .add_balance(token_id, amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
         }
+
         Ok(())
     }
 
-    fn internal_withdraw(
+    fn internal_sub_balance(
         &mut self,
         owner_id: &AccountIdRef,
         tokens: impl IntoIterator<Item = (TokenId, u128)>,
@@ -122,6 +124,7 @@ impl State for Contract {
             .accounts
             .get_mut(owner_id)
             .ok_or(DefuseError::AccountNotFound)?;
+
         for (token_id, amount) in tokens {
             if amount == 0 {
                 return Err(DefuseError::InvalidIntent);
@@ -129,9 +132,10 @@ impl State for Contract {
 
             owner
                 .token_balances
-                .withdraw(token_id.clone(), amount)
+                .sub_balance(token_id.clone(), amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
         }
+
         Ok(())
     }
 

@@ -65,7 +65,7 @@ impl ExecutableIntent for TokenDiff {
             // add delta to signer's account
             engine
                 .state
-                .internal_add_deltas(signer_id, [(token_id.clone(), delta)])?;
+                .internal_apply_deltas(signer_id, [(token_id.clone(), delta)])?;
 
             // take fees only from negative deltas (i.e. token_in)
             if delta < 0 {
@@ -74,7 +74,7 @@ impl ExecutableIntent for TokenDiff {
 
                 // collect fee
                 fees_collected
-                    .deposit(token_id, fee)
+                    .add_balance(token_id, fee)
                     .ok_or(DefuseError::BalanceOverflow)?;
             }
         }
@@ -87,7 +87,7 @@ impl ExecutableIntent for TokenDiff {
         if !fees_collected.is_empty() {
             engine
                 .state
-                .internal_deposit(engine.state.fee_collector().into_owned(), fees_collected)?;
+                .internal_add_balance(engine.state.fee_collector().into_owned(), fees_collected)?;
         }
 
         Ok(())

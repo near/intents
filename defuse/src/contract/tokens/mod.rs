@@ -38,11 +38,11 @@ impl Contract {
 
             self.state
                 .total_supplies
-                .deposit(token_id.clone(), amount)
+                .add_balance(token_id.clone(), amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
             owner
                 .token_balances
-                .deposit(token_id, amount)
+                .add_balance(token_id, amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
         }
 
@@ -80,11 +80,11 @@ impl Contract {
 
             owner
                 .token_balances
-                .withdraw(token_id.clone(), amount)
+                .sub_balance(token_id.clone(), amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
             self.state
                 .total_supplies
-                .withdraw(token_id, amount)
+                .sub_balance(token_id, amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
         }
 

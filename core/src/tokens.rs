@@ -140,7 +140,7 @@ where
 
     #[must_use]
     #[inline]
-    pub fn deposit(&mut self, k: T::K, amount: u128) -> Option<T::V>
+    pub fn add_balance(&mut self, k: T::K, amount: u128) -> Option<T::V>
     where
         T::V: CheckedAdd<u128>,
     {
@@ -149,28 +149,28 @@ where
 
     #[must_use]
     #[inline]
-    pub fn with_deposit(mut self, k: T::K, amount: u128) -> Option<Self>
+    pub fn with_add_balance(mut self, k: T::K, amount: u128) -> Option<Self>
     where
         T::V: CheckedAdd<u128>,
     {
-        self.deposit(k, amount)?;
+        self.add_balance(k, amount)?;
         Some(self)
     }
 
     #[must_use]
     #[inline]
-    pub fn with_deposit_many(self, amounts: impl IntoIterator<Item = (T::K, u128)>) -> Option<Self>
+    pub fn with_add_balances(self, amounts: impl IntoIterator<Item = (T::K, u128)>) -> Option<Self>
     where
         T::V: CheckedAdd<u128>,
     {
-        amounts
-            .into_iter()
-            .try_fold(self, |amounts, (k, amount)| amounts.with_deposit(k, amount))
+        amounts.into_iter().try_fold(self, |amounts, (k, amount)| {
+            amounts.with_add_balance(k, amount)
+        })
     }
 
     #[must_use]
     #[inline]
-    pub fn withdraw(&mut self, k: T::K, amount: u128) -> Option<T::V>
+    pub fn sub_balance(&mut self, k: T::K, amount: u128) -> Option<T::V>
     where
         T::V: CheckedSub<u128>,
     {
@@ -179,22 +179,22 @@ where
 
     #[must_use]
     #[inline]
-    pub fn with_withdraw(mut self, k: T::K, amount: u128) -> Option<Self>
+    pub fn with_sub_balance(mut self, k: T::K, amount: u128) -> Option<Self>
     where
         T::V: CheckedSub<u128>,
     {
-        self.withdraw(k, amount)?;
+        self.sub_balance(k, amount)?;
         Some(self)
     }
 
     #[must_use]
     #[inline]
-    pub fn with_withdraw_many(self, amounts: impl IntoIterator<Item = (T::K, u128)>) -> Option<Self>
+    pub fn with_sub_balances(self, amounts: impl IntoIterator<Item = (T::K, u128)>) -> Option<Self>
     where
         T::V: CheckedSub<u128>,
     {
         amounts.into_iter().try_fold(self, |amounts, (k, amount)| {
-            amounts.with_withdraw(k, amount)
+            amounts.with_sub_balance(k, amount)
         })
     }
 

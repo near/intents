@@ -46,23 +46,26 @@ pub trait StateView {
 pub trait State: StateView {
     #[must_use]
     fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> bool;
+
     #[must_use]
     fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> bool;
 
     #[must_use]
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> bool;
 
-    fn internal_deposit(
+    fn internal_add_balance(
         &mut self,
         owner_id: AccountId,
         tokens: impl IntoIterator<Item = (TokenId, u128)>,
     ) -> Result<()>;
-    fn internal_withdraw(
+
+    fn internal_sub_balance(
         &mut self,
         owner_id: &AccountIdRef,
         tokens: impl IntoIterator<Item = (TokenId, u128)>,
     ) -> Result<()>;
-    fn internal_add_deltas(
+
+    fn internal_apply_deltas(
         &mut self,
         owner_id: &AccountIdRef,
         tokens: impl IntoIterator<Item = (TokenId, i128)>,
@@ -70,16 +73,16 @@ pub trait State: StateView {
         for (token_id, delta) in tokens {
             let tokens = [(token_id, delta.unsigned_abs())];
             if delta.is_negative() {
-                self.internal_withdraw(owner_id, tokens)?;
+                self.internal_sub_balance(owner_id, tokens)?;
             } else {
-                self.internal_deposit(owner_id.to_owned(), tokens)?;
+                self.internal_add_balance(owner_id.to_owned(), tokens)?;
             }
         }
         Ok(())
     }
 
     fn ft_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: FtWithdraw) -> Result<()> {
-        self.internal_withdraw(
+        self.internal_sub_balance(
             owner_id,
             iter::once((TokenId::Nep141(withdraw.token.clone()), withdraw.amount.0)).chain(
                 withdraw.storage_deposit.map(|amount| {
@@ -93,7 +96,7 @@ pub trait State: StateView {
     }
 
     fn nft_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: NftWithdraw) -> Result<()> {
-        self.internal_withdraw(
+        self.internal_sub_balance(
             owner_id,
             iter::once((
                 TokenId::Nep171(withdraw.token.clone(), withdraw.token_id.clone()),
@@ -113,7 +116,7 @@ pub trait State: StateView {
             return Err(DefuseError::InvalidIntent);
         }
 
-        self.internal_withdraw(
+        self.internal_sub_balance(
             owner_id,
             iter::repeat(withdraw.token.clone())
                 .zip(withdraw.token_ids.iter().cloned())
@@ -129,7 +132,7 @@ pub trait State: StateView {
     }
 
     fn native_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: NativeWithdraw) -> Result<()> {
-        self.internal_withdraw(
+        self.internal_sub_balance(
             owner_id,
             [(
                 TokenId::Nep141(self.wnear_id().into_owned()),

@@ -110,14 +110,14 @@ where
         self.state.commit_nonce(account_id, nonce)
     }
 
-    fn internal_deposit(
+    fn internal_add_balance(
         &mut self,
         owner_id: AccountId,
         tokens: impl IntoIterator<Item = (TokenId, u128)>,
     ) -> Result<()> {
         for (token_id, amount) in tokens {
             self.state
-                .internal_deposit(owner_id.clone(), [(token_id.clone(), amount)])?;
+                .internal_add_balance(owner_id.clone(), [(token_id.clone(), amount)])?;
             if !self.deltas.deposit(owner_id.clone(), token_id, amount) {
                 return Err(DefuseError::BalanceOverflow);
             }
@@ -125,14 +125,14 @@ where
         Ok(())
     }
 
-    fn internal_withdraw(
+    fn internal_sub_balance(
         &mut self,
         owner_id: &AccountIdRef,
         tokens: impl IntoIterator<Item = (TokenId, u128)>,
     ) -> Result<()> {
         for (token_id, amount) in tokens {
             self.state
-                .internal_withdraw(owner_id, [(token_id.clone(), amount)])?;
+                .internal_sub_balance(owner_id, [(token_id.clone(), amount)])?;
             if !self.deltas.withdraw(owner_id.to_owned(), token_id, amount) {
                 return Err(DefuseError::BalanceOverflow);
             }
@@ -247,14 +247,14 @@ impl TokenTransferMatcher {
         let s = sub.balance_of(&owner_id);
         if s > 0 {
             let a = s.min(amount);
-            sub.withdraw(owner_id.clone(), a)
+            sub.sub_balance(owner_id.clone(), a)
                 .unwrap_or_else(|| unreachable!());
             amount = amount.saturating_sub(a);
             if amount == 0 {
                 return true;
             }
         }
-        add.deposit(owner_id, amount).is_some()
+        add.add_balance(owner_id, amount).is_some()
     }
 
     // Finalizes transfer of this token, or returns unmatched delta.
@@ -335,7 +335,7 @@ impl Transfers {
     ) -> Option<u128> {
         let mut sender = self.0.entry_or_default(sender_id);
         let mut receiver = sender.entry_or_default(receiver_id);
-        receiver.deposit(token_id, amount)
+        receiver.add_balance(token_id, amount)
     }
 
     pub fn with_transfer(
@@ -470,12 +470,12 @@ mod tests {
                 for (token_id, amount) in amounts {
                     new_deltas
                         .entry_or_default(sender_id.clone())
-                        .withdraw(token_id.clone(), amount)
+                        .sub_balance(token_id.clone(), amount)
                         .unwrap();
 
                     new_deltas
                         .entry_or_default(receiver_id.clone())
-                        .deposit(token_id, amount)
+                        .add_balance(token_id, amount)
                         .unwrap();
                 }
             }

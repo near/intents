@@ -66,13 +66,13 @@ impl MultiTokenResolver for Contract {
             // withdraw refund
             receiver
                 .token_balances
-                .withdraw(token_id.clone(), refund.0)
+                .sub_balance(token_id.clone(), refund.0)
                 .unwrap_or_panic();
             // deposit refund
             let previous_owner = self.accounts.get_or_create(previous_owner_id);
             previous_owner
                 .token_balances
-                .deposit(token_id, refund.0)
+                .add_balance(token_id, refund.0)
                 .unwrap_or_panic();
 
             // update as used amount in-place

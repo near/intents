@@ -49,10 +49,10 @@ impl ExecutableIntent for Transfer {
         engine.inspector.on_transfer(sender_id, &self, intent_hash);
         engine
             .state
-            .internal_withdraw(sender_id, self.tokens.clone())?;
+            .internal_sub_balance(sender_id, self.tokens.clone())?;
         engine
             .state
-            .internal_deposit(self.receiver_id, self.tokens)?;
+            .internal_add_balance(self.receiver_id, self.tokens)?;
         Ok(())
     }
 }

@@ -180,12 +180,12 @@ impl Contract {
                 .get_mut(sender_id)
                 .ok_or(DefuseError::AccountNotFound)?
                 .token_balances
-                .withdraw(token_id.clone(), amount)
+                .sub_balance(token_id.clone(), amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
             self.accounts
                 .get_or_create(receiver_id.clone())
                 .token_balances
-                .deposit(token_id, amount)
+                .add_balance(token_id, amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
         }
 
