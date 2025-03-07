@@ -9,7 +9,7 @@ use near_sdk::{AccountId, AccountIdRef};
 
 use crate::{
     fees::Pips,
-    tokens::{TokenAmounts, TokenId},
+    tokens::{Amounts, TokenId},
     DefuseError, Nonce, Nonces, Result,
 };
 
@@ -143,12 +143,12 @@ where
             if account.token_amounts.get(&token_id).is_none() {
                 account
                     .token_amounts
-                    .add_balance(token_id.clone(), self.view.balance_of(&owner_id, &token_id))
+                    .add(token_id.clone(), self.view.balance_of(&owner_id, &token_id))
                     .ok_or(DefuseError::BalanceOverflow)?;
             }
             account
                 .token_amounts
-                .add_balance(token_id, amount)
+                .add(token_id, amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
         }
         Ok(())
@@ -171,12 +171,12 @@ where
             if account.token_amounts.get(&token_id).is_none() {
                 account
                     .token_amounts
-                    .add_balance(token_id.clone(), self.view.balance_of(owner_id, &token_id))
+                    .add(token_id.clone(), self.view.balance_of(owner_id, &token_id))
                     .ok_or(DefuseError::BalanceOverflow)?;
             }
             account
                 .token_amounts
-                .sub_balance(token_id, amount)
+                .sub(token_id, amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
         }
         Ok(())
@@ -216,7 +216,7 @@ pub struct CachedAccount {
     public_keys_added: HashSet<PublicKey>,
     public_keys_removed: HashSet<PublicKey>,
 
-    token_amounts: TokenAmounts<HashMap<TokenId, u128>>,
+    token_amounts: Amounts<HashMap<TokenId, u128>>,
 }
 
 impl CachedAccount {

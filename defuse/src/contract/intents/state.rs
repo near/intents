@@ -67,7 +67,7 @@ impl StateView for Contract {
     fn balance_of(&self, account_id: &AccountIdRef, token_id: &TokenId) -> u128 {
         self.accounts
             .get(account_id)
-            .map(|account| account.token_balances.balance_of(token_id))
+            .map(|account| account.token_balances.amount_for(token_id))
             .unwrap_or_default()
     }
 }
@@ -108,7 +108,7 @@ impl State for Contract {
             }
             owner
                 .token_balances
-                .add_balance(token_id, amount)
+                .add(token_id, amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
         }
 
@@ -132,7 +132,7 @@ impl State for Contract {
 
             owner
                 .token_balances
-                .sub_balance(token_id.clone(), amount)
+                .sub(token_id.clone(), amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
         }
 

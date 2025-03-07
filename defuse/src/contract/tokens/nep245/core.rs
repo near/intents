@@ -134,7 +134,7 @@ impl MultiTokenCore for Contract {
 
     fn mt_supply(&self, token_id: defuse_nep245::TokenId) -> Option<U128> {
         Some(U128(
-            self.total_supplies.balance_of(&token_id.parse().ok()?),
+            self.total_supplies.amount_for(&token_id.parse().ok()?),
         ))
     }
 
@@ -180,12 +180,12 @@ impl Contract {
                 .get_mut(sender_id)
                 .ok_or(DefuseError::AccountNotFound)?
                 .token_balances
-                .sub_balance(token_id.clone(), amount)
+                .sub(token_id.clone(), amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
             self.accounts
                 .get_or_create(receiver_id.clone())
                 .token_balances
-                .add_balance(token_id, amount)
+                .add(token_id, amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
         }
 

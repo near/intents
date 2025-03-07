@@ -17,7 +17,7 @@ use crate::{
         token_diff::TokenDeltas,
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw},
     },
-    tokens::{TokenAmounts, TokenId},
+    tokens::{Amounts, TokenId},
     DefuseError, Nonce, Result,
 };
 
@@ -194,7 +194,7 @@ impl TransferMatcher {
         let mut deltas = TokenDeltas::default();
         for (token_id, transfer_matcher) in self.0 {
             if let Err(unmatched) = transfer_matcher.finalize_into(&token_id, &mut transfers) {
-                if unmatched == 0 || deltas.add_delta(token_id, unmatched).is_none() {
+                if unmatched == 0 || deltas.apply_delta(token_id, unmatched).is_none() {
                     return Err(InvariantViolated::Overflow);
                 }
             }
@@ -208,7 +208,7 @@ impl TransferMatcher {
     }
 }
 
-type AccountAmounts = TokenAmounts<HashMap<AccountId, u128>>;
+type AccountAmounts = Amounts<HashMap<AccountId, u128>>;
 
 // Accumulates internal deposits and withdrawals on a single token
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -244,17 +244,17 @@ impl TokenTransferMatcher {
         owner_id: AccountId,
         mut amount: u128,
     ) -> bool {
-        let s = sub.balance_of(&owner_id);
+        let s = sub.amount_for(&owner_id);
         if s > 0 {
             let a = s.min(amount);
-            sub.sub_balance(owner_id.clone(), a)
+            sub.sub(owner_id.clone(), a)
                 .unwrap_or_else(|| unreachable!());
             amount = amount.saturating_sub(a);
             if amount == 0 {
                 return true;
             }
         }
-        add.add_balance(owner_id, amount).is_some()
+        add.add(owner_id, amount).is_some()
     }
 
     // Finalizes transfer of this token, or returns unmatched delta.
@@ -321,7 +321,7 @@ impl TokenTransferMatcher {
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Transfers(
     /// `sender_id` -> `receiver_id` -> `token_id` -> `amount`
-    HashMap<AccountId, HashMap<AccountId, TokenAmounts<HashMap<TokenId, u128>>>>,
+    HashMap<AccountId, HashMap<AccountId, Amounts<HashMap<TokenId, u128>>>>,
 );
 
 impl Transfers {
@@ -335,7 +335,7 @@ impl Transfers {
     ) -> Option<u128> {
         let mut sender = self.0.entry_or_default(sender_id);
         let mut receiver = sender.entry_or_default(receiver_id);
-        receiver.add_balance(token_id, amount)
+        receiver.add(token_id, amount)
     }
 
     pub fn with_transfer(
@@ -390,7 +390,7 @@ impl Transfers {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InvariantViolated {
     UnmatchedDeltas {
-        #[serde_as(as = "TokenAmounts<BTreeMap<_, DisplayFromStr>>")]
+        #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
         unmatched_deltas: TokenDeltas,
     },
     Overflow,
@@ -445,7 +445,7 @@ mod tests {
             (
                 owner_id.clone(),
                 TokenDeltas::default()
-                    .with_add_deltas(
+                    .with_apply_deltas(
                         deltas
                             .iter()
                             .map(|(token_id, delta)| ((*token_id).clone(), *delta)),
@@ -470,12 +470,12 @@ mod tests {
                 for (token_id, amount) in amounts {
                     new_deltas
                         .entry_or_default(sender_id.clone())
-                        .sub_balance(token_id.clone(), amount)
+                        .sub(token_id.clone(), amount)
                         .unwrap();
 
                     new_deltas
                         .entry_or_default(receiver_id.clone())
-                        .add_balance(token_id, amount)
+                        .add(token_id, amount)
                         .unwrap();
                 }
             }
@@ -508,9 +508,9 @@ mod tests {
             deltas.finalize().unwrap_err(),
             InvariantViolated::UnmatchedDeltas {
                 unmatched_deltas: TokenDeltas::default()
-                    .with_add_delta(ft1.clone(), -3)
+                    .with_apply_delta(ft1.clone(), -3)
                     .unwrap()
-                    .with_add_delta(ft2.clone(), -1)
+                    .with_apply_delta(ft2.clone(), -1)
                     .unwrap()
             }
         );

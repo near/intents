@@ -55,7 +55,7 @@ impl MultiTokenResolver for Contract {
                 // receiver doesn't have an account, so nowhere to refund from
                 return amounts;
             };
-            let receiver_balance = receiver.token_balances.balance_of(&token_id);
+            let receiver_balance = receiver.token_balances.amount_for(&token_id);
             // refund maximum what we can
             refund.0 = refund.0.min(receiver_balance);
             if refund.0 == 0 {
@@ -66,13 +66,13 @@ impl MultiTokenResolver for Contract {
             // withdraw refund
             receiver
                 .token_balances
-                .sub_balance(token_id.clone(), refund.0)
+                .sub(token_id.clone(), refund.0)
                 .unwrap_or_panic();
             // deposit refund
             let previous_owner = self.accounts.get_or_create(previous_owner_id);
             previous_owner
                 .token_balances
-                .add_balance(token_id, refund.0)
+                .add(token_id, refund.0)
                 .unwrap_or_panic();
 
             // update as used amount in-place

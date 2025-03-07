@@ -2,7 +2,7 @@ use defuse_core::{
     accounts::AccountEvent,
     engine::Inspector,
     intents::{token_diff::TokenDiff, tokens::Transfer, IntentEvent},
-    tokens::TokenAmounts,
+    tokens::Amounts,
     Deadline,
 };
 use near_sdk::{AccountIdRef, CryptoHash};
@@ -41,7 +41,7 @@ impl Inspector for SimulateInspector {
         &mut self,
         _owner_id: &AccountIdRef,
         _token_diff: &TokenDiff,
-        _fees_collected: &TokenAmounts,
+        _fees_collected: &Amounts,
         _intent_hash: CryptoHash,
     ) {
     }

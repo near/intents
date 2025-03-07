@@ -3,7 +3,7 @@ use near_sdk::{AccountIdRef, CryptoHash};
 
 use crate::{
     intents::{token_diff::TokenDiff, tokens::Transfer},
-    tokens::TokenAmounts,
+    tokens::Amounts,
     Deadline,
 };
 
@@ -21,7 +21,7 @@ pub trait Inspector {
         &mut self,
         owner_id: &AccountIdRef,
         token_diff: &TokenDiff,
-        fees_collected: &TokenAmounts,
+        fees_collected: &Amounts,
         intent_hash: CryptoHash,
     );
 

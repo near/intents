@@ -37,7 +37,7 @@ async fn test_swap_p2p(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] f
                 account: &env.user1,
                 init_balances: [(&env.ft1, 100)].into_iter().collect(),
                 diff: [TokenDeltas::default()
-                    .with_add_deltas([
+                    .with_apply_deltas([
                         (ft1_token_id.clone(), -100),
                         (
                             ft2_token_id.clone(),
@@ -57,7 +57,7 @@ async fn test_swap_p2p(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] f
                 account: &env.user2,
                 init_balances: [(&env.ft2, 200)].into_iter().collect(),
                 diff: [TokenDeltas::default()
-                    .with_add_deltas([
+                    .with_apply_deltas([
                         (
                             ft1_token_id.clone(),
                             TokenDiff::closure_delta(&ft1_token_id, -100, fee).unwrap(),
@@ -95,7 +95,7 @@ async fn test_swap_many(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] 
                 account: &env.user1,
                 init_balances: [(&env.ft1, 100)].into_iter().collect(),
                 diff: [TokenDeltas::default()
-                    .with_add_deltas([(ft1_token_id.clone(), -100), (ft2_token_id.clone(), 200)])
+                    .with_apply_deltas([(ft1_token_id.clone(), -100), (ft2_token_id.clone(), 200)])
                     .unwrap()]
                 .into(),
                 result_balances: [(&env.ft2, 200)].into_iter().collect(),
@@ -105,7 +105,7 @@ async fn test_swap_many(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] 
                 init_balances: [(&env.ft2, 1000)].into_iter().collect(),
                 diff: [
                     TokenDeltas::default()
-                        .with_add_deltas([
+                        .with_apply_deltas([
                             (
                                 ft1_token_id.clone(),
                                 TokenDiff::closure_delta(&ft1_token_id, -100, fee).unwrap(),
@@ -117,7 +117,7 @@ async fn test_swap_many(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] 
                         ])
                         .unwrap(),
                     TokenDeltas::default()
-                        .with_add_deltas([
+                        .with_apply_deltas([
                             (
                                 ft2_token_id.clone(),
                                 TokenDiff::closure_delta(&ft2_token_id, 300, fee).unwrap(),
@@ -152,7 +152,7 @@ async fn test_swap_many(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] 
                 account: &env.user3,
                 init_balances: [(&env.ft3, 500)].into_iter().collect(),
                 diff: [TokenDeltas::default()
-                    .with_add_deltas([(ft2_token_id.clone(), 300), (ft3_token_id.clone(), -500)])
+                    .with_apply_deltas([(ft2_token_id.clone(), 300), (ft3_token_id.clone(), -500)])
                     .unwrap()]
                 .into(),
                 result_balances: [(&env.ft2, 300)].into_iter().collect(),
@@ -264,7 +264,7 @@ async fn test_invariant_violated() {
             DefuseIntents {
                 intents: [TokenDiff {
                     diff: TokenDeltas::default()
-                        .with_add_deltas([(ft1.clone(), -1000), (ft2.clone(), 2000)])
+                        .with_apply_deltas([(ft1.clone(), -1000), (ft2.clone(), 2000)])
                         .unwrap(),
                     memo: None,
                     referral: None,
@@ -280,7 +280,7 @@ async fn test_invariant_violated() {
             DefuseIntents {
                 intents: [TokenDiff {
                     diff: TokenDeltas::default()
-                        .with_add_deltas([(ft1.clone(), 1000), (ft2.clone(), -1999)])
+                        .with_apply_deltas([(ft1.clone(), 1000), (ft2.clone(), -1999)])
                         .unwrap(),
                     memo: None,
                     referral: None,
@@ -411,13 +411,13 @@ async fn test_solver_user_closure(
     let expected_unmatched_delta_token_in =
         TokenDiff::closure_delta(&token_in, USER_DELTA_IN, fee).unwrap();
     assert_eq!(
-        unmatched_deltas.balance_of(&token_in),
+        unmatched_deltas.amount_for(&token_in),
         expected_unmatched_delta_token_in
     );
 
     // calculate user_delta_out to return to the user
     let user_delta_out =
-        TokenDiff::closure_supply_delta(&token_out, unmatched_deltas.balance_of(&token_out), fee)
+        TokenDiff::closure_supply_delta(&token_out, unmatched_deltas.amount_for(&token_out), fee)
             .unwrap();
     dbg!(user_delta_out);
 

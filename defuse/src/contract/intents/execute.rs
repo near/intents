@@ -9,7 +9,7 @@ use defuse_core::{
         tokens::Transfer,
         IntentEvent,
     },
-    tokens::TokenAmounts,
+    tokens::Amounts,
     Deadline,
 };
 use near_sdk::{AccountIdRef, CryptoHash};
@@ -46,7 +46,7 @@ impl Inspector for ExecuteInspector {
         &mut self,
         owner_id: &AccountIdRef,
         token_diff: &TokenDiff,
-        fees_collected: &TokenAmounts,
+        fees_collected: &Amounts,
         intent_hash: CryptoHash,
     ) {
         DefuseEvent::TokenDiff(

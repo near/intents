@@ -114,9 +114,9 @@ pub enum ParseTokenIdError {
 #[near(serializers = [borsh, json])]
 #[autoimpl(Deref using self.0)]
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct TokenAmounts<T = BTreeMap<TokenId, u128>>(T);
+pub struct Amounts<T = BTreeMap<TokenId, u128>>(T);
 
-impl<T> TokenAmounts<T> {
+impl<T> Amounts<T> {
     #[inline]
     pub const fn new(map: T) -> Self {
         Self(map)
@@ -128,19 +128,19 @@ impl<T> TokenAmounts<T> {
     }
 }
 
-impl<T> TokenAmounts<T>
+impl<T> Amounts<T>
 where
     T: DefaultMap,
     T::V: Copy,
 {
     #[inline]
-    pub fn balance_of(&self, k: &T::K) -> T::V {
+    pub fn amount_for(&self, k: &T::K) -> T::V {
         self.0.get(k).copied().unwrap_or_default()
     }
 
     #[must_use]
     #[inline]
-    pub fn add_balance(&mut self, k: T::K, amount: u128) -> Option<T::V>
+    pub fn add(&mut self, k: T::K, amount: u128) -> Option<T::V>
     where
         T::V: CheckedAdd<u128>,
     {
@@ -149,28 +149,28 @@ where
 
     #[must_use]
     #[inline]
-    pub fn with_add_balance(mut self, k: T::K, amount: u128) -> Option<Self>
+    pub fn with_add(mut self, k: T::K, amount: u128) -> Option<Self>
     where
         T::V: CheckedAdd<u128>,
     {
-        self.add_balance(k, amount)?;
+        self.add(k, amount)?;
         Some(self)
     }
 
     #[must_use]
     #[inline]
-    pub fn with_add_balances(self, amounts: impl IntoIterator<Item = (T::K, u128)>) -> Option<Self>
+    pub fn with_add_many(self, amounts: impl IntoIterator<Item = (T::K, u128)>) -> Option<Self>
     where
         T::V: CheckedAdd<u128>,
     {
-        amounts.into_iter().try_fold(self, |amounts, (k, amount)| {
-            amounts.with_add_balance(k, amount)
-        })
+        amounts
+            .into_iter()
+            .try_fold(self, |amounts, (k, amount)| amounts.with_add(k, amount))
     }
 
     #[must_use]
     #[inline]
-    pub fn sub_balance(&mut self, k: T::K, amount: u128) -> Option<T::V>
+    pub fn sub(&mut self, k: T::K, amount: u128) -> Option<T::V>
     where
         T::V: CheckedSub<u128>,
     {
@@ -179,28 +179,28 @@ where
 
     #[must_use]
     #[inline]
-    pub fn with_sub_balance(mut self, k: T::K, amount: u128) -> Option<Self>
+    pub fn with_sub(mut self, k: T::K, amount: u128) -> Option<Self>
     where
         T::V: CheckedSub<u128>,
     {
-        self.sub_balance(k, amount)?;
+        self.sub(k, amount)?;
         Some(self)
     }
 
     #[must_use]
     #[inline]
-    pub fn with_sub_balances(self, amounts: impl IntoIterator<Item = (T::K, u128)>) -> Option<Self>
+    pub fn with_sub_many(self, amounts: impl IntoIterator<Item = (T::K, u128)>) -> Option<Self>
     where
         T::V: CheckedSub<u128>,
     {
-        amounts.into_iter().try_fold(self, |amounts, (k, amount)| {
-            amounts.with_sub_balance(k, amount)
-        })
+        amounts
+            .into_iter()
+            .try_fold(self, |amounts, (k, amount)| amounts.with_sub(k, amount))
     }
 
     #[must_use]
     #[inline]
-    pub fn add_delta(&mut self, k: T::K, delta: i128) -> Option<T::V>
+    pub fn apply_delta(&mut self, k: T::K, delta: i128) -> Option<T::V>
     where
         T::V: CheckedAdd<i128>,
     {
@@ -209,23 +209,23 @@ where
 
     #[must_use]
     #[inline]
-    pub fn with_add_delta(mut self, k: T::K, delta: i128) -> Option<Self>
+    pub fn with_apply_delta(mut self, k: T::K, delta: i128) -> Option<Self>
     where
         T::V: CheckedAdd<i128>,
     {
-        self.add_delta(k, delta)?;
+        self.apply_delta(k, delta)?;
         Some(self)
     }
 
     #[must_use]
     #[inline]
-    pub fn with_add_deltas(self, amounts: impl IntoIterator<Item = (T::K, i128)>) -> Option<Self>
+    pub fn with_apply_deltas(self, amounts: impl IntoIterator<Item = (T::K, i128)>) -> Option<Self>
     where
         T::V: CheckedAdd<i128>,
     {
-        amounts
-            .into_iter()
-            .try_fold(self, |amounts, (k, delta)| amounts.with_add_delta(k, delta))
+        amounts.into_iter().try_fold(self, |amounts, (k, delta)| {
+            amounts.with_apply_delta(k, delta)
+        })
     }
 
     #[must_use]
@@ -238,7 +238,7 @@ where
 }
 
 #[allow(clippy::iter_without_into_iter)]
-impl<T> TokenAmounts<T>
+impl<T> Amounts<T>
 where
     T: IterableMap,
 {
@@ -247,7 +247,7 @@ where
     }
 }
 
-impl<T> IntoIterator for TokenAmounts<T>
+impl<T> IntoIterator for Amounts<T>
 where
     T: IntoIterator,
 {
@@ -261,7 +261,7 @@ where
     }
 }
 
-impl<'a, T> IntoIterator for &'a TokenAmounts<T>
+impl<'a, T> IntoIterator for &'a Amounts<T>
 where
     &'a T: IntoIterator,
 {
@@ -275,7 +275,7 @@ where
     }
 }
 
-impl<T> TokenAmounts<T>
+impl<T> Amounts<T>
 where
     T: IterableMap,
 {
@@ -290,21 +290,21 @@ where
     }
 }
 
-impl<T> From<TokenAmounts<T>> for Cow<'_, TokenAmounts<T>>
+impl<T> From<Amounts<T>> for Cow<'_, Amounts<T>>
 where
     T: Clone,
 {
-    fn from(value: TokenAmounts<T>) -> Self {
+    fn from(value: Amounts<T>) -> Self {
         Self::Owned(value)
     }
 }
 
-impl<T, As> SerializeAs<TokenAmounts<T>> for TokenAmounts<As>
+impl<T, As> SerializeAs<Amounts<T>> for Amounts<As>
 where
     As: SerializeAs<T>,
 {
     #[inline]
-    fn serialize_as<S>(source: &TokenAmounts<T>, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize_as<S>(source: &Amounts<T>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -312,16 +312,16 @@ where
     }
 }
 
-impl<'de, T, As> DeserializeAs<'de, TokenAmounts<T>> for TokenAmounts<As>
+impl<'de, T, As> DeserializeAs<'de, Amounts<T>> for Amounts<As>
 where
     As: DeserializeAs<'de, T>,
 {
     #[inline]
-    fn deserialize_as<D>(deserializer: D) -> Result<TokenAmounts<T>, D::Error>
+    fn deserialize_as<D>(deserializer: D) -> Result<Amounts<T>, D::Error>
     where
         D: Deserializer<'de>,
     {
-        As::deserialize_as(deserializer).map(TokenAmounts)
+        As::deserialize_as(deserializer).map(Amounts)
     }
 }
 
@@ -364,7 +364,7 @@ mod abi {
         }
     }
 
-    impl<T, As> JsonSchemaAs<TokenAmounts<T>> for TokenAmounts<As>
+    impl<T, As> JsonSchemaAs<Amounts<T>> for Amounts<As>
     where
         As: JsonSchemaAs<T>,
     {
@@ -391,34 +391,34 @@ mod tests {
     fn invariant() {
         let [t1, t2] = ["t1.near", "t2.near"].map(|t| TokenId::Nep141(t.parse().unwrap()));
 
-        assert!(TokenAmounts::<BTreeMap<TokenId, i128>>::default().is_empty());
-        assert!(TokenAmounts::<BTreeMap<_, i128>>::default()
-            .with_add_deltas([(t1.clone(), 0)])
+        assert!(Amounts::<BTreeMap<TokenId, i128>>::default().is_empty());
+        assert!(Amounts::<BTreeMap<_, i128>>::default()
+            .with_apply_deltas([(t1.clone(), 0)])
             .unwrap()
             .is_empty());
 
-        assert!(!TokenAmounts::<BTreeMap<_, i128>>::default()
-            .with_add_deltas([(t1.clone(), 1)])
+        assert!(!Amounts::<BTreeMap<_, i128>>::default()
+            .with_apply_deltas([(t1.clone(), 1)])
             .unwrap()
             .is_empty());
 
-        assert!(!TokenAmounts::<BTreeMap<_, i128>>::default()
-            .with_add_deltas([(t1.clone(), -1)])
+        assert!(!Amounts::<BTreeMap<_, i128>>::default()
+            .with_apply_deltas([(t1.clone(), -1)])
             .unwrap()
             .is_empty());
 
-        assert!(TokenAmounts::<BTreeMap<_, i128>>::default()
-            .with_add_deltas([(t1.clone(), 1), (t1.clone(), -1)])
+        assert!(Amounts::<BTreeMap<_, i128>>::default()
+            .with_apply_deltas([(t1.clone(), 1), (t1.clone(), -1)])
             .unwrap()
             .is_empty());
 
-        assert!(!TokenAmounts::<BTreeMap<_, i128>>::default()
-            .with_add_deltas([(t1.clone(), 1), (t1.clone(), -1), (t2.clone(), -1)])
+        assert!(!Amounts::<BTreeMap<_, i128>>::default()
+            .with_apply_deltas([(t1.clone(), 1), (t1.clone(), -1), (t2.clone(), -1)])
             .unwrap()
             .is_empty());
 
-        assert!(TokenAmounts::<BTreeMap<_, i128>>::default()
-            .with_add_deltas([
+        assert!(Amounts::<BTreeMap<_, i128>>::default()
+            .with_apply_deltas([
                 (t1.clone(), 1),
                 (t1.clone(), -1),
                 (t2.clone(), -1),

@@ -8,13 +8,13 @@ use serde_with::{serde_as, DisplayFromStr};
 use crate::{
     engine::{Engine, Inspector, State, StateView},
     fees::Pips,
-    tokens::{TokenAmounts, TokenId},
+    tokens::{Amounts, TokenId},
     DefuseError, Result,
 };
 
 use super::ExecutableIntent;
 
-pub type TokenDeltas = TokenAmounts<BTreeMap<TokenId, i128>>;
+pub type TokenDeltas = Amounts<BTreeMap<TokenId, i128>>;
 
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
@@ -29,7 +29,7 @@ pub type TokenDeltas = TokenAmounts<BTreeMap<TokenId, i128>>;
 #[autoimpl(Deref using self.diff)]
 #[autoimpl(DerefMut using self.diff)]
 pub struct TokenDiff {
-    #[serde_as(as = "TokenAmounts<BTreeMap<_, DisplayFromStr>>")]
+    #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
     pub diff: TokenDeltas,
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -55,7 +55,7 @@ impl ExecutableIntent for TokenDiff {
         }
 
         let protocol_fee = engine.state.fee();
-        let mut fees_collected: TokenAmounts = TokenAmounts::default();
+        let mut fees_collected: Amounts = Amounts::default();
 
         for (token_id, delta) in self.diff.clone() {
             if delta == 0 {
@@ -74,7 +74,7 @@ impl ExecutableIntent for TokenDiff {
 
                 // collect fee
                 fees_collected
-                    .add_balance(token_id, fee)
+                    .add(token_id, fee)
                     .ok_or(DefuseError::BalanceOverflow)?;
             }
         }
@@ -108,9 +108,9 @@ pub struct TokenDiffEvent<'a> {
     #[serde(flatten)]
     pub diff: Cow<'a, TokenDiff>,
 
-    #[serde_as(as = "TokenAmounts<BTreeMap<_, DisplayFromStr>>")]
-    #[serde(skip_serializing_if = "TokenAmounts::is_empty")]
-    pub fees_collected: TokenAmounts,
+    #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
+    #[serde(skip_serializing_if = "Amounts::is_empty")]
+    pub fees_collected: Amounts,
 }
 
 impl TokenDiff {
@@ -141,14 +141,14 @@ impl TokenDiff {
             // collect total supply deltas
             .try_fold(TokenDeltas::default(), |deltas, (token_id, delta)| {
                 let supply_delta = Self::supply_delta(&token_id, delta, fee)?;
-                deltas.with_add_delta(token_id, supply_delta)
+                deltas.with_apply_delta(token_id, supply_delta)
             })?
             .into_inner()
             .into_iter()
             // calculate closures from total supply deltas
             .try_fold(TokenDeltas::default(), |deltas, (token_id, delta)| {
                 let closure = Self::closure_supply_delta(&token_id, delta, fee)?;
-                deltas.with_add_delta(token_id, closure)
+                deltas.with_apply_delta(token_id, closure)
             })
     }
 
@@ -281,10 +281,10 @@ mod tests {
                 TokenDiff::closure_deltas(
                     [
                         TokenDeltas::default()
-                            .with_add_deltas([(t1.clone(), d1), (t2.clone(), d2)])
+                            .with_apply_deltas([(t1.clone(), d1), (t2.clone(), d2)])
                             .unwrap(),
                         TokenDeltas::default()
-                            .with_add_deltas([(t3.clone(), d3)])
+                            .with_apply_deltas([(t3.clone(), d3)])
                             .unwrap(),
                     ]
                     .into_iter()
@@ -293,7 +293,7 @@ mod tests {
                 )
                 .unwrap(),
                 TokenDeltas::default()
-                    .with_add_deltas([
+                    .with_apply_deltas([
                         (t1.clone(), TokenDiff::closure_delta(&t1, d1, fee).unwrap()),
                         (t2.clone(), TokenDiff::closure_delta(&t2, d2, fee).unwrap()),
                         (t3.clone(), TokenDiff::closure_delta(&t3, d3, fee).unwrap()),
@@ -312,13 +312,13 @@ mod tests {
         let closure = TokenDiff::closure_deltas(
             [
                 TokenDeltas::default()
-                    .with_add_deltas([(t1.clone(), -100), (t2.clone(), 200)])
+                    .with_apply_deltas([(t1.clone(), -100), (t2.clone(), 200)])
                     .unwrap(),
                 TokenDeltas::default()
-                    .with_add_deltas([(t2.clone(), -200), (t3.clone(), 300)])
+                    .with_apply_deltas([(t2.clone(), -200), (t3.clone(), 300)])
                     .unwrap(),
                 TokenDeltas::default()
-                    .with_add_deltas([(t3.clone(), -300), (t1.clone(), 101)])
+                    .with_apply_deltas([(t3.clone(), -300), (t1.clone(), 101)])
                     .unwrap(),
             ]
             .into_iter()
