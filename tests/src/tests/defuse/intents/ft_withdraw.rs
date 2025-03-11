@@ -10,7 +10,7 @@ use defuse::{
     },
 };
 use near_sdk::{AccountId, NearToken};
-use randomness::{Rng, make_true_rng};
+use randomness::Rng;
 use rstest::rstest;
 use test_utils::random::Seed;
 use test_utils::random::make_seedable_rng;

@@ -10,6 +10,7 @@ use near_sdk::{AccountId, AccountIdRef};
 use crate::{
     DefuseError, Nonce, Nonces, Result,
     fees::Pips,
+    intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw},
     tokens::{Amounts, TokenId},
 };
 
@@ -180,6 +181,66 @@ where
                 .ok_or(DefuseError::BalanceOverflow)?;
         }
         Ok(())
+    }
+
+    fn ft_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: FtWithdraw) -> Result<()> {
+        self.internal_sub_balance(
+            owner_id,
+            std::iter::once((TokenId::Nep141(withdraw.token.clone()), withdraw.amount.0)).chain(
+                withdraw.storage_deposit.map(|amount| {
+                    (
+                        TokenId::Nep141(self.wnear_id().into_owned()),
+                        amount.as_yoctonear(),
+                    )
+                }),
+            ),
+        )
+    }
+
+    fn nft_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: NftWithdraw) -> Result<()> {
+        self.internal_sub_balance(
+            owner_id,
+            std::iter::once((
+                TokenId::Nep171(withdraw.token.clone(), withdraw.token_id.clone()),
+                1,
+            ))
+            .chain(withdraw.storage_deposit.map(|amount| {
+                (
+                    TokenId::Nep141(self.wnear_id().into_owned()),
+                    amount.as_yoctonear(),
+                )
+            })),
+        )
+    }
+
+    fn mt_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: MtWithdraw) -> Result<()> {
+        if withdraw.token_ids.len() != withdraw.amounts.len() || withdraw.token_ids.is_empty() {
+            return Err(DefuseError::InvalidIntent);
+        }
+
+        self.internal_sub_balance(
+            owner_id,
+            std::iter::repeat(withdraw.token.clone())
+                .zip(withdraw.token_ids.iter().cloned())
+                .map(|(token, token_id)| TokenId::Nep245(token, token_id))
+                .zip(withdraw.amounts.iter().map(|a| a.0))
+                .chain(withdraw.storage_deposit.map(|amount| {
+                    (
+                        TokenId::Nep141(self.wnear_id().into_owned()),
+                        amount.as_yoctonear(),
+                    )
+                })),
+        )
+    }
+
+    fn native_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: NativeWithdraw) -> Result<()> {
+        self.internal_sub_balance(
+            owner_id,
+            [(
+                TokenId::Nep141(self.wnear_id().into_owned()),
+                withdraw.amount.as_yoctonear(),
+            )],
+        )
     }
 }
 

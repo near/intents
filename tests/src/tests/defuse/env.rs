@@ -257,6 +257,7 @@ impl EnvBuilder {
         )
         .await
         .unwrap();
+
         s.ft_storage_deposit(
             &s.ft2,
             &[
@@ -269,6 +270,7 @@ impl EnvBuilder {
         )
         .await
         .unwrap();
+
         s.ft_storage_deposit(
             &s.ft3,
             &[
@@ -281,6 +283,7 @@ impl EnvBuilder {
         )
         .await
         .unwrap();
+
         for token in ["ft1", "ft2", "ft3"] {
             s.poa_factory_ft_deposit(
                 s.poa_factory.id(),
@@ -308,6 +311,7 @@ impl EnvBuilder {
             )
             .await
             .unwrap();
+
         s.user2
             .add_public_key(
                 s.defuse.id(),
@@ -320,6 +324,7 @@ impl EnvBuilder {
             )
             .await
             .unwrap();
+
         s.user3
             .add_public_key(
                 s.defuse.id(),

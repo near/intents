@@ -60,7 +60,7 @@ impl MtExt for near_workspaces::Account {
         approval: Option<(AccountId, u64)>,
         memo: Option<String>,
     ) -> anyhow::Result<()> {
-        self.call(token_contract, "mt_trasnfer")
+        self.call(token_contract, "mt_transfer")
             .args_json(json!({
                 "receiver_id": receiver_id,
                 "token_id": token_id,
