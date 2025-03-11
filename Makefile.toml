@@ -68,6 +68,11 @@ args = [
 [tasks.test]
 alias = "tests"
 
+[tasks.nextest]
+dependencies = ["build"]
+command = "cargo"
+args = ["nextest", "run", "--all"]
+
 [tasks.tests]
 dependencies = ["build"]
 run_task = "run-tests"
