@@ -11,6 +11,9 @@ use defuse::{
 };
 use near_sdk::{AccountId, NearToken};
 use randomness::{Rng, make_true_rng};
+use rstest::rstest;
+use test_utils::random::Seed;
+use test_utils::random::make_seedable_rng;
 
 use super::ExecuteIntentsExt;
 use crate::{
@@ -19,9 +22,14 @@ use crate::{
 };
 
 #[tokio::test]
-async fn test_ft_withdraw_intent() {
+#[rstest]
+#[trace]
+#[case(Seed::from_entropy())]
+async fn test_ft_withdraw_intent(#[case] seed: Seed) {
     // intentionally large deposit
     const STORAGE_DEPOSIT: NearToken = NearToken::from_near(1000);
+
+    let mut rng = make_seedable_rng(seed);
 
     let env = Env::new().await;
 
@@ -34,7 +42,7 @@ async fn test_ft_withdraw_intent() {
     env.defuse
         .execute_intents([env.user1.sign_defuse_message(
             env.defuse.id(),
-            make_true_rng().random(),
+            rng.random(),
             Deadline::timeout(Duration::from_secs(120)),
             DefuseIntents {
                 intents: [FtWithdraw {
@@ -69,7 +77,7 @@ async fn test_ft_withdraw_intent() {
     env.defuse
         .execute_intents([env.user1.sign_defuse_message(
             env.defuse.id(),
-            make_true_rng().random(),
+            rng.random(),
             Deadline::MAX,
             DefuseIntents {
                 intents: [FtWithdraw {
@@ -121,7 +129,7 @@ async fn test_ft_withdraw_intent() {
         env.defuse.id(),
         [env.user1.sign_defuse_message(
             env.defuse.id(),
-            make_true_rng().random(),
+            rng.random(),
             Deadline::MAX,
             DefuseIntents {
                 intents: [FtWithdraw {
@@ -178,7 +186,12 @@ async fn test_ft_withdraw_intent() {
 }
 
 #[tokio::test]
-async fn test_ft_withdraw_intent_msg() {
+#[rstest]
+#[trace]
+#[case(Seed::from_entropy())]
+async fn test_ft_withdraw_intent_msg(#[case] seed: Seed) {
+    let mut rng = make_seedable_rng(seed);
+
     let env = Env::new().await;
 
     let defuse2 = env
@@ -206,7 +219,7 @@ async fn test_ft_withdraw_intent_msg() {
     env.defuse
         .execute_intents([env.user1.sign_defuse_message(
             env.defuse.id(),
-            make_true_rng().random(),
+            rng.random(),
             Deadline::timeout(Duration::from_secs(120)),
             DefuseIntents {
                 intents: [FtWithdraw {
