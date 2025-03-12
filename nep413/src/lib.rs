@@ -1,6 +1,6 @@
 use core::fmt::Display;
 
-use defuse_crypto::{serde::AsCurve, CryptoHash, Curve, Ed25519, Payload, SignedPayload};
+use defuse_crypto::{CryptoHash, Curve, Ed25519, Payload, SignedPayload, serde::AsCurve};
 use defuse_near_utils::UnwrapOrPanicError;
 use defuse_nep461::{OffchainMessage, SignedMessageNep};
 use defuse_serde_utils::base64::Base64;

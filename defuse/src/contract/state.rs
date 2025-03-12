@@ -4,7 +4,7 @@ use defuse_core::{
 };
 use defuse_near_utils::NestPrefix;
 use near_sdk::{
-    borsh::BorshSerialize, near, store::IterableMap, AccountId, BorshStorageKey, IntoStorageKey,
+    AccountId, BorshStorageKey, IntoStorageKey, borsh::BorshSerialize, near, store::IterableMap,
 };
 
 pub type TokenBalances = Amounts<IterableMap<TokenId, u128>>;

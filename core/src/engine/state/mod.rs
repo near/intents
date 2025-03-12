@@ -9,10 +9,10 @@ use impl_tools::autoimpl;
 use near_sdk::{AccountId, AccountIdRef};
 
 use crate::{
+    DefuseError, Nonce, Result,
     fees::Pips,
     intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw},
     tokens::TokenId,
-    DefuseError, Nonce, Result,
 };
 
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>)]

@@ -3,18 +3,18 @@ use std::time::Duration;
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
     core::{
-        fees::{FeesConfig, Pips},
-        intents::{tokens::FtWithdraw, DefuseIntents},
-        tokens::TokenId,
         Deadline,
+        fees::{FeesConfig, Pips},
+        intents::{DefuseIntents, tokens::FtWithdraw},
+        tokens::TokenId,
     },
 };
 use near_sdk::{AccountId, NearToken};
-use randomness::{make_true_rng, Rng};
+use randomness::{Rng, make_true_rng};
 
 use super::ExecuteIntentsExt;
 use crate::{
-    tests::defuse::{env::Env, tokens::nep141::DefuseFtReceiver, DefuseExt, DefuseSigner},
+    tests::defuse::{DefuseExt, DefuseSigner, env::Env, tokens::nep141::DefuseFtReceiver},
     utils::{ft::FtExt, mt::MtExt, wnear::WNearExt},
 };
 

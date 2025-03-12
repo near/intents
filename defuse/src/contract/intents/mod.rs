@@ -4,15 +4,15 @@ mod simulate;
 mod state;
 
 use defuse_core::{
+    DefuseError,
     engine::{Engine, StateView},
     payload::multi::MultiPayload,
-    DefuseError,
 };
 use defuse_near_utils::UnwrapOrPanic;
 use defuse_nep245::MtEvent;
 use execute::ExecuteInspector;
-use near_plugins::{pause, Pausable};
-use near_sdk::{near, FunctionError};
+use near_plugins::{Pausable, pause};
+use near_sdk::{FunctionError, near};
 use simulate::SimulateInspector;
 
 use crate::intents::{Intents, SimulationOutput, StateOutput};

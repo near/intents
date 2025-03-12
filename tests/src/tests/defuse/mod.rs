@@ -9,12 +9,12 @@ use std::sync::LazyLock;
 use defuse::{
     contract::config::DefuseConfig,
     core::{
+        Deadline, Nonce,
         nep413::Nep413Payload,
         payload::{multi::MultiPayload, nep413::Nep413DefuseMessage},
-        Deadline, Nonce,
     },
 };
-use near_sdk::{serde::Serialize, serde_json::json, AccountId};
+use near_sdk::{AccountId, serde::Serialize, serde_json::json};
 use near_workspaces::Contract;
 
 use crate::utils::{account::AccountExt, crypto::Signer, read_wasm};

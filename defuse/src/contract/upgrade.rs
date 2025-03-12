@@ -1,7 +1,7 @@
 use defuse_controller::ControllerUpgradable;
-use defuse_near_utils::{method_name, CURRENT_ACCOUNT_ID};
-use near_plugins::{access_control_any, AccessControllable};
-use near_sdk::{assert_one_yocto, near, Gas, NearToken, Promise};
+use defuse_near_utils::{CURRENT_ACCOUNT_ID, method_name};
+use near_plugins::{AccessControllable, access_control_any};
+use near_sdk::{Gas, NearToken, Promise, assert_one_yocto, near};
 
 use super::{Contract, ContractExt, Role};
 

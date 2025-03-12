@@ -1,22 +1,22 @@
 use std::{collections::BTreeMap, time::Duration};
 
 use defuse::core::{
+    Deadline,
     fees::Pips,
     intents::{
-        token_diff::{TokenDeltas, TokenDiff},
         DefuseIntents,
+        token_diff::{TokenDeltas, TokenDiff},
     },
     payload::multi::MultiPayload,
     tokens::TokenId,
-    Deadline,
 };
 use near_sdk::AccountId;
 use near_workspaces::Account;
-use randomness::{make_true_rng, Rng};
+use randomness::{Rng, make_true_rng};
 use rstest::rstest;
 
 use crate::{
-    tests::defuse::{env::Env, DefuseSigner},
+    tests::defuse::{DefuseSigner, env::Env},
     utils::mt::MtExt,
 };
 

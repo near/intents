@@ -1,4 +1,4 @@
-use near_sdk::{env, Gas};
+use near_sdk::{Gas, env};
 
 #[inline]
 pub fn gas_left() -> Gas {

@@ -2,16 +2,16 @@ use defuse_admin_utils::full_access_keys::FullAccessKeys;
 use defuse_near_utils::{CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID};
 use near_contract_standards::{
     fungible_token::{
-        events::{FtBurn, FtMint},
-        metadata::{FungibleTokenMetadata, FungibleTokenMetadataProvider, FT_METADATA_SPEC},
         FungibleToken, FungibleTokenCore, FungibleTokenResolver,
+        events::{FtBurn, FtMint},
+        metadata::{FT_METADATA_SPEC, FungibleTokenMetadata, FungibleTokenMetadataProvider},
     },
     storage_management::{StorageBalance, StorageBalanceBounds, StorageManagement},
 };
-use near_plugins::{events::AsEvent, only, ownable::OwnershipTransferred, Ownable};
+use near_plugins::{Ownable, events::AsEvent, only, ownable::OwnershipTransferred};
 use near_sdk::{
-    assert_one_yocto, borsh::BorshSerialize, env, json_types::U128, near, require, store::Lazy,
     AccountId, BorshStorageKey, NearToken, PanicOnDefault, Promise, PromiseOrValue, PublicKey,
+    assert_one_yocto, borsh::BorshSerialize, env, json_types::U128, near, require, store::Lazy,
 };
 
 use crate::{PoaFungibleToken, WITHDRAW_MEMO_PREFIX};

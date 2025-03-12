@@ -1,13 +1,13 @@
 use std::collections::BTreeMap;
 
 use near_contract_standards::non_fungible_token;
-use near_sdk::{json_types::U128, near, AccountId, AccountIdRef, CryptoHash, NearToken};
-use serde_with::{serde_as, DisplayFromStr};
+use near_sdk::{AccountId, AccountIdRef, CryptoHash, NearToken, json_types::U128, near};
+use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
+    DefuseError, Result,
     engine::{Engine, Inspector, State},
     tokens::Amounts,
-    DefuseError, Result,
 };
 
 use super::ExecutableIntent;

@@ -7,7 +7,7 @@ pub use serde_with::{
 
 use derive_more::From;
 use near_sdk::serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_with::{serde_as, DeserializeAs, SerializeAs};
+use serde_with::{DeserializeAs, SerializeAs, serde_as};
 
 pub struct Base64<ALPHABET: Alphabet = Standard, PADDING: Format = Padded>(
     ::serde_with::base64::Base64<ALPHABET, PADDING>,
@@ -84,9 +84,9 @@ mod abi {
     use super::*;
 
     use near_sdk::schemars::{
-        gen::SchemaGenerator,
-        schema::{InstanceType, Schema, SchemaObject},
         JsonSchema,
+        r#gen::SchemaGenerator,
+        schema::{InstanceType, Schema, SchemaObject},
     };
     use serde_with::schemars_0_8::JsonSchemaAs;
 

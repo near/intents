@@ -2,9 +2,9 @@ use impl_tools::autoimpl;
 use near_sdk::{AccountIdRef, CryptoHash};
 
 use crate::{
+    Deadline,
     intents::{token_diff::TokenDiff, tokens::Transfer},
     tokens::Amounts,
-    Deadline,
 };
 
 #[autoimpl(for <T: trait + ?Sized> &mut T, Box<T>)]

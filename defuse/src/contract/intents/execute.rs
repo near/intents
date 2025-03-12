@@ -1,16 +1,16 @@
 use std::borrow::Cow;
 
 use defuse_core::{
+    Deadline,
     accounts::AccountEvent,
     engine::Inspector,
     events::DefuseEvent,
     intents::{
+        IntentEvent,
         token_diff::{TokenDiff, TokenDiffEvent},
         tokens::Transfer,
-        IntentEvent,
     },
     tokens::Amounts,
-    Deadline,
 };
 use near_sdk::{AccountIdRef, CryptoHash};
 

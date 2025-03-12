@@ -5,7 +5,7 @@ use std::{
 
 use defuse_poa_factory::contract::Role;
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
-use near_sdk::{json_types::U128, AccountId, NearToken};
+use near_sdk::{AccountId, NearToken, json_types::U128};
 use near_workspaces::Contract;
 use serde_json::json;
 
@@ -240,7 +240,7 @@ impl PoAFactoryExt for near_workspaces::Contract {
 mod tests {
     use super::*;
 
-    use crate::utils::{ft::FtExt, Sandbox};
+    use crate::utils::{Sandbox, ft::FtExt};
 
     #[tokio::test]
     async fn test_deploy_mint() {

@@ -4,14 +4,13 @@ use core::{
 };
 use std::{borrow::Cow, collections::BTreeMap};
 
-use defuse_map_utils::{cleanup::DefaultMap, IterableMap};
+use defuse_map_utils::{IterableMap, cleanup::DefaultMap};
 use defuse_num_utils::{CheckedAdd, CheckedSub};
 use impl_tools::autoimpl;
 use near_account_id::ParseAccountError;
 use near_sdk::{
-    near,
+    AccountId, near,
     serde::{Deserializer, Serializer},
-    AccountId,
 };
 use serde_with::{DeserializeAs, DeserializeFromStr, SerializeAs, SerializeDisplay};
 use strum::{EnumDiscriminants, EnumString};
@@ -330,9 +329,9 @@ mod abi {
     use super::*;
 
     use near_sdk::schemars::{
-        gen::SchemaGenerator,
-        schema::{InstanceType, Schema, SchemaObject},
         JsonSchema,
+        r#gen::SchemaGenerator,
+        schema::{InstanceType, Schema, SchemaObject},
     };
     use serde_with::schemars_0_8::JsonSchemaAs;
 
@@ -376,8 +375,8 @@ mod abi {
             false
         }
 
-        fn json_schema(gen: &mut SchemaGenerator) -> Schema {
-            As::json_schema(gen)
+        fn json_schema(genenerator: &mut SchemaGenerator) -> Schema {
+            As::json_schema(genenerator)
         }
     }
 }
@@ -392,39 +391,51 @@ mod tests {
         let [t1, t2] = ["t1.near", "t2.near"].map(|t| TokenId::Nep141(t.parse().unwrap()));
 
         assert!(Amounts::<BTreeMap<TokenId, i128>>::default().is_empty());
-        assert!(Amounts::<BTreeMap<_, i128>>::default()
-            .with_apply_deltas([(t1.clone(), 0)])
-            .unwrap()
-            .is_empty());
+        assert!(
+            Amounts::<BTreeMap<_, i128>>::default()
+                .with_apply_deltas([(t1.clone(), 0)])
+                .unwrap()
+                .is_empty()
+        );
 
-        assert!(!Amounts::<BTreeMap<_, i128>>::default()
-            .with_apply_deltas([(t1.clone(), 1)])
-            .unwrap()
-            .is_empty());
+        assert!(
+            !Amounts::<BTreeMap<_, i128>>::default()
+                .with_apply_deltas([(t1.clone(), 1)])
+                .unwrap()
+                .is_empty()
+        );
 
-        assert!(!Amounts::<BTreeMap<_, i128>>::default()
-            .with_apply_deltas([(t1.clone(), -1)])
-            .unwrap()
-            .is_empty());
+        assert!(
+            !Amounts::<BTreeMap<_, i128>>::default()
+                .with_apply_deltas([(t1.clone(), -1)])
+                .unwrap()
+                .is_empty()
+        );
 
-        assert!(Amounts::<BTreeMap<_, i128>>::default()
-            .with_apply_deltas([(t1.clone(), 1), (t1.clone(), -1)])
-            .unwrap()
-            .is_empty());
+        assert!(
+            Amounts::<BTreeMap<_, i128>>::default()
+                .with_apply_deltas([(t1.clone(), 1), (t1.clone(), -1)])
+                .unwrap()
+                .is_empty()
+        );
 
-        assert!(!Amounts::<BTreeMap<_, i128>>::default()
-            .with_apply_deltas([(t1.clone(), 1), (t1.clone(), -1), (t2.clone(), -1)])
-            .unwrap()
-            .is_empty());
+        assert!(
+            !Amounts::<BTreeMap<_, i128>>::default()
+                .with_apply_deltas([(t1.clone(), 1), (t1.clone(), -1), (t2.clone(), -1)])
+                .unwrap()
+                .is_empty()
+        );
 
-        assert!(Amounts::<BTreeMap<_, i128>>::default()
-            .with_apply_deltas([
-                (t1.clone(), 1),
-                (t1.clone(), -1),
-                (t2.clone(), -1),
-                (t2.clone(), 1)
-            ])
-            .unwrap()
-            .is_empty());
+        assert!(
+            Amounts::<BTreeMap<_, i128>>::default()
+                .with_apply_deltas([
+                    (t1.clone(), 1),
+                    (t1.clone(), -1),
+                    (t2.clone(), -1),
+                    (t2.clone(), 1)
+                ])
+                .unwrap()
+                .is_empty()
+        );
     }
 }

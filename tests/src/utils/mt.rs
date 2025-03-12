@@ -1,5 +1,5 @@
 use defuse::nep245::TokenId;
-use near_sdk::{json_types::U128, AccountId, NearToken};
+use near_sdk::{AccountId, NearToken, json_types::U128};
 use serde_json::json;
 
 pub trait MtExt {

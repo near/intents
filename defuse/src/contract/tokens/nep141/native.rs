@@ -1,5 +1,5 @@
 use defuse_core::intents::tokens::NativeWithdraw;
-use near_sdk::{env, near, require, Gas, Promise, PromiseResult};
+use near_sdk::{Gas, Promise, PromiseResult, env, near, require};
 
 use crate::contract::{Contract, ContractExt};
 

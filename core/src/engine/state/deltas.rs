@@ -8,17 +8,17 @@ use std::{
 use defuse_crypto::PublicKey;
 use defuse_map_utils::cleanup::DefaultMap;
 use defuse_nep245::{MtEvent, MtTransferEvent};
-use near_sdk::{json_types::U128, near, AccountId, AccountIdRef};
-use serde_with::{serde_as, DisplayFromStr};
+use near_sdk::{AccountId, AccountIdRef, json_types::U128, near};
+use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
+    DefuseError, Nonce, Result,
     fees::Pips,
     intents::{
         token_diff::TokenDeltas,
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw},
     },
     tokens::{Amounts, TokenId},
-    DefuseError, Nonce, Result,
 };
 
 use super::{State, StateView};

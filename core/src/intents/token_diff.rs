@@ -2,14 +2,14 @@ use std::{borrow::Cow, collections::BTreeMap};
 
 use defuse_num_utils::CheckedMulDiv;
 use impl_tools::autoimpl;
-use near_sdk::{near, AccountId, AccountIdRef, CryptoHash};
-use serde_with::{serde_as, DisplayFromStr};
+use near_sdk::{AccountId, AccountIdRef, CryptoHash, near};
+use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
+    DefuseError, Result,
     engine::{Engine, Inspector, State, StateView},
     fees::Pips,
     tokens::{Amounts, TokenId},
-    DefuseError, Result,
 };
 
 use super::ExecutableIntent;
@@ -253,9 +253,11 @@ mod tests {
 
     #[test]
     fn closure_deltas_empty() {
-        assert!(TokenDiff::closure_deltas(None, Pips::ONE_BIP)
-            .unwrap()
-            .is_empty());
+        assert!(
+            TokenDiff::closure_deltas(None, Pips::ONE_BIP)
+                .unwrap()
+                .is_empty()
+        );
     }
 
     #[rstest]

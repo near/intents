@@ -1,6 +1,6 @@
-use defuse_near_utils::{method_name, UnwrapOrPanicError, CURRENT_ACCOUNT_ID};
-use near_plugins::{access_control_any, pause, AccessControllable, Pausable};
-use near_sdk::{assert_one_yocto, env, near, require, Allowance, Promise, PublicKey};
+use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanicError, method_name};
+use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
+use near_sdk::{Allowance, Promise, PublicKey, assert_one_yocto, env, near, require};
 
 use crate::{
     contract::{Contract, ContractExt, Role},

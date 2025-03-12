@@ -5,7 +5,7 @@ use core::{
 
 use near_sdk::{bs58, near};
 
-use crate::{Curve, CurveType, Ed25519, ParseCurveError, Secp256k1, P256};
+use crate::{Curve, CurveType, Ed25519, P256, ParseCurveError, Secp256k1};
 
 #[near(serializers = [borsh])]
 #[cfg_attr(
@@ -87,9 +87,9 @@ mod abi {
 
     use near_sdk::{
         schemars::{
-            gen::SchemaGenerator,
-            schema::{InstanceType, Metadata, Schema, SchemaObject},
             JsonSchema,
+            r#gen::SchemaGenerator,
+            schema::{InstanceType, Metadata, Schema, SchemaObject},
         },
         serde_json,
     };

@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use defuse_crypto::PublicKey;
-use near_sdk::{near, AccountIdRef};
+use near_sdk::{AccountIdRef, near};
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(serializers = [json])]

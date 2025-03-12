@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
-use defuse_core::{crypto::PublicKey, Nonce};
+use defuse_core::{Nonce, crypto::PublicKey};
 use defuse_serde_utils::base64::AsBase64;
-use near_sdk::{ext_contract, AccountId};
+use near_sdk::{AccountId, ext_contract};
 
 #[ext_contract(ext_public_key_manager)]
 pub trait AccountManager {

@@ -16,9 +16,9 @@ use defuse_core::Result;
 
 use events::PostponedMtBurnEvents;
 use impl_tools::autoimpl;
-use near_plugins::{access_control, AccessControlRole, AccessControllable, Pausable};
+use near_plugins::{AccessControlRole, AccessControllable, Pausable, access_control};
 use near_sdk::{
-    borsh::BorshDeserialize, near, require, store::LookupSet, BorshStorageKey, PanicOnDefault,
+    BorshStorageKey, PanicOnDefault, borsh::BorshDeserialize, near, require, store::LookupSet,
 };
 
 use crate::Defuse;

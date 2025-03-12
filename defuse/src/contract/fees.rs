@@ -5,8 +5,8 @@ use defuse_core::{
     events::DefuseIntentEmit,
     fees::{FeeChangedEvent, FeeCollectorChangedEvent, Pips},
 };
-use near_plugins::{access_control_any, pause, AccessControllable, Pausable};
-use near_sdk::{assert_one_yocto, near, require, AccountId};
+use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
+use near_sdk::{AccountId, assert_one_yocto, near, require};
 
 use crate::fees::FeesManager;
 

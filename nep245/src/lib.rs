@@ -4,7 +4,7 @@ pub mod receiver;
 pub mod resolver;
 mod token;
 
-use near_sdk::{json_types::U128, AccountId};
+use near_sdk::{AccountId, json_types::U128};
 
 pub use self::{core::*, events::*, token::*};
 

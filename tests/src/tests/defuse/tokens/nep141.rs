@@ -3,19 +3,19 @@ use std::time::Duration;
 use defuse::{
     contract::Role,
     core::{
-        intents::{tokens::FtWithdraw, DefuseIntents},
-        tokens::TokenId,
         Deadline,
+        intents::{DefuseIntents, tokens::FtWithdraw},
+        tokens::TokenId,
     },
     tokens::DepositMessage,
 };
-use near_sdk::{json_types::U128, AccountId, NearToken};
-use randomness::{make_true_rng, Rng};
+use near_sdk::{AccountId, NearToken, json_types::U128};
+use randomness::{Rng, make_true_rng};
 use serde_json::json;
 
 use crate::{
     tests::{
-        defuse::{env::Env, DefuseSigner},
+        defuse::{DefuseSigner, env::Env},
         poa::factory::PoAFactoryExt,
     },
     utils::{acl::AclExt, ft::FtExt, mt::MtExt},

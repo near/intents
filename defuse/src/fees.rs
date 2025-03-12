@@ -1,6 +1,6 @@
 use defuse_core::fees::Pips;
 use near_plugins::AccessControllable;
-use near_sdk::{ext_contract, AccountId};
+use near_sdk::{AccountId, ext_contract};
 
 #[ext_contract(ext_fees_manager)]
 #[allow(clippy::module_name_repetitions)]

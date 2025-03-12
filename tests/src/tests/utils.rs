@@ -2,7 +2,7 @@ use defuse::core::fees::Pips;
 use near_sdk::borsh;
 use randomness::Rng;
 use rstest::rstest;
-use test_utils::random::{make_seedable_rng, Seed};
+use test_utils::random::{Seed, make_seedable_rng};
 
 #[rstest]
 #[trace]

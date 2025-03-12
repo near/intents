@@ -11,7 +11,7 @@ pub use defuse_nep245 as nep245;
 
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
 use defuse_controller::ControllerUpgradable;
-use defuse_nep245::{receiver::MultiTokenReceiver, MultiTokenCore};
+use defuse_nep245::{MultiTokenCore, receiver::MultiTokenReceiver};
 use near_contract_standards::{
     fungible_token::receiver::FungibleTokenReceiver,
     non_fungible_token::core::NonFungibleTokenReceiver,

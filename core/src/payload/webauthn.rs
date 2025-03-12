@@ -1,6 +1,6 @@
 use defuse_crypto::{Payload, PublicKey, SignedPayload};
 use defuse_webauthn::PayloadSignature;
-use near_sdk::{env, near, serde::de::DeserializeOwned, serde_json, CryptoHash};
+use near_sdk::{CryptoHash, env, near, serde::de::DeserializeOwned, serde_json};
 
 use super::{DefusePayload, ExtractDefusePayload};
 
@@ -43,7 +43,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use near_sdk::{serde_json, AccountIdRef};
+    use near_sdk::{AccountIdRef, serde_json};
 
     #[test]
     fn test_p256() {

@@ -1,6 +1,6 @@
 use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 use near_plugins::AccessControllable;
-use near_sdk::{ext_contract, json_types::U128, AccountId, PromiseOrValue};
+use near_sdk::{AccountId, PromiseOrValue, ext_contract, json_types::U128};
 
 #[ext_contract(ext_ft_withdraw)]
 pub trait FungibleTokenWithdrawer: FungibleTokenReceiver + FungibleTokenWithdrawResolver {

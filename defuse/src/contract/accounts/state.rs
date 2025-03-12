@@ -1,6 +1,6 @@
 use defuse_core::tokens::{Amounts, TokenId};
 use defuse_near_utils::NestPrefix;
-use near_sdk::{near, store::IterableMap, BorshStorageKey, IntoStorageKey};
+use near_sdk::{BorshStorageKey, IntoStorageKey, near, store::IterableMap};
 
 #[derive(Debug)]
 #[near(serializers = [borsh])]

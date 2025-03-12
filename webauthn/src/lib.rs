@@ -1,4 +1,4 @@
-use defuse_crypto::{serde::AsCurve, Curve, Ed25519, PublicKey, P256};
+use defuse_crypto::{Curve, Ed25519, P256, PublicKey, serde::AsCurve};
 use defuse_serde_utils::base64::{Base64, Unpadded, UrlSafe};
 use near_sdk::{env, near, serde_json};
 use serde_with::serde_as;

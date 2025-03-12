@@ -1,4 +1,4 @@
-use near_sdk::{ext_contract, Promise, PublicKey};
+use near_sdk::{Promise, PublicKey, ext_contract};
 
 #[ext_contract(ext_full_access_keys)]
 pub trait FullAccessKeys {
