@@ -22,6 +22,7 @@ use super::ExecutableIntent;
 )]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
+/// Within the intents contract, transfer tokens from one owner to another.
 pub struct Transfer {
     pub receiver_id: AccountId,
 
@@ -59,6 +60,7 @@ impl ExecutableIntent for Transfer {
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
+/// An intent that represents withdrawing a token (from the intents contract) to a given account id.
 pub struct FtWithdraw {
     pub token: AccountId,
     pub receiver_id: AccountId,
@@ -97,6 +99,7 @@ impl ExecutableIntent for FtWithdraw {
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
+/// An intent that represents withdrawing a token (from the intents contract) to a given account id.
 pub struct NftWithdraw {
     pub token: AccountId,
     pub receiver_id: AccountId,
@@ -135,6 +138,8 @@ impl ExecutableIntent for NftWithdraw {
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
+/// Withdraw given tokens (of any kind, under the MultiToken standard) from the intents contract to a given
+/// external account id (external being outside of intents).
 pub struct MtWithdraw {
     pub token: AccountId,
     pub receiver_id: AccountId,
@@ -171,12 +176,12 @@ impl ExecutableIntent for MtWithdraw {
     }
 }
 
+#[near(serializers = [borsh, json])]
+#[derive(Debug, Clone)]
 /// Withdraw native NEAR to `receiver_id`.
 /// The amount will be subtracted from user's NEP-141 `wNEAR` balance.
 /// NOTE: the `wNEAR` will not be refunded in case of fail (e.g. `receiver_id`
 /// account does not exist).
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
 pub struct NativeWithdraw {
     pub receiver_id: AccountId,
     pub amount: NearToken,
