@@ -1,22 +1,21 @@
 use std::iter;
 
-use defuse_core::{engine::StateView, intents::tokens::NftWithdraw, tokens::TokenId, Result};
+use defuse_core::{Result, engine::StateView, intents::tokens::NftWithdraw, tokens::TokenId};
 use defuse_near_utils::{
-    UnwrapOrPanic, UnwrapOrPanicError, CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID,
+    CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
-use defuse_wnear::{ext_wnear, NEAR_WITHDRAW_GAS};
+use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::{non_fungible_token, storage_management::ext_storage_management};
-use near_plugins::{access_control_any, pause, AccessControllable, Pausable};
+use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
 use near_sdk::{
-    assert_one_yocto, env,
+    AccountId, Gas, NearToken, Promise, PromiseOrValue, PromiseResult, assert_one_yocto, env,
     json_types::U128,
     near, require,
     serde_json::{self, json},
-    AccountId, Gas, NearToken, Promise, PromiseOrValue, PromiseResult,
 };
 
 use crate::{
-    contract::{tokens::STORAGE_DEPOSIT_GAS, Contract, ContractExt, Role},
+    contract::{Contract, ContractExt, Role, tokens::STORAGE_DEPOSIT_GAS},
     tokens::nep171::{
         NonFungibleTokenForceWithdrawer, NonFungibleTokenWithdrawResolver,
         NonFungibleTokenWithdrawer,

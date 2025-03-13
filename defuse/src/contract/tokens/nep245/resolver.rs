@@ -2,9 +2,9 @@ use std::borrow::Cow;
 
 use defuse_near_utils::{UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::{
-    resolver::MultiTokenResolver, ClearedApproval, MtEventEmit, MtTransferEvent, TokenId,
+    ClearedApproval, MtEventEmit, MtTransferEvent, TokenId, resolver::MultiTokenResolver,
 };
-use near_sdk::{env, json_types::U128, near, require, serde_json, AccountId, Gas, PromiseResult};
+use near_sdk::{AccountId, Gas, PromiseResult, env, json_types::U128, near, require, serde_json};
 
 use crate::contract::{Contract, ContractExt};
 

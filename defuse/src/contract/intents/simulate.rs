@@ -1,9 +1,9 @@
 use defuse_core::{
+    Deadline,
     accounts::AccountEvent,
     engine::Inspector,
-    intents::{token_diff::TokenDiff, tokens::Transfer, IntentEvent},
+    intents::{IntentEvent, token_diff::TokenDiff, tokens::Transfer},
     tokens::Amounts,
-    Deadline,
 };
 use near_sdk::{AccountIdRef, CryptoHash};
 

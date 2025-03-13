@@ -1,6 +1,6 @@
 use near_sdk::{
     bs58,
-    serde::{de, Deserialize, Deserializer, Serialize, Serializer},
+    serde::{Deserialize, Deserializer, Serialize, Serializer, de},
 };
 use serde_with::{DeserializeAs, SerializeAs};
 
@@ -44,9 +44,9 @@ mod abi {
     use super::*;
 
     use near_sdk::schemars::{
-        gen::SchemaGenerator,
-        schema::{InstanceType, Schema, SchemaObject},
         JsonSchema,
+        r#gen::SchemaGenerator,
+        schema::{InstanceType, Schema, SchemaObject},
     };
     use serde_with::schemars_0_8::JsonSchemaAs;
 

@@ -1,4 +1,4 @@
-use near_sdk::{ext_contract, Gas, Promise};
+use near_sdk::{Gas, Promise, ext_contract};
 
 #[ext_contract(ext_controller_upgradable)]
 pub trait ControllerUpgradable {

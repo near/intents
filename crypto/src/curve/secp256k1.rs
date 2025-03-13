@@ -1,4 +1,4 @@
-use near_sdk::{env, CryptoHash};
+use near_sdk::{CryptoHash, env};
 
 use super::{Curve, CurveType, TypedCurve};
 

@@ -1,9 +1,9 @@
-use defuse_core::{engine::StateView, tokens::TokenId, DefuseError, Result};
-use defuse_near_utils::{UnwrapOrPanic, CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID};
-use defuse_nep245::{receiver::ext_mt_receiver, MtEvent, MtTransferEvent, MultiTokenCore};
-use near_plugins::{pause, Pausable};
+use defuse_core::{DefuseError, Result, engine::StateView, tokens::TokenId};
+use defuse_near_utils::{CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic};
+use defuse_nep245::{MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver};
+use near_plugins::{Pausable, pause};
 use near_sdk::{
-    assert_one_yocto, json_types::U128, near, require, AccountId, AccountIdRef, PromiseOrValue,
+    AccountId, AccountIdRef, PromiseOrValue, assert_one_yocto, json_types::U128, near, require,
 };
 
 use crate::contract::{Contract, ContractExt};

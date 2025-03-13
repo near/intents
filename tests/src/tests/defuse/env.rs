@@ -5,8 +5,8 @@ use std::ops::Deref;
 use anyhow::anyhow;
 use defuse::{
     contract::{
-        config::{DefuseConfig, RolesConfig},
         Role,
+        config::{DefuseConfig, RolesConfig},
     },
     core::fees::{FeesConfig, Pips},
     tokens::DepositMessage,
@@ -17,10 +17,10 @@ use near_workspaces::{Account, Contract};
 
 use crate::{
     tests::poa::factory::PoAFactoryExt,
-    utils::{ft::FtExt, wnear::WNearExt, Sandbox},
+    utils::{Sandbox, ft::FtExt, wnear::WNearExt},
 };
 
-use super::{accounts::AccountManagerExt, tokens::nep141::DefuseFtReceiver, DefuseExt};
+use super::{DefuseExt, accounts::AccountManagerExt, tokens::nep141::DefuseFtReceiver};
 
 pub struct Env {
     sandbox: Sandbox,

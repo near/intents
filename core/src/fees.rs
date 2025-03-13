@@ -6,8 +6,9 @@ use std::borrow::Cow;
 
 use defuse_num_utils::{CheckedAdd, CheckedMulDiv, CheckedSub};
 use near_sdk::{
+    AccountId, AccountIdRef,
     borsh::{BorshDeserialize, BorshSchema, BorshSerialize},
-    near, AccountId, AccountIdRef,
+    near,
 };
 use thiserror::Error as ThisError;
 

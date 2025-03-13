@@ -1,16 +1,16 @@
 pub use rand::prelude::SliceRandom;
-pub use rand::{seq, CryptoRng, Rng, RngCore, SeedableRng};
+pub use rand::{CryptoRng, Rng, RngCore, SeedableRng, seq};
 
 pub mod distributions {
-    pub use rand::distr::{weighted::WeightedIndex, Alphanumeric, Distribution, StandardUniform};
+    pub use rand::distr::{Alphanumeric, Distribution, StandardUniform, weighted::WeightedIndex};
     pub mod uniform {
         pub use rand::distr::uniform::SampleRange;
     }
 }
 
 pub mod rngs {
-    pub use rand::rngs::mock::StepRng;
     pub use rand::rngs::OsRng;
+    pub use rand::rngs::mock::StepRng;
 }
 
 #[must_use]

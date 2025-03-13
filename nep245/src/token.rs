@@ -1,4 +1,4 @@
-use near_sdk::{near, AccountId};
+use near_sdk::{AccountId, near};
 
 pub type TokenId = String;
 

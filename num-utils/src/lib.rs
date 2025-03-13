@@ -1,6 +1,6 @@
 use core::ops::Mul;
 
-use bnum::{cast::As, BInt, BUint};
+use bnum::{BInt, BUint, cast::As};
 
 pub trait CheckedAdd<RHS = Self>: Sized {
     fn checked_add(self, rhs: RHS) -> Option<Self>;

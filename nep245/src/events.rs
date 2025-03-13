@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use derive_more::derive::From;
-use near_sdk::{json_types::U128, near, serde::Deserialize, AccountIdRef};
+use near_sdk::{AccountIdRef, json_types::U128, near, serde::Deserialize};
 
 use super::TokenId;
 

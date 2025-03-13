@@ -1,6 +1,6 @@
-use near_sdk::{ext_contract, json_types::U128, AccountId, PromiseOrValue};
+use near_sdk::{AccountId, PromiseOrValue, ext_contract, json_types::U128};
 
-use super::{resolver::MultiTokenResolver, Token, TokenId};
+use super::{Token, TokenId, resolver::MultiTokenResolver};
 
 #[ext_contract(ext_mt_core)]
 pub trait MultiTokenCore: MultiTokenResolver {

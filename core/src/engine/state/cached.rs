@@ -8,9 +8,9 @@ use defuse_crypto::PublicKey;
 use near_sdk::{AccountId, AccountIdRef};
 
 use crate::{
+    DefuseError, Nonce, Nonces, Result,
     fees::Pips,
     tokens::{Amounts, TokenId},
-    DefuseError, Nonce, Nonces, Result,
 };
 
 use super::{State, StateView};

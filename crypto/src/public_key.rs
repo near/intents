@@ -3,9 +3,9 @@ use core::{
     str::FromStr,
 };
 
-use near_sdk::{bs58, env, near, AccountId, AccountIdRef};
+use near_sdk::{AccountId, AccountIdRef, bs58, env, near};
 
-use crate::{Curve, CurveType, Ed25519, ParseCurveError, Secp256k1, P256};
+use crate::{Curve, CurveType, Ed25519, P256, ParseCurveError, Secp256k1};
 
 #[near(serializers = [borsh])]
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -130,9 +130,9 @@ mod abi {
 
     use near_sdk::{
         schemars::{
-            gen::SchemaGenerator,
-            schema::{InstanceType, Metadata, Schema, SchemaObject},
             JsonSchema,
+            r#gen::SchemaGenerator,
+            schema::{InstanceType, Metadata, Schema, SchemaObject},
         },
         serde_json,
     };

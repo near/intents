@@ -1,5 +1,5 @@
-use rand_chacha::{rand_core::RngCore, ChaChaRng};
-pub use randomness::{self, seq::IteratorRandom, CryptoRng, Rng, SeedableRng};
+use rand_chacha::{ChaChaRng, rand_core::RngCore};
+pub use randomness::{self, CryptoRng, Rng, SeedableRng, seq::IteratorRandom};
 use std::{num::ParseIntError, str::FromStr};
 
 #[derive(Debug, Copy, Clone)]

@@ -4,9 +4,9 @@ mod nep245;
 
 use std::borrow::Cow;
 
-use defuse_core::{tokens::TokenId, DefuseError, Result};
+use defuse_core::{DefuseError, Result, tokens::TokenId};
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
-use near_sdk::{json_types::U128, AccountId, AccountIdRef, Gas};
+use near_sdk::{AccountId, AccountIdRef, Gas, json_types::U128};
 
 use super::Contract;
 

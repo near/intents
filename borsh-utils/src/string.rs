@@ -1,6 +1,6 @@
 use core::{fmt::Display, str::FromStr};
 
-use near_sdk::borsh::{self, io, BorshSerialize};
+use near_sdk::borsh::{self, BorshSerialize, io};
 
 pub struct DisplayFromStr;
 

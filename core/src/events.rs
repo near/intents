@@ -6,7 +6,7 @@ use near_sdk::{near, serde::Deserialize};
 use crate::{
     accounts::{AccountEvent, PublicKeyEvent},
     fees::{FeeChangedEvent, FeeCollectorChangedEvent},
-    intents::{token_diff::TokenDiffEvent, tokens::Transfer, IntentEvent},
+    intents::{IntentEvent, token_diff::TokenDiffEvent, tokens::Transfer},
 };
 
 #[must_use = "make sure to `.emit()` this event"]

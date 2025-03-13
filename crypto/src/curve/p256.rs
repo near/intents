@@ -1,9 +1,9 @@
 use super::{Curve, CurveType, TypedCurve};
 use near_sdk::CryptoHash;
 use p256::{
-    ecdsa::{signature::hazmat::PrehashVerifier, Signature, VerifyingKey},
-    elliptic_curve::{generic_array::GenericArray, scalar::IsHigh},
     EncodedPoint,
+    ecdsa::{Signature, VerifyingKey, signature::hazmat::PrehashVerifier},
+    elliptic_curve::{generic_array::GenericArray, scalar::IsHigh},
 };
 
 pub struct P256;

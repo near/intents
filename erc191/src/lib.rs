@@ -1,4 +1,4 @@
-use defuse_crypto::{serde::AsCurve, CryptoHash, Curve, Payload, Secp256k1, SignedPayload};
+use defuse_crypto::{CryptoHash, Curve, Payload, Secp256k1, SignedPayload, serde::AsCurve};
 use impl_tools::autoimpl;
 use near_sdk::{env, near};
 use serde_with::serde_as;

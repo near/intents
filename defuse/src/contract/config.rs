@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use defuse_core::fees::FeesConfig;
-use near_sdk::{near, AccountId};
+use near_sdk::{AccountId, near};
 
 use super::Role;
 

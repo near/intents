@@ -1,14 +1,14 @@
 use defuse_core::tokens::TokenId;
 use defuse_near_utils::{
-    UnwrapOrPanic, UnwrapOrPanicError, CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID,
+    CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
 use near_contract_standards::non_fungible_token::core::NonFungibleTokenReceiver;
-use near_plugins::{pause, Pausable};
-use near_sdk::{near, AccountId, PromiseOrValue};
+use near_plugins::{Pausable, pause};
+use near_sdk::{AccountId, PromiseOrValue, near};
 
 use crate::{
     contract::{Contract, ContractExt},
-    intents::{ext_intents, Intents},
+    intents::{Intents, ext_intents},
     tokens::DepositMessage,
 };
 

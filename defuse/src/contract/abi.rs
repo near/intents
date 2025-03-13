@@ -1,6 +1,6 @@
 use defuse_core::{
     intents::{DefuseIntents, Intent},
-    payload::{nep413::Nep413DefuseMessage, DefusePayload},
+    payload::{DefusePayload, nep413::Nep413DefuseMessage},
 };
 use near_sdk::near;
 

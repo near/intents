@@ -1,4 +1,4 @@
-use defuse_crypto::{serde::AsCurve, Curve, Ed25519, Payload, SignedPayload};
+use defuse_crypto::{Curve, Ed25519, Payload, SignedPayload, serde::AsCurve};
 use near_sdk::{env, near, serde::de::DeserializeOwned, serde_json};
 use serde_with::serde_as;
 

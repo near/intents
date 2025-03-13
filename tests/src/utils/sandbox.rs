@@ -1,6 +1,6 @@
 use std::{fs, ops::Deref, path::Path};
 
-use near_workspaces::{types::NearToken, Account, Network, Worker};
+use near_workspaces::{Account, Network, Worker, types::NearToken};
 
 pub fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
     let filename = Path::new(env!("CARGO_MANIFEST_DIR"))

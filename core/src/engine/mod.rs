@@ -6,9 +6,9 @@ pub use self::{inspector::*, state::*};
 use defuse_crypto::{Payload, SignedPayload};
 
 use crate::{
-    intents::{DefuseIntents, ExecutableIntent},
-    payload::{multi::MultiPayload, DefusePayload, ExtractDefusePayload},
     DefuseError, Result,
+    intents::{DefuseIntents, ExecutableIntent},
+    payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
 };
 
 use self::deltas::{Deltas, Transfers};

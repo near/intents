@@ -27,7 +27,7 @@ members = [
 default-members = ["defuse"]
 
 [workspace.package]
-edition = "2021"
+edition = "2024"
 repository = "https://github.com/defuse-protocol/defuse-contracts"
 
 [workspace.dependencies]

@@ -4,13 +4,13 @@ mod contract;
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
 use near_contract_standards::{
     fungible_token::{
-        metadata::{FungibleTokenMetadata, FungibleTokenMetadataProvider},
         FungibleTokenCore, FungibleTokenResolver,
+        metadata::{FungibleTokenMetadata, FungibleTokenMetadataProvider},
     },
     storage_management::StorageManagement,
 };
 use near_plugins::Ownable;
-use near_sdk::{ext_contract, json_types::U128, AccountId};
+use near_sdk::{AccountId, ext_contract, json_types::U128};
 
 /// Fungible token that allows minting only by its owner.
 /// To withdraw, users can call `ft_transfer` on the deployed token,

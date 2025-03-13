@@ -104,8 +104,8 @@ where
     #[inline]
     fn deref(&self) -> &Self::Target {
         match self {
-            Self::Vacant(ref entry) => entry,
-            Self::Occupied(ref entry) => entry,
+            Self::Vacant(entry) => entry,
+            Self::Occupied(entry) => entry,
         }
     }
 }
@@ -118,8 +118,8 @@ where
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         match self {
-            Self::Vacant(ref mut entry) => entry,
-            Self::Occupied(ref mut entry) => entry,
+            Self::Vacant(entry) => entry,
+            Self::Occupied(entry) => entry,
         }
     }
 }

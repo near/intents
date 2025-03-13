@@ -4,13 +4,13 @@ pub mod tokens;
 
 use defuse_serde_utils::base58::Base58;
 use derive_more::derive::From;
-use near_sdk::{near, AccountIdRef, CryptoHash};
+use near_sdk::{AccountIdRef, CryptoHash, near};
 use serde_with::serde_as;
 use tokens::NativeWithdraw;
 
 use crate::{
-    engine::{Engine, Inspector, State},
     Result,
+    engine::{Engine, Inspector, State},
 };
 
 use self::{

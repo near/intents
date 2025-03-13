@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use near_sdk::{env, FunctionError};
+use near_sdk::{FunctionError, env};
 
 pub trait PanicError {
     #[inline]

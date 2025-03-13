@@ -2,7 +2,7 @@ use near_contract_standards::{
     fungible_token::{FungibleTokenCore, FungibleTokenResolver},
     storage_management::StorageManagement,
 };
-use near_sdk::{ext_contract, json_types::U128, Gas, Promise};
+use near_sdk::{Gas, Promise, ext_contract, json_types::U128};
 
 pub const NEAR_WITHDRAW_GAS: Gas = Gas::from_tgas(5);
 

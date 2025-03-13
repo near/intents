@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 
-use near_sdk::serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use near_sdk::serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 use serde_with::{DeserializeAs, SerializeAs};
 
 use crate::TypedCurve;
@@ -31,9 +31,9 @@ mod abi {
     use super::*;
 
     use near_sdk::schemars::{
-        gen::SchemaGenerator,
-        schema::{InstanceType, Schema, SchemaObject, StringValidation},
         JsonSchema,
+        r#gen::SchemaGenerator,
+        schema::{InstanceType, Schema, SchemaObject, StringValidation},
     };
     use serde_with::schemars_0_8::JsonSchemaAs;
 
