@@ -10,9 +10,9 @@ use crate::{
 
 use super::ExecutableIntent;
 
-/// Add public key to the signer account
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
+/// Add public key to the signer account. See `Intent` enum for deeper explanation.
 pub struct AddPublicKey {
     pub public_key: PublicKey,
 }
@@ -39,7 +39,7 @@ impl ExecutableIntent for AddPublicKey {
     }
 }
 
-/// Remove public key to the signer account
+/// Remove public key to the signer account. See `Intent` enum for deeper explanation.
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
 pub struct RemovePublicKey {
@@ -68,7 +68,6 @@ impl ExecutableIntent for RemovePublicKey {
     }
 }
 
-/// Invalidate given nonces TODO: error?
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
     serde_as(schemars = true)
@@ -79,6 +78,7 @@ impl ExecutableIntent for RemovePublicKey {
 )]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
+/// Assign the given nonce(s) to the given account id, such that no other account can use them.
 pub struct InvalidateNonces {
     #[serde_as(as = "Vec<Base64>")]
     pub nonces: Vec<Nonce>,
