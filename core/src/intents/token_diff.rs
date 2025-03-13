@@ -28,6 +28,8 @@ pub type TokenDeltas = Amounts<BTreeMap<TokenId, i128>>;
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 #[autoimpl(Deref using self.diff)]
 #[autoimpl(DerefMut using self.diff)]
+/// A representation of an Intent that specifies the desired change in
+/// token balances.
 pub struct TokenDiff {
     #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
     pub diff: TokenDeltas,
@@ -104,6 +106,7 @@ impl ExecutableIntent for TokenDiff {
 )]
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
+/// An event emitted when a `TokenDiff` intent is executed.
 pub struct TokenDiffEvent<'a> {
     #[serde(flatten)]
     pub diff: Cow<'a, TokenDiff>,
