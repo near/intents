@@ -145,13 +145,5 @@ pub trait State: StateView {
         &mut self,
         owner_id: &AccountIdRef,
         storage_deposit: StorageDeposit,
-    ) -> Result<()> {
-        self.internal_withdraw(
-            owner_id,
-            [(
-                TokenId::Nep141(self.wnear_id().into_owned()),
-                storage_deposit.amount.as_yoctonear(),
-            )],
-        )
-    }
+    ) -> Result<()>;
 }

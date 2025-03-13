@@ -10,6 +10,7 @@ use near_sdk::{AccountId, AccountIdRef};
 use crate::{
     DefuseError, Nonce, Nonces, Result,
     fees::Pips,
+    intents::tokens::StorageDeposit,
     tokens::{Amounts, TokenId},
 };
 
@@ -180,6 +181,20 @@ where
                 .ok_or(DefuseError::BalanceOverflow)?;
         }
         Ok(())
+    }
+
+    fn storage_deposit(
+        &mut self,
+        owner_id: &AccountIdRef,
+        storage_deposit: StorageDeposit,
+    ) -> Result<()> {
+        self.internal_sub_balance(
+            owner_id,
+            [(
+                TokenId::Nep141(self.wnear_id().into_owned()),
+                storage_deposit.amount.as_yoctonear(),
+            )],
+        )
     }
 }
 
