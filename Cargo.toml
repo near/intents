@@ -65,7 +65,7 @@ impl-tools = "0.10"
 itertools = "0.13"
 near-account-id = "1.0"
 near-contract-standards = "5.5"
-near-plugins = { git = "https://github.com/Near-One/near-plugins", rev = "e6e4b070" }
+near-plugins = { git = "https://github.com/Near-One/near-plugins", tag = "v0.5.0" }
 near-sdk = "5.7"
 near-workspaces = "0.14"
 p256 = { version = "0.13", default-features = false, features = ["ecdsa"] }
