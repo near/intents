@@ -55,6 +55,8 @@ pub struct MtTransferEvent<'a> {
     pub memo: Option<Cow<'a, str>>,
 }
 
+/// A trait that's used to make it possible to call `emit()` on the enum
+/// arms' contents without having to explicitly construct the enum `MtEvent` itself
 pub trait MtEventEmit<'a>: Into<MtEvent<'a>> {
     #[inline]
     fn emit(self) {
