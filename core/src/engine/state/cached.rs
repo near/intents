@@ -10,7 +10,8 @@ use near_sdk::{AccountId, AccountIdRef};
 use crate::{
     DefuseError, Nonce, Nonces, Result,
     fees::Pips,
-    intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
+    intents::tokens::StorageDeposit,
+    intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw},
     tokens::{Amounts, TokenId},
 };
 
