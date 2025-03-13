@@ -5,7 +5,7 @@ use defuse_core::{
     crypto::PublicKey,
     engine::{State, StateView},
     fees::Pips,
-    intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw},
+    intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
     tokens::TokenId,
 };
 use defuse_near_utils::CURRENT_ACCOUNT_ID;
@@ -177,6 +177,35 @@ impl State for Contract {
                 Contract::ext(CURRENT_ACCOUNT_ID.clone())
                     .with_static_gas(Contract::DO_NATIVE_WITHDRAW_GAS)
                     .do_native_withdraw(withdraw),
+            );
+
+        Ok(())
+    }
+
+    fn storage_deposit(
+        &mut self,
+        owner_id: &AccountIdRef,
+        storage_deposit: StorageDeposit,
+    ) -> Result<()> {
+        self.withdraw(
+            owner_id,
+            [(
+                TokenId::Nep141(self.wnear_id().into_owned()),
+                storage_deposit.amount.as_yoctonear(),
+            )],
+            Some("withdraw"),
+        )?;
+
+        // detach promise
+        let _ = ext_wnear::ext(self.wnear_id.clone())
+            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .with_static_gas(NEAR_WITHDRAW_GAS)
+            .near_withdraw(U128(storage_deposit.amount.as_yoctonear()))
+            .then(
+                // do_storage_deposit only after unwrapping NEAR
+                Contract::ext(CURRENT_ACCOUNT_ID.clone())
+                    .with_static_gas(Contract::DO_STORAGE_DEPOSIT_GAS)
+                    .do_storage_deposit(storage_deposit),
             );
 
         Ok(())

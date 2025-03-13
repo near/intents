@@ -6,7 +6,7 @@ use defuse_serde_utils::base58::Base58;
 use derive_more::derive::From;
 use near_sdk::{AccountIdRef, CryptoHash, near};
 use serde_with::serde_as;
-use tokens::NativeWithdraw;
+use tokens::{NativeWithdraw, StorageDeposit};
 
 use crate::{
     Result,
@@ -63,6 +63,8 @@ pub enum Intent {
 
     /// Withdraw native tokens (NEAR) from the intents contract to a given external account id (external being outside of intents).
     NativeWithdraw(NativeWithdraw),
+
+    StorageDeposit(StorageDeposit),
 
     /// The user declares the will to have a set of changes done to set of tokens. For example,
     /// a simple trade of 100 of token A for 200 of token B, can be represented by `TokenDiff`
@@ -122,6 +124,7 @@ impl ExecutableIntent for Intent {
             Self::NftWithdraw(intent) => intent.execute_intent(signer_id, engine, intent_hash),
             Self::MtWithdraw(intent) => intent.execute_intent(signer_id, engine, intent_hash),
             Self::NativeWithdraw(intent) => intent.execute_intent(signer_id, engine, intent_hash),
+            Self::StorageDeposit(intent) => intent.execute_intent(signer_id, engine, intent_hash),
             Self::TokenDiff(intent) => intent.execute_intent(signer_id, engine, intent_hash),
         }
     }
