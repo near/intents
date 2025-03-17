@@ -9,7 +9,7 @@ use defuse_num_utils::{CheckedAdd, CheckedSub};
 use impl_tools::autoimpl;
 use near_account_id::ParseAccountError;
 use near_sdk::{
-    AccountId, near,
+    AccountId, AccountIdRef, near,
     serde::{Deserializer, Serializer},
 };
 use serde_with::{DeserializeAs, DeserializeFromStr, SerializeAs, SerializeDisplay};
@@ -50,6 +50,16 @@ pub enum TokenId {
         /// Token ID
         defuse_nep245::TokenId,
     ),
+}
+
+impl TokenId {
+    pub fn account_id(&self) -> &AccountIdRef {
+        match self {
+            TokenId::Nep141(account_id) => account_id,
+            TokenId::Nep171(account_id, _) => account_id,
+            TokenId::Nep245(account_id, _) => account_id,
+        }
+    }
 }
 
 impl Debug for TokenId {

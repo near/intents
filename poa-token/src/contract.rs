@@ -86,6 +86,9 @@ impl PoaFungibleToken for Contract {
 impl FungibleTokenCore for Contract {
     #[payable]
     fn ft_transfer(&mut self, receiver_id: AccountId, amount: U128, memo: Option<String>) {
+        // A special case we created to handle withdrawals:
+        // If the receiver id is the token contract id, we burn these tokens by calling ft_withdraw,
+        // which will reduce the balance and emit an FtBurn event.
         if receiver_id == *CURRENT_ACCOUNT_ID
             && memo
                 .as_deref()

@@ -101,6 +101,23 @@ impl Env {
             .strip_suffix(&format!(".{}", self.poa_factory.id()))
             .unwrap()
     }
+
+    pub async fn fund_account_with_near(&mut self, account_id: &AccountId, amount: NearToken) {
+        self.sandbox
+            .root_account()
+            .transfer_near(account_id, amount)
+            .await
+            .unwrap()
+            .unwrap();
+    }
+
+    pub fn sandbox_ref(&self) -> &Sandbox {
+        &self.sandbox
+    }
+
+    pub fn sandbox_mut(&mut self) -> &mut Sandbox {
+        &mut self.sandbox
+    }
 }
 
 impl Deref for Env {
@@ -120,6 +137,7 @@ pub struct EnvBuilder {
     roles: RolesConfig,
     self_as_super_admin: bool,
     deployer_as_super_admin: bool,
+    disable_ft_storage_deposit: bool,
 }
 
 impl EnvBuilder {
@@ -145,6 +163,11 @@ impl EnvBuilder {
 
     pub fn deployer_as_super_admin(mut self) -> Self {
         self.deployer_as_super_admin = true;
+        self
+    }
+
+    pub fn disable_ft_storage_deposit(mut self) -> Self {
+        self.disable_ft_storage_deposit = true;
         self
     }
 
@@ -190,11 +213,12 @@ impl EnvBuilder {
                 .super_admins
                 .insert(format!("defuse.{}", root.id()).parse().unwrap());
         }
+
         if self.deployer_as_super_admin {
             self.roles.super_admins.insert(root.id().clone());
         }
 
-        let s = Env {
+        let env_result = Env {
             user1: sandbox.create_account("user1").await,
             user2: sandbox.create_account("user2").await,
             user3: sandbox.create_account("user3").await,
@@ -229,80 +253,91 @@ impl EnvBuilder {
             sandbox,
         };
 
-        s.ft_storage_deposit(
-            s.wnear.id(),
-            &[
-                s.user1.id(),
-                s.user2.id(),
-                s.user3.id(),
-                s.defuse.id(),
-                root.id(),
-            ],
-        )
-        .await
-        .unwrap();
-        s.near_deposit(s.wnear.id(), NearToken::from_near(100))
+        env_result
+            .near_deposit(env_result.wnear.id(), NearToken::from_near(100))
             .await
             .unwrap();
 
-        s.ft_storage_deposit(
-            &s.ft1,
-            &[
-                s.user1.id(),
-                s.user2.id(),
-                s.user3.id(),
-                s.defuse.id(),
-                root.id(),
-            ],
-        )
-        .await
-        .unwrap();
+        if !self.disable_ft_storage_deposit {
+            env_result
+                .ft_storage_deposit(
+                    env_result.wnear.id(),
+                    &[
+                        env_result.user1.id(),
+                        env_result.user2.id(),
+                        env_result.user3.id(),
+                        env_result.defuse.id(),
+                        root.id(),
+                    ],
+                )
+                .await
+                .unwrap();
 
-        s.ft_storage_deposit(
-            &s.ft2,
-            &[
-                s.user1.id(),
-                s.user2.id(),
-                s.user3.id(),
-                s.defuse.id(),
-                root.id(),
-            ],
-        )
-        .await
-        .unwrap();
+            env_result
+                .ft_storage_deposit(
+                    &env_result.ft1,
+                    &[
+                        env_result.user1.id(),
+                        env_result.user2.id(),
+                        env_result.user3.id(),
+                        env_result.defuse.id(),
+                        root.id(),
+                    ],
+                )
+                .await
+                .unwrap();
 
-        s.ft_storage_deposit(
-            &s.ft3,
-            &[
-                s.user1.id(),
-                s.user2.id(),
-                s.user3.id(),
-                s.defuse.id(),
-                root.id(),
-            ],
-        )
-        .await
-        .unwrap();
+            env_result
+                .ft_storage_deposit(
+                    &env_result.ft2,
+                    &[
+                        env_result.user1.id(),
+                        env_result.user2.id(),
+                        env_result.user3.id(),
+                        env_result.defuse.id(),
+                        root.id(),
+                    ],
+                )
+                .await
+                .unwrap();
+
+            env_result
+                .ft_storage_deposit(
+                    &env_result.ft3,
+                    &[
+                        env_result.user1.id(),
+                        env_result.user2.id(),
+                        env_result.user3.id(),
+                        env_result.defuse.id(),
+                        root.id(),
+                    ],
+                )
+                .await
+                .unwrap();
+        }
 
         for token in ["ft1", "ft2", "ft3"] {
-            s.poa_factory_ft_deposit(
-                s.poa_factory.id(),
-                token,
-                root.id(),
-                1_000_000_000,
-                None,
-                None,
-            )
-            .await
-            .unwrap();
+            env_result
+                .poa_factory_ft_deposit(
+                    env_result.poa_factory.id(),
+                    token,
+                    root.id(),
+                    1_000_000_000,
+                    None,
+                    None,
+                )
+                .await
+                .unwrap();
         }
 
         // NOTE: near_workspaces uses the same signer all subaccounts
-        s.user1
+        env_result
+            .user1
             .add_public_key(
-                s.defuse.id(),
+                env_result.defuse.id(),
                 // HACK: near_worspaces does not expose near_crypto API
-                s.user1
+                env_result
+                    .user1
                     .secret_key()
                     .public_key()
                     .to_string()
@@ -312,10 +347,12 @@ impl EnvBuilder {
             .await
             .unwrap();
 
-        s.user2
+        env_result
+            .user2
             .add_public_key(
-                s.defuse.id(),
-                s.user2
+                env_result.defuse.id(),
+                env_result
+                    .user2
                     .secret_key()
                     .public_key()
                     .to_string()
@@ -325,10 +362,12 @@ impl EnvBuilder {
             .await
             .unwrap();
 
-        s.user3
+        env_result
+            .user3
             .add_public_key(
-                s.defuse.id(),
-                s.user3
+                env_result.defuse.id(),
+                env_result
+                    .user3
                     .secret_key()
                     .public_key()
                     .to_string()
@@ -338,6 +377,6 @@ impl EnvBuilder {
             .await
             .unwrap();
 
-        s
+        env_result
     }
 }

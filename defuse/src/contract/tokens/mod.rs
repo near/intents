@@ -82,6 +82,7 @@ impl Contract {
                 .token_balances
                 .sub(token_id.clone(), amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
+
             self.state
                 .total_supplies
                 .sub(token_id, amount)

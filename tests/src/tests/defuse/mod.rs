@@ -1,6 +1,7 @@
 pub mod accounts;
 mod env;
 mod intents;
+mod storage;
 mod tokens;
 mod upgrade;
 
@@ -51,6 +52,7 @@ impl DefuseExt for Contract {
 }
 
 pub trait DefuseSigner: Signer {
+    #[must_use]
     fn sign_defuse_message<T>(
         &self,
         defuse_contract: &AccountId,

@@ -1,5 +1,5 @@
 use near_contract_standards::storage_management::StorageBalance;
-use near_sdk::{AccountId, NearToken};
+use near_sdk::{AccountId, AccountIdRef, NearToken};
 use near_workspaces::Contract;
 use serde_json::json;
 
@@ -10,11 +10,18 @@ pub trait StorageManagementExt {
         account_id: Option<&AccountId>,
         deposit: NearToken,
     ) -> anyhow::Result<StorageBalance>;
+
     async fn storage_unregister(
         &self,
         contract_id: &AccountId,
         force: Option<bool>,
     ) -> anyhow::Result<bool>;
+
+    async fn storage_balance_of(
+        &self,
+        contract_id: &AccountId,
+        account_id: &AccountIdRef,
+    ) -> anyhow::Result<Option<StorageBalance>>;
 }
 
 impl StorageManagementExt for near_workspaces::Account {
@@ -54,6 +61,23 @@ impl StorageManagementExt for near_workspaces::Account {
             .json()
             .map_err(Into::into)
     }
+
+    async fn storage_balance_of(
+        &self,
+        contract_id: &AccountId,
+        account_id: &AccountIdRef,
+    ) -> anyhow::Result<Option<StorageBalance>> {
+        self.call(contract_id, "storage_balance_of")
+            .args_json(json!({
+                "account_id": account_id
+            }))
+            .max_gas()
+            .transact()
+            .await?
+            .into_result()?
+            .json()
+            .map_err(Into::into)
+    }
 }
 
 impl StorageManagementExt for Contract {
@@ -75,6 +99,16 @@ impl StorageManagementExt for Contract {
     ) -> anyhow::Result<bool> {
         self.as_account()
             .storage_unregister(contract_id, force)
+            .await
+    }
+
+    async fn storage_balance_of(
+        &self,
+        contract_id: &AccountId,
+        account_id: &AccountIdRef,
+    ) -> anyhow::Result<Option<StorageBalance>> {
+        self.as_account()
+            .storage_balance_of(contract_id, account_id)
             .await
     }
 }
