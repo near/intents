@@ -54,6 +54,7 @@ pub enum TokenId {
 
 impl TokenId {
     pub fn account_id(&self) -> &AccountIdRef {
+        #[allow(clippy::match_same_arms)]
         match self {
             TokenId::Nep141(account_id) => account_id,
             TokenId::Nep171(account_id, _) => account_id,
