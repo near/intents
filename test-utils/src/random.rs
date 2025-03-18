@@ -1,5 +1,6 @@
 use rand_chacha::{ChaChaRng, rand_core::RngCore};
 pub use randomness::{self, CryptoRng, Rng, SeedableRng, seq::IteratorRandom};
+use rstest::fixture;
 use std::{num::ParseIntError, str::FromStr};
 
 #[derive(Debug, Copy, Clone)]
@@ -100,4 +101,9 @@ pub fn gen_random_bytes(rng: &mut impl Rng, min_len: usize, max_len: usize) -> V
     let mut bytes = vec![0; data_length];
     rng.fill_bytes(&mut bytes);
     bytes
+}
+
+#[fixture]
+pub fn random_seed() -> Seed {
+    Seed::from_entropy()
 }

@@ -7,6 +7,7 @@ use defuse::core::intents::{DefuseIntents, tokens::StorageDeposit};
 use near_sdk::NearToken;
 use randomness::Rng;
 use rstest::rstest;
+use test_utils::random::random_seed;
 use test_utils::random::{Seed, make_seedable_rng};
 
 const MIN_FT_STORAGE_DEPOSIT_VALUE: NearToken =
@@ -17,27 +18,23 @@ const ONE_YOCTO_NEAR: NearToken = NearToken::from_yoctonear(1);
 #[tokio::test]
 #[rstest]
 #[trace]
+#[case(MIN_FT_STORAGE_DEPOSIT_VALUE, Some(MIN_FT_STORAGE_DEPOSIT_VALUE))]
+#[trace]
 #[case(
-    Seed::from_entropy(),
-    MIN_FT_STORAGE_DEPOSIT_VALUE,
-    Some(MIN_FT_STORAGE_DEPOSIT_VALUE)
-)]
-#[case(
-    Seed::from_entropy(),
     MIN_FT_STORAGE_DEPOSIT_VALUE.checked_sub(ONE_YOCTO_NEAR).unwrap(), // Sending less than the required min leads to nothing being deposited
     None
 )]
+#[trace]
 #[case(
-    Seed::from_entropy(),
     MIN_FT_STORAGE_DEPOSIT_VALUE.checked_add(ONE_YOCTO_NEAR).unwrap(),
     Some(MIN_FT_STORAGE_DEPOSIT_VALUE)
 )]
 async fn storage_deposit_success(
-    #[case] seed: Seed,
+    random_seed: Seed,
     #[case] amount_to_deposit: NearToken,
     #[case] expected_deposited: Option<NearToken>,
 ) {
-    let mut rng = make_seedable_rng(seed);
+    let mut rng = make_seedable_rng(random_seed);
 
     let mut env = Env::builder().disable_ft_storage_deposit().build().await;
 
@@ -145,9 +142,8 @@ async fn storage_deposit_success(
 #[tokio::test]
 #[rstest]
 #[trace]
-#[case(Seed::from_entropy())]
-async fn storage_deposit_fails_user_has_no_balance_in_intents(#[case] seed: Seed) {
-    let mut rng = make_seedable_rng(seed);
+async fn storage_deposit_fails_user_has_no_balance_in_intents(random_seed: Seed) {
+    let mut rng = make_seedable_rng(random_seed);
 
     let mut env = Env::builder().disable_ft_storage_deposit().build().await;
 
