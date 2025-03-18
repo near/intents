@@ -22,12 +22,12 @@ const MIN_FT_STORAGE_DEPOSIT_VALUE: NearToken =
 )]
 #[case(
     Seed::from_entropy(),
-    NearToken::from_yoctonear(1_250_000_000_000_000_000_000-1), // Sending less than the required min leads to nothing being deposited
+    NearToken::from_yoctonear(MIN_FT_STORAGE_DEPOSIT_VALUE-1), // Sending less than the required min leads to nothing being deposited
     None
 )]
 #[case(
     Seed::from_entropy(),
-    NearToken::from_yoctonear(1_250_000_000_000_000_000_000+1),
+    NearToken::from_yoctonear(MIN_FT_STORAGE_DEPOSIT_VALUE+1),
     Some(MIN_FT_STORAGE_DEPOSIT_VALUE)
 )]
 async fn storage_deposit_success(
