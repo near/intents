@@ -12,6 +12,8 @@ use test_utils::random::{Seed, make_seedable_rng};
 const MIN_FT_STORAGE_DEPOSIT_VALUE: NearToken =
     NearToken::from_yoctonear(1_250_000_000_000_000_000_000);
 
+const ONE_YOCTO_NEAR: NearToken = NearToken::from_yoctonear(1);
+
 #[tokio::test]
 #[rstest]
 #[trace]
@@ -22,12 +24,12 @@ const MIN_FT_STORAGE_DEPOSIT_VALUE: NearToken =
 )]
 #[case(
     Seed::from_entropy(),
-    NearToken::from_yoctonear(MIN_FT_STORAGE_DEPOSIT_VALUE-1), // Sending less than the required min leads to nothing being deposited
+    MIN_FT_STORAGE_DEPOSIT_VALUE.checked_sub(ONE_YOCTO_NEAR).unwrap(), // Sending less than the required min leads to nothing being deposited
     None
 )]
 #[case(
     Seed::from_entropy(),
-    NearToken::from_yoctonear(MIN_FT_STORAGE_DEPOSIT_VALUE+1),
+    MIN_FT_STORAGE_DEPOSIT_VALUE.checked_add(ONE_YOCTO_NEAR).unwrap(),
     Some(MIN_FT_STORAGE_DEPOSIT_VALUE)
 )]
 async fn storage_deposit_success(
