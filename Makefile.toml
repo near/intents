@@ -71,7 +71,7 @@ alias = "tests"
 [tasks.nextest]
 dependencies = ["build"]
 command = "cargo"
-args = ["nextest", "run", "--all"]
+args = ["nextest", "run", "--all", "${@}"]
 
 [tasks.tests]
 dependencies = ["build"]
