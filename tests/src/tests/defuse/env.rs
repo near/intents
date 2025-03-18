@@ -102,13 +102,22 @@ impl Env {
             .unwrap()
     }
 
-    pub async fn fund_account_with_near(&mut self, account_id: &AccountId, amount: NearToken) {
+    pub async fn fund_account_with_near(&self, account_id: &AccountId, amount: NearToken) {
         self.sandbox
             .root_account()
             .transfer_near(account_id, amount)
             .await
             .unwrap()
             .unwrap();
+    }
+
+    pub async fn near_balance(&mut self, account_id: &AccountId) -> NearToken {
+        self.sandbox
+            .worker()
+            .view_account(account_id)
+            .await
+            .unwrap()
+            .balance
     }
 
     pub fn sandbox_ref(&self) -> &Sandbox {
