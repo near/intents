@@ -33,42 +33,31 @@ pub struct DefuseIntents {
 #[serde(tag = "intent", rename_all = "snake_case")]
 #[derive(Debug, Clone, From)]
 pub enum Intent {
-    /// Given an account id, the user can add public keys. The added public keys can sign
-    /// intents on behalf of these accounts, even to add new ones.
-    /// Warning: Implicit account ids, by default, have their corresponding public keys added.
-    /// Meaning: For a leaked private key, whose implicit account id had been used in intents,
-    /// the user must manually rotate the underlying public key within intents.
+    /// See [`AddPublicKey`]
     AddPublicKey(AddPublicKey),
 
-    /// Remove the public key associated with a given account. See `AddPublicKey`.
+    /// See [`RemovePublicKey`]
     RemovePublicKey(RemovePublicKey),
 
-    /// Every intent execution requires a nonce. This intent reserves a nonce for an account id,
-    /// ensuring that a nonce won't be used multiple times. Note that an account id can have
-    /// multiple nonces associated with it.
+    /// See [`InvalidateNonces`]
     InvalidateNonces(InvalidateNonces),
 
-    /// Transfer a set of tokens from the signer to a specified account id, within the intents contract.
+    /// See [`Transfer`]
     Transfer(Transfer),
 
-    /// Withdraw given FT tokens from the intents contract to a given external account id (external being outside of intents).
+    /// See [`FtWithdraw`]
     FtWithdraw(FtWithdraw),
 
-    /// Withdraw given NFT tokens from the intents contract to a given external account id (external being outside of intents).
+    /// See [`NftWithdraw`]
     NftWithdraw(NftWithdraw),
 
-    /// Withdraw given tokens (of any kind, under the MT standard) from the intents contract to a given
-    /// external account id (external being outside of intents).
+    /// See [`MtWithdraw`]
     MtWithdraw(MtWithdraw),
 
-    /// Withdraw native tokens (NEAR) from the intents contract to a given external account id (external being outside of intents).
+    /// See [`NativeWithdraw`]
     NativeWithdraw(NativeWithdraw),
 
-    /// The user declares the will to have a set of changes done to set of tokens. For example,
-    /// a simple trade of 100 of token A for 200 of token B, can be represented by `TokenDiff`
-    /// of {"A": -100, "B": 200} (this format is just for demonstration purposes).
-    /// In general, the user can submit multiple changes with many tokens,
-    /// not just token A for token B.
+    /// See [`TokenDiff`]
     TokenDiff(TokenDiff),
 }
 
