@@ -138,10 +138,10 @@ impl ExecutableIntent for NftWithdraw {
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
-/// Withdraw given tokens (of any kind, under the MT standard and its implementation in the intents contract) from the intents contract
+/// Withdraw given MT tokens (i.e. [NEP-245](https://github.com/near/NEPs/blob/master/neps/nep-0245.md)) from the intents contract
 /// to a given to an external account id (external being outside of intents).
-/// This requires that the token id be formatted correctly. For example, to withdraw an FT token with token id <token id>, the token id specified here
-/// must be `nep141:<token id>`
+///
+/// If `msg` is given, `mt_batch_transfer_call()` will be used to transfer to the `receiver_id`. Otherwise, `mt_batch_transfer()` will be used.
 pub struct MtWithdraw {
     pub token: AccountId,
     pub receiver_id: AccountId,
