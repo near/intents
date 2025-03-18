@@ -19,7 +19,7 @@ use self::{
     tokens::{FtWithdraw, MtWithdraw, NftWithdraw, Transfer},
 };
 
-#[near(serializers = [borsh, json])]
+#[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct DefuseIntents {
     /// Sequence of intents to execute in given order. Empty list is also
@@ -29,7 +29,7 @@ pub struct DefuseIntents {
     pub intents: Vec<Intent>,
 }
 
-#[near(serializers = [borsh, json])]
+#[near(serializers = [json])]
 #[serde(tag = "intent", rename_all = "snake_case")]
 #[derive(Debug, Clone, From)]
 pub enum Intent {
