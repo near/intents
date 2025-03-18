@@ -78,7 +78,8 @@ impl ExecutableIntent for RemovePublicKey {
 )]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
-/// Assign the given nonce(s) to the given account id, such that no other account can use them.
+/// Each account id gets (over time, while using the intents contract) more nonces, and this ensures that nonces are not reused to avoid replay attacks.
+/// This "marks" the nonce as used.
 pub struct InvalidateNonces {
     #[serde_as(as = "Vec<Base64>")]
     pub nonces: Vec<Nonce>,
