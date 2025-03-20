@@ -48,6 +48,6 @@ pub fn withdraw_to(address: impl AsRef<str>) -> String {
     format!("{WITHDRAW_MEMO_PREFIX}{}", address.as_ref())
 }
 
-pub fn message_prefixed(address: impl AsRef<str>) -> String {
+pub fn unwrap_message_prefixed(address: impl AsRef<str>) -> String {
     format!("{UNWRAP_MSG_PREFIX}:{}", address.as_ref())
 }
