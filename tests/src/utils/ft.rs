@@ -47,8 +47,10 @@ pub trait FtExt: StorageManagementExt {
         &self,
         token_id: &AccountId,
         account_id: Option<&AccountId>,
-    ) -> anyhow::Result<StorageBalance>;
-
+    ) -> anyhow::Result<StorageBalance> {
+        self.storage_deposit(token_id, account_id, FT_STORAGE_DEPOSIT)
+            .await
+    }
     async fn ft_storage_deposit_many(
         &self,
         token_id: &AccountId,
@@ -163,15 +165,6 @@ impl FtExt for Account {
         }
         Ok(())
     }
-
-    async fn ft_storage_deposit(
-        &self,
-        token_id: &AccountId,
-        account_id: Option<&AccountId>,
-    ) -> anyhow::Result<StorageBalance> {
-        self.storage_deposit(token_id, account_id, FT_STORAGE_DEPOSIT)
-            .await
-    }
 }
 
 impl FtExt for Contract {
@@ -227,14 +220,5 @@ impl FtExt for Contract {
             self.ft_storage_deposit(token_id, Some(account)).await?;
         }
         Ok(())
-    }
-
-    async fn ft_storage_deposit(
-        &self,
-        token_id: &AccountId,
-        account_id: Option<&AccountId>,
-    ) -> anyhow::Result<StorageBalance> {
-        self.storage_deposit(token_id, account_id, FT_STORAGE_DEPOSIT)
-            .await
     }
 }
