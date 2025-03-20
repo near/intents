@@ -37,7 +37,7 @@ pub trait PoaFungibleToken:
 }
 
 pub trait CanWrapToken {
-    /// If this PoA token wraps an Omni-bridge token, returns Some(id) of the token it wraps. Otherwise, None.
+    /// If this `PoA` token wraps an Omni-bridge token, returns Some(id) of the token it wraps. Otherwise, None.
     fn wrapped_token(&self) -> Option<&AccountIdRef>;
 }
 
