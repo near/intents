@@ -31,6 +31,6 @@ pub trait PoaFactory: AccessControllable + FullAccessKeys {
         memo: Option<String>,
     ) -> Promise;
 
-    /// Returns a maping of token names to their account ids.
+    /// Returns a mapping of token names to their account ids.
     fn tokens(&self) -> HashMap<String, AccountId>;
 }
