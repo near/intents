@@ -106,25 +106,23 @@ async fn storage_deposit_success(
     .await
     .unwrap();
 
-    let storage_deposit_intent = StorageDeposit {
-        contract_id: env.ft1.clone(),
-        account_id: env.user2.id().clone(),
-        amount: amount_to_deposit,
-    }
-    .into();
-
-    let intents = DefuseIntents {
-        intents: [storage_deposit_intent].into(),
-    };
-
-    let signed_intents = env.user2.sign_defuse_message(
-        env.defuse.id(),
-        rng.random(),
-        Deadline::timeout(std::time::Duration::from_secs(120)),
-        intents,
-    );
-
-    env.defuse.execute_intents([signed_intents]).await.unwrap();
+    env.defuse
+        .execute_intents([env.user2.sign_defuse_message(
+            env.defuse.id(),
+            rng.random(),
+            Deadline::timeout(std::time::Duration::from_secs(120)),
+            DefuseIntents {
+                intents: [StorageDeposit {
+                    contract_id: env.ft1.clone(),
+                    account_id: env.user2.id().clone(),
+                    amount: amount_to_deposit,
+                }
+                .into()]
+                .into(),
+            },
+        )])
+        .await
+        .unwrap();
 
     {
         let storage_balance_ft1_user2 = env
@@ -206,27 +204,24 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents(random_seed: Seed)
         .await
         .unwrap();
 
-    let storage_deposit_intent = StorageDeposit {
-        contract_id: env.ft1.clone(),
-        account_id: env.user2.id().clone(),
-        amount: MIN_FT_STORAGE_DEPOSIT_VALUE,
-    }
-    .into();
-
-    let intents = DefuseIntents {
-        intents: [storage_deposit_intent].into(),
-    };
-
-    let signed_intents = env.user2.sign_defuse_message(
+    let signed_intents = [env.user2.sign_defuse_message(
         env.defuse.id(),
         rng.random(),
         Deadline::timeout(std::time::Duration::from_secs(120)),
-        intents,
-    );
+        DefuseIntents {
+            intents: [StorageDeposit {
+                contract_id: env.ft1.clone(),
+                account_id: env.user2.id().clone(),
+                amount: MIN_FT_STORAGE_DEPOSIT_VALUE,
+            }
+            .into()]
+            .into(),
+        },
+    )];
 
-    // Fails the user does not own any near in the intents smart contract. They should first deposit near/wnear.
+    // Fails because the user does not own any wNEAR in the intents smart contract. They should first deposit wNEAR.
     env.defuse
-        .execute_intents([signed_intents])
+        .execute_intents(signed_intents)
         .await
         .unwrap_err();
 }

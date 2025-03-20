@@ -120,7 +120,7 @@ impl Env {
             .balance
     }
 
-    pub fn sandbox_ref(&self) -> &Sandbox {
+    pub fn sandbox(&self) -> &Sandbox {
         &self.sandbox
     }
 

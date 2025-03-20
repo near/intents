@@ -71,10 +71,8 @@ impl StorageManagementExt for near_workspaces::Account {
             .args_json(json!({
                 "account_id": account_id
             }))
-            .max_gas()
-            .transact()
+            .view()
             .await?
-            .into_result()?
             .json()
             .map_err(Into::into)
     }
