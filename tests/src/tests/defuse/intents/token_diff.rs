@@ -177,7 +177,7 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
     // deposit
     for account in &accounts {
         for (token_id, balance) in &account.init_balances {
-            env.defuse_ft_mint(
+            env.defuse_ft_deposit_to(
                 token_id,
                 (*balance).try_into().unwrap(),
                 account.account.id(),
@@ -249,10 +249,10 @@ async fn test_invariant_violated() {
     let ft2 = TokenId::Nep141(env.ft2.clone());
 
     // deposit
-    env.defuse_ft_mint(&env.ft1, 1000, env.user1.id())
+    env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
         .await
         .unwrap();
-    env.defuse_ft_mint(&env.ft2, 2000, env.user2.id())
+    env.defuse_ft_deposit_to(&env.ft2, 2000, env.user2.id())
         .await
         .unwrap();
 
@@ -345,10 +345,10 @@ async fn test_solver_user_closure(
     let solver = &env.user2;
 
     // deposit
-    env.defuse_ft_mint(&env.ft1, USER_BALANCE, user.id())
+    env.defuse_ft_deposit_to(&env.ft1, USER_BALANCE, user.id())
         .await
         .unwrap();
-    env.defuse_ft_mint(&env.ft2, SOLVER_BALANCE, solver.id())
+    env.defuse_ft_deposit_to(&env.ft2, SOLVER_BALANCE, solver.id())
         .await
         .unwrap();
 

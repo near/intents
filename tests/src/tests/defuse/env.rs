@@ -60,7 +60,7 @@ impl Env {
             .await
     }
 
-    pub async fn defuse_ft_mint(
+    pub async fn defuse_ft_deposit_to(
         &self,
         token_id: &AccountId,
         amount: u128,

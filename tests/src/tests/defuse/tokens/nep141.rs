@@ -25,7 +25,7 @@ use crate::{
 async fn test_deposit_withdraw() {
     let env = Env::new().await;
 
-    env.defuse_ft_mint(&env.ft1, 1000, env.user1.id())
+    env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
         .await
         .unwrap();
 
@@ -240,7 +240,7 @@ async fn test_deposit_withdraw_intent_refund() {
 #[tokio::test]
 async fn test_ft_force_withdraw() {
     let env = Env::builder().deployer_as_super_admin().build().await;
-    env.defuse_ft_mint(&env.ft1, 1000, env.user1.id())
+    env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
         .await
         .unwrap();
 

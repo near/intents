@@ -32,7 +32,7 @@ async fn test_ft_withdraw_intent(random_seed: Seed) {
 
     let env = Env::new().await;
 
-    env.defuse_ft_mint(&env.ft1, 1000, env.user1.id())
+    env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
         .await
         .unwrap();
 
@@ -210,7 +210,7 @@ async fn test_ft_withdraw_intent_msg(random_seed: Seed) {
         .await
         .unwrap();
 
-    env.defuse_ft_mint(&env.ft1, 1000, env.user1.id())
+    env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
         .await
         .unwrap();
 

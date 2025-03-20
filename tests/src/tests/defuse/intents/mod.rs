@@ -143,7 +143,7 @@ async fn test_simulate_is_view_method() {
     let ft1 = TokenId::Nep141(env.ft1.clone());
 
     // deposit
-    env.defuse_ft_mint(&env.ft1, 1000, env.user1.id())
+    env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
         .await
         .unwrap();
 
@@ -193,7 +193,7 @@ async fn test_webauthn() {
     let ft1 = TokenId::Nep141(env.ft1.clone());
 
     // deposit
-    env.defuse_ft_mint(&env.ft1, 2000, &SIGNER_ID.to_owned())
+    env.defuse_ft_deposit_to(&env.ft1, 2000, &SIGNER_ID.to_owned())
         .await
         .unwrap();
 

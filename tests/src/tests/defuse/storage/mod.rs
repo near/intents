@@ -98,7 +98,7 @@ async fn storage_deposit_success(
         .unwrap();
 
     // Fund the user's account with near in the intents contract for the storage deposit intent
-    env.defuse_ft_mint(
+    env.defuse_ft_deposit_to(
         env.wnear.id(),
         NearToken::from_near(10).as_yoctonear(),
         env.user2.id(),
