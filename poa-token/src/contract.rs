@@ -3,6 +3,7 @@ use defuse_near_utils::{CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID};
 use near_contract_standards::{
     fungible_token::{
         FungibleToken, FungibleTokenCore, FungibleTokenResolver,
+        core::ext_ft_core,
         events::{FtBurn, FtMint},
         metadata::{FT_METADATA_SPEC, FungibleTokenMetadata, FungibleTokenMetadataProvider},
     },
@@ -10,23 +11,44 @@ use near_contract_standards::{
 };
 use near_plugins::{Ownable, events::AsEvent, only, ownable::OwnershipTransferred};
 use near_sdk::{
-    AccountId, BorshStorageKey, NearToken, PanicOnDefault, Promise, PromiseOrValue, PublicKey,
-    assert_one_yocto, borsh::BorshSerialize, env, json_types::U128, near, require, store::Lazy,
+    AccountId, AccountIdRef, BorshStorageKey, Gas, NearToken, PanicOnDefault, Promise,
+    PromiseOrValue, PublicKey, assert_one_yocto,
+    borsh::{BorshDeserialize, BorshSerialize},
+    env,
+    json_types::U128,
+    near, require,
+    store::Lazy,
 };
+use std::str::FromStr;
 
-use crate::{PoaFungibleToken, WITHDRAW_MEMO_PREFIX};
+use crate::{CanWrapToken, PoaFungibleToken, UNWRAP_MSG_PREFIX, WITHDRAW_MEMO_PREFIX};
+
+pub const FT_TRANSFER_GAS: Gas = Gas::from_tgas(10);
+pub const FT_REFUND_GAS: Gas = Gas::from_tgas(10);
+
+#[derive(BorshSerialize, BorshDeserialize)]
+#[borsh(crate = "::near_sdk::borsh")]
+pub struct ContractWithoutOmniWrapping {
+    token: FungibleToken,
+    metadata: Lazy<FungibleTokenMetadata>,
+}
 
 #[near(contract_state)]
 #[derive(Ownable, PanicOnDefault)]
 pub struct Contract {
     token: FungibleToken,
     metadata: Lazy<FungibleTokenMetadata>,
+    wrapped_token: Option<AccountId>,
 }
 
 #[near]
 impl Contract {
     #[init]
-    pub fn new(owner_id: Option<AccountId>, metadata: Option<FungibleTokenMetadata>) -> Self {
+    pub fn new(
+        owner_id: Option<AccountId>,
+        metadata: Option<FungibleTokenMetadata>,
+        wrapped_token: Option<AccountId>,
+    ) -> Self {
         let metadata = metadata.unwrap_or_else(|| FungibleTokenMetadata {
             spec: FT_METADATA_SPEC.to_string(),
             name: Default::default(),
@@ -41,6 +63,7 @@ impl Contract {
         let contract = Self {
             token: FungibleToken::new(Prefix::FungibleToken),
             metadata: Lazy::new(Prefix::Metadata, metadata),
+            wrapped_token,
         };
 
         let owner = owner_id.unwrap_or_else(|| PREDECESSOR_ACCOUNT_ID.clone());
@@ -55,6 +78,69 @@ impl Contract {
         }
         .emit();
         contract
+    }
+
+    #[private]
+    #[init(ignore_state)]
+    pub fn upgrade_wrap_for_omni_bridge() -> Self {
+        let old_state: ContractWithoutOmniWrapping =
+            env::state_read().expect("Deserializing old state failed");
+
+        Self {
+            token: old_state.token,
+            metadata: old_state.metadata,
+            wrapped_token: None,
+        }
+    }
+
+    #[only(self, owner)]
+    pub fn set_wrapped_token_account_id(&mut self, token_account_id: AccountId) {
+        self.wrapped_token = Some(token_account_id);
+    }
+
+    #[only(self, owner)]
+    pub fn clear_wrapped_token_account_id(&mut self) {
+        self.wrapped_token = None;
+    }
+
+    #[only(self, owner)]
+    pub fn ft_resolve_unwrap(&mut self, account_id: AccountId, amount: u128) {
+        let unused_amount = match env::promise_result(0) {
+            near_sdk::PromiseResult::Successful(value) => {
+                if let Ok(unused_amount) = near_sdk::serde_json::from_slice::<U128>(&value) {
+                    std::cmp::min(amount, unused_amount.0)
+                } else {
+                    amount
+                }
+            }
+            near_sdk::PromiseResult::Failed => amount,
+        };
+
+        self.token.internal_deposit(&account_id, unused_amount);
+    }
+}
+
+impl Contract {
+    fn internal_ft_transfer_wrapped(
+        &mut self,
+        amount: U128,
+        memo: Option<String>,
+        msg: String,
+        token_destination: AccountId,
+        wrapped_token_id: AccountId,
+    ) -> PromiseOrValue<U128> {
+        let previous_owner = PREDECESSOR_ACCOUNT_ID.clone();
+
+        self.ft_withdraw(&PREDECESSOR_ACCOUNT_ID, amount, None);
+        ext_ft_core::ext(wrapped_token_id.to_owned())
+            .ft_transfer_call(token_destination, amount, memo, msg)
+            // FIXME: Do we need to refund on transfer failure?
+            .then(
+                Contract::ext(CURRENT_ACCOUNT_ID.clone())
+                    .with_static_gas(FT_REFUND_GAS)
+                    .ft_resolve_unwrap(previous_owner, amount.0),
+            )
+            .into()
     }
 }
 
@@ -83,6 +169,13 @@ impl PoaFungibleToken for Contract {
 }
 
 #[near]
+impl CanWrapToken for Contract {
+    fn wrapped_token(&self) -> Option<&AccountIdRef> {
+        self.wrapped_token.as_deref()
+    }
+}
+
+#[near]
 impl FungibleTokenCore for Contract {
     #[payable]
     fn ft_transfer(&mut self, receiver_id: AccountId, amount: U128, memo: Option<String>) {
@@ -94,7 +187,10 @@ impl FungibleTokenCore for Contract {
                 .as_deref()
                 .map_or(false, |memo| memo.starts_with(WITHDRAW_MEMO_PREFIX))
         {
-            self.ft_withdraw(&PREDECESSOR_ACCOUNT_ID, amount, memo);
+            match self.wrapped_token() {
+                Some(_) => env::panic_str("This PoA token was migrated to OmniBridge"),
+                None => self.ft_withdraw(&PREDECESSOR_ACCOUNT_ID, amount, memo),
+            }
         } else {
             self.token.ft_transfer(receiver_id, amount, memo)
         }
@@ -108,7 +204,40 @@ impl FungibleTokenCore for Contract {
         memo: Option<String>,
         msg: String,
     ) -> PromiseOrValue<U128> {
-        self.token.ft_transfer_call(receiver_id, amount, memo, msg)
+        let wrapped_token = self.wrapped_token().map(|id| id.to_owned());
+        match wrapped_token {
+            Some(wrapped_token_id) => {
+                let msg_parts = msg.splitn(3, ':').collect::<Vec<_>>();
+                if msg_parts.len() >= 2 && msg_parts[0] == UNWRAP_MSG_PREFIX {
+                    let receiver_from_msg_str = msg_parts[1];
+                    let rest_of_the_message = msg_parts.get(2).unwrap_or(&"");
+
+                    let receiver_from_msg = AccountId::from_str(receiver_from_msg_str)
+                        .unwrap_or_else(|_| {
+                            env::panic_str(&format!(
+                                "Invalid sender id detected: {receiver_from_msg_str}"
+                            ))
+                        });
+
+                    self.internal_ft_transfer_wrapped(
+                        amount,
+                        memo,
+                        rest_of_the_message.to_string(),
+                        receiver_from_msg,
+                        wrapped_token_id,
+                    )
+                } else {
+                    self.internal_ft_transfer_wrapped(
+                        amount,
+                        memo,
+                        msg,
+                        receiver_id,
+                        wrapped_token_id,
+                    )
+                }
+            }
+            None => self.token.ft_transfer_call(receiver_id, amount, memo, msg),
+        }
     }
 
     fn ft_total_supply(&self) -> U128 {
