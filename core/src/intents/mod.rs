@@ -25,6 +25,7 @@ pub struct DefuseIntents {
     /// Sequence of intents to execute in given order. Empty list is also
     /// a valid sequence, i.e. it doesn't do anything, but still invalidates
     /// the `nonce` for the signer
+    /// WARNING: Promises created by different intents are executed concurrently and does not rely on the order of the intents in this structure
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub intents: Vec<Intent>,
 }

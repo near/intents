@@ -209,6 +209,13 @@ impl ExecutableIntent for NativeWithdraw {
 /// `storage_deposit` for an `account_id` on `contract_id`.
 /// The `amount` will be subtracted from user's NEP-141 `wNEAR` balance.
 /// NOTE: the `wNEAR` will not be refunded in any case.
+///
+/// WARNING: use this intent only if paying storage_deposit is not a prerequisite
+/// for other intents to succeed. If some intent (e.g. ft_withdraw) requires storage_deposit,
+/// then use storage_deposit field of corresponding intent instead of adding a separate
+/// `StorageDeposit` intent. This is due to the fact that intents that fire `Promise`s
+/// are not guaranteed to be executed sequentially, in the order of the provided intents in
+/// `DefuseIntents`.
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
 pub struct StorageDeposit {
