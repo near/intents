@@ -14,6 +14,7 @@ pub enum PrefixedMessage<'a, M> {
 }
 
 impl<'a, M> PrefixedMessage<'a, M> {
+    #[must_use]
     pub fn rest_of_the_message(&self) -> &str {
         match self {
             PrefixedMessage::NoMatch(msg) => msg,
@@ -35,7 +36,7 @@ impl<'a, M: MessagePrefix> From<&'a str> for PrefixedMessage<'a, M> {
 
             Self::Matched {
                 suffix: receiver_from_msg_str,
-                rest: &rest_of_the_message,
+                rest: rest_of_the_message,
                 _marker: PhantomData,
             }
         } else {
