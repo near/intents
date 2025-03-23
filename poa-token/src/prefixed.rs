@@ -13,7 +13,7 @@ pub enum PrefixedMessage<'a, M> {
     },
 }
 
-impl<'a, M> PrefixedMessage<'a, M> {
+impl<M> PrefixedMessage<'_, M> {
     #[must_use]
     pub fn rest_of_the_message(&self) -> &str {
         match self {
