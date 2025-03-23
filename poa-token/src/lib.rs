@@ -1,6 +1,8 @@
 #[cfg(feature = "contract")]
 pub mod contract;
 
+pub mod prefixed;
+
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
 use near_contract_standards::{
     fungible_token::{
