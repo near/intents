@@ -1,8 +1,6 @@
 #[cfg(feature = "contract")]
 pub mod contract;
 
-pub mod prefixed;
-
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
 use near_contract_standards::{
     fungible_token::{
@@ -44,12 +42,7 @@ pub trait CanWrapToken {
 }
 
 pub const WITHDRAW_MEMO_PREFIX: &str = "WITHDRAW_TO:";
-pub const UNWRAP_MSG_PREFIX: &str = "UNWRAP_TO";
 
 pub fn withdraw_to(address: impl AsRef<str>) -> String {
     format!("{WITHDRAW_MEMO_PREFIX}{}", address.as_ref())
-}
-
-pub fn unwrap_message_prefixed(address: impl AsRef<str>) -> String {
-    format!("{UNWRAP_MSG_PREFIX}:{}", address.as_ref())
 }

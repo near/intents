@@ -1,4 +1,7 @@
-use defuse_admin_utils::full_access_keys::FullAccessKeys;
+use defuse_admin_utils::{
+    full_access_keys::FullAccessKeys,
+    prefixed::{MessagePrefix, PrefixedMessage},
+};
 use defuse_near_utils::{CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID};
 use near_contract_standards::{
     fungible_token::{
@@ -19,12 +22,8 @@ use near_sdk::{
     near, require,
     store::Lazy,
 };
-use std::str::FromStr;
 
-use crate::{
-    CanWrapToken, PoaFungibleToken, UNWRAP_MSG_PREFIX, WITHDRAW_MEMO_PREFIX,
-    prefixed::PrefixedMessage,
-};
+use crate::{CanWrapToken, PoaFungibleToken, WITHDRAW_MEMO_PREFIX};
 
 pub const FT_TRANSFER_GAS: Gas = Gas::from_tgas(10);
 pub const FT_REFUND_GAS: Gas = Gas::from_tgas(10);
@@ -210,7 +209,7 @@ impl FungibleTokenCore for Contract {
         let wrapped_token = self.wrapped_token().map(|id| id.to_owned());
         match wrapped_token {
             Some(wrapped_token_id) => {
-                let parsed = PrefixedMessage::<UnwrapPrefix>::from(msg.as_str());
+                let parsed = PrefixedMessage::<UnwrapPrefix, AccountId>::from(msg.as_str());
                 match parsed {
                     PrefixedMessage::NoMatch(_) => self.internal_ft_transfer_wrapped(
                         amount,
@@ -220,25 +219,16 @@ impl FungibleTokenCore for Contract {
                         wrapped_token_id,
                     ),
                     PrefixedMessage::Matched {
-                        suffix: receiver_from_msg_str,
+                        suffix: receiver_from_msg,
                         rest,
                         _marker,
-                    } => {
-                        let receiver_from_msg = AccountId::from_str(receiver_from_msg_str)
-                            .unwrap_or_else(|_| {
-                                env::panic_str(&format!(
-                                    "Invalid sender id detected: {receiver_from_msg_str}"
-                                ))
-                            });
-
-                        self.internal_ft_transfer_wrapped(
-                            amount,
-                            memo,
-                            rest.to_string(),
-                            receiver_from_msg,
-                            wrapped_token_id,
-                        )
-                    }
+                    } => self.internal_ft_transfer_wrapped(
+                        amount,
+                        memo,
+                        rest.to_string(),
+                        receiver_from_msg,
+                        wrapped_token_id,
+                    ),
                 }
             }
             None => self.token.ft_transfer_call(receiver_id, amount, memo, msg),
@@ -341,6 +331,6 @@ enum Prefix {
 
 struct UnwrapPrefix;
 
-impl crate::prefixed::MessagePrefix for UnwrapPrefix {
-    const PREFIX: &'static str = UNWRAP_MSG_PREFIX;
+impl MessagePrefix for UnwrapPrefix {
+    const PREFIX: &'static str = "UNWRAP_TO";
 }

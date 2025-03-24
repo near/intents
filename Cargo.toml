@@ -23,6 +23,7 @@ members = [
     "tests",
     "test-utils",
     "wnear",
+    "wtoken",
 ]
 default-members = ["defuse"]
 
