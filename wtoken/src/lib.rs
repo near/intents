@@ -170,18 +170,22 @@ impl FungibleTokenCore for Contract {
                     .ft_transfer_call(receiver_id, amount, memo, m.to_string())
             }
             PrefixedMessage::Matched {
-                suffix: receiver_id,
+                suffix: receiver_id_from_msg,
                 rest,
                 _marker,
             } => {
                 if receiver_id != *CURRENT_ACCOUNT_ID {
                     env::panic_str(
-                        "Given msg indicated the will to unwrap, but the receiver address is not the contract address",
+                        "Given msg indicated the will to unwrap the token, but the receiver address is not the contract address",
                     )
                 }
                 let previous_owner = &*PREDECESSOR_ACCOUNT_ID;
+
+                self.token
+                    .internal_withdraw(&receiver_id_from_msg, amount.0);
+
                 ext_ft_core::ext(self.wrapped_token_id.clone())
-                    .ft_transfer_call(receiver_id, amount, memo, rest.to_string())
+                    .ft_transfer_call(receiver_id_from_msg, amount, memo, rest.to_string())
                     .then(
                         Contract::ext(CURRENT_ACCOUNT_ID.clone())
                             .with_static_gas(FT_REFUND_GAS)

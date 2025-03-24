@@ -134,6 +134,7 @@ impl Contract {
         let previous_owner = PREDECESSOR_ACCOUNT_ID.clone();
 
         self.ft_withdraw(&PREDECESSOR_ACCOUNT_ID, amount, None);
+
         ext_ft_core::ext(wrapped_token_id.to_owned())
             .ft_transfer_call(token_destination, amount, memo, msg)
             // FIXME: Do we need to refund on transfer failure?
