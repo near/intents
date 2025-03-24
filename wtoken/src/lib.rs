@@ -79,7 +79,7 @@ impl Contract {
             wrapped_token_id,
         };
         this.token.internal_register_account(&owner_id);
-        this.token.internal_deposit(&owner_id, 0u128.into());
+        this.token.internal_deposit(&owner_id, 0);
 
         near_contract_standards::fungible_token::events::FtMint {
             owner_id: &owner_id,
