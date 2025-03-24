@@ -6,7 +6,7 @@ use near_contract_standards::fungible_token::metadata::{
 };
 use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 use near_contract_standards::fungible_token::{
-    Balance, FungibleToken, FungibleTokenCore, FungibleTokenResolver,
+    FungibleToken, FungibleTokenCore, FungibleTokenResolver,
 };
 use near_contract_standards::storage_management::{
     StorageBalance, StorageBalanceBounds, StorageManagement,
@@ -18,8 +18,6 @@ use near_sdk::{
     AccountId, AccountIdRef, BorshStorageKey, Gas, NearToken, PanicOnDefault, PromiseOrValue, env,
     ext_contract, log, near, require,
 };
-
-const ERR_TOTAL_SUPPLY_OVERFLOW: &str = "Total supply overflow";
 
 pub const FT_TRANSFER_GAS: Gas = Gas::from_tgas(10);
 pub const FT_REFUND_GAS: Gas = Gas::from_tgas(10);
@@ -108,46 +106,6 @@ impl Contract {
     }
 }
 
-impl Contract {
-    #[must_use]
-    pub fn internal_unwrap_balance_of(&self, account_id: &AccountId) -> Balance {
-        match self.token.accounts.get(account_id) {
-            Some(balance) => balance,
-            None => {
-                env::panic_str(format!("The account {} is not registered", &account_id).as_str())
-            }
-        }
-    }
-
-    pub fn internal_add_balance(&mut self, account_id: &AccountId, amount: Balance) {
-        let balance = self.internal_unwrap_balance_of(account_id);
-        if let Some(new_balance) = balance.checked_add(amount) {
-            self.token.accounts.insert(account_id, &new_balance);
-            self.token.total_supply = self
-                .token
-                .total_supply
-                .checked_add(amount)
-                .unwrap_or_else(|| env::panic_str(ERR_TOTAL_SUPPLY_OVERFLOW));
-        } else {
-            env::panic_str("Balance overflow");
-        }
-    }
-
-    pub fn internal_sub_balance(&mut self, account_id: &AccountId, amount: Balance) {
-        let balance = self.internal_unwrap_balance_of(account_id);
-        if let Some(new_balance) = balance.checked_sub(amount) {
-            self.token.accounts.insert(account_id, &new_balance);
-            self.token.total_supply = self
-                .token
-                .total_supply
-                .checked_sub(amount)
-                .unwrap_or_else(|| env::panic_str(ERR_TOTAL_SUPPLY_OVERFLOW));
-        } else {
-            env::panic_str("The account doesn't have enough balance");
-        }
-    }
-}
-
 #[near]
 impl FungibleTokenCore for Contract {
     #[payable]
@@ -221,7 +179,7 @@ impl FungibleTokenReceiver for Contract {
                 rest: _,
                 _marker,
             } => {
-                self.internal_add_balance(&receiver_id, amount.0);
+                self.token.internal_deposit(&receiver_id, amount.0);
                 0.into()
             }
         };
