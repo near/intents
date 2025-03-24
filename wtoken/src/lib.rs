@@ -41,19 +41,15 @@ enum StorageKey {
 
 #[near]
 impl Contract {
-    /// Initializes the contract with the given total supply owned by the given `owner_id` with
-    /// default metadata (for example purposes only).
     #[init]
     #[must_use]
     pub fn new_default_meta(
         owner_id: AccountId,
-        total_supply: U128,
         symbol: &str,
         wrapped_token_id: AccountId,
     ) -> Self {
         Self::new(
             owner_id,
-            total_supply,
             FungibleTokenMetadata {
                 spec: FT_METADATA_SPEC.to_string(),
                 name: format!("Wrapped token of: {wrapped_token_id}"),
@@ -67,14 +63,11 @@ impl Contract {
         )
     }
 
-    /// Initializes the contract with the given total supply owned by the given `owner_id` with
-    /// the given fungible token metadata.
     #[init]
     #[allow(clippy::needless_pass_by_value)]
     #[must_use]
     pub fn new(
         owner_id: AccountId,
-        total_supply: U128,
         metadata: FungibleTokenMetadata,
         wrapped_token_id: AccountId,
     ) -> Self {
@@ -86,11 +79,11 @@ impl Contract {
             wrapped_token_id,
         };
         this.token.internal_register_account(&owner_id);
-        this.token.internal_deposit(&owner_id, total_supply.into());
+        this.token.internal_deposit(&owner_id, 0u128.into());
 
         near_contract_standards::fungible_token::events::FtMint {
             owner_id: &owner_id,
-            amount: total_supply,
+            amount: 0.into(),
             memo: Some("new tokens are minted"),
         }
         .emit();
@@ -181,13 +174,18 @@ impl FungibleTokenCore for Contract {
                 rest,
                 _marker,
             } => {
-                let previous_owner = PREDECESSOR_ACCOUNT_ID.clone();
+                if receiver_id != *CURRENT_ACCOUNT_ID {
+                    env::panic_str(
+                        "Given msg indicated the will to unwrap, but the receiver address is not the contract address",
+                    )
+                }
+                let previous_owner = &*PREDECESSOR_ACCOUNT_ID;
                 ext_ft_core::ext(self.wrapped_token_id.clone())
                     .ft_transfer_call(receiver_id, amount, memo, rest.to_string())
                     .then(
                         Contract::ext(CURRENT_ACCOUNT_ID.clone())
                             .with_static_gas(FT_REFUND_GAS)
-                            .ft_resolve_unwrap(&previous_owner, amount.0), // FIXME: Does this require ownership management because it's async, so we can't pass a reference?
+                            .ft_resolve_unwrap(previous_owner, amount.0), // FIXME: Does this require ownership management because it's async, so we can't pass a reference?
                     )
                     .into()
             }
