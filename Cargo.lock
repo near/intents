@@ -240,29 +240,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bon"
-version = "2.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97493a391b4b18ee918675fb8663e53646fd09321c58b46afa04e8ce2499c869"
-dependencies = [
- "bon-macros",
- "rustversion",
-]
-
-[[package]]
-name = "bon-macros"
-version = "2.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a2af3eac944c12cdf4423eab70d310da0a8e5851a18ffb192c0a5e3f7ae1663"
-dependencies = [
- "darling 0.20.10",
- "ident_case",
- "proc-macro2",
- "quote",
- "syn 2.0.100",
-]
-
-[[package]]
 name = "borsh"
 version = "1.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -379,34 +356,6 @@ dependencies = [
  "eyre",
  "hex",
  "humantime",
- "libloading",
- "near-abi",
- "rustc_version",
- "schemars",
- "serde_json",
- "sha2",
- "symbolic-debuginfo",
- "tracing",
- "wasm-opt",
- "zstd 0.13.3",
-]
-
-[[package]]
-name = "cargo-near-build"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33da359f840830cccaedd09d58f78d468c948b9d17e31e3d8e83bf0859f6a38b"
-dependencies = [
- "bon",
- "bs58 0.5.1",
- "camino",
- "cargo_metadata",
- "colored",
- "dunce",
- "eyre",
- "hex",
- "humantime",
- "indenter",
  "libloading",
  "near-abi",
  "rustc_version",
@@ -2937,8 +2886,7 @@ dependencies = [
  "async-trait",
  "base64 0.22.1",
  "bs58 0.5.1",
- "cargo-near-build 0.2.0",
- "cargo_metadata",
+ "cargo-near-build",
  "chrono",
  "fs2",
  "json-patch",
@@ -5150,20 +5098,6 @@ name = "writeable"
 version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e9df38ee2d2c3c5948ea468a8406ff0db0b29ae1ffde1bcf20ef305bcc95c51"
-
-[[package]]
-name = "wtoken"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "cargo-near-build 0.3.2",
- "defuse-admin-utils",
- "defuse-near-utils",
- "near-contract-standards",
- "near-sdk",
- "near-workspaces",
- "tokio",
-]
 
 [[package]]
 name = "wyz"
