@@ -131,7 +131,7 @@ impl Contract {
         };
 
         let self_total_supply = self.ft_total_supply();
-        require!(self_total_supply <= parsed_balance);
+        require!(parsed_balance >= self_total_supply);
 
         self.wrapped_token = Some(token_account_id);
     }
@@ -165,7 +165,6 @@ impl Contract {
 
 impl Contract {
     fn do_unwrap_and_transfer(
-        // Try to maintain the same order from ft_transfer/call
         &mut self,
         token_destination: AccountId,
         amount: U128,
