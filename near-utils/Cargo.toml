@@ -1,7 +1,7 @@
 [package]
 name = "defuse-near-utils"
 edition.workspace = true
-version = "0.1.0"
+version.workspace = true
 
 [dependencies]
 near-sdk.workspace = true

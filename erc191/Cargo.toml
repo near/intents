@@ -1,7 +1,7 @@
 [package]
 name = "defuse-erc191"
 edition.workspace = true
-version = "0.1.0"
+version.workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, features = ["serde"] }
