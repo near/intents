@@ -29,6 +29,7 @@ default-members = ["defuse"]
 [workspace.package]
 edition = "2024"
 repository = "https://github.com/defuse-protocol/defuse-contracts"
+version = "0.1.0"
 
 [workspace.dependencies]
 defuse-admin-utils.path = "admin-utils"
