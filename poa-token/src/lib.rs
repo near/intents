@@ -1,8 +1,6 @@
 #[cfg(feature = "contract")]
 pub mod contract;
 
-pub mod prefixed;
-
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
 use near_contract_standards::{
     fungible_token::{
@@ -12,7 +10,7 @@ use near_contract_standards::{
     storage_management::StorageManagement,
 };
 use near_plugins::Ownable;
-use near_sdk::{AccountId, AccountIdRef, ext_contract, json_types::U128};
+use near_sdk::{AccountId, ext_contract, json_types::U128};
 
 /// Fungible token that allows minting only by its owner.
 /// To withdraw, users can call `ft_transfer` on the deployed token,
@@ -40,10 +38,12 @@ pub trait PoaFungibleToken:
 
 pub trait CanWrapToken {
     /// If this `PoA` token wraps an Omni-bridge token, returns Some(id) of the token it wraps. Otherwise, None.
-    fn wrapped_token(&self) -> Option<&AccountIdRef>;
+    fn wrapped_token(&self) -> Option<&AccountId>;
 }
 
 pub const WITHDRAW_MEMO_PREFIX: &str = "WITHDRAW_TO:";
+
+pub const UNWRAP_PREFIX: &str = "UNWRAP_TO";
 
 pub fn withdraw_to(address: impl AsRef<str>) -> String {
     format!("{WITHDRAW_MEMO_PREFIX}{}", address.as_ref())

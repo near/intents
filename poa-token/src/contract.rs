@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
 use defuse_near_utils::{CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID};
 use near_contract_standards::{
@@ -11,8 +13,8 @@ use near_contract_standards::{
 };
 use near_plugins::{Ownable, events::AsEvent, only, ownable::OwnershipTransferred};
 use near_sdk::{
-    AccountId, AccountIdRef, BorshStorageKey, Gas, NearToken, PanicOnDefault, Promise,
-    PromiseOrValue, PublicKey, assert_one_yocto,
+    AccountId, BorshStorageKey, Gas, NearToken, PanicOnDefault, Promise, PromiseOrValue, PublicKey,
+    assert_one_yocto,
     borsh::{BorshDeserialize, BorshSerialize},
     env,
     json_types::U128,
@@ -20,14 +22,14 @@ use near_sdk::{
     store::Lazy,
 };
 
-use crate::{CanWrapToken, PoaFungibleToken, WITHDRAW_MEMO_PREFIX, prefixed::PrefixedMessage};
+use crate::{CanWrapToken, PoaFungibleToken, UNWRAP_PREFIX, WITHDRAW_MEMO_PREFIX};
 
 const FT_UNWRAP_GAS: Gas = Gas::from_tgas(10);
 const DO_WRAP_TOKEN_GAS: Gas = Gas::from_tgas(10);
 
 #[derive(BorshSerialize, BorshDeserialize)]
 #[borsh(crate = "::near_sdk::borsh")]
-pub struct ContractWithoutOmniWrapping {
+pub struct LegacyPoATokenContract {
     token: FungibleToken,
     metadata: Lazy<FungibleTokenMetadata>,
 }
@@ -79,10 +81,9 @@ impl Contract {
         contract
     }
 
-    #[private]
     #[init(ignore_state)]
-    pub fn upgrade_wrap_for_omni_bridge() -> Self {
-        let old_state: ContractWithoutOmniWrapping =
+    pub fn upgrade_as_wrapped() -> Self {
+        let old_state: LegacyPoATokenContract =
             env::state_read().expect("Deserializing old state failed");
 
         Self {
@@ -93,15 +94,11 @@ impl Contract {
     }
 
     #[only(self, owner)]
-    pub fn clear_wrapped_token_account_id(&mut self) {
-        self.wrapped_token = None;
-    }
-
-    #[only(self, owner)]
+    #[payable]
     pub fn set_wrapped_token_account_id(&mut self, token_account_id: AccountId) -> Promise {
-        if self.wrapped_token.is_some() {
-            env::panic_str("Wrapped token is already set")
-        }
+        assert_one_yocto();
+
+        require!(self.wrapped_token.is_none(), "Wrapped token is already set");
 
         ext_ft_core::ext(token_account_id.clone())
             .ft_balance_of(CURRENT_ACCOUNT_ID.clone())
@@ -112,8 +109,10 @@ impl Contract {
             )
     }
 
-    #[only(self, owner)]
+    #[private]
     pub fn do_set_wrapped_token_account_id(&mut self, token_account_id: AccountId) {
+        require!(self.wrapped_token.is_none(), "Wrapped token is already set");
+
         let parsed_balance = match env::promise_result(0) {
             near_sdk::PromiseResult::Successful(balance_bytes) => {
                 if let Ok(balance) = near_sdk::serde_json::from_slice::<U128>(&balance_bytes) {
@@ -131,14 +130,17 @@ impl Contract {
         };
 
         let self_total_supply = self.ft_total_supply();
-        require!(parsed_balance >= self_total_supply);
+        require!(
+            parsed_balance >= self_total_supply,
+            "Migration required that the wrapped token have sufficient balance to cover for the balance in this contract"
+        );
 
         self.wrapped_token = Some(token_account_id);
     }
 
-    #[only(self, owner)]
-    pub fn ft_resolve_unwrap(&mut self, account_id: &AccountId, amount: u128, is_call: bool) {
-        let unused_amount = match env::promise_result(0) {
+    #[private]
+    pub fn ft_resolve_unwrap(&mut self, sender_id: &AccountId, amount: u128, is_call: bool) {
+        let used = match env::promise_result(0) {
             near_sdk::PromiseResult::Successful(value) => {
                 if let Ok(unused_amount) = near_sdk::serde_json::from_slice::<U128>(&value) {
                     std::cmp::min(amount, unused_amount.0)
@@ -159,33 +161,41 @@ impl Contract {
             }
         };
 
-        self.token.internal_deposit(account_id, unused_amount);
+        let to_refund = amount.saturating_sub(used);
+        self.token.internal_deposit(sender_id, to_refund);
     }
 }
 
 impl Contract {
-    fn do_unwrap_and_transfer(
+    fn unwrap_and_transfer(
         &mut self,
         token_destination: AccountId,
         amount: U128,
         memo: Option<String>,
-        msg: String,
-        wrapped_token_id: AccountId,
+        msg: Option<String>,
     ) -> PromiseOrValue<U128> {
+        let Some(wrapped_token_id) = self.wrapped_token.clone() else {
+            env::panic_str("Unwrapping is only for wrapped tokens");
+        };
+
         let previous_owner = &*PREDECESSOR_ACCOUNT_ID;
 
         self.ft_withdraw(&PREDECESSOR_ACCOUNT_ID, amount, None);
 
-        let is_call = !msg.is_empty();
-
-        ext_ft_core::ext(wrapped_token_id.to_owned())
-            .ft_transfer_call(token_destination, amount, memo, msg)
-            .then(
-                Contract::ext(CURRENT_ACCOUNT_ID.clone())
-                    .with_static_gas(FT_UNWRAP_GAS)
-                    .ft_resolve_unwrap(previous_owner, amount.0, is_call),
-            )
-            .into()
+        match msg {
+            Some(inner_msg) => ext_ft_core::ext(wrapped_token_id.clone())
+                .ft_transfer_call(token_destination, amount, memo, inner_msg)
+                .then(
+                    Contract::ext(CURRENT_ACCOUNT_ID.clone())
+                        .with_static_gas(FT_UNWRAP_GAS)
+                        .ft_resolve_unwrap(previous_owner, amount.0, true),
+                )
+                .into(),
+            None => {
+                self.ft_transfer(token_destination, amount, memo);
+                PromiseOrValue::Value(0.into())
+            }
+        }
     }
 }
 
@@ -219,8 +229,8 @@ impl PoaFungibleToken for Contract {
 
 #[near]
 impl CanWrapToken for Contract {
-    fn wrapped_token(&self) -> Option<&AccountIdRef> {
-        self.wrapped_token.as_deref()
+    fn wrapped_token(&self) -> Option<&AccountId> {
+        self.wrapped_token.as_ref()
     }
 }
 
@@ -236,10 +246,12 @@ impl FungibleTokenCore for Contract {
                 .as_deref()
                 .map_or(false, |memo| memo.starts_with(WITHDRAW_MEMO_PREFIX))
         {
-            match self.wrapped_token() {
-                Some(_) => env::panic_str("This PoA token was migrated to OmniBridge"),
-                None => self.ft_withdraw(&PREDECESSOR_ACCOUNT_ID, amount, memo),
-            }
+            require!(
+                self.wrapped_token().is_none(),
+                "This PoA token was migrated to OmniBridge"
+            );
+
+            self.ft_withdraw(&PREDECESSOR_ACCOUNT_ID, amount, memo)
         } else {
             self.token.ft_transfer(receiver_id, amount, memo)
         }
@@ -253,29 +265,30 @@ impl FungibleTokenCore for Contract {
         memo: Option<String>,
         msg: String,
     ) -> PromiseOrValue<U128> {
-        let Some(wrapped_token_id) = self.wrapped_token().map(|id| id.to_owned()) else {
+        if self.wrapped_token().is_none() {
             return self.token.ft_transfer_call(receiver_id, amount, memo, msg);
         };
 
-        let parsed = PrefixedMessage::from(msg.as_str());
-        match parsed {
-            PrefixedMessage::NoMatch(_) => {
-                self.do_unwrap_and_transfer(receiver_id, amount, memo, msg, wrapped_token_id)
+        if receiver_id != *CURRENT_ACCOUNT_ID {
+            return self.token.ft_transfer_call(receiver_id, amount, memo, msg);
+        }
+
+        let msg_parts = msg.splitn(3, ':').collect::<Vec<_>>();
+        if msg_parts.len() >= 2 && msg_parts[0] == UNWRAP_PREFIX {
+            let suffix = msg_parts[1];
+            let rest_of_the_message = msg_parts.get(2).unwrap_or(&"");
+
+            match AccountId::from_str(suffix) {
+                Ok(receiver_from_msg) => self.unwrap_and_transfer(
+                    receiver_from_msg,
+                    amount,
+                    memo,
+                    Some(rest_of_the_message.to_string()),
+                ),
+                Err(_) => env::panic_str("Invalid account id provided in msg: {msg}"),
             }
-            PrefixedMessage::Matched {
-                account_id: receiver_from_msg,
-                rest,
-            } => self.do_unwrap_and_transfer(
-                receiver_from_msg,
-                amount,
-                memo,
-                rest.to_string(),
-                wrapped_token_id,
-            ),
-            PrefixedMessage::MatchedNoMessage(account_id) => {
-                self.ft_transfer(account_id, amount, memo);
-                PromiseOrValue::Value(0.into())
-            }
+        } else {
+            return PromiseOrValue::Value(0.into());
         }
     }
 
@@ -311,14 +324,16 @@ impl near_contract_standards::fungible_token::receiver::FungibleTokenReceiver fo
         amount: U128,
         msg: String,
     ) -> PromiseOrValue<U128> {
-        let wrapped_token_id = match &self.wrapped_token {
-            Some(w) => w,
-            None => env::panic_str("This function is supposed to be used only with a token"),
-        };
+        require!(
+            self.wrapped_token.is_some(),
+            "This function is supposed to be used only with a token"
+        );
 
-        if wrapped_token_id != &*PREDECESSOR_ACCOUNT_ID {
-            env::panic_str("Only the wrapping token contract can call this function")
-        }
+        require!(
+            self.wrapped_token()
+                .is_some_and(|t| &*PREDECESSOR_ACCOUNT_ID == t),
+            "Only the wrapped token can be the caller of this function",
+        );
 
         let recipient = if msg.is_empty() {
             sender_id
