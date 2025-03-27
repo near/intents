@@ -62,7 +62,7 @@ impl PoATokenContract {
         self.contract.id()
     }
 
-    pub async fn ft_balance_of(&self, account_id: AccountId) -> anyhow::Result<U128> {
+    pub async fn poa_ft_balance_of(&self, account_id: AccountId) -> anyhow::Result<U128> {
         self.contract
             .call("ft_balance_of")
             .args_json(json!(
@@ -75,10 +75,19 @@ impl PoATokenContract {
             .json()
             .map_err(Into::into)
     }
+
+    pub async fn poa_wrapped_token(&self) -> anyhow::Result<Option<AccountId>> {
+        self.contract
+            .call("wrapped_token")
+            .view()
+            .await?
+            .json()
+            .map_err(Into::into)
+    }
 }
 
 pub trait PoATokenContractCaller {
-    async fn ft_deposit(
+    async fn poa_ft_deposit(
         &self,
         contract: &PoATokenContract,
         owner_id: &AccountIdRef,
@@ -86,7 +95,7 @@ pub trait PoATokenContractCaller {
         memo: Option<String>,
     ) -> anyhow::Result<()>;
 
-    async fn storage_deposit(
+    async fn poa_storage_deposit(
         &self,
         contract: &PoATokenContract,
         attached_deposit: NearToken,
@@ -94,23 +103,29 @@ pub trait PoATokenContractCaller {
         registration_only: Option<bool>,
     ) -> anyhow::Result<StorageBalance>;
 
-    async fn storage_deposit_simple(
+    async fn poa_storage_deposit_simple(
         &self,
         contract: &PoATokenContract,
         account_id: &AccountIdRef,
     ) -> anyhow::Result<StorageBalance>;
 
-    async fn ft_transfer(
+    async fn poa_ft_transfer(
         &self,
         contract: &PoATokenContract,
         receiver_id: &AccountIdRef,
         amount: U128,
         memo: Option<String>,
     ) -> anyhow::Result<TestLog>;
+
+    async fn poa_set_wrapped_token_account_id(
+        &self,
+        contract: &PoATokenContract,
+        token_account_id: &AccountIdRef,
+    ) -> anyhow::Result<TestLog>;
 }
 
 impl PoATokenContractCaller for near_workspaces::Account {
-    async fn ft_deposit(
+    async fn poa_ft_deposit(
         &self,
         contract: &PoATokenContract,
         owner_id: &AccountIdRef,
@@ -141,12 +156,12 @@ impl PoATokenContractCaller for near_workspaces::Account {
         Ok(())
     }
 
-    async fn storage_deposit_simple(
+    async fn poa_storage_deposit_simple(
         &self,
         contract: &PoATokenContract,
         account_id: &AccountIdRef,
     ) -> anyhow::Result<StorageBalance> {
-        self.storage_deposit(
+        self.poa_storage_deposit(
             contract,
             MIN_FT_STORAGE_DEPOSIT_VALUE,
             Some(account_id),
@@ -155,7 +170,7 @@ impl PoATokenContractCaller for near_workspaces::Account {
         .await
     }
 
-    async fn storage_deposit(
+    async fn poa_storage_deposit(
         &self,
         contract: &PoATokenContract,
         attached_deposit: NearToken,
@@ -188,7 +203,7 @@ impl PoATokenContractCaller for near_workspaces::Account {
             .map_err(Into::into)
     }
 
-    async fn ft_transfer(
+    async fn poa_ft_transfer(
         &self,
         contract: &PoATokenContract,
         receiver_id: &AccountIdRef,
@@ -221,8 +236,31 @@ impl PoATokenContractCaller for near_workspaces::Account {
 
         Ok(logs)
     }
+
+    async fn poa_set_wrapped_token_account_id(
+        &self,
+        contract: &PoATokenContract,
+        token_account_id: &AccountIdRef,
+    ) -> anyhow::Result<TestLog> {
+        let logs = self
+            .call(contract.id(), "set_wrapped_token_account_id")
+            .args_json(json!(
+                {
+                    "token_account_id": token_account_id,
+                }
+            ))
+            .max_gas()
+            .deposit(NearToken::from_yoctonear(1))
+            .transact()
+            .await?
+            .into_result()
+            .map(|outcome| outcome.logs().into())?;
+
+        Ok(logs)
+    }
 }
 
+#[derive(Debug)]
 pub struct TestLog {
     logs: Vec<String>,
 }

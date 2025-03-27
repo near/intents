@@ -207,7 +207,10 @@ impl Contract {
         let self_total_supply = self.ft_total_supply();
         require!(
             parsed_balance >= self_total_supply,
-            "Migration required that the wrapped token have sufficient balance to cover for the balance in this contract"
+            format!(
+                "Migration required that the wrapped token have sufficient balance to cover for the balance in this contract: {} < {}",
+                parsed_balance.0, self_total_supply.0
+            )
         );
 
         *self.wrapped_token_mut() = Some(token_account_id);
