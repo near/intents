@@ -4,6 +4,7 @@ skip_core_tasks = true
 
 [env]
 TARGET_DIR = "${PWD}/res"
+POA_TOKEN_WASM = "${TARGET_DIR}/defuse_poa_token.wasm"
 POA_TOKEN_WITH_DEPOSIT_DIR = "${TARGET_DIR}/poa-token-with-deposit"
 
 [tasks.default]
