@@ -50,7 +50,7 @@ impl TransferFixture {
 }
 
 #[tokio::test]
-async fn simple_transfer_after_wrap() {
+async fn simple_transfer() {
     let fixture = TransferFixture::new().await;
 
     // fund user1 with deposit
@@ -288,6 +288,24 @@ async fn simple_transfer_after_wrap() {
                 .unwrap_err()
                 .to_string()
                 .contains("PoA token was migrated to OmniBridge")
+        );
+    }
+
+    // Deposit after wrapping should fail
+    {
+        assert!(
+            fixture
+                .poa_contract_owner
+                .poa_ft_deposit(
+                    &fixture.poa_token_contract,
+                    fixture.user1.id(),
+                    10_000.into(),
+                    None,
+                )
+                .await
+                .unwrap_err()
+                .to_string()
+                .contains("This PoA token was migrated to OmniBridge. No deposits are possible")
         );
     }
 }
