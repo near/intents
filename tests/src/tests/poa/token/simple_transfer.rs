@@ -1,6 +1,6 @@
-use super::token_env::{PoATokenContract, PoATokenContractCaller};
+use super::token_env::{PoATokenContract, PoATokenContractCaller, PoATokenExt};
 use crate::{
-    tests::poa::token_env::{MIN_FT_STORAGE_DEPOSIT_VALUE, PoATokenExt},
+    tests::poa::token::token_env::MIN_FT_STORAGE_DEPOSIT_VALUE,
     utils::{Sandbox, ft::FtExt, storage_management::StorageManagementExt, wnear::WNearExt},
 };
 use defuse_poa_token::WITHDRAW_MEMO_PREFIX;
@@ -23,7 +23,7 @@ impl TransferFixture {
         let poa_contract_owner = sandbox.create_account("owner").await;
         let user1 = sandbox.create_account("user1").await;
         let user2 = sandbox.create_account("user2").await;
-        let poa_token_contract: crate::tests::poa::token_env::PoATokenContract = root
+        let poa_token_contract: PoATokenContract = root
             .deploy_poa_token("poa_token", Some(poa_contract_owner.id().clone()), None)
             .await
             .unwrap();
