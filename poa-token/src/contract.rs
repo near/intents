@@ -16,7 +16,7 @@ use near_sdk::{
     AccountId, BorshStorageKey, Gas, NearToken, Promise, PromiseOrValue, PublicKey,
     assert_one_yocto,
     borsh::{BorshDeserialize, BorshSerialize},
-    env,
+    env::{self},
     json_types::U128,
     near, require,
     store::Lazy,
@@ -92,13 +92,13 @@ impl Contract {
         }
     }
 
-    fn wrapped_token(&self) -> &Option<AccountId> {
+    fn wrapped_token(&self) -> Option<&AccountId> {
         match self {
             Contract::WrappableToken {
                 token: _,
                 metadata: _,
                 wrapped_token,
-            } => wrapped_token,
+            } => wrapped_token.as_ref(),
         }
     }
 
@@ -115,19 +115,16 @@ impl Contract {
 
 #[near]
 impl Contract {
+    #[must_use]
     #[init]
-    pub fn new(
-        owner_id: Option<AccountId>,
-        metadata: Option<FungibleTokenMetadata>,
-        wrapped_token: Option<AccountId>,
-    ) -> Self {
+    pub fn new(owner_id: Option<AccountId>, metadata: Option<FungibleTokenMetadata>) -> Self {
         let metadata = metadata.unwrap_or_else(|| FungibleTokenMetadata {
             spec: FT_METADATA_SPEC.to_string(),
-            name: Default::default(),
-            symbol: Default::default(),
-            icon: Default::default(),
-            reference: Default::default(),
-            reference_hash: Default::default(),
+            name: String::default(),
+            symbol: String::default(),
+            icon: Option::default(),
+            reference: Option::default(),
+            reference_hash: Option::default(),
             decimals: Default::default(),
         });
         metadata.assert_valid();
@@ -135,7 +132,7 @@ impl Contract {
         let contract = Self::WrappableToken {
             token: FungibleToken::new(Prefix::FungibleToken),
             metadata: Lazy::new(Prefix::Metadata, metadata),
-            wrapped_token,
+            wrapped_token: None,
         };
 
         let owner = owner_id.unwrap_or_else(|| PREDECESSOR_ACCOUNT_ID.clone());
@@ -152,6 +149,7 @@ impl Contract {
         contract
     }
 
+    #[must_use]
     #[init(ignore_state)]
     pub fn upgrade_as_wrapped() -> Self {
         let old_state: LegacyPoATokenContract =
@@ -251,7 +249,7 @@ impl Contract {
         memo: Option<String>,
         msg: Option<String>,
     ) -> PromiseOrValue<U128> {
-        let Some(wrapped_token_id) = self.wrapped_token().clone() else {
+        let Some(wrapped_token_id) = self.wrapped_token().cloned() else {
             env::panic_str("Unwrapping is only for wrapped tokens");
         };
 
@@ -259,6 +257,8 @@ impl Contract {
 
         self.ft_withdraw(&PREDECESSOR_ACCOUNT_ID, amount, None);
 
+        // There seems to be a bug in clippy... this isn't a single match arm
+        #[allow(clippy::single_match_else)]
         match msg {
             Some(inner_msg) => ext_ft_core::ext(wrapped_token_id.clone())
                 .ft_transfer_call(token_destination, amount, memo, inner_msg)
@@ -295,7 +295,9 @@ impl PoaFungibleToken for Contract {
 
         self.token_mut()
             .storage_deposit(Some(owner_id.clone()), None);
+
         self.token_mut().internal_deposit(&owner_id, amount.into());
+
         FtMint {
             owner_id: &owner_id,
             amount,
@@ -308,7 +310,7 @@ impl PoaFungibleToken for Contract {
 #[near]
 impl CanWrapToken for Contract {
     fn wrapped_token(&self) -> Option<&AccountId> {
-        self.wrapped_token().as_ref()
+        self.wrapped_token()
     }
 }
 
@@ -322,16 +324,16 @@ impl FungibleTokenCore for Contract {
         if receiver_id == *CURRENT_ACCOUNT_ID
             && memo
                 .as_deref()
-                .map_or(false, |memo| memo.starts_with(WITHDRAW_MEMO_PREFIX))
+                .is_some_and(|memo| memo.starts_with(WITHDRAW_MEMO_PREFIX))
         {
             require!(
                 self.wrapped_token().is_none(),
                 "This PoA token was migrated to OmniBridge"
             );
 
-            self.ft_withdraw(&PREDECESSOR_ACCOUNT_ID, amount, memo)
+            self.ft_withdraw(&PREDECESSOR_ACCOUNT_ID, amount, memo.as_deref());
         } else {
-            self.token_mut().ft_transfer(receiver_id, amount, memo)
+            self.token_mut().ft_transfer(receiver_id, amount, memo);
         }
     }
 
@@ -365,12 +367,12 @@ impl FungibleTokenCore for Contract {
                     receiver_from_msg,
                     amount,
                     memo,
-                    Some(rest_of_the_message.to_string()),
+                    Some((*rest_of_the_message).to_string()),
                 ),
                 Err(_) => env::panic_str("Invalid account id provided in msg: {msg}"),
             }
         } else {
-            return PromiseOrValue::Value(0.into());
+            PromiseOrValue::Value(0.into())
         }
     }
 
@@ -414,7 +416,7 @@ impl near_contract_standards::fungible_token::receiver::FungibleTokenReceiver fo
         require!(
             self.wrapped_token()
                 .as_ref()
-                .is_some_and(|t| &*PREDECESSOR_ACCOUNT_ID == t),
+                .is_some_and(|t| &*PREDECESSOR_ACCOUNT_ID == *t),
             "Only the wrapped token can be the caller of this function",
         );
 
@@ -470,7 +472,7 @@ impl FungibleTokenMetadataProvider for Contract {
 }
 
 impl Contract {
-    fn ft_withdraw(&mut self, account_id: &AccountId, amount: U128, memo: Option<String>) {
+    fn ft_withdraw(&mut self, account_id: &AccountId, amount: U128, memo: Option<&str>) {
         assert_one_yocto();
         require!(amount.0 > 0, "zero amount");
         self.token_mut()
@@ -478,7 +480,7 @@ impl Contract {
         FtBurn {
             owner_id: account_id,
             amount,
-            memo: memo.as_deref(),
+            memo,
         }
         .emit();
     }

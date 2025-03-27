@@ -9,6 +9,7 @@ pub fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
         .with_extension("wasm");
     fs::read(filename).unwrap()
 }
+
 pub struct Sandbox {
     worker: Worker<near_workspaces::network::Sandbox>,
     root_account: Account,

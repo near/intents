@@ -190,11 +190,6 @@ impl EnvBuilder {
         self
     }
 
-    // pub fn staging_duration(mut self, staging_duration: Duration) -> Self {
-    //     self.staging_duration = Some(staging_duration);
-    //     self
-    // }
-
     pub async fn build(mut self) -> Env {
         let sandbox = Sandbox::new().await.unwrap();
         let root = sandbox.root_account().clone();

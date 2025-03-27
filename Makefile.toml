@@ -4,13 +4,13 @@ skip_core_tasks = true
 
 [env]
 TARGET_DIR = "${PWD}/res"
-POA_TOKEN_WASM = "${TARGET_DIR}/defuse_poa_token.wasm"
+POA_TOKEN_WITH_DEPOSIT_DIR = "${TARGET_DIR}/poa-token-with-deposit"
 
 [tasks.default]
 alias = "build"
 
 [tasks.clippy]
-dependencies = ["add-cache-dir-tag", "build-poa-token"]
+dependencies = ["add-cache-dir-tag"]
 command = "cargo"
 args = ["clippy", "--workspace", "--all-targets", "--no-deps"]
 
@@ -34,7 +34,7 @@ args = [
 ]
 
 [tasks.build-poa-factory]
-dependencies = ["add-cache-dir-tag", "build-poa-token"]
+dependencies = ["add-cache-dir-tag", "build-poa-token", "build-poa-token-with-deposits"]
 command = "cargo"
 args = [
     "near",
@@ -62,6 +62,22 @@ args = [
     "contract",
     "--out-dir",
     "${TARGET_DIR}",
+    "--no-embed-abi",
+]
+
+[tasks.build-poa-token-with-deposits]
+dependencies = ["add-cache-dir-tag"]
+command = "cargo"
+args = [
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--manifest-path",
+    "./poa-token/Cargo.toml",
+    "--features",
+    "contract,deposits",
+    "--out-dir",
+    "${POA_TOKEN_WITH_DEPOSIT_DIR}",
     "--no-embed-abi",
 ]
 

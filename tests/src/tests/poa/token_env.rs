@@ -1,0 +1,242 @@
+use crate::utils::{account::AccountExt, read_wasm};
+use near_contract_standards::{
+    fungible_token::metadata::FungibleTokenMetadata, storage_management::StorageBalance,
+};
+use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128};
+use near_workspaces::Contract;
+use serde_json::json;
+use std::sync::LazyLock;
+
+pub const MIN_FT_STORAGE_DEPOSIT_VALUE: NearToken =
+    NearToken::from_yoctonear(1_250_000_000_000_000_000_000);
+
+static POA_TOKEN_WASM: LazyLock<Vec<u8>> =
+    LazyLock::new(|| read_wasm("poa-token-with-deposit/defuse_poa_token"));
+
+pub trait PoATokenExt {
+    async fn deploy_poa_token(
+        &self,
+        id: &str,
+        owner_id: Option<AccountId>,
+        metadata: Option<FungibleTokenMetadata>,
+    ) -> anyhow::Result<PoATokenContract>;
+}
+
+impl PoATokenExt for near_workspaces::Account {
+    async fn deploy_poa_token(
+        &self,
+        id: &str,
+        owner_id: Option<AccountId>,
+        metadata: Option<FungibleTokenMetadata>,
+    ) -> anyhow::Result<PoATokenContract> {
+        let contract = self.deploy_contract(id, &POA_TOKEN_WASM).await?;
+        let mut json_args = serde_json::Map::new();
+        if let Some(oid) = owner_id {
+            json_args.insert("owner_id".to_string(), serde_json::to_value(oid).unwrap());
+        }
+        if let Some(md) = metadata {
+            json_args.insert("metadata".to_string(), serde_json::to_value(md).unwrap());
+        }
+
+        contract
+            .call("new")
+            .args_json(json_args)
+            .max_gas()
+            .transact()
+            .await?
+            .into_result()?;
+        Ok(PoATokenContract::new(contract))
+    }
+}
+
+pub struct PoATokenContract {
+    contract: Contract,
+}
+
+impl PoATokenContract {
+    fn new(contract: Contract) -> Self {
+        Self { contract }
+    }
+
+    pub fn id(&self) -> &AccountId {
+        self.contract.id()
+    }
+
+    pub async fn ft_balance_of(&self, account_id: AccountId) -> anyhow::Result<U128> {
+        self.contract
+            .call("ft_balance_of")
+            .args_json(json!(
+                {
+                    "account_id": account_id,
+                }
+            ))
+            .view()
+            .await?
+            .json()
+            .map_err(Into::into)
+    }
+}
+
+pub trait PoATokenContractCaller {
+    async fn ft_deposit(
+        &self,
+        contract: &PoATokenContract,
+        owner_id: &AccountIdRef,
+        amount: U128,
+        memo: Option<String>,
+    ) -> anyhow::Result<()>;
+
+    async fn storage_deposit(
+        &self,
+        contract: &PoATokenContract,
+        attached_deposit: NearToken,
+        account_id: Option<&AccountIdRef>,
+        registration_only: Option<bool>,
+    ) -> anyhow::Result<StorageBalance>;
+
+    async fn storage_deposit_simple(
+        &self,
+        contract: &PoATokenContract,
+        account_id: &AccountIdRef,
+    ) -> anyhow::Result<StorageBalance>;
+
+    async fn ft_transfer(
+        &self,
+        contract: &PoATokenContract,
+        receiver_id: &AccountIdRef,
+        amount: U128,
+        memo: Option<String>,
+    ) -> anyhow::Result<TestLog>;
+}
+
+impl PoATokenContractCaller for near_workspaces::Account {
+    async fn ft_deposit(
+        &self,
+        contract: &PoATokenContract,
+        owner_id: &AccountIdRef,
+        amount: U128,
+        memo: Option<String>,
+    ) -> anyhow::Result<()> {
+        let mut json_args = json!(
+            {
+                "owner_id": owner_id,
+                "amount": amount,
+            }
+        );
+
+        if let Some(m) = memo {
+            json_args
+                .as_object_mut()
+                .unwrap()
+                .insert("memo".to_string(), m.into());
+        }
+
+        self.call(contract.contract.id(), "ft_deposit")
+            .args_json(json_args)
+            .max_gas()
+            .transact()
+            .await?
+            .into_result()?;
+
+        Ok(())
+    }
+
+    async fn storage_deposit_simple(
+        &self,
+        contract: &PoATokenContract,
+        account_id: &AccountIdRef,
+    ) -> anyhow::Result<StorageBalance> {
+        self.storage_deposit(
+            contract,
+            MIN_FT_STORAGE_DEPOSIT_VALUE,
+            Some(account_id),
+            None,
+        )
+        .await
+    }
+
+    async fn storage_deposit(
+        &self,
+        contract: &PoATokenContract,
+        attached_deposit: NearToken,
+        account_id: Option<&AccountIdRef>,
+        registration_only: Option<bool>,
+    ) -> anyhow::Result<StorageBalance> {
+        let mut json_args = json!({});
+
+        if let Some(aid) = account_id {
+            json_args
+                .as_object_mut()
+                .unwrap()
+                .insert("account_id".to_string(), serde_json::to_value(aid).unwrap());
+        }
+
+        if let Some(ro) = registration_only {
+            json_args.as_object_mut().unwrap().insert(
+                "registration_only".to_string(),
+                serde_json::to_value(ro).unwrap(),
+            );
+        }
+
+        self.call(contract.contract.id(), "storage_deposit")
+            .deposit(attached_deposit)
+            .args_json(json_args)
+            .max_gas()
+            .transact()
+            .await?
+            .json()
+            .map_err(Into::into)
+    }
+
+    async fn ft_transfer(
+        &self,
+        contract: &PoATokenContract,
+        receiver_id: &AccountIdRef,
+        amount: U128,
+        memo: Option<String>,
+    ) -> anyhow::Result<TestLog> {
+        let mut json_args = json!(
+            {
+                "receiver_id": receiver_id,
+                "amount": amount,
+            }
+        );
+
+        if let Some(m) = memo {
+            json_args
+                .as_object_mut()
+                .unwrap()
+                .insert("memo".to_string(), m.into());
+        }
+
+        let logs = self
+            .call(contract.id(), "ft_transfer")
+            .args_json(json_args)
+            .max_gas()
+            .deposit(NearToken::from_yoctonear(1))
+            .transact()
+            .await?
+            .into_result()
+            .map(|outcome| outcome.logs().into())?;
+
+        Ok(logs)
+    }
+}
+
+pub struct TestLog {
+    logs: Vec<String>,
+}
+
+impl From<Vec<&str>> for TestLog {
+    fn from(logs: Vec<&str>) -> Self {
+        Self {
+            logs: logs.into_iter().map(str::to_string).collect(),
+        }
+    }
+}
+
+impl TestLog {
+    pub fn as_strings(&self) -> &[String] {
+        &self.logs
+    }
+}
