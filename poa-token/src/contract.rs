@@ -194,8 +194,7 @@ impl Contract {
         let incoming_metadata = serde_json::from_slice::<FungibleTokenMetadata>(&metadata_bytes)
             .unwrap_or_else(|e| {
                 env::panic_str(&format!(
-                    "Setting metadata failed due to unparsable promise data: {}",
-                    e
+                    "Setting metadata failed due to unparsable promise data: {e}"
                 ))
             });
 
