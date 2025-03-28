@@ -1,7 +1,7 @@
 [package]
 name = "defuse-wnear"
 edition.workspace = true
-version = "0.1.0"
+version.workspace = true
 
 [dependencies]
 near-contract-standards.workspace = true

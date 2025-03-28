@@ -1,7 +1,7 @@
 [package]
 name = "defuse-serde-utils"
 edition.workspace = true
-version = "0.1.0"
+version.workspace = true
 
 [dependencies]
 derive_more = { workspace = true, features = ["from"] }
