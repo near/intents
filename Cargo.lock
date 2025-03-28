@@ -958,6 +958,7 @@ dependencies = [
  "bnum",
  "defuse",
  "defuse-poa-factory",
+ "defuse-poa-token",
  "hex-literal",
  "impl-tools",
  "near-contract-standards",
