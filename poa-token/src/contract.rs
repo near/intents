@@ -7,7 +7,9 @@ use near_contract_standards::{
         FungibleToken, FungibleTokenCore, FungibleTokenResolver,
         core::ext_ft_core,
         events::{FtBurn, FtMint},
-        metadata::{FT_METADATA_SPEC, FungibleTokenMetadata, FungibleTokenMetadataProvider},
+        metadata::{
+            FT_METADATA_SPEC, FungibleTokenMetadata, FungibleTokenMetadataProvider, ext_ft_metadata,
+        },
     },
     storage_management::{StorageBalance, StorageBalanceBounds, StorageManagement},
 };
@@ -18,7 +20,7 @@ use near_sdk::{
     borsh::{BorshDeserialize, BorshSerialize},
     env::{self},
     json_types::U128,
-    near, require,
+    near, require, serde_json,
     store::Lazy,
 };
 
@@ -26,6 +28,8 @@ use crate::{CanWrapToken, PoaFungibleToken, UNWRAP_PREFIX, WITHDRAW_MEMO_PREFIX}
 
 const FT_UNWRAP_GAS: Gas = Gas::from_tgas(10);
 const DO_WRAP_TOKEN_GAS: Gas = Gas::from_tgas(10);
+const METADATA_GET_TOKEN_GAS: Gas = Gas::from_tgas(40);
+const METADATA_SET_TOKEN_GAS: Gas = Gas::from_tgas(50);
 
 #[derive(BorshSerialize, BorshDeserialize)]
 #[borsh(crate = "::near_sdk::borsh")]
@@ -164,6 +168,62 @@ impl Contract {
 
     #[only(self, owner)]
     #[payable]
+    pub fn sync_wrapped_token_metadata(&mut self) -> Promise {
+        let Some(wrapped_token) = self.wrapped_token().cloned() else {
+            env::panic_str("This function is restricted to wrapped tokens")
+        };
+
+        ext_ft_metadata::ext(wrapped_token)
+            .with_static_gas(METADATA_GET_TOKEN_GAS)
+            .ft_metadata()
+            .then(
+                Self::ext(CURRENT_ACCOUNT_ID.clone())
+                    .with_static_gas(METADATA_SET_TOKEN_GAS)
+                    .do_set_wrapped_metadata(),
+            )
+    }
+
+    #[private]
+    pub fn do_set_wrapped_metadata(&mut self) {
+        let near_sdk::PromiseResult::Successful(metadata_bytes) = env::promise_result(0) else {
+            env::panic_str(
+                "Setting metadata failed due to the promise failing at ft_metadata() call.",
+            )
+        };
+
+        let incoming_metadata = serde_json::from_slice::<FungibleTokenMetadata>(&metadata_bytes)
+            .unwrap_or_else(|e| {
+                env::panic_str(&format!(
+                    "Setting metadata failed due to unparsable promise data: {}",
+                    e
+                ))
+            });
+
+        let new_symbol = format!("w{}", incoming_metadata.symbol);
+
+        // FIXME: Is this a valid strategy to prevent syncing multiple times?
+        require!(
+            new_symbol != incoming_metadata.symbol,
+            "Metadata has already been synchronized"
+        );
+
+        let to_set_metadata = FungibleTokenMetadata {
+            spec: FT_METADATA_SPEC.to_string(),
+            name: format!("Wrapped {}", incoming_metadata.symbol),
+            symbol: new_symbol,
+            ..incoming_metadata
+        };
+        match self {
+            Contract::WrappableToken {
+                token: _,
+                metadata,
+                wrapped_token: _,
+            } => metadata.set(to_set_metadata),
+        }
+    }
+
+    #[only(self, owner)]
+    #[payable]
     pub fn set_wrapped_token_account_id(&mut self, token_account_id: AccountId) -> Promise {
         assert_one_yocto();
 
@@ -190,7 +250,7 @@ impl Contract {
 
         let parsed_balance = match env::promise_result(0) {
             near_sdk::PromiseResult::Successful(balance_bytes) => {
-                if let Ok(balance) = near_sdk::serde_json::from_slice::<U128>(&balance_bytes) {
+                if let Ok(balance) = serde_json::from_slice::<U128>(&balance_bytes) {
                     balance
                 } else {
                     env::panic_str(&format!(
