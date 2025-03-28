@@ -202,7 +202,7 @@ impl Contract {
 
         // FIXME: Is this a valid strategy to prevent syncing multiple times?
         require!(
-            new_symbol != incoming_metadata.symbol,
+            new_symbol != self.ft_metadata().symbol,
             "Metadata has already been synchronized"
         );
 
@@ -212,6 +212,7 @@ impl Contract {
             symbol: new_symbol,
             ..incoming_metadata
         };
+
         match self {
             Contract::WrappableToken {
                 token: _,

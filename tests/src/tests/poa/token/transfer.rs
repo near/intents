@@ -409,4 +409,15 @@ async fn metadata_sync() {
         new_metadata.name,
         format!("Wrapped {}", source_metadata.name),
     );
+
+    // Attempt to redo synchronization should fail
+    assert!(
+        fixture
+            .poa_contract_owner
+            .poa_sync_wrapped_token_metadata(&fixture.poa_token_contract)
+            .await
+            .unwrap_err()
+            .to_string()
+            .contains("Metadata has already been synchronized")
+    );
 }
