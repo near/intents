@@ -208,7 +208,7 @@ impl Contract {
 
         let to_set_metadata = FungibleTokenMetadata {
             spec: FT_METADATA_SPEC.to_string(),
-            name: format!("Wrapped {}", incoming_metadata.symbol),
+            name: format!("Wrapped {}", incoming_metadata.name),
             symbol: new_symbol,
             ..incoming_metadata
         };

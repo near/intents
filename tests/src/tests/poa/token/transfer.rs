@@ -4,6 +4,7 @@ use crate::{
     utils::{Sandbox, ft::FtExt, storage_management::StorageManagementExt, wnear::WNearExt},
 };
 use defuse_poa_token::WITHDRAW_MEMO_PREFIX;
+use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_sdk::NearToken;
 use near_workspaces::Account;
 
@@ -49,6 +50,7 @@ impl TransferFixture {
     }
 }
 
+/// Tests ft_transfer, ft_deposit, balances and withdrawals with and without wrapping
 #[tokio::test]
 async fn simple_transfer() {
     let fixture = TransferFixture::new().await;
@@ -58,7 +60,7 @@ async fn simple_transfer() {
         assert_eq!(
             fixture
                 .poa_token_contract
-                .poa_ft_balance_of(fixture.user1.id().clone())
+                .poa_ft_balance_of(fixture.user1.id())
                 .await
                 .unwrap(),
             0.into()
@@ -78,7 +80,7 @@ async fn simple_transfer() {
         assert_eq!(
             fixture
                 .poa_token_contract
-                .poa_ft_balance_of(fixture.user1.id().clone())
+                .poa_ft_balance_of(fixture.user1.id())
                 .await
                 .unwrap(),
             100_000.into()
@@ -90,7 +92,7 @@ async fn simple_transfer() {
         assert_eq!(
             fixture
                 .poa_token_contract
-                .poa_ft_balance_of(fixture.user2.id().clone())
+                .poa_ft_balance_of(fixture.user2.id())
                 .await
                 .unwrap(),
             0.into()
@@ -110,7 +112,7 @@ async fn simple_transfer() {
         assert_eq!(
             fixture
                 .poa_token_contract
-                .poa_ft_balance_of(fixture.user2.id().clone())
+                .poa_ft_balance_of(fixture.user2.id())
                 .await
                 .unwrap(),
             40_000.into()
@@ -124,7 +126,7 @@ async fn simple_transfer() {
         assert_eq!(
             fixture
                 .poa_token_contract
-                .poa_ft_balance_of(fixture.user2.id().clone())
+                .poa_ft_balance_of(fixture.user2.id())
                 .await
                 .unwrap(),
             40_000.into()
@@ -151,7 +153,7 @@ async fn simple_transfer() {
         assert_eq!(
             fixture
                 .poa_token_contract
-                .poa_ft_balance_of(fixture.user2.id().clone())
+                .poa_ft_balance_of(fixture.user2.id())
                 .await
                 .unwrap(),
             (30_000).into()
@@ -244,7 +246,7 @@ async fn simple_transfer() {
         assert_eq!(
             fixture
                 .poa_token_contract
-                .poa_ft_balance_of(fixture.user2.id().clone())
+                .poa_ft_balance_of(fixture.user2.id())
                 .await
                 .unwrap(),
             30_000.into()
@@ -264,7 +266,7 @@ async fn simple_transfer() {
         assert_eq!(
             fixture
                 .poa_token_contract
-                .poa_ft_balance_of(fixture.user2.id().clone())
+                .poa_ft_balance_of(fixture.user2.id())
                 .await
                 .unwrap(),
             35_000.into()
@@ -308,4 +310,103 @@ async fn simple_transfer() {
                 .contains("This PoA token was migrated to OmniBridge. No deposits are possible")
         );
     }
+}
+
+#[tokio::test]
+async fn metadata_sync() {
+    let fixture = TransferFixture::new().await;
+
+    // Unauthorized user attempts syncing
+    assert!(
+        fixture
+            .user1
+            .poa_sync_wrapped_token_metadata(&fixture.poa_token_contract)
+            .await
+            .unwrap_err()
+            .to_string()
+            .contains("Method is private")
+    );
+
+    // Cannot sync metadata before wrapping
+    assert!(
+        fixture
+            .poa_contract_owner
+            .poa_sync_wrapped_token_metadata(&fixture.poa_token_contract)
+            .await
+            .unwrap_err()
+            .to_string()
+            .contains("This function is restricted to wrapped tokens")
+    );
+
+    // Deploy wrapped near
+    let wnear_contract = fixture.sandbox.deploy_wrap_near("wnear").await.unwrap();
+
+    // Wrap the PoA token
+    {
+        // No token wraps in PoA so far
+        assert!(
+            fixture
+                .poa_token_contract
+                .poa_wrapped_token()
+                .await
+                .unwrap()
+                .is_none()
+        );
+
+        // Fund wnear
+        fixture
+            .root
+            .near_deposit(wnear_contract.id(), NearToken::from_near(10))
+            .await
+            .unwrap();
+
+        fixture
+            .root
+            .storage_deposit(
+                wnear_contract.id(),
+                Some(fixture.poa_token_contract.id()),
+                MIN_FT_STORAGE_DEPOSIT_VALUE,
+            )
+            .await
+            .unwrap();
+
+        fixture
+            .poa_contract_owner
+            .poa_set_wrapped_token_account_id(&fixture.poa_token_contract, wnear_contract.id())
+            .await
+            .unwrap();
+
+        assert_eq!(
+            fixture
+                .poa_token_contract
+                .poa_wrapped_token()
+                .await
+                .unwrap()
+                .as_ref(),
+            Some(wnear_contract.id())
+        );
+    }
+
+    // syncing metadata should work now
+    fixture
+        .poa_contract_owner
+        .poa_sync_wrapped_token_metadata(&fixture.poa_token_contract)
+        .await
+        .unwrap();
+
+    // Check the metadata against the wrapped token
+    let source_metadata: FungibleTokenMetadata = wnear_contract
+        .call("ft_metadata")
+        .view()
+        .await
+        .unwrap()
+        .json()
+        .unwrap();
+
+    let new_metadata = fixture.poa_token_contract.poa_ft_metadata().await.unwrap();
+    assert_eq!(new_metadata.symbol, format!("w{}", source_metadata.symbol));
+    assert_eq!(
+        new_metadata.name,
+        format!("Wrapped {}", source_metadata.name),
+    );
 }

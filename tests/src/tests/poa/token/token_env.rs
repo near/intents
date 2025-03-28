@@ -62,7 +62,7 @@ impl PoATokenContract {
         self.contract.id()
     }
 
-    pub async fn poa_ft_balance_of(&self, account_id: AccountId) -> anyhow::Result<U128> {
+    pub async fn poa_ft_balance_of(&self, account_id: &AccountIdRef) -> anyhow::Result<U128> {
         self.contract
             .call("ft_balance_of")
             .args_json(json!(
@@ -79,6 +79,15 @@ impl PoATokenContract {
     pub async fn poa_wrapped_token(&self) -> anyhow::Result<Option<AccountId>> {
         self.contract
             .call("wrapped_token")
+            .view()
+            .await?
+            .json()
+            .map_err(Into::into)
+    }
+
+    pub async fn poa_ft_metadata(&self) -> anyhow::Result<FungibleTokenMetadata> {
+        self.contract
+            .call("ft_metadata")
             .view()
             .await?
             .json()
@@ -121,6 +130,20 @@ pub trait PoATokenContractCaller {
         &self,
         contract: &PoATokenContract,
         token_account_id: &AccountIdRef,
+    ) -> anyhow::Result<TestLog>;
+
+    async fn poa_ft_transfer_call(
+        &self,
+        contract: &PoATokenContract,
+        receiver_id: &AccountIdRef,
+        amount: U128,
+        memo: Option<String>,
+        msg: String,
+    ) -> anyhow::Result<TestLog>;
+
+    async fn poa_sync_wrapped_token_metadata(
+        &self,
+        contract: &PoATokenContract,
     ) -> anyhow::Result<TestLog>;
 }
 
@@ -249,6 +272,58 @@ impl PoATokenContractCaller for near_workspaces::Account {
                     "token_account_id": token_account_id,
                 }
             ))
+            .max_gas()
+            .deposit(NearToken::from_yoctonear(1))
+            .transact()
+            .await?
+            .into_result()
+            .map(|outcome| outcome.logs().into())?;
+
+        Ok(logs)
+    }
+
+    async fn poa_ft_transfer_call(
+        &self,
+        contract: &PoATokenContract,
+        receiver_id: &AccountIdRef,
+        amount: U128,
+        memo: Option<String>,
+        msg: String,
+    ) -> anyhow::Result<TestLog> {
+        let mut json_args = json!(
+            {
+                "receiver_id": receiver_id,
+                "amount": amount,
+                "msg": msg,
+            }
+        );
+
+        if let Some(m) = memo {
+            json_args
+                .as_object_mut()
+                .unwrap()
+                .insert("memo".to_string(), m.into());
+        }
+
+        let logs = self
+            .call(contract.id(), "ft_transfer_call")
+            .args_json(json_args)
+            .max_gas()
+            .deposit(NearToken::from_yoctonear(1))
+            .transact()
+            .await?
+            .into_result()
+            .map(|outcome| outcome.logs().into())?;
+
+        Ok(logs)
+    }
+
+    async fn poa_sync_wrapped_token_metadata(
+        &self,
+        contract: &PoATokenContract,
+    ) -> anyhow::Result<TestLog> {
+        let logs = self
+            .call(contract.id(), "sync_wrapped_token_metadata")
             .max_gas()
             .deposit(NearToken::from_yoctonear(1))
             .transact()
