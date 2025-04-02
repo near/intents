@@ -360,7 +360,10 @@ impl From<ExecutionResult<near_workspaces::result::Value>> for TestLog {
                 .iter()
                 .map(|s| {
                     if let Err(e) = (*s).clone().into_result() {
-                        e.into_inner().unwrap_err().to_string()
+                        match e.into_inner() {
+                            Ok(o) => format!("OK: {o}"),
+                            Err(e) => format!("Err: {e}"),
+                        }
                     } else {
                         String::new()
                     }

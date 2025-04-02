@@ -454,12 +454,16 @@ impl FungibleTokenCore for Contract {
         msg: String,
     ) -> PromiseOrValue<U128> {
         if self.wrapped_token().is_none() {
+            near_sdk::log!("No wrapping token in contract. Using legacy ft_transfer_call path.");
             return self
                 .token_mut()
                 .ft_transfer_call(receiver_id, amount, memo, msg);
         };
 
         if receiver_id != *CURRENT_ACCOUNT_ID {
+            near_sdk::log!(
+                "ft_transfer_call destination is not the smart contract address - proceeding with a standard ft_transfer_call for token."
+            );
             return self
                 .token_mut()
                 .ft_transfer_call(receiver_id, amount, memo, msg);
@@ -470,16 +474,24 @@ impl FungibleTokenCore for Contract {
             let suffix = msg_parts[1];
             let rest_of_the_message = msg_parts.get(2).unwrap_or(&"");
 
+            near_sdk::log!(
+                "Unwrap command detected in ft_transfer_call to `{suffix}`, with message `{rest_of_the_message}`"
+            );
+
+            let inner_msg = if rest_of_the_message.is_empty() {
+                None
+            } else {
+                Some((*rest_of_the_message).to_string())
+            };
+
             match AccountId::from_str(suffix) {
-                Ok(receiver_from_msg) => self.unwrap_and_transfer(
-                    receiver_from_msg,
-                    amount,
-                    memo,
-                    Some((*rest_of_the_message).to_string()),
-                ),
+                Ok(receiver_from_msg) => {
+                    self.unwrap_and_transfer(receiver_from_msg, amount, memo, inner_msg)
+                }
                 Err(_) => env::panic_str("Invalid account id provided in msg: {msg}"),
             }
         } else {
+            near_sdk::log!("Invalid message was provided: {msg}. No transfer will be done.");
             PromiseOrValue::Value(0.into())
         }
     }
@@ -532,6 +544,9 @@ impl near_contract_standards::fungible_token::receiver::FungibleTokenReceiver fo
             sender_id
         } else {
             use defuse_near_utils::UnwrapOrPanicError;
+            near_sdk::log!(
+                "In ft_on_transfer, msg is not empty `{msg}`. Attempting to interpret it as AccountId"
+            );
             msg.parse().unwrap_or_panic_display()
         };
 
