@@ -56,6 +56,13 @@ impl randomness::distributions::Distribution<Seed> for randomness::distributions
     }
 }
 
+pub fn make_random_string(rng: &mut impl Rng, size: usize) -> String {
+    rng.sample_iter(&randomness::distributions::Alphanumeric)
+        .take(size)
+        .map(char::from)
+        .collect()
+}
+
 #[derive(Debug, Clone)]
 pub struct TestRng(rand_chacha::ChaChaRng);
 

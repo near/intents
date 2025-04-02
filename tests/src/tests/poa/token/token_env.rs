@@ -3,7 +3,7 @@ use near_contract_standards::{
     fungible_token::metadata::FungibleTokenMetadata, storage_management::StorageBalance,
 };
 use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128};
-use near_workspaces::Contract;
+use near_workspaces::{Contract, result::ExecutionResult};
 use serde_json::json;
 use std::sync::LazyLock;
 
@@ -76,6 +76,15 @@ impl PoATokenContract {
             .map_err(Into::into)
     }
 
+    pub async fn poa_ft_total_supply(&self) -> anyhow::Result<U128> {
+        self.contract
+            .call("ft_total_supply")
+            .view()
+            .await?
+            .json()
+            .map_err(Into::into)
+    }
+
     pub async fn poa_wrapped_token(&self) -> anyhow::Result<Option<AccountId>> {
         self.contract
             .call("wrapped_token")
@@ -141,9 +150,10 @@ pub trait PoATokenContractCaller {
         msg: String,
     ) -> anyhow::Result<TestLog>;
 
-    async fn poa_sync_wrapped_token_metadata(
+    async fn poa_force_sync_wrapped_token_metadata(
         &self,
         contract: &PoATokenContract,
+        attached_deposit: NearToken,
     ) -> anyhow::Result<TestLog>;
 }
 
@@ -255,7 +265,7 @@ impl PoATokenContractCaller for near_workspaces::Account {
             .transact()
             .await?
             .into_result()
-            .map(|outcome| outcome.logs().into())?;
+            .map(Into::into)?;
 
         Ok(logs)
     }
@@ -277,7 +287,7 @@ impl PoATokenContractCaller for near_workspaces::Account {
             .transact()
             .await?
             .into_result()
-            .map(|outcome| outcome.logs().into())?;
+            .map(Into::into)?;
 
         Ok(logs)
     }
@@ -305,45 +315,57 @@ impl PoATokenContractCaller for near_workspaces::Account {
                 .insert("memo".to_string(), m.into());
         }
 
-        let logs = self
+        let outcome = self
             .call(contract.id(), "ft_transfer_call")
             .args_json(json_args)
             .max_gas()
             .deposit(NearToken::from_yoctonear(1))
             .transact()
             .await?
-            .into_result()
-            .map(|outcome| outcome.logs().into())?;
+            .into_result()?;
 
-        Ok(logs)
+        Ok(outcome.into())
     }
 
-    async fn poa_sync_wrapped_token_metadata(
+    async fn poa_force_sync_wrapped_token_metadata(
         &self,
         contract: &PoATokenContract,
+        attached_deposit: NearToken,
     ) -> anyhow::Result<TestLog> {
-        let logs = self
-            .call(contract.id(), "sync_wrapped_token_metadata")
+        let outcome = self
+            .call(contract.id(), "force_sync_wrapped_token_metadata")
             .max_gas()
-            .deposit(NearToken::from_yoctonear(1))
+            .deposit(attached_deposit)
             .transact()
             .await?
-            .into_result()
-            .map(|outcome| outcome.logs().into())?;
+            .into_result()?;
 
-        Ok(logs)
+        Ok(outcome.into())
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct TestLog {
     logs: Vec<String>,
+    receipt_failure_errors: Vec<String>,
 }
 
-impl From<Vec<&str>> for TestLog {
-    fn from(logs: Vec<&str>) -> Self {
+impl From<ExecutionResult<near_workspaces::result::Value>> for TestLog {
+    fn from(outcome: ExecutionResult<near_workspaces::result::Value>) -> Self {
         Self {
-            logs: logs.into_iter().map(str::to_string).collect(),
+            logs: outcome.logs().into_iter().map(str::to_string).collect(),
+            receipt_failure_errors: outcome
+                .receipt_outcomes()
+                .iter()
+                .map(|s| {
+                    if let Err(e) = (*s).clone().into_result() {
+                        e.into_inner().unwrap_err().to_string()
+                    } else {
+                        String::new()
+                    }
+                })
+                .collect::<Vec<_>>(),
         }
     }
 }

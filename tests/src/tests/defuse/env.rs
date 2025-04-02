@@ -111,7 +111,7 @@ impl Env {
             .unwrap();
     }
 
-    pub async fn near_balance(&mut self, account_id: &AccountId) -> NearToken {
+    pub async fn near_balance(&self, account_id: &AccountId) -> NearToken {
         self.sandbox
             .worker()
             .view_account(account_id)

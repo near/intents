@@ -5,7 +5,7 @@ use crate::{
 };
 use defuse_poa_token::WITHDRAW_MEMO_PREFIX;
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
-use near_sdk::NearToken;
+use near_sdk::{AccountId, NearToken};
 use near_workspaces::Account;
 
 struct TransferFixture {
@@ -18,6 +18,15 @@ struct TransferFixture {
 }
 
 impl TransferFixture {
+    async fn near_balance(&self, account_id: &AccountId) -> NearToken {
+        self.sandbox
+            .worker()
+            .view_account(account_id)
+            .await
+            .unwrap()
+            .balance
+    }
+
     async fn new() -> Self {
         let sandbox = Sandbox::new().await.unwrap();
         let root = sandbox.root_account().clone();
@@ -132,6 +141,12 @@ async fn simple_transfer() {
             40_000.into()
         );
 
+        let total_supply_before_burn = fixture
+            .poa_token_contract
+            .poa_ft_total_supply()
+            .await
+            .unwrap();
+
         let logs = fixture
             .user2
             .poa_ft_transfer(
@@ -143,12 +158,24 @@ async fn simple_transfer() {
             .await
             .unwrap();
 
-        // Assert that a burn has happened through the logs
+        // Assert that a burn event was emitted
         assert!(logs.as_strings().iter().any(|s| s.contains("ft_burn")));
         assert!(logs.as_strings().iter().any(|s| {
             s.replace(' ', "")
                 .contains(&"\"amount\":\"10000\"".to_string())
         }));
+
+        let total_supply_after_burn = fixture
+            .poa_token_contract
+            .poa_ft_total_supply()
+            .await
+            .unwrap();
+
+        // Supply went down by the burned amount
+        assert_eq!(
+            total_supply_after_burn.0 + 10000,
+            total_supply_before_burn.0
+        );
 
         assert_eq!(
             fixture
@@ -156,7 +183,7 @@ async fn simple_transfer() {
                 .poa_ft_balance_of(fixture.user2.id())
                 .await
                 .unwrap(),
-            (30_000).into()
+            30_000.into()
         );
     }
 
@@ -320,7 +347,10 @@ async fn metadata_sync() {
     assert!(
         fixture
             .user1
-            .poa_sync_wrapped_token_metadata(&fixture.poa_token_contract)
+            .poa_force_sync_wrapped_token_metadata(
+                &fixture.poa_token_contract,
+                NearToken::from_near(1)
+            )
             .await
             .unwrap_err()
             .to_string()
@@ -331,7 +361,10 @@ async fn metadata_sync() {
     assert!(
         fixture
             .poa_contract_owner
-            .poa_sync_wrapped_token_metadata(&fixture.poa_token_contract)
+            .poa_force_sync_wrapped_token_metadata(
+                &fixture.poa_token_contract,
+                NearToken::from_near(1)
+            )
             .await
             .unwrap_err()
             .to_string()
@@ -387,12 +420,38 @@ async fn metadata_sync() {
         );
     }
 
-    // syncing metadata should work now
+    // Attempting to update metadata but with only 1 yocto, which is not enough for storage deposit, because we're adding more info
+    assert!(
+        fixture
+            .poa_contract_owner
+            .poa_force_sync_wrapped_token_metadata(
+                &fixture.poa_token_contract,
+                NearToken::from_yoctonear(1)
+            )
+            .await
+            .unwrap_err()
+            .to_string()
+            .contains("Not enough attached deposit for updating metadata")
+    );
+
+    let balance_before = fixture.near_balance(fixture.poa_token_contract.id()).await;
+
+    // syncing metadata should work now with enough sufficient deposit
     fixture
         .poa_contract_owner
-        .poa_sync_wrapped_token_metadata(&fixture.poa_token_contract)
+        .poa_force_sync_wrapped_token_metadata(&fixture.poa_token_contract, NearToken::from_near(1))
         .await
         .unwrap();
+
+    let balance_after = fixture.near_balance(fixture.poa_token_contract.id()).await;
+
+    // Updating the metadata shouldn't consume more than 10 millinear
+    assert!(
+        balance_after
+            > balance_before
+                .checked_sub(NearToken::from_millinear(10))
+                .unwrap()
+    );
 
     // Check the metadata against the wrapped token
     let source_metadata: FungibleTokenMetadata = wnear_contract
@@ -410,14 +469,13 @@ async fn metadata_sync() {
         format!("Wrapped {}", source_metadata.name),
     );
 
-    // Attempt to redo synchronization should fail
-    assert!(
-        fixture
-            .poa_contract_owner
-            .poa_sync_wrapped_token_metadata(&fixture.poa_token_contract)
-            .await
-            .unwrap_err()
-            .to_string()
-            .contains("Metadata has already been synchronized")
-    );
+    // Attempting to redo synchronization is OK
+    fixture
+        .poa_contract_owner
+        .poa_force_sync_wrapped_token_metadata(
+            &fixture.poa_token_contract,
+            NearToken::from_yoctonear(1),
+        ) // only 1 yocto because we're not changing anything
+        .await
+        .unwrap();
 }

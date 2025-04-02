@@ -28,6 +28,7 @@ use crate::{CanWrapToken, PoaFungibleToken, UNWRAP_PREFIX, WITHDRAW_MEMO_PREFIX}
 
 const FT_UNWRAP_GAS: Gas = Gas::from_tgas(10);
 const DO_WRAP_TOKEN_GAS: Gas = Gas::from_tgas(10);
+const BALANCE_OF_GAS: Gas = Gas::from_tgas(10);
 const METADATA_GET_TOKEN_GAS: Gas = Gas::from_tgas(40);
 const METADATA_SET_TOKEN_GAS: Gas = Gas::from_tgas(50);
 
@@ -154,6 +155,7 @@ impl Contract {
     }
 
     #[must_use]
+    #[private]
     #[init(ignore_state)]
     pub fn upgrade_as_wrapped() -> Self {
         let old_state: LegacyPoATokenContract =
@@ -166,9 +168,18 @@ impl Contract {
         }
     }
 
+    // Note that we make this permission'ed because it can be disastrous if an attacker can change the number of decimals of an external contract,
+    // and then sync the metadata (update our decimals), which will break all off-chain (and possibly on-chain) applications.
     #[only(self, owner)]
     #[payable]
-    pub fn sync_wrapped_token_metadata(&mut self) -> Promise {
+    pub fn force_sync_wrapped_token_metadata(&mut self) -> Promise {
+        let caller_id = env::predecessor_account_id();
+
+        require!(
+            env::attached_deposit() >= NearToken::from_yoctonear(1),
+            "Requires attached deposit of exactly 1 yoctoNEAR or more"
+        );
+
         let Some(wrapped_token) = self.wrapped_token().cloned() else {
             env::panic_str("This function is restricted to wrapped tokens")
         };
@@ -179,12 +190,14 @@ impl Contract {
             .then(
                 Self::ext(CURRENT_ACCOUNT_ID.clone())
                     .with_static_gas(METADATA_SET_TOKEN_GAS)
-                    .do_set_wrapped_metadata(),
+                    .with_attached_deposit(env::attached_deposit())
+                    .do_sync_wrapped_metadata(caller_id),
             )
     }
 
     #[private]
-    pub fn do_set_wrapped_metadata(&mut self) {
+    #[payable]
+    pub fn do_sync_wrapped_metadata(&mut self, caller_id: AccountId) {
         let near_sdk::PromiseResult::Successful(metadata_bytes) = env::promise_result(0) else {
             env::panic_str(
                 "Setting metadata failed due to the promise failing at ft_metadata() call.",
@@ -198,18 +211,12 @@ impl Contract {
                 ))
             });
 
-        let new_symbol = format!("w{}", incoming_metadata.symbol);
-
-        // FIXME: Is this a valid strategy to prevent syncing multiple times?
-        require!(
-            new_symbol != self.ft_metadata().symbol,
-            "Metadata has already been synchronized"
-        );
+        let initial_storage_usage = env::storage_usage();
 
         let to_set_metadata = FungibleTokenMetadata {
             spec: FT_METADATA_SPEC.to_string(),
             name: format!("Wrapped {}", incoming_metadata.name),
-            symbol: new_symbol,
+            symbol: format!("w{}", incoming_metadata.symbol),
             ..incoming_metadata
         };
 
@@ -220,6 +227,36 @@ impl Contract {
                 wrapped_token: _,
             } => metadata.set(to_set_metadata),
         }
+
+        self.metadata_mut().flush();
+
+        let end_storage_usage = env::storage_usage();
+
+        // Note that we use saturating sub here to prevent abuse. We do not refund Near for freed storage
+        let new_storage_byte_count = end_storage_usage.saturating_sub(initial_storage_usage);
+
+        let new_storage_cost = env::storage_byte_cost()
+            .checked_mul(u128::from(new_storage_byte_count))
+            .expect("Storage cost calculation overflow");
+
+        let storage_cost_refund = env::attached_deposit()
+            .checked_sub(new_storage_cost)
+            .unwrap_or_else(|| {
+                env::panic_str(&format!(
+                    "Not enough attached deposit for updating metadata: {}yNEAR < {}yNEAR",
+                    new_storage_cost.as_yoctonear(),
+                    env::attached_deposit().as_yoctonear()
+                ))
+            });
+
+        near_sdk::log!(
+            "Updated metadata with cost from size {}yNEAR to size {}yNEAR with cost {}yNEAR",
+            initial_storage_usage,
+            end_storage_usage,
+            new_storage_cost
+        );
+
+        Promise::new(caller_id).transfer(storage_cost_refund);
     }
 
     #[only(self, owner)]
@@ -233,6 +270,7 @@ impl Contract {
         );
 
         ext_ft_core::ext(token_account_id.clone())
+            .with_static_gas(BALANCE_OF_GAS)
             .ft_balance_of(CURRENT_ACCOUNT_ID.clone())
             .then(
                 Self::ext(CURRENT_ACCOUNT_ID.clone())
@@ -276,8 +314,14 @@ impl Contract {
         *self.wrapped_token_mut() = Some(token_account_id);
     }
 
+    /// Returns the amount of tokens that were used/unwrapped after requesting an unwrap
     #[private]
-    pub fn ft_resolve_unwrap(&mut self, sender_id: &AccountId, amount: u128, is_call: bool) {
+    pub fn ft_resolve_unwrap(
+        &mut self,
+        sender_id: &AccountId,
+        amount: u128,
+        is_call: bool,
+    ) -> U128 {
         let used = match env::promise_result(0) {
             near_sdk::PromiseResult::Successful(value) => {
                 if let Ok(unused_amount) = near_sdk::serde_json::from_slice::<U128>(&value) {
@@ -287,7 +331,6 @@ impl Contract {
                 }
             }
             near_sdk::PromiseResult::Failed => {
-                // TODO: understand this logic
                 if is_call {
                     // do not refund on failed `ft_transfer_call` due to
                     // NEP-141 vulnerability: `ft_resolve_transfer` fails to
@@ -301,6 +344,8 @@ impl Contract {
 
         let to_refund = amount.saturating_sub(used);
         self.token_mut().internal_deposit(sender_id, to_refund);
+
+        used.into()
     }
 }
 
