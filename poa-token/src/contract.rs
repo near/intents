@@ -197,7 +197,7 @@ impl Contract {
 
     #[private]
     #[payable]
-    pub fn do_sync_wrapped_metadata(&mut self, caller_id: AccountId) {
+    pub fn do_sync_wrapped_metadata(&mut self, caller_id: AccountId) -> Promise {
         let near_sdk::PromiseResult::Successful(metadata_bytes) = env::promise_result(0) else {
             env::panic_str(
                 "Setting metadata failed due to the promise failing at ft_metadata() call.",
@@ -256,7 +256,7 @@ impl Contract {
             new_storage_cost
         );
 
-        Promise::new(caller_id).transfer(storage_cost_refund);
+        Promise::new(caller_id).transfer(storage_cost_refund)
     }
 
     #[only(self, owner)]
@@ -472,21 +472,15 @@ impl FungibleTokenCore for Contract {
         let msg_parts = msg.splitn(3, ':').collect::<Vec<_>>();
         if msg_parts.len() >= 2 && msg_parts[0] == UNWRAP_PREFIX {
             let suffix = msg_parts[1];
-            let rest_of_the_message = msg_parts.get(2).unwrap_or(&"");
+            let rest_of_the_message = msg_parts.get(2).map(|s| s.to_string());
 
             near_sdk::log!(
-                "Unwrap command detected in ft_transfer_call to `{suffix}`, with message `{rest_of_the_message}`"
+                "Unwrap command detected in ft_transfer_call to `{suffix}`, with message `{rest_of_the_message:?}`"
             );
-
-            let inner_msg = if rest_of_the_message.is_empty() {
-                None
-            } else {
-                Some((*rest_of_the_message).to_string())
-            };
 
             match AccountId::from_str(suffix) {
                 Ok(receiver_from_msg) => {
-                    self.unwrap_and_transfer(receiver_from_msg, amount, memo, inner_msg)
+                    self.unwrap_and_transfer(receiver_from_msg, amount, memo, rest_of_the_message)
                 }
                 Err(_) => env::panic_str("Invalid account id provided in msg: {msg}"),
             }
