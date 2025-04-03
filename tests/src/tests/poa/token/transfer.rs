@@ -127,7 +127,7 @@ async fn simple_transfer() {
             40_000.into()
         );
 
-        assert!(!logs.as_strings().iter().any(|s| s.contains("ft_burn")));
+        assert!(!logs.logs().iter().any(|s| s.contains("ft_burn")));
     }
 
     // Burning tokens by using the special case and transferring to the smart contract address
@@ -159,8 +159,8 @@ async fn simple_transfer() {
             .unwrap();
 
         // Assert that a burn event was emitted
-        assert!(logs.as_strings().iter().any(|s| s.contains("ft_burn")));
-        assert!(logs.as_strings().iter().any(|s| {
+        assert!(logs.logs().iter().any(|s| s.contains("ft_burn")));
+        assert!(logs.logs().iter().any(|s| {
             s.replace(' ', "")
                 .contains(&"\"amount\":\"10000\"".to_string())
         }));
@@ -299,7 +299,7 @@ async fn simple_transfer() {
             35_000.into()
         );
 
-        assert!(!logs.as_strings().iter().any(|s| s.contains("ft_burn")));
+        assert!(!logs.logs().iter().any(|s| s.contains("ft_burn")));
     }
 
     // Burning tokens by using the special case and transferring to the smart contract address

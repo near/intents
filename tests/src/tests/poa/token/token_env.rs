@@ -374,7 +374,7 @@ impl From<ExecutionResult<near_workspaces::result::Value>> for TestLog {
 }
 
 impl TestLog {
-    pub fn as_strings(&self) -> &[String] {
+    pub fn logs(&self) -> &[String] {
         &self.logs
     }
 }
