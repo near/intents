@@ -363,12 +363,13 @@ impl Contract {
 
         let previous_owner = &*PREDECESSOR_ACCOUNT_ID;
 
-        self.ft_withdraw(&PREDECESSOR_ACCOUNT_ID, amount, None);
+        self.ft_withdraw(previous_owner, amount, None);
 
         // There seems to be a bug in clippy... this isn't a single match arm
         #[allow(clippy::single_match_else)]
         match msg {
             Some(inner_msg) => ext_ft_core::ext(wrapped_token_id.clone())
+                .with_attached_deposit(NearToken::from_yoctonear(1))
                 .ft_transfer_call(token_destination, amount, memo, inner_msg)
                 .then(
                     Contract::ext(CURRENT_ACCOUNT_ID.clone())
@@ -376,10 +377,10 @@ impl Contract {
                         .ft_resolve_unwrap(previous_owner, amount.0, true),
                 )
                 .into(),
-            None => {
-                self.ft_transfer(token_destination, amount, memo);
-                PromiseOrValue::Value(0.into())
-            }
+            None => ext_ft_core::ext(wrapped_token_id.clone())
+                .with_attached_deposit(NearToken::from_yoctonear(1))
+                .ft_transfer(token_destination, amount, memo)
+                .into(),
         }
     }
 }
@@ -453,8 +454,12 @@ impl FungibleTokenCore for Contract {
         memo: Option<String>,
         msg: String,
     ) -> PromiseOrValue<U128> {
+        assert_one_yocto();
         if self.wrapped_token().is_none() {
-            near_sdk::log!("No wrapping token in contract. Using legacy ft_transfer_call path.");
+            near_sdk::log!(
+                "No wrapping token in contract. Using legacy ft_transfer_call path. Caller: {} - Receiver: {receiver_id}",
+                &*env::predecessor_account_id()
+            );
             return self
                 .token_mut()
                 .ft_transfer_call(receiver_id, amount, memo, msg);
@@ -472,7 +477,7 @@ impl FungibleTokenCore for Contract {
         let msg_parts = msg.splitn(3, ':').collect::<Vec<_>>();
         if msg_parts.len() >= 2 && msg_parts[0] == UNWRAP_PREFIX {
             let suffix = msg_parts[1];
-            let rest_of_the_message = msg_parts.get(2).map(|s| s.to_string());
+            let rest_of_the_message = msg_parts.get(2).map(|s| (*s).to_string());
 
             near_sdk::log!(
                 "Unwrap command detected in ft_transfer_call to `{suffix}`, with message `{rest_of_the_message:?}`"
@@ -485,7 +490,7 @@ impl FungibleTokenCore for Contract {
                 Err(_) => env::panic_str("Invalid account id provided in msg: {msg}"),
             }
         } else {
-            near_sdk::log!("Invalid message was provided: {msg}. No transfer will be done.");
+            near_sdk::log!("Invalid message was provided: `{msg}`. No transfer will be done.");
             PromiseOrValue::Value(0.into())
         }
     }

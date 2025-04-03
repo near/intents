@@ -12,12 +12,21 @@ struct TransferCallFixture {
     root: Account,
     user1: Account,
     user2: Account,
-    poa_contract_owner: Account,
-    poa_token_contract: PoATokenContract,
-    second_poa_contract_owner: Account,
-    second_poa_token_contract: PoATokenContract,
-    third_poa_contract_owner: Account,
-    third_poa_token_contract: PoATokenContract,
+
+    // l1 -> Level 1 -> Doesn't wrap anything
+    // L1
+    poa_l1_contract_owner: Account,
+    poa_l1_token_contract: PoATokenContract,
+
+    // l2 -> Level 2 -> Wraps level1
+    // L2
+    poa_l2_contract_owner: Account,
+    poa_l2_token_contract: PoATokenContract,
+
+    // l3 -> Level 3 -> Wraps level2
+    // L3
+    poa_l3_contract_owner: Account,
+    poa_l3_token_contract: PoATokenContract,
 }
 
 impl TransferCallFixture {
@@ -26,61 +35,54 @@ impl TransferCallFixture {
         let root = sandbox.root_account().clone();
         let user1 = sandbox.create_account("user1").await;
         let user2 = sandbox.create_account("user2").await;
-        let poa_contract_owner = sandbox.create_account("owner").await;
-        let poa_token_contract: PoATokenContract = root
-            .deploy_poa_token("poa_token", Some(poa_contract_owner.id().clone()), None)
+        let poa_l1_contract_owner = sandbox.create_account("owner").await;
+        let poa_l1_token_contract: PoATokenContract = root
+            .deploy_poa_token("poa_token", Some(poa_l1_contract_owner.id().clone()), None)
             .await
             .unwrap();
 
-        let second_poa_contract_owner = sandbox.create_account("owner2").await;
-        let second_poa_token_contract: PoATokenContract = root
+        let poa_l2_contract_owner = sandbox.create_account("owner2_1").await;
+        let poa_l2_token_contract: PoATokenContract = root
             .deploy_poa_token(
-                "poa_token2",
-                Some(second_poa_contract_owner.id().clone()),
+                "poa_token2_1",
+                Some(poa_l2_contract_owner.id().clone()),
                 None,
             )
             .await
             .unwrap();
 
-        let third_poa_contract_owner = sandbox.create_account("owner3").await;
-        let third_poa_token_contract: PoATokenContract = root
-            .deploy_poa_token(
-                "poa_token3",
-                Some(third_poa_contract_owner.id().clone()),
-                None,
-            )
+        let poa_l3_contract_owner = sandbox.create_account("owner3").await;
+        let poa_l3_token_contract: PoATokenContract = root
+            .deploy_poa_token("poa_token3", Some(poa_l3_contract_owner.id().clone()), None)
             .await
             .unwrap();
 
         // Storage deposit for involved users, to deposit tokens into his account
         {
-            root.poa_storage_deposit_simple(&poa_token_contract, user1.id())
+            root.poa_storage_deposit_simple(&poa_l1_token_contract, user1.id())
                 .await
                 .unwrap();
-            root.poa_storage_deposit_simple(&poa_token_contract, user2.id())
+            root.poa_storage_deposit_simple(&poa_l1_token_contract, user2.id())
                 .await
                 .unwrap();
-            root.poa_storage_deposit_simple(&poa_token_contract, second_poa_token_contract.id())
+            root.poa_storage_deposit_simple(&poa_l1_token_contract, poa_l2_token_contract.id())
                 .await
                 .unwrap();
 
-            root.poa_storage_deposit_simple(&second_poa_token_contract, user1.id())
+            root.poa_storage_deposit_simple(&poa_l2_token_contract, user1.id())
                 .await
                 .unwrap();
-            root.poa_storage_deposit_simple(&second_poa_token_contract, user2.id())
+            root.poa_storage_deposit_simple(&poa_l2_token_contract, user2.id())
                 .await
                 .unwrap();
-            root.poa_storage_deposit_simple(
-                &second_poa_token_contract,
-                third_poa_token_contract.id(),
-            )
-            .await
-            .unwrap();
+            root.poa_storage_deposit_simple(&poa_l2_token_contract, poa_l3_token_contract.id())
+                .await
+                .unwrap();
 
-            root.poa_storage_deposit_simple(&third_poa_token_contract, user1.id())
+            root.poa_storage_deposit_simple(&poa_l3_token_contract, user1.id())
                 .await
                 .unwrap();
-            root.poa_storage_deposit_simple(&third_poa_token_contract, user2.id())
+            root.poa_storage_deposit_simple(&poa_l3_token_contract, user2.id())
                 .await
                 .unwrap();
         }
@@ -90,12 +92,12 @@ impl TransferCallFixture {
             root,
             user1,
             user2,
-            poa_contract_owner,
-            poa_token_contract,
-            second_poa_contract_owner,
-            second_poa_token_contract,
-            third_poa_contract_owner,
-            third_poa_token_contract,
+            poa_l1_contract_owner,
+            poa_l1_token_contract,
+            poa_l2_contract_owner,
+            poa_l2_token_contract,
+            poa_l3_contract_owner,
+            poa_l3_token_contract,
         }
     }
 }
@@ -111,9 +113,9 @@ async fn transfer_and_call(random_seed: Seed) {
     // fund user1 with deposit
     {
         fixture
-            .poa_contract_owner
+            .poa_l1_contract_owner
             .poa_ft_deposit(
-                &fixture.poa_token_contract,
+                &fixture.poa_l1_token_contract,
                 fixture.user1.id(),
                 100_000.into(),
                 None,
@@ -123,7 +125,7 @@ async fn transfer_and_call(random_seed: Seed) {
 
         assert_eq!(
             fixture
-                .poa_token_contract
+                .poa_l1_token_contract
                 .poa_ft_balance_of(fixture.user1.id())
                 .await
                 .unwrap(),
@@ -131,12 +133,12 @@ async fn transfer_and_call(random_seed: Seed) {
         );
     }
 
-    // Make the second PoA token a wrap of the first one
+    // Make the L2 PoA token a wrap of the L1 contract
     {
         // No token wraps in PoA so far
         assert!(
             fixture
-                .second_poa_token_contract
+                .poa_l2_token_contract
                 .poa_wrapped_token()
                 .await
                 .unwrap()
@@ -144,31 +146,31 @@ async fn transfer_and_call(random_seed: Seed) {
         );
 
         fixture
-            .second_poa_contract_owner
+            .poa_l2_contract_owner
             .poa_set_wrapped_token_account_id(
-                &fixture.second_poa_token_contract,
-                fixture.poa_token_contract.id(),
+                &fixture.poa_l2_token_contract,
+                fixture.poa_l1_token_contract.id(),
             )
             .await
             .unwrap();
 
         assert_eq!(
             fixture
-                .second_poa_token_contract
+                .poa_l2_token_contract
                 .poa_wrapped_token()
                 .await
                 .unwrap()
                 .as_ref(),
-            Some(fixture.poa_token_contract.id())
+            Some(fixture.poa_l1_token_contract.id())
         );
     }
 
-    // Make the third PoA token a wrap of the second one
+    // Make the L3 PoA token a wrap of L2
     {
         // No token wraps in PoA so far
         assert!(
             fixture
-                .third_poa_token_contract
+                .poa_l3_token_contract
                 .poa_wrapped_token()
                 .await
                 .unwrap()
@@ -176,34 +178,34 @@ async fn transfer_and_call(random_seed: Seed) {
         );
 
         fixture
-            .third_poa_contract_owner
+            .poa_l3_contract_owner
             .poa_set_wrapped_token_account_id(
-                &fixture.third_poa_token_contract,
-                fixture.second_poa_token_contract.id(),
+                &fixture.poa_l3_token_contract,
+                fixture.poa_l2_token_contract.id(),
             )
             .await
             .unwrap();
 
         assert_eq!(
             fixture
-                .third_poa_token_contract
+                .poa_l3_token_contract
                 .poa_wrapped_token()
                 .await
                 .unwrap()
                 .as_ref(),
-            Some(fixture.second_poa_token_contract.id())
+            Some(fixture.poa_l2_token_contract.id())
         );
     }
 
     // Testing ft_on_transfer
-    // Transferring to another account/contract (on first poa token contract, which is unwrapped) does a simple ft_transfer_call in the inner token
-    // `msg` is empty. The sender should receive the balance (based on ft_on_transfer in the second contract).
+    // Transferring to another account/contract (on L1 poa token contract, which is unwrapped) does a simple ft_transfer_call in the inner token
+    // `msg` is empty. The sender should receive the balance (based on ft_on_transfer in the L2 contract).
     {
         // Balance before
         assert_eq!(
             fixture
-                .poa_token_contract
-                .poa_ft_balance_of(fixture.second_poa_token_contract.id())
+                .poa_l1_token_contract
+                .poa_ft_balance_of(fixture.poa_l2_token_contract.id())
                 .await
                 .unwrap(),
             0.into()
@@ -213,8 +215,8 @@ async fn transfer_and_call(random_seed: Seed) {
         fixture
             .user1
             .poa_ft_transfer_call(
-                &fixture.poa_token_contract,
-                fixture.second_poa_token_contract.id(),
+                &fixture.poa_l1_token_contract,
+                fixture.poa_l2_token_contract.id(),
                 10_000.into(),
                 None,
                 String::new(),
@@ -225,8 +227,8 @@ async fn transfer_and_call(random_seed: Seed) {
         // Balance after
         assert_eq!(
             fixture
-                .poa_token_contract
-                .poa_ft_balance_of(fixture.second_poa_token_contract.id())
+                .poa_l1_token_contract
+                .poa_ft_balance_of(fixture.poa_l2_token_contract.id())
                 .await
                 .unwrap(),
             10_000.into()
@@ -234,23 +236,23 @@ async fn transfer_and_call(random_seed: Seed) {
     }
 
     // Testing ft_on_transfer
-    // Transferring to another account/contract (on first poa token contract, which is unwrapped) to second contract, does a simple ft_transfer_call in the inner token
-    // `msg` has user2 id. They should receive that balance in the second contract (based on ft_on_transfer in the second contract).
+    // Transferring to another account/contract (on L1 poa token contract, which is unwrapped) to L2 contract, does a simple ft_transfer_call in the inner token
+    // `msg` has user2 id. They should receive that balance in the L2 contract (based on ft_on_transfer in the L2 contract).
     {
-        // Balance before (second contract's balance in first's)
+        // Balance before (L2 contract's balance in L1's)
         assert_eq!(
             fixture
-                .poa_token_contract
-                .poa_ft_balance_of(fixture.second_poa_token_contract.id())
+                .poa_l1_token_contract
+                .poa_ft_balance_of(fixture.poa_l2_token_contract.id())
                 .await
                 .unwrap(),
             10_000.into()
         );
 
-        // Balance before (user2 balance in second contract)
+        // Balance before (user2 balance in L2 contract)
         assert_eq!(
             fixture
-                .second_poa_token_contract
+                .poa_l2_token_contract
                 .poa_ft_balance_of(fixture.user2.id())
                 .await
                 .unwrap(),
@@ -261,8 +263,8 @@ async fn transfer_and_call(random_seed: Seed) {
         fixture
             .user1
             .poa_ft_transfer_call(
-                &fixture.poa_token_contract,
-                fixture.second_poa_token_contract.id(),
+                &fixture.poa_l1_token_contract,
+                fixture.poa_l2_token_contract.id(),
                 5_000.into(),
                 None,
                 fixture.user2.id().to_string(),
@@ -270,20 +272,20 @@ async fn transfer_and_call(random_seed: Seed) {
             .await
             .unwrap();
 
-        // Balance after (second contract's balance in first's)
+        // Balance after (L2 contract's balance in L1's)
         assert_eq!(
             fixture
-                .poa_token_contract
-                .poa_ft_balance_of(fixture.second_poa_token_contract.id())
+                .poa_l1_token_contract
+                .poa_ft_balance_of(fixture.poa_l2_token_contract.id())
                 .await
                 .unwrap(),
             15_000.into()
         );
 
-        // Balance after (user2 balance in second contract)
+        // Balance after (user2 balance in L2 contract)
         assert_eq!(
             fixture
-                .second_poa_token_contract
+                .poa_l2_token_contract
                 .poa_ft_balance_of(fixture.user2.id())
                 .await
                 .unwrap(),
@@ -292,13 +294,13 @@ async fn transfer_and_call(random_seed: Seed) {
     }
 
     // Testing ft_transfer_call
-    // On a contract with a wrapped token (second contract), if the receiver is NOT the contract account id, it will still use the inner token's transfer function
-    // which will call ft_on_transfer on the third poa token contract with the same message, giving the funds to user2, the sender, because it's an empty message
+    // On a contract with a wrapped token (L2 contract), if the receiver is NOT the contract account id, it will still use the inner token's transfer function
+    // which will call ft_on_transfer on the L3 poa token contract with the same message, giving the funds to user2, the sender, because it's an empty message
     {
         // Balance before
         assert_eq!(
             fixture
-                .third_poa_token_contract
+                .poa_l3_token_contract
                 .poa_ft_balance_of(fixture.user2.id())
                 .await
                 .unwrap(),
@@ -309,8 +311,8 @@ async fn transfer_and_call(random_seed: Seed) {
         fixture
             .user2
             .poa_ft_transfer_call(
-                &fixture.second_poa_token_contract,
-                fixture.third_poa_token_contract.id(),
+                &fixture.poa_l2_token_contract,
+                fixture.poa_l3_token_contract.id(),
                 200.into(),
                 None,
                 String::new(),
@@ -321,7 +323,7 @@ async fn transfer_and_call(random_seed: Seed) {
         // Balance after
         assert_eq!(
             fixture
-                .third_poa_token_contract
+                .poa_l3_token_contract
                 .poa_ft_balance_of(fixture.user2.id())
                 .await
                 .unwrap(),
@@ -330,13 +332,13 @@ async fn transfer_and_call(random_seed: Seed) {
     }
 
     // Testing ft_transfer_call
-    // On a contract with a wrapped token (second contract), if the receiver is NOT the contract account id, it will still use the inner token's transfer function
-    // which will call ft_on_transfer on the third poa token contract with the same message, giving the funds to user1, because user1 is specified there
+    // On a contract with a wrapped token (L2 contract), if the receiver is NOT the contract account id, it will still use the inner token's transfer function
+    // which will call ft_on_transfer on the L3 poa token contract with the same message, giving the funds to user1, because user1 is specified there
     {
         // Balance before
         assert_eq!(
             fixture
-                .third_poa_token_contract
+                .poa_l3_token_contract
                 .poa_ft_balance_of(fixture.user1.id())
                 .await
                 .unwrap(),
@@ -347,8 +349,8 @@ async fn transfer_and_call(random_seed: Seed) {
         fixture
             .user2
             .poa_ft_transfer_call(
-                &fixture.second_poa_token_contract,
-                fixture.third_poa_token_contract.id(),
+                &fixture.poa_l2_token_contract,
+                fixture.poa_l3_token_contract.id(),
                 300.into(),
                 None,
                 fixture.user1.id().to_string(),
@@ -359,7 +361,7 @@ async fn transfer_and_call(random_seed: Seed) {
         // Balance after
         assert_eq!(
             fixture
-                .third_poa_token_contract
+                .poa_l3_token_contract
                 .poa_ft_balance_of(fixture.user1.id())
                 .await
                 .unwrap(),
@@ -374,7 +376,7 @@ async fn transfer_and_call(random_seed: Seed) {
         // Balance before
         assert_eq!(
             fixture
-                .second_poa_token_contract
+                .poa_l2_token_contract
                 .poa_ft_balance_of(fixture.user1.id())
                 .await
                 .unwrap(),
@@ -383,7 +385,7 @@ async fn transfer_and_call(random_seed: Seed) {
 
         assert_eq!(
             fixture
-                .second_poa_token_contract
+                .poa_l2_token_contract
                 .poa_ft_balance_of(fixture.user2.id())
                 .await
                 .unwrap(),
@@ -394,7 +396,7 @@ async fn transfer_and_call(random_seed: Seed) {
         fixture
             .user2
             .poa_ft_transfer_call(
-                &fixture.second_poa_token_contract,
+                &fixture.poa_l2_token_contract,
                 fixture.user1.id(),
                 500.into(),
                 None,
@@ -406,7 +408,7 @@ async fn transfer_and_call(random_seed: Seed) {
         // Balance after
         assert_eq!(
             fixture
-                .second_poa_token_contract
+                .poa_l2_token_contract
                 .poa_ft_balance_of(fixture.user1.id())
                 .await
                 .unwrap(),
@@ -415,7 +417,7 @@ async fn transfer_and_call(random_seed: Seed) {
 
         assert_eq!(
             fixture
-                .second_poa_token_contract
+                .poa_l2_token_contract
                 .poa_ft_balance_of(fixture.user2.id())
                 .await
                 .unwrap(),
@@ -430,8 +432,8 @@ async fn transfer_and_call(random_seed: Seed) {
         fixture
             .user2
             .poa_ft_transfer_call(
-                &fixture.second_poa_token_contract,
-                fixture.second_poa_token_contract.id(),
+                &fixture.poa_l2_token_contract,
+                fixture.poa_l2_token_contract.id(),
                 500.into(),
                 None,
                 format!("{UNWRAP_PREFIX}:HELLO_WORLD"),
@@ -440,5 +442,145 @@ async fn transfer_and_call(random_seed: Seed) {
             .unwrap_err()
             .to_string()
             .contains("Invalid account id provided in msg");
+    }
+
+    // Testing ft_transfer_call
+    // Using the contract's address as destination + a message with the unwrap prefix + a valid address in the form UNWRAP_TO:receiver.near
+    {
+        let msg = format!("{UNWRAP_PREFIX}:{}", fixture.user2.id());
+        // Balance before
+        assert_eq!(
+            fixture
+                .poa_l2_token_contract
+                .poa_ft_balance_of(fixture.user1.id())
+                .await
+                .unwrap(),
+            10000.into()
+        );
+
+        assert_eq!(
+            fixture
+                .poa_l2_token_contract
+                .poa_ft_balance_of(fixture.user2.id())
+                .await
+                .unwrap(),
+            4500.into()
+        );
+
+        // user2 balance in L1 contract
+        assert_eq!(
+            fixture
+                .poa_l1_token_contract
+                .poa_ft_balance_of(fixture.user2.id())
+                .await
+                .unwrap(),
+            0.into()
+        );
+
+        // Transfer
+        fixture
+            .user1
+            .poa_ft_transfer_call(
+                &fixture.poa_l2_token_contract,
+                fixture.poa_l2_token_contract.id(),
+                500.into(),
+                None,
+                msg,
+            )
+            .await
+            .unwrap();
+
+        // Balance after
+        assert_eq!(
+            fixture
+                .poa_l2_token_contract
+                .poa_ft_balance_of(fixture.user1.id())
+                .await
+                .unwrap(),
+            9500.into()
+        );
+
+        assert_eq!(
+            fixture
+                .poa_l2_token_contract
+                .poa_ft_balance_of(fixture.user2.id())
+                .await
+                .unwrap(),
+            4500.into()
+        );
+
+        // Balance of user2 in L1's contract
+        assert_eq!(
+            fixture
+                .poa_l1_token_contract
+                .poa_ft_balance_of(fixture.user2.id())
+                .await
+                .unwrap(),
+            500.into()
+        );
+    }
+
+    // Testing ft_transfer_call
+    // Using the contract's address as destination + a message with the unwrap prefix + a valid address in the form UNWRAP_TO:L3.near:UNWRAP_TO:user2
+    // Call is done by user1.
+    // This will unwrap from L3 into L2, which in turn will unwrap into L1 with a simple ft_transfer
+    {
+        let msg = format!(
+            "{UNWRAP_PREFIX}:{}:{UNWRAP_PREFIX}:{}",
+            fixture.poa_l2_token_contract.id(),
+            fixture.user2.id()
+        );
+        // Balance before
+        assert_eq!(
+            fixture
+                .poa_l3_token_contract
+                .poa_ft_balance_of(fixture.user1.id())
+                .await
+                .unwrap(),
+            300.into()
+        );
+
+        // Balance in L1, which will be receiving the tokens after unwrapping twice
+        assert_eq!(
+            fixture
+                .poa_l1_token_contract
+                .poa_ft_balance_of(fixture.user2.id())
+                .await
+                .unwrap(),
+            500.into()
+        );
+
+        // Transfer
+        fixture
+            .user1
+            .poa_ft_transfer_call(
+                &fixture.poa_l3_token_contract,
+                fixture.poa_l3_token_contract.id(),
+                120.into(),
+                None,
+                msg,
+            )
+            .await
+            .unwrap();
+
+        // Balance after
+        assert_eq!(
+            fixture
+                .poa_l3_token_contract
+                .poa_ft_balance_of(fixture.user1.id())
+                .await
+                .unwrap(),
+            180.into()
+        );
+
+        // Balance of user1 in L1 contract, which we unwrapped to
+        assert_eq!(
+            fixture
+                .poa_l1_token_contract
+                .poa_ft_balance_of(fixture.user2.id())
+                .await
+                .unwrap(),
+            620.into()
+        );
     }
 }
