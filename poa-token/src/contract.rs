@@ -416,9 +416,10 @@ impl PoaFungibleToken for Contract {
     #[only(self, owner)]
     #[payable]
     fn ft_deposit(&mut self, owner_id: AccountId, amount: U128, memo: Option<String>) {
-        if self.wrapped_token().is_some() {
-            env::panic_str("This PoA token was migrated to OmniBridge. No deposits are possible.");
-        }
+        require!(
+            self.wrapped_token().is_none(),
+            "This PoA token was migrated to OmniBridge. No deposits are possible.",
+        );
 
         self.token_mut()
             .storage_deposit(Some(owner_id.clone()), None);
