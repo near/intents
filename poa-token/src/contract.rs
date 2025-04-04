@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
-use defuse_near_utils::{CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID};
+use defuse_near_utils::{CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic};
 use near_contract_standards::{
     fungible_token::{
         FungibleToken, FungibleTokenCore, FungibleTokenResolver,
@@ -26,11 +26,13 @@ use near_sdk::{
 
 use crate::{CanWrapToken, PoaFungibleToken, UNWRAP_PREFIX, WITHDRAW_MEMO_PREFIX};
 
-const FT_UNWRAP_GAS: Gas = Gas::from_tgas(10);
+const FT_RESOLVE_UNWRAP_GAS: Gas = Gas::from_tgas(10);
 const DO_WRAP_TOKEN_GAS: Gas = Gas::from_tgas(10);
 const BALANCE_OF_GAS: Gas = Gas::from_tgas(10);
 const METADATA_GET_TOKEN_GAS: Gas = Gas::from_tgas(40);
 const METADATA_SET_TOKEN_GAS: Gas = Gas::from_tgas(50);
+
+// TODO: remove logs
 
 #[derive(BorshSerialize, BorshDeserialize)]
 #[borsh(crate = "::near_sdk::borsh")]
@@ -197,7 +199,7 @@ impl Contract {
 
     #[private]
     #[payable]
-    pub fn do_sync_wrapped_metadata(&mut self, caller_id: AccountId) -> Promise {
+    pub fn do_sync_wrapped_metadata(&mut self, caller_id: AccountId) -> PromiseOrValue<NearToken> {
         let near_sdk::PromiseResult::Successful(metadata_bytes) = env::promise_result(0) else {
             env::panic_str(
                 "Setting metadata failed due to the promise failing at ft_metadata() call.",
@@ -205,11 +207,10 @@ impl Contract {
         };
 
         let incoming_metadata = serde_json::from_slice::<FungibleTokenMetadata>(&metadata_bytes)
-            .unwrap_or_else(|e| {
-                env::panic_str(&format!(
-                    "Setting metadata failed due to unparsable promise data: {e}"
-                ))
-            });
+            .map_err(|e| {
+                format!("JSON: failed to parse Promise output as FungibleTokenMetadata: {e}")
+            })
+            .unwrap_or_panic();
 
         let initial_storage_usage = env::storage_usage();
 
@@ -219,6 +220,8 @@ impl Contract {
             symbol: format!("w{}", incoming_metadata.symbol),
             ..incoming_metadata
         };
+
+        to_set_metadata.assert_valid();
 
         match self {
             Contract::WrappableToken {
@@ -233,30 +236,36 @@ impl Contract {
         let end_storage_usage = env::storage_usage();
 
         // Note that we use saturating sub here to prevent abuse. We do not refund Near for freed storage
-        let new_storage_byte_count = end_storage_usage.saturating_sub(initial_storage_usage);
+        let storage_increase_byte_count = end_storage_usage.saturating_sub(initial_storage_usage);
 
-        let new_storage_cost = env::storage_byte_cost()
-            .checked_mul(u128::from(new_storage_byte_count))
-            .expect("Storage cost calculation overflow");
+        let storage_increase_cost = env::storage_byte_cost()
+            .checked_mul(u128::from(storage_increase_byte_count))
+            .ok_or("Storage cost calculation overflow")
+            .unwrap_or_panic();
 
-        let storage_cost_refund = env::attached_deposit()
-            .checked_sub(new_storage_cost)
-            .unwrap_or_else(|| {
-                env::panic_str(&format!(
-                    "Not enough attached deposit for updating metadata: {}yNEAR < {}yNEAR",
-                    new_storage_cost.as_yoctonear(),
-                    env::attached_deposit().as_yoctonear()
-                ))
-            });
+        let refund = env::attached_deposit()
+            .checked_sub(storage_increase_cost)
+            .ok_or_else(|| {
+                format!(
+                    "Insufficient attached deposit {}yN, required {}yN",
+                    env::attached_deposit().as_yoctonear(),
+                    storage_increase_cost.as_yoctonear(),
+                )
+            })
+            .unwrap_or_panic();
 
         near_sdk::log!(
             "Updated metadata with cost from size {}yNEAR to size {}yNEAR with cost {}yNEAR",
             initial_storage_usage,
             end_storage_usage,
-            new_storage_cost
+            storage_increase_cost
         );
 
-        Promise::new(caller_id).transfer(storage_cost_refund)
+        if refund > NearToken::from_yoctonear(0) {
+            Promise::new(caller_id).transfer(refund).into()
+        } else {
+            PromiseOrValue::Value(NearToken::from_near(0))
+        }
     }
 
     #[only(self, owner)]
@@ -319,13 +328,13 @@ impl Contract {
     pub fn ft_resolve_unwrap(
         &mut self,
         sender_id: &AccountId,
-        amount: u128,
+        amount: U128,
         is_call: bool,
     ) -> U128 {
         let used = match env::promise_result(0) {
             near_sdk::PromiseResult::Successful(value) => {
                 if let Ok(unused_amount) = near_sdk::serde_json::from_slice::<U128>(&value) {
-                    std::cmp::min(amount, unused_amount.0)
+                    std::cmp::min(amount, unused_amount)
                 } else {
                     amount
                 }
@@ -337,13 +346,19 @@ impl Contract {
                     // read result of `ft_on_transfer` due to insufficient gas
                     amount
                 } else {
-                    0
+                    0.into()
                 }
             }
         };
 
-        let to_refund = amount.saturating_sub(used);
+        let to_refund = amount.0.saturating_sub(used.0);
         self.token_mut().internal_deposit(sender_id, to_refund);
+        FtBurn {
+            owner_id: sender_id,
+            amount,
+            memo: Some("refund for unwrap"),
+        }
+        .emit();
 
         used.into()
     }
@@ -352,7 +367,7 @@ impl Contract {
 impl Contract {
     fn unwrap_and_transfer(
         &mut self,
-        token_destination: AccountId,
+        receiver_id: AccountId,
         amount: U128,
         memo: Option<String>,
         msg: Option<String>,
@@ -361,26 +376,29 @@ impl Contract {
             env::panic_str("Unwrapping is only for wrapped tokens");
         };
 
-        let previous_owner = &*PREDECESSOR_ACCOUNT_ID;
+        let sender_id = &*PREDECESSOR_ACCOUNT_ID;
 
-        self.ft_withdraw(previous_owner, amount, None);
+        self.ft_withdraw(sender_id, amount, None);
 
-        // There seems to be a bug in clippy... this isn't a single match arm
-        #[allow(clippy::single_match_else)]
-        match msg {
-            Some(inner_msg) => ext_ft_core::ext(wrapped_token_id.clone())
+        if let Some(inner_msg) = msg {
+            ext_ft_core::ext(wrapped_token_id.clone())
                 .with_attached_deposit(NearToken::from_yoctonear(1))
-                .ft_transfer_call(token_destination, amount, memo, inner_msg)
+                .ft_transfer_call(receiver_id, amount, memo, inner_msg)
                 .then(
                     Contract::ext(CURRENT_ACCOUNT_ID.clone())
-                        .with_static_gas(FT_UNWRAP_GAS)
-                        .ft_resolve_unwrap(previous_owner, amount.0, true),
+                        .with_static_gas(FT_RESOLVE_UNWRAP_GAS)
+                        .ft_resolve_unwrap(sender_id, amount, true),
                 )
-                .into(),
-            None => ext_ft_core::ext(wrapped_token_id.clone())
+                .into()
+        } else {
+            ext_ft_core::ext(wrapped_token_id.clone())
                 .with_attached_deposit(NearToken::from_yoctonear(1))
-                .ft_transfer(token_destination, amount, memo)
-                .into(),
+                .ft_transfer(receiver_id, amount, memo)
+                .then(
+                    Self::ext(CURRENT_ACCOUNT_ID.clone())
+                        .ft_resolve_unwrap(sender_id, amount, false),
+                )
+                .into()
         }
     }
 }
