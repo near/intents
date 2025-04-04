@@ -9,10 +9,13 @@ use serde_json::json;
 pub const MIN_FT_STORAGE_DEPOSIT_VALUE: NearToken =
     NearToken::from_yoctonear(1_250_000_000_000_000_000_000);
 
-pub static POA_TOKEN_WASM: &[u8] = include_bytes!(concat!(
+#[cfg(not(clippy))]
+pub const POA_TOKEN_WASM: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../res/poa-token-with-deposit/defuse_poa_token.wasm"
 ));
+#[cfg(clippy)]
+pub const POA_TOKEN_WASM: &[u8] = b"";
 
 pub trait PoATokenExt {
     async fn deploy_poa_token(
