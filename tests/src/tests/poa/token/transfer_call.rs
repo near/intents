@@ -432,7 +432,7 @@ async fn transfer_and_call(random_seed: Seed) {
                 fixture.poa_l2_token_contract.id(),
                 500.into(),
                 None,
-                format!("{UNWRAP_PREFIX}:HELLO_WORLD"),
+                format!("{UNWRAP_PREFIX}HELLO_WORLD"),
             )
             .await
             .unwrap_err()
@@ -443,7 +443,7 @@ async fn transfer_and_call(random_seed: Seed) {
     // Testing ft_transfer_call
     // Using the contract's address as destination + a message with the unwrap prefix + a valid address in the form UNWRAP_TO:receiver.near
     {
-        let msg = format!("{UNWRAP_PREFIX}:{}", fixture.user2.id());
+        let msg = format!("{UNWRAP_PREFIX}{}", fixture.user2.id());
         // Balance before
         assert_eq!(
             fixture
@@ -522,7 +522,7 @@ async fn transfer_and_call(random_seed: Seed) {
     // This will unwrap from L3 into L2, which in turn will unwrap into L1 with a simple ft_transfer
     {
         let msg = format!(
-            "{UNWRAP_PREFIX}:{}:{UNWRAP_PREFIX}:{}",
+            "{UNWRAP_PREFIX}{}:{UNWRAP_PREFIX}{}",
             fixture.poa_l2_token_contract.id(),
             fixture.user2.id()
         );

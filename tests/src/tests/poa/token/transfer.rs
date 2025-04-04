@@ -431,7 +431,7 @@ async fn metadata_sync() {
             .await
             .unwrap_err()
             .to_string()
-            .contains("Not enough attached deposit for updating metadata")
+            .contains("Insufficient attached deposit")
     );
 
     let balance_before = fixture.near_balance(fixture.poa_token_contract.id()).await;

@@ -1,7 +1,7 @@
-use std::str::FromStr;
-
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
-use defuse_near_utils::{CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic};
+use defuse_near_utils::{
+    CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
+};
 use near_contract_standards::{
     fungible_token::{
         FungibleToken, FungibleTokenCore, FungibleTokenResolver,
@@ -360,7 +360,7 @@ impl Contract {
         }
         .emit();
 
-        used.into()
+        used
     }
 }
 
@@ -473,6 +473,7 @@ impl FungibleTokenCore for Contract {
         msg: String,
     ) -> PromiseOrValue<U128> {
         assert_one_yocto();
+
         if self.wrapped_token().is_none() {
             near_sdk::log!(
                 "No wrapping token in contract. Using legacy ft_transfer_call path. Caller: {} - Receiver: {receiver_id}",
@@ -492,24 +493,37 @@ impl FungibleTokenCore for Contract {
                 .ft_transfer_call(receiver_id, amount, memo, msg);
         }
 
-        let msg_parts = msg.splitn(3, ':').collect::<Vec<_>>();
-        if msg_parts.len() >= 2 && msg_parts[0] == UNWRAP_PREFIX {
-            let suffix = msg_parts[1];
-            let rest_of_the_message = msg_parts.get(2).map(|s| (*s).to_string());
+        let Some(rest) = msg.strip_prefix(UNWRAP_PREFIX) else {
+            // In the case when our custom conditions were not met,
+            // we should keep backwards compatibility with NEP-141 standard,
+            // so that other protocols can interact with this token as a
+            // regular Fungible Token.
+            //
+            // We could have let the remaining Promises (i.e. ft_on_transfer()
+            // and ft_resolve_transfer()) go though, but we make a shortcut
+            // and save gas, since we know what is going to happen anyway.
+            //
+            // This is the expected behavior from NEP-141 token standard
+            // in both cases: `deposits` feature enabled and not
+            return PromiseOrValue::Value(U128(0));
+        };
 
-            near_sdk::log!(
-                "Unwrap command detected in ft_transfer_call to `{suffix}`, with message `{rest_of_the_message:?}`"
-            );
+        if let Some((receiver_id_from_msg, msg)) = rest.split_once(':') {
+            near_sdk::log!("Parsed message: Receiver `{receiver_id_from_msg}` and Rest: {msg}.");
 
-            match AccountId::from_str(suffix) {
-                Ok(receiver_from_msg) => {
-                    self.unwrap_and_transfer(receiver_from_msg, amount, memo, rest_of_the_message)
-                }
-                Err(_) => env::panic_str("Invalid account id provided in msg: {msg}"),
-            }
+            let receiver_id_from_msg = receiver_id_from_msg
+                .parse::<AccountId>()
+                .map_err(|e| format!("Failed to parse account id `{receiver_id_from_msg}`: {e}"))
+                .unwrap_or_panic_display();
+
+            self.unwrap_and_transfer(receiver_id_from_msg, amount, memo, Some(msg.to_string()))
         } else {
-            near_sdk::log!("Invalid message was provided: `{msg}`. No transfer will be done.");
-            PromiseOrValue::Value(0.into())
+            near_sdk::log!("Parsed message: Receiver `{rest}` and Rest: {msg}.");
+            let receiver_id_from_msg: AccountId = rest
+                .parse()
+                .map_err(|e| format!("Failed to parse account id `{rest}``: {e}"))
+                .unwrap_or_panic_display();
+            self.unwrap_and_transfer(receiver_id_from_msg, amount, memo, None)
         }
     }
 
