@@ -37,23 +37,19 @@ impl TransferCallFixture {
         let user2 = sandbox.create_account("user2").await;
         let poa_l1_contract_owner = sandbox.create_account("owner").await;
         let poa_l1_token_contract: PoATokenContract = root
-            .deploy_poa_token("poa_token", Some(poa_l1_contract_owner.id().clone()), None)
+            .deploy_poa_token("poa_token", Some(poa_l1_contract_owner.id()), None)
             .await
             .unwrap();
 
         let poa_l2_contract_owner = sandbox.create_account("owner2_1").await;
         let poa_l2_token_contract: PoATokenContract = root
-            .deploy_poa_token(
-                "poa_token2_1",
-                Some(poa_l2_contract_owner.id().clone()),
-                None,
-            )
+            .deploy_poa_token("poa_token2_1", Some(poa_l2_contract_owner.id()), None)
             .await
             .unwrap();
 
         let poa_l3_contract_owner = sandbox.create_account("owner3").await;
         let poa_l3_token_contract: PoATokenContract = root
-            .deploy_poa_token("poa_token3", Some(poa_l3_contract_owner.id().clone()), None)
+            .deploy_poa_token("poa_token3", Some(poa_l3_contract_owner.id()), None)
             .await
             .unwrap();
 

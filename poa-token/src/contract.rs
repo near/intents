@@ -157,7 +157,7 @@ impl Contract {
     #[must_use]
     #[private]
     #[init(ignore_state)]
-    pub fn upgrade_as_wrapped() -> Self {
+    pub fn upgrade_to_versioned() -> Self {
         let old_state: LegacyPoATokenContract =
             env::state_read().expect("Deserializing old state failed");
 

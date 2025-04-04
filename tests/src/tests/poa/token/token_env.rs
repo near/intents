@@ -1,23 +1,24 @@
-use crate::utils::{account::AccountExt, read_wasm};
+use crate::utils::account::AccountExt;
 use near_contract_standards::{
     fungible_token::metadata::FungibleTokenMetadata, storage_management::StorageBalance,
 };
 use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128};
 use near_workspaces::{Contract, result::ExecutionResult};
 use serde_json::json;
-use std::sync::LazyLock;
 
 pub const MIN_FT_STORAGE_DEPOSIT_VALUE: NearToken =
     NearToken::from_yoctonear(1_250_000_000_000_000_000_000);
 
-static POA_TOKEN_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm("poa-token-with-deposit/defuse_poa_token"));
+pub static POA_TOKEN_WASM: &[u8] = include_bytes!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../res/poa-token-with-deposit/defuse_poa_token.wasm"
+));
 
 pub trait PoATokenExt {
     async fn deploy_poa_token(
         &self,
         id: &str,
-        owner_id: Option<AccountId>,
+        owner_id: Option<&AccountIdRef>,
         metadata: Option<FungibleTokenMetadata>,
     ) -> anyhow::Result<PoATokenContract>;
 }
@@ -26,10 +27,10 @@ impl PoATokenExt for near_workspaces::Account {
     async fn deploy_poa_token(
         &self,
         id: &str,
-        owner_id: Option<AccountId>,
+        owner_id: Option<&AccountIdRef>,
         metadata: Option<FungibleTokenMetadata>,
     ) -> anyhow::Result<PoATokenContract> {
-        let contract = self.deploy_contract(id, &POA_TOKEN_WASM).await?;
+        let contract = self.deploy_contract(id, POA_TOKEN_WASM).await?;
         let mut json_args = serde_json::Map::new();
         if let Some(oid) = owner_id {
             json_args.insert("owner_id".to_string(), serde_json::to_value(oid).unwrap());

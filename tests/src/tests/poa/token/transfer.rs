@@ -34,7 +34,7 @@ impl TransferFixture {
         let user1 = sandbox.create_account("user1").await;
         let user2 = sandbox.create_account("user2").await;
         let poa_token_contract: PoATokenContract = root
-            .deploy_poa_token("poa_token", Some(poa_contract_owner.id().clone()), None)
+            .deploy_poa_token("poa_token", Some(poa_contract_owner.id()), None)
             .await
             .unwrap();
 
