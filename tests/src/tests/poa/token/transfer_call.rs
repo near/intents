@@ -141,14 +141,28 @@ async fn transfer_and_call(random_seed: Seed) {
                 .is_none()
         );
 
-        fixture
-            .poa_l2_contract_owner
-            .poa_set_wrapped_token_account_id(
-                &fixture.poa_l2_token_contract,
-                fixture.poa_l1_token_contract.id(),
-            )
-            .await
-            .unwrap();
+        {
+            fixture
+                .poa_l2_contract_owner
+                .poa_pause_for_wrapping(fixture.poa_l2_token_contract.id())
+                .await
+                .unwrap();
+
+            fixture
+                .poa_l2_contract_owner
+                .poa_set_wrapped_token_account_id(
+                    &fixture.poa_l2_token_contract,
+                    fixture.poa_l1_token_contract.id(),
+                )
+                .await
+                .unwrap();
+
+            fixture
+                .poa_l2_contract_owner
+                .poa_unpause_for_wrapping(fixture.poa_l2_token_contract.id())
+                .await
+                .unwrap();
+        }
 
         assert_eq!(
             fixture
@@ -173,14 +187,28 @@ async fn transfer_and_call(random_seed: Seed) {
                 .is_none()
         );
 
-        fixture
-            .poa_l3_contract_owner
-            .poa_set_wrapped_token_account_id(
-                &fixture.poa_l3_token_contract,
-                fixture.poa_l2_token_contract.id(),
-            )
-            .await
-            .unwrap();
+        {
+            fixture
+                .poa_l3_contract_owner
+                .poa_pause_for_wrapping(fixture.poa_l3_token_contract.id())
+                .await
+                .unwrap();
+
+            fixture
+                .poa_l3_contract_owner
+                .poa_set_wrapped_token_account_id(
+                    &fixture.poa_l3_token_contract,
+                    fixture.poa_l2_token_contract.id(),
+                )
+                .await
+                .unwrap();
+
+            fixture
+                .poa_l3_contract_owner
+                .poa_unpause_for_wrapping(fixture.poa_l3_token_contract.id())
+                .await
+                .unwrap();
+        }
 
         assert_eq!(
             fixture

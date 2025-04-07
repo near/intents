@@ -104,7 +104,7 @@ impl PoAFactoryExt for near_workspaces::Account {
                 "token": token,
                 "metadata": metadata.into(),
             }))
-            .deposit(NearToken::from_near(4))
+            .deposit(NearToken::from_near(10))
             .max_gas()
             .transact()
             .await?

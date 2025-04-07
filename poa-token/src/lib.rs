@@ -9,7 +9,7 @@ use near_contract_standards::{
     },
     storage_management::StorageManagement,
 };
-use near_plugins::Ownable;
+use near_plugins::{AccessControllable, Pausable};
 use near_sdk::{AccountId, ext_contract, json_types::U128};
 
 /// Fungible token that allows minting only by its owner.
@@ -22,7 +22,8 @@ pub trait PoaFungibleToken:
     + FungibleTokenResolver
     + FungibleTokenMetadataProvider
     + StorageManagement
-    + Ownable
+    + AccessControllable
+    + Pausable
     + FullAccessKeys
     + CanWrapToken
 {

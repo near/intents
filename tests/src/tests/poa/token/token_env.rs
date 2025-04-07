@@ -6,6 +6,9 @@ use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128};
 use near_workspaces::{Contract, result::ExecutionResult};
 use serde_json::json;
 
+// FIXME: reuse the traits of FT from other tests
+// FIXME: pass contract id instead of contract
+
 pub const MIN_FT_STORAGE_DEPOSIT_VALUE: NearToken =
     NearToken::from_yoctonear(1_250_000_000_000_000_000_000);
 
@@ -159,6 +162,10 @@ pub trait PoATokenContractCaller {
         contract: &PoATokenContract,
         attached_deposit: NearToken,
     ) -> anyhow::Result<TestLog>;
+
+    async fn poa_pause_for_wrapping(&self, contract: &AccountId) -> anyhow::Result<TestLog>;
+
+    async fn poa_unpause_for_wrapping(&self, contract: &AccountId) -> anyhow::Result<TestLog>;
 }
 
 impl PoATokenContractCaller for near_workspaces::Account {
@@ -340,6 +347,38 @@ impl PoATokenContractCaller for near_workspaces::Account {
             .call(contract.id(), "force_sync_wrapped_token_metadata")
             .max_gas()
             .deposit(attached_deposit)
+            .transact()
+            .await?
+            .into_result()?;
+
+        Ok(outcome.into())
+    }
+
+    async fn poa_pause_for_wrapping(&self, contract_id: &AccountId) -> anyhow::Result<TestLog> {
+        let outcome = self
+            .call(contract_id, "pa_pause_feature")
+            .args_json(json!(
+                {
+                    "key": "ALL".to_string(),
+                }
+            ))
+            .max_gas()
+            .transact()
+            .await?
+            .into_result()?;
+
+        Ok(outcome.into())
+    }
+
+    async fn poa_unpause_for_wrapping(&self, contract: &AccountId) -> anyhow::Result<TestLog> {
+        let outcome = self
+            .call(contract, "pa_unpause_feature")
+            .args_json(json!(
+                {
+                    "key": "ALL".to_string(),
+                }
+            ))
+            .max_gas()
             .transact()
             .await?
             .into_result()?;

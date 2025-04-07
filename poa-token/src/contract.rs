@@ -1,3 +1,4 @@
+use crate::{CanWrapToken, PoaFungibleToken, UNWRAP_PREFIX, WITHDRAW_MEMO_PREFIX};
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
@@ -13,9 +14,10 @@ use near_contract_standards::{
     },
     storage_management::{StorageBalance, StorageBalanceBounds, StorageManagement},
 };
-use near_plugins::{Ownable, events::AsEvent, only, ownable::OwnershipTransferred};
+use near_plugins::AccessControllable;
+use near_plugins::{AccessControlRole, Pausable, access_control};
 use near_sdk::{
-    AccountId, BorshStorageKey, Gas, NearToken, Promise, PromiseOrValue, PublicKey,
+    AccountId, BorshStorageKey, Gas, NearToken, PanicOnDefault, Promise, PromiseOrValue, PublicKey,
     assert_one_yocto,
     borsh::{BorshDeserialize, BorshSerialize},
     env::{self},
@@ -23,8 +25,6 @@ use near_sdk::{
     near, require, serde_json,
     store::Lazy,
 };
-
-use crate::{CanWrapToken, PoaFungibleToken, UNWRAP_PREFIX, WITHDRAW_MEMO_PREFIX};
 
 const FT_RESOLVE_UNWRAP_GAS: Gas = Gas::from_tgas(10);
 const DO_WRAP_TOKEN_GAS: Gas = Gas::from_tgas(10);
@@ -34,6 +34,12 @@ const METADATA_SET_TOKEN_GAS: Gas = Gas::from_tgas(50);
 
 // TODO: remove logs
 
+#[near(serializers = [json])]
+#[derive(AccessControlRole, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Role {
+    Owner,
+}
+
 #[derive(BorshSerialize, BorshDeserialize)]
 #[borsh(crate = "::near_sdk::borsh")]
 pub struct LegacyPoATokenContract {
@@ -41,9 +47,8 @@ pub struct LegacyPoATokenContract {
     metadata: Lazy<FungibleTokenMetadata>,
 }
 
-#[near(contract_state)]
-#[derive(Ownable)]
-pub enum Contract {
+#[near]
+enum ContractVersions {
     WrappableToken {
         token: FungibleToken,
         metadata: Lazy<FungibleTokenMetadata>,
@@ -51,17 +56,18 @@ pub enum Contract {
     },
 }
 
-// PanicOnDefault does not work on enums, so we implement it
-impl Default for Contract {
-    fn default() -> Self {
-        env::panic_str("Default impl isn't supported for this contract");
-    }
+#[near(contract_state)]
+#[access_control(role_type(Role))]
+#[derive(Pausable, PanicOnDefault)]
+#[pausable(pause_roles(Role::Owner), unpause_roles(Role::Owner))]
+pub struct Contract {
+    inner: ContractVersions,
 }
 
 impl Contract {
     fn token(&self) -> &FungibleToken {
-        match self {
-            Contract::WrappableToken {
+        match &self.inner {
+            ContractVersions::WrappableToken {
                 token,
                 metadata: _,
                 wrapped_token: _,
@@ -70,8 +76,8 @@ impl Contract {
     }
 
     fn token_mut(&mut self) -> &mut FungibleToken {
-        match self {
-            Contract::WrappableToken {
+        match &mut self.inner {
+            ContractVersions::WrappableToken {
                 token,
                 metadata: _,
                 wrapped_token: _,
@@ -80,8 +86,8 @@ impl Contract {
     }
 
     fn metadata(&self) -> &Lazy<FungibleTokenMetadata> {
-        match self {
-            Contract::WrappableToken {
+        match &self.inner {
+            ContractVersions::WrappableToken {
                 token: _,
                 metadata,
                 wrapped_token: _,
@@ -90,8 +96,8 @@ impl Contract {
     }
 
     fn metadata_mut(&mut self) -> &mut Lazy<FungibleTokenMetadata> {
-        match self {
-            Contract::WrappableToken {
+        match &mut self.inner {
+            ContractVersions::WrappableToken {
                 token: _,
                 metadata,
                 wrapped_token: _,
@@ -100,8 +106,8 @@ impl Contract {
     }
 
     fn wrapped_token(&self) -> Option<&AccountId> {
-        match self {
-            Contract::WrappableToken {
+        match &self.inner {
+            ContractVersions::WrappableToken {
                 token: _,
                 metadata: _,
                 wrapped_token,
@@ -110,8 +116,8 @@ impl Contract {
     }
 
     fn wrapped_token_mut(&mut self) -> &mut Option<AccountId> {
-        match self {
-            Contract::WrappableToken {
+        match &mut self.inner {
+            ContractVersions::WrappableToken {
                 token: _,
                 metadata: _,
                 wrapped_token,
@@ -136,44 +142,55 @@ impl Contract {
         });
         metadata.assert_valid();
 
-        let contract = Self::WrappableToken {
-            token: FungibleToken::new(Prefix::FungibleToken),
-            metadata: Lazy::new(Prefix::Metadata, metadata),
-            wrapped_token: None,
+        let mut contract = Self {
+            inner: ContractVersions::WrappableToken {
+                token: FungibleToken::new(Prefix::FungibleToken),
+                metadata: Lazy::new(Prefix::Metadata, metadata),
+                wrapped_token: None,
+            },
         };
 
-        let owner = owner_id.unwrap_or_else(|| PREDECESSOR_ACCOUNT_ID.clone());
-        // Ownable::owner_set requires it to be a promise
-        require!(!env::storage_write(
-            contract.owner_storage_key(),
-            owner.as_bytes()
-        ));
-        OwnershipTransferred {
-            previous_owner: None,
-            new_owner: Some(owner),
+        // Update ACL
+        {
+            let owner = owner_id.unwrap_or_else(|| PREDECESSOR_ACCOUNT_ID.clone());
+            let mut acl = contract.acl_get_or_init();
+            require!(acl.add_super_admin_unchecked(&owner), "add super-admin");
+            require!(acl.grant_role_unchecked(Role::Owner, &owner), "add owner");
         }
-        .emit();
+
         contract
     }
 
     #[must_use]
     #[private]
     #[init(ignore_state)]
-    pub fn upgrade_to_versioned() -> Self {
+    pub fn upgrade_to_versioned(owner_id: Option<AccountId>) -> Self {
         let old_state: LegacyPoATokenContract =
             env::state_read().expect("Deserializing old state failed");
 
-        Self::WrappableToken {
-            token: old_state.token,
-            metadata: old_state.metadata,
-            wrapped_token: None,
+        let mut contract = Self {
+            inner: ContractVersions::WrappableToken {
+                token: old_state.token,
+                metadata: old_state.metadata,
+                wrapped_token: None,
+            },
+        };
+
+        {
+            let owner = owner_id.unwrap_or_else(|| PREDECESSOR_ACCOUNT_ID.clone());
+            let mut acl = contract.acl_get_or_init();
+            require!(acl.add_super_admin_unchecked(&owner), "add super-admin");
+            require!(acl.grant_role_unchecked(Role::Owner, &owner), "add owner");
         }
+
+        contract
     }
 
     // Note that we make this permission'ed because it can be disastrous if an attacker can change the number of decimals of an external contract,
     // and then sync the metadata (update our decimals), which will break all off-chain (and possibly on-chain) applications.
-    #[only(self, owner)]
+    #[near_plugins::access_control_any(roles(Role::Owner))]
     #[payable]
+    #[near_plugins::pause]
     pub fn force_sync_wrapped_token_metadata(&mut self) -> Promise {
         let caller_id = env::predecessor_account_id();
 
@@ -199,6 +216,7 @@ impl Contract {
 
     #[private]
     #[payable]
+    #[near_plugins::pause]
     pub fn do_sync_wrapped_metadata(&mut self, caller_id: AccountId) -> PromiseOrValue<()> {
         let near_sdk::PromiseResult::Successful(metadata_bytes) = env::promise_result(0) else {
             env::panic_str(
@@ -223,8 +241,8 @@ impl Contract {
 
         to_set_metadata.assert_valid();
 
-        match self {
-            Contract::WrappableToken {
+        match &mut self.inner {
+            ContractVersions::WrappableToken {
                 token: _,
                 metadata,
                 wrapped_token: _,
@@ -268,10 +286,16 @@ impl Contract {
         }
     }
 
-    #[only(self, owner)]
+    #[near_plugins::access_control_any(roles(Role::Owner))]
     #[payable]
     pub fn set_wrapped_token_account_id(&mut self, token_account_id: AccountId) -> Promise {
         assert_one_yocto();
+
+        if !self.pa_is_paused("ALL".to_string()) {
+            env::panic_str(
+                "The contract must be paused first before setting the wrapped token target",
+            )
+        }
 
         let caller_id = env::predecessor_account_id();
 
@@ -450,16 +474,18 @@ impl Contract {
 
 #[near]
 impl PoaFungibleToken for Contract {
-    #[only(self, owner)]
+    #[near_plugins::access_control_any(roles(Role::Owner))]
     #[payable]
+    #[near_plugins::pause]
     fn set_metadata(&mut self, metadata: FungibleTokenMetadata) {
         assert_one_yocto();
         metadata.assert_valid();
         self.metadata_mut().set(metadata);
     }
 
-    #[only(self, owner)]
+    #[near_plugins::access_control_any(roles(Role::Owner))]
     #[payable]
+    #[near_plugins::pause]
     fn ft_deposit(&mut self, owner_id: AccountId, amount: U128, memo: Option<String>) {
         require!(
             self.wrapped_token().is_none(),
@@ -490,6 +516,7 @@ impl CanWrapToken for Contract {
 #[near]
 impl FungibleTokenCore for Contract {
     #[payable]
+    #[near_plugins::pause]
     fn ft_transfer(&mut self, receiver_id: AccountId, amount: U128, memo: Option<String>) {
         // A special case we created to handle withdrawals:
         // If the receiver id is the token contract id, we burn these tokens by calling ft_withdraw,
@@ -511,6 +538,7 @@ impl FungibleTokenCore for Contract {
     }
 
     #[payable]
+    #[near_plugins::pause]
     fn ft_transfer_call(
         &mut self,
         receiver_id: AccountId,
@@ -636,6 +664,7 @@ impl near_contract_standards::fungible_token::receiver::FungibleTokenReceiver fo
 #[near]
 impl StorageManagement for Contract {
     #[payable]
+    #[near_plugins::pause]
     fn storage_deposit(
         &mut self,
         account_id: Option<AccountId>,
@@ -646,11 +675,13 @@ impl StorageManagement for Contract {
     }
 
     #[payable]
+    #[near_plugins::pause]
     fn storage_withdraw(&mut self, amount: Option<NearToken>) -> StorageBalance {
         self.token_mut().storage_withdraw(amount)
     }
 
     #[payable]
+    #[near_plugins::pause]
     fn storage_unregister(&mut self, force: Option<bool>) -> bool {
         self.token_mut().storage_unregister(force)
     }
@@ -672,6 +703,7 @@ impl FungibleTokenMetadataProvider for Contract {
 }
 
 impl Contract {
+    #[near_plugins::pause]
     fn ft_withdraw(&mut self, account_id: &AccountId, amount: U128, memo: Option<&str>) {
         assert_one_yocto();
         require!(amount.0 > 0, "zero amount");
@@ -688,12 +720,12 @@ impl Contract {
 
 #[near]
 impl FullAccessKeys for Contract {
-    #[only(self, owner)]
+    #[near_plugins::access_control_any(roles(Role::Owner))]
     fn add_full_access_key(&mut self, public_key: PublicKey) -> Promise {
         Promise::new(CURRENT_ACCOUNT_ID.clone()).add_full_access_key(public_key)
     }
 
-    #[only(self, owner)]
+    #[near_plugins::access_control_any(roles(Role::Owner))]
     fn delete_key(&mut self, public_key: PublicKey) -> Promise {
         Promise::new(CURRENT_ACCOUNT_ID.clone()).delete_key(public_key)
     }
