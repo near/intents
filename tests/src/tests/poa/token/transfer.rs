@@ -8,6 +8,8 @@ use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_sdk::{AccountId, NearToken};
 use near_workspaces::Account;
 
+// FIXME: add test that tries to set wrapped token with little balance
+
 struct TransferFixture {
     sandbox: Sandbox,
     poa_contract_owner: Account,
@@ -205,7 +207,11 @@ async fn simple_transfer() {
         assert!(
             fixture
                 .user1
-                .poa_set_wrapped_token_account_id(&fixture.poa_token_contract, wnear_contract.id())
+                .poa_set_wrapped_token_account_id(
+                    &fixture.poa_token_contract,
+                    wnear_contract.id(),
+                    NearToken::from_near(1)
+                )
                 .await
                 .unwrap_err()
                 .to_string()
@@ -216,7 +222,11 @@ async fn simple_transfer() {
         assert!(
             fixture
                 .poa_contract_owner
-                .poa_set_wrapped_token_account_id(&fixture.poa_token_contract, wnear_contract.id())
+                .poa_set_wrapped_token_account_id(
+                    &fixture.poa_token_contract,
+                    wnear_contract.id(),
+                    NearToken::from_near(1)
+                )
                 .await
                 .unwrap_err()
                 .to_string()
@@ -237,7 +247,8 @@ async fn simple_transfer() {
                     .poa_contract_owner
                     .poa_set_wrapped_token_account_id(
                         &fixture.poa_token_contract,
-                        wnear_contract.id()
+                        wnear_contract.id(),
+                        NearToken::from_near(1)
                     )
                     .await
                     .unwrap_err()
@@ -289,7 +300,11 @@ async fn simple_transfer() {
 
             fixture
                 .poa_contract_owner
-                .poa_set_wrapped_token_account_id(&fixture.poa_token_contract, wnear_contract.id())
+                .poa_set_wrapped_token_account_id(
+                    &fixture.poa_token_contract,
+                    wnear_contract.id(),
+                    NearToken::from_near(1),
+                )
                 .await
                 .unwrap();
 
@@ -455,7 +470,11 @@ async fn metadata_sync() {
 
             fixture
                 .poa_contract_owner
-                .poa_set_wrapped_token_account_id(&fixture.poa_token_contract, wnear_contract.id())
+                .poa_set_wrapped_token_account_id(
+                    &fixture.poa_token_contract,
+                    wnear_contract.id(),
+                    NearToken::from_near(1),
+                )
                 .await
                 .unwrap();
 

@@ -1,6 +1,7 @@
 use super::token_env::{PoATokenContract, PoATokenContractCaller, PoATokenExt};
 use crate::utils::Sandbox;
 use defuse_poa_token::UNWRAP_PREFIX;
+use near_sdk::NearToken;
 use near_workspaces::Account;
 use rstest::rstest;
 use test_utils::random::{Seed, make_random_string, make_seedable_rng, random_seed};
@@ -153,6 +154,7 @@ async fn transfer_and_call(random_seed: Seed) {
                 .poa_set_wrapped_token_account_id(
                     &fixture.poa_l2_token_contract,
                     fixture.poa_l1_token_contract.id(),
+                    NearToken::from_near(1),
                 )
                 .await
                 .unwrap();
@@ -199,6 +201,7 @@ async fn transfer_and_call(random_seed: Seed) {
                 .poa_set_wrapped_token_account_id(
                     &fixture.poa_l3_token_contract,
                     fixture.poa_l2_token_contract.id(),
+                    NearToken::from_near(1),
                 )
                 .await
                 .unwrap();

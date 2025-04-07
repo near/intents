@@ -48,11 +48,11 @@ pub struct LegacyPoATokenContract {
 }
 
 #[near]
-enum ContractVersions {
+enum ContractState {
     WrappableToken {
         token: FungibleToken,
         metadata: Lazy<FungibleTokenMetadata>,
-        wrapped_token: Option<AccountId>,
+        wrapped_token: Lazy<Option<AccountId>>,
     },
 }
 
@@ -61,13 +61,13 @@ enum ContractVersions {
 #[derive(Pausable, PanicOnDefault)]
 #[pausable(pause_roles(Role::Owner), unpause_roles(Role::Owner))]
 pub struct Contract {
-    inner: ContractVersions,
+    inner: ContractState,
 }
 
 impl Contract {
     fn token(&self) -> &FungibleToken {
         match &self.inner {
-            ContractVersions::WrappableToken {
+            ContractState::WrappableToken {
                 token,
                 metadata: _,
                 wrapped_token: _,
@@ -77,7 +77,7 @@ impl Contract {
 
     fn token_mut(&mut self) -> &mut FungibleToken {
         match &mut self.inner {
-            ContractVersions::WrappableToken {
+            ContractState::WrappableToken {
                 token,
                 metadata: _,
                 wrapped_token: _,
@@ -87,7 +87,7 @@ impl Contract {
 
     fn metadata(&self) -> &Lazy<FungibleTokenMetadata> {
         match &self.inner {
-            ContractVersions::WrappableToken {
+            ContractState::WrappableToken {
                 token: _,
                 metadata,
                 wrapped_token: _,
@@ -97,7 +97,7 @@ impl Contract {
 
     fn metadata_mut(&mut self) -> &mut Lazy<FungibleTokenMetadata> {
         match &mut self.inner {
-            ContractVersions::WrappableToken {
+            ContractState::WrappableToken {
                 token: _,
                 metadata,
                 wrapped_token: _,
@@ -107,21 +107,11 @@ impl Contract {
 
     fn wrapped_token(&self) -> Option<&AccountId> {
         match &self.inner {
-            ContractVersions::WrappableToken {
+            ContractState::WrappableToken {
                 token: _,
                 metadata: _,
                 wrapped_token,
-            } => wrapped_token.as_ref(),
-        }
-    }
-
-    fn wrapped_token_mut(&mut self) -> &mut Option<AccountId> {
-        match &mut self.inner {
-            ContractVersions::WrappableToken {
-                token: _,
-                metadata: _,
-                wrapped_token,
-            } => wrapped_token,
+            } => (**wrapped_token).as_ref(),
         }
     }
 }
@@ -143,10 +133,10 @@ impl Contract {
         metadata.assert_valid();
 
         let mut contract = Self {
-            inner: ContractVersions::WrappableToken {
+            inner: ContractState::WrappableToken {
                 token: FungibleToken::new(Prefix::FungibleToken),
                 metadata: Lazy::new(Prefix::Metadata, metadata),
-                wrapped_token: None,
+                wrapped_token: Lazy::new(Prefix::WrappedToken, None),
             },
         };
 
@@ -169,10 +159,10 @@ impl Contract {
             env::state_read().expect("Deserializing old state failed");
 
         let mut contract = Self {
-            inner: ContractVersions::WrappableToken {
+            inner: ContractState::WrappableToken {
                 token: old_state.token,
                 metadata: old_state.metadata,
-                wrapped_token: None,
+                wrapped_token: Lazy::new(Prefix::WrappedToken, None),
             },
         };
 
@@ -242,7 +232,7 @@ impl Contract {
         to_set_metadata.assert_valid();
 
         match &mut self.inner {
-            ContractVersions::WrappableToken {
+            ContractState::WrappableToken {
                 token: _,
                 metadata,
                 wrapped_token: _,
@@ -289,8 +279,6 @@ impl Contract {
     #[near_plugins::access_control_any(roles(Role::Owner))]
     #[payable]
     pub fn set_wrapped_token_account_id(&mut self, token_account_id: AccountId) -> Promise {
-        assert_one_yocto();
-
         if !self.pa_is_paused("ALL".to_string()) {
             env::panic_str(
                 "The contract must be paused first before setting the wrapped token target",
@@ -357,7 +345,16 @@ impl Contract {
 
         let initial_wrapping = self.wrapped_token().cloned();
 
-        *self.wrapped_token_mut() = Some(token_account_id);
+        match &mut self.inner {
+            ContractState::WrappableToken {
+                token: _,
+                metadata: _,
+                wrapped_token,
+            } => {
+                wrapped_token.set(Some(token_account_id));
+                wrapped_token.flush();
+            }
+        }
 
         let end_storage_usage = env::storage_usage();
 
@@ -548,6 +545,15 @@ impl FungibleTokenCore for Contract {
     ) -> PromiseOrValue<U128> {
         assert_one_yocto();
 
+        if receiver_id != *CURRENT_ACCOUNT_ID {
+            near_sdk::log!(
+                "ft_transfer_call destination is not the smart contract address - proceeding with a standard ft_transfer_call for token."
+            );
+            return self
+                .token_mut()
+                .ft_transfer_call(receiver_id, amount, memo, msg);
+        }
+
         if self.wrapped_token().is_none() {
             near_sdk::log!(
                 "No wrapping token in contract. Using legacy ft_transfer_call path. Caller: {} - Receiver: {receiver_id}",
@@ -557,15 +563,6 @@ impl FungibleTokenCore for Contract {
                 .token_mut()
                 .ft_transfer_call(receiver_id, amount, memo, msg);
         };
-
-        if receiver_id != *CURRENT_ACCOUNT_ID {
-            near_sdk::log!(
-                "ft_transfer_call destination is not the smart contract address - proceeding with a standard ft_transfer_call for token."
-            );
-            return self
-                .token_mut()
-                .ft_transfer_call(receiver_id, amount, memo, msg);
-        }
 
         let Some(rest) = msg.strip_prefix(UNWRAP_PREFIX) else {
             // In the case when our custom conditions were not met,
@@ -736,4 +733,5 @@ impl FullAccessKeys for Contract {
 enum Prefix {
     FungibleToken,
     Metadata,
+    WrappedToken,
 }

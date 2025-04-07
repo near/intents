@@ -146,6 +146,7 @@ pub trait PoATokenContractCaller {
         &self,
         contract: &PoATokenContract,
         token_account_id: &AccountIdRef,
+        attached_deposit: NearToken,
     ) -> anyhow::Result<TestLog>;
 
     async fn poa_ft_transfer_call(
@@ -285,6 +286,7 @@ impl PoATokenContractCaller for near_workspaces::Account {
         &self,
         contract: &PoATokenContract,
         token_account_id: &AccountIdRef,
+        attached_deposit: NearToken,
     ) -> anyhow::Result<TestLog> {
         let logs = self
             .call(contract.id(), "set_wrapped_token_account_id")
@@ -294,7 +296,7 @@ impl PoATokenContractCaller for near_workspaces::Account {
                 }
             ))
             .max_gas()
-            .deposit(NearToken::from_yoctonear(1))
+            .deposit(attached_deposit)
             .transact()
             .await?
             .into_result()
