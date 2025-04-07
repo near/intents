@@ -199,7 +199,7 @@ impl Contract {
 
     #[private]
     #[payable]
-    pub fn do_sync_wrapped_metadata(&mut self, caller_id: AccountId) -> PromiseOrValue<NearToken> {
+    pub fn do_sync_wrapped_metadata(&mut self, caller_id: AccountId) -> PromiseOrValue<()> {
         let near_sdk::PromiseResult::Successful(metadata_bytes) = env::promise_result(0) else {
             env::panic_str(
                 "Setting metadata failed due to the promise failing at ft_metadata() call.",
@@ -264,7 +264,7 @@ impl Contract {
         if refund > NearToken::from_yoctonear(0) {
             Promise::new(caller_id).transfer(refund).into()
         } else {
-            PromiseOrValue::Value(NearToken::from_near(0))
+            PromiseOrValue::Value(())
         }
     }
 
@@ -272,6 +272,8 @@ impl Contract {
     #[payable]
     pub fn set_wrapped_token_account_id(&mut self, token_account_id: AccountId) -> Promise {
         assert_one_yocto();
+
+        let caller_id = env::predecessor_account_id();
 
         require!(
             self.wrapped_token().is_none(),
@@ -283,13 +285,19 @@ impl Contract {
             .ft_balance_of(CURRENT_ACCOUNT_ID.clone())
             .then(
                 Self::ext(CURRENT_ACCOUNT_ID.clone())
+                    .with_attached_deposit(env::attached_deposit())
                     .with_static_gas(DO_WRAP_TOKEN_GAS)
-                    .do_set_wrapped_token_account_id(token_account_id),
+                    .do_set_wrapped_token_account_id(token_account_id, caller_id),
             )
     }
 
     #[private]
-    pub fn do_set_wrapped_token_account_id(&mut self, token_account_id: AccountId) {
+    #[payable]
+    pub fn do_set_wrapped_token_account_id(
+        &mut self,
+        token_account_id: AccountId,
+        caller_id: AccountId,
+    ) -> PromiseOrValue<()> {
         require!(
             self.wrapped_token().is_none(),
             "Wrapped token is already set"
@@ -320,7 +328,44 @@ impl Contract {
             )
         );
 
+        // TODO: test storage increase attached deposit and whether it's sufficient - Currently cannot be tested because there's no visible change in storage
+        let initial_storage_usage = env::storage_usage();
+
+        let initial_wrapping = self.wrapped_token().cloned();
+
         *self.wrapped_token_mut() = Some(token_account_id);
+
+        let end_storage_usage = env::storage_usage();
+
+        let storage_increase_byte_count = end_storage_usage.saturating_sub(initial_storage_usage);
+
+        near_sdk::log!(
+            "Token wrapping from `{:?}` to `{:?}` - storage change: Initial `{initial_storage_usage}` - End `{end_storage_usage}`",
+            initial_wrapping,
+            self.wrapped_token()
+        );
+
+        let storage_increase_cost = env::storage_byte_cost()
+            .checked_mul(u128::from(storage_increase_byte_count))
+            .ok_or("Storage cost calculation overflow")
+            .unwrap_or_panic();
+
+        let refund = env::attached_deposit()
+            .checked_sub(storage_increase_cost)
+            .ok_or_else(|| {
+                format!(
+                    "Insufficient attached deposit {}yN, required {}yN",
+                    env::attached_deposit().as_yoctonear(),
+                    storage_increase_cost.as_yoctonear(),
+                )
+            })
+            .unwrap_or_panic();
+
+        if refund > NearToken::from_yoctonear(0) {
+            Promise::new(caller_id).transfer(refund).into()
+        } else {
+            PromiseOrValue::Value(())
+        }
     }
 
     /// Returns the amount of tokens that were used/unwrapped after requesting an unwrap
