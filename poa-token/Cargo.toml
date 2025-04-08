@@ -12,6 +12,7 @@ workspace = true
 [dependencies]
 defuse-admin-utils.workspace = true
 defuse-near-utils.workspace = true
+defuse-controller.workspace = true
 
 near-contract-standards.workspace = true
 near-plugins.workspace = true

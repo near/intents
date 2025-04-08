@@ -935,6 +935,7 @@ name = "defuse-poa-token"
 version = "0.1.0"
 dependencies = [
  "defuse-admin-utils",
+ "defuse-controller",
  "defuse-near-utils",
  "near-contract-standards",
  "near-plugins",
