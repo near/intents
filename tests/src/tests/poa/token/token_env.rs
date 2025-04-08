@@ -164,9 +164,13 @@ pub trait PoATokenContractCaller {
         attached_deposit: NearToken,
     ) -> anyhow::Result<TestLog>;
 
-    async fn poa_pause_for_wrapping(&self, contract: &AccountId) -> anyhow::Result<TestLog>;
+    async fn poa_lock_contract_for_wrapping(&self, contract: &AccountId)
+    -> anyhow::Result<TestLog>;
 
-    async fn poa_unpause_for_wrapping(&self, contract: &AccountId) -> anyhow::Result<TestLog>;
+    async fn poa_unlock_contract_for_wrapping(
+        &self,
+        contract: &AccountId,
+    ) -> anyhow::Result<TestLog>;
 }
 
 impl PoATokenContractCaller for near_workspaces::Account {
@@ -356,9 +360,12 @@ impl PoATokenContractCaller for near_workspaces::Account {
         Ok(outcome.into())
     }
 
-    async fn poa_pause_for_wrapping(&self, contract_id: &AccountId) -> anyhow::Result<TestLog> {
+    async fn poa_lock_contract_for_wrapping(
+        &self,
+        contract_id: &AccountId,
+    ) -> anyhow::Result<TestLog> {
         let outcome = self
-            .call(contract_id, "pa_pause_feature")
+            .call(contract_id, "lock_contract")
             .args_json(json!(
                 {
                     "key": "ALL".to_string(),
@@ -372,9 +379,12 @@ impl PoATokenContractCaller for near_workspaces::Account {
         Ok(outcome.into())
     }
 
-    async fn poa_unpause_for_wrapping(&self, contract: &AccountId) -> anyhow::Result<TestLog> {
+    async fn poa_unlock_contract_for_wrapping(
+        &self,
+        contract: &AccountId,
+    ) -> anyhow::Result<TestLog> {
         let outcome = self
-            .call(contract, "pa_unpause_feature")
+            .call(contract, "unlock_contract")
             .args_json(json!(
                 {
                     "key": "ALL".to_string(),

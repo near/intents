@@ -213,10 +213,10 @@ async fn simple_transfer() {
                 .await
                 .unwrap_err()
                 .to_string()
-                .contains("Requires one of these roles")
+                .contains("Method is private")
         );
 
-        // Without pausing, setting token wrapper won't work
+        // Without locking, setting token wrapper won't work
         assert!(
             fixture
                 .poa_contract_owner
@@ -228,14 +228,14 @@ async fn simple_transfer() {
                 .await
                 .unwrap_err()
                 .to_string()
-                .contains("The contract must be paused first")
+                .contains("The contract must be locked first")
         );
 
         // Prepare the conditions for successful wrapping, but test a failed case
         {
             fixture
                 .poa_contract_owner
-                .poa_pause_for_wrapping(fixture.poa_token_contract.id())
+                .poa_lock_contract_for_wrapping(fixture.poa_token_contract.id())
                 .await
                 .unwrap();
 
@@ -256,7 +256,7 @@ async fn simple_transfer() {
 
             fixture
                 .poa_contract_owner
-                .poa_unpause_for_wrapping(fixture.poa_token_contract.id())
+                .poa_unlock_contract_for_wrapping(fixture.poa_token_contract.id())
                 .await
                 .unwrap();
         }
@@ -292,7 +292,7 @@ async fn simple_transfer() {
         {
             fixture
                 .poa_contract_owner
-                .poa_pause_for_wrapping(fixture.poa_token_contract.id())
+                .poa_lock_contract_for_wrapping(fixture.poa_token_contract.id())
                 .await
                 .unwrap();
 
@@ -324,7 +324,7 @@ async fn simple_transfer() {
 
             fixture
                 .poa_contract_owner
-                .poa_unpause_for_wrapping(fixture.poa_token_contract.id())
+                .poa_unlock_contract_for_wrapping(fixture.poa_token_contract.id())
                 .await
                 .unwrap();
         }
@@ -426,7 +426,7 @@ async fn metadata_sync() {
             .await
             .unwrap_err()
             .to_string()
-            .contains("Requires one of these roles")
+            .contains("Method is private")
     );
 
     // Cannot sync metadata before wrapping
@@ -478,7 +478,7 @@ async fn metadata_sync() {
         {
             fixture
                 .poa_contract_owner
-                .poa_pause_for_wrapping(fixture.poa_token_contract.id())
+                .poa_lock_contract_for_wrapping(fixture.poa_token_contract.id())
                 .await
                 .unwrap();
 
@@ -494,7 +494,7 @@ async fn metadata_sync() {
 
             fixture
                 .poa_contract_owner
-                .poa_unpause_for_wrapping(fixture.poa_token_contract.id())
+                .poa_unlock_contract_for_wrapping(fixture.poa_token_contract.id())
                 .await
                 .unwrap();
         }

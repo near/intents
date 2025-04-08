@@ -44,6 +44,18 @@ impl<T> UnwrapOrPanic<T> for Option<T> {
     }
 }
 
+pub trait UnwrapOrPanicCtx<T> {
+    fn unwrap_or_panic_ctx(self, ctx: &str) -> T;
+}
+
+impl<T> UnwrapOrPanicCtx<T> for Option<T> {
+    #[inline]
+    #[track_caller]
+    fn unwrap_or_panic_ctx(self, ctx: &str) -> T {
+        self.unwrap_or_else(|| env::panic_str(ctx))
+    }
+}
+
 impl<T, E> UnwrapOrPanic<T> for Result<T, E>
 where
     E: FunctionError,
