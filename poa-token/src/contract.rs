@@ -28,7 +28,7 @@ use near_sdk::{
     store::Lazy,
 };
 
-const STATE_MIGRATE_FUNCTION: &str = method_name!(Contract::upgrade_to_versioned);
+const STATE_MIGRATE_FUNCTION: &str = method_name!(Contract::state_migrate);
 const STATE_MIGRATE_DEFAULT_GAS: Gas = Gas::from_tgas(5);
 
 const FT_RESOLVE_UNWRAP_GAS: Gas = Gas::from_tgas(10);
@@ -754,7 +754,7 @@ impl ControllerUpgradable for Contract {
             )
     }
 
-    #[only(self, owner)]
+    #[private]
     fn state_migrate(&mut self) {}
 }
 

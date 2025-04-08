@@ -2,6 +2,7 @@
 pub mod contract;
 
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
+use defuse_controller::ControllerUpgradable;
 use near_contract_standards::{
     fungible_token::{
         FungibleTokenCore, FungibleTokenResolver,
@@ -25,6 +26,7 @@ pub trait PoaFungibleToken:
     + Ownable
     + FullAccessKeys
     + CanWrapToken
+    + ControllerUpgradable
 {
     /// Sets metadata.
     /// NOTE: MUST attach 1 yⓃ for security purposes.

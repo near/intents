@@ -923,6 +923,7 @@ name = "defuse-poa-factory"
 version = "0.1.0"
 dependencies = [
  "defuse-admin-utils",
+ "defuse-controller",
  "defuse-near-utils",
  "defuse-poa-token",
  "near-contract-standards",

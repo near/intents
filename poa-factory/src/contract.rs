@@ -2,7 +2,8 @@ use core::iter;
 use std::collections::{HashMap, HashSet};
 
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
-use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanicError, gas_left};
+use defuse_controller::ControllerUpgradable;
+use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanicError, gas_left, method_name};
 use defuse_poa_token::ext_poa_fungible_token;
 use near_contract_standards::fungible_token::{core::ext_ft_core, metadata::FungibleTokenMetadata};
 use near_plugins::{
@@ -20,6 +21,9 @@ use near_sdk::{
 };
 
 use crate::PoaFactory;
+
+const STATE_MIGRATE_FUNCTION: &str = method_name!(Contract::state_migrate);
+const STATE_MIGRATE_DEFAULT_GAS: Gas = Gas::from_tgas(5);
 
 #[cfg(not(clippy))]
 const POA_TOKEN_WASM: &[u8] = include_bytes!(std::env!(
@@ -223,6 +227,30 @@ impl FullAccessKeys for Contract {
         assert_one_yocto();
         Promise::new(CURRENT_ACCOUNT_ID.clone()).delete_key(public_key)
     }
+}
+
+#[near]
+impl ControllerUpgradable for Contract {
+    #[access_control_any(roles(Role::DAO, Role::TokenDeployer))]
+    #[payable]
+    fn upgrade(
+        &mut self,
+        #[serializer(borsh)] code: Vec<u8>,
+        #[serializer(borsh)] state_migration_gas: Option<Gas>,
+    ) -> Promise {
+        assert_one_yocto();
+        Promise::new(CURRENT_ACCOUNT_ID.clone())
+            .deploy_contract(code)
+            .function_call(
+                STATE_MIGRATE_FUNCTION.into(),
+                Vec::new(),
+                NearToken::from_yoctonear(0),
+                state_migration_gas.unwrap_or(STATE_MIGRATE_DEFAULT_GAS),
+            )
+    }
+
+    #[private]
+    fn state_migrate(&mut self) {}
 }
 
 #[derive(BorshSerialize, BorshStorageKey)]
