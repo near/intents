@@ -5,6 +5,7 @@ use near_workspaces::{Account, AccountId, Contract};
 use serde_json::json;
 
 use super::storage_management::StorageManagementExt;
+use super::test_logs::TestLog;
 
 pub const FT_STORAGE_DEPOSIT: NearToken = NearToken::from_yoctonear(2_350_000_000_000_000_000_000);
 const TOTAL_SUPPLY: u128 = 1_000_000_000;
@@ -31,7 +32,7 @@ pub trait FtExt: StorageManagementExt {
         receiver_id: &AccountId,
         amount: u128,
         memo: Option<String>,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<TestLog>;
 
     async fn ft_transfer_call(
         &self,
@@ -91,8 +92,9 @@ impl FtExt for Account {
         receiver_id: &AccountId,
         amount: u128,
         memo: Option<String>,
-    ) -> anyhow::Result<()> {
-        self.call(token_id, "ft_transfer")
+    ) -> anyhow::Result<TestLog> {
+        let outcome = self
+            .call(token_id, "ft_transfer")
             .args_json(json!({
                 "receiver_id": receiver_id,
                 "amount": U128(amount),
@@ -103,7 +105,8 @@ impl FtExt for Account {
             .transact()
             .await?
             .into_result()?;
-        Ok(())
+
+        Ok(outcome.into())
     }
 
     async fn ft_transfer_call(
@@ -175,10 +178,11 @@ impl FtExt for Contract {
         receiver_id: &AccountId,
         amount: u128,
         memo: Option<String>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<TestLog> {
         self.as_account()
             .ft_transfer(token_id, receiver_id, amount, memo)
             .await
+            .map(Into::into)
     }
 
     async fn ft_transfer_call(

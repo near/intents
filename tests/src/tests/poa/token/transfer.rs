@@ -17,8 +17,6 @@ struct TransferFixture {
     poa_token_contract: PoATokenContract,
 }
 
-// FIXME: Restore log asserts that are commented here
-
 impl TransferFixture {
     async fn near_balance(&self, account_id: &AccountId) -> NearToken {
         self.sandbox
@@ -141,7 +139,7 @@ async fn simple_transfer() {
             40_000
         );
 
-        // assert!(!logs.logs().iter().any(|s| s.contains("ft_burn")));
+        assert!(!logs.logs().iter().any(|s| s.contains("ft_burn")));
     }
 
     // Burning tokens by using the special case and transferring to the smart contract address
@@ -175,11 +173,11 @@ async fn simple_transfer() {
             .unwrap();
 
         // Assert that a burn event was emitted
-        // assert!(logs.logs().iter().any(|s| s.contains("ft_burn")));
-        // assert!(logs.logs().iter().any(|s| {
-        //     s.replace(' ', "")
-        //         .contains(&"\"amount\":\"10000\"".to_string())
-        // }));
+        assert!(logs.logs().iter().any(|s| s.contains("ft_burn")));
+        assert!(logs.logs().iter().any(|s| {
+            s.replace(' ', "")
+                .contains(&"\"amount\":\"10000\"".to_string())
+        }));
 
         let total_supply_after_burn = fixture
             .poa_token_contract
@@ -388,7 +386,7 @@ async fn simple_transfer() {
             35_000
         );
 
-        // assert!(!logs.logs().iter().any(|s| s.contains("ft_burn")));
+        assert!(!logs.logs().iter().any(|s| s.contains("ft_burn")));
     }
 
     // Burning tokens by using the special case and transferring to the smart contract address
