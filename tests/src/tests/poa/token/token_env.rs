@@ -4,8 +4,6 @@ use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128};
 use near_workspaces::Contract;
 use serde_json::json;
 
-// FIXME: pass contract id instead of contract
-
 pub const MIN_FT_STORAGE_DEPOSIT_VALUE: NearToken =
     NearToken::from_yoctonear(1_250_000_000_000_000_000_000);
 
