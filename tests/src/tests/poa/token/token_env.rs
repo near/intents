@@ -1,7 +1,5 @@
 use crate::utils::account::AccountExt;
-use near_contract_standards::{
-    fungible_token::metadata::FungibleTokenMetadata, storage_management::StorageBalance,
-};
+use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128};
 use near_workspaces::{Contract, result::ExecutionResult};
 use serde_json::json;
@@ -65,31 +63,12 @@ impl PoATokenContract {
         Self { contract }
     }
 
+    pub fn inner(&self) -> &Contract {
+        &self.contract
+    }
+
     pub fn id(&self) -> &AccountId {
         self.contract.id()
-    }
-
-    pub async fn poa_ft_balance_of(&self, account_id: &AccountIdRef) -> anyhow::Result<U128> {
-        self.contract
-            .call("ft_balance_of")
-            .args_json(json!(
-                {
-                    "account_id": account_id,
-                }
-            ))
-            .view()
-            .await?
-            .json()
-            .map_err(Into::into)
-    }
-
-    pub async fn poa_ft_total_supply(&self) -> anyhow::Result<U128> {
-        self.contract
-            .call("ft_total_supply")
-            .view()
-            .await?
-            .json()
-            .map_err(Into::into)
     }
 
     pub async fn poa_wrapped_token(&self) -> anyhow::Result<Option<AccountId>> {
@@ -120,42 +99,11 @@ pub trait PoATokenContractCaller {
         memo: Option<String>,
     ) -> anyhow::Result<()>;
 
-    async fn poa_storage_deposit(
-        &self,
-        contract: &PoATokenContract,
-        attached_deposit: NearToken,
-        account_id: Option<&AccountIdRef>,
-        registration_only: Option<bool>,
-    ) -> anyhow::Result<StorageBalance>;
-
-    async fn poa_storage_deposit_simple(
-        &self,
-        contract: &PoATokenContract,
-        account_id: &AccountIdRef,
-    ) -> anyhow::Result<StorageBalance>;
-
-    async fn poa_ft_transfer(
-        &self,
-        contract: &PoATokenContract,
-        receiver_id: &AccountIdRef,
-        amount: U128,
-        memo: Option<String>,
-    ) -> anyhow::Result<TestLog>;
-
     async fn poa_set_wrapped_token_account_id(
         &self,
         contract: &PoATokenContract,
         token_account_id: &AccountIdRef,
         attached_deposit: NearToken,
-    ) -> anyhow::Result<TestLog>;
-
-    async fn poa_ft_transfer_call(
-        &self,
-        contract: &PoATokenContract,
-        receiver_id: &AccountIdRef,
-        amount: U128,
-        memo: Option<String>,
-        msg: String,
     ) -> anyhow::Result<TestLog>;
 
     async fn poa_force_sync_wrapped_token_metadata(
@@ -205,87 +153,6 @@ impl PoATokenContractCaller for near_workspaces::Account {
         Ok(())
     }
 
-    async fn poa_storage_deposit_simple(
-        &self,
-        contract: &PoATokenContract,
-        account_id: &AccountIdRef,
-    ) -> anyhow::Result<StorageBalance> {
-        self.poa_storage_deposit(
-            contract,
-            MIN_FT_STORAGE_DEPOSIT_VALUE,
-            Some(account_id),
-            None,
-        )
-        .await
-    }
-
-    async fn poa_storage_deposit(
-        &self,
-        contract: &PoATokenContract,
-        attached_deposit: NearToken,
-        account_id: Option<&AccountIdRef>,
-        registration_only: Option<bool>,
-    ) -> anyhow::Result<StorageBalance> {
-        let mut json_args = json!({});
-
-        if let Some(aid) = account_id {
-            json_args
-                .as_object_mut()
-                .unwrap()
-                .insert("account_id".to_string(), serde_json::to_value(aid).unwrap());
-        }
-
-        if let Some(ro) = registration_only {
-            json_args.as_object_mut().unwrap().insert(
-                "registration_only".to_string(),
-                serde_json::to_value(ro).unwrap(),
-            );
-        }
-
-        self.call(contract.contract.id(), "storage_deposit")
-            .deposit(attached_deposit)
-            .args_json(json_args)
-            .max_gas()
-            .transact()
-            .await?
-            .json()
-            .map_err(Into::into)
-    }
-
-    async fn poa_ft_transfer(
-        &self,
-        contract: &PoATokenContract,
-        receiver_id: &AccountIdRef,
-        amount: U128,
-        memo: Option<String>,
-    ) -> anyhow::Result<TestLog> {
-        let mut json_args = json!(
-            {
-                "receiver_id": receiver_id,
-                "amount": amount,
-            }
-        );
-
-        if let Some(m) = memo {
-            json_args
-                .as_object_mut()
-                .unwrap()
-                .insert("memo".to_string(), m.into());
-        }
-
-        let logs = self
-            .call(contract.id(), "ft_transfer")
-            .args_json(json_args)
-            .max_gas()
-            .deposit(NearToken::from_yoctonear(1))
-            .transact()
-            .await?
-            .into_result()
-            .map(Into::into)?;
-
-        Ok(logs)
-    }
-
     async fn poa_set_wrapped_token_account_id(
         &self,
         contract: &PoATokenContract,
@@ -307,41 +174,6 @@ impl PoATokenContractCaller for near_workspaces::Account {
             .map(Into::into)?;
 
         Ok(logs)
-    }
-
-    async fn poa_ft_transfer_call(
-        &self,
-        contract: &PoATokenContract,
-        receiver_id: &AccountIdRef,
-        amount: U128,
-        memo: Option<String>,
-        msg: String,
-    ) -> anyhow::Result<TestLog> {
-        let mut json_args = json!(
-            {
-                "receiver_id": receiver_id,
-                "amount": amount,
-                "msg": msg,
-            }
-        );
-
-        if let Some(m) = memo {
-            json_args
-                .as_object_mut()
-                .unwrap()
-                .insert("memo".to_string(), m.into());
-        }
-
-        let outcome = self
-            .call(contract.id(), "ft_transfer_call")
-            .args_json(json_args)
-            .max_gas()
-            .deposit(NearToken::from_yoctonear(1))
-            .transact()
-            .await?
-            .into_result()?;
-
-        Ok(outcome.into())
     }
 
     async fn poa_force_sync_wrapped_token_metadata(

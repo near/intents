@@ -21,6 +21,8 @@ pub trait FtExt: StorageManagementExt {
         account_id: &AccountId,
     ) -> anyhow::Result<u128>;
 
+    async fn ft_total_supply(&self, token_id: &AccountId) -> anyhow::Result<u128>;
+
     async fn ft_balance_of(&self, account_id: &AccountId) -> anyhow::Result<u128>;
 
     async fn ft_transfer(
@@ -65,6 +67,14 @@ impl FtExt for Account {
             .args_json(json!({
                 "account_id": account_id,
             }))
+            .await?
+            .json::<U128>()
+            .map(|v| v.0)
+            .map_err(Into::into)
+    }
+
+    async fn ft_total_supply(&self, token_id: &AccountId) -> anyhow::Result<u128> {
+        self.view(token_id, "ft_total_supply")
             .await?
             .json::<U128>()
             .map(|v| v.0)
@@ -153,6 +163,10 @@ impl FtExt for Contract {
 
     async fn ft_balance_of(&self, account_id: &AccountId) -> anyhow::Result<u128> {
         self.as_account().ft_balance_of(account_id).await
+    }
+
+    async fn ft_total_supply(&self, token_id: &AccountId) -> anyhow::Result<u128> {
+        self.as_account().ft_total_supply(token_id).await
     }
 
     async fn ft_transfer(
