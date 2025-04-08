@@ -8,7 +8,7 @@ use super::token_env::POA_TOKEN_WASM;
 
 const UNVERSIONED_POA_CONTRACT_WASM_BYTES: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/old-artifacts/old-poa-token/defuse_poa_token.wasm"
+    "/unversioned-artifacts/old-poa-token/defuse_poa_token.wasm"
 ));
 
 struct UpgradeFixture {
