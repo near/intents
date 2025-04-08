@@ -333,7 +333,7 @@ async fn transfer_and_call(random_seed: Seed) {
                 fixture.poa_l2_token_contract.id(),
                 5_000,
                 None,
-                &fixture.user2.id().to_string(),
+                fixture.user2.id().as_ref(),
             )
             .await
             .unwrap();
@@ -424,7 +424,7 @@ async fn transfer_and_call(random_seed: Seed) {
                 fixture.poa_l3_token_contract.id(),
                 300,
                 None,
-                &fixture.user1.id().to_string(),
+                fixture.user1.id().as_ref(),
             )
             .await
             .unwrap();

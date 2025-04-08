@@ -182,7 +182,6 @@ impl FtExt for Contract {
         self.as_account()
             .ft_transfer(token_id, receiver_id, amount, memo)
             .await
-            .map(Into::into)
     }
 
     async fn ft_transfer_call(
