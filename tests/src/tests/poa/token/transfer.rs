@@ -8,8 +8,6 @@ use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_sdk::{AccountId, NearToken};
 use near_workspaces::Account;
 
-// FIXME: add test that tries to set wrapped token with little balance
-
 struct TransferFixture {
     sandbox: Sandbox,
     poa_contract_owner: Account,
@@ -298,6 +296,22 @@ async fn simple_transfer() {
                 .await
                 .unwrap();
 
+            // This fails because the attached deposit is not enough to cover for storage
+            assert!(
+                fixture
+                    .poa_contract_owner
+                    .poa_set_wrapped_token_account_id(
+                        &fixture.poa_token_contract,
+                        wnear_contract.id(),
+                        NearToken::from_yoctonear(1),
+                    )
+                    .await
+                    .unwrap_err()
+                    .to_string()
+                    .contains("Insufficient attached deposit")
+            );
+
+            // This succeeds, now
             fixture
                 .poa_contract_owner
                 .poa_set_wrapped_token_account_id(
