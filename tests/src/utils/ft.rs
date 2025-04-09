@@ -131,10 +131,11 @@ impl FtExt for Account {
             .into_result()
             .inspect(|outcome| {
                 println!(
-                    "ft_transfer_call: total_gas_burnt: {}, logs: {:#?}",
+                    "ft_transfer_call: total_gas_burnt: {}",
                     outcome.total_gas_burnt,
-                    outcome.logs()
                 );
+                let test_log: TestLog = outcome.clone().into();
+                println!("Inner logs: {test_log:#?}");
             })?
             .json::<U128>()
             .map(|v| v.0)

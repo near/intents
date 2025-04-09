@@ -150,6 +150,7 @@ impl PoATokenContractCaller for near_workspaces::Account {
 
         self.call(contract.contract.id(), "ft_deposit")
             .args_json(json_args)
+            .deposit(NearToken::from_millinear(100))
             .max_gas()
             .transact()
             .await?

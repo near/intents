@@ -37,8 +37,6 @@ const BALANCE_OF_GAS: Gas = Gas::from_tgas(10);
 const METADATA_GET_TOKEN_GAS: Gas = Gas::from_tgas(40);
 const METADATA_SET_TOKEN_GAS: Gas = Gas::from_tgas(50);
 
-// FIXME: remove logs
-
 #[derive(BorshSerialize, BorshDeserialize)]
 #[borsh(crate = "::near_sdk::borsh")]
 pub struct LegacyPoATokenContract {
@@ -258,13 +256,6 @@ impl Contract {
             })
             .unwrap_or_panic();
 
-        near_sdk::log!(
-            "Updated metadata with cost from size {}yNEAR to size {}yNEAR with cost {}yNEAR",
-            initial_storage_usage,
-            end_storage_usage,
-            storage_increase_cost
-        );
-
         if refund > NearToken::from_yoctonear(0) {
             Promise::new(caller_id).transfer(refund).into()
         } else {
@@ -338,8 +329,6 @@ impl Contract {
 
         let initial_storage_usage = env::storage_usage();
 
-        let initial_wrapping = self.wrapped_token().cloned();
-
         match &mut self.inner {
             ContractState::WrappableToken(lock) => {
                 let wrapped_token = &mut lock
@@ -355,12 +344,6 @@ impl Contract {
         let end_storage_usage = env::storage_usage();
 
         let storage_increase_byte_count = end_storage_usage.saturating_sub(initial_storage_usage);
-
-        near_sdk::log!(
-            "Token wrapping from `{:?}` to `{:?}` - storage change: Initial `{initial_storage_usage}` - End `{end_storage_usage}`",
-            initial_wrapping,
-            self.wrapped_token()
-        );
 
         let storage_increase_cost = env::storage_byte_cost()
             .checked_mul(u128::from(storage_increase_byte_count))
@@ -395,10 +378,18 @@ impl Contract {
     ) -> U128 {
         let used = match env::promise_result(0) {
             near_sdk::PromiseResult::Successful(value) => {
-                if let Ok(unused_amount) = near_sdk::serde_json::from_slice::<U128>(&value) {
-                    std::cmp::min(amount, unused_amount)
+                if is_call {
+                    // `ft_transfer_call` returns successfully transferred amount
+                    if let Ok(unused_amount) = near_sdk::serde_json::from_slice::<U128>(&value) {
+                        std::cmp::min(amount, unused_amount).0
+                    } else {
+                        amount.0
+                    }
+                } else if value.is_empty() {
+                    // `ft_transfer` returns empty result on success
+                    amount.0
                 } else {
-                    amount
+                    0
                 }
             }
             near_sdk::PromiseResult::Failed => {
@@ -406,23 +397,26 @@ impl Contract {
                     // do not refund on failed `ft_transfer_call` due to
                     // NEP-141 vulnerability: `ft_resolve_transfer` fails to
                     // read result of `ft_on_transfer` due to insufficient gas
-                    amount
+                    amount.0
                 } else {
-                    0.into()
+                    0
                 }
             }
         };
 
-        let to_refund = amount.0.saturating_sub(used.0);
-        self.token_mut().internal_deposit(sender_id, to_refund);
-        FtBurn {
-            owner_id: sender_id,
-            amount,
-            memo: Some("refund for unwrap"),
-        }
-        .emit();
+        let to_refund = amount.0.saturating_sub(used);
 
-        used
+        if to_refund > 0 {
+            self.token_mut().internal_deposit(sender_id, to_refund);
+            FtMint {
+                owner_id: sender_id,
+                amount,
+                memo: Some("refund for unwrap"),
+            }
+            .emit();
+        }
+
+        used.into()
     }
 
     pub fn lock_contract(&mut self) {
@@ -560,19 +554,12 @@ impl FungibleTokenCore for Contract {
         assert_one_yocto();
 
         if receiver_id != *CURRENT_ACCOUNT_ID {
-            near_sdk::log!(
-                "ft_transfer_call destination is not the smart contract address - proceeding with a standard ft_transfer_call for token."
-            );
             return self
                 .token_mut()
                 .ft_transfer_call(receiver_id, amount, memo, msg);
         }
 
         if self.wrapped_token().is_none() {
-            near_sdk::log!(
-                "No wrapping token in contract. Using legacy ft_transfer_call path. Caller: {} - Receiver: {receiver_id}",
-                &*env::predecessor_account_id()
-            );
             return self
                 .token_mut()
                 .ft_transfer_call(receiver_id, amount, memo, msg);
@@ -594,8 +581,6 @@ impl FungibleTokenCore for Contract {
         };
 
         if let Some((receiver_id_from_msg, msg)) = rest.split_once(':') {
-            near_sdk::log!("Parsed message: Receiver `{receiver_id_from_msg}` and Rest: {msg}.");
-
             let receiver_id_from_msg = receiver_id_from_msg
                 .parse::<AccountId>()
                 .map_err(|e| format!("Failed to parse account id `{receiver_id_from_msg}`: {e}"))
@@ -603,7 +588,6 @@ impl FungibleTokenCore for Contract {
 
             self.unwrap_and_transfer(receiver_id_from_msg, amount, memo, Some(msg.to_string()))
         } else {
-            near_sdk::log!("Parsed message: Receiver `{rest}` and Rest: {msg}.");
             let receiver_id_from_msg: AccountId = rest
                 .parse()
                 .map_err(|e| format!("Failed to parse account id `{rest}``: {e}"))
@@ -660,9 +644,6 @@ impl near_contract_standards::fungible_token::receiver::FungibleTokenReceiver fo
             sender_id
         } else {
             use defuse_near_utils::UnwrapOrPanicError;
-            near_sdk::log!(
-                "In ft_on_transfer, msg is not empty `{msg}`. Attempting to interpret it as AccountId"
-            );
             msg.parse().unwrap_or_panic_display()
         };
 
