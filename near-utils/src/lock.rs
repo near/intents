@@ -106,6 +106,11 @@ impl<T> Lock<T> {
         self.locked = false;
         &mut self.value
     }
+
+    #[inline]
+    pub fn ignore_lock(&self) -> &T {
+        &self.value
+    }
 }
 
 impl<T> From<T> for Lock<T> {

@@ -1,7 +1,8 @@
 #[cfg(feature = "contract")]
-mod contract;
+pub mod contract;
 
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
+use defuse_controller::ControllerUpgradable;
 use near_contract_standards::{
     fungible_token::{
         FungibleTokenCore, FungibleTokenResolver,
@@ -24,6 +25,8 @@ pub trait PoaFungibleToken:
     + StorageManagement
     + Ownable
     + FullAccessKeys
+    + CanWrapToken
+    + ControllerUpgradable
 {
     /// Sets metadata.
     /// NOTE: MUST attach 1 yⓃ for security purposes.
@@ -35,7 +38,14 @@ pub trait PoaFungibleToken:
     fn ft_deposit(&mut self, owner_id: AccountId, amount: U128, memo: Option<String>);
 }
 
+pub trait CanWrapToken {
+    /// If this `PoA` token wraps an Omni-bridge token, returns Some(id) of the token it wraps. Otherwise, None.
+    fn wrapped_token(&self) -> Option<&AccountId>;
+}
+
 pub const WITHDRAW_MEMO_PREFIX: &str = "WITHDRAW_TO:";
+
+pub const UNWRAP_PREFIX: &str = "UNWRAP_TO:";
 
 pub fn withdraw_to(address: impl AsRef<str>) -> String {
     format!("{WITHDRAW_MEMO_PREFIX}{}", address.as_ref())

@@ -16,7 +16,7 @@ use near_sdk::{AccountId, NearToken};
 use near_workspaces::{Account, Contract};
 
 use crate::{
-    tests::poa::factory::PoAFactoryExt,
+    tests::poa::factory::factory_env::PoAFactoryExt,
     utils::{Sandbox, ft::FtExt, wnear::WNearExt},
 };
 
@@ -111,7 +111,7 @@ impl Env {
             .unwrap();
     }
 
-    pub async fn near_balance(&mut self, account_id: &AccountId) -> NearToken {
+    pub async fn near_balance(&self, account_id: &AccountId) -> NearToken {
         self.sandbox
             .worker()
             .view_account(account_id)
@@ -189,11 +189,6 @@ impl EnvBuilder {
         self.roles.grantees.entry(role).or_default().insert(grantee);
         self
     }
-
-    // pub fn staging_duration(mut self, staging_duration: Duration) -> Self {
-    //     self.staging_duration = Some(staging_duration);
-    //     self
-    // }
 
     pub async fn build(mut self) -> Env {
         let sandbox = Sandbox::new().await.unwrap();

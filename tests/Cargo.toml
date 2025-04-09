@@ -9,6 +9,7 @@ workspace = true
 [dev-dependencies]
 defuse = { workspace = true, features = ["contract"] }
 defuse-poa-factory = { workspace = true, features = ["contract"] }
+defuse-poa-token = { workspace = true, features = ["contract"] }
 
 anyhow.workspace = true
 bnum = { workspace = true, features = ["rand"] }

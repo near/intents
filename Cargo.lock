@@ -923,6 +923,7 @@ name = "defuse-poa-factory"
 version = "0.1.0"
 dependencies = [
  "defuse-admin-utils",
+ "defuse-controller",
  "defuse-near-utils",
  "defuse-poa-token",
  "near-contract-standards",
@@ -935,6 +936,7 @@ name = "defuse-poa-token"
 version = "0.1.0"
 dependencies = [
  "defuse-admin-utils",
+ "defuse-controller",
  "defuse-near-utils",
  "near-contract-standards",
  "near-plugins",
@@ -958,6 +960,7 @@ dependencies = [
  "bnum",
  "defuse",
  "defuse-poa-factory",
+ "defuse-poa-token",
  "hex-literal",
  "impl-tools",
  "near-contract-standards",

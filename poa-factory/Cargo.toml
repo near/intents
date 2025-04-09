@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 defuse-admin-utils.workspace = true
+defuse-controller.workspace = true
 defuse-near-utils.workspace = true
 defuse-poa-token.workspace = true
 

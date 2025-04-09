@@ -4,8 +4,8 @@ use near_workspaces::types::NearToken;
 use near_workspaces::{Account, AccountId, Contract};
 use serde_json::json;
 
-use super::account::AccountExt;
 use super::storage_management::StorageManagementExt;
+use super::test_logs::TestLog;
 
 pub const FT_STORAGE_DEPOSIT: NearToken = NearToken::from_yoctonear(2_350_000_000_000_000_000_000);
 const TOTAL_SUPPLY: u128 = 1_000_000_000;
@@ -16,13 +16,13 @@ const FUNGIBLE_TOKEN_WASM: &[u8] = include_bytes!(concat!(
 ));
 
 pub trait FtExt: StorageManagementExt {
-    async fn deploy_vanilla_ft_token(&self, token_name: &str) -> anyhow::Result<Contract>;
-
     async fn ft_token_balance_of(
         &self,
         token_id: &AccountId,
         account_id: &AccountId,
     ) -> anyhow::Result<u128>;
+
+    async fn ft_total_supply(&self, token_id: &AccountId) -> anyhow::Result<u128>;
 
     async fn ft_balance_of(&self, account_id: &AccountId) -> anyhow::Result<u128>;
 
@@ -32,7 +32,7 @@ pub trait FtExt: StorageManagementExt {
         receiver_id: &AccountId,
         amount: u128,
         memo: Option<String>,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<TestLog>;
 
     async fn ft_transfer_call(
         &self,
@@ -59,30 +59,6 @@ pub trait FtExt: StorageManagementExt {
 }
 
 impl FtExt for Account {
-    async fn deploy_vanilla_ft_token(&self, token_name: &str) -> anyhow::Result<Contract> {
-        let contract = self
-            .deploy_contract(token_name, FUNGIBLE_TOKEN_WASM)
-            .await?;
-        contract
-            .call("new")
-            .args_json(json!({
-                "owner_id": self.id(),
-                "total_supply": TOTAL_SUPPLY.to_string(),
-                "metadata": {
-                    "spec": "ft-1.0.0",
-                    "name": format!("Token {}", token_name),
-                    "symbol": "TKN",
-                    "decimals": 18
-                }
-            }))
-            .max_gas()
-            .transact()
-            .await?
-            .into_result()?;
-
-        Ok(contract)
-    }
-
     async fn ft_token_balance_of(
         &self,
         token_id: &AccountId,
@@ -92,6 +68,14 @@ impl FtExt for Account {
             .args_json(json!({
                 "account_id": account_id,
             }))
+            .await?
+            .json::<U128>()
+            .map(|v| v.0)
+            .map_err(Into::into)
+    }
+
+    async fn ft_total_supply(&self, token_id: &AccountId) -> anyhow::Result<u128> {
+        self.view(token_id, "ft_total_supply")
             .await?
             .json::<U128>()
             .map(|v| v.0)
@@ -108,8 +92,9 @@ impl FtExt for Account {
         receiver_id: &AccountId,
         amount: u128,
         memo: Option<String>,
-    ) -> anyhow::Result<()> {
-        self.call(token_id, "ft_transfer")
+    ) -> anyhow::Result<TestLog> {
+        let outcome = self
+            .call(token_id, "ft_transfer")
             .args_json(json!({
                 "receiver_id": receiver_id,
                 "amount": U128(amount),
@@ -120,7 +105,8 @@ impl FtExt for Account {
             .transact()
             .await?
             .into_result()?;
-        Ok(())
+
+        Ok(outcome.into())
     }
 
     async fn ft_transfer_call(
@@ -145,10 +131,11 @@ impl FtExt for Account {
             .into_result()
             .inspect(|outcome| {
                 println!(
-                    "ft_transfer_call: total_gas_burnt: {}, logs: {:#?}",
+                    "ft_transfer_call: total_gas_burnt: {}",
                     outcome.total_gas_burnt,
-                    outcome.logs()
                 );
+                let test_log: TestLog = outcome.clone().into();
+                println!("Inner logs: {test_log:#?}");
             })?
             .json::<U128>()
             .map(|v| v.0)
@@ -168,10 +155,6 @@ impl FtExt for Account {
 }
 
 impl FtExt for Contract {
-    async fn deploy_vanilla_ft_token(&self, token_name: &str) -> anyhow::Result<Self> {
-        self.as_account().deploy_vanilla_ft_token(token_name).await
-    }
-
     async fn ft_token_balance_of(
         &self,
         token_id: &AccountId,
@@ -186,13 +169,17 @@ impl FtExt for Contract {
         self.as_account().ft_balance_of(account_id).await
     }
 
+    async fn ft_total_supply(&self, token_id: &AccountId) -> anyhow::Result<u128> {
+        self.as_account().ft_total_supply(token_id).await
+    }
+
     async fn ft_transfer(
         &self,
         token_id: &AccountId,
         receiver_id: &AccountId,
         amount: u128,
         memo: Option<String>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<TestLog> {
         self.as_account()
             .ft_transfer(token_id, receiver_id, amount, memo)
             .await
