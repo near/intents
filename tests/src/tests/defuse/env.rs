@@ -16,7 +16,7 @@ use near_sdk::{AccountId, NearToken};
 use near_workspaces::{Account, Contract};
 
 use crate::{
-    tests::poa::factory::PoAFactoryExt,
+    tests::poa::factory::factory_env::PoAFactoryExt,
     utils::{Sandbox, ft::FtExt, wnear::WNearExt},
 };
 

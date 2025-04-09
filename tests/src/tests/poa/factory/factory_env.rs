@@ -26,12 +26,14 @@ pub trait PoAFactoryExt {
     fn token_id(token: &str, factory: &AccountId) -> AccountId {
         format!("{token}.{factory}").parse().unwrap()
     }
+
     async fn poa_factory_deploy_token(
         &self,
         factory: &AccountId,
         token: &str,
         metadata: impl Into<Option<FungibleTokenMetadata>>,
     ) -> anyhow::Result<AccountId>;
+
     async fn poa_deploy_token(
         &self,
         token: &str,
@@ -47,6 +49,7 @@ pub trait PoAFactoryExt {
         msg: Option<String>,
         memo: Option<String>,
     ) -> anyhow::Result<()>;
+
     async fn poa_ft_deposit(
         &self,
         token: &str,
@@ -55,6 +58,7 @@ pub trait PoAFactoryExt {
         msg: Option<String>,
         memo: Option<String>,
     ) -> anyhow::Result<()>;
+
     async fn poa_factory_tokens(
         &self,
         poa_factory: &AccountId,
@@ -233,75 +237,5 @@ impl PoAFactoryExt for near_workspaces::Contract {
         poa_factory: &AccountId,
     ) -> anyhow::Result<HashMap<String, AccountId>> {
         self.as_account().poa_factory_tokens(poa_factory).await
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    use crate::utils::{Sandbox, ft::FtExt};
-
-    #[tokio::test]
-    async fn test_deploy_mint() {
-        let sandbox = Sandbox::new().await.unwrap();
-        let root = sandbox.root_account();
-        let user = sandbox.create_account("user1").await;
-
-        let poa_factory = root
-            .deploy_poa_factory(
-                "poa-factory",
-                [root.id().clone()],
-                [
-                    (Role::TokenDeployer, [root.id().clone()]),
-                    (Role::TokenDepositer, [root.id().clone()]),
-                ],
-                [
-                    (Role::TokenDeployer, [root.id().clone()]),
-                    (Role::TokenDepositer, [root.id().clone()]),
-                ],
-            )
-            .await
-            .unwrap();
-
-        user.poa_factory_deploy_token(poa_factory.id(), "ft1", None)
-            .await
-            .unwrap_err();
-
-        root.poa_factory_deploy_token(poa_factory.id(), "ft1.abc", None)
-            .await
-            .unwrap_err();
-
-        let ft1 = root
-            .poa_factory_deploy_token(poa_factory.id(), "ft1", None)
-            .await
-            .unwrap();
-
-        root.poa_factory_deploy_token(poa_factory.id(), "ft1", None)
-            .await
-            .unwrap_err();
-
-        assert_eq!(
-            sandbox.ft_token_balance_of(&ft1, user.id()).await.unwrap(),
-            0
-        );
-
-        sandbox
-            .ft_storage_deposit_many(&ft1, &[root.id(), user.id()])
-            .await
-            .unwrap();
-
-        user.poa_factory_ft_deposit(poa_factory.id(), "ft1", user.id(), 1000, None, None)
-            .await
-            .unwrap_err();
-
-        root.poa_factory_ft_deposit(poa_factory.id(), "ft1", user.id(), 1000, None, None)
-            .await
-            .unwrap();
-
-        assert_eq!(
-            sandbox.ft_token_balance_of(&ft1, user.id()).await.unwrap(),
-            1000
-        );
     }
 }

@@ -16,7 +16,7 @@ use serde_json::json;
 use crate::{
     tests::{
         defuse::{DefuseSigner, env::Env},
-        poa::factory::PoAFactoryExt,
+        poa::factory::factory_env::PoAFactoryExt,
     },
     utils::{acl::AclExt, ft::FtExt, mt::MtExt},
 };

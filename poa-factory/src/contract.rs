@@ -39,6 +39,8 @@ const POA_TOKEN_FT_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
 /// Copied from `near_contract_standards::fungible_token::core_impl::GAS_FOR_FT_TRANSFER_CALL`
 const POA_TOKEN_FT_TRANSFER_CALL_MIN_GAS: Gas = Gas::from_tgas(30);
 
+const POA_TOKEN_UPRADE_GAS: Gas = Gas::from_tgas(10);
+
 #[derive(AccessControlRole, Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[near(serializers = [json])]
 pub enum Role {
@@ -95,6 +97,39 @@ impl Contract {
             "failed to set roles"
         );
         contract
+    }
+
+    #[pause]
+    #[access_control_any(roles(Role::DAO, Role::TokenDeployer))]
+    #[payable]
+    pub fn upgrade_token(&mut self, token: String, self_public_key: PublicKey) -> Promise {
+        // FIXME: Check what conditions for atomicity, safety and repeatability are needed
+        Promise::new(Self::token_id(token))
+            .function_call(
+                "add_full_access_key".to_string(),
+                serde_json::to_vec(&json!({
+                    "public_key": self_public_key,
+                }))
+                .unwrap_or_panic_display(),
+                NearToken::from_near(0),
+                POA_TOKEN_UPRADE_GAS,
+            )
+            .deploy_contract(POA_TOKEN_WASM.to_vec())
+            .function_call(
+                "upgrade_to_versioned".to_string(),
+                serde_json::to_vec(&json!({})).unwrap_or_panic_display(),
+                NearToken::from_yoctonear(1), // FIXME: amount
+                POA_TOKEN_UPRADE_GAS,
+            )
+            .function_call(
+                "delete_key".to_string(),
+                serde_json::to_vec(&json!({
+                    "public_key": self_public_key,
+                }))
+                .unwrap_or_panic_display(),
+                NearToken::from_near(0),
+                POA_TOKEN_UPRADE_GAS,
+            )
     }
 }
 
