@@ -37,7 +37,7 @@ const BALANCE_OF_GAS: Gas = Gas::from_tgas(10);
 const METADATA_GET_TOKEN_GAS: Gas = Gas::from_tgas(40);
 const METADATA_SET_TOKEN_GAS: Gas = Gas::from_tgas(50);
 
-// TODO: remove logs
+// FIXME: remove logs
 
 #[derive(BorshSerialize, BorshDeserialize)]
 #[borsh(crate = "::near_sdk::borsh")]
