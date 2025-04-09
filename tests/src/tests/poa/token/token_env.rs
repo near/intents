@@ -195,11 +195,6 @@ impl PoATokenContractCaller for near_workspaces::Account {
     ) -> anyhow::Result<TestLog> {
         let outcome = self
             .call(contract_id, "lock_contract")
-            .args_json(json!(
-                {
-                    "key": "ALL".to_string(),
-                }
-            ))
             .max_gas()
             .transact()
             .await?
@@ -214,11 +209,6 @@ impl PoATokenContractCaller for near_workspaces::Account {
     ) -> anyhow::Result<TestLog> {
         let outcome = self
             .call(contract, "unlock_contract")
-            .args_json(json!(
-                {
-                    "key": "ALL".to_string(),
-                }
-            ))
             .max_gas()
             .transact()
             .await?
