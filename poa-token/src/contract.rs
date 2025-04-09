@@ -442,6 +442,10 @@ impl Contract {
             }
         }
     }
+
+    pub fn is_contract_locked(&self) -> bool {
+        self.is_locked()
+    }
 }
 
 impl Contract {

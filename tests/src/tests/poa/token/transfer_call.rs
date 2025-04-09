@@ -225,11 +225,27 @@ async fn transfer_and_call(random_seed: Seed) {
         );
 
         {
+            assert!(
+                !fixture
+                    .poa_l3_token_contract
+                    .poa_is_contract_locked_for_wrapping()
+                    .await
+                    .unwrap()
+            );
+
             fixture
                 .poa_l3_contract_owner
                 .poa_lock_contract_for_wrapping(fixture.poa_l3_token_contract.id())
                 .await
                 .unwrap();
+
+            assert!(
+                fixture
+                    .poa_l3_token_contract
+                    .poa_is_contract_locked_for_wrapping()
+                    .await
+                    .unwrap()
+            );
 
             fixture
                 .poa_l3_contract_owner
@@ -246,6 +262,14 @@ async fn transfer_and_call(random_seed: Seed) {
                 .poa_unlock_contract_for_wrapping(fixture.poa_l3_token_contract.id())
                 .await
                 .unwrap();
+
+            assert!(
+                !fixture
+                    .poa_l3_token_contract
+                    .poa_is_contract_locked_for_wrapping()
+                    .await
+                    .unwrap()
+            );
         }
 
         assert_eq!(

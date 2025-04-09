@@ -85,6 +85,14 @@ impl PoATokenContract {
             .json()
             .map_err(Into::into)
     }
+
+    pub async fn poa_is_contract_locked_for_wrapping(&self) -> anyhow::Result<bool> {
+        self.contract
+            .view("is_contract_locked")
+            .await?
+            .json()
+            .map_err(Into::into)
+    }
 }
 
 pub trait PoATokenContractCaller {
