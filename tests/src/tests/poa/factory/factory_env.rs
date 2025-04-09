@@ -11,7 +11,8 @@ use serde_json::json;
 
 use crate::utils::{account::AccountExt, read_wasm};
 
-static POA_FACTORY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("defuse_poa_factory"));
+static CURRENT_POA_FACTORY_WASM: LazyLock<Vec<u8>> =
+    LazyLock::new(|| read_wasm("defuse_poa_factory"));
 
 pub trait PoAFactoryExt {
     async fn deploy_poa_factory(
@@ -73,7 +74,9 @@ impl PoAFactoryExt for near_workspaces::Account {
         admins: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
         grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
     ) -> anyhow::Result<Contract> {
-        let contract = self.deploy_contract(name, &POA_FACTORY_WASM).await?;
+        let contract = self
+            .deploy_contract(name, &CURRENT_POA_FACTORY_WASM)
+            .await?;
         self.transfer_near(contract.id(), NearToken::from_near(100))
             .await?
             .into_result()?;
