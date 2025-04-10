@@ -258,7 +258,7 @@ impl EnvBuilder {
                 .poa_factory_deploy_token(poa_factory.id(), "ft3", None)
                 .await
                 .unwrap(),
-            poa_factory,
+            poa_factory: poa_factory.clone(),
             sandbox,
         };
 
@@ -282,8 +282,8 @@ impl EnvBuilder {
                 .await
                 .unwrap();
 
-            env_result
-                .ft_storage_deposit(
+            poa_factory
+                .ft_storage_deposit_many(
                     &env_result.ft1,
                     &[
                         env_result.user1.id(),
@@ -296,8 +296,8 @@ impl EnvBuilder {
                 .await
                 .unwrap();
 
-            env_result
-                .ft_storage_deposit(
+            poa_factory
+                .ft_storage_deposit_many(
                     &env_result.ft2,
                     &[
                         env_result.user1.id(),
@@ -310,8 +310,8 @@ impl EnvBuilder {
                 .await
                 .unwrap();
 
-            env_result
-                .ft_storage_deposit(
+            poa_factory
+                .ft_storage_deposit_many(
                     &env_result.ft3,
                     &[
                         env_result.user1.id(),

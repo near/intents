@@ -206,7 +206,8 @@ async fn test_ft_withdraw_intent_msg(random_seed: Seed) {
         )
         .await
         .unwrap();
-    env.ft_storage_deposit(&env.ft1, &[defuse2.id()])
+    env.poa_factory
+        .ft_storage_deposit_many(&env.ft1, &[defuse2.id()])
         .await
         .unwrap();
 

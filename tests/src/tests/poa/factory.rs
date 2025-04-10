@@ -286,7 +286,7 @@ mod tests {
             0
         );
 
-        sandbox
+        poa_factory
             .ft_storage_deposit_many(&ft1, &[root.id(), user.id()])
             .await
             .unwrap();
