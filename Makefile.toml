@@ -5,7 +5,8 @@ skip_core_tasks = true
 [env]
 TARGET_DIR = "${PWD}/res"
 POA_TOKEN_WASM = "${TARGET_DIR}/defuse_poa_token.wasm"
-POA_TOKEN_WITH_NO_REGISTRATION = "${TARGET_DIR}/poa-token-no-registration"
+POA_TOKEN_WITH_NO_REGISTRATION_DIR = "${TARGET_DIR}/poa-token-no-registration"
+POA_TOKEN_WASM_NO_REGISTRATION_WASM = "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}/defuse_poa_token.wasm"
 
 [tasks.default]
 alias = "build"
@@ -35,7 +36,7 @@ args = [
 ]
 
 [tasks.build-poa-factory]
-dependencies = ["add-cache-dir-tag", "build-poa-token", "build-poa-token-no-registration"]
+dependencies = ["add-cache-dir-tag", "build-poa-token", "build-poa-factory-no-registration"]
 command = "cargo"
 args = [
     "near",
@@ -47,6 +48,22 @@ args = [
     "contract",
     "--out-dir",
     "${TARGET_DIR}",
+    "--no-embed-abi",
+]
+
+[tasks.build-poa-factory-no-registration]
+dependencies = ["add-cache-dir-tag", "build-poa-token-no-registration"]
+command = "cargo"
+args = [
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--manifest-path",
+    "./poa-factory/Cargo.toml",
+    "--features",
+    "contract,no-registration",
+    "--out-dir",
+    "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}",
     "--no-embed-abi",
 ]
 
@@ -78,7 +95,7 @@ args = [
     "--features",
     "contract,no-registration",
     "--out-dir",
-    "${POA_TOKEN_WITH_NO_REGISTRATION}",
+    "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}",
     "--no-embed-abi",
 ]
 

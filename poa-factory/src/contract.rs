@@ -21,10 +21,15 @@ use near_sdk::{
 
 use crate::PoaFactory;
 
-#[cfg(not(clippy))]
+#[cfg(all(not(clippy), not(feature = "no-registration")))]
 const POA_TOKEN_WASM: &[u8] = include_bytes!(std::env!(
     "POA_TOKEN_WASM",
     "Set ${POA_TOKEN_WASM} to be the path of the PoA token binary",
+));
+#[cfg(all(not(clippy), feature = "no-registration"))]
+const POA_TOKEN_WASM: &[u8] = include_bytes!(std::env!(
+    "POA_TOKEN_WASM_NO_REGISTRATION_WASM",
+    "Set ${POA_TOKEN_WASM_NO_REGISTRATION_WASM} to be the path of the PoA token binary",
 ));
 #[cfg(clippy)]
 const POA_TOKEN_WASM: &[u8] = b"";
