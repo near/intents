@@ -45,10 +45,6 @@ impl Env {
         EnvBuilder::default()
     }
 
-    pub async fn new() -> Self {
-        Self::builder().build().await
-    }
-
     pub async fn ft_storage_deposit(
         &self,
         token: &AccountId,
@@ -147,6 +143,7 @@ pub struct EnvBuilder {
     self_as_super_admin: bool,
     deployer_as_super_admin: bool,
     disable_ft_storage_deposit: bool,
+    disable_registration: bool,
 }
 
 impl EnvBuilder {
@@ -190,6 +187,11 @@ impl EnvBuilder {
         self
     }
 
+    pub fn no_registration(mut self, no_reg_value: bool) -> Self {
+        self.disable_registration = no_reg_value;
+        self
+    }
+
     // pub fn staging_duration(mut self, staging_duration: Duration) -> Self {
     //     self.staging_duration = Some(staging_duration);
     //     self
@@ -211,6 +213,7 @@ impl EnvBuilder {
                     (POAFactoryRole::TokenDeployer, [root.id().clone()]),
                     (POAFactoryRole::TokenDepositer, [root.id().clone()]),
                 ],
+                self.disable_registration,
             )
             .await
             .unwrap();

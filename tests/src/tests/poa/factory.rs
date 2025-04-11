@@ -12,6 +12,16 @@ use serde_json::json;
 use crate::utils::{account::AccountExt, read_wasm};
 
 static POA_FACTORY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("defuse_poa_factory"));
+static POA_FACTORY_WASM_NO_REGISTRATION: LazyLock<Vec<u8>> =
+    LazyLock::new(|| read_wasm("poa-token-no-registration/defuse_poa_factory"));
+
+fn poa_factory_wasm(no_registration: bool) -> &'static [u8] {
+    if !no_registration {
+        &*POA_FACTORY_WASM
+    } else {
+        &*POA_FACTORY_WASM_NO_REGISTRATION
+    }
+}
 
 pub trait PoAFactoryExt {
     async fn deploy_poa_factory(
@@ -20,6 +30,7 @@ pub trait PoAFactoryExt {
         super_admins: impl IntoIterator<Item = AccountId>,
         admins: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
         grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
+        no_registration: bool,
     ) -> anyhow::Result<Contract>;
 
     #[track_caller]
@@ -68,8 +79,11 @@ impl PoAFactoryExt for near_workspaces::Account {
         super_admins: impl IntoIterator<Item = AccountId>,
         admins: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
         grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
+        no_registration: bool,
     ) -> anyhow::Result<Contract> {
-        let contract = self.deploy_contract(name, &POA_FACTORY_WASM).await?;
+        let contract = self
+            .deploy_contract(name, poa_factory_wasm(no_registration))
+            .await?;
         self.transfer_near(contract.id(), NearToken::from_near(100))
             .await?
             .into_result()?;
@@ -176,9 +190,10 @@ impl PoAFactoryExt for near_workspaces::Contract {
         super_admins: impl IntoIterator<Item = AccountId>,
         admins: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
         grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
+        no_registration: bool,
     ) -> anyhow::Result<Contract> {
         self.as_account()
-            .deploy_poa_factory(name, super_admins, admins, grantees)
+            .deploy_poa_factory(name, super_admins, admins, grantees, no_registration)
             .await
     }
 
@@ -238,12 +253,15 @@ impl PoAFactoryExt for near_workspaces::Contract {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
 
     use crate::utils::{Sandbox, ft::FtExt};
 
     #[tokio::test]
-    async fn test_deploy_mint() {
+    #[rstest]
+    async fn test_deploy_mint(#[values(false, true)] no_registration: bool) {
         let sandbox = Sandbox::new().await.unwrap();
         let root = sandbox.root_account();
         let user = sandbox.create_account("user1").await;
@@ -260,6 +278,7 @@ mod tests {
                     (Role::TokenDeployer, [root.id().clone()]),
                     (Role::TokenDepositer, [root.id().clone()]),
                 ],
+                no_registration,
             )
             .await
             .unwrap();

@@ -36,7 +36,11 @@ async fn storage_deposit_success(
 ) {
     let mut rng = make_seedable_rng(random_seed);
 
-    let env = Env::builder().disable_ft_storage_deposit().build().await;
+    let env = Env::builder()
+        .disable_ft_storage_deposit()
+        .no_registration(false)
+        .build()
+        .await;
 
     env.fund_account_with_near(env.user1.id(), NearToken::from_near(1000))
         .await;
@@ -145,7 +149,11 @@ async fn storage_deposit_success(
 async fn storage_deposit_fails_user_has_no_balance_in_intents(random_seed: Seed) {
     let mut rng = make_seedable_rng(random_seed);
 
-    let env = Env::builder().disable_ft_storage_deposit().build().await;
+    let env = Env::builder()
+        .disable_ft_storage_deposit()
+        .no_registration(false)
+        .build()
+        .await;
 
     env.fund_account_with_near(&env.user1.id().to_owned(), NearToken::from_near(1000))
         .await;

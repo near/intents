@@ -24,13 +24,14 @@ use crate::{
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn test_ft_withdraw_intent(random_seed: Seed) {
+async fn test_ft_withdraw_intent(random_seed: Seed, #[values(false, true)] _no_registration: bool) {
+    // FIXME: fix this test with no_registration being true and false
     // intentionally large deposit
     const STORAGE_DEPOSIT: NearToken = NearToken::from_near(1000);
 
     let mut rng = make_seedable_rng(random_seed);
 
-    let env = Env::new().await;
+    let env = Env::builder().no_registration(false).build().await;
 
     env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
         .await
@@ -66,6 +67,7 @@ async fn test_ft_withdraw_intent(random_seed: Seed) {
             .unwrap(),
         1000
     );
+
     assert_eq!(
         env.ft_token_balance_of(&env.ft1, &other_user_id)
             .await
@@ -187,10 +189,16 @@ async fn test_ft_withdraw_intent(random_seed: Seed) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn test_ft_withdraw_intent_msg(random_seed: Seed) {
+async fn test_ft_withdraw_intent_msg(
+    random_seed: Seed,
+    #[values(false, true)] no_registration: bool,
+) {
     let mut rng = make_seedable_rng(random_seed);
 
-    let env = Env::new().await;
+    let env = Env::builder()
+        .no_registration(no_registration)
+        .build()
+        .await;
 
     let defuse2 = env
         .deploy_defuse(
@@ -206,6 +214,7 @@ async fn test_ft_withdraw_intent_msg(random_seed: Seed) {
         )
         .await
         .unwrap();
+
     env.poa_factory
         .ft_storage_deposit_many(&env.ft1, &[defuse2.id()])
         .await

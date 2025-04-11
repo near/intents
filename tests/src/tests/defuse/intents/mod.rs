@@ -9,6 +9,7 @@ use defuse::{
 };
 use near_sdk::{AccountId, AccountIdRef};
 use randomness::{Rng, make_true_rng};
+use rstest::rstest;
 use serde_json::json;
 
 use crate::utils::mt::MtExt;
@@ -137,8 +138,12 @@ impl ExecuteIntentsExt for near_workspaces::Contract {
 }
 
 #[tokio::test]
-async fn test_simulate_is_view_method() {
-    let env = Env::new().await;
+#[rstest]
+async fn test_simulate_is_view_method(#[values(false, true)] no_registration: bool) {
+    let env = Env::builder()
+        .no_registration(no_registration)
+        .build()
+        .await;
 
     let ft1 = TokenId::Nep141(env.ft1.clone());
 
@@ -184,11 +189,15 @@ async fn test_simulate_is_view_method() {
 }
 
 #[tokio::test]
-async fn test_webauthn() {
+#[rstest]
+async fn test_webauthn(#[values(false, true)] no_registration: bool) {
     const SIGNER_ID: &AccountIdRef =
         AccountIdRef::new_or_panic("0x3602b546589a8fcafdce7fad64a46f91db0e4d50");
 
-    let env = Env::new().await;
+    let env = Env::builder()
+        .no_registration(no_registration)
+        .build()
+        .await;
 
     let ft1 = TokenId::Nep141(env.ft1.clone());
 
