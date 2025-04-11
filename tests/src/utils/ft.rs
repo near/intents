@@ -148,7 +148,7 @@ impl FtExt for Account {
                 println!(
                     "ft_transfer_call Logs: {:?}",
                     TestLog::from(outcome.clone())
-                )
+                );
             })?
             .json::<U128>()
             .map(|v| v.0)

@@ -133,6 +133,7 @@ impl Deref for Env {
     }
 }
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Default)]
 pub struct EnvBuilder {
     fee: Pips,

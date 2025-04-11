@@ -16,10 +16,10 @@ static POA_FACTORY_WASM_NO_REGISTRATION: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("poa-token-no-registration/defuse_poa_factory"));
 
 fn poa_factory_wasm(no_registration: bool) -> &'static [u8] {
-    if !no_registration {
-        &*POA_FACTORY_WASM
+    if no_registration {
+        &POA_FACTORY_WASM_NO_REGISTRATION
     } else {
-        &*POA_FACTORY_WASM_NO_REGISTRATION
+        &POA_FACTORY_WASM
     }
 }
 
