@@ -137,18 +137,12 @@ impl FungibleTokenResolver for Contract {
 #[near]
 impl StorageManagement for Contract {
     #[payable]
+    #[cfg_attr(feature = "no-registration", only(self, owner))]
     fn storage_deposit(
         &mut self,
         account_id: Option<AccountId>,
         registration_only: Option<bool>,
     ) -> StorageBalance {
-        {
-            // This code in this scope equivalent to `#[only(self, owner)]`, but it can't be put behind a feature
-            #[cfg(feature = "no-registration")]
-            if !self.owner_is() {
-                ::near_sdk::assert_self();
-            }
-        }
         self.token.storage_deposit(account_id, registration_only)
     }
 
