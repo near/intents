@@ -222,7 +222,6 @@ impl EnvBuilder {
                     (POAFactoryRole::TokenDeployer, [root.id().clone()]),
                     (POAFactoryRole::TokenDepositer, [root.id().clone()]),
                 ],
-                self.disable_registration,
             )
             .await
             .unwrap();

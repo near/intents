@@ -20,7 +20,6 @@ pub trait PoAFactoryExt {
         super_admins: impl IntoIterator<Item = AccountId>,
         admins: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
         grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
-        no_registration: bool,
     ) -> anyhow::Result<Contract>;
 
     #[track_caller]
@@ -72,7 +71,6 @@ impl PoAFactoryExt for near_workspaces::Account {
         super_admins: impl IntoIterator<Item = AccountId>,
         admins: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
         grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
-        no_registration: bool, // FIXME: remove
     ) -> anyhow::Result<Contract> {
         let contract = self.deploy_contract(name, &POA_FACTORY_WASM).await?;
         self.transfer_near(contract.id(), NearToken::from_near(100))
@@ -181,10 +179,9 @@ impl PoAFactoryExt for near_workspaces::Contract {
         super_admins: impl IntoIterator<Item = AccountId>,
         admins: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
         grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
-        no_registration: bool,
     ) -> anyhow::Result<Contract> {
         self.as_account()
-            .deploy_poa_factory(name, super_admins, admins, grantees, no_registration)
+            .deploy_poa_factory(name, super_admins, admins, grantees)
             .await
     }
 
@@ -252,7 +249,7 @@ mod tests {
 
     #[tokio::test]
     #[rstest]
-    async fn test_deploy_mint(#[values(false, true)] no_registration: bool) {
+    async fn test_deploy_mint() {
         let sandbox = Sandbox::new().await.unwrap();
         let root = sandbox.root_account();
         let user = sandbox.create_account("user1").await;
@@ -269,7 +266,6 @@ mod tests {
                     (Role::TokenDeployer, [root.id().clone()]),
                     (Role::TokenDepositer, [root.id().clone()]),
                 ],
-                no_registration,
             )
             .await
             .unwrap();
