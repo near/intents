@@ -188,12 +188,16 @@ impl Contract {
 #[near]
 impl FullAccessKeys for Contract {
     #[only(self, owner)]
+    #[payable]
     fn add_full_access_key(&mut self, public_key: PublicKey) -> Promise {
+        assert_one_yocto();
         Promise::new(CURRENT_ACCOUNT_ID.clone()).add_full_access_key(public_key)
     }
 
     #[only(self, owner)]
+    #[payable]
     fn delete_key(&mut self, public_key: PublicKey) -> Promise {
+        assert_one_yocto();
         Promise::new(CURRENT_ACCOUNT_ID.clone()).delete_key(public_key)
     }
 }
