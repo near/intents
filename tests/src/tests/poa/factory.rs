@@ -12,16 +12,6 @@ use serde_json::json;
 use crate::utils::{account::AccountExt, read_wasm};
 
 static POA_FACTORY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("defuse_poa_factory"));
-static POA_FACTORY_WASM_NO_REGISTRATION: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm("poa-token-no-registration/defuse_poa_factory"));
-
-fn poa_factory_wasm(no_registration: bool) -> &'static [u8] {
-    if no_registration {
-        &POA_FACTORY_WASM_NO_REGISTRATION
-    } else {
-        &POA_FACTORY_WASM
-    }
-}
 
 pub trait PoAFactoryExt {
     async fn deploy_poa_factory(
@@ -43,6 +33,7 @@ pub trait PoAFactoryExt {
         token: &str,
         metadata: impl Into<Option<FungibleTokenMetadata>>,
     ) -> anyhow::Result<AccountId>;
+
     async fn poa_deploy_token(
         &self,
         token: &str,
@@ -58,6 +49,7 @@ pub trait PoAFactoryExt {
         msg: Option<String>,
         memo: Option<String>,
     ) -> anyhow::Result<()>;
+
     async fn poa_ft_deposit(
         &self,
         token: &str,
@@ -66,6 +58,7 @@ pub trait PoAFactoryExt {
         msg: Option<String>,
         memo: Option<String>,
     ) -> anyhow::Result<()>;
+
     async fn poa_factory_tokens(
         &self,
         poa_factory: &AccountId,
@@ -79,11 +72,9 @@ impl PoAFactoryExt for near_workspaces::Account {
         super_admins: impl IntoIterator<Item = AccountId>,
         admins: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
         grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
-        no_registration: bool,
+        no_registration: bool, // FIXME: remove
     ) -> anyhow::Result<Contract> {
-        let contract = self
-            .deploy_contract(name, poa_factory_wasm(no_registration))
-            .await?;
+        let contract = self.deploy_contract(name, &POA_FACTORY_WASM).await?;
         self.transfer_near(contract.id(), NearToken::from_near(100))
             .await?
             .into_result()?;

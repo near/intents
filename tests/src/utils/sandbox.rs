@@ -34,7 +34,7 @@ impl Sandbox {
         self.worker.fast_forward(num_blocks).await.unwrap();
     }
 
-    pub const fn worker(&self) -> &Worker<impl Network> {
+    pub const fn worker(&self) -> &Worker<impl Network + 'static> {
         &self.worker
     }
 

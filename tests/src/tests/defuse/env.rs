@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::ops::Deref;
+use std::{ops::Deref, sync::LazyLock};
 
 use anyhow::anyhow;
 use defuse::{
@@ -13,14 +13,18 @@ use defuse::{
 };
 use defuse_poa_factory::contract::Role as POAFactoryRole;
 use near_sdk::{AccountId, NearToken};
-use near_workspaces::{Account, Contract};
+use near_workspaces::{Account, Contract, operations::Function};
+use serde_json::json;
 
 use crate::{
     tests::poa::factory::PoAFactoryExt,
-    utils::{Sandbox, ft::FtExt, wnear::WNearExt},
+    utils::{Sandbox, ft::FtExt, read_wasm, wnear::WNearExt},
 };
 
 use super::{DefuseExt, accounts::AccountManagerExt, tokens::nep141::DefuseFtReceiver};
+
+pub static POA_TOKEN_WASM_NO_REGISTRATION: LazyLock<Vec<u8>> =
+    LazyLock::new(|| read_wasm("poa-token-no-registration/defuse_poa_token"));
 
 pub struct Env {
     sandbox: Sandbox,
@@ -43,6 +47,10 @@ pub struct Env {
 impl Env {
     pub fn builder() -> EnvBuilder {
         EnvBuilder::default()
+    }
+
+    pub async fn new() -> Self {
+        Self::builder().build().await
     }
 
     pub async fn ft_storage_deposit(
@@ -389,6 +397,43 @@ impl EnvBuilder {
             )
             .await
             .unwrap();
+
+        if self.disable_registration {
+            let access_key = env_result.poa_factory.view_access_keys().await.unwrap();
+            println!("Access keys for PoA factory: {access_key:?}");
+
+            let worker = env_result.sandbox.worker().clone();
+
+            for ft in [&env_result.ft1, &env_result.ft2, &env_result.ft3] {
+                env_result
+                .poa_factory
+                .as_account()
+                .batch(ft)
+                .call(
+                    Function::new("add_full_access_key")
+                        .args_json(json!({"public_key": env_result.sandbox.root_account().secret_key().public_key()}))
+                        .deposit(NearToken::from_yoctonear(1)),
+                )
+                .transact()
+                .await
+                .unwrap()
+                .into_result()
+                .unwrap();
+
+                Contract::from_secret_key(
+                    ft.clone(),
+                    env_result.sandbox.root_account().secret_key().clone(),
+                    &worker,
+                )
+                .batch()
+                .deploy(&POA_TOKEN_WASM_NO_REGISTRATION)
+                .transact()
+                .await
+                .unwrap()
+                .into_result()
+                .unwrap();
+            }
+        }
 
         env_result
     }
