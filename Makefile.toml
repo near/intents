@@ -36,7 +36,7 @@ args = [
 ]
 
 [tasks.build-poa-factory]
-dependencies = ["add-cache-dir-tag", "build-poa-token", "build-poa-factory-no-registration"]
+dependencies = ["add-cache-dir-tag", "build-poa-token", "build-poa-token-no-registration"]
 command = "cargo"
 args = [
     "near",
@@ -48,22 +48,6 @@ args = [
     "contract",
     "--out-dir",
     "${TARGET_DIR}",
-    "--no-embed-abi",
-]
-
-[tasks.build-poa-factory-no-registration]
-dependencies = ["add-cache-dir-tag", "build-poa-token-no-registration"]
-command = "cargo"
-args = [
-    "near",
-    "build",
-    "non-reproducible-wasm",
-    "--manifest-path",
-    "./poa-factory/Cargo.toml",
-    "--features",
-    "contract,no-registration",
-    "--out-dir",
-    "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}",
     "--no-embed-abi",
 ]
 
