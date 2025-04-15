@@ -832,6 +832,7 @@ dependencies = [
  "defuse-crypto",
  "defuse-erc191",
  "defuse-map-utils",
+ "defuse-near-utils",
  "defuse-nep245",
  "defuse-nep413",
  "defuse-num-utils",

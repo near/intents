@@ -5,6 +5,7 @@ use std::{
 
 use defuse_bitmap::{U248, U256};
 use defuse_crypto::PublicKey;
+use defuse_near_utils::Lock;
 use near_sdk::{AccountId, AccountIdRef};
 
 use crate::{
@@ -61,7 +62,7 @@ where
     }
 
     fn has_public_key(&self, account_id: &AccountIdRef, public_key: &PublicKey) -> bool {
-        if let Some(account) = self.accounts.get(account_id) {
+        if let Some(account) = self.accounts.get(account_id).map(Lock::as_inner_unchecked) {
             if account.public_keys_added.contains(public_key) {
                 return true;
             }
@@ -73,7 +74,7 @@ where
     }
 
     fn iter_public_keys(&self, account_id: &AccountIdRef) -> impl Iterator<Item = PublicKey> + '_ {
-        let account = self.accounts.get(account_id);
+        let account = self.accounts.get(account_id).map(Lock::as_inner_unchecked);
         self.view
             .iter_public_keys(account_id)
             .filter(move |pk| account.is_none_or(|a| !a.public_keys_removed.contains(pk)))
@@ -89,6 +90,7 @@ where
     fn is_nonce_used(&self, account_id: &AccountIdRef, nonce: Nonce) -> bool {
         self.accounts
             .get(account_id)
+            .map(Lock::as_inner_unchecked)
             .is_some_and(|account| account.is_nonce_used(nonce))
             || self.view.is_nonce_used(account_id, nonce)
     }
@@ -96,6 +98,7 @@ where
     fn balance_of(&self, account_id: &AccountIdRef, token_id: &TokenId) -> u128 {
         self.accounts
             .get(account_id)
+            .map(Lock::as_inner_unchecked)
             .and_then(|account| account.token_amounts.get(token_id).copied())
             .unwrap_or_else(|| self.view.balance_of(account_id, token_id))
     }
@@ -107,7 +110,12 @@ where
 {
     fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()> {
         let had = self.has_public_key(&account_id, &public_key);
-        let account = self.accounts.get_or_create(account_id.clone());
+        let account = self
+            .accounts
+            .get_or_create(account_id.clone())
+            .as_unlocked_mut()
+            // TODO: allow changing locked account state by permissioned accounts
+            .ok_or(DefuseError::AccountLocked)?;
         let added = if had {
             account.public_keys_removed.remove(&public_key)
         } else {
@@ -121,7 +129,12 @@ where
 
     fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()> {
         let had = self.has_public_key(&account_id, &public_key);
-        let account = self.accounts.get_or_create(account_id.clone());
+        let account = self
+            .accounts
+            .get_or_create(account_id.clone())
+            .as_unlocked_mut()
+            // TODO: allow changing locked account state by permissioned accounts
+            .ok_or(DefuseError::AccountLocked)?;
         let removed = if had {
             account.public_keys_removed.insert(public_key)
         } else {
@@ -137,9 +150,15 @@ where
         if self.is_nonce_used(&account_id, nonce) {
             return Err(DefuseError::NonceUsed);
         }
-        // TODO
-        todo!()
-        // self.accounts.get_or_create(account_id).commit_nonce(nonce)
+
+        self.accounts
+            .get_or_create(account_id)
+            .as_unlocked_mut()
+            // TODO: allow changing locked account state by permissioned accounts
+            .ok_or(DefuseError::AccountLocked)?
+            .commit_nonce(nonce)
+            .then_some(())
+            .ok_or(DefuseError::NonceUsed)
     }
 
     fn internal_add_balance(
@@ -147,7 +166,12 @@ where
         owner_id: AccountId,
         token_amounts: impl IntoIterator<Item = (TokenId, u128)>,
     ) -> Result<()> {
-        let account = self.accounts.get_or_create(owner_id.clone());
+        let account = self
+            .accounts
+            .get_or_create(owner_id.clone())
+            .as_unlocked_mut()
+            // TODO: allow changing locked account state by permissioned accounts
+            .ok_or(DefuseError::AccountLocked)?;
         for (token_id, amount) in token_amounts {
             if account.token_amounts.get(&token_id).is_none() {
                 account
@@ -171,7 +195,10 @@ where
         let account = self
             .accounts
             .get_mut(owner_id)
-            .ok_or(DefuseError::AccountNotFound)?;
+            .ok_or(DefuseError::AccountNotFound)?
+            .as_unlocked_mut()
+            // TODO: allow changing locked account state by permissioned accounts
+            .ok_or(DefuseError::AccountLocked)?;
         for (token_id, amount) in token_amounts {
             if amount == 0 {
                 return Err(DefuseError::InvalidIntent);
@@ -268,7 +295,7 @@ where
 
 #[derive(Debug, Default, Clone)]
 // TODO: add Lock<>?
-pub struct CachedAccounts(HashMap<AccountId, CachedAccount>);
+pub struct CachedAccounts(HashMap<AccountId, Lock<CachedAccount>>);
 
 impl CachedAccounts {
     #[must_use]
@@ -278,17 +305,17 @@ impl CachedAccounts {
     }
 
     #[inline]
-    pub fn get(&self, account_id: &AccountIdRef) -> Option<&CachedAccount> {
+    pub fn get(&self, account_id: &AccountIdRef) -> Option<&Lock<CachedAccount>> {
         self.0.get(account_id)
     }
 
     #[inline]
-    pub fn get_mut(&mut self, account_id: &AccountIdRef) -> Option<&mut CachedAccount> {
+    pub fn get_mut(&mut self, account_id: &AccountIdRef) -> Option<&mut Lock<CachedAccount>> {
         self.0.get_mut(account_id)
     }
 
     #[inline]
-    pub fn get_or_create(&mut self, account_id: AccountId) -> &mut CachedAccount {
+    pub fn get_or_create(&mut self, account_id: AccountId) -> &mut Lock<CachedAccount> {
         self.0.entry(account_id).or_default()
     }
 }
