@@ -92,21 +92,18 @@ impl<S> State for Deltas<S>
 where
     S: State,
 {
-    #[must_use]
     #[inline]
-    fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> bool {
+    fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()> {
         self.state.add_public_key(account_id, public_key)
     }
 
-    #[must_use]
     #[inline]
-    fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> bool {
+    fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()> {
         self.state.remove_public_key(account_id, public_key)
     }
 
-    #[must_use]
     #[inline]
-    fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> bool {
+    fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
         self.state.commit_nonce(account_id, nonce)
     }
 

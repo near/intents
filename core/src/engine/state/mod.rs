@@ -23,6 +23,8 @@ pub trait StateView {
     fn fee(&self) -> Pips;
     fn fee_collector(&self) -> Cow<'_, AccountIdRef>;
 
+    // TODO: is_locked()
+
     #[must_use]
     fn has_public_key(&self, account_id: &AccountIdRef, public_key: &PublicKey) -> bool;
     fn iter_public_keys(&self, account_id: &AccountIdRef) -> impl Iterator<Item = PublicKey> + '_;
@@ -44,14 +46,11 @@ pub trait StateView {
 
 #[autoimpl(for<T: trait + ?Sized> &mut T, Box<T>)]
 pub trait State: StateView {
-    #[must_use]
-    fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> bool;
+    fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()>;
 
-    #[must_use]
-    fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> bool;
+    fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()>;
 
-    #[must_use]
-    fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> bool;
+    fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()>;
 
     fn internal_add_balance(
         &mut self,

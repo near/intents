@@ -6,6 +6,7 @@ pub mod fees;
 pub mod intents;
 pub mod tokens;
 
+use accounts::AccountForceLocker;
 pub use defuse_core as core;
 pub use defuse_nep245 as nep245;
 
@@ -49,6 +50,7 @@ pub trait Defuse:
     + FungibleTokenForceWithdrawer
     + NonFungibleTokenForceWithdrawer
     + MultiTokenForceWithdrawer
+    + AccountForceLocker
     + Pausable
     + ControllerUpgradable
     + FullAccessKeys

@@ -19,7 +19,13 @@ impl Contract {
         tokens: impl IntoIterator<Item = (TokenId, u128)>,
         memo: Option<&str>,
     ) -> Result<()> {
-        let owner = self.accounts.get_or_create(owner_id.clone());
+        let owner = self
+            .accounts
+            .get_or_create(owner_id.clone())
+            // TOOD: are we sure we cannot deposit to locked accounts?
+            .as_unlocked_mut()
+            // TODO: allow changing locked account state by permissioned accounts
+            .ok_or(DefuseError::AccountLocked)?;
 
         let mut mint_event = MtMintEvent {
             owner_id: owner_id.into(),
@@ -60,7 +66,10 @@ impl Contract {
         let owner = self
             .accounts
             .get_mut(owner_id)
-            .ok_or(DefuseError::AccountNotFound)?;
+            .ok_or(DefuseError::AccountNotFound)?
+            .as_unlocked_mut()
+            // TODO: allow changing locked account state by permissioned accounts
+            .ok_or(DefuseError::AccountLocked)?;
 
         let mut burn_event = MtBurnEvent {
             owner_id: Cow::Owned(owner_id.to_owned()),

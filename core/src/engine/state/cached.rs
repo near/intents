@@ -105,34 +105,41 @@ impl<W> State for CachedState<W>
 where
     W: StateView,
 {
-    #[must_use]
-    fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> bool {
+    fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()> {
         let had = self.has_public_key(&account_id, &public_key);
         let account = self.accounts.get_or_create(account_id.clone());
-        if had {
+        let added = if had {
             account.public_keys_removed.remove(&public_key)
         } else {
             account.public_keys_added.insert(public_key)
+        };
+        if !added {
+            return Err(DefuseError::PublicKeyExists);
         }
+        Ok(())
     }
 
-    #[must_use]
-    fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> bool {
+    fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()> {
         let had = self.has_public_key(&account_id, &public_key);
         let account = self.accounts.get_or_create(account_id.clone());
-        if had {
+        let removed = if had {
             account.public_keys_removed.insert(public_key)
         } else {
             account.public_keys_added.remove(&public_key)
+        };
+        if !removed {
+            return Err(DefuseError::PublicKeyNotExist);
         }
+        Ok(())
     }
 
-    #[must_use]
-    fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> bool {
+    fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
         if self.is_nonce_used(&account_id, nonce) {
-            return false;
+            return Err(DefuseError::NonceUsed);
         }
-        self.accounts.get_or_create(account_id).commit_nonce(nonce)
+        // TODO
+        todo!()
+        // self.accounts.get_or_create(account_id).commit_nonce(nonce)
     }
 
     fn internal_add_balance(
@@ -260,6 +267,7 @@ where
 }
 
 #[derive(Debug, Default, Clone)]
+// TODO: add Lock<>?
 pub struct CachedAccounts(HashMap<AccountId, CachedAccount>);
 
 impl CachedAccounts {

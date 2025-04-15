@@ -21,7 +21,7 @@ pub trait AccountManager {
     /// i.e. this key can't be used to make any actions unless it's re-created.
     ///
     /// NOTE: MUST attach 1 yⓃ for security purposes.
-    fn remove_public_key(&mut self, public_key: &PublicKey);
+    fn remove_public_key(&mut self, public_key: PublicKey);
 
     /// Returns whether given nonce was already used by the account
     /// NOTE: nonces are non-sequential and follow
@@ -34,6 +34,8 @@ pub trait AccountManager {
 
 #[ext_contract(ext_force_account_locker)]
 pub trait AccountForceLocker {
-    fn force_lock_account(&mut self, account_id: AccountId);
-    fn force_unlock_account(&mut self, account_id: AccountId);
+    fn is_account_locked(&self, account_id: &AccountId) -> bool;
+    // TODO: docs
+    fn force_lock_account(&mut self, account_id: AccountId) -> bool;
+    fn force_unlock_account(&mut self, account_id: &AccountId) -> bool;
 }

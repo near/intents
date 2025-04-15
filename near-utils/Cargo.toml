@@ -5,3 +5,4 @@ version = "0.1.0"
 
 [dependencies]
 near-sdk.workspace = true
+defuse-borsh-utils.workspace = true

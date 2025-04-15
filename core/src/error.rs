@@ -10,6 +10,9 @@ pub enum DefuseError {
     #[error("account not found")]
     AccountNotFound,
 
+    #[error("account is locked")]
+    AccountLocked,
+
     #[error("insufficient balance or overflow")]
     BalanceOverflow,
 

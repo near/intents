@@ -12,6 +12,7 @@ workspace = true
 [dependencies]
 defuse-admin-utils.workspace = true
 defuse-bitmap = { workspace = true, optional = true }
+defuse-borsh-utils = { workspace = true, optional = true }
 defuse-controller.workspace = true
 defuse-core.workspace = true
 defuse-near-utils.workspace = true
@@ -32,4 +33,9 @@ thiserror.workspace = true
 
 [features]
 abi = ["defuse-core/abi"]
-contract = ["dep:defuse-wnear", "dep:defuse-map-utils", "dep:defuse-bitmap"]
+contract = [
+    "dep:defuse-wnear",
+    "dep:defuse-map-utils",
+    "dep:defuse-bitmap",
+    "dep:defuse-borsh-utils",
+]

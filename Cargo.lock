@@ -774,6 +774,7 @@ dependencies = [
  "bnum",
  "defuse-admin-utils",
  "defuse-bitmap",
+ "defuse-borsh-utils",
  "defuse-controller",
  "defuse-core",
  "defuse-map-utils",
@@ -811,6 +812,7 @@ dependencies = [
 name = "defuse-borsh-utils"
 version = "0.1.0"
 dependencies = [
+ "impl-tools",
  "near-sdk",
 ]
 
@@ -883,6 +885,7 @@ dependencies = [
 name = "defuse-near-utils"
 version = "0.1.0"
 dependencies = [
+ "defuse-borsh-utils",
  "near-sdk",
 ]
 

@@ -179,11 +179,17 @@ impl Contract {
             self.accounts
                 .get_mut(sender_id)
                 .ok_or(DefuseError::AccountNotFound)?
+                .as_unlocked_mut()
+                // TODO: allow changing locked account state by permissioned accounts
+                .ok_or(DefuseError::AccountLocked)?
                 .token_balances
                 .sub(token_id.clone(), amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
             self.accounts
                 .get_or_create(receiver_id.clone())
+                .as_unlocked_mut()
+                // TODO: allow changing locked account state by permissioned accounts
+                .ok_or(DefuseError::AccountLocked)?
                 .token_balances
                 .add(token_id, amount)
                 .ok_or(DefuseError::BalanceOverflow)?;

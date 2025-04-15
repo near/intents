@@ -1,13 +1,14 @@
 use std::borrow::Cow;
 
 use defuse_bitmap::{U248, U256};
+use defuse_borsh_utils::r#as::As;
 use defuse_core::{
     Nonces,
     accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
     events::DefuseEvent,
 };
-use defuse_near_utils::{Lock, NestPrefix};
+use defuse_near_utils::{Lock, MaybeLock, NestPrefix};
 use impl_tools::autoimpl;
 use near_sdk::{
     AccountIdRef, BorshStorageKey, IntoStorageKey,
@@ -18,18 +19,14 @@ use near_sdk::{
 
 use super::AccountState;
 
-#[derive(Debug)]
 #[near(serializers = [borsh])]
-pub enum Account {
-    Legacy(LegacyAccount),
-    V1(Lock<LegacyAccount>),
-}
+pub struct AccountL(#[borsh(deserialize_with = "As::<MaybeLock>::deserialize")] Lock<Account>);
 
 #[derive(Debug)]
 #[near(serializers = [borsh])]
 #[autoimpl(Deref using self.state)]
 #[autoimpl(DerefMut using self.state)]
-pub struct LegacyAccount {
+pub struct Account {
     nonces: Nonces<LookupMap<U248, U256>>,
 
     implicit_public_key_removed: bool,
@@ -40,7 +37,7 @@ pub struct LegacyAccount {
     prefix: Vec<u8>,
 }
 
-impl LegacyAccount {
+impl Account {
     #[inline]
     pub fn new<S>(prefix: S, me: &AccountIdRef) -> Self
     where
