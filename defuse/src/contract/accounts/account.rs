@@ -7,7 +7,7 @@ use defuse_core::{
     crypto::PublicKey,
     events::DefuseEvent,
 };
-use defuse_near_utils::NestPrefix;
+use defuse_near_utils::{Lock, NestPrefix};
 use impl_tools::autoimpl;
 use near_sdk::{
     AccountIdRef, BorshStorageKey, IntoStorageKey,
@@ -20,9 +20,16 @@ use super::AccountState;
 
 #[derive(Debug)]
 #[near(serializers = [borsh])]
+pub enum Account {
+    Legacy(LegacyAccount),
+    V1(Lock<LegacyAccount>),
+}
+
+#[derive(Debug)]
+#[near(serializers = [borsh])]
 #[autoimpl(Deref using self.state)]
 #[autoimpl(DerefMut using self.state)]
-pub struct Account {
+pub struct LegacyAccount {
     nonces: Nonces<LookupMap<U248, U256>>,
 
     implicit_public_key_removed: bool,
@@ -33,7 +40,7 @@ pub struct Account {
     prefix: Vec<u8>,
 }
 
-impl Account {
+impl LegacyAccount {
     #[inline]
     pub fn new<S>(prefix: S, me: &AccountIdRef) -> Self
     where

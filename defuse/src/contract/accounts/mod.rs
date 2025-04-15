@@ -84,7 +84,7 @@ impl AccountManager for Contract {
 #[derive(Debug)]
 #[near(serializers = [borsh])]
 pub struct Accounts {
-    accounts: IterableMap<AccountId, Account>,
+    accounts: IterableMap<AccountId, LegacyAccount>,
     prefix: Vec<u8>,
 }
 
@@ -102,21 +102,21 @@ impl Accounts {
     }
 
     #[inline]
-    pub fn get(&self, account_id: &AccountIdRef) -> Option<&Account> {
+    pub fn get(&self, account_id: &AccountIdRef) -> Option<&LegacyAccount> {
         self.accounts.get(account_id)
     }
 
     #[inline]
-    pub fn get_mut(&mut self, account_id: &AccountIdRef) -> Option<&mut Account> {
+    pub fn get_mut(&mut self, account_id: &AccountIdRef) -> Option<&mut LegacyAccount> {
         self.accounts.get_mut(account_id)
     }
 
     #[inline]
-    pub fn get_or_create(&mut self, account_id: AccountId) -> &mut Account {
+    pub fn get_or_create(&mut self, account_id: AccountId) -> &mut LegacyAccount {
         self.accounts
             .entry(account_id)
             .or_insert_with_key(|account_id| {
-                Account::new(
+                LegacyAccount::new(
                     self.prefix
                         .as_slice()
                         .nest(AccountsPrefix::Account(account_id)),

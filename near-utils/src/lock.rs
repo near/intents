@@ -6,14 +6,14 @@ use near_sdk::near;
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 #[near(serializers = [borsh, json])]
 pub struct Lock<T> {
-    #[serde(flatten)]
-    value: T,
     #[serde(
         default,
         // do not serialize `false`
         skip_serializing_if = "::core::ops::Not::not"
     )]
     locked: bool,
+    #[serde(flatten)]
+    value: T,
 }
 
 impl<T> Lock<T> {

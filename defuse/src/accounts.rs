@@ -31,3 +31,9 @@ pub trait AccountManager {
     /// NOTE: MUST attach 1 yⓃ for security purposes.
     fn invalidate_nonces(&mut self, nonces: Vec<AsBase64<Nonce>>);
 }
+
+#[ext_contract(ext_force_account_locker)]
+pub trait AccountForceLocker {
+    fn force_lock_account(&mut self, account_id: AccountId);
+    fn force_unlock_account(&mut self, account_id: AccountId);
+}
