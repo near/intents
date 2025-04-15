@@ -5,7 +5,7 @@ pub use self::{account::*, state::*};
 
 use std::collections::HashSet;
 
-use defuse_borsh_utils::r#as::BorshDeserializeAsWrap;
+use defuse_borsh_utils::r#as::AsWrap;
 use defuse_core::{
     Nonce,
     crypto::PublicKey,
@@ -66,8 +66,8 @@ impl AccountManager for Contract {
 #[near(serializers = [borsh])]
 pub struct Accounts {
     // Unfortunately, we can't use `#[borsh(deserialize_with = "...")]` here,
-    // since IterableMap requires it's type parameters to implement BorshSerialize
-    accounts: IterableMap<AccountId, BorshDeserializeAsWrap<Lock<Account>, MaybeLock>>,
+    // as IterableMap requires K and V parameters to implement BorshSerialize
+    accounts: IterableMap<AccountId, AsWrap<Lock<Account>, MaybeLock>>,
     prefix: Vec<u8>,
 }
 

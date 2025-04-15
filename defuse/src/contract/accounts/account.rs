@@ -1,14 +1,13 @@
 use std::borrow::Cow;
 
 use defuse_bitmap::{U248, U256};
-use defuse_borsh_utils::r#as::As;
 use defuse_core::{
     Nonces,
     accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
     events::DefuseEvent,
 };
-use defuse_near_utils::{Lock, MaybeLock, NestPrefix};
+use defuse_near_utils::NestPrefix;
 use impl_tools::autoimpl;
 use near_sdk::{
     AccountIdRef, BorshStorageKey, IntoStorageKey,
@@ -18,9 +17,6 @@ use near_sdk::{
 };
 
 use super::AccountState;
-
-#[near(serializers = [borsh])]
-pub struct AccountL(#[borsh(deserialize_with = "As::<MaybeLock>::deserialize")] Lock<Account>);
 
 #[derive(Debug)]
 #[near(serializers = [borsh])]

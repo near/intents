@@ -1,8 +1,6 @@
 use std::{io, marker::PhantomData};
 
-use defuse_borsh_utils::r#as::{
-    BorshDeserializeAs, BorshDeserializeAsWrap, BorshSerializeAs, BorshSerializeAsWrap, Same,
-};
+use defuse_borsh_utils::r#as::{AsWrap, BorshDeserializeAs, BorshSerializeAs, Same};
 use near_sdk::{
     borsh::{BorshDeserialize, BorshSerialize},
     near,
@@ -173,7 +171,7 @@ where
     {
         Lock {
             locked: source.locked,
-            value: BorshSerializeAsWrap::<T, As>::new(&source.value),
+            value: AsWrap::<&T, &As>::new(&source.value),
         }
         .serialize(writer)
     }
@@ -188,7 +186,7 @@ where
     where
         R: io::Read,
     {
-        Lock::<BorshDeserializeAsWrap<T, As>>::deserialize_reader(reader).map(|v| Lock {
+        Lock::<AsWrap<T, As>>::deserialize_reader(reader).map(|v| Lock {
             locked: v.locked,
             value: v.value.into_inner(),
         })
