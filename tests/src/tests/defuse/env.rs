@@ -398,26 +398,35 @@ impl EnvBuilder {
             .unwrap();
 
         if self.disable_registration {
-            let access_key = env_result.poa_factory.view_access_keys().await.unwrap();
-            println!("Access keys for PoA factory: {access_key:?}");
+            let root_secret_key = env_result.sandbox.root_account().secret_key();
+            let root_access_key = root_secret_key.public_key();
 
             let worker = env_result.sandbox.worker().clone();
 
             for ft in [&env_result.ft1, &env_result.ft2, &env_result.ft3] {
                 env_result
-                .poa_factory
-                .as_account()
-                .batch(ft)
-                .call(
-                    Function::new("add_full_access_key")
-                        .args_json(json!({"public_key": env_result.sandbox.root_account().secret_key().public_key()}))
-                        .deposit(NearToken::from_yoctonear(1)),
-                )
-                .transact()
-                .await
-                .unwrap()
-                .into_result()
-                .unwrap();
+                    .poa_factory
+                    .as_account()
+                    .batch(ft)
+                    .call(
+                        Function::new("add_full_access_key")
+                            .args_json(json!({"public_key": root_access_key}))
+                            .deposit(NearToken::from_yoctonear(1)),
+                    )
+                    .transact()
+                    .await
+                    .unwrap()
+                    .into_result()
+                    .unwrap();
+
+                Contract::from_secret_key(ft.clone(), root_secret_key.clone(), &worker)
+                    .batch()
+                    .deploy(&POA_TOKEN_WASM_NO_REGISTRATION)
+                    .transact()
+                    .await
+                    .unwrap()
+                    .into_result()
+                    .unwrap();
 
                 Contract::from_secret_key(
                     ft.clone(),
@@ -425,7 +434,7 @@ impl EnvBuilder {
                     &worker,
                 )
                 .batch()
-                .deploy(&POA_TOKEN_WASM_NO_REGISTRATION)
+                .delete_key(root_access_key.clone())
                 .transact()
                 .await
                 .unwrap()
