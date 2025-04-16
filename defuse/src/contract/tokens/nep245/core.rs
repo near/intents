@@ -49,6 +49,7 @@ impl MultiTokenCore for Contract {
             token_ids,
             amounts,
             memo.as_deref(),
+            false,
         )
         .unwrap_or_panic()
     }
@@ -95,6 +96,7 @@ impl MultiTokenCore for Contract {
             amounts,
             memo.as_deref(),
             msg,
+            false,
         )
         .unwrap_or_panic()
     }
@@ -165,6 +167,7 @@ impl Contract {
         token_ids: Vec<defuse_nep245::TokenId>,
         amounts: Vec<U128>,
         memo: Option<&str>,
+        force: bool,
     ) -> Result<()> {
         if sender_id == receiver_id || token_ids.len() != amounts.len() || amounts.is_empty() {
             return Err(DefuseError::InvalidIntent);
@@ -179,16 +182,15 @@ impl Contract {
             self.accounts
                 .get_mut(sender_id)
                 .ok_or(DefuseError::AccountNotFound)?
-                .as_unlocked_mut()
-                // TODO: allow changing locked account state by permissioned accounts
+                .as_unlocked_or_mut(force)
                 .ok_or(DefuseError::AccountLocked)?
                 .token_balances
                 .sub(token_id.clone(), amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
             self.accounts
                 .get_or_create(receiver_id.clone())
-                .as_unlocked_mut()
-                // TODO: allow changing locked account state by permissioned accounts
+                // TODO: are we sure we can't deposit to locked accounts?
+                .as_unlocked_or_mut(force)
                 .ok_or(DefuseError::AccountLocked)?
                 .token_balances
                 .add(token_id, amount)
@@ -220,6 +222,7 @@ impl Contract {
         amounts: Vec<U128>,
         memo: Option<&str>,
         msg: String,
+        force: bool,
     ) -> Result<PromiseOrValue<Vec<U128>>> {
         self.internal_mt_batch_transfer(
             &sender_id,
@@ -227,6 +230,7 @@ impl Contract {
             token_ids.clone(),
             amounts.clone(),
             memo,
+            force,
         )?;
 
         let previous_owner_ids = vec![sender_id.clone(); token_ids.len()];

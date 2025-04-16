@@ -22,6 +22,7 @@ defuse-serde-utils.workspace = true
 defuse-wnear = { workspace = true, optional = true }
 
 bnum.workspace = true
+derive_more.workspace = true
 impl-tools.workspace = true
 near-account-id.workspace = true
 near-contract-standards.workspace = true

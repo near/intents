@@ -72,7 +72,7 @@ impl<T> Lock<T> {
         if !self.is_locked() {
             return None;
         }
-        Some(&self.value)
+        Some(self.as_inner_unchecked())
     }
 
     #[must_use]
@@ -81,7 +81,17 @@ impl<T> Lock<T> {
         if !self.is_locked() {
             return None;
         }
-        Some(&mut self.value)
+        Some(self.as_inner_unchecked_mut())
+    }
+
+    #[must_use]
+    #[inline]
+    pub const fn as_locked_or_mut(&mut self, force: bool) -> Option<&mut T> {
+        if force {
+            Some(self.as_inner_unchecked_mut())
+        } else {
+            self.as_locked_mut()
+        }
     }
 
     #[must_use]
@@ -100,13 +110,13 @@ impl<T> Lock<T> {
             return None;
         }
         self.locked = true;
-        Some(&mut self.value)
+        Some(self.as_inner_unchecked_mut())
     }
 
     #[inline]
     pub const fn force_lock(&mut self) -> &mut T {
         self.locked = true;
-        &mut self.value
+        self.as_inner_unchecked_mut()
     }
 
     #[must_use]
@@ -115,7 +125,7 @@ impl<T> Lock<T> {
         if self.is_locked() {
             return None;
         }
-        Some(&self.value)
+        Some(self.as_inner_unchecked())
     }
 
     #[must_use]
@@ -124,7 +134,17 @@ impl<T> Lock<T> {
         if self.is_locked() {
             return None;
         }
-        Some(&mut self.value)
+        Some(self.as_inner_unchecked_mut())
+    }
+
+    #[must_use]
+    #[inline]
+    pub const fn as_unlocked_or_mut(&mut self, force: bool) -> Option<&mut T> {
+        if force {
+            Some(self.as_inner_unchecked_mut())
+        } else {
+            self.as_unlocked_mut()
+        }
     }
 
     #[must_use]
@@ -143,13 +163,13 @@ impl<T> Lock<T> {
             return None;
         }
         self.locked = false;
-        Some(&mut self.value)
+        Some(self.as_inner_unchecked_mut())
     }
 
     #[inline]
     pub const fn force_unlock(&mut self) -> &mut T {
         self.locked = false;
-        &mut self.value
+        self.as_inner_unchecked_mut()
     }
 }
 
@@ -193,6 +213,7 @@ where
     }
 }
 
+// TODO: docs
 pub struct MaybeLock<T: ?Sized = Same, const DEFAULT_LOCKED: bool = false>(PhantomData<T>);
 
 impl<T, As, const DEFAULT_LOCKED: bool> BorshDeserializeAs<Lock<T>>
@@ -207,18 +228,5 @@ where
     {
         Lock::<As>::deserialize_as(reader)
             .or_else(|_| As::deserialize_as(reader).map(|v| Lock::new(v, DEFAULT_LOCKED)))
-    }
-}
-
-impl<T, As, const DEFAULT_LOCKED: bool> BorshSerializeAs<Lock<T>> for MaybeLock<As, DEFAULT_LOCKED>
-where
-    As: BorshSerializeAs<T>,
-{
-    #[inline]
-    fn serialize_as<W>(source: &Lock<T>, writer: &mut W) -> io::Result<()>
-    where
-        W: io::Write,
-    {
-        Lock::<As>::serialize_as(source, writer)
     }
 }

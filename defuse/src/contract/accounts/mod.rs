@@ -5,13 +5,12 @@ pub use self::{account::*, state::*};
 
 use std::collections::HashSet;
 
-use defuse_borsh_utils::r#as::AsWrap;
 use defuse_core::{
     Nonce,
     crypto::PublicKey,
     engine::{State, StateView},
 };
-use defuse_near_utils::{Lock, MaybeLock, NestPrefix, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic};
+use defuse_near_utils::{Lock, NestPrefix, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic};
 use defuse_serde_utils::base64::AsBase64;
 use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{
@@ -65,9 +64,11 @@ impl AccountManager for Contract {
 #[derive(Debug)]
 #[near(serializers = [borsh])]
 pub struct Accounts {
+    // Initially, it was `IterableMap<AccountId, Account>`, but then the support
+    // for locking accounts was introduces, so we lazily migrate the storage.
     // Unfortunately, we can't use `#[borsh(deserialize_with = "...")]` here,
     // as IterableMap requires K and V parameters to implement BorshSerialize
-    accounts: IterableMap<AccountId, AsWrap<Lock<Account>, MaybeLock>>,
+    accounts: IterableMap<AccountId, MaybeLockedAccount>,
     prefix: Vec<u8>,
 }
 
@@ -102,12 +103,12 @@ impl Accounts {
         self.accounts
             .entry(account_id)
             .or_insert_with_key(|account_id| {
-                Lock::unlocked(Account::new(
+                Account::new(
                     self.prefix
                         .as_slice()
                         .nest(AccountsPrefix::Account(account_id)),
                     account_id,
-                ))
+                )
                 .into()
             })
     }

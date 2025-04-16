@@ -13,16 +13,19 @@ impl<T> Nonces<T>
 where
     T: Map<K = U248, V = U256>,
 {
+    #[must_use]
     #[inline]
     pub const fn new(bitmap: T) -> Self {
         Self(BitMap256::new(bitmap))
     }
 
+    #[must_use]
     #[inline]
     pub fn is_used(&self, n: Nonce) -> bool {
         self.0.get_bit(n)
     }
 
+    #[must_use]
     #[inline]
     pub fn commit(&mut self, n: Nonce) -> bool {
         !self.0.set_bit(n)

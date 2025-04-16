@@ -48,6 +48,7 @@ impl NonFungibleTokenWithdrawer for Contract {
                 msg,
                 storage_deposit: None,
             },
+            false,
         )
         .unwrap_or_panic()
     }
@@ -58,6 +59,7 @@ impl Contract {
         &mut self,
         owner_id: AccountId,
         withdraw: NftWithdraw,
+        force: bool,
     ) -> Result<PromiseOrValue<bool>> {
         self.withdraw(
             &owner_id,
@@ -72,6 +74,7 @@ impl Contract {
                 )
             })),
             Some("withdraw"),
+            force,
         )?;
 
         let is_call = withdraw.msg.is_some();
@@ -207,6 +210,7 @@ impl NonFungibleTokenForceWithdrawer for Contract {
                 msg,
                 storage_deposit: None,
             },
+            true,
         )
         .unwrap_or_panic()
     }

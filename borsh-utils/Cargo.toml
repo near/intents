@@ -3,6 +3,11 @@ name = "defuse-borsh-utils"
 edition.workspace = true
 version = "0.1.0"
 
+[lints]
+workspace = true
+
 [dependencies]
+defuse-io-utils.workspace = true
+
 near-sdk.workspace = true
 impl-tools.workspace = true

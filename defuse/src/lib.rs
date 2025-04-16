@@ -19,6 +19,7 @@ use near_contract_standards::{
 };
 use near_plugins::{AccessControllable, Pausable};
 use near_sdk::ext_contract;
+use tokens::nep245::MultiTokenForceCore;
 
 use self::{
     accounts::AccountManager,
@@ -47,6 +48,7 @@ pub trait Defuse:
     + MultiTokenWithdrawer
     // Governance
     + AccessControllable
+    + MultiTokenForceCore
     + FungibleTokenForceWithdrawer
     + NonFungibleTokenForceWithdrawer
     + MultiTokenForceWithdrawer

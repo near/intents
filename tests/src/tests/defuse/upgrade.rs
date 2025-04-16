@@ -6,7 +6,7 @@ use crate::{tests::defuse::accounts::AccountManagerExt, utils::mt::MtExt};
 
 use super::DEFUSE_WASM;
 
-#[ignore = "only for simple upgrades"]
+// #[ignore = "only for simple upgrades"]
 #[tokio::test]
 async fn test_upgrade() {
     let old_contract_id: AccountId = "intents.near".parse().unwrap();

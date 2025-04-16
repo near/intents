@@ -62,13 +62,13 @@ impl Contract {
         owner_id: &AccountIdRef,
         token_amounts: impl IntoIterator<Item = (TokenId, u128)>,
         memo: Option<impl Into<String>>,
+        force: bool,
     ) -> Result<()> {
         let owner = self
             .accounts
             .get_mut(owner_id)
             .ok_or(DefuseError::AccountNotFound)?
-            .as_unlocked_mut()
-            // TODO: allow changing locked account state by permissioned accounts
+            .as_unlocked_or_mut(force)
             .ok_or(DefuseError::AccountLocked)?;
 
         let mut burn_event = MtBurnEvent {

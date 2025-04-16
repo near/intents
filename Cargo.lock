@@ -782,6 +782,7 @@ dependencies = [
  "defuse-nep245",
  "defuse-serde-utils",
  "defuse-wnear",
+ "derive_more 1.0.0",
  "impl-tools",
  "near-account-id",
  "near-contract-standards",
@@ -812,6 +813,7 @@ dependencies = [
 name = "defuse-borsh-utils"
 version = "0.1.0"
 dependencies = [
+ "defuse-io-utils",
  "impl-tools",
  "near-sdk",
 ]
@@ -873,6 +875,10 @@ dependencies = [
  "near-sdk",
  "serde_with",
 ]
+
+[[package]]
+name = "defuse-io-utils"
+version = "0.1.0"
 
 [[package]]
 name = "defuse-map-utils"

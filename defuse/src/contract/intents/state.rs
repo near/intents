@@ -168,19 +168,19 @@ impl State for Contract {
     }
 
     fn ft_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: FtWithdraw) -> Result<()> {
-        self.internal_ft_withdraw(owner_id.to_owned(), withdraw)
+        self.internal_ft_withdraw(owner_id.to_owned(), withdraw, false)
             // detach promise
             .map(|_promise| ())
     }
 
     fn nft_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: NftWithdraw) -> Result<()> {
-        self.internal_nft_withdraw(owner_id.to_owned(), withdraw)
+        self.internal_nft_withdraw(owner_id.to_owned(), withdraw, false)
             // detach promise
             .map(|_promise| ())
     }
 
     fn mt_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: MtWithdraw) -> Result<()> {
-        self.internal_mt_withdraw(owner_id.to_owned(), withdraw)
+        self.internal_mt_withdraw(owner_id.to_owned(), withdraw, false)
             // detach promise
             .map(|_promise| ())
     }
@@ -193,6 +193,7 @@ impl State for Contract {
                 withdraw.amount.as_yoctonear(),
             )],
             Some("withdraw"),
+            false,
         )?;
 
         // detach promise
@@ -222,6 +223,7 @@ impl State for Contract {
                 storage_deposit.amount.as_yoctonear(),
             )],
             Some("withdraw"),
+            false,
         )?;
 
         // detach promise
