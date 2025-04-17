@@ -422,24 +422,12 @@ impl EnvBuilder {
                 Contract::from_secret_key(ft.clone(), root_secret_key.clone(), &worker)
                     .batch()
                     .deploy(&POA_TOKEN_WASM_NO_REGISTRATION)
+                    .delete_key(root_access_key.clone())
                     .transact()
                     .await
                     .unwrap()
                     .into_result()
                     .unwrap();
-
-                Contract::from_secret_key(
-                    ft.clone(),
-                    env_result.sandbox.root_account().secret_key().clone(),
-                    &worker,
-                )
-                .batch()
-                .delete_key(root_access_key.clone())
-                .transact()
-                .await
-                .unwrap()
-                .into_result()
-                .unwrap();
             }
         }
 

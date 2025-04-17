@@ -17,7 +17,7 @@ command = "cargo"
 args = ["clippy", "--workspace", "--all-targets", "--no-deps"]
 
 [tasks.build]
-dependencies = ["add-cache-dir-tag", "build-defuse", "build-poa-factory", "contract-stats"]
+dependencies = ["add-cache-dir-tag", "build-defuse", "build-poa-factory", "contract-stats", "build-poa-token-no-registration"]
 
 [tasks.build-defuse]
 dependencies = ["add-cache-dir-tag"]
@@ -36,7 +36,7 @@ args = [
 ]
 
 [tasks.build-poa-factory]
-dependencies = ["add-cache-dir-tag", "build-poa-token", "build-poa-token-no-registration"]
+dependencies = ["add-cache-dir-tag", "build-poa-token"]
 command = "cargo"
 args = [
     "near",

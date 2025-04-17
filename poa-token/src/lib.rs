@@ -1,5 +1,5 @@
 #[cfg(feature = "contract")]
-pub mod contract;
+mod contract;
 
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
 use near_contract_standards::{
