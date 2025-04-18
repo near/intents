@@ -1,4 +1,4 @@
-use std::cell::LazyCell;
+use std::{cell::LazyCell, fmt::Display};
 
 const DISABLE_STRING_CHECKS_ENV_VAR: &str = "DEFUSE_SKIP_STRING_ERROR_CHECKS";
 
@@ -14,7 +14,7 @@ pub trait ResultAssertsExt {
 
 impl<T, E> ResultAssertsExt for Result<T, E>
 where
-    E: ToString,
+    E: Display,
 {
     fn assert_err_contains(&self, to_contain: &str) {
         match self {
