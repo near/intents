@@ -1,7 +1,7 @@
 const DISABLE_STRING_CHECKS_ENV_VAR: &str = "DEFUSE_SKIP_STRING_ERROR_CHECKS";
 
 pub trait ResultAssertsExt {
-    fn assert_error_contains(&self, s: &str);
+    fn assert_error_contains(&self, to_contain: &str);
 }
 
 impl<T, E> ResultAssertsExt for Result<T, E>
