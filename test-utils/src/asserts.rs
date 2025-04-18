@@ -9,14 +9,15 @@ thread_local! {
 }
 
 pub trait ResultAssertsExt {
-    fn assert_err_contains(&self, to_contain: &str);
+    fn assert_err_contains(&self, to_contain: impl AsRef<str>);
 }
 
 impl<T, E> ResultAssertsExt for Result<T, E>
 where
     E: Display,
 {
-    fn assert_err_contains(&self, to_contain: &str) {
+    fn assert_err_contains(&self, to_contain: impl AsRef<str>) {
+        let to_contain = to_contain.as_ref();
         match self {
             Ok(_) => panic!("Result::unwrap_err() on Result::Ok()"),
             Err(e) => {
