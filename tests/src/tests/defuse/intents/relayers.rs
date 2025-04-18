@@ -41,13 +41,13 @@ async fn test_relayer_keys(#[values(false, true)] no_registration: bool) {
     )
     .execute_intents([]) // Empty because it's just to ensure that authorization works/doesn't work
     .await
-    .assert_error_contains("Failed to query access key");
+    .assert_err_contains("Failed to query access key");
 
     // A random, unauthorized user attempts to add a key (no role `Role::RelayerKeysManager`) and fails
     env.user2
         .add_relayer_key(env.defuse.id(), &new_relayer_public_key_near_sdk)
         .await
-        .assert_error_contains("Requires one of these roles:");
+        .assert_err_contains("Requires one of these roles:");
 
     // A `Role::RelayerKeysManager` attempts to add the key, successfully
     env.user1
@@ -60,7 +60,7 @@ async fn test_relayer_keys(#[values(false, true)] no_registration: bool) {
     env.user1
         .add_relayer_key(env.defuse.id(), &new_relayer_public_key_near_sdk)
         .await
-        .assert_error_contains("key already exists");
+        .assert_err_contains("key already exists");
 
     // Create a Function-call Key, then use it to execute an (empty) intent
     Contract::from_secret_key(
@@ -76,7 +76,7 @@ async fn test_relayer_keys(#[values(false, true)] no_registration: bool) {
     env.user2
         .delete_relayer_key(env.defuse.id(), &new_relayer_public_key_near_sdk)
         .await
-        .assert_error_contains("Requires one of these roles:");
+        .assert_err_contains("Requires one of these roles:");
 
     // Delete the relayer key by the authorized entity
     env.user1
@@ -89,7 +89,7 @@ async fn test_relayer_keys(#[values(false, true)] no_registration: bool) {
     env.user1
         .delete_relayer_key(env.defuse.id(), &new_relayer_public_key_near_sdk)
         .await
-        .assert_error_contains("key not found");
+        .assert_err_contains("key not found");
 
     let access_keys = env.defuse.view_access_keys().await.unwrap();
     dbg!(&access_keys);
