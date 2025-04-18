@@ -1,6 +1,6 @@
-use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanicError, method_name};
+use defuse_near_utils::{CURRENT_ACCOUNT_ID, method_name};
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
-use near_sdk::{Allowance, Promise, PublicKey, assert_one_yocto, env, near, require};
+use near_sdk::{Allowance, Promise, PublicKey, assert_one_yocto, near, require};
 
 use crate::{
     contract::{Contract, ContractExt, Role},
@@ -15,13 +15,12 @@ impl RelayerKeys for Contract {
     #[payable]
     #[access_control_any(roles(Role::DAO, Role::RelayerKeysManager))]
     fn add_relayer_key(&mut self, public_key: PublicKey) -> Promise {
+        assert_one_yocto();
         Self::ext(CURRENT_ACCOUNT_ID.clone())
             .do_add_relayer_key(public_key.clone())
             .add_access_key_allowance(
                 public_key,
-                Allowance::limited(env::attached_deposit())
-                    .ok_or("no deposit attached for allowance")
-                    .unwrap_or_panic_static_str(),
+                Allowance::Unlimited,
                 CURRENT_ACCOUNT_ID.clone(),
                 EXECUTE_INTENTS_FUNC.into(),
             )
