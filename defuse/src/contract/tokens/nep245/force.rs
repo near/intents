@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use defuse_near_utils::UnwrapOrPanic;
 use defuse_nep245::TokenId;
 use near_plugins::{AccessControllable, access_control_any};

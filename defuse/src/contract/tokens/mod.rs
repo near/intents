@@ -22,10 +22,8 @@ impl Contract {
         let owner = self
             .accounts
             .get_or_create(owner_id.clone())
-            // TOOD: are we sure we cannot deposit to locked accounts?
-            .as_unlocked_mut()
-            // TODO: allow changing locked account state by permissioned accounts
-            .ok_or(DefuseError::AccountLocked)?;
+            // deposits are allowed for locked accounts
+            .as_inner_unchecked_mut();
 
         let mut mint_event = MtMintEvent {
             owner_id: owner_id.into(),
@@ -69,7 +67,7 @@ impl Contract {
             .get_mut(owner_id)
             .ok_or(DefuseError::AccountNotFound)?
             .as_unlocked_or_mut(force)
-            .ok_or(DefuseError::AccountLocked)?;
+            .ok_or_else(|| DefuseError::AccountLocked(owner_id.to_owned()))?;
 
         let mut burn_event = MtBurnEvent {
             owner_id: Cow::Owned(owner_id.to_owned()),

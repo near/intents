@@ -161,6 +161,7 @@ enum BorshableAccount {
     V2(Lock<Account>),
 }
 
+// TODO: docs
 #[derive(Debug, BorshSerialize)]
 #[borsh(crate = "::near_sdk::borsh")]
 enum BorshableAccountRef<'a> {

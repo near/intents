@@ -7,10 +7,12 @@ use serde_with::{DisplayFromStr, serde_as};
 use crate::{
     DefuseError, Result,
     engine::{Engine, Inspector, State},
-    tokens::Amounts,
+    tokens::{Amounts, TokenId},
 };
 
 use super::ExecutableIntent;
+
+pub type TokenAmounts = Amounts<BTreeMap<TokenId, u128>>;
 
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
@@ -27,7 +29,7 @@ pub struct Transfer {
     pub receiver_id: AccountId,
 
     #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
-    pub tokens: Amounts,
+    pub tokens: TokenAmounts,
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<String>,

@@ -1,6 +1,6 @@
-use std::{io, marker::PhantomData};
+use std::io;
 
-use defuse_borsh_utils::r#as::{AsWrap, BorshDeserializeAs, BorshSerializeAs, Same};
+use defuse_borsh_utils::r#as::{AsWrap, BorshDeserializeAs, BorshSerializeAs};
 use near_sdk::{
     borsh::{BorshDeserialize, BorshSerialize},
     near,
@@ -42,19 +42,22 @@ impl<T> Lock<T> {
         Self::new(value, true)
     }
 
-    // TODO: do we need this?
+    #[inline]
+    pub const fn set_locked(&mut self, locked: bool) -> &mut Self {
+        self.locked = locked;
+        self
+    }
+
     #[inline]
     pub const fn as_inner_unchecked(&self) -> &T {
         &self.value
     }
 
-    // TODO: do we need this?
     #[inline]
     pub const fn as_inner_unchecked_mut(&mut self) -> &mut T {
         &mut self.value
     }
 
-    // TODO: do we need this?
     #[inline]
     pub fn into_inner_unchecked(self) -> T {
         self.value
@@ -210,23 +213,5 @@ where
             locked: v.locked,
             value: v.value.into_inner(),
         })
-    }
-}
-
-// TODO: docs
-pub struct MaybeLock<T: ?Sized = Same, const DEFAULT_LOCKED: bool = false>(PhantomData<T>);
-
-impl<T, As, const DEFAULT_LOCKED: bool> BorshDeserializeAs<Lock<T>>
-    for MaybeLock<As, DEFAULT_LOCKED>
-where
-    As: BorshDeserializeAs<T>,
-{
-    #[inline]
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<Lock<T>>
-    where
-        R: io::Read,
-    {
-        Lock::<As>::deserialize_as(reader)
-            .or_else(|_| As::deserialize_as(reader).map(|v| Lock::new(v, DEFAULT_LOCKED)))
     }
 }

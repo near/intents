@@ -183,15 +183,14 @@ impl Contract {
                 .get_mut(sender_id)
                 .ok_or(DefuseError::AccountNotFound)?
                 .as_unlocked_or_mut(force)
-                .ok_or(DefuseError::AccountLocked)?
+                .ok_or_else(|| DefuseError::AccountLocked(sender_id.to_owned()))?
                 .token_balances
                 .sub(token_id.clone(), amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
             self.accounts
                 .get_or_create(receiver_id.clone())
-                // TODO: are we sure we can't deposit to locked accounts?
-                .as_unlocked_or_mut(force)
-                .ok_or(DefuseError::AccountLocked)?
+                // locked accounts are allowed to receive incoming transfers
+                .as_inner_unchecked_mut()
                 .token_balances
                 .add(token_id, amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
@@ -214,6 +213,7 @@ impl Contract {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn internal_mt_batch_transfer_call(
         &mut self,
         sender_id: AccountId,

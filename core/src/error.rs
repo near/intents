@@ -1,4 +1,4 @@
-use near_sdk::{FunctionError, serde_json};
+use near_sdk::{AccountId, FunctionError, serde_json};
 use thiserror::Error as ThisError;
 
 use crate::{engine::deltas::InvariantViolated, tokens::ParseTokenIdError};
@@ -7,11 +7,12 @@ pub type Result<T, E = DefuseError> = ::core::result::Result<T, E>;
 
 #[derive(Debug, ThisError, FunctionError)]
 pub enum DefuseError {
+    // TODO: enrich with account_id
     #[error("account not found")]
     AccountNotFound,
 
-    #[error("account is locked")]
-    AccountLocked,
+    #[error("account '{0}' is locked")]
+    AccountLocked(AccountId),
 
     #[error("insufficient balance or overflow")]
     BalanceOverflow,

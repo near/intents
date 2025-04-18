@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 
-use defuse_core::DefuseError;
 use defuse_near_utils::{Lock, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::{
     ClearedApproval, MtEventEmit, MtTransferEvent, TokenId, resolver::MultiTokenResolver,
@@ -55,10 +54,11 @@ impl MultiTokenResolver for Contract {
             let Some(receiver) = self
                 .accounts
                 .get_mut(&receiver_id)
-                // TODO: are we sure we cannot refund from locked receiver?
+                // TODO
                 .and_then(Lock::as_unlocked_mut)
             else {
-                // receiver doesn't have an account, so nowhere to refund from
+                // receiver doesn't have an account or it's locked,
+                // so nowhere to refund from
                 return amounts;
             };
             let receiver_balance = receiver.token_balances.amount_for(&token_id);
@@ -75,14 +75,10 @@ impl MultiTokenResolver for Contract {
                 .sub(token_id.clone(), refund.0)
                 .unwrap_or_panic();
             // deposit refund
-            let previous_owner = self
-                .accounts
+            self.accounts
                 .get_or_create(previous_owner_id)
-                .as_unlocked_mut()
-                .ok_or(DefuseError::AccountLocked)
-                // TODO: what if previous_owner was locked meanwhile?
-                .unwrap_or_panic();
-            previous_owner
+                // refunds are allowed for locked accounts
+                .as_inner_unchecked_mut()
                 .token_balances
                 .add(token_id, refund.0)
                 .unwrap_or_panic();

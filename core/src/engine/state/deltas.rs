@@ -86,6 +86,11 @@ where
     fn balance_of(&self, account_id: &AccountIdRef, token_id: &TokenId) -> u128 {
         self.state.balance_of(account_id, token_id)
     }
+
+    #[inline]
+    fn is_account_locked(&self, account_id: &AccountIdRef) -> bool {
+        self.state.is_account_locked(account_id)
+    }
 }
 
 impl<S> State for Deltas<S>

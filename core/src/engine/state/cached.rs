@@ -102,6 +102,13 @@ where
             .and_then(|account| account.token_amounts.get(token_id).copied())
             .unwrap_or_else(|| self.view.balance_of(account_id, token_id))
     }
+
+    fn is_account_locked(&self, account_id: &AccountIdRef) -> bool {
+        self.accounts
+            .get(account_id)
+            .map(Lock::is_locked)
+            .unwrap_or_else(|| self.view.is_account_locked(account_id))
+    }
 }
 
 impl<W> State for CachedState<W>
@@ -109,13 +116,14 @@ where
     W: StateView,
 {
     fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()> {
-        let had = self.has_public_key(&account_id, &public_key);
+        let had = self.view.has_public_key(&account_id, &public_key);
         let account = self
             .accounts
-            .get_or_create(account_id.clone())
+            .get_or_create(account_id.clone(), |account_id| {
+                self.view.is_account_locked(account_id)
+            })
             .as_unlocked_mut()
-            // TODO: allow changing locked account state by permissioned accounts
-            .ok_or(DefuseError::AccountLocked)?;
+            .ok_or(DefuseError::AccountLocked(account_id))?;
         let added = if had {
             account.public_keys_removed.remove(&public_key)
         } else {
@@ -128,13 +136,14 @@ where
     }
 
     fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()> {
-        let had = self.has_public_key(&account_id, &public_key);
+        let had = self.view.has_public_key(&account_id, &public_key);
         let account = self
             .accounts
-            .get_or_create(account_id.clone())
+            .get_or_create(account_id.clone(), |account_id| {
+                self.view.is_account_locked(account_id)
+            })
             .as_unlocked_mut()
-            // TODO: allow changing locked account state by permissioned accounts
-            .ok_or(DefuseError::AccountLocked)?;
+            .ok_or(DefuseError::AccountLocked(account_id))?;
         let removed = if had {
             account.public_keys_removed.insert(public_key)
         } else {
@@ -152,10 +161,11 @@ where
         }
 
         self.accounts
-            .get_or_create(account_id)
+            .get_or_create(account_id.clone(), |account_id| {
+                self.view.is_account_locked(account_id)
+            })
             .as_unlocked_mut()
-            // TODO: allow changing locked account state by permissioned accounts
-            .ok_or(DefuseError::AccountLocked)?
+            .ok_or(DefuseError::AccountLocked(account_id))?
             .commit_nonce(nonce)
             .then_some(())
             .ok_or(DefuseError::NonceUsed)
@@ -168,10 +178,10 @@ where
     ) -> Result<()> {
         let account = self
             .accounts
-            .get_or_create(owner_id.clone())
-            .as_unlocked_mut()
-            // TODO: allow changing locked account state by permissioned accounts
-            .ok_or(DefuseError::AccountLocked)?;
+            .get_or_create(owner_id.clone(), |owner_id| {
+                self.view.is_account_locked(owner_id)
+            })
+            .as_inner_unchecked_mut();
         for (token_id, amount) in token_amounts {
             if account.token_amounts.get(&token_id).is_none() {
                 account
@@ -194,11 +204,12 @@ where
     ) -> Result<()> {
         let account = self
             .accounts
-            .get_mut(owner_id)
-            .ok_or(DefuseError::AccountNotFound)?
+            // TODO: or_create: are we sure?
+            .get_or_create(owner_id.to_owned(), |owner_id| {
+                self.view.is_account_locked(owner_id)
+            })
             .as_unlocked_mut()
-            // TODO: allow changing locked account state by permissioned accounts
-            .ok_or(DefuseError::AccountLocked)?;
+            .ok_or_else(|| DefuseError::AccountLocked(owner_id.to_owned()))?;
         for (token_id, amount) in token_amounts {
             if amount == 0 {
                 return Err(DefuseError::InvalidIntent);
@@ -294,7 +305,6 @@ where
 }
 
 #[derive(Debug, Default, Clone)]
-// TODO: add Lock<>?
 pub struct CachedAccounts(HashMap<AccountId, Lock<CachedAccount>>);
 
 impl CachedAccounts {
@@ -315,8 +325,14 @@ impl CachedAccounts {
     }
 
     #[inline]
-    pub fn get_or_create(&mut self, account_id: AccountId) -> &mut Lock<CachedAccount> {
-        self.0.entry(account_id).or_default()
+    pub fn get_or_create(
+        &mut self,
+        account_id: AccountId,
+        default_locked: impl FnOnce(&AccountId) -> bool,
+    ) -> &mut Lock<CachedAccount> {
+        self.0.entry(account_id).or_insert_with_key(|account_id| {
+            Lock::new(Default::default(), default_locked(account_id))
+        })
     }
 }
 

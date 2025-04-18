@@ -23,8 +23,6 @@ pub trait StateView {
     fn fee(&self) -> Pips;
     fn fee_collector(&self) -> Cow<'_, AccountIdRef>;
 
-    // TODO: is_locked()
-
     #[must_use]
     fn has_public_key(&self, account_id: &AccountIdRef, public_key: &PublicKey) -> bool;
     fn iter_public_keys(&self, account_id: &AccountIdRef) -> impl Iterator<Item = PublicKey> + '_;
@@ -34,6 +32,8 @@ pub trait StateView {
 
     #[must_use]
     fn balance_of(&self, account_id: &AccountIdRef, token_id: &TokenId) -> u128;
+
+    fn is_account_locked(&self, account_id: &AccountIdRef) -> bool;
 
     #[inline]
     fn cached(self) -> CachedState<Self>

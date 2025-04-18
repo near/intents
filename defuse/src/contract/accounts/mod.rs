@@ -7,8 +7,10 @@ use std::collections::HashSet;
 
 use defuse_core::{
     Nonce,
+    accounts::AccountEvent,
     crypto::PublicKey,
     engine::{State, StateView},
+    events::DefuseEvent,
 };
 use defuse_near_utils::{Lock, NestPrefix, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic};
 use defuse_serde_utils::base64::AsBase64;
@@ -95,11 +97,10 @@ impl Accounts {
         self.accounts.get_mut(account_id).map(|a| &mut **a)
     }
 
-    // TODO: docs
-    // Creates unlocked account by default
+    /// Gets or creates an account with given `account_id`.
+    /// NOTE: The created account will be unblocked by default.
     #[inline]
     pub fn get_or_create(&mut self, account_id: AccountId) -> &mut Lock<Account> {
-        // TODO: allow creating locked accounts
         self.accounts
             .entry(account_id)
             .or_insert_with_key(|account_id| {
@@ -124,23 +125,36 @@ enum AccountsPrefix<'a> {
 #[near]
 impl AccountForceLocker for Contract {
     fn is_account_locked(&self, account_id: &AccountId) -> bool {
-        self.accounts.get(account_id).is_some_and(Lock::is_locked)
+        StateView::is_account_locked(self, account_id)
     }
 
     #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountLocker))]
     #[payable]
     fn force_lock_account(&mut self, account_id: AccountId) -> bool {
         assert_one_yocto();
-        self.accounts.get_or_create(account_id).lock().is_some()
+        let locked = self
+            .accounts
+            .get_or_create(account_id.clone())
+            .lock()
+            .is_some();
+        if locked {
+            DefuseEvent::AccountLocked(AccountEvent::new(account_id, ())).emit();
+        }
+        locked
     }
 
     #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountUnlocker))]
     #[payable]
     fn force_unlock_account(&mut self, account_id: &AccountId) -> bool {
         assert_one_yocto();
-        self.accounts
+        let unlocked = self
+            .accounts
             .get_mut(account_id)
             .and_then(Lock::unlock)
-            .is_some()
+            .is_some();
+        if unlocked {
+            DefuseEvent::AccountUnlocked(AccountEvent::new(account_id, ())).emit();
+        }
+        unlocked
     }
 }

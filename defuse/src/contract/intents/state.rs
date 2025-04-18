@@ -75,6 +75,11 @@ impl StateView for Contract {
             .map(|account| account.token_balances.amount_for(token_id))
             .unwrap_or_default()
     }
+
+    #[inline]
+    fn is_account_locked(&self, account_id: &AccountIdRef) -> bool {
+        self.accounts.get(account_id).is_some_and(Lock::is_locked)
+    }
 }
 
 impl State for Contract {
@@ -83,8 +88,7 @@ impl State for Contract {
         self.accounts
             .get_or_create(account_id.clone())
             .as_unlocked_mut()
-            // TODO: allow changing locked account state by permissioned accounts
-            .ok_or(DefuseError::AccountLocked)?
+            .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))?
             .add_public_key(&account_id, public_key)
             .then_some(())
             .ok_or(DefuseError::PublicKeyExists)
@@ -96,8 +100,7 @@ impl State for Contract {
             // create account if doesn't exist, so the user can opt out of implicit public key
             .get_or_create(account_id.clone())
             .as_unlocked_mut()
-            // TODO: allow changing locked account state by permissioned accounts
-            .ok_or(DefuseError::AccountLocked)?
+            .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))?
             .remove_public_key(&account_id, &public_key)
             .then_some(())
             .ok_or(DefuseError::PublicKeyNotExist)
@@ -106,10 +109,9 @@ impl State for Contract {
     #[inline]
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
         self.accounts
-            .get_or_create(account_id)
+            .get_or_create(account_id.clone())
             .as_unlocked_mut()
-            // TODO: allow changing locked account state by permissioned accounts
-            .ok_or(DefuseError::AccountLocked)?
+            .ok_or(DefuseError::AccountLocked(account_id))?
             .commit_nonce(nonce)
             .then_some(())
             .ok_or(DefuseError::NonceUsed)
@@ -122,10 +124,8 @@ impl State for Contract {
     ) -> Result<()> {
         let owner = self
             .accounts
-            .get_or_create(owner_id)
-            .as_unlocked_mut()
-            // TODO: allow changing locked account state by permissioned accounts
-            .ok_or(DefuseError::AccountLocked)?;
+            .get_or_create(owner_id.clone())
+            .as_inner_unchecked_mut();
 
         for (token_id, amount) in tokens {
             if amount == 0 {
@@ -150,8 +150,7 @@ impl State for Contract {
             .get_mut(owner_id)
             .ok_or(DefuseError::AccountNotFound)?
             .as_unlocked_mut()
-            // TODO: allow changing locked account state by permissioned accounts
-            .ok_or(DefuseError::AccountLocked)?;
+            .ok_or_else(|| DefuseError::AccountLocked(owner_id.to_owned()))?;
 
         for (token_id, amount) in tokens {
             if amount == 0 {
