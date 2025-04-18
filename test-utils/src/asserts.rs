@@ -16,6 +16,7 @@ impl<T, E> ResultAssertsExt for Result<T, E>
 where
     E: Display,
 {
+    #[track_caller]
     fn assert_err_contains(&self, to_contain: impl AsRef<str>) {
         let to_contain = to_contain.as_ref();
         match self {
