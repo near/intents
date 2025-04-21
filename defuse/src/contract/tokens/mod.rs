@@ -65,7 +65,7 @@ impl Contract {
         let owner = self
             .accounts
             .get_mut(owner_id)
-            .ok_or(DefuseError::AccountNotFound)?
+            .ok_or_else(|| DefuseError::AccountNotFound(owner_id.to_owned()))?
             .as_unlocked_or_mut(force)
             .ok_or_else(|| DefuseError::AccountLocked(owner_id.to_owned()))?;
 

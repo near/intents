@@ -12,7 +12,6 @@ use crate::{
 
 #[near]
 impl MultiTokenForceCore for Contract {
-    // TODO: pause?
     #[access_control_any(roles(Role::DAO, Role::UnrestrictedWithdrawer))]
     #[payable]
     fn mt_force_transfer(

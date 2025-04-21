@@ -70,7 +70,7 @@ where
 
         // make sure the account has this public key
         if !self.state.has_public_key(&signer_id, &public_key) {
-            return Err(DefuseError::PublicKeyNotExist);
+            return Err(DefuseError::PublicKeyNotExist(signer_id, public_key));
         }
 
         // commit nonce

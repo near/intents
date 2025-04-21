@@ -381,53 +381,7 @@ impl_borsh_serde_as_for_tuple!(0:T0 as As0,1:T1 as As1,2:T2 as As2,3:T3 as As3,4
 impl_borsh_serde_as_for_tuple!(0:T0 as As0,1:T1 as As1,2:T2 as As2,3:T3 as As3,4:T4 as As4,5:T5 as As5,6:T6 as As6,7:T7 as As7,8:T8 as As8);
 impl_borsh_serde_as_for_tuple!(0:T0 as As0,1:T1 as As1,2:T2 as As2,3:T3 as As3,4:T4 as As4,5:T5 as As5,6:T6 as As6,7:T7 as As7,8:T8 as As8,9:T9 as As9);
 
-pub struct Or<T1: ?Sized, T2: ?Sized = Same>(PhantomData<T1>, PhantomData<T2>);
-
-impl<T, As1, As2> BorshDeserializeAs<T> for Or<As1, As2>
-where
-    As1: BorshDeserializeAs<T> + ?Sized,
-    As2: BorshDeserializeAs<T> + ?Sized,
-{
-    #[inline]
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<T>
-    where
-        R: io::Read,
-    {
-        let mut buf = Vec::new();
-        As1::deserialize_as(&mut reader.tee(&mut buf))
-            .or_else(|_| As2::deserialize_as(&mut buf.chain(reader)))
-    }
-}
-
-impl<T, As1, As2> BorshSerializeAs<T> for Or<As1, As2>
-where
-    As1: BorshSerializeAs<T> + ?Sized,
-{
-    #[inline]
-    fn serialize_as<W>(source: &T, writer: &mut W) -> io::Result<()>
-    where
-        W: io::Write,
-    {
-        // TODO
-        As1::serialize_as(source, writer)
-    }
-}
-
-// TODO
 pub struct FromInto<T: ?Sized>(PhantomData<T>);
-
-impl<T, U> BorshDeserializeAs<T> for FromInto<U>
-where
-    U: BorshDeserialize + Into<T>,
-{
-    #[inline]
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<T>
-    where
-        R: io::Read,
-    {
-        U::deserialize_reader(reader).map(Into::into)
-    }
-}
 
 impl<T, U> BorshSerializeAs<T> for FromInto<U>
 where
@@ -443,7 +397,34 @@ where
     }
 }
 
+impl<T, U> BorshDeserializeAs<T> for FromInto<U>
+where
+    U: BorshDeserialize + Into<T>,
+{
+    #[inline]
+    fn deserialize_as<R>(reader: &mut R) -> io::Result<T>
+    where
+        R: io::Read,
+    {
+        U::deserialize_reader(reader).map(Into::into)
+    }
+}
+
 pub struct FromIntoRef<T: ?Sized>(PhantomData<T>);
+
+impl<T, U> BorshSerializeAs<T> for FromIntoRef<U>
+where
+    for<'a> &'a T: Into<U>,
+    U: BorshSerialize,
+{
+    #[inline]
+    fn serialize_as<W>(source: &T, writer: &mut W) -> io::Result<()>
+    where
+        W: io::Write,
+    {
+        source.into().serialize(writer)
+    }
+}
 
 impl<T, U> BorshDeserializeAs<T> for FromIntoRef<U>
 where
@@ -458,16 +439,20 @@ where
     }
 }
 
-impl<T, U> BorshSerializeAs<T> for FromIntoRef<U>
+pub struct Or<T1: ?Sized, T2: ?Sized = Same>(PhantomData<T1>, PhantomData<T2>);
+
+impl<T, As1, As2> BorshDeserializeAs<T> for Or<As1, As2>
 where
-    for<'a> &'a T: Into<U>,
-    U: BorshSerialize,
+    As1: BorshDeserializeAs<T> + ?Sized,
+    As2: BorshDeserializeAs<T> + ?Sized,
 {
     #[inline]
-    fn serialize_as<W>(source: &T, writer: &mut W) -> io::Result<()>
+    fn deserialize_as<R>(reader: &mut R) -> io::Result<T>
     where
-        W: io::Write,
+        R: io::Read,
     {
-        source.into().serialize(writer)
+        let mut buf = Vec::new();
+        As1::deserialize_as(&mut reader.tee(&mut buf))
+            .or_else(|_| As2::deserialize_as(&mut buf.chain(reader)))
     }
 }

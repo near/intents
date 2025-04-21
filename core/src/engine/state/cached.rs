@@ -123,14 +123,14 @@ where
                 self.view.is_account_locked(account_id)
             })
             .as_unlocked_mut()
-            .ok_or(DefuseError::AccountLocked(account_id))?;
+            .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))?;
         let added = if had {
             account.public_keys_removed.remove(&public_key)
         } else {
             account.public_keys_added.insert(public_key)
         };
         if !added {
-            return Err(DefuseError::PublicKeyExists);
+            return Err(DefuseError::PublicKeyExists(account_id, public_key));
         }
         Ok(())
     }
@@ -143,14 +143,14 @@ where
                 self.view.is_account_locked(account_id)
             })
             .as_unlocked_mut()
-            .ok_or(DefuseError::AccountLocked(account_id))?;
+            .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))?;
         let removed = if had {
             account.public_keys_removed.insert(public_key)
         } else {
             account.public_keys_added.remove(&public_key)
         };
         if !removed {
-            return Err(DefuseError::PublicKeyNotExist);
+            return Err(DefuseError::PublicKeyNotExist(account_id, public_key));
         }
         Ok(())
     }
@@ -204,7 +204,6 @@ where
     ) -> Result<()> {
         let account = self
             .accounts
-            // TODO: or_create: are we sure?
             .get_or_create(owner_id.to_owned(), |owner_id| {
                 self.view.is_account_locked(owner_id)
             })

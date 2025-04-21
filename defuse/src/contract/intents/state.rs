@@ -91,7 +91,7 @@ impl State for Contract {
             .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))?
             .add_public_key(&account_id, public_key)
             .then_some(())
-            .ok_or(DefuseError::PublicKeyExists)
+            .ok_or(DefuseError::PublicKeyExists(account_id, public_key))
     }
 
     #[inline]
@@ -103,7 +103,7 @@ impl State for Contract {
             .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))?
             .remove_public_key(&account_id, &public_key)
             .then_some(())
-            .ok_or(DefuseError::PublicKeyNotExist)
+            .ok_or(DefuseError::PublicKeyNotExist(account_id, public_key))
     }
 
     #[inline]
@@ -148,7 +148,7 @@ impl State for Contract {
         let owner = self
             .accounts
             .get_mut(owner_id)
-            .ok_or(DefuseError::AccountNotFound)?
+            .ok_or_else(|| DefuseError::AccountNotFound(owner_id.to_owned()))?
             .as_unlocked_mut()
             .ok_or_else(|| DefuseError::AccountLocked(owner_id.to_owned()))?;
 
