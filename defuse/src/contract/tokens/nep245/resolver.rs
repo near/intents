@@ -54,7 +54,18 @@ impl MultiTokenResolver for Contract {
             let Some(receiver) = self
                 .accounts
                 .get_mut(&receiver_id)
-                // TODO
+                // NOTE: Interacting with locked receivers might result in loss of funds.
+                //
+                // Receiver's account might have been locked between `mt_transfer_call()` and
+                // `mt_resolve_transfer()`, so that outgoing transfers are no longer allowed
+                // for this account. If we allow refunds to happen, then it would lead to
+                // `mt_transfer` events emitted with `old_owner_id` being the locked account,
+                // which we want to avoid.
+                //
+                // So, since we allow locked accounts to receive incoming transfers, it means
+                // that `mt_transfer_call()` to locked recepients will always result in full
+                // transfer without any refunds, even if the receiver returned non-zero refund
+                // amounts from `mt_on_transfer`.
                 .and_then(Lock::as_unlocked_mut)
             else {
                 // receiver doesn't have an account or it's locked,

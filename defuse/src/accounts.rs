@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use defuse_core::{Nonce, crypto::PublicKey};
 use defuse_serde_utils::base64::AsBase64;
+use near_plugins::AccessControllable;
 use near_sdk::{AccountId, ext_contract};
 
 #[ext_contract(ext_public_key_manager)]
@@ -33,9 +34,21 @@ pub trait AccountManager {
 }
 
 #[ext_contract(ext_force_account_locker)]
-pub trait AccountForceLocker {
+pub trait AccountForceLocker: AccessControllable {
+    /// Returns whether the given`account_id` is locked
     fn is_account_locked(&self, account_id: &AccountId) -> bool;
-    // TODO: docs
+
+    /// Locks given `account_id` from modifying its own state, including
+    /// token balances.
+    /// Returns `false` if the account was already in locked state.
+    ///
+    /// Attached deposit of 1yN is required for security purposes.
+    ///
+    /// NOTE: this still allows for force withdrawals/transfers
     fn force_lock_account(&mut self, account_id: AccountId) -> bool;
+    /// Unlocks given `account_id`.
+    /// Returns `false` if the account wasn't in locked state.
+    ///
+    /// Attached deposit of 1yN is required for security purposes.
     fn force_unlock_account(&mut self, account_id: &AccountId) -> bool;
 }

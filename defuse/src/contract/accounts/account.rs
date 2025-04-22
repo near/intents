@@ -8,8 +8,7 @@ use defuse_core::{
     crypto::PublicKey,
     events::DefuseEvent,
 };
-use defuse_near_utils::{Lock, NestPrefix};
-use derive_more::derive::From;
+use defuse_near_utils::{Lock, NestPrefix, PanicOnClone};
 use impl_tools::autoimpl;
 use near_sdk::{
     AccountIdRef, BorshStorageKey, IntoStorageKey,
@@ -23,12 +22,9 @@ use super::AccountState;
 #[derive(Debug)]
 #[autoimpl(Deref using self.0)]
 #[autoimpl(DerefMut using self.0)]
+#[autoimpl(AsRef using self.0)]
+#[autoimpl(AsMut using self.0)]
 pub struct MaybeLockedAccount(Lock<Account>);
-
-impl MaybeLockedAccount {
-    // TODO
-    // pub fn as_unlocked_or(&self) ->
-}
 
 #[derive(Debug)]
 #[near(serializers = [borsh])]
@@ -154,62 +150,50 @@ enum AccountPrefix {
     State,
 }
 
-#[derive(Debug, From)]
+/// Versioned [Account] state for de/serialization
+#[derive(Debug)]
 #[near(serializers = [borsh])]
-enum BorshableAccount {
-    V1(Account),
-    V2(Lock<Account>),
-}
-
-// TODO: docs
-#[derive(Debug, BorshSerialize)]
-#[borsh(crate = "::near_sdk::borsh")]
-enum BorshableAccountRef<'a> {
-    #[allow(dead_code)]
-    V1(&'a Account),
-    V2(&'a Lock<Account>),
+enum VersionedAccount<'a> {
+    V1(Cow<'a, PanicOnClone<Account>>),
+    V2(Cow<'a, PanicOnClone<Lock<Account>>>),
 }
 
 impl BorshDeserialize for MaybeLockedAccount {
-    #[inline]
     fn deserialize_reader<R: io::Read>(reader: &mut R) -> io::Result<Self> {
-        Or::<FromInto<BorshableAccount>, FromInto<Account>>::deserialize_as(reader)
+        Or::<
+            // first, try deserializing as versioned
+            FromInto<VersionedAccount>,
+            // otherwise, try legacy
+            FromInto<Account>,
+        >::deserialize_as(reader)
     }
 }
 
 impl BorshSerialize for MaybeLockedAccount {
-    #[inline]
     fn serialize<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
-        BorshableAccountRef::from(self).serialize(writer)
-    }
-}
-
-impl From<BorshableAccount> for MaybeLockedAccount {
-    #[inline]
-    fn from(account: BorshableAccount) -> Self {
-        match account {
-            BorshableAccount::V1(account) => account.into(),
-            BorshableAccount::V2(account) => account.into(),
-        }
+        // always serialize as latest version
+        VersionedAccount::V2(Cow::Borrowed(PanicOnClone::from_ref(&self.0))).serialize(writer)
     }
 }
 
 impl From<Account> for MaybeLockedAccount {
-    #[inline]
     fn from(account: Account) -> Self {
         Self(Lock::unlocked(account))
     }
 }
 
 impl From<Lock<Account>> for MaybeLockedAccount {
-    #[inline]
     fn from(account: Lock<Account>) -> Self {
         Self(account)
     }
 }
 
-impl<'a> From<&'a MaybeLockedAccount> for BorshableAccountRef<'a> {
-    fn from(account: &'a MaybeLockedAccount) -> Self {
-        Self::V2(&account.0)
+impl From<VersionedAccount<'_>> for MaybeLockedAccount {
+    fn from(account: VersionedAccount) -> Self {
+        match account {
+            #[allow(deprecated)]
+            VersionedAccount::V1(account) => account.into_owned().into_inner().into(),
+            VersionedAccount::V2(account) => account.into_owned().into_inner().into(),
+        }
     }
 }

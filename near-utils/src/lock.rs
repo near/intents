@@ -17,7 +17,6 @@ pub struct Lock<T> {
         // do not serialize `false`
         skip_serializing_if = "::core::ops::Not::not"
     )]
-    // TODO: move to the end of struct?
     locked: bool,
     #[serde(flatten)]
     value: T,

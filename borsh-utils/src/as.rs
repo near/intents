@@ -439,7 +439,7 @@ where
     }
 }
 
-pub struct Or<T1: ?Sized, T2: ?Sized = Same>(PhantomData<T1>, PhantomData<T2>);
+pub struct Or<T1: ?Sized, T2: ?Sized>(PhantomData<T1>, PhantomData<T2>);
 
 impl<T, As1, As2> BorshDeserializeAs<T> for Or<As1, As2>
 where
