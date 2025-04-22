@@ -2,6 +2,7 @@
 name = "randomness"
 version.workspace = true
 edition.workspace = true
+repository.workspace = true
 
 [lints]
 workspace = true

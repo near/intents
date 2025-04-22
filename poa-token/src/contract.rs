@@ -16,7 +16,7 @@ use near_sdk::{
 
 use crate::{PoaFungibleToken, WITHDRAW_MEMO_PREFIX};
 
-#[near(contract_state)]
+#[near(contract_state, contract_metadata())]
 #[derive(Ownable, PanicOnDefault)]
 pub struct Contract {
     token: FungibleToken,

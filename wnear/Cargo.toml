@@ -2,6 +2,7 @@
 name = "defuse-wnear"
 edition.workspace = true
 version.workspace = true
+repository.workspace = true
 
 [dependencies]
 near-contract-standards.workspace = true

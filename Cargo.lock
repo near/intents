@@ -2366,9 +2366,8 @@ dependencies = [
 
 [[package]]
 name = "near-contract-standards"
-version = "5.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d28a4f69bef9cee153656cba1a4a871f306399d7838e88ec93a17484db8f0ec"
+version = "5.12.0"
+source = "git+https://github.com/BonelessImpl/near-sdk-rs/?branch=release-5.12.0#6093ccd4ad85912b0687334cc3340b18dd96b968"
 dependencies = [
  "near-sdk",
 ]
@@ -2529,7 +2528,7 @@ dependencies = [
 [[package]]
 name = "near-plugins"
 version = "0.5.0"
-source = "git+https://github.com/Near-One/near-plugins?tag=v0.5.0#e0cb09455ebb16c346d86c40aac3f926080195ae"
+source = "git+https://github.com/BonelessImpl/near-plugins?branch=v0.5.0-patched#2b5d2299cd6cb37f139b2b4ee565f50264ebde8c"
 dependencies = [
  "bitflags 1.3.2",
  "near-plugins-derive",
@@ -2540,7 +2539,7 @@ dependencies = [
 [[package]]
 name = "near-plugins-derive"
 version = "0.5.0"
-source = "git+https://github.com/Near-One/near-plugins?tag=v0.5.0#e0cb09455ebb16c346d86c40aac3f926080195ae"
+source = "git+https://github.com/BonelessImpl/near-plugins?branch=v0.5.0-patched#2b5d2299cd6cb37f139b2b4ee565f50264ebde8c"
 dependencies = [
  "darling 0.13.4",
  "proc-macro-crate 0.1.5",
@@ -2733,9 +2732,8 @@ checksum = "d0906c4a3962bc31e9737da0884e3595065b37eb3117848c6d73be3746cc734b"
 
 [[package]]
 name = "near-sdk"
-version = "5.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d50771049af7a22bd71c71e080412b7a0b7fcc018499b46386a601bf0bcb3eab"
+version = "5.12.0"
+source = "git+https://github.com/BonelessImpl/near-sdk-rs/?branch=release-5.12.0#6093ccd4ad85912b0687334cc3340b18dd96b968"
 dependencies = [
  "base64 0.22.1",
  "borsh",
@@ -2758,9 +2756,8 @@ dependencies = [
 
 [[package]]
 name = "near-sdk-macros"
-version = "5.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f83d000fc665eeb2d674aed42dd415f7365f848514bb7b487cb25ce78c1978df"
+version = "5.12.0"
+source = "git+https://github.com/BonelessImpl/near-sdk-rs/?branch=release-5.12.0#6093ccd4ad85912b0687334cc3340b18dd96b968"
 dependencies = [
  "Inflector",
  "darling 0.20.10",
@@ -2810,8 +2807,7 @@ checksum = "66319954983ae164fd0b714ae9d8b09edc26c74d9b3a1f51e564bb14720adb8e"
 [[package]]
 name = "near-sys"
 version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dbf4ca5c805cb78700e10e43484902d8da05f25788db277999d209568aaf4c8e"
+source = "git+https://github.com/BonelessImpl/near-sdk-rs/?branch=release-5.12.0#6093ccd4ad85912b0687334cc3340b18dd96b968"
 
 [[package]]
 name = "near-time"

@@ -2,6 +2,7 @@
 name = "defuse-nep245"
 edition.workspace = true
 version.workspace = true
+repository.workspace = true
 
 [dependencies]
 derive_more.workspace = true

@@ -50,14 +50,13 @@ pub enum Role {
     pause_roles(Role::DAO, Role::PauseManager),
     unpause_roles(Role::DAO, Role::UnpauseManager)
 )]
-#[near(contract_state, contract_metadata(
-    // TODO: remove when this PR is merged:
-    // https://github.com/near/near-sdk-rs/pull/1249
-    version = "unknown",
-    link = "https://github.com/defuse-protocol/defuse-contracts",
-    standard(standard = "dip4", version = "0.1.0"),
-    standard(standard = "nep245", version = "1.0.0"),
-))]
+#[near(
+    contract_state,
+    contract_metadata(
+        standard(standard = "dip4", version = "0.1.0"),
+        standard(standard = "nep245", version = "1.0.0"),
+    )
+)]
 #[autoimpl(Deref using self.state)]
 #[autoimpl(DerefMut using self.state)]
 pub struct Contract {

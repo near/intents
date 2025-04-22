@@ -45,7 +45,7 @@ pub enum Role {
     UnpauseManager,
 }
 
-#[near(contract_state)]
+#[near(contract_state, contract_metadata())]
 #[derive(Pausable, PanicOnDefault)]
 #[access_control(role_type(Role))]
 #[pausable(
