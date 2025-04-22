@@ -2,6 +2,7 @@
 name = "defuse-nep413"
 edition.workspace = true
 version.workspace = true
+repository.workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, features = ["serde"] }
