@@ -106,8 +106,7 @@ where
     fn is_account_locked(&self, account_id: &AccountIdRef) -> bool {
         self.accounts
             .get(account_id)
-            .map(Lock::is_locked)
-            .unwrap_or_else(|| self.view.is_account_locked(account_id))
+            .map_or_else(|| self.view.is_account_locked(account_id), Lock::is_locked)
     }
 }
 
@@ -330,7 +329,7 @@ impl CachedAccounts {
         default_locked: impl FnOnce(&AccountId) -> bool,
     ) -> &mut Lock<CachedAccount> {
         self.0.entry(account_id).or_insert_with_key(|account_id| {
-            Lock::new(Default::default(), default_locked(account_id))
+            Lock::new(CachedAccount::default(), default_locked(account_id))
         })
     }
 }
