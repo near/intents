@@ -9,9 +9,10 @@ use defuse::{
 };
 use near_sdk::{AccountId, AccountIdRef};
 use randomness::{Rng, make_true_rng};
+use rstest::rstest;
 use serde_json::json;
 
-use crate::utils::mt::MtExt;
+use crate::utils::{mt::MtExt, test_log::TestLog};
 
 use super::{DefuseSigner, accounts::AccountManagerExt, env::Env};
 
@@ -24,11 +25,11 @@ pub trait ExecuteIntentsExt: AccountManagerExt {
         &self,
         defuse_id: &AccountId,
         intents: impl IntoIterator<Item = MultiPayload>,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<TestLog>;
     async fn execute_intents(
         &self,
         intents: impl IntoIterator<Item = MultiPayload>,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<TestLog>;
 
     async fn defuse_simulate_intents(
         &self,
@@ -46,7 +47,7 @@ impl ExecuteIntentsExt for near_workspaces::Account {
         &self,
         defuse_id: &AccountId,
         intents: impl IntoIterator<Item = MultiPayload>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<TestLog> {
         let args = json!({
             "signed": intents.into_iter().collect::<Vec<_>>(),
         });
@@ -54,25 +55,28 @@ impl ExecuteIntentsExt for near_workspaces::Account {
             "execute_intents({})",
             serde_json::to_string_pretty(&args).unwrap()
         );
-        self.call(defuse_id, "execute_intents")
+        let logs = self
+            .call(defuse_id, "execute_intents")
             .args_json(args)
             .max_gas()
             .transact()
             .await?
             .into_result()
-            .map(|outcome| {
+            .inspect(|outcome| {
                 println!(
                     "execute_intents: total_gas_burnt: {}, logs: {:#?}",
                     outcome.total_gas_burnt,
                     outcome.logs()
                 );
             })
-            .map_err(Into::into)
+            .map(Into::into)?;
+
+        Ok(logs)
     }
     async fn execute_intents(
         &self,
         intents: impl IntoIterator<Item = MultiPayload>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<TestLog> {
         self.defuse_execute_intents(self.id(), intents).await
     }
 
@@ -107,7 +111,7 @@ impl ExecuteIntentsExt for near_workspaces::Contract {
         &self,
         defuse_id: &AccountId,
         intents: impl IntoIterator<Item = MultiPayload>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<TestLog> {
         self.as_account()
             .defuse_execute_intents(defuse_id, intents)
             .await
@@ -115,7 +119,7 @@ impl ExecuteIntentsExt for near_workspaces::Contract {
     async fn execute_intents(
         &self,
         intents: impl IntoIterator<Item = MultiPayload>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<TestLog> {
         self.as_account().execute_intents(intents).await
     }
 
@@ -137,8 +141,12 @@ impl ExecuteIntentsExt for near_workspaces::Contract {
 }
 
 #[tokio::test]
-async fn test_simulate_is_view_method() {
-    let env = Env::new().await;
+#[rstest]
+async fn test_simulate_is_view_method(#[values(false, true)] no_registration: bool) {
+    let env = Env::builder()
+        .no_registration(no_registration)
+        .build()
+        .await;
 
     let ft1 = TokenId::Nep141(env.ft1.clone());
 
@@ -184,11 +192,15 @@ async fn test_simulate_is_view_method() {
 }
 
 #[tokio::test]
-async fn test_webauthn() {
+#[rstest]
+async fn test_webauthn(#[values(false, true)] no_registration: bool) {
     const SIGNER_ID: &AccountIdRef =
         AccountIdRef::new_or_panic("0x3602b546589a8fcafdce7fad64a46f91db0e4d50");
 
-    let env = Env::new().await;
+    let env = Env::builder()
+        .no_registration(no_registration)
+        .build()
+        .await;
 
     let ft1 = TokenId::Nep141(env.ft1.clone());
 

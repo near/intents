@@ -32,6 +32,7 @@ pub trait PoAFactoryExt {
         token: &str,
         metadata: impl Into<Option<FungibleTokenMetadata>>,
     ) -> anyhow::Result<AccountId>;
+
     async fn poa_deploy_token(
         &self,
         token: &str,
@@ -47,6 +48,7 @@ pub trait PoAFactoryExt {
         msg: Option<String>,
         memo: Option<String>,
     ) -> anyhow::Result<()>;
+
     async fn poa_ft_deposit(
         &self,
         token: &str,
@@ -55,6 +57,7 @@ pub trait PoAFactoryExt {
         msg: Option<String>,
         memo: Option<String>,
     ) -> anyhow::Result<()>;
+
     async fn poa_factory_tokens(
         &self,
         poa_factory: &AccountId,
@@ -238,11 +241,14 @@ impl PoAFactoryExt for near_workspaces::Contract {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
 
     use crate::utils::{Sandbox, ft::FtExt};
 
     #[tokio::test]
+    #[rstest]
     async fn test_deploy_mint() {
         let sandbox = Sandbox::new().await.unwrap();
         let root = sandbox.root_account();
@@ -286,7 +292,7 @@ mod tests {
             0
         );
 
-        sandbox
+        poa_factory
             .ft_storage_deposit_many(&ft1, &[root.id(), user.id()])
             .await
             .unwrap();

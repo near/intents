@@ -26,6 +26,7 @@ pub struct Contract {
 #[near]
 impl Contract {
     #[init]
+    #[allow(dead_code)]
     pub fn new(owner_id: Option<AccountId>, metadata: Option<FungibleTokenMetadata>) -> Self {
         let metadata = metadata.unwrap_or_else(|| FungibleTokenMetadata {
             spec: FT_METADATA_SPEC.to_string(),
@@ -137,6 +138,7 @@ impl FungibleTokenResolver for Contract {
 #[near]
 impl StorageManagement for Contract {
     #[payable]
+    #[cfg_attr(feature = "no-registration", only(self, owner))]
     fn storage_deposit(
         &mut self,
         account_id: Option<AccountId>,
@@ -188,12 +190,16 @@ impl Contract {
 #[near]
 impl FullAccessKeys for Contract {
     #[only(self, owner)]
+    #[payable]
     fn add_full_access_key(&mut self, public_key: PublicKey) -> Promise {
+        assert_one_yocto();
         Promise::new(CURRENT_ACCOUNT_ID.clone()).add_full_access_key(public_key)
     }
 
     #[only(self, owner)]
+    #[payable]
     fn delete_key(&mut self, public_key: PublicKey) -> Promise {
+        assert_one_yocto();
         Promise::new(CURRENT_ACCOUNT_ID.clone()).delete_key(public_key)
     }
 }

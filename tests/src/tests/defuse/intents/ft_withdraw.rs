@@ -24,19 +24,32 @@ use crate::{
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn test_ft_withdraw_intent(random_seed: Seed) {
+async fn test_ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registration: bool) {
     // intentionally large deposit
     const STORAGE_DEPOSIT: NearToken = NearToken::from_near(1000);
 
     let mut rng = make_seedable_rng(random_seed);
 
-    let env = Env::new().await;
-
-    env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
-        .await
-        .unwrap();
+    let env = Env::builder()
+        .no_registration(no_registration)
+        .build()
+        .await;
 
     let other_user_id: AccountId = "other-user.near".parse().unwrap();
+
+    let ft1 = TokenId::Nep141(env.ft1.clone());
+    {
+        env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
+            .await
+            .unwrap();
+
+        assert_eq!(
+            env.mt_contract_balance_of(env.defuse.id(), env.user1.id(), &ft1.to_string())
+                .await
+                .unwrap(),
+            1000
+        );
+    }
 
     env.defuse
         .execute_intents([env.user1.sign_defuse_message(
@@ -59,13 +72,13 @@ async fn test_ft_withdraw_intent(random_seed: Seed) {
         .await
         .unwrap();
 
-    let ft1 = TokenId::Nep141(env.ft1.clone());
     assert_eq!(
         env.mt_contract_balance_of(env.defuse.id(), env.user1.id(), &ft1.to_string())
             .await
             .unwrap(),
         1000
     );
+
     assert_eq!(
         env.ft_token_balance_of(&env.ft1, &other_user_id)
             .await
@@ -117,6 +130,17 @@ async fn test_ft_withdraw_intent(random_seed: Seed) {
         .await
         .unwrap();
 
+    if no_registration {
+        // IN no_registration case, only token owner can register a new user
+        env.poa_factory
+            .ft_storage_deposit_many(&env.ft1, &[&other_user_id])
+            .await
+            .unwrap();
+    }
+
+    // in case of registration enabled, the user now has wNEAR to pay for it
+    let storage_deposit = (!no_registration).then_some(STORAGE_DEPOSIT);
+
     let old_defuse_balance = env
         .defuse
         .as_account()
@@ -137,8 +161,8 @@ async fn test_ft_withdraw_intent(random_seed: Seed) {
                     amount: 1000.into(),
                     memo: None,
                     msg: None,
-                    // now user has wNEAR to pay for it
-                    storage_deposit: Some(STORAGE_DEPOSIT),
+
+                    storage_deposit,
                 }
                 .into()]
                 .into(),
@@ -165,16 +189,20 @@ async fn test_ft_withdraw_intent(random_seed: Seed) {
             .unwrap(),
         0
     );
-    assert_eq!(
-        env.mt_contract_balance_of(
-            env.defuse.id(),
-            env.user1.id(),
-            &TokenId::Nep141(env.wnear.id().clone()).to_string()
-        )
-        .await
-        .unwrap(),
-        0,
-    );
+
+    if !no_registration {
+        // When no_registration is enabled, the storage deposit is done manually, not through intents
+        assert_eq!(
+            env.mt_contract_balance_of(
+                env.defuse.id(),
+                env.user1.id(),
+                &TokenId::Nep141(env.wnear.id().clone()).to_string()
+            )
+            .await
+            .unwrap(),
+            0,
+        );
+    }
 
     assert_eq!(
         env.ft_token_balance_of(&env.ft1, &other_user_id)
@@ -187,10 +215,16 @@ async fn test_ft_withdraw_intent(random_seed: Seed) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn test_ft_withdraw_intent_msg(random_seed: Seed) {
+async fn test_ft_withdraw_intent_msg(
+    random_seed: Seed,
+    #[values(false, true)] no_registration: bool,
+) {
     let mut rng = make_seedable_rng(random_seed);
 
-    let env = Env::new().await;
+    let env = Env::builder()
+        .no_registration(no_registration)
+        .build()
+        .await;
 
     let defuse2 = env
         .deploy_defuse(
@@ -206,7 +240,9 @@ async fn test_ft_withdraw_intent_msg(random_seed: Seed) {
         )
         .await
         .unwrap();
-    env.ft_storage_deposit(&env.ft1, &[defuse2.id()])
+
+    env.poa_factory
+        .ft_storage_deposit_many(&env.ft1, &[defuse2.id()])
         .await
         .unwrap();
 

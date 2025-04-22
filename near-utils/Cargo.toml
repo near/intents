@@ -1,10 +1,11 @@
 [package]
 name = "defuse-near-utils"
 edition.workspace = true
-version = "0.1.0"
+version.workspace = true
 
 [dependencies]
 defuse-borsh-utils.workspace = true
 
 impl-tools.workspace = true
 near-sdk.workspace = true
+

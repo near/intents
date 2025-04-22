@@ -6,6 +6,7 @@ use serde_json::json;
 
 use super::account::AccountExt;
 use super::storage_management::StorageManagementExt;
+use super::test_log::TestLog;
 
 pub const FT_STORAGE_DEPOSIT: NearToken = NearToken::from_yoctonear(2_350_000_000_000_000_000_000);
 const TOTAL_SUPPLY: u128 = 1_000_000_000;
@@ -145,9 +146,8 @@ impl FtExt for Account {
             .into_result()
             .inspect(|outcome| {
                 println!(
-                    "ft_transfer_call: total_gas_burnt: {}, logs: {:#?}",
-                    outcome.total_gas_burnt,
-                    outcome.logs()
+                    "ft_transfer_call Logs: {:?}",
+                    TestLog::from(outcome.clone())
                 );
             })?
             .json::<U128>()

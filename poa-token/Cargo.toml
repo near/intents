@@ -19,3 +19,4 @@ near-sdk = { workspace = true, features = ["unstable"] }
 
 [features]
 contract = []
+no-registration = []

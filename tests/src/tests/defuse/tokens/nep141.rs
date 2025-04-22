@@ -11,6 +11,7 @@ use defuse::{
 };
 use near_sdk::{AccountId, NearToken, json_types::U128};
 use randomness::{Rng, make_true_rng};
+use rstest::rstest;
 use serde_json::json;
 
 use crate::{
@@ -22,8 +23,12 @@ use crate::{
 };
 
 #[tokio::test]
-async fn test_deposit_withdraw() {
-    let env = Env::new().await;
+#[rstest]
+async fn test_deposit_withdraw(#[values(false, true)] no_registration: bool) {
+    let env = Env::builder()
+        .no_registration(no_registration)
+        .build()
+        .await;
 
     env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
         .await
@@ -62,8 +67,13 @@ async fn test_deposit_withdraw() {
 }
 
 #[tokio::test]
-async fn test_poa_deposit() {
-    let env = Env::new().await;
+#[rstest]
+async fn test_poa_deposit(#[values(false, true)] no_registration: bool) {
+    let env = Env::builder()
+        .no_registration(no_registration)
+        .build()
+        .await;
+
     let ft1 = TokenId::Nep141(env.ft1.clone());
 
     env.poa_factory_ft_deposit(
@@ -92,8 +102,12 @@ async fn test_poa_deposit() {
 }
 
 #[tokio::test]
-async fn test_deposit_withdraw_intent() {
-    let env = Env::new().await;
+#[rstest]
+async fn test_deposit_withdraw_intent(#[values(false, true)] no_registration: bool) {
+    let env = Env::builder()
+        .no_registration(no_registration)
+        .build()
+        .await;
 
     env.poa_factory_ft_deposit(
         env.poa_factory.id(),
@@ -174,8 +188,12 @@ async fn test_deposit_withdraw_intent() {
 }
 
 #[tokio::test]
-async fn test_deposit_withdraw_intent_refund() {
-    let env = Env::new().await;
+#[rstest]
+async fn test_deposit_withdraw_intent_refund(#[values(false, true)] no_registration: bool) {
+    let env = Env::builder()
+        .no_registration(no_registration)
+        .build()
+        .await;
 
     env.poa_factory_ft_deposit(
         env.poa_factory.id(),
@@ -238,8 +256,13 @@ async fn test_deposit_withdraw_intent_refund() {
 }
 
 #[tokio::test]
-async fn test_ft_force_withdraw() {
-    let env = Env::builder().deployer_as_super_admin().build().await;
+#[rstest]
+async fn test_ft_force_withdraw(#[values(false, true)] no_registration: bool) {
+    let env = Env::builder()
+        .deployer_as_super_admin()
+        .no_registration(no_registration)
+        .build()
+        .await;
     env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
         .await
         .unwrap();

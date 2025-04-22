@@ -24,8 +24,15 @@ use super::ExecuteIntentsExt;
 
 #[rstest]
 #[tokio::test]
-async fn test_swap_p2p(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips) {
-    let env = Env::builder().fee(fee).build().await;
+async fn test_swap_p2p(
+    #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
+    #[values(false, true)] no_registration: bool,
+) {
+    let env = Env::builder()
+        .fee(fee)
+        .no_registration(no_registration)
+        .build()
+        .await;
 
     let ft1_token_id = TokenId::Nep141(env.ft1.clone());
     let ft2_token_id = TokenId::Nep141(env.ft2.clone());
@@ -81,8 +88,15 @@ async fn test_swap_p2p(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] f
 
 #[rstest]
 #[tokio::test]
-async fn test_swap_many(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips) {
-    let env = Env::builder().fee(fee).build().await;
+async fn test_swap_many(
+    #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
+    #[values(false, true)] no_registration: bool,
+) {
+    let env = Env::builder()
+        .fee(fee)
+        .no_registration(no_registration)
+        .build()
+        .await;
 
     let ft1_token_id = TokenId::Nep141(env.ft1.clone());
     let ft2_token_id = TokenId::Nep141(env.ft2.clone());
@@ -242,8 +256,12 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
 }
 
 #[tokio::test]
-async fn test_invariant_violated() {
-    let env = Env::new().await;
+#[rstest]
+async fn test_invariant_violated(#[values(false, true)] no_registration: bool) {
+    let env = Env::builder()
+        .no_registration(no_registration)
+        .build()
+        .await;
 
     let ft1 = TokenId::Nep141(env.ft1.clone());
     let ft2 = TokenId::Nep141(env.ft2.clone());
@@ -332,6 +350,7 @@ async fn test_invariant_violated() {
 #[tokio::test]
 async fn test_solver_user_closure(
     #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
+    #[values(false, true)] no_registration: bool,
 ) {
     const USER_BALANCE: u128 = 1100;
     const SOLVER_BALANCE: u128 = 2100;
@@ -339,7 +358,11 @@ async fn test_solver_user_closure(
     // RFQ: 1000 token_in -> ??? token_out
     const USER_DELTA_IN: i128 = -1000;
 
-    let env = Env::builder().fee(fee).build().await;
+    let env = Env::builder()
+        .fee(fee)
+        .no_registration(no_registration)
+        .build()
+        .await;
 
     let user = &env.user1;
     let solver = &env.user2;

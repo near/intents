@@ -1,4 +1,4 @@
 [package]
 name = "defuse-nep461"
 edition.workspace = true
-version = "0.1.0"
+version.workspace = true
