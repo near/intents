@@ -70,7 +70,7 @@ pub struct Accounts {
     // for locking accounts was introduces, so we lazily migrate the storage.
     // Unfortunately, we can't use `#[borsh(deserialize_with = "...")]` here,
     // as IterableMap requires K and V parameters to implement BorshSerialize
-    accounts: IterableMap<AccountId, MaybeLockedAccount>,
+    accounts: IterableMap<AccountId, AccountEntry>,
     prefix: Vec<u8>,
 }
 
@@ -104,12 +104,12 @@ impl Accounts {
         self.accounts
             .entry(account_id)
             .or_insert_with_key(|account_id| {
-                Account::new(
+                Lock::unlocked(Account::new(
                     self.prefix
                         .as_slice()
                         .nest(AccountsPrefix::Account(account_id)),
                     account_id,
-                )
+                ))
                 .into()
             })
     }
