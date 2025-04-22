@@ -40,3 +40,18 @@ impl<T> Clone for PanicOnClone<T> {
         env::panic_str("PanicOnClone")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use core::{ops::Deref, ptr};
+
+    use super::*;
+
+    #[test]
+    fn from_ref() {
+        let value = "example".to_string();
+        let poc = PanicOnClone::from_ref(&value);
+        assert!(ptr::eq(poc.deref(), &value));
+        assert_eq!(poc.deref(), &value);
+    }
+}
