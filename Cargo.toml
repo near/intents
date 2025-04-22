@@ -65,12 +65,9 @@ hex-literal = "0.4"
 impl-tools = "0.10"
 itertools = "0.13"
 near-account-id = "1.0"
-
-# Note: All these depend on each other, and hence had to be sourced from one repo
-near-contract-standards = { git = "https://github.com/BonelessImpl/near-sdk-rs", branch = "release-5.12.0" }
-near-plugins = { git = "https://github.com/BonelessImpl/near-plugins", branch = "v0.5.0-patched" }
-near-sdk = { git = "https://github.com/BonelessImpl/near-sdk-rs/", branch = "release-5.12.0" }
-
+near-plugins = { git = "https://github.com/Near-One/near-plugins", tag = "v0.5.0" }
+near-sdk = "5.12"
+near-contract-standards = "5.12"
 near-workspaces = "0.14"
 p256 = { version = "0.13", default-features = false, features = ["ecdsa"] }
 rand_chacha = "0.9"
@@ -97,3 +94,6 @@ debug = false
 strip = "symbols"
 panic = "abort"
 overflow-checks = true
+
+[patch.crates-io]
+near-sdk = { git = 'https://github.com/BonelessImpl/near-sdk-rs/', branch = 'release-5.12.0', version = "5.12" }

@@ -2367,7 +2367,8 @@ dependencies = [
 [[package]]
 name = "near-contract-standards"
 version = "5.12.0"
-source = "git+https://github.com/BonelessImpl/near-sdk-rs/?branch=release-5.12.0#6093ccd4ad85912b0687334cc3340b18dd96b968"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3456659667263b7d1a5f3c38c40ff981367131f639e394f1939888075d4e0fd6"
 dependencies = [
  "near-sdk",
 ]
@@ -2528,7 +2529,7 @@ dependencies = [
 [[package]]
 name = "near-plugins"
 version = "0.5.0"
-source = "git+https://github.com/BonelessImpl/near-plugins?branch=v0.5.0-patched#2b5d2299cd6cb37f139b2b4ee565f50264ebde8c"
+source = "git+https://github.com/Near-One/near-plugins?tag=v0.5.0#e0cb09455ebb16c346d86c40aac3f926080195ae"
 dependencies = [
  "bitflags 1.3.2",
  "near-plugins-derive",
@@ -2539,7 +2540,7 @@ dependencies = [
 [[package]]
 name = "near-plugins-derive"
 version = "0.5.0"
-source = "git+https://github.com/BonelessImpl/near-plugins?branch=v0.5.0-patched#2b5d2299cd6cb37f139b2b4ee565f50264ebde8c"
+source = "git+https://github.com/Near-One/near-plugins?tag=v0.5.0#e0cb09455ebb16c346d86c40aac3f926080195ae"
 dependencies = [
  "darling 0.13.4",
  "proc-macro-crate 0.1.5",
