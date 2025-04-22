@@ -26,7 +26,7 @@ impl<T> Lock<T> {
     #[must_use]
     #[inline]
     pub const fn new(value: T, locked: bool) -> Self {
-        Self { value, locked }
+        Self { locked, value }
     }
 
     #[must_use]
