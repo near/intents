@@ -43,7 +43,7 @@ impl<T> Clone for PanicOnClone<T> {
 
 #[cfg(test)]
 mod tests {
-    use core::{ops::Deref, ptr};
+    use core::ptr;
 
     use super::*;
 
@@ -51,7 +51,7 @@ mod tests {
     fn from_ref() {
         let value = "example".to_string();
         let poc = PanicOnClone::from_ref(&value);
-        assert!(ptr::eq(poc.deref(), &value));
-        assert_eq!(poc.deref(), &value);
+        assert!(ptr::eq(&**poc, &value));
+        assert_eq!(&**poc, &value);
     }
 }
