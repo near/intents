@@ -20,11 +20,11 @@ use near_sdk::{
 use super::AccountState;
 
 #[derive(Debug)]
-#[near(serializers = [borsh])]
 #[autoimpl(Deref using self.0)]
 #[autoimpl(DerefMut using self.0)]
 #[autoimpl(AsRef using self.0)]
 #[autoimpl(AsMut using self.0)]
+#[near(serializers = [borsh])]
 pub struct AccountEntry(
     #[borsh(
         deserialize_with = "As::<VersionedAccountEntry>::deserialize",
