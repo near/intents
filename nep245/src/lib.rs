@@ -1,4 +1,5 @@
 mod core;
+pub mod enumeration;
 mod events;
 pub mod receiver;
 pub mod resolver;

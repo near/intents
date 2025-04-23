@@ -1,5 +1,5 @@
-use defuse::nep245::TokenId;
-use near_sdk::{AccountId, NearToken, json_types::U128};
+use defuse::nep245::{Token, TokenId};
+use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128};
 use serde_json::json;
 
 pub trait MtExt {
@@ -48,6 +48,21 @@ pub trait MtExt {
         account_id: &AccountId,
         token_ids: impl IntoIterator<Item = &TokenId>,
     ) -> anyhow::Result<Vec<u128>>;
+
+    async fn mt_tokens(
+        &self,
+        token_contract: &AccountId,
+        from_index: Option<U128>,
+        limit: Option<u32>,
+    ) -> anyhow::Result<Vec<Token>>;
+
+    async fn mt_tokens_for_owner(
+        &self,
+        token_contract: &AccountId,
+        account_id: &AccountIdRef,
+        from_index: Option<U128>,
+        limit: Option<u32>,
+    ) -> anyhow::Result<Vec<Token>>;
 }
 
 impl MtExt for near_workspaces::Account {
@@ -153,6 +168,44 @@ impl MtExt for near_workspaces::Account {
         self.mt_contract_batch_balance_of(self.id(), account_id, token_ids)
             .await
     }
+
+    async fn mt_tokens(
+        &self,
+        token_contract: &AccountId,
+        from_index: Option<U128>,
+        limit: Option<u32>,
+    ) -> anyhow::Result<Vec<Token>> {
+        let res = self
+            .view(token_contract, "mt_tokens")
+            .args_json(json!({
+                "from_index": from_index,
+                "limit": limit,
+            }))
+            .await?
+            .json::<Vec<Token>>()?;
+
+        Ok(res)
+    }
+
+    async fn mt_tokens_for_owner(
+        &self,
+        token_contract: &AccountId,
+        account_id: &AccountIdRef,
+        from_index: Option<U128>,
+        limit: Option<u32>,
+    ) -> anyhow::Result<Vec<Token>> {
+        let res = self
+            .view(token_contract, "mt_tokens_for_owner")
+            .args_json(json!({
+                "account_id": account_id,
+                "from_index": from_index,
+                "limit": limit,
+            }))
+            .await?
+            .json::<Vec<Token>>()?;
+
+        Ok(res)
+    }
 }
 
 impl MtExt for near_workspaces::Contract {
@@ -235,6 +288,29 @@ impl MtExt for near_workspaces::Contract {
     ) -> anyhow::Result<Vec<u128>> {
         self.as_account()
             .mt_batch_balance_of(account_id, token_ids)
+            .await
+    }
+
+    async fn mt_tokens(
+        &self,
+        token_contract: &AccountId,
+        from_index: Option<U128>,
+        limit: Option<u32>,
+    ) -> anyhow::Result<Vec<Token>> {
+        self.as_account()
+            .mt_tokens(token_contract, from_index, limit)
+            .await
+    }
+
+    async fn mt_tokens_for_owner(
+        &self,
+        token_contract: &AccountId,
+        account_id: &AccountIdRef,
+        from_index: Option<U128>,
+        limit: Option<u32>,
+    ) -> anyhow::Result<Vec<Token>> {
+        self.as_account()
+            .mt_tokens_for_owner(token_contract, account_id, from_index, limit)
             .await
     }
 }
