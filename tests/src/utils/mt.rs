@@ -187,9 +187,8 @@ impl MtExt for near_workspaces::Account {
         };
 
         let limit = match (from, to) {
-            (None, None) => None,
+            (Some(_) | None, None) => None,
             (None, Some(v)) => Some(v),
-            (Some(_), None) => None,
             (Some(f), Some(t)) => Some(t - f),
         };
 
@@ -224,9 +223,8 @@ impl MtExt for near_workspaces::Account {
         };
 
         let limit = match (from, to) {
-            (None, None) => None,
+            (Some(_) | None, None) => None,
             (None, Some(v)) => Some(v),
-            (Some(_), None) => None,
             (Some(f), Some(t)) => Some(t - f),
         };
 
