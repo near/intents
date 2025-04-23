@@ -195,7 +195,7 @@ impl MtExt for near_workspaces::Account {
         let res = self
             .view(token_contract, "mt_tokens")
             .args_json(json!({
-                "from_index": from.map(|v| v.to_string()),
+                "from_index": from.map(|v| U128(v as u128)),
                 "limit": limit,
             }))
             .await?
@@ -232,7 +232,7 @@ impl MtExt for near_workspaces::Account {
             .view(token_contract, "mt_tokens_for_owner")
             .args_json(json!({
                 "account_id": account_id,
-                "from_index": from.map(|v| v.to_string()),
+                "from_index": from.map(|v| U128(v as u128)),
                 "limit": limit,
             }))
             .await?
