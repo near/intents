@@ -270,3 +270,179 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
         );
     }
 }
+
+#[tokio::test]
+#[rstest]
+async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registration: bool) {
+    let env = Env::builder()
+        .no_registration(no_registration)
+        .build()
+        .await;
+
+    {
+        assert!(
+            env.user1
+                .mt_tokens(env.defuse.id(), ..)
+                .await
+                .unwrap()
+                .is_empty(),
+        );
+        assert!(
+            env.user1
+                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..)
+                .await
+                .unwrap()
+                .is_empty(),
+        );
+        assert!(
+            env.user1
+                .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), ..)
+                .await
+                .unwrap()
+                .is_empty(),
+        );
+        assert!(
+            env.user1
+                .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), ..)
+                .await
+                .unwrap()
+                .is_empty(),
+        );
+    }
+
+    env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
+        .await
+        .unwrap();
+    env.defuse_ft_deposit_to(&env.ft2, 2000, env.user1.id())
+        .await
+        .unwrap();
+    env.defuse_ft_deposit_to(&env.ft3, 3000, env.user1.id())
+        .await
+        .unwrap();
+
+    let ft1 = TokenId::Nep141(env.ft1.clone());
+    let ft2 = TokenId::Nep141(env.ft2.clone());
+    let ft3 = TokenId::Nep141(env.ft3.clone());
+
+    {
+        let expected = [
+            Token {
+                token_id: ft1.to_string(),
+                owner_id: None,
+            },
+            Token {
+                token_id: ft2.to_string(),
+                owner_id: None,
+            },
+            Token {
+                token_id: ft3.to_string(),
+                owner_id: None,
+            },
+        ];
+        assert_eq!(
+            env.user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
+            expected[..]
+        );
+
+        for i in 0..=3 {
+            assert_eq!(
+                env.user1.mt_tokens(env.defuse.id(), i..).await.unwrap(),
+                expected[i..]
+            );
+        }
+
+        for i in 0..=3 {
+            assert_eq!(
+                env.user1.mt_tokens(env.defuse.id(), ..i).await.unwrap(),
+                expected[..i]
+            );
+        }
+
+        for i in 1..=3 {
+            assert_eq!(
+                env.user1.mt_tokens(env.defuse.id(), 1..i).await.unwrap(),
+                expected[1..i]
+            );
+        }
+
+        for i in 2..=3 {
+            assert_eq!(
+                env.user1.mt_tokens(env.defuse.id(), 2..i).await.unwrap(),
+                expected[2..i]
+            );
+        }
+    }
+
+    {
+        let expected = [
+            Token {
+                token_id: ft1.to_string(),
+                owner_id: Some(env.user1.id().to_owned()),
+            },
+            Token {
+                token_id: ft2.to_string(),
+                owner_id: Some(env.user1.id().to_owned()),
+            },
+            Token {
+                token_id: ft3.to_string(),
+                owner_id: Some(env.user1.id().to_owned()),
+            },
+        ];
+
+        assert_eq!(
+            env.user1
+                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..)
+                .await
+                .unwrap(),
+            expected[..]
+        );
+
+        assert_eq!(
+            env.user1
+                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..)
+                .await
+                .unwrap(),
+            expected[..]
+        );
+
+        for i in 0..=3 {
+            assert_eq!(
+                env.user1
+                    .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), i..)
+                    .await
+                    .unwrap(),
+                expected[i..]
+            );
+        }
+
+        for i in 0..=3 {
+            assert_eq!(
+                env.user1
+                    .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..i)
+                    .await
+                    .unwrap(),
+                expected[..i]
+            );
+        }
+
+        for i in 1..=3 {
+            assert_eq!(
+                env.user1
+                    .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), 1..i)
+                    .await
+                    .unwrap(),
+                expected[1..i]
+            );
+        }
+
+        for i in 2..=3 {
+            assert_eq!(
+                env.user1
+                    .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), 2..i)
+                    .await
+                    .unwrap(),
+                expected[2..i]
+            );
+        }
+    }
+}

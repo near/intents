@@ -181,8 +181,8 @@ impl MtExt for near_workspaces::Account {
         };
 
         let to = match range.end_bound() {
-            std::ops::Bound::Included(v) => Some(*v),
-            std::ops::Bound::Excluded(v) => Some(*v - 1),
+            std::ops::Bound::Included(v) => Some(*v + 1),
+            std::ops::Bound::Excluded(v) => Some(*v),
             std::ops::Bound::Unbounded => None,
         };
 
@@ -195,7 +195,7 @@ impl MtExt for near_workspaces::Account {
         let res = self
             .view(token_contract, "mt_tokens")
             .args_json(json!({
-                "from_index": from,
+                "from_index": from.map(|v| v.to_string()),
                 "limit": limit,
             }))
             .await?
@@ -217,8 +217,8 @@ impl MtExt for near_workspaces::Account {
         };
 
         let to = match range.end_bound() {
-            std::ops::Bound::Included(v) => Some(*v),
-            std::ops::Bound::Excluded(v) => Some(*v - 1),
+            std::ops::Bound::Included(v) => Some(*v + 1),
+            std::ops::Bound::Excluded(v) => Some(*v),
             std::ops::Bound::Unbounded => None,
         };
 
@@ -232,7 +232,7 @@ impl MtExt for near_workspaces::Account {
             .view(token_contract, "mt_tokens_for_owner")
             .args_json(json!({
                 "account_id": account_id,
-                "from_index": from,
+                "from_index": from.map(|v| v.to_string()),
                 "limit": limit,
             }))
             .await?
