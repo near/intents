@@ -182,7 +182,7 @@ impl MtExt for near_workspaces::Account {
 
         let to = match range.end_bound() {
             std::ops::Bound::Included(v) => Some(*v),
-            std::ops::Bound::Excluded(v) => Some(*v + 1),
+            std::ops::Bound::Excluded(v) => Some(*v - 1),
             std::ops::Bound::Unbounded => None,
         };
 
@@ -218,7 +218,7 @@ impl MtExt for near_workspaces::Account {
 
         let to = match range.end_bound() {
             std::ops::Bound::Included(v) => Some(*v),
-            std::ops::Bound::Excluded(v) => Some(*v + 1),
+            std::ops::Bound::Excluded(v) => Some(*v - 1),
             std::ops::Bound::Unbounded => None,
         };
 
