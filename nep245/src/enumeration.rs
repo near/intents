@@ -1,8 +1,6 @@
 use crate::Token;
 use near_sdk::{AccountId, ext_contract, json_types::U128};
 
-// FIXME: the "limit" is a "number". Is u32 valid for that?
-
 /// A trait representing the multi-token enumeration standard: https://nomicon.io/Standards/Tokens/MultiToken/Enumeration#interface
 ///
 #[ext_contract(ext_mt_enumeration)]

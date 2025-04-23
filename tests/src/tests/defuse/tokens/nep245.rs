@@ -17,28 +17,28 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
     {
         assert!(
             env.user1
-                .mt_tokens(env.defuse.id(), None, None)
+                .mt_tokens(env.defuse.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
             env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), None, None)
+                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
             env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), None, None)
+                .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
             env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), None, None)
+                .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
@@ -54,10 +54,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
 
     {
         assert_eq!(
-            env.user1
-                .mt_tokens(env.defuse.id(), None, None)
-                .await
-                .unwrap(),
+            env.user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
             [Token {
                 token_id: ft1.to_string(),
                 owner_id: None
@@ -65,7 +62,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
         );
         assert_eq!(
             env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), None, None)
+                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..)
                 .await
                 .unwrap(),
             [Token {
@@ -75,14 +72,14 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
         );
         assert!(
             env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), None, None)
+                .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
             env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), None, None)
+                .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
@@ -95,10 +92,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
 
     {
         assert_eq!(
-            env.user1
-                .mt_tokens(env.defuse.id(), None, None)
-                .await
-                .unwrap(),
+            env.user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
             [Token {
                 token_id: ft1.to_string(),
                 owner_id: None
@@ -106,7 +100,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
         );
         assert_eq!(
             env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), None, None)
+                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..)
                 .await
                 .unwrap(),
             [Token {
@@ -116,7 +110,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
         );
         assert_eq!(
             env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), None, None)
+                .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), ..)
                 .await
                 .unwrap(),
             [Token {
@@ -126,7 +120,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
         );
         assert!(
             env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), None, None)
+                .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
@@ -139,10 +133,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
 
     {
         assert_eq!(
-            env.user1
-                .mt_tokens(env.defuse.id(), None, None)
-                .await
-                .unwrap(),
+            env.user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
             [
                 Token {
                     token_id: ft1.to_string(),
@@ -156,7 +147,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
         );
         assert_eq!(
             env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), None, None)
+                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..)
                 .await
                 .unwrap(),
             [
@@ -172,7 +163,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
         );
         assert_eq!(
             env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), None, None)
+                .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), ..)
                 .await
                 .unwrap(),
             [Token {
@@ -182,7 +173,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
         );
         assert!(
             env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), None, None)
+                .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
@@ -207,10 +198,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
 
     {
         assert_eq!(
-            env.user1
-                .mt_tokens(env.defuse.id(), None, None)
-                .await
-                .unwrap(),
+            env.user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
             [Token {
                 token_id: ft2.to_string(),
                 owner_id: None
@@ -218,7 +206,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
         );
         assert_eq!(
             env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), None, None)
+                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..)
                 .await
                 .unwrap(),
             [Token {
@@ -228,14 +216,14 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
         );
         assert_eq!(
             env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), None, None)
+                .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), ..)
                 .await
                 .unwrap(),
             []
         );
         assert!(
             env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), None, None)
+                .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
@@ -254,28 +242,28 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
     {
         assert!(
             env.user1
-                .mt_tokens(env.defuse.id(), None, None)
+                .mt_tokens(env.defuse.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
             env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), None, None)
+                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
             env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), None, None)
+                .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
             env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), None, None)
+                .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),

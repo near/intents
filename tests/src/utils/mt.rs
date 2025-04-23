@@ -1,3 +1,5 @@
+use std::ops::RangeBounds;
+
 use defuse::nep245::{Token, TokenId};
 use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128};
 use serde_json::json;
@@ -52,16 +54,14 @@ pub trait MtExt {
     async fn mt_tokens(
         &self,
         token_contract: &AccountId,
-        from_index: Option<U128>,
-        limit: Option<u32>,
+        from_index: impl RangeBounds<usize>,
     ) -> anyhow::Result<Vec<Token>>;
 
     async fn mt_tokens_for_owner(
         &self,
         token_contract: &AccountId,
         account_id: &AccountIdRef,
-        from_index: Option<U128>,
-        limit: Option<u32>,
+        range: impl RangeBounds<usize>,
     ) -> anyhow::Result<Vec<Token>>;
 }
 
@@ -172,13 +172,31 @@ impl MtExt for near_workspaces::Account {
     async fn mt_tokens(
         &self,
         token_contract: &AccountId,
-        from_index: Option<U128>,
-        limit: Option<u32>,
+        range: impl RangeBounds<usize>,
     ) -> anyhow::Result<Vec<Token>> {
+        let from = match range.start_bound() {
+            std::ops::Bound::Included(v) => Some(*v),
+            std::ops::Bound::Excluded(v) => Some(*v + 1),
+            std::ops::Bound::Unbounded => None,
+        };
+
+        let to = match range.end_bound() {
+            std::ops::Bound::Included(v) => Some(*v),
+            std::ops::Bound::Excluded(v) => Some(*v + 1),
+            std::ops::Bound::Unbounded => None,
+        };
+
+        let limit = match (from, to) {
+            (None, None) => None,
+            (None, Some(v)) => Some(v),
+            (Some(_), None) => None,
+            (Some(f), Some(t)) => Some(t - f),
+        };
+
         let res = self
             .view(token_contract, "mt_tokens")
             .args_json(json!({
-                "from_index": from_index,
+                "from_index": from,
                 "limit": limit,
             }))
             .await?
@@ -191,14 +209,32 @@ impl MtExt for near_workspaces::Account {
         &self,
         token_contract: &AccountId,
         account_id: &AccountIdRef,
-        from_index: Option<U128>,
-        limit: Option<u32>,
+        range: impl RangeBounds<usize>,
     ) -> anyhow::Result<Vec<Token>> {
+        let from = match range.start_bound() {
+            std::ops::Bound::Included(v) => Some(*v),
+            std::ops::Bound::Excluded(v) => Some(*v + 1),
+            std::ops::Bound::Unbounded => None,
+        };
+
+        let to = match range.end_bound() {
+            std::ops::Bound::Included(v) => Some(*v),
+            std::ops::Bound::Excluded(v) => Some(*v + 1),
+            std::ops::Bound::Unbounded => None,
+        };
+
+        let limit = match (from, to) {
+            (None, None) => None,
+            (None, Some(v)) => Some(v),
+            (Some(_), None) => None,
+            (Some(f), Some(t)) => Some(t - f),
+        };
+
         let res = self
             .view(token_contract, "mt_tokens_for_owner")
             .args_json(json!({
                 "account_id": account_id,
-                "from_index": from_index,
+                "from_index": from,
                 "limit": limit,
             }))
             .await?
@@ -294,23 +330,19 @@ impl MtExt for near_workspaces::Contract {
     async fn mt_tokens(
         &self,
         token_contract: &AccountId,
-        from_index: Option<U128>,
-        limit: Option<u32>,
+        range: impl RangeBounds<usize>,
     ) -> anyhow::Result<Vec<Token>> {
-        self.as_account()
-            .mt_tokens(token_contract, from_index, limit)
-            .await
+        self.as_account().mt_tokens(token_contract, range).await
     }
 
     async fn mt_tokens_for_owner(
         &self,
         token_contract: &AccountId,
         account_id: &AccountIdRef,
-        from_index: Option<U128>,
-        limit: Option<u32>,
+        range: impl RangeBounds<usize>,
     ) -> anyhow::Result<Vec<Token>> {
         self.as_account()
-            .mt_tokens_for_owner(token_contract, account_id, from_index, limit)
+            .mt_tokens_for_owner(token_contract, account_id, range)
             .await
     }
 }
