@@ -21,7 +21,7 @@ impl MultiTokenEnumeration for Contract {
 
         match limit {
             Some(l) => iter.take(l.try_into().unwrap_or_panic_display()).collect(),
-            None => iter.skip(from_index).collect(),
+            None => iter.collect(),
         }
     }
 
@@ -51,7 +51,7 @@ impl MultiTokenEnumeration for Contract {
 
         match limit {
             Some(l) => iter.take(l.try_into().unwrap_or_panic_display()).collect(),
-            None => iter.skip(from_index).collect(),
+            None => iter.collect(),
         }
     }
 }
