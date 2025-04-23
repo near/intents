@@ -30,7 +30,7 @@ pub struct AccountEntry(
         deserialize_with = "As::<VersionedAccountEntry>::deserialize",
         serialize_with = "As::<VersionedAccountEntry>::serialize"
     )]
-    Lock<Account>,
+    pub Lock<Account>,
 );
 
 impl From<Lock<Account>> for AccountEntry {
@@ -202,5 +202,50 @@ impl BorshSerializeAs<Lock<Account>> for VersionedAccountEntry<'_> {
     {
         // always serialize as latest version
         VersionedAccountEntry::V2(Cow::Borrowed(PanicOnClone::from_ref(source))).serialize(writer)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use defuse_core::tokens::TokenId;
+    use near_sdk::borsh;
+
+    use super::*;
+
+    #[test]
+    fn legacy_upgrade() {
+        const ACCOUNT_ID: &AccountIdRef = AccountIdRef::new_or_panic("test.near");
+        let ft = TokenId::Nep141("wrap.near".parse().unwrap());
+
+        let serialized_legacy = {
+            let mut legacy = Account::new(0, ACCOUNT_ID);
+            legacy.token_balances.add(ft.clone(), 123).unwrap();
+            borsh::to_vec(&legacy).expect("unable to serialize legacy Account")
+        };
+
+        let serialized_versioned = {
+            let mut versioned: AccountEntry = borsh::from_slice(&serialized_legacy).unwrap();
+            assert_eq!(
+                versioned
+                    .lock()
+                    .expect("legacy accounts must be unlocked by default")
+                    .token_balances
+                    .amount_for(&ft),
+                123,
+            );
+            borsh::to_vec(&versioned).expect("unale to serialize versioned account")
+        };
+
+        {
+            let versioned: AccountEntry = borsh::from_slice(&serialized_versioned).unwrap();
+            assert_eq!(
+                versioned
+                    .as_locked()
+                    .expect("should be locked by now")
+                    .token_balances
+                    .amount_for(&ft),
+                123,
+            );
+        }
     }
 }
