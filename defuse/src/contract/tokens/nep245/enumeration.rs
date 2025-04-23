@@ -46,7 +46,13 @@ impl MultiTokenEnumeration for Contract {
                 .skip(from_index)
                 .map(|(token_id, _amount)| Token {
                     token_id: token_id.to_string(),
-                    owner_id: Some(account_id.clone()),
+                    owner_id: match token_id {
+                        defuse_core::tokens::TokenId::Nep141(_account_id) => None,
+                        defuse_core::tokens::TokenId::Nep171(account_id, _) => {
+                            Some(account_id.clone())
+                        }
+                        defuse_core::tokens::TokenId::Nep245(_account_id, _) => None,
+                    },
                 });
 
         match limit {

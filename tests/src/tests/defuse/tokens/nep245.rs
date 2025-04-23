@@ -67,7 +67,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
                 .unwrap(),
             [Token {
                 token_id: ft1.to_string(),
-                owner_id: Some(env.user1.id().to_owned())
+                owner_id: None
             }]
         );
         assert!(
@@ -105,7 +105,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
                 .unwrap(),
             [Token {
                 token_id: ft1.to_string(),
-                owner_id: Some(env.user1.id().to_owned())
+                owner_id: None
             }]
         );
         assert_eq!(
@@ -115,7 +115,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
                 .unwrap(),
             [Token {
                 token_id: ft1.to_string(),
-                owner_id: Some(env.user2.id().to_owned())
+                owner_id: None
             }]
         );
         assert!(
@@ -153,11 +153,11 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
             [
                 Token {
                     token_id: ft1.to_string(),
-                    owner_id: Some(env.user1.id().to_owned())
+                    owner_id: None
                 },
                 Token {
                     token_id: ft2.to_string(),
-                    owner_id: Some(env.user1.id().to_owned())
+                    owner_id: None
                 }
             ]
         );
@@ -168,7 +168,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
                 .unwrap(),
             [Token {
                 token_id: ft1.to_string(),
-                owner_id: Some(env.user2.id().to_owned())
+                owner_id: None
             }]
         );
         assert!(
@@ -211,7 +211,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
                 .unwrap(),
             [Token {
                 token_id: ft2.to_string(),
-                owner_id: Some(env.user1.id().to_owned())
+                owner_id: None
             }]
         );
         assert_eq!(
@@ -377,15 +377,15 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
         let expected = [
             Token {
                 token_id: ft1.to_string(),
-                owner_id: Some(env.user1.id().to_owned()),
+                owner_id: None,
             },
             Token {
                 token_id: ft2.to_string(),
-                owner_id: Some(env.user1.id().to_owned()),
+                owner_id: None,
             },
             Token {
                 token_id: ft3.to_string(),
-                owner_id: Some(env.user1.id().to_owned()),
+                owner_id: None,
             },
         ];
 
