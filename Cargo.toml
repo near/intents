@@ -58,6 +58,7 @@ randomness.path = "randomness"
 test-utils.path = "test-utils"
 
 anyhow = "1"
+bitflags = "2.9.0"
 bnum = { version = "0.12", features = ["borsh"] }
 chrono = { version = "0.4", default-features = false }
 derive_more = "1.0"

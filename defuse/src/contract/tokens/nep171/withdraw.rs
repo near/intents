@@ -1,9 +1,7 @@
 use std::iter;
 
 use defuse_core::{Result, engine::StateView, intents::tokens::NftWithdraw, tokens::TokenId};
-use defuse_near_utils::{
-    CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
-};
+use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::{non_fungible_token, storage_management::ext_storage_management};
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
@@ -39,7 +37,7 @@ impl NonFungibleTokenWithdrawer for Contract {
     ) -> PromiseOrValue<bool> {
         assert_one_yocto();
         self.internal_nft_withdraw(
-            PREDECESSOR_ACCOUNT_ID.clone(),
+            self.ensure_auth_predecessor_id().clone(),
             NftWithdraw {
                 token,
                 receiver_id,

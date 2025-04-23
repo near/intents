@@ -1,9 +1,7 @@
 use core::iter;
 
 use defuse_core::{Result, engine::StateView, intents::tokens::FtWithdraw, tokens::TokenId};
-use defuse_near_utils::{
-    CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
-};
+use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError};
 
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::storage_management::ext_storage_management;
@@ -39,7 +37,7 @@ impl FungibleTokenWithdrawer for Contract {
     ) -> PromiseOrValue<U128> {
         assert_one_yocto();
         self.internal_ft_withdraw(
-            PREDECESSOR_ACCOUNT_ID.clone(),
+            self.ensure_auth_predecessor_id().clone(),
             FtWithdraw {
                 token,
                 receiver_id,

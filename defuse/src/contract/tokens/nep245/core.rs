@@ -1,5 +1,5 @@
 use defuse_core::{DefuseError, Result, engine::StateView, tokens::TokenId};
-use defuse_near_utils::{CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic};
+use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic};
 use defuse_nep245::{MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver};
 use near_plugins::{Pausable, pause};
 use near_sdk::{
@@ -44,7 +44,7 @@ impl MultiTokenCore for Contract {
         require!(approvals.is_none(), "approvals are not supported");
 
         self.internal_mt_batch_transfer(
-            &PREDECESSOR_ACCOUNT_ID,
+            self.ensure_auth_predecessor_id(),
             receiver_id,
             token_ids,
             amounts,
@@ -90,7 +90,7 @@ impl MultiTokenCore for Contract {
         require!(approvals.is_none(), "approvals are not supported");
 
         self.internal_mt_batch_transfer_call(
-            PREDECESSOR_ACCOUNT_ID.clone(),
+            self.ensure_auth_predecessor_id().clone(),
             receiver_id,
             token_ids,
             amounts,
