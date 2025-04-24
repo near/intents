@@ -583,7 +583,7 @@ dependencies = [
  "defuse-nep245",
  "defuse-serde-utils",
  "defuse-wnear",
- "derive_more 1.0.0",
+ "derive_more 2.0.1",
  "impl-tools",
  "near-account-id",
  "near-contract-standards",
