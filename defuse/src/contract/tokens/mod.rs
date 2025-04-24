@@ -36,10 +36,17 @@ impl Contract {
             mint_event.token_ids.to_mut().push(token_id.to_string());
             mint_event.amounts.to_mut().push(U128(amount));
 
-            self.state
+            let total_supply = self
+                .state
                 .total_supplies
                 .add(token_id.clone(), amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
+            match token_id {
+                TokenId::Nep171(contract_id, token_id) if total_supply > 1 => {
+                    return Err(DefuseError::NftAlreadyDeposited(contract_id, token_id));
+                }
+                _ => {}
+            }
             owner
                 .token_balances
                 .add(token_id, amount)
