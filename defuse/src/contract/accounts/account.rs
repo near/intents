@@ -14,7 +14,7 @@ use near_sdk::{
     AccountIdRef, BorshStorageKey, IntoStorageKey,
     borsh::BorshSerialize,
     near,
-    store::{IterableSet, LookupMap},
+    store::{IterableMap, IterableSet, LookupMap},
 };
 
 use super::AccountState;
@@ -167,13 +167,13 @@ enum AccountPrefix {
 #[derive(Debug)]
 #[near(serializers = [borsh])]
 enum VersionedAccountEntry<'a> {
-    V1(Cow<'a, PanicOnClone<Account>>),
-    V2(Cow<'a, PanicOnClone<Lock<Account>>>),
+    V0(Cow<'a, PanicOnClone<Account>>),
+    V1(Cow<'a, PanicOnClone<Lock<Account>>>),
 }
 
 impl From<Account> for VersionedAccountEntry<'_> {
     fn from(value: Account) -> Self {
-        Self::V1(Cow::Owned(value.into()))
+        Self::V0(Cow::Owned(value.into()))
     }
 }
 
@@ -182,6 +182,7 @@ impl BorshDeserializeAs<Lock<Account>> for VersionedAccountEntry<'_> {
     where
         R: io::Read,
     {
+        // prepend with magic number
         Or::<
             // first, try to deserialize as versioned
             Same,
@@ -189,8 +190,8 @@ impl BorshDeserializeAs<Lock<Account>> for VersionedAccountEntry<'_> {
             FromInto<Account>,
         >::deserialize_as(reader)
         .map(|entry: Self| match entry {
-            VersionedAccountEntry::V1(account) => account.into_owned().into_inner().into(),
-            VersionedAccountEntry::V2(account) => account.into_owned().into_inner(),
+            VersionedAccountEntry::V0(account) => account.into_owned().into_inner().into(),
+            VersionedAccountEntry::V1(account) => account.into_owned().into_inner(),
         })
     }
 }
@@ -201,7 +202,7 @@ impl BorshSerializeAs<Lock<Account>> for VersionedAccountEntry<'_> {
         W: io::Write,
     {
         // always serialize as latest version
-        VersionedAccountEntry::V2(Cow::Borrowed(PanicOnClone::from_ref(source))).serialize(writer)
+        VersionedAccountEntry::V1(Cow::Borrowed(PanicOnClone::from_ref(source))).serialize(writer)
     }
 }
 
