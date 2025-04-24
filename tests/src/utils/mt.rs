@@ -1,5 +1,7 @@
-use defuse::nep245::TokenId;
-use near_sdk::{AccountId, NearToken, json_types::U128};
+use std::ops::RangeBounds;
+
+use defuse::nep245::{Token, TokenId};
+use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128};
 use serde_json::json;
 
 pub trait MtExt {
@@ -48,6 +50,19 @@ pub trait MtExt {
         account_id: &AccountId,
         token_ids: impl IntoIterator<Item = &TokenId>,
     ) -> anyhow::Result<Vec<u128>>;
+
+    async fn mt_tokens(
+        &self,
+        token_contract: &AccountId,
+        from_index: impl RangeBounds<usize>,
+    ) -> anyhow::Result<Vec<Token>>;
+
+    async fn mt_tokens_for_owner(
+        &self,
+        token_contract: &AccountId,
+        account_id: &AccountIdRef,
+        range: impl RangeBounds<usize>,
+    ) -> anyhow::Result<Vec<Token>>;
 }
 
 impl MtExt for near_workspaces::Account {
@@ -153,6 +168,78 @@ impl MtExt for near_workspaces::Account {
         self.mt_contract_batch_balance_of(self.id(), account_id, token_ids)
             .await
     }
+
+    async fn mt_tokens(
+        &self,
+        token_contract: &AccountId,
+        range: impl RangeBounds<usize>,
+    ) -> anyhow::Result<Vec<Token>> {
+        let from = match range.start_bound() {
+            std::ops::Bound::Included(v) => Some(*v),
+            std::ops::Bound::Excluded(v) => Some(*v + 1),
+            std::ops::Bound::Unbounded => None,
+        };
+
+        let to = match range.end_bound() {
+            std::ops::Bound::Included(v) => Some(*v + 1),
+            std::ops::Bound::Excluded(v) => Some(*v),
+            std::ops::Bound::Unbounded => None,
+        };
+
+        let limit = match (from, to) {
+            (Some(_) | None, None) => None,
+            (None, Some(v)) => Some(v),
+            (Some(f), Some(t)) => Some(t - f),
+        };
+
+        let res = self
+            .view(token_contract, "mt_tokens")
+            .args_json(json!({
+                "from_index": from.map(|v| U128(v.try_into().unwrap())),
+                "limit": limit,
+            }))
+            .await?
+            .json::<Vec<Token>>()?;
+
+        Ok(res)
+    }
+
+    async fn mt_tokens_for_owner(
+        &self,
+        token_contract: &AccountId,
+        account_id: &AccountIdRef,
+        range: impl RangeBounds<usize>,
+    ) -> anyhow::Result<Vec<Token>> {
+        let from = match range.start_bound() {
+            std::ops::Bound::Included(v) => Some(*v),
+            std::ops::Bound::Excluded(v) => Some(*v + 1),
+            std::ops::Bound::Unbounded => None,
+        };
+
+        let to = match range.end_bound() {
+            std::ops::Bound::Included(v) => Some(*v + 1),
+            std::ops::Bound::Excluded(v) => Some(*v),
+            std::ops::Bound::Unbounded => None,
+        };
+
+        let limit = match (from, to) {
+            (Some(_) | None, None) => None,
+            (None, Some(v)) => Some(v),
+            (Some(f), Some(t)) => Some(t - f),
+        };
+
+        let res = self
+            .view(token_contract, "mt_tokens_for_owner")
+            .args_json(json!({
+                "account_id": account_id,
+                "from_index": from.map(|v| U128(v.try_into().unwrap())),
+                "limit": limit,
+            }))
+            .await?
+            .json::<Vec<Token>>()?;
+
+        Ok(res)
+    }
 }
 
 impl MtExt for near_workspaces::Contract {
@@ -235,6 +322,25 @@ impl MtExt for near_workspaces::Contract {
     ) -> anyhow::Result<Vec<u128>> {
         self.as_account()
             .mt_batch_balance_of(account_id, token_ids)
+            .await
+    }
+
+    async fn mt_tokens(
+        &self,
+        token_contract: &AccountId,
+        range: impl RangeBounds<usize>,
+    ) -> anyhow::Result<Vec<Token>> {
+        self.as_account().mt_tokens(token_contract, range).await
+    }
+
+    async fn mt_tokens_for_owner(
+        &self,
+        token_contract: &AccountId,
+        account_id: &AccountIdRef,
+        range: impl RangeBounds<usize>,
+    ) -> anyhow::Result<Vec<Token>> {
+        self.as_account()
+            .mt_tokens_for_owner(token_contract, account_id, range)
             .await
     }
 }

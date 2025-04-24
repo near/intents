@@ -26,7 +26,7 @@ impl MultiTokenResolver for Contract {
             !token_ids.is_empty()
                 && previous_owner_ids.len() == token_ids.len()
                 && amounts.len() == token_ids.len(),
-            "inavlid args"
+            "invalid args"
         );
 
         let mut refunds = match env::promise_result(0) {
