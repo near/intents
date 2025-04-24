@@ -98,4 +98,4 @@ panic = "abort"
 overflow-checks = true
 
 [patch.crates-io]
-near-sdk = { git = 'https://github.com/BonelessImpl/near-sdk-rs/', branch = 'release-5.12.0', version = "5.12" }
+near-sdk = { git = 'https://github.com/BonelessImpl/near-sdk-rs/', version = "5.12", rev = "6093ccd4ad85912b0687334cc3340b18dd96b968" }
