@@ -8,4 +8,4 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-rand = "0.9"
+rand = { workspace = true }

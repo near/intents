@@ -15,7 +15,7 @@ anyhow.workspace = true
 bnum = { workspace = true, features = ["rand"] }
 hex-literal.workspace = true
 impl-tools.workspace = true
-near-crypto = "0.26"
+near-crypto.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 near-workspaces.workspace = true
 near-contract-standards.workspace = true
