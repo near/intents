@@ -45,7 +45,7 @@ impl Contract {
                 TokenId::Nep171(contract_id, token_id) if total_supply > 1 => {
                     return Err(DefuseError::NftAlreadyDeposited(contract_id, token_id));
                 }
-                _ => {}
+                TokenId::Nep141(_) | TokenId::Nep171(_, _) | TokenId::Nep245(_, _) => {}
             }
             owner
                 .token_balances
