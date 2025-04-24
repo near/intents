@@ -1,5 +1,5 @@
 [config]
-end_task = "add-cache-dir-tag"
+init_task = "add-cache-dir-tags"
 default_to_workspace = false
 skip_core_tasks = true
 
@@ -18,7 +18,6 @@ args = ["clippy", "--workspace", "--all-targets", "--no-deps"]
 
 [tasks.build]
 dependencies = [
-    "add-cache-dir-tag",
     "build-defuse",
     "build-poa-factory",
     "contract-stats",
@@ -116,13 +115,8 @@ script = "cd ${TARGET_DIR} && du -ah *.wasm"
 
 # We add CACHEDIR.TAG as it helps in making system level applications, e.g., backup systems, understand that this directory is just for disposable things.
 [tasks.add-cache-dir-tags]
-condition = { platforms = [
-    "linux",
-    "mac",
-], files_exist = [
-    "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}",
-    "${TARGET_DIR}",
-] }
+condition = { platforms = ["linux", "mac"] }
 script = [
+    "mkdir -p ${CARGO_MAKE_CRATE_TARGET_DIRECTORY} ${TARGET_DIR}",
     "echo 'Signature: 8a477f597d28d172789f06886806bc55' | tee ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/CACHEDIR.TAG ${TARGET_DIR}/CACHEDIR.TAG > /dev/null",
 ]

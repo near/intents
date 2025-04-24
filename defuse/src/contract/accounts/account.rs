@@ -240,7 +240,7 @@ impl BorshSerializeAs<Lock<Account>> for VersionedAccountEntry<'_> {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[near(serializers = [borsh])]
 #[repr(transparent)]
 struct AccountFlags(u8);
@@ -252,10 +252,6 @@ bitflags! {
         // since borsh serializes `bool` to 0u8/1u8
         const IMPLICIT_PUBLIC_KEY_REMOVED     = 1 << 0;
         const AUTH_BY_PREDECESSOR_ID_DISABLED = 1 << 1;
-
-        // TODO?
-        // The source may set any bits
-        const _ = !0;
     }
 }
 
