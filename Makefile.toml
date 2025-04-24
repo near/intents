@@ -1,9 +1,10 @@
 [config]
+end_task = "add-cache-dir-tag"
 default_to_workspace = false
 skip_core_tasks = true
 
 [env]
-TARGET_DIR = "${PWD}/res"
+TARGET_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/res"
 POA_TOKEN_WASM = "${TARGET_DIR}/defuse_poa_token.wasm"
 POA_TOKEN_WITH_NO_REGISTRATION_DIR = "${TARGET_DIR}/poa-token-no-registration"
 POA_TOKEN_WASM_NO_REGISTRATION_WASM = "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}/defuse_poa_token.wasm"
@@ -12,15 +13,19 @@ POA_TOKEN_WASM_NO_REGISTRATION_WASM = "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}/def
 alias = "build"
 
 [tasks.clippy]
-dependencies = ["add-cache-dir-tag"]
 command = "cargo"
 args = ["clippy", "--workspace", "--all-targets", "--no-deps"]
 
 [tasks.build]
-dependencies = ["add-cache-dir-tag", "build-defuse", "build-poa-factory", "contract-stats", "build-poa-token-no-registration"]
+dependencies = [
+    "add-cache-dir-tag",
+    "build-defuse",
+    "build-poa-factory",
+    "contract-stats",
+    "build-poa-token-no-registration",
+]
 
 [tasks.build-defuse]
-dependencies = ["add-cache-dir-tag"]
 command = "cargo"
 args = [
     "near",
@@ -36,7 +41,7 @@ args = [
 ]
 
 [tasks.build-poa-factory]
-dependencies = ["add-cache-dir-tag", "build-poa-token"]
+dependencies = ["build-poa-token"]
 command = "cargo"
 args = [
     "near",
@@ -52,7 +57,6 @@ args = [
 ]
 
 [tasks.build-poa-token]
-dependencies = ["add-cache-dir-tag"]
 command = "cargo"
 args = [
     "near",
@@ -68,7 +72,6 @@ args = [
 ]
 
 [tasks.build-poa-token-no-registration]
-dependencies = ["add-cache-dir-tag"]
 command = "cargo"
 args = [
     "near",
@@ -112,9 +115,14 @@ category = "Tools"
 script = "cd ${TARGET_DIR} && du -ah *.wasm"
 
 # We add CACHEDIR.TAG as it helps in making system level applications, e.g., backup systems, understand that this directory is just for disposable things.
-[tasks.add-cache-dir-tag]
-condition = { platforms = ["linux", "mac"] }
+[tasks.add-cache-dir-tags]
+condition = { platforms = [
+    "linux",
+    "mac",
+], files_exist = [
+    "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}",
+    "${TARGET_DIR}",
+] }
 script = [
-    "mkdir -p target res",
-    "echo 'Signature: 8a477f597d28d172789f06886806bc55' | tee target/CACHEDIR.TAG res/CACHEDIR.TAG > /dev/null"
+    "echo 'Signature: 8a477f597d28d172789f06886806bc55' | tee ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/CACHEDIR.TAG ${TARGET_DIR}/CACHEDIR.TAG > /dev/null",
 ]

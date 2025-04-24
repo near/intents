@@ -7,6 +7,9 @@ repository.workspace = true
 [lib]
 doctest = true
 
+[lints]
+workspace = true
+
 [dependencies]
 impl-tools.workspace = true
 near-sdk = { workspace = true, optional = true }

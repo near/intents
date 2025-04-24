@@ -789,6 +789,7 @@ dependencies = [
  "near-contract-standards",
  "near-plugins",
  "near-sdk",
+ "rstest",
  "serde_with",
  "strum 0.26.3",
  "thiserror 1.0.69",

@@ -97,8 +97,8 @@ pub trait State: StateView {
         storage_deposit: StorageDeposit,
     ) -> Result<()>;
 
-    /// Sets whether authentication by PREDECESSOR_ID is enabled.
-    /// Returns whether authentication by PREDECESSOR_ID was enabled
+    /// Sets whether authentication by `PREDECESSOR_ID` is enabled.
+    /// Returns whether authentication by `PREDECESSOR_ID` was enabled
     /// before.
     fn set_auth_by_predecessor_id(&mut self, account_id: AccountId, enable: bool) -> Result<bool>;
 }

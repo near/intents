@@ -240,7 +240,7 @@ impl BorshSerializeAs<Lock<Account>> for VersionedAccountEntry<'_> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 #[near(serializers = [borsh])]
 #[repr(transparent)]
 struct AccountFlags(u8);
@@ -263,6 +263,7 @@ bitflags! {
 mod tests {
     use defuse_core::tokens::TokenId;
     use near_sdk::borsh;
+    use rstest::rstest;
 
     use super::*;
 
@@ -301,5 +302,22 @@ mod tests {
                 123,
             );
         }
+    }
+
+    #[rstest]
+    #[test]
+    fn upgrade_to_flags(#[values(true, false)] implicit_public_key_removed: bool) {
+        let serialized_legacy = borsh::to_vec(&implicit_public_key_removed).unwrap();
+        let flags: AccountFlags = borsh::from_slice(&serialized_legacy).unwrap();
+        assert_eq!(
+            flags.contains(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED),
+            implicit_public_key_removed,
+            "implicit_public_key_removed doesn't match"
+        );
+        assert_eq!(
+            borsh::to_vec(&flags).unwrap(),
+            serialized_legacy,
+            "unknown flags set"
+        );
     }
 }
