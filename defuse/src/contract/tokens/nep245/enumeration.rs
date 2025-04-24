@@ -38,22 +38,20 @@ impl MultiTokenEnumeration for Contract {
             return Vec::new();
         };
 
-        let iter =
-            account
-                .state
-                .token_balances
-                .iter()
-                .skip(from_index)
-                .map(|(token_id, _amount)| Token {
-                    token_id: token_id.to_string(),
-                    owner_id: match token_id {
-                        defuse_core::tokens::TokenId::Nep141(_account_id) => None,
-                        defuse_core::tokens::TokenId::Nep171(account_id, _) => {
-                            Some(account_id.clone())
-                        }
-                        defuse_core::tokens::TokenId::Nep245(_account_id, _) => None,
-                    },
-                });
+        let iter = account
+            .as_inner_unchecked()
+            .state
+            .token_balances
+            .iter()
+            .skip(from_index)
+            .map(|(token_id, _amount)| Token {
+                token_id: token_id.to_string(),
+                owner_id: match token_id {
+                    defuse_core::tokens::TokenId::Nep141(_account_id) => None,
+                    defuse_core::tokens::TokenId::Nep171(account_id, _) => Some(account_id.clone()),
+                    defuse_core::tokens::TokenId::Nep245(_account_id, _) => None,
+                },
+            });
 
         match limit {
             Some(l) => iter.take(l.try_into().unwrap_or_panic_display()).collect(),
