@@ -1,5 +1,5 @@
 [package]
-name = "test-utils"
+name = "defuse-test-utils"
 version.workspace = true
 edition.workspace = true
 repository.workspace = true
@@ -8,6 +8,7 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-randomness.workspace = true
+defuse-randomness.workspace = true
+
 rand_chacha.workspace = true
 rstest.workspace = true

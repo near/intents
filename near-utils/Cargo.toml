@@ -9,4 +9,3 @@ defuse-borsh-utils.workspace = true
 
 impl-tools.workspace = true
 near-sdk.workspace = true
-

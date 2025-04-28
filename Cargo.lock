@@ -578,17 +578,21 @@ dependencies = [
  "defuse-borsh-utils",
  "defuse-controller",
  "defuse-core",
+ "defuse-io-utils",
  "defuse-map-utils",
  "defuse-near-utils",
  "defuse-nep245",
  "defuse-serde-utils",
+ "defuse-test-utils",
  "defuse-wnear",
  "derive_more 2.0.1",
+ "hex",
  "impl-tools",
  "near-account-id",
  "near-contract-standards",
  "near-plugins",
  "near-sdk",
+ "rstest",
  "serde_with",
  "strum 0.27.1",
  "thiserror 2.0.12",
@@ -754,12 +758,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-randomness"
+version = "0.1.0"
+dependencies = [
+ "rand 0.9.1",
+]
+
+[[package]]
 name = "defuse-serde-utils"
 version = "0.1.0"
 dependencies = [
  "derive_more 2.0.1",
  "near-sdk",
  "serde_with",
+]
+
+[[package]]
+name = "defuse-test-utils"
+version = "0.1.0"
+dependencies = [
+ "defuse-randomness",
+ "rand_chacha 0.9.0",
+ "rstest",
 ]
 
 [[package]]
@@ -770,16 +790,16 @@ dependencies = [
  "bnum",
  "defuse",
  "defuse-poa-factory",
+ "defuse-randomness",
+ "defuse-test-utils",
  "hex-literal",
  "impl-tools",
  "near-contract-standards",
  "near-crypto",
  "near-sdk",
  "near-workspaces",
- "randomness",
  "rstest",
  "serde_json",
- "test-utils",
  "tokio",
 ]
 
@@ -2806,13 +2826,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "randomness"
-version = "0.1.0"
-dependencies = [
- "rand 0.9.1",
-]
-
-[[package]]
 name = "rayon"
 version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3593,15 +3606,6 @@ dependencies = [
  "once_cell",
  "rustix 1.0.5",
  "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "test-utils"
-version = "0.1.0"
-dependencies = [
- "rand_chacha 0.9.0",
- "randomness",
- "rstest",
 ]
 
 [[package]]

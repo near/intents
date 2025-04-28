@@ -10,9 +10,9 @@ use defuse::core::{
     payload::multi::MultiPayload,
     tokens::TokenId,
 };
+use defuse_randomness::{Rng, make_true_rng};
 use near_sdk::AccountId;
 use near_workspaces::Account;
-use randomness::{Rng, make_true_rng};
 use rstest::rstest;
 
 use crate::{

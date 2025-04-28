@@ -16,6 +16,7 @@ defuse-bitmap = { workspace = true, optional = true }
 defuse-borsh-utils = { workspace = true, optional = true }
 defuse-controller.workspace = true
 defuse-core.workspace = true
+defuse-io-utils = { workspace = true, optional = true }
 defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-map-utils = { workspace = true, optional = true }
@@ -33,6 +34,11 @@ serde_with.workspace = true
 strum.workspace = true
 thiserror.workspace = true
 
+[dev-dependencies]
+defuse-test-utils.workspace = true
+hex.workspace = true
+rstest.workspace = true
+
 [features]
 abi = ["defuse-core/abi"]
 contract = [
@@ -40,4 +46,5 @@ contract = [
     "dep:defuse-map-utils",
     "dep:defuse-bitmap",
     "dep:defuse-borsh-utils",
+    "dep:defuse-io-utils",
 ]

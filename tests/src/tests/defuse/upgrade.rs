@@ -1,6 +1,6 @@
 use defuse::core::crypto::PublicKey;
+use defuse_randomness::{Rng, make_true_rng};
 use near_sdk::AccountId;
-use randomness::{Rng, make_true_rng};
 
 use crate::{tests::defuse::accounts::AccountManagerExt, utils::mt::MtExt};
 
