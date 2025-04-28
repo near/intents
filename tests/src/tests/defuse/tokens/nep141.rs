@@ -9,8 +9,8 @@ use defuse::{
     },
     tokens::DepositMessage,
 };
+use defuse_randomness::{Rng, make_true_rng};
 use near_sdk::{AccountId, NearToken, json_types::U128};
-use randomness::{Rng, make_true_rng};
 use rstest::rstest;
 use serde_json::json;
 

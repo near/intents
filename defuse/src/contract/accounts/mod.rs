@@ -142,7 +142,7 @@ impl Accounts {
 #[borsh(crate = "::near_sdk::borsh")]
 enum AccountsPrefix<'a> {
     Accounts,
-    Account(&'a AccountId),
+    Account(&'a AccountIdRef),
 }
 
 #[near]

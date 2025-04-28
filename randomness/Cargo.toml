@@ -1,5 +1,5 @@
 [package]
-name = "randomness"
+name = "defuse-randomness"
 version.workspace = true
 edition.workspace = true
 repository.workspace = true
@@ -8,4 +8,4 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-rand = "0.9"
+rand = { workspace = true }

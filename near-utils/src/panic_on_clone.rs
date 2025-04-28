@@ -45,6 +45,8 @@ impl<T> Clone for PanicOnClone<T> {
 mod tests {
     use core::ptr;
 
+    use near_sdk::store::IterableMap;
+
     use super::*;
 
     #[test]
@@ -53,5 +55,11 @@ mod tests {
         let poc = PanicOnClone::from_ref(&value);
         assert!(ptr::eq(&**poc, &value));
         assert_eq!(&**poc, &value);
+    }
+
+    #[test]
+    #[should_panic(expected = "PanicOnClone is intended to panic on Clone::clone()")]
+    fn panics_on_clone() {
+        let _ = PanicOnClone::new(IterableMap::<(), ()>::new(0)).clone();
     }
 }
