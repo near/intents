@@ -33,6 +33,13 @@ pub enum DefuseEvent<'a> {
 
     #[event_version("0.2.1")]
     IntentsExecuted(Cow<'a, [IntentEvent<AccountEvent<'a, ()>>]>),
+
+    #[event_version("0.2.1")]
+    #[from(skip)]
+    AccountLocked(AccountEvent<'a, ()>),
+    #[event_version("0.2.1")]
+    #[from(skip)]
+    AccountUnlocked(AccountEvent<'a, ()>),
 }
 
 pub trait DefuseIntentEmit<'a>: Into<DefuseEvent<'a>> {
