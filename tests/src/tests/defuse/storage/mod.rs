@@ -4,11 +4,11 @@ use crate::{
 };
 use defuse::core::Deadline;
 use defuse::core::intents::{DefuseIntents, tokens::StorageDeposit};
+use defuse_randomness::Rng;
+use defuse_test_utils::random::random_seed;
+use defuse_test_utils::random::{Seed, make_seedable_rng};
 use near_sdk::NearToken;
-use randomness::Rng;
 use rstest::rstest;
-use test_utils::random::random_seed;
-use test_utils::random::{Seed, make_seedable_rng};
 
 const MIN_FT_STORAGE_DEPOSIT_VALUE: NearToken =
     NearToken::from_yoctonear(1_250_000_000_000_000_000_000);

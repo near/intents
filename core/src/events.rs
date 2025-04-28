@@ -6,7 +6,9 @@ use near_sdk::{near, serde::Deserialize};
 use crate::{
     accounts::{AccountEvent, PublicKeyEvent},
     fees::{FeeChangedEvent, FeeCollectorChangedEvent},
-    intents::{IntentEvent, token_diff::TokenDiffEvent, tokens::Transfer},
+    intents::{
+        IntentEvent, account::SetAuthByPredecessorId, token_diff::TokenDiffEvent, tokens::Transfer,
+    },
 };
 
 #[must_use = "make sure to `.emit()` this event"]
@@ -33,6 +35,16 @@ pub enum DefuseEvent<'a> {
 
     #[event_version("0.2.1")]
     IntentsExecuted(Cow<'a, [IntentEvent<AccountEvent<'a, ()>>]>),
+
+    #[event_version("0.2.1")]
+    #[from(skip)]
+    AccountLocked(AccountEvent<'a, ()>),
+    #[event_version("0.2.1")]
+    #[from(skip)]
+    AccountUnlocked(AccountEvent<'a, ()>),
+
+    #[event_version("0.2.1")]
+    SetAuthByPredecessorId(AccountEvent<'a, SetAuthByPredecessorId>),
 }
 
 pub trait DefuseIntentEmit<'a>: Into<DefuseEvent<'a>> {

@@ -1,5 +1,5 @@
+pub use defuse_randomness::{self as randomness, CryptoRng, Rng, SeedableRng, seq::IteratorRandom};
 use rand_chacha::{ChaChaRng, rand_core::RngCore};
-pub use randomness::{self, CryptoRng, Rng, SeedableRng, seq::IteratorRandom};
 use rstest::fixture;
 use std::{num::ParseIntError, str::FromStr};
 

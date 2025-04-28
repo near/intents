@@ -10,6 +10,8 @@ workspace = true
 [dev-dependencies]
 defuse = { workspace = true, features = ["contract"] }
 defuse-poa-factory = { workspace = true, features = ["contract"] }
+defuse-test-utils.workspace = true
+defuse-randomness.workspace = true
 
 anyhow.workspace = true
 bnum = { workspace = true, features = ["rand"] }
@@ -19,8 +21,6 @@ near-crypto.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 near-workspaces.workspace = true
 near-contract-standards.workspace = true
-randomness.workspace = true
 rstest.workspace = true
 serde_json.workspace = true
-test-utils.workspace = true
 tokio = { workspace = true, features = ["macros"] }

@@ -1,5 +1,5 @@
 use defuse_core::{DefuseError, Result, engine::StateView, tokens::TokenId};
-use defuse_near_utils::{CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic};
+use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic};
 use defuse_nep245::{MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver};
 use near_plugins::{Pausable, pause};
 use near_sdk::{
@@ -44,11 +44,12 @@ impl MultiTokenCore for Contract {
         require!(approvals.is_none(), "approvals are not supported");
 
         self.internal_mt_batch_transfer(
-            &PREDECESSOR_ACCOUNT_ID,
+            self.ensure_auth_predecessor_id(),
             receiver_id,
             token_ids,
             amounts,
             memo.as_deref(),
+            false,
         )
         .unwrap_or_panic()
     }
@@ -89,12 +90,13 @@ impl MultiTokenCore for Contract {
         require!(approvals.is_none(), "approvals are not supported");
 
         self.internal_mt_batch_transfer_call(
-            PREDECESSOR_ACCOUNT_ID.clone(),
+            self.ensure_auth_predecessor_id().clone(),
             receiver_id,
             token_ids,
             amounts,
             memo.as_deref(),
             msg,
+            false,
         )
         .unwrap_or_panic()
     }
@@ -165,6 +167,7 @@ impl Contract {
         token_ids: Vec<defuse_nep245::TokenId>,
         amounts: Vec<U128>,
         memo: Option<&str>,
+        force: bool,
     ) -> Result<()> {
         if sender_id == receiver_id || token_ids.len() != amounts.len() || amounts.is_empty() {
             return Err(DefuseError::InvalidIntent);
@@ -178,12 +181,16 @@ impl Contract {
 
             self.accounts
                 .get_mut(sender_id)
-                .ok_or(DefuseError::AccountNotFound)?
+                .ok_or_else(|| DefuseError::AccountNotFound(sender_id.to_owned()))?
+                .as_unlocked_or_mut(force)
+                .ok_or_else(|| DefuseError::AccountLocked(sender_id.to_owned()))?
                 .token_balances
                 .sub(token_id.clone(), amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
             self.accounts
                 .get_or_create(receiver_id.clone())
+                // locked accounts are allowed to receive incoming transfers
+                .as_inner_unchecked_mut()
                 .token_balances
                 .add(token_id, amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
@@ -206,6 +213,7 @@ impl Contract {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn internal_mt_batch_transfer_call(
         &mut self,
         sender_id: AccountId,
@@ -214,6 +222,7 @@ impl Contract {
         amounts: Vec<U128>,
         memo: Option<&str>,
         msg: String,
+        force: bool,
     ) -> Result<PromiseOrValue<Vec<U128>>> {
         self.internal_mt_batch_transfer(
             &sender_id,
@@ -221,6 +230,7 @@ impl Contract {
             token_ids.clone(),
             amounts.clone(),
             memo,
+            force,
         )?;
 
         let previous_owner_ids = vec![sender_id.clone(); token_ids.len()];

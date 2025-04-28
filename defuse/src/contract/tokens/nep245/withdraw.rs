@@ -5,9 +5,7 @@ use core::iter;
 use defuse_core::{
     DefuseError, Result, engine::StateView, intents::tokens::MtWithdraw, tokens::TokenId,
 };
-use defuse_near_utils::{
-    CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
-};
+use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::storage_management::ext_storage_management;
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
@@ -41,7 +39,7 @@ impl MultiTokenWithdrawer for Contract {
     ) -> PromiseOrValue<Vec<U128>> {
         assert_one_yocto();
         self.internal_mt_withdraw(
-            PREDECESSOR_ACCOUNT_ID.clone(),
+            self.ensure_auth_predecessor_id().clone(),
             MtWithdraw {
                 token,
                 receiver_id,
@@ -51,6 +49,7 @@ impl MultiTokenWithdrawer for Contract {
                 msg,
                 storage_deposit: None,
             },
+            false,
         )
         .unwrap_or_panic()
     }
@@ -61,6 +60,7 @@ impl Contract {
         &mut self,
         owner_id: AccountId,
         withdraw: MtWithdraw,
+        force: bool,
     ) -> Result<PromiseOrValue<Vec<U128>>> {
         if withdraw.token_ids.len() != withdraw.amounts.len() || withdraw.token_ids.is_empty() {
             return Err(DefuseError::InvalidIntent);
@@ -79,6 +79,7 @@ impl Contract {
                     )
                 })),
             Some("withdraw"),
+            force,
         )?;
 
         let is_call = withdraw.msg.is_some();
@@ -251,6 +252,7 @@ impl MultiTokenForceWithdrawer for Contract {
                 msg,
                 storage_deposit: None,
             },
+            true,
         )
         .unwrap_or_panic()
     }

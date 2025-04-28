@@ -86,27 +86,34 @@ where
     fn balance_of(&self, account_id: &AccountIdRef, token_id: &TokenId) -> u128 {
         self.state.balance_of(account_id, token_id)
     }
+
+    #[inline]
+    fn is_account_locked(&self, account_id: &AccountIdRef) -> bool {
+        self.state.is_account_locked(account_id)
+    }
+
+    #[inline]
+    fn is_auth_by_predecessor_id_disabled(&self, account_id: &AccountIdRef) -> bool {
+        self.state.is_auth_by_predecessor_id_disabled(account_id)
+    }
 }
 
 impl<S> State for Deltas<S>
 where
     S: State,
 {
-    #[must_use]
     #[inline]
-    fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> bool {
+    fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()> {
         self.state.add_public_key(account_id, public_key)
     }
 
-    #[must_use]
     #[inline]
-    fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> bool {
+    fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()> {
         self.state.remove_public_key(account_id, public_key)
     }
 
-    #[must_use]
     #[inline]
-    fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> bool {
+    fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
         self.state.commit_nonce(account_id, nonce)
     }
 
@@ -167,6 +174,11 @@ where
         storage_deposit: StorageDeposit,
     ) -> Result<()> {
         self.state.storage_deposit(owner_id, storage_deposit)
+    }
+
+    #[inline]
+    fn set_auth_by_predecessor_id(&mut self, account_id: AccountId, enable: bool) -> Result<bool> {
+        self.state.set_auth_by_predecessor_id(account_id, enable)
     }
 }
 
