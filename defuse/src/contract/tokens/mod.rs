@@ -53,7 +53,19 @@ impl Contract {
                 .ok_or(DefuseError::BalanceOverflow)?;
         }
 
-        MtEvent::MtMint([mint_event].as_slice().into()).emit();
+        // Emit the event only if the accumulative amount of all tokens is > 0
+        {
+            let accumulative_amounts = mint_event
+                .amounts
+                .iter()
+                .try_fold(0u128, |accum, curr| accum.checked_add(curr.0));
+
+            if let Some(v) = accumulative_amounts {
+                if v > 0 {
+                    MtEvent::MtMint([mint_event].as_slice().into()).emit();
+                }
+            }
+        }
 
         Ok(())
     }
