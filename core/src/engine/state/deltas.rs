@@ -172,7 +172,7 @@ where
 
 /// Accumulates internal deposits and withdrawals on different tokens
 /// to match transfers using `.finalize()`
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct TransferMatcher(HashMap<TokenId, TokenTransferMatcher>);
 
 impl TransferMatcher {
@@ -208,6 +208,7 @@ impl TransferMatcher {
                 }
             }
         }
+
         if !deltas.is_empty() {
             return Err(InvariantViolated::UnmatchedDeltas {
                 unmatched_deltas: deltas,
@@ -220,7 +221,8 @@ impl TransferMatcher {
 type AccountAmounts = Amounts<HashMap<AccountId, u128>>;
 
 // Accumulates internal deposits and withdrawals on a single token
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[near(serializers = [json])]
 pub struct TokenTransferMatcher {
     deposits: AccountAmounts,
     withdrawals: AccountAmounts,
@@ -327,7 +329,8 @@ impl TokenTransferMatcher {
 
 /// Raw transfers between accounts
 #[must_use]
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[near(serializers = [json])]
 pub struct Transfers(
     /// `sender_id` -> `receiver_id` -> `token_id` -> `amount`
     HashMap<AccountId, HashMap<AccountId, Amounts<HashMap<TokenId, u128>>>>,
@@ -356,6 +359,16 @@ impl Transfers {
     ) -> Option<Self> {
         self.transfer(sender_id, receiver_id, token_id, amount)?;
         Some(self)
+    }
+
+    /// Returns the number of accounts affected in this object
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    /// Returns whether there are no accounts affected
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 
     pub fn as_mt_event(&self) -> Option<MtEvent<'_>> {

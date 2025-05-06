@@ -38,10 +38,10 @@ impl Intents for Contract {
         let mut inspector = SimulateInspector::default();
         let engine = Engine::new(self.cached(), &mut inspector);
 
-        let invariant_violated = match engine.execute_signed_intents(signed) {
+        let (invariant_violated, transfers) = match engine.execute_signed_intents(signed) {
             // do not log transfers
-            Ok(_) => None,
-            Err(DefuseError::InvariantViolated(v)) => Some(v),
+            Ok(transfers) => (None, Some(transfers)),
+            Err(DefuseError::InvariantViolated(v)) => (Some(v), None),
             Err(err) => err.panic(),
         };
 
@@ -50,6 +50,7 @@ impl Intents for Contract {
             min_deadline: inspector.min_deadline,
             invariant_violated,
             state: StateOutput { fee: self.fee() },
+            account_transfers: transfers.unwrap_or_default(),
         }
     }
 }
