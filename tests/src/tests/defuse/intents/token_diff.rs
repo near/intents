@@ -224,12 +224,11 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
         .collect();
 
     // simulate
-    env.defuse
-        .simulate_intents(signed.clone())
-        .await
-        .unwrap()
-        .into_result()
-        .unwrap();
+    let sim_res = env.defuse.simulate_intents(signed.clone()).await.unwrap();
+    assert_eq!(sim_res.account_transfers.len(), accounts.len());
+
+    // Unwrap simulation result (no invariants violated)
+    sim_res.into_result().unwrap();
 
     // verify
     env.defuse.execute_intents(signed).await.unwrap();

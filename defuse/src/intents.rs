@@ -1,6 +1,10 @@
 use defuse_core::{
-    Deadline, Result, accounts::AccountEvent, engine::deltas::InvariantViolated, fees::Pips,
-    intents::IntentEvent, payload::multi::MultiPayload,
+    Deadline, Result,
+    accounts::AccountEvent,
+    engine::deltas::{InvariantViolated, Transfers},
+    fees::Pips,
+    intents::IntentEvent,
+    payload::multi::MultiPayload,
 };
 
 use near_plugins::AccessControllable;
@@ -40,6 +44,9 @@ pub struct SimulationOutput {
 
     /// Additional info about current state
     pub state: StateOutput,
+
+    /// Transfers that happened in accounts
+    pub account_transfers: Transfers,
 }
 
 impl SimulationOutput {
