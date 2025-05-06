@@ -366,6 +366,11 @@ impl Transfers {
         self.0.len()
     }
 
+    /// Returns whether there are no accounts affected
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     pub fn as_mt_event(&self) -> Option<MtEvent<'_>> {
         if self.0.is_empty() {
             return None;
