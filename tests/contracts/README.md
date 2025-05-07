@@ -1,0 +1,1 @@
+- The `non_fungible_token.wasm` file was built from https://github.com/near-examples/NFT default, using `cargo near build non-reproducible-wasm`.
