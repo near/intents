@@ -1,7 +1,7 @@
 use rand_chacha::{ChaChaRng, rand_core::RngCore};
 pub use randomness::{self, CryptoRng, Rng, SeedableRng, seq::IteratorRandom};
 use rstest::fixture;
-use std::{num::ParseIntError, str::FromStr};
+use std::{num::ParseIntError, ops::RangeBounds, str::FromStr};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Seed(pub u64);
@@ -96,11 +96,33 @@ pub fn make_seedable_rng(seed: Seed) -> impl Rng + CryptoRng {
     TestRng::new(seed)
 }
 
-pub fn gen_random_bytes(rng: &mut impl Rng, min_len: usize, max_len: usize) -> Vec<u8> {
-    let data_length = rng.random_range(min_len..=max_len);
+fn range_to_random_size(rng: &mut impl Rng, size: impl RangeBounds<usize>) -> usize {
+    let start = match size.start_bound() {
+        std::ops::Bound::Included(&n) => n,
+        std::ops::Bound::Excluded(&n) => n + 1,
+        std::ops::Bound::Unbounded => 0,
+    };
+    let end = match size.end_bound() {
+        std::ops::Bound::Included(&n) => n + 1,
+        std::ops::Bound::Excluded(&n) => n,
+        std::ops::Bound::Unbounded => usize::MAX,
+    };
+    rng.random_range(start..end)
+}
+
+pub fn gen_random_bytes(rng: &mut impl Rng, size: impl RangeBounds<usize>) -> Vec<u8> {
+    let data_length = range_to_random_size(rng, size);
     let mut bytes = vec![0; data_length];
     rng.fill_bytes(&mut bytes);
     bytes
+}
+
+pub fn gen_random_string<R: Rng>(rng: &mut R, size: impl RangeBounds<usize>) -> String {
+    let size = range_to_random_size(rng, size);
+    rng.sample_iter(&randomness::distributions::Alphanumeric)
+        .take(size)
+        .map(char::from)
+        .collect()
 }
 
 #[fixture]
