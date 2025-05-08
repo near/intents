@@ -249,7 +249,7 @@ mod tests {
 
     #[tokio::test]
     #[rstest]
-    async fn test_deploy_mint() {
+    async fn deploy_mint() {
         let sandbox = Sandbox::new().await.unwrap();
         let root = sandbox.root_account();
         let user = sandbox.create_account("user1").await;

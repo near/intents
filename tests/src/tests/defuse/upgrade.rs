@@ -8,7 +8,7 @@ use super::DEFUSE_WASM;
 
 #[ignore = "only for simple upgrades"]
 #[tokio::test]
-async fn test_upgrade() {
+async fn upgrade() {
     let old_contract_id: AccountId = "intents.near".parse().unwrap();
     let mainnet = near_workspaces::mainnet()
         .rpc_addr("https://nearrpc.aurora.dev")

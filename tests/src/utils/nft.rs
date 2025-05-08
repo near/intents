@@ -1,9 +1,23 @@
-use near_contract_standards::non_fungible_token::{Token, TokenId};
-use near_sdk::{AccountId, NearToken};
+use near_contract_standards::non_fungible_token::{Token, TokenId, metadata::TokenMetadata};
+use near_sdk::{AccountId, NearToken, json_types::Base64VecU8};
 use near_workspaces::Contract;
 use serde_json::json;
 
+use super::account::AccountExt;
+
+const NON_FUNGIBLE_TOKEN_WASM: &[u8] = include_bytes!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/contracts/non-fungible-token.wasm"
+));
+
 pub trait NftExt {
+    async fn deploy_vanilla_nft_issuer(
+        &self,
+        token_name: &str,
+        reference: Option<String>,
+        reference_hash: Option<Base64VecU8>,
+    ) -> anyhow::Result<Contract>;
+
     async fn nft_transfer(
         &self,
         collection: &AccountId,
@@ -21,6 +35,14 @@ pub trait NftExt {
         msg: String,
     ) -> anyhow::Result<bool>;
 
+    async fn nft_mint(
+        &self,
+        collection: &AccountId,
+        token_id: &TokenId,
+        token_owner_id: &AccountId,
+        token_metadata: &TokenMetadata,
+    ) -> anyhow::Result<Token>;
+
     async fn nft_token(
         &self,
         collection: &AccountId,
@@ -31,6 +53,48 @@ pub trait NftExt {
 }
 
 impl NftExt for near_workspaces::Account {
+    async fn deploy_vanilla_nft_issuer(
+        &self,
+        token_name: &str,
+        reference: Option<String>,
+        reference_hash: Option<Base64VecU8>,
+    ) -> anyhow::Result<Contract> {
+        let contract = self
+            .deploy_contract(token_name, NON_FUNGIBLE_TOKEN_WASM)
+            .await?;
+
+        let mut args = json!({
+            "owner_id": self.id(),
+            "metadata": {
+                "spec": "nft-1.0.0",
+                "name": format!("Token {}", token_name),
+                "symbol": "NFT_TKN",
+            }
+        });
+
+        if let Some(r) = reference {
+            args.as_object_mut()
+                .unwrap()
+                .insert("reference".to_string(), r.into());
+        }
+
+        if let Some(r) = reference_hash {
+            args.as_object_mut().unwrap().insert(
+                "reference_hash".to_string(),
+                serde_json::to_value(r).unwrap(),
+            );
+        }
+
+        contract
+            .call("new")
+            .args_json(args)
+            .max_gas()
+            .transact()
+            .await?
+            .into_result()?;
+
+        Ok(contract)
+    }
     async fn nft_transfer(
         &self,
         collection: &AccountId,
@@ -76,6 +140,27 @@ impl NftExt for near_workspaces::Account {
             .map_err(Into::into)
     }
 
+    async fn nft_mint(
+        &self,
+        collection: &AccountId,
+        token_id: &TokenId,
+        token_owner_id: &AccountId,
+        token_metadata: &TokenMetadata,
+    ) -> anyhow::Result<Token> {
+        self.call(collection, "nft_mint")
+            .args_json(json!({
+                "token_id": token_id,
+                "token_owner_id": token_owner_id,
+                "token_metadata": token_metadata,
+            }))
+            .deposit(NearToken::from_near(1))
+            .transact()
+            .await?
+            .into_result()?
+            .json()
+            .map_err(Into::into)
+    }
+
     async fn nft_token(
         &self,
         collection: &AccountId,
@@ -96,6 +181,17 @@ impl NftExt for near_workspaces::Account {
 }
 
 impl NftExt for Contract {
+    async fn deploy_vanilla_nft_issuer(
+        &self,
+        token_name: &str,
+        reference: Option<String>,
+        reference_hash: Option<Base64VecU8>,
+    ) -> anyhow::Result<Contract> {
+        self.as_account()
+            .deploy_vanilla_nft_issuer(token_name, reference, reference_hash)
+            .await
+    }
+
     async fn nft_transfer(
         &self,
         collection: &AccountId,
@@ -118,6 +214,18 @@ impl NftExt for Contract {
     ) -> anyhow::Result<bool> {
         self.as_account()
             .nft_transfer_call(collection, receiver_id, token_id, memo, msg)
+            .await
+    }
+
+    async fn nft_mint(
+        &self,
+        collection: &AccountId,
+        token_id: &TokenId,
+        token_owner_id: &AccountId,
+        token_metadata: &TokenMetadata,
+    ) -> anyhow::Result<Token> {
+        self.as_account()
+            .nft_mint(collection, token_id, token_owner_id, token_metadata)
             .await
     }
 

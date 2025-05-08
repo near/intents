@@ -142,7 +142,7 @@ impl ExecuteIntentsExt for near_workspaces::Contract {
 
 #[tokio::test]
 #[rstest]
-async fn test_simulate_is_view_method(#[values(false, true)] no_registration: bool) {
+async fn simulate_is_view_method(#[values(false, true)] no_registration: bool) {
     let env = Env::builder()
         .no_registration(no_registration)
         .build()
@@ -193,7 +193,7 @@ async fn test_simulate_is_view_method(#[values(false, true)] no_registration: bo
 
 #[tokio::test]
 #[rstest]
-async fn test_webauthn(#[values(false, true)] no_registration: bool) {
+async fn webauthn(#[values(false, true)] no_registration: bool) {
     const SIGNER_ID: &AccountIdRef =
         AccountIdRef::new_or_panic("0x3602b546589a8fcafdce7fad64a46f91db0e4d50");
 
