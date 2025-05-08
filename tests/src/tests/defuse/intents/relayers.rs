@@ -12,7 +12,7 @@ use crate::{
 
 #[tokio::test]
 #[rstest]
-async fn test_relayer_keys(#[values(false, true)] no_registration: bool) {
+async fn relayer_keys(#[values(false, true)] no_registration: bool) {
     use near_workspaces::Contract;
 
     let env = Env::builder()

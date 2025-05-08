@@ -24,7 +24,7 @@ use super::ExecuteIntentsExt;
 
 #[rstest]
 #[tokio::test]
-async fn test_swap_p2p(
+async fn swap_p2p(
     #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
     #[values(false, true)] no_registration: bool,
 ) {
@@ -88,7 +88,7 @@ async fn test_swap_p2p(
 
 #[rstest]
 #[tokio::test]
-async fn test_swap_many(
+async fn swap_many(
     #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
     #[values(false, true)] no_registration: bool,
 ) {
@@ -257,7 +257,7 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
 
 #[tokio::test]
 #[rstest]
-async fn test_invariant_violated(#[values(false, true)] no_registration: bool) {
+async fn invariant_violated(#[values(false, true)] no_registration: bool) {
     let env = Env::builder()
         .no_registration(no_registration)
         .build()
@@ -348,7 +348,7 @@ async fn test_invariant_violated(#[values(false, true)] no_registration: bool) {
 
 #[rstest]
 #[tokio::test]
-async fn test_solver_user_closure(
+async fn solver_user_closure(
     #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
     #[values(false, true)] no_registration: bool,
 ) {
