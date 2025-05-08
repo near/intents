@@ -1,26 +1,18 @@
-use std::collections::HashMap;
-
-use crate::tests::defuse::DefuseSigner;
-use crate::tests::defuse::env::Env;
-use crate::tests::defuse::intents::ExecuteIntentsExt;
-use crate::utils::mt::MtExt;
-use crate::utils::nft::NftExt;
-use defuse::core::Deadline;
-use defuse::core::intents::DefuseIntents;
-use defuse::core::intents::tokens::NftWithdraw;
-use defuse::core::tokens::TokenId as MtTokenId;
-use near_contract_standards::non_fungible_token::Token;
-use near_contract_standards::non_fungible_token::metadata::TokenMetadata;
-use near_sdk::NearToken;
-use near_sdk::json_types::Base64VecU8;
+use crate::tests::defuse::{DefuseSigner, env::Env, intents::ExecuteIntentsExt};
+use crate::utils::{mt::MtExt, nft::NftExt};
+use defuse::core::{
+    Deadline,
+    intents::{DefuseIntents, tokens::NftWithdraw},
+    tokens::TokenId as MtTokenId,
+};
+use near_contract_standards::non_fungible_token::{Token, metadata::TokenMetadata};
+use near_sdk::{NearToken, json_types::Base64VecU8};
 use randomness::Rng;
 use rstest::rstest;
-use serde_json::json;
-use test_utils::random::Seed;
-use test_utils::random::gen_random_bytes;
-use test_utils::random::gen_random_string;
-use test_utils::random::make_seedable_rng;
-use test_utils::random::random_seed;
+use std::collections::HashMap;
+use test_utils::random::{
+    Seed, gen_random_bytes, gen_random_string, make_seedable_rng, random_seed,
+};
 
 #[tokio::test]
 #[rstest]
@@ -51,17 +43,13 @@ async fn transfer_nft_to_verifier(random_seed: Seed) {
 
     let nft1: Token = env
         .user1
-        .call(nft_issuer_contract.id(), "nft_mint")
-        .args_json(json!({
-            "token_id": nft1_id,
-            "token_owner_id": env.user2.id().clone(),
-            "token_metadata": TokenMetadata::default(),
-        }))
-        .deposit(NearToken::from_near(1))
-        .transact()
+        .nft_mint(
+            nft_issuer_contract.id(),
+            &nft1_id,
+            env.user2.id(),
+            &TokenMetadata::default(),
+        )
         .await
-        .unwrap()
-        .json()
         .unwrap();
 
     assert_eq!(nft1.token_id, nft1_id);
@@ -74,17 +62,13 @@ async fn transfer_nft_to_verifier(random_seed: Seed) {
 
     let nft2: Token = env
         .user1
-        .call(nft_issuer_contract.id(), "nft_mint") // TODO: port this to a function
-        .args_json(json!({
-            "token_id": nft2_id,
-            "token_owner_id": env.user3.id().clone(),
-            "token_metadata": TokenMetadata::default(),
-        }))
-        .deposit(NearToken::from_near(1))
-        .transact()
+        .nft_mint(
+            nft_issuer_contract.id(),
+            &nft2_id,
+            env.user3.id(),
+            &TokenMetadata::default(),
+        )
         .await
-        .unwrap()
-        .json()
         .unwrap();
 
     assert_eq!(nft2.token_id, nft2_id);

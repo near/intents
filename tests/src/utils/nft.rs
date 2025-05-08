@@ -1,4 +1,4 @@
-use near_contract_standards::non_fungible_token::{Token, TokenId};
+use near_contract_standards::non_fungible_token::{Token, TokenId, metadata::TokenMetadata};
 use near_sdk::{AccountId, NearToken, json_types::Base64VecU8};
 use near_workspaces::Contract;
 use serde_json::json;
@@ -34,6 +34,14 @@ pub trait NftExt {
         memo: Option<String>,
         msg: String,
     ) -> anyhow::Result<bool>;
+
+    async fn nft_mint(
+        &self,
+        collection: &AccountId,
+        token_id: &TokenId,
+        token_owner_id: &AccountId,
+        token_metadata: &TokenMetadata,
+    ) -> anyhow::Result<Token>;
 
     async fn nft_token(
         &self,
@@ -132,6 +140,27 @@ impl NftExt for near_workspaces::Account {
             .map_err(Into::into)
     }
 
+    async fn nft_mint(
+        &self,
+        collection: &AccountId,
+        token_id: &TokenId,
+        token_owner_id: &AccountId,
+        token_metadata: &TokenMetadata,
+    ) -> anyhow::Result<Token> {
+        self.call(collection, "nft_mint")
+            .args_json(json!({
+                "token_id": token_id,
+                "token_owner_id": token_owner_id,
+                "token_metadata": token_metadata,
+            }))
+            .deposit(NearToken::from_near(1))
+            .transact()
+            .await?
+            .into_result()?
+            .json()
+            .map_err(Into::into)
+    }
+
     async fn nft_token(
         &self,
         collection: &AccountId,
@@ -185,6 +214,18 @@ impl NftExt for Contract {
     ) -> anyhow::Result<bool> {
         self.as_account()
             .nft_transfer_call(collection, receiver_id, token_id, memo, msg)
+            .await
+    }
+
+    async fn nft_mint(
+        &self,
+        collection: &AccountId,
+        token_id: &TokenId,
+        token_owner_id: &AccountId,
+        token_metadata: &TokenMetadata,
+    ) -> anyhow::Result<Token> {
+        self.as_account()
+            .nft_mint(collection, token_id, token_owner_id, token_metadata)
             .await
     }
 
