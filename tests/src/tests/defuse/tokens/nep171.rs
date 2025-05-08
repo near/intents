@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::tests::defuse::DefuseSigner;
 use crate::tests::defuse::env::Env;
 use crate::tests::defuse::intents::ExecuteIntentsExt;
@@ -72,7 +74,7 @@ async fn transfer_nft_to_verifier(random_seed: Seed) {
 
     let nft2: Token = env
         .user1
-        .call(nft_issuer_contract.id(), "nft_mint")
+        .call(nft_issuer_contract.id(), "nft_mint") // TODO: port this to a function
         .args_json(json!({
             "token_id": nft2_id,
             "token_owner_id": env.user3.id().clone(),
@@ -170,6 +172,62 @@ async fn transfer_nft_to_verifier(random_seed: Seed) {
                 .unwrap(),
             1
         );
+    }
+
+    // Let's test the MultiTokenEnumeration interface
+    {
+        // mt_tokens
+        {
+            let nfts_in_verifier = env.user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
+            assert_eq!(nfts_in_verifier.len(), 2);
+            let nfts_in_verifier_map = nfts_in_verifier
+                .into_iter()
+                .map(|v| (v.token_id.clone(), v))
+                .collect::<HashMap<_, _>>();
+            assert!(nfts_in_verifier_map.contains_key(&nft1_mt_token_id.to_string()));
+            assert!(nfts_in_verifier_map.contains_key(&nft2_mt_token_id.to_string()));
+        }
+
+        // mt_tokens_for_owner
+        {
+            // User1
+            {
+                let nfts_in_verifier = env
+                    .user1
+                    .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..)
+                    .await
+                    .unwrap();
+                assert_eq!(nfts_in_verifier.len(), 1);
+                assert_eq!(
+                    nfts_in_verifier[0].owner_id.as_ref().unwrap(),
+                    env.user1.id()
+                );
+            }
+
+            // User2
+            {
+                let nfts_in_verifier = env
+                    .user1
+                    .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), ..)
+                    .await
+                    .unwrap();
+                assert_eq!(nfts_in_verifier.len(), 0);
+            }
+
+            // User3
+            {
+                let nfts_in_verifier = env
+                    .user1
+                    .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), ..)
+                    .await
+                    .unwrap();
+                assert_eq!(nfts_in_verifier.len(), 1);
+                assert_eq!(
+                    nfts_in_verifier[0].owner_id.as_ref().unwrap(),
+                    env.user3.id()
+                );
+            }
+        }
     }
 
     {
