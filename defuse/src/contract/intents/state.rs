@@ -165,6 +165,7 @@ impl State for Contract {
                 withdraw.amount.as_yoctonear(),
             )],
             Some("withdraw"),
+            None,
         )?;
 
         // detach promise
@@ -194,6 +195,7 @@ impl State for Contract {
                 storage_deposit.amount.as_yoctonear(),
             )],
             Some("withdraw"),
+            None,
         )?;
 
         // detach promise
