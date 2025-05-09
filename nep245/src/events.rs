@@ -1,9 +1,7 @@
-use std::borrow::Cow;
-
+use super::TokenId;
 use derive_more::derive::From;
 use near_sdk::{AccountIdRef, json_types::U128, near, serde::Deserialize};
-
-use super::TokenId;
+use std::borrow::Cow;
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(event_json(standard = "nep245"))]
@@ -39,6 +37,7 @@ pub struct MtBurnEvent<'a> {
     pub amounts: Cow<'a, [U128]>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<Cow<'a, str>>,
+    pub withdraw_info: Option<String>,
 }
 
 #[must_use = "make sure to `.emit()` this event"]
