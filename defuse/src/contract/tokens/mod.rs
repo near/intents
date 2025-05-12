@@ -53,18 +53,8 @@ impl Contract {
                 .ok_or(DefuseError::BalanceOverflow)?;
         }
 
-        // Emit the event only if the accumulative amount of all tokens is > 0
-        {
-            let accumulative_amounts = mint_event
-                .amounts
-                .iter()
-                .try_fold(0u128, |accum, curr| accum.checked_add(curr.0));
-
-            if let Some(v) = accumulative_amounts {
-                if v > 0 {
-                    MtEvent::MtMint([mint_event].as_slice().into()).emit();
-                }
-            }
+        if !mint_event.amounts.is_empty() {
+            MtEvent::MtMint([mint_event].as_slice().into()).emit();
         }
 
         Ok(())
@@ -112,7 +102,9 @@ impl Contract {
         // to avoid confusion when `mt_burn` occurs before relevant
         // `mt_transfer` arrives. This can happen due to postponed
         // delta-matching during intents execution.
-        self.postponed_burns.mt_burn(burn_event);
+        if !burn_event.amounts.is_empty() {
+            self.postponed_burns.mt_burn(burn_event);
+        }
 
         Ok(())
     }
