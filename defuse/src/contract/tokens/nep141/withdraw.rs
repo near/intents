@@ -1,9 +1,7 @@
 use core::iter;
 
 use defuse_core::{Result, engine::StateView, intents::tokens::FtWithdraw, tokens::TokenId};
-use defuse_near_utils::{
-    CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
-};
+use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError};
 
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::storage_management::ext_storage_management;
@@ -39,7 +37,7 @@ impl FungibleTokenWithdrawer for Contract {
     ) -> PromiseOrValue<U128> {
         assert_one_yocto();
         self.internal_ft_withdraw(
-            PREDECESSOR_ACCOUNT_ID.clone(),
+            self.ensure_auth_predecessor_id().clone(),
             FtWithdraw {
                 token,
                 receiver_id,
@@ -48,6 +46,7 @@ impl FungibleTokenWithdrawer for Contract {
                 msg,
                 storage_deposit: None,
             },
+            false,
         )
         .unwrap_or_panic()
     }
@@ -58,6 +57,7 @@ impl Contract {
         &mut self,
         owner_id: AccountId,
         withdraw: FtWithdraw,
+        force: bool,
     ) -> Result<PromiseOrValue<U128>> {
         self.withdraw(
             &owner_id,
@@ -70,6 +70,7 @@ impl Contract {
                 }),
             ),
             Some("withdraw"),
+            force,
         )?;
 
         let is_call = withdraw.msg.is_some();
@@ -217,6 +218,7 @@ impl FungibleTokenForceWithdrawer for Contract {
                 msg,
                 storage_deposit: None,
             },
+            true,
         )
         .unwrap_or_panic()
     }

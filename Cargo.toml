@@ -9,6 +9,7 @@ members = [
     "crypto",
     "defuse",
     "erc191",
+    "io-utils",
     "map-utils",
     "near-utils",
     "nep245",
@@ -40,6 +41,7 @@ defuse-core.path = "core"
 defuse-crypto.path = "crypto"
 defuse.path = "defuse"
 defuse-erc191.path = "erc191"
+defuse-io-utils.path = "io-utils"
 defuse-map-utils.path = "map-utils"
 defuse-near-utils.path = "near-utils"
 defuse-nep245.path = "nep245"
@@ -52,10 +54,11 @@ defuse-poa-token.path = "poa-token"
 defuse-serde-utils.path = "serde-utils"
 defuse-wnear.path = "wnear"
 
-randomness.path = "randomness"
-test-utils.path = "test-utils"
+defuse-randomness.path = "randomness"
+defuse-test-utils.path = "test-utils"
 
 anyhow = "1"
+bitflags = "2.9.0"
 bnum = { version = "0.13", features = ["borsh"] }
 chrono = { version = "0.4", default-features = false }
 derive_more = "2.0"
@@ -83,9 +86,10 @@ tokio = { version = "1.38", default-features = false }
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }
 pedantic = { level = "deny", priority = -1 }
-module_name_repetitions = "allow"
 missing_errors_doc = "allow"
 missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
 
 
 [profile.release]

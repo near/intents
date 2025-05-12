@@ -1,3 +1,4 @@
+use defuse_crypto::PublicKey;
 use near_sdk::{AccountId, FunctionError, serde_json};
 use thiserror::Error as ThisError;
 
@@ -10,8 +11,11 @@ pub type Result<T, E = DefuseError> = ::core::result::Result<T, E>;
 
 #[derive(Debug, ThisError, FunctionError)]
 pub enum DefuseError {
-    #[error("account not found")]
-    AccountNotFound,
+    #[error("account '{0}' not found")]
+    AccountNotFound(AccountId),
+
+    #[error("account '{0}' is locked")]
+    AccountLocked(AccountId),
 
     #[error("insufficient balance or overflow")]
     BalanceOverflow,
@@ -40,15 +44,18 @@ pub enum DefuseError {
     #[error("nonce was already used")]
     NonceUsed,
 
-    #[error("public key already exists")]
-    PublicKeyExists,
+    #[error("public key '{1}' already exists for account '{0}'")]
+    PublicKeyExists(AccountId, PublicKey),
 
-    #[error("public key doesn't exist")]
-    PublicKeyNotExist,
+    #[error("public key '{1}' doesn't exist for account '{0}'")]
+    PublicKeyNotExist(AccountId, PublicKey),
 
     #[error("token_id: {0}")]
     ParseTokenId(#[from] ParseTokenIdError),
 
     #[error("wrong verifying_contract")]
     WrongVerifyingContract,
+
+    #[error("authentication by PREDECESSOR_ID is disabled for account '{0}'")]
+    AuthByPredecessorIdDisabled(AccountId),
 }

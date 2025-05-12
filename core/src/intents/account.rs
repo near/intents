@@ -4,7 +4,7 @@ use near_sdk::{AccountIdRef, CryptoHash, near};
 use serde_with::serde_as;
 
 use crate::{
-    DefuseError, Nonce, Result,
+    Nonce, Result,
     engine::{Engine, Inspector, State},
 };
 
@@ -33,13 +33,9 @@ impl ExecutableIntent for AddPublicKey {
         S: State,
         I: Inspector,
     {
-        if !engine
+        engine
             .state
             .add_public_key(signer_id.to_owned(), self.public_key)
-        {
-            return Err(DefuseError::PublicKeyExists);
-        }
-        Ok(())
     }
 }
 
@@ -62,13 +58,9 @@ impl ExecutableIntent for RemovePublicKey {
         S: State,
         I: Inspector,
     {
-        if !engine
+        engine
             .state
             .remove_public_key(signer_id.to_owned(), self.public_key)
-        {
-            return Err(DefuseError::PublicKeyNotExist);
-        }
-        Ok(())
     }
 }
 
@@ -96,16 +88,45 @@ impl ExecutableIntent for InvalidateNonces {
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
         _intent_hash: CryptoHash,
-    ) -> crate::Result<()>
+    ) -> Result<()>
     where
         S: State,
         I: Inspector,
     {
-        for nonce in self.nonces {
-            if !engine.state.commit_nonce(signer_id.to_owned(), nonce) {
-                return Err(DefuseError::NonceUsed);
-            }
-        }
-        Ok(())
+        self.nonces
+            .into_iter()
+            .try_for_each(|n| engine.state.commit_nonce(signer_id.to_owned(), n))
+    }
+}
+
+#[cfg_attr(
+    all(feature = "abi", not(target_arch = "wasm32")),
+    serde_as(schemars = true)
+)]
+#[cfg_attr(
+    not(all(feature = "abi", not(target_arch = "wasm32"))),
+    serde_as(schemars = false)
+)]
+#[near(serializers = [borsh, json])]
+#[derive(Debug, Clone)]
+pub struct SetAuthByPredecessorId {
+    pub enable: bool,
+}
+
+impl ExecutableIntent for SetAuthByPredecessorId {
+    fn execute_intent<S, I>(
+        self,
+        signer_id: &AccountIdRef,
+        engine: &mut Engine<S, I>,
+        _intent_hash: CryptoHash,
+    ) -> Result<()>
+    where
+        S: State,
+        I: Inspector,
+    {
+        engine
+            .state
+            .set_auth_by_predecessor_id(signer_id.to_owned(), self.enable)
+            .map(|_| ())
     }
 }

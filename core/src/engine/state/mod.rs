@@ -33,6 +33,11 @@ pub trait StateView {
     #[must_use]
     fn balance_of(&self, account_id: &AccountIdRef, token_id: &TokenId) -> u128;
 
+    fn is_account_locked(&self, account_id: &AccountIdRef) -> bool;
+
+    /// Returns whether authentication by PREDECESSOR is disabled.
+    fn is_auth_by_predecessor_id_disabled(&self, account_id: &AccountIdRef) -> bool;
+
     #[inline]
     fn cached(self) -> CachedState<Self>
     where
@@ -44,14 +49,11 @@ pub trait StateView {
 
 #[autoimpl(for<T: trait + ?Sized> &mut T, Box<T>)]
 pub trait State: StateView {
-    #[must_use]
-    fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> bool;
+    fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()>;
 
-    #[must_use]
-    fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> bool;
+    fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()>;
 
-    #[must_use]
-    fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> bool;
+    fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()>;
 
     fn internal_add_balance(
         &mut self,
@@ -94,4 +96,9 @@ pub trait State: StateView {
         owner_id: &AccountIdRef,
         storage_deposit: StorageDeposit,
     ) -> Result<()>;
+
+    /// Sets whether authentication by `PREDECESSOR_ID` is enabled.
+    /// Returns whether authentication by `PREDECESSOR_ID` was enabled
+    /// before.
+    fn set_auth_by_predecessor_id(&mut self, account_id: AccountId, enable: bool) -> Result<bool>;
 }

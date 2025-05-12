@@ -9,11 +9,11 @@ use defuse::{
         tokens::TokenId,
     },
 };
+use defuse_randomness::Rng;
+use defuse_test_utils::random::make_seedable_rng;
+use defuse_test_utils::random::{Seed, random_seed};
 use near_sdk::{AccountId, NearToken};
-use randomness::Rng;
 use rstest::rstest;
-use test_utils::random::make_seedable_rng;
-use test_utils::random::{Seed, random_seed};
 
 use super::ExecuteIntentsExt;
 use crate::{
