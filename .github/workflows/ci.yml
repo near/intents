@@ -146,6 +146,5 @@ jobs:
       - name: Install Cargo Plugins
         run: cargo install cargo-audit
       - name: Run security audit
-        # Do we want to deny warnings? Options are: warnings (any), unmaintained, unsound, yanked
-        run: cargo audit
-        # run: cargo audit --deny warnings
+        run: cargo audit --deny unsound --deny yanked
+        # run: cargo audit --deny warnings  # Warnings include: unmaintained, unsound and yanked
