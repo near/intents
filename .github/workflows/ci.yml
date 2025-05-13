@@ -124,7 +124,6 @@ jobs:
       - uses: rustsec/audit-check@v2.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          # TODO: get reporting to work
 
   security_audit_deny:
     name: Security Audit - deny

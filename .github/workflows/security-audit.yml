@@ -1,0 +1,16 @@
+name: Security audit
+on:
+  schedule:
+    - cron: "0 12 * * *"
+jobs:
+  scheduled_security_audit_report:
+    name: Scheduled Security Audit - report
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: rustsec/audit-check@v2.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
