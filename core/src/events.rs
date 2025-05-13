@@ -6,12 +6,17 @@ use near_sdk::{near, serde::Deserialize};
 use crate::{
     accounts::{AccountEvent, PublicKeyEvent},
     fees::{FeeChangedEvent, FeeCollectorChangedEvent},
-    intents::{IntentEvent, token_diff::TokenDiffEvent, tokens::Transfer},
+    intents::{
+        IntentEvent,
+        token_diff::TokenDiffEvent,
+        tokens::{FtWithdraw, MtWithdraw, NftWithdraw, Transfer},
+    },
 };
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(event_json(standard = "dip4"))]
 #[derive(Debug, Clone, Deserialize, From)]
+// FIXME: Check with FE if it's OK to add arms + update all arm versions to be the same new version
 pub enum DefuseEvent<'a> {
     #[event_version("0.2.1")]
     #[from(skip)]
@@ -33,6 +38,15 @@ pub enum DefuseEvent<'a> {
 
     #[event_version("0.2.1")]
     IntentsExecuted(Cow<'a, [IntentEvent<AccountEvent<'a, ()>>]>),
+
+    #[event_version("0.2.1")]
+    FtWithdraw(FtWithdraw),
+
+    #[event_version("0.2.1")]
+    NftWithdraw(NftWithdraw),
+
+    #[event_version("0.2.1")]
+    MtWithdraw(MtWithdraw),
 }
 
 pub trait DefuseIntentEmit<'a>: Into<DefuseEvent<'a>> {

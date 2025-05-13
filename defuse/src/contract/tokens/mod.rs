@@ -1,15 +1,14 @@
 mod nep141;
 mod nep171;
 mod nep245;
-mod withdraw_info;
+mod withdraw_event;
 
 use super::Contract;
-use defuse_core::{DefuseError, Result, tokens::TokenId};
-use defuse_near_utils::UnwrapOrPanicError;
+use defuse_core::{DefuseError, Result, events::DefuseEvent, tokens::TokenId};
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
-use near_sdk::{AccountId, AccountIdRef, Gas, json_types::U128, serde_json};
+use near_sdk::{AccountId, AccountIdRef, Gas, json_types::U128};
 use std::borrow::Cow;
-use withdraw_info::WithdrawInfo;
+use withdraw_event::WithdrawEvent;
 
 pub const STORAGE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
 
@@ -64,7 +63,7 @@ impl Contract {
         owner_id: &AccountIdRef,
         token_amounts: impl IntoIterator<Item = (TokenId, u128)>,
         memo: Option<impl Into<String>>,
-        withdraw_info: Option<WithdrawInfo>,
+        withdraw_event: Option<WithdrawEvent>,
     ) -> Result<()> {
         let owner = self
             .accounts
@@ -77,8 +76,6 @@ impl Contract {
             token_ids: Vec::new().into(),
             amounts: Vec::new().into(),
             memo: memo.map(Into::into).map(Into::into),
-            withdraw_info: withdraw_info
-                .map(|w| serde_json::to_string(&w).unwrap_or_panic_display()),
         };
 
         for (token_id, amount) in token_amounts {
@@ -105,6 +102,11 @@ impl Contract {
         // `mt_transfer` arrives. This can happen due to postponed
         // delta-matching during intents execution.
         self.postponed_burns.mt_burn(burn_event);
+
+        if let Some(ev) = withdraw_event {
+            let event: DefuseEvent = ev.into();
+            event.emit();
+        }
 
         Ok(())
     }

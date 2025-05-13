@@ -37,7 +37,6 @@ pub struct MtBurnEvent<'a> {
     pub amounts: Cow<'a, [U128]>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<Cow<'a, str>>,
-    pub withdraw_info: Option<String>,
 }
 
 #[must_use = "make sure to `.emit()` this event"]
