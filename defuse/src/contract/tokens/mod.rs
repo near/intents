@@ -8,7 +8,7 @@ use defuse_core::{DefuseError, Result, events::DefuseEvent, tokens::TokenId};
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
 use near_sdk::{AccountId, AccountIdRef, Gas, json_types::U128};
 use std::borrow::Cow;
-use withdraw_event::WithdrawEvent;
+use withdraw_event::WithdrawEventMediator;
 
 pub const STORAGE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
 
@@ -63,7 +63,7 @@ impl Contract {
         owner_id: &AccountIdRef,
         token_amounts: impl IntoIterator<Item = (TokenId, u128)>,
         memo: Option<impl Into<String>>,
-        withdraw_event: Option<WithdrawEvent>,
+        withdraw_event: Option<WithdrawEventMediator>,
     ) -> Result<()> {
         let owner = self
             .accounts
