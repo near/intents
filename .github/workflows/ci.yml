@@ -116,6 +116,9 @@ jobs:
   security_audit_report:
     name: Security Audit - report
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: rustsec/audit-check@v2.0.0
