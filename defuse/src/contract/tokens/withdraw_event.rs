@@ -3,41 +3,41 @@ use defuse_core::{
     intents::tokens::{FtWithdraw, MtWithdraw, NftWithdraw},
 };
 
-/// A withdraw is done through a unified function using the MtToken interface.
+/// A withdraw is done through a unified function using the `MultiToken` interface.
 /// This struct helps in transferring the withdraw event information from the
 /// type-specific withdraw (Ft/Mt/Nft, etc), to the unified part that performs
 /// the withdrawal.
 #[derive(Debug, Clone)]
 pub enum WithdrawEventMediator {
-    FtWithdraw(FtWithdraw),
-    NftWithdraw(NftWithdraw),
-    MtWithdraw(MtWithdraw),
+    Ft(FtWithdraw),
+    Nft(NftWithdraw),
+    Mt(MtWithdraw),
 }
 
 impl From<FtWithdraw> for WithdrawEventMediator {
     fn from(w: FtWithdraw) -> Self {
-        Self::FtWithdraw(w)
+        Self::Ft(w)
     }
 }
 
 impl From<NftWithdraw> for WithdrawEventMediator {
     fn from(w: NftWithdraw) -> Self {
-        Self::NftWithdraw(w)
+        Self::Nft(w)
     }
 }
 
 impl From<MtWithdraw> for WithdrawEventMediator {
     fn from(w: MtWithdraw) -> Self {
-        Self::MtWithdraw(w)
+        Self::Mt(w)
     }
 }
 
-impl<'a> From<WithdrawEventMediator> for DefuseEvent<'a> {
+impl From<WithdrawEventMediator> for DefuseEvent<'_> {
     fn from(ev: WithdrawEventMediator) -> Self {
         match ev {
-            WithdrawEventMediator::FtWithdraw(w) => DefuseEvent::FtWithdraw(w),
-            WithdrawEventMediator::NftWithdraw(w) => DefuseEvent::NftWithdraw(w),
-            WithdrawEventMediator::MtWithdraw(w) => DefuseEvent::MtWithdraw(w),
+            WithdrawEventMediator::Ft(w) => DefuseEvent::FtWithdraw(w),
+            WithdrawEventMediator::Nft(w) => DefuseEvent::NftWithdraw(w),
+            WithdrawEventMediator::Mt(w) => DefuseEvent::MtWithdraw(w),
         }
     }
 }
