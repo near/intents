@@ -72,7 +72,6 @@ impl Contract {
                 )
             })),
             Some("withdraw"),
-            Some(withdraw.clone().into()),
         )?;
 
         let is_call = withdraw.msg.is_some();

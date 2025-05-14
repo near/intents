@@ -8,7 +8,7 @@ use defuse_core::{
     intents::{
         IntentEvent,
         token_diff::{TokenDiff, TokenDiffEvent},
-        tokens::Transfer,
+        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
     },
     tokens::Amounts,
 };
@@ -58,6 +58,91 @@ impl Inspector for ExecuteInspector {
                         fees_collected: fees_collected.clone(),
                     },
                 ),
+                intent_hash,
+            )]
+            .as_slice()
+            .into(),
+        )
+        .emit();
+    }
+
+    fn on_ft_withdraw(
+        &mut self,
+        owner_id: &AccountIdRef,
+        ft_withdraw: FtWithdraw,
+        intent_hash: CryptoHash,
+    ) {
+        DefuseEvent::FtWithdraw(
+            [IntentEvent::new(
+                AccountEvent::new(owner_id, ft_withdraw),
+                intent_hash,
+            )]
+            .as_slice()
+            .into(),
+        )
+        .emit();
+    }
+
+    fn on_nft_withdraw(
+        &mut self,
+        owner_id: &AccountIdRef,
+        nft_withdraw: NftWithdraw,
+        intent_hash: CryptoHash,
+    ) {
+        DefuseEvent::NftWithdraw(
+            [IntentEvent::new(
+                AccountEvent::new(owner_id, nft_withdraw),
+                intent_hash,
+            )]
+            .as_slice()
+            .into(),
+        )
+        .emit();
+    }
+
+    fn on_mt_withdraw(
+        &mut self,
+        owner_id: &AccountIdRef,
+        mt_withdraw: MtWithdraw,
+        intent_hash: CryptoHash,
+    ) {
+        DefuseEvent::MtWithdraw(
+            [IntentEvent::new(
+                AccountEvent::new(owner_id, mt_withdraw),
+                intent_hash,
+            )]
+            .as_slice()
+            .into(),
+        )
+        .emit();
+    }
+
+    fn on_native_withdraw(
+        &mut self,
+        owner_id: &AccountIdRef,
+        native_withdraw: NativeWithdraw,
+        intent_hash: CryptoHash,
+    ) {
+        DefuseEvent::NativeWithdraw(
+            [IntentEvent::new(
+                AccountEvent::new(owner_id, native_withdraw),
+                intent_hash,
+            )]
+            .as_slice()
+            .into(),
+        )
+        .emit();
+    }
+
+    fn on_storage_deposit(
+        &mut self,
+        owner_id: &AccountIdRef,
+        storage_deposit: StorageDeposit,
+        intent_hash: CryptoHash,
+    ) {
+        DefuseEvent::StorageDeposit(
+            [IntentEvent::new(
+                AccountEvent::new(owner_id, storage_deposit),
                 intent_hash,
             )]
             .as_slice()

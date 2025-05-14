@@ -40,19 +40,19 @@ pub enum DefuseEvent<'a> {
     IntentsExecuted(Cow<'a, [IntentEvent<AccountEvent<'a, ()>>]>),
 
     #[event_version("0.2.1")]
-    FtWithdraw(FtWithdraw),
+    FtWithdraw(Cow<'a, [IntentEvent<AccountEvent<'a, FtWithdraw>>]>),
 
     #[event_version("0.2.1")]
-    NftWithdraw(NftWithdraw),
+    NftWithdraw(Cow<'a, [IntentEvent<AccountEvent<'a, NftWithdraw>>]>),
 
     #[event_version("0.2.1")]
-    MtWithdraw(MtWithdraw),
+    MtWithdraw(Cow<'a, [IntentEvent<AccountEvent<'a, MtWithdraw>>]>),
 
     #[event_version("0.2.1")]
-    NativeWithdraw(NativeWithdraw),
+    NativeWithdraw(Cow<'a, [IntentEvent<AccountEvent<'a, NativeWithdraw>>]>),
 
     #[event_version("0.2.1")]
-    StorageDeposit(StorageDeposit),
+    StorageDeposit(Cow<'a, [IntentEvent<AccountEvent<'a, StorageDeposit>>]>),
 }
 
 pub trait DefuseIntentEmit<'a>: Into<DefuseEvent<'a>> {

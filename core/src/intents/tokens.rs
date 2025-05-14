@@ -87,12 +87,15 @@ impl ExecutableIntent for FtWithdraw {
         self,
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        _intent_hash: CryptoHash,
+        intent_hash: CryptoHash,
     ) -> Result<()>
     where
         S: State,
         I: Inspector,
     {
+        engine
+            .inspector
+            .on_ft_withdraw(owner_id, self.clone(), intent_hash);
         engine.state.ft_withdraw(owner_id, self)
     }
 }
@@ -126,12 +129,15 @@ impl ExecutableIntent for NftWithdraw {
         self,
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        _intent_hash: CryptoHash,
+        intent_hash: CryptoHash,
     ) -> Result<()>
     where
         S: State,
         I: Inspector,
     {
+        engine
+            .inspector
+            .on_nft_withdraw(owner_id, self.clone(), intent_hash);
         engine.state.nft_withdraw(owner_id, self)
     }
 }
@@ -168,12 +174,15 @@ impl ExecutableIntent for MtWithdraw {
         self,
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        _intent_hash: CryptoHash,
+        intent_hash: CryptoHash,
     ) -> Result<()>
     where
         S: State,
         I: Inspector,
     {
+        engine
+            .inspector
+            .on_mt_withdraw(owner_id, self.clone(), intent_hash);
         engine.state.mt_withdraw(owner_id, self)
     }
 }
@@ -195,12 +204,15 @@ impl ExecutableIntent for NativeWithdraw {
         self,
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        _intent_hash: CryptoHash,
+        intent_hash: CryptoHash,
     ) -> Result<()>
     where
         S: State,
         I: Inspector,
     {
+        engine
+            .inspector
+            .on_native_withdraw(owner_id, self.clone(), intent_hash);
         engine.state.native_withdraw(owner_id, self)
     }
 }
@@ -230,12 +242,15 @@ impl ExecutableIntent for StorageDeposit {
         self,
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        _intent_hash: CryptoHash,
+        intent_hash: CryptoHash,
     ) -> Result<()>
     where
         S: State,
         I: Inspector,
     {
+        engine
+            .inspector
+            .on_storage_deposit(owner_id, self.clone(), intent_hash);
         engine.state.storage_deposit(owner_id, self)
     }
 }

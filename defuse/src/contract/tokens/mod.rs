@@ -1,14 +1,12 @@
 mod nep141;
 mod nep171;
 mod nep245;
-mod withdraw_event;
 
 use super::Contract;
-use defuse_core::{DefuseError, Result, events::DefuseEvent, tokens::TokenId};
+use defuse_core::{DefuseError, Result, tokens::TokenId};
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
 use near_sdk::{AccountId, AccountIdRef, Gas, json_types::U128};
 use std::borrow::Cow;
-use withdraw_event::TokenEventMediator;
 
 pub const STORAGE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
 
@@ -63,7 +61,6 @@ impl Contract {
         owner_id: &AccountIdRef,
         token_amounts: impl IntoIterator<Item = (TokenId, u128)>,
         memo: Option<impl Into<String>>,
-        token_event: Option<TokenEventMediator>,
     ) -> Result<()> {
         let owner = self
             .accounts
@@ -102,11 +99,6 @@ impl Contract {
         // `mt_transfer` arrives. This can happen due to postponed
         // delta-matching during intents execution.
         self.postponed_burns.mt_burn(burn_event);
-
-        if let Some(ev) = token_event {
-            let event: DefuseEvent = ev.into();
-            event.emit();
-        }
 
         Ok(())
     }
