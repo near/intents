@@ -42,8 +42,8 @@ impl From<NativeWithdraw> for TokenEventMediator {
 }
 
 impl From<StorageDeposit> for TokenEventMediator {
-    fn from(w: StorageDeposit) -> Self {
-        Self::StorageDeposit(w)
+    fn from(s: StorageDeposit) -> Self {
+        Self::StorageDeposit(s)
     }
 }
 
