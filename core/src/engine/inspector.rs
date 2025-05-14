@@ -30,35 +30,35 @@ pub trait Inspector {
     fn on_ft_withdraw(
         &mut self,
         owner_id: &AccountIdRef,
-        ft_withdraw: FtWithdraw,
+        ft_withdraw: &FtWithdraw,
         intent_hash: CryptoHash,
     );
 
     fn on_nft_withdraw(
         &mut self,
         owner_id: &AccountIdRef,
-        nft_withdraw: NftWithdraw,
+        nft_withdraw: &NftWithdraw,
         intent_hash: CryptoHash,
     );
 
     fn on_mt_withdraw(
         &mut self,
         owner_id: &AccountIdRef,
-        mt_withdraw: MtWithdraw,
+        mt_withdraw: &MtWithdraw,
         intent_hash: CryptoHash,
     );
 
     fn on_native_withdraw(
         &mut self,
         owner_id: &AccountIdRef,
-        native_withdraw: NativeWithdraw,
+        native_withdraw: &NativeWithdraw,
         intent_hash: CryptoHash,
     );
 
     fn on_storage_deposit(
         &mut self,
         owner_id: &AccountIdRef,
-        storage_deposit: StorageDeposit,
+        storage_deposit: &StorageDeposit,
         intent_hash: CryptoHash,
     );
 

@@ -69,12 +69,12 @@ impl Inspector for ExecuteInspector {
     fn on_ft_withdraw(
         &mut self,
         owner_id: &AccountIdRef,
-        ft_withdraw: FtWithdraw,
+        ft_withdraw: &FtWithdraw,
         intent_hash: CryptoHash,
     ) {
         DefuseEvent::FtWithdraw(
             [IntentEvent::new(
-                AccountEvent::new(owner_id, ft_withdraw),
+                AccountEvent::new(owner_id, Cow::Borrowed(ft_withdraw)),
                 intent_hash,
             )]
             .as_slice()
@@ -86,12 +86,12 @@ impl Inspector for ExecuteInspector {
     fn on_nft_withdraw(
         &mut self,
         owner_id: &AccountIdRef,
-        nft_withdraw: NftWithdraw,
+        nft_withdraw: &NftWithdraw,
         intent_hash: CryptoHash,
     ) {
         DefuseEvent::NftWithdraw(
             [IntentEvent::new(
-                AccountEvent::new(owner_id, nft_withdraw),
+                AccountEvent::new(owner_id, Cow::Borrowed(nft_withdraw)),
                 intent_hash,
             )]
             .as_slice()
@@ -103,12 +103,12 @@ impl Inspector for ExecuteInspector {
     fn on_mt_withdraw(
         &mut self,
         owner_id: &AccountIdRef,
-        mt_withdraw: MtWithdraw,
+        mt_withdraw: &MtWithdraw,
         intent_hash: CryptoHash,
     ) {
         DefuseEvent::MtWithdraw(
             [IntentEvent::new(
-                AccountEvent::new(owner_id, mt_withdraw),
+                AccountEvent::new(owner_id, Cow::Borrowed(mt_withdraw)),
                 intent_hash,
             )]
             .as_slice()
@@ -120,12 +120,12 @@ impl Inspector for ExecuteInspector {
     fn on_native_withdraw(
         &mut self,
         owner_id: &AccountIdRef,
-        native_withdraw: NativeWithdraw,
+        native_withdraw: &NativeWithdraw,
         intent_hash: CryptoHash,
     ) {
         DefuseEvent::NativeWithdraw(
             [IntentEvent::new(
-                AccountEvent::new(owner_id, native_withdraw),
+                AccountEvent::new(owner_id, Cow::Borrowed(native_withdraw)),
                 intent_hash,
             )]
             .as_slice()
@@ -137,12 +137,12 @@ impl Inspector for ExecuteInspector {
     fn on_storage_deposit(
         &mut self,
         owner_id: &AccountIdRef,
-        storage_deposit: StorageDeposit,
+        storage_deposit: &StorageDeposit,
         intent_hash: CryptoHash,
     ) {
         DefuseEvent::StorageDeposit(
             [IntentEvent::new(
-                AccountEvent::new(owner_id, storage_deposit),
+                AccountEvent::new(owner_id, Cow::Borrowed(storage_deposit)),
                 intent_hash,
             )]
             .as_slice()

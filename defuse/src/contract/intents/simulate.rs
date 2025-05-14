@@ -53,7 +53,7 @@ impl Inspector for SimulateInspector {
     fn on_ft_withdraw(
         &mut self,
         _owner_id: &AccountIdRef,
-        _ft_withdraw: FtWithdraw,
+        _ft_withdraw: &FtWithdraw,
         _intent_hash: CryptoHash,
     ) {
     }
@@ -61,7 +61,7 @@ impl Inspector for SimulateInspector {
     fn on_nft_withdraw(
         &mut self,
         _owner_id: &AccountIdRef,
-        _nft_withdraw: NftWithdraw,
+        _nft_withdraw: &NftWithdraw,
         _intent_hash: CryptoHash,
     ) {
     }
@@ -69,7 +69,7 @@ impl Inspector for SimulateInspector {
     fn on_mt_withdraw(
         &mut self,
         _owner_id: &AccountIdRef,
-        _mt_withdraw: MtWithdraw,
+        _mt_withdraw: &MtWithdraw,
         _intent_hash: CryptoHash,
     ) {
     }
@@ -77,7 +77,7 @@ impl Inspector for SimulateInspector {
     fn on_native_withdraw(
         &mut self,
         _owner_id: &AccountIdRef,
-        _native_withdraw: NativeWithdraw,
+        _native_withdraw: &NativeWithdraw,
         _intent_hash: CryptoHash,
     ) {
     }
@@ -85,7 +85,7 @@ impl Inspector for SimulateInspector {
     fn on_storage_deposit(
         &mut self,
         _owner_id: &AccountIdRef,
-        _storage_deposit: StorageDeposit,
+        _storage_deposit: &StorageDeposit,
         _intent_hash: CryptoHash,
     ) {
     }
