@@ -61,4 +61,5 @@ pub trait DefuseIntentEmit<'a>: Into<DefuseEvent<'a>> {
         DefuseEvent::emit(&self.into());
     }
 }
+
 impl<'a, T> DefuseIntentEmit<'a> for T where T: Into<DefuseEvent<'a>> {}
