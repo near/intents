@@ -47,7 +47,9 @@ impl ExecutableIntent for Transfer {
         if sender_id == self.receiver_id || self.tokens.is_empty() {
             return Err(DefuseError::InvalidIntent);
         }
-        engine.inspector.on_transfer(sender_id, &self, intent_hash);
+        engine
+            .inspector
+            .on_transfer(sender_id, &self, intent_hash)?;
         engine
             .state
             .internal_sub_balance(sender_id, self.tokens.clone())?;
@@ -95,7 +97,7 @@ impl ExecutableIntent for FtWithdraw {
     {
         engine
             .inspector
-            .on_ft_withdraw(owner_id, &self, intent_hash);
+            .on_ft_withdraw(owner_id, &self, intent_hash)?;
         engine.state.ft_withdraw(owner_id, self)
     }
 }
@@ -137,7 +139,7 @@ impl ExecutableIntent for NftWithdraw {
     {
         engine
             .inspector
-            .on_nft_withdraw(owner_id, &self, intent_hash);
+            .on_nft_withdraw(owner_id, &self, intent_hash)?;
         engine.state.nft_withdraw(owner_id, self)
     }
 }
@@ -182,7 +184,7 @@ impl ExecutableIntent for MtWithdraw {
     {
         engine
             .inspector
-            .on_mt_withdraw(owner_id, &self, intent_hash);
+            .on_mt_withdraw(owner_id, &self, intent_hash)?;
         engine.state.mt_withdraw(owner_id, self)
     }
 }
@@ -212,7 +214,7 @@ impl ExecutableIntent for NativeWithdraw {
     {
         engine
             .inspector
-            .on_native_withdraw(owner_id, &self, intent_hash);
+            .on_native_withdraw(owner_id, &self, intent_hash)?;
         engine.state.native_withdraw(owner_id, self)
     }
 }
@@ -250,7 +252,7 @@ impl ExecutableIntent for StorageDeposit {
     {
         engine
             .inspector
-            .on_storage_deposit(owner_id, &self, intent_hash);
+            .on_storage_deposit(owner_id, &self, intent_hash)?;
         engine.state.storage_deposit(owner_id, self)
     }
 }

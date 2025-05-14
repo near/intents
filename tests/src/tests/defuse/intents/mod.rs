@@ -92,11 +92,12 @@ impl ExecuteIntentsExt for near_workspaces::Account {
             "simulate_intents({})",
             serde_json::to_string_pretty(&args).unwrap()
         );
-        self.view(defuse_id, "simulate_intents")
+        let res = self
+            .view(defuse_id, "simulate_intents")
             .args_json(args)
-            .await?
-            .json()
-            .map_err(Into::into)
+            .await?;
+        println!("Simulation logs: {:?}", res.logs);
+        res.json().map_err(Into::into)
     }
     async fn simulate_intents(
         &self,

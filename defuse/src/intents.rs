@@ -1,10 +1,16 @@
+use std::collections::HashMap;
+
 use defuse_core::{
-    Deadline, Result, accounts::AccountEvent, engine::deltas::InvariantViolated, fees::Pips,
-    intents::IntentEvent, payload::multi::MultiPayload,
+    Deadline, Result,
+    accounts::AccountEvent,
+    engine::deltas::InvariantViolated,
+    fees::Pips,
+    intents::{IntentEvent, token_diff::TokenDeltas},
+    payload::multi::MultiPayload,
 };
 
 use near_plugins::AccessControllable;
-use near_sdk::{Promise, PublicKey, ext_contract, near};
+use near_sdk::{AccountId, Promise, PublicKey, ext_contract, near};
 use serde_with::serde_as;
 
 use crate::fees::FeesManager;
@@ -40,6 +46,9 @@ pub struct SimulationOutput {
 
     /// Additional info about current state
     pub state: StateOutput,
+
+    /// All changes in balances after simulating the intent
+    pub balance_diff: HashMap<AccountId, TokenDeltas>,
 }
 
 impl SimulationOutput {

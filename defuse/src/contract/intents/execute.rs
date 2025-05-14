@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+use defuse_core::error::Result;
 use defuse_core::{
     Deadline,
     accounts::AccountEvent,
@@ -29,7 +30,7 @@ impl Inspector for ExecuteInspector {
         sender_id: &AccountIdRef,
         transfer: &Transfer,
         intent_hash: CryptoHash,
-    ) {
+    ) -> Result<()> {
         DefuseEvent::Transfer(
             [IntentEvent::new(
                 AccountEvent::new(sender_id, Cow::Borrowed(transfer)),
@@ -39,6 +40,8 @@ impl Inspector for ExecuteInspector {
             .into(),
         )
         .emit();
+
+        Ok(())
     }
 
     #[inline]
@@ -48,7 +51,7 @@ impl Inspector for ExecuteInspector {
         token_diff: &TokenDiff,
         fees_collected: &Amounts,
         intent_hash: CryptoHash,
-    ) {
+    ) -> Result<()> {
         DefuseEvent::TokenDiff(
             [IntentEvent::new(
                 AccountEvent::new(
@@ -64,6 +67,8 @@ impl Inspector for ExecuteInspector {
             .into(),
         )
         .emit();
+
+        Ok(())
     }
 
     fn on_ft_withdraw(
@@ -71,7 +76,7 @@ impl Inspector for ExecuteInspector {
         owner_id: &AccountIdRef,
         ft_withdraw: &FtWithdraw,
         intent_hash: CryptoHash,
-    ) {
+    ) -> Result<()> {
         DefuseEvent::FtWithdraw(
             [IntentEvent::new(
                 AccountEvent::new(owner_id, Cow::Borrowed(ft_withdraw)),
@@ -81,6 +86,8 @@ impl Inspector for ExecuteInspector {
             .into(),
         )
         .emit();
+
+        Ok(())
     }
 
     fn on_nft_withdraw(
@@ -88,7 +95,7 @@ impl Inspector for ExecuteInspector {
         owner_id: &AccountIdRef,
         nft_withdraw: &NftWithdraw,
         intent_hash: CryptoHash,
-    ) {
+    ) -> Result<()> {
         DefuseEvent::NftWithdraw(
             [IntentEvent::new(
                 AccountEvent::new(owner_id, Cow::Borrowed(nft_withdraw)),
@@ -98,6 +105,8 @@ impl Inspector for ExecuteInspector {
             .into(),
         )
         .emit();
+
+        Ok(())
     }
 
     fn on_mt_withdraw(
@@ -105,7 +114,7 @@ impl Inspector for ExecuteInspector {
         owner_id: &AccountIdRef,
         mt_withdraw: &MtWithdraw,
         intent_hash: CryptoHash,
-    ) {
+    ) -> Result<()> {
         DefuseEvent::MtWithdraw(
             [IntentEvent::new(
                 AccountEvent::new(owner_id, Cow::Borrowed(mt_withdraw)),
@@ -115,6 +124,8 @@ impl Inspector for ExecuteInspector {
             .into(),
         )
         .emit();
+
+        Ok(())
     }
 
     fn on_native_withdraw(
@@ -122,7 +133,7 @@ impl Inspector for ExecuteInspector {
         owner_id: &AccountIdRef,
         native_withdraw: &NativeWithdraw,
         intent_hash: CryptoHash,
-    ) {
+    ) -> Result<()> {
         DefuseEvent::NativeWithdraw(
             [IntentEvent::new(
                 AccountEvent::new(owner_id, Cow::Borrowed(native_withdraw)),
@@ -132,6 +143,8 @@ impl Inspector for ExecuteInspector {
             .into(),
         )
         .emit();
+
+        Ok(())
     }
 
     fn on_storage_deposit(
@@ -139,7 +152,7 @@ impl Inspector for ExecuteInspector {
         owner_id: &AccountIdRef,
         storage_deposit: &StorageDeposit,
         intent_hash: CryptoHash,
-    ) {
+    ) -> Result<()> {
         DefuseEvent::StorageDeposit(
             [IntentEvent::new(
                 AccountEvent::new(owner_id, Cow::Borrowed(storage_deposit)),
@@ -149,6 +162,8 @@ impl Inspector for ExecuteInspector {
             .into(),
         )
         .emit();
+
+        Ok(())
     }
 
     #[inline]

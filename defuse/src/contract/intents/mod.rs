@@ -35,7 +35,7 @@ impl Intents for Contract {
     #[pause(name = "intents")]
     #[inline]
     fn simulate_intents(&self, signed: Vec<MultiPayload>) -> SimulationOutput {
-        let mut inspector = SimulateInspector::default();
+        let mut inspector = SimulateInspector::new(self.wnear_id.clone());
         let engine = Engine::new(self.cached(), &mut inspector);
 
         let invariant_violated = match engine.execute_signed_intents(signed) {
@@ -50,6 +50,7 @@ impl Intents for Contract {
             min_deadline: inspector.min_deadline,
             invariant_violated,
             state: StateOutput { fee: self.fee() },
+            balance_diff: inspector.balance_diff,
         }
     }
 }
