@@ -16,42 +16,41 @@ use crate::{
 #[must_use = "make sure to `.emit()` this event"]
 #[near(event_json(standard = "dip4"))]
 #[derive(Debug, Clone, Deserialize, From)]
-// FIXME: Check with FE if it's OK to add arms + update all arm versions to be the same new version
 pub enum DefuseEvent<'a> {
-    #[event_version("0.2.1")]
+    #[event_version("0.3.0")]
     #[from(skip)]
     PublicKeyAdded(AccountEvent<'a, PublicKeyEvent<'a>>),
-    #[event_version("0.2.1")]
+    #[event_version("0.3.0")]
     #[from(skip)]
     PublicKeyRemoved(AccountEvent<'a, PublicKeyEvent<'a>>),
 
-    #[event_version("0.2.1")]
+    #[event_version("0.3.0")]
     FeeChanged(FeeChangedEvent),
-    #[event_version("0.2.1")]
+    #[event_version("0.3.0")]
     FeeCollectorChanged(FeeCollectorChangedEvent<'a>),
 
-    #[event_version("0.2.1")]
+    #[event_version("0.3.0")]
     Transfer(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, Transfer>>>]>),
 
-    #[event_version("0.2.1")]
+    #[event_version("0.3.0")]
     TokenDiff(Cow<'a, [IntentEvent<AccountEvent<'a, TokenDiffEvent<'a>>>]>),
 
-    #[event_version("0.2.1")]
+    #[event_version("0.3.0")]
     IntentsExecuted(Cow<'a, [IntentEvent<AccountEvent<'a, ()>>]>),
 
-    #[event_version("0.2.1")]
+    #[event_version("0.3.0")]
     FtWithdraw(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, FtWithdraw>>>]>),
 
-    #[event_version("0.2.1")]
+    #[event_version("0.3.0")]
     NftWithdraw(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, NftWithdraw>>>]>),
 
-    #[event_version("0.2.1")]
+    #[event_version("0.3.0")]
     MtWithdraw(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, MtWithdraw>>>]>),
 
-    #[event_version("0.2.1")]
+    #[event_version("0.3.0")]
     NativeWithdraw(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, NativeWithdraw>>>]>),
 
-    #[event_version("0.2.1")]
+    #[event_version("0.3.0")]
     StorageDeposit(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, StorageDeposit>>>]>),
 }
 
