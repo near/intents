@@ -63,7 +63,7 @@ impl Contract {
         owner_id: &AccountIdRef,
         token_amounts: impl IntoIterator<Item = (TokenId, u128)>,
         memo: Option<impl Into<String>>,
-        withdraw_event: Option<TokenEventMediator>,
+        token_event: Option<TokenEventMediator>,
     ) -> Result<()> {
         let owner = self
             .accounts
@@ -103,7 +103,7 @@ impl Contract {
         // delta-matching during intents execution.
         self.postponed_burns.mt_burn(burn_event);
 
-        if let Some(ev) = withdraw_event {
+        if let Some(ev) = token_event {
             let event: DefuseEvent = ev.into();
             event.emit();
         }
