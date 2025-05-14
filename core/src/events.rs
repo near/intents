@@ -9,7 +9,7 @@ use crate::{
     intents::{
         IntentEvent,
         token_diff::TokenDiffEvent,
-        tokens::{FtWithdraw, MtWithdraw, NftWithdraw, Transfer},
+        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
     },
 };
 
@@ -47,6 +47,12 @@ pub enum DefuseEvent<'a> {
 
     #[event_version("0.2.1")]
     MtWithdraw(MtWithdraw),
+
+    #[event_version("0.2.1")]
+    NativeWithdraw(NativeWithdraw),
+
+    #[event_version("0.2.1")]
+    StorageDeposit(StorageDeposit),
 }
 
 pub trait DefuseIntentEmit<'a>: Into<DefuseEvent<'a>> {

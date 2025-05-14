@@ -1,43 +1,60 @@
 use defuse_core::{
     events::DefuseEvent,
-    intents::tokens::{FtWithdraw, MtWithdraw, NftWithdraw},
+    intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
 };
 
-/// A withdraw is done through a unified function using the `MultiToken` interface.
+/// A token event (withdraw, storage deposit, etc) is done through a unified
+/// function using the `MultiToken` interface.
 /// This struct helps in transferring the withdraw event information from the
 /// type-specific withdraw (Ft/Mt/Nft, etc), to the unified part that performs
 /// the withdrawal.
 #[derive(Debug, Clone)]
-pub enum WithdrawEventMediator {
+pub enum TokenEventMediator {
     Ft(FtWithdraw),
     Nft(NftWithdraw),
     Mt(MtWithdraw),
+    NativeWithdraw(NativeWithdraw),
+    StorageDeposit(StorageDeposit),
 }
 
-impl From<FtWithdraw> for WithdrawEventMediator {
+impl From<FtWithdraw> for TokenEventMediator {
     fn from(w: FtWithdraw) -> Self {
         Self::Ft(w)
     }
 }
 
-impl From<NftWithdraw> for WithdrawEventMediator {
+impl From<NftWithdraw> for TokenEventMediator {
     fn from(w: NftWithdraw) -> Self {
         Self::Nft(w)
     }
 }
 
-impl From<MtWithdraw> for WithdrawEventMediator {
+impl From<MtWithdraw> for TokenEventMediator {
     fn from(w: MtWithdraw) -> Self {
         Self::Mt(w)
     }
 }
 
-impl From<WithdrawEventMediator> for DefuseEvent<'_> {
-    fn from(ev: WithdrawEventMediator) -> Self {
+impl From<NativeWithdraw> for TokenEventMediator {
+    fn from(w: NativeWithdraw) -> Self {
+        Self::NativeWithdraw(w)
+    }
+}
+
+impl From<StorageDeposit> for TokenEventMediator {
+    fn from(w: StorageDeposit) -> Self {
+        Self::StorageDeposit(w)
+    }
+}
+
+impl From<TokenEventMediator> for DefuseEvent<'_> {
+    fn from(ev: TokenEventMediator) -> Self {
         match ev {
-            WithdrawEventMediator::Ft(w) => DefuseEvent::FtWithdraw(w),
-            WithdrawEventMediator::Nft(w) => DefuseEvent::NftWithdraw(w),
-            WithdrawEventMediator::Mt(w) => DefuseEvent::MtWithdraw(w),
+            TokenEventMediator::Ft(w) => DefuseEvent::FtWithdraw(w),
+            TokenEventMediator::Nft(w) => DefuseEvent::NftWithdraw(w),
+            TokenEventMediator::Mt(w) => DefuseEvent::MtWithdraw(w),
+            TokenEventMediator::NativeWithdraw(w) => DefuseEvent::NativeWithdraw(w),
+            TokenEventMediator::StorageDeposit(s) => DefuseEvent::StorageDeposit(s),
         }
     }
 }
