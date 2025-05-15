@@ -5,6 +5,9 @@ use defuse::core::{
     intents::{DefuseIntents, tokens::NftWithdraw},
     tokens::TokenId as MtTokenId,
 };
+use near_contract_standards::non_fungible_token::metadata::{
+    NFT_METADATA_SPEC, NFTContractMetadata,
+};
 use near_contract_standards::non_fungible_token::{Token, metadata::TokenMetadata};
 use near_sdk::{NearToken, json_types::Base64VecU8};
 use randomness::Rng;
@@ -30,8 +33,15 @@ async fn transfer_nft_to_verifier(random_seed: Seed) {
         .user1
         .deploy_vanilla_nft_issuer(
             "nft1",
-            Some("http://abc.com/xyz/".to_string()),
-            Some(Base64VecU8(gen_random_bytes(&mut rng, 32..=32))),
+            NFTContractMetadata {
+                reference: Some("http://abc.com/xyz/".to_string()),
+                reference_hash: Some(Base64VecU8(gen_random_bytes(&mut rng, 32..=32))),
+                spec: NFT_METADATA_SPEC.to_string(),
+                name: "Token nft1".to_string(),
+                symbol: "NFT_TKN".to_string(),
+                icon: None,
+                base_uri: None,
+            },
         )
         .await
         .unwrap();
