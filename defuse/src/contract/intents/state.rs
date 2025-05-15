@@ -8,7 +8,7 @@ use defuse_core::{
     intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
     tokens::TokenId,
 };
-use defuse_near_utils::CURRENT_ACCOUNT_ID;
+use defuse_near_utils::{CURRENT_ACCOUNT_ID, Lock};
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128};
 
@@ -37,14 +37,17 @@ impl StateView for Contract {
 
     #[inline]
     fn has_public_key(&self, account_id: &AccountIdRef, public_key: &PublicKey) -> bool {
-        self.accounts.get(account_id).map_or_else(
-            || account_id == public_key.to_implicit_account_id(),
-            |account| account.has_public_key(account_id, public_key),
-        )
+        self.accounts
+            .get(account_id)
+            .map(Lock::as_inner_unchecked)
+            .map_or_else(
+                || account_id == public_key.to_implicit_account_id(),
+                |account| account.has_public_key(account_id, public_key),
+            )
     }
 
     fn iter_public_keys(&self, account_id: &AccountIdRef) -> impl Iterator<Item = PublicKey> + '_ {
-        let account = self.accounts.get(account_id);
+        let account = self.accounts.get(account_id).map(Lock::as_inner_unchecked);
         account
             .map(|account| account.iter_public_keys(account_id))
             .into_iter()
@@ -60,6 +63,7 @@ impl StateView for Contract {
     fn is_nonce_used(&self, account_id: &AccountIdRef, nonce: Nonce) -> bool {
         self.accounts
             .get(account_id)
+            .map(Lock::as_inner_unchecked)
             .is_some_and(|account| account.is_nonce_used(nonce))
     }
 
@@ -67,32 +71,50 @@ impl StateView for Contract {
     fn balance_of(&self, account_id: &AccountIdRef, token_id: &TokenId) -> u128 {
         self.accounts
             .get(account_id)
+            .map(Lock::as_inner_unchecked)
             .map(|account| account.token_balances.amount_for(token_id))
             .unwrap_or_default()
+    }
+
+    #[inline]
+    fn is_account_locked(&self, account_id: &AccountIdRef) -> bool {
+        self.accounts.get(account_id).is_some_and(Lock::is_locked)
     }
 }
 
 impl State for Contract {
-    #[must_use]
     #[inline]
-    fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> bool {
+    fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()> {
         self.accounts
             .get_or_create(account_id.clone())
+            .as_unlocked_mut()
+            .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))?
             .add_public_key(&account_id, public_key)
+            .then_some(())
+            .ok_or(DefuseError::PublicKeyExists(account_id, public_key))
     }
 
-    #[must_use]
     #[inline]
-    fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> bool {
+    fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()> {
+        self.accounts
+            // create account if doesn't exist, so the user can opt out of implicit public key
+            .get_or_create(account_id.clone())
+            .as_unlocked_mut()
+            .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))?
+            .remove_public_key(&account_id, &public_key)
+            .then_some(())
+            .ok_or(DefuseError::PublicKeyNotExist(account_id, public_key))
+    }
+
+    #[inline]
+    fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
         self.accounts
             .get_or_create(account_id.clone())
-            .remove_public_key(&account_id, &public_key)
-    }
-
-    #[must_use]
-    #[inline]
-    fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> bool {
-        self.accounts.get_or_create(account_id).commit_nonce(nonce)
+            .as_unlocked_mut()
+            .ok_or(DefuseError::AccountLocked(account_id))?
+            .commit_nonce(nonce)
+            .then_some(())
+            .ok_or(DefuseError::NonceUsed)
     }
 
     fn internal_add_balance(
@@ -100,7 +122,11 @@ impl State for Contract {
         owner_id: AccountId,
         tokens: impl IntoIterator<Item = (TokenId, u128)>,
     ) -> Result<()> {
-        let owner = self.accounts.get_or_create(owner_id);
+        let owner = self
+            .accounts
+            .get_or_create(owner_id.clone())
+            // we allow locked accounts to accept deposits and incoming deposits
+            .as_inner_unchecked_mut();
 
         for (token_id, amount) in tokens {
             if amount == 0 {
@@ -123,7 +149,9 @@ impl State for Contract {
         let owner = self
             .accounts
             .get_mut(owner_id)
-            .ok_or(DefuseError::AccountNotFound)?;
+            .ok_or_else(|| DefuseError::AccountNotFound(owner_id.to_owned()))?
+            .as_unlocked_mut()
+            .ok_or_else(|| DefuseError::AccountLocked(owner_id.to_owned()))?;
 
         for (token_id, amount) in tokens {
             if amount == 0 {
@@ -140,19 +168,19 @@ impl State for Contract {
     }
 
     fn ft_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: FtWithdraw) -> Result<()> {
-        self.internal_ft_withdraw(owner_id.to_owned(), withdraw)
+        self.internal_ft_withdraw(owner_id.to_owned(), withdraw, false)
             // detach promise
             .map(|_promise| ())
     }
 
     fn nft_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: NftWithdraw) -> Result<()> {
-        self.internal_nft_withdraw(owner_id.to_owned(), withdraw)
+        self.internal_nft_withdraw(owner_id.to_owned(), withdraw, false)
             // detach promise
             .map(|_promise| ())
     }
 
     fn mt_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: MtWithdraw) -> Result<()> {
-        self.internal_mt_withdraw(owner_id.to_owned(), withdraw)
+        self.internal_mt_withdraw(owner_id.to_owned(), withdraw, false)
             // detach promise
             .map(|_promise| ())
     }
@@ -165,6 +193,7 @@ impl State for Contract {
                 withdraw.amount.as_yoctonear(),
             )],
             Some("withdraw"),
+            false,
         )?;
 
         // detach promise
@@ -194,6 +223,7 @@ impl State for Contract {
                 storage_deposit.amount.as_yoctonear(),
             )],
             Some("withdraw"),
+            false,
         )?;
 
         // detach promise

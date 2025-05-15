@@ -9,6 +9,7 @@ members = [
     "crypto",
     "defuse",
     "erc191",
+    "io-utils",
     "map-utils",
     "near-utils",
     "nep245",
@@ -40,6 +41,7 @@ defuse-core.path = "core"
 defuse-crypto.path = "crypto"
 defuse.path = "defuse"
 defuse-erc191.path = "erc191"
+defuse-io-utils.path = "io-utils"
 defuse-map-utils.path = "map-utils"
 defuse-near-utils.path = "near-utils"
 defuse-nep245.path = "nep245"
@@ -52,8 +54,8 @@ defuse-poa-token.path = "poa-token"
 defuse-serde-utils.path = "serde-utils"
 defuse-wnear.path = "wnear"
 
-randomness.path = "randomness"
-test-utils.path = "test-utils"
+defuse-randomness.path = "randomness"
+defuse-test-utils.path = "test-utils"
 
 anyhow = "1"
 bnum = { version = "0.13", features = ["borsh"] }

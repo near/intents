@@ -1,12 +1,12 @@
 use defuse::core::crypto::PublicKey;
+use defuse_randomness::{Rng, make_true_rng};
 use near_sdk::AccountId;
-use randomness::{Rng, make_true_rng};
 
 use crate::{tests::defuse::accounts::AccountManagerExt, utils::mt::MtExt};
 
 use super::DEFUSE_WASM;
 
-#[ignore = "only for simple upgrades"]
+#[ignore = "only for simple upgrades with state size <50Kb"]
 #[tokio::test]
 async fn upgrade() {
     let old_contract_id: AccountId = "intents.near".parse().unwrap();
@@ -18,14 +18,15 @@ async fn upgrade() {
     let sandbox = near_workspaces::sandbox().await.unwrap();
     let new_contract = sandbox
         .import_contract(&old_contract_id, &mainnet)
-        .with_data()
+        .with_data() // large state results into errors...
         .transact()
         .await
         .unwrap();
 
     new_contract
-        .as_account()
+        .batch()
         .deploy(&DEFUSE_WASM)
+        .transact()
         .await
         .unwrap()
         .into_result()

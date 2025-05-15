@@ -6,6 +6,7 @@ pub mod fees;
 pub mod intents;
 pub mod tokens;
 
+use accounts::AccountForceLocker;
 pub use defuse_core as core;
 pub use defuse_nep245 as nep245;
 
@@ -20,6 +21,7 @@ use near_contract_standards::{
 };
 use near_plugins::{AccessControllable, Pausable};
 use near_sdk::ext_contract;
+use tokens::nep245::MultiTokenForceCore;
 
 use self::{
     accounts::AccountManager,
@@ -49,9 +51,11 @@ pub trait Defuse:
     + MultiTokenEnumeration
     // Governance
     + AccessControllable
+    + MultiTokenForceCore
     + FungibleTokenForceWithdrawer
     + NonFungibleTokenForceWithdrawer
     + MultiTokenForceWithdrawer
+    + AccountForceLocker
     + Pausable
     + ControllerUpgradable
     + FullAccessKeys

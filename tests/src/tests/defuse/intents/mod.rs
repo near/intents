@@ -7,8 +7,8 @@ use defuse::{
     },
     intents::SimulationOutput,
 };
+use defuse_randomness::{Rng, make_true_rng};
 use near_sdk::{AccountId, AccountIdRef};
-use randomness::{Rng, make_true_rng};
 use rstest::rstest;
 use serde_json::json;
 
