@@ -86,7 +86,7 @@ impl ExecutableIntent for TokenDiff {
 
         engine
             .inspector
-            .on_token_diff(signer_id, &self, &fees_collected, intent_hash);
+            .on_token_diff(signer_id, &self, &fees_collected, intent_hash)?;
 
         // deposit fees to collector
         if !fees_collected.is_empty() {

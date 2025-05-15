@@ -1,4 +1,7 @@
-use std::{collections::BTreeMap, time::Duration};
+use std::{
+    collections::{BTreeMap, HashMap},
+    time::Duration,
+};
 
 use defuse::core::{
     Deadline,
@@ -8,7 +11,7 @@ use defuse::core::{
         token_diff::{TokenDeltas, TokenDiff},
     },
     payload::multi::MultiPayload,
-    tokens::TokenId,
+    tokens::{Amounts, TokenId},
 };
 use near_sdk::AccountId;
 use near_workspaces::Account;
@@ -179,12 +182,40 @@ async fn test_swap_many(
 
 type FtBalances<'a> = BTreeMap<&'a AccountId, i128>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct AccountFtDiff<'a> {
     account: &'a Account,
     init_balances: FtBalances<'a>,
     diff: Vec<TokenDeltas>,
     result_balances: FtBalances<'a>,
+}
+
+fn into_simulation_diff(
+    test_diffs: Vec<AccountFtDiff>,
+) -> HashMap<AccountId, Amounts<BTreeMap<TokenId, i128>>> {
+    let mut result = HashMap::<AccountId, Amounts<BTreeMap<TokenId, i128>>>::default();
+
+    for account_diffs in test_diffs {
+        for token_diffs in account_diffs.diff {
+            for (token_id, amount_diff) in token_diffs {
+                if amount_diff >= 0 {
+                    result
+                        .entry(account_diffs.account.id().to_owned())
+                        .or_default()
+                        .add(token_id, amount_diff.try_into().unwrap())
+                        .unwrap();
+                } else {
+                    result
+                        .entry(account_diffs.account.id().to_owned())
+                        .or_default()
+                        .sub(token_id, (-amount_diff).try_into().unwrap())
+                        .unwrap();
+                }
+            }
+        }
+    }
+
+    result
 }
 
 async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
@@ -224,12 +255,12 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
         .collect();
 
     // simulate
-    env.defuse
-        .simulate_intents(signed.clone())
-        .await
-        .unwrap()
-        .into_result()
-        .unwrap();
+    let sim_res = env.defuse.simulate_intents(signed.clone()).await.unwrap();
+    assert_eq!(sim_res.balance_diff, into_simulation_diff(accounts.clone()));
+    println!("Balance diff: {:#?}", sim_res.balance_diff);
+
+    // Unwrap simulation result (no invariants violated)
+    sim_res.into_result().unwrap();
 
     // verify
     env.defuse.execute_intents(signed).await.unwrap();

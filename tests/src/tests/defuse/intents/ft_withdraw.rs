@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{collections::BTreeMap, time::Duration};
 
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
@@ -6,7 +6,7 @@ use defuse::{
         Deadline,
         fees::{FeesConfig, Pips},
         intents::{DefuseIntents, tokens::FtWithdraw},
-        tokens::TokenId,
+        tokens::{Amounts, TokenId},
     },
 };
 use near_sdk::{AccountId, NearToken};
@@ -250,26 +250,39 @@ async fn test_ft_withdraw_intent_msg(
         .await
         .unwrap();
 
-    env.defuse
-        .execute_intents([env.user1.sign_defuse_message(
-            env.defuse.id(),
-            rng.random(),
-            Deadline::timeout(Duration::from_secs(120)),
-            DefuseIntents {
-                intents: [FtWithdraw {
-                    token: env.ft1.clone(),
-                    receiver_id: defuse2.id().clone(),
-                    amount: 1000.into(),
-                    memo: Some("defuse-to-defuse".to_string()),
-                    msg: Some(env.user2.id().to_string()),
-                    storage_deposit: None,
-                }
-                .into()]
-                .into(),
-            },
-        )])
-        .await
-        .unwrap();
+    let withdraw_intent = FtWithdraw {
+        token: env.ft1.clone(),
+        receiver_id: defuse2.id().clone(),
+        amount: 1000.into(),
+        memo: Some("defuse-to-defuse".to_string()),
+        msg: Some(env.user2.id().to_string()),
+        storage_deposit: None,
+    };
+
+    let intents = [env.user1.sign_defuse_message(
+        env.defuse.id(),
+        rng.random(),
+        Deadline::timeout(Duration::from_secs(120)),
+        DefuseIntents {
+            intents: [withdraw_intent.clone().into()].into(),
+        },
+    )];
+
+    let sim_out = env.defuse.simulate_intents(intents.clone()).await.unwrap();
+    assert_eq!(sim_out.balance_diff.len(), 1);
+    assert_eq!(
+        sim_out.balance_diff.get(env.user1.id()).unwrap(),
+        &Amounts::from(
+            [(TokenId::Nep141(env.ft1.clone()), -1000)]
+                .into_iter()
+                .collect::<BTreeMap<_, _>>()
+        )
+    );
+    assert_eq!(sim_out.ft_withdrawals, Some(vec![withdraw_intent]));
+    assert!(sim_out.nft_withdrawals.is_none());
+    assert!(sim_out.mt_withdrawals.is_none());
+
+    env.defuse.execute_intents(intents).await.unwrap();
 
     let ft1 = TokenId::Nep141(env.ft1.clone());
 

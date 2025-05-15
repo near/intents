@@ -1,7 +1,7 @@
 pub mod accounts;
 mod deadline;
 pub mod engine;
-mod error;
+pub mod error;
 pub mod events;
 pub mod fees;
 pub mod intents;
