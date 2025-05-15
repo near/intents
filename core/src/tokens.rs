@@ -116,6 +116,12 @@ pub enum ParseTokenIdError {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Amounts<T = BTreeMap<TokenId, u128>>(T);
 
+impl<T> From<T> for Amounts<T> {
+    fn from(m: T) -> Self {
+        Amounts(m)
+    }
+}
+
 impl<T> Amounts<T> {
     #[inline]
     pub const fn new(map: T) -> Self {

@@ -61,7 +61,7 @@ impl ExecutableIntent for Transfer {
 }
 
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// Withdraw given FT tokens from the intents contract to a given external account id (external being outside of intents).
 pub struct FtWithdraw {
     pub token: AccountId,

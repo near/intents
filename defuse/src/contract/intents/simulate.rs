@@ -22,6 +22,9 @@ pub struct SimulateInspector {
     pub min_deadline: Deadline,
     pub balance_diff: HashMap<AccountId, TokenDeltas>,
     pub wnear_id: AccountId,
+    pub ft_withdrawals: Option<Vec<FtWithdraw>>,
+    pub nft_withdrawals: Option<Vec<NftWithdraw>>,
+    pub mt_withdrawals: Option<Vec<MtWithdraw>>,
 }
 
 impl SimulateInspector {
@@ -31,6 +34,9 @@ impl SimulateInspector {
             min_deadline: Deadline::MAX,
             balance_diff: HashMap::default(),
             wnear_id,
+            ft_withdrawals: None,
+            nft_withdrawals: None,
+            mt_withdrawals: None,
         }
     }
 }
@@ -51,18 +57,12 @@ impl Inspector for SimulateInspector {
         for (token_id, transfer_amount) in &transfer.tokens {
             self.balance_diff
                 .entry_or_default(sender_id.to_owned())
-                .sub(
-                    token_id.clone(),
-                    (*transfer_amount).try_into().unwrap_or_panic_display(),
-                )
+                .sub(token_id.clone(), *transfer_amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
 
             self.balance_diff
                 .entry_or_default(transfer.receiver_id.clone())
-                .add(
-                    token_id.clone(),
-                    (*transfer_amount).try_into().unwrap_or_panic_display(),
-                )
+                .add(token_id.clone(), *transfer_amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
         }
 
@@ -110,9 +110,13 @@ impl Inspector for SimulateInspector {
             .entry_or_default(owner_id.to_owned())
             .sub(
                 TokenId::Nep141(ft_withdraw.token.clone()),
-                ft_withdraw.amount.0.try_into().unwrap_or_panic_display(),
+                ft_withdraw.amount.0,
             )
             .ok_or(DefuseError::BalanceOverflow)?;
+
+        self.ft_withdrawals
+            .get_or_insert(Vec::new())
+            .push(ft_withdraw.clone());
 
         Ok(())
     }
@@ -130,6 +134,10 @@ impl Inspector for SimulateInspector {
                 1,
             )
             .ok_or(DefuseError::BalanceOverflow)?;
+
+        self.nft_withdrawals
+            .get_or_insert(Vec::new())
+            .push(nft_withdraw.clone());
 
         Ok(())
     }
@@ -152,12 +160,13 @@ impl Inspector for SimulateInspector {
 
             self.balance_diff
                 .entry_or_default(owner_id.to_owned())
-                .sub(
-                    token_id,
-                    transfer_amount.0.try_into().unwrap_or_panic_display(),
-                )
+                .sub(token_id, transfer_amount.0)
                 .ok_or(DefuseError::BalanceOverflow)?;
         }
+
+        self.mt_withdrawals
+            .get_or_insert(Vec::new())
+            .push(mt_withdraw.clone());
 
         Ok(())
     }
@@ -171,14 +180,7 @@ impl Inspector for SimulateInspector {
         let wnear = TokenId::Nep141(self.wnear_id.clone());
         self.balance_diff
             .entry_or_default(owner_id.to_owned())
-            .sub(
-                wnear,
-                native_withdraw
-                    .amount
-                    .as_yoctonear()
-                    .try_into()
-                    .unwrap_or_panic_display(),
-            )
+            .sub(wnear, native_withdraw.amount.as_yoctonear())
             .ok_or(DefuseError::BalanceOverflow)?;
 
         Ok(())
@@ -193,14 +195,7 @@ impl Inspector for SimulateInspector {
         let wnear = TokenId::Nep141(self.wnear_id.clone());
         self.balance_diff
             .entry_or_default(owner_id.to_owned())
-            .sub(
-                wnear,
-                storage_deposit
-                    .amount
-                    .as_yoctonear()
-                    .try_into()
-                    .unwrap_or_panic_display(),
-            )
+            .sub(wnear, storage_deposit.amount.as_yoctonear())
             .ok_or(DefuseError::BalanceOverflow)?;
 
         Ok(())

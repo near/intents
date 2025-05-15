@@ -51,6 +51,9 @@ impl Intents for Contract {
             invariant_violated,
             state: StateOutput { fee: self.fee() },
             balance_diff: inspector.balance_diff,
+            ft_withdrawals: inspector.ft_withdrawals,
+            nft_withdrawals: inspector.nft_withdrawals,
+            mt_withdrawals: inspector.mt_withdrawals,
         }
     }
 }
