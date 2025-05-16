@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use defuse_core::{
     DefuseError, Nonce, Result,
     crypto::PublicKey,
@@ -11,6 +9,7 @@ use defuse_core::{
 use defuse_near_utils::CURRENT_ACCOUNT_ID;
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128};
+use std::borrow::Cow;
 
 use crate::contract::Contract;
 

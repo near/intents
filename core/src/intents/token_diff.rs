@@ -7,12 +7,14 @@ use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
     DefuseError, Result,
+    accounts::AccountEvent,
     engine::{Engine, Inspector, State, StateView},
+    events::DefuseEvent,
     fees::Pips,
     tokens::{Amounts, TokenId},
 };
 
-use super::ExecutableIntent;
+use super::{ExecutableIntent, IntentEvent};
 
 pub type TokenDeltas = Amounts<BTreeMap<TokenId, i128>>;
 
@@ -84,9 +86,21 @@ impl ExecutableIntent for TokenDiff {
             }
         }
 
-        engine
-            .inspector
-            .on_token_diff(signer_id, &self, &fees_collected, intent_hash);
+        let event = DefuseEvent::TokenDiff(
+            vec![IntentEvent::new(
+                AccountEvent::new(
+                    signer_id,
+                    TokenDiffEvent {
+                        diff: Cow::Borrowed(&self),
+                        fees_collected: fees_collected.clone(),
+                    },
+                ),
+                intent_hash,
+            )]
+            .into(),
+        );
+
+        engine.inspector.on_event(event);
 
         // deposit fees to collector
         if !fees_collected.is_empty() {
