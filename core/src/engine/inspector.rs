@@ -9,55 +9,5 @@ pub trait Inspector {
 
     fn on_deadline(&mut self, deadline: Deadline);
 
-    // fn on_transfer(
-    //     &mut self,
-    //     sender_id: &AccountIdRef,
-    //     transfer: &Transfer,
-    //     intent_hash: CryptoHash,
-    // ) -> Result<()>;
-
-    // fn on_token_diff(
-    //     &mut self,
-    //     owner_id: &AccountIdRef,
-    //     token_diff: &TokenDiff,
-    //     fees_collected: &Amounts,
-    //     intent_hash: CryptoHash,
-    // ) -> Result<()>;
-
-    // fn on_ft_withdraw(
-    //     &mut self,
-    //     owner_id: &AccountIdRef,
-    //     ft_withdraw: &FtWithdraw,
-    //     intent_hash: CryptoHash,
-    // ) -> Result<()>;
-
-    // fn on_nft_withdraw(
-    //     &mut self,
-    //     owner_id: &AccountIdRef,
-    //     nft_withdraw: &NftWithdraw,
-    //     intent_hash: CryptoHash,
-    // ) -> Result<()>;
-
-    // fn on_mt_withdraw(
-    //     &mut self,
-    //     owner_id: &AccountIdRef,
-    //     mt_withdraw: &MtWithdraw,
-    //     intent_hash: CryptoHash,
-    // ) -> Result<()>;
-
-    // fn on_native_withdraw(
-    //     &mut self,
-    //     owner_id: &AccountIdRef,
-    //     native_withdraw: &NativeWithdraw,
-    //     intent_hash: CryptoHash,
-    // ) -> Result<()>;
-
-    // fn on_storage_deposit(
-    //     &mut self,
-    //     owner_id: &AccountIdRef,
-    //     storage_deposit: &StorageDeposit,
-    //     intent_hash: CryptoHash,
-    // ) -> Result<()>;
-
     fn on_intent_executed(&mut self, signer_id: &AccountIdRef, hash: CryptoHash);
 }
