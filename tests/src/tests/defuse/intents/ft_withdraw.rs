@@ -278,10 +278,6 @@ async fn test_ft_withdraw_intent_msg(
                 .collect::<BTreeMap<_, _>>()
         )
     );
-    // FIXME: consider testing events
-    // assert_eq!(sim_out.ft_withdrawals, Some(vec![withdraw_intent]));
-    // assert!(sim_out.nft_withdrawals.is_none());
-    // assert!(sim_out.mt_withdrawals.is_none());
 
     env.defuse.execute_intents(intents).await.unwrap();
 
