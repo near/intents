@@ -1,5 +1,4 @@
-use crate::Deadline;
-use crate::events::DefuseEvent;
+use crate::{Deadline, events::DefuseEvent};
 use impl_tools::autoimpl;
 use near_sdk::{AccountIdRef, CryptoHash};
 

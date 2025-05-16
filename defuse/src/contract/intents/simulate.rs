@@ -13,7 +13,7 @@ pub struct SimulateInspector {
     pub intents_executed: Vec<IntentEvent<AccountEvent<'static, ()>>>,
     pub min_deadline: Deadline,
     pub balance_diff: HashMap<AccountId, TokenDeltas>,
-    pub events_emitted: Vec<String>,
+    pub events_emitted: Vec<serde_json::Value>,
 }
 
 impl Default for SimulateInspector {
@@ -31,7 +31,7 @@ impl Inspector for SimulateInspector {
     #[inline]
     fn on_event(&mut self, event: DefuseEvent<'_>) {
         self.events_emitted
-            .push(serde_json::to_string(&event).unwrap_or_panic_display());
+            .push(serde_json::to_value(&event).unwrap_or_panic_display());
     }
 
     #[inline]
