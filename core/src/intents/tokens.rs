@@ -54,7 +54,7 @@ impl ExecutableIntent for Transfer {
             intent_hash,
         )]));
 
-        engine.inspector.on_event(event);
+        engine.inspector.on_event(event.into());
 
         engine
             .state
@@ -106,7 +106,7 @@ impl ExecutableIntent for FtWithdraw {
             intent_hash,
         )]));
 
-        engine.inspector.on_event(event);
+        engine.inspector.on_event(event.into());
 
         engine.state.ft_withdraw(owner_id, self)
     }
@@ -152,7 +152,7 @@ impl ExecutableIntent for NftWithdraw {
             intent_hash,
         )]));
 
-        engine.inspector.on_event(event);
+        engine.inspector.on_event(event.into());
 
         engine.state.nft_withdraw(owner_id, self)
     }
@@ -202,7 +202,7 @@ impl ExecutableIntent for MtWithdraw {
             intent_hash,
         )]));
 
-        engine.inspector.on_event(event);
+        engine.inspector.on_event(event.into());
 
         engine.state.mt_withdraw(owner_id, self)
     }
@@ -236,7 +236,7 @@ impl ExecutableIntent for NativeWithdraw {
             intent_hash,
         )]));
 
-        engine.inspector.on_event(event);
+        engine.inspector.on_event(event.into());
 
         engine.state.native_withdraw(owner_id, self)
     }
@@ -278,7 +278,7 @@ impl ExecutableIntent for StorageDeposit {
             intent_hash,
         )]));
 
-        engine.inspector.on_event(event);
+        engine.inspector.on_event(event.into());
 
         engine.state.storage_deposit(owner_id, self)
     }

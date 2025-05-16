@@ -97,7 +97,7 @@ impl ExecutableIntent for TokenDiff {
             intent_hash,
         )]));
 
-        engine.inspector.on_event(event);
+        engine.inspector.on_event(event.into());
 
         // deposit fees to collector
         if !fees_collected.is_empty() {

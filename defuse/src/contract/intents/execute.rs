@@ -1,5 +1,9 @@
 use defuse_core::{
-    Deadline, accounts::AccountEvent, engine::Inspector, events::DefuseEvent, intents::IntentEvent,
+    Deadline,
+    accounts::AccountEvent,
+    engine::Inspector,
+    events::{DefuseEvent, Event},
+    intents::IntentEvent,
 };
 use near_sdk::{AccountIdRef, CryptoHash};
 use std::borrow::Cow;
@@ -11,7 +15,7 @@ pub struct ExecuteInspector {
 
 impl Inspector for ExecuteInspector {
     #[inline]
-    fn on_event(&mut self, event: DefuseEvent<'_>) {
+    fn on_event(&mut self, event: Event<'_>) {
         event.emit();
     }
 

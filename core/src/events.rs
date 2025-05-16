@@ -7,9 +7,28 @@ use crate::{
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
     },
 };
+use defuse_nep245::MtEvent;
 use derive_more::derive::From;
 use near_sdk::{near, serde::Deserialize};
 use std::borrow::Cow;
+
+#[must_use = "make sure to `.emit()` this event"]
+#[near(serializers = [json])]
+#[derive(Debug, Clone, From)]
+#[serde(untagged)]
+pub enum Event<'a> {
+    Dip4(DefuseEvent<'a>),
+    Nep245(MtEvent<'a>),
+}
+
+impl Event<'_> {
+    pub fn emit(&self) {
+        match self {
+            Self::Dip4(event) => event.emit(),
+            Self::Nep245(event) => event.emit(),
+        }
+    }
+}
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(event_json(standard = "dip4"))]

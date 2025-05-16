@@ -1,4 +1,4 @@
-use defuse_core::events::DefuseEvent;
+use defuse_core::events::Event;
 use defuse_core::{
     Deadline,
     accounts::AccountEvent,
@@ -29,7 +29,7 @@ impl Default for SimulateInspector {
 
 impl Inspector for SimulateInspector {
     #[inline]
-    fn on_event(&mut self, event: DefuseEvent<'_>) {
+    fn on_event(&mut self, event: Event<'_>) {
         self.events_emitted
             .push(serde_json::to_value(&event).unwrap_or_panic_display());
     }

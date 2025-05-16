@@ -1,10 +1,10 @@
-use crate::{Deadline, events::DefuseEvent};
+use crate::{Deadline, events::Event};
 use impl_tools::autoimpl;
 use near_sdk::{AccountIdRef, CryptoHash};
 
 #[autoimpl(for <T: trait + ?Sized> &mut T, Box<T>)]
 pub trait Inspector {
-    fn on_event(&mut self, event: DefuseEvent<'_>);
+    fn on_event(&mut self, event: Event<'_>);
 
     fn on_deadline(&mut self, deadline: Deadline);
 
