@@ -11,7 +11,7 @@ pub struct ExecuteInspector {
 
 impl Inspector for ExecuteInspector {
     #[inline]
-    fn emit_event(&mut self, event: DefuseEvent<'_>) {
+    fn on_event(&mut self, event: DefuseEvent<'_>) {
         event.emit();
     }
 

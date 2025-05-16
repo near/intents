@@ -29,7 +29,7 @@ impl Default for SimulateInspector {
 
 impl Inspector for SimulateInspector {
     #[inline]
-    fn emit_event(&mut self, event: DefuseEvent<'_>) {
+    fn on_event(&mut self, event: DefuseEvent<'_>) {
         self.events_emitted
             .push(serde_json::to_string(&event).unwrap_or_panic_display());
     }
