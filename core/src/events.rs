@@ -1,8 +1,3 @@
-use std::borrow::Cow;
-
-use derive_more::derive::From;
-use near_sdk::{near, serde::Deserialize};
-
 use crate::{
     accounts::{AccountEvent, PublicKeyEvent},
     fees::{FeeChangedEvent, FeeCollectorChangedEvent},
@@ -12,6 +7,9 @@ use crate::{
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
     },
 };
+use derive_more::derive::From;
+use near_sdk::{near, serde::Deserialize};
+use std::borrow::Cow;
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(event_json(standard = "dip4"))]
