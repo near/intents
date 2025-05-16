@@ -3,11 +3,7 @@ use defuse_core::{
     Deadline,
     accounts::AccountEvent,
     engine::Inspector,
-    intents::{
-        IntentEvent,
-        token_diff::TokenDeltas,
-        tokens::{FtWithdraw, MtWithdraw, NftWithdraw},
-    },
+    intents::{IntentEvent, token_diff::TokenDeltas},
 };
 use defuse_near_utils::UnwrapOrPanicError;
 use near_sdk::{AccountId, AccountIdRef, CryptoHash, serde_json};
@@ -17,24 +13,15 @@ pub struct SimulateInspector {
     pub intents_executed: Vec<IntentEvent<AccountEvent<'static, ()>>>,
     pub min_deadline: Deadline,
     pub balance_diff: HashMap<AccountId, TokenDeltas>,
-    #[allow(dead_code)] // FIXME: remove
-    pub wnear_id: AccountId,
-    pub ft_withdrawals: Option<Vec<FtWithdraw>>,
-    pub nft_withdrawals: Option<Vec<NftWithdraw>>,
-    pub mt_withdrawals: Option<Vec<MtWithdraw>>,
     pub events_emitted: Vec<String>,
 }
 
-impl SimulateInspector {
-    pub fn new(wnear_id: AccountId) -> Self {
+impl Default for SimulateInspector {
+    fn default() -> Self {
         Self {
             intents_executed: Vec::new(),
             min_deadline: Deadline::MAX,
             balance_diff: HashMap::default(),
-            wnear_id,
-            ft_withdrawals: None,
-            nft_withdrawals: None,
-            mt_withdrawals: None,
             events_emitted: Vec::new(),
         }
     }

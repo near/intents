@@ -5,11 +5,7 @@ use defuse_core::{
     accounts::AccountEvent,
     engine::deltas::InvariantViolated,
     fees::Pips,
-    intents::{
-        IntentEvent,
-        token_diff::TokenDeltas,
-        tokens::{FtWithdraw, MtWithdraw, NftWithdraw},
-    },
+    intents::{IntentEvent, token_diff::TokenDeltas},
     payload::multi::MultiPayload,
 };
 
@@ -53,11 +49,6 @@ pub struct SimulationOutput {
 
     /// All changes in balances after simulating the intent
     pub balance_diff: HashMap<AccountId, TokenDeltas>,
-
-    /// Explicit withdrawal requests
-    pub ft_withdrawals: Option<Vec<FtWithdraw>>,
-    pub nft_withdrawals: Option<Vec<NftWithdraw>>,
-    pub mt_withdrawals: Option<Vec<MtWithdraw>>,
 }
 
 impl SimulationOutput {

@@ -35,7 +35,7 @@ impl Intents for Contract {
     #[pause(name = "intents")]
     #[inline]
     fn simulate_intents(&self, signed: Vec<MultiPayload>) -> SimulationOutput {
-        let mut inspector = SimulateInspector::new(self.wnear_id.clone());
+        let mut inspector = SimulateInspector::default();
         let engine = Engine::new(self.cached(), &mut inspector);
 
         let invariant_violated = match engine.execute_signed_intents(signed) {
@@ -51,9 +51,6 @@ impl Intents for Contract {
             invariant_violated,
             state: StateOutput { fee: self.fee() },
             balance_diff: inspector.balance_diff,
-            ft_withdrawals: inspector.ft_withdrawals,
-            nft_withdrawals: inspector.nft_withdrawals,
-            mt_withdrawals: inspector.mt_withdrawals,
         }
     }
 }
