@@ -4,13 +4,25 @@ on:
     - cron: "0 12 * * *"
 jobs:
   scheduled_security_audit_report:
-    name: Scheduled Security Audit - report
+    name: Scheduled Security Audit
     runs-on: ubuntu-latest
-    permissions:
-      checks: write
-      contents: read
+    needs: check
     steps:
-      - uses: actions/checkout@v4
-      - uses: rustsec/audit-check@v2.0.0
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # this action doesn't allow passing `shared-key` to Swatinem/rust-cache,
+          # so we setup cache manually in the next step
+          cache: false
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ${{ github.ref }}
+          cache-all-crates: true
+      - name: Install Cargo Plugins
+        run: cargo install cargo-audit
+      - name: Run security audit
+        run: cargo audit --deny unsound --deny yanked
+        # run: cargo audit --deny warnings  # Warnings include: unmaintained, unsound and yanked
