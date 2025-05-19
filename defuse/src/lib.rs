@@ -1,3 +1,4 @@
+#![doc = include_str!(env!("CARGO_PKG_README"))]
 #[cfg(feature = "contract")]
 pub mod contract;
 
