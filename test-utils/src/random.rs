@@ -9,23 +9,23 @@ pub struct Seed(pub u64);
 impl Seed {
     #[must_use]
     pub fn from_entropy() -> Self {
-        Seed(randomness::make_true_rng().next_u64())
+        Self(randomness::make_true_rng().next_u64())
     }
 
     #[must_use]
     pub fn from_entropy_and_print(test_name: &str) -> Self {
-        let result = Seed(randomness::make_true_rng().next_u64());
+        let result = Self(randomness::make_true_rng().next_u64());
         result.print_with_decoration(test_name);
         result
     }
 
     #[must_use]
-    pub fn from_u64(v: u64) -> Self {
-        Seed(v)
+    pub const fn from_u64(v: u64) -> Self {
+        Self(v)
     }
 
     #[must_use]
-    pub fn as_u64(&self) -> u64 {
+    pub const fn as_u64(&self) -> u64 {
         self.0
     }
 
@@ -39,13 +39,13 @@ impl FromStr for Seed {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let v = s.parse::<u64>()?;
-        Ok(Seed::from_u64(v))
+        Ok(Self::from_u64(v))
     }
 }
 
 impl From<u64> for Seed {
     fn from(v: u64) -> Self {
-        Seed::from_u64(v)
+        Self::from_u64(v)
     }
 }
 

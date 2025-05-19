@@ -49,7 +49,7 @@ impl Nep413Payload {
 
     #[must_use]
     #[inline]
-    pub fn with_nonce(mut self, nonce: [u8; 32]) -> Self {
+    pub const fn with_nonce(mut self, nonce: [u8; 32]) -> Self {
         self.nonce = nonce;
         self
     }

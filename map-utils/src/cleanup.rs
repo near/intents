@@ -218,7 +218,7 @@ where
     E: OccupiedEntry<'a, V: Default + Eq>,
 {
     #[inline]
-    pub fn new(entry: E) -> Self {
+    pub const fn new(entry: E) -> Self {
         Self(Some(entry), PhantomData)
     }
 
