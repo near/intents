@@ -41,6 +41,8 @@ jobs:
         run: cargo clean --doc
       - name: Build docs
         run: cargo doc --no-deps
+      - name: Add redirect
+        run: echo '<meta http-equiv="refresh" content="0;url=defuse/index.html">' > target/doc/index.html
       - name: Remove lock file
         run: rm -f target/doc/.lock
       - name: Upload artifact
@@ -48,9 +50,6 @@ jobs:
         with:
           # Upload docs dir
           path: "target/doc"
-      # - name: Deploy to GitHub Pages
-      #   id: deployment
-      #   uses: actions/deploy-pages@v4
 
   deploy:
     name: Deploy
