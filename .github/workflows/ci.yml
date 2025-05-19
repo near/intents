@@ -148,3 +148,9 @@ jobs:
       - name: Run security audit
         run: cargo audit --deny unsound --deny yanked
         # run: cargo audit --deny warnings  # Warnings include: unmaintained, unsound and yanked
+
+  contract_analysis:
+    name: Shared security analysis
+    uses: aurora-is-near/.github/.github/workflows/security_analysis.yml@master
+    secrets:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
