@@ -163,7 +163,7 @@ async fn simulate_is_view_method(#[values(false, true)] no_registration: bool) {
             DefuseIntents {
                 intents: [Transfer {
                     receiver_id: env.user2.id().clone(),
-                    tokens: Amounts::new([(ft1.clone(), 1000)].into_iter().collect()),
+                    tokens: Amounts::new(std::iter::once((ft1.clone(), 1000)).collect()),
                     memo: None,
                 }
                 .into()]

@@ -51,7 +51,7 @@ impl<T> ExtractDefusePayload<T> for DefusePayload<T> {
     type Error = Infallible;
 
     #[inline]
-    fn extract_defuse_payload(self) -> Result<DefusePayload<T>, Self::Error> {
+    fn extract_defuse_payload(self) -> Result<Self, Self::Error> {
         Ok(self)
     }
 }

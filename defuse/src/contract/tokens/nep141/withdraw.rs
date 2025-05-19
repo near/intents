@@ -80,8 +80,8 @@ impl Contract {
                 .near_withdraw(U128(storage_deposit.as_yoctonear()))
                 .then(
                     // schedule storage_deposit() only after near_withdraw() returns
-                    Contract::ext(CURRENT_ACCOUNT_ID.clone())
-                        .with_static_gas(Contract::DO_FT_WITHDRAW_GAS.saturating_add(if is_call {
+                    Self::ext(CURRENT_ACCOUNT_ID.clone())
+                        .with_static_gas(Self::DO_FT_WITHDRAW_GAS.saturating_add(if is_call {
                             FT_TRANSFER_CALL_GAS
                         } else {
                             FT_TRANSFER_GAS
@@ -89,11 +89,11 @@ impl Contract {
                         .do_ft_withdraw(withdraw.clone()),
                 )
         } else {
-            Contract::do_ft_withdraw(withdraw.clone())
+            Self::do_ft_withdraw(withdraw.clone())
         }
         .then(
-            Contract::ext(CURRENT_ACCOUNT_ID.clone())
-                .with_static_gas(Contract::FT_RESOLVE_WITHDRAW_GAS)
+            Self::ext(CURRENT_ACCOUNT_ID.clone())
+                .with_static_gas(Self::FT_RESOLVE_WITHDRAW_GAS)
                 .ft_resolve_withdraw(withdraw.token, owner_id, withdraw.amount, is_call),
         )
         .into())

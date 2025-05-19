@@ -523,9 +523,9 @@ mod tests {
             deltas.finalize().unwrap_err(),
             InvariantViolated::UnmatchedDeltas {
                 unmatched_deltas: TokenDeltas::default()
-                    .with_apply_delta(ft1.clone(), -3)
+                    .with_apply_delta(ft1, -3)
                     .unwrap()
-                    .with_apply_delta(ft2.clone(), -1)
+                    .with_apply_delta(ft2, -1)
                     .unwrap()
             }
         );

@@ -1,3 +1,7 @@
+// This is due to a bug in clippy that happens with shared security analysis
+// Clippy doesn't seem to play well with autoimpl
+#![allow(clippy::type_repetition_in_bounds)]
+
 use core::{
     fmt::Debug,
     marker::PhantomData,

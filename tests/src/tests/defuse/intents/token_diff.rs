@@ -42,7 +42,7 @@ async fn swap_p2p(
         [
             AccountFtDiff {
                 account: &env.user1,
-                init_balances: [(&env.ft1, 100)].into_iter().collect(),
+                init_balances: std::iter::once((&env.ft1, 100)).collect(),
                 diff: [TokenDeltas::default()
                     .with_apply_deltas([
                         (ft1_token_id.clone(), -100),
@@ -53,16 +53,15 @@ async fn swap_p2p(
                     ])
                     .unwrap()]
                 .into(),
-                result_balances: [(
+                result_balances: std::iter::once((
                     &env.ft2,
                     TokenDiff::closure_delta(&ft2_token_id, -200, fee).unwrap(),
-                )]
-                .into_iter()
+                ))
                 .collect(),
             },
             AccountFtDiff {
                 account: &env.user2,
-                init_balances: [(&env.ft2, 200)].into_iter().collect(),
+                init_balances: std::iter::once((&env.ft2, 200)).collect(),
                 diff: [TokenDeltas::default()
                     .with_apply_deltas([
                         (
@@ -73,11 +72,10 @@ async fn swap_p2p(
                     ])
                     .unwrap()]
                 .into(),
-                result_balances: [(
+                result_balances: std::iter::once((
                     &env.ft1,
                     TokenDiff::closure_delta(&ft1_token_id, -100, fee).unwrap(),
-                )]
-                .into_iter()
+                ))
                 .collect(),
             },
         ]
@@ -107,16 +105,16 @@ async fn swap_many(
         [
             AccountFtDiff {
                 account: &env.user1,
-                init_balances: [(&env.ft1, 100)].into_iter().collect(),
+                init_balances: std::iter::once((&env.ft1, 100)).collect(),
                 diff: [TokenDeltas::default()
                     .with_apply_deltas([(ft1_token_id.clone(), -100), (ft2_token_id.clone(), 200)])
                     .unwrap()]
                 .into(),
-                result_balances: [(&env.ft2, 200)].into_iter().collect(),
+                result_balances: std::iter::once((&env.ft2, 200)).collect(),
             },
             AccountFtDiff {
                 account: &env.user2,
-                init_balances: [(&env.ft2, 1000)].into_iter().collect(),
+                init_balances: std::iter::once((&env.ft2, 1000)).collect(),
                 diff: [
                     TokenDeltas::default()
                         .with_apply_deltas([
@@ -164,12 +162,12 @@ async fn swap_many(
             },
             AccountFtDiff {
                 account: &env.user3,
-                init_balances: [(&env.ft3, 500)].into_iter().collect(),
+                init_balances: std::iter::once((&env.ft3, 500)).collect(),
                 diff: [TokenDeltas::default()
                     .with_apply_deltas([(ft2_token_id.clone(), 300), (ft3_token_id.clone(), -500)])
                     .unwrap()]
                 .into(),
-                result_balances: [(&env.ft2, 300)].into_iter().collect(),
+                result_balances: std::iter::once((&env.ft2, 300)).collect(),
             },
         ]
         .into(),
@@ -318,7 +316,9 @@ async fn invariant_violated(#[values(false, true)] no_registration: bool) {
             .invariant_violated
             .unwrap()
             .into_unmatched_deltas(),
-        Some(TokenDeltas::new([(ft2.clone(), 1)].into_iter().collect()))
+        Some(TokenDeltas::new(
+            std::iter::once((ft2.clone(), 1)).collect()
+        ))
     );
 
     env.defuse.execute_intents(signed).await.unwrap_err();

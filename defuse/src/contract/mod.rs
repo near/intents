@@ -73,6 +73,7 @@ pub struct Contract {
 impl Contract {
     #[must_use]
     #[init]
+    #[allow(clippy::use_self)] // Clippy seems to not play well with near-sdk, or there is a bug in clippy - seen in shared security analysis
     pub fn new(config: DefuseConfig) -> Self {
         let mut contract = Self {
             accounts: Accounts::new(Prefix::Accounts),

@@ -428,12 +428,7 @@ mod tests {
 
         assert!(
             Amounts::<BTreeMap<_, i128>>::default()
-                .with_apply_deltas([
-                    (t1.clone(), 1),
-                    (t1.clone(), -1),
-                    (t2.clone(), -1),
-                    (t2.clone(), 1)
-                ])
+                .with_apply_deltas([(t1.clone(), 1), (t1, -1), (t2.clone(), -1), (t2, 1)])
                 .unwrap()
                 .is_empty()
         );

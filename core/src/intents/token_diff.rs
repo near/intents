@@ -337,10 +337,10 @@ mod tests {
                     .with_apply_deltas([(t1.clone(), -100), (t2.clone(), 200)])
                     .unwrap(),
                 TokenDeltas::default()
-                    .with_apply_deltas([(t2.clone(), -200), (t3.clone(), 300)])
+                    .with_apply_deltas([(t2, -200), (t3.clone(), 300)])
                     .unwrap(),
                 TokenDeltas::default()
-                    .with_apply_deltas([(t3.clone(), -300), (t1.clone(), 101)])
+                    .with_apply_deltas([(t3, -300), (t1, 101)])
                     .unwrap(),
             ]
             .into_iter()

@@ -234,7 +234,7 @@ impl Contract {
                 msg,
             )
             .then(
-                Contract::ext(CURRENT_ACCOUNT_ID.clone())
+                Self::ext(CURRENT_ACCOUNT_ID.clone())
                     .with_static_gas(MT_RESOLVE_TRANSFER_GAS)
                     .mt_resolve_transfer(previous_owner_ids, receiver_id, token_ids, amounts, None),
             )

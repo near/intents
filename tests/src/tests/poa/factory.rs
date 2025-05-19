@@ -179,7 +179,7 @@ impl PoAFactoryExt for near_workspaces::Contract {
         super_admins: impl IntoIterator<Item = AccountId>,
         admins: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
         grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
-    ) -> anyhow::Result<Contract> {
+    ) -> anyhow::Result<Self> {
         self.as_account()
             .deploy_poa_factory(name, super_admins, admins, grantees)
             .await

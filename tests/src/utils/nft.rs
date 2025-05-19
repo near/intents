@@ -168,7 +168,7 @@ impl NftExt for Contract {
         &self,
         token_name: &str,
         metadata: NFTContractMetadata,
-    ) -> anyhow::Result<Contract> {
+    ) -> anyhow::Result<Self> {
         self.as_account()
             .deploy_vanilla_nft_issuer(token_name, metadata)
             .await
