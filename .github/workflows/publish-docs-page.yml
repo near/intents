@@ -23,11 +23,8 @@ concurrency:
 
 jobs:
   # Single deploy job since we're just deploying
-  deploy:
+  build:
     name: Publish cargo docs
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -40,13 +37,29 @@ jobs:
           cache: false
       - name: Setup Pages
         uses: actions/configure-pages@v5
-      - name: Generate docs
-        run: cargo doc
+      - name: Clean docs folder
+        run: cargo clean --doc
+      - name: Build docs
+        run: cargo doc --no-deps
+      - name: Remove lock file
+        run: rm -f target/doc/.lock
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           # Upload docs dir
-          path: "./target/doc"
+          path: "target/doc"
+      # - name: Deploy to GitHub Pages
+      #   id: deployment
+      #   uses: actions/deploy-pages@v4
+
+  deploy:
+    name: Deploy
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
