@@ -3,6 +3,7 @@ pub mod multi;
 pub mod nep413;
 pub mod raw;
 pub mod webauthn;
+pub mod tep104;
 
 use core::convert::Infallible;
 

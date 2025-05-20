@@ -4,7 +4,7 @@ use near_sdk::{CryptoHash, env, near, serde::de::DeserializeOwned, serde_json};
 
 use super::{DefusePayload, ExtractDefusePayload};
 
-#[near(serializers = [borsh, json])]
+#[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct SignedWebAuthnPayload {
     pub payload: String,

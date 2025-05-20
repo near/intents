@@ -635,6 +635,7 @@ dependencies = [
  "defuse-nep413",
  "defuse-num-utils",
  "defuse-serde-utils",
+ "defuse-tep104",
  "defuse-webauthn",
  "derive_more 2.0.1",
  "hex",
@@ -749,6 +750,18 @@ dependencies = [
  "derive_more 2.0.1",
  "near-sdk",
  "serde_with",
+]
+
+[[package]]
+name = "defuse-tep104"
+version = "0.1.0"
+dependencies = [
+ "defuse-crypto",
+ "hex-literal",
+ "impl-tools",
+ "near-sdk",
+ "serde_with",
+ "tlb",
 ]
 
 [[package]]
@@ -2401,6 +2414,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "num-bigint"
+version = "0.4.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a5e44f723f1133c9deac646763579fdb3ac745e418f2a7af9cd0c431da1f20b9"
+dependencies = [
+ "num-integer",
+ "num-traits",
+]
+
+[[package]]
 name = "num-conv"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2422,7 +2445,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "12ac428b1cb17fce6f731001d307d351ec70a6d202fc2e60f7d4c5e42d8f4f07"
 dependencies = [
  "autocfg",
- "num-bigint",
+ "num-bigint 0.3.3",
  "num-integer",
  "num-traits",
  "serde",
@@ -3697,6 +3720,29 @@ name = "tinyvec_macros"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
+
+[[package]]
+name = "tlb"
+version = "0.3.2"
+dependencies = [
+ "bitvec",
+ "hex",
+ "impl-tools",
+ "sha2",
+ "tlbits",
+]
+
+[[package]]
+name = "tlbits"
+version = "0.3.2"
+dependencies = [
+ "bitvec",
+ "either",
+ "impl-tools",
+ "num-bigint 0.4.6",
+ "num-traits",
+ "thiserror 1.0.69",
+]
 
 [[package]]
 name = "tokio"
