@@ -1,0 +1,25 @@
+[package]
+name = "defuse-ton-connect"
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+defuse-crypto = { workspace = true, features = ["serde"] }
+defuse-near-utils.workspace = true
+defuse-serde-utils.workspace = true
+
+impl-tools.workspace = true
+near-sdk.workspace = true
+serde_with.workspace = true
+tlb.workspace = true
+tlb-ton = { workspace = true, features = ["serde"] }
+
+[features]
+abi = ["defuse-crypto/abi"]
+
+[dev-dependencies]
+hex-literal.workspace = true
