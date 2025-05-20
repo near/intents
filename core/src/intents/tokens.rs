@@ -50,14 +50,15 @@ impl ExecutableIntent for Transfer {
             return Err(DefuseError::InvalidIntent);
         }
 
-        {
-            let inner_event = [IntentEvent::new(
-                AccountEvent::new(sender_id, Cow::Borrowed(&self)),
-                intent_hash,
-            )];
-            let event = DefuseEvent::Transfer(Cow::Borrowed(inner_event.as_slice()));
-            engine.inspector.on_event(event);
-        }
+        engine
+            .inspector
+            .on_event(DefuseEvent::Transfer(Cow::Borrowed(
+                [IntentEvent::new(
+                    AccountEvent::new(sender_id, Cow::Borrowed(&self)),
+                    intent_hash,
+                )]
+                .as_slice(),
+            )));
 
         engine
             .state
@@ -104,14 +105,15 @@ impl ExecutableIntent for FtWithdraw {
         S: State,
         I: Inspector,
     {
-        {
-            let event_inner = [IntentEvent::new(
-                AccountEvent::new(owner_id, Cow::Borrowed(&self)),
-                intent_hash,
-            )];
-            let event = DefuseEvent::FtWithdraw(Cow::Borrowed(event_inner.as_slice()));
-            engine.inspector.on_event(event);
-        }
+        engine
+            .inspector
+            .on_event(DefuseEvent::FtWithdraw(Cow::Borrowed(
+                [IntentEvent::new(
+                    AccountEvent::new(owner_id, Cow::Borrowed(&self)),
+                    intent_hash,
+                )]
+                .as_slice(),
+            )));
 
         engine.state.ft_withdraw(owner_id, self)
     }
@@ -152,14 +154,15 @@ impl ExecutableIntent for NftWithdraw {
         S: State,
         I: Inspector,
     {
-        {
-            let event_inner = [IntentEvent::new(
-                AccountEvent::new(owner_id, Cow::Borrowed(&self)),
-                intent_hash,
-            )];
-            let event = DefuseEvent::NftWithdraw(Cow::Borrowed(event_inner.as_slice()));
-            engine.inspector.on_event(event);
-        }
+        engine
+            .inspector
+            .on_event(DefuseEvent::NftWithdraw(Cow::Borrowed(
+                [IntentEvent::new(
+                    AccountEvent::new(owner_id, Cow::Borrowed(&self)),
+                    intent_hash,
+                )]
+                .as_slice(),
+            )));
 
         engine.state.nft_withdraw(owner_id, self)
     }
@@ -203,14 +206,15 @@ impl ExecutableIntent for MtWithdraw {
         S: State,
         I: Inspector,
     {
-        {
-            let event_inner = [IntentEvent::new(
-                AccountEvent::new(owner_id, Cow::Borrowed(&self)),
-                intent_hash,
-            )];
-            let event = DefuseEvent::MtWithdraw(Cow::Borrowed(event_inner.as_slice()));
-            engine.inspector.on_event(event);
-        }
+        engine
+            .inspector
+            .on_event(DefuseEvent::MtWithdraw(Cow::Borrowed(
+                [IntentEvent::new(
+                    AccountEvent::new(owner_id, Cow::Borrowed(&self)),
+                    intent_hash,
+                )]
+                .as_slice(),
+            )));
 
         engine.state.mt_withdraw(owner_id, self)
     }
@@ -239,14 +243,15 @@ impl ExecutableIntent for NativeWithdraw {
         S: State,
         I: Inspector,
     {
-        {
-            let event_inner = [IntentEvent::new(
-                AccountEvent::new(owner_id, Cow::Borrowed(&self)),
-                intent_hash,
-            )];
-            let event = DefuseEvent::NativeWithdraw(Cow::Borrowed(event_inner.as_slice()));
-            engine.inspector.on_event(event);
-        }
+        engine
+            .inspector
+            .on_event(DefuseEvent::NativeWithdraw(Cow::Borrowed(
+                [IntentEvent::new(
+                    AccountEvent::new(owner_id, Cow::Borrowed(&self)),
+                    intent_hash,
+                )]
+                .as_slice(),
+            )));
 
         engine.state.native_withdraw(owner_id, self)
     }
@@ -283,14 +288,15 @@ impl ExecutableIntent for StorageDeposit {
         S: State,
         I: Inspector,
     {
-        {
-            let event_inner = [IntentEvent::new(
-                AccountEvent::new(owner_id, Cow::Borrowed(&self)),
-                intent_hash,
-            )];
-            let event = DefuseEvent::StorageDeposit(Cow::Borrowed(event_inner.as_slice()));
-            engine.inspector.on_event(event);
-        }
+        engine
+            .inspector
+            .on_event(DefuseEvent::StorageDeposit(Cow::Borrowed(
+                [IntentEvent::new(
+                    AccountEvent::new(owner_id, Cow::Borrowed(&self)),
+                    intent_hash,
+                )]
+                .as_slice(),
+            )));
 
         engine.state.storage_deposit(owner_id, self)
     }
