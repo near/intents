@@ -86,8 +86,8 @@ impl ExecutableIntent for TokenDiff {
             }
         }
 
-        let event = DefuseEvent::TokenDiff(
-            vec![IntentEvent::new(
+        {
+            let inner_event = [IntentEvent::new(
                 AccountEvent::new(
                     signer_id,
                     TokenDiffEvent {
@@ -96,11 +96,10 @@ impl ExecutableIntent for TokenDiff {
                     },
                 ),
                 intent_hash,
-            )]
-            .into(),
-        );
-
-        engine.inspector.on_event(event);
+            )];
+            let event = DefuseEvent::TokenDiff(Cow::Borrowed(inner_event.as_slice()));
+            engine.inspector.on_event(event);
+        }
 
         // deposit fees to collector
         if !fees_collected.is_empty() {

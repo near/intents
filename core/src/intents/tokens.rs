@@ -50,14 +50,14 @@ impl ExecutableIntent for Transfer {
             return Err(DefuseError::InvalidIntent);
         }
 
-        let event = DefuseEvent::Transfer(
-            vec![IntentEvent::new(
+        {
+            let inner_event = [IntentEvent::new(
                 AccountEvent::new(sender_id, Cow::Borrowed(&self)),
                 intent_hash,
-            )]
-            .into(),
-        );
-        engine.inspector.on_event(event);
+            )];
+            let event = DefuseEvent::Transfer(Cow::Borrowed(inner_event.as_slice()));
+            engine.inspector.on_event(event);
+        }
 
         engine
             .state
@@ -104,12 +104,14 @@ impl ExecutableIntent for FtWithdraw {
         S: State,
         I: Inspector,
     {
-        let event = DefuseEvent::FtWithdraw(Cow::Owned(vec![IntentEvent::new(
-            AccountEvent::new(owner_id, Cow::Borrowed(&self)),
-            intent_hash,
-        )]));
-
-        engine.inspector.on_event(event);
+        {
+            let event_inner = [IntentEvent::new(
+                AccountEvent::new(owner_id, Cow::Borrowed(&self)),
+                intent_hash,
+            )];
+            let event = DefuseEvent::FtWithdraw(Cow::Borrowed(event_inner.as_slice()));
+            engine.inspector.on_event(event);
+        }
 
         engine.state.ft_withdraw(owner_id, self)
     }
@@ -150,12 +152,14 @@ impl ExecutableIntent for NftWithdraw {
         S: State,
         I: Inspector,
     {
-        let event = DefuseEvent::NftWithdraw(Cow::Owned(vec![IntentEvent::new(
-            AccountEvent::new(owner_id, Cow::Borrowed(&self)),
-            intent_hash,
-        )]));
-
-        engine.inspector.on_event(event);
+        {
+            let event_inner = [IntentEvent::new(
+                AccountEvent::new(owner_id, Cow::Borrowed(&self)),
+                intent_hash,
+            )];
+            let event = DefuseEvent::NftWithdraw(Cow::Borrowed(event_inner.as_slice()));
+            engine.inspector.on_event(event);
+        }
 
         engine.state.nft_withdraw(owner_id, self)
     }
@@ -199,12 +203,14 @@ impl ExecutableIntent for MtWithdraw {
         S: State,
         I: Inspector,
     {
-        let event = DefuseEvent::MtWithdraw(Cow::Owned(vec![IntentEvent::new(
-            AccountEvent::new(owner_id, Cow::Borrowed(&self)),
-            intent_hash,
-        )]));
-
-        engine.inspector.on_event(event);
+        {
+            let event_inner = [IntentEvent::new(
+                AccountEvent::new(owner_id, Cow::Borrowed(&self)),
+                intent_hash,
+            )];
+            let event = DefuseEvent::MtWithdraw(Cow::Borrowed(event_inner.as_slice()));
+            engine.inspector.on_event(event);
+        }
 
         engine.state.mt_withdraw(owner_id, self)
     }
@@ -233,12 +239,14 @@ impl ExecutableIntent for NativeWithdraw {
         S: State,
         I: Inspector,
     {
-        let event = DefuseEvent::NativeWithdraw(Cow::Owned(vec![IntentEvent::new(
-            AccountEvent::new(owner_id, Cow::Borrowed(&self)),
-            intent_hash,
-        )]));
-
-        engine.inspector.on_event(event);
+        {
+            let event_inner = [IntentEvent::new(
+                AccountEvent::new(owner_id, Cow::Borrowed(&self)),
+                intent_hash,
+            )];
+            let event = DefuseEvent::NativeWithdraw(Cow::Borrowed(event_inner.as_slice()));
+            engine.inspector.on_event(event);
+        }
 
         engine.state.native_withdraw(owner_id, self)
     }
@@ -275,12 +283,15 @@ impl ExecutableIntent for StorageDeposit {
         S: State,
         I: Inspector,
     {
-        let event = DefuseEvent::StorageDeposit(Cow::Owned(vec![IntentEvent::new(
-            AccountEvent::new(owner_id, Cow::Borrowed(&self)),
-            intent_hash,
-        )]));
+        {
+            let event_inner = [IntentEvent::new(
+                AccountEvent::new(owner_id, Cow::Borrowed(&self)),
+                intent_hash,
+            )];
+            let event = DefuseEvent::StorageDeposit(Cow::Borrowed(event_inner.as_slice()));
+            engine.inspector.on_event(event);
+        }
 
-        engine.inspector.on_event(event);
         engine.state.storage_deposit(owner_id, self)
     }
 }
