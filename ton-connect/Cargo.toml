@@ -9,17 +9,18 @@ workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, features = ["serde"] }
-defuse-near-utils.workspace = true
-defuse-serde-utils.workspace = true
+defuse-near-utils = { workspace = true, features = ["digest"] }
+defuse-serde-utils = { workspace = true, features = ["tlb"] }
 
+chrono = { workspace = true, features = ["serde"] }
 impl-tools.workspace = true
 near-sdk.workspace = true
-serde_with.workspace = true
+schemars = { workspace = true, features = ["chrono"] }
+serde_with = { workspace = true, features = ["chrono_0_4"] }
 tlb-ton = { workspace = true, features = ["serde"] }
 
 [features]
-abi = ["defuse-crypto/abi"]
-cell = ["defuse-near-utils/digest", "defuse-serde-utils/tlb"]
+abi = ["defuse-crypto/abi", "defuse-serde-utils/abi"]
 
 [dev-dependencies]
 hex-literal.workspace = true

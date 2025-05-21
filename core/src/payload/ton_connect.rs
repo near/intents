@@ -25,7 +25,9 @@ where
     type Error = serde_json::Error;
 
     fn extract_defuse_payload(self) -> Result<DefusePayload<T>, Self::Error> {
-        // TODO: check timestamp
+        if self.timestamp > defuse_near_utils::time::now() {
+            return Err(Error::custom("timestamp has not come yet"));
+        }
         let TonConnectPayloadSchema::Text { text } = self.payload else {
             return Err(Error::custom("only text payload supported"));
         };

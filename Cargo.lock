@@ -646,6 +646,7 @@ dependencies = [
  "defuse-crypto",
  "defuse-erc191",
  "defuse-map-utils",
+ "defuse-near-utils",
  "defuse-nep245",
  "defuse-nep413",
  "defuse-num-utils",
@@ -700,6 +701,7 @@ dependencies = [
 name = "defuse-near-utils"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "digest",
  "near-sdk",
 ]
@@ -794,12 +796,14 @@ dependencies = [
 name = "defuse-ton-connect"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "defuse-crypto",
  "defuse-near-utils",
  "defuse-serde-utils",
  "hex-literal",
  "impl-tools",
  "near-sdk",
+ "schemars",
  "serde_with",
  "tlb-ton",
 ]
@@ -3105,6 +3109,7 @@ version = "0.8.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3fbf2ae1b8bc8e02df939598064d22402220cd5bbcca1c76f7d6a310974d5615"
 dependencies = [
+ "chrono",
  "dyn-clone",
  "schemars_derive",
  "serde",
