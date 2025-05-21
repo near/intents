@@ -6,7 +6,6 @@ jobs:
   scheduled_security_audit_report:
     name: Scheduled Security Audit
     runs-on: ubuntu-latest
-    needs: check
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
