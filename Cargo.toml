@@ -57,7 +57,6 @@ defuse-wnear.path = "wnear"
 randomness.path = "randomness"
 test-utils.path = "test-utils"
 
-
 anyhow = "1"
 bnum = { version = "0.13", features = ["borsh"] }
 chrono = { version = "0.4", default-features = false }
