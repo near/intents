@@ -58,13 +58,13 @@ randomness.path = "randomness"
 test-utils.path = "test-utils"
 
 
-hex = "0.4"
 anyhow = "1"
 bnum = { version = "0.13", features = ["borsh"] }
 chrono = { version = "0.4", default-features = false }
 derive_more = "2.0"
 digest = { version = "0.10", default-features = false }
 ed25519-dalek = { version = "2.1", default-features = false }
+hex = "0.4"
 hex-literal = "1.0"
 impl-tools = "0.10"
 itertools = "0.14"
