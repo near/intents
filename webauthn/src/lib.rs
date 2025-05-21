@@ -14,7 +14,7 @@ use serde_with::serde_as;
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
 pub struct PayloadSignature {
-    /// Base64Url-encodded [authenticatorData](https://w3c.github.io/webauthn/#authenticator-data)
+    /// Base64Url-encoded [authenticatorData](https://w3c.github.io/webauthn/#authenticator-data)
     #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
     pub authenticator_data: Vec<u8>,
     /// Serialized [clientDataJSON](https://w3c.github.io/webauthn/#dom-authenticatorresponse-clientdatajson)
