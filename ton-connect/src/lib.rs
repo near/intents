@@ -3,7 +3,7 @@
 use chrono::{DateTime, Utc};
 use defuse_crypto::{Curve, Ed25519, Payload, SignedPayload, serde::AsCurve};
 use defuse_near_utils::UnwrapOrPanicError;
-use defuse_serde_utils::base64::Base64;
+use defuse_serde_utils::{base64::Base64, tlb::AsBoC};
 use impl_tools::autoimpl;
 use near_sdk::{env, near};
 use serde_with::{PickFirst, TimestampSeconds, serde_as};
@@ -123,7 +123,7 @@ pub enum TonConnectPayloadSchema {
     },
     Cell {
         schema_crc: u32,
-        #[serde_as(as = "defuse_serde_utils::tlb::AsBoC<Base64>")]
+        #[serde_as(as = "AsBoC<Base64>")]
         cell: tlb_ton::Cell,
     },
 }
