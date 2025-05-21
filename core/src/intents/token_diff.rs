@@ -7,12 +7,14 @@ use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
     DefuseError, Result,
+    accounts::AccountEvent,
     engine::{Engine, Inspector, State, StateView},
+    events::DefuseEvent,
     fees::Pips,
     tokens::{Amounts, TokenId},
 };
 
-use super::ExecutableIntent;
+use super::{ExecutableIntent, IntentEvent};
 
 pub type TokenDeltas = Amounts<BTreeMap<TokenId, i128>>;
 
@@ -84,9 +86,20 @@ impl ExecutableIntent for TokenDiff {
             }
         }
 
-        engine
-            .inspector
-            .on_token_diff(signer_id, &self, &fees_collected, intent_hash);
+        engine.inspector.on_event(DefuseEvent::TokenDiff(
+            [IntentEvent::new(
+                AccountEvent::new(
+                    signer_id,
+                    TokenDiffEvent {
+                        diff: Cow::Borrowed(&self),
+                        fees_collected: fees_collected.clone(),
+                    },
+                ),
+                intent_hash,
+            )]
+            .as_slice()
+            .into(),
+        ));
 
         // deposit fees to collector
         if !fees_collected.is_empty() {
@@ -323,10 +336,10 @@ mod tests {
                     .with_apply_deltas([(t1.clone(), -100), (t2.clone(), 200)])
                     .unwrap(),
                 TokenDeltas::default()
-                    .with_apply_deltas([(t2.clone(), -200), (t3.clone(), 300)])
+                    .with_apply_deltas([(t2, -200), (t3.clone(), 300)])
                     .unwrap(),
                 TokenDeltas::default()
-                    .with_apply_deltas([(t3.clone(), -300), (t1.clone(), 101)])
+                    .with_apply_deltas([(t3, -300), (t1, 101)])
                     .unwrap(),
             ]
             .into_iter()

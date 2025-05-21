@@ -17,6 +17,9 @@ impl MultiTokenEnumeration for Contract {
             .skip(from_index)
             .map(|(token_id, _amount)| Token {
                 token_id: token_id.to_string(),
+                // Note: There is no way to fill this field currently (which is required for NEP-171/NFTs),
+                // as it requires reverse look-up for tokens and that's expensive for storage.
+                // We will postpone this decision for the future when it's needed.
                 owner_id: None,
             });
 

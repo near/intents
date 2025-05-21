@@ -24,7 +24,7 @@ use crate::{
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn test_ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registration: bool) {
+async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registration: bool) {
     // intentionally large deposit
     const STORAGE_DEPOSIT: NearToken = NearToken::from_near(1000);
 
@@ -215,10 +215,7 @@ async fn test_ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_re
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn test_ft_withdraw_intent_msg(
-    random_seed: Seed,
-    #[values(false, true)] no_registration: bool,
-) {
+async fn ft_withdraw_intent_msg(random_seed: Seed, #[values(false, true)] no_registration: bool) {
     let mut rng = make_seedable_rng(random_seed);
 
     let env = Env::builder()

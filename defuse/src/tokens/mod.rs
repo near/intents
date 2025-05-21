@@ -45,7 +45,7 @@ impl DepositMessage {
 
     #[must_use]
     #[inline]
-    pub fn with_refund_if_fails(mut self) -> Self {
+    pub const fn with_refund_if_fails(mut self) -> Self {
         self.refund_if_fails = true;
         self
     }

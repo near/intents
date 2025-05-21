@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::{borrow::Cow, collections::BTreeMap};
 
 use near_contract_standards::non_fungible_token;
 use near_sdk::{AccountId, AccountIdRef, CryptoHash, NearToken, json_types::U128, near};
@@ -6,11 +6,13 @@ use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
     DefuseError, Result,
+    accounts::AccountEvent,
     engine::{Engine, Inspector, State},
+    events::DefuseEvent,
     tokens::Amounts,
 };
 
-use super::ExecutableIntent;
+use super::{ExecutableIntent, IntentEvent};
 
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
@@ -47,7 +49,17 @@ impl ExecutableIntent for Transfer {
         if sender_id == self.receiver_id || self.tokens.is_empty() {
             return Err(DefuseError::InvalidIntent);
         }
-        engine.inspector.on_transfer(sender_id, &self, intent_hash);
+
+        engine
+            .inspector
+            .on_event(DefuseEvent::Transfer(Cow::Borrowed(
+                [IntentEvent::new(
+                    AccountEvent::new(sender_id, Cow::Borrowed(&self)),
+                    intent_hash,
+                )]
+                .as_slice(),
+            )));
+
         engine
             .state
             .internal_sub_balance(sender_id, self.tokens.clone())?;
@@ -87,12 +99,22 @@ impl ExecutableIntent for FtWithdraw {
         self,
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        _intent_hash: CryptoHash,
+        intent_hash: CryptoHash,
     ) -> Result<()>
     where
         S: State,
         I: Inspector,
     {
+        engine
+            .inspector
+            .on_event(DefuseEvent::FtWithdraw(Cow::Borrowed(
+                [IntentEvent::new(
+                    AccountEvent::new(owner_id, Cow::Borrowed(&self)),
+                    intent_hash,
+                )]
+                .as_slice(),
+            )));
+
         engine.state.ft_withdraw(owner_id, self)
     }
 }
@@ -126,12 +148,22 @@ impl ExecutableIntent for NftWithdraw {
         self,
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        _intent_hash: CryptoHash,
+        intent_hash: CryptoHash,
     ) -> Result<()>
     where
         S: State,
         I: Inspector,
     {
+        engine
+            .inspector
+            .on_event(DefuseEvent::NftWithdraw(Cow::Borrowed(
+                [IntentEvent::new(
+                    AccountEvent::new(owner_id, Cow::Borrowed(&self)),
+                    intent_hash,
+                )]
+                .as_slice(),
+            )));
+
         engine.state.nft_withdraw(owner_id, self)
     }
 }
@@ -168,12 +200,22 @@ impl ExecutableIntent for MtWithdraw {
         self,
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        _intent_hash: CryptoHash,
+        intent_hash: CryptoHash,
     ) -> Result<()>
     where
         S: State,
         I: Inspector,
     {
+        engine
+            .inspector
+            .on_event(DefuseEvent::MtWithdraw(Cow::Borrowed(
+                [IntentEvent::new(
+                    AccountEvent::new(owner_id, Cow::Borrowed(&self)),
+                    intent_hash,
+                )]
+                .as_slice(),
+            )));
+
         engine.state.mt_withdraw(owner_id, self)
     }
 }
@@ -195,12 +237,22 @@ impl ExecutableIntent for NativeWithdraw {
         self,
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        _intent_hash: CryptoHash,
+        intent_hash: CryptoHash,
     ) -> Result<()>
     where
         S: State,
         I: Inspector,
     {
+        engine
+            .inspector
+            .on_event(DefuseEvent::NativeWithdraw(Cow::Borrowed(
+                [IntentEvent::new(
+                    AccountEvent::new(owner_id, Cow::Borrowed(&self)),
+                    intent_hash,
+                )]
+                .as_slice(),
+            )));
+
         engine.state.native_withdraw(owner_id, self)
     }
 }
@@ -230,12 +282,22 @@ impl ExecutableIntent for StorageDeposit {
         self,
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        _intent_hash: CryptoHash,
+        intent_hash: CryptoHash,
     ) -> Result<()>
     where
         S: State,
         I: Inspector,
     {
+        engine
+            .inspector
+            .on_event(DefuseEvent::StorageDeposit(Cow::Borrowed(
+                [IntentEvent::new(
+                    AccountEvent::new(owner_id, Cow::Borrowed(&self)),
+                    intent_hash,
+                )]
+                .as_slice(),
+            )));
+
         engine.state.storage_deposit(owner_id, self)
     }
 }

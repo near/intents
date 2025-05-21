@@ -1,9 +1,7 @@
-use std::borrow::Cow;
-
+use super::TokenId;
 use derive_more::derive::From;
 use near_sdk::{AccountIdRef, json_types::U128, near, serde::Deserialize};
-
-use super::TokenId;
+use std::borrow::Cow;
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(event_json(standard = "nep245"))]

@@ -1,7 +1,7 @@
 use rand_chacha::{ChaChaRng, rand_core::RngCore};
 pub use randomness::{self, CryptoRng, Rng, SeedableRng, seq::IteratorRandom};
 use rstest::fixture;
-use std::{num::ParseIntError, str::FromStr};
+use std::{num::ParseIntError, ops::RangeBounds, str::FromStr};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Seed(pub u64);
@@ -9,23 +9,23 @@ pub struct Seed(pub u64);
 impl Seed {
     #[must_use]
     pub fn from_entropy() -> Self {
-        Seed(randomness::make_true_rng().next_u64())
+        Self(randomness::make_true_rng().next_u64())
     }
 
     #[must_use]
     pub fn from_entropy_and_print(test_name: &str) -> Self {
-        let result = Seed(randomness::make_true_rng().next_u64());
+        let result = Self(randomness::make_true_rng().next_u64());
         result.print_with_decoration(test_name);
         result
     }
 
     #[must_use]
-    pub fn from_u64(v: u64) -> Self {
-        Seed(v)
+    pub const fn from_u64(v: u64) -> Self {
+        Self(v)
     }
 
     #[must_use]
-    pub fn as_u64(&self) -> u64 {
+    pub const fn as_u64(&self) -> u64 {
         self.0
     }
 
@@ -39,13 +39,13 @@ impl FromStr for Seed {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let v = s.parse::<u64>()?;
-        Ok(Seed::from_u64(v))
+        Ok(Self::from_u64(v))
     }
 }
 
 impl From<u64> for Seed {
     fn from(v: u64) -> Self {
-        Seed::from_u64(v)
+        Self::from_u64(v)
     }
 }
 
@@ -96,11 +96,33 @@ pub fn make_seedable_rng(seed: Seed) -> impl Rng + CryptoRng {
     TestRng::new(seed)
 }
 
-pub fn gen_random_bytes(rng: &mut impl Rng, min_len: usize, max_len: usize) -> Vec<u8> {
-    let data_length = rng.random_range(min_len..=max_len);
+fn range_to_random_size(rng: &mut impl Rng, size: impl RangeBounds<usize>) -> usize {
+    let start = match size.start_bound() {
+        std::ops::Bound::Included(&n) => n,
+        std::ops::Bound::Excluded(&n) => n + 1,
+        std::ops::Bound::Unbounded => 0,
+    };
+    let end = match size.end_bound() {
+        std::ops::Bound::Included(&n) => n + 1,
+        std::ops::Bound::Excluded(&n) => n,
+        std::ops::Bound::Unbounded => usize::MAX,
+    };
+    rng.random_range(start..end)
+}
+
+pub fn gen_random_bytes(rng: &mut impl Rng, size: impl RangeBounds<usize>) -> Vec<u8> {
+    let data_length = range_to_random_size(rng, size);
     let mut bytes = vec![0; data_length];
     rng.fill_bytes(&mut bytes);
     bytes
+}
+
+pub fn gen_random_string<R: Rng>(rng: &mut R, size: impl RangeBounds<usize>) -> String {
+    let size = range_to_random_size(rng, size);
+    rng.sample_iter(&randomness::distributions::Alphanumeric)
+        .take(size)
+        .map(char::from)
+        .collect()
 }
 
 #[fixture]

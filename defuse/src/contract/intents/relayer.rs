@@ -28,10 +28,7 @@ impl RelayerKeys for Contract {
 
     #[private]
     fn do_add_relayer_key(&mut self, public_key: PublicKey) {
-        require!(
-            self.relayer_keys.insert(public_key.clone()),
-            "key already exists",
-        );
+        require!(self.relayer_keys.insert(public_key), "key already exists",);
     }
 
     #[pause(name = "intents")]

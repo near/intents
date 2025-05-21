@@ -89,8 +89,8 @@ impl Contract {
                 .near_withdraw(U128(storage_deposit.as_yoctonear()))
                 .then(
                     // schedule storage_deposit() only after near_withdraw() returns
-                    Contract::ext(CURRENT_ACCOUNT_ID.clone())
-                        .with_static_gas(Contract::DO_MT_WITHDRAW_GAS.saturating_add(if is_call {
+                    Self::ext(CURRENT_ACCOUNT_ID.clone())
+                        .with_static_gas(Self::DO_MT_WITHDRAW_GAS.saturating_add(if is_call {
                             MT_BATCH_TRANSFER_CALL_GAS
                         } else {
                             MT_BATCH_TRANSFER_GAS
@@ -98,11 +98,11 @@ impl Contract {
                         .do_mt_withdraw(withdraw.clone()),
                 )
         } else {
-            Contract::do_mt_withdraw(withdraw.clone())
+            Self::do_mt_withdraw(withdraw.clone())
         }
         .then(
-            Contract::ext(CURRENT_ACCOUNT_ID.clone())
-                .with_static_gas(Contract::MT_RESOLVE_WITHDRAW_GAS)
+            Self::ext(CURRENT_ACCOUNT_ID.clone())
+                .with_static_gas(Self::MT_RESOLVE_WITHDRAW_GAS)
                 .mt_resolve_withdraw(
                     withdraw.token,
                     owner_id,

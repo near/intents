@@ -4,7 +4,7 @@ use near_sdk::{AccountId, NearToken};
 use near_workspaces::Contract;
 use serde_json::json;
 
-use crate::utils::{account::AccountExt, nft::NftExt, read_wasm, Sandbox};
+use crate::utils::{Sandbox, account::AccountExt, nft::NftExt, read_wasm};
 
 static ACCOUNT_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("defuse_account_contract"));
 
@@ -67,7 +67,7 @@ impl AccountShardExt for near_workspaces::Account {
 }
 
 #[tokio::test]
-async fn test_account_shard() {
+async fn account_shard() {
     let sandbox = Sandbox::new().await.unwrap();
 
     let dao = sandbox

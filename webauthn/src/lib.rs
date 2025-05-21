@@ -73,7 +73,7 @@ impl PayloadSignature {
     const AUTH_DATA_FLAGS_BS: u8 = 1 << 4;
 
     /// <https://w3c.github.io/webauthn/#sctn-verifying-assertion>
-    fn verify_flags(flags: u8, require_user_verification: bool) -> bool {
+    const fn verify_flags(flags: u8, require_user_verification: bool) -> bool {
         // 16. Verify that the UP bit of the flags in authData is set.
         if flags & Self::AUTH_DATA_FLAGS_UP != Self::AUTH_DATA_FLAGS_UP {
             return false;
@@ -168,13 +168,13 @@ impl Signature {
         match self {
             // [COSE EdDSA (-8) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
             // ed25519 curve
-            Signature::Ed25519 {
+            Self::Ed25519 {
                 public_key,
                 signature,
             } => Ed25519::verify(signature, message, public_key).map(PublicKey::Ed25519),
             // [COSE ES256 (-7) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
             // P256 (a.k.a secp256r1) over SHA-256
-            Signature::P256 {
+            Self::P256 {
                 public_key,
                 signature,
             } => {

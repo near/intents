@@ -172,6 +172,12 @@ where
 
 /// Accumulates internal deposits and withdrawals on different tokens
 /// to match transfers using `.finalize()`
+///
+/// Transfers in `TokenDiff` intents are represented as deltas without receivers.
+/// This struct accumulates tokens all transfers, and converts them from deltas, to
+/// a set of transfers from one account to another.
+/// Note that this doesn't touch account balances. The balances were already changed
+/// in an earlier stage while executing the intent.
 #[derive(Debug, Default)]
 pub struct TransferMatcher(HashMap<TokenId, TokenTransferMatcher>);
 
@@ -517,9 +523,9 @@ mod tests {
             deltas.finalize().unwrap_err(),
             InvariantViolated::UnmatchedDeltas {
                 unmatched_deltas: TokenDeltas::default()
-                    .with_apply_delta(ft1.clone(), -3)
+                    .with_apply_delta(ft1, -3)
                     .unwrap()
-                    .with_apply_delta(ft2.clone(), -1)
+                    .with_apply_delta(ft2, -1)
                     .unwrap()
             }
         );

@@ -61,6 +61,7 @@ pub struct Contract {
 impl Contract {
     #[must_use]
     #[init]
+    #[allow(clippy::use_self)] // Due to a bug in clippy, even though we return Self, it still complains - happens in shared security analysis
     pub fn new(
         super_admins: HashSet<AccountId>,
         admins: HashMap<Role, HashSet<AccountId>>,

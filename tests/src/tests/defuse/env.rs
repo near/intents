@@ -115,7 +115,7 @@ impl Env {
             .unwrap();
     }
 
-    pub async fn near_balance(&mut self, account_id: &AccountId) -> NearToken {
+    pub async fn near_balance(&self, account_id: &AccountId) -> NearToken {
         self.sandbox
             .worker()
             .view_account(account_id)
@@ -124,7 +124,7 @@ impl Env {
             .balance
     }
 
-    pub fn sandbox(&self) -> &Sandbox {
+    pub const fn sandbox(&self) -> &Sandbox {
         &self.sandbox
     }
 
@@ -156,7 +156,7 @@ pub struct EnvBuilder {
 }
 
 impl EnvBuilder {
-    pub fn fee(mut self, fee: Pips) -> Self {
+    pub const fn fee(mut self, fee: Pips) -> Self {
         self.fee = fee;
         self
     }
@@ -171,17 +171,17 @@ impl EnvBuilder {
         self
     }
 
-    pub fn self_as_super_admin(mut self) -> Self {
+    pub const fn self_as_super_admin(mut self) -> Self {
         self.self_as_super_admin = true;
         self
     }
 
-    pub fn deployer_as_super_admin(mut self) -> Self {
+    pub const fn deployer_as_super_admin(mut self) -> Self {
         self.deployer_as_super_admin = true;
         self
     }
 
-    pub fn disable_ft_storage_deposit(mut self) -> Self {
+    pub const fn disable_ft_storage_deposit(mut self) -> Self {
         self.disable_ft_storage_deposit = true;
         self
     }
@@ -196,7 +196,7 @@ impl EnvBuilder {
         self
     }
 
-    pub fn no_registration(mut self, no_reg_value: bool) -> Self {
+    pub const fn no_registration(mut self, no_reg_value: bool) -> Self {
         self.disable_registration = no_reg_value;
         self
     }
@@ -249,7 +249,7 @@ impl EnvBuilder {
                         wnear_id: wnear.id().clone(),
                         fees: FeesConfig {
                             fee: self.fee,
-                            fee_collector: self.fee_collector.unwrap_or(root.id().clone()),
+                            fee_collector: self.fee_collector.unwrap_or_else(|| root.id().clone()),
                         },
                         roles: self.roles,
                     },

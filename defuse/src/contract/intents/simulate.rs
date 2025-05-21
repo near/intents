@@ -1,9 +1,5 @@
 use defuse_core::{
-    Deadline,
-    accounts::AccountEvent,
-    engine::Inspector,
-    intents::{IntentEvent, token_diff::TokenDiff, tokens::Transfer},
-    tokens::Amounts,
+    Deadline, accounts::AccountEvent, engine::Inspector, events::DefuseEvent, intents::IntentEvent,
 };
 use near_sdk::{AccountIdRef, CryptoHash};
 
@@ -27,24 +23,7 @@ impl Inspector for SimulateInspector {
         self.min_deadline = self.min_deadline.min(deadline);
     }
 
-    #[inline]
-    fn on_transfer(
-        &mut self,
-        _sender_id: &AccountIdRef,
-        _transfer: &Transfer,
-        _intent_hash: CryptoHash,
-    ) {
-    }
-
-    #[inline]
-    fn on_token_diff(
-        &mut self,
-        _owner_id: &AccountIdRef,
-        _token_diff: &TokenDiff,
-        _fees_collected: &Amounts,
-        _intent_hash: CryptoHash,
-    ) {
-    }
+    fn on_event(&mut self, _event: DefuseEvent<'_>) {}
 
     #[inline]
     fn on_intent_executed(&mut self, signer_id: &AccountIdRef, intent_hash: CryptoHash) {

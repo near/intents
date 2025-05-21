@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use defuse_core::{
     DefuseError, Nonce, Result,
     crypto::PublicKey,
@@ -11,6 +9,7 @@ use defuse_core::{
 use defuse_near_utils::CURRENT_ACCOUNT_ID;
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128};
+use std::borrow::Cow;
 
 use crate::contract::Contract;
 
@@ -174,8 +173,8 @@ impl State for Contract {
             .near_withdraw(U128(withdraw.amount.as_yoctonear()))
             .then(
                 // do_native_withdraw only after unwrapping NEAR
-                Contract::ext(CURRENT_ACCOUNT_ID.clone())
-                    .with_static_gas(Contract::DO_NATIVE_WITHDRAW_GAS)
+                Self::ext(CURRENT_ACCOUNT_ID.clone())
+                    .with_static_gas(Self::DO_NATIVE_WITHDRAW_GAS)
                     .do_native_withdraw(withdraw),
             );
 
@@ -203,8 +202,8 @@ impl State for Contract {
             .near_withdraw(U128(storage_deposit.amount.as_yoctonear()))
             .then(
                 // do_storage_deposit only after unwrapping NEAR
-                Contract::ext(CURRENT_ACCOUNT_ID.clone())
-                    .with_static_gas(Contract::DO_STORAGE_DEPOSIT_GAS)
+                Self::ext(CURRENT_ACCOUNT_ID.clone())
+                    .with_static_gas(Self::DO_STORAGE_DEPOSIT_GAS)
                     .do_storage_deposit(storage_deposit),
             );
 

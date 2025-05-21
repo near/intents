@@ -24,7 +24,7 @@ use crate::{
 
 #[tokio::test]
 #[rstest]
-async fn test_deposit_withdraw(#[values(false, true)] no_registration: bool) {
+async fn deposit_withdraw(#[values(false, true)] no_registration: bool) {
     let env = Env::builder()
         .no_registration(no_registration)
         .build()
@@ -68,7 +68,7 @@ async fn test_deposit_withdraw(#[values(false, true)] no_registration: bool) {
 
 #[tokio::test]
 #[rstest]
-async fn test_poa_deposit(#[values(false, true)] no_registration: bool) {
+async fn poa_deposit(#[values(false, true)] no_registration: bool) {
     let env = Env::builder()
         .no_registration(no_registration)
         .build()
@@ -103,7 +103,7 @@ async fn test_poa_deposit(#[values(false, true)] no_registration: bool) {
 
 #[tokio::test]
 #[rstest]
-async fn test_deposit_withdraw_intent(#[values(false, true)] no_registration: bool) {
+async fn deposit_withdraw_intent(#[values(false, true)] no_registration: bool) {
     let env = Env::builder()
         .no_registration(no_registration)
         .build()
@@ -189,7 +189,7 @@ async fn test_deposit_withdraw_intent(#[values(false, true)] no_registration: bo
 
 #[tokio::test]
 #[rstest]
-async fn test_deposit_withdraw_intent_refund(#[values(false, true)] no_registration: bool) {
+async fn deposit_withdraw_intent_refund(#[values(false, true)] no_registration: bool) {
     let env = Env::builder()
         .no_registration(no_registration)
         .build()
@@ -257,7 +257,7 @@ async fn test_deposit_withdraw_intent_refund(#[values(false, true)] no_registrat
 
 #[tokio::test]
 #[rstest]
-async fn test_ft_force_withdraw(#[values(false, true)] no_registration: bool) {
+async fn ft_force_withdraw(#[values(false, true)] no_registration: bool) {
     let env = Env::builder()
         .deployer_as_super_admin()
         .no_registration(no_registration)

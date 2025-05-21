@@ -1,16 +1,7 @@
 use std::borrow::Cow;
 
 use defuse_core::{
-    Deadline,
-    accounts::AccountEvent,
-    engine::Inspector,
-    events::DefuseEvent,
-    intents::{
-        IntentEvent,
-        token_diff::{TokenDiff, TokenDiffEvent},
-        tokens::Transfer,
-    },
-    tokens::Amounts,
+    Deadline, accounts::AccountEvent, engine::Inspector, events::DefuseEvent, intents::IntentEvent,
 };
 use near_sdk::{AccountIdRef, CryptoHash};
 
@@ -23,47 +14,8 @@ impl Inspector for ExecuteInspector {
     #[inline]
     fn on_deadline(&mut self, _deadline: Deadline) {}
 
-    #[inline]
-    fn on_transfer(
-        &mut self,
-        sender_id: &AccountIdRef,
-        transfer: &Transfer,
-        intent_hash: CryptoHash,
-    ) {
-        DefuseEvent::Transfer(
-            [IntentEvent::new(
-                AccountEvent::new(sender_id, Cow::Borrowed(transfer)),
-                intent_hash,
-            )]
-            .as_slice()
-            .into(),
-        )
-        .emit();
-    }
-
-    #[inline]
-    fn on_token_diff(
-        &mut self,
-        owner_id: &AccountIdRef,
-        token_diff: &TokenDiff,
-        fees_collected: &Amounts,
-        intent_hash: CryptoHash,
-    ) {
-        DefuseEvent::TokenDiff(
-            [IntentEvent::new(
-                AccountEvent::new(
-                    owner_id,
-                    TokenDiffEvent {
-                        diff: Cow::Borrowed(token_diff),
-                        fees_collected: fees_collected.clone(),
-                    },
-                ),
-                intent_hash,
-            )]
-            .as_slice()
-            .into(),
-        )
-        .emit();
+    fn on_event(&mut self, event: DefuseEvent<'_>) {
+        event.emit();
     }
 
     #[inline]

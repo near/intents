@@ -57,32 +57,33 @@ defuse-wnear.path = "wnear"
 randomness.path = "randomness"
 test-utils.path = "test-utils"
 
+
+hex = "0.4"
 anyhow = "1"
 bnum = { version = "0.13", features = ["borsh"] }
 chrono = { version = "0.4", default-features = false }
 derive_more = "2.0"
 digest = { version = "0.10", default-features = false }
-ed25519-dalek = { version = "2.1.1", default-features = false }
-hex = "0.4"
+ed25519-dalek = { version = "2.1", default-features = false }
 hex-literal = "1.0"
 impl-tools = "0.10"
 itertools = "0.14"
-near-account-id = "1.0"
-near-contract-standards = "5.12"
-near-crypto = "0.29"
+near-account-id = "1.1"
+near-contract-standards = "5.14"
+near-crypto = "0.30"
 near-plugins = { git = "https://github.com/Near-One/near-plugins", tag = "v0.5.0" }
-near-sdk = "5.12"
-near-workspaces = "0.18"
+near-sdk = "5.14"
+near-workspaces = "0.20"
 p256 = { version = "0.13", default-features = false, features = ["ecdsa"] }
 rand = "0.9"
 rand_chacha = "0.9"
-rstest = "0.25.0"
+rstest = "0.25"
 serde_json = "1"
 serde_with = "3.9"
 strum = { version = "0.27", features = ["derive"] }
 thiserror = "2"
 tlb-ton = "0.4.1"
-tokio = { version = "1.38", default-features = false }
+tokio = { version = "1.45", default-features = false }
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }
@@ -90,7 +91,6 @@ pedantic = { level = "deny", priority = -1 }
 module_name_repetitions = "allow"
 missing_errors_doc = "allow"
 missing_panics_doc = "allow"
-
 
 [profile.release]
 codegen-units = 1
@@ -100,6 +100,3 @@ debug = false
 strip = "symbols"
 panic = "abort"
 overflow-checks = true
-
-[patch.crates-io]
-near-sdk = { git = 'https://github.com/BonelessImpl/near-sdk-rs/', version = "5.12", rev = "6093ccd4ad85912b0687334cc3340b18dd96b968" }

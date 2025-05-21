@@ -108,7 +108,7 @@ where
     #[must_use]
     fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> bool {
         let had = self.has_public_key(&account_id, &public_key);
-        let account = self.accounts.get_or_create(account_id.clone());
+        let account = self.accounts.get_or_create(account_id);
         if had {
             account.public_keys_removed.remove(&public_key)
         } else {
@@ -119,7 +119,7 @@ where
     #[must_use]
     fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> bool {
         let had = self.has_public_key(&account_id, &public_key);
-        let account = self.accounts.get_or_create(account_id.clone());
+        let account = self.accounts.get_or_create(account_id);
         if had {
             account.public_keys_removed.insert(public_key)
         } else {
