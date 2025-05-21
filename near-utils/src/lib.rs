@@ -1,4 +1,6 @@
 mod cache;
+#[cfg(feature = "digest")]
+pub mod digest;
 mod gas;
 mod lock;
 mod panic;

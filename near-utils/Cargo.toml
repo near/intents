@@ -6,3 +6,7 @@ repository.workspace = true
 
 [dependencies]
 near-sdk.workspace = true
+digest = { workspace = true, optional = true }
+
+[features]
+digest = ["dep:digest"]

@@ -11,7 +11,7 @@ use near_sdk::near;
 pub struct Deadline(
     #[cfg_attr(
         all(feature = "abi", not(target_arch = "wasm32")),
-        schemars(with = "String", example = "Deadline::default")
+        schemars(with = "String", example = "Deadline::MAX")
     )]
     DateTime<Utc>,
 );

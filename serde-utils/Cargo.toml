@@ -8,6 +8,7 @@ repository.workspace = true
 derive_more = { workspace = true, features = ["from"] }
 near-sdk.workspace = true
 serde_with.workspace = true
+tlb-ton = { workspace = true, optional = true }
 
 [features]
 default = ["base58", "base64"]
@@ -15,3 +16,4 @@ default = ["base58", "base64"]
 abi = []
 base58 = []
 base64 = ["serde_with/base64"]
+tlb = ["dep:tlb-ton"]

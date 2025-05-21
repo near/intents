@@ -6,54 +6,78 @@ use defuse_serde_utils::base64::Base64;
 use impl_tools::autoimpl;
 use near_sdk::{env, near};
 use serde_with::serde_as;
-use tlb::{
-    Cell,
-    r#as::Text,
-    ser::{CellBuilder, CellBuilderError, CellSerialize, CellSerializeExt},
-};
-use tlb_ton::MsgAddress;
+use tlb_ton::{Error, MsgAddress, StringError};
 
 #[near(serializers = [json])]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone)]
-pub struct Tep104Payload {
+pub struct TonConnectPayload {
+    #[cfg_attr(
+        all(feature = "abi", not(target_arch = "wasm32")),
+        schemars(with = "String")
+    )]
     pub address: MsgAddress,
     pub domain: String,
     pub timestamp: u64, // TODO: chrono?
-    pub payload: Tep104SchemaPayload,
+    pub payload: TonConnectPayloadSchema,
 }
 
-impl Tep104Payload {
-    fn prehash(&self) -> Vec<u8> {
+impl TonConnectPayload {
+    fn try_hash(&self) -> Result<near_sdk::CryptoHash, StringError> {
         match &self.payload {
-            Tep104SchemaPayload::Text { .. } | Tep104SchemaPayload::Binary { .. } => {
+            TonConnectPayloadSchema::Text { .. } | TonConnectPayloadSchema::Binary { .. } => {
                 let (payload_prefix, payload) = match &self.payload {
-                    Tep104SchemaPayload::Text { text } => (b"txt", text.as_bytes()),
-                    Tep104SchemaPayload::Binary { bytes } => (b"bin", bytes.as_slice()),
+                    TonConnectPayloadSchema::Text { text } => (b"txt", text.as_bytes()),
+                    TonConnectPayloadSchema::Binary { bytes } => (b"bin", bytes.as_slice()),
+                    #[cfg(feature = "cell")]
                     _ => unreachable!(),
                 };
-                [
-                    [0xff, 0xff].as_slice(),
-                    b"ton-connect/sign-data/",
-                    &self.address.workchain_id.to_be_bytes(),
-                    &self.address.address,
-                    &u32::try_from(self.domain.len())
-                        .map_err(|_| "domain: too long")
-                        .unwrap_or_panic_static_str()
-                        .to_be_bytes(),
-                    self.domain.as_bytes(),
-                    &self.timestamp.to_be_bytes(),
-                    payload_prefix,
-                    &u32::try_from(payload.len())
-                        .map_err(|_| "payload: too long")
-                        .unwrap_or_panic_static_str()
-                        .to_be_bytes(),
-                    payload,
-                ]
-                .concat()
+                Ok(env::sha256_array(
+                    &[
+                        [0xff, 0xff].as_slice(),
+                        b"ton-connect/sign-data/",
+                        &self.address.workchain_id.to_be_bytes(),
+                        &self.address.address,
+                        &u32::try_from(self.domain.len())
+                            .map_err(|_| Error::custom("domain: too long"))?
+                            .to_be_bytes(),
+                        self.domain.as_bytes(),
+                        &self.timestamp.to_be_bytes(),
+                        payload_prefix,
+                        &u32::try_from(payload.len())
+                            .map_err(|_| Error::custom("payload: too long"))?
+                            .to_be_bytes(),
+                        payload,
+                    ]
+                    .concat(),
+                ))
             }
-            Tep104SchemaPayload::Cell { schema_crc } => todo!(),
+            #[cfg(feature = "cell")]
+            TonConnectPayloadSchema::Cell { schema_crc, cell } => {
+                use tlb_ton::{
+                    Cell,
+                    r#as::{Ref, SnakeData},
+                    bits::ser::BitWriterExt,
+                };
+
+                let mut b = Cell::builder();
+                b.pack(0x75569022_u32)?
+                    .pack(schema_crc)?
+                    .pack(self.timestamp)?
+                    .pack(self.address)?
+                    .store_as::<_, Ref<SnakeData>>(&self.domain)?
+                    .store_as::<_, Ref>(cell)?;
+                Ok(b.into_cell()
+                    .hash_digest::<defuse_near_utils::digest::Sha256>())
+            }
         }
+    }
+}
+
+impl Payload for TonConnectPayload {
+    #[inline]
+    fn hash(&self) -> near_sdk::CryptoHash {
+        self.try_hash().unwrap_or_panic_str()
     }
 }
 
@@ -68,7 +92,7 @@ impl Tep104Payload {
 #[near(serializers = [json])]
 #[serde(tag = "type", rename_all = "snake_case")]
 #[derive(Debug, Clone)]
-pub enum Tep104SchemaPayload {
+pub enum TonConnectPayloadSchema {
     // TODO: docs
     // This schema is used to sign UTF-8 text messages using
     // _snake format_ (per [TEP-64](https://github.com/ton-blockchain/TEPs/blob/master/text/0064-token-data-standard.md)).
@@ -82,10 +106,12 @@ pub enum Tep104SchemaPayload {
         #[serde_as(as = "Base64")]
         bytes: Vec<u8>,
     },
+    #[cfg(feature = "cell")]
     Cell {
+        // TODO: string?
         schema_crc: u32,
-        // TODO
-        // cell: Cell,
+        #[serde_as(as = "defuse_serde_utils::tlb::AsBoC<Base64>")]
+        cell: tlb_ton::Cell,
     },
 }
 
@@ -100,9 +126,9 @@ pub enum Tep104SchemaPayload {
 #[near(serializers = [json])]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone)]
-pub struct SignedTep104Payload {
+pub struct SignedTonConnectPayload {
     #[serde(flatten)]
-    pub payload: Tep104Payload,
+    pub payload: TonConnectPayload,
 
     #[serde_as(as = "AsCurve<Ed25519>")]
     pub public_key: <Ed25519 as Curve>::PublicKey,
@@ -110,14 +136,14 @@ pub struct SignedTep104Payload {
     pub signature: <Ed25519 as Curve>::Signature,
 }
 
-impl Payload for SignedTep104Payload {
+impl Payload for SignedTonConnectPayload {
     #[inline]
     fn hash(&self) -> near_sdk::CryptoHash {
-        env::sha256_array(&self.payload.prehash())
+        self.payload.hash()
     }
 }
 
-impl SignedPayload for SignedTep104Payload {
+impl SignedPayload for SignedTonConnectPayload {
     type PublicKey = <Ed25519 as Curve>::PublicKey;
 
     #[inline]
@@ -127,6 +153,7 @@ impl SignedPayload for SignedTep104Payload {
 }
 
 #[cfg(test)]
+#[allow(clippy::unreadable_literal)]
 mod tests {
     use super::*;
 
@@ -134,14 +161,14 @@ mod tests {
 
     #[test]
     fn verify_text() {
-        let signed = SignedTep104Payload {
-            payload: Tep104Payload {
+        let signed = SignedTonConnectPayload {
+            payload: TonConnectPayload {
                 address: "0:f4809e5ffac9dc42a6b1d94c5e74ad5fd86378de675c805f2274d0055cbc9378"
                     .parse()
                     .unwrap(),
                 domain: "ton-connect.github.io".to_string(),
                 timestamp: 1747759882,
-                payload: Tep104SchemaPayload::Text {
+                payload: TonConnectPayloadSchema::Text {
                     text: "Hello, TON!".repeat(100),
                 },
             },
@@ -156,14 +183,14 @@ mod tests {
 
     #[test]
     fn verify_binary() {
-        let signed = SignedTep104Payload {
-            payload: Tep104Payload {
+        let signed = SignedTonConnectPayload {
+            payload: TonConnectPayload {
                 address: "0:f4809e5ffac9dc42a6b1d94c5e74ad5fd86378de675c805f2274d0055cbc9378"
                     .parse()
                     .unwrap(),
                 domain: "ton-connect.github.io".to_string(),
                 timestamp: 1747760435,
-                payload: Tep104SchemaPayload::Binary {
+                payload: TonConnectPayloadSchema::Binary {
                     bytes: hex!("48656c6c6f2c20544f4e21").into(),
                 },
             },
@@ -176,20 +203,31 @@ mod tests {
         assert_eq!(signed.verify(), Some(signed.public_key));
     }
 
+    #[cfg(feature = "cell")]
     #[test]
     fn verify_cell() {
-        let signed = SignedTep104Payload {
-            payload: Tep104Payload {
+        use tlb_ton::BagOfCells;
+
+        let signed = SignedTonConnectPayload {
+            payload: TonConnectPayload {
                 address: "0:f4809e5ffac9dc42a6b1d94c5e74ad5fd86378de675c805f2274d0055cbc9378"
                     .parse()
                     .unwrap(),
                 domain: "ton-connect.github.io".to_string(),
-                timestamp: 1747760435,
-                payload: Tep104SchemaPayload::Cell { schema_crc: 1 },
+                timestamp: 1747772412,
+                payload: TonConnectPayloadSchema::Cell {
+                    schema_crc: 0x2eccd0c1,
+                    cell: BagOfCells::parse_base64("te6cckEBAQEAEQAAHgAAAABIZWxsbywgVE9OIb7WCx4=")
+                        .unwrap()
+                        .into_single_root()
+                        .unwrap()
+                        .as_ref()
+                        .clone(),
+                },
             },
             public_key: hex!("22e795a07e832fc9084ca35a488a711f1dbedef637d4e886a6997d93ee2c2e37"),
             signature: hex!(
-                "9cf4c1c16b47afce46940eb9cd410894f31544b74206c2254bb1651f9b32cf5b0e482b78a2e8251e54d3517fae4b06c6f23546667d63ff62dccce70451698d01"
+                "6ad083855374c201c2acb14aa4e7eef44603c8d356624c8fd3b6be3babd84bd8bc7390f0ed4484ab58a535b3088681e0006839eb07136470985b3a33bfa17c05"
             ),
         };
 

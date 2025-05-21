@@ -650,7 +650,7 @@ dependencies = [
  "defuse-nep413",
  "defuse-num-utils",
  "defuse-serde-utils",
- "defuse-tep104",
+ "defuse-ton-connect",
  "defuse-webauthn",
  "derive_more 2.0.1",
  "hex",
@@ -700,6 +700,7 @@ dependencies = [
 name = "defuse-near-utils"
 version = "0.1.0"
 dependencies = [
+ "digest",
  "near-sdk",
 ]
 
@@ -765,18 +766,7 @@ dependencies = [
  "derive_more 2.0.1",
  "near-sdk",
  "serde_with",
-]
-
-[[package]]
-name = "defuse-tep104"
-version = "0.1.0"
-dependencies = [
- "defuse-crypto",
- "hex-literal",
- "impl-tools",
- "near-sdk",
- "serde_with",
- "tlb",
+ "tlb-ton",
 ]
 
 [[package]]
@@ -811,7 +801,6 @@ dependencies = [
  "impl-tools",
  "near-sdk",
  "serde_with",
- "tlb",
  "tlb-ton",
 ]
 
@@ -3775,9 +3764,13 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tlb"
-version = "0.3.2"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b8c1ecc4227c3397b0e2e8935e9640571d38d362fa661135a566b8d2b04bd66"
 dependencies = [
+ "base64 0.21.7",
  "bitvec",
+ "crc",
  "hex",
  "impl-tools",
  "sha2",
@@ -3786,7 +3779,9 @@ dependencies = [
 
 [[package]]
 name = "tlb-ton"
-version = "0.3.2"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2121a243f9d28eb13227e6c8e932615b484cb6f2904e5aee232c3208ef2fc278"
 dependencies = [
  "base64 0.21.7",
  "chrono",
@@ -3803,7 +3798,9 @@ dependencies = [
 
 [[package]]
 name = "tlbits"
-version = "0.3.2"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e6a5bfbdfcfcb9bfd4ac115a42deae172cd2c1a4e4ca2a02f44d234e6ecd9fe0"
 dependencies = [
  "bitvec",
  "either",

@@ -15,11 +15,12 @@ defuse-serde-utils.workspace = true
 impl-tools.workspace = true
 near-sdk.workspace = true
 serde_with.workspace = true
-tlb.workspace = true
 tlb-ton = { workspace = true, features = ["serde"] }
 
 [features]
 abi = ["defuse-crypto/abi"]
+cell = ["defuse-near-utils/digest", "defuse-serde-utils/tlb"]
 
 [dev-dependencies]
 hex-literal.workspace = true
+tlb-ton = { workspace = true, features = ["base64"] }
