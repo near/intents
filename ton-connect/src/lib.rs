@@ -7,7 +7,9 @@ use defuse_serde_utils::{base64::Base64, tlb::AsBoC};
 use impl_tools::autoimpl;
 use near_sdk::{env, near};
 use serde_with::{PickFirst, TimestampSeconds, serde_as};
-use tlb_ton::{Error, MsgAddress, StringError};
+use tlb_ton::{Cell, Error, MsgAddress, StringError};
+
+pub use tlb_ton;
 
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
@@ -89,6 +91,7 @@ impl TonConnectPayload {
                 .store_as::<_, Ref<SnakeData>>(&self.domain)?
                 .store_as::<_, Ref>(cell)?;
                 Ok(b.into_cell()
+                    // use host function for recursive hash calculation
                     .hash_digest::<defuse_near_utils::digest::Sha256>())
             }
         }
@@ -124,7 +127,7 @@ pub enum TonConnectPayloadSchema {
     Cell {
         schema_crc: u32,
         #[serde_as(as = "AsBoC<Base64>")]
-        cell: tlb_ton::Cell,
+        cell: Cell,
     },
 }
 
