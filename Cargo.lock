@@ -704,6 +704,8 @@ dependencies = [
  "chrono",
  "digest",
  "near-sdk",
+ "rstest",
+ "test-utils",
 ]
 
 [[package]]

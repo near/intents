@@ -30,3 +30,22 @@ impl FixedOutput for Sha256 {
 }
 
 impl HashMarker for Sha256 {}
+
+#[cfg(test)]
+mod tests {
+    use digest::Digest;
+    use near_sdk::CryptoHash;
+    use rstest::rstest;
+    use test_utils::random::{Seed, gen_random_bytes, make_seedable_rng, random_seed};
+
+    use super::*;
+
+    #[rstest]
+    #[trace]
+    fn digest(random_seed: Seed) {
+        let mut rng = make_seedable_rng(random_seed);
+        let data = gen_random_bytes(&mut rng, 0..1000);
+        let got: CryptoHash = Sha256::digest(&data).into();
+        assert_eq!(got, env::sha256_array(&data));
+    }
+}
