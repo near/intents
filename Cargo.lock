@@ -348,6 +348,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c469d952047f47f91b68d1cba3f10d63c11d73e4636f24f08daf0278abf01c4d"
 dependencies = [
  "android-tzdata",
+ "arbitrary",
  "iana-time-zone",
  "js-sys",
  "num-traits",
@@ -799,6 +800,7 @@ dependencies = [
 name = "defuse-ton-connect"
 version = "0.1.0"
 dependencies = [
+ "arbitrary",
  "chrono",
  "defuse-crypto",
  "defuse-near-utils",
@@ -806,8 +808,10 @@ dependencies = [
  "hex-literal",
  "impl-tools",
  "near-sdk",
+ "rstest",
  "schemars",
  "serde_with",
+ "test-utils",
  "tlb-ton",
 ]
 
@@ -2411,6 +2415,7 @@ version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a5e44f723f1133c9deac646763579fdb3ac745e418f2a7af9cd0c431da1f20b9"
 dependencies = [
+ "arbitrary",
  "num-integer",
  "num-traits",
 ]
@@ -3737,10 +3742,11 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tlb"
-version = "0.4.0"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b8c1ecc4227c3397b0e2e8935e9640571d38d362fa661135a566b8d2b04bd66"
+checksum = "7300ca284027c88593ee1db350206dcc766aa1e2b71e50a3202d4a7c9477e78b"
 dependencies = [
+ "arbitrary",
  "base64 0.21.7",
  "bitvec",
  "crc",
@@ -3752,10 +3758,11 @@ dependencies = [
 
 [[package]]
 name = "tlb-ton"
-version = "0.4.1"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2121a243f9d28eb13227e6c8e932615b484cb6f2904e5aee232c3208ef2fc278"
+checksum = "9280356c21824389dfd15ea0f7c2d067350bda9db0d2355f660b4360f9ea183a"
 dependencies = [
+ "arbitrary",
  "base64 0.21.7",
  "chrono",
  "crc",

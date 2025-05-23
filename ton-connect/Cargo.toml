@@ -23,5 +23,9 @@ tlb-ton = { workspace = true, features = ["serde"] }
 abi = ["defuse-crypto/abi", "defuse-serde-utils/abi"]
 
 [dev-dependencies]
+arbitrary.workspace = true
 hex-literal.workspace = true
-tlb-ton = { workspace = true, features = ["base64"] }
+near-sdk = { workspace = true, features = ["unit-testing"] }
+rstest.workspace = true
+test-utils.workspace = true
+tlb-ton = { workspace = true, features = ["arbitrary", "base64"] }

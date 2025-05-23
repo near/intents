@@ -58,6 +58,7 @@ randomness.path = "randomness"
 test-utils.path = "test-utils"
 
 anyhow = "1"
+arbitrary = "1"
 bnum = { version = "0.13", features = ["borsh"] }
 chrono = { version = "0.4", default-features = false }
 derive_more = "2.0"
@@ -82,7 +83,7 @@ serde_json = "1"
 serde_with = "3.9"
 strum = { version = "0.27", features = ["derive"] }
 thiserror = "2"
-tlb-ton = "0.4.1"
+tlb-ton = "0.4.5"
 tokio = { version = "1.45", default-features = false }
 
 [workspace.lints.clippy]
