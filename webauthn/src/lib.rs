@@ -11,7 +11,7 @@ use serde_with::serde_as;
     not(all(feature = "abi", not(target_arch = "wasm32"))),
     serde_as(schemars = false)
 )]
-#[near(serializers = [borsh, json])]
+#[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct PayloadSignature {
     /// Base64Url-encoded [authenticatorData](https://w3c.github.io/webauthn/#authenticator-data)
@@ -141,7 +141,7 @@ pub enum ClientDataType {
     not(all(feature = "abi", not(target_arch = "wasm32"))),
     serde_as(schemars = false)
 )]
-#[near(serializers = [borsh, json])]
+#[near(serializers = [json])]
 #[serde(untagged)]
 #[derive(Debug, Clone)]
 pub enum Signature {

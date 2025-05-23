@@ -1,0 +1,1 @@
+# TON Connect [signData](https://docs.tonconsole.com/academy/sign-data)

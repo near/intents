@@ -11,8 +11,10 @@ defuse-erc191.workspace = true
 defuse-nep245.workspace = true
 defuse-nep413.workspace = true
 defuse-map-utils.workspace = true
+defuse-near-utils = { workspace = true, features = ["time"] }
 defuse-num-utils.workspace = true
 defuse-serde-utils.workspace = true
+defuse-ton-connect.workspace = true
 defuse-webauthn.workspace = true
 
 chrono = { workspace = true, features = ["serde"] }
@@ -32,6 +34,7 @@ abi = [
     "defuse-erc191/abi",
     "defuse-nep413/abi",
     "defuse-serde-utils/abi",
+    "defuse-ton-connect/abi",
     "defuse-webauthn/abi",
 ]
 

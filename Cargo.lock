@@ -348,6 +348,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c469d952047f47f91b68d1cba3f10d63c11d73e4636f24f08daf0278abf01c4d"
 dependencies = [
  "android-tzdata",
+ "arbitrary",
  "iana-time-zone",
  "js-sys",
  "num-traits",
@@ -408,6 +409,21 @@ checksum = "59ed5838eebb26a2bb2e58f6d5b5316989ae9d08bab10e0e6d103e656d1b0280"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "crc"
+version = "3.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9710d3b3739c2e349eb44fe848ad0b7c8cb1e42bd87ee49371df2f7acaf3e675"
+dependencies = [
+ "crc-catalog",
+]
+
+[[package]]
+name = "crc-catalog"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "19d374276b40fb8bbdee95aef7c7fa6b5316ec764510eb64b8dd0e2ed0d7e7f5"
 
 [[package]]
 name = "crc32fast"
@@ -631,10 +647,12 @@ dependencies = [
  "defuse-crypto",
  "defuse-erc191",
  "defuse-map-utils",
+ "defuse-near-utils",
  "defuse-nep245",
  "defuse-nep413",
  "defuse-num-utils",
  "defuse-serde-utils",
+ "defuse-ton-connect",
  "defuse-webauthn",
  "derive_more 2.0.1",
  "hex",
@@ -684,7 +702,11 @@ dependencies = [
 name = "defuse-near-utils"
 version = "0.1.0"
 dependencies = [
+ "chrono",
+ "digest",
  "near-sdk",
+ "rstest",
+ "test-utils",
 ]
 
 [[package]]
@@ -749,6 +771,7 @@ dependencies = [
  "derive_more 2.0.1",
  "near-sdk",
  "serde_with",
+ "tlb-ton",
 ]
 
 [[package]]
@@ -757,6 +780,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bnum",
+ "chrono",
  "defuse",
  "defuse-poa-factory",
  "hex-literal",
@@ -770,6 +794,25 @@ dependencies = [
  "serde_json",
  "test-utils",
  "tokio",
+]
+
+[[package]]
+name = "defuse-ton-connect"
+version = "0.1.0"
+dependencies = [
+ "arbitrary",
+ "chrono",
+ "defuse-crypto",
+ "defuse-near-utils",
+ "defuse-serde-utils",
+ "hex-literal",
+ "impl-tools",
+ "near-sdk",
+ "rstest",
+ "schemars",
+ "serde_with",
+ "test-utils",
+ "tlb-ton",
 ]
 
 [[package]]
@@ -2367,6 +2410,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "num-bigint"
+version = "0.4.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a5e44f723f1133c9deac646763579fdb3ac745e418f2a7af9cd0c431da1f20b9"
+dependencies = [
+ "arbitrary",
+ "num-integer",
+ "num-traits",
+]
+
+[[package]]
 name = "num-conv"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2388,7 +2442,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "12ac428b1cb17fce6f731001d307d351ec70a6d202fc2e60f7d4c5e42d8f4f07"
 dependencies = [
  "autocfg",
- "num-bigint",
+ "num-bigint 0.3.3",
  "num-integer",
  "num-traits",
  "serde",
@@ -3063,6 +3117,7 @@ version = "0.8.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3fbf2ae1b8bc8e02df939598064d22402220cd5bbcca1c76f7d6a310974d5615"
 dependencies = [
+ "chrono",
  "dyn-clone",
  "schemars_derive",
  "serde",
@@ -3398,6 +3453,15 @@ dependencies = [
 
 [[package]]
 name = "strum"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "290d54ea6f91c969195bdbcd7442c8c2a2ba87da8bf60a7ee86a235d4bc1e125"
+dependencies = [
+ "strum_macros 0.25.3",
+]
+
+[[package]]
+name = "strum"
 version = "0.26.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8fec0f0aef304996cf250b31b5a10dee7980c85da9d759361292b8bca5a18f06"
@@ -3422,6 +3486,19 @@ dependencies = [
  "quote",
  "rustversion",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "strum_macros"
+version = "0.25.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23dc1fa9ac9c169a78ba62f0b841814b7abae11bdd047b9c58f893439e309ea0"
+dependencies = [
+ "heck 0.4.1",
+ "proc-macro2",
+ "quote",
+ "rustversion",
+ "syn 2.0.101",
 ]
 
 [[package]]
@@ -3662,6 +3739,58 @@ name = "tinyvec_macros"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
+
+[[package]]
+name = "tlb"
+version = "0.4.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ab3e609d99d65bba9365b1ece9b5486ea7dbf10472997515a8a64d4c49f0f36"
+dependencies = [
+ "arbitrary",
+ "base64 0.21.7",
+ "bitvec",
+ "crc",
+ "digest",
+ "hex",
+ "impl-tools",
+ "sha2",
+ "tlbits",
+]
+
+[[package]]
+name = "tlb-ton"
+version = "0.4.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc972030365ed2fbe728c1abea79f02f5e8dccc8731c372a60ff530ffb163181"
+dependencies = [
+ "arbitrary",
+ "base64 0.21.7",
+ "chrono",
+ "crc",
+ "digest",
+ "hex",
+ "impl-tools",
+ "lazy_static",
+ "num-bigint 0.4.6",
+ "num-traits",
+ "serde_with",
+ "strum 0.25.0",
+ "tlb",
+]
+
+[[package]]
+name = "tlbits"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e6a5bfbdfcfcb9bfd4ac115a42deae172cd2c1a4e4ca2a02f44d234e6ecd9fe0"
+dependencies = [
+ "bitvec",
+ "either",
+ "impl-tools",
+ "num-bigint 0.4.6",
+ "num-traits",
+ "thiserror 1.0.69",
+]
 
 [[package]]
 name = "tokio"

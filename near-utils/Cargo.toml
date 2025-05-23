@@ -5,4 +5,15 @@ version.workspace = true
 repository.workspace = true
 
 [dependencies]
+chrono = { workspace = true, optional = true }
+digest = { workspace = true, optional = true }
 near-sdk.workspace = true
+
+[features]
+digest = ["dep:digest"]
+time = ["dep:chrono"]
+
+[dev-dependencies]
+rstest.workspace = true
+test-utils.workspace = true
+near-sdk = {workspace = true, features = ["unit-testing"]}

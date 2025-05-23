@@ -2,6 +2,7 @@ pub mod erc191;
 pub mod multi;
 pub mod nep413;
 pub mod raw;
+pub mod ton_connect;
 pub mod webauthn;
 
 use core::convert::Infallible;

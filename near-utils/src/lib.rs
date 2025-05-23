@@ -1,8 +1,12 @@
 mod cache;
+#[cfg(feature = "digest")]
+pub mod digest;
 mod gas;
 mod lock;
 mod panic;
 mod prefix;
+#[cfg(feature = "time")]
+pub mod time;
 
 pub use self::{cache::*, gas::*, lock::*, panic::*, prefix::*};
 

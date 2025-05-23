@@ -92,7 +92,7 @@ impl Payload for Nep413Payload {
     not(all(feature = "abi", not(target_arch = "wasm32"))),
     serde_as(schemars = false)
 )]
-#[near(serializers = [borsh, json])]
+#[near(serializers = [json])]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone)]
 pub struct SignedNep413Payload {

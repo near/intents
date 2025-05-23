@@ -4,7 +4,7 @@ use near_sdk::{env, near};
 use serde_with::serde_as;
 
 /// See [ERC-191](https://github.com/ethereum/ercs/blob/master/ERCS/erc-191.md)
-#[near(serializers = [borsh, json])]
+#[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct Erc191Payload(pub String);
 
@@ -35,7 +35,7 @@ impl Payload for Erc191Payload {
     not(all(feature = "abi", not(target_arch = "wasm32"))),
     serde_as(schemars = false)
 )]
-#[near(serializers = [borsh, json])]
+#[near(serializers = [json])]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone)]
 pub struct SignedErc191Payload {

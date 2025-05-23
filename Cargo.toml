@@ -22,6 +22,7 @@ members = [
     "serde-utils",
     "tests",
     "test-utils",
+    "ton-connect",
     "wnear",
 ]
 default-members = ["defuse"]
@@ -50,15 +51,18 @@ defuse-webauthn.path = "webauthn"
 defuse-poa-factory.path = "poa-factory"
 defuse-poa-token.path = "poa-token"
 defuse-serde-utils.path = "serde-utils"
+defuse-ton-connect.path = "ton-connect"
 defuse-wnear.path = "wnear"
 
 randomness.path = "randomness"
 test-utils.path = "test-utils"
 
 anyhow = "1"
+arbitrary = "1"
 bnum = { version = "0.13", features = ["borsh"] }
 chrono = { version = "0.4", default-features = false }
 derive_more = "2.0"
+digest = { version = "0.10", default-features = false }
 ed25519-dalek = { version = "2.1", default-features = false }
 hex = "0.4"
 hex-literal = "1.0"
@@ -74,10 +78,12 @@ p256 = { version = "0.13", default-features = false, features = ["ecdsa"] }
 rand = "0.9"
 rand_chacha = "0.9"
 rstest = "0.25"
+schemars = "0.8"
 serde_json = "1"
 serde_with = "3.9"
 strum = { version = "0.27", features = ["derive"] }
 thiserror = "2"
+tlb-ton = { version = "0.4.6", default-features = false }
 tokio = { version = "1.45", default-features = false }
 
 [workspace.lints.clippy]
