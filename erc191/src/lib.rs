@@ -41,6 +41,7 @@ impl Payload for Erc191Payload {
 pub struct SignedErc191Payload {
     pub payload: Erc191Payload,
 
+    /// There is no public key member because the public key can be recovered by knowing the data and the signature
     #[serde_as(as = "AsCurve<Secp256k1>")]
     pub signature: <Secp256k1 as Curve>::Signature,
 }
