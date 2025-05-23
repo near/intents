@@ -7,7 +7,11 @@ use defuse_serde_utils::{base64::Base64, tlb::AsBoC};
 use impl_tools::autoimpl;
 use near_sdk::{env, near};
 use serde_with::{PickFirst, TimestampSeconds, serde_as};
-use tlb_ton::{Cell, Error, MsgAddress, StringError};
+use tlb_ton::{
+    Cell, Error, MsgAddress, StringError,
+    r#as::{Ref, SnakeData},
+    bits::ser::BitWriterExt,
+};
 
 pub use tlb_ton;
 
@@ -76,12 +80,6 @@ impl TonConnectPayload {
                 ))
             }
             TonConnectPayloadSchema::Cell { schema_crc, cell } => {
-                use tlb_ton::{
-                    Cell,
-                    r#as::{Ref, SnakeData},
-                    bits::ser::BitWriterExt,
-                };
-
                 let mut b = Cell::builder();
                 b.pack(
                     #[allow(clippy::unreadable_literal)]
