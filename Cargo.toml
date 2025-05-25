@@ -1,5 +1,5 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 members = [
     "admin-utils",
     "bitmap",
@@ -31,6 +31,7 @@ default-members = ["defuse"]
 edition = "2024"
 repository = "https://github.com/near/intents"
 version = "0.1.0"
+rust-version = "1.85.0"
 
 [workspace.dependencies]
 defuse-admin-utils.path = "admin-utils"

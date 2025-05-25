@@ -72,7 +72,6 @@ impl StateView for Contract {
 }
 
 impl State for Contract {
-    #[must_use]
     #[inline]
     fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> bool {
         self.accounts
@@ -80,7 +79,6 @@ impl State for Contract {
             .add_public_key(&account_id, public_key)
     }
 
-    #[must_use]
     #[inline]
     fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> bool {
         self.accounts
@@ -88,7 +86,6 @@ impl State for Contract {
             .remove_public_key(&account_id, &public_key)
     }
 
-    #[must_use]
     #[inline]
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> bool {
         self.accounts.get_or_create(account_id).commit_nonce(nonce)
