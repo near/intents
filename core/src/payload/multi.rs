@@ -21,16 +21,25 @@ use super::{
 /// we can allow wallets, like Metamask, sign messages to perform intents without having to
 /// support new cryptographic primitives and signing standards.
 pub enum MultiPayload {
-    /// NEP-413: The message signing standard in Near
+    /// NEP-413: The standard for message signing in Near Protocol.
+    /// For more details, refer to [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md).
     Nep413(SignedNep413Payload),
-    /// ERC-191: The message signing standard in Ethereum - AKA personal_sign(): https://eips.ethereum.org/EIPS/eip-191
+
+    /// ERC-191: The standard for message signing in Ethereum, commonly used with `personal_sign()`.
+    /// For more details, refer to [EIP-191](https://eips.ethereum.org/EIPS/eip-191).
     Erc191(SignedErc191Payload),
-    /// For Solana Phantom wallets: https://docs.phantom.com/solana/signing-a-message
+
+    /// Raw Ed25519: The standard used by Solana Phantom wallets for message signing.
+    /// For more details, refer to [Phantom Wallet's documentation](https://docs.phantom.com/solana/signing-a-message).
     RawEd25519(SignedRawEd25519Payload),
-    /// Standard for Passkeys - webauthn: https://w3c.github.io/webauthn/
+
+    /// WebAuthn: The standard for Passkeys.
+    /// For more details, refer to [WebAuthn specification](https://w3c.github.io/webauthn/).
     #[serde(rename = "webauthn")]
     WebAuthn(SignedWebAuthnPayload),
-    /// Standard for TonConnect data signing: https://docs.tonconsole.com/academy/sign-data
+
+    /// TonConnect: The standard for data signing inTON blockchain platform.
+    /// For more details, refer to [TonConnect documentation](https://docs.tonconsole.com/academy/sign-data).
     TonConnect(SignedTonConnectPayload),
 }
 
