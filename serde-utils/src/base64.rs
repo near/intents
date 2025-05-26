@@ -1,5 +1,5 @@
-#[allow(rustdoc::broken_intra_doc_links)]
-/// Helper for [`serde_with::base64::Base64`] to implement [`serde_with::schemars_0_8::JsonSchemaAs`] on it.
+#![allow(rustdoc::broken_intra_doc_links)]
+//! Helper for [`serde_with::base64::Base64`] to implement [`serde_with::schemars_0_8::JsonSchemaAs`] on it.
 pub use serde_with::{
     base64::{Alphabet, Standard, UrlSafe},
     formats::{Format, Padded, Unpadded},
