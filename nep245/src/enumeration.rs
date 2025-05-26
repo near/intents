@@ -1,8 +1,7 @@
 use crate::Token;
 use near_sdk::{AccountId, ext_contract, json_types::U128};
 
-/// A trait representing the multi-token enumeration standard: https://nomicon.io/Standards/Tokens/MultiToken/Enumeration#interface
-///
+/// A trait representing the [multi-token enumeration standard](https://nomicon.io/Standards/Tokens/MultiToken/Enumeration#interface).
 #[ext_contract(ext_mt_enumeration)]
 pub trait MultiTokenEnumeration {
     /// Get a list of all tokens

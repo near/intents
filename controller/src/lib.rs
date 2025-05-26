@@ -9,6 +9,6 @@ pub trait ControllerUpgradable {
         #[serializer(borsh)] state_migration_gas: Option<Gas>,
     ) -> Promise;
 
-    /// MUST be #[private]
+    /// MUST be `#[private]`
     fn state_migrate(&mut self);
 }

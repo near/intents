@@ -100,7 +100,7 @@ impl PayloadSignature {
     }
 }
 
-/// https://w3c.github.io/webauthn/#dictdef-collectedclientdata
+/// For more details, refer to [WebAuthn specification](https://w3c.github.io/webauthn/#dictdef-collectedclientdata).
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
     serde_as(schemars = true)
