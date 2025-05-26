@@ -1,3 +1,4 @@
+pub mod event_emitter;
 mod inspector;
 mod state;
 

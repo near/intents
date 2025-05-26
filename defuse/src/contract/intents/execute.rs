@@ -1,7 +1,11 @@
 use std::borrow::Cow;
 
 use defuse_core::{
-    Deadline, accounts::AccountEvent, engine::Inspector, events::DefuseEvent, intents::IntentEvent,
+    Deadline,
+    accounts::AccountEvent,
+    engine::{Inspector, event_emitter::EventEmitter},
+    events::DefuseEvent,
+    intents::IntentEvent,
 };
 use near_sdk::{AccountIdRef, CryptoHash};
 
@@ -24,6 +28,10 @@ impl Inspector for ExecuteInspector {
             AccountEvent::new(Cow::Owned(signer_id.to_owned()), ()),
             intent_hash,
         ));
+    }
+
+    fn emit_event<E: EventEmitter>(&mut self, mut event: E) {
+        event.do_emit();
     }
 }
 
