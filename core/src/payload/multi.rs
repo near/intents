@@ -38,7 +38,7 @@ pub enum MultiPayload {
     #[serde(rename = "webauthn")]
     WebAuthn(SignedWebAuthnPayload),
 
-    /// TonConnect: The standard for data signing inTON blockchain platform.
+    /// TonConnect: The standard for data signing in TON blockchain platform.
     /// For more details, refer to [TonConnect documentation](https://docs.tonconsole.com/academy/sign-data).
     TonConnect(SignedTonConnectPayload),
 }
