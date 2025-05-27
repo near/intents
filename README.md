@@ -58,5 +58,5 @@ After building, the artifacts of the build will be in the `res` directory.
 ### Contracts in this repository
 
 - Verifier/Defuse smart contract: The primary contract for Near Intents discussed in this readme file.
-- PoA Token and PoA factory contract: Contracts responsible for the Proof of Authority bridge. These help in transferring tokens from other assets (e.g., Bitcoin, Ethereum, Solana, etc) to the Near blockchain, so that transactions in the Near Intents can happen.
+- `PoA Token` and `PoA factory` contract: Contracts responsible for the Proof of Authority bridge. These help in transferring tokens from other assets (e.g., Bitcoin, Ethereum, Solana, etc) to the Near blockchain, so that transactions in the Near Intents can happen.
 - Controller interface: Interface [for contract](https://github.com/aurora-is-near/aurora-controller-factory) responsible for upgrading smart contracts and migrating their state.
