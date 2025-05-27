@@ -112,10 +112,13 @@ async fn storage_deposit_success(
     .await
     .unwrap();
 
+    let nonce = rng.random();
+
     env.defuse
         .execute_intents([env.user2.sign_defuse_message(
+            &mut rng,
             env.defuse.id(),
-            rng.random(),
+            nonce,
             Deadline::timeout(std::time::Duration::from_secs(120)),
             DefuseIntents {
                 intents: [StorageDeposit {
@@ -215,9 +218,12 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents(random_seed: Seed)
         .await
         .unwrap();
 
+    let nonce = rng.random();
+
     let signed_intents = [env.user2.sign_defuse_message(
+        &mut rng,
         env.defuse.id(),
-        rng.random(),
+        nonce,
         Deadline::timeout(std::time::Duration::from_secs(120)),
         DefuseIntents {
             intents: [StorageDeposit {

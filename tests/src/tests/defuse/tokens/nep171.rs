@@ -243,10 +243,13 @@ async fn transfer_nft_to_verifier(random_seed: Seed) {
             );
         }
 
+        let nonce = rng.random();
+
         env.defuse
             .execute_intents([env.user3.sign_defuse_message(
+                &mut rng,
                 env.defuse.id(),
-                rng.random(),
+                nonce,
                 Deadline::timeout(std::time::Duration::from_secs(120)),
                 DefuseIntents {
                     intents: [NftWithdraw {

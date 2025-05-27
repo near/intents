@@ -32,6 +32,12 @@ impl Seed {
     pub fn print_with_decoration(&self, test_name: &str) {
         println!("{test_name} seed: {}", self.0);
     }
+
+    #[must_use]
+    pub fn derive_seed(&self) -> Seed {
+        let mut rng = make_seedable_rng(*self);
+        rng.random()
+    }
 }
 
 impl FromStr for Seed {

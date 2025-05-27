@@ -5,22 +5,25 @@ mod storage;
 mod tokens;
 mod upgrade;
 
-use std::sync::LazyLock;
-
+use self::accounts::AccountManagerExt;
+use crate::utils::{account::AccountExt, crypto::Signer, read_wasm};
+use defuse::core::payload::DefusePayload;
+use defuse::core::ton_connect::tlb_ton::MsgAddress;
 use defuse::{
     contract::config::DefuseConfig,
     core::{
         Deadline, Nonce,
         nep413::Nep413Payload,
         payload::{multi::MultiPayload, nep413::Nep413DefuseMessage},
+        ton_connect::TonConnectPayload,
     },
 };
+use hex::ToHex;
 use near_sdk::{AccountId, serde::Serialize, serde_json::json};
 use near_workspaces::Contract;
-
-use crate::utils::{account::AccountExt, crypto::Signer, read_wasm};
-
-use self::accounts::AccountManagerExt;
+use randomness::Rng;
+use std::str::FromStr;
+use std::sync::LazyLock;
 
 static DEFUSE_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("defuse"));
 
@@ -53,8 +56,9 @@ impl DefuseExt for Contract {
 
 pub trait DefuseSigner: Signer {
     #[must_use]
-    fn sign_defuse_message<T>(
+    fn sign_defuse_message<T, R: Rng>(
         &self,
+        rng: &mut R,
         defuse_contract: &AccountId,
         nonce: Nonce,
         deadline: Deadline,
@@ -65,8 +69,9 @@ pub trait DefuseSigner: Signer {
 }
 
 impl DefuseSigner for near_workspaces::Account {
-    fn sign_defuse_message<T>(
+    fn sign_defuse_message<T, R: Rng>(
         &self,
+        rng: &mut R,
         defuse_contract: &AccountId,
         nonce: Nonce,
         deadline: Deadline,
@@ -75,18 +80,44 @@ impl DefuseSigner for near_workspaces::Account {
     where
         T: Serialize,
     {
-        self.sign_nep413(
-            Nep413Payload::new(
-                serde_json::to_string(&Nep413DefuseMessage {
-                    signer_id: self.id().clone(),
-                    deadline,
-                    message,
+        const ALGO_COUNT: u32 = 2;
+        let algo_choice = rng.random_range(0..ALGO_COUNT);
+
+        match algo_choice {
+            0 => self
+                .sign_nep413(
+                    Nep413Payload::new(
+                        serde_json::to_string(&Nep413DefuseMessage {
+                            signer_id: self.id().clone(),
+                            deadline,
+                            message,
+                        })
+                        .unwrap(),
+                    )
+                    .with_recipient(defuse_contract)
+                    .with_nonce(nonce),
+                )
+                .into(),
+            1 => {
+                let address_hex = rng.random::<[u8; 32]>().encode_hex::<String>();
+                self.sign_ton_connect(TonConnectPayload {
+                    address: MsgAddress::from_str(&format!("123:{address_hex}")).unwrap(),
+                    domain: "intents.test.near".to_string(),
+                    timestamp: defuse_near_utils::time::now(),
+                    payload: defuse::core::ton_connect::TonConnectPayloadSchema::Text {
+                        text: serde_json::to_string(&DefusePayload {
+                            signer_id: self.id().clone(),
+                            verifying_contract: defuse_contract.clone(),
+                            deadline,
+                            nonce,
+                            message,
+                        })
+                        .unwrap(),
+                    },
                 })
-                .unwrap(),
-            )
-            .with_recipient(defuse_contract)
-            .with_nonce(nonce),
-        )
-        .into()
+                .into()
+            }
+            _ => unreachable!(),
+        }
     }
 }

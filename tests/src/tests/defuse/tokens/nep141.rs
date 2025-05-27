@@ -1,5 +1,10 @@
-use std::time::Duration;
-
+use crate::{
+    tests::{
+        defuse::{DefuseSigner, env::Env},
+        poa::factory::PoAFactoryExt,
+    },
+    utils::{acl::AclExt, ft::FtExt, mt::MtExt},
+};
 use defuse::{
     contract::Role,
     core::{
@@ -10,17 +15,13 @@ use defuse::{
     tokens::DepositMessage,
 };
 use near_sdk::{AccountId, NearToken, json_types::U128};
-use randomness::{Rng, make_true_rng};
+use randomness::Rng;
 use rstest::rstest;
 use serde_json::json;
-
-use crate::{
-    tests::{
-        defuse::{DefuseSigner, env::Env},
-        poa::factory::PoAFactoryExt,
-    },
-    utils::{acl::AclExt, ft::FtExt, mt::MtExt},
-};
+use std::time::Duration;
+use test_utils::random::Seed;
+use test_utils::random::make_seedable_rng;
+use test_utils::random::random_seed;
 
 #[tokio::test]
 #[rstest]
@@ -103,7 +104,9 @@ async fn poa_deposit(#[values(false, true)] no_registration: bool) {
 
 #[tokio::test]
 #[rstest]
-async fn deposit_withdraw_intent(#[values(false, true)] no_registration: bool) {
+async fn deposit_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registration: bool) {
+    let mut rng = make_seedable_rng(random_seed);
+
     let env = Env::builder()
         .no_registration(no_registration)
         .build()
@@ -120,6 +123,8 @@ async fn deposit_withdraw_intent(#[values(false, true)] no_registration: bool) {
     .await
     .unwrap();
 
+    let nonce = rng.random();
+
     assert_eq!(
         env.user1
             .defuse_ft_deposit(
@@ -129,8 +134,9 @@ async fn deposit_withdraw_intent(#[values(false, true)] no_registration: bool) {
                 DepositMessage {
                     receiver_id: env.user1.id().clone(),
                     execute_intents: [env.user1.sign_defuse_message(
+                        &mut rng,
                         env.defuse.id(),
-                        make_true_rng().random(),
+                        nonce,
                         Deadline::timeout(Duration::from_secs(120)),
                         DefuseIntents {
                             intents: [
@@ -189,7 +195,12 @@ async fn deposit_withdraw_intent(#[values(false, true)] no_registration: bool) {
 
 #[tokio::test]
 #[rstest]
-async fn deposit_withdraw_intent_refund(#[values(false, true)] no_registration: bool) {
+async fn deposit_withdraw_intent_refund(
+    random_seed: Seed,
+    #[values(false, true)] no_registration: bool,
+) {
+    let mut rng = make_seedable_rng(random_seed);
+
     let env = Env::builder()
         .no_registration(no_registration)
         .build()
@@ -206,6 +217,8 @@ async fn deposit_withdraw_intent_refund(#[values(false, true)] no_registration: 
     .await
     .unwrap();
 
+    let nonce = rng.random();
+
     assert_eq!(
         env.user1
             .defuse_ft_deposit(
@@ -215,8 +228,9 @@ async fn deposit_withdraw_intent_refund(#[values(false, true)] no_registration: 
                 DepositMessage {
                     receiver_id: env.user1.id().clone(),
                     execute_intents: [env.user1.sign_defuse_message(
+                        &mut rng,
                         env.defuse.id(),
-                        make_true_rng().random(),
+                        nonce,
                         Deadline::MAX,
                         DefuseIntents {
                             intents: [FtWithdraw {

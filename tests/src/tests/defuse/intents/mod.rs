@@ -1,18 +1,24 @@
 use defuse::{
     core::{
         Deadline,
-        intents::{DefuseIntents, tokens::Transfer},
-        payload::multi::MultiPayload,
+        intents::{
+            DefuseIntents,
+            tokens::{FtWithdraw, Transfer},
+        },
+        payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
         tokens::{Amounts, TokenId},
     },
     intents::SimulationOutput,
 };
+use hex::ToHex;
 use near_sdk::{AccountId, AccountIdRef};
-use randomness::{Rng, make_true_rng};
+use randomness::Rng;
 use rstest::rstest;
 use serde_json::json;
+use test_utils::random::make_seedable_rng;
+use test_utils::random::{Seed, random_seed};
 
-use crate::utils::{mt::MtExt, test_log::TestLog};
+use crate::utils::{crypto::Signer, mt::MtExt, test_log::TestLog};
 
 use super::{DefuseSigner, accounts::AccountManagerExt, env::Env};
 
@@ -142,7 +148,9 @@ impl ExecuteIntentsExt for near_workspaces::Contract {
 
 #[tokio::test]
 #[rstest]
-async fn simulate_is_view_method(#[values(false, true)] no_registration: bool) {
+async fn simulate_is_view_method(random_seed: Seed, #[values(false, true)] no_registration: bool) {
+    let mut rng = make_seedable_rng(random_seed);
+
     let env = Env::builder()
         .no_registration(no_registration)
         .build()
@@ -155,10 +163,13 @@ async fn simulate_is_view_method(#[values(false, true)] no_registration: bool) {
         .await
         .unwrap();
 
+    let nonce = rng.random();
+
     env.defuse
         .simulate_intents([env.user1.sign_defuse_message(
+            &mut rng,
             env.defuse.id(),
-            make_true_rng().random(),
+            nonce,
             Deadline::MAX,
             DefuseIntents {
                 intents: [Transfer {
@@ -242,4 +253,61 @@ async fn webauthn(#[values(false, true)] no_registration: bool) {
             .unwrap(),
         0
     );
+}
+
+#[tokio::test]
+#[rstest]
+#[trace]
+async fn ton_connect_sign_intent_example(random_seed: Seed) {
+    use defuse::core::ton_connect::tlb_ton::MsgAddress;
+    use std::str::FromStr;
+
+    let mut rng = make_seedable_rng(random_seed);
+
+    let env: Env = Env::builder().no_registration(false).build().await;
+
+    let address_hex = rng.random::<[u8; 32]>().encode_hex::<String>();
+
+    let intents = DefuseIntents {
+        intents: [FtWithdraw {
+            token: env.ft1.clone(),
+            receiver_id: "bob.near".parse().unwrap(),
+            amount: 1000.into(),
+            memo: None,
+            msg: None,
+            storage_deposit: None,
+        }
+        .into()]
+        .into(),
+    };
+
+    let payload = defuse::core::ton_connect::TonConnectPayload {
+        address: MsgAddress::from_str(&format!("123:{address_hex}")).unwrap(),
+        domain: "example.com".to_string(),
+        timestamp: defuse_near_utils::time::now(),
+        payload: defuse::core::ton_connect::TonConnectPayloadSchema::Text {
+            text: serde_json::to_string(&DefusePayload {
+                signer_id: "alice.near".parse().unwrap(),
+                verifying_contract: "intent.near".parse().unwrap(),
+                deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
+                nonce: rng.random(),
+                message: intents,
+            })
+            .unwrap(),
+        },
+    };
+
+    let root_secret_key = env.sandbox().root_account().secret_key();
+
+    let worker = env.sandbox().worker().clone();
+
+    let account = near_workspaces::Account::from_secret_key(
+        "alice.near".parse().unwrap(),
+        root_secret_key.clone(),
+        &worker,
+    );
+
+    let signed = account.sign_ton_connect(payload);
+
+    let _decoded_payload: DefusePayload<DefuseIntents> = signed.extract_defuse_payload().unwrap();
 }

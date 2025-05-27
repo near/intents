@@ -10,11 +10,13 @@ workspace = true
 [dev-dependencies]
 defuse = { workspace = true, features = ["contract"] }
 defuse-poa-factory = { workspace = true, features = ["contract"] }
+defuse-near-utils = { workspace = true }
 
 anyhow.workspace = true
 bnum = { workspace = true, features = ["rand"] }
 chrono.workspace = true
 hex-literal.workspace = true
+hex.workspace = true
 impl-tools.workspace = true
 near-crypto.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }

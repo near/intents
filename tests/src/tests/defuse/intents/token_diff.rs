@@ -14,6 +14,8 @@ use near_sdk::AccountId;
 use near_workspaces::Account;
 use randomness::{Rng, make_true_rng};
 use rstest::rstest;
+use test_utils::random::make_seedable_rng;
+use test_utils::random::{Seed, random_seed};
 
 use crate::{
     tests::defuse::{DefuseSigner, env::Env},
@@ -25,6 +27,7 @@ use super::ExecuteIntentsExt;
 #[rstest]
 #[tokio::test]
 async fn swap_p2p(
+    random_seed: Seed,
     #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
     #[values(false, true)] no_registration: bool,
 ) {
@@ -38,6 +41,7 @@ async fn swap_p2p(
     let ft2_token_id = TokenId::Nep141(env.ft2.clone());
 
     test_ft_diffs(
+        random_seed,
         &env,
         [
             AccountFtDiff {
@@ -87,6 +91,7 @@ async fn swap_p2p(
 #[rstest]
 #[tokio::test]
 async fn swap_many(
+    random_seed: Seed,
     #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
     #[values(false, true)] no_registration: bool,
 ) {
@@ -101,6 +106,7 @@ async fn swap_many(
     let ft3_token_id = TokenId::Nep141(env.ft3.clone());
 
     test_ft_diffs(
+        random_seed,
         &env,
         [
             AccountFtDiff {
@@ -185,7 +191,7 @@ struct AccountFtDiff<'a> {
     result_balances: FtBalances<'a>,
 }
 
-async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
+async fn test_ft_diffs(random_gen_seed: Seed, env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
     // deposit
     for account in &accounts {
         for (token_id, balance) in &account.init_balances {
@@ -199,11 +205,15 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
         }
     }
 
+    let seed_inner = random_gen_seed.derive_seed();
+
     let signed: Vec<MultiPayload> = accounts
         .iter()
         .flat_map(move |account| {
-            account.diff.iter().cloned().map(|diff| {
+            let mut rng = make_seedable_rng(seed_inner);
+            account.diff.iter().cloned().map(move |diff| {
                 account.account.sign_defuse_message(
+                    &mut rng,
                     env.defuse.id(),
                     make_true_rng().random(),
                     Deadline::timeout(Duration::from_secs(120)),
@@ -255,7 +265,9 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
 
 #[tokio::test]
 #[rstest]
-async fn invariant_violated(#[values(false, true)] no_registration: bool) {
+async fn invariant_violated(random_seed: Seed, #[values(false, true)] no_registration: bool) {
+    let mut rng = make_seedable_rng(random_seed);
+
     let env = Env::builder()
         .no_registration(no_registration)
         .build()
@@ -272,10 +284,14 @@ async fn invariant_violated(#[values(false, true)] no_registration: bool) {
         .await
         .unwrap();
 
+    let nonce1 = rng.random();
+    let nonce2 = rng.random();
+
     let signed: Vec<_> = [
         env.user1.sign_defuse_message(
+            &mut rng,
             env.defuse.id(),
-            make_true_rng().random(),
+            nonce1,
             Deadline::MAX,
             DefuseIntents {
                 intents: [TokenDiff {
@@ -290,8 +306,9 @@ async fn invariant_violated(#[values(false, true)] no_registration: bool) {
             },
         ),
         env.user1.sign_defuse_message(
+            &mut rng,
             env.defuse.id(),
-            make_true_rng().random(),
+            nonce2,
             Deadline::MAX,
             DefuseIntents {
                 intents: [TokenDiff {
@@ -349,6 +366,7 @@ async fn invariant_violated(#[values(false, true)] no_registration: bool) {
 #[rstest]
 #[tokio::test]
 async fn solver_user_closure(
+    random_seed: Seed,
     #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
     #[values(false, true)] no_registration: bool,
 ) {
@@ -357,6 +375,8 @@ async fn solver_user_closure(
 
     // RFQ: 1000 token_in -> ??? token_out
     const USER_DELTA_IN: i128 = -1000;
+
+    let mut rng = make_seedable_rng(random_seed);
 
     let env = Env::builder()
         .fee(fee)
@@ -386,10 +406,13 @@ async fn solver_user_closure(
     let solver_delta_out = solver_delta_in * -2;
     dbg!(solver_delta_in, solver_delta_out);
 
+    let nonce = rng.random();
+
     // solver signs his intent
     let solver_commitment = solver.sign_defuse_message(
+        &mut rng,
         env.defuse.id(),
-        make_true_rng().random(),
+        nonce,
         Deadline::timeout(Duration::from_secs(90)),
         DefuseIntents {
             intents: [TokenDiff {
@@ -444,10 +467,13 @@ async fn solver_user_closure(
             .unwrap();
     dbg!(user_delta_out);
 
+    let nonce = rng.random();
+
     // user signs the message
     let user_commitment = user.sign_defuse_message(
+        &mut rng,
         env.defuse.id(),
-        make_true_rng().random(),
+        nonce,
         Deadline::timeout(Duration::from_secs(90)),
         DefuseIntents {
             intents: [TokenDiff {
