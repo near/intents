@@ -2235,8 +2235,7 @@ checksum = "d191936f902770069255b16c95d1fb8edd6f3c3817c9228933a20ec8466737a3"
 [[package]]
 name = "near-sdk"
 version = "5.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1477ca4eb6d4a70a0e5740c5d34c268eedacce936ca557d3450ed5bd873fd06"
+source = "git+https://github.com/BonelessImpl/near-sdk-rs?branch=feature%2Fjson-event-string#61226d8b0054ce4ce3c4e0075db8728f8c9fcad9"
 dependencies = [
  "base64 0.22.1",
  "borsh",
@@ -2260,8 +2259,7 @@ dependencies = [
 [[package]]
 name = "near-sdk-macros"
 version = "5.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f29fe6d31a827e421d0d3f5c38fe3cc73f9f2a2aae41d2601d37c22d7ec1aae"
+source = "git+https://github.com/BonelessImpl/near-sdk-rs?branch=feature%2Fjson-event-string#61226d8b0054ce4ce3c4e0075db8728f8c9fcad9"
 dependencies = [
  "Inflector",
  "darling 0.20.11",
@@ -2283,8 +2281,7 @@ checksum = "f292226fd8f4c7c21cf6b1da1c17e9b484ebc1b9aeb4251d69336d28b7917ace"
 [[package]]
 name = "near-sys"
 version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7d8e0ba9994e4d54cb4b301cd5fa9f2defcb69851148103512b9640a7e91572"
+source = "git+https://github.com/BonelessImpl/near-sdk-rs?branch=feature%2Fjson-event-string#61226d8b0054ce4ce3c4e0075db8728f8c9fcad9"
 
 [[package]]
 name = "near-time"
