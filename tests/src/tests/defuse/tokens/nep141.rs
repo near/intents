@@ -1,3 +1,4 @@
+use crate::tests::defuse::SigningStandard;
 use crate::{
     tests::{
         defuse::{DefuseSigner, env::Env},
@@ -5,6 +6,7 @@ use crate::{
     },
     utils::{acl::AclExt, ft::FtExt, mt::MtExt},
 };
+use arbitrary::{Arbitrary, Unstructured};
 use defuse::{
     contract::Role,
     core::{
@@ -134,7 +136,10 @@ async fn deposit_withdraw_intent(random_seed: Seed, #[values(false, true)] no_re
                 DepositMessage {
                     receiver_id: env.user1.id().clone(),
                     execute_intents: [env.user1.sign_defuse_message(
-                        &mut rng,
+                        SigningStandard::arbitrary(&mut Unstructured::new(
+                            &rng.random::<[u8; 1]>()
+                        ))
+                        .unwrap(),
                         env.defuse.id(),
                         nonce,
                         Deadline::timeout(Duration::from_secs(120)),
@@ -199,6 +204,10 @@ async fn deposit_withdraw_intent_refund(
     random_seed: Seed,
     #[values(false, true)] no_registration: bool,
 ) {
+    use arbitrary::{Arbitrary, Unstructured};
+
+    use crate::tests::defuse::SigningStandard;
+
     let mut rng = make_seedable_rng(random_seed);
 
     let env = Env::builder()
@@ -228,7 +237,10 @@ async fn deposit_withdraw_intent_refund(
                 DepositMessage {
                     receiver_id: env.user1.id().clone(),
                     execute_intents: [env.user1.sign_defuse_message(
-                        &mut rng,
+                        SigningStandard::arbitrary(&mut Unstructured::new(
+                            &rng.random::<[u8; 1]>()
+                        ))
+                        .unwrap(),
                         env.defuse.id(),
                         nonce,
                         Deadline::MAX,

@@ -1,3 +1,7 @@
+use super::{DefuseSigner, accounts::AccountManagerExt, env::Env};
+use crate::tests::defuse::SigningStandard;
+use crate::utils::{crypto::Signer, mt::MtExt, test_log::TestLog};
+use arbitrary::{Arbitrary, Unstructured};
 use defuse::{
     core::{
         Deadline,
@@ -10,17 +14,12 @@ use defuse::{
     },
     intents::SimulationOutput,
 };
-use hex::ToHex;
 use near_sdk::{AccountId, AccountIdRef};
 use randomness::Rng;
 use rstest::rstest;
 use serde_json::json;
 use test_utils::random::make_seedable_rng;
 use test_utils::random::{Seed, random_seed};
-
-use crate::utils::{crypto::Signer, mt::MtExt, test_log::TestLog};
-
-use super::{DefuseSigner, accounts::AccountManagerExt, env::Env};
 
 mod ft_withdraw;
 mod relayers;
@@ -167,7 +166,7 @@ async fn simulate_is_view_method(random_seed: Seed, #[values(false, true)] no_re
 
     env.defuse
         .simulate_intents([env.user1.sign_defuse_message(
-            &mut rng,
+            SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
             env.defuse.id(),
             nonce,
             Deadline::MAX,
@@ -260,13 +259,12 @@ async fn webauthn(#[values(false, true)] no_registration: bool) {
 #[trace]
 async fn ton_connect_sign_intent_example(random_seed: Seed) {
     use defuse::core::ton_connect::tlb_ton::MsgAddress;
-    use std::str::FromStr;
 
     let mut rng = make_seedable_rng(random_seed);
 
     let env: Env = Env::builder().no_registration(false).build().await;
 
-    let address_hex = rng.random::<[u8; 32]>().encode_hex::<String>();
+    let address = MsgAddress::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 32]>())).unwrap();
 
     let intents = DefuseIntents {
         intents: [FtWithdraw {
@@ -282,7 +280,7 @@ async fn ton_connect_sign_intent_example(random_seed: Seed) {
     };
 
     let payload = defuse::core::ton_connect::TonConnectPayload {
-        address: MsgAddress::from_str(&format!("123:{address_hex}")).unwrap(),
+        address,
         domain: "example.com".to_string(),
         timestamp: defuse_near_utils::time::now(),
         payload: defuse::core::ton_connect::TonConnectPayloadSchema::Text {

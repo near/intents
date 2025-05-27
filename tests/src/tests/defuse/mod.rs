@@ -7,6 +7,7 @@ mod upgrade;
 
 use self::accounts::AccountManagerExt;
 use crate::utils::{account::AccountExt, crypto::Signer, read_wasm};
+use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::payload::DefusePayload;
 use defuse::core::ton_connect::tlb_ton::MsgAddress;
 use defuse::{
@@ -18,11 +19,8 @@ use defuse::{
         ton_connect::TonConnectPayload,
     },
 };
-use hex::ToHex;
 use near_sdk::{AccountId, serde::Serialize, serde_json::json};
 use near_workspaces::Contract;
-use randomness::Rng;
-use std::str::FromStr;
 use std::sync::LazyLock;
 
 static DEFUSE_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("defuse"));
@@ -56,9 +54,9 @@ impl DefuseExt for Contract {
 
 pub trait DefuseSigner: Signer {
     #[must_use]
-    fn sign_defuse_message<T, R: Rng>(
+    fn sign_defuse_message<T>(
         &self,
-        rng: &mut R,
+        signing_standard: SigningStandard,
         defuse_contract: &AccountId,
         nonce: Nonce,
         deadline: Deadline,
@@ -69,9 +67,9 @@ pub trait DefuseSigner: Signer {
 }
 
 impl DefuseSigner for near_workspaces::Account {
-    fn sign_defuse_message<T, R: Rng>(
+    fn sign_defuse_message<T>(
         &self,
-        rng: &mut R,
+        signing_standard: SigningStandard,
         defuse_contract: &AccountId,
         nonce: Nonce,
         deadline: Deadline,
@@ -80,11 +78,8 @@ impl DefuseSigner for near_workspaces::Account {
     where
         T: Serialize,
     {
-        const ALGO_COUNT: u32 = 2;
-        let algo_choice = rng.random_range(0..ALGO_COUNT);
-
-        match algo_choice {
-            0 => self
+        match signing_standard {
+            SigningStandard::Nep413 => self
                 .sign_nep413(
                     Nep413Payload::new(
                         serde_json::to_string(&Nep413DefuseMessage {
@@ -98,10 +93,12 @@ impl DefuseSigner for near_workspaces::Account {
                     .with_nonce(nonce),
                 )
                 .into(),
-            1 => {
-                let address_hex = rng.random::<[u8; 32]>().encode_hex::<String>();
-                self.sign_ton_connect(TonConnectPayload {
-                    address: MsgAddress::from_str(&format!("123:{address_hex}")).unwrap(),
+            SigningStandard::TonConnect => self
+                .sign_ton_connect(TonConnectPayload {
+                    address: MsgAddress::arbitrary(&mut Unstructured::new(
+                        self.secret_key().public_key().key_data(),
+                    ))
+                    .unwrap(),
                     domain: "intents.test.near".to_string(),
                     timestamp: defuse_near_utils::time::now(),
                     payload: defuse::core::ton_connect::TonConnectPayloadSchema::Text {
@@ -115,9 +112,14 @@ impl DefuseSigner for near_workspaces::Account {
                         .unwrap(),
                     },
                 })
-                .into()
-            }
-            _ => unreachable!(),
+                .into(),
         }
     }
+}
+
+#[derive(Default, Arbitrary)]
+pub enum SigningStandard {
+    #[default]
+    Nep413,
+    TonConnect,
 }

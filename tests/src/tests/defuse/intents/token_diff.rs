@@ -1,5 +1,6 @@
 use std::{collections::BTreeMap, time::Duration};
 
+use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::{
     Deadline,
     fees::Pips,
@@ -18,7 +19,7 @@ use test_utils::random::make_seedable_rng;
 use test_utils::random::{Seed, random_seed};
 
 use crate::{
-    tests::defuse::{DefuseSigner, env::Env},
+    tests::defuse::{DefuseSigner, SigningStandard, env::Env},
     utils::mt::MtExt,
 };
 
@@ -213,7 +214,8 @@ async fn test_ft_diffs(random_gen_seed: Seed, env: &Env, accounts: Vec<AccountFt
             let mut rng = make_seedable_rng(seed_inner);
             account.diff.iter().cloned().map(move |diff| {
                 account.account.sign_defuse_message(
-                    &mut rng,
+                    SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
+                        .unwrap(),
                     env.defuse.id(),
                     make_true_rng().random(),
                     Deadline::timeout(Duration::from_secs(120)),
@@ -289,7 +291,7 @@ async fn invariant_violated(random_seed: Seed, #[values(false, true)] no_registr
 
     let signed: Vec<_> = [
         env.user1.sign_defuse_message(
-            &mut rng,
+            SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
             env.defuse.id(),
             nonce1,
             Deadline::MAX,
@@ -306,7 +308,7 @@ async fn invariant_violated(random_seed: Seed, #[values(false, true)] no_registr
             },
         ),
         env.user1.sign_defuse_message(
-            &mut rng,
+            SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
             env.defuse.id(),
             nonce2,
             Deadline::MAX,
@@ -410,7 +412,7 @@ async fn solver_user_closure(
 
     // solver signs his intent
     let solver_commitment = solver.sign_defuse_message(
-        &mut rng,
+        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
         env.defuse.id(),
         nonce,
         Deadline::timeout(Duration::from_secs(90)),
@@ -471,7 +473,7 @@ async fn solver_user_closure(
 
     // user signs the message
     let user_commitment = user.sign_defuse_message(
-        &mut rng,
+        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
         env.defuse.id(),
         nonce,
         Deadline::timeout(Duration::from_secs(90)),

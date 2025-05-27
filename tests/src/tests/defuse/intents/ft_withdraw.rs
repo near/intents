@@ -1,8 +1,11 @@
 use super::ExecuteIntentsExt;
 use crate::{
-    tests::defuse::{DefuseExt, DefuseSigner, env::Env, tokens::nep141::DefuseFtReceiver},
+    tests::defuse::{
+        DefuseExt, DefuseSigner, SigningStandard, env::Env, tokens::nep141::DefuseFtReceiver,
+    },
     utils::{ft::FtExt, mt::MtExt, wnear::WNearExt},
 };
+use arbitrary::{Arbitrary, Unstructured};
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
     core::{
@@ -53,7 +56,7 @@ async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registr
 
     env.defuse
         .execute_intents([env.user1.sign_defuse_message(
-            &mut rng,
+            SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
             env.defuse.id(),
             nonce,
             Deadline::timeout(Duration::from_secs(120)),
@@ -91,7 +94,7 @@ async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registr
 
     env.defuse
         .execute_intents([env.user1.sign_defuse_message(
-            &mut rng,
+            SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
             env.defuse.id(),
             nonce,
             Deadline::MAX,
@@ -158,7 +161,7 @@ async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registr
     env.defuse_execute_intents(
         env.defuse.id(),
         [env.user1.sign_defuse_message(
-            &mut rng,
+            SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
             env.defuse.id(),
             nonce,
             Deadline::MAX,
@@ -259,7 +262,7 @@ async fn ft_withdraw_intent_msg(random_seed: Seed, #[values(false, true)] no_reg
 
     env.defuse
         .execute_intents([env.user1.sign_defuse_message(
-            &mut rng,
+            SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
             env.defuse.id(),
             nonce,
             Deadline::timeout(Duration::from_secs(120)),

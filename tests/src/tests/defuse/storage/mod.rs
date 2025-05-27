@@ -1,7 +1,8 @@
 use crate::{
-    tests::defuse::{DefuseSigner, env::Env, intents::ExecuteIntentsExt},
+    tests::defuse::{DefuseSigner, SigningStandard, env::Env, intents::ExecuteIntentsExt},
     utils::{storage_management::StorageManagementExt, wnear::WNearExt},
 };
+use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::Deadline;
 use defuse::core::intents::{DefuseIntents, tokens::StorageDeposit};
 use near_sdk::NearToken;
@@ -116,7 +117,7 @@ async fn storage_deposit_success(
 
     env.defuse
         .execute_intents([env.user2.sign_defuse_message(
-            &mut rng,
+            SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
             env.defuse.id(),
             nonce,
             Deadline::timeout(std::time::Duration::from_secs(120)),
@@ -221,7 +222,7 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents(random_seed: Seed)
     let nonce = rng.random();
 
     let signed_intents = [env.user2.sign_defuse_message(
-        &mut rng,
+        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
         env.defuse.id(),
         nonce,
         Deadline::timeout(std::time::Duration::from_secs(120)),
