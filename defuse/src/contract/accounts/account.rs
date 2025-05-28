@@ -1,12 +1,5 @@
-use std::borrow::Cow;
-
 use defuse_bitmap::{U248, U256};
-use defuse_core::{
-    Nonces,
-    accounts::{AccountEvent, PublicKeyEvent},
-    crypto::PublicKey,
-    events::DefuseEvent,
-};
+use defuse_core::{Nonces, crypto::PublicKey};
 use defuse_near_utils::NestPrefix;
 use impl_tools::autoimpl;
 use near_sdk::{
@@ -58,14 +51,6 @@ impl Account {
             return false;
         }
 
-        DefuseEvent::PublicKeyAdded(AccountEvent::new(
-            Cow::Borrowed(me),
-            PublicKeyEvent {
-                public_key: Cow::Borrowed(&public_key),
-            },
-        ))
-        .emit();
-
         true
     }
 
@@ -85,14 +70,6 @@ impl Account {
         if !self.maybe_remove_public_key(me, public_key) {
             return false;
         }
-
-        DefuseEvent::PublicKeyRemoved(AccountEvent::new(
-            Cow::Borrowed(me),
-            PublicKeyEvent {
-                public_key: Cow::Borrowed(public_key),
-            },
-        ))
-        .emit();
 
         true
     }
