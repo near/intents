@@ -94,4 +94,6 @@ pub trait State: StateView {
         owner_id: &AccountIdRef,
         storage_deposit: StorageDeposit,
     ) -> Result<()>;
+
+    fn set_fee(&mut self, fee: Pips);
 }

@@ -21,6 +21,7 @@ use super::{State, StateView};
 pub struct CachedState<W: StateView> {
     view: W,
     accounts: CachedAccounts,
+    fee: Pips,
 }
 
 impl<W> CachedState<W>
@@ -30,6 +31,7 @@ where
     #[inline]
     pub fn new(view: W) -> Self {
         Self {
+            fee: view.fee(),
             view,
             accounts: CachedAccounts::new(),
         }
@@ -256,6 +258,10 @@ where
                 storage_deposit.amount.as_yoctonear(),
             )],
         )
+    }
+
+    fn set_fee(&mut self, fee: Pips) {
+        self.fee = fee;
     }
 }
 

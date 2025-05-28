@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use defuse_crypto::PublicKey;
 use defuse_serde_utils::base64::Base64;
 use near_sdk::{AccountIdRef, CryptoHash, near};
@@ -7,9 +5,7 @@ use serde_with::serde_as;
 
 use crate::{
     DefuseError, Nonce, Result,
-    accounts::{AccountEvent, PublicKeyEvent},
     engine::{Engine, Inspector, State},
-    events::DefuseEvent,
 };
 
 use super::ExecutableIntent;
@@ -44,15 +40,6 @@ impl ExecutableIntent for AddPublicKey {
             return Err(DefuseError::PublicKeyExists);
         }
 
-        engine
-            .inspector
-            .on_event(DefuseEvent::PublicKeyAdded(AccountEvent::new(
-                Cow::Borrowed(signer_id),
-                PublicKeyEvent {
-                    public_key: Cow::Borrowed(&self.public_key),
-                },
-            )));
-
         Ok(())
     }
 }
@@ -82,15 +69,6 @@ impl ExecutableIntent for RemovePublicKey {
         {
             return Err(DefuseError::PublicKeyNotExist);
         }
-
-        engine
-            .inspector
-            .on_event(DefuseEvent::PublicKeyRemoved(AccountEvent::new(
-                Cow::Borrowed(signer_id),
-                PublicKeyEvent {
-                    public_key: Cow::Borrowed(&self.public_key),
-                },
-            )));
 
         Ok(())
     }

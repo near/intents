@@ -2,15 +2,16 @@ use core::mem;
 use std::borrow::Cow;
 
 use defuse_core::{
+    engine::Engine,
     events::DefuseIntentEmit,
-    fees::{FeeChangedEvent, FeeCollectorChangedEvent, Pips},
+    fees::{FeeCollectorChangedEvent, Pips},
 };
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
 use near_sdk::{AccountId, assert_one_yocto, near, require};
 
 use crate::fees::FeesManager;
 
-use super::{Contract, ContractExt, Role};
+use super::{Contract, ContractExt, Role, intents::execute::ExecuteInspector};
 
 #[near]
 impl FeesManager for Contract {
@@ -19,13 +20,7 @@ impl FeesManager for Contract {
     #[payable]
     fn set_fee(&mut self, #[allow(unused_mut)] mut fee: Pips) {
         assert_one_yocto();
-        require!(self.fees.fee != fee, "same");
-        mem::swap(&mut self.fees.fee, &mut fee);
-        FeeChangedEvent {
-            old_fee: fee,
-            new_fee: self.fees.fee,
-        }
-        .emit();
+        Engine::new(self, ExecuteInspector::default()).set_fee(fee);
     }
 
     fn fee(&self) -> Pips {

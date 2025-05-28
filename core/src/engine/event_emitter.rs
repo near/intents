@@ -1,6 +1,5 @@
-use near_sdk::serde_json;
-
 use crate::events::DefuseEvent;
+use near_sdk::serde_json;
 
 pub trait EmittableEvent {
     fn do_emit(&mut self);

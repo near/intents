@@ -2,6 +2,8 @@ pub mod event_emitter;
 mod inspector;
 mod state;
 
+use std::{borrow::Cow, ops::Deref};
+
 pub use self::{inspector::*, state::*};
 
 use defuse_crypto::{Payload, PublicKey, SignedPayload};
@@ -9,6 +11,9 @@ use near_sdk::{AccountId, FunctionError};
 
 use crate::{
     DefuseError, Result,
+    accounts::{AccountEvent, PublicKeyEvent},
+    events::DefuseEvent,
+    fees::{FeeChangedEvent, Pips},
     intents::{DefuseIntents, ExecutableIntent},
     payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
 };
@@ -95,15 +100,43 @@ where
 
     #[inline]
     pub fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) {
-        if !self.state.add_public_key(account_id, public_key) {
+        if !self.state.add_public_key(account_id.clone(), public_key) {
             DefuseError::PublicKeyExists.panic()
         }
+
+        self.inspector
+            .on_event(DefuseEvent::PublicKeyAdded(AccountEvent::new(
+                Cow::Borrowed(account_id.deref()),
+                PublicKeyEvent {
+                    public_key: Cow::Borrowed(&public_key),
+                },
+            )));
     }
 
     #[inline]
     pub fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) {
-        if !self.state.remove_public_key(account_id, public_key) {
+        if !self.state.remove_public_key(account_id.clone(), public_key) {
             DefuseError::PublicKeyNotExist.panic()
         }
+
+        self.inspector
+            .on_event(DefuseEvent::PublicKeyRemoved(AccountEvent::new(
+                Cow::Borrowed(account_id.deref()),
+                PublicKeyEvent {
+                    public_key: Cow::Borrowed(&public_key),
+                },
+            )));
+    }
+
+    #[inline]
+    pub fn set_fee(&mut self, fee: Pips) {
+        let old_fee = self.state.fee();
+        self.state.set_fee(fee);
+
+        self.inspector
+            .on_event(DefuseEvent::FeeChanged(FeeChangedEvent {
+                old_fee,
+                new_fee: self.state.fee(),
+            }));
     }
 }

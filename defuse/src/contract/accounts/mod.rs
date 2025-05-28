@@ -51,7 +51,7 @@ impl AccountManager for Contract {
     fn remove_public_key(&mut self, public_key: &PublicKey) {
         assert_one_yocto();
         Engine::new(self, ExecuteInspector::default())
-            .remove_public_key(PREDECESSOR_ACCOUNT_ID.clone(), public_key.clone());
+            .remove_public_key(PREDECESSOR_ACCOUNT_ID.clone(), *public_key);
     }
 
     fn is_nonce_used(&self, account_id: &AccountId, nonce: AsBase64<Nonce>) -> bool {

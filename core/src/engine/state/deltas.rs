@@ -1,15 +1,14 @@
+use defuse_crypto::PublicKey;
+use defuse_map_utils::cleanup::DefaultMap;
+use defuse_nep245::{MtEvent, MtTransferEvent};
+use near_sdk::{AccountId, AccountIdRef, json_types::U128, near};
+use serde_with::{DisplayFromStr, serde_as};
 use std::{
     borrow::Cow,
     cmp::Reverse,
     collections::{BTreeMap, HashMap},
     iter,
 };
-
-use defuse_crypto::PublicKey;
-use defuse_map_utils::cleanup::DefaultMap;
-use defuse_nep245::{MtEvent, MtTransferEvent};
-use near_sdk::{AccountId, AccountIdRef, json_types::U128, near};
-use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
     DefuseError, Nonce, Result,
@@ -167,6 +166,10 @@ where
         storage_deposit: StorageDeposit,
     ) -> Result<()> {
         self.state.storage_deposit(owner_id, storage_deposit)
+    }
+
+    fn set_fee(&mut self, fee: Pips) {
+        self.state.set_fee(fee);
     }
 }
 
