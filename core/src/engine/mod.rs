@@ -4,7 +4,8 @@ mod state;
 
 pub use self::{inspector::*, state::*};
 
-use defuse_crypto::{Payload, SignedPayload};
+use defuse_crypto::{Payload, PublicKey, SignedPayload};
+use near_sdk::{AccountId, FunctionError};
 
 use crate::{
     DefuseError, Result,
@@ -90,5 +91,19 @@ where
         self.state
             .finalize()
             .map_err(DefuseError::InvariantViolated)
+    }
+
+    #[inline]
+    pub fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) {
+        if !self.state.add_public_key(account_id, public_key) {
+            DefuseError::PublicKeyExists.panic()
+        }
+    }
+
+    #[inline]
+    pub fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) {
+        if !self.state.remove_public_key(account_id, public_key) {
+            DefuseError::PublicKeyNotExist.panic()
+        }
     }
 }

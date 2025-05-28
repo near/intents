@@ -1,4 +1,4 @@
-mod execute;
+pub mod execute;
 mod relayer;
 mod simulate;
 mod state;

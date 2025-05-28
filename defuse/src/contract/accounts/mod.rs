@@ -5,7 +5,7 @@ pub use self::{account::*, state::*};
 
 use std::collections::HashSet;
 
-use defuse_core::{DefuseError, Nonce, crypto::PublicKey};
+use defuse_core::{DefuseError, Nonce, crypto::PublicKey, engine::Engine};
 use defuse_near_utils::{NestPrefix, PREDECESSOR_ACCOUNT_ID};
 use defuse_serde_utils::base64::AsBase64;
 use near_sdk::{
@@ -17,6 +17,8 @@ use crate::{
     accounts::AccountManager,
     contract::{Contract, ContractExt},
 };
+
+use super::intents::execute::ExecuteInspector;
 
 #[near]
 impl AccountManager for Contract {
@@ -41,26 +43,15 @@ impl AccountManager for Contract {
     #[payable]
     fn add_public_key(&mut self, public_key: PublicKey) {
         assert_one_yocto();
-        if !self
-            .accounts
-            .get_or_create(PREDECESSOR_ACCOUNT_ID.clone())
-            .add_public_key(&PREDECESSOR_ACCOUNT_ID, public_key)
-        {
-            DefuseError::PublicKeyExists.panic()
-        }
+        Engine::new(self, ExecuteInspector::default())
+            .add_public_key(PREDECESSOR_ACCOUNT_ID.clone(), public_key);
     }
 
     #[payable]
     fn remove_public_key(&mut self, public_key: &PublicKey) {
         assert_one_yocto();
-        if !self
-            .accounts
-            // create account if doesn't exist, so the user can opt out of implicit public key
-            .get_or_create(PREDECESSOR_ACCOUNT_ID.clone())
-            .remove_public_key(&PREDECESSOR_ACCOUNT_ID, public_key)
-        {
-            DefuseError::PublicKeyNotExist.panic()
-        }
+        Engine::new(self, ExecuteInspector::default())
+            .remove_public_key(PREDECESSOR_ACCOUNT_ID.clone(), public_key.clone());
     }
 
     fn is_nonce_used(&self, account_id: &AccountId, nonce: AsBase64<Nonce>) -> bool {
