@@ -211,4 +211,9 @@ impl State for Contract {
         require!(self.fees.fee != fee, "same");
         std::mem::swap(&mut self.fees.fee, &mut fee);
     }
+
+    fn set_fee_collector(&mut self, mut fee_collector: AccountId) {
+        require!(self.fees.fee_collector != fee_collector, "same");
+        std::mem::swap(&mut self.fees.fee_collector, &mut fee_collector);
+    }
 }

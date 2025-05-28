@@ -1,17 +1,8 @@
-use core::mem;
-use std::borrow::Cow;
-
-use defuse_core::{
-    engine::Engine,
-    events::DefuseIntentEmit,
-    fees::{FeeCollectorChangedEvent, Pips},
-};
-use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
-use near_sdk::{AccountId, assert_one_yocto, near, require};
-
-use crate::fees::FeesManager;
-
 use super::{Contract, ContractExt, Role, intents::execute::ExecuteInspector};
+use crate::fees::FeesManager;
+use defuse_core::{engine::Engine, fees::Pips};
+use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
+use near_sdk::{AccountId, assert_one_yocto, near};
 
 #[near]
 impl FeesManager for Contract {
@@ -32,13 +23,7 @@ impl FeesManager for Contract {
     #[payable]
     fn set_fee_collector(&mut self, #[allow(unused_mut)] mut fee_collector: AccountId) {
         assert_one_yocto();
-        require!(self.fees.fee_collector != fee_collector, "same");
-        mem::swap(&mut self.fees.fee_collector, &mut fee_collector);
-        FeeCollectorChangedEvent {
-            old_fee_collector: fee_collector.into(),
-            new_fee_collector: Cow::Borrowed(self.fees.fee_collector.as_ref()),
-        }
-        .emit();
+        Engine::new(self, ExecuteInspector::default()).set_fee_collector(fee_collector);
     }
 
     fn fee_collector(&self) -> &AccountId {

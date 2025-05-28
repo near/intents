@@ -171,6 +171,10 @@ where
     fn set_fee(&mut self, fee: Pips) {
         self.state.set_fee(fee);
     }
+
+    fn set_fee_collector(&mut self, fee_collector: AccountId) {
+        self.state.set_fee_collector(fee_collector);
+    }
 }
 
 /// Accumulates internal deposits and withdrawals on different tokens

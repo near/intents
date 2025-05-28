@@ -96,4 +96,5 @@ pub trait State: StateView {
     ) -> Result<()>;
 
     fn set_fee(&mut self, fee: Pips);
+    fn set_fee_collector(&mut self, fee_collector: AccountId);
 }

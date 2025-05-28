@@ -13,7 +13,7 @@ use crate::{
     DefuseError, Result,
     accounts::{AccountEvent, PublicKeyEvent},
     events::DefuseEvent,
-    fees::{FeeChangedEvent, Pips},
+    fees::{FeeChangedEvent, FeeCollectorChangedEvent, Pips},
     intents::{DefuseIntents, ExecutableIntent},
     payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
 };
@@ -137,6 +137,18 @@ where
             .on_event(DefuseEvent::FeeChanged(FeeChangedEvent {
                 old_fee,
                 new_fee: self.state.fee(),
+            }));
+    }
+
+    #[inline]
+    pub fn set_fee_collector(&mut self, fee_collector: AccountId) {
+        let old_fee_collector = self.state.fee_collector().into_owned();
+        self.state.set_fee_collector(fee_collector);
+
+        self.inspector
+            .on_event(DefuseEvent::FeeCollectorChanged(FeeCollectorChangedEvent {
+                old_fee_collector: Cow::Borrowed(&old_fee_collector),
+                new_fee_collector: self.state.fee_collector(),
             }));
     }
 }

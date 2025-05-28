@@ -22,6 +22,7 @@ pub struct CachedState<W: StateView> {
     view: W,
     accounts: CachedAccounts,
     fee: Pips,
+    fee_collector: AccountId,
 }
 
 impl<W> CachedState<W>
@@ -32,6 +33,7 @@ where
     pub fn new(view: W) -> Self {
         Self {
             fee: view.fee(),
+            fee_collector: view.fee_collector().into_owned(),
             view,
             accounts: CachedAccounts::new(),
         }
@@ -262,6 +264,10 @@ where
 
     fn set_fee(&mut self, fee: Pips) {
         self.fee = fee;
+    }
+
+    fn set_fee_collector(&mut self, fee_collector: AccountId) {
+        self.fee_collector = fee_collector;
     }
 }
 
