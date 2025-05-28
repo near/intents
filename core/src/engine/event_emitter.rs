@@ -1,4 +1,5 @@
 use crate::events::DefuseEvent;
+use defuse_nep245::MtEvent;
 use near_sdk::serde_json;
 
 pub trait EmittableEvent {
@@ -7,6 +8,16 @@ pub trait EmittableEvent {
 }
 
 impl EmittableEvent for DefuseEvent<'_> {
+    fn do_emit(&mut self) {
+        self.emit();
+    }
+
+    fn emit_to_json(&mut self) -> serde_json::Value {
+        self.to_json()
+    }
+}
+
+impl EmittableEvent for MtEvent<'_> {
     fn do_emit(&mut self) {
         self.emit();
     }
