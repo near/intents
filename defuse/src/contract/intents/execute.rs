@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use defuse_core::{
     Deadline,
     accounts::AccountEvent,
-    engine::{Inspector, event_emitter::EventEmitter},
+    engine::{Inspector, event_emitter::EmittableEvent},
     events::DefuseEvent,
     intents::IntentEvent,
 };
@@ -18,10 +18,6 @@ impl Inspector for ExecuteInspector {
     #[inline]
     fn on_deadline(&mut self, _deadline: Deadline) {}
 
-    fn on_event(&mut self, event: DefuseEvent<'_>) {
-        event.emit();
-    }
-
     #[inline]
     fn on_intent_executed(&mut self, signer_id: &AccountIdRef, intent_hash: CryptoHash) {
         self.intents_executed.push(IntentEvent::new(
@@ -30,7 +26,7 @@ impl Inspector for ExecuteInspector {
         ));
     }
 
-    fn emit_event<E: EventEmitter>(&mut self, mut event: E) {
+    fn on_event<E: EmittableEvent>(&mut self, mut event: E) {
         event.do_emit();
     }
 }

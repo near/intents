@@ -1,43 +1,37 @@
+use near_sdk::serde_json;
+
 use crate::events::DefuseEvent;
 
-pub trait EventEmitter {
+pub trait EmittableEvent {
     fn do_emit(&mut self);
+    fn emit_to_json(&mut self) -> serde_json::Value;
 }
 
-impl EventEmitter for DefuseEvent<'_> {
+impl EmittableEvent for DefuseEvent<'_> {
     fn do_emit(&mut self) {
         self.emit();
     }
-}
 
-pub struct EventHandler<E: EventEmitter> {
-    postponed_events: Vec<E>,
-}
-
-impl<E: EventEmitter> EventHandler<E> {
-    pub fn emit_event_owned(mut event: E) {
-        event.do_emit();
-    }
-
-    pub fn emit_event_mut(event: &mut E) {
-        event.do_emit();
-    }
-
-    pub fn postpone_event_emission(&mut self, event: E) {
-        self.postponed_events.push(event);
-    }
-
-    fn emit_postponed(&mut self) {
-        let mut events = std::mem::take(&mut self.postponed_events);
-        if events.is_empty() {
-            return;
-        }
-        events.iter_mut().for_each(|e| e.do_emit());
+    fn emit_to_json(&mut self) -> serde_json::Value {
+        self.to_json()
     }
 }
 
-impl<E: EventEmitter> Drop for EventHandler<E> {
-    fn drop(&mut self) {
-        self.emit_postponed();
+#[derive(Debug, Default)]
+pub struct SimulationEvents {
+    events: Vec<serde_json::Value>,
+}
+
+impl SimulationEvents {
+    pub fn new() -> Self {
+        Self { events: Vec::new() }
+    }
+
+    pub fn add_event<E: EmittableEvent>(&mut self, mut event: E) {
+        self.events.push(event.emit_to_json());
+    }
+
+    pub fn take(self) -> Vec<serde_json::Value> {
+        self.events
     }
 }
