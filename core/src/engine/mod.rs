@@ -2,14 +2,7 @@ pub mod event_emitter;
 mod inspector;
 mod state;
 
-use std::{borrow::Cow, ops::Deref};
-
 pub use self::{inspector::*, state::*};
-
-use defuse_crypto::{Payload, PublicKey, SignedPayload};
-use defuse_nep245::{MtEvent, MtTransferEvent};
-use near_sdk::{AccountId, AccountIdRef, FunctionError};
-
 use crate::{
     DefuseError, Result,
     accounts::{AccountEvent, PublicKeyEvent},
@@ -18,6 +11,10 @@ use crate::{
     intents::{DefuseIntents, ExecutableIntent},
     payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
 };
+use defuse_crypto::{Payload, PublicKey, SignedPayload};
+use defuse_nep245::{MtEvent, MtTransferEvent};
+use near_sdk::{AccountId, AccountIdRef, FunctionError};
+use std::borrow::Cow;
 
 use self::deltas::{Deltas, Transfers};
 
@@ -100,14 +97,14 @@ where
     }
 
     #[inline]
-    pub fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) {
-        if !self.state.add_public_key(account_id.clone(), public_key) {
+    pub fn add_public_key(&mut self, account_id: &AccountIdRef, public_key: PublicKey) {
+        if !self.state.add_public_key(account_id.to_owned(), public_key) {
             DefuseError::PublicKeyExists.panic()
         }
 
         self.inspector
             .on_event(DefuseEvent::PublicKeyAdded(AccountEvent::new(
-                Cow::Borrowed(account_id.deref()),
+                Cow::Borrowed(account_id),
                 PublicKeyEvent {
                     public_key: Cow::Borrowed(&public_key),
                 },
@@ -115,14 +112,17 @@ where
     }
 
     #[inline]
-    pub fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) {
-        if !self.state.remove_public_key(account_id.clone(), public_key) {
+    pub fn remove_public_key(&mut self, account_id: &AccountIdRef, public_key: PublicKey) {
+        if !self
+            .state
+            .remove_public_key(account_id.to_owned(), public_key)
+        {
             DefuseError::PublicKeyNotExist.panic()
         }
 
         self.inspector
             .on_event(DefuseEvent::PublicKeyRemoved(AccountEvent::new(
-                Cow::Borrowed(account_id.deref()),
+                Cow::Borrowed(account_id),
                 PublicKeyEvent {
                     public_key: Cow::Borrowed(&public_key),
                 },

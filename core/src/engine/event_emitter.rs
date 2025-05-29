@@ -33,7 +33,7 @@ pub struct SimulationEvents {
 }
 
 impl SimulationEvents {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self { events: Vec::new() }
     }
 
