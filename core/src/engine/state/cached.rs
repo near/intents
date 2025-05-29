@@ -278,8 +278,6 @@ where
         amounts: Vec<near_sdk::json_types::U128>,
         _memo: Option<&str>,
     ) -> Result<()> {
-        // FIXME: See if it's possible to unify the impl with the one in state.rs/execute
-
         if sender_id == receiver_id || token_ids.len() != amounts.len() || amounts.is_empty() {
             return Err(DefuseError::InvalidIntent);
         }
