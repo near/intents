@@ -4,7 +4,7 @@ use defuse_core::{
 };
 
 use near_plugins::AccessControllable;
-use near_sdk::{Promise, PublicKey, ext_contract, near};
+use near_sdk::{Promise, PublicKey, ext_contract, near, serde_json};
 use serde_with::serde_as;
 
 use crate::fees::FeesManager;
@@ -40,6 +40,9 @@ pub struct SimulationOutput {
 
     /// Additional info about current state
     pub state: StateOutput,
+
+    /// The events that would be emitted during a successful execution of the intents
+    pub emitted_events: Vec<serde_json::Value>,
 }
 
 impl SimulationOutput {
