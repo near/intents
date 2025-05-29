@@ -91,10 +91,7 @@ where
         self.inspector.on_intent_executed(&signer_id, hash);
         self.inspector
             .emit_event_eventually(DefuseEvent::IntentsExecuted(Cow::Owned(vec![
-                IntentEvent::new(
-                    AccountEvent::new(Cow::Owned(signer_id.to_owned()), ()),
-                    hash,
-                ),
+                IntentEvent::new(AccountEvent::new(Cow::Owned(signer_id.clone()), ()), hash),
             ])));
 
         Ok(())
