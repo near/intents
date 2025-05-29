@@ -290,17 +290,8 @@ where
             }
             let token_id: TokenId = token_id.parse()?;
 
-            self.accounts
-                .get_mut(sender_id)
-                .ok_or(DefuseError::AccountNotFound)?
-                .token_amounts
-                .sub(token_id.clone(), amount)
-                .ok_or(DefuseError::BalanceOverflow)?;
-            self.accounts
-                .get_or_create(receiver_id.clone())
-                .token_amounts
-                .add(token_id, amount)
-                .ok_or(DefuseError::BalanceOverflow)?;
+            self.internal_sub_balance(sender_id, [(token_id.clone(), amount)])?;
+            self.internal_add_balance(receiver_id.clone(), [(token_id.clone(), amount)])?;
         }
 
         Ok(())
