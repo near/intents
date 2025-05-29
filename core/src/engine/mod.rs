@@ -8,7 +8,7 @@ use crate::{
     accounts::{AccountEvent, PublicKeyEvent},
     events::DefuseEvent,
     fees::{FeeChangedEvent, FeeCollectorChangedEvent, Pips},
-    intents::{DefuseIntents, ExecutableIntent},
+    intents::{DefuseIntents, ExecutableIntent, IntentEvent},
     payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
     tokens::TokenId,
 };
@@ -85,7 +85,17 @@ where
         }
 
         intents.execute_intent(&signer_id, self, hash)?;
+
+        // Emit related events. Due to backwards compatibility, we have two functions for this,
+        // and are displayed in simulations in two different ways.
         self.inspector.on_intent_executed(&signer_id, hash);
+        self.inspector
+            .emit_event_eventually(DefuseEvent::IntentsExecuted(Cow::Owned(vec![
+                IntentEvent::new(
+                    AccountEvent::new(Cow::Owned(signer_id.to_owned()), ()),
+                    hash,
+                ),
+            ])));
 
         Ok(())
     }
