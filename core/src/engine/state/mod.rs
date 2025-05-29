@@ -97,4 +97,13 @@ pub trait State: StateView {
 
     fn set_fee(&mut self, fee: Pips);
     fn set_fee_collector(&mut self, fee_collector: AccountId);
+
+    fn internal_mt_batch_transfer(
+        &mut self,
+        sender_id: &AccountIdRef,
+        receiver_id: AccountId,
+        token_ids: Vec<defuse_nep245::TokenId>,
+        amounts: Vec<near_sdk::json_types::U128>,
+        memo: Option<&str>,
+    ) -> Result<()>;
 }

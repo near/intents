@@ -269,6 +269,42 @@ where
     fn set_fee_collector(&mut self, fee_collector: AccountId) {
         self.fee_collector = fee_collector;
     }
+
+    fn internal_mt_batch_transfer(
+        &mut self,
+        sender_id: &AccountIdRef,
+        receiver_id: AccountId,
+        token_ids: Vec<defuse_nep245::TokenId>,
+        amounts: Vec<near_sdk::json_types::U128>,
+        _memo: Option<&str>,
+    ) -> Result<()> {
+        // FIXME: See if it's possible to unify the impl with the one in state.rs/execute
+
+        if sender_id == receiver_id || token_ids.len() != amounts.len() || amounts.is_empty() {
+            return Err(DefuseError::InvalidIntent);
+        }
+
+        for (token_id, amount) in token_ids.iter().zip(amounts.iter().map(|a| a.0)) {
+            if amount == 0 {
+                return Err(DefuseError::InvalidIntent);
+            }
+            let token_id: TokenId = token_id.parse()?;
+
+            self.accounts
+                .get_mut(sender_id)
+                .ok_or(DefuseError::AccountNotFound)?
+                .token_amounts
+                .sub(token_id.clone(), amount)
+                .ok_or(DefuseError::BalanceOverflow)?;
+            self.accounts
+                .get_or_create(receiver_id.clone())
+                .token_amounts
+                .add(token_id, amount)
+                .ok_or(DefuseError::BalanceOverflow)?;
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Default, Clone)]

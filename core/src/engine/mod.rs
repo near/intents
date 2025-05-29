@@ -7,7 +7,8 @@ use std::{borrow::Cow, ops::Deref};
 pub use self::{inspector::*, state::*};
 
 use defuse_crypto::{Payload, PublicKey, SignedPayload};
-use near_sdk::{AccountId, FunctionError};
+use defuse_nep245::{MtEvent, MtTransferEvent};
+use near_sdk::{AccountId, AccountIdRef, FunctionError};
 
 use crate::{
     DefuseError, Result,
@@ -150,5 +151,38 @@ where
                 old_fee_collector: Cow::Borrowed(&old_fee_collector),
                 new_fee_collector: self.state.fee_collector(),
             }));
+    }
+
+    #[inline]
+    pub fn internal_mt_batch_transfer(
+        &mut self,
+        sender_id: &AccountIdRef,
+        receiver_id: AccountId,
+        token_ids: Vec<defuse_nep245::TokenId>,
+        amounts: Vec<near_sdk::json_types::U128>,
+        memo: Option<&str>,
+    ) -> Result<()> {
+        self.state.internal_mt_batch_transfer(
+            sender_id,
+            receiver_id.clone(),
+            token_ids.clone(),
+            amounts.clone(),
+            memo,
+        )?;
+
+        self.inspector.on_event(MtEvent::MtTransfer(
+            [MtTransferEvent {
+                authorized_id: None,
+                old_owner_id: sender_id.into(),
+                new_owner_id: receiver_id.into(),
+                token_ids: token_ids.into(),
+                amounts: amounts.into(),
+                memo: memo.map(Into::into),
+            }]
+            .as_slice()
+            .into(),
+        ));
+
+        Ok(())
     }
 }

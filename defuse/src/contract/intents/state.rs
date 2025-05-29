@@ -216,4 +216,38 @@ impl State for Contract {
         require!(self.fees.fee_collector != fee_collector, "same");
         std::mem::swap(&mut self.fees.fee_collector, &mut fee_collector);
     }
+
+    fn internal_mt_batch_transfer(
+        &mut self,
+        sender_id: &AccountIdRef,
+        receiver_id: AccountId,
+        token_ids: Vec<defuse_nep245::TokenId>,
+        amounts: Vec<near_sdk::json_types::U128>,
+        _memo: Option<&str>,
+    ) -> Result<()> {
+        if sender_id == receiver_id || token_ids.len() != amounts.len() || amounts.is_empty() {
+            return Err(DefuseError::InvalidIntent);
+        }
+
+        for (token_id, amount) in token_ids.iter().zip(amounts.iter().map(|a| a.0)) {
+            if amount == 0 {
+                return Err(DefuseError::InvalidIntent);
+            }
+            let token_id: TokenId = token_id.parse()?;
+
+            self.accounts
+                .get_mut(sender_id)
+                .ok_or(DefuseError::AccountNotFound)?
+                .token_balances
+                .sub(token_id.clone(), amount)
+                .ok_or(DefuseError::BalanceOverflow)?;
+            self.accounts
+                .get_or_create(receiver_id.clone())
+                .token_balances
+                .add(token_id, amount)
+                .ok_or(DefuseError::BalanceOverflow)?;
+        }
+
+        Ok(())
+    }
 }

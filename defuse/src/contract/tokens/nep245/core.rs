@@ -1,12 +1,15 @@
-use defuse_core::{DefuseError, Result, engine::StateView, tokens::TokenId};
+use defuse_core::{
+    Result,
+    engine::{Engine, StateView},
+};
 use defuse_near_utils::{CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic};
-use defuse_nep245::{MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver};
+use defuse_nep245::{MultiTokenCore, receiver::ext_mt_receiver};
 use near_plugins::{Pausable, pause};
 use near_sdk::{
     AccountId, AccountIdRef, PromiseOrValue, assert_one_yocto, json_types::U128, near, require,
 };
 
-use crate::contract::{Contract, ContractExt};
+use crate::contract::{Contract, ContractExt, intents::execute::ExecuteInspector};
 
 use super::resolver::MT_RESOLVE_TRANSFER_GAS;
 
@@ -166,42 +169,13 @@ impl Contract {
         amounts: Vec<U128>,
         memo: Option<&str>,
     ) -> Result<()> {
-        if sender_id == receiver_id || token_ids.len() != amounts.len() || amounts.is_empty() {
-            return Err(DefuseError::InvalidIntent);
-        }
-
-        for (token_id, amount) in token_ids.iter().zip(amounts.iter().map(|a| a.0)) {
-            if amount == 0 {
-                return Err(DefuseError::InvalidIntent);
-            }
-            let token_id: TokenId = token_id.parse()?;
-
-            self.accounts
-                .get_mut(sender_id)
-                .ok_or(DefuseError::AccountNotFound)?
-                .token_balances
-                .sub(token_id.clone(), amount)
-                .ok_or(DefuseError::BalanceOverflow)?;
-            self.accounts
-                .get_or_create(receiver_id.clone())
-                .token_balances
-                .add(token_id, amount)
-                .ok_or(DefuseError::BalanceOverflow)?;
-        }
-
-        MtEvent::MtTransfer(
-            [MtTransferEvent {
-                authorized_id: None,
-                old_owner_id: sender_id.into(),
-                new_owner_id: receiver_id.into(),
-                token_ids: token_ids.into(),
-                amounts: amounts.into(),
-                memo: memo.map(Into::into),
-            }]
-            .as_slice()
-            .into(),
-        )
-        .emit();
+        Engine::new(self, ExecuteInspector::default()).internal_mt_batch_transfer(
+            sender_id,
+            receiver_id,
+            token_ids,
+            amounts,
+            memo,
+        )?;
 
         Ok(())
     }
