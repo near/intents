@@ -12,6 +12,7 @@ use near_sdk::{AccountIdRef, CryptoHash};
 #[derive(Debug, Default)]
 pub struct ExecuteInspector {
     pub intents_executed: Vec<IntentEvent<AccountEvent<'static, ()>>>,
+    pub postponed_events: Vec<Box<dyn EmittableEvent>>,
 }
 
 impl Inspector for ExecuteInspector {
@@ -29,12 +30,21 @@ impl Inspector for ExecuteInspector {
     fn on_event<E: EmittableEvent>(&mut self, mut event: E) {
         event.do_emit();
     }
+
+    fn emit_event_eventually<E: EmittableEvent + 'static>(&mut self, event: E) {
+        self.postponed_events.push(Box::new(event));
+    }
 }
 
 impl Drop for ExecuteInspector {
     fn drop(&mut self) {
         if !self.intents_executed.is_empty() {
             DefuseEvent::IntentsExecuted(self.intents_executed.as_slice().into()).emit();
+        }
+
+        let events = std::mem::take(&mut self.postponed_events);
+        for mut event in events {
+            event.do_emit();
         }
     }
 }

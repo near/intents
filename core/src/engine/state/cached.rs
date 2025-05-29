@@ -315,6 +315,25 @@ where
 
         Ok(())
     }
+
+    fn withdraw(
+        &mut self,
+        owner_id: &AccountIdRef,
+        token_amounts: impl IntoIterator<Item = (TokenId, u128)>,
+        _memo: Option<impl Into<String>>,
+    ) -> Result<()> {
+        for (token_id, amount) in token_amounts {
+            if amount == 0 {
+                return Err(DefuseError::InvalidIntent);
+            }
+
+            // We have to call this function multiple times instead of using the given iterator
+            // because we have to check whether the balance is zero
+            self.internal_sub_balance(owner_id, [(token_id, amount)])?;
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Default, Clone)]

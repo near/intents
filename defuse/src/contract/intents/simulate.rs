@@ -42,4 +42,8 @@ impl Inspector for SimulateInspector {
     fn on_event<E: EmittableEvent>(&mut self, event: E) {
         self.events_handler.add_event(event);
     }
+
+    fn emit_event_eventually<E: EmittableEvent>(&mut self, event: E) {
+        self.events_handler.add_event(event);
+    }
 }

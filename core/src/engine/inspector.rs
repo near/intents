@@ -9,5 +9,7 @@ pub trait Inspector {
 
     fn on_event<E: EmittableEvent>(&mut self, event: E);
 
+    fn emit_event_eventually<E: EmittableEvent + 'static>(&mut self, event: E);
+
     fn on_intent_executed(&mut self, signer_id: &AccountIdRef, hash: CryptoHash);
 }

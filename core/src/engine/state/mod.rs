@@ -113,4 +113,11 @@ pub trait State: StateView {
         tokens: impl IntoIterator<Item = (TokenId, u128)>,
         memo: Option<&str>,
     ) -> Result<()>;
+
+    fn withdraw(
+        &mut self,
+        owner_id: &AccountIdRef,
+        token_amounts: impl IntoIterator<Item = (TokenId, u128)>,
+        memo: Option<impl Into<String>>,
+    ) -> Result<()>;
 }

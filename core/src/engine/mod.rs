@@ -13,7 +13,7 @@ use crate::{
     tokens::TokenId,
 };
 use defuse_crypto::{Payload, PublicKey, SignedPayload};
-use defuse_nep245::{MtEvent, MtMintEvent, MtTransferEvent};
+use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent, MtTransferEvent};
 use near_sdk::{AccountId, AccountIdRef, FunctionError};
 use std::borrow::Cow;
 
@@ -219,6 +219,41 @@ where
                 .as_slice()
                 .into(),
             ));
+        }
+
+        Ok(())
+    }
+
+    #[inline]
+    pub fn withdraw(
+        &mut self,
+        owner_id: &AccountIdRef,
+        token_amounts: impl IntoIterator<Item = (TokenId, u128)>,
+        memo: Option<&str>,
+    ) -> Result<()> {
+        let token_amounts = token_amounts.into_iter().collect::<Vec<_>>();
+
+        self.state.withdraw(owner_id, token_amounts.clone(), memo)?;
+
+        if !token_amounts.is_empty() {
+            let token_ids = token_amounts
+                .iter()
+                .map(|(tid, _amount)| tid.to_string())
+                .collect::<Vec<_>>();
+
+            let amounts = token_amounts
+                .iter()
+                .map(|(_tid, amount)| near_sdk::json_types::U128(*amount))
+                .collect::<Vec<_>>();
+
+            self.inspector
+                .emit_event_eventually(MtEvent::MtBurn(Cow::Owned(vec![MtBurnEvent {
+                    owner_id: owner_id.to_owned().into(),
+                    authorized_id: None,
+                    token_ids: token_ids.into(),
+                    amounts: amounts.into(),
+                    memo: memo.map(|v| Cow::Owned(v.to_owned())),
+                }])));
         }
 
         Ok(())

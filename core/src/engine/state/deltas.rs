@@ -196,6 +196,15 @@ where
     ) -> Result<()> {
         self.state.deposit(owner_id, tokens, memo)
     }
+
+    fn withdraw(
+        &mut self,
+        owner_id: &AccountIdRef,
+        token_amounts: impl IntoIterator<Item = (TokenId, u128)>,
+        memo: Option<impl Into<String>>,
+    ) -> Result<()> {
+        self.state.withdraw(owner_id, token_amounts, memo)
+    }
 }
 
 /// Accumulates internal deposits and withdrawals on different tokens

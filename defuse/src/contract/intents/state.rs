@@ -283,4 +283,34 @@ impl State for Contract {
 
         Ok(())
     }
+
+    fn withdraw(
+        &mut self,
+        owner_id: &AccountIdRef,
+        token_amounts: impl IntoIterator<Item = (TokenId, u128)>,
+        _memo: Option<impl Into<String>>,
+    ) -> Result<()> {
+        let owner = self
+            .accounts
+            .get_mut(owner_id)
+            .ok_or(DefuseError::AccountNotFound)?;
+
+        for (token_id, amount) in token_amounts {
+            if amount == 0 {
+                return Err(DefuseError::InvalidIntent);
+            }
+
+            owner
+                .token_balances
+                .sub(token_id.clone(), amount)
+                .ok_or(DefuseError::BalanceOverflow)?;
+
+            self.state
+                .total_supplies
+                .sub(token_id, amount)
+                .ok_or(DefuseError::BalanceOverflow)?;
+        }
+
+        Ok(())
+    }
 }

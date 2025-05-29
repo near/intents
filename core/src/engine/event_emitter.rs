@@ -2,7 +2,7 @@ use crate::events::DefuseEvent;
 use defuse_nep245::MtEvent;
 use near_sdk::serde_json;
 
-pub trait EmittableEvent {
+pub trait EmittableEvent: std::fmt::Debug {
     fn do_emit(&mut self);
     fn emit_to_json(&mut self) -> serde_json::Value;
 }
