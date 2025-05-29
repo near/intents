@@ -10,9 +10,10 @@ use crate::{
     fees::{FeeChangedEvent, FeeCollectorChangedEvent, Pips},
     intents::{DefuseIntents, ExecutableIntent},
     payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
+    tokens::TokenId,
 };
 use defuse_crypto::{Payload, PublicKey, SignedPayload};
-use defuse_nep245::{MtEvent, MtTransferEvent};
+use defuse_nep245::{MtEvent, MtMintEvent, MtTransferEvent};
 use near_sdk::{AccountId, AccountIdRef, FunctionError};
 use std::borrow::Cow;
 
@@ -182,6 +183,43 @@ where
             .as_slice()
             .into(),
         ));
+
+        Ok(())
+    }
+
+    #[inline]
+    pub fn deposit(
+        &mut self,
+        owner_id: AccountId,
+        tokens: impl IntoIterator<Item = (TokenId, u128)>,
+        memo: Option<&str>,
+    ) -> Result<()> {
+        let tokens = tokens.into_iter().collect::<Vec<_>>();
+
+        self.state.deposit(owner_id.clone(), tokens.clone(), memo)?;
+
+        if !tokens.is_empty() {
+            let token_ids = tokens
+                .iter()
+                .map(|(tid, _amount)| tid.to_string())
+                .collect::<Vec<_>>();
+
+            let amounts = tokens
+                .iter()
+                .map(|(_tid, amount)| near_sdk::json_types::U128(*amount))
+                .collect::<Vec<_>>();
+
+            self.inspector.on_event(MtEvent::MtMint(
+                [MtMintEvent {
+                    owner_id: owner_id.into(),
+                    token_ids: token_ids.into(),
+                    amounts: amounts.into(),
+                    memo: memo.map(Into::into),
+                }]
+                .as_slice()
+                .into(),
+            ));
+        }
 
         Ok(())
     }

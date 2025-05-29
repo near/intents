@@ -106,4 +106,11 @@ pub trait State: StateView {
         amounts: Vec<near_sdk::json_types::U128>,
         memo: Option<&str>,
     ) -> Result<()>;
+
+    fn deposit(
+        &mut self,
+        owner_id: AccountId,
+        tokens: impl IntoIterator<Item = (TokenId, u128)>,
+        memo: Option<&str>,
+    ) -> Result<()>;
 }

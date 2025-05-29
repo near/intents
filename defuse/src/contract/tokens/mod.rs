@@ -2,9 +2,9 @@ mod nep141;
 mod nep171;
 mod nep245;
 
-use super::Contract;
-use defuse_core::{DefuseError, Result, tokens::TokenId};
-use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
+use super::{Contract, intents::execute::ExecuteInspector};
+use defuse_core::{DefuseError, Result, engine::Engine, tokens::TokenId};
+use defuse_nep245::MtBurnEvent;
 use near_sdk::{AccountId, AccountIdRef, Gas, json_types::U128};
 use std::borrow::Cow;
 
@@ -17,43 +17,7 @@ impl Contract {
         tokens: impl IntoIterator<Item = (TokenId, u128)>,
         memo: Option<&str>,
     ) -> Result<()> {
-        let owner = self.accounts.get_or_create(owner_id.clone());
-
-        let mut mint_event = MtMintEvent {
-            owner_id: owner_id.into(),
-            token_ids: Vec::new().into(),
-            amounts: Vec::new().into(),
-            memo: memo.map(Into::into),
-        };
-
-        for (token_id, amount) in tokens {
-            if amount == 0 {
-                return Err(DefuseError::InvalidIntent);
-            }
-
-            mint_event.token_ids.to_mut().push(token_id.to_string());
-            mint_event.amounts.to_mut().push(U128(amount));
-
-            let total_supply = self
-                .state
-                .total_supplies
-                .add(token_id.clone(), amount)
-                .ok_or(DefuseError::BalanceOverflow)?;
-            match token_id {
-                TokenId::Nep171(contract_id, token_id) if total_supply > 1 => {
-                    return Err(DefuseError::NftAlreadyDeposited(contract_id, token_id));
-                }
-                TokenId::Nep141(_) | TokenId::Nep171(_, _) | TokenId::Nep245(_, _) => {}
-            }
-            owner
-                .token_balances
-                .add(token_id, amount)
-                .ok_or(DefuseError::BalanceOverflow)?;
-        }
-
-        if !mint_event.amounts.is_empty() {
-            MtEvent::MtMint([mint_event].as_slice().into()).emit();
-        }
+        Engine::new(self, ExecuteInspector::default()).deposit(owner_id, tokens, memo)?;
 
         Ok(())
     }

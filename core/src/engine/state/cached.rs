@@ -305,6 +305,30 @@ where
 
         Ok(())
     }
+
+    fn deposit(
+        &mut self,
+        owner_id: AccountId,
+        tokens: impl IntoIterator<Item = (TokenId, u128)>,
+        _memo: Option<&str>,
+    ) -> Result<()> {
+        let owner = self.accounts.get_or_create(owner_id);
+
+        for (token_id, amount) in tokens {
+            if amount == 0 {
+                return Err(DefuseError::InvalidIntent);
+            }
+
+            // FIXME: we cannot detect total supplies here to test whether the NFT already exists - Maybe it is OK because then the token is not legitimate
+
+            owner
+                .token_amounts
+                .add(token_id, amount)
+                .ok_or(DefuseError::BalanceOverflow)?;
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Default, Clone)]

@@ -187,6 +187,15 @@ where
         self.state
             .internal_mt_batch_transfer(sender_id, receiver_id, token_ids, amounts, memo)
     }
+
+    fn deposit(
+        &mut self,
+        owner_id: AccountId,
+        tokens: impl IntoIterator<Item = (TokenId, u128)>,
+        memo: Option<&str>,
+    ) -> Result<()> {
+        self.state.deposit(owner_id, tokens, memo)
+    }
 }
 
 /// Accumulates internal deposits and withdrawals on different tokens

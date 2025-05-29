@@ -250,4 +250,37 @@ impl State for Contract {
 
         Ok(())
     }
+
+    fn deposit(
+        &mut self,
+        owner_id: AccountId,
+        tokens: impl IntoIterator<Item = (TokenId, u128)>,
+        _memo: Option<&str>,
+    ) -> Result<()> {
+        let owner = self.accounts.get_or_create(owner_id);
+
+        for (token_id, amount) in tokens {
+            if amount == 0 {
+                return Err(DefuseError::InvalidIntent);
+            }
+
+            let total_supply = self
+                .state
+                .total_supplies
+                .add(token_id.clone(), amount)
+                .ok_or(DefuseError::BalanceOverflow)?;
+            match token_id {
+                TokenId::Nep171(contract_id, token_id) if total_supply > 1 => {
+                    return Err(DefuseError::NftAlreadyDeposited(contract_id, token_id));
+                }
+                TokenId::Nep141(_) | TokenId::Nep171(_, _) | TokenId::Nep245(_, _) => {}
+            }
+            owner
+                .token_balances
+                .add(token_id, amount)
+                .ok_or(DefuseError::BalanceOverflow)?;
+        }
+
+        Ok(())
+    }
 }
