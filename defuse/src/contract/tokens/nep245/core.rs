@@ -1,3 +1,5 @@
+use super::resolver::MT_RESOLVE_TRANSFER_GAS;
+use crate::contract::{Contract, ContractExt, intents::execute::ExecuteInspector};
 use defuse_core::{
     Result,
     engine::{Engine, StateView},
@@ -8,10 +10,6 @@ use near_plugins::{Pausable, pause};
 use near_sdk::{
     AccountId, AccountIdRef, PromiseOrValue, assert_one_yocto, json_types::U128, near, require,
 };
-
-use crate::contract::{Contract, ContractExt, intents::execute::ExecuteInspector};
-
-use super::resolver::MT_RESOLVE_TRANSFER_GAS;
 
 #[near]
 impl MultiTokenCore for Contract {

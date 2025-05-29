@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use defuse_core::{
     Deadline,
     accounts::AccountEvent,
@@ -8,10 +6,16 @@ use defuse_core::{
     intents::IntentEvent,
 };
 use near_sdk::{AccountIdRef, CryptoHash};
+use std::borrow::Cow;
 
 #[derive(Debug, Default)]
 pub struct ExecuteInspector {
     pub intents_executed: Vec<IntentEvent<AccountEvent<'static, ()>>>,
+
+    // Schedule to emit events only in the end of tx
+    // to avoid confusion when events like `mt_burn` occurs before
+    // relevant `mt_transfer` arrives. This can happen due to postponed
+    // delta-matching during intents execution.
     pub postponed_events: Vec<Box<dyn EmittableEvent>>,
 }
 
