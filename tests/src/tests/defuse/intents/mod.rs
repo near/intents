@@ -211,7 +211,7 @@ async fn simulate_is_view_method(random_seed: Seed, #[values(false, true)] no_re
             let tokens = data.get("tokens").unwrap();
             assert_eq!(tokens.as_object().unwrap().len(), 1);
             assert_eq!(
-                tokens.get(&TokenId::Nep141(env.ft1).to_string()).unwrap(),
+                tokens.get(TokenId::Nep141(env.ft1).to_string()).unwrap(),
                 "1000"
             );
         }
