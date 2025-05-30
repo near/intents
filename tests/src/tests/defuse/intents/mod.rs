@@ -164,26 +164,76 @@ async fn simulate_is_view_method(random_seed: Seed, #[values(false, true)] no_re
 
     let nonce = rng.random();
 
-    env.defuse
-        .simulate_intents([env.user1.sign_defuse_message(
-            SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
-            env.defuse.id(),
-            nonce,
-            Deadline::MAX,
-            DefuseIntents {
-                intents: [Transfer {
-                    receiver_id: env.user2.id().clone(),
-                    tokens: Amounts::new(std::iter::once((ft1.clone(), 1000)).collect()),
-                    memo: None,
-                }
-                .into()]
-                .into(),
-            },
-        )])
-        .await
-        .unwrap()
-        .into_result()
-        .unwrap();
+    {
+        let simulation_output = env
+            .defuse
+            .simulate_intents([env.user1.sign_defuse_message(
+                SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
+                    .unwrap(),
+                env.defuse.id(),
+                nonce,
+                Deadline::MAX,
+                DefuseIntents {
+                    intents: [Transfer {
+                        receiver_id: env.user2.id().clone(),
+                        tokens: Amounts::new(std::iter::once((ft1.clone(), 1000)).collect()),
+                        memo: None,
+                    }
+                    .into()]
+                    .into(),
+                },
+            )])
+            .await
+            .unwrap();
+
+        // Expecting two events, one for transfer, and one for execution of the intent
+        assert_eq!(simulation_output.emitted_events.len(), 2);
+        {
+            let transfer_event = simulation_output
+                .emitted_events
+                .iter()
+                .find(|v| v.get("event").unwrap() == "transfer")
+                .unwrap();
+
+            assert_eq!(transfer_event.get("standard").unwrap(), "dip4");
+            assert!(transfer_event.get("version").is_some());
+
+            let data = transfer_event.get("data").unwrap().as_array().unwrap();
+            assert_eq!(data.len(), 1);
+            let data = data.first().unwrap();
+
+            assert_eq!(data.get("account_id").unwrap(), &env.user1.id().to_string());
+            assert_eq!(
+                data.get("receiver_id").unwrap(),
+                &env.user2.id().to_string()
+            );
+
+            let tokens = data.get("tokens").unwrap();
+            assert_eq!(tokens.as_object().unwrap().len(), 1);
+            assert_eq!(
+                tokens.get(&TokenId::Nep141(env.ft1).to_string()).unwrap(),
+                "1000"
+            );
+        }
+
+        {
+            let intent_exec_event = simulation_output
+                .emitted_events
+                .iter()
+                .find(|v| v.get("event").unwrap() == "intents_executed")
+                .unwrap();
+            assert_eq!(intent_exec_event.get("standard").unwrap(), "dip4");
+            assert!(intent_exec_event.get("version").is_some());
+
+            let data = intent_exec_event.get("data").unwrap().as_array().unwrap();
+            assert_eq!(data.len(), 1);
+            let data = data.first().unwrap();
+
+            assert_eq!(data.get("account_id").unwrap(), &env.user1.id().to_string());
+        }
+
+        simulation_output.into_result().unwrap();
+    }
 
     assert_eq!(
         env.defuse
