@@ -167,13 +167,9 @@ impl Contract {
         amounts: Vec<U128>,
         memo: Option<&str>,
     ) -> Result<()> {
-        Engine::new(self, ExecuteInspector::default()).internal_mt_batch_transfer(
-            sender_id,
-            receiver_id,
-            token_ids,
-            amounts,
-            memo,
-        )?;
+        Engine::new(self, ExecuteInspector::default())
+            .state_mutator()
+            .internal_mt_batch_transfer(sender_id, receiver_id, token_ids, amounts, memo)?;
 
         Ok(())
     }

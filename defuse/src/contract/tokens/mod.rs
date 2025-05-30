@@ -15,7 +15,9 @@ impl Contract {
         tokens: impl IntoIterator<Item = (TokenId, u128)>,
         memo: Option<&str>,
     ) -> Result<()> {
-        Engine::new(self, ExecuteInspector::default()).deposit(owner_id, tokens, memo)?;
+        Engine::new(self, ExecuteInspector::default())
+            .state_mutator()
+            .deposit(owner_id, tokens, memo)?;
 
         Ok(())
     }
@@ -26,7 +28,9 @@ impl Contract {
         token_amounts: impl IntoIterator<Item = (TokenId, u128)>,
         memo: Option<&str>,
     ) -> Result<()> {
-        Engine::new(self, ExecuteInspector::default()).withdraw(owner_id, token_amounts, memo)?;
+        Engine::new(self, ExecuteInspector::default())
+            .state_mutator()
+            .withdraw(owner_id, token_amounts, memo)?;
 
         Ok(())
     }

@@ -11,7 +11,9 @@ impl FeesManager for Contract {
     #[payable]
     fn set_fee(&mut self, #[allow(unused_mut)] mut fee: Pips) {
         assert_one_yocto();
-        Engine::new(self, ExecuteInspector::default()).set_fee(fee);
+        Engine::new(self, ExecuteInspector::default())
+            .state_mutator()
+            .set_fee(fee);
     }
 
     fn fee(&self) -> Pips {
@@ -23,7 +25,9 @@ impl FeesManager for Contract {
     #[payable]
     fn set_fee_collector(&mut self, #[allow(unused_mut)] mut fee_collector: AccountId) {
         assert_one_yocto();
-        Engine::new(self, ExecuteInspector::default()).set_fee_collector(fee_collector);
+        Engine::new(self, ExecuteInspector::default())
+            .state_mutator()
+            .set_fee_collector(fee_collector);
     }
 
     fn fee_collector(&self) -> &AccountId {

@@ -44,6 +44,7 @@ impl AccountManager for Contract {
     fn add_public_key(&mut self, public_key: PublicKey) {
         assert_one_yocto();
         Engine::new(self, ExecuteInspector::default())
+            .state_mutator()
             .add_public_key(&PREDECESSOR_ACCOUNT_ID, public_key);
     }
 
@@ -51,6 +52,7 @@ impl AccountManager for Contract {
     fn remove_public_key(&mut self, public_key: &PublicKey) {
         assert_one_yocto();
         Engine::new(self, ExecuteInspector::default())
+            .state_mutator()
             .remove_public_key(&PREDECESSOR_ACCOUNT_ID, *public_key);
     }
 
