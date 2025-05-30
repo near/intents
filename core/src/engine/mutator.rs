@@ -100,7 +100,7 @@ where
         amounts: Vec<near_sdk::json_types::U128>,
         memo: Option<&str>,
     ) -> Result<()> {
-        self.engine.state.internal_mt_batch_transfer(
+        self.engine.state.mt_batch_transfer(
             sender_id,
             receiver_id.clone(),
             token_ids.clone(),

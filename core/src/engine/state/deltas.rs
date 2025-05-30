@@ -176,7 +176,7 @@ where
         self.state.set_fee_collector(fee_collector);
     }
 
-    fn internal_mt_batch_transfer(
+    fn mt_batch_transfer(
         &mut self,
         sender_id: &AccountIdRef,
         receiver_id: AccountId,
@@ -185,7 +185,7 @@ where
         memo: Option<&str>,
     ) -> Result<()> {
         self.state
-            .internal_mt_batch_transfer(sender_id, receiver_id, token_ids, amounts, memo)
+            .mt_batch_transfer(sender_id, receiver_id, token_ids, amounts, memo)
     }
 
     fn deposit(

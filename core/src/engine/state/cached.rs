@@ -270,7 +270,7 @@ where
         self.fee_collector = fee_collector;
     }
 
-    fn internal_mt_batch_transfer(
+    fn mt_batch_transfer(
         &mut self,
         sender_id: &AccountIdRef,
         receiver_id: AccountId,

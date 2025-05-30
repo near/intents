@@ -217,7 +217,7 @@ impl State for Contract {
         std::mem::swap(&mut self.fees.fee_collector, &mut fee_collector);
     }
 
-    fn internal_mt_batch_transfer(
+    fn mt_batch_transfer(
         &mut self,
         sender_id: &AccountIdRef,
         receiver_id: AccountId,

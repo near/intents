@@ -98,7 +98,7 @@ pub trait State: StateView {
     fn set_fee(&mut self, fee: Pips);
     fn set_fee_collector(&mut self, fee_collector: AccountId);
 
-    fn internal_mt_batch_transfer(
+    fn mt_batch_transfer(
         &mut self,
         sender_id: &AccountIdRef,
         receiver_id: AccountId,
