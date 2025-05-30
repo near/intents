@@ -54,27 +54,69 @@ async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registr
 
     let nonce = rng.random();
 
-    env.defuse
-        .execute_intents([env.user1.sign_defuse_message(
-            SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
-            env.defuse.id(),
-            nonce,
-            Deadline::timeout(Duration::from_secs(120)),
-            DefuseIntents {
-                intents: [FtWithdraw {
-                    token: env.ft1.clone(),
-                    receiver_id: other_user_id.clone(),
-                    amount: 1000.into(),
-                    memo: None,
-                    msg: None,
-                    storage_deposit: None,
-                }
-                .into()]
-                .into(),
-            },
-        )])
-        .await
-        .unwrap();
+    let intents = [env.user1.sign_defuse_message(
+        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        env.defuse.id(),
+        nonce,
+        Deadline::timeout(Duration::from_secs(120)),
+        DefuseIntents {
+            intents: [FtWithdraw {
+                token: env.ft1.clone(),
+                receiver_id: other_user_id.clone(),
+                amount: 1000.into(),
+                memo: None,
+                msg: None,
+                storage_deposit: None,
+            }
+            .into()]
+            .into(),
+        },
+    )];
+
+    // Test events emitted from the simulation
+    {
+        let simulation_output = env.defuse.simulate_intents(intents.clone()).await.unwrap();
+        // Expecting two events, one for withdrawal, and one for execution of the intent
+
+        assert_eq!(simulation_output.emitted_events.len(), 2);
+        {
+            let withdraw_event = simulation_output
+                .emitted_events
+                .iter()
+                .find(|v| v.get("event").unwrap() == "ft_withdraw")
+                .unwrap();
+
+            assert_eq!(withdraw_event.get("standard").unwrap(), "dip4");
+            assert!(withdraw_event.get("version").is_some());
+
+            let data = withdraw_event.get("data").unwrap().as_array().unwrap();
+            assert_eq!(data.len(), 1);
+            let data = data.first().unwrap();
+
+            assert_eq!(data.get("account_id").unwrap(), &env.user1.id().to_string());
+            assert_eq!(data.get("receiver_id").unwrap(), &other_user_id.to_string());
+            assert_eq!(data.get("token").unwrap(), &env.ft1.to_string());
+            assert_eq!(data.get("amount").unwrap(), "1000");
+        }
+
+        {
+            let intent_exec_event = simulation_output
+                .emitted_events
+                .iter()
+                .find(|v| v.get("event").unwrap() == "intents_executed")
+                .unwrap();
+            assert_eq!(intent_exec_event.get("standard").unwrap(), "dip4");
+            assert!(intent_exec_event.get("version").is_some());
+
+            let data = intent_exec_event.get("data").unwrap().as_array().unwrap();
+            assert_eq!(data.len(), 1);
+            let data = data.first().unwrap();
+
+            assert_eq!(data.get("account_id").unwrap(), &env.user1.id().to_string());
+        }
+    }
+
+    env.defuse.execute_intents(intents).await.unwrap();
 
     assert_eq!(
         env.mt_contract_balance_of(env.defuse.id(), env.user1.id(), &ft1.to_string())
