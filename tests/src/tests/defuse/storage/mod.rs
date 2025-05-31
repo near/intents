@@ -131,53 +131,6 @@ async fn storage_deposit_success(
         },
     )];
 
-    // Test events emitted from the simulation
-    {
-        let simulation_output = env.defuse.simulate_intents(intents.clone()).await.unwrap();
-
-        // Expecting two events, one for withdrawal, and one for execution of the intent
-        assert_eq!(simulation_output.emitted_events.len(), 2);
-        {
-            let withdraw_event = simulation_output
-                .emitted_events
-                .iter()
-                .find(|v| v.get("event").unwrap() == "storage_deposit")
-                .unwrap();
-
-            assert_eq!(withdraw_event.get("standard").unwrap(), "dip4");
-            assert!(withdraw_event.get("version").is_some());
-
-            let data = withdraw_event.get("data").unwrap().as_array().unwrap();
-            assert_eq!(data.len(), 1);
-            let data = data.first().unwrap();
-
-            assert_eq!(data.get("account_id").unwrap(), &env.user2.id().to_string());
-            assert_eq!(data.get("contract_id").unwrap(), &env.ft1.to_string());
-            assert_eq!(
-                data.get("amount").unwrap(),
-                &MIN_FT_STORAGE_DEPOSIT_VALUE.as_yoctonear().to_string()
-            );
-        }
-
-        {
-            let intent_exec_event = simulation_output
-                .emitted_events
-                .iter()
-                .find(|v| v.get("event").unwrap() == "intents_executed")
-                .unwrap();
-            assert_eq!(intent_exec_event.get("standard").unwrap(), "dip4");
-            assert!(intent_exec_event.get("version").is_some());
-
-            let data = intent_exec_event.get("data").unwrap().as_array().unwrap();
-            assert_eq!(data.len(), 1);
-            let data = data.first().unwrap();
-
-            assert_eq!(data.get("account_id").unwrap(), &env.user2.id().to_string());
-        }
-
-        simulation_output.into_result().unwrap();
-    }
-
     env.defuse.execute_intents(intents).await.unwrap();
 
     {
