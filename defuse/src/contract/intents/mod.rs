@@ -1,4 +1,4 @@
-mod execute;
+pub mod execute;
 mod relayer;
 mod simulate;
 mod state;
@@ -50,6 +50,7 @@ impl Intents for Contract {
             min_deadline: inspector.min_deadline,
             invariant_violated,
             state: StateOutput { fee: self.fee() },
+            emitted_events: inspector.events_handler.take(),
         }
     }
 }

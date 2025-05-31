@@ -115,24 +115,23 @@ async fn storage_deposit_success(
 
     let nonce = rng.random();
 
-    env.defuse
-        .execute_intents([env.user2.sign_defuse_message(
-            SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
-            env.defuse.id(),
-            nonce,
-            Deadline::timeout(std::time::Duration::from_secs(120)),
-            DefuseIntents {
-                intents: [StorageDeposit {
-                    contract_id: env.ft1.clone(),
-                    account_id: env.user2.id().clone(),
-                    amount: amount_to_deposit,
-                }
-                .into()]
-                .into(),
-            },
-        )])
-        .await
-        .unwrap();
+    let intents = [env.user2.sign_defuse_message(
+        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        env.defuse.id(),
+        nonce,
+        Deadline::timeout(std::time::Duration::from_secs(120)),
+        DefuseIntents {
+            intents: [StorageDeposit {
+                contract_id: env.ft1.clone(),
+                account_id: env.user2.id().clone(),
+                amount: amount_to_deposit,
+            }
+            .into()]
+            .into(),
+        },
+    )];
+
+    env.defuse.execute_intents(intents).await.unwrap();
 
     {
         let storage_balance_ft1_user2 = env

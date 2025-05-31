@@ -8,7 +8,7 @@ use defuse_core::{
 };
 use defuse_near_utils::CURRENT_ACCOUNT_ID;
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
-use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128};
+use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128, require};
 use std::borrow::Cow;
 
 use crate::contract::Contract;
@@ -203,6 +203,113 @@ impl State for Contract {
                     .with_static_gas(Self::DO_STORAGE_DEPOSIT_GAS)
                     .do_storage_deposit(storage_deposit),
             );
+
+        Ok(())
+    }
+
+    fn set_fee(&mut self, mut fee: Pips) {
+        require!(self.fees.fee != fee, "same");
+        std::mem::swap(&mut self.fees.fee, &mut fee);
+    }
+
+    fn set_fee_collector(&mut self, mut fee_collector: AccountId) {
+        require!(self.fees.fee_collector != fee_collector, "same");
+        std::mem::swap(&mut self.fees.fee_collector, &mut fee_collector);
+    }
+
+    fn mt_batch_transfer(
+        &mut self,
+        sender_id: &AccountIdRef,
+        receiver_id: AccountId,
+        token_ids: Vec<defuse_nep245::TokenId>,
+        amounts: Vec<near_sdk::json_types::U128>,
+        _memo: Option<&str>,
+    ) -> Result<()> {
+        if sender_id == receiver_id || token_ids.len() != amounts.len() || amounts.is_empty() {
+            return Err(DefuseError::InvalidIntent);
+        }
+
+        for (token_id, amount) in token_ids.iter().zip(amounts.iter().map(|a| a.0)) {
+            if amount == 0 {
+                return Err(DefuseError::InvalidIntent);
+            }
+            let token_id: TokenId = token_id.parse()?;
+
+            self.accounts
+                .get_mut(sender_id)
+                .ok_or(DefuseError::AccountNotFound)?
+                .token_balances
+                .sub(token_id.clone(), amount)
+                .ok_or(DefuseError::BalanceOverflow)?;
+            self.accounts
+                .get_or_create(receiver_id.clone())
+                .token_balances
+                .add(token_id, amount)
+                .ok_or(DefuseError::BalanceOverflow)?;
+        }
+
+        Ok(())
+    }
+
+    fn deposit(
+        &mut self,
+        owner_id: AccountId,
+        tokens: impl IntoIterator<Item = (TokenId, u128)>,
+        _memo: Option<&str>,
+    ) -> Result<()> {
+        let owner = self.accounts.get_or_create(owner_id);
+
+        for (token_id, amount) in tokens {
+            if amount == 0 {
+                return Err(DefuseError::InvalidIntent);
+            }
+
+            let total_supply = self
+                .state
+                .total_supplies
+                .add(token_id.clone(), amount)
+                .ok_or(DefuseError::BalanceOverflow)?;
+            match token_id {
+                TokenId::Nep171(contract_id, token_id) if total_supply > 1 => {
+                    return Err(DefuseError::NftAlreadyDeposited(contract_id, token_id));
+                }
+                TokenId::Nep141(_) | TokenId::Nep171(_, _) | TokenId::Nep245(_, _) => {}
+            }
+            owner
+                .token_balances
+                .add(token_id, amount)
+                .ok_or(DefuseError::BalanceOverflow)?;
+        }
+
+        Ok(())
+    }
+
+    fn withdraw(
+        &mut self,
+        owner_id: &AccountIdRef,
+        token_amounts: impl IntoIterator<Item = (TokenId, u128)>,
+        _memo: Option<impl Into<String>>,
+    ) -> Result<()> {
+        let owner = self
+            .accounts
+            .get_mut(owner_id)
+            .ok_or(DefuseError::AccountNotFound)?;
+
+        for (token_id, amount) in token_amounts {
+            if amount == 0 {
+                return Err(DefuseError::InvalidIntent);
+            }
+
+            owner
+                .token_balances
+                .sub(token_id.clone(), amount)
+                .ok_or(DefuseError::BalanceOverflow)?;
+
+            self.state
+                .total_supplies
+                .sub(token_id, amount)
+                .ok_or(DefuseError::BalanceOverflow)?;
+        }
 
         Ok(())
     }

@@ -94,4 +94,30 @@ pub trait State: StateView {
         owner_id: &AccountIdRef,
         storage_deposit: StorageDeposit,
     ) -> Result<()>;
+
+    fn set_fee(&mut self, fee: Pips);
+    fn set_fee_collector(&mut self, fee_collector: AccountId);
+
+    fn mt_batch_transfer(
+        &mut self,
+        sender_id: &AccountIdRef,
+        receiver_id: AccountId,
+        token_ids: Vec<defuse_nep245::TokenId>,
+        amounts: Vec<near_sdk::json_types::U128>,
+        memo: Option<&str>,
+    ) -> Result<()>;
+
+    fn deposit(
+        &mut self,
+        owner_id: AccountId,
+        tokens: impl IntoIterator<Item = (TokenId, u128)>,
+        memo: Option<&str>,
+    ) -> Result<()>;
+
+    fn withdraw(
+        &mut self,
+        owner_id: &AccountIdRef,
+        token_amounts: impl IntoIterator<Item = (TokenId, u128)>,
+        memo: Option<impl Into<String>>,
+    ) -> Result<()>;
 }

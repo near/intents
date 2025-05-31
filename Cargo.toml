@@ -102,3 +102,6 @@ debug = false
 strip = "symbols"
 panic = "abort"
 overflow-checks = true
+
+[patch.crates-io]
+near-sdk = { git = "https://github.com/BonelessImpl/near-sdk-rs", branch = "feature/json-event-string" }

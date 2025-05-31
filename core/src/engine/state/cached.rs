@@ -21,6 +21,8 @@ use super::{State, StateView};
 pub struct CachedState<W: StateView> {
     view: W,
     accounts: CachedAccounts,
+    fee: Pips,
+    fee_collector: AccountId,
 }
 
 impl<W> CachedState<W>
@@ -30,6 +32,8 @@ where
     #[inline]
     pub fn new(view: W) -> Self {
         Self {
+            fee: view.fee(),
+            fee_collector: view.fee_collector().into_owned(),
             view,
             accounts: CachedAccounts::new(),
         }
@@ -256,6 +260,77 @@ where
                 storage_deposit.amount.as_yoctonear(),
             )],
         )
+    }
+
+    fn set_fee(&mut self, fee: Pips) {
+        self.fee = fee;
+    }
+
+    fn set_fee_collector(&mut self, fee_collector: AccountId) {
+        self.fee_collector = fee_collector;
+    }
+
+    fn mt_batch_transfer(
+        &mut self,
+        sender_id: &AccountIdRef,
+        receiver_id: AccountId,
+        token_ids: Vec<defuse_nep245::TokenId>,
+        amounts: Vec<near_sdk::json_types::U128>,
+        _memo: Option<&str>,
+    ) -> Result<()> {
+        if sender_id == receiver_id || token_ids.len() != amounts.len() || amounts.is_empty() {
+            return Err(DefuseError::InvalidIntent);
+        }
+
+        for (token_id, amount) in token_ids.iter().zip(amounts.iter().map(|a| a.0)) {
+            if amount == 0 {
+                return Err(DefuseError::InvalidIntent);
+            }
+            let token_id: TokenId = token_id.parse()?;
+
+            self.internal_sub_balance(sender_id, [(token_id.clone(), amount)])?;
+            self.internal_add_balance(receiver_id.clone(), [(token_id.clone(), amount)])?;
+        }
+
+        Ok(())
+    }
+
+    fn deposit(
+        &mut self,
+        owner_id: AccountId,
+        tokens: impl IntoIterator<Item = (TokenId, u128)>,
+        _memo: Option<&str>,
+    ) -> Result<()> {
+        for (token_id, amount) in tokens {
+            if amount == 0 {
+                return Err(DefuseError::InvalidIntent);
+            }
+
+            // We have to call this function multiple times instead of using the given iterator
+            // because we have to check whether the balance is zero
+            self.internal_add_balance(owner_id.clone(), [(token_id, amount)])?;
+        }
+
+        Ok(())
+    }
+
+    fn withdraw(
+        &mut self,
+        owner_id: &AccountIdRef,
+        token_amounts: impl IntoIterator<Item = (TokenId, u128)>,
+        _memo: Option<impl Into<String>>,
+    ) -> Result<()> {
+        for (token_id, amount) in token_amounts {
+            if amount == 0 {
+                return Err(DefuseError::InvalidIntent);
+            }
+
+            // We have to call this function multiple times instead of using the given iterator
+            // because we have to check whether the balance is zero
+            self.internal_sub_balance(owner_id, [(token_id, amount)])?;
+        }
+
+        Ok(())
     }
 }
 

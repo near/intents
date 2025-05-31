@@ -1,17 +1,20 @@
+pub mod event_emitter;
 mod inspector;
+pub mod mutator;
 mod state;
 
+use self::deltas::{Deltas, Transfers};
 pub use self::{inspector::*, state::*};
-
-use defuse_crypto::{Payload, SignedPayload};
-
 use crate::{
     DefuseError, Result,
-    intents::{DefuseIntents, ExecutableIntent},
+    accounts::AccountEvent,
+    events::DefuseEvent,
+    intents::{DefuseIntents, ExecutableIntent, IntentEvent},
     payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
 };
-
-use self::deltas::{Deltas, Transfers};
+use defuse_crypto::{Payload, SignedPayload};
+use mutator::StateMutator;
+use std::borrow::Cow;
 
 pub struct Engine<S, I> {
     pub state: Deltas<S>,
@@ -79,7 +82,14 @@ where
         }
 
         intents.execute_intent(&signer_id, self, hash)?;
+
+        // Emit related events. Due to backwards compatibility, we have two functions for this,
+        // and are displayed in simulations in two different ways.
         self.inspector.on_intent_executed(&signer_id, hash);
+        self.inspector
+            .emit_event_eventually(DefuseEvent::IntentsExecuted(Cow::Owned(vec![
+                IntentEvent::new(AccountEvent::new(Cow::Owned(signer_id.clone()), ()), hash),
+            ])));
 
         Ok(())
     }
@@ -89,5 +99,9 @@ where
         self.state
             .finalize()
             .map_err(DefuseError::InvariantViolated)
+    }
+
+    pub fn state_mutator(&mut self) -> StateMutator<S, I> {
+        StateMutator::new(self)
     }
 }

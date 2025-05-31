@@ -34,7 +34,7 @@ impl Seed {
     }
 
     #[must_use]
-    pub fn derive_seed(&self) -> Seed {
+    pub fn derive_seed(&self) -> Self {
         let mut rng = make_seedable_rng(*self);
         rng.random()
     }
