@@ -115,24 +115,70 @@ async fn storage_deposit_success(
 
     let nonce = rng.random();
 
-    env.defuse
-        .execute_intents([env.user2.sign_defuse_message(
-            SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
-            env.defuse.id(),
-            nonce,
-            Deadline::timeout(std::time::Duration::from_secs(120)),
-            DefuseIntents {
-                intents: [StorageDeposit {
-                    contract_id: env.ft1.clone(),
-                    account_id: env.user2.id().clone(),
-                    amount: amount_to_deposit,
-                }
-                .into()]
-                .into(),
-            },
-        )])
-        .await
-        .unwrap();
+    let intents = [env.user2.sign_defuse_message(
+        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        env.defuse.id(),
+        nonce,
+        Deadline::timeout(std::time::Duration::from_secs(120)),
+        DefuseIntents {
+            intents: [StorageDeposit {
+                contract_id: env.ft1.clone(),
+                account_id: env.user2.id().clone(),
+                amount: amount_to_deposit,
+            }
+            .into()]
+            .into(),
+        },
+    )];
+
+    // Test events emitted from the simulation
+    {
+        let simulation_output = env.defuse.simulate_intents(intents.clone()).await.unwrap();
+
+        // Expecting two events, one for withdrawal, and one for execution of the intent
+        assert_eq!(simulation_output.emitted_events.len(), 2);
+        {
+            let withdraw_event = simulation_output
+                .emitted_events
+                .iter()
+                .find(|v| v.get("event").unwrap() == "storage_deposit")
+                .unwrap();
+
+            assert_eq!(withdraw_event.get("standard").unwrap(), "dip4");
+            assert!(withdraw_event.get("version").is_some());
+
+            let data = withdraw_event.get("data").unwrap().as_array().unwrap();
+            assert_eq!(data.len(), 1);
+            let data = data.first().unwrap();
+
+            assert_eq!(data.get("account_id").unwrap(), &env.user2.id().to_string());
+            assert_eq!(data.get("contract_id").unwrap(), &env.ft1.to_string());
+            assert_eq!(
+                data.get("amount").unwrap(),
+                &MIN_FT_STORAGE_DEPOSIT_VALUE.as_yoctonear().to_string()
+            );
+        }
+
+        {
+            let intent_exec_event = simulation_output
+                .emitted_events
+                .iter()
+                .find(|v| v.get("event").unwrap() == "intents_executed")
+                .unwrap();
+            assert_eq!(intent_exec_event.get("standard").unwrap(), "dip4");
+            assert!(intent_exec_event.get("version").is_some());
+
+            let data = intent_exec_event.get("data").unwrap().as_array().unwrap();
+            assert_eq!(data.len(), 1);
+            let data = data.first().unwrap();
+
+            assert_eq!(data.get("account_id").unwrap(), &env.user2.id().to_string());
+        }
+
+        simulation_output.into_result().unwrap();
+    }
+
+    env.defuse.execute_intents(intents).await.unwrap();
 
     {
         let storage_balance_ft1_user2 = env

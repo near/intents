@@ -76,8 +76,8 @@ async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registr
     // Test events emitted from the simulation
     {
         let simulation_output = env.defuse.simulate_intents(intents.clone()).await.unwrap();
-        // Expecting two events, one for withdrawal, and one for execution of the intent
 
+        // Expecting two events, one for withdrawal, and one for execution of the intent
         assert_eq!(simulation_output.emitted_events.len(), 2);
         {
             let withdraw_event = simulation_output
