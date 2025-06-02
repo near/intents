@@ -2,11 +2,11 @@ use super::{ExecutableIntent, IntentEvent};
 use crate::{
     DefuseError, Result,
     accounts::AccountEvent,
+    amounts::Amounts,
     engine::{Engine, Inspector, State, StateView},
     events::DefuseEvent,
     fees::Pips,
     token_id::TokenId,
-    amounts::Amounts,
 };
 use defuse_num_utils::CheckedMulDiv;
 use impl_tools::autoimpl;
