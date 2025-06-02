@@ -3,7 +3,7 @@ use crate::TokenId;
 use crate::enumeration::MultiTokenEnumeration;
 use near_sdk::near;
 
-type MetadataId = String;
+pub type MetadataId = String;
 
 #[derive(Debug, Clone)]
 #[near(serializers = [json, borsh])]
