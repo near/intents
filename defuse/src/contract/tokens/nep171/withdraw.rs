@@ -1,7 +1,12 @@
-use std::iter;
-
+use crate::{
+    contract::{Contract, ContractExt, Role, tokens::STORAGE_DEPOSIT_GAS},
+    tokens::nep171::{
+        NonFungibleTokenForceWithdrawer, NonFungibleTokenWithdrawResolver,
+        NonFungibleTokenWithdrawer,
+    },
+};
 use defuse_core::{
-    DefuseError, Result, engine::StateView, intents::tokens::NftWithdraw, tokens::TokenId,
+    DefuseError, Result, engine::StateView, intents::tokens::NftWithdraw, token_id::TokenId,
 };
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
@@ -16,14 +21,7 @@ use near_sdk::{
     near, require,
     serde_json::{self, json},
 };
-
-use crate::{
-    contract::{Contract, ContractExt, Role, tokens::STORAGE_DEPOSIT_GAS},
-    tokens::nep171::{
-        NonFungibleTokenForceWithdrawer, NonFungibleTokenWithdrawResolver,
-        NonFungibleTokenWithdrawer,
-    },
-};
+use std::iter;
 
 #[near]
 impl NonFungibleTokenWithdrawer for Contract {

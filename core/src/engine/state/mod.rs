@@ -12,7 +12,7 @@ use crate::{
     Nonce, Result,
     fees::Pips,
     intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
-    tokens::TokenId,
+    token_id::TokenId,
 };
 
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>)]

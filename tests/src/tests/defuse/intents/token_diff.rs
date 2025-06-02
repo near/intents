@@ -1,6 +1,9 @@
-use std::{collections::BTreeMap, time::Duration};
-
+use crate::{
+    tests::defuse::{DefuseSigner, SigningStandard, env::Env},
+    utils::mt::MtExt,
+};
 use arbitrary::{Arbitrary, Unstructured};
+use defuse::core::token_id::TokenId;
 use defuse::core::{
     Deadline,
     fees::Pips,
@@ -9,19 +12,14 @@ use defuse::core::{
         token_diff::{TokenDeltas, TokenDiff},
     },
     payload::multi::MultiPayload,
-    tokens::TokenId,
 };
 use near_sdk::AccountId;
 use near_workspaces::Account;
 use randomness::{Rng, make_true_rng};
 use rstest::rstest;
+use std::{collections::BTreeMap, time::Duration};
 use test_utils::random::make_seedable_rng;
 use test_utils::random::{Seed, random_seed};
-
-use crate::{
-    tests::defuse::{DefuseSigner, SigningStandard, env::Env},
-    utils::mt::MtExt,
-};
 
 use super::ExecuteIntentsExt;
 

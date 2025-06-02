@@ -2,7 +2,7 @@ use crate::{
     tests::defuse::{env::Env, tokens::nep141::DefuseFtWithdrawer},
     utils::mt::MtExt,
 };
-use defuse::core::tokens::TokenId;
+use defuse::core::token_id::TokenId;
 use defuse::nep245::Token;
 use rstest::rstest;
 

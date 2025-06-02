@@ -1,7 +1,7 @@
 use core::iter;
 
 use defuse_core::{
-    DefuseError, Result, engine::StateView, intents::tokens::FtWithdraw, tokens::TokenId,
+    DefuseError, Result, engine::StateView, intents::tokens::FtWithdraw, token_id::TokenId,
 };
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,

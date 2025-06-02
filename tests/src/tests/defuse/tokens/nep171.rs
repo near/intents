@@ -2,10 +2,10 @@ use crate::tests::defuse::SigningStandard;
 use crate::tests::defuse::{DefuseSigner, env::Env, intents::ExecuteIntentsExt};
 use crate::utils::{mt::MtExt, nft::NftExt};
 use arbitrary::{Arbitrary, Unstructured};
+use defuse::core::token_id::TokenId as MtTokenId;
 use defuse::core::{
     Deadline,
     intents::{DefuseIntents, tokens::NftWithdraw},
-    tokens::TokenId as MtTokenId,
 };
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata,

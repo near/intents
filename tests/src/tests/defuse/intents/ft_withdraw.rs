@@ -6,13 +6,13 @@ use crate::{
     utils::{ft::FtExt, mt::MtExt, wnear::WNearExt},
 };
 use arbitrary::{Arbitrary, Unstructured};
+use defuse::core::token_id::TokenId;
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
     core::{
         Deadline,
         fees::{FeesConfig, Pips},
         intents::{DefuseIntents, tokens::FtWithdraw},
-        tokens::TokenId,
     },
 };
 use near_sdk::{AccountId, Gas, NearToken};

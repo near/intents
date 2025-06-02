@@ -1,9 +1,8 @@
 #![allow(clippy::too_many_arguments)]
 
 use core::iter;
-
 use defuse_core::{
-    DefuseError, Result, engine::StateView, intents::tokens::MtWithdraw, tokens::TokenId,
+    DefuseError, Result, engine::StateView, intents::tokens::MtWithdraw, token_id::TokenId,
 };
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
