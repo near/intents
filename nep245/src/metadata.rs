@@ -108,7 +108,7 @@ pub trait MultiTokenMetadata {
     fn mt_metadata_contract(&self) -> MTContractMetadata;
 
     /// For a list of `token_ids`, returns a vector of combined `(base, token)` metadata.
-    fn mt_metadata_token_all(&self, token_ids: Vec<TokenId>) -> Vec<MTTokenMetadataAll>;
+    fn mt_metadata_token_all(&self, token_ids: Vec<TokenId>) -> Vec<Option<MTTokenMetadataAll>>;
 
     /// Given `token_ids`, returns each token’s `MTTokenMetadata` or `None` if absent.
     fn mt_metadata_token_by_token_id(
