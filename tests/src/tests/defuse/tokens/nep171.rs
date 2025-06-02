@@ -262,6 +262,7 @@ async fn transfer_nft_to_verifier(random_seed: Seed) {
                         memo: None,
                         msg: None,
                         storage_deposit: None,
+                        min_gas: None,
                     }
                     .into()]
                     .into(),

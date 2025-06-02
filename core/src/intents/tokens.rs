@@ -1,7 +1,7 @@
 use std::{borrow::Cow, collections::BTreeMap};
 
 use near_contract_standards::non_fungible_token;
-use near_sdk::{AccountId, AccountIdRef, CryptoHash, NearToken, json_types::U128, near};
+use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, NearToken, json_types::U128, near};
 use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
@@ -91,7 +91,15 @@ pub struct FtWithdraw {
     /// NOTE: the `wNEAR` will not be refunded in case of fail
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub storage_deposit: Option<NearToken>,
-    // TODO: min_gas?
+
+    /// Optional minimum required Near gas for created Promise to succeed. Defaults are:
+    /// * `ft_transfer`: 15TGas
+    /// * `ft_transfer_call`: 50TGas
+    ///
+    /// Remaining gas will be distributed evenly across all Function Call
+    /// Promises created during execution of current receipt.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_gas: Option<Gas>,
 }
 
 impl ExecutableIntent for FtWithdraw {
@@ -141,6 +149,15 @@ pub struct NftWithdraw {
     /// NOTE: the `wNEAR` will not be refunded in case of fail
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub storage_deposit: Option<NearToken>,
+
+    /// Optional minimum required Near gas for created Promise to succeed. Defaults are:
+    /// * `nft_transfer`: 15TGas
+    /// * `nft_transfer_call`: 50TGas
+    ///
+    /// Remaining gas will be distributed evenly across all Function Call
+    /// Promises created during execution of current receipt.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_gas: Option<Gas>,
 }
 
 impl ExecutableIntent for NftWithdraw {
@@ -194,6 +211,15 @@ pub struct MtWithdraw {
     /// NOTE: the `wNEAR` will not be refunded in case of fail
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub storage_deposit: Option<NearToken>,
+
+    /// Optional minimum required Near gas for created Promise to succeed. Defaults are:
+    /// * `mt_batch_transfer`: 20TGas
+    /// * `mt_batch_transfer_call`: 50TGas
+    ///
+    /// Remaining gas will be distributed evenly across all Function Call
+    /// Promises created during execution of current receipt.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_gas: Option<Gas>,
 }
 impl ExecutableIntent for MtWithdraw {
     #[inline]

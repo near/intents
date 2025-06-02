@@ -15,7 +15,7 @@ use defuse::{
         tokens::TokenId,
     },
 };
-use near_sdk::{AccountId, NearToken};
+use near_sdk::{AccountId, Gas, NearToken};
 use randomness::Rng;
 use rstest::rstest;
 use std::time::Duration;
@@ -68,6 +68,7 @@ async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registr
                     memo: None,
                     msg: None,
                     storage_deposit: None,
+                    min_gas: None,
                 }
                 .into()]
                 .into(),
@@ -107,6 +108,7 @@ async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registr
                     msg: None,
                     // user has no wnear yet
                     storage_deposit: Some(STORAGE_DEPOSIT),
+                    min_gas: None,
                 }
                 .into()]
                 .into(),
@@ -158,6 +160,7 @@ async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registr
 
     let nonce = rng.random();
 
+    // too large min_gas specified
     env.defuse_execute_intents(
         env.defuse.id(),
         [env.user1.sign_defuse_message(
@@ -172,8 +175,33 @@ async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registr
                     amount: 1000.into(),
                     memo: None,
                     msg: None,
-
                     storage_deposit,
+                    min_gas: Some(Gas::from_tgas(300)),
+                }
+                .into()]
+                .into(),
+            },
+        )],
+    )
+    .await
+    .unwrap_err();
+
+    env.defuse_execute_intents(
+        env.defuse.id(),
+        [env.user1.sign_defuse_message(
+            SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+            env.defuse.id(),
+            nonce,
+            Deadline::MAX,
+            DefuseIntents {
+                intents: [FtWithdraw {
+                    token: env.ft1.clone(),
+                    receiver_id: other_user_id.clone(),
+                    amount: 1000.into(),
+                    memo: None,
+                    msg: None,
+                    storage_deposit,
+                    min_gas: None,
                 }
                 .into()]
                 .into(),
@@ -274,6 +302,7 @@ async fn ft_withdraw_intent_msg(random_seed: Seed, #[values(false, true)] no_reg
                     memo: Some("defuse-to-defuse".to_string()),
                     msg: Some(env.user2.id().to_string()),
                     storage_deposit: None,
+                    min_gas: None,
                 }
                 .into()]
                 .into(),

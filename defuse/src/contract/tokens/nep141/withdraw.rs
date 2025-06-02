@@ -48,6 +48,7 @@ impl FungibleTokenWithdrawer for Contract {
                 memo,
                 msg,
                 storage_deposit: None,
+                min_gas: None,
             },
         )
         .unwrap_or_panic()
@@ -84,11 +85,10 @@ impl Contract {
                 .then(
                     // schedule storage_deposit() only after near_withdraw() returns
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
-                        // TODO
                         .with_static_gas(Self::DO_FT_WITHDRAW_GAS.saturating_add(if is_call {
-                            FT_TRANSFER_CALL_GAS
+                            withdraw.min_gas.unwrap_or(FT_TRANSFER_CALL_GAS)
                         } else {
-                            FT_TRANSFER_GAS
+                            withdraw.min_gas.unwrap_or(FT_TRANSFER_GAS)
                         }))
                         .do_ft_withdraw(withdraw.clone()),
                 )
@@ -139,12 +139,14 @@ impl Contract {
                 withdraw.amount.0,
                 withdraw.memo.as_deref(),
                 msg,
+                withdraw.min_gas.unwrap_or(FT_TRANSFER_CALL_GAS),
             )
         } else {
             p.ft_transfer(
                 &withdraw.receiver_id,
                 withdraw.amount.0,
                 withdraw.memo.as_deref(),
+                withdraw.min_gas.unwrap_or(FT_TRANSFER_GAS),
             )
         }
     }
@@ -224,6 +226,7 @@ impl FungibleTokenForceWithdrawer for Contract {
                 memo,
                 msg,
                 storage_deposit: None,
+                min_gas: None,
             },
         )
         .unwrap_or_panic()
@@ -231,19 +234,32 @@ impl FungibleTokenForceWithdrawer for Contract {
 }
 
 pub trait FtExt {
-    fn ft_transfer(self, receiver_id: &AccountId, amount: u128, memo: Option<&str>) -> Self;
+    fn ft_transfer(
+        self,
+        receiver_id: &AccountId,
+        amount: u128,
+        memo: Option<&str>,
+        min_gas: Gas,
+    ) -> Self;
     fn ft_transfer_call(
         self,
         receiver_id: &AccountId,
         amount: u128,
         memo: Option<&str>,
         msg: &str,
+        min_gas: Gas,
     ) -> Self;
 }
 
 impl FtExt for Promise {
-    fn ft_transfer(self, receiver_id: &AccountId, amount: u128, memo: Option<&str>) -> Self {
-        self.function_call(
+    fn ft_transfer(
+        self,
+        receiver_id: &AccountId,
+        amount: u128,
+        memo: Option<&str>,
+        min_gas: Gas,
+    ) -> Self {
+        self.function_call_weight(
             "ft_transfer".to_string(),
             serde_json::to_vec(&json!({
                 "receiver_id": receiver_id,
@@ -252,7 +268,8 @@ impl FtExt for Promise {
             }))
             .unwrap_or_panic_display(),
             NearToken::from_yoctonear(1),
-            FT_TRANSFER_GAS,
+            min_gas,
+            GasWeight::default(),
         )
     }
 
@@ -262,6 +279,7 @@ impl FtExt for Promise {
         amount: u128,
         memo: Option<&str>,
         msg: &str,
+        min_gas: Gas,
     ) -> Self {
         self.function_call_weight(
             "ft_transfer_call".to_string(),
@@ -273,7 +291,7 @@ impl FtExt for Promise {
             }))
             .unwrap_or_panic_display(),
             NearToken::from_yoctonear(1),
-            FT_TRANSFER_CALL_GAS,
+            min_gas,
             GasWeight::default(),
         )
     }

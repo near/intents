@@ -48,6 +48,7 @@ impl NonFungibleTokenWithdrawer for Contract {
                 memo,
                 msg,
                 storage_deposit: None,
+                min_gas: None,
             },
         )
         .unwrap_or_panic()
@@ -86,11 +87,10 @@ impl Contract {
                 .then(
                     // schedule storage_deposit() only after near_withdraw() returns
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
-                        // TODO
                         .with_static_gas(Self::DO_NFT_WITHDRAW_GAS.saturating_add(if is_call {
-                            NFT_TRANSFER_CALL_GAS
+                            withdraw.min_gas.unwrap_or(NFT_TRANSFER_CALL_GAS)
                         } else {
-                            NFT_TRANSFER_GAS
+                            withdraw.min_gas.unwrap_or(NFT_TRANSFER_GAS)
                         }))
                         .do_nft_withdraw(withdraw.clone()),
                 )
@@ -141,12 +141,14 @@ impl Contract {
                 &withdraw.token_id,
                 withdraw.memo.as_deref(),
                 msg,
+                withdraw.min_gas.unwrap_or(NFT_TRANSFER_CALL_GAS),
             )
         } else {
             p.nft_transfer(
                 &withdraw.receiver_id,
                 &withdraw.token_id,
                 withdraw.memo.as_deref(),
+                withdraw.min_gas.unwrap_or(NFT_TRANSFER_GAS),
             )
         }
     }
@@ -214,6 +216,7 @@ impl NonFungibleTokenForceWithdrawer for Contract {
                 memo,
                 msg,
                 storage_deposit: None,
+                min_gas: None,
             },
         )
         .unwrap_or_panic()
@@ -226,6 +229,7 @@ pub trait NftExt {
         receiver_id: &AccountId,
         token_id: &non_fungible_token::TokenId,
         memo: Option<&str>,
+        min_gas: Gas,
     ) -> Self;
 
     fn nft_transfer_call(
@@ -234,6 +238,7 @@ pub trait NftExt {
         token_id: &non_fungible_token::TokenId,
         memo: Option<&str>,
         msg: &str,
+        min_gas: Gas,
     ) -> Self;
 }
 
@@ -243,8 +248,9 @@ impl NftExt for Promise {
         receiver_id: &AccountId,
         token_id: &non_fungible_token::TokenId,
         memo: Option<&str>,
+        min_gas: Gas,
     ) -> Self {
-        self.function_call(
+        self.function_call_weight(
             "nft_transfer".to_string(),
             serde_json::to_vec(&json!({
                 "receiver_id": receiver_id,
@@ -253,7 +259,8 @@ impl NftExt for Promise {
             }))
             .unwrap_or_panic_display(),
             NearToken::from_yoctonear(1),
-            NFT_TRANSFER_GAS,
+            min_gas,
+            GasWeight::default(),
         )
     }
 
@@ -263,6 +270,7 @@ impl NftExt for Promise {
         token_id: &non_fungible_token::TokenId,
         memo: Option<&str>,
         msg: &str,
+        min_gas: Gas,
     ) -> Self {
         self.function_call_weight(
             "nft_transfer_call".to_string(),
@@ -274,7 +282,7 @@ impl NftExt for Promise {
             }))
             .unwrap_or_panic_display(),
             NearToken::from_yoctonear(1),
-            NFT_TRANSFER_CALL_GAS,
+            min_gas,
             GasWeight::default(),
         )
     }

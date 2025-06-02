@@ -51,6 +51,7 @@ impl MultiTokenWithdrawer for Contract {
                 memo,
                 msg,
                 storage_deposit: None,
+                min_gas: None,
             },
         )
         .unwrap_or_panic()
@@ -93,11 +94,10 @@ impl Contract {
                 .then(
                     // schedule storage_deposit() only after near_withdraw() returns
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
-                        // TODO
                         .with_static_gas(Self::DO_MT_WITHDRAW_GAS.saturating_add(if is_call {
-                            MT_BATCH_TRANSFER_CALL_GAS
+                            withdraw.min_gas.unwrap_or(MT_BATCH_TRANSFER_CALL_GAS)
                         } else {
-                            MT_BATCH_TRANSFER_GAS
+                            withdraw.min_gas.unwrap_or(MT_BATCH_TRANSFER_GAS)
                         }))
                         .do_mt_withdraw(withdraw.clone()),
                 )
@@ -154,6 +154,7 @@ impl Contract {
                 &withdraw.amounts,
                 withdraw.memo.as_deref(),
                 msg,
+                withdraw.min_gas.unwrap_or(MT_BATCH_TRANSFER_CALL_GAS),
             )
         } else {
             p.mt_batch_transfer(
@@ -161,6 +162,7 @@ impl Contract {
                 &withdraw.token_ids,
                 &withdraw.amounts,
                 withdraw.memo.as_deref(),
+                withdraw.min_gas.unwrap_or(MT_BATCH_TRANSFER_GAS),
             )
         }
     }
@@ -258,6 +260,7 @@ impl MultiTokenForceWithdrawer for Contract {
                 memo,
                 msg,
                 storage_deposit: None,
+                min_gas: None,
             },
         )
         .unwrap_or_panic()
@@ -271,6 +274,7 @@ pub trait MtExt {
         token_ids: &[defuse_nep245::TokenId],
         amounts: &[U128],
         memo: Option<&str>,
+        min_gas: Gas,
     ) -> Self;
 
     fn mt_batch_transfer_call(
@@ -280,6 +284,7 @@ pub trait MtExt {
         amounts: &[U128],
         memo: Option<&str>,
         msg: &str,
+        min_gas: Gas,
     ) -> Self;
 }
 
@@ -290,8 +295,9 @@ impl MtExt for Promise {
         token_ids: &[defuse_nep245::TokenId],
         amounts: &[U128],
         memo: Option<&str>,
+        min_gas: Gas,
     ) -> Self {
-        self.function_call(
+        self.function_call_weight(
             "mt_batch_transfer".to_string(),
             serde_json::to_vec(&json!({
                 "receiver_id": receiver_id,
@@ -301,7 +307,8 @@ impl MtExt for Promise {
             }))
             .unwrap_or_panic_display(),
             NearToken::from_yoctonear(1),
-            MT_BATCH_TRANSFER_GAS,
+            min_gas,
+            GasWeight::default(),
         )
     }
 
@@ -312,6 +319,7 @@ impl MtExt for Promise {
         amounts: &[U128],
         memo: Option<&str>,
         msg: &str,
+        min_gas: Gas,
     ) -> Self {
         self.function_call_weight(
             "mt_batch_transfer_call".to_string(),
@@ -324,7 +332,7 @@ impl MtExt for Promise {
             }))
             .unwrap_or_panic_display(),
             NearToken::from_yoctonear(1),
-            MT_BATCH_TRANSFER_CALL_GAS,
+            min_gas,
             GasWeight::default(),
         )
     }
