@@ -9,7 +9,8 @@ use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::storage_management::ext_storage_management;
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
 use near_sdk::{
-    AccountId, Gas, NearToken, Promise, PromiseOrValue, PromiseResult, assert_one_yocto, env,
+    AccountId, Gas, GasWeight, NearToken, Promise, PromiseOrValue, PromiseResult, assert_one_yocto,
+    env,
     json_types::U128,
     near, require,
     serde_json::{self, json},
@@ -77,10 +78,13 @@ impl Contract {
             ext_wnear::ext(self.wnear_id.clone())
                 .with_attached_deposit(NearToken::from_yoctonear(1))
                 .with_static_gas(NEAR_WITHDRAW_GAS)
+                // do not distribute remaining gas here
+                .with_unused_gas_weight(0)
                 .near_withdraw(U128(storage_deposit.as_yoctonear()))
                 .then(
                     // schedule storage_deposit() only after near_withdraw() returns
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
+                        // TODO
                         .with_static_gas(Self::DO_FT_WITHDRAW_GAS.saturating_add(if is_call {
                             FT_TRANSFER_CALL_GAS
                         } else {
@@ -94,6 +98,8 @@ impl Contract {
         .then(
             Self::ext(CURRENT_ACCOUNT_ID.clone())
                 .with_static_gas(Self::FT_RESOLVE_WITHDRAW_GAS)
+                // do not distribute remaining gas here
+                .with_unused_gas_weight(0)
                 .ft_resolve_withdraw(withdraw.token, owner_id, withdraw.amount, is_call),
         )
         .into())
@@ -120,6 +126,8 @@ impl Contract {
             ext_storage_management::ext(withdraw.token)
                 .with_attached_deposit(storage_deposit)
                 .with_static_gas(STORAGE_DEPOSIT_GAS)
+                // do not distribute remaining gas here
+                .with_unused_gas_weight(0)
                 .storage_deposit(Some(withdraw.receiver_id.clone()), None)
         } else {
             Promise::new(withdraw.token)
@@ -255,7 +263,7 @@ impl FtExt for Promise {
         memo: Option<&str>,
         msg: &str,
     ) -> Self {
-        self.function_call(
+        self.function_call_weight(
             "ft_transfer_call".to_string(),
             serde_json::to_vec(&json!({
                 "receiver_id": receiver_id,
@@ -266,6 +274,7 @@ impl FtExt for Promise {
             .unwrap_or_panic_display(),
             NearToken::from_yoctonear(1),
             FT_TRANSFER_CALL_GAS,
+            GasWeight::default(),
         )
     }
 }

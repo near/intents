@@ -91,6 +91,7 @@ pub struct FtWithdraw {
     /// NOTE: the `wNEAR` will not be refunded in case of fail
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub storage_deposit: Option<NearToken>,
+    // TODO: min_gas?
 }
 
 impl ExecutableIntent for FtWithdraw {
