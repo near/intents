@@ -2,6 +2,7 @@ use super::{DefuseSigner, accounts::AccountManagerExt, env::Env};
 use crate::tests::defuse::SigningStandard;
 use crate::utils::{crypto::Signer, mt::MtExt, test_log::TestLog};
 use arbitrary::{Arbitrary, Unstructured};
+use defuse::core::token_id::TokenId;
 use defuse::{
     core::{
         Deadline,
@@ -10,7 +11,7 @@ use defuse::{
             tokens::{FtWithdraw, Transfer},
         },
         payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
-        tokens::{Amounts, TokenId},
+        tokens::Amounts,
     },
     intents::SimulationOutput,
 };

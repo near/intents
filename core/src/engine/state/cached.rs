@@ -1,18 +1,16 @@
-use std::{
-    borrow::Cow,
-    collections::{HashMap, HashSet},
-};
-
-use defuse_bitmap::{U248, U256};
-use defuse_crypto::PublicKey;
-use near_sdk::{AccountId, AccountIdRef};
-
 use crate::{
     DefuseError, Nonce, Nonces, Result,
     fees::Pips,
-    intents::tokens::StorageDeposit,
-    intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw},
-    tokens::{Amounts, TokenId},
+    intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
+    token_id::TokenId,
+    tokens::Amounts,
+};
+use defuse_bitmap::{U248, U256};
+use defuse_crypto::PublicKey;
+use near_sdk::{AccountId, AccountIdRef};
+use std::{
+    borrow::Cow,
+    collections::{HashMap, HashSet},
 };
 
 use super::{State, StateView};

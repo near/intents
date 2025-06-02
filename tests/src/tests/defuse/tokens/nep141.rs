@@ -7,12 +7,12 @@ use crate::{
     utils::{acl::AclExt, ft::FtExt, mt::MtExt},
 };
 use arbitrary::{Arbitrary, Unstructured};
+use defuse::core::token_id::TokenId;
 use defuse::{
     contract::Role,
     core::{
         Deadline,
         intents::{DefuseIntents, tokens::FtWithdraw},
-        tokens::TokenId,
     },
     tokens::DepositMessage,
 };

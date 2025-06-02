@@ -1,4 +1,4 @@
-use defuse_core::{DefuseError, Result, engine::StateView, tokens::TokenId};
+use defuse_core::{DefuseError, Result, engine::StateView, token_id::TokenId};
 use defuse_near_utils::{CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic};
 use defuse_nep245::{MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver};
 use near_plugins::{Pausable, pause};

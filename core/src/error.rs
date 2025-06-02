@@ -1,10 +1,9 @@
-use near_sdk::{AccountId, FunctionError, serde_json};
-use thiserror::Error as ThisError;
-
 use crate::{
     engine::deltas::InvariantViolated,
-    tokens::{ParseTokenIdError, TokenId},
+    token_id::{ParseTokenIdError, TokenId},
 };
+use near_sdk::{AccountId, FunctionError, serde_json};
+use thiserror::Error as ThisError;
 
 pub type Result<T, E = DefuseError> = ::core::result::Result<T, E>;
 

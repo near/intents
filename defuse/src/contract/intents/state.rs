@@ -4,7 +4,7 @@ use defuse_core::{
     engine::{State, StateView},
     fees::Pips,
     intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
-    tokens::TokenId,
+    token_id::TokenId,
 };
 use defuse_near_utils::CURRENT_ACCOUNT_ID;
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};

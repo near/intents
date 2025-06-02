@@ -1,6 +1,6 @@
 use std::iter;
 
-use defuse_core::{Result, engine::StateView, intents::tokens::NftWithdraw, tokens::TokenId};
+use defuse_core::{Result, engine::StateView, intents::tokens::NftWithdraw, token_id::TokenId};
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };

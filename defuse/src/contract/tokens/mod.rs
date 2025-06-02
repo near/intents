@@ -3,7 +3,7 @@ mod nep171;
 mod nep245;
 
 use super::Contract;
-use defuse_core::{DefuseError, Result, tokens::TokenId};
+use defuse_core::{DefuseError, Result, token_id::TokenId};
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
 use near_sdk::{AccountId, AccountIdRef, Gas, json_types::U128};
 use std::borrow::Cow;

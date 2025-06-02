@@ -1,16 +1,3 @@
-use std::{
-    borrow::Cow,
-    cmp::Reverse,
-    collections::{BTreeMap, HashMap},
-    iter,
-};
-
-use defuse_crypto::PublicKey;
-use defuse_map_utils::cleanup::DefaultMap;
-use defuse_nep245::{MtEvent, MtTransferEvent};
-use near_sdk::{AccountId, AccountIdRef, json_types::U128, near};
-use serde_with::{DisplayFromStr, serde_as};
-
 use crate::{
     DefuseError, Nonce, Result,
     fees::Pips,
@@ -18,7 +5,19 @@ use crate::{
         token_diff::TokenDeltas,
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
     },
-    tokens::{Amounts, TokenId},
+    token_id::TokenId,
+    tokens::Amounts,
+};
+use defuse_crypto::PublicKey;
+use defuse_map_utils::cleanup::DefaultMap;
+use defuse_nep245::{MtEvent, MtTransferEvent};
+use near_sdk::{AccountId, AccountIdRef, json_types::U128, near};
+use serde_with::{DisplayFromStr, serde_as};
+use std::{
+    borrow::Cow,
+    cmp::Reverse,
+    collections::{BTreeMap, HashMap},
+    iter,
 };
 
 use super::{State, StateView};

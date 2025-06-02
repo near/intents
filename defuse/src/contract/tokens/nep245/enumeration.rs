@@ -1,5 +1,5 @@
 use crate::contract::{Contract, ContractExt};
-use defuse_core::tokens::TokenIdType;
+use defuse_core::token_id::TokenIdType;
 use defuse_near_utils::UnwrapOrPanicError;
 use defuse_nep245::{Token, enumeration::MultiTokenEnumeration};
 use near_sdk::{AccountId, json_types::U128, near};
