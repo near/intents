@@ -3,6 +3,8 @@ use crate::TokenId;
 use crate::enumeration::MultiTokenEnumeration;
 use near_sdk::near;
 
+type MetadataId = String;
+
 #[derive(Debug, Clone)]
 #[near(serializers = [json, borsh])]
 pub struct MTContractMetadata {
@@ -17,7 +19,7 @@ pub struct MTBaseTokenMetadata {
     pub name: String,
 
     /// Unique identifier for this metadata entry
-    pub id: String,
+    pub id: MetadataId,
 
     /// Abbreviated symbol for the token (e.g., "MOCHI"), or `None` if unset
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -125,7 +127,7 @@ pub trait MultiTokenMetadata {
     /// Given a list of `base_metadata_ids`, returns each `MTBaseTokenMetadata` or `None` if absent.
     fn mt_metadata_base_by_metadata_id(
         &self,
-        base_metadata_ids: Vec<String>,
+        base_metadata_ids: Vec<MetadataId>,
     ) -> Vec<Option<MTBaseTokenMetadata>>;
 }
 
