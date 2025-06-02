@@ -9,7 +9,7 @@ use crate::{
     accounts::AccountEvent,
     engine::{Engine, Inspector, State},
     events::DefuseEvent,
-    tokens::Amounts,
+    amounts::Amounts,
 };
 
 use super::{ExecutableIntent, IntentEvent};

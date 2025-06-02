@@ -1,4 +1,4 @@
-use defuse_core::{fees::FeesConfig, token_id::TokenId, tokens::Amounts};
+use defuse_core::{fees::FeesConfig, token_id::TokenId, amounts::Amounts};
 use defuse_near_utils::NestPrefix;
 use near_sdk::{
     AccountId, BorshStorageKey, IntoStorageKey, borsh::BorshSerialize, near, store::IterableMap,

@@ -101,3 +101,43 @@ pub enum ParseTokenIdError {
     #[error(transparent)]
     ParseError(#[from] strum::ParseError),
 }
+
+#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+mod abi {
+    use super::*;
+
+    use near_sdk::schemars::{
+        JsonSchema,
+        r#gen::SchemaGenerator,
+        schema::{InstanceType, Schema, SchemaObject},
+    };
+    use serde_with::schemars_0_8::JsonSchemaAs;
+
+    impl JsonSchema for TokenId {
+        fn schema_name() -> String {
+            stringify!(TokenId).to_string()
+        }
+
+        fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
+            SchemaObject {
+                instance_type: Some(InstanceType::String.into()),
+                extensions: [(
+                    "examples",
+                    [
+                        Self::Nep141("ft.near".parse().unwrap()),
+                        Self::Nep171("nft.near".parse().unwrap(), "token_id1".to_string()),
+                        Self::Nep245("mt.near".parse().unwrap(), "token_id1".to_string()),
+                    ]
+                    .map(|s| s.to_string())
+                    .to_vec()
+                    .into(),
+                )]
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), v))
+                .collect(),
+                ..Default::default()
+            }
+            .into()
+        }
+    }
+}

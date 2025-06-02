@@ -3,7 +3,7 @@ use crate::{
     fees::Pips,
     intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
     token_id::TokenId,
-    tokens::Amounts,
+    amounts::Amounts,
 };
 use defuse_bitmap::{U248, U256};
 use defuse_crypto::PublicKey;
