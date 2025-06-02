@@ -11,7 +11,7 @@ use defuse::{
             tokens::{FtWithdraw, Transfer},
         },
         payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
-        tokens::Amounts,
+        amounts::Amounts,
     },
     intents::SimulationOutput,
 };

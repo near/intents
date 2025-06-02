@@ -8,7 +8,7 @@ pub mod intents;
 mod nonce;
 pub mod payload;
 pub mod token_id;
-pub mod tokens;
+pub mod amounts;
 
 pub use self::{deadline::*, error::*, nonce::*};
 

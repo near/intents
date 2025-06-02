@@ -6,7 +6,7 @@ use crate::{
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
     },
     token_id::TokenId,
-    tokens::Amounts,
+    amounts::Amounts,
 };
 use defuse_crypto::PublicKey;
 use defuse_map_utils::cleanup::DefaultMap;

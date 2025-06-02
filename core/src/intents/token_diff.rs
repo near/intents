@@ -6,7 +6,7 @@ use crate::{
     events::DefuseEvent,
     fees::Pips,
     token_id::TokenId,
-    tokens::Amounts,
+    amounts::Amounts,
 };
 use defuse_num_utils::CheckedMulDiv;
 use impl_tools::autoimpl;
