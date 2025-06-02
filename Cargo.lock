@@ -645,6 +645,7 @@ dependencies = [
 name = "defuse-core"
 version = "0.1.0"
 dependencies = [
+ "arbitrary",
  "chrono",
  "defuse-bitmap",
  "defuse-crypto",
@@ -667,6 +668,7 @@ dependencies = [
  "rstest",
  "serde_with",
  "strum 0.27.1",
+ "test-utils",
  "thiserror 2.0.12",
 ]
 
