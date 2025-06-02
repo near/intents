@@ -153,9 +153,12 @@ async fn storage_deposit_success(
 
             assert_eq!(data.get("account_id").unwrap(), &env.user2.id().to_string());
             assert_eq!(data.get("contract_id").unwrap(), &env.ft1.to_string());
+            // This result does not make sense with respect to other contracts, because
+            // other FT contracts only accept 0.00125 NEAR for storage deposits.
+            // But this is just for this contract's simulation.
             assert_eq!(
                 data.get("amount").unwrap(),
-                &MIN_FT_STORAGE_DEPOSIT_VALUE.as_yoctonear().to_string()
+                &amount_to_deposit.as_yoctonear().to_string()
             );
         }
 
