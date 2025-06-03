@@ -194,8 +194,7 @@ mod abi {
     };
     use serde_with::schemars_0_8::JsonSchemaAs;
 
-    // FIXME: this should be for TokenId
-    impl JsonSchema for TokenIdHolder {
+    impl JsonSchema for TokenId {
         fn schema_name() -> String {
             stringify!(TokenIdHolder).to_string()
         }
@@ -206,9 +205,21 @@ mod abi {
                 extensions: [(
                     "examples",
                     [
-                        Self::Nep141("ft.near".parse().unwrap()),
-                        Self::Nep171("nft.near".parse().unwrap(), "token_id1".to_string()),
-                        Self::Nep245("mt.near".parse().unwrap(), "token_id1".to_string()),
+                        Self {
+                            token_id: TokenIdHolder::Nep141("ft.near".parse().unwrap()),
+                        },
+                        Self {
+                            token_id: TokenIdHolder::Nep171(
+                                "nft.near".parse().unwrap(),
+                                "token_id1".to_string(),
+                            ),
+                        },
+                        Self {
+                            token_id: TokenIdHolder::Nep245(
+                                "mt.near".parse().unwrap(),
+                                "token_id1".to_string(),
+                            ),
+                        },
                     ]
                     .map(|s| s.to_string())
                     .to_vec()
