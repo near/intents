@@ -37,7 +37,7 @@ async fn deposit_withdraw(#[values(false, true)] no_registration: bool) {
         .await
         .unwrap();
 
-    let ft1 = TokenId::Nep141(env.ft1.clone());
+    let ft1 = TokenId::make_nep141(env.ft1.clone());
 
     assert_eq!(
         env.mt_contract_balance_of(env.defuse.id(), env.user1.id(), &ft1.to_string())
@@ -77,7 +77,7 @@ async fn poa_deposit(#[values(false, true)] no_registration: bool) {
         .build()
         .await;
 
-    let ft1 = TokenId::Nep141(env.ft1.clone());
+    let ft1 = TokenId::make_nep141(env.ft1.clone());
 
     env.poa_factory_ft_deposit(
         env.poa_factory.id(),
@@ -170,7 +170,7 @@ async fn deposit_withdraw_intent(random_seed: Seed, #[values(false, true)] no_re
         1000
     );
 
-    let ft1 = TokenId::Nep141(env.ft1.clone());
+    let ft1 = TokenId::make_nep141(env.ft1.clone());
 
     assert_eq!(
         env.ft_token_balance_of(&env.ft1, env.user1.id())
@@ -268,7 +268,7 @@ async fn deposit_withdraw_intent_refund(
         0
     );
 
-    let ft1 = TokenId::Nep141(env.ft1.clone());
+    let ft1 = TokenId::make_nep141(env.ft1.clone());
     assert_eq!(
         env.mt_contract_balance_of(env.defuse.id(), env.user1.id(), &ft1.to_string())
             .await
@@ -295,7 +295,7 @@ async fn ft_force_withdraw(#[values(false, true)] no_registration: bool) {
         .await
         .unwrap();
 
-    let ft1 = TokenId::Nep141(env.ft1.clone());
+    let ft1 = TokenId::make_nep141(env.ft1.clone());
 
     env.user2
         .defuse_ft_force_withdraw(

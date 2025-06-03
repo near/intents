@@ -262,7 +262,7 @@ mod tests {
 
     #[test]
     fn invariant() {
-        let [t1, t2] = ["t1.near", "t2.near"].map(|t| TokenId::Nep141(t.parse().unwrap()));
+        let [t1, t2] = ["t1.near", "t2.near"].map(|t| TokenId::make_nep141(t.parse().unwrap()));
 
         assert!(Amounts::<BTreeMap<TokenId, i128>>::default().is_empty());
         assert!(

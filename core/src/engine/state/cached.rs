@@ -1,9 +1,9 @@
 use crate::{
     DefuseError, Nonce, Nonces, Result,
+    amounts::Amounts,
     fees::Pips,
     intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
     token_id::TokenId,
-    amounts::Amounts,
 };
 use defuse_bitmap::{U248, U256};
 use defuse_crypto::PublicKey;
@@ -182,14 +182,16 @@ where
     fn ft_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: FtWithdraw) -> Result<()> {
         self.internal_sub_balance(
             owner_id,
-            std::iter::once((TokenId::Nep141(withdraw.token.clone()), withdraw.amount.0)).chain(
-                withdraw.storage_deposit.map(|amount| {
-                    (
-                        TokenId::Nep141(self.wnear_id().into_owned()),
-                        amount.as_yoctonear(),
-                    )
-                }),
-            ),
+            std::iter::once((
+                TokenId::make_nep141(withdraw.token.clone()),
+                withdraw.amount.0,
+            ))
+            .chain(withdraw.storage_deposit.map(|amount| {
+                (
+                    TokenId::make_nep141(self.wnear_id().into_owned()),
+                    amount.as_yoctonear(),
+                )
+            })),
         )
     }
 
@@ -197,12 +199,12 @@ where
         self.internal_sub_balance(
             owner_id,
             std::iter::once((
-                TokenId::Nep171(withdraw.token.clone(), withdraw.token_id.clone()),
+                TokenId::make_nep171(withdraw.token.clone(), withdraw.token_id.clone())?,
                 1,
             ))
             .chain(withdraw.storage_deposit.map(|amount| {
                 (
-                    TokenId::Nep141(self.wnear_id().into_owned()),
+                    TokenId::make_nep141(self.wnear_id().into_owned()),
                     amount.as_yoctonear(),
                 )
             })),
@@ -214,15 +216,19 @@ where
             return Err(DefuseError::InvalidIntent);
         }
 
+        let token_ids = std::iter::repeat(withdraw.token.clone())
+            .zip(withdraw.token_ids.iter().cloned())
+            .map(|(token, token_id)| TokenId::make_nep245(token, token_id))
+            .collect::<Result<Vec<_>, _>>()?;
+
         self.internal_sub_balance(
             owner_id,
-            std::iter::repeat(withdraw.token.clone())
-                .zip(withdraw.token_ids.iter().cloned())
-                .map(|(token, token_id)| TokenId::Nep245(token, token_id))
+            token_ids
+                .into_iter()
                 .zip(withdraw.amounts.iter().map(|a| a.0))
                 .chain(withdraw.storage_deposit.map(|amount| {
                     (
-                        TokenId::Nep141(self.wnear_id().into_owned()),
+                        TokenId::make_nep141(self.wnear_id().into_owned()),
                         amount.as_yoctonear(),
                     )
                 })),
@@ -233,7 +239,7 @@ where
         self.internal_sub_balance(
             owner_id,
             [(
-                TokenId::Nep141(self.wnear_id().into_owned()),
+                TokenId::make_nep141(self.wnear_id().into_owned()),
                 withdraw.amount.as_yoctonear(),
             )],
         )
@@ -247,7 +253,7 @@ where
         self.internal_sub_balance(
             owner_id,
             [(
-                TokenId::Nep141(self.wnear_id().into_owned()),
+                TokenId::make_nep141(self.wnear_id().into_owned()),
                 storage_deposit.amount.as_yoctonear(),
             )],
         )

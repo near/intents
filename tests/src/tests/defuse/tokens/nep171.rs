@@ -51,7 +51,8 @@ async fn transfer_nft_to_verifier(random_seed: Seed) {
     let nft1_id = gen_random_string(&mut rng, 32..=32);
 
     // Create the token id, expected inside the verifier contract
-    let nft1_mt_token_id = MtTokenId::Nep171(nft_issuer_contract.id().to_owned(), nft1_id.clone());
+    let nft1_mt_token_id =
+        MtTokenId::make_nep171(nft_issuer_contract.id().to_owned(), nft1_id.clone()).unwrap();
 
     let nft1: Token = env
         .user1
@@ -70,7 +71,8 @@ async fn transfer_nft_to_verifier(random_seed: Seed) {
     let nft2_id = gen_random_string(&mut rng, 32..=32);
 
     // Create the token id, expected inside the verifier contract
-    let nft2_mt_token_id = MtTokenId::Nep171(nft_issuer_contract.id().to_owned(), nft2_id.clone());
+    let nft2_mt_token_id =
+        MtTokenId::make_nep171(nft_issuer_contract.id().to_owned(), nft2_id.clone()).unwrap();
 
     let nft2: Token = env
         .user1

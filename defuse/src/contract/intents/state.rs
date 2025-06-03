@@ -157,7 +157,7 @@ impl State for Contract {
         self.withdraw(
             owner_id,
             [(
-                TokenId::Nep141(self.wnear_id().into_owned()),
+                TokenId::make_nep141(self.wnear_id().into_owned()),
                 withdraw.amount.as_yoctonear(),
             )],
             Some("withdraw"),
@@ -190,7 +190,7 @@ impl State for Contract {
         self.withdraw(
             owner_id,
             [(
-                TokenId::Nep141(self.wnear_id().into_owned()),
+                TokenId::make_nep141(self.wnear_id().into_owned()),
                 storage_deposit.amount.as_yoctonear(),
             )],
             Some("withdraw"),

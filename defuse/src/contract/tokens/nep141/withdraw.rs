@@ -62,14 +62,16 @@ impl Contract {
     ) -> Result<PromiseOrValue<U128>> {
         self.withdraw(
             &owner_id,
-            iter::once((TokenId::Nep141(withdraw.token.clone()), withdraw.amount.0)).chain(
-                withdraw.storage_deposit.map(|amount| {
-                    (
-                        TokenId::Nep141(self.wnear_id().into_owned()),
-                        amount.as_yoctonear(),
-                    )
-                }),
-            ),
+            iter::once((
+                TokenId::make_nep141(withdraw.token.clone()),
+                withdraw.amount.0,
+            ))
+            .chain(withdraw.storage_deposit.map(|amount| {
+                (
+                    TokenId::make_nep141(self.wnear_id().into_owned()),
+                    amount.as_yoctonear(),
+                )
+            })),
             Some("withdraw"),
         )?;
 
@@ -194,7 +196,7 @@ impl FungibleTokenWithdrawResolver for Contract {
         if refund > 0 {
             self.deposit(
                 sender_id,
-                [(TokenId::Nep141(token), refund)],
+                [(TokenId::make_nep141(token), refund)],
                 Some("refund"),
             )
             .unwrap_or_panic();

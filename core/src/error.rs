@@ -2,7 +2,7 @@ use crate::{
     engine::deltas::InvariantViolated,
     token_id::{ParseTokenIdError, TokenId},
 };
-use near_sdk::{AccountId, FunctionError, serde_json};
+use near_sdk::{FunctionError, serde_json};
 use thiserror::Error as ThisError;
 
 pub type Result<T, E = DefuseError> = ::core::result::Result<T, E>;
@@ -36,8 +36,8 @@ pub enum DefuseError {
     #[error("JSON: {0}")]
     JSON(#[from] serde_json::Error),
 
-    #[error("NFT '{}' was already deposited", TokenId::Nep171(.0.clone(), .1.clone()))]
-    NftAlreadyDeposited(AccountId, defuse_nep245::TokenId),
+    #[error("NFT '{0}' is already deposited")]
+    NftAlreadyDeposited(TokenId),
 
     #[error("nonce was already used")]
     NonceUsed,

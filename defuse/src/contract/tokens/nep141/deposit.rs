@@ -35,7 +35,10 @@ impl FungibleTokenReceiver for Contract {
 
         self.deposit(
             msg.receiver_id,
-            [(TokenId::Nep141(PREDECESSOR_ACCOUNT_ID.clone()), amount.0)],
+            [(
+                TokenId::make_nep141(PREDECESSOR_ACCOUNT_ID.clone()),
+                amount.0,
+            )],
             Some("deposit"),
         )
         .unwrap_or_panic();
