@@ -9,7 +9,7 @@ use arbitrary::{Arbitrary, Unstructured};
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
     core::{
-        Deadline, DefuseError,
+        Deadline,
         fees::{FeesConfig, Pips},
         intents::{DefuseIntents, tokens::FtWithdraw},
         tokens::TokenId,
