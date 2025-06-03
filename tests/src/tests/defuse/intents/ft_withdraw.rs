@@ -38,7 +38,7 @@ async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registr
 
     let other_user_id: AccountId = "other-user.near".parse().unwrap();
 
-    let ft1 = TokenId::Nep141(env.ft1.clone());
+    let ft1 = TokenId::make_nep141(env.ft1.clone());
     {
         env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
             .await
@@ -207,7 +207,7 @@ async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registr
             env.mt_contract_balance_of(
                 env.defuse.id(),
                 env.user1.id(),
-                &TokenId::Nep141(env.wnear.id().clone()).to_string()
+                &TokenId::make_nep141(env.wnear.id().clone()).to_string()
             )
             .await
             .unwrap(),
@@ -282,7 +282,7 @@ async fn ft_withdraw_intent_msg(random_seed: Seed, #[values(false, true)] no_reg
         .await
         .unwrap();
 
-    let ft1 = TokenId::Nep141(env.ft1.clone());
+    let ft1 = TokenId::make_nep141(env.ft1.clone());
 
     assert_eq!(
         env.mt_contract_balance_of(env.defuse.id(), env.user1.id(), &ft1.to_string())

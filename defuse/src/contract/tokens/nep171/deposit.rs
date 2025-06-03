@@ -34,12 +34,11 @@ impl NonFungibleTokenReceiver for Contract {
             msg.parse().unwrap_or_panic_display()
         };
 
-        self.deposit(
-            msg.receiver_id,
-            [(TokenId::Nep171(PREDECESSOR_ACCOUNT_ID.clone(), token_id), 1)],
-            Some("deposit"),
-        )
-        .unwrap_or_panic();
+        let token_id = TokenId::make_nep171(PREDECESSOR_ACCOUNT_ID.clone(), token_id)
+            .unwrap_or_panic_display();
+
+        self.deposit(msg.receiver_id, [(token_id, 1)], Some("deposit"))
+            .unwrap_or_panic();
 
         if !msg.execute_intents.is_empty() {
             if msg.refund_if_fails {

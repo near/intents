@@ -50,7 +50,7 @@ impl MultiTokenEnumeration for Contract {
                 .skip(from_index)
                 .map(|(token_id, _amount)| Token {
                     token_id: token_id.to_string(),
-                    owner_id: match token_id.into() {
+                    owner_id: match token_id.which() {
                         TokenIdType::Nep171 => Some(account_id.clone()),
                         TokenIdType::Nep141 | TokenIdType::Nep245 => None,
                     },
