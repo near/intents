@@ -184,7 +184,7 @@ async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registr
         )],
     )
     .await
-    .assert_err_contains(DefuseError::InsufficientGas);
+    .assert_err_contains("Exceeded the prepaid gas.");
 
     env.defuse_execute_intents(
         env.defuse.id(),
