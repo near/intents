@@ -94,11 +94,16 @@ impl Contract {
                 .then(
                     // schedule storage_deposit() only after near_withdraw() returns
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
-                        .with_static_gas(Self::DO_MT_WITHDRAW_GAS.saturating_add(if is_call {
-                            withdraw.min_gas.unwrap_or(MT_BATCH_TRANSFER_CALL_GAS)
-                        } else {
-                            withdraw.min_gas.unwrap_or(MT_BATCH_TRANSFER_GAS)
-                        }))
+                        .with_static_gas(
+                            Self::DO_MT_WITHDRAW_GAS
+                                .checked_add(if is_call {
+                                    withdraw.min_gas.unwrap_or(MT_BATCH_TRANSFER_CALL_GAS)
+                                } else {
+                                    withdraw.min_gas.unwrap_or(MT_BATCH_TRANSFER_GAS)
+                                })
+                                .ok_or(DefuseError::InsufficientGas)
+                                .unwrap_or_panic(),
+                        )
                         .do_mt_withdraw(withdraw.clone()),
                 )
         } else {

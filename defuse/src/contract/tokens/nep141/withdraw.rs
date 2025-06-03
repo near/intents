@@ -1,6 +1,8 @@
 use core::iter;
 
-use defuse_core::{Result, engine::StateView, intents::tokens::FtWithdraw, tokens::TokenId};
+use defuse_core::{
+    DefuseError, Result, engine::StateView, intents::tokens::FtWithdraw, tokens::TokenId,
+};
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
@@ -22,9 +24,6 @@ use crate::{
         FungibleTokenForceWithdrawer, FungibleTokenWithdrawResolver, FungibleTokenWithdrawer,
     },
 };
-
-const FT_TRANSFER_GAS: Gas = Gas::from_tgas(15);
-const FT_TRANSFER_CALL_GAS: Gas = Gas::from_tgas(50);
 
 #[near]
 impl FungibleTokenWithdrawer for Contract {
@@ -74,7 +73,7 @@ impl Contract {
             Some("withdraw"),
         )?;
 
-        let is_call = withdraw.msg.is_some();
+        let is_call = withdraw.is_call();
         Ok(if let Some(storage_deposit) = withdraw.storage_deposit {
             ext_wnear::ext(self.wnear_id.clone())
                 .with_attached_deposit(NearToken::from_yoctonear(1))
@@ -85,11 +84,12 @@ impl Contract {
                 .then(
                     // schedule storage_deposit() only after near_withdraw() returns
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
-                        .with_static_gas(Self::DO_FT_WITHDRAW_GAS.saturating_add(if is_call {
-                            withdraw.min_gas.unwrap_or(FT_TRANSFER_CALL_GAS)
-                        } else {
-                            withdraw.min_gas.unwrap_or(FT_TRANSFER_GAS)
-                        }))
+                        .with_static_gas(
+                            Self::DO_FT_WITHDRAW_GAS
+                                .checked_add(withdraw.min_gas())
+                                .ok_or(DefuseError::InsufficientGas)
+                                .unwrap_or_panic(),
+                        )
                         .do_ft_withdraw(withdraw.clone()),
                 )
         } else {
@@ -117,6 +117,8 @@ impl Contract {
     #[must_use]
     #[private]
     pub fn do_ft_withdraw(withdraw: FtWithdraw) -> Promise {
+        let min_gas = withdraw.min_gas();
+
         let p = if let Some(storage_deposit) = withdraw.storage_deposit {
             require!(
                 matches!(env::promise_result(0), PromiseResult::Successful(data) if data.is_empty()),
@@ -139,14 +141,14 @@ impl Contract {
                 withdraw.amount.0,
                 withdraw.memo.as_deref(),
                 msg,
-                withdraw.min_gas.unwrap_or(FT_TRANSFER_CALL_GAS),
+                min_gas,
             )
         } else {
             p.ft_transfer(
                 &withdraw.receiver_id,
                 withdraw.amount.0,
                 withdraw.memo.as_deref(),
-                withdraw.min_gas.unwrap_or(FT_TRANSFER_GAS),
+                min_gas,
             )
         }
     }

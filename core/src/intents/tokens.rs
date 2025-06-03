@@ -92,14 +92,51 @@ pub struct FtWithdraw {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub storage_deposit: Option<NearToken>,
 
-    /// Optional minimum required Near gas for created Promise to succeed. Defaults are:
-    /// * `ft_transfer`: 15TGas
-    /// * `ft_transfer_call`: 50TGas
+    /// Optional minimum required Near gas for created Promise to succeed:
+    /// * `ft_transfer`:      minimum: 15TGas, default: 15TGas
+    /// * `ft_transfer_call`: minimum: 30TGas, default: 50TGas
     ///
     /// Remaining gas will be distributed evenly across all Function Call
     /// Promises created during execution of current receipt.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub min_gas: Option<Gas>,
+}
+
+impl FtWithdraw {
+    const FT_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(15);
+    const FT_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(15);
+
+    /// Taken from [near-contract-standards](https://github.com/near/near-sdk-rs/blob/985c16b8fffc623096d0b7e60b26746842a2d712/near-contract-standards/src/fungible_token/core_impl.rs#L137)
+    const FT_TRANSFER_CALL_GAS_MIN: Gas = Gas::from_tgas(30);
+    const FT_TRANSFER_CALL_GAS_DEFAULT: Gas = Gas::from_tgas(50);
+
+    /// Returns whether it's `ft_transfer_call()`
+    #[inline]
+    pub fn is_call(&self) -> bool {
+        self.msg.is_some()
+    }
+
+    /// Returns minimum required gas
+    #[inline]
+    pub fn min_gas(&self) -> Gas {
+        let (default, min) = if self.is_call() {
+            (
+                Self::FT_TRANSFER_CALL_GAS_DEFAULT,
+                Self::FT_TRANSFER_CALL_GAS_MIN,
+            )
+        } else {
+            (Self::FT_TRANSFER_GAS_DEFAULT, Self::FT_TRANSFER_GAS_MIN)
+        };
+
+        self.min_gas
+            .unwrap_or(default)
+            // We need to set hard minimum for gas to prevent loss of funds
+            // due to insufficient gas:
+            // 1. We don't refund wNEAR taken for `storage_deposit()`,
+            //    which is executed in the same receipt as `ft_transfer[_call]()`
+            // 2. We don't refund if `ft_transfer_call()` Promise fails
+            .max(min)
+    }
 }
 
 impl ExecutableIntent for FtWithdraw {

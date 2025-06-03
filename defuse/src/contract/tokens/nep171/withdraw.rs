@@ -1,6 +1,8 @@
 use std::iter;
 
-use defuse_core::{Result, engine::StateView, intents::tokens::NftWithdraw, tokens::TokenId};
+use defuse_core::{
+    DefuseError, Result, engine::StateView, intents::tokens::NftWithdraw, tokens::TokenId,
+};
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
@@ -87,11 +89,16 @@ impl Contract {
                 .then(
                     // schedule storage_deposit() only after near_withdraw() returns
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
-                        .with_static_gas(Self::DO_NFT_WITHDRAW_GAS.saturating_add(if is_call {
-                            withdraw.min_gas.unwrap_or(NFT_TRANSFER_CALL_GAS)
-                        } else {
-                            withdraw.min_gas.unwrap_or(NFT_TRANSFER_GAS)
-                        }))
+                        .with_static_gas(
+                            Self::DO_NFT_WITHDRAW_GAS
+                                .checked_add(if is_call {
+                                    withdraw.min_gas.unwrap_or(NFT_TRANSFER_CALL_GAS)
+                                } else {
+                                    withdraw.min_gas.unwrap_or(NFT_TRANSFER_GAS)
+                                })
+                                .ok_or(DefuseError::InsufficientGas)
+                                .unwrap_or_panic(),
+                        )
                         .do_nft_withdraw(withdraw.clone()),
                 )
         } else {
