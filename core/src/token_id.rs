@@ -232,6 +232,7 @@ mod tests {
     use rstest::rstest;
     use test_utils::random::{Seed, gen_random_bytes, make_seedable_rng, random_seed};
 
+    #[allow(clippy::as_conversions)]
     fn arbitrary_account_id(u: &mut Unstructured<'_>) -> arbitrary::Result<AccountId> {
         if u.arbitrary()? {
             // Named account id
