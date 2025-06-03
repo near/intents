@@ -118,7 +118,6 @@ impl Contract {
     #[private]
     pub fn do_ft_withdraw(withdraw: FtWithdraw) -> Promise {
         let min_gas = withdraw.min_gas();
-
         let p = if let Some(storage_deposit) = withdraw.storage_deposit {
             require!(
                 matches!(env::promise_result(0), PromiseResult::Successful(data) if data.is_empty()),

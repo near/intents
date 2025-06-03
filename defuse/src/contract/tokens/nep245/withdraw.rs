@@ -24,9 +24,6 @@ use crate::{
     tokens::nep245::{MultiTokenForceWithdrawer, MultiTokenWithdrawResolver, MultiTokenWithdrawer},
 };
 
-const MT_BATCH_TRANSFER_GAS: Gas = Gas::from_tgas(20);
-const MT_BATCH_TRANSFER_CALL_GAS: Gas = Gas::from_tgas(50);
-
 #[near]
 impl MultiTokenWithdrawer for Contract {
     #[pause]
@@ -96,11 +93,7 @@ impl Contract {
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
                         .with_static_gas(
                             Self::DO_MT_WITHDRAW_GAS
-                                .checked_add(if is_call {
-                                    withdraw.min_gas.unwrap_or(MT_BATCH_TRANSFER_CALL_GAS)
-                                } else {
-                                    withdraw.min_gas.unwrap_or(MT_BATCH_TRANSFER_GAS)
-                                })
+                                .checked_add(withdraw.min_gas())
                                 .ok_or(DefuseError::InsufficientGas)
                                 .unwrap_or_panic(),
                         )
@@ -111,6 +104,7 @@ impl Contract {
         }
         .then(
             Self::ext(CURRENT_ACCOUNT_ID.clone())
+                // TODO: gas_base + gas_per_token * token_ids.len()
                 .with_static_gas(Self::MT_RESOLVE_WITHDRAW_GAS)
                 // do not distribute remaining gas here
                 .with_unused_gas_weight(0)
@@ -128,6 +122,7 @@ impl Contract {
 
 #[near]
 impl Contract {
+    // TODO: gas_base + gas_per_token * token_ids.len()
     const MT_RESOLVE_WITHDRAW_GAS: Gas = Gas::from_tgas(7);
     const DO_MT_WITHDRAW_GAS: Gas = Gas::from_tgas(5)
         // do_nft_withdraw() method is called externally
@@ -137,6 +132,7 @@ impl Contract {
     #[must_use]
     #[private]
     pub fn do_mt_withdraw(withdraw: MtWithdraw) -> Promise {
+        let min_gas = withdraw.min_gas();
         let p = if let Some(storage_deposit) = withdraw.storage_deposit {
             require!(
                 matches!(env::promise_result(0), PromiseResult::Successful(data) if data.is_empty()),
@@ -159,7 +155,7 @@ impl Contract {
                 &withdraw.amounts,
                 withdraw.memo.as_deref(),
                 msg,
-                withdraw.min_gas.unwrap_or(MT_BATCH_TRANSFER_CALL_GAS),
+                min_gas,
             )
         } else {
             p.mt_batch_transfer(
@@ -167,7 +163,7 @@ impl Contract {
                 &withdraw.token_ids,
                 &withdraw.amounts,
                 withdraw.memo.as_deref(),
-                withdraw.min_gas.unwrap_or(MT_BATCH_TRANSFER_GAS),
+                min_gas,
             )
         }
     }
