@@ -78,6 +78,7 @@ impl TokenId {
     vis(pub)
 )]
 #[near(serializers = [borsh])]
+// Private: Because we need construction to go through the TokenId struct to check for length
 enum TokenIdHolder {
     Nep141(
         /// Contract
@@ -127,8 +128,6 @@ impl Display for TokenIdHolder {
         fmt::Debug::fmt(self, f)
     }
 }
-
-// FIXME: all construction sites (and deserialization) must check for size
 
 impl FromStr for TokenIdHolder {
     type Err = TokenIdError;
@@ -240,7 +239,10 @@ mod tests {
     use arbitrary::{Arbitrary, Unstructured};
     use near_sdk::borsh;
     use rstest::rstest;
-    use test_utils::random::{Seed, gen_random_bytes, make_seedable_rng, random_seed};
+    use test_utils::{
+        asserts::ResultAssertsExt,
+        random::{Seed, gen_random_bytes, gen_random_string, make_seedable_rng, random_seed},
+    };
 
     #[allow(clippy::as_conversions)]
     fn arbitrary_account_id(u: &mut Unstructured<'_>) -> arbitrary::Result<AccountId> {
@@ -378,7 +380,37 @@ mod tests {
         assert_eq!(token_id_deser, token_id);
     }
 
-    // FIXME: add tests for length
-}
+    #[rstest]
+    #[trace]
+    fn token_id_length(random_seed: Seed) {
+        let mut rng = make_seedable_rng(random_seed);
+        let bytes = gen_random_bytes(&mut rng, ..1000);
+        let mut u = arbitrary::Unstructured::new(&bytes);
 
-// FIXME: add contract tests, not just unit tests
+        {
+            let token_id_string = gen_random_string(&mut rng, 2..1000);
+            let nft_result = TokenId::make_nep171(
+                arbitrary_account_id(&mut u).unwrap(),
+                token_id_string.clone(),
+            );
+            if token_id_string.len() > MAX_ALLOWED_TOKEN_ID_LEN {
+                nft_result.assert_err_contains("Token id provided is too large.");
+            } else {
+                nft_result.unwrap();
+            }
+        }
+
+        {
+            let token_id_string = gen_random_string(&mut rng, 2..1000);
+            let mt_result = TokenId::make_nep245(
+                arbitrary_account_id(&mut u).unwrap(),
+                token_id_string.clone(),
+            );
+            if token_id_string.len() > MAX_ALLOWED_TOKEN_ID_LEN {
+                mt_result.assert_err_contains("Token id provided is too large.");
+            } else {
+                mt_result.unwrap();
+            }
+        }
+    }
+}
