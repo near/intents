@@ -33,7 +33,8 @@ args = ["clippy",
         "-A", "clippy::must_use_candidate",
         "-A", "clippy::unreadable_literal",
         "-A", "clippy::similar_names",
-        "-A", "clippy::too_long_first_doc_paragraph"
+        "-A", "clippy::too_long_first_doc_paragraph",
+        "-D", "clippy::as_conversions",
         ]
 
 [tasks.build]
