@@ -1,6 +1,6 @@
 use crate::{
     engine::deltas::InvariantViolated,
-    token_id::{ParseTokenIdError, TokenId},
+    token_id::{TokenId, TokenIdError},
 };
 use near_sdk::{FunctionError, serde_json};
 use thiserror::Error as ThisError;
@@ -49,7 +49,7 @@ pub enum DefuseError {
     PublicKeyNotExist,
 
     #[error("token_id: {0}")]
-    ParseTokenId(#[from] ParseTokenIdError),
+    ParseTokenId(#[from] TokenIdError),
 
     #[error("wrong verifying_contract")]
     WrongVerifyingContract,

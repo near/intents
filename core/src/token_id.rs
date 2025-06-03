@@ -28,9 +28,9 @@ impl TokenId {
     pub fn make_nep171(
         account_id: AccountId,
         native_token_id: near_contract_standards::non_fungible_token::TokenId,
-    ) -> Result<Self, ParseTokenIdError> {
+    ) -> Result<Self, TokenIdError> {
         if native_token_id.len() > MAX_ALLOWED_TOKEN_ID_LEN {
-            return Err(ParseTokenIdError::TokenIdTooLarge(native_token_id.len()));
+            return Err(TokenIdError::TokenIdTooLarge(native_token_id.len()));
         }
 
         Ok(Self {
@@ -41,9 +41,9 @@ impl TokenId {
     pub fn make_nep245(
         account_id: AccountId,
         defuse_token_id: defuse_nep245::TokenId,
-    ) -> Result<Self, ParseTokenIdError> {
+    ) -> Result<Self, TokenIdError> {
         if defuse_token_id.len() > MAX_ALLOWED_TOKEN_ID_LEN {
-            return Err(ParseTokenIdError::TokenIdTooLarge(defuse_token_id.len()));
+            return Err(TokenIdError::TokenIdTooLarge(defuse_token_id.len()));
         }
 
         Ok(Self {
@@ -131,7 +131,7 @@ impl Display for TokenIdHolder {
 // FIXME: all construction sites (and deserialization) must check for size
 
 impl FromStr for TokenIdHolder {
-    type Err = ParseTokenIdError;
+    type Err = TokenIdError;
 
     #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -145,7 +145,7 @@ impl FromStr for TokenIdHolder {
                     .split_once(':')
                     .ok_or(strum::ParseError::VariantNotFound)?;
                 if token_id.len() > MAX_ALLOWED_TOKEN_ID_LEN {
-                    return Err(ParseTokenIdError::TokenIdTooLarge(token_id.len()));
+                    return Err(TokenIdError::TokenIdTooLarge(token_id.len()));
                 }
                 Self::Nep171(contract_id.parse()?, token_id.to_string())
             }
@@ -154,7 +154,7 @@ impl FromStr for TokenIdHolder {
                     .split_once(':')
                     .ok_or(strum::ParseError::VariantNotFound)?;
                 if token_id.len() > MAX_ALLOWED_TOKEN_ID_LEN {
-                    return Err(ParseTokenIdError::TokenIdTooLarge(token_id.len()));
+                    return Err(TokenIdError::TokenIdTooLarge(token_id.len()));
                 }
                 Self::Nep245(contract_id.parse()?, token_id.to_string())
             }
@@ -163,7 +163,7 @@ impl FromStr for TokenIdHolder {
 }
 
 impl FromStr for TokenId {
-    type Err = ParseTokenIdError;
+    type Err = TokenIdError;
 
     #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -172,9 +172,8 @@ impl FromStr for TokenId {
     }
 }
 
-// FIXME: rename to TokenIdError
 #[derive(Debug, ThisError)]
-pub enum ParseTokenIdError {
+pub enum TokenIdError {
     #[error("AccountId: {0}")]
     AccountId(#[from] ParseAccountError),
     #[error(transparent)]
