@@ -259,7 +259,6 @@ mod tests {
                 })
                 .collect::<arbitrary::Result<_>>()?;
             let s = s + ".near";
-            println!("Arbitrary account (named): {s}");
             s.parse().map_err(|_| arbitrary::Error::IncorrectFormat)
         } else {
             // Explicit numeric account id
@@ -274,7 +273,6 @@ mod tests {
                     })
                 })
                 .collect::<arbitrary::Result<_>>()?;
-            println!("Arbitrary account (explicit): {s}");
             s.parse().map_err(|_| arbitrary::Error::IncorrectFormat)
         }
     }
