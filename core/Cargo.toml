@@ -37,6 +37,7 @@ abi = [
     "defuse-ton-connect/abi",
     "defuse-webauthn/abi",
 ]
+ton_connect_check_timestamp = []
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 chrono = { workspace = true, features = ["now"] }

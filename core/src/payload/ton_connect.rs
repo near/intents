@@ -25,6 +25,9 @@ where
     type Error = serde_json::Error;
 
     fn extract_defuse_payload(self) -> Result<DefusePayload<T>, Self::Error> {
+        // This was causing simulate_intents() to fail, since sometimes signed
+        // intent is simulated right after signing
+        #[cfg(feature = "ton_connect_check_timestamp")]
         if self.timestamp > defuse_near_utils::time::now() {
             // TON Connect [specification](https://docs.tonconsole.com/academy/sign-data#in-a-smart-contract-on-chain)
             // requires to check that "timestamp is recent". We don't have fixed TTL for
