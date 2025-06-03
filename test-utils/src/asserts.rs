@@ -9,7 +9,7 @@ thread_local! {
 }
 
 pub trait ResultAssertsExt {
-    fn assert_err_contains(&self, to_contain: impl AsRef<str>);
+    fn assert_err_contains(&self, to_contain: impl Display);
 }
 
 impl<T, E> ResultAssertsExt for Result<T, E>
@@ -17,8 +17,8 @@ where
     E: Display,
 {
     #[track_caller]
-    fn assert_err_contains(&self, to_contain: impl AsRef<str>) {
-        let to_contain = to_contain.as_ref();
+    fn assert_err_contains(&self, to_contain: impl Display) {
+        let to_contain = to_contain.to_string();
         match self {
             Ok(_) => panic!("Result::unwrap_err() on Result::Ok()"),
             Err(e) => {
@@ -27,7 +27,7 @@ where
                 if check_string {
                     let error_string = e.to_string();
                     assert!(
-                        e.to_string().contains(to_contain),
+                        e.to_string().contains(&to_contain),
                         "Result::unwrap_err() successful, but the error string does not contain the expected string.\nError string: `{error_string}`\nshould have contained: `{to_contain}`"
                     );
                 } else {

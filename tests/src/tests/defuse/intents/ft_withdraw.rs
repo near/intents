@@ -9,7 +9,7 @@ use arbitrary::{Arbitrary, Unstructured};
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
     core::{
-        Deadline,
+        Deadline, DefuseError,
         fees::{FeesConfig, Pips},
         intents::{DefuseIntents, tokens::FtWithdraw},
         tokens::TokenId,
@@ -19,8 +19,8 @@ use near_sdk::{AccountId, Gas, NearToken};
 use randomness::Rng;
 use rstest::rstest;
 use std::time::Duration;
-use test_utils::random::make_seedable_rng;
 use test_utils::random::{Seed, random_seed};
+use test_utils::{asserts::ResultAssertsExt, random::make_seedable_rng};
 
 #[tokio::test]
 #[rstest]
@@ -184,7 +184,7 @@ async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registr
         )],
     )
     .await
-    .unwrap_err();
+    .assert_err_contains(DefuseError::InsufficientGas);
 
     env.defuse_execute_intents(
         env.defuse.id(),
