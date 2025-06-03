@@ -144,12 +144,18 @@ impl FromStr for TokenIdHolder {
                 let (contract_id, token_id) = data
                     .split_once(':')
                     .ok_or(strum::ParseError::VariantNotFound)?;
+                if token_id.len() > MAX_ALLOWED_TOKEN_ID_LEN {
+                    return Err(ParseTokenIdError::TokenIdTooLarge(token_id.len()));
+                }
                 Self::Nep171(contract_id.parse()?, token_id.to_string())
             }
             TokenIdType::Nep245 => {
                 let (contract_id, token_id) = data
                     .split_once(':')
                     .ok_or(strum::ParseError::VariantNotFound)?;
+                if token_id.len() > MAX_ALLOWED_TOKEN_ID_LEN {
+                    return Err(ParseTokenIdError::TokenIdTooLarge(token_id.len()));
+                }
                 Self::Nep245(contract_id.parse()?, token_id.to_string())
             }
         })
@@ -188,6 +194,7 @@ mod abi {
     };
     use serde_with::schemars_0_8::JsonSchemaAs;
 
+    // FIXME: this should be for TokenId
     impl JsonSchema for TokenIdHolder {
         fn schema_name() -> String {
             stringify!(TokenIdHolder).to_string()
