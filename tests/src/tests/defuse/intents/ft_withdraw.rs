@@ -1,8 +1,7 @@
 use super::ExecuteIntentsExt;
+use crate::tests::defuse::tokens::nep141::traits::DefuseFtReceiver;
 use crate::{
-    tests::defuse::{
-        DefuseExt, DefuseSigner, SigningStandard, env::Env, tokens::nep141::DefuseFtReceiver,
-    },
+    tests::defuse::{DefuseExt, DefuseSigner, SigningStandard, env::Env},
     utils::{ft::FtExt, mt::MtExt, wnear::WNearExt},
 };
 use arbitrary::{Arbitrary, Unstructured};
