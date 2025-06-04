@@ -31,7 +31,7 @@ default-members = ["defuse"]
 edition = "2024"
 repository = "https://github.com/near/intents"
 version = "0.1.0"
-rust-version = "1.85.0"
+rust-version = "1.87.0"
 
 [workspace.dependencies]
 defuse-admin-utils.path = "admin-utils"
@@ -84,7 +84,7 @@ serde_json = "1"
 serde_with = "3.9"
 strum = { version = "0.27", features = ["derive"] }
 thiserror = "2"
-tlb-ton = { version = "0.4.6", default-features = false }
+tlb-ton = { version = "0.5.1", default-features = false }
 tokio = { version = "1.45", default-features = false }
 
 [workspace.lints.clippy]
