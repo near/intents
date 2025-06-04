@@ -150,6 +150,7 @@ pub struct TonConnectCellMessage<'a, T = Cell> {
 /// ```tlb
 /// message#75569022
 /// ```
+#[allow(clippy::unreadable_literal)]
 const MESSAGE_TAG: u32 = 0x75569022;
 
 impl<T> CellSerialize for TonConnectCellMessage<'_, T>
@@ -174,7 +175,7 @@ where
     }
 }
 
-impl<'de, 'a, T> CellDeserialize<'de> for TonConnectCellMessage<'a, T>
+impl<'de: 'a, 'a, T> CellDeserialize<'de> for TonConnectCellMessage<'a, T>
 where
     T: CellDeserialize<'de>,
 {

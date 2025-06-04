@@ -105,7 +105,6 @@ impl<W> State for CachedState<W>
 where
     W: StateView,
 {
-    #[must_use]
     fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> bool {
         let had = self.has_public_key(&account_id, &public_key);
         let account = self.accounts.get_or_create(account_id);
@@ -116,7 +115,6 @@ where
         }
     }
 
-    #[must_use]
     fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> bool {
         let had = self.has_public_key(&account_id, &public_key);
         let account = self.accounts.get_or_create(account_id);
@@ -127,7 +125,6 @@ where
         }
     }
 
-    #[must_use]
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> bool {
         if self.is_nonce_used(&account_id, nonce) {
             return false;
