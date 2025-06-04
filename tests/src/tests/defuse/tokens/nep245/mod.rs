@@ -1,7 +1,4 @@
-use crate::{
-    tests::defuse::{env::Env, tokens::nep141::DefuseFtWithdrawer},
-    utils::mt::MtExt,
-};
+use crate::{tests::defuse::env::Env, utils::mt::MtExt};
 use defuse::core::token_id::TokenId;
 use defuse::nep245::Token;
 use rstest::rstest;
@@ -10,6 +7,8 @@ use rstest::rstest;
 #[rstest]
 async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
     use defuse::core::token_id::nep141::Nep141TokenId;
+
+    use crate::tests::defuse::tokens::nep141::traits::DefuseFtWithdrawer;
 
     let env = Env::builder()
         .no_registration(no_registration)
