@@ -8,7 +8,9 @@ use near_sdk::{AccountId, Gas, PromiseResult, env, json_types::U128, near, requi
 
 use crate::contract::{Contract, ContractExt};
 
-pub(super) const MT_RESOLVE_TRANSFER_GAS: Gas = Gas::from_tgas(7);
+pub(super) const MT_RESOLVE_TRANSFER_GAS_PER_TOKEN: Gas = Gas::from_tgas(7);
+pub(super) const MT_RESOLVE_TRANSFER_BASE_GAS: Gas = Gas::from_tgas(5);
+pub(super) const MT_RESOLVE_TRANSFER_MAX_GAS: Gas = Gas::from_tgas(100);
 
 #[near]
 impl MultiTokenResolver for Contract {

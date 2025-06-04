@@ -6,9 +6,13 @@ use near_sdk::{
     AccountId, AccountIdRef, PromiseOrValue, assert_one_yocto, json_types::U128, near, require,
 };
 
-use crate::contract::{Contract, ContractExt};
-
-use super::resolver::MT_RESOLVE_TRANSFER_GAS;
+use crate::contract::{
+    Contract, ContractExt,
+    tokens::nep245::resolver::{
+        MT_RESOLVE_TRANSFER_BASE_GAS, MT_RESOLVE_TRANSFER_GAS_PER_TOKEN,
+        MT_RESOLVE_TRANSFER_MAX_GAS,
+    },
+};
 
 #[near]
 impl MultiTokenCore for Contract {
@@ -225,6 +229,13 @@ impl Contract {
 
         let previous_owner_ids = vec![sender_id.clone(); token_ids.len()];
 
+        let resolve_gas_cost = std::cmp::min(
+            MT_RESOLVE_TRANSFER_BASE_GAS.saturating_add(
+                MT_RESOLVE_TRANSFER_GAS_PER_TOKEN.saturating_mul(token_ids.len() as u64),
+            ),
+            MT_RESOLVE_TRANSFER_MAX_GAS,
+        );
+
         Ok(ext_mt_receiver::ext(receiver_id.clone())
             .mt_on_transfer(
                 sender_id,
@@ -235,8 +246,7 @@ impl Contract {
             )
             .then(
                 Self::ext(CURRENT_ACCOUNT_ID.clone())
-                    // TODO: gas_base + gas_per_token * token_ids.len()
-                    .with_static_gas(MT_RESOLVE_TRANSFER_GAS)
+                    .with_static_gas(resolve_gas_cost)
                     // do not distribute remaining gas here
                     .with_unused_gas_weight(0)
                     .mt_resolve_transfer(previous_owner_ids, receiver_id, token_ids, amounts, None),
