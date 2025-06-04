@@ -1,17 +1,18 @@
-use defuse_core::{DefuseError, Result, engine::StateView, token_id::TokenId};
-use defuse_near_utils::{CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic};
-use defuse_nep245::{MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver};
-use near_plugins::{Pausable, pause};
-use near_sdk::{
-    AccountId, AccountIdRef, PromiseOrValue, assert_one_yocto, json_types::U128, near, require,
-};
-
 use crate::contract::{
     Contract, ContractExt,
     tokens::nep245::resolver::{
         MT_RESOLVE_TRANSFER_BASE_GAS, MT_RESOLVE_TRANSFER_GAS_PER_TOKEN,
         MT_RESOLVE_TRANSFER_MAX_GAS,
     },
+};
+use defuse_core::{DefuseError, Result, engine::StateView, token_id::TokenId};
+use defuse_near_utils::{
+    CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
+};
+use defuse_nep245::{MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver};
+use near_plugins::{Pausable, pause};
+use near_sdk::{
+    AccountId, AccountIdRef, PromiseOrValue, assert_one_yocto, json_types::U128, near, require,
 };
 
 #[near]
@@ -231,7 +232,8 @@ impl Contract {
 
         let resolve_gas_cost = std::cmp::min(
             MT_RESOLVE_TRANSFER_BASE_GAS.saturating_add(
-                MT_RESOLVE_TRANSFER_GAS_PER_TOKEN.saturating_mul(token_ids.len() as u64),
+                MT_RESOLVE_TRANSFER_GAS_PER_TOKEN
+                    .saturating_mul(token_ids.len().try_into().unwrap_or_panic_display()),
             ),
             MT_RESOLVE_TRANSFER_MAX_GAS,
         );
