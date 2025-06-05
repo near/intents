@@ -1,14 +1,20 @@
 use defuse_core::{DefuseError, Result, engine::StateView, tokens::TokenId};
-use defuse_near_utils::{CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic};
+use defuse_near_utils::{
+    CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
+};
 use defuse_nep245::{MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver};
 use near_plugins::{Pausable, pause};
 use near_sdk::{
     AccountId, AccountIdRef, PromiseOrValue, assert_one_yocto, json_types::U128, near, require,
 };
 
-use crate::contract::{Contract, ContractExt};
-
-use super::resolver::MT_RESOLVE_TRANSFER_GAS;
+use crate::contract::{
+    Contract, ContractExt,
+    tokens::nep245::resolver::{
+        MT_RESOLVE_TRANSFER_BASE_GAS, MT_RESOLVE_TRANSFER_GAS_PER_TOKEN,
+        MT_RESOLVE_TRANSFER_MAX_GAS,
+    },
+};
 
 #[near]
 impl MultiTokenCore for Contract {
@@ -225,6 +231,14 @@ impl Contract {
 
         let previous_owner_ids = vec![sender_id.clone(); token_ids.len()];
 
+        let resolve_gas_cost = std::cmp::min(
+            MT_RESOLVE_TRANSFER_BASE_GAS.saturating_add(
+                MT_RESOLVE_TRANSFER_GAS_PER_TOKEN
+                    .saturating_mul(token_ids.len().try_into().unwrap_or_panic_display()),
+            ),
+            MT_RESOLVE_TRANSFER_MAX_GAS,
+        );
+
         Ok(ext_mt_receiver::ext(receiver_id.clone())
             .mt_on_transfer(
                 sender_id,
@@ -235,7 +249,7 @@ impl Contract {
             )
             .then(
                 Self::ext(CURRENT_ACCOUNT_ID.clone())
-                    .with_static_gas(MT_RESOLVE_TRANSFER_GAS)
+                    .with_static_gas(resolve_gas_cost)
                     .mt_resolve_transfer(previous_owner_ids, receiver_id, token_ids, amounts, None),
             )
             .into())

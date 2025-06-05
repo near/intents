@@ -1,7 +1,5 @@
-use crate::{
-    tests::defuse::{env::Env, tokens::nep141::DefuseFtWithdrawer},
-    utils::mt::MtExt,
-};
+use crate::tests::defuse::tokens::nep141::traits::DefuseFtWithdrawer;
+use crate::{tests::defuse::env::Env, utils::mt::MtExt};
 use defuse::core::tokens::TokenId;
 use defuse::nep245::Token;
 use rstest::rstest;

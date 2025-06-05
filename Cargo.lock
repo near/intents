@@ -796,6 +796,7 @@ dependencies = [
  "rstest",
  "serde_json",
  "test-utils",
+ "tlb-ton",
  "tokio",
 ]
 
