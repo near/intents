@@ -1,4 +1,4 @@
-use defuse_core::tokens::{Amounts, TokenId};
+use defuse_core::{amounts::Amounts, token_id::TokenId};
 use defuse_near_utils::NestPrefix;
 use near_sdk::{BorshStorageKey, IntoStorageKey, near, store::IterableMap};
 

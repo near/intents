@@ -2,15 +2,16 @@ use super::{DefuseSigner, accounts::AccountManagerExt, env::Env};
 use crate::tests::defuse::SigningStandard;
 use crate::utils::{crypto::Signer, mt::MtExt, test_log::TestLog};
 use arbitrary::{Arbitrary, Unstructured};
+use defuse::core::token_id::TokenId;
 use defuse::{
     core::{
         Deadline,
+        amounts::Amounts,
         intents::{
             DefuseIntents,
             tokens::{FtWithdraw, Transfer},
         },
         payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
-        tokens::{Amounts, TokenId},
     },
     intents::SimulationOutput,
 };
@@ -155,7 +156,7 @@ async fn simulate_is_view_method(random_seed: Seed, #[values(false, true)] no_re
         .build()
         .await;
 
-    let ft1 = TokenId::Nep141(env.ft1.clone());
+    let ft1 = TokenId::make_nep141(env.ft1.clone());
 
     // deposit
     env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
@@ -212,7 +213,7 @@ async fn webauthn(#[values(false, true)] no_registration: bool) {
         .build()
         .await;
 
-    let ft1 = TokenId::Nep141(env.ft1.clone());
+    let ft1 = TokenId::make_nep141(env.ft1.clone());
 
     // deposit
     env.defuse_ft_deposit_to(&env.ft1, 2000, &SIGNER_ID.to_owned())

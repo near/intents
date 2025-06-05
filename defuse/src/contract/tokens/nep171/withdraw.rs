@@ -1,6 +1,6 @@
 use std::iter;
 
-use defuse_core::{Result, engine::StateView, intents::tokens::NftWithdraw, tokens::TokenId};
+use defuse_core::{Result, engine::StateView, intents::tokens::NftWithdraw, token_id::TokenId};
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
@@ -62,12 +62,12 @@ impl Contract {
         self.withdraw(
             &owner_id,
             iter::once((
-                TokenId::Nep171(withdraw.token.clone(), withdraw.token_id.clone()),
+                TokenId::make_nep171(withdraw.token.clone(), withdraw.token_id.clone())?,
                 1,
             ))
             .chain(withdraw.storage_deposit.map(|amount| {
                 (
-                    TokenId::Nep141(self.wnear_id().into_owned()),
+                    TokenId::make_nep141(self.wnear_id().into_owned()),
                     amount.as_yoctonear(),
                 )
             })),
@@ -170,13 +170,11 @@ impl NonFungibleTokenWithdrawResolver for Contract {
             PromiseResult::Failed => is_call,
         };
 
+        let token_id = TokenId::make_nep171(token, token_id).unwrap_or_panic_display();
+
         if !used {
-            self.deposit(
-                sender_id,
-                [(TokenId::Nep171(token, token_id), 1)],
-                Some("refund"),
-            )
-            .unwrap_or_panic();
+            self.deposit(sender_id, [(token_id, 1)], Some("refund"))
+                .unwrap_or_panic();
         }
 
         used

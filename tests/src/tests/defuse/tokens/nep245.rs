@@ -2,7 +2,7 @@ use crate::{
     tests::defuse::{env::Env, tokens::nep141::DefuseFtWithdrawer},
     utils::mt::MtExt,
 };
-use defuse::core::tokens::TokenId;
+use defuse::core::token_id::TokenId;
 use defuse::nep245::Token;
 use rstest::rstest;
 
@@ -49,8 +49,8 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
         .await
         .unwrap();
 
-    let ft1 = TokenId::Nep141(env.ft1.clone());
-    let ft2 = TokenId::Nep141(env.ft2.clone());
+    let ft1 = TokenId::make_nep141(env.ft1.clone());
+    let ft2 = TokenId::make_nep141(env.ft2.clone());
 
     {
         assert_eq!(
@@ -320,9 +320,9 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
         .await
         .unwrap();
 
-    let ft1 = TokenId::Nep141(env.ft1.clone());
-    let ft2 = TokenId::Nep141(env.ft2.clone());
-    let ft3 = TokenId::Nep141(env.ft3.clone());
+    let ft1 = TokenId::make_nep141(env.ft1.clone());
+    let ft2 = TokenId::make_nep141(env.ft2.clone());
+    let ft3 = TokenId::make_nep141(env.ft3.clone());
 
     {
         let expected = [

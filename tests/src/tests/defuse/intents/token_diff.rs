@@ -1,6 +1,9 @@
-use std::{collections::BTreeMap, time::Duration};
-
+use crate::{
+    tests::defuse::{DefuseSigner, SigningStandard, env::Env},
+    utils::mt::MtExt,
+};
 use arbitrary::{Arbitrary, Unstructured};
+use defuse::core::token_id::TokenId;
 use defuse::core::{
     Deadline,
     fees::Pips,
@@ -9,19 +12,14 @@ use defuse::core::{
         token_diff::{TokenDeltas, TokenDiff},
     },
     payload::multi::MultiPayload,
-    tokens::TokenId,
 };
 use near_sdk::AccountId;
 use near_workspaces::Account;
 use randomness::{Rng, make_true_rng};
 use rstest::rstest;
+use std::{collections::BTreeMap, time::Duration};
 use test_utils::random::make_seedable_rng;
 use test_utils::random::{Seed, random_seed};
-
-use crate::{
-    tests::defuse::{DefuseSigner, SigningStandard, env::Env},
-    utils::mt::MtExt,
-};
 
 use super::ExecuteIntentsExt;
 
@@ -38,8 +36,8 @@ async fn swap_p2p(
         .build()
         .await;
 
-    let ft1_token_id = TokenId::Nep141(env.ft1.clone());
-    let ft2_token_id = TokenId::Nep141(env.ft2.clone());
+    let ft1_token_id = TokenId::make_nep141(env.ft1.clone());
+    let ft2_token_id = TokenId::make_nep141(env.ft2.clone());
 
     test_ft_diffs(
         random_seed,
@@ -102,9 +100,9 @@ async fn swap_many(
         .build()
         .await;
 
-    let ft1_token_id = TokenId::Nep141(env.ft1.clone());
-    let ft2_token_id = TokenId::Nep141(env.ft2.clone());
-    let ft3_token_id = TokenId::Nep141(env.ft3.clone());
+    let ft1_token_id = TokenId::make_nep141(env.ft1.clone());
+    let ft2_token_id = TokenId::make_nep141(env.ft2.clone());
+    let ft3_token_id = TokenId::make_nep141(env.ft3.clone());
 
     test_ft_diffs(
         random_seed,
@@ -251,7 +249,7 @@ async fn test_ft_diffs(random_gen_seed: Seed, env: &Env, accounts: Vec<AccountFt
             .into_iter()
             .map(|(t, b)| {
                 (
-                    TokenId::Nep141(t.clone()).to_string(),
+                    TokenId::make_nep141(t.clone()).to_string(),
                     u128::try_from(b).unwrap(),
                 )
             })
@@ -275,8 +273,8 @@ async fn invariant_violated(random_seed: Seed, #[values(false, true)] no_registr
         .build()
         .await;
 
-    let ft1 = TokenId::Nep141(env.ft1.clone());
-    let ft2 = TokenId::Nep141(env.ft2.clone());
+    let ft1 = TokenId::make_nep141(env.ft1.clone());
+    let ft2 = TokenId::make_nep141(env.ft2.clone());
 
     // deposit
     env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
@@ -397,8 +395,8 @@ async fn solver_user_closure(
         .await
         .unwrap();
 
-    let token_in = TokenId::Nep141(env.ft1.clone());
-    let token_out = TokenId::Nep141(env.ft2.clone());
+    let token_in = TokenId::make_nep141(env.ft1.clone());
+    let token_out = TokenId::make_nep141(env.ft2.clone());
 
     dbg!(USER_DELTA_IN);
     // propagate RFQ to solver with adjusted amount_in

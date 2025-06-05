@@ -7,9 +7,9 @@ use serde_with::{DisplayFromStr, serde_as};
 use crate::{
     DefuseError, Result,
     accounts::AccountEvent,
+    amounts::Amounts,
     engine::{Engine, Inspector, State},
     events::DefuseEvent,
-    tokens::Amounts,
 };
 
 use super::{ExecutableIntent, IntentEvent};
