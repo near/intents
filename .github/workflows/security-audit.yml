@@ -19,7 +19,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: ${{ github.ref }}
-          cache-all-crates: true
+          save-if: false
       - name: Install Cargo Plugins
         run: cargo install cargo-audit
       - name: Run security audit
