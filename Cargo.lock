@@ -3745,9 +3745,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tlb"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3cab8f4117d061150ba9a843c0c9d57760ae25aa0720aff3fcc4855b944ad59b"
+checksum = "341978a7312fb9675a445aed6092e6105ebc5c5df8d7a19f8c911ff2e870bfc9"
 dependencies = [
  "arbitrary",
  "base64 0.21.7",
@@ -3762,9 +3762,9 @@ dependencies = [
 
 [[package]]
 name = "tlb-ton"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5fdb13ba75104cbc48a2b7c741ebfe33e8d0fa022e1cf28214e1c06e13a0440"
+checksum = "ccabf1c52a8ac481845f222fa51b60adbeda727921ac316c8ef7efd2fa30b817"
 dependencies = [
  "arbitrary",
  "base64 0.21.7",
@@ -3783,15 +3783,16 @@ dependencies = [
 
 [[package]]
 name = "tlbits"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3c4d91b8bd1df39baa4ee0334e28e064bad71d3d770d7dc188f471198e0169d"
+checksum = "097916b5f423b9956007b1f308104224a3c4f536f0dd16d60bfced85042a2923"
 dependencies = [
  "bitvec",
  "either",
  "impl-tools",
  "num-bigint 0.4.6",
  "num-traits",
+ "rustversion",
  "thiserror 1.0.69",
 ]
 

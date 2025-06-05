@@ -1,4 +1,4 @@
-//! TON Connect [signData](https://docs.tonconsole.com/academy/sign-data)
+//! TON Connect [signData](https://github.com/ton-blockchain/ton-connect/blob/main/requests-responses.md#sign-data)
 
 use std::borrow::Cow;
 
@@ -12,8 +12,7 @@ use serde_with::{PickFirst, TimestampSeconds, serde_as};
 use tlb_ton::{
     Cell, Error, MsgAddress, StringError,
     r#as::{Ref, SnakeData},
-    bits::{de::BitReaderExt, integer::ConstU32, ser::BitWriterExt},
-    de::{CellDeserialize, CellParser, CellParserError},
+    bits::ser::BitWriterExt,
     ser::{CellBuilder, CellBuilderError, CellSerialize, CellSerializeExt},
 };
 
@@ -172,28 +171,6 @@ where
             // payload:^Cell
             .store_as::<_, Ref>(&self.payload)?;
         Ok(())
-    }
-}
-
-impl<'de: 'a, 'a, T> CellDeserialize<'de> for TonConnectCellMessage<'a, T>
-where
-    T: CellDeserialize<'de>,
-{
-    fn parse(parser: &mut CellParser<'de>) -> Result<Self, CellParserError<'de>> {
-        // message#75569022
-        parser.unpack::<ConstU32<MESSAGE_TAG>>()?;
-        Ok(Self {
-            // schema_hash:uint32
-            schema_crc: parser.unpack()?,
-            // timestamp:uint64
-            timestamp: parser.unpack()?,
-            // userAddress:MsgAddress
-            user_address: parser.unpack()?,
-            // {n:#} appDomain:^(SnakeData ~n)
-            app_domain: parser.parse_as::<_, Ref<Cow<SnakeData>>>()?,
-            // payload:^Cell
-            payload: parser.parse_as::<_, Ref>()?,
-        })
     }
 }
 
