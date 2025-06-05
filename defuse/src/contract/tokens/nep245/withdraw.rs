@@ -94,7 +94,7 @@ impl Contract {
                         .with_static_gas(
                             Self::DO_MT_WITHDRAW_GAS
                                 .checked_add(withdraw.min_gas())
-                                .ok_or(DefuseError::InsufficientGas)
+                                .ok_or(DefuseError::GasOverflow)
                                 .unwrap_or_panic(),
                         )
                         .do_mt_withdraw(withdraw.clone()),
