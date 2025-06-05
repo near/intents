@@ -124,7 +124,7 @@ async fn storage_deposit_success(
             DefuseIntents {
                 intents: [StorageDeposit {
                     contract_id: env.ft1.clone(),
-                    account_id: env.user2.id().clone(),
+                    deposit_for_account_id: env.user2.id().clone(),
                     amount: amount_to_deposit,
                 }
                 .into()]
@@ -229,7 +229,7 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents(random_seed: Seed)
         DefuseIntents {
             intents: [StorageDeposit {
                 contract_id: env.ft1.clone(),
-                account_id: env.user2.id().clone(),
+                deposit_for_account_id: env.user2.id().clone(),
                 amount: MIN_FT_STORAGE_DEPOSIT_VALUE,
             }
             .into()]

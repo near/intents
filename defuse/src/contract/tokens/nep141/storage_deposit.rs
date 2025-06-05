@@ -21,6 +21,6 @@ impl Contract {
             .with_static_gas(STORAGE_DEPOSIT_GAS)
             // do not distribute remaining gas here
             .with_unused_gas_weight(0)
-            .storage_deposit(Some(storage_deposit.account_id), None)
+            .storage_deposit(Some(storage_deposit.deposit_for_account_id), None)
     }
 }

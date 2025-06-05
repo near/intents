@@ -414,7 +414,12 @@ impl ExecutableIntent for NativeWithdraw {
 #[derive(Debug, Clone)]
 pub struct StorageDeposit {
     pub contract_id: AccountId,
-    pub account_id: AccountId,
+    #[serde(
+        // There was field collision for `account_id` in `AccountEvent`,
+        // but we keep it for backwards-compatibility
+        alias = "account_id",
+    )]
+    pub deposit_for_account_id: AccountId,
     pub amount: NearToken,
 }
 
