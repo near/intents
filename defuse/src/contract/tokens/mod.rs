@@ -2,11 +2,9 @@ mod nep141;
 mod nep171;
 mod nep245;
 
-use super::Contract;
-use defuse_core::{DefuseError, Result, tokens::TokenId};
-use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
-use near_sdk::{AccountId, AccountIdRef, Gas, json_types::U128};
-use std::borrow::Cow;
+use super::{Contract, intents::execute::ExecuteInspector};
+use defuse_core::{Result, engine::Engine, tokens::TokenId};
+use near_sdk::{AccountId, AccountIdRef, Gas};
 
 pub const STORAGE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
 
@@ -17,43 +15,9 @@ impl Contract {
         tokens: impl IntoIterator<Item = (TokenId, u128)>,
         memo: Option<&str>,
     ) -> Result<()> {
-        let owner = self.accounts.get_or_create(owner_id.clone());
-
-        let mut mint_event = MtMintEvent {
-            owner_id: owner_id.into(),
-            token_ids: Vec::new().into(),
-            amounts: Vec::new().into(),
-            memo: memo.map(Into::into),
-        };
-
-        for (token_id, amount) in tokens {
-            if amount == 0 {
-                return Err(DefuseError::InvalidIntent);
-            }
-
-            mint_event.token_ids.to_mut().push(token_id.to_string());
-            mint_event.amounts.to_mut().push(U128(amount));
-
-            let total_supply = self
-                .state
-                .total_supplies
-                .add(token_id.clone(), amount)
-                .ok_or(DefuseError::BalanceOverflow)?;
-            match token_id {
-                TokenId::Nep171(contract_id, token_id) if total_supply > 1 => {
-                    return Err(DefuseError::NftAlreadyDeposited(contract_id, token_id));
-                }
-                TokenId::Nep141(_) | TokenId::Nep171(_, _) | TokenId::Nep245(_, _) => {}
-            }
-            owner
-                .token_balances
-                .add(token_id, amount)
-                .ok_or(DefuseError::BalanceOverflow)?;
-        }
-
-        if !mint_event.amounts.is_empty() {
-            MtEvent::MtMint([mint_event].as_slice().into()).emit();
-        }
+        Engine::new(self, ExecuteInspector::default())
+            .state_mutator()
+            .deposit(owner_id, tokens, memo)?;
 
         Ok(())
     }
@@ -62,47 +26,11 @@ impl Contract {
         &mut self,
         owner_id: &AccountIdRef,
         token_amounts: impl IntoIterator<Item = (TokenId, u128)>,
-        memo: Option<impl Into<String>>,
+        memo: Option<&str>,
     ) -> Result<()> {
-        let owner = self
-            .accounts
-            .get_mut(owner_id)
-            .ok_or(DefuseError::AccountNotFound)?;
-
-        let mut burn_event = MtBurnEvent {
-            owner_id: Cow::Owned(owner_id.to_owned()),
-            authorized_id: None,
-            token_ids: Vec::new().into(),
-            amounts: Vec::new().into(),
-            memo: memo.map(Into::into).map(Into::into),
-        };
-
-        for (token_id, amount) in token_amounts {
-            if amount == 0 {
-                return Err(DefuseError::InvalidIntent);
-            }
-
-            burn_event.token_ids.to_mut().push(token_id.to_string());
-            burn_event.amounts.to_mut().push(U128(amount));
-
-            owner
-                .token_balances
-                .sub(token_id.clone(), amount)
-                .ok_or(DefuseError::BalanceOverflow)?;
-
-            self.state
-                .total_supplies
-                .sub(token_id, amount)
-                .ok_or(DefuseError::BalanceOverflow)?;
-        }
-
-        // Schedule to emit `mt_burn` events only in the end of tx
-        // to avoid confusion when `mt_burn` occurs before relevant
-        // `mt_transfer` arrives. This can happen due to postponed
-        // delta-matching during intents execution.
-        if !burn_event.amounts.is_empty() {
-            self.postponed_burns.mt_burn(burn_event);
-        }
+        Engine::new(self, ExecuteInspector::default())
+            .state_mutator()
+            .withdraw(owner_id, token_amounts, memo)?;
 
         Ok(())
     }

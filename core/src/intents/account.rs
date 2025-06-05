@@ -39,6 +39,7 @@ impl ExecutableIntent for AddPublicKey {
         {
             return Err(DefuseError::PublicKeyExists);
         }
+
         Ok(())
     }
 }
@@ -68,6 +69,7 @@ impl ExecutableIntent for RemovePublicKey {
         {
             return Err(DefuseError::PublicKeyNotExist);
         }
+
         Ok(())
     }
 }

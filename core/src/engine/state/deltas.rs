@@ -1,15 +1,14 @@
+use defuse_crypto::PublicKey;
+use defuse_map_utils::cleanup::DefaultMap;
+use defuse_nep245::{MtEvent, MtTransferEvent};
+use near_sdk::{AccountId, AccountIdRef, json_types::U128, near};
+use serde_with::{DisplayFromStr, serde_as};
 use std::{
     borrow::Cow,
     cmp::Reverse,
     collections::{BTreeMap, HashMap},
     iter,
 };
-
-use defuse_crypto::PublicKey;
-use defuse_map_utils::cleanup::DefaultMap;
-use defuse_nep245::{MtEvent, MtTransferEvent};
-use near_sdk::{AccountId, AccountIdRef, json_types::U128, near};
-use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
     DefuseError, Nonce, Result,
@@ -164,6 +163,44 @@ where
         storage_deposit: StorageDeposit,
     ) -> Result<()> {
         self.state.storage_deposit(owner_id, storage_deposit)
+    }
+
+    fn set_fee(&mut self, fee: Pips) {
+        self.state.set_fee(fee);
+    }
+
+    fn set_fee_collector(&mut self, fee_collector: AccountId) {
+        self.state.set_fee_collector(fee_collector);
+    }
+
+    fn mt_batch_transfer(
+        &mut self,
+        sender_id: &AccountIdRef,
+        receiver_id: AccountId,
+        token_ids: Vec<defuse_nep245::TokenId>,
+        amounts: Vec<near_sdk::json_types::U128>,
+        memo: Option<&str>,
+    ) -> Result<()> {
+        self.state
+            .mt_batch_transfer(sender_id, receiver_id, token_ids, amounts, memo)
+    }
+
+    fn deposit(
+        &mut self,
+        owner_id: AccountId,
+        tokens: impl IntoIterator<Item = (TokenId, u128)>,
+        memo: Option<&str>,
+    ) -> Result<()> {
+        self.state.deposit(owner_id, tokens, memo)
+    }
+
+    fn withdraw(
+        &mut self,
+        owner_id: &AccountIdRef,
+        token_amounts: impl IntoIterator<Item = (TokenId, u128)>,
+        memo: Option<impl Into<String>>,
+    ) -> Result<()> {
+        self.state.withdraw(owner_id, token_amounts, memo)
     }
 }
 
