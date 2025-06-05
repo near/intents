@@ -586,7 +586,7 @@ dependencies = [
 
 [[package]]
 name = "defuse"
-version = "0.2.5"
+version = "0.2.6"
 dependencies = [
  "bnum",
  "defuse-admin-utils",
