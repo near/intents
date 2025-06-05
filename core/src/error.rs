@@ -55,4 +55,7 @@ pub enum DefuseError {
 
     #[error("wrong verifying_contract")]
     WrongVerifyingContract,
+
+    #[error("authentication by PREDECESSOR_ID is disabled for account '{0}'")]
+    AuthByPredecessorIdDisabled(AccountId),
 }

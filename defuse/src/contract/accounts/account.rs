@@ -3,6 +3,7 @@ use std::{
     io::{self, Read},
 };
 
+use bitflags::bitflags;
 use defuse_bitmap::{U248, U256};
 use defuse_borsh_utils::r#as::{As, BorshDeserializeAs, BorshSerializeAs};
 use defuse_core::{
@@ -10,6 +11,7 @@ use defuse_core::{
     accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
     events::DefuseEvent,
+    intents::account::SetAuthByPredecessorId,
 };
 use defuse_io_utils::ReadExt;
 use defuse_near_utils::{Lock, NestPrefix, PanicOnClone};
@@ -50,7 +52,7 @@ impl From<Lock<Account>> for AccountEntry {
 pub struct Account {
     nonces: Nonces<LookupMap<U248, U256>>,
 
-    implicit_public_key_removed: bool,
+    flags: AccountFlags,
     public_keys: IterableSet<PublicKey>,
 
     pub state: AccountState,
@@ -70,7 +72,9 @@ impl Account {
             nonces: Nonces::new(LookupMap::new(
                 prefix.as_slice().nest(AccountPrefix::Nonces),
             )),
-            implicit_public_key_removed: !me.get_account_type().is_implicit(),
+            flags: (!me.get_account_type().is_implicit())
+                .then_some(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
+                .unwrap_or_else(AccountFlags::empty),
             public_keys: IterableSet::new(prefix.as_slice().nest(AccountPrefix::PublicKeys)),
             state: AccountState::new(prefix.as_slice().nest(AccountPrefix::State)),
             prefix,
@@ -97,8 +101,8 @@ impl Account {
     #[inline]
     fn maybe_add_public_key(&mut self, me: &AccountIdRef, public_key: PublicKey) -> bool {
         if me == public_key.to_implicit_account_id() {
-            let was_removed = self.implicit_public_key_removed;
-            self.implicit_public_key_removed = false;
+            let was_removed = self.implicit_public_key_removed();
+            self.flags.remove(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED);
             was_removed
         } else {
             self.public_keys.insert(public_key)
@@ -125,8 +129,8 @@ impl Account {
     #[inline]
     fn maybe_remove_public_key(&mut self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
         if me == public_key.to_implicit_account_id() {
-            let was_removed = self.implicit_public_key_removed;
-            self.implicit_public_key_removed = true;
+            let was_removed = self.implicit_public_key_removed();
+            self.flags.insert(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED);
             !was_removed
         } else {
             self.public_keys.remove(public_key)
@@ -135,14 +139,14 @@ impl Account {
 
     #[inline]
     pub fn has_public_key(&self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
-        !self.implicit_public_key_removed && me == public_key.to_implicit_account_id()
+        !self.implicit_public_key_removed() && me == public_key.to_implicit_account_id()
             || self.public_keys.contains(public_key)
     }
 
     #[inline]
     pub fn iter_public_keys(&self, me: &AccountIdRef) -> impl Iterator<Item = PublicKey> + '_ {
         self.public_keys.iter().copied().chain(
-            (!self.implicit_public_key_removed)
+            (!self.implicit_public_key_removed())
                 .then(|| PublicKey::from_implicit_account_id(me))
                 .flatten(),
         )
@@ -156,6 +160,37 @@ impl Account {
     #[inline]
     pub fn commit_nonce(&mut self, n: U256) -> bool {
         self.nonces.commit(n)
+    }
+
+    #[inline]
+    const fn implicit_public_key_removed(&self) -> bool {
+        self.flags
+            .contains(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
+    }
+
+    /// Returns whether authentication by PREDECESSOR is disabled.
+    pub const fn is_auth_by_predecessor_id_disabled(&self) -> bool {
+        self.flags
+            .contains(AccountFlags::AUTH_BY_PREDECESSOR_ID_DISABLED)
+    }
+
+    /// Sets whether authentication by `PREDECESSOR_ID` is enabled.
+    /// Returns whether authentication by `PREDECESSOR_ID` was enabled
+    /// before.
+    pub fn set_auth_by_predecessor_id(&mut self, me: &AccountIdRef, enable: bool) -> bool {
+        let was_disabled = self.is_auth_by_predecessor_id_disabled();
+        let toggle = was_disabled ^ !enable;
+        if toggle {
+            self.flags
+                .toggle(AccountFlags::AUTH_BY_PREDECESSOR_ID_DISABLED);
+
+            DefuseEvent::SetAuthByPredecessorId(AccountEvent::new(
+                Cow::Borrowed(me),
+                SetAuthByPredecessorId { enable },
+            ))
+            .emit();
+        }
+        !was_disabled
     }
 }
 
@@ -253,6 +288,21 @@ impl BorshSerializeAs<Lock<Account>> for MaybeVersionedAccountEntry {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[near(serializers = [borsh])]
+#[repr(transparent)]
+struct AccountFlags(u8);
+
+bitflags! {
+    impl AccountFlags: u8 {
+        // It was a legacy `implicit_public_key_removed: bool`
+        // flag in previous version. It's safe to migrate here,
+        // since borsh serializes `bool` to 0u8/1u8
+        const IMPLICIT_PUBLIC_KEY_REMOVED     = 1 << 0;
+        const AUTH_BY_PREDECESSOR_ID_DISABLED = 1 << 1;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use defuse_core::tokens::TokenId;
@@ -302,5 +352,22 @@ mod tests {
             assert_eq!(account.token_balances.amount_for(&ft), 123);
             assert!(account.is_nonce_used(nonce));
         }
+    }
+
+    #[rstest]
+    #[test]
+    fn upgrade_to_flags(#[values(true, false)] implicit_public_key_removed: bool) {
+        let serialized_legacy = borsh::to_vec(&implicit_public_key_removed).unwrap();
+        let flags: AccountFlags = borsh::from_slice(&serialized_legacy).unwrap();
+        assert_eq!(
+            flags.contains(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED),
+            implicit_public_key_removed,
+            "implicit_public_key_removed doesn't match"
+        );
+        assert_eq!(
+            borsh::to_vec(&flags).unwrap(),
+            serialized_legacy,
+            "unknown flags set"
+        );
     }
 }

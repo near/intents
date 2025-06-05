@@ -58,7 +58,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "PanicOnClone is intended to panic on Clone::clone()")]
     fn panics_on_clone() {
         let _ = PanicOnClone::new(IterableMap::<(), ()>::new(0)).clone();
     }

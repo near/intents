@@ -91,6 +91,11 @@ where
     fn is_account_locked(&self, account_id: &AccountIdRef) -> bool {
         self.state.is_account_locked(account_id)
     }
+
+    #[inline]
+    fn is_auth_by_predecessor_id_disabled(&self, account_id: &AccountIdRef) -> bool {
+        self.state.is_auth_by_predecessor_id_disabled(account_id)
+    }
 }
 
 impl<S> State for Deltas<S>
@@ -169,6 +174,11 @@ where
         storage_deposit: StorageDeposit,
     ) -> Result<()> {
         self.state.storage_deposit(owner_id, storage_deposit)
+    }
+
+    #[inline]
+    fn set_auth_by_predecessor_id(&mut self, account_id: AccountId, enable: bool) -> Result<bool> {
+        self.state.set_auth_by_predecessor_id(account_id, enable)
     }
 }
 

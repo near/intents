@@ -3,3 +3,6 @@ name = "defuse-nep461"
 edition.workspace = true
 version.workspace = true
 repository.workspace = true
+
+[lints]
+workspace = true

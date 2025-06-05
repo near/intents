@@ -12,7 +12,7 @@ use defuse_near_utils::{CURRENT_ACCOUNT_ID, Lock};
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128};
 
-use crate::contract::Contract;
+use crate::contract::{Contract, accounts::Account};
 
 impl StateView for Contract {
     #[inline]
@@ -79,6 +79,13 @@ impl StateView for Contract {
     #[inline]
     fn is_account_locked(&self, account_id: &AccountIdRef) -> bool {
         self.accounts.get(account_id).is_some_and(Lock::is_locked)
+    }
+
+    fn is_auth_by_predecessor_id_disabled(&self, account_id: &AccountIdRef) -> bool {
+        self.accounts
+            .get(account_id)
+            .map(Lock::as_inner_unchecked)
+            .is_some_and(Account::is_auth_by_predecessor_id_disabled)
     }
 }
 
@@ -239,5 +246,13 @@ impl State for Contract {
             );
 
         Ok(())
+    }
+
+    fn set_auth_by_predecessor_id(&mut self, account_id: AccountId, enable: bool) -> Result<bool> {
+        self.accounts
+            .get_or_create(account_id.clone())
+            .as_unlocked_mut()
+            .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))
+            .map(|account| account.set_auth_by_predecessor_id(&account_id, enable))
     }
 }
