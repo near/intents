@@ -1,7 +1,12 @@
 //! This module presents traits according to [multi-token metadata extension](https://github.com/near/NEPs/blob/master/specs/Standards/Tokens/MultiToken/Metadata.md)
+
 use crate::TokenId;
 use crate::enumeration::MultiTokenEnumeration;
+use chrono::{DateTime, TimeZone, Utc};
+use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
 use near_sdk::near;
+use serde_with::{PickFirst, TimestampMilliSeconds, serde_as};
+use std::io::{Read, Write};
 
 pub type MetadataId = String;
 
@@ -51,6 +56,7 @@ pub struct MTBaseTokenMetadata {
 }
 
 #[derive(Debug, Clone)]
+#[serde_as]
 #[near(serializers = [json, borsh])]
 pub struct MTTokenMetadata {
     /// Title of this specific token (e.g., "Arch Nemesis: Mail Carrier" or "Parcel #5055"), or `None`
@@ -69,21 +75,21 @@ pub struct MTTokenMetadata {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub media_hash: Option<String>,
 
-    /// Unix epoch in milliseconds when this token was issued or minted, or `None`
+    /// Unix epoch in milliseconds or RFC3339 when this token was issued or minted, or `None`
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub issued_at: Option<u64>,
+    pub issued_at: Option<DatetimeUtcWrapper>,
 
-    /// Unix epoch in milliseconds when this token expires, or `None`
+    /// Unix epoch in milliseconds or RFC3339 when this token expires, or `None`
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub expires_at: Option<u64>,
+    pub expires_at: Option<DatetimeUtcWrapper>,
 
-    /// Unix epoch in milliseconds when this token starts being valid, or `None`
+    /// Unix epoch in milliseconds or RFC3339 when this token starts being valid, or `None`
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub starts_at: Option<u64>,
+    pub starts_at: Option<DatetimeUtcWrapper>,
 
-    /// Unix epoch in milliseconds when this token metadata was last updated, or `None`
+    /// Unix epoch in milliseconds or RFC3339 when this token metadata was last updated, or `None`
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub updated_at: Option<u64>,
+    pub updated_at: Option<DatetimeUtcWrapper>,
 
     /// Anything extra the MT wants to store on-chain (can be stringified JSON), or `None`
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -147,4 +153,47 @@ pub trait MultiTokenMetadataEnumeration: MultiTokenMetadata + MultiTokenEnumerat
         from_index: Option<String>,
         limit: Option<u64>,
     ) -> Vec<MTBaseTokenMetadata>;
+}
+
+/// A wrapper that implements Borsh de-/serialization for `Datetime<Utc>`
+#[derive(Debug, Clone)]
+#[serde_as]
+#[near(serializers = [json])]
+pub struct DatetimeUtcWrapper(
+    #[serde_as(as = "PickFirst<(_, TimestampMilliSeconds)>")] pub DateTime<Utc>,
+);
+
+impl BorshSerialize for DatetimeUtcWrapper {
+    fn serialize<W: Write>(&self, writer: &mut W) -> std::io::Result<()> {
+        BorshSerialize::serialize(&self.0.timestamp_millis(), writer)?;
+        Ok(())
+    }
+}
+
+impl BorshDeserialize for DatetimeUtcWrapper {
+    fn deserialize_reader<R: Read>(reader: &mut R) -> std::io::Result<Self> {
+        let millis: i64 = BorshDeserialize::deserialize_reader(reader)?;
+        let internal = Utc.timestamp_millis_opt(millis).single().ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid timestamp")
+        })?;
+        Ok(Self(internal))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::metadata::DatetimeUtcWrapper;
+    use chrono::DateTime;
+    use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
+
+    #[test]
+    fn test_datetime_utc_wrapper_borsh() {
+        let timestamp = DateTime::from_timestamp(1747772412, 0).unwrap();
+        let wrapped = DatetimeUtcWrapper(timestamp);
+        let mut buffer = Vec::<u8>::new();
+        BorshSerialize::serialize(&wrapped, &mut buffer).unwrap();
+        let actual_wrapped: DatetimeUtcWrapper =
+            BorshDeserialize::deserialize(&mut buffer.as_slice()).unwrap();
+        assert_eq!(actual_wrapped.0, wrapped.0);
+    }
 }

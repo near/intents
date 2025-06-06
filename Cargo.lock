@@ -713,8 +713,10 @@ dependencies = [
 name = "defuse-nep245"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "derive_more 2.0.1",
  "near-sdk",
+ "serde_with",
 ]
 
 [[package]]
