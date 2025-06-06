@@ -12,7 +12,8 @@ use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::storage_management::ext_storage_management;
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
 use near_sdk::{
-    AccountId, Gas, NearToken, Promise, PromiseOrValue, PromiseResult, assert_one_yocto, env,
+    AccountId, Gas, GasWeight, NearToken, Promise, PromiseOrValue, PromiseResult, assert_one_yocto,
+    env,
     json_types::U128,
     near, require,
     serde_json::{self, json},
@@ -22,9 +23,6 @@ use crate::{
     contract::{Contract, ContractExt, Role, tokens::STORAGE_DEPOSIT_GAS},
     tokens::nep245::{MultiTokenForceWithdrawer, MultiTokenWithdrawResolver, MultiTokenWithdrawer},
 };
-
-const MT_BATCH_TRANSFER_GAS: Gas = Gas::from_tgas(20);
-const MT_BATCH_TRANSFER_CALL_GAS: Gas = Gas::from_tgas(50);
 
 #[near]
 impl MultiTokenWithdrawer for Contract {
@@ -50,6 +48,7 @@ impl MultiTokenWithdrawer for Contract {
                 memo,
                 msg,
                 storage_deposit: None,
+                min_gas: None,
             },
         )
         .unwrap_or_panic()
@@ -86,15 +85,18 @@ impl Contract {
             ext_wnear::ext(self.wnear_id.clone())
                 .with_attached_deposit(NearToken::from_yoctonear(1))
                 .with_static_gas(NEAR_WITHDRAW_GAS)
+                // do not distribute remaining gas here
+                .with_unused_gas_weight(0)
                 .near_withdraw(U128(storage_deposit.as_yoctonear()))
                 .then(
                     // schedule storage_deposit() only after near_withdraw() returns
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
-                        .with_static_gas(Self::DO_MT_WITHDRAW_GAS.saturating_add(if is_call {
-                            MT_BATCH_TRANSFER_CALL_GAS
-                        } else {
-                            MT_BATCH_TRANSFER_GAS
-                        }))
+                        .with_static_gas(
+                            Self::DO_MT_WITHDRAW_GAS
+                                .checked_add(withdraw.min_gas())
+                                .ok_or(DefuseError::GasOverflow)
+                                .unwrap_or_panic(),
+                        )
                         .do_mt_withdraw(withdraw.clone()),
                 )
         } else {
@@ -102,7 +104,10 @@ impl Contract {
         }
         .then(
             Self::ext(CURRENT_ACCOUNT_ID.clone())
+                // TODO: gas_base + gas_per_token * token_ids.len()
                 .with_static_gas(Self::MT_RESOLVE_WITHDRAW_GAS)
+                // do not distribute remaining gas here
+                .with_unused_gas_weight(0)
                 .mt_resolve_withdraw(
                     withdraw.token,
                     owner_id,
@@ -117,6 +122,7 @@ impl Contract {
 
 #[near]
 impl Contract {
+    // TODO: gas_base + gas_per_token * token_ids.len()
     const MT_RESOLVE_WITHDRAW_GAS: Gas = Gas::from_tgas(7);
     const DO_MT_WITHDRAW_GAS: Gas = Gas::from_tgas(5)
         // do_nft_withdraw() method is called externally
@@ -126,6 +132,7 @@ impl Contract {
     #[must_use]
     #[private]
     pub fn do_mt_withdraw(withdraw: MtWithdraw) -> Promise {
+        let min_gas = withdraw.min_gas();
         let p = if let Some(storage_deposit) = withdraw.storage_deposit {
             require!(
                 matches!(env::promise_result(0), PromiseResult::Successful(data) if data.is_empty()),
@@ -135,6 +142,8 @@ impl Contract {
             ext_storage_management::ext(withdraw.token)
                 .with_attached_deposit(storage_deposit)
                 .with_static_gas(STORAGE_DEPOSIT_GAS)
+                // do not distribute remaining gas here
+                .with_unused_gas_weight(0)
                 .storage_deposit(Some(withdraw.receiver_id.clone()), None)
         } else {
             Promise::new(withdraw.token)
@@ -146,6 +155,7 @@ impl Contract {
                 &withdraw.amounts,
                 withdraw.memo.as_deref(),
                 msg,
+                min_gas,
             )
         } else {
             p.mt_batch_transfer(
@@ -153,6 +163,7 @@ impl Contract {
                 &withdraw.token_ids,
                 &withdraw.amounts,
                 withdraw.memo.as_deref(),
+                min_gas,
             )
         }
     }
@@ -250,6 +261,7 @@ impl MultiTokenForceWithdrawer for Contract {
                 memo,
                 msg,
                 storage_deposit: None,
+                min_gas: None,
             },
         )
         .unwrap_or_panic()
@@ -263,6 +275,7 @@ pub trait MtExt {
         token_ids: &[defuse_nep245::TokenId],
         amounts: &[U128],
         memo: Option<&str>,
+        min_gas: Gas,
     ) -> Self;
 
     fn mt_batch_transfer_call(
@@ -272,6 +285,7 @@ pub trait MtExt {
         amounts: &[U128],
         memo: Option<&str>,
         msg: &str,
+        min_gas: Gas,
     ) -> Self;
 }
 
@@ -282,8 +296,9 @@ impl MtExt for Promise {
         token_ids: &[defuse_nep245::TokenId],
         amounts: &[U128],
         memo: Option<&str>,
+        min_gas: Gas,
     ) -> Self {
-        self.function_call(
+        self.function_call_weight(
             "mt_batch_transfer".to_string(),
             serde_json::to_vec(&json!({
                 "receiver_id": receiver_id,
@@ -293,7 +308,8 @@ impl MtExt for Promise {
             }))
             .unwrap_or_panic_display(),
             NearToken::from_yoctonear(1),
-            MT_BATCH_TRANSFER_GAS,
+            min_gas,
+            GasWeight::default(),
         )
     }
 
@@ -304,8 +320,9 @@ impl MtExt for Promise {
         amounts: &[U128],
         memo: Option<&str>,
         msg: &str,
+        min_gas: Gas,
     ) -> Self {
-        self.function_call(
+        self.function_call_weight(
             "mt_batch_transfer_call".to_string(),
             serde_json::to_vec(&json!({
                 "receiver_id": receiver_id,
@@ -316,7 +333,8 @@ impl MtExt for Promise {
             }))
             .unwrap_or_panic_display(),
             NearToken::from_yoctonear(1),
-            MT_BATCH_TRANSFER_CALL_GAS,
+            min_gas,
+            GasWeight::default(),
         )
     }
 }

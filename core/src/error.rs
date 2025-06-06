@@ -19,6 +19,9 @@ pub enum DefuseError {
     #[error("deadline has expired")]
     DeadlineExpired,
 
+    #[error("gas overflow")]
+    GasOverflow,
+
     #[error("invalid intent")]
     InvalidIntent,
 

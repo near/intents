@@ -167,11 +167,15 @@ impl State for Contract {
         let _ = ext_wnear::ext(self.wnear_id.clone())
             .with_attached_deposit(NearToken::from_yoctonear(1))
             .with_static_gas(NEAR_WITHDRAW_GAS)
+            // do not distribute remaining gas here
+            .with_unused_gas_weight(0)
             .near_withdraw(U128(withdraw.amount.as_yoctonear()))
             .then(
                 // do_native_withdraw only after unwrapping NEAR
                 Self::ext(CURRENT_ACCOUNT_ID.clone())
                     .with_static_gas(Self::DO_NATIVE_WITHDRAW_GAS)
+                    // do not distribute remaining gas here
+                    .with_unused_gas_weight(0)
                     .do_native_withdraw(withdraw),
             );
 
@@ -196,11 +200,15 @@ impl State for Contract {
         let _ = ext_wnear::ext(self.wnear_id.clone())
             .with_attached_deposit(NearToken::from_yoctonear(1))
             .with_static_gas(NEAR_WITHDRAW_GAS)
+            // do not distribute remaining gas here
+            .with_unused_gas_weight(0)
             .near_withdraw(U128(storage_deposit.amount.as_yoctonear()))
             .then(
                 // do_storage_deposit only after unwrapping NEAR
                 Self::ext(CURRENT_ACCOUNT_ID.clone())
                     .with_static_gas(Self::DO_STORAGE_DEPOSIT_GAS)
+                    // do not distribute remaining gas here
+                    .with_unused_gas_weight(0)
                     .do_storage_deposit(storage_deposit),
             );
 

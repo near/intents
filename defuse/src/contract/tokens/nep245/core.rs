@@ -235,7 +235,10 @@ impl Contract {
             )
             .then(
                 Self::ext(CURRENT_ACCOUNT_ID.clone())
+                    // TODO: gas_base + gas_per_token * token_ids.len()
                     .with_static_gas(MT_RESOLVE_TRANSFER_GAS)
+                    // do not distribute remaining gas here
+                    .with_unused_gas_weight(0)
                     .mt_resolve_transfer(previous_owner_ids, receiver_id, token_ids, amounts, None),
             )
             .into())

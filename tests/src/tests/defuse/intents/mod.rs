@@ -274,6 +274,7 @@ async fn ton_connect_sign_intent_example(random_seed: Seed) {
             memo: None,
             msg: None,
             storage_deposit: None,
+            min_gas: None,
         }
         .into()]
         .into(),

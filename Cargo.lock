@@ -586,7 +586,7 @@ dependencies = [
 
 [[package]]
 name = "defuse"
-version = "0.2.5"
+version = "0.2.6"
 dependencies = [
  "bnum",
  "defuse-admin-utils",
@@ -3747,9 +3747,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tlb"
-version = "0.4.6"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2ab3e609d99d65bba9365b1ece9b5486ea7dbf10472997515a8a64d4c49f0f36"
+checksum = "341978a7312fb9675a445aed6092e6105ebc5c5df8d7a19f8c911ff2e870bfc9"
 dependencies = [
  "arbitrary",
  "base64 0.21.7",
@@ -3764,9 +3764,9 @@ dependencies = [
 
 [[package]]
 name = "tlb-ton"
-version = "0.4.6"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc972030365ed2fbe728c1abea79f02f5e8dccc8731c372a60ff530ffb163181"
+checksum = "ccabf1c52a8ac481845f222fa51b60adbeda727921ac316c8ef7efd2fa30b817"
 dependencies = [
  "arbitrary",
  "base64 0.21.7",
@@ -3785,15 +3785,16 @@ dependencies = [
 
 [[package]]
 name = "tlbits"
-version = "0.4.0"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6a5bfbdfcfcb9bfd4ac115a42deae172cd2c1a4e4ca2a02f44d234e6ecd9fe0"
+checksum = "097916b5f423b9956007b1f308104224a3c4f536f0dd16d60bfced85042a2923"
 dependencies = [
  "bitvec",
  "either",
  "impl-tools",
  "num-bigint 0.4.6",
  "num-traits",
+ "rustversion",
  "thiserror 1.0.69",
 ]
 

@@ -15,12 +15,12 @@ use defuse::{
         tokens::TokenId,
     },
 };
-use near_sdk::{AccountId, NearToken};
+use near_sdk::{AccountId, Gas, NearToken};
 use randomness::Rng;
 use rstest::rstest;
 use std::time::Duration;
-use test_utils::random::make_seedable_rng;
 use test_utils::random::{Seed, random_seed};
+use test_utils::{asserts::ResultAssertsExt, random::make_seedable_rng};
 
 #[tokio::test]
 #[rstest]
@@ -68,6 +68,7 @@ async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registr
                     memo: None,
                     msg: None,
                     storage_deposit: None,
+                    min_gas: None,
                 }
                 .into()]
                 .into(),
@@ -107,6 +108,7 @@ async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registr
                     msg: None,
                     // user has no wnear yet
                     storage_deposit: Some(STORAGE_DEPOSIT),
+                    min_gas: None,
                 }
                 .into()]
                 .into(),
@@ -158,6 +160,7 @@ async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registr
 
     let nonce = rng.random();
 
+    // too large min_gas specified
     env.defuse_execute_intents(
         env.defuse.id(),
         [env.user1.sign_defuse_message(
@@ -172,8 +175,33 @@ async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registr
                     amount: 1000.into(),
                     memo: None,
                     msg: None,
-
                     storage_deposit,
+                    min_gas: Some(Gas::from_tgas(300)),
+                }
+                .into()]
+                .into(),
+            },
+        )],
+    )
+    .await
+    .assert_err_contains("Exceeded the prepaid gas.");
+
+    env.defuse_execute_intents(
+        env.defuse.id(),
+        [env.user1.sign_defuse_message(
+            SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+            env.defuse.id(),
+            nonce,
+            Deadline::MAX,
+            DefuseIntents {
+                intents: [FtWithdraw {
+                    token: env.ft1.clone(),
+                    receiver_id: other_user_id.clone(),
+                    amount: 1000.into(),
+                    memo: None,
+                    msg: None,
+                    storage_deposit,
+                    min_gas: None,
                 }
                 .into()]
                 .into(),
@@ -258,22 +286,77 @@ async fn ft_withdraw_intent_msg(random_seed: Seed, #[values(false, true)] no_reg
         .await
         .unwrap();
 
-    let nonce = rng.random();
+    let ft1 = TokenId::Nep141(env.ft1.clone());
+
+    // too small min_gas
+    {
+        env.defuse
+            .execute_intents([env.user1.sign_defuse_message(
+                SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
+                    .unwrap(),
+                env.defuse.id(),
+                rng.random(),
+                Deadline::timeout(Duration::from_secs(120)),
+                DefuseIntents {
+                    intents: [FtWithdraw {
+                        token: env.ft1.clone(),
+                        receiver_id: defuse2.id().clone(),
+                        amount: 400.into(),
+                        memo: Some("defuse-to-defuse".to_string()),
+                        msg: Some(env.user2.id().to_string()),
+                        storage_deposit: None,
+                        // too small, but minimum of 30TGas will be used
+                        min_gas: Some(Gas::from_tgas(1)),
+                    }
+                    .into()]
+                    .into(),
+                },
+            )])
+            .await
+            .unwrap();
+
+        assert_eq!(
+            env.mt_contract_balance_of(env.defuse.id(), env.user1.id(), &ft1.to_string())
+                .await
+                .unwrap(),
+            600
+        );
+        assert_eq!(
+            env.ft_token_balance_of(&env.ft1, env.defuse.id())
+                .await
+                .unwrap(),
+            600
+        );
+
+        assert_eq!(
+            env.ft_token_balance_of(&env.ft1, defuse2.id())
+                .await
+                .unwrap(),
+            400
+        );
+        assert_eq!(
+            env.mt_contract_balance_of(defuse2.id(), env.user2.id(), &ft1.to_string())
+                .await
+                .unwrap(),
+            400
+        );
+    }
 
     env.defuse
         .execute_intents([env.user1.sign_defuse_message(
             SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
             env.defuse.id(),
-            nonce,
+            rng.random(),
             Deadline::timeout(Duration::from_secs(120)),
             DefuseIntents {
                 intents: [FtWithdraw {
                     token: env.ft1.clone(),
                     receiver_id: defuse2.id().clone(),
-                    amount: 1000.into(),
+                    amount: 600.into(),
                     memo: Some("defuse-to-defuse".to_string()),
                     msg: Some(env.user2.id().to_string()),
                     storage_deposit: None,
+                    min_gas: None,
                 }
                 .into()]
                 .into(),
@@ -281,8 +364,6 @@ async fn ft_withdraw_intent_msg(random_seed: Seed, #[values(false, true)] no_reg
         )])
         .await
         .unwrap();
-
-    let ft1 = TokenId::Nep141(env.ft1.clone());
 
     assert_eq!(
         env.mt_contract_balance_of(env.defuse.id(), env.user1.id(), &ft1.to_string())

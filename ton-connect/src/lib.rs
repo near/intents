@@ -1,4 +1,6 @@
-//! TON Connect [signData](https://docs.tonconsole.com/academy/sign-data)
+//! TON Connect [signData](https://github.com/ton-blockchain/ton-connect/blob/main/requests-responses.md#sign-data)
+
+use std::borrow::Cow;
 
 use chrono::{DateTime, Utc};
 use defuse_crypto::{Curve, Ed25519, Payload, SignedPayload, serde::AsCurve};
@@ -11,6 +13,7 @@ use tlb_ton::{
     Cell, Error, MsgAddress, StringError,
     r#as::{Ref, SnakeData},
     bits::ser::BitWriterExt,
+    ser::{CellBuilder, CellBuilderError, CellSerialize, CellSerializeExt},
 };
 
 pub use tlb_ton;
@@ -80,19 +83,16 @@ impl TonConnectPayload {
                 ))
             }
             TonConnectPayloadSchema::Cell { schema_crc, cell } => {
-                let mut b = Cell::builder();
-                b.pack(
-                    #[allow(clippy::unreadable_literal)]
-                    0x75569022_u32,
-                )?
-                .pack(schema_crc)?
-                .pack(timestamp)?
-                .pack(self.address)?
-                .store_as::<_, Ref<SnakeData>>(&self.domain)?
-                .store_as::<_, Ref>(cell)?;
-                Ok(b.into_cell()
-                    // use host function for recursive hash calculation
-                    .hash_digest::<defuse_near_utils::digest::Sha256>())
+                Ok(TonConnectCellMessage {
+                    schema_crc: *schema_crc,
+                    timestamp,
+                    user_address: Cow::Borrowed(&self.address),
+                    app_domain: Cow::Borrowed(self.domain.as_str()),
+                    payload: cell,
+                }
+                .to_cell()?
+                // use host function for recursive hash calculation
+                .hash_digest::<defuse_near_utils::digest::Sha256>())
             }
         }
     }
@@ -104,6 +104,7 @@ impl Payload for TonConnectPayload {
         self.try_hash().unwrap_or_panic_str()
     }
 }
+
 /// See <https://docs.tonconsole.com/academy/sign-data#choosing-the-right-format>
 #[cfg_attr(test, derive(arbitrary::Arbitrary))]
 #[cfg_attr(
@@ -130,6 +131,47 @@ pub enum TonConnectPayloadSchema {
         #[serde_as(as = "AsBoC<Base64>")]
         cell: Cell,
     },
+}
+
+/// ```tlb
+/// message#75569022 schema_hash:uint32 timestamp:uint64 userAddress:MsgAddress
+///                  {n:#} appDomain:^(SnakeData ~n) payload:^Cell = Message;
+/// ```
+#[derive(Debug, Clone)]
+pub struct TonConnectCellMessage<'a, T = Cell> {
+    pub schema_crc: u32,
+    pub timestamp: u64,
+    pub user_address: Cow<'a, MsgAddress>,
+    pub app_domain: Cow<'a, str>,
+    pub payload: T,
+}
+
+/// ```tlb
+/// message#75569022
+/// ```
+#[allow(clippy::unreadable_literal)]
+const MESSAGE_TAG: u32 = 0x75569022;
+
+impl<T> CellSerialize for TonConnectCellMessage<'_, T>
+where
+    T: CellSerialize,
+{
+    fn store(&self, builder: &mut CellBuilder) -> Result<(), CellBuilderError> {
+        builder
+            // message#75569022
+            .pack(MESSAGE_TAG)?
+            // schema_hash:uint32
+            .pack(self.schema_crc)?
+            // timestamp:uint64
+            .pack(self.timestamp)?
+            // userAddress:MsgAddress
+            .pack(&self.user_address)?
+            // {n:#} appDomain:^(SnakeData ~n)
+            .store_as::<_, Ref<SnakeData>>(self.app_domain.as_ref())?
+            // payload:^Cell
+            .store_as::<_, Ref>(&self.payload)?;
+        Ok(())
+    }
 }
 
 #[cfg_attr(test, derive(arbitrary::Arbitrary))]

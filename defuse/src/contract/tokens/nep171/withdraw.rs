@@ -1,6 +1,8 @@
 use std::iter;
 
-use defuse_core::{Result, engine::StateView, intents::tokens::NftWithdraw, tokens::TokenId};
+use defuse_core::{
+    DefuseError, Result, engine::StateView, intents::tokens::NftWithdraw, tokens::TokenId,
+};
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
@@ -8,7 +10,8 @@ use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::{non_fungible_token, storage_management::ext_storage_management};
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
 use near_sdk::{
-    AccountId, Gas, NearToken, Promise, PromiseOrValue, PromiseResult, assert_one_yocto, env,
+    AccountId, Gas, GasWeight, NearToken, Promise, PromiseOrValue, PromiseResult, assert_one_yocto,
+    env,
     json_types::U128,
     near, require,
     serde_json::{self, json},
@@ -21,9 +24,6 @@ use crate::{
         NonFungibleTokenWithdrawer,
     },
 };
-
-const NFT_TRANSFER_GAS: Gas = Gas::from_tgas(15);
-const NFT_TRANSFER_CALL_GAS: Gas = Gas::from_tgas(50);
 
 #[near]
 impl NonFungibleTokenWithdrawer for Contract {
@@ -47,6 +47,7 @@ impl NonFungibleTokenWithdrawer for Contract {
                 memo,
                 msg,
                 storage_deposit: None,
+                min_gas: None,
             },
         )
         .unwrap_or_panic()
@@ -74,20 +75,23 @@ impl Contract {
             Some("withdraw"),
         )?;
 
-        let is_call = withdraw.msg.is_some();
+        let is_call = withdraw.is_call();
         Ok(if let Some(storage_deposit) = withdraw.storage_deposit {
             ext_wnear::ext(self.wnear_id.clone())
                 .with_attached_deposit(NearToken::from_yoctonear(1))
                 .with_static_gas(NEAR_WITHDRAW_GAS)
+                // do not distribute remaining gas here
+                .with_unused_gas_weight(0)
                 .near_withdraw(U128(storage_deposit.as_yoctonear()))
                 .then(
                     // schedule storage_deposit() only after near_withdraw() returns
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
-                        .with_static_gas(Self::DO_NFT_WITHDRAW_GAS.saturating_add(if is_call {
-                            NFT_TRANSFER_CALL_GAS
-                        } else {
-                            NFT_TRANSFER_GAS
-                        }))
+                        .with_static_gas(
+                            Self::DO_NFT_WITHDRAW_GAS
+                                .checked_add(withdraw.min_gas())
+                                .ok_or(DefuseError::GasOverflow)
+                                .unwrap_or_panic(),
+                        )
                         .do_nft_withdraw(withdraw.clone()),
                 )
         } else {
@@ -96,6 +100,8 @@ impl Contract {
         .then(
             Self::ext(CURRENT_ACCOUNT_ID.clone())
                 .with_static_gas(Self::NFT_RESOLVE_WITHDRAW_GAS)
+                // do not distribute remaining gas here
+                .with_unused_gas_weight(0)
                 .nft_resolve_withdraw(withdraw.token, owner_id, withdraw.token_id, is_call),
         )
         .into())
@@ -113,6 +119,7 @@ impl Contract {
     #[must_use]
     #[private]
     pub fn do_nft_withdraw(withdraw: NftWithdraw) -> Promise {
+        let min_gas = withdraw.min_gas();
         let p = if let Some(storage_deposit) = withdraw.storage_deposit {
             require!(
                 matches!(env::promise_result(0), PromiseResult::Successful(data) if data.is_empty()),
@@ -122,6 +129,8 @@ impl Contract {
             ext_storage_management::ext(withdraw.token)
                 .with_attached_deposit(storage_deposit)
                 .with_static_gas(STORAGE_DEPOSIT_GAS)
+                // do not distribute remaining gas here
+                .with_unused_gas_weight(0)
                 .storage_deposit(Some(withdraw.receiver_id.clone()), None)
         } else {
             Promise::new(withdraw.token)
@@ -133,12 +142,14 @@ impl Contract {
                 &withdraw.token_id,
                 withdraw.memo.as_deref(),
                 msg,
+                min_gas,
             )
         } else {
             p.nft_transfer(
                 &withdraw.receiver_id,
                 &withdraw.token_id,
                 withdraw.memo.as_deref(),
+                min_gas,
             )
         }
     }
@@ -206,6 +217,7 @@ impl NonFungibleTokenForceWithdrawer for Contract {
                 memo,
                 msg,
                 storage_deposit: None,
+                min_gas: None,
             },
         )
         .unwrap_or_panic()
@@ -218,6 +230,7 @@ pub trait NftExt {
         receiver_id: &AccountId,
         token_id: &non_fungible_token::TokenId,
         memo: Option<&str>,
+        min_gas: Gas,
     ) -> Self;
 
     fn nft_transfer_call(
@@ -226,6 +239,7 @@ pub trait NftExt {
         token_id: &non_fungible_token::TokenId,
         memo: Option<&str>,
         msg: &str,
+        min_gas: Gas,
     ) -> Self;
 }
 
@@ -235,8 +249,9 @@ impl NftExt for Promise {
         receiver_id: &AccountId,
         token_id: &non_fungible_token::TokenId,
         memo: Option<&str>,
+        min_gas: Gas,
     ) -> Self {
-        self.function_call(
+        self.function_call_weight(
             "nft_transfer".to_string(),
             serde_json::to_vec(&json!({
                 "receiver_id": receiver_id,
@@ -245,7 +260,8 @@ impl NftExt for Promise {
             }))
             .unwrap_or_panic_display(),
             NearToken::from_yoctonear(1),
-            NFT_TRANSFER_GAS,
+            min_gas,
+            GasWeight::default(),
         )
     }
 
@@ -255,8 +271,9 @@ impl NftExt for Promise {
         token_id: &non_fungible_token::TokenId,
         memo: Option<&str>,
         msg: &str,
+        min_gas: Gas,
     ) -> Self {
-        self.function_call(
+        self.function_call_weight(
             "nft_transfer_call".to_string(),
             serde_json::to_vec(&json!({
                 "receiver_id": receiver_id,
@@ -266,7 +283,8 @@ impl NftExt for Promise {
             }))
             .unwrap_or_panic_display(),
             NearToken::from_yoctonear(1),
-            NFT_TRANSFER_CALL_GAS,
+            min_gas,
+            GasWeight::default(),
         )
     }
 }

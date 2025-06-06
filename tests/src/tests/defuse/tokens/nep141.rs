@@ -153,6 +153,7 @@ async fn deposit_withdraw_intent(random_seed: Seed, #[values(false, true)] no_re
                                     memo: None,
                                     msg: None,
                                     storage_deposit: None,
+                                    min_gas: None,
                                 }
                                 .into(),
                             ]
@@ -252,6 +253,7 @@ async fn deposit_withdraw_intent_refund(
                                 memo: None,
                                 msg: None,
                                 storage_deposit: None,
+                                min_gas: None,
                             }
                             .into(),]
                             .into(),

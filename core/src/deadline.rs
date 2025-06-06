@@ -37,6 +37,12 @@ impl Deadline {
     pub fn has_expired(self) -> bool {
         Self::now() > self
     }
+
+    #[must_use]
+    #[inline]
+    pub fn into_timestamp(self) -> DateTime<Utc> {
+        self.0
+    }
 }
 
 impl Add<Duration> for Deadline {
