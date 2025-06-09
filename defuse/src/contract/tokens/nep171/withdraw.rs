@@ -111,7 +111,7 @@ impl Contract {
 #[near]
 impl Contract {
     const NFT_RESOLVE_WITHDRAW_GAS: Gas = Gas::from_tgas(5);
-    const DO_NFT_WITHDRAW_GAS: Gas = Gas::from_tgas(3)
+    const DO_NFT_WITHDRAW_GAS: Gas = Gas::from_tgas(4)
         // do_nft_withdraw() method is called externally
         // only with storage_deposit
         .saturating_add(STORAGE_DEPOSIT_GAS);

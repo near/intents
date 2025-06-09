@@ -7,7 +7,7 @@ use crate::contract::{Contract, ContractExt, tokens::STORAGE_DEPOSIT_GAS};
 #[near]
 impl Contract {
     pub(crate) const DO_STORAGE_DEPOSIT_GAS: Gas =
-        Gas::from_tgas(3).saturating_add(STORAGE_DEPOSIT_GAS);
+        Gas::from_tgas(4).saturating_add(STORAGE_DEPOSIT_GAS);
 
     #[private]
     pub fn do_storage_deposit(&mut self, storage_deposit: StorageDeposit) -> Promise {

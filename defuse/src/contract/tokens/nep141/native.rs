@@ -5,7 +5,7 @@ use crate::contract::{Contract, ContractExt};
 
 #[near]
 impl Contract {
-    pub(crate) const DO_NATIVE_WITHDRAW_GAS: Gas = Gas::from_tgas(3)
+    pub(crate) const DO_NATIVE_WITHDRAW_GAS: Gas = Gas::from_tgas(4)
         // Transfer NEAR
         .saturating_add(Gas::from_tgas(1));
 
