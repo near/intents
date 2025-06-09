@@ -14,6 +14,25 @@ pub trait DefuseFtReceiver {
     ) -> anyhow::Result<u128>;
 }
 
+pub trait DefuseFtWithdrawer {
+    async fn defuse_ft_withdraw(
+        &self,
+        defuse_id: &AccountId,
+        token_id: &AccountId,
+        receiver_id: &AccountId,
+        amount: u128,
+    ) -> anyhow::Result<u128>;
+
+    async fn defuse_ft_force_withdraw(
+        &self,
+        defuse_id: &AccountId,
+        owner_id: &AccountId,
+        token_id: &AccountId,
+        receiver_id: &AccountId,
+        amount: u128,
+    ) -> anyhow::Result<u128>;
+}
+
 impl DefuseFtReceiver for near_workspaces::Account {
     async fn defuse_ft_deposit(
         &self,
@@ -48,25 +67,6 @@ impl DefuseFtReceiver for near_workspaces::Contract {
             .defuse_ft_deposit(defuse_id, token_id, amount, msg)
             .await
     }
-}
-
-pub trait DefuseFtWithdrawer {
-    async fn defuse_ft_withdraw(
-        &self,
-        defuse_id: &AccountId,
-        token_id: &AccountId,
-        receiver_id: &AccountId,
-        amount: u128,
-    ) -> anyhow::Result<u128>;
-
-    async fn defuse_ft_force_withdraw(
-        &self,
-        defuse_id: &AccountId,
-        owner_id: &AccountId,
-        token_id: &AccountId,
-        receiver_id: &AccountId,
-        amount: u128,
-    ) -> anyhow::Result<u128>;
 }
 
 impl DefuseFtWithdrawer for near_workspaces::Account {
