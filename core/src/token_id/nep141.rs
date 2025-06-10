@@ -6,6 +6,7 @@ use crate::token_id::error::TokenIdError;
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[near(serializers = [borsh])]
+#[must_use]
 pub struct Nep141TokenId {
     account_id: AccountId,
 }
@@ -46,9 +47,7 @@ impl FromStr for Nep141TokenId {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
-    use crate::token_id::nep141::Nep141TokenId;
+    use super::*;
     use rstest::rstest;
     use test_utils::{
         account_id::arbitrary_account_id,
@@ -56,6 +55,7 @@ mod tests {
     };
 
     #[rstest]
+    #[trace]
     fn to_from_string(random_seed: Seed) {
         let mut rng = make_seedable_rng(random_seed);
         let bytes = gen_random_bytes(&mut rng, ..1000);

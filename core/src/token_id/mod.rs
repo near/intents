@@ -265,4 +265,28 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn token_id_fixed_strings() {
+        {
+            let token_id_str = "nep141:my-token.near";
+            let token_id = TokenId::from_str(token_id_str).unwrap();
+            let expected_token_id = TokenId::Nep141("my-token.near".parse().unwrap());
+            assert_eq!(token_id, expected_token_id);
+        }
+        {
+            let token_id_str = "nep171:my-token.near:abc";
+            let token_id = TokenId::from_str(token_id_str).unwrap();
+            let expected_token_id =
+                TokenId::make_nep171("my-token.near".parse().unwrap(), "abc".to_string()).unwrap();
+            assert_eq!(token_id, expected_token_id);
+        }
+        {
+            let token_id_str = "nep245:my-token.near:abc";
+            let token_id = TokenId::from_str(token_id_str).unwrap();
+            let expected_token_id =
+                TokenId::make_nep245("my-token.near".parse().unwrap(), "abc".to_string()).unwrap();
+            assert_eq!(token_id, expected_token_id);
+        }
+    }
 }

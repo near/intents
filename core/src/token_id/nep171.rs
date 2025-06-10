@@ -5,6 +5,7 @@ use near_sdk::{AccountId, AccountIdRef, near};
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[near(serializers = [borsh])]
+#[must_use]
 pub struct Nep171TokenId {
     account_id: AccountId,
     native_token_id: near_contract_standards::non_fungible_token::TokenId,
@@ -26,7 +27,7 @@ impl Nep171TokenId {
     }
 
     pub fn contract_id(&self) -> &AccountIdRef {
-        self.account_id.as_ref()
+        &self.account_id
     }
 
     pub const fn native_token_id(&self) -> &near_contract_standards::non_fungible_token::TokenId {
@@ -62,4 +63,68 @@ impl FromStr for Nep171TokenId {
     }
 }
 
-// FIXME: add tests
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use arbitrary::Arbitrary;
+    use rstest::rstest;
+    use test_utils::{
+        account_id::arbitrary_account_id,
+        asserts::ResultAssertsExt,
+        random::{Seed, gen_random_bytes, gen_random_string, make_seedable_rng, random_seed},
+    };
+
+    #[rstest]
+    #[trace]
+    fn to_from_string(random_seed: Seed) {
+        let mut rng = make_seedable_rng(random_seed);
+        let bytes = gen_random_bytes(&mut rng, ..1000);
+        let mut u = arbitrary::Unstructured::new(&bytes);
+
+        let account_id = arbitrary_account_id(&mut u).unwrap();
+        let native_token_id =
+            near_contract_standards::non_fungible_token::TokenId::arbitrary(&mut u).unwrap();
+        let token_id = Nep171TokenId::new(account_id.clone(), native_token_id.clone()).unwrap();
+
+        assert_eq!(
+            token_id.to_string(),
+            format!("{account_id}:{native_token_id}")
+        );
+
+        assert_eq!(
+            Nep171TokenId::from_str(&token_id.to_string()).unwrap(),
+            token_id
+        );
+    }
+
+    #[rstest]
+    #[trace]
+    fn from_string_length_limit(random_seed: Seed) {
+        let mut rng = make_seedable_rng(random_seed);
+        let bytes = gen_random_bytes(&mut rng, ..1000);
+        let mut u = arbitrary::Unstructured::new(&bytes);
+
+        let token_id_string = gen_random_string(&mut rng, 2..1000);
+        let nft_result = Nep171TokenId::new(
+            arbitrary_account_id(&mut u).unwrap(),
+            token_id_string.clone(),
+        );
+        if token_id_string.len() > MAX_ALLOWED_TOKEN_ID_LEN {
+            nft_result.assert_err_contains("Token id provided is too large.");
+        } else {
+            let _ = nft_result.unwrap();
+        }
+    }
+
+    #[rstest]
+    #[trace]
+    fn fixed_from_string() {
+        let account_id = AccountId::from_str("my-token.near").unwrap();
+        let native_token_id = "abc";
+        let token_id = Nep171TokenId::new(account_id, native_token_id.to_string()).unwrap();
+
+        let expected_token_id_str = "my-token.near:abc";
+        assert_eq!(token_id.to_string(), expected_token_id_str);
+        assert_eq!(token_id, expected_token_id_str.parse().unwrap());
+    }
+}
