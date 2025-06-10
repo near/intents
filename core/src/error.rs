@@ -1,6 +1,6 @@
 use crate::{
     engine::deltas::InvariantViolated,
-    token_id::{TokenId, TokenIdError},
+    token_id::{TokenId, error::TokenIdError},
 };
 use near_sdk::{FunctionError, serde_json};
 use thiserror::Error as ThisError;

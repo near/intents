@@ -6,7 +6,7 @@ use crate::{
     engine::{Engine, Inspector, State, StateView},
     events::DefuseEvent,
     fees::Pips,
-    token_id::{TokenId, TokenIdType},
+    token_id::TokenId,
 };
 use defuse_num_utils::CheckedMulDiv;
 use impl_tools::autoimpl;
@@ -218,11 +218,12 @@ impl TokenDiff {
 
     #[inline]
     pub const fn token_fee(token_id: &TokenId, amount: u128, fee: Pips) -> Pips {
-        match token_id.which() {
-            TokenIdType::Nep141 => {}
-            TokenIdType::Nep245 if amount > 1 => {}
+        match token_id {
+            TokenId::Nep141(_) => {}
+            TokenId::Nep245(_) if amount > 1 => {}
+
             // do not take fees on NFTs and MTs with |delta| <= 1
-            _ => return Pips::ZERO,
+            TokenId::Nep171(_) | TokenId::Nep245(_) => return Pips::ZERO,
         }
         fee
     }

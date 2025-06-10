@@ -1,64 +1,20 @@
+pub mod error;
+pub mod nep141;
+pub mod nep171;
+pub mod nep245;
+
+use crate::token_id::{
+    error::TokenIdError, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId,
+};
 use core::{
     fmt::{self, Debug, Display},
     str::FromStr,
 };
-use near_account_id::ParseAccountError;
 use near_sdk::{AccountId, near};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 use strum::{EnumDiscriminants, EnumString};
-use thiserror::Error as ThisError;
 
 const MAX_ALLOWED_TOKEN_ID_LEN: usize = 127;
-
-#[derive(
-    Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr,
-)]
-#[near(serializers = [borsh])]
-pub struct TokenId {
-    token_id: TokenIdHolder,
-}
-
-impl TokenId {
-    pub const fn make_nep141(account_id: AccountId) -> Self {
-        Self {
-            token_id: TokenIdHolder::Nep141(account_id),
-        }
-    }
-
-    pub fn make_nep171(
-        account_id: AccountId,
-        native_token_id: near_contract_standards::non_fungible_token::TokenId,
-    ) -> Result<Self, TokenIdError> {
-        if native_token_id.len() > MAX_ALLOWED_TOKEN_ID_LEN {
-            return Err(TokenIdError::TokenIdTooLarge(native_token_id.len()));
-        }
-
-        Ok(Self {
-            token_id: TokenIdHolder::Nep171(account_id, native_token_id),
-        })
-    }
-
-    pub fn make_nep245(
-        account_id: AccountId,
-        defuse_token_id: defuse_nep245::TokenId,
-    ) -> Result<Self, TokenIdError> {
-        if defuse_token_id.len() > MAX_ALLOWED_TOKEN_ID_LEN {
-            return Err(TokenIdError::TokenIdTooLarge(defuse_token_id.len()));
-        }
-
-        Ok(Self {
-            token_id: TokenIdHolder::Nep245(account_id, defuse_token_id),
-        })
-    }
-
-    pub const fn which(&self) -> TokenIdType {
-        match self.token_id {
-            TokenIdHolder::Nep141(..) => TokenIdType::Nep141,
-            TokenIdHolder::Nep171(..) => TokenIdType::Nep171,
-            TokenIdHolder::Nep245(..) => TokenIdType::Nep245,
-        }
-    }
-}
 
 #[derive(
     Clone,
@@ -79,57 +35,63 @@ impl TokenId {
 )]
 #[near(serializers = [borsh])]
 // Private: Because we need construction to go through the TokenId struct to check for length
-enum TokenIdHolder {
-    Nep141(
-        /// Contract
-        AccountId,
-    ),
-    Nep171(
-        /// Contract
-        AccountId,
-        /// Token ID
-        near_contract_standards::non_fungible_token::TokenId,
-    ),
-    Nep245(
-        /// Contract
-        AccountId,
-        /// Token ID
-        defuse_nep245::TokenId,
-    ),
+pub enum TokenId {
+    Nep141(Nep141TokenId),
+    Nep171(Nep171TokenId),
+    Nep245(Nep245TokenId),
 }
 
-impl Debug for TokenIdHolder {
+impl Debug for TokenId {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Nep141(contract_id) => {
-                write!(f, "{}:{}", TokenIdType::Nep141, contract_id)
+            Self::Nep141(token_id) => {
+                write!(f, "{}:{}", TokenIdType::Nep141, token_id)
             }
-            Self::Nep171(contract_id, token_id) => {
-                write!(f, "{}:{}:{}", TokenIdType::Nep171, contract_id, token_id)
+            Self::Nep171(token_id) => {
+                write!(f, "{}:{}", TokenIdType::Nep171, token_id)
             }
-            Self::Nep245(contract_id, token_id) => {
-                write!(f, "{}:{}:{}", TokenIdType::Nep245, contract_id, token_id)
+            Self::Nep245(token_id) => {
+                write!(f, "{}:{}", TokenIdType::Nep245, token_id)
             }
         }
+    }
+}
+
+impl TokenId {
+    pub const fn make_nep141(account_id: AccountId) -> Self {
+        Self::Nep141(Nep141TokenId::new(account_id))
+    }
+
+    pub fn make_nep171(
+        account_id: AccountId,
+        native_token_id: near_contract_standards::non_fungible_token::TokenId,
+    ) -> Result<Self, TokenIdError> {
+        Ok(Self::Nep171(Nep171TokenId::new(
+            account_id,
+            native_token_id,
+        )?))
+    }
+
+    pub fn make_nep245(
+        account_id: AccountId,
+        defuse_token_id: defuse_nep245::TokenId,
+    ) -> Result<Self, TokenIdError> {
+        Ok(Self::Nep245(Nep245TokenId::new(
+            account_id,
+            defuse_token_id,
+        )?))
     }
 }
 
 impl Display for TokenId {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Debug::fmt(&self.token_id, f)
+        fmt::Debug::fmt(&self, f)
     }
 }
 
-impl Display for TokenIdHolder {
-    #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Debug::fmt(self, f)
-    }
-}
-
-impl FromStr for TokenIdHolder {
+impl FromStr for TokenId {
     type Err = TokenIdError;
 
     #[inline]
@@ -139,46 +101,10 @@ impl FromStr for TokenIdHolder {
             .ok_or(strum::ParseError::VariantNotFound)?;
         Ok(match typ.parse()? {
             TokenIdType::Nep141 => Self::Nep141(data.parse()?),
-            TokenIdType::Nep171 => {
-                let (contract_id, token_id) = data
-                    .split_once(':')
-                    .ok_or(strum::ParseError::VariantNotFound)?;
-                if token_id.len() > MAX_ALLOWED_TOKEN_ID_LEN {
-                    return Err(TokenIdError::TokenIdTooLarge(token_id.len()));
-                }
-                Self::Nep171(contract_id.parse()?, token_id.to_string())
-            }
-            TokenIdType::Nep245 => {
-                let (contract_id, token_id) = data
-                    .split_once(':')
-                    .ok_or(strum::ParseError::VariantNotFound)?;
-                if token_id.len() > MAX_ALLOWED_TOKEN_ID_LEN {
-                    return Err(TokenIdError::TokenIdTooLarge(token_id.len()));
-                }
-                Self::Nep245(contract_id.parse()?, token_id.to_string())
-            }
+            TokenIdType::Nep171 => Self::Nep171(data.parse()?),
+            TokenIdType::Nep245 => Self::Nep245(data.parse()?),
         })
     }
-}
-
-impl FromStr for TokenId {
-    type Err = TokenIdError;
-
-    #[inline]
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let token_id: TokenIdHolder = s.parse()?;
-        Ok(Self { token_id })
-    }
-}
-
-#[derive(Debug, ThisError)]
-pub enum TokenIdError {
-    #[error("AccountId: {0}")]
-    AccountId(#[from] ParseAccountError),
-    #[error(transparent)]
-    ParseError(#[from] strum::ParseError),
-    #[error("Token id provided is too large. Given: {0}. Max: {MAX_ALLOWED_TOKEN_ID_LEN}")]
-    TokenIdTooLarge(usize),
 }
 
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
@@ -194,7 +120,7 @@ mod abi {
 
     impl JsonSchema for TokenId {
         fn schema_name() -> String {
-            stringify!(TokenIdHolder).to_string()
+            stringify!(TokenId).to_string()
         }
 
         fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
@@ -203,21 +129,18 @@ mod abi {
                 extensions: [(
                     "examples",
                     [
-                        Self {
-                            token_id: TokenIdHolder::Nep141("ft.near".parse().unwrap()),
-                        },
-                        Self {
-                            token_id: TokenIdHolder::Nep171(
+                        TokenId::Nep141(Nep141TokenId::new("ft.near".parse().unwrap())),
+                        TokenId::Nep171(
+                            Nep171TokenId::new(
                                 "nft.near".parse().unwrap(),
                                 "token_id1".to_string(),
-                            ),
-                        },
-                        Self {
-                            token_id: TokenIdHolder::Nep245(
-                                "mt.near".parse().unwrap(),
-                                "token_id1".to_string(),
-                            ),
-                        },
+                            )
+                            .unwrap(),
+                        ),
+                        TokenId::Nep245(
+                            Nep245TokenId::new("mt.near".parse().unwrap(), "token_id1".to_string())
+                                .unwrap(),
+                        ),
                     ]
                     .map(|s| s.to_string())
                     .to_vec()
@@ -278,60 +201,37 @@ mod tests {
         }
     }
 
-    impl<'a> Arbitrary<'a> for TokenIdHolder {
+    impl<'a> Arbitrary<'a> for TokenId {
         fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
             let variant = u.int_in_range(0..=2)?;
             Ok(match variant {
-                0 => Self::Nep141(arbitrary_account_id(u)?),
+                0 => Self::Nep141(Nep141TokenId::new(arbitrary_account_id(u)?)),
                 1 => Self::Nep171(
-                    arbitrary_account_id(u)?,
-                    near_contract_standards::non_fungible_token::TokenId::arbitrary(u)?,
+                    Nep171TokenId::new(
+                        arbitrary_account_id(u)?,
+                        near_contract_standards::non_fungible_token::TokenId::arbitrary(u)?,
+                    )
+                    .unwrap(),
                 ),
                 2 => Self::Nep245(
-                    arbitrary_account_id(u)?,
-                    defuse_nep245::TokenId::arbitrary(u)?,
+                    Nep245TokenId::new(
+                        arbitrary_account_id(u)?,
+                        defuse_nep245::TokenId::arbitrary(u)?,
+                    )
+                    .unwrap(),
                 ),
                 _ => unreachable!(),
             })
         }
     }
 
-    impl<'a> Arbitrary<'a> for TokenId {
-        fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-            Ok(Self {
-                token_id: TokenIdHolder::arbitrary(u)?,
-            })
-        }
-    }
-
     #[test]
     fn holder_fixed_data_serialization_and_deserialization() {
-        let nep141 = TokenIdHolder::Nep141("abc".parse().unwrap());
-        let nep171 = TokenIdHolder::Nep171("abc".parse().unwrap(), "xyz".to_string());
-        let nep245 = TokenIdHolder::Nep245("abc".parse().unwrap(), "xyz".to_string());
-
-        let nep141_hex_expected = "0003000000616263";
-        let nep171_hex_expected = "01030000006162630300000078797a";
-        let nep245_hex_expected = "02030000006162630300000078797a";
-
-        let nep141_expected = hex::decode(nep141_hex_expected).unwrap();
-        let nep171_expected = hex::decode(nep171_hex_expected).unwrap();
-        let nep245_expected = hex::decode(nep245_hex_expected).unwrap();
-
-        let nep141_deserialized = borsh::from_slice::<TokenIdHolder>(&nep141_expected).unwrap();
-        let nep171_deserialized = borsh::from_slice::<TokenIdHolder>(&nep171_expected).unwrap();
-        let nep245_deserialized = borsh::from_slice::<TokenIdHolder>(&nep245_expected).unwrap();
-
-        assert_eq!(nep141_deserialized, nep141);
-        assert_eq!(nep171_deserialized, nep171);
-        assert_eq!(nep245_deserialized, nep245);
-    }
-
-    #[test]
-    fn token_id_fixed_data_serialization_and_deserialization() {
-        let nep141 = TokenId::make_nep141("abc".parse().unwrap());
-        let nep171 = TokenId::make_nep171("abc".parse().unwrap(), "xyz".to_string()).unwrap();
-        let nep245 = TokenId::make_nep245("abc".parse().unwrap(), "xyz".to_string()).unwrap();
+        let nep141 = TokenId::Nep141("abc".parse().unwrap());
+        let nep171 =
+            TokenId::Nep171(Nep171TokenId::new("abc".parse().unwrap(), "xyz".to_string()).unwrap());
+        let nep245 =
+            TokenId::Nep245(Nep245TokenId::new("abc".parse().unwrap(), "xyz".to_string()).unwrap());
 
         let nep141_hex_expected = "0003000000616263";
         let nep171_hex_expected = "01030000006162630300000078797a";
@@ -357,10 +257,10 @@ mod tests {
         let bytes = gen_random_bytes(&mut rng, ..1000);
         let mut u = arbitrary::Unstructured::new(&bytes);
 
-        let token_id: TokenIdHolder = Arbitrary::arbitrary(&mut u).unwrap();
+        let token_id: TokenId = Arbitrary::arbitrary(&mut u).unwrap();
 
         let token_id_ser = borsh::to_vec(&token_id).unwrap();
-        let token_id_deser: TokenIdHolder = borsh::from_slice(&token_id_ser).unwrap();
+        let token_id_deser: TokenId = borsh::from_slice(&token_id_ser).unwrap();
 
         assert_eq!(token_id_deser, token_id);
     }
