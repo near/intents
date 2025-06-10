@@ -112,7 +112,7 @@ impl FtWithdraw {
 
     /// Returns whether it's `ft_transfer_call()`
     #[inline]
-    pub fn is_call(&self) -> bool {
+    pub const fn is_call(&self) -> bool {
         self.msg.is_some()
     }
 
@@ -207,7 +207,7 @@ impl NftWithdraw {
 
     /// Returns whether it's `nft_transfer_call()`
     #[inline]
-    pub fn is_call(&self) -> bool {
+    pub const fn is_call(&self) -> bool {
         self.msg.is_some()
     }
 
@@ -306,7 +306,7 @@ impl MtWithdraw {
 
     /// Returns whether it's `mt_batch_transfer_call()`
     #[inline]
-    pub fn is_call(&self) -> bool {
+    pub const fn is_call(&self) -> bool {
         self.msg.is_some()
     }
 

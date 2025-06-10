@@ -92,9 +92,16 @@ tokio = { version = "1.45", default-features = false }
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }
 pedantic = { level = "deny", priority = -1 }
+nursery = { level = "deny", priority = -1 }
+as_conversions = { level = "deny", priority = -1 }
+
 module_name_repetitions = "allow"
 missing_errors_doc = "allow"
 missing_panics_doc = "allow"
+must_use_candidate = "allow"
+unreadable_literal = "allow"
+similar_names = "allow"
+too_long_first_doc_paragraph = "allow"
 
 [profile.release]
 codegen-units = 1

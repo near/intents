@@ -12,30 +12,9 @@ POA_TOKEN_WASM_NO_REGISTRATION_WASM = "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}/def
 alias = "build"
 
 [tasks.clippy]
-dependencies = ["add-cache-dir-tag", "clippy-security-audit"]
+dependencies = ["add-cache-dir-tag"]
 command = "cargo"
 args = ["clippy", "--workspace", "--all-targets", "--no-deps"]
-
-# Cargo clippy command from security audit
-[tasks.clippy-security-audit]
-command = "cargo"
-args = ["clippy",
-        "--all-targets",
-        "--workspace",
-        "--no-deps",
-        "--lib",
-        "--",
-        "-D", "clippy::all",
-        "-D", "clippy::pedantic",
-        "-D", "clippy::nursery",
-        "-A", "clippy::missing_errors_doc",
-        "-A", "clippy::missing_panics_doc",
-        "-A", "clippy::must_use_candidate",
-        "-A", "clippy::unreadable_literal",
-        "-A", "clippy::similar_names",
-        "-A", "clippy::too_long_first_doc_paragraph",
-        "-D", "clippy::as_conversions",
-        ]
 
 [tasks.build]
 dependencies = ["add-cache-dir-tag", "build-defuse", "build-poa-factory", "contract-stats", "build-poa-token-no-registration"]

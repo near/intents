@@ -40,7 +40,7 @@ impl Deadline {
 
     #[must_use]
     #[inline]
-    pub fn into_timestamp(self) -> DateTime<Utc> {
+    pub const fn into_timestamp(self) -> DateTime<Utc> {
         self.0
     }
 }
