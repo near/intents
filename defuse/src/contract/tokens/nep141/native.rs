@@ -5,12 +5,11 @@ use crate::contract::{Contract, ContractExt};
 
 #[near]
 impl Contract {
-    pub(crate) const DO_NATIVE_WITHDRAW_GAS: Gas = Gas::from_tgas(4)
-        // Transfer NEAR
-        .saturating_add(Gas::from_tgas(1));
+    pub(crate) const DO_NATIVE_WITHDRAW_GAS: Gas = Gas::from_tgas(10);
 
+    #[must_use]
     #[private]
-    pub fn do_native_withdraw(&mut self, withdraw: NativeWithdraw) -> Promise {
+    pub fn do_native_withdraw(withdraw: NativeWithdraw) -> Promise {
         require!(
             matches!(env::promise_result(0), PromiseResult::Successful(data) if data.is_empty()),
             "near_withdraw failed",

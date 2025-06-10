@@ -22,6 +22,7 @@ use test_utils::random::make_seedable_rng;
 use test_utils::random::{Seed, random_seed};
 
 mod ft_withdraw;
+mod native_withdraw;
 mod relayers;
 mod token_diff;
 
@@ -68,11 +69,7 @@ impl ExecuteIntentsExt for near_workspaces::Account {
             .await?
             .into_result()
             .inspect(|outcome| {
-                println!(
-                    "execute_intents: total_gas_burnt: {}, logs: {:#?}",
-                    outcome.total_gas_burnt,
-                    outcome.logs()
-                );
+                println!("execute_intents: {outcome:#?}");
             })
             .map(Into::into)?;
 

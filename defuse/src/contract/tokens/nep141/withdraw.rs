@@ -109,7 +109,7 @@ impl Contract {
 #[near]
 impl Contract {
     const FT_RESOLVE_WITHDRAW_GAS: Gas = Gas::from_tgas(5);
-    const DO_FT_WITHDRAW_GAS: Gas = Gas::from_tgas(4)
+    const DO_FT_WITHDRAW_GAS: Gas = Gas::from_tgas(5)
         // do_ft_withdraw() method is called externally
         // only with storage_deposit
         .saturating_add(STORAGE_DEPOSIT_GAS);
