@@ -13,6 +13,11 @@ use defuse_io_utils::ReadExt;
 use impl_tools::autoimpl;
 use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
 
+#[cfg(feature = "chrono")]
+mod chrono;
+#[cfg(feature = "chrono")]
+pub use self::chrono::*;
+
 pub trait BorshSerializeAs<T: ?Sized> {
     fn serialize_as<W>(source: &T, writer: &mut W) -> io::Result<()>
     where

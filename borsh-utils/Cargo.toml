@@ -11,5 +11,9 @@ workspace = true
 [dependencies]
 defuse-io-utils.workspace = true
 
-near-sdk.workspace = true
 impl-tools.workspace = true
+near-sdk.workspace = true
+chrono = { workspace = true, optional = true }
+
+[features]
+chrono = ["dep:chrono"]
