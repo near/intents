@@ -1,10 +1,11 @@
 use std::{fmt, str::FromStr};
 
 use near_sdk::{AccountId, AccountIdRef, near};
+use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 use crate::token_id::error::TokenIdError;
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr)]
 #[near(serializers = [borsh])]
 #[must_use]
 pub struct Nep141TokenId {
