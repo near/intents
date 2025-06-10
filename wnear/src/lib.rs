@@ -4,7 +4,7 @@ use near_contract_standards::{
 };
 use near_sdk::{Gas, Promise, ext_contract, json_types::U128};
 
-pub const NEAR_WITHDRAW_GAS: Gas = Gas::from_tgas(5);
+pub const NEAR_WITHDRAW_GAS: Gas = Gas::from_tgas(10);
 
 #[ext_contract(ext_wnear)]
 pub trait WNear: FungibleTokenCore + FungibleTokenResolver + StorageManagement {
