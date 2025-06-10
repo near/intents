@@ -18,3 +18,6 @@ abi = []
 base58 = []
 base64 = ["serde_with/base64"]
 tlb = ["dep:tlb-ton"]
+
+[lints]
+workspace = true

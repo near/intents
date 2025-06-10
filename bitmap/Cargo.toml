@@ -12,3 +12,6 @@ near-sdk = { workspace = true }
 
 [dev-dependencies]
 bnum.workspace = true
+
+[lints]
+workspace = true

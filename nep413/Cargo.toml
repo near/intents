@@ -17,3 +17,6 @@ serde_with.workspace = true
 
 [features]
 abi = ["defuse-serde-utils/abi", "defuse-crypto/abi"]
+
+[lints]
+workspace = true

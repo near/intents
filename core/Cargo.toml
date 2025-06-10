@@ -48,3 +48,6 @@ itertools.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
 test-utils.workspace = true
+
+[lints]
+workspace = true

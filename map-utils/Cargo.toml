@@ -16,3 +16,6 @@ near-sdk = { workspace = true, optional = true }
 default = ["near"]
 
 near = ["dep:near-sdk"]
+
+[lints]
+workspace = true

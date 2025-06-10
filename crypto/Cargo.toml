@@ -17,3 +17,6 @@ thiserror.workspace = true
 [features]
 abi = ["serde", "serde_with/schemars_0_8"]
 serde = ["dep:serde_with"]
+
+[lints]
+workspace = true
