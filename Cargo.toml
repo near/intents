@@ -9,6 +9,7 @@ members = [
     "crypto",
     "defuse",
     "erc191",
+    "io-utils",
     "map-utils",
     "near-utils",
     "nep245",
@@ -42,6 +43,7 @@ defuse-core.path = "core"
 defuse-crypto.path = "crypto"
 defuse.path = "defuse"
 defuse-erc191.path = "erc191"
+defuse-io-utils.path = "io-utils"
 defuse-map-utils.path = "map-utils"
 defuse-near-utils.path = "near-utils"
 defuse-nep245.path = "nep245"
