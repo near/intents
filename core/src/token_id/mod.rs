@@ -160,7 +160,7 @@ mod abi {
 mod tests {
     use super::*;
     use arbitrary::{Arbitrary, Unstructured};
-    use near_sdk::borsh;
+    use near_sdk::{borsh, serde_json};
     use rstest::rstest;
     use test_utils::{
         account_id::arbitrary_account_id,
@@ -273,6 +273,18 @@ mod tests {
             let token_id = TokenId::from_str(token_id_str).unwrap();
             let expected_token_id = TokenId::Nep141("my-token.near".parse().unwrap());
             assert_eq!(token_id, expected_token_id);
+
+            // Json value is the token id, but with quotes
+            let json_token_id: TokenId =
+                serde_json::from_str(&format!("\"{token_id_str}\"")).unwrap();
+            assert_eq!(json_token_id, expected_token_id);
+
+            // Json back and forth
+            assert_eq!(
+                serde_json::from_str::<TokenId>(&serde_json::to_string(&json_token_id).unwrap())
+                    .unwrap(),
+                expected_token_id
+            );
         }
         {
             let token_id_str = "nep171:my-token.near:abc";
@@ -280,6 +292,18 @@ mod tests {
             let expected_token_id =
                 TokenId::make_nep171("my-token.near".parse().unwrap(), "abc".to_string()).unwrap();
             assert_eq!(token_id, expected_token_id);
+
+            // Json value is the token id, but with quotes
+            let json_token_id: TokenId =
+                serde_json::from_str(&format!("\"{token_id_str}\"")).unwrap();
+            assert_eq!(json_token_id, expected_token_id);
+
+            // Json back and forth
+            assert_eq!(
+                serde_json::from_str::<TokenId>(&serde_json::to_string(&json_token_id).unwrap())
+                    .unwrap(),
+                expected_token_id
+            );
         }
         {
             let token_id_str = "nep245:my-token.near:abc";
@@ -287,6 +311,18 @@ mod tests {
             let expected_token_id =
                 TokenId::make_nep245("my-token.near".parse().unwrap(), "abc".to_string()).unwrap();
             assert_eq!(token_id, expected_token_id);
+
+            // Json value is the token id, but with quotes
+            let json_token_id: TokenId =
+                serde_json::from_str(&format!("\"{token_id_str}\"")).unwrap();
+            assert_eq!(json_token_id, expected_token_id);
+
+            // Json back and forth
+            assert_eq!(
+                serde_json::from_str::<TokenId>(&serde_json::to_string(&json_token_id).unwrap())
+                    .unwrap(),
+                expected_token_id
+            );
         }
     }
 }
