@@ -44,4 +44,31 @@ impl FromStr for Nep141TokenId {
     }
 }
 
-// FIXME: add tests
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use crate::token_id::nep141::Nep141TokenId;
+    use rstest::rstest;
+    use test_utils::{
+        account_id::arbitrary_account_id,
+        random::{Seed, gen_random_bytes, make_seedable_rng, random_seed},
+    };
+
+    #[rstest]
+    fn to_from_string(random_seed: Seed) {
+        let mut rng = make_seedable_rng(random_seed);
+        let bytes = gen_random_bytes(&mut rng, ..1000);
+        let mut u = arbitrary::Unstructured::new(&bytes);
+
+        let account_id = arbitrary_account_id(&mut u).unwrap();
+        let token_id = Nep141TokenId::new(account_id.clone());
+
+        assert_eq!(token_id.to_string(), account_id.to_string());
+
+        assert_eq!(
+            Nep141TokenId::from_str(&token_id.to_string()).unwrap(),
+            token_id
+        );
+    }
+}

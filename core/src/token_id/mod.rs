@@ -163,43 +163,10 @@ mod tests {
     use near_sdk::borsh;
     use rstest::rstest;
     use test_utils::{
+        account_id::arbitrary_account_id,
         asserts::ResultAssertsExt,
         random::{Seed, gen_random_bytes, gen_random_string, make_seedable_rng, random_seed},
     };
-
-    #[allow(clippy::as_conversions)]
-    fn arbitrary_account_id(u: &mut Unstructured<'_>) -> arbitrary::Result<AccountId> {
-        if u.arbitrary()? {
-            // Named account id
-            let len = u.int_in_range(3..=20)?;
-            let s: String = (0..len)
-                .map(|_| {
-                    let c = u.int_in_range(0..=35)?;
-                    Ok(match c {
-                        0..=25 => (b'a' + c) as char,
-                        26..=35 => (b'0' + (c - 26)) as char,
-                        _ => unreachable!(),
-                    })
-                })
-                .collect::<arbitrary::Result<_>>()?;
-            let s = s + ".near";
-            s.parse().map_err(|_| arbitrary::Error::IncorrectFormat)
-        } else {
-            // Explicit numeric account id
-            let len = 64;
-            let s: String = (0..len)
-                .map(|_| {
-                    let c = u.int_in_range(0..=15)?;
-                    Ok(match c {
-                        0..=9 => (b'0' + c) as char,
-                        10..=15 => (b'a' + (c - 10)) as char,
-                        _ => unreachable!(),
-                    })
-                })
-                .collect::<arbitrary::Result<_>>()?;
-            s.parse().map_err(|_| arbitrary::Error::IncorrectFormat)
-        }
-    }
 
     impl<'a> Arbitrary<'a> for TokenId {
         fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
@@ -226,7 +193,7 @@ mod tests {
     }
 
     #[test]
-    fn holder_fixed_data_serialization_and_deserialization() {
+    fn fixed_data_serialization_and_deserialization() {
         let nep141 = TokenId::Nep141("abc".parse().unwrap());
         let nep171 =
             TokenId::Nep171(Nep171TokenId::new("abc".parse().unwrap(), "xyz".to_string()).unwrap());
@@ -252,22 +219,7 @@ mod tests {
 
     #[rstest]
     #[trace]
-    fn holder_serialization_back_and_forth(random_seed: Seed) {
-        let mut rng = make_seedable_rng(random_seed);
-        let bytes = gen_random_bytes(&mut rng, ..1000);
-        let mut u = arbitrary::Unstructured::new(&bytes);
-
-        let token_id: TokenId = Arbitrary::arbitrary(&mut u).unwrap();
-
-        let token_id_ser = borsh::to_vec(&token_id).unwrap();
-        let token_id_deser: TokenId = borsh::from_slice(&token_id_ser).unwrap();
-
-        assert_eq!(token_id_deser, token_id);
-    }
-
-    #[rstest]
-    #[trace]
-    fn token_id_serialization_back_and_forth(random_seed: Seed) {
+    fn serialization_back_and_forth(random_seed: Seed) {
         let mut rng = make_seedable_rng(random_seed);
         let bytes = gen_random_bytes(&mut rng, ..1000);
         let mut u = arbitrary::Unstructured::new(&bytes);

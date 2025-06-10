@@ -9,6 +9,8 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
+arbitrary.workspace = true
+near-sdk.workspace = true
 randomness.workspace = true
 rand_chacha.workspace = true
 rstest.workspace = true
