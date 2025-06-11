@@ -1,0 +1,122 @@
+use crate::arbitrary::hex::arbitrary_hex;
+use arbitrary::{Arbitrary, Unstructured};
+use near_sdk::AccountId;
+
+const MAX_NEAR_ACCOUNT_LENGTH: usize = 64;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Arbitrary)]
+enum AccountType {
+    Named,
+    Implicit,
+    Ethereum,
+}
+
+pub fn arbitrary_account_id(u: &mut Unstructured<'_>) -> arbitrary::Result<AccountId> {
+    match AccountType::arbitrary(u)? {
+        AccountType::Named => arbitrary_near_named_account_id(u),
+        AccountType::Implicit => arbitrary_near_implicit_account_id(u),
+        AccountType::Ethereum => arbitrary_ethereum_account_id(u),
+    }
+}
+
+pub fn arbitrary_ethereum_account_id(u: &mut Unstructured<'_>) -> arbitrary::Result<AccountId> {
+    let s = arbitrary_hex::<20>(u)?;
+    format!("0x{s}")
+        .parse()
+        .map_err(|_| arbitrary::Error::IncorrectFormat)
+}
+
+pub fn arbitrary_near_implicit_account_id(
+    u: &mut Unstructured<'_>,
+) -> arbitrary::Result<AccountId> {
+    let s = arbitrary_hex::<32>(u)?;
+    s.parse().map_err(|_| arbitrary::Error::IncorrectFormat)
+}
+
+#[allow(clippy::as_conversions)]
+fn arbitrary_near_named_account_prefix(u: &mut Unstructured<'_>) -> arbitrary::Result<String> {
+    let len = u.int_in_range(3..=40)?;
+    (0..len)
+        .map(|_| {
+            let c = u.int_in_range(0..=35)?;
+            Ok(match c {
+                0..=25 => (b'a' + c) as char,
+                26..=35 => (b'0' + (c - 26)) as char,
+                _ => unreachable!(),
+            })
+        })
+        .collect::<arbitrary::Result<_>>()
+}
+
+fn arbitrary_near_named_account_tla(u: &mut Unstructured<'_>) -> arbitrary::Result<String> {
+    let possibilities = ["near"];
+    let index = usize::arbitrary(u)? % possibilities.len();
+    Ok(possibilities[index].to_string())
+}
+
+pub fn arbitrary_near_named_account_id(u: &mut Unstructured<'_>) -> arbitrary::Result<AccountId> {
+    let sub_account_count = u.int_in_range(1..=20)?;
+    let account_subs = (0..sub_account_count)
+        .map(|_| arbitrary_near_named_account_prefix(u))
+        .collect::<arbitrary::Result<Vec<String>>>()?;
+    let account_tla = arbitrary_near_named_account_tla(u)?;
+
+    // This is the full account + TLA
+    let mut account_parts = account_subs
+        .into_iter()
+        .chain(std::iter::once(account_tla))
+        .collect::<Vec<_>>();
+
+    let get_total_length = |parts: &[String]| -> usize {
+        parts.iter().map(String::len).sum::<usize>() + parts.len() - 1
+    };
+
+    // Keep chopping sub accounts from the front
+    // until the size is not more than the max
+    while get_total_length(&account_parts) > MAX_NEAR_ACCOUNT_LENGTH {
+        account_parts = account_parts.into_iter().skip(1).collect();
+    }
+
+    assert!(account_parts.len() >= 2);
+
+    let account = account_parts.join(".");
+    account
+        .parse()
+        .map_err(|_| arbitrary::Error::IncorrectFormat)
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use crate::{
+        arbitrary::account_id::{
+            arbitrary_ethereum_account_id, arbitrary_near_implicit_account_id,
+            arbitrary_near_named_account_id,
+        },
+        random::{Seed, gen_random_bytes, make_seedable_rng, random_seed},
+    };
+
+    #[rstest]
+    #[trace]
+    fn basic(random_seed: Seed) {
+        let mut rng = make_seedable_rng(random_seed);
+        let bytes = gen_random_bytes(&mut rng, ..1000000);
+        let mut u = arbitrary::Unstructured::new(&bytes);
+
+        for _ in 0..10 {
+            {
+                let account = arbitrary_near_implicit_account_id(&mut u).unwrap();
+                assert_eq!(account.len(), 64);
+            }
+            {
+                let account = arbitrary_near_named_account_id(&mut u).unwrap();
+                assert!(account.to_string().contains('.'));
+            }
+            {
+                let account = arbitrary_ethereum_account_id(&mut u).unwrap();
+                assert_eq!(account.to_string().len(), 42);
+            }
+        }
+    }
+}

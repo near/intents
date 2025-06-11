@@ -138,7 +138,7 @@ mod tests {
     use near_sdk::{borsh, serde_json};
     use rstest::rstest;
     use test_utils::{
-        account_id::arbitrary_account_id,
+        arbitrary::account_id::arbitrary_account_id,
         asserts::ResultAssertsExt,
         random::{Seed, gen_random_bytes, gen_random_string, make_seedable_rng, random_seed},
     };

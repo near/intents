@@ -51,7 +51,7 @@ mod tests {
     use super::*;
     use rstest::rstest;
     use test_utils::{
-        account_id::arbitrary_account_id,
+        arbitrary::account_id::arbitrary_account_id,
         random::{Seed, gen_random_bytes, make_seedable_rng, random_seed},
     };
 

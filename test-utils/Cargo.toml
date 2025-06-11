@@ -9,7 +9,9 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-arbitrary.workspace = true
+arbitrary = { workspace = true, features = ["derive"]}
+derive_more = { workspace = true, features = ["full"] }
+hex.workspace = true
 near-sdk.workspace = true
 randomness.workspace = true
 rand_chacha.workspace = true

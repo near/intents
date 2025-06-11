@@ -67,7 +67,7 @@ mod tests {
     use arbitrary::Arbitrary;
     use rstest::rstest;
     use test_utils::{
-        account_id::arbitrary_account_id,
+        arbitrary::account_id::arbitrary_account_id,
         asserts::ResultAssertsExt,
         random::{Seed, gen_random_bytes, gen_random_string, make_seedable_rng, random_seed},
     };
