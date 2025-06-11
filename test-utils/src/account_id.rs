@@ -3,6 +3,8 @@ use near_sdk::AccountId;
 
 #[allow(clippy::as_conversions)]
 pub fn arbitrary_account_id(u: &mut Unstructured<'_>) -> arbitrary::Result<AccountId> {
+    // FIXME: add an arbitrary number of sub-accounts
+    // FIXME: add ethereum accounts - It can be simply 0x... account and works with AccountId
     if u.arbitrary()? {
         // Named account id
         let len = u.int_in_range(3..=20)?;
