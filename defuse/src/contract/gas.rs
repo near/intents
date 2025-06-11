@@ -12,13 +12,13 @@ use near_sdk::Gas;
 // lm = LinearModelFit[{{1, 11.9}, {2, 13.1}, {3, 14.4}}, {1, n}, n]
 // lm["ParameterErrors"]
 // The values below add 30% margin to the estimated values
-const MT_RESOLVE_TRANSFER_GAS_PER_TOKEN: Gas = Gas::from_tgas(14);
-const MT_RESOLVE_TRANSFER_BASE_GAS: Gas = Gas::from_tgas(5);
+const MT_RESOLVE_TRANSFER_PER_TOKEN_GAS: Gas = Gas::from_tgas(5);
+const MT_RESOLVE_TRANSFER_BASE_GAS: Gas = Gas::from_tgas(14);
 
 #[must_use]
 pub fn total_mt_withdraw_gas(token_count: usize) -> Gas {
     let token_count: u64 = token_count.try_into().unwrap_or_panic_display();
 
     MT_RESOLVE_TRANSFER_BASE_GAS
-        .saturating_add(MT_RESOLVE_TRANSFER_GAS_PER_TOKEN.saturating_mul(token_count))
+        .saturating_add(MT_RESOLVE_TRANSFER_PER_TOKEN_GAS.saturating_mul(token_count))
 }
