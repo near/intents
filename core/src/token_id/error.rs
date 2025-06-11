@@ -7,6 +7,6 @@ pub enum TokenIdError {
     AccountId(#[from] ParseAccountError),
     #[error(transparent)]
     ParseError(#[from] strum::ParseError),
-    #[error("Token id provided is too large. Given: {0}. Max: {MAX_ALLOWED_TOKEN_ID_LEN}")]
+    #[error("TokenId is too long. Max length is {MAX_ALLOWED_TOKEN_ID_LEN}, got {0}")]
     TokenIdTooLarge(usize),
 }

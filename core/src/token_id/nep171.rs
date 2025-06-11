@@ -8,38 +8,38 @@ use serde_with::{DeserializeFromStr, SerializeDisplay};
 #[near(serializers = [borsh])]
 #[must_use]
 pub struct Nep171TokenId {
-    account_id: AccountId,
-    native_token_id: near_contract_standards::non_fungible_token::TokenId,
+    contract_id: AccountId,
+    nft_token_id: near_contract_standards::non_fungible_token::TokenId,
 }
 
 impl Nep171TokenId {
     pub fn new(
-        account_id: AccountId,
-        native_token_id: near_contract_standards::non_fungible_token::TokenId,
+        contract_id: AccountId,
+        nft_token_id: near_contract_standards::non_fungible_token::TokenId,
     ) -> Result<Self, TokenIdError> {
-        if native_token_id.len() > MAX_ALLOWED_TOKEN_ID_LEN {
-            return Err(TokenIdError::TokenIdTooLarge(native_token_id.len()));
+        if nft_token_id.len() > MAX_ALLOWED_TOKEN_ID_LEN {
+            return Err(TokenIdError::TokenIdTooLarge(nft_token_id.len()));
         }
 
         Ok(Self {
-            account_id,
-            native_token_id,
+            contract_id,
+            nft_token_id,
         })
     }
 
     pub fn contract_id(&self) -> &AccountIdRef {
-        &self.account_id
+        &self.contract_id
     }
 
-    pub const fn native_token_id(&self) -> &near_contract_standards::non_fungible_token::TokenId {
-        &self.native_token_id
+    pub const fn nft_token_id(&self) -> &near_contract_standards::non_fungible_token::TokenId {
+        &self.nft_token_id
     }
 }
 
 impl std::fmt::Debug for Nep171TokenId {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}", self.contract_id(), self.native_token_id())
+        write!(f, "{}:{}", self.contract_id(), self.nft_token_id())
     }
 }
 
@@ -57,9 +57,6 @@ impl FromStr for Nep171TokenId {
         let (contract_id, token_id) = data
             .split_once(':')
             .ok_or(strum::ParseError::VariantNotFound)?;
-        if token_id.len() > MAX_ALLOWED_TOKEN_ID_LEN {
-            return Err(TokenIdError::TokenIdTooLarge(token_id.len()));
-        }
         Self::new(contract_id.parse()?, token_id.to_string())
     }
 }
@@ -111,7 +108,7 @@ mod tests {
             token_id_string.clone(),
         );
         if token_id_string.len() > MAX_ALLOWED_TOKEN_ID_LEN {
-            nft_result.assert_err_contains("Token id provided is too large.");
+            nft_result.assert_err_contains("TokenId is too long.");
         } else {
             let _ = nft_result.unwrap();
         }

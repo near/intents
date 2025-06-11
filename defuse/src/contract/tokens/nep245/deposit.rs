@@ -1,4 +1,4 @@
-use defuse_core::token_id::TokenId;
+use defuse_core::token_id::nep245::Nep245TokenId;
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
@@ -45,15 +45,16 @@ impl MultiTokenReceiver for Contract {
 
         let n = amounts.len();
 
-        let token_ids = token_ids
-            .into_iter()
-            .map(|token_id| TokenId::make_nep245(token.clone(), token_id))
-            .collect::<Result<Vec<_>, _>>()
-            .unwrap_or_panic_display();
-
         self.deposit(
             msg.receiver_id,
-            token_ids.into_iter().zip(amounts.into_iter().map(|a| a.0)),
+            token_ids
+                .into_iter()
+                .map(|token_id| {
+                    Nep245TokenId::new(token.clone(), token_id)
+                        .unwrap_or_panic_display()
+                        .into()
+                })
+                .zip(amounts.into_iter().map(|a| a.0)),
             Some("deposit"),
         )
         .unwrap_or_panic();

@@ -9,31 +9,31 @@ use crate::token_id::{MAX_ALLOWED_TOKEN_ID_LEN, error::TokenIdError};
 #[near(serializers = [borsh])]
 #[must_use]
 pub struct Nep245TokenId {
-    account_id: AccountId,
-    defuse_token_id: defuse_nep245::TokenId,
+    contract_id: AccountId,
+    mt_token_id: defuse_nep245::TokenId,
 }
 
 impl Nep245TokenId {
     pub fn new(
-        account_id: AccountId,
-        defuse_token_id: defuse_nep245::TokenId,
+        contract_id: AccountId,
+        mt_token_id: defuse_nep245::TokenId,
     ) -> Result<Self, TokenIdError> {
-        if defuse_token_id.len() > MAX_ALLOWED_TOKEN_ID_LEN {
-            return Err(TokenIdError::TokenIdTooLarge(defuse_token_id.len()));
+        if mt_token_id.len() > MAX_ALLOWED_TOKEN_ID_LEN {
+            return Err(TokenIdError::TokenIdTooLarge(mt_token_id.len()));
         }
 
         Ok(Self {
-            account_id,
-            defuse_token_id,
+            contract_id,
+            mt_token_id,
         })
     }
 
     pub fn contract_id(&self) -> &AccountIdRef {
-        &self.account_id
+        &self.contract_id
     }
 
     pub const fn defuse_token_id(&self) -> &defuse_nep245::TokenId {
-        &self.defuse_token_id
+        &self.mt_token_id
     }
 }
 
@@ -58,9 +58,6 @@ impl FromStr for Nep245TokenId {
         let (contract_id, token_id) = data
             .split_once(':')
             .ok_or(strum::ParseError::VariantNotFound)?;
-        if token_id.len() > MAX_ALLOWED_TOKEN_ID_LEN {
-            return Err(TokenIdError::TokenIdTooLarge(token_id.len()));
-        }
         Self::new(contract_id.parse()?, token_id.to_string())
     }
 }
@@ -112,7 +109,7 @@ mod tests {
             token_id_string.clone(),
         );
         if token_id_string.len() > MAX_ALLOWED_TOKEN_ID_LEN {
-            nft_result.assert_err_contains("Token id provided is too large.");
+            nft_result.assert_err_contains("TokenId is too long.");
         } else {
             let _ = nft_result.unwrap();
         }

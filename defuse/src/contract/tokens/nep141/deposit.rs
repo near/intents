@@ -1,4 +1,4 @@
-use defuse_core::token_id::TokenId;
+use defuse_core::token_id::nep141::Nep141TokenId;
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
@@ -36,7 +36,7 @@ impl FungibleTokenReceiver for Contract {
         self.deposit(
             msg.receiver_id,
             [(
-                TokenId::make_nep141(PREDECESSOR_ACCOUNT_ID.clone()),
+                Nep141TokenId::new(PREDECESSOR_ACCOUNT_ID.clone()).into(),
                 amount.0,
             )],
             Some("deposit"),

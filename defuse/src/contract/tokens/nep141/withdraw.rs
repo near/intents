@@ -1,12 +1,17 @@
+use crate::{
+    contract::{Contract, ContractExt, Role, tokens::STORAGE_DEPOSIT_GAS},
+    tokens::nep141::{
+        FungibleTokenForceWithdrawer, FungibleTokenWithdrawResolver, FungibleTokenWithdrawer,
+    },
+};
 use core::iter;
-
 use defuse_core::{
-    DefuseError, Result, engine::StateView, intents::tokens::FtWithdraw, token_id::TokenId,
+    DefuseError, Result, engine::StateView, intents::tokens::FtWithdraw,
+    token_id::nep141::Nep141TokenId,
 };
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
-
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::storage_management::ext_storage_management;
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
@@ -16,13 +21,6 @@ use near_sdk::{
     json_types::U128,
     near, require,
     serde_json::{self, json},
-};
-
-use crate::{
-    contract::{Contract, ContractExt, Role, tokens::STORAGE_DEPOSIT_GAS},
-    tokens::nep141::{
-        FungibleTokenForceWithdrawer, FungibleTokenWithdrawResolver, FungibleTokenWithdrawer,
-    },
 };
 
 #[near]
@@ -63,12 +61,12 @@ impl Contract {
         self.withdraw(
             &owner_id,
             iter::once((
-                TokenId::make_nep141(withdraw.token.clone()),
+                Nep141TokenId::new(withdraw.token.clone()).into(),
                 withdraw.amount.0,
             ))
             .chain(withdraw.storage_deposit.map(|amount| {
                 (
-                    TokenId::make_nep141(self.wnear_id().into_owned()),
+                    Nep141TokenId::new(self.wnear_id().into_owned()).into(),
                     amount.as_yoctonear(),
                 )
             })),
@@ -196,7 +194,7 @@ impl FungibleTokenWithdrawResolver for Contract {
         if refund > 0 {
             self.deposit(
                 sender_id,
-                [(TokenId::make_nep141(token), refund)],
+                [(Nep141TokenId::new(token).into(), refund)],
                 Some("refund"),
             )
             .unwrap_or_panic();

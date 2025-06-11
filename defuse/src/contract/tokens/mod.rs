@@ -40,9 +40,9 @@ impl Contract {
                 .add(token_id.clone(), amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
             match token_id {
-                TokenId::Nep171(_) => {
+                TokenId::Nep171(ref tid) => {
                     if total_supply > 1 {
-                        return Err(DefuseError::NftAlreadyDeposited(token_id));
+                        return Err(DefuseError::NftAlreadyDeposited(tid.clone()));
                     }
                 }
                 TokenId::Nep141(_) | TokenId::Nep245(_) => {}

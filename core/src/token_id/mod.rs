@@ -10,7 +10,7 @@ use core::{
     fmt::{self, Debug, Display},
     str::FromStr,
 };
-use near_sdk::{AccountId, near};
+use near_sdk::near;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 use strum::{EnumDiscriminants, EnumString};
 
@@ -26,6 +26,7 @@ const MAX_ALLOWED_TOKEN_ID_LEN: usize = 127;
     EnumDiscriminants,
     SerializeDisplay,
     DeserializeFromStr,
+    derive_more::From,
 )]
 #[strum_discriminants(
     name(TokenIdType),
@@ -55,32 +56,6 @@ impl Debug for TokenId {
                 write!(f, "{}:{}", TokenIdType::Nep245, token_id)
             }
         }
-    }
-}
-
-impl TokenId {
-    pub const fn make_nep141(account_id: AccountId) -> Self {
-        Self::Nep141(Nep141TokenId::new(account_id))
-    }
-
-    pub fn make_nep171(
-        account_id: AccountId,
-        native_token_id: near_contract_standards::non_fungible_token::TokenId,
-    ) -> Result<Self, TokenIdError> {
-        Ok(Self::Nep171(Nep171TokenId::new(
-            account_id,
-            native_token_id,
-        )?))
-    }
-
-    pub fn make_nep245(
-        account_id: AccountId,
-        defuse_token_id: defuse_nep245::TokenId,
-    ) -> Result<Self, TokenIdError> {
-        Ok(Self::Nep245(Nep245TokenId::new(
-            account_id,
-            defuse_token_id,
-        )?))
     }
 }
 
@@ -241,12 +216,14 @@ mod tests {
 
         {
             let token_id_string = gen_random_string(&mut rng, 2..1000);
-            let nft_result = TokenId::make_nep171(
+            let nft_result: Result<TokenId, _> = Nep171TokenId::new(
                 arbitrary_account_id(&mut u).unwrap(),
                 token_id_string.clone(),
-            );
+            )
+            .map(Into::into);
+
             if token_id_string.len() > MAX_ALLOWED_TOKEN_ID_LEN {
-                nft_result.assert_err_contains("Token id provided is too large.");
+                nft_result.assert_err_contains("TokenId is too long.");
             } else {
                 nft_result.unwrap();
             }
@@ -254,12 +231,14 @@ mod tests {
 
         {
             let token_id_string = gen_random_string(&mut rng, 2..1000);
-            let mt_result = TokenId::make_nep245(
+            let mt_result: Result<TokenId, _> = Nep245TokenId::new(
                 arbitrary_account_id(&mut u).unwrap(),
                 token_id_string.clone(),
-            );
+            )
+            .map(Into::into);
+
             if token_id_string.len() > MAX_ALLOWED_TOKEN_ID_LEN {
-                mt_result.assert_err_contains("Token id provided is too large.");
+                mt_result.assert_err_contains("TokenId is too long.");
             } else {
                 mt_result.unwrap();
             }
@@ -289,8 +268,10 @@ mod tests {
         {
             let token_id_str = "nep171:my-token.near:abc";
             let token_id = TokenId::from_str(token_id_str).unwrap();
-            let expected_token_id =
-                TokenId::make_nep171("my-token.near".parse().unwrap(), "abc".to_string()).unwrap();
+            let expected_token_id: TokenId =
+                Nep171TokenId::new("my-token.near".parse().unwrap(), "abc".to_string())
+                    .unwrap()
+                    .into();
             assert_eq!(token_id, expected_token_id);
 
             // Json value is the token id, but with quotes
@@ -308,8 +289,10 @@ mod tests {
         {
             let token_id_str = "nep245:my-token.near:abc";
             let token_id = TokenId::from_str(token_id_str).unwrap();
-            let expected_token_id =
-                TokenId::make_nep245("my-token.near".parse().unwrap(), "abc".to_string()).unwrap();
+            let expected_token_id: TokenId =
+                Nep245TokenId::new("my-token.near".parse().unwrap(), "abc".to_string())
+                    .unwrap()
+                    .into();
             assert_eq!(token_id, expected_token_id);
 
             // Json value is the token id, but with quotes

@@ -1,4 +1,4 @@
-use defuse_core::token_id::TokenId;
+use defuse_core::token_id::nep171::Nep171TokenId;
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
@@ -34,8 +34,9 @@ impl NonFungibleTokenReceiver for Contract {
             msg.parse().unwrap_or_panic_display()
         };
 
-        let token_id = TokenId::make_nep171(PREDECESSOR_ACCOUNT_ID.clone(), token_id)
-            .unwrap_or_panic_display();
+        let token_id = Nep171TokenId::new(PREDECESSOR_ACCOUNT_ID.clone(), token_id)
+            .unwrap_or_panic_display()
+            .into();
 
         self.deposit(msg.receiver_id, [(token_id, 1)], Some("deposit"))
             .unwrap_or_panic();

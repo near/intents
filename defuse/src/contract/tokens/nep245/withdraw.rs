@@ -1,7 +1,10 @@
 #![allow(clippy::too_many_arguments)]
 
 use defuse_core::{
-    DefuseError, Result, engine::StateView, intents::tokens::MtWithdraw, token_id::TokenId,
+    DefuseError, Result,
+    engine::StateView,
+    intents::tokens::MtWithdraw,
+    token_id::{nep141::Nep141TokenId, nep245::Nep245TokenId},
 };
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
@@ -65,7 +68,7 @@ impl Contract {
 
         let token_ids = std::iter::repeat(withdraw.token.clone())
             .zip(withdraw.token_ids.iter().cloned())
-            .map(|(token, token_id)| TokenId::make_nep245(token, token_id))
+            .map(|(token, token_id)| Nep245TokenId::new(token, token_id).map(Into::into))
             .collect::<Result<Vec<_>, _>>()?;
 
         self.withdraw(
@@ -75,7 +78,7 @@ impl Contract {
                 .zip(withdraw.amounts.iter().map(|a| a.0))
                 .chain(withdraw.storage_deposit.map(|amount| {
                     (
-                        TokenId::make_nep141(self.wnear_id().into_owned()),
+                        Nep141TokenId::new(self.wnear_id().into_owned()).into(),
                         amount.as_yoctonear(),
                     )
                 })),
@@ -214,16 +217,15 @@ impl MultiTokenWithdrawResolver for Contract {
             }
         };
 
-        let token_ids = token_ids
-            .iter()
-            .map(|tid| TokenId::make_nep245(token.clone(), tid.to_string()))
-            .collect::<Result<Vec<_>, _>>()
-            .unwrap_or_panic_display();
-
         self.deposit(
             sender_id,
             token_ids
                 .into_iter()
+                .map(|tid| {
+                    Nep245TokenId::new(token.clone(), tid)
+                        .unwrap_or_panic_display()
+                        .into()
+                })
                 .zip(amounts)
                 .zip(&mut used)
                 .filter_map(|((token_id, amount), used)| {

@@ -4,7 +4,7 @@ use defuse_core::{
     engine::{State, StateView},
     fees::Pips,
     intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
-    token_id::TokenId,
+    token_id::{TokenId, nep141::Nep141TokenId},
 };
 use defuse_near_utils::CURRENT_ACCOUNT_ID;
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
@@ -157,7 +157,7 @@ impl State for Contract {
         self.withdraw(
             owner_id,
             [(
-                TokenId::make_nep141(self.wnear_id().into_owned()),
+                Nep141TokenId::new(self.wnear_id().into_owned()).into(),
                 withdraw.amount.as_yoctonear(),
             )],
             Some("withdraw"),
@@ -190,7 +190,7 @@ impl State for Contract {
         self.withdraw(
             owner_id,
             [(
-                TokenId::make_nep141(self.wnear_id().into_owned()),
+                Nep141TokenId::new(self.wnear_id().into_owned()).into(),
                 storage_deposit.amount.as_yoctonear(),
             )],
             Some("withdraw"),

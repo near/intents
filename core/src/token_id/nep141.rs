@@ -9,16 +9,16 @@ use crate::token_id::error::TokenIdError;
 #[near(serializers = [borsh])]
 #[must_use]
 pub struct Nep141TokenId {
-    account_id: AccountId,
+    contract_id: AccountId,
 }
 
 impl Nep141TokenId {
-    pub const fn new(account_id: AccountId) -> Self {
-        Self { account_id }
+    pub const fn new(contract_id: AccountId) -> Self {
+        Self { contract_id }
     }
 
     pub fn contract_id(&self) -> &AccountIdRef {
-        self.account_id.as_ref()
+        self.contract_id.as_ref()
     }
 }
 
@@ -41,7 +41,7 @@ impl FromStr for Nep141TokenId {
 
     fn from_str(data: &str) -> Result<Self, Self::Err> {
         Ok(Self {
-            account_id: data.parse()?,
+            contract_id: data.parse()?,
         })
     }
 }
