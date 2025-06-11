@@ -5,7 +5,7 @@ use defuse::{
         Deadline,
         crypto::PublicKey,
         intents::{DefuseIntents, tokens::NativeWithdraw},
-        tokens::TokenId,
+        token_id::{TokenId, nep141::Nep141TokenId},
     },
     tokens::DepositMessage,
 };
@@ -93,7 +93,7 @@ async fn native_withdraw_intent(random_seed: Seed) {
         env.defuse
             .mt_balance_of(
                 env.user1.id(),
-                &TokenId::Nep141(env.wnear.id().clone()).to_string()
+                &TokenId::Nep141(Nep141TokenId::new(env.wnear.id().to_owned())).to_string()
             )
             .await
             .unwrap(),
