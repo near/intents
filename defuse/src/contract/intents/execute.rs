@@ -31,7 +31,7 @@ impl Inspector for ExecuteInspector {
         ));
     }
 
-    fn on_event<E: EmittableEvent>(&mut self, mut event: E) {
+    fn on_event<E: EmittableEvent>(&mut self, event: E) {
         event.do_emit();
     }
 
@@ -47,7 +47,7 @@ impl Drop for ExecuteInspector {
         }
 
         let events = std::mem::take(&mut self.postponed_events);
-        for mut event in events {
+        for event in events {
             event.do_emit();
         }
     }
