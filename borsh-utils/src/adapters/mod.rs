@@ -53,6 +53,7 @@ impl<T: ?Sized> As<T> {
     }
 }
 
+/// Analog for [`serde_with::Same`](https://docs.rs/serde_with/latest/serde_with/struct.Same.html)
 #[derive(Debug, Eq, PartialEq)]
 pub struct Same;
 
