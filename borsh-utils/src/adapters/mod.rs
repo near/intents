@@ -53,6 +53,7 @@ impl<T: ?Sized> As<T> {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct Same;
 
 impl<T> BorshSerializeAs<T> for Same
@@ -461,3 +462,6 @@ where
             .or_else(|_| As2::deserialize_as(&mut buf.chain(reader)))
     }
 }
+
+#[cfg(test)]
+mod tests;

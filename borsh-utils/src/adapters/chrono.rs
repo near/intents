@@ -1,11 +1,8 @@
-use std::{fmt::Display, io, marker::PhantomData};
-
+use super::BorshSerializeAs;
+use crate::adapters::BorshDeserializeAs;
 use chrono::{DateTime, Utc};
 use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
-
-use crate::adapters::BorshDeserializeAs;
-
-use super::BorshSerializeAs;
+use std::{fmt::Display, io, marker::PhantomData};
 
 pub struct TimestampSeconds<I = i64>(PhantomData<I>);
 
@@ -147,5 +144,72 @@ where
             .try_into()
             .map_err(|err| io::Error::other(err.to_string()))?;
         Ok(DateTime::<Utc>::from_timestamp_nanos(timestamp))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::{DateTime, TimeZone, Utc};
+    use std::io::Cursor;
+
+    #[test]
+    fn timestamp_seconds_i64_roundtrip() {
+        let dt: DateTime<Utc> = Utc.timestamp_opt(1_600_000_000, 0).unwrap();
+        let mut buf = Vec::new();
+        TimestampSeconds::<i64>::serialize_as(&dt, &mut buf).unwrap();
+        let mut cursor = Cursor::new(&buf);
+        let dt2 = TimestampSeconds::<i64>::deserialize_as(&mut cursor).unwrap();
+        assert_eq!(dt, dt2);
+    }
+
+    #[test]
+    fn timestamp_milliseconds_i64_roundtrip() {
+        let millis = 1_600_000_000_123;
+        let dt: DateTime<Utc> = DateTime::<Utc>::from_timestamp_millis(millis).unwrap();
+        let mut buf = Vec::new();
+        TimestampMilliSeconds::<i64>::serialize_as(&dt, &mut buf).unwrap();
+        let mut cursor = Cursor::new(&buf);
+        let dt2 = TimestampMilliSeconds::<i64>::deserialize_as(&mut cursor).unwrap();
+        assert_eq!(dt, dt2);
+    }
+
+    #[test]
+    fn timestamp_microseconds_i64_roundtrip() {
+        let micros = 1_600_000_000_123_456;
+        let dt: DateTime<Utc> = DateTime::<Utc>::from_timestamp_micros(micros).unwrap();
+        let mut buf = Vec::new();
+        TimestampMicroSeconds::<i64>::serialize_as(&dt, &mut buf).unwrap();
+        let mut cursor = Cursor::new(&buf);
+        let dt2 = TimestampMicroSeconds::<i64>::deserialize_as(&mut cursor).unwrap();
+        assert_eq!(dt, dt2);
+    }
+
+    #[test]
+    fn timestamp_nanoseconds_i64_roundtrip() {
+        let nanos = 1_600_000_000_123_456_789;
+        let dt: DateTime<Utc> = DateTime::<Utc>::from_timestamp_nanos(nanos);
+        let mut buf = Vec::new();
+        TimestampNanoSeconds::<i64>::serialize_as(&dt, &mut buf).unwrap();
+        let mut cursor = Cursor::new(&buf);
+        let dt2 = TimestampNanoSeconds::<i64>::deserialize_as(&mut cursor).unwrap();
+        assert_eq!(dt, dt2);
+    }
+
+    #[test]
+    fn invalid_timestamp_seconds_overflow() {
+        let dt: DateTime<Utc> = Utc.timestamp_opt(127, 0).unwrap();
+        let mut buf = Vec::new();
+        let res = TimestampSeconds::<i8>::serialize_as(&dt, &mut buf);
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn invalid_timestamp_nanoseconds_out_of_range() {
+        let invalid_nanos = i128::from(i64::MAX) * 1_000_000_000;
+        let buf = invalid_nanos.to_le_bytes();
+        let mut cursor = Cursor::new(&buf[..]);
+        let res = TimestampNanoSeconds::<i64>::deserialize_as(&mut cursor);
+        assert!(res.is_err());
     }
 }
