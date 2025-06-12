@@ -149,50 +149,34 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::adapters::tests::roundtrip_as;
+
     use super::*;
     use chrono::{DateTime, TimeZone, Utc};
-    use std::io::Cursor;
 
     #[test]
     fn timestamp_seconds_i64_roundtrip() {
-        let dt: DateTime<Utc> = Utc.timestamp_opt(1_600_000_000, 0).unwrap();
-        let mut buf = Vec::new();
-        TimestampSeconds::<i64>::serialize_as(&dt, &mut buf).unwrap();
-        let mut cursor = Cursor::new(&buf);
-        let dt2 = TimestampSeconds::<i64>::deserialize_as(&mut cursor).unwrap();
-        assert_eq!(dt, dt2);
+        roundtrip_as::<_, TimestampSeconds<i64>>(&Utc.timestamp_opt(1_600_000_000, 0).unwrap());
     }
 
     #[test]
     fn timestamp_milliseconds_i64_roundtrip() {
-        let millis = 1_600_000_000_123;
-        let dt: DateTime<Utc> = DateTime::<Utc>::from_timestamp_millis(millis).unwrap();
-        let mut buf = Vec::new();
-        TimestampMilliSeconds::<i64>::serialize_as(&dt, &mut buf).unwrap();
-        let mut cursor = Cursor::new(&buf);
-        let dt2 = TimestampMilliSeconds::<i64>::deserialize_as(&mut cursor).unwrap();
-        assert_eq!(dt, dt2);
+        roundtrip_as::<_, TimestampMilliSeconds<i64>>(
+            &DateTime::<Utc>::from_timestamp_millis(1_600_000_000_123).unwrap(),
+        );
     }
 
     #[test]
     fn timestamp_microseconds_i64_roundtrip() {
-        let micros = 1_600_000_000_123_456;
-        let dt: DateTime<Utc> = DateTime::<Utc>::from_timestamp_micros(micros).unwrap();
-        let mut buf = Vec::new();
-        TimestampMicroSeconds::<i64>::serialize_as(&dt, &mut buf).unwrap();
-        let mut cursor = Cursor::new(&buf);
-        let dt2 = TimestampMicroSeconds::<i64>::deserialize_as(&mut cursor).unwrap();
-        assert_eq!(dt, dt2);
+        roundtrip_as::<_, TimestampMicroSeconds<i64>>(
+            &DateTime::<Utc>::from_timestamp_micros(1_600_000_000_123_456).unwrap(),
+        );
     }
 
     #[test]
     fn timestamp_nanoseconds_i64_roundtrip() {
-        let nanos = 1_600_000_000_123_456_789;
-        let dt: DateTime<Utc> = DateTime::<Utc>::from_timestamp_nanos(nanos);
-        let mut buf = Vec::new();
-        TimestampNanoSeconds::<i64>::serialize_as(&dt, &mut buf).unwrap();
-        let mut cursor = Cursor::new(&buf);
-        let dt2 = TimestampNanoSeconds::<i64>::deserialize_as(&mut cursor).unwrap();
-        assert_eq!(dt, dt2);
+        roundtrip_as::<_, TimestampNanoSeconds<i64>>(&DateTime::<Utc>::from_timestamp_nanos(
+            1_600_000_000_123_456_789,
+        ));
     }
 }

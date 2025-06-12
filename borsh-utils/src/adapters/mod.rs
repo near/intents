@@ -1,7 +1,7 @@
 //! Analog of [serde_with](https://docs.rs/serde_with) for [borsh](https://docs.rs/borsh)
 
 use std::{
-    fmt::{self},
+    fmt::{self, Display},
     io::{self, Read},
     marker::PhantomData,
     mem::MaybeUninit,
@@ -443,6 +443,44 @@ where
         R: io::Read,
     {
         U::deserialize_reader(reader).map(Into::into)
+    }
+}
+
+pub struct TryFromInto<T: ?Sized>(PhantomData<T>);
+
+impl<T, U> BorshSerializeAs<T> for TryFromInto<U>
+where
+    T: TryInto<U> + Clone,
+    <T as TryInto<U>>::Error: Display,
+    U: BorshSerialize,
+{
+    #[inline]
+    fn serialize_as<W>(source: &T, writer: &mut W) -> io::Result<()>
+    where
+        W: io::Write,
+    {
+        source
+            .clone()
+            .try_into()
+            .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err.to_string()))?
+            .serialize(writer)
+    }
+}
+
+impl<T, U> BorshDeserializeAs<T> for TryFromInto<U>
+where
+    U: BorshDeserialize + TryInto<T>,
+    <U as TryInto<T>>::Error: Display,
+{
+    #[inline]
+    fn deserialize_as<R>(reader: &mut R) -> io::Result<T>
+    where
+        R: io::Read,
+    {
+        U::deserialize_reader(reader).and_then(|v| {
+            v.try_into()
+                .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err.to_string()))
+        })
     }
 }
 
