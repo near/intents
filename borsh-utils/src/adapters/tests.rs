@@ -31,19 +31,19 @@ struct MyInt(i64);
 
 impl From<MyInt> for i32 {
     fn from(val: MyInt) -> Self {
-        val.0 as i32
+        i32::try_from(val.0).unwrap()
     }
 }
 
-impl<'a> Into<i32> for &'a MyInt {
-    fn into(self) -> i32 {
-        (self.0) as i32
+impl From<&MyInt> for i32 {
+    fn from(val: &MyInt) -> Self {
+        i32::try_from(val.0).unwrap()
     }
 }
 
 impl From<i32> for MyInt {
     fn from(val: i32) -> Self {
-        MyInt(val as i64)
+        MyInt(i64::from(val))
     }
 }
 
@@ -120,10 +120,10 @@ fn test_option_wrap() {
     let opt = Some(42u32);
     let mut buf = vec![];
     <Option<Same> as BorshSerializeAs<Option<u32>>>::serialize_as(&opt, &mut buf).unwrap();
-    let out =
+    let output =
         <Option<Same> as BorshDeserializeAs<Option<u32>>>::deserialize_as(&mut Cursor::new(&buf))
             .unwrap();
-    assert_eq!(opt, out);
+    assert_eq!(opt, output);
 }
 
 #[test]

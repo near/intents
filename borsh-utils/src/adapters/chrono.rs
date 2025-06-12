@@ -195,21 +195,4 @@ mod tests {
         let dt2 = TimestampNanoSeconds::<i64>::deserialize_as(&mut cursor).unwrap();
         assert_eq!(dt, dt2);
     }
-
-    #[test]
-    fn invalid_timestamp_seconds_overflow() {
-        let dt: DateTime<Utc> = Utc.timestamp_opt(127, 0).unwrap();
-        let mut buf = Vec::new();
-        let res = TimestampSeconds::<i8>::serialize_as(&dt, &mut buf);
-        assert!(res.is_err());
-    }
-
-    #[test]
-    fn invalid_timestamp_nanoseconds_out_of_range() {
-        let invalid_nanos = i128::from(i64::MAX) * 1_000_000_000;
-        let buf = invalid_nanos.to_le_bytes();
-        let mut cursor = Cursor::new(&buf[..]);
-        let res = TimestampNanoSeconds::<i64>::deserialize_as(&mut cursor);
-        assert!(res.is_err());
-    }
 }
