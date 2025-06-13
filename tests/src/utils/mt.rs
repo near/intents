@@ -15,6 +15,18 @@ pub trait MtExt {
         memo: Option<String>,
     ) -> anyhow::Result<()>;
 
+    #[allow(clippy::too_many_arguments)]
+    async fn mt_transfer_call(
+        &self,
+        token_contract: &AccountId,
+        receiver_id: &AccountId,
+        token_id: &TokenId,
+        amount: u128,
+        approval: Option<(AccountId, u64)>,
+        memo: Option<String>,
+        msg: String,
+    ) -> anyhow::Result<()>;
+
     async fn mt_batch_transfer(
         &self,
         token_contract: &AccountId,
@@ -82,6 +94,33 @@ impl MtExt for near_workspaces::Account {
                 "amount": U128(amount),
                 "approval": approval,
                 "memo": memo,
+            }))
+            .deposit(NearToken::from_yoctonear(1))
+            .max_gas()
+            .transact()
+            .await?
+            .into_result()?;
+        Ok(())
+    }
+
+    async fn mt_transfer_call(
+        &self,
+        token_contract: &AccountId,
+        receiver_id: &AccountId,
+        token_id: &TokenId,
+        amount: u128,
+        approval: Option<(AccountId, u64)>,
+        memo: Option<String>,
+        msg: String,
+    ) -> anyhow::Result<()> {
+        self.call(token_contract, "mt_transfer_call")
+            .args_json(json!({
+                "receiver_id": receiver_id,
+                "token_id": token_id,
+                "amount": U128(amount),
+                "approval": approval,
+                "memo": memo,
+                "msg": msg
             }))
             .deposit(NearToken::from_yoctonear(1))
             .max_gas()
@@ -260,6 +299,29 @@ impl MtExt for near_workspaces::Contract {
                 amount,
                 approval,
                 memo,
+            )
+            .await
+    }
+
+    async fn mt_transfer_call(
+        &self,
+        token_contract: &AccountId,
+        receiver_id: &AccountId,
+        token_id: &TokenId,
+        amount: u128,
+        approval: Option<(AccountId, u64)>,
+        memo: Option<String>,
+        msg: String,
+    ) -> anyhow::Result<()> {
+        self.as_account()
+            .mt_transfer_call(
+                token_contract,
+                receiver_id,
+                token_id,
+                amount,
+                approval,
+                memo,
+                msg,
             )
             .await
     }

@@ -1,8 +1,10 @@
-use crate::{
-    tests::defuse::{env::Env, tokens::nep141::DefuseFtWithdrawer},
-    utils::mt::MtExt,
-};
+pub mod traits;
+
+use crate::tests::defuse::tokens::nep245::traits::DefuseMtWithdrawer;
+use crate::{tests::defuse::env::Env, utils::mt::MtExt};
 use defuse::core::token_id::TokenId;
+use defuse::core::token_id::nep141::Nep141TokenId;
+use defuse::core::token_id::nep245::Nep245TokenId;
 use defuse::nep245::Token;
 use rstest::rstest;
 
@@ -10,6 +12,8 @@ use rstest::rstest;
 #[rstest]
 async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
     use defuse::core::token_id::nep141::Nep141TokenId;
+
+    use crate::tests::defuse::tokens::nep141::traits::DefuseFtWithdrawer;
 
     let env = Env::builder()
         .no_registration(no_registration)
@@ -448,5 +452,381 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
                 expected[2..i]
             );
         }
+    }
+}
+
+#[tokio::test]
+#[rstest]
+async fn multitoken_transfers() {
+    let env = Env::builder().build().await;
+
+    {
+        assert!(
+            env.user1
+                .mt_tokens(env.defuse.id(), ..)
+                .await
+                .unwrap()
+                .is_empty(),
+        );
+        assert!(
+            env.user1
+                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..)
+                .await
+                .unwrap()
+                .is_empty(),
+        );
+        assert!(
+            env.user1
+                .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), ..)
+                .await
+                .unwrap()
+                .is_empty(),
+        );
+        assert!(
+            env.user1
+                .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), ..)
+                .await
+                .unwrap()
+                .is_empty(),
+        );
+    }
+
+    env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
+        .await
+        .unwrap();
+
+    env.defuse_ft_deposit_to(&env.ft2, 5000, env.user1.id())
+        .await
+        .unwrap();
+
+    env.defuse_ft_deposit_to(&env.ft3, 8000, env.user1.id())
+        .await
+        .unwrap();
+
+    env.defuse_ft_deposit_to(&env.ft1, 1000, env.user2.id())
+        .await
+        .unwrap();
+
+    env.defuse_ft_deposit_to(&env.ft2, 5000, env.user2.id())
+        .await
+        .unwrap();
+
+    env.defuse_ft_deposit_to(&env.ft3, 8000, env.user2.id())
+        .await
+        .unwrap();
+
+    let ft1 = TokenId::Nep141(Nep141TokenId::new(env.ft1.clone()));
+    let ft2 = TokenId::Nep141(Nep141TokenId::new(env.ft2.clone()));
+    let ft3 = TokenId::Nep141(Nep141TokenId::new(env.ft3.clone()));
+
+    // At this point, user1 in defuse2, has no balance of `"nep245:defuse.test.near:nep141:ft1.test.near"`, and others. We will fund it next.
+    {
+        assert_eq!(
+            env.defuse2
+                .mt_balance_of(
+                    env.user1.id(),
+                    &TokenId::Nep245(
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft1.to_string()).unwrap()
+                    )
+                    .to_string(),
+                )
+                .await
+                .unwrap(),
+            0
+        );
+
+        assert_eq!(
+            env.defuse2
+                .mt_balance_of(
+                    env.user1.id(),
+                    &TokenId::Nep245(
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft2.to_string()).unwrap()
+                    )
+                    .to_string(),
+                )
+                .await
+                .unwrap(),
+            0
+        );
+
+        assert_eq!(
+            env.defuse2
+                .mt_balance_of(
+                    env.user1.id(),
+                    &TokenId::Nep245(
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft3.to_string()).unwrap()
+                    )
+                    .to_string(),
+                )
+                .await
+                .unwrap(),
+            0
+        );
+    }
+
+    // Do an mt_transfer_call, and the message is of type DepositMessage, which will contain the user who will own the tokens in defuse2
+    {
+        env.user1
+            .mt_transfer_call(
+                env.defuse.id(),
+                env.defuse2.id(),
+                &ft1.to_string(),
+                100,
+                None,
+                None,
+                env.user1.id().to_string(),
+            )
+            .await
+            .unwrap();
+
+        env.user1
+            .mt_transfer_call(
+                env.defuse.id(),
+                env.defuse2.id(),
+                &ft2.to_string(),
+                200,
+                None,
+                None,
+                env.user1.id().to_string(),
+            )
+            .await
+            .unwrap();
+
+        env.user1
+            .mt_transfer_call(
+                env.defuse.id(),
+                env.defuse2.id(),
+                &ft3.to_string(),
+                300,
+                None,
+                None,
+                env.user1.id().to_string(),
+            )
+            .await
+            .unwrap();
+    }
+
+    // At this point, user1 in defuse2 has 100 of `"nep245:defuse.test.near:nep141:ft1.test.near"`, and others
+    {
+        assert_eq!(
+            env.defuse2
+                .mt_balance_of(
+                    env.user1.id(),
+                    &TokenId::Nep245(
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft1.to_string()).unwrap()
+                    )
+                    .to_string(),
+                )
+                .await
+                .unwrap(),
+            100
+        );
+
+        assert_eq!(
+            env.defuse2
+                .mt_balance_of(
+                    env.user1.id(),
+                    &TokenId::Nep245(
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft2.to_string()).unwrap()
+                    )
+                    .to_string(),
+                )
+                .await
+                .unwrap(),
+            200
+        );
+
+        assert_eq!(
+            env.defuse2
+                .mt_balance_of(
+                    env.user1.id(),
+                    &TokenId::Nep245(
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft3.to_string()).unwrap()
+                    )
+                    .to_string(),
+                )
+                .await
+                .unwrap(),
+            300
+        );
+    }
+
+    // To use this:
+    // 1. Add this to the resolve function: near_sdk::log!("225a33ac58aee0cf8c6ea225223a237a");
+    // 2. Uncomment the key string, which is used to detect this log in promises
+    // 3. Uncomment the code after mt_withdraw calls, and it will print the gas values
+    // let key_string = "225a33ac58aee0cf8c6ea225223a237a";
+
+    // Now we do a withdraw of ft1 from defuse2, which will trigger a transfer from defuse2 account in defuse, to user2
+    {
+        let tokens: Vec<(String, u128)> = vec![(ft1.to_string(), 10)];
+
+        let (_amounts, _test_log) = env
+            .user1
+            .defuse_mt_withdraw(
+                env.defuse2.id(),
+                env.defuse.id(),
+                env.user2.id(),
+                tokens.iter().cloned().map(|v| v.0).collect(),
+                tokens.iter().map(|v| v.1).collect(),
+            )
+            .await
+            .unwrap();
+
+        // let receipt_logs = test_log
+        //     .logs_and_gas_burnt_in_receipts()
+        //     .iter()
+        //     .filter(|(a, _b)| a.iter().any(|s| s.contains(key_string)))
+        //     .collect::<Vec<_>>();
+        // assert_eq!(receipt_logs.len(), 1);
+
+        // println!("Cost with token count 1: {}", receipt_logs[0].1);
+    }
+
+    // Now user1 in defuse2 has 90 tokens left of `"nep245:defuse.test.near:nep141:ft1.test.near"`
+    {
+        // Only ft1 balance changes
+        assert_eq!(
+            env.defuse2
+                .mt_balance_of(
+                    env.user1.id(),
+                    &TokenId::Nep245(
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft1.to_string()).unwrap()
+                    )
+                    .to_string(),
+                )
+                .await
+                .unwrap(),
+            90
+        );
+
+        assert_eq!(
+            env.defuse2
+                .mt_balance_of(
+                    env.user1.id(),
+                    &TokenId::Nep245(
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft2.to_string()).unwrap()
+                    )
+                    .to_string(),
+                )
+                .await
+                .unwrap(),
+            200
+        );
+
+        assert_eq!(
+            env.defuse2
+                .mt_balance_of(
+                    env.user1.id(),
+                    &TokenId::Nep245(
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft3.to_string()).unwrap()
+                    )
+                    .to_string(),
+                )
+                .await
+                .unwrap(),
+            300
+        );
+    }
+
+    // Now we do a withdraw of ft1 and ft2 from defuse2, which will trigger a transfer from defuse2 account in defuse, to user2
+    {
+        let tokens: Vec<(String, u128)> = vec![(ft1.to_string(), 10), (ft2.to_string(), 20)];
+
+        let (_amounts, _test_log) = env
+            .user1
+            .defuse_mt_withdraw(
+                env.defuse2.id(),
+                env.defuse.id(),
+                env.user2.id(),
+                tokens.iter().cloned().map(|v| v.0).collect(),
+                tokens.iter().map(|v| v.1).collect(),
+            )
+            .await
+            .unwrap();
+
+        // let receipt_logs = test_log
+        //     .logs_and_gas_burnt_in_receipts()
+        //     .iter()
+        //     .filter(|(a, _b)| a.iter().any(|s| s.contains(key_string)))
+        //     .collect::<Vec<_>>();
+        // assert_eq!(receipt_logs.len(), 1);
+
+        // println!("Cost with token count 2: {}", receipt_logs[0].1);
+    }
+
+    // Now we do a withdraw of ft1, ft2 and ft3 from defuse2, which will trigger a transfer from defuse2 account in defuse, to user2
+    {
+        let tokens: Vec<(String, u128)> = vec![
+            (ft1.to_string(), 10),
+            (ft2.to_string(), 20),
+            (ft3.to_string(), 30),
+        ];
+
+        let (_amounts, _test_log) = env
+            .user1
+            .defuse_mt_withdraw(
+                env.defuse2.id(),
+                env.defuse.id(),
+                env.user2.id(),
+                tokens.iter().cloned().map(|v| v.0).collect(),
+                tokens.iter().map(|v| v.1).collect(),
+            )
+            .await
+            .unwrap();
+
+        // let receipt_logs = test_log
+        //     .logs_and_gas_burnt_in_receipts()
+        //     .iter()
+        //     .filter(|(a, _b)| a.iter().any(|s| s.contains(key_string)))
+        //     .collect::<Vec<_>>();
+        // assert_eq!(receipt_logs.len(), 1);
+
+        // println!("Cost with token count 3: {}", receipt_logs[0].1);
+    }
+
+    // We ensure the math is sound after the last two withdrawals
+    {
+        assert_eq!(
+            env.defuse2
+                .mt_balance_of(
+                    env.user1.id(),
+                    &TokenId::Nep245(
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft1.to_string()).unwrap()
+                    )
+                    .to_string(),
+                )
+                .await
+                .unwrap(),
+            70
+        );
+
+        assert_eq!(
+            env.defuse2
+                .mt_balance_of(
+                    env.user1.id(),
+                    &TokenId::Nep245(
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft2.to_string()).unwrap()
+                    )
+                    .to_string(),
+                )
+                .await
+                .unwrap(),
+            160
+        );
+
+        assert_eq!(
+            env.defuse2
+                .mt_balance_of(
+                    env.user1.id(),
+                    &TokenId::Nep245(
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft3.to_string()).unwrap()
+                    )
+                    .to_string(),
+                )
+                .await
+                .unwrap(),
+            270
+        );
     }
 }

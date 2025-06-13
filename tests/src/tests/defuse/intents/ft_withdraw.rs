@@ -1,19 +1,14 @@
 use super::ExecuteIntentsExt;
+use crate::tests::defuse::tokens::nep141::traits::DefuseFtReceiver;
 use crate::{
-    tests::defuse::{
-        DefuseExt, DefuseSigner, SigningStandard, env::Env, tokens::nep141::DefuseFtReceiver,
-    },
+    tests::defuse::{DefuseSigner, SigningStandard, env::Env},
     utils::{ft::FtExt, mt::MtExt, wnear::WNearExt},
 };
 use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
-use defuse::{
-    contract::config::{DefuseConfig, RolesConfig},
-    core::{
-        Deadline,
-        fees::{FeesConfig, Pips},
-        intents::{DefuseIntents, tokens::FtWithdraw},
-    },
+use defuse::core::{
+    Deadline,
+    intents::{DefuseIntents, tokens::FtWithdraw},
 };
 use near_sdk::{AccountId, Gas, NearToken};
 use randomness::Rng;
@@ -26,8 +21,6 @@ use test_utils::{asserts::ResultAssertsExt, random::make_seedable_rng};
 #[rstest]
 #[trace]
 async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registration: bool) {
-    use defuse::core::token_id::nep141::Nep141TokenId;
-
     // intentionally large deposit
     const STORAGE_DEPOSIT: NearToken = NearToken::from_near(1000);
 
@@ -264,23 +257,8 @@ async fn ft_withdraw_intent_msg(random_seed: Seed, #[values(false, true)] no_reg
         .build()
         .await;
 
-    let defuse2 = env
-        .deploy_defuse(
-            "defuse2",
-            DefuseConfig {
-                wnear_id: env.wnear.id().clone(),
-                fees: FeesConfig {
-                    fee: Pips::ZERO,
-                    fee_collector: env.id().clone(),
-                },
-                roles: RolesConfig::default(),
-            },
-        )
-        .await
-        .unwrap();
-
     env.poa_factory
-        .ft_storage_deposit_many(&env.ft1, &[defuse2.id()])
+        .ft_storage_deposit_many(&env.ft1, &[env.defuse2.id()])
         .await
         .unwrap();
 
@@ -302,7 +280,7 @@ async fn ft_withdraw_intent_msg(random_seed: Seed, #[values(false, true)] no_reg
                 DefuseIntents {
                     intents: [FtWithdraw {
                         token: env.ft1.clone(),
-                        receiver_id: defuse2.id().clone(),
+                        receiver_id: env.defuse2.id().clone(),
                         amount: 400.into(),
                         memo: Some("defuse-to-defuse".to_string()),
                         msg: Some(env.user2.id().to_string()),
@@ -331,13 +309,13 @@ async fn ft_withdraw_intent_msg(random_seed: Seed, #[values(false, true)] no_reg
         );
 
         assert_eq!(
-            env.ft_token_balance_of(&env.ft1, defuse2.id())
+            env.ft_token_balance_of(&env.ft1, env.defuse2.id())
                 .await
                 .unwrap(),
             400
         );
         assert_eq!(
-            env.mt_contract_balance_of(defuse2.id(), env.user2.id(), &ft1.to_string())
+            env.mt_contract_balance_of(env.defuse2.id(), env.user2.id(), &ft1.to_string())
                 .await
                 .unwrap(),
             400
@@ -353,7 +331,7 @@ async fn ft_withdraw_intent_msg(random_seed: Seed, #[values(false, true)] no_reg
             DefuseIntents {
                 intents: [FtWithdraw {
                     token: env.ft1.clone(),
-                    receiver_id: defuse2.id().clone(),
+                    receiver_id: env.defuse2.id().clone(),
                     amount: 600.into(),
                     memo: Some("defuse-to-defuse".to_string()),
                     msg: Some(env.user2.id().to_string()),
@@ -381,13 +359,13 @@ async fn ft_withdraw_intent_msg(random_seed: Seed, #[values(false, true)] no_reg
     );
 
     assert_eq!(
-        env.ft_token_balance_of(&env.ft1, defuse2.id())
+        env.ft_token_balance_of(&env.ft1, env.defuse2.id())
             .await
             .unwrap(),
         1000
     );
     assert_eq!(
-        env.mt_contract_balance_of(defuse2.id(), env.user2.id(), &ft1.to_string())
+        env.mt_contract_balance_of(env.defuse2.id(), env.user2.id(), &ft1.to_string())
             .await
             .unwrap(),
         1000

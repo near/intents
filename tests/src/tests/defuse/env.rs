@@ -1,7 +1,10 @@
 #![allow(dead_code)]
 
-use std::{ops::Deref, sync::LazyLock};
-
+use super::{DefuseExt, accounts::AccountManagerExt};
+use crate::{
+    tests::{defuse::tokens::nep141::traits::DefuseFtReceiver, poa::factory::PoAFactoryExt},
+    utils::{Sandbox, ft::FtExt, read_wasm, wnear::WNearExt},
+};
 use anyhow::anyhow;
 use defuse::{
     contract::{
@@ -15,13 +18,7 @@ use defuse_poa_factory::contract::Role as POAFactoryRole;
 use near_sdk::{AccountId, NearToken};
 use near_workspaces::{Account, Contract, operations::Function};
 use serde_json::json;
-
-use crate::{
-    tests::poa::factory::PoAFactoryExt,
-    utils::{Sandbox, ft::FtExt, read_wasm, wnear::WNearExt},
-};
-
-use super::{DefuseExt, accounts::AccountManagerExt, tokens::nep141::DefuseFtReceiver};
+use std::{ops::Deref, sync::LazyLock};
 
 pub static POA_TOKEN_WASM_NO_REGISTRATION: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("poa-token-no-registration/defuse_poa_token"));
@@ -36,6 +33,7 @@ pub struct Env {
     pub wnear: Contract,
 
     pub defuse: Contract,
+    pub defuse2: Contract,
 
     pub poa_factory: Contract,
 
@@ -245,6 +243,23 @@ impl EnvBuilder {
             defuse: root
                 .deploy_defuse(
                     "defuse",
+                    DefuseConfig {
+                        wnear_id: wnear.id().clone(),
+                        fees: FeesConfig {
+                            fee: self.fee,
+                            fee_collector: self
+                                .fee_collector
+                                .clone()
+                                .unwrap_or_else(|| root.id().clone()),
+                        },
+                        roles: self.roles.clone(),
+                    },
+                )
+                .await
+                .unwrap(),
+            defuse2: root
+                .deploy_defuse(
+                    "defuse2",
                     DefuseConfig {
                         wnear_id: wnear.id().clone(),
                         fees: FeesConfig {

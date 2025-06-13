@@ -5,6 +5,7 @@ mod admin;
 pub mod config;
 mod events;
 mod fees;
+pub mod gas;
 mod intents;
 mod state;
 mod tokens;

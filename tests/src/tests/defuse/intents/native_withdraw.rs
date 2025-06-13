@@ -1,5 +1,10 @@
-use std::time::Duration;
-
+use crate::{
+    tests::defuse::{
+        DefuseSigner, SigningStandard, env::Env, intents::ExecuteIntentsExt,
+        tokens::nep141::traits::DefuseFtReceiver,
+    },
+    utils::{mt::MtExt, wnear::WNearExt},
+};
 use defuse::{
     core::{
         Deadline,
@@ -12,15 +17,8 @@ use defuse::{
 use near_sdk::NearToken;
 use randomness::Rng;
 use rstest::rstest;
+use std::time::Duration;
 use test_utils::random::{Seed, make_seedable_rng, random_seed};
-
-use crate::{
-    tests::defuse::{
-        DefuseSigner, SigningStandard, env::Env, intents::ExecuteIntentsExt,
-        tokens::nep141::DefuseFtReceiver,
-    },
-    utils::{mt::MtExt, wnear::WNearExt},
-};
 
 #[tokio::test]
 #[rstest]
