@@ -228,10 +228,10 @@ impl MultiTokenWithdrawResolver for Contract {
                     // update min during iteration
                     used.0 = used.0.min(amount.0);
                     let refund = amount.0.saturating_sub(used.0);
-                    let token_id = Nep245TokenId::new(token.clone(), token_id)
-                        .unwrap_or_panic_display()
-                        .into();
                     if refund > 0 {
+                        let token_id = Nep245TokenId::new(token.clone(), token_id)
+                            .unwrap_or_panic_display()
+                            .into();
                         Some((token_id, refund))
                     } else {
                         None
