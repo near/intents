@@ -222,17 +222,15 @@ impl MultiTokenWithdrawResolver for Contract {
             sender_id,
             token_ids
                 .into_iter()
-                .map(|tid| {
-                    Nep245TokenId::new(token.clone(), tid)
-                        .unwrap_or_panic_display()
-                        .into()
-                })
                 .zip(amounts)
                 .zip(&mut used)
                 .filter_map(|((token_id, amount), used)| {
                     // update min during iteration
                     used.0 = used.0.min(amount.0);
                     let refund = amount.0.saturating_sub(used.0);
+                    let token_id = Nep245TokenId::new(token.clone(), token_id)
+                        .unwrap_or_panic_display()
+                        .into();
                     if refund > 0 {
                         Some((token_id, refund))
                     } else {
