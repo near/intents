@@ -108,7 +108,7 @@ mod tests {
             token_id_string.clone(),
         );
         if token_id_string.len() > MAX_ALLOWED_TOKEN_ID_LEN {
-            nft_result.assert_err_contains("TokenId is too long.");
+            nft_result.assert_err_contains("token_id is too long.");
         } else {
             let _ = nft_result.unwrap();
         }
