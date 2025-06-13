@@ -1,12 +1,10 @@
-use std::borrow::Cow;
-
+use crate::contract::{Contract, ContractExt};
 use defuse_near_utils::{UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::{
     ClearedApproval, MtEventEmit, MtTransferEvent, TokenId, resolver::MultiTokenResolver,
 };
 use near_sdk::{AccountId, PromiseResult, env, json_types::U128, near, require, serde_json};
-
-use crate::contract::{Contract, ContractExt};
+use std::borrow::Cow;
 
 #[near]
 impl MultiTokenResolver for Contract {

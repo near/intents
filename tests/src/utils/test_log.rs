@@ -7,7 +7,7 @@ pub struct TestLog {
     logs: Vec<String>,
     receipt_failure_errors: Vec<String>,
     gas_burnt_in_tx: Gas,
-    gas_burnt_in_receipts: Vec<Gas>,
+    logs_and_gas_burnt_in_receipts: Vec<(Vec<String>, Gas)>,
 }
 
 impl From<ExecutionResult<near_workspaces::result::Value>> for TestLog {
@@ -29,10 +29,10 @@ impl From<ExecutionResult<near_workspaces::result::Value>> for TestLog {
                 })
                 .collect::<Vec<_>>(),
             gas_burnt_in_tx: outcome.total_gas_burnt,
-            gas_burnt_in_receipts: outcome
+            logs_and_gas_burnt_in_receipts: outcome
                 .receipt_outcomes()
                 .iter()
-                .map(|v| v.gas_burnt)
+                .map(|v| (v.logs.clone(), v.gas_burnt))
                 .collect(),
         }
     }
@@ -47,7 +47,7 @@ impl TestLog {
         &self.gas_burnt_in_tx
     }
 
-    pub const fn gas_burnt_in_receipts(&self) -> &Vec<Gas> {
-        &self.gas_burnt_in_receipts
+    pub const fn logs_and_gas_burnt_in_receipts(&self) -> &Vec<(Vec<String>, Gas)> {
+        &self.logs_and_gas_burnt_in_receipts
     }
 }
