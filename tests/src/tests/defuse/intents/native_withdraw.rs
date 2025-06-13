@@ -106,21 +106,17 @@ async fn native_withdraw_intent(random_seed: Seed) {
     .await
     .expect("execute_intents: failed to withdraw native NEAR to receivers");
 
-    // Check balances in defuse contract.
-    // Nothing should be left for anyone since we withdrawn the exact amounts deposited in defuse.
-    for (account, _) in &amounts_to_withdraw {
-        assert_eq!(
-            env.defuse
-                .mt_balance_of(
-                    account,
-                    &TokenId::Nep141(Nep141TokenId::new(env.wnear.id().to_owned())).to_string()
-                )
-                .await
-                .unwrap(),
-            0,
-            "there should be nothing left deposited for {account}"
-        );
-    }
+    assert_eq!(
+        env.defuse
+            .mt_balance_of(
+                env.user1.id(),
+                &TokenId::Nep141(Nep141TokenId::new(env.wnear.id().clone())).to_string()
+            )
+            .await
+            .unwrap(),
+        0,
+        "there should be nothing left deposited for user1"
+    );
 
     // Check balances of NEAR on the blockchain
     for ((receiver_id, amount), initial_balance) in amounts_to_withdraw.iter().zip(initial_balances)
