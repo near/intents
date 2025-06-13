@@ -12,7 +12,7 @@ use core::{
 };
 use near_sdk::near;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
-use strum::{EnumDiscriminants, EnumString};
+use strum::{EnumDiscriminants, EnumIter, EnumString};
 
 const MAX_ALLOWED_TOKEN_ID_LEN: usize = 127;
 
@@ -30,7 +30,7 @@ const MAX_ALLOWED_TOKEN_ID_LEN: usize = 127;
 )]
 #[strum_discriminants(
     name(TokenIdType),
-    derive(strum::Display, EnumString),
+    derive(strum::Display, EnumString, EnumIter),
     strum(serialize_all = "snake_case"),
     vis(pub)
 )]
@@ -137,6 +137,7 @@ mod tests {
     use arbitrary::{Arbitrary, Unstructured};
     use near_sdk::{borsh, serde_json};
     use rstest::rstest;
+    use strum::IntoEnumIterator;
     use test_utils::{
         arbitrary::account_id::arbitrary_account_id,
         asserts::ResultAssertsExt,
@@ -145,24 +146,24 @@ mod tests {
 
     impl<'a> Arbitrary<'a> for TokenId {
         fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-            let variant = u.int_in_range(0..=2)?;
+            let variants = TokenIdType::iter().collect::<Vec<_>>();
+            let variant = u.choose(&variants)?;
             Ok(match variant {
-                0 => Self::Nep141(Nep141TokenId::new(arbitrary_account_id(u)?)),
-                1 => Self::Nep171(
+                TokenIdType::Nep141 => Self::Nep141(Nep141TokenId::new(arbitrary_account_id(u)?)),
+                TokenIdType::Nep171 => Self::Nep171(
                     Nep171TokenId::new(
                         arbitrary_account_id(u)?,
                         near_contract_standards::non_fungible_token::TokenId::arbitrary(u)?,
                     )
                     .unwrap(),
                 ),
-                2 => Self::Nep245(
+                TokenIdType::Nep245 => Self::Nep245(
                     Nep245TokenId::new(
                         arbitrary_account_id(u)?,
                         defuse_nep245::TokenId::arbitrary(u)?,
                     )
                     .unwrap(),
                 ),
-                _ => unreachable!(),
             })
         }
     }
