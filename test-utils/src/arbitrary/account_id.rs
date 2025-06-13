@@ -1,4 +1,4 @@
-use crate::arbitrary::hex::arbitrary_hex;
+use crate::arbitrary::hex::arbitrary_hex_fixed_size;
 use arbitrary::{Arbitrary, Unstructured};
 use near_sdk::AccountId;
 
@@ -20,7 +20,7 @@ pub fn arbitrary_account_id(u: &mut Unstructured<'_>) -> arbitrary::Result<Accou
 }
 
 pub fn arbitrary_ethereum_account_id(u: &mut Unstructured<'_>) -> arbitrary::Result<AccountId> {
-    let s = arbitrary_hex::<20>(u)?;
+    let s = arbitrary_hex_fixed_size::<20>(u)?;
     format!("0x{s}")
         .parse()
         .map_err(|_| arbitrary::Error::IncorrectFormat)
@@ -29,7 +29,7 @@ pub fn arbitrary_ethereum_account_id(u: &mut Unstructured<'_>) -> arbitrary::Res
 pub fn arbitrary_near_implicit_account_id(
     u: &mut Unstructured<'_>,
 ) -> arbitrary::Result<AccountId> {
-    let s = arbitrary_hex::<32>(u)?;
+    let s = arbitrary_hex_fixed_size::<32>(u)?;
     s.parse().map_err(|_| arbitrary::Error::IncorrectFormat)
 }
 
