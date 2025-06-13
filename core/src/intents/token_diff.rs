@@ -75,8 +75,7 @@ impl ExecutableIntent for TokenDiff {
             // take fees only from negative deltas (i.e. token_in)
             if delta < 0 {
                 let amount = delta.unsigned_abs();
-                let fee =
-                    Self::token_fee((&token_id).into(), amount, protocol_fee).fee_ceil(amount);
+                let fee = Self::token_fee(&token_id, amount, protocol_fee).fee_ceil(amount);
 
                 // collect fee
                 fees_collected
@@ -184,7 +183,7 @@ impl TokenDiff {
         if delta < 0 {
             // fee is taken only on negative deltas (i.e. token_in)
             delta.checked_mul_div_ceil(
-                Self::token_fee(token_id.into(), delta.unsigned_abs(), fee)
+                Self::token_fee(token_id, delta.unsigned_abs(), fee)
                     .invert()
                     .as_pips()
                     .into(),
@@ -206,7 +205,7 @@ impl TokenDiff {
             // fee is taken only on negative deltas (i.e. token_in)
             closure.checked_mul_div_euclid(
                 Pips::MAX.as_pips().into(),
-                Self::token_fee(token_id.into(), delta.unsigned_abs(), fee)
+                Self::token_fee(token_id, delta.unsigned_abs(), fee)
                     .invert()
                     .as_pips()
                     .into(),
@@ -218,7 +217,8 @@ impl TokenDiff {
     }
 
     #[inline]
-    pub const fn token_fee(token_id: TokenIdType, amount: u128, fee: Pips) -> Pips {
+    pub fn token_fee(token_id: impl Into<TokenIdType>, amount: u128, fee: Pips) -> Pips {
+        let token_id = token_id.into();
         match token_id {
             TokenIdType::Nep141 => {}
             TokenIdType::Nep245 if amount > 1 => {}

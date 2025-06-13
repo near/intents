@@ -2,7 +2,7 @@ use crate::tests::defuse::SigningStandard;
 use crate::tests::defuse::{DefuseSigner, env::Env, intents::ExecuteIntentsExt};
 use crate::utils::{mt::MtExt, nft::NftExt};
 use arbitrary::{Arbitrary, Unstructured};
-use defuse::core::token_id::TokenId as MtTokenId;
+use defuse::core::token_id::TokenId as DefuseTokenId;
 use defuse::core::token_id::nep171::Nep171TokenId;
 use defuse::core::{
     Deadline,
@@ -52,7 +52,7 @@ async fn transfer_nft_to_verifier(random_seed: Seed) {
     let nft1_id = gen_random_string(&mut rng, 32..=32);
 
     // Create the token id, expected inside the verifier contract
-    let nft1_mt_token_id = MtTokenId::from(
+    let nft1_mt_token_id = DefuseTokenId::from(
         Nep171TokenId::new(nft_issuer_contract.id().to_owned(), nft1_id.clone()).unwrap(),
     );
 
@@ -73,7 +73,7 @@ async fn transfer_nft_to_verifier(random_seed: Seed) {
     let nft2_id = gen_random_string(&mut rng, 32..=32);
 
     // Create the token id, expected inside the verifier contract
-    let nft2_mt_token_id = MtTokenId::from(
+    let nft2_mt_token_id = DefuseTokenId::from(
         Nep171TokenId::new(nft_issuer_contract.id().to_owned(), nft2_id.clone()).unwrap(),
     );
 

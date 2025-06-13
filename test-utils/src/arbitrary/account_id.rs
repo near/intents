@@ -1,21 +1,22 @@
 use crate::arbitrary::hex::arbitrary_hex_fixed_size;
 use arbitrary::{Arbitrary, Unstructured};
+use near_account_id::AccountType;
 use near_sdk::AccountId;
 
 const MAX_NEAR_ACCOUNT_LENGTH: usize = 64;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Arbitrary)]
-enum AccountType {
-    Named,
-    Implicit,
-    Ethereum,
-}
-
 pub fn arbitrary_account_id(u: &mut Unstructured<'_>) -> arbitrary::Result<AccountId> {
-    match AccountType::arbitrary(u)? {
-        AccountType::Named => arbitrary_near_named_account_id(u),
-        AccountType::Implicit => arbitrary_near_implicit_account_id(u),
-        AccountType::Ethereum => arbitrary_ethereum_account_id(u),
+    let types = [
+        AccountType::NamedAccount,
+        AccountType::NearImplicitAccount,
+        AccountType::EthImplicitAccount,
+    ];
+    let choice = u.choose(&types)?;
+
+    match choice {
+        AccountType::NamedAccount => arbitrary_near_named_account_id(u),
+        AccountType::NearImplicitAccount => arbitrary_near_implicit_account_id(u),
+        AccountType::EthImplicitAccount => arbitrary_ethereum_account_id(u),
     }
 }
 

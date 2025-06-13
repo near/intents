@@ -3657,6 +3657,7 @@ dependencies = [
  "arbitrary",
  "derive_more 2.0.1",
  "hex",
+ "near-account-id",
  "near-sdk",
  "rand_chacha 0.9.0",
  "randomness",
