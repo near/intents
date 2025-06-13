@@ -1,6 +1,6 @@
 use crate::{
     engine::deltas::InvariantViolated,
-    token_id::{error::TokenIdError, nep171::Nep171TokenId},
+    token_id::{TokenId, error::TokenIdError, nep171::Nep171TokenId},
 };
 use near_sdk::{FunctionError, serde_json};
 use thiserror::Error as ThisError;
@@ -36,7 +36,7 @@ pub enum DefuseError {
     #[error("JSON: {0}")]
     JSON(#[from] serde_json::Error),
 
-    #[error("NFT '{0}' is already deposited")]
+    #[error("NFT '{}' is already deposited", TokenId::Nep171(.0.clone()))]
     NftAlreadyDeposited(Nep171TokenId),
 
     #[error("nonce was already used")]

@@ -1,24 +1,25 @@
 pub mod cached;
 pub mod deltas;
 
-use std::borrow::Cow;
-
-use cached::CachedState;
-use defuse_crypto::PublicKey;
-use impl_tools::autoimpl;
-use near_sdk::{AccountId, AccountIdRef};
-
 use crate::{
     Nonce, Result,
     fees::Pips,
     intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
-    token_id::TokenId,
+    token_id::{TokenId, nep141::Nep141TokenId},
 };
+use cached::CachedState;
+use defuse_crypto::PublicKey;
+use impl_tools::autoimpl;
+use near_sdk::{AccountId, AccountIdRef};
+use std::borrow::Cow;
 
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>)]
 pub trait StateView {
     fn verifying_contract(&self) -> Cow<'_, AccountIdRef>;
     fn wnear_id(&self) -> Cow<'_, AccountIdRef>;
+    fn wnear_token_id(&self) -> TokenId {
+        Nep141TokenId::new(self.wnear_id().into_owned()).into()
+    }
 
     fn fee(&self) -> Pips;
     fn fee_collector(&self) -> Cow<'_, AccountIdRef>;

@@ -49,11 +49,9 @@ impl MultiTokenReceiver for Contract {
             msg.receiver_id,
             token_ids
                 .into_iter()
-                .map(|token_id| {
-                    Nep245TokenId::new(token.clone(), token_id)
-                        .unwrap_or_panic_display()
-                        .into()
-                })
+                .map(|token_id| Nep245TokenId::new(token.clone(), token_id))
+                .map(UnwrapOrPanicError::unwrap_or_panic_display)
+                .map(Into::into)
                 .zip(amounts.into_iter().map(|a| a.0)),
             Some("deposit"),
         )

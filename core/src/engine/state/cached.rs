@@ -218,20 +218,20 @@ where
 
         let token_ids = std::iter::repeat(withdraw.token.clone())
             .zip(withdraw.token_ids.iter().cloned())
-            .map(|(token, token_id)| Nep245TokenId::new(token, token_id).map(Into::into))
+            .map(|(token, token_id)| Nep245TokenId::new(token, token_id))
             .collect::<Result<Vec<_>, _>>()?;
 
         self.internal_sub_balance(
             owner_id,
             token_ids
                 .into_iter()
+                .map(Into::into)
                 .zip(withdraw.amounts.iter().map(|a| a.0))
-                .chain(withdraw.storage_deposit.map(|amount| {
-                    (
-                        Nep141TokenId::new(self.wnear_id().into_owned()).into(),
-                        amount.as_yoctonear(),
-                    )
-                })),
+                .chain(
+                    withdraw
+                        .storage_deposit
+                        .map(|amount| (self.wnear_token_id(), amount.as_yoctonear())),
+                ),
         )
     }
 

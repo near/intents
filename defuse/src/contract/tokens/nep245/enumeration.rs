@@ -1,5 +1,5 @@
 use crate::contract::{Contract, ContractExt};
-use defuse_core::token_id::TokenId;
+use defuse_core::token_id::TokenIdType;
 use defuse_near_utils::UnwrapOrPanicError;
 use defuse_nep245::{Token, enumeration::MultiTokenEnumeration};
 use near_sdk::{AccountId, json_types::U128, near};
@@ -50,9 +50,9 @@ impl MultiTokenEnumeration for Contract {
                 .skip(from_index)
                 .map(|(token_id, _amount)| Token {
                     token_id: token_id.to_string(),
-                    owner_id: match token_id {
-                        TokenId::Nep171(_) => Some(account_id.clone()),
-                        TokenId::Nep141(_) | TokenId::Nep245(_) => None,
+                    owner_id: match TokenIdType::from(token_id) {
+                        TokenIdType::Nep171 => Some(account_id.clone()),
+                        TokenIdType::Nep141 | TokenIdType::Nep245 => None,
                     },
                 });
 

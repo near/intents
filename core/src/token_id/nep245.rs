@@ -32,7 +32,7 @@ impl Nep245TokenId {
         &self.contract_id
     }
 
-    pub const fn defuse_token_id(&self) -> &defuse_nep245::TokenId {
+    pub const fn mt_token_id(&self) -> &defuse_nep245::TokenId {
         &self.mt_token_id
     }
 }
@@ -40,7 +40,7 @@ impl Nep245TokenId {
 impl std::fmt::Debug for Nep245TokenId {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}", self.contract_id(), self.defuse_token_id())
+        write!(f, "{}:{}", self.contract_id(), self.mt_token_id())
     }
 }
 

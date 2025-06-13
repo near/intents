@@ -74,11 +74,11 @@ impl FromStr for TokenId {
         let (typ, data) = s
             .split_once(':')
             .ok_or(strum::ParseError::VariantNotFound)?;
-        Ok(match typ.parse()? {
-            TokenIdType::Nep141 => Self::Nep141(data.parse()?),
-            TokenIdType::Nep171 => Self::Nep171(data.parse()?),
-            TokenIdType::Nep245 => Self::Nep245(data.parse()?),
-        })
+        match typ.parse()? {
+            TokenIdType::Nep141 => data.parse().map(Self::Nep141),
+            TokenIdType::Nep171 => data.parse().map(Self::Nep171),
+            TokenIdType::Nep245 => data.parse().map(Self::Nep245),
+        }
     }
 }
 
