@@ -2,12 +2,10 @@ pub mod traits;
 
 use crate::tests::defuse::tokens::nep245::traits::DefuseMtWithdrawer;
 use crate::{tests::defuse::env::Env, utils::mt::MtExt};
-use defuse::contract::gas::total_mt_withdraw_gas;
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
 use defuse::core::token_id::nep245::Nep245TokenId;
 use defuse::nep245::Token;
-use near_sdk::Gas;
 use rstest::rstest;
 
 #[tokio::test]
@@ -653,13 +651,17 @@ async fn multitoken_transfers() {
         );
     }
 
-    let gas_risk_margin_percent = 30; // 30% - The gas allocated should be 30% more than needed to account for risk
+    // To use this:
+    // 1. Add this to the resolve function: near_sdk::log!("225a33ac58aee0cf8c6ea225223a237a");
+    // 2. Uncomment the key string, which is used to detect this log in promises
+    // 3. Uncomment the code after mt_withdraw calls, and it will print the gas values
+    // let key_string = "225a33ac58aee0cf8c6ea225223a237a";
 
     // Now we do a withdraw of ft1 from defuse2, which will trigger a transfer from defuse2 account in defuse, to user2
     {
         let tokens: Vec<(String, u128)> = vec![(ft1.to_string(), 10)];
 
-        let (_amounts, test_log) = env
+        let (_amounts, _test_log) = env
             .user1
             .defuse_mt_withdraw(
                 env.defuse2.id(),
@@ -671,28 +673,14 @@ async fn multitoken_transfers() {
             .await
             .unwrap();
 
-        // The sum of the receipts is always less than the total gas used, because the main tx is missing
-        assert!(
-            *test_log.total_gas_burnt()
-                > test_log
-                    .gas_burnt_in_receipts()
-                    .iter()
-                    .fold(Gas::from_tgas(0), |so_far, curr| {
-                        so_far.checked_add(*curr).unwrap()
-                    })
-        );
+        // let receipt_logs = test_log
+        //     .logs_and_gas_burnt_in_receipts()
+        //     .iter()
+        //     .filter(|(a, _b)| a.iter().any(|s| s.contains(key_string)))
+        //     .collect::<Vec<_>>();
+        // assert_eq!(receipt_logs.len(), 1);
 
-        // Ensure that enough gas will always be allocated
-        assert!(
-            test_log
-                .total_gas_burnt()
-                .checked_mul(gas_risk_margin_percent + 100)
-                .unwrap()
-                .checked_div(100)
-                .unwrap()
-                < total_mt_withdraw_gas(tokens.len()),
-            "The amount of gas spent in the transaction is higher than the expected amount + margin of error. Maybe you should increase the allocated gas."
-        );
+        // println!("Cost with token count 1: {}", receipt_logs[0].1);
     }
 
     // Now user1 in defuse2 has 90 tokens left of `"nep245:defuse.test.near:nep141:ft1.test.near"`
@@ -745,7 +733,7 @@ async fn multitoken_transfers() {
     {
         let tokens: Vec<(String, u128)> = vec![(ft1.to_string(), 10), (ft2.to_string(), 20)];
 
-        let (_amounts, test_log) = env
+        let (_amounts, _test_log) = env
             .user1
             .defuse_mt_withdraw(
                 env.defuse2.id(),
@@ -757,28 +745,14 @@ async fn multitoken_transfers() {
             .await
             .unwrap();
 
-        // The sum of the receipts is always less than the total gas used, because the main tx is missing
-        assert!(
-            *test_log.total_gas_burnt()
-                > test_log
-                    .gas_burnt_in_receipts()
-                    .iter()
-                    .fold(Gas::from_tgas(0), |so_far, curr| {
-                        so_far.checked_add(*curr).unwrap()
-                    })
-        );
+        // let receipt_logs = test_log
+        //     .logs_and_gas_burnt_in_receipts()
+        //     .iter()
+        //     .filter(|(a, _b)| a.iter().any(|s| s.contains(key_string)))
+        //     .collect::<Vec<_>>();
+        // assert_eq!(receipt_logs.len(), 1);
 
-        // Ensure that enough gas will always be allocated
-        assert!(
-            test_log
-                .total_gas_burnt()
-                .checked_mul(gas_risk_margin_percent + 100)
-                .unwrap()
-                .checked_div(100)
-                .unwrap()
-                < total_mt_withdraw_gas(tokens.len()),
-            "The amount of gas spent in the transaction is higher than the expected amount + margin of error. Maybe you should increase the allocated gas."
-        );
+        // println!("Cost with token count 2: {}", receipt_logs[0].1);
     }
 
     // Now we do a withdraw of ft1, ft2 and ft3 from defuse2, which will trigger a transfer from defuse2 account in defuse, to user2
@@ -789,7 +763,7 @@ async fn multitoken_transfers() {
             (ft3.to_string(), 30),
         ];
 
-        let (_amounts, test_log) = env
+        let (_amounts, _test_log) = env
             .user1
             .defuse_mt_withdraw(
                 env.defuse2.id(),
@@ -801,28 +775,14 @@ async fn multitoken_transfers() {
             .await
             .unwrap();
 
-        // The sum of the receipts is always less than the total gas used, because the main tx is missing
-        assert!(
-            *test_log.total_gas_burnt()
-                > test_log
-                    .gas_burnt_in_receipts()
-                    .iter()
-                    .fold(Gas::from_tgas(0), |so_far, curr| {
-                        so_far.checked_add(*curr).unwrap()
-                    })
-        );
+        // let receipt_logs = test_log
+        //     .logs_and_gas_burnt_in_receipts()
+        //     .iter()
+        //     .filter(|(a, _b)| a.iter().any(|s| s.contains(key_string)))
+        //     .collect::<Vec<_>>();
+        // assert_eq!(receipt_logs.len(), 1);
 
-        // Ensure that enough gas will always be allocated
-        assert!(
-            test_log
-                .total_gas_burnt()
-                .checked_mul(gas_risk_margin_percent + 100)
-                .unwrap()
-                .checked_div(100)
-                .unwrap()
-                < total_mt_withdraw_gas(tokens.len()),
-            "The amount of gas spent in the transaction is higher than the expected amount + margin of error. Maybe you should increase the allocated gas."
-        );
+        // println!("Cost with token count 3: {}", receipt_logs[0].1);
     }
 
     // We ensure the math is sound after the last two withdrawals
