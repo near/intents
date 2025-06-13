@@ -131,18 +131,11 @@ mod abi {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+#[cfg(any(feature = "arbitrary", test))]
+const _: () = {
     use arbitrary::{Arbitrary, Unstructured};
-    use near_sdk::{borsh, serde_json};
-    use rstest::rstest;
     use strum::IntoEnumIterator;
-    use test_utils::{
-        arbitrary::account_id::arbitrary_account_id,
-        asserts::ResultAssertsExt,
-        random::{Seed, gen_random_bytes, gen_random_string, make_seedable_rng, random_seed},
-    };
+    use test_utils::arbitrary::account_id::arbitrary_account_id;
 
     impl<'a> Arbitrary<'a> for TokenId {
         fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
@@ -167,6 +160,19 @@ mod tests {
             })
         }
     }
+};
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use arbitrary::Arbitrary;
+    use near_sdk::{borsh, serde_json};
+    use rstest::rstest;
+    use test_utils::{
+        arbitrary::account_id::arbitrary_account_id,
+        asserts::ResultAssertsExt,
+        random::{Seed, gen_random_bytes, gen_random_string, make_seedable_rng, random_seed},
+    };
 
     #[test]
     fn fixed_data_serialization_and_deserialization() {
@@ -224,7 +230,7 @@ mod tests {
             .map(Into::into);
 
             if token_id_string.len() > MAX_ALLOWED_TOKEN_ID_LEN {
-                nft_result.assert_err_contains("TokenId is too long.");
+                nft_result.assert_err_contains("token_id is too long.");
             } else {
                 nft_result.unwrap();
             }
@@ -239,7 +245,7 @@ mod tests {
             .map(Into::into);
 
             if token_id_string.len() > MAX_ALLOWED_TOKEN_ID_LEN {
-                mt_result.assert_err_contains("TokenId is too long.");
+                mt_result.assert_err_contains("token_id is too long.");
             } else {
                 mt_result.unwrap();
             }
