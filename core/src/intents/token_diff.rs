@@ -62,24 +62,24 @@ impl ExecutableIntent for TokenDiff {
         let protocol_fee = engine.state.fee();
         let mut fees_collected: Amounts = Amounts::default();
 
-        for (token_id, delta) in self.diff.clone() {
-            if delta == 0 {
+        for (token_id, delta) in &self.diff {
+            if *delta == 0 {
                 return Err(DefuseError::InvalidIntent);
             }
 
             // add delta to signer's account
             engine
                 .state
-                .internal_apply_deltas(signer_id, [(token_id.clone(), delta)])?;
+                .internal_apply_deltas(signer_id, [(token_id.clone(), *delta)])?;
 
             // take fees only from negative deltas (i.e. token_in)
-            if delta < 0 {
+            if *delta < 0 {
                 let amount = delta.unsigned_abs();
-                let fee = Self::token_fee(&token_id, amount, protocol_fee).fee_ceil(amount);
+                let fee = Self::token_fee(token_id, amount, protocol_fee).fee_ceil(amount);
 
                 // collect fee
                 fees_collected
-                    .add(token_id, fee)
+                    .add(token_id.clone(), fee)
                     .ok_or(DefuseError::BalanceOverflow)?;
             }
         }
