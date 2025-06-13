@@ -1,6 +1,7 @@
 mod core;
 pub mod enumeration;
 mod events;
+pub mod metadata;
 pub mod receiver;
 pub mod resolver;
 mod token;
