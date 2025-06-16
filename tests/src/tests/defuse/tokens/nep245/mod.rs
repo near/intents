@@ -457,7 +457,7 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
 
 #[tokio::test]
 #[rstest]
-async fn multitoken_transfers() {
+async fn multitoken_withdrawals() {
     let env = Env::builder().build().await;
 
     {
