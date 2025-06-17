@@ -6,18 +6,23 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
+arbitrary_with = { workspace = true, optional = true }
 chrono = { workspace = true, optional = true }
 digest = { workspace = true, optional = true }
+hex = { workspace = true, optional = true }
+near-account-id = { workspace = true, optional = true }
 near-sdk.workspace = true
 
 [features]
+arbitrary = ["dep:arbitrary_with", "dep:hex", "dep:near-account-id"]
 digest = ["dep:digest"]
 time = ["dep:chrono"]
 
 [dev-dependencies]
+defuse-test-utils.workspace = true
+
 rstest.workspace = true
-test-utils.workspace = true
-near-sdk = {workspace = true, features = ["unit-testing"]}
+near-sdk = { workspace = true, features = ["unit-testing"] }
 
 [lints]
 workspace = true

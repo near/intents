@@ -1,9 +1,9 @@
 use defuse::contract::Role;
+use defuse_test_utils::asserts::ResultAssertsExt;
 use near_sdk::{AccountId, NearToken, PublicKey};
 use near_workspaces::{Account, types::SecretKey};
 use rstest::rstest;
 use serde_json::json;
-use test_utils::asserts::ResultAssertsExt;
 
 use crate::{
     tests::defuse::{env::Env, intents::ExecuteIntentsExt},
