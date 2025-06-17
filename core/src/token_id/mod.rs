@@ -132,15 +132,6 @@ mod abi {
     }
 }
 
-// 1 BTC = $100k interest rate: 1% daily
-// * 1 BTC -> $105k, 1% of 1 BTC = $1.05k
-//   $5k - $1
-//
-// * 1 BTC -> $95k, 1.1BTC, 1% of 1 BTC = $0.95k
-//   profit of not returning: -$5k
-//
-//
-
 #[cfg(test)]
 mod tests {
     use super::*;
