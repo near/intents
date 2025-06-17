@@ -600,8 +600,10 @@ dependencies = [
  "bnum",
  "defuse-admin-utils",
  "defuse-bitmap",
+ "defuse-borsh-utils",
  "defuse-controller",
  "defuse-core",
+ "defuse-io-utils",
  "defuse-map-utils",
  "defuse-near-utils",
  "defuse-nep245",
@@ -614,6 +616,7 @@ dependencies = [
  "near-sdk",
  "serde_with",
  "strum 0.27.1",
+ "test-utils",
  "thiserror 2.0.12",
 ]
 
@@ -721,7 +724,9 @@ name = "defuse-near-utils"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "defuse-borsh-utils",
  "digest",
+ "impl-tools",
  "near-sdk",
  "rstest",
  "test-utils",

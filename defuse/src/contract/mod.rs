@@ -42,6 +42,9 @@ pub enum Role {
     PauseManager,
     Upgrader,
     UnpauseManager,
+
+    UnrestrictedAccountLocker,
+    UnrestrictedAccountUnlocker,
 }
 
 #[access_control(role_type(Role))]

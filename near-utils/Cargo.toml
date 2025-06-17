@@ -6,8 +6,11 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
+defuse-borsh-utils.workspace = true
+
 chrono = { workspace = true, optional = true }
 digest = { workspace = true, optional = true }
+impl-tools.workspace = true
 near-sdk.workspace = true
 
 [features]

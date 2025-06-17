@@ -52,6 +52,13 @@ pub enum DefuseEvent<'a> {
 
     #[event_version("0.3.0")]
     StorageDeposit(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, StorageDeposit>>>]>),
+
+    #[event_version("0.3.0")]
+    #[from(skip)]
+    AccountLocked(AccountEvent<'a, ()>),
+    #[event_version("0.3.0")]
+    #[from(skip)]
+    AccountUnlocked(AccountEvent<'a, ()>),
 }
 
 pub trait DefuseIntentEmit<'a>: Into<DefuseEvent<'a>> {

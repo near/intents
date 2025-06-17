@@ -33,10 +33,10 @@ impl HashMarker for Sha256 {}
 
 #[cfg(test)]
 mod tests {
+    use test_utils::random::{Seed, gen_random_bytes, make_seedable_rng, random_seed};
     use digest::Digest;
     use near_sdk::CryptoHash;
     use rstest::rstest;
-    use test_utils::random::{Seed, gen_random_bytes, make_seedable_rng, random_seed};
 
     use super::*;
 

@@ -70,13 +70,11 @@ where
 
         // make sure the account has this public key
         if !self.state.has_public_key(&signer_id, &public_key) {
-            return Err(DefuseError::PublicKeyNotExist);
+            return Err(DefuseError::PublicKeyNotExist(signer_id, public_key));
         }
 
         // commit nonce
-        if !self.state.commit_nonce(signer_id.clone(), nonce) {
-            return Err(DefuseError::NonceUsed);
-        }
+        self.state.commit_nonce(signer_id.clone(), nonce)?;
 
         intents.execute_intent(&signer_id, self, hash)?;
         self.inspector.on_intent_executed(&signer_id, hash);

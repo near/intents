@@ -1,6 +1,7 @@
+
 use rand_chacha::{ChaChaRng, rand_core::RngCore};
-pub use randomness::{self, CryptoRng, Rng, SeedableRng, seq::IteratorRandom};
 use rstest::fixture;
+pub use randomness::{self as randomness, CryptoRng, Rng, SeedableRng, seq::IteratorRandom};
 use std::{num::ParseIntError, ops::RangeBounds, str::FromStr};
 
 #[derive(Debug, Copy, Clone)]

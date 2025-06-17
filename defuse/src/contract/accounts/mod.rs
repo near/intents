@@ -5,86 +5,68 @@ pub use self::{account::*, state::*};
 
 use std::collections::HashSet;
 
-use defuse_core::{DefuseError, Nonce, crypto::PublicKey};
-use defuse_near_utils::{NestPrefix, PREDECESSOR_ACCOUNT_ID};
+use defuse_core::{
+    DefuseError, Nonce,
+    accounts::AccountEvent,
+    crypto::PublicKey,
+    engine::{State, StateView},
+    events::DefuseEvent,
+};
+use defuse_near_utils::{Lock, NestPrefix, PREDECESSOR_ACCOUNT_ID};
 use defuse_serde_utils::base64::AsBase64;
+use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{
     AccountId, AccountIdRef, BorshStorageKey, FunctionError, IntoStorageKey, assert_one_yocto,
     borsh::BorshSerialize, near, store::IterableMap,
 };
 
 use crate::{
-    accounts::AccountManager,
-    contract::{Contract, ContractExt},
+    accounts::{AccountForceLocker, AccountManager},
+    contract::{Contract, ContractExt, Role},
 };
 
 #[near]
 impl AccountManager for Contract {
     fn has_public_key(&self, account_id: &AccountId, public_key: &PublicKey) -> bool {
-        self.accounts.get(account_id).map_or_else(
-            || account_id == &public_key.to_implicit_account_id(),
-            |account| account.has_public_key(account_id, public_key),
-        )
+        StateView::has_public_key(self, account_id, public_key)
     }
 
     fn public_keys_of(&self, account_id: &AccountId) -> HashSet<PublicKey> {
-        self.accounts.get(account_id).map_or_else(
-            || {
-                PublicKey::from_implicit_account_id(account_id)
-                    .into_iter()
-                    .collect()
-            },
-            |account| account.iter_public_keys(account_id).collect(),
-        )
+        StateView::iter_public_keys(self, account_id).collect()
     }
 
     #[payable]
     fn add_public_key(&mut self, public_key: PublicKey) {
         assert_one_yocto();
-        if !self
-            .accounts
-            .get_or_create(PREDECESSOR_ACCOUNT_ID.clone())
-            .add_public_key(&PREDECESSOR_ACCOUNT_ID, public_key)
-        {
-            DefuseError::PublicKeyExists.panic()
-        }
+        State::add_public_key(self, PREDECESSOR_ACCOUNT_ID.clone(), public_key).unwrap_or_panic();
     }
 
     #[payable]
     fn remove_public_key(&mut self, public_key: &PublicKey) {
         assert_one_yocto();
-        if !self
-            .accounts
-            // create account if doesn't exist, so the user can opt out of implicit public key
-            .get_or_create(PREDECESSOR_ACCOUNT_ID.clone())
-            .remove_public_key(&PREDECESSOR_ACCOUNT_ID, public_key)
-        {
-            DefuseError::PublicKeyNotExist.panic()
-        }
+        State::remove_public_key(self, PREDECESSOR_ACCOUNT_ID.clone(), public_key)
+            .unwrap_or_panic();
     }
 
     fn is_nonce_used(&self, account_id: &AccountId, nonce: AsBase64<Nonce>) -> bool {
-        self.accounts
-            .get(account_id)
-            .is_some_and(move |account| account.is_nonce_used(nonce.into_inner()))
+        StateView::is_nonce_used(self, account_id, nonce.into_inner())
     }
 
     #[payable]
     fn invalidate_nonces(&mut self, nonces: Vec<AsBase64<Nonce>>) {
         assert_one_yocto();
-        let account = self.accounts.get_or_create(PREDECESSOR_ACCOUNT_ID.clone());
-        for n in nonces.into_iter().map(AsBase64::into_inner) {
-            if !account.commit_nonce(n) {
-                DefuseError::NonceUsed.panic()
-            }
-        }
+        nonces
+            .into_iter()
+            .map(AsBase64::into_inner)
+            .try_for_each(|n| State::commit_nonce(self, PREDECESSOR_ACCOUNT_ID.clone(), n))
+            .unwrap_or_panic();
     }
 }
 
 #[derive(Debug)]
 #[near(serializers = [borsh])]
 pub struct Accounts {
-    accounts: IterableMap<AccountId, Account>,
+    accounts: IterableMap<AccountId, AccountEntry>,
     prefix: Vec<u8>,
 }
 
@@ -102,26 +84,29 @@ impl Accounts {
     }
 
     #[inline]
-    pub fn get(&self, account_id: &AccountIdRef) -> Option<&Account> {
-        self.accounts.get(account_id)
+    pub fn get(&self, account_id: &AccountIdRef) -> Option<&Lock<Account>> {
+        self.accounts.get(account_id).map(|a| &**a)
     }
 
     #[inline]
-    pub fn get_mut(&mut self, account_id: &AccountIdRef) -> Option<&mut Account> {
-        self.accounts.get_mut(account_id)
+    pub fn get_mut(&mut self, account_id: &AccountIdRef) -> Option<&mut Lock<Account>> {
+        self.accounts.get_mut(account_id).map(|a| &mut **a)
     }
 
+    /// Gets or creates an account with given `account_id`.
+    /// NOTE: The created account will be unblocked by default.
     #[inline]
-    pub fn get_or_create(&mut self, account_id: AccountId) -> &mut Account {
+    pub fn get_or_create(&mut self, account_id: AccountId) -> &mut Lock<Account> {
         self.accounts
             .entry(account_id)
             .or_insert_with_key(|account_id| {
-                Account::new(
+                Lock::unlocked(Account::new(
                     self.prefix
                         .as_slice()
                         .nest(AccountsPrefix::Account(account_id)),
                     account_id,
-                )
+                ))
+                .into()
             })
     }
 }
@@ -130,5 +115,42 @@ impl Accounts {
 #[borsh(crate = "::near_sdk::borsh")]
 enum AccountsPrefix<'a> {
     Accounts,
-    Account(&'a AccountId),
+    Account(&'a AccountIdRef),
+}
+
+#[near]
+impl AccountForceLocker for Contract {
+    fn is_account_locked(&self, account_id: &AccountId) -> bool {
+        StateView::is_account_locked(self, account_id)
+    }
+
+    #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountLocker))]
+    #[payable]
+    fn force_lock_account(&mut self, account_id: AccountId) -> bool {
+        assert_one_yocto();
+        let locked = self
+            .accounts
+            .get_or_create(account_id.clone())
+            .lock()
+            .is_some();
+        if locked {
+            DefuseEvent::AccountLocked(AccountEvent::new(account_id, ())).emit();
+        }
+        locked
+    }
+
+    #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountUnlocker))]
+    #[payable]
+    fn force_unlock_account(&mut self, account_id: &AccountId) -> bool {
+        assert_one_yocto();
+        let unlocked = self
+            .accounts
+            .get_mut(account_id)
+            .and_then(Lock::unlock)
+            .is_some();
+        if unlocked {
+            DefuseEvent::AccountUnlocked(AccountEvent::new(account_id, ())).emit();
+        }
+        unlocked
+    }
 }

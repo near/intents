@@ -22,6 +22,8 @@ use near_contract_standards::{
 use near_plugins::{AccessControllable, Pausable};
 use near_sdk::ext_contract;
 
+use crate::accounts::AccountForceLocker;
+
 use self::{
     accounts::AccountManager,
     intents::{Intents, RelayerKeys},
@@ -53,6 +55,7 @@ pub trait Defuse:
     + FungibleTokenForceWithdrawer
     + NonFungibleTokenForceWithdrawer
     + MultiTokenForceWithdrawer
+    + AccountForceLocker
     + Pausable
     + ControllerUpgradable
     + FullAccessKeys

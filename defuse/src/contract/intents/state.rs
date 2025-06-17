@@ -73,14 +73,14 @@ impl StateView for Contract {
 
 impl State for Contract {
     #[inline]
-    fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> bool {
+    fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()> {
         self.accounts
             .get_or_create(account_id.clone())
             .add_public_key(&account_id, public_key)
     }
 
     #[inline]
-    fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> bool {
+    fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()> {
         self.accounts
             .get_or_create(account_id.clone())
             .remove_public_key(&account_id, &public_key)
