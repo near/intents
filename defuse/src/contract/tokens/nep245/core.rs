@@ -1,11 +1,28 @@
-use crate::contract::{Contract, ContractExt, gas::total_mt_withdraw_gas};
+use crate::contract::{Contract, ContractExt, tokens::LOG_CHUNK_TOKEN_COUNT};
 use defuse_core::{DefuseError, Result, engine::StateView, token_id::TokenId};
-use defuse_near_utils::{CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic};
+use defuse_near_utils::{
+    CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
+};
 use defuse_nep245::{MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver};
 use near_plugins::{Pausable, pause};
 use near_sdk::{
-    AccountId, AccountIdRef, PromiseOrValue, assert_one_yocto, json_types::U128, near, require,
+    AccountId, AccountIdRef, Gas, PromiseOrValue, assert_one_yocto, json_types::U128, near, require,
 };
+use std::borrow::Cow;
+
+// These represent a linear model total_gas_cost = per_token*n + base,
+// where `n` is the number of tokens.
+const MT_RESOLVE_TRANSFER_PER_TOKEN_GAS: Gas = Gas::from_tgas(2);
+const MT_RESOLVE_TRANSFER_BASE_GAS: Gas = Gas::from_tgas(8);
+
+#[must_use]
+pub fn mt_resolve_gas(token_count: usize) -> Gas {
+    let token_count: u64 = token_count.try_into().unwrap_or_panic_display();
+
+    MT_RESOLVE_TRANSFER_BASE_GAS
+        .checked_add(MT_RESOLVE_TRANSFER_PER_TOKEN_GAS.saturating_mul(token_count))
+        .unwrap_or_panic()
+}
 
 #[near]
 impl MultiTokenCore for Contract {
@@ -42,9 +59,9 @@ impl MultiTokenCore for Contract {
 
         self.internal_mt_batch_transfer(
             &PREDECESSOR_ACCOUNT_ID,
-            receiver_id,
-            token_ids,
-            amounts,
+            &receiver_id,
+            &token_ids,
+            &amounts,
             memo.as_deref(),
         )
         .unwrap_or_panic()
@@ -158,9 +175,9 @@ impl Contract {
     pub(crate) fn internal_mt_batch_transfer(
         &mut self,
         sender_id: &AccountIdRef,
-        receiver_id: AccountId,
-        token_ids: Vec<defuse_nep245::TokenId>,
-        amounts: Vec<U128>,
+        receiver_id: &AccountIdRef,
+        token_ids: &[defuse_nep245::TokenId],
+        amounts: &[U128],
         memo: Option<&str>,
     ) -> Result<()> {
         if sender_id == receiver_id || token_ids.len() != amounts.len() || amounts.is_empty() {
@@ -180,26 +197,33 @@ impl Contract {
                 .sub(token_id.clone(), amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
             self.accounts
-                .get_or_create(receiver_id.clone())
+                .get_or_create(receiver_id.to_owned())
                 .token_balances
                 .add(token_id, amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
         }
 
-        MtEvent::MtTransfer(
-            [MtTransferEvent {
-                authorized_id: None,
-                old_owner_id: sender_id.into(),
-                new_owner_id: receiver_id.into(),
-                token_ids: token_ids.into(),
-                amounts: amounts.into(),
-                memo: memo.map(Into::into),
-            }]
-            .as_slice()
-            .into(),
-        )
-        .emit();
+        {
+            // We batch logging because there is a limit on the size of logs
+            let token_log_batch = token_ids.chunks(LOG_CHUNK_TOKEN_COUNT);
+            let amount_log_batch = amounts.chunks(LOG_CHUNK_TOKEN_COUNT);
 
+            for (token_ids, amounts) in token_log_batch.zip(amount_log_batch) {
+                MtEvent::MtTransfer(
+                    [MtTransferEvent {
+                        authorized_id: None,
+                        old_owner_id: sender_id.into(),
+                        new_owner_id: Cow::Borrowed(receiver_id),
+                        token_ids: token_ids.into(),
+                        amounts: amounts.into(),
+                        memo: memo.map(Into::into),
+                    }]
+                    .as_slice()
+                    .into(),
+                )
+                .emit();
+            }
+        }
         Ok(())
     }
 
@@ -212,17 +236,11 @@ impl Contract {
         memo: Option<&str>,
         msg: String,
     ) -> Result<PromiseOrValue<Vec<U128>>> {
-        self.internal_mt_batch_transfer(
-            &sender_id,
-            receiver_id.clone(),
-            token_ids.clone(),
-            amounts.clone(),
-            memo,
-        )?;
+        self.internal_mt_batch_transfer(&sender_id, &receiver_id, &token_ids, &amounts, memo)?;
 
         let previous_owner_ids = vec![sender_id.clone(); token_ids.len()];
 
-        let resolve_gas_cost = total_mt_withdraw_gas(token_ids.len());
+        let resolve_gas_cost = mt_resolve_gas(token_ids.len());
 
         Ok(ext_mt_receiver::ext(receiver_id.clone())
             .mt_on_transfer(

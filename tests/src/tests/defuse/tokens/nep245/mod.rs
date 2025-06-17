@@ -1,3 +1,5 @@
+mod letter_gen;
+mod mt_transfer_resolve_gas;
 pub mod traits;
 
 use crate::tests::defuse::tokens::nep245::traits::DefuseMtWithdrawer;

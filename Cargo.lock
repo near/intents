@@ -851,6 +851,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "arbitrary",
+ "arbitrary_with",
  "bnum",
  "chrono",
  "defuse",
@@ -858,6 +859,7 @@ dependencies = [
  "defuse-poa-factory",
  "defuse-randomness",
  "defuse-test-utils",
+ "derive_more 2.0.1",
  "hex",
  "hex-literal",
  "impl-tools",
@@ -867,6 +869,7 @@ dependencies = [
  "near-workspaces",
  "rstest",
  "serde_json",
+ "strum 0.27.1",
  "tlb-ton",
  "tokio",
 ]
