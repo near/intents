@@ -33,7 +33,6 @@ pub struct Env {
     pub wnear: Contract,
 
     pub defuse: Contract,
-    pub defuse2: Contract,
 
     pub poa_factory: Contract,
 
@@ -253,20 +252,6 @@ impl EnvBuilder {
                                 .unwrap_or_else(|| root.id().clone()),
                         },
                         roles: self.roles.clone(),
-                    },
-                )
-                .await
-                .unwrap(),
-            defuse2: root
-                .deploy_defuse(
-                    "defuse2",
-                    DefuseConfig {
-                        wnear_id: wnear.id().clone(),
-                        fees: FeesConfig {
-                            fee: self.fee,
-                            fee_collector: self.fee_collector.unwrap_or_else(|| root.id().clone()),
-                        },
-                        roles: self.roles,
                     },
                 )
                 .await

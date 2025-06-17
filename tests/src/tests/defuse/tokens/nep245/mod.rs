@@ -2,8 +2,11 @@ mod letter_gen;
 mod mt_transfer_resolve_gas;
 pub mod traits;
 
+use crate::tests::defuse::DefuseExt;
 use crate::tests::defuse::tokens::nep245::traits::DefuseMtWithdrawer;
 use crate::{tests::defuse::env::Env, utils::mt::MtExt};
+use defuse::contract::config::{DefuseConfig, RolesConfig};
+use defuse::core::fees::{FeesConfig, Pips};
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
 use defuse::core::token_id::nep245::Nep245TokenId;
@@ -462,6 +465,20 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
 async fn multitoken_withdrawals() {
     let env = Env::builder().build().await;
 
+    let defuse2 = env
+        .deploy_defuse(
+            "defuse2",
+            DefuseConfig {
+                wnear_id: env.wnear.id().clone(),
+                fees: FeesConfig {
+                    fee: Pips::ZERO,
+                    fee_collector: env.id().clone(),
+                },
+                roles: RolesConfig::default(),
+            },
+        )
+        .await
+        .unwrap();
     {
         assert!(
             env.user1
@@ -524,7 +541,7 @@ async fn multitoken_withdrawals() {
     // At this point, user1 in defuse2, has no balance of `"nep245:defuse.test.near:nep141:ft1.test.near"`, and others. We will fund it next.
     {
         assert_eq!(
-            env.defuse2
+            defuse2
                 .mt_balance_of(
                     env.user1.id(),
                     &TokenId::Nep245(
@@ -538,7 +555,7 @@ async fn multitoken_withdrawals() {
         );
 
         assert_eq!(
-            env.defuse2
+            defuse2
                 .mt_balance_of(
                     env.user1.id(),
                     &TokenId::Nep245(
@@ -552,7 +569,7 @@ async fn multitoken_withdrawals() {
         );
 
         assert_eq!(
-            env.defuse2
+            defuse2
                 .mt_balance_of(
                     env.user1.id(),
                     &TokenId::Nep245(
@@ -571,7 +588,7 @@ async fn multitoken_withdrawals() {
         env.user1
             .mt_transfer_call(
                 env.defuse.id(),
-                env.defuse2.id(),
+                defuse2.id(),
                 &ft1.to_string(),
                 100,
                 None,
@@ -584,7 +601,7 @@ async fn multitoken_withdrawals() {
         env.user1
             .mt_transfer_call(
                 env.defuse.id(),
-                env.defuse2.id(),
+                defuse2.id(),
                 &ft2.to_string(),
                 200,
                 None,
@@ -597,7 +614,7 @@ async fn multitoken_withdrawals() {
         env.user1
             .mt_transfer_call(
                 env.defuse.id(),
-                env.defuse2.id(),
+                defuse2.id(),
                 &ft3.to_string(),
                 300,
                 None,
@@ -611,7 +628,7 @@ async fn multitoken_withdrawals() {
     // At this point, user1 in defuse2 has 100 of `"nep245:defuse.test.near:nep141:ft1.test.near"`, and others
     {
         assert_eq!(
-            env.defuse2
+            defuse2
                 .mt_balance_of(
                     env.user1.id(),
                     &TokenId::Nep245(
@@ -625,7 +642,7 @@ async fn multitoken_withdrawals() {
         );
 
         assert_eq!(
-            env.defuse2
+            defuse2
                 .mt_balance_of(
                     env.user1.id(),
                     &TokenId::Nep245(
@@ -639,7 +656,7 @@ async fn multitoken_withdrawals() {
         );
 
         assert_eq!(
-            env.defuse2
+            defuse2
                 .mt_balance_of(
                     env.user1.id(),
                     &TokenId::Nep245(
@@ -666,7 +683,7 @@ async fn multitoken_withdrawals() {
         let (_amounts, _test_log) = env
             .user1
             .defuse_mt_withdraw(
-                env.defuse2.id(),
+                defuse2.id(),
                 env.defuse.id(),
                 env.user2.id(),
                 tokens.iter().cloned().map(|v| v.0).collect(),
@@ -689,7 +706,7 @@ async fn multitoken_withdrawals() {
     {
         // Only ft1 balance changes
         assert_eq!(
-            env.defuse2
+            defuse2
                 .mt_balance_of(
                     env.user1.id(),
                     &TokenId::Nep245(
@@ -703,7 +720,7 @@ async fn multitoken_withdrawals() {
         );
 
         assert_eq!(
-            env.defuse2
+            defuse2
                 .mt_balance_of(
                     env.user1.id(),
                     &TokenId::Nep245(
@@ -717,7 +734,7 @@ async fn multitoken_withdrawals() {
         );
 
         assert_eq!(
-            env.defuse2
+            defuse2
                 .mt_balance_of(
                     env.user1.id(),
                     &TokenId::Nep245(
@@ -738,7 +755,7 @@ async fn multitoken_withdrawals() {
         let (_amounts, _test_log) = env
             .user1
             .defuse_mt_withdraw(
-                env.defuse2.id(),
+                defuse2.id(),
                 env.defuse.id(),
                 env.user2.id(),
                 tokens.iter().cloned().map(|v| v.0).collect(),
@@ -768,7 +785,7 @@ async fn multitoken_withdrawals() {
         let (_amounts, _test_log) = env
             .user1
             .defuse_mt_withdraw(
-                env.defuse2.id(),
+                defuse2.id(),
                 env.defuse.id(),
                 env.user2.id(),
                 tokens.iter().cloned().map(|v| v.0).collect(),
@@ -790,7 +807,7 @@ async fn multitoken_withdrawals() {
     // We ensure the math is sound after the last two withdrawals
     {
         assert_eq!(
-            env.defuse2
+            defuse2
                 .mt_balance_of(
                     env.user1.id(),
                     &TokenId::Nep245(
@@ -804,7 +821,7 @@ async fn multitoken_withdrawals() {
         );
 
         assert_eq!(
-            env.defuse2
+            defuse2
                 .mt_balance_of(
                     env.user1.id(),
                     &TokenId::Nep245(
@@ -818,7 +835,7 @@ async fn multitoken_withdrawals() {
         );
 
         assert_eq!(
-            env.defuse2
+            defuse2
                 .mt_balance_of(
                     env.user1.id(),
                     &TokenId::Nep245(
