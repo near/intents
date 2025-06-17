@@ -245,7 +245,7 @@ mod tests {
                     "7bc628f6d634ab6ddaf10463742b13f0ede3cb828737d9ce1962cc808fbfe7035e77c1a3d0b682acf02d645cc1a244992b276552c0e1c57d30b03c2820d73d01"
                 ),
             },
-            random_bytes,
+            &random_bytes,
         );
     }
 
@@ -270,7 +270,7 @@ mod tests {
                     "9cf4c1c16b47afce46940eb9cd410894f31544b74206c2254bb1651f9b32cf5b0e482b78a2e8251e54d3517fae4b06c6f23546667d63ff62dccce70451698d01"
                 ),
             },
-            random_bytes,
+            &random_bytes,
         );
     }
 
@@ -305,15 +305,15 @@ mod tests {
                     "6ad083855374c201c2acb14aa4e7eef44603c8d356624c8fd3b6be3babd84bd8bc7390f0ed4484ab58a535b3088681e0006839eb07136470985b3a33bfa17c05"
                 ),
             },
-            random_bytes,
+            &random_bytes,
         );
     }
 
-    fn verify(signed: &SignedTonConnectPayload, random_bytes: Vec<u8>) {
+    fn verify(signed: &SignedTonConnectPayload, random_bytes: &[u8]) {
         verify_ok(signed, true);
 
         // tampering
-        let mut u = Unstructured::new(&random_bytes);
+        let mut u = Unstructured::new(random_bytes);
         {
             let mut t = signed.clone();
             t.payload.address = Arbitrary::arbitrary(&mut u).unwrap();

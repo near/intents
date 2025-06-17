@@ -47,16 +47,17 @@ pub struct ArbitraryNamedAccountId;
 impl<'a> ArbitraryAs<'a, AccountId> for ArbitraryNamedAccountId {
     fn arbitrary_as(u: &mut Unstructured<'a>) -> Result<AccountId> {
         let make_subaccount = |account_id: &str, u: &mut Unstructured<'a>| -> Result<String> {
+            #[allow(clippy::range_minus_one)]
             let subaccount_len =
                 u.int_in_range(2..=(MAX_ACCOUNT_ID_LENGTH - account_id.len() - 1))?;
             (0..subaccount_len)
                 .map(|_| {
                     let c = u.int_in_range(0..=35)?;
-                    Ok(match c {
-                        0..=25 => (b'a' + c) as char,
-                        26..=35 => (b'0' + (c - 26)) as char,
+                    Ok(char::from(match c {
+                        0..=25 => b'a' + c,
+                        26..=35 => b'0' + (c - 26),
                         _ => unreachable!(),
-                    })
+                    }))
                 })
                 .collect::<Result<_>>()
         };
