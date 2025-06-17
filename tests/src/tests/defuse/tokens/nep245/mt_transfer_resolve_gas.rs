@@ -231,19 +231,7 @@ async fn mt_transfer_resolve_gas(rng: impl Rng) {
         let min_token_count = 1;
         let max_token_count = 200;
 
-        // for token_count in (1..200).map(|v| v * 5) {
-        //     run_resolve_gas_test(
-        //         gen_mode,
-        //         token_count,
-        //         env.clone(),
-        //         author_account.clone(),
-        //         rng.clone(),
-        //     )
-        //     .await
-        //     .unwrap();
-        // }
-
-        let max = binary_search_max(min_token_count, max_token_count, {
+        let max_transferred_count = binary_search_max(min_token_count, max_token_count, {
             let rng = rng.clone();
             let env = env.clone();
             let author_account = author_account.clone();
@@ -259,6 +247,14 @@ async fn mt_transfer_resolve_gas(rng: impl Rng) {
         })
         .await;
 
-        println!("Max for generation mode {gen_mode} is: {max:?}");
+        let max_transferred_count = max_transferred_count.unwrap();
+
+        println!(
+            "Max token transfer per call for generation mode {gen_mode} is: {max_transferred_count:?}"
+        );
+
+        // If the max number of transferred tokens is less than this value, panic.
+        let min_transferred_desired = 50;
+        assert!(max_transferred_count >= min_transferred_desired);
     }
 }
