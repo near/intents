@@ -52,11 +52,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: check
     steps:
-      - name: Debug cache shared-key
-        run: |
-          echo "GITHUB_REF:   $GITHUB_REF"
-          echo "GITHUB_JOB:   $GITHUB_JOB"
-          echo "Runner OS:    $RUNNER_OS"
+      ## Helpful for cache debugging
+      # - name: Debug cache shared-key
+      #   run: |
+      #     echo "GITHUB_REF:   $GITHUB_REF"
+      #     echo "GITHUB_JOB:   $GITHUB_JOB"
+      #     echo "Runner OS:    $RUNNER_OS"
 
       - name: Install Dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1
@@ -74,6 +75,12 @@ jobs:
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
         with:
+          # `${{ github.job }}` is the name of the job, in this case `build`.
+          # In this case, the same `shared-key` will be used for all `build` jobs.
+          # Note that internally in the cache software, the name contains more stuff;
+          # the final key used for cache hits looks like this:
+          # v0-rust-build-Linux-x64-26ad3c07-f048083d
+          # which includes container information.
           shared-key: ${{ github.job }}
           cache-all-crates: "true" # Yes, it's a string
       - name: Install Cargo Plugins
