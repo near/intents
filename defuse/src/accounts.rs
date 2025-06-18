@@ -22,7 +22,7 @@ pub trait AccountManager {
     /// i.e. this key can't be used to make any actions unless it's re-created.
     ///
     /// NOTE: MUST attach 1 yⓃ for security purposes.
-    fn remove_public_key(&mut self, public_key: &PublicKey);
+    fn remove_public_key(&mut self, public_key: PublicKey);
 
     /// Returns whether given nonce was already used by the account
     /// NOTE: nonces are non-sequential and follow

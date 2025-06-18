@@ -6,17 +6,17 @@ pub use self::{account::*, state::*};
 use std::collections::HashSet;
 
 use defuse_core::{
-    DefuseError, Nonce,
+    Nonce,
     accounts::AccountEvent,
     crypto::PublicKey,
     engine::{State, StateView},
     events::DefuseEvent,
 };
-use defuse_near_utils::{Lock, NestPrefix, PREDECESSOR_ACCOUNT_ID};
+use defuse_near_utils::{Lock, NestPrefix, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic};
 use defuse_serde_utils::base64::AsBase64;
 use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{
-    AccountId, AccountIdRef, BorshStorageKey, FunctionError, IntoStorageKey, assert_one_yocto,
+    AccountId, AccountIdRef, BorshStorageKey, IntoStorageKey, assert_one_yocto,
     borsh::BorshSerialize, near, store::IterableMap,
 };
 
@@ -42,7 +42,7 @@ impl AccountManager for Contract {
     }
 
     #[payable]
-    fn remove_public_key(&mut self, public_key: &PublicKey) {
+    fn remove_public_key(&mut self, public_key: PublicKey) {
         assert_one_yocto();
         State::remove_public_key(self, PREDECESSOR_ACCOUNT_ID.clone(), public_key)
             .unwrap_or_panic();

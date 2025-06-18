@@ -158,6 +158,13 @@ pub struct AccountEntry(
     pub Lock<Account>,
 );
 
+impl From<Lock<Account>> for AccountEntry {
+    #[inline]
+    fn from(value: Lock<Account>) -> Self {
+        Self(value)
+    }
+}
+
 /// This is a magic number that is used to differentiate between
 /// borsh-serialized representations of legacy and versioned [`Account`]s:
 /// * versioned [`Account`]s always start with this prefix
