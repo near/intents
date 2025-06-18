@@ -19,7 +19,7 @@ pub struct Nep245TokenId {
         arbitrary(with = As::<ArbitraryAccountId>::arbitrary),
     )]
     contract_id: AccountId,
-    
+
     #[cfg_attr(
         any(feature = "arbitrary", test),
         arbitrary(with = As::<LimitLen<MAX_ALLOWED_TOKEN_ID_LEN>>::arbitrary),
