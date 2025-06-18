@@ -84,6 +84,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "arbitrary_with"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "10727f045a37482b73f6e951641a45125ce967db9f676f707fabb4fd885d0966"
+dependencies = [
+ "arbitrary",
+ "array-util",
+ "impl-tools",
+ "rustversion",
+]
+
+[[package]]
+name = "array-util"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7e509844de8f09b90a2c3444684a2b6695f4071360e13d2fda0af9f749cc2ed6"
+dependencies = [
+ "arrayvec",
+]
+
+[[package]]
+name = "arrayvec"
+version = "0.7.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c02d123df017efcdfbd739ef81735b36c5ba83ec3c59c80a9d7ecc718f92e50"
+
+[[package]]
 name = "async-trait"
 version = "0.1.88"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -608,6 +635,7 @@ dependencies = [
  "defuse-near-utils",
  "defuse-nep245",
  "defuse-serde-utils",
+ "defuse-test-utils",
  "defuse-wnear",
  "impl-tools",
  "near-account-id",
@@ -616,7 +644,6 @@ dependencies = [
  "near-sdk",
  "serde_with",
  "strum 0.27.1",
- "test-utils",
  "thiserror 2.0.12",
 ]
 
@@ -658,6 +685,7 @@ name = "defuse-core"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "arbitrary_with",
  "chrono",
  "defuse-bitmap",
  "defuse-crypto",
@@ -668,10 +696,12 @@ dependencies = [
  "defuse-nep413",
  "defuse-num-utils",
  "defuse-serde-utils",
+ "defuse-test-utils",
  "defuse-ton-connect",
  "defuse-webauthn",
  "derive_more 2.0.1",
  "hex",
+ "hex-literal",
  "impl-tools",
  "itertools 0.14.0",
  "near-account-id",
@@ -680,7 +710,6 @@ dependencies = [
  "rstest",
  "serde_with",
  "strum 0.27.1",
- "test-utils",
  "thiserror 2.0.12",
 ]
 
@@ -723,13 +752,16 @@ dependencies = [
 name = "defuse-near-utils"
 version = "0.1.0"
 dependencies = [
+ "arbitrary_with",
  "chrono",
  "defuse-borsh-utils",
+ "defuse-test-utils",
  "digest",
+ "hex",
  "impl-tools",
+ "near-account-id",
  "near-sdk",
  "rstest",
- "test-utils",
 ]
 
 [[package]]
@@ -788,6 +820,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-randomness"
+version = "0.1.0"
+dependencies = [
+ "rand 0.9.1",
+]
+
+[[package]]
 name = "defuse-serde-utils"
 version = "0.1.0"
 dependencies = [
@@ -795,6 +834,20 @@ dependencies = [
  "near-sdk",
  "serde_with",
  "tlb-ton",
+]
+
+[[package]]
+name = "defuse-test-utils"
+version = "0.1.0"
+dependencies = [
+ "arbitrary",
+ "defuse-randomness",
+ "derive_more 2.0.1",
+ "hex",
+ "near-account-id",
+ "near-sdk",
+ "rand_chacha 0.9.0",
+ "rstest",
 ]
 
 [[package]]
@@ -808,6 +861,8 @@ dependencies = [
  "defuse",
  "defuse-near-utils",
  "defuse-poa-factory",
+ "defuse-randomness",
+ "defuse-test-utils",
  "hex",
  "hex-literal",
  "impl-tools",
@@ -815,10 +870,8 @@ dependencies = [
  "near-crypto",
  "near-sdk",
  "near-workspaces",
- "randomness",
  "rstest",
  "serde_json",
- "test-utils",
  "tlb-ton",
  "tokio",
 ]
@@ -832,13 +885,13 @@ dependencies = [
  "defuse-crypto",
  "defuse-near-utils",
  "defuse-serde-utils",
+ "defuse-test-utils",
  "hex-literal",
  "impl-tools",
  "near-sdk",
  "rstest",
  "schemars",
  "serde_with",
- "test-utils",
  "tlb-ton",
 ]
 
@@ -1661,9 +1714,9 @@ dependencies = [
 
 [[package]]
 name = "impl-tools"
-version = "0.10.3"
+version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ae95c9095c2f1126d7db785955c73cdc5fc33e7c3fa911bd4a42931672029a7"
+checksum = "e19bd783a5f6c6a3de6e850c90e1a9c5102ddcefd57c1503597862cacf629287"
 dependencies = [
  "autocfg",
  "impl-tools-lib",
@@ -1673,9 +1726,9 @@ dependencies = [
 
 [[package]]
 name = "impl-tools-lib"
-version = "0.11.1"
+version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a391adcea096a89a593317881fb61ef4e68d3e7d9de9e2338e6e1557be29e10"
+checksum = "e5dd44512657db861b4305c97cda920d0551d1911f7dfa77badee2a6e25277b1"
 dependencies = [
  "proc-macro-error2",
  "proc-macro2",
@@ -2853,13 +2906,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "randomness"
-version = "0.1.0"
-dependencies = [
- "rand 0.9.1",
-]
-
-[[package]]
 name = "rayon"
 version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3656,20 +3702,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "test-utils"
-version = "0.1.0"
-dependencies = [
- "arbitrary",
- "derive_more 2.0.1",
- "hex",
- "near-account-id",
- "near-sdk",
- "rand_chacha 0.9.0",
- "randomness",
- "rstest",
-]
-
-[[package]]
 name = "thiserror"
 version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3776,11 +3808,12 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tlb"
-version = "0.5.2"
+version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "341978a7312fb9675a445aed6092e6105ebc5c5df8d7a19f8c911ff2e870bfc9"
+checksum = "fdc025689fc2fd8b88fd53d112f865ffc84ac920dd06e88da3bde9afaa4a8bc3"
 dependencies = [
  "arbitrary",
+ "array-util",
  "base64 0.21.7",
  "bitvec",
  "crc",
@@ -3793,9 +3826,9 @@ dependencies = [
 
 [[package]]
 name = "tlb-ton"
-version = "0.5.2"
+version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ccabf1c52a8ac481845f222fa51b60adbeda727921ac316c8ef7efd2fa30b817"
+checksum = "b04abc3181f4c46388bd513d299e02603ad4a9dd4e04d36c669c87436958e48e"
 dependencies = [
  "arbitrary",
  "base64 0.21.7",
@@ -3814,10 +3847,11 @@ dependencies = [
 
 [[package]]
 name = "tlbits"
-version = "0.5.2"
+version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "097916b5f423b9956007b1f308104224a3c4f536f0dd16d60bfced85042a2923"
+checksum = "037d1fa9c669c3adb766dc471691cfb6626ea9467dcac206f6473cf0dbcf3d4b"
 dependencies = [
+ "array-util",
  "bitvec",
  "either",
  "impl-tools",

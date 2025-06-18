@@ -18,7 +18,7 @@ jobs:
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: ${{ github.ref }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
           cache-all-crates: true
       - name: Install Cargo Plugins
         run: cargo install cargo-audit

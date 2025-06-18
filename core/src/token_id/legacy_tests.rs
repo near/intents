@@ -1,18 +1,17 @@
 //! Tests that ensure that serialization to the new format adhere to the old one
 
 use crate::token_id::{TokenId, error::TokenIdError};
-use arbitrary::{Arbitrary, Unstructured};
+use arbitrary_with::{Arbitrary, As};
+use defuse_near_utils::arbitrary::ArbitraryAccountId;
+use defuse_test_utils::random::make_arbitrary;
 use near_sdk::{AccountId, borsh, near};
 use rstest::rstest;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 use std::{fmt, str::FromStr};
-use strum::{EnumDiscriminants, EnumIter, EnumString, IntoEnumIterator};
-use test_utils::{
-    arbitrary::account_id::arbitrary_account_id,
-    random::{Seed, gen_random_bytes, make_seedable_rng, random_seed},
-};
+use strum::{EnumDiscriminants, EnumIter, EnumString};
 
 /// A copy of the old TokenId without length checking. We have the copy here to test serialization/deserialization
+#[cfg_attr(any(feature = "arbitrary", test), derive(Arbitrary))]
 #[derive(
     Clone,
     PartialEq,
@@ -33,16 +32,28 @@ use test_utils::{
 enum LegacyTokenId {
     Nep141(
         /// Contract
+        #[cfg_attr(
+            any(feature = "arbitrary", test),
+            arbitrary(with = As::<ArbitraryAccountId>::arbitrary),
+        )]
         AccountId,
     ),
     Nep171(
         /// Contract
+        #[cfg_attr(
+            any(feature = "arbitrary", test),
+            arbitrary(with = As::<ArbitraryAccountId>::arbitrary),
+        )]
         AccountId,
         /// Token ID
         near_contract_standards::non_fungible_token::TokenId,
     ),
     Nep245(
         /// Contract
+        #[cfg_attr(
+            any(feature = "arbitrary", test),
+            arbitrary(with = As::<ArbitraryAccountId>::arbitrary),
+        )]
         AccountId,
         /// Token ID
         defuse_nep245::TokenId,
@@ -111,47 +122,17 @@ impl FromStr for LegacyTokenId {
     }
 }
 
-impl<'a> Arbitrary<'a> for LegacyTokenId {
-    fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-        let variants = LegacyTokenIdType::iter().collect::<Vec<_>>();
-        let variant = u.choose(&variants)?;
-        Ok(match variant {
-            LegacyTokenIdType::Nep141 => Self::Nep141(arbitrary_account_id(u)?),
-            LegacyTokenIdType::Nep171 => Self::Nep171(
-                arbitrary_account_id(u)?,
-                near_contract_standards::non_fungible_token::TokenId::arbitrary(u)?,
-            ),
-            LegacyTokenIdType::Nep245 => Self::Nep245(
-                arbitrary_account_id(u)?,
-                defuse_nep245::TokenId::arbitrary(u)?,
-            ),
-        })
-    }
-}
-
-fn assert_eq_legacy_and_new_token_id(legacy_token_id: &LegacyTokenId, new_token_id: &TokenId) {
-    match legacy_token_id {
-        LegacyTokenId::Nep141(account_id) => {
-            if let TokenId::Nep141(nep141) = new_token_id {
-                assert_eq!(account_id, nep141.contract_id());
-            } else {
-                unreachable!()
+impl From<TokenId> for LegacyTokenId {
+    fn from(token_id: TokenId) -> Self {
+        match token_id {
+            TokenId::Nep141(token_id) => Self::Nep141(token_id.into_contract_id()),
+            TokenId::Nep171(token_id) => {
+                let (contract_id, nft_token_id) = token_id.into_contract_id_and_nft_token_id();
+                Self::Nep171(contract_id, nft_token_id)
             }
-        }
-        LegacyTokenId::Nep171(account_id, nft_token_id) => {
-            if let TokenId::Nep171(nep171) = new_token_id {
-                assert_eq!(account_id, nep171.contract_id());
-                assert_eq!(nft_token_id, nep171.nft_token_id());
-            } else {
-                unreachable!()
-            }
-        }
-        LegacyTokenId::Nep245(account_id, mt_token_id) => {
-            if let TokenId::Nep245(nep245) = new_token_id {
-                assert_eq!(account_id, nep245.contract_id());
-                assert_eq!(mt_token_id, nep245.mt_token_id());
-            } else {
-                unreachable!()
+            TokenId::Nep245(token_id) => {
+                let (contract_id, mt_token_id) = token_id.into_contract_id_and_mt_token_id();
+                Self::Nep245(contract_id, mt_token_id)
             }
         }
     }
@@ -159,15 +140,28 @@ fn assert_eq_legacy_and_new_token_id(legacy_token_id: &LegacyTokenId, new_token_
 
 #[rstest]
 #[trace]
-fn serialization_back_and_forth_legacy_and_new(random_seed: Seed) {
-    let mut rng = make_seedable_rng(random_seed);
-    let bytes = gen_random_bytes(&mut rng, ..1000);
-    let mut u = arbitrary::Unstructured::new(&bytes);
+fn borsh_roundtrip(#[from(make_arbitrary)] token_id: TokenId) {
+    let legacy_token_id: LegacyTokenId = token_id.clone().into();
 
-    let token_id: LegacyTokenId = Arbitrary::arbitrary(&mut u).unwrap();
+    let ser = borsh::to_vec(&token_id).unwrap();
+    assert_eq!(ser, borsh::to_vec(&legacy_token_id).unwrap());
 
-    let token_id_ser = borsh::to_vec(&token_id).unwrap();
-    let token_id_deser: TokenId = borsh::from_slice(&token_id_ser).unwrap();
+    let got: TokenId = borsh::from_slice(&ser).unwrap();
+    let legacy_got: LegacyTokenId = borsh::from_slice(&ser).unwrap();
+    assert_eq!(got, token_id);
+    assert_eq!(legacy_got, legacy_token_id);
+}
 
-    assert_eq_legacy_and_new_token_id(&token_id, &token_id_deser);
+#[rstest]
+#[trace]
+fn display_from_str_roundtrip(#[from(make_arbitrary)] token_id: TokenId) {
+    let legacy_token_id: LegacyTokenId = token_id.clone().into();
+
+    let ser = token_id.to_string();
+    assert_eq!(ser, legacy_token_id.to_string());
+
+    let got: TokenId = ser.parse().unwrap();
+    let legacy_got: LegacyTokenId = ser.parse().unwrap();
+    assert_eq!(got, token_id);
+    assert_eq!(legacy_got, legacy_token_id);
 }

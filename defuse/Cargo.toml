@@ -46,4 +46,4 @@ contract = [
 ]
 
 [dev-dependencies]
-test-utils.workspace = true
+defuse-test-utils.workspace = true
