@@ -86,10 +86,7 @@ mod tests {
 
     use arbitrary::Unstructured;
     use arbitrary_with::UnstructuredExt;
-    use defuse_test_utils::{
-        asserts::ResultAssertsExt,
-        random::{make_arbitrary, random_bytes},
-    };
+    use defuse_test_utils::random::{make_arbitrary, random_bytes};
     use rstest::rstest;
 
     #[rstest]
@@ -108,7 +105,7 @@ mod tests {
 
         let r = Nep245TokenId::new(contract_id, token_id.clone());
         if token_id.len() > MAX_ALLOWED_TOKEN_ID_LEN {
-            r.assert_err_contains("token_id is too long.");
+            assert!(matches!(r.unwrap_err(), TokenIdError::TokenIdTooLarge(_)));
         } else {
             r.unwrap();
         }
