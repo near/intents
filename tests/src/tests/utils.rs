@@ -1,6 +1,6 @@
 use defuse::core::fees::Pips;
 use defuse_randomness::Rng;
-use defuse_test_utils::random::{Seed, rng, random_seed};
+use defuse_test_utils::random::{Seed, random_seed, rng};
 use near_sdk::borsh;
 use rstest::rstest;
 

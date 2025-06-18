@@ -17,7 +17,7 @@ use defuse::{
     tokens::DepositMessage,
 };
 use defuse_randomness::Rng;
-use defuse_test_utils::random::{Seed, rng, random_seed};
+use defuse_test_utils::random::{Seed, random_seed, rng};
 use near_sdk::{AccountId, NearToken, json_types::U128};
 use rstest::rstest;
 use serde_json::json;

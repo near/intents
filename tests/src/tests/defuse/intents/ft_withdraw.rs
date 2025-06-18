@@ -18,7 +18,7 @@ use defuse::{
 use defuse_randomness::Rng;
 use defuse_test_utils::{
     asserts::ResultAssertsExt,
-    random::{Seed, rng, random_seed},
+    random::{Seed, random_seed, rng},
 };
 use near_sdk::{AccountId, Gas, NearToken};
 use rstest::rstest;

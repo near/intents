@@ -14,7 +14,7 @@ use defuse::core::{
     payload::multi::MultiPayload,
 };
 use defuse_randomness::{Rng, make_true_rng};
-use defuse_test_utils::random::{Seed, rng, random_seed};
+use defuse_test_utils::random::{Seed, random_seed, rng};
 use near_sdk::AccountId;
 use near_workspaces::Account;
 use rstest::rstest;
