@@ -40,7 +40,7 @@ jobs:
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: ${{ github.ref }}-${{ github.job }}
+          shared-key: ${{ github.job }}
           cache-all-crates: "true" # Yes, it's a string
       - name: Install cargo-make
         run: cargo install cargo-make
@@ -74,7 +74,7 @@ jobs:
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: ${{ github.ref }}-${{ github.job }}
+          shared-key: ${{ github.job }}
           cache-all-crates: "true" # Yes, it's a string
       - name: Install Cargo Plugins
         run: cargo install cargo-make cargo-near
@@ -107,7 +107,7 @@ jobs:
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: ${{ github.ref }}-${{ github.job }}
+          shared-key: ${{ github.job }}
           cache-all-crates: "true" # Yes, it's a string
       - name: Install cargo-make
         run: cargo install cargo-make
@@ -147,7 +147,7 @@ jobs:
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: ${{ github.ref }}-${{ github.job }}
+          shared-key: ${{ github.job }}
           cache-all-crates: "true" # Yes, it's a string
       - name: Install Cargo Plugins
         run: cargo install cargo-audit
