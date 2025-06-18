@@ -238,7 +238,7 @@ impl Contract {
     }
 
     #[must_use]
-    pub fn mt_resolve_gas(token_count: usize) -> Gas {
+    fn mt_resolve_gas(token_count: usize) -> Gas {
         // These represent a linear model total_gas_cost = per_token*n + base,
         // where `n` is the number of tokens.
         const MT_RESOLVE_TRANSFER_PER_TOKEN_GAS: Gas = Gas::from_tgas(2);
@@ -246,7 +246,11 @@ impl Contract {
         let token_count: u64 = token_count.try_into().unwrap_or_panic_display();
 
         MT_RESOLVE_TRANSFER_BASE_GAS
-            .checked_add(MT_RESOLVE_TRANSFER_PER_TOKEN_GAS.saturating_mul(token_count))
+            .checked_add(
+                MT_RESOLVE_TRANSFER_PER_TOKEN_GAS
+                    .checked_mul(token_count)
+                    .unwrap(),
+            )
             .unwrap_or_panic()
     }
 }

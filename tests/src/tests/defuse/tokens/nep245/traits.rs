@@ -12,6 +12,7 @@ pub trait DefuseMtWithdrawer {
         receiver_id: &AccountId,
         token_ids: Vec<TokenId>,
         amounts: Vec<u128>,
+        msg: Option<String>,
     ) -> anyhow::Result<(Vec<u128>, TestLog)>;
 }
 
@@ -23,6 +24,7 @@ impl DefuseMtWithdrawer for near_workspaces::Account {
         receiver_id: &AccountId,
         token_ids: Vec<TokenId>,
         amounts: Vec<u128>,
+        msg: Option<String>,
     ) -> anyhow::Result<(Vec<u128>, TestLog)> {
         let (result, test_log) = self
             .call(defuse_id, "mt_withdraw")
@@ -32,6 +34,7 @@ impl DefuseMtWithdrawer for near_workspaces::Account {
                 "receiver_id": receiver_id,
                 "token_ids": token_ids,
                 "amounts": amounts.into_iter().map(U128).collect::<Vec<_>>(),
+                "msg": msg
             }))
             .max_gas()
             .transact()

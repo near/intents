@@ -688,6 +688,7 @@ async fn multitoken_withdrawals() {
                 env.user2.id(),
                 tokens.iter().cloned().map(|v| v.0).collect(),
                 tokens.iter().map(|v| v.1).collect(),
+                None,
             )
             .await
             .unwrap();
@@ -760,6 +761,7 @@ async fn multitoken_withdrawals() {
                 env.user2.id(),
                 tokens.iter().cloned().map(|v| v.0).collect(),
                 tokens.iter().map(|v| v.1).collect(),
+                None,
             )
             .await
             .unwrap();
@@ -790,6 +792,7 @@ async fn multitoken_withdrawals() {
                 env.user2.id(),
                 tokens.iter().cloned().map(|v| v.0).collect(),
                 tokens.iter().map(|v| v.1).collect(),
+                None,
             )
             .await
             .unwrap();

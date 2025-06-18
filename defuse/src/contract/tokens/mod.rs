@@ -54,17 +54,7 @@ impl Contract {
         }
 
         if !mint_event.amounts.is_empty() {
-            MtEvent::MtMint(
-                [MtMintEvent {
-                    owner_id: Cow::Borrowed(&mint_event.owner_id),
-                    token_ids: mint_event.token_ids,
-                    amounts: mint_event.amounts,
-                    memo: memo.map(Into::into),
-                }]
-                .as_slice()
-                .into(),
-            )
-            .emit();
+            MtEvent::MtMint([mint_event].as_slice().into()).emit();
         }
 
         Ok(())
