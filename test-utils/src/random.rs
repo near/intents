@@ -36,7 +36,7 @@ impl Seed {
 
     #[must_use]
     pub fn derive_seed(&self) -> Self {
-        let mut rng = random_rng(*self);
+        let mut rng = rng(*self);
         rng.random()
     }
 }
@@ -135,18 +135,18 @@ pub fn random_seed() -> Seed {
 
 #[fixture]
 #[must_use]
-pub fn random_rng(random_seed: Seed) -> impl Rng + CryptoRng {
+pub fn rng(random_seed: Seed) -> impl Rng + CryptoRng {
     TestRng::new(random_seed)
 }
 
 #[fixture]
 pub fn random_bytes<'a>(
     #[default(50..1000)] size: impl RangeBounds<usize>,
-    mut random_rng: impl Rng,
+    mut rng: impl Rng,
 ) -> Vec<u8> {
-    let data_length = range_to_random_size(&mut random_rng, size);
+    let data_length = range_to_random_size(&mut rng, size);
     let mut bytes = vec![0; data_length];
-    random_rng.fill_bytes(&mut bytes);
+    rng.fill_bytes(&mut bytes);
     bytes
 }
 

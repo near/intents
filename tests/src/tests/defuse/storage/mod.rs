@@ -6,7 +6,7 @@ use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::Deadline;
 use defuse::core::intents::{DefuseIntents, tokens::StorageDeposit};
 use defuse_randomness::Rng;
-use defuse_test_utils::random::{Seed, random_rng, random_seed};
+use defuse_test_utils::random::{Seed, random_seed, rng};
 use near_sdk::NearToken;
 use rstest::rstest;
 
@@ -34,7 +34,7 @@ async fn storage_deposit_success(
     #[case] amount_to_deposit: NearToken,
     #[case] expected_deposited: Option<NearToken>,
 ) {
-    let mut rng = random_rng(random_seed);
+    let mut rng = rng(random_seed);
 
     let env = Env::builder()
         .disable_ft_storage_deposit()
@@ -150,7 +150,7 @@ async fn storage_deposit_success(
 #[rstest]
 #[trace]
 async fn storage_deposit_fails_user_has_no_balance_in_intents(random_seed: Seed) {
-    let mut rng = random_rng(random_seed);
+    let mut rng = rng(random_seed);
 
     let env = Env::builder()
         .disable_ft_storage_deposit()

@@ -10,7 +10,7 @@ use defuse::{
     tokens::DepositMessage,
 };
 use defuse_randomness::Rng;
-use defuse_test_utils::random::{Seed, random_rng, random_seed};
+use defuse_test_utils::random::{Seed, rng, random_seed};
 use near_sdk::NearToken;
 use rstest::rstest;
 
@@ -26,7 +26,7 @@ use crate::{
 #[rstest]
 #[trace]
 async fn native_withdraw_intent(random_seed: Seed) {
-    let mut rng = random_rng(random_seed);
+    let mut rng = rng(random_seed);
     let env = Env::new().await;
 
     let amounts_to_withdraw = [

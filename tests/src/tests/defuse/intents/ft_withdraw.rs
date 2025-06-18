@@ -18,7 +18,7 @@ use defuse::{
 use defuse_randomness::Rng;
 use defuse_test_utils::{
     asserts::ResultAssertsExt,
-    random::{Seed, random_rng, random_seed},
+    random::{Seed, rng, random_seed},
 };
 use near_sdk::{AccountId, Gas, NearToken};
 use rstest::rstest;
@@ -33,7 +33,7 @@ async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registr
     // intentionally large deposit
     const STORAGE_DEPOSIT: NearToken = NearToken::from_near(1000);
 
-    let mut rng = random_rng(random_seed);
+    let mut rng = rng(random_seed);
 
     let env = Env::builder()
         .no_registration(no_registration)
@@ -259,7 +259,7 @@ async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registr
 #[rstest]
 #[trace]
 async fn ft_withdraw_intent_msg(random_seed: Seed, #[values(false, true)] no_registration: bool) {
-    let mut rng = random_rng(random_seed);
+    let mut rng = rng(random_seed);
 
     let env = Env::builder()
         .no_registration(no_registration)
