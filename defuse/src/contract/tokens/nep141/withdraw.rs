@@ -47,6 +47,7 @@ impl FungibleTokenWithdrawer for Contract {
                 storage_deposit: None,
                 min_gas: None,
             },
+            false,
         )
         .unwrap_or_panic()
     }
@@ -57,6 +58,7 @@ impl Contract {
         &mut self,
         owner_id: AccountId,
         withdraw: FtWithdraw,
+        force: bool,
     ) -> Result<PromiseOrValue<U128>> {
         self.withdraw(
             &owner_id,
@@ -71,6 +73,7 @@ impl Contract {
                 )
             })),
             Some("withdraw"),
+            force,
         )?;
 
         let is_call = withdraw.is_call();
@@ -229,6 +232,7 @@ impl FungibleTokenForceWithdrawer for Contract {
                 storage_deposit: None,
                 min_gas: None,
             },
+            true,
         )
         .unwrap_or_panic()
     }
