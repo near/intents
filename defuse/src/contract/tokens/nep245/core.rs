@@ -249,7 +249,7 @@ impl Contract {
             .checked_add(
                 MT_RESOLVE_TRANSFER_PER_TOKEN_GAS
                     .checked_mul(token_count)
-                    .unwrap(),
+                    .unwrap_or_panic(),
             )
             .unwrap_or_panic()
     }
