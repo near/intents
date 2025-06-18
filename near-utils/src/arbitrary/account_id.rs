@@ -1,3 +1,5 @@
+use std::{iter, ops::RangeInclusive};
+
 use arbitrary_with::{Arbitrary, ArbitraryAs, Error, Result, Unstructured, UnstructuredExt};
 use near_account_id::AccountType;
 use near_sdk::AccountId;
@@ -44,29 +46,71 @@ impl<'a> ArbitraryAs<'a, AccountId> for ArbitraryImplicitEthAccountId {
 
 pub struct ArbitraryNamedAccountId;
 
+impl ArbitraryNamedAccountId {
+    const NON_EDGE_ALPHABET: &[u8] = b"0123456789abcdefghijklmnopqrstuvwxyz-_";
+    const EDGE_ALPHABET: &[u8] = b"0123456789abcdefghijklmnopqrstuvwxyz";
+
+    fn char(u: &mut Unstructured<'_>, on_edge: bool) -> Result<char> {
+        u.choose(if on_edge {
+            Self::EDGE_ALPHABET
+        } else {
+            Self::NON_EDGE_ALPHABET
+        })
+        .map(|c| (*c).into())
+    }
+
+    fn arbitrary_subaccount(
+        u: &mut Unstructured<'_>,
+        len_bounds: RangeInclusive<usize>,
+    ) -> Result<String> {
+        if len_bounds.is_empty() {
+            return Err(Error::EmptyChoose);
+        }
+        let len = u
+            .int_in_range(len_bounds)?
+            // subaccount can't be empty
+            .max(1);
+
+        // account_id can't start with '-' or '_'
+        let first = Self::char(u, true)?;
+        if len == 1 {
+            return Ok(first.into());
+        }
+        let last = Self::char(u, true)?;
+
+        iter::once(Ok(first))
+            .chain(
+                iter::repeat_with({
+                    // '-' and '_' must be followed by edge char
+                    let mut last_not_edge = false;
+                    move || {
+                        Self::char(u, last_not_edge)
+                            .inspect(|c| last_not_edge = ['-', '_'].contains(c))
+                    }
+                })
+                .take(len - 2),
+            )
+            .chain(iter::once(Ok(last)))
+            .collect()
+    }
+}
+
 impl<'a> ArbitraryAs<'a, AccountId> for ArbitraryNamedAccountId {
     fn arbitrary_as(u: &mut Unstructured<'a>) -> Result<AccountId> {
-        let make_subaccount = |account_id: &str, u: &mut Unstructured<'a>| -> Result<String> {
-            #[allow(clippy::range_minus_one)]
-            let subaccount_len =
-                u.int_in_range(2..=(MAX_ACCOUNT_ID_LENGTH - account_id.len() - 1))?;
-            (0..subaccount_len)
-                .map(|_| {
-                    let c = u.int_in_range(0..=35)?;
-                    Ok(char::from(match c {
-                        0..=25 => b'a' + c,
-                        26..=35 => b'0' + (c - 26),
-                        _ => unreachable!(),
-                    }))
-                })
-                .collect::<Result<_>>()
-        };
+        // TLA
+        let mut account_id = Self::arbitrary_subaccount(u, 2..=MAX_ACCOUNT_ID_LENGTH)?;
 
-        let mut account_id = make_subaccount("", u)?;
-
+        // keep adding subaccounts while there is enough space for at least
+        // single characted + '.'
         while account_id.len() < MAX_ACCOUNT_ID_LENGTH - 2 && u.arbitrary()? {
-            account_id = [make_subaccount(&account_id, u)?, account_id].join(".");
+            account_id = [
+                #[allow(clippy::range_minus_one)]
+                Self::arbitrary_subaccount(u, 1..=MAX_ACCOUNT_ID_LENGTH - account_id.len() - 1)?,
+                account_id,
+            ]
+            .join(".");
         }
+        println!("account_id: {account_id}");
         account_id.parse().map_err(|_| Error::IncorrectFormat)
     }
 }
