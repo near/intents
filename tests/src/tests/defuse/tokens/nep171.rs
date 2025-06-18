@@ -8,22 +8,20 @@ use defuse::core::{
     Deadline,
     intents::{DefuseIntents, tokens::NftWithdraw},
 };
+use defuse_randomness::Rng;
+use defuse_test_utils::random::{Seed, gen_random_string, random_bytes, random_seed, rng};
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata,
 };
 use near_contract_standards::non_fungible_token::{Token, metadata::TokenMetadata};
 use near_sdk::{NearToken, json_types::Base64VecU8};
-use randomness::Rng;
 use rstest::rstest;
 use std::collections::HashMap;
-use test_utils::random::{
-    Seed, gen_random_bytes, gen_random_string, make_seedable_rng, random_seed,
-};
 
 #[tokio::test]
 #[rstest]
 async fn transfer_nft_to_verifier(random_seed: Seed) {
-    let mut rng = make_seedable_rng(random_seed);
+    let mut rng = rng(random_seed);
 
     let env = Env::builder().build().await;
 
@@ -38,7 +36,7 @@ async fn transfer_nft_to_verifier(random_seed: Seed) {
             "nft1",
             NFTContractMetadata {
                 reference: Some("http://abc.com/xyz/".to_string()),
-                reference_hash: Some(Base64VecU8(gen_random_bytes(&mut rng, 32..=32))),
+                reference_hash: Some(Base64VecU8(random_bytes(32..=32, &mut rng))),
                 spec: NFT_METADATA_SPEC.to_string(),
                 name: "Token nft1".to_string(),
                 symbol: "NFT_TKN".to_string(),

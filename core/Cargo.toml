@@ -19,6 +19,7 @@ defuse-ton-connect.workspace = true
 defuse-webauthn.workspace = true
 
 arbitrary = { workspace = true, optional = true }
+arbitrary_with = { workspace = true, optional = true }
 chrono = { workspace = true, features = ["serde"] }
 derive_more = { workspace = true, features = ["from"] }
 hex.workspace = true
@@ -39,17 +40,25 @@ abi = [
     "defuse-ton-connect/abi",
     "defuse-webauthn/abi",
 ]
-arbitrary = ["dep:arbitrary"]
+arbitrary = [
+    "dep:arbitrary",
+    "dep:arbitrary_with",
+    "defuse-near-utils/arbitrary",
+]
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 chrono = { workspace = true, features = ["now"] }
 
 [dev-dependencies]
+defuse-test-utils.workspace = true
+defuse-near-utils = { workspace = true, features = ["arbitrary"] }
+
 arbitrary.workspace = true
+arbitrary_with.workspace = true
+hex-literal.workspace = true
 itertools.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
-test-utils.workspace = true
 
 [lints]
 workspace = true

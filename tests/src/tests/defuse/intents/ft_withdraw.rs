@@ -15,12 +15,14 @@ use defuse::{
         intents::{DefuseIntents, tokens::FtWithdraw},
     },
 };
+use defuse_randomness::Rng;
+use defuse_test_utils::{
+    asserts::ResultAssertsExt,
+    random::{Seed, random_seed, rng},
+};
 use near_sdk::{AccountId, Gas, NearToken};
-use randomness::Rng;
 use rstest::rstest;
 use std::time::Duration;
-use test_utils::random::{Seed, random_seed};
-use test_utils::{asserts::ResultAssertsExt, random::make_seedable_rng};
 
 #[tokio::test]
 #[rstest]
@@ -31,7 +33,7 @@ async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registr
     // intentionally large deposit
     const STORAGE_DEPOSIT: NearToken = NearToken::from_near(1000);
 
-    let mut rng = make_seedable_rng(random_seed);
+    let mut rng = rng(random_seed);
 
     let env = Env::builder()
         .no_registration(no_registration)
@@ -257,7 +259,7 @@ async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registr
 #[rstest]
 #[trace]
 async fn ft_withdraw_intent_msg(random_seed: Seed, #[values(false, true)] no_registration: bool) {
-    let mut rng = make_seedable_rng(random_seed);
+    let mut rng = rng(random_seed);
 
     let env = Env::builder()
         .no_registration(no_registration)

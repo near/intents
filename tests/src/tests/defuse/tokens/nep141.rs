@@ -16,14 +16,12 @@ use defuse::{
     },
     tokens::DepositMessage,
 };
+use defuse_randomness::Rng;
+use defuse_test_utils::random::{Seed, random_seed, rng};
 use near_sdk::{AccountId, NearToken, json_types::U128};
-use randomness::Rng;
 use rstest::rstest;
 use serde_json::json;
 use std::time::Duration;
-use test_utils::random::Seed;
-use test_utils::random::make_seedable_rng;
-use test_utils::random::random_seed;
 
 #[tokio::test]
 #[rstest]
@@ -113,7 +111,7 @@ async fn poa_deposit(#[values(false, true)] no_registration: bool) {
 async fn deposit_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registration: bool) {
     use defuse::core::token_id::nep141::Nep141TokenId;
 
-    let mut rng = make_seedable_rng(random_seed);
+    let mut rng = rng(random_seed);
 
     let env = Env::builder()
         .no_registration(no_registration)
@@ -216,7 +214,7 @@ async fn deposit_withdraw_intent_refund(
 
     use crate::tests::defuse::SigningStandard;
 
-    let mut rng = make_seedable_rng(random_seed);
+    let mut rng = rng(random_seed);
 
     let env = Env::builder()
         .no_registration(no_registration)

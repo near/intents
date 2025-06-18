@@ -5,11 +5,10 @@ use crate::{
 use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::Deadline;
 use defuse::core::intents::{DefuseIntents, tokens::StorageDeposit};
+use defuse_randomness::Rng;
+use defuse_test_utils::random::{Seed, random_seed, rng};
 use near_sdk::NearToken;
-use randomness::Rng;
 use rstest::rstest;
-use test_utils::random::random_seed;
-use test_utils::random::{Seed, make_seedable_rng};
 
 const MIN_FT_STORAGE_DEPOSIT_VALUE: NearToken =
     NearToken::from_yoctonear(1_250_000_000_000_000_000_000);
@@ -35,7 +34,7 @@ async fn storage_deposit_success(
     #[case] amount_to_deposit: NearToken,
     #[case] expected_deposited: Option<NearToken>,
 ) {
-    let mut rng = make_seedable_rng(random_seed);
+    let mut rng = rng(random_seed);
 
     let env = Env::builder()
         .disable_ft_storage_deposit()
@@ -151,7 +150,7 @@ async fn storage_deposit_success(
 #[rstest]
 #[trace]
 async fn storage_deposit_fails_user_has_no_balance_in_intents(random_seed: Seed) {
-    let mut rng = make_seedable_rng(random_seed);
+    let mut rng = rng(random_seed);
 
     let env = Env::builder()
         .disable_ft_storage_deposit()

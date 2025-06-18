@@ -40,8 +40,8 @@ jobs:
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: ${{ github.ref }}
-          cache-all-crates: true
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+          cache-all-crates: "true" # Yes, it's a string
       - name: Install cargo-make
         run: cargo install cargo-make
       - name: Run clippy
@@ -68,8 +68,8 @@ jobs:
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: ${{ github.ref }}
-          cache-all-crates: true
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+          cache-all-crates: "true" # Yes, it's a string
       - name: Install Cargo Plugins
         run: cargo install cargo-make cargo-near
       - name: Build
@@ -101,8 +101,8 @@ jobs:
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: ${{ github.ref }}
-          cache-all-crates: true
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+          cache-all-crates: "true" # Yes, it's a string
       - name: Install cargo-make
         run: cargo install cargo-make
       - name: Download Artifacts
@@ -141,8 +141,8 @@ jobs:
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: ${{ github.ref }}
-          cache-all-crates: true
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+          cache-all-crates: "true" # Yes, it's a string
       - name: Install Cargo Plugins
         run: cargo install cargo-audit
       - name: Run security audit

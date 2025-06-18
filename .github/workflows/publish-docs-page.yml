@@ -32,8 +32,6 @@ jobs:
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          # this action doesn't allow passing `shared-key` to Swatinem/rust-cache,
-          # so we setup cache manually in the next step
           cache: false
       - name: Setup Pages
         uses: actions/configure-pages@v5

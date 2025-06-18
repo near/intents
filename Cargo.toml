@@ -57,11 +57,12 @@ defuse-serde-utils.path = "serde-utils"
 defuse-ton-connect.path = "ton-connect"
 defuse-wnear.path = "wnear"
 
-randomness.path = "randomness"
-test-utils.path = "test-utils"
+defuse-randomness.path = "randomness"
+defuse-test-utils.path = "test-utils"
 
 anyhow = "1"
 arbitrary = "1"
+arbitrary_with = "0.3"
 bnum = { version = "0.13", features = ["borsh"] }
 chrono = { version = "0.4", default-features = false }
 derive_more = "2.0"
@@ -69,7 +70,7 @@ digest = { version = "0.10", default-features = false }
 ed25519-dalek = { version = "2.1", default-features = false }
 hex = "0.4"
 hex-literal = "1.0"
-impl-tools = "0.10"
+impl-tools = "0.11"
 itertools = "0.14"
 near-account-id = "1.1"
 near-contract-standards = "5.14"
@@ -86,7 +87,7 @@ serde_json = "1"
 serde_with = "3.9"
 strum = { version = "0.27", features = ["derive"] }
 thiserror = "2"
-tlb-ton = { version = "0.5.2", default-features = false }
+tlb-ton = { version = "0.5", default-features = false }
 tokio = { version = "1.45", default-features = false }
 
 [workspace.lints.clippy]

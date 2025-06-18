@@ -1,7 +1,8 @@
+use ::arbitrary::{Arbitrary, Unstructured};
+pub use defuse_randomness::{self as randomness, CryptoRng, Rng, SeedableRng, seq::IteratorRandom};
 use rand_chacha::{ChaChaRng, rand_core::RngCore};
-pub use randomness::{self, CryptoRng, Rng, SeedableRng, seq::IteratorRandom};
 use rstest::fixture;
-use std::{num::ParseIntError, ops::RangeBounds, str::FromStr};
+use std::{fmt::Display, num::ParseIntError, ops::RangeBounds, str::FromStr};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Seed(pub u64);
@@ -35,8 +36,14 @@ impl Seed {
 
     #[must_use]
     pub fn derive_seed(&self) -> Self {
-        let mut rng = make_seedable_rng(*self);
+        let mut rng = rng(*self);
         rng.random()
+    }
+}
+
+impl Display for Seed {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(&self.0, f)
     }
 }
 
@@ -97,11 +104,6 @@ impl RngCore for TestRng {
 
 impl CryptoRng for TestRng {}
 
-#[must_use]
-pub fn make_seedable_rng(seed: Seed) -> impl Rng + CryptoRng {
-    TestRng::new(seed)
-}
-
 fn range_to_random_size(rng: &mut impl Rng, size: impl RangeBounds<usize>) -> usize {
     let start = match size.start_bound() {
         std::ops::Bound::Included(&n) => n,
@@ -116,13 +118,6 @@ fn range_to_random_size(rng: &mut impl Rng, size: impl RangeBounds<usize>) -> us
     rng.random_range(start..end)
 }
 
-pub fn gen_random_bytes(rng: &mut impl Rng, size: impl RangeBounds<usize>) -> Vec<u8> {
-    let data_length = range_to_random_size(rng, size);
-    let mut bytes = vec![0; data_length];
-    rng.fill_bytes(&mut bytes);
-    bytes
-}
-
 pub fn gen_random_string<R: Rng>(rng: &mut R, size: impl RangeBounds<usize>) -> String {
     let size = range_to_random_size(rng, size);
     rng.sample_iter(&randomness::distributions::Alphanumeric)
@@ -133,5 +128,33 @@ pub fn gen_random_string<R: Rng>(rng: &mut R, size: impl RangeBounds<usize>) -> 
 
 #[fixture]
 pub fn random_seed() -> Seed {
-    Seed::from_entropy()
+    let seed = Seed::from_entropy();
+    eprintln!("======= SEED =======\n{seed}\n====================",);
+    seed
+}
+
+#[fixture]
+#[must_use]
+pub fn rng(random_seed: Seed) -> impl Rng + CryptoRng {
+    TestRng::new(random_seed)
+}
+
+#[fixture]
+pub fn random_bytes<'a>(
+    #[default(50..1000)] size: impl RangeBounds<usize>,
+    mut rng: impl Rng,
+) -> Vec<u8> {
+    let data_length = range_to_random_size(&mut rng, size);
+    let mut bytes = vec![0; data_length];
+    rng.fill_bytes(&mut bytes);
+    bytes
+}
+
+#[fixture]
+pub fn make_arbitrary<T>(random_bytes: Vec<u8>) -> T
+where
+    for<'a> T: Arbitrary<'a>,
+{
+    let mut u = Unstructured::new(&random_bytes);
+    u.arbitrary().unwrap()
 }

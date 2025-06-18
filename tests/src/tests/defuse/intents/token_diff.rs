@@ -13,13 +13,12 @@ use defuse::core::{
     },
     payload::multi::MultiPayload,
 };
+use defuse_randomness::{Rng, make_true_rng};
+use defuse_test_utils::random::{Seed, random_seed, rng};
 use near_sdk::AccountId;
 use near_workspaces::Account;
-use randomness::{Rng, make_true_rng};
 use rstest::rstest;
 use std::{collections::BTreeMap, time::Duration};
-use test_utils::random::make_seedable_rng;
-use test_utils::random::{Seed, random_seed};
 
 use super::ExecuteIntentsExt;
 
@@ -212,7 +211,7 @@ async fn test_ft_diffs(random_gen_seed: Seed, env: &Env, accounts: Vec<AccountFt
     let signed: Vec<MultiPayload> = accounts
         .iter()
         .flat_map(move |account| {
-            let mut rng = make_seedable_rng(seed_inner);
+            let mut rng = rng(seed_inner);
             account.diff.iter().cloned().map(move |diff| {
                 account.account.sign_defuse_message(
                     SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
@@ -269,7 +268,7 @@ async fn test_ft_diffs(random_gen_seed: Seed, env: &Env, accounts: Vec<AccountFt
 #[tokio::test]
 #[rstest]
 async fn invariant_violated(random_seed: Seed, #[values(false, true)] no_registration: bool) {
-    let mut rng = make_seedable_rng(random_seed);
+    let mut rng = rng(random_seed);
 
     let env = Env::builder()
         .no_registration(no_registration)
@@ -379,7 +378,7 @@ async fn solver_user_closure(
     // RFQ: 1000 token_in -> ??? token_out
     const USER_DELTA_IN: i128 = -1000;
 
-    let mut rng = make_seedable_rng(random_seed);
+    let mut rng = rng(random_seed);
 
     let env = Env::builder()
         .fee(fee)
