@@ -246,12 +246,9 @@ impl EnvBuilder {
                         wnear_id: wnear.id().clone(),
                         fees: FeesConfig {
                             fee: self.fee,
-                            fee_collector: self
-                                .fee_collector
-                                .clone()
-                                .unwrap_or_else(|| root.id().clone()),
+                            fee_collector: self.fee_collector.unwrap_or_else(|| root.id().clone()),
                         },
-                        roles: self.roles.clone(),
+                        roles: self.roles,
                     },
                 )
                 .await

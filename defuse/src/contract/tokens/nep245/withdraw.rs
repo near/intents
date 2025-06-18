@@ -24,21 +24,6 @@ use near_sdk::{
     serde_json::{self, json},
 };
 
-// These represent a linear model total_gas_cost = per_token*n + base,
-// where `n` is the number of tokens in one mt_withdraw call.
-// fitted from points {(1, 3.0), (2, 3.0), (3, 3.0)}
-// The slope is below the margin of error. So we choose a low enough value.
-const MT_RESOLVE_WITHDRAW_PER_TOKEN_GAS: Gas = Gas::from_tgas(1);
-const MT_RESOLVE_WITHDRAW_BASE_GAS: Gas = Gas::from_tgas(6);
-
-#[must_use]
-fn total_mt_withdraw_resolve_gas(token_count: usize) -> Gas {
-    let token_count: u64 = token_count.try_into().unwrap_or_panic_display();
-
-    MT_RESOLVE_WITHDRAW_BASE_GAS
-        .saturating_add(MT_RESOLVE_WITHDRAW_PER_TOKEN_GAS.saturating_mul(token_count))
-}
-
 #[near]
 impl MultiTokenWithdrawer for Contract {
     #[pause]
@@ -124,7 +109,7 @@ impl Contract {
         }
         .then(
             Self::ext(CURRENT_ACCOUNT_ID.clone())
-                .with_static_gas(total_mt_withdraw_resolve_gas(withdraw.token_ids.len()))
+                .with_static_gas(Self::mt_withdraw_resolve_gas(withdraw.token_ids.len()))
                 // do not distribute remaining gas here
                 .with_unused_gas_weight(0)
                 .mt_resolve_withdraw(
@@ -136,6 +121,18 @@ impl Contract {
                 ),
         )
         .into())
+    }
+
+    #[must_use]
+    fn mt_withdraw_resolve_gas(token_count: usize) -> Gas {
+        // Values chosen to be similar to `MT_RESOLVE_TRANSFER_*` values
+        const MT_RESOLVE_WITHDRAW_PER_TOKEN_GAS: Gas = Gas::from_tgas(2);
+        const MT_RESOLVE_WITHDRAW_BASE_GAS: Gas = Gas::from_tgas(8);
+
+        let token_count: u64 = token_count.try_into().unwrap_or_panic_display();
+
+        MT_RESOLVE_WITHDRAW_BASE_GAS
+            .saturating_add(MT_RESOLVE_WITHDRAW_PER_TOKEN_GAS.saturating_mul(token_count))
     }
 }
 

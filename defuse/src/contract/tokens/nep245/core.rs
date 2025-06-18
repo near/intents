@@ -10,20 +10,6 @@ use near_sdk::{
 };
 use std::borrow::Cow;
 
-// These represent a linear model total_gas_cost = per_token*n + base,
-// where `n` is the number of tokens.
-const MT_RESOLVE_TRANSFER_PER_TOKEN_GAS: Gas = Gas::from_tgas(2);
-const MT_RESOLVE_TRANSFER_BASE_GAS: Gas = Gas::from_tgas(8);
-
-#[must_use]
-pub fn mt_resolve_gas(token_count: usize) -> Gas {
-    let token_count: u64 = token_count.try_into().unwrap_or_panic_display();
-
-    MT_RESOLVE_TRANSFER_BASE_GAS
-        .checked_add(MT_RESOLVE_TRANSFER_PER_TOKEN_GAS.saturating_mul(token_count))
-        .unwrap_or_panic()
-}
-
 #[near]
 impl MultiTokenCore for Contract {
     #[payable]
@@ -233,8 +219,6 @@ impl Contract {
 
         let previous_owner_ids = vec![sender_id.clone(); token_ids.len()];
 
-        let resolve_gas_cost = mt_resolve_gas(token_ids.len());
-
         Ok(ext_mt_receiver::ext(receiver_id.clone())
             .mt_on_transfer(
                 sender_id,
@@ -245,11 +229,24 @@ impl Contract {
             )
             .then(
                 Self::ext(CURRENT_ACCOUNT_ID.clone())
-                    .with_static_gas(resolve_gas_cost)
-                    // do not distribute remaining gas here
+                    .with_static_gas(Self::mt_resolve_gas(token_ids.len()))
+                    // do not distribute remaining gas here (so that all that's left goes to `mt_on_transfer`)
                     .with_unused_gas_weight(0)
                     .mt_resolve_transfer(previous_owner_ids, receiver_id, token_ids, amounts, None),
             )
             .into())
+    }
+
+    #[must_use]
+    pub fn mt_resolve_gas(token_count: usize) -> Gas {
+        // These represent a linear model total_gas_cost = per_token*n + base,
+        // where `n` is the number of tokens.
+        const MT_RESOLVE_TRANSFER_PER_TOKEN_GAS: Gas = Gas::from_tgas(2);
+        const MT_RESOLVE_TRANSFER_BASE_GAS: Gas = Gas::from_tgas(8);
+        let token_count: u64 = token_count.try_into().unwrap_or_panic_display();
+
+        MT_RESOLVE_TRANSFER_BASE_GAS
+            .checked_add(MT_RESOLVE_TRANSFER_PER_TOKEN_GAS.saturating_mul(token_count))
+            .unwrap_or_panic()
     }
 }
