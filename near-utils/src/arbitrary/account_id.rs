@@ -110,7 +110,6 @@ impl<'a> ArbitraryAs<'a, AccountId> for ArbitraryNamedAccountId {
             ]
             .join(".");
         }
-        println!("account_id: {account_id}");
         account_id.parse().map_err(|_| Error::IncorrectFormat)
     }
 }
