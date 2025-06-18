@@ -12,6 +12,7 @@ use serde_with::{DeserializeAs, SerializeAs};
 
 use crate::token_id::TokenId;
 
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh, json])]
 #[autoimpl(Deref using self.0)]
 #[derive(Debug, Clone, Default, PartialEq, Eq)]

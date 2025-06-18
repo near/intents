@@ -1,4 +1,5 @@
 mod account;
+mod entry;
 mod state;
 
 pub use self::{account::*, state::*};
@@ -22,7 +23,7 @@ use near_sdk::{
 
 use crate::{
     accounts::{AccountForceLocker, AccountManager},
-    contract::{Contract, ContractExt, Role},
+    contract::{Contract, ContractExt, Role, accounts::entry::AccountEntry},
 };
 
 #[near]

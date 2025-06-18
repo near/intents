@@ -624,6 +624,7 @@ dependencies = [
 name = "defuse"
 version = "0.2.8"
 dependencies = [
+ "arbitrary_with",
  "bnum",
  "defuse-admin-utils",
  "defuse-bitmap",
@@ -638,10 +639,12 @@ dependencies = [
  "defuse-test-utils",
  "defuse-wnear",
  "impl-tools",
+ "itertools 0.14.0",
  "near-account-id",
  "near-contract-standards",
  "near-plugins",
  "near-sdk",
+ "rstest",
  "serde_with",
  "strum 0.27.1",
  "thiserror 2.0.12",
@@ -658,6 +661,7 @@ dependencies = [
 name = "defuse-bitmap"
 version = "0.1.0"
 dependencies = [
+ "arbitrary",
  "bnum",
  "defuse-map-utils",
  "near-sdk",
@@ -717,6 +721,7 @@ dependencies = [
 name = "defuse-crypto"
 version = "0.1.0"
 dependencies = [
+ "arbitrary",
  "ed25519-dalek",
  "hex",
  "near-sdk",
@@ -840,7 +845,7 @@ dependencies = [
 name = "defuse-test-utils"
 version = "0.1.0"
 dependencies = [
- "arbitrary",
+ "arbitrary_with",
  "defuse-randomness",
  "derive_more 2.0.1",
  "hex",

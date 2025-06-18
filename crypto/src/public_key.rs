@@ -7,6 +7,7 @@ use near_sdk::{AccountId, AccountIdRef, bs58, env, near};
 
 use crate::{Curve, CurveType, Ed25519, P256, ParseCurveError, Secp256k1};
 
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh])]
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(

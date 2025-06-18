@@ -122,7 +122,7 @@ impl State for Contract {
     ) -> Result<()> {
         let owner = self
             .accounts
-            .get_or_create(owner_id.clone())
+            .get_or_create(owner_id)
             // we allow locked accounts to accept deposits and incoming deposits
             .as_inner_unchecked_mut();
 

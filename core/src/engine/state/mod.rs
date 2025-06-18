@@ -47,13 +47,10 @@ pub trait StateView {
 
 #[autoimpl(for<T: trait + ?Sized> &mut T, Box<T>)]
 pub trait State: StateView {
-    #[must_use]
     fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()>;
 
-    #[must_use]
     fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()>;
 
-    #[must_use]
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()>;
 
     fn internal_add_balance(
