@@ -1,8 +1,8 @@
-use std::{iter, ops::RangeInclusive};
+use std::iter;
 
 use arbitrary_with::{Arbitrary, ArbitraryAs, Error, Result, Unstructured, UnstructuredExt};
 use near_account_id::AccountType;
-use near_sdk::AccountId;
+use near_sdk::{AccountId, AccountIdRef};
 
 const MAX_ACCOUNT_ID_LENGTH: usize = 64;
 
@@ -59,13 +59,17 @@ impl ArbitraryNamedAccountId {
         .map(|c| (*c).into())
     }
 
-    fn arbitrary_subaccount(
+    pub fn arbitrary_subaccount(
         u: &mut Unstructured<'_>,
-        len_bounds: RangeInclusive<usize>,
-    ) -> Result<String> {
-        if len_bounds.is_empty() {
-            return Err(Error::EmptyChoose);
-        }
+        parent: Option<&AccountIdRef>,
+    ) -> Result<AccountId> {
+        let len_bounds = parent.map_or(
+            // TLA
+            2..=MAX_ACCOUNT_ID_LENGTH,
+            #[allow(clippy::range_minus_one)]
+            |parent| 1..=MAX_ACCOUNT_ID_LENGTH - parent.len() - 1,
+        );
+
         let len = u
             .int_in_range(len_bounds)?
             // subaccount can't be empty
@@ -73,44 +77,49 @@ impl ArbitraryNamedAccountId {
 
         // account_id can't start with '-' or '_'
         let first = Self::char(u, true)?;
-        if len == 1 {
-            return Ok(first.into());
-        }
-        let last = Self::char(u, true)?;
 
-        iter::once(Ok(first))
-            .chain(
-                iter::repeat_with({
-                    // '-' and '_' must be followed by edge char
-                    let mut last_not_edge = false;
-                    move || {
-                        Self::char(u, last_not_edge)
-                            .inspect(|c| last_not_edge = ['-', '_'].contains(c))
-                    }
-                })
-                .take(len - 2),
-            )
-            .chain(iter::once(Ok(last)))
-            .collect()
+        let subaccount: String = if len == 1 {
+            first.into()
+        } else {
+            let last = Self::char(u, true)?;
+
+            iter::once(Ok(first))
+                .chain(
+                    iter::repeat_with({
+                        // '-' and '_' must be followed by edge char
+                        let mut last_not_edge = false;
+                        move || {
+                            Self::char(u, last_not_edge)
+                                .inspect(|c| last_not_edge = ['-', '_'].contains(c))
+                        }
+                    })
+                    .take(len - 2),
+                )
+                .chain(iter::once(Ok(last)))
+                .collect::<Result<_>>()?
+        };
+
+        if let Some(parent) = parent {
+            format!("{subaccount}.{parent}")
+        } else {
+            subaccount
+        }
+        .parse()
+        .map_err(|_| Error::IncorrectFormat)
     }
 }
 
 impl<'a> ArbitraryAs<'a, AccountId> for ArbitraryNamedAccountId {
     fn arbitrary_as(u: &mut Unstructured<'a>) -> Result<AccountId> {
         // TLA
-        let mut account_id = Self::arbitrary_subaccount(u, 2..=MAX_ACCOUNT_ID_LENGTH)?;
+        let mut account_id = Self::arbitrary_subaccount(u, None).unwrap();
 
         // keep adding subaccounts while there is enough space for at least
         // single characted + '.'
         while account_id.len() < MAX_ACCOUNT_ID_LENGTH - 2 && u.arbitrary()? {
-            account_id = [
-                #[allow(clippy::range_minus_one)]
-                Self::arbitrary_subaccount(u, 1..=MAX_ACCOUNT_ID_LENGTH - account_id.len() - 1)?,
-                account_id,
-            ]
-            .join(".");
+            account_id = Self::arbitrary_subaccount(u, Some(&account_id)).unwrap();
         }
-        account_id.parse().map_err(|_| Error::IncorrectFormat)
+        Ok(account_id)
     }
 }
 
@@ -154,5 +163,28 @@ mod tests {
                 ));
             }
         }
+    }
+
+    #[rstest]
+    fn named_tla(random_bytes: Vec<u8>) {
+        let mut u = Unstructured::new(&random_bytes);
+        assert!(
+            ArbitraryNamedAccountId::arbitrary_subaccount(&mut u, None)
+                .unwrap()
+                .is_top_level()
+        );
+    }
+
+    #[rstest]
+    fn named_subaccount(random_bytes: Vec<u8>) {
+        const TLA: &AccountIdRef = AccountIdRef::new_or_panic("near");
+
+        let mut u = Unstructured::new(&random_bytes);
+
+        assert!(
+            ArbitraryNamedAccountId::arbitrary_subaccount(&mut u, Some(TLA))
+                .unwrap()
+                .is_sub_account_of(TLA)
+        );
     }
 }

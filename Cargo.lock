@@ -85,13 +85,14 @@ dependencies = [
 
 [[package]]
 name = "arbitrary_with"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2af56e9a5115d3c42c2e85438e3b95e57d8bf8fa93d6304b7b667bc944ff435a"
+checksum = "10727f045a37482b73f6e951641a45125ce967db9f676f707fabb4fd885d0966"
 dependencies = [
  "arbitrary",
  "array-util",
  "impl-tools",
+ "rustversion",
 ]
 
 [[package]]

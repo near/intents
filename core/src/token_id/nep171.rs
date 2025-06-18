@@ -6,7 +6,7 @@ use near_sdk::{AccountId, AccountIdRef, near};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 #[cfg(any(feature = "arbitrary", test))]
-use arbitrary_with::{Arbitrary, As};
+use arbitrary_with::{Arbitrary, As, LimitLen};
 #[cfg(any(feature = "arbitrary", test))]
 use defuse_near_utils::arbitrary::ArbitraryAccountId;
 
@@ -19,7 +19,11 @@ pub struct Nep171TokenId {
         arbitrary(with = As::<ArbitraryAccountId>::arbitrary),
     )]
     contract_id: AccountId,
-    // TODO: arbitrary max length
+
+    #[cfg_attr(
+        any(feature = "arbitrary", test),
+        arbitrary(with = As::<LimitLen<MAX_ALLOWED_TOKEN_ID_LEN>>::arbitrary),
+    )]
     nft_token_id: near_contract_standards::non_fungible_token::TokenId,
 }
 
