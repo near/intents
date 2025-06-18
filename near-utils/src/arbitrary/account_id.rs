@@ -115,9 +115,9 @@ impl<'a> ArbitraryAs<'a, AccountId> for ArbitraryNamedAccountId {
         let mut account_id = Self::arbitrary_subaccount(u, None).unwrap();
 
         // keep adding subaccounts while there is enough space for at least
-        // single characted + '.'
+        // single character + '.'
         while account_id.len() < MAX_ACCOUNT_ID_LENGTH - 2 && u.arbitrary()? {
-            account_id = Self::arbitrary_subaccount(u, Some(&account_id)).unwrap();
+            account_id = Self::arbitrary_subaccount(u, Some(&account_id))?;
         }
         Ok(account_id)
     }
