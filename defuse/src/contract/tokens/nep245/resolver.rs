@@ -1,4 +1,4 @@
-use crate::contract::{Contract, ContractExt, tokens::LOG_CHUNK_TOKEN_COUNT};
+use crate::contract::{Contract, ContractExt};
 use defuse_near_utils::{UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::{
     ClearedApproval, MtEventEmit, MtTransferEvent, TokenId, resolver::MultiTokenResolver,
@@ -82,25 +82,19 @@ impl MultiTokenResolver for Contract {
             .unzip();
 
         if !refunded_amounts.is_empty() {
-            // We batch logging because there is a limit on the size of logs
-            let refunded_token_log_batch = refunded_token_ids.chunks(LOG_CHUNK_TOKEN_COUNT);
-            let refunded_amount_log_batch = refunded_amounts.chunks(LOG_CHUNK_TOKEN_COUNT);
-
-            for (token_ids, amounts) in refunded_token_log_batch.zip(refunded_amount_log_batch) {
-                // deposit refunds
-                Cow::Borrowed(
-                    [MtTransferEvent {
-                        authorized_id: None,
-                        old_owner_id: Cow::Borrowed(&receiver_id),
-                        new_owner_id: Cow::Borrowed(&sender_id),
-                        token_ids: token_ids.into(),
-                        amounts: amounts.into(),
-                        memo: Some("refund".into()),
-                    }]
-                    .as_slice(),
-                )
-                .emit();
-            }
+            // deposit refunds
+            Cow::Borrowed(
+                [MtTransferEvent {
+                    authorized_id: None,
+                    old_owner_id: Cow::Borrowed(&receiver_id),
+                    new_owner_id: Cow::Borrowed(&sender_id),
+                    token_ids: refunded_token_ids.into(),
+                    amounts: refunded_amounts.into(),
+                    memo: Some("refund".into()),
+                }]
+                .as_slice(),
+            )
+            .emit();
         }
 
         amounts

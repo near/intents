@@ -1,4 +1,4 @@
-use crate::contract::{Contract, ContractExt, tokens::LOG_CHUNK_TOKEN_COUNT};
+use crate::contract::{Contract, ContractExt};
 use defuse_core::{DefuseError, Result, engine::StateView, token_id::TokenId};
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
@@ -203,27 +203,20 @@ impl Contract {
                 .ok_or(DefuseError::BalanceOverflow)?;
         }
 
-        {
-            // We batch logging because there is a limit on the size of logs
-            let token_log_batch = token_ids.chunks(LOG_CHUNK_TOKEN_COUNT);
-            let amount_log_batch = amounts.chunks(LOG_CHUNK_TOKEN_COUNT);
+        MtEvent::MtTransfer(
+            [MtTransferEvent {
+                authorized_id: None,
+                old_owner_id: sender_id.into(),
+                new_owner_id: Cow::Borrowed(receiver_id),
+                token_ids: token_ids.into(),
+                amounts: amounts.into(),
+                memo: memo.map(Into::into),
+            }]
+            .as_slice()
+            .into(),
+        )
+        .emit();
 
-            for (token_ids, amounts) in token_log_batch.zip(amount_log_batch) {
-                MtEvent::MtTransfer(
-                    [MtTransferEvent {
-                        authorized_id: None,
-                        old_owner_id: sender_id.into(),
-                        new_owner_id: Cow::Borrowed(receiver_id),
-                        token_ids: token_ids.into(),
-                        amounts: amounts.into(),
-                        memo: memo.map(Into::into),
-                    }]
-                    .as_slice()
-                    .into(),
-                )
-                .emit();
-            }
-        }
         Ok(())
     }
 

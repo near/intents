@@ -139,8 +139,14 @@ async fn run_resolve_gas_test(
         .max_gas()
         .transact()
         .await
+        .inspect_err(|e| {
+            println!("`mt_on_transfer` (1) failed (expected) for token count `{token_count}`: {e}");
+        })
         .context("Failed at mt_on_transfer 1")?
         .into_result()
+        .inspect_err(|e| {
+            println!("`mt_on_transfer` (2) failed (expected) for token count `{token_count}`: {e}");
+        })
         .context("Failed at mt_on_transfer 2")?
         .into();
 
@@ -178,8 +184,13 @@ async fn run_resolve_gas_test(
             .is_empty(),
     );
 
-    let (transferred_amounts, call_test_log) =
-        res.context("Failed at mt_batch_transfer, but refunds succeeded")?;
+    let (transferred_amounts, call_test_log) = res
+        .inspect_err(|e| {
+            println!(
+                "`mt_batch_transfer_call` failed (expected) for token count `{token_count}`: {e}"
+            );
+        })
+        .context("Failed at mt_batch_transfer, but refunds succeeded")?;
 
     println!("{{{token_count}, {}}},", call_test_log.total_gas_burnt());
 
@@ -256,5 +267,21 @@ async fn mt_transfer_resolve_gas(rng: impl Rng) {
         // If the max number of transferred tokens is less than this value, panic.
         let min_transferred_desired = 50;
         assert!(max_transferred_count >= min_transferred_desired);
+    }
+}
+
+#[tokio::test]
+async fn binary_search() {
+    let max = 100;
+    // Test all possible values for binary search
+    for limit in 0..max {
+        let test = move |x| async move {
+            if x <= limit {
+                Ok(())
+            } else {
+                Err(anyhow::anyhow!(">limit"))
+            }
+        };
+        assert_eq!(binary_search_max(0, max, test).await, Some(limit));
     }
 }

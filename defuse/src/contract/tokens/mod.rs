@@ -10,12 +10,6 @@ use std::borrow::Cow;
 
 pub const STORAGE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
 
-/// In functions of `MultiToken` that emit logs of everything that happens,
-/// how many tokens to batch together in one event.
-/// A very high number can lead to hitting the log limit in near (16384 chars at the time of writing).
-/// A very low number will consume too much gas and make transactions with many tokens fail early.
-pub const LOG_CHUNK_TOKEN_COUNT: usize = 25;
-
 impl Contract {
     pub(crate) fn deposit(
         &mut self,
@@ -60,23 +54,17 @@ impl Contract {
         }
 
         if !mint_event.amounts.is_empty() {
-            // We batch logging because there is a limit on the size of logs
-            let token_log_batch = mint_event.token_ids.chunks(LOG_CHUNK_TOKEN_COUNT);
-            let amount_log_batch = mint_event.amounts.chunks(LOG_CHUNK_TOKEN_COUNT);
-
-            for (token_ids, amounts) in token_log_batch.zip(amount_log_batch) {
-                MtEvent::MtMint(
-                    [MtMintEvent {
-                        owner_id: Cow::Borrowed(&mint_event.owner_id),
-                        token_ids: token_ids.into(),
-                        amounts: amounts.into(),
-                        memo: memo.map(Into::into),
-                    }]
-                    .as_slice()
-                    .into(),
-                )
-                .emit();
-            }
+            MtEvent::MtMint(
+                [MtMintEvent {
+                    owner_id: Cow::Borrowed(&mint_event.owner_id),
+                    token_ids: mint_event.token_ids,
+                    amounts: mint_event.amounts,
+                    memo: memo.map(Into::into),
+                }]
+                .as_slice()
+                .into(),
+            )
+            .emit();
         }
 
         Ok(())
