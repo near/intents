@@ -664,6 +664,7 @@ dependencies = [
 name = "defuse-borsh-utils"
 version = "0.1.0"
 dependencies = [
+ "array-util",
  "chrono",
  "defuse-io-utils",
  "impl-tools",

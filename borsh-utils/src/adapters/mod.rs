@@ -4,7 +4,6 @@ use std::{
     fmt::{self, Display},
     io::{self, Read},
     marker::PhantomData,
-    mem::MaybeUninit,
     rc::Rc,
     sync::Arc,
 };
@@ -333,11 +332,8 @@ where
     where
         R: io::Read,
     {
-        let mut arr: [MaybeUninit<T>; N] = unsafe { MaybeUninit::uninit().assume_init() };
-        for a in &mut arr {
-            a.write(As::deserialize_as(reader)?);
-        }
-        Ok(unsafe { arr.as_ptr().cast::<[T; N]>().read() })
+        // TODO: replace with [`core::array::try_from_fn`](https://github.com/rust-lang/rust/issues/89379) when stabilized
+        array_util::try_from_fn(|_i| As::deserialize_as(reader))
     }
 }
 
