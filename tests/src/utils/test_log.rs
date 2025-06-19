@@ -1,3 +1,4 @@
+use near_sdk::Gas;
 use near_workspaces::result::ExecutionResult;
 
 #[allow(dead_code)]
@@ -5,6 +6,8 @@ use near_workspaces::result::ExecutionResult;
 pub struct TestLog {
     logs: Vec<String>,
     receipt_failure_errors: Vec<String>,
+    gas_burnt_in_tx: Gas,
+    logs_and_gas_burnt_in_receipts: Vec<(Vec<String>, Gas)>,
 }
 
 impl From<ExecutionResult<near_workspaces::result::Value>> for TestLog {
@@ -25,6 +28,12 @@ impl From<ExecutionResult<near_workspaces::result::Value>> for TestLog {
                     }
                 })
                 .collect::<Vec<_>>(),
+            gas_burnt_in_tx: outcome.total_gas_burnt,
+            logs_and_gas_burnt_in_receipts: outcome
+                .receipt_outcomes()
+                .iter()
+                .map(|v| (v.logs.clone(), v.gas_burnt))
+                .collect(),
         }
     }
 }
@@ -32,5 +41,13 @@ impl From<ExecutionResult<near_workspaces::result::Value>> for TestLog {
 impl TestLog {
     pub fn logs(&self) -> &[String] {
         &self.logs
+    }
+
+    pub const fn total_gas_burnt(&self) -> &Gas {
+        &self.gas_burnt_in_tx
+    }
+
+    pub const fn logs_and_gas_burnt_in_receipts(&self) -> &Vec<(Vec<String>, Gas)> {
+        &self.logs_and_gas_burnt_in_receipts
     }
 }

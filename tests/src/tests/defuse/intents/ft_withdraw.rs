@@ -1,19 +1,19 @@
 use super::ExecuteIntentsExt;
+use crate::tests::defuse::DefuseExt;
+use crate::tests::defuse::tokens::nep141::traits::DefuseFtReceiver;
 use crate::{
-    tests::defuse::{
-        DefuseExt, DefuseSigner, SigningStandard, env::Env, tokens::nep141::DefuseFtReceiver,
-    },
+    tests::defuse::{DefuseSigner, SigningStandard, env::Env},
     utils::{ft::FtExt, mt::MtExt, wnear::WNearExt},
 };
 use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
+use defuse::core::{
+    Deadline,
+    intents::{DefuseIntents, tokens::FtWithdraw},
+};
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
-    core::{
-        Deadline,
-        fees::{FeesConfig, Pips},
-        intents::{DefuseIntents, tokens::FtWithdraw},
-    },
+    core::fees::{FeesConfig, Pips},
 };
 use defuse_randomness::Rng;
 use defuse_test_utils::{
@@ -28,8 +28,6 @@ use std::time::Duration;
 #[rstest]
 #[trace]
 async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registration: bool) {
-    use defuse::core::token_id::nep141::Nep141TokenId;
-
     // intentionally large deposit
     const STORAGE_DEPOSIT: NearToken = NearToken::from_near(1000);
 

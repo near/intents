@@ -1,5 +1,6 @@
 use std::ops::RangeBounds;
 
+use crate::utils::test_log::TestLog;
 use defuse::nep245::{Token, TokenId};
 use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128};
 use serde_json::json;
@@ -15,6 +16,18 @@ pub trait MtExt {
         memo: Option<String>,
     ) -> anyhow::Result<()>;
 
+    #[allow(clippy::too_many_arguments)]
+    async fn mt_transfer_call(
+        &self,
+        token_contract: &AccountId,
+        receiver_id: &AccountId,
+        token_id: &TokenId,
+        amount: u128,
+        approval: Option<(AccountId, u64)>,
+        memo: Option<String>,
+        msg: String,
+    ) -> anyhow::Result<()>;
+
     async fn mt_batch_transfer(
         &self,
         token_contract: &AccountId,
@@ -24,6 +37,18 @@ pub trait MtExt {
         approvals: Option<impl IntoIterator<Item = Option<(AccountId, u64)>>>,
         memo: Option<String>,
     ) -> anyhow::Result<()>;
+
+    #[allow(clippy::too_many_arguments)]
+    async fn mt_batch_transfer_call(
+        &self,
+        token_contract: &AccountId,
+        receiver_id: &AccountId,
+        token_ids: impl IntoIterator<Item = TokenId>,
+        amounts: impl IntoIterator<Item = u128>,
+        approvals: Option<impl IntoIterator<Item = Option<(AccountId, u64)>>>,
+        memo: Option<String>,
+        msg: String,
+    ) -> anyhow::Result<(Vec<u128>, TestLog)>;
 
     async fn mt_contract_balance_of(
         &self,
@@ -91,6 +116,33 @@ impl MtExt for near_workspaces::Account {
         Ok(())
     }
 
+    async fn mt_transfer_call(
+        &self,
+        token_contract: &AccountId,
+        receiver_id: &AccountId,
+        token_id: &TokenId,
+        amount: u128,
+        approval: Option<(AccountId, u64)>,
+        memo: Option<String>,
+        msg: String,
+    ) -> anyhow::Result<()> {
+        self.call(token_contract, "mt_transfer_call")
+            .args_json(json!({
+                "receiver_id": receiver_id,
+                "token_id": token_id,
+                "amount": U128(amount),
+                "approval": approval,
+                "memo": memo,
+                "msg": msg
+            }))
+            .deposit(NearToken::from_yoctonear(1))
+            .max_gas()
+            .transact()
+            .await?
+            .into_result()?;
+        Ok(())
+    }
+
     async fn mt_batch_transfer(
         &self,
         token_contract: &AccountId,
@@ -115,6 +167,43 @@ impl MtExt for near_workspaces::Account {
             .await?
             .into_result()?;
         Ok(())
+    }
+
+    async fn mt_batch_transfer_call(
+        &self,
+        token_contract: &AccountId,
+        receiver_id: &AccountId,
+        token_ids: impl IntoIterator<Item = TokenId>,
+        amounts: impl IntoIterator<Item = u128>,
+        approvals: Option<impl IntoIterator<Item = Option<(AccountId, u64)>>>,
+        memo: Option<String>,
+        msg: String,
+    ) -> anyhow::Result<(Vec<u128>, TestLog)> {
+        let result = self
+            .call(token_contract, "mt_batch_transfer_call")
+            .args_json(json!({
+                "receiver_id": receiver_id,
+                "token_ids": token_ids.into_iter().collect::<Vec<_>>(),
+                "amounts": amounts.into_iter().map(U128).collect::<Vec<_>>(),
+                "approvals": approvals.map(|a| a.into_iter().collect::<Vec<_>>()),
+                "memo": memo,
+                "msg": msg
+            }))
+            .deposit(NearToken::from_yoctonear(1))
+            .max_gas()
+            .transact()
+            .await?
+            .into_result()?;
+
+        Ok((
+            result
+                .clone()
+                .json::<Vec<U128>>()?
+                .into_iter()
+                .map(|a| a.0)
+                .collect(),
+            result.into(),
+        ))
     }
 
     async fn mt_contract_balance_of(
@@ -264,6 +353,29 @@ impl MtExt for near_workspaces::Contract {
             .await
     }
 
+    async fn mt_transfer_call(
+        &self,
+        token_contract: &AccountId,
+        receiver_id: &AccountId,
+        token_id: &TokenId,
+        amount: u128,
+        approval: Option<(AccountId, u64)>,
+        memo: Option<String>,
+        msg: String,
+    ) -> anyhow::Result<()> {
+        self.as_account()
+            .mt_transfer_call(
+                token_contract,
+                receiver_id,
+                token_id,
+                amount,
+                approval,
+                memo,
+                msg,
+            )
+            .await
+    }
+
     async fn mt_batch_transfer(
         &self,
         token_contract: &AccountId,
@@ -281,6 +393,29 @@ impl MtExt for near_workspaces::Contract {
                 amounts,
                 approvals,
                 memo,
+            )
+            .await
+    }
+
+    async fn mt_batch_transfer_call(
+        &self,
+        token_contract: &AccountId,
+        receiver_id: &AccountId,
+        token_ids: impl IntoIterator<Item = TokenId>,
+        amounts: impl IntoIterator<Item = u128>,
+        approvals: Option<impl IntoIterator<Item = Option<(AccountId, u64)>>>,
+        memo: Option<String>,
+        msg: String,
+    ) -> anyhow::Result<(Vec<u128>, TestLog)> {
+        self.as_account()
+            .mt_batch_transfer_call(
+                token_contract,
+                receiver_id,
+                token_ids,
+                amounts,
+                approvals,
+                memo,
+                msg,
             )
             .await
     }
