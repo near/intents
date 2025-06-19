@@ -139,7 +139,7 @@ mod tests {
             let payload = Sep53Payload::new(msg.to_vec());
 
             let hash = payload.hash();
-            let key = near_crypto::SecretKey::ED25519(near_crypto::ED25519SecretKey(
+            let secret_key = near_crypto::SecretKey::ED25519(near_crypto::ED25519SecretKey(
                 signing_key
                     .as_bytes()
                     .iter()
@@ -149,7 +149,7 @@ mod tests {
                     .try_into()
                     .unwrap(),
             ));
-            let generic_sig = key.sign(hash.as_ref());
+            let generic_sig = secret_key.sign(hash.as_ref());
             let sig = match generic_sig {
                 near_crypto::Signature::ED25519(signature) => signature,
                 near_crypto::Signature::SECP256K1(_) => unreachable!(),
@@ -158,7 +158,7 @@ mod tests {
             let actual_sig_b64 = STANDARD.encode(sig.to_bytes());
 
             assert_eq!(actual_sig_b64, *expected_sig_b64);
-            assert!(generic_sig.verify(hash.as_ref(), &key.public_key()));
+            assert!(generic_sig.verify(hash.as_ref(), &secret_key.public_key()));
 
             let signed_payload = SignedSep53Payload {
                 payload,
