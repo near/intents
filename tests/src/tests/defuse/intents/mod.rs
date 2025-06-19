@@ -17,7 +17,7 @@ use defuse::{
     intents::SimulationOutput,
 };
 use defuse_randomness::Rng;
-use defuse_test_utils::random::{Seed, random_seed, rng};
+use defuse_test_utils::random::rng;
 use near_sdk::{AccountId, AccountIdRef};
 use rstest::rstest;
 use serde_json::json;
@@ -145,9 +145,11 @@ impl ExecuteIntentsExt for near_workspaces::Contract {
 
 #[tokio::test]
 #[rstest]
-async fn simulate_is_view_method(random_seed: Seed, #[values(false, true)] no_registration: bool) {
-    let mut rng = rng(random_seed);
-
+#[trace]
+async fn simulate_is_view_method(
+    #[notrace] mut rng: impl Rng,
+    #[values(false, true)] no_registration: bool,
+) {
     let env = Env::builder()
         .no_registration(no_registration)
         .build()
@@ -255,10 +257,8 @@ async fn webauthn(#[values(false, true)] no_registration: bool) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn ton_connect_sign_intent_example(random_seed: Seed) {
+async fn ton_connect_sign_intent_example(#[notrace] mut rng: impl Rng) {
     use defuse::core::ton_connect::tlb_ton::MsgAddress;
-
-    let mut rng = rng(random_seed);
 
     let env: Env = Env::builder().no_registration(false).build().await;
 

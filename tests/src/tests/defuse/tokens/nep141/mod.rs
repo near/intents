@@ -21,13 +21,14 @@ use defuse::{
     tokens::DepositMessage,
 };
 use defuse_randomness::Rng;
-use defuse_test_utils::random::{Seed, random_seed, rng};
+use defuse_test_utils::random::rng;
 use near_sdk::json_types::U128;
 use rstest::rstest;
 use std::time::Duration;
 
 #[tokio::test]
 #[rstest]
+#[trace]
 async fn deposit_withdraw(#[values(false, true)] no_registration: bool) {
     let env = Env::builder()
         .no_registration(no_registration)
@@ -109,12 +110,14 @@ async fn poa_deposit(#[values(false, true)] no_registration: bool) {
 
 #[tokio::test]
 #[rstest]
-async fn deposit_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registration: bool) {
+#[trace]
+async fn deposit_withdraw_intent(
+    #[notrace] mut rng: impl Rng,
+    #[values(false, true)] no_registration: bool,
+) {
     use defuse::core::token_id::nep141::Nep141TokenId;
 
     use crate::tests::defuse::tokens::nep141::traits::DefuseFtReceiver;
-
-    let mut rng = rng(random_seed);
 
     let env = Env::builder()
         .no_registration(no_registration)
@@ -208,16 +211,15 @@ async fn deposit_withdraw_intent(random_seed: Seed, #[values(false, true)] no_re
 
 #[tokio::test]
 #[rstest]
+#[trace]
 async fn deposit_withdraw_intent_refund(
-    random_seed: Seed,
+    #[notrace] mut rng: impl Rng,
     #[values(false, true)] no_registration: bool,
 ) {
     use arbitrary::{Arbitrary, Unstructured};
     use defuse::core::token_id::nep141::Nep141TokenId;
 
     use crate::tests::defuse::{SigningStandard, tokens::nep141::traits::DefuseFtReceiver};
-
-    let mut rng = rng(random_seed);
 
     let env = Env::builder()
         .no_registration(no_registration)

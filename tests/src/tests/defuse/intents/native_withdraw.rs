@@ -17,15 +17,13 @@ use defuse::{
     tokens::DepositMessage,
 };
 use defuse_randomness::Rng;
-use defuse_test_utils::random::{Seed, random_seed, rng};
+use defuse_test_utils::random::rng;
 use near_sdk::NearToken;
 use rstest::rstest;
 
 #[tokio::test]
 #[rstest]
-#[trace]
-async fn native_withdraw_intent(random_seed: Seed) {
-    let mut rng = rng(random_seed);
+async fn native_withdraw_intent(mut rng: impl Rng) {
     let env = Env::new().await;
 
     let amounts_to_withdraw = [
