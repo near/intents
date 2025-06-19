@@ -105,7 +105,7 @@ impl MtExt for near_workspaces::Account {
                 "receiver_id": receiver_id,
                 "token_id": token_id,
                 "amount": U128(amount),
-                "approvals": approval,
+                "approval": approval,
                 "memo": memo,
             }))
             .deposit(NearToken::from_yoctonear(1))
