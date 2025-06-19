@@ -330,10 +330,10 @@ impl CachedAccounts {
     pub fn get_or_create(
         &mut self,
         account_id: AccountId,
-        default_locked: impl FnOnce(&AccountId) -> bool,
+        is_initially_locked: impl FnOnce(&AccountId) -> bool,
     ) -> &mut Lock<CachedAccount> {
         self.0.entry(account_id).or_insert_with_key(|account_id| {
-            Lock::new(CachedAccount::default(), default_locked(account_id))
+            Lock::new(CachedAccount::default(), is_initially_locked(account_id))
         })
     }
 }
