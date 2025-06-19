@@ -13,19 +13,24 @@ use defuse::core::{
     },
     payload::multi::MultiPayload,
 };
-use defuse_randomness::{Rng, make_true_rng};
-use defuse_test_utils::random::{Seed, random_seed, rng};
+use defuse_randomness::Rng;
+use defuse_test_utils::random::rng;
 use near_sdk::AccountId;
 use near_workspaces::Account;
 use rstest::rstest;
-use std::{collections::BTreeMap, time::Duration};
+use std::{
+    collections::BTreeMap,
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
 use super::ExecuteIntentsExt;
 
 #[rstest]
 #[tokio::test]
+#[trace]
 async fn swap_p2p(
-    random_seed: Seed,
+    #[notrace] rng: impl Rng,
     #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
     #[values(false, true)] no_registration: bool,
 ) {
@@ -42,7 +47,7 @@ async fn swap_p2p(
     let ft2_token_id = TokenId::from(Nep141TokenId::new(env.ft2.clone()));
 
     test_ft_diffs(
-        random_seed,
+        rng,
         &env,
         [
             AccountFtDiff {
@@ -91,8 +96,9 @@ async fn swap_p2p(
 
 #[rstest]
 #[tokio::test]
+#[trace]
 async fn swap_many(
-    random_seed: Seed,
+    #[notrace] rng: impl Rng,
     #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
     #[values(false, true)] no_registration: bool,
 ) {
@@ -107,7 +113,7 @@ async fn swap_many(
     let ft3_token_id = TokenId::from(Nep141TokenId::new(env.ft3.clone()));
 
     test_ft_diffs(
-        random_seed,
+        rng,
         &env,
         [
             AccountFtDiff {
@@ -192,7 +198,7 @@ struct AccountFtDiff<'a> {
     result_balances: FtBalances<'a>,
 }
 
-async fn test_ft_diffs(random_gen_seed: Seed, env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
+async fn test_ft_diffs(rng: impl Rng, env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
     // deposit
     for account in &accounts {
         for (token_id, balance) in &account.init_balances {
@@ -206,18 +212,20 @@ async fn test_ft_diffs(random_gen_seed: Seed, env: &Env, accounts: Vec<AccountFt
         }
     }
 
-    let seed_inner = random_gen_seed.derive_seed();
+    let rng = Arc::new(Mutex::new(rng));
 
     let signed: Vec<MultiPayload> = accounts
         .iter()
         .flat_map(move |account| {
-            let mut rng = rng(seed_inner);
+            let rng = rng.clone();
             account.diff.iter().cloned().map(move |diff| {
                 account.account.sign_defuse_message(
-                    SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
-                        .unwrap(),
+                    SigningStandard::arbitrary(&mut Unstructured::new(
+                        &rng.lock().unwrap().random::<[u8; 1]>(),
+                    ))
+                    .unwrap(),
                     env.defuse.id(),
-                    make_true_rng().random(),
+                    rng.lock().unwrap().random(),
                     Deadline::timeout(Duration::from_secs(120)),
                     DefuseIntents {
                         intents: [TokenDiff {
@@ -267,9 +275,11 @@ async fn test_ft_diffs(random_gen_seed: Seed, env: &Env, accounts: Vec<AccountFt
 
 #[tokio::test]
 #[rstest]
-async fn invariant_violated(random_seed: Seed, #[values(false, true)] no_registration: bool) {
-    let mut rng = rng(random_seed);
-
+#[trace]
+async fn invariant_violated(
+    #[notrace] mut rng: impl Rng,
+    #[values(false, true)] no_registration: bool,
+) {
     let env = Env::builder()
         .no_registration(no_registration)
         .build()
@@ -367,8 +377,9 @@ async fn invariant_violated(random_seed: Seed, #[values(false, true)] no_registr
 
 #[rstest]
 #[tokio::test]
+#[trace]
 async fn solver_user_closure(
-    random_seed: Seed,
+    #[notrace] mut rng: impl Rng,
     #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
     #[values(false, true)] no_registration: bool,
 ) {
@@ -377,8 +388,6 @@ async fn solver_user_closure(
 
     // RFQ: 1000 token_in -> ??? token_out
     const USER_DELTA_IN: i128 = -1000;
-
-    let mut rng = rng(random_seed);
 
     let env = Env::builder()
         .fee(fee)

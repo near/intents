@@ -11,7 +11,7 @@ workspace = true
 [dev-dependencies]
 defuse = { workspace = true, features = ["contract"] }
 defuse-poa-factory = { workspace = true, features = ["contract"] }
-defuse-near-utils = { workspace = true }
+defuse-near-utils = { workspace = true, features = ["arbitrary"] }
 defuse-randomness.workspace = true
 defuse-test-utils.workspace = true
 
