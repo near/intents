@@ -184,24 +184,21 @@ mod tests {
 
     #[rstest]
     fn legacy_upgrade(#[from(make_arbitrary)] data: AccountData) {
-        let serialized_legacy = {
-            let legacy = data.make_account();
-            borsh::to_vec(&legacy).expect("unable to serialize legacy Account")
-        };
+        let legacy = data.make_account();
+        let serialized_legacy = borsh::to_vec(&legacy).expect("unable to serialize legacy Account");
+        // we need to drop it, so all collections from near-sdk flush to storage
+        drop(legacy);
 
-        let serialized_versioned = {
-            let mut versioned: AccountEntry = borsh::from_slice(&serialized_legacy).unwrap();
-            data.assert_contained_in(
-                versioned
-                    .lock()
-                    .expect("legacy accounts must be unlocked by default"),
-            );
-            borsh::to_vec(&versioned).unwrap()
-        };
+        let mut versioned: AccountEntry = borsh::from_slice(&serialized_legacy).unwrap();
+        data.assert_contained_in(
+            versioned
+                .lock()
+                .expect("legacy accounts must be unlocked by default"),
+        );
+        let serialized_versioned = borsh::to_vec(&versioned).unwrap();
+        drop(versioned);
 
-        {
-            let versioned: AccountEntry = borsh::from_slice(&serialized_versioned).unwrap();
-            data.assert_contained_in(versioned.as_locked().expect("should be locked by now"));
-        }
+        let versioned: AccountEntry = borsh::from_slice(&serialized_versioned).unwrap();
+        data.assert_contained_in(versioned.as_locked().expect("should be locked by now"));
     }
 }

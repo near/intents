@@ -26,7 +26,7 @@ pub trait MtExt {
         approval: Option<(AccountId, u64)>,
         memo: Option<String>,
         msg: String,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<Vec<u128>>;
 
     async fn mt_batch_transfer(
         &self,
@@ -125,7 +125,7 @@ impl MtExt for near_workspaces::Account {
         approval: Option<(AccountId, u64)>,
         memo: Option<String>,
         msg: String,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<Vec<u128>> {
         self.call(token_contract, "mt_transfer_call")
             .args_json(json!({
                 "receiver_id": receiver_id,
@@ -139,8 +139,10 @@ impl MtExt for near_workspaces::Account {
             .max_gas()
             .transact()
             .await?
-            .into_result()?;
-        Ok(())
+            .into_result()?
+            .json::<Vec<U128>>()
+            .map(|amounts| amounts.into_iter().map(|a| a.0).collect())
+            .map_err(Into::into)
     }
 
     async fn mt_batch_transfer(
@@ -362,7 +364,7 @@ impl MtExt for near_workspaces::Contract {
         approval: Option<(AccountId, u64)>,
         memo: Option<String>,
         msg: String,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<Vec<u128>> {
         self.as_account()
             .mt_transfer_call(
                 token_contract,

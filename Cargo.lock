@@ -868,6 +868,7 @@ dependencies = [
  "defuse-near-utils",
  "defuse-poa-factory",
  "defuse-randomness",
+ "defuse-serde-utils",
  "defuse-test-utils",
  "derive_more 2.0.1",
  "hex",
