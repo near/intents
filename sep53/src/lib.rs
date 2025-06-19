@@ -81,15 +81,13 @@ impl SignedPayload for SignedSep53Payload {
 
 #[cfg(test)]
 mod tests {
-
+    use crate::{Sep53Payload, SignedSep53Payload};
     use base64::{Engine, engine::general_purpose::STANDARD};
     use defuse_crypto::{Payload, SignedPayload};
     use ed25519_dalek::Verifier;
     use ed25519_dalek::{SigningKey, ed25519::signature::SignerMut};
     use near_sdk::base64;
     use stellar_strkey::Strkey;
-
-    use crate::{Sep53Payload, SignedSep53Payload};
 
     #[test]
     fn reference_test_vectors() {
