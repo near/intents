@@ -63,6 +63,7 @@ defuse-test-utils.path = "test-utils"
 anyhow = "1"
 arbitrary = "1"
 arbitrary_with = "0.3"
+array-util = "1"
 bnum = { version = "0.13", features = ["borsh"] }
 chrono = { version = "0.4", default-features = false }
 derive_more = "2.0"
