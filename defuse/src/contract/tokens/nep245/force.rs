@@ -49,9 +49,9 @@ impl MultiTokenForceCore for Contract {
 
         self.internal_mt_batch_transfer(
             &owner_id,
-            receiver_id,
-            token_ids,
-            amounts,
+            &receiver_id,
+            &token_ids,
+            &amounts,
             memo.as_deref(),
             true,
         )
