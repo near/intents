@@ -23,8 +23,7 @@ use rstest::rstest;
 
 #[tokio::test]
 #[rstest]
-#[trace]
-async fn native_withdraw_intent(#[notrace] mut rng: impl Rng) {
+async fn native_withdraw_intent(mut rng: impl Rng) {
     let env = Env::new().await;
 
     let amounts_to_withdraw = [
