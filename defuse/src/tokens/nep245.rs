@@ -35,6 +35,8 @@ pub trait MultiTokenWithdrawResolver {
     ) -> Vec<U128>;
 }
 
+/// Same as [`MultiTokenCore`], but allows permissioned accounts to transfer
+/// from any `owner_id` bypassing locked checks.
 #[ext_contract(ext_mt_force_core)]
 pub trait MultiTokenForceCore: MultiTokenCore + AccessControllable {
     fn mt_force_transfer(
