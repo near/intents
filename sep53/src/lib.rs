@@ -83,7 +83,7 @@ impl SignedPayload for SignedSep53Payload {
 mod tests {
 
     use base64::{Engine, engine::general_purpose::STANDARD};
-    use defuse_crypto::Payload;
+    use defuse_crypto::{Payload, SignedPayload};
     use ed25519_dalek::Verifier;
     use ed25519_dalek::ed25519::signature::digest::Digest;
     use ed25519_dalek::{SigningKey, ed25519::signature::SignerMut};
@@ -91,7 +91,7 @@ mod tests {
     use sha2::Sha256;
     use stellar_strkey::Strkey;
 
-    use crate::Sep53Payload;
+    use crate::{Sep53Payload, SignedSep53Payload};
 
     #[test]
     fn reference_test_vectors() {
@@ -123,6 +123,7 @@ mod tests {
             ),
         ];
 
+        // Verify with dalek
         for (msg, expected_b64) in vectors {
             let mut payload = b"Stellar Signed Message:\n".to_vec();
             payload.extend_from_slice(msg);
@@ -135,6 +136,7 @@ mod tests {
             assert!(verifying_key.verify(hash.as_ref(), &sig).is_ok());
         }
 
+        // Verify with our abstraction
         for (msg, expected_sig_b64) in vectors {
             let payload = Sep53Payload::new(msg.to_vec());
 
@@ -159,6 +161,14 @@ mod tests {
 
             assert_eq!(actual_sig_b64, *expected_sig_b64);
             assert!(generic_sig.verify(hash.as_ref(), &key.public_key()));
+
+            let signed_payload = SignedSep53Payload {
+                payload,
+                public_key: verifying_key.as_bytes().to_owned(),
+                signature: sig.to_bytes(),
+            };
+
+            assert!(signed_payload.verify().is_some());
         }
     }
 }
