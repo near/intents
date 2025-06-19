@@ -24,7 +24,7 @@ members = [
     "tests",
     "test-utils",
     "ton-connect",
-    "wnear",
+    "wnear", "sep53",
 ]
 default-members = ["defuse"]
 
