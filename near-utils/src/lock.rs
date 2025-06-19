@@ -47,11 +47,18 @@ impl<T> Lock<T> {
         self
     }
 
+    /// # Safety
+    /// This method bypasses lock state checks. Use only when you need to access
+    /// the inner value regardless of lock state, such as for read operations
+    /// or when implementing higher-level locking logic.
     #[inline]
     pub const fn as_inner_unchecked(&self) -> &T {
         &self.value
     }
 
+    /// # Safety
+    /// This method bypasses lock state checks. Use only when you need mutable access
+    /// to the inner value regardless of lock state. Misuse can compromise locking semantics.
     #[inline]
     pub const fn as_inner_unchecked_mut(&mut self) -> &mut T {
         &mut self.value
@@ -213,4 +220,24 @@ where
             value: v.value.into_inner(),
         })
     }
+}
+
+#[cfg(test)]
+#[test]
+fn test() {
+    let mut a = Lock::new(0, false);
+
+    assert!(!a.is_locked());
+    assert_eq!(a.unlock(), None);
+
+    assert_eq!(a.as_unlocked().copied(), Some(0));
+    *a.as_unlocked_mut().unwrap() += 1;
+    assert_eq!(*a.as_inner_unchecked(), 1);
+
+    assert_eq!(a.lock().copied(), Some(1));
+    assert!(a.is_locked());
+
+    assert_eq!(a.as_locked().copied(), Some(1));
+    *a.as_locked_mut().unwrap() += 1;
+    assert_eq!(*a.as_inner_unchecked(), 2);
 }
