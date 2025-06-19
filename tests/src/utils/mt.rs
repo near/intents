@@ -185,7 +185,7 @@ impl MtExt for near_workspaces::Account {
                 "receiver_id": receiver_id,
                 "token_ids": token_ids.into_iter().collect::<Vec<_>>(),
                 "amounts": amounts.into_iter().map(U128).collect::<Vec<_>>(),
-                "approval": approvals.map(|a| a.into_iter().collect::<Vec<_>>()),
+                "approvals": approvals.map(|a| a.into_iter().collect::<Vec<_>>()),
                 "memo": memo,
                 "msg": msg
             }))
