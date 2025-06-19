@@ -85,17 +85,15 @@ mod tests {
     use base64::{Engine, engine::general_purpose::STANDARD};
     use defuse_crypto::{Payload, SignedPayload};
     use ed25519_dalek::Verifier;
-    use ed25519_dalek::ed25519::signature::digest::Digest;
     use ed25519_dalek::{SigningKey, ed25519::signature::SignerMut};
     use near_sdk::base64;
-    use sha2::Sha256;
     use stellar_strkey::Strkey;
 
     use crate::{Sep53Payload, SignedSep53Payload};
 
     #[test]
     fn reference_test_vectors() {
-        // 1) Decode the StrKey seed → raw 32 bytes
+        // 1) Decode the StrKey seed -> raw 32 bytes
         let seed = "SAKICEVQLYWGSOJS4WW7HZJWAHZVEEBS527LHK5V4MLJALYKICQCJXMW";
         let raw = match Strkey::from_string(seed).unwrap() {
             Strkey::PrivateKeyEd25519(pk) => pk.0,
@@ -128,7 +126,7 @@ mod tests {
             let mut payload = b"Stellar Signed Message:\n".to_vec();
             payload.extend_from_slice(msg);
 
-            let hash = Sha256::digest(&payload);
+            let hash = near_sdk::env::sha256_array(&payload);
             let sig = signing_key.sign(hash.as_ref());
             let actual_b64 = STANDARD.encode(sig.to_bytes());
 
