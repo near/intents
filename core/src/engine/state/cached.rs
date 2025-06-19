@@ -306,7 +306,7 @@ where
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default)]
 pub struct CachedAccounts(HashMap<AccountId, Lock<CachedAccount>>);
 
 impl CachedAccounts {

@@ -9,7 +9,7 @@ use near_sdk::{
 /// A persistent lock, which stores its state (whether it's locked or unlocked)
 /// on-chain, so that the inner value can be accessed depending on
 /// the current state of the lock.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Default, PartialEq, Eq)]
 #[near(serializers = [borsh, json])]
 pub struct Lock<T> {
     #[serde(
