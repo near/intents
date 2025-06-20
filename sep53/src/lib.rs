@@ -19,11 +19,7 @@ impl Sep53Payload {
 
     #[inline]
     pub fn prehash(&self) -> Vec<u8> {
-        [
-            "Stellar Signed Message:\n".as_bytes(),
-            self.message.as_bytes(),
-        ]
-        .concat()
+        [b"Stellar Signed Message:\n", self.message.as_bytes()].concat()
     }
 }
 
@@ -110,7 +106,7 @@ mod tests {
             let mut payload = "Stellar Signed Message:\n".to_string();
             payload += msg;
 
-            let hash = near_sdk::env::sha256_array(&payload.as_bytes());
+            let hash = near_sdk::env::sha256_array(payload.as_bytes());
             let sig = signing_key.sign(hash.as_ref());
             let actual_b64 = STANDARD.encode(sig.to_bytes());
 
