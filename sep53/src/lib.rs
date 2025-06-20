@@ -5,26 +5,25 @@ use serde_with::serde_as;
 
 /// See [SEP-53](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md)
 #[near(serializers = [json])]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 #[derive(Debug, Clone)]
-#[must_use]
 pub struct Sep53Payload {
-    pub message: Vec<u8>,
+    pub message: String,
 }
 
 impl Sep53Payload {
     #[inline]
-    pub const fn new(message: Vec<u8>) -> Self {
+    pub const fn new(message: String) -> Self {
         Self { message }
     }
 
     #[inline]
     pub fn prehash(&self) -> Vec<u8> {
-        b"Stellar Signed Message:\n"
-            .iter()
-            .copied()
-            .chain(self.message.as_slice().iter().copied())
-            .collect()
+        [
+            "Stellar Signed Message:\n".as_bytes(),
+            self.message.as_bytes(),
+        ]
+        .concat()
     }
 }
 
@@ -96,27 +95,22 @@ mod tests {
 
         let vectors = [
             (
-                b"Hello, World!".as_ref(),
+                "Hello, World!",
                 "fO5dbYhXUhBMhe6kId/cuVq/AfEnHRHEvsP8vXh03M1uLpi5e46yO2Q8rEBzu3feXQewcQE5GArp88u6ePK6BA==",
             ),
             (
-                "こんにちは、世界！".as_bytes(),
+                "こんにちは、世界！",
                 "CDU265Xs8y3OWbB/56H9jPgUss5G9A0qFuTqH2zs2YDgTm+++dIfmAEceFqB7bhfN3am59lCtDXrCtwH2k1GBA==",
             ),
-            (
-                &STANDARD
-                    .decode("2zZDP1sa1BVBfLP7TeeMk3sUbaxAkUhBhDiNdrksaFo=")
-                    .unwrap(),
-                "VA1+7hefNwv2NKScH6n+Sljj15kLAge+M2wE7fzFOf+L0MMbssA1mwfJZRyyrhBORQRle10X1Dxpx+UOI4EbDQ==",
-            ),
+            // One test vector is dropped because it's binary data, and that's not supported
         ];
 
         // Verify with dalek
         for (msg, expected_b64) in vectors {
-            let mut payload = b"Stellar Signed Message:\n".to_vec();
-            payload.extend_from_slice(msg);
+            let mut payload = "Stellar Signed Message:\n".to_string();
+            payload += msg;
 
-            let hash = near_sdk::env::sha256_array(&payload);
+            let hash = near_sdk::env::sha256_array(&payload.as_bytes());
             let sig = signing_key.sign(hash.as_ref());
             let actual_b64 = STANDARD.encode(sig.to_bytes());
 
@@ -126,7 +120,7 @@ mod tests {
 
         // Verify with our abstraction
         for (msg, expected_sig_b64) in vectors {
-            let payload = Sep53Payload::new(msg.to_vec());
+            let payload = Sep53Payload::new(msg.to_string());
 
             let hash = payload.hash();
             let secret_key = near_crypto::SecretKey::ED25519(near_crypto::ED25519SecretKey(

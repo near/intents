@@ -1,10 +1,6 @@
-use defuse_sep53::{Sep53Payload, SignedSep53Payload};
-use near_sdk::{
-    serde::de::{DeserializeOwned, Error},
-    serde_json,
-};
-
 use crate::payload::{DefusePayload, ExtractDefusePayload};
+use defuse_sep53::{Sep53Payload, SignedSep53Payload};
+use near_sdk::{serde::de::DeserializeOwned, serde_json};
 
 impl<T> ExtractDefusePayload<T> for SignedSep53Payload
 where
@@ -25,11 +21,6 @@ where
     type Error = serde_json::Error;
 
     fn extract_defuse_payload(self) -> Result<DefusePayload<T>, Self::Error> {
-        let message_string = String::from_utf8(self.message).map_err(|_| {
-            serde_json::Error::custom("Invalid SEP-53 message. Only UTF-8 strings are supported.")
-        })?;
-        let p: DefusePayload<T> = serde_json::from_str(&message_string)?;
-
-        Ok(p)
+        serde_json::from_str(&self.message)
     }
 }
