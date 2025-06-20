@@ -37,6 +37,7 @@ abi = [
     "defuse-crypto/abi",
     "defuse-erc191/abi",
     "defuse-nep413/abi",
+    "defuse-sep53/abi",
     "defuse-serde-utils/abi",
     "defuse-ton-connect/abi",
     "defuse-webauthn/abi",
