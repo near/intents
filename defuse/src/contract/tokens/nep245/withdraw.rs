@@ -1,5 +1,9 @@
 #![allow(clippy::too_many_arguments)]
 
+use crate::{
+    contract::{Contract, ContractExt, Role, tokens::STORAGE_DEPOSIT_GAS},
+    tokens::nep245::{MultiTokenForceWithdrawer, MultiTokenWithdrawResolver, MultiTokenWithdrawer},
+};
 use defuse_core::{
     DefuseError, Result,
     engine::StateView,
@@ -18,11 +22,6 @@ use near_sdk::{
     json_types::U128,
     near, require,
     serde_json::{self, json},
-};
-
-use crate::{
-    contract::{Contract, ContractExt, Role, tokens::STORAGE_DEPOSIT_GAS},
-    tokens::nep245::{MultiTokenForceWithdrawer, MultiTokenWithdrawResolver, MultiTokenWithdrawer},
 };
 
 #[near]
@@ -110,8 +109,7 @@ impl Contract {
         }
         .then(
             Self::ext(CURRENT_ACCOUNT_ID.clone())
-                // TODO: gas_base + gas_per_token * token_ids.len()
-                .with_static_gas(Self::MT_RESOLVE_WITHDRAW_GAS)
+                .with_static_gas(Self::mt_resolve_withdraw_gas(withdraw.token_ids.len()))
                 // do not distribute remaining gas here
                 .with_unused_gas_weight(0)
                 .mt_resolve_withdraw(
@@ -124,12 +122,27 @@ impl Contract {
         )
         .into())
     }
+
+    #[must_use]
+    fn mt_resolve_withdraw_gas(token_count: usize) -> Gas {
+        // Values chosen to be similar to `MT_RESOLVE_TRANSFER_*` values
+        const MT_RESOLVE_WITHDRAW_PER_TOKEN_GAS: Gas = Gas::from_tgas(2);
+        const MT_RESOLVE_WITHDRAW_BASE_GAS: Gas = Gas::from_tgas(8);
+
+        let token_count: u64 = token_count.try_into().unwrap_or_panic_display();
+
+        MT_RESOLVE_WITHDRAW_BASE_GAS
+            .checked_add(
+                MT_RESOLVE_WITHDRAW_PER_TOKEN_GAS
+                    .checked_mul(token_count)
+                    .unwrap_or_panic(),
+            )
+            .unwrap_or_panic()
+    }
 }
 
 #[near]
 impl Contract {
-    // TODO: gas_base + gas_per_token * token_ids.len()
-    const MT_RESOLVE_WITHDRAW_GAS: Gas = Gas::from_tgas(7);
     const DO_MT_WITHDRAW_GAS: Gas = Gas::from_tgas(5)
         // do_nft_withdraw() method is called externally
         // only with storage_deposit

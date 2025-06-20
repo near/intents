@@ -1,5 +1,12 @@
 use std::time::Duration;
 
+use crate::{
+    tests::defuse::{
+        DefuseSigner, SigningStandard, env::Env, intents::ExecuteIntentsExt,
+        tokens::nep141::traits::DefuseFtReceiver,
+    },
+    utils::{mt::MtExt, wnear::WNearExt},
+};
 use defuse::{
     core::{
         Deadline,
@@ -10,23 +17,13 @@ use defuse::{
     tokens::DepositMessage,
 };
 use defuse_randomness::Rng;
-use defuse_test_utils::random::{Seed, random_seed, rng};
+use defuse_test_utils::random::rng;
 use near_sdk::NearToken;
 use rstest::rstest;
 
-use crate::{
-    tests::defuse::{
-        DefuseSigner, SigningStandard, env::Env, intents::ExecuteIntentsExt,
-        tokens::nep141::DefuseFtReceiver,
-    },
-    utils::{mt::MtExt, wnear::WNearExt},
-};
-
 #[tokio::test]
 #[rstest]
-#[trace]
-async fn native_withdraw_intent(random_seed: Seed) {
-    let mut rng = rng(random_seed);
+async fn native_withdraw_intent(mut rng: impl Rng) {
     let env = Env::new().await;
 
     let amounts_to_withdraw = [

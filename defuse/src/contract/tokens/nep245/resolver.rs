@@ -1,14 +1,10 @@
-use std::borrow::Cow;
-
+use crate::contract::{Contract, ContractExt};
 use defuse_near_utils::{UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::{
     ClearedApproval, MtEventEmit, MtTransferEvent, TokenId, resolver::MultiTokenResolver,
 };
-use near_sdk::{AccountId, Gas, PromiseResult, env, json_types::U128, near, require, serde_json};
-
-use crate::contract::{Contract, ContractExt};
-
-pub(super) const MT_RESOLVE_TRANSFER_GAS: Gas = Gas::from_tgas(7);
+use near_sdk::{AccountId, PromiseResult, env, json_types::U128, near, require, serde_json};
+use std::borrow::Cow;
 
 #[near]
 impl MultiTokenResolver for Contract {
@@ -90,8 +86,8 @@ impl MultiTokenResolver for Contract {
             Cow::Borrowed(
                 [MtTransferEvent {
                     authorized_id: None,
-                    old_owner_id: receiver_id.into(),
-                    new_owner_id: sender_id.into(),
+                    old_owner_id: Cow::Borrowed(&receiver_id),
+                    new_owner_id: Cow::Borrowed(&sender_id),
                     token_ids: refunded_token_ids.into(),
                     amounts: refunded_amounts.into(),
                     memo: Some("refund".into()),

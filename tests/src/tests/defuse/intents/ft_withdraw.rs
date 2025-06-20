@@ -1,25 +1,22 @@
 use super::ExecuteIntentsExt;
+use crate::tests::defuse::DefuseExt;
+use crate::tests::defuse::tokens::nep141::traits::DefuseFtReceiver;
 use crate::{
-    tests::defuse::{
-        DefuseExt, DefuseSigner, SigningStandard, env::Env, tokens::nep141::DefuseFtReceiver,
-    },
+    tests::defuse::{DefuseSigner, SigningStandard, env::Env},
     utils::{ft::FtExt, mt::MtExt, wnear::WNearExt},
 };
 use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
+use defuse::core::{
+    Deadline,
+    intents::{DefuseIntents, tokens::FtWithdraw},
+};
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
-    core::{
-        Deadline,
-        fees::{FeesConfig, Pips},
-        intents::{DefuseIntents, tokens::FtWithdraw},
-    },
+    core::fees::{FeesConfig, Pips},
 };
 use defuse_randomness::Rng;
-use defuse_test_utils::{
-    asserts::ResultAssertsExt,
-    random::{Seed, random_seed, rng},
-};
+use defuse_test_utils::{asserts::ResultAssertsExt, random::rng};
 use near_sdk::{AccountId, Gas, NearToken};
 use rstest::rstest;
 use std::time::Duration;
@@ -27,13 +24,12 @@ use std::time::Duration;
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registration: bool) {
-    use defuse::core::token_id::nep141::Nep141TokenId;
-
+async fn ft_withdraw_intent(
+    #[notrace] mut rng: impl Rng,
+    #[values(false, true)] no_registration: bool,
+) {
     // intentionally large deposit
     const STORAGE_DEPOSIT: NearToken = NearToken::from_near(1000);
-
-    let mut rng = rng(random_seed);
 
     let env = Env::builder()
         .no_registration(no_registration)
@@ -258,9 +254,10 @@ async fn ft_withdraw_intent(random_seed: Seed, #[values(false, true)] no_registr
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn ft_withdraw_intent_msg(random_seed: Seed, #[values(false, true)] no_registration: bool) {
-    let mut rng = rng(random_seed);
-
+async fn ft_withdraw_intent_msg(
+    #[notrace] mut rng: impl Rng,
+    #[values(false, true)] no_registration: bool,
+) {
     let env = Env::builder()
         .no_registration(no_registration)
         .build()

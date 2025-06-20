@@ -1,14 +1,15 @@
-use defuse::core::crypto::PublicKey;
-use defuse_randomness::{Rng, make_true_rng};
-use near_sdk::AccountId;
-
-use crate::{tests::defuse::accounts::AccountManagerExt, utils::mt::MtExt};
-
 use super::DEFUSE_WASM;
+use crate::{tests::defuse::accounts::AccountManagerExt, utils::mt::MtExt};
+use defuse::core::crypto::PublicKey;
+use defuse_randomness::Rng;
+use defuse_test_utils::random::rng;
+use near_sdk::AccountId;
+use rstest::rstest;
 
 #[ignore = "only for simple upgrades"]
 #[tokio::test]
-async fn upgrade() {
+#[rstest]
+async fn upgrade(mut rng: impl Rng) {
     let old_contract_id: AccountId = "intents.near".parse().unwrap();
     let mainnet = near_workspaces::mainnet()
         .rpc_addr("https://nearrpc.aurora.dev")
@@ -43,9 +44,9 @@ async fn upgrade() {
     );
 
     for public_key in [
-        PublicKey::Ed25519(make_true_rng().random()),
-        PublicKey::Secp256k1(make_true_rng().random()),
-        PublicKey::P256(make_true_rng().random()),
+        PublicKey::Ed25519(rng.random()),
+        PublicKey::Secp256k1(rng.random()),
+        PublicKey::P256(rng.random()),
     ] {
         assert!(
             new_contract

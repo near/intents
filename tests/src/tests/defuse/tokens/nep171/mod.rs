@@ -9,7 +9,7 @@ use defuse::core::{
     intents::{DefuseIntents, tokens::NftWithdraw},
 };
 use defuse_randomness::Rng;
-use defuse_test_utils::random::{Seed, gen_random_string, random_bytes, random_seed, rng};
+use defuse_test_utils::random::{gen_random_string, random_bytes, rng};
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata,
 };
@@ -20,9 +20,7 @@ use std::collections::HashMap;
 
 #[tokio::test]
 #[rstest]
-async fn transfer_nft_to_verifier(random_seed: Seed) {
-    let mut rng = rng(random_seed);
-
+async fn transfer_nft_to_verifier(mut rng: impl Rng) {
     let env = Env::builder().build().await;
 
     env.transfer_near(env.user1.id(), NearToken::from_near(100))

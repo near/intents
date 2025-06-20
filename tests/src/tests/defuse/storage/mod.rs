@@ -6,7 +6,7 @@ use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::Deadline;
 use defuse::core::intents::{DefuseIntents, tokens::StorageDeposit};
 use defuse_randomness::Rng;
-use defuse_test_utils::random::{Seed, random_seed, rng};
+use defuse_test_utils::random::rng;
 use near_sdk::NearToken;
 use rstest::rstest;
 
@@ -30,12 +30,10 @@ const ONE_YOCTO_NEAR: NearToken = NearToken::from_yoctonear(1);
     Some(MIN_FT_STORAGE_DEPOSIT_VALUE)
 )]
 async fn storage_deposit_success(
-    random_seed: Seed,
+    #[notrace] mut rng: impl Rng,
     #[case] amount_to_deposit: NearToken,
     #[case] expected_deposited: Option<NearToken>,
 ) {
-    let mut rng = rng(random_seed);
-
     let env = Env::builder()
         .disable_ft_storage_deposit()
         .no_registration(false)
@@ -148,10 +146,7 @@ async fn storage_deposit_success(
 
 #[tokio::test]
 #[rstest]
-#[trace]
-async fn storage_deposit_fails_user_has_no_balance_in_intents(random_seed: Seed) {
-    let mut rng = rng(random_seed);
-
+async fn storage_deposit_fails_user_has_no_balance_in_intents(mut rng: impl Rng) {
     let env = Env::builder()
         .disable_ft_storage_deposit()
         .no_registration(false)

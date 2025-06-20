@@ -1,14 +1,14 @@
+use crate::contract::{Contract, ContractExt};
 use defuse_core::{DefuseError, Result, engine::StateView, token_id::TokenId};
-use defuse_near_utils::{CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic};
+use defuse_near_utils::{
+    CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
+};
 use defuse_nep245::{MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver};
 use near_plugins::{Pausable, pause};
 use near_sdk::{
-    AccountId, AccountIdRef, PromiseOrValue, assert_one_yocto, json_types::U128, near, require,
+    AccountId, AccountIdRef, Gas, PromiseOrValue, assert_one_yocto, json_types::U128, near, require,
 };
-
-use crate::contract::{Contract, ContractExt};
-
-use super::resolver::MT_RESOLVE_TRANSFER_GAS;
+use std::borrow::Cow;
 
 #[near]
 impl MultiTokenCore for Contract {
@@ -45,9 +45,9 @@ impl MultiTokenCore for Contract {
 
         self.internal_mt_batch_transfer(
             &PREDECESSOR_ACCOUNT_ID,
-            receiver_id,
-            token_ids,
-            amounts,
+            &receiver_id,
+            &token_ids,
+            &amounts,
             memo.as_deref(),
         )
         .unwrap_or_panic()
@@ -161,9 +161,9 @@ impl Contract {
     pub(crate) fn internal_mt_batch_transfer(
         &mut self,
         sender_id: &AccountIdRef,
-        receiver_id: AccountId,
-        token_ids: Vec<defuse_nep245::TokenId>,
-        amounts: Vec<U128>,
+        receiver_id: &AccountIdRef,
+        token_ids: &[defuse_nep245::TokenId],
+        amounts: &[U128],
         memo: Option<&str>,
     ) -> Result<()> {
         if sender_id == receiver_id || token_ids.len() != amounts.len() || amounts.is_empty() {
@@ -183,7 +183,7 @@ impl Contract {
                 .sub(token_id.clone(), amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
             self.accounts
-                .get_or_create(receiver_id.clone())
+                .get_or_create(receiver_id.to_owned())
                 .token_balances
                 .add(token_id, amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
@@ -193,7 +193,7 @@ impl Contract {
             [MtTransferEvent {
                 authorized_id: None,
                 old_owner_id: sender_id.into(),
-                new_owner_id: receiver_id.into(),
+                new_owner_id: Cow::Borrowed(receiver_id),
                 token_ids: token_ids.into(),
                 amounts: amounts.into(),
                 memo: memo.map(Into::into),
@@ -215,13 +215,7 @@ impl Contract {
         memo: Option<&str>,
         msg: String,
     ) -> Result<PromiseOrValue<Vec<U128>>> {
-        self.internal_mt_batch_transfer(
-            &sender_id,
-            receiver_id.clone(),
-            token_ids.clone(),
-            amounts.clone(),
-            memo,
-        )?;
+        self.internal_mt_batch_transfer(&sender_id, &receiver_id, &token_ids, &amounts, memo)?;
 
         let previous_owner_ids = vec![sender_id.clone(); token_ids.len()];
 
@@ -235,12 +229,28 @@ impl Contract {
             )
             .then(
                 Self::ext(CURRENT_ACCOUNT_ID.clone())
-                    // TODO: gas_base + gas_per_token * token_ids.len()
-                    .with_static_gas(MT_RESOLVE_TRANSFER_GAS)
-                    // do not distribute remaining gas here
+                    .with_static_gas(Self::mt_resolve_gas(token_ids.len()))
+                    // do not distribute remaining gas here (so that all that's left goes to `mt_on_transfer`)
                     .with_unused_gas_weight(0)
                     .mt_resolve_transfer(previous_owner_ids, receiver_id, token_ids, amounts, None),
             )
             .into())
+    }
+
+    #[must_use]
+    fn mt_resolve_gas(token_count: usize) -> Gas {
+        // These represent a linear model total_gas_cost = per_token*n + base,
+        // where `n` is the number of tokens.
+        const MT_RESOLVE_TRANSFER_PER_TOKEN_GAS: Gas = Gas::from_tgas(2);
+        const MT_RESOLVE_TRANSFER_BASE_GAS: Gas = Gas::from_tgas(8);
+        let token_count: u64 = token_count.try_into().unwrap_or_panic_display();
+
+        MT_RESOLVE_TRANSFER_BASE_GAS
+            .checked_add(
+                MT_RESOLVE_TRANSFER_PER_TOKEN_GAS
+                    .checked_mul(token_count)
+                    .unwrap_or_panic(),
+            )
+            .unwrap_or_panic()
     }
 }
