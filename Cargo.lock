@@ -710,6 +710,7 @@ dependencies = [
  "defuse-nep245",
  "defuse-nep413",
  "defuse-num-utils",
+ "defuse-sep53",
  "defuse-serde-utils",
  "defuse-test-utils",
  "defuse-ton-connect",
@@ -837,6 +838,21 @@ name = "defuse-randomness"
 version = "0.1.0"
 dependencies = [
  "rand 0.9.1",
+]
+
+[[package]]
+name = "defuse-sep53"
+version = "0.1.0"
+dependencies = [
+ "defuse-crypto",
+ "defuse-near-utils",
+ "defuse-serde-utils",
+ "ed25519-dalek",
+ "impl-tools",
+ "near-crypto",
+ "near-sdk",
+ "serde_with",
+ "stellar-strkey",
 ]
 
 [[package]]
@@ -1077,7 +1093,6 @@ version = "2.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "115531babc129696a58c64a4fef0a8bf9e9698629fb97e9e40767d235cfbcd53"
 dependencies = [
- "pkcs8",
  "signature",
 ]
 
@@ -1090,10 +1105,8 @@ dependencies = [
  "curve25519-dalek",
  "ed25519",
  "rand_core 0.6.4",
- "serde",
  "sha2",
  "subtle",
- "zeroize",
 ]
 
 [[package]]
@@ -2736,16 +2749,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
-name = "pkcs8"
-version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f950b2377845cebe5cf8b5165cb3cc1a5e0fa5cfa3e1f7f55707d8fd82e0a7b7"
-dependencies = [
- "der",
- "spki",
-]
-
-[[package]]
 name = "pkg-config"
 version = "0.3.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3308,21 +3311,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56e6fa9c48d24d85fb3de5ad847117517440f6beceb7798af16b4a87d616b8d0"
 
 [[package]]
-name = "sep53"
-version = "0.1.0"
-dependencies = [
- "defuse-crypto",
- "defuse-near-utils",
- "defuse-serde-utils",
- "ed25519-dalek",
- "impl-tools",
- "near-crypto",
- "near-sdk",
- "serde_with",
- "stellar-strkey",
-]
-
-[[package]]
 name = "serde"
 version = "1.0.219"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3536,16 +3524,6 @@ name = "spin"
 version = "0.9.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
-
-[[package]]
-name = "spki"
-version = "0.7.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d91ed6c858b01f942cd56b37a94b3e0a1798290327d1236e4d9cf4eaca44d29d"
-dependencies = [
- "base64ct",
- "der",
-]
 
 [[package]]
 name = "stable_deref_trait"

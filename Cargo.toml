@@ -20,11 +20,12 @@ members = [
     "poa-factory",
     "poa-token",
     "randomness",
+    "sep53",
     "serde-utils",
     "tests",
     "test-utils",
     "ton-connect",
-    "wnear", "sep53",
+    "wnear",
 ]
 default-members = ["defuse"]
 
@@ -53,6 +54,7 @@ defuse-num-utils.path = "num-utils"
 defuse-webauthn.path = "webauthn"
 defuse-poa-factory.path = "poa-factory"
 defuse-poa-token.path = "poa-token"
+defuse-sep53.path = "sep53"
 defuse-serde-utils.path = "serde-utils"
 defuse-ton-connect.path = "ton-connect"
 defuse-wnear.path = "wnear"

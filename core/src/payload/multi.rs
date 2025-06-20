@@ -1,6 +1,7 @@
 use defuse_crypto::{Payload, PublicKey, SignedPayload};
 use defuse_erc191::SignedErc191Payload;
 use defuse_nep413::SignedNep413Payload;
+use defuse_sep53::SignedSep53Payload;
 use defuse_ton_connect::SignedTonConnectPayload;
 use derive_more::derive::From;
 use near_sdk::{CryptoHash, near, serde::de::DeserializeOwned, serde_json};
@@ -41,6 +42,10 @@ pub enum MultiPayload {
     /// TonConnect: The standard for data signing in TON blockchain platform.
     /// For more details, refer to [TonConnect documentation](https://docs.tonconsole.com/academy/sign-data).
     TonConnect(SignedTonConnectPayload),
+
+    /// SEP-53: The standard for signing data off-chain for Stellar accounts.
+    /// See [SEP-53](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md)
+    Sep53(SignedSep53Payload),
 }
 
 impl Payload for MultiPayload {
@@ -56,6 +61,7 @@ impl Payload for MultiPayload {
             Self::RawEd25519(payload) => payload.hash(),
             Self::WebAuthn(payload) => payload.hash(),
             Self::TonConnect(payload) => payload.hash(),
+            Self::Sep53(payload) => payload.hash(),
         }
     }
 }
@@ -71,6 +77,7 @@ impl SignedPayload for MultiPayload {
             Self::RawEd25519(payload) => payload.verify().map(PublicKey::Ed25519),
             Self::WebAuthn(payload) => payload.verify(),
             Self::TonConnect(payload) => payload.verify().map(PublicKey::Ed25519),
+            Self::Sep53(payload) => payload.verify().map(PublicKey::Ed25519),
         }
     }
 }
@@ -89,6 +96,7 @@ where
             Self::RawEd25519(payload) => payload.extract_defuse_payload(),
             Self::WebAuthn(payload) => payload.extract_defuse_payload(),
             Self::TonConnect(payload) => payload.extract_defuse_payload(),
+            Self::Sep53(payload) => payload.extract_defuse_payload(),
         }
     }
 }

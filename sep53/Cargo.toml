@@ -1,5 +1,5 @@
 [package]
-name = "sep53"
+name = "defuse-sep53"
 edition.workspace = true
 repository.workspace = true
 version.workspace = true
@@ -15,10 +15,10 @@ near-sdk = { workspace = true, features = ["unit-testing"] }
 serde_with.workspace = true
 
 [dev-dependencies]
+ed25519-dalek.workspace = true
 near-crypto.workspace = true
 # FIXME: move to root Cargo.toml
 stellar-strkey = "0.0"
-ed25519-dalek = "2.0"
 
 [features]
 abi = ["defuse-serde-utils/abi", "defuse-crypto/abi"]

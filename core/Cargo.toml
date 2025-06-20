@@ -16,6 +16,7 @@ defuse-near-utils = { workspace = true, features = ["time"] }
 defuse-num-utils.workspace = true
 defuse-serde-utils.workspace = true
 defuse-ton-connect.workspace = true
+defuse-sep53.workspace = true
 defuse-webauthn.workspace = true
 
 arbitrary = { workspace = true, optional = true }

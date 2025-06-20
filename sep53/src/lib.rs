@@ -4,15 +4,7 @@ use near_sdk::{env, near};
 use serde_with::serde_as;
 
 /// See [SEP-53](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md)
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
-#[near(serializers = [borsh, json])]
+#[near(serializers = [json])]
 #[serde(rename_all = "camelCase")]
 #[derive(Debug, Clone)]
 #[must_use]
