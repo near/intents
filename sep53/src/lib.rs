@@ -71,9 +71,11 @@ mod tests {
     use crate::{Sep53Payload, SignedSep53Payload};
     use base64::{Engine, engine::general_purpose::STANDARD};
     use defuse_crypto::{Payload, SignedPayload};
+    use defuse_test_utils::random::{CryptoRng, Rng, gen_random_string, random_bytes, rng};
     use ed25519_dalek::Verifier;
     use ed25519_dalek::{SigningKey, ed25519::signature::SignerMut};
     use near_sdk::base64;
+    use rstest::rstest;
     use stellar_strkey::Strkey;
 
     #[test]
@@ -147,6 +149,137 @@ mod tests {
             };
 
             assert!(signed_payload.verify().is_some());
+        }
+    }
+
+    /// Returns a new String where one character in `s` is replaced by a random lowercase ASCII letter.
+    fn tamper_string(rng: &mut impl Rng, s: &str) -> String {
+        let mut chars: Vec<char> = s.chars().collect();
+        let len = chars.len();
+        if len == 0 {
+            return String::new();
+        }
+
+        let idx = rng.random_range(0..len);
+        // keep sampling until we get a new char
+        let new_c = loop {
+            #[allow(clippy::as_conversions)]
+            let c = (b'a' + rng.random_range(0..26)) as char;
+            if c != chars[idx] {
+                break c;
+            }
+        };
+        chars[idx] = new_c;
+        chars.into_iter().collect()
+    }
+
+    /// Returns a new signature byte‐vector where exactly one bit of the original `sig`
+    /// has been flipped at a random position.
+    fn tamper_bytes(rng: &mut impl Rng, sig: &[u8]) -> Vec<u8> {
+        let mut tampered = sig.to_vec();
+        let total_bits = tampered.len() * 8;
+        // pick a random bit index and flip it
+        let bit_idx = rng.random_range(0..total_bits);
+        let byte_idx = bit_idx / 8;
+        let bit_in_byte = bit_idx % 8;
+        tampered[byte_idx] ^= 1 << bit_in_byte;
+        tampered
+    }
+
+    /// Decode our test seed into a NEAR ED25519 secret + public key
+    fn make_ed25519_key(rng: &mut (impl Rng + CryptoRng)) -> near_crypto::SecretKey {
+        // We have to use dalek because near interface doesn't support making keys from bytes
+        // so we start from dalek, generate a random key, then use it in a new near_crypto key
+        let key_len = ed25519_dalek::SECRET_KEY_LENGTH;
+        let bytes = random_bytes(key_len..=key_len, rng);
+        let signing_key = SigningKey::from_bytes(&bytes.try_into().unwrap());
+        let verifying_key = signing_key.verifying_key();
+
+        near_crypto::SecretKey::ED25519(near_crypto::ED25519SecretKey(
+            signing_key
+                .as_bytes()
+                .iter()
+                .chain(verifying_key.as_bytes())
+                .copied()
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap(),
+        ))
+    }
+
+    #[rstest]
+    fn tampered_message_fails(mut rng: impl Rng + CryptoRng) {
+        let sk = make_ed25519_key(&mut rng);
+        let pk = sk.public_key();
+
+        let msg = gen_random_string(&mut rng, 100..1000);
+
+        // sign the “good” message
+        let payload = Sep53Payload::new(msg.clone());
+        let hash = payload.hash();
+        let sig = match sk.sign(hash.as_ref()) {
+            near_crypto::Signature::ED25519(signature) => signature,
+            near_crypto::Signature::SECP256K1(_) => unreachable!(),
+        };
+
+        {
+            let signed_good = SignedSep53Payload {
+                payload,
+                public_key: pk.key_data().try_into().unwrap(),
+                signature: sig.to_bytes(),
+            };
+            assert!(signed_good.verify().is_some());
+        }
+
+        // tamper with the message, and expect failure
+        {
+            let tempered_message = tamper_string(&mut rng, &msg);
+
+            // verify with a tampered message
+            let bad_payload = Sep53Payload::new(tempered_message);
+            let signed_bad = SignedSep53Payload {
+                payload: bad_payload,
+                public_key: pk.key_data().try_into().unwrap(),
+                signature: sig.to_bytes(),
+            };
+            assert!(signed_bad.verify().is_none());
+        }
+    }
+
+    #[rstest]
+    fn tampered_signature_fails(mut rng: impl Rng + CryptoRng) {
+        let sk = make_ed25519_key(&mut rng);
+        let pk = sk.public_key();
+
+        let msg = gen_random_string(&mut rng, 100..1000);
+
+        // sign the canonical payload
+        let payload = Sep53Payload::new(msg);
+        let hash = payload.hash();
+        let sig = match sk.sign(hash.as_ref()) {
+            near_crypto::Signature::ED25519(signature) => signature,
+            near_crypto::Signature::SECP256K1(_) => unreachable!(),
+        };
+
+        {
+            let signed_good = SignedSep53Payload {
+                payload: payload.clone(),
+                public_key: pk.key_data().try_into().unwrap(),
+                signature: sig.into(),
+            };
+            assert!(signed_good.verify().is_some());
+        }
+
+        // tamper with the signature, and expect failure
+        {
+            let bad_bytes = tamper_bytes(&mut rng, sig.to_bytes().as_ref());
+
+            let signed_bad = SignedSep53Payload {
+                payload,
+                public_key: pk.key_data().try_into().unwrap(),
+                signature: bad_bytes.try_into().unwrap(),
+            };
+            assert!(signed_bad.verify().is_none());
         }
     }
 }

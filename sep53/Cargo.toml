@@ -15,10 +15,11 @@ near-sdk = { workspace = true, features = ["unit-testing"] }
 serde_with.workspace = true
 
 [dev-dependencies]
+defuse-test-utils.workspace = true
 ed25519-dalek.workspace = true
 near-crypto.workspace = true
-# FIXME: move to root Cargo.toml
-stellar-strkey = "0.0"
+rstest.workspace = true
+stellar-strkey.workspace = true
 
 [features]
 abi = ["defuse-serde-utils/abi", "defuse-crypto/abi"]

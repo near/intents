@@ -847,10 +847,12 @@ dependencies = [
  "defuse-crypto",
  "defuse-near-utils",
  "defuse-serde-utils",
+ "defuse-test-utils",
  "ed25519-dalek",
  "impl-tools",
  "near-crypto",
  "near-sdk",
+ "rstest",
  "serde_with",
  "stellar-strkey",
 ]
