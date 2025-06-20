@@ -7,11 +7,11 @@ use near_sdk::{AccountId, PromiseOrValue, assert_one_yocto, json_types::U128, ne
 
 use crate::{
     contract::{Contract, ContractExt, Role},
-    tokens::nep245::MultiTokenForceCore,
+    tokens::nep245::MultiTokenForcedCore,
 };
 
 #[near]
-impl MultiTokenForceCore for Contract {
+impl MultiTokenForcedCore for Contract {
     #[access_control_any(roles(Role::DAO, Role::UnrestrictedWithdrawer))]
     #[payable]
     fn mt_force_transfer(

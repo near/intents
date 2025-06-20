@@ -80,7 +80,7 @@ where
 
     /// Iterate over set U256
     #[inline]
-    pub fn iter(&self) -> impl Iterator<Item = U256> + '_
+    pub fn as_iter(&self) -> impl Iterator<Item = U256> + '_
     where
         T: IterableMap,
     {

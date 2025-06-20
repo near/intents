@@ -1,4 +1,5 @@
 mod locked;
+mod traits;
 
 use defuse::core::{Nonce, crypto::PublicKey};
 use defuse_serde_utils::base64::AsBase64;
@@ -58,7 +59,6 @@ impl AccountManagerExt for near_workspaces::Account {
         defuse_contract_id: &AccountId,
         public_key: PublicKey,
     ) -> anyhow::Result<()> {
-        // TODO: check bool output
         self.call(defuse_contract_id, "remove_public_key")
             .deposit(NearToken::from_yoctonear(1))
             .args_json(json!({

@@ -95,7 +95,7 @@ impl<T> Lock<T> {
 
     #[must_use]
     #[inline]
-    pub const fn as_locked_or_mut(&mut self, force: bool) -> Option<&mut T> {
+    pub const fn as_locked_mut_maybe_forced(&mut self, force: bool) -> Option<&mut T> {
         if force {
             Some(self.as_inner_unchecked_mut())
         } else {
@@ -130,7 +130,7 @@ impl<T> Lock<T> {
 
     #[must_use]
     #[inline]
-    pub const fn as_unlocked(&self) -> Option<&T> {
+    pub const fn get(&self) -> Option<&T> {
         if self.is_locked() {
             return None;
         }
@@ -139,7 +139,7 @@ impl<T> Lock<T> {
 
     #[must_use]
     #[inline]
-    pub const fn as_unlocked_mut(&mut self) -> Option<&mut T> {
+    pub const fn get_mut(&mut self) -> Option<&mut T> {
         if self.is_locked() {
             return None;
         }
@@ -148,11 +148,11 @@ impl<T> Lock<T> {
 
     #[must_use]
     #[inline]
-    pub const fn as_unlocked_or_mut(&mut self, force: bool) -> Option<&mut T> {
+    pub const fn get_mut_maybe_forced(&mut self, force: bool) -> Option<&mut T> {
         if force {
             Some(self.as_inner_unchecked_mut())
         } else {
-            self.as_unlocked_mut()
+            self.get_mut()
         }
     }
 
@@ -230,8 +230,8 @@ fn test() {
     assert!(!a.is_locked());
     assert_eq!(a.unlock(), None);
 
-    assert_eq!(a.as_unlocked().copied(), Some(0));
-    *a.as_unlocked_mut().unwrap() += 1;
+    assert_eq!(a.get().copied(), Some(0));
+    *a.get_mut().unwrap() += 1;
     assert_eq!(*a.as_inner_unchecked(), 1);
 
     assert_eq!(a.lock().copied(), Some(1));

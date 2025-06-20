@@ -2,7 +2,9 @@
 
 use crate::{
     contract::{Contract, ContractExt, Role, tokens::STORAGE_DEPOSIT_GAS},
-    tokens::nep245::{MultiTokenForceWithdrawer, MultiTokenWithdrawResolver, MultiTokenWithdrawer},
+    tokens::nep245::{
+        MultiTokenForcedWithdrawer, MultiTokenWithdrawResolver, MultiTokenWithdrawer,
+    },
 };
 use defuse_core::{
     DefuseError, Result,
@@ -262,7 +264,7 @@ impl MultiTokenWithdrawResolver for Contract {
 }
 
 #[near]
-impl MultiTokenForceWithdrawer for Contract {
+impl MultiTokenForcedWithdrawer for Contract {
     #[access_control_any(roles(Role::DAO, Role::UnrestrictedWithdrawer))]
     #[payable]
     fn mt_force_withdraw(

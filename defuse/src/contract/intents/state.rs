@@ -86,7 +86,7 @@ impl State for Contract {
     fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()> {
         self.accounts
             .get_or_create(account_id.clone())
-            .as_unlocked_mut()
+            .get_mut()
             .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))?
             .add_public_key(&account_id, public_key)
             .then_some(())
@@ -97,7 +97,7 @@ impl State for Contract {
     fn remove_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()> {
         self.accounts
             .get_or_create(account_id.clone())
-            .as_unlocked_mut()
+            .get_mut()
             .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))?
             .remove_public_key(&account_id, &public_key)
             .then_some(())
@@ -108,7 +108,7 @@ impl State for Contract {
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
         self.accounts
             .get_or_create(account_id.clone())
-            .as_unlocked_mut()
+            .get_mut()
             .ok_or(DefuseError::AccountLocked(account_id))?
             .commit_nonce(nonce)
             .then_some(())
@@ -148,7 +148,7 @@ impl State for Contract {
             .accounts
             .get_mut(owner_id)
             .ok_or_else(|| DefuseError::AccountNotFound(owner_id.to_owned()))?
-            .as_unlocked_mut()
+            .get_mut()
             .ok_or_else(|| DefuseError::AccountLocked(owner_id.to_owned()))?;
 
         for (token_id, amount) in tokens {

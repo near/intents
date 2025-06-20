@@ -182,7 +182,7 @@ impl Contract {
             self.accounts
                 .get_mut(sender_id)
                 .ok_or_else(|| DefuseError::AccountNotFound(sender_id.to_owned()))?
-                .as_unlocked_or_mut(force)
+                .get_mut_maybe_forced(force)
                 .ok_or_else(|| DefuseError::AccountLocked(sender_id.to_owned()))?
                 .token_balances
                 .sub(token_id.clone(), amount)

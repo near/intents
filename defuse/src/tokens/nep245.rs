@@ -38,7 +38,7 @@ pub trait MultiTokenWithdrawResolver {
 /// Same as [`MultiTokenCore`], but allows permissioned accounts to transfer
 /// from any `owner_id` bypassing locked checks.
 #[ext_contract(ext_mt_force_core)]
-pub trait MultiTokenForceCore: MultiTokenCore + AccessControllable {
+pub trait MultiTokenForcedCore: MultiTokenCore + AccessControllable {
     fn mt_force_transfer(
         &mut self,
         owner_id: AccountId,
@@ -83,7 +83,7 @@ pub trait MultiTokenForceCore: MultiTokenCore + AccessControllable {
 }
 
 #[ext_contract(ext_mt_force_withdraw)]
-pub trait MultiTokenForceWithdrawer: MultiTokenWithdrawer + AccessControllable {
+pub trait MultiTokenForcedWithdrawer: MultiTokenWithdrawer + AccessControllable {
     fn mt_force_withdraw(
         &mut self,
         owner_id: AccountId,

@@ -34,6 +34,6 @@ where
     where
         T: IterableMap,
     {
-        self.0.iter()
+        self.0.as_iter()
     }
 }

@@ -12,14 +12,15 @@ use defuse::{
 };
 
 use defuse_test_utils::{asserts::ResultAssertsExt, random::random_bytes};
-use near_sdk::{AccountId, AccountIdRef, NearToken};
 use rstest::rstest;
-use serde_json::json;
 
 use crate::{
     tests::defuse::{
-        DefuseSigner, SigningStandard, accounts::AccountManagerExt, env::Env,
-        intents::ExecuteIntentsExt, tokens::nep141::traits::DefuseFtWithdrawer,
+        DefuseSigner, SigningStandard,
+        accounts::{AccountManagerExt, traits::AccountForceLockerExt},
+        env::Env,
+        intents::ExecuteIntentsExt,
+        tokens::nep141::traits::DefuseFtWithdrawer,
     },
     utils::{acl::AclExt, mt::MtExt},
 };
@@ -307,7 +308,7 @@ async fn test_lock_account(random_bytes: Vec<u8>) {
             account_locker
                 .force_unlock_account(env.defuse.id(), locked_account.id())
                 .await
-                .expect_err("user2 doesn't have UnrestrictedAccountUnocker role");
+                .expect_err("user2 doesn't have UnrestrictedAccountUnlocker role");
             assert!(
                 env.is_account_locked(env.defuse.id(), locked_account.id())
                     .await
@@ -370,77 +371,5 @@ async fn test_lock_account(random_bytes: Vec<u8>) {
                 .unwrap(),
             3000 - 200 + 50
         );
-    }
-}
-
-pub trait AccountForceLockerExt {
-    async fn is_account_locked(
-        &self,
-        contract_id: &AccountId,
-        account_id: &AccountIdRef,
-    ) -> anyhow::Result<bool>;
-
-    async fn force_lock_account(
-        &self,
-        contract_id: &AccountId,
-        account_id: &AccountIdRef,
-    ) -> anyhow::Result<bool>;
-
-    async fn force_unlock_account(
-        &self,
-        contract_id: &AccountId,
-        account_id: &AccountIdRef,
-    ) -> anyhow::Result<bool>;
-}
-
-impl AccountForceLockerExt for near_workspaces::Account {
-    async fn is_account_locked(
-        &self,
-        contract_id: &AccountId,
-        account_id: &AccountIdRef,
-    ) -> anyhow::Result<bool> {
-        self.view(contract_id, "is_account_locked")
-            .args_json(json!({
-                "account_id": account_id,
-            }))
-            .await?
-            .json()
-            .map_err(Into::into)
-    }
-
-    async fn force_lock_account(
-        &self,
-        contract_id: &AccountId,
-        account_id: &AccountIdRef,
-    ) -> anyhow::Result<bool> {
-        self.call(contract_id, "force_lock_account")
-            .args_json(json!({
-                "account_id": account_id,
-            }))
-            .deposit(NearToken::from_yoctonear(1))
-            .max_gas()
-            .transact()
-            .await?
-            .into_result()?
-            .json()
-            .map_err(Into::into)
-    }
-
-    async fn force_unlock_account(
-        &self,
-        contract_id: &AccountId,
-        account_id: &AccountIdRef,
-    ) -> anyhow::Result<bool> {
-        self.call(contract_id, "force_unlock_account")
-            .args_json(json!({
-                "account_id": account_id,
-            }))
-            .deposit(NearToken::from_yoctonear(1))
-            .max_gas()
-            .transact()
-            .await?
-            .into_result()?
-            .json()
-            .map_err(Into::into)
     }
 }

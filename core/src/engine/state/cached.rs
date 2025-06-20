@@ -119,7 +119,7 @@ where
             .get_or_create(account_id.clone(), |account_id| {
                 self.view.is_account_locked(account_id)
             })
-            .as_unlocked_mut()
+            .get_mut()
             .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))?;
         let added = if had {
             account.public_keys_removed.remove(&public_key)
@@ -139,7 +139,7 @@ where
             .get_or_create(account_id.clone(), |account_id| {
                 self.view.is_account_locked(account_id)
             })
-            .as_unlocked_mut()
+            .get_mut()
             .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))?;
         let removed = if had {
             account.public_keys_removed.insert(public_key)
@@ -161,7 +161,7 @@ where
             .get_or_create(account_id.clone(), |account_id| {
                 self.view.is_account_locked(account_id)
             })
-            .as_unlocked_mut()
+            .get_mut()
             .ok_or(DefuseError::AccountLocked(account_id))?
             .commit_nonce(nonce)
             .then_some(())
@@ -204,7 +204,7 @@ where
             .get_or_create(owner_id.to_owned(), |owner_id| {
                 self.view.is_account_locked(owner_id)
             })
-            .as_unlocked_mut()
+            .get_mut()
             .ok_or_else(|| DefuseError::AccountLocked(owner_id.to_owned()))?;
         for (token_id, amount) in token_amounts {
             if amount == 0 {
