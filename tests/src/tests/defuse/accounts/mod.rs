@@ -1,9 +1,19 @@
-use defuse::core::crypto::PublicKey;
+mod locked;
+mod traits;
+
+use defuse::core::{Nonce, crypto::PublicKey};
+use defuse_serde_utils::base64::AsBase64;
 use near_sdk::{AccountId, NearToken};
 use serde_json::json;
 
 pub trait AccountManagerExt {
     async fn add_public_key(
+        &self,
+        defuse_contract_id: &AccountId,
+        public_key: PublicKey,
+    ) -> anyhow::Result<()>;
+
+    async fn remove_public_key(
         &self,
         defuse_contract_id: &AccountId,
         public_key: PublicKey,
@@ -21,6 +31,8 @@ pub trait AccountManagerExt {
         account_id: &AccountId,
         public_key: &PublicKey,
     ) -> anyhow::Result<bool>;
+
+    async fn is_nonce_used(&self, account_id: &AccountId, nonce: &Nonce) -> anyhow::Result<bool>;
 }
 
 impl AccountManagerExt for near_workspaces::Account {
@@ -31,6 +43,23 @@ impl AccountManagerExt for near_workspaces::Account {
     ) -> anyhow::Result<()> {
         // TODO: check bool output
         self.call(defuse_contract_id, "add_public_key")
+            .deposit(NearToken::from_yoctonear(1))
+            .args_json(json!({
+                "public_key": public_key,
+            }))
+            .max_gas()
+            .transact()
+            .await?
+            .into_result()?;
+        Ok(())
+    }
+
+    async fn remove_public_key(
+        &self,
+        defuse_contract_id: &AccountId,
+        public_key: PublicKey,
+    ) -> anyhow::Result<()> {
+        self.call(defuse_contract_id, "remove_public_key")
             .deposit(NearToken::from_yoctonear(1))
             .args_json(json!({
                 "public_key": public_key,
@@ -66,6 +95,17 @@ impl AccountManagerExt for near_workspaces::Account {
         self.defuse_has_public_key(self.id(), account_id, public_key)
             .await
     }
+
+    async fn is_nonce_used(&self, account_id: &AccountId, nonce: &Nonce) -> anyhow::Result<bool> {
+        self.view(self.id(), "is_nonce_used")
+            .args_json(json!({
+                "account_id": account_id,
+                "nonce": AsBase64(nonce),
+            }))
+            .await?
+            .json()
+            .map_err(Into::into)
+    }
 }
 
 impl AccountManagerExt for near_workspaces::Contract {
@@ -76,6 +116,16 @@ impl AccountManagerExt for near_workspaces::Contract {
     ) -> anyhow::Result<()> {
         self.as_account()
             .add_public_key(defuse_contract_id, public_key)
+            .await
+    }
+
+    async fn remove_public_key(
+        &self,
+        defuse_contract_id: &AccountId,
+        public_key: PublicKey,
+    ) -> anyhow::Result<()> {
+        self.as_account()
+            .remove_public_key(defuse_contract_id, public_key)
             .await
     }
 
@@ -98,5 +148,9 @@ impl AccountManagerExt for near_workspaces::Contract {
         self.as_account()
             .has_public_key(account_id, public_key)
             .await
+    }
+
+    async fn is_nonce_used(&self, account_id: &AccountId, nonce: &Nonce) -> anyhow::Result<bool> {
+        self.as_account().is_nonce_used(account_id, nonce).await
     }
 }

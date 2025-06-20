@@ -2,7 +2,9 @@
 
 use crate::{
     contract::{Contract, ContractExt, Role, tokens::STORAGE_DEPOSIT_GAS},
-    tokens::nep245::{MultiTokenForceWithdrawer, MultiTokenWithdrawResolver, MultiTokenWithdrawer},
+    tokens::nep245::{
+        MultiTokenForcedWithdrawer, MultiTokenWithdrawResolver, MultiTokenWithdrawer,
+    },
 };
 use defuse_core::{
     DefuseError, Result,
@@ -50,6 +52,7 @@ impl MultiTokenWithdrawer for Contract {
                 storage_deposit: None,
                 min_gas: None,
             },
+            false,
         )
         .unwrap_or_panic()
     }
@@ -60,6 +63,7 @@ impl Contract {
         &mut self,
         owner_id: AccountId,
         withdraw: MtWithdraw,
+        force: bool,
     ) -> Result<PromiseOrValue<Vec<U128>>> {
         if withdraw.token_ids.len() != withdraw.amounts.len() || withdraw.token_ids.is_empty() {
             return Err(DefuseError::InvalidIntent);
@@ -83,6 +87,7 @@ impl Contract {
                     )
                 })),
             Some("withdraw"),
+            force,
         )?;
 
         let is_call = withdraw.msg.is_some();
@@ -259,7 +264,7 @@ impl MultiTokenWithdrawResolver for Contract {
 }
 
 #[near]
-impl MultiTokenForceWithdrawer for Contract {
+impl MultiTokenForcedWithdrawer for Contract {
     #[access_control_any(roles(Role::DAO, Role::UnrestrictedWithdrawer))]
     #[payable]
     fn mt_force_withdraw(
@@ -285,6 +290,7 @@ impl MultiTokenForceWithdrawer for Contract {
                 storage_deposit: None,
                 min_gas: None,
             },
+            true,
         )
         .unwrap_or_panic()
     }

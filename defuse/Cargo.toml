@@ -15,8 +15,10 @@ workspace = true
 [dependencies]
 defuse-admin-utils.workspace = true
 defuse-bitmap = { workspace = true, optional = true }
+defuse-borsh-utils = { workspace = true, optional = true }
 defuse-controller.workspace = true
 defuse-core.workspace = true
+defuse-io-utils = { workspace = true, optional = true }
 defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-map-utils = { workspace = true, optional = true }
@@ -35,4 +37,19 @@ thiserror.workspace = true
 
 [features]
 abi = ["defuse-core/abi"]
-contract = ["dep:defuse-wnear", "dep:defuse-map-utils", "dep:defuse-bitmap"]
+contract = [
+    "dep:defuse-bitmap",
+    "dep:defuse-borsh-utils",
+    "dep:defuse-io-utils",
+    "dep:defuse-map-utils",
+    "dep:defuse-wnear",
+]
+
+[dev-dependencies]
+defuse-core = { workspace = true, features = ["arbitrary"] }
+defuse-test-utils.workspace = true
+
+arbitrary_with.workspace = true
+itertools.workspace = true
+rstest.workspace = true
+near-sdk = { workspace = true, features = ["unit-testing"] }

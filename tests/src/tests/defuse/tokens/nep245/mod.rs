@@ -194,14 +194,14 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
     // Going back to zero available balance won't make it appear in mt_tokens
     assert_eq!(
         env.user1
-            .defuse_ft_withdraw(env.defuse.id(), &env.ft1, env.user1.id(), 1000)
+            .defuse_ft_withdraw(env.defuse.id(), &env.ft1, env.user1.id(), 1000, None, None)
             .await
             .unwrap(),
         1000
     );
     assert_eq!(
         env.user2
-            .defuse_ft_withdraw(env.defuse.id(), &env.ft1, env.user2.id(), 2000)
+            .defuse_ft_withdraw(env.defuse.id(), &env.ft1, env.user2.id(), 2000, None, None)
             .await
             .unwrap(),
         2000
@@ -244,7 +244,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
     // Withdraw back everything left for user1, and we're back to the initial state
     assert_eq!(
         env.user1
-            .defuse_ft_withdraw(env.defuse.id(), &env.ft2, env.user1.id(), 5000)
+            .defuse_ft_withdraw(env.defuse.id(), &env.ft2, env.user1.id(), 5000, None, None)
             .await
             .unwrap(),
         5000

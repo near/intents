@@ -1,4 +1,4 @@
-use ::arbitrary::{Arbitrary, Unstructured};
+use arbitrary_with::{Arbitrary, Unstructured};
 pub use defuse_randomness::{self as randomness, CryptoRng, Rng, SeedableRng, seq::IteratorRandom};
 use rand_chacha::{ChaChaRng, rand_core::RngCore};
 use rstest::fixture;
@@ -155,6 +155,6 @@ pub fn make_arbitrary<T>(random_bytes: Vec<u8>) -> T
 where
     for<'a> T: Arbitrary<'a>,
 {
-    let mut u = Unstructured::new(&random_bytes);
-    u.arbitrary().unwrap()
+    let u = Unstructured::new(&random_bytes);
+    T::arbitrary_take_rest(u).unwrap()
 }

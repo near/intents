@@ -6,9 +6,12 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
+defuse-borsh-utils.workspace = true
+
 arbitrary_with = { workspace = true, optional = true }
 chrono = { workspace = true, optional = true }
 digest = { workspace = true, optional = true }
+impl-tools.workspace = true
 hex = { workspace = true, optional = true }
 near-account-id = { workspace = true, optional = true }
 near-sdk.workspace = true

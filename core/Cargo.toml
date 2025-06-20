@@ -43,6 +43,8 @@ abi = [
 arbitrary = [
     "dep:arbitrary",
     "dep:arbitrary_with",
+    "defuse-bitmap/arbitrary",
+    "defuse-crypto/arbitrary",
     "defuse-near-utils/arbitrary",
 ]
 

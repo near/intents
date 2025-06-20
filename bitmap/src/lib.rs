@@ -1,4 +1,4 @@
-use defuse_map_utils::Map;
+use defuse_map_utils::{IterableMap, Map};
 use near_sdk::near;
 
 pub type U256 = [u8; 32];
@@ -6,6 +6,7 @@ pub type U248 = [u8; 31];
 
 /// 256-bit map.  
 /// See [permit2 nonce schema](https://docs.uniswap.org/contracts/permit2/reference/signature-transfer#nonce-schema)
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, Default)]
 pub struct BitMap256<T: Map<K = U248, V = U256>>(T);
@@ -75,6 +76,28 @@ where
         } else {
             self.clear_bit(n)
         }
+    }
+
+    /// Iterate over set U256
+    #[inline]
+    pub fn as_iter(&self) -> impl Iterator<Item = U256> + '_
+    where
+        T: IterableMap,
+    {
+        self.0.iter().flat_map(|(prefix, bitmap)| {
+            (0..=u8::MAX)
+                .filter(|&bit_pos| {
+                    let byte = bitmap[usize::from(bit_pos / 8)];
+                    let byte_mask = 1 << (bit_pos % 8);
+                    byte & byte_mask != 0
+                })
+                .map(|bit_pos| {
+                    let mut nonce: U256 = [0; 32];
+                    nonce[..prefix.len()].copy_from_slice(prefix);
+                    nonce[prefix.len()..].copy_from_slice(&[bit_pos]);
+                    nonce
+                })
+        })
     }
 }
 

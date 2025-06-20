@@ -42,19 +42,19 @@ impl MultiTokenEnumeration for Contract {
             return Vec::new();
         };
 
-        let iter =
-            account
-                .state
-                .token_balances
-                .iter()
-                .skip(from_index)
-                .map(|(token_id, _amount)| Token {
-                    token_id: token_id.to_string(),
-                    owner_id: match TokenIdType::from(token_id) {
-                        TokenIdType::Nep171 => Some(account_id.clone()),
-                        TokenIdType::Nep141 | TokenIdType::Nep245 => None,
-                    },
-                });
+        let iter = account
+            .as_inner_unchecked()
+            .state
+            .token_balances
+            .iter()
+            .skip(from_index)
+            .map(|(token_id, _amount)| Token {
+                token_id: token_id.to_string(),
+                owner_id: match TokenIdType::from(token_id) {
+                    TokenIdType::Nep171 => Some(account_id.clone()),
+                    TokenIdType::Nep141 | TokenIdType::Nep245 => None,
+                },
+            });
 
         match limit {
             Some(l) => iter.take(l.try_into().unwrap_or_panic_display()).collect(),

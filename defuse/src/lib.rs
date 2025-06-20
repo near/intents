@@ -22,13 +22,15 @@ use near_contract_standards::{
 use near_plugins::{AccessControllable, Pausable};
 use near_sdk::ext_contract;
 
+use crate::{accounts::AccountForceLocker, tokens::nep245::MultiTokenForcedCore};
+
 use self::{
     accounts::AccountManager,
     intents::{Intents, RelayerKeys},
     tokens::{
         nep141::{FungibleTokenForceWithdrawer, FungibleTokenWithdrawer},
         nep171::{NonFungibleTokenForceWithdrawer, NonFungibleTokenWithdrawer},
-        nep245::{MultiTokenForceWithdrawer, MultiTokenWithdrawer},
+        nep245::{MultiTokenForcedWithdrawer, MultiTokenWithdrawer},
     },
 };
 
@@ -50,9 +52,11 @@ pub trait Defuse:
     + MultiTokenEnumeration
     // Governance
     + AccessControllable
+    + MultiTokenForcedCore
     + FungibleTokenForceWithdrawer
     + NonFungibleTokenForceWithdrawer
-    + MultiTokenForceWithdrawer
+    + MultiTokenForcedWithdrawer
+    + AccountForceLocker
     + Pausable
     + ControllerUpgradable
     + FullAccessKeys

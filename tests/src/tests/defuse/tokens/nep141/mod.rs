@@ -50,7 +50,7 @@ async fn deposit_withdraw(#[values(false, true)] no_registration: bool) {
 
     assert_eq!(
         env.user1
-            .defuse_ft_withdraw(env.defuse.id(), &env.ft1, env.user1.id(), 1000)
+            .defuse_ft_withdraw(env.defuse.id(), &env.ft1, env.user1.id(), 1000, None, None)
             .await
             .unwrap(),
         1000
@@ -318,6 +318,8 @@ async fn ft_force_withdraw(#[values(false, true)] no_registration: bool) {
             &env.ft1,
             env.user2.id(),
             1000,
+            None,
+            None,
         )
         .await
         .unwrap_err();
@@ -350,7 +352,9 @@ async fn ft_force_withdraw(#[values(false, true)] no_registration: bool) {
                 env.user1.id(),
                 &env.ft1,
                 env.user2.id(),
-                1000
+                1000,
+                None,
+                None,
             )
             .await
             .unwrap(),

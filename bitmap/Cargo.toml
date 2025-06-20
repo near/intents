@@ -8,7 +8,11 @@ repository.workspace = true
 [dependencies]
 defuse-map-utils.workspace = true
 
-near-sdk = { workspace = true }
+arbitrary = { workspace = true, optional = true }
+near-sdk.workspace = true
+
+[features]
+arbitrary = ["dep:arbitrary"]
 
 [dev-dependencies]
 bnum.workspace = true

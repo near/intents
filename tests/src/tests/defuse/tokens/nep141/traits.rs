@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use defuse::tokens::DepositMessage;
 use near_sdk::{AccountId, NearToken, json_types::U128};
 use serde_json::json;
@@ -21,6 +23,8 @@ pub trait DefuseFtWithdrawer {
         token_id: &AccountId,
         receiver_id: &AccountId,
         amount: u128,
+        memo: Option<String>,
+        msg: Option<String>,
     ) -> anyhow::Result<u128>;
 
     async fn defuse_ft_force_withdraw(
@@ -30,6 +34,8 @@ pub trait DefuseFtWithdrawer {
         token_id: &AccountId,
         receiver_id: &AccountId,
         amount: u128,
+        memo: Option<String>,
+        msg: Option<String>,
     ) -> anyhow::Result<u128>;
 }
 
@@ -76,6 +82,8 @@ impl DefuseFtWithdrawer for near_workspaces::Account {
         token: &AccountId,
         receiver_id: &AccountId,
         amount: u128,
+        memo: Option<String>,
+        msg: Option<String>,
     ) -> anyhow::Result<u128> {
         self.call(defuse_id, "ft_withdraw")
             .deposit(NearToken::from_yoctonear(1))
@@ -83,6 +91,8 @@ impl DefuseFtWithdrawer for near_workspaces::Account {
                 "token": token,
                 "receiver_id": receiver_id,
                 "amount": U128(amount),
+                "memo": memo,
+                "msg": msg,
             }))
             .max_gas()
             .transact()
@@ -100,6 +110,8 @@ impl DefuseFtWithdrawer for near_workspaces::Account {
         token: &AccountId,
         receiver_id: &AccountId,
         amount: u128,
+        memo: Option<String>,
+        msg: Option<String>,
     ) -> anyhow::Result<u128> {
         self.call(defuse_id, "ft_force_withdraw")
             .deposit(NearToken::from_yoctonear(1))
@@ -108,6 +120,8 @@ impl DefuseFtWithdrawer for near_workspaces::Account {
                 "token": token,
                 "receiver_id": receiver_id,
                 "amount": U128(amount),
+                "memo": memo,
+                "msg": msg,
             }))
             .max_gas()
             .transact()
@@ -126,9 +140,11 @@ impl DefuseFtWithdrawer for near_workspaces::Contract {
         token_id: &AccountId,
         receiver_id: &AccountId,
         amount: u128,
+        memo: Option<String>,
+        msg: Option<String>,
     ) -> anyhow::Result<u128> {
         self.as_account()
-            .defuse_ft_withdraw(defuse_id, token_id, receiver_id, amount)
+            .defuse_ft_withdraw(defuse_id, token_id, receiver_id, amount, memo, msg)
             .await
     }
 
@@ -139,9 +155,19 @@ impl DefuseFtWithdrawer for near_workspaces::Contract {
         token_id: &AccountId,
         receiver_id: &AccountId,
         amount: u128,
+        memo: Option<String>,
+        msg: Option<String>,
     ) -> anyhow::Result<u128> {
         self.as_account()
-            .defuse_ft_force_withdraw(defuse_id, owner_id, token_id, receiver_id, amount)
+            .defuse_ft_force_withdraw(
+                defuse_id,
+                owner_id,
+                token_id,
+                receiver_id,
+                amount,
+                memo,
+                msg,
+            )
             .await
     }
 }

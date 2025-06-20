@@ -1,10 +1,12 @@
-use crate::contract::{Contract, ContractExt};
-use defuse_near_utils::{UnwrapOrPanic, UnwrapOrPanicError};
+use std::borrow::Cow;
+
+use defuse_near_utils::{Lock, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::{
     ClearedApproval, MtEventEmit, MtTransferEvent, TokenId, resolver::MultiTokenResolver,
 };
 use near_sdk::{AccountId, PromiseResult, env, json_types::U128, near, require, serde_json};
-use std::borrow::Cow;
+
+use crate::contract::{Contract, ContractExt};
 
 #[near]
 impl MultiTokenResolver for Contract {
@@ -47,7 +49,23 @@ impl MultiTokenResolver for Contract {
             );
 
             refund.0 = refund.0.min(amount.0);
-            let Some(receiver) = self.accounts.get_mut(&receiver_id) else {
+            let Some(receiver) = self
+                .accounts
+                .get_mut(&receiver_id)
+                // NOTE: refunds from locked accounts are allowed to prevent
+                // senders from loss of funds.
+                //
+                // Receiver's account might have been locked between
+                // `mt_transfer_call()` and `mt_resolve_transfer()`, so that
+                // outgoing transfers are no longer allowed for this account.
+                // But here we distinguish between regular transfers and
+                // refunds, despite it would lead to `mt_transfer` event
+                // emitted with `old_owner_id` being the locked account.
+                //
+                // Locked receivers still won't be able to transfer funds in
+                // `<receiver_id>::on_mt_transfer()` implementation.
+                .map(Lock::as_inner_unchecked_mut)
+            else {
                 // receiver doesn't have an account, so nowhere to refund from
                 return amounts;
             };
@@ -65,8 +83,10 @@ impl MultiTokenResolver for Contract {
                 .sub(token_id.clone(), refund.0)
                 .unwrap_or_panic();
             // deposit refund
-            let previous_owner = self.accounts.get_or_create(previous_owner_id);
-            previous_owner
+            self.accounts
+                .get_or_create(previous_owner_id)
+                // refunds are allowed for locked accounts
+                .as_inner_unchecked_mut()
                 .token_balances
                 .add(token_id, refund.0)
                 .unwrap_or_panic();

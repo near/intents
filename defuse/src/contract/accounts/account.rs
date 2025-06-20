@@ -7,6 +7,7 @@ use defuse_core::{
     crypto::PublicKey,
     events::DefuseEvent,
 };
+
 use defuse_near_utils::NestPrefix;
 use impl_tools::autoimpl;
 use near_sdk::{
@@ -53,6 +54,7 @@ impl Account {
     }
 
     #[inline]
+    #[must_use]
     pub fn add_public_key(&mut self, me: &AccountIdRef, public_key: PublicKey) -> bool {
         if !self.maybe_add_public_key(me, public_key) {
             return false;
@@ -70,6 +72,7 @@ impl Account {
     }
 
     #[inline]
+    #[must_use]
     fn maybe_add_public_key(&mut self, me: &AccountIdRef, public_key: PublicKey) -> bool {
         if me == public_key.to_implicit_account_id() {
             let was_removed = self.implicit_public_key_removed;
@@ -81,6 +84,7 @@ impl Account {
     }
 
     #[inline]
+    #[must_use]
     pub fn remove_public_key(&mut self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
         if !self.maybe_remove_public_key(me, public_key) {
             return false;
@@ -98,6 +102,7 @@ impl Account {
     }
 
     #[inline]
+    #[must_use]
     fn maybe_remove_public_key(&mut self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
         if me == public_key.to_implicit_account_id() {
             let was_removed = self.implicit_public_key_removed;
@@ -129,6 +134,7 @@ impl Account {
     }
 
     #[inline]
+    #[must_use]
     pub fn commit_nonce(&mut self, n: U256) -> bool {
         self.nonces.commit(n)
     }

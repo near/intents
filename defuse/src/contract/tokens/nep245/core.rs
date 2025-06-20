@@ -49,6 +49,7 @@ impl MultiTokenCore for Contract {
             &token_ids,
             &amounts,
             memo.as_deref(),
+            false,
         )
         .unwrap_or_panic()
     }
@@ -95,6 +96,7 @@ impl MultiTokenCore for Contract {
             amounts,
             memo.as_deref(),
             msg,
+            false,
         )
         .unwrap_or_panic()
     }
@@ -165,6 +167,7 @@ impl Contract {
         token_ids: &[defuse_nep245::TokenId],
         amounts: &[U128],
         memo: Option<&str>,
+        force: bool,
     ) -> Result<()> {
         if sender_id == receiver_id || token_ids.len() != amounts.len() || amounts.is_empty() {
             return Err(DefuseError::InvalidIntent);
@@ -178,12 +181,16 @@ impl Contract {
 
             self.accounts
                 .get_mut(sender_id)
-                .ok_or(DefuseError::AccountNotFound)?
+                .ok_or_else(|| DefuseError::AccountNotFound(sender_id.to_owned()))?
+                .get_mut_maybe_forced(force)
+                .ok_or_else(|| DefuseError::AccountLocked(sender_id.to_owned()))?
                 .token_balances
                 .sub(token_id.clone(), amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
             self.accounts
                 .get_or_create(receiver_id.to_owned())
+                // locked accounts are allowed to receive incoming transfers
+                .as_inner_unchecked_mut()
                 .token_balances
                 .add(token_id, amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
@@ -206,6 +213,7 @@ impl Contract {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn internal_mt_batch_transfer_call(
         &mut self,
         sender_id: AccountId,
@@ -214,8 +222,16 @@ impl Contract {
         amounts: Vec<U128>,
         memo: Option<&str>,
         msg: String,
+        force: bool,
     ) -> Result<PromiseOrValue<Vec<U128>>> {
-        self.internal_mt_batch_transfer(&sender_id, &receiver_id, &token_ids, &amounts, memo)?;
+        self.internal_mt_batch_transfer(
+            &sender_id,
+            &receiver_id,
+            &token_ids,
+            &amounts,
+            memo,
+            force,
+        )?;
 
         let previous_owner_ids = vec![sender_id.clone(); token_ids.len()];
 
