@@ -81,7 +81,7 @@ async fn native_withdraw_intent(mut rng: impl Rng) {
     env.defuse_execute_intents(
         env.defuse.id(),
         [env.user2.sign_defuse_message(
-            SigningStandard::Nep413,
+            SigningStandard::default(),
             env.defuse.id(),
             rng.random(),
             Deadline::timeout(Duration::from_secs(120)),

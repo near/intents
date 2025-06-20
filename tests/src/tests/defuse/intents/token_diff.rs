@@ -209,7 +209,7 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
         .flat_map(move |account| {
             account.diff.iter().cloned().map(move |diff| {
                 account.account.sign_defuse_message(
-                    SigningStandard::Nep413,
+                    SigningStandard::default(),
                     env.defuse.id(),
                     make_true_rng().random(),
                     Deadline::timeout(Duration::from_secs(120)),
