@@ -1,18 +1,15 @@
-use std::{
-    borrow::Cow,
-    io::{self, Read},
-};
-
+use super::Account;
 use defuse_borsh_utils::adapters::{As, BorshDeserializeAs, BorshSerializeAs};
-use defuse_io_utils::ReadExt;
 use defuse_near_utils::{Lock, PanicOnClone};
 use impl_tools::autoimpl;
 use near_sdk::{
     borsh::{BorshDeserialize, BorshSerialize},
     near,
 };
-
-use super::Account;
+use std::{
+    borrow::Cow,
+    io::{self, Read},
+};
 
 #[derive(Debug)]
 #[autoimpl(Deref using self.0)]
@@ -54,20 +51,13 @@ const VERSIONED_MAGIC_PREFIX: u32 = u32::MAX;
 #[derive(Debug)]
 #[near(serializers = [borsh])]
 enum VersionedAccountEntry<'a> {
-    V0(Cow<'a, PanicOnClone<Account>>),
-    V1(Cow<'a, PanicOnClone<Lock<Account>>>),
-}
-
-impl From<Account> for VersionedAccountEntry<'_> {
-    fn from(value: Account) -> Self {
-        Self::V0(Cow::Owned(value.into()))
-    }
+    V0(Cow<'a, PanicOnClone<Lock<Account>>>),
 }
 
 impl<'a> From<&'a Lock<Account>> for VersionedAccountEntry<'a> {
     fn from(value: &'a Lock<Account>) -> Self {
         // always serialize as latest version
-        Self::V1(Cow::Borrowed(PanicOnClone::from_ref(value)))
+        Self::V0(Cow::Borrowed(PanicOnClone::from_ref(value)))
     }
 }
 
@@ -76,8 +66,7 @@ impl From<VersionedAccountEntry<'_>> for Lock<Account> {
         // Borsh always deserializes into `Cow::Owned`, so it's
         // safe to call `Cow::<PanicOnClone<_>>::into_owned()` here.
         match versioned {
-            VersionedAccountEntry::V0(account) => account.into_owned().into_inner().into(),
-            VersionedAccountEntry::V1(account) => account.into_owned().into_inner(),
+            VersionedAccountEntry::V0(account) => account.into_owned().into_inner(),
         }
     }
 }
@@ -89,22 +78,23 @@ impl BorshDeserializeAs<Lock<Account>> for MaybeVersionedAccountEntry {
     where
         R: io::Read,
     {
-        let mut buf = Vec::new();
         // There will always be 4 bytes for u32:
         // * either `VERSIONED_MAGIC_PREFIX`,
         // * or u32 for `Account.nonces.prefix`
-        let prefix = u32::deserialize_reader(&mut reader.tee(&mut buf))?;
+        let mut buf = [0u8; 4];
+        reader.read_exact(&mut buf)?;
+        let prefix = u32::deserialize_reader(&mut buf.as_slice())?;
 
         if prefix == VERSIONED_MAGIC_PREFIX {
-            VersionedAccountEntry::deserialize_reader(reader)
+            // V1 path
+            let res = VersionedAccountEntry::deserialize_reader(reader)?;
+            Ok(res.into())
         } else {
-            Account::deserialize_reader(
-                // prepend already consumed part of the reader
-                &mut buf.chain(reader),
-            )
-            .map(Into::into)
+            // V0 path: put the 4 bytes back into the stream
+            let mut chained = io::Cursor::new(buf).chain(reader);
+            let acc = Account::deserialize_reader(&mut chained)?;
+            Ok(Lock::unlocked(acc))
         }
-        .map(Into::into)
     }
 }
 
