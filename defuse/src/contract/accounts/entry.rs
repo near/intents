@@ -1,6 +1,7 @@
 use std::{
     borrow::Cow,
     io::{self, Read},
+    mem::size_of,
 };
 
 use defuse_borsh_utils::adapters::{As, BorshDeserializeAs, BorshSerializeAs};
