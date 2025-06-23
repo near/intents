@@ -59,20 +59,31 @@ impl SignedPayload for SignedErc191Payload {
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {
-        Secp256k1::verify(&self.signature, &self.payload.hash(), &())
+        // normalize v field of the signature.
+        let signature_v_corrected = if *self.signature.last()? >= 27 {
+            let mut sig = self.signature;
+            // Ethereum only uses uncompressed keys, with corresponding value v=27/28
+            // https://bitcoin.stackexchange.com/a/38909/58790
+            *sig.last_mut()? -= 27;
+            sig
+        } else {
+            self.signature
+        };
+        Secp256k1::verify(&signature_v_corrected, &self.payload.hash(), &())
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-//     #[test]
-//     fn verify() {
-//         let signed_payload = SignedErc191Payload {
-//             payload: Erc191Payload("Hello world!".to_string()),
-//             signature: hex::decode("7800a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e471c").unwrap().try_into().unwrap(),
-//         };
-//         signed_payload.verify().unwrap();
-//     }
-// }
+    #[test]
+    fn verify() {
+        let signed_payload = SignedErc191Payload {
+            payload: Erc191Payload("Hello world!".to_string()),
+            // Signature constructed in Metamask, using private key: a4b319a82adfc43584e4537fec97a80516e16673db382cd91eba97abbab8ca56
+            signature: hex::decode("7800a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e471c").unwrap().try_into().unwrap(),
+        };
+        signed_payload.verify().unwrap();
+    }
+}
