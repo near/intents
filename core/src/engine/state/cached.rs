@@ -333,7 +333,7 @@ impl CachedAccounts {
         is_initially_locked: impl FnOnce(&AccountId) -> bool,
     ) -> &mut Lock<CachedAccount> {
         self.0.entry(account_id).or_insert_with_key(|account_id| {
-            Lock::new(CachedAccount::default(), is_initially_locked(account_id))
+            Lock::new(is_initially_locked(account_id), CachedAccount::default())
         })
     }
 }

@@ -25,20 +25,20 @@ pub struct Lock<T> {
 impl<T> Lock<T> {
     #[must_use]
     #[inline]
-    pub const fn new(value: T, locked: bool) -> Self {
+    pub const fn new(locked: bool, value: T) -> Self {
         Self { locked, value }
     }
 
     #[must_use]
     #[inline]
     pub const fn unlocked(value: T) -> Self {
-        Self::new(value, false)
+        Self::new(false, value)
     }
 
     #[must_use]
     #[inline]
     pub const fn locked(value: T) -> Self {
-        Self::new(value, true)
+        Self::new(true, value)
     }
 
     #[inline]
@@ -180,6 +180,24 @@ impl<T> Lock<T> {
         self.locked = false;
         self.as_inner_unchecked_mut()
     }
+
+    #[inline]
+    pub const fn as_ref(&self) -> Lock<&T> {
+        Lock::new(self.is_locked(), self.as_inner_unchecked())
+    }
+
+    #[inline]
+    pub const fn as_mut(&mut self) -> Lock<&mut T> {
+        Lock::new(self.is_locked(), self.as_inner_unchecked_mut())
+    }
+
+    #[inline]
+    pub fn map_inner_unchecked<U, F>(self, f: F) -> Lock<U>
+    where
+        F: FnOnce(T) -> U,
+    {
+        Lock::new(self.is_locked(), f(self.into_inner_unchecked()))
+    }
 }
 
 impl<T> From<T> for Lock<T> {
@@ -225,7 +243,7 @@ where
 #[cfg(test)]
 #[test]
 fn test() {
-    let mut a = Lock::new(0, false);
+    let mut a = Lock::new(false, 0);
 
     assert!(!a.is_locked());
     assert_eq!(a.unlock(), None);

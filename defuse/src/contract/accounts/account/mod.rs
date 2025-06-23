@@ -1,3 +1,7 @@
+mod entry;
+
+pub use self::entry::*;
+
 use std::borrow::Cow;
 
 use defuse_bitmap::{U248, U256};
@@ -19,19 +23,21 @@ use near_sdk::{
 
 use super::AccountState;
 
+// NOTE: in order to migrate to a new version (even when adding new fields),
+// see docs for `VersionedAccountEntry`
 #[derive(Debug)]
 #[near(serializers = [borsh])]
 #[autoimpl(Deref using self.state)]
 #[autoimpl(DerefMut using self.state)]
 pub struct Account {
-    nonces: Nonces<LookupMap<U248, U256>>,
+    pub(super) nonces: Nonces<LookupMap<U248, U256>>,
 
-    implicit_public_key_removed: bool,
-    public_keys: IterableSet<PublicKey>,
+    pub(super) implicit_public_key_removed: bool,
+    pub(super) public_keys: IterableSet<PublicKey>,
 
     pub state: AccountState,
 
-    prefix: Vec<u8>,
+    pub(super) prefix: Vec<u8>,
 }
 
 impl Account {
