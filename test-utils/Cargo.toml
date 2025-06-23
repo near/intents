@@ -11,7 +11,7 @@ workspace = true
 [dependencies]
 defuse-randomness.workspace = true
 
-arbitrary.workspace = true
+arbitrary_with.workspace = true
 derive_more = { workspace = true, features = ["full"] }
 near-account-id.workspace = true
 hex.workspace = true

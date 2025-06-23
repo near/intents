@@ -749,7 +749,6 @@ version = "0.1.0"
 dependencies = [
  "defuse-crypto",
  "defuse-test-utils",
- "hex",
  "hex-literal",
  "impl-tools",
  "near-sdk",
@@ -874,7 +873,7 @@ dependencies = [
 name = "defuse-test-utils"
 version = "0.1.0"
 dependencies = [
- "arbitrary",
+ "arbitrary_with",
  "defuse-randomness",
  "derive_more 2.0.1",
  "hex",
