@@ -30,14 +30,14 @@ use super::AccountState;
 #[autoimpl(Deref using self.state)]
 #[autoimpl(DerefMut using self.state)]
 pub struct Account {
-    pub(super) nonces: Nonces<LookupMap<U248, U256>>,
+    nonces: Nonces<LookupMap<U248, U256>>,
 
-    pub(super) implicit_public_key_removed: bool,
-    pub(super) public_keys: IterableSet<PublicKey>,
+    implicit_public_key_removed: bool,
+    public_keys: IterableSet<PublicKey>,
 
     pub state: AccountState,
 
-    pub(super) prefix: Vec<u8>,
+    prefix: Vec<u8>,
 }
 
 impl Account {

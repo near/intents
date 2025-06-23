@@ -1,21 +1,21 @@
+mod v0;
+
 use std::{
     borrow::Cow,
     io::{self, Read},
     mem::size_of,
 };
 
-use defuse_bitmap::{U248, U256};
 use defuse_borsh_utils::adapters::{As, BorshDeserializeAs, BorshSerializeAs};
-use defuse_core::{Nonces, crypto::PublicKey};
+
 use defuse_near_utils::{Lock, PanicOnClone};
 use impl_tools::autoimpl;
 use near_sdk::{
     borsh::{BorshDeserialize, BorshSerialize},
     near,
-    store::{IterableSet, LookupMap},
 };
 
-use crate::contract::accounts::AccountState;
+use crate::contract::accounts::account::entry::v0::AccountV0;
 
 use super::Account;
 
@@ -138,41 +138,6 @@ impl BorshSerializeAs<Lock<Account>> for MaybeVersionedAccountEntry {
             VersionedAccountEntry::from(source),
         )
             .serialize(writer)
-    }
-}
-
-#[derive(Debug)]
-#[near(serializers = [borsh])]
-#[autoimpl(Deref using self.state)]
-#[autoimpl(DerefMut using self.state)]
-struct AccountV0 {
-    nonces: Nonces<LookupMap<U248, U256>>,
-
-    implicit_public_key_removed: bool,
-    public_keys: IterableSet<PublicKey>,
-
-    pub state: AccountState,
-
-    prefix: Vec<u8>,
-}
-
-impl From<AccountV0> for Account {
-    fn from(
-        AccountV0 {
-            nonces,
-            implicit_public_key_removed,
-            public_keys,
-            state,
-            prefix,
-        }: AccountV0,
-    ) -> Self {
-        Self {
-            nonces,
-            implicit_public_key_removed,
-            public_keys,
-            state,
-            prefix,
-        }
     }
 }
 
