@@ -32,7 +32,7 @@ pub enum MultiPayload {
     Erc191(SignedErc191Payload),
 
     /// TIP-191: The standard for message signing in Tron.
-    /// For more details, refer to [EIP-191](https://github.com/tronprotocol/tips/blob/master/tip-191.md).
+    /// For more details, refer to [TIP-191](https://github.com/tronprotocol/tips/blob/master/tip-191.md).
     Tip191(SignedTip191Payload),
 
     /// Raw Ed25519: The standard used by Solana Phantom wallets for message signing.
