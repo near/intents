@@ -11,7 +11,7 @@ use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128};
 use std::borrow::Cow;
 
-use crate::contract::Contract;
+use crate::contract::{Contract, accounts::Account};
 
 impl StateView for Contract {
     #[inline]
@@ -78,6 +78,14 @@ impl StateView for Contract {
     #[inline]
     fn is_account_locked(&self, account_id: &AccountIdRef) -> bool {
         self.accounts.get(account_id).is_some_and(Lock::is_locked)
+    }
+
+    #[inline]
+    fn is_auth_by_predecessor_id_enabled(&self, account_id: &AccountIdRef) -> bool {
+        self.accounts
+            .get(account_id)
+            .map(Lock::as_inner_unchecked)
+            .is_none_or(Account::is_auth_by_predecessor_id_enabled)
     }
 }
 
@@ -245,5 +253,21 @@ impl State for Contract {
             );
 
         Ok(())
+    }
+
+    fn set_auth_by_predecessor_id(&mut self, account_id: AccountId, enable: bool) -> Result<bool> {
+        if enable {
+            let Some(account) = self.accounts.get_mut(&account_id) else {
+                // no need to create an account: not-yet-existing accounts
+                // have auth by PREDECESSOR_ID enabled by default
+                return Ok(true);
+            };
+            account
+        } else {
+            self.accounts.get_or_create(account_id.clone())
+        }
+        .get_mut()
+        .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))
+        .map(|account| account.set_auth_by_predecessor_id(&account_id, enable))
     }
 }

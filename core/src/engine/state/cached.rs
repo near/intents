@@ -106,6 +106,15 @@ where
             .get(account_id)
             .map_or_else(|| self.view.is_account_locked(account_id), Lock::is_locked)
     }
+
+    fn is_auth_by_predecessor_id_enabled(&self, account_id: &AccountIdRef) -> bool {
+        let was_enabled = self.view.is_auth_by_predecessor_id_enabled(account_id);
+        let toggled = self
+            .accounts
+            .get(account_id)
+            .is_some_and(|a| a.as_inner_unchecked().auth_by_predecessor_id_toggled);
+        was_enabled ^ toggled
+    }
 }
 
 impl<W> State for CachedState<W>
@@ -304,6 +313,22 @@ where
             )],
         )
     }
+
+    fn set_auth_by_predecessor_id(&mut self, account_id: AccountId, enable: bool) -> Result<bool> {
+        let was_enabled = self.is_auth_by_predecessor_id_enabled(&account_id);
+        let toggle = was_enabled ^ enable;
+        if toggle {
+            self.accounts
+                .get_or_create(account_id.clone(), |owner_id| {
+                    self.view.is_account_locked(owner_id)
+                })
+                .get_mut()
+                .ok_or(DefuseError::AccountLocked(account_id))?
+                // toggle
+                .auth_by_predecessor_id_toggled ^= true;
+        }
+        Ok(was_enabled)
+    }
 }
 
 #[derive(Debug, Default)]
@@ -341,6 +366,8 @@ impl CachedAccounts {
 #[derive(Debug, Clone, Default)]
 pub struct CachedAccount {
     nonces: Nonces<HashMap<U248, U256>>,
+
+    auth_by_predecessor_id_toggled: bool,
 
     public_keys_added: HashSet<PublicKey>,
     public_keys_removed: HashSet<PublicKey>,

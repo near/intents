@@ -6,7 +6,7 @@ use near_sdk::{
     store::{IterableSet, LookupMap},
 };
 
-use crate::contract::accounts::{Account, AccountState};
+use crate::contract::accounts::{Account, AccountState, account::AccountFlags};
 
 /// Legacy version of [`Account`]
 #[derive(Debug)]
@@ -36,7 +36,9 @@ impl From<AccountV0> for Account {
     ) -> Self {
         Self {
             nonces,
-            implicit_public_key_removed,
+            flags: implicit_public_key_removed
+                .then_some(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
+                .unwrap_or_else(AccountFlags::empty),
             public_keys,
             state,
             prefix,

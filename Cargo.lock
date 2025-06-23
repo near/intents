@@ -642,6 +642,7 @@ name = "defuse"
 version = "0.2.8"
 dependencies = [
  "arbitrary_with",
+ "bitflags 2.9.1",
  "bnum",
  "defuse-admin-utils",
  "defuse-bitmap",

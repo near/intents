@@ -3,7 +3,7 @@ default_to_workspace = false
 skip_core_tasks = true
 
 [env]
-TARGET_DIR = "${PWD}/res"
+TARGET_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/res"
 POA_TOKEN_WASM = "${TARGET_DIR}/defuse_poa_token.wasm"
 POA_TOKEN_WITH_NO_REGISTRATION_DIR = "${TARGET_DIR}/poa-token-no-registration"
 POA_TOKEN_WASM_NO_REGISTRATION_WASM = "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}/defuse_poa_token.wasm"
@@ -17,7 +17,13 @@ command = "cargo"
 args = ["clippy", "--workspace", "--all-targets", "--no-deps"]
 
 [tasks.build]
-dependencies = ["add-cache-dir-tag", "build-defuse", "build-poa-factory", "contract-stats", "build-poa-token-no-registration"]
+dependencies = [
+    "add-cache-dir-tag",
+    "build-defuse",
+    "build-poa-factory",
+    "contract-stats",
+    "build-poa-token-no-registration",
+]
 
 [tasks.build-defuse]
 dependencies = ["add-cache-dir-tag"]
@@ -120,5 +126,5 @@ script = "cd ${TARGET_DIR} && du -ah *.wasm"
 condition = { platforms = ["linux", "mac"] }
 script = [
     "mkdir -p target res",
-    "echo 'Signature: 8a477f597d28d172789f06886806bc55' | tee target/CACHEDIR.TAG res/CACHEDIR.TAG > /dev/null"
+    "echo 'Signature: 8a477f597d28d172789f06886806bc55' | tee target/CACHEDIR.TAG res/CACHEDIR.TAG > /dev/null",
 ]

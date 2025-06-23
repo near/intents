@@ -8,6 +8,7 @@ use crate::{
     fees::{FeeChangedEvent, FeeCollectorChangedEvent},
     intents::{
         IntentEvent,
+        account::SetAuthByPredecessorId,
         token_diff::TokenDiffEvent,
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
     },
@@ -59,6 +60,9 @@ pub enum DefuseEvent<'a> {
     #[event_version("0.3.0")]
     #[from(skip)]
     AccountUnlocked(AccountEvent<'a, ()>),
+
+    #[event_version("0.3.0")]
+    SetAuthByPredecessorId(AccountEvent<'a, SetAuthByPredecessorId>),
 }
 
 pub trait DefuseIntentEmit<'a>: Into<DefuseEvent<'a>> {

@@ -7,7 +7,7 @@ pub use self::{account::*, state::*};
 use std::collections::HashSet;
 
 use defuse_core::{
-    Nonce,
+    DefuseError, Nonce,
     crypto::PublicKey,
     engine::{State, StateView},
 };
@@ -15,7 +15,7 @@ use defuse_near_utils::{Lock, NestPrefix, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic}
 use defuse_serde_utils::base64::AsBase64;
 
 use near_sdk::{
-    AccountId, AccountIdRef, BorshStorageKey, IntoStorageKey, assert_one_yocto,
+    AccountId, AccountIdRef, BorshStorageKey, FunctionError, IntoStorageKey, assert_one_yocto,
     borsh::BorshSerialize, near, store::IterableMap,
 };
 
@@ -37,13 +37,14 @@ impl AccountManager for Contract {
     #[payable]
     fn add_public_key(&mut self, public_key: PublicKey) {
         assert_one_yocto();
-        State::add_public_key(self, PREDECESSOR_ACCOUNT_ID.clone(), public_key).unwrap_or_panic();
+        State::add_public_key(self, self.ensure_auth_predecessor_id().clone(), public_key)
+            .unwrap_or_panic();
     }
 
     #[payable]
     fn remove_public_key(&mut self, public_key: PublicKey) {
         assert_one_yocto();
-        State::remove_public_key(self, PREDECESSOR_ACCOUNT_ID.clone(), public_key)
+        State::remove_public_key(self, self.ensure_auth_predecessor_id().clone(), public_key)
             .unwrap_or_panic();
     }
 
@@ -54,11 +55,33 @@ impl AccountManager for Contract {
     #[payable]
     fn invalidate_nonces(&mut self, nonces: Vec<AsBase64<Nonce>>) {
         assert_one_yocto();
+        let account_id = self.ensure_auth_predecessor_id();
         nonces
             .into_iter()
             .map(AsBase64::into_inner)
-            .try_for_each(|n| State::commit_nonce(self, PREDECESSOR_ACCOUNT_ID.clone(), n))
+            .try_for_each(|n| State::commit_nonce(self, account_id.clone(), n))
             .unwrap_or_panic();
+    }
+
+    fn is_auth_by_predecessor_id_enabled(&self, account_id: &AccountId) -> bool {
+        StateView::is_auth_by_predecessor_id_enabled(self, account_id)
+    }
+
+    #[payable]
+    fn disable_auth_by_predecessor_id(&mut self) {
+        assert_one_yocto();
+        State::set_auth_by_predecessor_id(self, self.ensure_auth_predecessor_id().clone(), false)
+            .unwrap_or_panic();
+    }
+}
+
+impl Contract {
+    #[inline]
+    pub fn ensure_auth_predecessor_id(&self) -> &'static AccountId {
+        if !StateView::is_auth_by_predecessor_id_enabled(self, &PREDECESSOR_ACCOUNT_ID) {
+            DefuseError::AuthByPredecessorIdDisabled(PREDECESSOR_ACCOUNT_ID.clone()).panic();
+        }
+        &PREDECESSOR_ACCOUNT_ID
     }
 }
 

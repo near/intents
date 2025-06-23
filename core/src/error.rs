@@ -16,6 +16,9 @@ pub enum DefuseError {
     #[error("account '{0}' is locked")]
     AccountLocked(AccountId),
 
+    #[error("authentication by PREDECESSOR_ID is disabled for account '{0}'")]
+    AuthByPredecessorIdDisabled(AccountId),
+
     #[error("insufficient balance or overflow")]
     BalanceOverflow,
 

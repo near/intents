@@ -12,9 +12,7 @@ use defuse_core::{
     intents::tokens::MtWithdraw,
     token_id::{nep141::Nep141TokenId, nep245::Nep245TokenId},
 };
-use defuse_near_utils::{
-    CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
-};
+use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::storage_management::ext_storage_management;
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
@@ -41,7 +39,7 @@ impl MultiTokenWithdrawer for Contract {
     ) -> PromiseOrValue<Vec<U128>> {
         assert_one_yocto();
         self.internal_mt_withdraw(
-            PREDECESSOR_ACCOUNT_ID.clone(),
+            self.ensure_auth_predecessor_id().clone(),
             MtWithdraw {
                 token,
                 receiver_id,

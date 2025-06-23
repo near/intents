@@ -5,7 +5,7 @@ use defuse_serde_utils::base64::AsBase64;
 use near_plugins::AccessControllable;
 use near_sdk::{AccountId, ext_contract};
 
-#[ext_contract(ext_public_key_manager)]
+#[ext_contract(ext_account_manager)]
 pub trait AccountManager {
     /// Check if account has given public key
     fn has_public_key(&self, account_id: &AccountId, public_key: &PublicKey) -> bool;
@@ -31,6 +31,22 @@ pub trait AccountManager {
 
     /// NOTE: MUST attach 1 yⓃ for security purposes.
     fn invalidate_nonces(&mut self, nonces: Vec<AsBase64<Nonce>>);
+
+    /// Returns whether authentication by PREDECESSOR_ID is enabled
+    /// for given `account_id`.
+    ///
+    /// NOTE: Authentication by PREDECESSOR_ID is enabled by default
+    /// when creating new accounts.
+    fn is_auth_by_predecessor_id_enabled(&self, account_id: &AccountId) -> bool;
+
+    /// Disables authentication by PREDECESSOR_ID for the caller,
+    /// i.e. PREDECESSOR_ID itself.
+    ///
+    /// **WARN**: Doing so might lock you out of your funds if
+    /// you don't have any other public_keys added to your account.
+    ///
+    /// NOTE: MUST attach 1 yⓃ for security purposes.
+    fn disable_auth_by_predecessor_id(&mut self);
 }
 
 #[ext_contract(ext_force_account_locker)]
