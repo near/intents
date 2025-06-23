@@ -11,7 +11,7 @@ defuse-near-utils.workspace = true
 defuse-serde-utils.workspace = true
 
 impl-tools.workspace = true
-near-sdk = { workspace = true, features = ["unit-testing"] }
+near-sdk.workspace = true
 serde_with.workspace = true
 
 [dev-dependencies]
@@ -20,6 +20,7 @@ ed25519-dalek.workspace = true
 near-crypto.workspace = true
 rstest.workspace = true
 stellar-strkey.workspace = true
+near-sdk = { workspace = true, features = ["unit-testing"] }
 
 [features]
 abi = ["defuse-serde-utils/abi", "defuse-crypto/abi"]
