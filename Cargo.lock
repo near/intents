@@ -713,6 +713,7 @@ dependencies = [
  "defuse-sep53",
  "defuse-serde-utils",
  "defuse-test-utils",
+ "defuse-tip191",
  "defuse-ton-connect",
  "defuse-webauthn",
  "derive_more 2.0.1",
@@ -747,6 +748,7 @@ name = "defuse-erc191"
 version = "0.1.0"
 dependencies = [
  "defuse-crypto",
+ "hex",
  "impl-tools",
  "near-sdk",
  "serde_with",
@@ -908,6 +910,17 @@ dependencies = [
  "strum 0.27.1",
  "tlb-ton",
  "tokio",
+]
+
+[[package]]
+name = "defuse-tip191"
+version = "0.1.0"
+dependencies = [
+ "defuse-crypto",
+ "hex",
+ "impl-tools",
+ "near-sdk",
+ "serde_with",
 ]
 
 [[package]]

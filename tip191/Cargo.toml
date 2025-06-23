@@ -1,9 +1,9 @@
 [package]
-name = "defuse-erc191"
+name = "defuse-tip191"
 edition.workspace = true
+repository.workspace = true
 version.workspace = true
 rust-version.workspace = true
-repository.workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, features = ["serde"] }

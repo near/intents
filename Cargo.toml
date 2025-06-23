@@ -24,6 +24,7 @@ members = [
     "serde-utils",
     "tests",
     "test-utils",
+    "tip191",
     "ton-connect",
     "wnear",
 ]
@@ -56,6 +57,7 @@ defuse-poa-factory.path = "poa-factory"
 defuse-poa-token.path = "poa-token"
 defuse-sep53.path = "sep53"
 defuse-serde-utils.path = "serde-utils"
+defuse-tip191.path = "tip191"
 defuse-ton-connect.path = "ton-connect"
 defuse-wnear.path = "wnear"
 
