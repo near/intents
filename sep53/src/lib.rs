@@ -243,7 +243,7 @@ mod tests {
 
         // tamper with the signature, and expect failure
         {
-            let bad_bytes = tamper_bytes(&mut rng, sig.to_bytes().as_ref(), true);
+            let bad_bytes = tamper_bytes(&mut rng, sig.to_bytes().as_ref(), false);
 
             let signed_bad = SignedSep53Payload {
                 payload,
