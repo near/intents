@@ -73,6 +73,7 @@ mod tests {
     use base64::{Engine, engine::general_purpose::STANDARD};
     use defuse_crypto::{Payload, SignedPayload};
     use defuse_test_utils::random::{CryptoRng, Rng, gen_random_string, random_bytes, rng};
+    use defuse_test_utils::tamper::{tamper_bytes, tamper_string};
     use ed25519_dalek::Verifier;
     use ed25519_dalek::{SigningKey, ed25519::signature::SignerMut};
     use near_sdk::base64;
@@ -154,40 +155,6 @@ mod tests {
                 Some(verifying_key.as_bytes().to_owned())
             );
         }
-    }
-
-    /// Returns a new String where one character in `s` is replaced by a random lowercase ASCII letter.
-    fn tamper_string(rng: &mut impl Rng, s: &str) -> String {
-        let mut chars: Vec<char> = s.chars().collect();
-        let len = chars.len();
-        if len == 0 {
-            return String::new();
-        }
-
-        let idx = rng.random_range(0..len);
-        // keep sampling until we get a new char
-        let new_c = loop {
-            #[allow(clippy::as_conversions)]
-            let c = (b'a' + rng.random_range(0..26)) as char;
-            if c != chars[idx] {
-                break c;
-            }
-        };
-        chars[idx] = new_c;
-        chars.into_iter().collect()
-    }
-
-    /// Returns a new signature byte‐vector where exactly one bit of the original `sig`
-    /// has been flipped at a random position.
-    fn tamper_bytes(rng: &mut impl Rng, sig: &[u8]) -> Vec<u8> {
-        let mut tampered = sig.to_vec();
-        let total_bits = tampered.len() * 8;
-        // pick a random bit index and flip it
-        let bit_idx = rng.random_range(0..total_bits);
-        let byte_idx = bit_idx / 8;
-        let bit_in_byte = bit_idx % 8;
-        tampered[byte_idx] ^= 1 << bit_in_byte;
-        tampered
     }
 
     /// Decode our test seed into a NEAR ED25519 secret + public key
