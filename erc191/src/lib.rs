@@ -59,29 +59,27 @@ impl SignedPayload for SignedErc191Payload {
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {
-        // normalize v field of the signature.
-        let signature_v_corrected = if *self.signature.last()? >= 27 {
-            let mut sig = self.signature;
-            // Ethereum only uses uncompressed keys, with corresponding value v=27/28
-            // https://bitcoin.stackexchange.com/a/38909/58790
-            *sig.last_mut()? -= 27;
-            sig
-        } else {
-            self.signature
-        };
-        Secp256k1::verify(&signature_v_corrected, &self.payload.hash(), &())
+        Secp256k1::verify(&self.signature, &self.payload.hash(), &())
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use defuse_test_utils::{
         random::{Rng, rng},
         tamper::{tamper_bytes, tamper_string},
     };
     use rstest::rstest;
 
-    use super::*;
+    fn fix_v_in_signature(mut sig: [u8; 65]) -> [u8; 65] {
+        if *sig.last().unwrap() >= 27 {
+            // Ethereum only uses uncompressed keys, with corresponding value v=27/28
+            // https://bitcoin.stackexchange.com/a/38909/58790
+            *sig.last_mut().unwrap() -= 27;
+        }
+        sig
+    }
 
     #[test]
     fn verify() {
@@ -91,6 +89,7 @@ mod tests {
         let signature = hex_literal::hex!(
             "7800a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e471c"
         );
+        let signature = fix_v_in_signature(signature);
 
         // Public key can be derived using `ethers_signers` crate:
         // let wallet = LocalWallet::from_str(
@@ -122,6 +121,7 @@ mod tests {
         let signature = hex_literal::hex!(
             "7800a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e471c"
         );
+        let signature = fix_v_in_signature(signature);
 
         // Public key can be derived using `ethers_signers` crate:
         // let wallet = LocalWallet::from_str(
@@ -164,6 +164,7 @@ mod tests {
         let signature = hex_literal::hex!(
             "7800a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e471c"
         );
+        let signature = fix_v_in_signature(signature);
 
         // Public key can be derived using `ethers_signers` crate:
         // let wallet = LocalWallet::from_str(
