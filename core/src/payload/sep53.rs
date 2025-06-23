@@ -21,6 +21,6 @@ where
     type Error = serde_json::Error;
 
     fn extract_defuse_payload(self) -> Result<DefusePayload<T>, Self::Error> {
-        serde_json::from_str(&self.message)
+        serde_json::from_str(&self.payload)
     }
 }

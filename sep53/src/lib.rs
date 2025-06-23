@@ -8,18 +8,18 @@ use serde_with::serde_as;
 #[serde(rename_all = "snake_case")]
 #[derive(Debug, Clone)]
 pub struct Sep53Payload {
-    pub message: String,
+    pub payload: String,
 }
 
 impl Sep53Payload {
     #[inline]
-    pub const fn new(message: String) -> Self {
-        Self { message }
+    pub const fn new(payload: String) -> Self {
+        Self { payload }
     }
 
     #[inline]
     pub fn prehash(&self) -> Vec<u8> {
-        [b"Stellar Signed Message:\n", self.message.as_bytes()].concat()
+        [b"Stellar Signed Message:\n", self.payload.as_bytes()].concat()
     }
 }
 
@@ -42,6 +42,7 @@ impl Payload for Sep53Payload {
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone)]
 pub struct SignedSep53Payload {
+    #[serde(flatten)]
     pub payload: Sep53Payload,
 
     #[serde_as(as = "AsCurve<Ed25519>")]
@@ -82,13 +83,13 @@ mod tests {
     fn reference_test_vectors() {
         // 1) Decode the StrKey seed -> raw 32 bytes
         let seed = "SAKICEVQLYWGSOJS4WW7HZJWAHZVEEBS527LHK5V4MLJALYKICQCJXMW";
-        let raw = match Strkey::from_string(seed).unwrap() {
+        let raw_key = match Strkey::from_string(seed).unwrap() {
             Strkey::PrivateKeyEd25519(pk) => pk.0,
             _ => panic!("expected an Ed25519 seed"),
         };
 
         // 2) Build SigningKey + VerifyingKey
-        let mut signing_key = SigningKey::from_bytes(&raw);
+        let mut signing_key = SigningKey::from_bytes(&raw_key);
         let verifying_key = signing_key.verifying_key();
 
         let vectors = [
@@ -148,7 +149,10 @@ mod tests {
                 signature: sig.to_bytes(),
             };
 
-            assert!(signed_payload.verify().is_some());
+            assert_eq!(
+                signed_payload.verify(),
+                Some(verifying_key.as_bytes().to_owned())
+            );
         }
     }
 
@@ -242,7 +246,7 @@ mod tests {
                 public_key: pk.key_data().try_into().unwrap(),
                 signature: sig.to_bytes(),
             };
-            assert!(signed_bad.verify().is_none());
+            assert_eq!(signed_bad.verify(), None);
         }
     }
 

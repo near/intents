@@ -116,16 +116,13 @@ impl DefuseSigner for near_workspaces::Account {
                 .into(),
             SigningStandard::Sep53 => self
                 .sign_sep53(Sep53Payload::new(
-                    serde_json::to_string(
-                        &serde_json::to_string(&DefusePayload {
-                            signer_id: self.id().clone(),
-                            verifying_contract: defuse_contract.clone(),
-                            deadline,
-                            nonce,
-                            message,
-                        })
-                        .unwrap(),
-                    )
+                    serde_json::to_string(&DefusePayload {
+                        signer_id: self.id().clone(),
+                        verifying_contract: defuse_contract.clone(),
+                        deadline,
+                        nonce,
+                        message,
+                    })
                     .unwrap(),
                 ))
                 .into(),
