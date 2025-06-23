@@ -111,7 +111,7 @@ mod tests {
             signature,
         };
 
-        assert_eq!(signed_payload.verify().unwrap(), public_key);
+        assert_eq!(signed_payload.verify(), Some(public_key));
     }
 
     #[rstest]
@@ -133,7 +133,7 @@ mod tests {
                 signature,
             };
 
-            assert_eq!(signed_payload.verify().unwrap(), public_key);
+            assert_eq!(signed_payload.verify(), Some(public_key));
         }
 
         {
@@ -165,7 +165,7 @@ mod tests {
                 signature,
             };
 
-            assert_eq!(signed_payload.verify().unwrap(), public_key);
+            assert_eq!(signed_payload.verify(), Some(public_key));
         }
 
         {

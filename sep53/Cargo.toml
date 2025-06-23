@@ -21,7 +21,7 @@ stellar-strkey.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 
 [features]
-abi = []
+abi = ["defuse-crypto/abi"]
 
 [lints]
 workspace = true
