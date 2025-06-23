@@ -13,9 +13,11 @@ near-sdk.workspace = true
 serde_with.workspace = true
 
 [dev-dependencies]
+defuse-test-utils.workspace = true
 hex.workspace = true
 hex-literal.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
+rstest.workspace = true
 
 [features]
 abi = []

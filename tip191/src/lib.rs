@@ -77,6 +77,11 @@ impl SignedPayload for SignedTip191Payload {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use defuse_test_utils::{
+        random::{Rng, rng},
+        tamper::{tamper_bytes, tamper_string},
+    };
+    use rstest::rstest;
 
     #[test]
     fn verify() {
@@ -107,5 +112,69 @@ mod tests {
         };
 
         assert_eq!(signed_payload.verify().unwrap(), public_key);
+    }
+
+    #[rstest]
+    fn tamper_message_fails(mut rng: impl Rng) {
+        let msg = "Hello, TRON!";
+
+        let signature = hex_literal::hex!(
+            "eea1651a60600ec4d9c45e8ae81da1a78377f789f0ac2019de66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c1c"
+        );
+
+        let public_key = hex_literal::hex!(
+            "85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"
+        );
+
+        {
+            let signed_payload = SignedTip191Payload {
+                payload: Tip191Payload(msg.to_string()),
+                signature,
+            };
+
+            assert_eq!(signed_payload.verify().unwrap(), public_key);
+        }
+
+        {
+            let bad_signed_payload = SignedTip191Payload {
+                payload: Tip191Payload(tamper_string(&mut rng, msg)),
+                signature,
+            };
+
+            assert_ne!(bad_signed_payload.verify(), Some(public_key));
+        }
+    }
+
+    #[rstest]
+    fn tamper_signature_fails(mut rng: impl Rng) {
+        let msg = "Hello, TRON!";
+
+        let signature = hex_literal::hex!(
+            "eea1651a60600ec4d9c45e8ae81da1a78377f789f0ac2019de66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c1c"
+        );
+
+        let public_key = hex_literal::hex!(
+            "85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"
+        );
+
+        {
+            let signed_payload = SignedTip191Payload {
+                payload: Tip191Payload(msg.to_string()),
+                signature,
+            };
+
+            assert_eq!(signed_payload.verify().unwrap(), public_key);
+        }
+
+        {
+            let bad_signed_payload = SignedTip191Payload {
+                payload: Tip191Payload(msg.to_string()),
+                signature: tamper_bytes(&mut rng, &signature, false)
+                    .try_into()
+                    .unwrap(),
+            };
+
+            assert_ne!(bad_signed_payload.verify(), Some(public_key));
+        }
     }
 }

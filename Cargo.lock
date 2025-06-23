@@ -748,10 +748,12 @@ name = "defuse-erc191"
 version = "0.1.0"
 dependencies = [
  "defuse-crypto",
+ "defuse-test-utils",
  "hex",
  "hex-literal",
  "impl-tools",
  "near-sdk",
+ "rstest",
  "serde_with",
 ]
 
@@ -916,9 +918,11 @@ name = "defuse-tip191"
 version = "0.1.0"
 dependencies = [
  "defuse-crypto",
+ "defuse-test-utils",
  "hex-literal",
  "impl-tools",
  "near-sdk",
+ "rstest",
  "serde_with",
 ]
 
