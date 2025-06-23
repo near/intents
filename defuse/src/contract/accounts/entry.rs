@@ -4,7 +4,6 @@ use std::{
 };
 
 use defuse_borsh_utils::adapters::{As, BorshDeserializeAs, BorshSerializeAs};
-use defuse_io_utils::ReadExt;
 use defuse_near_utils::{Lock, PanicOnClone};
 use impl_tools::autoimpl;
 use near_sdk::{
@@ -89,11 +88,12 @@ impl BorshDeserializeAs<Lock<Account>> for MaybeVersionedAccountEntry {
     where
         R: io::Read,
     {
-        let mut buf = Vec::new();
         // There will always be 4 bytes for u32:
         // * either `VERSIONED_MAGIC_PREFIX`,
         // * or u32 for `Account.nonces.prefix`
-        let prefix = u32::deserialize_reader(&mut reader.tee(&mut buf))?;
+        let mut buf = [0u8; size_of::<u32>()];
+        reader.read_exact(&mut buf)?;
+        let prefix = u32::deserialize_reader(&mut buf.as_slice())?;
 
         if prefix == VERSIONED_MAGIC_PREFIX {
             VersionedAccountEntry::deserialize_reader(reader)
