@@ -749,6 +749,7 @@ version = "0.1.0"
 dependencies = [
  "defuse-crypto",
  "hex",
+ "hex-literal",
  "impl-tools",
  "near-sdk",
  "serde_with",
@@ -847,8 +848,6 @@ name = "defuse-sep53"
 version = "0.1.0"
 dependencies = [
  "defuse-crypto",
- "defuse-near-utils",
- "defuse-serde-utils",
  "defuse-test-utils",
  "ed25519-dalek",
  "impl-tools",
@@ -917,7 +916,7 @@ name = "defuse-tip191"
 version = "0.1.0"
 dependencies = [
  "defuse-crypto",
- "hex",
+ "hex-literal",
  "impl-tools",
  "near-sdk",
  "serde_with",

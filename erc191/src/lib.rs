@@ -79,11 +79,32 @@ mod tests {
 
     #[test]
     fn verify() {
+        let msg = "Hello world!";
+
+        // Signature constructed in Metamask, using private key: a4b319a82adfc43584e4537fec97a80516e16673db382cd91eba97abbab8ca56
+        let signature = hex_literal::hex!(
+            "7800a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e471c"
+        );
+
+        // Public key can be derived using `ethers_signers` crate:
+        // let wallet = LocalWallet::from_str(
+        //     "a4b319a82adfc43584e4537fec97a80516e16673db382cd91eba97abbab8ca56",
+        // )?;
+        // let signing_key = wallet.signer();
+        // let verifying_key = signing_key.verifying_key();
+        // let public_key = verifying_key.to_encoded_point(false);
+        // // Notice that we skip the first byte, 0x04
+        // println!("Public key: 0x{}", hex::encode(public_key.as_bytes()[1..]));
+
+        let public_key = hex_literal::hex!(
+            "85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"
+        );
+
         let signed_payload = SignedErc191Payload {
-            payload: Erc191Payload("Hello world!".to_string()),
-            // Signature constructed in Metamask, using private key: a4b319a82adfc43584e4537fec97a80516e16673db382cd91eba97abbab8ca56
-            signature: hex::decode("7800a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e471c").unwrap().try_into().unwrap(),
+            payload: Erc191Payload(msg.to_string()),
+            signature,
         };
-        signed_payload.verify().unwrap();
+
+        assert_eq!(signed_payload.verify().unwrap(), public_key);
     }
 }

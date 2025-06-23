@@ -31,7 +31,7 @@ impl Curve for Secp256k1 {
     ) -> Option<Self::PublicKey> {
         env::ecrecover(
             hash, signature, *v,
-            // Do not accept malleabile signatures:
+            // Do not accept malleable signatures:
             // https://github.com/near/nearcore/blob/d73041cc1d1a70af4456fceefaceb1bf7f684fde/core/crypto/src/signature.rs#L448-L455
             true,
         )
