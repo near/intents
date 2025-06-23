@@ -1,9 +1,9 @@
 [package]
-name = "defuse-erc191"
+name = "defuse-sep53"
 edition.workspace = true
+repository.workspace = true
 version.workspace = true
 rust-version.workspace = true
-repository.workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, features = ["serde"] }
@@ -14,9 +14,11 @@ serde_with.workspace = true
 
 [dev-dependencies]
 defuse-test-utils.workspace = true
-hex-literal.workspace = true
-near-sdk = { workspace = true, features = ["unit-testing"] }
+ed25519-dalek.workspace = true
+near-crypto.workspace = true
 rstest.workspace = true
+stellar-strkey.workspace = true
+near-sdk = { workspace = true, features = ["unit-testing"] }
 
 [features]
 abi = ["defuse-crypto/abi"]

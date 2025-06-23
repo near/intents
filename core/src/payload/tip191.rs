@@ -1,8 +1,8 @@
 use super::{DefusePayload, ExtractDefusePayload};
-use defuse_erc191::SignedErc191Payload;
+use defuse_tip191::SignedTip191Payload;
 use near_sdk::{serde::de::DeserializeOwned, serde_json};
 
-impl<T> ExtractDefusePayload<T> for SignedErc191Payload
+impl<T> ExtractDefusePayload<T> for SignedTip191Payload
 where
     T: DeserializeOwned,
 {

@@ -1,6 +1,8 @@
 use defuse_crypto::{Payload, PublicKey, SignedPayload};
 use defuse_erc191::SignedErc191Payload;
 use defuse_nep413::SignedNep413Payload;
+use defuse_sep53::SignedSep53Payload;
+use defuse_tip191::SignedTip191Payload;
 use defuse_ton_connect::SignedTonConnectPayload;
 use derive_more::derive::From;
 use near_sdk::{CryptoHash, near, serde::de::DeserializeOwned, serde_json};
@@ -29,6 +31,10 @@ pub enum MultiPayload {
     /// For more details, refer to [EIP-191](https://eips.ethereum.org/EIPS/eip-191).
     Erc191(SignedErc191Payload),
 
+    /// TIP-191: The standard for message signing in Tron.
+    /// For more details, refer to [TIP-191](https://github.com/tronprotocol/tips/blob/master/tip-191.md).
+    Tip191(SignedTip191Payload),
+
     /// Raw Ed25519: The standard used by Solana Phantom wallets for message signing.
     /// For more details, refer to [Phantom Wallet's documentation](https://docs.phantom.com/solana/signing-a-message).
     RawEd25519(SignedRawEd25519Payload),
@@ -41,6 +47,10 @@ pub enum MultiPayload {
     /// TonConnect: The standard for data signing in TON blockchain platform.
     /// For more details, refer to [TonConnect documentation](https://docs.tonconsole.com/academy/sign-data).
     TonConnect(SignedTonConnectPayload),
+
+    /// SEP-53: The standard for signing data off-chain for Stellar accounts.
+    /// See [SEP-53](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md)
+    Sep53(SignedSep53Payload),
 }
 
 impl Payload for MultiPayload {
@@ -53,9 +63,11 @@ impl Payload for MultiPayload {
         match self {
             Self::Nep413(payload) => payload.hash(),
             Self::Erc191(payload) => payload.hash(),
+            Self::Tip191(payload) => payload.hash(),
             Self::RawEd25519(payload) => payload.hash(),
             Self::WebAuthn(payload) => payload.hash(),
             Self::TonConnect(payload) => payload.hash(),
+            Self::Sep53(payload) => payload.hash(),
         }
     }
 }
@@ -68,9 +80,11 @@ impl SignedPayload for MultiPayload {
         match self {
             Self::Nep413(payload) => payload.verify().map(PublicKey::Ed25519),
             Self::Erc191(payload) => payload.verify().map(PublicKey::Secp256k1),
+            Self::Tip191(payload) => payload.verify().map(PublicKey::Secp256k1),
             Self::RawEd25519(payload) => payload.verify().map(PublicKey::Ed25519),
             Self::WebAuthn(payload) => payload.verify(),
             Self::TonConnect(payload) => payload.verify().map(PublicKey::Ed25519),
+            Self::Sep53(payload) => payload.verify().map(PublicKey::Ed25519),
         }
     }
 }
@@ -86,9 +100,11 @@ where
         match self {
             Self::Nep413(payload) => payload.extract_defuse_payload(),
             Self::Erc191(payload) => payload.extract_defuse_payload(),
+            Self::Tip191(payload) => payload.extract_defuse_payload(),
             Self::RawEd25519(payload) => payload.extract_defuse_payload(),
             Self::WebAuthn(payload) => payload.extract_defuse_payload(),
             Self::TonConnect(payload) => payload.extract_defuse_payload(),
+            Self::Sep53(payload) => payload.extract_defuse_payload(),
         }
     }
 }

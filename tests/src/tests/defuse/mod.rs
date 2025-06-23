@@ -9,6 +9,7 @@ use self::accounts::AccountManagerExt;
 use crate::utils::{account::AccountExt, crypto::Signer, read_wasm};
 use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::payload::DefusePayload;
+use defuse::core::sep53::Sep53Payload;
 use defuse::core::ton_connect::tlb_ton::MsgAddress;
 use defuse::{
     contract::config::DefuseConfig,
@@ -113,6 +114,18 @@ impl DefuseSigner for near_workspaces::Account {
                     },
                 })
                 .into(),
+            SigningStandard::Sep53 => self
+                .sign_sep53(Sep53Payload::new(
+                    serde_json::to_string(&DefusePayload {
+                        signer_id: self.id().clone(),
+                        verifying_contract: defuse_contract.clone(),
+                        deadline,
+                        nonce,
+                        message,
+                    })
+                    .unwrap(),
+                ))
+                .into(),
         }
     }
 }
@@ -122,4 +135,5 @@ pub enum SigningStandard {
     #[default]
     Nep413,
     TonConnect,
+    Sep53,
 }

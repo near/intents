@@ -2,6 +2,8 @@ pub mod erc191;
 pub mod multi;
 pub mod nep413;
 pub mod raw;
+pub mod sep53;
+pub mod tip191;
 pub mod ton_connect;
 pub mod webauthn;
 

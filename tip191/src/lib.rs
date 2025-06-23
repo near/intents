@@ -3,24 +3,25 @@ use impl_tools::autoimpl;
 use near_sdk::{env, near};
 use serde_with::serde_as;
 
-/// See [ERC-191](https://github.com/ethereum/ercs/blob/master/ERCS/erc-191.md)
+/// See [TIP-191](https://github.com/tronprotocol/tips/blob/master/tip-191.md)
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
-pub struct Erc191Payload(pub String);
+pub struct Tip191Payload(pub String);
 
-impl Erc191Payload {
+impl Tip191Payload {
     #[inline]
     pub fn prehash(&self) -> Vec<u8> {
         let data = self.0.as_bytes();
         [
-            format!("\x19Ethereum Signed Message:\n{}", data.len()).as_bytes(),
+            // Prefix not specified in the standard. But from: https://tronweb.network/docu/docs/Sign%20and%20Verify%20Message/
+            format!("\x19TRON Signed Message:\n{}", data.len()).as_bytes(),
             data,
         ]
         .concat()
     }
 }
 
-impl Payload for Erc191Payload {
+impl Payload for Tip191Payload {
     #[inline]
     fn hash(&self) -> CryptoHash {
         env::keccak256_array(&self.prehash())
@@ -38,8 +39,8 @@ impl Payload for Erc191Payload {
 #[near(serializers = [json])]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone)]
-pub struct SignedErc191Payload {
-    pub payload: Erc191Payload,
+pub struct SignedTip191Payload {
+    pub payload: Tip191Payload,
 
     /// There is no public key member because the public key can be recovered
     /// via `ecrecover()` knowing the data and the signature
@@ -47,14 +48,14 @@ pub struct SignedErc191Payload {
     pub signature: <Secp256k1 as Curve>::Signature,
 }
 
-impl Payload for SignedErc191Payload {
+impl Payload for SignedTip191Payload {
     #[inline]
     fn hash(&self) -> CryptoHash {
         self.payload.hash()
     }
 }
 
-impl SignedPayload for SignedErc191Payload {
+impl SignedPayload for SignedTip191Payload {
     type PublicKey = <Secp256k1 as Curve>::PublicKey;
 
     #[inline]
@@ -83,11 +84,11 @@ mod tests {
 
     #[test]
     fn verify() {
-        let msg = "Hello world!";
+        let msg = "Hello, TRON!";
 
-        // Signature constructed in Metamask, using private key: a4b319a82adfc43584e4537fec97a80516e16673db382cd91eba97abbab8ca56
+        // Signature constructed in TronLink, using private key: a4b319a82adfc43584e4537fec97a80516e16673db382cd91eba97abbab8ca56
         let signature = hex_literal::hex!(
-            "7800a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e471c"
+            "eea1651a60600ec4d9c45e8ae81da1a78377f789f0ac2019de66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c1c"
         );
         let signature = fix_v_in_signature(signature);
 
@@ -105,8 +106,8 @@ mod tests {
             "85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"
         );
 
-        let signed_payload = SignedErc191Payload {
-            payload: Erc191Payload(msg.to_string()),
+        let signed_payload = SignedTip191Payload {
+            payload: Tip191Payload(msg.to_string()),
             signature,
         };
 
@@ -115,31 +116,20 @@ mod tests {
 
     #[rstest]
     fn tamper_message_fails(mut rng: impl Rng) {
-        let msg = "Hello world!";
+        let msg = "Hello, TRON!";
 
-        // Signature constructed in Metamask, using private key: a4b319a82adfc43584e4537fec97a80516e16673db382cd91eba97abbab8ca56
         let signature = hex_literal::hex!(
-            "7800a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e471c"
+            "eea1651a60600ec4d9c45e8ae81da1a78377f789f0ac2019de66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c1c"
         );
         let signature = fix_v_in_signature(signature);
-
-        // Public key can be derived using `ethers_signers` crate:
-        // let wallet = LocalWallet::from_str(
-        //     "a4b319a82adfc43584e4537fec97a80516e16673db382cd91eba97abbab8ca56",
-        // )?;
-        // let signing_key = wallet.signer();
-        // let verifying_key = signing_key.verifying_key();
-        // let public_key = verifying_key.to_encoded_point(false);
-        // // Notice that we skip the first byte, 0x04
-        // println!("Public key: 0x{}", hex::encode(public_key.as_bytes()[1..]));
 
         let public_key = hex_literal::hex!(
             "85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"
         );
 
         {
-            let signed_payload = SignedErc191Payload {
-                payload: Erc191Payload(msg.to_string()),
+            let signed_payload = SignedTip191Payload {
+                payload: Tip191Payload(msg.to_string()),
                 signature,
             };
 
@@ -147,8 +137,8 @@ mod tests {
         }
 
         {
-            let bad_signed_payload = SignedErc191Payload {
-                payload: Erc191Payload(tamper_string(&mut rng, msg)),
+            let bad_signed_payload = SignedTip191Payload {
+                payload: Tip191Payload(tamper_string(&mut rng, msg)),
                 signature,
             };
 
@@ -158,31 +148,20 @@ mod tests {
 
     #[rstest]
     fn tamper_signature_fails(mut rng: impl Rng) {
-        let msg = "Hello world!";
+        let msg = "Hello, TRON!";
 
-        // Signature constructed in Metamask, using private key: a4b319a82adfc43584e4537fec97a80516e16673db382cd91eba97abbab8ca56
         let signature = hex_literal::hex!(
-            "7800a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e471c"
+            "eea1651a60600ec4d9c45e8ae81da1a78377f789f0ac2019de66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c1c"
         );
         let signature = fix_v_in_signature(signature);
-
-        // Public key can be derived using `ethers_signers` crate:
-        // let wallet = LocalWallet::from_str(
-        //     "a4b319a82adfc43584e4537fec97a80516e16673db382cd91eba97abbab8ca56",
-        // )?;
-        // let signing_key = wallet.signer();
-        // let verifying_key = signing_key.verifying_key();
-        // let public_key = verifying_key.to_encoded_point(false);
-        // // Notice that we skip the first byte, 0x04
-        // println!("Public key: 0x{}", hex::encode(public_key.as_bytes()[1..]));
 
         let public_key = hex_literal::hex!(
             "85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"
         );
 
         {
-            let signed_payload = SignedErc191Payload {
-                payload: Erc191Payload(msg.to_string()),
+            let signed_payload = SignedTip191Payload {
+                payload: Tip191Payload(msg.to_string()),
                 signature,
             };
 
@@ -190,8 +169,8 @@ mod tests {
         }
 
         {
-            let bad_signed_payload = SignedErc191Payload {
-                payload: Erc191Payload(msg.to_string()),
+            let bad_signed_payload = SignedTip191Payload {
+                payload: Tip191Payload(msg.to_string()),
                 signature: tamper_bytes(&mut rng, &signature, false)
                     .try_into()
                     .unwrap(),
