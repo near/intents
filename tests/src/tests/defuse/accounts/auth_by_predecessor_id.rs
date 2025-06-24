@@ -117,7 +117,7 @@ async fn test(random_bytes: Vec<u8>) {
                 DefuseIntents {
                     intents: [Transfer {
                         receiver_id: env.user2.id().clone(),
-                        tokens: Amounts::new([(ft1.clone(), 200)].into_iter().collect()),
+                        tokens: Amounts::new([(ft1.clone(), 200)].into()),
                         memo: None,
                     }
                     .into()]
