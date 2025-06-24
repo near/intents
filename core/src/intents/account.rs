@@ -5,6 +5,7 @@ use serde_with::serde_as;
 
 use crate::{
     Nonce, Result,
+    accounts::AccountEvent,
     engine::{Engine, Inspector, State},
 };
 
@@ -110,7 +111,7 @@ impl ExecutableIntent for InvalidateNonces {
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
 pub struct SetAuthByPredecessorId {
-    pub enable: bool,
+    pub enabled: bool,
 }
 
 impl ExecutableIntent for SetAuthByPredecessorId {
@@ -126,7 +127,12 @@ impl ExecutableIntent for SetAuthByPredecessorId {
     {
         engine
             .state
-            .set_auth_by_predecessor_id(signer_id.to_owned(), self.enable)
-            .map(|_| ())
+            .set_auth_by_predecessor_id(signer_id.to_owned(), self.enabled)?;
+
+        engine
+            .inspector
+            .on_event(AccountEvent::new(signer_id, self).into());
+
+        Ok(())
     }
 }

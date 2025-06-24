@@ -180,7 +180,7 @@ impl Account {
 
             DefuseEvent::SetAuthByPredecessorId(AccountEvent::new(
                 Cow::Borrowed(me),
-                SetAuthByPredecessorId { enable },
+                SetAuthByPredecessorId { enabled: enable },
             ))
             .emit();
         }

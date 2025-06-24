@@ -11,6 +11,7 @@ use tokens::{NativeWithdraw, StorageDeposit};
 use crate::{
     Result,
     engine::{Engine, Inspector, State},
+    intents::account::SetAuthByPredecessorId,
 };
 
 use self::{
@@ -63,6 +64,9 @@ pub enum Intent {
 
     /// See [`TokenDiff`]
     TokenDiff(TokenDiff),
+
+    /// See [`SetAuthByPredecessorId`]
+    SetAuthByPredecessorId(SetAuthByPredecessorId),
 }
 
 pub trait ExecutableIntent {
@@ -117,6 +121,9 @@ impl ExecutableIntent for Intent {
             Self::NativeWithdraw(intent) => intent.execute_intent(signer_id, engine, intent_hash),
             Self::StorageDeposit(intent) => intent.execute_intent(signer_id, engine, intent_hash),
             Self::TokenDiff(intent) => intent.execute_intent(signer_id, engine, intent_hash),
+            Self::SetAuthByPredecessorId(intent) => {
+                intent.execute_intent(signer_id, engine, intent_hash)
+            }
         }
     }
 }
