@@ -42,6 +42,7 @@ impl Nep245TokenId {
         })
     }
 
+    #[allow(clippy::missing_const_for_fn)]
     pub fn contract_id(&self) -> &AccountIdRef {
         &self.contract_id
     }
