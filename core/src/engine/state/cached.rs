@@ -112,7 +112,8 @@ where
         let toggled = self
             .accounts
             .get(account_id)
-            .is_some_and(|a| a.as_inner_unchecked().auth_by_predecessor_id_toggled);
+            .map(Lock::as_inner_unchecked)
+            .is_some_and(|a| a.auth_by_predecessor_id_toggled);
         was_enabled ^ toggled
     }
 }

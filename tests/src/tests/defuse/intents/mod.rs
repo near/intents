@@ -55,15 +55,21 @@ impl ExecuteIntentsExt for near_workspaces::Account {
         defuse_id: &AccountId,
         intents: impl IntoIterator<Item = MultiPayload>,
     ) -> anyhow::Result<TestLog> {
+        let intents = intents.into_iter().collect::<Vec<_>>();
+
+        // simulate before execution
+        let simulation_result = self
+            .defuse_simulate_intents(defuse_id, intents.clone())
+            .await;
+
         let args = json!({
-            "signed": intents.into_iter().collect::<Vec<_>>(),
+            "signed": intents,
         });
         println!(
             "execute_intents({})",
             serde_json::to_string_pretty(&args).unwrap()
         );
-        let logs = self
-            .call(defuse_id, "execute_intents")
+        self.call(defuse_id, "execute_intents")
             .args_json(args)
             .max_gas()
             .transact()
@@ -72,9 +78,10 @@ impl ExecuteIntentsExt for near_workspaces::Account {
             .inspect(|outcome| {
                 println!("execute_intents: {outcome:#?}");
             })
-            .map(Into::into)?;
-
-        Ok(logs)
+            .map(Into::into)
+            .map_err(Into::into)
+            // return simulation_err if execute_ok
+            .and_then(|res| simulation_result.map(|_| res))
     }
     async fn execute_intents(
         &self,
