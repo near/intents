@@ -161,7 +161,7 @@ impl Account {
             .set(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED, removed);
     }
 
-    /// Returns whether authentication by PREDECESSOR is disabled.
+    /// Returns whether authentication by PREDECESSOR is enabled.
     pub const fn is_auth_by_predecessor_id_enabled(&self) -> bool {
         !self
             .flags

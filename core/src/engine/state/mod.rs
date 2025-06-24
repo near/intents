@@ -36,7 +36,7 @@ pub trait StateView {
 
     fn is_account_locked(&self, account_id: &AccountIdRef) -> bool;
 
-    /// Returns whether authentication by `PREDECESSOR_ID` is disabled.
+    /// Returns whether authentication by `PREDECESSOR_ID` is enabled.
     fn is_auth_by_predecessor_id_enabled(&self, account_id: &AccountIdRef) -> bool;
 
     #[inline]
