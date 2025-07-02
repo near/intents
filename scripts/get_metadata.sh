@@ -1,4 +1,9 @@
 #!/bin/sh
+# Usage:
+#   ./get_metadata.sh                  # for all token_ids in VERIFIER_CONTRACT
+#   ./get_metadata.sh < asset_ids.txt  # read token_ids from file
+# Environment variables:
+#   VERIFIER_CONTRACT (default: intents.near)
 set -e
 
 VERIFIER_CONTRACT=${VERIFIER_CONTRACT:-intents.near}
