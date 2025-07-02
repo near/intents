@@ -46,4 +46,3 @@ token_metadata() {
 while read -r TOKEN_ID; do
   token_metadata "${TOKEN_ID}"
 done
-
