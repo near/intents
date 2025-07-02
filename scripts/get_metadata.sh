@@ -1,20 +1,13 @@
 #!/bin/sh
 # Usage:
 #   ./get_metadata.sh                  # for all token_ids in VERIFIER_CONTRACT
+#   ./get_metadata.sh TOKEN_ID ...     # for given TOKEN_ID(s)
 #   ./get_metadata.sh < asset_ids.txt  # read token_ids from file
 # Environment variables:
 #   VERIFIER_CONTRACT (default: intents.near)
 set -e
 
 VERIFIER_CONTRACT=${VERIFIER_CONTRACT:-intents.near}
-
-if test -t 0; then
-  near --quiet contract call-function as-read-only "${VERIFIER_CONTRACT}" \
-    mt_tokens json-args '{}' \
-    network-config mainnet now \
-    | jq -r '.[].token_id' \
-    | exec "$0"
-fi
 
 component() {
   # Usage: component ASSET_ID INDEX
@@ -53,6 +46,24 @@ token_metadata() {
   fi
 }
 
-while read -r ASSET_ID; do
-  token_metadata "${ASSET_ID}"
-done
+token_metadata_all() {
+  while read -r ASSET_ID; do
+    token_metadata "${ASSET_ID}"
+  done
+}
+
+mt_token_ids() {
+  near --quiet contract call-function as-read-only "${VERIFIER_CONTRACT}" \
+    mt_tokens json-args '{}' \
+    network-config mainnet now \
+    | jq -r '.[].token_id'
+}
+
+if [ $# -ne 0 ]; then
+  printf '%s\n' $@
+elif test -t 0; then
+  mt_token_ids
+else
+  cat
+fi | token_metadata_all
+
