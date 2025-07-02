@@ -1,4 +1,6 @@
-#!/bin/sh -e
+#!/bin/sh
+set -e
+
 VERIFIER_CONTRACT=${VERIFIER_CONTRACT:-intents.near}
 
 if test -t 0; then
@@ -20,8 +22,6 @@ token_metadata() {
   # Usage: token_metadata ASSET_ID
   ASSET_ID="$1"
   ASSET_STANDARD="$(component "${ASSET_ID}" 1)"
-  JQ_ARGS_PRE='.'
-  JQ_ARGS_POST='.'
 
   if [ "${ASSET_STANDARD}" = 'nep141' ]; then
     CONTRACT_ID="$(component "${ASSET_ID}" 2)"
