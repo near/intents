@@ -16,33 +16,35 @@ component() {
 }
 
 token_metadata() {
-  TOKEN_ID="$1"
-  TOKEN_STANDARD="$(component "${TOKEN_ID}" 1)"
+  ASSET_ID="$1"
+  ASSET_STANDARD="$(component "${ASSET_ID}" 1)"
   JQ_ARGS='.'
 
-  if [ "${TOKEN_STANDARD}" = 'nep141' ]; then
-    CONTRACT_ID="$(component "${TOKEN_ID}" 2)"
+  if [ "${ASSET_STANDARD}" = 'nep141' ]; then
+    CONTRACT_ID="$(component "${ASSET_ID}" 2)"
     METHOD_NAME='ft_metadata'
     JSON_ARGS='{}'
-  elif [ "${TOKEN_STANDARD}" = 'nep171' ]; then
-    CONTRACT_ID="$(component "${TOKEN_ID}" 2)"
-    METHOD_NAME='nft_metadata'
-    JSON_ARGS='{}'
-  elif [ "${TOKEN_STANDARD}" = 'nep245' ]; then
-    CONTRACT_ID="$(component "${TOKEN_ID}" 2)"
+  elif [ "${ASSET_STANDARD}" = 'nep171' ]; then
+    CONTRACT_ID="$(component "${ASSET_ID}" 2)"
+    TOKEN_ID="$(component "${ASSET_ID}" 3)"
+    METHOD_NAME='nft_token'
+    JSON_ARGS="{\"token_id\": \"${TOKEN_ID}\"}"
+  elif [ "${ASSET_STANDARD}" = 'nep245' ]; then
+    CONTRACT_ID="$(component "${ASSET_ID}" 2)"
+    TOKEN_ID="$(component "${ASSET_ID}" 3)"
     METHOD_NAME='mt_metadata_base_by_token_id'
-    JSON_ARGS="{\"token_ids\": [\"$(component "${TOKEN_ID}" 3)\"]}"
+    JSON_ARGS="{\"token_ids\": [\"${TOKEN_ID}\"]}"
     JQ_ARGS='.[0]'
   else
-    echo "Unknown token standard: '${TOKEN_STANDARD}'" >&2 && exit 1
+    echo "Unknown token standard: '${ASSET_STANDARD}'" >&2 && exit 1
   fi
 
   near --quiet contract call-function as-read-only "${CONTRACT_ID}" \
     "${METHOD_NAME}" json-args "${JSON_ARGS}" \
     network-config mainnet now 2>/dev/null \
-    | jq "${JQ_ARGS} | { asset_id: \"${TOKEN_ID}\" } + ."
+    | jq "${JQ_ARGS} | { asset_id: \"${ASSET_ID}\" } + ."
 }
 
-while read -r TOKEN_ID; do
-  token_metadata "${TOKEN_ID}"
+while read -r ASSET_ID; do
+  token_metadata "${ASSET_ID}"
 done
