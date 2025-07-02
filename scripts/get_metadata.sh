@@ -10,39 +10,42 @@ if test -t 0; then
 fi
 
 component() {
-  TOKEN_ID="$1"
+  # Usage: component ASSET_ID INDEX
+  ASSET_ID="$1"
   COMPONENT="$2"
-  printf "${TOKEN_ID}" | cut -d':' -f"${COMPONENT}"
+  printf '%s' "${ASSET_ID}" | cut -d':' -f"${COMPONENT}"
 }
 
 token_metadata() {
+  # Usage: token_metadata ASSET_ID
   ASSET_ID="$1"
   ASSET_STANDARD="$(component "${ASSET_ID}" 1)"
-  JQ_ARGS='.'
+  JQ_ARGS_PRE='.'
+  JQ_ARGS_POST='.'
 
   if [ "${ASSET_STANDARD}" = 'nep141' ]; then
     CONTRACT_ID="$(component "${ASSET_ID}" 2)"
-    METHOD_NAME='ft_metadata'
-    JSON_ARGS='{}'
+    near --quiet contract call-function as-read-only "${CONTRACT_ID}" \
+      ft_metadata json-args '{}' \
+      network-config mainnet now 2>/dev/null \
+      | jq "{ asset_id: \"${ASSET_ID}\", standard: \"${ASSET_STANDARD}\", contract_id: \"${CONTRACT_ID}\", metadata: . }"
   elif [ "${ASSET_STANDARD}" = 'nep171' ]; then
     CONTRACT_ID="$(component "${ASSET_ID}" 2)"
     TOKEN_ID="$(component "${ASSET_ID}" 3)"
-    METHOD_NAME='nft_token'
-    JSON_ARGS="{\"token_id\": \"${TOKEN_ID}\"}"
+    near --quiet contract call-function as-read-only "${CONTRACT_ID}" \
+      nft_token json-args "{\"token_id\": \"${TOKEN_ID}\"}" \
+      network-config mainnet now 2>/dev/null \
+      | jq "{ asset_id: \"${ASSET_ID}\", standard: \"${ASSET_STANDARD}\", contract_id: \"${CONTRACT_ID}\", token_id: \"${TOKEN_ID}\", metadata: . }"
   elif [ "${ASSET_STANDARD}" = 'nep245' ]; then
     CONTRACT_ID="$(component "${ASSET_ID}" 2)"
     TOKEN_ID="$(component "${ASSET_ID}" 3)"
-    METHOD_NAME='mt_metadata_base_by_token_id'
-    JSON_ARGS="{\"token_ids\": [\"${TOKEN_ID}\"]}"
-    JQ_ARGS='.[0]'
+    near --quiet contract call-function as-read-only "${CONTRACT_ID}" \
+      mt_metadata_base_by_token_id json-args "{\"token_ids\": [\"${TOKEN_ID}\"]}" \
+      network-config mainnet now 2>/dev/null \
+      | jq "{ asset_id: \"${ASSET_ID}\", standard: \"${ASSET_STANDARD}\", contract_id: \"${CONTRACT_ID}\", token_id: \"${TOKEN_ID}\", metadata: .[0] }"
   else
     echo "Unknown token standard: '${ASSET_STANDARD}'" >&2 && exit 1
   fi
-
-  near --quiet contract call-function as-read-only "${CONTRACT_ID}" \
-    "${METHOD_NAME}" json-args "${JSON_ARGS}" \
-    network-config mainnet now 2>/dev/null \
-    | jq "${JQ_ARGS} | { asset_id: \"${ASSET_ID}\" } + ."
 }
 
 while read -r ASSET_ID; do
