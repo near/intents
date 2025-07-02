@@ -38,7 +38,7 @@ jobs:
       - name: Clean docs folder
         run: cargo clean --doc
       - name: Build docs
-        run: cargo doc --workspace --no-deps --features near-sdk/unit-testing
+        run: cargo doc --workspace --no-deps --features near-sdk/non-contract-usage
       - name: Add redirect
         run: echo '<meta http-equiv="refresh" content="0;url=defuse/index.html">' > target/doc/index.html
       - name: Remove lock file
