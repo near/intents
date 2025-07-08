@@ -6,6 +6,7 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
+defuse-bip322.workspace = true
 defuse-bitmap.workspace = true
 defuse-crypto = { workspace = true, features = ["serde"] }
 defuse-erc191.workspace = true
@@ -35,12 +36,12 @@ thiserror.workspace = true
 
 [features]
 abi = [
+    "defuse-bip322/abi",
     "defuse-crypto/abi",
     "defuse-erc191/abi",
     "defuse-nep413/abi",
     "defuse-sep53/abi",
     "defuse-tip191/abi",
-
     "defuse-serde-utils/abi",
     "defuse-ton-connect/abi",
     "defuse-webauthn/abi",

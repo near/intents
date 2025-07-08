@@ -1,0 +1,33 @@
+[package]
+name = "defuse-bip322"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+defuse-bip340.workspace = true
+defuse-crypto = { workspace = true, features = ["serde"] }
+defuse-near-utils = { workspace = true, features = ["digest"] }
+
+bitcoin = { workspace = true, features = ["serde"] }
+digest.workspace = true
+near-sdk.workspace = true
+serde_with.workspace = true
+
+# TODO: remove this dependency and implement it manually, due to:
+# * it doesn't export public key
+# * it doesn't use near_sdk::env::* host functions for hash calculation and
+#   signature verification, so it might be costy on gas
+bip322 = "0.0.9"
+
+[features]
+abi = ["defuse-crypto/abi"]
+
+[dev-dependencies]
+hex-literal.workspace = true
+near-sdk = { workspace = true, features = ["unit-testing"] }
+rstest.workspace = true
