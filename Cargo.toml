@@ -3,6 +3,8 @@ resolver = "3"
 members = [
     "admin-utils",
     "auth-call",
+    "bip322",
+    "bip340",
     "bitmap",
     "borsh-utils",
     "controller",
@@ -40,6 +42,8 @@ rust-version = "1.86.0"
 [workspace.dependencies]
 defuse-admin-utils.path = "admin-utils"
 defuse-auth-call.path = "auth-call"
+defuse-bip322.path = "bip322"
+defuse-bip340.path = "bip340"
 defuse-bitmap.path = "bitmap"
 defuse-borsh-utils.path = "borsh-utils"
 defuse-controller.path = "controller"
@@ -70,6 +74,7 @@ anyhow = "1"
 arbitrary = "1"
 arbitrary_with = "0.3"
 array-util = "1"
+bitcoin = "0.32"
 bitflags = "2.9.1"
 bnum = { version = "0.13", features = ["borsh"] }
 chrono = { version = "0.4", default-features = false }
