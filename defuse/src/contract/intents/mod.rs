@@ -1,3 +1,4 @@
+mod auth_call;
 mod execute;
 mod relayer;
 mod simulate;

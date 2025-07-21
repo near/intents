@@ -2,7 +2,10 @@ use crate::{
     DefuseError, Nonce, Nonces, Result,
     amounts::Amounts,
     fees::Pips,
-    intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
+    intents::{
+        auth::AuthCall,
+        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
+    },
     token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
 };
 use defuse_bitmap::{U248, U256};
@@ -329,6 +332,20 @@ where
                 .auth_by_predecessor_id_toggled ^= true;
         }
         Ok(was_enabled)
+    }
+
+    fn auth_call(&mut self, signer_id: &AccountIdRef, auth_call: AuthCall) -> Result<()> {
+        if !auth_call.attached_deposit.is_zero() {
+            self.internal_sub_balance(
+                signer_id,
+                [(
+                    Nep141TokenId::new(self.wnear_id().into_owned()).into(),
+                    auth_call.attached_deposit.as_yoctonear(),
+                )],
+            )?;
+        }
+
+        Ok(())
     }
 }
 

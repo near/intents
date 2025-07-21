@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
     "admin-utils",
+    "auth-call",
     "bitmap",
     "borsh-utils",
     "controller",
@@ -38,6 +39,7 @@ rust-version = "1.86.0"
 
 [workspace.dependencies]
 defuse-admin-utils.path = "admin-utils"
+defuse-auth-call.path = "auth-call"
 defuse-bitmap.path = "bitmap"
 defuse-borsh-utils.path = "borsh-utils"
 defuse-controller.path = "controller"

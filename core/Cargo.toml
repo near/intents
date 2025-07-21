@@ -6,6 +6,7 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
+defuse-auth-call.workspace = true
 defuse-bitmap.workspace = true
 defuse-crypto = { workspace = true, features = ["serde"] }
 defuse-erc191.workspace = true
