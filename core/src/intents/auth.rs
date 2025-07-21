@@ -23,7 +23,7 @@ pub struct AuthCall {
     /// Callee for [`.on_auth`](::defuse_auth_call::AuthCallee::on_auth)
     pub contract_id: AccountId,
 
-    /// `msg` to be passed in [`.on_auth`](::defuse_auth_call::AuthCallee::on_auth)
+    /// `msg` to pass in [`.on_auth`](::defuse_auth_call::AuthCallee::on_auth)
     pub msg: String,
 
     /// Optionally, attach deposit to [`.on_auth`](::defuse_auth_call::AuthCallee::on_auth)
