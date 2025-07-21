@@ -45,7 +45,12 @@ pub struct AuthCall {
 }
 
 impl AuthCall {
-    pub const MIN_GAS_DEFAULT: Gas = Gas::from_tgas(10);
+    const MIN_GAS_DEFAULT: Gas = Gas::from_tgas(10);
+
+    #[inline]
+    pub fn min_gas(&self) -> Gas {
+        self.min_gas.unwrap_or(Self::MIN_GAS_DEFAULT)
+    }
 }
 
 impl ExecutableIntent for AuthCall {

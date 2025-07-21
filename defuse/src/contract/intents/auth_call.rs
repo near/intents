@@ -18,9 +18,11 @@ impl Contract {
             );
         }
 
+        let min_gas = auth_call.min_gas();
+
         ext_auth_callee::ext(auth_call.contract_id)
             .with_attached_deposit(auth_call.attached_deposit)
-            .with_static_gas(auth_call.min_gas.unwrap_or(AuthCall::MIN_GAS_DEFAULT))
+            .with_static_gas(min_gas)
             .on_auth(signer_id, auth_call.msg)
     }
 }
