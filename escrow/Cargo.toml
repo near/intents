@@ -1,0 +1,16 @@
+[package]
+name = "defuse-escrow"
+edition.workspace = true
+version = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+defuse-nep245.workspace = true
+
+near-contract-standards.workspace = true
+near-sdk.workspace = true
+
+[features]
+contract = []

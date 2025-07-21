@@ -766,6 +766,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-escrow"
+version = "0.1.0"
+dependencies = [
+ "defuse-nep245",
+ "near-contract-standards",
+ "near-sdk",
+]
+
+[[package]]
 name = "defuse-io-utils"
 version = "0.1.0"
 
