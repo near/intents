@@ -4,6 +4,12 @@
 use near_sdk::{near, env};
 use serde_with::serde_as;
 
+/// Helper function for double SHA-256 (used in Bitcoin checksums)
+fn double_sha256(data: &[u8]) -> [u8; 32] {
+    let first_hash = env::sha256_array(data);
+    env::sha256_array(&first_hash)
+}
+
 /// Minimal Bitcoin address representation for BIP-322
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
@@ -18,6 +24,10 @@ use serde_with::serde_as;
 pub struct Address {
     pub inner: String,
     pub address_type: AddressType,
+    #[serde(skip)]
+    pub pubkey_hash: Option<[u8; 20]>,
+    #[serde(skip)]
+    pub witness_program: Option<WitnessProgram>,
 }
 
 #[near(serializers = [json])]
@@ -80,19 +90,16 @@ impl Address {
     pub fn to_address_data(&self) -> AddressData {
         match self.address_type {
             AddressType::P2PKH => {
-                // For P2PKH, extract pubkey hash from address
-                // Simplified: just use a placeholder hash for now
                 AddressData::P2pkh { 
-                    pubkey_hash: [0u8; 20] // TODO: Parse from address string
+                    pubkey_hash: self.pubkey_hash.unwrap_or([0u8; 20])
                 }
             },
             AddressType::P2WPKH => {
-                // For P2WPKH, create witness program
                 AddressData::Segwit {
-                    witness_program: WitnessProgram {
+                    witness_program: self.witness_program.clone().unwrap_or(WitnessProgram {
                         version: 0,
-                        program: vec![0u8; 20], // TODO: Parse from address string
-                    }
+                        program: vec![0u8; 20],
+                    })
                 }
             },
         }
@@ -102,21 +109,23 @@ impl Address {
         match self.address_type {
             AddressType::P2PKH => {
                 // P2PKH script: OP_DUP OP_HASH160 <pubkey_hash> OP_EQUALVERIFY OP_CHECKSIG
+                let pubkey_hash = self.pubkey_hash.unwrap_or([0u8; 20]);
                 let mut script = Vec::new();
                 script.push(0x76); // OP_DUP
                 script.push(0xa9); // OP_HASH160
                 script.push(20);   // Push 20 bytes
-                script.extend_from_slice(&[0u8; 20]); // TODO: actual pubkey hash
+                script.extend_from_slice(&pubkey_hash);
                 script.push(0x88); // OP_EQUALVERIFY
                 script.push(0xac); // OP_CHECKSIG
                 ScriptBuf { inner: script }
             },
             AddressType::P2WPKH => {
                 // P2WPKH script: OP_0 <20-byte-pubkey-hash>
+                let pubkey_hash = self.pubkey_hash.unwrap_or([0u8; 20]);
                 let mut script = Vec::new();
                 script.push(0x00); // OP_0
                 script.push(20);   // Push 20 bytes
-                script.extend_from_slice(&[0u8; 20]); // TODO: actual pubkey hash
+                script.extend_from_slice(&pubkey_hash);
                 ScriptBuf { inner: script }
             },
         }
@@ -124,24 +133,134 @@ impl Address {
 }
 
 impl std::str::FromStr for Address {
-    type Err = &'static str;
+    type Err = AddressError;
     
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // Simplified address parsing for MVP
+        // P2PKH addresses (legacy, start with '1')
         if s.starts_with('1') {
+            let decoded = bs58::decode(s)
+                .into_vec()
+                .map_err(|_| AddressError::InvalidBase58)?;
+            
+            // Check length and version byte for P2PKH
+            if decoded.len() != 25 {
+                return Err(AddressError::InvalidLength);
+            }
+            
+            // Check version byte (0x00 for P2PKH mainnet)
+            if decoded[0] != 0x00 {
+                return Err(AddressError::InvalidBase58);
+            }
+            
+            // Extract pubkey hash (skip version byte and checksum)
+            let mut pubkey_hash = [0u8; 20];
+            pubkey_hash.copy_from_slice(&decoded[1..21]);
+            
+            // Verify checksum (last 4 bytes)
+            let payload = &decoded[..21];
+            let checksum = &decoded[21..25];
+            let computed_checksum = double_sha256(payload);
+            if &computed_checksum[..4] != checksum {
+                return Err(AddressError::InvalidBase58);
+            }
+            
             Ok(Address {
                 inner: s.to_string(),
                 address_type: AddressType::P2PKH,
+                pubkey_hash: Some(pubkey_hash),
+                witness_program: None,
             })
-        } else if s.starts_with("bc1q") {
+        }
+        // P2WPKH addresses (bech32, start with 'bc1q')
+        else if s.starts_with("bc1q") {
+            let program = decode_bech32(s)?;
+            
+            if program.len() != 20 {
+                return Err(AddressError::InvalidWitnessProgram);
+            }
+            
+            let mut pubkey_hash = [0u8; 20];
+            pubkey_hash.copy_from_slice(&program);
+            
             Ok(Address {
                 inner: s.to_string(),
                 address_type: AddressType::P2WPKH,
+                pubkey_hash: Some(pubkey_hash),
+                witness_program: Some(WitnessProgram {
+                    version: 0,
+                    program: program,
+                }),
             })
         } else {
-            Err("Unsupported address format")
+            Err(AddressError::UnsupportedFormat)
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub enum AddressError {
+    InvalidBase58,
+    InvalidLength,
+    InvalidWitnessProgram,
+    UnsupportedFormat,
+    InvalidBech32,
+}
+
+impl std::fmt::Display for AddressError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            AddressError::InvalidBase58 => write!(f, "Invalid base58 encoding"),
+            AddressError::InvalidLength => write!(f, "Invalid address length"),
+            AddressError::InvalidWitnessProgram => write!(f, "Invalid witness program"),
+            AddressError::UnsupportedFormat => write!(f, "Unsupported address format"),
+            AddressError::InvalidBech32 => write!(f, "Invalid bech32 encoding"),
+        }
+    }
+}
+
+impl std::error::Error for AddressError {}
+
+// Simplified bech32 decoder for bc1q addresses
+fn decode_bech32(addr: &str) -> Result<Vec<u8>, AddressError> {
+    // Very simplified bech32 decoder for MVP - production would use proper library
+    if !addr.starts_with("bc1q") {
+        return Err(AddressError::InvalidBech32);
+    }
+    
+    let data_part = &addr[4..]; // Skip "bc1q"
+    
+    // Bech32 character set
+    const CHARSET: &[u8] = b"qpzry9x8gf2tvdw0s3jn54khce6mua7l";
+    
+    let mut decoded = Vec::new();
+    for ch in data_part.chars() {
+        let pos = CHARSET.iter().position(|&c| c == ch as u8)
+            .ok_or(AddressError::InvalidBech32)?;
+        decoded.push(pos as u8);
+    }
+    
+    // Convert 5-bit groups to 8-bit bytes (simplified)
+    let mut bytes = Vec::new();
+    let mut bits = 0u32;
+    let mut bit_count = 0;
+    
+    for value in decoded {
+        bits = (bits << 5) | (value as u32);
+        bit_count += 5;
+        
+        if bit_count >= 8 {
+            bytes.push((bits >> (bit_count - 8)) as u8);
+            bit_count -= 8;
+            bits &= (1 << bit_count) - 1;
+        }
+    }
+    
+    // Remove checksum bytes (last 6 characters = 30 bits = ~4 bytes)
+    if bytes.len() >= 4 {
+        bytes.truncate(bytes.len() - 4);
+    }
+    
+    Ok(bytes)
 }
 
 /// Script buffer
@@ -153,6 +272,14 @@ pub struct ScriptBuf {
 impl ScriptBuf {
     pub fn new() -> Self {
         Self { inner: Vec::new() }
+    }
+    
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+    
+    pub fn len(&self) -> usize {
+        self.inner.len()
     }
 }
 
