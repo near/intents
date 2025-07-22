@@ -687,6 +687,7 @@ dependencies = [
 name = "defuse-bip322"
 version = "0.1.0"
 dependencies = [
+ "bs58 0.5.1",
  "defuse-crypto",
  "defuse-near-utils",
  "hex-literal",
