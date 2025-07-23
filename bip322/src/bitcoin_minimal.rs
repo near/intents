@@ -17,7 +17,7 @@
 //!
 //! ## Supported Address Types
 //!
-//! - **P2PKH**: Legacy addresses starting with '1' (Base58Check encoded)
+//! - **P2PKH**: Legacy addresses starting with '1' (`Base58Check` encoded)
 //! - **P2WPKH**: Segwit v0 addresses starting with 'bc1q' (Bech32 encoded)
 //!
 //! Future phases will add P2SH ('3' addresses) and P2WSH support.
@@ -39,7 +39,7 @@ use bech32::{Hrp, segwit};
 /// Double SHA-256 is Bitcoin's standard hash function used for:
 /// - Transaction IDs (TXID computation)
 /// - Block hashes
-/// - Address checksums in Base58Check encoding
+/// - Address checksums in `Base58Check` encoding
 /// - Merkle tree construction
 /// 
 /// The algorithm: `SHA256(SHA256(data))`

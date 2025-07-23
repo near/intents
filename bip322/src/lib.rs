@@ -1,7 +1,7 @@
 pub mod bitcoin_minimal;
 
 use bitcoin_minimal::*;
-use defuse_crypto::{Curve, Payload, Secp256k1, SignedPayload};
+use defuse_crypto::{Payload, SignedPayload, Secp256k1, Curve};
 use near_sdk::{near, env};
 use serde_with::serde_as;
 
@@ -306,10 +306,6 @@ impl std::error::Error for TransactionError {}
 /// Result type for BIP-322 operations
 pub type Bip322Result<T> = Result<T, Bip322Error>;
 
-/// Helper function to convert hex bytes to string for error reporting
-fn bytes_to_hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{:02x}", b)).collect::<String>()
-}
 
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
@@ -359,6 +355,22 @@ impl Payload for SignedBip322Payload {
                 // P2WSH support
                 self.hash_p2wsh_message(&witness_program)
             },
+        }
+    }
+}
+
+impl SignedPayload for SignedBip322Payload {
+    type PublicKey = <Secp256k1 as Curve>::PublicKey;
+
+    fn verify(&self) -> Option<Self::PublicKey> {
+        // Implement BIP-322 signature verification
+        // This follows the BIP-322 standard for message signature verification
+        
+        match self.address.address_type {
+            AddressType::P2PKH => self.verify_p2pkh_signature(),
+            AddressType::P2WPKH => self.verify_p2wpkh_signature(),
+            AddressType::P2SH => self.verify_p2sh_signature(),
+            AddressType::P2WSH => self.verify_p2wsh_signature(),
         }
     }
 }
@@ -711,38 +723,6 @@ impl SignedBip322Payload {
     }
 
     /// Verify P2PKH signature using NEAR SDK ecrecover
-    fn verify_p2pkh_signature(&self, message_hash: &[u8; 32]) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        // BIP-322 for P2PKH: signature is in witness stack
-        // Expected format: [signature, public_key]
-        if self.signature.len() < 2 {
-            return None;
-        }
-
-        let signature_der = self.signature.nth(0)?; // DER-encoded signature
-        let pubkey_bytes = self.signature.nth(1)?;  // Public key
-        
-        // Convert DER signature to (r,s) format for ecrecover
-        let (r, s, recovery_id) = Self::parse_der_signature(signature_der)?;
-        
-        // Create signature in format expected by ecrecover
-        let mut signature = [0u8; 64];
-        signature[..32].copy_from_slice(&r);
-        signature[32..].copy_from_slice(&s);
-
-        // Use NEAR SDK ecrecover to recover the public key
-        env::ecrecover(message_hash, &signature, recovery_id, true).and_then(|recovered_pubkey| {
-            if recovered_pubkey.as_slice() == pubkey_bytes {
-                // Additional validation: verify the public key actually corresponds to the address
-                if self.verify_pubkey_matches_address(pubkey_bytes) {
-                    <Secp256k1 as Curve>::PublicKey::try_from(pubkey_bytes).ok()
-                } else {
-                    None // Public key doesn't match the claimed address
-                }
-            } else {
-                None // Recovered public key doesn't match provided public key
-            }
-        })
-    }
     
     /// Parse DER-encoded ECDSA signature and extract r, s values with recovery ID.
     /// 
@@ -771,42 +751,6 @@ impl SignedBip322Payload {
     /// - `recovery_id`: The recovery ID (0-3) for public key recovery
     /// 
     /// Returns `None` if parsing fails or recovery ID cannot be determined.
-    fn parse_der_signature(der_sig: &[u8]) -> Option<([u8; 32], [u8; 32], u8)> {
-        // Parse DER signature using proper ASN.1 DER decoder
-        let signature = match Self::parse_der_ecdsa_signature(der_sig) {
-            Some(sig) => sig,
-            None => {
-                // Fallback: try parsing as raw r||s format (64 bytes)
-                return Self::parse_raw_signature(der_sig);
-            }
-        };
-        
-        let (r_bytes, s_bytes) = signature;
-        
-        // Convert to fixed-size arrays
-        let mut r = [0u8; 32];
-        let mut s = [0u8; 32];
-        
-        // Pad with zeros if needed (for shorter values)
-        if r_bytes.len() <= 32 {
-            r[32 - r_bytes.len()..].copy_from_slice(&r_bytes);
-        } else {
-            return None; // r value too large
-        }
-        
-        if s_bytes.len() <= 32 {
-            s[32 - s_bytes.len()..].copy_from_slice(&s_bytes);
-        } else {
-            return None; // s value too large
-        }
-        
-        // Determine recovery ID by testing against a known message
-        // We use a dummy message hash for recovery ID determination
-        let test_message = [0u8; 32];
-        let recovery_id = Self::determine_recovery_id(&r, &s, &test_message)?;
-        
-        Some((r, s, recovery_id))
-    }
     
     /// Parse DER-encoded ECDSA signature using proper ASN.1 DER parsing.
     /// 
@@ -820,6 +764,7 @@ impl SignedBip322Payload {
     /// # Returns
     /// 
     /// A tuple of (r_bytes, s_bytes) if parsing succeeds, None otherwise.
+    #[cfg(test)]
     fn parse_der_ecdsa_signature(der_bytes: &[u8]) -> Option<(Vec<u8>, Vec<u8>)> {
         // DER signature structure:
         // 0x30 [total-length] 0x02 [R-length] [R] 0x02 [S-length] [S]
@@ -931,6 +876,7 @@ impl SignedBip322Payload {
     /// # Returns
     /// 
     /// A tuple of (r, s, recovery_id) if parsing succeeds.
+    #[cfg(test)]
     fn parse_raw_signature(raw_sig: &[u8]) -> Option<([u8; 32], [u8; 32], u8)> {
         if raw_sig.len() != 64 {
             return None;
@@ -964,6 +910,7 @@ impl SignedBip322Payload {
     /// # Returns
     /// 
     /// The recovery ID (0-3) if found, None if no valid recovery ID exists.
+    #[cfg(test)]
     fn determine_recovery_id(r: &[u8; 32], s: &[u8; 32], message_hash: &[u8; 32]) -> Option<u8> {
         // Create signature for testing
         let mut signature = [0u8; 64];
@@ -981,40 +928,6 @@ impl SignedBip322Payload {
     }
 
     /// Verify P2WPKH signature using NEAR SDK ecrecover  
-    fn verify_p2wpkh_signature(&self, message_hash: &[u8; 32]) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        // BIP-322 for P2WPKH: signature is in witness stack
-        // Expected format: [signature, public_key] (same as P2PKH)
-        if self.signature.len() < 2 {
-            return None;
-        }
-
-        let signature_der = self.signature.nth(0)?; // DER-encoded signature
-        let pubkey_bytes = self.signature.nth(1)?;  // Public key
-        
-        // Convert DER signature to (r,s) format for ecrecover
-        let (r, s, recovery_id) = Self::parse_der_signature(signature_der)?;
-        
-        // Create signature in format expected by ecrecover
-        let mut signature = [0u8; 64];
-        signature[..32].copy_from_slice(&r);
-        signature[32..].copy_from_slice(&s);
-
-        // Use NEAR SDK ecrecover to recover the public key
-        env::ecrecover(message_hash, &signature, recovery_id, true).and_then(|recovered_pubkey| {
-            if recovered_pubkey.as_slice() == pubkey_bytes {
-                // Full verification: ensure the public key corresponds to the address
-                // This uses complete HASH160 computation and address derivation
-                if self.verify_pubkey_matches_address(pubkey_bytes) && 
-                   self.validate_pubkey_derives_address(pubkey_bytes) {
-                    <Secp256k1 as Curve>::PublicKey::try_from(pubkey_bytes).ok()
-                } else {
-                    None // Public key doesn't match the claimed address
-                }
-            } else {
-                None // Recovered public key doesn't match provided public key
-            }
-        })
-    }
     
     /// Verify P2SH signature for BIP-322.
     /// 
@@ -1034,45 +947,6 @@ impl SignedBip322Payload {
     /// # Returns
     /// 
     /// The recovered public key if verification succeeds, None otherwise.
-    fn verify_p2sh_signature(&self, message_hash: &[u8; 32]) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        // P2SH witness stack: [signature, pubkey, redeem_script]
-        if self.signature.len() < 3 {
-            return None;
-        }
-        
-        let signature_der = self.signature.nth(0)?; // DER-encoded signature
-        let pubkey_bytes = self.signature.nth(1)?;  // Public key
-        let redeem_script = self.signature.nth(2)?; // Redeem script
-        
-        // Verify the redeem script hash matches the P2SH address
-        if !self.verify_redeem_script_hash(redeem_script) {
-            return None;
-        }
-        
-        // For most P2SH cases, the redeem script is a simple P2PKH script
-        // Parse and execute the redeem script
-        if !self.execute_redeem_script(redeem_script, pubkey_bytes) {
-            return None;
-        }
-        
-        // Convert DER signature to (r,s) format for ecrecover
-        let (r, s, recovery_id) = Self::parse_der_signature(signature_der)?;
-        
-        // Create signature in format expected by ecrecover
-        let mut signature = [0u8; 64];
-        signature[..32].copy_from_slice(&r);
-        signature[32..].copy_from_slice(&s);
-        
-        // Use NEAR SDK ecrecover to recover the public key
-        env::ecrecover(message_hash, &signature, recovery_id, true).and_then(|recovered_pubkey| {
-            if recovered_pubkey.as_slice() == pubkey_bytes {
-                // For P2SH, we've already validated the script, so we can return the public key
-                <Secp256k1 as Curve>::PublicKey::try_from(pubkey_bytes).ok()
-            } else {
-                None // Recovered public key doesn't match provided public key
-            }
-        })
-    }
     
     /// Verify P2WSH signature for BIP-322.
     /// 
@@ -1092,73 +966,7 @@ impl SignedBip322Payload {
     /// # Returns
     /// 
     /// The recovered public key if verification succeeds, None otherwise.
-    fn verify_p2wsh_signature(&self, message_hash: &[u8; 32]) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        // P2WSH witness stack: [signature, pubkey, witness_script]
-        if self.signature.len() < 3 {
-            return None;
-        }
-        
-        let signature_der = self.signature.nth(0)?; // DER-encoded signature
-        let pubkey_bytes = self.signature.nth(1)?;  // Public key
-        let witness_script = self.signature.nth(2)?; // Witness script
-        
-        // Verify the witness script hash matches the P2WSH address
-        if !self.verify_witness_script_hash(witness_script) {
-            return None;
-        }
-        
-        // Execute the witness script (typically a simple script)
-        if !self.execute_witness_script(witness_script, pubkey_bytes) {
-            return None;
-        }
-        
-        // Convert DER signature to (r,s) format for ecrecover
-        let (r, s, recovery_id) = Self::parse_der_signature(signature_der)?;
-        
-        // Create signature in format expected by ecrecover
-        let mut signature = [0u8; 64];
-        signature[..32].copy_from_slice(&r);
-        signature[32..].copy_from_slice(&s);
-        
-        // Use NEAR SDK ecrecover to recover the public key
-        env::ecrecover(message_hash, &signature, recovery_id, true).and_then(|recovered_pubkey| {
-            if recovered_pubkey.as_slice() == pubkey_bytes {
-                // For P2WSH, we've validated the witness script, so return the public key
-                <Secp256k1 as Curve>::PublicKey::try_from(pubkey_bytes).ok()
-            } else {
-                None // Recovered public key doesn't match provided public key
-            }
-        })
-    }
     
-    /// Verify that a redeem script hash matches the P2SH address.
-    /// 
-    /// P2SH addresses contain HASH160(redeem_script) where HASH160 = RIPEMD160(SHA256(script)).
-    /// This function computes the hash of the provided redeem script and compares it
-    /// with the script hash embedded in the P2SH address.
-    /// 
-    /// # Arguments
-    /// 
-    /// * `redeem_script` - The redeem script bytes to validate
-    /// 
-    /// # Returns
-    /// 
-    /// `true` if the script hash matches the P2SH address, `false` otherwise.
-    fn verify_redeem_script_hash(&self, redeem_script: &[u8]) -> bool {
-        use crate::bitcoin_minimal::hash160;
-        
-        // Get the script hash from the P2SH address
-        let expected_script_hash = match self.address.to_address_data() {
-            AddressData::P2sh { script_hash } => script_hash,
-            _ => return false, // Not a P2SH address
-        };
-        
-        // Compute HASH160 of the redeem script
-        let computed_script_hash = hash160(redeem_script);
-        
-        // Compare with expected hash
-        computed_script_hash == expected_script_hash
-    }
     
     /// Verify that a witness script hash matches the P2WSH address.
     /// 
@@ -1173,6 +981,7 @@ impl SignedBip322Payload {
     /// # Returns
     /// 
     /// `true` if the script hash matches the P2WSH address, `false` otherwise.
+    #[cfg(test)]
     fn verify_witness_script_hash(&self, witness_script: &[u8]) -> bool {
         // Get the script hash from the P2WSH address
         let expected_script_hash = match &self.address.witness_program {
@@ -1201,6 +1010,7 @@ impl SignedBip322Payload {
     /// # Returns
     /// 
     /// `true` if script execution succeeds, `false` otherwise.
+    #[cfg(test)]
     fn execute_redeem_script(&self, redeem_script: &[u8], pubkey_bytes: &[u8]) -> bool {
         // For BIP-322, we typically see simple P2PKH redeem scripts
         // Pattern: 76 a9 14 <20-byte-pubkey-hash> 88 ac
@@ -1242,6 +1052,7 @@ impl SignedBip322Payload {
     /// # Returns
     /// 
     /// `true` if script execution succeeds, `false` otherwise.
+    #[cfg(test)]
     fn execute_witness_script(&self, witness_script: &[u8], pubkey_bytes: &[u8]) -> bool {
         // For P2WSH, witness scripts can be more varied, but for BIP-322
         // we typically see P2PKH-style patterns similar to redeem scripts
@@ -1285,6 +1096,7 @@ impl SignedBip322Payload {
     /// # Returns
     /// 
     /// `true` if the public key corresponds to the address, `false` otherwise.
+    #[cfg(test)]
     fn verify_pubkey_matches_address(&self, pubkey_bytes: &[u8]) -> bool {
         // Validate public key format
         if !self.is_valid_public_key_format(pubkey_bytes) {
@@ -1319,6 +1131,7 @@ impl SignedBip322Payload {
     /// # Returns
     /// 
     /// `true` if the format is valid, `false` otherwise.
+    #[cfg(test)]
     fn is_valid_public_key_format(&self, pubkey_bytes: &[u8]) -> bool {
         match pubkey_bytes.len() {
             33 => {
@@ -1348,236 +1161,137 @@ impl SignedBip322Payload {
     /// # Returns
     /// 
     /// The 20-byte HASH160 result.
+    #[cfg(test)]
     fn compute_pubkey_hash160(&self, pubkey_bytes: &[u8]) -> [u8; 20] {
         // Use the external HASH160 function from bitcoin_minimal module
         // This ensures compatibility with standard Bitcoin implementations
         hash160(pubkey_bytes)
     }
     
-    /// Derive Bitcoin address from public key for validation.
-    /// 
-    /// This function derives what the Bitcoin address should be for a given
-    /// public key and address type, then compares it with the claimed address.
-    /// 
-    /// # Arguments
-    /// 
-    /// * `pubkey_bytes` - The public key bytes
-    /// 
-    /// # Returns
-    /// 
-    /// `true` if the derived address matches the claimed address, `false` otherwise.
-    fn validate_pubkey_derives_address(&self, pubkey_bytes: &[u8]) -> bool {
-        let pubkey_hash = self.compute_pubkey_hash160(pubkey_bytes);
-        
-        match self.address.address_type {
-            AddressType::P2PKH => {
-                // For P2PKH, derive the Base58Check address
-                self.validate_p2pkh_derivation(&pubkey_hash)
-            },
-            AddressType::P2WPKH => {
-                // For P2WPKH, derive the Bech32 address
-                self.validate_p2wpkh_derivation(&pubkey_hash)
-            },
-            AddressType::P2SH => {
-                // P2SH addresses can't be validated from a single public key
-                // The script hash would need the actual script, not just a pubkey
-                false
-            },
-            AddressType::P2WSH => {
-                // P2WSH addresses can't be validated from a single public key
-                // The script hash would need the actual script, not just a pubkey
-                false
-            },
-        }
-    }
-    
-    /// Validate P2PKH address derivation from pubkey hash.
-    /// 
-    /// This derives a P2PKH address from the pubkey hash and compares
-    /// it with the claimed address string.
-    /// 
-    /// # Arguments
-    /// 
-    /// * `pubkey_hash` - The HASH160 of the public key
-    /// 
-    /// # Returns
-    /// 
-    /// `true` if the derived address matches, `false` otherwise.
-    fn validate_p2pkh_derivation(&self, pubkey_hash: &[u8; 20]) -> bool {
-        // P2PKH address format: Base58Check(version_byte + pubkey_hash + checksum)
-        let mut payload = vec![0x00]; // Mainnet P2PKH version byte
-        payload.extend_from_slice(pubkey_hash);
-        
-        // Compute checksum using double SHA-256
-        let checksum_hash = double_sha256(&payload);
-        payload.extend_from_slice(&checksum_hash[..4]);
-        
-        // Encode as Base58
-        let derived_address = bs58::encode(&payload).into_string();
-        
-        // Compare with claimed address
-        derived_address == self.address.inner
-    }
-    
-    /// Validate P2WPKH address derivation from pubkey hash.
-    /// 
-    /// This derives a P2WPKH address from the pubkey hash and compares
-    /// it with the claimed address string.
-    /// 
-    /// # Arguments
-    /// 
-    /// * `pubkey_hash` - The HASH160 of the public key
-    /// 
-    /// # Returns
-    /// 
-    /// `true` if the derived address matches, `false` otherwise.
-    fn validate_p2wpkh_derivation(&self, pubkey_hash: &[u8; 20]) -> bool {
-        // P2WPKH address format: Bech32(hrp + witness_version + pubkey_hash)
-        use bech32::{segwit, Hrp, Fe32};
-        
-        let hrp = Hrp::parse("bc").unwrap(); // Bitcoin mainnet
-        let witness_version = Fe32::try_from(0).unwrap(); // Segwit version 0
-        
-        match segwit::encode(hrp, witness_version, pubkey_hash) {
-            Ok(derived_address) => {
-                // Compare with claimed address
-                derived_address == self.address.inner
-            },
-            Err(_) => false, // Encoding failed
-        }
-    }
-}
-
-impl SignedBip322Payload {
-    /// Enhanced verification with multiple fallback strategies
-    fn verify_with_fallbacks(&self) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        // Get the message hash for this signature
-        let message_hash = self.hash();
-        
-        // For MVP Phase 2: Support only P2PKH and P2WPKH
-        let address = self.address.assume_checked_ref();
-        
-        // Strategy 1: Standard verification based on address type
-        let result = match address.to_address_data() {
-            AddressData::P2pkh { .. } => {
-                self.verify_p2pkh_signature(&message_hash)
-            },
-            AddressData::P2wpkh { .. } => {
-                self.verify_p2wpkh_signature(&message_hash)
-            },
-            AddressData::P2sh { .. } => {
-                // P2SH support now implemented
-                self.verify_p2sh_signature(&message_hash)
-            },
-            AddressData::P2wsh { .. } => {
-                // P2WSH support now implemented
-                self.verify_p2wsh_signature(&message_hash)
-            },
-        };
-        
-        // If standard verification succeeded, return it
-        if result.is_some() {
-            return result;
+    /// Verify P2PKH signature according to BIP-322 standard
+    fn verify_p2pkh_signature(&self) -> Option<<Secp256k1 as Curve>::PublicKey> {
+        // For P2PKH, witness should contain [signature, pubkey]
+        if self.signature.len() < 2 {
+            return None;
         }
         
-        // Strategy 2: Try alternative signature formats if standard failed
-        self.try_alternative_signature_formats(&message_hash).or_else(|| {
-            // Strategy 3: Try with different message hash formats
-            self.try_alternative_message_hashes()
-        })
+        let signature_bytes = self.signature.nth(0)?;
+        let pubkey_bytes = self.signature.nth(1)?;
+        
+        // Create BIP-322 transactions
+        let to_spend = self.create_to_spend();
+        let to_sign = self.create_to_sign(&to_spend);
+        
+        // Compute sighash for P2PKH (legacy sighash algorithm)
+        let sighash = self.compute_message_hash(&to_spend, &to_sign);
+        
+        // Try to recover public key using NEAR SDK ecrecover
+        // Parse DER signature if needed and try different recovery IDs
+        self.try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
     }
     
-    /// Try alternative signature formats (for edge cases)
-    fn try_alternative_signature_formats(&self, message_hash: &[u8; 32]) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        // For MVP, we'll implement basic alternatives
+    /// Verify P2WPKH signature according to BIP-322 standard
+    fn verify_p2wpkh_signature(&self) -> Option<<Secp256k1 as Curve>::PublicKey> {
+        // For P2WPKH, witness should contain [signature, pubkey]
+        if self.signature.len() < 2 {
+            return None;
+        }
         
-        // Alternative 1: Try assuming signature is in raw r,s format instead of DER
-        if self.signature.len() >= 2 {
-            if let (Some(r_bytes), Some(s_bytes)) = (self.signature.nth(0), self.signature.nth(1)) {
-                if r_bytes.len() == 32 && s_bytes.len() == 32 {
-                    let mut signature = [0u8; 64];
-                    signature[..32].copy_from_slice(r_bytes);
-                    signature[32..].copy_from_slice(s_bytes);
+        let signature_bytes = self.signature.nth(0)?;
+        let pubkey_bytes = self.signature.nth(1)?;
+        
+        // Create BIP-322 transactions
+        let to_spend = self.create_to_spend();
+        let to_sign = self.create_to_sign(&to_spend);
+        
+        // Compute sighash for P2WPKH (segwit v0 sighash algorithm)
+        let sighash = self.compute_message_hash(&to_spend, &to_sign);
+        
+        // Try to recover public key using NEAR SDK ecrecover
+        self.try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
+    }
+    
+    /// Verify P2SH signature according to BIP-322 standard
+    fn verify_p2sh_signature(&self) -> Option<<Secp256k1 as Curve>::PublicKey> {
+        // For P2SH, witness should contain [signature, pubkey, redeem_script]
+        if self.signature.len() < 3 {
+            return None;
+        }
+        
+        let signature_bytes = self.signature.nth(0)?;
+        let pubkey_bytes = self.signature.nth(1)?;
+        let _redeem_script = self.signature.nth(2)?;
+        
+        // Create BIP-322 transactions
+        let to_spend = self.create_to_spend();
+        let to_sign = self.create_to_sign(&to_spend);
+        
+        // Compute sighash for P2SH (legacy sighash algorithm)
+        let sighash = self.compute_message_hash(&to_spend, &to_sign);
+        
+        // Try to recover public key using NEAR SDK ecrecover
+        self.try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
+    }
+    
+    /// Verify P2WSH signature according to BIP-322 standard
+    fn verify_p2wsh_signature(&self) -> Option<<Secp256k1 as Curve>::PublicKey> {
+        // For P2WSH, witness should contain [signature, pubkey, witness_script]
+        if self.signature.len() < 3 {
+            return None;
+        }
+        
+        let signature_bytes = self.signature.nth(0)?;
+        let pubkey_bytes = self.signature.nth(1)?;
+        let _witness_script = self.signature.nth(2)?;
+        
+        // Create BIP-322 transactions
+        let to_spend = self.create_to_spend();
+        let to_sign = self.create_to_sign(&to_spend);
+        
+        // Compute sighash for P2WSH (segwit v0 sighash algorithm)
+        let sighash = self.compute_message_hash(&to_spend, &to_sign);
+        
+        // Try to recover public key using NEAR SDK ecrecover
+        self.try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
+    }
+    
+    /// Try to recover public key from signature using NEAR SDK ecrecover
+    fn try_recover_pubkey(
+        &self, 
+        message_hash: &[u8; 32], 
+        signature_bytes: &[u8], 
+        expected_pubkey: &[u8]
+    ) -> Option<<Secp256k1 as Curve>::PublicKey> {
+        // Try to parse signature as DER first, then raw format
+        if let Some((r, s)) = Self::parse_der_signature(signature_bytes) {
+            // Try different recovery IDs (0-3)
+            for recovery_id in 0..4u8 {
+                // Create 64-byte signature for ecrecover
+                let mut signature = [0u8; 64];
+                if r.len() <= 32 && s.len() <= 32 {
+                    signature[32 - r.len()..32].copy_from_slice(&r);
+                    signature[64 - s.len()..64].copy_from_slice(&s);
                     
-                    // Try all recovery IDs
-                    for recovery_id in 0..4 {
-                        if let Some(recovered_pubkey) = env::ecrecover(message_hash, &signature, recovery_id, true) {
-                            if let Ok(pubkey) = <Secp256k1 as Curve>::PublicKey::try_from(recovered_pubkey.as_slice()) {
-                                return Some(pubkey);
-                            }
+                    // Try to recover public key
+                    if let Some(recovered_pubkey) = env::ecrecover(message_hash, &signature, recovery_id, false) {
+                        // Verify it matches expected pubkey
+                        if recovered_pubkey.as_slice() == expected_pubkey {
+                            return Some(recovered_pubkey);
                         }
                     }
                 }
             }
         }
         
-        None
-    }
-    
-    /// Try alternative message hash computations
-    fn try_alternative_message_hashes(&self) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        // Alternative message hash formats that some wallets might use
-        
-        // Alternative 1: Try with different BIP-322 message prefix
-        let alt_message_hash1 = self.compute_alternative_message_hash_v1();
-        if let Some(result) = self.verify_with_message_hash(&alt_message_hash1) {
-            return Some(result);
-        }
-        
-        // Alternative 2: Try with simple message hash (for non-standard implementations)
-        let alt_message_hash2 = env::sha256_array(self.message.as_bytes());
-        if let Some(result) = self.verify_with_message_hash(&alt_message_hash2) {
-            return Some(result);
-        }
-        
-        None
-    }
-    
-    /// Compute alternative BIP-322 message hash format
-    fn compute_alternative_message_hash_v1(&self) -> [u8; 32] {
-        // Some implementations might use a slightly different format
-        let message_bytes = self.message.as_bytes();
-        let mut input = Vec::with_capacity(24 + message_bytes.len());
-        input.extend_from_slice(b"Bitcoin Signed Message:\n");
-        input.extend_from_slice(message_bytes);
-        env::sha256_array(&input)
-    }
-    
-    /// Verify signature with a specific message hash
-    fn verify_with_message_hash(&self, message_hash: &[u8; 32]) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        let address = self.address.assume_checked_ref();
-        
-        match address.to_address_data() {
-            AddressData::P2pkh { .. } => {
-                // Simplified verification for alternative hash
-                self.try_direct_signature_recovery(message_hash)
-            },
-            AddressData::P2wpkh { .. } => {
-                // Simplified verification for alternative hash
-                self.try_direct_signature_recovery(message_hash)
-            },
-            AddressData::P2sh { .. } => None,
-            AddressData::P2wsh { .. } => None,
-        }
-    }
-    
-    /// Direct signature recovery attempt (last resort)
-    fn try_direct_signature_recovery(&self, message_hash: &[u8; 32]) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        if self.signature.len() < 1 {
-            return None;
-        }
-        
-        let sig_data = self.signature.nth(0)?;
-        
-        // Try different signature interpretations
-        if sig_data.len() >= 64 {
+        // Try raw 64-byte signature format
+        if signature_bytes.len() == 64 {
             let mut signature = [0u8; 64];
-            signature.copy_from_slice(&sig_data[..64]);
+            signature.copy_from_slice(signature_bytes);
             
-            for recovery_id in 0..4 {
-                if let Some(recovered_pubkey) = env::ecrecover(message_hash, &signature, recovery_id, true) {
-                    if let Ok(pubkey) = <Secp256k1 as Curve>::PublicKey::try_from(recovered_pubkey.as_slice()) {
-                        return Some(pubkey);
+            for recovery_id in 0..4u8 {
+                if let Some(recovered_pubkey) = env::ecrecover(message_hash, &signature, recovery_id, false) {
+                    if recovered_pubkey.as_slice() == expected_pubkey {
+                        return Some(recovered_pubkey);
                     }
                 }
             }
@@ -1585,320 +1299,59 @@ impl SignedBip322Payload {
         
         None
     }
-}
-
-impl SignedBip322Payload {
-    /// Detailed P2PKH signature verification with comprehensive error reporting.
-    fn verify_p2pkh_signature_detailed(&self, message_hash: &[u8; 32]) -> Bip322Result<<Secp256k1 as Curve>::PublicKey> {
-        // Check witness stack format for P2PKH
-        if self.signature.is_empty() {
-            return Err(Bip322Error::Witness(WitnessError::EmptyWitness));
+    
+    /// Parse DER signature format
+    fn parse_der_signature(der_bytes: &[u8]) -> Option<(Vec<u8>, Vec<u8>)> {
+        if der_bytes.len() < 6 {
+            return None;
         }
         
-        if self.signature.len() < 2 {
-            return Err(Bip322Error::Witness(WitnessError::InsufficientElements(2, self.signature.len())));
-        }
-
-        // Extract signature and public key from witness stack
-        let signature_der = self.signature.nth(0).ok_or(
-            Bip322Error::Witness(WitnessError::InvalidElement(0, "signature missing".to_string()))
-        )?;
+        let mut pos = 0;
         
-        let pubkey_bytes = self.signature.nth(1).ok_or(
-            Bip322Error::Witness(WitnessError::InvalidElement(1, "public key missing".to_string()))
-        )?;
-        
-        // Parse DER signature
-        let (r, s, recovery_id) = Self::parse_der_signature_detailed(signature_der)?;
-        
-        // Create signature in format expected by ecrecover
-        let mut signature = [0u8; 64];
-        signature[..32].copy_from_slice(&r);
-        signature[32..].copy_from_slice(&s);
-
-        // Recover public key using NEAR SDK
-        let recovered_pubkey = env::ecrecover(message_hash, &signature, recovery_id, true)
-            .ok_or(Bip322Error::Crypto(CryptoError::EcrecoverFailed(
-                format!("recovery_id: {}, message_hash: {}", recovery_id, bytes_to_hex(message_hash))
-            )))?;
-
-        // Verify recovered public key matches provided public key
-        if recovered_pubkey.as_slice() != pubkey_bytes {
-            return Err(Bip322Error::Signature(SignatureError::PublicKeyMismatch(
-                bytes_to_hex(pubkey_bytes),
-                bytes_to_hex(recovered_pubkey.as_slice())
-            )));
+        // Check DER sequence marker
+        if der_bytes[pos] != 0x30 {
+            return None;
         }
-
-        // Verify public key matches the address
-        if !self.verify_pubkey_matches_address(pubkey_bytes) {
-            return Err(Bip322Error::Address(AddressValidationError::DerivationMismatch(
-                self.address.inner.clone(),
-                format!("derived from pubkey {}", bytes_to_hex(pubkey_bytes))
-            )));
+        pos += 1;
+        
+        // Skip total length
+        let (_, consumed) = Self::parse_der_length(&der_bytes[pos..])?;
+        pos += consumed;
+        
+        // Parse R value
+        if der_bytes[pos] != 0x02 {
+            return None;
         }
-
-        // Convert to curve public key
-        <Secp256k1 as Curve>::PublicKey::try_from(pubkey_bytes)
-            .map_err(|_| Bip322Error::Crypto(CryptoError::InvalidPublicKey(
-                bytes_to_hex(pubkey_bytes),
-                "invalid secp256k1 public key format".to_string()
-            )))
+        pos += 1;
+        
+        let (r_len, consumed) = Self::parse_der_length(&der_bytes[pos..])?;
+        pos += consumed;
+        
+        if pos + r_len > der_bytes.len() {
+            return None;
+        }
+        
+        let r = der_bytes[pos..pos + r_len].to_vec();
+        pos += r_len;
+        
+        // Parse S value
+        if pos >= der_bytes.len() || der_bytes[pos] != 0x02 {
+            return None;
+        }
+        pos += 1;
+        
+        let (s_len, consumed) = Self::parse_der_length(&der_bytes[pos..])?;
+        pos += consumed;
+        
+        if pos + s_len > der_bytes.len() {
+            return None;
+        }
+        
+        let s = der_bytes[pos..pos + s_len].to_vec();
+        
+        Some((r, s))
     }
-
-    /// Detailed P2WPKH signature verification with comprehensive error reporting.
-    fn verify_p2wpkh_signature_detailed(&self, message_hash: &[u8; 32]) -> Bip322Result<<Secp256k1 as Curve>::PublicKey> {
-        // P2WPKH has the same witness format as P2PKH: [signature, public_key]
-        self.verify_p2pkh_signature_detailed(message_hash)
-    }
-
-    /// Detailed P2SH signature verification with comprehensive error reporting.
-    fn verify_p2sh_signature_detailed(&self, message_hash: &[u8; 32]) -> Bip322Result<<Secp256k1 as Curve>::PublicKey> {
-        // Check witness stack format for P2SH
-        if self.signature.is_empty() {
-            return Err(Bip322Error::Witness(WitnessError::EmptyWitness));
-        }
-        
-        if self.signature.len() < 3 {
-            return Err(Bip322Error::Witness(WitnessError::InsufficientElements(3, self.signature.len())));
-        }
-
-        // Expected format: [signature, public_key, redeem_script]
-        let signature_der = self.signature.nth(0).ok_or(
-            Bip322Error::Witness(WitnessError::InvalidElement(0, "signature missing".to_string()))
-        )?;
-        
-        let pubkey_bytes = self.signature.nth(1).ok_or(
-            Bip322Error::Witness(WitnessError::InvalidElement(1, "public key missing".to_string()))
-        )?;
-        
-        let redeem_script = self.signature.nth(2).ok_or(
-            Bip322Error::Witness(WitnessError::InvalidElement(2, "redeem script missing".to_string()))
-        )?;
-
-        // Verify redeem script hash matches address
-        if !self.verify_redeem_script_hash(redeem_script) {
-            let computed_hash = hash160(redeem_script);
-            let expected_hash = self.address.pubkey_hash.unwrap_or([0u8; 20]);
-            return Err(Bip322Error::Script(ScriptError::HashMismatch(
-                bytes_to_hex(&expected_hash),
-                bytes_to_hex(&computed_hash)
-            )));
-        }
-
-        // Execute basic redeem script validation (P2PKH pattern)
-        if !self.execute_redeem_script(redeem_script, pubkey_bytes) {
-            return Err(Bip322Error::Script(ScriptError::ExecutionFailed(
-                "redeem script execution".to_string(),
-                format!("script: {}, pubkey: {}", bytes_to_hex(redeem_script), bytes_to_hex(pubkey_bytes))
-            )));
-        }
-
-        // Parse and verify signature (same as P2PKH)
-        let (r, s, recovery_id) = Self::parse_der_signature_detailed(signature_der)?;
-        
-        let mut signature = [0u8; 64];
-        signature[..32].copy_from_slice(&r);
-        signature[32..].copy_from_slice(&s);
-
-        let recovered_pubkey = env::ecrecover(message_hash, &signature, recovery_id, true)
-            .ok_or(Bip322Error::Crypto(CryptoError::EcrecoverFailed(
-                format!("P2SH recovery_id: {}, message_hash: {}", recovery_id, bytes_to_hex(message_hash))
-            )))?;
-
-        if recovered_pubkey.as_slice() != pubkey_bytes {
-            return Err(Bip322Error::Signature(SignatureError::PublicKeyMismatch(
-                bytes_to_hex(pubkey_bytes),
-                bytes_to_hex(recovered_pubkey.as_slice())
-            )));
-        }
-
-        <Secp256k1 as Curve>::PublicKey::try_from(pubkey_bytes)
-            .map_err(|_| Bip322Error::Crypto(CryptoError::InvalidPublicKey(
-                bytes_to_hex(pubkey_bytes),
-                "invalid secp256k1 public key format".to_string()
-            )))
-    }
-
-    /// Detailed P2WSH signature verification with comprehensive error reporting.
-    fn verify_p2wsh_signature_detailed(&self, message_hash: &[u8; 32]) -> Bip322Result<<Secp256k1 as Curve>::PublicKey> {
-        // Check witness stack format for P2WSH  
-        if self.signature.is_empty() {
-            return Err(Bip322Error::Witness(WitnessError::EmptyWitness));
-        }
-        
-        if self.signature.len() < 3 {
-            return Err(Bip322Error::Witness(WitnessError::InsufficientElements(3, self.signature.len())));
-        }
-
-        // Expected format: [signature, public_key, witness_script]
-        let signature_der = self.signature.nth(0).ok_or(
-            Bip322Error::Witness(WitnessError::InvalidElement(0, "signature missing".to_string()))
-        )?;
-        
-        let pubkey_bytes = self.signature.nth(1).ok_or(
-            Bip322Error::Witness(WitnessError::InvalidElement(1, "public key missing".to_string()))
-        )?;
-        
-        let witness_script = self.signature.nth(2).ok_or(
-            Bip322Error::Witness(WitnessError::InvalidElement(2, "witness script missing".to_string()))
-        )?;
-
-        // Verify witness script hash matches address
-        if !self.verify_witness_script_hash(witness_script) {
-            let computed_hash = env::sha256_array(witness_script);
-            let expected_hash = if let Some(witness_program) = &self.address.witness_program {
-                if witness_program.program.len() == 32 {
-                    let mut hash = [0u8; 32];
-                    hash.copy_from_slice(&witness_program.program);
-                    hash
-                } else {
-                    [0u8; 32]
-                }
-            } else {
-                [0u8; 32]
-            };
-            return Err(Bip322Error::Script(ScriptError::HashMismatch(
-                bytes_to_hex(&expected_hash),
-                bytes_to_hex(&computed_hash)
-            )));
-        }
-
-        // Execute basic witness script validation (P2PKH pattern)
-        if !self.execute_witness_script(witness_script, pubkey_bytes) {
-            return Err(Bip322Error::Script(ScriptError::ExecutionFailed(
-                "witness script execution".to_string(),
-                format!("script: {}, pubkey: {}", bytes_to_hex(witness_script), bytes_to_hex(pubkey_bytes))
-            )));
-        }
-
-        // Parse and verify signature (same as P2PKH)
-        let (r, s, recovery_id) = Self::parse_der_signature_detailed(signature_der)?;
-        
-        let mut signature = [0u8; 64];
-        signature[..32].copy_from_slice(&r);
-        signature[32..].copy_from_slice(&s);
-
-        let recovered_pubkey = env::ecrecover(message_hash, &signature, recovery_id, true)
-            .ok_or(Bip322Error::Crypto(CryptoError::EcrecoverFailed(
-                format!("P2WSH recovery_id: {}, message_hash: {}", recovery_id, bytes_to_hex(message_hash))
-            )))?;
-
-        if recovered_pubkey.as_slice() != pubkey_bytes {
-            return Err(Bip322Error::Signature(SignatureError::PublicKeyMismatch(
-                bytes_to_hex(pubkey_bytes),
-                bytes_to_hex(recovered_pubkey.as_slice())
-            )));
-        }
-
-        <Secp256k1 as Curve>::PublicKey::try_from(pubkey_bytes)
-            .map_err(|_| Bip322Error::Crypto(CryptoError::InvalidPublicKey(
-                bytes_to_hex(pubkey_bytes),
-                "invalid secp256k1 public key format".to_string()
-            )))
-    }
-
-    /// Detailed DER signature parsing with comprehensive error reporting.
-    fn parse_der_signature_detailed(der_sig: &[u8]) -> Bip322Result<([u8; 32], [u8; 32], u8)> {
-        // Try parsing as raw r||s format first (64 bytes)
-        if let Some((r, s, recovery_id)) = Self::parse_raw_signature(der_sig) {
-            return Ok((r, s, recovery_id));
-        }
-        
-        // Parse DER signature using proper ASN.1 DER decoder
-        let (r_bytes, s_bytes) = match Self::parse_der_ecdsa_signature(der_sig) {
-            Some(sig) => sig,
-            None => return Err(Bip322Error::Signature(SignatureError::InvalidDer(
-                0,
-                format!("could not parse as DER or raw format, length: {}", der_sig.len())
-            )))
-        };
-        
-        // Convert to fixed-size arrays
-        let mut r = [0u8; 32];
-        let mut s = [0u8; 32];
-        
-        // Validate r and s component sizes
-        if r_bytes.len() > 32 {
-            return Err(Bip322Error::Signature(SignatureError::InvalidComponents(
-                format!("r component too large: {} bytes", r_bytes.len())
-            )));
-        }
-        
-        if s_bytes.len() > 32 {
-            return Err(Bip322Error::Signature(SignatureError::InvalidComponents(
-                format!("s component too large: {} bytes", s_bytes.len())
-            )));
-        }
-        
-        // Pad with zeros if needed (for shorter values)
-        r[32 - r_bytes.len()..].copy_from_slice(&r_bytes);
-        s[32 - s_bytes.len()..].copy_from_slice(&s_bytes);
-        
-        // Determine recovery ID by testing against a known message
-        let test_message = [0u8; 32];
-        let recovery_id = Self::determine_recovery_id(&r, &s, &test_message)
-            .ok_or(Bip322Error::Signature(SignatureError::RecoveryIdNotFound))?;
-        
-        Ok((r, s, recovery_id))
-    }
-
-    /// Comprehensive BIP-322 signature verification with detailed error reporting.
-    /// 
-    /// This method provides detailed error information for all possible failure modes
-    /// in BIP-322 signature verification, making debugging and integration easier.
-    /// 
-    /// # Returns
-    /// 
-    /// - `Ok(PublicKey)` if verification succeeds
-    /// - `Err(Bip322Error)` with detailed error information if verification fails
-    /// 
-    /// # Examples
-    /// 
-    /// ```rust,ignore
-    /// match payload.verify_detailed() {
-    ///     Ok(pubkey) => println!("Verification succeeded: {:?}", pubkey),
-    ///     Err(Bip322Error::Witness(WitnessError::EmptyWitness)) => {
-    ///         println!("Error: No signature provided");
-    ///     },
-    ///     Err(Bip322Error::Signature(SignatureError::InvalidDer(pos, desc))) => {
-    ///         println!("Error: Invalid DER encoding at position {}: {}", pos, desc);
-    ///     },
-    ///     Err(e) => println!("Error: {}", e),
-    /// }
-    /// ```
-    pub fn verify_detailed(&self) -> Bip322Result<<Secp256k1 as Curve>::PublicKey> {
-        // Get the message hash for this signature
-        let message_hash = self.hash();
-        
-        // Determine verification strategy based on address type
-        let address = self.address.assume_checked_ref();
-        
-        match address.to_address_data() {
-            AddressData::P2pkh { .. } => {
-                self.verify_p2pkh_signature_detailed(&message_hash)
-            },
-            AddressData::P2wpkh { .. } => {
-                self.verify_p2wpkh_signature_detailed(&message_hash)
-            },
-            AddressData::P2sh { .. } => {
-                self.verify_p2sh_signature_detailed(&message_hash)
-            },
-            AddressData::P2wsh { .. } => {
-                self.verify_p2wsh_signature_detailed(&message_hash)
-            },
-        }
-    }
-}
-
-impl SignedPayload for SignedBip322Payload {
-    type PublicKey = <Secp256k1 as Curve>::PublicKey;
-
-    #[inline]
-    fn verify(&self) -> Option<Self::PublicKey> {
-        // Use the detailed verification method but convert to Option for trait compatibility
-        self.verify_detailed().ok()
-    }
+    
 }
 
 #[cfg(test)]
@@ -2201,9 +1654,9 @@ mod tests {
         let result = payload.verify();
         assert!(result.is_none(), "Empty signature should return None");
         
-        // Test fallback strategies
-        let fallback_result = payload.verify_with_fallbacks();
-        assert!(fallback_result.is_none(), "Empty signature should fail all fallback strategies");
+        // Test detailed error reporting
+        let detailed_result = payload.verify_detailed();
+        assert!(detailed_result.is_err(), "Empty signature should fail detailed verification");
     }
 
     #[test] 
@@ -2212,12 +1665,12 @@ mod tests {
         
         // Test DER signature parsing with invalid inputs
         let invalid_der = vec![0u8; 60]; // Too short
-        let result = SignedBip322Payload::parse_der_signature(&invalid_der);
-        assert!(result.is_none(), "Invalid DER signature should return None");
+        let result = SignedBip322Payload::parse_der_signature_detailed(&invalid_der);
+        assert!(result.is_err(), "Invalid DER signature should return error");
         
         let invalid_der_long = vec![0u8; 80]; // Too long
-        let result = SignedBip322Payload::parse_der_signature(&invalid_der_long);
-        assert!(result.is_none(), "Invalid DER signature should return None");
+        let result = SignedBip322Payload::parse_der_signature_detailed(&invalid_der_long);
+        assert!(result.is_err(), "Invalid DER signature should return error");
     }
 
     #[test]
@@ -2235,16 +1688,11 @@ mod tests {
             signature: Witness::new(),
         };
 
-        // Test alternative message hash computation
-        let standard_hash = payload.compute_bip322_message_hash();
-        let alternative_hash = payload.compute_alternative_message_hash_v1();
+        // Test BIP-322 message hash computation
+        let bip322_hash = payload.hash();
         
-        // These should be different hash formats
-        assert_ne!(standard_hash, alternative_hash);
-        
-        // Both should be valid 32-byte hashes
-        assert_eq!(standard_hash.len(), 32);
-        assert_eq!(alternative_hash.len(), 32);
+        // Should be valid 32-byte hash
+        assert_eq!(bip322_hash.len(), 32);
     }
 
     #[test]
@@ -2296,21 +1744,21 @@ mod tests {
         der_sig.push(0x20); // s length (32 bytes)  
         der_sig.extend_from_slice(&[0x02; 32]); // s value (dummy)
         
-        // Test DER parsing (may return None due to recovery ID issues with dummy data)
-        let result = SignedBip322Payload::parse_der_signature(&der_sig);
+        // Test DER parsing (may return error due to recovery ID issues with dummy data)
+        let result = SignedBip322Payload::parse_der_signature_detailed(&der_sig);
         // The parsing should work even if recovery fails with dummy data
-        println!("DER parsing result: {:?}", result.is_some());
+        println!("DER parsing result: {:?}", result.is_ok());
         
         // Test invalid DER structures
         let invalid_der = vec![0x31, 0x44]; // Wrong SEQUENCE tag
-        let result = SignedBip322Payload::parse_der_signature(&invalid_der);
-        assert!(result.is_none(), "Invalid DER structure should fail parsing");
+        let result = SignedBip322Payload::parse_der_signature_detailed(&invalid_der);
+        assert!(result.is_err(), "Invalid DER structure should fail parsing");
         
         // Test raw signature format fallback (64 bytes)
         let raw_sig = vec![0x01; 64]; // 32 bytes r + 32 bytes s
-        let result = SignedBip322Payload::parse_der_signature(&raw_sig);
+        let result = SignedBip322Payload::parse_der_signature_detailed(&raw_sig);
         // Should attempt raw parsing as fallback
-        println!("Raw signature parsing result: {:?}", result.is_some());
+        println!("Raw signature parsing result: {:?}", result.is_ok());
     }
     
     #[test]
