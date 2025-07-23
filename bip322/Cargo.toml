@@ -17,6 +17,7 @@ serde_with.workspace = true
 
 # For Bitcoin address parsing
 bs58 = "0.5"
+bech32 = "0.11"
 
 [features]
 abi = ["defuse-crypto/abi"]
@@ -25,3 +26,6 @@ abi = ["defuse-crypto/abi"]
 hex-literal.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
+defuse-core.workspace = true
+serde_json.workspace = true
+serde_with.workspace = true
