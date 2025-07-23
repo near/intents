@@ -4,6 +4,8 @@ use defuse::core::{
     sep53::{Sep53Payload, SignedSep53Payload},
     ton_connect::{SignedTonConnectPayload, TonConnectPayload},
 };
+use defuse_bip322::SignedBip322Payload;
+use defuse_bip322::bitcoin_minimal::{Address, AddressType, Witness};
 use near_workspaces::Account;
 
 pub trait Signer {
@@ -12,6 +14,7 @@ pub trait Signer {
     fn sign_nep413(&self, payload: Nep413Payload) -> SignedNep413Payload;
     fn sign_ton_connect(&self, payload: TonConnectPayload) -> SignedTonConnectPayload;
     fn sign_sep53(&self, payload: Sep53Payload) -> SignedSep53Payload;
+    fn sign_bip322(&self, message: String) -> SignedBip322Payload;
 }
 
 impl Signer for Account {
@@ -62,6 +65,28 @@ impl Signer for Account {
                 }
             }
             _ => unreachable!(),
+        }
+    }
+
+    fn sign_bip322(&self, message: String) -> SignedBip322Payload {
+        // For testing purposes, create a dummy BIP-322 signature
+        // In a real implementation, this would need proper Bitcoin ECDSA signing
+
+        // Create a dummy P2WPKH address for testing
+        let address = Address {
+            inner: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".to_string(),
+            address_type: AddressType::P2WPKH,
+            pubkey_hash: Some([1u8; 20]),
+            witness_program: None,
+        };
+
+        // Create empty witness (signature verification will fail, but structure is correct for testing)
+        let signature = Witness::new();
+
+        SignedBip322Payload {
+            address,
+            message,
+            signature,
         }
     }
 }

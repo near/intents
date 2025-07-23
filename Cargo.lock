@@ -173,6 +173,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "89e25b6adfb930f02d1981565a6e5d9c547ac15a96606256d3b59040e5cd4ca3"
 
 [[package]]
+name = "bech32"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d965446196e3b7decd44aa7ee49e31d630118f90ef12f97900f262eb915c951d"
+
+[[package]]
 name = "binary-install"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -687,12 +693,15 @@ dependencies = [
 name = "defuse-bip322"
 version = "0.1.0"
 dependencies = [
+ "bech32",
  "bs58 0.5.1",
+ "defuse-core",
  "defuse-crypto",
  "defuse-near-utils",
  "hex-literal",
  "near-sdk",
  "rstest",
+ "serde_json",
  "serde_with",
 ]
 
