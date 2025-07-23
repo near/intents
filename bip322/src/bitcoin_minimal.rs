@@ -6,12 +6,12 @@
 //! - **Address parsing**: P2PKH (Base58) and P2WPKH (Bech32) address formats
 //! - **Transaction encoding**: Bitcoin transaction serialization for hashing
 //! - **Script construction**: Basic Bitcoin script operations
-//! - **NEAR SDK integration**: All cryptographic operations use NEAR host functions
+//! - **NEAR SDK integration**: All cryptographic operations use NEAR host functions (SHA-256, RIPEMD-160)
 //!
 //! ## Design Principles
 //!
 //! 1. **Minimal Dependencies**: Only includes essential Bitcoin functionality
-//! 2. **NEAR Optimized**: Uses `env::sha256_array()` for all hash computations
+//! 2. **NEAR Optimized**: Uses `env::sha256_array()` and `env::ripemd160_array()` for all hash computations
 //! 3. **MVP Focus**: Supports only P2PKH and P2WPKH for Phase 2-3
 //! 4. **Gas Efficient**: Optimized for NEAR Protocol's gas model
 //!
@@ -51,12 +51,40 @@ use bech32::{Hrp, segwit};
 /// # Returns
 /// 
 /// A 32-byte double SHA-256 hash computed using NEAR SDK's `env::sha256_array()`
-fn double_sha256(data: &[u8]) -> [u8; 32] {
+pub fn double_sha256(data: &[u8]) -> [u8; 32] {
     // First SHA-256 pass using NEAR SDK
     let first_hash = env::sha256_array(data);
     
     // Second SHA-256 pass using NEAR SDK
     env::sha256_array(&first_hash)
+}
+
+/// Computes HASH160 (RIPEMD160(SHA256(data))) for Bitcoin address generation using NEAR SDK.
+/// 
+/// HASH160 is Bitcoin's standard address hash function used for:
+/// - P2PKH address generation from public keys
+/// - P2WPKH address generation from public keys
+/// - Script hash computation for P2SH addresses
+/// 
+/// The algorithm: `RIPEMD160(SHA256(data))`
+/// 
+/// This implementation uses NEAR SDK's optimized host functions:
+/// - `env::sha256_array()` for SHA-256 computation
+/// - `env::ripemd160_array()` for RIPEMD-160 computation
+/// 
+/// # Arguments
+/// 
+/// * `data` - The input data to hash (typically a public key)
+/// 
+/// # Returns
+/// 
+/// A 20-byte HASH160 result computed using NEAR SDK host functions
+pub fn hash160(data: &[u8]) -> [u8; 20] {
+    // First pass: SHA256 using NEAR SDK host function
+    let sha256_result = env::sha256_array(data);
+    
+    // Second pass: RIPEMD160 using NEAR SDK host function
+    env::ripemd160_array(&sha256_result)
 }
 
 /// Bitcoin address representation optimized for BIP-322 verification.
