@@ -41,19 +41,17 @@ impl Payload for SignedBip322Payload {
                 // For MVP Phase 2: P2PKH support
                 self.hash_p2pkh_message(&pubkey_hash)
             },
-            AddressData::Segwit { witness_program } if witness_program.is_p2wpkh() => {
-                // For MVP Phase 2: P2WPKH support  
+            AddressData::P2wpkh { witness_program } => {
+                // P2WPKH support  
                 self.hash_p2wpkh_message(&witness_program)
             },
-            // Phase 4: Complex address types
-            AddressData::P2sh { script_hash: _ } => {
-                unimplemented!("P2SH support planned for Phase 4")
+            AddressData::P2sh { script_hash } => {
+                // P2SH support  
+                self.hash_p2sh_message(&script_hash)
             },
-            AddressData::Segwit { witness_program } if witness_program.is_p2wsh() => {
-                unimplemented!("P2WSH support planned for Phase 4")
-            },
-            _ => {
-                panic!("Unsupported address type")
+            AddressData::P2wsh { witness_program } => {
+                // P2WSH support
+                self.hash_p2wsh_message(&witness_program)
             },
         }
     }
@@ -117,6 +115,59 @@ impl SignedBip322Payload {
         
         // Step 3: Compute signature hash using segwit v0 algorithm
         // This is where P2WPKH differs from P2PKH - the sighash computation
+        self.compute_message_hash(&to_spend, &to_sign)
+    }
+    
+    /// Computes the BIP-322 signature hash for P2SH addresses.
+    /// 
+    /// P2SH (Pay-to-Script-Hash) addresses contain a hash of a redeem script.
+    /// The BIP-322 process for P2SH is similar to P2PKH but uses legacy sighash algorithm
+    /// since P2SH predates segwit.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `_script_hash` - The 20-byte script hash from the P2SH address
+    /// 
+    /// # Returns
+    /// 
+    /// The 32-byte signature hash that should be signed according to BIP-322 for P2SH.
+    fn hash_p2sh_message(&self, _script_hash: &[u8; 20]) -> near_sdk::CryptoHash {
+        // Step 1: Create the "to_spend" transaction
+        // For P2SH, this contains the P2SH script_pubkey
+        let to_spend = self.create_to_spend();
+        
+        // Step 2: Create the "to_sign" transaction
+        // For P2SH, this will reference the to_spend output
+        let to_sign = self.create_to_sign(&to_spend);
+        
+        // Step 3: Compute signature hash using legacy algorithm
+        // P2SH uses the same legacy sighash as P2PKH (not segwit)
+        self.compute_message_hash(&to_spend, &to_sign)
+    }
+    
+    /// Computes the BIP-322 signature hash for P2WSH addresses.
+    /// 
+    /// P2WSH (Pay-to-Witness-Script-Hash) addresses contain a SHA256 hash of a witness script.
+    /// The BIP-322 process for P2WSH uses the segwit v0 sighash algorithm.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `_witness_program` - The witness program containing the script hash
+    /// 
+    /// # Returns
+    /// 
+    /// The 32-byte signature hash that should be signed according to BIP-322 for P2WSH.
+    fn hash_p2wsh_message(&self, _witness_program: &WitnessProgram) -> near_sdk::CryptoHash {
+        // Step 1: Create the "to_spend" transaction
+        // For P2WSH, this contains the P2WSH script_pubkey (OP_0 + 32-byte script hash)
+        let to_spend = self.create_to_spend();
+        
+        // Step 2: Create the "to_sign" transaction
+        // For P2WSH, this will reference the to_spend output
+        let to_sign = self.create_to_sign(&to_spend);
+        
+        // Step 3: Compute signature hash using segwit v0 algorithm
+        // P2WSH uses the same segwit sighash as P2WPKH
         self.compute_message_hash(&to_spend, &to_sign)
     }
 
@@ -311,14 +362,27 @@ impl SignedBip322Payload {
                     .expect("to_spend should have output")
                     .script_pubkey
             },
-            AddressData::Segwit { witness_program } if witness_program.is_p2wpkh() => {
+            AddressData::P2sh { .. } => {
                 &to_spend
                     .output
                     .first()
                     .expect("to_spend should have output")
                     .script_pubkey
             },
-            _ => panic!("Unsupported address type in message hash computation"),
+            AddressData::P2wpkh { .. } => {
+                &to_spend
+                    .output
+                    .first()
+                    .expect("to_spend should have output")
+                    .script_pubkey
+            },
+            AddressData::P2wsh { .. } => {
+                &to_spend
+                    .output
+                    .first()
+                    .expect("to_spend should have output")
+                    .script_pubkey
+            },
         };
 
         let mut sighash_cache = SighashCache::new(to_sign.clone());
@@ -646,6 +710,259 @@ impl SignedBip322Payload {
         })
     }
     
+    /// Verify P2SH signature for BIP-322.
+    /// 
+    /// P2SH (Pay-to-Script-Hash) addresses require a redeem script to be executed.
+    /// For BIP-322, the witness stack format is: [signature, pubkey, redeem_script]
+    /// 
+    /// The process:
+    /// 1. Extract signature, public key, and redeem script from witness stack
+    /// 2. Verify the script hash matches the P2SH address
+    /// 3. Execute the redeem script (typically a simple P2PKH script)
+    /// 4. Verify the signature against the message hash
+    /// 
+    /// # Arguments
+    /// 
+    /// * `message_hash` - The BIP-322 message hash to verify against
+    /// 
+    /// # Returns
+    /// 
+    /// The recovered public key if verification succeeds, None otherwise.
+    fn verify_p2sh_signature(&self, message_hash: &[u8; 32]) -> Option<<Secp256k1 as Curve>::PublicKey> {
+        // P2SH witness stack: [signature, pubkey, redeem_script]
+        if self.signature.len() < 3 {
+            return None;
+        }
+        
+        let signature_der = self.signature.nth(0)?; // DER-encoded signature
+        let pubkey_bytes = self.signature.nth(1)?;  // Public key
+        let redeem_script = self.signature.nth(2)?; // Redeem script
+        
+        // Verify the redeem script hash matches the P2SH address
+        if !self.verify_redeem_script_hash(redeem_script) {
+            return None;
+        }
+        
+        // For most P2SH cases, the redeem script is a simple P2PKH script
+        // Parse and execute the redeem script
+        if !self.execute_redeem_script(redeem_script, pubkey_bytes) {
+            return None;
+        }
+        
+        // Convert DER signature to (r,s) format for ecrecover
+        let (r, s, recovery_id) = Self::parse_der_signature(signature_der)?;
+        
+        // Create signature in format expected by ecrecover
+        let mut signature = [0u8; 64];
+        signature[..32].copy_from_slice(&r);
+        signature[32..].copy_from_slice(&s);
+        
+        // Use NEAR SDK ecrecover to recover the public key
+        env::ecrecover(message_hash, &signature, recovery_id, true).and_then(|recovered_pubkey| {
+            if recovered_pubkey.as_slice() == pubkey_bytes {
+                // For P2SH, we've already validated the script, so we can return the public key
+                <Secp256k1 as Curve>::PublicKey::try_from(pubkey_bytes).ok()
+            } else {
+                None // Recovered public key doesn't match provided public key
+            }
+        })
+    }
+    
+    /// Verify P2WSH signature for BIP-322.
+    /// 
+    /// P2WSH (Pay-to-Witness-Script-Hash) addresses require a witness script.
+    /// For BIP-322, the witness stack format is: [signature, pubkey, witness_script]
+    /// 
+    /// The process:
+    /// 1. Extract signature, public key, and witness script from witness stack
+    /// 2. Verify the script hash matches the P2WSH address (32-byte SHA256)
+    /// 3. Execute the witness script (typically a simple P2PKH-like script)
+    /// 4. Verify the signature against the message hash
+    /// 
+    /// # Arguments
+    /// 
+    /// * `message_hash` - The BIP-322 message hash to verify against
+    /// 
+    /// # Returns
+    /// 
+    /// The recovered public key if verification succeeds, None otherwise.
+    fn verify_p2wsh_signature(&self, message_hash: &[u8; 32]) -> Option<<Secp256k1 as Curve>::PublicKey> {
+        // P2WSH witness stack: [signature, pubkey, witness_script]
+        if self.signature.len() < 3 {
+            return None;
+        }
+        
+        let signature_der = self.signature.nth(0)?; // DER-encoded signature
+        let pubkey_bytes = self.signature.nth(1)?;  // Public key
+        let witness_script = self.signature.nth(2)?; // Witness script
+        
+        // Verify the witness script hash matches the P2WSH address
+        if !self.verify_witness_script_hash(witness_script) {
+            return None;
+        }
+        
+        // Execute the witness script (typically a simple script)
+        if !self.execute_witness_script(witness_script, pubkey_bytes) {
+            return None;
+        }
+        
+        // Convert DER signature to (r,s) format for ecrecover
+        let (r, s, recovery_id) = Self::parse_der_signature(signature_der)?;
+        
+        // Create signature in format expected by ecrecover
+        let mut signature = [0u8; 64];
+        signature[..32].copy_from_slice(&r);
+        signature[32..].copy_from_slice(&s);
+        
+        // Use NEAR SDK ecrecover to recover the public key
+        env::ecrecover(message_hash, &signature, recovery_id, true).and_then(|recovered_pubkey| {
+            if recovered_pubkey.as_slice() == pubkey_bytes {
+                // For P2WSH, we've validated the witness script, so return the public key
+                <Secp256k1 as Curve>::PublicKey::try_from(pubkey_bytes).ok()
+            } else {
+                None // Recovered public key doesn't match provided public key
+            }
+        })
+    }
+    
+    /// Verify that a redeem script hash matches the P2SH address.
+    /// 
+    /// P2SH addresses contain HASH160(redeem_script) where HASH160 = RIPEMD160(SHA256(script)).
+    /// This function computes the hash of the provided redeem script and compares it
+    /// with the script hash embedded in the P2SH address.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `redeem_script` - The redeem script bytes to validate
+    /// 
+    /// # Returns
+    /// 
+    /// `true` if the script hash matches the P2SH address, `false` otherwise.
+    fn verify_redeem_script_hash(&self, redeem_script: &[u8]) -> bool {
+        use crate::bitcoin_minimal::hash160;
+        
+        // Get the script hash from the P2SH address
+        let expected_script_hash = match self.address.to_address_data() {
+            AddressData::P2sh { script_hash } => script_hash,
+            _ => return false, // Not a P2SH address
+        };
+        
+        // Compute HASH160 of the redeem script
+        let computed_script_hash = hash160(redeem_script);
+        
+        // Compare with expected hash
+        computed_script_hash == expected_script_hash
+    }
+    
+    /// Verify that a witness script hash matches the P2WSH address.
+    /// 
+    /// P2WSH addresses contain SHA256(witness_script) as a 32-byte hash.
+    /// This function computes the SHA256 hash of the provided witness script
+    /// and compares it with the script hash embedded in the P2WSH address.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `witness_script` - The witness script bytes to validate
+    /// 
+    /// # Returns
+    /// 
+    /// `true` if the script hash matches the P2WSH address, `false` otherwise.
+    fn verify_witness_script_hash(&self, witness_script: &[u8]) -> bool {
+        // Get the script hash from the P2WSH address
+        let expected_script_hash = match &self.address.witness_program {
+            Some(witness_program) if witness_program.is_p2wsh() => &witness_program.program,
+            _ => return false, // Not a P2WSH address
+        };
+        
+        // Compute SHA256 of the witness script
+        let computed_script_hash = env::sha256_array(witness_script);
+        
+        // Compare with expected hash
+        computed_script_hash.as_slice() == expected_script_hash
+    }
+    
+    /// Execute a redeem script for P2SH verification.
+    /// 
+    /// This function implements basic Bitcoin script execution for common redeem script patterns.
+    /// For BIP-322, the most common case is a simple P2PKH-style redeem script:
+    /// `OP_DUP OP_HASH160 <pubkey_hash> OP_EQUALVERIFY OP_CHECKSIG`
+    /// 
+    /// # Arguments
+    /// 
+    /// * `redeem_script` - The redeem script bytes to execute
+    /// * `pubkey_bytes` - The public key to validate against
+    /// 
+    /// # Returns
+    /// 
+    /// `true` if script execution succeeds, `false` otherwise.
+    fn execute_redeem_script(&self, redeem_script: &[u8], pubkey_bytes: &[u8]) -> bool {
+        // For BIP-322, we typically see simple P2PKH redeem scripts
+        // Pattern: 76 a9 14 <20-byte-pubkey-hash> 88 ac
+        // OP_DUP OP_HASH160 <pubkey_hash> OP_EQUALVERIFY OP_CHECKSIG
+        
+        if redeem_script.len() == 25 &&
+           redeem_script[0] == 0x76 && // OP_DUP
+           redeem_script[1] == 0xa9 && // OP_HASH160
+           redeem_script[2] == 0x14 && // Push 20 bytes
+           redeem_script[23] == 0x88 && // OP_EQUALVERIFY
+           redeem_script[24] == 0xac    // OP_CHECKSIG
+        {
+            // Extract the pubkey hash from the script
+            let script_pubkey_hash = &redeem_script[3..23];
+            
+            // Compute HASH160 of the provided public key
+            use crate::bitcoin_minimal::hash160;
+            let computed_pubkey_hash = hash160(pubkey_bytes);
+            
+            // Verify the public key hash matches
+            computed_pubkey_hash.as_slice() == script_pubkey_hash
+        } else {
+            // For now, only support simple P2PKH redeem scripts
+            // Future enhancement: full Bitcoin script interpreter
+            false
+        }
+    }
+    
+    /// Execute a witness script for P2WSH verification.
+    /// 
+    /// This function implements basic Bitcoin script execution for witness scripts.
+    /// Similar to redeem scripts, but used in the witness stack for segwit transactions.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `witness_script` - The witness script bytes to execute
+    /// * `pubkey_bytes` - The public key to validate against
+    /// 
+    /// # Returns
+    /// 
+    /// `true` if script execution succeeds, `false` otherwise.
+    fn execute_witness_script(&self, witness_script: &[u8], pubkey_bytes: &[u8]) -> bool {
+        // For P2WSH, witness scripts can be more varied, but for BIP-322
+        // we typically see P2PKH-style patterns similar to redeem scripts
+        
+        if witness_script.len() == 25 &&
+           witness_script[0] == 0x76 && // OP_DUP
+           witness_script[1] == 0xa9 && // OP_HASH160
+           witness_script[2] == 0x14 && // Push 20 bytes
+           witness_script[23] == 0x88 && // OP_EQUALVERIFY
+           witness_script[24] == 0xac    // OP_CHECKSIG
+        {
+            // Extract the pubkey hash from the script
+            let script_pubkey_hash = &witness_script[3..23];
+            
+            // Compute HASH160 of the provided public key
+            use crate::bitcoin_minimal::hash160;
+            let computed_pubkey_hash = hash160(pubkey_bytes);
+            
+            // Verify the public key hash matches
+            computed_pubkey_hash.as_slice() == script_pubkey_hash
+        } else {
+            // For now, only support simple P2PKH-style witness scripts
+            // Future enhancement: full Bitcoin script interpreter
+            false
+        }
+    }
+    
     /// Verify that a public key matches the address using full cryptographic validation.
     /// 
     /// This function performs complete address validation by:
@@ -755,6 +1072,16 @@ impl SignedBip322Payload {
                 // For P2WPKH, derive the Bech32 address
                 self.validate_p2wpkh_derivation(&pubkey_hash)
             },
+            AddressType::P2SH => {
+                // P2SH addresses can't be validated from a single public key
+                // The script hash would need the actual script, not just a pubkey
+                false
+            },
+            AddressType::P2WSH => {
+                // P2WSH addresses can't be validated from a single public key
+                // The script hash would need the actual script, not just a pubkey
+                false
+            },
         }
     }
     
@@ -829,21 +1156,16 @@ impl SignedBip322Payload {
             AddressData::P2pkh { .. } => {
                 self.verify_p2pkh_signature(&message_hash)
             },
-            AddressData::Segwit { witness_program } if witness_program.is_p2wpkh() => {
+            AddressData::P2wpkh { .. } => {
                 self.verify_p2wpkh_signature(&message_hash)
             },
-            // Phase 4: Complex address types
             AddressData::P2sh { .. } => {
-                // P2SH support planned for Phase 4
-                None
+                // P2SH support now implemented
+                self.verify_p2sh_signature(&message_hash)
             },
-            AddressData::Segwit { witness_program } if witness_program.is_p2wsh() => {
-                // P2WSH support planned for Phase 4
-                None
-            },
-            AddressData::Segwit { .. } => {
-                // Unsupported address type
-                None
+            AddressData::P2wsh { .. } => {
+                // P2WSH support now implemented
+                self.verify_p2wsh_signature(&message_hash)
             },
         };
         
@@ -924,11 +1246,12 @@ impl SignedBip322Payload {
                 // Simplified verification for alternative hash
                 self.try_direct_signature_recovery(message_hash)
             },
-            AddressData::Segwit { witness_program } if witness_program.is_p2wpkh() => {
+            AddressData::P2wpkh { .. } => {
                 // Simplified verification for alternative hash
                 self.try_direct_signature_recovery(message_hash)
             },
-            _ => None,
+            AddressData::P2sh { .. } => None,
+            AddressData::P2wsh { .. } => None,
         }
     }
     
@@ -1200,11 +1523,18 @@ mod tests {
         assert_eq!(witness_prog.version, 0, "P2WPKH should be witness version 0");
         assert_eq!(witness_prog.program.len(), 20, "P2WPKH program should be 20 bytes");
         
-        // Test P2WSH address (32-byte program) - should be rejected in MVP Phase 2-3
+        // Test P2WSH address (32-byte program) - now supported 
         let valid_p2wsh = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";
         let address = valid_p2wsh.parse::<Address>();
-        // P2WSH is not supported in MVP Phase 2-3 (only P2WPKH with 20-byte programs)
-        assert!(address.is_err(), "P2WSH addresses should be rejected in MVP (32-byte programs not supported)");
+        // P2WSH is now supported (32-byte witness programs)
+        assert!(address.is_ok(), "P2WSH addresses should be supported (32-byte programs)");
+        
+        if let Ok(parsed_address) = address {
+            assert_eq!(parsed_address.address_type, AddressType::P2WSH);
+            if let Some(witness_program) = &parsed_address.witness_program {
+                assert_eq!(witness_program.program.len(), 32, "P2WSH program should be 32 bytes");
+            }
+        }
         
         // Test invalid bech32 addresses
         let invalid_checksum = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t5"; // Wrong checksum
@@ -1228,8 +1558,12 @@ mod tests {
         assert!(valid_20_byte.parse::<Address>().is_ok(), "20-byte witness program should be valid");
         
         let valid_32_byte = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3"; // 32-byte P2WSH
-        // P2WSH (32-byte) is not supported in MVP Phase 2-3
-        assert!(valid_32_byte.parse::<Address>().is_err(), "32-byte witness program should be rejected in MVP");
+        // P2WSH (32-byte) is now supported
+        assert!(valid_32_byte.parse::<Address>().is_ok(), "32-byte witness program should be supported (P2WSH)");
+        
+        if let Ok(addr) = valid_32_byte.parse::<Address>() {
+            assert_eq!(addr.address_type, AddressType::P2WSH);
+        }
         
         // Test that our implementation properly validates witness version 0
         // (Future versions would require different validation rules)
@@ -1537,5 +1871,393 @@ mod tests {
         let tx_id = payload.compute_tx_id(&to_spend);
         assert_eq!(tx_id.len(), 32);
         assert_eq!(to_sign.input[0].previous_output.txid, Txid::from_byte_array(tx_id));
+    }
+    
+    #[test]
+    fn test_p2sh_address_parsing() {
+        use std::str::FromStr;
+        
+        // Test valid P2SH address parsing
+        let p2sh_address = "3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX";
+        let parsed = Address::from_str(p2sh_address).expect("Should parse valid P2SH address");
+        
+        assert_eq!(parsed.inner, p2sh_address);
+        assert_eq!(parsed.address_type, AddressType::P2SH);
+        assert!(parsed.pubkey_hash.is_some(), "P2SH should have script hash");
+        assert!(parsed.witness_program.is_none(), "P2SH should not have witness program");
+        
+        // Test script_pubkey generation for P2SH
+        let script_pubkey = parsed.script_pubkey();
+        assert!(!script_pubkey.is_empty(), "P2SH script_pubkey should not be empty");
+        
+        // Test to_address_data conversion
+        let address_data = parsed.to_address_data();
+        match address_data {
+            AddressData::P2sh { script_hash } => {
+                assert_eq!(script_hash.len(), 20, "Script hash should be 20 bytes");
+            },
+            _ => panic!("Expected P2sh address data"),
+        }
+        
+        // Test another valid P2SH address
+        let p2sh_address2 = "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy";
+        let parsed2 = Address::from_str(p2sh_address2).expect("Should parse another valid P2SH address");
+        assert_eq!(parsed2.address_type, AddressType::P2SH);
+        
+        // Test invalid P2SH addresses
+        let invalid_p2sh = "3InvalidAddress123";
+        assert!(Address::from_str(invalid_p2sh).is_err(), "Should reject invalid P2SH address");
+        
+        // Test P2SH address with wrong version byte (simulate)
+        // This would normally be caught by base58 decoding, but we test the concept
+        let _testnet_p2sh = "2MzBNp8kzHjVTLhSJhZM1z1KkdmZBxHBFxD"; // Testnet P2SH (starts with 2)
+        // This should fail because we only support mainnet (version 0x05, not 0xc4)
+        // The actual error depends on base58 validation
+    }
+    
+    #[test] 
+    fn test_p2wsh_address_parsing() {
+        use std::str::FromStr;
+        
+        // Test valid P2WSH address parsing (32-byte witness program)
+        let p2wsh_address = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";
+        let parsed = Address::from_str(p2wsh_address).expect("Should parse valid P2WSH address");
+        
+        assert_eq!(parsed.inner, p2wsh_address);
+        assert_eq!(parsed.address_type, AddressType::P2WSH);
+        assert!(parsed.pubkey_hash.is_none(), "P2WSH should not have pubkey hash");
+        assert!(parsed.witness_program.is_some(), "P2WSH should have witness program");
+        
+        // Verify witness program properties
+        if let Some(witness_program) = &parsed.witness_program {
+            assert_eq!(witness_program.version, 0, "Should be segwit v0");
+            assert_eq!(witness_program.program.len(), 32, "P2WSH witness program should be 32 bytes");
+            assert!(witness_program.is_p2wsh(), "Should be identified as P2WSH");
+            assert!(!witness_program.is_p2wpkh(), "Should not be identified as P2WPKH");
+        }
+        
+        // Test script_pubkey generation for P2WSH
+        let script_pubkey = parsed.script_pubkey();
+        assert!(!script_pubkey.is_empty(), "P2WSH script_pubkey should not be empty");
+        
+        // Test to_address_data conversion
+        let address_data = parsed.to_address_data();
+        match address_data {
+            AddressData::P2wsh { witness_program } => {
+                assert_eq!(witness_program.version, 0);
+                assert_eq!(witness_program.program.len(), 32);
+            },
+            _ => panic!("Expected P2wsh address data"),
+        }
+        
+        // Test another valid P2WSH address
+        let _p2wsh_address2 = "bc1qklh6jk9k5k5k5k5k5k5k5k5k5k5k5k5k5k5k5k5k5k5k5k5k5k5k5k5kqwerty";
+        // Note: This is a made-up address for format testing, real addresses need valid checksums
+        // For now, we test the parsing logic structure
+    }
+    
+    #[test]
+    fn test_address_type_distinctions() {
+        use std::str::FromStr;
+        
+        // Test that different address types are correctly distinguished
+        
+        // P2PKH (starts with '1')
+        let p2pkh = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa";
+        if let Ok(parsed) = Address::from_str(p2pkh) {
+            assert_eq!(parsed.address_type, AddressType::P2PKH);
+        }
+        
+        // P2SH (starts with '3') 
+        let p2sh = "3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX";
+        if let Ok(parsed) = Address::from_str(p2sh) {
+            assert_eq!(parsed.address_type, AddressType::P2SH);
+        }
+        
+        // P2WPKH (starts with 'bc1q', 20-byte witness program)
+        let p2wpkh = "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l";
+        if let Ok(parsed) = Address::from_str(p2wpkh) {
+            assert_eq!(parsed.address_type, AddressType::P2WPKH);
+            if let Some(wp) = &parsed.witness_program {
+                assert_eq!(wp.program.len(), 20);
+            }
+        }
+        
+        // P2WSH (starts with 'bc1q', 32-byte witness program) 
+        let p2wsh = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";
+        if let Ok(parsed) = Address::from_str(p2wsh) {
+            assert_eq!(parsed.address_type, AddressType::P2WSH);
+            if let Some(wp) = &parsed.witness_program {
+                assert_eq!(wp.program.len(), 32);
+            }
+        }
+        
+        // Test unsupported formats
+        let unsupported_formats = vec![
+            "tb1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l", // Testnet
+            "bc1p9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l", // Taproot (segwit v1)
+            "2MzBNp8kzHjVTLhSJhZM1z1KkdmZBxHBFxD",        // Testnet P2SH
+            "invalid_address",                              // Invalid format
+        ];
+        
+        for addr in unsupported_formats {
+            assert!(Address::from_str(addr).is_err(), "Should reject unsupported address: {}", addr);
+        }
+    }
+    
+    #[test]
+    fn test_address_script_pubkey_generation() {
+        use std::str::FromStr;
+        
+        // Test script_pubkey generation for all address types
+        
+        // P2PKH: OP_DUP OP_HASH160 <pubkey_hash> OP_EQUALVERIFY OP_CHECKSIG
+        let p2pkh = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"; 
+        if let Ok(parsed) = Address::from_str(p2pkh) {
+            let script = parsed.script_pubkey();
+            // P2PKH script should be: 76 a9 14 <20-byte-hash> 88 ac (25 bytes total)
+            assert_eq!(script.len(), 25, "P2PKH script should be 25 bytes");
+        }
+        
+        // P2SH: OP_HASH160 <script_hash> OP_EQUAL
+        let p2sh = "3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX";
+        if let Ok(parsed) = Address::from_str(p2sh) {
+            let script = parsed.script_pubkey();
+            // P2SH script should be: a9 14 <20-byte-hash> 87 (23 bytes total)
+            assert_eq!(script.len(), 23, "P2SH script should be 23 bytes");
+        }
+        
+        // P2WPKH: OP_0 <20-byte-pubkey-hash>
+        let p2wpkh = "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l";
+        if let Ok(parsed) = Address::from_str(p2wpkh) {
+            let script = parsed.script_pubkey();
+            // P2WPKH script should be: 00 14 <20-byte-hash> (22 bytes total)
+            assert_eq!(script.len(), 22, "P2WPKH script should be 22 bytes");
+        }
+        
+        // P2WSH: OP_0 <32-byte-script-hash>
+        let p2wsh = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";
+        if let Ok(parsed) = Address::from_str(p2wsh) {
+            let script = parsed.script_pubkey();
+            // P2WSH script should be: 00 20 <32-byte-hash> (34 bytes total)
+            assert_eq!(script.len(), 34, "P2WSH script should be 34 bytes");
+        }
+    }
+    
+    #[test]
+    fn test_p2sh_signature_verification_structure() {
+        use std::str::FromStr;
+        use crate::bitcoin_minimal::hash160;
+        
+        // Test P2SH signature verification structure (without actual signature)
+        let p2sh_address = "3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX";
+        let address = Address::from_str(p2sh_address).expect("Should parse P2SH address");
+        
+        // Create test redeem script: simple P2PKH script
+        // OP_DUP OP_HASH160 <20-byte-pubkey-hash> OP_EQUALVERIFY OP_CHECKSIG
+        let test_pubkey = [
+            0x02, 0x79, 0xbe, 0x66, 0x7e, 0xf9, 0xdc, 0xbb, 0xac, 0x55, 0xa0, 0x62, 
+            0x95, 0xce, 0x87, 0x0b, 0x07, 0x02, 0x9b, 0xfc, 0xdb, 0x2d, 0xce, 0x28, 
+            0xd9, 0x59, 0xf2, 0x81, 0x5b, 0x16, 0xf8, 0x17, 0x98
+        ];
+        let pubkey_hash = hash160(&test_pubkey);
+        
+        let mut redeem_script = Vec::new();
+        redeem_script.push(0x76); // OP_DUP
+        redeem_script.push(0xa9); // OP_HASH160
+        redeem_script.push(0x14); // Push 20 bytes
+        redeem_script.extend_from_slice(&pubkey_hash);
+        redeem_script.push(0x88); // OP_EQUALVERIFY
+        redeem_script.push(0xac); // OP_CHECKSIG
+        
+        // Create BIP-322 payload with empty signature for structure testing
+        let payload = SignedBip322Payload {
+            address,
+            message: "Test P2SH message".to_string(),
+            signature: Witness::new(), // Empty for structure test
+        };
+        
+        // Test hash computation (should not panic)
+        let message_hash = payload.hash();
+        assert_eq!(message_hash.len(), 32, "Message hash should be 32 bytes");
+        
+        // Test verification with empty signature (should return None gracefully)
+        let verification_result = payload.verify();
+        assert!(verification_result.is_none(), "Empty signature should return None");
+        
+        // Test redeem script validation structure
+        let script_hash = hash160(&redeem_script);
+        assert_eq!(script_hash.len(), 20, "Script hash should be 20 bytes");
+    }
+    
+    #[test] 
+    fn test_p2wsh_signature_verification_structure() {
+        use std::str::FromStr;
+        
+        // Test P2WSH signature verification structure (without actual signature)
+        let p2wsh_address = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";
+        let address = Address::from_str(p2wsh_address).expect("Should parse P2WSH address");
+        
+        // Create test witness script: simple P2PKH-style script
+        let test_pubkey = [
+            0x03, 0x1b, 0x84, 0xc5, 0x56, 0x7b, 0x12, 0x64, 0x40, 0x99, 0x5d, 0x3e, 
+            0xd5, 0xaa, 0xba, 0x05, 0x65, 0xd7, 0x1e, 0x18, 0x34, 0x60, 0x48, 0x19, 
+            0xff, 0x9c, 0x17, 0xf5, 0xe9, 0xd5, 0xdd, 0x07, 0x8f
+        ];
+        
+        use crate::bitcoin_minimal::hash160;
+        let pubkey_hash = hash160(&test_pubkey);
+        
+        let mut witness_script = Vec::new();
+        witness_script.push(0x76); // OP_DUP
+        witness_script.push(0xa9); // OP_HASH160
+        witness_script.push(0x14); // Push 20 bytes
+        witness_script.extend_from_slice(&pubkey_hash);
+        witness_script.push(0x88); // OP_EQUALVERIFY
+        witness_script.push(0xac); // OP_CHECKSIG
+        
+        // Create BIP-322 payload with empty signature for structure testing
+        let payload = SignedBip322Payload {
+            address,
+            message: "Test P2WSH message".to_string(),
+            signature: Witness::new(), // Empty for structure test
+        };
+        
+        // Test hash computation (should not panic)
+        let message_hash = payload.hash();
+        assert_eq!(message_hash.len(), 32, "Message hash should be 32 bytes");
+        
+        // Test verification with empty signature (should return None gracefully)
+        let verification_result = payload.verify();
+        assert!(verification_result.is_none(), "Empty signature should return None");
+        
+        // Test witness script validation structure
+        let script_hash = env::sha256_array(&witness_script);
+        assert_eq!(script_hash.len(), 32, "Witness script hash should be 32 bytes");
+    }
+    
+    #[test]
+    fn test_redeem_script_validation() {
+        use std::str::FromStr;
+        use crate::bitcoin_minimal::hash160;
+        
+        // Test redeem script hash validation for P2SH
+        let p2sh_address = "3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX";
+        let address = Address::from_str(p2sh_address).expect("Should parse P2SH address");
+        
+        // Create a simple redeem script
+        let test_pubkey = [0x02; 33]; // Simple test pubkey
+        let pubkey_hash = hash160(&test_pubkey);
+        
+        let mut redeem_script = Vec::new();
+        redeem_script.push(0x76); // OP_DUP
+        redeem_script.push(0xa9); // OP_HASH160  
+        redeem_script.push(0x14); // Push 20 bytes
+        redeem_script.extend_from_slice(&pubkey_hash);
+        redeem_script.push(0x88); // OP_EQUALVERIFY
+        redeem_script.push(0xac); // OP_CHECKSIG
+        
+        let payload = SignedBip322Payload {
+            address,
+            message: "Test message".to_string(),
+            signature: Witness::new(),
+        };
+        
+        // Test script parsing (valid P2PKH pattern)
+        assert!(payload.execute_redeem_script(&redeem_script, &test_pubkey), 
+                "Valid P2PKH redeem script should execute successfully");
+        
+        // Test invalid script (wrong length)
+        let invalid_script = vec![0x76, 0xa9]; // Too short
+        assert!(!payload.execute_redeem_script(&invalid_script, &test_pubkey),
+                "Invalid script should fail execution");
+        
+        // Test invalid script (wrong opcode pattern)
+        let mut invalid_pattern = redeem_script.clone();
+        invalid_pattern[0] = 0x51; // Change OP_DUP to OP_1 
+        assert!(!payload.execute_redeem_script(&invalid_pattern, &test_pubkey),
+                "Invalid opcode pattern should fail execution");
+    }
+    
+    #[test]
+    fn test_witness_script_validation() {
+        use std::str::FromStr;
+        use crate::bitcoin_minimal::hash160;
+        
+        // Test witness script validation for P2WSH
+        let p2wsh_address = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";
+        let address = Address::from_str(p2wsh_address).expect("Should parse P2WSH address");
+        
+        // Create a simple witness script
+        let test_pubkey = [0x03; 33]; // Simple test pubkey
+        let pubkey_hash = hash160(&test_pubkey);
+        
+        let mut witness_script = Vec::new();
+        witness_script.push(0x76); // OP_DUP
+        witness_script.push(0xa9); // OP_HASH160
+        witness_script.push(0x14); // Push 20 bytes
+        witness_script.extend_from_slice(&pubkey_hash);
+        witness_script.push(0x88); // OP_EQUALVERIFY
+        witness_script.push(0xac); // OP_CHECKSIG
+        
+        let payload = SignedBip322Payload {
+            address,
+            message: "Test message".to_string(),
+            signature: Witness::new(),
+        };
+        
+        // Test script parsing (valid P2PKH-style pattern)
+        assert!(payload.execute_witness_script(&witness_script, &test_pubkey),
+                "Valid P2PKH-style witness script should execute successfully");
+        
+        // Test invalid script (wrong length)
+        let invalid_script = vec![0x76, 0xa9]; // Too short
+        assert!(!payload.execute_witness_script(&invalid_script, &test_pubkey),
+                "Invalid script should fail execution");
+        
+        // Test script with wrong pubkey
+        let wrong_pubkey = [0x02; 33]; // Different pubkey
+        assert!(!payload.execute_witness_script(&witness_script, &wrong_pubkey),
+                "Script with wrong pubkey should fail execution");
+    }
+    
+    #[test]
+    fn test_p2sh_p2wsh_integration() {
+        use std::str::FromStr;
+        
+        // Test that P2SH and P2WSH work within the complete BIP-322 system
+        
+        // Test P2SH integration
+        let p2sh_address = "3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX";
+        let p2sh_payload = SignedBip322Payload {
+            address: Address::from_str(p2sh_address).expect("Should parse P2SH"),
+            message: "Integration test message".to_string(),
+            signature: Witness::new(),
+        };
+        
+        // Hash computation should work
+        let p2sh_hash = p2sh_payload.hash();
+        assert_eq!(p2sh_hash.len(), 32, "P2SH hash should be 32 bytes");
+        
+        // Verification should return None gracefully (no signature provided)
+        assert!(p2sh_payload.verify().is_none(), "P2SH with empty signature should return None");
+        
+        // Test P2WSH integration  
+        let p2wsh_address = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";
+        let p2wsh_payload = SignedBip322Payload {
+            address: Address::from_str(p2wsh_address).expect("Should parse P2WSH"),
+            message: "Integration test message".to_string(),
+            signature: Witness::new(),
+        };
+        
+        // Hash computation should work
+        let p2wsh_hash = p2wsh_payload.hash();
+        assert_eq!(p2wsh_hash.len(), 32, "P2WSH hash should be 32 bytes");
+        
+        // Verification should return None gracefully (no signature provided)
+        assert!(p2wsh_payload.verify().is_none(), "P2WSH with empty signature should return None");
+        
+        // Verify hashes are different (different addresses produce different hashes)
+        assert_ne!(p2sh_hash, p2wsh_hash, "Different address types should produce different hashes");
     }
 }

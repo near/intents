@@ -176,16 +176,29 @@ pub enum AddressType {
     /// - Example: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l"
     P2WPKH,
     
-    // Future Phase 4 expansions:
-    // P2SH,  // Pay-to-Script-Hash (addresses starting with '3')
-    // P2WSH, // Pay-to-Witness-Script-Hash (complex segwit scripts)
+    /// Pay-to-Script-Hash (legacy Bitcoin script addresses).
+    /// 
+    /// - Start with '3' on mainnet
+    /// - Use Base58Check encoding with version byte 0x05
+    /// - Require legacy Bitcoin sighash algorithm for verification
+    /// - Example: "3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX"
+    P2SH,
+    
+    /// Pay-to-Witness-Script-Hash (segwit v0 script addresses).
+    /// 
+    /// - Start with 'bc1q' on mainnet (but longer than P2WPKH)
+    /// - Use Bech32 encoding with 32-byte witness program
+    /// - Require segwit v0 sighash algorithm for verification
+    /// - Example: "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3"
+    P2WSH
 }
 
 #[derive(Debug, Clone)]
 pub enum AddressData {
     P2pkh { pubkey_hash: [u8; 20] },
-    Segwit { witness_program: WitnessProgram },
     P2sh { script_hash: [u8; 20] },
+    P2wpkh { witness_program: WitnessProgram },
+    P2wsh { witness_program: WitnessProgram },
 }
 
 /// Segwit witness program containing version and program data.
@@ -254,11 +267,24 @@ impl Address {
                     pubkey_hash: self.pubkey_hash.unwrap_or([0u8; 20])
                 }
             },
+            AddressType::P2SH => {
+                AddressData::P2sh { 
+                    script_hash: self.pubkey_hash.unwrap_or([0u8; 20])
+                }
+            },
             AddressType::P2WPKH => {
-                AddressData::Segwit {
+                AddressData::P2wpkh {
                     witness_program: self.witness_program.clone().unwrap_or(WitnessProgram {
                         version: 0,
                         program: vec![0u8; 20],
+                    })
+                }
+            },
+            AddressType::P2WSH => {
+                AddressData::P2wsh {
+                    witness_program: self.witness_program.clone().unwrap_or(WitnessProgram {
+                        version: 0,
+                        program: vec![0u8; 32],
                     })
                 }
             },
@@ -279,6 +305,16 @@ impl Address {
                 script.push(0xac); // OP_CHECKSIG
                 ScriptBuf { inner: script }
             },
+            AddressType::P2SH => {
+                // P2SH script: OP_HASH160 <script_hash> OP_EQUAL
+                let script_hash = self.pubkey_hash.unwrap_or([0u8; 20]);
+                let mut script = Vec::new();
+                script.push(0xa9); // OP_HASH160
+                script.push(20);   // Push 20 bytes
+                script.extend_from_slice(&script_hash);
+                script.push(0x87); // OP_EQUAL
+                ScriptBuf { inner: script }
+            },
             AddressType::P2WPKH => {
                 // P2WPKH script: OP_0 <20-byte-pubkey-hash>
                 let pubkey_hash = self.pubkey_hash.unwrap_or([0u8; 20]);
@@ -286,6 +322,25 @@ impl Address {
                 script.push(0x00); // OP_0
                 script.push(20);   // Push 20 bytes
                 script.extend_from_slice(&pubkey_hash);
+                ScriptBuf { inner: script }
+            },
+            AddressType::P2WSH => {
+                // P2WSH script: OP_0 <32-byte-script-hash>
+                let script_hash = if let Some(witness_program) = &self.witness_program {
+                    if witness_program.program.len() == 32 {
+                        let mut hash = [0u8; 32];
+                        hash.copy_from_slice(&witness_program.program);
+                        hash
+                    } else {
+                        [0u8; 32]
+                    }
+                } else {
+                    [0u8; 32]
+                };
+                let mut script = Vec::new();
+                script.push(0x00); // OP_0
+                script.push(32);   // Push 32 bytes
+                script.extend_from_slice(&script_hash);
                 ScriptBuf { inner: script }
             },
         }
@@ -302,7 +357,7 @@ impl std::str::FromStr for Address {
     /// Parses a Bitcoin address string into an `Address` structure.
     /// 
     /// This method performs comprehensive validation including:
-    /// - Format detection (P2PKH vs P2WPKH)
+    /// - Format detection (P2PKH, P2SH, P2WPKH, P2WSH)
     /// - Encoding validation (Base58Check vs Bech32)
     /// - Checksum verification
     /// - Length validation
@@ -321,7 +376,9 @@ impl std::str::FromStr for Address {
     /// 
     /// ```rust,ignore
     /// let p2pkh: Address = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa".parse()?;
+    /// let p2sh: Address = "3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX".parse()?;
     /// let p2wpkh: Address = "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".parse()?;
+    /// let p2wsh: Address = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3".parse()?;
     /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // P2PKH (Pay-to-Public-Key-Hash) address parsing
@@ -366,43 +423,102 @@ impl std::str::FromStr for Address {
                 witness_program: None,
             })
         }
-        // P2WPKH (Pay-to-Witness-Public-Key-Hash) address parsing
+        // P2SH (Pay-to-Script-Hash) address parsing
+        // These are legacy Bitcoin script addresses starting with '3' on mainnet
+        else if s.starts_with('3') {
+            // Decode the Base58Check encoded address
+            // Base58Check = Base58(version + payload + checksum)
+            let decoded = bs58::decode(s)
+                .into_vec()
+                .map_err(|_| AddressError::InvalidBase58)?;
+            
+            // P2SH addresses must be exactly 25 bytes:
+            // 1 byte version + 20 bytes script_hash + 4 bytes checksum
+            if decoded.len() != 25 {
+                return Err(AddressError::InvalidLength);
+            }
+            
+            // Verify version byte for P2SH mainnet addresses
+            // 0x05 = P2SH mainnet, 0xc4 = P2SH testnet (not supported)
+            if decoded[0] != 0x05 {
+                return Err(AddressError::InvalidBase58);
+            }
+            
+            // Extract the 20-byte script hash
+            // This is RIPEMD160(SHA256(script)) from bytes 1-20
+            let mut script_hash = [0u8; 20];
+            script_hash.copy_from_slice(&decoded[1..21]);
+            
+            // Verify Base58Check checksum (last 4 bytes)
+            // Checksum = first 4 bytes of double_sha256(version + script_hash)
+            let payload = &decoded[..21];        // version + script_hash
+            let checksum = &decoded[21..25];     // provided checksum
+            let computed_checksum = double_sha256(payload);
+            if &computed_checksum[..4] != checksum {
+                return Err(AddressError::InvalidBase58);
+            }
+            
+            Ok(Address {
+                inner: s.to_string(),
+                address_type: AddressType::P2SH,
+                pubkey_hash: Some(script_hash), // Store script hash in pubkey_hash field
+                witness_program: None,
+            })
+        }
+        // P2WPKH/P2WSH (Pay-to-Witness-Public-Key-Hash/Script-Hash) address parsing
         // These are segwit addresses starting with 'bc1' on mainnet
         else if s.starts_with("bc1") {
             // Decode the Bech32 encoded address with full validation
             // This includes proper checksum verification and format validation
             let (witness_version, witness_program) = decode_bech32(s)?;
             
-            // For MVP Phase 2-3, we only support segwit version 0
+            // We only support segwit version 0
             if witness_version != 0 {
                 return Err(AddressError::UnsupportedFormat);
             }
             
-            // P2WPKH witness programs must be exactly 20 bytes
-            // P2WSH would be 32 bytes (not supported in MVP)
-            if witness_program.len() != 20 {
-                return Err(AddressError::InvalidWitnessProgram);
+            // Distinguish between P2WPKH (20 bytes) and P2WSH (32 bytes)
+            match witness_program.len() {
+                20 => {
+                    // P2WPKH: 20-byte public key hash
+                    let mut pubkey_hash = [0u8; 20];
+                    pubkey_hash.copy_from_slice(&witness_program);
+                    
+                    Ok(Self {
+                        inner: s.to_string(),
+                        address_type: AddressType::P2WPKH,
+                        pubkey_hash: Some(pubkey_hash),
+                        witness_program: Some(WitnessProgram {
+                            version: witness_version,
+                            program: witness_program,
+                        }),
+                    })
+                },
+                32 => {
+                    // P2WSH: 32-byte script hash
+                    Ok(Self {
+                        inner: s.to_string(),
+                        address_type: AddressType::P2WSH,
+                        pubkey_hash: None, // P2WSH doesn't have a pubkey hash
+                        witness_program: Some(WitnessProgram {
+                            version: witness_version,
+                            program: witness_program,
+                        }),
+                    })
+                },
+                _ => {
+                    // Invalid witness program length for segwit v0
+                    Err(AddressError::InvalidWitnessProgram)
+                }
             }
-            
-            // Extract the 20-byte public key hash from the witness program
-            let mut pubkey_hash = [0u8; 20];
-            pubkey_hash.copy_from_slice(&witness_program);
-            
-            Ok(Self {
-                inner: s.to_string(),
-                address_type: AddressType::P2WPKH,
-                pubkey_hash: Some(pubkey_hash),
-                witness_program: Some(WitnessProgram {
-                    version: witness_version,
-                    program: witness_program,
-                }),
-            })
         } else {
             // Unsupported address format
             // Currently supports:
             // - P2PKH addresses starting with '1'
-            // - P2WPKH addresses starting with 'bc1'
-            // Future: P2SH ('3'), other segwit versions, testnet addresses
+            // - P2SH addresses starting with '3'
+            // - P2WPKH addresses starting with 'bc1q' (20-byte witness program)
+            // - P2WSH addresses starting with 'bc1q' (32-byte witness program)
+            // Future: other segwit versions, testnet addresses
             Err(AddressError::UnsupportedFormat)
         }
     }
