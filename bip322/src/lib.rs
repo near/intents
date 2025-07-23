@@ -5,6 +5,312 @@ use defuse_crypto::{Curve, Payload, Secp256k1, SignedPayload};
 use near_sdk::{near, env};
 use serde_with::serde_as;
 
+/// Comprehensive error types for BIP-322 signature verification.
+/// 
+/// This enum provides detailed error information for all possible failure modes
+/// in BIP-322 signature verification, making debugging and integration easier.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Bip322Error {
+    /// Errors related to witness stack format and content
+    Witness(WitnessError),
+    
+    /// Errors in signature parsing and validation
+    Signature(SignatureError),
+    
+    /// Errors in script execution and validation
+    Script(ScriptError),
+    
+    /// Errors in cryptographic operations
+    Crypto(CryptoError),
+    
+    /// Errors in address validation and derivation
+    Address(AddressValidationError),
+    
+    /// Errors in BIP-322 transaction construction
+    Transaction(TransactionError),
+}
+
+/// Errors related to witness stack format and content
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum WitnessError {
+    /// Witness stack is empty when signature data is expected
+    EmptyWitness,
+    
+    /// Insufficient witness stack elements for the address type
+    /// Contains: (expected_count, actual_count)
+    InsufficientElements(usize, usize),
+    
+    /// Invalid witness stack element at specified index
+    /// Contains: (element_index, description)
+    InvalidElement(usize, String),
+    
+    /// Witness stack format doesn't match address type requirements  
+    /// Contains: (address_type, description)
+    FormatMismatch(AddressType, String),
+}
+
+/// Errors in signature parsing and validation
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SignatureError {
+    /// Invalid DER encoding in signature
+    /// Contains: (error_position, description)
+    InvalidDer(usize, String),
+    
+    /// Signature components (r, s) are invalid
+    /// Contains: description of the invalid component
+    InvalidComponents(String),
+    
+    /// Recovery ID could not be determined
+    /// All recovery IDs (0-3) failed during signature recovery
+    RecoveryIdNotFound,
+    
+    /// Signature recovery failed with the determined recovery ID
+    /// Contains: (recovery_id, description)  
+    RecoveryFailed(u8, String),
+    
+    /// Public key recovered from signature doesn't match provided public key
+    /// Contains: (expected_pubkey_hex, recovered_pubkey_hex)
+    PublicKeyMismatch(String, String),
+}
+
+/// Errors in script execution and validation
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ScriptError {
+    /// Script hash doesn't match the address
+    /// Contains: (expected_hash_hex, computed_hash_hex)
+    HashMismatch(String, String),
+    
+    /// Script format is not supported
+    /// Contains: (script_hex, reason)
+    UnsupportedFormat(String, String),
+    
+    /// Script execution failed during validation
+    /// Contains: (operation, reason)
+    ExecutionFailed(String, String),
+    
+    /// Script size exceeds limits
+    /// Contains: (actual_size, max_size)
+    SizeExceeded(usize, usize),
+    
+    /// Invalid opcode or script structure
+    /// Contains: (position, opcode, description)
+    InvalidOpcode(usize, u8, String),
+    
+    /// Public key in script doesn't match provided public key
+    /// Contains: (script_pubkey_hash_hex, computed_pubkey_hash_hex)
+    PubkeyMismatch(String, String),
+}
+
+/// Errors in cryptographic operations
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CryptoError {
+    /// ECDSA signature recovery failed
+    /// Contains: description of the failure
+    EcrecoverFailed(String),
+    
+    /// Public key format is invalid
+    /// Contains: (pubkey_hex, reason)
+    InvalidPublicKey(String, String),
+    
+    /// Hash computation failed
+    /// Contains: (hash_type, reason)
+    HashingFailed(String, String),
+    
+    /// NEAR SDK cryptographic function failed
+    /// Contains: (function_name, description)
+    NearSdkError(String, String),
+}
+
+/// Errors in address validation and derivation
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AddressValidationError {
+    /// Address type doesn't support the requested operation
+    /// Contains: (address_type, operation)
+    UnsupportedOperation(AddressType, String),
+    
+    /// Public key doesn't derive to the claimed address
+    /// Contains: (claimed_address, derived_address)
+    DerivationMismatch(String, String),
+    
+    /// Address parsing or validation failed
+    /// Contains: (address, reason)
+    InvalidAddress(String, String),
+    
+    /// Missing required address data (pubkey_hash, witness_program, etc.)
+    /// Contains: (address_type, missing_field)
+    MissingData(AddressType, String),
+}
+
+/// Errors in BIP-322 transaction construction
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TransactionError {
+    /// Failed to create the "to_spend" transaction
+    /// Contains: reason for failure
+    ToSpendCreationFailed(String),
+    
+    /// Failed to create the "to_sign" transaction  
+    /// Contains: reason for failure
+    ToSignCreationFailed(String),
+    
+    /// Message hash computation failed
+    /// Contains: (stage, reason)
+    MessageHashFailed(String, String),
+    
+    /// Transaction encoding failed
+    /// Contains: (transaction_type, reason)
+    EncodingFailed(String, String),
+}
+
+impl std::fmt::Display for Bip322Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Bip322Error::Witness(e) => write!(f, "Witness error: {}", e),
+            Bip322Error::Signature(e) => write!(f, "Signature error: {}", e),
+            Bip322Error::Script(e) => write!(f, "Script error: {}", e),
+            Bip322Error::Crypto(e) => write!(f, "Crypto error: {}", e),
+            Bip322Error::Address(e) => write!(f, "Address error: {}", e),
+            Bip322Error::Transaction(e) => write!(f, "Transaction error: {}", e),
+        }
+    }
+}
+
+impl std::fmt::Display for WitnessError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            WitnessError::EmptyWitness => write!(f, "Witness stack is empty"),
+            WitnessError::InsufficientElements(expected, actual) => {
+                write!(f, "Insufficient witness elements: expected {}, got {}", expected, actual)
+            },
+            WitnessError::InvalidElement(idx, desc) => {
+                write!(f, "Invalid witness element at index {}: {}", idx, desc)
+            },
+            WitnessError::FormatMismatch(addr_type, desc) => {
+                write!(f, "Witness format mismatch for {:?}: {}", addr_type, desc)
+            },
+        }
+    }
+}
+
+impl std::fmt::Display for SignatureError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SignatureError::InvalidDer(pos, desc) => {
+                write!(f, "Invalid DER encoding at position {}: {}", pos, desc)
+            },
+            SignatureError::InvalidComponents(desc) => {
+                write!(f, "Invalid signature components: {}", desc)
+            },
+            SignatureError::RecoveryIdNotFound => {
+                write!(f, "Could not determine recovery ID (tried 0-3)")
+            },
+            SignatureError::RecoveryFailed(id, desc) => {
+                write!(f, "Signature recovery failed with ID {}: {}", id, desc)
+            },
+            SignatureError::PublicKeyMismatch(expected, recovered) => {
+                write!(f, "Public key mismatch: expected {}, recovered {}", expected, recovered)
+            },
+        }
+    }
+}
+
+impl std::fmt::Display for ScriptError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ScriptError::HashMismatch(expected, computed) => {
+                write!(f, "Script hash mismatch: expected {}, computed {}", expected, computed)
+            },
+            ScriptError::UnsupportedFormat(script, reason) => {
+                write!(f, "Unsupported script format {}: {}", script, reason)
+            },
+            ScriptError::ExecutionFailed(op, reason) => {
+                write!(f, "Script execution failed at {}: {}", op, reason)
+            },
+            ScriptError::SizeExceeded(actual, max) => {
+                write!(f, "Script size {} exceeds maximum {}", actual, max)
+            },
+            ScriptError::InvalidOpcode(pos, opcode, desc) => {
+                write!(f, "Invalid opcode 0x{:02x} at position {}: {}", opcode, pos, desc)
+            },
+            ScriptError::PubkeyMismatch(script_hash, computed_hash) => {
+                write!(f, "Script pubkey mismatch: script has {}, computed {}", script_hash, computed_hash)
+            },
+        }
+    }
+}
+
+impl std::fmt::Display for CryptoError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CryptoError::EcrecoverFailed(desc) => {
+                write!(f, "ECDSA signature recovery failed: {}", desc)
+            },
+            CryptoError::InvalidPublicKey(pubkey, reason) => {
+                write!(f, "Invalid public key {}: {}", pubkey, reason)
+            },
+            CryptoError::HashingFailed(hash_type, reason) => {
+                write!(f, "{} hashing failed: {}", hash_type, reason)
+            },
+            CryptoError::NearSdkError(func, desc) => {
+                write!(f, "NEAR SDK {} failed: {}", func, desc)
+            },
+        }
+    }
+}
+
+impl std::fmt::Display for AddressValidationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AddressValidationError::UnsupportedOperation(addr_type, op) => {
+                write!(f, "{:?} addresses don't support operation: {}", addr_type, op)
+            },
+            AddressValidationError::DerivationMismatch(claimed, derived) => {
+                write!(f, "Address derivation mismatch: claimed {}, derived {}", claimed, derived)
+            },
+            AddressValidationError::InvalidAddress(addr, reason) => {
+                write!(f, "Invalid address {}: {}", addr, reason)
+            },
+            AddressValidationError::MissingData(addr_type, field) => {
+                write!(f, "{:?} address missing required data: {}", addr_type, field)
+            },
+        }
+    }
+}
+
+impl std::fmt::Display for TransactionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TransactionError::ToSpendCreationFailed(reason) => {
+                write!(f, "Failed to create to_spend transaction: {}", reason)
+            },
+            TransactionError::ToSignCreationFailed(reason) => {
+                write!(f, "Failed to create to_sign transaction: {}", reason)
+            },
+            TransactionError::MessageHashFailed(stage, reason) => {
+                write!(f, "Message hash computation failed at {}: {}", stage, reason)
+            },
+            TransactionError::EncodingFailed(tx_type, reason) => {
+                write!(f, "Transaction encoding failed for {}: {}", tx_type, reason)
+            },
+        }
+    }
+}
+
+impl std::error::Error for Bip322Error {}
+impl std::error::Error for WitnessError {}
+impl std::error::Error for SignatureError {}
+impl std::error::Error for ScriptError {}
+impl std::error::Error for CryptoError {}
+impl std::error::Error for AddressValidationError {}
+impl std::error::Error for TransactionError {}
+
+/// Result type for BIP-322 operations
+pub type Bip322Result<T> = Result<T, Bip322Error>;
+
+/// Helper function to convert hex bytes to string for error reporting
+fn bytes_to_hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{:02x}", b)).collect::<String>()
+}
+
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
     serde_as(schemars = true)
@@ -1281,13 +1587,317 @@ impl SignedBip322Payload {
     }
 }
 
+impl SignedBip322Payload {
+    /// Detailed P2PKH signature verification with comprehensive error reporting.
+    fn verify_p2pkh_signature_detailed(&self, message_hash: &[u8; 32]) -> Bip322Result<<Secp256k1 as Curve>::PublicKey> {
+        // Check witness stack format for P2PKH
+        if self.signature.is_empty() {
+            return Err(Bip322Error::Witness(WitnessError::EmptyWitness));
+        }
+        
+        if self.signature.len() < 2 {
+            return Err(Bip322Error::Witness(WitnessError::InsufficientElements(2, self.signature.len())));
+        }
+
+        // Extract signature and public key from witness stack
+        let signature_der = self.signature.nth(0).ok_or(
+            Bip322Error::Witness(WitnessError::InvalidElement(0, "signature missing".to_string()))
+        )?;
+        
+        let pubkey_bytes = self.signature.nth(1).ok_or(
+            Bip322Error::Witness(WitnessError::InvalidElement(1, "public key missing".to_string()))
+        )?;
+        
+        // Parse DER signature
+        let (r, s, recovery_id) = Self::parse_der_signature_detailed(signature_der)?;
+        
+        // Create signature in format expected by ecrecover
+        let mut signature = [0u8; 64];
+        signature[..32].copy_from_slice(&r);
+        signature[32..].copy_from_slice(&s);
+
+        // Recover public key using NEAR SDK
+        let recovered_pubkey = env::ecrecover(message_hash, &signature, recovery_id, true)
+            .ok_or(Bip322Error::Crypto(CryptoError::EcrecoverFailed(
+                format!("recovery_id: {}, message_hash: {}", recovery_id, bytes_to_hex(message_hash))
+            )))?;
+
+        // Verify recovered public key matches provided public key
+        if recovered_pubkey.as_slice() != pubkey_bytes {
+            return Err(Bip322Error::Signature(SignatureError::PublicKeyMismatch(
+                bytes_to_hex(pubkey_bytes),
+                bytes_to_hex(recovered_pubkey.as_slice())
+            )));
+        }
+
+        // Verify public key matches the address
+        if !self.verify_pubkey_matches_address(pubkey_bytes) {
+            return Err(Bip322Error::Address(AddressValidationError::DerivationMismatch(
+                self.address.inner.clone(),
+                format!("derived from pubkey {}", bytes_to_hex(pubkey_bytes))
+            )));
+        }
+
+        // Convert to curve public key
+        <Secp256k1 as Curve>::PublicKey::try_from(pubkey_bytes)
+            .map_err(|_| Bip322Error::Crypto(CryptoError::InvalidPublicKey(
+                bytes_to_hex(pubkey_bytes),
+                "invalid secp256k1 public key format".to_string()
+            )))
+    }
+
+    /// Detailed P2WPKH signature verification with comprehensive error reporting.
+    fn verify_p2wpkh_signature_detailed(&self, message_hash: &[u8; 32]) -> Bip322Result<<Secp256k1 as Curve>::PublicKey> {
+        // P2WPKH has the same witness format as P2PKH: [signature, public_key]
+        self.verify_p2pkh_signature_detailed(message_hash)
+    }
+
+    /// Detailed P2SH signature verification with comprehensive error reporting.
+    fn verify_p2sh_signature_detailed(&self, message_hash: &[u8; 32]) -> Bip322Result<<Secp256k1 as Curve>::PublicKey> {
+        // Check witness stack format for P2SH
+        if self.signature.is_empty() {
+            return Err(Bip322Error::Witness(WitnessError::EmptyWitness));
+        }
+        
+        if self.signature.len() < 3 {
+            return Err(Bip322Error::Witness(WitnessError::InsufficientElements(3, self.signature.len())));
+        }
+
+        // Expected format: [signature, public_key, redeem_script]
+        let signature_der = self.signature.nth(0).ok_or(
+            Bip322Error::Witness(WitnessError::InvalidElement(0, "signature missing".to_string()))
+        )?;
+        
+        let pubkey_bytes = self.signature.nth(1).ok_or(
+            Bip322Error::Witness(WitnessError::InvalidElement(1, "public key missing".to_string()))
+        )?;
+        
+        let redeem_script = self.signature.nth(2).ok_or(
+            Bip322Error::Witness(WitnessError::InvalidElement(2, "redeem script missing".to_string()))
+        )?;
+
+        // Verify redeem script hash matches address
+        if !self.verify_redeem_script_hash(redeem_script) {
+            let computed_hash = hash160(redeem_script);
+            let expected_hash = self.address.pubkey_hash.unwrap_or([0u8; 20]);
+            return Err(Bip322Error::Script(ScriptError::HashMismatch(
+                bytes_to_hex(&expected_hash),
+                bytes_to_hex(&computed_hash)
+            )));
+        }
+
+        // Execute basic redeem script validation (P2PKH pattern)
+        if !self.execute_redeem_script(redeem_script, pubkey_bytes) {
+            return Err(Bip322Error::Script(ScriptError::ExecutionFailed(
+                "redeem script execution".to_string(),
+                format!("script: {}, pubkey: {}", bytes_to_hex(redeem_script), bytes_to_hex(pubkey_bytes))
+            )));
+        }
+
+        // Parse and verify signature (same as P2PKH)
+        let (r, s, recovery_id) = Self::parse_der_signature_detailed(signature_der)?;
+        
+        let mut signature = [0u8; 64];
+        signature[..32].copy_from_slice(&r);
+        signature[32..].copy_from_slice(&s);
+
+        let recovered_pubkey = env::ecrecover(message_hash, &signature, recovery_id, true)
+            .ok_or(Bip322Error::Crypto(CryptoError::EcrecoverFailed(
+                format!("P2SH recovery_id: {}, message_hash: {}", recovery_id, bytes_to_hex(message_hash))
+            )))?;
+
+        if recovered_pubkey.as_slice() != pubkey_bytes {
+            return Err(Bip322Error::Signature(SignatureError::PublicKeyMismatch(
+                bytes_to_hex(pubkey_bytes),
+                bytes_to_hex(recovered_pubkey.as_slice())
+            )));
+        }
+
+        <Secp256k1 as Curve>::PublicKey::try_from(pubkey_bytes)
+            .map_err(|_| Bip322Error::Crypto(CryptoError::InvalidPublicKey(
+                bytes_to_hex(pubkey_bytes),
+                "invalid secp256k1 public key format".to_string()
+            )))
+    }
+
+    /// Detailed P2WSH signature verification with comprehensive error reporting.
+    fn verify_p2wsh_signature_detailed(&self, message_hash: &[u8; 32]) -> Bip322Result<<Secp256k1 as Curve>::PublicKey> {
+        // Check witness stack format for P2WSH  
+        if self.signature.is_empty() {
+            return Err(Bip322Error::Witness(WitnessError::EmptyWitness));
+        }
+        
+        if self.signature.len() < 3 {
+            return Err(Bip322Error::Witness(WitnessError::InsufficientElements(3, self.signature.len())));
+        }
+
+        // Expected format: [signature, public_key, witness_script]
+        let signature_der = self.signature.nth(0).ok_or(
+            Bip322Error::Witness(WitnessError::InvalidElement(0, "signature missing".to_string()))
+        )?;
+        
+        let pubkey_bytes = self.signature.nth(1).ok_or(
+            Bip322Error::Witness(WitnessError::InvalidElement(1, "public key missing".to_string()))
+        )?;
+        
+        let witness_script = self.signature.nth(2).ok_or(
+            Bip322Error::Witness(WitnessError::InvalidElement(2, "witness script missing".to_string()))
+        )?;
+
+        // Verify witness script hash matches address
+        if !self.verify_witness_script_hash(witness_script) {
+            let computed_hash = env::sha256_array(witness_script);
+            let expected_hash = if let Some(witness_program) = &self.address.witness_program {
+                if witness_program.program.len() == 32 {
+                    let mut hash = [0u8; 32];
+                    hash.copy_from_slice(&witness_program.program);
+                    hash
+                } else {
+                    [0u8; 32]
+                }
+            } else {
+                [0u8; 32]
+            };
+            return Err(Bip322Error::Script(ScriptError::HashMismatch(
+                bytes_to_hex(&expected_hash),
+                bytes_to_hex(&computed_hash)
+            )));
+        }
+
+        // Execute basic witness script validation (P2PKH pattern)
+        if !self.execute_witness_script(witness_script, pubkey_bytes) {
+            return Err(Bip322Error::Script(ScriptError::ExecutionFailed(
+                "witness script execution".to_string(),
+                format!("script: {}, pubkey: {}", bytes_to_hex(witness_script), bytes_to_hex(pubkey_bytes))
+            )));
+        }
+
+        // Parse and verify signature (same as P2PKH)
+        let (r, s, recovery_id) = Self::parse_der_signature_detailed(signature_der)?;
+        
+        let mut signature = [0u8; 64];
+        signature[..32].copy_from_slice(&r);
+        signature[32..].copy_from_slice(&s);
+
+        let recovered_pubkey = env::ecrecover(message_hash, &signature, recovery_id, true)
+            .ok_or(Bip322Error::Crypto(CryptoError::EcrecoverFailed(
+                format!("P2WSH recovery_id: {}, message_hash: {}", recovery_id, bytes_to_hex(message_hash))
+            )))?;
+
+        if recovered_pubkey.as_slice() != pubkey_bytes {
+            return Err(Bip322Error::Signature(SignatureError::PublicKeyMismatch(
+                bytes_to_hex(pubkey_bytes),
+                bytes_to_hex(recovered_pubkey.as_slice())
+            )));
+        }
+
+        <Secp256k1 as Curve>::PublicKey::try_from(pubkey_bytes)
+            .map_err(|_| Bip322Error::Crypto(CryptoError::InvalidPublicKey(
+                bytes_to_hex(pubkey_bytes),
+                "invalid secp256k1 public key format".to_string()
+            )))
+    }
+
+    /// Detailed DER signature parsing with comprehensive error reporting.
+    fn parse_der_signature_detailed(der_sig: &[u8]) -> Bip322Result<([u8; 32], [u8; 32], u8)> {
+        // Try parsing as raw r||s format first (64 bytes)
+        if let Some((r, s, recovery_id)) = Self::parse_raw_signature(der_sig) {
+            return Ok((r, s, recovery_id));
+        }
+        
+        // Parse DER signature using proper ASN.1 DER decoder
+        let (r_bytes, s_bytes) = match Self::parse_der_ecdsa_signature(der_sig) {
+            Some(sig) => sig,
+            None => return Err(Bip322Error::Signature(SignatureError::InvalidDer(
+                0,
+                format!("could not parse as DER or raw format, length: {}", der_sig.len())
+            )))
+        };
+        
+        // Convert to fixed-size arrays
+        let mut r = [0u8; 32];
+        let mut s = [0u8; 32];
+        
+        // Validate r and s component sizes
+        if r_bytes.len() > 32 {
+            return Err(Bip322Error::Signature(SignatureError::InvalidComponents(
+                format!("r component too large: {} bytes", r_bytes.len())
+            )));
+        }
+        
+        if s_bytes.len() > 32 {
+            return Err(Bip322Error::Signature(SignatureError::InvalidComponents(
+                format!("s component too large: {} bytes", s_bytes.len())
+            )));
+        }
+        
+        // Pad with zeros if needed (for shorter values)
+        r[32 - r_bytes.len()..].copy_from_slice(&r_bytes);
+        s[32 - s_bytes.len()..].copy_from_slice(&s_bytes);
+        
+        // Determine recovery ID by testing against a known message
+        let test_message = [0u8; 32];
+        let recovery_id = Self::determine_recovery_id(&r, &s, &test_message)
+            .ok_or(Bip322Error::Signature(SignatureError::RecoveryIdNotFound))?;
+        
+        Ok((r, s, recovery_id))
+    }
+
+    /// Comprehensive BIP-322 signature verification with detailed error reporting.
+    /// 
+    /// This method provides detailed error information for all possible failure modes
+    /// in BIP-322 signature verification, making debugging and integration easier.
+    /// 
+    /// # Returns
+    /// 
+    /// - `Ok(PublicKey)` if verification succeeds
+    /// - `Err(Bip322Error)` with detailed error information if verification fails
+    /// 
+    /// # Examples
+    /// 
+    /// ```rust,ignore
+    /// match payload.verify_detailed() {
+    ///     Ok(pubkey) => println!("Verification succeeded: {:?}", pubkey),
+    ///     Err(Bip322Error::Witness(WitnessError::EmptyWitness)) => {
+    ///         println!("Error: No signature provided");
+    ///     },
+    ///     Err(Bip322Error::Signature(SignatureError::InvalidDer(pos, desc))) => {
+    ///         println!("Error: Invalid DER encoding at position {}: {}", pos, desc);
+    ///     },
+    ///     Err(e) => println!("Error: {}", e),
+    /// }
+    /// ```
+    pub fn verify_detailed(&self) -> Bip322Result<<Secp256k1 as Curve>::PublicKey> {
+        // Get the message hash for this signature
+        let message_hash = self.hash();
+        
+        // Determine verification strategy based on address type
+        let address = self.address.assume_checked_ref();
+        
+        match address.to_address_data() {
+            AddressData::P2pkh { .. } => {
+                self.verify_p2pkh_signature_detailed(&message_hash)
+            },
+            AddressData::P2wpkh { .. } => {
+                self.verify_p2wpkh_signature_detailed(&message_hash)
+            },
+            AddressData::P2sh { .. } => {
+                self.verify_p2sh_signature_detailed(&message_hash)
+            },
+            AddressData::P2wsh { .. } => {
+                self.verify_p2wsh_signature_detailed(&message_hash)
+            },
+        }
+    }
+}
+
 impl SignedPayload for SignedBip322Payload {
     type PublicKey = <Secp256k1 as Curve>::PublicKey;
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {
-        // Comprehensive verification with fallback strategies
-        self.verify_with_fallbacks()
+        // Use the detailed verification method but convert to Option for trait compatibility
+        self.verify_detailed().ok()
     }
 }
 
@@ -1296,6 +1906,7 @@ mod tests {
     use hex_literal::hex;
     use near_sdk::{test_utils::VMContextBuilder, testing_env};
     use rstest::rstest;
+    use std::str::FromStr;
 
     use super::*;
 
@@ -2259,5 +2870,209 @@ mod tests {
         
         // Verify hashes are different (different addresses produce different hashes)
         assert_ne!(p2sh_hash, p2wsh_hash, "Different address types should produce different hashes");
+    }
+
+    #[test]
+    fn test_detailed_error_reporting() {
+        setup_test_env();
+        
+        // Test empty witness error
+        let payload = SignedBip322Payload {
+            address: Address::from_str("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa").expect("Should parse P2PKH"),
+            message: "Test message".to_string(),
+            signature: Witness::new(), // Empty witness
+        };
+        
+        match payload.verify_detailed() {
+            Err(Bip322Error::Witness(WitnessError::EmptyWitness)) => {
+                // Expected error
+            },
+            other => panic!("Expected EmptyWitness error, got: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_insufficient_witness_elements_error() {
+        setup_test_env();
+        
+        // Test insufficient witness elements for P2PKH (needs 2, providing 1)
+        let witness = Witness::from_stack(vec![vec![0x01, 0x02, 0x03]]); // Only signature, missing public key
+        
+        let payload = SignedBip322Payload {
+            address: Address::from_str("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa").expect("Should parse P2PKH"),
+            message: "Test message".to_string(),
+            signature: witness,
+        };
+        
+        match payload.verify_detailed() {
+            Err(Bip322Error::Witness(WitnessError::InsufficientElements(expected, actual))) => {
+                assert_eq!(expected, 2);
+                assert_eq!(actual, 1);
+            },
+            other => panic!("Expected InsufficientElements error, got: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_invalid_der_signature_error() {
+        setup_test_env();
+        
+        // Test invalid DER signature
+        let witness = Witness::from_stack(vec![
+            vec![0x00, 0x01, 0x02], // Invalid DER signature
+            vec![0x02; 33],         // Valid-looking public key (33 bytes)
+        ]);
+        
+        let payload = SignedBip322Payload {
+            address: Address::from_str("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa").expect("Should parse P2PKH"),
+            message: "Test message".to_string(),
+            signature: witness,
+        };
+        
+        match payload.verify_detailed() {
+            Err(Bip322Error::Signature(SignatureError::InvalidDer(pos, desc))) => {
+                assert_eq!(pos, 0);
+                assert!(desc.contains("could not parse as DER or raw format"));
+            },
+            other => panic!("Expected InvalidDer error, got: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_p2sh_script_hash_mismatch_error() {
+        setup_test_env();
+        
+        // Test P2SH with mismatched script hash
+        let witness = Witness::from_stack(vec![
+            vec![0x01; 64],         // Raw signature format (64 bytes)
+            vec![0x02; 33],         // Public key
+            vec![0x76, 0xa9, 0x14], // Invalid redeem script (too short)
+        ]);
+        
+        let payload = SignedBip322Payload {
+            address: Address::from_str("3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX").expect("Should parse P2SH"),
+            message: "Test message".to_string(),
+            signature: witness,
+        };
+        
+        match payload.verify_detailed() {
+            Err(Bip322Error::Script(ScriptError::HashMismatch(expected, computed))) => {
+                assert!(!expected.is_empty());
+                assert!(!computed.is_empty());
+                assert_ne!(expected, computed);
+            },
+            other => panic!("Expected HashMismatch error, got: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_ecrecover_failure_error() {
+        setup_test_env();
+        
+        // Test ECDSA recovery failure with invalid signature components
+        let witness = Witness::from_stack(vec![
+            vec![0x00; 64],      // Invalid signature (all zeros)
+            vec![0x02; 33],      // Valid-looking public key
+        ]);
+        
+        let payload = SignedBip322Payload {
+            address: Address::from_str("bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l").expect("Should parse P2WPKH"),
+            message: "Test message".to_string(),
+            signature: witness,
+        };
+        
+        match payload.verify_detailed() {
+            Err(Bip322Error::Crypto(CryptoError::EcrecoverFailed(desc))) => {
+                assert!(desc.contains("recovery_id"));
+                assert!(desc.contains("message_hash"));
+            },
+            Err(Bip322Error::Signature(SignatureError::InvalidDer(_, desc))) => {
+                // This is also acceptable since all zeros can't be parsed as valid signature
+                assert!(desc.contains("could not parse"));
+            },
+            other => panic!("Expected EcrecoverFailed or InvalidDer error, got: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_public_key_mismatch_error() {
+        setup_test_env();
+        
+        // Create a valid signature but with mismatched public key
+        let valid_signature = vec![0x01; 64]; // Assume this would be valid
+        let wrong_pubkey = vec![0xFF; 33];   // Wrong public key
+        
+        let witness = Witness::from_stack(vec![valid_signature, wrong_pubkey.clone()]);
+        
+        let payload = SignedBip322Payload {
+            address: Address::from_str("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa").expect("Should parse P2PKH"),
+            message: "Test message".to_string(),
+            signature: witness,
+        };
+        
+        // This should result in either EcrecoverFailed or PublicKeyMismatch
+        match payload.verify_detailed() {
+            Err(Bip322Error::Crypto(CryptoError::EcrecoverFailed(_))) |
+            Err(Bip322Error::Signature(SignatureError::PublicKeyMismatch(_, _))) => {
+                // Either error is acceptable for this test case
+            },
+            other => panic!("Expected crypto or signature error, got: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_address_derivation_mismatch_error() {
+        setup_test_env();
+        
+        // This test would require a valid signature that recovers to a public key
+        // that doesn't derive to the claimed address. For now, we'll test the structure.
+        
+        // Create a payload with a P2WPKH address but we'll simulate the scenario
+        // where the recovered public key doesn't match the address
+        let payload = SignedBip322Payload {
+            address: Address::from_str("bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l").expect("Should parse P2WPKH"),
+            message: "Test message".to_string(),
+            signature: Witness::new(), // Empty will trigger EmptyWitness first
+        };
+        
+        // Verify error types exist in our hierarchy
+        match payload.verify_detailed() {
+            Err(Bip322Error::Witness(WitnessError::EmptyWitness)) => {
+                // Expected for empty witness
+            },
+            other => panic!("Expected EmptyWitness error, got: {:?}", other),
+        }
+        
+        // Test that our error types can be constructed
+        let derivation_error = Bip322Error::Address(AddressValidationError::DerivationMismatch(
+            "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".to_string(),
+            "derived_address".to_string(),
+        ));
+        
+        assert!(matches!(derivation_error, Bip322Error::Address(_)));
+    }
+
+    #[test]
+    fn test_error_display_messages() {
+        setup_test_env();
+        
+        // Test that all error types have proper Display implementations
+        let witness_error = Bip322Error::Witness(WitnessError::EmptyWitness);
+        assert_eq!(format!("{}", witness_error), "Witness error: Witness stack is empty");
+        
+        let signature_error = Bip322Error::Signature(SignatureError::InvalidDer(5, "bad encoding".to_string()));
+        assert_eq!(format!("{}", signature_error), "Signature error: Invalid DER encoding at position 5: bad encoding");
+        
+        let script_error = Bip322Error::Script(ScriptError::HashMismatch("abc123".to_string(), "def456".to_string()));
+        assert_eq!(format!("{}", script_error), "Script error: Script hash mismatch: expected abc123, computed def456");
+        
+        let crypto_error = Bip322Error::Crypto(CryptoError::EcrecoverFailed("test failure".to_string()));
+        assert_eq!(format!("{}", crypto_error), "Crypto error: ECDSA signature recovery failed: test failure");
+        
+        let address_error = Bip322Error::Address(AddressValidationError::DerivationMismatch("addr1".to_string(), "addr2".to_string()));
+        assert_eq!(format!("{}", address_error), "Address error: Address derivation mismatch: claimed addr1, derived addr2");
+        
+        let transaction_error = Bip322Error::Transaction(TransactionError::ToSpendCreationFailed("test reason".to_string()));
+        assert_eq!(format!("{}", transaction_error), "Transaction error: Failed to create to_spend transaction: test reason");
     }
 }
