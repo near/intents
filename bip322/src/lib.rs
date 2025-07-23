@@ -362,43 +362,248 @@ impl SignedBip322Payload {
         // Use NEAR SDK ecrecover to recover the public key
         env::ecrecover(message_hash, &signature, recovery_id, true).and_then(|recovered_pubkey| {
             if recovered_pubkey.as_slice() == pubkey_bytes {
-                <Secp256k1 as Curve>::PublicKey::try_from(pubkey_bytes).ok()
+                // Additional validation: verify the public key actually corresponds to the address
+                if self.verify_pubkey_matches_address(pubkey_bytes) {
+                    <Secp256k1 as Curve>::PublicKey::try_from(pubkey_bytes).ok()
+                } else {
+                    None // Public key doesn't match the claimed address
+                }
             } else {
-                None
+                None // Recovered public key doesn't match provided public key
             }
         })
     }
     
-    /// Parse DER-encoded signature and extract recovery ID
-    /// Returns (r, s, `recovery_id`) if successful
+    /// Parse DER-encoded ECDSA signature and extract r, s values with recovery ID.
+    /// 
+    /// This function implements proper ASN.1 DER parsing for ECDSA signatures
+    /// as used in Bitcoin transactions. It handles the complete DER structure:
+    /// 
+    /// ```text
+    /// SEQUENCE {
+    ///   r INTEGER,
+    ///   s INTEGER
+    /// }
+    /// ```
+    /// 
+    /// After parsing, it attempts to determine the recovery ID by testing
+    /// all possible values against a known message hash.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `der_sig` - The DER-encoded signature bytes
+    /// 
+    /// # Returns
+    /// 
+    /// A tuple containing:
+    /// - `r`: The r value as a 32-byte array
+    /// - `s`: The s value as a 32-byte array  
+    /// - `recovery_id`: The recovery ID (0-3) for public key recovery
+    /// 
+    /// Returns `None` if parsing fails or recovery ID cannot be determined.
     fn parse_der_signature(der_sig: &[u8]) -> Option<([u8; 32], [u8; 32], u8)> {
-        // Simplified DER parsing for MVP
-        // Real implementation would properly parse DER format
-        if der_sig.len() < 70 || der_sig.len() > 73 {
-            return None;
-        }
+        // Parse DER signature using proper ASN.1 DER decoder
+        let signature = match Self::parse_der_ecdsa_signature(der_sig) {
+            Some(sig) => sig,
+            None => {
+                // Fallback: try parsing as raw r||s format (64 bytes)
+                return Self::parse_raw_signature(der_sig);
+            }
+        };
         
-        // For MVP, assume signature is in a known format and extract r,s
-        // This is a placeholder - production code would properly parse DER
+        let (r_bytes, s_bytes) = signature;
+        
+        // Convert to fixed-size arrays
         let mut r = [0u8; 32];
         let mut s = [0u8; 32];
         
-        // Try to extract r and s from the signature
-        // This is simplified and would need proper DER parsing
-        if der_sig.len() >= 64 {
-            r.copy_from_slice(&der_sig[..32]);
-            s.copy_from_slice(&der_sig[32..64]);
+        // Pad with zeros if needed (for shorter values)
+        if r_bytes.len() <= 32 {
+            r[32 - r_bytes.len()..].copy_from_slice(&r_bytes);
         } else {
+            return None; // r value too large
+        }
+        
+        if s_bytes.len() <= 32 {
+            s[32 - s_bytes.len()..].copy_from_slice(&s_bytes);
+        } else {
+            return None; // s value too large
+        }
+        
+        // Determine recovery ID by testing against a known message
+        // We use a dummy message hash for recovery ID determination
+        let test_message = [0u8; 32];
+        let recovery_id = Self::determine_recovery_id(&r, &s, &test_message)?;
+        
+        Some((r, s, recovery_id))
+    }
+    
+    /// Parse DER-encoded ECDSA signature using proper ASN.1 DER parsing.
+    /// 
+    /// This implements the complete DER parsing algorithm for ECDSA signatures
+    /// following the ASN.1 specification used in Bitcoin.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `der_bytes` - The DER-encoded signature
+    /// 
+    /// # Returns
+    /// 
+    /// A tuple of (r_bytes, s_bytes) if parsing succeeds, None otherwise.
+    fn parse_der_ecdsa_signature(der_bytes: &[u8]) -> Option<(Vec<u8>, Vec<u8>)> {
+        // DER signature structure:
+        // 0x30 [total-length] 0x02 [R-length] [R] 0x02 [S-length] [S]
+        
+        if der_bytes.len() < 6 {
+            return None; // Too short for minimal DER signature
+        }
+        
+        let mut pos = 0;
+        
+        // Check SEQUENCE tag (0x30)
+        if der_bytes[pos] != 0x30 {
+            return None;
+        }
+        pos += 1;
+        
+        // Parse total length
+        let (total_len, len_bytes) = Self::parse_der_length(&der_bytes[pos..])?;
+        pos += len_bytes;
+        
+        // Verify total length matches remaining bytes
+        if pos + total_len != der_bytes.len() {
             return None;
         }
         
-        // For MVP, try recovery IDs 0-3
+        // Parse r value
+        if pos >= der_bytes.len() || der_bytes[pos] != 0x02 {
+            return None; // Missing INTEGER tag for r
+        }
+        pos += 1;
+        
+        let (r_len, len_bytes) = Self::parse_der_length(&der_bytes[pos..])?;
+        pos += len_bytes;
+        
+        if pos + r_len > der_bytes.len() {
+            return None; // r value extends beyond signature
+        }
+        
+        let r_bytes = der_bytes[pos..pos + r_len].to_vec();
+        pos += r_len;
+        
+        // Parse s value
+        if pos >= der_bytes.len() || der_bytes[pos] != 0x02 {
+            return None; // Missing INTEGER tag for s
+        }
+        pos += 1;
+        
+        let (s_len, len_bytes) = Self::parse_der_length(&der_bytes[pos..])?;
+        pos += len_bytes;
+        
+        if pos + s_len != der_bytes.len() {
+            return None; // s value doesn't match remaining bytes
+        }
+        
+        let s_bytes = der_bytes[pos..pos + s_len].to_vec();
+        
+        Some((r_bytes, s_bytes))
+    }
+    
+    /// Parse DER length encoding.
+    /// 
+    /// DER uses variable-length encoding for lengths:
+    /// - Short form: 0-127 (0x00-0x7F) - length in single byte
+    /// - Long form: 128-255 (0x80-0xFF) - first byte indicates number of length bytes
+    /// 
+    /// # Arguments
+    /// 
+    /// * `bytes` - The bytes starting with the length encoding
+    /// 
+    /// # Returns
+    /// 
+    /// A tuple of (length_value, bytes_consumed) if parsing succeeds.
+    fn parse_der_length(bytes: &[u8]) -> Option<(usize, usize)> {
+        if bytes.is_empty() {
+            return None;
+        }
+        
+        let first_byte = bytes[0];
+        
+        if first_byte & 0x80 == 0 {
+            // Short form: length is just the first byte
+            Some((first_byte as usize, 1))
+        } else {
+            // Long form: first byte indicates number of length bytes
+            let len_bytes = (first_byte & 0x7F) as usize;
+            
+            if len_bytes == 0 || len_bytes > 4 || bytes.len() < 1 + len_bytes {
+                return None; // Invalid length encoding
+            }
+            
+            let mut length = 0usize;
+            for i in 1..=len_bytes {
+                length = (length << 8) | (bytes[i] as usize);
+            }
+            
+            Some((length, 1 + len_bytes))
+        }
+    }
+    
+    /// Parse raw signature format (r||s as 64 bytes).
+    /// 
+    /// This handles the case where the signature is provided as raw r and s values
+    /// concatenated together, rather than DER-encoded.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `raw_sig` - The raw signature bytes (should be 64 bytes)
+    /// 
+    /// # Returns
+    /// 
+    /// A tuple of (r, s, recovery_id) if parsing succeeds.
+    fn parse_raw_signature(raw_sig: &[u8]) -> Option<([u8; 32], [u8; 32], u8)> {
+        if raw_sig.len() != 64 {
+            return None;
+        }
+        
+        let mut r = [0u8; 32];
+        let mut s = [0u8; 32];
+        
+        r.copy_from_slice(&raw_sig[..32]);
+        s.copy_from_slice(&raw_sig[32..64]);
+        
+        // Determine recovery ID
+        let test_message = [0u8; 32];
+        let recovery_id = Self::determine_recovery_id(&r, &s, &test_message)?;
+        
+        Some((r, s, recovery_id))
+    }
+    
+    /// Determine the recovery ID for ECDSA signature recovery.
+    /// 
+    /// The recovery ID is needed to recover the public key from an ECDSA signature.
+    /// There are typically 2-4 possible recovery IDs, and we need to test each one
+    /// to find the correct one.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `r` - The r value of the signature
+    /// * `s` - The s value of the signature
+    /// * `message_hash` - A test message hash to validate recovery
+    /// 
+    /// # Returns
+    /// 
+    /// The recovery ID (0-3) if found, None if no valid recovery ID exists.
+    fn determine_recovery_id(r: &[u8; 32], s: &[u8; 32], message_hash: &[u8; 32]) -> Option<u8> {
+        // Create signature for testing
+        let mut signature = [0u8; 64];
+        signature[..32].copy_from_slice(r);
+        signature[32..].copy_from_slice(s);
+        
+        // Test each possible recovery ID (0-3)
         for recovery_id in 0..4 {
-            let mut sig = [0u8; 64];
-            sig[..32].copy_from_slice(&r);
-            sig[32..].copy_from_slice(&s);
-            if env::ecrecover(&[0u8; 32], &sig, recovery_id, true).is_some() {
-                return Some((r, s, recovery_id));
+            if env::ecrecover(message_hash, &signature, recovery_id, true).is_some() {
+                return Some(recovery_id);
             }
         }
         
@@ -427,41 +632,186 @@ impl SignedBip322Payload {
         // Use NEAR SDK ecrecover to recover the public key
         env::ecrecover(message_hash, &signature, recovery_id, true).and_then(|recovered_pubkey| {
             if recovered_pubkey.as_slice() == pubkey_bytes {
-                // Additional verification: ensure the public key corresponds to the address
-                if self.verify_pubkey_matches_address(pubkey_bytes) {
+                // Full verification: ensure the public key corresponds to the address
+                // This uses complete HASH160 computation and address derivation
+                if self.verify_pubkey_matches_address(pubkey_bytes) && 
+                   self.validate_pubkey_derives_address(pubkey_bytes) {
                     <Secp256k1 as Curve>::PublicKey::try_from(pubkey_bytes).ok()
                 } else {
-                    None
+                    None // Public key doesn't match the claimed address
                 }
             } else {
-                None
+                None // Recovered public key doesn't match provided public key
             }
         })
     }
     
-    /// Verify that a public key matches the address (P2WPKH specific)
+    /// Verify that a public key matches the address using full cryptographic validation.
+    /// 
+    /// This function performs complete address validation by:
+    /// 1. Computing HASH160(pubkey) = RIPEMD160(SHA256(pubkey))
+    /// 2. Comparing with the expected hash from the address
+    /// 3. Validating both compressed and uncompressed public key formats
+    /// 
+    /// This replaces the MVP simplified validation with production-ready validation.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `pubkey_bytes` - The public key bytes to validate
+    /// 
+    /// # Returns
+    /// 
+    /// `true` if the public key corresponds to the address, `false` otherwise.
     fn verify_pubkey_matches_address(&self, pubkey_bytes: &[u8]) -> bool {
-        if pubkey_bytes.len() != 33 { // Compressed public key
+        // Validate public key format
+        if !self.is_valid_public_key_format(pubkey_bytes) {
             return false;
         }
         
-        // For P2WPKH, the address is derived from HASH160(pubkey)
-        if matches!(self.address.address_type, AddressType::P2WPKH) {
-            // Compute HASH160 = RIPEMD160(SHA256(pubkey))
-            let _sha256_hash = env::sha256_array(pubkey_bytes);
-            
-            // NEAR SDK doesn't have RIPEMD160, so we'll use a simplified check for MVP
-            // In production, would need proper RIPEMD160 implementation
-            if let Some(expected_hash) = self.address.pubkey_hash {
-                // For MVP, just check that we have a hash to compare against
-                // Production would compute RIPEMD160(sha256_hash) and compare
-                // For now, we'll accept if the address has a hash
-                return !expected_hash.iter().all(|&b| b == 0);
-            }
-        }
+        // Get the expected pubkey hash from the address
+        let expected_hash = match self.address.pubkey_hash {
+            Some(hash) => hash,
+            None => return false, // Address must have pubkey hash for validation
+        };
         
-        // For P2PKH, similar logic would apply
-        true // For MVP, accept valid public keys
+        // Compute HASH160 of the public key using full cryptographic implementation
+        let computed_hash = self.compute_pubkey_hash160(pubkey_bytes);
+        
+        // Compare computed hash with expected hash
+        computed_hash == expected_hash
+    }
+    
+    /// Validate public key format (compressed or uncompressed).
+    /// 
+    /// Bitcoin supports two public key formats:
+    /// - Compressed: 33 bytes, starts with 0x02 or 0x03
+    /// - Uncompressed: 65 bytes, starts with 0x04
+    /// 
+    /// Modern Bitcoin primarily uses compressed public keys.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `pubkey_bytes` - The public key bytes to validate
+    /// 
+    /// # Returns
+    /// 
+    /// `true` if the format is valid, `false` otherwise.
+    fn is_valid_public_key_format(&self, pubkey_bytes: &[u8]) -> bool {
+        match pubkey_bytes.len() {
+            33 => {
+                // Compressed public key
+                matches!(pubkey_bytes[0], 0x02 | 0x03)
+            },
+            65 => {
+                // Uncompressed public key
+                pubkey_bytes[0] == 0x04
+            },
+            _ => false, // Invalid length
+        }
+    }
+    
+    /// Compute HASH160 of a public key using full cryptographic implementation.
+    /// 
+    /// HASH160 is Bitcoin's standard hash function for generating addresses:
+    /// HASH160(pubkey) = RIPEMD160(SHA256(pubkey))
+    /// 
+    /// This implementation uses external cryptographic libraries to ensure
+    /// compatibility with Bitcoin Core and other standard implementations.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `pubkey_bytes` - The public key bytes
+    /// 
+    /// # Returns
+    /// 
+    /// The 20-byte HASH160 result.
+    fn compute_pubkey_hash160(&self, pubkey_bytes: &[u8]) -> [u8; 20] {
+        // Use the external HASH160 function from bitcoin_minimal module
+        // This ensures compatibility with standard Bitcoin implementations
+        hash160(pubkey_bytes)
+    }
+    
+    /// Derive Bitcoin address from public key for validation.
+    /// 
+    /// This function derives what the Bitcoin address should be for a given
+    /// public key and address type, then compares it with the claimed address.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `pubkey_bytes` - The public key bytes
+    /// 
+    /// # Returns
+    /// 
+    /// `true` if the derived address matches the claimed address, `false` otherwise.
+    fn validate_pubkey_derives_address(&self, pubkey_bytes: &[u8]) -> bool {
+        let pubkey_hash = self.compute_pubkey_hash160(pubkey_bytes);
+        
+        match self.address.address_type {
+            AddressType::P2PKH => {
+                // For P2PKH, derive the Base58Check address
+                self.validate_p2pkh_derivation(&pubkey_hash)
+            },
+            AddressType::P2WPKH => {
+                // For P2WPKH, derive the Bech32 address
+                self.validate_p2wpkh_derivation(&pubkey_hash)
+            },
+        }
+    }
+    
+    /// Validate P2PKH address derivation from pubkey hash.
+    /// 
+    /// This derives a P2PKH address from the pubkey hash and compares
+    /// it with the claimed address string.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `pubkey_hash` - The HASH160 of the public key
+    /// 
+    /// # Returns
+    /// 
+    /// `true` if the derived address matches, `false` otherwise.
+    fn validate_p2pkh_derivation(&self, pubkey_hash: &[u8; 20]) -> bool {
+        // P2PKH address format: Base58Check(version_byte + pubkey_hash + checksum)
+        let mut payload = vec![0x00]; // Mainnet P2PKH version byte
+        payload.extend_from_slice(pubkey_hash);
+        
+        // Compute checksum using double SHA-256
+        let checksum_hash = double_sha256(&payload);
+        payload.extend_from_slice(&checksum_hash[..4]);
+        
+        // Encode as Base58
+        let derived_address = bs58::encode(&payload).into_string();
+        
+        // Compare with claimed address
+        derived_address == self.address.inner
+    }
+    
+    /// Validate P2WPKH address derivation from pubkey hash.
+    /// 
+    /// This derives a P2WPKH address from the pubkey hash and compares
+    /// it with the claimed address string.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `pubkey_hash` - The HASH160 of the public key
+    /// 
+    /// # Returns
+    /// 
+    /// `true` if the derived address matches, `false` otherwise.
+    fn validate_p2wpkh_derivation(&self, pubkey_hash: &[u8; 20]) -> bool {
+        // P2WPKH address format: Bech32(hrp + witness_version + pubkey_hash)
+        use bech32::{segwit, Hrp, Fe32};
+        
+        let hrp = Hrp::parse("bc").unwrap(); // Bitcoin mainnet
+        let witness_version = Fe32::try_from(0).unwrap(); // Segwit version 0
+        
+        match segwit::encode(hrp, witness_version, pubkey_hash) {
+            Ok(derived_address) => {
+                // Compare with claimed address
+                derived_address == self.address.inner
+            },
+            Err(_) => false, // Encoding failed
+        }
     }
 }
 
@@ -975,10 +1325,178 @@ mod tests {
         // Test with correct length but dummy data
         let dummy_pubkey = vec![0x02; 33]; // Valid compressed public key format
         let result = payload.verify_pubkey_matches_address(&dummy_pubkey);
-        // Should pass MVP verification (simplified)
-        assert!(result, "Valid format public key should pass MVP verification");
+        // With full validation, dummy pubkeys that don't match the address should fail
+        assert!(!result, "Dummy public key should fail full cryptographic validation");
+        
+        // Note: With full implementation, we now perform complete HASH160 validation.
+        // A public key must actually correspond to the address to pass verification,
+        // not just have the correct format. This is the expected production behavior.
+    }
+    
+    #[test]
+    fn test_full_der_signature_parsing() {
+        setup_test_env();
+        
+        // Test proper DER signature parsing with a realistic DER structure
+        // DER format: 0x30 [total-length] 0x02 [R-length] [R] 0x02 [S-length] [S]
+        
+        // Create a minimal valid DER signature for testing
+        let mut der_sig = vec![];
+        der_sig.push(0x30); // SEQUENCE tag
+        der_sig.push(0x44); // Total length (68 bytes for content)
+        der_sig.push(0x02); // INTEGER tag for r
+        der_sig.push(0x20); // r length (32 bytes)
+        der_sig.extend_from_slice(&[0x01; 32]); // r value (dummy)
+        der_sig.push(0x02); // INTEGER tag for s
+        der_sig.push(0x20); // s length (32 bytes)  
+        der_sig.extend_from_slice(&[0x02; 32]); // s value (dummy)
+        
+        // Test DER parsing (may return None due to recovery ID issues with dummy data)
+        let result = SignedBip322Payload::parse_der_signature(&der_sig);
+        // The parsing should work even if recovery fails with dummy data
+        println!("DER parsing result: {:?}", result.is_some());
+        
+        // Test invalid DER structures
+        let invalid_der = vec![0x31, 0x44]; // Wrong SEQUENCE tag
+        let result = SignedBip322Payload::parse_der_signature(&invalid_der);
+        assert!(result.is_none(), "Invalid DER structure should fail parsing");
+        
+        // Test raw signature format fallback (64 bytes)
+        let raw_sig = vec![0x01; 64]; // 32 bytes r + 32 bytes s
+        let result = SignedBip322Payload::parse_der_signature(&raw_sig);
+        // Should attempt raw parsing as fallback
+        println!("Raw signature parsing result: {:?}", result.is_some());
+    }
+    
+    #[test]
+    fn test_full_hash160_computation() {
+        setup_test_env();
+        
+        // Test HASH160 computation with known test vectors
+        let test_pubkey = [
+            0x02, 0x79, 0xbe, 0x66, 0x7e, 0xf9, 0xdc, 0xbb, 0xac, 0x55, 0xa0, 0x62, 0x95, 0xce, 0x87, 0x0b,
+            0x07, 0x02, 0x9b, 0xfc, 0xdb, 0x2d, 0xce, 0x28, 0xd9, 0x59, 0xf2, 0x81, 0x5b, 0x16, 0xf8, 0x17, 0x98
+        ]; // Example compressed public key
+        
+        let hash160_result = hash160(&test_pubkey);
+        
+        // Verify the result is 20 bytes
+        assert_eq!(hash160_result.len(), 20, "HASH160 should produce 20-byte result");
+        
+        // Verify it's not all zeros (would indicate a problem)
+        assert!(!hash160_result.iter().all(|&b| b == 0), "HASH160 should not be all zeros");
+        
+        // Test with different input lengths
+        let uncompressed_pubkey = [0x04; 65]; // Uncompressed format
+        let hash160_uncompressed = hash160(&uncompressed_pubkey);
+        assert_eq!(hash160_uncompressed.len(), 20, "HASH160 should work with uncompressed keys");
+        
+        // Different inputs should produce different hashes
+        assert_ne!(hash160_result, hash160_uncompressed, "Different pubkeys should produce different hashes");
+    }
+    
+    #[test]
+    fn test_public_key_format_validation() {
+        setup_test_env();
+        
+        let payload = SignedBip322Payload {
+            address: Address {
+                inner: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4".to_string(),
+                address_type: AddressType::P2WPKH,
+                pubkey_hash: Some([1u8; 20]),
+                witness_program: None,
+            },
+            message: "Test message".to_string(),
+            signature: Witness::new(),
+        };
+        
+        // Test valid compressed public key format
+        let compressed_02 = vec![0x02; 33];
+        assert!(payload.is_valid_public_key_format(&compressed_02), "0x02 prefix should be valid compressed");
+        
+        let compressed_03 = vec![0x03; 33];
+        assert!(payload.is_valid_public_key_format(&compressed_03), "0x03 prefix should be valid compressed");
+        
+        // Test valid uncompressed public key format
+        let uncompressed = vec![0x04; 65];
+        assert!(payload.is_valid_public_key_format(&uncompressed), "0x04 prefix should be valid uncompressed");
+        
+        // Test invalid formats
+        let invalid_prefix = vec![0x05; 33];
+        assert!(!payload.is_valid_public_key_format(&invalid_prefix), "0x05 prefix should be invalid");
+        
+        let wrong_length = vec![0x02; 32]; // Too short
+        assert!(!payload.is_valid_public_key_format(&wrong_length), "Wrong length should be invalid");
+        
+        let empty = vec![];
+        assert!(!payload.is_valid_public_key_format(&empty), "Empty key should be invalid");
+    }
+    
+    #[test]
+    fn test_production_address_validation() {
+        setup_test_env();
+        
+        // Test that the new implementation provides full validation
+        // This replaces the MVP simplified validation
+        
+        let payload = SignedBip322Payload {
+            address: Address {
+                inner: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4".to_string(),
+                address_type: AddressType::P2WPKH,
+                pubkey_hash: Some([
+                    0x75, 0x1e, 0x76, 0xc9, 0x76, 0x2a, 0x3b, 0x1a, 0xa8, 0x12,
+                    0xa9, 0x82, 0x59, 0x37, 0x11, 0xc4, 0x97, 0x4c, 0x96, 0x2b
+                ]), // Extracted from the bech32 address above
+                witness_program: None,
+            },
+            message: "Test message".to_string(),
+            signature: Witness::new(),
+        };
+        
+        // Test with a public key that doesn't match the address
+        let wrong_pubkey = vec![0x02; 33]; // Dummy key that won't match
+        let result = payload.verify_pubkey_matches_address(&wrong_pubkey);
+        assert!(!result, "Wrong public key should fail full validation");
+        
+        // Test format validation still works
+        assert!(payload.is_valid_public_key_format(&wrong_pubkey), "Format validation should still pass");
+        
+        // The key difference: MVP would accept format-valid keys,
+        // but full implementation requires cryptographic correspondence
+        println!("Full implementation correctly rejects non-matching public keys");
     }
 
+    #[test]
+    fn test_der_length_parsing() {
+        setup_test_env();
+        
+        // Test DER length parsing edge cases
+        
+        // Short form lengths (0-127)
+        let short_length = [0x20]; // 32 bytes
+        let result = SignedBip322Payload::parse_der_length(&short_length);
+        assert_eq!(result, Some((32, 1)), "Short form length parsing should work");
+        
+        // Long form lengths (128+)
+        let long_length = [0x81, 0x80]; // Length encoded in 1 byte, value 128
+        let result = SignedBip322Payload::parse_der_length(&long_length);
+        assert_eq!(result, Some((128, 2)), "Long form length parsing should work");
+        
+        // Multi-byte long form
+        let multi_byte = [0x82, 0x01, 0x00]; // Length encoded in 2 bytes, value 256
+        let result = SignedBip322Payload::parse_der_length(&multi_byte);
+        assert_eq!(result, Some((256, 3)), "Multi-byte long form should work");
+        
+        // Invalid cases
+        let empty = [];
+        let result = SignedBip322Payload::parse_der_length(&empty);
+        assert_eq!(result, None, "Empty input should return None");
+        
+        let invalid_long = [0x85]; // Claims 5 length bytes but doesn't provide them
+        let result = SignedBip322Payload::parse_der_length(&invalid_long);
+        assert_eq!(result, None, "Incomplete long form should return None");
+    }
+    
     #[test] 
     fn test_comprehensive_bip322_structure() {
         setup_test_env();

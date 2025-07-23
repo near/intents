@@ -15,9 +15,11 @@ defuse-near-utils.workspace = true
 near-sdk.workspace = true
 serde_with.workspace = true
 
-# For Bitcoin address parsing
+# For Bitcoin address parsing and cryptographic operations
 bs58 = "0.5"
 bech32 = "0.11"
+
+# For full signature parsing - cryptographic operations now use NEAR SDK host functions
 
 [features]
 abi = ["defuse-crypto/abi"]

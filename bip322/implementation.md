@@ -61,6 +61,7 @@
 
 - `near_sdk::env::sha256_array()` for double SHA-256 operations
 - `near_sdk::env::sha256()` for message hashing
+- `near_sdk::env::ripemd160_array()` for RIPEMD-160 hash computation
 - `near_sdk::env::ecrecover()` for public key recovery
 - Existing defuse-crypto types for public key representation
 - NEAR gas optimization patterns
