@@ -253,6 +253,11 @@ impl Witness {
     pub fn nth(&self, index: usize) -> Option<&[u8]> {
         self.stack.get(index).map(|v| v.as_slice())
     }
+
+    /// Create a witness with the given stack elements (for testing)
+    pub fn from_stack(stack: Vec<Vec<u8>>) -> Self {
+        Self { stack }
+    }
 }
 
 impl Address {
