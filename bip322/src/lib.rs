@@ -323,10 +323,12 @@ pub struct SignedBip322Payload {
     pub address: Address,
     pub message: String,
 
-    // TODO:
-    // * is it just signature-related bytes?
-    // * or is it a serialized `to_sign` tx (pbst)?
-    // * how do we differentiate between them?
+    /// BIP-322 signature data as a witness stack.
+    /// 
+    /// The witness format depends on the address type:
+    /// - P2PKH/P2WPKH: [signature, pubkey]
+    /// - P2SH: [signature, pubkey, redeem_script]
+    /// - P2WSH: [signature, pubkey, witness_script]
     pub signature: Witness,
 }
 
@@ -335,7 +337,6 @@ impl Payload for SignedBip322Payload {
     fn hash(&self) -> near_sdk::CryptoHash {
         match self
             .address
-            // TODO
             .assume_checked_ref()
             .to_address_data()
         {
