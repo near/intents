@@ -884,10 +884,22 @@ impl SighashCache {
         sighash_type: EcdsaSighashType,
     ) -> Result<(), std::io::Error> {
         // Simplified segwit v0 sighash implementation
-        // This is a placeholder - full implementation would be more complex
+        // Include the transaction structure to ensure message hash affects final result
         
-        // For MVP, just write some basic transaction data
+        // Write transaction version
         writer.write_all(&self.tx.version.0.to_le_bytes())?;
+        
+        // Write input count and inputs (this includes the script_sig with message hash)
+        writer.write_all(&(self.tx.input.len() as u32).to_le_bytes())?;
+        for input in &self.tx.input {
+            writer.write_all(&input.previous_output.txid.0)?;
+            writer.write_all(&input.previous_output.vout.to_le_bytes())?;
+            writer.write_all(&(input.script_sig.inner.len() as u32).to_le_bytes())?;
+            writer.write_all(&input.script_sig.inner)?;
+            writer.write_all(&input.sequence.0.to_le_bytes())?;
+        }
+        
+        // Write other transaction components
         writer.write_all(&[input_index as u8])?;
         writer.write_all(&script_code.inner)?;
         writer.write_all(&value.0.to_le_bytes())?;

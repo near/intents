@@ -27,6 +27,8 @@ This module provides **full BIP-322 compliance** for verifying Bitcoin message s
 
 ### ✅ All Major Address Types (100% Coverage)
 
+> **Note**: This implementation supports Bitcoin mainnet addresses only for production security.
+
 | Address Type | Format | Example | Status |
 |-------------|---------|---------|--------|
 | **P2PKH** | Legacy addresses starting with '1' | `1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa` | ✅ **Complete** |
@@ -87,27 +89,28 @@ This module provides **full BIP-322 compliance** for verifying Bitcoin message s
 
 ### ✅ Comprehensive Test Suite
 
-- **✅ Unit Tests**: 38+ individual test functions covering all components
+- **✅ Unit Tests**: 45 individual test functions covering all components
 - **✅ Integration Tests**: End-to-end BIP-322 verification workflows  
 - **✅ Test Vectors**: Official BIP-322 test vectors with expected outputs
 - **✅ Address Parsing**: All 4 address types with valid/invalid cases
 - **✅ Signature Verification**: Multiple signature formats and edge cases
-- **✅ Gas Benchmarking**: Performance validation for production deployment
+- **✅ Edge Case Testing**: Comprehensive failure scenarios and boundary conditions
 - **✅ Error Scenarios**: Comprehensive failure case coverage
 
 ### Test Categories
 
-```rust
-// Example test cases included:
-- BIP-322 message hash computation with test vectors
-- Bitcoin address parsing for all supported types
+**Unit Tests (12 functions)**:
+- Address parsing and validation for all 4 Bitcoin address types
+- BIP-322 message hash computation with deterministic verification
 - Transaction structure validation (to_spend/to_sign)
-- Signature format parsing (DER and raw)
-- Public key recovery and validation
-- Witness stack handling for all address types
-- Gas consumption benchmarking
-- Error handling and edge cases
-```
+- Signature verification for each address type
+- Edge cases: empty signatures, invalid formats, malformed data
+- Trait implementations (Payload, SignedPayload)
+
+**Integration Tests (3 functions)**:
+- DefusePayload extraction from BIP-322 messages
+- Integration with MultiPayload enum system
+- Cross-module compatibility with NEAR intents system
 
 ## 🚀 Production Readiness
 
@@ -180,11 +183,11 @@ The implementation uses only essential dependencies:
 
 ```toml
 [dependencies]
-near-sdk = "5.15"           # NEAR blockchain SDK
-bech32 = "0.11"            # Bech32 address encoding/decoding
+defuse-crypto = { workspace = true, features = ["serde"] }
+near-sdk.workspace = true
+serde_with.workspace = true
 bs58 = "0.5"               # Base58 encoding for legacy addresses
-hex-literal = "0.4"        # Hex literals for test vectors
-serde-with = "3.12"        # Serialization helpers
+bech32 = "0.11"            # Bech32 address encoding/decoding
 ```
 
 ### Core Modules

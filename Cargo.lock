@@ -689,6 +689,7 @@ dependencies = [
  "bs58 0.5.1",
  "defuse-core",
  "defuse-crypto",
+ "hex",
  "hex-literal",
  "near-sdk",
  "rstest",
