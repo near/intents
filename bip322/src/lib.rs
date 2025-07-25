@@ -37,11 +37,11 @@ pub struct SignedBip322Payload {
 impl Payload for SignedBip322Payload {
     #[inline]
     fn hash(&self) -> near_sdk::CryptoHash {
-        match self.address.assume_checked_ref().to_address_data() {
-            AddressData::P2pkh { pubkey_hash } => self.hash_p2pkh_message(&pubkey_hash),
-            AddressData::P2wpkh { witness_program } => self.hash_p2wpkh_message(&witness_program),
-            AddressData::P2sh { script_hash } => self.hash_p2sh_message(&script_hash),
-            AddressData::P2wsh { witness_program } => self.hash_p2wsh_message(&witness_program),
+        match self.address.address_type {
+            AddressType::P2PKH => self.hash_p2pkh_message(),
+            AddressType::P2WPKH => self.hash_p2wpkh_message(),
+            AddressType::P2SH => self.hash_p2sh_message(),
+            AddressType::P2WSH => self.hash_p2wsh_message(),
         }
     }
 }
@@ -50,9 +50,6 @@ impl SignedPayload for SignedBip322Payload {
     type PublicKey = <Secp256k1 as Curve>::PublicKey;
 
     fn verify(&self) -> Option<Self::PublicKey> {
-        // Implement BIP-322 signature verification
-        // This follows the BIP-322 standard for message signature verification
-
         match self.address.address_type {
             AddressType::P2PKH => self.verify_p2pkh_signature(),
             AddressType::P2WPKH => self.verify_p2wpkh_signature(),
@@ -72,14 +69,12 @@ impl SignedBip322Payload {
     /// 2. Creates a "to_sign" transaction that spends from the "to_spend" transaction
     /// 3. Computes the signature hash using the standard Bitcoin sighash algorithm
     ///
-    /// # Arguments
-    ///
-    /// * `_pubkey_hash` - The 20-byte RIPEMD160(SHA256(pubkey)) hash (currently unused in MVP)
+    /// The pubkey hash is obtained from the already-validated address stored in `self.address`.
     ///
     /// # Returns
     ///
     /// The 32-byte signature hash that should be signed according to BIP-322 for P2PKH.
-    fn hash_p2pkh_message(&self, _pubkey_hash: &[u8; 20]) -> near_sdk::CryptoHash {
+    fn hash_p2pkh_message(&self) -> near_sdk::CryptoHash {
         // Step 1: Create the "to_spend" transaction
         // This transaction contains the BIP-322 message hash in its input script
         let to_spend = self.create_to_spend();
@@ -102,14 +97,12 @@ impl SignedBip322Payload {
     /// 2. Uses segwit v0 sighash algorithm instead of legacy sighash
     /// 3. The witness program contains the pubkey hash (20 bytes for v0)
     ///
-    /// # Arguments
-    ///
-    /// * `_witness_program` - The witness program containing version and hash data
+    /// The witness program is obtained from the already-validated address stored in `self.address`.
     ///
     /// # Returns
     ///
     /// The 32-byte signature hash that should be signed according to BIP-322 for P2WPKH.
-    fn hash_p2wpkh_message(&self, _witness_program: &WitnessProgram) -> near_sdk::CryptoHash {
+    fn hash_p2wpkh_message(&self) -> near_sdk::CryptoHash {
         // Step 1: Create the "to_spend" transaction (same as P2PKH)
         // The transaction structure is identical regardless of address type
         let to_spend = self.create_to_spend();
@@ -129,14 +122,12 @@ impl SignedBip322Payload {
     /// The BIP-322 process for P2SH is similar to P2PKH but uses legacy sighash algorithm
     /// since P2SH predates segwit.
     ///
-    /// # Arguments
-    ///
-    /// * `_script_hash` - The 20-byte script hash from the P2SH address
+    /// The script hash is obtained from the already-validated address stored in `self.address`.
     ///
     /// # Returns
     ///
     /// The 32-byte signature hash that should be signed according to BIP-322 for P2SH.
-    fn hash_p2sh_message(&self, _script_hash: &[u8; 20]) -> near_sdk::CryptoHash {
+    fn hash_p2sh_message(&self) -> near_sdk::CryptoHash {
         // Step 1: Create the "to_spend" transaction
         // For P2SH, this contains the P2SH script_pubkey
         let to_spend = self.create_to_spend();
@@ -155,14 +146,12 @@ impl SignedBip322Payload {
     /// P2WSH (Pay-to-Witness-Script-Hash) addresses contain a SHA256 hash of a witness script.
     /// The BIP-322 process for P2WSH uses the segwit v0 sighash algorithm.
     ///
-    /// # Arguments
-    ///
-    /// * `_witness_program` - The witness program containing the script hash
+    /// The witness program is obtained from the already-validated address stored in `self.address`.
     ///
     /// # Returns
     ///
     /// The 32-byte signature hash that should be signed according to BIP-322 for P2WSH.
-    fn hash_p2wsh_message(&self, _witness_program: &WitnessProgram) -> near_sdk::CryptoHash {
+    fn hash_p2wsh_message(&self) -> near_sdk::CryptoHash {
         // Step 1: Create the "to_spend" transaction
         // For P2WSH, this contains the P2WSH script_pubkey (OP_0 + 32-byte script hash)
         let to_spend = self.create_to_spend();
@@ -351,9 +340,7 @@ impl SignedBip322Payload {
         tx.consensus_encode(&mut buf)
             .unwrap_or_else(|_| panic!("Transaction encoding failed"));
 
-        // Double SHA-256 using NEAR SDK
-        let first_hash = env::sha256_array(&buf);
-        env::sha256_array(&first_hash)
+        bitcoin_minimal::double_sha256(&buf)
     }
 
     /// Compute the final message hash for signature verification
@@ -411,212 +398,7 @@ impl SignedBip322Payload {
             )
             .expect("Sighash encoding should succeed");
 
-        // Double SHA-256 using NEAR SDK
-        let first_hash = env::sha256_array(&buf);
-        env::sha256_array(&first_hash)
-    }
-
-
-    /// Verify that a witness script hash matches the P2WSH address.
-    ///
-    /// P2WSH addresses contain SHA256(witness_script) as a 32-byte hash.
-    /// This function computes the SHA256 hash of the provided witness script
-    /// and compares it with the script hash embedded in the P2WSH address.
-    ///
-    /// # Arguments
-    ///
-    /// * `witness_script` - The witness script bytes to validate
-    ///
-    /// # Returns
-    ///
-    /// `true` if the script hash matches the P2WSH address, `false` otherwise.
-    #[cfg(test)]
-    fn verify_witness_script_hash(&self, witness_script: &[u8]) -> bool {
-        // Get the script hash from the P2WSH address
-        let expected_script_hash = match &self.address.witness_program {
-            Some(witness_program) if witness_program.is_p2wsh() => &witness_program.program,
-            _ => return false, // Not a P2WSH address
-        };
-
-        // Compute SHA256 of the witness script
-        let computed_script_hash = env::sha256_array(witness_script);
-
-        // Compare with expected hash
-        computed_script_hash.as_slice() == expected_script_hash
-    }
-
-    /// Execute a redeem script for P2SH verification.
-    ///
-    /// This function implements basic Bitcoin script execution for common redeem script patterns.
-    /// For BIP-322, the most common case is a simple P2PKH-style redeem script:
-    /// `OP_DUP OP_HASH160 <pubkey_hash> OP_EQUALVERIFY OP_CHECKSIG`
-    ///
-    /// # Arguments
-    ///
-    /// * `redeem_script` - The redeem script bytes to execute
-    /// * `pubkey_bytes` - The public key to validate against
-    ///
-    /// # Returns
-    ///
-    /// `true` if script execution succeeds, `false` otherwise.
-    #[cfg(test)]
-    fn execute_redeem_script(&self, redeem_script: &[u8], pubkey_bytes: &[u8]) -> bool {
-        // For BIP-322, we typically see simple P2PKH redeem scripts
-        // Pattern: 76 a9 14 <20-byte-pubkey-hash> 88 ac
-        // OP_DUP OP_HASH160 <pubkey_hash> OP_EQUALVERIFY OP_CHECKSIG
-
-        if redeem_script.len() == 25 &&
-           redeem_script[0] == 0x76 && // OP_DUP
-           redeem_script[1] == 0xa9 && // OP_HASH160
-           redeem_script[2] == 0x14 && // Push 20 bytes
-           redeem_script[23] == 0x88 && // OP_EQUALVERIFY
-           redeem_script[24] == 0xac
-        // OP_CHECKSIG
-        {
-            // Extract the pubkey hash from the script
-            let script_pubkey_hash = &redeem_script[3..23];
-
-            // Compute HASH160 of the provided public key
-            use crate::bitcoin_minimal::hash160;
-            let computed_pubkey_hash = hash160(pubkey_bytes);
-
-            // Verify the public key hash matches
-            computed_pubkey_hash.as_slice() == script_pubkey_hash
-        } else {
-            // For now, only support simple P2PKH redeem scripts
-            // Future enhancement: full Bitcoin script interpreter
-            false
-        }
-    }
-
-    /// Execute a witness script for P2WSH verification.
-    ///
-    /// This function implements basic Bitcoin script execution for witness scripts.
-    /// Similar to redeem scripts, but used in the witness stack for segwit transactions.
-    ///
-    /// # Arguments
-    ///
-    /// * `witness_script` - The witness script bytes to execute
-    /// * `pubkey_bytes` - The public key to validate against
-    ///
-    /// # Returns
-    ///
-    /// `true` if script execution succeeds, `false` otherwise.
-    #[cfg(test)]
-    fn execute_witness_script(&self, witness_script: &[u8], pubkey_bytes: &[u8]) -> bool {
-        // For P2WSH, witness scripts can be more varied, but for BIP-322
-        // we typically see P2PKH-style patterns similar to redeem scripts
-
-        if witness_script.len() == 25 &&
-           witness_script[0] == 0x76 && // OP_DUP
-           witness_script[1] == 0xa9 && // OP_HASH160
-           witness_script[2] == 0x14 && // Push 20 bytes
-           witness_script[23] == 0x88 && // OP_EQUALVERIFY
-           witness_script[24] == 0xac
-        // OP_CHECKSIG
-        {
-            // Extract the pubkey hash from the script
-            let script_pubkey_hash = &witness_script[3..23];
-
-            // Compute HASH160 of the provided public key
-            use crate::bitcoin_minimal::hash160;
-            let computed_pubkey_hash = hash160(pubkey_bytes);
-
-            // Verify the public key hash matches
-            computed_pubkey_hash.as_slice() == script_pubkey_hash
-        } else {
-            // For now, only support simple P2PKH-style witness scripts
-            // Future enhancement: full Bitcoin script interpreter
-            false
-        }
-    }
-
-    /// Verify that a public key matches the address using full cryptographic validation.
-    ///
-    /// This function performs complete address validation by:
-    /// 1. Computing HASH160(pubkey) = RIPEMD160(SHA256(pubkey))
-    /// 2. Comparing with the expected hash from the address
-    /// 3. Validating both compressed and uncompressed public key formats
-    ///
-    /// This replaces the MVP simplified validation with production-ready validation.
-    ///
-    /// # Arguments
-    ///
-    /// * `pubkey_bytes` - The public key bytes to validate
-    ///
-    /// # Returns
-    ///
-    /// `true` if the public key corresponds to the address, `false` otherwise.
-    #[cfg(test)]
-    fn verify_pubkey_matches_address(&self, pubkey_bytes: &[u8]) -> bool {
-        // Validate public key format
-        if !self.is_valid_public_key_format(pubkey_bytes) {
-            return false;
-        }
-
-        // Get the expected pubkey hash from the address
-        let expected_hash = match self.address.pubkey_hash {
-            Some(hash) => hash,
-            None => return false, // Address must have pubkey hash for validation
-        };
-
-        // Compute HASH160 of the public key using full cryptographic implementation
-        let computed_hash = self.compute_pubkey_hash160(pubkey_bytes);
-
-        // Compare computed hash with expected hash
-        computed_hash == expected_hash
-    }
-
-    /// Validate public key format (compressed or uncompressed).
-    ///
-    /// Bitcoin supports two public key formats:
-    /// - Compressed: 33 bytes, starts with 0x02 or 0x03
-    /// - Uncompressed: 65 bytes, starts with 0x04
-    ///
-    /// Modern Bitcoin primarily uses compressed public keys.
-    ///
-    /// # Arguments
-    ///
-    /// * `pubkey_bytes` - The public key bytes to validate
-    ///
-    /// # Returns
-    ///
-    /// `true` if the format is valid, `false` otherwise.
-    #[cfg(test)]
-    fn is_valid_public_key_format(&self, pubkey_bytes: &[u8]) -> bool {
-        match pubkey_bytes.len() {
-            33 => {
-                // Compressed public key
-                matches!(pubkey_bytes[0], 0x02 | 0x03)
-            }
-            65 => {
-                // Uncompressed public key
-                pubkey_bytes[0] == 0x04
-            }
-            _ => false, // Invalid length
-        }
-    }
-
-    /// Compute HASH160 of a public key using full cryptographic implementation.
-    ///
-    /// HASH160 is Bitcoin's standard hash function for generating addresses:
-    /// HASH160(pubkey) = RIPEMD160(SHA256(pubkey))
-    ///
-    /// This implementation uses external cryptographic libraries to ensure
-    /// compatibility with Bitcoin Core and other standard implementations.
-    ///
-    /// # Arguments
-    ///
-    /// * `pubkey_bytes` - The public key bytes
-    ///
-    /// # Returns
-    ///
-    /// The 20-byte HASH160 result.
-    #[cfg(test)]
-    fn compute_pubkey_hash160(&self, pubkey_bytes: &[u8]) -> [u8; 20] {
-        // Use the external HASH160 function from bitcoin_minimal module
-        // This ensures compatibility with standard Bitcoin implementations
-        hash160(pubkey_bytes)
+        double_sha256(&buf)
     }
 
     /// Verify P2PKH signature according to BIP-322 standard
@@ -770,6 +552,105 @@ mod tests {
             .signer_account_id("test.near".parse().unwrap())
             .build();
         testing_env!(context);
+    }
+
+    // Test helper methods moved from main impl block
+    impl SignedBip322Payload {
+        fn execute_redeem_script(&self, redeem_script: &[u8], pubkey_bytes: &[u8]) -> bool {
+            // For BIP-322, we typically see simple P2PKH redeem scripts
+            // Pattern: 76 a9 14 <20-byte-pubkey-hash> 88 ac
+            // OP_DUP OP_HASH160 <pubkey_hash> OP_EQUALVERIFY OP_CHECKSIG
+
+            if redeem_script.len() == 25 &&
+               redeem_script[0] == 0x76 && // OP_DUP
+               redeem_script[1] == 0xa9 && // OP_HASH160
+               redeem_script[2] == 0x14 && // Push 20 bytes
+               redeem_script[23] == 0x88 && // OP_EQUALVERIFY
+               redeem_script[24] == 0xac
+            // OP_CHECKSIG
+            {
+                // Extract the pubkey hash from the script
+                let script_pubkey_hash = &redeem_script[3..23];
+
+                // Compute HASH160 of the provided public key
+                use crate::bitcoin_minimal::hash160;
+                let computed_pubkey_hash = hash160(pubkey_bytes);
+
+                // Verify the public key hash matches
+                computed_pubkey_hash.as_slice() == script_pubkey_hash
+            } else {
+                // For now, only support simple P2PKH redeem scripts
+                // Future enhancement: full Bitcoin script interpreter
+                false
+            }
+        }
+
+        fn execute_witness_script(&self, witness_script: &[u8], pubkey_bytes: &[u8]) -> bool {
+            // For P2WSH, witness scripts can be more varied, but for BIP-322
+            // we typically see P2PKH-style patterns similar to redeem scripts
+
+            if witness_script.len() == 25 &&
+               witness_script[0] == 0x76 && // OP_DUP
+               witness_script[1] == 0xa9 && // OP_HASH160
+               witness_script[2] == 0x14 && // Push 20 bytes
+               witness_script[23] == 0x88 && // OP_EQUALVERIFY
+               witness_script[24] == 0xac
+            // OP_CHECKSIG
+            {
+                // Extract the pubkey hash from the script
+                let script_pubkey_hash = &witness_script[3..23];
+
+                // Compute HASH160 of the provided public key
+                use crate::bitcoin_minimal::hash160;
+                let computed_pubkey_hash = hash160(pubkey_bytes);
+
+                // Verify the public key hash matches
+                computed_pubkey_hash.as_slice() == script_pubkey_hash
+            } else {
+                // For now, only support simple P2PKH-style witness scripts
+                // Future enhancement: full Bitcoin script interpreter
+                false
+            }
+        }
+
+        fn verify_pubkey_matches_address(&self, pubkey_bytes: &[u8]) -> bool {
+            // Validate public key format
+            if !self.is_valid_public_key_format(pubkey_bytes) {
+                return false;
+            }
+
+            // Get the expected pubkey hash from the address
+            let expected_hash = match self.address.pubkey_hash {
+                Some(hash) => hash,
+                None => return false, // Address must have pubkey hash for validation
+            };
+
+            // Compute HASH160 of the public key using full cryptographic implementation
+            let computed_hash = self.compute_pubkey_hash160(pubkey_bytes);
+
+            // Compare computed hash with expected hash
+            computed_hash == expected_hash
+        }
+
+        fn is_valid_public_key_format(&self, pubkey_bytes: &[u8]) -> bool {
+            match pubkey_bytes.len() {
+                33 => {
+                    // Compressed public key
+                    matches!(pubkey_bytes[0], 0x02 | 0x03)
+                }
+                65 => {
+                    // Uncompressed public key
+                    pubkey_bytes[0] == 0x04
+                }
+                _ => false, // Invalid length
+            }
+        }
+
+        fn compute_pubkey_hash160(&self, pubkey_bytes: &[u8]) -> [u8; 20] {
+            // Use the external HASH160 function from bitcoin_minimal module
+            // This ensures compatibility with standard Bitcoin implementations
+            hash160(pubkey_bytes)
+        }
     }
 
     #[test]

@@ -202,13 +202,13 @@ pub enum AddressType {
 pub enum AddressData {
     /// Pay-to-Public-Key-Hash data containing the 20-byte hash of the public key.
     P2pkh { pubkey_hash: [u8; 20] },
-    
+
     /// Pay-to-Script-Hash data containing the 20-byte hash of the redeem script.
     P2sh { script_hash: [u8; 20] },
-    
+
     /// Pay-to-Witness-Public-Key-Hash data with the witness program.
     P2wpkh { witness_program: WitnessProgram },
-    
+
     /// Pay-to-Witness-Script-Hash data with the witness program.
     P2wsh { witness_program: WitnessProgram },
 }
