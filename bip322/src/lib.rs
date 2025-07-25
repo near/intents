@@ -1,311 +1,13 @@
 pub mod bitcoin_minimal;
+pub mod der;
+pub mod error;
 
 use bitcoin_minimal::*;
-use defuse_crypto::{Payload, SignedPayload, Secp256k1, Curve};
-use near_sdk::{near, env};
+use defuse_crypto::{Curve, Payload, Secp256k1, SignedPayload};
+use near_sdk::{env, near};
 use serde_with::serde_as;
 
-/// Comprehensive error types for BIP-322 signature verification.
-///
-/// This enum provides detailed error information for all possible failure modes
-/// in BIP-322 signature verification, making debugging and integration easier.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Bip322Error {
-    /// Errors related to witness stack format and content
-    Witness(WitnessError),
-
-    /// Errors in signature parsing and validation
-    Signature(SignatureError),
-
-    /// Errors in script execution and validation
-    Script(ScriptError),
-
-    /// Errors in cryptographic operations
-    Crypto(CryptoError),
-
-    /// Errors in address validation and derivation
-    Address(AddressValidationError),
-
-    /// Errors in BIP-322 transaction construction
-    Transaction(TransactionError),
-}
-
-/// Errors related to witness stack format and content
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum WitnessError {
-    /// Witness stack is empty when signature data is expected
-    EmptyWitness,
-
-    /// Insufficient witness stack elements for the address type
-    /// Contains: (expected_count, actual_count)
-    InsufficientElements(usize, usize),
-
-    /// Invalid witness stack element at specified index
-    /// Contains: (element_index, description)
-    InvalidElement(usize, String),
-
-    /// Witness stack format doesn't match address type requirements
-    /// Contains: (address_type, description)
-    FormatMismatch(AddressType, String),
-}
-
-/// Errors in signature parsing and validation
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SignatureError {
-    /// Invalid DER encoding in signature
-    /// Contains: (error_position, description)
-    InvalidDer(usize, String),
-
-    /// Signature components (r, s) are invalid
-    /// Contains: description of the invalid component
-    InvalidComponents(String),
-
-    /// Recovery ID could not be determined
-    /// All recovery IDs (0-3) failed during signature recovery
-    RecoveryIdNotFound,
-
-    /// Signature recovery failed with the determined recovery ID
-    /// Contains: (recovery_id, description)
-    RecoveryFailed(u8, String),
-
-    /// Public key recovered from signature doesn't match provided public key
-    /// Contains: (expected_pubkey_hex, recovered_pubkey_hex)
-    PublicKeyMismatch(String, String),
-}
-
-/// Errors in script execution and validation
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ScriptError {
-    /// Script hash doesn't match the address
-    /// Contains: (expected_hash_hex, computed_hash_hex)
-    HashMismatch(String, String),
-
-    /// Script format is not supported
-    /// Contains: (script_hex, reason)
-    UnsupportedFormat(String, String),
-
-    /// Script execution failed during validation
-    /// Contains: (operation, reason)
-    ExecutionFailed(String, String),
-
-    /// Script size exceeds limits
-    /// Contains: (actual_size, max_size)
-    SizeExceeded(usize, usize),
-
-    /// Invalid opcode or script structure
-    /// Contains: (position, opcode, description)
-    InvalidOpcode(usize, u8, String),
-
-    /// Public key in script doesn't match provided public key
-    /// Contains: (script_pubkey_hash_hex, computed_pubkey_hash_hex)
-    PubkeyMismatch(String, String),
-}
-
-/// Errors in cryptographic operations
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CryptoError {
-    /// ECDSA signature recovery failed
-    /// Contains: description of the failure
-    EcrecoverFailed(String),
-
-    /// Public key format is invalid
-    /// Contains: (pubkey_hex, reason)
-    InvalidPublicKey(String, String),
-
-    /// Hash computation failed
-    /// Contains: (hash_type, reason)
-    HashingFailed(String, String),
-
-    /// NEAR SDK cryptographic function failed
-    /// Contains: (function_name, description)
-    NearSdkError(String, String),
-}
-
-/// Errors in address validation and derivation
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AddressValidationError {
-    /// Address type doesn't support the requested operation
-    /// Contains: (address_type, operation)
-    UnsupportedOperation(AddressType, String),
-
-    /// Public key doesn't derive to the claimed address
-    /// Contains: (claimed_address, derived_address)
-    DerivationMismatch(String, String),
-
-    /// Address parsing or validation failed
-    /// Contains: (address, reason)
-    InvalidAddress(String, String),
-
-    /// Missing required address data (pubkey_hash, witness_program, etc.)
-    /// Contains: (address_type, missing_field)
-    MissingData(AddressType, String),
-}
-
-/// Errors in BIP-322 transaction construction
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TransactionError {
-    /// Failed to create the "to_spend" transaction
-    /// Contains: reason for failure
-    ToSpendCreationFailed(String),
-
-    /// Failed to create the "to_sign" transaction
-    /// Contains: reason for failure
-    ToSignCreationFailed(String),
-
-    /// Message hash computation failed
-    /// Contains: (stage, reason)
-    MessageHashFailed(String, String),
-
-    /// Transaction encoding failed
-    /// Contains: (transaction_type, reason)
-    EncodingFailed(String, String),
-}
-
-impl std::fmt::Display for Bip322Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Bip322Error::Witness(e) => write!(f, "Witness error: {}", e),
-            Bip322Error::Signature(e) => write!(f, "Signature error: {}", e),
-            Bip322Error::Script(e) => write!(f, "Script error: {}", e),
-            Bip322Error::Crypto(e) => write!(f, "Crypto error: {}", e),
-            Bip322Error::Address(e) => write!(f, "Address error: {}", e),
-            Bip322Error::Transaction(e) => write!(f, "Transaction error: {}", e),
-        }
-    }
-}
-
-impl std::fmt::Display for WitnessError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            WitnessError::EmptyWitness => write!(f, "Witness stack is empty"),
-            WitnessError::InsufficientElements(expected, actual) => {
-                write!(f, "Insufficient witness elements: expected {}, got {}", expected, actual)
-            },
-            WitnessError::InvalidElement(idx, desc) => {
-                write!(f, "Invalid witness element at index {}: {}", idx, desc)
-            },
-            WitnessError::FormatMismatch(addr_type, desc) => {
-                write!(f, "Witness format mismatch for {:?}: {}", addr_type, desc)
-            },
-        }
-    }
-}
-
-impl std::fmt::Display for SignatureError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            SignatureError::InvalidDer(pos, desc) => {
-                write!(f, "Invalid DER encoding at position {}: {}", pos, desc)
-            },
-            SignatureError::InvalidComponents(desc) => {
-                write!(f, "Invalid signature components: {}", desc)
-            },
-            SignatureError::RecoveryIdNotFound => {
-                write!(f, "Could not determine recovery ID (tried 0-3)")
-            },
-            SignatureError::RecoveryFailed(id, desc) => {
-                write!(f, "Signature recovery failed with ID {}: {}", id, desc)
-            },
-            SignatureError::PublicKeyMismatch(expected, recovered) => {
-                write!(f, "Public key mismatch: expected {}, recovered {}", expected, recovered)
-            },
-        }
-    }
-}
-
-impl std::fmt::Display for ScriptError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ScriptError::HashMismatch(expected, computed) => {
-                write!(f, "Script hash mismatch: expected {}, computed {}", expected, computed)
-            },
-            ScriptError::UnsupportedFormat(script, reason) => {
-                write!(f, "Unsupported script format {}: {}", script, reason)
-            },
-            ScriptError::ExecutionFailed(op, reason) => {
-                write!(f, "Script execution failed at {}: {}", op, reason)
-            },
-            ScriptError::SizeExceeded(actual, max) => {
-                write!(f, "Script size {} exceeds maximum {}", actual, max)
-            },
-            ScriptError::InvalidOpcode(pos, opcode, desc) => {
-                write!(f, "Invalid opcode 0x{:02x} at position {}: {}", opcode, pos, desc)
-            },
-            ScriptError::PubkeyMismatch(script_hash, computed_hash) => {
-                write!(f, "Script pubkey mismatch: script has {}, computed {}", script_hash, computed_hash)
-            },
-        }
-    }
-}
-
-impl std::fmt::Display for CryptoError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            CryptoError::EcrecoverFailed(desc) => {
-                write!(f, "ECDSA signature recovery failed: {}", desc)
-            },
-            CryptoError::InvalidPublicKey(pubkey, reason) => {
-                write!(f, "Invalid public key {}: {}", pubkey, reason)
-            },
-            CryptoError::HashingFailed(hash_type, reason) => {
-                write!(f, "{} hashing failed: {}", hash_type, reason)
-            },
-            CryptoError::NearSdkError(func, desc) => {
-                write!(f, "NEAR SDK {} failed: {}", func, desc)
-            },
-        }
-    }
-}
-
-impl std::fmt::Display for AddressValidationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            AddressValidationError::UnsupportedOperation(addr_type, op) => {
-                write!(f, "{:?} addresses don't support operation: {}", addr_type, op)
-            },
-            AddressValidationError::DerivationMismatch(claimed, derived) => {
-                write!(f, "Address derivation mismatch: claimed {}, derived {}", claimed, derived)
-            },
-            AddressValidationError::InvalidAddress(addr, reason) => {
-                write!(f, "Invalid address {}: {}", addr, reason)
-            },
-            AddressValidationError::MissingData(addr_type, field) => {
-                write!(f, "{:?} address missing required data: {}", addr_type, field)
-            },
-        }
-    }
-}
-
-impl std::fmt::Display for TransactionError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            TransactionError::ToSpendCreationFailed(reason) => {
-                write!(f, "Failed to create to_spend transaction: {}", reason)
-            },
-            TransactionError::ToSignCreationFailed(reason) => {
-                write!(f, "Failed to create to_sign transaction: {}", reason)
-            },
-            TransactionError::MessageHashFailed(stage, reason) => {
-                write!(f, "Message hash computation failed at {}: {}", stage, reason)
-            },
-            TransactionError::EncodingFailed(tx_type, reason) => {
-                write!(f, "Transaction encoding failed for {}: {}", tx_type, reason)
-            },
-        }
-    }
-}
-
-impl std::error::Error for Bip322Error {}
-impl std::error::Error for WitnessError {}
-impl std::error::Error for SignatureError {}
-impl std::error::Error for ScriptError {}
-impl std::error::Error for CryptoError {}
-impl std::error::Error for AddressValidationError {}
-impl std::error::Error for TransactionError {}
-
-/// Result type for BIP-322 operations
-pub type Bip322Result<T> = Result<T, Bip322Error>;
-
+pub use error::*;
 
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
@@ -324,7 +26,7 @@ pub struct SignedBip322Payload {
     pub message: String,
 
     /// BIP-322 signature data as a witness stack.
-    /// 
+    ///
     /// The witness format depends on the address type:
     /// - P2PKH/P2WPKH: [signature, pubkey]
     /// - P2SH: [signature, pubkey, redeem_script]
@@ -335,27 +37,11 @@ pub struct SignedBip322Payload {
 impl Payload for SignedBip322Payload {
     #[inline]
     fn hash(&self) -> near_sdk::CryptoHash {
-        match self
-            .address
-            .assume_checked_ref()
-            .to_address_data()
-        {
-            AddressData::P2pkh { pubkey_hash } => {
-                // For MVP Phase 2: P2PKH support
-                self.hash_p2pkh_message(&pubkey_hash)
-            },
-            AddressData::P2wpkh { witness_program } => {
-                // P2WPKH support
-                self.hash_p2wpkh_message(&witness_program)
-            },
-            AddressData::P2sh { script_hash } => {
-                // P2SH support
-                self.hash_p2sh_message(&script_hash)
-            },
-            AddressData::P2wsh { witness_program } => {
-                // P2WSH support
-                self.hash_p2wsh_message(&witness_program)
-            },
+        match self.address.assume_checked_ref().to_address_data() {
+            AddressData::P2pkh { pubkey_hash } => self.hash_p2pkh_message(&pubkey_hash),
+            AddressData::P2wpkh { witness_program } => self.hash_p2wpkh_message(&witness_program),
+            AddressData::P2sh { script_hash } => self.hash_p2sh_message(&script_hash),
+            AddressData::P2wsh { witness_program } => self.hash_p2wsh_message(&witness_program),
         }
     }
 }
@@ -535,8 +221,8 @@ impl SignedBip322Payload {
                 // Script contains OP_0 followed by the BIP-322 message hash
                 // This embeds the message directly into the transaction structure
                 script_sig: ScriptBuilder::new()
-                    .push_opcode(OP_0)           // Push empty stack item
-                    .push_slice(&message_hash)   // Push the 32-byte message hash
+                    .push_opcode(OP_0) // Push empty stack item
+                    .push_slice(&message_hash) // Push the 32-byte message hash
                     .into_script(),
 
                 // Standard sequence number
@@ -596,7 +282,10 @@ impl SignedBip322Payload {
             input: [TxIn {
                 // Reference the "to_spend" transaction by its computed TXID
                 // Index 0 refers to the first (and only) output of "to_spend"
-                previous_output: OutPoint::new(Txid::from_byte_array(self.compute_tx_id(to_spend)), 0),
+                previous_output: OutPoint::new(
+                    Txid::from_byte_array(self.compute_tx_id(to_spend)),
+                    0,
+                ),
 
                 // Empty script_sig (modern Bitcoin uses witness data for signatures)
                 script_sig: ScriptBuf::new(),
@@ -616,9 +305,7 @@ impl SignedBip322Payload {
 
                 // OP_RETURN makes this output provably unspendable
                 // This ensures the transaction could never be broadcast profitably
-                script_pubkey: ScriptBuilder::new()
-                    .push_opcode(OP_RETURN)
-                    .into_script(),
+                script_pubkey: ScriptBuilder::new().push_opcode(OP_RETURN).into_script(),
             }]
             .into(),
         }
@@ -650,8 +337,8 @@ impl SignedBip322Payload {
         // Create the tagged hash: SHA256(tag_hash || tag_hash || message)
         // The double tag_hash inclusion is part of the BIP-340 tagged hash specification
         let mut input = Vec::new();
-        input.extend_from_slice(&tag_hash);           // First tag hash
-        input.extend_from_slice(&tag_hash);           // Second tag hash (domain separation)
+        input.extend_from_slice(&tag_hash); // First tag hash
+        input.extend_from_slice(&tag_hash); // Second tag hash (domain separation)
         input.extend_from_slice(self.message.as_bytes()); // The actual message
 
         // Final hash computation using NEAR SDK
@@ -670,7 +357,11 @@ impl SignedBip322Payload {
     }
 
     /// Compute the final message hash for signature verification
-    fn compute_message_hash(&self, to_spend: &Transaction, to_sign: &Transaction) -> near_sdk::CryptoHash {
+    fn compute_message_hash(
+        &self,
+        to_spend: &Transaction,
+        to_sign: &Transaction,
+    ) -> near_sdk::CryptoHash {
         let address = self.address.assume_checked_ref();
 
         let script_code = match address.to_address_data() {
@@ -680,293 +371,50 @@ impl SignedBip322Payload {
                     .first()
                     .expect("to_spend should have output")
                     .script_pubkey
-            },
+            }
             AddressData::P2sh { .. } => {
                 &to_spend
                     .output
                     .first()
                     .expect("to_spend should have output")
                     .script_pubkey
-            },
+            }
             AddressData::P2wpkh { .. } => {
                 &to_spend
                     .output
                     .first()
                     .expect("to_spend should have output")
                     .script_pubkey
-            },
+            }
             AddressData::P2wsh { .. } => {
                 &to_spend
                     .output
                     .first()
                     .expect("to_spend should have output")
                     .script_pubkey
-            },
+            }
         };
 
         let mut sighash_cache = SighashCache::new(to_sign.clone());
         let mut buf = Vec::new();
-        sighash_cache.segwit_v0_encode_signing_data_to(
-            &mut buf,
-            0,
-            script_code,
-            to_spend
-                .output
-                .first()
-                .expect("to_spend should have output")
-                .value,
-            EcdsaSighashType::All,
-        ).expect("Sighash encoding should succeed");
+        sighash_cache
+            .segwit_v0_encode_signing_data_to(
+                &mut buf,
+                0,
+                script_code,
+                to_spend
+                    .output
+                    .first()
+                    .expect("to_spend should have output")
+                    .value,
+                EcdsaSighashType::All,
+            )
+            .expect("Sighash encoding should succeed");
 
         // Double SHA-256 using NEAR SDK
         let first_hash = env::sha256_array(&buf);
         env::sha256_array(&first_hash)
     }
-
-    /// Verify P2PKH signature using NEAR SDK ecrecover
-
-    /// Parse DER-encoded ECDSA signature and extract r, s values with recovery ID.
-    ///
-    /// This function implements proper ASN.1 DER parsing for ECDSA signatures
-    /// as used in Bitcoin transactions. It handles the complete DER structure:
-    ///
-    /// ```text
-    /// SEQUENCE {
-    ///   r INTEGER,
-    ///   s INTEGER
-    /// }
-    /// ```
-    ///
-    /// After parsing, it attempts to determine the recovery ID by testing
-    /// all possible values against a known message hash.
-    ///
-    /// # Arguments
-    ///
-    /// * `der_sig` - The DER-encoded signature bytes
-    ///
-    /// # Returns
-    ///
-    /// A tuple containing:
-    /// - `r`: The r value as a 32-byte array
-    /// - `s`: The s value as a 32-byte array
-    /// - `recovery_id`: The recovery ID (0-3) for public key recovery
-    ///
-    /// Returns `None` if parsing fails or recovery ID cannot be determined.
-
-    /// Parse DER-encoded ECDSA signature using proper ASN.1 DER parsing.
-    ///
-    /// This implements the complete DER parsing algorithm for ECDSA signatures
-    /// following the ASN.1 specification used in Bitcoin.
-    ///
-    /// # Arguments
-    ///
-    /// * `der_bytes` - The DER-encoded signature
-    ///
-    /// # Returns
-    ///
-    /// A tuple of (r_bytes, s_bytes) if parsing succeeds, None otherwise.
-    #[cfg(test)]
-    fn parse_der_ecdsa_signature(der_bytes: &[u8]) -> Option<(Vec<u8>, Vec<u8>)> {
-        // DER signature structure:
-        // 0x30 [total-length] 0x02 [R-length] [R] 0x02 [S-length] [S]
-
-        if der_bytes.len() < 6 {
-            return None; // Too short for minimal DER signature
-        }
-
-        let mut pos = 0;
-
-        // Check SEQUENCE tag (0x30)
-        if der_bytes[pos] != 0x30 {
-            return None;
-        }
-        pos += 1;
-
-        // Parse total length
-        let (total_len, len_bytes) = Self::parse_der_length(&der_bytes[pos..])?;
-        pos += len_bytes;
-
-        // Verify total length matches remaining bytes
-        if pos + total_len != der_bytes.len() {
-            return None;
-        }
-
-        // Parse r value
-        if pos >= der_bytes.len() || der_bytes[pos] != 0x02 {
-            return None; // Missing INTEGER tag for r
-        }
-        pos += 1;
-
-        let (r_len, len_bytes) = Self::parse_der_length(&der_bytes[pos..])?;
-        pos += len_bytes;
-
-        if pos + r_len > der_bytes.len() {
-            return None; // r value extends beyond signature
-        }
-
-        let r_bytes = der_bytes[pos..pos + r_len].to_vec();
-        pos += r_len;
-
-        // Parse s value
-        if pos >= der_bytes.len() || der_bytes[pos] != 0x02 {
-            return None; // Missing INTEGER tag for s
-        }
-        pos += 1;
-
-        let (s_len, len_bytes) = Self::parse_der_length(&der_bytes[pos..])?;
-        pos += len_bytes;
-
-        if pos + s_len != der_bytes.len() {
-            return None; // s value doesn't match remaining bytes
-        }
-
-        let s_bytes = der_bytes[pos..pos + s_len].to_vec();
-
-        Some((r_bytes, s_bytes))
-    }
-
-    /// Parse DER length encoding.
-    ///
-    /// DER uses variable-length encoding for lengths:
-    /// - Short form: 0-127 (0x00-0x7F) - length in single byte
-    /// - Long form: 128-255 (0x80-0xFF) - first byte indicates number of length bytes
-    ///
-    /// # Arguments
-    ///
-    /// * `bytes` - The bytes starting with the length encoding
-    ///
-    /// # Returns
-    ///
-    /// A tuple of (length_value, bytes_consumed) if parsing succeeds.
-    fn parse_der_length(bytes: &[u8]) -> Option<(usize, usize)> {
-        if bytes.is_empty() {
-            return None;
-        }
-
-        let first_byte = bytes[0];
-
-        if first_byte & 0x80 == 0 {
-            // Short form: length is just the first byte
-            Some((first_byte as usize, 1))
-        } else {
-            // Long form: first byte indicates number of length bytes
-            let len_bytes = (first_byte & 0x7F) as usize;
-
-            if len_bytes == 0 || len_bytes > 4 || bytes.len() < 1 + len_bytes {
-                return None; // Invalid length encoding
-            }
-
-            let mut length = 0usize;
-            for i in 1..=len_bytes {
-                length = (length << 8) | (bytes[i] as usize);
-            }
-
-            Some((length, 1 + len_bytes))
-        }
-    }
-
-    /// Parse raw signature format (r||s as 64 bytes).
-    ///
-    /// This handles the case where the signature is provided as raw r and s values
-    /// concatenated together, rather than DER-encoded.
-    ///
-    /// # Arguments
-    ///
-    /// * `raw_sig` - The raw signature bytes (should be 64 bytes)
-    ///
-    /// # Returns
-    ///
-    /// A tuple of (r, s, recovery_id) if parsing succeeds.
-    #[cfg(test)]
-    fn parse_raw_signature(raw_sig: &[u8]) -> Option<([u8; 32], [u8; 32], u8)> {
-        if raw_sig.len() != 64 {
-            return None;
-        }
-
-        let mut r = [0u8; 32];
-        let mut s = [0u8; 32];
-
-        r.copy_from_slice(&raw_sig[..32]);
-        s.copy_from_slice(&raw_sig[32..64]);
-
-        // Determine recovery ID
-        let test_message = [0u8; 32];
-        let recovery_id = Self::determine_recovery_id(&r, &s, &test_message)?;
-
-        Some((r, s, recovery_id))
-    }
-
-    /// Determine the recovery ID for ECDSA signature recovery.
-    ///
-    /// The recovery ID is needed to recover the public key from an ECDSA signature.
-    /// There are typically 2-4 possible recovery IDs, and we need to test each one
-    /// to find the correct one.
-    ///
-    /// # Arguments
-    ///
-    /// * `r` - The r value of the signature
-    /// * `s` - The s value of the signature
-    /// * `message_hash` - A test message hash to validate recovery
-    ///
-    /// # Returns
-    ///
-    /// The recovery ID (0-3) if found, None if no valid recovery ID exists.
-    #[cfg(test)]
-    fn determine_recovery_id(r: &[u8; 32], s: &[u8; 32], message_hash: &[u8; 32]) -> Option<u8> {
-        // Create signature for testing
-        let mut signature = [0u8; 64];
-        signature[..32].copy_from_slice(r);
-        signature[32..].copy_from_slice(s);
-
-        // Test each possible recovery ID (0-3)
-        for recovery_id in 0..4 {
-            if env::ecrecover(message_hash, &signature, recovery_id, true).is_some() {
-                return Some(recovery_id);
-            }
-        }
-
-        None
-    }
-
-    /// Verify P2WPKH signature using NEAR SDK ecrecover
-
-    /// Verify P2SH signature for BIP-322.
-    ///
-    /// P2SH (Pay-to-Script-Hash) addresses require a redeem script to be executed.
-    /// For BIP-322, the witness stack format is: [signature, pubkey, redeem_script]
-    ///
-    /// The process:
-    /// 1. Extract signature, public key, and redeem script from witness stack
-    /// 2. Verify the script hash matches the P2SH address
-    /// 3. Execute the redeem script (typically a simple P2PKH script)
-    /// 4. Verify the signature against the message hash
-    ///
-    /// # Arguments
-    ///
-    /// * `message_hash` - The BIP-322 message hash to verify against
-    ///
-    /// # Returns
-    ///
-    /// The recovered public key if verification succeeds, None otherwise.
-
-    /// Verify P2WSH signature for BIP-322.
-    ///
-    /// P2WSH (Pay-to-Witness-Script-Hash) addresses require a witness script.
-    /// For BIP-322, the witness stack format is: [signature, pubkey, witness_script]
-    ///
-    /// The process:
-    /// 1. Extract signature, public key, and witness script from witness stack
-    /// 2. Verify the script hash matches the P2WSH address (32-byte SHA256)
-    /// 3. Execute the witness script (typically a simple P2PKH-like script)
-    /// 4. Verify the signature against the message hash
-    ///
-    /// # Arguments
-    ///
-    /// * `message_hash` - The BIP-322 message hash to verify against
-    ///
-    /// # Returns
-    ///
-    /// The recovered public key if verification succeeds, None otherwise.
 
 
     /// Verify that a witness script hash matches the P2WSH address.
@@ -1022,7 +470,8 @@ impl SignedBip322Payload {
            redeem_script[1] == 0xa9 && // OP_HASH160
            redeem_script[2] == 0x14 && // Push 20 bytes
            redeem_script[23] == 0x88 && // OP_EQUALVERIFY
-           redeem_script[24] == 0xac    // OP_CHECKSIG
+           redeem_script[24] == 0xac
+        // OP_CHECKSIG
         {
             // Extract the pubkey hash from the script
             let script_pubkey_hash = &redeem_script[3..23];
@@ -1063,7 +512,8 @@ impl SignedBip322Payload {
            witness_script[1] == 0xa9 && // OP_HASH160
            witness_script[2] == 0x14 && // Push 20 bytes
            witness_script[23] == 0x88 && // OP_EQUALVERIFY
-           witness_script[24] == 0xac    // OP_CHECKSIG
+           witness_script[24] == 0xac
+        // OP_CHECKSIG
         {
             // Extract the pubkey hash from the script
             let script_pubkey_hash = &witness_script[3..23];
@@ -1138,11 +588,11 @@ impl SignedBip322Payload {
             33 => {
                 // Compressed public key
                 matches!(pubkey_bytes[0], 0x02 | 0x03)
-            },
+            }
             65 => {
                 // Uncompressed public key
                 pubkey_bytes[0] == 0x04
-            },
+            }
             _ => false, // Invalid length
         }
     }
@@ -1187,7 +637,7 @@ impl SignedBip322Payload {
         let sighash = self.compute_message_hash(&to_spend, &to_sign);
 
         // Try to recover public key using NEAR SDK ecrecover
-        // Parse DER signature if needed and try different recovery IDs
+        // Parse signature and try different recovery IDs
         self.try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
     }
 
@@ -1261,10 +711,10 @@ impl SignedBip322Payload {
         &self,
         message_hash: &[u8; 32],
         signature_bytes: &[u8],
-        expected_pubkey: &[u8]
+        expected_pubkey: &[u8],
     ) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        // Try to parse signature as DER first, then raw format
-        if let Some((r, s)) = Self::parse_der_signature(signature_bytes) {
+        // Try to parse signature in different formats
+        if let Some((r, s)) = der::parse_der_signature(signature_bytes) {
             // Try different recovery IDs (0-3)
             for recovery_id in 0..4u8 {
                 // Create 64-byte signature for ecrecover
@@ -1274,7 +724,9 @@ impl SignedBip322Payload {
                     signature[64 - s.len()..64].copy_from_slice(&s);
 
                     // Try to recover public key
-                    if let Some(recovered_pubkey) = env::ecrecover(message_hash, &signature, recovery_id, false) {
+                    if let Some(recovered_pubkey) =
+                        env::ecrecover(message_hash, &signature, recovery_id, false)
+                    {
                         // Verify it matches expected pubkey
                         if recovered_pubkey.as_slice() == expected_pubkey {
                             return Some(recovered_pubkey);
@@ -1290,7 +742,9 @@ impl SignedBip322Payload {
             signature.copy_from_slice(signature_bytes);
 
             for recovery_id in 0..4u8 {
-                if let Some(recovered_pubkey) = env::ecrecover(message_hash, &signature, recovery_id, false) {
+                if let Some(recovered_pubkey) =
+                    env::ecrecover(message_hash, &signature, recovery_id, false)
+                {
                     if recovered_pubkey.as_slice() == expected_pubkey {
                         return Some(recovered_pubkey);
                     }
@@ -1300,61 +754,7 @@ impl SignedBip322Payload {
 
         None
     }
-
-    /// Parse DER signature format
-    fn parse_der_signature(der_bytes: &[u8]) -> Option<(Vec<u8>, Vec<u8>)> {
-        if der_bytes.len() < 6 {
-            return None;
-        }
-
-        let mut pos = 0;
-
-        // Check DER sequence marker
-        if der_bytes[pos] != 0x30 {
-            return None;
-        }
-        pos += 1;
-
-        // Skip total length
-        let (_, consumed) = Self::parse_der_length(&der_bytes[pos..])?;
-        pos += consumed;
-
-        // Parse R value
-        if der_bytes[pos] != 0x02 {
-            return None;
-        }
-        pos += 1;
-
-        let (r_len, consumed) = Self::parse_der_length(&der_bytes[pos..])?;
-        pos += consumed;
-
-        if pos + r_len > der_bytes.len() {
-            return None;
-        }
-
-        let r = der_bytes[pos..pos + r_len].to_vec();
-        pos += r_len;
-
-        // Parse S value
-        if pos >= der_bytes.len() || der_bytes[pos] != 0x02 {
-            return None;
-        }
-        pos += 1;
-
-        let (s_len, consumed) = Self::parse_der_length(&der_bytes[pos..])?;
-        pos += consumed;
-
-        if pos + s_len > der_bytes.len() {
-            return None;
-        }
-
-        let s = der_bytes[pos..pos + s_len].to_vec();
-
-        Some((r, s))
-    }
-
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -1393,7 +793,11 @@ mod tests {
 
         println!("BIP-322 message hash gas usage: {}", hash_gas);
 
-        assert!(hash_gas < 50_000_000_000, "Message hash gas usage too high: {}", hash_gas);
+        assert!(
+            hash_gas < 50_000_000_000,
+            "Message hash gas usage too high: {}",
+            hash_gas
+        );
     }
 
     #[test]
@@ -1423,8 +827,16 @@ mod tests {
 
         println!("Transaction ID computation gas usage: {}", tx_id_gas);
 
-        assert!(tx_creation_gas < 50_000_000_000, "Transaction creation gas usage too high: {}", tx_creation_gas);
-        assert!(tx_id_gas < 50_000_000_000, "Transaction ID gas usage too high: {}", tx_id_gas);
+        assert!(
+            tx_creation_gas < 50_000_000_000,
+            "Transaction creation gas usage too high: {}",
+            tx_creation_gas
+        );
+        assert!(
+            tx_id_gas < 50_000_000_000,
+            "Transaction ID gas usage too high: {}",
+            tx_id_gas
+        );
     }
 
     #[test]
@@ -1449,7 +861,11 @@ mod tests {
         println!("Full P2WPKH hash pipeline gas usage: {}", full_hash_gas);
 
         // This is the most expensive operation - should still be reasonable for NEAR SDK test environment
-        assert!(full_hash_gas < 150_000_000_000, "Full hash pipeline gas usage too high: {}", full_hash_gas);
+        assert!(
+            full_hash_gas < 150_000_000_000,
+            "Full hash pipeline gas usage too high: {}",
+            full_hash_gas
+        );
     }
 
     #[test]
@@ -1471,28 +887,39 @@ mod tests {
 
         // Ecrecover is expensive but should be within reasonable bounds for blockchain use
         // NEAR SDK ecrecover can use significant gas in test environment, so we set a high limit
-        assert!(ecrecover_gas < 500_000_000_000, "Ecrecover gas usage too high: {}", ecrecover_gas);
-        
+        assert!(
+            ecrecover_gas < 500_000_000_000,
+            "Ecrecover gas usage too high: {}",
+            ecrecover_gas
+        );
+
         // Verify gas usage is at least some minimum (confirms the operation actually ran)
-        assert!(ecrecover_gas > 1000, "Ecrecover should use some gas, got: {}", ecrecover_gas);
-        
+        assert!(
+            ecrecover_gas > 1000,
+            "Ecrecover should use some gas, got: {}",
+            ecrecover_gas
+        );
+
         // Test with different recovery IDs to ensure consistent gas usage
         let start_gas2 = env::used_gas();
         let result2 = env::ecrecover(&message_hash, &signature, 1u8, true);
         let ecrecover_gas2 = env::used_gas().as_gas() - start_gas2.as_gas();
-        
+
         // In test environment, ecrecover behavior may vary, so just ensure it doesn't panic
         let _result2 = result2;
-        
+
         // Gas usage should be similar regardless of recovery ID
         let gas_diff = if ecrecover_gas > ecrecover_gas2 {
             ecrecover_gas - ecrecover_gas2
         } else {
             ecrecover_gas2 - ecrecover_gas
         };
-        
+
         // Allow for some variance but they should be roughly the same
-        assert!(gas_diff < ecrecover_gas / 10, "Gas usage should be consistent across recovery IDs");
+        assert!(
+            gas_diff < ecrecover_gas / 10,
+            "Gas usage should be consistent across recovery IDs"
+        );
     }
 
     #[rstest]
@@ -1519,7 +946,10 @@ mod tests {
         };
 
         let computed_hash = payload.compute_bip322_message_hash();
-        assert_eq!(computed_hash, expected_hash, "BIP-322 message hash mismatch");
+        assert_eq!(
+            computed_hash, expected_hash,
+            "BIP-322 message hash mismatch"
+        );
     }
 
     #[test]
@@ -1549,7 +979,10 @@ mod tests {
         assert_eq!(to_sign.output.len(), 1);
 
         let to_spend_txid = payload.compute_tx_id(&to_spend);
-        assert_eq!(to_sign.input[0].previous_output.txid, Txid::from_byte_array(to_spend_txid));
+        assert_eq!(
+            to_sign.input[0].previous_output.txid,
+            Txid::from_byte_array(to_spend_txid)
+        );
     }
 
     #[test]
@@ -1557,18 +990,29 @@ mod tests {
         setup_test_env();
 
         let p2wpkh_addr = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4".parse::<Address>();
-        assert!(p2wpkh_addr.is_ok(), "Valid P2WPKH address should parse successfully");
+        assert!(
+            p2wpkh_addr.is_ok(),
+            "Valid P2WPKH address should parse successfully"
+        );
 
         let addr = p2wpkh_addr.unwrap();
         assert!(matches!(addr.address_type, AddressType::P2WPKH));
-        assert!(addr.pubkey_hash.is_some(), "P2WPKH should have pubkey_hash extracted");
-        assert!(addr.witness_program.is_some(), "P2WPKH should have witness_program");
+        assert!(
+            addr.pubkey_hash.is_some(),
+            "P2WPKH should have pubkey_hash extracted"
+        );
+        assert!(
+            addr.witness_program.is_some(),
+            "P2WPKH should have witness_program"
+        );
 
         assert!("bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4".starts_with("bc1"));
         assert!(!"bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4".starts_with('1'));
 
         assert!("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa".starts_with('1')); // P2PKH format
-        assert!("bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3".starts_with("bc1")); // P2WSH format
+        assert!(
+            "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3".starts_with("bc1")
+        ); // P2WSH format
     }
 
     #[test]
@@ -1587,7 +1031,10 @@ mod tests {
         // Test valid P2WPKH address (from BIP-173 examples)
         let valid_p2wpkh = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4";
         let address = valid_p2wpkh.parse::<Address>();
-        assert!(address.is_ok(), "Valid P2WPKH address should parse successfully");
+        assert!(
+            address.is_ok(),
+            "Valid P2WPKH address should parse successfully"
+        );
 
         let addr = address.unwrap();
         assert_eq!(addr.address_type, AddressType::P2WPKH);
@@ -1595,28 +1042,51 @@ mod tests {
         assert!(addr.witness_program.is_some());
 
         let witness_prog = addr.witness_program.unwrap();
-        assert_eq!(witness_prog.version, 0, "P2WPKH should be witness version 0");
-        assert_eq!(witness_prog.program.len(), 20, "P2WPKH program should be 20 bytes");
+        assert_eq!(
+            witness_prog.version, 0,
+            "P2WPKH should be witness version 0"
+        );
+        assert_eq!(
+            witness_prog.program.len(),
+            20,
+            "P2WPKH program should be 20 bytes"
+        );
 
         let valid_p2wsh = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";
         let address = valid_p2wsh.parse::<Address>();
-        assert!(address.is_ok(), "P2WSH addresses should be supported (32-byte programs)");
+        assert!(
+            address.is_ok(),
+            "P2WSH addresses should be supported (32-byte programs)"
+        );
 
         if let Ok(parsed_address) = address {
             assert_eq!(parsed_address.address_type, AddressType::P2WSH);
             if let Some(witness_program) = &parsed_address.witness_program {
-                assert_eq!(witness_program.program.len(), 32, "P2WSH program should be 32 bytes");
+                assert_eq!(
+                    witness_program.program.len(),
+                    32,
+                    "P2WSH program should be 32 bytes"
+                );
             }
         }
 
         let invalid_checksum = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t5"; // Wrong checksum
-        assert!(invalid_checksum.parse::<Address>().is_err(), "Invalid checksum should fail");
+        assert!(
+            invalid_checksum.parse::<Address>().is_err(),
+            "Invalid checksum should fail"
+        );
 
         let invalid_hrp = "tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx"; // Testnet HRP
-        assert!(invalid_hrp.parse::<Address>().is_err(), "Testnet addresses should be rejected");
+        assert!(
+            invalid_hrp.parse::<Address>().is_err(),
+            "Testnet addresses should be rejected"
+        );
 
         let malformed = "bc1invalid";
-        assert!(malformed.parse::<Address>().is_err(), "Malformed bech32 should fail");
+        assert!(
+            malformed.parse::<Address>().is_err(),
+            "Malformed bech32 should fail"
+        );
     }
 
     #[test]
@@ -1627,10 +1097,16 @@ mod tests {
         // These are synthetic examples for testing edge cases
 
         let valid_20_byte = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"; // 20-byte P2WPKH
-        assert!(valid_20_byte.parse::<Address>().is_ok(), "20-byte witness program should be valid");
+        assert!(
+            valid_20_byte.parse::<Address>().is_ok(),
+            "20-byte witness program should be valid"
+        );
 
         let valid_32_byte = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3"; // 32-byte P2WSH
-        assert!(valid_32_byte.parse::<Address>().is_ok(), "32-byte witness program should be supported (P2WSH)");
+        assert!(
+            valid_32_byte.parse::<Address>().is_ok(),
+            "32-byte witness program should be supported (P2WSH)"
+        );
 
         if let Ok(addr) = valid_32_byte.parse::<Address>() {
             assert_eq!(addr.address_type, AddressType::P2WSH);
@@ -1642,12 +1118,14 @@ mod tests {
         setup_test_env();
 
         let payload = SignedBip322Payload {
-            address: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".parse().unwrap_or_else(|_| Address {
-                inner: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".to_string(),
-                address_type: AddressType::P2WPKH,
-                pubkey_hash: Some([1u8; 20]),
-                witness_program: None,
-            }),
+            address: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l"
+                .parse()
+                .unwrap_or_else(|_| Address {
+                    inner: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".to_string(),
+                    address_type: AddressType::P2WPKH,
+                    pubkey_hash: Some([1u8; 20]),
+                    witness_program: None,
+                }),
             message: "Test message".to_string(),
             signature: Witness::new(),
         };
@@ -1658,7 +1136,10 @@ mod tests {
 
         // Test verification with empty signature - should return None
         let verification_result = payload.verify();
-        assert!(verification_result.is_none(), "Empty signature should return None");
+        assert!(
+            verification_result.is_none(),
+            "Empty signature should return None"
+        );
     }
 
     #[test]
@@ -1676,10 +1157,13 @@ mod tests {
         valid_der.push(0x02); // INTEGER tag for s
         valid_der.push(0x20); // s length (32 bytes)
         valid_der.extend_from_slice(&[0xBB; 32]); // s value
-        
-        let result = SignedBip322Payload::parse_der_signature(&valid_der);
-        assert!(result.is_some(), "Valid DER signature should parse successfully");
-        
+
+        let result = der::parse_der_signature(&valid_der);
+        assert!(
+            result.is_some(),
+            "Valid DER signature should parse successfully"
+        );
+
         let (r_bytes, s_bytes) = result.unwrap();
         assert_eq!(r_bytes.len(), 32, "R should be 32 bytes");
         assert_eq!(s_bytes.len(), 32, "S should be 32 bytes");
@@ -1688,24 +1172,24 @@ mod tests {
 
         // Test DER signature parsing with invalid inputs
         let invalid_der = vec![0u8; 60]; // Not a valid DER structure
-        let result = SignedBip322Payload::parse_der_signature(&invalid_der);
+        let result = der::parse_der_signature(&invalid_der);
         assert!(result.is_none(), "Invalid DER signature should return None");
 
         // Test empty input
         let empty_der = vec![];
-        let result = SignedBip322Payload::parse_der_signature(&empty_der);
+        let result = der::parse_der_signature(&empty_der);
         assert!(result.is_none(), "Empty input should return None");
-        
+
         // Test DER with only SEQUENCE tag
         let incomplete_der = vec![0x30];
-        let result = SignedBip322Payload::parse_der_signature(&incomplete_der);
+        let result = der::parse_der_signature(&incomplete_der);
         assert!(result.is_none(), "Incomplete DER should return None");
-        
+
         // Test DER with wrong SEQUENCE tag
         let wrong_tag = vec![0x31, 0x44, 0x02, 0x20];
-        let result = SignedBip322Payload::parse_der_signature(&wrong_tag);
+        let result = der::parse_der_signature(&wrong_tag);
         assert!(result.is_none(), "Wrong SEQUENCE tag should return None");
-        
+
         // Test DER with mismatched lengths
         let mut mismatched_der = vec![];
         mismatched_der.push(0x30); // SEQUENCE tag
@@ -1713,8 +1197,8 @@ mod tests {
         mismatched_der.push(0x02); // INTEGER tag for r
         mismatched_der.push(0x20); // r length (32 bytes - already exceeds total)
         mismatched_der.extend_from_slice(&[0xFF; 32]);
-        
-        let result = SignedBip322Payload::parse_der_signature(&mismatched_der);
+
+        let result = der::parse_der_signature(&mismatched_der);
         assert!(result.is_none(), "Mismatched lengths should fail");
     }
 
@@ -1723,7 +1207,9 @@ mod tests {
         setup_test_env();
 
         let payload = SignedBip322Payload {
-            address: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".parse().expect("Should parse P2WPKH address"),
+            address: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l"
+                .parse()
+                .expect("Should parse P2WPKH address"),
             message: "Test message".to_string(),
             signature: Witness::new(),
         };
@@ -1731,37 +1217,57 @@ mod tests {
         let bip322_hash = payload.hash();
 
         assert_eq!(bip322_hash.len(), 32);
-        assert!(bip322_hash.iter().any(|&b| b != 0), "Hash should not be all zeros");
-        
+        assert!(
+            bip322_hash.iter().any(|&b| b != 0),
+            "Hash should not be all zeros"
+        );
+
         // Test that different messages produce different hashes
         let mut payload2 = payload.clone();
         payload2.message = "Different message".to_string();
         let hash2 = payload2.hash();
-        
+
         // Test that BIP-322 message hashes are different for different messages
         let msg_hash1 = payload.compute_bip322_message_hash();
         let msg_hash2 = payload2.compute_bip322_message_hash();
-        assert_ne!(msg_hash1, msg_hash2, "Different messages should produce different BIP-322 message hashes");
-        
-        assert_ne!(bip322_hash, hash2, "Different messages should produce different hashes");
-        
+        assert_ne!(
+            msg_hash1, msg_hash2,
+            "Different messages should produce different BIP-322 message hashes"
+        );
+
+        assert_ne!(
+            bip322_hash, hash2,
+            "Different messages should produce different hashes"
+        );
+
         // Test that same message produces same hash (deterministic)
         let hash3 = payload.hash();
         assert_eq!(bip322_hash, hash3, "Same message should produce same hash");
-        
+
         // Test empty message
         let mut empty_payload = payload.clone();
         empty_payload.message = String::new();
         let empty_hash = empty_payload.hash();
-        assert_eq!(empty_hash.len(), 32, "Empty message should still produce valid hash");
-        assert_ne!(empty_hash, bip322_hash, "Empty message should produce different hash");
-        
+        assert_eq!(
+            empty_hash.len(),
+            32,
+            "Empty message should still produce valid hash"
+        );
+        assert_ne!(
+            empty_hash, bip322_hash,
+            "Empty message should produce different hash"
+        );
+
         // Test that different addresses produce different hashes for same message
         let mut different_addr_payload = payload.clone();
-        different_addr_payload.address.inner = "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq".to_string();
+        different_addr_payload.address.inner =
+            "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq".to_string();
         different_addr_payload.address.pubkey_hash = Some([2u8; 20]);
         let different_addr_hash = different_addr_payload.hash();
-        assert_ne!(bip322_hash, different_addr_hash, "Different addresses should produce different hashes");
+        assert_ne!(
+            bip322_hash, different_addr_hash,
+            "Different addresses should produce different hashes"
+        );
     }
 
     #[test]
@@ -1788,7 +1294,10 @@ mod tests {
         let dummy_pubkey = vec![0x02; 33]; // Valid compressed public key format
         let result = payload.verify_pubkey_matches_address(&dummy_pubkey);
         // With full validation, dummy pubkeys that don't match the address should fail
-        assert!(!result, "Dummy public key should fail full cryptographic validation");
+        assert!(
+            !result,
+            "Dummy public key should fail full cryptographic validation"
+        );
     }
 
     #[test]
@@ -1810,9 +1319,12 @@ mod tests {
         der_sig.extend_from_slice(&[0x02; 32]); // s value (dummy)
 
         // Test DER parsing - should successfully parse the structure
-        let result = SignedBip322Payload::parse_der_signature(&der_sig);
-        assert!(result.is_some(), "Valid DER signature should parse successfully");
-        
+        let result = der::parse_der_signature(&der_sig);
+        assert!(
+            result.is_some(),
+            "Valid DER signature should parse successfully"
+        );
+
         let (r_bytes, s_bytes) = result.unwrap();
         assert_eq!(r_bytes.len(), 32, "R component should be 32 bytes");
         assert_eq!(s_bytes.len(), 32, "S component should be 32 bytes");
@@ -1821,26 +1333,29 @@ mod tests {
 
         // Test invalid DER structures
         let invalid_der = vec![0x31, 0x44]; // Wrong SEQUENCE tag
-        let result = SignedBip322Payload::parse_der_signature(&invalid_der);
-        assert!(result.is_none(), "Invalid DER structure should fail parsing");
-        
+        let result = der::parse_der_signature(&invalid_der);
+        assert!(
+            result.is_none(),
+            "Invalid DER structure should fail parsing"
+        );
+
         // Test DER with wrong tag for R
         let mut invalid_r_tag = der_sig.clone();
         invalid_r_tag[2] = 0x03; // Wrong INTEGER tag
-        let result = SignedBip322Payload::parse_der_signature(&invalid_r_tag);
+        let result = der::parse_der_signature(&invalid_r_tag);
         assert!(result.is_none(), "DER with invalid R tag should fail");
-        
+
         // Test DER with wrong tag for S
         let mut invalid_s_tag = der_sig.clone();
         invalid_s_tag[36] = 0x03; // Wrong INTEGER tag for S (position: 2 + 2 + 32 = 36)
-        let result = SignedBip322Payload::parse_der_signature(&invalid_s_tag);
+        let result = der::parse_der_signature(&invalid_s_tag);
         assert!(result.is_none(), "DER with invalid S tag should fail");
 
         // Test DER that's too short
         let too_short = vec![0x30, 0x44]; // Only header, no data
-        let result = SignedBip322Payload::parse_der_signature(&too_short);
+        let result = der::parse_der_signature(&too_short);
         assert!(result.is_none(), "Too short DER should fail parsing");
-        
+
         // Test DER with correct structure but different R/S lengths
         let mut variable_length_der = vec![];
         variable_length_der.push(0x30); // SEQUENCE tag
@@ -1851,8 +1366,8 @@ mod tests {
         variable_length_der.push(0x02); // INTEGER tag for s
         variable_length_der.push(0x02); // s length (2 bytes)
         variable_length_der.extend_from_slice(&[0xAB, 0xCD]); // s value
-        
-        let result = SignedBip322Payload::parse_der_signature(&variable_length_der);
+
+        let result = der::parse_der_signature(&variable_length_der);
         assert!(result.is_some(), "Variable length DER should parse");
         let (r_bytes, s_bytes) = result.unwrap();
         assert_eq!(r_bytes, vec![0xFF, 0xFE], "Short R should parse correctly");
@@ -1865,25 +1380,40 @@ mod tests {
 
         // Test HASH160 computation with known test vectors
         let test_pubkey = [
-            0x02, 0x79, 0xbe, 0x66, 0x7e, 0xf9, 0xdc, 0xbb, 0xac, 0x55, 0xa0, 0x62, 0x95, 0xce, 0x87, 0x0b,
-            0x07, 0x02, 0x9b, 0xfc, 0xdb, 0x2d, 0xce, 0x28, 0xd9, 0x59, 0xf2, 0x81, 0x5b, 0x16, 0xf8, 0x17, 0x98
+            0x02, 0x79, 0xbe, 0x66, 0x7e, 0xf9, 0xdc, 0xbb, 0xac, 0x55, 0xa0, 0x62, 0x95, 0xce,
+            0x87, 0x0b, 0x07, 0x02, 0x9b, 0xfc, 0xdb, 0x2d, 0xce, 0x28, 0xd9, 0x59, 0xf2, 0x81,
+            0x5b, 0x16, 0xf8, 0x17, 0x98,
         ]; // Example compressed public key
 
         let hash160_result = hash160(&test_pubkey);
 
         // Verify the result is 20 bytes
-        assert_eq!(hash160_result.len(), 20, "HASH160 should produce 20-byte result");
+        assert_eq!(
+            hash160_result.len(),
+            20,
+            "HASH160 should produce 20-byte result"
+        );
 
         // Verify it's not all zeros (would indicate a problem)
-        assert!(!hash160_result.iter().all(|&b| b == 0), "HASH160 should not be all zeros");
+        assert!(
+            !hash160_result.iter().all(|&b| b == 0),
+            "HASH160 should not be all zeros"
+        );
 
         // Test with different input lengths
         let uncompressed_pubkey = [0x04; 65]; // Uncompressed format
         let hash160_uncompressed = hash160(&uncompressed_pubkey);
-        assert_eq!(hash160_uncompressed.len(), 20, "HASH160 should work with uncompressed keys");
+        assert_eq!(
+            hash160_uncompressed.len(),
+            20,
+            "HASH160 should work with uncompressed keys"
+        );
 
         // Different inputs should produce different hashes
-        assert_ne!(hash160_result, hash160_uncompressed, "Different pubkeys should produce different hashes");
+        assert_ne!(
+            hash160_result, hash160_uncompressed,
+            "Different pubkeys should produce different hashes"
+        );
     }
 
     #[test]
@@ -1903,24 +1433,42 @@ mod tests {
 
         // Test valid compressed public key format
         let compressed_02 = vec![0x02; 33];
-        assert!(payload.is_valid_public_key_format(&compressed_02), "0x02 prefix should be valid compressed");
+        assert!(
+            payload.is_valid_public_key_format(&compressed_02),
+            "0x02 prefix should be valid compressed"
+        );
 
         let compressed_03 = vec![0x03; 33];
-        assert!(payload.is_valid_public_key_format(&compressed_03), "0x03 prefix should be valid compressed");
+        assert!(
+            payload.is_valid_public_key_format(&compressed_03),
+            "0x03 prefix should be valid compressed"
+        );
 
         // Test valid uncompressed public key format
         let uncompressed = vec![0x04; 65];
-        assert!(payload.is_valid_public_key_format(&uncompressed), "0x04 prefix should be valid uncompressed");
+        assert!(
+            payload.is_valid_public_key_format(&uncompressed),
+            "0x04 prefix should be valid uncompressed"
+        );
 
         // Test invalid formats
         let invalid_prefix = vec![0x05; 33];
-        assert!(!payload.is_valid_public_key_format(&invalid_prefix), "0x05 prefix should be invalid");
+        assert!(
+            !payload.is_valid_public_key_format(&invalid_prefix),
+            "0x05 prefix should be invalid"
+        );
 
         let wrong_length = vec![0x02; 32]; // Too short
-        assert!(!payload.is_valid_public_key_format(&wrong_length), "Wrong length should be invalid");
+        assert!(
+            !payload.is_valid_public_key_format(&wrong_length),
+            "Wrong length should be invalid"
+        );
 
         let empty = vec![];
-        assert!(!payload.is_valid_public_key_format(&empty), "Empty key should be invalid");
+        assert!(
+            !payload.is_valid_public_key_format(&empty),
+            "Empty key should be invalid"
+        );
     }
 
     #[test]
@@ -1935,8 +1483,8 @@ mod tests {
                 inner: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4".to_string(),
                 address_type: AddressType::P2WPKH,
                 pubkey_hash: Some([
-                    0x75, 0x1e, 0x76, 0xc9, 0x76, 0x2a, 0x3b, 0x1a, 0xa8, 0x12,
-                    0xa9, 0x82, 0x59, 0x37, 0x11, 0xc4, 0x97, 0x4c, 0x96, 0x2b
+                    0x75, 0x1e, 0x76, 0xc9, 0x76, 0x2a, 0x3b, 0x1a, 0xa8, 0x12, 0xa9, 0x82, 0x59,
+                    0x37, 0x11, 0xc4, 0x97, 0x4c, 0x96, 0x2b,
                 ]),
                 witness_program: None,
             },
@@ -1950,32 +1498,50 @@ mod tests {
         assert!(!result, "Wrong public key should fail full validation");
 
         // Test format validation still works
-        assert!(payload.is_valid_public_key_format(&wrong_pubkey), "Format validation should still pass");
-        
+        assert!(
+            payload.is_valid_public_key_format(&wrong_pubkey),
+            "Format validation should still pass"
+        );
+
         // Test with different invalid formats
         let invalid_length = vec![0x02; 32]; // Wrong length (should be 33 for compressed)
-        assert!(!payload.is_valid_public_key_format(&invalid_length), "Wrong length should fail format validation");
-        
+        assert!(
+            !payload.is_valid_public_key_format(&invalid_length),
+            "Wrong length should fail format validation"
+        );
+
         let invalid_prefix = vec![0x05; 33]; // Invalid prefix (should be 0x02, 0x03, or 0x04)
-        assert!(!payload.is_valid_public_key_format(&invalid_prefix), "Invalid prefix should fail format validation");
-        
+        assert!(
+            !payload.is_valid_public_key_format(&invalid_prefix),
+            "Invalid prefix should fail format validation"
+        );
+
         let uncompressed_valid = vec![0x04; 65]; // Valid uncompressed format
-        assert!(payload.is_valid_public_key_format(&uncompressed_valid), "Valid uncompressed format should pass");
-        
+        assert!(
+            payload.is_valid_public_key_format(&uncompressed_valid),
+            "Valid uncompressed format should pass"
+        );
+
         let compressed_03 = vec![0x03; 33]; // Valid compressed format with 0x03 prefix
-        assert!(payload.is_valid_public_key_format(&compressed_03), "0x03 prefix should be valid for compressed");
-        
+        assert!(
+            payload.is_valid_public_key_format(&compressed_03),
+            "0x03 prefix should be valid for compressed"
+        );
+
         // Test that different public keys produce different hash160 values
         let pubkey1 = vec![0x02; 33];
         let pubkey2 = vec![0x03; 33];
         let hash1 = payload.compute_pubkey_hash160(&pubkey1);
         let hash2 = payload.compute_pubkey_hash160(&pubkey2);
-        assert_ne!(hash1, hash2, "Different pubkeys should produce different hash160 values");
-        
+        assert_ne!(
+            hash1, hash2,
+            "Different pubkeys should produce different hash160 values"
+        );
+
         // Verify hash160 produces 20-byte results
         assert_eq!(hash1.len(), 20, "Hash160 should produce 20-byte result");
         assert_eq!(hash2.len(), 20, "Hash160 should produce 20-byte result");
-        
+
         // Test that hash160 is deterministic
         let hash1_repeat = payload.compute_pubkey_hash160(&pubkey1);
         assert_eq!(hash1, hash1_repeat, "Hash160 should be deterministic");
@@ -1989,26 +1555,34 @@ mod tests {
 
         // Short form lengths (0-127)
         let short_length = [0x20]; // 32 bytes
-        let result = SignedBip322Payload::parse_der_length(&short_length);
-        assert_eq!(result, Some((32, 1)), "Short form length parsing should work");
+        let result = der::parse_der_length(&short_length);
+        assert_eq!(
+            result,
+            Some((32, 1)),
+            "Short form length parsing should work"
+        );
 
         // Long form lengths (128+)
         let long_length = [0x81, 0x80]; // Length encoded in 1 byte, value 128
-        let result = SignedBip322Payload::parse_der_length(&long_length);
-        assert_eq!(result, Some((128, 2)), "Long form length parsing should work");
+        let result = der::parse_der_length(&long_length);
+        assert_eq!(
+            result,
+            Some((128, 2)),
+            "Long form length parsing should work"
+        );
 
         // Multi-byte long form
         let multi_byte = [0x82, 0x01, 0x00]; // Length encoded in 2 bytes, value 256
-        let result = SignedBip322Payload::parse_der_length(&multi_byte);
+        let result = der::parse_der_length(&multi_byte);
         assert_eq!(result, Some((256, 3)), "Multi-byte long form should work");
 
         // Invalid cases
         let empty = [];
-        let result = SignedBip322Payload::parse_der_length(&empty);
+        let result = der::parse_der_length(&empty);
         assert_eq!(result, None, "Empty input should return None");
 
         let invalid_long = [0x85]; // Claims 5 length bytes but doesn't provide them
-        let result = SignedBip322Payload::parse_der_length(&invalid_long);
+        let result = der::parse_der_length(&invalid_long);
         assert_eq!(result, None, "Incomplete long form should return None");
     }
 
@@ -2022,8 +1596,8 @@ mod tests {
                 inner: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".to_string(),
                 address_type: AddressType::P2WPKH,
                 pubkey_hash: Some([
-                    0x1a, 0x2b, 0x3c, 0x4d, 0x5e, 0x6f, 0x70, 0x81, 0x92, 0xa3,
-                    0xb4, 0xc5, 0xd6, 0xe7, 0xf8, 0x09, 0x1a, 0x2b, 0x3c, 0x4d
+                    0x1a, 0x2b, 0x3c, 0x4d, 0x5e, 0x6f, 0x70, 0x81, 0x92, 0xa3, 0xb4, 0xc5, 0xd6,
+                    0xe7, 0xf8, 0x09, 0x1a, 0x2b, 0x3c, 0x4d,
                 ]),
                 witness_program: None,
             },
@@ -2051,7 +1625,10 @@ mod tests {
         // Verify transaction ID computation
         let tx_id = payload.compute_tx_id(&to_spend);
         assert_eq!(tx_id.len(), 32);
-        assert_eq!(to_sign.input[0].previous_output.txid, Txid::from_byte_array(tx_id));
+        assert_eq!(
+            to_sign.input[0].previous_output.txid,
+            Txid::from_byte_array(tx_id)
+        );
     }
 
     #[test]
@@ -2065,33 +1642,46 @@ mod tests {
         assert_eq!(parsed.inner, p2sh_address);
         assert_eq!(parsed.address_type, AddressType::P2SH);
         assert!(parsed.pubkey_hash.is_some(), "P2SH should have script hash");
-        assert!(parsed.witness_program.is_none(), "P2SH should not have witness program");
+        assert!(
+            parsed.witness_program.is_none(),
+            "P2SH should not have witness program"
+        );
 
         // Test script_pubkey generation for P2SH
         let script_pubkey = parsed.script_pubkey();
-        assert!(!script_pubkey.is_empty(), "P2SH script_pubkey should not be empty");
+        assert!(
+            !script_pubkey.is_empty(),
+            "P2SH script_pubkey should not be empty"
+        );
 
         // Test to_address_data conversion
         let address_data = parsed.to_address_data();
         match address_data {
             AddressData::P2sh { script_hash } => {
                 assert_eq!(script_hash.len(), 20, "Script hash should be 20 bytes");
-            },
+            }
             _ => panic!("Expected P2sh address data"),
         }
 
         // Test another valid P2SH address
         let p2sh_address2 = "3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy";
-        let parsed2 = Address::from_str(p2sh_address2).expect("Should parse another valid P2SH address");
+        let parsed2 =
+            Address::from_str(p2sh_address2).expect("Should parse another valid P2SH address");
         assert_eq!(parsed2.address_type, AddressType::P2SH);
 
         // Test invalid P2SH addresses
         let invalid_p2sh = "3InvalidAddress123";
-        assert!(Address::from_str(invalid_p2sh).is_err(), "Should reject invalid P2SH address");
+        assert!(
+            Address::from_str(invalid_p2sh).is_err(),
+            "Should reject invalid P2SH address"
+        );
 
         // Test P2SH address with wrong version byte
         let testnet_p2sh = "2MzBNp8kzHjVTLhSJhZM1z1KkdmZBxHBFxD"; // Testnet P2SH (starts with 2)
-        assert!(Address::from_str(testnet_p2sh).is_err(), "Should reject invalid P2SH address");
+        assert!(
+            Address::from_str(testnet_p2sh).is_err(),
+            "Should reject invalid P2SH address"
+        );
     }
 
     #[test]
@@ -2104,20 +1694,36 @@ mod tests {
 
         assert_eq!(parsed.inner, p2wsh_address);
         assert_eq!(parsed.address_type, AddressType::P2WSH);
-        assert!(parsed.pubkey_hash.is_none(), "P2WSH should not have pubkey hash");
-        assert!(parsed.witness_program.is_some(), "P2WSH should have witness program");
+        assert!(
+            parsed.pubkey_hash.is_none(),
+            "P2WSH should not have pubkey hash"
+        );
+        assert!(
+            parsed.witness_program.is_some(),
+            "P2WSH should have witness program"
+        );
 
         // Verify witness program properties
         if let Some(witness_program) = &parsed.witness_program {
             assert_eq!(witness_program.version, 0, "Should be segwit v0");
-            assert_eq!(witness_program.program.len(), 32, "P2WSH witness program should be 32 bytes");
+            assert_eq!(
+                witness_program.program.len(),
+                32,
+                "P2WSH witness program should be 32 bytes"
+            );
             assert!(witness_program.is_p2wsh(), "Should be identified as P2WSH");
-            assert!(!witness_program.is_p2wpkh(), "Should not be identified as P2WPKH");
+            assert!(
+                !witness_program.is_p2wpkh(),
+                "Should not be identified as P2WPKH"
+            );
         }
 
         // Test script_pubkey generation for P2WSH
         let script_pubkey = parsed.script_pubkey();
-        assert!(!script_pubkey.is_empty(), "P2WSH script_pubkey should not be empty");
+        assert!(
+            !script_pubkey.is_empty(),
+            "P2WSH script_pubkey should not be empty"
+        );
 
         // Test to_address_data conversion
         let address_data = parsed.to_address_data();
@@ -2125,7 +1731,7 @@ mod tests {
             AddressData::P2wsh { witness_program } => {
                 assert_eq!(witness_program.version, 0);
                 assert_eq!(witness_program.program.len(), 32);
-            },
+            }
             _ => panic!("Expected P2wsh address data"),
         }
 
@@ -2173,11 +1779,15 @@ mod tests {
             "tb1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l", // Testnet
             "bc1p9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l", // Taproot (segwit v1)
             "2MzBNp8kzHjVTLhSJhZM1z1KkdmZBxHBFxD",        // Testnet P2SH
-            "invalid_address",                              // Invalid format
+            "invalid_address",                            // Invalid format
         ];
 
         for addr in unsupported_formats {
-            assert!(Address::from_str(addr).is_err(), "Should reject unsupported address: {}", addr);
+            assert!(
+                Address::from_str(addr).is_err(),
+                "Should reject unsupported address: {}",
+                addr
+            );
         }
     }
 
@@ -2222,8 +1832,8 @@ mod tests {
 
     #[test]
     fn test_p2sh_signature_verification_structure() {
-        use std::str::FromStr;
         use crate::bitcoin_minimal::hash160;
+        use std::str::FromStr;
 
         // Test P2SH signature verification structure (without actual signature)
         let p2sh_address = "3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX";
@@ -2232,9 +1842,9 @@ mod tests {
         // Create test redeem script: simple P2PKH script
         // OP_DUP OP_HASH160 <20-byte-pubkey-hash> OP_EQUALVERIFY OP_CHECKSIG
         let test_pubkey = [
-            0x02, 0x79, 0xbe, 0x66, 0x7e, 0xf9, 0xdc, 0xbb, 0xac, 0x55, 0xa0, 0x62,
-            0x95, 0xce, 0x87, 0x0b, 0x07, 0x02, 0x9b, 0xfc, 0xdb, 0x2d, 0xce, 0x28,
-            0xd9, 0x59, 0xf2, 0x81, 0x5b, 0x16, 0xf8, 0x17, 0x98
+            0x02, 0x79, 0xbe, 0x66, 0x7e, 0xf9, 0xdc, 0xbb, 0xac, 0x55, 0xa0, 0x62, 0x95, 0xce,
+            0x87, 0x0b, 0x07, 0x02, 0x9b, 0xfc, 0xdb, 0x2d, 0xce, 0x28, 0xd9, 0x59, 0xf2, 0x81,
+            0x5b, 0x16, 0xf8, 0x17, 0x98,
         ];
         let pubkey_hash = hash160(&test_pubkey);
 
@@ -2259,7 +1869,10 @@ mod tests {
 
         // Test verification with empty signature (should return None gracefully)
         let verification_result = payload.verify();
-        assert!(verification_result.is_none(), "Empty signature should return None");
+        assert!(
+            verification_result.is_none(),
+            "Empty signature should return None"
+        );
 
         // Test redeem script validation structure
         let script_hash = hash160(&redeem_script);
@@ -2276,9 +1889,9 @@ mod tests {
 
         // Create test witness script: simple P2PKH-style script
         let test_pubkey = [
-            0x03, 0x1b, 0x84, 0xc5, 0x56, 0x7b, 0x12, 0x64, 0x40, 0x99, 0x5d, 0x3e,
-            0xd5, 0xaa, 0xba, 0x05, 0x65, 0xd7, 0x1e, 0x18, 0x34, 0x60, 0x48, 0x19,
-            0xff, 0x9c, 0x17, 0xf5, 0xe9, 0xd5, 0xdd, 0x07, 0x8f
+            0x03, 0x1b, 0x84, 0xc5, 0x56, 0x7b, 0x12, 0x64, 0x40, 0x99, 0x5d, 0x3e, 0xd5, 0xaa,
+            0xba, 0x05, 0x65, 0xd7, 0x1e, 0x18, 0x34, 0x60, 0x48, 0x19, 0xff, 0x9c, 0x17, 0xf5,
+            0xe9, 0xd5, 0xdd, 0x07, 0x8f,
         ];
 
         use crate::bitcoin_minimal::hash160;
@@ -2305,17 +1918,24 @@ mod tests {
 
         // Test verification with empty signature (should return None gracefully)
         let verification_result = payload.verify();
-        assert!(verification_result.is_none(), "Empty signature should return None");
+        assert!(
+            verification_result.is_none(),
+            "Empty signature should return None"
+        );
 
         // Test witness script validation structure
         let script_hash = env::sha256_array(&witness_script);
-        assert_eq!(script_hash.len(), 32, "Witness script hash should be 32 bytes");
+        assert_eq!(
+            script_hash.len(),
+            32,
+            "Witness script hash should be 32 bytes"
+        );
     }
 
     #[test]
     fn test_redeem_script_validation() {
-        use std::str::FromStr;
         use crate::bitcoin_minimal::hash160;
+        use std::str::FromStr;
 
         // Test redeem script hash validation for P2SH
         let p2sh_address = "3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX";
@@ -2340,25 +1960,31 @@ mod tests {
         };
 
         // Test script parsing (valid P2PKH pattern)
-        assert!(payload.execute_redeem_script(&redeem_script, &test_pubkey),
-                "Valid P2PKH redeem script should execute successfully");
+        assert!(
+            payload.execute_redeem_script(&redeem_script, &test_pubkey),
+            "Valid P2PKH redeem script should execute successfully"
+        );
 
         // Test invalid script (wrong length)
         let invalid_script = vec![0x76, 0xa9]; // Too short
-        assert!(!payload.execute_redeem_script(&invalid_script, &test_pubkey),
-                "Invalid script should fail execution");
+        assert!(
+            !payload.execute_redeem_script(&invalid_script, &test_pubkey),
+            "Invalid script should fail execution"
+        );
 
         // Test invalid script (wrong opcode pattern)
         let mut invalid_pattern = redeem_script.clone();
         invalid_pattern[0] = 0x51; // Change OP_DUP to OP_1
-        assert!(!payload.execute_redeem_script(&invalid_pattern, &test_pubkey),
-                "Invalid opcode pattern should fail execution");
+        assert!(
+            !payload.execute_redeem_script(&invalid_pattern, &test_pubkey),
+            "Invalid opcode pattern should fail execution"
+        );
     }
 
     #[test]
     fn test_witness_script_validation() {
-        use std::str::FromStr;
         use crate::bitcoin_minimal::hash160;
+        use std::str::FromStr;
 
         // Test witness script validation for P2WSH
         let p2wsh_address = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";
@@ -2383,18 +2009,24 @@ mod tests {
         };
 
         // Test script parsing (valid P2PKH-style pattern)
-        assert!(payload.execute_witness_script(&witness_script, &test_pubkey),
-                "Valid P2PKH-style witness script should execute successfully");
+        assert!(
+            payload.execute_witness_script(&witness_script, &test_pubkey),
+            "Valid P2PKH-style witness script should execute successfully"
+        );
 
         // Test invalid script (wrong length)
         let invalid_script = vec![0x76, 0xa9]; // Too short
-        assert!(!payload.execute_witness_script(&invalid_script, &test_pubkey),
-                "Invalid script should fail execution");
+        assert!(
+            !payload.execute_witness_script(&invalid_script, &test_pubkey),
+            "Invalid script should fail execution"
+        );
 
         // Test script with wrong pubkey
         let wrong_pubkey = [0x02; 33]; // Different pubkey
-        assert!(!payload.execute_witness_script(&witness_script, &wrong_pubkey),
-                "Script with wrong pubkey should fail execution");
+        assert!(
+            !payload.execute_witness_script(&witness_script, &wrong_pubkey),
+            "Script with wrong pubkey should fail execution"
+        );
     }
 
     #[test]
@@ -2416,7 +2048,10 @@ mod tests {
         assert_eq!(p2sh_hash.len(), 32, "P2SH hash should be 32 bytes");
 
         // Verification should return None gracefully (no signature provided)
-        assert!(p2sh_payload.verify().is_none(), "P2SH with empty signature should return None");
+        assert!(
+            p2sh_payload.verify().is_none(),
+            "P2SH with empty signature should return None"
+        );
 
         // Test P2WSH integration
         let p2wsh_address = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";
@@ -2431,10 +2066,16 @@ mod tests {
         assert_eq!(p2wsh_hash.len(), 32, "P2WSH hash should be 32 bytes");
 
         // Verification should return None gracefully (no signature provided)
-        assert!(p2wsh_payload.verify().is_none(), "P2WSH with empty signature should return None");
+        assert!(
+            p2wsh_payload.verify().is_none(),
+            "P2WSH with empty signature should return None"
+        );
 
         // Verify hashes are different (different addresses produce different hashes)
-        assert_ne!(p2sh_hash, p2wsh_hash, "Different address types should produce different hashes");
+        assert_ne!(
+            p2sh_hash, p2wsh_hash,
+            "Different address types should produce different hashes"
+        );
     }
 
     #[test]
@@ -2443,7 +2084,8 @@ mod tests {
 
         // Test empty witness error
         let payload = SignedBip322Payload {
-            address: Address::from_str("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa").expect("Should parse P2PKH"),
+            address: Address::from_str("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
+                .expect("Should parse P2PKH"),
             message: "Test message".to_string(),
             signature: Witness::new(), // Empty witness
         };
@@ -2461,14 +2103,18 @@ mod tests {
         let witness = Witness::from_stack(vec![vec![0x01, 0x02, 0x03]]); // Only signature, missing public key
 
         let payload = SignedBip322Payload {
-            address: Address::from_str("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa").expect("Should parse P2PKH"),
+            address: Address::from_str("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
+                .expect("Should parse P2PKH"),
             message: "Test message".to_string(),
             signature: witness,
         };
 
         // Test that insufficient witness elements returns None for verification
         let result = payload.verify();
-        assert!(result.is_none(), "Insufficient witness elements should return None");
+        assert!(
+            result.is_none(),
+            "Insufficient witness elements should return None"
+        );
     }
 
     #[test]
@@ -2482,7 +2128,8 @@ mod tests {
         ]);
 
         let payload = SignedBip322Payload {
-            address: Address::from_str("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa").expect("Should parse P2PKH"),
+            address: Address::from_str("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
+                .expect("Should parse P2PKH"),
             message: "Test message".to_string(),
             signature: witness,
         };
@@ -2503,7 +2150,8 @@ mod tests {
         ]);
 
         let payload = SignedBip322Payload {
-            address: Address::from_str("3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX").expect("Should parse P2SH"),
+            address: Address::from_str("3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX")
+                .expect("Should parse P2SH"),
             message: "Test message".to_string(),
             signature: witness,
         };
@@ -2518,12 +2166,13 @@ mod tests {
 
         // Test ECDSA recovery failure with invalid signature components
         let witness = Witness::from_stack(vec![
-            vec![0x00; 64],      // Invalid signature (all zeros)
-            vec![0x02; 33],      // Valid-looking public key
+            vec![0x00; 64], // Invalid signature (all zeros)
+            vec![0x02; 33], // Valid-looking public key
         ]);
 
         let payload = SignedBip322Payload {
-            address: Address::from_str("bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l").expect("Should parse P2WPKH"),
+            address: Address::from_str("bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l")
+                .expect("Should parse P2WPKH"),
             message: "Test message".to_string(),
             signature: witness,
         };
@@ -2538,12 +2187,13 @@ mod tests {
 
         // Create a valid signature but with mismatched public key
         let valid_signature = vec![0x01; 64]; // Assume this would be valid
-        let wrong_pubkey = vec![0xFF; 33];   // Wrong public key
+        let wrong_pubkey = vec![0xFF; 33]; // Wrong public key
 
         let witness = Witness::from_stack(vec![valid_signature, wrong_pubkey.clone()]);
 
         let payload = SignedBip322Payload {
-            address: Address::from_str("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa").expect("Should parse P2PKH"),
+            address: Address::from_str("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
+                .expect("Should parse P2PKH"),
             message: "Test message".to_string(),
             signature: witness,
         };
@@ -2563,7 +2213,8 @@ mod tests {
         // Create a payload with a P2WPKH address but we'll simulate the scenario
         // where the recovered public key doesn't match the address
         let payload = SignedBip322Payload {
-            address: Address::from_str("bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l").expect("Should parse P2WPKH"),
+            address: Address::from_str("bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l")
+                .expect("Should parse P2WPKH"),
             message: "Test message".to_string(),
             signature: Witness::new(), // Empty will trigger EmptyWitness first
         };
@@ -2573,7 +2224,6 @@ mod tests {
         assert!(result.is_none(), "Empty witness should return None");
     }
 
-
     #[test]
     fn test_bip322_official_test_vectors() {
         setup_test_env();
@@ -2581,16 +2231,23 @@ mod tests {
         // Test vector from BIP-322 specification
         // Empty message with P2WPKH address
         let payload = SignedBip322Payload {
-            address: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4".parse().expect("Should parse P2WPKH address"),
+            address: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"
+                .parse()
+                .expect("Should parse P2WPKH address"),
             message: "".to_string(), // Empty message
             signature: Witness::new(),
         };
 
         // Verify the test vector hash matches BIP-322 specification
         let bip322_hash = payload.compute_bip322_message_hash();
-        let expected_empty_message_hash = hex::decode("c90c269c4f8fcbe6880f72a721ddfbf1914268a794cbb21cfafee13770ae19f1")
-            .expect("Valid hex");
-        assert_eq!(bip322_hash.to_vec(), expected_empty_message_hash, "Empty message hash should match BIP-322 test vector");
+        let expected_empty_message_hash =
+            hex::decode("c90c269c4f8fcbe6880f72a721ddfbf1914268a794cbb21cfafee13770ae19f1")
+                .expect("Valid hex");
+        assert_eq!(
+            bip322_hash.to_vec(),
+            expected_empty_message_hash,
+            "Empty message hash should match BIP-322 test vector"
+        );
 
         // Test vector with "Hello World" message
         let hello_payload = SignedBip322Payload {
@@ -2600,27 +2257,40 @@ mod tests {
         };
 
         let hello_hash = hello_payload.compute_bip322_message_hash();
-        let expected_hello_hash = hex::decode("f0eb03b1a75ac6d9847f55c624a99169b5dccba2a31f5b23bea77ba270de0a7a")
-            .expect("Valid hex");
-        assert_eq!(hello_hash.to_vec(), expected_hello_hash, "Hello World message hash should match BIP-322 test vector");
+        let expected_hello_hash =
+            hex::decode("f0eb03b1a75ac6d9847f55c624a99169b5dccba2a31f5b23bea77ba270de0a7a")
+                .expect("Valid hex");
+        assert_eq!(
+            hello_hash.to_vec(),
+            expected_hello_hash,
+            "Hello World message hash should match BIP-322 test vector"
+        );
 
         // Test with P2PKH address (legacy format)
         let p2pkh_payload = SignedBip322Payload {
-            address: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa".parse().expect("Should parse P2PKH address"),
+            address: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
+                .parse()
+                .expect("Should parse P2PKH address"),
             message: "Hello World".to_string(),
             signature: Witness::new(),
         };
 
         let p2pkh_message_hash = p2pkh_payload.compute_bip322_message_hash();
         let p2wpkh_message_hash = hello_hash;
-        
+
         // Both should produce the same message hash since they have the same message
-        assert_eq!(p2pkh_message_hash, p2wpkh_message_hash, "Same message should produce same BIP-322 message hash regardless of address type");
-        
+        assert_eq!(
+            p2pkh_message_hash, p2wpkh_message_hash,
+            "Same message should produce same BIP-322 message hash regardless of address type"
+        );
+
         // But the final signature hashes should be different due to different script_pubkey
         let p2pkh_sig_hash = p2pkh_payload.hash();
         let p2wpkh_sig_hash = hello_payload.hash();
-        assert_ne!(p2pkh_sig_hash, p2wpkh_sig_hash, "P2PKH and P2WPKH should produce different signature hashes for same message");
+        assert_ne!(
+            p2pkh_sig_hash, p2wpkh_sig_hash,
+            "P2PKH and P2WPKH should produce different signature hashes for same message"
+        );
     }
 
     #[test]
@@ -2635,21 +2305,21 @@ mod tests {
                 inner: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4".to_string(),
                 address_type: AddressType::P2WPKH,
                 pubkey_hash: Some([
-                    0x75, 0x1e, 0x76, 0xc9, 0x76, 0x2a, 0x3b, 0x1a, 0xa8, 0x12,
-                    0xa9, 0x82, 0x59, 0x37, 0x11, 0xc4, 0x97, 0x4c, 0x96, 0x2b
+                    0x75, 0x1e, 0x76, 0xc9, 0x76, 0x2a, 0x3b, 0x1a, 0xa8, 0x12, 0xa9, 0x82, 0x59,
+                    0x37, 0x11, 0xc4, 0x97, 0x4c, 0x96, 0x2b,
                 ]),
                 witness_program: Some(WitnessProgram {
                     version: 0,
                     program: vec![
-                        0x75, 0x1e, 0x76, 0xc9, 0x76, 0x2a, 0x3b, 0x1a, 0xa8, 0x12,
-                        0xa9, 0x82, 0x59, 0x37, 0x11, 0xc4, 0x97, 0x4c, 0x96, 0x2b
+                        0x75, 0x1e, 0x76, 0xc9, 0x76, 0x2a, 0x3b, 0x1a, 0xa8, 0x12, 0xa9, 0x82,
+                        0x59, 0x37, 0x11, 0xc4, 0x97, 0x4c, 0x96, 0x2b,
                     ],
                 }),
             },
             message: "Test message for complete verification".to_string(),
             signature: Witness::from_stack(vec![
                 vec![0x30, 0x44, 0x02, 0x20], // Incomplete DER signature for testing
-                vec![0x02; 33], // Compressed public key format
+                vec![0x02; 33],               // Compressed public key format
             ]),
         };
 
@@ -2662,13 +2332,35 @@ mod tests {
         let to_sign = payload.create_to_sign(&to_spend);
 
         // Verify transaction structure is correct for BIP-322
-        assert_eq!(to_spend.version.0, 0, "to_spend version should be 0 for BIP-322");
-        assert_eq!(to_sign.version.0, 0, "to_sign version should be 0 for BIP-322");
-        
-        assert_eq!(to_spend.input.len(), 1, "to_spend should have exactly 1 input");
-        assert_eq!(to_spend.output.len(), 1, "to_spend should have exactly 1 output");
-        assert_eq!(to_sign.input.len(), 1, "to_sign should have exactly 1 input");
-        assert_eq!(to_sign.output.len(), 1, "to_sign should have exactly 1 output");
+        assert_eq!(
+            to_spend.version.0, 0,
+            "to_spend version should be 0 for BIP-322"
+        );
+        assert_eq!(
+            to_sign.version.0, 0,
+            "to_sign version should be 0 for BIP-322"
+        );
+
+        assert_eq!(
+            to_spend.input.len(),
+            1,
+            "to_spend should have exactly 1 input"
+        );
+        assert_eq!(
+            to_spend.output.len(),
+            1,
+            "to_spend should have exactly 1 output"
+        );
+        assert_eq!(
+            to_sign.input.len(),
+            1,
+            "to_sign should have exactly 1 input"
+        );
+        assert_eq!(
+            to_sign.output.len(),
+            1,
+            "to_sign should have exactly 1 output"
+        );
 
         // Verify to_sign references to_spend correctly
         let to_spend_txid = payload.compute_tx_id(&to_spend);
@@ -2681,13 +2373,19 @@ mod tests {
         // Test message hash computation integration
         let message_hash = payload.compute_message_hash(&to_spend, &to_sign);
         assert_eq!(message_hash.len(), 32, "Message hash should be 32 bytes");
-        assert!(message_hash.iter().any(|&b| b != 0), "Message hash should not be all zeros");
+        assert!(
+            message_hash.iter().any(|&b| b != 0),
+            "Message hash should not be all zeros"
+        );
 
         // Test deterministic behavior
         let to_spend2 = payload.create_to_spend();
         let to_sign2 = payload.create_to_sign(&to_spend2);
         let message_hash2 = payload.compute_message_hash(&to_spend2, &to_sign2);
-        assert_eq!(message_hash, message_hash2, "Message hash should be deterministic");
+        assert_eq!(
+            message_hash, message_hash2,
+            "Message hash should be deterministic"
+        );
     }
 
     #[test]
@@ -2695,7 +2393,7 @@ mod tests {
         setup_test_env();
 
         // Create signatures for different address types to ensure they don't cross-verify
-        
+
         let p2pkh_payload = SignedBip322Payload {
             address: Address {
                 inner: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa".to_string(),
@@ -2738,7 +2436,10 @@ mod tests {
             signature: Witness::from_stack(vec![
                 vec![0x01; 64], // Same signature
                 vec![0x02; 33], // Same public key
-                vec![0x76, 0xa9, 0x14, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0x88, 0xac], // P2PKH redeem script
+                vec![
+                    0x76, 0xa9, 0x14, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab,
+                    0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0x88, 0xac,
+                ], // P2PKH redeem script
             ]),
         };
 
@@ -2747,14 +2448,32 @@ mod tests {
         let p2wpkh_hash = p2wpkh_payload.hash();
         let p2sh_hash = p2sh_payload.hash();
 
-        assert_ne!(p2pkh_hash, p2wpkh_hash, "P2PKH and P2WPKH should produce different hashes");
-        assert_ne!(p2pkh_hash, p2sh_hash, "P2PKH and P2SH should produce different hashes");
-        assert_ne!(p2wpkh_hash, p2sh_hash, "P2WPKH and P2SH should produce different hashes");
+        assert_ne!(
+            p2pkh_hash, p2wpkh_hash,
+            "P2PKH and P2WPKH should produce different hashes"
+        );
+        assert_ne!(
+            p2pkh_hash, p2sh_hash,
+            "P2PKH and P2SH should produce different hashes"
+        );
+        assert_ne!(
+            p2wpkh_hash, p2sh_hash,
+            "P2WPKH and P2SH should produce different hashes"
+        );
 
         // Verify verification fails for all (since these are dummy signatures)
-        assert!(p2pkh_payload.verify().is_none(), "Dummy P2PKH signature should not verify");
-        assert!(p2wpkh_payload.verify().is_none(), "Dummy P2WPKH signature should not verify");
-        assert!(p2sh_payload.verify().is_none(), "Dummy P2SH signature should not verify");
+        assert!(
+            p2pkh_payload.verify().is_none(),
+            "Dummy P2PKH signature should not verify"
+        );
+        assert!(
+            p2wpkh_payload.verify().is_none(),
+            "Dummy P2WPKH signature should not verify"
+        );
+        assert!(
+            p2sh_payload.verify().is_none(),
+            "Dummy P2SH signature should not verify"
+        );
 
         // Test that different address types require different witness stack formats
         let insufficient_p2sh = SignedBip322Payload {
@@ -2764,7 +2483,10 @@ mod tests {
                 vec![0x01; 64], // Only signature, missing public key and redeem script
             ]),
         };
-        assert!(insufficient_p2sh.verify().is_none(), "P2SH with insufficient witness should fail");
+        assert!(
+            insufficient_p2sh.verify().is_none(),
+            "P2SH with insufficient witness should fail"
+        );
 
         // Test P2WSH requires witness script
         let p2wsh_payload = SignedBip322Payload {
@@ -2781,10 +2503,13 @@ mod tests {
             signature: Witness::from_stack(vec![
                 vec![0x01; 64], // Signature
                 vec![0x02; 33], // Public key
-                // Missing witness script
+                                // Missing witness script
             ]),
         };
-        assert!(p2wsh_payload.verify().is_none(), "P2WSH with insufficient witness should fail");
+        assert!(
+            p2wsh_payload.verify().is_none(),
+            "P2WSH with insufficient witness should fail"
+        );
     }
 
     #[test]
@@ -2806,14 +2531,20 @@ mod tests {
         };
 
         // Test empty witness stack
-        assert!(base_payload.verify().is_none(), "Empty witness should fail verification");
+        assert!(
+            base_payload.verify().is_none(),
+            "Empty witness should fail verification"
+        );
 
         // Test witness with only one element (missing public key)
         let insufficient_witness = SignedBip322Payload {
             signature: Witness::from_stack(vec![vec![0x01; 64]]),
             ..base_payload.clone()
         };
-        assert!(insufficient_witness.verify().is_none(), "Insufficient witness elements should fail");
+        assert!(
+            insufficient_witness.verify().is_none(),
+            "Insufficient witness elements should fail"
+        );
 
         // Test witness with wrong signature length
         let wrong_sig_length = SignedBip322Payload {
@@ -2823,7 +2554,10 @@ mod tests {
             ]),
             ..base_payload.clone()
         };
-        assert!(wrong_sig_length.verify().is_none(), "Wrong signature length should fail");
+        assert!(
+            wrong_sig_length.verify().is_none(),
+            "Wrong signature length should fail"
+        );
 
         // Test witness with wrong public key length
         let wrong_pubkey_length = SignedBip322Payload {
@@ -2833,7 +2567,10 @@ mod tests {
             ]),
             ..base_payload.clone()
         };
-        assert!(wrong_pubkey_length.verify().is_none(), "Wrong public key length should fail");
+        assert!(
+            wrong_pubkey_length.verify().is_none(),
+            "Wrong public key length should fail"
+        );
 
         // Test witness with corrupted DER signature
         let corrupted_der = SignedBip322Payload {
@@ -2843,7 +2580,10 @@ mod tests {
             ]),
             ..base_payload.clone()
         };
-        assert!(corrupted_der.verify().is_none(), "Corrupted DER signature should fail");
+        assert!(
+            corrupted_der.verify().is_none(),
+            "Corrupted DER signature should fail"
+        );
 
         // Test witness with invalid public key prefix
         let invalid_pubkey_prefix = SignedBip322Payload {
@@ -2857,7 +2597,10 @@ mod tests {
             ]),
             ..base_payload.clone()
         };
-        assert!(invalid_pubkey_prefix.verify().is_none(), "Invalid public key prefix should fail");
+        assert!(
+            invalid_pubkey_prefix.verify().is_none(),
+            "Invalid public key prefix should fail"
+        );
 
         // Test witness with too many elements
         let too_many_elements = SignedBip322Payload {
@@ -2870,14 +2613,19 @@ mod tests {
             ..base_payload
         };
         // This should still work as P2WPKH only uses first 2 elements
-        assert!(too_many_elements.verify().is_none(), "Too many witness elements should not crash but should fail verification");
+        assert!(
+            too_many_elements.verify().is_none(),
+            "Too many witness elements should not crash but should fail verification"
+        );
     }
 
     #[test]
     fn test_unicode_message_handling() {
         setup_test_env();
 
-        let base_address = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4".parse::<Address>().expect("Should parse P2WPKH address");
+        let base_address = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"
+            .parse::<Address>()
+            .expect("Should parse P2WPKH address");
 
         // Test basic Unicode characters
         let unicode_payload = SignedBip322Payload {
@@ -2887,8 +2635,15 @@ mod tests {
         };
 
         let unicode_hash = unicode_payload.hash();
-        assert_eq!(unicode_hash.len(), 32, "Unicode message should produce valid hash");
-        assert!(unicode_hash.iter().any(|&b| b != 0), "Unicode hash should not be all zeros");
+        assert_eq!(
+            unicode_hash.len(),
+            32,
+            "Unicode message should produce valid hash"
+        );
+        assert!(
+            unicode_hash.iter().any(|&b| b != 0),
+            "Unicode hash should not be all zeros"
+        );
 
         // Test that different Unicode messages produce different hashes
         let unicode_payload2 = SignedBip322Payload {
@@ -2898,7 +2653,10 @@ mod tests {
         };
 
         let unicode_hash2 = unicode_payload2.hash();
-        assert_ne!(unicode_hash, unicode_hash2, "Different Unicode messages should produce different hashes");
+        assert_ne!(
+            unicode_hash, unicode_hash2,
+            "Different Unicode messages should produce different hashes"
+        );
 
         // Test emoji-only message
         let emoji_payload = SignedBip322Payload {
@@ -2908,8 +2666,15 @@ mod tests {
         };
 
         let emoji_hash = emoji_payload.hash();
-        assert_eq!(emoji_hash.len(), 32, "Emoji message should produce valid hash");
-        assert_ne!(emoji_hash, unicode_hash, "Emoji message should produce different hash");
+        assert_eq!(
+            emoji_hash.len(),
+            32,
+            "Emoji message should produce valid hash"
+        );
+        assert_ne!(
+            emoji_hash, unicode_hash,
+            "Emoji message should produce different hash"
+        );
 
         // Test multi-byte Unicode boundary conditions
         let multibyte_payload = SignedBip322Payload {
@@ -2919,7 +2684,11 @@ mod tests {
         };
 
         let multibyte_hash = multibyte_payload.hash();
-        assert_eq!(multibyte_hash.len(), 32, "Multi-byte Unicode should produce valid hash");
+        assert_eq!(
+            multibyte_hash.len(),
+            32,
+            "Multi-byte Unicode should produce valid hash"
+        );
 
         // Test very long Unicode message
         let long_unicode = "🌟".repeat(1000); // 1000 star emojis
@@ -2930,7 +2699,11 @@ mod tests {
         };
 
         let long_hash = long_payload.hash();
-        assert_eq!(long_hash.len(), 32, "Long Unicode message should produce valid hash");
+        assert_eq!(
+            long_hash.len(),
+            32,
+            "Long Unicode message should produce valid hash"
+        );
 
         // Test null and control characters
         let control_payload = SignedBip322Payload {
@@ -2940,11 +2713,18 @@ mod tests {
         };
 
         let control_hash = control_payload.hash();
-        assert_eq!(control_hash.len(), 32, "Message with control characters should produce valid hash");
+        assert_eq!(
+            control_hash.len(),
+            32,
+            "Message with control characters should produce valid hash"
+        );
 
         // Test deterministic behavior with Unicode
         let unicode_hash_repeat = unicode_payload.hash();
-        assert_eq!(unicode_hash, unicode_hash_repeat, "Unicode hash should be deterministic");
+        assert_eq!(
+            unicode_hash, unicode_hash_repeat,
+            "Unicode hash should be deterministic"
+        );
     }
 
     #[test]
@@ -2961,7 +2741,8 @@ mod tests {
         let mainnet_p2wpkh = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4".parse::<Address>();
         assert!(mainnet_p2wpkh.is_ok(), "Valid mainnet P2WPKH should parse");
 
-        let mainnet_p2wsh = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3".parse::<Address>();
+        let mainnet_p2wsh =
+            "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3".parse::<Address>();
         assert!(mainnet_p2wsh.is_ok(), "Valid mainnet P2WSH should parse");
 
         // Test that testnet addresses are rejected (security boundary)
@@ -2976,7 +2757,10 @@ mod tests {
         // Test regtest addresses are rejected
         let regtest_addr = "bcrt1qw508d6qejxtdg4y5r3zarvary0c5xw7kyuewdq";
         let regtest_result = regtest_addr.parse::<Address>();
-        assert!(regtest_result.is_err(), "Regtest address should be rejected");
+        assert!(
+            regtest_result.is_err(),
+            "Regtest address should be rejected"
+        );
 
         // Test that different network signatures don't cross-validate
         let mainnet_payload = SignedBip322Payload {
@@ -2990,7 +2774,11 @@ mod tests {
 
         // Verify mainnet payload produces valid hash structure
         let mainnet_hash = mainnet_payload.hash();
-        assert_eq!(mainnet_hash.len(), 32, "Mainnet payload should produce valid hash");
+        assert_eq!(
+            mainnet_hash.len(),
+            32,
+            "Mainnet payload should produce valid hash"
+        );
 
         // Test various invalid network formats
         let invalid_networks = vec![
@@ -3002,12 +2790,20 @@ mod tests {
 
         for invalid_addr in invalid_networks {
             let result = invalid_addr.parse::<Address>();
-            assert!(result.is_err(), "Invalid network address {} should be rejected", invalid_addr);
+            assert!(
+                result.is_err(),
+                "Invalid network address {} should be rejected",
+                invalid_addr
+            );
         }
 
         // Test that witness version > 0 is handled correctly
-        let future_segwit = "bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7kt5nd6y";
+        let future_segwit =
+            "bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7kt5nd6y";
         let future_result = future_segwit.parse::<Address>();
-        assert!(future_result.is_err(), "Future segwit version should be rejected");
+        assert!(
+            future_result.is_err(),
+            "Future segwit version should be rejected"
+        );
     }
 }
