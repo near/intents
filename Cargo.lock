@@ -685,15 +685,15 @@ dependencies = [
 name = "defuse-bip322"
 version = "0.1.0"
 dependencies = [
- "bip322",
- "bitcoin",
- "defuse-bip340",
+ "bech32",
+ "bs58 0.5.1",
+ "defuse-core",
  "defuse-crypto",
- "defuse-near-utils",
- "digest",
+ "hex",
  "hex-literal",
  "near-sdk",
  "rstest",
+ "serde_json",
  "serde_with",
 ]
 

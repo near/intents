@@ -24,6 +24,7 @@ abi = ["defuse-crypto/abi"]
 
 [dev-dependencies]
 hex-literal.workspace = true
+hex.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
 defuse-core.workspace = true
