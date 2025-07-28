@@ -269,17 +269,17 @@ impl Witness {
     }
 
     pub fn nth(&self, index: usize) -> Option<&[u8]> {
-        self.stack.get(index).map(|v| v.as_slice())
+        self.stack.get(index).map(std::vec::Vec::as_slice)
     }
 
     /// Create a witness with the given stack elements (for testing)
-    pub fn from_stack(stack: Vec<Vec<u8>>) -> Self {
+    pub const fn from_stack(stack: Vec<Vec<u8>>) -> Self {
         Self { stack }
     }
 }
 
 impl Address {
-    pub fn assume_checked_ref(&self) -> &Self {
+    pub const fn assume_checked_ref(&self) -> &Self {
         self
     }
 
@@ -292,16 +292,22 @@ impl Address {
                 script_hash: self.pubkey_hash.unwrap_or([0u8; 20]),
             },
             AddressType::P2WPKH => AddressData::P2wpkh {
-                witness_program: self.witness_program.clone().unwrap_or(WitnessProgram {
-                    version: 0,
-                    program: vec![0u8; 20],
-                }),
+                witness_program: self
+                    .witness_program
+                    .clone()
+                    .unwrap_or_else(|| WitnessProgram {
+                        version: 0,
+                        program: vec![0u8; 20],
+                    }),
             },
             AddressType::P2WSH => AddressData::P2wsh {
-                witness_program: self.witness_program.clone().unwrap_or(WitnessProgram {
-                    version: 0,
-                    program: vec![0u8; 32],
-                }),
+                witness_program: self
+                    .witness_program
+                    .clone()
+                    .unwrap_or_else(|| WitnessProgram {
+                        version: 0,
+                        program: vec![0u8; 32],
+                    }),
             },
         }
     }
@@ -341,17 +347,18 @@ impl Address {
             }
             AddressType::P2WSH => {
                 // P2WSH script: OP_0 <32-byte-script-hash>
-                let script_hash = if let Some(witness_program) = &self.witness_program {
-                    if witness_program.program.len() == 32 {
-                        let mut hash = [0u8; 32];
-                        hash.copy_from_slice(&witness_program.program);
-                        hash
-                    } else {
-                        [0u8; 32]
-                    }
-                } else {
-                    [0u8; 32]
-                };
+                let script_hash =
+                    self.witness_program
+                        .as_ref()
+                        .map_or([0u8; 32], |witness_program| {
+                            if witness_program.program.len() == 32 {
+                                let mut hash = [0u8; 32];
+                                hash.copy_from_slice(&witness_program.program);
+                                hash
+                            } else {
+                                [0u8; 32]
+                            }
+                        });
                 let mut script = Vec::new();
                 script.push(0x00); // OP_0
                 script.push(32); // Push 32 bytes
@@ -373,7 +380,7 @@ impl std::str::FromStr for Address {
     ///
     /// This method performs comprehensive validation including:
     /// - Format detection (P2PKH, P2SH, P2WPKH, P2WSH)
-    /// - Encoding validation (Base58Check vs Bech32)
+    /// - Encoding validation (`Base58Check` vs Bech32)
     /// - Checksum verification
     /// - Length validation
     /// - Network validation (mainnet only)
@@ -431,7 +438,7 @@ impl std::str::FromStr for Address {
                 return Err(AddressError::InvalidBase58);
             }
 
-            Ok(Address {
+            Ok(Self {
                 inner: s.to_string(),
                 address_type: AddressType::P2PKH,
                 pubkey_hash: Some(pubkey_hash),
@@ -473,7 +480,7 @@ impl std::str::FromStr for Address {
                 return Err(AddressError::InvalidBase58);
             }
 
-            Ok(Address {
+            Ok(Self {
                 inner: s.to_string(),
                 address_type: AddressType::P2SH,
                 pubkey_hash: Some(script_hash), // Store script hash in pubkey_hash field
@@ -545,7 +552,7 @@ impl std::str::FromStr for Address {
 /// in address parsing, allowing for specific error handling and user feedback.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AddressError {
-    /// Invalid Base58Check encoding (for P2PKH addresses).
+    /// Invalid `Base58Check` encoding (for P2PKH addresses).
     ///
     /// This includes:
     /// - Invalid characters in the Base58 alphabet
@@ -556,7 +563,7 @@ pub enum AddressError {
     /// Invalid address length (typically for P2PKH addresses).
     ///
     /// P2PKH addresses must be exactly 25 bytes when decoded:
-    /// 1 byte version + 20 bytes pubkey_hash + 4 bytes checksum
+    /// 1 byte version + 20 bytes `pubkey_hash` + 4 bytes checksum
     InvalidLength,
 
     /// Invalid witness program format or length.
@@ -586,11 +593,11 @@ pub enum AddressError {
 impl std::fmt::Display for AddressError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            AddressError::InvalidBase58 => write!(f, "Invalid base58 encoding"),
-            AddressError::InvalidLength => write!(f, "Invalid address length"),
-            AddressError::InvalidWitnessProgram => write!(f, "Invalid witness program"),
-            AddressError::UnsupportedFormat => write!(f, "Unsupported address format"),
-            AddressError::InvalidBech32 => write!(f, "Invalid bech32 encoding"),
+            Self::InvalidBase58 => write!(f, "Invalid base58 encoding"),
+            Self::InvalidLength => write!(f, "Invalid address length"),
+            Self::InvalidWitnessProgram => write!(f, "Invalid witness program"),
+            Self::UnsupportedFormat => write!(f, "Unsupported address format"),
+            Self::InvalidBech32 => write!(f, "Invalid bech32 encoding"),
         }
     }
 }
@@ -692,11 +699,11 @@ impl ScriptBuf {
 pub struct Txid([u8; 32]);
 
 impl Txid {
-    pub fn all_zeros() -> Self {
+    pub const fn all_zeros() -> Self {
         Self([0u8; 32])
     }
 
-    pub fn from_byte_array(bytes: [u8; 32]) -> Self {
+    pub const fn from_byte_array(bytes: [u8; 32]) -> Self {
         Self(bytes)
     }
 }
@@ -709,7 +716,7 @@ pub struct OutPoint {
 }
 
 impl OutPoint {
-    pub fn new(txid: Txid, vout: u32) -> Self {
+    pub const fn new(txid: Txid, vout: u32) -> Self {
         Self { txid, vout }
     }
 }
@@ -804,7 +811,7 @@ impl Encodable for Transaction {
         len += writer.write(&self.version.0.to_le_bytes())?;
 
         // Input count (compact size)
-        len += write_compact_size(writer, self.input.len() as u64)?;
+        len += write_compact_size(writer, try_into_io::<usize, u64>(self.input.len())?)?;
 
         // Inputs
         for input in &self.input {
@@ -813,7 +820,10 @@ impl Encodable for Transaction {
             len += writer.write(&input.previous_output.vout.to_le_bytes())?;
 
             // Script sig
-            len += write_compact_size(writer, input.script_sig.inner.len() as u64)?;
+            len += write_compact_size(
+                writer,
+                try_into_io::<usize, u64>(input.script_sig.inner.len())?,
+            )?;
             len += writer.write(&input.script_sig.inner)?;
 
             // Sequence (4 bytes)
@@ -821,7 +831,7 @@ impl Encodable for Transaction {
         }
 
         // Output count
-        len += write_compact_size(writer, self.output.len() as u64)?;
+        len += write_compact_size(writer, try_into_io::<usize, u64>(self.output.len())?)?;
 
         // Outputs
         for output in &self.output {
@@ -829,7 +839,10 @@ impl Encodable for Transaction {
             len += writer.write(&output.value.0.to_le_bytes())?;
 
             // Script pubkey
-            len += write_compact_size(writer, output.script_pubkey.inner.len() as u64)?;
+            len += write_compact_size(
+                writer,
+                try_into_io::<usize, u64>(output.script_pubkey.inner.len())?,
+            )?;
             len += writer.write(&output.script_pubkey.inner)?;
         }
 
@@ -840,17 +853,31 @@ impl Encodable for Transaction {
     }
 }
 
+/// Helper function to convert between numeric types with proper error handling for IO operations.
+///
+/// This function is used throughout the encoding logic to safely convert between numeric types
+/// (e.g., usize to u64, u64 to u32) while providing consistent error handling.
+fn try_into_io<T, U>(value: T) -> Result<U, std::io::Error>
+where
+    T: TryInto<U>,
+    T::Error: std::error::Error + Send + Sync + 'static,
+{
+    value
+        .try_into()
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))
+}
+
 fn write_compact_size<W: std::io::Write>(writer: &mut W, n: u64) -> Result<usize, std::io::Error> {
     if n < 0xfd {
-        writer.write_all(&[n as u8])?;
+        writer.write_all(&[try_into_io::<u64, u8>(n)?])?;
         Ok(1)
     } else if n <= 0xffff {
         writer.write_all(&[0xfd])?;
-        writer.write_all(&(n as u16).to_le_bytes())?;
+        writer.write_all(&try_into_io::<u64, u16>(n)?.to_le_bytes())?;
         Ok(3)
     } else if n <= 0xffffffff {
         writer.write_all(&[0xfe])?;
-        writer.write_all(&(n as u32).to_le_bytes())?;
+        writer.write_all(&try_into_io::<u64, u32>(n)?.to_le_bytes())?;
         Ok(5)
     } else {
         writer.write_all(&[0xff])?;
@@ -875,14 +902,17 @@ impl ScriptBuilder {
         Self { inner: Vec::new() }
     }
 
+    #[must_use]
     pub fn push_opcode(mut self, opcode: u8) -> Self {
         self.inner.push(opcode);
         self
     }
 
+    #[must_use]
     pub fn push_slice(mut self, data: &[u8]) -> Self {
         if data.len() <= 75 {
-            self.inner.push(data.len() as u8);
+            self.inner
+                .push(u8::try_from(data.len()).expect("data length fits in u8"));
         } else {
             panic!("Large pushdata not implemented");
         }
@@ -905,7 +935,7 @@ pub struct SighashCache {
 }
 
 impl SighashCache {
-    pub fn new(tx: Transaction) -> Self {
+    pub const fn new(tx: Transaction) -> Self {
         Self { tx }
     }
 
@@ -924,26 +954,36 @@ impl SighashCache {
         writer.write_all(&self.tx.version.0.to_le_bytes())?;
 
         // Write input count and inputs (this includes the script_sig with message hash)
-        writer.write_all(&(self.tx.input.len() as u32).to_le_bytes())?;
+        writer.write_all(&try_into_io::<usize, u32>(self.tx.input.len())?.to_le_bytes())?;
         for input in &self.tx.input {
             writer.write_all(&input.previous_output.txid.0)?;
             writer.write_all(&input.previous_output.vout.to_le_bytes())?;
-            writer.write_all(&(input.script_sig.inner.len() as u32).to_le_bytes())?;
+            writer.write_all(
+                &try_into_io::<usize, u32>(input.script_sig.inner.len())?.to_le_bytes(),
+            )?;
             writer.write_all(&input.script_sig.inner)?;
             writer.write_all(&input.sequence.0.to_le_bytes())?;
         }
 
         // Write other transaction components
-        writer.write_all(&[input_index as u8])?;
+        writer.write_all(&[try_into_io::<usize, u8>(input_index)?])?;
         writer.write_all(&script_code.inner)?;
         writer.write_all(&value.0.to_le_bytes())?;
-        writer.write_all(&[sighash_type as u8])?;
+        writer.write_all(&[sighash_type.into()])?;
 
         Ok(())
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[repr(u8)]
 pub enum EcdsaSighashType {
     All = 0x01,
+}
+
+impl From<EcdsaSighashType> for u8 {
+    fn from(value: EcdsaSighashType) -> Self {
+        match value {
+            EcdsaSighashType::All => 0x01u8,
+        }
+    }
 }

@@ -27,7 +27,7 @@
 ///
 /// # Returns
 ///
-/// A tuple of (length_value, bytes_consumed) if parsing succeeds.
+/// A tuple of (`length_value`, `bytes_consumed`) if parsing succeeds.
 pub fn parse_der_length(bytes: &[u8]) -> Option<(usize, usize)> {
     if bytes.is_empty() {
         return None;
@@ -37,18 +37,18 @@ pub fn parse_der_length(bytes: &[u8]) -> Option<(usize, usize)> {
 
     if first_byte & 0x80 == 0 {
         // Short form: length is just the first byte
-        Some((first_byte as usize, 1))
+        Some((usize::from(first_byte), 1))
     } else {
         // Long form: first byte indicates number of length bytes
-        let len_bytes = (first_byte & 0x7F) as usize;
+        let len_bytes = usize::from(first_byte & 0x7F);
 
         if len_bytes == 0 || len_bytes > 4 || bytes.len() < 1 + len_bytes {
             return None; // Invalid length encoding
         }
 
         let mut length = 0usize;
-        for i in 1..=len_bytes {
-            length = (length << 8) | (bytes[i] as usize);
+        for &byte in bytes.iter().take(len_bytes + 1).skip(1) {
+            length = (length << 8) | usize::from(byte);
         }
 
         Some((length, 1 + len_bytes))
@@ -75,7 +75,7 @@ pub fn parse_der_length(bytes: &[u8]) -> Option<(usize, usize)> {
 ///
 /// # Returns
 ///
-/// A tuple of (r_bytes, s_bytes) if parsing succeeds, None otherwise.
+/// A tuple of (`r_bytes`, `s_bytes`) if parsing succeeds, None otherwise.
 pub fn parse_der_ecdsa_signature(der_bytes: &[u8]) -> Option<(Vec<u8>, Vec<u8>)> {
     // DER signature structure:
     // 0x30 [total-length] 0x02 [R-length] [R] 0x02 [S-length] [S]
@@ -147,7 +147,7 @@ pub fn parse_der_ecdsa_signature(der_bytes: &[u8]) -> Option<(Vec<u8>, Vec<u8>)>
 ///
 /// # Returns
 ///
-/// A tuple of (r_bytes, s_bytes) if parsing succeeds, None otherwise.
+/// A tuple of (`r_bytes`, `s_bytes`) if parsing succeeds, None otherwise.
 pub fn parse_der_signature(der_bytes: &[u8]) -> Option<(Vec<u8>, Vec<u8>)> {
     if der_bytes.len() < 6 {
         return None;
