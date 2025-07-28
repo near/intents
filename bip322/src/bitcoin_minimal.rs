@@ -993,6 +993,25 @@ impl SighashCache {
         Self { tx }
     }
 
+    /// Encodes the BIP-143 sighash preimage for segwit v0 signature verification.
+    ///
+    /// This function implements the complete BIP-143 sighash algorithm for segwit v0
+    /// transactions, creating the exact preimage that gets double-SHA256 hashed
+    /// for signature verification.
+    ///
+    /// # BIP-143 Sighash Preimage Format
+    ///
+    /// The preimage consists of the following fields in order:
+    /// 1. version (4 bytes)
+    /// 2. hashPrevouts (32 bytes) - double SHA256 of all outpoints
+    /// 3. hashSequence (32 bytes) - double SHA256 of all sequence numbers  
+    /// 4. outpoint (36 bytes) - the specific input's outpoint being signed
+    /// 5. scriptCode (variable) - with compact size prefix
+    /// 6. amount (8 bytes) - value of the output being spent
+    /// 7. sequence (4 bytes) - sequence of the input being signed
+    /// 8. hashOutputs (32 bytes) - double SHA256 of all outputs
+    /// 9. locktime (4 bytes)
+    /// 10. `sighash_type` (4 bytes) - as little-endian integer
     pub fn segwit_v0_encode_signing_data_to<W: std::io::Write>(
         &mut self,
         writer: &mut W,
@@ -1001,31 +1020,93 @@ impl SighashCache {
         value: Amount,
         sighash_type: EcdsaSighashType,
     ) -> Result<(), std::io::Error> {
-        // Simplified segwit v0 sighash implementation
-        // Include the transaction structure to ensure message hash affects final result
-
-        // Write transaction version
+        // 1. Transaction version (4 bytes, little-endian)
         writer.write_all(&self.tx.version.0.to_le_bytes())?;
 
-        // Write input count and inputs (this includes the script_sig with message hash)
-        writer.write_all(&try_into_io::<usize, u32>(self.tx.input.len())?.to_le_bytes())?;
-        for input in &self.tx.input {
-            writer.write_all(&input.previous_output.txid.0)?;
-            writer.write_all(&input.previous_output.vout.to_le_bytes())?;
-            writer.write_all(
-                &try_into_io::<usize, u32>(input.script_sig.inner.len())?.to_le_bytes(),
-            )?;
-            writer.write_all(&input.script_sig.inner)?;
-            writer.write_all(&input.sequence.0.to_le_bytes())?;
-        }
+        // 2. hashPrevouts (32 bytes) - double SHA256 of all outpoints
+        let hash_prevouts = self.compute_hash_prevouts();
+        writer.write_all(&hash_prevouts)?;
 
-        // Write other transaction components
-        writer.write_all(&[try_into_io::<usize, u8>(input_index)?])?;
+        // 3. hashSequence (32 bytes) - double SHA256 of all sequence numbers
+        let hash_sequence = self.compute_hash_sequence();
+        writer.write_all(&hash_sequence)?;
+
+        // 4. Outpoint (36 bytes) - the specific input's outpoint being signed
+        if input_index >= self.tx.input.len() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Input index out of bounds"
+            ));
+        }
+        let input = &self.tx.input[input_index];
+        writer.write_all(&input.previous_output.txid.0)?;
+        writer.write_all(&input.previous_output.vout.to_le_bytes())?;
+
+        // 5. scriptCode (variable length with compact size prefix)
+        write_compact_size(writer, try_into_io::<usize, u64>(script_code.inner.len())?)?;
         writer.write_all(&script_code.inner)?;
+
+        // 6. amount (8 bytes, little-endian) - value of the output being spent
         writer.write_all(&value.0.to_le_bytes())?;
-        writer.write_all(&[sighash_type.into()])?;
+
+        // 7. sequence (4 bytes, little-endian) - sequence of the input being signed
+        writer.write_all(&input.sequence.0.to_le_bytes())?;
+
+        // 8. hashOutputs (32 bytes) - double SHA256 of all outputs
+        let hash_outputs = self.compute_hash_outputs()?;
+        writer.write_all(&hash_outputs)?;
+
+        // 9. locktime (4 bytes, little-endian)
+        writer.write_all(&self.tx.lock_time.0.to_le_bytes())?;
+
+        // 10. sighash_type (4 bytes, little-endian)
+        writer.write_all(&u32::from(u8::from(sighash_type)).to_le_bytes())?;
 
         Ok(())
+    }
+
+    /// Computes hashPrevouts as specified in BIP-143.
+    /// 
+    /// `hashPrevouts` = `double_sha256(all outpoints concatenated)`
+    /// Each outpoint is 36 bytes: txid (32 bytes) + vout (4 bytes little-endian)
+    fn compute_hash_prevouts(&self) -> [u8; 32] {
+        let mut outpoints_data = Vec::new();
+        for input in &self.tx.input {
+            outpoints_data.extend_from_slice(&input.previous_output.txid.0);
+            outpoints_data.extend_from_slice(&input.previous_output.vout.to_le_bytes());
+        }
+        double_sha256(&outpoints_data)
+    }
+
+    /// Computes hashSequence as specified in BIP-143.
+    /// 
+    /// `hashSequence` = `double_sha256(all sequence numbers concatenated)`
+    /// Each sequence is 4 bytes little-endian
+    fn compute_hash_sequence(&self) -> [u8; 32] {
+        let mut sequence_data = Vec::new();
+        for input in &self.tx.input {
+            sequence_data.extend_from_slice(&input.sequence.0.to_le_bytes());
+        }
+        double_sha256(&sequence_data)
+    }
+
+    /// Computes hashOutputs as specified in BIP-143.
+    /// 
+    /// `hashOutputs` = `double_sha256(all outputs concatenated)`
+    /// Each output is: value (8 bytes little-endian) + scriptPubKey (variable length with compact size prefix)
+    fn compute_hash_outputs(&self) -> Result<[u8; 32], std::io::Error> {
+        let mut outputs_data = Vec::new();
+        for output in &self.tx.output {
+            outputs_data.extend_from_slice(&output.value.0.to_le_bytes());
+            // Write scriptPubKey with compact size prefix
+            let script_len = try_into_io::<usize, u64>(output.script_pubkey.inner.len())?;
+            let mut compact_size_bytes = Vec::new();
+            write_compact_size(&mut compact_size_bytes, script_len)
+                .expect("Writing to Vec should not fail");
+            outputs_data.extend_from_slice(&compact_size_bytes);
+            outputs_data.extend_from_slice(&output.script_pubkey.inner);
+        }
+        Ok(double_sha256(&outputs_data))
     }
 }
 

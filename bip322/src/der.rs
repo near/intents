@@ -170,8 +170,8 @@ pub fn parse_der_signature(der_bytes: &[u8]) -> Option<(Vec<u8>, Vec<u8>)> {
     }
     pos += 1;
 
-    // Skip total length
-    let (_, consumed) = parse_der_length(&der_bytes[pos..])?;
+    // Parse total length - we need to validate this matches actual content
+    let (total_len, consumed) = parse_der_length(&der_bytes[pos..])?;
     pos += consumed;
 
     // Parse R value
@@ -204,6 +204,17 @@ pub fn parse_der_signature(der_bytes: &[u8]) -> Option<(Vec<u8>, Vec<u8>)> {
     }
 
     let s = der_bytes[pos..pos + s_len].to_vec();
+    pos += s_len;
+
+    // Validate that total length matches actual consumed bytes and no trailing data
+    let content_start = 1 + consumed; // 1 for sequence tag + consumed for length encoding
+    let actual_content_len = pos - content_start;
+    let expected_total_bytes = content_start + total_len;
+    
+    // Check that content length matches declared length and no trailing data exists
+    if actual_content_len != total_len || pos != expected_total_bytes || expected_total_bytes != der_bytes.len() {
+        return None; // Length mismatch or trailing data detected
+    }
 
     Some((r, s))
 }
@@ -320,5 +331,25 @@ mod tests {
 
         let wrong_sequence_tag = vec![0x31, 0x06, 0x02, 0x01, 0x01, 0x02, 0x01, 0x02];
         assert_eq!(parse_der_signature(&wrong_sequence_tag), None);
+    }
+
+    #[test]
+    fn test_parse_der_signature_trailing_data() {
+        // Valid DER signature with extra trailing bytes
+        let trailing_data = vec![
+            0x30, 0x06, // SEQUENCE, length 6
+            0x02, 0x01, 0x01, // INTEGER, length 1, value 0x01 (R)
+            0x02, 0x01, 0x02, // INTEGER, length 1, value 0x02 (S)
+            0xFF, 0xFF, // Extra trailing bytes
+        ];
+        assert_eq!(parse_der_signature(&trailing_data), None);
+
+        // Valid DER signature with length mismatch (declared length too short)
+        let length_mismatch = vec![
+            0x30, 0x04, // SEQUENCE, length 4 (but actual content is 6 bytes)
+            0x02, 0x01, 0x01, // INTEGER, length 1, value 0x01 (R)
+            0x02, 0x01, 0x02, // INTEGER, length 1, value 0x02 (S)
+        ];
+        assert_eq!(parse_der_signature(&length_mismatch), None);
     }
 }
