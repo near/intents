@@ -1,0 +1,11 @@
+[package]
+name = "defuse-auth-call"
+version.workspace = true
+edition.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+near-sdk.workspace = true

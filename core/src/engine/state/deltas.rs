@@ -3,6 +3,7 @@ use crate::{
     amounts::Amounts,
     fees::Pips,
     intents::{
+        auth::AuthCall,
         token_diff::TokenDeltas,
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
     },
@@ -178,6 +179,11 @@ where
     #[inline]
     fn set_auth_by_predecessor_id(&mut self, account_id: AccountId, enable: bool) -> Result<bool> {
         self.state.set_auth_by_predecessor_id(account_id, enable)
+    }
+
+    #[inline]
+    fn auth_call(&mut self, signer_id: &AccountIdRef, auth_call: AuthCall) -> Result<()> {
+        self.state.auth_call(signer_id, auth_call)
     }
 }
 

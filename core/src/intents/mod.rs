@@ -1,4 +1,5 @@
 pub mod account;
+pub mod auth;
 pub mod token_diff;
 pub mod tokens;
 
@@ -11,7 +12,7 @@ use tokens::{NativeWithdraw, StorageDeposit};
 use crate::{
     Result,
     engine::{Engine, Inspector, State},
-    intents::account::SetAuthByPredecessorId,
+    intents::{account::SetAuthByPredecessorId, auth::AuthCall},
 };
 
 use self::{
@@ -67,6 +68,9 @@ pub enum Intent {
 
     /// See [`SetAuthByPredecessorId`]
     SetAuthByPredecessorId(SetAuthByPredecessorId),
+
+    /// See [`AuthCall`]
+    AuthCall(AuthCall),
 }
 
 pub trait ExecutableIntent {
@@ -124,6 +128,7 @@ impl ExecutableIntent for Intent {
             Self::SetAuthByPredecessorId(intent) => {
                 intent.execute_intent(signer_id, engine, intent_hash)
             }
+            Self::AuthCall(intent) => intent.execute_intent(signer_id, engine, intent_hash),
         }
     }
 }

@@ -14,6 +14,7 @@ workspace = true
 
 [dependencies]
 defuse-admin-utils.workspace = true
+defuse-auth-call.workspace = true
 defuse-bitmap = { workspace = true, optional = true }
 defuse-borsh-utils = { workspace = true, optional = true }
 defuse-controller.workspace = true

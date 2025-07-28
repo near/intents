@@ -4,7 +4,10 @@ pub mod deltas;
 use crate::{
     Nonce, Result,
     fees::Pips,
-    intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
+    intents::{
+        auth::AuthCall,
+        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
+    },
     token_id::{TokenId, nep141::Nep141TokenId},
 };
 use cached::CachedState;
@@ -102,4 +105,6 @@ pub trait State: StateView {
     /// Returns whether authentication by `PREDECESSOR_ID` was enabled
     /// before.
     fn set_auth_by_predecessor_id(&mut self, account_id: AccountId, enable: bool) -> Result<bool>;
+
+    fn auth_call(&mut self, signer_id: &AccountIdRef, auth_call: AuthCall) -> Result<()>;
 }
