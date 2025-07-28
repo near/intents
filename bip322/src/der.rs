@@ -51,6 +51,15 @@ pub fn parse_der_length(bytes: &[u8]) -> Option<(usize, usize)> {
             length = (length << 8) | usize::from(byte);
         }
 
+        // Validate canonical encoding - no leading zeros except for single zero byte
+        if len_bytes > 1 && bytes[1] == 0 {
+            return None; // Non-canonical: leading zero
+        }
+
+        // Validate minimal encoding - could have used short form
+        if len_bytes == 1 && length <= 127 {
+            return None; // Non-canonical: should use short form
+        }
         Some((length, 1 + len_bytes))
     }
 }
@@ -240,6 +249,26 @@ mod tests {
         let invalid_long = vec![0x85]; // Claims 5 length bytes but doesn't have them
         let result = parse_der_length(&invalid_long);
         assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_parse_der_ecdsa_signature_trailing_data() {
+        // Signature with extra bytes after valid content
+        let invalid_der = vec![
+            0x30, 0x06, // SEQUENCE, length 6
+            0x02, 0x01, 0x01, // INTEGER, length 1, value 0x01 (R)
+            0x02, 0x01, 0x02, // INTEGER, length 1, value 0x02 (S)
+            0xFF, // Extra byte
+        ];
+        assert_eq!(parse_der_ecdsa_signature(&invalid_der), None);
+    }
+
+    #[test]
+    fn test_parse_der_length_non_canonical() {
+        // Length 127 encoded in long form (should use short form)
+        let non_canonical = vec![0x81, 0x7F];
+        // Should fail with canonical validation enabled
+        assert_eq!(parse_der_length(&non_canonical), None);
     }
 
     #[test]

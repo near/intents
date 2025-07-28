@@ -1505,7 +1505,9 @@ mod tests {
         );
 
         // Test to_address_data conversion
-        let address_data = parsed.to_address_data();
+        let address_data = parsed
+            .to_address_data()
+            .expect("Address should have required cryptographic data");
         match address_data {
             AddressData::P2sh { script_hash } => {
                 assert_eq!(script_hash.len(), 20, "Script hash should be 20 bytes");
@@ -1574,7 +1576,9 @@ mod tests {
         );
 
         // Test to_address_data conversion
-        let address_data = parsed.to_address_data();
+        let address_data = parsed
+            .to_address_data()
+            .expect("Address should have required cryptographic data");
         match address_data {
             AddressData::P2wsh { witness_program } => {
                 assert_eq!(witness_program.version, 0);
@@ -2659,5 +2663,79 @@ mod tests {
             future_result.is_err(),
             "Future segwit version should be rejected"
         );
+    }
+
+    #[test]
+    fn test_transaction_witness_serialization() {
+        // Create a transaction with witness data to test proper serialization
+        let witness_stack = vec![
+            vec![0x30, 0x44, 0x02, 0x20], // Mock signature
+            vec![0x02, 0x21, 0x00], // Mock public key
+        ];
+        let witness = Witness::from_stack(witness_stack);
+        
+        let tx = Transaction {
+            version: Version(2),
+            input: vec![TxIn {
+                previous_output: OutPoint::new(Txid::from_byte_array([1u8; 32]), 0),
+                script_sig: ScriptBuf::new(),
+                sequence: Sequence::ZERO,
+                witness,
+            }],
+            output: vec![TxOut {
+                value: Amount::ZERO,
+                script_pubkey: ScriptBuf::new(),
+            }],
+            lock_time: LockTime::ZERO,
+        };
+
+        // Serialize the transaction
+        let mut serialized = Vec::new();
+        let bytes_written = tx.consensus_encode(&mut serialized).expect("Serialization should succeed");
+        
+        // Verify that witness data is included
+        assert!(bytes_written > 0, "Transaction should serialize to non-empty bytes");
+        assert!(serialized.len() > 20, "Serialized transaction with witness should be longer than minimal transaction");
+        
+        // Check for witness marker and flag bytes (0x00, 0x01) after version
+        // Version is first 4 bytes, then marker (0x00) and flag (0x01)
+        assert_eq!(serialized[4], 0x00, "Witness marker byte should be present");
+        assert_eq!(serialized[5], 0x01, "Witness flag byte should be present");
+    }
+
+    #[test]
+    fn test_transaction_legacy_serialization() {
+        // Create a transaction without witness data
+        let tx = Transaction {
+            version: Version(1),
+            input: vec![TxIn {
+                previous_output: OutPoint::new(Txid::from_byte_array([1u8; 32]), 0),
+                script_sig: ScriptBuf::new(),
+                sequence: Sequence::ZERO,
+                witness: Witness::new(), // Empty witness
+            }],
+            output: vec![TxOut {
+                value: Amount::ZERO,
+                script_pubkey: ScriptBuf::new(),
+            }],
+            lock_time: LockTime::ZERO,
+        };
+
+        // Serialize the transaction
+        let mut serialized = Vec::new();
+        let bytes_written = tx.consensus_encode(&mut serialized).expect("Serialization should succeed");
+        
+        // Verify that witness marker/flag bytes are NOT included
+        assert!(bytes_written > 0, "Transaction should serialize to non-empty bytes");
+        
+        // For legacy transactions, bytes 4-5 should be input count, not witness marker/flag
+        // Since we have 1 input, byte 4 should be 0x01 (compact size for 1), not 0x00 (marker)
+        assert_eq!(serialized[4], 0x01, "Should have input count, not witness marker");
+        
+        // Check that we don't have marker/flag bytes by looking at the structure
+        // Legacy format: version(4) + input_count(1) + ... 
+        // Witness format: version(4) + marker(1) + flag(1) + input_count(1) + ...
+        // So for legacy, byte 4 should be input count (0x01), not marker (0x00)
+        assert_ne!(serialized[4], 0x00, "Legacy transaction should not have witness marker");
     }
 }
