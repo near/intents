@@ -711,8 +711,9 @@ mod tests {
         println!("Full P2WPKH hash pipeline gas usage: {full_hash_gas}");
 
         // This is the most expensive operation - should still be reasonable for NEAR SDK test environment
+        // The BIP-143 implementation requires more computation due to proper hashPrevouts, hashSequence, and hashOutputs
         assert!(
-            full_hash_gas < 150_000_000_000,
+            full_hash_gas < 250_000_000_000,
             "Full hash pipeline gas usage too high: {full_hash_gas}"
         );
     }
