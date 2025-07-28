@@ -833,7 +833,10 @@ impl Encodable for Transaction {
         let mut len = 0;
 
         // Check if any input has witness data
-        let has_witness = self.input.iter().any(|input| !input.witness.stack.is_empty());
+        let has_witness = self
+            .input
+            .iter()
+            .any(|input| !input.witness.stack.is_empty());
 
         // Version (4 bytes, little-endian)
         len += writer.write(&self.version.0.to_le_bytes())?;
@@ -888,13 +891,11 @@ impl Encodable for Transaction {
                     writer,
                     try_into_io::<usize, u64>(input.witness.stack.len())?,
                 )?;
-                
+
                 // Write each witness item
                 for witness_item in &input.witness.stack {
-                    len += write_compact_size(
-                        writer,
-                        try_into_io::<usize, u64>(witness_item.len())?,
-                    )?;
+                    len +=
+                        write_compact_size(writer, try_into_io::<usize, u64>(witness_item.len())?)?;
                     len += writer.write(witness_item)?;
                 }
             }
@@ -1035,7 +1036,7 @@ impl SighashCache {
         if input_index >= self.tx.input.len() {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
-                "Input index out of bounds"
+                "Input index out of bounds",
             ));
         }
         let input = &self.tx.input[input_index];
@@ -1066,7 +1067,7 @@ impl SighashCache {
     }
 
     /// Computes hashPrevouts as specified in BIP-143.
-    /// 
+    ///
     /// `hashPrevouts` = `double_sha256(all outpoints concatenated)`
     /// Each outpoint is 36 bytes: txid (32 bytes) + vout (4 bytes little-endian)
     fn compute_hash_prevouts(&self) -> [u8; 32] {
@@ -1079,7 +1080,7 @@ impl SighashCache {
     }
 
     /// Computes hashSequence as specified in BIP-143.
-    /// 
+    ///
     /// `hashSequence` = `double_sha256(all sequence numbers concatenated)`
     /// Each sequence is 4 bytes little-endian
     fn compute_hash_sequence(&self) -> [u8; 32] {
@@ -1091,7 +1092,7 @@ impl SighashCache {
     }
 
     /// Computes hashOutputs as specified in BIP-143.
-    /// 
+    ///
     /// `hashOutputs` = `double_sha256(all outputs concatenated)`
     /// Each output is: value (8 bytes little-endian) + scriptPubKey (variable length with compact size prefix)
     fn compute_hash_outputs(&self) -> Result<[u8; 32], std::io::Error> {

@@ -2671,10 +2671,10 @@ mod tests {
         // Create a transaction with witness data to test proper serialization
         let witness_stack = vec![
             vec![0x30, 0x44, 0x02, 0x20], // Mock signature
-            vec![0x02, 0x21, 0x00], // Mock public key
+            vec![0x02, 0x21, 0x00],       // Mock public key
         ];
         let witness = Witness::from_stack(witness_stack);
-        
+
         let tx = Transaction {
             version: Version(2),
             input: vec![TxIn {
@@ -2692,12 +2692,20 @@ mod tests {
 
         // Serialize the transaction
         let mut serialized = Vec::new();
-        let bytes_written = tx.consensus_encode(&mut serialized).expect("Serialization should succeed");
-        
+        let bytes_written = tx
+            .consensus_encode(&mut serialized)
+            .expect("Serialization should succeed");
+
         // Verify that witness data is included
-        assert!(bytes_written > 0, "Transaction should serialize to non-empty bytes");
-        assert!(serialized.len() > 20, "Serialized transaction with witness should be longer than minimal transaction");
-        
+        assert!(
+            bytes_written > 0,
+            "Transaction should serialize to non-empty bytes"
+        );
+        assert!(
+            serialized.len() > 20,
+            "Serialized transaction with witness should be longer than minimal transaction"
+        );
+
         // Check for witness marker and flag bytes (0x00, 0x01) after version
         // Version is first 4 bytes, then marker (0x00) and flag (0x01)
         assert_eq!(serialized[4], 0x00, "Witness marker byte should be present");
@@ -2724,19 +2732,30 @@ mod tests {
 
         // Serialize the transaction
         let mut serialized = Vec::new();
-        let bytes_written = tx.consensus_encode(&mut serialized).expect("Serialization should succeed");
-        
+        let bytes_written = tx
+            .consensus_encode(&mut serialized)
+            .expect("Serialization should succeed");
+
         // Verify that witness marker/flag bytes are NOT included
-        assert!(bytes_written > 0, "Transaction should serialize to non-empty bytes");
-        
+        assert!(
+            bytes_written > 0,
+            "Transaction should serialize to non-empty bytes"
+        );
+
         // For legacy transactions, bytes 4-5 should be input count, not witness marker/flag
         // Since we have 1 input, byte 4 should be 0x01 (compact size for 1), not 0x00 (marker)
-        assert_eq!(serialized[4], 0x01, "Should have input count, not witness marker");
-        
+        assert_eq!(
+            serialized[4], 0x01,
+            "Should have input count, not witness marker"
+        );
+
         // Check that we don't have marker/flag bytes by looking at the structure
-        // Legacy format: version(4) + input_count(1) + ... 
+        // Legacy format: version(4) + input_count(1) + ...
         // Witness format: version(4) + marker(1) + flag(1) + input_count(1) + ...
         // So for legacy, byte 4 should be input count (0x01), not marker (0x00)
-        assert_ne!(serialized[4], 0x00, "Legacy transaction should not have witness marker");
+        assert_ne!(
+            serialized[4], 0x00,
+            "Legacy transaction should not have witness marker"
+        );
     }
 }

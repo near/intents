@@ -210,9 +210,12 @@ pub fn parse_der_signature(der_bytes: &[u8]) -> Option<(Vec<u8>, Vec<u8>)> {
     let content_start = 1 + consumed; // 1 for sequence tag + consumed for length encoding
     let actual_content_len = pos - content_start;
     let expected_total_bytes = content_start + total_len;
-    
+
     // Check that content length matches declared length and no trailing data exists
-    if actual_content_len != total_len || pos != expected_total_bytes || expected_total_bytes != der_bytes.len() {
+    if actual_content_len != total_len
+        || pos != expected_total_bytes
+        || expected_total_bytes != der_bytes.len()
+    {
         return None; // Length mismatch or trailing data detected
     }
 
