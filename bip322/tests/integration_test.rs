@@ -5,7 +5,7 @@
 //!
 //! 1. BIP-322 payloads can extract JSON-encoded Defuse payloads
 //! 2. BIP-322 integrates properly with the Payload/SignedPayload traits
-//! 3. BIP-322 works correctly within MultiPayload contexts
+//! 3. BIP-322 works correctly within `MultiPayload` contexts
 //!
 //! These integration tests complement the unit tests in the main module
 //! by focusing on cross-module compatibility and system-level functionality.
@@ -15,16 +15,21 @@ use defuse_bip322::{
     bitcoin_minimal::{Address, AddressType, Witness},
 };
 use defuse_core::payload::{DefusePayload, ExtractDefusePayload};
-use serde_json;
 
-/// Tests BIP-322 integration with DefusePayload extraction.
+// Helper function to verify trait implementations
+const fn verify_traits_implemented<T: defuse_crypto::Payload + defuse_crypto::SignedPayload>(
+    _payload: &T,
+) {
+}
+
+/// Tests BIP-322 integration with `DefusePayload` extraction.
 ///
 /// This test validates that BIP-322 signatures can carry JSON-encoded Defuse payloads
 /// in their message field, which is essential for the intents system. The test:
 ///
 /// 1. Creates a BIP-322 payload with JSON message content
-/// 2. Attempts to extract a DefusePayload from the message
-/// 3. Verifies the ExtractDefusePayload trait implementation works
+/// 2. Attempts to extract a `DefusePayload` from the message
+/// 3. Verifies the `ExtractDefusePayload` trait implementation works
 ///
 /// Note: The test doesn't require a valid signature since it only tests
 /// payload extraction, not signature verification.
@@ -54,7 +59,7 @@ fn test_bip322_extract_defuse_payload_integration() {
     );
 }
 
-/// Tests BIP-322 integration with core Payload and SignedPayload traits.
+/// Tests BIP-322 integration with core `Payload` and `SignedPayload` traits.
 ///
 /// This test validates that BIP-322 properly implements the fundamental traits
 /// required by the Defuse system:
@@ -115,18 +120,17 @@ fn test_bip322_integration_structure() {
     );
 
     // Verify the trait is properly implemented by checking type compatibility
-    fn verify_traits_implemented<T: Payload + SignedPayload>(_payload: &T) {}
     verify_traits_implemented(&bip322_payload);
 }
 
-/// Tests BIP-322 integration within MultiPayload enumeration.
+/// Tests BIP-322 integration within `MultiPayload` enumeration.
 ///
 /// This test validates that BIP-322 works correctly when wrapped in the
-/// MultiPayload enum that handles different signature schemes (BIP-322, ERC-191, NEP-413, etc.).
+/// `MultiPayload` enum that handles different signature schemes (BIP-322, ERC-191, NEP-413, etc.).
 ///
 /// The test ensures that:
-/// 1. BIP-322 payloads can be wrapped in MultiPayload::Bip322 variant
-/// 2. MultiPayload correctly delegates to BIP-322 implementations
+/// 1. BIP-322 payloads can be wrapped in `MultiPayload::Bip322` variant
+/// 2. `MultiPayload` correctly delegates to BIP-322 implementations
 /// 3. The complete signature verification pipeline works through the enum
 #[test]
 fn test_bip322_multi_payload_integration() {
@@ -198,7 +202,7 @@ fn test_bip322_multi_payload_integration() {
         _ => panic!("Expected MultiPayload::Bip322 variant"),
     }
 
-    // Test ExtractDefusePayload trait implementation through MultiPayload
+    // Test `ExtractDefusePayload` trait implementation through `MultiPayload`
     let json_payload = SignedBip322Payload {
         address: Address {
             inner: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".to_string(),
@@ -214,9 +218,9 @@ fn test_bip322_multi_payload_integration() {
     let extraction_result: Result<DefusePayload<serde_json::Value>, _> =
         multi_json.extract_defuse_payload();
 
-    // Verify ExtractDefusePayload trait works through MultiPayload wrapper
+    // Verify `ExtractDefusePayload` trait works through `MultiPayload` wrapper
     assert!(
         extraction_result.is_ok() || extraction_result.is_err(),
-        "ExtractDefusePayload should work through MultiPayload"
+        "`ExtractDefusePayload` should work through `MultiPayload`"
     );
 }

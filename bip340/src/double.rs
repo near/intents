@@ -25,7 +25,7 @@ where
 {
     fn finalize_into(self, out: &mut digest::Output<Self>) {
         D::default()
-            .chain(&self.0.finalize_fixed())
+            .chain(self.0.finalize_fixed())
             .finalize_into(out);
     }
 }
