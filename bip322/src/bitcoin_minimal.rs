@@ -283,40 +283,54 @@ impl Address {
         self
     }
 
-    pub fn to_address_data(&self) -> AddressData {
+    /// Extracts address data with proper error handling for missing cryptographic data.
+    ///
+    /// Returns an error if required cryptographic data is missing for the address type:
+    /// - P2PKH/P2SH addresses require `pubkey_hash`/`script_hash`
+    /// - P2WPKH/P2WSH addresses require `witness_program`
+    ///
+    /// # Errors
+    ///
+    /// Returns `AddressError::MissingRequiredData` if the required cryptographic data
+    /// is not present for the address type.
+    pub fn to_address_data(&self) -> Result<AddressData, AddressError> {
         match self.address_type {
-            AddressType::P2PKH => AddressData::P2pkh {
-                pubkey_hash: self.pubkey_hash.unwrap_or([0u8; 20]),
-            },
-            AddressType::P2SH => AddressData::P2sh {
-                script_hash: self.pubkey_hash.unwrap_or([0u8; 20]),
-            },
-            AddressType::P2WPKH => AddressData::P2wpkh {
-                witness_program: self
+            AddressType::P2PKH => {
+                let pubkey_hash = self.pubkey_hash.ok_or(AddressError::MissingRequiredData)?;
+                Ok(AddressData::P2pkh { pubkey_hash })
+            }
+            AddressType::P2SH => {
+                let script_hash = self.pubkey_hash.ok_or(AddressError::MissingRequiredData)?;
+                Ok(AddressData::P2sh { script_hash })
+            }
+            AddressType::P2WPKH => {
+                let witness_program = self
                     .witness_program
                     .clone()
-                    .unwrap_or_else(|| WitnessProgram {
-                        version: 0,
-                        program: vec![0u8; 20],
-                    }),
-            },
-            AddressType::P2WSH => AddressData::P2wsh {
-                witness_program: self
+                    .ok_or(AddressError::MissingRequiredData)?;
+                Ok(AddressData::P2wpkh { witness_program })
+            }
+            AddressType::P2WSH => {
+                let witness_program = self
                     .witness_program
                     .clone()
-                    .unwrap_or_else(|| WitnessProgram {
-                        version: 0,
-                        program: vec![0u8; 32],
-                    }),
-            },
+                    .ok_or(AddressError::MissingRequiredData)?;
+                Ok(AddressData::P2wsh { witness_program })
+            }
         }
     }
 
+    /// Generates the script pubkey for this address.
+    ///
+    /// # Panics
+    ///
+    /// Panics if required cryptographic data is missing. Use `to_address_data()` first
+    /// to validate that all required data is present before calling this method.
     pub fn script_pubkey(&self) -> ScriptBuf {
         match self.address_type {
             AddressType::P2PKH => {
                 // P2PKH script: OP_DUP OP_HASH160 <pubkey_hash> OP_EQUALVERIFY OP_CHECKSIG
-                let pubkey_hash = self.pubkey_hash.unwrap_or([0u8; 20]);
+                let pubkey_hash = self.pubkey_hash.expect("P2PKH address missing pubkey_hash");
                 let mut script = Vec::new();
                 script.push(0x76); // OP_DUP
                 script.push(0xa9); // OP_HASH160
@@ -328,7 +342,7 @@ impl Address {
             }
             AddressType::P2SH => {
                 // P2SH script: OP_HASH160 <script_hash> OP_EQUAL
-                let script_hash = self.pubkey_hash.unwrap_or([0u8; 20]);
+                let script_hash = self.pubkey_hash.expect("P2SH address missing script_hash");
                 let mut script = Vec::new();
                 script.push(0xa9); // OP_HASH160
                 script.push(20); // Push 20 bytes
@@ -338,7 +352,9 @@ impl Address {
             }
             AddressType::P2WPKH => {
                 // P2WPKH script: OP_0 <20-byte-pubkey-hash>
-                let pubkey_hash = self.pubkey_hash.unwrap_or([0u8; 20]);
+                let pubkey_hash = self
+                    .pubkey_hash
+                    .expect("P2WPKH address missing pubkey_hash");
                 let mut script = Vec::new();
                 script.push(0x00); // OP_0
                 script.push(20); // Push 20 bytes
@@ -347,22 +363,21 @@ impl Address {
             }
             AddressType::P2WSH => {
                 // P2WSH script: OP_0 <32-byte-script-hash>
-                let script_hash =
-                    self.witness_program
-                        .as_ref()
-                        .map_or([0u8; 32], |witness_program| {
-                            if witness_program.program.len() == 32 {
-                                let mut hash = [0u8; 32];
-                                hash.copy_from_slice(&witness_program.program);
-                                hash
-                            } else {
-                                [0u8; 32]
-                            }
-                        });
+                let witness_program = self
+                    .witness_program
+                    .as_ref()
+                    .expect("P2WSH address missing witness_program");
+
+                assert_eq!(
+                    witness_program.program.len(),
+                    32,
+                    "P2WSH witness program must be exactly 32 bytes"
+                );
+
                 let mut script = Vec::new();
                 script.push(0x00); // OP_0
                 script.push(32); // Push 32 bytes
-                script.extend_from_slice(&script_hash);
+                script.extend_from_slice(&witness_program.program);
                 ScriptBuf { inner: script }
             }
         }
@@ -588,6 +603,13 @@ pub enum AddressError {
     /// - Invalid HRP (Human Readable Part)
     /// - Malformed segwit data
     InvalidBech32,
+
+    /// Missing required data for address type.
+    ///
+    /// This occurs when:
+    /// - P2PKH/P2SH addresses are missing `pubkey_hash`/`script_hash`
+    /// - P2WPKH/P2WSH addresses are missing `witness_program`
+    MissingRequiredData,
 }
 
 impl std::fmt::Display for AddressError {
@@ -598,6 +620,9 @@ impl std::fmt::Display for AddressError {
             Self::InvalidWitnessProgram => write!(f, "Invalid witness program"),
             Self::UnsupportedFormat => write!(f, "Unsupported address format"),
             Self::InvalidBech32 => write!(f, "Invalid bech32 encoding"),
+            Self::MissingRequiredData => {
+                write!(f, "Missing required cryptographic data for address type")
+            }
         }
     }
 }
@@ -807,8 +832,17 @@ impl Encodable for Transaction {
     fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
         let mut len = 0;
 
+        // Check if any input has witness data
+        let has_witness = self.input.iter().any(|input| !input.witness.stack.is_empty());
+
         // Version (4 bytes, little-endian)
         len += writer.write(&self.version.0.to_le_bytes())?;
+
+        // If witness data exists, write marker and flag bytes
+        if has_witness {
+            len += writer.write(&[0x00])?; // Marker byte
+            len += writer.write(&[0x01])?; // Flag byte
+        }
 
         // Input count (compact size)
         len += write_compact_size(writer, try_into_io::<usize, u64>(self.input.len())?)?;
@@ -844,6 +878,26 @@ impl Encodable for Transaction {
                 try_into_io::<usize, u64>(output.script_pubkey.inner.len())?,
             )?;
             len += writer.write(&output.script_pubkey.inner)?;
+        }
+
+        // If witness data exists, serialize witness for each input
+        if has_witness {
+            for input in &self.input {
+                // Write witness stack size
+                len += write_compact_size(
+                    writer,
+                    try_into_io::<usize, u64>(input.witness.stack.len())?,
+                )?;
+                
+                // Write each witness item
+                for witness_item in &input.witness.stack {
+                    len += write_compact_size(
+                        writer,
+                        try_into_io::<usize, u64>(witness_item.len())?,
+                    )?;
+                    len += writer.write(witness_item)?;
+                }
+            }
         }
 
         // Lock time (4 bytes)

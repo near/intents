@@ -21,7 +21,13 @@ This module provides **full BIP-322 compliance** for verifying Bitcoin message s
 - **✅ SHA-256**: Using `near_sdk::env::sha256_array()` for all hash operations
 - **✅ RIPEMD-160**: Using `near_sdk::env::ripemd160_array()` for address validation
 - **✅ ECDSA Recovery**: Using `near_sdk::env::ecrecover()` for signature verification
-- **✅ Zero External Dependencies**: No external crypto libraries, pure NEAR SDK implementation
+- **✅ Minimal External Dependencies**: All cryptographic operations use NEAR SDK host functions exclusively
+
+### Address Encoding Dependencies
+
+While cryptographic operations are handled entirely by NEAR SDK, Bitcoin address encoding and decoding relies on established, lightweight crates:
+- **`bs58`**: For Base58Check encoding/decoding (legacy P2PKH/P2SH addresses)
+- **`bech32`**: For Bech32 encoding/decoding (Segwit P2WPKH/P2WSH addresses)
 
 ## 🏠 Supported Bitcoin Address Types
 
@@ -137,10 +143,12 @@ use defuse_crypto::SignedPayload;
 use std::str::FromStr;
 
 // Create a BIP-322 payload
+// Note: This is a simplified example. In practice, you would parse the witness
+// data from the actual BIP-322 signature format.
 let payload = SignedBip322Payload {
     address: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".parse()?,
     message: "Hello Bitcoin!".to_string(),
-    signature: witness_from_signature_data(signature_bytes),
+    signature: Witness::from_stack(vec![signature_bytes, public_key_bytes]),
 };
 
 // Verify the signature (returns Option<PublicKey>)

@@ -53,7 +53,8 @@ pub enum MultiPayload {
     /// See [SEP-53](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md)
     Sep53(SignedSep53Payload),
 
-    // TODO: docs
+    /// BIP-322: The standard for Bitcoin generic message signing.
+    /// For more details, refer to [BIP-322](https://github.com/bitcoin/bips/blob/master/bip-0322.mediawiki).
     Bip322(SignedBip322Payload),
 }
 
