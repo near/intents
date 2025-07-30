@@ -610,7 +610,6 @@ mod tests {
 
         let payload = SignedBip322Payload {
             address: Address {
-                inner: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".to_string(),
                 address_type: AddressType::P2WPKH,
                 pubkey_hash: Some([1u8; 20]),
                 witness_program: None,
@@ -637,7 +636,6 @@ mod tests {
 
         let payload = SignedBip322Payload {
             address: Address {
-                inner: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".to_string(),
                 address_type: AddressType::P2WPKH,
                 pubkey_hash: Some([1u8; 20]),
                 witness_program: None,
@@ -674,7 +672,6 @@ mod tests {
 
         let payload = SignedBip322Payload {
             address: Address {
-                inner: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".to_string(),
                 address_type: AddressType::P2WPKH,
                 pubkey_hash: Some([1u8; 20]),
                 witness_program: None,
@@ -763,7 +760,6 @@ mod tests {
 
         let payload = SignedBip322Payload {
             address: Address {
-                inner: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".to_string(),
                 address_type: AddressType::P2WPKH,
                 pubkey_hash: Some([1u8; 20]),
                 witness_program: None,
@@ -785,7 +781,6 @@ mod tests {
 
         let payload = SignedBip322Payload {
             address: Address {
-                inner: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".to_string(),
                 address_type: AddressType::P2WPKH,
                 pubkey_hash: Some([1u8; 20]),
                 witness_program: None,
@@ -948,7 +943,6 @@ mod tests {
             address: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l"
                 .parse()
                 .unwrap_or_else(|_| Address {
-                    inner: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".to_string(),
                     address_type: AddressType::P2WPKH,
                     pubkey_hash: Some([1u8; 20]),
                     witness_program: None,
@@ -1027,8 +1021,7 @@ mod tests {
 
         // Test that different addresses produce different hashes for same message
         let mut different_addr_payload = payload;
-        different_addr_payload.address.inner =
-            "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq".to_string();
+        different_addr_payload.address.address_type = AddressType::P2WPKH;
         different_addr_payload.address.pubkey_hash = Some([2u8; 20]);
         let different_addr_hash = different_addr_payload.hash();
         assert_ne!(
@@ -1043,7 +1036,6 @@ mod tests {
 
         let payload = SignedBip322Payload {
             address: Address {
-                inner: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".to_string(),
                 address_type: AddressType::P2WPKH,
                 pubkey_hash: Some([1u8; 20]),
                 witness_program: None,
@@ -1115,7 +1107,6 @@ mod tests {
 
         let _payload = SignedBip322Payload {
             address: Address {
-                inner: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4".to_string(),
                 address_type: AddressType::P2WPKH,
                 pubkey_hash: Some([1u8; 20]),
                 witness_program: None,
@@ -1173,7 +1164,6 @@ mod tests {
 
         let payload = SignedBip322Payload {
             address: Address {
-                inner: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4".to_string(),
                 address_type: AddressType::P2WPKH,
                 pubkey_hash: Some([
                     0x75, 0x1e, 0x76, 0xc9, 0x76, 0x2a, 0x3b, 0x1a, 0xa8, 0x12, 0xa9, 0x82, 0x59,
@@ -1247,7 +1237,6 @@ mod tests {
         // Test complete BIP-322 structure for P2WPKH
         let payload = SignedBip322Payload {
             address: Address {
-                inner: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".to_string(),
                 address_type: AddressType::P2WPKH,
                 pubkey_hash: Some([
                     0x1a, 0x2b, 0x3c, 0x4d, 0x5e, 0x6f, 0x70, 0x81, 0x92, 0xa3, 0xb4, 0xc5, 0xd6,
@@ -1291,7 +1280,6 @@ mod tests {
         let p2sh_address = "3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX";
         let parsed = Address::from_str(p2sh_address).expect("Should parse valid P2SH address");
 
-        assert_eq!(parsed.inner, p2sh_address);
         assert_eq!(parsed.address_type, AddressType::P2SH);
         assert!(parsed.pubkey_hash.is_some(), "P2SH should have script hash");
         assert!(
@@ -1344,7 +1332,6 @@ mod tests {
         let p2wsh_address = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";
         let parsed = Address::from_str(p2wsh_address).expect("Should parse valid P2WSH address");
 
-        assert_eq!(parsed.inner, p2wsh_address);
         assert_eq!(parsed.address_type, AddressType::P2WSH);
         assert!(
             parsed.pubkey_hash.is_none(),
@@ -1937,7 +1924,6 @@ mod tests {
 
         let payload = SignedBip322Payload {
             address: Address {
-                inner: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4".to_string(),
                 address_type: AddressType::P2WPKH,
                 pubkey_hash: Some([
                     0x75, 0x1e, 0x76, 0xc9, 0x76, 0x2a, 0x3b, 0x1a, 0xa8, 0x12, 0xa9, 0x82, 0x59,
@@ -2096,7 +2082,6 @@ mod tests {
         // Test P2WSH requires witness script
         let p2wsh_payload = SignedBip322Payload {
             address: Address {
-                inner: "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3".to_string(),
                 address_type: AddressType::P2WSH,
                 pubkey_hash: None,
                 witness_program: Some(WitnessProgram {
@@ -2121,7 +2106,6 @@ mod tests {
     fn create_test_p2pkh_payload() -> SignedBip322Payload {
         SignedBip322Payload {
             address: Address {
-                inner: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa".to_string(),
                 address_type: AddressType::P2PKH,
                 pubkey_hash: Some([1u8; 20]),
                 witness_program: None,
@@ -2137,7 +2121,6 @@ mod tests {
     fn create_test_p2wpkh_payload() -> SignedBip322Payload {
         SignedBip322Payload {
             address: Address {
-                inner: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4".to_string(),
                 address_type: AddressType::P2WPKH,
                 pubkey_hash: Some([2u8; 20]),
                 witness_program: Some(WitnessProgram {
@@ -2156,7 +2139,6 @@ mod tests {
     fn create_test_p2sh_payload() -> SignedBip322Payload {
         SignedBip322Payload {
             address: Address {
-                inner: "3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX".to_string(),
                 address_type: AddressType::P2SH,
                 pubkey_hash: Some([3u8; 20]),
                 witness_program: None,
@@ -2179,7 +2161,6 @@ mod tests {
 
         let base_payload = SignedBip322Payload {
             address: Address {
-                inner: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4".to_string(),
                 address_type: AddressType::P2WPKH,
                 pubkey_hash: Some([1u8; 20]),
                 witness_program: Some(WitnessProgram {
