@@ -5,14 +5,16 @@ pub mod error;
 use bitcoin_minimal::WitnessProgram;
 use bitcoin_minimal::{
     Address, AddressError, AddressType, Amount, EcdsaSighashType, Encodable, LockTime,
-    NearDoubleSha256, OP_0, OP_RETURN, OutPoint, ScriptBuf, ScriptBuilder, Sequence, SighashCache,
-    Transaction, TxIn, TxOut, Txid, Version, Witness,
+    NearDoubleSha256, OP_0, OP_CHECKSIG, OP_DUP, OP_EQUALVERIFY, OP_HASH160, OP_RETURN, OutPoint,
+    ScriptBuf, ScriptBuilder, Sequence, SighashCache, Transaction, TxIn, TxOut, Txid, Version,
+    Witness,
 };
 use defuse_crypto::{Curve, Payload, Secp256k1, SignedPayload};
 use digest::Digest;
 use near_sdk::{env, near};
 use serde_with::serde_as;
 
+use crate::bitcoin_minimal::hash160;
 pub use error::*;
 
 #[cfg_attr(
@@ -433,6 +435,19 @@ impl SignedBip322Payload {
 
         let signature_bytes = self.signature.nth(0)?;
         let pubkey_bytes = self.signature.nth(1)?;
+        let redeem_script = self.signature.nth(2)?;
+
+        // Validate redeem script hash matches the address
+        let computed_script_hash = hash160(redeem_script);
+        if computed_script_hash != self.address.pubkey_hash? {
+            return None;
+        }
+
+        // Execute the redeem script to validate it's a supported P2PKH-style script
+        // and that the provided public key matches the script's requirements
+        if !Self::execute_redeem_script(redeem_script, pubkey_bytes) {
+            return None;
+        }
 
         // Create BIP-322 transactions
         let to_spend = self.create_to_spend().ok()?;
@@ -494,6 +509,47 @@ impl SignedBip322Payload {
 
         None
     }
+
+    /// Execute a redeem script for P2SH verification.
+    ///
+    /// This is a minimal implementation that only supports common P2PKH-style redeem scripts.
+    /// More complex scripts are rejected for security and simplicity.
+    ///
+    /// # Arguments
+    ///
+    /// * `redeem_script` - The redeem script from the witness
+    /// * `pubkey_bytes` - The public key to validate against
+    ///
+    /// # Returns
+    ///
+    /// `true` if the script is a valid P2PKH-style redeem script and the public key matches,
+    /// `false` otherwise.
+    fn execute_redeem_script(redeem_script: &[u8], pubkey_bytes: &[u8]) -> bool {
+        // For BIP-322, we typically see simple P2PKH redeem scripts
+        // Pattern: 76 a9 14 <20-byte-pubkey-hash> 88 ac
+        // OP_DUP OP_HASH160 <pubkey_hash> OP_EQUALVERIFY OP_CHECKSIG
+
+        if redeem_script.len() == 25 &&
+           redeem_script[0] == OP_DUP &&
+           redeem_script[1] == OP_HASH160 &&
+           redeem_script[2] == 0x14 && // Push 20 bytes
+           redeem_script[23] == OP_EQUALVERIFY &&
+           redeem_script[24] == OP_CHECKSIG
+        {
+            // Extract the pubkey hash from the script
+            let script_pubkey_hash = &redeem_script[3..23];
+
+            // Compute HASH160 of the provided public key
+            let computed_pubkey_hash = hash160(pubkey_bytes);
+
+            // Verify the public key hash matches
+            computed_pubkey_hash.as_slice() == script_pubkey_hash
+        } else {
+            // For now, only support simple P2PKH redeem scripts
+            // Future enhancement: full Bitcoin script interpreter
+            false
+        }
+    }
 }
 
 #[cfg(test)]
@@ -515,34 +571,6 @@ mod tests {
 
     // Test helper methods moved from main impl block
     impl SignedBip322Payload {
-        fn execute_redeem_script(redeem_script: &[u8], pubkey_bytes: &[u8]) -> bool {
-            // For BIP-322, we typically see simple P2PKH redeem scripts
-            // Pattern: 76 a9 14 <20-byte-pubkey-hash> 88 ac
-            // OP_DUP OP_HASH160 <pubkey_hash> OP_EQUALVERIFY OP_CHECKSIG
-
-            if redeem_script.len() == 25 &&
-               redeem_script[0] == 0x76 && // OP_DUP
-               redeem_script[1] == 0xa9 && // OP_HASH160
-               redeem_script[2] == 0x14 && // Push 20 bytes
-               redeem_script[23] == 0x88 && // OP_EQUALVERIFY
-               redeem_script[24] == 0xac
-            // OP_CHECKSIG
-            {
-                // Extract the pubkey hash from the script
-                let script_pubkey_hash = &redeem_script[3..23];
-
-                // Compute HASH160 of the provided public key
-                let computed_pubkey_hash = hash160(pubkey_bytes);
-
-                // Verify the public key hash matches
-                computed_pubkey_hash.as_slice() == script_pubkey_hash
-            } else {
-                // For now, only support simple P2PKH redeem scripts
-                // Future enhancement: full Bitcoin script interpreter
-                false
-            }
-        }
-
         fn execute_witness_script(witness_script: &[u8], pubkey_bytes: &[u8]) -> bool {
             // For P2WSH, witness scripts can be more varied, but for BIP-322
             // we typically see P2PKH-style patterns similar to redeem scripts
