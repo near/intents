@@ -1,0 +1,34 @@
+[package]
+name = "defuse-bip322"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+defuse-crypto = { workspace = true, features = ["serde"] }
+near-sdk.workspace = true
+serde_with.workspace = true
+defuse-bip340 = { path = "../bip340" }
+digest.workspace = true
+
+# For Bitcoin address parsing and cryptographic operations
+bs58 = "0.5"
+bech32 = "0.11"
+
+# All cryptographic operations now use NEAR SDK host functions exclusively
+
+[features]
+abi = ["defuse-crypto/abi"]
+
+[dev-dependencies]
+hex-literal.workspace = true
+hex.workspace = true
+near-sdk = { workspace = true, features = ["unit-testing"] }
+rstest.workspace = true
+defuse-core.workspace = true
+serde_json.workspace = true
+serde_with.workspace = true
