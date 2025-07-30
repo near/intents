@@ -31,33 +31,55 @@
 //! - Encoding functions: Transaction serialization for hash computation
 
 use bech32::{Hrp, segwit};
+use defuse_bip340::Double;
+use digest::{Digest, FixedOutput, HashMarker, OutputSizeUser, Update};
 use near_sdk::{env, near};
 use serde_with::serde_as;
 
-/// Computes double SHA-256 hash using NEAR SDK cryptographic functions.
+/// NEAR SDK SHA-256 implementation compatible with the `digest` crate traits.
 ///
-/// Double SHA-256 is Bitcoin's standard hash function used for:
-/// - Transaction IDs (TXID computation)
-/// - Block hashes
-/// - Address checksums in `Base58Check` encoding
-/// - Merkle tree construction
-///
-/// The algorithm: `SHA256(SHA256(data))`
-///
-/// # Arguments
-///
-/// * `data` - The input data to hash
-///
-/// # Returns
-///
-/// A 32-byte double SHA-256 hash computed using NEAR SDK's `env::sha256_array()`
-pub fn double_sha256(data: &[u8]) -> [u8; 32] {
-    // First SHA-256 pass using NEAR SDK
-    let first_hash = env::sha256_array(data);
-
-    // Second SHA-256 pass using NEAR SDK
-    env::sha256_array(&first_hash)
+/// This implementation uses NEAR SDK's `env::sha256_array()` function for
+/// cryptographic operations, making it suitable for use in NEAR smart contracts
+/// while being compatible with BIP340's `Double` and `Bip340TaggedDigest` functionality.
+#[derive(Debug, Clone, Default)]
+pub struct NearSha256 {
+    buffer: Vec<u8>,
 }
+
+impl NearSha256 {
+    /// Creates a new NEAR SHA-256 hasher instance.
+    pub const fn new() -> Self {
+        Self { buffer: Vec::new() }
+    }
+}
+
+impl Update for NearSha256 {
+    fn update(&mut self, data: &[u8]) {
+        self.buffer.extend_from_slice(data);
+    }
+}
+
+impl OutputSizeUser for NearSha256 {
+    type OutputSize = digest::consts::U32;
+}
+
+impl FixedOutput for NearSha256 {
+    fn finalize_into(self, out: &mut digest::Output<Self>) {
+        let hash = env::sha256_array(&self.buffer);
+        out.copy_from_slice(&hash);
+    }
+}
+
+impl HashMarker for NearSha256 {}
+
+// Note: Digest trait is automatically implemented for types that implement
+// FixedOutput + Default + Update + HashMarker
+
+/// Type alias for double SHA-256 using NEAR SDK functions.
+///
+/// This combines BIP340's `Double` wrapper with our NEAR SDK implementation
+/// to provide Bitcoin's standard double SHA-256 hash function.
+pub type NearDoubleSha256 = Double<NearSha256>;
 
 /// Computes HASH160 (RIPEMD160(SHA256(data))) for Bitcoin address generation using NEAR SDK.
 ///
@@ -448,7 +470,7 @@ impl std::str::FromStr for Address {
             // Checksum = first 4 bytes of double_sha256(version + pubkey_hash)
             let payload = &decoded[..21]; // version + pubkey_hash
             let checksum = &decoded[21..25]; // provided checksum
-            let computed_checksum = double_sha256(payload);
+            let computed_checksum: [u8; 32] = NearDoubleSha256::digest(payload).into();
             if &computed_checksum[..4] != checksum {
                 return Err(AddressError::InvalidBase58);
             }
@@ -490,7 +512,7 @@ impl std::str::FromStr for Address {
             // Checksum = first 4 bytes of double_sha256(version + script_hash)
             let payload = &decoded[..21]; // version + script_hash
             let checksum = &decoded[21..25]; // provided checksum
-            let computed_checksum = double_sha256(payload);
+            let computed_checksum: [u8; 32] = NearDoubleSha256::digest(payload).into();
             if &computed_checksum[..4] != checksum {
                 return Err(AddressError::InvalidBase58);
             }
@@ -1076,7 +1098,7 @@ impl SighashCache {
             outpoints_data.extend_from_slice(&input.previous_output.txid.0);
             outpoints_data.extend_from_slice(&input.previous_output.vout.to_le_bytes());
         }
-        double_sha256(&outpoints_data)
+        NearDoubleSha256::digest(&outpoints_data).into()
     }
 
     /// Computes hashSequence as specified in BIP-143.
@@ -1088,7 +1110,7 @@ impl SighashCache {
         for input in &self.tx.input {
             sequence_data.extend_from_slice(&input.sequence.0.to_le_bytes());
         }
-        double_sha256(&sequence_data)
+        NearDoubleSha256::digest(&sequence_data).into()
     }
 
     /// Computes hashOutputs as specified in BIP-143.
@@ -1107,7 +1129,7 @@ impl SighashCache {
             outputs_data.extend_from_slice(&compact_size_bytes);
             outputs_data.extend_from_slice(&output.script_pubkey.inner);
         }
-        Ok(double_sha256(&outputs_data))
+        Ok(NearDoubleSha256::digest(&outputs_data).into())
     }
 }
 
@@ -1121,5 +1143,70 @@ impl From<EcdsaSighashType> for u8 {
         match value {
             EcdsaSighashType::All => 0x01u8,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hex_literal::hex;
+    use rstest::rstest;
+
+    /// Test that our NEAR SDK double hash using BIP340 Double produces expected results
+    #[rstest]
+    #[case(b"", hex!("5df6e0e2761359d30a8275058e299fcc0381534545f55cf43e41983f5d4c9456"))]
+    #[case(b"hello", hex!("9595c9df90075148eb06860365df33584b75bff782a510c6cd4883a419833d50"))]
+    fn test_near_double_sha256_bip340(#[case] input: &[u8], #[case] expected: [u8; 32]) {
+        assert_eq!(NearDoubleSha256::digest(input), expected.into());
+    }
+
+    /// Test BIP340 tagged hash functionality using NEAR SDK
+    #[rstest]
+    #[case(b"BIP0340/challenge", b"test_data")]
+    #[case(b"TapLeaf", b"script")]
+    fn test_bip340_tagged_hash_near(#[case] tag: &[u8], #[case] data: &[u8]) {
+        use defuse_bip340::Bip340TaggedDigest;
+
+        // Use BIP340 tagged digest trait with NEAR SDK implementation
+        let result = NearSha256::tagged(tag).chain_update(data).finalize();
+
+        // Should produce a valid 32-byte hash
+        assert_eq!(result.len(), 32);
+
+        // Test that the tagged hash follows the BIP340 pattern
+        let expected = {
+            let tag_hash = NearSha256::digest(tag);
+            NearSha256::new()
+                .chain_update(tag_hash)
+                .chain_update(tag_hash)
+                .chain_update(data)
+                .finalize()
+        };
+        assert_eq!(result, expected);
+    }
+
+    /// Test NEAR SHA256 basic functionality
+    #[rstest]
+    #[case(b"")]
+    #[case(b"hello")]
+    #[case(b"bitcoin")]
+    fn test_near_sha256_basic(#[case] input: &[u8]) {
+        let result = NearSha256::digest(input);
+        assert_eq!(result.len(), 32);
+
+        // Test that it matches what we get from incremental updates
+        let incremental = NearSha256::new().chain_update(input).finalize();
+        assert_eq!(result, incremental);
+    }
+
+    /// Test address parsing with different types
+    #[rstest]
+    #[case("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", AddressType::P2PKH)]
+    #[case("3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX", AddressType::P2SH)]
+    #[case("bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l", AddressType::P2WPKH)]
+    fn test_address_type_detection(#[case] addr_str: &str, #[case] expected_type: AddressType) {
+        let addr: Address = addr_str.parse().expect("Valid address");
+        assert_eq!(addr.address_type, expected_type);
+        assert_eq!(addr.inner, addr_str);
     }
 }

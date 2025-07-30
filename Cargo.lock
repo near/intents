@@ -687,8 +687,10 @@ version = "0.1.0"
 dependencies = [
  "bech32",
  "bs58 0.5.1",
+ "defuse-bip340",
  "defuse-core",
  "defuse-crypto",
+ "digest",
  "hex",
  "hex-literal",
  "near-sdk",
