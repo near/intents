@@ -162,7 +162,7 @@ pub struct Address {
 pub enum AddressType {
     /// Pay-to-Public-Key-Hash (legacy Bitcoin addresses).
     ///
-    /// - Start with '1' on mainnet
+    /// - Start with '1' on the mainnet
     /// - Use Base58Check encoding
     /// - Require legacy Bitcoin sighash algorithm for verification
     /// - Example: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
@@ -178,7 +178,7 @@ pub enum AddressType {
 
     /// Pay-to-Script-Hash (legacy Bitcoin script addresses).
     ///
-    /// - Start with '3' on mainnet
+    /// - Start with '3' on the mainnet
     /// - Use Base58Check encoding with version byte 0x05
     /// - Require legacy Bitcoin sighash algorithm for verification
     /// - Example: "3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX"
@@ -269,7 +269,7 @@ impl Witness {
     }
 
     pub fn nth(&self, index: usize) -> Option<&[u8]> {
-        self.stack.get(index).map(std::vec::Vec::as_slice)
+        self.stack.get(index).map(Vec::as_slice)
     }
 
     /// Create a witness with the given stack elements (for testing)
@@ -384,7 +384,7 @@ impl Address {
     }
 }
 
-/// Implementation of address parsing from string format.
+/// Implementation of address parsing from the string format.
 ///
 /// This implementation supports parsing the two most common Bitcoin address formats
 /// with full validation including checksum verification.
@@ -393,7 +393,7 @@ impl std::str::FromStr for Address {
 
     /// Parses a Bitcoin address string into an `Address` structure.
     ///
-    /// This method performs comprehensive validation including:
+    /// This method performs comprehensive validation including
     /// - Format detection (P2PKH, P2SH, P2WPKH, P2WSH)
     /// - Encoding validation (`Base58Check` vs Bech32)
     /// - Checksum verification
@@ -419,7 +419,7 @@ impl std::str::FromStr for Address {
     /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // P2PKH (Pay-to-Public-Key-Hash) address parsing
-        // These are legacy Bitcoin addresses starting with '1' on mainnet
+        // These are legacy Bitcoin addresses starting with '1' on the mainnet
         if s.starts_with('1') {
             // Decode the Base58Check encoded address
             // Base58Check = Base58(version + payload + checksum)
@@ -461,7 +461,7 @@ impl std::str::FromStr for Address {
             })
         }
         // P2SH (Pay-to-Script-Hash) address parsing
-        // These are legacy Bitcoin script addresses starting with '3' on mainnet
+        // These are legacy Bitcoin script addresses starting with '3' on the mainnet
         else if s.starts_with('3') {
             // Decode the Base58Check encoded address
             // Base58Check = Base58(version + payload + checksum)
@@ -498,12 +498,12 @@ impl std::str::FromStr for Address {
             Ok(Self {
                 inner: s.to_string(),
                 address_type: AddressType::P2SH,
-                pubkey_hash: Some(script_hash), // Store script hash in pubkey_hash field
+                pubkey_hash: Some(script_hash), // Store script hash in the pubkey_hash field
                 witness_program: None,
             })
         }
         // P2WPKH/P2WSH (Pay-to-Witness-Public-Key-Hash/Script-Hash) address parsing
-        // These are segwit addresses starting with 'bc1' on mainnet
+        // These are segwit addresses starting with 'bc1' on the mainnet
         else if s.starts_with("bc1") {
             // Decode the Bech32 encoded address with full validation
             // This includes proper checksum verification and format validation
@@ -640,7 +640,7 @@ impl std::error::Error for AddressError {}
 /// 1. Parse the HRP (Human Readable Part) - should be "bc" for mainnet
 /// 2. Decode the data part using proper Bech32 decoding algorithm
 /// 3. Validate the Bech32 checksum (6-character suffix)
-/// 4. Convert witness version and program from 5-bit to 8-bit encoding
+/// 4. Convert the witness version and program from 5-bit to 8-bit encoding
 /// 5. Validate witness version and program length constraints
 ///
 /// # Arguments
@@ -655,7 +655,7 @@ impl std::error::Error for AddressError {}
 ///
 /// # Errors
 ///
-/// Returns `AddressError::InvalidBech32` for any decoding failures including:
+/// Returns `AddressError::InvalidBech32` for any decoding failures including
 /// - Invalid characters in the address
 /// - Checksum validation failures  
 /// - Invalid witness version or program length
@@ -883,7 +883,7 @@ impl Encodable for Transaction {
             len += writer.write(&output.script_pubkey.inner)?;
         }
 
-        // If witness data exists, serialize witness for each input
+        // If witness data exists, serialize the witness for each input
         if has_witness {
             for input in &self.input {
                 // Write witness stack size
@@ -1099,7 +1099,7 @@ impl SighashCache {
         let mut outputs_data = Vec::new();
         for output in &self.tx.output {
             outputs_data.extend_from_slice(&output.value.0.to_le_bytes());
-            // Write scriptPubKey with compact size prefix
+            // Write scriptPubKey with the compact size prefix
             let script_len = try_into_io::<usize, u64>(output.script_pubkey.inner.len())?;
             let mut compact_size_bytes = Vec::new();
             write_compact_size(&mut compact_size_bytes, script_len)

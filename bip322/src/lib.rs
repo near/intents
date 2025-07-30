@@ -392,7 +392,7 @@ impl SignedBip322Payload {
         // Compute sighash for P2PKH (legacy sighash algorithm)
         let sighash = Self::compute_message_hash(&to_spend, &to_sign);
 
-        // Try to recover public key using NEAR SDK ecrecover
+        // Try to recover public key
         // Parse signature and try different recovery IDs
         Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
     }
@@ -414,7 +414,7 @@ impl SignedBip322Payload {
         // Compute sighash for P2WPKH (segwit v0 sighash algorithm)
         let sighash = Self::compute_message_hash(&to_spend, &to_sign);
 
-        // Try to recover public key using NEAR SDK ecrecover
+        // Try to recover public key
         Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
     }
 
@@ -436,7 +436,7 @@ impl SignedBip322Payload {
         // Compute sighash for P2SH (legacy sighash algorithm)
         let sighash = Self::compute_message_hash(&to_spend, &to_sign);
 
-        // Try to recover public key using NEAR SDK ecrecover
+        // Try to recover public key
         Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
     }
 
@@ -458,28 +458,31 @@ impl SignedBip322Payload {
         // Compute sighash for P2WSH (segwit v0 sighash algorithm)
         let sighash = Self::compute_message_hash(&to_spend, &to_sign);
 
-        // Try to recover public key using NEAR SDK ecrecover
+        // Try to recover public key
         Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
     }
 
-    /// Try to recover public key from signature using NEAR SDK ecrecover
+    /// Try to recover public key from signature using Secp256k1 curve verify function
     fn try_recover_pubkey(
         message_hash: &[u8; 32],
         signature_bytes: &[u8],
         expected_pubkey: &[u8],
     ) -> Option<<Secp256k1 as Curve>::PublicKey> {
         // Use only raw 64-byte signature format
-        if signature_bytes.len() == 64 {
-            let mut signature = [0u8; 64];
-            signature.copy_from_slice(signature_bytes);
+        if signature_bytes.len() != 64 {
+            return None;
+        }
 
-            for recovery_id in 0..4u8 {
-                if let Some(recovered_pubkey) =
-                    env::ecrecover(message_hash, &signature, recovery_id, false)
-                {
-                    if recovered_pubkey.as_slice() == expected_pubkey {
-                        return Some(recovered_pubkey);
-                    }
+        // Try different recovery IDs (0-1) by creating 65-byte signatures
+        for recovery_id in 0..2u8 {
+            let mut signature_65 = [0u8; 65];
+            signature_65[..64].copy_from_slice(signature_bytes);
+            signature_65[64] = recovery_id; // Set recovery byte as last byte
+
+            // Use Secp256k1::verify to recover the public key
+            if let Some(recovered_pubkey) = Secp256k1::verify(&signature_65, message_hash, &()) {
+                if recovered_pubkey.as_slice() == expected_pubkey {
+                    return Some(recovered_pubkey);
                 }
             }
         }
@@ -966,7 +969,6 @@ mod tests {
         );
     }
 
-
     #[test]
     fn test_alternative_message_hashes() {
         setup_test_env();
@@ -1064,7 +1066,6 @@ mod tests {
             "Dummy public key should fail full cryptographic validation"
         );
     }
-
 
     #[test]
     fn test_full_hash160_computation() {
@@ -1238,7 +1239,6 @@ mod tests {
         let hash1_repeat = SignedBip322Payload::compute_pubkey_hash160(&pubkey1);
         assert_eq!(hash1, hash1_repeat, "Hash160 should be deterministic");
     }
-
 
     #[test]
     fn test_comprehensive_bip322_structure() {
