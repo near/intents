@@ -54,7 +54,7 @@ While cryptographic operations are handled entirely by NEAR SDK, Bitcoin address
 
 ### ✅ Multiple Signature Formats
 
-- **✅ DER Format**: Standard Bitcoin DER-encoded signatures
+- **✅ Binary Format**: Raw 64-byte signature format
 - **✅ Raw Format**: 64-byte raw signature format
 - **✅ Recovery ID**: Automatic recovery ID determination (0-3)
 - **✅ Fallback Strategies**: Multiple parsing attempts for maximum compatibility
@@ -259,7 +259,7 @@ The implementation is designed to be compatible with:
 - ✅ Bitcoin mainnet addresses only
 - ✅ Segwit version 0 (current standard)
 - ✅ All major address types in use today
-- ✅ Standard signature formats (DER and raw)
+- ✅ Raw 64-byte signature format
 - ✅ NEAR SDK integration
 
 ### Potential Future Extensions

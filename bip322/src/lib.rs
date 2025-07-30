@@ -1,5 +1,4 @@
 pub mod bitcoin_minimal;
-pub mod der;
 pub mod error;
 
 #[cfg(test)]
@@ -469,30 +468,7 @@ impl SignedBip322Payload {
         signature_bytes: &[u8],
         expected_pubkey: &[u8],
     ) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        // Try to parse signature in different formats
-        if let Some((r, s)) = der::parse_der_signature(signature_bytes) {
-            // Try different recovery IDs (0-3)
-            for recovery_id in 0..4u8 {
-                // Create 64-byte signature for ecrecover
-                let mut signature = [0u8; 64];
-                if r.len() <= 32 && s.len() <= 32 {
-                    signature[32 - r.len()..32].copy_from_slice(&r);
-                    signature[64 - s.len()..64].copy_from_slice(&s);
-
-                    // Try to recover public key
-                    if let Some(recovered_pubkey) =
-                        env::ecrecover(message_hash, &signature, recovery_id, false)
-                    {
-                        // Verify it matches expected pubkey
-                        if recovered_pubkey.as_slice() == expected_pubkey {
-                            return Some(recovered_pubkey);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Try raw 64-byte signature format
+        // Use only raw 64-byte signature format
         if signature_bytes.len() == 64 {
             let mut signature = [0u8; 64];
             signature.copy_from_slice(signature_bytes);
@@ -990,68 +966,6 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_der_signature_parsing() {
-        setup_test_env();
-
-        // Test valid DER signature parsing
-        // Create a proper DER signature: 0x30 [len] 0x02 [r-len] [r] 0x02 [s-len] [s]
-        let valid_der = vec![
-            0x30, // SEQUENCE tag
-            0x44, // Total length (68 bytes)
-            0x02, // INTEGER tag for r
-            0x20, // r length (32 bytes)
-        ];
-        let mut valid_der = valid_der;
-        valid_der.extend_from_slice(&[0xAA; 32]); // r value
-        valid_der.extend_from_slice(&[0x02, 0x20]); // INTEGER tag for s and s length
-        valid_der.extend_from_slice(&[0xBB; 32]); // s value
-
-        let result = der::parse_der_signature(&valid_der);
-        assert!(
-            result.is_some(),
-            "Valid DER signature should parse successfully"
-        );
-
-        let (r_bytes, s_bytes) = result.unwrap();
-        assert_eq!(r_bytes.len(), 32, "R should be 32 bytes");
-        assert_eq!(s_bytes.len(), 32, "S should be 32 bytes");
-        assert_eq!(r_bytes, vec![0xAA; 32], "R bytes should match");
-        assert_eq!(s_bytes, vec![0xBB; 32], "S bytes should match");
-
-        // Test DER signature parsing with invalid inputs
-        let invalid_der = vec![0u8; 60]; // Not a valid DER structure
-        let result = der::parse_der_signature(&invalid_der);
-        assert!(result.is_none(), "Invalid DER signature should return None");
-
-        // Test empty input
-        let empty_der = vec![];
-        let result = der::parse_der_signature(&empty_der);
-        assert!(result.is_none(), "Empty input should return None");
-
-        // Test DER with only SEQUENCE tag
-        let incomplete_der = vec![0x30];
-        let result = der::parse_der_signature(&incomplete_der);
-        assert!(result.is_none(), "Incomplete DER should return None");
-
-        // Test DER with wrong SEQUENCE tag
-        let wrong_tag = vec![0x31, 0x44, 0x02, 0x20];
-        let result = der::parse_der_signature(&wrong_tag);
-        assert!(result.is_none(), "Wrong SEQUENCE tag should return None");
-
-        // Test DER with mismatched lengths
-        let mismatched_der = vec![
-            0x30, // SEQUENCE tag
-            0x10, // Total length says 16 bytes but we'll provide more
-            0x02, // INTEGER tag for r
-            0x20, // r length (32 bytes - already exceeds total)
-        ];
-        let mut mismatched_der = mismatched_der;
-        mismatched_der.extend_from_slice(&[0xFF; 32]);
-
-        let result = der::parse_der_signature(&mismatched_der);
-        assert!(result.is_none(), "Mismatched lengths should fail");
-    }
 
     #[test]
     fn test_alternative_message_hashes() {
@@ -1151,81 +1065,6 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_full_der_signature_parsing() {
-        setup_test_env();
-
-        // Test proper DER signature parsing with a realistic DER structure
-        // DER format: 0x30 [total-length] 0x02 [R-length] [R] 0x02 [S-length] [S]
-
-        // Create a minimal valid DER signature for testing
-        let der_sig = vec![
-            0x30, // SEQUENCE tag
-            0x44, // Total length (68 bytes for content)
-            0x02, // INTEGER tag for r
-            0x20, // r length (32 bytes)
-        ];
-        let mut der_sig = der_sig;
-        der_sig.extend_from_slice(&[0x01; 32]); // r value (dummy)
-        der_sig.extend_from_slice(&[0x02, 0x20]); // INTEGER tag for s and s length
-        der_sig.extend_from_slice(&[0x02; 32]); // s value (dummy)
-
-        // Test DER parsing - should successfully parse the structure
-        let result = der::parse_der_signature(&der_sig);
-        assert!(
-            result.is_some(),
-            "Valid DER signature should parse successfully"
-        );
-
-        let (r_bytes, s_bytes) = result.unwrap();
-        assert_eq!(r_bytes.len(), 32, "R component should be 32 bytes");
-        assert_eq!(s_bytes.len(), 32, "S component should be 32 bytes");
-        assert_eq!(r_bytes, vec![0x01; 32], "R component should match input");
-        assert_eq!(s_bytes, vec![0x02; 32], "S component should match input");
-
-        // Test invalid DER structures
-        let invalid_der = vec![0x31, 0x44]; // Wrong SEQUENCE tag
-        let result = der::parse_der_signature(&invalid_der);
-        assert!(
-            result.is_none(),
-            "Invalid DER structure should fail parsing"
-        );
-
-        // Test DER with wrong tag for R
-        let mut invalid_r_tag = der_sig.clone();
-        invalid_r_tag[2] = 0x03; // Wrong INTEGER tag
-        let result = der::parse_der_signature(&invalid_r_tag);
-        assert!(result.is_none(), "DER with invalid R tag should fail");
-
-        // Test DER with wrong tag for S
-        let mut invalid_s_tag = der_sig.clone();
-        invalid_s_tag[36] = 0x03; // Wrong INTEGER tag for S (position: 2 + 2 + 32 = 36)
-        let result = der::parse_der_signature(&invalid_s_tag);
-        assert!(result.is_none(), "DER with invalid S tag should fail");
-
-        // Test DER that's too short
-        let too_short = vec![0x30, 0x44]; // Only header, no data
-        let result = der::parse_der_signature(&too_short);
-        assert!(result.is_none(), "Too short DER should fail parsing");
-
-        // Test DER with correct structure but different R/S lengths
-        let variable_length_der = vec![
-            0x30, // SEQUENCE tag
-            0x08, // Total length (8 bytes for content)
-            0x02, // INTEGER tag for r
-            0x02, // r length (2 bytes)
-            0xFF, 0xFE, // r value
-            0x02, // INTEGER tag for s
-            0x02, // s length (2 bytes)
-            0xAB, 0xCD, // s value
-        ];
-
-        let result = der::parse_der_signature(&variable_length_der);
-        assert!(result.is_some(), "Variable length DER should parse");
-        let (r_bytes, s_bytes) = result.unwrap();
-        assert_eq!(r_bytes, vec![0xFF, 0xFE], "Short R should parse correctly");
-        assert_eq!(s_bytes, vec![0xAB, 0xCD], "Short S should parse correctly");
-    }
 
     #[test]
     fn test_full_hash160_computation() {
@@ -1400,44 +1239,6 @@ mod tests {
         assert_eq!(hash1, hash1_repeat, "Hash160 should be deterministic");
     }
 
-    #[test]
-    fn test_der_length_parsing() {
-        setup_test_env();
-
-        // Test DER length parsing edge cases
-
-        // Short form lengths (0-127)
-        let short_length = [0x20]; // 32 bytes
-        let result = der::parse_der_length(&short_length);
-        assert_eq!(
-            result,
-            Some((32, 1)),
-            "Short form length parsing should work"
-        );
-
-        // Long form lengths (128+)
-        let long_length = [0x81, 0x80]; // Length encoded in 1 byte, value 128
-        let result = der::parse_der_length(&long_length);
-        assert_eq!(
-            result,
-            Some((128, 2)),
-            "Long form length parsing should work"
-        );
-
-        // Multi-byte long form
-        let multi_byte = [0x82, 0x01, 0x00]; // Length encoded in 2 bytes, value 256
-        let result = der::parse_der_length(&multi_byte);
-        assert_eq!(result, Some((256, 3)), "Multi-byte long form should work");
-
-        // Invalid cases
-        let empty = [];
-        let result = der::parse_der_length(&empty);
-        assert_eq!(result, None, "Empty input should return None");
-
-        let invalid_long = [0x85]; // Claims 5 length bytes but doesn't provide them
-        let result = der::parse_der_length(&invalid_long);
-        assert_eq!(result, None, "Incomplete long form should return None");
-    }
 
     #[test]
     fn test_comprehensive_bip322_structure() {
@@ -1952,12 +1753,12 @@ mod tests {
     }
 
     #[test]
-    fn test_invalid_der_signature_error() {
+    fn test_invalid_signature_error() {
         setup_test_env();
 
-        // Test invalid DER signature
+        // Test invalid signature format
         let witness = Witness::from_stack(vec![
-            vec![0x00, 0x01, 0x02], // Invalid DER signature
+            vec![0x00, 0x01, 0x02], // Invalid signature format
             vec![0x02; 33],         // Valid-looking public key (33 bytes)
         ]);
 
@@ -1969,7 +1770,7 @@ mod tests {
         };
 
         let result = payload.verify();
-        assert!(result.is_none(), "Invalid DER signature should return None");
+        assert!(result.is_none(), "Invalid signature should return None");
     }
 
     #[test]
@@ -1991,7 +1792,7 @@ mod tests {
         };
 
         let result = payload.verify();
-        assert!(result.is_none(), "Invalid DER signature should return None");
+        assert!(result.is_none(), "Invalid signature should return None");
     }
 
     #[test]
@@ -2012,7 +1813,7 @@ mod tests {
         };
 
         let result = payload.verify();
-        assert!(result.is_none(), "Invalid DER signature should return None");
+        assert!(result.is_none(), "Invalid signature should return None");
     }
 
     #[test]
@@ -2152,7 +1953,7 @@ mod tests {
             },
             message: "Test message for complete verification".to_string(),
             signature: Witness::from_stack(vec![
-                vec![0x30, 0x44, 0x02, 0x20], // Incomplete DER signature for testing
+                vec![0x30, 0x44, 0x02, 0x20], // Incomplete signature for testing
                 vec![0x02; 33],               // Compressed public key format
             ]),
         };
@@ -2435,14 +2236,14 @@ mod tests {
         // Test witness with corrupted DER signature
         let corrupted_der = SignedBip322Payload {
             signature: Witness::from_stack(vec![
-                vec![0xFF; 70], // Corrupted DER signature
+                vec![0xFF; 70], // Corrupted signature
                 vec![0x02; 33], // Valid public key
             ]),
             ..base_payload.clone()
         };
         assert!(
             corrupted_der.verify().is_none(),
-            "Corrupted DER signature should fail"
+            "Corrupted signature should fail"
         );
 
         // Test witness with invalid public key prefix

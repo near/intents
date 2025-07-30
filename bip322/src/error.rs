@@ -50,10 +50,6 @@ pub enum WitnessError {
 /// Errors in signature parsing and validation
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SignatureError {
-    /// Invalid DER encoding in signature
-    /// Contains: (`error_position`, description)
-    InvalidDer(usize, String),
-
     /// Signature components (r, s) are invalid
     /// Contains: description of the invalid component
     InvalidComponents(String),
@@ -195,9 +191,6 @@ impl std::fmt::Display for WitnessError {
 impl std::fmt::Display for SignatureError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::InvalidDer(pos, desc) => {
-                write!(f, "Invalid DER encoding at position {pos}: {desc}")
-            }
             Self::InvalidComponents(desc) => {
                 write!(f, "Invalid signature components: {desc}")
             }
