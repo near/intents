@@ -12,6 +12,8 @@ workspace = true
 defuse-crypto = { workspace = true, features = ["serde"] }
 near-sdk.workspace = true
 serde_with.workspace = true
+defuse-bip340 = { path = "../bip340" }
+digest.workspace = true
 
 # For Bitcoin address parsing and cryptographic operations
 bs58 = "0.5"

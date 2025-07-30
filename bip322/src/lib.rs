@@ -4,11 +4,12 @@ pub mod error;
 #[cfg(test)]
 use bitcoin_minimal::WitnessProgram;
 use bitcoin_minimal::{
-    Address, AddressType, Amount, EcdsaSighashType, Encodable, LockTime, OP_0, OP_RETURN, OutPoint,
-    ScriptBuf, ScriptBuilder, Sequence, SighashCache, Transaction, TxIn, TxOut, Txid, Version,
-    Witness, double_sha256,
+    Address, AddressType, Amount, EcdsaSighashType, Encodable, LockTime, NearDoubleSha256, OP_0,
+    OP_RETURN, OutPoint, ScriptBuf, ScriptBuilder, Sequence, SighashCache, Transaction, TxIn,
+    TxOut, Txid, Version, Witness,
 };
 use defuse_crypto::{Curve, Payload, Secp256k1, SignedPayload};
+use digest::Digest;
 use near_sdk::{env, near};
 use serde_with::serde_as;
 
@@ -345,7 +346,7 @@ impl SignedBip322Payload {
         tx.consensus_encode(&mut buf)
             .unwrap_or_else(|_| panic!("Transaction encoding failed"));
 
-        bitcoin_minimal::double_sha256(&buf)
+        NearDoubleSha256::digest(&buf).into()
     }
 
     /// Compute the final message hash for signature verification
@@ -372,7 +373,7 @@ impl SignedBip322Payload {
             )
             .expect("Sighash encoding should succeed");
 
-        double_sha256(&buf)
+        NearDoubleSha256::digest(&buf).into()
     }
 
     /// Verify P2PKH signature according to BIP-322 standard
@@ -427,7 +428,6 @@ impl SignedBip322Payload {
 
         let signature_bytes = self.signature.nth(0)?;
         let pubkey_bytes = self.signature.nth(1)?;
-        let _redeem_script = self.signature.nth(2)?;
 
         // Create BIP-322 transactions
         let to_spend = self.create_to_spend();
