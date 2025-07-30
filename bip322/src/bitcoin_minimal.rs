@@ -144,13 +144,6 @@ pub fn hash160(data: &[u8]) -> [u8; 20] {
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct Address {
-    /// The original address string as provided by the user.
-    ///
-    /// This is kept for reference and debugging purposes. Examples:
-    /// - P2PKH: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
-    /// - P2WPKH: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l"
-    pub inner: String,
-
     /// The parsed address type, determining verification method.
     ///
     /// This field determines which BIP-322 verification algorithm to use:
@@ -476,7 +469,6 @@ impl std::str::FromStr for Address {
             }
 
             Ok(Self {
-                inner: s.to_string(),
                 address_type: AddressType::P2PKH,
                 pubkey_hash: Some(pubkey_hash),
                 witness_program: None,
@@ -518,7 +510,6 @@ impl std::str::FromStr for Address {
             }
 
             Ok(Self {
-                inner: s.to_string(),
                 address_type: AddressType::P2SH,
                 pubkey_hash: Some(script_hash), // Store script hash in the pubkey_hash field
                 witness_program: None,
@@ -544,7 +535,6 @@ impl std::str::FromStr for Address {
                     pubkey_hash.copy_from_slice(&witness_program);
 
                     Ok(Self {
-                        inner: s.to_string(),
                         address_type: AddressType::P2WPKH,
                         pubkey_hash: Some(pubkey_hash),
                         witness_program: Some(WitnessProgram {
@@ -556,7 +546,6 @@ impl std::str::FromStr for Address {
                 32 => {
                     // P2WSH: 32-byte script hash
                     Ok(Self {
-                        inner: s.to_string(),
                         address_type: AddressType::P2WSH,
                         pubkey_hash: None, // P2WSH doesn't have a pubkey hash
                         witness_program: Some(WitnessProgram {
@@ -1207,6 +1196,5 @@ mod tests {
     fn test_address_type_detection(#[case] addr_str: &str, #[case] expected_type: AddressType) {
         let addr: Address = addr_str.parse().expect("Valid address");
         assert_eq!(addr.address_type, expected_type);
-        assert_eq!(addr.inner, addr_str);
     }
 }

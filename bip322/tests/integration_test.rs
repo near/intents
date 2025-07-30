@@ -40,7 +40,6 @@ fn test_bip322_extract_defuse_payload_integration() {
 
     let bip322_payload = SignedBip322Payload {
         address: Address {
-            inner: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".to_string(),
             address_type: AddressType::P2WPKH,
             pubkey_hash: Some([1u8; 20]),
             witness_program: None,
@@ -74,7 +73,6 @@ fn test_bip322_integration_structure() {
 
     let bip322_payload = SignedBip322Payload {
         address: Address {
-            inner: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".to_string(),
             address_type: AddressType::P2WPKH,
             pubkey_hash: Some([1u8; 20]),
             witness_program: None,
@@ -139,7 +137,6 @@ fn test_bip322_multi_payload_integration() {
 
     let bip322_payload = SignedBip322Payload {
         address: Address {
-            inner: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".to_string(),
             address_type: AddressType::P2WPKH,
             pubkey_hash: Some([1u8; 20]),
             witness_program: None,
@@ -164,7 +161,6 @@ fn test_bip322_multi_payload_integration() {
     // Verify the hash matches direct BIP-322 computation
     let direct_bip322 = SignedBip322Payload {
         address: Address {
-            inner: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".to_string(),
             address_type: AddressType::P2WPKH,
             pubkey_hash: Some([1u8; 20]),
             witness_program: None,
@@ -205,7 +201,6 @@ fn test_bip322_multi_payload_integration() {
     // Test `ExtractDefusePayload` trait implementation through `MultiPayload`
     let json_payload = SignedBip322Payload {
         address: Address {
-            inner: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l".to_string(),
             address_type: AddressType::P2WPKH,
             pubkey_hash: Some([1u8; 20]),
             witness_program: None,
