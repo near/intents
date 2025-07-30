@@ -942,7 +942,7 @@ mod tests {
         let payload = SignedBip322Payload {
             address: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l"
                 .parse()
-                .unwrap_or_else(|_| Address {
+                .unwrap_or(Address {
                     address_type: AddressType::P2WPKH,
                     pubkey_hash: Some([1u8; 20]),
                     witness_program: None,
