@@ -4,9 +4,9 @@ pub mod error;
 #[cfg(test)]
 use bitcoin_minimal::WitnessProgram;
 use bitcoin_minimal::{
-    Address, AddressType, Amount, EcdsaSighashType, Encodable, LockTime, NearDoubleSha256, OP_0,
-    OP_RETURN, OutPoint, ScriptBuf, ScriptBuilder, Sequence, SighashCache, Transaction, TxIn,
-    TxOut, Txid, Version, Witness,
+    Address, AddressError, AddressType, Amount, EcdsaSighashType, Encodable, LockTime,
+    NearDoubleSha256, OP_0, OP_RETURN, OutPoint, ScriptBuf, ScriptBuilder, Sequence, SighashCache,
+    Transaction, TxIn, TxOut, Txid, Version, Witness,
 };
 use defuse_crypto::{Curve, Payload, Secp256k1, SignedPayload};
 use digest::Digest;
@@ -49,6 +49,7 @@ impl Payload for SignedBip322Payload {
             AddressType::P2SH => self.hash_p2sh_message(),
             AddressType::P2WSH => self.hash_p2wsh_message(),
         }
+        .expect("Address should have valid data")
     }
 }
 
@@ -80,10 +81,10 @@ impl SignedBip322Payload {
     /// # Returns
     ///
     /// The 32-byte signature hash that should be signed according to BIP-322 for P2PKH.
-    fn hash_p2pkh_message(&self) -> near_sdk::CryptoHash {
+    fn hash_p2pkh_message(&self) -> Result<near_sdk::CryptoHash, AddressError> {
         // Step 1: Create the "to_spend" transaction
         // This transaction contains the BIP-322 message hash in its input script
-        let to_spend = self.create_to_spend();
+        let to_spend = self.create_to_spend()?;
 
         // Step 2: Create the "to_sign" transaction
         // This transaction spends from the "to_spend" transaction
@@ -91,7 +92,7 @@ impl SignedBip322Payload {
 
         // Step 3: Compute the final signature hash
         // This is the hash that would actually be signed by a wallet
-        Self::compute_message_hash(&to_spend, &to_sign)
+        Ok(Self::compute_message_hash(&to_spend, &to_sign))
     }
 
     /// Computes the BIP-322 signature hash for P2WPKH addresses.
@@ -108,10 +109,10 @@ impl SignedBip322Payload {
     /// # Returns
     ///
     /// The 32-byte signature hash that should be signed according to BIP-322 for P2WPKH.
-    fn hash_p2wpkh_message(&self) -> near_sdk::CryptoHash {
+    fn hash_p2wpkh_message(&self) -> Result<near_sdk::CryptoHash, AddressError> {
         // Step 1: Create the "to_spend" transaction (same as P2PKH)
         // The transaction structure is identical regardless of address type
-        let to_spend = self.create_to_spend();
+        let to_spend = self.create_to_spend()?;
 
         // Step 2: Create the "to_sign" transaction (same as P2PKH)
         // The spending transaction is also identical in structure
@@ -119,7 +120,7 @@ impl SignedBip322Payload {
 
         // Step 3: Compute signature hash using segwit v0 algorithm
         // This is where P2WPKH differs from P2PKH - the sighash computation
-        Self::compute_message_hash(&to_spend, &to_sign)
+        Ok(Self::compute_message_hash(&to_spend, &to_sign))
     }
 
     /// Computes the BIP-322 signature hash for P2SH addresses.
@@ -133,10 +134,10 @@ impl SignedBip322Payload {
     /// # Returns
     ///
     /// The 32-byte signature hash that should be signed according to BIP-322 for P2SH.
-    fn hash_p2sh_message(&self) -> near_sdk::CryptoHash {
+    fn hash_p2sh_message(&self) -> Result<near_sdk::CryptoHash, AddressError> {
         // Step 1: Create the "to_spend" transaction
         // For P2SH, this contains the P2SH script_pubkey
-        let to_spend = self.create_to_spend();
+        let to_spend = self.create_to_spend()?;
 
         // Step 2: Create the "to_sign" transaction
         // For P2SH, this will reference the to_spend output
@@ -144,7 +145,7 @@ impl SignedBip322Payload {
 
         // Step 3: Compute signature hash using legacy algorithm
         // P2SH uses the same legacy sighash as P2PKH (not segwit)
-        Self::compute_message_hash(&to_spend, &to_sign)
+        Ok(Self::compute_message_hash(&to_spend, &to_sign))
     }
 
     /// Computes the BIP-322 signature hash for P2WSH addresses.
@@ -157,10 +158,10 @@ impl SignedBip322Payload {
     /// # Returns
     ///
     /// The 32-byte signature hash that should be signed according to BIP-322 for P2WSH.
-    fn hash_p2wsh_message(&self) -> near_sdk::CryptoHash {
+    fn hash_p2wsh_message(&self) -> Result<near_sdk::CryptoHash, AddressError> {
         // Step 1: Create the "to_spend" transaction
         // For P2WSH, this contains the P2WSH script_pubkey (OP_0 + 32-byte script hash)
-        let to_spend = self.create_to_spend();
+        let to_spend = self.create_to_spend()?;
 
         // Step 2: Create the "to_sign" transaction
         // For P2WSH, this will reference the to_spend output
@@ -168,7 +169,7 @@ impl SignedBip322Payload {
 
         // Step 3: Compute signature hash using segwit v0 algorithm
         // P2WSH uses the same segwit sighash as P2WPKH
-        Self::compute_message_hash(&to_spend, &to_sign)
+        Ok(Self::compute_message_hash(&to_spend, &to_sign))
     }
 
     /// Creates the \"`to_spend`\" transaction according to BIP-322 specification.
@@ -192,7 +193,11 @@ impl SignedBip322Payload {
     /// # Returns
     ///
     /// A `Transaction` representing the \"`to_spend`\" phase of BIP-322.
-    fn create_to_spend(&self) -> Transaction {
+    ///
+    /// # Errors
+    ///
+    /// Returns `AddressError::MissingRequiredData` if the address is missing required cryptographic data.
+    fn create_to_spend(&self) -> Result<Transaction, AddressError> {
         // Get a reference to the validated address
         let address = self.address.assume_checked_ref();
 
@@ -200,7 +205,7 @@ impl SignedBip322Payload {
         // This is the core message that gets embedded in the transaction
         let message_hash = self.compute_bip322_message_hash();
 
-        Transaction {
+        Ok(Transaction {
             // Version 0 is a BIP-322 marker (normal Bitcoin transactions use version 1 or 2)
             version: Version(0),
 
@@ -236,10 +241,10 @@ impl SignedBip322Payload {
                 // The script_pubkey corresponds to the address type:
                 // - P2PKH: `OP_DUP OP_HASH160 <pubkey_hash> OP_EQUALVERIFY OP_CHECKSIG`
                 // - P2WPKH: `OP_0 <20-byte-pubkey-hash>`
-                script_pubkey: address.script_pubkey(),
+                script_pubkey: address.script_pubkey()?,
             }]
             .into(),
-        }
+        })
     }
 
     /// Creates the \"`to_sign`\" transaction according to BIP-322 specification.
@@ -387,7 +392,7 @@ impl SignedBip322Payload {
         let pubkey_bytes = self.signature.nth(1)?;
 
         // Create BIP-322 transactions
-        let to_spend = self.create_to_spend();
+        let to_spend = self.create_to_spend().ok()?;
         let to_sign = Self::create_to_sign(&to_spend);
 
         // Compute sighash for P2PKH (legacy sighash algorithm)
@@ -409,7 +414,7 @@ impl SignedBip322Payload {
         let pubkey_bytes = self.signature.nth(1)?;
 
         // Create BIP-322 transactions
-        let to_spend = self.create_to_spend();
+        let to_spend = self.create_to_spend().ok()?;
         let to_sign = Self::create_to_sign(&to_spend);
 
         // Compute sighash for P2WPKH (segwit v0 sighash algorithm)
@@ -430,7 +435,7 @@ impl SignedBip322Payload {
         let pubkey_bytes = self.signature.nth(1)?;
 
         // Create BIP-322 transactions
-        let to_spend = self.create_to_spend();
+        let to_spend = self.create_to_spend().ok()?;
         let to_sign = Self::create_to_sign(&to_spend);
 
         // Compute sighash for P2SH (legacy sighash algorithm)
@@ -452,7 +457,7 @@ impl SignedBip322Payload {
         let _witness_script = self.signature.nth(2)?;
 
         // Create BIP-322 transactions
-        let to_spend = self.create_to_spend();
+        let to_spend = self.create_to_spend().ok()?;
         let to_sign = Self::create_to_sign(&to_spend);
 
         // Compute sighash for P2WSH (segwit v0 sighash algorithm)
@@ -645,7 +650,9 @@ mod tests {
         };
 
         let start_gas = env::used_gas();
-        let to_spend = payload.create_to_spend();
+        let to_spend = payload
+            .create_to_spend()
+            .expect("Address should have valid data");
         let tx_creation_gas = env::used_gas().as_gas() - start_gas.as_gas();
 
         println!("Transaction creation gas usage: {tx_creation_gas}");
@@ -789,7 +796,9 @@ mod tests {
             signature: Witness::new(),
         };
 
-        let to_spend = payload.create_to_spend();
+        let to_spend = payload
+            .create_to_spend()
+            .expect("Address should have valid data");
         let to_sign = SignedBip322Payload::create_to_sign(&to_spend);
 
         assert_eq!(to_spend.version, Version(0));
@@ -1249,7 +1258,9 @@ mod tests {
         };
 
         // Test BIP-322 transaction creation
-        let to_spend = payload.create_to_spend();
+        let to_spend = payload
+            .create_to_spend()
+            .expect("Address should have valid data");
         let to_sign = SignedBip322Payload::create_to_sign(&to_spend);
 
         // Verify transaction structure
@@ -1258,7 +1269,10 @@ mod tests {
         assert_eq!(to_spend.output.len(), 1);
 
         // Verify script pubkey is created correctly for P2WPKH
-        let script = payload.address.script_pubkey();
+        let script = payload
+            .address
+            .script_pubkey()
+            .expect("Address should have valid script_pubkey");
         assert_eq!(script.len(), 22); // OP_0 + 20-byte hash
 
         // Test message hash computation
@@ -1288,7 +1302,9 @@ mod tests {
         );
 
         // Test script_pubkey generation for P2SH
-        let script_pubkey = parsed.script_pubkey();
+        let script_pubkey = parsed
+            .script_pubkey()
+            .expect("Address should have valid script_pubkey");
         assert!(
             !script_pubkey.is_empty(),
             "P2SH script_pubkey should not be empty"
@@ -1358,7 +1374,9 @@ mod tests {
         }
 
         // Test script_pubkey generation for P2WSH
-        let script_pubkey = parsed.script_pubkey();
+        let script_pubkey = parsed
+            .script_pubkey()
+            .expect("Address should have valid script_pubkey");
         assert!(
             !script_pubkey.is_empty(),
             "P2WSH script_pubkey should not be empty"
@@ -1436,7 +1454,9 @@ mod tests {
         // P2PKH: OP_DUP OP_HASH160 <pubkey_hash> OP_EQUALVERIFY OP_CHECKSIG
         let p2pkh = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa";
         if let Ok(parsed) = Address::from_str(p2pkh) {
-            let script = parsed.script_pubkey();
+            let script = parsed
+                .script_pubkey()
+                .expect("Address should have valid script_pubkey");
             // P2PKH script should be: 76 a9 14 <20-byte-hash> 88 ac (25 bytes total)
             assert_eq!(script.len(), 25, "P2PKH script should be 25 bytes");
         }
@@ -1444,7 +1464,9 @@ mod tests {
         // P2SH: OP_HASH160 <script_hash> OP_EQUAL
         let p2sh = "3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX";
         if let Ok(parsed) = Address::from_str(p2sh) {
-            let script = parsed.script_pubkey();
+            let script = parsed
+                .script_pubkey()
+                .expect("Address should have valid script_pubkey");
             // P2SH script should be: a9 14 <20-byte-hash> 87 (23 bytes total)
             assert_eq!(script.len(), 23, "P2SH script should be 23 bytes");
         }
@@ -1452,7 +1474,9 @@ mod tests {
         // P2WPKH: OP_0 <20-byte-pubkey-hash>
         let p2wpkh = "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l";
         if let Ok(parsed) = Address::from_str(p2wpkh) {
-            let script = parsed.script_pubkey();
+            let script = parsed
+                .script_pubkey()
+                .expect("Address should have valid script_pubkey");
             // P2WPKH script should be: 00 14 <20-byte-hash> (22 bytes total)
             assert_eq!(script.len(), 22, "P2WPKH script should be 22 bytes");
         }
@@ -1460,7 +1484,9 @@ mod tests {
         // P2WSH: OP_0 <32-byte-script-hash>
         let p2wsh = "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3";
         if let Ok(parsed) = Address::from_str(p2wsh) {
-            let script = parsed.script_pubkey();
+            let script = parsed
+                .script_pubkey()
+                .expect("Address should have valid script_pubkey");
             // P2WSH script should be: 00 20 <32-byte-hash> (34 bytes total)
             assert_eq!(script.len(), 34, "P2WSH script should be 34 bytes");
         }
@@ -1949,7 +1975,9 @@ mod tests {
         assert!(result.is_none(), "Invalid signature should not verify");
 
         // Test BIP-322 transaction creation
-        let to_spend = payload.create_to_spend();
+        let to_spend = payload
+            .create_to_spend()
+            .expect("Address should have valid data");
         let to_sign = SignedBip322Payload::create_to_sign(&to_spend);
 
         // Verify transaction structure is correct for BIP-322
@@ -2000,7 +2028,9 @@ mod tests {
         );
 
         // Test deterministic behavior
-        let to_spend2 = payload.create_to_spend();
+        let to_spend2 = payload
+            .create_to_spend()
+            .expect("Address should have valid data");
         let to_sign2 = SignedBip322Payload::create_to_sign(&to_spend2);
         let message_hash2 = SignedBip322Payload::compute_message_hash(&to_spend2, &to_sign2);
         assert_eq!(
