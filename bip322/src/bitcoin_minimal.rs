@@ -173,7 +173,8 @@ pub struct Address {
 /// This enum defines the address formats supported in the current MVP implementation.
 /// Each type corresponds to a different signature verification algorithm.
 #[near(serializers = [json])]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[repr(u8)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AddressType {
     /// Pay-to-Public-Key-Hash (legacy Bitcoin addresses).
     ///
@@ -1120,9 +1121,86 @@ impl SighashCache {
         }
         Ok(NearDoubleSha256::digest(&outputs_data).into())
     }
+
+    /// Encodes the legacy sighash preimage for P2PKH and P2SH signature verification.
+    ///
+    /// This function implements the original Bitcoin sighash algorithm used before segwit.
+    /// The legacy sighash is simpler than BIP-143 but has known vulnerabilities like
+    /// quadratic scaling behavior.
+    ///
+    /// # Legacy Sighash Preimage Format
+    ///
+    /// The preimage consists of the following fields in order:
+    /// 1. version (4 bytes)
+    /// 2. inputs with modified scripts
+    /// 3. outputs
+    /// 4. locktime (4 bytes)
+    /// 5. `sighash_type` (4 bytes)
+    ///
+    /// For `SIGHASH_ALL` (the only type we support), all inputs and outputs are included.
+    pub fn legacy_encode_signing_data_to<W: std::io::Write>(
+        &mut self,
+        writer: &mut W,
+        input_index: usize,
+        script_code: &ScriptBuf,
+        sighash_type: EcdsaSighashType,
+    ) -> Result<(), std::io::Error> {
+        // 1. Transaction version (4 bytes, little-endian)
+        writer.write_all(&self.tx.version.0.to_le_bytes())?;
+
+        // 2. Number of inputs (compact size)
+        let input_count = try_into_io::<usize, u64>(self.tx.input.len())?;
+        write_compact_size(writer, input_count)?;
+
+        // 3. Inputs with script modifications
+        for (i, input) in self.tx.input.iter().enumerate() {
+            // Write outpoint (txid + vout)
+            writer.write_all(&input.previous_output.txid.0)?;
+            writer.write_all(&input.previous_output.vout.to_le_bytes())?;
+
+            // For legacy sighash, only the input being signed gets the script_code
+            // All other inputs get empty scripts
+            if i == input_index {
+                // Use the provided script_code for the input being signed
+                let script_len = try_into_io::<usize, u64>(script_code.inner.len())?;
+                write_compact_size(writer, script_len)?;
+                writer.write_all(&script_code.inner)?;
+            } else {
+                // Empty script for other inputs
+                write_compact_size(writer, 0u64)?;
+            }
+
+            // Write sequence
+            writer.write_all(&input.sequence.0.to_le_bytes())?;
+        }
+
+        // 4. Number of outputs (compact size)
+        let output_count = try_into_io::<usize, u64>(self.tx.output.len())?;
+        write_compact_size(writer, output_count)?;
+
+        // 5. All outputs (for SIGHASH_ALL)
+        for output in &self.tx.output {
+            writer.write_all(&output.value.0.to_le_bytes())?;
+            let script_len = try_into_io::<usize, u64>(output.script_pubkey.inner.len())?;
+            write_compact_size(writer, script_len)?;
+            writer.write_all(&output.script_pubkey.inner)?;
+        }
+
+        // 6. Locktime (4 bytes, little-endian)
+        writer.write_all(&self.tx.lock_time.0.to_le_bytes())?;
+
+        // 7. Sighash type (4 bytes, little-endian)
+        let sighash_value = match sighash_type {
+            EcdsaSighashType::All => 0x01u32,
+        };
+        writer.write_all(&sighash_value.to_le_bytes())?;
+
+        Ok(())
+    }
 }
 
 #[repr(u8)]
+#[derive(Debug, Clone, Copy)]
 pub enum EcdsaSighashType {
     All = 0x01,
 }

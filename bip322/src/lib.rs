@@ -92,9 +92,13 @@ impl SignedBip322Payload {
         // This transaction spends from the "to_spend" transaction
         let to_sign = Self::create_to_sign(&to_spend);
 
-        // Step 3: Compute the final signature hash
-        // This is the hash that would actually be signed by a wallet
-        Ok(Self::compute_message_hash(&to_spend, &to_sign))
+        // Step 3: Compute the final signature hash using legacy algorithm
+        // P2PKH uses the original Bitcoin sighash algorithm (pre-segwit)
+        Ok(Self::compute_message_hash(
+            &to_spend,
+            &to_sign,
+            AddressType::P2PKH,
+        ))
     }
 
     /// Computes the BIP-322 signature hash for P2WPKH addresses.
@@ -121,8 +125,12 @@ impl SignedBip322Payload {
         let to_sign = Self::create_to_sign(&to_spend);
 
         // Step 3: Compute signature hash using segwit v0 algorithm
-        // This is where P2WPKH differs from P2PKH - the sighash computation
-        Ok(Self::compute_message_hash(&to_spend, &to_sign))
+        // P2WPKH uses the BIP-143 segwit sighash algorithm (not legacy)
+        Ok(Self::compute_message_hash(
+            &to_spend,
+            &to_sign,
+            AddressType::P2WPKH,
+        ))
     }
 
     /// Computes the BIP-322 signature hash for P2SH addresses.
@@ -147,7 +155,11 @@ impl SignedBip322Payload {
 
         // Step 3: Compute signature hash using legacy algorithm
         // P2SH uses the same legacy sighash as P2PKH (not segwit)
-        Ok(Self::compute_message_hash(&to_spend, &to_sign))
+        Ok(Self::compute_message_hash(
+            &to_spend,
+            &to_sign,
+            AddressType::P2SH,
+        ))
     }
 
     /// Computes the BIP-322 signature hash for P2WSH addresses.
@@ -170,8 +182,12 @@ impl SignedBip322Payload {
         let to_sign = Self::create_to_sign(&to_spend);
 
         // Step 3: Compute signature hash using segwit v0 algorithm
-        // P2WSH uses the same segwit sighash as P2WPKH
-        Ok(Self::compute_message_hash(&to_spend, &to_sign))
+        // P2WSH uses the same segwit sighash as P2WPKH (BIP-143)
+        Ok(Self::compute_message_hash(
+            &to_spend,
+            &to_sign,
+            AddressType::P2WSH,
+        ))
     }
 
     /// Creates the \"`to_spend`\" transaction according to BIP-322 specification.
@@ -356,8 +372,59 @@ impl SignedBip322Payload {
         NearDoubleSha256::digest(&buf).into()
     }
 
-    /// Compute the final message hash for signature verification
-    fn compute_message_hash(to_spend: &Transaction, to_sign: &Transaction) -> near_sdk::CryptoHash {
+    /// Compute the message hash using the appropriate sighash algorithm based on address type.
+    ///
+    /// Bitcoin uses different sighash algorithms:
+    /// - Legacy sighash: For P2PKH and P2SH addresses (pre-segwit)
+    /// - Segwit v0 sighash: For P2WPKH and P2WSH addresses (BIP-143)
+    fn compute_message_hash(
+        to_spend: &Transaction,
+        to_sign: &Transaction,
+        address_type: AddressType,
+    ) -> near_sdk::CryptoHash {
+        match address_type {
+            AddressType::P2PKH | AddressType::P2SH => {
+                Self::compute_legacy_sighash(to_spend, to_sign)
+            }
+            AddressType::P2WPKH | AddressType::P2WSH => {
+                Self::compute_segwit_v0_sighash(to_spend, to_sign)
+            }
+        }
+    }
+
+    /// Compute legacy sighash for P2PKH and P2SH addresses.
+    ///
+    /// This implements the original Bitcoin sighash algorithm used before segwit.
+    /// It's simpler than the segwit version but has some known vulnerabilities
+    /// (like quadratic scaling) that segwit addresses.
+    fn compute_legacy_sighash(
+        to_spend: &Transaction,
+        to_sign: &Transaction,
+    ) -> near_sdk::CryptoHash {
+        let script_code = &to_spend
+            .output
+            .first()
+            .expect("to_spend should have output")
+            .script_pubkey;
+
+        let mut sighash_cache = SighashCache::new(to_sign.clone());
+        let mut buf = Vec::new();
+        sighash_cache
+            .legacy_encode_signing_data_to(&mut buf, 0, script_code, EcdsaSighashType::All)
+            .expect("Legacy sighash encoding should succeed");
+
+        NearDoubleSha256::digest(&buf).into()
+    }
+
+    /// Compute segwit v0 sighash for P2WPKH and P2WSH addresses.
+    ///
+    /// This implements the BIP-143 sighash algorithm introduced with segwit.
+    /// It fixes several issues with the legacy algorithm and includes the
+    /// amount being spent in the signature hash.
+    fn compute_segwit_v0_sighash(
+        to_spend: &Transaction,
+        to_sign: &Transaction,
+    ) -> near_sdk::CryptoHash {
         let script_code = &to_spend
             .output
             .first()
@@ -378,7 +445,7 @@ impl SignedBip322Payload {
                     .value,
                 EcdsaSighashType::All,
             )
-            .expect("Sighash encoding should succeed");
+            .expect("Segwit v0 sighash encoding should succeed");
 
         NearDoubleSha256::digest(&buf).into()
     }
@@ -398,7 +465,7 @@ impl SignedBip322Payload {
         let to_sign = Self::create_to_sign(&to_spend);
 
         // Compute sighash for P2PKH (legacy sighash algorithm)
-        let sighash = Self::compute_message_hash(&to_spend, &to_sign);
+        let sighash = Self::compute_message_hash(&to_spend, &to_sign, AddressType::P2PKH);
 
         // Try to recover public key
         // Parse signature and try different recovery IDs
@@ -420,7 +487,7 @@ impl SignedBip322Payload {
         let to_sign = Self::create_to_sign(&to_spend);
 
         // Compute sighash for P2WPKH (segwit v0 sighash algorithm)
-        let sighash = Self::compute_message_hash(&to_spend, &to_sign);
+        let sighash = Self::compute_message_hash(&to_spend, &to_sign, AddressType::P2WPKH);
 
         // Try to recover public key
         Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
@@ -454,7 +521,7 @@ impl SignedBip322Payload {
         let to_sign = Self::create_to_sign(&to_spend);
 
         // Compute sighash for P2SH (legacy sighash algorithm)
-        let sighash = Self::compute_message_hash(&to_spend, &to_sign);
+        let sighash = Self::compute_message_hash(&to_spend, &to_sign, AddressType::P2SH);
 
         // Try to recover public key
         Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
@@ -469,14 +536,29 @@ impl SignedBip322Payload {
 
         let signature_bytes = self.signature.nth(0)?;
         let pubkey_bytes = self.signature.nth(1)?;
-        let _witness_script = self.signature.nth(2)?;
+        let witness_script = self.signature.nth(2)?;
+
+        // Validate witness script hash matches the address
+        let computed_script_hash = env::sha256_array(witness_script);
+        if let Some(witness_program) = &self.address.witness_program {
+            if computed_script_hash != witness_program.program.as_slice() {
+                return None;
+            }
+        } else {
+            return None;
+        }
+
+        // Execute the witness script
+        if !Self::execute_witness_script(witness_script, pubkey_bytes) {
+            return None;
+        }
 
         // Create BIP-322 transactions
         let to_spend = self.create_to_spend().ok()?;
         let to_sign = Self::create_to_sign(&to_spend);
 
         // Compute sighash for P2WSH (segwit v0 sighash algorithm)
-        let sighash = Self::compute_message_hash(&to_spend, &to_sign);
+        let sighash = Self::compute_message_hash(&to_spend, &to_sign, AddressType::P2WSH);
 
         // Try to recover public key
         Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
@@ -550,6 +632,57 @@ impl SignedBip322Payload {
             false
         }
     }
+
+    /// Execute a witness script for P2WSH verification.
+    ///
+    /// This is a minimal implementation that only supports common P2PKH-style witness scripts
+    /// used in P2WSH contexts. More complex scripts are rejected for security and simplicity.
+    ///
+    /// For P2WSH (Pay-to-Witness-Script-Hash), the witness script is the actual script that
+    /// gets executed, while the `script_pubkey` contains the hash of this witness script.
+    ///
+    /// # Arguments
+    ///
+    /// * `witness_script` - The witness script from the witness stack
+    /// * `pubkey_bytes` - The public key to validate against
+    ///
+    /// # Returns
+    ///
+    /// `true` if the script is a valid P2PKH-style witness script and the public key matches,
+    /// `false` otherwise.
+    ///
+    /// # Supported Pattern
+    ///
+    /// Only supports the standard P2PKH pattern:
+    /// ```text
+    /// OP_DUP OP_HASH160 <20-byte-pubkey-hash> OP_EQUALVERIFY OP_CHECKSIG
+    /// ```
+    fn execute_witness_script(witness_script: &[u8], pubkey_bytes: &[u8]) -> bool {
+        // For P2WSH, witness scripts can be more varied, but for BIP-322
+        // we typically see P2PKH-style patterns similar to redeem scripts
+
+        if witness_script.len() == 25 &&
+            witness_script[0] == 0x76 && // OP_DUP
+            witness_script[1] == 0xa9 && // OP_HASH160
+            witness_script[2] == 0x14 && // Push 20 bytes
+            witness_script[23] == 0x88 && // OP_EQUALVERIFY
+            witness_script[24] == 0xac
+        // OP_CHECKSIG
+        {
+            // Extract the pubkey hash from the script
+            let script_pubkey_hash = &witness_script[3..23];
+
+            // Compute HASH160 of the provided public key
+            let computed_pubkey_hash = hash160(pubkey_bytes);
+
+            // Verify the public key hash matches
+            computed_pubkey_hash.as_slice() == script_pubkey_hash
+        } else {
+            // For now, only support simple P2PKH-style witness scripts
+            // Future enhancement: full Bitcoin script interpreter
+            false
+        }
+    }
 }
 
 #[cfg(test)]
@@ -571,33 +704,6 @@ mod tests {
 
     // Test helper methods moved from main impl block
     impl SignedBip322Payload {
-        fn execute_witness_script(witness_script: &[u8], pubkey_bytes: &[u8]) -> bool {
-            // For P2WSH, witness scripts can be more varied, but for BIP-322
-            // we typically see P2PKH-style patterns similar to redeem scripts
-
-            if witness_script.len() == 25 &&
-               witness_script[0] == 0x76 && // OP_DUP
-               witness_script[1] == 0xa9 && // OP_HASH160
-               witness_script[2] == 0x14 && // Push 20 bytes
-               witness_script[23] == 0x88 && // OP_EQUALVERIFY
-               witness_script[24] == 0xac
-            // OP_CHECKSIG
-            {
-                // Extract the pubkey hash from the script
-                let script_pubkey_hash = &witness_script[3..23];
-
-                // Compute HASH160 of the provided public key
-                let computed_pubkey_hash = hash160(pubkey_bytes);
-
-                // Verify the public key hash matches
-                computed_pubkey_hash.as_slice() == script_pubkey_hash
-            } else {
-                // For now, only support simple P2PKH-style witness scripts
-                // Future enhancement: full Bitcoin script interpreter
-                false
-            }
-        }
-
         fn verify_pubkey_matches_address(&self, pubkey_bytes: &[u8]) -> bool {
             // Validate public key format
             if !Self::is_valid_public_key_format(pubkey_bytes) {
@@ -2048,7 +2154,8 @@ mod tests {
         );
 
         // Test message hash computation integration
-        let message_hash = SignedBip322Payload::compute_message_hash(&to_spend, &to_sign);
+        let message_hash =
+            SignedBip322Payload::compute_message_hash(&to_spend, &to_sign, AddressType::P2WPKH);
         assert_eq!(message_hash.len(), 32, "Message hash should be 32 bytes");
         assert!(
             message_hash.iter().any(|&b| b != 0),
@@ -2060,7 +2167,8 @@ mod tests {
             .create_to_spend()
             .expect("Address should have valid data");
         let to_sign2 = SignedBip322Payload::create_to_sign(&to_spend2);
-        let message_hash2 = SignedBip322Payload::compute_message_hash(&to_spend2, &to_sign2);
+        let message_hash2 =
+            SignedBip322Payload::compute_message_hash(&to_spend2, &to_sign2, AddressType::P2WPKH);
         assert_eq!(
             message_hash, message_hash2,
             "Message hash should be deterministic"
