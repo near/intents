@@ -337,15 +337,15 @@ impl Address {
 
     /// Generates the script pubkey for this address.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if required cryptographic data is missing. Use `to_address_data()` first
-    /// to validate that all required data is present before calling this method.
-    pub fn script_pubkey(&self) -> ScriptBuf {
+    /// Returns `AddressError::MissingRequiredData` if required cryptographic data
+    /// is missing for the address type.
+    pub fn script_pubkey(&self) -> Result<ScriptBuf, AddressError> {
         match self.address_type {
             AddressType::P2PKH => {
                 // P2PKH script: OP_DUP OP_HASH160 <pubkey_hash> OP_EQUALVERIFY OP_CHECKSIG
-                let pubkey_hash = self.pubkey_hash.expect("P2PKH address missing pubkey_hash");
+                let pubkey_hash = self.pubkey_hash.ok_or(AddressError::MissingRequiredData)?;
                 let mut script = Vec::new();
                 script.push(0x76); // OP_DUP
                 script.push(0xa9); // OP_HASH160
@@ -353,47 +353,43 @@ impl Address {
                 script.extend_from_slice(&pubkey_hash);
                 script.push(0x88); // OP_EQUALVERIFY
                 script.push(0xac); // OP_CHECKSIG
-                ScriptBuf { inner: script }
+                Ok(ScriptBuf { inner: script })
             }
             AddressType::P2SH => {
                 // P2SH script: OP_HASH160 <script_hash> OP_EQUAL
-                let script_hash = self.pubkey_hash.expect("P2SH address missing script_hash");
+                let script_hash = self.pubkey_hash.ok_or(AddressError::MissingRequiredData)?;
                 let mut script = Vec::new();
                 script.push(0xa9); // OP_HASH160
                 script.push(20); // Push 20 bytes
                 script.extend_from_slice(&script_hash);
                 script.push(0x87); // OP_EQUAL
-                ScriptBuf { inner: script }
+                Ok(ScriptBuf { inner: script })
             }
             AddressType::P2WPKH => {
                 // P2WPKH script: OP_0 <20-byte-pubkey-hash>
-                let pubkey_hash = self
-                    .pubkey_hash
-                    .expect("P2WPKH address missing pubkey_hash");
+                let pubkey_hash = self.pubkey_hash.ok_or(AddressError::MissingRequiredData)?;
                 let mut script = Vec::new();
                 script.push(0x00); // OP_0
                 script.push(20); // Push 20 bytes
                 script.extend_from_slice(&pubkey_hash);
-                ScriptBuf { inner: script }
+                Ok(ScriptBuf { inner: script })
             }
             AddressType::P2WSH => {
                 // P2WSH script: OP_0 <32-byte-script-hash>
                 let witness_program = self
                     .witness_program
                     .as_ref()
-                    .expect("P2WSH address missing witness_program");
+                    .ok_or(AddressError::MissingRequiredData)?;
 
-                assert_eq!(
-                    witness_program.program.len(),
-                    32,
-                    "P2WSH witness program must be exactly 32 bytes"
-                );
+                if witness_program.program.len() != 32 {
+                    return Err(AddressError::InvalidWitnessProgram);
+                }
 
                 let mut script = Vec::new();
                 script.push(0x00); // OP_0
                 script.push(32); // Push 32 bytes
                 script.extend_from_slice(&witness_program.program);
-                ScriptBuf { inner: script }
+                Ok(ScriptBuf { inner: script })
             }
         }
     }
