@@ -571,25 +571,15 @@ impl SignedBip322Payload {
         expected_pubkey: &[u8],
     ) -> Option<<Secp256k1 as Curve>::PublicKey> {
         // Use only raw 64-byte signature format
-        if signature_bytes.len() != 64 {
+        if signature_bytes.len() != 65 {
             return None;
         }
 
-        // Try different recovery IDs (0-1) by creating 65-byte signatures
-        for recovery_id in 0..2u8 {
-            let mut signature_65 = [0u8; 65];
-            signature_65[..64].copy_from_slice(signature_bytes);
-            signature_65[64] = recovery_id; // Set recovery byte as last byte
+        let mut signature_65 = [0u8; 65];
+        signature_65[..65].copy_from_slice(signature_bytes);
 
-            // Use Secp256k1::verify to recover the public key
-            if let Some(recovered_pubkey) = Secp256k1::verify(&signature_65, message_hash, &()) {
-                if recovered_pubkey.as_slice() == expected_pubkey {
-                    return Some(recovered_pubkey);
-                }
-            }
-        }
-
-        None
+        Secp256k1::verify(&signature_65, message_hash, &())
+            .filter(|recovered_pubkey| recovered_pubkey.as_slice() == expected_pubkey)
     }
 
     /// Execute a redeem script for P2SH verification.
