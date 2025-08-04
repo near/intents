@@ -32,3 +32,4 @@ rstest.workspace = true
 defuse-core.workspace = true
 serde_json.workspace = true
 serde_with.workspace = true
+base64 = "0.22"

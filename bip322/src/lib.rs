@@ -74,8 +74,8 @@ impl SignedBip322Payload {
     /// P2PKH (Pay-to-Public-Key-Hash) is the original Bitcoin address format.
     /// This method implements the BIP-322 process specifically for P2PKH addresses:
     ///
-    /// 1. Creates a "`to_spend`" transaction with the message hash in the input script
-    /// 2. Creates a "`to_sign`" transaction that spends from the "`to_spend`" transaction
+    /// 1. Creates a "`to_spend`" transaction with the message hash in input script
+    /// 2. Creates a "`to_sign`" transaction that spends from "`to_spend`" transaction
     /// 3. Computes the signature hash using the standard Bitcoin sighash algorithm
     ///
     /// The pubkey hash is obtained from the already-validated address stored in `self.address`.
@@ -431,7 +431,7 @@ impl SignedBip322Payload {
             .expect("to_spend should have output")
             .script_pubkey;
 
-        let mut sighash_cache = SighashCache::new(to_sign.clone());
+        let sighash_cache = SighashCache::new(to_sign.clone());
         let mut buf = Vec::new();
         sighash_cache
             .segwit_v0_encode_signing_data_to(
@@ -730,6 +730,121 @@ mod tests {
             // Use the external HASH160 function from bitcoin_minimal module
             // This ensures compatibility with standard Bitcoin implementations
             hash160(pubkey_bytes)
+        }
+    }
+
+    #[cfg(test)]
+    impl SignedBip322Payload {
+        /// Test helper: Create a Witness from a base64-encoded signature, Bitcoin address, and message.
+        ///
+        /// This function recovers the public key from the signature using the message hash,
+        /// validates it matches the address, and creates the appropriate witness structure
+        /// based on address type.
+        ///
+        /// # Arguments
+        ///
+        /// * `signature_base64` - Base64-encoded signature (65 bytes: 64-byte signature + recovery ID)
+        /// * `address` - Bitcoin address string (e.g., "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
+        /// * `message` - The original message that was signed
+        ///
+        /// # Returns
+        ///
+        /// A `Witness` object with the appropriate structure for the address type.
+        ///
+        /// # Example
+        ///
+        /// ```rust,ignore
+        /// let witness = SignedBip322Payload::create_witness_from_signature(
+        ///     "MEQCIQDx...", // base64 signature (65 bytes)
+        ///     "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh", // bech32 address
+        ///     "Hello, Bitcoin!" // original message
+        /// );
+        /// ```
+        pub fn create_witness_from_signature(
+            signature_base64: &str,
+            address: &str,
+            message: &str,
+        ) -> Witness {
+            use base64::{Engine as _, engine::general_purpose::STANDARD};
+
+            // Decode base64 signature
+            let signature_bytes = STANDARD
+                .decode(signature_base64)
+                .expect("Invalid base64 signature");
+
+            // Parse the address to determine type
+            let parsed_address = Address::from_str(address).expect("Invalid Bitcoin address");
+
+            // Recover public key from signature using Secp256k1::verify()
+            // Signature must be 65 bytes (64 bytes + recovery ID)
+            let pubkey_bytes = if signature_bytes.len() == 65 {
+                // Create the BIP-322 message hash to recover against
+                let temp_payload = SignedBip322Payload {
+                    address: parsed_address.clone(),
+                    message: message.to_string(),
+                    signature: Witness::new(),
+                };
+                let message_hash = temp_payload.hash();
+
+                // Convert signature to 65-byte array
+                let mut signature_65 = [0u8; 65];
+                signature_65.copy_from_slice(&signature_bytes);
+
+                // Recover public key using Secp256k1::verify
+                if let Some(recovered_pubkey) = Secp256k1::verify(&signature_65, &message_hash, &())
+                {
+                    recovered_pubkey.as_slice().to_vec()
+                } else {
+                    // Fallback to dummy pubkey if recovery fails
+                    vec![0x02; 33]
+                }
+            } else {
+                // If signature is not 65 bytes, use dummy pubkey
+                vec![0x02; 33]
+            };
+
+            // Build witness based on address type
+            match parsed_address.address_type {
+                AddressType::P2PKH | AddressType::P2WPKH => {
+                    // Simple witness: [signature, pubkey]
+                    Witness::from_stack(vec![signature_bytes, pubkey_bytes])
+                }
+                AddressType::P2SH => {
+                    // P2SH witness: [signature, pubkey, redeem_script]
+                    // Build a P2PKH-style redeem script
+                    let redeem_script = if let Some(hash) = parsed_address.pubkey_hash {
+                        let mut script = vec![
+                            OP_DUP, OP_HASH160, 0x14, // PUSH 20 bytes
+                        ];
+                        script.extend_from_slice(&hash);
+                        script.push(OP_EQUALVERIFY);
+                        script.push(OP_CHECKSIG);
+                        script
+                    } else {
+                        panic!("P2SH address missing pubkey hash");
+                    };
+
+                    Witness::from_stack(vec![signature_bytes, pubkey_bytes, redeem_script])
+                }
+                AddressType::P2WSH => {
+                    // P2WSH witness: [signature, pubkey, witness_script]
+                    // Build a P2PKH-style witness script
+                    let witness_script = if let Some(program) = &parsed_address.witness_program {
+                        let mut script = vec![
+                            OP_DUP, OP_HASH160, 0x14, // PUSH 20 bytes
+                        ];
+                        // Use first 20 bytes of witness program as hash
+                        script.extend_from_slice(&program.program[..20]);
+                        script.push(OP_EQUALVERIFY);
+                        script.push(OP_CHECKSIG);
+                        script
+                    } else {
+                        panic!("P2WSH address missing witness program");
+                    };
+
+                    Witness::from_stack(vec![signature_bytes, pubkey_bytes, witness_script])
+                }
+            }
         }
     }
 
@@ -2695,5 +2810,69 @@ mod tests {
             serialized[4], 0x00,
             "Legacy transaction should not have witness marker"
         );
+    }
+
+    const MESSAGE: &str = r#"{
+  "signer_id": "alice.near",
+  "verifying_contract": "intents.near",
+  "deadline": {
+    "timestamp": 1734735219
+  },
+  "nonce": "XVoKfmScb3G+XqH9ke/fSlJ/3xO59sNhCxhpG821BH8=",
+  "intents": [
+    {
+      "intent": "token_diff",
+      "diff": {
+        "nep141:usdc.near": "-1000",
+        "nep141:wbtc.near": "0.001"
+      }
+    }
+  ]
+}
+"#;
+    fn test_parse_signed_bip322_payload_leather_wallet() {
+        let address = "bc1p4tgt4934ysj6drgcuyr492hlku6kue20rhjn7wthkeue5ku43flqn9lkfp";
+        let signature = "AUAl8g/QcmbWNwWsGvDLORWjU6FwohDPShrRhelfc/RETVZ245o2IUNSLv6whA1ToDp96CJ3vX0JfcCPheuy1Rsw";
+    }
+
+    fn test_parse_signed_bip322_payload_magic_eden_wallet() {
+        let address = "bc1pqcgf630uvwkx2mxrs357ur5nxv6tjylp90ewte6yf4az0j2e3c3syjm22a";
+        let signature = "AUCi4U4Tb/A22yiIP+Yk/KgouYMdrKMlM9TYGaUPTNox4mI5DeXFw+OrZ+JIISakx+5su7k6DfKF7XerTkT0vBEO";
+    }
+
+    fn test_parse_signed_bip322_payload_xverse_wallet() {
+        let address = "bc1psqt6kq8vts45mwrw72gll2x7kmaux6akga7lsjp2ctchhs9249wq8pj0uv";
+        let signature = "AUAy/nD9/YJgsPMM05dnhtPmiJptiO2eHpAJ9GYhvORhptHNqeNyOsUczx3tFAC40Rn9AgGa2Zvbgi/Exp/nAccC";
+    }
+
+    fn test_parse_signed_bip322_payload_oyl_wallet() {
+        let address = "bc1pj3573fe3jlhf35kmzh05gthwy453xu6j7ehhsr7rrpk23mgd0ugqs4d02f";
+        let signature = "AUGYwllbBv32z1MabDbo1/5Kpx9N3lJMyFQ35sfvUlfreMiCuk7aW++8y1xtGvul3cEdEFjTgOz3km8A2ExKrt2jAQ==";
+    }
+
+    fn test_parse_signed_bip322_payload_ghost_wallet() {
+        let address = "bc1p8pd76laz84v2vmx7qwuznv2yy7n5sq2dszptf4m4czhqneyfhj2st4mu9h";
+        let signature = "AUAsoDOP3REtR1HYO3mlQKRxPt643IcMqRE/1k/+skLBUFCSbZw4esU04KMvWXc00XitpZqfIHGkafULg0CxCCz8";
+    }
+
+    fn test_parse_signed_bip322_payload_unisat_wallet() {
+        let address = "bc1qyt6gau643sm52hvej4n4qr34h3878ahs209s27";
+        let signature = "H3240zU+IK4IZ60zAfNSppkcKfwDANatUKwquAA+SAeWQt2vOTn5LKuHg3079OIyfLuunTiWd9OmwCTKRqDMXmo=";
+    }
+
+    fn test_parse_signed_bip322_payload_sparrow_wallet() {
+        let address = "3HiZ2chbEQPX5Sdsesutn6bTQPd9XdiyuL";
+        let signature = "H3Gzu4gab41yV0mRu8xQynKDmW442sEYtz28Ilh8YQibYMLnAa9yd9WaQ6TMYKkjPVLQWInkKXDYU1jWIYBsJs8=";
+
+        let witness =
+            SignedBip322Payload::create_witness_from_signature(signature, address, MESSAGE);
+
+        SignedBip322Payload {
+            address: address.parse().unwrap(),
+            message: MESSAGE.to_string(),
+            signature: witness,
+        }
+        .verify()
+        .expect("Expected valid signature");
     }
 }

@@ -1026,7 +1026,7 @@ impl SighashCache {
     /// 9. locktime (4 bytes)
     /// 10. `sighash_type` (4 bytes) - as little-endian integer
     pub fn segwit_v0_encode_signing_data_to<W: std::io::Write>(
-        &mut self,
+        &self,
         writer: &mut W,
         input_index: usize,
         script_code: &ScriptBuf,
