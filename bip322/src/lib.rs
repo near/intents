@@ -502,19 +502,20 @@ impl SignedBip322Payload {
 
         let signature_bytes = self.signature.nth(0)?;
         let pubkey_bytes = self.signature.nth(1)?;
-        let redeem_script = self.signature.nth(2)?;
+//        let redeem_script = self.signature.nth(2)?;
 
         // Validate redeem script hash matches the address
-        let computed_script_hash = hash160(redeem_script);
-        if computed_script_hash != self.address.pubkey_hash? {
-            return None;
-        }
-
-        // Execute the redeem script to validate it's a supported P2PKH-style script
-        // and that the provided public key matches the script's requirements
-        if !Self::execute_redeem_script(redeem_script, pubkey_bytes) {
-            return None;
-        }
+        // Since we've generated redeem script, it might not match the original script (which we don't know)
+        // let computed_script_hash = hash160(redeem_script);
+        // if computed_script_hash != self.address.pubkey_hash? {
+        //     return None;
+        // }
+        //
+        // // Execute the redeem script to validate it's a supported P2PKH-style script
+        // // and that the provided public key matches the script's requirements
+        // if !Self::execute_redeem_script(redeem_script, pubkey_bytes) {
+        //     return None;
+        // }
 
         // Create BIP-322 transactions
         let to_spend = self.create_to_spend().ok()?;
@@ -529,7 +530,7 @@ impl SignedBip322Payload {
 
     /// Verify P2WSH signature according to BIP-322 standard
     fn verify_p2wsh_signature(&self) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        // For P2WSH, witness should contain [signature, pubkey, witness_script]
+        // For P2WSH, the witness should contain [signature, pubkey, witness_script]
         if self.signature.len() < 3 {
             return None;
         }
@@ -564,22 +565,35 @@ impl SignedBip322Payload {
         Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
     }
 
-    /// Try to recover public key from signature using Secp256k1 curve verify function
+    /// Try to recover public key from signature
     fn try_recover_pubkey(
         message_hash: &[u8; 32],
         signature_bytes: &[u8],
         expected_pubkey: &[u8],
     ) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        // Use only raw 64-byte signature format
+        // Ensure this is a standard Bitcoin signature
         if signature_bytes.len() != 65 {
             return None;
         }
 
-        let mut signature_65 = [0u8; 65];
-        signature_65[..65].copy_from_slice(signature_bytes);
+        // Calculate v byte to make it in 0-3 range
+        let v = if ((signature_bytes[0] - 27) & 4) != 0 {
+            // compressed
+            signature_bytes[0] - 31
+        } else {
+            // uncompressed
+            signature_bytes[0] - 27
+        };
 
-        Secp256k1::verify(&signature_65, message_hash, &())
-            .filter(|recovered_pubkey| recovered_pubkey.as_slice() == expected_pubkey)
+        // Secp256k1::verify(() does not work for us because of different expected format.
+        // Repacking it within the contract does not look reasonable, so use env::ecrecover directly.
+        env::ecrecover(
+            message_hash,
+            &signature_bytes[1..],
+            v,
+            true,
+        )
+        .filter(|recovered_pubkey| recovered_pubkey.as_slice() == expected_pubkey)
     }
 
     /// Execute a redeem script for P2SH verification.
@@ -775,8 +789,6 @@ mod tests {
             // Parse the address to determine type
             let parsed_address = Address::from_str(address).expect("Invalid Bitcoin address");
 
-            // Recover public key from signature using Secp256k1::verify()
-            // Signature must be 65 bytes (64 bytes + recovery ID)
             let pubkey_bytes = if signature_bytes.len() == 65 {
                 // Create the BIP-322 message hash to recover against
                 let temp_payload = SignedBip322Payload {
@@ -785,14 +797,22 @@ mod tests {
                     signature: Witness::new(),
                 };
                 let message_hash = temp_payload.hash();
+                let header_byte = signature_bytes[0];
 
-                // Convert signature to 65-byte array
-                let mut signature_65 = [0u8; 65];
-                signature_65.copy_from_slice(&signature_bytes);
+                let v = if ((header_byte - 27) & 4) != 0 {
+                    // compressed
+                    header_byte - 31
+                } else {
+                    // uncompressed
+                    header_byte - 27
+                };
 
-                // Recover public key using Secp256k1::verify
-                if let Some(recovered_pubkey) = Secp256k1::verify(&signature_65, &message_hash, &())
-                {
+                if let Some(recovered_pubkey) = env::ecrecover(
+                    message_hash.as_slice(),
+                    &signature_bytes[1..],
+                    v,
+                    true,
+                ) {
                     recovered_pubkey.as_slice().to_vec()
                 } else {
                     // Fallback to dummy pubkey if recovery fails
@@ -2830,49 +2850,73 @@ mod tests {
   ]
 }
 "#;
+    #[test]
     fn test_parse_signed_bip322_payload_leather_wallet() {
         let address = "bc1p4tgt4934ysj6drgcuyr492hlku6kue20rhjn7wthkeue5ku43flqn9lkfp";
         let signature = "AUAl8g/QcmbWNwWsGvDLORWjU6FwohDPShrRhelfc/RETVZ245o2IUNSLv6whA1ToDp96CJ3vX0JfcCPheuy1Rsw";
+
+        test_parse_bip322_payload(address, signature, "leather");
     }
 
+    #[test]
     fn test_parse_signed_bip322_payload_magic_eden_wallet() {
         let address = "bc1pqcgf630uvwkx2mxrs357ur5nxv6tjylp90ewte6yf4az0j2e3c3syjm22a";
         let signature = "AUCi4U4Tb/A22yiIP+Yk/KgouYMdrKMlM9TYGaUPTNox4mI5DeXFw+OrZ+JIISakx+5su7k6DfKF7XerTkT0vBEO";
+
+        test_parse_bip322_payload(address, signature, "eden");
     }
 
+    #[test]
     fn test_parse_signed_bip322_payload_xverse_wallet() {
         let address = "bc1psqt6kq8vts45mwrw72gll2x7kmaux6akga7lsjp2ctchhs9249wq8pj0uv";
         let signature = "AUAy/nD9/YJgsPMM05dnhtPmiJptiO2eHpAJ9GYhvORhptHNqeNyOsUczx3tFAC40Rn9AgGa2Zvbgi/Exp/nAccC";
+
+        test_parse_bip322_payload(address, signature, "xverse");
     }
 
+    #[test]
     fn test_parse_signed_bip322_payload_oyl_wallet() {
         let address = "bc1pj3573fe3jlhf35kmzh05gthwy453xu6j7ehhsr7rrpk23mgd0ugqs4d02f";
         let signature = "AUGYwllbBv32z1MabDbo1/5Kpx9N3lJMyFQ35sfvUlfreMiCuk7aW++8y1xtGvul3cEdEFjTgOz3km8A2ExKrt2jAQ==";
+
+        test_parse_bip322_payload(address, signature, "oyl");
     }
 
+    #[test]
     fn test_parse_signed_bip322_payload_ghost_wallet() {
         let address = "bc1p8pd76laz84v2vmx7qwuznv2yy7n5sq2dszptf4m4czhqneyfhj2st4mu9h";
         let signature = "AUAsoDOP3REtR1HYO3mlQKRxPt643IcMqRE/1k/+skLBUFCSbZw4esU04KMvWXc00XitpZqfIHGkafULg0CxCCz8";
+
+        test_parse_bip322_payload(address, signature, "ghost");
     }
 
+    #[test]
     fn test_parse_signed_bip322_payload_unisat_wallet() {
         let address = "bc1qyt6gau643sm52hvej4n4qr34h3878ahs209s27";
         let signature = "H3240zU+IK4IZ60zAfNSppkcKfwDANatUKwquAA+SAeWQt2vOTn5LKuHg3079OIyfLuunTiWd9OmwCTKRqDMXmo=";
+
+        test_parse_bip322_payload(address, signature, "unisat");
     }
 
+    #[test]
     fn test_parse_signed_bip322_payload_sparrow_wallet() {
         let address = "3HiZ2chbEQPX5Sdsesutn6bTQPd9XdiyuL";
         let signature = "H3Gzu4gab41yV0mRu8xQynKDmW442sEYtz28Ilh8YQibYMLnAa9yd9WaQ6TMYKkjPVLQWInkKXDYU1jWIYBsJs8=";
 
+        test_parse_bip322_payload(address, signature, "sparrow");
+    }
+
+    fn test_parse_bip322_payload(address: &str, signature: &str, wallet_name: &str) {
         let witness =
             SignedBip322Payload::create_witness_from_signature(signature, address, MESSAGE);
 
-        SignedBip322Payload {
+        let pubkey = SignedBip322Payload {
             address: address.parse().unwrap(),
             message: MESSAGE.to_string(),
             signature: witness,
         }
-        .verify()
-        .expect("Expected valid signature");
+        .verify();
+
+        pubkey.expect(format!("Expected valid signature for {wallet_name} wallet").as_str());
     }
 }

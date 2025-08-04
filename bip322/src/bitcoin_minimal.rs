@@ -521,7 +521,7 @@ impl std::str::FromStr for Address {
 
             // We only support segwit version 0
             if witness_version != 0 {
-                return Err(AddressError::UnsupportedFormat);
+                return Err(AddressError::UnsupportedWithnessVersion);
             }
 
             // Distinguish between P2WPKH (20 bytes) and P2WSH (32 bytes)
@@ -603,6 +603,8 @@ pub enum AddressError {
     /// - P2WPKH/P2WSH addresses starting with 'bc1'
     UnsupportedFormat,
 
+    UnsupportedWithnessVersion,
+
     /// Invalid Bech32 encoding (for segwit addresses).
     ///
     /// This includes:
@@ -627,6 +629,7 @@ impl std::fmt::Display for AddressError {
             Self::InvalidLength => write!(f, "Invalid address length"),
             Self::InvalidWitnessProgram => write!(f, "Invalid witness program"),
             Self::UnsupportedFormat => write!(f, "Unsupported address format"),
+            Self::UnsupportedWithnessVersion => write!(f, "Unsupported withness version"),
             Self::InvalidBech32 => write!(f, "Invalid bech32 encoding"),
             Self::MissingRequiredData => {
                 write!(f, "Missing required cryptographic data for address type")
