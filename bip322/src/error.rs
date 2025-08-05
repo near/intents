@@ -4,8 +4,6 @@
 //! in BIP-322 signature verification, providing detailed context for
 //! debugging and integration purposes.
 
-use crate::bitcoin_minimal::AddressType;
-
 /// Main error type for BIP-322 operations
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Bip322Error {
@@ -43,8 +41,8 @@ pub enum WitnessError {
     InvalidElement(usize, String),
 
     /// Witness stack format doesn't match address type requirements
-    /// Contains: (`address_type`, description)
-    FormatMismatch(AddressType, String),
+    /// Contains: (`address_type_name`, description)
+    FormatMismatch(String, String),
 }
 
 /// Errors in signature parsing and validation
@@ -119,8 +117,8 @@ pub enum CryptoError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AddressValidationError {
     /// Address type doesn't support the requested operation
-    /// Contains: (`address_type`, operation)
-    UnsupportedOperation(AddressType, String),
+    /// Contains: (`address_type_name`, operation)
+    UnsupportedOperation(String, String),
 
     /// Public key doesn't derive to the claimed address
     /// Contains: (`claimed_address`, `derived_address`)
@@ -131,8 +129,8 @@ pub enum AddressValidationError {
     InvalidAddress(String, String),
 
     /// Missing required address data (`pubkey_hash`, `witness_program`, etc.)
-    /// Contains: (`address_type`, `missing_field`)
-    MissingData(AddressType, String),
+    /// Contains: (`address_type_name`, `missing_field`)
+    MissingData(String, String),
 }
 
 /// Errors in BIP-322 transaction construction
@@ -182,7 +180,7 @@ impl std::fmt::Display for WitnessError {
                 write!(f, "Invalid witness element at index {idx}: {desc}")
             }
             Self::FormatMismatch(addr_type, desc) => {
-                write!(f, "Witness format mismatch for {addr_type:?}: {desc}")
+                write!(f, "Witness format mismatch for {addr_type}: {desc}")
             }
         }
     }
@@ -264,7 +262,7 @@ impl std::fmt::Display for AddressValidationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::UnsupportedOperation(addr_type, op) => {
-                write!(f, "{addr_type:?} addresses don't support operation: {op}")
+                write!(f, "{addr_type} addresses don't support operation: {op}")
             }
             Self::DerivationMismatch(claimed, derived) => {
                 write!(
@@ -276,7 +274,7 @@ impl std::fmt::Display for AddressValidationError {
                 write!(f, "Invalid address {addr}: {reason}")
             }
             Self::MissingData(addr_type, field) => {
-                write!(f, "{addr_type:?} address missing required data: {field}")
+                write!(f, "{addr_type} address missing required data: {field}")
             }
         }
     }

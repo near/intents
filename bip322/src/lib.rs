@@ -4,10 +4,9 @@ pub mod error;
 #[cfg(test)]
 use bitcoin_minimal::WitnessProgram;
 use bitcoin_minimal::{
-    Address, AddressError, AddressType, Amount, EcdsaSighashType, Encodable, LockTime,
-    NearDoubleSha256, OP_0, OP_CHECKSIG, OP_DUP, OP_EQUALVERIFY, OP_HASH160, OP_RETURN, OutPoint,
-    ScriptBuf, ScriptBuilder, Sequence, SighashCache, Transaction, TxIn, TxOut, Txid, Version,
-    Witness,
+    Address, AddressError, Amount, EcdsaSighashType, Encodable, LockTime, NearDoubleSha256, OP_0,
+    OP_RETURN, OutPoint, ScriptBuf, Sequence, SighashCache, Transaction, TxIn, TxOut, Txid,
+    Version, Witness,
 };
 use defuse_crypto::{Curve, Payload, Secp256k1, SignedPayload};
 use digest::Digest;
@@ -45,11 +44,11 @@ pub struct SignedBip322Payload {
 impl Payload for SignedBip322Payload {
     #[inline]
     fn hash(&self) -> near_sdk::CryptoHash {
-        match self.address.address_type {
-            AddressType::P2PKH => self.hash_p2pkh_message(),
-            AddressType::P2WPKH => self.hash_p2wpkh_message(),
-            AddressType::P2SH => self.hash_p2sh_message(),
-            AddressType::P2WSH => self.hash_p2wsh_message(),
+        match &self.address {
+            Address::P2PKH { .. } => self.hash_p2pkh_message(),
+            Address::P2WPKH { .. } => self.hash_p2wpkh_message(),
+            Address::P2SH { .. } => self.hash_p2sh_message(),
+            Address::P2WSH { .. } => self.hash_p2wsh_message(),
         }
         .expect("Address should have valid data")
     }
@@ -59,11 +58,11 @@ impl SignedPayload for SignedBip322Payload {
     type PublicKey = <Secp256k1 as Curve>::PublicKey;
 
     fn verify(&self) -> Option<Self::PublicKey> {
-        match self.address.address_type {
-            AddressType::P2PKH => self.verify_p2pkh_signature(),
-            AddressType::P2WPKH => self.verify_p2wpkh_signature(),
-            AddressType::P2SH => self.verify_p2sh_signature(),
-            AddressType::P2WSH => self.verify_p2wsh_signature(),
+        match &self.address {
+            Address::P2PKH { .. } => self.verify_p2pkh_signature(),
+            Address::P2WPKH { .. } => self.verify_p2wpkh_signature(),
+            Address::P2SH { .. } => self.verify_p2sh_signature(),
+            Address::P2WSH { .. } => self.verify_p2wsh_signature(),
         }
     }
 }
@@ -94,10 +93,10 @@ impl SignedBip322Payload {
 
         // Step 3: Compute the final signature hash using legacy algorithm
         // P2PKH uses the original Bitcoin sighash algorithm (pre-segwit)
-        Ok(Self::compute_message_hash(
+        Ok(Self::compute_message_hash_for_address(
             &to_spend,
             &to_sign,
-            AddressType::P2PKH,
+            &self.address,
         ))
     }
 
@@ -126,10 +125,10 @@ impl SignedBip322Payload {
 
         // Step 3: Compute signature hash using segwit v0 algorithm
         // P2WPKH uses the BIP-143 segwit sighash algorithm (not legacy)
-        Ok(Self::compute_message_hash(
+        Ok(Self::compute_message_hash_for_address(
             &to_spend,
             &to_sign,
-            AddressType::P2WPKH,
+            &self.address,
         ))
     }
 
@@ -155,10 +154,10 @@ impl SignedBip322Payload {
 
         // Step 3: Compute signature hash using legacy algorithm
         // P2SH uses the same legacy sighash as P2PKH (not segwit)
-        Ok(Self::compute_message_hash(
+        Ok(Self::compute_message_hash_for_address(
             &to_spend,
             &to_sign,
-            AddressType::P2SH,
+            &self.address,
         ))
     }
 
@@ -183,10 +182,10 @@ impl SignedBip322Payload {
 
         // Step 3: Compute signature hash using segwit v0 algorithm
         // P2WSH uses the same segwit sighash as P2WPKH (BIP-143)
-        Ok(Self::compute_message_hash(
+        Ok(Self::compute_message_hash_for_address(
             &to_spend,
             &to_sign,
-            AddressType::P2WSH,
+            &self.address,
         ))
     }
 
@@ -217,7 +216,7 @@ impl SignedBip322Payload {
     /// Returns `AddressError::MissingRequiredData` if the address is missing required cryptographic data.
     fn create_to_spend(&self) -> Result<Transaction, AddressError> {
         // Get a reference to the validated address
-        let address = self.address.assume_checked_ref();
+        let address = &self.address;
 
         // Create the BIP-322 tagged hash of the message
         // This is the core message that gets embedded in the transaction
@@ -238,10 +237,13 @@ impl SignedBip322Payload {
 
                 // Script contains OP_0 followed by the BIP-322 message hash
                 // This embeds the message directly into the transaction structure
-                script_sig: ScriptBuilder::new()
-                    .push_opcode(OP_0) // Push empty stack item
-                    .push_slice(&message_hash) // Push the 32-byte message hash
-                    .into_script(),
+                script_sig: {
+                    let mut script = Vec::with_capacity(34); // 2 opcodes + 32 bytes message hash
+                    script.push(OP_0); // Push empty stack item
+                    script.push(32); // Push 32 bytes
+                    script.extend_from_slice(&message_hash); // Push the 32-byte message hash
+                    ScriptBuf::from_bytes(script)
+                },
 
                 // Standard sequence number
                 sequence: Sequence::ZERO,
@@ -323,7 +325,11 @@ impl SignedBip322Payload {
 
                 // OP_RETURN makes this output provably unspendable
                 // This ensures the transaction could never be broadcast profitably
-                script_pubkey: ScriptBuilder::new().push_opcode(OP_RETURN).into_script(),
+                script_pubkey: {
+                    let mut script = Vec::with_capacity(1); // Single OP_RETURN opcode
+                    script.push(OP_RETURN);
+                    ScriptBuf::from_bytes(script)
+                },
             }]
             .into(),
         }
@@ -365,7 +371,8 @@ impl SignedBip322Payload {
 
     /// Compute transaction ID using NEAR SDK (double SHA-256)
     fn compute_tx_id(tx: &Transaction) -> [u8; 32] {
-        let mut buf = Vec::new();
+        // Estimate for typical BIP-322 transaction: ~200-300 bytes
+        let mut buf = Vec::with_capacity(300);
         tx.consensus_encode(&mut buf)
             .unwrap_or_else(|_| panic!("Transaction encoding failed"));
 
@@ -377,16 +384,16 @@ impl SignedBip322Payload {
     /// Bitcoin uses different sighash algorithms:
     /// - Legacy sighash: For P2PKH and P2SH addresses (pre-segwit)
     /// - Segwit v0 sighash: For P2WPKH and P2WSH addresses (BIP-143)
-    fn compute_message_hash(
+    fn compute_message_hash_for_address(
         to_spend: &Transaction,
         to_sign: &Transaction,
-        address_type: AddressType,
+        address: &Address,
     ) -> near_sdk::CryptoHash {
-        match address_type {
-            AddressType::P2PKH | AddressType::P2SH => {
+        match address {
+            Address::P2PKH { .. } | Address::P2SH { .. } => {
                 Self::compute_legacy_sighash(to_spend, to_sign)
             }
-            AddressType::P2WPKH | AddressType::P2WSH => {
+            Address::P2WPKH { .. } | Address::P2WSH { .. } => {
                 Self::compute_segwit_v0_sighash(to_spend, to_sign)
             }
         }
@@ -408,7 +415,8 @@ impl SignedBip322Payload {
             .script_pubkey;
 
         let mut sighash_cache = SighashCache::new(to_sign.clone());
-        let mut buf = Vec::new();
+        // Legacy sighash preimage is typically ~200-400 bytes
+        let mut buf = Vec::with_capacity(400);
         sighash_cache
             .legacy_encode_signing_data_to(&mut buf, 0, script_code, EcdsaSighashType::All)
             .expect("Legacy sighash encoding should succeed");
@@ -432,7 +440,8 @@ impl SignedBip322Payload {
             .script_pubkey;
 
         let sighash_cache = SighashCache::new(to_sign.clone());
-        let mut buf = Vec::new();
+        // BIP-143 sighash preimage has fixed structure: ~200 bytes
+        let mut buf = Vec::with_capacity(200);
         sighash_cache
             .segwit_v0_encode_signing_data_to(
                 &mut buf,
@@ -465,7 +474,7 @@ impl SignedBip322Payload {
         let to_sign = Self::create_to_sign(&to_spend);
 
         // Compute sighash for P2PKH (legacy sighash algorithm)
-        let sighash = Self::compute_message_hash(&to_spend, &to_sign, AddressType::P2PKH);
+        let sighash = Self::compute_message_hash_for_address(&to_spend, &to_sign, &self.address);
 
         // Try to recover public key
         // Parse signature and try different recovery IDs
@@ -487,7 +496,7 @@ impl SignedBip322Payload {
         let to_sign = Self::create_to_sign(&to_spend);
 
         // Compute sighash for P2WPKH (segwit v0 sighash algorithm)
-        let sighash = Self::compute_message_hash(&to_spend, &to_sign, AddressType::P2WPKH);
+        let sighash = Self::compute_message_hash_for_address(&to_spend, &to_sign, &self.address);
 
         // Try to recover public key
         Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
@@ -502,7 +511,7 @@ impl SignedBip322Payload {
 
         let signature_bytes = self.signature.nth(0)?;
         let pubkey_bytes = self.signature.nth(1)?;
-//        let redeem_script = self.signature.nth(2)?;
+        //        let redeem_script = self.signature.nth(2)?;
 
         // Validate redeem script hash matches the address
         // Since we've generated redeem script, it might not match the original script (which we don't know)
@@ -522,7 +531,7 @@ impl SignedBip322Payload {
         let to_sign = Self::create_to_sign(&to_spend);
 
         // Compute sighash for P2SH (legacy sighash algorithm)
-        let sighash = Self::compute_message_hash(&to_spend, &to_sign, AddressType::P2SH);
+        let sighash = Self::compute_message_hash_for_address(&to_spend, &to_sign, &self.address);
 
         // Try to recover public key
         Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
@@ -541,11 +550,12 @@ impl SignedBip322Payload {
 
         // Validate witness script hash matches the address
         let computed_script_hash = env::sha256_array(witness_script);
-        if let Some(witness_program) = &self.address.witness_program {
+        if let Address::P2WSH { witness_program } = &self.address {
             if computed_script_hash != witness_program.program.as_slice() {
                 return None;
             }
         } else {
+            // This should never happen since we're in P2WSH verification
             return None;
         }
 
@@ -559,7 +569,7 @@ impl SignedBip322Payload {
         let to_sign = Self::create_to_sign(&to_spend);
 
         // Compute sighash for P2WSH (segwit v0 sighash algorithm)
-        let sighash = Self::compute_message_hash(&to_spend, &to_sign, AddressType::P2WSH);
+        let sighash = Self::compute_message_hash_for_address(&to_spend, &to_sign, &self.address);
 
         // Try to recover public key
         Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
@@ -587,54 +597,8 @@ impl SignedBip322Payload {
 
         // Secp256k1::verify(() does not work for us because of different expected format.
         // Repacking it within the contract does not look reasonable, so use env::ecrecover directly.
-        env::ecrecover(
-            message_hash,
-            &signature_bytes[1..],
-            v,
-            true,
-        )
-        .filter(|recovered_pubkey| recovered_pubkey.as_slice() == expected_pubkey)
-    }
-
-    /// Execute a redeem script for P2SH verification.
-    ///
-    /// This is a minimal implementation that only supports common P2PKH-style redeem scripts.
-    /// More complex scripts are rejected for security and simplicity.
-    ///
-    /// # Arguments
-    ///
-    /// * `redeem_script` - The redeem script from the witness
-    /// * `pubkey_bytes` - The public key to validate against
-    ///
-    /// # Returns
-    ///
-    /// `true` if the script is a valid P2PKH-style redeem script and the public key matches,
-    /// `false` otherwise.
-    fn execute_redeem_script(redeem_script: &[u8], pubkey_bytes: &[u8]) -> bool {
-        // For BIP-322, we typically see simple P2PKH redeem scripts
-        // Pattern: 76 a9 14 <20-byte-pubkey-hash> 88 ac
-        // OP_DUP OP_HASH160 <pubkey_hash> OP_EQUALVERIFY OP_CHECKSIG
-
-        if redeem_script.len() == 25 &&
-           redeem_script[0] == OP_DUP &&
-           redeem_script[1] == OP_HASH160 &&
-           redeem_script[2] == 0x14 && // Push 20 bytes
-           redeem_script[23] == OP_EQUALVERIFY &&
-           redeem_script[24] == OP_CHECKSIG
-        {
-            // Extract the pubkey hash from the script
-            let script_pubkey_hash = &redeem_script[3..23];
-
-            // Compute HASH160 of the provided public key
-            let computed_pubkey_hash = hash160(pubkey_bytes);
-
-            // Verify the public key hash matches
-            computed_pubkey_hash.as_slice() == script_pubkey_hash
-        } else {
-            // For now, only support simple P2PKH redeem scripts
-            // Future enhancement: full Bitcoin script interpreter
-            false
-        }
+        env::ecrecover(message_hash, &signature_bytes[1..], v, true)
+            .filter(|recovered_pubkey| recovered_pubkey.as_slice() == expected_pubkey)
     }
 
     /// Execute a witness script for P2WSH verification.
@@ -715,8 +679,17 @@ mod tests {
             }
 
             // Get the expected pubkey hash from the address
-            let Some(expected_hash) = self.address.pubkey_hash else {
-                return false; // Address must have pubkey hash for validation
+            let expected_hash = match &self.address {
+                Address::P2PKH { pubkey_hash } => *pubkey_hash,
+                Address::P2WPKH { witness_program } => {
+                    if witness_program.program.len() != 20 {
+                        return false;
+                    }
+                    let mut hash = [0u8; 20];
+                    hash.copy_from_slice(&witness_program.program);
+                    hash
+                }
+                _ => return false, // Only P2PKH and P2WPKH have pubkey hashes
             };
 
             // Compute HASH160 of the public key using full cryptographic implementation
@@ -807,12 +780,9 @@ mod tests {
                     header_byte - 27
                 };
 
-                if let Some(recovered_pubkey) = env::ecrecover(
-                    message_hash.as_slice(),
-                    &signature_bytes[1..],
-                    v,
-                    true,
-                ) {
+                if let Some(recovered_pubkey) =
+                    env::ecrecover(message_hash.as_slice(), &signature_bytes[1..], v, true)
+                {
                     recovered_pubkey.as_slice().to_vec()
                 } else {
                     // Fallback to dummy pubkey if recovery fails
@@ -2764,7 +2734,7 @@ mod tests {
         };
 
         // Serialize the transaction
-        let mut serialized = Vec::new();
+        let mut serialized = Vec::with_capacity(200); // Typical transaction size
         let bytes_written = tx
             .consensus_encode(&mut serialized)
             .expect("Serialization should succeed");
@@ -2804,7 +2774,7 @@ mod tests {
         };
 
         // Serialize the transaction
-        let mut serialized = Vec::new();
+        let mut serialized = Vec::with_capacity(200); // Typical transaction size
         let bytes_written = tx
             .consensus_encode(&mut serialized)
             .expect("Serialization should succeed");

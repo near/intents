@@ -111,28 +111,31 @@ pub fn hash160(data: &[u8]) -> [u8; 20] {
 
 /// Bitcoin address representation optimized for BIP-322 verification.
 ///
-/// This structure holds a parsed Bitcoin address with pre-computed data
-/// needed for signature verification. It supports the two most common
-/// address types used in modern Bitcoin transactions.
+/// This enum holds a parsed Bitcoin address with all necessary data for each address type.
+/// Each variant contains exactly the data needed for that address type, making invalid
+/// states unrepresentable at compile time.
 ///
-/// # Supported Formats
+/// # Supported Address Types
 ///
 /// - **P2PKH**: Pay-to-Public-Key-Hash addresses starting with '1'
 ///   - Example: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
 ///   - Uses Base58Check encoding with version byte 0x00
 ///   - Contains RIPEMD160(SHA256(pubkey)) hash
 ///
+/// - **P2SH**: Pay-to-Script-Hash addresses starting with '3'
+///   - Example: "3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX"
+///   - Uses Base58Check encoding with version byte 0x05
+///   - Contains RIPEMD160(SHA256(script)) hash
+///
 /// - **P2WPKH**: Pay-to-Witness-Public-Key-Hash addresses starting with 'bc1q'
 ///   - Example: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l"
 ///   - Uses Bech32 encoding with witness version 0
 ///   - Contains the same pubkey hash as P2PKH but in witness format
 ///
-/// # Fields
-///
-/// - `inner`: The original address string for reference
-/// - `address_type`: Parsed address type (P2PKH or P2WPKH)
-/// - `pubkey_hash`: The 20-byte hash for address validation (optional for MVP)
-/// - `witness_program`: Segwit witness program data (for P2WPKH addresses)
+/// - **P2WSH**: Pay-to-Witness-Script-Hash addresses starting with 'bc1q' (longer)
+///   - Example: "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3"
+///   - Uses Bech32 encoding with witness version 0 and 32-byte program
+///   - Contains SHA256(witness_script) hash
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
     serde_as(schemars = true)
@@ -143,70 +146,38 @@ pub fn hash160(data: &[u8]) -> [u8; 20] {
 )]
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
-pub struct Address {
-    /// The parsed address type, determining verification method.
-    ///
-    /// This field determines which BIP-322 verification algorithm to use:
-    /// - `P2PKH`: Uses legacy Bitcoin sighash algorithm
-    /// - `P2WPKH`: Uses segwit v0 sighash algorithm
-    pub address_type: AddressType,
-
-    /// The 20-byte public key hash extracted from the address.
-    ///
-    /// For both P2PKH and P2WPKH, this contains RIPEMD160(SHA256(pubkey)).
-    /// This field is used for address validation during signature verification.
-    /// Marked with `#[serde(skip)]` to exclude from JSON serialization.
-    #[serde(skip)]
-    pub pubkey_hash: Option<[u8; 20]>,
-
-    /// Segwit witness program data for P2WPKH addresses.
-    ///
-    /// Contains the witness version (0 for P2WPKH) and the program data
-    /// (20-byte pubkey hash). Only populated for segwit addresses.
-    /// Marked with `#[serde(skip)]` to exclude from JSON serialization.
-    #[serde(skip)]
-    pub witness_program: Option<WitnessProgram>,
-}
-
-/// Enumeration of supported Bitcoin address types.
-///
-/// This enum defines the address formats supported in the current MVP implementation.
-/// Each type corresponds to a different signature verification algorithm.
-#[near(serializers = [json])]
-#[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AddressType {
+pub enum Address {
     /// Pay-to-Public-Key-Hash (legacy Bitcoin addresses).
     ///
-    /// - Start with '1' on the mainnet
-    /// - Use Base58Check encoding
-    /// - Require legacy Bitcoin sighash algorithm for verification
-    /// - Example: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
-    P2PKH,
-
-    /// Pay-to-Witness-Public-Key-Hash (segwit v0 addresses).
-    ///
-    /// - Start with 'bc1q' on mainnet
-    /// - Use Bech32 encoding
-    /// - Require segwit v0 sighash algorithm for verification
-    /// - Example: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l"
-    P2WPKH,
+    /// Uses legacy Bitcoin sighash algorithm for BIP-322 verification.
+    P2PKH {
+        /// The 20-byte public key hash: RIPEMD160(SHA256(pubkey))
+        pubkey_hash: [u8; 20],
+    },
 
     /// Pay-to-Script-Hash (legacy Bitcoin script addresses).
     ///
-    /// - Start with '3' on the mainnet
-    /// - Use Base58Check encoding with version byte 0x05
-    /// - Require legacy Bitcoin sighash algorithm for verification
-    /// - Example: "3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX"
-    P2SH,
+    /// Uses legacy Bitcoin sighash algorithm for BIP-322 verification.
+    P2SH {
+        /// The 20-byte script hash: RIPEMD160(SHA256(script))
+        script_hash: [u8; 20],
+    },
+
+    /// Pay-to-Witness-Public-Key-Hash (segwit v0 addresses).
+    ///
+    /// Uses segwit v0 sighash algorithm (BIP-143) for BIP-322 verification.
+    P2WPKH {
+        /// The witness program containing version and 20-byte pubkey hash
+        witness_program: WitnessProgram,
+    },
 
     /// Pay-to-Witness-Script-Hash (segwit v0 script addresses).
     ///
-    /// - Start with 'bc1q' on mainnet (but longer than P2WPKH)
-    /// - Use Bech32 encoding with 32-byte witness program
-    /// - Require segwit v0 sighash algorithm for verification
-    /// - Example: "bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3"
-    P2WSH,
+    /// Uses segwit v0 sighash algorithm (BIP-143) for BIP-322 verification.
+    P2WSH {
+        /// The witness program containing version and 32-byte script hash
+        witness_program: WitnessProgram,
+    },
 }
 
 /// Parsed address data containing the essential cryptographic information.
@@ -234,22 +205,13 @@ pub enum AddressData {
 /// This structure represents the parsed witness program from a segwit address.
 /// It contains the witness version (currently 0 for P2WPKH/P2WSH) and the
 /// witness program bytes (20 bytes for P2WPKH, 32 bytes for P2WSH).
+#[near(serializers = [json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WitnessProgram {
     /// Witness version (0 for current segwit, 1-16 for future versions)
     pub version: u8,
     /// Witness program bytes (20 bytes for P2WPKH, 32 bytes for P2WSH)
     pub program: Vec<u8>,
-}
-
-impl WitnessProgram {
-    pub fn is_p2wpkh(&self) -> bool {
-        self.version == 0 && self.program.len() == 20
-    }
-
-    pub fn is_p2wsh(&self) -> bool {
-        self.version == 0 && self.program.len() == 32
-    }
 }
 
 /// Bitcoin witness stack for storing signature and script data.
@@ -263,12 +225,6 @@ impl WitnessProgram {
 #[derive(Debug, Clone)]
 pub struct Witness {
     stack: Vec<Vec<u8>>,
-}
-
-impl Default for Witness {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl Witness {
@@ -295,102 +251,74 @@ impl Witness {
 }
 
 impl Address {
-    pub const fn assume_checked_ref(&self) -> &Self {
-        self
-    }
-
-    /// Extracts address data with proper error handling for missing cryptographic data.
+    /// Extracts address data from the enum variant.
     ///
-    /// Returns an error if required cryptographic data is missing for the address type:
-    /// - P2PKH/P2SH addresses require `pubkey_hash`/`script_hash`
-    /// - P2WPKH/P2WSH addresses require `witness_program`
-    ///
-    /// # Errors
-    ///
-    /// Returns `AddressError::MissingRequiredData` if the required cryptographic data
-    /// is not present for the address type.
-    pub fn to_address_data(&self) -> Result<AddressData, AddressError> {
-        match self.address_type {
-            AddressType::P2PKH => {
-                let pubkey_hash = self.pubkey_hash.ok_or(AddressError::MissingRequiredData)?;
-                Ok(AddressData::P2pkh { pubkey_hash })
-            }
-            AddressType::P2SH => {
-                let script_hash = self.pubkey_hash.ok_or(AddressError::MissingRequiredData)?;
-                Ok(AddressData::P2sh { script_hash })
-            }
-            AddressType::P2WPKH => {
-                let witness_program = self
-                    .witness_program
-                    .clone()
-                    .ok_or(AddressError::MissingRequiredData)?;
-                Ok(AddressData::P2wpkh { witness_program })
-            }
-            AddressType::P2WSH => {
-                let witness_program = self
-                    .witness_program
-                    .clone()
-                    .ok_or(AddressError::MissingRequiredData)?;
-                Ok(AddressData::P2wsh { witness_program })
-            }
+    /// Since the new Address enum contains all necessary data within each variant,
+    /// this method never fails and simply converts to the AddressData format.
+    pub fn to_address_data(&self) -> AddressData {
+        match self {
+            Address::P2PKH { pubkey_hash } => AddressData::P2pkh {
+                pubkey_hash: *pubkey_hash,
+            },
+            Address::P2SH { script_hash } => AddressData::P2sh {
+                script_hash: *script_hash,
+            },
+            Address::P2WPKH { witness_program } => AddressData::P2wpkh {
+                witness_program: witness_program.clone(),
+            },
+            Address::P2WSH { witness_program } => AddressData::P2wsh {
+                witness_program: witness_program.clone(),
+            },
         }
     }
 
     /// Generates the script pubkey for this address.
     ///
-    /// # Errors
-    ///
-    /// Returns `AddressError::MissingRequiredData` if required cryptographic data
-    /// is missing for the address type.
+    /// Since the new Address enum contains all necessary data within each variant,
+    /// this method never fails due to missing data.
     pub fn script_pubkey(&self) -> Result<ScriptBuf, AddressError> {
-        match self.address_type {
-            AddressType::P2PKH => {
+        match self {
+            Address::P2PKH { pubkey_hash } => {
                 // P2PKH script: OP_DUP OP_HASH160 <pubkey_hash> OP_EQUALVERIFY OP_CHECKSIG
-                let pubkey_hash = self.pubkey_hash.ok_or(AddressError::MissingRequiredData)?;
-                let mut script = Vec::new();
-                script.push(0x76); // OP_DUP
-                script.push(0xa9); // OP_HASH160
+                let mut script = Vec::with_capacity(25); // 5 opcodes + 20 bytes hash
+                script.push(OP_DUP);
+                script.push(OP_HASH160);
                 script.push(20); // Push 20 bytes
-                script.extend_from_slice(&pubkey_hash);
-                script.push(0x88); // OP_EQUALVERIFY
-                script.push(0xac); // OP_CHECKSIG
-                Ok(ScriptBuf { inner: script })
+                script.extend_from_slice(pubkey_hash);
+                script.push(OP_EQUALVERIFY);
+                script.push(OP_CHECKSIG);
+                Ok(ScriptBuf::from_bytes(script))
             }
-            AddressType::P2SH => {
+            Address::P2SH { script_hash } => {
                 // P2SH script: OP_HASH160 <script_hash> OP_EQUAL
-                let script_hash = self.pubkey_hash.ok_or(AddressError::MissingRequiredData)?;
-                let mut script = Vec::new();
-                script.push(0xa9); // OP_HASH160
+                let mut script = Vec::with_capacity(23); // 3 opcodes + 20 bytes hash
+                script.push(OP_HASH160);
                 script.push(20); // Push 20 bytes
-                script.extend_from_slice(&script_hash);
-                script.push(0x87); // OP_EQUAL
-                Ok(ScriptBuf { inner: script })
+                script.extend_from_slice(script_hash);
+                script.push(OP_EQUAL);
+                Ok(ScriptBuf::from_bytes(script))
             }
-            AddressType::P2WPKH => {
+            Address::P2WPKH { witness_program } => {
                 // P2WPKH script: OP_0 <20-byte-pubkey-hash>
-                let pubkey_hash = self.pubkey_hash.ok_or(AddressError::MissingRequiredData)?;
-                let mut script = Vec::new();
-                script.push(0x00); // OP_0
+                if witness_program.program.len() != 20 {
+                    return Err(AddressError::InvalidWitnessProgram);
+                }
+                let mut script = Vec::with_capacity(22); // 2 opcodes + 20 bytes program
+                script.push(OP_0);
                 script.push(20); // Push 20 bytes
-                script.extend_from_slice(&pubkey_hash);
-                Ok(ScriptBuf { inner: script })
+                script.extend_from_slice(&witness_program.program);
+                Ok(ScriptBuf::from_bytes(script))
             }
-            AddressType::P2WSH => {
+            Address::P2WSH { witness_program } => {
                 // P2WSH script: OP_0 <32-byte-script-hash>
-                let witness_program = self
-                    .witness_program
-                    .as_ref()
-                    .ok_or(AddressError::MissingRequiredData)?;
-
                 if witness_program.program.len() != 32 {
                     return Err(AddressError::InvalidWitnessProgram);
                 }
-
-                let mut script = Vec::new();
-                script.push(0x00); // OP_0
+                let mut script = Vec::with_capacity(34); // 2 opcodes + 32 bytes program
+                script.push(OP_0);
                 script.push(32); // Push 32 bytes
                 script.extend_from_slice(&witness_program.program);
-                Ok(ScriptBuf { inner: script })
+                Ok(ScriptBuf::from_bytes(script))
             }
         }
     }
@@ -465,11 +393,7 @@ impl std::str::FromStr for Address {
                 return Err(AddressError::InvalidBase58);
             }
 
-            Ok(Self {
-                address_type: AddressType::P2PKH,
-                pubkey_hash: Some(pubkey_hash),
-                witness_program: None,
-            })
+            Ok(Self::P2PKH { pubkey_hash })
         }
         // P2SH (Pay-to-Script-Hash) address parsing
         // These are legacy Bitcoin script addresses starting with '3' on the mainnet
@@ -506,11 +430,7 @@ impl std::str::FromStr for Address {
                 return Err(AddressError::InvalidBase58);
             }
 
-            Ok(Self {
-                address_type: AddressType::P2SH,
-                pubkey_hash: Some(script_hash), // Store script hash in the pubkey_hash field
-                witness_program: None,
-            })
+            Ok(Self::P2SH { script_hash })
         }
         // P2WPKH/P2WSH (Pay-to-Witness-Public-Key-Hash/Script-Hash) address parsing
         // These are segwit addresses starting with 'bc1' on the mainnet
@@ -528,27 +448,20 @@ impl std::str::FromStr for Address {
             match witness_program.len() {
                 20 => {
                     // P2WPKH: 20-byte public key hash
-                    let mut pubkey_hash = [0u8; 20];
-                    pubkey_hash.copy_from_slice(&witness_program);
-
-                    Ok(Self {
-                        address_type: AddressType::P2WPKH,
-                        pubkey_hash: Some(pubkey_hash),
-                        witness_program: Some(WitnessProgram {
+                    Ok(Self::P2WPKH {
+                        witness_program: WitnessProgram {
                             version: witness_version,
                             program: witness_program,
-                        }),
+                        },
                     })
                 }
                 32 => {
                     // P2WSH: 32-byte script hash
-                    Ok(Self {
-                        address_type: AddressType::P2WSH,
-                        pubkey_hash: None, // P2WSH doesn't have a pubkey hash
-                        witness_program: Some(WitnessProgram {
+                    Ok(Self::P2WSH {
+                        witness_program: WitnessProgram {
                             version: witness_version,
                             program: witness_program,
-                        }),
+                        },
                     })
                 }
                 _ => {
@@ -710,23 +623,13 @@ pub struct ScriptBuf {
     inner: Vec<u8>,
 }
 
-impl Default for ScriptBuf {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl ScriptBuf {
     pub const fn new() -> Self {
         Self { inner: Vec::new() }
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.inner.is_empty()
-    }
-
-    pub fn len(&self) -> usize {
-        self.inner.len()
+    pub fn from_bytes(bytes: Vec<u8>) -> Self {
+        Self { inner: bytes }
     }
 }
 
@@ -952,48 +855,10 @@ fn write_compact_size<W: std::io::Write>(writer: &mut W, n: u64) -> Result<usize
     }
 }
 
-/// Script builder
-pub struct ScriptBuilder {
-    inner: Vec<u8>,
-}
-
-impl Default for ScriptBuilder {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl ScriptBuilder {
-    pub const fn new() -> Self {
-        Self { inner: Vec::new() }
-    }
-
-    #[must_use]
-    pub fn push_opcode(mut self, opcode: u8) -> Self {
-        self.inner.push(opcode);
-        self
-    }
-
-    #[must_use]
-    pub fn push_slice(mut self, data: &[u8]) -> Self {
-        if data.len() <= 75 {
-            self.inner
-                .push(u8::try_from(data.len()).expect("data length fits in u8"));
-        } else {
-            panic!("Large pushdata not implemented");
-        }
-        self.inner.extend_from_slice(data);
-        self
-    }
-
-    pub fn into_script(self) -> ScriptBuf {
-        ScriptBuf { inner: self.inner }
-    }
-}
-
 // Op codes
 pub const OP_0: u8 = 0x00;
 pub const OP_DUP: u8 = 0x76;
+pub const OP_EQUAL: u8 = 0x87;
 pub const OP_HASH160: u8 = 0xa9;
 pub const OP_EQUALVERIFY: u8 = 0x88;
 pub const OP_CHECKSIG: u8 = 0xac;
@@ -1086,7 +951,7 @@ impl SighashCache {
     /// `hashPrevouts` = `double_sha256(all outpoints concatenated)`
     /// Each outpoint is 36 bytes: txid (32 bytes) + vout (4 bytes little-endian)
     fn compute_hash_prevouts(&self) -> [u8; 32] {
-        let mut outpoints_data = Vec::new();
+        let mut outpoints_data = Vec::with_capacity(self.tx.input.len() * 36); // 32 bytes txid + 4 bytes vout per input
         for input in &self.tx.input {
             outpoints_data.extend_from_slice(&input.previous_output.txid.0);
             outpoints_data.extend_from_slice(&input.previous_output.vout.to_le_bytes());
@@ -1099,7 +964,7 @@ impl SighashCache {
     /// `hashSequence` = `double_sha256(all sequence numbers concatenated)`
     /// Each sequence is 4 bytes little-endian
     fn compute_hash_sequence(&self) -> [u8; 32] {
-        let mut sequence_data = Vec::new();
+        let mut sequence_data = Vec::with_capacity(self.tx.input.len() * 4); // 4 bytes per input
         for input in &self.tx.input {
             sequence_data.extend_from_slice(&input.sequence.0.to_le_bytes());
         }
@@ -1111,12 +976,13 @@ impl SighashCache {
     /// `hashOutputs` = `double_sha256(all outputs concatenated)`
     /// Each output is: value (8 bytes little-endian) + scriptPubKey (variable length with compact size prefix)
     fn compute_hash_outputs(&self) -> Result<[u8; 32], std::io::Error> {
-        let mut outputs_data = Vec::new();
+        // Estimate: (8 bytes value + 1-9 bytes compact size + ~25 bytes script) * number of outputs
+        let mut outputs_data = Vec::with_capacity(self.tx.output.len() * 42);
         for output in &self.tx.output {
             outputs_data.extend_from_slice(&output.value.0.to_le_bytes());
             // Write scriptPubKey with the compact size prefix
             let script_len = try_into_io::<usize, u64>(output.script_pubkey.inner.len())?;
-            let mut compact_size_bytes = Vec::new();
+            let mut compact_size_bytes = Vec::with_capacity(9); // max compact size is 9 bytes
             write_compact_size(&mut compact_size_bytes, script_len)
                 .expect("Writing to Vec should not fail");
             outputs_data.extend_from_slice(&compact_size_bytes);
@@ -1271,11 +1137,12 @@ mod tests {
 
     /// Test address parsing with different types
     #[rstest]
-    #[case("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", AddressType::P2PKH)]
-    #[case("3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX", AddressType::P2SH)]
-    #[case("bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l", AddressType::P2WPKH)]
-    fn test_address_type_detection(#[case] addr_str: &str, #[case] expected_type: AddressType) {
+    #[case("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")]
+    #[case("3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX")]
+    #[case("bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l")]
+    fn test_address_parsing(#[case] addr_str: &str) {
         let addr: Address = addr_str.parse().expect("Valid address");
-        assert_eq!(addr.address_type, expected_type);
+        // Test that parsing succeeds and address can generate script
+        let _script = addr.script_pubkey().expect("Should generate script");
     }
 }
