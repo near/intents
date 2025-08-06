@@ -5,7 +5,7 @@ pub mod verification;
 #[cfg(test)]
 use bitcoin_minimal::WitnessProgram;
 use bitcoin_minimal::{
-    Address, Amount, EcdsaSighashType, Encodable, LockTime, NearDoubleSha256, OP_0,
+    Address, Amount, Bip322Witness, EcdsaSighashType, Encodable, LockTime, NearDoubleSha256, OP_0,
     OP_CHECKSIG, OP_DUP, OP_EQUALVERIFY, OP_HASH160, OP_RETURN, OutPoint, ScriptBuf, Sequence,
     Transaction, TxIn, TxOut, Txid, Version, Witness,
 };
@@ -39,7 +39,7 @@ pub struct SignedBip322Payload {
     /// - P2PKH/P2WPKH: [signature, pubkey]
     /// - P2SH: [signature, pubkey, redeem_script]
     /// - P2WSH: [signature, pubkey, witness_script]
-    pub signature: Witness,
+    pub signature: Bip322Witness,
 }
 
 impl Payload for SignedBip322Payload {
@@ -456,24 +456,25 @@ impl SignedBip322Payload {
 
     /// Verify P2PKH signature according to BIP-322 standard
     fn verify_p2pkh_signature(&self) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        // For P2PKH, witness should contain [signature, pubkey]
-        if self.signature.len() < 2 {
-            return None;
+        // For P2PKH, extract signature and pubkey from witness
+        match &self.signature {
+            Bip322Witness::P2PKH { .. } => {
+                let signature_bytes = self.signature.signature();
+                let pubkey_bytes = self.signature.pubkey();
+
+                // Create BIP-322 transactions
+                let to_spend = self.create_to_spend();
+                let to_sign = Self::create_to_sign(&to_spend);
+
+                // Compute sighash for P2PKH (legacy sighash algorithm)
+                let sighash = Self::compute_message_hash(&to_spend, &to_sign, &self.address);
+
+                // Try to recover public key
+                // Parse signature and try different recovery IDs
+                Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
+            }
+            _ => None, // Wrong witness type for P2PKH
         }
-
-        let signature_bytes = self.signature.nth(0)?;
-        let pubkey_bytes = self.signature.nth(1)?;
-
-        // Create BIP-322 transactions
-        let to_spend = self.create_to_spend();
-        let to_sign = Self::create_to_sign(&to_spend);
-
-        // Compute sighash for P2PKH (legacy sighash algorithm)
-        let sighash = Self::compute_message_hash(&to_spend, &to_sign, &self.address);
-
-        // Try to recover public key
-        // Parse signature and try different recovery IDs
-        Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
     }
 
     /// Verify P2WPKH signature according to BIP-322 standard
@@ -748,7 +749,7 @@ mod tests {
                 let temp_payload = SignedBip322Payload {
                     address: parsed_address.clone(),
                     message: message.to_string(),
-                    signature: Witness::new(),
+                    signature: Bip322Witness::empty_p2pkh(),
                 };
                 let message_hash = temp_payload.hash();
                 let header_byte = signature_bytes[0];
@@ -776,21 +777,23 @@ mod tests {
 
             // Build witness based on address type
             match &parsed_address {
-                Address::P2PKH { .. } | Address::P2WPKH { .. } => {
-                    // Simple witness: [signature, pubkey]
-                    Witness::from_stack(vec![signature_bytes, pubkey_bytes])
+                Address::P2PKH { .. } => {
+                    Bip322Witness::P2PKH {
+                        signature: signature_bytes,
+                        pubkey: pubkey_bytes,
+                    }
                 }
-                Address::P2SH { script_hash } => {
-                    // P2SH witness: [signature, pubkey, redeem_script]
-                    // Build a P2PKH-style redeem script
-                    let mut script = vec![
-                        OP_DUP, OP_HASH160, 0x14, // PUSH 20 bytes
-                    ];
-                    script.extend_from_slice(script_hash);
-                    script.push(OP_EQUALVERIFY);
-                    script.push(OP_CHECKSIG);
-
-                    Witness::from_stack(vec![signature_bytes, pubkey_bytes, script])
+                Address::P2WPKH { .. } => {
+                    Bip322Witness::P2WPKH {
+                        signature: signature_bytes,
+                        pubkey: pubkey_bytes,
+                    }
+                }
+                Address::P2SH { .. } => {
+                    Bip322Witness::P2SH {
+                        signature: signature_bytes,
+                        pubkey: pubkey_bytes,
+                    }
                 }
                 Address::P2WSH { witness_program } => {
                     // P2WSH witness: [signature, pubkey, witness_script]
@@ -803,7 +806,11 @@ mod tests {
                     script.push(OP_EQUALVERIFY);
                     script.push(OP_CHECKSIG);
 
-                    Witness::from_stack(vec![signature_bytes, pubkey_bytes, script])
+                    Bip322Witness::P2WSH {
+                        signature: signature_bytes,
+                        pubkey: pubkey_bytes,
+                        witness_script: script,
+                    }
                 }
             }
         }
@@ -821,7 +828,7 @@ mod tests {
                 },
             },
             message: "Hello World".to_string(),
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         let start_gas = env::used_gas();
@@ -848,7 +855,7 @@ mod tests {
                 },
             },
             message: "Hello World".to_string(),
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         let start_gas = env::used_gas();
@@ -885,7 +892,7 @@ mod tests {
                 },
             },
             message: "Hello World".to_string(),
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         let start_gas = env::used_gas();
@@ -974,7 +981,7 @@ mod tests {
                 },
             },
             message: String::from_utf8(message.to_vec()).unwrap(),
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         let computed_hash = payload.compute_bip322_message_hash();
@@ -996,7 +1003,7 @@ mod tests {
                 },
             },
             message: "Hello World".to_string(),
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         let to_spend = payload.create_to_spend();
@@ -1159,7 +1166,7 @@ mod tests {
                     },
                 }),
             message: "Test message".to_string(),
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         // Test that verification handles empty signatures gracefully
@@ -1183,7 +1190,7 @@ mod tests {
                 .parse()
                 .expect("Should parse P2WPKH address"),
             message: "Test message".to_string(),
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         let bip322_hash = payload.hash();
@@ -1257,7 +1264,7 @@ mod tests {
                 },
             },
             message: "Test message".to_string(),
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         // Test public key address verification with invalid public key
@@ -1329,7 +1336,7 @@ mod tests {
                 },
             },
             message: "Test message".to_string(),
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         // Test valid compressed public key format
@@ -1390,7 +1397,7 @@ mod tests {
                 },
             },
             message: "Test message".to_string(),
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         // Test with a public key that doesn't match the address
@@ -1464,7 +1471,7 @@ mod tests {
                 },
             },
             message: "Hello Bitcoin".to_string(),
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         // Test BIP-322 transaction creation
@@ -1722,7 +1729,7 @@ mod tests {
         let payload = SignedBip322Payload {
             address,
             message: "Test P2SH message".to_string(),
-            signature: Witness::new(), // Empty for structure test
+            signature: Bip322Witness::empty_p2pkh(), // Empty for structure test
         };
 
         // Test hash computation (should not panic)
@@ -1768,7 +1775,7 @@ mod tests {
         let payload = SignedBip322Payload {
             address,
             message: "Test P2WSH message".to_string(),
-            signature: Witness::new(), // Empty for structure test
+            signature: Bip322Witness::empty_p2pkh(), // Empty for structure test
         };
 
         // Test hash computation (should not panic)
@@ -1812,7 +1819,7 @@ mod tests {
         let _payload = SignedBip322Payload {
             address,
             message: "Test message".to_string(),
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         // Test script hash validation for redeem script
@@ -1853,7 +1860,7 @@ mod tests {
         let _payload = SignedBip322Payload {
             address,
             message: "Test message".to_string(),
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         // Test witness script hash validation
@@ -1887,7 +1894,7 @@ mod tests {
         let p2sh_payload = SignedBip322Payload {
             address: Address::from_str(p2sh_address).expect("Should parse P2SH"),
             message: "Integration test message".to_string(),
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         // Hash computation should work
@@ -1905,7 +1912,7 @@ mod tests {
         let p2wsh_payload = SignedBip322Payload {
             address: Address::from_str(p2wsh_address).expect("Should parse P2WSH"),
             message: "Integration test message".to_string(),
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         // Hash computation should work
@@ -1934,7 +1941,7 @@ mod tests {
             address: Address::from_str("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
                 .expect("Should parse P2PKH"),
             message: "Test message".to_string(),
-            signature: Witness::new(), // Empty witness
+            signature: Bip322Witness::empty_p2pkh(), // Empty witness
         };
 
         // Test that empty witness returns None for verification
@@ -2063,7 +2070,7 @@ mod tests {
             address: Address::from_str("bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l")
                 .expect("Should parse P2WPKH"),
             message: "Test message".to_string(),
-            signature: Witness::new(), // Empty will trigger EmptyWitness first
+            signature: Bip322Witness::empty_p2pkh(), // Empty will trigger EmptyWitness first
         };
 
         // Verify error handling with empty witness
@@ -2082,7 +2089,7 @@ mod tests {
                 .parse()
                 .expect("Should parse P2WPKH address"),
             message: String::new(), // Empty message
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         // Verify the test vector hash matches BIP-322 specification
@@ -2100,7 +2107,7 @@ mod tests {
         let hello_payload = SignedBip322Payload {
             address: payload.address,
             message: "Hello World".to_string(),
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         let hello_hash = hello_payload.compute_bip322_message_hash();
@@ -2119,7 +2126,7 @@ mod tests {
                 .parse()
                 .expect("Should parse P2PKH address"),
             message: "Hello World".to_string(),
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         let p2pkh_message_hash = p2pkh_payload.compute_bip322_message_hash();
@@ -2379,7 +2386,7 @@ mod tests {
                 },
             },
             message: "Malformed witness test".to_string(),
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         // Test empty witness stack
@@ -2483,7 +2490,7 @@ mod tests {
         let unicode_payload = SignedBip322Payload {
             address: base_address.clone(),
             message: "Hello 世界! 🌍".to_string(), // Mixed ASCII, Chinese, emoji
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         let unicode_hash = unicode_payload.hash();
@@ -2501,7 +2508,7 @@ mod tests {
         let unicode_payload2 = SignedBip322Payload {
             address: base_address.clone(),
             message: "Différent ñöñ-ÅSCÏÏ tëxt! 🚀".to_string(),
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         let unicode_hash2 = unicode_payload2.hash();
@@ -2514,7 +2521,7 @@ mod tests {
         let emoji_payload = SignedBip322Payload {
             address: base_address.clone(),
             message: "🚀🌙⭐🪐".to_string(),
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         let emoji_hash = emoji_payload.hash();
@@ -2532,7 +2539,7 @@ mod tests {
         let multibyte_payload = SignedBip322Payload {
             address: base_address.clone(),
             message: "𝕿𝖍𝖎𝖘 𝖎𝖘 𝖆 𝖙𝖊𝖘𝖙 𝖔𝖋 𝖒𝖚𝖑𝖙𝖎-𝖇𝖞𝖙𝖊 𝖀𝖓𝖎𝖈𝖔𝖉𝖊".to_string(), // Mathematical script
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         let multibyte_hash = multibyte_payload.hash();
@@ -2547,7 +2554,7 @@ mod tests {
         let long_payload = SignedBip322Payload {
             address: base_address.clone(),
             message: long_unicode,
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         let long_hash = long_payload.hash();
@@ -2561,7 +2568,7 @@ mod tests {
         let control_payload = SignedBip322Payload {
             address: base_address,
             message: "Test\x00\x01\x02with\tcontrol\ncharacters\r".to_string(),
-            signature: Witness::new(),
+            signature: Bip322Witness::empty_p2pkh(),
         };
 
         let control_hash = control_payload.hash();

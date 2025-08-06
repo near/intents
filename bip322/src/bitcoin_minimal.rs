@@ -216,20 +216,17 @@ pub struct WitnessProgram {
     pub program: Vec<u8>,
 }
 
-/// Bitcoin witness stack for storing signature and script data.
+/// Bitcoin transaction witness stack for storing signature and script data.
 ///
-/// The witness stack is used in segwit transactions and BIP-322 signatures to store
-/// signature data and scripts. The format depends on the address type:
-/// - P2WPKH: [signature, pubkey]
-/// - P2WSH: [signature, pubkey, witness_script]
-/// - P2SH: [signature, pubkey, redeem_script]
+/// This is used for the generic Bitcoin transaction witness stack format
+/// where witness data is stored as a vector of byte vectors.
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
-pub struct Witness {
+pub struct TransactionWitness {
     stack: Vec<Vec<u8>>,
 }
 
-impl Witness {
+impl TransactionWitness {
     pub const fn new() -> Self {
         Self { stack: Vec::new() }
     }
@@ -251,6 +248,98 @@ impl Witness {
         Self { stack }
     }
 }
+
+/// Type-safe BIP-322 signature witness data.
+///
+/// Each variant corresponds to a specific address type and enforces the correct
+/// witness structure at compile time. Signatures should be 65 bytes (Bitcoin
+/// compact signature format with recovery ID) but stored as Vec<u8> for NEAR SDK compatibility.
+#[near(serializers = [json])]
+#[derive(Debug, Clone)]
+pub enum Bip322Witness {
+    /// P2PKH witness: signature (should be 65 bytes) + public key
+    P2PKH {
+        signature: Vec<u8>,
+        pubkey: Vec<u8>,
+    },
+
+    /// P2WPKH witness: signature (should be 65 bytes) + public key  
+    P2WPKH {
+        signature: Vec<u8>,
+        pubkey: Vec<u8>,
+    },
+
+    /// P2SH witness: signature (should be 65 bytes) + public key
+    /// Note: redeem_script removed as it's currently unused in verification
+    P2SH {
+        signature: Vec<u8>,
+        pubkey: Vec<u8>,
+    },
+
+    /// P2WSH witness: signature (should be 65 bytes) + public key + witness script
+    P2WSH {
+        signature: Vec<u8>,
+        pubkey: Vec<u8>,
+        witness_script: Vec<u8>,
+    },
+}
+
+impl Bip322Witness {
+    /// Create an empty P2PKH witness (for testing/placeholder)
+    pub fn empty_p2pkh() -> Self {
+        Self::P2PKH {
+            signature: vec![0u8; 65],
+            pubkey: Vec::new(),
+        }
+    }
+
+    /// Get signature bytes for any witness type
+    pub fn signature(&self) -> &[u8] {
+        match self {
+            Bip322Witness::P2PKH { signature, .. } => signature,
+            Bip322Witness::P2WPKH { signature, .. } => signature,
+            Bip322Witness::P2SH { signature, .. } => signature,
+            Bip322Witness::P2WSH { signature, .. } => signature,
+        }
+    }
+
+    /// Get public key bytes for any witness type
+    pub fn pubkey(&self) -> &[u8] {
+        match self {
+            Bip322Witness::P2PKH { pubkey, .. } => pubkey,
+            Bip322Witness::P2WPKH { pubkey, .. } => pubkey,
+            Bip322Witness::P2SH { pubkey, .. } => pubkey,
+            Bip322Witness::P2WSH { pubkey, .. } => pubkey,
+        }
+    }
+
+    /// Get witness script for P2WSH addresses
+    pub fn witness_script(&self) -> Option<&[u8]> {
+        match self {
+            Bip322Witness::P2WSH { witness_script, .. } => Some(witness_script),
+            _ => None,
+        }
+    }
+
+    /// Check if witness type matches address type
+    pub fn matches_address(&self, address: &Address) -> bool {
+        match (self, address) {
+            (Bip322Witness::P2PKH { .. }, Address::P2PKH { .. }) => true,
+            (Bip322Witness::P2WPKH { .. }, Address::P2WPKH { .. }) => true,
+            (Bip322Witness::P2SH { .. }, Address::P2SH { .. }) => true,
+            (Bip322Witness::P2WSH { .. }, Address::P2WSH { .. }) => true,
+            _ => false,
+        }
+    }
+
+    /// Validates that signature is exactly 65 bytes
+    pub fn validate_signature_length(&self) -> bool {
+        self.signature().len() == 65
+    }
+}
+
+// Type alias for backward compatibility in transactions
+pub type Witness = TransactionWitness;
 
 impl Address {
     /// Extracts address data from the enum variant.
@@ -324,7 +413,7 @@ impl Address {
     /// # Arguments
     ///
     /// * `message` - The message that was signed
-    /// * `signature` - The BIP-322 signature witness stack
+    /// * `signature` - The BIP-322 signature witness data
     ///
     /// # Returns
     ///
@@ -333,7 +422,7 @@ impl Address {
     pub fn verify_bip322_signature(
         &self,
         message: &str,
-        signature: &Witness,
+        signature: &Bip322Witness,
     ) -> Option<Secp256k1PublicKey> {
         use crate::SignedBip322Payload;
 
@@ -370,7 +459,7 @@ impl Address {
         let payload = SignedBip322Payload {
             address: self.clone(),
             message: message.to_string(),
-            signature: Witness::new(), // Empty signature for hash computation
+            signature: Bip322Witness::empty_p2pkh(), // Empty signature for hash computation
         };
 
         match self {

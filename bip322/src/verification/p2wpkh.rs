@@ -25,27 +25,28 @@ use near_sdk::CryptoHash;
 pub fn verify_p2wpkh_signature(
     payload: &SignedBip322Payload,
 ) -> Option<<Secp256k1 as Curve>::PublicKey> {
-    // For P2WPKH, witness should contain [signature, pubkey]
-    if payload.signature.len() < 2 {
-        return None;
+    // For P2WPKH, extract signature and pubkey from witness
+    match &payload.signature {
+        crate::bitcoin_minimal::Bip322Witness::P2WPKH { .. } => {
+            let signature_bytes = payload.signature.signature();
+            let pubkey_bytes = payload.signature.pubkey();
+
+            // Create BIP-322 transactions
+            let to_spend = payload.create_to_spend();
+            let to_sign = SignedBip322Payload::create_to_sign(&to_spend);
+
+            // Compute sighash for P2WPKH (segwit v0 sighash algorithm)
+            let sighash = SignedBip322Payload::compute_message_hash(
+                &to_spend,
+                &to_sign,
+                &payload.address,
+            );
+
+            // Try to recover public key
+            SignedBip322Payload::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
+        }
+        _ => None, // Wrong witness type for P2WPKH
     }
-
-    let signature_bytes = payload.signature.nth(0)?;
-    let pubkey_bytes = payload.signature.nth(1)?;
-
-    // Create BIP-322 transactions
-    let to_spend = payload.create_to_spend();
-    let to_sign = SignedBip322Payload::create_to_sign(&to_spend);
-
-    // Compute sighash for P2WPKH (segwit v0 sighash algorithm)
-    let sighash = SignedBip322Payload::compute_message_hash(
-        &to_spend,
-        &to_sign,
-        &payload.address,
-    );
-
-    // Try to recover public key
-    SignedBip322Payload::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
 }
 
 /// Computes the BIP-322 message hash for P2WPKH addresses.
