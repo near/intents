@@ -872,7 +872,7 @@ impl Transaction {
     /// 8. hashOutputs (32 bytes) - double SHA256 of all outputs
     /// 9. locktime (4 bytes)
     /// 10. `sighash_type` (4 bytes) - as little-endian integer
-    pub fn segwit_v0_encode_signing_data_to<W: std::io::Write>(
+    pub fn encode_segwit_v0<W: std::io::Write>(
         &self,
         writer: &mut W,
         input_index: usize,
@@ -986,7 +986,7 @@ impl Transaction {
     /// 5. `sighash_type` (4 bytes)
     ///
     /// For `SIGHASH_ALL` (the only type we support), all inputs and outputs are included.
-    pub fn legacy_encode_signing_data_to<W: std::io::Write>(
+    pub fn encode_legacy<W: std::io::Write>(
         &self,
         writer: &mut W,
         input_index: usize,

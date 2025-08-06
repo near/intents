@@ -93,7 +93,7 @@ impl SignedBip322Payload {
 
         // Step 3: Compute the final signature hash using legacy algorithm
         // P2PKH uses the original Bitcoin sighash algorithm (pre-segwit)
-        Self::compute_message_hash_for_address(
+        Self::compute_message_hash(
             &to_spend,
             &to_sign,
             &self.address,
@@ -125,7 +125,7 @@ impl SignedBip322Payload {
 
         // Step 3: Compute signature hash using segwit v0 algorithm
         // P2WPKH uses the BIP-143 segwit sighash algorithm (not legacy)
-        Self::compute_message_hash_for_address(
+        Self::compute_message_hash(
             &to_spend,
             &to_sign,
             &self.address,
@@ -154,7 +154,7 @@ impl SignedBip322Payload {
 
         // Step 3: Compute signature hash using legacy algorithm
         // P2SH uses the same legacy sighash as P2PKH (not segwit)
-        Self::compute_message_hash_for_address(
+        Self::compute_message_hash(
             &to_spend,
             &to_sign,
             &self.address,
@@ -182,7 +182,7 @@ impl SignedBip322Payload {
 
         // Step 3: Compute signature hash using segwit v0 algorithm
         // P2WSH uses the same segwit sighash as P2WPKH (BIP-143)
-        Self::compute_message_hash_for_address(
+        Self::compute_message_hash(
             &to_spend,
             &to_sign,
             &self.address,
@@ -381,7 +381,7 @@ impl SignedBip322Payload {
     /// Bitcoin uses different sighash algorithms:
     /// - Legacy sighash: For P2PKH and P2SH addresses (pre-segwit)
     /// - Segwit v0 sighash: For P2WPKH and P2WSH addresses (BIP-143)
-    fn compute_message_hash_for_address(
+    fn compute_message_hash(
         to_spend: &Transaction,
         to_sign: &Transaction,
         address: &Address,
@@ -414,7 +414,7 @@ impl SignedBip322Payload {
         // Legacy sighash preimage is typically ~200-400 bytes
         let mut buf = Vec::with_capacity(400);
         to_sign
-            .legacy_encode_signing_data_to(&mut buf, 0, script_code, EcdsaSighashType::All)
+            .encode_legacy(&mut buf, 0, script_code, EcdsaSighashType::All)
             .expect("Legacy sighash encoding should succeed");
 
         NearDoubleSha256::digest(&buf).into()
@@ -438,7 +438,7 @@ impl SignedBip322Payload {
         // BIP-143 sighash preimage has fixed structure: ~200 bytes
         let mut buf = Vec::with_capacity(200);
         to_sign
-            .segwit_v0_encode_signing_data_to(
+            .encode_segwit_v0(
                 &mut buf,
                 0,
                 script_code,
@@ -469,7 +469,7 @@ impl SignedBip322Payload {
         let to_sign = Self::create_to_sign(&to_spend);
 
         // Compute sighash for P2PKH (legacy sighash algorithm)
-        let sighash = Self::compute_message_hash_for_address(&to_spend, &to_sign, &self.address);
+        let sighash = Self::compute_message_hash(&to_spend, &to_sign, &self.address);
 
         // Try to recover public key
         // Parse signature and try different recovery IDs
@@ -491,7 +491,7 @@ impl SignedBip322Payload {
         let to_sign = Self::create_to_sign(&to_spend);
 
         // Compute sighash for P2WPKH (segwit v0 sighash algorithm)
-        let sighash = Self::compute_message_hash_for_address(&to_spend, &to_sign, &self.address);
+        let sighash = Self::compute_message_hash(&to_spend, &to_sign, &self.address);
 
         // Try to recover public key
         Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
@@ -512,7 +512,7 @@ impl SignedBip322Payload {
         let to_sign = Self::create_to_sign(&to_spend);
 
         // Compute sighash for P2SH (legacy sighash algorithm)
-        let sighash = Self::compute_message_hash_for_address(&to_spend, &to_sign, &self.address);
+        let sighash = Self::compute_message_hash(&to_spend, &to_sign, &self.address);
 
         // Try to recover public key
         Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
@@ -550,7 +550,7 @@ impl SignedBip322Payload {
         let to_sign = Self::create_to_sign(&to_spend);
 
         // Compute sighash for P2WSH (segwit v0 sighash algorithm)
-        let sighash = Self::compute_message_hash_for_address(&to_spend, &to_sign, &self.address);
+        let sighash = Self::compute_message_hash(&to_spend, &to_sign, &self.address);
 
         // Try to recover public key
         Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)

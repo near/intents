@@ -40,7 +40,7 @@ pub fn verify_p2sh_signature(
     let to_sign = SignedBip322Payload::create_to_sign(&to_spend);
 
     // Compute sighash for P2SH (legacy sighash algorithm)
-    let sighash = SignedBip322Payload::compute_message_hash_for_address(
+    let sighash = SignedBip322Payload::compute_message_hash(
         &to_spend,
         &to_sign,
         &payload.address,
@@ -69,7 +69,7 @@ pub fn compute_p2sh_message_hash(payload: &SignedBip322Payload) -> CryptoHash {
     let to_sign = SignedBip322Payload::create_to_sign(&to_spend);
 
     // Step 3: Compute signature hash using legacy algorithm
-    SignedBip322Payload::compute_message_hash_for_address(
+    SignedBip322Payload::compute_message_hash(
         &to_spend,
         &to_sign,
         &payload.address,
