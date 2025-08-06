@@ -12,7 +12,7 @@
 
 use defuse_bip322::{
     SignedBip322Payload,
-    bitcoin_minimal::{Address, AddressType, Witness},
+    bitcoin_minimal::{Address, Witness, WitnessProgram},
 };
 use defuse_core::payload::{DefusePayload, ExtractDefusePayload};
 
@@ -39,10 +39,11 @@ fn test_bip322_extract_defuse_payload_integration() {
     // The JSON message represents what would typically be a Defuse intent payload.
 
     let bip322_payload = SignedBip322Payload {
-        address: Address {
-            address_type: AddressType::P2WPKH,
-            pubkey_hash: Some([1u8; 20]),
-            witness_program: None,
+        address: Address::P2WPKH {
+            witness_program: WitnessProgram {
+                version: 0,
+                program: vec![1u8; 20],
+            }
         },
         message: r#"{"signer_id":"alice.near","verifying_contract":"defuse.near","deadline":"Never","nonce":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","test":"value"}"#.to_string(),
         signature: Witness::new(),
@@ -72,10 +73,11 @@ fn test_bip322_integration_structure() {
     use defuse_crypto::{Payload, SignedPayload};
 
     let bip322_payload = SignedBip322Payload {
-        address: Address {
-            address_type: AddressType::P2WPKH,
-            pubkey_hash: Some([1u8; 20]),
-            witness_program: None,
+        address: Address::P2WPKH {
+            witness_program: WitnessProgram {
+                version: 0,
+                program: vec![1u8; 20],
+            },
         },
         message: "Test message for BIP-322".to_string(),
         signature: Witness::new(),
@@ -136,10 +138,11 @@ fn test_bip322_multi_payload_integration() {
     use defuse_crypto::{Payload, SignedPayload};
 
     let bip322_payload = SignedBip322Payload {
-        address: Address {
-            address_type: AddressType::P2WPKH,
-            pubkey_hash: Some([1u8; 20]),
-            witness_program: None,
+        address: Address::P2WPKH {
+            witness_program: WitnessProgram {
+                version: 0,
+                program: vec![1u8; 20],
+            },
         },
         message: "Multi-payload test".to_string(),
         signature: Witness::new(),
@@ -160,10 +163,11 @@ fn test_bip322_multi_payload_integration() {
 
     // Verify the hash matches direct BIP-322 computation
     let direct_bip322 = SignedBip322Payload {
-        address: Address {
-            address_type: AddressType::P2WPKH,
-            pubkey_hash: Some([1u8; 20]),
-            witness_program: None,
+        address: Address::P2WPKH {
+            witness_program: WitnessProgram {
+                version: 0,
+                program: vec![1u8; 20],
+            },
         },
         message: "Multi-payload test".to_string(),
         signature: Witness::new(),
@@ -189,9 +193,8 @@ fn test_bip322_multi_payload_integration() {
                 payload.message, "Multi-payload test",
                 "Should be able to access inner BIP-322 payload"
             );
-            assert_eq!(
-                payload.address.address_type,
-                AddressType::P2WPKH,
+            assert!(
+                matches!(payload.address, Address::P2WPKH { .. }),
                 "Should preserve address type"
             );
         }
@@ -200,10 +203,11 @@ fn test_bip322_multi_payload_integration() {
 
     // Test `ExtractDefusePayload` trait implementation through `MultiPayload`
     let json_payload = SignedBip322Payload {
-        address: Address {
-            address_type: AddressType::P2WPKH,
-            pubkey_hash: Some([1u8; 20]),
-            witness_program: None,
+        address: Address::P2WPKH {
+            witness_program: WitnessProgram {
+                version: 0,
+                program: vec![1u8; 20],
+            }
         },
         message: r#"{"signer_id":"bob.near","verifying_contract":"defuse.near","deadline":"Never","nonce":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","action":"transfer","amount":100}"#.to_string(),
         signature: Witness::new(),

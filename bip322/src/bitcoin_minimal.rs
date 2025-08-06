@@ -36,6 +36,10 @@ use digest::{Digest, FixedOutput, HashMarker, OutputSizeUser, Update};
 use near_sdk::{env, near};
 use serde_with::serde_as;
 
+// Type alias for cleaner function signatures
+use defuse_crypto::{Curve, Secp256k1};
+pub type Secp256k1PublicKey = <Secp256k1 as Curve>::PublicKey;
+
 /// NEAR SDK SHA-256 implementation compatible with the `digest` crate traits.
 ///
 /// This implementation uses NEAR SDK's `env::sha256_array()` function for
@@ -252,9 +256,6 @@ impl Witness {
 
 impl Address {
     /// Extracts address data from the enum variant.
-    ///
-    /// Since the new Address enum contains all necessary data within each variant,
-    /// this method never fails and simply converts to the AddressData format.
     pub fn to_address_data(&self) -> AddressData {
         match self {
             Address::P2PKH { pubkey_hash } => AddressData::P2pkh {
@@ -273,10 +274,7 @@ impl Address {
     }
 
     /// Generates the script pubkey for this address.
-    ///
-    /// Since the new Address enum contains all necessary data within each variant,
-    /// this method never fails due to missing data.
-    pub fn script_pubkey(&self) -> Result<ScriptBuf, AddressError> {
+    pub fn script_pubkey(&self) -> ScriptBuf {
         match self {
             Address::P2PKH { pubkey_hash } => {
                 // P2PKH script: OP_DUP OP_HASH160 <pubkey_hash> OP_EQUALVERIFY OP_CHECKSIG
@@ -287,7 +285,7 @@ impl Address {
                 script.extend_from_slice(pubkey_hash);
                 script.push(OP_EQUALVERIFY);
                 script.push(OP_CHECKSIG);
-                Ok(ScriptBuf::from_bytes(script))
+                ScriptBuf::from_bytes(script)
             }
             Address::P2SH { script_hash } => {
                 // P2SH script: OP_HASH160 <script_hash> OP_EQUAL
@@ -296,30 +294,92 @@ impl Address {
                 script.push(20); // Push 20 bytes
                 script.extend_from_slice(script_hash);
                 script.push(OP_EQUAL);
-                Ok(ScriptBuf::from_bytes(script))
+                ScriptBuf::from_bytes(script)
             }
             Address::P2WPKH { witness_program } => {
                 // P2WPKH script: OP_0 <20-byte-pubkey-hash>
-                if witness_program.program.len() != 20 {
-                    return Err(AddressError::InvalidWitnessProgram);
-                }
+                // Length is guaranteed to be 20 bytes by address parsing
                 let mut script = Vec::with_capacity(22); // 2 opcodes + 20 bytes program
                 script.push(OP_0);
                 script.push(20); // Push 20 bytes
                 script.extend_from_slice(&witness_program.program);
-                Ok(ScriptBuf::from_bytes(script))
+                ScriptBuf::from_bytes(script)
             }
             Address::P2WSH { witness_program } => {
                 // P2WSH script: OP_0 <32-byte-script-hash>
-                if witness_program.program.len() != 32 {
-                    return Err(AddressError::InvalidWitnessProgram);
-                }
+                // Length is guaranteed to be 32 bytes by address parsing
                 let mut script = Vec::with_capacity(34); // 2 opcodes + 32 bytes program
                 script.push(OP_0);
                 script.push(32); // Push 32 bytes
                 script.extend_from_slice(&witness_program.program);
-                Ok(ScriptBuf::from_bytes(script))
+                ScriptBuf::from_bytes(script)
             }
+        }
+    }
+
+    /// Verifies a BIP-322 signature for this address type.
+    ///
+    /// This method delegates to the appropriate verification algorithm based on
+    /// the address type, handling the specific witness stack format and signature
+    /// verification requirements for each address format.
+    ///
+    /// # Arguments
+    ///
+    /// * `message` - The message that was signed
+    /// * `signature` - The BIP-322 signature witness stack
+    ///
+    /// # Returns
+    ///
+    /// * `Some(PublicKey)` if signature verification succeeds
+    /// * `None` if signature verification fails for any reason
+    pub fn verify_bip322_signature(
+        &self,
+        message: &str,
+        signature: &Witness,
+    ) -> Option<Secp256k1PublicKey> {
+        use crate::SignedBip322Payload;
+
+        let payload = SignedBip322Payload {
+            address: self.clone(),
+            message: message.to_string(),
+            signature: signature.clone(),
+        };
+
+        match self {
+            Address::P2PKH { .. } => crate::verification::verify_p2pkh_signature(&payload),
+            Address::P2WPKH { .. } => crate::verification::verify_p2wpkh_signature(&payload),
+            Address::P2SH { .. } => crate::verification::verify_p2sh_signature(&payload),
+            Address::P2WSH { .. } => crate::verification::verify_p2wsh_signature(&payload),
+        }
+    }
+
+    /// Computes the BIP-322 message hash for this address type.
+    ///
+    /// Each address type uses different algorithms for computing the message hash:
+    /// - P2PKH/P2SH: Legacy Bitcoin sighash
+    /// - P2WPKH/P2WSH: Segwit v0 sighash (BIP-143)
+    ///
+    /// # Arguments
+    ///
+    /// * `message` - The message to compute the hash for
+    ///
+    /// # Returns
+    ///
+    /// The 32-byte message hash for this address type
+    pub fn compute_bip322_message_hash(&self, message: &str) -> near_sdk::CryptoHash {
+        use crate::SignedBip322Payload;
+
+        let payload = SignedBip322Payload {
+            address: self.clone(),
+            message: message.to_string(),
+            signature: Witness::new(), // Empty signature for hash computation
+        };
+
+        match self {
+            Address::P2PKH { .. } => crate::verification::compute_p2pkh_message_hash(&payload),
+            Address::P2WPKH { .. } => crate::verification::compute_p2wpkh_message_hash(&payload),
+            Address::P2SH { .. } => crate::verification::compute_p2sh_message_hash(&payload),
+            Address::P2WSH { .. } => crate::verification::compute_p2wsh_message_hash(&payload),
         }
     }
 }
@@ -1143,6 +1203,7 @@ mod tests {
     fn test_address_parsing(#[case] addr_str: &str) {
         let addr: Address = addr_str.parse().expect("Valid address");
         // Test that parsing succeeds and address can generate script
-        let _script = addr.script_pubkey().expect("Should generate script");
+        let _script = addr.script_pubkey();
+        //TODO: better test? more tests?
     }
 }
