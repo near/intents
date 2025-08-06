@@ -36,6 +36,8 @@ use digest::{Digest, FixedOutput, HashMarker, OutputSizeUser, Update};
 use near_sdk::{env, near};
 use serde_with::serde_as;
 
+use crate::error::AddressError;
+
 // Type alias for cleaner function signatures
 use defuse_crypto::{Curve, Secp256k1};
 pub type Secp256k1PublicKey = <Secp256k1 as Curve>::PublicKey;
@@ -114,10 +116,6 @@ pub fn hash160(data: &[u8]) -> [u8; 20] {
 }
 
 /// Bitcoin address representation optimized for BIP-322 verification.
-///
-/// This enum holds a parsed Bitcoin address with all necessary data for each address type.
-/// Each variant contains exactly the data needed for that address type, making invalid
-/// states unrepresentable at compile time.
 ///
 /// # Supported Address Types
 ///
@@ -542,76 +540,6 @@ impl std::str::FromStr for Address {
     }
 }
 
-/// Errors that can occur during Bitcoin address parsing.
-///
-/// This enum provides detailed error information for different failure modes
-/// in address parsing, allowing for specific error handling and user feedback.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AddressError {
-    /// Invalid `Base58Check` encoding (for P2PKH addresses).
-    ///
-    /// This includes:
-    /// - Invalid characters in the Base58 alphabet
-    /// - Checksum validation failures
-    /// - Invalid version bytes
-    InvalidBase58,
-
-    /// Invalid address length (typically for P2PKH addresses).
-    ///
-    /// P2PKH addresses must be exactly 25 bytes when decoded:
-    /// 1 byte version + 20 bytes `pubkey_hash` + 4 bytes checksum
-    InvalidLength,
-
-    /// Invalid witness program format or length.
-    ///
-    /// This includes:
-    /// - Witness programs with invalid lengths for their version
-    /// - Malformed witness data
-    InvalidWitnessProgram,
-
-    /// Unsupported address format.
-    ///
-    /// Currently supports only:
-    /// - P2PKH addresses starting with '1'
-    /// - P2WPKH/P2WSH addresses starting with 'bc1'
-    UnsupportedFormat,
-
-    UnsupportedWithnessVersion,
-
-    /// Invalid Bech32 encoding (for segwit addresses).
-    ///
-    /// This includes:
-    /// - Invalid characters in the Bech32 alphabet
-    /// - Checksum validation failures
-    /// - Invalid HRP (Human Readable Part)
-    /// - Malformed segwit data
-    InvalidBech32,
-
-    /// Missing required data for address type.
-    ///
-    /// This occurs when:
-    /// - P2PKH/P2SH addresses are missing `pubkey_hash`/`script_hash`
-    /// - P2WPKH/P2WSH addresses are missing `witness_program`
-    MissingRequiredData,
-}
-
-impl std::fmt::Display for AddressError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Self::InvalidBase58 => write!(f, "Invalid base58 encoding"),
-            Self::InvalidLength => write!(f, "Invalid address length"),
-            Self::InvalidWitnessProgram => write!(f, "Invalid witness program"),
-            Self::UnsupportedFormat => write!(f, "Unsupported address format"),
-            Self::UnsupportedWithnessVersion => write!(f, "Unsupported withness version"),
-            Self::InvalidBech32 => write!(f, "Invalid bech32 encoding"),
-            Self::MissingRequiredData => {
-                write!(f, "Missing required cryptographic data for address type")
-            }
-        }
-    }
-}
-
-impl std::error::Error for AddressError {}
 
 /// Full Bech32 decoder for Bitcoin segwit addresses using the bech32 crate.
 ///

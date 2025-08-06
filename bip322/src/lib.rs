@@ -1,4 +1,5 @@
 pub mod bitcoin_minimal;
+pub mod error;
 pub mod verification;
 
 #[cfg(test)]
@@ -14,6 +15,7 @@ use near_sdk::{env, near};
 use serde_with::serde_as;
 
 use crate::bitcoin_minimal::hash160;
+pub use error::AddressError;
 
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
