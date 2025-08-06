@@ -7,7 +7,7 @@ use bitcoin_minimal::WitnessProgram;
 use bitcoin_minimal::{
     Address, Amount, EcdsaSighashType, Encodable, LockTime, NearDoubleSha256, OP_0,
     OP_CHECKSIG, OP_DUP, OP_EQUALVERIFY, OP_HASH160, OP_RETURN, OutPoint, ScriptBuf, Sequence,
-    SighashCache, Transaction, TxIn, TxOut, Txid, Version, Witness,
+    Transaction, TxIn, TxOut, Txid, Version, Witness,
 };
 use defuse_crypto::{Curve, Payload, Secp256k1, SignedPayload};
 use digest::Digest;
@@ -411,10 +411,9 @@ impl SignedBip322Payload {
             .expect("to_spend should have output")
             .script_pubkey;
 
-        let mut sighash_cache = SighashCache::new(to_sign.clone());
         // Legacy sighash preimage is typically ~200-400 bytes
         let mut buf = Vec::with_capacity(400);
-        sighash_cache
+        to_sign
             .legacy_encode_signing_data_to(&mut buf, 0, script_code, EcdsaSighashType::All)
             .expect("Legacy sighash encoding should succeed");
 
@@ -436,10 +435,9 @@ impl SignedBip322Payload {
             .expect("to_spend should have output")
             .script_pubkey;
 
-        let sighash_cache = SighashCache::new(to_sign.clone());
         // BIP-143 sighash preimage has fixed structure: ~200 bytes
         let mut buf = Vec::with_capacity(200);
-        sighash_cache
+        to_sign
             .segwit_v0_encode_signing_data_to(
                 &mut buf,
                 0,

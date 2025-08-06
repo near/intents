@@ -852,16 +852,7 @@ pub const OP_EQUALVERIFY: u8 = 0x88;
 pub const OP_CHECKSIG: u8 = 0xac;
 pub const OP_RETURN: u8 = 0x6a;
 
-// Signature hash cache (simplified)
-pub struct SighashCache {
-    tx: Transaction,
-}
-
-impl SighashCache {
-    pub const fn new(tx: Transaction) -> Self {
-        Self { tx }
-    }
-
+impl Transaction {
     /// Encodes the BIP-143 sighash preimage for segwit v0 signature verification.
     ///
     /// This function implements the complete BIP-143 sighash algorithm for segwit v0
@@ -890,7 +881,7 @@ impl SighashCache {
         sighash_type: EcdsaSighashType,
     ) -> Result<(), std::io::Error> {
         // 1. Transaction version (4 bytes, little-endian)
-        writer.write_all(&self.tx.version.0.to_le_bytes())?;
+        writer.write_all(&self.version.0.to_le_bytes())?;
 
         // 2. hashPrevouts (32 bytes) - double SHA256 of all outpoints
         let hash_prevouts = self.compute_hash_prevouts();
@@ -901,13 +892,13 @@ impl SighashCache {
         writer.write_all(&hash_sequence)?;
 
         // 4. Outpoint (36 bytes) - the specific input's outpoint being signed
-        if input_index >= self.tx.input.len() {
+        if input_index >= self.input.len() {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
                 "Input index out of bounds",
             ));
         }
-        let input = &self.tx.input[input_index];
+        let input = &self.input[input_index];
         writer.write_all(&input.previous_output.txid.0)?;
         writer.write_all(&input.previous_output.vout.to_le_bytes())?;
 
@@ -926,7 +917,7 @@ impl SighashCache {
         writer.write_all(&hash_outputs)?;
 
         // 9. locktime (4 bytes, little-endian)
-        writer.write_all(&self.tx.lock_time.0.to_le_bytes())?;
+        writer.write_all(&self.lock_time.0.to_le_bytes())?;
 
         // 10. sighash_type (4 bytes, little-endian)
         writer.write_all(&u32::from(u8::from(sighash_type)).to_le_bytes())?;
@@ -939,8 +930,8 @@ impl SighashCache {
     /// `hashPrevouts` = `double_sha256(all outpoints concatenated)`
     /// Each outpoint is 36 bytes: txid (32 bytes) + vout (4 bytes little-endian)
     fn compute_hash_prevouts(&self) -> [u8; 32] {
-        let mut outpoints_data = Vec::with_capacity(self.tx.input.len() * 36); // 32 bytes txid + 4 bytes vout per input
-        for input in &self.tx.input {
+        let mut outpoints_data = Vec::with_capacity(self.input.len() * 36); // 32 bytes txid + 4 bytes vout per input
+        for input in &self.input {
             outpoints_data.extend_from_slice(&input.previous_output.txid.0);
             outpoints_data.extend_from_slice(&input.previous_output.vout.to_le_bytes());
         }
@@ -952,8 +943,8 @@ impl SighashCache {
     /// `hashSequence` = `double_sha256(all sequence numbers concatenated)`
     /// Each sequence is 4 bytes little-endian
     fn compute_hash_sequence(&self) -> [u8; 32] {
-        let mut sequence_data = Vec::with_capacity(self.tx.input.len() * 4); // 4 bytes per input
-        for input in &self.tx.input {
+        let mut sequence_data = Vec::with_capacity(self.input.len() * 4); // 4 bytes per input
+        for input in &self.input {
             sequence_data.extend_from_slice(&input.sequence.0.to_le_bytes());
         }
         NearDoubleSha256::digest(&sequence_data).into()
@@ -965,8 +956,8 @@ impl SighashCache {
     /// Each output is: value (8 bytes little-endian) + scriptPubKey (variable length with compact size prefix)
     fn compute_hash_outputs(&self) -> Result<[u8; 32], std::io::Error> {
         // Estimate: (8 bytes value + 1-9 bytes compact size + ~25 bytes script) * number of outputs
-        let mut outputs_data = Vec::with_capacity(self.tx.output.len() * 42);
-        for output in &self.tx.output {
+        let mut outputs_data = Vec::with_capacity(self.output.len() * 42);
+        for output in &self.output {
             outputs_data.extend_from_slice(&output.value.0.to_le_bytes());
             // Write scriptPubKey with the compact size prefix
             let script_len = try_into_io::<usize, u64>(output.script_pubkey.inner.len())?;
@@ -996,21 +987,21 @@ impl SighashCache {
     ///
     /// For `SIGHASH_ALL` (the only type we support), all inputs and outputs are included.
     pub fn legacy_encode_signing_data_to<W: std::io::Write>(
-        &mut self,
+        &self,
         writer: &mut W,
         input_index: usize,
         script_code: &ScriptBuf,
         sighash_type: EcdsaSighashType,
     ) -> Result<(), std::io::Error> {
         // 1. Transaction version (4 bytes, little-endian)
-        writer.write_all(&self.tx.version.0.to_le_bytes())?;
+        writer.write_all(&self.version.0.to_le_bytes())?;
 
         // 2. Number of inputs (compact size)
-        let input_count = try_into_io::<usize, u64>(self.tx.input.len())?;
+        let input_count = try_into_io::<usize, u64>(self.input.len())?;
         write_compact_size(writer, input_count)?;
 
         // 3. Inputs with script modifications
-        for (i, input) in self.tx.input.iter().enumerate() {
+        for (i, input) in self.input.iter().enumerate() {
             // Write outpoint (txid + vout)
             writer.write_all(&input.previous_output.txid.0)?;
             writer.write_all(&input.previous_output.vout.to_le_bytes())?;
@@ -1032,11 +1023,11 @@ impl SighashCache {
         }
 
         // 4. Number of outputs (compact size)
-        let output_count = try_into_io::<usize, u64>(self.tx.output.len())?;
+        let output_count = try_into_io::<usize, u64>(self.output.len())?;
         write_compact_size(writer, output_count)?;
 
         // 5. All outputs (for SIGHASH_ALL)
-        for output in &self.tx.output {
+        for output in &self.output {
             writer.write_all(&output.value.0.to_le_bytes())?;
             let script_len = try_into_io::<usize, u64>(output.script_pubkey.inner.len())?;
             write_compact_size(writer, script_len)?;
@@ -1044,7 +1035,7 @@ impl SighashCache {
         }
 
         // 6. Locktime (4 bytes, little-endian)
-        writer.write_all(&self.tx.lock_time.0.to_le_bytes())?;
+        writer.write_all(&self.lock_time.0.to_le_bytes())?;
 
         // 7. Sighash type (4 bytes, little-endian)
         let sighash_value = match sighash_type {
