@@ -285,14 +285,6 @@ pub enum Bip322Witness {
 }
 
 impl Bip322Witness {
-    /// Create an empty P2PKH witness (for testing/placeholder)
-    pub fn empty_p2pkh() -> Self {
-        Self::P2PKH {
-            signature: vec![0u8; 65],
-            pubkey: Vec::new(),
-        }
-    }
-
     /// Get signature bytes for any witness type
     pub fn signature(&self) -> &[u8] {
         match self {
@@ -321,17 +313,6 @@ impl Bip322Witness {
         }
     }
 
-    /// Check if witness type matches address type
-    pub fn matches_address(&self, address: &Address) -> bool {
-        match (self, address) {
-            (Bip322Witness::P2PKH { .. }, Address::P2PKH { .. }) => true,
-            (Bip322Witness::P2WPKH { .. }, Address::P2WPKH { .. }) => true,
-            (Bip322Witness::P2SH { .. }, Address::P2SH { .. }) => true,
-            (Bip322Witness::P2WSH { .. }, Address::P2WSH { .. }) => true,
-            _ => false,
-        }
-    }
-
     /// Validates that signature is exactly 65 bytes
     pub fn validate_signature_length(&self) -> bool {
         self.signature().len() == 65
@@ -342,6 +323,42 @@ impl Bip322Witness {
 pub type Witness = TransactionWitness;
 
 impl Address {
+    /// Create a BIP-322 witness for this address type with the given signature and public key.
+    /// This ensures the witness variant always matches the address type at compile time.
+    pub fn create_bip322_witness(&self, signature: Vec<u8>, pubkey: Vec<u8>) -> Bip322Witness {
+        match self {
+            Address::P2PKH { .. } => Bip322Witness::P2PKH { signature, pubkey },
+            Address::P2WPKH { .. } => Bip322Witness::P2WPKH { signature, pubkey },
+            Address::P2SH { .. } => Bip322Witness::P2SH { signature, pubkey },
+            Address::P2WSH { .. } => {
+                // P2WSH requires a witness script - provide empty one for now
+                Bip322Witness::P2WSH {
+                    signature,
+                    pubkey,
+                    witness_script: Vec::new(),
+                }
+            }
+        }
+    }
+
+    /// Create a BIP-322 witness for P2WSH addresses with witness script.
+    /// Only available for P2WSH addresses.
+    pub fn create_p2wsh_witness(&self, signature: Vec<u8>, pubkey: Vec<u8>, witness_script: Vec<u8>) -> Option<Bip322Witness> {
+        match self {
+            Address::P2WSH { .. } => Some(Bip322Witness::P2WSH {
+                signature,
+                pubkey,
+                witness_script,
+            }),
+            _ => None, // Not a P2WSH address
+        }
+    }
+
+    /// Create an empty BIP-322 witness for this address type (for testing/placeholders).
+    pub fn create_empty_witness(&self) -> Bip322Witness {
+        self.create_bip322_witness(vec![0u8; 65], Vec::new())
+    }
+
     /// Extracts address data from the enum variant.
     pub fn to_address_data(&self) -> AddressData {
         match self {
@@ -459,7 +476,7 @@ impl Address {
         let payload = SignedBip322Payload {
             address: self.clone(),
             message: message.to_string(),
-            signature: Bip322Witness::empty_p2pkh(), // Empty signature for hash computation
+            signature: self.create_empty_witness(), // Empty signature for hash computation
         };
 
         match self {

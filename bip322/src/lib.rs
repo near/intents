@@ -479,82 +479,85 @@ impl SignedBip322Payload {
 
     /// Verify P2WPKH signature according to BIP-322 standard
     fn verify_p2wpkh_signature(&self) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        // For P2WPKH, witness should contain [signature, pubkey]
-        if self.signature.len() < 2 {
-            return None;
+        // For P2WPKH, extract signature and pubkey from witness
+        match &self.signature {
+            Bip322Witness::P2WPKH { .. } => {
+                let signature_bytes = self.signature.signature();
+                let pubkey_bytes = self.signature.pubkey();
+
+                // Create BIP-322 transactions
+                let to_spend = self.create_to_spend();
+                let to_sign = Self::create_to_sign(&to_spend);
+
+                // Compute sighash for P2WPKH (segwit v0 sighash algorithm)
+                let sighash = Self::compute_message_hash(&to_spend, &to_sign, &self.address);
+
+                // Try to recover public key
+                Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
+            }
+            _ => None, // Wrong witness type for P2WPKH
         }
-
-        let signature_bytes = self.signature.nth(0)?;
-        let pubkey_bytes = self.signature.nth(1)?;
-
-        // Create BIP-322 transactions
-        let to_spend = self.create_to_spend();
-        let to_sign = Self::create_to_sign(&to_spend);
-
-        // Compute sighash for P2WPKH (segwit v0 sighash algorithm)
-        let sighash = Self::compute_message_hash(&to_spend, &to_sign, &self.address);
-
-        // Try to recover public key
-        Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
     }
 
     /// Verify P2SH signature according to BIP-322 standard
     fn verify_p2sh_signature(&self) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        // For P2SH, witness should contain [signature, pubkey, redeem_script]
-        if self.signature.len() < 3 {
-            return None;
+        // For P2SH, extract signature and pubkey from witness
+        match &self.signature {
+            Bip322Witness::P2SH { .. } => {
+                let signature_bytes = self.signature.signature();
+                let pubkey_bytes = self.signature.pubkey();
+
+                // Create BIP-322 transactions
+                let to_spend = self.create_to_spend();
+                let to_sign = Self::create_to_sign(&to_spend);
+
+                // Compute sighash for P2SH (legacy sighash algorithm)
+                let sighash = Self::compute_message_hash(&to_spend, &to_sign, &self.address);
+
+                // Try to recover public key
+                Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
+            }
+            _ => None, // Wrong witness type for P2SH
         }
-
-        let signature_bytes = self.signature.nth(0)?;
-        let pubkey_bytes = self.signature.nth(1)?;
-
-        // Create BIP-322 transactions
-        let to_spend = self.create_to_spend();
-        let to_sign = Self::create_to_sign(&to_spend);
-
-        // Compute sighash for P2SH (legacy sighash algorithm)
-        let sighash = Self::compute_message_hash(&to_spend, &to_sign, &self.address);
-
-        // Try to recover public key
-        Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
     }
 
     /// Verify P2WSH signature according to BIP-322 standard
     fn verify_p2wsh_signature(&self) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        // For P2WSH, the witness should contain [signature, pubkey, witness_script]
-        if self.signature.len() < 3 {
-            return None;
-        }
+        // For P2WSH, extract signature, pubkey, and witness script
+        match &self.signature {
+            Bip322Witness::P2WSH { .. } => {
+                let signature_bytes = self.signature.signature();
+                let pubkey_bytes = self.signature.pubkey();
+                let witness_script = self.signature.witness_script().unwrap_or(&[]);
 
-        let signature_bytes = self.signature.nth(0)?;
-        let pubkey_bytes = self.signature.nth(1)?;
-        let witness_script = self.signature.nth(2)?;
+                // Validate witness script hash matches the address
+                let computed_script_hash = env::sha256_array(witness_script);
+                if let Address::P2WSH { witness_program } = &self.address {
+                    if computed_script_hash != witness_program.program.as_slice() {
+                        return None;
+                    }
+                } else {
+                    // This should never happen since we're in P2WSH verification
+                    return None;
+                }
 
-        // Validate witness script hash matches the address
-        let computed_script_hash = env::sha256_array(witness_script);
-        if let Address::P2WSH { witness_program } = &self.address {
-            if computed_script_hash != witness_program.program.as_slice() {
-                return None;
+                // Execute the witness script
+                if !Self::execute_witness_script(witness_script, pubkey_bytes) {
+                    return None;
+                }
+
+                // Create BIP-322 transactions
+                let to_spend = self.create_to_spend();
+                let to_sign = Self::create_to_sign(&to_spend);
+
+                // Compute sighash for P2WSH (segwit v0 sighash algorithm)
+                let sighash = Self::compute_message_hash(&to_spend, &to_sign, &self.address);
+
+                // Try to recover public key
+                Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
             }
-        } else {
-            // This should never happen since we're in P2WSH verification
-            return None;
+            _ => None, // Wrong witness type for P2WSH
         }
-
-        // Execute the witness script
-        if !Self::execute_witness_script(witness_script, pubkey_bytes) {
-            return None;
-        }
-
-        // Create BIP-322 transactions
-        let to_spend = self.create_to_spend();
-        let to_sign = Self::create_to_sign(&to_spend);
-
-        // Compute sighash for P2WSH (segwit v0 sighash algorithm)
-        let sighash = Self::compute_message_hash(&to_spend, &to_sign, &self.address);
-
-        // Try to recover public key
-        Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
     }
 
     /// Try to recover public key from signature
@@ -775,26 +778,8 @@ mod tests {
                 vec![0x02; 33]
             };
 
-            // Build witness based on address type
+            // Build witness using address-specific creation method
             match &parsed_address {
-                Address::P2PKH { .. } => {
-                    Bip322Witness::P2PKH {
-                        signature: signature_bytes,
-                        pubkey: pubkey_bytes,
-                    }
-                }
-                Address::P2WPKH { .. } => {
-                    Bip322Witness::P2WPKH {
-                        signature: signature_bytes,
-                        pubkey: pubkey_bytes,
-                    }
-                }
-                Address::P2SH { .. } => {
-                    Bip322Witness::P2SH {
-                        signature: signature_bytes,
-                        pubkey: pubkey_bytes,
-                    }
-                }
                 Address::P2WSH { witness_program } => {
                     // P2WSH witness: [signature, pubkey, witness_script]
                     // Build a P2PKH-style witness script
@@ -806,11 +791,12 @@ mod tests {
                     script.push(OP_EQUALVERIFY);
                     script.push(OP_CHECKSIG);
 
-                    Bip322Witness::P2WSH {
-                        signature: signature_bytes,
-                        pubkey: pubkey_bytes,
-                        witness_script: script,
-                    }
+                    parsed_address.create_p2wsh_witness(signature_bytes, pubkey_bytes, script)
+                        .expect("P2WSH address should create P2WSH witness")
+                }
+                _ => {
+                    // For P2PKH, P2WPKH, P2SH - use the general creation method
+                    parsed_address.create_bip322_witness(signature_bytes, pubkey_bytes)
                 }
             }
         }
