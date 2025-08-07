@@ -819,7 +819,7 @@ pub struct Transaction {
 /// Bitcoin amounts are represented as 64-bit unsigned integers in satoshis,
 /// where 1 BTC = 100,000,000 satoshis. This provides sufficient precision
 /// for all Bitcoin monetary operations.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Amount(u64);
 
 impl Amount {

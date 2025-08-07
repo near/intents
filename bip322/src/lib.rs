@@ -1,6 +1,8 @@
 pub mod bitcoin_minimal;
 pub mod error;
 pub mod hashing;
+#[cfg(test)]
+pub mod tests;
 pub mod transaction;
 pub mod verification;
 
