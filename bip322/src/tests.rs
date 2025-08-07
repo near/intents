@@ -8,7 +8,7 @@
 //! - Signature verification for all address types
 //! - Error handling and edge cases
 
-use crate::bitcoin_minimal::{Address, Bip322Witness};
+use crate::bitcoin_minimal::Address;
 use crate::hashing::Bip322MessageHasher;
 use crate::transaction::Bip322TransactionBuilder;
 use crate::{SignedBip322Payload, AddressError};
@@ -256,71 +256,6 @@ mod transaction_building_tests {
     }
 }
 
-#[cfg(test)]
-mod witness_tests {
-    use super::*;
-
-    #[test]
-    fn test_bip322_witness_creation() {
-        setup_test_env();
-        
-        // Test P2PKH witness creation
-        let signature = vec![0u8; 65];
-        let pubkey = vec![1u8; 33];
-        let witness = Bip322Witness::P2PKH { signature: signature.clone(), pubkey: pubkey.clone() };
-        
-        assert_eq!(witness.signature(), &signature, "Should return correct signature");
-        assert_eq!(witness.pubkey(), &pubkey, "Should return correct pubkey");
-        assert!(witness.witness_script().is_none(), "P2PKH should not have witness script");
-    }
-
-    #[test]
-    fn test_witness_from_stack() {
-        setup_test_env();
-        
-        // Test 2-element stack (P2PKH/P2WPKH pattern)
-        let stack = vec![vec![0u8; 65], vec![1u8; 33]];
-        let witness = Bip322Witness::from_stack(stack.clone());
-        
-        match witness {
-            Bip322Witness::P2PKH { signature, pubkey } => {
-                assert_eq!(signature, stack[0], "Should use first element as signature");
-                assert_eq!(pubkey, stack[1], "Should use second element as pubkey");
-            }
-            _ => panic!("Should create P2PKH witness for 2-element stack"),
-        }
-        
-        // Test 3-element stack (P2WSH pattern)
-        let stack_3 = vec![vec![0u8; 65], vec![1u8; 33], vec![2u8; 25]];
-        let witness_3 = Bip322Witness::from_stack(stack_3.clone());
-        
-        match witness_3 {
-            Bip322Witness::P2WSH { signature, pubkey, witness_script } => {
-                assert_eq!(signature, stack_3[0], "Should use first element as signature");
-                assert_eq!(pubkey, stack_3[1], "Should use second element as pubkey");
-                assert_eq!(witness_script, stack_3[2], "Should use third element as witness script");
-            }
-            _ => panic!("Should create P2WSH witness for 3-element stack"),
-        }
-    }
-
-    #[test]
-    fn test_witness_signature_length_validation() {
-        setup_test_env();
-        
-        let valid_witness = Bip322Witness::P2PKH { 
-            signature: vec![0u8; 65], 
-            pubkey: vec![1u8; 33] 
-        };
-        assert!(valid_witness.validate_signature_length(), "65-byte signature should be valid");
-        
-        let invalid_witness = Bip322Witness::P2PKH { 
-            signature: vec![0u8; 64], // Too short
-            pubkey: vec![1u8; 33] 
-        };
-        assert!(!invalid_witness.validate_signature_length(), "64-byte signature should be invalid");
-    }
-}
 
 #[cfg(test)]
 mod signature_verification_tests {

@@ -45,12 +45,7 @@ pub struct SignedBip322Payload {
 impl Payload for SignedBip322Payload {
     #[inline]
     fn hash(&self) -> near_sdk::CryptoHash {
-        match &self.address {
-            Address::P2PKH { .. } => self.hash_p2pkh_message(),
-            Address::P2WPKH { .. } => self.hash_p2wpkh_message(),
-            Address::P2SH { .. } => self.hash_p2sh_message(),
-            Address::P2WSH { .. } => self.hash_p2wsh_message(),
-        }
+        self.compute_bip322_hash()
     }
 }
 
@@ -68,120 +63,32 @@ impl SignedPayload for SignedBip322Payload {
 }
 
 impl SignedBip322Payload {
-    /// Computes the BIP-322 signature hash for P2PKH addresses.
+    /// Computes the BIP-322 signature hash for any address type.
     ///
-    /// P2PKH (Pay-to-Public-Key-Hash) is the original Bitcoin address format.
-    /// This method implements the BIP-322 process specifically for P2PKH addresses:
+    /// This method implements the universal BIP-322 process:
     ///
     /// 1. Creates a "`to_spend`" transaction with the message hash in input script
-    /// 2. Creates a "`to_sign`" transaction that spends from "`to_spend`" transaction
-    /// 3. Computes the signature hash using the standard Bitcoin sighash algorithm
+    /// 2. Creates a "`to_sign`" transaction that spends from "`to_spend`" transaction  
+    /// 3. Computes the signature hash using the appropriate algorithm for the address type
     ///
-    /// The pubkey hash is obtained from the already-validated address stored in `self.address`.
+    /// The `Bip322MessageHasher::compute_message_hash` automatically selects the correct
+    /// hashing algorithm based on the address type:
+    /// - P2PKH/P2SH: Legacy Bitcoin sighash algorithm (pre-segwit)
+    /// - P2WPKH/P2WSH: Segwit v0 sighash algorithm (BIP-143)
     ///
     /// # Returns
     ///
-    /// The 32-byte signature hash that should be signed according to BIP-322 for P2PKH.
-    fn hash_p2pkh_message(&self) -> near_sdk::CryptoHash {
+    /// The 32-byte signature hash that should be signed according to BIP-322.
+    fn compute_bip322_hash(&self) -> near_sdk::CryptoHash {
         // Step 1: Create the "to_spend" transaction
-        // This transaction contains the BIP-322 message hash in its input script
+        // Contains the BIP-322 message hash in its input script
         let to_spend = self.create_to_spend();
 
         // Step 2: Create the "to_sign" transaction
-        // This transaction spends from the "to_spend" transaction
+        // References the to_spend output
         let to_sign = Bip322TransactionBuilder::create_to_sign(&to_spend);
 
-        // Step 3: Compute the final signature hash using legacy algorithm
-        // P2PKH uses the original Bitcoin sighash algorithm (pre-segwit)
-        Bip322MessageHasher::compute_message_hash(
-            &to_spend,
-            &to_sign,
-            &self.address,
-        )
-    }
-
-    /// Computes the BIP-322 signature hash for P2WPKH addresses.
-    ///
-    /// P2WPKH (Pay-to-Witness-Public-Key-Hash) is the segwit version of P2PKH.
-    /// The process is similar to P2PKH but uses segwit v0 sighash computation:
-    ///
-    /// 1. Creates the same "`to_spend`" and "`to_sign`" transaction structure
-    /// 2. Uses segwit v0 sighash algorithm instead of legacy sighash
-    /// 3. The witness program contains the pubkey hash (20 bytes for v0)
-    ///
-    /// The witness program is obtained from the already-validated address stored in `self.address`.
-    ///
-    /// # Returns
-    ///
-    /// The 32-byte signature hash that should be signed according to BIP-322 for P2WPKH.
-    fn hash_p2wpkh_message(&self) -> near_sdk::CryptoHash {
-        // Step 1: Create the "to_spend" transaction (same as P2PKH)
-        // The transaction structure is identical regardless of address type
-        let to_spend = self.create_to_spend();
-
-        // Step 2: Create the "to_sign" transaction (same as P2PKH)
-        // The spending transaction is also identical in structure
-        let to_sign = Bip322TransactionBuilder::create_to_sign(&to_spend);
-
-        // Step 3: Compute signature hash using segwit v0 algorithm
-        // P2WPKH uses the BIP-143 segwit sighash algorithm (not legacy)
-        Bip322MessageHasher::compute_message_hash(
-            &to_spend,
-            &to_sign,
-            &self.address,
-        )
-    }
-
-    /// Computes the BIP-322 signature hash for P2SH addresses.
-    ///
-    /// P2SH (Pay-to-Script-Hash) addresses contain a hash of a redeem script.
-    /// The BIP-322 process for P2SH is similar to P2PKH but uses legacy sighash algorithm
-    /// since P2SH predates segwit.
-    ///
-    /// The script hash is obtained from the already-validated address stored in `self.address`.
-    ///
-    /// # Returns
-    ///
-    /// The 32-byte signature hash that should be signed according to BIP-322 for P2SH.
-    fn hash_p2sh_message(&self) -> near_sdk::CryptoHash {
-        // Step 1: Create the "to_spend" transaction
-        // For P2SH, this contains the P2SH script_pubkey
-        let to_spend = self.create_to_spend();
-
-        // Step 2: Create the "to_sign" transaction
-        // For P2SH, this will reference the to_spend output
-        let to_sign = Bip322TransactionBuilder::create_to_sign(&to_spend);
-
-        // Step 3: Compute signature hash using legacy algorithm
-        // P2SH uses the same legacy sighash as P2PKH (not segwit)
-        Bip322MessageHasher::compute_message_hash(
-            &to_spend,
-            &to_sign,
-            &self.address,
-        )
-    }
-
-    /// Computes the BIP-322 signature hash for P2WSH addresses.
-    ///
-    /// P2WSH (Pay-to-Witness-Script-Hash) addresses contain a SHA256 hash of a witness script.
-    /// The BIP-322 process for P2WSH uses the segwit v0 sighash algorithm.
-    ///
-    /// The witness program is obtained from the already-validated address stored in `self.address`.
-    ///
-    /// # Returns
-    ///
-    /// The 32-byte signature hash that should be signed according to BIP-322 for P2WSH.
-    fn hash_p2wsh_message(&self) -> near_sdk::CryptoHash {
-        // Step 1: Create the "to_spend" transaction
-        // For P2WSH, this contains the P2WSH script_pubkey (OP_0 + 32-byte script hash)
-        let to_spend = self.create_to_spend();
-
-        // Step 2: Create the "to_sign" transaction
-        // For P2WSH, this will reference the to_spend output
-        let to_sign = Bip322TransactionBuilder::create_to_sign(&to_spend);
-
-        // Step 3: Compute signature hash using segwit v0 algorithm
-        // P2WSH uses the same segwit sighash as P2WPKH (BIP-143)
+        // Step 3: Compute signature hash using appropriate algorithm for address type
         Bip322MessageHasher::compute_message_hash(
             &to_spend,
             &to_sign,
