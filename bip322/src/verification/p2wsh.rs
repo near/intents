@@ -44,6 +44,11 @@ pub fn verify_p2wsh_signature(
                 return None;
             }
 
+            // Execute the witness script
+            if !SignedBip322Payload::execute_witness_script(witness_script, pubkey_bytes) {
+                return None;
+            }
+
             // Create BIP-322 transactions
             let to_spend = payload.create_to_spend();
             let to_sign = SignedBip322Payload::create_to_sign(&to_spend);

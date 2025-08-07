@@ -216,10 +216,7 @@ pub struct WitnessProgram {
     pub program: Vec<u8>,
 }
 
-/// Bitcoin transaction witness stack for storing signature and script data.
-///
-/// This is used for the generic Bitcoin transaction witness stack format
-/// where witness data is stored as a vector of byte vectors.
+/// Simple witness stack for Bitcoin transactions (internal use only)
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct TransactionWitness {
@@ -231,19 +228,6 @@ impl TransactionWitness {
         Self { stack: Vec::new() }
     }
 
-    pub fn len(&self) -> usize {
-        self.stack.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.stack.is_empty()
-    }
-
-    pub fn nth(&self, index: usize) -> Option<&[u8]> {
-        self.stack.get(index).map(Vec::as_slice)
-    }
-
-    /// Create a witness with the given stack elements (for testing)
     pub const fn from_stack(stack: Vec<Vec<u8>>) -> Self {
         Self { stack }
     }
@@ -270,7 +254,6 @@ pub enum Bip322Witness {
     },
 
     /// P2SH witness: signature (should be 65 bytes) + public key
-    /// Note: redeem_script removed as it's currently unused in verification
     P2SH {
         signature: Vec<u8>,
         pubkey: Vec<u8>,
@@ -317,9 +300,41 @@ impl Bip322Witness {
     pub fn validate_signature_length(&self) -> bool {
         self.signature().len() == 65
     }
+
+    /// Create empty P2PKH witness (for testing/placeholders)
+    pub fn empty_p2pkh() -> Self {
+        Bip322Witness::P2PKH {
+            signature: Vec::new(),
+            pubkey: Vec::new(),
+        }
+    }
+
+    /// Create witness from raw stack (for testing compatibility)
+    pub fn from_stack(stack: Vec<Vec<u8>>) -> Self {
+        match stack.len() {
+            2 => Bip322Witness::P2PKH {
+                signature: stack.get(0).cloned().unwrap_or_default(),
+                pubkey: stack.get(1).cloned().unwrap_or_default(),
+            },
+            3 => Bip322Witness::P2WSH {
+                signature: stack.get(0).cloned().unwrap_or_default(),
+                pubkey: stack.get(1).cloned().unwrap_or_default(),
+                witness_script: stack.get(2).cloned().unwrap_or_default(),
+            },
+            _ => Bip322Witness::P2PKH {
+                signature: Vec::new(),
+                pubkey: Vec::new(),
+            },
+        }
+    }
+
+    /// Create empty witness (for testing/placeholders)
+    pub fn new() -> Self {
+        Self::empty_p2pkh()
+    }
 }
 
-// Type alias for backward compatibility in transactions
+// Type alias for Bitcoin transaction witness (internal use only)
 pub type Witness = TransactionWitness;
 
 impl Address {
@@ -605,7 +620,7 @@ impl std::str::FromStr for Address {
 
             // We only support segwit version 0
             if witness_version != 0 {
-                return Err(AddressError::UnsupportedWithnessVersion);
+                return Err(AddressError::UnsupportedWitnessVersion);
             }
 
             // Distinguish between P2WPKH (20 bytes) and P2WSH (32 bytes)
@@ -1229,6 +1244,5 @@ mod tests {
         let addr: Address = addr_str.parse().expect("Valid address");
         // Test that parsing succeeds and address can generate script
         let _script = addr.script_pubkey();
-        //TODO: better test? more tests?
     }
 }

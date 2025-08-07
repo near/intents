@@ -59,10 +59,10 @@ impl SignedPayload for SignedBip322Payload {
 
     fn verify(&self) -> Option<Self::PublicKey> {
         match &self.address {
-            Address::P2PKH { .. } => self.verify_p2pkh_signature(),
-            Address::P2WPKH { .. } => self.verify_p2wpkh_signature(),
-            Address::P2SH { .. } => self.verify_p2sh_signature(),
-            Address::P2WSH { .. } => self.verify_p2wsh_signature(),
+            Address::P2PKH { .. } => verification::p2pkh::verify_p2pkh_signature(self),
+            Address::P2WPKH { .. } => verification::p2wpkh::verify_p2wpkh_signature(self),
+            Address::P2SH { .. } => verification::p2sh::verify_p2sh_signature(self),
+            Address::P2WSH { .. } => verification::p2wsh::verify_p2wsh_signature(self),
         }
     }
 }
@@ -454,114 +454,9 @@ impl SignedBip322Payload {
         NearDoubleSha256::digest(&buf).into()
     }
 
-    /// Verify P2PKH signature according to BIP-322 standard
-    fn verify_p2pkh_signature(&self) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        // For P2PKH, extract signature and pubkey from witness
-        match &self.signature {
-            Bip322Witness::P2PKH { .. } => {
-                let signature_bytes = self.signature.signature();
-                let pubkey_bytes = self.signature.pubkey();
-
-                // Create BIP-322 transactions
-                let to_spend = self.create_to_spend();
-                let to_sign = Self::create_to_sign(&to_spend);
-
-                // Compute sighash for P2PKH (legacy sighash algorithm)
-                let sighash = Self::compute_message_hash(&to_spend, &to_sign, &self.address);
-
-                // Try to recover public key
-                // Parse signature and try different recovery IDs
-                Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
-            }
-            _ => None, // Wrong witness type for P2PKH
-        }
-    }
-
-    /// Verify P2WPKH signature according to BIP-322 standard
-    fn verify_p2wpkh_signature(&self) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        // For P2WPKH, extract signature and pubkey from witness
-        match &self.signature {
-            Bip322Witness::P2WPKH { .. } => {
-                let signature_bytes = self.signature.signature();
-                let pubkey_bytes = self.signature.pubkey();
-
-                // Create BIP-322 transactions
-                let to_spend = self.create_to_spend();
-                let to_sign = Self::create_to_sign(&to_spend);
-
-                // Compute sighash for P2WPKH (segwit v0 sighash algorithm)
-                let sighash = Self::compute_message_hash(&to_spend, &to_sign, &self.address);
-
-                // Try to recover public key
-                Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
-            }
-            _ => None, // Wrong witness type for P2WPKH
-        }
-    }
-
-    /// Verify P2SH signature according to BIP-322 standard
-    fn verify_p2sh_signature(&self) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        // For P2SH, extract signature and pubkey from witness
-        match &self.signature {
-            Bip322Witness::P2SH { .. } => {
-                let signature_bytes = self.signature.signature();
-                let pubkey_bytes = self.signature.pubkey();
-
-                // Create BIP-322 transactions
-                let to_spend = self.create_to_spend();
-                let to_sign = Self::create_to_sign(&to_spend);
-
-                // Compute sighash for P2SH (legacy sighash algorithm)
-                let sighash = Self::compute_message_hash(&to_spend, &to_sign, &self.address);
-
-                // Try to recover public key
-                Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
-            }
-            _ => None, // Wrong witness type for P2SH
-        }
-    }
-
-    /// Verify P2WSH signature according to BIP-322 standard
-    fn verify_p2wsh_signature(&self) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        // For P2WSH, extract signature, pubkey, and witness script
-        match &self.signature {
-            Bip322Witness::P2WSH { .. } => {
-                let signature_bytes = self.signature.signature();
-                let pubkey_bytes = self.signature.pubkey();
-                let witness_script = self.signature.witness_script().unwrap_or(&[]);
-
-                // Validate witness script hash matches the address
-                let computed_script_hash = env::sha256_array(witness_script);
-                if let Address::P2WSH { witness_program } = &self.address {
-                    if computed_script_hash != witness_program.program.as_slice() {
-                        return None;
-                    }
-                } else {
-                    // This should never happen since we're in P2WSH verification
-                    return None;
-                }
-
-                // Execute the witness script
-                if !Self::execute_witness_script(witness_script, pubkey_bytes) {
-                    return None;
-                }
-
-                // Create BIP-322 transactions
-                let to_spend = self.create_to_spend();
-                let to_sign = Self::create_to_sign(&to_spend);
-
-                // Compute sighash for P2WSH (segwit v0 sighash algorithm)
-                let sighash = Self::compute_message_hash(&to_spend, &to_sign, &self.address);
-
-                // Try to recover public key
-                Self::try_recover_pubkey(&sighash, signature_bytes, pubkey_bytes)
-            }
-            _ => None, // Wrong witness type for P2WSH
-        }
-    }
 
     /// Try to recover public key from signature
-    fn try_recover_pubkey(
+    pub fn try_recover_pubkey(
         message_hash: &[u8; 32],
         signature_bytes: &[u8],
         expected_pubkey: &[u8],
@@ -610,7 +505,7 @@ impl SignedBip322Payload {
     /// ```text
     /// OP_DUP OP_HASH160 <20-byte-pubkey-hash> OP_EQUALVERIFY OP_CHECKSIG
     /// ```
-    fn execute_witness_script(witness_script: &[u8], pubkey_bytes: &[u8]) -> bool {
+    pub fn execute_witness_script(witness_script: &[u8], pubkey_bytes: &[u8]) -> bool {
         // For P2WSH, witness scripts can be more varied, but for BIP-322
         // we typically see P2PKH-style patterns similar to redeem scripts
 
@@ -736,7 +631,7 @@ mod tests {
             signature_base64: &str,
             address: &str,
             message: &str,
-        ) -> Witness {
+        ) -> Bip322Witness {
             use base64::{Engine as _, engine::general_purpose::STANDARD};
 
             // Decode base64 signature
@@ -1940,7 +1835,7 @@ mod tests {
         setup_test_env();
 
         // Test insufficient witness elements for P2PKH (needs 2, providing 1)
-        let witness = Witness::from_stack(vec![vec![0x01, 0x02, 0x03]]); // Only signature, missing public key
+        let witness = Bip322Witness::from_stack(vec![vec![0x01, 0x02, 0x03]]); // Only signature, missing public key
 
         let payload = SignedBip322Payload {
             address: Address::from_str("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
@@ -1962,7 +1857,7 @@ mod tests {
         setup_test_env();
 
         // Test invalid signature format
-        let witness = Witness::from_stack(vec![
+        let witness = Bip322Witness::from_stack(vec![
             vec![0x00, 0x01, 0x02], // Invalid signature format
             vec![0x02; 33],         // Valid-looking public key (33 bytes)
         ]);
@@ -1983,7 +1878,7 @@ mod tests {
         setup_test_env();
 
         // Test P2SH with mismatched script hash
-        let witness = Witness::from_stack(vec![
+        let witness = Bip322Witness::from_stack(vec![
             vec![0x01; 64],         // Raw signature format (64 bytes)
             vec![0x02; 33],         // Public key
             vec![0x76, 0xa9, 0x14], // Invalid redeem script (too short)
@@ -2005,7 +1900,7 @@ mod tests {
         setup_test_env();
 
         // Test ECDSA recovery failure with invalid signature components
-        let witness = Witness::from_stack(vec![
+        let witness = Bip322Witness::from_stack(vec![
             vec![0x00; 64], // Invalid signature (all zeros)
             vec![0x02; 33], // Valid-looking public key
         ]);
@@ -2029,7 +1924,7 @@ mod tests {
         let valid_signature = vec![0x01; 64]; // Assume this would be valid
         let wrong_pubkey = vec![0xFF; 33]; // Wrong public key
 
-        let witness = Witness::from_stack(vec![valid_signature, wrong_pubkey]);
+        let witness = Bip322Witness::from_stack(vec![valid_signature, wrong_pubkey]);
 
         let payload = SignedBip322Payload {
             address: Address::from_str("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
@@ -2151,7 +2046,7 @@ mod tests {
                 },
             },
             message: "Test message for complete verification".to_string(),
-            signature: Witness::from_stack(vec![
+            signature: Bip322Witness::from_stack(vec![
                 vec![0x30, 0x44, 0x02, 0x20], // Incomplete signature for testing
                 vec![0x02; 33],               // Compressed public key format
             ]),
@@ -2283,7 +2178,7 @@ mod tests {
         let insufficient_p2sh = SignedBip322Payload {
             address: p2sh_payload.address,
             message: "Test".to_string(),
-            signature: Witness::from_stack(vec![
+            signature: Bip322Witness::from_stack(vec![
                 vec![0x01; 64], // Only signature, missing public key and redeem script
             ]),
         };
@@ -2301,7 +2196,7 @@ mod tests {
                 },
             },
             message: "Test".to_string(),
-            signature: Witness::from_stack(vec![
+            signature: Bip322Witness::from_stack(vec![
                 vec![0x01; 64], // Signature
                 vec![0x02; 33], // Public key
                                 // Missing witness script
@@ -2320,7 +2215,7 @@ mod tests {
                 pubkey_hash: [1u8; 20],
             },
             message: "Cross-verification test".to_string(),
-            signature: Witness::from_stack(vec![
+            signature: Bip322Witness::from_stack(vec![
                 vec![0x01; 64], // Raw signature
                 vec![0x02; 33], // Public key
             ]),
@@ -2336,7 +2231,7 @@ mod tests {
                 },
             },
             message: "Cross-verification test".to_string(),
-            signature: Witness::from_stack(vec![
+            signature: Bip322Witness::from_stack(vec![
                 vec![0x01; 64], // Same signature as P2PKH
                 vec![0x02; 33], // Same public key as P2PKH
             ]),
@@ -2349,7 +2244,7 @@ mod tests {
                 script_hash: [3u8; 20],
             },
             message: "Cross-verification test".to_string(),
-            signature: Witness::from_stack(vec![
+            signature: Bip322Witness::from_stack(vec![
                 vec![0x01; 64], // Same signature
                 vec![0x02; 33], // Same public key
                 vec![
@@ -2383,7 +2278,7 @@ mod tests {
 
         // Test witness with only one element (missing public key)
         let insufficient_witness = SignedBip322Payload {
-            signature: Witness::from_stack(vec![vec![0x01; 64]]),
+            signature: Bip322Witness::from_stack(vec![vec![0x01; 64]]),
             ..base_payload.clone()
         };
         assert!(
@@ -2393,7 +2288,7 @@ mod tests {
 
         // Test witness with wrong signature length
         let wrong_sig_length = SignedBip322Payload {
-            signature: Witness::from_stack(vec![
+            signature: Bip322Witness::from_stack(vec![
                 vec![0x01; 32], // Too short for signature
                 vec![0x02; 33], // Valid public key length
             ]),
@@ -2406,7 +2301,7 @@ mod tests {
 
         // Test witness with wrong public key length
         let wrong_pubkey_length = SignedBip322Payload {
-            signature: Witness::from_stack(vec![
+            signature: Bip322Witness::from_stack(vec![
                 vec![0x01; 64], // Valid signature length
                 vec![0x02; 32], // Wrong public key length (should be 33 or 65)
             ]),
@@ -2419,7 +2314,7 @@ mod tests {
 
         // Test witness with corrupted DER signature
         let corrupted_der = SignedBip322Payload {
-            signature: Witness::from_stack(vec![
+            signature: Bip322Witness::from_stack(vec![
                 vec![0xFF; 70], // Corrupted signature
                 vec![0x02; 33], // Valid public key
             ]),
@@ -2432,7 +2327,7 @@ mod tests {
 
         // Test witness with invalid public key prefix
         let invalid_pubkey_prefix = SignedBip322Payload {
-            signature: Witness::from_stack(vec![
+            signature: Bip322Witness::from_stack(vec![
                 vec![0x01; 64], // Valid signature length
                 {
                     let mut invalid_key = vec![0x05]; // Invalid prefix
@@ -2449,7 +2344,7 @@ mod tests {
 
         // Test witness with too many elements
         let too_many_elements = SignedBip322Payload {
-            signature: Witness::from_stack(vec![
+            signature: Bip322Witness::from_stack(vec![
                 vec![0x01; 64], // Signature
                 vec![0x02; 33], // Public key
                 vec![0x03; 10], // Extra element (not expected for P2WPKH)
@@ -2611,7 +2506,7 @@ mod tests {
         let mainnet_payload = SignedBip322Payload {
             address: mainnet_p2wpkh.unwrap(),
             message: "Network test".to_string(),
-            signature: Witness::from_stack(vec![
+            signature: Bip322Witness::from_stack(vec![
                 vec![0x01; 64], // Dummy signature
                 vec![0x02; 33], // Dummy public key
             ]),

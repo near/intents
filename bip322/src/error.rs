@@ -37,7 +37,7 @@ pub enum AddressError {
     /// - P2WPKH/P2WSH addresses starting with 'bc1'
     UnsupportedFormat,
 
-    UnsupportedWithnessVersion,
+    UnsupportedWitnessVersion,
 
     /// Invalid Bech32 encoding (for segwit addresses).
     ///
@@ -63,7 +63,7 @@ impl std::fmt::Display for AddressError {
             Self::InvalidLength => write!(f, "Invalid address length"),
             Self::InvalidWitnessProgram => write!(f, "Invalid witness program"),
             Self::UnsupportedFormat => write!(f, "Unsupported address format"),
-            Self::UnsupportedWithnessVersion => write!(f, "Unsupported withness version"),
+            Self::UnsupportedWitnessVersion => write!(f, "Unsupported witness version"),
             Self::InvalidBech32 => write!(f, "Invalid bech32 encoding"),
             Self::MissingRequiredData => {
                 write!(f, "Missing required cryptographic data for address type")
