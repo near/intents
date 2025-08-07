@@ -10,30 +10,24 @@ use crate::SignedBip322Payload;
 use defuse_crypto::{Curve, Secp256k1};
 use near_sdk::env;
 
-/// Common BIP-322 verification logic.
+/// Common BIP-322 verification logic that recovers the public key.
 ///
 /// This function implements the standard BIP-322 verification process:
 /// 1. Creates BIP-322 transactions (to_spend, to_sign)
 /// 2. Computes message hash using appropriate algorithm for address type
 /// 3. Recovers public key from compact signature
-/// 4. Calls address-specific validation function
 ///
 /// # Arguments
 /// 
 /// * `payload` - The signed BIP-322 payload
-/// * `validate_address` - Function to validate recovered pubkey against specific address
 ///
 /// # Returns
 ///
-/// * `Some(PublicKey)` if verification succeeds
-/// * `None` if verification fails
-fn verify_bip322_common<F>(
+/// * `Some(PublicKey)` if public key recovery succeeds
+/// * `None` if recovery fails
+fn verify_bip322_common(
     payload: &SignedBip322Payload,
-    validate_address: F,
-) -> Option<<Secp256k1 as Curve>::PublicKey>
-where
-    F: FnOnce(&[u8; 64]) -> bool,
-{
+) -> Option<<Secp256k1 as Curve>::PublicKey> {
     // Create BIP-322 transactions
     let to_spend = payload.create_to_spend();
     let to_sign = Bip322TransactionBuilder::create_to_sign(&to_spend);
@@ -46,14 +40,7 @@ where
     );
 
     // Try to recover public key from signature
-    let recovered_pubkey = SignedBip322Payload::try_recover_pubkey(&sighash, &payload.signature)?;
-    
-    // Validate recovered pubkey against address using provided function
-    if validate_address(&recovered_pubkey) {
-        Some(recovered_pubkey)
-    } else {
-        None
-    }
+    SignedBip322Payload::try_recover_pubkey(&sighash, &payload.signature)
 }
 
 /// Verifies a BIP-322 signature for P2PKH addresses.
@@ -77,11 +64,15 @@ pub fn verify_p2pkh_signature(
         return None;
     };
 
-    // Use common verification with P2PKH-specific validation
-    verify_bip322_common(payload, |recovered_pubkey| {
-        let computed_pubkey_hash = crate::bitcoin_minimal::hash160(recovered_pubkey);
-        computed_pubkey_hash == *pubkey_hash
-    })
+    let recovered_pubkey = verify_bip322_common(payload)?;
+    
+    // Validate that recovered pubkey matches the P2PKH address
+    let computed_pubkey_hash = crate::bitcoin_minimal::hash160(&recovered_pubkey);
+    if computed_pubkey_hash == *pubkey_hash {
+        Some(recovered_pubkey)
+    } else {
+        None
+    }
 }
 
 /// Verifies a BIP-322 signature for P2WPKH addresses.
@@ -105,11 +96,15 @@ pub fn verify_p2wpkh_signature(
         return None;
     };
 
-    // Use common verification with P2WPKH-specific validation
-    verify_bip322_common(payload, |recovered_pubkey| {
-        let computed_pubkey_hash = crate::bitcoin_minimal::hash160(recovered_pubkey);
-        computed_pubkey_hash == witness_program.program.as_slice()
-    })
+    let recovered_pubkey = verify_bip322_common(payload)?;
+    
+    // Validate that recovered pubkey matches the P2WPKH address
+    let computed_pubkey_hash = crate::bitcoin_minimal::hash160(&recovered_pubkey);
+    if computed_pubkey_hash == witness_program.program.as_slice() {
+        Some(recovered_pubkey)
+    } else {
+        None
+    }
 }
 
 /// Verifies a BIP-322 signature for P2SH addresses.
@@ -134,22 +129,25 @@ pub fn verify_p2sh_signature(
         return None;
     };
 
-    // Use common verification with P2SH-specific validation
-    verify_bip322_common(payload, |recovered_pubkey| {
-        // Create P2PKH-style redeem script from recovered pubkey
-        let pubkey_hash = crate::bitcoin_minimal::hash160(recovered_pubkey);
-        let mut redeem_script = Vec::with_capacity(25);
-        redeem_script.push(0x76); // OP_DUP
-        redeem_script.push(0xa9); // OP_HASH160  
-        redeem_script.push(0x14); // Push 20 bytes
-        redeem_script.extend_from_slice(&pubkey_hash);
-        redeem_script.push(0x88); // OP_EQUALVERIFY
-        redeem_script.push(0xac); // OP_CHECKSIG
-        
-        // Hash the redeem script and compare with address script hash
-        let computed_script_hash = crate::bitcoin_minimal::hash160(&redeem_script);
-        computed_script_hash == *script_hash
-    })
+    let recovered_pubkey = verify_bip322_common(payload)?;
+
+    // Create P2PKH-style redeem script from recovered pubkey
+    let pubkey_hash = crate::bitcoin_minimal::hash160(&recovered_pubkey);
+    let mut redeem_script = Vec::with_capacity(25);
+    redeem_script.push(0x76); // OP_DUP
+    redeem_script.push(0xa9); // OP_HASH160  
+    redeem_script.push(0x14); // Push 20 bytes
+    redeem_script.extend_from_slice(&pubkey_hash);
+    redeem_script.push(0x88); // OP_EQUALVERIFY
+    redeem_script.push(0xac); // OP_CHECKSIG
+    
+    // Hash the redeem script and compare with address script hash
+    let computed_script_hash = crate::bitcoin_minimal::hash160(&redeem_script);
+    if computed_script_hash == *script_hash {
+        Some(recovered_pubkey)
+    } else {
+        None
+    }
 }
 
 /// Verifies a BIP-322 signature for P2WSH addresses.
@@ -174,21 +172,24 @@ pub fn verify_p2wsh_signature(
         return None;
     };
 
-    // Use common verification with P2WSH-specific validation
-    verify_bip322_common(payload, |recovered_pubkey| {
-        // Create P2PKH-style witness script from recovered pubkey
-        let pubkey_hash = crate::bitcoin_minimal::hash160(recovered_pubkey);
-        let mut witness_script = Vec::with_capacity(25);
-        witness_script.push(0x76); // OP_DUP
-        witness_script.push(0xa9); // OP_HASH160
-        witness_script.push(0x14); // Push 20 bytes
-        witness_script.extend_from_slice(&pubkey_hash);
-        witness_script.push(0x88); // OP_EQUALVERIFY
-        witness_script.push(0xac); // OP_CHECKSIG
-        
-        // Hash witness script with SHA256 (not hash160) and compare with address
-        let computed_script_hash = env::sha256_array(&witness_script);
-        computed_script_hash == witness_program.program.as_slice()
-    })
+    let recovered_pubkey = verify_bip322_common(payload)?;
+
+    // Create P2PKH-style witness script from recovered pubkey
+    let pubkey_hash = crate::bitcoin_minimal::hash160(&recovered_pubkey);
+    let mut witness_script = Vec::with_capacity(25);
+    witness_script.push(0x76); // OP_DUP
+    witness_script.push(0xa9); // OP_HASH160
+    witness_script.push(0x14); // Push 20 bytes
+    witness_script.extend_from_slice(&pubkey_hash);
+    witness_script.push(0x88); // OP_EQUALVERIFY
+    witness_script.push(0xac); // OP_CHECKSIG
+    
+    // Hash witness script with SHA256 (not hash160) and compare with address
+    let computed_script_hash = env::sha256_array(&witness_script);
+    if computed_script_hash == witness_program.program.as_slice() {
+        Some(recovered_pubkey)
+    } else {
+        None
+    }
 }
 
