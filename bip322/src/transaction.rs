@@ -6,7 +6,7 @@
 
 use crate::bitcoin_minimal::{
     Address, Amount, Encodable, LockTime, NearDoubleSha256, OP_0, OP_RETURN, OutPoint, ScriptBuf,
-    Sequence, Transaction, TxIn, TxOut, Txid, Version, Witness,
+    Sequence, Transaction, TransactionWitness, TxIn, TxOut, Txid, Version,
 };
 use digest::Digest;
 
@@ -60,7 +60,7 @@ impl Bip322TransactionBuilder {
                 sequence: Sequence::ZERO,
 
                 // Empty witness stack (will be populated in "to_sign" transaction)
-                witness: Witness::new(),
+                witness: TransactionWitness::new(),
             }]
             .into(),
 
@@ -125,7 +125,7 @@ impl Bip322TransactionBuilder {
                 sequence: Sequence::ZERO,
 
                 // Empty witness (actual signature would go here in real Bitcoin)
-                witness: Witness::new(),
+                witness: TransactionWitness::new(),
             }]
             .into(),
 

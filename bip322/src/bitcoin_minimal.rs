@@ -334,8 +334,6 @@ impl Bip322Witness {
     }
 }
 
-// Type alias for Bitcoin transaction witness (internal use only)
-pub type Witness = TransactionWitness;
 
 impl Address {
     /// Create a BIP-322 witness for this address type with the given signature and public key.
@@ -783,7 +781,7 @@ pub struct TxIn {
     /// Sequence number for transaction replacement/timelock
     pub sequence: Sequence,
     /// Witness data for segwit transactions
-    pub witness: Witness,
+    pub witness: TransactionWitness,
 }
 
 /// Bitcoin transaction output containing value and locking script.
