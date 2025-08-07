@@ -58,10 +58,10 @@ impl SignedPayload for SignedBip322Payload {
 
     fn verify(&self) -> Option<Self::PublicKey> {
         match &self.address {
-            Address::P2PKH { .. } => verification::p2pkh::verify_p2pkh_signature(self),
-            Address::P2WPKH { .. } => verification::p2wpkh::verify_p2wpkh_signature(self),
-            Address::P2SH { .. } => verification::p2sh::verify_p2sh_signature(self),
-            Address::P2WSH { .. } => verification::p2wsh::verify_p2wsh_signature(self),
+            Address::P2PKH { .. } => verification::verify_p2pkh_signature(self),
+            Address::P2WPKH { .. } => verification::verify_p2wpkh_signature(self),
+            Address::P2SH { .. } => verification::verify_p2sh_signature(self),
+            Address::P2WSH { .. } => verification::verify_p2wsh_signature(self),
         }
     }
 }
