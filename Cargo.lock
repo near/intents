@@ -941,6 +941,7 @@ dependencies = [
  "chrono",
  "defuse",
  "defuse-bip322",
+ "defuse-crypto",
  "defuse-near-utils",
  "defuse-poa-factory",
  "defuse-randomness",
