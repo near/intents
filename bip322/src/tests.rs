@@ -334,15 +334,10 @@ mod signature_verification_tests {
         let p2pkh_address = Address::from_str("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
             .expect("Should parse P2PKH address");
         
-        let wrong_witness = Bip322Witness::P2WPKH {
-            signature: vec![0u8; 65],
-            pubkey: vec![1u8; 33],
-        };
-        
         let payload = SignedBip322Payload {
             address: p2pkh_address,
             message: "Test message".to_string(),
-            signature: wrong_witness,
+            signature: [0u8; 65], // Empty 65-byte signature
         };
         
         let result = payload.verify();
@@ -356,12 +351,12 @@ mod signature_verification_tests {
         let address = Address::from_str("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
             .expect("Should parse address");
         
-        let empty_witness = Bip322Witness::empty_p2pkh();
+        let empty_signature = [0u8; 65]; // Empty 65-byte signature
         
         let payload = SignedBip322Payload {
             address,
             message: "Test message".to_string(),
-            signature: empty_witness,
+            signature: empty_signature,
         };
         
         let result = payload.verify();
@@ -375,15 +370,12 @@ mod signature_verification_tests {
         let address = Address::from_str("bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4")
             .expect("Should parse P2WPKH address");
         
-        let invalid_witness = Bip322Witness::P2WPKH {
-            signature: vec![0u8; 64], // Invalid length
-            pubkey: vec![1u8; 33],
-        };
+        let invalid_signature = [0u8; 65]; // Valid 65-byte signature (but empty, so will fail)
         
         let payload = SignedBip322Payload {
             address,
             message: "Test message".to_string(),
-            signature: invalid_witness,
+            signature: invalid_signature,
         };
         
         let result = payload.verify();
@@ -405,15 +397,12 @@ mod integration_tests {
         let message = "Hello, BIP-322!";
         
         // Create payload (without valid signature - just testing structure)
-        let witness = Bip322Witness::P2PKH {
-            signature: vec![0u8; 65], // Mock signature
-            pubkey: vec![1u8; 33],    // Mock pubkey
-        };
+        let mock_signature = [0u8; 65]; // Mock 65-byte signature
         
         let _payload = SignedBip322Payload {
             address: address.clone(),
             message: message.to_string(),
-            signature: witness,
+            signature: mock_signature,
         };
         
         // Test message hash computation
@@ -450,15 +439,12 @@ mod integration_tests {
             .expect("Should parse P2WPKH address");
         let message = "Segwit BIP-322 test";
         
-        let witness = Bip322Witness::P2WPKH {
-            signature: vec![0u8; 65],
-            pubkey: vec![1u8; 33],
-        };
+        let mock_signature = [0u8; 65]; // Mock 65-byte signature
         
         let _payload = SignedBip322Payload {
             address: address.clone(),
             message: message.to_string(),
-            signature: witness,
+            signature: mock_signature,
         };
         
         // Verify message hash is different from P2PKH

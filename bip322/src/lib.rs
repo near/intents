@@ -13,8 +13,7 @@ use near_sdk::{env, near};
 use transaction::Bip322TransactionBuilder;
 use serde_with::serde_as;
 
-use crate::bitcoin_minimal::hash160;
-pub use bitcoin_minimal::{Address, Bip322Witness};
+pub use bitcoin_minimal::Address;
 pub use error::AddressError;
 
 #[cfg_attr(
@@ -33,13 +32,14 @@ pub struct SignedBip322Payload {
     pub address: Address,
     pub message: String,
 
-    /// BIP-322 signature data as a witness stack.
+    /// Standard Bitcoin compact format signature (65 bytes).
     ///
-    /// The witness format depends on the address type:
-    /// - P2PKH/P2WPKH: [signature, pubkey]
-    /// - P2SH: [signature, pubkey, redeem_script]
-    /// - P2WSH: [signature, pubkey, witness_script]
-    pub signature: Bip322Witness,
+    /// This is the signature produced by Bitcoin wallets in compact format:
+    /// - 1 byte: recovery ID (27-30 for uncompressed, 31-34 for compressed)
+    /// - 32 bytes: r value 
+    /// - 32 bytes: s value
+    #[serde_as(as = "serde_with::Bytes")]
+    pub signature: [u8; 65],
 }
 
 impl Payload for SignedBip322Payload {
@@ -219,78 +219,25 @@ impl SignedBip322Payload {
     /// Try to recover public key from signature
     pub fn try_recover_pubkey(
         message_hash: &[u8; 32],
-        signature_bytes: &[u8],
-        expected_pubkey: &[u8],
+        signature_bytes: &[u8; 65],
     ) -> Option<<Secp256k1 as Curve>::PublicKey> {
-        // Ensure this is a standard Bitcoin signature
-        if signature_bytes.len() != 65 {
-            return None;
+        // Validate recovery ID range (27-34 for standard Bitcoin compact format)
+        let recovery_id = signature_bytes[0];
+        if recovery_id < 27 || recovery_id > 34 {
+            return None; // Invalid recovery ID
         }
 
         // Calculate v byte to make it in 0-3 range
-        let v = if ((signature_bytes[0] - 27) & 4) != 0 {
+        let v = if ((recovery_id - 27) & 4) != 0 {
             // compressed
-            signature_bytes[0] - 31
+            recovery_id - 31
         } else {
-            // uncompressed
-            signature_bytes[0] - 27
+            // uncompressed  
+            recovery_id - 27
         };
 
-        // Secp256k1::verify(() does not work for us because of different expected format.
-        // Repacking it within the contract does not look reasonable, so use env::ecrecover directly.
+        // Use env::ecrecover to recover public key from signature
         env::ecrecover(message_hash, &signature_bytes[1..], v, true)
-            .filter(|recovered_pubkey| recovered_pubkey.as_slice() == expected_pubkey)
-    }
-
-    /// Execute a witness script for P2WSH verification.
-    ///
-    /// This is a minimal implementation that only supports common P2PKH-style witness scripts
-    /// used in P2WSH contexts. More complex scripts are rejected for security and simplicity.
-    ///
-    /// For P2WSH (Pay-to-Witness-Script-Hash), the witness script is the actual script that
-    /// gets executed, while the `script_pubkey` contains the hash of this witness script.
-    ///
-    /// # Arguments
-    ///
-    /// * `witness_script` - The witness script from the witness stack
-    /// * `pubkey_bytes` - The public key to validate against
-    ///
-    /// # Returns
-    ///
-    /// `true` if the script is a valid P2PKH-style witness script and the public key matches,
-    /// `false` otherwise.
-    ///
-    /// # Supported Pattern
-    ///
-    /// Only supports the standard P2PKH pattern:
-    /// ```text
-    /// OP_DUP OP_HASH160 <20-byte-pubkey-hash> OP_EQUALVERIFY OP_CHECKSIG
-    /// ```
-    pub fn execute_witness_script(witness_script: &[u8], pubkey_bytes: &[u8]) -> bool {
-        // For P2WSH, witness scripts can be more varied, but for BIP-322
-        // we typically see P2PKH-style patterns similar to redeem scripts
-
-        if witness_script.len() == 25 &&
-            witness_script[0] == 0x76 && // OP_DUP
-            witness_script[1] == 0xa9 && // OP_HASH160
-            witness_script[2] == 0x14 && // Push 20 bytes
-            witness_script[23] == 0x88 && // OP_EQUALVERIFY
-            witness_script[24] == 0xac
-        // OP_CHECKSIG
-        {
-            // Extract the pubkey hash from the script
-            let script_pubkey_hash = &witness_script[3..23];
-
-            // Compute HASH160 of the provided public key
-            let computed_pubkey_hash = hash160(pubkey_bytes);
-
-            // Verify the public key hash matches
-            computed_pubkey_hash.as_slice() == script_pubkey_hash
-        } else {
-            // For now, only support simple P2PKH-style witness scripts
-            // Future enhancement: full Bitcoin script interpreter
-            false
-        }
     }
 }
 

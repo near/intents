@@ -82,8 +82,8 @@ impl Signer for Account {
                 }
             });
 
-        // Create empty witness (signature verification will fail, but structure is correct for testing)
-        let signature = address.create_empty_witness();
+        // Create empty 65-byte signature (signature verification will fail, but structure is correct for testing)
+        let signature = [0u8; 65];
 
         SignedBip322Payload {
             address,

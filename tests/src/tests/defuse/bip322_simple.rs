@@ -3,7 +3,7 @@
 //! These tests verify BIP-322 signature parsing, message hashing, and basic operations
 //! without complex NEAR contract integration.
 
-use defuse_bip322::{Address, Bip322Witness, SignedBip322Payload};
+use defuse_bip322::{Address, SignedBip322Payload};
 use defuse_crypto::{Payload, SignedPayload};
 use rstest::rstest;
 
@@ -76,7 +76,7 @@ async fn test_bip322_message_hashing() -> anyhow::Result<()> {
     let payload = SignedBip322Payload {
         address: address.clone(),
         message: TEST_MESSAGE.to_string(),
-        signature: address.create_empty_witness(),
+        signature: [0u8; 65], // Empty 65-byte signature
     };
     
     // Test message hash computation
@@ -92,7 +92,7 @@ async fn test_bip322_message_hashing() -> anyhow::Result<()> {
     let payload2 = SignedBip322Payload {
         address: address.clone(),
         message: "different message".to_string(),
-        signature: address.create_empty_witness(),
+        signature: [0u8; 65], // Empty 65-byte signature
     };
     
     let hash3 = payload2.hash();
@@ -109,55 +109,46 @@ async fn test_witness_creation() -> anyhow::Result<()> {
     let address: Address = test_addresses::P2WPKH.parse()
         .map_err(|e| anyhow::anyhow!("Failed to parse P2WPKH address: {:?}", e))?;
     
-    // Create empty witness for testing
-    let witness = address.create_empty_witness();
+    // Test 65-byte signature format
+    let signature = [0u8; 65]; // Empty 65-byte signature
     
-    // Verify witness type matches address type
-    match (&address, &witness) {
-        (Address::P2WPKH { .. }, Bip322Witness::P2WPKH { .. }) => {
-            println!("✅ Witness type matches address type");
-        },
-        _ => anyhow::bail!("Witness type doesn't match address type"),
-    }
+    // Create payload with 65-byte signature
+    let payload = SignedBip322Payload {
+        address: address.clone(),
+        message: TEST_MESSAGE.to_string(),
+        signature,
+    };
     
-    // Verify witness structure
-    assert_eq!(witness.signature().len(), 65, "Signature should be 65 bytes");
-    assert!(witness.pubkey().is_empty(), "Test pubkey should be empty");
+    // Verify signature format
+    assert_eq!(payload.signature.len(), 65, "Signature should be 65 bytes");
     
-    println!("✅ Witness creation works for P2WPKH address");
+    println!("✅ 65-byte signature format works for P2WPKH address");
     Ok(())
 }
 
-/// Test P2WSH witness script creation
+/// Test P2WSH payload creation with 65-byte signature
 #[tokio::test]
-async fn test_p2wsh_witness_script() -> anyhow::Result<()> {
+async fn test_p2wsh_signature_format() -> anyhow::Result<()> {
     let address: Address = test_addresses::P2WSH.parse()
         .map_err(|e| anyhow::anyhow!("Failed to parse P2WSH address: {:?}", e))?;
     
-    // Create P2WSH witness with script
-    let signature = vec![0u8; 65];
-    let pubkey = vec![0x02; 33]; // Compressed pubkey format
-    let witness_script = vec![0x76, 0xa9, 0x14]; // OP_DUP OP_HASH160 PUSH(20)
+    // Create P2WSH payload with 65-byte signature
+    let signature = [0u8; 65]; // 65-byte compact signature
     
-    let witness = address.create_p2wsh_witness(signature.clone(), pubkey.clone(), witness_script.clone());
+    let payload = SignedBip322Payload {
+        address: address.clone(),
+        message: TEST_MESSAGE.to_string(), 
+        signature,
+    };
     
-    match witness {
-        Some(Bip322Witness::P2WSH { signature: sig, pubkey: pk, witness_script: script }) => {
-            assert_eq!(sig, signature);
-            assert_eq!(pk, pubkey);
-            assert_eq!(script, witness_script);
-            println!("✅ P2WSH witness created successfully");
-        },
-        _ => anyhow::bail!("Failed to create P2WSH witness"),
-    }
+    // Verify signature format
+    assert_eq!(payload.signature.len(), 65, "P2WSH signature should be 65 bytes");
     
-    // Test that non-P2WSH addresses return None
-    let p2wpkh_address: Address = test_addresses::P2WPKH.parse()
-        .map_err(|e| anyhow::anyhow!("Failed to parse P2WPKH address: {:?}", e))?;
-    let result = p2wpkh_address.create_p2wsh_witness(signature, pubkey, witness_script);
-    assert!(result.is_none(), "Non-P2WSH address should return None");
+    // Test that we can compute hash for P2WSH
+    let hash = payload.hash();
+    assert!(!hash.is_empty(), "P2WSH hash should not be empty");
     
-    println!("✅ P2WSH witness script creation working correctly");
+    println!("✅ P2WSH 65-byte signature format working correctly");
     Ok(())
 }
 
@@ -170,10 +161,7 @@ async fn test_payload_serialization() -> anyhow::Result<()> {
     let original_payload = SignedBip322Payload {
         address: address.clone(),
         message: TEST_MESSAGE.to_string(),
-        signature: Bip322Witness::P2WPKH {
-            signature: vec![0u8; 65],
-            pubkey: vec![0x02; 33],
-        },
+        signature: [0u8; 65], // 65-byte compact signature
     };
     
     // Test JSON serialization
@@ -201,7 +189,7 @@ async fn test_signature_verification_flow() -> anyhow::Result<()> {
     let payload = SignedBip322Payload {
         address: address.clone(),
         message: TEST_MESSAGE.to_string(),
-        signature: address.create_empty_witness(),
+        signature: [0u8; 65], // Empty 65-byte signature
     };
     
     // Test verification (should return None due to empty signature)
@@ -250,7 +238,7 @@ async fn test_message_hash_by_address_type() -> anyhow::Result<()> {
         let address: Address = addr_str.parse()
             .map_err(|e| anyhow::anyhow!("Failed to parse {} address: {:?}", addr_type, e))?;
         
-        let signature = address.create_empty_witness();
+        let signature = [0u8; 65]; // Empty 65-byte signature
         let payload = SignedBip322Payload {
             address,
             message: TEST_MESSAGE.to_string(),
@@ -291,10 +279,7 @@ async fn test_bip322_end_to_end_simple() -> anyhow::Result<()> {
     let payload = SignedBip322Payload {
         address: address.clone(),
         message: TEST_MESSAGE.to_string(),
-        signature: Bip322Witness::P2WPKH {
-            signature: vec![1u8; 65], // Non-zero signature for variety
-            pubkey: vec![0x03; 33],   // Different pubkey format  
-        },
+        signature: [1u8; 65], // Non-zero 65-byte signature for variety
     };
     
     // Test serialization roundtrip

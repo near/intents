@@ -453,14 +453,14 @@ impl Address {
     pub fn verify_bip322_signature(
         &self,
         message: &str,
-        signature: &Bip322Witness,
+        signature: &[u8; 65],
     ) -> Option<Secp256k1PublicKey> {
         use crate::SignedBip322Payload;
 
         let payload = SignedBip322Payload {
             address: self.clone(),
             message: message.to_string(),
-            signature: signature.clone(),
+            signature: *signature,
         };
 
         match self {
@@ -490,7 +490,7 @@ impl Address {
         let payload = SignedBip322Payload {
             address: self.clone(),
             message: message.to_string(),
-            signature: self.create_empty_witness(), // Empty signature for hash computation
+            signature: [0u8; 65], // Empty 65-byte signature for hash computation
         };
 
         // Use the Payload trait's hash method which dispatches to correct address type
