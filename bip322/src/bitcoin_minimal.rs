@@ -357,14 +357,15 @@ impl Address {
     /// Create a BIP-322 witness for P2WSH addresses with witness script.
     /// Only available for P2WSH addresses.
     pub fn create_p2wsh_witness(&self, signature: Vec<u8>, pubkey: Vec<u8>, witness_script: Vec<u8>) -> Option<Bip322Witness> {
-        match self {
-            Address::P2WSH { .. } => Some(Bip322Witness::P2WSH {
-                signature,
-                pubkey,
-                witness_script,
-            }),
-            _ => None, // Not a P2WSH address
-        }
+        let Address::P2WSH { .. } = self else {
+            return None; // Not a P2WSH address
+        };
+        
+        Some(Bip322Witness::P2WSH {
+            signature,
+            pubkey,
+            witness_script,
+        })
     }
 
     /// Create an empty BIP-322 witness for this address type (for testing/placeholders).
@@ -654,7 +655,6 @@ impl std::str::FromStr for Address {
         }
     }
 }
-
 
 /// Full Bech32 decoder for Bitcoin segwit addresses using the bech32 crate.
 ///

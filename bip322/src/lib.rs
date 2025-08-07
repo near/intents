@@ -6,7 +6,7 @@ pub mod tests;
 pub mod transaction;
 pub mod verification;
 
-use bitcoin_minimal::{Address, Bip322Witness, Transaction};
+use bitcoin_minimal::Transaction;
 use defuse_crypto::{Curve, Payload, Secp256k1, SignedPayload};
 use hashing::Bip322MessageHasher;
 use near_sdk::{env, near};
@@ -14,6 +14,7 @@ use transaction::Bip322TransactionBuilder;
 use serde_with::serde_as;
 
 use crate::bitcoin_minimal::hash160;
+pub use bitcoin_minimal::{Address, Bip322Witness};
 pub use error::AddressError;
 
 #[cfg_attr(
@@ -214,7 +215,6 @@ impl SignedBip322Payload {
         let message_hash = Bip322MessageHasher::compute_bip322_message_hash(&self.message);
         Bip322TransactionBuilder::create_to_spend(&self.address, &message_hash)
     }
-
 
     /// Try to recover public key from signature
     pub fn try_recover_pubkey(

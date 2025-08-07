@@ -11,6 +11,7 @@ workspace = true
 [dev-dependencies]
 defuse = { workspace = true, features = ["contract"] }
 defuse-bip322 = { workspace = true }
+defuse-crypto = { workspace = true }
 defuse-near-utils = { workspace = true, features = ["arbitrary"] }
 defuse-poa-factory = { workspace = true, features = ["contract"] }
 defuse-serde-utils = { workspace = true }
