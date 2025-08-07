@@ -187,20 +187,6 @@ pub enum Address {
 /// This enum represents the different types of Bitcoin addresses after parsing,
 /// extracting the essential hash or program data needed for signature verification.
 /// Each variant contains the specific data needed for its address type.
-#[derive(Debug, Clone)]
-pub enum AddressData {
-    /// Pay-to-Public-Key-Hash data containing the 20-byte hash of the public key.
-    P2pkh { pubkey_hash: [u8; 20] },
-
-    /// Pay-to-Script-Hash data containing the 20-byte hash of the redeem script.
-    P2sh { script_hash: [u8; 20] },
-
-    /// Pay-to-Witness-Public-Key-Hash data with the witness program.
-    P2wpkh { witness_program: WitnessProgram },
-
-    /// Pay-to-Witness-Script-Hash data with the witness program.
-    P2wsh { witness_program: WitnessProgram },
-}
 
 /// Segwit witness program containing version and program data.
 ///
@@ -233,29 +219,7 @@ impl TransactionWitness {
     }
 }
 
-
-
-
 impl Address {
-
-    /// Extracts address data from the enum variant.
-    pub fn to_address_data(&self) -> AddressData {
-        match self {
-            Address::P2PKH { pubkey_hash } => AddressData::P2pkh {
-                pubkey_hash: *pubkey_hash,
-            },
-            Address::P2SH { script_hash } => AddressData::P2sh {
-                script_hash: *script_hash,
-            },
-            Address::P2WPKH { witness_program } => AddressData::P2wpkh {
-                witness_program: witness_program.clone(),
-            },
-            Address::P2WSH { witness_program } => AddressData::P2wsh {
-                witness_program: witness_program.clone(),
-            },
-        }
-    }
-
     /// Generates the script pubkey for this address.
     pub fn script_pubkey(&self) -> ScriptBuf {
         match self {
@@ -639,8 +603,8 @@ pub struct TxIn {
     pub previous_output: OutPoint,
     /// Script signature (legacy) or empty for segwit
     pub script_sig: ScriptBuf,
-    /// Sequence number for transaction replacement/timelock
-    pub sequence: Sequence,
+    /// Sequence number for transaction replacement/timelock (BIP-322 uses 0)
+    pub sequence: u32,
     /// Witness data for segwit transactions
     pub witness: TransactionWitness,
 }
@@ -651,8 +615,8 @@ pub struct TxIn {
 /// that must be satisfied to spend those coins in a future transaction.
 #[derive(Debug, Clone)]
 pub struct TxOut {
-    /// The value/amount of bitcoin in this output
-    pub value: Amount,
+    /// The value/amount of bitcoin in this output (BIP-322 uses 0)
+    pub value: u64,
     pub script_pubkey: ScriptBuf,
 }
 
@@ -663,10 +627,10 @@ pub struct TxOut {
 /// can be used for time-based transaction validation.
 #[derive(Debug, Clone)]
 pub struct Transaction {
-    /// Transaction format version
-    pub version: Version,
-    /// Earliest time/block when transaction can be included
-    pub lock_time: LockTime,
+    /// Transaction format version (BIP-322 uses 0)
+    pub version: i32,
+    /// Earliest time/block when transaction can be included (BIP-322 uses 0)
+    pub lock_time: u32,
     /// Transaction inputs (coins being spent)
     pub input: Vec<TxIn>,
     /// Transaction outputs (new coin allocations)
@@ -678,32 +642,6 @@ pub struct Transaction {
 /// Bitcoin amounts are represented as 64-bit unsigned integers in satoshis,
 /// where 1 BTC = 100,000,000 satoshis. This provides sufficient precision
 /// for all Bitcoin monetary operations.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Amount(u64);
-
-impl Amount {
-    pub const ZERO: Self = Self(0);
-}
-
-/// Version
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Version(pub i32);
-
-/// Lock time
-#[derive(Debug, Clone, Copy)]
-pub struct LockTime(u32);
-
-impl LockTime {
-    pub const ZERO: Self = Self(0);
-}
-
-/// Sequence
-#[derive(Debug, Clone, Copy)]
-pub struct Sequence(u32);
-
-impl Sequence {
-    pub const ZERO: Self = Self(0);
-}
 
 /// Consensus encodable trait
 pub trait Encodable {
@@ -721,7 +659,7 @@ impl Encodable for Transaction {
             .any(|input| !input.witness.stack.is_empty());
 
         // Version (4 bytes, little-endian)
-        len += writer.write(&self.version.0.to_le_bytes())?;
+        len += writer.write(&self.version.to_le_bytes())?;
 
         // If witness data exists, write marker and flag bytes
         if has_witness {
@@ -746,7 +684,7 @@ impl Encodable for Transaction {
             len += writer.write(&input.script_sig.inner)?;
 
             // Sequence (4 bytes)
-            len += writer.write(&input.sequence.0.to_le_bytes())?;
+            len += writer.write(&input.sequence.to_le_bytes())?;
         }
 
         // Output count
@@ -755,7 +693,7 @@ impl Encodable for Transaction {
         // Outputs
         for output in &self.output {
             // Value (8 bytes, little-endian)
-            len += writer.write(&output.value.0.to_le_bytes())?;
+            len += writer.write(&output.value.to_le_bytes())?;
 
             // Script pubkey
             len += write_compact_size(
@@ -784,7 +722,7 @@ impl Encodable for Transaction {
         }
 
         // Lock time (4 bytes)
-        len += writer.write(&self.lock_time.0.to_le_bytes())?;
+        len += writer.write(&self.lock_time.to_le_bytes())?;
 
         Ok(len)
     }
@@ -857,11 +795,11 @@ impl Transaction {
         writer: &mut W,
         input_index: usize,
         script_code: &ScriptBuf,
-        value: Amount,
+        value: u64,
         sighash_type: EcdsaSighashType,
     ) -> Result<(), std::io::Error> {
         // 1. Transaction version (4 bytes, little-endian)
-        writer.write_all(&self.version.0.to_le_bytes())?;
+        writer.write_all(&self.version.to_le_bytes())?;
 
         // 2. hashPrevouts (32 bytes) - double SHA256 of all outpoints
         let hash_prevouts = self.compute_hash_prevouts();
@@ -887,17 +825,17 @@ impl Transaction {
         writer.write_all(&script_code.inner)?;
 
         // 6. amount (8 bytes, little-endian) - value of the output being spent
-        writer.write_all(&value.0.to_le_bytes())?;
+        writer.write_all(&value.to_le_bytes())?;
 
         // 7. sequence (4 bytes, little-endian) - sequence of the input being signed
-        writer.write_all(&input.sequence.0.to_le_bytes())?;
+        writer.write_all(&input.sequence.to_le_bytes())?;
 
         // 8. hashOutputs (32 bytes) - double SHA256 of all outputs
         let hash_outputs = self.compute_hash_outputs()?;
         writer.write_all(&hash_outputs)?;
 
         // 9. locktime (4 bytes, little-endian)
-        writer.write_all(&self.lock_time.0.to_le_bytes())?;
+        writer.write_all(&self.lock_time.to_le_bytes())?;
 
         // 10. sighash_type (4 bytes, little-endian)
         writer.write_all(&u32::from(u8::from(sighash_type)).to_le_bytes())?;
@@ -925,7 +863,7 @@ impl Transaction {
     fn compute_hash_sequence(&self) -> [u8; 32] {
         let mut sequence_data = Vec::with_capacity(self.input.len() * 4); // 4 bytes per input
         for input in &self.input {
-            sequence_data.extend_from_slice(&input.sequence.0.to_le_bytes());
+            sequence_data.extend_from_slice(&input.sequence.to_le_bytes());
         }
         NearDoubleSha256::digest(&sequence_data).into()
     }
@@ -938,7 +876,7 @@ impl Transaction {
         // Estimate: (8 bytes value + 1-9 bytes compact size + ~25 bytes script) * number of outputs
         let mut outputs_data = Vec::with_capacity(self.output.len() * 42);
         for output in &self.output {
-            outputs_data.extend_from_slice(&output.value.0.to_le_bytes());
+            outputs_data.extend_from_slice(&output.value.to_le_bytes());
             // Write scriptPubKey with the compact size prefix
             let script_len = try_into_io::<usize, u64>(output.script_pubkey.inner.len())?;
             let mut compact_size_bytes = Vec::with_capacity(9); // max compact size is 9 bytes
@@ -974,7 +912,7 @@ impl Transaction {
         sighash_type: EcdsaSighashType,
     ) -> Result<(), std::io::Error> {
         // 1. Transaction version (4 bytes, little-endian)
-        writer.write_all(&self.version.0.to_le_bytes())?;
+        writer.write_all(&self.version.to_le_bytes())?;
 
         // 2. Number of inputs (compact size)
         let input_count = try_into_io::<usize, u64>(self.input.len())?;
@@ -999,7 +937,7 @@ impl Transaction {
             }
 
             // Write sequence
-            writer.write_all(&input.sequence.0.to_le_bytes())?;
+            writer.write_all(&input.sequence.to_le_bytes())?;
         }
 
         // 4. Number of outputs (compact size)
@@ -1008,14 +946,14 @@ impl Transaction {
 
         // 5. All outputs (for SIGHASH_ALL)
         for output in &self.output {
-            writer.write_all(&output.value.0.to_le_bytes())?;
+            writer.write_all(&output.value.to_le_bytes())?;
             let script_len = try_into_io::<usize, u64>(output.script_pubkey.inner.len())?;
             write_compact_size(writer, script_len)?;
             writer.write_all(&output.script_pubkey.inner)?;
         }
 
         // 6. Locktime (4 bytes, little-endian)
-        writer.write_all(&self.lock_time.0.to_le_bytes())?;
+        writer.write_all(&self.lock_time.to_le_bytes())?;
 
         // 7. Sighash type (4 bytes, little-endian)
         let sighash_value = match sighash_type {
@@ -1040,4 +978,3 @@ impl From<EcdsaSighashType> for u8 {
         }
     }
 }
-

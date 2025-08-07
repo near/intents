@@ -47,13 +47,6 @@ pub enum AddressError {
     /// - Invalid HRP (Human Readable Part)
     /// - Malformed segwit data
     InvalidBech32,
-
-    /// Missing required data for address type.
-    ///
-    /// This occurs when:
-    /// - P2PKH/P2SH addresses are missing `pubkey_hash`/`script_hash`
-    /// - P2WPKH/P2WSH addresses are missing `witness_program`
-    MissingRequiredData,
 }
 
 impl std::fmt::Display for AddressError {
@@ -65,9 +58,6 @@ impl std::fmt::Display for AddressError {
             Self::UnsupportedFormat => write!(f, "Unsupported address format"),
             Self::UnsupportedWitnessVersion => write!(f, "Unsupported witness version"),
             Self::InvalidBech32 => write!(f, "Invalid bech32 encoding"),
-            Self::MissingRequiredData => {
-                write!(f, "Missing required cryptographic data for address type")
-            }
         }
     }
 }

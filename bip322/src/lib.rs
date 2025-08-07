@@ -10,8 +10,8 @@ use bitcoin_minimal::Transaction;
 use defuse_crypto::{Curve, Payload, Secp256k1, SignedPayload};
 use hashing::Bip322MessageHasher;
 use near_sdk::{env, near};
-use transaction::Bip322TransactionBuilder;
 use serde_with::serde_as;
+use transaction::{create_to_sign, create_to_spend};
 
 pub use bitcoin_minimal::Address;
 pub use error::AddressError;
@@ -36,7 +36,7 @@ pub struct SignedBip322Payload {
     ///
     /// This is the signature produced by Bitcoin wallets in compact format:
     /// - 1 byte: recovery ID (27-30 for uncompressed, 31-34 for compressed)
-    /// - 32 bytes: r value 
+    /// - 32 bytes: r value
     /// - 32 bytes: s value
     #[serde_as(as = "serde_with::Bytes")]
     pub signature: [u8; 65],
@@ -86,14 +86,10 @@ impl SignedBip322Payload {
 
         // Step 2: Create the "to_sign" transaction
         // References the to_spend output
-        let to_sign = Bip322TransactionBuilder::create_to_sign(&to_spend);
+        let to_sign = create_to_sign(&to_spend);
 
         // Step 3: Compute signature hash using appropriate algorithm for address type
-        Bip322MessageHasher::compute_message_hash(
-            &to_spend,
-            &to_sign,
-            &self.address,
-        )
+        Bip322MessageHasher::compute_message_hash(&to_spend, &to_sign, &self.address)
     }
 
     /// Creates the \"`to_spend`\" transaction according to BIP-322 specification.
@@ -120,7 +116,7 @@ impl SignedBip322Payload {
     ///
     fn create_to_spend(&self) -> Transaction {
         let message_hash = Bip322MessageHasher::compute_bip322_message_hash(&self.message);
-        Bip322TransactionBuilder::create_to_spend(&self.address, &message_hash)
+        create_to_spend(&self.address, &message_hash)
     }
 
     /// Try to recover public key from signature
@@ -139,7 +135,7 @@ impl SignedBip322Payload {
             // compressed
             recovery_id - 31
         } else {
-            // uncompressed  
+            // uncompressed
             recovery_id - 27
         };
 
@@ -147,4 +143,3 @@ impl SignedBip322Payload {
         env::ecrecover(message_hash, &signature_bytes[1..], v, true)
     }
 }
-

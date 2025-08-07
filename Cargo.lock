@@ -689,14 +689,9 @@ dependencies = [
  "bech32",
  "bs58 0.5.1",
  "defuse-bip340",
- "defuse-core",
  "defuse-crypto",
  "digest",
- "hex",
- "hex-literal",
  "near-sdk",
- "rstest",
- "serde_json",
  "serde_with",
 ]
 
