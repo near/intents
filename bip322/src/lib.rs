@@ -88,7 +88,7 @@ impl SignedBip322Payload {
 
         // Step 2: Create the "to_sign" transaction
         // This transaction spends from the "to_spend" transaction
-        let to_sign = Self::create_to_sign(&to_spend);
+        let to_sign = Bip322TransactionBuilder::create_to_sign(&to_spend);
 
         // Step 3: Compute the final signature hash using legacy algorithm
         // P2PKH uses the original Bitcoin sighash algorithm (pre-segwit)
@@ -120,7 +120,7 @@ impl SignedBip322Payload {
 
         // Step 2: Create the "to_sign" transaction (same as P2PKH)
         // The spending transaction is also identical in structure
-        let to_sign = Self::create_to_sign(&to_spend);
+        let to_sign = Bip322TransactionBuilder::create_to_sign(&to_spend);
 
         // Step 3: Compute signature hash using segwit v0 algorithm
         // P2WPKH uses the BIP-143 segwit sighash algorithm (not legacy)
@@ -149,7 +149,7 @@ impl SignedBip322Payload {
 
         // Step 2: Create the "to_sign" transaction
         // For P2SH, this will reference the to_spend output
-        let to_sign = Self::create_to_sign(&to_spend);
+        let to_sign = Bip322TransactionBuilder::create_to_sign(&to_spend);
 
         // Step 3: Compute signature hash using legacy algorithm
         // P2SH uses the same legacy sighash as P2PKH (not segwit)
@@ -177,7 +177,7 @@ impl SignedBip322Payload {
 
         // Step 2: Create the "to_sign" transaction
         // For P2WSH, this will reference the to_spend output
-        let to_sign = Self::create_to_sign(&to_spend);
+        let to_sign = Bip322TransactionBuilder::create_to_sign(&to_spend);
 
         // Step 3: Compute signature hash using segwit v0 algorithm
         // P2WSH uses the same segwit sighash as P2WPKH (BIP-143)
@@ -214,36 +214,6 @@ impl SignedBip322Payload {
         let message_hash = Bip322MessageHasher::compute_bip322_message_hash(&self.message);
         Bip322TransactionBuilder::create_to_spend(&self.address, &message_hash)
     }
-
-    /// Creates the \"`to_sign`\" transaction according to BIP-322 specification.
-    ///
-    /// The \"`to_sign`\" transaction spends from the \"`to_spend`\" transaction and represents
-    /// what would actually be signed by a Bitcoin wallet. Its structure:
-    ///
-    /// - **Version**: 0 (BIP-322 marker, same as `to_spend`)
-    /// - **Input**: Single input that spends the \"`to_spend`\" transaction:
-    ///   - Previous output: TXID of `to_spend` transaction, index 0
-    ///   - Script: Empty (for segwit) or minimal script (for legacy)
-    ///   - Sequence: 0
-    /// - **Output**: Single output with `OP_RETURN` (provably unspendable)
-    /// - **Locktime**: 0
-    ///
-    /// The signature verification process computes the sighash of this transaction,
-    /// which is what the private key actually signs.
-    ///
-    /// # Arguments
-    ///
-    /// * `to_spend` - The \"`to_spend`\" transaction created by `create_to_spend()`
-    ///
-    /// # Returns
-    ///
-    /// A `Transaction` representing the \"`to_sign`\" phase of BIP-322.
-    fn create_to_sign(to_spend: &Transaction) -> Transaction {
-        Bip322TransactionBuilder::create_to_sign(to_spend)
-    }
-
-
-
 
 
     /// Try to recover public key from signature

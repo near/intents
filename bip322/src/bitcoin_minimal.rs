@@ -39,7 +39,7 @@ use serde_with::serde_as;
 use crate::error::AddressError;
 
 // Type alias for cleaner function signatures
-use defuse_crypto::{Curve, Secp256k1};
+use defuse_crypto::{Curve, Payload, Secp256k1};
 pub type Secp256k1PublicKey = <Secp256k1 as Curve>::PublicKey;
 
 /// NEAR SDK SHA-256 implementation compatible with the `digest` crate traits.
@@ -492,12 +492,8 @@ impl Address {
             signature: self.create_empty_witness(), // Empty signature for hash computation
         };
 
-        match self {
-            Address::P2PKH { .. } => crate::verification::compute_p2pkh_message_hash(&payload),
-            Address::P2WPKH { .. } => crate::verification::compute_p2wpkh_message_hash(&payload),
-            Address::P2SH { .. } => crate::verification::compute_p2sh_message_hash(&payload),
-            Address::P2WSH { .. } => crate::verification::compute_p2wsh_message_hash(&payload),
-        }
+        // Use the Payload trait's hash method which dispatches to correct address type
+        payload.hash()
     }
 }
 
