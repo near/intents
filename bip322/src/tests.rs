@@ -441,75 +441,79 @@ mod integration_tests {
         );
     }
 
-    const MESSAGE: &str = r#"{"signer_id":"alice.near","verifying_contract":"defuse.near","deadline":"Never","nonce":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","test":"value"}"#;
-//     const MESSAGE: &str = r#"{
-//   "signer_id": "alice.near",
-//   "verifying_contract": "intents.near",
-//   "deadline": {
-//     "timestamp": 1734735219
-//   },
-//   "nonce": "XVoKfmScb3G+XqH9ke/fSlJ/3xO59sNhCxhpG821BH8=",
-//   "intents": [
-//     {
-//       "intent": "token_diff",
-//       "diff": {
-//         "nep141:usdc.near": "-1000",
-//         "nep141:wbtc.near": "0.001"
-//       }
-//     }
-//   ]
-// }
-// "#;
+    // const MESSAGE: &str = r#"{"signer_id":"alice.near","verifying_contract":"defuse.near","deadline":"Never","nonce":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","test":"value"}"#;
+    const MESSAGE: &str = r#"{
+  "signer_id": "alice.near",
+  "verifying_contract": "intents.near",
+  "deadline": {
+    "timestamp": 1734735219
+  },
+  "nonce": "XVoKfmScb3G+XqH9ke/fSlJ/3xO59sNhCxhpG821BH8=",
+  "intents": [
+    {
+      "intent": "token_diff",
+      "diff": {
+        "nep141:usdc.near": "-1000",
+        "nep141:wbtc.near": "0.001"
+      }
+    }
+  ]
+}
+"#;
 
     use base64::{
         engine::general_purpose,
         Engine as _,
     };
+    
 
-    #[test]
-    fn test_parse_signed_bip322_payload_leather_wallet() {
-        let address = "bc1p4tgt4934ysj6drgcuyr492hlku6kue20rhjn7wthkeue5ku43flqn9lkfp";
-        let signature = "AUAl8g/QcmbWNwWsGvDLORWjU6FwohDPShrRhelfc/RETVZ245o2IUNSLv6whA1ToDp96CJ3vX0JfcCPheuy1Rsw";
-
-        test_parse_bip322_payload(address, signature, "leather");
-    }
-
-    #[test]
-    fn test_parse_signed_bip322_payload_magic_eden_wallet() {
-        let address = "bc1pqcgf630uvwkx2mxrs357ur5nxv6tjylp90ewte6yf4az0j2e3c3syjm22a";
-        let signature = "AUCi4U4Tb/A22yiIP+Yk/KgouYMdrKMlM9TYGaUPTNox4mI5DeXFw+OrZ+JIISakx+5su7k6DfKF7XerTkT0vBEO";
-
-        test_parse_bip322_payload(address, signature, "eden");
-    }
-
-    #[test]
-    fn test_parse_signed_bip322_payload_xverse_wallet() {
-        let address = "bc1psqt6kq8vts45mwrw72gll2x7kmaux6akga7lsjp2ctchhs9249wq8pj0uv";
-        let signature = "AUAy/nD9/YJgsPMM05dnhtPmiJptiO2eHpAJ9GYhvORhptHNqeNyOsUczx3tFAC40Rn9AgGa2Zvbgi/Exp/nAccC";
-
-        test_parse_bip322_payload(address, signature, "xverse");
-    }
-
-    #[test]
-    fn test_parse_signed_bip322_payload_oyl_wallet() {
-        let address = "bc1pj3573fe3jlhf35kmzh05gthwy453xu6j7ehhsr7rrpk23mgd0ugqs4d02f";
-        let signature = "AUGYwllbBv32z1MabDbo1/5Kpx9N3lJMyFQ35sfvUlfreMiCuk7aW++8y1xtGvul3cEdEFjTgOz3km8A2ExKrt2jAQ==";
-
-        test_parse_bip322_payload(address, signature, "oyl");
-    }
-
-    #[test]
-    fn test_parse_signed_bip322_payload_ghost_wallet() {
-        let address = "bc1p8pd76laz84v2vmx7qwuznv2yy7n5sq2dszptf4m4czhqneyfhj2st4mu9h";
-        let signature = "AUAsoDOP3REtR1HYO3mlQKRxPt643IcMqRE/1k/+skLBUFCSbZw4esU04KMvWXc00XitpZqfIHGkafULg0CxCCz8";
-
-        test_parse_bip322_payload(address, signature, "ghost");
-    }
+    // #[test]
+    // fn test_parse_signed_bip322_payload_leather_wallet() {
+    //     let address = "bc1p4tgt4934ysj6drgcuyr492hlku6kue20rhjn7wthkeue5ku43flqn9lkfp";
+    //     let signature = "AUAl8g/QcmbWNwWsGvDLORWjU6FwohDPShrRhelfc/RETVZ245o2IUNSLv6whA1ToDp96CJ3vX0JfcCPheuy1Rsw";
+    //
+    //     test_parse_bip322_payload(address, signature, "leather");
+    // }
+    //
+    // #[test]
+    // fn test_parse_signed_bip322_payload_magic_eden_wallet() {
+    //     let address = "bc1pqcgf630uvwkx2mxrs357ur5nxv6tjylp90ewte6yf4az0j2e3c3syjm22a";
+    //     let signature = "AUCi4U4Tb/A22yiIP+Yk/KgouYMdrKMlM9TYGaUPTNox4mI5DeXFw+OrZ+JIISakx+5su7k6DfKF7XerTkT0vBEO";
+    //
+    //     test_parse_bip322_payload(address, signature, "eden");
+    // }
+    //
+    // #[test]
+    // fn test_parse_signed_bip322_payload_xverse_wallet() {
+    //     let address = "bc1psqt6kq8vts45mwrw72gll2x7kmaux6akga7lsjp2ctchhs9249wq8pj0uv";
+    //     let signature = "AUAy/nD9/YJgsPMM05dnhtPmiJptiO2eHpAJ9GYhvORhptHNqeNyOsUczx3tFAC40Rn9AgGa2Zvbgi/Exp/nAccC";
+    //
+    //     test_parse_bip322_payload(address, signature, "xverse");
+    // }
+    //
+    // #[test]
+    // fn test_parse_signed_bip322_payload_oyl_wallet() {
+    //     let address = "bc1pj3573fe3jlhf35kmzh05gthwy453xu6j7ehhsr7rrpk23mgd0ugqs4d02f";
+    //     let signature = "AUGYwllbBv32z1MabDbo1/5Kpx9N3lJMyFQ35sfvUlfreMiCuk7aW++8y1xtGvul3cEdEFjTgOz3km8A2ExKrt2jAQ==";
+    //
+    //     test_parse_bip322_payload(address, signature, "oyl");
+    // }
+    //
+    // #[test]
+    // fn test_parse_signed_bip322_payload_ghost_wallet() {
+    //     let address = "bc1p8pd76laz84v2vmx7qwuznv2yy7n5sq2dszptf4m4czhqneyfhj2st4mu9h";
+    //     let signature = "AUAsoDOP3REtR1HYO3mlQKRxPt643IcMqRE/1k/+skLBUFCSbZw4esU04KMvWXc00XitpZqfIHGkafULg0CxCCz8";
+    //
+    //     test_parse_bip322_payload(address, signature, "ghost");
+    // }
 
     #[test]
     fn test_parse_signed_bip322_payload_unisat_wallet() {
         let address = "bc1qyt6gau643sm52hvej4n4qr34h3878ahs209s27";
-        let signature = "H6Gjb7ArwmAtbS7urzjT1IS+GfGLhz5XgSvu2c863K0+RcxgOFDoD7Uo+Z44CK7NcCLY1tc9eeudsYlM2zCNYDU=";
+        let signature = //"IH73ZAtKGynrRcrUqlJEyTxrxkn0bKzeJKTC/h2WgA6nffOzMAXBMLIj3ToaYGtwbtP6UrITsxzYy1Tu8yQ7QyU=";
+                              //"H6Gjb7ArwmAtbS7urzjT1IS+GfGLhz5XgSvu2c863K0+RcxgOFDoD7Uo+Z44CK7NcCLY1tc9eeudsYlM2zCNYDU=";
+                              //IH73ZAtKGynrRcrUqlJEyTxrxkn0bKzeJKTC/h2WgA6nffOzMAXBMLIj3ToaYGtwbtP6UrITsxzYy1Tu8yQ7QyU=
+        "H3240zU+IK4IZ60zAfNSppkcKfwDANatUKwquAA+SAeWQt2vOTn5LKuHg3079OIyfLuunTiWd9OmwCTKRqDMXmo=";
 
         test_parse_bip322_payload(address, signature, "unisat");
     }

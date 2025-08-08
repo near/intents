@@ -10,6 +10,57 @@ use crate::transaction::create_to_sign;
 use defuse_crypto::{Curve, Secp256k1};
 use near_sdk::env;
 
+/// Computes hash160 of a raw public key using the appropriate Bitcoin format.
+///
+/// # Arguments
+///
+/// * `raw_pubkey` - The raw public key from ecrecover (always 64 bytes)
+/// * `compressed` - Whether to use compressed (true) or uncompressed (false) format
+///
+/// # Returns
+///
+/// The 20-byte hash160 result, or the input hash if not 64 bytes
+fn hash160_pubkey(raw_pubkey: &[u8; 64], compressed: bool) -> Vec<[u8; 20]> {
+    if compressed {
+        // Since pubkey is restored, we don't know which (odd or even) y was used to
+        // build compressed key and calculate the hash.
+        // It means that we have to calculate hash for both possibilities.
+        let mut compressed = Vec::with_capacity(33);
+        compressed.push(0x02);
+        compressed.extend_from_slice(&raw_pubkey[..32]);
+
+        let mut response = Vec::with_capacity(2);
+        response.push(crate::bitcoin_minimal::hash160(&compressed));
+
+        compressed.as_mut_slice()[0] = 0x03;
+        response.push(crate::bitcoin_minimal::hash160(&compressed));
+
+        return response
+    }
+
+    vec![crate::bitcoin_minimal::hash160(raw_pubkey)]
+}
+
+/// Assemble witness or redeem script
+///
+/// # Arguments
+///
+/// * `pubkey_hash` - The HASH160 of the public key
+///
+/// # Returns
+///
+/// Assembled script which verifies given hash
+fn build_script(pubkey_hash: &[u8; 20]) -> Vec<u8> {
+    let mut script = Vec::with_capacity(25);
+    script.push(0x76); // OP_DUP
+    script.push(0xa9); // OP_HASH160
+    script.push(0x14); // Push 20 bytes
+    script.extend_from_slice(pubkey_hash);
+    script.push(0x88); // OP_EQUALVERIFY
+    script.push(0xac); // OP_CHECKSIG
+    script
+}
+
 /// Common BIP-322 verification logic that recovers the public key.
 ///
 /// This function implements the standard BIP-322 verification process:
@@ -26,14 +77,11 @@ use near_sdk::env;
 /// * `Some(PublicKey)` if public key recovery succeeds
 /// * `None` if recovery fails
 fn verify_bip322_common(payload: &SignedBip322Payload) -> Option<<Secp256k1 as Curve>::PublicKey> {
-    // Create BIP-322 transactions
     let to_spend = payload.create_to_spend();
     let to_sign = create_to_sign(&to_spend);
 
-    // Compute sighash using appropriate algorithm for address type
     let sighash = Bip322MessageHasher::compute_message_hash(&to_spend, &to_sign, &payload.address);
 
-    // Try to recover public key from signature
     SignedBip322Payload::try_recover_pubkey(&sighash, &payload.signature)
 }
 
@@ -61,12 +109,25 @@ pub fn verify_p2pkh_signature(
     let recovered_pubkey = verify_bip322_common(payload)?;
 
     // Validate that recovered pubkey matches the P2PKH address
-    let computed_pubkey_hash = crate::bitcoin_minimal::hash160(&recovered_pubkey);
-    if computed_pubkey_hash == *pubkey_hash {
-        Some(recovered_pubkey)
-    } else {
-        None
+    // P2PKH can use either compressed or uncompressed, try both
+
+    // Try uncompressed first
+    let uncompressed_hash = hash160_pubkey(&recovered_pubkey, false);
+    if uncompressed_hash[0] == *pubkey_hash {
+        return Some(recovered_pubkey)
     }
+
+    // Try compressed next, two possibilities
+    let compressed_hash = hash160_pubkey(&recovered_pubkey, true);
+    if compressed_hash[0] == *pubkey_hash {
+        return Some(recovered_pubkey);
+    }
+
+    if compressed_hash[1] == *pubkey_hash {
+        return Some(recovered_pubkey);
+    }
+
+    None
 }
 
 /// Verifies a BIP-322 signature for P2WPKH addresses.
@@ -93,12 +154,19 @@ pub fn verify_p2wpkh_signature(
     let recovered_pubkey = verify_bip322_common(payload)?;
 
     // Validate that recovered pubkey matches the P2WPKH address
-    let computed_pubkey_hash = crate::bitcoin_minimal::hash160(&recovered_pubkey);
-    if computed_pubkey_hash == witness_program.program.as_slice() {
-        Some(recovered_pubkey)
-    } else {
-        None
+    // P2WPKH addresses always use compressed public keys, so two possibilities,
+    // depending on the y coordinate parity
+    let computed_pubkey_hash = hash160_pubkey(&recovered_pubkey, true);
+
+    if computed_pubkey_hash[0] == witness_program.program.as_slice() {
+        return Some(recovered_pubkey);
     }
+
+    if computed_pubkey_hash[1] == witness_program.program.as_slice() {
+        return Some(recovered_pubkey);
+    }
+
+    None
 }
 
 /// Verifies a BIP-322 signature for P2SH addresses.
@@ -126,22 +194,35 @@ pub fn verify_p2sh_signature(
     let recovered_pubkey = verify_bip322_common(payload)?;
 
     // Create P2PKH-style redeem script from recovered pubkey
-    let pubkey_hash = crate::bitcoin_minimal::hash160(&recovered_pubkey);
-    let mut redeem_script = Vec::with_capacity(25);
-    redeem_script.push(0x76); // OP_DUP
-    redeem_script.push(0xa9); // OP_HASH160  
-    redeem_script.push(0x14); // Push 20 bytes
-    redeem_script.extend_from_slice(&pubkey_hash);
-    redeem_script.push(0x88); // OP_EQUALVERIFY
-    redeem_script.push(0xac); // OP_CHECKSIG
+    // There is no fixed rule, public keys can be compressed or uncompressed,
+    // so we have to try both.
 
-    // Hash the redeem script and compare with address script hash
+    // Try uncompressed first
+    let pubkey_hash = hash160_pubkey(&recovered_pubkey, false);
+    let redeem_script = build_script(&pubkey_hash[0]);
+    let computed_script_hash = crate::bitcoin_minimal::hash160(&redeem_script);
+
+    if computed_script_hash == *script_hash {
+        return Some(recovered_pubkey);
+    }
+
+    // Try compressed next, two possibilities
+    let pubkey_hash = hash160_pubkey(&recovered_pubkey, true);
+
+    let redeem_script = build_script(&pubkey_hash[0]);
     let computed_script_hash = crate::bitcoin_minimal::hash160(&redeem_script);
     if computed_script_hash == *script_hash {
-        Some(recovered_pubkey)
-    } else {
-        None
+        return Some(recovered_pubkey);
     }
+
+    let redeem_script = build_script(&pubkey_hash[1]);
+    let computed_script_hash = crate::bitcoin_minimal::hash160(&redeem_script);
+    if computed_script_hash == *script_hash {
+        return Some(recovered_pubkey);
+    }
+
+    // Both failed, return None
+    None
 }
 
 /// Verifies a BIP-322 signature for P2WSH addresses.
@@ -169,20 +250,31 @@ pub fn verify_p2wsh_signature(
     let recovered_pubkey = verify_bip322_common(payload)?;
 
     // Create P2PKH-style witness script from recovered pubkey
-    let pubkey_hash = crate::bitcoin_minimal::hash160(&recovered_pubkey);
-    let mut witness_script = Vec::with_capacity(25);
-    witness_script.push(0x76); // OP_DUP
-    witness_script.push(0xa9); // OP_HASH160
-    witness_script.push(0x14); // Push 20 bytes
-    witness_script.extend_from_slice(&pubkey_hash);
-    witness_script.push(0x88); // OP_EQUALVERIFY
-    witness_script.push(0xac); // OP_CHECKSIG
+    // Try uncompressed first
+    let pubkey_hash = hash160_pubkey(&recovered_pubkey, false);
 
-    // Hash witness script with SHA256 (not hash160) and compare with address
+    let witness_script = build_script(&pubkey_hash[0]);
+    let computed_script_hash = env::sha256_array(&witness_script);
+
+    if computed_script_hash == witness_program.program.as_slice() {
+        return Some(recovered_pubkey);
+    }
+
+    // Try compressed next
+    let pubkey_hash = hash160_pubkey(&recovered_pubkey, true);
+
+    let witness_script = build_script(&pubkey_hash[0]);
     let computed_script_hash = env::sha256_array(&witness_script);
     if computed_script_hash == witness_program.program.as_slice() {
-        Some(recovered_pubkey)
-    } else {
-        None
+        return Some(recovered_pubkey);
     }
+
+    let witness_script = build_script(&pubkey_hash[1]);
+    let computed_script_hash = env::sha256_array(&witness_script);
+    if computed_script_hash == witness_program.program.as_slice() {
+        return Some(recovered_pubkey);
+    }
+
+    // Both failed, return None
+    None
 }

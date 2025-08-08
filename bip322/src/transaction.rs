@@ -47,7 +47,7 @@ pub fn create_to_spend(address: &Address, message_hash: &[u8; 32]) -> Transactio
             script_sig: {
                 let mut script = Vec::with_capacity(34); // 2 opcodes + 32 bytes message hash
                 script.push(OP_0); // Push empty stack item
-                script.push(32); // Push 32 bytes
+                script.push(32u8); // Push 32 bytes
                 script.extend_from_slice(message_hash); // Push the 32-byte message hash
                 ScriptBuf::from_bytes(script)
             },
