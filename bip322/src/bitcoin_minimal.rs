@@ -31,7 +31,6 @@
 //! - Encoding functions: Transaction serialization for hash computation
 
 use bech32::{Hrp, segwit};
-use defuse_bip340::Double;
 use digest::Digest;
 use near_sdk::near;
 use serde_with::serde_as;
@@ -42,17 +41,6 @@ use crate::error::AddressError;
 use defuse_crypto::{Curve, Payload, Secp256k1};
 pub type Secp256k1PublicKey = <Secp256k1 as Curve>::PublicKey;
 
-/// Type alias for NEAR SDK SHA-256 implementation from near-utils.
-///
-/// This reuses the standardized NEAR SDK SHA-256 implementation from near-utils
-/// that is compatible with the `digest` crate traits.
-pub type NearSha256 = defuse_near_utils::digest::Sha256;
-
-/// Type alias for double SHA-256 using NEAR SDK functions.
-///
-/// This combines BIP340's `Double` wrapper with the near-utils NEAR SDK implementation
-/// to provide Bitcoin's standard double SHA-256 hash function.
-pub type NearDoubleSha256 = Double<NearSha256>;
 
 /// Bitcoin address representation optimized for BIP-322 verification.
 ///
@@ -330,7 +318,7 @@ impl std::str::FromStr for Address {
             // Checksum = first 4 bytes of double_sha256(version + pubkey_hash)
             let payload = &decoded[..21]; // version + pubkey_hash
             let checksum = &decoded[21..25]; // provided checksum
-            let computed_checksum: [u8; 32] = NearDoubleSha256::digest(payload).into();
+            let computed_checksum: [u8; 32] = defuse_near_utils::digest::DoubleSha256::digest(payload).into();
             if &computed_checksum[..4] != checksum {
                 return Err(AddressError::InvalidBase58);
             }
@@ -367,7 +355,7 @@ impl std::str::FromStr for Address {
             // Checksum = first 4 bytes of double_sha256(version + script_hash)
             let payload = &decoded[..21]; // version + script_hash
             let checksum = &decoded[21..25]; // provided checksum
-            let computed_checksum: [u8; 32] = NearDoubleSha256::digest(payload).into();
+            let computed_checksum: [u8; 32] = defuse_near_utils::digest::DoubleSha256::digest(payload).into();
             if &computed_checksum[..4] != checksum {
                 return Err(AddressError::InvalidBase58);
             }
@@ -792,7 +780,7 @@ impl Transaction {
             outpoints_data.extend_from_slice(&input.previous_output.txid.0);
             outpoints_data.extend_from_slice(&input.previous_output.vout.to_le_bytes());
         }
-        NearDoubleSha256::digest(&outpoints_data).into()
+        defuse_near_utils::digest::DoubleSha256::digest(&outpoints_data).into()
     }
 
     /// Computes hashSequence as specified in BIP-143.
@@ -804,7 +792,7 @@ impl Transaction {
         for input in &self.input {
             sequence_data.extend_from_slice(&input.sequence.to_le_bytes());
         }
-        NearDoubleSha256::digest(&sequence_data).into()
+        defuse_near_utils::digest::DoubleSha256::digest(&sequence_data).into()
     }
 
     /// Computes hashOutputs as specified in BIP-143.
@@ -824,7 +812,7 @@ impl Transaction {
             outputs_data.extend_from_slice(&compact_size_bytes);
             outputs_data.extend_from_slice(&output.script_pubkey.inner);
         }
-        Ok(NearDoubleSha256::digest(&outputs_data).into())
+        Ok(defuse_near_utils::digest::DoubleSha256::digest(&outputs_data).into())
     }
 
     /// Encodes the legacy sighash preimage for P2PKH and P2SH signature verification.

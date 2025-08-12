@@ -5,9 +5,10 @@
 //! the Bitcoin signing process without requiring actual UTXOs.
 
 use crate::bitcoin_minimal::{
-    Address, Encodable, NearDoubleSha256, OP_0, OP_RETURN, OutPoint, ScriptBuf, Transaction,
+    Address, Encodable, OP_0, OP_RETURN, OutPoint, ScriptBuf, Transaction,
     TransactionWitness, TxIn, TxOut, Txid,
 };
+use defuse_near_utils::digest::DoubleSha256;
 use digest::Digest;
 
 /// Creates the "to_spend" transaction according to BIP-322 specification.
@@ -156,5 +157,5 @@ pub fn compute_tx_id(tx: &Transaction) -> [u8; 32] {
     let mut buf = Vec::with_capacity(300);
     tx.consensus_encode(&mut buf)
         .unwrap_or_else(|_| panic!("Transaction encoding failed"));
-    NearDoubleSha256::digest(&buf).into()
+    DoubleSha256::digest(&buf).into()
 }

@@ -688,22 +688,11 @@ dependencies = [
  "base64 0.22.1",
  "bech32",
  "bs58 0.5.1",
- "defuse-bip340",
  "defuse-crypto",
  "defuse-near-utils",
  "digest",
  "near-sdk",
  "serde_with",
-]
-
-[[package]]
-name = "defuse-bip340"
-version = "0.1.0"
-dependencies = [
- "digest",
- "hex-literal",
- "rstest",
- "sha2",
 ]
 
 [[package]]

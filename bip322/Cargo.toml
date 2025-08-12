@@ -12,7 +12,6 @@ workspace = true
 defuse-crypto = { workspace = true, features = ["serde"] }
 near-sdk.workspace = true
 serde_with.workspace = true
-defuse-bip340 = { path = "../bip340" }
 digest.workspace = true
 defuse-near-utils = { workspace = true, features = ["digest"] }
 

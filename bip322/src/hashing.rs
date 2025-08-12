@@ -4,8 +4,8 @@
 //! It includes both the BIP-322 tagged hash for messages and the sighash computation
 //! methods for different address types.
 
-use crate::bitcoin_minimal::{Address, EcdsaSighashType, NearDoubleSha256, NearSha256, ScriptBuf, Transaction, OP_CHECKSIG, OP_DUP, OP_EQUALVERIFY, OP_HASH160};
-use defuse_bip340::TaggedDigest;
+use crate::bitcoin_minimal::{Address, EcdsaSighashType, ScriptBuf, Transaction, OP_CHECKSIG, OP_DUP, OP_EQUALVERIFY, OP_HASH160};
+use defuse_near_utils::digest::{DoubleSha256, Sha256, TaggedDigest};
 use digest::Digest;
 
 /// BIP-322 message hashing utilities
@@ -34,7 +34,7 @@ impl Bip322MessageHasher {
     /// A 32-byte hash that represents the BIP-322 tagged hash of the message.
     pub fn compute_bip322_message_hash(message: &str) -> [u8; 32] {
         // Use BIP-340's tagged digest implementation with NEAR SDK SHA-256
-        NearSha256::tagged(b"BIP0322-signed-message")
+        Sha256::tagged(b"BIP0322-signed-message")
             .chain_update(message.as_bytes())
             .finalize()
             .into()
@@ -100,7 +100,7 @@ impl Bip322MessageHasher {
             .encode_legacy(&mut buf, 0, script_code, EcdsaSighashType::All)
             .expect("Legacy sighash encoding should succeed");
 
-        NearDoubleSha256::digest(&buf).into()
+        DoubleSha256::digest(&buf).into()
     }
 
     /// Compute segwit v0 sighash for P2WPKH and P2WSH addresses.
@@ -164,6 +164,6 @@ impl Bip322MessageHasher {
             .encode_segwit_v0(&mut buf, 0, &script_code, amount, EcdsaSighashType::All)
             .expect("Segwit v0 sighash encoding should succeed");
 
-        NearDoubleSha256::digest(&buf).into()
+        DoubleSha256::digest(&buf).into()
     }
 }

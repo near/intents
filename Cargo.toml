@@ -3,7 +3,6 @@ resolver = "3"
 members = [
     "admin-utils",
     "bip322",
-    "bip340",
     "bitmap",
     "borsh-utils",
     "controller",
@@ -41,7 +40,6 @@ rust-version = "1.86.0"
 [workspace.dependencies]
 defuse-admin-utils.path = "admin-utils"
 defuse-bip322.path = "bip322"
-defuse-bip340.path = "bip340"
 defuse-bitmap.path = "bitmap"
 defuse-borsh-utils.path = "borsh-utils"
 defuse-controller.path = "controller"
