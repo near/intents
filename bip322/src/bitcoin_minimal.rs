@@ -33,7 +33,7 @@
 use bech32::{Hrp, segwit};
 use defuse_bip340::Double;
 use digest::Digest;
-use near_sdk::{env, near};
+use near_sdk::near;
 use serde_with::serde_as;
 
 use crate::error::AddressError;
@@ -61,11 +61,7 @@ pub type NearDoubleSha256 = Double<NearSha256>;
 /// - P2WPKH address generation from public keys
 /// - Script hash computation for P2SH addresses
 ///
-/// The algorithm: `RIPEMD160(SHA256(data))`
-///
-/// This implementation uses NEAR SDK's optimized host functions:
-/// - `env::sha256_array()` for SHA-256 computation
-/// - `env::ripemd160_array()` for RIPEMD-160 computation
+/// This function uses the standardized Hash160 implementation from near-utils.
 ///
 /// # Arguments
 ///
@@ -75,11 +71,7 @@ pub type NearDoubleSha256 = Double<NearSha256>;
 ///
 /// A 20-byte HASH160 result computed using NEAR SDK host functions
 pub fn hash160(data: &[u8]) -> [u8; 20] {
-    // First pass: SHA256 using NEAR SDK host function
-    let sha256_result = env::sha256_array(data);
-
-    // Second pass: RIPEMD160 using NEAR SDK host function
-    env::ripemd160_array(&sha256_result)
+    defuse_near_utils::digest::Hash160::digest(data).into()
 }
 
 /// Bitcoin address representation optimized for BIP-322 verification.
