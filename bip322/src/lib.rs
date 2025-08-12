@@ -131,12 +131,15 @@ impl SignedBip322Payload {
         }
 
         // Calculate v byte to make it in 0-3 range
-        let mut recovery_id = signature_bytes[0] - 27;
-        if recovery_id >= 4 {
-            recovery_id -= 4;
-        }
+        let v = if ((recovery_id - 27) & 4) != 0 {
+            // compressed
+            recovery_id - 31
+        } else {
+            // uncompressed  
+            recovery_id - 27
+        };
 
         // Use env::ecrecover to recover public key from signature
-        env::ecrecover(message_hash, &signature_bytes[1..], recovery_id, true)
+        env::ecrecover(message_hash, &signature_bytes[1..], v, true)
     }
 }

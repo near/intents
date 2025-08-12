@@ -4,7 +4,7 @@
 //! Uses a common verification pattern with address-specific validation.
 
 use crate::SignedBip322Payload;
-use crate::bitcoin_minimal::Address;
+use crate::bitcoin_minimal::{Address, OP_CHECKSIG, OP_DUP, OP_EQUALVERIFY, OP_HASH160};
 use crate::hashing::Bip322MessageHasher;
 use crate::transaction::create_to_sign;
 use defuse_crypto::{Curve, Secp256k1};
@@ -52,12 +52,12 @@ fn hash160_pubkey(raw_pubkey: &[u8; 64], compressed: bool) -> Vec<[u8; 20]> {
 /// Assembled script which verifies given hash
 fn build_script(pubkey_hash: &[u8; 20]) -> Vec<u8> {
     let mut script = Vec::with_capacity(25);
-    script.push(0x76); // OP_DUP
-    script.push(0xa9); // OP_HASH160
-    script.push(0x14); // Push 20 bytes
+    script.push(OP_DUP);
+    script.push(OP_HASH160);
+    script.push(20);
     script.extend_from_slice(pubkey_hash);
-    script.push(0x88); // OP_EQUALVERIFY
-    script.push(0xac); // OP_CHECKSIG
+    script.push(OP_EQUALVERIFY);
+    script.push(OP_CHECKSIG);
     script
 }
 
