@@ -5,7 +5,7 @@
 //! methods for different address types.
 
 use crate::bitcoin_minimal::{Address, EcdsaSighashType, NearDoubleSha256, NearSha256, ScriptBuf, Transaction, OP_CHECKSIG, OP_DUP, OP_EQUALVERIFY, OP_HASH160};
-use defuse_bip340::Bip340TaggedDigest;
+use defuse_bip340::TaggedDigest;
 use digest::Digest;
 
 /// BIP-322 message hashing utilities

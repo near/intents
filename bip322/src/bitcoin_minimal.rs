@@ -54,26 +54,6 @@ pub type NearSha256 = defuse_near_utils::digest::Sha256;
 /// to provide Bitcoin's standard double SHA-256 hash function.
 pub type NearDoubleSha256 = Double<NearSha256>;
 
-/// Computes HASH160 (RIPEMD160(SHA256(data))) for Bitcoin address generation using NEAR SDK.
-///
-/// HASH160 is Bitcoin's standard address hash function used for:
-/// - P2PKH address generation from public keys
-/// - P2WPKH address generation from public keys
-/// - Script hash computation for P2SH addresses
-///
-/// This function uses the standardized Hash160 implementation from near-utils.
-///
-/// # Arguments
-///
-/// * `data` - The input data to hash (typically a public key)
-///
-/// # Returns
-///
-/// A 20-byte HASH160 result computed using NEAR SDK host functions
-pub fn hash160(data: &[u8]) -> [u8; 20] {
-    defuse_near_utils::digest::Hash160::digest(data).into()
-}
-
 /// Bitcoin address representation optimized for BIP-322 verification.
 ///
 /// # Supported Address Types

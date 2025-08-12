@@ -1,11 +1,11 @@
 use digest::Digest;
 
 /// [BIP-340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki) tagged hash
-pub trait Bip340TaggedDigest: Digest {
+pub trait TaggedDigest: Digest {
     fn tagged(tag: impl AsRef<[u8]>) -> Self;
 }
 
-impl<D: Digest> Bip340TaggedDigest for D {
+impl<D: Digest> TaggedDigest for D {
     fn tagged(tag: impl AsRef<[u8]>) -> Self {
         let tag = Self::digest(tag);
         Self::new().chain_update(&tag).chain_update(&tag)

@@ -8,6 +8,7 @@ use crate::bitcoin_minimal::{Address, OP_CHECKSIG, OP_DUP, OP_EQUALVERIFY, OP_HA
 use crate::hashing::Bip322MessageHasher;
 use crate::transaction::create_to_sign;
 use defuse_crypto::{Curve, Secp256k1};
+use digest::Digest;
 use near_sdk::env;
 
 /// Computes hash160 of a raw public key using the appropriate Bitcoin format.
@@ -30,15 +31,15 @@ fn hash160_pubkey(raw_pubkey: &[u8; 64], compressed: bool) -> Vec<[u8; 20]> {
         compressed.extend_from_slice(&raw_pubkey[..32]);
 
         let mut response = Vec::with_capacity(2);
-        response.push(crate::bitcoin_minimal::hash160(&compressed));
+        response.push(defuse_near_utils::digest::Hash160::digest(&compressed).into());
 
         compressed.as_mut_slice()[0] = 0x03;
-        response.push(crate::bitcoin_minimal::hash160(&compressed));
+        response.push(defuse_near_utils::digest::Hash160::digest(&compressed).into());
 
         return response
     }
 
-    vec![crate::bitcoin_minimal::hash160(raw_pubkey)]
+    vec![defuse_near_utils::digest::Hash160::digest(raw_pubkey).into()]
 }
 
 /// Assemble witness or redeem script
@@ -200,7 +201,7 @@ pub fn verify_p2sh_signature(
     // Try uncompressed first
     let pubkey_hash = hash160_pubkey(&recovered_pubkey, false);
     let redeem_script = build_script(&pubkey_hash[0]);
-    let computed_script_hash = crate::bitcoin_minimal::hash160(&redeem_script);
+    let computed_script_hash: [u8; 20] = defuse_near_utils::digest::Hash160::digest(&redeem_script).into();
 
     if computed_script_hash == *script_hash {
         return Some(recovered_pubkey);
@@ -210,13 +211,13 @@ pub fn verify_p2sh_signature(
     let pubkey_hash = hash160_pubkey(&recovered_pubkey, true);
 
     let redeem_script = build_script(&pubkey_hash[0]);
-    let computed_script_hash = crate::bitcoin_minimal::hash160(&redeem_script);
+    let computed_script_hash: [u8; 20] = defuse_near_utils::digest::Hash160::digest(&redeem_script).into();
     if computed_script_hash == *script_hash {
         return Some(recovered_pubkey);
     }
 
     let redeem_script = build_script(&pubkey_hash[1]);
-    let computed_script_hash = crate::bitcoin_minimal::hash160(&redeem_script);
+    let computed_script_hash: [u8; 20] = defuse_near_utils::digest::Hash160::digest(&redeem_script).into();
     if computed_script_hash == *script_hash {
         return Some(recovered_pubkey);
     }
