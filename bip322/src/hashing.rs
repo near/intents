@@ -4,17 +4,17 @@
 //! It includes both the BIP-322 tagged hash for messages and the sighash computation
 //! methods for different address types.
 
-use crate::bitcoin_minimal::{Address, EcdsaSighashType, NearDoubleSha256, ScriptBuf, Transaction, OP_CHECKSIG, OP_DUP, OP_EQUALVERIFY, OP_HASH160};
+use crate::bitcoin_minimal::{Address, EcdsaSighashType, NearDoubleSha256, NearSha256, ScriptBuf, Transaction, OP_CHECKSIG, OP_DUP, OP_EQUALVERIFY, OP_HASH160};
+use defuse_bip340::Bip340TaggedDigest;
 use digest::Digest;
-use near_sdk::env;
 
 /// BIP-322 message hashing utilities
 pub struct Bip322MessageHasher;
 
 impl Bip322MessageHasher {
-    /// Computes the BIP-322 tagged message hash using NEAR SDK cryptographic functions.
+    /// Computes the BIP-322 tagged message hash using BIP-340 tagged digest implementation.
     ///
-    /// BIP-322 uses a "tagged hash" approach similar to BIP-340 (Schnorr signatures).
+    /// BIP-322 uses a "tagged hash" approach identical to BIP-340 (Schnorr signatures).
     /// This prevents signature reuse across different contexts by domain-separating
     /// the hash computation.
     ///
@@ -22,8 +22,8 @@ impl Bip322MessageHasher {
     /// 1. Compute `tag_hash = SHA256("BIP0322-signed-message")`
     /// 2. Compute `message_hash = SHA256(tag_hash || tag_hash || message)`
     ///
-    /// This double-inclusion of the tag hash ensures domain separation while
-    /// maintaining compatibility with existing SHA256 implementations.
+    /// This implementation uses the BIP-340 `Bip340TaggedDigest` trait with our
+    /// NEAR SDK compatible SHA-256 implementation for optimal gas efficiency.
     ///
     /// # Arguments
     ///
@@ -33,21 +33,11 @@ impl Bip322MessageHasher {
     ///
     /// A 32-byte hash that represents the BIP-322 tagged hash of the message.
     pub fn compute_bip322_message_hash(message: &str) -> [u8; 32] {
-        // The BIP-322 tag string - this creates domain separation
-        let tag = b"BIP0322-signed-message";
-
-        // Hash the tag itself using NEAR SDK
-        let tag_hash = env::sha256_array(tag);
-
-        // Create the tagged hash: SHA256(tag_hash || tag_hash || message)
-        // The double tag_hash inclusion is part of the BIP-340 tagged hash specification
-        let mut input = Vec::with_capacity(tag_hash.len() * 2 + message.len());
-        input.extend_from_slice(&tag_hash); // First tag hash
-        input.extend_from_slice(&tag_hash); // Second tag hash (domain separation)
-        input.extend_from_slice(message.as_bytes()); // The actual message
-
-        // Final hash computation using NEAR SDK
-        env::sha256_array(&input)
+        // Use BIP-340's tagged digest implementation with NEAR SDK SHA-256
+        NearSha256::tagged(b"BIP0322-signed-message")
+            .chain_update(message.as_bytes())
+            .finalize()
+            .into()
     }
 
     /// Compute the message hash using the appropriate sighash algorithm based on address type.
