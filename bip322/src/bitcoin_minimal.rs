@@ -32,7 +32,7 @@
 
 use bech32::{Hrp, segwit};
 use defuse_bip340::Double;
-use digest::{Digest, FixedOutput, HashMarker, OutputSizeUser, Update};
+use digest::Digest;
 use near_sdk::{env, near};
 use serde_with::serde_as;
 
@@ -42,48 +42,15 @@ use crate::error::AddressError;
 use defuse_crypto::{Curve, Payload, Secp256k1};
 pub type Secp256k1PublicKey = <Secp256k1 as Curve>::PublicKey;
 
-/// NEAR SDK SHA-256 implementation compatible with the `digest` crate traits.
+/// Type alias for NEAR SDK SHA-256 implementation from near-utils.
 ///
-/// This implementation uses NEAR SDK's `env::sha256_array()` function for
-/// cryptographic operations, making it suitable for use in NEAR smart contracts
-/// while being compatible with BIP340's `Double` and `Bip340TaggedDigest` functionality.
-#[derive(Debug, Clone, Default)]
-pub struct NearSha256 {
-    buffer: Vec<u8>,
-}
-
-impl NearSha256 {
-    /// Creates a new NEAR SHA-256 hasher instance.
-    pub const fn new() -> Self {
-        Self { buffer: Vec::new() }
-    }
-}
-
-impl Update for NearSha256 {
-    fn update(&mut self, data: &[u8]) {
-        self.buffer.extend_from_slice(data);
-    }
-}
-
-impl OutputSizeUser for NearSha256 {
-    type OutputSize = digest::consts::U32;
-}
-
-impl FixedOutput for NearSha256 {
-    fn finalize_into(self, out: &mut digest::Output<Self>) {
-        let hash = env::sha256_array(&self.buffer);
-        out.copy_from_slice(&hash);
-    }
-}
-
-impl HashMarker for NearSha256 {}
-
-// Note: Digest trait is automatically implemented for types that implement
-// FixedOutput + Default + Update + HashMarker
+/// This reuses the standardized NEAR SDK SHA-256 implementation from near-utils
+/// that is compatible with the `digest` crate traits.
+pub type NearSha256 = defuse_near_utils::digest::Sha256;
 
 /// Type alias for double SHA-256 using NEAR SDK functions.
 ///
-/// This combines BIP340's `Double` wrapper with our NEAR SDK implementation
+/// This combines BIP340's `Double` wrapper with the near-utils NEAR SDK implementation
 /// to provide Bitcoin's standard double SHA-256 hash function.
 pub type NearDoubleSha256 = Double<NearSha256>;
 

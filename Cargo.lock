@@ -690,6 +690,7 @@ dependencies = [
  "bs58 0.5.1",
  "defuse-bip340",
  "defuse-crypto",
+ "defuse-near-utils",
  "digest",
  "near-sdk",
  "serde_with",
