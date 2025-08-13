@@ -38,7 +38,7 @@ use serde_with::serde_as;
 use crate::error::AddressError;
 
 // Type alias for cleaner function signatures
-use defuse_crypto::{Curve, Payload, Secp256k1};
+use defuse_crypto::{Curve, Secp256k1};
 pub type Secp256k1PublicKey = <Secp256k1 as Curve>::PublicKey;
 
 
@@ -191,67 +191,6 @@ impl Address {
         }
     }
 
-    /// Verifies a BIP-322 signature for this address type.
-    ///
-    /// This method delegates to the appropriate verification algorithm based on
-    /// the address type, handling the specific witness stack format and signature
-    /// verification requirements for each address format.
-    ///
-    /// # Arguments
-    ///
-    /// * `message` - The message that was signed
-    /// * `signature` - The BIP-322 signature witness data
-    ///
-    /// # Returns
-    ///
-    /// * `Some(PublicKey)` if signature verification succeeds
-    /// * `None` if signature verification fails for any reason
-    pub fn verify_bip322_signature(
-        &self,
-        message: &str,
-        signature: &[u8; 65],
-    ) -> Option<Secp256k1PublicKey> {
-        use crate::SignedBip322Payload;
-
-        let payload = SignedBip322Payload {
-            address: self.clone(),
-            message: message.to_string(),
-            signature: *signature,
-        };
-
-        match self {
-            Address::P2PKH { .. } => crate::verification::verify_p2pkh_signature(&payload),
-            Address::P2WPKH { .. } => crate::verification::verify_p2wpkh_signature(&payload),
-            Address::P2SH { .. } => crate::verification::verify_p2sh_signature(&payload),
-            Address::P2WSH { .. } => crate::verification::verify_p2wsh_signature(&payload),
-        }
-    }
-
-    /// Computes the BIP-322 message hash for this address type.
-    ///
-    /// Each address type uses different algorithms for computing the message hash:
-    /// - P2PKH/P2SH: Legacy Bitcoin sighash
-    /// - P2WPKH/P2WSH: Segwit v0 sighash (BIP-143)
-    ///
-    /// # Arguments
-    ///
-    /// * `message` - The message to compute the hash for
-    ///
-    /// # Returns
-    ///
-    /// The 32-byte message hash for this address type
-    pub fn compute_bip322_message_hash(&self, message: &str) -> near_sdk::CryptoHash {
-        use crate::SignedBip322Payload;
-
-        let payload = SignedBip322Payload {
-            address: self.clone(),
-            message: message.to_string(),
-            signature: [0u8; 65], // Empty 65-byte signature for hash computation
-        };
-
-        // Use the Payload trait's hash method which dispatches to correct address type
-        payload.hash()
-    }
 }
 
 /// Implementation of address parsing from the string format.

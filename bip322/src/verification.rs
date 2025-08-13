@@ -1,15 +1,77 @@
-//! BIP-322 signature verification logic
+//! BIP-322 signature verification utilities
 //!
-//! This module contains unified verification logic for all Bitcoin address types.
-//! Uses a common verification pattern with address-specific validation.
+//! This module provides utility functions for address validation and public key
+//! verification used in BIP-322 signature validation.
 
-use crate::SignedBip322Payload;
 use crate::bitcoin_minimal::{Address, OP_CHECKSIG, OP_DUP, OP_EQUALVERIFY, OP_HASH160};
-use crate::hashing::Bip322MessageHasher;
-use crate::transaction::create_to_sign;
 use defuse_crypto::{Curve, Secp256k1};
 use digest::Digest;
 use near_sdk::env;
+
+/// Validates that a recovered public key matches the expected Bitcoin address.
+///
+/// This function performs address-specific validation for all supported Bitcoin address types.
+///
+/// # Arguments
+///
+/// * `recovered_pubkey` - The 64-byte raw public key recovered from signature
+/// * `address` - The Bitcoin address to validate against
+///
+/// # Returns
+///
+/// `true` if the public key matches the address, `false` otherwise
+pub fn validate_pubkey_matches_address(
+    recovered_pubkey: &<Secp256k1 as Curve>::PublicKey,
+    address: &Address,
+) -> bool {
+    match address {
+        Address::P2PKH { pubkey_hash } => validate_p2pkh_address(recovered_pubkey, pubkey_hash),
+        Address::P2WPKH { witness_program } => validate_p2wpkh_address(recovered_pubkey, witness_program),
+        Address::P2SH { script_hash } => validate_p2sh_address(recovered_pubkey, script_hash),
+        Address::P2WSH { witness_program } => validate_p2wsh_address(recovered_pubkey, witness_program),
+    }
+}
+
+/// Validates that a compressed public key matches the expected Bitcoin address.
+///
+/// This function performs address-specific validation using the compressed public key format
+/// directly, without requiring decompression to the uncompressed format.
+///
+/// # Arguments
+///
+/// * `compressed_pubkey` - The 33-byte compressed public key
+/// * `address` - The Bitcoin address to validate against
+///
+/// # Returns
+///
+/// `true` if the compressed public key matches the address, `false` otherwise
+pub fn validate_compressed_pubkey_matches_address(
+    compressed_pubkey: &[u8; 33],
+    address: &Address,
+) -> bool {
+    match address {
+        Address::P2PKH { pubkey_hash } => {
+            let computed_hash: [u8; 20] = defuse_near_utils::digest::Hash160::digest(compressed_pubkey).into();
+            computed_hash == *pubkey_hash
+        }
+        Address::P2WPKH { witness_program } => {
+            let computed_hash: [u8; 20] = defuse_near_utils::digest::Hash160::digest(compressed_pubkey).into();
+            computed_hash == witness_program.program.as_slice()
+        }
+        Address::P2SH { script_hash } => {
+            let pubkey_hash: [u8; 20] = defuse_near_utils::digest::Hash160::digest(compressed_pubkey).into();
+            let redeem_script = build_script(&pubkey_hash);
+            let computed_script_hash: [u8; 20] = defuse_near_utils::digest::Hash160::digest(&redeem_script).into();
+            computed_script_hash == *script_hash
+        }
+        Address::P2WSH { witness_program } => {
+            let pubkey_hash: [u8; 20] = defuse_near_utils::digest::Hash160::digest(compressed_pubkey).into();
+            let witness_script = build_script(&pubkey_hash);
+            let computed_script_hash = env::sha256_array(&witness_script);
+            computed_script_hash == witness_program.program.as_slice()
+        }
+    }
+}
 
 /// Computes hash160 of a raw public key using the appropriate Bitcoin format.
 ///
@@ -62,220 +124,82 @@ fn build_script(pubkey_hash: &[u8; 20]) -> Vec<u8> {
     script
 }
 
-/// Common BIP-322 verification logic that recovers the public key.
-///
-/// This function implements the standard BIP-322 verification process:
-/// 1. Creates BIP-322 transactions (to_spend, to_sign)
-/// 2. Computes message hash using appropriate algorithm for address type
-/// 3. Recovers public key from compact signature
-///
-/// # Arguments
-///
-/// * `payload` - The signed BIP-322 payload
-///
-/// # Returns
-///
-/// * `Some(PublicKey)` if public key recovery succeeds
-/// * `None` if recovery fails
-fn verify_bip322_common(payload: &SignedBip322Payload) -> Option<<Secp256k1 as Curve>::PublicKey> {
-    let to_spend = payload.create_to_spend();
-    let to_sign = create_to_sign(&to_spend);
-
-    let sighash = Bip322MessageHasher::compute_message_hash(&to_spend, &to_sign, &payload.address);
-
-    SignedBip322Payload::try_recover_pubkey(&sighash, &payload.signature)
-}
-
-/// Verifies a BIP-322 signature for P2PKH addresses.
-///
-/// P2PKH verification recovers the public key from the signature and validates
-/// that its hash160 matches the pubkey_hash in the P2PKH address.
-///
-/// # Arguments
-///
-/// * `payload` - The signed BIP-322 payload
-///
-/// # Returns
-///
-/// * `Some(PublicKey)` if verification succeeds
-/// * `None` if verification fails
-pub fn verify_p2pkh_signature(
-    payload: &SignedBip322Payload,
-) -> Option<<Secp256k1 as Curve>::PublicKey> {
-    // Ensure this is a P2PKH address
-    let Address::P2PKH { pubkey_hash } = &payload.address else {
-        return None;
-    };
-
-    let recovered_pubkey = verify_bip322_common(payload)?;
-
-    // Validate that recovered pubkey matches the P2PKH address
-    // P2PKH can use either compressed or uncompressed, try both
-
+/// Validates a P2PKH address against a recovered public key.
+fn validate_p2pkh_address(recovered_pubkey: &[u8; 64], expected_pubkey_hash: &[u8; 20]) -> bool {
     // Try uncompressed first
-    let uncompressed_hash = hash160_pubkey(&recovered_pubkey, false);
-    if uncompressed_hash[0] == *pubkey_hash {
-        return Some(recovered_pubkey)
+    let uncompressed_hash = hash160_pubkey(recovered_pubkey, false);
+    if uncompressed_hash[0] == *expected_pubkey_hash {
+        return true;
     }
 
     // Try compressed next, two possibilities
-    let compressed_hash = hash160_pubkey(&recovered_pubkey, true);
-    if compressed_hash[0] == *pubkey_hash {
-        return Some(recovered_pubkey);
-    }
-
-    if compressed_hash[1] == *pubkey_hash {
-        return Some(recovered_pubkey);
-    }
-
-    None
+    let compressed_hash = hash160_pubkey(recovered_pubkey, true);
+    compressed_hash[0] == *expected_pubkey_hash || compressed_hash[1] == *expected_pubkey_hash
 }
 
-/// Verifies a BIP-322 signature for P2WPKH addresses.
-///
-/// P2WPKH verification recovers the public key from the signature and validates
-/// that its hash160 matches the witness program (pubkey hash) in the P2WPKH address.
-///
-/// # Arguments
-///
-/// * `payload` - The signed BIP-322 payload
-///
-/// # Returns
-///
-/// * `Some(PublicKey)` if verification succeeds
-/// * `None` if verification fails
-pub fn verify_p2wpkh_signature(
-    payload: &SignedBip322Payload,
-) -> Option<<Secp256k1 as Curve>::PublicKey> {
-    // Ensure this is a P2WPKH address
-    let Address::P2WPKH { witness_program } = &payload.address else {
-        return None;
-    };
-
-    let recovered_pubkey = verify_bip322_common(payload)?;
-
-    // Validate that recovered pubkey matches the P2WPKH address
+/// Validates a P2WPKH address against a recovered public key.
+fn validate_p2wpkh_address(
+    recovered_pubkey: &[u8; 64], 
+    witness_program: &crate::bitcoin_minimal::WitnessProgram
+) -> bool {
     // P2WPKH addresses always use compressed public keys, so two possibilities,
     // depending on the y coordinate parity
-    let computed_pubkey_hash = hash160_pubkey(&recovered_pubkey, true);
+    let computed_pubkey_hash = hash160_pubkey(recovered_pubkey, true);
 
-    if computed_pubkey_hash[0] == witness_program.program.as_slice() {
-        return Some(recovered_pubkey);
-    }
-
-    if computed_pubkey_hash[1] == witness_program.program.as_slice() {
-        return Some(recovered_pubkey);
-    }
-
-    None
+    computed_pubkey_hash[0] == witness_program.program.as_slice() 
+        || computed_pubkey_hash[1] == witness_program.program.as_slice()
 }
 
-/// Verifies a BIP-322 signature for P2SH addresses.
-///
-/// P2SH verification creates a P2PKH-style redeem script from the recovered
-/// public key and validates that its hash160 matches the script_hash in the P2SH address.
-/// This is a simplified implementation that only supports P2PKH-style redeem scripts.
-///
-/// # Arguments
-///
-/// * `payload` - The signed BIP-322 payload
-///
-/// # Returns
-///
-/// * `Some(PublicKey)` if verification succeeds
-/// * `None` if verification fails
-pub fn verify_p2sh_signature(
-    payload: &SignedBip322Payload,
-) -> Option<<Secp256k1 as Curve>::PublicKey> {
-    // Ensure this is a P2SH address
-    let Address::P2SH { script_hash } = &payload.address else {
-        return None;
-    };
-
-    let recovered_pubkey = verify_bip322_common(payload)?;
-
-    // Create P2PKH-style redeem script from recovered pubkey
-    // There is no fixed rule, public keys can be compressed or uncompressed,
-    // so we have to try both.
-
+/// Validates a P2SH address against a recovered public key.
+fn validate_p2sh_address(recovered_pubkey: &[u8; 64], expected_script_hash: &[u8; 20]) -> bool {
     // Try uncompressed first
-    let pubkey_hash = hash160_pubkey(&recovered_pubkey, false);
+    let pubkey_hash = hash160_pubkey(recovered_pubkey, false);
     let redeem_script = build_script(&pubkey_hash[0]);
     let computed_script_hash: [u8; 20] = defuse_near_utils::digest::Hash160::digest(&redeem_script).into();
 
-    if computed_script_hash == *script_hash {
-        return Some(recovered_pubkey);
+    if computed_script_hash == *expected_script_hash {
+        return true;
     }
 
     // Try compressed next, two possibilities
-    let pubkey_hash = hash160_pubkey(&recovered_pubkey, true);
+    let pubkey_hash = hash160_pubkey(recovered_pubkey, true);
 
     let redeem_script = build_script(&pubkey_hash[0]);
     let computed_script_hash: [u8; 20] = defuse_near_utils::digest::Hash160::digest(&redeem_script).into();
-    if computed_script_hash == *script_hash {
-        return Some(recovered_pubkey);
+    if computed_script_hash == *expected_script_hash {
+        return true;
     }
 
     let redeem_script = build_script(&pubkey_hash[1]);
     let computed_script_hash: [u8; 20] = defuse_near_utils::digest::Hash160::digest(&redeem_script).into();
-    if computed_script_hash == *script_hash {
-        return Some(recovered_pubkey);
-    }
-
-    // Both failed, return None
-    None
+    computed_script_hash == *expected_script_hash
 }
 
-/// Verifies a BIP-322 signature for P2WSH addresses.
-///
-/// P2WSH verification creates a P2PKH-style witness script from the recovered
-/// public key and validates that its SHA256 hash matches the witness program in the P2WSH address.
-/// This is a simplified implementation that only supports P2PKH-style witness scripts.
-///
-/// # Arguments
-///
-/// * `payload` - The signed BIP-322 payload
-///
-/// # Returns
-///
-/// * `Some(PublicKey)` if verification succeeds
-/// * `None` if verification fails
-pub fn verify_p2wsh_signature(
-    payload: &SignedBip322Payload,
-) -> Option<<Secp256k1 as Curve>::PublicKey> {
-    // Ensure this is a P2WSH address
-    let Address::P2WSH { witness_program } = &payload.address else {
-        return None;
-    };
-
-    let recovered_pubkey = verify_bip322_common(payload)?;
-
-    // Create P2PKH-style witness script from recovered pubkey
+/// Validates a P2WSH address against a recovered public key.
+fn validate_p2wsh_address(
+    recovered_pubkey: &[u8; 64], 
+    witness_program: &crate::bitcoin_minimal::WitnessProgram
+) -> bool {
     // Try uncompressed first
-    let pubkey_hash = hash160_pubkey(&recovered_pubkey, false);
-
+    let pubkey_hash = hash160_pubkey(recovered_pubkey, false);
     let witness_script = build_script(&pubkey_hash[0]);
     let computed_script_hash = env::sha256_array(&witness_script);
 
     if computed_script_hash == witness_program.program.as_slice() {
-        return Some(recovered_pubkey);
+        return true;
     }
 
     // Try compressed next
-    let pubkey_hash = hash160_pubkey(&recovered_pubkey, true);
+    let pubkey_hash = hash160_pubkey(recovered_pubkey, true);
 
     let witness_script = build_script(&pubkey_hash[0]);
     let computed_script_hash = env::sha256_array(&witness_script);
     if computed_script_hash == witness_program.program.as_slice() {
-        return Some(recovered_pubkey);
+        return true;
     }
 
     let witness_script = build_script(&pubkey_hash[1]);
     let computed_script_hash = env::sha256_array(&witness_script);
-    if computed_script_hash == witness_program.program.as_slice() {
-        return Some(recovered_pubkey);
-    }
-
-    // Both failed, return None
-    None
+    computed_script_hash == witness_program.program.as_slice()
 }
+

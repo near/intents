@@ -67,6 +67,7 @@ impl Signer for Account {
         }
     }
 
+    //TODO: BIP-322 replace with some realistic test vector.
     fn sign_bip322(&self, message: String) -> SignedBip322Payload {
         // For testing purposes, create a dummy BIP-322 signature
         // In a real implementation, this would need proper Bitcoin ECDSA signing
@@ -83,7 +84,7 @@ impl Signer for Account {
             });
 
         // Create empty 65-byte signature (signature verification will fail, but structure is correct for testing)
-        let signature = [0u8; 65];
+        let signature = defuse_bip322::Bip322Signature::Compact { signature: [0u8; 65] };
 
         SignedBip322Payload {
             address,

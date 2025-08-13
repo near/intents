@@ -1,5 +1,4 @@
 pub mod accounts;
-mod bip322_simple;
 mod env;
 mod intents;
 mod storage;

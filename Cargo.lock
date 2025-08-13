@@ -691,6 +691,7 @@ dependencies = [
  "defuse-crypto",
  "defuse-near-utils",
  "digest",
+ "hex-literal",
  "near-sdk",
  "serde_with",
 ]
