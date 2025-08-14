@@ -60,8 +60,15 @@ pub fn validate_compressed_pubkey_matches_address(
         }
         Address::P2SH { script_hash } => {
             let pubkey_hash: [u8; 20] = defuse_near_utils::digest::Hash160::digest(compressed_pubkey).into();
-            let redeem_script = build_script(&pubkey_hash);
-            let computed_script_hash: [u8; 20] = defuse_near_utils::digest::Hash160::digest(&redeem_script).into();
+            
+            // For P2SH-P2WPKH (nested segwit), create a P2WPKH witness program
+            // Format: [version_byte][20_byte_pubkey_hash]
+            let mut witness_program = Vec::with_capacity(22);
+            witness_program.push(0x00); // witness version 0
+            witness_program.push(0x14); // 20 bytes length
+            witness_program.extend_from_slice(&pubkey_hash);
+            
+            let computed_script_hash: [u8; 20] = defuse_near_utils::digest::Hash160::digest(&witness_program).into();
             computed_script_hash == *script_hash
         }
         Address::P2WSH { witness_program } => {

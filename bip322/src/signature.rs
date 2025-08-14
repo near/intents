@@ -416,11 +416,14 @@ impl Bip322Signature {
         }
 
         // Calculate v byte to make it in 0-3 range
-        let v = if ((recovery_id - 27) & 4) != 0 {
-            // compressed
+        // Bitcoin recovery ID format:
+        // 27-30: uncompressed public key, recovery_id - 27 gives 0-3
+        // 31-34: compressed public key, recovery_id - 31 gives 0-3
+        let v = if recovery_id >= 31 {
+            // compressed public key
             recovery_id - 31
         } else {
-            // uncompressed
+            // uncompressed public key  
             recovery_id - 27
         };
 
