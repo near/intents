@@ -4,7 +4,10 @@
 //! It includes both the BIP-322 tagged hash for messages and the sighash computation
 //! methods for different address types.
 
-use crate::bitcoin_minimal::{Address, EcdsaSighashType, ScriptBuf, Transaction, OP_CHECKSIG, OP_DUP, OP_EQUALVERIFY, OP_HASH160};
+use crate::bitcoin_minimal::{
+    Address, EcdsaSighashType, OP_CHECKSIG, OP_DUP, OP_EQUALVERIFY, OP_HASH160, ScriptBuf,
+    Transaction,
+};
 use defuse_near_utils::digest::{DoubleSha256, Sha256, TaggedDigest};
 use digest::Digest;
 
@@ -147,7 +150,9 @@ impl Bip322MessageHasher {
                 // It is not derivable from the address; you'll need the script provided.
                 // If you don't support general P2WSH here, you can return a hash that will
                 // never verify, or panic with a clear message.
-                panic!("compute_segwit_v0_sighash: P2WSH requires the witness script (not derivable from address)")
+                panic!(
+                    "compute_segwit_v0_sighash: P2WSH requires the witness script (not derivable from address)"
+                )
             }
             // Should not reach here; function only called for segwit types
             _ => unreachable!("compute_segwit_v0_sighash called with non-segwit address"),

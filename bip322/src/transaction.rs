@@ -5,8 +5,8 @@
 //! the Bitcoin signing process without requiring actual UTXOs.
 
 use crate::bitcoin_minimal::{
-    Address, Encodable, OP_0, OP_RETURN, OutPoint, ScriptBuf, Transaction,
-    TransactionWitness, TxIn, TxOut, Txid,
+    Address, Encodable, OP_0, OP_RETURN, OutPoint, ScriptBuf, Transaction, TransactionWitness,
+    TxIn, TxOut, Txid,
 };
 use defuse_near_utils::digest::DoubleSha256;
 use digest::Digest;

@@ -84,7 +84,9 @@ impl Signer for Account {
             });
 
         // Create empty 65-byte signature (signature verification will fail, but structure is correct for testing)
-        let signature = defuse_bip322::Bip322Signature::Compact { signature: [0u8; 65] };
+        let signature = defuse_bip322::Bip322Signature::Compact {
+            signature: [0u8; 65],
+        };
 
         SignedBip322Payload {
             address,

@@ -1,4 +1,7 @@
-use digest::{Digest, FixedOutput, HashMarker, OutputSizeUser, Update, consts::{U32, U20}};
+use digest::{
+    Digest, FixedOutput, HashMarker, OutputSizeUser, Update,
+    consts::{U20, U32},
+};
 use near_sdk::env;
 
 #[derive(Debug, Clone, Default)]
@@ -108,7 +111,7 @@ impl<D> HashMarker for Double<D> where D: HashMarker {}
 
 /// Tagged digest trait for domain-separated hashing.
 ///
-/// Tagged hashing prevents signature reuse across different contexts by 
+/// Tagged hashing prevents signature reuse across different contexts by
 /// domain-separating the hash computation with a tag.
 ///
 /// The algorithm: `Hash(tag_hash || tag_hash || data)` where `tag_hash = Hash(tag)`
@@ -168,15 +171,18 @@ mod tests {
     #[rstest]
     fn tagged_digest_test(random_bytes: Vec<u8>) {
         let tag = b"test-tag";
-        let got: [u8; 32] = Sha256::tagged(tag).chain_update(&random_bytes).finalize().into();
-        
+        let got: [u8; 32] = Sha256::tagged(tag)
+            .chain_update(&random_bytes)
+            .finalize()
+            .into();
+
         let tag_hash = env::sha256_array(tag);
         let mut combined = Vec::with_capacity(tag_hash.len() * 2 + random_bytes.len());
         combined.extend_from_slice(&tag_hash);
         combined.extend_from_slice(&tag_hash);
         combined.extend_from_slice(&random_bytes);
         let expected = env::sha256_array(&combined);
-        
+
         assert_eq!(got, expected);
     }
 }

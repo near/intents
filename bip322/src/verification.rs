@@ -26,9 +26,13 @@ pub fn validate_pubkey_matches_address(
 ) -> bool {
     match address {
         Address::P2PKH { pubkey_hash } => validate_p2pkh_address(recovered_pubkey, pubkey_hash),
-        Address::P2WPKH { witness_program } => validate_p2wpkh_address(recovered_pubkey, witness_program),
+        Address::P2WPKH { witness_program } => {
+            validate_p2wpkh_address(recovered_pubkey, witness_program)
+        }
         Address::P2SH { script_hash } => validate_p2sh_address(recovered_pubkey, script_hash),
-        Address::P2WSH { witness_program } => validate_p2wsh_address(recovered_pubkey, witness_program),
+        Address::P2WSH { witness_program } => {
+            validate_p2wsh_address(recovered_pubkey, witness_program)
+        }
     }
 }
 
@@ -51,28 +55,33 @@ pub fn validate_compressed_pubkey_matches_address(
 ) -> bool {
     match address {
         Address::P2PKH { pubkey_hash } => {
-            let computed_hash: [u8; 20] = defuse_near_utils::digest::Hash160::digest(compressed_pubkey).into();
+            let computed_hash: [u8; 20] =
+                defuse_near_utils::digest::Hash160::digest(compressed_pubkey).into();
             computed_hash == *pubkey_hash
         }
         Address::P2WPKH { witness_program } => {
-            let computed_hash: [u8; 20] = defuse_near_utils::digest::Hash160::digest(compressed_pubkey).into();
+            let computed_hash: [u8; 20] =
+                defuse_near_utils::digest::Hash160::digest(compressed_pubkey).into();
             computed_hash == witness_program.program.as_slice()
         }
         Address::P2SH { script_hash } => {
-            let pubkey_hash: [u8; 20] = defuse_near_utils::digest::Hash160::digest(compressed_pubkey).into();
-            
+            let pubkey_hash: [u8; 20] =
+                defuse_near_utils::digest::Hash160::digest(compressed_pubkey).into();
+
             // For P2SH-P2WPKH (nested segwit), create a P2WPKH witness program
             // Format: [version_byte][20_byte_pubkey_hash]
             let mut witness_program = Vec::with_capacity(22);
             witness_program.push(0x00); // witness version 0
             witness_program.push(0x14); // 20 bytes length
             witness_program.extend_from_slice(&pubkey_hash);
-            
-            let computed_script_hash: [u8; 20] = defuse_near_utils::digest::Hash160::digest(&witness_program).into();
+
+            let computed_script_hash: [u8; 20] =
+                defuse_near_utils::digest::Hash160::digest(&witness_program).into();
             computed_script_hash == *script_hash
         }
         Address::P2WSH { witness_program } => {
-            let pubkey_hash: [u8; 20] = defuse_near_utils::digest::Hash160::digest(compressed_pubkey).into();
+            let pubkey_hash: [u8; 20] =
+                defuse_near_utils::digest::Hash160::digest(compressed_pubkey).into();
             let witness_script = build_script(&pubkey_hash);
             let computed_script_hash = env::sha256_array(&witness_script);
             computed_script_hash == witness_program.program.as_slice()
@@ -105,7 +114,7 @@ fn hash160_pubkey(raw_pubkey: &[u8; 64], compressed: bool) -> Vec<[u8; 20]> {
         compressed.as_mut_slice()[0] = 0x03;
         response.push(defuse_near_utils::digest::Hash160::digest(&compressed).into());
 
-        return response
+        return response;
     }
 
     vec![defuse_near_utils::digest::Hash160::digest(raw_pubkey).into()]
@@ -146,14 +155,14 @@ fn validate_p2pkh_address(recovered_pubkey: &[u8; 64], expected_pubkey_hash: &[u
 
 /// Validates a P2WPKH address against a recovered public key.
 fn validate_p2wpkh_address(
-    recovered_pubkey: &[u8; 64], 
-    witness_program: &crate::bitcoin_minimal::WitnessProgram
+    recovered_pubkey: &[u8; 64],
+    witness_program: &crate::bitcoin_minimal::WitnessProgram,
 ) -> bool {
     // P2WPKH addresses always use compressed public keys, so two possibilities,
     // depending on the y coordinate parity
     let computed_pubkey_hash = hash160_pubkey(recovered_pubkey, true);
 
-    computed_pubkey_hash[0] == witness_program.program.as_slice() 
+    computed_pubkey_hash[0] == witness_program.program.as_slice()
         || computed_pubkey_hash[1] == witness_program.program.as_slice()
 }
 
@@ -162,7 +171,8 @@ fn validate_p2sh_address(recovered_pubkey: &[u8; 64], expected_script_hash: &[u8
     // Try uncompressed first
     let pubkey_hash = hash160_pubkey(recovered_pubkey, false);
     let redeem_script = build_script(&pubkey_hash[0]);
-    let computed_script_hash: [u8; 20] = defuse_near_utils::digest::Hash160::digest(&redeem_script).into();
+    let computed_script_hash: [u8; 20] =
+        defuse_near_utils::digest::Hash160::digest(&redeem_script).into();
 
     if computed_script_hash == *expected_script_hash {
         return true;
@@ -172,20 +182,22 @@ fn validate_p2sh_address(recovered_pubkey: &[u8; 64], expected_script_hash: &[u8
     let pubkey_hash = hash160_pubkey(recovered_pubkey, true);
 
     let redeem_script = build_script(&pubkey_hash[0]);
-    let computed_script_hash: [u8; 20] = defuse_near_utils::digest::Hash160::digest(&redeem_script).into();
+    let computed_script_hash: [u8; 20] =
+        defuse_near_utils::digest::Hash160::digest(&redeem_script).into();
     if computed_script_hash == *expected_script_hash {
         return true;
     }
 
     let redeem_script = build_script(&pubkey_hash[1]);
-    let computed_script_hash: [u8; 20] = defuse_near_utils::digest::Hash160::digest(&redeem_script).into();
+    let computed_script_hash: [u8; 20] =
+        defuse_near_utils::digest::Hash160::digest(&redeem_script).into();
     computed_script_hash == *expected_script_hash
 }
 
 /// Validates a P2WSH address against a recovered public key.
 fn validate_p2wsh_address(
-    recovered_pubkey: &[u8; 64], 
-    witness_program: &crate::bitcoin_minimal::WitnessProgram
+    recovered_pubkey: &[u8; 64],
+    witness_program: &crate::bitcoin_minimal::WitnessProgram,
 ) -> bool {
     // Try uncompressed first
     let pubkey_hash = hash160_pubkey(recovered_pubkey, false);
@@ -209,4 +221,3 @@ fn validate_p2wsh_address(
     let computed_script_hash = env::sha256_array(&witness_script);
     computed_script_hash == witness_program.program.as_slice()
 }
-

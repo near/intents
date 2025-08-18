@@ -41,7 +41,6 @@ use crate::error::AddressError;
 use defuse_crypto::{Curve, Secp256k1};
 pub type Secp256k1PublicKey = <Secp256k1 as Curve>::PublicKey;
 
-
 /// Bitcoin address representation optimized for BIP-322 verification.
 ///
 /// # Supported Address Types
@@ -190,7 +189,6 @@ impl Address {
             }
         }
     }
-
 }
 
 /// Implementation of address parsing from the string format.
@@ -257,7 +255,8 @@ impl std::str::FromStr for Address {
             // Checksum = first 4 bytes of double_sha256(version + pubkey_hash)
             let payload = &decoded[..21]; // version + pubkey_hash
             let checksum = &decoded[21..25]; // provided checksum
-            let computed_checksum: [u8; 32] = defuse_near_utils::digest::DoubleSha256::digest(payload).into();
+            let computed_checksum: [u8; 32] =
+                defuse_near_utils::digest::DoubleSha256::digest(payload).into();
             if &computed_checksum[..4] != checksum {
                 return Err(AddressError::InvalidBase58);
             }
@@ -294,7 +293,8 @@ impl std::str::FromStr for Address {
             // Checksum = first 4 bytes of double_sha256(version + script_hash)
             let payload = &decoded[..21]; // version + script_hash
             let checksum = &decoded[21..25]; // provided checksum
-            let computed_checksum: [u8; 32] = defuse_near_utils::digest::DoubleSha256::digest(payload).into();
+            let computed_checksum: [u8; 32] =
+                defuse_near_utils::digest::DoubleSha256::digest(payload).into();
             if &computed_checksum[..4] != checksum {
                 return Err(AddressError::InvalidBase58);
             }

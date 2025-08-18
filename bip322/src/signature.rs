@@ -102,7 +102,7 @@ impl Bip322Signature {
     /// Read a variable-length integer from data starting at cursor position.
     ///
     /// Returns (value, bytes_consumed) or None if invalid/truncated data.
-    /// 
+    ///
     /// Bitcoin varint format:
     /// - < 0xFD: single byte value
     /// - 0xFD: followed by 2-byte little-endian value
@@ -193,8 +193,8 @@ impl Bip322Signature {
         }
 
         // Read number of witness items using proper varint decoding
-        let (witness_count, consumed) = Self::read_varint(data, cursor)
-            .ok_or(Bip322Error::InvalidWitnessFormat)?;
+        let (witness_count, consumed) =
+            Self::read_varint(data, cursor).ok_or(Bip322Error::InvalidWitnessFormat)?;
         cursor += consumed;
 
         // Validate witness count is reasonable to prevent DoS
@@ -208,8 +208,8 @@ impl Bip322Signature {
             }
 
             // Read item length using proper varint decoding
-            let (item_length, consumed) = Self::read_varint(data, cursor)
-                .ok_or(Bip322Error::InvalidWitnessFormat)?;
+            let (item_length, consumed) =
+                Self::read_varint(data, cursor).ok_or(Bip322Error::InvalidWitnessFormat)?;
             cursor += consumed;
 
             // Validate item length is reasonable to prevent DoS
@@ -255,7 +255,8 @@ impl Bip322Signature {
                 }
             }
             Bip322Signature::Full { witness_stack } => {
-                let parsed_pubkey = Self::extract_pubkey_from_full_signature(witness_stack, address)?;
+                let parsed_pubkey =
+                    Self::extract_pubkey_from_full_signature(witness_stack, address)?;
                 Self::validate_parsed_pubkey_matches_address(&parsed_pubkey, address)
             }
         }
@@ -288,9 +289,7 @@ impl Bip322Signature {
     }
 
     /// Extract public key from P2PKH witness stack
-    fn extract_pubkey_from_witness_p2pkh(
-        witness_stack: &[Vec<u8>],
-    ) -> Option<ParsedPublicKey> {
+    fn extract_pubkey_from_witness_p2pkh(witness_stack: &[Vec<u8>]) -> Option<ParsedPublicKey> {
         // For P2PKH in BIP-322, public key is typically the second element
         if witness_stack.len() >= 2 {
             Self::parse_pubkey_from_bytes(&witness_stack[1])
@@ -327,9 +326,7 @@ impl Bip322Signature {
     }
 
     /// Extract public key from P2WPKH witness stack  
-    fn extract_pubkey_from_witness_p2wpkh(
-        witness_stack: &[Vec<u8>],
-    ) -> Option<ParsedPublicKey> {
+    fn extract_pubkey_from_witness_p2wpkh(witness_stack: &[Vec<u8>]) -> Option<ParsedPublicKey> {
         // P2WPKH witness stack: [signature, pubkey]
         if witness_stack.len() == 2 {
             Self::parse_pubkey_from_bytes(&witness_stack[1])
@@ -339,9 +336,7 @@ impl Bip322Signature {
     }
 
     /// Extract public key from P2SH witness stack
-    fn extract_pubkey_from_witness_p2sh(
-        witness_stack: &[Vec<u8>],
-    ) -> Option<ParsedPublicKey> {
+    fn extract_pubkey_from_witness_p2sh(witness_stack: &[Vec<u8>]) -> Option<ParsedPublicKey> {
         // P2SH can contain various redeem scripts
         // For now, handle the common case of P2WPKH-in-P2SH
         if witness_stack.len() >= 2 {
@@ -352,9 +347,7 @@ impl Bip322Signature {
     }
 
     /// Extract public key from P2WSH witness stack
-    fn extract_pubkey_from_witness_p2wsh(
-        witness_stack: &[Vec<u8>],
-    ) -> Option<ParsedPublicKey> {
+    fn extract_pubkey_from_witness_p2wsh(witness_stack: &[Vec<u8>]) -> Option<ParsedPublicKey> {
         // P2WSH witness stack can be complex depending on the witness script
         // For single-key scripts: [signature, pubkey, witness_script]
         if witness_stack.len() >= 2 {
@@ -363,7 +356,6 @@ impl Bip322Signature {
             None
         }
     }
-
 
     /// Validate that a parsed public key matches the given address.
     ///
@@ -381,7 +373,9 @@ impl Bip322Signature {
         match parsed_pubkey {
             ParsedPublicKey::Compressed(compressed) => {
                 // Validate compressed public key against address
-                if crate::verification::validate_compressed_pubkey_matches_address(compressed, address) {
+                if crate::verification::validate_compressed_pubkey_matches_address(
+                    compressed, address,
+                ) {
                     // Validation succeeded, but we cannot provide uncompressed format
                     // This indicates a successful verification but inability to decompress
                     // For now, we'll create a placeholder uncompressed key to indicate success
@@ -423,7 +417,7 @@ impl Bip322Signature {
             // compressed public key
             recovery_id - 31
         } else {
-            // uncompressed public key  
+            // uncompressed public key
             recovery_id - 27
         };
 
