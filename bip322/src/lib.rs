@@ -59,22 +59,3 @@ impl SignedPayload for SignedBip322Payload {
             .extract_public_key(&message_hash, &self.address)
     }
 }
-
-impl SignedBip322Payload {
-    /// Creates a SignedBip322Payload with a compact signature format.
-    ///
-    /// This is a convenience constructor for the most common case where
-    /// wallets provide base64-encoded 65-byte signatures.
-    pub fn with_compact_signature(
-        address: Address,
-        message: String,
-        signature_base64: &str,
-    ) -> Result<Self, Bip322Error> {
-        let signature = Bip322Signature::from_str(signature_base64)?;
-        Ok(SignedBip322Payload {
-            address,
-            message,
-            signature,
-        })
-    }
-}

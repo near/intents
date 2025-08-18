@@ -51,8 +51,8 @@ impl Bip322MessageHasher {
     ///
     /// # Arguments
     ///
-    /// * `to_spend` - The "to_spend" BIP-322 transaction
-    /// * `to_sign` - The "to_sign" BIP-322 transaction
+    /// * `to_spend` - The `to_spend` BIP-322 transaction
+    /// * `to_sign` - The `to_sign` BIP-322 transaction
     /// * `address` - The address type determines which sighash algorithm to use
     ///
     /// # Returns
@@ -81,12 +81,12 @@ impl Bip322MessageHasher {
     ///
     /// # Arguments
     ///
-    /// * `to_spend` - The "to_spend" BIP-322 transaction
-    /// * `to_sign` - The "to_sign" BIP-322 transaction
+    /// * `to_spend` - The `to_spend` BIP-322 transaction
+    /// * `to_sign` - The `to_sign` BIP-322 transaction
     ///
     /// # Returns
     ///
-    /// The legacy sighash as a 32-byte NEAR CryptoHash
+    /// The legacy sighash as a 32-byte NEAR `CryptoHash`
     pub fn compute_legacy_sighash(
         to_spend: &Transaction,
         to_sign: &Transaction,
@@ -115,12 +115,12 @@ impl Bip322MessageHasher {
     ///
     /// # Arguments
     ///
-    /// * `to_spend` - The "to_spend" BIP-322 transaction
-    /// * `to_sign` - The "to_sign" BIP-322 transaction
+    /// * `to_spend` - The `to_spend` BIP-322 transaction
+    /// * `to_sign` - The `to_sign` BIP-322 transaction
     ///
     /// # Returns
     ///
-    /// The segwit v0 sighash as a 32-byte NEAR CryptoHash
+    /// The segwit v0 sighash as a 32-byte NEAR `CryptoHash`
     pub fn compute_segwit_v0_sighash(
         to_spend: &Transaction,
         to_sign: &Transaction,
@@ -148,8 +148,6 @@ impl Bip322MessageHasher {
             Address::P2WSH { .. } => {
                 // For P2WSH, the scriptCode must be the witness script itself.
                 // It is not derivable from the address; you'll need the script provided.
-                // If you don't support general P2WSH here, you can return a hash that will
-                // never verify, or panic with a clear message.
                 panic!(
                     "compute_segwit_v0_sighash: P2WSH requires the witness script (not derivable from address)"
                 )

@@ -113,7 +113,6 @@ pub enum Address {
 /// This enum represents the different types of Bitcoin addresses after parsing,
 /// extracting the essential hash or program data needed for signature verification.
 /// Each variant contains the specific data needed for its address type.
-
 /// Segwit witness program containing version and program data.
 ///
 /// This structure represents the parsed witness program from a segwit address.
@@ -135,6 +134,12 @@ pub struct TransactionWitness {
     stack: Vec<Vec<u8>>,
 }
 
+impl Default for TransactionWitness {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TransactionWitness {
     pub const fn new() -> Self {
         Self { stack: Vec::new() }
@@ -149,7 +154,7 @@ impl Address {
     /// Generates the script pubkey for this address.
     pub fn script_pubkey(&self) -> ScriptBuf {
         match self {
-            Address::P2PKH { pubkey_hash } => {
+            Self::P2PKH { pubkey_hash } => {
                 // P2PKH script: OP_DUP OP_HASH160 <pubkey_hash> OP_EQUALVERIFY OP_CHECKSIG
                 let mut script = Vec::with_capacity(25); // 5 opcodes + 20 bytes hash
                 script.push(OP_DUP);
@@ -160,7 +165,7 @@ impl Address {
                 script.push(OP_CHECKSIG);
                 ScriptBuf::from_bytes(script)
             }
-            Address::P2SH { script_hash } => {
+            Self::P2SH { script_hash } => {
                 // P2SH script: OP_HASH160 <script_hash> OP_EQUAL
                 let mut script = Vec::with_capacity(23); // 3 opcodes + 20 bytes hash
                 script.push(OP_HASH160);
@@ -169,7 +174,7 @@ impl Address {
                 script.push(OP_EQUAL);
                 ScriptBuf::from_bytes(script)
             }
-            Address::P2WPKH { witness_program } => {
+            Self::P2WPKH { witness_program } => {
                 // P2WPKH script: OP_0 <20-byte-pubkey-hash>
                 // Length is guaranteed to be 20 bytes by address parsing
                 let mut script = Vec::with_capacity(22); // 2 opcodes + 20 bytes program
@@ -178,7 +183,7 @@ impl Address {
                 script.extend_from_slice(&witness_program.program);
                 ScriptBuf::from_bytes(script)
             }
-            Address::P2WSH { witness_program } => {
+            Self::P2WSH { witness_program } => {
                 // P2WSH script: OP_0 <32-byte-script-hash>
                 // Length is guaranteed to be 32 bytes by address parsing
                 let mut script = Vec::with_capacity(34); // 2 opcodes + 32 bytes program
@@ -421,12 +426,18 @@ pub struct ScriptBuf {
     inner: Vec<u8>,
 }
 
+impl Default for ScriptBuf {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ScriptBuf {
     pub const fn new() -> Self {
         Self { inner: Vec::new() }
     }
 
-    pub fn from_bytes(bytes: Vec<u8>) -> Self {
+    pub const fn from_bytes(bytes: Vec<u8>) -> Self {
         Self { inner: bytes }
     }
 }
@@ -508,7 +519,6 @@ pub struct Transaction {
 /// Bitcoin amounts are represented as 64-bit unsigned integers in satoshis,
 /// where 1 BTC = 100,000,000 satoshis. This provides sufficient precision
 /// for all Bitcoin monetary operations.
-
 /// Consensus encodable trait
 pub trait Encodable {
     fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error>;

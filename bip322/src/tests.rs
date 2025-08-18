@@ -4,7 +4,7 @@
 //! of the BIP-322 implementation including:
 //! - Address parsing and validation
 //! - Message hashing (BIP-322 tagged hash)
-//! - Transaction building (to_spend and to_sign)
+//! - Transaction building (`to_spend` and `to_sign`)
 //! - Signature verification for all address types
 //! - Error handling and edge cases
 
@@ -14,6 +14,7 @@ use crate::transaction::{compute_tx_id, create_to_sign, create_to_spend};
 use crate::{AddressError, SignedBip322Payload};
 use defuse_crypto::SignedPayload;
 use near_sdk::{test_utils::VMContextBuilder, testing_env};
+use std::collections::HashSet;
 use std::str::FromStr;
 
 /// Setup test environment with NEAR SDK testing utilities
@@ -116,7 +117,7 @@ mod address_parsing_tests {
 
         for (addr_str, _expected_error) in invalid_addresses {
             let result = Address::from_str(addr_str);
-            assert!(result.is_err(), "Should fail to parse: {}", addr_str);
+            assert!(result.is_err(), "Should fail to parse: {addr_str}");
 
             // Note: We can't easily match the exact error type without more complex setup
             // This test ensures parsing fails as expected
@@ -384,14 +385,13 @@ mod integration_tests {
         let bip322_signature = Bip322Signature::from_str(signature)
             .expect("Should parse signature from base64 string");
 
-        let pubkey = SignedBip322Payload {
+        let _pubkey = SignedBip322Payload {
             address: address.parse().unwrap(),
             message: MESSAGE.to_string(),
             signature: bip322_signature,
         }
-        .verify();
-
-        pubkey.expect(format!("Expected valid signature for {info_message}").as_str());
+        .verify()
+        .unwrap_or_else(|| panic!("Expected valid signature for {info_message}"));
     }
 
     // Generated comprehensive test vectors covering different scenarios
@@ -420,7 +420,7 @@ mod integration_tests {
             Bip322TestVector {
                 address_type: "P2PKH",
                 address: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
-                message: r#""#,
+                message: r"",
                 signature_type: "compact",
                 signature_base64: "H9L5yLFjti0QTHhPyFrZCT1V/MMnBtXKmoiKDZ78NDBjERki6ZTQZdSMCtkgoNmp17By9ItJr8o7ChX0XxY91nk=",
                 expected_verification: false,
@@ -429,7 +429,7 @@ mod integration_tests {
             Bip322TestVector {
                 address_type: "P2PKH",
                 address: "1F3sAm6ZtwLAUnj7d38pGFxtP3RVEvtsbV",
-                message: r#"Hello World!"#,
+                message: r"Hello World!",
                 signature_type: "compact",
                 signature_base64: "H9L5yLFjti0QTHhPyFrZCT1V/MMnBtXKmoiKDZ78NDBjERki6ZTQZdSMCtkgoNmp17By9ItJr8o7ChX0XxY91nk=",
                 expected_verification: false,
@@ -456,7 +456,7 @@ mod integration_tests {
             Bip322TestVector {
                 address_type: "P2WPKH",
                 address: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l",
-                message: r#""#,
+                message: r"",
                 signature_type: "full",
                 signature_base64: "AkcwRAIgM2gBAQqvZX15ZiysmKmQpDrG83avLIT492QBzLnQIxYCIBaTpOaD20qRlEylyxFSeEA2ba9YOixpX8z46TSDtS40ASECx/EgAxlkQpQ9hYjgGu6EBCPMVPwVIVJqO4XCsMvViHI=",
                 expected_verification: true,
@@ -465,7 +465,7 @@ mod integration_tests {
             Bip322TestVector {
                 address_type: "P2WPKH",
                 address: "bc1q9vza2e8x573nczrlzms0wvx3gsqjx7vavgkx0l",
-                message: r#"Hello World"#,
+                message: r"Hello World",
                 signature_type: "full",
                 signature_base64: "AkcwRAIgZRfIY3p7/DoVTty6YZbWS71bc5Vct9p9Fia83eRmw2QCICK/ENGfwLtptFluMGs2KsqoNSk89pO7F29zJLUx9a/sASECx/EgAxlkQpQ9hYjgGu6EBCPMVPwVIVJqO4XCsMvViHI=",
                 expected_verification: true,
@@ -499,10 +499,10 @@ mod integration_tests {
                 // Verify signature type matches expectation
                 match (vector.signature_type, &signature) {
                     ("compact", Bip322Signature::Compact { .. }) => {
-                        println!("✓ Vector {} correctly parsed as compact signature", i);
+                        println!("✓ Vector {i} correctly parsed as compact signature");
                     }
                     ("full", Bip322Signature::Full { .. }) => {
-                        println!("✓ Vector {} correctly parsed as full signature", i);
+                        println!("✓ Vector {i} correctly parsed as full signature");
                     }
                     _ => {
                         panic!(
@@ -528,7 +528,7 @@ mod integration_tests {
                     signature,
                 };
 
-                println!("✓ Vector {} payload created successfully", i);
+                println!("✓ Vector {i} payload created successfully");
             }
         }
 
@@ -563,12 +563,11 @@ mod integration_tests {
 
                 match payload.verify() {
                     Some(_pubkey) => {
-                        println!("✓ Working vector {} verified successfully", i);
+                        println!("✓ Working vector {i} verified successfully");
                     }
                     None => {
                         println!(
-                            "✗ Working vector {} failed verification (might need implementation fixes)",
-                            i
+                            "✗ Working vector {i} failed verification (might need implementation fixes)"
                         );
                         // Don't panic here since we might have implementation issues to fix
                     }
@@ -591,13 +590,12 @@ mod integration_tests {
                 .count();
 
             println!(
-                "Testing signature type detection: {} compact, {} full",
-                compact_count, full_count
+                "Testing signature type detection: {compact_count} compact, {full_count} full"
             );
 
             for (i, vector) in TEST_VECTORS.iter().enumerate() {
                 let signature = Bip322Signature::from_str(vector.signature_base64)
-                    .expect(&format!("Vector {} should parse", i));
+                    .unwrap_or_else(|_| panic!("Vector {i} should parse"));
 
                 let detected_type = match signature {
                     Bip322Signature::Compact { .. } => "compact",
@@ -618,10 +616,9 @@ mod integration_tests {
         fn test_address_type_coverage() {
             setup_test_env();
 
-            use std::collections::HashSet;
             let address_types: HashSet<_> = TEST_VECTORS.iter().map(|v| v.address_type).collect();
 
-            println!("Address types covered: {:?}", address_types);
+            println!("Address types covered: {address_types:?}");
 
             // We should have coverage for major address types
             assert!(
@@ -734,7 +731,7 @@ mod integration_tests {
             // Test official P2WPKH empty message signature
             let payload = SignedBip322Payload {
                 address: P2WPKH_ADDRESS.parse().unwrap(),
-                message: "".to_string(),
+                message: String::new(),
                 signature: Bip322Signature::from_str(EMPTY_MESSAGE_SIGNATURE).unwrap(),
             };
 
@@ -749,7 +746,7 @@ mod integration_tests {
             // Test alternative P2WPKH empty message signature
             let payload = SignedBip322Payload {
                 address: P2WPKH_ADDRESS.parse().unwrap(),
-                message: "".to_string(),
+                message: String::new(),
                 signature: Bip322Signature::from_str(P2WPKH_EMPTY_ALT_SIGNATURE).unwrap(),
             };
 
@@ -816,9 +813,9 @@ mod integration_tests {
             setup_test_env();
 
             println!("Testing P2PKH reference vector (parsing only):");
-            println!("Address: {}", P2PKH_ADDRESS);
-            println!("Message: {}", P2PKH_MESSAGE);
-            println!("Signature: {}", P2PKH_SIGNATURE);
+            println!("Address: {P2PKH_ADDRESS}");
+            println!("Message: {P2PKH_MESSAGE}");
+            println!("Signature: {P2PKH_SIGNATURE}");
 
             // Test that parsing works correctly
             let signature =

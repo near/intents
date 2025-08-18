@@ -76,7 +76,7 @@ impl Signer for Account {
         // Using a valid mainnet address format: bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4
         let address: Address = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"
             .parse()
-            .unwrap_or_else(|_| {
+            .unwrap_or({
                 // Fallback: create P2PKH with dummy data if parsing fails
                 Address::P2PKH {
                     pubkey_hash: [0u8; 20],

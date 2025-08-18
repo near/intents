@@ -82,7 +82,7 @@ pub fn validate_compressed_pubkey_matches_address(
         Address::P2WSH { witness_program } => {
             let pubkey_hash: [u8; 20] =
                 defuse_near_utils::digest::Hash160::digest(compressed_pubkey).into();
-            let witness_script = build_script(&pubkey_hash);
+            let witness_script = build_witness_script(&pubkey_hash);
             let computed_script_hash = env::sha256_array(&witness_script);
             computed_script_hash == witness_program.program.as_slice()
         }
@@ -99,7 +99,7 @@ pub fn validate_compressed_pubkey_matches_address(
 /// # Returns
 ///
 /// The 20-byte hash160 result, or the input hash if not 64 bytes
-fn hash160_pubkey(raw_pubkey: &[u8; 64], compressed: bool) -> Vec<[u8; 20]> {
+fn compute_pubkey_hash160_all(raw_pubkey: &[u8; 64], compressed: bool) -> Vec<[u8; 20]> {
     if compressed {
         // Since pubkey is restored, we don't know which (odd or even) y was used to
         // build compressed key and calculate the hash.
@@ -129,7 +129,7 @@ fn hash160_pubkey(raw_pubkey: &[u8; 64], compressed: bool) -> Vec<[u8; 20]> {
 /// # Returns
 ///
 /// Assembled script which verifies given hash
-fn build_script(pubkey_hash: &[u8; 20]) -> Vec<u8> {
+fn build_witness_script(pubkey_hash: &[u8; 20]) -> Vec<u8> {
     let mut script = Vec::with_capacity(25);
     script.push(OP_DUP);
     script.push(OP_HASH160);
@@ -143,13 +143,13 @@ fn build_script(pubkey_hash: &[u8; 20]) -> Vec<u8> {
 /// Validates a P2PKH address against a recovered public key.
 fn validate_p2pkh_address(recovered_pubkey: &[u8; 64], expected_pubkey_hash: &[u8; 20]) -> bool {
     // Try uncompressed first
-    let uncompressed_hash = hash160_pubkey(recovered_pubkey, false);
+    let uncompressed_hash = compute_pubkey_hash160_all(recovered_pubkey, false);
     if uncompressed_hash[0] == *expected_pubkey_hash {
         return true;
     }
 
     // Try compressed next, two possibilities
-    let compressed_hash = hash160_pubkey(recovered_pubkey, true);
+    let compressed_hash = compute_pubkey_hash160_all(recovered_pubkey, true);
     compressed_hash[0] == *expected_pubkey_hash || compressed_hash[1] == *expected_pubkey_hash
 }
 
@@ -160,7 +160,7 @@ fn validate_p2wpkh_address(
 ) -> bool {
     // P2WPKH addresses always use compressed public keys, so two possibilities,
     // depending on the y coordinate parity
-    let computed_pubkey_hash = hash160_pubkey(recovered_pubkey, true);
+    let computed_pubkey_hash = compute_pubkey_hash160_all(recovered_pubkey, true);
 
     computed_pubkey_hash[0] == witness_program.program.as_slice()
         || computed_pubkey_hash[1] == witness_program.program.as_slice()
@@ -169,8 +169,8 @@ fn validate_p2wpkh_address(
 /// Validates a P2SH address against a recovered public key.
 fn validate_p2sh_address(recovered_pubkey: &[u8; 64], expected_script_hash: &[u8; 20]) -> bool {
     // Try uncompressed first
-    let pubkey_hash = hash160_pubkey(recovered_pubkey, false);
-    let redeem_script = build_script(&pubkey_hash[0]);
+    let pubkey_hash = compute_pubkey_hash160_all(recovered_pubkey, false);
+    let redeem_script = build_witness_script(&pubkey_hash[0]);
     let computed_script_hash: [u8; 20] =
         defuse_near_utils::digest::Hash160::digest(&redeem_script).into();
 
@@ -179,16 +179,16 @@ fn validate_p2sh_address(recovered_pubkey: &[u8; 64], expected_script_hash: &[u8
     }
 
     // Try compressed next, two possibilities
-    let pubkey_hash = hash160_pubkey(recovered_pubkey, true);
+    let pubkey_hash = compute_pubkey_hash160_all(recovered_pubkey, true);
 
-    let redeem_script = build_script(&pubkey_hash[0]);
+    let redeem_script = build_witness_script(&pubkey_hash[0]);
     let computed_script_hash: [u8; 20] =
         defuse_near_utils::digest::Hash160::digest(&redeem_script).into();
     if computed_script_hash == *expected_script_hash {
         return true;
     }
 
-    let redeem_script = build_script(&pubkey_hash[1]);
+    let redeem_script = build_witness_script(&pubkey_hash[1]);
     let computed_script_hash: [u8; 20] =
         defuse_near_utils::digest::Hash160::digest(&redeem_script).into();
     computed_script_hash == *expected_script_hash
@@ -200,8 +200,8 @@ fn validate_p2wsh_address(
     witness_program: &crate::bitcoin_minimal::WitnessProgram,
 ) -> bool {
     // Try uncompressed first
-    let pubkey_hash = hash160_pubkey(recovered_pubkey, false);
-    let witness_script = build_script(&pubkey_hash[0]);
+    let pubkey_hash = compute_pubkey_hash160_all(recovered_pubkey, false);
+    let witness_script = build_witness_script(&pubkey_hash[0]);
     let computed_script_hash = env::sha256_array(&witness_script);
 
     if computed_script_hash == witness_program.program.as_slice() {
@@ -209,15 +209,15 @@ fn validate_p2wsh_address(
     }
 
     // Try compressed next
-    let pubkey_hash = hash160_pubkey(recovered_pubkey, true);
+    let pubkey_hash = compute_pubkey_hash160_all(recovered_pubkey, true);
 
-    let witness_script = build_script(&pubkey_hash[0]);
+    let witness_script = build_witness_script(&pubkey_hash[0]);
     let computed_script_hash = env::sha256_array(&witness_script);
     if computed_script_hash == witness_program.program.as_slice() {
         return true;
     }
 
-    let witness_script = build_script(&pubkey_hash[1]);
+    let witness_script = build_witness_script(&pubkey_hash[1]);
     let computed_script_hash = env::sha256_array(&witness_script);
     computed_script_hash == witness_program.program.as_slice()
 }

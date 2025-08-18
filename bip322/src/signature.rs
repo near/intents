@@ -74,7 +74,7 @@ pub enum Bip322Error {
 
 impl From<base64::DecodeError> for Bip322Error {
     fn from(e: base64::DecodeError) -> Self {
-        Bip322Error::InvalidBase64(e)
+        Self::InvalidBase64(e)
     }
 }
 
@@ -88,7 +88,7 @@ impl FromStr for Bip322Signature {
         // Check if it's a simple 65-byte compact signature
         if decoded.len() == 65 {
             let sig_bytes: [u8; 65] = decoded.try_into().expect("Invalid signature length"); // Should never fail
-            return Ok(Bip322Signature::Compact {
+            return Ok(Self::Compact {
                 signature: sig_bytes,
             });
         }
@@ -101,7 +101,7 @@ impl FromStr for Bip322Signature {
 impl Bip322Signature {
     /// Read a variable-length integer from data starting at cursor position.
     ///
-    /// Returns (value, bytes_consumed) or None if invalid/truncated data.
+    /// Returns `(value, bytes_consumed)` or None if invalid/truncated data.
     ///
     /// Bitcoin varint format:
     /// - < 0xFD: single byte value
@@ -114,12 +114,12 @@ impl Bip322Signature {
         }
 
         match data[cursor] {
-            n @ 0..=0xFC => Some((n as u64, 1)),
+            n @ 0..=0xFC => Some((u64::from(n), 1)),
             0xFD => {
                 if cursor + 3 > data.len() {
                     return None;
                 }
-                let value = u16::from_le_bytes([data[cursor + 1], data[cursor + 2]]) as u64;
+                let value = u64::from(u16::from_le_bytes([data[cursor + 1], data[cursor + 2]]));
                 Some((value, 3))
             }
             0xFE => {
@@ -128,7 +128,7 @@ impl Bip322Signature {
                 }
                 let mut bytes = [0u8; 4];
                 bytes.copy_from_slice(&data[cursor + 1..cursor + 5]);
-                let value = u32::from_le_bytes(bytes) as u64;
+                let value = u64::from(u32::from_le_bytes(bytes));
                 Some((value, 5))
             }
             0xFF => {
@@ -150,6 +150,7 @@ impl Bip322Signature {
     /// - 253-65535: 0xFD + 2 bytes little-endian
     /// - 65536-4294967295: 0xFE + 4 bytes little-endian
     /// - >= 4294967296: 0xFF + 8 bytes little-endian
+    #[allow(clippy::cast_possible_truncation, clippy::as_conversions)]
     fn encode_varint(value: u64, output: &mut Vec<u8>) {
         match value {
             n if n < 253 => {
@@ -176,7 +177,7 @@ impl Bip322Signature {
         // The format is: witness stack with multiple items (signature, pubkey, etc.)
         let witness_stack = Self::parse_witness_stack(data)?;
 
-        Ok(Bip322Signature::Full { witness_stack })
+        Ok(Self::Full { witness_stack })
     }
 
     /// Parse witness stack from raw bytes
@@ -217,7 +218,8 @@ impl Bip322Signature {
                 return Err(Bip322Error::InvalidWitnessFormat);
             }
 
-            let item_length = item_length as usize;
+            let item_length =
+                usize::try_from(item_length).map_err(|_| Bip322Error::InvalidWitnessFormat)?;
             if cursor + item_length > data.len() {
                 return Err(Bip322Error::InvalidWitnessFormat);
             }
@@ -242,7 +244,7 @@ impl Bip322Signature {
         address: &Address,
     ) -> Option<<Secp256k1 as Curve>::PublicKey> {
         match self {
-            Bip322Signature::Compact { signature } => {
+            Self::Compact { signature } => {
                 let recovered_pubkey =
                     Self::try_recover_pubkey_from_compact(message_hash, signature)?;
 
@@ -254,7 +256,7 @@ impl Bip322Signature {
                     None
                 }
             }
-            Bip322Signature::Full { witness_stack } => {
+            Self::Full { witness_stack } => {
                 let parsed_pubkey =
                     Self::extract_pubkey_from_full_signature(witness_stack, address)?;
                 Self::validate_parsed_pubkey_matches_address(&parsed_pubkey, address)
@@ -405,7 +407,7 @@ impl Bip322Signature {
     ) -> Option<<Secp256k1 as Curve>::PublicKey> {
         // Validate recovery ID range (27-34 for standard Bitcoin compact format)
         let recovery_id = signature_bytes[0];
-        if recovery_id < 27 || recovery_id > 34 {
+        if !(27..=34).contains(&recovery_id) {
             return None; // Invalid recovery ID
         }
 
@@ -431,12 +433,12 @@ impl Bip322Signature {
     /// Full signatures use the complete BIP-322 transaction construction.
     pub fn compute_message_hash(&self, message: &str, address: &Address) -> [u8; 32] {
         match self {
-            Bip322Signature::Compact { .. } => {
+            Self::Compact { .. } => {
                 // For compact signatures, use standard Bitcoin message signing
                 // This follows the format: double SHA256 of "Bitcoin Signed Message:\n" + message
                 Self::compute_bitcoin_message_hash(message)
             }
-            Bip322Signature::Full { .. } => {
+            Self::Full { .. } => {
                 // For full BIP-322 signatures, use the complete transaction construction
                 let message_hash = Bip322MessageHasher::compute_bip322_message_hash(message);
                 let to_spend = create_to_spend(address, &message_hash);
@@ -464,7 +466,10 @@ impl Bip322Signature {
         full_message.extend_from_slice(prefix);
 
         // Add message length as proper varint
-        Self::encode_varint(message_bytes.len() as u64, &mut full_message);
+        Self::encode_varint(
+            u64::try_from(message_bytes.len()).unwrap_or(0),
+            &mut full_message,
+        );
 
         full_message.extend_from_slice(message_bytes);
 
