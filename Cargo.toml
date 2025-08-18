@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
     "admin-utils",
+    "auth-call",
     "bip322",
     "bitmap",
     "borsh-utils",
@@ -39,6 +40,7 @@ rust-version = "1.86.0"
 
 [workspace.dependencies]
 defuse-admin-utils.path = "admin-utils"
+defuse-auth-call.path = "auth-call"
 defuse-bip322.path = "bip322"
 defuse-bitmap.path = "bitmap"
 defuse-borsh-utils.path = "borsh-utils"
@@ -70,7 +72,6 @@ anyhow = "1"
 arbitrary = "1"
 arbitrary_with = "0.3"
 array-util = "1"
-bitcoin = "0.32"
 bitflags = "2.9.1"
 bnum = { version = "0.13", features = ["borsh"] }
 chrono = { version = "0.4", default-features = false }
@@ -82,10 +83,10 @@ hex-literal = "1.0"
 impl-tools = "0.11"
 itertools = "0.14"
 near-account-id = "1.1"
-near-contract-standards = "5.14"
+near-contract-standards = "5.16"
 near-crypto = "0.30"
 near-plugins = { git = "https://github.com/Near-One/near-plugins", tag = "v0.5.0" }
-near-sdk = "5.14"
+near-sdk = "5.15"
 near-workspaces = "0.20"
 p256 = { version = "0.13", default-features = false, features = ["ecdsa"] }
 rand = "0.9"

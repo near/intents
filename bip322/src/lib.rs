@@ -10,7 +10,6 @@ pub mod verification;
 use defuse_crypto::{Curve, Payload, Secp256k1, SignedPayload};
 use near_sdk::near;
 use serde_with::serde_as;
-use std::str::FromStr;
 
 pub use bitcoin_minimal::Address;
 pub use error::AddressError;
