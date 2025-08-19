@@ -897,6 +897,7 @@ mod wallet_generated_test_vectors {
         signature: WalletSignature,
         signing_method: &'static str,
         public_key: &'static str,
+        #[allow(dead_code)]
         timestamp: u64,
     }
 
@@ -906,7 +907,9 @@ mod wallet_generated_test_vectors {
         String(&'static str),
         Object {
             signature: &'static str,
+            #[allow(dead_code)]
             address: &'static str,
+            #[allow(dead_code)]
             message: &'static str,
         },
     }
@@ -914,8 +917,8 @@ mod wallet_generated_test_vectors {
     impl WalletSignature {
         fn get_signature_string(&self) -> &str {
             match self {
-                WalletSignature::String(s) => s,
-                WalletSignature::Object { signature, .. } => signature,
+                Self::String(s) => s,
+                Self::Object { signature, .. } => signature,
             }
         }
     }
@@ -1543,23 +1546,20 @@ mod wallet_generated_test_vectors {
                 signature,
             };
 
-            match payload.verify() {
-                Some(_pubkey) => {
-                    verify_success += 1;
-                    println!(
-                        "✓ Vector {i}: {}/{} BIP322 signature verified successfully",
-                        vector.wallet_type, vector.address_type
-                    );
-                }
-                None => {
-                    verify_failure += 1;
-                    println!(
-                        "✗ Vector {i}: {}/{} BIP322 signature verification failed",
-                        vector.wallet_type, vector.address_type
-                    );
-                    println!("  Address: {}", vector.address);
-                    println!("  Message: {}", vector.message);
-                }
+            if let Some(_pubkey) = payload.verify() {
+                verify_success += 1;
+                println!(
+                    "✓ Vector {i}: {}/{} BIP322 signature verified successfully",
+                    vector.wallet_type, vector.address_type
+                );
+            } else {
+                verify_failure += 1;
+                println!(
+                    "✗ Vector {i}: {}/{} BIP322 signature verification failed",
+                    vector.wallet_type, vector.address_type
+                );
+                println!("  Address: {}", vector.address);
+                println!("  Message: {}", vector.message);
             }
         }
 
@@ -1571,7 +1571,7 @@ mod wallet_generated_test_vectors {
         // Report results - we expect some signatures to verify
         if verify_success > 0 {
             println!("✓ Some BIP322 signatures verified successfully");
-        } else if bip322_vectors.len() > 0 {
+        } else if !bip322_vectors.is_empty() {
             println!("⚠ No BIP322 signatures verified - implementation may need updates");
         }
     }
@@ -1636,28 +1636,25 @@ mod wallet_generated_test_vectors {
                 signature,
             };
 
-            match payload.verify() {
-                Some(_pubkey) => {
-                    verify_success += 1;
-                    println!(
-                        "✓ Vector {i}: {}/{} ECDSA signature verified successfully",
-                        vector.wallet_type, vector.address_type
-                    );
-                }
-                None => {
-                    verify_failure += 1;
-                    println!(
-                        "✗ Vector {i}: {}/{} ECDSA signature verification failed",
-                        vector.wallet_type, vector.address_type
-                    );
-                    println!("  Address: {}", vector.address);
-                    println!(
-                        "  Message: {}",
-                        vector.message.chars().take(50).collect::<String>()
-                    );
-                    if vector.message.len() > 50 {
-                        println!("  Message (truncated): ...");
-                    }
+            if let Some(_pubkey) = payload.verify() {
+                verify_success += 1;
+                println!(
+                    "✓ Vector {i}: {}/{} ECDSA signature verified successfully",
+                    vector.wallet_type, vector.address_type
+                );
+            } else {
+                verify_failure += 1;
+                println!(
+                    "✗ Vector {i}: {}/{} ECDSA signature verification failed",
+                    vector.wallet_type, vector.address_type
+                );
+                println!("  Address: {}", vector.address);
+                println!(
+                    "  Message: {}",
+                    vector.message.chars().take(50).collect::<String>()
+                );
+                if vector.message.len() > 50 {
+                    println!("  Message (truncated): ...");
                 }
             }
         }
@@ -1670,7 +1667,7 @@ mod wallet_generated_test_vectors {
         // Report results - we expect some signatures to verify
         if verify_success > 0 {
             println!("✓ Some ECDSA signatures verified successfully");
-        } else if ecdsa_vectors.len() > 0 {
+        } else if !ecdsa_vectors.is_empty() {
             println!("⚠ No ECDSA signatures verified - may be expected for this implementation");
         }
     }
@@ -1733,7 +1730,7 @@ mod wallet_generated_test_vectors {
             let display_msg = if msg.len() > 50 {
                 format!("{}...", msg.chars().take(47).collect::<String>())
             } else {
-                msg.to_string()
+                (*msg).to_string()
             };
             println!("  {}: {display_msg}", i + 1);
         }
