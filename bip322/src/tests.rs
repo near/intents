@@ -928,7 +928,9 @@ mod wallet_generated_test_vectors {
             address: "bc1qyt6gau643sm52hvej4n4qr34h3878ahs209s27",
             address_type: "payment",
             message: "Hello World!",
-            signature: WalletSignature::String("AkgwRQIhAL7hcUAwAP2hqp5G3uYUzhdGetIWPoESiTeavdpgKqbhAiBzLWJNpIcr8WUPWrsdtFhIc6bKmbdu6qESC/ZwRzOe6AEhAqNFZusSJQyCkSvEbd0Fk9+0wlJZRULu6d6frUVRX0Lt"),
+            signature: WalletSignature::String(
+                "AkgwRQIhAL7hcUAwAP2hqp5G3uYUzhdGetIWPoESiTeavdpgKqbhAiBzLWJNpIcr8WUPWrsdtFhIc6bKmbdu6qESC/ZwRzOe6AEhAqNFZusSJQyCkSvEbd0Fk9+0wlJZRULu6d6frUVRX0Lt",
+            ),
             signing_method: "bip322",
             public_key: "02a34566eb12250c82912bc46ddd0593dfb4c252594542eee9de9fad45515f42ed",
             timestamp: 1755590949192,
@@ -938,7 +940,9 @@ mod wallet_generated_test_vectors {
             address: "bc1qyt6gau643sm52hvej4n4qr34h3878ahs209s27",
             address_type: "payment",
             message: r#"{"signer_id":"alice.near","verifying_contract":"defuse.near","deadline":"Never","nonce":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","test":"value"}"#,
-            signature: WalletSignature::String("AkcwRAIgUo7OrJ9x23tY9KMrNci+XkoOuHnR7J2vrzI4XdBboHkCICbfo/9oFDYWVXrcCBgwEuD0A7Udpjk4Oj0gSOFgWc/6ASECo0Vm6xIlDIKRK8Rt3QWT37TCUllFQu7p3p+tRVFfQu0="),
+            signature: WalletSignature::String(
+                "AkcwRAIgUo7OrJ9x23tY9KMrNci+XkoOuHnR7J2vrzI4XdBboHkCICbfo/9oFDYWVXrcCBgwEuD0A7Udpjk4Oj0gSOFgWc/6ASECo0Vm6xIlDIKRK8Rt3QWT37TCUllFQu7p3p+tRVFfQu0=",
+            ),
             signing_method: "bip322",
             public_key: "02a34566eb12250c82912bc46ddd0593dfb4c252594542eee9de9fad45515f42ed",
             timestamp: 1755590951798,
@@ -949,7 +953,9 @@ mod wallet_generated_test_vectors {
             address: "bc1ptslxpl5kvfglkkxunpgrs7hye42xnqgyjmv5qczmd2z8nckyf9csa3ltm0",
             address_type: "payment",
             message: "Hello World!",
-            signature: WalletSignature::String("AUCLVKMldwxRPB2j4h/Cwx8+lBHJGNXI3G/+kEqijAF4h4Sd2k2FuCUKqS17InQAmLvVHg60axME6f4uy+nsHfgx"),
+            signature: WalletSignature::String(
+                "AUCLVKMldwxRPB2j4h/Cwx8+lBHJGNXI3G/+kEqijAF4h4Sd2k2FuCUKqS17InQAmLvVHg60axME6f4uy+nsHfgx",
+            ),
             signing_method: "bip322",
             public_key: "02938bc6df762a933e84be9860e99568ec5fca96012795aa654b334658c90a2b73",
             timestamp: 1755590962817,
@@ -959,7 +965,9 @@ mod wallet_generated_test_vectors {
             address: "bc1ptslxpl5kvfglkkxunpgrs7hye42xnqgyjmv5qczmd2z8nckyf9csa3ltm0",
             address_type: "payment",
             message: r#"{"signer_id":"alice.near","verifying_contract":"defuse.near","deadline":"Never","nonce":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","test":"value"}"#,
-            signature: WalletSignature::String("AUAhwfD4KM418Z69K9fBHTM+RcnxjOtERkii19prqvwLp3LQQcEbuMersS4oHi8M6jVrPmh/6xdFDSFqAQGNRoaI"),
+            signature: WalletSignature::String(
+                "AUAhwfD4KM418Z69K9fBHTM+RcnxjOtERkii19prqvwLp3LQQcEbuMersS4oHi8M6jVrPmh/6xdFDSFqAQGNRoaI",
+            ),
             signing_method: "bip322",
             public_key: "02938bc6df762a933e84be9860e99568ec5fca96012795aa654b334658c90a2b73",
             timestamp: 1755590964760,
@@ -970,7 +978,9 @@ mod wallet_generated_test_vectors {
             address: "bc1psqt6kq8vts45mwrw72gll2x7kmaux6akga7lsjp2ctchhs9249wq8pj0uv",
             address_type: "ordinals",
             message: "Hello World!",
-            signature: WalletSignature::String("AUBjSngI+D1HipbvQ1G0hhg8Ob1hi2uvbPzHxAaJgIenIz11Ea8+yW5W0edc8ypNudE28gzzUp6wboCaH9Y4TuCx"),
+            signature: WalletSignature::String(
+                "AUBjSngI+D1HipbvQ1G0hhg8Ob1hi2uvbPzHxAaJgIenIz11Ea8+yW5W0edc8ypNudE28gzzUp6wboCaH9Y4TuCx",
+            ),
             signing_method: "ecdsa",
             public_key: "17e934f4980071de5d607852cf78a2542b46d432b28e6f3c5003fc226b091d63",
             timestamp: 1755590974036,
@@ -980,7 +990,9 @@ mod wallet_generated_test_vectors {
             address: "bc1psqt6kq8vts45mwrw72gll2x7kmaux6akga7lsjp2ctchhs9249wq8pj0uv",
             address_type: "ordinals",
             message: r#"{"signer_id":"alice.near","verifying_contract":"defuse.near","deadline":"Never","nonce":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","test":"value"}"#,
-            signature: WalletSignature::String("AUD87z1O/+TCs+RQ4FWbfJ2jWVwPQrvOyhMP1xv03WrbhAPQTy8ghEEdXzbQHxRzFwpw5MoZZnvgciuyMfPfb7u8"),
+            signature: WalletSignature::String(
+                "AUD87z1O/+TCs+RQ4FWbfJ2jWVwPQrvOyhMP1xv03WrbhAPQTy8ghEEdXzbQHxRzFwpw5MoZZnvgciuyMfPfb7u8",
+            ),
             signing_method: "ecdsa",
             public_key: "17e934f4980071de5d607852cf78a2542b46d432b28e6f3c5003fc226b091d63",
             timestamp: 1755590976928,
@@ -990,7 +1002,9 @@ mod wallet_generated_test_vectors {
             address: "34WyCAk3pnpyv7Z3Z4QiSRGhUBzLXeqLEP",
             address_type: "payment",
             message: "Hello World!",
-            signature: WalletSignature::String("I0afbfPDmwliKdvd57iR4PStG22I8rBCQTArWD3VEJUVPkoEqmwVPbUWRcN9G3gJjaKjK/uDzpf6HRQ9AMq+cM8="),
+            signature: WalletSignature::String(
+                "I0afbfPDmwliKdvd57iR4PStG22I8rBCQTArWD3VEJUVPkoEqmwVPbUWRcN9G3gJjaKjK/uDzpf6HRQ9AMq+cM8=",
+            ),
             signing_method: "ecdsa",
             public_key: "02e9de2b5264d8fba3e257bab089eabad7553187538b6482cbace96d18d1287a16",
             timestamp: 1755590978990,
@@ -1000,7 +1014,9 @@ mod wallet_generated_test_vectors {
             address: "34WyCAk3pnpyv7Z3Z4QiSRGhUBzLXeqLEP",
             address_type: "payment",
             message: r#"{"signer_id":"alice.near","verifying_contract":"defuse.near","deadline":"Never","nonce":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","test":"value"}"#,
-            signature: WalletSignature::String("I7fbZuXNdEsmrA5TtmF0b/kyppp34c/cst/zG+Q6MkycZC+jnLqRyUIX8Sym+vLpZzHg7HiuyaYTC5WxMidgnW0="),
+            signature: WalletSignature::String(
+                "I7fbZuXNdEsmrA5TtmF0b/kyppp34c/cst/zG+Q6MkycZC+jnLqRyUIX8Sym+vLpZzHg7HiuyaYTC5WxMidgnW0=",
+            ),
             signing_method: "ecdsa",
             public_key: "02e9de2b5264d8fba3e257bab089eabad7553187538b6482cbace96d18d1287a16",
             timestamp: 1755590981393,
@@ -1011,7 +1027,9 @@ mod wallet_generated_test_vectors {
             address: "3Gc3Bq6TPDhKLFTUCd3Vuz9JXrACFaxD7a",
             address_type: "payment",
             message: "Hello World!",
-            signature: WalletSignature::String("I+pfKpxU7ge2z70ichKOSLjFRDVJFV6paCBsLZOGDdSoX/Jrx6EOHHf+mMdr9QPdGqN7tza7X5UD47mvIGW04FI="),
+            signature: WalletSignature::String(
+                "I+pfKpxU7ge2z70ichKOSLjFRDVJFV6paCBsLZOGDdSoX/Jrx6EOHHf+mMdr9QPdGqN7tza7X5UD47mvIGW04FI=",
+            ),
             signing_method: "ecdsa",
             public_key: "02eff96e4356c615a1c98ae8a29a43cead00d6bc806d14ebee4c025cbb1beb45af",
             timestamp: 1755590983237,
@@ -1021,7 +1039,9 @@ mod wallet_generated_test_vectors {
             address: "3Gc3Bq6TPDhKLFTUCd3Vuz9JXrACFaxD7a",
             address_type: "payment",
             message: r#"{"signer_id":"alice.near","verifying_contract":"defuse.near","deadline":"Never","nonce":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","test":"value"}"#,
-            signature: WalletSignature::String("JHw516KRpz/e+UDHpWTO9kpsB7bLV3xrik0qra2xZGJ+K8C5WgYwJwr2Y1ZdoJJKWBAR26U4oIyr6OFGRMO3m8Q="),
+            signature: WalletSignature::String(
+                "JHw516KRpz/e+UDHpWTO9kpsB7bLV3xrik0qra2xZGJ+K8C5WgYwJwr2Y1ZdoJJKWBAR26U4oIyr6OFGRMO3m8Q=",
+            ),
             signing_method: "ecdsa",
             public_key: "02eff96e4356c615a1c98ae8a29a43cead00d6bc806d14ebee4c025cbb1beb45af",
             timestamp: 1755590984330,
@@ -1031,7 +1051,9 @@ mod wallet_generated_test_vectors {
             address: "bc1p82mv0dwh7akajhc8upcvv5s5g0v4km3lrx4rvnvu5vr3vl6eug9q76sa8p",
             address_type: "ordinals",
             message: "Hello World!",
-            signature: WalletSignature::String("AUAnjFdOGxYY8/peLBXLh1PByk5YVHzIqpKG0qoF+F9rp8pnQDyaw6LXKmFUaO60lyGd1dScoaxBhf+bPqJ9W5ot"),
+            signature: WalletSignature::String(
+                "AUAnjFdOGxYY8/peLBXLh1PByk5YVHzIqpKG0qoF+F9rp8pnQDyaw6LXKmFUaO60lyGd1dScoaxBhf+bPqJ9W5ot",
+            ),
             signing_method: "ecdsa",
             public_key: "ebebb8c785e1be2a06240fcc06ea9ed6e6b307dcf52ced9c56a35e36f940cebb",
             timestamp: 1755590985306,
@@ -1041,7 +1063,9 @@ mod wallet_generated_test_vectors {
             address: "bc1p82mv0dwh7akajhc8upcvv5s5g0v4km3lrx4rvnvu5vr3vl6eug9q76sa8p",
             address_type: "ordinals",
             message: r#"{"signer_id":"alice.near","verifying_contract":"defuse.near","deadline":"Never","nonce":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","test":"value"}"#,
-            signature: WalletSignature::String("AUDrplB4I3Q8nm/yhRgSw0uYMj8rfYkZrAPYCRfAR9+CBzhavGDEjDkk+DdB22LGlHOlWZdVjOOob2eYQfXmowjv"),
+            signature: WalletSignature::String(
+                "AUDrplB4I3Q8nm/yhRgSw0uYMj8rfYkZrAPYCRfAR9+CBzhavGDEjDkk+DdB22LGlHOlWZdVjOOob2eYQfXmowjv",
+            ),
             signing_method: "ecdsa",
             public_key: "ebebb8c785e1be2a06240fcc06ea9ed6e6b307dcf52ced9c56a35e36f940cebb",
             timestamp: 1755590986327,
@@ -1052,7 +1076,9 @@ mod wallet_generated_test_vectors {
             address: "bc1psqt6kq8vts45mwrw72gll2x7kmaux6akga7lsjp2ctchhs9249wq8pj0uv",
             address_type: "ordinals",
             message: "Hello World!",
-            signature: WalletSignature::String("AUDkPPtlGd+RVWCr1IRDUM9iPUDIEC/W3SgyZWNiqru7Frcd0u8uE82jOkqYk1wOtKw3ZLlOPtqZKIqXvsAxQ03G"),
+            signature: WalletSignature::String(
+                "AUDkPPtlGd+RVWCr1IRDUM9iPUDIEC/W3SgyZWNiqru7Frcd0u8uE82jOkqYk1wOtKw3ZLlOPtqZKIqXvsAxQ03G",
+            ),
             signing_method: "ecdsa",
             public_key: "17e934f4980071de5d607852cf78a2542b46d432b28e6f3c5003fc226b091d63",
             timestamp: 1755590990124,
@@ -1062,7 +1088,9 @@ mod wallet_generated_test_vectors {
             address: "bc1psqt6kq8vts45mwrw72gll2x7kmaux6akga7lsjp2ctchhs9249wq8pj0uv",
             address_type: "ordinals",
             message: r#"{"signer_id":"alice.near","verifying_contract":"defuse.near","deadline":"Never","nonce":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","test":"value"}"#,
-            signature: WalletSignature::String("AUCCzQIeYz+DiBr4kKEGR+m4KQjxiex0h0ca/S/UcSNGD99hKD6WkNEECqQQ9yFZyRBP8lrAtSAtjMP4ZgziiNDt"),
+            signature: WalletSignature::String(
+                "AUCCzQIeYz+DiBr4kKEGR+m4KQjxiex0h0ca/S/UcSNGD99hKD6WkNEECqQQ9yFZyRBP8lrAtSAtjMP4ZgziiNDt",
+            ),
             signing_method: "ecdsa",
             public_key: "17e934f4980071de5d607852cf78a2542b46d432b28e6f3c5003fc226b091d63",
             timestamp: 1755590991703,
@@ -1072,7 +1100,9 @@ mod wallet_generated_test_vectors {
             address: "34WyCAk3pnpyv7Z3Z4QiSRGhUBzLXeqLEP",
             address_type: "payment",
             message: "Hello World!",
-            signature: WalletSignature::String("I0afbfPDmwliKdvd57iR4PStG22I8rBCQTArWD3VEJUVPkoEqmwVPbUWRcN9G3gJjaKjK/uDzpf6HRQ9AMq+cM8="),
+            signature: WalletSignature::String(
+                "I0afbfPDmwliKdvd57iR4PStG22I8rBCQTArWD3VEJUVPkoEqmwVPbUWRcN9G3gJjaKjK/uDzpf6HRQ9AMq+cM8=",
+            ),
             signing_method: "ecdsa",
             public_key: "02e9de2b5264d8fba3e257bab089eabad7553187538b6482cbace96d18d1287a16",
             timestamp: 1755590993658,
@@ -1082,7 +1112,9 @@ mod wallet_generated_test_vectors {
             address: "34WyCAk3pnpyv7Z3Z4QiSRGhUBzLXeqLEP",
             address_type: "payment",
             message: r#"{"signer_id":"alice.near","verifying_contract":"defuse.near","deadline":"Never","nonce":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","test":"value"}"#,
-            signature: WalletSignature::String("I7fbZuXNdEsmrA5TtmF0b/kyppp34c/cst/zG+Q6MkycZC+jnLqRyUIX8Sym+vLpZzHg7HiuyaYTC5WxMidgnW0="),
+            signature: WalletSignature::String(
+                "I7fbZuXNdEsmrA5TtmF0b/kyppp34c/cst/zG+Q6MkycZC+jnLqRyUIX8Sym+vLpZzHg7HiuyaYTC5WxMidgnW0=",
+            ),
             signing_method: "ecdsa",
             public_key: "02e9de2b5264d8fba3e257bab089eabad7553187538b6482cbace96d18d1287a16",
             timestamp: 1755590995223,
@@ -1150,7 +1182,9 @@ mod wallet_generated_test_vectors {
             address: "bc1q2le6ka4y5yy703t9nlmh8e4v6p84ansdkw50ce",
             address_type: "payment",
             message: "Hello World!",
-            signature: WalletSignature::String("AkgwRQIhAONhOb2VlDoy2anrPDkIKvtetuHD7dVKAOnoE5ju0TbmAiBNVtROWPDK3O0vkFGNlPJ1oYOc2CZ/JtoZg8XuOqnEZQEhAraEOzai1nkdqdg/Y8jfKshxmKG3wxFji0QowVGD/dY5"),
+            signature: WalletSignature::String(
+                "AkgwRQIhAONhOb2VlDoy2anrPDkIKvtetuHD7dVKAOnoE5ju0TbmAiBNVtROWPDK3O0vkFGNlPJ1oYOc2CZ/JtoZg8XuOqnEZQEhAraEOzai1nkdqdg/Y8jfKshxmKG3wxFji0QowVGD/dY5",
+            ),
             signing_method: "bip322",
             public_key: "02b6843b36a2d6791da9d83f63c8df2ac87198a1b7c311638b4428c15183fdd639",
             timestamp: 1755596665772,
@@ -1160,7 +1194,9 @@ mod wallet_generated_test_vectors {
             address: "bc1q2le6ka4y5yy703t9nlmh8e4v6p84ansdkw50ce",
             address_type: "payment",
             message: r#"{"signer_id":"alice.near","verifying_contract":"defuse.near","deadline":"Never","nonce":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","test":"value"}"#,
-            signature: WalletSignature::String("AkcwRAIgMwV8KFV6qDERVnkb6RBg/f5stBNs9cFfy/zu1s2H9ZcCIFWfDYFd2sDiV+SAA9D4iS7IQsLN/FKVDx0d989yqa3PASECtoQ7NqLWeR2p2D9jyN8qyHGYobfDEWOLRCjBUYP91jk="),
+            signature: WalletSignature::String(
+                "AkcwRAIgMwV8KFV6qDERVnkb6RBg/f5stBNs9cFfy/zu1s2H9ZcCIFWfDYFd2sDiV+SAA9D4iS7IQsLN/FKVDx0d989yqa3PASECtoQ7NqLWeR2p2D9jyN8qyHGYobfDEWOLRCjBUYP91jk=",
+            ),
             signing_method: "bip322",
             public_key: "02b6843b36a2d6791da9d83f63c8df2ac87198a1b7c311638b4428c15183fdd639",
             timestamp: 1755596667945,
@@ -1170,7 +1206,9 @@ mod wallet_generated_test_vectors {
             address: "bc1p8pd76laz84v2vmx7qwuznv2yy7n5sq2dszptf4m4czhqneyfhj2st4mu9h",
             address_type: "payment",
             message: "Hello World!",
-            signature: WalletSignature::String("AUBWtXqiVBzcATi4iphoEQwPHUYyQB5S54Gh7mDEp4NIoAhpMiU9AX2Gq/HSs6ygKSDFxjmlxqSwLx0rZeT+3NR2"),
+            signature: WalletSignature::String(
+                "AUBWtXqiVBzcATi4iphoEQwPHUYyQB5S54Gh7mDEp4NIoAhpMiU9AX2Gq/HSs6ygKSDFxjmlxqSwLx0rZeT+3NR2",
+            ),
             signing_method: "bip322",
             public_key: "025b298ff5d39e5b48a95e67bca8b40547c7bbfdc15ba64f0fc1ff3a4688eac011",
             timestamp: 1755596670972,
@@ -1180,7 +1218,9 @@ mod wallet_generated_test_vectors {
             address: "bc1p8pd76laz84v2vmx7qwuznv2yy7n5sq2dszptf4m4czhqneyfhj2st4mu9h",
             address_type: "payment",
             message: r#"{"signer_id":"alice.near","verifying_contract":"defuse.near","deadline":"Never","nonce":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","test":"value"}"#,
-            signature: WalletSignature::String("AUCU5OXennh1mb4Y1BzzHyN0LcLQ6yUCzHAIZ7YnmlvKB3Ljn+HJcoUhOugthXRl8ezhhCupFQT+K9BF7Bl9TmpY"),
+            signature: WalletSignature::String(
+                "AUCU5OXennh1mb4Y1BzzHyN0LcLQ6yUCzHAIZ7YnmlvKB3Ljn+HJcoUhOugthXRl8ezhhCupFQT+K9BF7Bl9TmpY",
+            ),
             signing_method: "bip322",
             public_key: "025b298ff5d39e5b48a95e67bca8b40547c7bbfdc15ba64f0fc1ff3a4688eac011",
             timestamp: 1755596672508,
@@ -1191,7 +1231,9 @@ mod wallet_generated_test_vectors {
             address: "bc1pj3573fe3jlhf35kmzh05gthwy453xu6j7ehhsr7rrpk23mgd0ugqs4d02f",
             address_type: "taproot",
             message: "Hello World!",
-            signature: WalletSignature::String("AUG0K5o2HOO4X9Q7Hpne0IRtrlU2XE4RWes3F4NspZf5hLmwmRfdiQg4rIB8aDiqcXmwIxnw/ohbPg27PUKIdZjqAQ=="),
+            signature: WalletSignature::String(
+                "AUG0K5o2HOO4X9Q7Hpne0IRtrlU2XE4RWes3F4NspZf5hLmwmRfdiQg4rIB8aDiqcXmwIxnw/ohbPg27PUKIdZjqAQ==",
+            ),
             signing_method: "ecdsa",
             public_key: "02cc5371b04bb4edc5f866dc7924afcb83f39ecb3e5774c2cb1a02864f0030909e",
             timestamp: 1755596675780,
@@ -1201,7 +1243,9 @@ mod wallet_generated_test_vectors {
             address: "bc1pj3573fe3jlhf35kmzh05gthwy453xu6j7ehhsr7rrpk23mgd0ugqs4d02f",
             address_type: "taproot",
             message: r#"{"signer_id":"alice.near","verifying_contract":"defuse.near","deadline":"Never","nonce":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","test":"value"}"#,
-            signature: WalletSignature::String("AUFGlITh1uRH7rzBk8fXWacArO5FiRe7BaNUzXHyhOeZnalny4HzCaJQiv3kEa0HopjDpjqJJX+jbzAaTSWtFW/AAQ=="),
+            signature: WalletSignature::String(
+                "AUFGlITh1uRH7rzBk8fXWacArO5FiRe7BaNUzXHyhOeZnalny4HzCaJQiv3kEa0HopjDpjqJJX+jbzAaTSWtFW/AAQ==",
+            ),
             signing_method: "ecdsa",
             public_key: "02cc5371b04bb4edc5f866dc7924afcb83f39ecb3e5774c2cb1a02864f0030909e",
             timestamp: 1755596677124,
@@ -1211,7 +1255,9 @@ mod wallet_generated_test_vectors {
             address: "bc1qhatel865u6m6kqzjcc2nxjvw3zux3wp0rv3up0",
             address_type: "nativeSegwit",
             message: "Hello World!",
-            signature: WalletSignature::String("AkcwRAIgdmE7502afedY+5CPnbQniCwfguRBuCDe2fknKBPjU6ACIBnjVJ4wq0sPNTsQPJQ5WUebOJIBoiLohonTgVg8FMI1ASEDp23W74f3yU0+J19Yo7t8aRFfn8UuIHSma6+saAYnfJ0="),
+            signature: WalletSignature::String(
+                "AkcwRAIgdmE7502afedY+5CPnbQniCwfguRBuCDe2fknKBPjU6ACIBnjVJ4wq0sPNTsQPJQ5WUebOJIBoiLohonTgVg8FMI1ASEDp23W74f3yU0+J19Yo7t8aRFfn8UuIHSma6+saAYnfJ0=",
+            ),
             signing_method: "ecdsa",
             public_key: "02cc5371b04bb4edc5f866dc7924afcb83f39ecb3e5774c2cb1a02864f0030909e",
             timestamp: 1755596678527,
@@ -1221,7 +1267,9 @@ mod wallet_generated_test_vectors {
             address: "bc1qhatel865u6m6kqzjcc2nxjvw3zux3wp0rv3up0",
             address_type: "nativeSegwit",
             message: r#"{"signer_id":"alice.near","verifying_contract":"defuse.near","deadline":"Never","nonce":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","test":"value"}"#,
-            signature: WalletSignature::String("AkgwRQIhAOgBeRAsOE5msmUox5gcWNrMeq9n86dVUbxKQMqZuL+LAiABS7XmA8+G33HA5B7a0IwOBP8Rhnd60mZAC8laC9IqQQEhA6dt1u+H98lNPidfWKO7fGkRX5/FLiB0pmuvrGgGJ3yd"),
+            signature: WalletSignature::String(
+                "AkgwRQIhAOgBeRAsOE5msmUox5gcWNrMeq9n86dVUbxKQMqZuL+LAiABS7XmA8+G33HA5B7a0IwOBP8Rhnd60mZAC8laC9IqQQEhA6dt1u+H98lNPidfWKO7fGkRX5/FLiB0pmuvrGgGJ3yd",
+            ),
             signing_method: "ecdsa",
             public_key: "02cc5371b04bb4edc5f866dc7924afcb83f39ecb3e5774c2cb1a02864f0030909e",
             timestamp: 1755596680162,
@@ -1231,7 +1279,9 @@ mod wallet_generated_test_vectors {
             address: "3BbNjJ5SB9UgdC9keGcqZP6bZWQtLL1tec",
             address_type: "nestedSegwit",
             message: "Hello World!",
-            signature: WalletSignature::String("AkgwRQIhANoLQECTBPhwYfqCgd2akT8KfYNjfg+mdy4wm91o6TjBAiBpSYXpt8FvSOJOwsjgKU/2TtxyEyOXR/zDxIVG+26MbQEhA6ZDPWB+EoYl1NWqFJjTNgxXLx34CNG8kJiaqNya9FHI"),
+            signature: WalletSignature::String(
+                "AkgwRQIhANoLQECTBPhwYfqCgd2akT8KfYNjfg+mdy4wm91o6TjBAiBpSYXpt8FvSOJOwsjgKU/2TtxyEyOXR/zDxIVG+26MbQEhA6ZDPWB+EoYl1NWqFJjTNgxXLx34CNG8kJiaqNya9FHI",
+            ),
             signing_method: "ecdsa",
             public_key: "02cc5371b04bb4edc5f866dc7924afcb83f39ecb3e5774c2cb1a02864f0030909e",
             timestamp: 1755596682207,
@@ -1241,7 +1291,9 @@ mod wallet_generated_test_vectors {
             address: "3BbNjJ5SB9UgdC9keGcqZP6bZWQtLL1tec",
             address_type: "nestedSegwit",
             message: r#"{"signer_id":"alice.near","verifying_contract":"defuse.near","deadline":"Never","nonce":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","test":"value"}"#,
-            signature: WalletSignature::String("AkgwRQIhAKKWZIV8jTn6OQ8BFGsU8jZa9VyddJOXMG9iiVDmuS2BAiAgM6yhdetOTx1Di8MRI9NmA67Mp3iFN4DqJlIvuEQttAEhA6ZDPWB+EoYl1NWqFJjTNgxXLx34CNG8kJiaqNya9FHI"),
+            signature: WalletSignature::String(
+                "AkgwRQIhAKKWZIV8jTn6OQ8BFGsU8jZa9VyddJOXMG9iiVDmuS2BAiAgM6yhdetOTx1Di8MRI9NmA67Mp3iFN4DqJlIvuEQttAEhA6ZDPWB+EoYl1NWqFJjTNgxXLx34CNG8kJiaqNya9FHI",
+            ),
             signing_method: "ecdsa",
             public_key: "02cc5371b04bb4edc5f866dc7924afcb83f39ecb3e5774c2cb1a02864f0030909e",
             timestamp: 1755596684011,
@@ -1251,7 +1303,9 @@ mod wallet_generated_test_vectors {
             address: "1BfhKaFY3V2kkQmQ7BDLc2EPLMphwfdUkz",
             address_type: "legacy",
             message: "Hello World!",
-            signature: WalletSignature::String("IFYQ9pgLAynqmFOyUd1zVkbjZPXNJME1eS+baKLVbGmuZ9uyhdk2xKliVANxHvNCHs/+OG+6AZOH8Foox5yqhEM="),
+            signature: WalletSignature::String(
+                "IFYQ9pgLAynqmFOyUd1zVkbjZPXNJME1eS+baKLVbGmuZ9uyhdk2xKliVANxHvNCHs/+OG+6AZOH8Foox5yqhEM=",
+            ),
             signing_method: "ecdsa",
             public_key: "02cc5371b04bb4edc5f866dc7924afcb83f39ecb3e5774c2cb1a02864f0030909e",
             timestamp: 1755596685783,
@@ -1261,7 +1315,9 @@ mod wallet_generated_test_vectors {
             address: "1BfhKaFY3V2kkQmQ7BDLc2EPLMphwfdUkz",
             address_type: "legacy",
             message: r#"{"signer_id":"alice.near","verifying_contract":"defuse.near","deadline":"Never","nonce":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","test":"value"}"#,
-            signature: WalletSignature::String("IMLe55NlQT2ctAytFOyx7A2M6bJSd8rejYYy4I1HnCn9JQmLZAEeXanL8qJNPtJ9isKmPnyRY4rqRf85zVvrKj8="),
+            signature: WalletSignature::String(
+                "IMLe55NlQT2ctAytFOyx7A2M6bJSd8rejYYy4I1HnCn9JQmLZAEeXanL8qJNPtJ9isKmPnyRY4rqRf85zVvrKj8=",
+            ),
             signing_method: "ecdsa",
             public_key: "02cc5371b04bb4edc5f866dc7924afcb83f39ecb3e5774c2cb1a02864f0030909e",
             timestamp: 1755596687637,
@@ -1269,56 +1325,90 @@ mod wallet_generated_test_vectors {
     ];
 
     /// Categorize test vectors by wallet type and signing method
-    fn categorize_test_vectors<'a>(vectors: &'a [&'a WalletTestVector]) -> HashMap<String, Vec<&'a WalletTestVector>> {
+    fn categorize_test_vectors<'a>(
+        vectors: &'a [&'a WalletTestVector],
+    ) -> HashMap<String, Vec<&'a WalletTestVector>> {
         let mut categories = HashMap::new();
-        
+
         for vector in vectors {
             let key = format!("{}_{}", vector.wallet_type, vector.signing_method);
             categories.entry(key).or_insert_with(Vec::new).push(*vector);
         }
-        
+
         categories
     }
 
-    #[test] 
+    #[test]
     fn test_static_test_vectors() {
         setup_test_env();
 
         let vectors = WALLET_TEST_VECTORS;
 
-        println!("Testing {} static test vectors from all wallets", vectors.len());
-        
+        println!(
+            "Testing {} static test vectors from all wallets",
+            vectors.len()
+        );
+
         // Verify we have some vectors
         assert!(!vectors.is_empty(), "Should have test vectors");
 
         // Check that we have different wallet types
-        let wallet_types: std::collections::HashSet<_> = vectors.iter().map(|v| v.wallet_type).collect();
+        let wallet_types: std::collections::HashSet<_> =
+            vectors.iter().map(|v| v.wallet_type).collect();
         println!("Wallet types: {wallet_types:?}");
-        
+
         // Verify we have signing methods
-        let signing_methods: std::collections::HashSet<_> = vectors.iter().map(|v| v.signing_method).collect();
+        let signing_methods: std::collections::HashSet<_> =
+            vectors.iter().map(|v| v.signing_method).collect();
         println!("Signing methods: {signing_methods:?}");
 
         // Basic validation that vectors have required fields
         for (i, vector) in vectors.iter().enumerate() {
             assert!(!vector.address.is_empty(), "Vector {i} should have address");
             assert!(!vector.message.is_empty(), "Vector {i} should have message");
-            assert!(!vector.public_key.is_empty(), "Vector {i} should have public key");
+            assert!(
+                !vector.public_key.is_empty(),
+                "Vector {i} should have public key"
+            );
         }
 
         // Verify we have expected wallet coverage
-        assert!(wallet_types.contains("unisat"), "Should have Unisat vectors");
+        assert!(
+            wallet_types.contains("unisat"),
+            "Should have Unisat vectors"
+        );
         assert!(wallet_types.contains("okx"), "Should have OKX vectors");
-        assert!(wallet_types.contains("magicEden"), "Should have Magic Eden vectors");
-        assert!(wallet_types.contains("orange"), "Should have Orange vectors");
-        assert!(wallet_types.contains("xverse"), "Should have Xverse vectors");
-        assert!(wallet_types.contains("leather"), "Should have Leather vectors");
-        assert!(wallet_types.contains("phantom"), "Should have Phantom vectors");
+        assert!(
+            wallet_types.contains("magicEden"),
+            "Should have Magic Eden vectors"
+        );
+        assert!(
+            wallet_types.contains("orange"),
+            "Should have Orange vectors"
+        );
+        assert!(
+            wallet_types.contains("xverse"),
+            "Should have Xverse vectors"
+        );
+        assert!(
+            wallet_types.contains("leather"),
+            "Should have Leather vectors"
+        );
+        assert!(
+            wallet_types.contains("phantom"),
+            "Should have Phantom vectors"
+        );
         assert!(wallet_types.contains("oyl"), "Should have Oyl vectors");
-        
+
         // Verify we have both signing methods
-        assert!(signing_methods.contains("bip322"), "Should have BIP322 vectors");
-        assert!(signing_methods.contains("ecdsa"), "Should have ECDSA vectors");
+        assert!(
+            signing_methods.contains("bip322"),
+            "Should have BIP322 vectors"
+        );
+        assert!(
+            signing_methods.contains("ecdsa"),
+            "Should have ECDSA vectors"
+        );
     }
 
     #[test]
@@ -1328,7 +1418,10 @@ mod wallet_generated_test_vectors {
         // Get all static test vectors
         let all_vectors: Vec<_> = WALLET_TEST_VECTORS.iter().collect();
 
-        println!("Testing signature parsing for {} total vectors", all_vectors.len());
+        println!(
+            "Testing signature parsing for {} total vectors",
+            all_vectors.len()
+        );
 
         let mut parse_success = 0;
         let mut parse_failure = 0;
@@ -1336,36 +1429,44 @@ mod wallet_generated_test_vectors {
 
         for (i, vector) in all_vectors.iter().enumerate() {
             let signature_str = vector.signature.get_signature_string();
-            
+
             match Bip322Signature::from_str(signature_str) {
                 Ok(signature) => {
                     parse_success += 1;
-                    println!("✓ Vector {i}: {}/{} signature parsed successfully", 
-                            vector.wallet_type, vector.signing_method);
-                    
+                    println!(
+                        "✓ Vector {i}: {}/{} signature parsed successfully",
+                        vector.wallet_type, vector.signing_method
+                    );
+
                     // Verify signature type detection
                     match (&signature, vector.signing_method) {
                         (Bip322Signature::Compact { .. }, "ecdsa") => {
                             println!("  → Correctly identified as compact/ecdsa");
-                        },
+                        }
                         (Bip322Signature::Full { .. }, "bip322") => {
                             println!("  → Correctly identified as full/bip322");
-                        },
+                        }
                         _ => {
-                            println!("  → Signature format: {:?}, Method: {}", 
-                                   match signature {
-                                       Bip322Signature::Compact { .. } => "Compact",
-                                       Bip322Signature::Full { .. } => "Full",
-                                   },
-                                   vector.signing_method);
+                            println!(
+                                "  → Signature format: {:?}, Method: {}",
+                                match signature {
+                                    Bip322Signature::Compact { .. } => "Compact",
+                                    Bip322Signature::Full { .. } => "Full",
+                                },
+                                vector.signing_method
+                            );
                         }
                     }
-                },
+                }
                 Err(e) => {
                     parse_failure += 1;
-                    *failures_by_method.entry(vector.signing_method.to_string()).or_insert(0) += 1;
-                    println!("✗ Vector {i}: {}/{} signature parsing failed: {:?}", 
-                            vector.wallet_type, vector.signing_method, e);
+                    *failures_by_method
+                        .entry(vector.signing_method.to_string())
+                        .or_insert(0) += 1;
+                    println!(
+                        "✗ Vector {i}: {}/{} signature parsing failed: {:?}",
+                        vector.wallet_type, vector.signing_method, e
+                    );
                 }
             }
         }
@@ -1376,7 +1477,10 @@ mod wallet_generated_test_vectors {
         println!("  Failures by method: {failures_by_method:?}");
 
         // We expect most signatures to parse successfully
-        assert!(parse_success > 0, "Should successfully parse some signatures");
+        assert!(
+            parse_success > 0,
+            "Should successfully parse some signatures"
+        );
     }
 
     #[test]
@@ -1384,11 +1488,15 @@ mod wallet_generated_test_vectors {
         setup_test_env();
 
         // Get all static test vectors and filter for BIP322 signatures only
-        let bip322_vectors: Vec<_> = WALLET_TEST_VECTORS.iter()
+        let bip322_vectors: Vec<_> = WALLET_TEST_VECTORS
+            .iter()
             .filter(|v| v.signing_method == "bip322")
             .collect();
 
-        println!("Testing BIP322 signature verification for {} vectors", bip322_vectors.len());
+        println!(
+            "Testing BIP322 signature verification for {} vectors",
+            bip322_vectors.len()
+        );
 
         if bip322_vectors.is_empty() {
             println!("No BIP322 vectors found in static test data");
@@ -1401,13 +1509,16 @@ mod wallet_generated_test_vectors {
 
         for (i, vector) in bip322_vectors.iter().enumerate() {
             let signature_str = vector.signature.get_signature_string();
-            
+
             // Parse signature
             let signature = match Bip322Signature::from_str(signature_str) {
                 Ok(sig) => sig,
                 Err(e) => {
                     parse_failure += 1;
-                    println!("✗ Vector {i}: Failed to parse signature for {}/{}: {:?}", vector.wallet_type, vector.address_type, e);
+                    println!(
+                        "✗ Vector {i}: Failed to parse signature for {}/{}: {:?}",
+                        vector.wallet_type, vector.address_type, e
+                    );
                     continue;
                 }
             };
@@ -1417,7 +1528,10 @@ mod wallet_generated_test_vectors {
                 Ok(addr) => addr,
                 Err(e) => {
                     parse_failure += 1;
-                    println!("✗ Vector {i}: Failed to parse address {} for {}/{}: {:?}", vector.address, vector.wallet_type, vector.address_type, e);
+                    println!(
+                        "✗ Vector {i}: Failed to parse address {} for {}/{}: {:?}",
+                        vector.address, vector.wallet_type, vector.address_type, e
+                    );
                     continue;
                 }
             };
@@ -1432,13 +1546,17 @@ mod wallet_generated_test_vectors {
             match payload.verify() {
                 Some(_pubkey) => {
                     verify_success += 1;
-                    println!("✓ Vector {i}: {}/{} BIP322 signature verified successfully", 
-                            vector.wallet_type, vector.address_type);
-                },
+                    println!(
+                        "✓ Vector {i}: {}/{} BIP322 signature verified successfully",
+                        vector.wallet_type, vector.address_type
+                    );
+                }
                 None => {
                     verify_failure += 1;
-                    println!("✗ Vector {i}: {}/{} BIP322 signature verification failed", 
-                            vector.wallet_type, vector.address_type);
+                    println!(
+                        "✗ Vector {i}: {}/{} BIP322 signature verification failed",
+                        vector.wallet_type, vector.address_type
+                    );
                     println!("  Address: {}", vector.address);
                     println!("  Message: {}", vector.message);
                 }
@@ -1462,12 +1580,16 @@ mod wallet_generated_test_vectors {
     fn test_ecdsa_wallet_signature_verification() {
         setup_test_env();
 
-        // Get all static test vectors and filter for ECDSA signatures only  
-        let ecdsa_vectors: Vec<_> = WALLET_TEST_VECTORS.iter()
+        // Get all static test vectors and filter for ECDSA signatures only
+        let ecdsa_vectors: Vec<_> = WALLET_TEST_VECTORS
+            .iter()
             .filter(|v| v.signing_method == "ecdsa")
             .collect();
 
-        println!("Testing ECDSA signature verification for {} vectors", ecdsa_vectors.len());
+        println!(
+            "Testing ECDSA signature verification for {} vectors",
+            ecdsa_vectors.len()
+        );
 
         if ecdsa_vectors.is_empty() {
             println!("No ECDSA vectors found in static test data");
@@ -1480,13 +1602,16 @@ mod wallet_generated_test_vectors {
 
         for (i, vector) in ecdsa_vectors.iter().enumerate() {
             let signature_str = vector.signature.get_signature_string();
-            
+
             // Parse signature
             let signature = match Bip322Signature::from_str(signature_str) {
                 Ok(sig) => sig,
                 Err(e) => {
                     parse_failure += 1;
-                    println!("✗ Vector {i}: Failed to parse signature for {}/{}: {:?}", vector.wallet_type, vector.address_type, e);
+                    println!(
+                        "✗ Vector {i}: Failed to parse signature for {}/{}: {:?}",
+                        vector.wallet_type, vector.address_type, e
+                    );
                     continue;
                 }
             };
@@ -1496,7 +1621,10 @@ mod wallet_generated_test_vectors {
                 Ok(addr) => addr,
                 Err(e) => {
                     parse_failure += 1;
-                    println!("✗ Vector {i}: Failed to parse address {} for {}/{}: {:?}", vector.address, vector.wallet_type, vector.address_type, e);
+                    println!(
+                        "✗ Vector {i}: Failed to parse address {} for {}/{}: {:?}",
+                        vector.address, vector.wallet_type, vector.address_type, e
+                    );
                     continue;
                 }
             };
@@ -1511,15 +1639,22 @@ mod wallet_generated_test_vectors {
             match payload.verify() {
                 Some(_pubkey) => {
                     verify_success += 1;
-                    println!("✓ Vector {i}: {}/{} ECDSA signature verified successfully", 
-                            vector.wallet_type, vector.address_type);
-                },
+                    println!(
+                        "✓ Vector {i}: {}/{} ECDSA signature verified successfully",
+                        vector.wallet_type, vector.address_type
+                    );
+                }
                 None => {
                     verify_failure += 1;
-                    println!("✗ Vector {i}: {}/{} ECDSA signature verification failed", 
-                            vector.wallet_type, vector.address_type);
+                    println!(
+                        "✗ Vector {i}: {}/{} ECDSA signature verification failed",
+                        vector.wallet_type, vector.address_type
+                    );
                     println!("  Address: {}", vector.address);
-                    println!("  Message: {}", vector.message.chars().take(50).collect::<String>());
+                    println!(
+                        "  Message: {}",
+                        vector.message.chars().take(50).collect::<String>()
+                    );
                     if vector.message.len() > 50 {
                         println!("  Message (truncated): ...");
                     }
@@ -1547,11 +1682,14 @@ mod wallet_generated_test_vectors {
         // Get all static test vectors
         let all_vectors: Vec<_> = WALLET_TEST_VECTORS.iter().collect();
 
-        println!("Analyzing wallet coverage for {} total vectors", all_vectors.len());
+        println!(
+            "Analyzing wallet coverage for {} total vectors",
+            all_vectors.len()
+        );
 
         // Categorize by wallet type
-        let wallet_counts: HashMap<String, usize> = all_vectors.iter()
-            .fold(HashMap::new(), |mut acc, v| {
+        let wallet_counts: HashMap<String, usize> =
+            all_vectors.iter().fold(HashMap::new(), |mut acc, v| {
                 *acc.entry(v.wallet_type.to_string()).or_insert(0) += 1;
                 acc
             });
@@ -1562,8 +1700,8 @@ mod wallet_generated_test_vectors {
         }
 
         // Categorize by signing method
-        let method_counts: HashMap<String, usize> = all_vectors.iter()
-            .fold(HashMap::new(), |mut acc, v| {
+        let method_counts: HashMap<String, usize> =
+            all_vectors.iter().fold(HashMap::new(), |mut acc, v| {
                 *acc.entry(v.signing_method.to_string()).or_insert(0) += 1;
                 acc
             });
@@ -1574,8 +1712,8 @@ mod wallet_generated_test_vectors {
         }
 
         // Categorize by address type
-        let address_type_counts: HashMap<String, usize> = all_vectors.iter()
-            .fold(HashMap::new(), |mut acc, v| {
+        let address_type_counts: HashMap<String, usize> =
+            all_vectors.iter().fold(HashMap::new(), |mut acc, v| {
                 *acc.entry(v.address_type.to_string()).or_insert(0) += 1;
                 acc
             });
@@ -1586,9 +1724,9 @@ mod wallet_generated_test_vectors {
         }
 
         // Message analysis
-        let unique_messages: std::collections::HashSet<_> = all_vectors.iter()
-            .map(|v| v.message).collect();
-        
+        let unique_messages: std::collections::HashSet<_> =
+            all_vectors.iter().map(|v| v.message).collect();
+
         println!("\nMessage Coverage:");
         println!("  Unique messages: {}", unique_messages.len());
         for (i, msg) in unique_messages.iter().take(5).enumerate() {
@@ -1608,8 +1746,17 @@ mod wallet_generated_test_vectors {
         }
 
         // Assertions for coverage
-        assert!(!wallet_counts.is_empty(), "Should have wallet type coverage");
-        assert!(!method_counts.is_empty(), "Should have signing method coverage");
-        assert!(unique_messages.len() >= 2, "Should have multiple unique messages");
+        assert!(
+            !wallet_counts.is_empty(),
+            "Should have wallet type coverage"
+        );
+        assert!(
+            !method_counts.is_empty(),
+            "Should have signing method coverage"
+        );
+        assert!(
+            unique_messages.len() >= 2,
+            "Should have multiple unique messages"
+        );
     }
 }
