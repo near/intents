@@ -76,8 +76,8 @@ where
         // commit nonce
         self.state.commit_nonce(signer_id.clone(), nonce)?;
 
-        intents.execute_intent(&signer_id, self, hash)?;
-        self.inspector.on_intent_executed(&signer_id, hash);
+        intents.execute_intent(&signer_id, self, hash, nonce)?;
+        self.inspector.on_intent_executed(&signer_id, hash, nonce);
 
         Ok(())
     }

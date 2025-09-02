@@ -1,5 +1,6 @@
 use defuse_core::{
-    Deadline, accounts::AccountEvent, engine::Inspector, events::DefuseEvent, intents::IntentEvent,
+    Deadline, Nonce, accounts::AccountEvent, engine::Inspector, events::DefuseEvent,
+    intents::IntentEvent,
 };
 use near_sdk::{AccountIdRef, CryptoHash};
 
@@ -26,10 +27,16 @@ impl Inspector for SimulateInspector {
     fn on_event(&mut self, _event: DefuseEvent<'_>) {}
 
     #[inline]
-    fn on_intent_executed(&mut self, signer_id: &AccountIdRef, intent_hash: CryptoHash) {
+    fn on_intent_executed(
+        &mut self,
+        signer_id: &AccountIdRef,
+        intent_hash: CryptoHash,
+        nonce: Nonce,
+    ) {
         self.intents_executed.push(IntentEvent::new(
             AccountEvent::new(signer_id.to_owned(), ()),
             intent_hash,
+            nonce,
         ));
     }
 }

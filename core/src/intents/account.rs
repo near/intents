@@ -3,7 +3,7 @@ use near_sdk::{AccountIdRef, CryptoHash, near};
 use serde_with::serde_as;
 
 use crate::{
-    Result,
+    Nonce, Result,
     accounts::AccountEvent,
     engine::{Engine, Inspector, State},
 };
@@ -28,6 +28,7 @@ impl ExecutableIntent for AddPublicKey {
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
         _intent_hash: CryptoHash,
+        _nonce: Nonce,
     ) -> Result<()>
     where
         S: State,
@@ -53,6 +54,7 @@ impl ExecutableIntent for RemovePublicKey {
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
         _intent_hash: CryptoHash,
+        _nonce: Nonce,
     ) -> crate::Result<()>
     where
         S: State,
@@ -84,6 +86,7 @@ impl ExecutableIntent for SetAuthByPredecessorId {
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
         _intent_hash: CryptoHash,
+        _nonce: Nonce,
     ) -> Result<()>
     where
         S: State,
