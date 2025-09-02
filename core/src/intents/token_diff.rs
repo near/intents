@@ -1,6 +1,6 @@
 use super::{ExecutableIntent, IntentEvent};
 use crate::{
-    DefuseError, Nonce, Result,
+    DefuseError, Result,
     accounts::AccountEvent,
     amounts::Amounts,
     engine::{Engine, Inspector, State, StateView},
@@ -50,7 +50,6 @@ impl ExecutableIntent for TokenDiff {
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
         intent_hash: CryptoHash,
-        nonce: Nonce,
     ) -> Result<()>
     where
         S: State,
@@ -95,7 +94,6 @@ impl ExecutableIntent for TokenDiff {
                     },
                 ),
                 intent_hash,
-                nonce,
             )]
             .as_slice()
             .into(),

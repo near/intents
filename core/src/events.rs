@@ -4,7 +4,7 @@ use derive_more::derive::From;
 use near_sdk::{near, serde::Deserialize};
 
 use crate::{
-    accounts::{AccountEvent, PublicKeyEvent},
+    accounts::{AccountEvent, NonceEvent, PublicKeyEvent},
     fees::{FeeChangedEvent, FeeCollectorChangedEvent},
     intents::{
         IntentEvent,
@@ -37,7 +37,7 @@ pub enum DefuseEvent<'a> {
     TokenDiff(Cow<'a, [IntentEvent<AccountEvent<'a, TokenDiffEvent<'a>>>]>),
 
     #[event_version("0.3.0")]
-    IntentsExecuted(Cow<'a, [IntentEvent<AccountEvent<'a, ()>>]>),
+    IntentsExecuted(Cow<'a, [IntentEvent<AccountEvent<'a, NonceEvent>>]>),
 
     #[event_version("0.3.0")]
     FtWithdraw(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, FtWithdraw>>>]>),
