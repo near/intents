@@ -2,7 +2,7 @@ use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, NearToken, near};
 use serde_with::serde_as;
 
 use crate::{
-    Result,
+    Nonce, Result,
     engine::{Engine, Inspector, State},
     intents::ExecutableIntent,
 };
@@ -59,6 +59,7 @@ impl ExecutableIntent for AuthCall {
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
         _intent_hash: CryptoHash,
+        _nonce: Nonce,
     ) -> Result<()>
     where
         S: State,
