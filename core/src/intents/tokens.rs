@@ -5,7 +5,7 @@ use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, NearToken, json_types::
 use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
-    DefuseError, Nonce, Result,
+    DefuseError, Result,
     accounts::AccountEvent,
     amounts::Amounts,
     engine::{Engine, Inspector, State},
@@ -41,7 +41,6 @@ impl ExecutableIntent for Transfer {
         sender_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
         intent_hash: CryptoHash,
-        nonce: Nonce,
     ) -> Result<()>
     where
         S: State,
@@ -57,7 +56,6 @@ impl ExecutableIntent for Transfer {
                 [IntentEvent::new(
                     AccountEvent::new(sender_id, Cow::Borrowed(&self)),
                     intent_hash,
-                    nonce,
                 )]
                 .as_slice(),
             )));
@@ -148,7 +146,6 @@ impl ExecutableIntent for FtWithdraw {
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
         intent_hash: CryptoHash,
-        nonce: Nonce,
     ) -> Result<()>
     where
         S: State,
@@ -160,7 +157,6 @@ impl ExecutableIntent for FtWithdraw {
                 [IntentEvent::new(
                     AccountEvent::new(owner_id, Cow::Borrowed(&self)),
                     intent_hash,
-                    nonce,
                 )]
                 .as_slice(),
             )));
@@ -245,7 +241,6 @@ impl ExecutableIntent for NftWithdraw {
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
         intent_hash: CryptoHash,
-        nonce: Nonce,
     ) -> Result<()>
     where
         S: State,
@@ -257,7 +252,6 @@ impl ExecutableIntent for NftWithdraw {
                 [IntentEvent::new(
                     AccountEvent::new(owner_id, Cow::Borrowed(&self)),
                     intent_hash,
-                    nonce,
                 )]
                 .as_slice(),
             )));
@@ -349,7 +343,6 @@ impl ExecutableIntent for MtWithdraw {
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
         intent_hash: CryptoHash,
-        nonce: Nonce,
     ) -> Result<()>
     where
         S: State,
@@ -361,7 +354,6 @@ impl ExecutableIntent for MtWithdraw {
                 [IntentEvent::new(
                     AccountEvent::new(owner_id, Cow::Borrowed(&self)),
                     intent_hash,
-                    nonce,
                 )]
                 .as_slice(),
             )));
@@ -388,7 +380,6 @@ impl ExecutableIntent for NativeWithdraw {
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
         intent_hash: CryptoHash,
-        nonce: Nonce,
     ) -> Result<()>
     where
         S: State,
@@ -400,7 +391,6 @@ impl ExecutableIntent for NativeWithdraw {
                 [IntentEvent::new(
                     AccountEvent::new(owner_id, Cow::Borrowed(&self)),
                     intent_hash,
-                    nonce,
                 )]
                 .as_slice(),
             )));
@@ -440,7 +430,6 @@ impl ExecutableIntent for StorageDeposit {
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
         intent_hash: CryptoHash,
-        nonce: Nonce,
     ) -> Result<()>
     where
         S: State,
@@ -452,7 +441,6 @@ impl ExecutableIntent for StorageDeposit {
                 [IntentEvent::new(
                     AccountEvent::new(owner_id, Cow::Borrowed(&self)),
                     intent_hash,
-                    nonce,
                 )]
                 .as_slice(),
             )));

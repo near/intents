@@ -2,6 +2,7 @@ use super::{DefuseSigner, accounts::AccountManagerExt, env::Env};
 use crate::tests::defuse::SigningStandard;
 use crate::utils::{crypto::Signer, mt::MtExt, test_log::TestLog};
 use arbitrary::{Arbitrary, Unstructured};
+use defuse::core::accounts::{AccountEvent, NonceEvent};
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
 use defuse::{
@@ -192,8 +193,10 @@ async fn simulate_is_view_method(
         .unwrap();
 
     assert_eq!(result.intents_executed.len(), 1);
-    assert_eq!(result.intents_executed.first().unwrap().nonce, nonce);
-
+    assert_eq!(
+        result.intents_executed.first().unwrap().event.event.nonce,
+        nonce
+    );
     result.into_result().unwrap();
 
     assert_eq!(

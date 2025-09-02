@@ -1,11 +1,14 @@
 use defuse_core::{
-    Deadline, Nonce, accounts::AccountEvent, engine::Inspector, events::DefuseEvent,
+    Deadline, Nonce,
+    accounts::{AccountEvent, NonceEvent},
+    engine::Inspector,
+    events::DefuseEvent,
     intents::IntentEvent,
 };
 use near_sdk::{AccountIdRef, CryptoHash};
 
 pub struct SimulateInspector {
-    pub intents_executed: Vec<IntentEvent<AccountEvent<'static, ()>>>,
+    pub intents_executed: Vec<IntentEvent<AccountEvent<'static, NonceEvent>>>,
     pub min_deadline: Deadline,
 }
 
@@ -34,9 +37,8 @@ impl Inspector for SimulateInspector {
         nonce: Nonce,
     ) {
         self.intents_executed.push(IntentEvent::new(
-            AccountEvent::new(signer_id.to_owned(), ()),
+            AccountEvent::new(signer_id.to_owned(), NonceEvent::new(nonce)),
             intent_hash,
-            nonce,
         ));
     }
 }
