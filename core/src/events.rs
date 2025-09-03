@@ -36,7 +36,7 @@ pub enum DefuseEvent<'a> {
     #[event_version("0.3.0")]
     TokenDiff(Cow<'a, [IntentEvent<AccountEvent<'a, TokenDiffEvent<'a>>>]>),
 
-    #[event_version("0.4.0")]
+    #[event_version("0.3.1")]
     IntentsExecuted(Cow<'a, [IntentEvent<AccountEvent<'a, NonceEvent>>]>),
 
     #[event_version("0.3.0")]
