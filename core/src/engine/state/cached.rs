@@ -12,7 +12,7 @@ use crate::{
 use defuse_bitmap::{U248, U256};
 use defuse_crypto::PublicKey;
 use defuse_near_utils::Lock;
-use near_sdk::{AccountId, AccountIdRef};
+use near_sdk::{AccountId, AccountIdRef, env};
 use std::{
     borrow::Cow,
     collections::{HashMap, HashSet},
@@ -167,7 +167,7 @@ where
     }
 
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
-        if nonce::is_nonce_expired(nonce) {
+        if nonce::is_nonce_expired(nonce, env::block_timestamp_ms()) {
             return Err(DefuseError::NonceExpired);
         }
 
