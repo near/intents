@@ -12,7 +12,7 @@ use defuse_core::{
 };
 use defuse_near_utils::{CURRENT_ACCOUNT_ID, Lock};
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
-use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128};
+use near_sdk::{AccountId, AccountIdRef, NearToken, env, json_types::U128};
 use std::borrow::Cow;
 
 use crate::contract::{Contract, accounts::Account};
@@ -118,7 +118,7 @@ impl State for Contract {
 
     #[inline]
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
-        if is_nonce_expired(nonce) {
+        if is_nonce_expired(nonce, env::block_timestamp_ms()) {
             return Err(DefuseError::NonceExpired);
         }
 
