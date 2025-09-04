@@ -150,6 +150,12 @@ impl Account {
     }
 
     #[inline]
+    #[must_use]
+    pub fn clear_expired_nonce(&mut self, n: U256) -> bool {
+        self.nonces.clear_expired(n)
+    }
+
+    #[inline]
     const fn is_implicit_public_key_removed(&self) -> bool {
         self.flags
             .contains(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)

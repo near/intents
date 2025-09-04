@@ -131,6 +131,21 @@ impl State for Contract {
             .ok_or(DefuseError::NonceUsed)
     }
 
+    #[inline]
+    fn clear_expired_nonces(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
+        if !is_nonce_expired(nonce, env::block_timestamp_ms()) {
+            return Err(DefuseError::ActiveNonce);
+        }
+
+        self.accounts
+            .get_or_create(account_id.clone())
+            .get_mut()
+            .ok_or(DefuseError::AccountLocked(account_id))?
+            .clear_expired_nonce(nonce)
+            .then_some(())
+            .ok_or(DefuseError::NonceDoesNotExist)
+    }
+
     fn internal_add_balance(
         &mut self,
         owner_id: AccountId,
