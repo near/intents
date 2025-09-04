@@ -1,8 +1,13 @@
 use defuse_bitmap::{BitMap256, U248, U256};
 use defuse_map_utils::{IterableMap, Map};
-use near_sdk::near;
+use near_sdk::{env, near};
 
 pub type Nonce = U256;
+
+// NOTE:
+// Expirable nonce structure: [word_position, bit_position]
+// Where word_position = [ EXPIRABLE_NONCE_PREFIX , <8 bytes timestamp in ms>, <22 random bytes> ]
+const EXPIRABLE_NONCE_PREFIX: u8 = 0xFF;
 
 /// See [permit2 nonce schema](https://docs.uniswap.org/contracts/permit2/reference/signature-transfer#nonce-schema)
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
@@ -35,5 +40,19 @@ where
         T: IterableMap,
     {
         self.0.as_iter()
+    }
+}
+
+#[inline]
+pub fn is_nonce_expired(n: Nonce) -> bool {
+    match n[0] {
+        EXPIRABLE_NONCE_PREFIX => {
+            // It's safe to unwrap here because we know the entire slice is exactly 32 bytes long
+            let timestamp_bytes = n[1..9].try_into().unwrap();
+            let timestamp = u64::from_be_bytes(timestamp_bytes);
+
+            timestamp < env::block_timestamp_ms()
+        }
+        _ => false, // Legacy nonces never expire
     }
 }
