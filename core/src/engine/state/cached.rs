@@ -6,6 +6,7 @@ use crate::{
         auth::AuthCall,
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
     },
+    nonce,
     token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
 };
 use defuse_bitmap::{U248, U256};
@@ -166,6 +167,10 @@ where
     }
 
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
+        if nonce::is_nonce_expired(nonce) {
+            return Err(DefuseError::NonceExpired);
+        }
+
         if self.is_nonce_used(&account_id, nonce) {
             return Err(DefuseError::NonceUsed);
         }

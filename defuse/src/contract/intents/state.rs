@@ -7,6 +7,7 @@ use defuse_core::{
         auth::AuthCall,
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
     },
+    is_nonce_expired,
     token_id::{TokenId, nep141::Nep141TokenId},
 };
 use defuse_near_utils::{CURRENT_ACCOUNT_ID, Lock};
@@ -117,6 +118,10 @@ impl State for Contract {
 
     #[inline]
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
+        if is_nonce_expired(nonce) {
+            return Err(DefuseError::NonceExpired);
+        }
+
         self.accounts
             .get_or_create(account_id.clone())
             .get_mut()
