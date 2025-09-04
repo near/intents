@@ -35,6 +35,11 @@ where
     }
 
     #[inline]
+    pub fn clear_expired(&mut self, n: Nonce) -> bool {
+        !self.0.remove(n)
+    }
+
+    #[inline]
     pub fn iter(&self) -> impl Iterator<Item = Nonce> + '_
     where
         T: IterableMap,

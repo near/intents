@@ -41,6 +41,12 @@ where
         (byte, byte_mask)
     }
 
+    #[inline]
+    pub fn remove(&mut self, n: U256) -> bool {
+        let [word_pos @ .., _] = n;
+        self.0.remove(&word_pos).is_some()
+    }
+
     /// Set the bit `n` and return old value
     #[inline]
     pub fn set_bit(&mut self, n: U256) -> bool {

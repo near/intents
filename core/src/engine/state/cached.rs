@@ -186,6 +186,22 @@ where
             .ok_or(DefuseError::NonceUsed)
     }
 
+    fn clear_expired_nonces(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
+        if !nonce::is_nonce_expired(nonce, env::block_timestamp_ms()) {
+            return Err(DefuseError::ActiveNonce);
+        }
+
+        self.accounts
+            .get_or_create(account_id.clone(), |account_id| {
+                self.view.is_account_locked(account_id)
+            })
+            .get_mut()
+            .ok_or(DefuseError::AccountLocked(account_id))?
+            .clear_expired_nonce(nonce)
+            .then_some(())
+            .ok_or(DefuseError::NonceDoesNotExist)
+    }
+
     fn internal_add_balance(
         &mut self,
         owner_id: AccountId,
@@ -407,5 +423,11 @@ impl CachedAccount {
     #[inline]
     pub fn commit_nonce(&mut self, n: U256) -> bool {
         self.nonces.commit(n)
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn clear_expired_nonce(&mut self, n: U256) -> bool {
+        self.nonces.clear_expired(n)
     }
 }

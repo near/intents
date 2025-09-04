@@ -117,6 +117,11 @@ where
         self.state.commit_nonce(account_id, nonce)
     }
 
+    #[inline]
+    fn clear_expired_nonces(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
+        self.state.clear_expired_nonces(account_id, nonce)
+    }
+
     fn internal_add_balance(
         &mut self,
         owner_id: AccountId,
