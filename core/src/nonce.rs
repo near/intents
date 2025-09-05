@@ -56,10 +56,21 @@ pub fn is_nonce_expired(n: Nonce, current_timestamp: u64) -> bool {
             let timestamp_bytes = n[1..9].try_into().unwrap();
             let timestamp = u64::from_be_bytes(timestamp_bytes);
 
-            timestamp >= current_timestamp
+            timestamp < current_timestamp
         }
         _ => false, // Legacy nonces never expire
     }
+}
+
+pub fn pack_expirable_nonce(timestamp: u64, seed: &[u8]) -> U256 {
+    let mut result = [0u8; 32];
+
+    result[0] = EXPIRABLE_NONCE_PREFIX;
+    result[1..9].copy_from_slice(&timestamp.to_be_bytes());
+    result[9..31].copy_from_slice(&seed);
+    result[31] = 1;
+
+    U256::from(result)
 }
 
 #[cfg(test)]
@@ -70,20 +81,6 @@ mod tests {
     use chrono::Utc;
     use defuse_test_utils::random::random_bytes;
     use rstest::rstest;
-
-    fn pack_expirable_nonce(timestamp: u64, random_bytes: &[u8]) -> U256 {
-        let mut result = [0u8; 32];
-
-        let mut u = Unstructured::new(random_bytes);
-        let seed: [u8; 22] = u.arbitrary().unwrap();
-
-        result[0] = EXPIRABLE_NONCE_PREFIX;
-        result[1..9].copy_from_slice(&timestamp.to_be_bytes());
-        result[9..31].copy_from_slice(&seed);
-        result[31] = 1;
-
-        U256::from(result)
-    }
 
     #[rstest]
     fn nonexpirable_test(random_bytes: Vec<u8>) {
@@ -97,12 +94,15 @@ mod tests {
     #[rstest]
     fn expirable_test(random_bytes: Vec<u8>) {
         let current_timestamp = Utc::now().timestamp_millis() as u64;
-        let not_expired = pack_expirable_nonce(current_timestamp - 1000, &random_bytes);
+        let mut u = arbitrary::Unstructured::new(&random_bytes);
+        let seed: [u8; 22] = u.arbitrary().unwrap();
 
-        assert!(!is_nonce_expired(not_expired, current_timestamp));
-
-        let expired = pack_expirable_nonce(current_timestamp + 1000, &random_bytes);
+        let expired = pack_expirable_nonce(current_timestamp - 1000, &seed);
 
         assert!(is_nonce_expired(expired, current_timestamp));
+
+        let not_expired = pack_expirable_nonce(current_timestamp + 1000, &seed);
+
+        assert!(!is_nonce_expired(not_expired, current_timestamp));
     }
 }
