@@ -23,7 +23,7 @@ pub trait AccountManagerExt {
 
     async fn clear_expired_nonces(
         &self,
-        defuse_contract_id: &AccountId,
+        account_id: &AccountId,
         nonces: Vec<Nonce>,
     ) -> anyhow::Result<()>;
 
@@ -91,14 +91,15 @@ impl AccountManagerExt for near_workspaces::Account {
 
     async fn clear_expired_nonces(
         &self,
-        defuse_contract_id: &AccountId,
+        account_id: &AccountId,
         nonces: Vec<Nonce>,
     ) -> anyhow::Result<()> {
         let nonces = nonces.into_iter().map(AsBase64).collect::<Vec<_>>();
 
-        self.call(defuse_contract_id, "clear_expired_nonces")
+        self.call(self.id(), "clear_expired_nonces")
             .deposit(NearToken::from_yoctonear(1))
             .args_json(json!({
+                "account_id": account_id,
                 "nonces": nonces,
             }))
             .max_gas()
@@ -194,11 +195,11 @@ impl AccountManagerExt for near_workspaces::Contract {
 
     async fn clear_expired_nonces(
         &self,
-        defuse_contract_id: &AccountId,
+        account_id: &AccountId,
         nonces: Vec<Nonce>,
     ) -> anyhow::Result<()> {
         self.as_account()
-            .clear_expired_nonces(defuse_contract_id, nonces)
+            .clear_expired_nonces(account_id, nonces)
             .await
     }
 

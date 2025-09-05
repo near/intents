@@ -197,9 +197,9 @@ where
             })
             .get_mut()
             .ok_or(DefuseError::AccountLocked(account_id))?
-            .clear_expired_nonce(nonce)
-            .then_some(())
-            .ok_or(DefuseError::NonceDoesNotExist)
+            .clear_expired_nonce(nonce);
+
+        Ok(())
     }
 
     fn internal_add_balance(
@@ -427,7 +427,7 @@ impl CachedAccount {
 
     #[inline]
     #[must_use]
-    pub fn clear_expired_nonce(&mut self, n: U256) -> bool {
-        self.nonces.clear_expired(n)
+    pub fn clear_expired_nonce(&mut self, n: U256) {
+        self.nonces.clear_expired(n);
     }
 }
