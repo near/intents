@@ -36,7 +36,7 @@ where
 
     #[inline]
     pub fn clear_expired(&mut self, n: Nonce) -> bool {
-        !self.0.remove(n)
+        self.0.remove(n)
     }
 
     #[inline]

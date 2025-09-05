@@ -83,6 +83,7 @@ impl ExecuteIntentsExt for near_workspaces::Account {
             // return simulation_err if execute_ok
             .and_then(|res| simulation_result.map(|_| res))
     }
+
     async fn execute_intents(
         &self,
         intents: impl IntoIterator<Item = MultiPayload>,
