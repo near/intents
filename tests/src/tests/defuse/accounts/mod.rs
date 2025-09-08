@@ -8,6 +8,8 @@ use defuse_serde_utils::base64::AsBase64;
 use near_sdk::{AccountId, AccountIdRef, Gas, NearToken};
 use serde_json::json;
 
+use crate::utils::test_log::TestLog;
+
 pub trait AccountManagerExt {
     async fn add_public_key(
         &self,
@@ -21,7 +23,10 @@ pub trait AccountManagerExt {
         public_key: PublicKey,
     ) -> anyhow::Result<()>;
 
-    async fn clear_expired_nonces(&self, data: &[(AccountId, Vec<Nonce>)]) -> anyhow::Result<()>;
+    async fn clear_expired_nonces(
+        &self,
+        data: &[(AccountId, Vec<Nonce>)],
+    ) -> anyhow::Result<TestLog>;
 
     async fn defuse_has_public_key(
         &self,
@@ -85,7 +90,10 @@ impl AccountManagerExt for near_workspaces::Account {
         Ok(())
     }
 
-    async fn clear_expired_nonces(&self, data: &[(AccountId, Vec<Nonce>)]) -> anyhow::Result<()> {
+    async fn clear_expired_nonces(
+        &self,
+        data: &[(AccountId, Vec<Nonce>)],
+    ) -> anyhow::Result<TestLog> {
         let nonces = data
             .iter()
             .map(|(acc, nonces)| {
@@ -97,7 +105,8 @@ impl AccountManagerExt for near_workspaces::Account {
             })
             .collect::<Vec<(AccountId, Vec<AsBase64<Nonce>>)>>();
 
-        self.call(self.id(), "clear_expired_nonces")
+        let res = self
+            .call(self.id(), "clear_expired_nonces")
             .deposit(NearToken::from_yoctonear(1))
             .args_json(json!({
                 "data": nonces,
@@ -105,8 +114,10 @@ impl AccountManagerExt for near_workspaces::Account {
             .max_gas()
             .transact()
             .await?
-            .into_result()?;
-        Ok(())
+            .into_result()
+            .map(|outcome| TestLog::from(outcome))?;
+
+        Ok(res)
     }
 
     async fn defuse_has_public_key(
@@ -193,7 +204,10 @@ impl AccountManagerExt for near_workspaces::Contract {
             .await
     }
 
-    async fn clear_expired_nonces(&self, data: &[(AccountId, Vec<Nonce>)]) -> anyhow::Result<()> {
+    async fn clear_expired_nonces(
+        &self,
+        data: &[(AccountId, Vec<Nonce>)],
+    ) -> anyhow::Result<TestLog> {
         self.as_account().clear_expired_nonces(data).await
     }
 
