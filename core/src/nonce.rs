@@ -48,29 +48,60 @@ where
     }
 }
 
-#[inline]
-pub fn is_nonce_expired(n: Nonce, current_timestamp: u64) -> bool {
-    match n[0] {
-        EXPIRABLE_NONCE_PREFIX => {
-            // It's safe to unwrap here because we know the entire slice is exactly 32 bytes long
-            let timestamp_bytes = n[1..9].try_into().unwrap();
-            let timestamp = u64::from_be_bytes(timestamp_bytes);
+pub struct ExpirableNonce {
+    pub prefix: u8,
+    pub timestamp: u64,
+    pub data: [u8; 23],
+}
 
-            timestamp < current_timestamp
+impl From<Nonce> for ExpirableNonce {
+    fn from(n: Nonce) -> Self {
+        // It's safe to unwrap here because we know the entire slice is exactly 32 bytes long
+        let prefix = n[0];
+
+        let timestamp_bytes = n[1..9].try_into().unwrap();
+        let timestamp = u64::from_be_bytes(timestamp_bytes);
+
+        let data = n[9..32].try_into().unwrap();
+
+        ExpirableNonce {
+            prefix,
+            timestamp,
+            data,
         }
-        _ => false, // Legacy nonces never expire
     }
 }
 
-pub fn pack_expirable_nonce(timestamp: u64, seed: &[u8]) -> U256 {
-    let mut result = [0u8; 32];
+impl From<ExpirableNonce> for Nonce {
+    fn from(n: ExpirableNonce) -> Self {
+        let mut result = [0u8; 32];
+        result[0] = n.prefix;
+        result[1..9].copy_from_slice(&n.timestamp.to_be_bytes());
+        result[9..32].copy_from_slice(&n.data);
+        result
+    }
+}
 
-    result[0] = EXPIRABLE_NONCE_PREFIX;
-    result[1..9].copy_from_slice(&timestamp.to_be_bytes());
-    result[9..31].copy_from_slice(&seed);
-    result[31] = 1;
+impl ExpirableNonce {
+    #[inline]
+    pub fn is_expired(&self, current_timestamp: u64) -> bool {
+        match self.prefix {
+            EXPIRABLE_NONCE_PREFIX => self.timestamp < current_timestamp,
+            _ => false, // Legacy nonces never expire
+        }
+    }
 
-    U256::from(result)
+    pub fn pack_expirable(timestamp: u64, data: &[u8]) -> Result<Self, &'static str> {
+        if data.len() != 23 {
+            return Err("Invalid data length");
+        }
+
+        Ok(ExpirableNonce {
+            prefix: EXPIRABLE_NONCE_PREFIX,
+            timestamp,
+            data: data.try_into().unwrap(),
+        })
+    }
 }
 
 #[cfg(test)]
@@ -85,24 +116,23 @@ mod tests {
     #[rstest]
     fn nonexpirable_test(random_bytes: Vec<u8>) {
         let mut u = Unstructured::new(&random_bytes);
-        let nonexpirable: U256 = u.arbitrary().unwrap();
         let current_timestamp = Utc::now().timestamp_millis() as u64;
+        let nonce: U256 = u.arbitrary().unwrap();
+        let nonexpirable = ExpirableNonce::from(nonce);
 
-        assert!(!is_nonce_expired(nonexpirable, current_timestamp));
+        assert!(!nonexpirable.is_expired(current_timestamp));
     }
 
     #[rstest]
     fn expirable_test(random_bytes: Vec<u8>) {
         let current_timestamp = Utc::now().timestamp_millis() as u64;
         let mut u = arbitrary::Unstructured::new(&random_bytes);
-        let seed: [u8; 22] = u.arbitrary().unwrap();
+        let seed: [u8; 23] = u.arbitrary().unwrap();
 
-        let expired = pack_expirable_nonce(current_timestamp - 1000, &seed);
+        let expired = ExpirableNonce::pack_expirable(current_timestamp - 1000, &seed).unwrap();
+        assert!(expired.is_expired(current_timestamp));
 
-        assert!(is_nonce_expired(expired, current_timestamp));
-
-        let not_expired = pack_expirable_nonce(current_timestamp + 1000, &seed);
-
-        assert!(!is_nonce_expired(not_expired, current_timestamp));
+        let not_expired = ExpirableNonce::pack_expirable(current_timestamp + 1000, &seed).unwrap();
+        assert!(!not_expired.is_expired(current_timestamp));
     }
 }

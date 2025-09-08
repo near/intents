@@ -1,12 +1,11 @@
 use crate::{
-    DefuseError, Nonce, Nonces, Result,
+    DefuseError, ExpirableNonce, Nonce, Nonces, Result,
     amounts::Amounts,
     fees::Pips,
     intents::{
         auth::AuthCall,
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
     },
-    nonce,
     token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
 };
 use defuse_bitmap::{U248, U256};
@@ -167,7 +166,7 @@ where
     }
 
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
-        if nonce::is_nonce_expired(nonce, env::block_timestamp_ms()) {
+        if ExpirableNonce::from(nonce).is_expired(env::block_timestamp_ms()) {
             return Err(DefuseError::NonceExpired);
         }
 
@@ -187,7 +186,7 @@ where
     }
 
     fn clear_expired_nonces(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
-        if !nonce::is_nonce_expired(nonce, env::block_timestamp_ms()) {
+        if !ExpirableNonce::from(nonce).is_expired(env::block_timestamp_ms()) {
             return Err(DefuseError::ActiveNonce);
         }
 
@@ -426,7 +425,6 @@ impl CachedAccount {
     }
 
     #[inline]
-    #[must_use]
     pub fn clear_expired_nonce(&mut self, n: U256) {
         self.nonces.clear_expired(n);
     }

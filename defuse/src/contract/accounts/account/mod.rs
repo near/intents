@@ -150,7 +150,6 @@ impl Account {
     }
 
     #[inline]
-    #[must_use]
     pub fn clear_expired_nonce(&mut self, n: U256) {
         self.nonces.clear_expired(n);
     }

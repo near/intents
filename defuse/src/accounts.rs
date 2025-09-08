@@ -33,7 +33,7 @@ pub trait AccountManager {
     fn invalidate_nonces(&mut self, nonces: Vec<AsBase64<Nonce>>);
 
     /// NOTE: MUST attach 1 yⓃ for security purposes.
-    fn clear_expired_nonces(&mut self, account_id: &AccountId, nonces: Vec<AsBase64<Nonce>>);
+    fn clear_expired_nonces(&mut self, data: Vec<(AccountId, Vec<AsBase64<Nonce>>)>);
 
     /// Returns whether authentication by PREDECESSOR_ID is enabled
     /// for given `account_id`.
