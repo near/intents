@@ -50,7 +50,7 @@ where
 // To distinguish between legacy nonces and expirable nonces
 // we use a specific prefix EXPIRABLE_NONCE_PREFIX. Expirable nonces
 // have the following structure: [word_position, bit_position].
-// Where word_position = [ EXPIRABLE_NONCE_PREFIX , <8 bytes timestamp in ms>, <22 random bytes> ]
+// Where word_position = [ EXPIRABLE_NONCE_PREFIX , <8 bytes timestamp in ms>, <20 random bytes> ]
 pub struct ExpirableNonce {
     pub prefix: [u8; 4],
     pub timestamp: u64,
@@ -130,7 +130,7 @@ mod tests {
     fn expirable_test(random_bytes: Vec<u8>) {
         let current_timestamp = Utc::now().timestamp_millis() as u64;
         let mut u = arbitrary::Unstructured::new(&random_bytes);
-        let seed: [u8; 23] = u.arbitrary().unwrap();
+        let seed: [u8; 20] = u.arbitrary().unwrap();
 
         let expired = ExpirableNonce::pack_expirable(current_timestamp - 1000, &seed).unwrap();
         assert!(expired.is_expired(current_timestamp));

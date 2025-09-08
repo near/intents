@@ -97,11 +97,9 @@ impl AccountManagerExt for near_workspaces::Account {
         let nonces = data
             .iter()
             .map(|(acc, nonces)| {
-                let base64_nonces: Vec<AsBase64<Nonce>> = nonces
-                    .iter()
-                    .map(|nonce| AsBase64(*nonce)) // Деrefence + копіювання
-                    .collect();
-                (acc.clone(), base64_nonces) // Клонуємо AccountId
+                let base64_nonces: Vec<AsBase64<Nonce>> =
+                    nonces.iter().map(|nonce| AsBase64(*nonce)).collect();
+                (acc.clone(), base64_nonces)
             })
             .collect::<Vec<(AccountId, Vec<AsBase64<Nonce>>)>>();
 

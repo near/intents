@@ -33,7 +33,6 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
     let deposit_amount = withdraw_amount.0 * 2;
 
     // Create user account
-
     let ft1 = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
     {
         env.defuse_ft_deposit_to(&env.ft1, deposit_amount, env.user1.id())
@@ -157,7 +156,6 @@ async fn test_clear_expired_nonces(#[notrace] mut rng: impl Rng) {
     let deposit_amount = withdraw_amount.0;
 
     // Create user account
-
     let ft1 = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
     {
         env.defuse_ft_deposit_to(&env.ft1, deposit_amount, env.user1.id())
@@ -242,7 +240,6 @@ async fn clear_multiple_nonces(
     let chunk_size = 10;
 
     // Create user account
-
     let ft1 = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
     {
         env.defuse_ft_deposit_to(&env.ft1, deposit_amount, env.user1.id())
