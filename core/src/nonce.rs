@@ -4,10 +4,9 @@ use near_sdk::near;
 
 pub type Nonce = U256;
 
-// NOTE:
-// Expirable nonce structure: [word_position, bit_position]
-// Where word_position = [ EXPIRABLE_NONCE_PREFIX , <8 bytes timestamp in ms>, <22 random bytes> ]
-const EXPIRABLE_NONCE_PREFIX: u8 = 0xFF;
+// Prefix to identify expirable nonces:
+// (first 4 bytes of sha256("expirable_nonce"))
+const EXPIRABLE_NONCE_PREFIX: [u8; 4] = [0xdd, 0x50, 0xbc, 0x7c];
 
 /// See [permit2 nonce schema](https://docs.uniswap.org/contracts/permit2/reference/signature-transfer#nonce-schema)
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
@@ -48,21 +47,25 @@ where
     }
 }
 
+// To distinguish between legacy nonces and expirable nonces
+// we use a specific prefix EXPIRABLE_NONCE_PREFIX. Expirable nonces
+// have the following structure: [word_position, bit_position].
+// Where word_position = [ EXPIRABLE_NONCE_PREFIX , <8 bytes timestamp in ms>, <22 random bytes> ]
 pub struct ExpirableNonce {
-    pub prefix: u8,
+    pub prefix: [u8; 4],
     pub timestamp: u64,
-    pub data: [u8; 23],
+    pub data: [u8; 20],
 }
 
 impl From<Nonce> for ExpirableNonce {
     fn from(n: Nonce) -> Self {
         // It's safe to unwrap here because we know the entire slice is exactly 32 bytes long
-        let prefix = n[0];
+        let prefix = n[0..4].try_into().unwrap();
 
-        let timestamp_bytes = n[1..9].try_into().unwrap();
+        let timestamp_bytes = n[4..12].try_into().unwrap();
         let timestamp = u64::from_be_bytes(timestamp_bytes);
 
-        let data = n[9..32].try_into().unwrap();
+        let data = n[12..32].try_into().unwrap();
 
         ExpirableNonce {
             prefix,
@@ -75,9 +78,9 @@ impl From<Nonce> for ExpirableNonce {
 impl From<ExpirableNonce> for Nonce {
     fn from(n: ExpirableNonce) -> Self {
         let mut result = [0u8; 32];
-        result[0] = n.prefix;
-        result[1..9].copy_from_slice(&n.timestamp.to_be_bytes());
-        result[9..32].copy_from_slice(&n.data);
+        result[0..4].copy_from_slice(&n.prefix);
+        result[4..12].copy_from_slice(&n.timestamp.to_be_bytes());
+        result[12..32].copy_from_slice(&n.data);
         result
     }
 }
@@ -92,7 +95,7 @@ impl ExpirableNonce {
     }
 
     pub fn pack_expirable(timestamp: u64, data: &[u8]) -> Result<Self, &'static str> {
-        if data.len() != 23 {
+        if data.len() != 20 {
             return Err("Invalid data length");
         }
 
