@@ -1,5 +1,5 @@
 use defuse_core::{
-    DefuseError, Nonce, Result,
+    DefuseError, ExpirableNonce, Nonce, Result,
     crypto::PublicKey,
     engine::{State, StateView},
     fees::Pips,
@@ -7,7 +7,6 @@ use defuse_core::{
         auth::AuthCall,
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
     },
-    is_nonce_expired,
     token_id::{TokenId, nep141::Nep141TokenId},
 };
 use defuse_near_utils::{CURRENT_ACCOUNT_ID, Lock};
@@ -118,7 +117,7 @@ impl State for Contract {
 
     #[inline]
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
-        if is_nonce_expired(nonce, env::block_timestamp_ms()) {
+        if ExpirableNonce::from(nonce).is_expired(env::block_timestamp_ms()) {
             return Err(DefuseError::NonceExpired);
         }
 
@@ -133,7 +132,7 @@ impl State for Contract {
 
     #[inline]
     fn clear_expired_nonces(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
-        if !is_nonce_expired(nonce, env::block_timestamp_ms()) {
+        if !ExpirableNonce::from(nonce).is_expired(env::block_timestamp_ms()) {
             return Err(DefuseError::ActiveNonce);
         }
 

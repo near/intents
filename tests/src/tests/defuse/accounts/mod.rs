@@ -21,11 +21,7 @@ pub trait AccountManagerExt {
         public_key: PublicKey,
     ) -> anyhow::Result<()>;
 
-    async fn clear_expired_nonces(
-        &self,
-        account_id: &AccountId,
-        nonces: Vec<Nonce>,
-    ) -> anyhow::Result<()>;
+    async fn clear_expired_nonces(&self, data: &[(AccountId, Vec<Nonce>)]) -> anyhow::Result<()>;
 
     async fn defuse_has_public_key(
         &self,
@@ -89,18 +85,22 @@ impl AccountManagerExt for near_workspaces::Account {
         Ok(())
     }
 
-    async fn clear_expired_nonces(
-        &self,
-        account_id: &AccountId,
-        nonces: Vec<Nonce>,
-    ) -> anyhow::Result<()> {
-        let nonces = nonces.into_iter().map(AsBase64).collect::<Vec<_>>();
+    async fn clear_expired_nonces(&self, data: &[(AccountId, Vec<Nonce>)]) -> anyhow::Result<()> {
+        let nonces = data
+            .iter()
+            .map(|(acc, nonces)| {
+                let base64_nonces: Vec<AsBase64<Nonce>> = nonces
+                    .iter()
+                    .map(|nonce| AsBase64(*nonce)) // Деrefence + копіювання
+                    .collect();
+                (acc.clone(), base64_nonces) // Клонуємо AccountId
+            })
+            .collect::<Vec<(AccountId, Vec<AsBase64<Nonce>>)>>();
 
         self.call(self.id(), "clear_expired_nonces")
             .deposit(NearToken::from_yoctonear(1))
             .args_json(json!({
-                "account_id": account_id,
-                "nonces": nonces,
+                "data": nonces,
             }))
             .max_gas()
             .transact()
@@ -193,14 +193,8 @@ impl AccountManagerExt for near_workspaces::Contract {
             .await
     }
 
-    async fn clear_expired_nonces(
-        &self,
-        account_id: &AccountId,
-        nonces: Vec<Nonce>,
-    ) -> anyhow::Result<()> {
-        self.as_account()
-            .clear_expired_nonces(account_id, nonces)
-            .await
+    async fn clear_expired_nonces(&self, data: &[(AccountId, Vec<Nonce>)]) -> anyhow::Result<()> {
+        self.as_account().clear_expired_nonces(data).await
     }
 
     async fn defuse_has_public_key(

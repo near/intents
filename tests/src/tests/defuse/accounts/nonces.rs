@@ -1,8 +1,7 @@
 use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::{
-    Deadline, DefuseError,
+    Deadline, ExpirableNonce,
     intents::{DefuseIntents, tokens::FtWithdraw},
-    pack_expirable_nonce,
     token_id::{TokenId, nep141::Nep141TokenId},
 };
 
@@ -83,7 +82,10 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
     );
 
     // nonce is expired
-    let expired_nonce = pack_expirable_nonce(current_timestamp - 10000, &rng.random::<[u8; 22]>());
+    let expired_nonce =
+        ExpirableNonce::pack_expirable(current_timestamp - 10000, &rng.random::<[u8; 23]>())
+            .unwrap()
+            .into();
 
     env.defuse
         .execute_intents([env.user1.sign_defuse_message(
@@ -110,7 +112,9 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
 
     // nonce can be committed
     let expirable_nonce =
-        pack_expirable_nonce(current_timestamp + 10000, &rng.random::<[u8; 22]>());
+        ExpirableNonce::pack_expirable(current_timestamp + 10000, &rng.random::<[u8; 23]>())
+            .unwrap()
+            .into();
 
     env.defuse
         .execute_intents([env.user1.sign_defuse_message(
@@ -169,7 +173,10 @@ async fn clear_expired_nonces(#[notrace] mut rng: impl Rng) {
     }
 
     // commit expirable nonce
-    let expirable_nonce = pack_expirable_nonce(current_timestamp + 3000, &rng.random::<[u8; 22]>());
+    let expirable_nonce =
+        ExpirableNonce::pack_expirable(current_timestamp + 3000, &rng.random::<[u8; 23]>())
+            .unwrap()
+            .into();
 
     env.defuse
         .execute_intents([env.user1.sign_defuse_message(
@@ -203,7 +210,7 @@ async fn clear_expired_nonces(#[notrace] mut rng: impl Rng) {
 
     // nonce is still active
     env.defuse
-        .clear_expired_nonces(env.user1.id(), vec![expirable_nonce])
+        .clear_expired_nonces(&[(env.user1.id().clone(), vec![expirable_nonce])])
         .await
         .assert_err_contains("nonce is still active");
 
@@ -211,13 +218,13 @@ async fn clear_expired_nonces(#[notrace] mut rng: impl Rng) {
 
     // nonce is expired
     env.defuse
-        .clear_expired_nonces(env.user1.id(), vec![expirable_nonce])
+        .clear_expired_nonces(&[(env.user1.id().clone(), vec![expirable_nonce])])
         .await
         .unwrap();
 
     // skip if already cleared
     env.defuse
-        .clear_expired_nonces(env.user1.id(), vec![expirable_nonce])
+        .clear_expired_nonces(&[(env.user1.id().clone(), vec![expirable_nonce])])
         .await
         .unwrap();
 }
