@@ -52,9 +52,6 @@ pub enum DefuseError {
     #[error("nonce was already expired")]
     NonceExpired,
 
-    #[error("invalid nonces length")]
-    InvalidNonces,
-
     #[error("nonce is still active")]
     ActiveNonce,
 
