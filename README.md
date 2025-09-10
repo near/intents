@@ -25,6 +25,16 @@ For more information on how to use the Intents ecosystem, please refer to [the d
 
 For technical information about the Verifier smart contract programming primitives (and other smart contracts here), please refer to [the cargo documentation page](https://near.github.io/intents/).
 
+### Payload traits
+
+Intents bridges several external signing standards such as BIP-322, TIP-191,
+and ERC-191. Each standard is represented by a small structure implementing the
+[`Payload`](https://near.github.io/intents/defuse_crypto/payload/trait.Payload.html)
+and [`SignedPayload`](https://near.github.io/intents/defuse_crypto/payload/trait.SignedPayload.html) traits.
+These implementations allow the engine to hash and verify messages from the
+different standards in a uniform way. They are used internally and are not part
+of a stable public API.
+
 ### The name "defuse"
 
 The name defuse is an old name for the smart contract that we use to execute intents. It is being phased out for NEAR Intents.
