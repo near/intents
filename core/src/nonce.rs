@@ -52,7 +52,8 @@ where
 /// To distinguish between legacy nonces and expirable nonces
 /// we use a specific prefix EXPIRABLE_NONCE_PREFIX. Expirable nonces
 /// have the following structure: [word_position, bit_position].
-/// Where word_position = [ EXPIRABLE_NONCE_PREFIX , <8 bytes timestamp in ms>, <20 random bytes> ]
+/// Where word_position = [ EXPIRABLE_NONCE_PREFIX , <8 bytes timestamp in ms>, <19 random bytes> ]
+/// and bit_position is the last (lowest) byte.
 pub struct ExpirableNonce {
     pub timestamp: Deadline,
     pub data: [u8; 20],
