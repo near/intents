@@ -250,8 +250,8 @@ mod abi {
             false
         }
 
-        fn json_schema(genenerator: &mut SchemaGenerator) -> Schema {
-            As::json_schema(genenerator)
+        fn json_schema(generator: &mut SchemaGenerator) -> Schema {
+            As::json_schema(generator)
         }
     }
 }
