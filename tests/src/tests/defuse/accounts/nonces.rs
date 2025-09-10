@@ -155,6 +155,8 @@ async fn test_clear_expired_nonces(#[notrace] mut rng: impl Rng) {
     let withdraw_amount: U128 = 1000.into();
     let deposit_amount = withdraw_amount.0;
 
+    let waiting_time = Duration::from_millis(3000);
+
     // Create user account
     let ft1 = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
     {
@@ -171,10 +173,12 @@ async fn test_clear_expired_nonces(#[notrace] mut rng: impl Rng) {
     }
 
     // commit expirable nonce
-    let expirable_nonce =
-        ExpirableNonce::try_from_millis(current_timestamp + 3000, &rng.random::<[u8; 20]>())
-            .unwrap()
-            .into();
+    let expirable_nonce = ExpirableNonce::try_from_millis(
+        current_timestamp + waiting_time.as_millis() as i64,
+        &rng.random::<[u8; 20]>(),
+    )
+    .unwrap()
+    .into();
 
     env.defuse
         .execute_intents([env.user1.sign_defuse_message(
@@ -206,7 +210,7 @@ async fn test_clear_expired_nonces(#[notrace] mut rng: impl Rng) {
             .unwrap(),
     );
 
-    sleep(Duration::from_secs(1)).await;
+    sleep(waiting_time).await;
 
     // nonce is expired
     env.defuse
@@ -232,6 +236,8 @@ async fn clear_multiple_nonces(
     let deposit_amount = 1000;
     let withdraw_amount: U128 = (1000 / nonce_count as u128).into();
     let chunk_size = 10;
+
+    let waiting_time = Duration::from_millis(3000);
 
     // Create user account
     let ft1 = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
@@ -259,7 +265,7 @@ async fn clear_multiple_nonces(
             .map(|_| {
                 // commit expirable nonce
                 let expirable_nonce = ExpirableNonce::try_from_millis(
-                    current_timestamp + 3000,
+                    current_timestamp + waiting_time.as_millis() as i64,
                     &rng.random::<[u8; 20]>(),
                 )
                 .unwrap()
