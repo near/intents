@@ -52,9 +52,6 @@ pub enum DefuseError {
     #[error("nonce was already expired")]
     NonceExpired,
 
-    #[error("nonce is still active")]
-    ActiveNonce,
-
     #[error("public key '{1}' already exists for account '{0}'")]
     PublicKeyExists(AccountId, PublicKey),
 

@@ -7,7 +7,7 @@ use std::borrow::Cow;
 use bitflags::bitflags;
 use defuse_bitmap::{U248, U256};
 use defuse_core::{
-    Nonces,
+    ExpirableNonce, Nonces,
     accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
     events::DefuseEvent,
@@ -19,7 +19,7 @@ use impl_tools::autoimpl;
 use near_sdk::{
     AccountIdRef, BorshStorageKey, IntoStorageKey,
     borsh::BorshSerialize,
-    near,
+    env, near,
     store::{IterableSet, LookupMap},
 };
 
@@ -149,9 +149,17 @@ impl Account {
         self.nonces.commit(n)
     }
 
+    /// Clears the nonce if it was expired.
+    /// Returns whether the nonces was cleared. If the nonce has not expired yet, then returns `false`,
+    /// regardless of whether it was previously committed or not.
     #[inline]
     pub fn clear_expired_nonce(&mut self, n: U256) -> bool {
-        self.nonces.clear_expired(n)
+        match ExpirableNonce::maybe_from(n) {
+            Some(expirable_nonce) if expirable_nonce.is_expired(env::block_timestamp_ms()) => {
+                self.nonces.clear_expired(n)
+            }
+            _ => false,
+        }
     }
 
     #[inline]
