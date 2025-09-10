@@ -59,7 +59,11 @@ pub trait State: StateView {
 
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()>;
 
-    fn clear_expired_nonces(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()>;
+    fn clear_expired_nonces(
+        &mut self,
+        account_id: AccountId,
+        nonces: impl IntoIterator<Item = Nonce>,
+    ) -> Result<()>;
 
     fn internal_add_balance(
         &mut self,

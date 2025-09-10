@@ -185,18 +185,24 @@ where
             .ok_or(DefuseError::NonceUsed)
     }
 
-    fn clear_expired_nonces(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
-        if !ExpirableNonce::from(nonce).is_expired(env::block_timestamp_ms()) {
-            return Err(DefuseError::ActiveNonce);
-        }
-
-        self.accounts
-            .get_or_create(account_id.clone(), |account_id| {
-                self.view.is_account_locked(account_id)
-            })
+    fn clear_expired_nonces(
+        &mut self,
+        account_id: AccountId,
+        nonces: impl IntoIterator<Item = Nonce>,
+    ) -> Result<()> {
+        let account = self
+            .accounts
+            .get_mut(&account_id)
+            .ok_or_else(|| DefuseError::AccountNotFound(account_id.to_owned()))?
             .get_mut()
-            .ok_or(DefuseError::AccountLocked(account_id))?
-            .clear_expired_nonce(nonce);
+            .ok_or(DefuseError::AccountLocked(account_id))?;
+
+        for nonce in nonces {
+            if !ExpirableNonce::from(nonce).is_expired(env::block_timestamp_ms()) {
+                return Err(DefuseError::ActiveNonce);
+            }
+            account.clear_expired_nonce(nonce);
+        }
 
         Ok(())
     }
@@ -425,7 +431,7 @@ impl CachedAccount {
     }
 
     #[inline]
-    pub fn clear_expired_nonce(&mut self, n: U256) {
-        self.nonces.clear_expired(n);
+    pub fn clear_expired_nonce(&mut self, n: U256) -> bool {
+        self.nonces.clear_expired(n)
     }
 }

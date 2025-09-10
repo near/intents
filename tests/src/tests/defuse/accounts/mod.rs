@@ -107,7 +107,7 @@ impl AccountManagerExt for near_workspaces::Account {
             .call(self.id(), "clear_expired_nonces")
             .deposit(NearToken::from_yoctonear(1))
             .args_json(json!({
-                "data": nonces,
+                "nonces": nonces,
             }))
             .max_gas()
             .transact()
