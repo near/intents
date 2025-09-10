@@ -690,7 +690,9 @@ dependencies = [
  "arbitrary",
  "bnum",
  "defuse-map-utils",
+ "hex-literal",
  "near-sdk",
+ "rstest",
 ]
 
 [[package]]

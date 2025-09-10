@@ -16,6 +16,9 @@ arbitrary = ["dep:arbitrary"]
 
 [dev-dependencies]
 bnum.workspace = true
+hex-literal.workspace = true
+near-sdk = { workspace = true, features = ["unit-testing"] }
+rstest.workspace = true
 
 [lints]
 workspace = true
