@@ -21,7 +21,7 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
           cache-all-crates: true
       - name: Install Cargo Plugins
-        run: cargo install cargo-audit
+        run: cargo install cargo-audit --locked
       - name: Run security audit
         run: cargo audit --deny unsound --deny yanked
         # run: cargo audit --deny warnings  # Warnings include: unmaintained, unsound and yanked
