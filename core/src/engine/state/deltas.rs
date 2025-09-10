@@ -118,8 +118,12 @@ where
     }
 
     #[inline]
-    fn clear_expired_nonces(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
-        self.state.clear_expired_nonces(account_id, nonce)
+    fn clear_expired_nonces(
+        &mut self,
+        account_id: AccountId,
+        nonces: impl IntoIterator<Item = Nonce>,
+    ) -> Result<()> {
+        self.state.clear_expired_nonces(account_id, nonces)
     }
 
     fn internal_add_balance(
