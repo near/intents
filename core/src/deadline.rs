@@ -28,6 +28,18 @@ impl Deadline {
 
     #[must_use]
     #[inline]
+    pub fn try_from_millis(timestamp: i64) -> Option<Self> {
+        DateTime::<Utc>::from_timestamp_millis(timestamp).map(Self)
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn into_millis(self) -> i64 {
+        self.0.timestamp_millis()
+    }
+
+    #[must_use]
+    #[inline]
     pub fn timeout(timeout: Duration) -> Self {
         Self::now() + timeout
     }

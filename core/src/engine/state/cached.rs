@@ -166,8 +166,10 @@ where
     }
 
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
-        if ExpirableNonce::from(nonce).is_expired(env::block_timestamp_ms()) {
-            return Err(DefuseError::NonceExpired);
+        if let Some(expirable_nonce) = ExpirableNonce::maybe_from(nonce) {
+            if expirable_nonce.is_expired(env::block_timestamp_ms()) {
+                return Err(DefuseError::NonceExpired);
+            }
         }
 
         if self.is_nonce_used(&account_id, nonce) {
@@ -197,12 +199,9 @@ where
             .get_mut()
             .ok_or(DefuseError::AccountLocked(account_id))?;
 
-        for nonce in nonces {
-            if !ExpirableNonce::from(nonce).is_expired(env::block_timestamp_ms()) {
-                return Err(DefuseError::ActiveNonce);
-            }
+        nonces.into_iter().for_each(|nonce| {
             account.clear_expired_nonce(nonce);
-        }
+        });
 
         Ok(())
     }
@@ -432,6 +431,11 @@ impl CachedAccount {
 
     #[inline]
     pub fn clear_expired_nonce(&mut self, n: U256) -> bool {
-        self.nonces.clear_expired(n)
+        match ExpirableNonce::maybe_from(n) {
+            Some(expirable_nonce) if expirable_nonce.is_expired(env::block_timestamp_ms()) => {
+                self.nonces.clear_expired(n)
+            }
+            _ => false,
+        }
     }
 }

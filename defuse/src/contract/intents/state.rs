@@ -117,8 +117,10 @@ impl State for Contract {
 
     #[inline]
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
-        if ExpirableNonce::from(nonce).is_expired(env::block_timestamp_ms()) {
-            return Err(DefuseError::NonceExpired);
+        if let Some(expirable_nonce) = ExpirableNonce::maybe_from(nonce) {
+            if expirable_nonce.is_expired(env::block_timestamp_ms()) {
+                return Err(DefuseError::NonceExpired);
+            }
         }
 
         self.accounts
@@ -143,12 +145,9 @@ impl State for Contract {
             .get_mut()
             .ok_or(DefuseError::AccountLocked(account_id))?;
 
-        for nonce in nonces {
-            if !ExpirableNonce::from(nonce).is_expired(env::block_timestamp_ms()) {
-                return Err(DefuseError::ActiveNonce);
-            }
+        nonces.into_iter().for_each(|nonce| {
             account.clear_expired_nonce(nonce);
-        }
+        });
 
         Ok(())
     }

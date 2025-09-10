@@ -27,7 +27,7 @@ use crate::{
 #[rstest]
 async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
     let env = Env::builder().build().await;
-    let current_timestamp = chrono::Utc::now().timestamp_millis() as u64;
+    let current_timestamp = chrono::Utc::now().timestamp_millis();
 
     let withdraw_amount: U128 = 1000.into();
     let deposit_amount = withdraw_amount.0 * 2;
@@ -82,7 +82,7 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
 
     // nonce is expired
     let expired_nonce =
-        ExpirableNonce::pack_expirable(current_timestamp - 10000, &rng.random::<[u8; 20]>())
+        ExpirableNonce::try_from_millis(current_timestamp - 10000, &rng.random::<[u8; 20]>())
             .unwrap()
             .into();
 
@@ -111,7 +111,7 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
 
     // nonce can be committed
     let expirable_nonce =
-        ExpirableNonce::pack_expirable(current_timestamp + 10000, &rng.random::<[u8; 20]>())
+        ExpirableNonce::try_from_millis(current_timestamp + 10000, &rng.random::<[u8; 20]>())
             .unwrap()
             .into();
 
@@ -150,7 +150,7 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
 #[rstest]
 async fn test_clear_expired_nonces(#[notrace] mut rng: impl Rng) {
     let env = Env::builder().build().await;
-    let current_timestamp = chrono::Utc::now().timestamp_millis() as u64;
+    let current_timestamp = chrono::Utc::now().timestamp_millis();
 
     let withdraw_amount: U128 = 1000.into();
     let deposit_amount = withdraw_amount.0;
@@ -172,7 +172,7 @@ async fn test_clear_expired_nonces(#[notrace] mut rng: impl Rng) {
 
     // commit expirable nonce
     let expirable_nonce =
-        ExpirableNonce::pack_expirable(current_timestamp + 3000, &rng.random::<[u8; 20]>())
+        ExpirableNonce::try_from_millis(current_timestamp + 3000, &rng.random::<[u8; 20]>())
             .unwrap()
             .into();
 
@@ -205,12 +205,6 @@ async fn test_clear_expired_nonces(#[notrace] mut rng: impl Rng) {
             .await
             .unwrap(),
     );
-
-    // nonce is still active
-    env.defuse
-        .clear_expired_nonces(&[(env.user1.id().clone(), vec![expirable_nonce])])
-        .await
-        .assert_err_contains("nonce is still active");
 
     sleep(Duration::from_secs(1)).await;
 
@@ -259,12 +253,12 @@ async fn clear_multiple_nonces(
     let balance_before = env.near_balance(env.id()).await;
 
     for _ in 0..rounds {
-        let current_timestamp = chrono::Utc::now().timestamp_millis() as u64;
+        let current_timestamp = chrono::Utc::now().timestamp_millis();
 
         let intents = (0..chunk_size.min(nonce_count))
             .map(|_| {
                 // commit expirable nonce
-                let expirable_nonce = ExpirableNonce::pack_expirable(
+                let expirable_nonce = ExpirableNonce::try_from_millis(
                     current_timestamp + 3000,
                     &rng.random::<[u8; 20]>(),
                 )
