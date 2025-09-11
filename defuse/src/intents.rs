@@ -1,6 +1,10 @@
 use defuse_core::{
-    Deadline, Result, accounts::AccountEvent, engine::deltas::InvariantViolated, fees::Pips,
-    intents::IntentEvent, payload::multi::MultiPayload,
+    Deadline, Result,
+    accounts::{AccountEvent, NonceEvent},
+    engine::deltas::InvariantViolated,
+    fees::Pips,
+    intents::IntentEvent,
+    payload::multi::MultiPayload,
 };
 
 use near_plugins::AccessControllable;
@@ -28,7 +32,7 @@ pub trait Intents: FeesManager {
 #[derive(Debug, Clone)]
 pub struct SimulationOutput {
     /// Intent hashes along with corresponding signers
-    pub intents_executed: Vec<IntentEvent<AccountEvent<'static, ()>>>,
+    pub intents_executed: Vec<IntentEvent<AccountEvent<'static, NonceEvent>>>,
 
     /// Minimum deadline among all simulated intents
     pub min_deadline: Deadline,
