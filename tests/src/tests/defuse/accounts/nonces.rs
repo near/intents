@@ -12,7 +12,7 @@ use defuse_test_utils::{
     asserts::ResultAssertsExt,
     random::{Rng, rng},
 };
-use near_sdk::json_types::U128;
+use near_sdk::{AccountId, json_types::U128};
 use rstest::rstest;
 
 use crate::{
@@ -153,7 +153,7 @@ async fn test_clear_expired_nonces(#[notrace] mut rng: impl Rng) {
     let current_timestamp = chrono::Utc::now().timestamp_millis();
 
     let withdraw_amount: U128 = 1000.into();
-    let deposit_amount = withdraw_amount.0;
+    let deposit_amount = withdraw_amount.0 * 2;
 
     let waiting_time = Duration::from_millis(3000);
 
@@ -172,7 +172,7 @@ async fn test_clear_expired_nonces(#[notrace] mut rng: impl Rng) {
         );
     }
 
-    // commit expirable nonce
+    // commit expirable nonces
     let expirable_nonce = ExpirableNonce::try_from_millis(
         current_timestamp + waiting_time.as_millis() as i64,
         &rng.random::<[u8; 20]>(),
@@ -180,26 +180,56 @@ async fn test_clear_expired_nonces(#[notrace] mut rng: impl Rng) {
     .unwrap()
     .into();
 
+    let long_term_expirable_nonce = ExpirableNonce::try_from_millis(
+        current_timestamp + Duration::from_secs(3600).as_millis() as i64,
+        &rng.random::<[u8; 20]>(),
+    )
+    .unwrap()
+    .into();
+
     env.defuse
-        .execute_intents([env.user1.sign_defuse_message(
-            SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
-            env.defuse.id(),
-            expirable_nonce,
-            Deadline::MAX,
-            DefuseIntents {
-                intents: [FtWithdraw {
-                    token: env.ft1.clone(),
-                    receiver_id: env.user1.id().clone(),
-                    amount: withdraw_amount,
-                    memo: None,
-                    msg: None,
-                    storage_deposit: None,
-                    min_gas: None,
-                }
-                .into()]
-                .into(),
-            },
-        )])
+        .execute_intents([
+            env.user1.sign_defuse_message(
+                SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
+                    .unwrap(),
+                env.defuse.id(),
+                expirable_nonce,
+                Deadline::MAX,
+                DefuseIntents {
+                    intents: [FtWithdraw {
+                        token: env.ft1.clone(),
+                        receiver_id: env.user1.id().clone(),
+                        amount: withdraw_amount,
+                        memo: None,
+                        msg: None,
+                        storage_deposit: None,
+                        min_gas: None,
+                    }
+                    .into()]
+                    .into(),
+                },
+            ),
+            env.user1.sign_defuse_message(
+                SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
+                    .unwrap(),
+                env.defuse.id(),
+                long_term_expirable_nonce,
+                Deadline::MAX,
+                DefuseIntents {
+                    intents: [FtWithdraw {
+                        token: env.ft1.clone(),
+                        receiver_id: env.user1.id().clone(),
+                        amount: withdraw_amount,
+                        memo: None,
+                        msg: None,
+                        storage_deposit: None,
+                        min_gas: None,
+                    }
+                    .into()]
+                    .into(),
+                },
+            ),
+        ])
         .await
         .unwrap();
 
@@ -218,9 +248,22 @@ async fn test_clear_expired_nonces(#[notrace] mut rng: impl Rng) {
         .await
         .unwrap();
 
-    // skip if already cleared
+    assert!(
+        !env.defuse
+            .is_nonce_used(env.user1.id(), &expirable_nonce)
+            .await
+            .unwrap(),
+    );
+
+    let unknown_user: AccountId = "unknown-user.near".parse().unwrap();
+
+    // skip if nonce already cleared / is not expired / user does not exist
     env.defuse
-        .clear_expired_nonces(&[(env.user1.id().clone(), vec![expirable_nonce])])
+        .clear_expired_nonces(&[
+            (env.user1.id().clone(), vec![expirable_nonce]),
+            (env.user1.id().clone(), vec![long_term_expirable_nonce]),
+            (unknown_user, vec![expirable_nonce]),
+        ])
         .await
         .unwrap();
 }
