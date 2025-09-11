@@ -42,9 +42,9 @@ where
     }
 
     #[inline]
-    pub fn remove(&mut self, n: U256) -> bool {
-        let [word_pos @ .., _] = n;
-        self.0.remove(&word_pos).is_some()
+    pub fn clear_by_prefix(&mut self, n: U256) -> bool {
+        let [prefix @ .., _] = n;
+        self.0.remove(&prefix).is_some()
     }
 
     /// Set the bit `n` and return old value
