@@ -34,7 +34,7 @@ impl Deadline {
 
     #[must_use]
     #[inline]
-    pub fn into_millis(self) -> i64 {
+    pub const fn into_millis(self) -> i64 {
         self.0.timestamp_millis()
     }
 

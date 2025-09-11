@@ -11,7 +11,7 @@ use crate::{
 use defuse_bitmap::{U248, U256};
 use defuse_crypto::PublicKey;
 use defuse_near_utils::Lock;
-use near_sdk::{AccountId, AccountIdRef, env};
+use near_sdk::{AccountId, AccountIdRef};
 use std::{
     borrow::Cow,
     collections::{HashMap, HashSet},
@@ -167,7 +167,7 @@ where
 
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
         if let Some(expirable_nonce) = ExpirableNonce::maybe_from(nonce) {
-            if expirable_nonce.is_expired(env::block_timestamp_ms()) {
+            if expirable_nonce.is_expired() {
                 return Err(DefuseError::NonceExpired);
             }
         }
@@ -195,7 +195,7 @@ where
         let account = self
             .accounts
             .get_mut(&account_id)
-            .ok_or_else(|| DefuseError::AccountNotFound(account_id.to_owned()))?
+            .ok_or_else(|| DefuseError::AccountNotFound(account_id.clone()))?
             .get_mut()
             .ok_or(DefuseError::AccountLocked(account_id))?;
 
@@ -432,9 +432,7 @@ impl CachedAccount {
     #[inline]
     pub fn clear_expired_nonce(&mut self, n: U256) -> bool {
         match ExpirableNonce::maybe_from(n) {
-            Some(expirable_nonce) if expirable_nonce.is_expired(env::block_timestamp_ms()) => {
-                self.nonces.clear_expired(n)
-            }
+            Some(expirable_nonce) if expirable_nonce.is_expired() => self.nonces.clear_expired(n),
             _ => false,
         }
     }

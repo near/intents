@@ -68,12 +68,12 @@ impl AccountManager for Contract {
     fn clear_expired_nonces(&mut self, nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>) {
         assert_one_yocto();
 
-        nonces.into_iter().for_each(|(user, nonces)| {
+        for (user, nonces) in nonces {
             let nonces = nonces.into_iter().map(AsBase64::into_inner);
 
             // NOTE: all errors are omitted
-            State::clear_expired_nonces(self, user.clone(), nonces).ok();
-        });
+            State::clear_expired_nonces(self, user, nonces).ok();
+        }
     }
 
     fn is_auth_by_predecessor_id_enabled(&self, account_id: &AccountId) -> bool {
