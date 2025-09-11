@@ -113,7 +113,7 @@ impl AccountManagerExt for near_workspaces::Account {
             .transact()
             .await?
             .into_result()
-            .map(|outcome| TestLog::from(outcome))?;
+            .map(TestLog::from)?;
 
         Ok(res)
     }

@@ -19,7 +19,7 @@ use impl_tools::autoimpl;
 use near_sdk::{
     AccountIdRef, BorshStorageKey, IntoStorageKey,
     borsh::BorshSerialize,
-    env, near,
+    near,
     store::{IterableSet, LookupMap},
 };
 
@@ -155,9 +155,7 @@ impl Account {
     #[inline]
     pub fn clear_expired_nonce(&mut self, n: U256) -> bool {
         match ExpirableNonce::maybe_from(n) {
-            Some(expirable_nonce) if expirable_nonce.is_expired(env::block_timestamp_ms()) => {
-                self.nonces.clear_expired(n)
-            }
+            Some(expirable_nonce) if expirable_nonce.is_expired() => self.nonces.clear_expired(n),
             _ => false,
         }
     }

@@ -1,13 +1,13 @@
 use defuse_bitmap::{BitMap256, U248, U256};
 use defuse_map_utils::{IterableMap, Map};
-use near_sdk::near;
+use near_sdk::{env, near};
 
 use crate::Deadline;
 
 pub type Nonce = U256;
 
 /// Prefix to identify expirable nonces:
-/// (first 4 bytes of sha256("expirable_nonce"))
+/// (first 4 bytes of `sha256("expirable_nonce"))`
 const EXPIRABLE_NONCE_PREFIX: [u8; 4] = [0xdd, 0x50, 0xbc, 0x7c];
 
 /// See [permit2 nonce schema](https://docs.uniswap.org/contracts/permit2/reference/signature-transfer#nonce-schema)
@@ -50,10 +50,10 @@ where
 }
 
 /// To distinguish between legacy nonces and expirable nonces
-/// we use a specific prefix EXPIRABLE_NONCE_PREFIX. Expirable nonces
-/// have the following structure: [word_position, bit_position].
-/// Where word_position = [ EXPIRABLE_NONCE_PREFIX , <8 bytes timestamp in ms>, <19 random bytes> ]
-/// and bit_position is the last (lowest) byte.
+/// we use a specific prefix `EXPIRABLE_NONCE_PREFIX`. Expirable nonces
+/// have the following structure: [`word_position`, `bit_position`].
+/// Where `word_position` = [ `EXPIRABLE_NONCE_PREFIX` , <8 bytes timestamp in ms>, <19 random bytes> ]
+/// and `bit_position` is the last (lowest) byte
 pub struct ExpirableNonce {
     pub timestamp: Deadline,
     pub data: [u8; 20],
@@ -71,7 +71,7 @@ impl From<ExpirableNonce> for Nonce {
 
 impl ExpirableNonce {
     pub fn try_from_millis(timestamp: i64, data: &[u8; 20]) -> Option<Self> {
-        Some(ExpirableNonce {
+        Some(Self {
             timestamp: Deadline::try_from_millis(timestamp)?,
             data: *data,
         })
@@ -91,12 +91,13 @@ impl ExpirableNonce {
 
         let data = n[12..32].try_into().unwrap();
 
-        Some(ExpirableNonce { timestamp, data })
+        Some(Self { timestamp, data })
     }
 
     #[inline]
-    pub fn is_expired(&self, current_timestamp: u64) -> bool {
-        self.timestamp.into_millis() < current_timestamp as i64
+    pub fn is_expired(&self) -> bool {
+        // It's safe to unwrap here because value would not exceed i64::MAX
+        self.timestamp.into_millis() < env::block_timestamp_ms().try_into().unwrap()
     }
 }
 
@@ -105,7 +106,6 @@ mod tests {
     use super::*;
 
     use arbitrary::Unstructured;
-    use chrono::Utc;
     use defuse_test_utils::random::random_bytes;
     use rstest::rstest;
 
@@ -120,7 +120,7 @@ mod tests {
 
     #[rstest]
     fn expirable_test(random_bytes: Vec<u8>) {
-        let current_timestamp = Utc::now().timestamp_millis();
+        let current_timestamp: i64 = env::block_timestamp_ms().try_into().unwrap();
         let mut u = arbitrary::Unstructured::new(&random_bytes);
         let nonce: [u8; 20] = u.arbitrary().unwrap();
 
@@ -128,10 +128,10 @@ mod tests {
         assert!(invalid.is_none());
 
         let expired = ExpirableNonce::try_from_millis(current_timestamp - 1000, &nonce).unwrap();
-        assert!(expired.is_expired(current_timestamp as u64));
+        assert!(expired.is_expired());
 
         let not_expired =
             ExpirableNonce::try_from_millis(current_timestamp + 1000, &nonce).unwrap();
-        assert!(!not_expired.is_expired(current_timestamp as u64));
+        assert!(!not_expired.is_expired());
     }
 }

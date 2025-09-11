@@ -155,7 +155,7 @@ async fn test_clear_expired_nonces(#[notrace] mut rng: impl Rng) {
     let withdraw_amount: U128 = 1000.into();
     let deposit_amount = withdraw_amount.0 * 2;
 
-    let waiting_time = Duration::from_millis(3000);
+    let waiting_time = 3000;
 
     // Create user account
     let ft1 = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
@@ -174,18 +174,16 @@ async fn test_clear_expired_nonces(#[notrace] mut rng: impl Rng) {
 
     // commit expirable nonces
     let expirable_nonce = ExpirableNonce::try_from_millis(
-        current_timestamp + waiting_time.as_millis() as i64,
+        current_timestamp + waiting_time,
         &rng.random::<[u8; 20]>(),
     )
     .unwrap()
     .into();
 
-    let long_term_expirable_nonce = ExpirableNonce::try_from_millis(
-        current_timestamp + Duration::from_secs(3600).as_millis() as i64,
-        &rng.random::<[u8; 20]>(),
-    )
-    .unwrap()
-    .into();
+    let long_term_expirable_nonce =
+        ExpirableNonce::try_from_millis(current_timestamp + 3_600_000, &rng.random::<[u8; 20]>())
+            .unwrap()
+            .into();
 
     env.defuse
         .execute_intents([
@@ -240,7 +238,7 @@ async fn test_clear_expired_nonces(#[notrace] mut rng: impl Rng) {
             .unwrap(),
     );
 
-    sleep(waiting_time).await;
+    sleep(Duration::from_millis(waiting_time.try_into().unwrap())).await;
 
     // nonce is expired
     env.defuse
@@ -277,10 +275,10 @@ async fn clear_multiple_nonces(
     let env = Env::builder().build().await;
 
     let deposit_amount = 1000;
-    let withdraw_amount: U128 = (1000 / nonce_count as u128).into();
+    let withdraw_amount: U128 = (1000 / u128::try_from(nonce_count).unwrap()).into();
     let chunk_size = 10;
 
-    let waiting_time = Duration::from_millis(3000);
+    let waiting_time = 3000;
 
     // Create user account
     let ft1 = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
@@ -297,8 +295,8 @@ async fn clear_multiple_nonces(
         );
     }
 
-    let mut nonces = Vec::with_capacity(nonce_count as usize);
-    let rounds = (nonce_count + chunk_size - 1) / chunk_size;
+    let mut nonces = Vec::with_capacity(nonce_count);
+    let rounds = nonce_count.div_ceil(chunk_size);
     let balance_before = env.near_balance(env.id()).await;
 
     for _ in 0..rounds {
@@ -308,7 +306,7 @@ async fn clear_multiple_nonces(
             .map(|_| {
                 // commit expirable nonce
                 let expirable_nonce = ExpirableNonce::try_from_millis(
-                    current_timestamp + waiting_time.as_millis() as i64,
+                    current_timestamp + waiting_time,
                     &rng.random::<[u8; 20]>(),
                 )
                 .unwrap()
@@ -344,7 +342,8 @@ async fn clear_multiple_nonces(
 
     let balance_after = env.near_balance(env.id()).await;
 
-    sleep(Duration::from_secs(rounds as u64 + 1)).await;
+    let timeout: u64 = rounds.try_into().unwrap();
+    sleep(Duration::from_secs(timeout + 1)).await;
 
     let gas_used = env
         .defuse
