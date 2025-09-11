@@ -1,5 +1,5 @@
 use defuse_core::{
-    DefuseError, ExpirableNonce, Nonce, Result,
+    DefuseError, Nonce, Result,
     crypto::PublicKey,
     engine::{State, StateView},
     fees::Pips,
@@ -117,19 +117,11 @@ impl State for Contract {
 
     #[inline]
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
-        if let Some(expirable_nonce) = ExpirableNonce::maybe_from(nonce) {
-            if expirable_nonce.is_expired() {
-                return Err(DefuseError::NonceExpired);
-            }
-        }
-
         self.accounts
             .get_or_create(account_id.clone())
             .get_mut()
             .ok_or(DefuseError::AccountLocked(account_id))?
             .commit_nonce(nonce)
-            .then_some(())
-            .ok_or(DefuseError::NonceUsed)
     }
 
     #[inline]

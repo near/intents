@@ -2,7 +2,7 @@ use defuse_bitmap::{BitMap256, U248, U256};
 use defuse_map_utils::{IterableMap, Map};
 use near_sdk::{env, near};
 
-use crate::Deadline;
+use crate::{Deadline, DefuseError, Result};
 
 pub type Nonce = U256;
 
@@ -31,13 +31,26 @@ where
     }
 
     #[inline]
-    pub fn commit(&mut self, n: Nonce) -> bool {
-        !self.0.set_bit(n)
+    pub fn commit(&mut self, n: Nonce) -> Result<()> {
+        if ExpirableNonce::maybe_from(n).is_some_and(|n| n.is_expired()) {
+            return Err(DefuseError::NonceExpired);
+        }
+
+        if self.0.set_bit(n) {
+            return Err(DefuseError::NonceUsed);
+        }
+
+        Ok(())
     }
 
     #[inline]
     pub fn clear_expired(&mut self, n: Nonce) -> bool {
-        self.0.clear_by_prefix(n)
+        match ExpirableNonce::maybe_from(n) {
+            Some(expirable_nonce) if expirable_nonce.is_expired() => {
+                self.0.clear_by_prefix(n[0..31].try_into().unwrap())
+            }
+            _ => false,
+        }
     }
 
     #[inline]

@@ -64,10 +64,7 @@ impl AccountManager for Contract {
             .unwrap_or_panic();
     }
 
-    #[payable]
     fn clear_expired_nonces(&mut self, nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>) {
-        assert_one_yocto();
-
         for (user, nonces) in nonces {
             let nonces = nonces.into_iter().map(AsBase64::into_inner);
 
