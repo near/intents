@@ -1,5 +1,5 @@
 use crate::{
-    DefuseError, ExpirableNonce, Nonce, Nonces, Result,
+    DefuseError, Nonce, Nonces, Result,
     amounts::Amounts,
     fees::Pips,
     intents::{
@@ -166,12 +166,6 @@ where
     }
 
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
-        if let Some(expirable_nonce) = ExpirableNonce::maybe_from(nonce) {
-            if expirable_nonce.is_expired() {
-                return Err(DefuseError::NonceExpired);
-            }
-        }
-
         if self.is_nonce_used(&account_id, nonce) {
             return Err(DefuseError::NonceUsed);
         }
@@ -183,8 +177,6 @@ where
             .get_mut()
             .ok_or(DefuseError::AccountLocked(account_id))?
             .commit_nonce(nonce)
-            .then_some(())
-            .ok_or(DefuseError::NonceUsed)
     }
 
     fn clear_expired_nonces(
@@ -425,15 +417,12 @@ impl CachedAccount {
     }
 
     #[inline]
-    pub fn commit_nonce(&mut self, n: U256) -> bool {
+    pub fn commit_nonce(&mut self, n: U256) -> Result<()> {
         self.nonces.commit(n)
     }
 
     #[inline]
     pub fn clear_expired_nonce(&mut self, n: U256) -> bool {
-        match ExpirableNonce::maybe_from(n) {
-            Some(expirable_nonce) if expirable_nonce.is_expired() => self.nonces.clear_expired(n),
-            _ => false,
-        }
+        self.nonces.clear_expired(n)
     }
 }
