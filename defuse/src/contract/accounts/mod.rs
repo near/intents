@@ -64,12 +64,15 @@ impl AccountManager for Contract {
             .unwrap_or_panic();
     }
 
-    fn clear_expired_nonces(&mut self, nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>) {
-        for (user, nonces) in nonces {
-            let nonces = nonces.into_iter().map(AsBase64::into_inner);
-
+    fn cleanup_expired_nonces(&mut self, nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>) {
+        for (account_id, nonces) in nonces {
             // NOTE: all errors are omitted
-            State::clear_expired_nonces(self, user, nonces).ok();
+            State::cleanup_expired_nonces(
+                self,
+                &account_id,
+                nonces.into_iter().map(AsBase64::into_inner),
+            )
+            .ok();
         }
     }
 

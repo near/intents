@@ -1,9 +1,7 @@
 use arbitrary::{Arbitrary, Unstructured};
-use defuse::core::{
-    Deadline, ExpirableNonce,
-    intents::{DefuseIntents, tokens::FtWithdraw},
-    token_id::{TokenId, nep141::Nep141TokenId},
-};
+use chrono::{TimeDelta, Utc};
+use defuse::core::{Deadline, ExpirableNonce, intents::DefuseIntents};
+use itertools::Itertools;
 
 use std::time::Duration;
 use tokio::time::sleep;
@@ -12,40 +10,20 @@ use defuse_test_utils::{
     asserts::ResultAssertsExt,
     random::{Rng, rng},
 };
-use near_sdk::{AccountId, json_types::U128};
+use near_sdk::AccountId;
 use rstest::rstest;
 
-use crate::{
-    tests::defuse::{
-        DefuseSigner, SigningStandard, accounts::AccountManagerExt, env::Env,
-        intents::ExecuteIntentsExt,
-    },
-    utils::mt::MtExt,
+use crate::tests::defuse::{
+    DefuseSigner, SigningStandard, accounts::AccountManagerExt, env::Env,
+    intents::ExecuteIntentsExt,
 };
 
 #[tokio::test]
 #[rstest]
 async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
     let env = Env::builder().build().await;
-    let current_timestamp = chrono::Utc::now().timestamp_millis();
-
-    let withdraw_amount: U128 = 1000.into();
-    let deposit_amount = withdraw_amount.0 * 2;
-
-    // Create user account
-    let ft1 = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
-    {
-        env.defuse_ft_deposit_to(&env.ft1, deposit_amount, env.user1.id())
-            .await
-            .unwrap();
-
-        assert_eq!(
-            env.mt_contract_balance_of(env.defuse.id(), env.user1.id(), &ft1.to_string())
-                .await
-                .unwrap(),
-            deposit_amount
-        );
-    }
+    let current_timestamp = Utc::now();
+    let timeout_delta = TimeDelta::seconds(3);
 
     // legacy nonce
     let legacy_nonce = rng.random();
@@ -56,19 +34,7 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
             env.defuse.id(),
             legacy_nonce,
             Deadline::MAX,
-            DefuseIntents {
-                intents: [FtWithdraw {
-                    token: env.ft1.clone(),
-                    receiver_id: env.user1.id().clone(),
-                    amount: withdraw_amount,
-                    memo: None,
-                    msg: None,
-                    storage_deposit: None,
-                    min_gas: None,
-                }
-                .into()]
-                .into(),
-            },
+            DefuseIntents { intents: [].into() },
         )])
         .await
         .unwrap();
@@ -81,10 +47,11 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
     );
 
     // nonce is expired
-    let expired_nonce =
-        ExpirableNonce::try_from_millis(current_timestamp - 10000, &rng.random::<[u8; 20]>())
-            .unwrap()
-            .into();
+    let expired_nonce = ExpirableNonce::new(
+        Deadline::new(current_timestamp.checked_sub_signed(timeout_delta).unwrap()),
+        rng.random::<[u8; 20]>(),
+    )
+    .into();
 
     env.defuse
         .execute_intents([env.user1.sign_defuse_message(
@@ -92,28 +59,17 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
             env.defuse.id(),
             expired_nonce,
             Deadline::MAX,
-            DefuseIntents {
-                intents: [FtWithdraw {
-                    token: env.ft1.clone(),
-                    receiver_id: env.user1.id().clone(),
-                    amount: withdraw_amount,
-                    memo: None,
-                    msg: None,
-                    storage_deposit: None,
-                    min_gas: None,
-                }
-                .into()]
-                .into(),
-            },
+            DefuseIntents { intents: [].into() },
         )])
         .await
         .assert_err_contains("nonce was already expired");
 
     // nonce can be committed
-    let expirable_nonce =
-        ExpirableNonce::try_from_millis(current_timestamp + 10000, &rng.random::<[u8; 20]>())
-            .unwrap()
-            .into();
+    let expirable_nonce = ExpirableNonce::new(
+        Deadline::new(current_timestamp.checked_add_signed(timeout_delta).unwrap()),
+        rng.random::<[u8; 20]>(),
+    )
+    .into();
 
     env.defuse
         .execute_intents([env.user1.sign_defuse_message(
@@ -121,19 +77,7 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
             env.defuse.id(),
             expirable_nonce,
             Deadline::MAX,
-            DefuseIntents {
-                intents: [FtWithdraw {
-                    token: env.ft1.clone(),
-                    receiver_id: env.user1.id().clone(),
-                    amount: withdraw_amount,
-                    memo: None,
-                    msg: None,
-                    storage_deposit: None,
-                    min_gas: None,
-                }
-                .into()]
-                .into(),
-            },
+            DefuseIntents { intents: [].into() },
         )])
         .await
         .unwrap();
@@ -148,42 +92,32 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
 
 #[tokio::test]
 #[rstest]
-async fn test_clear_expired_nonces(#[notrace] mut rng: impl Rng) {
+async fn test_cleanup_expired_nonces(#[notrace] mut rng: impl Rng) {
+    const WAITING_TIME: TimeDelta = TimeDelta::seconds(3);
+
     let env = Env::builder().build().await;
-    let current_timestamp = chrono::Utc::now().timestamp_millis();
-
-    let withdraw_amount: U128 = 1000.into();
-    let deposit_amount = withdraw_amount.0 * 2;
-
-    let waiting_time = 3000;
-
-    // Create user account
-    let ft1 = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
-    {
-        env.defuse_ft_deposit_to(&env.ft1, deposit_amount, env.user1.id())
-            .await
-            .unwrap();
-
-        assert_eq!(
-            env.mt_contract_balance_of(env.defuse.id(), env.user1.id(), &ft1.to_string())
-                .await
-                .unwrap(),
-            deposit_amount
-        );
-    }
+    let current_timestamp = Utc::now();
 
     // commit expirable nonces
-    let expirable_nonce = ExpirableNonce::try_from_millis(
-        current_timestamp + waiting_time,
-        &rng.random::<[u8; 20]>(),
+    let expirable_nonce = ExpirableNonce::new(
+        Deadline::new(
+            current_timestamp
+                .checked_add_signed(TimeDelta::seconds(1))
+                .unwrap(),
+        ),
+        rng.random::<[u8; 20]>(),
     )
-    .unwrap()
     .into();
 
-    let long_term_expirable_nonce =
-        ExpirableNonce::try_from_millis(current_timestamp + 3_600_000, &rng.random::<[u8; 20]>())
-            .unwrap()
-            .into();
+    let long_term_expirable_nonce = ExpirableNonce::new(
+        Deadline::new(
+            current_timestamp
+                .checked_add_signed(TimeDelta::hours(1))
+                .unwrap(),
+        ),
+        rng.random::<[u8; 20]>(),
+    )
+    .into();
 
     env.defuse
         .execute_intents([
@@ -193,19 +127,7 @@ async fn test_clear_expired_nonces(#[notrace] mut rng: impl Rng) {
                 env.defuse.id(),
                 expirable_nonce,
                 Deadline::MAX,
-                DefuseIntents {
-                    intents: [FtWithdraw {
-                        token: env.ft1.clone(),
-                        receiver_id: env.user1.id().clone(),
-                        amount: withdraw_amount,
-                        memo: None,
-                        msg: None,
-                        storage_deposit: None,
-                        min_gas: None,
-                    }
-                    .into()]
-                    .into(),
-                },
+                DefuseIntents { intents: [].into() },
             ),
             env.user1.sign_defuse_message(
                 SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
@@ -213,19 +135,7 @@ async fn test_clear_expired_nonces(#[notrace] mut rng: impl Rng) {
                 env.defuse.id(),
                 long_term_expirable_nonce,
                 Deadline::MAX,
-                DefuseIntents {
-                    intents: [FtWithdraw {
-                        token: env.ft1.clone(),
-                        receiver_id: env.user1.id().clone(),
-                        amount: withdraw_amount,
-                        memo: None,
-                        msg: None,
-                        storage_deposit: None,
-                        min_gas: None,
-                    }
-                    .into()]
-                    .into(),
-                },
+                DefuseIntents { intents: [].into() },
             ),
         ])
         .await
@@ -238,11 +148,11 @@ async fn test_clear_expired_nonces(#[notrace] mut rng: impl Rng) {
             .unwrap(),
     );
 
-    sleep(Duration::from_millis(waiting_time.try_into().unwrap())).await;
+    sleep(Duration::from_secs_f64(WAITING_TIME.as_seconds_f64())).await;
 
     // nonce is expired
     env.defuse
-        .clear_expired_nonces(&[(env.user1.id().clone(), vec![expirable_nonce])])
+        .cleanup_expired_nonces(&[(env.user1.id().clone(), vec![expirable_nonce])])
         .await
         .unwrap();
 
@@ -257,7 +167,7 @@ async fn test_clear_expired_nonces(#[notrace] mut rng: impl Rng) {
 
     // skip if nonce already cleared / is not expired / user does not exist
     env.defuse
-        .clear_expired_nonces(&[
+        .cleanup_expired_nonces(&[
             (env.user1.id().clone(), vec![expirable_nonce]),
             (env.user1.id().clone(), vec![long_term_expirable_nonce]),
             (unknown_user, vec![expirable_nonce]),
@@ -268,71 +178,36 @@ async fn test_clear_expired_nonces(#[notrace] mut rng: impl Rng) {
 
 #[tokio::test]
 #[rstest]
-async fn clear_multiple_nonces(
+async fn cleanup_multiple_nonces(
     #[notrace] mut rng: impl Rng,
     #[values(1, 10, 100)] nonce_count: usize,
 ) {
+    const CHUNK_SIZE: usize = 10;
+    const WAITING_TIME: TimeDelta = TimeDelta::seconds(3);
+
     let env = Env::builder().build().await;
-
-    let deposit_amount = 1000;
-    let withdraw_amount: U128 = (1000 / u128::try_from(nonce_count).unwrap()).into();
-    let chunk_size = 10;
-
-    let waiting_time = 3000;
-
-    // Create user account
-    let ft1 = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
-    {
-        env.defuse_ft_deposit_to(&env.ft1, deposit_amount, env.user1.id())
-            .await
-            .unwrap();
-
-        assert_eq!(
-            env.mt_contract_balance_of(env.defuse.id(), env.user1.id(), &ft1.to_string())
-                .await
-                .unwrap(),
-            deposit_amount
-        );
-    }
-
     let mut nonces = Vec::with_capacity(nonce_count);
-    let rounds = nonce_count.div_ceil(chunk_size);
-    let balance_before = env.near_balance(env.id()).await;
 
-    for _ in 0..rounds {
-        let current_timestamp = chrono::Utc::now().timestamp_millis();
+    for chunk in &(0..nonce_count).chunks(CHUNK_SIZE) {
+        let current_timestamp = Utc::now();
 
-        let intents = (0..chunk_size.min(nonce_count))
+        let intents = chunk
             .map(|_| {
                 // commit expirable nonce
-                let expirable_nonce = ExpirableNonce::try_from_millis(
-                    current_timestamp + waiting_time,
-                    &rng.random::<[u8; 20]>(),
+                let expirable_nonce = ExpirableNonce::new(
+                    Deadline::new(current_timestamp.checked_add_signed(WAITING_TIME).unwrap()),
+                    rng.random::<[u8; 20]>(),
                 )
-                .unwrap()
                 .into();
 
                 nonces.push(expirable_nonce);
 
                 env.user1.sign_defuse_message(
-                    SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
-                        .unwrap(),
+                    SigningStandard::Nep413,
                     env.defuse.id(),
                     expirable_nonce,
                     Deadline::MAX,
-                    DefuseIntents {
-                        intents: [FtWithdraw {
-                            token: env.ft1.clone(),
-                            receiver_id: env.user1.id().clone(),
-                            amount: withdraw_amount,
-                            memo: None,
-                            msg: None,
-                            storage_deposit: None,
-                            min_gas: None,
-                        }
-                        .into()]
-                        .into(),
-                    },
+                    DefuseIntents { intents: [].into() },
                 )
             })
             .collect::<Vec<_>>();
@@ -340,21 +215,17 @@ async fn clear_multiple_nonces(
         env.defuse.execute_intents(intents).await.unwrap();
     }
 
-    let balance_after = env.near_balance(env.id()).await;
-
-    let timeout: u64 = rounds.try_into().unwrap();
-    sleep(Duration::from_secs(timeout + 1)).await;
+    sleep(Duration::from_secs_f64(WAITING_TIME.as_seconds_f64())).await;
 
     let gas_used = env
         .defuse
-        .clear_expired_nonces(&[(env.user1.id().clone(), nonces)])
+        .cleanup_expired_nonces(&[(env.user1.id().clone(), nonces)])
         .await
         .unwrap();
 
     println!(
-        "Gas used to clear {} nonces: {}, balance diff: {}",
+        "Gas used to clear {} nonces: {}",
         nonce_count,
         gas_used.total_gas_burnt(),
-        balance_after.saturating_sub(balance_before)
     );
 }

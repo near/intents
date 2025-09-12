@@ -59,9 +59,9 @@ pub trait State: StateView {
 
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()>;
 
-    fn clear_expired_nonces(
+    fn cleanup_expired_nonces(
         &mut self,
-        account_id: AccountId,
+        account_id: &AccountId,
         nonces: impl IntoIterator<Item = Nonce>,
     ) -> Result<()>;
 

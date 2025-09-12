@@ -23,7 +23,7 @@ pub trait AccountManagerExt {
         public_key: PublicKey,
     ) -> anyhow::Result<()>;
 
-    async fn clear_expired_nonces(
+    async fn cleanup_expired_nonces(
         &self,
         data: &[(AccountId, Vec<Nonce>)],
     ) -> anyhow::Result<TestLog>;
@@ -90,7 +90,7 @@ impl AccountManagerExt for near_workspaces::Account {
         Ok(())
     }
 
-    async fn clear_expired_nonces(
+    async fn cleanup_expired_nonces(
         &self,
         data: &[(AccountId, Vec<Nonce>)],
     ) -> anyhow::Result<TestLog> {
@@ -104,7 +104,7 @@ impl AccountManagerExt for near_workspaces::Account {
             .collect::<Vec<(AccountId, Vec<AsBase64<Nonce>>)>>();
 
         let res = self
-            .call(self.id(), "clear_expired_nonces")
+            .call(self.id(), "cleanup_expired_nonces")
             .args_json(json!({
                 "nonces": nonces,
             }))
@@ -201,11 +201,11 @@ impl AccountManagerExt for near_workspaces::Contract {
             .await
     }
 
-    async fn clear_expired_nonces(
+    async fn cleanup_expired_nonces(
         &self,
         data: &[(AccountId, Vec<Nonce>)],
     ) -> anyhow::Result<TestLog> {
-        self.as_account().clear_expired_nonces(data).await
+        self.as_account().cleanup_expired_nonces(data).await
     }
 
     async fn defuse_has_public_key(
