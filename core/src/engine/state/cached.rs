@@ -179,21 +179,20 @@ where
             .commit_nonce(nonce)
     }
 
-    fn clear_expired_nonces(
+    fn cleanup_expired_nonces(
         &mut self,
-        account_id: AccountId,
+        account_id: &AccountId,
         nonces: impl IntoIterator<Item = Nonce>,
     ) -> Result<()> {
         let account = self
             .accounts
-            .get_mut(&account_id)
+            .get_mut(account_id)
             .ok_or_else(|| DefuseError::AccountNotFound(account_id.clone()))?
-            .get_mut()
-            .ok_or(DefuseError::AccountLocked(account_id))?;
+            .as_inner_unchecked_mut();
 
-        nonces.into_iter().for_each(|nonce| {
-            account.clear_expired_nonce(nonce);
-        });
+        for n in nonces {
+            account.clear_expired_nonce(n);
+        }
 
         Ok(())
     }

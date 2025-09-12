@@ -2,8 +2,10 @@ use core::{
     ops::{Add, AddAssign},
     time::Duration,
 };
+use std::io;
 
 use chrono::{DateTime, Utc};
+use defuse_borsh_utils::adapters::{BorshDeserializeAs, BorshSerializeAs, TimestampMilliSeconds};
 use near_sdk::near;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -12,6 +14,10 @@ pub struct Deadline(DateTime<Utc>);
 
 impl Deadline {
     pub const MAX: Self = Self(DateTime::<Utc>::MAX_UTC);
+
+    pub const fn new(d: DateTime<Utc>) -> Self {
+        Self(d)
+    }
 
     #[cfg(target_arch = "wasm32")]
     #[must_use]
@@ -24,18 +30,6 @@ impl Deadline {
     #[inline]
     pub fn now() -> Self {
         Self(Utc::now())
-    }
-
-    #[must_use]
-    #[inline]
-    pub fn try_from_millis(timestamp: i64) -> Option<Self> {
-        DateTime::<Utc>::from_timestamp_millis(timestamp).map(Self)
-    }
-
-    #[must_use]
-    #[inline]
-    pub const fn into_millis(self) -> i64 {
-        self.0.timestamp_millis()
     }
 
     #[must_use]
@@ -70,5 +64,23 @@ impl AddAssign<Duration> for Deadline {
     #[inline]
     fn add_assign(&mut self, rhs: Duration) {
         self.0 += rhs;
+    }
+}
+
+impl BorshSerializeAs<Deadline> for TimestampMilliSeconds {
+    fn serialize_as<W>(source: &Deadline, writer: &mut W) -> io::Result<()>
+    where
+        W: io::Write,
+    {
+        Self::serialize_as(&source.0, writer)
+    }
+}
+
+impl BorshDeserializeAs<Deadline> for TimestampMilliSeconds {
+    fn deserialize_as<R>(reader: &mut R) -> io::Result<Deadline>
+    where
+        R: io::Read,
+    {
+        Self::deserialize_as(reader).map(Deadline)
     }
 }
