@@ -132,8 +132,7 @@ mod tests {
         let packed: Nonce = exp.clone().into();
 
         let unpacked = ExpirableNonce::maybe_from(packed).expect("prefix must match");
-        assert_eq!(unpacked.deadline, exp.deadline);
-        assert_eq!(unpacked.nonce, exp.nonce);
+        assert_eq!(unpacked, exp);
     }
 
     #[rstest]
