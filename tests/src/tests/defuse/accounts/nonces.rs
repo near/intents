@@ -26,6 +26,7 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
     let timeout_delta = TimeDelta::seconds(3);
 
     // legacy nonce
+    let deadline = Deadline::MAX;
     let legacy_nonce = rng.random();
 
     env.defuse
@@ -33,7 +34,7 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
             SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
             env.defuse.id(),
             legacy_nonce,
-            Deadline::MAX,
+            deadline,
             DefuseIntents { intents: [].into() },
         )])
         .await
@@ -47,11 +48,23 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
     );
 
     // nonce is expired
-    let expired_nonce = ExpirableNonce::new(
-        Deadline::new(current_timestamp.checked_sub_signed(timeout_delta).unwrap()),
-        rng.random::<[u8; 20]>(),
-    )
-    .into();
+    let deadline = Deadline::new(current_timestamp.checked_sub_signed(timeout_delta).unwrap());
+    let expired_nonce = ExpirableNonce::new(deadline, rng.random::<[u8; 20]>()).into();
+
+    env.defuse
+        .execute_intents([env.user1.sign_defuse_message(
+            SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+            env.defuse.id(),
+            expired_nonce,
+            deadline,
+            DefuseIntents { intents: [].into() },
+        )])
+        .await
+        .assert_err_contains("deadline has expired");
+
+    // deadline is greater than nonce
+    let deadline = Deadline::new(current_timestamp.checked_add_signed(timeout_delta).unwrap());
+    let expired_nonce = ExpirableNonce::new(deadline, rng.random::<[u8; 20]>()).into();
 
     env.defuse
         .execute_intents([env.user1.sign_defuse_message(
@@ -62,21 +75,18 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
             DefuseIntents { intents: [].into() },
         )])
         .await
-        .assert_err_contains("nonce was already expired");
+        .assert_err_contains("deadline is greater than nonce");
 
     // nonce can be committed
-    let expirable_nonce = ExpirableNonce::new(
-        Deadline::new(current_timestamp.checked_add_signed(timeout_delta).unwrap()),
-        rng.random::<[u8; 20]>(),
-    )
-    .into();
+    let deadline = Deadline::new(current_timestamp.checked_add_signed(timeout_delta).unwrap());
+    let expirable_nonce = ExpirableNonce::new(deadline, rng.random::<[u8; 20]>()).into();
 
     env.defuse
         .execute_intents([env.user1.sign_defuse_message(
             SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
             env.defuse.id(),
             expirable_nonce,
-            Deadline::MAX,
+            deadline,
             DefuseIntents { intents: [].into() },
         )])
         .await
@@ -99,25 +109,20 @@ async fn test_cleanup_expired_nonces(#[notrace] mut rng: impl Rng) {
     let current_timestamp = Utc::now();
 
     // commit expirable nonces
-    let expirable_nonce = ExpirableNonce::new(
-        Deadline::new(
-            current_timestamp
-                .checked_add_signed(TimeDelta::seconds(1))
-                .unwrap(),
-        ),
-        rng.random::<[u8; 20]>(),
-    )
-    .into();
+    let deadline = Deadline::new(
+        current_timestamp
+            .checked_add_signed(TimeDelta::seconds(1))
+            .unwrap(),
+    );
+    let expirable_nonce = ExpirableNonce::new(deadline, rng.random::<[u8; 20]>()).into();
 
-    let long_term_expirable_nonce = ExpirableNonce::new(
-        Deadline::new(
-            current_timestamp
-                .checked_add_signed(TimeDelta::hours(1))
-                .unwrap(),
-        ),
-        rng.random::<[u8; 20]>(),
-    )
-    .into();
+    let long_term_deadline = Deadline::new(
+        current_timestamp
+            .checked_add_signed(TimeDelta::hours(1))
+            .unwrap(),
+    );
+    let long_term_expirable_nonce =
+        ExpirableNonce::new(long_term_deadline, rng.random::<[u8; 20]>()).into();
 
     env.defuse
         .execute_intents([
@@ -126,7 +131,7 @@ async fn test_cleanup_expired_nonces(#[notrace] mut rng: impl Rng) {
                     .unwrap(),
                 env.defuse.id(),
                 expirable_nonce,
-                Deadline::MAX,
+                deadline,
                 DefuseIntents { intents: [].into() },
             ),
             env.user1.sign_defuse_message(
@@ -134,7 +139,7 @@ async fn test_cleanup_expired_nonces(#[notrace] mut rng: impl Rng) {
                     .unwrap(),
                 env.defuse.id(),
                 long_term_expirable_nonce,
-                Deadline::MAX,
+                long_term_deadline,
                 DefuseIntents { intents: [].into() },
             ),
         ])
@@ -194,11 +199,10 @@ async fn cleanup_multiple_nonces(
         let intents = chunk
             .map(|_| {
                 // commit expirable nonce
-                let expirable_nonce = ExpirableNonce::new(
-                    Deadline::new(current_timestamp.checked_add_signed(WAITING_TIME).unwrap()),
-                    rng.random::<[u8; 20]>(),
-                )
-                .into();
+                let deadline =
+                    Deadline::new(current_timestamp.checked_add_signed(WAITING_TIME).unwrap());
+                let expirable_nonce =
+                    ExpirableNonce::new(deadline, rng.random::<[u8; 20]>()).into();
 
                 nonces.push(expirable_nonce);
 
@@ -206,7 +210,7 @@ async fn cleanup_multiple_nonces(
                     SigningStandard::Nep413,
                     env.defuse.id(),
                     expirable_nonce,
-                    Deadline::MAX,
+                    deadline,
                     DefuseIntents { intents: [].into() },
                 )
             })

@@ -25,6 +25,9 @@ pub enum DefuseError {
     #[error("deadline has expired")]
     DeadlineExpired,
 
+    #[error("deadline is greater than nonce")]
+    DeadlineGreaterThanNonce,
+
     #[error("gas overflow")]
     GasOverflow,
 

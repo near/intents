@@ -1,5 +1,5 @@
 use defuse_bitmap::{BitMap256, U248, U256};
-use defuse_borsh_utils::adapters::{As, TimestampMilliSeconds};
+use defuse_borsh_utils::adapters::{As, TimestampMicroSeconds};
 use defuse_map_utils::{IterableMap, Map};
 use hex_literal::hex;
 use near_sdk::{
@@ -71,8 +71,8 @@ where
 #[borsh(crate = "::near_sdk::borsh")]
 pub struct ExpirableNonce {
     #[borsh(
-        serialize_with = "As::<TimestampMilliSeconds>::serialize",
-        deserialize_with = "As::<TimestampMilliSeconds>::deserialize"
+        serialize_with = "As::<TimestampMicroSeconds>::serialize",
+        deserialize_with = "As::<TimestampMicroSeconds>::deserialize"
     )]
     pub deadline: Deadline,
     pub nonce: [u8; 20],
@@ -102,7 +102,6 @@ impl ExpirableNonce {
     /// Checks prefix and parses the rest as expirable nonce
     /// If prefix doesn't match or nonce has invalid timestamp, returns None
     pub fn maybe_from(n: Nonce) -> Option<Self> {
-        // It's safe to unwrap here because we know the entire slice is exactly 32 bytes long
         let mut bytes = n.strip_prefix(&Self::EXPIRABLE_NONCE_PREFIX)?;
         Self::deserialize_reader(&mut bytes).ok()
     }

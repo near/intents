@@ -5,7 +5,7 @@ use core::{
 use std::io;
 
 use chrono::{DateTime, Utc};
-use defuse_borsh_utils::adapters::{BorshDeserializeAs, BorshSerializeAs, TimestampMilliSeconds};
+use defuse_borsh_utils::adapters::{BorshDeserializeAs, BorshSerializeAs, TimestampMicroSeconds};
 use near_sdk::near;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -22,7 +22,7 @@ impl Deadline {
     #[cfg(target_arch = "wasm32")]
     #[must_use]
     pub fn now() -> Self {
-        Self(defuse_near_utils::time::now())
+        Self(*defuse_near_utils::BLOCK_TIMESTAMP)
     }
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -67,7 +67,7 @@ impl AddAssign<Duration> for Deadline {
     }
 }
 
-impl BorshSerializeAs<Deadline> for TimestampMilliSeconds {
+impl BorshSerializeAs<Deadline> for TimestampMicroSeconds {
     fn serialize_as<W>(source: &Deadline, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
@@ -76,7 +76,7 @@ impl BorshSerializeAs<Deadline> for TimestampMilliSeconds {
     }
 }
 
-impl BorshDeserializeAs<Deadline> for TimestampMilliSeconds {
+impl BorshDeserializeAs<Deadline> for TimestampMicroSeconds {
     fn deserialize_as<R>(reader: &mut R) -> io::Result<Deadline>
     where
         R: io::Read,
