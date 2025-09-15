@@ -67,7 +67,7 @@ where
 /// have the following structure: [`word_position`, `bit_position`].
 /// Where `word_position` = [ `EXPIRABLE_NONCE_PREFIX` , <8 bytes timestamp in microseconds>, <19 random bytes> ]
 /// and `bit_position` is the last (lowest) byte
-#[derive(BorshSerialize, BorshDeserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
 #[borsh(crate = "::near_sdk::borsh")]
 pub struct ExpirableNonce {
     #[borsh(
@@ -81,6 +81,7 @@ pub struct ExpirableNonce {
 impl From<ExpirableNonce> for Nonce {
     fn from(n: ExpirableNonce) -> Self {
         let mut result = [0u8; 32];
+
         borsh::to_writer(
             &mut result[..],
             &(ExpirableNonce::EXPIRABLE_NONCE_PREFIX, n),
@@ -120,6 +121,20 @@ mod tests {
     use chrono::{Days, Utc};
     use defuse_test_utils::random::random_bytes;
     use rstest::rstest;
+
+    #[rstest]
+    fn roundtrip_layout(random_bytes: Vec<u8>) {
+        let mut u = Unstructured::new(&random_bytes);
+        let nonce_bytes: [u8; 20] = u.arbitrary().unwrap();
+        let now = Deadline::new(Utc::now());
+
+        let exp = ExpirableNonce::new(now, nonce_bytes);
+        let packed: Nonce = exp.clone().into();
+
+        let unpacked = ExpirableNonce::maybe_from(packed).expect("prefix must match");
+        assert_eq!(unpacked.deadline, exp.deadline);
+        assert_eq!(unpacked.nonce, exp.nonce);
+    }
 
     #[rstest]
     fn nonexpirable_test(random_bytes: Vec<u8>) {
