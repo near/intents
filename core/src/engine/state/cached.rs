@@ -177,8 +177,24 @@ where
             .get_mut()
             .ok_or(DefuseError::AccountLocked(account_id))?
             .commit_nonce(nonce)
-            .then_some(())
-            .ok_or(DefuseError::NonceUsed)
+    }
+
+    fn cleanup_expired_nonces(
+        &mut self,
+        account_id: &AccountId,
+        nonces: impl IntoIterator<Item = Nonce>,
+    ) -> Result<()> {
+        let account = self
+            .accounts
+            .get_mut(account_id)
+            .ok_or_else(|| DefuseError::AccountNotFound(account_id.clone()))?
+            .as_inner_unchecked_mut();
+
+        for n in nonces {
+            account.clear_expired_nonce(n);
+        }
+
+        Ok(())
     }
 
     fn internal_add_balance(
@@ -400,7 +416,12 @@ impl CachedAccount {
     }
 
     #[inline]
-    pub fn commit_nonce(&mut self, n: U256) -> bool {
+    pub fn commit_nonce(&mut self, n: U256) -> Result<()> {
         self.nonces.commit(n)
+    }
+
+    #[inline]
+    pub fn clear_expired_nonce(&mut self, n: U256) -> bool {
+        self.nonces.clear_expired(n)
     }
 }

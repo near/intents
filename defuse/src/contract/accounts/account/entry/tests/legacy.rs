@@ -2,8 +2,14 @@ use std::collections::{HashMap, HashSet};
 
 use arbitrary_with::{Arbitrary, As, arbitrary};
 use defuse_bitmap::U256;
-use defuse_core::{crypto::PublicKey, token_id::TokenId};
-use defuse_near_utils::arbitrary::ArbitraryAccountId;
+use defuse_core::{
+    Nonces, Result,
+    accounts::{AccountEvent, PublicKeyEvent},
+    crypto::PublicKey,
+    events::DefuseEvent,
+    token_id::TokenId,
+};
+use defuse_near_utils::{NestPrefix, arbitrary::ArbitraryAccountId};
 use defuse_test_utils::random::make_arbitrary;
 use near_sdk::{
     AccountId,
@@ -63,7 +69,7 @@ impl AccountData {
         }
 
         for &n in &self.nonces {
-            assert!(legacy.commit_nonce(n));
+            assert!(legacy.commit_nonce(n).is_ok());
         }
 
         for (token_id, &amount) in &self.token_balances {

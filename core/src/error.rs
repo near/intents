@@ -25,6 +25,9 @@ pub enum DefuseError {
     #[error("deadline has expired")]
     DeadlineExpired,
 
+    #[error("deadline is greater than nonce")]
+    DeadlineGreaterThanNonce,
+
     #[error("gas overflow")]
     GasOverflow,
 
@@ -48,6 +51,9 @@ pub enum DefuseError {
 
     #[error("nonce was already used")]
     NonceUsed,
+
+    #[error("nonce was already expired")]
+    NonceExpired,
 
     #[error("public key '{1}' already exists for account '{0}'")]
     PublicKeyExists(AccountId, PublicKey),

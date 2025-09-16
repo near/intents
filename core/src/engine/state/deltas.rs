@@ -117,6 +117,15 @@ where
         self.state.commit_nonce(account_id, nonce)
     }
 
+    #[inline]
+    fn cleanup_expired_nonces(
+        &mut self,
+        account_id: &AccountId,
+        nonces: impl IntoIterator<Item = Nonce>,
+    ) -> Result<()> {
+        self.state.cleanup_expired_nonces(account_id, nonces)
+    }
+
     fn internal_add_balance(
         &mut self,
         owner_id: AccountId,

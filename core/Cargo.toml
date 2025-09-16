@@ -23,9 +23,11 @@ defuse-webauthn.workspace = true
 
 arbitrary = { workspace = true, optional = true }
 arbitrary_with = { workspace = true, optional = true }
+defuse-borsh-utils = { workspace = true, features = ["chrono"] }
 chrono = { workspace = true, features = ["serde"] }
 derive_more = { workspace = true, features = ["from"] }
 hex.workspace = true
+hex-literal.workspace = true
 impl-tools.workspace = true
 near-account-id.workspace = true
 near-contract-standards.workspace = true
