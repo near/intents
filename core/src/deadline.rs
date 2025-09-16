@@ -22,7 +22,7 @@ impl Deadline {
     #[cfg(target_arch = "wasm32")]
     #[must_use]
     pub fn now() -> Self {
-        Self(*defuse_near_utils::BLOCK_TIMESTAMP)
+        Self(defuse_near_utils::BLOCK_TIMESTAMP.clone())
     }
 
     #[cfg(not(target_arch = "wasm32"))]
