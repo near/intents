@@ -139,6 +139,7 @@ impl Account {
     #[inline]
     pub fn is_nonce_used(&self, nonce: U256) -> bool {
         unimplemented!()
+
         // self.nonces.is_used(nonce)
     }
 
