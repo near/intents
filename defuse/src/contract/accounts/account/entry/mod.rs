@@ -1,4 +1,6 @@
+mod implementations;
 mod v0;
+mod v1;
 
 use std::{
     borrow::Cow,
@@ -15,7 +17,7 @@ use near_sdk::{
     near,
 };
 
-use crate::contract::accounts::account::entry::v0::AccountV0;
+use crate::contract::accounts::account::entry::{v0::AccountV0, v1::AccountV1};
 
 use super::Account;
 
@@ -46,6 +48,7 @@ impl From<Lock<Account>> for AccountEntry {
 #[near(serializers = [borsh])]
 enum VersionedAccountEntry<'a> {
     V0(Cow<'a, PanicOnClone<AccountV0>>),
+    V1(Cow<'a, PanicOnClone<AccountV1>>),
     // When upgrading to a new version, given current version `N`:
     // 1. Copy current `Account` struct definition and name it `AccountVN`
     // 2. Add variant `VN(Cow<'a, PanicOnClone<AccountVN>>)` before `Latest`
@@ -60,6 +63,9 @@ impl From<VersionedAccountEntry<'_>> for Lock<Account> {
         // safe to call `Cow::<PanicOnClone<_>>::into_owned()` here.
         match versioned {
             VersionedAccountEntry::V0(account) => {
+                Self::unlocked(account.into_owned().into_inner().into())
+            }
+            VersionedAccountEntry::V1(account) => {
                 Self::unlocked(account.into_owned().into_inner().into())
             }
             VersionedAccountEntry::Latest(account) => account
@@ -80,6 +86,12 @@ impl<'a> From<&'a Lock<Account>> for VersionedAccountEntry<'a> {
 impl From<AccountV0> for VersionedAccountEntry<'_> {
     fn from(value: AccountV0) -> Self {
         Self::V0(Cow::Owned(value.into()))
+    }
+}
+
+impl From<AccountV1> for VersionedAccountEntry<'_> {
+    fn from(value: AccountV1) -> Self {
+        Self::V1(Cow::Owned(value.into()))
     }
 }
 

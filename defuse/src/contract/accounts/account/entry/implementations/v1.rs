@@ -1,11 +1,4 @@
-mod entry;
-
-pub use self::entry::*;
-
-use std::borrow::Cow;
-
-use bitflags::bitflags;
-use defuse_bitmap::{U248, U256};
+use defuse_bitmap::U256;
 use defuse_core::{
     Nonces,
     accounts::{AccountEvent, PublicKeyEvent},
@@ -13,36 +6,20 @@ use defuse_core::{
     events::DefuseEvent,
     intents::account::SetAuthByPredecessorId,
 };
-
 use defuse_near_utils::NestPrefix;
-use impl_tools::autoimpl;
 use near_sdk::{
-    AccountIdRef, BorshStorageKey, IntoStorageKey,
-    borsh::BorshSerialize,
-    near,
-    store::{IterableSet, LookupMap, key::Sha256},
+    AccountIdRef, IntoStorageKey,
+    store::{IterableSet, LookupMap},
+};
+use std::borrow::Cow;
+
+use crate::contract::accounts::{
+    AccountState,
+    account::{AccountFlags, AccountPrefix, entry::AccountV1},
 };
 
-use super::AccountState;
-
-// NOTE: in order to migrate to a new version (even when adding new fields),
-// see docs for `VersionedAccountEntry`
-#[derive(Debug)]
-#[near(serializers = [borsh])]
-#[autoimpl(Deref using self.state)]
-#[autoimpl(DerefMut using self.state)]
-pub struct Account {
-    nonces: MaybeOptimizedNonces,
-
-    flags: AccountFlags,
-    public_keys: IterableSet<PublicKey>,
-
-    pub state: AccountState,
-
-    prefix: Vec<u8>,
-}
-
-impl Account {
+/// Legacy implementation of V1 of [`Account`]
+impl AccountV1 {
     #[inline]
     pub fn new<S>(prefix: S, me: &AccountIdRef) -> Self
     where
@@ -51,7 +28,9 @@ impl Account {
         let prefix = prefix.into_storage_key();
 
         Self {
-            nonces: MaybeOptimizedNonces::new(prefix.as_slice()),
+            nonces: Nonces::new(LookupMap::new(
+                prefix.as_slice().nest(AccountPrefix::Nonces),
+            )),
             flags: (!me.get_account_type().is_implicit())
                 .then_some(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
                 .unwrap_or_else(AccountFlags::empty),
@@ -138,15 +117,13 @@ impl Account {
 
     #[inline]
     pub fn is_nonce_used(&self, nonce: U256) -> bool {
-        unimplemented!()
-        // self.nonces.is_used(nonce)
+        self.nonces.is_used(nonce)
     }
 
     #[inline]
     #[must_use]
     pub fn commit_nonce(&mut self, n: U256) -> bool {
-        unimplemented!()
-        // self.nonces.commit(n)
+        self.nonces.commit(n)
     }
 
     #[inline]
@@ -185,91 +162,5 @@ impl Account {
             .emit();
         }
         was_enabled
-    }
-}
-
-#[derive(Debug)]
-#[near(serializers = [borsh])]
-pub struct MaybeOptimizedNonces {
-    legacy: Option<Nonces<LookupMap<U248, U256>>>,
-    optimized: Nonces<LookupMap<U248, U256, Sha256>>,
-}
-impl MaybeOptimizedNonces {
-    pub fn new<S>(prefix: S) -> Self
-    where
-        S: IntoStorageKey,
-    {
-        let prefix = prefix.into_storage_key();
-
-        Self {
-            //  NOTE: new nonces should not have an legacy part - this is a more efficient use of storage
-            legacy: None,
-            optimized: Nonces::new(LookupMap::with_hasher(
-                prefix.as_slice().nest(AccountPrefix::OptimizedNonces),
-            )),
-        }
-    }
-
-    pub fn new_with_legacy<S>(prefix: S, legacy: Nonces<LookupMap<U248, U256>>) -> Self
-    where
-        S: IntoStorageKey,
-    {
-        let prefix = prefix.into_storage_key();
-
-        Self {
-            legacy: Some(legacy),
-            optimized: Nonces::new(LookupMap::with_hasher(
-                prefix.as_slice().nest(AccountPrefix::OptimizedNonces),
-            )),
-        }
-    }
-}
-
-#[derive(BorshSerialize, BorshStorageKey)]
-#[borsh(crate = "::near_sdk::borsh")]
-enum AccountPrefix {
-    Nonces,
-    PublicKeys,
-    State,
-    OptimizedNonces,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[near(serializers = [borsh])]
-#[repr(transparent)]
-struct AccountFlags(u8);
-
-bitflags! {
-    impl AccountFlags: u8 {
-        // It was a legacy `implicit_public_key_removed: bool`
-        // flag in previous version. It's safe to migrate here,
-        // since borsh serializes `bool` to 0u8/1u8
-        const IMPLICIT_PUBLIC_KEY_REMOVED     = 1 << 0;
-        const AUTH_BY_PREDECESSOR_ID_DISABLED = 1 << 1;
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    use near_sdk::borsh;
-    use rstest::rstest;
-
-    #[rstest]
-    #[test]
-    fn upgrade_to_flags(#[values(true, false)] implicit_public_key_removed: bool) {
-        let serialized_legacy = borsh::to_vec(&implicit_public_key_removed).unwrap();
-        let flags: AccountFlags = borsh::from_slice(&serialized_legacy).unwrap();
-        assert_eq!(
-            flags.contains(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED),
-            implicit_public_key_removed,
-            "implicit_public_key_removed doesn't match"
-        );
-        assert_eq!(
-            borsh::to_vec(&flags).unwrap(),
-            serialized_legacy,
-            "unknown flags set"
-        );
     }
 }

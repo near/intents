@@ -10,15 +10,15 @@ use crate::contract::accounts::{
     Account, AccountState, MaybeOptimizedNonces, account::AccountFlags,
 };
 
-/// Legacy: V0 of [`Account`]
+/// Legacy: V1 of [`Account`]
 #[derive(Debug)]
 #[near(serializers = [borsh])]
 #[autoimpl(Deref using self.state)]
 #[autoimpl(DerefMut using self.state)]
-pub struct AccountV0 {
+pub struct AccountV1 {
     pub(super) nonces: Nonces<LookupMap<U248, U256>>,
 
-    pub(super) implicit_public_key_removed: bool,
+    pub(super) flags: AccountFlags,
     pub(super) public_keys: IterableSet<PublicKey>,
 
     pub state: AccountState,
@@ -26,21 +26,19 @@ pub struct AccountV0 {
     pub(super) prefix: Vec<u8>,
 }
 
-impl From<AccountV0> for Account {
+impl From<AccountV1> for Account {
     fn from(
-        AccountV0 {
+        AccountV1 {
             nonces,
-            implicit_public_key_removed,
+            flags,
             public_keys,
             state,
             prefix,
-        }: AccountV0,
+        }: AccountV1,
     ) -> Self {
         Self {
             nonces: MaybeOptimizedNonces::new_with_legacy(prefix.as_slice(), nonces),
-            flags: implicit_public_key_removed
-                .then_some(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
-                .unwrap_or_else(AccountFlags::empty),
+            flags,
             public_keys,
             state,
             prefix,

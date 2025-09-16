@@ -1,28 +1,18 @@
-use std::{
-    borrow::Cow,
-    collections::{HashMap, HashSet},
-};
+use std::collections::{HashMap, HashSet};
 
 use arbitrary_with::{Arbitrary, As, arbitrary};
 use defuse_bitmap::U256;
-use defuse_core::{
-    Nonces,
-    accounts::{AccountEvent, PublicKeyEvent},
-    crypto::PublicKey,
-    events::DefuseEvent,
-    token_id::TokenId,
-};
-use defuse_near_utils::{NestPrefix, arbitrary::ArbitraryAccountId};
+use defuse_core::{crypto::PublicKey, token_id::TokenId};
+use defuse_near_utils::arbitrary::ArbitraryAccountId;
 use defuse_test_utils::random::make_arbitrary;
 use near_sdk::{
-    AccountId, AccountIdRef, BorshStorageKey, IntoStorageKey,
-    borsh::{self, BorshSerialize},
-    store::{IterableSet, LookupMap},
+    AccountId,
+    borsh::{self},
 };
 use rstest::rstest;
 
 use crate::contract::accounts::{
-    Account, AccountState,
+    Account,
     account::{AccountEntry, entry::AccountV0},
 };
 
@@ -101,100 +91,4 @@ impl AccountData {
             assert_eq!(a.token_balances.amount_for(token_id), amount);
         }
     }
-}
-
-// this is a copy of legacy implementation, so we can handle
-// all mutations same way as they happened before
-impl AccountV0 {
-    #[inline]
-    pub fn new<S>(prefix: S, me: &AccountIdRef) -> Self
-    where
-        S: IntoStorageKey,
-    {
-        let prefix = prefix.into_storage_key();
-
-        Self {
-            nonces: Nonces::new(LookupMap::new(
-                prefix.as_slice().nest(AccountPrefix::Nonces),
-            )),
-            implicit_public_key_removed: !me.get_account_type().is_implicit(),
-            public_keys: IterableSet::new(prefix.as_slice().nest(AccountPrefix::PublicKeys)),
-            state: AccountState::new(prefix.as_slice().nest(AccountPrefix::State)),
-            prefix,
-        }
-    }
-
-    #[inline]
-    #[must_use]
-    pub fn add_public_key(&mut self, me: &AccountIdRef, public_key: PublicKey) -> bool {
-        if !self.maybe_add_public_key(me, public_key) {
-            return false;
-        }
-
-        DefuseEvent::PublicKeyAdded(AccountEvent::new(
-            Cow::Borrowed(me),
-            PublicKeyEvent {
-                public_key: Cow::Borrowed(&public_key),
-            },
-        ))
-        .emit();
-
-        true
-    }
-
-    #[inline]
-    #[must_use]
-    fn maybe_add_public_key(&mut self, me: &AccountIdRef, public_key: PublicKey) -> bool {
-        if me == public_key.to_implicit_account_id() {
-            let was_removed = self.implicit_public_key_removed;
-            self.implicit_public_key_removed = false;
-            was_removed
-        } else {
-            self.public_keys.insert(public_key)
-        }
-    }
-
-    #[inline]
-    #[must_use]
-    pub fn remove_public_key(&mut self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
-        if !self.maybe_remove_public_key(me, public_key) {
-            return false;
-        }
-
-        DefuseEvent::PublicKeyRemoved(AccountEvent::new(
-            Cow::Borrowed(me),
-            PublicKeyEvent {
-                public_key: Cow::Borrowed(public_key),
-            },
-        ))
-        .emit();
-
-        true
-    }
-
-    #[inline]
-    #[must_use]
-    fn maybe_remove_public_key(&mut self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
-        if me == public_key.to_implicit_account_id() {
-            let was_removed = self.implicit_public_key_removed;
-            self.implicit_public_key_removed = true;
-            !was_removed
-        } else {
-            self.public_keys.remove(public_key)
-        }
-    }
-
-    #[inline]
-    #[must_use]
-    pub fn commit_nonce(&mut self, n: U256) -> bool {
-        self.nonces.commit(n)
-    }
-}
-
-#[derive(BorshSerialize, BorshStorageKey)]
-#[borsh(crate = "::near_sdk::borsh")]
-enum AccountPrefix {
-    Nonces,
-    PublicKeys,
-    State,
 }
