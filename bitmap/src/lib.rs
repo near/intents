@@ -41,6 +41,11 @@ where
         (byte, byte_mask)
     }
 
+    #[inline]
+    pub fn clear_by_prefix(&mut self, prefix: [u8; 31]) -> bool {
+        self.0.remove(&prefix).is_some()
+    }
+
     /// Set the bit `n` and return old value
     #[inline]
     pub fn set_bit(&mut self, n: U256) -> bool {

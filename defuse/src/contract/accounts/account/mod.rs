@@ -7,7 +7,7 @@ use std::borrow::Cow;
 use bitflags::bitflags;
 use defuse_bitmap::{U248, U256};
 use defuse_core::{
-    Nonces,
+    Nonces, Result,
     accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
     events::DefuseEvent,
@@ -144,9 +144,16 @@ impl Account {
     }
 
     #[inline]
-    #[must_use]
-    pub fn commit_nonce(&mut self, n: U256) -> bool {
+    pub fn commit_nonce(&mut self, n: U256) -> Result<()> {
         self.nonces.commit(n)
+    }
+
+    /// Clears the nonce if it was expired.
+    /// Returns whether the nonces was cleared. If the nonce has not expired yet, then returns `false`,
+    /// regardless of whether it was previously committed or not.
+    #[inline]
+    pub fn clear_expired_nonce(&mut self, n: U256) -> bool {
+        self.nonces.clear_expired(n)
     }
 
     #[inline]
