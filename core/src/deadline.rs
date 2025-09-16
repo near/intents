@@ -5,7 +5,7 @@ use core::{
 use std::io;
 
 use chrono::{DateTime, Utc};
-use defuse_borsh_utils::adapters::{BorshDeserializeAs, BorshSerializeAs, TimestampMicroSeconds};
+use defuse_borsh_utils::adapters::{BorshDeserializeAs, BorshSerializeAs, TimestampNanoSeconds};
 use near_sdk::near;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -67,7 +67,7 @@ impl AddAssign<Duration> for Deadline {
     }
 }
 
-impl BorshSerializeAs<Deadline> for TimestampMicroSeconds {
+impl BorshSerializeAs<Deadline> for TimestampNanoSeconds {
     fn serialize_as<W>(source: &Deadline, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
@@ -76,7 +76,7 @@ impl BorshSerializeAs<Deadline> for TimestampMicroSeconds {
     }
 }
 
-impl BorshDeserializeAs<Deadline> for TimestampMicroSeconds {
+impl BorshDeserializeAs<Deadline> for TimestampNanoSeconds {
     fn deserialize_as<R>(reader: &mut R) -> io::Result<Deadline>
     where
         R: io::Read,

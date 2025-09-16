@@ -1,5 +1,5 @@
 use defuse_bitmap::{BitMap256, U248, U256};
-use defuse_borsh_utils::adapters::{As, TimestampMicroSeconds};
+use defuse_borsh_utils::adapters::{As, TimestampNanoSeconds};
 use defuse_map_utils::{IterableMap, Map};
 use hex_literal::hex;
 use near_sdk::{
@@ -71,8 +71,8 @@ where
 #[borsh(crate = "::near_sdk::borsh")]
 pub struct ExpirableNonce {
     #[borsh(
-        serialize_with = "As::<TimestampMicroSeconds>::serialize",
-        deserialize_with = "As::<TimestampMicroSeconds>::deserialize"
+        serialize_with = "As::<TimestampNanoSeconds>::serialize",
+        deserialize_with = "As::<TimestampNanoSeconds>::deserialize"
     )]
     pub deadline: Deadline,
     pub nonce: [u8; 20],
