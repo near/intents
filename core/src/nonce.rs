@@ -65,7 +65,7 @@ where
 /// To distinguish between legacy nonces and expirable nonces
 /// we use a specific prefix `EXPIRABLE_NONCE_PREFIX`. Expirable nonces
 /// have the following structure: [`word_position`, `bit_position`].
-/// Where `word_position` = [ `EXPIRABLE_NONCE_PREFIX` , <8 bytes timestamp in microseconds>, <19 random bytes> ]
+/// Where `word_position` = [ `EXPIRABLE_NONCE_PREFIX` , <8 bytes timestamp in nanoseconds>, <19 random bytes> ]
 /// and `bit_position` is the last (lowest) byte
 #[derive(Clone, Debug, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
 #[borsh(crate = "::near_sdk::borsh")]
