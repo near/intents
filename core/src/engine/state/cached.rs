@@ -177,6 +177,8 @@ where
             .get_mut()
             .ok_or(DefuseError::AccountLocked(account_id))?
             .commit_nonce(nonce)
+            .then_some(())
+            .ok_or(DefuseError::NonceUsed)
     }
 
     fn cleanup_expired_nonces(
@@ -416,7 +418,7 @@ impl CachedAccount {
     }
 
     #[inline]
-    pub fn commit_nonce(&mut self, n: U256) -> Result<()> {
+    pub fn commit_nonce(&mut self, n: U256) -> bool {
         self.nonces.commit(n)
     }
 

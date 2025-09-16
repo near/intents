@@ -1,13 +1,14 @@
 mod entry;
+mod nonces;
 
-pub use self::entry::*;
+pub use self::{entry::*, nonces::MaybeOptimizedNonces};
 
 use std::borrow::Cow;
 
 use bitflags::bitflags;
-use defuse_bitmap::{U248, U256};
+use defuse_bitmap::U256;
 use defuse_core::{
-    Nonces, Result,
+    Result,
     accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
     events::DefuseEvent,
@@ -17,10 +18,7 @@ use defuse_core::{
 use defuse_near_utils::NestPrefix;
 use impl_tools::autoimpl;
 use near_sdk::{
-    AccountIdRef, BorshStorageKey, IntoStorageKey,
-    borsh::BorshSerialize,
-    near,
-    store::{IterableSet, LookupMap, key::Sha256},
+    AccountIdRef, BorshStorageKey, IntoStorageKey, borsh::BorshSerialize, near, store::IterableSet,
 };
 
 use super::AccountState;
@@ -138,22 +136,20 @@ impl Account {
 
     #[inline]
     pub fn is_nonce_used(&self, nonce: U256) -> bool {
-        unimplemented!()
-
-        // self.nonces.is_used(nonce)
+        self.nonces.is_nonce_used(nonce)
     }
 
     #[inline]
-    pub fn commit_nonce(&mut self, n: U256) -> Result<()> {
-        self.nonces.commit(n)
+    pub fn commit_nonce(&mut self, nonce: U256) -> Result<()> {
+        self.nonces.commit_nonce(nonce)
     }
 
     /// Clears the nonce if it was expired.
     /// Returns whether the nonces was cleared. If the nonce has not expired yet, then returns `false`,
     /// regardless of whether it was previously committed or not.
     #[inline]
-    pub fn clear_expired_nonce(&mut self, n: U256) -> bool {
-        self.nonces.clear_expired(n)
+    pub fn clear_expired_nonce(&mut self, nonce: U256) -> bool {
+        self.nonces.clear_expired_nonce(nonce)
     }
 
     #[inline]
@@ -195,50 +191,12 @@ impl Account {
     }
 }
 
-#[derive(Debug)]
-#[near(serializers = [borsh])]
-pub struct MaybeOptimizedNonces {
-    legacy: Option<Nonces<LookupMap<U248, U256>>>,
-    optimized: Nonces<LookupMap<U248, U256, Sha256>>,
-}
-impl MaybeOptimizedNonces {
-    pub fn new<S>(prefix: S) -> Self
-    where
-        S: IntoStorageKey,
-    {
-        let prefix = prefix.into_storage_key();
-
-        Self {
-            //  NOTE: new nonces should not have an legacy part - this is a more efficient use of storage
-            legacy: None,
-            optimized: Nonces::new(LookupMap::with_hasher(
-                prefix.as_slice().nest(AccountPrefix::OptimizedNonces),
-            )),
-        }
-    }
-
-    pub fn new_with_legacy<S>(prefix: S, legacy: Nonces<LookupMap<U248, U256>>) -> Self
-    where
-        S: IntoStorageKey,
-    {
-        let prefix = prefix.into_storage_key();
-
-        Self {
-            legacy: Some(legacy),
-            optimized: Nonces::new(LookupMap::with_hasher(
-                prefix.as_slice().nest(AccountPrefix::OptimizedNonces),
-            )),
-        }
-    }
-}
-
 #[derive(BorshSerialize, BorshStorageKey)]
 #[borsh(crate = "::near_sdk::borsh")]
 enum AccountPrefix {
     Nonces,
     PublicKeys,
     State,
-    OptimizedNonces,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
