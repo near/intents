@@ -645,6 +645,7 @@ dependencies = [
  "bitflags 2.9.1",
  "bnum",
  "defuse-admin-utils",
+ "defuse-auth-call",
  "defuse-bitmap",
  "defuse-borsh-utils",
  "defuse-controller",
@@ -676,13 +677,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-auth-call"
+version = "0.1.0"
+dependencies = [
+ "near-sdk",
+]
+
+[[package]]
 name = "defuse-bitmap"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
  "bnum",
  "defuse-map-utils",
+ "hex-literal",
  "near-sdk",
+ "rstest",
 ]
 
 [[package]]
@@ -710,6 +720,7 @@ dependencies = [
  "arbitrary",
  "arbitrary_with",
  "chrono",
+ "defuse-auth-call",
  "defuse-bitmap",
  "defuse-crypto",
  "defuse-erc191",

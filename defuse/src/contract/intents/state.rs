@@ -3,7 +3,10 @@ use defuse_core::{
     crypto::PublicKey,
     engine::{State, StateView},
     fees::Pips,
-    intents::tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
+    intents::{
+        auth::AuthCall,
+        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
+    },
     token_id::{TokenId, nep141::Nep141TokenId},
 };
 use defuse_near_utils::{CURRENT_ACCOUNT_ID, Lock};
@@ -269,5 +272,40 @@ impl State for Contract {
         .get_mut()
         .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))
         .map(|account| account.set_auth_by_predecessor_id(&account_id, enable))
+    }
+
+    fn auth_call(&mut self, signer_id: &AccountIdRef, auth_call: AuthCall) -> Result<()> {
+        // detach promise
+        let _ = if auth_call.attached_deposit.is_zero() {
+            Self::do_auth_call(signer_id.to_owned(), auth_call)
+        } else {
+            // withdraw from signer's wNEAR balance
+            self.withdraw(
+                signer_id,
+                [(
+                    Nep141TokenId::new(self.wnear_id().into_owned()).into(),
+                    auth_call.attached_deposit.as_yoctonear(),
+                )],
+                Some("withdraw"),
+                false,
+            )?;
+
+            ext_wnear::ext(self.wnear_id.clone())
+                .with_attached_deposit(NearToken::from_yoctonear(1))
+                .with_static_gas(NEAR_WITHDRAW_GAS)
+                // do not distribute remaining gas here
+                .with_unused_gas_weight(0)
+                .near_withdraw(U128(auth_call.attached_deposit.as_yoctonear()))
+                .then(
+                    // do_auth_call only after unwrapping NEAR
+                    Self::ext(CURRENT_ACCOUNT_ID.clone())
+                        .with_static_gas(
+                            Self::DO_AUTH_CALL_MIN_GAS.saturating_add(auth_call.min_gas()),
+                        )
+                        .do_auth_call(signer_id.to_owned(), auth_call),
+                )
+        };
+
+        Ok(())
     }
 }

@@ -171,7 +171,8 @@ async fn simulate_is_view_method(
 
     let nonce = rng.random();
 
-    env.defuse
+    let result = env
+        .defuse
         .simulate_intents([env.user1.sign_defuse_message(
             SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
             env.defuse.id(),
@@ -188,9 +189,14 @@ async fn simulate_is_view_method(
             },
         )])
         .await
-        .unwrap()
-        .into_result()
         .unwrap();
+
+    assert_eq!(result.intents_executed.len(), 1);
+    assert_eq!(
+        result.intents_executed.first().unwrap().event.event.nonce,
+        nonce
+    );
+    result.into_result().unwrap();
 
     assert_eq!(
         env.defuse

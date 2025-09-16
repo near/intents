@@ -103,9 +103,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use std::collections::{HashMap, HashSet};
 
     use bnum::BUintD8;
+    use hex_literal::hex;
+    use rstest::rstest;
 
     use super::*;
 
@@ -128,5 +130,21 @@ mod tests {
             assert!(!m.clear_bit(n));
             assert!(!m.get_bit(n));
         }
+    }
+
+    #[rstest]
+    #[case(&[])]
+    #[case(&[hex!("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")])]
+    #[case(&[hex!("0000000000000000000000000000000000000000000000000000000000000000"), hex!("0000000000000000000000000000000000000000000000000000000000000001")])]
+    #[case(&[hex!("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00"), hex!("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")])]
+    #[case(&[hex!("0000000000000000000000000000000000000000000000000000000000000000"), hex!("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")])]
+    fn iter(#[case] nonces: &[U256]) {
+        let mut m = BitMap256::<HashMap<U248, U256>>::default();
+        for n in nonces {
+            assert!(!m.set_bit(*n));
+        }
+
+        let all: HashSet<_> = m.as_iter().collect();
+        assert_eq!(all, nonces.iter().copied().collect());
     }
 }
