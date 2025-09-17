@@ -18,7 +18,7 @@ use crate::contract::accounts::{
     account::{AccountFlags, AccountPrefix, entry::AccountV1},
 };
 
-/// Legacy implementation of V1 of [`Account`]
+/// Legacy implementation of [`AccountV1`]
 impl AccountV1 {
     #[inline]
     pub fn new<S>(prefix: S, me: &AccountIdRef) -> Self

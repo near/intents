@@ -15,7 +15,7 @@ use std::borrow::Cow;
 
 use crate::contract::accounts::{AccountState, account::entry::AccountV0};
 
-/// Legacy implementation of V0 of [`Account`]
+/// Legacy implementation of [`AccountV0`]
 impl AccountV0 {
     #[inline]
     pub fn new<S>(prefix: S, me: &AccountIdRef) -> Self
