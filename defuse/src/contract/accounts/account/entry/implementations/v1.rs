@@ -121,7 +121,6 @@ impl AccountV1 {
     }
 
     #[inline]
-    #[must_use]
     pub fn commit_nonce(&mut self, n: U256) -> Result<()> {
         self.nonces.commit(n)
     }
