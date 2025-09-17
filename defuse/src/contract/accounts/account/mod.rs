@@ -49,7 +49,9 @@ impl Account {
         let prefix = prefix.into_storage_key();
 
         Self {
-            nonces: MaybeOptimizedNonces::new(prefix.as_slice()),
+            nonces: MaybeOptimizedNonces::new(
+                prefix.as_slice().nest(AccountPrefix::OptimizedNonces),
+            ),
             flags: (!me.get_account_type().is_implicit())
                 .then_some(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
                 .unwrap_or_else(AccountFlags::empty),
@@ -194,9 +196,10 @@ impl Account {
 #[derive(BorshSerialize, BorshStorageKey)]
 #[borsh(crate = "::near_sdk::borsh")]
 enum AccountPrefix {
-    Nonces,
+    _LegacyNonces,
     PublicKeys,
     State,
+    OptimizedNonces,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

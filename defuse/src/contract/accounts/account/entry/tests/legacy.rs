@@ -1,18 +1,20 @@
 use std::{
     collections::{HashMap, HashSet},
     marker::PhantomData,
+    ops::RangeBounds,
 };
 
 use arbitrary_with::{Arbitrary, As, arbitrary};
+use chrono::{Days, Utc};
 use defuse_bitmap::U256;
-use defuse_core::{Result, crypto::PublicKey, token_id::TokenId};
+use defuse_core::{Deadline, ExpirableNonce, Result, crypto::PublicKey, token_id::TokenId};
 use defuse_near_utils::arbitrary::ArbitraryAccountId;
-use defuse_test_utils::random::make_arbitrary;
+use defuse_test_utils::random::{Rng, make_arbitrary, range_to_random_size, rng};
 use near_sdk::{
     AccountId,
     borsh::{self, BorshDeserialize, BorshSerialize},
 };
-use rstest::rstest;
+use rstest::{fixture, rstest};
 
 use crate::contract::accounts::{
     Account,
@@ -22,12 +24,34 @@ use crate::contract::accounts::{
     },
 };
 
+#[fixture]
+fn random_nonces(
+    mut rng: impl Rng,
+    #[default(10..1000)] size: impl RangeBounds<usize>,
+) -> Vec<U256> {
+    let future_deadline = Deadline::new(Utc::now().checked_add_days(Days::new(1)).unwrap());
+
+    (0..range_to_random_size(&mut rng, size))
+        .map(|_| {
+            let expirable = rng.random();
+            if expirable {
+                ExpirableNonce::new(future_deadline, rng.random()).into()
+            } else {
+                rng.random()
+            }
+        })
+        .collect()
+}
+
 #[rstest]
 #[case::v0(PhantomData::<AccountV0>)]
 #[case::v1(PhantomData::<AccountV1>)]
 #[allow(clippy::used_underscore_binding)]
-fn legacy_upgrade<T>(#[from(make_arbitrary)] data: AccountData, #[case] _marker: PhantomData<T>)
-where
+fn legacy_upgrade<T>(
+    #[from(make_arbitrary)] data: AccountData,
+    random_nonces: Vec<U256>,
+    #[case] _marker: PhantomData<T>,
+) where
     T: LegacyAccountBuilder,
     <T as LegacyAccountBuilder>::Account: BorshSerialize + BorshDeserialize,
 {
@@ -37,16 +61,29 @@ where
     drop(legacy);
 
     let mut versioned: AccountEntry = borsh::from_slice(&serialized_legacy).unwrap();
-    data.assert_contained_in(
-        versioned
-            .lock()
-            .expect("legacy accounts must be unlocked by default"),
-    );
+    let account = versioned
+        .lock()
+        .expect("legacy accounts must be unlocked by default");
+    data.assert_contained_in(account);
+
+    // commit new nonces
+    for nonce in &random_nonces {
+        assert!(account.commit_nonce(*nonce).is_ok());
+    }
+
     let serialized_versioned = borsh::to_vec(&versioned).unwrap();
     drop(versioned);
 
     let versioned: AccountEntry = borsh::from_slice(&serialized_versioned).unwrap();
-    data.assert_contained_in(versioned.as_locked().expect("should be locked by now"));
+    let account = versioned
+        .as_locked()
+        .expect("legacy accounts must be unlocked by default");
+    data.assert_contained_in(account);
+
+    // check new nonces existence
+    for &n in &random_nonces {
+        assert!(account.is_nonce_used(n));
+    }
 }
 
 /// Data for legacy account creating

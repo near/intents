@@ -1,5 +1,6 @@
 use defuse_bitmap::{U248, U256};
 use defuse_core::{Nonces, crypto::PublicKey};
+use defuse_near_utils::NestPrefix;
 use impl_tools::autoimpl;
 use near_sdk::{
     near,
@@ -7,7 +8,8 @@ use near_sdk::{
 };
 
 use crate::contract::accounts::{
-    Account, AccountState, MaybeOptimizedNonces, account::AccountFlags,
+    Account, AccountState, MaybeOptimizedNonces,
+    account::{AccountFlags, AccountPrefix},
 };
 
 /// Legacy: V0 of [`Account`]
@@ -37,7 +39,10 @@ impl From<AccountV0> for Account {
         }: AccountV0,
     ) -> Self {
         Self {
-            nonces: MaybeOptimizedNonces::new_with_legacy(prefix.as_slice(), nonces),
+            nonces: MaybeOptimizedNonces::new_with_legacy(
+                prefix.as_slice().nest(AccountPrefix::OptimizedNonces),
+                nonces,
+            ),
             flags: implicit_public_key_removed
                 .then_some(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
                 .unwrap_or_else(AccountFlags::empty),

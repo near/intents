@@ -8,14 +8,15 @@ use defuse_core::{
 };
 use defuse_near_utils::NestPrefix;
 use near_sdk::{
-    AccountIdRef, IntoStorageKey,
+    AccountIdRef, BorshStorageKey, IntoStorageKey,
+    borsh::BorshSerialize,
     store::{IterableSet, LookupMap},
 };
 use std::borrow::Cow;
 
 use crate::contract::accounts::{
     AccountState,
-    account::{AccountFlags, AccountPrefix, entry::AccountV1},
+    account::{AccountFlags, entry::AccountV1},
 };
 
 /// Legacy implementation of [`AccountV1`]
@@ -162,4 +163,12 @@ impl AccountV1 {
         }
         was_enabled
     }
+}
+
+#[derive(BorshSerialize, BorshStorageKey)]
+#[borsh(crate = "::near_sdk::borsh")]
+enum AccountPrefix {
+    Nonces,
+    PublicKeys,
+    State,
 }

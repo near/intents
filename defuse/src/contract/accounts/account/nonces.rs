@@ -1,10 +1,7 @@
 use defuse_bitmap::{U248, U256};
 
-use defuse_near_utils::NestPrefix;
 use near_sdk::{
-    BorshStorageKey, IntoStorageKey,
-    borsh::BorshSerialize,
-    near,
+    IntoStorageKey, near,
     store::{LookupMap, key::Sha256},
 };
 
@@ -27,9 +24,7 @@ impl MaybeOptimizedNonces {
         Self {
             //  NOTE: new nonces should not have an legacy part - this is a more efficient use of storage
             legacy: None,
-            nonces: Nonces::new(LookupMap::with_hasher(
-                prefix.as_slice().nest(NoncePrefix::Nonces),
-            )),
+            nonces: Nonces::new(LookupMap::with_hasher(prefix)),
         }
     }
 
@@ -37,20 +32,20 @@ impl MaybeOptimizedNonces {
     where
         S: IntoStorageKey,
     {
-        let prefix = prefix.into_storage_key();
-
         Self {
             legacy: Some(legacy),
-            nonces: Nonces::new(LookupMap::with_hasher(
-                prefix.as_slice().nest(NoncePrefix::Nonces),
-            )),
+            nonces: Nonces::new(LookupMap::with_hasher(prefix)),
         }
     }
 
     #[inline]
     pub fn commit_nonce(&mut self, nonce: U256) -> Result<()> {
         // Check both maps for used nonce
-        if self.is_nonce_used(nonce) {
+        if self
+            .legacy
+            .as_ref()
+            .is_some_and(|legacy| legacy.is_used(nonce))
+        {
             return Err(DefuseError::NonceUsed);
         }
 
@@ -62,6 +57,8 @@ impl MaybeOptimizedNonces {
     pub fn is_nonce_used(&self, nonce: U256) -> bool {
         // Check legacy map only if the nonce is not expirable
         // otherwise check both maps
+
+        // TODO: legacy nonces which have expirable prefix can be committed twice, check probability
         self.nonces.is_used(nonce)
             || (ExpirableNonce::maybe_from(nonce).is_none()
                 && self
@@ -75,12 +72,4 @@ impl MaybeOptimizedNonces {
         // Expirable nonces can not be in the legacy map
         self.nonces.clear_expired(nonce)
     }
-}
-
-// TODO: check on collisions
-#[derive(BorshSerialize, BorshStorageKey)]
-#[borsh(crate = "::near_sdk::borsh")]
-enum NoncePrefix {
-    _Legacy, // should be the same as AccountPrefix::Nonces
-    Nonces,
 }
