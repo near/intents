@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    marker::PhantomData,
+};
 
 use arbitrary_with::{Arbitrary, As, arbitrary};
 use defuse_bitmap::U256;
@@ -7,18 +10,27 @@ use defuse_near_utils::arbitrary::ArbitraryAccountId;
 use defuse_test_utils::random::make_arbitrary;
 use near_sdk::{
     AccountId,
-    borsh::{self},
+    borsh::{self, BorshDeserialize, BorshSerialize},
 };
 use rstest::rstest;
 
 use crate::contract::accounts::{
     Account,
-    account::{AccountEntry, entry::AccountV0},
+    account::{
+        AccountEntry,
+        entry::{AccountV0, v1::AccountV1},
+    },
 };
 
 #[rstest]
-fn legacy_upgrade(#[from(make_arbitrary)] data: AccountData) {
-    let legacy = data.make_legacy_account();
+#[case::v0(PhantomData::<AccountV0>)]
+#[case::v1(PhantomData::<AccountV1>)]
+fn legacy_upgrade<T>(#[from(make_arbitrary)] data: AccountData, #[case] _marker: PhantomData<T>)
+where
+    T: LegacyAccountBuilder,
+    <T as LegacyAccountBuilder>::Account: BorshSerialize + BorshDeserialize,
+{
+    let legacy = data.make_legacy_account::<T>();
     let serialized_legacy = borsh::to_vec(&legacy).expect("unable to serialize legacy Account");
     // we need to drop it, so all collections from near-sdk flush to storage
     drop(legacy);
@@ -36,7 +48,7 @@ fn legacy_upgrade(#[from(make_arbitrary)] data: AccountData) {
     data.assert_contained_in(versioned.as_locked().expect("should be locked by now"));
 }
 
-/// Data for creating [`AccountV0`]
+/// Data for legacy account creating
 #[derive(Arbitrary)]
 struct AccountData {
     prefix: Vec<u8>,
@@ -50,30 +62,24 @@ struct AccountData {
 }
 
 impl AccountData {
-    fn make_legacy_account(&self) -> AccountV0 {
-        let mut legacy = AccountV0::new(self.prefix.as_slice(), &self.account_id);
+    fn make_legacy_account<B: LegacyAccountBuilder>(&self) -> B::Account {
+        let mut legacy = B::new(self.prefix.as_slice(), &self.account_id);
 
-        for &pk in &self.public_keys {
-            assert!(legacy.add_public_key(&self.account_id, pk));
-        }
-        if let Some(implicit_pk) = PublicKey::from_implicit_account_id(&self.account_id)
+        self.public_keys
+            .iter()
+            .for_each(|&pk| assert!(B::add_public_key(&mut legacy, &self.account_id, pk)));
+
+        PublicKey::from_implicit_account_id(&self.account_id)
             .filter(|_| self.try_remove_implicit_public_key)
-        {
-            assert!(legacy.remove_public_key(&self.account_id, &implicit_pk));
-        }
+            .map(|pk| assert!(B::remove_public_key(&mut legacy, &self.account_id, &pk)));
 
-        for &n in &self.nonces {
-            assert!(legacy.commit_nonce(n));
-        }
+        self.nonces
+            .iter()
+            .for_each(|&n| assert!(B::commit_nonce(&mut legacy, n)));
 
-        for (token_id, &amount) in &self.token_balances {
-            assert!(
-                legacy
-                    .token_balances
-                    .add(token_id.clone(), amount)
-                    .is_some()
-            );
-        }
+        self.token_balances.iter().for_each(|(token_id, &amount)| {
+            assert!(B::add_balance(&mut legacy, token_id.clone(), amount))
+        });
 
         legacy
     }
@@ -92,3 +98,57 @@ impl AccountData {
         }
     }
 }
+
+trait LegacyAccountBuilder {
+    type Account;
+
+    fn new(prefix: &[u8], account_id: &AccountId) -> Self::Account;
+    fn add_public_key(account: &mut Self::Account, account_id: &AccountId, pk: PublicKey) -> bool;
+    fn remove_public_key(
+        account: &mut Self::Account,
+        account_id: &AccountId,
+        pk: &PublicKey,
+    ) -> bool;
+    fn commit_nonce(account: &mut Self::Account, nonce: U256) -> bool;
+    fn add_balance(account: &mut Self::Account, token_id: TokenId, amount: u128) -> bool;
+}
+
+// Added macro for builder implementation to reduce boilerplate
+macro_rules! impl_legacy_account_builder {
+    ($account_type:ty) => {
+        impl LegacyAccountBuilder for $account_type {
+            type Account = $account_type;
+
+            fn new(prefix: &[u8], account_id: &AccountId) -> Self::Account {
+                <$account_type>::new(prefix, account_id)
+            }
+
+            fn add_public_key(
+                account: &mut Self::Account,
+                account_id: &AccountId,
+                pk: PublicKey,
+            ) -> bool {
+                account.add_public_key(account_id, pk)
+            }
+
+            fn remove_public_key(
+                account: &mut Self::Account,
+                account_id: &AccountId,
+                pk: &PublicKey,
+            ) -> bool {
+                account.remove_public_key(account_id, pk)
+            }
+
+            fn commit_nonce(account: &mut Self::Account, nonce: U256) -> bool {
+                account.commit_nonce(nonce)
+            }
+
+            fn add_balance(account: &mut Self::Account, token_id: TokenId, amount: u128) -> bool {
+                account.token_balances.add(token_id, amount).is_some()
+            }
+        }
+    };
+}
+
+impl_legacy_account_builder!(AccountV0);
+impl_legacy_account_builder!(AccountV1);

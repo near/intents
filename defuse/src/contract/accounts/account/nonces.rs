@@ -49,10 +49,9 @@ impl MaybeOptimizedNonces {
 
     #[inline]
     pub fn commit_nonce(&mut self, nonce: U256) -> Result<()> {
-        ExpirableNonce::maybe_from(nonce)
-            .is_some_and(|expirable| expirable.has_expired())
-            .then_some(())
-            .ok_or(DefuseError::NonceExpired)?;
+        if ExpirableNonce::maybe_from(nonce).is_some_and(|expirable| expirable.has_expired()) {
+            return Err(DefuseError::NonceExpired);
+        }
 
         // New nonces can be committed only to the new map
         self.nonces
