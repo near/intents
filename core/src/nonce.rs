@@ -7,7 +7,7 @@ use near_sdk::{
     near,
 };
 
-use crate::Deadline;
+use crate::{Deadline, DefuseError, Result};
 
 pub type Nonce = U256;
 
@@ -32,14 +32,26 @@ where
     }
 
     #[inline]
-    pub fn commit(&mut self, n: Nonce) -> bool {
-        !self.0.set_bit(n)
+    pub fn commit(&mut self, n: Nonce) -> Result<()> {
+        if ExpirableNonce::maybe_from(n).is_some_and(|expirable| expirable.has_expired()) {
+            return Err(DefuseError::NonceExpired);
+        }
+
+        if self.0.set_bit(n) {
+            return Err(DefuseError::NonceUsed);
+        }
+
+        Ok(())
     }
 
     #[inline]
     pub fn clear_expired(&mut self, n: Nonce) -> bool {
-        let [prefix @ .., _] = n;
-        self.0.clear_by_prefix(prefix)
+        if ExpirableNonce::maybe_from(n).is_some_and(|n| n.has_expired()) {
+            let [prefix @ .., _] = n;
+            return self.0.clear_by_prefix(prefix);
+        }
+
+        false
     }
 
     #[inline]

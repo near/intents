@@ -5,7 +5,7 @@ use std::{
 
 use arbitrary_with::{Arbitrary, As, arbitrary};
 use defuse_bitmap::U256;
-use defuse_core::{crypto::PublicKey, token_id::TokenId};
+use defuse_core::{Result, crypto::PublicKey, token_id::TokenId};
 use defuse_near_utils::arbitrary::ArbitraryAccountId;
 use defuse_test_utils::random::make_arbitrary;
 use near_sdk::{
@@ -78,7 +78,7 @@ impl AccountData {
 
         self.nonces
             .iter()
-            .for_each(|&n| assert!(B::commit_nonce(&mut legacy, n)));
+            .for_each(|&n| assert!(B::commit_nonce(&mut legacy, n).is_ok()));
 
         self.token_balances.iter().for_each(|(token_id, &amount)| {
             assert!(B::add_balance(&mut legacy, token_id.clone(), amount));
@@ -112,7 +112,7 @@ trait LegacyAccountBuilder {
         account_id: &AccountId,
         pk: &PublicKey,
     ) -> bool;
-    fn commit_nonce(account: &mut Self::Account, nonce: U256) -> bool;
+    fn commit_nonce(account: &mut Self::Account, nonce: U256) -> Result<()>;
     fn add_balance(account: &mut Self::Account, token_id: TokenId, amount: u128) -> bool;
 }
 
@@ -142,7 +142,7 @@ macro_rules! impl_legacy_account_builder {
                 account.remove_public_key(account_id, pk)
             }
 
-            fn commit_nonce(account: &mut Self::Account, nonce: U256) -> bool {
+            fn commit_nonce(account: &mut Self::Account, nonce: U256) -> Result<()> {
                 account.commit_nonce(nonce)
             }
 

@@ -1,6 +1,6 @@
 use defuse_bitmap::U256;
 use defuse_core::{
-    Nonces,
+    Nonces, Result,
     accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
     events::DefuseEvent,
@@ -122,7 +122,7 @@ impl AccountV1 {
 
     #[inline]
     #[must_use]
-    pub fn commit_nonce(&mut self, n: U256) -> bool {
+    pub fn commit_nonce(&mut self, n: U256) -> Result<()> {
         self.nonces.commit(n)
     }
 

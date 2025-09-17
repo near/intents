@@ -49,22 +49,13 @@ impl MaybeOptimizedNonces {
 
     #[inline]
     pub fn commit_nonce(&mut self, nonce: U256) -> Result<()> {
-        if ExpirableNonce::maybe_from(nonce).is_some_and(|expirable| expirable.has_expired()) {
-            return Err(DefuseError::NonceExpired);
-        }
-
         // Check both maps for used nonce
         if self.is_nonce_used(nonce) {
             return Err(DefuseError::NonceUsed);
         }
 
         // New nonces can be committed only to the new map
-        self.nonces
-            .commit(nonce)
-            .then_some(())
-            .ok_or(DefuseError::NonceUsed)?;
-
-        Ok(())
+        self.nonces.commit(nonce)
     }
 
     #[inline]
@@ -82,8 +73,7 @@ impl MaybeOptimizedNonces {
     #[inline]
     pub fn clear_expired_nonce(&mut self, nonce: U256) -> bool {
         // Expirable nonces can not be in the legacy map
-        ExpirableNonce::maybe_from(nonce).is_some_and(|n| n.has_expired())
-            && self.nonces.clear_expired(nonce)
+        self.nonces.clear_expired(nonce)
     }
 }
 
