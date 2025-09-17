@@ -53,6 +53,11 @@ impl MaybeOptimizedNonces {
             return Err(DefuseError::NonceExpired);
         }
 
+        // Check both maps for used nonce
+        if self.is_nonce_used(nonce) {
+            return Err(DefuseError::NonceUsed);
+        }
+
         // New nonces can be committed only to the new map
         self.nonces
             .commit(nonce)
