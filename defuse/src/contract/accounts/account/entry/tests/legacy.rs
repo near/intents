@@ -25,6 +25,7 @@ use crate::contract::accounts::{
 #[rstest]
 #[case::v0(PhantomData::<AccountV0>)]
 #[case::v1(PhantomData::<AccountV1>)]
+#[allow(clippy::used_underscore_binding)]
 fn legacy_upgrade<T>(#[from(make_arbitrary)] data: AccountData, #[case] _marker: PhantomData<T>)
 where
     T: LegacyAccountBuilder,
@@ -69,16 +70,18 @@ impl AccountData {
             .iter()
             .for_each(|&pk| assert!(B::add_public_key(&mut legacy, &self.account_id, pk)));
 
-        PublicKey::from_implicit_account_id(&self.account_id)
+        if let Some(pk) = PublicKey::from_implicit_account_id(&self.account_id)
             .filter(|_| self.try_remove_implicit_public_key)
-            .map(|pk| assert!(B::remove_public_key(&mut legacy, &self.account_id, &pk)));
+        {
+            assert!(B::remove_public_key(&mut legacy, &self.account_id, &pk));
+        }
 
         self.nonces
             .iter()
             .for_each(|&n| assert!(B::commit_nonce(&mut legacy, n)));
 
         self.token_balances.iter().for_each(|(token_id, &amount)| {
-            assert!(B::add_balance(&mut legacy, token_id.clone(), amount))
+            assert!(B::add_balance(&mut legacy, token_id.clone(), amount));
         });
 
         legacy
