@@ -16,7 +16,7 @@ use crate::{
 };
 
 use self::{
-    account::{AddPublicKey, InvalidateNonces, RemovePublicKey},
+    account::{AddPublicKey, RemovePublicKey},
     token_diff::TokenDiff,
     tokens::{FtWithdraw, MtWithdraw, NftWithdraw, Transfer},
 };
@@ -41,9 +41,6 @@ pub enum Intent {
 
     /// See [`RemovePublicKey`]
     RemovePublicKey(RemovePublicKey),
-
-    /// See [`InvalidateNonces`]
-    InvalidateNonces(InvalidateNonces),
 
     /// See [`Transfer`]
     Transfer(Transfer),
@@ -117,7 +114,6 @@ impl ExecutableIntent for Intent {
         match self {
             Self::AddPublicKey(intent) => intent.execute_intent(signer_id, engine, intent_hash),
             Self::RemovePublicKey(intent) => intent.execute_intent(signer_id, engine, intent_hash),
-            Self::InvalidateNonces(intent) => intent.execute_intent(signer_id, engine, intent_hash),
             Self::Transfer(intent) => intent.execute_intent(signer_id, engine, intent_hash),
             Self::FtWithdraw(intent) => intent.execute_intent(signer_id, engine, intent_hash),
             Self::NftWithdraw(intent) => intent.execute_intent(signer_id, engine, intent_hash),
@@ -147,6 +143,7 @@ impl ExecutableIntent for Intent {
 pub struct IntentEvent<T> {
     #[serde_as(as = "Base58")]
     pub intent_hash: CryptoHash,
+
     #[serde(flatten)]
     pub event: T,
 }

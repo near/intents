@@ -6,7 +6,7 @@ use std::{
 use arbitrary_with::{Arbitrary, As, arbitrary};
 use defuse_bitmap::U256;
 use defuse_core::{
-    Nonces,
+    Nonces, Result,
     accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
     events::DefuseEvent,
@@ -73,7 +73,7 @@ impl AccountData {
         }
 
         for &n in &self.nonces {
-            assert!(legacy.commit_nonce(n));
+            assert!(legacy.commit_nonce(n).is_ok());
         }
 
         for (token_id, &amount) in &self.token_balances {
@@ -185,8 +185,7 @@ impl AccountV0 {
     }
 
     #[inline]
-    #[must_use]
-    pub fn commit_nonce(&mut self, n: U256) -> bool {
+    pub fn commit_nonce(&mut self, n: U256) -> Result<()> {
         self.nonces.commit(n)
     }
 }

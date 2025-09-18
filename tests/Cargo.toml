@@ -25,6 +25,7 @@ derive_more.workspace = true
 hex-literal.workspace = true
 hex.workspace = true
 impl-tools.workspace = true
+itertools.workspace = true
 near-crypto.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 near-workspaces.workspace = true
