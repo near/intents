@@ -690,7 +690,9 @@ dependencies = [
  "arbitrary",
  "bnum",
  "defuse-map-utils",
+ "hex-literal",
  "near-sdk",
+ "rstest",
 ]
 
 [[package]]
@@ -720,6 +722,7 @@ dependencies = [
  "chrono",
  "defuse-auth-call",
  "defuse-bitmap",
+ "defuse-borsh-utils",
  "defuse-crypto",
  "defuse-erc191",
  "defuse-map-utils",
@@ -922,6 +925,7 @@ dependencies = [
  "hex",
  "hex-literal",
  "impl-tools",
+ "itertools 0.14.0",
  "near-contract-standards",
  "near-crypto",
  "near-sdk",

@@ -6,7 +6,7 @@ pub use self::{inspector::*, state::*};
 use defuse_crypto::{Payload, SignedPayload};
 
 use crate::{
-    DefuseError, Result,
+    DefuseError, ExpirableNonce, Result,
     intents::{DefuseIntents, ExecutableIntent},
     payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
 };
@@ -63,6 +63,11 @@ where
         }
 
         self.inspector.on_deadline(deadline);
+
+        if ExpirableNonce::maybe_from(nonce).is_some_and(|n| deadline > n.deadline) {
+            return Err(DefuseError::DeadlineGreaterThanNonce);
+        }
+
         // make sure message is still valid
         if deadline.has_expired() {
             return Err(DefuseError::DeadlineExpired);
@@ -77,7 +82,7 @@ where
         self.state.commit_nonce(signer_id.clone(), nonce)?;
 
         intents.execute_intent(&signer_id, self, hash)?;
-        self.inspector.on_intent_executed(&signer_id, hash);
+        self.inspector.on_intent_executed(&signer_id, hash, nonce);
 
         Ok(())
     }
