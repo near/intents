@@ -1,47 +1,27 @@
 use std::{
     collections::{HashMap, HashSet},
     marker::PhantomData,
-    ops::RangeBounds,
 };
 
 use arbitrary_with::{Arbitrary, As, arbitrary};
-use chrono::{Days, Utc};
 use defuse_bitmap::U256;
-use defuse_core::{Deadline, ExpirableNonce, Result, crypto::PublicKey, token_id::TokenId};
+use defuse_core::{Result, crypto::PublicKey, token_id::TokenId};
 use defuse_near_utils::arbitrary::ArbitraryAccountId;
-use defuse_test_utils::random::{Rng, make_arbitrary, range_to_random_size, rng};
+use defuse_test_utils::random::make_arbitrary;
 use near_sdk::{
     AccountId,
     borsh::{self, BorshDeserialize, BorshSerialize},
 };
-use rstest::{fixture, rstest};
+use rstest::rstest;
 
 use crate::contract::accounts::{
     Account,
     account::{
         AccountEntry,
         entry::{AccountV0, v1::AccountV1},
+        nonces::tests::random_nonces,
     },
 };
-
-#[fixture]
-fn random_nonces(
-    mut rng: impl Rng,
-    #[default(10..1000)] size: impl RangeBounds<usize>,
-) -> Vec<U256> {
-    let future_deadline = Deadline::new(Utc::now().checked_add_days(Days::new(1)).unwrap());
-
-    (0..range_to_random_size(&mut rng, size))
-        .map(|_| {
-            let expirable = rng.random();
-            if expirable {
-                ExpirableNonce::new(future_deadline, rng.random()).into()
-            } else {
-                rng.random()
-            }
-        })
-        .collect()
-}
 
 #[rstest]
 #[case::v0(PhantomData::<AccountV0>)]
