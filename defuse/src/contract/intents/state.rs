@@ -122,8 +122,25 @@ impl State for Contract {
             .get_mut()
             .ok_or(DefuseError::AccountLocked(account_id))?
             .commit_nonce(nonce)
-            .then_some(())
-            .ok_or(DefuseError::NonceUsed)
+    }
+
+    #[inline]
+    fn cleanup_expired_nonces(
+        &mut self,
+        account_id: &AccountId,
+        nonces: impl IntoIterator<Item = Nonce>,
+    ) -> Result<()> {
+        let account = self
+            .accounts
+            .get_mut(account_id)
+            .ok_or_else(|| DefuseError::AccountNotFound(account_id.clone()))?
+            .as_inner_unchecked_mut();
+
+        for n in nonces {
+            account.clear_expired_nonce(n);
+        }
+
+        Ok(())
     }
 
     fn internal_add_balance(
