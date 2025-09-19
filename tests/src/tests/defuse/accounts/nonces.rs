@@ -23,7 +23,7 @@ use crate::tests::defuse::{
 async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
     let env = Env::builder().build().await;
     let current_timestamp = Utc::now();
-    let timeout_delta = TimeDelta::seconds(3);
+    let timeout_delta = TimeDelta::seconds(4);
 
     // legacy nonce
     let deadline = Deadline::MAX;

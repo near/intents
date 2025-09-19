@@ -52,18 +52,6 @@ impl AccountManager for Contract {
         StateView::is_nonce_used(self, account_id, nonce.into_inner())
     }
 
-    #[payable]
-    fn invalidate_nonces(&mut self, nonces: Vec<AsBase64<Nonce>>) {
-        assert_one_yocto();
-        let account_id = self.ensure_auth_predecessor_id();
-
-        nonces
-            .into_iter()
-            .map(AsBase64::into_inner)
-            .try_for_each(|n| State::commit_nonce(self, account_id.clone(), n))
-            .unwrap_or_panic();
-    }
-
     fn cleanup_expired_nonces(&mut self, nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>) {
         for (account_id, nonces) in nonces {
             // NOTE: all errors are omitted

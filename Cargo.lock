@@ -644,6 +644,7 @@ dependencies = [
  "arbitrary_with",
  "bitflags 2.9.1",
  "bnum",
+ "chrono",
  "defuse-admin-utils",
  "defuse-auth-call",
  "defuse-bitmap",

@@ -33,7 +33,7 @@ where
 
     #[inline]
     pub fn commit(&mut self, n: Nonce) -> Result<()> {
-        if ExpirableNonce::maybe_from(n).is_some_and(|n| n.has_expired()) {
+        if ExpirableNonce::maybe_from(n).is_some_and(|expirable| expirable.has_expired()) {
             return Err(DefuseError::NonceExpired);
         }
 
@@ -50,6 +50,7 @@ where
             let [prefix @ .., _] = n;
             return self.0.clear_by_prefix(prefix);
         }
+
         false
     }
 

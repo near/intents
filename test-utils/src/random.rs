@@ -104,7 +104,7 @@ impl RngCore for TestRng {
 
 impl CryptoRng for TestRng {}
 
-fn range_to_random_size(rng: &mut impl Rng, size: impl RangeBounds<usize>) -> usize {
+pub fn range_to_random_size(rng: &mut impl Rng, size: impl RangeBounds<usize>) -> usize {
     let start = match size.start_bound() {
         std::ops::Bound::Included(&n) => n,
         std::ops::Bound::Excluded(&n) => n + 1,
