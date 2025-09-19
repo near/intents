@@ -126,6 +126,18 @@ impl DefuseSigner for near_workspaces::Account {
                     .unwrap(),
                 ))
                 .into(),
+            SigningStandard::Bip322 => self
+                .sign_bip322(
+                    serde_json::to_string(&DefusePayload {
+                        signer_id: self.id().clone(),
+                        verifying_contract: defuse_contract.clone(),
+                        deadline,
+                        nonce,
+                        message,
+                    })
+                    .unwrap(),
+                )
+                .into(),
         }
     }
 }
@@ -136,4 +148,5 @@ pub enum SigningStandard {
     Nep413,
     TonConnect,
     Sep53,
+    Bip322,
 }
