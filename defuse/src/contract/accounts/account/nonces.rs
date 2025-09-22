@@ -242,6 +242,11 @@ pub(super) mod tests {
 
         let mut optimized = MaybeOptimizedNonces::new(random_bytes);
 
+        optimized
+            .commit_nonce(valid_nonce)
+            .expect("should be able to commit new expirable nonce");
+
         assert!(!optimized.clear_expired_nonce(valid_nonce));
+        assert!(optimized.is_nonce_used(valid_nonce));
     }
 }
