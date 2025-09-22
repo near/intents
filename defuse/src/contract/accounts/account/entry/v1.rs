@@ -8,7 +8,7 @@ use near_sdk::{
 };
 
 use crate::contract::accounts::{
-    Account, AccountState, MaybeOptimizedNonces,
+    Account, AccountState, MaybeLegacyNonces,
     account::{AccountFlags, AccountPrefix},
 };
 
@@ -39,7 +39,7 @@ impl From<AccountV1> for Account {
         }: AccountV1,
     ) -> Self {
         Self {
-            nonces: MaybeOptimizedNonces::new_with_legacy(
+            nonces: MaybeLegacyNonces::<LookupMap<U248, U256>>::legacy(
                 prefix.as_slice().nest(AccountPrefix::OptimizedNonces),
                 nonces,
             ),

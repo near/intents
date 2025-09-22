@@ -1,12 +1,12 @@
 mod entry;
 mod nonces;
 
-pub use self::{entry::*, nonces::MaybeOptimizedNonces};
+pub use self::{entry::*, nonces::MaybeLegacyNonces};
 
 use std::borrow::Cow;
 
 use bitflags::bitflags;
-use defuse_bitmap::U256;
+use defuse_bitmap::{U248, U256};
 use defuse_core::{
     Result,
     accounts::{AccountEvent, PublicKeyEvent},
@@ -18,7 +18,10 @@ use defuse_core::{
 use defuse_near_utils::NestPrefix;
 use impl_tools::autoimpl;
 use near_sdk::{
-    AccountIdRef, BorshStorageKey, IntoStorageKey, borsh::BorshSerialize, near, store::IterableSet,
+    AccountIdRef, BorshStorageKey, IntoStorageKey,
+    borsh::BorshSerialize,
+    near,
+    store::{IterableSet, LookupMap},
 };
 
 use super::AccountState;
@@ -30,7 +33,7 @@ use super::AccountState;
 #[autoimpl(Deref using self.state)]
 #[autoimpl(DerefMut using self.state)]
 pub struct Account {
-    nonces: MaybeOptimizedNonces,
+    nonces: MaybeLegacyNonces<LookupMap<U248, U256>>,
 
     flags: AccountFlags,
     public_keys: IterableSet<PublicKey>,
@@ -49,7 +52,7 @@ impl Account {
         let prefix = prefix.into_storage_key();
 
         Self {
-            nonces: MaybeOptimizedNonces::new(
+            nonces: MaybeLegacyNonces::<LookupMap<U248, U256>>::new(
                 prefix.as_slice().nest(AccountPrefix::OptimizedNonces),
             ),
             flags: (!me.get_account_type().is_implicit())
