@@ -35,6 +35,7 @@ fn legacy_upgrade<T>(
     T: LegacyAccountBuilder,
     <T as LegacyAccountBuilder>::Account: BorshSerialize + BorshDeserialize,
 {
+    // TODO: fix tests - they are not broken after adding locking to AccountV1
     let legacy = data.make_legacy_account::<T>();
     let serialized_legacy = borsh::to_vec(&legacy).expect("unable to serialize legacy Account");
     // we need to drop it, so all collections from near-sdk flush to storage

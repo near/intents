@@ -47,7 +47,7 @@ impl From<Lock<Account>> for AccountEntry {
 #[near(serializers = [borsh])]
 enum VersionedAccountEntry<'a> {
     V0(Cow<'a, PanicOnClone<AccountV0>>),
-    V1(Cow<'a, PanicOnClone<AccountV1>>),
+    V1(Cow<'a, PanicOnClone<Lock<AccountV1>>>),
     // When upgrading to a new version, given current version `N`:
     // 1. Copy current `Account` struct definition and name it `AccountVN`
     // 2. Add variant `VN(Cow<'a, PanicOnClone<AccountVN>>)` before `Latest`
@@ -64,9 +64,10 @@ impl From<VersionedAccountEntry<'_>> for Lock<Account> {
             VersionedAccountEntry::V0(account) => {
                 Self::unlocked(account.into_owned().into_inner().into())
             }
-            VersionedAccountEntry::V1(account) => {
-                Self::unlocked(account.into_owned().into_inner().into())
-            }
+            VersionedAccountEntry::V1(account) => account
+                .into_owned()
+                .into_inner()
+                .map_inner_unchecked(Into::into),
             VersionedAccountEntry::Latest(account) => account
                 .into_owned()
                 .into_inner()
@@ -88,8 +89,8 @@ impl From<AccountV0> for VersionedAccountEntry<'_> {
     }
 }
 
-impl From<AccountV1> for VersionedAccountEntry<'_> {
-    fn from(value: AccountV1) -> Self {
+impl From<Lock<AccountV1>> for VersionedAccountEntry<'_> {
+    fn from(value: Lock<AccountV1>) -> Self {
         Self::V1(Cow::Owned(value.into()))
     }
 }
