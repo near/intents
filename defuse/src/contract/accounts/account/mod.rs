@@ -199,7 +199,8 @@ impl Account {
 #[derive(BorshSerialize, BorshStorageKey)]
 #[borsh(crate = "::near_sdk::borsh")]
 enum AccountPrefix {
-    _LegacyNonces,
+    #[deprecated(note = "Please use `AccountPrefix::OptimizedNonces` instead.")]
+    LegacyNonces,
     PublicKeys,
     State,
     OptimizedNonces,
