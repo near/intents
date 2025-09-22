@@ -1,12 +1,12 @@
 mod entry;
 mod nonces;
 
-pub use self::{entry::*, nonces::MaybeLegacyNonces};
+pub use self::{entry::*, nonces::MaybeLegacyAccountNonces};
 
 use std::borrow::Cow;
 
 use bitflags::bitflags;
-use defuse_bitmap::{U248, U256};
+use defuse_bitmap::U256;
 use defuse_core::{
     Result,
     accounts::{AccountEvent, PublicKeyEvent},
@@ -18,10 +18,7 @@ use defuse_core::{
 use defuse_near_utils::NestPrefix;
 use impl_tools::autoimpl;
 use near_sdk::{
-    AccountIdRef, BorshStorageKey, IntoStorageKey,
-    borsh::BorshSerialize,
-    near,
-    store::{IterableSet, LookupMap},
+    AccountIdRef, BorshStorageKey, IntoStorageKey, borsh::BorshSerialize, near, store::IterableSet,
 };
 
 use super::AccountState;
@@ -33,7 +30,7 @@ use super::AccountState;
 #[autoimpl(Deref using self.state)]
 #[autoimpl(DerefMut using self.state)]
 pub struct Account {
-    nonces: MaybeLegacyNonces<LookupMap<U248, U256>>,
+    nonces: MaybeLegacyAccountNonces,
 
     flags: AccountFlags,
     public_keys: IterableSet<PublicKey>,
@@ -52,7 +49,7 @@ impl Account {
         let prefix = prefix.into_storage_key();
 
         Self {
-            nonces: MaybeLegacyNonces::<LookupMap<U248, U256>>::new(
+            nonces: MaybeLegacyAccountNonces::new(
                 prefix.as_slice().nest(AccountPrefix::OptimizedNonces),
             ),
             flags: (!me.get_account_type().is_implicit())
@@ -141,12 +138,12 @@ impl Account {
 
     #[inline]
     pub fn is_nonce_used(&self, nonce: U256) -> bool {
-        self.nonces.is_nonce_used(nonce)
+        self.nonces.is_used(nonce)
     }
 
     #[inline]
     pub fn commit_nonce(&mut self, nonce: U256) -> Result<()> {
-        self.nonces.commit_nonce(nonce)
+        self.nonces.commit(nonce)
     }
 
     /// Clears the nonce if it was expired.
@@ -154,7 +151,7 @@ impl Account {
     /// regardless of whether it was previously committed or not.
     #[inline]
     pub fn clear_expired_nonce(&mut self, nonce: U256) -> bool {
-        self.nonces.clear_expired_nonce(nonce)
+        self.nonces.clear_expired(nonce)
     }
 
     #[inline]

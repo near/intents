@@ -16,7 +16,8 @@ use defuse_core::{
 use std::borrow::Cow;
 
 use crate::contract::accounts::{
-    Account, AccountState, MaybeLegacyNonces, account::AccountFlags, account::AccountPrefix,
+    Account, AccountState, MaybeLegacyAccountNonces,
+    account::{AccountFlags, AccountPrefix},
 };
 
 /// Legacy: V1 of [`Account`]
@@ -46,7 +47,7 @@ impl From<AccountV1> for Account {
         }: AccountV1,
     ) -> Self {
         Self {
-            nonces: MaybeLegacyNonces::<LookupMap<U248, U256>>::legacy(
+            nonces: MaybeLegacyAccountNonces::with_legacy(
                 prefix.as_slice().nest(AccountPrefix::OptimizedNonces),
                 nonces,
             ),
