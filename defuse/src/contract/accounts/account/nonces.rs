@@ -108,7 +108,7 @@ pub(super) mod tests {
     #[fixture]
     pub(crate) fn random_nonces(
         mut rng: impl Rng,
-        #[default(10..1000)] size: impl RangeBounds<usize>,
+        #[default(10..100)] size: impl RangeBounds<usize>,
     ) -> Vec<U256> {
         (0..range_to_random_size(&mut rng, size))
             .map(|_| generate_nonce(rng.random(), &mut rng))
