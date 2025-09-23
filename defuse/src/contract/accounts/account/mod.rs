@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 mod entry;
 mod nonces;
 
@@ -197,7 +199,7 @@ impl Account {
 #[borsh(crate = "::near_sdk::borsh")]
 enum AccountPrefix {
     #[deprecated(note = "Please use `AccountPrefix::OptimizedNonces` instead.")]
-    LegacyNonces,
+    _LegacyNonces,
     PublicKeys,
     State,
     OptimizedNonces,

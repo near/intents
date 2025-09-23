@@ -6,7 +6,7 @@ use std::{
 use arbitrary_with::{Arbitrary, As, arbitrary};
 use defuse_bitmap::U256;
 use defuse_core::{Result, crypto::PublicKey, token_id::TokenId};
-use defuse_near_utils::arbitrary::ArbitraryAccountId;
+use defuse_near_utils::{Lock, arbitrary::ArbitraryAccountId};
 use defuse_test_utils::random::make_arbitrary;
 use near_sdk::{
     AccountId,
@@ -18,37 +18,25 @@ use crate::contract::accounts::{
     Account,
     account::{
         AccountEntry,
-        entry::{AccountV0, v1::AccountV1},
+        entry::{AccountV0, MaybeVersionedAccountEntry, VersionedAccountEntry, v1::AccountV1},
         nonces::tests::random_nonces,
     },
 };
 
-#[rstest]
-#[case::v0(PhantomData::<AccountV0>)]
-#[case::v1(PhantomData::<AccountV1>)]
-#[allow(clippy::used_underscore_binding)]
-fn legacy_upgrade<T>(
-    #[from(make_arbitrary)] data: AccountData,
-    random_nonces: Vec<U256>,
-    #[case] _marker: PhantomData<T>,
-) where
-    T: LegacyAccountBuilder,
-    <T as LegacyAccountBuilder>::Account: BorshSerialize + BorshDeserialize,
-{
-    // TODO: fix tests - they are not broken after adding locking to AccountV1
-    let legacy = data.make_legacy_account::<T>();
-    let serialized_legacy = borsh::to_vec(&legacy).expect("unable to serialize legacy Account");
-    // we need to drop it, so all collections from near-sdk flush to storage
-    drop(legacy);
+fn deserialize_and_check_legacy_account(
+    serialized_legacy: &[u8],
+    data: &AccountData,
+    random_nonces: &[U256],
+) {
+    let mut versioned: AccountEntry = borsh::from_slice(serialized_legacy).unwrap();
 
-    let mut versioned: AccountEntry = borsh::from_slice(&serialized_legacy).unwrap();
     let account = versioned
         .lock()
         .expect("legacy accounts must be unlocked by default");
     data.assert_contained_in(account);
 
     // commit new nonces
-    for nonce in &random_nonces {
+    for nonce in random_nonces {
         assert!(account.commit_nonce(*nonce).is_ok());
     }
 
@@ -62,9 +50,46 @@ fn legacy_upgrade<T>(
     data.assert_contained_in(account);
 
     // check new nonces existence
-    for &n in &random_nonces {
+    for &n in random_nonces {
         assert!(account.is_nonce_used(n));
     }
+}
+
+#[rstest]
+fn legacy_upgrade(#[from(make_arbitrary)] data: AccountData, random_nonces: Vec<U256>) {
+    // legacy accounts have no wrappers around them
+    let legacy_acc = data.make_legacy_account::<AccountV0>();
+    let serialized_legacy = borsh::to_vec(&legacy_acc).expect("unable to serialize legacy Account");
+
+    // we need to drop it, so all collections from near-sdk flush to storage
+    drop(legacy_acc);
+
+    deserialize_and_check_legacy_account(&serialized_legacy, &data, &random_nonces);
+}
+
+#[rstest]
+#[case::v0(PhantomData::<AccountV1>)]
+#[allow(clippy::used_underscore_binding)]
+fn versioned_upgrade<T>(
+    #[from(make_arbitrary)] data: AccountData,
+    random_nonces: Vec<U256>,
+    #[case] _marker: PhantomData<T>,
+) where
+    T: LegacyAccountBuilder,
+    <T as LegacyAccountBuilder>::Account: BorshSerialize + BorshDeserialize,
+{
+    // versioned accounts always have wrappers around them and should be serialized with prefix
+    let legacy_entry: VersionedAccountEntry = data.make_legacy_account::<T>().into();
+    let serialized_legacy = borsh::to_vec(&(
+        MaybeVersionedAccountEntry::VERSIONED_MAGIC_PREFIX,
+        &legacy_entry,
+    ))
+    .expect("unable to serialize legacy Account");
+
+    // we need to drop it, so all collections from near-sdk flush to storage
+    drop(legacy_entry);
+
+    deserialize_and_check_legacy_account(&serialized_legacy, &data, &random_nonces);
 }
 
 /// Data for legacy account creating
@@ -121,7 +146,7 @@ impl AccountData {
 }
 
 trait LegacyAccountBuilder {
-    type Account;
+    type Account: for<'a> Into<VersionedAccountEntry<'a>>;
 
     fn new(prefix: &[u8], account_id: &AccountId) -> Self::Account;
     fn add_public_key(account: &mut Self::Account, account_id: &AccountId, pk: PublicKey) -> bool;
@@ -171,5 +196,46 @@ macro_rules! impl_legacy_account_builder {
     };
 }
 
+macro_rules! impl_versioned_account_builder {
+    ($account_type:ty) => {
+        impl LegacyAccountBuilder for $account_type {
+            type Account = Lock<$account_type>;
+
+            fn new(prefix: &[u8], account_id: &AccountId) -> Self::Account {
+                Lock::new(false, <$account_type>::new(prefix, account_id))
+            }
+
+            fn add_public_key(
+                account: &mut Self::Account,
+                account_id: &AccountId,
+                pk: PublicKey,
+            ) -> bool {
+                account.get_mut().unwrap().add_public_key(account_id, pk)
+            }
+
+            fn remove_public_key(
+                account: &mut Self::Account,
+                account_id: &AccountId,
+                pk: &PublicKey,
+            ) -> bool {
+                account.get_mut().unwrap().remove_public_key(account_id, pk)
+            }
+
+            fn commit_nonce(account: &mut Self::Account, nonce: U256) -> Result<()> {
+                account.get_mut().unwrap().commit_nonce(nonce)
+            }
+
+            fn add_balance(account: &mut Self::Account, token_id: TokenId, amount: u128) -> bool {
+                account
+                    .get_mut()
+                    .unwrap()
+                    .token_balances
+                    .add(token_id, amount)
+                    .is_some()
+            }
+        }
+    };
+}
+
 impl_legacy_account_builder!(AccountV0);
-impl_legacy_account_builder!(AccountV1);
+impl_versioned_account_builder!(AccountV1);
