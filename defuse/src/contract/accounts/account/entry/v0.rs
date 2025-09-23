@@ -72,6 +72,7 @@ impl AccountV0 {
 
         Self {
             nonces: Nonces::new(LookupMap::new(
+                #[allow(deprecated)]
                 prefix.as_slice().nest(AccountPrefix::_LegacyNonces),
             )),
             implicit_public_key_removed: !me.get_account_type().is_implicit(),

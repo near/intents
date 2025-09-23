@@ -1,5 +1,3 @@
-#![allow(deprecated)]
-
 mod entry;
 mod nonces;
 
@@ -198,15 +196,22 @@ impl Account {
     }
 }
 
-#[derive(BorshSerialize, BorshStorageKey)]
-#[borsh(crate = "::near_sdk::borsh")]
-enum AccountPrefix {
-    #[deprecated(note = "Please use `AccountPrefix::OptimizedNonces` instead.")]
-    _LegacyNonces,
-    PublicKeys,
-    State,
-    OptimizedNonces,
+#[allow(deprecated)]
+mod prefix {
+    use super::{BorshSerialize, BorshStorageKey};
+
+    #[derive(BorshSerialize, BorshStorageKey)]
+    #[borsh(crate = "::near_sdk::borsh")]
+    pub enum AccountPrefix {
+        #[deprecated(note = "Please use `AccountPrefix::OptimizedNonces` instead.")]
+        _LegacyNonces,
+        PublicKeys,
+        State,
+        OptimizedNonces,
+    }
 }
+
+use prefix::AccountPrefix;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[near(serializers = [borsh])]
