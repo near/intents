@@ -50,7 +50,7 @@ enum VersionedAccountEntry<'a> {
     V1(Cow<'a, PanicOnClone<Lock<AccountV1>>>),
     // When upgrading to a new version, given current version `N`:
     // 1. Copy current `Account` struct definition and name it `AccountVN`
-    // 2. Add variant `VN(Cow<'a, PanicOnClone<AccountVN>>)` before `Latest`
+    // 2. Add variant `VN(Cow<'a, PanicOnClone<Lock<AccountVN>>>)` before `Latest`
     // 3. Handle new variant in `match` expessions below
     // 4. Add tests for `VN -> Latest` migration
     Latest(Cow<'a, PanicOnClone<Lock<Account>>>),

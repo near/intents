@@ -20,7 +20,10 @@ use defuse_core::{
 use defuse_near_utils::NestPrefix;
 use impl_tools::autoimpl;
 use near_sdk::{
-    AccountIdRef, BorshStorageKey, IntoStorageKey, borsh::BorshSerialize, near, store::IterableSet,
+    AccountIdRef, BorshStorageKey, IntoStorageKey,
+    borsh::BorshSerialize,
+    near,
+    store::{IterableSet, LookupMap},
 };
 
 use super::AccountState;
@@ -51,9 +54,9 @@ impl Account {
         let prefix = prefix.into_storage_key();
 
         Self {
-            nonces: MaybeLegacyAccountNonces::new(
+            nonces: MaybeLegacyAccountNonces::new(LookupMap::with_hasher(
                 prefix.as_slice().nest(AccountPrefix::OptimizedNonces),
-            ),
+            )),
             flags: (!me.get_account_type().is_implicit())
                 .then_some(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
                 .unwrap_or_else(AccountFlags::empty),

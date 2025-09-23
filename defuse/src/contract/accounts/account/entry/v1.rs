@@ -48,8 +48,8 @@ impl From<AccountV1> for Account {
     ) -> Self {
         Self {
             nonces: MaybeLegacyAccountNonces::with_legacy(
-                prefix.as_slice().nest(AccountPrefix::OptimizedNonces),
                 nonces,
+                LookupMap::with_hasher(prefix.as_slice().nest(AccountPrefix::OptimizedNonces)),
             ),
             flags,
             public_keys,

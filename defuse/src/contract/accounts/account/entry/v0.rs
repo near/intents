@@ -47,8 +47,8 @@ impl From<AccountV0> for Account {
     ) -> Self {
         Self {
             nonces: MaybeLegacyAccountNonces::with_legacy(
-                prefix.as_slice().nest(AccountPrefix::OptimizedNonces),
                 nonces,
+                LookupMap::with_hasher(prefix.as_slice().nest(AccountPrefix::OptimizedNonces)),
             ),
             flags: implicit_public_key_removed
                 .then_some(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
