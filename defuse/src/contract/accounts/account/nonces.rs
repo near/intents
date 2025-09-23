@@ -6,7 +6,7 @@ use near_sdk::{
     store::{LookupMap, key::Sha256},
 };
 
-use defuse_core::{DefuseError, ExpirableNonce, Nonce, Nonces, Result};
+use defuse_core::{DefuseError, Nonce, Nonces, Result};
 
 pub type MaybeLegacyAccountNonces =
     MaybeLegacyNonces<LookupMap<U248, U256, Sha256>, LookupMap<U248, U256>>;
@@ -66,11 +66,10 @@ where
 
         // TODO: legacy nonces which have expirable prefix can be committed twice, check probability!
         self.nonces.is_used(nonce)
-            || (ExpirableNonce::maybe_from(nonce).is_none()
-                && self
-                    .legacy
-                    .as_ref()
-                    .is_some_and(|legacy| legacy.is_used(nonce)))
+            || self
+                .legacy
+                .as_ref()
+                .is_some_and(|legacy| legacy.is_used(nonce))
     }
 
     #[inline]
@@ -139,6 +138,7 @@ pub(super) mod tests {
         for nonce in &random_nonces {
             assert!(legacy_map.is_used(*nonce));
             assert!(!new.nonces.is_used(*nonce));
+            assert!(new.is_used(*nonce));
         }
     }
 
@@ -202,17 +202,6 @@ pub(super) mod tests {
 
     #[rstest]
     #[allow(clippy::used_underscore_binding)]
-    fn expirable_nonces_searched_only_in_new_map(random_bytes: Vec<u8>, mut rng: impl Rng) {
-        let expirable_nonce = generate_nonce(true, &mut rng);
-        let nonces = get_legacy_map(&[expirable_nonce], random_bytes.clone());
-        let new =
-            MaybeLegacyAccountNonces::with_legacy(nonces, LookupMap::with_hasher(random_bytes));
-
-        assert!(!new.is_used(expirable_nonce));
-    }
-
-    #[rstest]
-    #[allow(clippy::used_underscore_binding)]
     fn check_used_nonces(
         #[from(make_arbitrary)] legacy_nonces: Vec<U256>,
         random_nonces: Vec<U256>,
@@ -246,6 +235,7 @@ pub(super) mod tests {
         );
 
         assert!(!new.clear_expired(random_nonce));
+        assert!(new.is_used(random_nonce));
     }
 
     #[rstest]

@@ -2,17 +2,11 @@ use defuse_bitmap::{U248, U256};
 use defuse_near_utils::NestPrefix;
 use impl_tools::autoimpl;
 use near_sdk::{
-    AccountIdRef, near,
+    near,
     store::{IterableSet, LookupMap},
 };
 
-use defuse_core::{
-    Nonces, Result,
-    accounts::{AccountEvent, PublicKeyEvent},
-    crypto::PublicKey,
-    events::DefuseEvent,
-};
-use std::borrow::Cow;
+use defuse_core::{Nonces, crypto::PublicKey};
 
 use crate::contract::accounts::{
     Account, AccountState, MaybeLegacyAccountNonces,
@@ -61,89 +55,107 @@ impl From<AccountV0> for Account {
 }
 
 /// Legacy implementation of [`AccountV0`]
-impl AccountV0 {
-    #[cfg(test)]
-    #[inline]
-    pub fn new<S>(prefix: S, me: &AccountIdRef) -> Self
-    where
-        S: near_sdk::IntoStorageKey,
-    {
-        let prefix = prefix.into_storage_key();
+#[cfg(test)]
+pub(super) mod tests {
+    use super::*;
 
-        Self {
-            nonces: Nonces::new(LookupMap::new(
-                #[allow(deprecated)]
-                prefix.as_slice().nest(AccountPrefix::_LegacyNonces),
-            )),
-            implicit_public_key_removed: !me.get_account_type().is_implicit(),
-            public_keys: IterableSet::new(prefix.as_slice().nest(AccountPrefix::PublicKeys)),
-            state: AccountState::new(prefix.as_slice().nest(AccountPrefix::State)),
-            prefix,
-        }
-    }
+    use defuse_bitmap::U256;
+    use defuse_near_utils::NestPrefix;
+    use near_sdk::{
+        AccountIdRef,
+        store::{IterableSet, LookupMap},
+    };
 
-    #[inline]
-    #[must_use]
-    pub fn add_public_key(&mut self, me: &AccountIdRef, public_key: PublicKey) -> bool {
-        if !self.maybe_add_public_key(me, public_key) {
-            return false;
-        }
+    use defuse_core::{
+        Result,
+        accounts::{AccountEvent, PublicKeyEvent},
+        events::DefuseEvent,
+    };
+    use std::borrow::Cow;
 
-        DefuseEvent::PublicKeyAdded(AccountEvent::new(
-            Cow::Borrowed(me),
-            PublicKeyEvent {
-                public_key: Cow::Borrowed(&public_key),
-            },
-        ))
-        .emit();
+    impl AccountV0 {
+        #[inline]
+        pub fn new<S>(prefix: S, me: &AccountIdRef) -> Self
+        where
+            S: near_sdk::IntoStorageKey,
+        {
+            let prefix = prefix.into_storage_key();
 
-        true
-    }
-
-    #[inline]
-    #[must_use]
-    fn maybe_add_public_key(&mut self, me: &AccountIdRef, public_key: PublicKey) -> bool {
-        if me == public_key.to_implicit_account_id() {
-            let was_removed = self.implicit_public_key_removed;
-            self.implicit_public_key_removed = false;
-            was_removed
-        } else {
-            self.public_keys.insert(public_key)
-        }
-    }
-
-    #[inline]
-    #[must_use]
-    pub fn remove_public_key(&mut self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
-        if !self.maybe_remove_public_key(me, public_key) {
-            return false;
+            Self {
+                nonces: Nonces::new(LookupMap::new(
+                    #[allow(deprecated)]
+                    prefix.as_slice().nest(AccountPrefix::_LegacyNonces),
+                )),
+                implicit_public_key_removed: !me.get_account_type().is_implicit(),
+                public_keys: IterableSet::new(prefix.as_slice().nest(AccountPrefix::PublicKeys)),
+                state: AccountState::new(prefix.as_slice().nest(AccountPrefix::State)),
+                prefix,
+            }
         }
 
-        DefuseEvent::PublicKeyRemoved(AccountEvent::new(
-            Cow::Borrowed(me),
-            PublicKeyEvent {
-                public_key: Cow::Borrowed(public_key),
-            },
-        ))
-        .emit();
+        #[inline]
+        #[must_use]
+        pub fn add_public_key(&mut self, me: &AccountIdRef, public_key: PublicKey) -> bool {
+            if !self.maybe_add_public_key(me, public_key) {
+                return false;
+            }
 
-        true
-    }
+            DefuseEvent::PublicKeyAdded(AccountEvent::new(
+                Cow::Borrowed(me),
+                PublicKeyEvent {
+                    public_key: Cow::Borrowed(&public_key),
+                },
+            ))
+            .emit();
 
-    #[inline]
-    #[must_use]
-    fn maybe_remove_public_key(&mut self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
-        if me == public_key.to_implicit_account_id() {
-            let was_removed = self.implicit_public_key_removed;
-            self.implicit_public_key_removed = true;
-            !was_removed
-        } else {
-            self.public_keys.remove(public_key)
+            true
         }
-    }
 
-    #[inline]
-    pub fn commit_nonce(&mut self, n: U256) -> Result<()> {
-        self.nonces.commit(n)
+        #[inline]
+        #[must_use]
+        fn maybe_add_public_key(&mut self, me: &AccountIdRef, public_key: PublicKey) -> bool {
+            if me == public_key.to_implicit_account_id() {
+                let was_removed = self.implicit_public_key_removed;
+                self.implicit_public_key_removed = false;
+                was_removed
+            } else {
+                self.public_keys.insert(public_key)
+            }
+        }
+
+        #[inline]
+        #[must_use]
+        pub fn remove_public_key(&mut self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
+            if !self.maybe_remove_public_key(me, public_key) {
+                return false;
+            }
+
+            DefuseEvent::PublicKeyRemoved(AccountEvent::new(
+                Cow::Borrowed(me),
+                PublicKeyEvent {
+                    public_key: Cow::Borrowed(public_key),
+                },
+            ))
+            .emit();
+
+            true
+        }
+
+        #[inline]
+        #[must_use]
+        fn maybe_remove_public_key(&mut self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
+            if me == public_key.to_implicit_account_id() {
+                let was_removed = self.implicit_public_key_removed;
+                self.implicit_public_key_removed = true;
+                !was_removed
+            } else {
+                self.public_keys.remove(public_key)
+            }
+        }
+
+        #[inline]
+        pub fn commit_nonce(&mut self, n: U256) -> Result<()> {
+            self.nonces.commit(n)
+        }
     }
 }

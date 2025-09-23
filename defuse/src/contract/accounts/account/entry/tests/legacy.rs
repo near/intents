@@ -109,23 +109,23 @@ impl AccountData {
     fn make_legacy_account<B: LegacyAccountBuilder>(&self) -> B {
         let mut legacy = B::new(self.prefix.as_slice(), &self.account_id);
 
-        self.public_keys
-            .iter()
-            .for_each(|&pk| assert!(B::add_public_key(&mut legacy, &self.account_id, pk)));
+        for pubkey in &self.public_keys {
+            assert!(legacy.add_public_key(&self.account_id, *pubkey));
+        }
 
         if let Some(pk) = PublicKey::from_implicit_account_id(&self.account_id)
             .filter(|_| self.try_remove_implicit_public_key)
         {
-            assert!(B::remove_public_key(&mut legacy, &self.account_id, &pk));
+            assert!(legacy.remove_public_key(&self.account_id, &pk));
         }
 
-        self.nonces
-            .iter()
-            .for_each(|&n| assert!(B::commit_nonce(&mut legacy, n).is_ok()));
+        for nonce in &self.nonces {
+            assert!(legacy.commit_nonce(*nonce).is_ok());
+        }
 
-        self.token_balances.iter().for_each(|(token_id, &amount)| {
-            assert!(B::add_balance(&mut legacy, token_id.clone(), amount));
-        });
+        for (token_id, &amount) in &self.token_balances {
+            assert!(legacy.add_balance(token_id.clone(), amount));
+        }
 
         legacy
     }
@@ -180,11 +180,11 @@ macro_rules! impl_legacy_account_builder {
     };
 }
 
-macro_rules! impl_versioned_account_builder {
+macro_rules! impl_lock_account_builder {
     ($account_type:ty) => {
         impl LegacyAccountBuilder for Lock<$account_type> {
             fn new(prefix: &[u8], account_id: &AccountId) -> Self {
-                Lock::new(false, <$account_type>::new(prefix, account_id))
+                Lock::unlocked(<$account_type>::new(prefix, account_id))
             }
 
             fn add_public_key(&mut self, account_id: &AccountId, pk: PublicKey) -> bool {
@@ -211,7 +211,7 @@ macro_rules! impl_versioned_account_builder {
 }
 
 impl_legacy_account_builder!(AccountV0);
-impl_versioned_account_builder!(AccountV1);
+impl_lock_account_builder!(AccountV1);
 
 impl<'a> From<&'a Lock<AccountV1>> for VersionedAccountEntry<'a> {
     fn from(value: &'a Lock<AccountV1>) -> Self {
