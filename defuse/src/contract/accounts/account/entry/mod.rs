@@ -76,6 +76,7 @@ impl From<VersionedAccountEntry<'_>> for Lock<Account> {
     }
 }
 
+// Used for current accounts serialization
 impl<'a> From<&'a Lock<Account>> for VersionedAccountEntry<'a> {
     fn from(value: &'a Lock<Account>) -> Self {
         // always serialize as latest version
@@ -83,15 +84,10 @@ impl<'a> From<&'a Lock<Account>> for VersionedAccountEntry<'a> {
     }
 }
 
+// Used for legacy accounts deserialization
 impl From<AccountV0> for VersionedAccountEntry<'_> {
     fn from(value: AccountV0) -> Self {
         Self::V0(Cow::Owned(value.into()))
-    }
-}
-
-impl From<Lock<AccountV1>> for VersionedAccountEntry<'_> {
-    fn from(value: Lock<AccountV1>) -> Self {
-        Self::V1(Cow::Owned(value.into()))
     }
 }
 
@@ -139,8 +135,11 @@ impl BorshDeserializeAs<Lock<Account>> for MaybeVersionedAccountEntry {
     }
 }
 
-impl BorshSerializeAs<Lock<Account>> for MaybeVersionedAccountEntry {
-    fn serialize_as<W>(source: &Lock<Account>, writer: &mut W) -> io::Result<()>
+impl<T> BorshSerializeAs<T> for MaybeVersionedAccountEntry
+where
+    for<'a> VersionedAccountEntry<'a>: From<&'a T>,
+{
+    fn serialize_as<W>(source: &T, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
     {

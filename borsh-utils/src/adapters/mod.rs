@@ -10,7 +10,7 @@ use std::{
 
 use defuse_io_utils::ReadExt;
 use impl_tools::autoimpl;
-use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
+use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 
 #[cfg(feature = "chrono")]
 mod chrono;
@@ -112,6 +112,13 @@ impl<T, As: ?Sized> From<T> for AsWrap<T, As> {
     fn from(value: T) -> Self {
         Self::new(value)
     }
+}
+
+pub fn to_vec_as<T, As>(source: &T) -> io::Result<Vec<u8>>
+where
+    As: BorshSerializeAs<T> + ?Sized,
+{
+    borsh::to_vec(&AsWrap::<&T, &As>::new(source))
 }
 
 impl<T, As> BorshDeserialize for AsWrap<T, As>
