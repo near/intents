@@ -154,9 +154,12 @@ pub(super) mod tests {
         new.commit(legacy_nonce)
             .expect("should be able to commit new legacy nonce");
 
-        assert!(new.nonces.is_used(expirable_nonce));
-        assert!(new.nonces.is_used(legacy_nonce));
         assert!(new.legacy.is_none());
+
+        for n in [expirable_nonce, legacy_nonce] {
+            assert!(new.nonces.is_used(n));
+            assert!(new.is_used(n));
+        }
     }
 
     #[rstest]
