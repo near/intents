@@ -15,7 +15,7 @@ use defuse_core::{
     intents::account::SetAuthByPredecessorId,
 };
 
-use defuse_near_utils::NestPrefix;
+use defuse_near_utils::{NestPrefix, is_derived_from_public_key};
 use impl_tools::autoimpl;
 use near_sdk::{
     AccountIdRef, BorshStorageKey, IntoStorageKey,
@@ -55,7 +55,7 @@ impl Account {
             nonces: MaybeLegacyAccountNonces::new(LookupMap::with_hasher(
                 prefix.as_slice().nest(AccountPrefix::OptimizedNonces),
             )),
-            flags: (!me.get_account_type().is_implicit())
+            flags: (!is_derived_from_public_key(me))
                 .then_some(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
                 .unwrap_or_else(AccountFlags::empty),
             public_keys: IterableSet::new(prefix.as_slice().nest(AccountPrefix::PublicKeys)),

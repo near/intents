@@ -57,6 +57,7 @@ impl From<AccountV1> for Account {
 pub(super) mod tests {
     use super::*;
 
+    use defuse_near_utils::is_derived_from_public_key;
     use near_sdk::AccountIdRef;
 
     use defuse_core::{
@@ -80,7 +81,7 @@ pub(super) mod tests {
                     #[allow(deprecated)]
                     prefix.as_slice().nest(AccountPrefix::_LegacyNonces),
                 )),
-                flags: (!me.get_account_type().is_implicit())
+                flags: (!is_derived_from_public_key(me))
                     .then_some(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
                     .unwrap_or_else(AccountFlags::empty),
                 public_keys: IterableSet::new(prefix.as_slice().nest(AccountPrefix::PublicKeys)),

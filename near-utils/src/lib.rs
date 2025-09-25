@@ -1,3 +1,4 @@
+mod account_id;
 #[cfg(feature = "arbitrary")]
 pub mod arbitrary;
 mod cache;
@@ -11,7 +12,7 @@ mod prefix;
 #[cfg(feature = "time")]
 pub mod time;
 
-pub use self::{cache::*, gas::*, lock::*, panic::*, panic_on_clone::*, prefix::*};
+pub use self::{account_id::*, cache::*, gas::*, lock::*, panic::*, panic_on_clone::*, prefix::*};
 
 #[macro_export]
 macro_rules! method_name {

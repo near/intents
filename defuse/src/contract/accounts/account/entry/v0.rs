@@ -60,7 +60,7 @@ pub(super) mod tests {
     use super::*;
 
     use defuse_bitmap::U256;
-    use defuse_near_utils::NestPrefix;
+    use defuse_near_utils::{NestPrefix, is_derived_from_public_key};
     use near_sdk::{
         AccountIdRef,
         store::{IterableSet, LookupMap},
@@ -86,7 +86,7 @@ pub(super) mod tests {
                     #[allow(deprecated)]
                     prefix.as_slice().nest(AccountPrefix::_LegacyNonces),
                 )),
-                implicit_public_key_removed: !me.get_account_type().is_implicit(),
+                implicit_public_key_removed: !is_derived_from_public_key(me),
                 public_keys: IterableSet::new(prefix.as_slice().nest(AccountPrefix::PublicKeys)),
                 state: AccountState::new(prefix.as_slice().nest(AccountPrefix::State)),
                 prefix,
