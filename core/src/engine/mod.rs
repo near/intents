@@ -64,9 +64,9 @@ where
 
         self.inspector.on_deadline(deadline);
 
-        if ExpirableNonce::maybe_from(nonce).is_some_and(|n| deadline > n.deadline) {
-            return Err(DefuseError::DeadlineGreaterThanNonce);
-        }
+        // if ExpirableNonce::maybe_from(nonce).is_some_and(|n| deadline > n.deadline) {
+        //     return Err(DefuseError::DeadlineGreaterThanNonce);
+        // }
 
         // make sure message is still valid
         if deadline.has_expired() {
