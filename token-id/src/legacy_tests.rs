@@ -1,6 +1,6 @@
 //! Tests that ensure that serialization to the new format adhere to the old one
 
-use crate::token_id::{TokenId, error::TokenIdError};
+use crate::{TokenId, error::TokenIdError};
 use arbitrary_with::{Arbitrary, As};
 use defuse_near_utils::arbitrary::ArbitraryAccountId;
 use defuse_test_utils::random::make_arbitrary;

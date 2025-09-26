@@ -16,6 +16,7 @@ defuse-map-utils.workspace = true
 defuse-near-utils = { workspace = true, features = ["time"] }
 defuse-num-utils.workspace = true
 defuse-serde-utils.workspace = true
+defuse-token-id.workspace = true
 defuse-ton-connect.workspace = true
 defuse-sep53.workspace = true
 defuse-tip191.workspace = true
@@ -45,6 +46,7 @@ abi = [
     "defuse-tip191/abi",
 
     "defuse-serde-utils/abi",
+    "defuse-token-id/abi",
     "defuse-ton-connect/abi",
     "defuse-webauthn/abi",
 ]
@@ -54,6 +56,7 @@ arbitrary = [
     "defuse-bitmap/arbitrary",
     "defuse-crypto/arbitrary",
     "defuse-near-utils/arbitrary",
+    "defuse-token-id/arbitrary",
 ]
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

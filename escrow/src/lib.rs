@@ -8,7 +8,7 @@ use near_sdk::{PromiseOrValue, ext_contract, serde_json};
 mod action;
 #[cfg(feature = "contract")]
 mod contract;
-mod intent;
+// mod intent;
 
 #[ext_contract(ext_escrow)]
 pub trait Escrow: FungibleTokenReceiver + NonFungibleTokenReceiver + MultiTokenReceiver {

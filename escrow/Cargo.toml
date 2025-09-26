@@ -8,6 +8,7 @@ workspace = true
 
 [dependencies]
 defuse-nep245.workspace = true
+defuse-token-id.workspace = true
 
 near-contract-standards.workspace = true
 near-sdk.workspace = true

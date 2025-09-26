@@ -1,9 +1,11 @@
+pub use defuse_nep245::TokenId;
+
 use std::{fmt, str::FromStr};
 
-use crate::token_id::{MAX_ALLOWED_TOKEN_ID_LEN, error::TokenIdError};
-use near_contract_standards::non_fungible_token;
 use near_sdk::{AccountId, AccountIdRef, near};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
+
+use crate::{MAX_ALLOWED_TOKEN_ID_LEN, error::TokenIdError};
 
 #[cfg(any(feature = "arbitrary", test))]
 use arbitrary_with::{Arbitrary, As, LimitLen};
@@ -13,7 +15,7 @@ use defuse_near_utils::arbitrary::ArbitraryAccountId;
 #[cfg_attr(any(feature = "arbitrary", test), derive(Arbitrary))]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr)]
 #[near(serializers = [borsh])]
-pub struct Nep171TokenId {
+pub struct Nep245TokenId {
     #[cfg_attr(
         any(feature = "arbitrary", test),
         arbitrary(with = As::<ArbitraryAccountId>::arbitrary),
@@ -24,21 +26,18 @@ pub struct Nep171TokenId {
         any(feature = "arbitrary", test),
         arbitrary(with = As::<LimitLen<MAX_ALLOWED_TOKEN_ID_LEN>>::arbitrary),
     )]
-    nft_token_id: near_contract_standards::non_fungible_token::TokenId,
+    mt_token_id: TokenId,
 }
 
-impl Nep171TokenId {
-    pub fn new(
-        contract_id: AccountId,
-        nft_token_id: non_fungible_token::TokenId,
-    ) -> Result<Self, TokenIdError> {
-        if nft_token_id.len() > MAX_ALLOWED_TOKEN_ID_LEN {
-            return Err(TokenIdError::TokenIdTooLarge(nft_token_id.len()));
+impl Nep245TokenId {
+    pub fn new(contract_id: AccountId, mt_token_id: TokenId) -> Result<Self, TokenIdError> {
+        if mt_token_id.len() > MAX_ALLOWED_TOKEN_ID_LEN {
+            return Err(TokenIdError::TokenIdTooLarge(mt_token_id.len()));
         }
 
         Ok(Self {
             contract_id,
-            nft_token_id,
+            mt_token_id,
         })
     }
 
@@ -47,30 +46,30 @@ impl Nep171TokenId {
         &self.contract_id
     }
 
-    pub const fn nft_token_id(&self) -> &non_fungible_token::TokenId {
-        &self.nft_token_id
+    pub const fn mt_token_id(&self) -> &TokenId {
+        &self.mt_token_id
     }
 
-    pub fn into_contract_id_and_nft_token_id(self) -> (AccountId, non_fungible_token::TokenId) {
-        (self.contract_id, self.nft_token_id)
+    pub fn into_contract_id_and_mt_token_id(self) -> (AccountId, TokenId) {
+        (self.contract_id, self.mt_token_id)
     }
 }
 
-impl std::fmt::Debug for Nep171TokenId {
+impl std::fmt::Debug for Nep245TokenId {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}", self.contract_id(), self.nft_token_id())
+        write!(f, "{}:{}", self.contract_id(), self.mt_token_id())
     }
 }
 
-impl std::fmt::Display for Nep171TokenId {
+impl std::fmt::Display for Nep245TokenId {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(&self, f)
     }
 }
 
-impl FromStr for Nep171TokenId {
+impl FromStr for Nep245TokenId {
     type Err = TokenIdError;
 
     fn from_str(data: &str) -> Result<Self, Self::Err> {
@@ -84,6 +83,7 @@ impl FromStr for Nep171TokenId {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     use arbitrary::Unstructured;
     use arbitrary_with::UnstructuredExt;
     use defuse_test_utils::random::{make_arbitrary, random_bytes};
@@ -91,9 +91,9 @@ mod tests {
 
     #[rstest]
     #[trace]
-    fn display_from_str_roundtrip(#[from(make_arbitrary)] token_id: Nep171TokenId) {
+    fn display_from_str_roundtrip(#[from(make_arbitrary)] token_id: Nep245TokenId) {
         let s = token_id.to_string();
-        let got: Nep171TokenId = s.parse().unwrap();
+        let got: Nep245TokenId = s.parse().unwrap();
         assert_eq!(got, token_id);
     }
 
@@ -103,7 +103,7 @@ mod tests {
         let contract_id = u.arbitrary_as::<_, ArbitraryAccountId>().unwrap();
         let token_id: String = u.arbitrary().unwrap();
 
-        let r = Nep171TokenId::new(contract_id, token_id.clone());
+        let r = Nep245TokenId::new(contract_id, token_id.clone());
         if token_id.len() > MAX_ALLOWED_TOKEN_ID_LEN {
             assert!(matches!(r.unwrap_err(), TokenIdError::TokenIdTooLarge(_)));
         } else {
