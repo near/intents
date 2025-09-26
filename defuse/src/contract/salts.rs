@@ -1,5 +1,6 @@
-use defuse_core::{Salt, ValidSalts, accounts::SaltRotationEvent, events::DefuseIntentEmit};
-use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
+use defuse_core::{DefuseError, Salt, accounts::SaltRotationEvent, events::DefuseIntentEmit};
+use defuse_near_utils::UnwrapOrPanic;
+use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{assert_one_yocto, near};
 
 use super::{Contract, ContractExt, Role};
@@ -7,37 +8,45 @@ use crate::salts::SaltManager;
 
 #[near]
 impl SaltManager for Contract {
-    // TODO: find difference
-    #[pause]
-    #[pause(name = "intents")]
     #[payable]
     #[access_control_any(roles(Role::DAO, Role::SaltManager))]
-    fn rotate_salt(&mut self, #[allow(unused_mut)] mut salt: Salt) {
+    fn rotate_salt(&mut self) {
         assert_one_yocto();
 
-        let old_salts = self.salts.rotate_salt(&mut salt).expect("invalid salt");
+        let old_salt = self.salts.set_new();
 
         SaltRotationEvent {
-            old_salts,
-            new_salts: self.salts.clone(),
+            new_salt: *self.salts.current(),
+            old_salt,
         }
         .emit();
     }
 
     #[access_control_any(roles(Role::DAO, Role::SaltManager))]
-    fn reset_salts(&mut self, salts: ValidSalts) {
+    fn reset_salt(&mut self) {
         assert_one_yocto();
 
-        let old_salts = self.salts.reset_salts(salts);
+        let old_salt = self.salts.set_new();
+        self.salts
+            .clear_previous(&old_salt)
+            .then_some(())
+            .ok_or(DefuseError::InvalidSalt)
+            .unwrap_or_panic();
 
         SaltRotationEvent {
-            old_salts,
-            new_salts: self.salts.clone(),
+            new_salt: *self.salts.current(),
+            old_salt,
         }
         .emit();
     }
 
-    fn get_valid_salts(&self) -> &ValidSalts {
-        &self.salts
+    #[inline]
+    fn is_valid_salt(&self, salt: &Salt) -> bool {
+        self.salts.is_valid(salt)
+    }
+
+    #[inline]
+    fn get_current_salt(&self) -> Salt {
+        *self.salts.current()
     }
 }

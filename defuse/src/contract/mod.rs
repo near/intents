@@ -83,7 +83,7 @@ impl Contract {
     pub fn new(config: DefuseConfig) -> Self {
         let mut contract = Self {
             accounts: Accounts::new(Prefix::Accounts),
-            state: ContractState::new(Prefix::State, config.wnear_id, config.fees, config.salt),
+            state: ContractState::new(Prefix::State, config.wnear_id, config.fees),
             relayer_keys: LookupSet::new(Prefix::RelayerKeys),
             postponed_burns: PostponedMtBurnEvents::new(),
         };

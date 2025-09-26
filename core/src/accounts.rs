@@ -4,7 +4,7 @@ use near_sdk::{AccountIdRef, near};
 use serde_with::serde_as;
 use std::borrow::Cow;
 
-use crate::{Nonce, ValidSalts};
+use crate::{Nonce, Salt};
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(serializers = [json])]
@@ -68,6 +68,6 @@ impl NonceEvent {
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct SaltRotationEvent {
-    pub old_salts: ValidSalts,
-    pub new_salts: ValidSalts,
+    pub old_salt: Salt,
+    pub new_salt: Salt,
 }

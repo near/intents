@@ -16,8 +16,8 @@ impl NonceVerifier {
         Self { salts, deadline }
     }
 
-    fn contains_salt(&self, salt: Salt) -> bool {
-        self.salts.contains_salt(salt)
+    fn contains_salt(&self, salt: &Salt) -> bool {
+        self.salts.is_valid(&salt)
     }
 
     pub fn valid_for_commitment(&self, nonce: Nonce) -> Result<()> {
@@ -35,7 +35,7 @@ impl NonceVerifier {
                         ..
                     },
             }) => {
-                if !self.contains_salt(salt) {
+                if !self.contains_salt(&salt) {
                     return Err(DefuseError::InvalideNonceSalt);
                 }
 
@@ -55,7 +55,7 @@ impl NonceVerifier {
     pub fn valid_for_clearing(&self, nonce: Nonce) -> bool {
         match VersionedNonce::try_from(nonce) {
             Ok(VersionedNonce::V1(salted)) => {
-                !self.contains_salt(salted.salt) || salted.nonce.has_expired()
+                !self.contains_salt(&salted.salt) || salted.nonce.has_expired()
             }
             Ok(VersionedNonce::Legacy(_)) => true,
             Err(_) => false,

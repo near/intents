@@ -1,53 +1,61 @@
-use crate::{DefuseError, Result};
 use core::mem;
 use near_sdk::{
+    IntoStorageKey,
     borsh::{BorshDeserialize, BorshSerialize},
-    near,
+    env, near,
+    store::IterableMap,
 };
 
 pub type Salt = [u8; 4];
 
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh, json])]
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[near(serializers = [borsh])]
+#[derive(Debug)]
 pub struct ValidSalts {
-    previous: Option<Salt>,
+    previous: IterableMap<Salt, bool>,
     current: Salt,
 }
 
 impl ValidSalts {
+    fn get_random_salt() -> Salt {
+        // NOTE: it is safe to unwrap here as random_seed_array always returns 32 bytes
+        env::random_seed_array()[..4].try_into().unwrap()
+    }
+
     /// There can be only one valid salt at the beginning
     #[inline]
-    pub fn new(salt: Salt) -> Self {
+    pub fn new<S>(prefix: S) -> Self
+    where
+        S: IntoStorageKey,
+    {
         Self {
-            previous: None,
-            current: salt,
+            previous: IterableMap::new(prefix),
+            current: Self::get_random_salt(),
         }
     }
 
     #[inline]
-    pub fn contains_salt(&self, salt: Salt) -> bool {
-        salt == self.current || self.previous.is_some_and(|s| s == salt)
+    pub fn set_new(&mut self) -> Salt {
+        let salt = Self::get_random_salt();
+        let previous = mem::replace(&mut self.current, salt);
+
+        self.previous.insert(previous, true);
+
+        previous
     }
 
     #[inline]
-    pub fn rotate_salt(&mut self, new_salt: &mut Salt) -> Result<ValidSalts> {
-        if self.contains_salt(*new_salt) {
-            return Err(DefuseError::InvalidSalt);
-        }
-
-        let old_salts = self.clone();
-
-        let legacy_salt = mem::replace(&mut self.current, *new_salt);
-        self.previous = Some(legacy_salt);
-
-        Ok(old_salts)
+    pub fn clear_previous(&mut self, salt: &Salt) -> bool {
+        self.previous.get_mut(salt).map(|v| *v = false).is_some()
     }
 
     #[inline]
-    pub fn reset_salts(&mut self, new_salts: ValidSalts) -> ValidSalts {
-        // TODO: do we need to check if they are different?
-        mem::replace(self, new_salts)
+    pub fn is_valid(&self, salt: &Salt) -> bool {
+        salt == &self.current || self.previous.get(salt).is_some_and(|v| *v == true)
+    }
+
+    #[inline]
+    pub fn current(&self) -> &Salt {
+        &self.current
     }
 }
 
@@ -79,50 +87,53 @@ where
 mod tests {
     use super::*;
 
-    use defuse_test_utils::random::random_bytes;
+    use arbitrary::Unstructured;
+    use defuse_test_utils::random::{Rng, random_bytes, rng};
     use hex_literal::hex;
+    use near_sdk::{test_utils::VMContextBuilder, testing_env};
+
     use rstest::rstest;
+
+    fn set_random_seed(mut rng: impl Rng) -> Salt {
+        let seed = rng.random();
+        let context = VMContextBuilder::new().random_seed(seed).build();
+        testing_env!(context);
+
+        seed[..4].try_into().unwrap()
+    }
 
     #[rstest]
     fn contains_salt_test(random_bytes: Vec<u8>) {
-        let mut u = arbitrary::Unstructured::new(&random_bytes);
-        let salts: ValidSalts = u.arbitrary().unwrap();
-        let random_salt: [u8; 4] = u.arbitrary().unwrap();
+        let random_salt: Salt = Unstructured::new(&random_bytes).arbitrary().unwrap();
+        let salts = ValidSalts::new(random_bytes);
 
-        assert!(salts.contains_salt(salts.current));
-        assert!(!salts.contains_salt(random_salt));
+        assert!(salts.is_valid(&salts.current));
+        assert!(!salts.is_valid(&random_salt));
     }
 
     #[rstest]
-    fn rotate_salt_test(random_bytes: Vec<u8>) {
-        let mut u = arbitrary::Unstructured::new(&random_bytes);
-        let mut salts: ValidSalts = u.arbitrary().unwrap();
-        let old_salts = salts.clone();
-        let mut random_salt: [u8; 4] = u.arbitrary().unwrap();
+    fn rotate_salt_test(random_bytes: Vec<u8>, rng: impl Rng) {
+        let mut salts = ValidSalts::new(random_bytes);
 
-        let success = salts.rotate_salt(&mut random_salt);
+        let current = set_random_seed(rng);
+        let previous = salts.set_new();
 
-        assert!(success.is_ok());
-        assert_eq!(success.unwrap(), old_salts);
-        assert!(salts.contains_salt(old_salts.current));
-        assert!(salts.contains_salt(random_salt));
-
-        let fail = salts.rotate_salt(&mut random_salt);
-        assert!(fail.is_err());
+        assert!(salts.is_valid(&current));
+        assert!(salts.is_valid(&previous));
     }
 
     #[rstest]
-    fn reset_salt_test(random_bytes: Vec<u8>) {
-        let mut u = arbitrary::Unstructured::new(&random_bytes);
-        let mut salts: ValidSalts = u.arbitrary().unwrap();
+    fn reset_salt_test(random_bytes: Vec<u8>, mut rng: impl Rng) {
+        let mut salts = ValidSalts::new(random_bytes);
+        let random_salt: Salt = rng.random();
 
-        let new_salts: ValidSalts = u.arbitrary().unwrap();
-        let old_salts = salts.clone();
+        let current = set_random_seed(rng);
+        let previous = salts.set_new();
 
-        let replaced = salts.reset_salts(new_salts.clone());
-
-        assert_eq!(salts, new_salts);
-        assert_eq!(replaced, old_salts);
+        assert!(salts.clear_previous(&previous));
+        assert!(!salts.is_valid(&previous));
+        assert!(!salts.clear_previous(&random_salt));
+        assert!(!salts.clear_previous(&current));
     }
 
     #[rstest]

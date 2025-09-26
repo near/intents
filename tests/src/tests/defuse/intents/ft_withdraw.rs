@@ -6,7 +6,6 @@ use crate::{
     utils::{ft::FtExt, mt::MtExt, wnear::WNearExt},
 };
 use arbitrary::{Arbitrary, Unstructured};
-use defuse::core::Salt;
 use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
 use defuse::core::{
     Deadline,
@@ -274,7 +273,6 @@ async fn ft_withdraw_intent_msg(
                     fee_collector: env.id().clone(),
                 },
                 roles: RolesConfig::default(),
-                salt: Salt::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 4]>())).unwrap(),
             },
         )
         .await

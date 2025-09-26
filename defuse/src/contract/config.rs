@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use defuse_core::{Salt, fees::FeesConfig};
+use defuse_core::fees::FeesConfig;
 use near_sdk::{AccountId, near};
 
 use super::Role;
@@ -11,7 +11,6 @@ pub struct DefuseConfig {
     pub wnear_id: AccountId,
     pub fees: FeesConfig,
     pub roles: RolesConfig,
-    pub salt: Salt,
 }
 
 #[near(serializers = [json])]
