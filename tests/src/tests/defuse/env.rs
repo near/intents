@@ -11,7 +11,10 @@ use defuse::{
         Role,
         config::{DefuseConfig, RolesConfig},
     },
-    core::fees::{FeesConfig, Pips},
+    core::{
+        Salt,
+        fees::{FeesConfig, Pips},
+    },
     tokens::DepositMessage,
 };
 use defuse_poa_factory::contract::Role as POAFactoryRole;
@@ -143,6 +146,7 @@ impl Deref for Env {
 pub struct EnvBuilder {
     fee: Pips,
     fee_collector: Option<AccountId>,
+    salt: Salt,
 
     // roles
     roles: RolesConfig,
@@ -249,6 +253,7 @@ impl EnvBuilder {
                             fee_collector: self.fee_collector.unwrap_or_else(|| root.id().clone()),
                         },
                         roles: self.roles,
+                        salt: self.salt,
                     },
                 )
                 .await

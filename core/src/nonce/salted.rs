@@ -7,7 +7,7 @@ use near_sdk::{
 
 pub type Salt = [u8; 4];
 
-#[cfg_attr(test, derive(arbitrary::Arbitrary))]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh, json])]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ValidSalts {

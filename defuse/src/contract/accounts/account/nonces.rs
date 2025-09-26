@@ -61,7 +61,6 @@ where
 
     #[inline]
     pub fn is_used(&self, nonce: Nonce) -> bool {
-        // TODO: legacy nonces which have expirable prefix can be committed twice, check probability!
         self.nonces.is_used(nonce)
             || self
                 .legacy

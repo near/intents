@@ -5,12 +5,16 @@ pub mod traits;
 use crate::tests::defuse::DefuseExt;
 use crate::tests::defuse::tokens::nep245::traits::DefuseMtWithdrawer;
 use crate::{tests::defuse::env::Env, utils::mt::MtExt};
+use arbitrary::{Arbitrary, Unstructured};
 use defuse::contract::config::{DefuseConfig, RolesConfig};
+use defuse::core::Salt;
 use defuse::core::fees::{FeesConfig, Pips};
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
 use defuse::core::token_id::nep245::Nep245TokenId;
 use defuse::nep245::Token;
+use defuse_randomness::Rng;
+use defuse_test_utils::random::rng;
 use rstest::rstest;
 
 #[tokio::test]
@@ -462,7 +466,7 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
 
 #[tokio::test]
 #[rstest]
-async fn multitoken_withdrawals() {
+async fn multitoken_withdrawals(#[notrace] mut rng: impl Rng) {
     let env = Env::builder().build().await;
 
     let defuse2 = env
@@ -475,6 +479,7 @@ async fn multitoken_withdrawals() {
                     fee_collector: env.id().clone(),
                 },
                 roles: RolesConfig::default(),
+                salt: Salt::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 4]>())).unwrap(),
             },
         )
         .await
