@@ -1,5 +1,6 @@
 mod expirable;
 mod salted;
+mod verifier;
 mod versioned;
 
 pub use expirable::ExpirableNonce;

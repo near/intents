@@ -9,7 +9,7 @@ pub struct SaltedNonce<T>
 where
     T: BorshSerialize + BorshDeserialize,
 {
-    salt: Salt,
+    pub salt: Salt,
     pub nonce: T,
 }
 

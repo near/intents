@@ -32,11 +32,10 @@ impl VersionedNonce {
     }
 }
 
-impl TryFrom<Nonce> for VersionedNonce {
-    type Error = io::Error;
-
-    fn try_from(value: Nonce) -> io::Result<Self> {
-        Self::deserialize(&mut value.as_ref())
+impl From<Nonce> for VersionedNonce {
+    fn from(value: Nonce) -> Self {
+        // Note: this is safe to unwrap as Nonce is always 32 bytes
+        Self::deserialize(&mut value.as_ref()).unwrap()
     }
 }
 

@@ -61,9 +61,6 @@ where
 
     #[inline]
     pub fn is_used(&self, nonce: Nonce) -> bool {
-        // Check legacy map only if the nonce is not expirable
-        // otherwise check both maps
-
         // TODO: legacy nonces which have expirable prefix can be committed twice, check probability!
         self.nonces.is_used(nonce)
             || self
