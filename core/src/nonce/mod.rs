@@ -3,18 +3,16 @@ mod salted;
 mod verifier;
 mod versioned;
 
-pub use expirable::ExpirableNonce;
-
-use defuse_bitmap::{BitMap256, U248, U256};
-use defuse_borsh_utils::adapters::{As, TimestampNanoSeconds};
-use defuse_map_utils::{IterableMap, Map};
-use hex_literal::hex;
-use near_sdk::{
-    borsh::{self, BorshDeserialize, BorshSerialize},
-    near,
+pub use {
+    expirable::ExpirableNonce,
+    salted::{Salt, ValidSalts},
 };
 
-use crate::{Deadline, DefuseError, Result};
+use defuse_bitmap::{BitMap256, U248, U256};
+use defuse_map_utils::{IterableMap, Map};
+use near_sdk::near;
+
+use crate::{DefuseError, Result};
 
 pub type Nonce = U256;
 

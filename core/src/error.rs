@@ -69,4 +69,7 @@ pub enum DefuseError {
 
     #[error("wrong verifying_contract")]
     WrongVerifyingContract,
+
+    #[error("invalid salt")]
+    InvalidSalt,
 }

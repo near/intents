@@ -6,6 +6,7 @@ pub mod config;
 mod events;
 mod fees;
 mod intents;
+mod salts;
 mod state;
 mod tokens;
 mod upgrade;
@@ -45,6 +46,8 @@ pub enum Role {
 
     UnrestrictedAccountLocker,
     UnrestrictedAccountUnlocker,
+
+    SaltManager,
 }
 
 #[access_control(role_type(Role))]
@@ -80,7 +83,7 @@ impl Contract {
     pub fn new(config: DefuseConfig) -> Self {
         let mut contract = Self {
             accounts: Accounts::new(Prefix::Accounts),
-            state: ContractState::new(Prefix::State, config.wnear_id, config.fees),
+            state: ContractState::new(Prefix::State, config.wnear_id, config.fees, config.salt),
             relayer_keys: LookupSet::new(Prefix::RelayerKeys),
             postponed_burns: PostponedMtBurnEvents::new(),
         };

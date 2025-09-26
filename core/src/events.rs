@@ -4,7 +4,7 @@ use derive_more::derive::From;
 use near_sdk::{near, serde::Deserialize};
 
 use crate::{
-    accounts::{AccountEvent, NonceEvent, PublicKeyEvent},
+    accounts::{AccountEvent, NonceEvent, PublicKeyEvent, SaltRotationEvent},
     fees::{FeeChangedEvent, FeeCollectorChangedEvent},
     intents::{
         IntentEvent,
@@ -29,6 +29,10 @@ pub enum DefuseEvent<'a> {
     FeeChanged(FeeChangedEvent),
     #[event_version("0.3.0")]
     FeeCollectorChanged(FeeCollectorChangedEvent<'a>),
+
+    // TODO: which version should this be?
+    #[event_version("0.1.0")]
+    SaltRotationEvent(SaltRotationEvent),
 
     #[event_version("0.3.0")]
     Transfer(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, Transfer>>>]>),

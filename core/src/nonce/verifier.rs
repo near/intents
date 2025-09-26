@@ -1,24 +1,23 @@
 use crate::{
     Deadline, DefuseError, ExpirableNonce, Nonce, Result,
     nonce::{
-        salted::{Salt, SaltedNonce},
+        salted::{Salt, SaltedNonce, ValidSalts},
         versioned::VersionedNonce,
     },
 };
 
 struct NonceVerifier {
-    salts: (Option<Salt>, Salt),
+    salts: ValidSalts,
     deadline: Deadline,
 }
 
 impl NonceVerifier {
-    pub fn new(salts: (Option<Salt>, Salt), deadline: Deadline) -> Self {
+    pub fn new(salts: ValidSalts, deadline: Deadline) -> Self {
         Self { salts, deadline }
     }
 
     fn contains_salt(&self, salt: Salt) -> bool {
-        let (previous_salt, current_salt) = self.salts;
-        salt == current_salt || previous_salt.is_some_and(|s| s == salt)
+        self.salts.contains_salt(salt)
     }
 
     pub fn valid_for_commitment(&self, nonce: Nonce) -> Result<()> {

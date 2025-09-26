@@ -1,6 +1,55 @@
-use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
+use crate::{DefuseError, Result};
+use core::mem;
+use near_sdk::{
+    borsh::{BorshDeserialize, BorshSerialize},
+    near,
+};
 
 pub type Salt = [u8; 4];
+
+#[cfg_attr(test, derive(arbitrary::Arbitrary))]
+#[near(serializers = [borsh, json])]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ValidSalts {
+    previous: Option<Salt>,
+    current: Salt,
+}
+
+impl ValidSalts {
+    /// There can be only one valid salt at the beginning
+    #[inline]
+    pub fn new(salt: Salt) -> Self {
+        Self {
+            previous: None,
+            current: salt,
+        }
+    }
+
+    #[inline]
+    pub fn contains_salt(&self, salt: Salt) -> bool {
+        salt == self.current || self.previous.is_some_and(|s| s == salt)
+    }
+
+    #[inline]
+    pub fn rotate_salt(&mut self, new_salt: &mut Salt) -> Result<ValidSalts> {
+        if self.contains_salt(*new_salt) {
+            return Err(DefuseError::InvalidSalt);
+        }
+
+        let old_salts = self.clone();
+
+        let legacy_salt = mem::replace(&mut self.current, *new_salt);
+        self.previous = Some(legacy_salt);
+
+        Ok(old_salts)
+    }
+
+    #[inline]
+    pub fn reset_salts(&mut self, new_salts: ValidSalts) -> ValidSalts {
+        // TODO: do we need to check if they are different?
+        mem::replace(self, new_salts)
+    }
+}
 
 /// Salted nonces contain 4 bytes salt from a predefined set of salts
 #[derive(Clone, Debug, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
@@ -35,7 +84,49 @@ mod tests {
     use rstest::rstest;
 
     #[rstest]
-    fn valid_salt_test(random_bytes: Vec<u8>) {
+    fn contains_salt_test(random_bytes: Vec<u8>) {
+        let mut u = arbitrary::Unstructured::new(&random_bytes);
+        let salts: ValidSalts = u.arbitrary().unwrap();
+        let random_salt: [u8; 4] = u.arbitrary().unwrap();
+
+        assert!(salts.contains_salt(salts.current));
+        assert!(!salts.contains_salt(random_salt));
+    }
+
+    #[rstest]
+    fn rotate_salt_test(random_bytes: Vec<u8>) {
+        let mut u = arbitrary::Unstructured::new(&random_bytes);
+        let mut salts: ValidSalts = u.arbitrary().unwrap();
+        let old_salts = salts.clone();
+        let mut random_salt: [u8; 4] = u.arbitrary().unwrap();
+
+        let success = salts.rotate_salt(&mut random_salt);
+
+        assert!(success.is_ok());
+        assert_eq!(success.unwrap(), old_salts);
+        assert!(salts.contains_salt(old_salts.current));
+        assert!(salts.contains_salt(random_salt));
+
+        let fail = salts.rotate_salt(&mut random_salt);
+        assert!(fail.is_err());
+    }
+
+    #[rstest]
+    fn reset_salt_test(random_bytes: Vec<u8>) {
+        let mut u = arbitrary::Unstructured::new(&random_bytes);
+        let mut salts: ValidSalts = u.arbitrary().unwrap();
+
+        let new_salts: ValidSalts = u.arbitrary().unwrap();
+        let old_salts = salts.clone();
+
+        let replaced = salts.reset_salts(new_salts.clone());
+
+        assert_eq!(salts, new_salts);
+        assert_eq!(replaced, old_salts);
+    }
+
+    #[rstest]
+    fn valid_salted_nonce_test(random_bytes: Vec<u8>) {
         let mut u = arbitrary::Unstructured::new(&random_bytes);
         let nonce: [u8; 28] = u.arbitrary().unwrap();
 
