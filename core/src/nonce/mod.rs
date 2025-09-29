@@ -1,11 +1,12 @@
 mod expirable;
 mod salted;
-mod verifier;
 mod versioned;
 
 pub use {
     expirable::ExpirableNonce,
+    salted::SaltedNonce,
     salted::{Salt, ValidSalts},
+    versioned::VersionedNonce,
 };
 
 use defuse_bitmap::{BitMap256, U248, U256};
@@ -38,10 +39,6 @@ where
 
     #[inline]
     pub fn commit(&mut self, n: Nonce) -> Result<()> {
-        // if ExpirableNonce::maybe_from(n).is_some_and(|expirable| expirable.has_expired()) {
-        //     return Err(DefuseError::NonceExpired);
-        // }
-
         if self.0.set_bit(n) {
             return Err(DefuseError::NonceUsed);
         }
@@ -51,12 +48,9 @@ where
 
     #[inline]
     pub fn clear_expired(&mut self, n: Nonce) -> bool {
-        // if ExpirableNonce::maybe_from(n).is_some_and(|n| n.has_expired()) {
-        //     let [prefix @ .., _] = n;
-        //     return self.0.clear_by_prefix(prefix);
-        // }
+        let [prefix @ .., _] = n;
 
-        false
+        self.0.clear_by_prefix(prefix)
     }
 
     #[inline]

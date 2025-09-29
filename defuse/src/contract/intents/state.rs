@@ -1,5 +1,5 @@
 use defuse_core::{
-    DefuseError, Nonce, Result,
+    Deadline, DefuseError, ExpirableNonce, Nonce, Result, SaltedNonce, VersionedNonce,
     crypto::PublicKey,
     engine::{State, StateView},
     fees::Pips,
@@ -89,6 +89,42 @@ impl StateView for Contract {
             .get(account_id)
             .map(Lock::as_inner_unchecked)
             .is_none_or(Account::is_auth_by_predecessor_id_enabled)
+    }
+
+    fn verify_intent_nonce(&self, nonce: Nonce, intent_deadline: Deadline) -> Result<()> {
+        match VersionedNonce::from(nonce) {
+            // NOTE: it is allowed to commit legacy nonces in this version
+            VersionedNonce::Legacy(_) => {}
+            VersionedNonce::V1(SaltedNonce {
+                salt,
+                nonce: ExpirableNonce { deadline, .. },
+            }) => {
+                if !self.salts.is_valid(&salt) {
+                    return Err(DefuseError::InvalidNonceSalt);
+                }
+
+                if intent_deadline > deadline {
+                    return Err(DefuseError::DeadlineGreaterThanNonce);
+                }
+
+                if deadline.has_expired() {
+                    return Err(DefuseError::NonceExpired);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn is_nonce_cleanable(&self, nonce: Nonce) -> bool {
+        match VersionedNonce::from(nonce) {
+            VersionedNonce::V1(SaltedNonce {
+                salt,
+                nonce: ExpirableNonce { deadline, .. },
+            }) => !self.salts.is_valid(&salt) || deadline.has_expired(),
+            // NOTE: legacy nonces can't be cleared before a complete prohibition on its usage
+            VersionedNonce::Legacy(_) => false,
+        }
     }
 }
 

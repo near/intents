@@ -56,7 +56,7 @@ pub enum DefuseError {
     NonceExpired,
 
     #[error("invalid nonce salt")]
-    InvalideNonceSalt,
+    InvalidNonceSalt,
 
     #[error("public key '{1}' already exists for account '{0}'")]
     PublicKeyExists(AccountId, PublicKey),

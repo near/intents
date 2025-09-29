@@ -2,7 +2,7 @@ pub mod cached;
 pub mod deltas;
 
 use crate::{
-    Nonce, Result,
+    Deadline, Nonce, Result,
     fees::Pips,
     intents::{
         auth::AuthCall,
@@ -41,6 +41,12 @@ pub trait StateView {
 
     /// Returns whether authentication by `PREDECESSOR_ID` is enabled.
     fn is_auth_by_predecessor_id_enabled(&self, account_id: &AccountIdRef) -> bool;
+
+    /// Verifies whether the nonce can be committed
+    fn verify_intent_nonce(&self, nonce: Nonce, intent_deadline: Deadline) -> Result<()>;
+
+    /// Returns whether the nonce can be cleaned up
+    fn is_nonce_cleanable(&self, nonce: Nonce) -> bool;
 
     #[inline]
     fn cached(self) -> CachedState<Self>

@@ -1,5 +1,5 @@
 use crate::{
-    DefuseError, Nonce, Result,
+    Deadline, DefuseError, Nonce, Result,
     amounts::Amounts,
     fees::Pips,
     intents::{
@@ -95,6 +95,16 @@ where
     #[inline]
     fn is_auth_by_predecessor_id_enabled(&self, account_id: &AccountIdRef) -> bool {
         self.state.is_auth_by_predecessor_id_enabled(account_id)
+    }
+
+    #[inline]
+    fn verify_intent_nonce(&self, nonce: Nonce, intent_deadline: Deadline) -> Result<()> {
+        self.state.verify_intent_nonce(nonce, intent_deadline)
+    }
+
+    #[inline]
+    fn is_nonce_cleanable(&self, nonce: Nonce) -> bool {
+        self.state.is_nonce_cleanable(nonce)
     }
 }
 

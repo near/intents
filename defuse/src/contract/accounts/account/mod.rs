@@ -150,7 +150,7 @@ impl Account {
     }
 
     /// Clears the nonce if it was expired.
-    /// Returns whether the nonces was cleared. If the nonce has not expired yet, then returns `false`,
+    /// Returns whether the nonces was cleared,
     /// regardless of whether it was previously committed or not.
     #[inline]
     pub fn clear_expired_nonce(&mut self, nonce: U256) -> bool {

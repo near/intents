@@ -54,13 +54,15 @@ impl AccountManager for Contract {
 
     fn cleanup_expired_nonces(&mut self, nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>) {
         for (account_id, nonces) in nonces {
+            // TODO: optimize that
+            let cleanable = nonces
+                .into_iter()
+                .map(AsBase64::into_inner)
+                .filter(|&n| self.is_nonce_cleanable(n))
+                .collect::<Vec<_>>();
+
             // NOTE: all errors are omitted
-            State::cleanup_expired_nonces(
-                self,
-                &account_id,
-                nonces.into_iter().map(AsBase64::into_inner),
-            )
-            .ok();
+            State::cleanup_expired_nonces(self, &account_id, cleanable).ok();
         }
     }
 

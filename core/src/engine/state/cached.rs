@@ -1,5 +1,5 @@
 use crate::{
-    DefuseError, Nonce, Nonces, Result,
+    Deadline, DefuseError, Nonce, Nonces, Result,
     amounts::Amounts,
     fees::Pips,
     intents::{
@@ -118,6 +118,14 @@ where
             .map(Lock::as_inner_unchecked)
             .is_some_and(|a| a.auth_by_predecessor_id_toggled);
         was_enabled ^ toggled
+    }
+
+    fn verify_intent_nonce(&self, nonce: Nonce, intent_deadline: Deadline) -> Result<()> {
+        self.view.verify_intent_nonce(nonce, intent_deadline)
+    }
+
+    fn is_nonce_cleanable(&self, nonce: Nonce) -> bool {
+        self.view.is_nonce_cleanable(nonce)
     }
 }
 
