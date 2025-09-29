@@ -44,7 +44,7 @@ mod tests {
     fn expirable_test(random_bytes: Vec<u8>) {
         let current_timestamp = Utc::now();
         let mut u = arbitrary::Unstructured::new(&random_bytes);
-        let nonce: [u8; 20] = u.arbitrary().unwrap();
+        let nonce: [u8; 24] = u.arbitrary().unwrap();
 
         let expired = ExpirableNonce::new(
             Deadline::new(current_timestamp.checked_sub_days(Days::new(1)).unwrap()),

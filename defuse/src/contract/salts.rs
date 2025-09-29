@@ -16,26 +16,30 @@ impl SaltManager for Contract {
         let old_salt = self.salts.set_new();
 
         SaltRotationEvent {
-            new_salt: *self.salts.current(),
+            new_salt: self.salts.current(),
             old_salt,
         }
         .emit();
     }
 
+    #[payable]
     #[access_control_any(roles(Role::DAO, Role::SaltManager))]
-    fn reset_salt(&mut self) {
+    fn invalidate_salt(&mut self, salt: &Salt) {
         assert_one_yocto();
 
-        let old_salt = self.salts.set_new();
+        if salt == &self.salts.current() {
+            self.salts.set_new();
+        }
+
         self.salts
-            .clear_previous(&old_salt)
+            .clear_previous(&salt)
             .then_some(())
             .ok_or(DefuseError::InvalidSalt)
             .unwrap_or_panic();
 
         SaltRotationEvent {
-            new_salt: *self.salts.current(),
-            old_salt,
+            new_salt: self.salts.current(),
+            old_salt: *salt,
         }
         .emit();
     }
@@ -47,6 +51,6 @@ impl SaltManager for Contract {
 
     #[inline]
     fn get_current_salt(&self) -> Salt {
-        *self.salts.current()
+        self.salts.current()
     }
 }

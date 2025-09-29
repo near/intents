@@ -7,8 +7,9 @@ pub trait SaltManager {
     /// Sets the current salt to a new one, previous salt remains valid
     fn rotate_salt(&mut self);
 
-    /// Sets the current salt to a new one, previous salt is invalidated
-    fn reset_salt(&mut self);
+    /// Invalidates the provided salt: invalidates provided salt,
+    /// sets a new one if it was current salt.
+    fn invalidate_salt(&mut self, salt: &Salt);
 
     /// Returns whether the provided salt is valid
     fn is_valid_salt(&self, salt: &Salt) -> bool;

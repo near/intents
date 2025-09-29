@@ -100,7 +100,7 @@ impl StateView for Contract {
                 nonce: ExpirableNonce { deadline, .. },
             }) => {
                 if !self.salts.is_valid(&salt) {
-                    return Err(DefuseError::InvalidNonceSalt);
+                    return Err(DefuseError::InvalidSalt);
                 }
 
                 if intent_deadline > deadline {

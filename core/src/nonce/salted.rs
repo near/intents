@@ -33,6 +33,7 @@ impl ValidSalts {
         }
     }
 
+    /// Rotates the current salt, making the previous salt valid as well.
     #[inline]
     pub fn set_new(&mut self) -> Salt {
         let salt = Self::get_random_salt();
@@ -43,6 +44,7 @@ impl ValidSalts {
         previous
     }
 
+    /// Deactivates the previous salt, making it invalid.
     #[inline]
     pub fn clear_previous(&mut self, salt: &Salt) -> bool {
         self.previous.get_mut(salt).map(|v| *v = false).is_some()
@@ -54,12 +56,11 @@ impl ValidSalts {
     }
 
     #[inline]
-    pub fn current(&self) -> &Salt {
-        &self.current
+    pub fn current(&self) -> Salt {
+        self.current
     }
 }
 
-/// Salted nonces contain 4 bytes salt from a predefined set of salts
 #[derive(Clone, Debug, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
 #[borsh(crate = "::near_sdk::borsh")]
 pub struct SaltedNonce<T>
