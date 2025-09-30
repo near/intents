@@ -58,7 +58,7 @@ impl AccountManager for Contract {
             let cleanable = nonces
                 .into_iter()
                 .map(AsBase64::into_inner)
-                .filter(|&n| self.is_nonce_cleanable(n))
+                .filter(|&n| self.is_nonce_cleanable(n).unwrap_or_default())
                 .collect::<Vec<_>>();
 
             // NOTE: all errors are omitted

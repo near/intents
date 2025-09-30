@@ -27,7 +27,7 @@ use crate::Defuse;
 use self::{
     accounts::Accounts,
     config::{DefuseConfig, RolesConfig},
-    state::ContractState,
+    state::ContractStateEntry,
 };
 
 #[near(serializers = [json])]
@@ -67,7 +67,7 @@ pub enum Role {
 #[autoimpl(DerefMut using self.state)]
 pub struct Contract {
     accounts: Accounts,
-    state: ContractState,
+    state: ContractStateEntry,
 
     relayer_keys: LookupSet<near_sdk::PublicKey>,
 
@@ -83,7 +83,7 @@ impl Contract {
     pub fn new(config: DefuseConfig) -> Self {
         let mut contract = Self {
             accounts: Accounts::new(Prefix::Accounts),
-            state: ContractState::new(Prefix::State, config.wnear_id, config.fees),
+            state: ContractStateEntry::new(Prefix::State, config.wnear_id, config.fees),
             relayer_keys: LookupSet::new(Prefix::RelayerKeys),
             postponed_burns: PostponedMtBurnEvents::new(),
         };

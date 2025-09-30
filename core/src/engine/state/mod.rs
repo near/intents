@@ -46,7 +46,7 @@ pub trait StateView {
     fn verify_intent_nonce(&self, nonce: Nonce, intent_deadline: Deadline) -> Result<()>;
 
     /// Returns whether the nonce can be cleaned up
-    fn is_nonce_cleanable(&self, nonce: Nonce) -> bool;
+    fn is_nonce_cleanable(&self, nonce: Nonce) -> Result<bool>;
 
     #[inline]
     fn cached(self) -> CachedState<Self>

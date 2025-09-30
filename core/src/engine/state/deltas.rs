@@ -103,7 +103,7 @@ where
     }
 
     #[inline]
-    fn is_nonce_cleanable(&self, nonce: Nonce) -> bool {
+    fn is_nonce_cleanable(&self, nonce: Nonce) -> Result<bool> {
         self.state.is_nonce_cleanable(nonce)
     }
 }

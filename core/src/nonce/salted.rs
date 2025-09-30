@@ -52,11 +52,11 @@ impl ValidSalts {
 
     #[inline]
     pub fn is_valid(&self, salt: &Salt) -> bool {
-        salt == &self.current || self.previous.get(salt).is_some_and(|v| *v == true)
+        salt == &self.current || self.previous.get(salt).is_some_and(|v| *v)
     }
 
     #[inline]
-    pub fn current(&self) -> Salt {
+    pub const fn current(&self) -> Salt {
         self.current
     }
 }

@@ -124,7 +124,7 @@ where
         self.view.verify_intent_nonce(nonce, intent_deadline)
     }
 
-    fn is_nonce_cleanable(&self, nonce: Nonce) -> bool {
+    fn is_nonce_cleanable(&self, nonce: Nonce) -> Result<bool> {
         self.view.is_nonce_cleanable(nonce)
     }
 }

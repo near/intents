@@ -92,7 +92,7 @@ impl StateView for Contract {
     }
 
     fn verify_intent_nonce(&self, nonce: Nonce, intent_deadline: Deadline) -> Result<()> {
-        match VersionedNonce::from(nonce) {
+        match VersionedNonce::try_from(nonce).map_err(|_| DefuseError::InvalidNonce)? {
             // NOTE: it is allowed to commit legacy nonces in this version
             VersionedNonce::Legacy(_) => {}
             VersionedNonce::V1(SaltedNonce {
@@ -116,15 +116,17 @@ impl StateView for Contract {
         Ok(())
     }
 
-    fn is_nonce_cleanable(&self, nonce: Nonce) -> bool {
-        match VersionedNonce::from(nonce) {
+    fn is_nonce_cleanable(&self, nonce: Nonce) -> Result<bool> {
+        let res = match VersionedNonce::try_from(nonce).map_err(|_| DefuseError::InvalidNonce)? {
             VersionedNonce::V1(SaltedNonce {
                 salt,
                 nonce: ExpirableNonce { deadline, .. },
             }) => !self.salts.is_valid(&salt) || deadline.has_expired(),
             // NOTE: legacy nonces can't be cleared before a complete prohibition on its usage
             VersionedNonce::Legacy(_) => false,
-        }
+        };
+
+        Ok(res)
     }
 }
 

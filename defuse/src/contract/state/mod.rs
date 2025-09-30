@@ -1,3 +1,8 @@
+mod entry;
+mod v0;
+
+pub use entry::ContractStateEntry;
+
 use defuse_core::{ValidSalts, amounts::Amounts, fees::FeesConfig, token_id::TokenId};
 use defuse_near_utils::NestPrefix;
 use near_sdk::{

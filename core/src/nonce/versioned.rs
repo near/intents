@@ -24,18 +24,19 @@ impl VersionedNonce {
     pub const V1_MAGIC_PREFIX: [u8; 4] = hex!("a727892c");
 
     /// Returns the version prefix, if any
-    pub fn prefix(&self) -> Option<[u8; 4]> {
+    pub const fn prefix(&self) -> Option<[u8; 4]> {
         match self {
-            VersionedNonce::Legacy(_) => None,
-            VersionedNonce::V1(_) => Some(Self::V1_MAGIC_PREFIX),
+            Self::Legacy(_) => None,
+            Self::V1(_) => Some(Self::V1_MAGIC_PREFIX),
         }
     }
 }
 
-impl From<Nonce> for VersionedNonce {
-    fn from(value: Nonce) -> Self {
-        // Note: this is safe to unwrap as Nonce is always 32 bytes
-        Self::deserialize(&mut value.as_ref()).unwrap()
+impl TryFrom<Nonce> for VersionedNonce {
+    type Error = io::Error;
+
+    fn try_from(value: Nonce) -> Result<Self, Self::Error> {
+        Self::deserialize(&mut value.as_ref())
     }
 }
 
@@ -43,7 +44,7 @@ impl TryFrom<VersionedNonce> for Nonce {
     type Error = io::Error;
 
     fn try_from(value: VersionedNonce) -> io::Result<Self> {
-        let mut result = [0u8; size_of::<Nonce>()];
+        let mut result = [0u8; size_of::<Self>()];
 
         borsh::to_writer(&mut result[..], &value).unwrap();
 
@@ -60,10 +61,10 @@ impl BorshDeserialize for VersionedNonce {
         reader.read_exact(&mut prefix)?;
 
         let versioned = match prefix {
-            Self::V1_MAGIC_PREFIX => VersionedNonce::V1(
+            Self::V1_MAGIC_PREFIX => Self::V1(
                 SaltedNonce::<ExpirableNonce<[u8; 16]>>::deserialize_reader(reader)?,
             ),
-            _ => VersionedNonce::Legacy(Nonce::deserialize_reader(&mut prefix.chain(reader))?),
+            _ => Self::Legacy(Nonce::deserialize_reader(&mut prefix.chain(reader))?),
         };
 
         Ok(versioned)
@@ -78,8 +79,8 @@ impl BorshSerialize for VersionedNonce {
         }
 
         match self {
-            VersionedNonce::Legacy(nonce) => nonce.serialize(writer),
-            VersionedNonce::V1(salted) => salted.serialize(writer),
+            Self::Legacy(nonce) => nonce.serialize(writer),
+            Self::V1(salted) => salted.serialize(writer),
         }
     }
 }
@@ -99,7 +100,7 @@ mod tests {
         let mut u = Unstructured::new(&random_bytes);
         let nonce: Nonce = u.arbitrary().unwrap();
 
-        let expected = VersionedNonce::try_from(nonce).unwrap();
+        let expected = VersionedNonce::try_from(nonce).expect("unable to convert nonce");
         assert_eq!(expected, VersionedNonce::Legacy(nonce));
     }
 
@@ -112,7 +113,7 @@ mod tests {
 
         let salted = SaltedNonce::new(salt, ExpirableNonce::new(now, nonce_bytes));
         let nonce: Nonce = VersionedNonce::V1(salted.clone()).try_into().unwrap();
-        let exp = VersionedNonce::try_from(nonce).unwrap();
+        let exp = VersionedNonce::try_from(nonce).expect("unable to convert nonce");
 
         assert_eq!(exp, VersionedNonce::V1(salted));
     }

@@ -32,7 +32,7 @@ impl SaltManager for Contract {
         }
 
         self.salts
-            .clear_previous(&salt)
+            .clear_previous(salt)
             .then_some(())
             .ok_or(DefuseError::InvalidSalt)
             .unwrap_or_panic();

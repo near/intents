@@ -45,7 +45,7 @@ async fn rotate_salt() {
 async fn invalidate_salt() {
     let env = Env::builder().deployer_as_super_admin().build().await;
     let mut current_salt = env.defuse.get_current_salt().await.unwrap();
-    let mut prev_salt = current_salt.clone();
+    let mut prev_salt = current_salt;
 
     // only DAO or salt manager can invalidate salt
     {
