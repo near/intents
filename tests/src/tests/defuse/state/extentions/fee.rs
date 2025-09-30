@@ -9,7 +9,7 @@ pub trait FeesManagerExt {
     async fn set_fee_collector(
         &self,
         defuse_contract_id: &AccountId,
-        fee_collector: AccountId,
+        fee_collector: &AccountId,
     ) -> anyhow::Result<()>;
     async fn fee_collector(&self) -> anyhow::Result<AccountId>;
 }
@@ -38,7 +38,7 @@ impl FeesManagerExt for near_workspaces::Account {
     async fn set_fee_collector(
         &self,
         defuse_contract_id: &AccountId,
-        fee_collector: AccountId,
+        fee_collector: &AccountId,
     ) -> anyhow::Result<()> {
         self.call(defuse_contract_id, "set_fee_collector")
             .deposit(NearToken::from_yoctonear(1))
@@ -72,7 +72,7 @@ impl FeesManagerExt for near_workspaces::Contract {
     async fn set_fee_collector(
         &self,
         defuse_contract_id: &AccountId,
-        fee_collector: AccountId,
+        fee_collector: &AccountId,
     ) -> anyhow::Result<()> {
         self.as_account()
             .set_fee_collector(defuse_contract_id, fee_collector)
