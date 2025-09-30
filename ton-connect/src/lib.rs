@@ -31,8 +31,8 @@ pub use tlb_ton;
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TonConnectPayload {
-    /// Wallet address in either [Raw](https://docs.ton.org/learn/overviews/addresses#raw-address) representation
-    /// or [user-friendly](https://docs.ton.org/learn/overviews/addresses#user-friendly-address) format
+    /// Wallet address in either [Raw](https://docs.ton.org/v3/documentation/smart-contracts/addresses/address-formats#raw-address) representation
+    /// or [user-friendly](https://docs.ton.org/v3/documentation/smart-contracts/addresses/address-formats#user-friendly-address) format
     #[cfg_attr(
         all(feature = "abi", not(target_arch = "wasm32")),
         schemars(with = "String")
