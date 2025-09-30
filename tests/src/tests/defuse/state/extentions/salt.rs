@@ -11,7 +11,7 @@ pub trait SaltManagerExt {
         salt: Salt,
     ) -> anyhow::Result<()>;
 
-    async fn is_valid_salt(&self, salt: Salt) -> anyhow::Result<bool>;
+    async fn is_valid_salt(&self, salt: &Salt) -> anyhow::Result<bool>;
 
     async fn get_current_salt(&self) -> anyhow::Result<Salt>;
 }
@@ -44,7 +44,7 @@ impl SaltManagerExt for near_workspaces::Account {
         Ok(())
     }
 
-    async fn is_valid_salt(&self, salt: Salt) -> anyhow::Result<bool> {
+    async fn is_valid_salt(&self, salt: &Salt) -> anyhow::Result<bool> {
         self.view(self.id(), "is_valid_salt")
             .args_json(json!({ "salt": salt }))
             .await?
@@ -75,7 +75,7 @@ impl SaltManagerExt for near_workspaces::Contract {
             .await
     }
 
-    async fn is_valid_salt(&self, salt: Salt) -> anyhow::Result<bool> {
+    async fn is_valid_salt(&self, salt: &Salt) -> anyhow::Result<bool> {
         self.as_account().is_valid_salt(salt).await
     }
 

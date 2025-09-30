@@ -39,7 +39,7 @@ fn create_random_salted_nonce(salt: [u8; 4], deadline: Deadline, mut rng: impl R
 #[tokio::test]
 #[rstest]
 async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
-    let env = Env::builder().build().await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
     let current_timestamp = Utc::now();
     let current_salt = env.defuse.get_current_salt().await.unwrap();
     let timeout_delta = TimeDelta::days(1);
@@ -209,10 +209,10 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
 
 #[tokio::test]
 #[rstest]
-async fn test_cleanup_expired_nonces(#[notrace] mut rng: impl Rng) {
+async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
     const WAITING_TIME: TimeDelta = TimeDelta::seconds(3);
 
-    let env = Env::builder().build().await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
     let current_timestamp = Utc::now();
     let current_salt = env.defuse.get_current_salt().await.unwrap();
 
@@ -296,6 +296,44 @@ async fn test_cleanup_expired_nonces(#[notrace] mut rng: impl Rng) {
             ])
             .await
             .unwrap();
+
+        assert!(
+            env.defuse
+                .is_nonce_used(env.user1.id(), &legacy_nonce)
+                .await
+                .unwrap(),
+        );
+
+        assert!(
+            env.defuse
+                .is_nonce_used(env.user1.id(), &long_term_expirable_nonce)
+                .await
+                .unwrap(),
+        );
+    }
+
+    // clean invalid salt
+    {
+        env.acl_grant_role(env.defuse.id(), Role::SaltManager, env.user1.id())
+            .await
+            .expect("failed to grant role");
+
+        env.user1
+            .invalidate_salt(env.defuse.id(), current_salt)
+            .await
+            .expect("unable to rotate salt");
+
+        env.defuse
+            .cleanup_expired_nonces(&[(env.user1.id().clone(), vec![long_term_expirable_nonce])])
+            .await
+            .unwrap();
+
+        assert!(
+            !env.defuse
+                .is_nonce_used(env.user1.id(), &long_term_expirable_nonce)
+                .await
+                .unwrap(),
+        );
     }
 }
 

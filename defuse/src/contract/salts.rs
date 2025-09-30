@@ -8,8 +8,8 @@ use crate::salts::SaltManager;
 
 #[near]
 impl SaltManager for Contract {
-    #[payable]
     #[access_control_any(roles(Role::DAO, Role::SaltManager))]
+    #[payable]
     fn rotate_salt(&mut self) {
         assert_one_yocto();
 
@@ -22,8 +22,8 @@ impl SaltManager for Contract {
         .emit();
     }
 
-    #[payable]
     #[access_control_any(roles(Role::DAO, Role::SaltManager))]
+    #[payable]
     fn invalidate_salt(&mut self, salt: &Salt) {
         assert_one_yocto();
 
