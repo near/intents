@@ -28,7 +28,8 @@ async fn rotate_salt() {
             .await
             .expect("failed to grant role");
 
-        env.user1
+        let new_salt = env
+            .user1
             .rotate_salt(env.defuse.id())
             .await
             .expect("unable to rotate salt");
@@ -36,6 +37,7 @@ async fn rotate_salt() {
         let current_salt = env.defuse.get_current_salt(env.defuse.id()).await.unwrap();
 
         assert_ne!(prev_salt, current_salt);
+        assert_eq!(new_salt, current_salt);
         assert!(
             env.defuse
                 .is_valid_salt(env.defuse.id(), &prev_salt)
@@ -66,12 +68,11 @@ async fn invalidate_salt() {
             .await
             .expect("failed to grant role");
 
-        env.user1
+        current_salt = env
+            .user1
             .rotate_salt(env.defuse.id())
             .await
             .expect("unable to rotate salt");
-
-        current_salt = env.defuse.get_current_salt(env.defuse.id()).await.unwrap();
 
         env.user1
             .invalidate_salt(env.defuse.id(), &prev_salt)
@@ -88,13 +89,12 @@ async fn invalidate_salt() {
 
     // invalidate current salt by salt manager
     {
-        env.user1
+        prev_salt = current_salt;
+        current_salt = env
+            .user1
             .invalidate_salt(env.defuse.id(), &current_salt)
             .await
             .expect("unable to rotate salt");
-
-        prev_salt = current_salt;
-        current_salt = env.defuse.get_current_salt(env.defuse.id()).await.unwrap();
 
         assert!(
             !env.defuse

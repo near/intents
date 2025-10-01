@@ -1,5 +1,5 @@
 use defuse_core::{
-    Deadline, DefuseError, ExpirableNonce, Nonce, Result, SaltedNonce, VersionedNonce,
+    DefuseError, Nonce, Result, Salt,
     crypto::PublicKey,
     engine::{State, StateView},
     fees::Pips,
@@ -91,42 +91,8 @@ impl StateView for Contract {
             .is_none_or(Account::is_auth_by_predecessor_id_enabled)
     }
 
-    fn verify_intent_nonce(&self, nonce: Nonce, intent_deadline: Deadline) -> Result<()> {
-        match VersionedNonce::try_from(nonce).map_err(|_| DefuseError::InvalidNonce)? {
-            // NOTE: it is allowed to commit legacy nonces in this version
-            VersionedNonce::Legacy(_) => {}
-            VersionedNonce::V1(SaltedNonce {
-                salt,
-                nonce: ExpirableNonce { deadline, .. },
-            }) => {
-                if !self.salts.is_valid(&salt) {
-                    return Err(DefuseError::InvalidSalt);
-                }
-
-                if intent_deadline > deadline {
-                    return Err(DefuseError::DeadlineGreaterThanNonce);
-                }
-
-                if deadline.has_expired() {
-                    return Err(DefuseError::NonceExpired);
-                }
-            }
-        }
-
-        Ok(())
-    }
-
-    fn is_nonce_cleanable(&self, nonce: Nonce) -> Result<bool> {
-        let res = match VersionedNonce::try_from(nonce).map_err(|_| DefuseError::InvalidNonce)? {
-            VersionedNonce::V1(SaltedNonce {
-                salt,
-                nonce: ExpirableNonce { deadline, .. },
-            }) => !self.salts.is_valid(&salt) || deadline.has_expired(),
-            // NOTE: legacy nonces can't be cleared before a complete prohibition on its usage
-            VersionedNonce::Legacy(_) => false,
-        };
-
-        Ok(res)
+    fn is_valid_salt(&self, salt: &Salt) -> bool {
+        self.salts.is_valid(salt)
     }
 }
 
@@ -163,21 +129,14 @@ impl State for Contract {
     }
 
     #[inline]
-    fn cleanup_expired_nonces(
-        &mut self,
-        account_id: &AccountId,
-        nonces: impl IntoIterator<Item = Nonce>,
-    ) -> Result<()> {
+    fn cleanup_nonce(&mut self, account_id: &AccountId, nonce: Nonce) -> Result<()> {
         let account = self
             .accounts
             .get_mut(account_id)
             .ok_or_else(|| DefuseError::AccountNotFound(account_id.clone()))?
             .as_inner_unchecked_mut();
 
-        for n in nonces {
-            account.clear_expired_nonce(n);
-        }
-
+        account.cleanup_nonce(nonce);
         Ok(())
     }
 

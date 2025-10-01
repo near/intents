@@ -2,7 +2,7 @@ pub mod cached;
 pub mod deltas;
 
 use crate::{
-    Deadline, Nonce, Result,
+    Nonce, Result, Salt,
     fees::Pips,
     intents::{
         auth::AuthCall,
@@ -42,11 +42,8 @@ pub trait StateView {
     /// Returns whether authentication by `PREDECESSOR_ID` is enabled.
     fn is_auth_by_predecessor_id_enabled(&self, account_id: &AccountIdRef) -> bool;
 
-    /// Verifies whether the nonce can be committed
-    fn verify_intent_nonce(&self, nonce: Nonce, intent_deadline: Deadline) -> Result<()>;
-
-    /// Returns whether the nonce can be cleaned up
-    fn is_nonce_cleanable(&self, nonce: Nonce) -> Result<bool>;
+    /// Returns whether salt in nonce is valid
+    fn is_valid_salt(&self, salt: &Salt) -> bool;
 
     #[inline]
     fn cached(self) -> CachedState<Self>
@@ -65,11 +62,7 @@ pub trait State: StateView {
 
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()>;
 
-    fn cleanup_expired_nonces(
-        &mut self,
-        account_id: &AccountId,
-        nonces: impl IntoIterator<Item = Nonce>,
-    ) -> Result<()>;
+    fn cleanup_nonce(&mut self, account_id: &AccountId, nonce: Nonce) -> Result<()>;
 
     fn internal_add_balance(
         &mut self,

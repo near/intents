@@ -1,5 +1,5 @@
 use crate::{
-    Deadline, DefuseError, Nonce, Result,
+    DefuseError, Nonce, Result, Salt,
     amounts::Amounts,
     fees::Pips,
     intents::{
@@ -98,13 +98,8 @@ where
     }
 
     #[inline]
-    fn verify_intent_nonce(&self, nonce: Nonce, intent_deadline: Deadline) -> Result<()> {
-        self.state.verify_intent_nonce(nonce, intent_deadline)
-    }
-
-    #[inline]
-    fn is_nonce_cleanable(&self, nonce: Nonce) -> Result<bool> {
-        self.state.is_nonce_cleanable(nonce)
+    fn is_valid_salt(&self, salt: &Salt) -> bool {
+        self.state.is_valid_salt(salt)
     }
 }
 
@@ -128,12 +123,8 @@ where
     }
 
     #[inline]
-    fn cleanup_expired_nonces(
-        &mut self,
-        account_id: &AccountId,
-        nonces: impl IntoIterator<Item = Nonce>,
-    ) -> Result<()> {
-        self.state.cleanup_expired_nonces(account_id, nonces)
+    fn cleanup_nonce(&mut self, account_id: &AccountId, nonce: Nonce) -> Result<()> {
+        self.state.cleanup_nonce(account_id, nonce)
     }
 
     fn internal_add_balance(

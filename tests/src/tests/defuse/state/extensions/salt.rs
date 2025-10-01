@@ -3,13 +3,13 @@ use near_sdk::{AccountId, NearToken};
 use serde_json::json;
 
 pub trait SaltManagerExt {
-    async fn rotate_salt(&self, defuse_contract_id: &AccountId) -> anyhow::Result<()>;
+    async fn rotate_salt(&self, defuse_contract_id: &AccountId) -> anyhow::Result<Salt>;
 
     async fn invalidate_salt(
         &self,
         defuse_contract_id: &AccountId,
         salt: &Salt,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<Salt>;
 
     async fn is_valid_salt(
         &self,
@@ -21,31 +21,31 @@ pub trait SaltManagerExt {
 }
 
 impl SaltManagerExt for near_workspaces::Account {
-    async fn rotate_salt(&self, defuse_contract_id: &AccountId) -> anyhow::Result<()> {
+    async fn rotate_salt(&self, defuse_contract_id: &AccountId) -> anyhow::Result<Salt> {
         self.call(defuse_contract_id, "rotate_salt")
             .deposit(NearToken::from_yoctonear(1))
             .max_gas()
             .transact()
             .await?
-            .into_result()?;
-
-        Ok(())
+            .into_result()?
+            .json()
+            .map_err(Into::into)
     }
 
     async fn invalidate_salt(
         &self,
         defuse_contract_id: &AccountId,
         salt: &Salt,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<Salt> {
         self.call(defuse_contract_id, "invalidate_salt")
             .args_json(json!({ "salt": salt }))
             .deposit(NearToken::from_yoctonear(1))
             .max_gas()
             .transact()
             .await?
-            .into_result()?;
-
-        Ok(())
+            .into_result()?
+            .json()
+            .map_err(Into::into)
     }
 
     async fn is_valid_salt(
@@ -69,7 +69,7 @@ impl SaltManagerExt for near_workspaces::Account {
 }
 
 impl SaltManagerExt for near_workspaces::Contract {
-    async fn rotate_salt(&self, defuse_contract_id: &AccountId) -> anyhow::Result<()> {
+    async fn rotate_salt(&self, defuse_contract_id: &AccountId) -> anyhow::Result<Salt> {
         self.as_account().rotate_salt(defuse_contract_id).await
     }
 
@@ -77,7 +77,7 @@ impl SaltManagerExt for near_workspaces::Contract {
         &self,
         defuse_contract_id: &AccountId,
         salt: &Salt,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<Salt> {
         self.as_account()
             .invalidate_salt(defuse_contract_id, salt)
             .await

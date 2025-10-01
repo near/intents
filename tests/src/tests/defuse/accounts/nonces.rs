@@ -271,7 +271,7 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
     // nonce is expired
     {
         env.defuse
-            .cleanup_expired_nonces(&[(env.user1.id().clone(), vec![expirable_nonce])])
+            .cleanup_nonces(&[(env.user1.id().clone(), vec![expirable_nonce])])
             .await
             .unwrap();
 
@@ -288,7 +288,7 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
         let unknown_user: AccountId = "unknown-user.near".parse().unwrap();
 
         env.defuse
-            .cleanup_expired_nonces(&[
+            .cleanup_nonces(&[
                 (env.user1.id().clone(), vec![expirable_nonce]),
                 (env.user1.id().clone(), vec![legacy_nonce]),
                 (env.user1.id().clone(), vec![long_term_expirable_nonce]),
@@ -324,7 +324,7 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
             .expect("unable to rotate salt");
 
         env.defuse
-            .cleanup_expired_nonces(&[(env.user1.id().clone(), vec![long_term_expirable_nonce])])
+            .cleanup_nonces(&[(env.user1.id().clone(), vec![long_term_expirable_nonce])])
             .await
             .unwrap();
 
@@ -379,7 +379,7 @@ async fn cleanup_multiple_nonces(
 
     let gas_used = env
         .defuse
-        .cleanup_expired_nonces(&[(env.user1.id().clone(), nonces)])
+        .cleanup_nonces(&[(env.user1.id().clone(), nonces)])
         .await
         .unwrap();
 

@@ -149,11 +149,11 @@ impl Account {
         self.nonces.commit(nonce)
     }
 
-    /// Clears the nonce if it was expired.
+    /// Clears the nonce if it was expired/invalidated.
     /// Returns whether the nonces was cleared,
     /// regardless of whether it was previously committed or not.
     #[inline]
-    pub fn clear_expired_nonce(&mut self, nonce: U256) -> bool {
+    pub fn cleanup_nonce(&mut self, nonce: U256) -> bool {
         self.nonces.clear_expired(nonce)
     }
 

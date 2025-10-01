@@ -1,5 +1,5 @@
 use crate::{
-    Deadline, DefuseError, Nonce, Nonces, Result,
+    DefuseError, Nonce, Nonces, Result, Salt,
     amounts::Amounts,
     fees::Pips,
     intents::{
@@ -120,12 +120,8 @@ where
         was_enabled ^ toggled
     }
 
-    fn verify_intent_nonce(&self, nonce: Nonce, intent_deadline: Deadline) -> Result<()> {
-        self.view.verify_intent_nonce(nonce, intent_deadline)
-    }
-
-    fn is_nonce_cleanable(&self, nonce: Nonce) -> Result<bool> {
-        self.view.is_nonce_cleanable(nonce)
+    fn is_valid_salt(&self, salt: &Salt) -> bool {
+        self.view.is_valid_salt(salt)
     }
 }
 
@@ -183,20 +179,14 @@ where
             .commit_nonce(nonce)
     }
 
-    fn cleanup_expired_nonces(
-        &mut self,
-        account_id: &AccountId,
-        nonces: impl IntoIterator<Item = Nonce>,
-    ) -> Result<()> {
+    fn cleanup_nonce(&mut self, account_id: &AccountId, nonce: Nonce) -> Result<()> {
         let account = self
             .accounts
             .get_mut(account_id)
             .ok_or_else(|| DefuseError::AccountNotFound(account_id.clone()))?
             .as_inner_unchecked_mut();
 
-        for n in nonces {
-            account.clear_expired_nonce(n);
-        }
+        account.cleanup_nonce(nonce);
 
         Ok(())
     }
@@ -425,7 +415,7 @@ impl CachedAccount {
     }
 
     #[inline]
-    pub fn clear_expired_nonce(&mut self, n: U256) -> bool {
+    pub fn cleanup_nonce(&mut self, n: U256) -> bool {
         self.nonces.clear_expired(n)
     }
 }

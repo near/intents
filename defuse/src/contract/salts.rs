@@ -1,4 +1,4 @@
-use defuse_core::{DefuseError, Salt, accounts::SaltRotationEvent, events::DefuseIntentEmit};
+use defuse_core::{DefuseError, Salt, accounts::SaltRotation, events::DefuseIntentEmit};
 use defuse_near_utils::UnwrapOrPanic;
 use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{assert_one_yocto, near};
@@ -10,21 +10,24 @@ use crate::salts::SaltManager;
 impl SaltManager for Contract {
     #[access_control_any(roles(Role::DAO, Role::SaltManager))]
     #[payable]
-    fn rotate_salt(&mut self) {
+    fn rotate_salt(&mut self) -> Salt {
         assert_one_yocto();
 
         let old_salt = self.salts.set_new();
+        let current_salt = self.salts.current();
 
-        SaltRotationEvent {
-            new_salt: self.salts.current(),
+        SaltRotation {
+            new_salt: current_salt,
             old_salt,
         }
         .emit();
+
+        current_salt
     }
 
     #[access_control_any(roles(Role::DAO, Role::SaltManager))]
     #[payable]
-    fn invalidate_salt(&mut self, salt: &Salt) {
+    fn invalidate_salt(&mut self, salt: &Salt) -> Salt {
         assert_one_yocto();
 
         if salt == &self.salts.current() {
@@ -37,11 +40,15 @@ impl SaltManager for Contract {
             .ok_or(DefuseError::InvalidSalt)
             .unwrap_or_panic();
 
-        SaltRotationEvent {
-            new_salt: self.salts.current(),
+        let current_salt = self.salts.current();
+
+        SaltRotation {
+            new_salt: current_salt,
             old_salt: *salt,
         }
         .emit();
+
+        current_salt
     }
 
     #[inline]

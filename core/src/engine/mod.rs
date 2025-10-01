@@ -6,7 +6,7 @@ pub use self::{inspector::*, state::*};
 use defuse_crypto::{Payload, SignedPayload};
 
 use crate::{
-    DefuseError, Result,
+    Deadline, DefuseError, ExpirableNonce, Nonce, Result, SaltedNonce, VersionedNonce,
     intents::{DefuseIntents, ExecutableIntent},
     payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
 };
@@ -75,11 +75,39 @@ where
         }
 
         // commit nonce
-        self.state.verify_intent_nonce(nonce, deadline)?;
+        self.verify_intent_nonce(nonce, deadline)?;
         self.state.commit_nonce(signer_id.clone(), nonce)?;
 
         intents.execute_intent(&signer_id, self, hash)?;
         self.inspector.on_intent_executed(&signer_id, hash, nonce);
+
+        Ok(())
+    }
+
+    #[inline]
+    fn verify_intent_nonce(&self, nonce: Nonce, intent_deadline: Deadline) -> Result<()> {
+        let versioned = VersionedNonce::try_from(nonce).map_err(|_| DefuseError::InvalidNonce)?;
+
+        match versioned {
+            // NOTE: it is allowed to commit legacy nonces in this version
+            VersionedNonce::Legacy(_) => {}
+            VersionedNonce::V1(SaltedNonce {
+                salt,
+                nonce: ExpirableNonce { deadline, .. },
+            }) => {
+                if !self.state.is_valid_salt(&salt) {
+                    return Err(DefuseError::InvalidSalt);
+                }
+
+                if intent_deadline > deadline {
+                    return Err(DefuseError::DeadlineGreaterThanNonce);
+                }
+
+                if deadline.has_expired() {
+                    return Err(DefuseError::NonceExpired);
+                }
+            }
+        }
 
         Ok(())
     }

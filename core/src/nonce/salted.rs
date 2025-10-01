@@ -19,8 +19,13 @@ pub struct ValidSalts {
 
 impl ValidSalts {
     fn get_random_salt() -> Salt {
-        // NOTE: it is safe to unwrap here as random_seed_array always returns 32 bytes
-        env::random_seed_array()[..4].try_into().unwrap()
+        const SIZE: usize = size_of::<Salt>();
+        let seed = &env::random_seed_array()[..SIZE];
+        let mut result = [0u8; SIZE];
+
+        result.copy_from_slice(seed);
+
+        result
     }
 
     /// There can be only one valid salt at the beginning

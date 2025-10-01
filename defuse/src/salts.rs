@@ -5,11 +5,11 @@ use near_sdk::ext_contract;
 #[allow(clippy::module_name_repetitions)]
 pub trait SaltManager {
     /// Sets the current salt to a new one, previous salt remains valid
-    fn rotate_salt(&mut self);
+    fn rotate_salt(&mut self) -> Salt;
 
     /// Invalidates the provided salt: invalidates provided salt,
     /// sets a new one if it was current salt.
-    fn invalidate_salt(&mut self, salt: &Salt);
+    fn invalidate_salt(&mut self, salt: &Salt) -> Salt;
 
     /// Returns whether the provided salt is valid
     fn is_valid_salt(&self, salt: &Salt) -> bool;
