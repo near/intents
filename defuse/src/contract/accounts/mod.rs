@@ -7,7 +7,7 @@ pub use self::{account::*, state::*};
 use std::collections::HashSet;
 
 use defuse_core::{
-    DefuseError, Nonce,
+    DefuseError, ExpirableNonce, Nonce, SaltedNonce, VersionedNonce,
     crypto::PublicKey,
     engine::{State, StateView},
 };
@@ -52,15 +52,30 @@ impl AccountManager for Contract {
         StateView::is_nonce_used(self, account_id, nonce.into_inner())
     }
 
-    fn cleanup_expired_nonces(&mut self, nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>) {
+    fn cleanup_nonces(&mut self, nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>) {
         for (account_id, nonces) in nonces {
-            // NOTE: all errors are omitted
-            State::cleanup_expired_nonces(
-                self,
-                &account_id,
-                nonces.into_iter().map(AsBase64::into_inner),
-            )
-            .ok();
+            for nonce in nonces.into_iter().map(AsBase64::into_inner) {
+                // NOTE: omit invalid nonces
+                let Ok(versioned) =
+                    VersionedNonce::try_from(nonce).map_err(|_| DefuseError::InvalidNonce)
+                else {
+                    continue;
+                };
+
+                let cleanable = match versioned {
+                    VersionedNonce::V1(SaltedNonce {
+                        salt,
+                        nonce: ExpirableNonce { deadline, .. },
+                    }) => !self.is_valid_salt(&salt) || deadline.has_expired(),
+                    // NOTE: legacy nonces can't be cleared before a complete prohibition on its usage
+                    VersionedNonce::Legacy(_) => false,
+                };
+
+                // NOTE: all errors are omitted
+                if cleanable {
+                    State::cleanup_nonce(self, &account_id, nonce).ok();
+                }
+            }
         }
     }
 

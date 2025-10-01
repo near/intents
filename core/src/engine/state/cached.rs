@@ -1,5 +1,5 @@
 use crate::{
-    DefuseError, Nonce, Nonces, Result,
+    DefuseError, Nonce, Nonces, Result, Salt,
     amounts::Amounts,
     fees::Pips,
     intents::{
@@ -119,6 +119,10 @@ where
             .is_some_and(|a| a.auth_by_predecessor_id_toggled);
         was_enabled ^ toggled
     }
+
+    fn is_valid_salt(&self, salt: &Salt) -> bool {
+        self.view.is_valid_salt(salt)
+    }
 }
 
 impl<W> State for CachedState<W>
@@ -175,20 +179,14 @@ where
             .commit_nonce(nonce)
     }
 
-    fn cleanup_expired_nonces(
-        &mut self,
-        account_id: &AccountId,
-        nonces: impl IntoIterator<Item = Nonce>,
-    ) -> Result<()> {
+    fn cleanup_nonce(&mut self, account_id: &AccountId, nonce: Nonce) -> Result<()> {
         let account = self
             .accounts
             .get_mut(account_id)
             .ok_or_else(|| DefuseError::AccountNotFound(account_id.clone()))?
             .as_inner_unchecked_mut();
 
-        for n in nonces {
-            account.clear_expired_nonce(n);
-        }
+        account.cleanup_nonce(nonce);
 
         Ok(())
     }
@@ -417,7 +415,7 @@ impl CachedAccount {
     }
 
     #[inline]
-    pub fn clear_expired_nonce(&mut self, n: U256) -> bool {
+    pub fn cleanup_nonce(&mut self, n: U256) -> bool {
         self.nonces.clear_expired(n)
     }
 }

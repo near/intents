@@ -55,6 +55,9 @@ pub enum DefuseError {
     #[error("nonce was already expired")]
     NonceExpired,
 
+    #[error("invalid nonce")]
+    InvalidNonce,
+
     #[error("public key '{1}' already exists for account '{0}'")]
     PublicKeyExists(AccountId, PublicKey),
 
@@ -66,4 +69,7 @@ pub enum DefuseError {
 
     #[error("wrong verifying_contract")]
     WrongVerifyingContract,
+
+    #[error("invalid salt")]
+    InvalidSalt,
 }

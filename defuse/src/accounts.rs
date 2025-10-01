@@ -32,7 +32,7 @@ pub trait AccountManager {
     /// Clears all expired nonces for given accounts.
     /// Omitting any errors, e.g. if account doesn't exist or nonces are not expired.
     /// NOTE: MUST attach 1 yⓃ for security purposes.
-    fn cleanup_expired_nonces(&mut self, nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>);
+    fn cleanup_nonces(&mut self, nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>);
 
     /// Returns whether authentication by PREDECESSOR_ID is enabled
     /// for given `account_id`.

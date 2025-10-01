@@ -5,6 +5,7 @@ pub mod contract;
 pub mod accounts;
 pub mod fees;
 pub mod intents;
+pub mod salts;
 pub mod tokens;
 
 pub use defuse_core as core;
