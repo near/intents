@@ -231,3 +231,5 @@ what if failed? let the receiver claim the tokens one more time?
 TODO: safety deposit on both HTLC escrows as an incentive for solvers to finalize both sides
 
 TODO: how to measure ETA for swap to be filled?
+
+
