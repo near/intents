@@ -30,10 +30,6 @@ pub enum DefuseEvent<'a> {
     #[event_version("0.3.0")]
     FeeCollectorChanged(FeeCollectorChangedEvent<'a>),
 
-    // TODO: which version should this be?
-    #[event_version("0.1.0")]
-    SaltRotationEvent(SaltRotationEvent),
-
     #[event_version("0.3.0")]
     Transfer(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, Transfer>>>]>),
 
@@ -67,6 +63,9 @@ pub enum DefuseEvent<'a> {
 
     #[event_version("0.3.0")]
     SetAuthByPredecessorId(AccountEvent<'a, SetAuthByPredecessorId>),
+
+    #[event_version("0.4.0")]
+    SaltRotationEvent(SaltRotationEvent),
 }
 
 pub trait DefuseIntentEmit<'a>: Into<DefuseEvent<'a>> {

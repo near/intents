@@ -8,7 +8,7 @@ pub trait SaltManagerExt {
     async fn invalidate_salt(
         &self,
         defuse_contract_id: &AccountId,
-        salt: Salt,
+        salt: &Salt,
     ) -> anyhow::Result<()>;
 
     async fn is_valid_salt(
@@ -35,7 +35,7 @@ impl SaltManagerExt for near_workspaces::Account {
     async fn invalidate_salt(
         &self,
         defuse_contract_id: &AccountId,
-        salt: Salt,
+        salt: &Salt,
     ) -> anyhow::Result<()> {
         self.call(defuse_contract_id, "invalidate_salt")
             .args_json(json!({ "salt": salt }))
@@ -76,7 +76,7 @@ impl SaltManagerExt for near_workspaces::Contract {
     async fn invalidate_salt(
         &self,
         defuse_contract_id: &AccountId,
-        salt: Salt,
+        salt: &Salt,
     ) -> anyhow::Result<()> {
         self.as_account()
             .invalidate_salt(defuse_contract_id, salt)

@@ -11,7 +11,6 @@ use near_sdk::{
 
 pub type TokenBalances = Amounts<IterableMap<TokenId, u128>>;
 
-// TODO: add versioning
 #[near(serializers = [borsh])]
 #[derive(Debug)]
 pub struct ContractState {

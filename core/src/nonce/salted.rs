@@ -8,6 +8,8 @@ use near_sdk::{
 
 pub type Salt = [u8; 4];
 
+/// Contains current valid salt and set of previous
+/// salts that can be valid or invalid.
 #[near(serializers = [borsh])]
 #[derive(Debug)]
 pub struct ValidSalts {

@@ -52,8 +52,9 @@ impl MaybeVersionedStateEntry {
     /// This is safe to assume that legacy [`ContractState`] doesn't start with
     /// this prefix, since the first 4 bytes in legacy [`ContractState`] were used
     /// to denote the length of `keys: Vector<K>,` in [`IterableMap`] for
-    /// `total_supplies`, so coincidence is impossible given the number of tokens
-    /// stored on the contract.
+    /// `total_supplies`, so coincidence can happen in case the number of tokens
+    /// approaches the maximum possible which is unlikely at this time
+    /// given the number of tokens stored in the contract.
     const VERSIONED_MAGIC_PREFIX: u32 = u32::MAX;
 }
 

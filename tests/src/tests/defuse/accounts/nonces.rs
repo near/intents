@@ -186,7 +186,7 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
     {
         let current_salt = env.defuse.get_current_salt(env.defuse.id()).await.unwrap();
         env.user1
-            .invalidate_salt(env.defuse.id(), current_salt)
+            .invalidate_salt(env.defuse.id(), &current_salt)
             .await
             .expect("unable to invalidate salt");
 
@@ -319,7 +319,7 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
             .expect("failed to grant role");
 
         env.user1
-            .invalidate_salt(env.defuse.id(), current_salt)
+            .invalidate_salt(env.defuse.id(), &current_salt)
             .await
             .expect("unable to rotate salt");
 

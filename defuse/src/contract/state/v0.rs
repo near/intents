@@ -1,13 +1,11 @@
-use defuse_core::{ValidSalts, amounts::Amounts, fees::FeesConfig, token_id::TokenId};
+use defuse_core::{ValidSalts, fees::FeesConfig};
 use defuse_near_utils::NestPrefix;
-use near_sdk::{AccountId, IntoStorageKey, near, store::IterableMap};
+use near_sdk::{AccountId, IntoStorageKey, near};
 
 use crate::contract::{
     Prefix as ContractPrefix,
-    state::{ContractState, Prefix as StatePrefix},
+    state::{ContractState, Prefix as StatePrefix, TokenBalances},
 };
-
-pub type TokenBalances = Amounts<IterableMap<TokenId, u128>>;
 
 #[near(serializers = [borsh])]
 #[derive(Debug)]

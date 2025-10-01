@@ -22,14 +22,6 @@ pub enum VersionedNonce {
 impl VersionedNonce {
     /// Magic prefixes (first 4 bytes of `sha256(<nonce_vN>)`) used to mark versioned nonces:
     pub const V1_MAGIC_PREFIX: [u8; 4] = hex!("a727892c");
-
-    /// Returns the version prefix, if any
-    pub const fn prefix(&self) -> Option<[u8; 4]> {
-        match self {
-            Self::Legacy(_) => None,
-            Self::V1(_) => Some(Self::V1_MAGIC_PREFIX),
-        }
-    }
 }
 
 impl TryFrom<Nonce> for VersionedNonce {
@@ -45,10 +37,11 @@ impl TryFrom<VersionedNonce> for Nonce {
 
     fn try_from(value: VersionedNonce) -> io::Result<Self> {
         // Serialize into a Vec first and validate the exact layout.
-        let mut buf = Vec::with_capacity(32);
+        const SIZE: usize = size_of::<Nonce>();
+        let mut buf = Vec::with_capacity(SIZE);
         value.serialize(&mut buf)?;
 
-        if buf.len() != 32 {
+        if buf.len() != SIZE {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 format!(
@@ -57,7 +50,7 @@ impl TryFrom<VersionedNonce> for Nonce {
                 ),
             ));
         }
-        let mut result = [0u8; 32];
+        let mut result = [0u8; SIZE];
         result.copy_from_slice(&buf);
         Ok(result)
     }
@@ -83,14 +76,12 @@ impl BorshDeserialize for VersionedNonce {
 
 impl BorshSerialize for VersionedNonce {
     fn serialize<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
-        // TODO: make it more concise
-        if let Some(prefix) = self.prefix() {
-            writer.write_all(&prefix)?;
-        }
-
         match self {
             Self::Legacy(nonce) => nonce.serialize(writer),
-            Self::V1(salted) => salted.serialize(writer),
+            Self::V1(salted) => {
+                writer.write_all(&Self::V1_MAGIC_PREFIX)?;
+                salted.serialize(writer)
+            }
         }
     }
 }

@@ -55,7 +55,7 @@ async fn invalidate_salt() {
     // only DAO or salt manager can invalidate salt
     {
         env.user2
-            .invalidate_salt(env.defuse.id(), prev_salt)
+            .invalidate_salt(env.defuse.id(), &prev_salt)
             .await
             .assert_err_contains("Insufficient permissions for method");
     }
@@ -74,7 +74,7 @@ async fn invalidate_salt() {
         current_salt = env.defuse.get_current_salt(env.defuse.id()).await.unwrap();
 
         env.user1
-            .invalidate_salt(env.defuse.id(), prev_salt)
+            .invalidate_salt(env.defuse.id(), &prev_salt)
             .await
             .expect("unable to rotate salt");
 
@@ -89,7 +89,7 @@ async fn invalidate_salt() {
     // invalidate current salt by salt manager
     {
         env.user1
-            .invalidate_salt(env.defuse.id(), current_salt)
+            .invalidate_salt(env.defuse.id(), &current_salt)
             .await
             .expect("unable to rotate salt");
 
