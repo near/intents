@@ -67,7 +67,7 @@ impl NonceEvent {
 #[must_use = "make sure to `.emit()` this event"]
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
-pub struct SaltRotation {
+pub struct SaltRotationEvent {
     pub old_salt: Salt,
     pub new_salt: Salt,
 }

@@ -55,9 +55,12 @@ impl AccountManager for Contract {
     fn cleanup_nonces(&mut self, nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>) {
         for (account_id, nonces) in nonces {
             for nonce in nonces.into_iter().map(AsBase64::into_inner) {
-                let versioned = VersionedNonce::try_from(nonce)
-                    .map_err(|_| DefuseError::InvalidNonce)
-                    .unwrap_or_panic();
+                // NOTE: omit invalid nonces
+                let Ok(versioned) =
+                    VersionedNonce::try_from(nonce).map_err(|_| DefuseError::InvalidNonce)
+                else {
+                    continue;
+                };
 
                 let cleanable = match versioned {
                     VersionedNonce::V1(SaltedNonce {

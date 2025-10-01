@@ -1,4 +1,4 @@
-use defuse_core::{DefuseError, Salt, accounts::SaltRotation, events::DefuseIntentEmit};
+use defuse_core::{DefuseError, Salt, accounts::SaltRotationEvent, events::DefuseIntentEmit};
 use defuse_near_utils::UnwrapOrPanic;
 use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{assert_one_yocto, near};
@@ -16,7 +16,7 @@ impl SaltManager for Contract {
         let old_salt = self.salts.set_new();
         let current_salt = self.salts.current();
 
-        SaltRotation {
+        SaltRotationEvent {
             new_salt: current_salt,
             old_salt,
         }
@@ -42,7 +42,7 @@ impl SaltManager for Contract {
 
         let current_salt = self.salts.current();
 
-        SaltRotation {
+        SaltRotationEvent {
             new_salt: current_salt,
             old_salt: *salt,
         }
