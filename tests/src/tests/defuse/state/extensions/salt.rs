@@ -11,9 +11,13 @@ pub trait SaltManagerExt {
         salt: Salt,
     ) -> anyhow::Result<()>;
 
-    async fn is_valid_salt(&self, salt: &Salt) -> anyhow::Result<bool>;
+    async fn is_valid_salt(
+        &self,
+        defuse_contract_id: &AccountId,
+        salt: &Salt,
+    ) -> anyhow::Result<bool>;
 
-    async fn get_current_salt(&self) -> anyhow::Result<Salt>;
+    async fn get_current_salt(&self, defuse_contract_id: &AccountId) -> anyhow::Result<Salt>;
 }
 
 impl SaltManagerExt for near_workspaces::Account {
@@ -44,16 +48,20 @@ impl SaltManagerExt for near_workspaces::Account {
         Ok(())
     }
 
-    async fn is_valid_salt(&self, salt: &Salt) -> anyhow::Result<bool> {
-        self.view(self.id(), "is_valid_salt")
+    async fn is_valid_salt(
+        &self,
+        defuse_contract_id: &AccountId,
+        salt: &Salt,
+    ) -> anyhow::Result<bool> {
+        self.view(defuse_contract_id, "is_valid_salt")
             .args_json(json!({ "salt": salt }))
             .await?
             .json()
             .map_err(Into::into)
     }
 
-    async fn get_current_salt(&self) -> anyhow::Result<Salt> {
-        self.view(self.id(), "get_current_salt")
+    async fn get_current_salt(&self, defuse_contract_id: &AccountId) -> anyhow::Result<Salt> {
+        self.view(defuse_contract_id, "get_current_salt")
             .await?
             .json()
             .map_err(Into::into)
@@ -75,11 +83,17 @@ impl SaltManagerExt for near_workspaces::Contract {
             .await
     }
 
-    async fn is_valid_salt(&self, salt: &Salt) -> anyhow::Result<bool> {
-        self.as_account().is_valid_salt(salt).await
+    async fn is_valid_salt(
+        &self,
+        defuse_contract_id: &AccountId,
+        salt: &Salt,
+    ) -> anyhow::Result<bool> {
+        self.as_account()
+            .is_valid_salt(defuse_contract_id, salt)
+            .await
     }
 
-    async fn get_current_salt(&self) -> anyhow::Result<Salt> {
-        self.as_account().get_current_salt().await
+    async fn get_current_salt(&self, defuse_contract_id: &AccountId) -> anyhow::Result<Salt> {
+        self.as_account().get_current_salt(defuse_contract_id).await
     }
 }

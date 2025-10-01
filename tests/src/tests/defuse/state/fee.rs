@@ -13,7 +13,7 @@ use crate::{
 #[rstest]
 async fn set_fee() {
     let env = Env::builder().deployer_as_super_admin().build().await;
-    let prev_fee = env.defuse.fee().await.unwrap();
+    let prev_fee = env.defuse.fee(env.defuse.id()).await.unwrap();
     let fee = Pips::from_pips(100).unwrap();
 
     // only DAO or fee manager can set fee
@@ -35,7 +35,7 @@ async fn set_fee() {
             .await
             .expect("unable to set fee");
 
-        let current_fee = env.defuse.fee().await.unwrap();
+        let current_fee = env.defuse.fee(env.defuse.id()).await.unwrap();
 
         assert_ne!(prev_fee, current_fee);
         assert_eq!(current_fee, fee);
@@ -67,7 +67,7 @@ async fn set_fee_collector() {
             .await
             .expect("unable to set fee");
 
-        let current_collector = env.defuse.fee_collector().await.unwrap();
+        let current_collector = env.defuse.fee_collector(env.defuse.id()).await.unwrap();
 
         assert_eq!(current_collector, fee_collector);
     }

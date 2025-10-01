@@ -1,6 +1,6 @@
 use hex_literal::hex;
 use near_sdk::borsh::BorshDeserialize;
-use near_sdk::borsh::{self, BorshSerialize};
+use near_sdk::borsh::BorshSerialize;
 use std::io::{self, Read};
 
 use crate::{
@@ -44,14 +44,24 @@ impl TryFrom<VersionedNonce> for Nonce {
     type Error = io::Error;
 
     fn try_from(value: VersionedNonce) -> io::Result<Self> {
-        let mut result = [0u8; size_of::<Self>()];
+        // Serialize into a Vec first and validate the exact layout.
+        let mut buf = Vec::with_capacity(32);
+        value.serialize(&mut buf)?;
 
-        borsh::to_writer(&mut result[..], &value).unwrap();
-
+        if buf.len() != 32 {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!(
+                    "encoded VersionedNonce has unexpected length: {}",
+                    buf.len()
+                ),
+            ));
+        }
+        let mut result = [0u8; 32];
+        result.copy_from_slice(&buf);
         Ok(result)
     }
 }
-
 impl BorshDeserialize for VersionedNonce {
     fn deserialize_reader<R>(reader: &mut R) -> io::Result<Self>
     where

@@ -12,7 +12,7 @@ use crate::{
 #[rstest]
 async fn rotate_salt() {
     let env = Env::builder().deployer_as_super_admin().build().await;
-    let prev_salt = env.defuse.get_current_salt().await.unwrap();
+    let prev_salt = env.defuse.get_current_salt(env.defuse.id()).await.unwrap();
 
     // only DAO or salt manager can rotate salt
     {
@@ -33,10 +33,15 @@ async fn rotate_salt() {
             .await
             .expect("unable to rotate salt");
 
-        let current_salt = env.defuse.get_current_salt().await.unwrap();
+        let current_salt = env.defuse.get_current_salt(env.defuse.id()).await.unwrap();
 
         assert_ne!(prev_salt, current_salt);
-        assert!(env.defuse.is_valid_salt(&prev_salt).await.unwrap());
+        assert!(
+            env.defuse
+                .is_valid_salt(env.defuse.id(), &prev_salt)
+                .await
+                .unwrap()
+        );
     }
 }
 
@@ -44,7 +49,7 @@ async fn rotate_salt() {
 #[rstest]
 async fn invalidate_salt() {
     let env = Env::builder().deployer_as_super_admin().build().await;
-    let mut current_salt = env.defuse.get_current_salt().await.unwrap();
+    let mut current_salt = env.defuse.get_current_salt(env.defuse.id()).await.unwrap();
     let mut prev_salt = current_salt;
 
     // only DAO or salt manager can invalidate salt
@@ -66,31 +71,37 @@ async fn invalidate_salt() {
             .await
             .expect("unable to rotate salt");
 
-        current_salt = env.defuse.get_current_salt().await.unwrap();
+        current_salt = env.defuse.get_current_salt(env.defuse.id()).await.unwrap();
 
         env.user1
             .invalidate_salt(env.defuse.id(), prev_salt)
             .await
             .expect("unable to rotate salt");
 
-        assert!(!env.defuse.is_valid_salt(&prev_salt).await.unwrap());
+        assert!(
+            !env.defuse
+                .is_valid_salt(env.defuse.id(), &prev_salt)
+                .await
+                .unwrap()
+        );
     }
 
     // invalidate current salt by salt manager
     {
-        env.acl_grant_role(env.defuse.id(), Role::SaltManager, env.user1.id())
-            .await
-            .expect("failed to grant role");
-
         env.user1
             .invalidate_salt(env.defuse.id(), current_salt)
             .await
             .expect("unable to rotate salt");
 
         prev_salt = current_salt;
-        current_salt = env.defuse.get_current_salt().await.unwrap();
+        current_salt = env.defuse.get_current_salt(env.defuse.id()).await.unwrap();
 
-        assert!(!env.defuse.is_valid_salt(&prev_salt).await.unwrap());
+        assert!(
+            !env.defuse
+                .is_valid_salt(env.defuse.id(), &prev_salt)
+                .await
+                .unwrap()
+        );
         assert_ne!(prev_salt, current_salt);
     }
 }

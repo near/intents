@@ -41,7 +41,7 @@ fn create_random_salted_nonce(salt: [u8; 4], deadline: Deadline, mut rng: impl R
 async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
     let env = Env::builder().deployer_as_super_admin().build().await;
     let current_timestamp = Utc::now();
-    let current_salt = env.defuse.get_current_salt().await.unwrap();
+    let current_salt = env.defuse.get_current_salt(env.defuse.id()).await.unwrap();
     let timeout_delta = TimeDelta::days(1);
 
     // legacy nonce
@@ -184,7 +184,7 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
 
     // nonce can't be committed with invalidated salt
     {
-        let current_salt = env.defuse.get_current_salt().await.unwrap();
+        let current_salt = env.defuse.get_current_salt(env.defuse.id()).await.unwrap();
         env.user1
             .invalidate_salt(env.defuse.id(), current_salt)
             .await
@@ -214,7 +214,7 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
 
     let env = Env::builder().deployer_as_super_admin().build().await;
     let current_timestamp = Utc::now();
-    let current_salt = env.defuse.get_current_salt().await.unwrap();
+    let current_salt = env.defuse.get_current_salt(env.defuse.id()).await.unwrap();
 
     let deadline = Deadline::new(
         current_timestamp
@@ -348,7 +348,7 @@ async fn cleanup_multiple_nonces(
 
     let env = Env::builder().build().await;
     let mut nonces = Vec::with_capacity(nonce_count);
-    let current_salt = env.defuse.get_current_salt().await.unwrap();
+    let current_salt = env.defuse.get_current_salt(env.defuse.id()).await.unwrap();
 
     for chunk in &(0..nonce_count).chunks(CHUNK_SIZE) {
         let current_timestamp = Utc::now();

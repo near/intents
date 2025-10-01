@@ -1,5 +1,5 @@
-mod extentions;
+mod extensions;
 mod fee;
 mod salt;
 
-pub use extentions::{fee::FeesManagerExt, salt::SaltManagerExt};
+pub use extensions::{fee::FeesManagerExt, salt::SaltManagerExt};
