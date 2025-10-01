@@ -1,3 +1,4 @@
+use core::mem::size_of;
 use hex_literal::hex;
 use near_sdk::borsh::BorshDeserialize;
 use near_sdk::borsh::BorshSerialize;
