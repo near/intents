@@ -53,14 +53,14 @@ sequenceDiagram
 * Maker Asset
 * Maker Amount: fixed
 
-* Taker Asset (or `.custom_resolve()` for pizza case)
+* Taker Asset (or `.custom_resolve()` for pizza case) (x: nep141/custom_resolve)
 * Taker Amount
-  * Fixed: (optional) + slippage
+  * Fixed: (optional) + slippage (x)
   * Dutch Auction: price points
   * Market Orders: via oracle-verified price within slippage
-* Allow partial fills?
+* Allow partial fills? (x: only by single whitelisted solver)
 * Deadline
-* Solvers whitelist (optional)
+* Solvers whitelist (optional)  (x)
 * `receiver_id` for Taker Asset
 * Fee receiver
 
