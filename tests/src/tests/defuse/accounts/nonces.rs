@@ -42,7 +42,7 @@ fn create_random_salted_nonce(salt: Salt, deadline: Deadline, mut rng: impl Rng)
 async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
     let env = Env::builder().deployer_as_super_admin().build().await;
     let current_timestamp = Utc::now();
-    let current_salt = env.defuse.get_current_salt(env.defuse.id()).await.unwrap();
+    let current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
     let timeout_delta = TimeDelta::days(1);
 
     // legacy nonce
@@ -73,7 +73,7 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
     // invalid salt
     {
         let deadline = Deadline::new(current_timestamp.checked_add_signed(timeout_delta).unwrap());
-        let random_salt: Salt = rng.random::<[u8; 4]>().as_slice().into();
+        let random_salt = Salt::random();
         let salted = create_random_salted_nonce(random_salt, deadline, &mut rng);
 
         env.defuse
@@ -157,7 +157,7 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
             .expect("failed to grant role");
 
         env.user1
-            .rotate_salt(env.defuse.id(), false)
+            .update_current_salt(env.defuse.id(), false)
             .await
             .expect("unable to rotate salt");
 
@@ -186,9 +186,9 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
 
     // nonce can't be committed with invalidated salt
     {
-        let current_salt = env.defuse.get_current_salt(env.defuse.id()).await.unwrap();
+        let current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
         env.user1
-            .invalidate_salt(env.defuse.id(), &current_salt)
+            .invalidate_salts(env.defuse.id(), &[current_salt])
             .await
             .expect("unable to invalidate salt");
 
@@ -216,7 +216,7 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
 
     let env = Env::builder().deployer_as_super_admin().build().await;
     let current_timestamp = Utc::now();
-    let current_salt = env.defuse.get_current_salt(env.defuse.id()).await.unwrap();
+    let current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
 
     let deadline = Deadline::new(
         current_timestamp
@@ -321,7 +321,7 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
             .expect("failed to grant role");
 
         env.user1
-            .invalidate_salt(env.defuse.id(), &current_salt)
+            .invalidate_salts(env.defuse.id(), &[current_salt])
             .await
             .expect("unable to rotate salt");
 
@@ -350,7 +350,7 @@ async fn cleanup_multiple_nonces(
 
     let env = Env::builder().build().await;
     let mut nonces = Vec::with_capacity(nonce_count);
-    let current_salt = env.defuse.get_current_salt(env.defuse.id()).await.unwrap();
+    let current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
 
     for chunk in &(0..nonce_count).chunks(CHUNK_SIZE) {
         let current_timestamp = Utc::now();

@@ -1,4 +1,4 @@
-use defuse_core::{ValidSalts, fees::FeesConfig};
+use defuse_core::{SaltRegistry, fees::FeesConfig};
 use defuse_near_utils::NestPrefix;
 use near_sdk::{AccountId, IntoStorageKey, near};
 
@@ -29,7 +29,7 @@ impl From<ContractStateV0> for ContractState {
             total_supplies,
             wnear_id,
             fees,
-            salts: ValidSalts::new(
+            salts: SaltRegistry::new(
                 ContractPrefix::State
                     .into_storage_key()
                     .nest(StatePrefix::Salts),

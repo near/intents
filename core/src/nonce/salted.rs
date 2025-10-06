@@ -4,20 +4,25 @@ use near_sdk::{
     IntoStorageKey,
     borsh::{BorshDeserialize, BorshSerialize},
     env, near,
-    store::IterableMap,
+    store::{IterableMap, key::Identity},
+};
+use serde_with::{DeserializeFromStr, SerializeDisplay};
+use std::{
+    fmt::{self, Debug},
+    str::FromStr,
 };
 
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[derive(Debug, PartialEq, PartialOrd, Ord, Eq, Copy, Clone)]
+#[derive(PartialEq, PartialOrd, Ord, Eq, Copy, Clone, SerializeDisplay, DeserializeFromStr)]
 #[autoimpl(Deref using self.0)]
 #[autoimpl(DerefMut using self.0)]
 #[autoimpl(AsRef using self.0)]
 #[autoimpl(AsMut using self.0)]
-#[near(serializers = [borsh, json])]
+#[near(serializers = [borsh])]
 pub struct Salt([u8; 4]);
 
 impl Salt {
-    fn random() -> Self {
+    pub fn random() -> Self {
         const SIZE: usize = size_of::<Salt>();
         let seed = &env::random_seed_array()[..SIZE];
         let mut result = [0u8; SIZE];
@@ -28,11 +33,65 @@ impl Salt {
     }
 }
 
-impl From<&[u8]> for Salt {
-    fn from(value: &[u8]) -> Self {
+impl fmt::Debug for Salt {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", hex::encode(self.0))
+    }
+}
+
+impl fmt::Display for Salt {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        Debug::fmt(self, f)
+    }
+}
+
+impl FromStr for Salt {
+    type Err = hex::FromHexError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let bytes = hex::decode(s)?;
         let mut result = [0u8; 4];
-        result.copy_from_slice(&value[..4]);
-        Self(result)
+
+        result.copy_from_slice(&bytes[..4]);
+
+        Ok(Self(result))
+    }
+}
+
+#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+mod abi {
+    use super::*;
+
+    use near_sdk::{
+        schemars::{
+            JsonSchema,
+            r#gen::SchemaGenerator,
+            schema::{InstanceType, Metadata, Schema, SchemaObject},
+        },
+        serde_json,
+    };
+
+    impl JsonSchema for Salt {
+        fn schema_name() -> String {
+            String::schema_name()
+        }
+
+        fn is_referenceable() -> bool {
+            false
+        }
+
+        fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
+            SchemaObject {
+                instance_type: Some(InstanceType::String.into()),
+                extensions: [("contentEncoding", "hex".into())]
+                    .into_iter()
+                    .map(|(k, v)| (k.to_string(), v))
+                    .collect(),
+                metadata: None,
+                ..Default::default()
+            }
+            .into()
+        }
     }
 }
 
@@ -40,12 +99,12 @@ impl From<&[u8]> for Salt {
 /// salts that can be valid or invalid.
 #[near(serializers = [borsh])]
 #[derive(Debug)]
-pub struct ValidSalts {
-    previous: IterableMap<Salt, bool>,
+pub struct SaltRegistry {
+    previous: IterableMap<Salt, bool, Identity>,
     current: Salt,
 }
 
-impl ValidSalts {
+impl SaltRegistry {
     /// There can be only one valid salt at the beginning
     #[inline]
     pub fn new<S>(prefix: S) -> Self
@@ -53,7 +112,7 @@ impl ValidSalts {
         S: IntoStorageKey,
     {
         Self {
-            previous: IterableMap::new(prefix),
+            previous: IterableMap::with_hasher(prefix),
             current: Salt::random(),
         }
     }
@@ -121,6 +180,14 @@ mod tests {
 
     use rstest::rstest;
 
+    impl From<&[u8]> for Salt {
+        fn from(value: &[u8]) -> Self {
+            let mut result = [0u8; 4];
+            result.copy_from_slice(&value[..4]);
+            Self(result)
+        }
+    }
+
     fn set_random_seed(rng: &mut impl Rng) -> Salt {
         let seed = rng.random();
         let context = VMContextBuilder::new().random_seed(seed).build();
@@ -132,15 +199,15 @@ mod tests {
     #[rstest]
     fn contains_salt_test(random_bytes: Vec<u8>) {
         let random_salt: Salt = Unstructured::new(&random_bytes).arbitrary().unwrap();
-        let salts = ValidSalts::new(random_bytes);
+        let salts = SaltRegistry::new(random_bytes);
 
         assert!(salts.is_valid(salts.current));
         assert!(!salts.is_valid(random_salt));
     }
 
     #[rstest]
-    fn rotate_salt_test(random_bytes: Vec<u8>, mut rng: impl Rng) {
-        let mut salts = ValidSalts::new(random_bytes);
+    fn update_current_salt_test(random_bytes: Vec<u8>, mut rng: impl Rng) {
+        let mut salts = SaltRegistry::new(random_bytes);
 
         let current = set_random_seed(&mut rng);
         let previous = salts.set_new(false);
@@ -157,7 +224,7 @@ mod tests {
 
     #[rstest]
     fn reset_salt_test(random_bytes: Vec<u8>, mut rng: impl Rng) {
-        let mut salts = ValidSalts::new(random_bytes);
+        let mut salts = SaltRegistry::new(random_bytes);
         let random_salt = rng.random::<[u8; 4]>().as_slice().into();
 
         let current = set_random_seed(&mut rng);

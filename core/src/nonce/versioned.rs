@@ -1,10 +1,7 @@
 use core::mem::size_of;
 use defuse_borsh_utils::adapters::{BorshDeserializeAs, BorshSerializeAs};
 use hex_literal::hex;
-use near_sdk::{
-    borsh::{BorshDeserialize, BorshSerialize},
-    env,
-};
+use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
 use std::io::{self, Read};
 
 use crate::{
@@ -29,7 +26,7 @@ pub enum VersionedNonce {
 #[allow(clippy::fallible_impl_from)]
 impl From<Nonce> for VersionedNonce {
     fn from(value: Nonce) -> Self {
-        MaybeVersionedNonce::deserialize_as(&mut value.as_ref()).unwrap()
+        MaybeVersionedNonce::deserialize_as(&mut value.as_ref()).unwrap_or_else(|_| unreachable!())
     }
 }
 
@@ -37,19 +34,11 @@ impl From<Nonce> for VersionedNonce {
 #[allow(clippy::fallible_impl_from)]
 impl From<VersionedNonce> for Nonce {
     fn from(value: VersionedNonce) -> Self {
-        // Serialize into a Vec first and validate the exact layout.
         const SIZE: usize = size_of::<Nonce>();
-        let mut buf = Vec::with_capacity(SIZE);
-        MaybeVersionedNonce::serialize_as(&value, &mut buf).unwrap();
-
-        if buf.len() != SIZE {
-            env::panic_str(&format!(
-                "encoded VersionedNonce has unexpected length: {}",
-                buf.len(),
-            ));
-        }
         let mut result = [0u8; SIZE];
-        result.copy_from_slice(&buf);
+
+        MaybeVersionedNonce::serialize_as(&value, &mut result.as_mut_slice())
+            .unwrap_or_else(|_| unreachable!());
 
         result
     }

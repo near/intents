@@ -62,7 +62,7 @@ pub trait State: StateView {
 
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()>;
 
-    fn cleanup_nonce(&mut self, account_id: &AccountId, nonce: Nonce) -> Result<()>;
+    fn cleanup_nonce(&mut self, account_id: &AccountIdRef, nonce: Nonce) -> Result<()>;
 
     fn internal_add_balance(
         &mut self,

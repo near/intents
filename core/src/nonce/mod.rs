@@ -5,7 +5,7 @@ mod versioned;
 pub use {
     expirable::ExpirableNonce,
     salted::SaltedNonce,
-    salted::{Salt, ValidSalts},
+    salted::{Salt, SaltRegistry},
     versioned::VersionedNonce,
 };
 
@@ -47,9 +47,7 @@ where
     }
 
     #[inline]
-    pub fn cleanup(&mut self, n: Nonce) -> bool {
-        let [prefix @ .., _] = n;
-
+    pub fn clear_by_prefix(&mut self, prefix: [u8; 31]) -> bool {
         self.0.clear_by_prefix(prefix)
     }
 

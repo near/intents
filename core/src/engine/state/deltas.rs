@@ -123,7 +123,7 @@ where
     }
 
     #[inline]
-    fn cleanup_nonce(&mut self, account_id: &AccountId, nonce: Nonce) -> Result<()> {
+    fn cleanup_nonce(&mut self, account_id: &AccountIdRef, nonce: Nonce) -> Result<()> {
         self.state.cleanup_nonce(account_id, nonce)
     }
 

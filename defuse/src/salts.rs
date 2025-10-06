@@ -6,16 +6,16 @@ use near_sdk::ext_contract;
 pub trait SaltManager {
     /// Sets the current salt to a new one, previous salt remains valid.
     /// Returns the new current salt.
-    fn rotate_salt(&mut self, invalidate_current: bool) -> Salt;
+    fn update_current_salt(&mut self) -> Salt;
 
     /// Invalidates the provided salt: invalidates provided salt,
     /// sets a new one if it was current salt.
     /// Returns the current salt.
-    fn invalidate_salt(&mut self, salt: Salt) -> Salt;
+    fn invalidate_salts(&mut self, salts: Vec<Salt>) -> Salt;
 
     /// Returns whether the provided salt is valid
     fn is_valid_salt(&self, salt: Salt) -> bool;
 
     /// Returns the current salt
-    fn get_current_salt(&self) -> Salt;
+    fn current_salt(&self) -> Salt;
 }

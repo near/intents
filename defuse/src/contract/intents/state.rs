@@ -129,11 +129,11 @@ impl State for Contract {
     }
 
     #[inline]
-    fn cleanup_nonce(&mut self, account_id: &AccountId, nonce: Nonce) -> Result<()> {
+    fn cleanup_nonce(&mut self, account_id: &AccountIdRef, nonce: Nonce) -> Result<()> {
         let account = self
             .accounts
             .get_mut(account_id)
-            .ok_or_else(|| DefuseError::AccountNotFound(account_id.clone()))?
+            .ok_or_else(|| DefuseError::AccountNotFound(account_id.to_owned()))?
             .as_inner_unchecked_mut();
 
         account.cleanup_nonce(nonce);

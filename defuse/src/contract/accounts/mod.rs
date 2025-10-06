@@ -59,15 +59,17 @@ impl AccountManager for Contract {
                     VersionedNonce::V1(SaltedNonce {
                         salt,
                         nonce: ExpirableNonce { deadline, .. },
-                    }) => !self.is_valid_salt(salt) || deadline.has_expired(),
+                    }) => deadline.has_expired() || !self.is_valid_salt(salt),
                     // NOTE: legacy nonces can't be cleared before a complete prohibition on its usage
                     VersionedNonce::Legacy(_) => false,
                 };
 
-                // NOTE: all errors are omitted
-                if cleanable {
-                    State::cleanup_nonce(self, &account_id, nonce).ok();
+                if !cleanable {
+                    continue;
                 }
+
+                // NOTE: all errors are omitted
+                let _ = State::cleanup_nonce(self, &account_id, nonce);
             }
         }
     }

@@ -70,7 +70,9 @@ where
 
     #[inline]
     pub fn cleanup(&mut self, nonce: Nonce) -> bool {
-        self.nonces.cleanup(nonce)
+        let [prefix @ .., _] = nonce;
+
+        self.nonces.clear_by_prefix(prefix)
     }
 }
 

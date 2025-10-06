@@ -2,7 +2,7 @@ use defuse_crypto::PublicKey;
 use defuse_serde_utils::base64::Base64;
 use near_sdk::{AccountIdRef, near};
 use serde_with::serde_as;
-use std::borrow::Cow;
+use std::{borrow::Cow, collections::BTreeSet};
 
 use crate::{Nonce, Salt};
 
@@ -67,15 +67,7 @@ impl NonceEvent {
 #[must_use = "make sure to `.emit()` this event"]
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
-pub struct RotateSaltEvent {
-    pub old_salt: Salt,
-    pub new_salt: Salt,
-}
-
-#[must_use = "make sure to `.emit()` this event"]
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
-pub struct InvalidateSaltEvent {
+pub struct SaltRotationEvent {
     pub current: Salt,
-    pub invalidated: Salt,
+    pub invalidated: BTreeSet<Salt>,
 }
