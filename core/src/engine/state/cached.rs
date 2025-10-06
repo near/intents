@@ -120,7 +120,7 @@ where
         was_enabled ^ toggled
     }
 
-    fn is_valid_salt(&self, salt: &Salt) -> bool {
+    fn is_valid_salt(&self, salt: Salt) -> bool {
         self.view.is_valid_salt(salt)
     }
 }
@@ -416,6 +416,6 @@ impl CachedAccount {
 
     #[inline]
     pub fn cleanup_nonce(&mut self, n: U256) -> bool {
-        self.nonces.clear_expired(n)
+        self.nonces.cleanup(n)
     }
 }

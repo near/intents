@@ -12,12 +12,12 @@ use crate::{
 #[rstest]
 async fn rotate_salt() {
     let env = Env::builder().deployer_as_super_admin().build().await;
-    let prev_salt = env.defuse.get_current_salt(env.defuse.id()).await.unwrap();
+    let mut prev_salt = env.defuse.get_current_salt(env.defuse.id()).await.unwrap();
 
     // only DAO or salt manager can rotate salt
     {
         env.user2
-            .rotate_salt(env.defuse.id())
+            .rotate_salt(env.defuse.id(), false)
             .await
             .assert_err_contains("Insufficient permissions for method");
     }
@@ -30,7 +30,7 @@ async fn rotate_salt() {
 
         let new_salt = env
             .user1
-            .rotate_salt(env.defuse.id())
+            .rotate_salt(env.defuse.id(), false)
             .await
             .expect("unable to rotate salt");
 
@@ -40,6 +40,27 @@ async fn rotate_salt() {
         assert_eq!(new_salt, current_salt);
         assert!(
             env.defuse
+                .is_valid_salt(env.defuse.id(), &prev_salt)
+                .await
+                .unwrap()
+        );
+    }
+
+    // rotate salt by salt manager + invalidate current
+    {
+        prev_salt = env.defuse.get_current_salt(env.defuse.id()).await.unwrap();
+        let new_salt = env
+            .user1
+            .rotate_salt(env.defuse.id(), true)
+            .await
+            .expect("unable to rotate salt");
+
+        let current_salt = env.defuse.get_current_salt(env.defuse.id()).await.unwrap();
+
+        assert_ne!(prev_salt, current_salt);
+        assert_eq!(new_salt, current_salt);
+        assert!(
+            !env.defuse
                 .is_valid_salt(env.defuse.id(), &prev_salt)
                 .await
                 .unwrap()
@@ -70,7 +91,7 @@ async fn invalidate_salt() {
 
         current_salt = env
             .user1
-            .rotate_salt(env.defuse.id())
+            .rotate_salt(env.defuse.id(), false)
             .await
             .expect("unable to rotate salt");
 

@@ -98,7 +98,7 @@ where
     }
 
     #[inline]
-    fn is_valid_salt(&self, salt: &Salt) -> bool {
+    fn is_valid_salt(&self, salt: Salt) -> bool {
         self.state.is_valid_salt(salt)
     }
 }

@@ -154,7 +154,7 @@ impl Account {
     /// regardless of whether it was previously committed or not.
     #[inline]
     pub fn cleanup_nonce(&mut self, nonce: U256) -> bool {
-        self.nonces.clear_expired(nonce)
+        self.nonces.cleanup(nonce)
     }
 
     #[inline]

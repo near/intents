@@ -86,16 +86,14 @@ where
 
     #[inline]
     fn verify_intent_nonce(&self, nonce: Nonce, intent_deadline: Deadline) -> Result<()> {
-        let versioned = VersionedNonce::try_from(nonce).map_err(|_| DefuseError::InvalidNonce)?;
-
-        match versioned {
+        match VersionedNonce::from(nonce) {
             // NOTE: it is allowed to commit legacy nonces in this version
             VersionedNonce::Legacy(_) => {}
             VersionedNonce::V1(SaltedNonce {
                 salt,
                 nonce: ExpirableNonce { deadline, .. },
             }) => {
-                if !self.state.is_valid_salt(&salt) {
+                if !self.state.is_valid_salt(salt) {
                     return Err(DefuseError::InvalidSalt);
                 }
 

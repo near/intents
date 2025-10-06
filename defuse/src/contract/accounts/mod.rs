@@ -55,18 +55,11 @@ impl AccountManager for Contract {
     fn cleanup_nonces(&mut self, nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>) {
         for (account_id, nonces) in nonces {
             for nonce in nonces.into_iter().map(AsBase64::into_inner) {
-                // NOTE: omit invalid nonces
-                let Ok(versioned) =
-                    VersionedNonce::try_from(nonce).map_err(|_| DefuseError::InvalidNonce)
-                else {
-                    continue;
-                };
-
-                let cleanable = match versioned {
+                let cleanable = match VersionedNonce::from(nonce) {
                     VersionedNonce::V1(SaltedNonce {
                         salt,
                         nonce: ExpirableNonce { deadline, .. },
-                    }) => !self.is_valid_salt(&salt) || deadline.has_expired(),
+                    }) => !self.is_valid_salt(salt) || deadline.has_expired(),
                     // NOTE: legacy nonces can't be cleared before a complete prohibition on its usage
                     VersionedNonce::Legacy(_) => false,
                 };

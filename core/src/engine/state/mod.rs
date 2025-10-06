@@ -43,7 +43,7 @@ pub trait StateView {
     fn is_auth_by_predecessor_id_enabled(&self, account_id: &AccountIdRef) -> bool;
 
     /// Returns whether salt in nonce is valid
-    fn is_valid_salt(&self, salt: &Salt) -> bool;
+    fn is_valid_salt(&self, salt: Salt) -> bool;
 
     #[inline]
     fn cached(self) -> CachedState<Self>

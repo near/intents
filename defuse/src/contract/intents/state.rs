@@ -91,7 +91,7 @@ impl StateView for Contract {
             .is_none_or(Account::is_auth_by_predecessor_id_enabled)
     }
 
-    fn is_valid_salt(&self, salt: &Salt) -> bool {
+    fn is_valid_salt(&self, salt: Salt) -> bool {
         self.salts.is_valid(salt)
     }
 }

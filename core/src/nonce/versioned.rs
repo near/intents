@@ -1,7 +1,10 @@
 use core::mem::size_of;
+use defuse_borsh_utils::adapters::{BorshDeserializeAs, BorshSerializeAs};
 use hex_literal::hex;
-use near_sdk::borsh::BorshDeserialize;
-use near_sdk::borsh::BorshSerialize;
+use near_sdk::{
+    borsh::{BorshDeserialize, BorshSerialize},
+    env,
+};
 use std::io::{self, Read};
 
 use crate::{
@@ -13,76 +16,78 @@ use crate::{
 /// we use a specific prefix individual for each version.
 /// Versioned nonce formats:
 /// - Legacy: plain `[u8; 32]`
-/// - V1: `V1_MAGIC_PREFIX (4 bytes) || SALT (4 bytes) || DEADLINE (8 bytes) || NONCE (16 random bytes)`
-#[derive(Clone, Debug, PartialEq, Eq)]
+/// - VERSIONED: `VERSIONED_MAGIC_PREFIX (4 bytes) || VERSION (1 byte) || NONCE_BYTES (27 bytes)`
+///     - V1: SALT (4 bytes) || DEADLINE (8 bytes) || NONCE (15 random bytes)`
+#[derive(Clone, Debug, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
+#[borsh(crate = "::near_sdk::borsh")]
 pub enum VersionedNonce {
     Legacy(Nonce),
-    V1(SaltedNonce<ExpirableNonce<[u8; 16]>>),
+    V1(SaltedNonce<ExpirableNonce<[u8; 15]>>),
 }
 
-impl VersionedNonce {
-    /// Magic prefixes (first 4 bytes of `sha256(<nonce_vN>)`) used to mark versioned nonces:
-    pub const V1_MAGIC_PREFIX: [u8; 4] = hex!("a727892c");
-}
-
-impl TryFrom<Nonce> for VersionedNonce {
-    type Error = io::Error;
-
-    fn try_from(value: Nonce) -> Result<Self, Self::Error> {
-        Self::deserialize(&mut value.as_ref())
+// Allowed to maintain a clean API
+#[allow(clippy::fallible_impl_from)]
+impl From<Nonce> for VersionedNonce {
+    fn from(value: Nonce) -> Self {
+        MaybeVersionedNonce::deserialize_as(&mut value.as_ref()).unwrap()
     }
 }
 
-impl TryFrom<VersionedNonce> for Nonce {
-    type Error = io::Error;
-
-    fn try_from(value: VersionedNonce) -> io::Result<Self> {
+// Allowed to maintain a clean API
+#[allow(clippy::fallible_impl_from)]
+impl From<VersionedNonce> for Nonce {
+    fn from(value: VersionedNonce) -> Self {
         // Serialize into a Vec first and validate the exact layout.
         const SIZE: usize = size_of::<Nonce>();
         let mut buf = Vec::with_capacity(SIZE);
-        value.serialize(&mut buf)?;
+        MaybeVersionedNonce::serialize_as(&value, &mut buf).unwrap();
 
         if buf.len() != SIZE {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                format!(
-                    "encoded VersionedNonce has unexpected length: {}",
-                    buf.len()
-                ),
+            env::panic_str(&format!(
+                "encoded VersionedNonce has unexpected length: {}",
+                buf.len(),
             ));
         }
         let mut result = [0u8; SIZE];
         result.copy_from_slice(&buf);
-        Ok(result)
+
+        result
     }
 }
-impl BorshDeserialize for VersionedNonce {
-    fn deserialize_reader<R>(reader: &mut R) -> io::Result<Self>
+
+struct MaybeVersionedNonce;
+
+impl MaybeVersionedNonce {
+    /// Magic prefixes (first 4 bytes of `sha256(<versioned_nonce>)`) used to mark versioned nonces:
+    pub const VERSIONED_MAGIC_PREFIX: [u8; 4] = hex!("5628f6c6");
+}
+
+impl BorshDeserializeAs<VersionedNonce> for MaybeVersionedNonce {
+    fn deserialize_as<R>(reader: &mut R) -> io::Result<VersionedNonce>
     where
         R: io::Read,
     {
         let mut prefix = [0u8; 4];
         reader.read_exact(&mut prefix)?;
 
-        let versioned = match prefix {
-            Self::V1_MAGIC_PREFIX => Self::V1(
-                SaltedNonce::<ExpirableNonce<[u8; 16]>>::deserialize_reader(reader)?,
-            ),
-            _ => Self::Legacy(Nonce::deserialize_reader(&mut prefix.chain(reader))?),
+        let versioned = if prefix == Self::VERSIONED_MAGIC_PREFIX {
+            VersionedNonce::deserialize_reader(reader)?
+        } else {
+            VersionedNonce::Legacy(Nonce::deserialize_reader(&mut prefix.chain(reader))?)
         };
 
         Ok(versioned)
     }
 }
 
-impl BorshSerialize for VersionedNonce {
-    fn serialize<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
-        match self {
-            Self::Legacy(nonce) => nonce.serialize(writer),
-            Self::V1(salted) => {
-                writer.write_all(&Self::V1_MAGIC_PREFIX)?;
-                salted.serialize(writer)
-            }
+impl BorshSerializeAs<VersionedNonce> for MaybeVersionedNonce {
+    fn serialize_as<W>(source: &VersionedNonce, writer: &mut W) -> io::Result<()>
+    where
+        W: io::Write,
+    {
+        match source {
+            VersionedNonce::Legacy(nonce) => nonce.serialize(writer),
+            VersionedNonce::V1(_) => (Self::VERSIONED_MAGIC_PREFIX, source).serialize(writer),
         }
     }
 }
@@ -102,21 +107,27 @@ mod tests {
         let mut u = Unstructured::new(&random_bytes);
         let nonce: Nonce = u.arbitrary().unwrap();
 
-        let expected = VersionedNonce::try_from(nonce).expect("unable to convert nonce");
+        let expected = VersionedNonce::from(nonce);
         assert_eq!(expected, VersionedNonce::Legacy(nonce));
+
+        let back = Nonce::from(expected);
+        assert_eq!(back, nonce);
     }
 
     #[rstest]
     fn v1_roundtrip_layout(random_bytes: Vec<u8>) {
         let mut u = Unstructured::new(&random_bytes);
-        let nonce_bytes: [u8; 16] = u.arbitrary().unwrap();
+        let nonce_bytes: [u8; 15] = u.arbitrary().unwrap();
         let now = Deadline::new(Utc::now());
         let salt: Salt = u.arbitrary().unwrap();
 
         let salted = SaltedNonce::new(salt, ExpirableNonce::new(now, nonce_bytes));
-        let nonce: Nonce = VersionedNonce::V1(salted.clone()).try_into().unwrap();
-        let exp = VersionedNonce::try_from(nonce).expect("unable to convert nonce");
+        let nonce: Nonce = VersionedNonce::V1(salted.clone()).into();
+        let exp = VersionedNonce::from(nonce);
 
         assert_eq!(exp, VersionedNonce::V1(salted));
+
+        let back = Nonce::from(exp);
+        assert_eq!(back, nonce);
     }
 }

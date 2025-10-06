@@ -1,7 +1,7 @@
-mod entry;
 mod v0;
+mod versioned;
 
-pub use entry::ContractStateEntry;
+pub use versioned::MaybeVersionedStateEntry;
 
 use defuse_core::{ValidSalts, amounts::Amounts, fees::FeesConfig, token_id::TokenId};
 use defuse_near_utils::NestPrefix;

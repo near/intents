@@ -69,9 +69,8 @@ where
     }
 
     #[inline]
-    pub fn clear_expired(&mut self, nonce: Nonce) -> bool {
-        // Expirable nonces can not be in the legacy map
-        self.nonces.clear_expired(nonce)
+    pub fn cleanup(&mut self, nonce: Nonce) -> bool {
+        self.nonces.cleanup(nonce)
     }
 }
 
@@ -205,7 +204,7 @@ pub(super) mod tests {
             LookupMap::with_hasher(random_bytes),
         );
 
-        assert!(!new.clear_expired(random_nonce));
+        assert!(!new.cleanup(random_nonce));
         assert!(new.is_used(random_nonce));
     }
 }

@@ -4,7 +4,7 @@ use derive_more::derive::From;
 use near_sdk::{near, serde::Deserialize};
 
 use crate::{
-    accounts::{AccountEvent, NonceEvent, PublicKeyEvent, SaltRotationEvent},
+    accounts::{AccountEvent, InvalidateSaltEvent, NonceEvent, PublicKeyEvent, RotateSaltEvent},
     fees::{FeeChangedEvent, FeeCollectorChangedEvent},
     intents::{
         IntentEvent,
@@ -65,7 +65,10 @@ pub enum DefuseEvent<'a> {
     SetAuthByPredecessorId(AccountEvent<'a, SetAuthByPredecessorId>),
 
     #[event_version("0.4.0")]
-    SaltRotation(SaltRotationEvent),
+    RotateSalt(RotateSaltEvent),
+
+    #[event_version("0.4.0")]
+    InvalidateSalt(InvalidateSaltEvent),
 }
 
 pub trait DefuseIntentEmit<'a>: Into<DefuseEvent<'a>> {

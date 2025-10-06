@@ -47,7 +47,7 @@ where
     }
 
     #[inline]
-    pub fn clear_expired(&mut self, n: Nonce) -> bool {
+    pub fn cleanup(&mut self, n: Nonce) -> bool {
         let [prefix @ .., _] = n;
 
         self.0.clear_by_prefix(prefix)

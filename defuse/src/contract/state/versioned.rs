@@ -1,9 +1,6 @@
-use defuse_borsh_utils::adapters::{As, BorshDeserializeAs, BorshSerializeAs};
-use defuse_core::fees::FeesConfig;
+use defuse_borsh_utils::adapters::{BorshDeserializeAs, BorshSerializeAs};
 use defuse_near_utils::PanicOnClone;
-use impl_tools::autoimpl;
 use near_sdk::{
-    IntoStorageKey,
     borsh::{BorshDeserialize, BorshSerialize},
     near,
 };
@@ -16,32 +13,7 @@ use std::{
 
 use crate::contract::state::{ContractState, v0::ContractStateV0};
 
-#[derive(Debug)]
-#[autoimpl(Deref using self.0)]
-#[autoimpl(DerefMut using self.0)]
-#[autoimpl(AsRef using self.0)]
-#[autoimpl(AsMut using self.0)]
-#[near(serializers = [borsh])]
-#[repr(transparent)]
-pub struct ContractStateEntry(
-    #[borsh(
-        deserialize_with = "As::<MaybeVersionedStateEntry>::deserialize",
-        serialize_with = "As::<MaybeVersionedStateEntry>::serialize"
-    )]
-    pub ContractState,
-);
-
-impl ContractStateEntry {
-    #[inline]
-    pub fn new<T>(prefix: T, wnear_id: near_sdk::AccountId, fees: FeesConfig) -> Self
-    where
-        T: IntoStorageKey,
-    {
-        Self(ContractState::new(prefix, wnear_id, fees))
-    }
-}
-
-struct MaybeVersionedStateEntry;
+pub struct MaybeVersionedStateEntry;
 
 impl MaybeVersionedStateEntry {
     /// This is a magic number that is used to differentiate between

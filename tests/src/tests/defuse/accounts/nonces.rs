@@ -2,7 +2,9 @@ use arbitrary::{Arbitrary, Unstructured};
 use chrono::{TimeDelta, Utc};
 use defuse::{
     contract::Role,
-    core::{Deadline, ExpirableNonce, Nonce, SaltedNonce, VersionedNonce, intents::DefuseIntents},
+    core::{
+        Deadline, ExpirableNonce, Nonce, Salt, SaltedNonce, VersionedNonce, intents::DefuseIntents,
+    },
 };
 use itertools::Itertools;
 
@@ -24,16 +26,15 @@ use crate::{
     utils::acl::AclExt,
 };
 
-fn create_random_salted_nonce(salt: [u8; 4], deadline: Deadline, mut rng: impl Rng) -> Nonce {
+fn create_random_salted_nonce(salt: Salt, deadline: Deadline, mut rng: impl Rng) -> Nonce {
     VersionedNonce::V1(SaltedNonce::new(
         salt,
         ExpirableNonce {
             deadline,
-            nonce: rng.random::<[u8; 16]>(),
+            nonce: rng.random::<[u8; 15]>(),
         },
     ))
-    .try_into()
-    .expect("unable to create salted nonce")
+    .into()
 }
 
 #[tokio::test]
@@ -72,7 +73,8 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
     // invalid salt
     {
         let deadline = Deadline::new(current_timestamp.checked_add_signed(timeout_delta).unwrap());
-        let salted = create_random_salted_nonce(rng.random(), deadline, &mut rng);
+        let random_salt: Salt = rng.random::<[u8; 4]>().as_slice().into();
+        let salted = create_random_salted_nonce(random_salt, deadline, &mut rng);
 
         env.defuse
             .execute_intents([env.user1.sign_defuse_message(
@@ -155,7 +157,7 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
             .expect("failed to grant role");
 
         env.user1
-            .rotate_salt(env.defuse.id())
+            .rotate_salt(env.defuse.id(), false)
             .await
             .expect("unable to rotate salt");
 
