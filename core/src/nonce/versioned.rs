@@ -16,8 +16,8 @@ use crate::{
 /// we use a specific prefix individual for each version.
 /// Versioned nonce formats:
 /// - Legacy: plain `[u8; 32]`
-/// - VERSIONED: `VERSIONED_MAGIC_PREFIX (4 bytes) || VERSION (1 byte) || NONCE_BYTES (27 bytes)`
-///     - V1: SALT (4 bytes) || DEADLINE (8 bytes) || NONCE (15 random bytes)`
+/// - VERSIONED: `VERSIONED_MAGIC_PREFIX (4 bytes) || VERSION (1 byte) || NONCE_BYTES (27 bytes)`:
+///     - V1: `SALT (4 bytes) || DEADLINE (8 bytes) || NONCE (15 random bytes)`
 #[derive(Clone, Debug, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
 #[borsh(crate = "::near_sdk::borsh")]
 pub enum VersionedNonce {
