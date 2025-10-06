@@ -735,6 +735,7 @@ dependencies = [
  "defuse-serde-utils",
  "defuse-test-utils",
  "defuse-tip191",
+ "defuse-token-id",
  "defuse-ton-connect",
  "defuse-webauthn",
  "derive_more 2.0.1",
@@ -949,6 +950,26 @@ dependencies = [
  "near-sdk",
  "rstest",
  "serde_with",
+]
+
+[[package]]
+name = "defuse-token-id"
+version = "0.1.0"
+dependencies = [
+ "arbitrary",
+ "arbitrary_with",
+ "defuse-near-utils",
+ "defuse-nep245",
+ "defuse-test-utils",
+ "derive_more 2.0.1",
+ "hex",
+ "near-account-id",
+ "near-contract-standards",
+ "near-sdk",
+ "rstest",
+ "serde_with",
+ "strum 0.27.1",
+ "thiserror 2.0.12",
 ]
 
 [[package]]

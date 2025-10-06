@@ -3,7 +3,7 @@ pub mod nep141;
 pub mod nep171;
 pub mod nep245;
 
-use crate::token_id::{
+use crate::{
     error::TokenIdError, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId,
 };
 use core::{
