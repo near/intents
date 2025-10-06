@@ -51,6 +51,7 @@ contract = [
 [dev-dependencies]
 defuse-core = { workspace = true, features = ["arbitrary"] }
 defuse-test-utils.workspace = true
+chrono.workspace = true
 
 arbitrary_with.workspace = true
 itertools.workspace = true

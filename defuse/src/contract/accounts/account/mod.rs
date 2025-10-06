@@ -1,13 +1,14 @@
 mod entry;
+mod nonces;
 
-pub use self::entry::*;
+pub use self::{entry::*, nonces::MaybeLegacyAccountNonces};
 
 use std::borrow::Cow;
 
 use bitflags::bitflags;
-use defuse_bitmap::{U248, U256};
+use defuse_bitmap::U256;
 use defuse_core::{
-    Nonces, Result,
+    Result,
     accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
     events::DefuseEvent,
@@ -32,7 +33,7 @@ use super::AccountState;
 #[autoimpl(Deref using self.state)]
 #[autoimpl(DerefMut using self.state)]
 pub struct Account {
-    nonces: Nonces<LookupMap<U248, U256>>,
+    nonces: MaybeLegacyAccountNonces,
 
     flags: AccountFlags,
     public_keys: IterableSet<PublicKey>,
@@ -51,8 +52,8 @@ impl Account {
         let prefix = prefix.into_storage_key();
 
         Self {
-            nonces: Nonces::new(LookupMap::new(
-                prefix.as_slice().nest(AccountPrefix::Nonces),
+            nonces: MaybeLegacyAccountNonces::new(LookupMap::with_hasher(
+                prefix.as_slice().nest(AccountPrefix::OptimizedNonces),
             )),
             flags: (!me.get_account_type().is_implicit())
                 .then_some(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
@@ -144,16 +145,16 @@ impl Account {
     }
 
     #[inline]
-    pub fn commit_nonce(&mut self, n: U256) -> Result<()> {
-        self.nonces.commit(n)
+    pub fn commit_nonce(&mut self, nonce: U256) -> Result<()> {
+        self.nonces.commit(nonce)
     }
 
     /// Clears the nonce if it was expired.
     /// Returns whether the nonces was cleared. If the nonce has not expired yet, then returns `false`,
     /// regardless of whether it was previously committed or not.
     #[inline]
-    pub fn clear_expired_nonce(&mut self, n: U256) -> bool {
-        self.nonces.clear_expired(n)
+    pub fn clear_expired_nonce(&mut self, nonce: U256) -> bool {
+        self.nonces.clear_expired(nonce)
     }
 
     #[inline]
@@ -195,13 +196,22 @@ impl Account {
     }
 }
 
-#[derive(BorshSerialize, BorshStorageKey)]
-#[borsh(crate = "::near_sdk::borsh")]
-enum AccountPrefix {
-    Nonces,
-    PublicKeys,
-    State,
+#[allow(deprecated)]
+mod prefix {
+    use super::{BorshSerialize, BorshStorageKey};
+
+    #[derive(BorshSerialize, BorshStorageKey)]
+    #[borsh(crate = "::near_sdk::borsh")]
+    pub enum AccountPrefix {
+        #[deprecated(note = "Please use `AccountPrefix::OptimizedNonces` instead.")]
+        _LegacyNonces,
+        PublicKeys,
+        State,
+        OptimizedNonces,
+    }
 }
+
+use prefix::AccountPrefix;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[near(serializers = [borsh])]

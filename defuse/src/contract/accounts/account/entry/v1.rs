@@ -13,15 +13,15 @@ use crate::contract::accounts::{
     account::{AccountFlags, AccountPrefix},
 };
 
-/// Legacy: V0 of [`Account`]
+/// Legacy: V1 of [`Account`]
 #[derive(Debug)]
 #[near(serializers = [borsh])]
 #[autoimpl(Deref using self.state)]
 #[autoimpl(DerefMut using self.state)]
-pub struct AccountV0 {
+pub struct AccountV1 {
     pub(super) nonces: Nonces<LookupMap<U248, U256>>,
 
-    pub(super) implicit_public_key_removed: bool,
+    pub(super) flags: AccountFlags,
     pub(super) public_keys: IterableSet<PublicKey>,
 
     pub state: AccountState,
@@ -29,24 +29,22 @@ pub struct AccountV0 {
     pub(super) prefix: Vec<u8>,
 }
 
-impl From<AccountV0> for Account {
+impl From<AccountV1> for Account {
     fn from(
-        AccountV0 {
+        AccountV1 {
             nonces,
-            implicit_public_key_removed,
+            flags,
             public_keys,
             state,
             prefix,
-        }: AccountV0,
+        }: AccountV1,
     ) -> Self {
         Self {
             nonces: MaybeLegacyAccountNonces::with_legacy(
                 nonces,
                 LookupMap::with_hasher(prefix.as_slice().nest(AccountPrefix::OptimizedNonces)),
             ),
-            flags: implicit_public_key_removed
-                .then_some(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
-                .unwrap_or_else(AccountFlags::empty),
+            flags,
             public_keys,
             state,
             prefix,
@@ -54,26 +52,22 @@ impl From<AccountV0> for Account {
     }
 }
 
-/// Legacy implementation of [`AccountV0`]
+/// Legacy implementation of [`AccountV1`]
 #[cfg(test)]
 pub(super) mod tests {
     use super::*;
 
-    use defuse_bitmap::U256;
-    use defuse_near_utils::NestPrefix;
-    use near_sdk::{
-        AccountIdRef,
-        store::{IterableSet, LookupMap},
-    };
+    use near_sdk::AccountIdRef;
 
     use defuse_core::{
         Result,
         accounts::{AccountEvent, PublicKeyEvent},
         events::DefuseEvent,
+        intents::account::SetAuthByPredecessorId,
     };
     use std::borrow::Cow;
 
-    impl AccountV0 {
+    impl AccountV1 {
         #[inline]
         pub fn new<S>(prefix: S, me: &AccountIdRef) -> Self
         where
@@ -86,7 +80,9 @@ pub(super) mod tests {
                     #[allow(deprecated)]
                     prefix.as_slice().nest(AccountPrefix::_LegacyNonces),
                 )),
-                implicit_public_key_removed: !me.get_account_type().is_implicit(),
+                flags: (!me.get_account_type().is_implicit())
+                    .then_some(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
+                    .unwrap_or_else(AccountFlags::empty),
                 public_keys: IterableSet::new(prefix.as_slice().nest(AccountPrefix::PublicKeys)),
                 state: AccountState::new(prefix.as_slice().nest(AccountPrefix::State)),
                 prefix,
@@ -115,8 +111,8 @@ pub(super) mod tests {
         #[must_use]
         fn maybe_add_public_key(&mut self, me: &AccountIdRef, public_key: PublicKey) -> bool {
             if me == public_key.to_implicit_account_id() {
-                let was_removed = self.implicit_public_key_removed;
-                self.implicit_public_key_removed = false;
+                let was_removed = self.is_implicit_public_key_removed();
+                self.set_implicit_public_key_removed(false);
                 was_removed
             } else {
                 self.public_keys.insert(public_key)
@@ -145,8 +141,8 @@ pub(super) mod tests {
         #[must_use]
         fn maybe_remove_public_key(&mut self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
             if me == public_key.to_implicit_account_id() {
-                let was_removed = self.implicit_public_key_removed;
-                self.implicit_public_key_removed = true;
+                let was_removed = self.is_implicit_public_key_removed();
+                self.set_implicit_public_key_removed(true);
                 !was_removed
             } else {
                 self.public_keys.remove(public_key)
@@ -154,8 +150,66 @@ pub(super) mod tests {
         }
 
         #[inline]
+        pub fn has_public_key(&self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
+            !self.is_implicit_public_key_removed() && me == public_key.to_implicit_account_id()
+                || self.public_keys.contains(public_key)
+        }
+
+        #[inline]
+        pub fn iter_public_keys(&self, me: &AccountIdRef) -> impl Iterator<Item = PublicKey> + '_ {
+            self.public_keys.iter().copied().chain(
+                (!self.is_implicit_public_key_removed())
+                    .then(|| PublicKey::from_implicit_account_id(me))
+                    .flatten(),
+            )
+        }
+
+        #[inline]
+        pub fn is_nonce_used(&self, nonce: U256) -> bool {
+            self.nonces.is_used(nonce)
+        }
+
+        #[inline]
         pub fn commit_nonce(&mut self, n: U256) -> Result<()> {
             self.nonces.commit(n)
+        }
+
+        #[inline]
+        const fn is_implicit_public_key_removed(&self) -> bool {
+            self.flags
+                .contains(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
+        }
+
+        #[inline]
+        fn set_implicit_public_key_removed(&mut self, removed: bool) {
+            self.flags
+                .set(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED, removed);
+        }
+
+        /// Returns whether authentication by PREDECESSOR is enabled.
+        pub const fn is_auth_by_predecessor_id_enabled(&self) -> bool {
+            !self
+                .flags
+                .contains(AccountFlags::AUTH_BY_PREDECESSOR_ID_DISABLED)
+        }
+
+        /// Sets whether authentication by `PREDECESSOR_ID` is enabled.
+        /// Returns whether authentication by `PREDECESSOR_ID` was enabled
+        /// before.
+        pub fn set_auth_by_predecessor_id(&mut self, me: &AccountIdRef, enable: bool) -> bool {
+            let was_enabled = self.is_auth_by_predecessor_id_enabled();
+            let toggle = was_enabled ^ enable;
+            if toggle {
+                self.flags
+                    .toggle(AccountFlags::AUTH_BY_PREDECESSOR_ID_DISABLED);
+
+                DefuseEvent::SetAuthByPredecessorId(AccountEvent::new(
+                    Cow::Borrowed(me),
+                    SetAuthByPredecessorId { enabled: enable },
+                ))
+                .emit();
+            }
+            was_enabled
         }
     }
 }

@@ -1,4 +1,5 @@
 mod v0;
+mod v1;
 
 use std::{
     borrow::Cow,
@@ -15,7 +16,7 @@ use near_sdk::{
     near,
 };
 
-use crate::contract::accounts::account::entry::v0::AccountV0;
+use crate::contract::accounts::account::entry::{v0::AccountV0, v1::AccountV1};
 
 use super::Account;
 
@@ -46,9 +47,10 @@ impl From<Lock<Account>> for AccountEntry {
 #[near(serializers = [borsh])]
 enum VersionedAccountEntry<'a> {
     V0(Cow<'a, PanicOnClone<AccountV0>>),
+    V1(Cow<'a, PanicOnClone<Lock<AccountV1>>>),
     // When upgrading to a new version, given current version `N`:
     // 1. Copy current `Account` struct definition and name it `AccountVN`
-    // 2. Add variant `VN(Cow<'a, PanicOnClone<AccountVN>>)` before `Latest`
+    // 2. Add variant `VN(Cow<'a, PanicOnClone<Lock<AccountVN>>>)` before `Latest`
     // 3. Handle new variant in `match` expessions below
     // 4. Add tests for `VN -> Latest` migration
     Latest(Cow<'a, PanicOnClone<Lock<Account>>>),
@@ -62,6 +64,10 @@ impl From<VersionedAccountEntry<'_>> for Lock<Account> {
             VersionedAccountEntry::V0(account) => {
                 Self::unlocked(account.into_owned().into_inner().into())
             }
+            VersionedAccountEntry::V1(account) => account
+                .into_owned()
+                .into_inner()
+                .map_inner_unchecked(Into::into),
             VersionedAccountEntry::Latest(account) => account
                 .into_owned()
                 .into_inner()
@@ -70,6 +76,7 @@ impl From<VersionedAccountEntry<'_>> for Lock<Account> {
     }
 }
 
+// Used for current accounts serialization
 impl<'a> From<&'a Lock<Account>> for VersionedAccountEntry<'a> {
     fn from(value: &'a Lock<Account>) -> Self {
         // always serialize as latest version
@@ -77,6 +84,7 @@ impl<'a> From<&'a Lock<Account>> for VersionedAccountEntry<'a> {
     }
 }
 
+// Used for legacy accounts deserialization
 impl From<AccountV0> for VersionedAccountEntry<'_> {
     fn from(value: AccountV0) -> Self {
         Self::V0(Cow::Owned(value.into()))
@@ -127,8 +135,11 @@ impl BorshDeserializeAs<Lock<Account>> for MaybeVersionedAccountEntry {
     }
 }
 
-impl BorshSerializeAs<Lock<Account>> for MaybeVersionedAccountEntry {
-    fn serialize_as<W>(source: &Lock<Account>, writer: &mut W) -> io::Result<()>
+impl<T> BorshSerializeAs<T> for MaybeVersionedAccountEntry
+where
+    for<'a> VersionedAccountEntry<'a>: From<&'a T>,
+{
+    fn serialize_as<W>(source: &T, writer: &mut W) -> io::Result<()>
     where
         W: io::Write,
     {
