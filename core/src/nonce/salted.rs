@@ -50,9 +50,7 @@ impl FromStr for Salt {
     type Err = hex::FromHexError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let result: [u8; 4] = <[u8; 4]>::from_hex(s)?;
-
-        Ok(Self(result))
+        FromHex::from_hex(s).map(Self)
     }
 }
 

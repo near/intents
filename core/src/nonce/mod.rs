@@ -16,6 +16,7 @@ use near_sdk::near;
 use crate::{DefuseError, Result};
 
 pub type Nonce = U256;
+pub type NoncePrefix = U248;
 
 /// See [permit2 nonce schema](https://docs.uniswap.org/contracts/permit2/reference/signature-transfer#nonce-schema)
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
@@ -47,9 +48,7 @@ where
     }
 
     #[inline]
-    pub fn cleanup_by_prefix(&mut self, nonce: Nonce) -> bool {
-        let [prefix @ .., _] = nonce;
-
+    pub fn cleanup_by_prefix(&mut self, prefix: NoncePrefix) -> bool {
         self.0.cleanup_by_prefix(prefix)
     }
 

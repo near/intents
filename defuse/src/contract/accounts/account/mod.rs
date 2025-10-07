@@ -8,7 +8,7 @@ use std::borrow::Cow;
 use bitflags::bitflags;
 use defuse_bitmap::U256;
 use defuse_core::{
-    Nonce, Result,
+    NoncePrefix, Result,
     accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
     events::DefuseEvent,
@@ -153,8 +153,8 @@ impl Account {
     /// Returns whether the nonces was cleared,
     /// regardless of whether it was previously committed or not.
     #[inline]
-    pub fn cleanup_nonce_by_prefix(&mut self, nonce: Nonce) -> bool {
-        self.nonces.cleanup_by_prefix(nonce)
+    pub fn cleanup_nonce_by_prefix(&mut self, prefix: NoncePrefix) -> bool {
+        self.nonces.cleanup_by_prefix(prefix)
     }
 
     #[inline]

@@ -2,7 +2,7 @@ pub mod cached;
 pub mod deltas;
 
 use crate::{
-    Nonce, Result, Salt,
+    Nonce, NoncePrefix, Result, Salt,
     fees::Pips,
     intents::{
         auth::AuthCall,
@@ -62,7 +62,11 @@ pub trait State: StateView {
 
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()>;
 
-    fn cleanup_nonce_by_prefix(&mut self, account_id: &AccountIdRef, nonce: Nonce) -> Result<()>;
+    fn cleanup_nonce_by_prefix(
+        &mut self,
+        account_id: &AccountIdRef,
+        prefix: NoncePrefix,
+    ) -> Result<()>;
 
     fn internal_add_balance(
         &mut self,

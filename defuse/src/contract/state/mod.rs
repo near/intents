@@ -29,6 +29,7 @@ impl ContractState {
         S: IntoStorageKey,
     {
         let prefix = prefix.into_storage_key();
+
         Self {
             total_supplies: TokenBalances::new(IterableMap::new(
                 prefix.as_slice().nest(Prefix::TotalSupplies),

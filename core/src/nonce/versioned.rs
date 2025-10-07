@@ -59,13 +59,11 @@ impl BorshDeserializeAs<VersionedNonce> for MaybeVersionedNonce {
         let mut prefix = [0u8; 4];
         reader.read_exact(&mut prefix)?;
 
-        let versioned = if prefix == Self::VERSIONED_MAGIC_PREFIX {
-            VersionedNonce::deserialize_reader(reader)?
+        if prefix == Self::VERSIONED_MAGIC_PREFIX {
+            VersionedNonce::deserialize_reader(reader)
         } else {
-            VersionedNonce::Legacy(Nonce::deserialize_reader(&mut prefix.chain(reader))?)
-        };
-
-        Ok(versioned)
+            Nonce::deserialize_reader(&mut prefix.chain(reader)).map(VersionedNonce::Legacy)
+        }
     }
 }
 

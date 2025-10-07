@@ -69,7 +69,8 @@ impl AccountManager for Contract {
                 }
 
                 // NOTE: all errors are omitted
-                let _ = State::cleanup_nonce_by_prefix(self, &account_id, nonce);
+                let [prefix @ .., _] = nonce;
+                let _ = State::cleanup_nonce_by_prefix(self, &account_id, prefix);
             }
         }
     }
@@ -110,6 +111,7 @@ impl Accounts {
         S: IntoStorageKey,
     {
         let prefix = prefix.into_storage_key();
+
         Self {
             accounts: IterableMap::new(prefix.as_slice().nest(AccountsPrefix::Accounts)),
             prefix,

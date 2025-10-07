@@ -1,5 +1,5 @@
 use crate::{
-    DefuseError, Nonce, Result, Salt,
+    DefuseError, Nonce, NoncePrefix, Result, Salt,
     amounts::Amounts,
     fees::Pips,
     intents::{
@@ -123,8 +123,12 @@ where
     }
 
     #[inline]
-    fn cleanup_nonce_by_prefix(&mut self, account_id: &AccountIdRef, nonce: Nonce) -> Result<()> {
-        self.state.cleanup_nonce_by_prefix(account_id, nonce)
+    fn cleanup_nonce_by_prefix(
+        &mut self,
+        account_id: &AccountIdRef,
+        prefix: NoncePrefix,
+    ) -> Result<()> {
+        self.state.cleanup_nonce_by_prefix(account_id, prefix)
     }
 
     fn internal_add_balance(

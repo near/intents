@@ -6,7 +6,7 @@ use near_sdk::{
     store::{LookupMap, key::Sha256},
 };
 
-use defuse_core::{DefuseError, Nonce, Nonces, Result};
+use defuse_core::{DefuseError, Nonce, NoncePrefix, Nonces, Result};
 
 pub type MaybeLegacyAccountNonces =
     MaybeLegacyNonces<LookupMap<U248, U256, Sha256>, LookupMap<U248, U256>>;
@@ -69,8 +69,8 @@ where
     }
 
     #[inline]
-    pub fn cleanup_by_prefix(&mut self, nonce: Nonce) -> bool {
-        self.nonces.cleanup_by_prefix(nonce)
+    pub fn cleanup_by_prefix(&mut self, prefix: NoncePrefix) -> bool {
+        self.nonces.cleanup_by_prefix(prefix)
     }
 }
 
@@ -204,7 +204,8 @@ pub(super) mod tests {
             LookupMap::with_hasher(random_bytes),
         );
 
-        assert!(!new.cleanup_by_prefix(random_nonce));
+        let [prefix @ .., _] = random_nonce;
+        assert!(!new.cleanup_by_prefix(prefix));
         assert!(new.is_used(random_nonce));
     }
 }
