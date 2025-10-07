@@ -3,13 +3,13 @@ use defuse_near_utils::{CURRENT_ACCOUNT_ID, method_name};
 use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{Gas, NearToken, Promise, assert_one_yocto, near};
 
-use super::{Contract, ContractExt, Role};
+use super::{ContractEntry, ContractEntryExt, Role};
 
-const STATE_MIGRATE_FUNCTION: &str = method_name!(Contract::state_migrate);
+const STATE_MIGRATE_FUNCTION: &str = method_name!(ContractEntry::state_migrate);
 const STATE_MIGRATE_DEFAULT_GAS: Gas = Gas::from_tgas(5);
 
 #[near]
-impl ControllerUpgradable for Contract {
+impl ControllerUpgradable for ContractEntry {
     #[access_control_any(roles(Role::DAO, Role::Upgrader))]
     #[payable]
     fn upgrade(

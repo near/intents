@@ -1,7 +1,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use crate::{
-    contract::{Contract, ContractExt, Role, tokens::STORAGE_DEPOSIT_GAS},
+    contract::{ContractEntry, ContractEntryExt, Role, tokens::STORAGE_DEPOSIT_GAS},
     tokens::nep245::{
         MultiTokenForcedWithdrawer, MultiTokenWithdrawResolver, MultiTokenWithdrawer,
     },
@@ -25,7 +25,7 @@ use near_sdk::{
 };
 
 #[near]
-impl MultiTokenWithdrawer for Contract {
+impl MultiTokenWithdrawer for ContractEntry {
     #[pause]
     #[payable]
     fn mt_withdraw(
@@ -56,7 +56,7 @@ impl MultiTokenWithdrawer for Contract {
     }
 }
 
-impl Contract {
+impl ContractEntry {
     pub(crate) fn internal_mt_withdraw(
         &mut self,
         owner_id: AccountId,
@@ -145,7 +145,7 @@ impl Contract {
 }
 
 #[near]
-impl Contract {
+impl ContractEntry {
     const DO_MT_WITHDRAW_GAS: Gas = Gas::from_tgas(5)
         // do_nft_withdraw() method is called externally
         // only with storage_deposit
@@ -192,7 +192,7 @@ impl Contract {
 }
 
 #[near]
-impl MultiTokenWithdrawResolver for Contract {
+impl MultiTokenWithdrawResolver for ContractEntry {
     #[private]
     fn mt_resolve_withdraw(
         &mut self,
@@ -262,7 +262,7 @@ impl MultiTokenWithdrawResolver for Contract {
 }
 
 #[near]
-impl MultiTokenForcedWithdrawer for Contract {
+impl MultiTokenForcedWithdrawer for ContractEntry {
     #[access_control_any(roles(Role::DAO, Role::UnrestrictedWithdrawer))]
     #[payable]
     fn mt_force_withdraw(

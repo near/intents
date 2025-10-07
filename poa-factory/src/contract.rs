@@ -52,13 +52,13 @@ pub enum Role {
     pause_roles(Role::DAO, Role::PauseManager),
     unpause_roles(Role::DAO, Role::UnpauseManager)
 )]
-pub struct Contract {
+pub struct ContractEntry {
     tokens: IterableSet<String>,
     bridge_token_storage_deposit_required: NearToken,
 }
 
 #[near]
-impl Contract {
+impl ContractEntry {
     #[must_use]
     #[init]
     #[allow(clippy::use_self)] // Due to a bug in clippy, even though we return Self, it still complains - happens in shared security analysis
@@ -96,7 +96,7 @@ impl Contract {
 }
 
 #[near]
-impl PoaFactory for Contract {
+impl PoaFactory for ContractEntry {
     #[pause]
     #[access_control_any(roles(Role::DAO, Role::TokenDeployer))]
     #[payable]
@@ -197,7 +197,7 @@ impl PoaFactory for Contract {
     }
 }
 
-impl Contract {
+impl ContractEntry {
     #[track_caller]
     #[inline]
     fn token_id(token: impl AsRef<str>) -> AccountId {
@@ -210,7 +210,7 @@ impl Contract {
 }
 
 #[near]
-impl FullAccessKeys for Contract {
+impl FullAccessKeys for ContractEntry {
     #[access_control_any(roles(Role::DAO))]
     #[payable]
     fn add_full_access_key(&mut self, public_key: PublicKey) -> Promise {

@@ -18,10 +18,10 @@ use simulate::SimulateInspector;
 
 use crate::intents::{Intents, SimulationOutput, StateOutput};
 
-use super::{Contract, ContractExt};
+use super::{ContractEntry, ContractEntryExt};
 
 #[near]
-impl Intents for Contract {
+impl Intents for ContractEntry {
     #[pause(name = "intents")]
     #[inline]
     fn execute_intents(&mut self, signed: Vec<MultiPayload>) {

@@ -1,7 +1,7 @@
 mod v0;
 mod versioned;
 
-pub use versioned::MaybeVersionedStateEntry;
+pub use {v0::ContractStateV0, versioned::MaybeVersionedStateEntry};
 
 use defuse_core::{SaltRegistry, amounts::Amounts, fees::FeesConfig, token_id::TokenId};
 use defuse_near_utils::NestPrefix;

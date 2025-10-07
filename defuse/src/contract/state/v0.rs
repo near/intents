@@ -17,6 +17,7 @@ pub struct ContractStateV0 {
     pub fees: FeesConfig,
 }
 
+// TODO: move it
 impl From<ContractStateV0> for ContractState {
     fn from(
         ContractStateV0 {

@@ -7,13 +7,13 @@ use near_plugins::{Pausable, pause};
 use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near, require};
 
 use crate::{
-    contract::{Contract, ContractExt},
+    contract::{ContractEntry, ContractEntryExt},
     intents::{Intents, ext_intents},
     tokens::DepositMessage,
 };
 
 #[near]
-impl MultiTokenReceiver for Contract {
+impl MultiTokenReceiver for ContractEntry {
     /// Deposit multi-tokens.
     ///
     /// `msg` contains [`AccountId`] of the internal recipient.

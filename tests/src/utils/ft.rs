@@ -167,7 +167,7 @@ impl FtExt for Account {
     }
 }
 
-impl FtExt for Contract {
+impl FtExt for ContractEntry {
     async fn deploy_vanilla_ft_token(&self, token_name: &str) -> anyhow::Result<Self> {
         self.as_account().deploy_vanilla_ft_token(token_name).await
     }

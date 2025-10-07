@@ -7,13 +7,13 @@ use near_plugins::{Pausable, pause};
 use near_sdk::{AccountId, PromiseOrValue, near};
 
 use crate::{
-    contract::{Contract, ContractExt},
+    contract::{ContractEntry, ContractEntryExt},
     intents::{Intents, ext_intents},
     tokens::DepositMessage,
 };
 
 #[near]
-impl NonFungibleTokenReceiver for Contract {
+impl NonFungibleTokenReceiver for ContractEntry {
     /// Deposit non-fungible token.
     ///
     /// `msg` contains [`AccountId`] of the internal recipient.

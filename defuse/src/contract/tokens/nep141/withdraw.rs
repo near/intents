@@ -1,5 +1,5 @@
 use crate::{
-    contract::{Contract, ContractExt, Role, tokens::STORAGE_DEPOSIT_GAS},
+    contract::{ContractEntry, ContractEntryExt, Role, tokens::STORAGE_DEPOSIT_GAS},
     tokens::nep141::{
         FungibleTokenForceWithdrawer, FungibleTokenWithdrawResolver, FungibleTokenWithdrawer,
     },
@@ -22,7 +22,7 @@ use near_sdk::{
 };
 
 #[near]
-impl FungibleTokenWithdrawer for Contract {
+impl FungibleTokenWithdrawer for ContractEntry {
     #[pause]
     #[payable]
     fn ft_withdraw(
@@ -51,7 +51,7 @@ impl FungibleTokenWithdrawer for Contract {
     }
 }
 
-impl Contract {
+impl ContractEntry {
     pub(crate) fn internal_ft_withdraw(
         &mut self,
         owner_id: AccountId,
@@ -108,7 +108,7 @@ impl Contract {
 }
 
 #[near]
-impl Contract {
+impl ContractEntry {
     const FT_RESOLVE_WITHDRAW_GAS: Gas = Gas::from_tgas(5);
     const DO_FT_WITHDRAW_GAS: Gas = Gas::from_tgas(5)
         // do_ft_withdraw() method is called externally
@@ -155,7 +155,7 @@ impl Contract {
 }
 
 #[near]
-impl FungibleTokenWithdrawResolver for Contract {
+impl FungibleTokenWithdrawResolver for ContractEntry {
     #[private]
     fn ft_resolve_withdraw(
         &mut self,
@@ -206,7 +206,7 @@ impl FungibleTokenWithdrawResolver for Contract {
 }
 
 #[near]
-impl FungibleTokenForceWithdrawer for Contract {
+impl FungibleTokenForceWithdrawer for ContractEntry {
     #[access_control_any(roles(Role::DAO, Role::UnrestrictedWithdrawer))]
     #[payable]
     fn ft_force_withdraw(

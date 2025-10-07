@@ -2,10 +2,10 @@ use defuse_core::intents::tokens::StorageDeposit;
 use near_contract_standards::storage_management::ext_storage_management;
 use near_sdk::{Gas, Promise, PromiseResult, env, near, require};
 
-use crate::contract::{Contract, ContractExt, tokens::STORAGE_DEPOSIT_GAS};
+use crate::contract::{ContractEntry, ContractEntryExt, tokens::STORAGE_DEPOSIT_GAS};
 
 #[near]
-impl Contract {
+impl ContractEntry {
     pub(crate) const DO_STORAGE_DEPOSIT_GAS: Gas =
         Gas::from_tgas(5).saturating_add(STORAGE_DEPOSIT_GAS);
 

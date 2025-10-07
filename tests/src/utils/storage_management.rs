@@ -78,7 +78,7 @@ impl StorageManagementExt for near_workspaces::Account {
     }
 }
 
-impl StorageManagementExt for Contract {
+impl StorageManagementExt for ContractEntry {
     async fn storage_deposit(
         &self,
         contract_id: &AccountId,

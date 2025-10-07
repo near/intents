@@ -1,10 +1,10 @@
 use defuse_core::intents::tokens::NativeWithdraw;
 use near_sdk::{Gas, Promise, PromiseResult, env, near, require};
 
-use crate::contract::{Contract, ContractExt};
+use crate::contract::{ContractEntry, ContractEntryExt};
 
 #[near]
-impl Contract {
+impl ContractEntry {
     pub(crate) const DO_NATIVE_WITHDRAW_GAS: Gas = Gas::from_tgas(10);
 
     #[must_use]

@@ -2,7 +2,7 @@ mod nep141;
 mod nep171;
 mod nep245;
 
-use super::Contract;
+use super::ContractEntry;
 use defuse_core::{DefuseError, Result, token_id::TokenId};
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
 use near_sdk::{AccountId, AccountIdRef, Gas, json_types::U128};
@@ -10,7 +10,7 @@ use std::borrow::Cow;
 
 pub const STORAGE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
 
-impl Contract {
+impl ContractEntry {
     pub(crate) fn deposit(
         &mut self,
         owner_id: AccountId,

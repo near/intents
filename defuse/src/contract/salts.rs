@@ -5,11 +5,11 @@ use defuse_near_utils::UnwrapOrPanic;
 use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{assert_one_yocto, near};
 
-use super::{Contract, ContractExt, Role};
+use super::{ContractEntry, ContractEntryExt, Role};
 use crate::salts::SaltManager;
 
 #[near]
-impl SaltManager for Contract {
+impl SaltManager for ContractEntry {
     #[access_control_any(roles(Role::DAO, Role::SaltManager))]
     #[payable]
     fn update_current_salt(&mut self) -> Salt {

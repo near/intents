@@ -3,14 +3,14 @@ use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
 use near_sdk::{Allowance, Promise, PublicKey, assert_one_yocto, near, require};
 
 use crate::{
-    contract::{Contract, ContractExt, Role},
+    contract::{ContractEntry, ContractEntryExt, Role},
     intents::{Intents, RelayerKeys},
 };
 
-const EXECUTE_INTENTS_FUNC: &str = method_name!(Contract::execute_intents);
+const EXECUTE_INTENTS_FUNC: &str = method_name!(ContractEntry::execute_intents);
 
 #[near]
-impl RelayerKeys for Contract {
+impl RelayerKeys for ContractEntry {
     #[pause(name = "intents")]
     #[payable]
     #[access_control_any(roles(Role::DAO, Role::RelayerKeysManager))]

@@ -4,10 +4,10 @@ use defuse_core::{
 };
 use near_sdk::near;
 
-use super::{Contract, ContractExt};
+use super::{ContractEntry, ContractEntryExt};
 
 #[near]
-impl Contract {
+impl ContractEntry {
     pub fn __abi_helper(types: AbiHelper) {}
 }
 

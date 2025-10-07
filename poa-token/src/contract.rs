@@ -25,13 +25,13 @@ use crate::{PoaFungibleToken, WITHDRAW_MEMO_PREFIX};
     )
 )]
 #[derive(Ownable, PanicOnDefault)]
-pub struct Contract {
+pub struct ContractEntry {
     token: FungibleToken,
     metadata: Lazy<FungibleTokenMetadata>,
 }
 
 #[near]
-impl Contract {
+impl ContractEntry {
     #[init]
     #[allow(dead_code)]
     pub fn new(owner_id: Option<AccountId>, metadata: Option<FungibleTokenMetadata>) -> Self {
@@ -67,7 +67,7 @@ impl Contract {
 }
 
 #[near]
-impl PoaFungibleToken for Contract {
+impl PoaFungibleToken for ContractEntry {
     #[only(self, owner)]
     #[payable]
     fn set_metadata(&mut self, metadata: FungibleTokenMetadata) {
@@ -91,7 +91,7 @@ impl PoaFungibleToken for Contract {
 }
 
 #[near]
-impl FungibleTokenCore for Contract {
+impl FungibleTokenCore for ContractEntry {
     #[payable]
     fn ft_transfer(&mut self, receiver_id: AccountId, amount: U128, memo: Option<String>) {
         // A special case we created to handle withdrawals:
@@ -129,7 +129,7 @@ impl FungibleTokenCore for Contract {
 }
 
 #[near]
-impl FungibleTokenResolver for Contract {
+impl FungibleTokenResolver for ContractEntry {
     #[private]
     fn ft_resolve_transfer(
         &mut self,
@@ -143,7 +143,7 @@ impl FungibleTokenResolver for Contract {
 }
 
 #[near]
-impl StorageManagement for Contract {
+impl StorageManagement for ContractEntry {
     #[payable]
     #[cfg_attr(feature = "no-registration", only(self, owner))]
     fn storage_deposit(
@@ -174,13 +174,13 @@ impl StorageManagement for Contract {
 }
 
 #[near]
-impl FungibleTokenMetadataProvider for Contract {
+impl FungibleTokenMetadataProvider for ContractEntry {
     fn ft_metadata(&self) -> FungibleTokenMetadata {
         self.metadata.clone()
     }
 }
 
-impl Contract {
+impl ContractEntry {
     fn ft_withdraw(&mut self, account_id: &AccountId, amount: U128, memo: Option<String>) {
         assert_one_yocto();
         require!(amount.0 > 0, "zero amount");
@@ -195,7 +195,7 @@ impl Contract {
 }
 
 #[near]
-impl FullAccessKeys for Contract {
+impl FullAccessKeys for ContractEntry {
     #[only(self, owner)]
     #[payable]
     fn add_full_access_key(&mut self, public_key: PublicKey) -> Promise {
