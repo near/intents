@@ -21,11 +21,11 @@ use near_sdk::{
 
 use crate::{
     accounts::AccountManager,
-    contract::{ContractEntry, ContractEntryExt, accounts::AccountEntry},
+    contract::{Contract, ContractExt, accounts::AccountEntry},
 };
 
 #[near]
-impl AccountManager for ContractEntry {
+impl AccountManager for Contract {
     fn has_public_key(&self, account_id: &AccountId, public_key: &PublicKey) -> bool {
         StateView::has_public_key(self, account_id, public_key)
     }
@@ -86,7 +86,7 @@ impl AccountManager for ContractEntry {
     }
 }
 
-impl ContractEntry {
+impl Contract {
     #[inline]
     pub fn ensure_auth_predecessor_id(&self) -> &'static AccountId {
         if !StateView::is_auth_by_predecessor_id_enabled(self, &PREDECESSOR_ACCOUNT_ID) {

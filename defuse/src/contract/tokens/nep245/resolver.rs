@@ -6,10 +6,10 @@ use defuse_nep245::{
 };
 use near_sdk::{AccountId, PromiseResult, env, json_types::U128, near, require, serde_json};
 
-use crate::contract::{ContractEntry, ContractEntryExt};
+use crate::contract::{Contract, ContractExt};
 
 #[near]
-impl MultiTokenResolver for ContractEntry {
+impl MultiTokenResolver for Contract {
     #[private]
     fn mt_resolve_transfer(
         &mut self,

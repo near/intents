@@ -12,51 +12,51 @@ use near_sdk::{
     near,
 };
 
-use super::Contract;
-use v0::ContractV0;
+use super::ContractStorage;
+use v0::ContractStorageV0;
 
 /// Versioned [Contract] state for de/serialization.
 #[derive(Debug)]
 #[near(serializers = [borsh])]
-enum VersionedContract<'a> {
-    V0(Cow<'a, PanicOnClone<ContractV0>>),
+enum VersionedContractStorage<'a> {
+    V0(Cow<'a, PanicOnClone<ContractStorageV0>>),
     // When upgrading to a new version, given current version `N`:
     // 1. Copy current `Contract` struct definition and name it `ContractVN`
     // 2. Add variant `VN(Cow<'a, PanicOnClone<ContractVN>>)` before `Latest`
     // 3. Handle new variant in `match` expessions below
     // 4. Add tests for `VN -> Latest` migration
-    Latest(Cow<'a, PanicOnClone<Contract>>),
+    Latest(Cow<'a, PanicOnClone<ContractStorage>>),
 }
 
-impl From<VersionedContract<'_>> for Contract {
-    fn from(versioned: VersionedContract<'_>) -> Self {
+impl From<VersionedContractStorage<'_>> for ContractStorage {
+    fn from(versioned: VersionedContractStorage<'_>) -> Self {
         // Borsh always deserializes into `Cow::Owned`, so it's
         // safe to call `Cow::<PanicOnClone<_>>::into_owned()` here.
         match versioned {
-            VersionedContract::V0(contract) => contract.into_owned().into_inner().into(),
-            VersionedContract::Latest(contract) => contract.into_owned().into_inner(),
+            VersionedContractStorage::V0(contract) => contract.into_owned().into_inner().into(),
+            VersionedContractStorage::Latest(contract) => contract.into_owned().into_inner(),
         }
     }
 }
 
 // Used for current contract serialization
-impl<'a> From<&'a Contract> for VersionedContract<'a> {
-    fn from(value: &'a Contract) -> Self {
+impl<'a> From<&'a ContractStorage> for VersionedContractStorage<'a> {
+    fn from(value: &'a ContractStorage) -> Self {
         // always serialize as latest version
         Self::Latest(Cow::Borrowed(PanicOnClone::from_ref(value)))
     }
 }
 
 // Used for legacy contract deserialization
-impl From<ContractV0> for VersionedContract<'_> {
-    fn from(value: ContractV0) -> Self {
+impl From<ContractStorageV0> for VersionedContractStorage<'_> {
+    fn from(value: ContractStorageV0) -> Self {
         Self::V0(Cow::Owned(value.into()))
     }
 }
 
-pub struct MaybeVersionedContractEntry;
+pub struct MaybeVersionedContractStorage;
 
-impl MaybeVersionedContractEntry {
+impl MaybeVersionedContractStorage {
     /// This is a magic number that is used to differentiate between
     /// borsh-serialized representations of legacy and versioned [`Contract`]s:
     /// * versioned [`Contract`]s always start with this prefix
@@ -71,8 +71,8 @@ impl MaybeVersionedContractEntry {
     const VERSIONED_MAGIC_PREFIX: u32 = u32::MAX;
 }
 
-impl BorshDeserializeAs<Contract> for MaybeVersionedContractEntry {
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<Contract>
+impl BorshDeserializeAs<ContractStorage> for MaybeVersionedContractStorage {
+    fn deserialize_as<R>(reader: &mut R) -> io::Result<ContractStorage>
     where
         R: io::Read,
     {
@@ -84,10 +84,10 @@ impl BorshDeserializeAs<Contract> for MaybeVersionedContractEntry {
         let prefix = u32::deserialize_reader(&mut buf.as_slice())?;
 
         if prefix == Self::VERSIONED_MAGIC_PREFIX {
-            VersionedContract::deserialize_reader(reader)
+            VersionedContractStorage::deserialize_reader(reader)
         } else {
             // legacy state
-            ContractV0::deserialize_reader(
+            ContractStorageV0::deserialize_reader(
                 // prepend already consumed part of the reader
                 &mut buf.chain(reader),
             )
@@ -97,9 +97,9 @@ impl BorshDeserializeAs<Contract> for MaybeVersionedContractEntry {
     }
 }
 
-impl<T> BorshSerializeAs<T> for MaybeVersionedContractEntry
+impl<T> BorshSerializeAs<T> for MaybeVersionedContractStorage
 where
-    for<'a> VersionedContract<'a>: From<&'a T>,
+    for<'a> VersionedContractStorage<'a>: From<&'a T>,
 {
     fn serialize_as<W>(source: &T, writer: &mut W) -> io::Result<()>
     where
@@ -108,7 +108,7 @@ where
         (
             // always serialize as versioned and prepend magic prefix
             Self::VERSIONED_MAGIC_PREFIX,
-            VersionedContract::from(source),
+            VersionedContractStorage::from(source),
         )
             .serialize(writer)
     }

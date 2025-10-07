@@ -22,7 +22,7 @@ use near_plugins::{AccessControlRole, AccessControllable, Pausable, access_contr
 use near_sdk::{
     BorshStorageKey, PanicOnDefault, borsh::BorshDeserialize, near, require, store::LookupSet,
 };
-use versioned::MaybeVersionedContractEntry;
+use versioned::MaybeVersionedContractStorage;
 
 use crate::Defuse;
 
@@ -65,21 +65,21 @@ pub enum Role {
         standard(standard = "nep245", version = "1.0.0"),
     )
 )]
-#[autoimpl(Deref using self.contract)]
-#[autoimpl(DerefMut using self.contract)]
-pub struct ContractEntry {
+#[autoimpl(Deref using self.0)]
+#[autoimpl(DerefMut using self.0)]
+pub struct Contract(
     #[borsh(
-        deserialize_with = "As::<MaybeVersionedContractEntry>::deserialize",
-        serialize_with = "As::<MaybeVersionedContractEntry>::serialize"
+        deserialize_with = "As::<MaybeVersionedContractStorage>::deserialize",
+        serialize_with = "As::<MaybeVersionedContractStorage>::serialize"
     )]
-    contract: Contract,
-}
+    ContractStorage,
+);
 
 #[derive(Debug)]
 #[autoimpl(Deref using self.state)]
 #[autoimpl(DerefMut using self.state)]
 #[near(serializers = [borsh])]
-struct Contract {
+pub struct ContractStorage {
     accounts: Accounts,
 
     #[borsh(
@@ -95,19 +95,17 @@ struct Contract {
 }
 
 #[near]
-impl ContractEntry {
+impl Contract {
     #[must_use]
     #[init]
     #[allow(clippy::use_self)] // Clippy seems to not play well with near-sdk, or there is a bug in clippy - seen in shared security analysis
     pub fn new(config: DefuseConfig) -> Self {
-        let mut contract = Self {
-            contract: Contract {
-                accounts: Accounts::new(Prefix::Accounts),
-                state: ContractState::new(Prefix::State, config.wnear_id, config.fees),
-                relayer_keys: LookupSet::new(Prefix::RelayerKeys),
-                postponed_burns: PostponedMtBurnEvents::new(),
-            },
-        };
+        let mut contract = Self(ContractStorage {
+            accounts: Accounts::new(Prefix::Accounts),
+            state: ContractState::new(Prefix::State, config.wnear_id, config.fees),
+            relayer_keys: LookupSet::new(Prefix::RelayerKeys),
+            postponed_burns: PostponedMtBurnEvents::new(),
+        });
         contract.init_acl(config.roles);
         contract
     }
@@ -135,7 +133,7 @@ impl ContractEntry {
 }
 
 #[near]
-impl Defuse for ContractEntry {}
+impl Defuse for Contract {}
 
 #[derive(BorshStorageKey)]
 #[near(serializers = [borsh])]

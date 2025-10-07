@@ -1,11 +1,11 @@
-use crate::contract::{ContractEntry, ContractEntryExt};
+use crate::contract::{Contract, ContractExt};
 use defuse_core::token_id::TokenIdType;
 use defuse_near_utils::UnwrapOrPanicError;
 use defuse_nep245::{Token, enumeration::MultiTokenEnumeration};
 use near_sdk::{AccountId, json_types::U128, near};
 
 #[near]
-impl MultiTokenEnumeration for ContractEntry {
+impl MultiTokenEnumeration for Contract {
     fn mt_tokens(&self, from_index: Option<U128>, limit: Option<u32>) -> Vec<Token> {
         let from_index = from_index.map_or(0, |v| v.0);
         let from_index: usize = from_index.try_into().unwrap_or_panic_display();

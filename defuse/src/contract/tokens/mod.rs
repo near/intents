@@ -2,7 +2,7 @@ mod nep141;
 mod nep171;
 mod nep245;
 
-use super::ContractEntry;
+use super::Contract;
 use defuse_core::{DefuseError, Result, token_id::TokenId};
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
 use near_sdk::{AccountId, AccountIdRef, Gas, json_types::U128};
@@ -10,7 +10,7 @@ use std::borrow::Cow;
 
 pub const STORAGE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
 
-impl ContractEntry {
+impl Contract {
     pub(crate) fn deposit(
         &mut self,
         owner_id: AccountId,
@@ -18,6 +18,7 @@ impl ContractEntry {
         memo: Option<&str>,
     ) -> Result<()> {
         let owner = self
+            .0
             .accounts
             .get_or_create(owner_id.clone())
             // deposits are allowed for locked accounts
@@ -39,6 +40,7 @@ impl ContractEntry {
             mint_event.amounts.to_mut().push(U128(amount));
 
             let total_supply = self
+                .0
                 .state
                 .total_supplies
                 .add(token_id.clone(), amount)
@@ -51,6 +53,7 @@ impl ContractEntry {
                 }
                 TokenId::Nep141(_) | TokenId::Nep245(_) => {}
             }
+
             owner
                 .token_balances
                 .add(token_id, amount)
@@ -72,6 +75,7 @@ impl ContractEntry {
         force: bool,
     ) -> Result<()> {
         let owner = self
+            .0
             .accounts
             .get_mut(owner_id)
             .ok_or_else(|| DefuseError::AccountNotFound(owner_id.to_owned()))?
@@ -99,7 +103,8 @@ impl ContractEntry {
                 .sub(token_id.clone(), amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
 
-            self.state
+            self.0
+                .state
                 .total_supplies
                 .sub(token_id, amount)
                 .ok_or(DefuseError::BalanceOverflow)?;

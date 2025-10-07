@@ -3,10 +3,10 @@ use defuse_near_utils::CURRENT_ACCOUNT_ID;
 use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{Promise, PublicKey, assert_one_yocto, near};
 
-use super::{ContractEntry, ContractEntryExt, Role};
+use super::{Contract, ContractExt, Role};
 
 #[near]
-impl FullAccessKeys for ContractEntry {
+impl FullAccessKeys for Contract {
     #[access_control_any(roles(Role::DAO))]
     #[payable]
     fn add_full_access_key(&mut self, public_key: PublicKey) -> Promise {

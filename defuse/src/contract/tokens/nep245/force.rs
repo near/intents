@@ -6,12 +6,12 @@ use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{AccountId, PromiseOrValue, assert_one_yocto, json_types::U128, near, require};
 
 use crate::{
-    contract::{ContractEntry, ContractEntryExt, Role},
+    contract::{Contract, ContractExt, Role},
     tokens::nep245::MultiTokenForcedCore,
 };
 
 #[near]
-impl MultiTokenForcedCore for ContractEntry {
+impl MultiTokenForcedCore for Contract {
     #[access_control_any(roles(Role::DAO, Role::UnrestrictedWithdrawer))]
     #[payable]
     fn mt_force_transfer(

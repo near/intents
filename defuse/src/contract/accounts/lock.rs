@@ -5,11 +5,11 @@ use near_sdk::{AccountId, assert_one_yocto, near};
 
 use crate::{
     accounts::AccountForceLocker,
-    contract::{ContractEntry, ContractEntryExt, Role},
+    contract::{Contract, ContractExt, Role},
 };
 
 #[near]
-impl AccountForceLocker for ContractEntry {
+impl AccountForceLocker for Contract {
     fn is_account_locked(&self, account_id: &AccountId) -> bool {
         StateView::is_account_locked(self, account_id)
     }

@@ -2,10 +2,10 @@ use defuse_auth_call::ext_auth_callee;
 use defuse_core::intents::auth::AuthCall;
 use near_sdk::{AccountId, Gas, Promise, PromiseResult, env, near, require};
 
-use crate::contract::{ContractEntry, ContractEntryExt};
+use crate::contract::{Contract, ContractExt};
 
 #[near]
-impl ContractEntry {
+impl Contract {
     pub(crate) const DO_AUTH_CALL_MIN_GAS: Gas = Gas::from_tgas(5);
 
     #[must_use]

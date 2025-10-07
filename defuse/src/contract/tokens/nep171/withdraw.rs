@@ -1,5 +1,5 @@
 use crate::{
-    contract::{ContractEntry, ContractEntryExt, Role, tokens::STORAGE_DEPOSIT_GAS},
+    contract::{Contract, ContractExt, Role, tokens::STORAGE_DEPOSIT_GAS},
     tokens::nep171::{
         NonFungibleTokenForceWithdrawer, NonFungibleTokenWithdrawResolver,
         NonFungibleTokenWithdrawer,
@@ -25,7 +25,7 @@ use near_sdk::{
 use std::iter;
 
 #[near]
-impl NonFungibleTokenWithdrawer for ContractEntry {
+impl NonFungibleTokenWithdrawer for Contract {
     #[pause]
     #[payable]
     fn nft_withdraw(
@@ -54,7 +54,7 @@ impl NonFungibleTokenWithdrawer for ContractEntry {
     }
 }
 
-impl ContractEntry {
+impl Contract {
     pub(crate) fn internal_nft_withdraw(
         &mut self,
         owner_id: AccountId,
@@ -111,7 +111,7 @@ impl ContractEntry {
 }
 
 #[near]
-impl ContractEntry {
+impl Contract {
     const NFT_RESOLVE_WITHDRAW_GAS: Gas = Gas::from_tgas(5);
     const DO_NFT_WITHDRAW_GAS: Gas = Gas::from_tgas(5)
         // do_nft_withdraw() method is called externally
@@ -158,7 +158,7 @@ impl ContractEntry {
 }
 
 #[near]
-impl NonFungibleTokenWithdrawResolver for ContractEntry {
+impl NonFungibleTokenWithdrawResolver for Contract {
     #[private]
     fn nft_resolve_withdraw(
         &mut self,
@@ -197,7 +197,7 @@ impl NonFungibleTokenWithdrawResolver for ContractEntry {
 }
 
 #[near]
-impl NonFungibleTokenForceWithdrawer for ContractEntry {
+impl NonFungibleTokenForceWithdrawer for Contract {
     #[access_control_any(roles(Role::DAO, Role::UnrestrictedWithdrawer))]
     #[payable]
     fn nft_force_withdraw(

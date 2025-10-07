@@ -10,10 +10,10 @@ use near_sdk::{AccountId, assert_one_yocto, near, require};
 
 use crate::fees::FeesManager;
 
-use super::{ContractEntry, ContractEntryExt, Role};
+use super::{Contract, ContractExt, Role};
 
 #[near]
-impl FeesManager for ContractEntry {
+impl FeesManager for Contract {
     #[pause(name = "intents")]
     #[access_control_any(roles(Role::DAO, Role::FeesManager))]
     #[payable]

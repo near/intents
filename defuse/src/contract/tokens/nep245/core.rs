@@ -1,4 +1,4 @@
-use crate::contract::{ContractEntry, ContractEntryExt};
+use crate::contract::{Contract, ContractExt};
 use defuse_core::{DefuseError, Result, engine::StateView, token_id::TokenId};
 use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::{MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver};
@@ -9,7 +9,7 @@ use near_sdk::{
 use std::borrow::Cow;
 
 #[near]
-impl MultiTokenCore for ContractEntry {
+impl MultiTokenCore for Contract {
     #[payable]
     fn mt_transfer(
         &mut self,
@@ -146,7 +146,7 @@ impl MultiTokenCore for ContractEntry {
     }
 }
 
-impl ContractEntry {
+impl Contract {
     pub(crate) fn internal_mt_balance_of(
         &self,
         account_id: &AccountIdRef,

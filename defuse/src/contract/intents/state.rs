@@ -14,9 +14,9 @@ use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128};
 use std::borrow::Cow;
 
-use crate::contract::{ContractEntry, accounts::Account};
+use crate::contract::{Contract, accounts::Account};
 
-impl StateView for ContractEntry {
+impl StateView for Contract {
     #[inline]
     fn verifying_contract(&self) -> Cow<'_, AccountIdRef> {
         Cow::Borrowed(CURRENT_ACCOUNT_ID.as_ref())
@@ -96,7 +96,7 @@ impl StateView for ContractEntry {
     }
 }
 
-impl State for ContractEntry {
+impl State for Contract {
     #[inline]
     fn add_public_key(&mut self, account_id: AccountId, public_key: PublicKey) -> Result<()> {
         self.accounts

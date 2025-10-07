@@ -2,14 +2,14 @@ use impl_tools::autoimpl;
 use near_sdk::{near, store::LookupSet};
 
 use crate::contract::{
-    Contract, accounts::Accounts, events::PostponedMtBurnEvents, state::ContractStateV0,
+    ContractStorage, accounts::Accounts, events::PostponedMtBurnEvents, state::ContractStateV0,
 };
 
 #[derive(Debug)]
 #[autoimpl(Deref using self.state)]
 #[autoimpl(DerefMut using self.state)]
 #[near(serializers = [borsh])]
-pub struct ContractV0 {
+pub struct ContractStorageV0 {
     accounts: Accounts,
 
     state: ContractStateV0,
@@ -20,14 +20,14 @@ pub struct ContractV0 {
     postponed_burns: PostponedMtBurnEvents,
 }
 
-impl From<ContractV0> for Contract {
+impl From<ContractStorageV0> for ContractStorage {
     fn from(
-        ContractV0 {
+        ContractStorageV0 {
             accounts,
             state,
             relayer_keys,
             postponed_burns,
-        }: ContractV0,
+        }: ContractStorageV0,
     ) -> Self {
         Self {
             accounts,
