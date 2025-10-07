@@ -20,10 +20,7 @@ use events::PostponedMtBurnEvents;
 use impl_tools::autoimpl;
 use near_plugins::{AccessControlRole, AccessControllable, Pausable, access_control};
 use near_sdk::{
-    BorshStorageKey, PanicOnDefault,
-    borsh::{BorshDeserialize, BorshSerialize},
-    near, require,
-    store::LookupSet,
+    BorshStorageKey, PanicOnDefault, borsh::BorshDeserialize, near, require, store::LookupSet,
 };
 use versioned::MaybeVersionedContractEntry;
 
@@ -78,10 +75,10 @@ pub struct ContractEntry {
     contract: Contract,
 }
 
-#[derive(Debug, BorshDeserialize, BorshSerialize)]
-#[borsh(crate = "::near_sdk::borsh")]
+#[derive(Debug)]
 #[autoimpl(Deref using self.state)]
 #[autoimpl(DerefMut using self.state)]
+#[near(serializers = [borsh])]
 struct Contract {
     accounts: Accounts,
 

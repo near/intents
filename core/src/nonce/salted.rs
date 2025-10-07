@@ -87,7 +87,6 @@ mod abi {
                     .into_iter()
                     .map(|(k, v)| (k.to_string(), v))
                     .collect(),
-                metadata: None,
                 ..Default::default()
             }
             .into()

@@ -50,7 +50,7 @@ impl WNearExt for Account {
     }
 }
 
-impl WNearExt for ContractEntry {
+impl WNearExt for Contract {
     async fn deploy_wrap_near(&self, token: &str) -> anyhow::Result<Self> {
         self.as_account().deploy_wrap_near(token).await
     }

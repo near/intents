@@ -163,7 +163,7 @@ impl NftExt for near_workspaces::Account {
     }
 }
 
-impl NftExt for ContractEntry {
+impl NftExt for Contract {
     async fn deploy_vanilla_nft_issuer(
         &self,
         token_name: &str,

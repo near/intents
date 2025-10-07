@@ -48,7 +48,7 @@ impl DefuseExt for near_workspaces::Account {
     }
 }
 
-impl DefuseExt for ContractEntry {
+impl DefuseExt for Contract {
     async fn deploy_defuse(&self, id: &str, config: DefuseConfig) -> anyhow::Result<Self> {
         self.as_account().deploy_defuse(id, config).await
     }
