@@ -3,11 +3,7 @@ use near_sdk::{AccountId, NearToken};
 use serde_json::json;
 
 pub trait SaltManagerExt {
-    async fn update_current_salt(
-        &self,
-        defuse_contract_id: &AccountId,
-        invalidate_current: bool,
-    ) -> anyhow::Result<Salt>;
+    async fn update_current_salt(&self, defuse_contract_id: &AccountId) -> anyhow::Result<Salt>;
 
     async fn invalidate_salts(
         &self,
@@ -25,13 +21,8 @@ pub trait SaltManagerExt {
 }
 
 impl SaltManagerExt for near_workspaces::Account {
-    async fn update_current_salt(
-        &self,
-        defuse_contract_id: &AccountId,
-        invalidate_current: bool,
-    ) -> anyhow::Result<Salt> {
+    async fn update_current_salt(&self, defuse_contract_id: &AccountId) -> anyhow::Result<Salt> {
         self.call(defuse_contract_id, "update_current_salt")
-            .args_json(json!({ "invalidate_current": invalidate_current }))
             .deposit(NearToken::from_yoctonear(1))
             .max_gas()
             .transact()
@@ -78,13 +69,9 @@ impl SaltManagerExt for near_workspaces::Account {
 }
 
 impl SaltManagerExt for near_workspaces::Contract {
-    async fn update_current_salt(
-        &self,
-        defuse_contract_id: &AccountId,
-        invalidate_current: bool,
-    ) -> anyhow::Result<Salt> {
+    async fn update_current_salt(&self, defuse_contract_id: &AccountId) -> anyhow::Result<Salt> {
         self.as_account()
-            .update_current_salt(defuse_contract_id, invalidate_current)
+            .update_current_salt(defuse_contract_id)
             .await
     }
 

@@ -12,12 +12,12 @@ use crate::{
 #[rstest]
 async fn update_current_salt() {
     let env = Env::builder().deployer_as_super_admin().build().await;
-    let mut prev_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
+    let prev_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
 
     // only DAO or salt manager can rotate salt
     {
         env.user2
-            .update_current_salt(env.defuse.id(), false)
+            .update_current_salt(env.defuse.id())
             .await
             .assert_err_contains("Insufficient permissions for method");
     }
@@ -30,7 +30,7 @@ async fn update_current_salt() {
 
         let new_salt = env
             .user1
-            .update_current_salt(env.defuse.id(), false)
+            .update_current_salt(env.defuse.id())
             .await
             .expect("unable to rotate salt");
 
@@ -40,27 +40,6 @@ async fn update_current_salt() {
         assert_eq!(new_salt, current_salt);
         assert!(
             env.defuse
-                .is_valid_salt(env.defuse.id(), &prev_salt)
-                .await
-                .unwrap()
-        );
-    }
-
-    // rotate salt by salt manager + invalidate current
-    {
-        prev_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
-        let new_salt = env
-            .user1
-            .update_current_salt(env.defuse.id(), true)
-            .await
-            .expect("unable to rotate salt");
-
-        let current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
-
-        assert_ne!(prev_salt, current_salt);
-        assert_eq!(new_salt, current_salt);
-        assert!(
-            !env.defuse
                 .is_valid_salt(env.defuse.id(), &prev_salt)
                 .await
                 .unwrap()
@@ -91,7 +70,7 @@ async fn invalidate_salts() {
 
         current_salt = env
             .user1
-            .update_current_salt(env.defuse.id(), false)
+            .update_current_salt(env.defuse.id())
             .await
             .expect("unable to rotate salt");
 

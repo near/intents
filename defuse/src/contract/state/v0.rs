@@ -3,8 +3,8 @@ use defuse_near_utils::NestPrefix;
 use near_sdk::{AccountId, IntoStorageKey, near};
 
 use crate::contract::{
-    Prefix as ContractPrefix,
-    state::{ContractState, Prefix as StatePrefix, TokenBalances},
+    MigrateStorageWithPrefix,
+    state::{ContractState, Prefix, TokenBalances},
 };
 
 #[near(serializers = [borsh])]
@@ -17,24 +17,48 @@ pub struct ContractStateV0 {
     pub fees: FeesConfig,
 }
 
-// TODO: move it
-impl From<ContractStateV0> for ContractState {
-    fn from(
+impl MigrateStorageWithPrefix<ContractStateV0> for ContractState {
+    fn migrate<S>(
         ContractStateV0 {
             total_supplies,
             wnear_id,
             fees,
         }: ContractStateV0,
-    ) -> Self {
+        prefix: S,
+    ) -> Self
+    where
+        S: IntoStorageKey,
+    {
         Self {
             total_supplies,
             wnear_id,
             fees,
-            salts: SaltRegistry::new(
-                ContractPrefix::State
-                    .into_storage_key()
-                    .nest(StatePrefix::Salts),
-            ),
+            salts: SaltRegistry::new(prefix.into_storage_key().nest(Prefix::Salts)),
+        }
+    }
+}
+
+/// Legacy implementation of [`ContractStorageV0`]
+#[cfg(test)]
+pub(super) mod tests {
+
+    use super::*;
+    use near_sdk::{AccountId, store::IterableMap};
+
+    impl ContractStateV0 {
+        #[inline]
+        pub fn new<S>(prefix: S, wnear_id: AccountId, fees: FeesConfig) -> Self
+        where
+            S: IntoStorageKey,
+        {
+            let prefix = prefix.into_storage_key();
+            Self {
+                total_supplies: TokenBalances::new(IterableMap::new(
+                    prefix.as_slice().nest(Prefix::TotalSupplies),
+                )),
+                wnear_id,
+                fees,
+            }
         }
     }
 }

@@ -20,7 +20,8 @@ use events::PostponedMtBurnEvents;
 use impl_tools::autoimpl;
 use near_plugins::{AccessControlRole, AccessControllable, Pausable, access_control};
 use near_sdk::{
-    BorshStorageKey, PanicOnDefault, borsh::BorshDeserialize, near, require, store::LookupSet,
+    BorshStorageKey, IntoStorageKey, PanicOnDefault, borsh::BorshDeserialize, near, require,
+    store::LookupSet,
 };
 use versioned::MaybeVersionedContractStorage;
 
@@ -29,7 +30,7 @@ use crate::Defuse;
 use self::{
     accounts::Accounts,
     config::{DefuseConfig, RolesConfig},
-    state::{ContractState, MaybeVersionedStateEntry},
+    state::ContractState,
 };
 
 #[near(serializers = [json])]
@@ -82,10 +83,6 @@ pub struct Contract(
 pub struct ContractStorage {
     accounts: Accounts,
 
-    #[borsh(
-        deserialize_with = "As::<MaybeVersionedStateEntry>::deserialize",
-        serialize_with = "As::<MaybeVersionedStateEntry>::serialize"
-    )]
     state: ContractState,
 
     relayer_keys: LookupSet<near_sdk::PublicKey>,
@@ -141,4 +138,10 @@ enum Prefix {
     Accounts,
     State,
     RelayerKeys,
+}
+
+pub trait MigrateStorageWithPrefix<T>: Sized {
+    fn migrate<S>(val: T, prefix: S) -> Self
+    where
+        S: IntoStorageKey;
 }

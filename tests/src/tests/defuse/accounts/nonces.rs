@@ -157,7 +157,7 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
             .expect("failed to grant role");
 
         env.user1
-            .update_current_salt(env.defuse.id(), false)
+            .update_current_salt(env.defuse.id())
             .await
             .expect("unable to rotate salt");
 
