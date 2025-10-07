@@ -23,7 +23,10 @@ pub trait AccountManagerExt {
         public_key: PublicKey,
     ) -> anyhow::Result<()>;
 
-    async fn cleanup_nonces(&self, data: &[(AccountId, Vec<Nonce>)]) -> anyhow::Result<TestLog>;
+    async fn cleanup_nonces_by_prefix(
+        &self,
+        data: &[(AccountId, Vec<Nonce>)],
+    ) -> anyhow::Result<TestLog>;
 
     async fn defuse_has_public_key(
         &self,
@@ -87,7 +90,10 @@ impl AccountManagerExt for near_workspaces::Account {
         Ok(())
     }
 
-    async fn cleanup_nonces(&self, data: &[(AccountId, Vec<Nonce>)]) -> anyhow::Result<TestLog> {
+    async fn cleanup_nonces_by_prefix(
+        &self,
+        data: &[(AccountId, Vec<Nonce>)],
+    ) -> anyhow::Result<TestLog> {
         let nonces = data
             .iter()
             .map(|(acc, nonces)| {
@@ -98,7 +104,7 @@ impl AccountManagerExt for near_workspaces::Account {
             .collect::<Vec<(AccountId, Vec<AsBase64<Nonce>>)>>();
 
         let res = self
-            .call(self.id(), "cleanup_nonces")
+            .call(self.id(), "cleanup_nonces_by_prefix")
             .args_json(json!({
                 "nonces": nonces,
             }))
@@ -195,8 +201,11 @@ impl AccountManagerExt for near_workspaces::Contract {
             .await
     }
 
-    async fn cleanup_nonces(&self, data: &[(AccountId, Vec<Nonce>)]) -> anyhow::Result<TestLog> {
-        self.as_account().cleanup_nonces(data).await
+    async fn cleanup_nonces_by_prefix(
+        &self,
+        data: &[(AccountId, Vec<Nonce>)],
+    ) -> anyhow::Result<TestLog> {
+        self.as_account().cleanup_nonces_by_prefix(data).await
     }
 
     async fn defuse_has_public_key(

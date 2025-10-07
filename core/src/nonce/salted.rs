@@ -1,4 +1,5 @@
 use core::mem;
+use hex::FromHex;
 use impl_tools::autoimpl;
 use near_sdk::{
     IntoStorageKey,
@@ -49,10 +50,7 @@ impl FromStr for Salt {
     type Err = hex::FromHexError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s)?;
-        let mut result = [0u8; 4];
-
-        result.copy_from_slice(&bytes[..4]);
+        let result: [u8; 4] = <[u8; 4]>::from_hex(s)?;
 
         Ok(Self(result))
     }

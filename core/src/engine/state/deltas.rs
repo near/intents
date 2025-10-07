@@ -123,8 +123,8 @@ where
     }
 
     #[inline]
-    fn cleanup_nonce(&mut self, account_id: &AccountIdRef, nonce: Nonce) -> Result<()> {
-        self.state.cleanup_nonce(account_id, nonce)
+    fn cleanup_nonce_by_prefix(&mut self, account_id: &AccountIdRef, nonce: Nonce) -> Result<()> {
+        self.state.cleanup_nonce_by_prefix(account_id, nonce)
     }
 
     fn internal_add_balance(

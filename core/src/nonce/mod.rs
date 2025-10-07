@@ -47,8 +47,10 @@ where
     }
 
     #[inline]
-    pub fn clear_by_prefix(&mut self, prefix: [u8; 31]) -> bool {
-        self.0.clear_by_prefix(prefix)
+    pub fn cleanup_by_prefix(&mut self, nonce: Nonce) -> bool {
+        let [prefix @ .., _] = nonce;
+
+        self.0.cleanup_by_prefix(prefix)
     }
 
     #[inline]

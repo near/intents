@@ -179,14 +179,14 @@ where
             .commit_nonce(nonce)
     }
 
-    fn cleanup_nonce(&mut self, account_id: &AccountIdRef, nonce: Nonce) -> Result<()> {
+    fn cleanup_nonce_by_prefix(&mut self, account_id: &AccountIdRef, nonce: Nonce) -> Result<()> {
         let account = self
             .accounts
             .get_mut(account_id)
             .ok_or_else(|| DefuseError::AccountNotFound(account_id.to_owned()))?
             .as_inner_unchecked_mut();
 
-        account.cleanup_nonce(nonce);
+        account.cleanup_nonce_by_prefix(nonce);
 
         Ok(())
     }
@@ -415,9 +415,7 @@ impl CachedAccount {
     }
 
     #[inline]
-    pub fn cleanup_nonce(&mut self, n: U256) -> bool {
-        let [prefix @ .., _] = n;
-
-        self.nonces.clear_by_prefix(prefix)
+    pub fn cleanup_nonce_by_prefix(&mut self, nonce: Nonce) -> bool {
+        self.nonces.cleanup_by_prefix(nonce)
     }
 }

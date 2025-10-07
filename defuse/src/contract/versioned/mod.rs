@@ -21,8 +21,8 @@ use v0::ContractStorageV0;
 enum VersionedContractStorage<'a> {
     V0(Cow<'a, PanicOnClone<ContractStorageV0>>),
     // When upgrading to a new version, given current version `N`:
-    // 1. Copy current `Contract` struct definition and name it `ContractVN`
-    // 2. Add variant `VN(Cow<'a, PanicOnClone<ContractVN>>)` before `Latest`
+    // 1. Copy current `ContractStorage` struct definition and name it `ContractStorageVN`
+    // 2. Add variant `VN(Cow<'a, PanicOnClone<ContractStorageVN>>)` before `Latest`
     // 3. Handle new variant in `match` expessions below
     // 4. Add tests for `VN -> Latest` migration
     Latest(Cow<'a, PanicOnClone<ContractStorage>>),

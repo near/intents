@@ -69,10 +69,8 @@ where
     }
 
     #[inline]
-    pub fn cleanup(&mut self, nonce: Nonce) -> bool {
-        let [prefix @ .., _] = nonce;
-
-        self.nonces.clear_by_prefix(prefix)
+    pub fn cleanup_by_prefix(&mut self, nonce: Nonce) -> bool {
+        self.nonces.cleanup_by_prefix(nonce)
     }
 }
 
@@ -206,7 +204,7 @@ pub(super) mod tests {
             LookupMap::with_hasher(random_bytes),
         );
 
-        assert!(!new.cleanup(random_nonce));
+        assert!(!new.cleanup_by_prefix(random_nonce));
         assert!(new.is_used(random_nonce));
     }
 }
