@@ -4,7 +4,6 @@ use near_sdk::{near, store::LookupSet};
 use crate::contract::{
     ContractStorage, MigrateStorageWithPrefix, Prefix,
     accounts::Accounts,
-    events::PostponedMtBurnEvents,
     state::{ContractState, ContractStateV0},
 };
 
@@ -18,9 +17,6 @@ pub struct ContractStorageV0 {
     state: ContractStateV0,
 
     relayer_keys: LookupSet<near_sdk::PublicKey>,
-
-    #[borsh(skip)]
-    _postponed_burns: PostponedMtBurnEvents,
 }
 
 impl From<ContractStorageV0> for ContractStorage {
@@ -29,7 +25,6 @@ impl From<ContractStorageV0> for ContractStorage {
             accounts,
             state,
             relayer_keys,
-            ..
         }: ContractStorageV0,
     ) -> Self {
         Self {

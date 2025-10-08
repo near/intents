@@ -8,9 +8,9 @@ use crate::{
 
 /// To distinguish between legacy nonces and versioned nonces
 /// we use a specific prefix individual for each version.
-/// Versioned nonce formats:
-/// - Legacy: plain `[u8; 32]`
-/// - VERSIONED: `VERSIONED_MAGIC_PREFIX (4 bytes) || VERSION (1 byte) || NONCE_BYTES (27 bytes)`:
+/// Serialized versioned nonce contains:
+///     `VERSIONED_MAGIC_PREFIX (4 bytes) || VERSION (1 byte) || NONCE_BYTES (27 bytes)`
+/// Currently supported versions:
 ///     - V1: `SALT (4 bytes) || DEADLINE (8 bytes) || NONCE (15 random bytes)`
 #[derive(Clone, Debug, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
 #[borsh(crate = "::near_sdk::borsh")]
@@ -28,6 +28,19 @@ impl VersionedNonce {
     }
 }
 
+impl From<VersionedNonce> for Nonce {
+    fn from(value: VersionedNonce) -> Self {
+        const SIZE: usize = size_of::<Nonce>();
+        let mut result = [0u8; SIZE];
+
+        (&VersionedNonce::VERSIONED_MAGIC_PREFIX, &value)
+            .serialize(&mut result.as_mut_slice())
+            .unwrap_or_else(|_| unreachable!());
+
+        result
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -39,19 +52,13 @@ mod tests {
     use rstest::rstest;
 
     #[rstest]
-    fn legacy_roundtrip_layout(random_bytes: Vec<u8>) {
+    fn maybe_from_test(random_bytes: Vec<u8>) {
         let mut u = Unstructured::new(&random_bytes);
-        let nonce: Nonce = u.arbitrary().unwrap();
+        let legacy_nonce: Nonce = u.arbitrary().unwrap();
 
-        let expected = VersionedNonce::from(nonce);
-        assert_eq!(expected, VersionedNonce::Legacy(nonce));
+        let expected = VersionedNonce::maybe_from(legacy_nonce);
+        assert!(expected.is_none());
 
-        let back = Nonce::from(expected);
-        assert_eq!(back, nonce);
-    }
-
-    #[rstest]
-    fn v1_roundtrip_layout(random_bytes: Vec<u8>) {
         let mut u = Unstructured::new(&random_bytes);
         let nonce_bytes: [u8; 15] = u.arbitrary().unwrap();
         let now = Deadline::new(Utc::now());
@@ -59,11 +66,8 @@ mod tests {
 
         let salted = SaltedNonce::new(salt, ExpirableNonce::new(now, nonce_bytes));
         let nonce: Nonce = VersionedNonce::V1(salted.clone()).into();
-        let exp = VersionedNonce::from(nonce);
 
-        assert_eq!(exp, VersionedNonce::V1(salted));
-
-        let back = Nonce::from(exp);
-        assert_eq!(back, nonce);
+        let exp = VersionedNonce::maybe_from(nonce);
+        assert_eq!(exp, Some(VersionedNonce::V1(salted)));
     }
 }

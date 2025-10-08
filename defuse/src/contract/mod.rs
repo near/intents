@@ -6,6 +6,7 @@ pub mod config;
 mod events;
 mod fees;
 mod intents;
+mod runtime;
 mod salts;
 mod state;
 mod tokens;
@@ -16,7 +17,6 @@ use core::iter;
 
 use defuse_borsh_utils::adapters::As;
 use defuse_core::Result;
-use events::PostponedMtBurnEvents;
 use impl_tools::autoimpl;
 use near_plugins::{AccessControlRole, AccessControllable, Pausable, access_control};
 use near_sdk::{
@@ -25,7 +25,7 @@ use near_sdk::{
 };
 use versioned::MaybeVersionedContractStorage;
 
-use crate::Defuse;
+use crate::{Defuse, contract::runtime::Runtime};
 
 use self::{
     accounts::Accounts,
@@ -76,7 +76,7 @@ pub struct Contract {
     storage: ContractStorage,
 
     #[borsh(skip)]
-    postponed_burns: PostponedMtBurnEvents,
+    runtime: Runtime,
 }
 
 #[derive(Debug)]
@@ -103,7 +103,7 @@ impl Contract {
                 state: ContractState::new(Prefix::State, config.wnear_id, config.fees),
                 relayer_keys: LookupSet::new(Prefix::RelayerKeys),
             },
-            postponed_burns: PostponedMtBurnEvents::new(),
+            runtime: Runtime::default(),
         };
         contract.init_acl(config.roles);
         contract
