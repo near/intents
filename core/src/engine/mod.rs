@@ -86,23 +86,24 @@ where
 
     #[inline]
     fn verify_intent_nonce(&self, nonce: Nonce, intent_deadline: Deadline) -> Result<()> {
-        match VersionedNonce::from(nonce) {
-            // NOTE: it is allowed to commit legacy nonces in this version
-            VersionedNonce::Legacy(_) => {}
-            VersionedNonce::V1(SaltedNonce {
-                salt,
-                nonce: ExpirableNonce { deadline, .. },
-            }) => {
-                if !self.state.is_valid_salt(salt) {
-                    return Err(DefuseError::InvalidSalt);
-                }
+        // NOTE: it is allowed to commit legacy nonces in this version
+        if let Some(nonce) = VersionedNonce::maybe_from(nonce) {
+            match nonce {
+                VersionedNonce::V1(SaltedNonce {
+                    salt,
+                    nonce: ExpirableNonce { deadline, .. },
+                }) => {
+                    if !self.state.is_valid_salt(salt) {
+                        return Err(DefuseError::InvalidSalt);
+                    }
 
-                if intent_deadline > deadline {
-                    return Err(DefuseError::DeadlineGreaterThanNonce);
-                }
+                    if intent_deadline > deadline {
+                        return Err(DefuseError::DeadlineGreaterThanNonce);
+                    }
 
-                if deadline.has_expired() {
-                    return Err(DefuseError::NonceExpired);
+                    if deadline.has_expired() {
+                        return Err(DefuseError::NonceExpired);
+                    }
                 }
             }
         }

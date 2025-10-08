@@ -66,15 +66,18 @@ pub enum Role {
         standard(standard = "nep245", version = "1.0.0"),
     )
 )]
-#[autoimpl(Deref using self.0)]
-#[autoimpl(DerefMut using self.0)]
-pub struct Contract(
+#[autoimpl(Deref using self.storage)]
+#[autoimpl(DerefMut using self.storage)]
+pub struct Contract {
     #[borsh(
         deserialize_with = "As::<MaybeVersionedContractStorage>::deserialize",
         serialize_with = "As::<MaybeVersionedContractStorage>::serialize"
     )]
-    ContractStorage,
-);
+    storage: ContractStorage,
+
+    #[borsh(skip)]
+    postponed_burns: PostponedMtBurnEvents,
+}
 
 #[derive(Debug)]
 #[autoimpl(Deref using self.state)]
@@ -86,9 +89,6 @@ pub struct ContractStorage {
     state: ContractState,
 
     relayer_keys: LookupSet<near_sdk::PublicKey>,
-
-    #[borsh(skip)]
-    postponed_burns: PostponedMtBurnEvents,
 }
 
 #[near]
@@ -97,12 +97,14 @@ impl Contract {
     #[init]
     #[allow(clippy::use_self)] // Clippy seems to not play well with near-sdk, or there is a bug in clippy - seen in shared security analysis
     pub fn new(config: DefuseConfig) -> Self {
-        let mut contract = Self(ContractStorage {
-            accounts: Accounts::new(Prefix::Accounts),
-            state: ContractState::new(Prefix::State, config.wnear_id, config.fees),
-            relayer_keys: LookupSet::new(Prefix::RelayerKeys),
+        let mut contract = Self {
+            storage: ContractStorage {
+                accounts: Accounts::new(Prefix::Accounts),
+                state: ContractState::new(Prefix::State, config.wnear_id, config.fees),
+                relayer_keys: LookupSet::new(Prefix::RelayerKeys),
+            },
             postponed_burns: PostponedMtBurnEvents::new(),
-        });
+        };
         contract.init_acl(config.roles);
         contract
     }

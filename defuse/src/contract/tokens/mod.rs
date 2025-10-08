@@ -18,7 +18,7 @@ impl Contract {
         memo: Option<&str>,
     ) -> Result<()> {
         let owner = self
-            .0
+            .storage
             .accounts
             .get_or_create(owner_id.clone())
             // deposits are allowed for locked accounts
@@ -40,7 +40,7 @@ impl Contract {
             mint_event.amounts.to_mut().push(U128(amount));
 
             let total_supply = self
-                .0
+                .storage
                 .state
                 .total_supplies
                 .add(token_id.clone(), amount)
@@ -75,7 +75,7 @@ impl Contract {
         force: bool,
     ) -> Result<()> {
         let owner = self
-            .0
+            .storage
             .accounts
             .get_mut(owner_id)
             .ok_or_else(|| DefuseError::AccountNotFound(owner_id.to_owned()))?
@@ -103,7 +103,7 @@ impl Contract {
                 .sub(token_id.clone(), amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
 
-            self.0
+            self.storage
                 .state
                 .total_supplies
                 .sub(token_id, amount)

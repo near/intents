@@ -20,7 +20,7 @@ pub struct ContractStorageV0 {
     relayer_keys: LookupSet<near_sdk::PublicKey>,
 
     #[borsh(skip)]
-    postponed_burns: PostponedMtBurnEvents,
+    _postponed_burns: PostponedMtBurnEvents,
 }
 
 impl From<ContractStorageV0> for ContractStorage {
@@ -29,14 +29,13 @@ impl From<ContractStorageV0> for ContractStorage {
             accounts,
             state,
             relayer_keys,
-            postponed_burns,
+            ..
         }: ContractStorageV0,
     ) -> Self {
         Self {
             accounts,
             state: ContractState::migrate(state, Prefix::State),
             relayer_keys,
-            postponed_burns,
         }
     }
 }
