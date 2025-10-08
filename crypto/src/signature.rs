@@ -5,7 +5,9 @@ use core::{
 
 use near_sdk::{bs58, near};
 
-use crate::{Curve, CurveType, Ed25519, P256, ParseCurveError, Secp256k1};
+use crate::{
+    Curve, CurveType, Ed25519, P256, ParseCurveError, Secp256k1, parse::checked_base58_decode_array,
+};
 
 #[near(serializers = [borsh])]
 #[cfg_attr(
@@ -71,13 +73,12 @@ impl FromStr for Signature {
         } else {
             (CurveType::Ed25519, s)
         };
-        let decoder = bs58::decode(data.as_bytes());
+
         match curve {
-            CurveType::Ed25519 => decoder.into_array_const().map(Self::Ed25519),
-            CurveType::Secp256k1 => decoder.into_array_const().map(Self::Secp256k1),
-            CurveType::P256 => decoder.into_array_const().map(Self::P256),
+            CurveType::Ed25519 => checked_base58_decode_array(data).map(Self::Ed25519),
+            CurveType::Secp256k1 => checked_base58_decode_array(data).map(Self::Secp256k1),
+            CurveType::P256 => checked_base58_decode_array(data).map(Self::P256),
         }
-        .map_err(Into::into)
     }
 }
 

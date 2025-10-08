@@ -5,7 +5,9 @@ use core::{
 
 use near_sdk::{AccountId, AccountIdRef, bs58, env, near};
 
-use crate::{Curve, CurveType, Ed25519, P256, ParseCurveError, Secp256k1};
+use crate::{
+    Curve, CurveType, Ed25519, P256, ParseCurveError, Secp256k1, parse::checked_base58_decode_array,
+};
 
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh])]
@@ -115,13 +117,12 @@ impl FromStr for PublicKey {
         } else {
             (CurveType::Ed25519, s)
         };
-        let decoder = bs58::decode(data.as_bytes());
+
         match curve {
-            CurveType::Ed25519 => decoder.into_array_const().map(Self::Ed25519),
-            CurveType::Secp256k1 => decoder.into_array_const().map(Self::Secp256k1),
-            CurveType::P256 => decoder.into_array_const().map(Self::P256),
+            CurveType::Ed25519 => checked_base58_decode_array(data).map(Self::Ed25519),
+            CurveType::Secp256k1 => checked_base58_decode_array(data).map(Self::Secp256k1),
+            CurveType::P256 => checked_base58_decode_array(data).map(Self::P256),
         }
-        .map_err(Into::into)
     }
 }
 
@@ -205,7 +206,7 @@ mod tests {
     #[test]
     fn implicit_secp256k1() {
         assert_eq!(
-            "secp256k1:5KN6ZfGZgH1puWwH1Nc1P8xyrFZSPHDw3WUP6iitsjCECJLrGBq"
+            "secp256k1:3aMVMxsoAnHUbweXMtdKaN1uJaNwsfKv7wnc97SDGjXhyK62VyJwhPUPLZefKVthcoUcuWK6cqkSU4M542ipNxS3"
                 .parse::<PublicKey>()
                 .unwrap()
                 .to_implicit_account_id(),
@@ -216,7 +217,7 @@ mod tests {
     #[test]
     fn implicit_p256() {
         assert_eq!(
-            "p256:5KN6ZfGZgH1puWwH1Nc1P8xyrFZSPHDw3WUP6iitsjCECJLrGBq"
+            "p256:3aMVMxsoAnHUbweXMtdKaN1uJaNwsfKv7wnc97SDGjXhyK62VyJwhPUPLZefKVthcoUcuWK6cqkSU4M542ipNxS3"
                 .parse::<PublicKey>()
                 .unwrap()
                 .to_implicit_account_id(),

@@ -2,11 +2,12 @@ mod ed25519;
 mod p256;
 mod secp256k1;
 
+use crate::{ParseCurveError, parse::checked_base58_decode_array};
+
 pub use self::{ed25519::*, p256::*, secp256k1::*};
 
 use near_sdk::bs58;
 use strum::{Display, EnumString, IntoStaticStr};
-use thiserror::Error as ThisError;
 
 pub trait Curve {
     type PublicKey;
@@ -55,16 +56,6 @@ pub trait TypedCurve: Curve {
         } else {
             s
         };
-        bs58::decode(data.as_bytes())
-            .into_array_const()
-            .map_err(Into::into)
+        checked_base58_decode_array(data)
     }
-}
-
-#[derive(Debug, ThisError)]
-pub enum ParseCurveError {
-    #[error("wrong curve type")]
-    WrongCurveType,
-    #[error("base58: {0}")]
-    Base58(#[from] bs58::decode::Error),
 }
