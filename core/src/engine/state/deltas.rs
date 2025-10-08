@@ -127,7 +127,7 @@ where
         &mut self,
         account_id: &AccountIdRef,
         prefix: NoncePrefix,
-    ) -> Result<()> {
+    ) -> Result<bool> {
         self.state.cleanup_nonce_by_prefix(account_id, prefix)
     }
 

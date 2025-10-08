@@ -66,7 +66,7 @@ pub trait State: StateView {
         &mut self,
         account_id: &AccountIdRef,
         prefix: NoncePrefix,
-    ) -> Result<()>;
+    ) -> Result<bool>;
 
     fn internal_add_balance(
         &mut self,

@@ -183,16 +183,14 @@ where
         &mut self,
         account_id: &AccountIdRef,
         prefix: NoncePrefix,
-    ) -> Result<()> {
+    ) -> Result<bool> {
         let account = self
             .accounts
             .get_mut(account_id)
             .ok_or_else(|| DefuseError::AccountNotFound(account_id.to_owned()))?
             .as_inner_unchecked_mut();
 
-        account.cleanup_nonce_by_prefix(prefix);
-
-        Ok(())
+        Ok(account.cleanup_nonce_by_prefix(prefix))
     }
 
     fn internal_add_balance(

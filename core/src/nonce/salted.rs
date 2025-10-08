@@ -120,20 +120,22 @@ impl SaltRegistry {
         }
     }
 
+    fn derive_next_salt(&self) -> Result<Salt> {
+        (0..u8::MAX)
+            .map(Salt::derive)
+            .find(|s| !self.is_valid(*s))
+            .ok_or(DefuseError::SaltGenerationFailed)
+    }
+
     /// Rotates the current salt, making the previous salt valid as well.
     #[inline]
     pub fn set_new(&mut self) -> Result<Salt> {
-        for attempt in 0..u8::MAX {
-            let salt = Salt::derive(attempt);
-            if salt != self.current && !self.previous.contains_key(&salt) {
-                let previous = mem::replace(&mut self.current, salt);
-                self.previous.insert(previous, true);
+        let salt = self.derive_next_salt()?;
 
-                return Ok(previous);
-            }
-        }
+        let previous = mem::replace(&mut self.current, salt);
+        self.previous.insert(previous, true);
 
-        Err(DefuseError::SaltGenerationFailed)
+        Ok(previous)
     }
 
     /// Deactivates the previous salt, making it invalid.
