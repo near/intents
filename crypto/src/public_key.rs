@@ -179,7 +179,7 @@ mod abi {
         }
 
         pub(super) fn example_secp256k1() -> Self {
-            "secp256k1:5KN6ZfGZgH1puWwH1Nc1P8xyrFZSPHDw3WUP6iitsjCECJLrGBq"
+            "secp256k1:3aMVMxsoAnHUbweXMtdKaN1uJaNwsfKv7wnc97SDGjXhyK62VyJwhPUPLZefKVthcoUcuWK6cqkSU4M542ipNxS3"
                 .parse()
                 .unwrap()
         }
