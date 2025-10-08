@@ -7,8 +7,8 @@ pub enum ParseCurveError {
     WrongCurveType,
     #[error("base58: {0}")]
     Base58(#[from] bs58::decode::Error),
-    #[error("wrong length")]
-    WrongLength,
+    #[error("invalid length")]
+    InvalidLength,
 }
 
 /// Decodes input as base58 into array and checks for its length
@@ -21,7 +21,7 @@ pub fn checked_base58_decode_array<const N: usize>(
         // input lentgh and returns array filled up with zeros
         .onto(&mut output)?;
     if n != N {
-        return Err(ParseCurveError::WrongLength);
+        return Err(ParseCurveError::InvalidLength);
     }
     Ok(output)
 }
