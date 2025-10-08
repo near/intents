@@ -121,7 +121,7 @@ impl SaltRegistry {
     }
 
     fn derive_next_salt(&self) -> Result<Salt> {
-        (0..u8::MAX)
+        (0..=u8::MAX)
             .map(Salt::derive)
             .find(|s| !self.is_valid(*s))
             .ok_or(DefuseError::SaltGenerationFailed)

@@ -115,7 +115,7 @@ impl Contract {
         // `mt_transfer` arrives. This can happen due to postponed
         // delta-matching during intents execution.
         if !burn_event.amounts.is_empty() {
-            self.runtime.mt_burn(burn_event);
+            self.runtime.postponed_burns.mt_burn(burn_event);
         }
 
         Ok(())

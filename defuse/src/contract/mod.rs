@@ -6,7 +6,6 @@ pub mod config;
 mod events;
 mod fees;
 mod intents;
-mod runtime;
 mod salts;
 mod state;
 mod tokens;
@@ -25,7 +24,7 @@ use near_sdk::{
 };
 use versioned::MaybeVersionedContractStorage;
 
-use crate::{Defuse, contract::runtime::Runtime};
+use crate::{Defuse, contract::events::PostponedMtBurnEvents};
 
 use self::{
     accounts::Accounts,
@@ -89,6 +88,11 @@ pub struct ContractStorage {
     state: ContractState,
 
     relayer_keys: LookupSet<near_sdk::PublicKey>,
+}
+
+#[derive(Debug, Default)]
+pub struct Runtime {
+    pub postponed_burns: PostponedMtBurnEvents,
 }
 
 #[near]
