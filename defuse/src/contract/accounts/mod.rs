@@ -52,7 +52,7 @@ impl AccountManager for Contract {
         StateView::is_nonce_used(self, account_id, nonce.into_inner())
     }
 
-    fn cleanup_nonces_by_prefix(&mut self, nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>) {
+    fn cleanup_nonces(&mut self, nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>) {
         for (account_id, nonces) in nonces {
             for nonce in nonces.into_iter().map(AsBase64::into_inner) {
                 let cleanable = match VersionedNonce::from(nonce) {

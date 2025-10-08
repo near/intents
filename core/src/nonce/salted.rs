@@ -114,11 +114,11 @@ impl SaltRegistry {
 
     /// Rotates the current salt, making the previous salt valid as well.
     #[inline]
-    pub fn set_new(&mut self, invalidate_current: bool) -> Salt {
+    pub fn set_new(&mut self) -> Salt {
         let salt = Salt::random();
         let previous = mem::replace(&mut self.current, salt);
 
-        self.previous.insert(previous, !invalidate_current);
+        self.previous.insert(previous, true);
 
         previous
     }
@@ -127,9 +127,7 @@ impl SaltRegistry {
     #[inline]
     pub fn invalidate(&mut self, salt: Salt) -> bool {
         if salt == self.current {
-            self.set_new(true);
-
-            return true;
+            self.set_new();
         }
 
         self.previous.get_mut(&salt).map(|v| *v = false).is_some()
@@ -205,16 +203,10 @@ mod tests {
         let mut salts = SaltRegistry::new(random_bytes);
 
         let current = set_random_seed(&mut rng);
-        let previous = salts.set_new(false);
+        let previous = salts.set_new();
 
         assert!(salts.is_valid(current));
         assert!(salts.is_valid(previous));
-
-        let current = set_random_seed(&mut rng);
-        let previous = salts.set_new(true);
-
-        assert!(salts.is_valid(current));
-        assert!(!salts.is_valid(previous));
     }
 
     #[rstest]
@@ -223,7 +215,7 @@ mod tests {
         let random_salt = rng.random::<[u8; 4]>().as_slice().into();
 
         let current = set_random_seed(&mut rng);
-        let previous = salts.set_new(false);
+        let previous = salts.set_new();
 
         assert!(salts.invalidate(previous));
         assert!(!salts.is_valid(previous));

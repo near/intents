@@ -14,7 +14,7 @@ impl SaltManager for Contract {
     fn update_current_salt(&mut self) -> Salt {
         assert_one_yocto();
 
-        self.salts.set_new(false);
+        self.salts.set_new();
         let current = self.salts.current();
 
         SaltRotationEvent {

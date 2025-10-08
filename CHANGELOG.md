@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - Cleanup functionality for nonces to preserve storage: all expired nonces or nonces with invalid salt can be cleared. Legacy nonces can't be cleared before a complete prohibition on its usage.
 
 ### Changed
+- Contract storage versioning
 - State versioning
 - Nonce versioning
 - Updated nonce format: The new version must contain the salt part + expiration date to determine if it is valid, but legacy nonces are still supported

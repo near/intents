@@ -13,7 +13,7 @@ use tokio::time::sleep;
 
 use defuse_test_utils::{
     asserts::ResultAssertsExt,
-    random::{Rng, rng},
+    random::{Rng, random_bytes, rng},
 };
 use near_sdk::AccountId;
 use rstest::rstest;
@@ -39,11 +39,12 @@ fn create_random_salted_nonce(salt: Salt, deadline: Deadline, mut rng: impl Rng)
 
 #[tokio::test]
 #[rstest]
-async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
+async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng) {
     let env = Env::builder().deployer_as_super_admin().build().await;
     let current_timestamp = Utc::now();
     let current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
     let timeout_delta = TimeDelta::days(1);
+    let u = &mut Unstructured::new(&random_bytes);
 
     // legacy nonce
     {
@@ -52,8 +53,7 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
 
         env.defuse
             .execute_intents([env.user1.sign_defuse_message(
-                SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
-                    .unwrap(),
+                SigningStandard::arbitrary(u).unwrap(),
                 env.defuse.id(),
                 legacy_nonce,
                 deadline,
@@ -73,13 +73,12 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
     // invalid salt
     {
         let deadline = Deadline::new(current_timestamp.checked_add_signed(timeout_delta).unwrap());
-        let random_salt = Salt::random();
+        let random_salt = Salt::arbitrary(u).unwrap();
         let salted = create_random_salted_nonce(random_salt, deadline, &mut rng);
 
         env.defuse
             .execute_intents([env.user1.sign_defuse_message(
-                SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
-                    .unwrap(),
+                SigningStandard::arbitrary(u).unwrap(),
                 env.defuse.id(),
                 salted,
                 deadline,
@@ -96,8 +95,7 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
 
         env.defuse
             .execute_intents([env.user1.sign_defuse_message(
-                SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
-                    .unwrap(),
+                SigningStandard::arbitrary(u).unwrap(),
                 env.defuse.id(),
                 expired_nonce,
                 Deadline::MAX,
@@ -114,8 +112,7 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
 
         env.defuse
             .execute_intents([env.user1.sign_defuse_message(
-                SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
-                    .unwrap(),
+                SigningStandard::arbitrary(u).unwrap(),
                 env.defuse.id(),
                 expired_nonce,
                 deadline,
@@ -132,8 +129,7 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
 
         env.defuse
             .execute_intents([env.user1.sign_defuse_message(
-                SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
-                    .unwrap(),
+                SigningStandard::arbitrary(u).unwrap(),
                 env.defuse.id(),
                 expirable_nonce,
                 deadline,
@@ -166,8 +162,7 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
 
         env.defuse
             .execute_intents([env.user1.sign_defuse_message(
-                SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
-                    .unwrap(),
+                SigningStandard::arbitrary(u).unwrap(),
                 env.defuse.id(),
                 old_salt_nonce,
                 deadline,
@@ -197,8 +192,7 @@ async fn test_commit_nonces(#[notrace] mut rng: impl Rng) {
 
         env.defuse
             .execute_intents([env.user1.sign_defuse_message(
-                SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
-                    .unwrap(),
+                SigningStandard::arbitrary(u).unwrap(),
                 env.defuse.id(),
                 invalid_salt_nonce,
                 deadline,
