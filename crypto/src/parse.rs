@@ -18,7 +18,7 @@ pub fn checked_base58_decode_array<const N: usize>(
     let mut output = [0u8; N];
     let n = bs58::decode(input.as_ref())
         // NOTE: `.into_array_const()` doesn't return an error on insufficient
-        // input lentgh and returns array filled up with zeros
+        // input length and pads the array with zeros
         .onto(&mut output)?;
     if n != N {
         return Err(ParseCurveError::InvalidLength);
