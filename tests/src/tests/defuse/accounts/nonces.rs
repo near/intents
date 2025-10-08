@@ -205,7 +205,7 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
 
 #[tokio::test]
 #[rstest]
-async fn test_cleanup_nonces_by_prefix(#[notrace] mut rng: impl Rng) {
+async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
     const WAITING_TIME: TimeDelta = TimeDelta::seconds(3);
 
     let env = Env::builder().deployer_as_super_admin().build().await;
@@ -267,7 +267,7 @@ async fn test_cleanup_nonces_by_prefix(#[notrace] mut rng: impl Rng) {
     // nonce is expired
     {
         env.defuse
-            .cleanup_nonces_by_prefix(&[(env.user1.id().clone(), vec![expirable_nonce])])
+            .cleanup_nonces(&[(env.user1.id().clone(), vec![expirable_nonce])])
             .await
             .unwrap();
 
@@ -284,7 +284,7 @@ async fn test_cleanup_nonces_by_prefix(#[notrace] mut rng: impl Rng) {
         let unknown_user: AccountId = "unknown-user.near".parse().unwrap();
 
         env.defuse
-            .cleanup_nonces_by_prefix(&[
+            .cleanup_nonces(&[
                 (env.user1.id().clone(), vec![expirable_nonce]),
                 (env.user1.id().clone(), vec![legacy_nonce]),
                 (env.user1.id().clone(), vec![long_term_expirable_nonce]),
@@ -320,7 +320,7 @@ async fn test_cleanup_nonces_by_prefix(#[notrace] mut rng: impl Rng) {
             .expect("unable to rotate salt");
 
         env.defuse
-            .cleanup_nonces_by_prefix(&[(env.user1.id().clone(), vec![long_term_expirable_nonce])])
+            .cleanup_nonces(&[(env.user1.id().clone(), vec![long_term_expirable_nonce])])
             .await
             .unwrap();
 
@@ -375,7 +375,7 @@ async fn cleanup_multiple_nonces(
 
     let gas_used = env
         .defuse
-        .cleanup_nonces_by_prefix(&[(env.user1.id().clone(), nonces)])
+        .cleanup_nonces(&[(env.user1.id().clone(), nonces)])
         .await
         .unwrap();
 

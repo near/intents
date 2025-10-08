@@ -72,4 +72,7 @@ pub enum DefuseError {
 
     #[error("invalid salt")]
     InvalidSalt,
+
+    #[error("maximum attempts to generate a new salt reached")]
+    SaltGenerationFailed,
 }

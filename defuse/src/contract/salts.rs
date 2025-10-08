@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
 
 use defuse_core::{Salt, accounts::SaltRotationEvent, events::DefuseIntentEmit};
+use defuse_near_utils::UnwrapOrPanic;
 use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{assert_one_yocto, near};
 
@@ -14,7 +15,7 @@ impl SaltManager for Contract {
     fn update_current_salt(&mut self) -> Salt {
         assert_one_yocto();
 
-        self.salts.set_new();
+        self.salts.set_new().unwrap_or_panic();
         let current = self.salts.current();
 
         SaltRotationEvent {
@@ -30,9 +31,11 @@ impl SaltManager for Contract {
     #[payable]
     fn invalidate_salts(&mut self, salts: Vec<Salt>) -> Salt {
         assert_one_yocto();
+
+        // NOTE: omits any errors
         let invalidated = salts
             .into_iter()
-            .filter(|s| self.salts.invalidate(*s))
+            .filter(|s| self.salts.invalidate(*s).is_ok())
             .collect();
 
         let current = self.salts.current();
