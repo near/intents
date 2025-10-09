@@ -21,7 +21,7 @@ use rstest::rstest;
 use crate::{
     tests::defuse::{
         DefuseSigner, SigningStandard, accounts::AccountManagerExt, env::Env,
-        intents::ExecuteIntentsExt, state::SaltManagerExt,
+        garbage_collector::GarbageCollectorExt, intents::ExecuteIntentsExt, state::SaltManagerExt,
     },
     utils::acl::AclExt,
 };
