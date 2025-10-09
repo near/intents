@@ -276,7 +276,7 @@ impl State for Contract {
     }
 
     fn set_auth_by_predecessor_id(&mut self, account_id: AccountId, enable: bool) -> Result<bool> {
-        self.internal_set_auth_by_predecessor_id(account_id, enable, false)
+        self.internal_set_auth_by_predecessor_id(&account_id, enable, false)
     }
 
     fn auth_call(&mut self, signer_id: &AccountIdRef, auth_call: AuthCall) -> Result<()> {

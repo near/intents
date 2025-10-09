@@ -61,7 +61,7 @@ impl ForceAccountManager for Contract {
 
         for (account_id, enable) in account_ids {
             // NOTE: omit errors
-            let _ = self.internal_set_auth_by_predecessor_id(account_id, enable, true);
+            let _ = self.internal_set_auth_by_predecessor_id(&account_id, enable, true);
         }
     }
 }
@@ -69,12 +69,12 @@ impl ForceAccountManager for Contract {
 impl Contract {
     pub(crate) fn internal_set_auth_by_predecessor_id(
         &mut self,
-        account_id: AccountId,
+        account_id: &AccountId,
         enable: bool,
         force: bool,
     ) -> Result<bool> {
         if enable {
-            let Some(account) = self.accounts.get_mut(&account_id) else {
+            let Some(account) = self.accounts.get_mut(account_id) else {
                 // no need to create an account: not-yet-existing accounts
                 // have auth by PREDECESSOR_ID enabled by default
                 return Ok(true);
@@ -85,6 +85,6 @@ impl Contract {
         }
         .get_mut_maybe_forced(force)
         .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))
-        .map(|account| account.set_auth_by_predecessor_id(&account_id, enable))
+        .map(|account| account.set_auth_by_predecessor_id(account_id, enable))
     }
 }
