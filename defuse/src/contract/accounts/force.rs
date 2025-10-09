@@ -48,7 +48,7 @@ impl ForceAccountManager for Contract {
         unlocked
     }
 
-    /// Disables authentication by PREDECESSOR_ID for given account ids.
+    /// Sets authentication by PREDECESSOR_ID for given account ids.
     ///
     /// **WARN**: Doing so might lock these accounts out of your funds if
     /// they don't have any other public_keys added to them.
