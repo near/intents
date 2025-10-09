@@ -188,40 +188,42 @@ mod abi {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
 
-    #[test]
-    fn implicit_ed25519() {
+    #[rstest]
+    #[case(
+        "ed25519:5TagutioHgKLh7KZ1VEFBYfgRkPtqnKm9LoMnJMJugxm",
+        "423df0a6640e9467769c55a573f15b9ee999dc8970048959c72890abf5cc3a8e"
+    )]
+    #[case(
+        "secp256k1:3aMVMxsoAnHUbweXMtdKaN1uJaNwsfKv7wnc97SDGjXhyK62VyJwhPUPLZefKVthcoUcuWK6cqkSU4M542ipNxS3",
+        "0xbff77166b39599e54e391156eef7b8191e02be92"
+    )]
+    #[case(
+        "p256:3aMVMxsoAnHUbweXMtdKaN1uJaNwsfKv7wnc97SDGjXhyK62VyJwhPUPLZefKVthcoUcuWK6cqkSU4M542ipNxS3",
+        "0x7edf07ede58238026db3f90fc8032633b69b8de5"
+    )]
+    fn to_implicit_account_id(#[case] pk: &str, #[case] expected: &str) {
         assert_eq!(
-            "ed25519:5TagutioHgKLh7KZ1VEFBYfgRkPtqnKm9LoMnJMJugxm"
-                .parse::<PublicKey>()
-                .unwrap()
-                .to_implicit_account_id(),
-            AccountIdRef::new_or_panic(
-                "423df0a6640e9467769c55a573f15b9ee999dc8970048959c72890abf5cc3a8e"
-            )
+            pk.parse::<PublicKey>().unwrap().to_implicit_account_id(),
+            AccountIdRef::new_or_panic(expected)
         );
     }
 
-    #[test]
-    fn implicit_secp256k1() {
-        assert_eq!(
-            "secp256k1:3aMVMxsoAnHUbweXMtdKaN1uJaNwsfKv7wnc97SDGjXhyK62VyJwhPUPLZefKVthcoUcuWK6cqkSU4M542ipNxS3"
-                .parse::<PublicKey>()
-                .unwrap()
-                .to_implicit_account_id(),
-            AccountIdRef::new_or_panic("0xbff77166b39599e54e391156eef7b8191e02be92")
-        );
-    }
-
-    #[test]
-    fn implicit_p256() {
-        assert_eq!(
-            "p256:3aMVMxsoAnHUbweXMtdKaN1uJaNwsfKv7wnc97SDGjXhyK62VyJwhPUPLZefKVthcoUcuWK6cqkSU4M542ipNxS3"
-                .parse::<PublicKey>()
-                .unwrap()
-                .to_implicit_account_id(),
-            AccountIdRef::new_or_panic("0x7edf07ede58238026db3f90fc8032633b69b8de5")
-        );
+    #[rstest]
+    fn parse_invalid_length(
+        #[values(
+            "ed25519:5TagutioHgKLh7KZ1VEFBYfgRkPtqnKm9LoMnJMJ",
+            "ed25519:",
+            "secp256k1:p3UPfBR3kWxE2C8wF1855eguaoRvoW6jV5ZXbu3sTTCs",
+            "secp256k1:",
+            "p256:p3UPfBR3kWxE2C8wF1855eguaoRvoW6jV5ZXbu3sTTCs",
+            "p256:"
+        )]
+        pk: &str,
+    ) {
+        assert_eq!(pk.parse::<PublicKey>(), Err(ParseCurveError::InvalidLength));
     }
 }

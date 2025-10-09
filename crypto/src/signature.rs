@@ -141,3 +141,40 @@ mod abi {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    fn parse_ok(
+        #[values(
+            "ed25519:4nrYPT9gQbagzC1c7gSRnSkjZukXqjFxnPVp6wjmH1QgsBB1xzsbHB3piY7eHBnofUVS4WRRHpSfTVaqYq9KM265",
+            "secp256k1:7o3557Aipc2MDtvh3E5ZQet85ZcRsynThmhcVZye9mUD1fcG6PBCerX6BKDGkKf3L31DUSkAtSd9o4kGvc3h4wZJ7",
+            "p256:4skfJSJRVHKjXs2FztBcSnTsbSRMjF3ykFz9hB4kZo486KvRrTpwz54uzQawsKtCdM1BdQR6JdAAZXmHreNXmNBj"
+        )]
+        sig: &str,
+    ) {
+        sig.parse::<Signature>().unwrap();
+    }
+
+    #[rstest]
+    fn parse_invalid_length(
+        #[values(
+            "ed25519:5TagutioHgKLh7KZ1VEFBYfgRkPtqnKm9LoMnJMJ",
+            "ed25519:",
+            "secp256k1:p3UPfBR3kWxE2C8wF1855eguaoRvoW6jV5ZXbu3sTTCs",
+            "secp256k1:",
+            "p256:p3UPfBR3kWxE2C8wF1855eguaoRvoW6jV5ZXbu3sTTCs",
+            "p256:"
+        )]
+        sig: &str,
+    ) {
+        assert_eq!(
+            sig.parse::<Signature>(),
+            Err(ParseCurveError::InvalidLength)
+        );
+    }
+}

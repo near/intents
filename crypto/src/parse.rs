@@ -1,7 +1,7 @@
 use near_sdk::bs58;
 use thiserror::Error as ThisError;
 
-#[derive(Debug, ThisError)]
+#[derive(Debug, ThisError, PartialEq, Eq)]
 pub enum ParseCurveError {
     #[error("wrong curve type")]
     WrongCurveType,
@@ -20,8 +20,7 @@ pub fn checked_base58_decode_array<const N: usize>(
         // NOTE: `.into_array_const()` doesn't return an error on insufficient
         // input length and pads the array with zeros
         .onto(&mut output)?;
-    if n != N {
-        return Err(ParseCurveError::InvalidLength);
-    }
-    Ok(output)
+    (n == N)
+        .then_some(output)
+        .ok_or(ParseCurveError::InvalidLength)
 }

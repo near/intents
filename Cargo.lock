@@ -761,6 +761,7 @@ dependencies = [
  "hex",
  "near-sdk",
  "p256",
+ "rstest",
  "serde_with",
  "strum 0.27.1",
  "thiserror 2.0.12",
