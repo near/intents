@@ -1,6 +1,5 @@
 use core::mem;
 use hex::FromHex;
-use impl_tools::autoimpl;
 use near_sdk::{
     IntoStorageKey,
     borsh::{BorshDeserialize, BorshSerialize},
@@ -18,10 +17,6 @@ use crate::{DefuseError, Result};
 
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[derive(PartialEq, PartialOrd, Ord, Eq, Copy, Clone, SerializeDisplay, DeserializeFromStr)]
-#[autoimpl(Deref using self.0)]
-#[autoimpl(DerefMut using self.0)]
-#[autoimpl(AsRef using self.0)]
-#[autoimpl(AsMut using self.0)]
 #[near(serializers = [borsh])]
 pub struct Salt([u8; 4]);
 
@@ -34,11 +29,11 @@ impl Salt {
         input[..32].copy_from_slice(&seed);
         input[32] = num;
 
-        let hash = sha256_array(&input);
-        let mut result = [0u8; SIZE];
-        result.copy_from_slice(&hash[..SIZE]);
-
-        Self(result)
+        Self(
+            sha256_array(&input)[..SIZE]
+                .try_into()
+                .unwrap_or_else(|_| unreachable!()),
+        )
     }
 }
 
@@ -127,7 +122,7 @@ impl SaltRegistry {
             .ok_or(DefuseError::SaltGenerationFailed)
     }
 
-    /// Rotates the current salt, making the previous salt valid as well.
+    /// Rotates the current salt, making it previous and keeping it valid.
     #[inline]
     pub fn set_new(&mut self) -> Result<Salt> {
         let salt = self.derive_next_salt()?;
@@ -227,15 +222,15 @@ mod tests {
     fn update_current_salt_test(random_bytes: Vec<u8>, mut rng: impl Rng) {
         let mut salts = SaltRegistry::new(random_bytes);
 
-        let current = set_random_seed(&mut rng);
-        let previous = salts.set_new().expect("should set new salt");
+        let seed = set_random_seed(&mut rng);
+        let previous_salt = salts.set_new().expect("should set new salt");
 
-        assert!(salts.is_valid(seed_to_salt(&current, 0)));
-        assert!(salts.is_valid(previous));
+        assert!(salts.is_valid(seed_to_salt(&seed, 0)));
+        assert!(salts.is_valid(previous_salt));
 
-        let previous = salts.set_new().expect("should set new salt");
-        assert!(salts.is_valid(seed_to_salt(&current, 1)));
-        assert!(salts.is_valid(previous));
+        let previous_salt = salts.set_new().expect("should set new salt");
+        assert!(salts.is_valid(seed_to_salt(&seed, 1)));
+        assert!(salts.is_valid(previous_salt));
     }
 
     #[rstest]
@@ -245,10 +240,10 @@ mod tests {
 
         let seed = set_random_seed(&mut rng);
         let current = seed_to_salt(&seed, 0);
-        let previous = salts.set_new().expect("should set new salt");
+        let previous_salt = salts.set_new().expect("should set new salt");
 
-        assert!(salts.invalidate(previous).is_ok());
-        assert!(!salts.is_valid(previous));
+        assert!(salts.invalidate(previous_salt).is_ok());
+        assert!(!salts.is_valid(previous_salt));
         assert!(matches!(
             salts.invalidate(random_salt).unwrap_err(),
             DefuseError::InvalidSalt

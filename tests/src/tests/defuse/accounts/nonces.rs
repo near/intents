@@ -264,10 +264,28 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
 
     sleep(Duration::from_secs_f64(WAITING_TIME.as_seconds_f64())).await;
 
+    // only DAO or garbage collector can cleanup nonces
+    {
+        env.user1
+            .cleanup_nonces(
+                env.defuse.id(),
+                &[(env.user1.id().clone(), vec![expirable_nonce])],
+            )
+            .await
+            .assert_err_contains("Insufficient permissions for method");
+    }
+
     // nonce is expired
     {
-        env.defuse
-            .cleanup_nonces(&[(env.user1.id().clone(), vec![expirable_nonce])])
+        env.acl_grant_role(env.defuse.id(), Role::GarbageCollector, env.user1.id())
+            .await
+            .expect("failed to grant role");
+
+        env.user1
+            .cleanup_nonces(
+                env.defuse.id(),
+                &[(env.user1.id().clone(), vec![expirable_nonce])],
+            )
             .await
             .unwrap();
 
@@ -283,13 +301,16 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
     {
         let unknown_user: AccountId = "unknown-user.near".parse().unwrap();
 
-        env.defuse
-            .cleanup_nonces(&[
-                (env.user1.id().clone(), vec![expirable_nonce]),
-                (env.user1.id().clone(), vec![legacy_nonce]),
-                (env.user1.id().clone(), vec![long_term_expirable_nonce]),
-                (unknown_user, vec![expirable_nonce]),
-            ])
+        env.user1
+            .cleanup_nonces(
+                env.defuse.id(),
+                &[
+                    (env.user1.id().clone(), vec![expirable_nonce]),
+                    (env.user1.id().clone(), vec![legacy_nonce]),
+                    (env.user1.id().clone(), vec![long_term_expirable_nonce]),
+                    (unknown_user, vec![expirable_nonce]),
+                ],
+            )
             .await
             .unwrap();
 
@@ -319,8 +340,11 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
             .await
             .expect("unable to rotate salt");
 
-        env.defuse
-            .cleanup_nonces(&[(env.user1.id().clone(), vec![long_term_expirable_nonce])])
+        env.user1
+            .cleanup_nonces(
+                env.defuse.id(),
+                &[(env.user1.id().clone(), vec![long_term_expirable_nonce])],
+            )
             .await
             .unwrap();
 
@@ -342,9 +366,13 @@ async fn cleanup_multiple_nonces(
     const CHUNK_SIZE: usize = 10;
     const WAITING_TIME: TimeDelta = TimeDelta::seconds(3);
 
-    let env = Env::builder().build().await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
     let mut nonces = Vec::with_capacity(nonce_count);
     let current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
+
+    env.acl_grant_role(env.defuse.id(), Role::GarbageCollector, env.user1.id())
+        .await
+        .expect("failed to grant role");
 
     for chunk in &(0..nonce_count).chunks(CHUNK_SIZE) {
         let current_timestamp = Utc::now();
@@ -374,8 +402,8 @@ async fn cleanup_multiple_nonces(
     sleep(Duration::from_secs_f64(WAITING_TIME.as_seconds_f64())).await;
 
     let gas_used = env
-        .defuse
-        .cleanup_nonces(&[(env.user1.id().clone(), nonces)])
+        .user1
+        .cleanup_nonces(env.defuse.id(), &[(env.user1.id().clone(), nonces)])
         .await
         .unwrap();
 

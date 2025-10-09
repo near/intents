@@ -50,7 +50,10 @@ impl Intents for Contract {
             intents_executed: inspector.intents_executed,
             min_deadline: inspector.min_deadline,
             invariant_violated,
-            state: StateOutput { fee: self.fee() },
+            state: StateOutput {
+                fee: self.fee(),
+                current_salt: self.salts.current(),
+            },
         }
     }
 }

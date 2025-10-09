@@ -14,6 +14,7 @@ use defuse_core::{
 use defuse_near_utils::{Lock, NestPrefix, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic};
 use defuse_serde_utils::base64::AsBase64;
 
+use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{
     AccountId, AccountIdRef, BorshStorageKey, FunctionError, IntoStorageKey, assert_one_yocto,
     borsh::BorshSerialize, near, store::IterableMap,
@@ -21,7 +22,7 @@ use near_sdk::{
 
 use crate::{
     accounts::AccountManager,
-    contract::{Contract, ContractExt, accounts::AccountEntry},
+    contract::{Contract, ContractExt, Role, accounts::AccountEntry},
 };
 
 #[near]
@@ -52,18 +53,11 @@ impl AccountManager for Contract {
         StateView::is_nonce_used(self, account_id, nonce.into_inner())
     }
 
+    #[access_control_any(roles(Role::DAO, Role::GarbageCollector))]
     fn cleanup_nonces(&mut self, nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>) {
         for (account_id, nonces) in nonces {
             for nonce in nonces.into_iter().map(AsBase64::into_inner) {
-                let Some(VersionedNonce::V1(SaltedNonce {
-                    salt,
-                    nonce: ExpirableNonce { deadline, .. },
-                })) = VersionedNonce::maybe_from(nonce)
-                else {
-                    continue;
-                };
-
-                if !deadline.has_expired() && self.is_valid_salt(salt) {
+                if !self.is_nonce_cleanable(nonce) {
                     continue;
                 }
 
@@ -87,6 +81,26 @@ impl AccountManager for Contract {
 }
 
 impl Contract {
+    #[inline]
+    fn is_nonce_cleanable(&self, nonce: Nonce) -> bool {
+        let Some(versioned_nonce) = VersionedNonce::maybe_from(nonce) else {
+            return false;
+        };
+
+        match versioned_nonce {
+            VersionedNonce::V1(SaltedNonce {
+                salt,
+                nonce: ExpirableNonce { deadline, .. },
+            }) => {
+                if !deadline.has_expired() && self.is_valid_salt(salt) {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+
     #[inline]
     pub fn ensure_auth_predecessor_id(&self) -> &'static AccountId {
         if !StateView::is_auth_by_predecessor_id_enabled(self, &PREDECESSOR_ACCOUNT_ID) {

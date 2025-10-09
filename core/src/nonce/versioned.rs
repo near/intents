@@ -33,7 +33,7 @@ impl From<VersionedNonce> for Nonce {
         const SIZE: usize = size_of::<Nonce>();
         let mut result = [0u8; SIZE];
 
-        (&VersionedNonce::VERSIONED_MAGIC_PREFIX, &value)
+        (VersionedNonce::VERSIONED_MAGIC_PREFIX, value)
             .serialize(&mut result.as_mut_slice())
             .unwrap_or_else(|_| unreachable!());
 
