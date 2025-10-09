@@ -54,7 +54,10 @@ impl AccountManager for Contract {
     }
 
     #[access_control_any(roles(Role::DAO, Role::GarbageCollector))]
+    #[payable]
     fn cleanup_nonces(&mut self, nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>) {
+        assert_one_yocto();
+
         for (account_id, nonces) in nonces {
             for nonce in nonces.into_iter().map(AsBase64::into_inner) {
                 if !self.is_nonce_cleanable(nonce) {
@@ -92,7 +95,7 @@ impl Contract {
                 salt,
                 nonce: ExpirableNonce { deadline, .. },
             }) => {
-                if !deadline.has_expired() && self.is_valid_salt(salt) {
+                if !(deadline.has_expired() || self.is_valid_salt(salt)) {
                     return false;
                 }
             }
