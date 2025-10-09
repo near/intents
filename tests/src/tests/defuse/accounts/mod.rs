@@ -107,6 +107,7 @@ impl AccountManagerExt for near_workspaces::Account {
 
         let res = self
             .call(defuse_contract_id, "cleanup_nonces")
+            .deposit(NearToken::from_yoctonear(1))
             .args_json(json!({
                 "nonces": nonces,
             }))
