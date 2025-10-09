@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use defuse_core::{Nonce, crypto::PublicKey};
 use defuse_serde_utils::base64::AsBase64;
@@ -51,8 +51,8 @@ pub trait AccountManager {
     fn disable_auth_by_predecessor_id(&mut self);
 }
 
-#[ext_contract(ext_force_account_locker)]
-pub trait AccountForceLocker: AccessControllable {
+#[ext_contract(ext_force_account_manager)]
+pub trait ForceAccountManager: AccessControllable {
     /// Returns whether the given`account_id` is locked
     fn is_account_locked(&self, account_id: &AccountId) -> bool;
 
@@ -70,4 +70,12 @@ pub trait AccountForceLocker: AccessControllable {
     ///
     /// Attached deposit of 1yN is required for security purposes.
     fn force_unlock_account(&mut self, account_id: &AccountId) -> bool;
+
+    /// Disables authentication by PREDECESSOR_ID for given account ids.
+    ///
+    /// **WARN**: Doing so might lock these accounts out of your funds if
+    /// they don't have any other public_keys added to them.
+    ///
+    /// NOTE: MUST attach 1 yⓃ for security purposes.
+    fn force_set_auth_by_predecessor_ids(&mut self, account_ids: HashMap<AccountId, bool>);
 }

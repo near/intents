@@ -23,7 +23,7 @@ use near_contract_standards::{
 use near_plugins::{AccessControllable, Pausable};
 use near_sdk::ext_contract;
 
-use crate::{accounts::AccountForceLocker, tokens::nep245::MultiTokenForcedCore};
+use crate::{accounts::ForceAccountManager, tokens::nep245::MultiTokenForcedCore};
 
 use self::{
     accounts::AccountManager,
@@ -57,7 +57,7 @@ pub trait Defuse:
     + FungibleTokenForceWithdrawer
     + NonFungibleTokenForceWithdrawer
     + MultiTokenForcedWithdrawer
-    + AccountForceLocker
+    + ForceAccountManager
     + Pausable
     + ControllerUpgradable
     + FullAccessKeys
