@@ -26,16 +26,27 @@ use near_sdk::{AccountId, serde::Serialize, serde_json::json};
 use near_workspaces::Contract;
 use std::sync::LazyLock;
 
-static DEFUSE_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("defuse"));
+static DEFUSE_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("res", "defuse"));
+static DEFUSE_LEGACY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("res", "s"));
 
 pub trait DefuseExt: AccountManagerExt {
-    #[allow(clippy::too_many_arguments)]
     async fn deploy_defuse(&self, id: &str, config: DefuseConfig) -> anyhow::Result<Contract>;
+
+    async fn upgrade_defuse(&self) -> anyhow::Result<()>;
 }
 
 impl DefuseExt for near_workspaces::Account {
     async fn deploy_defuse(&self, id: &str, config: DefuseConfig) -> anyhow::Result<Contract> {
-        let contract = self.deploy_contract(id, &DEFUSE_WASM).await?;
+        let legacy = std::env::var("MIGRATE_FROM_LEGACY").is_ok_and(|v| v != "0");
+
+        let wasm = if legacy {
+            &DEFUSE_LEGACY_WASM
+        } else {
+            &DEFUSE_WASM
+        };
+
+        let contract = self.deploy_contract(id, wasm).await?;
+
         contract
             .call("new")
             .args_json(json!({
@@ -45,13 +56,25 @@ impl DefuseExt for near_workspaces::Account {
             .transact()
             .await?
             .into_result()?;
+
         Ok(contract)
+    }
+
+    // NOTE: it can be done also by function call
+    async fn upgrade_defuse(&self) -> anyhow::Result<()> {
+        self.deploy(&DEFUSE_WASM).await?.into_result()?;
+
+        Ok(())
     }
 }
 
 impl DefuseExt for Contract {
     async fn deploy_defuse(&self, id: &str, config: DefuseConfig) -> anyhow::Result<Self> {
         self.as_account().deploy_defuse(id, config).await
+    }
+
+    async fn upgrade_defuse(&self) -> anyhow::Result<()> {
+        self.as_account().upgrade_defuse().await
     }
 }
 

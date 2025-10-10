@@ -25,7 +25,7 @@ use serde_json::json;
 use std::{ops::Deref, sync::LazyLock};
 
 pub static POA_TOKEN_WASM_NO_REGISTRATION: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm("poa-token-no-registration/defuse_poa_token"));
+    LazyLock::new(|| read_wasm("res", "poa-token-no-registration/defuse_poa_token"));
 
 pub struct Env {
     sandbox: Sandbox,
@@ -203,23 +203,29 @@ impl EnvBuilder {
     }
 
     async fn deploy_defuse(&self, root: &Account, wnear: &Contract) -> Contract {
-        root.deploy_defuse(
-            "defuse",
-            DefuseConfig {
-                wnear_id: wnear.id().clone(),
-                fees: FeesConfig {
-                    fee: self.fee,
-                    fee_collector: self
-                        .fee_collector
-                        .as_ref()
-                        .unwrap_or_else(|| root.id())
-                        .clone(),
-                },
-                roles: self.roles.clone(),
+        let id = "defuse";
+        let cfg = DefuseConfig {
+            wnear_id: wnear.id().clone(),
+            fees: FeesConfig {
+                fee: self.fee,
+                fee_collector: self
+                    .fee_collector
+                    .as_ref()
+                    .unwrap_or_else(|| root.id())
+                    .clone(),
             },
-        )
-        .await
-        .unwrap()
+            roles: self.roles.clone(),
+        };
+
+        root.deploy_defuse(id, cfg).await.unwrap()
+    }
+
+    async fn deploy_legacy_and_migrate(&self, root: &Account, wnear: &Contract) -> Contract {
+        let contract = self.deploy_defuse(root, &wnear).await;
+
+        contract.upgrade_defuse().await.unwrap();
+
+        contract
     }
 
     fn grant_roles(&mut self, root: &Account) {
@@ -235,9 +241,16 @@ impl EnvBuilder {
     }
 
     async fn create_env(&self, sandbox: Sandbox, root: &Account) -> Env {
+        let migrate_from_legacy = std::env::var("MIGRATE_FROM_LEGACY").is_ok_and(|v| v != "0");
+
         let poa_factory = deploy_poa_factory(root).await;
         let wnear = sandbox.deploy_wrap_near("wnear").await.unwrap();
-        let defuse = self.deploy_defuse(root, &wnear).await;
+
+        let defuse = if migrate_from_legacy {
+            self.deploy_legacy_and_migrate(root, &wnear).await
+        } else {
+            self.deploy_defuse(root, &wnear).await
+        };
 
         let env = Env {
             user1: sandbox.create_account("user1").await,

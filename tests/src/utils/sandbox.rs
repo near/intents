@@ -2,9 +2,9 @@ use std::{fs, ops::Deref, path::Path};
 
 use near_workspaces::{Account, Network, Worker, types::NearToken};
 
-pub fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
+pub fn read_wasm(dir: &str, name: impl AsRef<Path>) -> Vec<u8> {
     let filename = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../res/")
+        .join(format!("../{}/", dir))
         .join(name)
         .with_extension("wasm");
     fs::read(filename).unwrap()
