@@ -445,7 +445,7 @@ async fn test_force_set_auth_by_predecessor_id(random_bytes: Vec<u8>) {
         );
     }
 
-    // disable auth by predecessor id
+    // enable auth by predecessor id
     {
         // no permisson
         {
@@ -454,7 +454,7 @@ async fn test_force_set_auth_by_predecessor_id(random_bytes: Vec<u8>) {
                 .await
                 .expect_err(&format!(
                     "{} doesn't have {:?} role yet",
-                    account_locker.id(),
+                    account_unlocker.id(),
                     Role::UnrestrictedAccountUnlocker,
                 ));
             assert!(
