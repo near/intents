@@ -1,11 +1,8 @@
 use defuse_core::{
-    Deadline, Nonce,
-    accounts::{AccountEvent, NonceEvent},
-    engine::Inspector,
-    events::DefuseEvent,
-    intents::IntentEvent,
+    accounts::{AccountEvent, NonceEvent}, engine::Inspector, events::DefuseEvent, intents::IntentEvent, Deadline, Nonce
 };
 use near_sdk::{AccountIdRef, CryptoHash};
+
 
 pub struct SimulateInspector {
     pub intents_executed: Vec<IntentEvent<AccountEvent<'static, NonceEvent>>>,
@@ -18,7 +15,7 @@ impl Default for SimulateInspector {
         Self {
             intents_executed: Vec::new(),
             min_deadline: Deadline::MAX,
-            events: Default::new(),
+            events: Vec::new(),
         }
     }
 }
@@ -30,7 +27,7 @@ impl Inspector for SimulateInspector {
     }
 
     fn on_event(&mut self, event: DefuseEvent<'_>) {
-        self.events.push(event.into());
+        self.events.push(event.into_static());
     }
 
     #[inline]

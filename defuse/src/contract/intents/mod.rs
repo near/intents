@@ -4,6 +4,9 @@ mod relayer;
 mod simulate;
 mod state;
 
+#[cfg(test)]
+mod tests;
+
 use defuse_core::{
     DefuseError,
     engine::{Engine, StateView},
@@ -48,6 +51,7 @@ impl Intents for Contract {
 
         SimulationOutput {
             intents_executed: inspector.intents_executed,
+            events: inspector.events,
             min_deadline: inspector.min_deadline,
             invariant_violated,
             state: StateOutput { fee: self.fee() },

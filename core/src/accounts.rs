@@ -16,11 +16,36 @@ pub struct AccountEvent<'a, T> {
     pub event: T,
 }
 
-impl<T> AccountEvent<'_, T> {
+impl<T: 'static> AccountEvent<'_, T> {
     pub fn into_owned(self) -> AccountEvent<'static, T> {
         AccountEvent {
             account_id: Cow::Owned(self.account_id.into_owned()),
             event: self.event,
+        }
+    }
+}
+
+// For AccountEvent with PublicKeyEvent
+impl<'a> AccountEvent<'a, PublicKeyEvent<'a>> {
+    pub fn into_owned_public_key(self) -> AccountEvent<'static, PublicKeyEvent<'static>> {
+        AccountEvent {
+            account_id: Cow::Owned(self.account_id.into_owned()),
+            event: self.event.into_owned(),
+        }
+    }
+}
+
+// For AccountEvent with TokenDiffEvent
+impl<'a> AccountEvent<'a, crate::intents::token_diff::TokenDiffEvent<'a>> {
+    pub fn into_owned_token_diff(
+        self,
+    ) -> AccountEvent<'static, crate::intents::token_diff::TokenDiffEvent<'static>> {
+        AccountEvent {
+            account_id: Cow::Owned(self.account_id.into_owned()),
+            event: crate::intents::token_diff::TokenDiffEvent {
+                diff: Cow::Owned(self.event.diff.into_owned()),
+                fees_collected: self.event.fees_collected,
+            },
         }
     }
 }
@@ -40,6 +65,15 @@ impl<'a, T> AccountEvent<'a, T> {
 #[derive(Debug, Clone)]
 pub struct PublicKeyEvent<'a> {
     pub public_key: Cow<'a, PublicKey>,
+}
+
+impl<'a> PublicKeyEvent<'a> {
+    #[inline]
+    pub fn into_owned(self) -> PublicKeyEvent<'static> {
+        PublicKeyEvent {
+            public_key: Cow::Owned(self.public_key.into_owned()),
+        }
+    }
 }
 
 #[cfg_attr(

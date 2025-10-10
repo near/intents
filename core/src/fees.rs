@@ -213,6 +213,16 @@ pub struct FeeCollectorChangedEvent<'a> {
     pub new_fee_collector: Cow<'a, AccountIdRef>,
 }
 
+impl<'a> FeeCollectorChangedEvent<'a> {
+    #[inline]
+    pub fn into_owned(self) -> FeeCollectorChangedEvent<'static> {
+        FeeCollectorChangedEvent {
+            old_fee_collector: Cow::Owned(self.old_fee_collector.into_owned()),
+            new_fee_collector: Cow::Owned(self.new_fee_collector.into_owned()),
+        }
+    }
+}
+
 impl BorshDeserialize for Pips {
     fn deserialize_reader<R: std::io::Read>(reader: &mut R) -> std::io::Result<Self> {
         let pips: u32 = near_sdk::borsh::BorshDeserialize::deserialize_reader(reader)?;

@@ -7,7 +7,7 @@ use crate::{
     accounts::{AccountEvent, NonceEvent, PublicKeyEvent},
     fees::{FeeChangedEvent, FeeCollectorChangedEvent},
     intents::{
-        IntentEvent,
+        IntentEvent, IntoStaticIntentEvent,
         account::SetAuthByPredecessorId,
         token_diff::TokenDiffEvent,
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
@@ -63,6 +63,70 @@ pub enum DefuseEvent<'a> {
 
     #[event_version("0.3.0")]
     SetAuthByPredecessorId(AccountEvent<'a, SetAuthByPredecessorId>),
+}
+
+impl<'a> DefuseEvent<'a> {
+    /// Helper function to convert event slices to 'static using IntoStaticIntentEvent trait
+    #[inline]
+    fn convert_events<E>(events: Cow<'a, [E]>) -> Cow<'static, [E::Output]>
+    where
+        E: IntoStaticIntentEvent + Clone,
+        E::Output: Clone,
+        [E]: ToOwned<Owned = Vec<E>>,
+    {
+        events
+            .into_owned()
+            .into_iter()
+            .map(IntoStaticIntentEvent::into_static)
+            .collect::<Vec<_>>()
+            .into()
+    }
+
+    /// Convert this event into one with a `'static` lifetime by converting
+    /// all borrowed data (`Cow::Borrowed`) into owned data (`Cow::Owned`).
+    pub fn into_static(self) -> DefuseEvent<'static> {
+        match self {
+            DefuseEvent::PublicKeyAdded(event) => {
+                DefuseEvent::PublicKeyAdded(event.into_owned_public_key())
+            }
+            DefuseEvent::PublicKeyRemoved(event) => {
+                DefuseEvent::PublicKeyRemoved(event.into_owned_public_key())
+            }
+            DefuseEvent::FeeChanged(event) => DefuseEvent::FeeChanged(event),
+            DefuseEvent::FeeCollectorChanged(event) => {
+                DefuseEvent::FeeCollectorChanged(event.into_owned())
+            }
+            DefuseEvent::Transfer(events) => {
+                DefuseEvent::Transfer(Self::convert_events(events))
+            }
+            DefuseEvent::TokenDiff(events) => {
+                DefuseEvent::TokenDiff(Self::convert_events(events))
+            }
+            DefuseEvent::IntentsExecuted(events) => {
+                DefuseEvent::IntentsExecuted(Self::convert_events(events))
+            }
+            DefuseEvent::FtWithdraw(events) => {
+                DefuseEvent::FtWithdraw(Self::convert_events(events))
+            }
+            DefuseEvent::NftWithdraw(events) => {
+                DefuseEvent::NftWithdraw(Self::convert_events(events))
+            }
+            DefuseEvent::MtWithdraw(events) => {
+                DefuseEvent::MtWithdraw(Self::convert_events(events))
+            }
+            DefuseEvent::NativeWithdraw(events) =>
+                DefuseEvent::NativeWithdraw(Self::convert_events(events))
+            ,
+            DefuseEvent::StorageDeposit(events) =>
+                DefuseEvent::StorageDeposit(Self::convert_events(events))
+            ,
+            DefuseEvent::AccountLocked(event) => DefuseEvent::AccountLocked(event.into_owned()),
+            DefuseEvent::AccountUnlocked(event) => DefuseEvent::AccountUnlocked(event.into_owned()),
+            DefuseEvent::SetAuthByPredecessorId(event) => {
+                DefuseEvent::SetAuthByPredecessorId(event.into_owned())
+            }
+        }
+    }
 }
 
 pub trait DefuseIntentEmit<'a>: Into<DefuseEvent<'a>> {

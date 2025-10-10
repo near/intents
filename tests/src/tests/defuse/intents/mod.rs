@@ -25,6 +25,7 @@ use serde_json::json;
 mod ft_withdraw;
 mod native_withdraw;
 mod relayers;
+mod simulate_events;
 mod token_diff;
 
 pub trait ExecuteIntentsExt: AccountManagerExt {

@@ -10,9 +10,7 @@ use serde_with::serde_as;
 use tokens::{NativeWithdraw, StorageDeposit};
 
 use crate::{
-    Result,
-    engine::{Engine, Inspector, State},
-    intents::{account::SetAuthByPredecessorId, auth::AuthCall},
+    accounts::AccountEvent, engine::{Engine, Inspector, State}, intents::{account::SetAuthByPredecessorId, auth::AuthCall}, Result
 };
 
 use self::{
@@ -146,6 +144,61 @@ pub struct IntentEvent<T> {
 
     #[serde(flatten)]
     pub event: T,
+}
+
+/// Trait for converting borrowed IntentEvent types to owned ('static) versions
+pub trait IntoStaticIntentEvent {
+    type Output;
+    fn into_static(self) -> Self::Output;
+}
+
+// For IntentEvent with Cow-wrapped event types
+impl<'a, T> IntoStaticIntentEvent for IntentEvent<AccountEvent<'a, std::borrow::Cow<'a, T>>>
+where
+    T: ToOwned + ?Sized + 'static,
+    T::Owned: 'static,
+{
+    type Output = IntentEvent<AccountEvent<'static, std::borrow::Cow<'static, T>>>;
+
+    #[inline]
+    fn into_static(self) -> Self::Output {
+        IntentEvent {
+            intent_hash: self.intent_hash,
+            event: AccountEvent {
+                account_id: std::borrow::Cow::Owned(self.event.account_id.into_owned()),
+                event: std::borrow::Cow::Owned(self.event.event.into_owned()),
+            },
+        }
+    }
+}
+
+// For IntentEvent with TokenDiffEvent
+impl<'a> IntoStaticIntentEvent for IntentEvent<AccountEvent<'a, token_diff::TokenDiffEvent<'a>>> {
+    type Output = IntentEvent<AccountEvent<'static, token_diff::TokenDiffEvent<'static>>>;
+
+    #[inline]
+    fn into_static(self) -> Self::Output {
+        IntentEvent {
+            intent_hash: self.intent_hash,
+            event: self.event.into_owned_token_diff(),
+        }
+    }
+}
+
+// For IntentEvent with NonceEvent specifically
+impl<'a> IntoStaticIntentEvent for IntentEvent<AccountEvent<'a, crate::accounts::NonceEvent>> {
+    type Output = IntentEvent<AccountEvent<'static, crate::accounts::NonceEvent>>;
+
+    #[inline]
+    fn into_static(self) -> Self::Output {
+        IntentEvent {
+            intent_hash: self.intent_hash,
+            event: AccountEvent {
+                account_id: std::borrow::Cow::Owned(self.event.account_id.into_owned()),
+                event: self.event.event,
+            },
+        }
+    }
 }
 
 impl<T> IntentEvent<T> {
