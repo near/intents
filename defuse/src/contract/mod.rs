@@ -13,9 +13,11 @@ mod upgrade;
 mod versioned;
 
 use core::iter;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 use defuse_borsh_utils::adapters::As;
-use defuse_core::Result;
+use defuse_core::{EventSink, Result, events::DefuseEvent};
 use impl_tools::autoimpl;
 use near_plugins::{AccessControlRole, AccessControllable, Pausable, access_control};
 use near_sdk::{
@@ -78,6 +80,23 @@ pub struct Contract {
 
     #[borsh(skip)]
     runtime: Runtime,
+
+    #[borsh(skip)]
+    event_sink: Rc<RefCell<EventSink>>,
+}
+
+impl Contract {
+    pub fn emit_defuse_event(&self, ev: DefuseEvent<'_>) {
+        self.event_sink.borrow_mut().consume_event(ev);
+    }
+
+    pub fn record_events_instead_of_emitting(&self) {
+        self.event_sink.borrow_mut().record_only_mode();
+    }
+
+    pub fn event_sink_handle(&self) -> Rc<RefCell<EventSink>> {
+        Rc::clone(&self.event_sink)
+    }
 }
 
 #[derive(Debug)]
@@ -110,6 +129,7 @@ impl Contract {
                 relayer_keys: LookupSet::new(Prefix::RelayerKeys),
             },
             runtime: Runtime::default(),
+            event_sink: Rc::new(RefCell::new(EventSink::default())),
         };
         contract.init_acl(config.roles);
         contract

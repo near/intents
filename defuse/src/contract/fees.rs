@@ -21,11 +21,13 @@ impl FeesManager for Contract {
         assert_one_yocto();
         require!(self.fees.fee != fee, "same");
         mem::swap(&mut self.fees.fee, &mut fee);
-        FeeChangedEvent {
-            old_fee: fee,
-            new_fee: self.fees.fee,
-        }
-        .emit();
+        self.emit_defuse_event(
+            FeeChangedEvent {
+                old_fee: fee,
+                new_fee: self.fees.fee,
+            }
+            .into(),
+        );
     }
 
     fn fee(&self) -> Pips {

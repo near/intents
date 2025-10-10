@@ -3,13 +3,14 @@ pub mod amounts;
 mod deadline;
 pub mod engine;
 mod error;
+pub mod event_sink;
 pub mod events;
 pub mod fees;
 pub mod intents;
 mod nonce;
 pub mod payload;
 
-pub use self::{deadline::*, error::*, nonce::*};
+pub use self::{deadline::*, error::*, event_sink::*, nonce::*};
 
 pub use defuse_crypto as crypto;
 pub use defuse_erc191 as erc191;

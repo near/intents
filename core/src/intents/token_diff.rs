@@ -84,20 +84,19 @@ impl ExecutableIntent for TokenDiff {
             }
         }
 
-        engine.inspector.on_event(DefuseEvent::TokenDiff(
-            [IntentEvent::new(
-                AccountEvent::new(
-                    signer_id,
-                    TokenDiffEvent {
-                        diff: Cow::Borrowed(&self),
-                        fees_collected: fees_collected.clone(),
-                    },
-                ),
-                intent_hash,
-            )]
-            .as_slice()
-            .into(),
-        ));
+        let event = TokenDiffEvent {
+            diff: Cow::Borrowed(&self),
+            fees_collected: fees_collected.clone(),
+        };
+        engine
+            .inspector
+            .on_event(DefuseEvent::TokenDiff(Cow::Borrowed(
+                [IntentEvent::new(
+                    AccountEvent::new(signer_id, event),
+                    intent_hash,
+                )]
+                .as_slice(),
+            )));
 
         // deposit fees to collector
         if !fees_collected.is_empty() {
@@ -119,7 +118,7 @@ impl ExecutableIntent for TokenDiff {
     serde_as(schemars = false)
 )]
 #[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// An event emitted when a `TokenDiff` intent is executed.
 pub struct TokenDiffEvent<'a> {
     #[serde(flatten)]

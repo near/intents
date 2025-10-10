@@ -23,7 +23,7 @@ use super::{ExecutableIntent, IntentEvent};
     serde_as(schemars = false)
 )]
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// Transfer a set of tokens from the signer to a specified account id, within the intents contract.
 pub struct Transfer {
     pub receiver_id: AccountId,
@@ -71,7 +71,7 @@ impl ExecutableIntent for Transfer {
 }
 
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// Withdraw given FT tokens from the intents contract to a given external account id (external being outside of intents).
 pub struct FtWithdraw {
     pub token: AccountId,
@@ -166,7 +166,7 @@ impl ExecutableIntent for FtWithdraw {
 }
 
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// Withdraw given NFT tokens from the intents contract to a given external account id (external being outside of intents).
 pub struct NftWithdraw {
     pub token: AccountId,
@@ -261,7 +261,7 @@ impl ExecutableIntent for NftWithdraw {
 }
 
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// Withdraw given MT tokens (i.e. [NEP-245](https://github.com/near/NEPs/blob/master/neps/nep-0245.md)) from the intents contract
 /// to a given to an external account id (external being outside of intents).
 ///
@@ -363,7 +363,7 @@ impl ExecutableIntent for MtWithdraw {
 }
 
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// Withdraw native tokens (NEAR) from the intents contract to a given external account id (external being outside of intents).
 /// This will subtract from the account's wNEAR balance, and will be sent to the account specified as native NEAR.
 /// NOTE: the `wNEAR` will not be refunded in case of fail (e.g. `receiver_id`
@@ -411,7 +411,7 @@ impl ExecutableIntent for NativeWithdraw {
 /// are not guaranteed to be executed sequentially, in the order of the provided intents in
 /// `DefuseIntents`.
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StorageDeposit {
     pub contract_id: AccountId,
     #[serde(
