@@ -450,7 +450,7 @@ async fn test_force_set_auth_by_predecessor_id(random_bytes: Vec<u8>) {
         // no permisson
         {
             account_unlocker
-                .force_disable_auth_by_predecessor_ids(env.defuse.id(), [user_account.id().clone()])
+                .force_enable_auth_by_predecessor_ids(env.defuse.id(), [user_account.id().clone()])
                 .await
                 .expect_err(&format!(
                     "{} doesn't have {:?} role yet",
@@ -465,7 +465,7 @@ async fn test_force_set_auth_by_predecessor_id(random_bytes: Vec<u8>) {
             );
         }
 
-        // grant UnrestrictedAccountLocker role
+        // grant UnrestrictedAccountUnlocker role
         env.acl_grant_role(
             env.defuse.id(),
             Role::UnrestrictedAccountUnlocker,
