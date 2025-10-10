@@ -1,13 +1,7 @@
 use defuse_core::{
-    DefuseError, Nonce, Result,
-    crypto::PublicKey,
-    engine::{State, StateView},
-    fees::Pips,
-    intents::{
-        auth::AuthCall,
-        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
-    },
-    token_id::{TokenId, nep141::Nep141TokenId},
+    accounts::{AccountEvent, PublicKeyEvent}, crypto::PublicKey, engine::{State, StateView}, events::DefuseEvent, fees::Pips, intents::{
+        account::SetAuthByPredecessorId, auth::AuthCall, tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit}
+    }, token_id::{nep141::Nep141TokenId, TokenId}, DefuseError, Nonce, Result
 };
 use defuse_near_utils::{CURRENT_ACCOUNT_ID, Lock};
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
@@ -101,6 +95,14 @@ impl State for Contract {
             .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))?
             .add_public_key(&account_id, public_key)
             .then_some(())
+            .inspect(|_| {
+                self.emit_defuse_event(DefuseEvent::PublicKeyAdded(AccountEvent::new(
+                    Cow::Borrowed(account_id.as_ref()),
+                    PublicKeyEvent {
+                        public_key: Cow::Borrowed(&public_key),
+                    },
+                )))
+            })
             .ok_or(DefuseError::PublicKeyExists(account_id, public_key))
     }
 
@@ -112,6 +114,14 @@ impl State for Contract {
             .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))?
             .remove_public_key(&account_id, &public_key)
             .then_some(())
+            .inspect(|_| {
+                self.emit_defuse_event(DefuseEvent::PublicKeyRemoved(AccountEvent::new(
+                    Cow::Borrowed(account_id.as_ref()),
+                    PublicKeyEvent {
+                        public_key: Cow::Borrowed(&public_key),
+                    },
+                )))
+            })
             .ok_or(DefuseError::PublicKeyNotExist(account_id, public_key))
     }
 
@@ -289,6 +299,14 @@ impl State for Contract {
         .get_mut()
         .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))
         .map(|account| account.set_auth_by_predecessor_id(&account_id, enable))
+        .inspect(|was_enabled| {
+            if was_enabled ^ enable {
+                self.emit_defuse_event(DefuseEvent::SetAuthByPredecessorId(AccountEvent::new(
+                    Cow::Borrowed(account_id.as_ref()),
+                    SetAuthByPredecessorId { enabled: enable },
+                )))
+            }
+        })
     }
 
     fn auth_call(&mut self, signer_id: &AccountIdRef, auth_call: AuthCall) -> Result<()> {

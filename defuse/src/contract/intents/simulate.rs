@@ -1,36 +1,38 @@
+use std::{cell::RefCell, rc::Rc};
+
 use defuse_core::{
-    Deadline, Nonce,
-    accounts::{AccountEvent, NonceEvent},
-    engine::Inspector,
-    events::DefuseEvent,
-    intents::IntentEvent,
+    accounts::{AccountEvent, NonceEvent}, engine::Inspector, events::DefuseEvent, intents::IntentEvent, Deadline, EventSink, Nonce
 };
 use near_sdk::{AccountIdRef, CryptoHash};
 
-pub struct SimulateInspector {
+pub struct GeneralInspector {
     pub intents_executed: Vec<IntentEvent<AccountEvent<'static, NonceEvent>>>,
-    pub events: Vec<DefuseEvent<'static>>,
+    event_sink: Rc<RefCell<EventSink>>,
     pub min_deadline: Deadline,
 }
 
-impl Default for SimulateInspector {
-    fn default() -> Self {
+impl GeneralInspector {
+    pub fn new(event_sink: Rc<RefCell<EventSink>>) -> Self {
         Self {
             intents_executed: Vec::new(),
             min_deadline: Deadline::MAX,
-            events: Vec::new(),
+            event_sink: event_sink,
         }
+    }
+
+    pub fn get_events(&self) -> Vec<DefuseEvent<'static>> {
+        self.event_sink.borrow().recorded_events().into_iter().cloned().collect()
     }
 }
 
-impl Inspector for SimulateInspector {
+impl Inspector for GeneralInspector {
     #[inline]
     fn on_deadline(&mut self, deadline: Deadline) {
         self.min_deadline = self.min_deadline.min(deadline);
     }
 
     fn on_event(&mut self, event: DefuseEvent<'_>) {
-        self.events.push(event.into_static());
+        self.event_sink.borrow_mut().consume_event(event.into_static());
     }
 
     #[inline]

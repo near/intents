@@ -24,7 +24,7 @@ impl AccountForceLocker for Contract {
             .lock()
             .is_some();
         if locked {
-            DefuseEvent::AccountLocked(AccountEvent::new(account_id, ())).emit();
+            self.emit_defuse_event(DefuseEvent::AccountLocked(AccountEvent::new(account_id, ())));
         }
         locked
     }
@@ -39,7 +39,7 @@ impl AccountForceLocker for Contract {
             .and_then(Lock::unlock)
             .is_some();
         if unlocked {
-            DefuseEvent::AccountUnlocked(AccountEvent::new(account_id, ())).emit();
+            self.emit_defuse_event(DefuseEvent::AccountUnlocked(AccountEvent::new(account_id, ())));
         }
         unlocked
     }

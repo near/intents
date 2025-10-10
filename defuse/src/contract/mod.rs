@@ -9,11 +9,14 @@ mod intents;
 mod state;
 mod tokens;
 mod upgrade;
+// mod event_sink;
 
 use core::iter;
+use std::{cell::RefCell, rc::Rc};
 
-use defuse_core::Result;
+use defuse_core::{events::DefuseEvent, Result, EventSink};
 
+// use event_sink::EventSink;
 use events::PostponedMtBurnEvents;
 use impl_tools::autoimpl;
 use near_plugins::{AccessControlRole, AccessControllable, Pausable, access_control};
@@ -70,6 +73,16 @@ pub struct Contract {
 
     #[borsh(skip)]
     postponed_burns: PostponedMtBurnEvents,
+
+    #[borsh(skip)]
+    event_sink: Rc<RefCell<EventSink>>,
+}
+
+
+impl Contract{ 
+    pub fn emit_defuse_event(&self, ev: DefuseEvent<'_>) {
+        self.event_sink.borrow_mut().consume_event(ev);
+    }
 }
 
 #[near]
@@ -83,6 +96,7 @@ impl Contract {
             state: ContractState::new(Prefix::State, config.wnear_id, config.fees),
             relayer_keys: LookupSet::new(Prefix::RelayerKeys),
             postponed_burns: PostponedMtBurnEvents::new(),
+            event_sink: Rc::new(RefCell::new(EventSink::default())),
         };
         contract.init_acl(config.roles);
         contract

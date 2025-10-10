@@ -67,19 +67,7 @@ impl Account {
     #[inline]
     #[must_use]
     pub fn add_public_key(&mut self, me: &AccountIdRef, public_key: PublicKey) -> bool {
-        if !self.maybe_add_public_key(me, public_key) {
-            return false;
-        }
-
-        DefuseEvent::PublicKeyAdded(AccountEvent::new(
-            Cow::Borrowed(me),
-            PublicKeyEvent {
-                public_key: Cow::Borrowed(&public_key),
-            },
-        ))
-        .emit();
-
-        true
+        self.maybe_add_public_key(me, public_key)
     }
 
     #[inline]
@@ -97,19 +85,7 @@ impl Account {
     #[inline]
     #[must_use]
     pub fn remove_public_key(&mut self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
-        if !self.maybe_remove_public_key(me, public_key) {
-            return false;
-        }
-
-        DefuseEvent::PublicKeyRemoved(AccountEvent::new(
-            Cow::Borrowed(me),
-            PublicKeyEvent {
-                public_key: Cow::Borrowed(public_key),
-            },
-        ))
-        .emit();
-
-        true
+        self.maybe_remove_public_key(me, public_key)
     }
 
     #[inline]
@@ -185,12 +161,6 @@ impl Account {
         if toggle {
             self.flags
                 .toggle(AccountFlags::AUTH_BY_PREDECESSOR_ID_DISABLED);
-
-            DefuseEvent::SetAuthByPredecessorId(AccountEvent::new(
-                Cow::Borrowed(me),
-                SetAuthByPredecessorId { enabled: enable },
-            ))
-            .emit();
         }
         was_enabled
     }
