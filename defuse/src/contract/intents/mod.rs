@@ -14,7 +14,6 @@ use defuse_core::{
 };
 use defuse_near_utils::UnwrapOrPanic;
 use defuse_nep245::MtEvent;
-use execute::ExecuteInspector;
 use near_plugins::{Pausable, pause};
 use near_sdk::{FunctionError, near};
 use simulate::{GeneralInspector};
@@ -32,7 +31,6 @@ impl Intents for Contract {
         let mut inspector = GeneralInspector::new(sink);
         let ExecuteIntentsResult {
             transfers,
-            executed,
             ..
         } = Engine::new(&mut *self, &mut inspector)
             .execute_signed_intents(signed)

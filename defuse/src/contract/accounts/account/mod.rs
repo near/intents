@@ -3,16 +3,11 @@ mod nonces;
 
 pub use self::{entry::*, nonces::MaybeLegacyAccountNonces};
 
-use std::borrow::Cow;
-
 use bitflags::bitflags;
 use defuse_bitmap::U256;
 use defuse_core::{
     Result,
-    accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
-    events::DefuseEvent,
-    intents::account::SetAuthByPredecessorId,
 };
 
 use defuse_near_utils::NestPrefix;
@@ -155,7 +150,7 @@ impl Account {
     /// Sets whether authentication by `PREDECESSOR_ID` is enabled.
     /// Returns whether authentication by `PREDECESSOR_ID` was enabled
     /// before.
-    pub fn set_auth_by_predecessor_id(&mut self, me: &AccountIdRef, enable: bool) -> bool {
+    pub fn set_auth_by_predecessor_id(&mut self, _me: &AccountIdRef, enable: bool) -> bool {
         let was_enabled = self.is_auth_by_predecessor_id_enabled();
         let toggle = was_enabled ^ enable;
         if toggle {
