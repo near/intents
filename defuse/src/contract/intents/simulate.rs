@@ -9,6 +9,7 @@ use near_sdk::{AccountIdRef, CryptoHash};
 
 pub struct SimulateInspector {
     pub intents_executed: Vec<IntentEvent<AccountEvent<'static, NonceEvent>>>,
+    pub events: Vec<DefuseEvent<'static>>,
     pub min_deadline: Deadline,
 }
 
@@ -17,6 +18,7 @@ impl Default for SimulateInspector {
         Self {
             intents_executed: Vec::new(),
             min_deadline: Deadline::MAX,
+            events: Default::new(),
         }
     }
 }
@@ -27,7 +29,9 @@ impl Inspector for SimulateInspector {
         self.min_deadline = self.min_deadline.min(deadline);
     }
 
-    fn on_event(&mut self, _event: DefuseEvent<'_>) {}
+    fn on_event(&mut self, event: DefuseEvent<'_>) {
+        self.events.push(event.into());
+    }
 
     #[inline]
     fn on_intent_executed(
