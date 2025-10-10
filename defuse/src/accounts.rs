@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use defuse_core::{Nonce, crypto::PublicKey};
 use defuse_serde_utils::base64::AsBase64;
@@ -77,5 +77,13 @@ pub trait ForceAccountManager: AccessControllable {
     /// they don't have any other public_keys added to them.
     ///
     /// NOTE: MUST attach 1 yⓃ for security purposes.
-    fn force_set_auth_by_predecessor_ids(&mut self, account_ids: HashMap<AccountId, bool>);
+    fn force_disable_auth_by_predecessor_ids(&mut self, account_ids: Vec<AccountId>);
+
+    /// Enables authentication by PREDECESSOR_ID for given account ids.
+    ///
+    /// **WARN**: Doing so might lock these accounts out of your funds if
+    /// they don't have any other public_keys added to them.
+    ///
+    /// NOTE: MUST attach 1 yⓃ for security purposes.
+    fn force_enable_auth_by_predecessor_ids(&mut self, account_ids: Vec<AccountId>);
 }

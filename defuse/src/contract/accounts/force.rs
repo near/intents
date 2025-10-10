@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use defuse_core::{
     DefuseError, Result, accounts::AccountEvent, engine::StateView, events::DefuseEvent,
 };
@@ -48,20 +46,25 @@ impl ForceAccountManager for Contract {
         unlocked
     }
 
-    /// Sets authentication by PREDECESSOR_ID for given account ids.
-    ///
-    /// **WARN**: Doing so might lock these accounts out of your funds if
-    /// they don't have any other public_keys added to them.
-    ///
-    /// NOTE: MUST attach 1 yⓃ for security purposes.
     #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountLocker))]
     #[payable]
-    fn force_set_auth_by_predecessor_ids(&mut self, account_ids: HashMap<AccountId, bool>) {
+    fn force_disable_auth_by_predecessor_ids(&mut self, account_ids: Vec<AccountId>) {
         assert_one_yocto();
 
-        for (account_id, enable) in account_ids {
+        for account_id in account_ids {
             // NOTE: omit errors
-            let _ = self.internal_set_auth_by_predecessor_id(&account_id, enable, true);
+            let _ = self.internal_set_auth_by_predecessor_id(&account_id, false, true);
+        }
+    }
+
+    #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountUnlocker))]
+    #[payable]
+    fn force_enable_auth_by_predecessor_ids(&mut self, account_ids: Vec<AccountId>) {
+        assert_one_yocto();
+
+        for account_id in account_ids {
+            // NOTE: omit errors
+            let _ = self.internal_set_auth_by_predecessor_id(&account_id, true, true);
         }
     }
 }
