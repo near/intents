@@ -96,7 +96,7 @@ impl Contract {
                 self.emit_defuse_event(DefuseEvent::SetAuthByPredecessorId(AccountEvent::new(
                     Cow::Borrowed(account_id.as_ref()),
                     SetAuthByPredecessorId { enabled: enable },
-                )))
+                )));
             }
         })
     }

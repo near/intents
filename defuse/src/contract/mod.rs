@@ -91,7 +91,7 @@ impl Contract {
     }
 
     pub fn record_events_instead_of_emitting(&self) {
-        self.event_sink.borrow_mut().record_only_mode()
+        self.event_sink.borrow_mut().record_only_mode();
     }
 
     pub fn event_sink_handle(&self) -> Rc<RefCell<EventSink>> {

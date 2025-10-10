@@ -46,10 +46,11 @@ impl EventSink {
         }
     }
 
-    pub fn record_only_mode(&mut self) {
+    pub const fn record_only_mode(&mut self) {
         self.mode = EventMode::Record;
     }
 
+    #[allow(clippy::missing_const_for_fn)] // False positive: cannot be const due to Vec deref
     pub fn recorded_events(&self) -> &[events::DefuseEvent<'static>] {
         &self.events
     }

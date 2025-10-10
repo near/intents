@@ -8,7 +8,7 @@ use crate::{Nonce, Salt};
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(serializers = [json])]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AccountEvent<'a, T> {
     pub account_id: Cow<'a, AccountIdRef>,
 
@@ -62,12 +62,12 @@ impl<'a, T> AccountEvent<'a, T> {
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(serializers = [json])]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PublicKeyEvent<'a> {
     pub public_key: Cow<'a, PublicKey>,
 }
 
-impl<'a> PublicKeyEvent<'a> {
+impl PublicKeyEvent<'_> {
     #[inline]
     pub fn into_owned(self) -> PublicKeyEvent<'static> {
         PublicKeyEvent {
@@ -85,7 +85,7 @@ impl<'a> PublicKeyEvent<'a> {
     serde_as(schemars = false)
 )]
 #[near(serializers = [json])]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NonceEvent {
     #[serde_as(as = "Base64")]
     pub nonce: Nonce,
@@ -100,7 +100,7 @@ impl NonceEvent {
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(serializers = [json])]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SaltRotationEvent {
     pub current: Salt,
     pub invalidated: BTreeSet<Salt>,

@@ -140,7 +140,7 @@ impl ExecutableIntent for Intent {
     serde_as(schemars = false)
 )]
 #[near(serializers = [json])]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IntentEvent<T> {
     #[serde_as(as = "Base58")]
     pub intent_hash: CryptoHash,
@@ -149,7 +149,7 @@ pub struct IntentEvent<T> {
     pub event: T,
 }
 
-/// Trait for converting borrowed IntentEvent types to owned ('static) versions
+/// Trait for converting borrowed `IntentEvent` types to owned ('static) versions
 pub trait IntoStaticIntentEvent {
     type Output;
     fn into_static(self) -> Self::Output;
@@ -161,6 +161,7 @@ where
     T: ToOwned + ?Sized + 'static,
     T::Owned: 'static,
 {
+    #[allow(clippy::use_self)] // False positive: Output has 'static lifetime, not 'a
     type Output = IntentEvent<AccountEvent<'static, std::borrow::Cow<'static, T>>>;
 
     #[inline]
@@ -177,6 +178,7 @@ where
 
 // For IntentEvent with TokenDiffEvent
 impl<'a> IntoStaticIntentEvent for IntentEvent<AccountEvent<'a, token_diff::TokenDiffEvent<'a>>> {
+    #[allow(clippy::use_self)] // False positive: Output has 'static lifetime, not 'a
     type Output = IntentEvent<AccountEvent<'static, token_diff::TokenDiffEvent<'static>>>;
 
     #[inline]
@@ -189,7 +191,8 @@ impl<'a> IntoStaticIntentEvent for IntentEvent<AccountEvent<'a, token_diff::Toke
 }
 
 // For IntentEvent with NonceEvent specifically
-impl<'a> IntoStaticIntentEvent for IntentEvent<AccountEvent<'a, crate::accounts::NonceEvent>> {
+impl IntoStaticIntentEvent for IntentEvent<AccountEvent<'_, crate::accounts::NonceEvent>> {
+    #[allow(clippy::use_self)] // False positive: Output has 'static lifetime, not '_
     type Output = IntentEvent<AccountEvent<'static, crate::accounts::NonceEvent>>;
 
     #[inline]

@@ -199,7 +199,6 @@ async fn simulate_is_view_method(
     assert_eq!(result.intents_executed.len(), 1);
 
     // Prepare expected transfer event
-    let intent_hash = result.intents_executed.first().unwrap().intent_hash;
     let expected_events = vec![DefuseEvent::Transfer(Cow::Owned(vec![IntentEvent {
         intent_hash: transfer_intent_payload.hash(),
         event: AccountEvent {

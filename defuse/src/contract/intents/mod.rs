@@ -33,9 +33,9 @@ impl Intents for Contract {
 
         //NOTE: previously emitted in inspector drop
         if !inspector.intents_executed.is_empty() {
-            self.emit_defuse_event(
-                DefuseEvent::IntentsExecuted(inspector.intents_executed.as_slice().into()).into(),
-            )
+            self.emit_defuse_event(DefuseEvent::IntentsExecuted(
+                inspector.intents_executed.as_slice().into(),
+            ));
         }
     }
 

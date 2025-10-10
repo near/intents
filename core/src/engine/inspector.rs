@@ -25,7 +25,7 @@ pub struct InspectorImpl {
 }
 
 impl InspectorImpl {
-    pub fn new(event_sink: Rc<RefCell<EventSink>>) -> Self {
+    pub const fn new(event_sink: Rc<RefCell<EventSink>>) -> Self {
         Self {
             intents_executed: Vec::new(),
             min_deadline: Deadline::MAX,
@@ -34,12 +34,7 @@ impl InspectorImpl {
     }
 
     pub fn get_events(&self) -> Vec<DefuseEvent<'static>> {
-        self.event_sink
-            .borrow()
-            .recorded_events()
-            .into_iter()
-            .cloned()
-            .collect()
+        self.event_sink.borrow().recorded_events().to_vec()
     }
 }
 

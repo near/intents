@@ -107,13 +107,13 @@ impl State for Contract {
             .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))?
             .add_public_key(&account_id, public_key)
             .then_some(())
-            .inspect(|_| {
+            .inspect(|()| {
                 self.emit_defuse_event(DefuseEvent::PublicKeyAdded(AccountEvent::new(
                     Cow::Borrowed(account_id.as_ref()),
                     PublicKeyEvent {
                         public_key: Cow::Borrowed(&public_key),
                     },
-                )))
+                )));
             })
             .ok_or(DefuseError::PublicKeyExists(account_id, public_key))
     }
@@ -126,13 +126,13 @@ impl State for Contract {
             .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))?
             .remove_public_key(&account_id, &public_key)
             .then_some(())
-            .inspect(|_| {
+            .inspect(|()| {
                 self.emit_defuse_event(DefuseEvent::PublicKeyRemoved(AccountEvent::new(
                     Cow::Borrowed(account_id.as_ref()),
                     PublicKeyEvent {
                         public_key: Cow::Borrowed(&public_key),
                     },
-                )))
+                )));
             })
             .ok_or(DefuseError::PublicKeyNotExist(account_id, public_key))
     }
