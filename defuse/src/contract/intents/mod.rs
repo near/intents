@@ -1,14 +1,12 @@
 mod auth_call;
-mod execute;
 mod relayer;
-mod simulate;
 mod state;
 
 use std::rc::Rc;
 
 use defuse_core::{
     DefuseError,
-    engine::{Engine, ExecuteIntentsResult, StateView},
+    engine::{Engine, ExecuteIntentsResult, InspectorImpl, StateView},
     events::DefuseEvent,
     payload::multi::MultiPayload,
 };
@@ -16,7 +14,6 @@ use defuse_near_utils::UnwrapOrPanic;
 use defuse_nep245::MtEvent;
 use near_plugins::{Pausable, pause};
 use near_sdk::{FunctionError, near};
-use simulate::{GeneralInspector};
 
 use crate::intents::{Intents, SimulationOutput, StateOutput};
 
@@ -28,7 +25,7 @@ impl Intents for Contract {
     #[inline]
     fn execute_intents(&mut self, signed: Vec<MultiPayload>) {
         let sink = Rc::clone(&self.event_sink);
-        let mut inspector = GeneralInspector::new(sink);
+        let mut inspector = InspectorImpl::new(sink);
         let ExecuteIntentsResult {
             transfers,
             ..
@@ -48,7 +45,7 @@ impl Intents for Contract {
     #[inline]
     fn simulate_intents(&self, signed: Vec<MultiPayload>) -> SimulationOutput {
         let sink = Rc::clone(&self.event_sink);
-        let mut inspector = GeneralInspector::new(sink);
+        let mut inspector = InspectorImpl::new(sink);
         let engine = Engine::new(self.cached(), &mut inspector);
         let result = engine.execute_signed_intents(signed);
 
