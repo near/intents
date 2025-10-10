@@ -194,6 +194,7 @@ async fn simulate_is_view_method(
         .unwrap();
 
     assert_eq!(result.intents_executed.len(), 1);
+    assert_eq!(result.events, vec![]);
     assert_eq!(
         result.intents_executed.first().unwrap().event.event.nonce,
         nonce

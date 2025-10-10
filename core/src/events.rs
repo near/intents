@@ -17,6 +17,10 @@ use crate::{
 #[must_use = "make sure to `.emit()` this event"]
 #[near(event_json(standard = "dip4"))]
 #[derive(Debug, Clone, Deserialize, From)]
+#[cfg_attr(
+    all(feature = "abi", not(target_arch = "wasm32")),
+    derive(schemars::JsonSchema)
+)]
 pub enum DefuseEvent<'a> {
     #[event_version("0.3.0")]
     #[from(skip)]

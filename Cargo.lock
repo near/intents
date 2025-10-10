@@ -747,6 +747,7 @@ dependencies = [
  "near-contract-standards",
  "near-sdk",
  "rstest",
+ "schemars",
  "serde_with",
  "strum 0.27.1",
  "thiserror 2.0.12",
