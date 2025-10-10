@@ -5,7 +5,9 @@ use core::{
 
 use near_sdk::{bs58, near};
 
-use crate::{Curve, CurveType, Ed25519, P256, ParseCurveError, Secp256k1};
+use crate::{
+    Curve, CurveType, Ed25519, P256, ParseCurveError, Secp256k1, parse::checked_base58_decode_array,
+};
 
 #[near(serializers = [borsh])]
 #[cfg_attr(
@@ -71,13 +73,12 @@ impl FromStr for Signature {
         } else {
             (CurveType::Ed25519, s)
         };
-        let decoder = bs58::decode(data.as_bytes());
+
         match curve {
-            CurveType::Ed25519 => decoder.into_array_const().map(Self::Ed25519),
-            CurveType::Secp256k1 => decoder.into_array_const().map(Self::Secp256k1),
-            CurveType::P256 => decoder.into_array_const().map(Self::P256),
+            CurveType::Ed25519 => checked_base58_decode_array(data).map(Self::Ed25519),
+            CurveType::Secp256k1 => checked_base58_decode_array(data).map(Self::Secp256k1),
+            CurveType::P256 => checked_base58_decode_array(data).map(Self::P256),
         }
-        .map_err(Into::into)
     }
 }
 
@@ -138,5 +139,42 @@ mod abi {
                 .parse()
                 .unwrap()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    fn parse_ok(
+        #[values(
+            "ed25519:4nrYPT9gQbagzC1c7gSRnSkjZukXqjFxnPVp6wjmH1QgsBB1xzsbHB3piY7eHBnofUVS4WRRHpSfTVaqYq9KM265",
+            "secp256k1:7o3557Aipc2MDtvh3E5ZQet85ZcRsynThmhcVZye9mUD1fcG6PBCerX6BKDGkKf3L31DUSkAtSd9o4kGvc3h4wZJ7",
+            "p256:4skfJSJRVHKjXs2FztBcSnTsbSRMjF3ykFz9hB4kZo486KvRrTpwz54uzQawsKtCdM1BdQR6JdAAZXmHreNXmNBj"
+        )]
+        sig: &str,
+    ) {
+        sig.parse::<Signature>().unwrap();
+    }
+
+    #[rstest]
+    fn parse_invalid_length(
+        #[values(
+            "ed25519:5TagutioHgKLh7KZ1VEFBYfgRkPtqnKm9LoMnJMJ",
+            "ed25519:",
+            "secp256k1:p3UPfBR3kWxE2C8wF1855eguaoRvoW6jV5ZXbu3sTTCs",
+            "secp256k1:",
+            "p256:p3UPfBR3kWxE2C8wF1855eguaoRvoW6jV5ZXbu3sTTCs",
+            "p256:"
+        )]
+        sig: &str,
+    ) {
+        assert_eq!(
+            sig.parse::<Signature>(),
+            Err(ParseCurveError::InvalidLength)
+        );
     }
 }

@@ -1,6 +1,11 @@
 use std::{cell::RefCell, rc::Rc};
 
-use crate::{Deadline, EventSink, Nonce, accounts::{AccountEvent, NonceEvent}, events::DefuseEvent, intents::IntentEvent};
+use crate::{
+    Deadline, EventSink, Nonce,
+    accounts::{AccountEvent, NonceEvent},
+    events::DefuseEvent,
+    intents::IntentEvent,
+};
 use impl_tools::autoimpl;
 use near_sdk::{AccountIdRef, CryptoHash};
 
@@ -29,7 +34,12 @@ impl InspectorImpl {
     }
 
     pub fn get_events(&self) -> Vec<DefuseEvent<'static>> {
-        self.event_sink.borrow().recorded_events().into_iter().cloned().collect()
+        self.event_sink
+            .borrow()
+            .recorded_events()
+            .into_iter()
+            .cloned()
+            .collect()
     }
 }
 
@@ -40,7 +50,9 @@ impl Inspector for InspectorImpl {
     }
 
     fn on_event(&mut self, event: DefuseEvent<'_>) {
-        self.event_sink.borrow_mut().consume_event(event.into_static());
+        self.event_sink
+            .borrow_mut()
+            .consume_event(event.into_static());
     }
 
     #[inline]

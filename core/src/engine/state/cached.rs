@@ -1,5 +1,5 @@
 use crate::{
-    DefuseError, Nonce, Nonces, Result,
+    DefuseError, Nonce, NoncePrefix, Nonces, Result, Salt,
     amounts::Amounts,
     fees::Pips,
     intents::{
@@ -119,6 +119,10 @@ where
             .is_some_and(|a| a.auth_by_predecessor_id_toggled);
         was_enabled ^ toggled
     }
+
+    fn is_valid_salt(&self, salt: Salt) -> bool {
+        self.view.is_valid_salt(salt)
+    }
 }
 
 impl<W> State for CachedState<W>
@@ -175,22 +179,18 @@ where
             .commit_nonce(nonce)
     }
 
-    fn cleanup_expired_nonces(
+    fn cleanup_nonce_by_prefix(
         &mut self,
-        account_id: &AccountId,
-        nonces: impl IntoIterator<Item = Nonce>,
-    ) -> Result<()> {
+        account_id: &AccountIdRef,
+        prefix: NoncePrefix,
+    ) -> Result<bool> {
         let account = self
             .accounts
             .get_mut(account_id)
-            .ok_or_else(|| DefuseError::AccountNotFound(account_id.clone()))?
+            .ok_or_else(|| DefuseError::AccountNotFound(account_id.to_owned()))?
             .as_inner_unchecked_mut();
 
-        for n in nonces {
-            account.clear_expired_nonce(n);
-        }
-
-        Ok(())
+        Ok(account.cleanup_nonce_by_prefix(prefix))
     }
 
     fn internal_add_balance(
@@ -417,7 +417,7 @@ impl CachedAccount {
     }
 
     #[inline]
-    pub fn clear_expired_nonce(&mut self, n: U256) -> bool {
-        self.nonces.clear_expired(n)
+    pub fn cleanup_nonce_by_prefix(&mut self, prefix: NoncePrefix) -> bool {
+        self.nonces.cleanup_by_prefix(prefix)
     }
 }

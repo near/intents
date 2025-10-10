@@ -24,9 +24,9 @@ pub enum EventMode {
     Record,
 }
 
-pub struct EventSink{
+pub struct EventSink {
     mode: EventMode,
-    events: Vec<events::DefuseEvent<'static>>
+    events: Vec<events::DefuseEvent<'static>>,
 }
 
 impl Default for EventSink {
@@ -53,5 +53,4 @@ impl EventSink {
     pub fn recorded_events(&self) -> &[events::DefuseEvent<'static>] {
         &self.events
     }
-} 
-
+}

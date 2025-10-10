@@ -1,4 +1,8 @@
-use defuse_core::{amounts::Amounts, fees::FeesConfig, token_id::TokenId};
+mod v0;
+
+pub use v0::ContractStateV0;
+
+use defuse_core::{SaltRegistry, amounts::Amounts, fees::FeesConfig, token_id::TokenId};
 use defuse_near_utils::NestPrefix;
 use near_sdk::{
     AccountId, BorshStorageKey, IntoStorageKey, borsh::BorshSerialize, near, store::IterableMap,
@@ -14,6 +18,8 @@ pub struct ContractState {
     pub wnear_id: AccountId,
 
     pub fees: FeesConfig,
+
+    pub salts: SaltRegistry,
 }
 
 impl ContractState {
@@ -22,12 +28,15 @@ impl ContractState {
     where
         S: IntoStorageKey,
     {
+        let prefix = prefix.into_storage_key();
+
         Self {
             total_supplies: TokenBalances::new(IterableMap::new(
-                prefix.into_storage_key().nest(Prefix::TotalSupplies),
+                prefix.as_slice().nest(Prefix::TotalSupplies),
             )),
             wnear_id,
             fees,
+            salts: SaltRegistry::new(prefix.as_slice().nest(Prefix::Salts)),
         }
     }
 }
@@ -36,4 +45,5 @@ impl ContractState {
 #[borsh(crate = "::near_sdk::borsh")]
 enum Prefix {
     TotalSupplies,
+    Salts,
 }

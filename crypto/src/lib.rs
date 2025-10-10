@@ -7,11 +7,12 @@
 //! intended for internal use.
 
 mod curve;
+mod parse;
 mod payload;
 mod public_key;
 mod signature;
 
-pub use self::{curve::*, payload::*, public_key::*, signature::*};
+pub use self::{curve::*, parse::ParseCurveError, payload::*, public_key::*, signature::*};
 
 #[cfg(feature = "serde")]
 pub mod serde;

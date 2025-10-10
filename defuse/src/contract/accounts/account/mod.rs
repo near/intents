@@ -5,10 +5,7 @@ pub use self::{entry::*, nonces::MaybeLegacyAccountNonces};
 
 use bitflags::bitflags;
 use defuse_bitmap::U256;
-use defuse_core::{
-    Result,
-    crypto::PublicKey,
-};
+use defuse_core::{NoncePrefix, Result, crypto::PublicKey};
 
 use defuse_near_utils::NestPrefix;
 use impl_tools::autoimpl;
@@ -120,12 +117,12 @@ impl Account {
         self.nonces.commit(nonce)
     }
 
-    /// Clears the nonce if it was expired.
-    /// Returns whether the nonces was cleared. If the nonce has not expired yet, then returns `false`,
+    /// Clears the all nonces with corresponding prefix if it was expired/invalidated.
+    /// Returns whether the nonces was cleared,
     /// regardless of whether it was previously committed or not.
     #[inline]
-    pub fn clear_expired_nonce(&mut self, nonce: U256) -> bool {
-        self.nonces.clear_expired(nonce)
+    pub fn cleanup_nonce_by_prefix(&mut self, prefix: NoncePrefix) -> bool {
+        self.nonces.cleanup_by_prefix(prefix)
     }
 
     #[inline]

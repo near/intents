@@ -6,7 +6,9 @@ pub use self::{inspector::*, state::*};
 use defuse_crypto::{Payload, SignedPayload};
 
 use crate::{
-    accounts::{AccountEvent, NonceEvent}, intents::{DefuseIntents, ExecutableIntent, IntentEvent}, payload::{multi::MultiPayload, DefusePayload, ExtractDefusePayload}, Deadline, DefuseError, ExpirableNonce, Result
+    Deadline, DefuseError, ExpirableNonce, Nonce, Result, SaltedNonce, VersionedNonce,
+    intents::{DefuseIntents, ExecutableIntent},
+    payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
 };
 
 use self::deltas::{Deltas, Transfers};
@@ -14,16 +16,6 @@ use self::deltas::{Deltas, Transfers};
 pub struct Engine<S, I> {
     pub state: Deltas<S>,
     pub inspector: I,
-    pub min_deadline: Deadline,
-    executed: Vec<AccountNonceEvent>,
-}
-
-pub type AccountNonceEvent = IntentEvent<AccountEvent<'static, NonceEvent>>;
-
-pub struct ExecuteIntentsResult{
-    pub transfers: Transfers,
-    pub min_deadline: Deadline,
-    pub executed: Vec<AccountNonceEvent>,
 }
 
 impl<S, I> Engine<S, I>
@@ -36,15 +28,13 @@ where
         Self {
             state: Deltas::new(state),
             inspector,
-            min_deadline: Deadline::MAX,
-            executed: Vec::new(),
         }
     }
 
     pub fn execute_signed_intents(
         mut self,
         signed: impl IntoIterator<Item = MultiPayload>,
-    ) -> Result<ExecuteIntentsResult> {
+    ) -> Result<Transfers> {
         for signed in signed {
             self.execute_signed_intent(signed)?;
         }
@@ -74,10 +64,6 @@ where
 
         self.inspector.on_deadline(deadline);
 
-        if ExpirableNonce::maybe_from(nonce).is_some_and(|n| deadline > n.deadline) {
-            return Err(DefuseError::DeadlineGreaterThanNonce);
-        }
-
         // make sure message is still valid
         if deadline.has_expired() {
             return Err(DefuseError::DeadlineExpired);
@@ -89,6 +75,7 @@ where
         }
 
         // commit nonce
+        self.verify_intent_nonce(nonce, deadline)?;
         self.state.commit_nonce(signer_id.clone(), nonce)?;
 
         intents.execute_intent(&signer_id, self, hash)?;
@@ -98,15 +85,37 @@ where
     }
 
     #[inline]
-    fn finalize(self) -> Result<ExecuteIntentsResult> {
-            self.state
-            .finalize()
-            .map(|transfers| ExecuteIntentsResult{
-                transfers,
-                min_deadline: self.min_deadline,
-                executed: self.executed,
-            })
-            .map_err(DefuseError::InvariantViolated)
+    fn verify_intent_nonce(&self, nonce: Nonce, intent_deadline: Deadline) -> Result<()> {
+        let Some(nonce) = VersionedNonce::maybe_from(nonce) else {
+            return Ok(());
+        };
+
+        match nonce {
+            VersionedNonce::V1(SaltedNonce {
+                salt,
+                nonce: ExpirableNonce { deadline, .. },
+            }) => {
+                if !self.state.is_valid_salt(salt) {
+                    return Err(DefuseError::InvalidSalt);
+                }
+
+                if intent_deadline > deadline {
+                    return Err(DefuseError::DeadlineGreaterThanNonce);
+                }
+
+                if deadline.has_expired() {
+                    return Err(DefuseError::NonceExpired);
+                }
+            }
+        }
+
+        Ok(())
     }
 
+    #[inline]
+    fn finalize(self) -> Result<Transfers> {
+        self.state
+            .finalize()
+            .map_err(DefuseError::InvariantViolated)
+    }
 }

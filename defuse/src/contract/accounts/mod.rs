@@ -1,5 +1,5 @@
 mod account;
-mod lock;
+mod force;
 mod state;
 
 pub use self::{account::*, state::*};
@@ -7,13 +7,14 @@ pub use self::{account::*, state::*};
 use std::collections::HashSet;
 
 use defuse_core::{
-    DefuseError, Nonce,
+    DefuseError, ExpirableNonce, Nonce, SaltedNonce, VersionedNonce,
     crypto::PublicKey,
     engine::{State, StateView},
 };
 use defuse_near_utils::{Lock, NestPrefix, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic};
 use defuse_serde_utils::base64::AsBase64;
 
+use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{
     AccountId, AccountIdRef, BorshStorageKey, FunctionError, IntoStorageKey, assert_one_yocto,
     borsh::BorshSerialize, near, store::IterableMap,
@@ -21,7 +22,7 @@ use near_sdk::{
 
 use crate::{
     accounts::AccountManager,
-    contract::{Contract, ContractExt, accounts::AccountEntry},
+    contract::{Contract, ContractExt, Role, accounts::AccountEntry},
 };
 
 #[near]
@@ -52,15 +53,21 @@ impl AccountManager for Contract {
         StateView::is_nonce_used(self, account_id, nonce.into_inner())
     }
 
-    fn cleanup_expired_nonces(&mut self, nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>) {
+    #[access_control_any(roles(Role::DAO, Role::GarbageCollector))]
+    #[payable]
+    fn cleanup_nonces(&mut self, nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>) {
+        assert_one_yocto();
+
         for (account_id, nonces) in nonces {
-            // NOTE: all errors are omitted
-            State::cleanup_expired_nonces(
-                self,
-                &account_id,
-                nonces.into_iter().map(AsBase64::into_inner),
-            )
-            .ok();
+            for nonce in nonces.into_iter().map(AsBase64::into_inner) {
+                if !self.is_nonce_cleanable(nonce) {
+                    continue;
+                }
+
+                // NOTE: all errors are omitted
+                let [prefix @ .., _] = nonce;
+                let _ = State::cleanup_nonce_by_prefix(self, &account_id, prefix);
+            }
         }
     }
 
@@ -77,6 +84,20 @@ impl AccountManager for Contract {
 }
 
 impl Contract {
+    #[inline]
+    fn is_nonce_cleanable(&self, nonce: Nonce) -> bool {
+        let Some(versioned_nonce) = VersionedNonce::maybe_from(nonce) else {
+            return false;
+        };
+
+        match versioned_nonce {
+            VersionedNonce::V1(SaltedNonce {
+                salt,
+                nonce: ExpirableNonce { deadline, .. },
+            }) => deadline.has_expired() || !self.is_valid_salt(salt),
+        }
+    }
+
     #[inline]
     pub fn ensure_auth_predecessor_id(&self) -> &'static AccountId {
         if !StateView::is_auth_by_predecessor_id_enabled(self, &PREDECESSOR_ACCOUNT_ID) {
@@ -100,6 +121,7 @@ impl Accounts {
         S: IntoStorageKey,
     {
         let prefix = prefix.into_storage_key();
+
         Self {
             accounts: IterableMap::new(prefix.as_slice().nest(AccountsPrefix::Accounts)),
             prefix,

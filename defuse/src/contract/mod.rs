@@ -6,25 +6,27 @@ pub mod config;
 mod events;
 mod fees;
 mod intents;
+mod salts;
 mod state;
 mod tokens;
 mod upgrade;
-// mod event_sink;
+mod versioned;
 
 use core::iter;
-use std::{cell::RefCell, rc::Rc};
+use std::cell::RefCell;
+use std::rc::Rc;
 
-use defuse_core::{events::DefuseEvent, Result, EventSink};
-
-// use event_sink::EventSink;
-use events::PostponedMtBurnEvents;
+use defuse_borsh_utils::adapters::As;
+use defuse_core::{EventSink, Result, events::DefuseEvent};
 use impl_tools::autoimpl;
 use near_plugins::{AccessControlRole, AccessControllable, Pausable, access_control};
 use near_sdk::{
-    BorshStorageKey, PanicOnDefault, borsh::BorshDeserialize, near, require, store::LookupSet,
+    BorshStorageKey, IntoStorageKey, PanicOnDefault, borsh::BorshDeserialize, near, require,
+    store::LookupSet,
 };
+use versioned::MaybeVersionedContractStorage;
 
-use crate::Defuse;
+use crate::{Defuse, contract::events::PostponedMtBurnEvents};
 
 use self::{
     accounts::Accounts,
@@ -48,6 +50,10 @@ pub enum Role {
 
     UnrestrictedAccountLocker,
     UnrestrictedAccountUnlocker,
+
+    SaltManager,
+
+    GarbageCollector,
 }
 
 #[access_control(role_type(Role))]
@@ -63,26 +69,51 @@ pub enum Role {
         standard(standard = "nep245", version = "1.0.0"),
     )
 )]
-#[autoimpl(Deref using self.state)]
-#[autoimpl(DerefMut using self.state)]
+#[autoimpl(Deref using self.storage)]
+#[autoimpl(DerefMut using self.storage)]
 pub struct Contract {
-    accounts: Accounts,
-    state: ContractState,
-
-    relayer_keys: LookupSet<near_sdk::PublicKey>,
+    #[borsh(
+        deserialize_with = "As::<MaybeVersionedContractStorage>::deserialize",
+        serialize_with = "As::<MaybeVersionedContractStorage>::serialize"
+    )]
+    storage: ContractStorage,
 
     #[borsh(skip)]
-    postponed_burns: PostponedMtBurnEvents,
+    runtime: Runtime,
 
     #[borsh(skip)]
     event_sink: Rc<RefCell<EventSink>>,
 }
 
-
-impl Contract{ 
+impl Contract {
     pub fn emit_defuse_event(&self, ev: DefuseEvent<'_>) {
         self.event_sink.borrow_mut().consume_event(ev);
     }
+
+    pub fn record_events_instead_of_emitting(&self) {
+        self.event_sink.borrow_mut().record_only_mode()
+    }
+
+    pub fn event_sink_handle(&self) -> Rc<RefCell<EventSink>> {
+        Rc::clone(&self.event_sink)
+    }
+}
+
+#[derive(Debug)]
+#[autoimpl(Deref using self.state)]
+#[autoimpl(DerefMut using self.state)]
+#[near(serializers = [borsh])]
+pub struct ContractStorage {
+    accounts: Accounts,
+
+    state: ContractState,
+
+    relayer_keys: LookupSet<near_sdk::PublicKey>,
+}
+
+#[derive(Debug, Default)]
+pub struct Runtime {
+    pub postponed_burns: PostponedMtBurnEvents,
 }
 
 #[near]
@@ -92,10 +123,12 @@ impl Contract {
     #[allow(clippy::use_self)] // Clippy seems to not play well with near-sdk, or there is a bug in clippy - seen in shared security analysis
     pub fn new(config: DefuseConfig) -> Self {
         let mut contract = Self {
-            accounts: Accounts::new(Prefix::Accounts),
-            state: ContractState::new(Prefix::State, config.wnear_id, config.fees),
-            relayer_keys: LookupSet::new(Prefix::RelayerKeys),
-            postponed_burns: PostponedMtBurnEvents::new(),
+            storage: ContractStorage {
+                accounts: Accounts::new(Prefix::Accounts),
+                state: ContractState::new(Prefix::State, config.wnear_id, config.fees),
+                relayer_keys: LookupSet::new(Prefix::RelayerKeys),
+            },
+            runtime: Runtime::default(),
             event_sink: Rc::new(RefCell::new(EventSink::default())),
         };
         contract.init_acl(config.roles);
@@ -133,4 +166,10 @@ enum Prefix {
     Accounts,
     State,
     RelayerKeys,
+}
+
+pub trait MigrateStorageWithPrefix<T>: Sized {
+    fn migrate<S>(val: T, prefix: S) -> Self
+    where
+        S: IntoStorageKey;
 }

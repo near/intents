@@ -1,5 +1,5 @@
 use defuse_core::{
-    Deadline, Result,
+    Deadline, Result, Salt,
     accounts::{AccountEvent, NonceEvent},
     engine::deltas::InvariantViolated,
     fees::Pips,
@@ -11,10 +11,10 @@ use near_plugins::AccessControllable;
 use near_sdk::{Promise, PublicKey, ext_contract, near};
 use serde_with::serde_as;
 
-use crate::fees::FeesManager;
+use crate::{fees::FeesManager, salts::SaltManager};
 
 #[ext_contract(ext_intents)]
-pub trait Intents: FeesManager {
+pub trait Intents: FeesManager + SaltManager {
     fn execute_intents(&mut self, signed: Vec<MultiPayload>);
 
     fn simulate_intents(&self, signed: Vec<MultiPayload>) -> SimulationOutput;
@@ -62,6 +62,8 @@ impl SimulationOutput {
 #[derive(Debug, Clone)]
 pub struct StateOutput {
     pub fee: Pips,
+
+    pub current_salt: Salt,
 }
 
 #[ext_contract(ext_relayer_keys)]

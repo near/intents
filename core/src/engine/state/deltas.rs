@@ -1,5 +1,5 @@
 use crate::{
-    DefuseError, Nonce, Result,
+    DefuseError, Nonce, NoncePrefix, Result, Salt,
     amounts::Amounts,
     fees::Pips,
     intents::{
@@ -96,6 +96,11 @@ where
     fn is_auth_by_predecessor_id_enabled(&self, account_id: &AccountIdRef) -> bool {
         self.state.is_auth_by_predecessor_id_enabled(account_id)
     }
+
+    #[inline]
+    fn is_valid_salt(&self, salt: Salt) -> bool {
+        self.state.is_valid_salt(salt)
+    }
 }
 
 impl<S> State for Deltas<S>
@@ -118,12 +123,12 @@ where
     }
 
     #[inline]
-    fn cleanup_expired_nonces(
+    fn cleanup_nonce_by_prefix(
         &mut self,
-        account_id: &AccountId,
-        nonces: impl IntoIterator<Item = Nonce>,
-    ) -> Result<()> {
-        self.state.cleanup_expired_nonces(account_id, nonces)
+        account_id: &AccountIdRef,
+        prefix: NoncePrefix,
+    ) -> Result<bool> {
+        self.state.cleanup_nonce_by_prefix(account_id, prefix)
     }
 
     fn internal_add_balance(
