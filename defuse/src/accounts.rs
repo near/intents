@@ -81,8 +81,9 @@ pub trait ForceAccountManager: AccessControllable {
 
     /// Enables authentication by PREDECESSOR_ID for given account ids.
     ///
-    /// **WARN**: Doing so might lock these accounts out of your funds if
-    /// they don't have any other public_keys added to them.
+    /// **WARN**: Doing so might let an attacker who has control over Near
+    /// accounts with the same AccountIds to take over control of these
+    /// accounts inside verifier contract.
     ///
     /// NOTE: MUST attach 1 yⓃ for security purposes.
     fn force_enable_auth_by_predecessor_ids(&mut self, account_ids: Vec<AccountId>);
