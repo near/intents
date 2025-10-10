@@ -8,7 +8,7 @@ use crate::Nonce;
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct AccountEvent<'a, T> {
     pub account_id: Cow<'a, AccountIdRef>,
 
@@ -62,7 +62,7 @@ impl<'a, T> AccountEvent<'a, T> {
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct PublicKeyEvent<'a> {
     pub public_key: Cow<'a, PublicKey>,
 }
@@ -85,7 +85,7 @@ impl<'a> PublicKeyEvent<'a> {
     serde_as(schemars = false)
 )]
 #[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct NonceEvent {
     #[serde_as(as = "Base64")]
     pub nonce: Nonce,

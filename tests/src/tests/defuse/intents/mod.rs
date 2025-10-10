@@ -7,25 +7,28 @@ use defuse::core::token_id::nep141::Nep141TokenId;
 use defuse::{
     core::{
         Deadline,
+        accounts::AccountEvent,
         amounts::Amounts,
+        events::DefuseEvent,
         intents::{
-            DefuseIntents,
+            DefuseIntents, IntentEvent,
             tokens::{FtWithdraw, Transfer},
         },
         payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
     },
     intents::SimulationOutput,
 };
+use defuse_crypto::Payload;
 use defuse_randomness::Rng;
 use defuse_test_utils::random::rng;
 use near_sdk::{AccountId, AccountIdRef};
 use rstest::rstest;
 use serde_json::json;
+use std::borrow::Cow;
 
 mod ft_withdraw;
 mod native_withdraw;
 mod relayers;
-mod simulate_events;
 mod token_diff;
 
 pub trait ExecuteIntentsExt: AccountManagerExt {
@@ -173,34 +176,46 @@ async fn simulate_is_view_method(
 
     let nonce = rng.random();
 
+    let transfer_intent = Transfer {
+        receiver_id: env.user2.id().clone(),
+        tokens: Amounts::new(std::iter::once((ft1.clone(), 1000)).collect()),
+        memo: None,
+    };
+    let transfer_intent_payload = env.user1.sign_defuse_message(
+        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        env.defuse.id(),
+        nonce,
+        Deadline::MAX,
+        DefuseIntents {
+            intents: vec![transfer_intent.clone().into()],
+        },
+    );
     let result = env
         .defuse
-        .simulate_intents([env.user1.sign_defuse_message(
-            SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
-            env.defuse.id(),
-            nonce,
-            Deadline::MAX,
-            DefuseIntents {
-                intents: [Transfer {
-                    receiver_id: env.user2.id().clone(),
-                    tokens: Amounts::new(std::iter::once((ft1.clone(), 1000)).collect()),
-                    memo: None,
-                }
-                .into()]
-                .into(),
-            },
-        )])
+        .simulate_intents([transfer_intent_payload.clone()])
         .await
         .unwrap();
 
     assert_eq!(result.intents_executed.len(), 1);
-    assert_eq!(result.events, vec![]);
+
+    // Prepare expected transfer event
+    let intent_hash = result.intents_executed.first().unwrap().intent_hash;
+    let expected_events = vec![DefuseEvent::Transfer(Cow::Owned(vec![IntentEvent {
+        intent_hash: transfer_intent_payload.hash(),
+        event: AccountEvent {
+            account_id: env.user1.id().clone().into(),
+            event: Cow::Owned(transfer_intent),
+        },
+    }]))];
+
+    assert_eq!(result.events, expected_events);
     assert_eq!(
         result.intents_executed.first().unwrap().event.event.nonce,
         nonce
     );
     result.into_result().unwrap();
 
+    // Verify balances haven't changed (simulate is a view method)
     assert_eq!(
         env.defuse
             .mt_balance_of(env.user1.id(), &ft1.to_string())

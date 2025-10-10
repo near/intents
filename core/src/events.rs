@@ -16,7 +16,7 @@ use crate::{
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(event_json(standard = "dip4"))]
-#[derive(Debug, Clone, Deserialize, From)]
+#[derive(Debug, Clone, Deserialize, From, PartialEq)]
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
     derive(schemars::JsonSchema)
@@ -100,12 +100,8 @@ impl<'a> DefuseEvent<'a> {
             DefuseEvent::FeeCollectorChanged(event) => {
                 DefuseEvent::FeeCollectorChanged(event.into_owned())
             }
-            DefuseEvent::Transfer(events) => {
-                DefuseEvent::Transfer(Self::convert_events(events))
-            }
-            DefuseEvent::TokenDiff(events) => {
-                DefuseEvent::TokenDiff(Self::convert_events(events))
-            }
+            DefuseEvent::Transfer(events) => DefuseEvent::Transfer(Self::convert_events(events)),
+            DefuseEvent::TokenDiff(events) => DefuseEvent::TokenDiff(Self::convert_events(events)),
             DefuseEvent::IntentsExecuted(events) => {
                 DefuseEvent::IntentsExecuted(Self::convert_events(events))
             }
@@ -118,12 +114,12 @@ impl<'a> DefuseEvent<'a> {
             DefuseEvent::MtWithdraw(events) => {
                 DefuseEvent::MtWithdraw(Self::convert_events(events))
             }
-            DefuseEvent::NativeWithdraw(events) =>
+            DefuseEvent::NativeWithdraw(events) => {
                 DefuseEvent::NativeWithdraw(Self::convert_events(events))
-            ,
-            DefuseEvent::StorageDeposit(events) =>
+            }
+            DefuseEvent::StorageDeposit(events) => {
                 DefuseEvent::StorageDeposit(Self::convert_events(events))
-            ,
+            }
             DefuseEvent::AccountLocked(event) => DefuseEvent::AccountLocked(event.into_owned()),
             DefuseEvent::AccountUnlocked(event) => DefuseEvent::AccountUnlocked(event.into_owned()),
             DefuseEvent::SetAuthByPredecessorId(event) => {

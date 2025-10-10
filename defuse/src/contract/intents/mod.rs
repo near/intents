@@ -4,9 +4,6 @@ mod relayer;
 mod simulate;
 mod state;
 
-#[cfg(test)]
-mod tests;
-
 use defuse_core::{
     DefuseError,
     engine::{Engine, StateView},

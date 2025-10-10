@@ -10,7 +10,10 @@ use serde_with::serde_as;
 use tokens::{NativeWithdraw, StorageDeposit};
 
 use crate::{
-    accounts::AccountEvent, engine::{Engine, Inspector, State}, intents::{account::SetAuthByPredecessorId, auth::AuthCall}, Result
+    Result,
+    accounts::AccountEvent,
+    engine::{Engine, Inspector, State},
+    intents::{account::SetAuthByPredecessorId, auth::AuthCall},
 };
 
 use self::{
@@ -137,7 +140,7 @@ impl ExecutableIntent for Intent {
     serde_as(schemars = false)
 )]
 #[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct IntentEvent<T> {
     #[serde_as(as = "Base58")]
     pub intent_hash: CryptoHash,

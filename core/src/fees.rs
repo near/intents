@@ -199,7 +199,7 @@ pub struct PipsOutOfRange;
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FeeChangedEvent {
     pub old_fee: Pips,
     pub new_fee: Pips,
@@ -207,7 +207,7 @@ pub struct FeeChangedEvent {
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FeeCollectorChangedEvent<'a> {
     pub old_fee_collector: Cow<'a, AccountIdRef>,
     pub new_fee_collector: Cow<'a, AccountIdRef>,
