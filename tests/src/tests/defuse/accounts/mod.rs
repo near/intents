@@ -1,5 +1,5 @@
 mod auth_by_predecessor_id;
-mod locked;
+mod force;
 mod nonces;
 mod traits;
 
@@ -61,7 +61,6 @@ impl AccountManagerExt for near_workspaces::Account {
         defuse_contract_id: &AccountId,
         public_key: PublicKey,
     ) -> anyhow::Result<()> {
-        // TODO: check bool output
         self.call(defuse_contract_id, "add_public_key")
             .deposit(NearToken::from_yoctonear(1))
             .args_json(json!({
