@@ -163,10 +163,17 @@ async fn simulate_is_view_method(
         .build()
         .await;
 
-    let ft1 = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
+    let user = env.create_user("user").await;
+    let other_user = env.create_user("other_user").await;
+
+    let ft = env.create_token("ft").await;
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
+
+    env.deposit_to_users(vec![user.id(), other_user.id()], &[&ft])
+        .await;
 
     // deposit
-    env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
+    env.defuse_ft_deposit_to(&ft, 1000, user.id())
         .await
         .unwrap();
 
@@ -174,15 +181,15 @@ async fn simulate_is_view_method(
 
     let result = env
         .defuse
-        .simulate_intents([env.user1.sign_defuse_message(
+        .simulate_intents([user.sign_defuse_message(
             SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
             env.defuse.id(),
             nonce,
             Deadline::MAX,
             DefuseIntents {
                 intents: [Transfer {
-                    receiver_id: env.user2.id().clone(),
-                    tokens: Amounts::new(std::iter::once((ft1.clone(), 1000)).collect()),
+                    receiver_id: other_user.id().clone(),
+                    tokens: Amounts::new(std::iter::once((ft_id.clone(), 1000)).collect()),
                     memo: None,
                 }
                 .into()]
@@ -201,14 +208,14 @@ async fn simulate_is_view_method(
 
     assert_eq!(
         env.defuse
-            .mt_balance_of(env.user1.id(), &ft1.to_string())
+            .mt_balance_of(user.id(), &ft_id.to_string())
             .await
             .unwrap(),
         1000
     );
     assert_eq!(
         env.defuse
-            .mt_balance_of(env.user2.id(), &ft1.to_string())
+            .mt_balance_of(other_user.id(), &ft_id.to_string())
             .await
             .unwrap(),
         0
@@ -226,10 +233,15 @@ async fn webauthn(#[values(false, true)] no_registration: bool) {
         .build()
         .await;
 
-    let ft1 = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
+    let user = env.create_user("user1").await;
+
+    let ft = env.create_token("ft1").await;
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
+
+    env.deposit_to_users(vec![user.id()], &[&ft]).await;
 
     // deposit
-    env.defuse_ft_deposit_to(&env.ft1, 2000, &SIGNER_ID.to_owned())
+    env.defuse_ft_deposit_to(&ft, 2000, &SIGNER_ID.to_owned())
         .await
         .unwrap();
 
@@ -254,14 +266,14 @@ async fn webauthn(#[values(false, true)] no_registration: bool) {
 
     assert_eq!(
         env.defuse
-            .mt_balance_of(env.user1.id(), &ft1.to_string())
+            .mt_balance_of(user.id(), &ft_id.to_string())
             .await
             .unwrap(),
         2000
     );
     assert_eq!(
         env.defuse
-            .mt_balance_of(&SIGNER_ID.to_owned(), &ft1.to_string())
+            .mt_balance_of(&SIGNER_ID.to_owned(), &ft_id.to_string())
             .await
             .unwrap(),
         0
@@ -276,11 +288,12 @@ async fn ton_connect_sign_intent_example(#[notrace] mut rng: impl Rng) {
 
     let env: Env = Env::builder().no_registration(false).build().await;
 
+    let ft_id: AccountId = "ft.test.near".parse().unwrap();
     let address = MsgAddress::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 32]>())).unwrap();
 
     let intents = DefuseIntents {
         intents: [FtWithdraw {
-            token: env.ft1.clone(),
+            token: ft_id.clone(),
             receiver_id: "bob.near".parse().unwrap(),
             amount: 1000.into(),
             memo: None,

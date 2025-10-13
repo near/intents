@@ -36,16 +36,20 @@ async fn ft_withdraw_intent(
         .build()
         .await;
 
+    let user = env.create_user("user").await;
     let other_user_id: AccountId = "other-user.near".parse().unwrap();
 
-    let ft1 = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
+    let ft = env.create_token("ft").await;
+    let token_id = TokenId::from(Nep141TokenId::new(ft.clone()));
+    env.deposit_to_users(vec![user.id()], &[&ft]).await;
+
     {
-        env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
+        env.defuse_ft_deposit_to(&ft, 1000, user.id())
             .await
             .unwrap();
 
         assert_eq!(
-            env.mt_contract_balance_of(env.defuse.id(), env.user1.id(), &ft1.to_string())
+            env.mt_contract_balance_of(env.defuse.id(), user.id(), &token_id.to_string())
                 .await
                 .unwrap(),
             1000
@@ -55,14 +59,14 @@ async fn ft_withdraw_intent(
     let nonce = rng.random();
 
     env.defuse
-        .execute_intents([env.user1.sign_defuse_message(
+        .execute_intents([user.sign_defuse_message(
             SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
             env.defuse.id(),
             nonce,
             Deadline::timeout(Duration::from_secs(120)),
             DefuseIntents {
                 intents: [FtWithdraw {
-                    token: env.ft1.clone(),
+                    token: ft.clone(),
                     receiver_id: other_user_id.clone(),
                     amount: 1000.into(),
                     memo: None,
@@ -78,30 +82,28 @@ async fn ft_withdraw_intent(
         .unwrap();
 
     assert_eq!(
-        env.mt_contract_balance_of(env.defuse.id(), env.user1.id(), &ft1.to_string())
+        env.mt_contract_balance_of(env.defuse.id(), user.id(), &token_id.to_string())
             .await
             .unwrap(),
         1000
     );
 
     assert_eq!(
-        env.ft_token_balance_of(&env.ft1, &other_user_id)
-            .await
-            .unwrap(),
+        env.ft_token_balance_of(&ft, &other_user_id).await.unwrap(),
         0
     );
 
     let nonce = rng.random();
 
     env.defuse
-        .execute_intents([env.user1.sign_defuse_message(
+        .execute_intents([user.sign_defuse_message(
             SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
             env.defuse.id(),
             nonce,
             Deadline::MAX,
             DefuseIntents {
                 intents: [FtWithdraw {
-                    token: env.ft1.clone(),
+                    token: ft.clone(),
                     receiver_id: other_user_id.clone(),
                     amount: 1000.into(),
                     memo: None,
@@ -118,31 +120,29 @@ async fn ft_withdraw_intent(
         .unwrap_err();
 
     // send user some near
-    env.transfer_near(env.user1.id(), STORAGE_DEPOSIT)
+    env.transfer_near(user.id(), STORAGE_DEPOSIT)
         .await
         .unwrap()
         .into_result()
         .unwrap();
     // wrap NEAR
-    env.user1
-        .near_deposit(env.wnear.id(), STORAGE_DEPOSIT)
+    user.near_deposit(env.wnear.id(), STORAGE_DEPOSIT)
         .await
         .unwrap();
     // deposit wNEAR
-    env.user1
-        .defuse_ft_deposit(
-            env.defuse.id(),
-            env.wnear.id(),
-            STORAGE_DEPOSIT.as_yoctonear(),
-            None,
-        )
-        .await
-        .unwrap();
+    user.defuse_ft_deposit(
+        env.defuse.id(),
+        env.wnear.id(),
+        STORAGE_DEPOSIT.as_yoctonear(),
+        None,
+    )
+    .await
+    .unwrap();
 
     if no_registration {
         // IN no_registration case, only token owner can register a new user
         env.poa_factory
-            .ft_storage_deposit_many(&env.ft1, &[&other_user_id])
+            .ft_storage_deposit_many(&ft, &[&other_user_id])
             .await
             .unwrap();
     }
@@ -163,14 +163,14 @@ async fn ft_withdraw_intent(
     // too large min_gas specified
     env.defuse_execute_intents(
         env.defuse.id(),
-        [env.user1.sign_defuse_message(
+        [user.sign_defuse_message(
             SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
             env.defuse.id(),
             nonce,
             Deadline::MAX,
             DefuseIntents {
                 intents: [FtWithdraw {
-                    token: env.ft1.clone(),
+                    token: ft.clone(),
                     receiver_id: other_user_id.clone(),
                     amount: 1000.into(),
                     memo: None,
@@ -188,14 +188,14 @@ async fn ft_withdraw_intent(
 
     env.defuse_execute_intents(
         env.defuse.id(),
-        [env.user1.sign_defuse_message(
+        [user.sign_defuse_message(
             SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
             env.defuse.id(),
             nonce,
             Deadline::MAX,
             DefuseIntents {
                 intents: [FtWithdraw {
-                    token: env.ft1.clone(),
+                    token: ft.clone(),
                     receiver_id: other_user_id.clone(),
                     amount: 1000.into(),
                     memo: None,
@@ -223,7 +223,7 @@ async fn ft_withdraw_intent(
     );
 
     assert_eq!(
-        env.mt_contract_balance_of(env.defuse.id(), env.user1.id(), &ft1.to_string())
+        env.mt_contract_balance_of(env.defuse.id(), user.id(), &token_id.to_string())
             .await
             .unwrap(),
         0
@@ -234,7 +234,7 @@ async fn ft_withdraw_intent(
         assert_eq!(
             env.mt_contract_balance_of(
                 env.defuse.id(),
-                env.user1.id(),
+                user.id(),
                 &TokenId::from(Nep141TokenId::new(env.wnear.id().clone())).to_string()
             )
             .await
@@ -244,9 +244,7 @@ async fn ft_withdraw_intent(
     }
 
     assert_eq!(
-        env.ft_token_balance_of(&env.ft1, &other_user_id)
-            .await
-            .unwrap(),
+        env.ft_token_balance_of(&ft, &other_user_id).await.unwrap(),
         1000
     );
 }
@@ -262,6 +260,12 @@ async fn ft_withdraw_intent_msg(
         .no_registration(no_registration)
         .build()
         .await;
+
+    let user = env.create_user("user").await;
+    let other_user_id: AccountId = "other-user.near".parse().unwrap();
+
+    let ft = env.create_token("ft").await;
+    env.deposit_to_users(vec![user.id()], &[&ft]).await;
 
     let defuse2 = env
         .deploy_defuse(
@@ -279,20 +283,20 @@ async fn ft_withdraw_intent_msg(
         .unwrap();
 
     env.poa_factory
-        .ft_storage_deposit_many(&env.ft1, &[defuse2.id()])
+        .ft_storage_deposit_many(&ft, &[defuse2.id()])
         .await
         .unwrap();
 
-    env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
+    env.defuse_ft_deposit_to(&ft, 1000, user.id())
         .await
         .unwrap();
 
-    let ft1 = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
+    let ft1 = TokenId::from(Nep141TokenId::new(ft.clone()));
 
     // too small min_gas
     {
         env.defuse
-            .execute_intents([env.user1.sign_defuse_message(
+            .execute_intents([user.sign_defuse_message(
                 SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
                     .unwrap(),
                 env.defuse.id(),
@@ -300,11 +304,11 @@ async fn ft_withdraw_intent_msg(
                 Deadline::timeout(Duration::from_secs(120)),
                 DefuseIntents {
                     intents: [FtWithdraw {
-                        token: env.ft1.clone(),
+                        token: ft.clone(),
                         receiver_id: defuse2.id().clone(),
                         amount: 400.into(),
                         memo: Some("defuse-to-defuse".to_string()),
-                        msg: Some(env.user2.id().to_string()),
+                        msg: Some(other_user_id.to_string()),
                         storage_deposit: None,
                         // too small, but minimum of 30TGas will be used
                         min_gas: Some(Gas::from_tgas(1)),
@@ -317,26 +321,22 @@ async fn ft_withdraw_intent_msg(
             .unwrap();
 
         assert_eq!(
-            env.mt_contract_balance_of(env.defuse.id(), env.user1.id(), &ft1.to_string())
+            env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft1.to_string())
                 .await
                 .unwrap(),
             600
         );
         assert_eq!(
-            env.ft_token_balance_of(&env.ft1, env.defuse.id())
-                .await
-                .unwrap(),
+            env.ft_token_balance_of(&ft, env.defuse.id()).await.unwrap(),
             600
         );
 
         assert_eq!(
-            env.ft_token_balance_of(&env.ft1, defuse2.id())
-                .await
-                .unwrap(),
+            env.ft_token_balance_of(&ft, defuse2.id()).await.unwrap(),
             400
         );
         assert_eq!(
-            env.mt_contract_balance_of(defuse2.id(), env.user2.id(), &ft1.to_string())
+            env.mt_contract_balance_of(defuse2.id(), &other_user_id, &ft1.to_string())
                 .await
                 .unwrap(),
             400
@@ -344,18 +344,18 @@ async fn ft_withdraw_intent_msg(
     }
 
     env.defuse
-        .execute_intents([env.user1.sign_defuse_message(
+        .execute_intents([user.sign_defuse_message(
             SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
             env.defuse.id(),
             rng.random(),
             Deadline::timeout(Duration::from_secs(120)),
             DefuseIntents {
                 intents: [FtWithdraw {
-                    token: env.ft1.clone(),
+                    token: ft.clone(),
                     receiver_id: defuse2.id().clone(),
                     amount: 600.into(),
                     memo: Some("defuse-to-defuse".to_string()),
-                    msg: Some(env.user2.id().to_string()),
+                    msg: Some(other_user_id.to_string()),
                     storage_deposit: None,
                     min_gas: None,
                 }
@@ -367,26 +367,22 @@ async fn ft_withdraw_intent_msg(
         .unwrap();
 
     assert_eq!(
-        env.mt_contract_balance_of(env.defuse.id(), env.user1.id(), &ft1.to_string())
+        env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft1.to_string())
             .await
             .unwrap(),
         0
     );
     assert_eq!(
-        env.ft_token_balance_of(&env.ft1, env.defuse.id())
-            .await
-            .unwrap(),
+        env.ft_token_balance_of(&ft, env.defuse.id()).await.unwrap(),
         0
     );
 
     assert_eq!(
-        env.ft_token_balance_of(&env.ft1, defuse2.id())
-            .await
-            .unwrap(),
+        env.ft_token_balance_of(&ft, defuse2.id()).await.unwrap(),
         1000
     );
     assert_eq!(
-        env.mt_contract_balance_of(defuse2.id(), env.user2.id(), &ft1.to_string())
+        env.mt_contract_balance_of(defuse2.id(), &other_user_id, &ft1.to_string())
             .await
             .unwrap(),
         1000

@@ -23,13 +23,16 @@ use std::collections::HashMap;
 async fn transfer_nft_to_verifier(mut rng: impl Rng) {
     let env = Env::builder().build().await;
 
-    env.transfer_near(env.user1.id(), NearToken::from_near(100))
+    let user1 = env.create_user("user1").await;
+    let user2 = env.create_user("user2").await;
+    let user3 = env.create_user("user3").await;
+
+    env.transfer_near(user1.id(), NearToken::from_near(100))
         .await
         .unwrap()
         .unwrap();
 
-    let nft_issuer_contract = env
-        .user1
+    let nft_issuer_contract = user1
         .deploy_vanilla_nft_issuer(
             "nft1",
             NFTContractMetadata {
@@ -52,19 +55,18 @@ async fn transfer_nft_to_verifier(mut rng: impl Rng) {
         Nep171TokenId::new(nft_issuer_contract.id().to_owned(), nft1_id.clone()).unwrap(),
     );
 
-    let nft1: Token = env
-        .user1
+    let nft1: Token = user1
         .nft_mint(
             nft_issuer_contract.id(),
             &nft1_id,
-            env.user2.id(),
+            user2.id(),
             &TokenMetadata::default(),
         )
         .await
         .unwrap();
 
     assert_eq!(nft1.token_id, nft1_id);
-    assert_eq!(nft1.owner_id, *env.user2.id());
+    assert_eq!(nft1.owner_id, *user2.id());
 
     let nft2_id = gen_random_string(&mut rng, 32..=32);
 
@@ -73,38 +75,36 @@ async fn transfer_nft_to_verifier(mut rng: impl Rng) {
         Nep171TokenId::new(nft_issuer_contract.id().to_owned(), nft2_id.clone()).unwrap(),
     );
 
-    let nft2: Token = env
-        .user1
+    let nft2: Token = user1
         .nft_mint(
             nft_issuer_contract.id(),
             &nft2_id,
-            env.user3.id(),
+            user3.id(),
             &TokenMetadata::default(),
         )
         .await
         .unwrap();
 
     assert_eq!(nft2.token_id, nft2_id);
-    assert_eq!(nft2.owner_id, *env.user3.id());
+    assert_eq!(nft2.owner_id, *user3.id());
 
     {
         {
-            assert_eq!(nft1.owner_id, *env.user2.id());
+            assert_eq!(nft1.owner_id, *user2.id());
             assert!(
-                env.user2
+                user2
                     .nft_transfer_call(
                         nft_issuer_contract.id(),
                         env.defuse.id(),
                         nft1.token_id.clone(),
                         None,
-                        env.user3.id().to_string(),
+                        user3.id().to_string(),
                     )
                     .await
                     .unwrap()
             );
 
-            let nft1_data = env
-                .user2
+            let nft1_data = user2
                 .nft_token(nft_issuer_contract.id(), &nft1.token_id)
                 .await
                 .unwrap()
@@ -115,14 +115,14 @@ async fn transfer_nft_to_verifier(mut rng: impl Rng) {
         // After transferring to defuse, the owner is user3, since it's specified in the message
         assert_eq!(
             env.defuse
-                .mt_balance_of(env.user2.id(), &nft1_mt_token_id.to_string())
+                .mt_balance_of(user2.id(), &nft1_mt_token_id.to_string())
                 .await
                 .unwrap(),
             0
         );
         assert_eq!(
             env.defuse
-                .mt_balance_of(env.user3.id(), &nft1_mt_token_id.to_string())
+                .mt_balance_of(user3.id(), &nft1_mt_token_id.to_string())
                 .await
                 .unwrap(),
             1
@@ -131,22 +131,21 @@ async fn transfer_nft_to_verifier(mut rng: impl Rng) {
 
     {
         {
-            assert_eq!(nft2.owner_id, *env.user3.id());
+            assert_eq!(nft2.owner_id, *user3.id());
             assert!(
-                env.user3
+                user3
                     .nft_transfer_call(
                         nft_issuer_contract.id(),
                         env.defuse.id(),
                         nft2.token_id.clone(),
                         None,
-                        env.user1.id().to_string(),
+                        user1.id().to_string(),
                     )
                     .await
                     .unwrap()
             );
 
-            let nft2_data = env
-                .user2
+            let nft2_data = user2
                 .nft_token(nft_issuer_contract.id(), &nft2.token_id)
                 .await
                 .unwrap()
@@ -157,14 +156,14 @@ async fn transfer_nft_to_verifier(mut rng: impl Rng) {
         // After transferring to defuse, the owner is user3, since it's specified in the message
         assert_eq!(
             env.defuse
-                .mt_balance_of(env.user3.id(), &nft2_mt_token_id.to_string())
+                .mt_balance_of(user3.id(), &nft2_mt_token_id.to_string())
                 .await
                 .unwrap(),
             0
         );
         assert_eq!(
             env.defuse
-                .mt_balance_of(env.user1.id(), &nft2_mt_token_id.to_string())
+                .mt_balance_of(user1.id(), &nft2_mt_token_id.to_string())
                 .await
                 .unwrap(),
             1
@@ -175,7 +174,7 @@ async fn transfer_nft_to_verifier(mut rng: impl Rng) {
     {
         // mt_tokens
         {
-            let nfts_in_verifier = env.user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
+            let nfts_in_verifier = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
             assert_eq!(nfts_in_verifier.len(), 2);
             let nfts_in_verifier_map = nfts_in_verifier
                 .into_iter()
@@ -189,23 +188,18 @@ async fn transfer_nft_to_verifier(mut rng: impl Rng) {
         {
             // User1
             {
-                let nfts_in_verifier = env
-                    .user1
-                    .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..)
+                let nfts_in_verifier = user1
+                    .mt_tokens_for_owner(env.defuse.id(), user1.id(), ..)
                     .await
                     .unwrap();
                 assert_eq!(nfts_in_verifier.len(), 1);
-                assert_eq!(
-                    nfts_in_verifier[0].owner_id.as_ref().unwrap(),
-                    env.user1.id()
-                );
+                assert_eq!(nfts_in_verifier[0].owner_id.as_ref().unwrap(), user1.id());
             }
 
             // User2
             {
-                let nfts_in_verifier = env
-                    .user1
-                    .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), ..)
+                let nfts_in_verifier = user1
+                    .mt_tokens_for_owner(env.defuse.id(), user2.id(), ..)
                     .await
                     .unwrap();
                 assert_eq!(nfts_in_verifier.len(), 0);
@@ -213,24 +207,19 @@ async fn transfer_nft_to_verifier(mut rng: impl Rng) {
 
             // User3
             {
-                let nfts_in_verifier = env
-                    .user1
-                    .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), ..)
+                let nfts_in_verifier = user1
+                    .mt_tokens_for_owner(env.defuse.id(), user3.id(), ..)
                     .await
                     .unwrap();
                 assert_eq!(nfts_in_verifier.len(), 1);
-                assert_eq!(
-                    nfts_in_verifier[0].owner_id.as_ref().unwrap(),
-                    env.user3.id()
-                );
+                assert_eq!(nfts_in_verifier[0].owner_id.as_ref().unwrap(), user3.id());
             }
         }
     }
 
     {
         {
-            let nft1_data = env
-                .user2
+            let nft1_data = user2
                 .nft_token(nft_issuer_contract.id(), &nft1.token_id)
                 .await
                 .unwrap()
@@ -239,7 +228,7 @@ async fn transfer_nft_to_verifier(mut rng: impl Rng) {
 
             assert_eq!(
                 env.defuse
-                    .mt_balance_of(env.user3.id(), &nft1_mt_token_id.to_string())
+                    .mt_balance_of(user3.id(), &nft1_mt_token_id.to_string())
                     .await
                     .unwrap(),
                 1
@@ -249,7 +238,7 @@ async fn transfer_nft_to_verifier(mut rng: impl Rng) {
         let nonce = rng.random();
 
         env.defuse
-            .execute_intents([env.user3.sign_defuse_message(
+            .execute_intents([user3.sign_defuse_message(
                 SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
                     .unwrap(),
                 env.defuse.id(),
@@ -258,7 +247,7 @@ async fn transfer_nft_to_verifier(mut rng: impl Rng) {
                 DefuseIntents {
                     intents: [NftWithdraw {
                         token: nft_issuer_contract.id().clone(),
-                        receiver_id: env.user1.id().clone(),
+                        receiver_id: user1.id().clone(),
                         token_id: nft1_id,
                         memo: None,
                         msg: None,
@@ -275,7 +264,7 @@ async fn transfer_nft_to_verifier(mut rng: impl Rng) {
         // User3 doesn't own the NFT on the verifier contract
         assert_eq!(
             env.defuse
-                .mt_balance_of(env.user3.id(), &nft1_mt_token_id.to_string())
+                .mt_balance_of(user3.id(), &nft1_mt_token_id.to_string())
                 .await
                 .unwrap(),
             0
@@ -283,13 +272,12 @@ async fn transfer_nft_to_verifier(mut rng: impl Rng) {
 
         // After withdrawing to user1, now they own the NFT
         {
-            let nft1_data = env
-                .user2
+            let nft1_data = user2
                 .nft_token(nft_issuer_contract.id(), &nft1.token_id)
                 .await
                 .unwrap()
                 .unwrap();
-            assert_eq!(nft1_data.owner_id, *env.user1.id());
+            assert_eq!(nft1_data.owner_id, *user1.id());
         }
     }
 }

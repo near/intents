@@ -37,16 +37,24 @@ async fn swap_p2p(
         .build()
         .await;
 
-    let ft1_token_id = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
+    let user1 = env.create_user("user1").await;
+    let user2 = env.create_user("user2").await;
 
-    let ft2_token_id = TokenId::from(Nep141TokenId::new(env.ft2.clone()));
+    let ft1 = env.create_token("ft1").await;
+    let ft2 = env.create_token("ft2").await;
+
+    let ft1_token_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
+    let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
+
+    env.deposit_to_users(vec![user1.id(), user2.id()], &[&ft1, &ft2])
+        .await;
 
     test_ft_diffs(
         &env,
         [
             AccountFtDiff {
-                account: &env.user1,
-                init_balances: std::iter::once((&env.ft1, 100)).collect(),
+                account: &user1,
+                init_balances: std::iter::once((&ft1, 100)).collect(),
                 diff: [TokenDeltas::default()
                     .with_apply_deltas([
                         (ft1_token_id.clone(), -100),
@@ -58,14 +66,14 @@ async fn swap_p2p(
                     .unwrap()]
                 .into(),
                 result_balances: std::iter::once((
-                    &env.ft2,
+                    &ft2,
                     TokenDiff::closure_delta(&ft2_token_id, -200, fee).unwrap(),
                 ))
                 .collect(),
             },
             AccountFtDiff {
-                account: &env.user2,
-                init_balances: std::iter::once((&env.ft2, 200)).collect(),
+                account: &user2,
+                init_balances: std::iter::once((&ft2, 200)).collect(),
                 diff: [TokenDeltas::default()
                     .with_apply_deltas([
                         (
@@ -77,7 +85,7 @@ async fn swap_p2p(
                     .unwrap()]
                 .into(),
                 result_balances: std::iter::once((
-                    &env.ft1,
+                    &ft1,
                     TokenDiff::closure_delta(&ft1_token_id, -100, fee).unwrap(),
                 ))
                 .collect(),
@@ -101,25 +109,39 @@ async fn swap_many(
         .build()
         .await;
 
-    let ft1_token_id = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
-    let ft2_token_id = TokenId::from(Nep141TokenId::new(env.ft2.clone()));
-    let ft3_token_id = TokenId::from(Nep141TokenId::new(env.ft3.clone()));
+    let user1 = env.create_user("user1").await;
+    let user2 = env.create_user("user2").await;
+    let user3 = env.create_user("user3").await;
+
+    let ft1 = env.create_token("ft1").await;
+    let ft2 = env.create_token("ft2").await;
+    let ft3 = env.create_token("ft3").await;
+
+    let ft1_token_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
+    let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
+    let ft3_token_id = TokenId::from(Nep141TokenId::new(ft3.clone()));
+
+    env.deposit_to_users(
+        vec![user1.id(), user2.id(), user3.id()],
+        &[&ft1, &ft2, &ft3],
+    )
+    .await;
 
     test_ft_diffs(
         &env,
         [
             AccountFtDiff {
-                account: &env.user1,
-                init_balances: std::iter::once((&env.ft1, 100)).collect(),
+                account: &user1,
+                init_balances: std::iter::once((&ft1, 100)).collect(),
                 diff: [TokenDeltas::default()
                     .with_apply_deltas([(ft1_token_id.clone(), -100), (ft2_token_id.clone(), 200)])
                     .unwrap()]
                 .into(),
-                result_balances: std::iter::once((&env.ft2, 200)).collect(),
+                result_balances: std::iter::once((&ft2, 200)).collect(),
             },
             AccountFtDiff {
-                account: &env.user2,
-                init_balances: std::iter::once((&env.ft2, 1000)).collect(),
+                account: &user2,
+                init_balances: std::iter::once((&ft2, 1000)).collect(),
                 diff: [
                     TokenDeltas::default()
                         .with_apply_deltas([
@@ -149,16 +171,16 @@ async fn swap_many(
                 .into(),
                 result_balances: [
                     (
-                        &env.ft1,
+                        &ft1,
                         TokenDiff::closure_delta(&ft1_token_id, -100, fee).unwrap(),
                     ),
                     (
-                        &env.ft2,
+                        &ft2,
                         1000 + TokenDiff::closure_delta(&ft2_token_id, 200, fee).unwrap()
                             + TokenDiff::closure_delta(&ft2_token_id, 300, fee).unwrap(),
                     ),
                     (
-                        &env.ft3,
+                        &ft3,
                         TokenDiff::closure_delta(&ft3_token_id, -500, fee).unwrap(),
                     ),
                 ]
@@ -166,13 +188,13 @@ async fn swap_many(
                 .collect(),
             },
             AccountFtDiff {
-                account: &env.user3,
-                init_balances: std::iter::once((&env.ft3, 500)).collect(),
+                account: &user3,
+                init_balances: std::iter::once((&ft3, 500)).collect(),
                 diff: [TokenDeltas::default()
                     .with_apply_deltas([(ft2_token_id.clone(), 300), (ft3_token_id.clone(), -500)])
                     .unwrap()]
                 .into(),
-                result_balances: std::iter::once((&env.ft2, 300)).collect(),
+                result_balances: std::iter::once((&ft2, 300)).collect(),
             },
         ]
         .into(),
@@ -271,14 +293,23 @@ async fn invariant_violated(
         .build()
         .await;
 
-    let ft1 = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
-    let ft2 = TokenId::from(Nep141TokenId::new(env.ft2.clone()));
+    let user1 = env.create_user("user1").await;
+    let user2 = env.create_user("user2").await;
+
+    let ft1 = env.create_token("ft1").await;
+    let ft2 = env.create_token("ft2").await;
+
+    let ft1_token_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
+    let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
+
+    env.deposit_to_users(vec![user1.id(), user2.id()], &[&ft1, &ft2])
+        .await;
 
     // deposit
-    env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
+    env.defuse_ft_deposit_to(&ft1, 1000, user1.id())
         .await
         .unwrap();
-    env.defuse_ft_deposit_to(&env.ft2, 2000, env.user2.id())
+    env.defuse_ft_deposit_to(&ft2, 2000, user2.id())
         .await
         .unwrap();
 
@@ -286,7 +317,7 @@ async fn invariant_violated(
     let nonce2 = rng.random();
 
     let signed: Vec<_> = [
-        env.user1.sign_defuse_message(
+        user1.sign_defuse_message(
             SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
             env.defuse.id(),
             nonce1,
@@ -294,7 +325,10 @@ async fn invariant_violated(
             DefuseIntents {
                 intents: [TokenDiff {
                     diff: TokenDeltas::default()
-                        .with_apply_deltas([(ft1.clone(), -1000), (ft2.clone(), 2000)])
+                        .with_apply_deltas([
+                            (ft1_token_id.clone(), -1000),
+                            (ft2_token_id.clone(), 2000),
+                        ])
                         .unwrap(),
                     memo: None,
                     referral: None,
@@ -303,7 +337,7 @@ async fn invariant_violated(
                 .into(),
             },
         ),
-        env.user1.sign_defuse_message(
+        user1.sign_defuse_message(
             SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
             env.defuse.id(),
             nonce2,
@@ -311,7 +345,10 @@ async fn invariant_violated(
             DefuseIntents {
                 intents: [TokenDiff {
                     diff: TokenDeltas::default()
-                        .with_apply_deltas([(ft1.clone(), 1000), (ft2.clone(), -1999)])
+                        .with_apply_deltas([
+                            (ft1_token_id.clone(), 1000),
+                            (ft2_token_id.clone(), -1999),
+                        ])
                         .unwrap(),
                     memo: None,
                     referral: None,
@@ -332,7 +369,7 @@ async fn invariant_violated(
             .unwrap()
             .into_unmatched_deltas(),
         Some(TokenDeltas::new(
-            std::iter::once((ft2.clone(), 1)).collect()
+            std::iter::once((ft2_token_id.clone(), 1)).collect()
         ))
     );
 
@@ -342,8 +379,8 @@ async fn invariant_violated(
     assert_eq!(
         env.mt_contract_batch_balance_of(
             env.defuse.id(),
-            env.user1.id(),
-            [&ft1.to_string(), &ft2.to_string()]
+            user1.id(),
+            [&ft1_token_id.to_string(), &ft2_token_id.to_string()]
         )
         .await
         .unwrap(),
@@ -352,8 +389,8 @@ async fn invariant_violated(
     assert_eq!(
         env.mt_contract_batch_balance_of(
             env.defuse.id(),
-            env.user2.id(),
-            [&ft1.to_string(), &ft2.to_string()]
+            user2.id(),
+            [&ft1_token_id.to_string(), &ft2_token_id.to_string()]
         )
         .await
         .unwrap(),
@@ -381,19 +418,25 @@ async fn solver_user_closure(
         .build()
         .await;
 
-    let user = &env.user1;
-    let solver = &env.user2;
+    let user = env.create_user("user").await;
+    let solver = env.create_user("solver").await;
+
+    let ft1 = env.create_token("ft1").await;
+    let ft2 = env.create_token("ft2").await;
+
+    env.deposit_to_users(vec![user.id(), solver.id()], &[&ft1, &ft2])
+        .await;
 
     // deposit
-    env.defuse_ft_deposit_to(&env.ft1, USER_BALANCE, user.id())
+    env.defuse_ft_deposit_to(&ft1, USER_BALANCE, user.id())
         .await
         .unwrap();
-    env.defuse_ft_deposit_to(&env.ft2, SOLVER_BALANCE, solver.id())
+    env.defuse_ft_deposit_to(&ft2, SOLVER_BALANCE, solver.id())
         .await
         .unwrap();
 
-    let token_in = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
-    let token_out = TokenId::from(Nep141TokenId::new(env.ft2.clone()));
+    let token_in = TokenId::from(Nep141TokenId::new(ft1.clone()));
+    let token_out = TokenId::from(Nep141TokenId::new(ft2.clone()));
 
     dbg!(USER_DELTA_IN);
     // propagate RFQ to solver with adjusted amount_in

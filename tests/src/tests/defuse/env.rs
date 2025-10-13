@@ -30,19 +30,20 @@ pub static POA_TOKEN_WASM_NO_REGISTRATION: LazyLock<Vec<u8>> =
 pub struct Env {
     sandbox: Sandbox,
 
-    pub user1: Account,
-    pub user2: Account,
-    pub user3: Account,
-
+    // pub user1: Account,
+    // pub user2: Account,
+    // pub user3: Account,
     pub wnear: Contract,
 
     pub defuse: Contract,
 
     pub poa_factory: Contract,
 
-    pub ft1: AccountId,
-    pub ft2: AccountId,
-    pub ft3: AccountId,
+    // pub ft1: AccountId,
+    // pub ft2: AccountId,
+    // pub ft3: AccountId,
+    pub disable_ft_storage_deposit: bool,
+    pub disable_registration: bool,
 }
 
 impl Env {
@@ -86,25 +87,86 @@ impl Env {
         Ok(())
     }
 
-    pub fn poa_ft1_name(&self) -> &str {
-        self.ft1
-            .as_str()
-            .strip_suffix(&format!(".{}", self.poa_factory.id()))
-            .unwrap()
+    pub async fn create_token(&self, name: &str) -> AccountId {
+        let root = self.sandbox.root_account();
+
+        // TODO: remove this?
+        let ft = root
+            .poa_factory_deploy_token(self.poa_factory.id(), name, None)
+            .await
+            .unwrap();
+
+        if self.disable_registration {
+            let root_secret_key = root.secret_key();
+            let root_access_key = root_secret_key.public_key();
+
+            let worker = self.sandbox.worker().clone();
+
+            deploy_token_without_registration(
+                self,
+                &ft,
+                &root_access_key,
+                root_secret_key,
+                worker.clone(),
+            )
+            .await;
+        }
+
+        ft
     }
 
-    pub fn poa_ft2_name(&self) -> &str {
-        self.ft2
-            .as_str()
-            .strip_suffix(&format!(".{}", self.poa_factory.id()))
-            .unwrap()
+    pub async fn create_user(&self, name: &str) -> Account {
+        let account = self.sandbox.create_account(name).await;
+
+        account
+            .add_public_key(self.defuse.id(), get_defuse_public_key(&account))
+            .await
+            .unwrap();
+
+        account
     }
 
-    pub fn poa_ft3_name(&self) -> &str {
-        self.ft3
-            .as_str()
+    // if no tokens provided - only wnear storage deposit will be done
+    pub async fn deposit_to_users(&self, mut accounts: Vec<&AccountId>, tokens: &[&AccountId]) {
+        let root = self.sandbox.root_account();
+
+        accounts.push(self.defuse.id());
+        accounts.push(root.id());
+
+        if !self.disable_ft_storage_deposit {
+            // Wnear storage deposit
+            root.ft_storage_deposit_many(self.wnear.id(), &accounts)
+                .await
+                .unwrap();
+
+            // FT storage deposit
+            for token in tokens {
+                self.poa_factory
+                    .ft_storage_deposit_many(token, &accounts)
+                    .await
+                    .unwrap();
+            }
+        }
+
+        for ft in tokens {
+            self.poa_factory_ft_deposit(
+                self.poa_factory.id(),
+                &self.poa_ft_name(ft),
+                root.id(),
+                1_000_000_000,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
+        }
+    }
+
+    pub fn poa_ft_name(&self, ft: &AccountId) -> String {
+        ft.as_str()
             .strip_suffix(&format!(".{}", self.poa_factory.id()))
             .unwrap()
+            .to_string()
     }
 
     pub async fn fund_account_with_near(&self, account_id: &AccountId, amount: NearToken) {
@@ -239,30 +301,31 @@ impl EnvBuilder {
             self.roles.super_admins.insert(root.id().clone());
         }
     }
-
-    async fn create_env(&self, sandbox: Sandbox, root: &Account) -> Env {
+    pub async fn build(mut self) -> Env {
+        // TODO: remove dublication
         let migrate_from_legacy = std::env::var("MIGRATE_FROM_LEGACY").is_ok_and(|v| v != "0");
 
-        let poa_factory = deploy_poa_factory(root).await;
+        let sandbox = Sandbox::new().await.unwrap();
+        let root = sandbox.root_account().clone();
+
+        let poa_factory = deploy_poa_factory(&root).await;
         let wnear = sandbox.deploy_wrap_near("wnear").await.unwrap();
 
+        self.grant_roles(&root);
+
         let defuse = if migrate_from_legacy {
-            self.deploy_legacy_and_migrate(root, &wnear).await
+            self.deploy_legacy_and_migrate(&root, &wnear).await
         } else {
-            self.deploy_defuse(root, &wnear).await
+            self.deploy_defuse(&root, &wnear).await
         };
 
         let env = Env {
-            user1: sandbox.create_account("user1").await,
-            user2: sandbox.create_account("user2").await,
-            user3: sandbox.create_account("user3").await,
             defuse,
             wnear,
-            ft1: deploy_token(root, poa_factory.id(), "ft1").await,
-            ft2: deploy_token(root, poa_factory.id(), "ft2").await,
-            ft3: deploy_token(root, poa_factory.id(), "ft3").await,
             poa_factory: poa_factory.clone(),
             sandbox,
+            disable_ft_storage_deposit: self.disable_ft_storage_deposit,
+            disable_registration: self.disable_registration,
         };
 
         env.near_deposit(env.wnear.id(), NearToken::from_near(100))
@@ -270,60 +333,19 @@ impl EnvBuilder {
             .unwrap();
 
         env
-    }
 
-    async fn deposit(&self, env_result: &Env, root: &Account, tokens: &[&AccountId]) {
-        if !self.disable_ft_storage_deposit {
-            ft_storage_deposit_many(
-                env_result,
-                &[
-                    env_result.user1.id(),
-                    env_result.user2.id(),
-                    env_result.user3.id(),
-                    env_result.defuse.id(),
-                    root.id(),
-                ],
-                tokens,
-            )
-            .await;
-        }
+        // let tokens = [&env_result.ft1, &env_result.ft2, &env_result.ft3];
 
-        for token in ["ft1", "ft2", "ft3"] {
-            env_result
-                .poa_factory_ft_deposit(
-                    env_result.poa_factory.id(),
-                    token,
-                    root.id(),
-                    1_000_000_000,
-                    None,
-                    None,
-                )
-                .await
-                .unwrap();
-        }
-    }
+        // self.deposit(&env_result, &root, &tokens).await;
 
-    pub async fn build(mut self) -> Env {
-        let sandbox = Sandbox::new().await.unwrap();
-        let root = sandbox.root_account().clone();
+        // // NOTE: near_workspaces uses the same signer all subaccounts
+        // add_public_key(&env_result, &env_result.user1).await;
+        // add_public_key(&env_result, &env_result.user2).await;
+        // add_public_key(&env_result, &env_result.user3).await;
 
-        self.grant_roles(&root);
-
-        let env_result = self.create_env(sandbox, &root).await;
-        let tokens = [&env_result.ft1, &env_result.ft2, &env_result.ft3];
-
-        self.deposit(&env_result, &root, &tokens).await;
-
-        // NOTE: near_workspaces uses the same signer all subaccounts
-        add_public_key(&env_result, &env_result.user1).await;
-        add_public_key(&env_result, &env_result.user2).await;
-        add_public_key(&env_result, &env_result.user3).await;
-
-        if self.disable_registration {
-            disable_registration(&env_result, &tokens).await;
-        }
-
-        env_result
+        // if self.disable_registration {
+        //     disable_registration(&env_result, &tokens).await;
+        // }
     }
 }
 
@@ -344,26 +366,13 @@ async fn deploy_poa_factory(root: &Account) -> Contract {
     .unwrap()
 }
 
-async fn deploy_token(root: &Account, poa_factory_id: &AccountId, token_id: &str) -> AccountId {
-    root.poa_factory_deploy_token(poa_factory_id, token_id, None)
-        .await
-        .unwrap()
-}
-
-async fn add_public_key(env_result: &Env, account: &Account) {
+fn get_defuse_public_key(account: &Account) -> defuse::core::crypto::PublicKey {
     account
-        .add_public_key(
-            env_result.defuse.id(),
-            env_result
-                .user2
-                .secret_key()
-                .public_key()
-                .to_string()
-                .parse()
-                .unwrap(),
-        )
-        .await
-        .unwrap();
+        .secret_key()
+        .public_key()
+        .to_string()
+        .parse()
+        .unwrap()
 }
 
 async fn disable_registration(env_result: &Env, tokens: &[&AccountId]) {
@@ -415,19 +424,4 @@ async fn deploy_token_without_registration<N: Network + 'static>(
         .unwrap()
         .into_result()
         .unwrap();
-}
-
-async fn ft_storage_deposit_many(env_result: &Env, accounts: &[&AccountId], tokens: &[&AccountId]) {
-    env_result
-        .ft_storage_deposit(env_result.wnear.id(), accounts)
-        .await
-        .unwrap();
-
-    for token in tokens {
-        env_result
-            .poa_factory
-            .ft_storage_deposit_many(token, accounts)
-            .await
-            .unwrap();
-    }
 }

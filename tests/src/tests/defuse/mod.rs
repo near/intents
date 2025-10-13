@@ -27,7 +27,8 @@ use near_workspaces::Contract;
 use std::sync::LazyLock;
 
 static DEFUSE_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("res", "defuse"));
-static DEFUSE_LEGACY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("res", "s"));
+static DEFUSE_LEGACY_WASM: LazyLock<Vec<u8>> =
+    LazyLock::new(|| read_wasm("releases", "0.2.10.wasm"));
 
 pub trait DefuseExt: AccountManagerExt {
     async fn deploy_defuse(&self, id: &str, config: DefuseConfig) -> anyhow::Result<Contract>;

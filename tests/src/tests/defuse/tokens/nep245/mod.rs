@@ -25,129 +25,137 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
         .build()
         .await;
 
+    let user1 = env.create_user("user1").await;
+    let user2 = env.create_user("user2").await;
+    let user3 = env.create_user("user3").await;
+
+    let ft1 = env.create_token("ft1").await;
+    let ft2 = env.create_token("ft2").await;
+
+    env.deposit_to_users(vec![user1.id()], &[&ft1, &ft2]).await;
+
     {
         assert!(
-            env.user1
+            user1
                 .mt_tokens(env.defuse.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user1.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user2.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user3.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
     }
 
-    env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
+    env.defuse_ft_deposit_to(&ft1, 1000, user1.id())
         .await
         .unwrap();
 
-    let ft1 = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
-    let ft2 = TokenId::from(Nep141TokenId::new(env.ft2.clone()));
+    let ft_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
 
     {
         assert_eq!(
-            env.user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
+            user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
             [Token {
-                token_id: ft1.to_string(),
+                token_id: ft_id.to_string(),
                 owner_id: None
             }]
         );
         assert_eq!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user1.id(), ..)
                 .await
                 .unwrap(),
             [Token {
-                token_id: ft1.to_string(),
+                token_id: ft_id.to_string(),
                 owner_id: None
             }]
         );
         assert!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user2.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), ..)
-                .await
-                .unwrap()
-                .is_empty(),
-        );
-    }
-
-    env.defuse_ft_deposit_to(&env.ft1, 2000, env.user2.id())
-        .await
-        .unwrap();
-
-    {
-        assert_eq!(
-            env.user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
-            [Token {
-                token_id: ft1.to_string(),
-                owner_id: None
-            }]
-        );
-        assert_eq!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..)
-                .await
-                .unwrap(),
-            [Token {
-                token_id: ft1.to_string(),
-                owner_id: None
-            }]
-        );
-        assert_eq!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), ..)
-                .await
-                .unwrap(),
-            [Token {
-                token_id: ft1.to_string(),
-                owner_id: None
-            }]
-        );
-        assert!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user3.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
     }
 
-    env.defuse_ft_deposit_to(&env.ft2, 5000, env.user1.id())
+    env.defuse_ft_deposit_to(&ft1, 2000, user2.id())
         .await
         .unwrap();
 
     {
         assert_eq!(
-            env.user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
+            user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
+            [Token {
+                token_id: ft_id.to_string(),
+                owner_id: None
+            }]
+        );
+        assert_eq!(
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user1.id(), ..)
+                .await
+                .unwrap(),
+            [Token {
+                token_id: ft_id.to_string(),
+                owner_id: None
+            }]
+        );
+        assert_eq!(
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user2.id(), ..)
+                .await
+                .unwrap(),
+            [Token {
+                token_id: ft_id.to_string(),
+                owner_id: None
+            }]
+        );
+        assert!(
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user3.id(), ..)
+                .await
+                .unwrap()
+                .is_empty(),
+        );
+    }
+
+    env.defuse_ft_deposit_to(&ft2, 5000, user1.id())
+        .await
+        .unwrap();
+
+    {
+        assert_eq!(
+            user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
             [
                 Token {
-                    token_id: ft1.to_string(),
+                    token_id: ft_id.to_string(),
                     owner_id: None
                 },
                 Token {
@@ -157,13 +165,13 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
             ]
         );
         assert_eq!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user1.id(), ..)
                 .await
                 .unwrap(),
             [
                 Token {
-                    token_id: ft1.to_string(),
+                    token_id: ft_id.to_string(),
                     owner_id: None
                 },
                 Token {
@@ -173,18 +181,18 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
             ]
         );
         assert_eq!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user2.id(), ..)
                 .await
                 .unwrap(),
             [Token {
-                token_id: ft1.to_string(),
+                token_id: ft_id.to_string(),
                 owner_id: None
             }]
         );
         assert!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user3.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
@@ -193,15 +201,15 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
 
     // Going back to zero available balance won't make it appear in mt_tokens
     assert_eq!(
-        env.user1
-            .defuse_ft_withdraw(env.defuse.id(), &env.ft1, env.user1.id(), 1000, None, None)
+        user1
+            .defuse_ft_withdraw(env.defuse.id(), &ft1, user1.id(), 1000, None, None)
             .await
             .unwrap(),
         1000
     );
     assert_eq!(
-        env.user2
-            .defuse_ft_withdraw(env.defuse.id(), &env.ft1, env.user2.id(), 2000, None, None)
+        user2
+            .defuse_ft_withdraw(env.defuse.id(), &ft1, user2.id(), 2000, None, None)
             .await
             .unwrap(),
         2000
@@ -209,15 +217,15 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
 
     {
         assert_eq!(
-            env.user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
+            user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
             [Token {
                 token_id: ft2.to_string(),
                 owner_id: None
             }]
         );
         assert_eq!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user1.id(), ..)
                 .await
                 .unwrap(),
             [Token {
@@ -226,15 +234,15 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
             }]
         );
         assert_eq!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user2.id(), ..)
                 .await
                 .unwrap(),
             []
         );
         assert!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user3.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
@@ -243,8 +251,8 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
 
     // Withdraw back everything left for user1, and we're back to the initial state
     assert_eq!(
-        env.user1
-            .defuse_ft_withdraw(env.defuse.id(), &env.ft2, env.user1.id(), 5000, None, None)
+        user1
+            .defuse_ft_withdraw(env.defuse.id(), &ft2, user1.id(), 5000, None, None)
             .await
             .unwrap(),
         5000
@@ -252,29 +260,29 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
 
     {
         assert!(
-            env.user1
+            user1
                 .mt_tokens(env.defuse.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user1.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user2.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user3.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
@@ -292,95 +300,103 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
         .build()
         .await;
 
+    let user1 = env.create_user("user1").await;
+    let user2 = env.create_user("user2").await;
+    let user3 = env.create_user("user3").await;
+
+    let ft1 = env.create_token("ft1").await;
+    let ft2 = env.create_token("ft2").await;
+    let ft3 = env.create_token("ft3").await;
+
     {
         assert!(
-            env.user1
+            user1
                 .mt_tokens(env.defuse.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user1.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user2.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user3.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
     }
 
-    env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
+    env.defuse_ft_deposit_to(&ft1, 1000, user1.id())
         .await
         .unwrap();
-    env.defuse_ft_deposit_to(&env.ft2, 2000, env.user1.id())
+    env.defuse_ft_deposit_to(&ft2, 2000, user1.id())
         .await
         .unwrap();
-    env.defuse_ft_deposit_to(&env.ft3, 3000, env.user1.id())
+    env.defuse_ft_deposit_to(&ft3, 3000, user1.id())
         .await
         .unwrap();
 
-    let ft1 = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
-    let ft2 = TokenId::from(Nep141TokenId::new(env.ft2.clone()));
-    let ft3 = TokenId::from(Nep141TokenId::new(env.ft3.clone()));
+    let ft1_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
+    let ft2_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
+    let ft3_id = TokenId::from(Nep141TokenId::new(ft3.clone()));
 
     {
         let expected = [
             Token {
-                token_id: ft1.to_string(),
+                token_id: ft1_id.to_string(),
                 owner_id: None,
             },
             Token {
-                token_id: ft2.to_string(),
+                token_id: ft2_id.to_string(),
                 owner_id: None,
             },
             Token {
-                token_id: ft3.to_string(),
+                token_id: ft3_id.to_string(),
                 owner_id: None,
             },
         ];
         assert_eq!(
-            env.user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
+            user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
             expected[..]
         );
 
         for i in 0..=3 {
             assert_eq!(
-                env.user1.mt_tokens(env.defuse.id(), i..).await.unwrap(),
+                user1.mt_tokens(env.defuse.id(), i..).await.unwrap(),
                 expected[i..]
             );
         }
 
         for i in 0..=3 {
             assert_eq!(
-                env.user1.mt_tokens(env.defuse.id(), ..i).await.unwrap(),
+                user1.mt_tokens(env.defuse.id(), ..i).await.unwrap(),
                 expected[..i]
             );
         }
 
         for i in 1..=3 {
             assert_eq!(
-                env.user1.mt_tokens(env.defuse.id(), 1..i).await.unwrap(),
+                user1.mt_tokens(env.defuse.id(), 1..i).await.unwrap(),
                 expected[1..i]
             );
         }
 
         for i in 2..=3 {
             assert_eq!(
-                env.user1.mt_tokens(env.defuse.id(), 2..i).await.unwrap(),
+                user1.mt_tokens(env.defuse.id(), 2..i).await.unwrap(),
                 expected[2..i]
             );
         }
@@ -389,30 +405,30 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
     {
         let expected = [
             Token {
-                token_id: ft1.to_string(),
+                token_id: ft1_id.to_string(),
                 owner_id: None,
             },
             Token {
-                token_id: ft2.to_string(),
+                token_id: ft2_id.to_string(),
                 owner_id: None,
             },
             Token {
-                token_id: ft3.to_string(),
+                token_id: ft3_id.to_string(),
                 owner_id: None,
             },
         ];
 
         assert_eq!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user1.id(), ..)
                 .await
                 .unwrap(),
             expected[..]
         );
 
         assert_eq!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user1.id(), ..)
                 .await
                 .unwrap(),
             expected[..]
@@ -420,8 +436,8 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
 
         for i in 0..=3 {
             assert_eq!(
-                env.user1
-                    .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), i..)
+                user1
+                    .mt_tokens_for_owner(env.defuse.id(), user1.id(), i..)
                     .await
                     .unwrap(),
                 expected[i..]
@@ -430,8 +446,8 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
 
         for i in 0..=3 {
             assert_eq!(
-                env.user1
-                    .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..i)
+                user1
+                    .mt_tokens_for_owner(env.defuse.id(), user1.id(), ..i)
                     .await
                     .unwrap(),
                 expected[..i]
@@ -440,8 +456,8 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
 
         for i in 1..=3 {
             assert_eq!(
-                env.user1
-                    .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), 1..i)
+                user1
+                    .mt_tokens_for_owner(env.defuse.id(), user1.id(), 1..i)
                     .await
                     .unwrap(),
                 expected[1..i]
@@ -450,8 +466,8 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
 
         for i in 2..=3 {
             assert_eq!(
-                env.user1
-                    .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), 2..i)
+                user1
+                    .mt_tokens_for_owner(env.defuse.id(), user1.id(), 2..i)
                     .await
                     .unwrap(),
                 expected[2..i]
@@ -464,6 +480,17 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
 #[rstest]
 async fn multitoken_withdrawals() {
     let env = Env::builder().build().await;
+
+    let user1 = env.create_user("user1").await;
+    let user2 = env.create_user("user2").await;
+    let user3 = env.create_user("user3").await;
+
+    let ft1 = env.create_token("ft1").await;
+    let ft2 = env.create_token("ft2").await;
+    let ft3 = env.create_token("ft3").await;
+
+    env.deposit_to_users(vec![user1.id()], &[&ft1, &ft2, &ft3])
+        .await;
 
     let defuse2 = env
         .deploy_defuse(
@@ -481,71 +508,71 @@ async fn multitoken_withdrawals() {
         .unwrap();
     {
         assert!(
-            env.user1
+            user1
                 .mt_tokens(env.defuse.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user1.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user1.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user2.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user2.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
         assert!(
-            env.user1
-                .mt_tokens_for_owner(env.defuse.id(), env.user3.id(), ..)
+            user1
+                .mt_tokens_for_owner(env.defuse.id(), user3.id(), ..)
                 .await
                 .unwrap()
                 .is_empty(),
         );
     }
 
-    env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
+    env.defuse_ft_deposit_to(&ft1, 1000, user1.id())
         .await
         .unwrap();
 
-    env.defuse_ft_deposit_to(&env.ft2, 5000, env.user1.id())
+    env.defuse_ft_deposit_to(&ft2, 5000, user1.id())
         .await
         .unwrap();
 
-    env.defuse_ft_deposit_to(&env.ft3, 8000, env.user1.id())
+    env.defuse_ft_deposit_to(&ft3, 8000, user1.id())
         .await
         .unwrap();
 
-    env.defuse_ft_deposit_to(&env.ft1, 1000, env.user2.id())
+    env.defuse_ft_deposit_to(&ft1, 1000, user2.id())
         .await
         .unwrap();
 
-    env.defuse_ft_deposit_to(&env.ft2, 5000, env.user2.id())
+    env.defuse_ft_deposit_to(&ft2, 5000, user2.id())
         .await
         .unwrap();
 
-    env.defuse_ft_deposit_to(&env.ft3, 8000, env.user2.id())
+    env.defuse_ft_deposit_to(&ft3, 8000, user2.id())
         .await
         .unwrap();
 
-    let ft1 = TokenId::Nep141(Nep141TokenId::new(env.ft1.clone()));
-    let ft2 = TokenId::Nep141(Nep141TokenId::new(env.ft2.clone()));
-    let ft3 = TokenId::Nep141(Nep141TokenId::new(env.ft3.clone()));
+    let ft1_id = TokenId::Nep141(Nep141TokenId::new(ft1.clone()));
+    let ft2_id = TokenId::Nep141(Nep141TokenId::new(ft2.clone()));
+    let ft3_id = TokenId::Nep141(Nep141TokenId::new(ft3.clone()));
 
     // At this point, user1 in defuse2, has no balance of `"nep245:defuse.test.near:nep141:ft1.test.near"`, and others. We will fund it next.
     {
         assert_eq!(
             defuse2
                 .mt_balance_of(
-                    env.user1.id(),
+                    user1.id(),
                     &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft1.to_string()).unwrap()
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft1_id.to_string()).unwrap()
                     )
                     .to_string(),
                 )
@@ -557,9 +584,9 @@ async fn multitoken_withdrawals() {
         assert_eq!(
             defuse2
                 .mt_balance_of(
-                    env.user1.id(),
+                    user1.id(),
                     &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft2.to_string()).unwrap()
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft2_id.to_string()).unwrap()
                     )
                     .to_string(),
                 )
@@ -571,9 +598,9 @@ async fn multitoken_withdrawals() {
         assert_eq!(
             defuse2
                 .mt_balance_of(
-                    env.user1.id(),
+                    user1.id(),
                     &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft3.to_string()).unwrap()
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft3_id.to_string()).unwrap()
                     )
                     .to_string(),
                 )
@@ -585,41 +612,41 @@ async fn multitoken_withdrawals() {
 
     // Do an mt_transfer_call, and the message is of type DepositMessage, which will contain the user who will own the tokens in defuse2
     {
-        env.user1
+        user1
             .mt_transfer_call(
                 env.defuse.id(),
                 defuse2.id(),
-                &ft1.to_string(),
+                &ft1_id.to_string(),
                 100,
                 None,
                 None,
-                env.user1.id().to_string(),
+                user1.id().to_string(),
             )
             .await
             .unwrap();
 
-        env.user1
+        user1
             .mt_transfer_call(
                 env.defuse.id(),
                 defuse2.id(),
-                &ft2.to_string(),
+                &ft2_id.to_string(),
                 200,
                 None,
                 None,
-                env.user1.id().to_string(),
+                user1.id().to_string(),
             )
             .await
             .unwrap();
 
-        env.user1
+        user1
             .mt_transfer_call(
                 env.defuse.id(),
                 defuse2.id(),
-                &ft3.to_string(),
+                &ft3_id.to_string(),
                 300,
                 None,
                 None,
-                env.user1.id().to_string(),
+                user1.id().to_string(),
             )
             .await
             .unwrap();
@@ -630,9 +657,9 @@ async fn multitoken_withdrawals() {
         assert_eq!(
             defuse2
                 .mt_balance_of(
-                    env.user1.id(),
+                    user1.id(),
                     &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft1.to_string()).unwrap()
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft1_id.to_string()).unwrap()
                     )
                     .to_string(),
                 )
@@ -644,9 +671,9 @@ async fn multitoken_withdrawals() {
         assert_eq!(
             defuse2
                 .mt_balance_of(
-                    env.user1.id(),
+                    user1.id(),
                     &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft2.to_string()).unwrap()
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft2_id.to_string()).unwrap()
                     )
                     .to_string(),
                 )
@@ -658,9 +685,9 @@ async fn multitoken_withdrawals() {
         assert_eq!(
             defuse2
                 .mt_balance_of(
-                    env.user1.id(),
+                    user1.id(),
                     &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft3.to_string()).unwrap()
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft3_id.to_string()).unwrap()
                     )
                     .to_string(),
                 )
@@ -678,14 +705,13 @@ async fn multitoken_withdrawals() {
 
     // Now we do a withdraw of ft1 from defuse2, which will trigger a transfer from defuse2 account in defuse, to user2
     {
-        let tokens: Vec<(String, u128)> = vec![(ft1.to_string(), 10)];
+        let tokens: Vec<(String, u128)> = vec![(ft1_id.to_string(), 10)];
 
-        let (_amounts, _test_log) = env
-            .user1
+        let (_amounts, _test_log) = user1
             .defuse_mt_withdraw(
                 defuse2.id(),
                 env.defuse.id(),
-                env.user2.id(),
+                user2.id(),
                 tokens.iter().cloned().map(|v| v.0).collect(),
                 tokens.iter().map(|v| v.1).collect(),
                 None,
@@ -709,9 +735,9 @@ async fn multitoken_withdrawals() {
         assert_eq!(
             defuse2
                 .mt_balance_of(
-                    env.user1.id(),
+                    user1.id(),
                     &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft1.to_string()).unwrap()
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft1_id.to_string()).unwrap()
                     )
                     .to_string(),
                 )
@@ -723,9 +749,9 @@ async fn multitoken_withdrawals() {
         assert_eq!(
             defuse2
                 .mt_balance_of(
-                    env.user1.id(),
+                    user1.id(),
                     &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft2.to_string()).unwrap()
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft2_id.to_string()).unwrap()
                     )
                     .to_string(),
                 )
@@ -737,9 +763,9 @@ async fn multitoken_withdrawals() {
         assert_eq!(
             defuse2
                 .mt_balance_of(
-                    env.user1.id(),
+                    user1.id(),
                     &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft3.to_string()).unwrap()
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft3_id.to_string()).unwrap()
                     )
                     .to_string(),
                 )
@@ -751,14 +777,13 @@ async fn multitoken_withdrawals() {
 
     // Now we do a withdraw of ft1 and ft2 from defuse2, which will trigger a transfer from defuse2 account in defuse, to user2
     {
-        let tokens: Vec<(String, u128)> = vec![(ft1.to_string(), 10), (ft2.to_string(), 20)];
+        let tokens: Vec<(String, u128)> = vec![(ft1_id.to_string(), 10), (ft2_id.to_string(), 20)];
 
-        let (_amounts, _test_log) = env
-            .user1
+        let (_amounts, _test_log) = user1
             .defuse_mt_withdraw(
                 defuse2.id(),
                 env.defuse.id(),
-                env.user2.id(),
+                user2.id(),
                 tokens.iter().cloned().map(|v| v.0).collect(),
                 tokens.iter().map(|v| v.1).collect(),
                 None,
@@ -779,17 +804,16 @@ async fn multitoken_withdrawals() {
     // Now we do a withdraw of ft1, ft2 and ft3 from defuse2, which will trigger a transfer from defuse2 account in defuse, to user2
     {
         let tokens: Vec<(String, u128)> = vec![
-            (ft1.to_string(), 10),
-            (ft2.to_string(), 20),
-            (ft3.to_string(), 30),
+            (ft1_id.to_string(), 10),
+            (ft2_id.to_string(), 20),
+            (ft3_id.to_string(), 30),
         ];
 
-        let (_amounts, _test_log) = env
-            .user1
+        let (_amounts, _test_log) = user1
             .defuse_mt_withdraw(
                 defuse2.id(),
                 env.defuse.id(),
-                env.user2.id(),
+                user2.id(),
                 tokens.iter().cloned().map(|v| v.0).collect(),
                 tokens.iter().map(|v| v.1).collect(),
                 None,
@@ -812,9 +836,9 @@ async fn multitoken_withdrawals() {
         assert_eq!(
             defuse2
                 .mt_balance_of(
-                    env.user1.id(),
+                    user1.id(),
                     &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft1.to_string()).unwrap()
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft1_id.to_string()).unwrap()
                     )
                     .to_string(),
                 )
@@ -826,9 +850,9 @@ async fn multitoken_withdrawals() {
         assert_eq!(
             defuse2
                 .mt_balance_of(
-                    env.user1.id(),
+                    user1.id(),
                     &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft2.to_string()).unwrap()
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft2_id.to_string()).unwrap()
                     )
                     .to_string(),
                 )
@@ -840,9 +864,9 @@ async fn multitoken_withdrawals() {
         assert_eq!(
             defuse2
                 .mt_balance_of(
-                    env.user1.id(),
+                    user1.id(),
                     &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft3.to_string()).unwrap()
+                        Nep245TokenId::new(env.defuse.id().to_owned(), ft3_id.to_string()).unwrap()
                     )
                     .to_string(),
                 )
