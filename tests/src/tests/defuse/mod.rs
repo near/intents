@@ -31,15 +31,23 @@ static DEFUSE_LEGACY_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("releases", "0.2.10.wasm"));
 
 pub trait DefuseExt: AccountManagerExt {
-    async fn deploy_defuse(&self, id: &str, config: DefuseConfig) -> anyhow::Result<Contract>;
+    async fn deploy_defuse(
+        &self,
+        id: &str,
+        config: DefuseConfig,
+        legacy: bool,
+    ) -> anyhow::Result<Contract>;
 
     async fn upgrade_defuse(&self) -> anyhow::Result<()>;
 }
 
 impl DefuseExt for near_workspaces::Account {
-    async fn deploy_defuse(&self, id: &str, config: DefuseConfig) -> anyhow::Result<Contract> {
-        let legacy = std::env::var("MIGRATE_FROM_LEGACY").is_ok_and(|v| v != "0");
-
+    async fn deploy_defuse(
+        &self,
+        id: &str,
+        config: DefuseConfig,
+        legacy: bool,
+    ) -> anyhow::Result<Contract> {
         let wasm = if legacy {
             &DEFUSE_LEGACY_WASM
         } else {
@@ -70,8 +78,13 @@ impl DefuseExt for near_workspaces::Account {
 }
 
 impl DefuseExt for Contract {
-    async fn deploy_defuse(&self, id: &str, config: DefuseConfig) -> anyhow::Result<Self> {
-        self.as_account().deploy_defuse(id, config).await
+    async fn deploy_defuse(
+        &self,
+        id: &str,
+        config: DefuseConfig,
+        legacy: bool,
+    ) -> anyhow::Result<Self> {
+        self.as_account().deploy_defuse(id, config, legacy).await
     }
 
     async fn upgrade_defuse(&self) -> anyhow::Result<()> {

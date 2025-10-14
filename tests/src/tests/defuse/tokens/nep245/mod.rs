@@ -512,6 +512,7 @@ async fn multitoken_withdrawals() {
                 },
                 roles: RolesConfig::default(),
             },
+            false,
         )
         .await
         .unwrap();
