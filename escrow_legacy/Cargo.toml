@@ -1,25 +1,19 @@
 [package]
-name = "defuse-escrow"
+name = "defuse-escrow1"
 edition.workspace = true
 version = "0.1.0"
-
-[lib]
-crate-type = ["cdylib", "rlib"]
 
 [lints]
 workspace = true
 
 [dependencies]
-defuse-borsh-utils = { workspace = true, features = ["chrono"] }
-defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-token-id.workspace = true
 
 near-contract-standards.workspace = true
 near-sdk.workspace = true
 
-chrono = { workspace = true, features = ["serde"] }
+chrono.workspace = true
 
 [features]
-abi = []
 contract = []

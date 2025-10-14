@@ -20,6 +20,7 @@ args = ["clippy", "--workspace", "--all-targets", "--no-deps"]
 dependencies = [
     "add-cache-dir-tag",
     "build-defuse",
+    "build-escrow",
     "build-poa-factory",
     "contract-stats",
     "build-poa-token-no-registration",
@@ -35,6 +36,23 @@ args = [
     "--locked",
     "--manifest-path",
     "./defuse/Cargo.toml",
+    "--features",
+    "abi,contract",
+    "--out-dir",
+    "${TARGET_DIR}",
+    "--no-embed-abi",
+]
+
+[tasks.build-escrow]
+dependencies = ["add-cache-dir-tag"]
+command = "cargo"
+args = [
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--locked",
+    "--manifest-path",
+    "./escrow/Cargo.toml",
     "--features",
     "abi,contract",
     "--out-dir",

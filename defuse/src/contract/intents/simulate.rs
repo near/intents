@@ -27,7 +27,9 @@ impl Inspector for SimulateInspector {
         self.min_deadline = self.min_deadline.min(deadline);
     }
 
-    fn on_event(&mut self, _event: DefuseEvent<'_>) {}
+    fn on_event(&mut self, _event: DefuseEvent<'_>) {
+
+    }
 
     #[inline]
     fn on_intent_executed(
