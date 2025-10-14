@@ -32,7 +32,8 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
     let ft1 = env.create_token("ft1").await;
     let ft2 = env.create_token("ft2").await;
 
-    env.deposit_to_users(vec![user1.id()], &[&ft1, &ft2]).await;
+    env.deposit_to_users(vec![user1.id(), user2.id()], &[&ft1, &ft2])
+        .await;
 
     {
         assert!(
@@ -69,13 +70,14 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
         .await
         .unwrap();
 
-    let ft_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
+    let ft1_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
+    let ft2_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
 
     {
         assert_eq!(
             user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
             [Token {
-                token_id: ft_id.to_string(),
+                token_id: ft1_id.to_string(),
                 owner_id: None
             }]
         );
@@ -85,7 +87,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
                 .await
                 .unwrap(),
             [Token {
-                token_id: ft_id.to_string(),
+                token_id: ft1_id.to_string(),
                 owner_id: None
             }]
         );
@@ -113,7 +115,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
         assert_eq!(
             user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
             [Token {
-                token_id: ft_id.to_string(),
+                token_id: ft1_id.to_string(),
                 owner_id: None
             }]
         );
@@ -123,7 +125,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
                 .await
                 .unwrap(),
             [Token {
-                token_id: ft_id.to_string(),
+                token_id: ft1_id.to_string(),
                 owner_id: None
             }]
         );
@@ -133,7 +135,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
                 .await
                 .unwrap(),
             [Token {
-                token_id: ft_id.to_string(),
+                token_id: ft1_id.to_string(),
                 owner_id: None
             }]
         );
@@ -155,11 +157,11 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
             user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
             [
                 Token {
-                    token_id: ft_id.to_string(),
+                    token_id: ft1_id.to_string(),
                     owner_id: None
                 },
                 Token {
-                    token_id: ft2.to_string(),
+                    token_id: ft2_id.to_string(),
                     owner_id: None
                 }
             ]
@@ -171,11 +173,11 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
                 .unwrap(),
             [
                 Token {
-                    token_id: ft_id.to_string(),
+                    token_id: ft1_id.to_string(),
                     owner_id: None
                 },
                 Token {
-                    token_id: ft2.to_string(),
+                    token_id: ft2_id.to_string(),
                     owner_id: None
                 }
             ]
@@ -186,7 +188,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
                 .await
                 .unwrap(),
             [Token {
-                token_id: ft_id.to_string(),
+                token_id: ft1_id.to_string(),
                 owner_id: None
             }]
         );
@@ -219,7 +221,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
         assert_eq!(
             user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
             [Token {
-                token_id: ft2.to_string(),
+                token_id: ft2_id.to_string(),
                 owner_id: None
             }]
         );
@@ -229,7 +231,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
                 .await
                 .unwrap(),
             [Token {
-                token_id: ft2.to_string(),
+                token_id: ft2_id.to_string(),
                 owner_id: None
             }]
         );
@@ -307,6 +309,9 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
     let ft1 = env.create_token("ft1").await;
     let ft2 = env.create_token("ft2").await;
     let ft3 = env.create_token("ft3").await;
+
+    env.deposit_to_users(vec![user1.id()], &[&ft1, &ft2, &ft3])
+        .await;
 
     {
         assert!(

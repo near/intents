@@ -125,6 +125,9 @@ async fn deposit_withdraw_intent(
 
     let ft = env.create_token("ft").await;
 
+    env.deposit_to_users(vec![user.id(), other_user.id()], &[&ft])
+        .await;
+
     env.poa_factory_ft_deposit(
         env.poa_factory.id(),
         &env.poa_ft_name(&ft),
@@ -298,7 +301,8 @@ async fn ft_force_withdraw(#[values(false, true)] no_registration: bool) {
 
     let ft = env.create_token("ft").await;
 
-    env.deposit_to_users(vec![user.id()], &[&ft]).await;
+    env.deposit_to_users(vec![user.id(), other_user.id()], &[&ft])
+        .await;
 
     env.defuse_ft_deposit_to(&ft, 1000, user.id())
         .await

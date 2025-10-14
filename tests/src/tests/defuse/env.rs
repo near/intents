@@ -30,18 +30,12 @@ pub static POA_TOKEN_WASM_NO_REGISTRATION: LazyLock<Vec<u8>> =
 pub struct Env {
     sandbox: Sandbox,
 
-    // pub user1: Account,
-    // pub user2: Account,
-    // pub user3: Account,
     pub wnear: Contract,
 
     pub defuse: Contract,
 
     pub poa_factory: Contract,
 
-    // pub ft1: AccountId,
-    // pub ft2: AccountId,
-    // pub ft3: AccountId,
     pub disable_ft_storage_deposit: bool,
     pub disable_registration: bool,
 }
@@ -333,19 +327,6 @@ impl EnvBuilder {
             .unwrap();
 
         env
-
-        // let tokens = [&env_result.ft1, &env_result.ft2, &env_result.ft3];
-
-        // self.deposit(&env_result, &root, &tokens).await;
-
-        // // NOTE: near_workspaces uses the same signer all subaccounts
-        // add_public_key(&env_result, &env_result.user1).await;
-        // add_public_key(&env_result, &env_result.user2).await;
-        // add_public_key(&env_result, &env_result.user3).await;
-
-        // if self.disable_registration {
-        //     disable_registration(&env_result, &tokens).await;
-        // }
     }
 }
 
@@ -373,24 +354,6 @@ fn get_defuse_public_key(account: &Account) -> defuse::core::crypto::PublicKey {
         .to_string()
         .parse()
         .unwrap()
-}
-
-async fn disable_registration(env_result: &Env, tokens: &[&AccountId]) {
-    let root_secret_key = env_result.sandbox.root_account().secret_key();
-    let root_access_key = root_secret_key.public_key();
-
-    let worker = env_result.sandbox.worker().clone();
-
-    for ft in tokens {
-        deploy_token_without_registration(
-            env_result,
-            ft,
-            &root_access_key,
-            root_secret_key,
-            worker.clone(),
-        )
-        .await;
-    }
 }
 
 async fn deploy_token_without_registration<N: Network + 'static>(
