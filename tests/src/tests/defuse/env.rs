@@ -84,7 +84,6 @@ impl Env {
     pub async fn create_token(&self, name: &str) -> AccountId {
         let root = self.sandbox.root_account();
 
-        // TODO: remove this?
         let ft = root
             .poa_factory_deploy_token(self.poa_factory.id(), name, None)
             .await
@@ -121,7 +120,11 @@ impl Env {
     }
 
     // if no tokens provided - only wnear storage deposit will be done
-    pub async fn deposit_to_users(&self, mut accounts: Vec<&AccountId>, tokens: &[&AccountId]) {
+    pub async fn storage_deposit_for_users(
+        &self,
+        mut accounts: Vec<&AccountId>,
+        tokens: &[&AccountId],
+    ) {
         let root = self.sandbox.root_account();
 
         accounts.push(self.defuse.id());
@@ -141,6 +144,11 @@ impl Env {
                     .unwrap();
             }
         }
+    }
+
+    // if no tokens provided - only wnear storage deposit will be done
+    pub async fn deposit_to_root(&self, tokens: &[&AccountId]) {
+        let root = self.sandbox.root_account();
 
         for ft in tokens {
             self.poa_factory_ft_deposit(

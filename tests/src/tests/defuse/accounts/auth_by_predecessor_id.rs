@@ -27,7 +27,8 @@ async fn auth_by_predecessor_id(random_bytes: Vec<u8>) {
     let ft = env.create_token("ft").await;
     let user = env.create_user("user").await;
 
-    env.deposit_to_users(vec![user.id()], &[&ft]).await;
+    env.storage_deposit_for_users(vec![user.id()], &[&ft]).await;
+    env.deposit_to_root(&[&ft]).await;
 
     let receiver_id: AccountId = "receiver_id.near".parse().unwrap();
 

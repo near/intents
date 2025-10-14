@@ -169,8 +169,9 @@ async fn simulate_is_view_method(
     let ft = env.create_token("ft").await;
     let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
 
-    env.deposit_to_users(vec![user.id(), other_user.id()], &[&ft])
+    env.storage_deposit_for_users(vec![user.id(), other_user.id()], &[&ft])
         .await;
+    env.deposit_to_root(&[&ft]).await;
 
     // deposit
     env.defuse_ft_deposit_to(&ft, 1000, user.id())
@@ -238,7 +239,8 @@ async fn webauthn(#[values(false, true)] no_registration: bool) {
     let ft = env.create_token("ft1").await;
     let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
 
-    env.deposit_to_users(vec![user.id()], &[&ft]).await;
+    env.storage_deposit_for_users(vec![user.id()], &[&ft]).await;
+    env.deposit_to_root(&[&ft]).await;
 
     // deposit
     env.defuse_ft_deposit_to(&ft, 2000, &SIGNER_ID.to_owned())
