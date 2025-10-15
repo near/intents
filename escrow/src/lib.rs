@@ -25,7 +25,17 @@ pub struct Contract {
     // )]
     // pub deadline: DateTime<Utc>,
     pub salt: [u8; 4],
-    // TODO: fees
+    // TODO: fees:
+    // * hard-code protocol fee_collector
+    // * app fees
+}
+
+pub enum EscrowAsset {
+    Nep141 {
+        contract_id: AccountId,
+        receiver_id: AccountId,
+        msg: Option<String>,
+    }
 }
 
 #[near(serializers = [borsh, json])]

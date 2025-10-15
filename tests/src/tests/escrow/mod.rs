@@ -39,21 +39,38 @@ async fn test_escrow() {
         .await
         .unwrap();
 
+    const MAKER_AMOUNT: u128 = 100;
+    const TAKER_AMOUNT: u128 = 200;
+
     let maker_token = root
         .poa_factory_deploy_token(poa_factory.id(), "maker-ft", None)
         .await
         .unwrap();
-    root.poa_factory_ft_deposit(poa_factory.id(), "maker-ft", maker.id(), 100, None, None)
-        .await
-        .unwrap();
+    root.poa_factory_ft_deposit(
+        poa_factory.id(),
+        "maker-ft",
+        maker.id(),
+        MAKER_AMOUNT,
+        None,
+        None,
+    )
+    .await
+    .unwrap();
 
     let taker_token = root
         .poa_factory_deploy_token(poa_factory.id(), "taker-ft", None)
         .await
         .unwrap();
-    root.poa_factory_ft_deposit(poa_factory.id(), "taker-ft", taker.id(), 200, None, None)
-        .await
-        .unwrap();
+    root.poa_factory_ft_deposit(
+        poa_factory.id(),
+        "taker-ft",
+        taker.id(),
+        TAKER_AMOUNT,
+        None,
+        None,
+    )
+    .await
+    .unwrap();
 
     let escrow = root.deploy_contract("escrow", &ESCROW_WASM).await.unwrap();
     escrow
@@ -61,9 +78,9 @@ async fn test_escrow() {
         .args_json(json!({
             "config": EscrowContract {
                 maker_token_id: maker_token.clone(),
-                maker_amount: 100,
+                maker_amount: MAKER_AMOUNT,
                 taker_token_id: taker_token.clone(),
-                taker_amount: 200,
+                taker_amount: TAKER_AMOUNT,
                 taker_asset_receiver_id: maker.id().clone(),
                 state: State::Init,
                 salt: [0; 4],
@@ -86,7 +103,7 @@ async fn test_escrow() {
 
     // lock
     maker
-        .ft_transfer_call(&maker_token, escrow.id(), 100, None, "")
+        .ft_transfer_call(&maker_token, escrow.id(), MAKER_AMOUNT, None, "")
         .await
         .unwrap();
 
@@ -95,7 +112,7 @@ async fn test_escrow() {
         .ft_transfer_call(
             &taker_token,
             escrow.id(),
-            200,
+            TAKER_AMOUNT,
             None,
             &serde_json::to_string(&TakerMessage {
                 receiver_id: taker.id().clone(),
@@ -104,4 +121,23 @@ async fn test_escrow() {
         )
         .await
         .unwrap();
+
+    assert_eq!(
+        sandbox
+            .ft_token_balance_of(&maker_token, taker.id())
+            .await
+            .unwrap(),
+        MAKER_AMOUNT,
+    );
+    assert_eq!(
+        sandbox
+            .ft_token_balance_of(&taker_token, maker.id())
+            .await
+            .unwrap(),
+        TAKER_AMOUNT,
+    );
+    escrow
+        .view_account()
+        .await
+        .expect_err("escrow deletes itself after being filled");
 }
