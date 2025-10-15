@@ -89,15 +89,14 @@ async fn test_upgrade_with_persistence(mut rng: impl Rng) {
     let user3 = &env.create_user("user3").await;
     let user4 = &env.create_user("user4").await;
 
-    // let intents = [user1, user2, user3, user4].map(|user| {
-    //     sign_intents(
-    //         env.defuse.id(),
-    //         &user,
-    //         vec![Intent::AddPublicKey(AddPublicKey {
-    //             public_key: PublicKey::Ed25519(rng.random()),
-    //         })],
-    //     )
-    // });
+    let intents = [user1, user2, user3, user4].map(|user| {
+        env.sign_intents(
+            &user,
+            vec![Intent::AddPublicKey(AddPublicKey {
+                public_key: PublicKey::Ed25519(rng.random()),
+            })],
+        )
+    });
 
-    // env.execute_intents(intents).await.unwrap();
+    env.execute_intents(intents).await.unwrap();
 }

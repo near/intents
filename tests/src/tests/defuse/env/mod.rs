@@ -221,14 +221,14 @@ impl Env {
     }
 }
 
-// TODO: check this
-impl Drop for Env {
-    fn drop(&mut self) {
-        tokio::runtime::Handle::current().block_on(async {
-            self.verify_storage_consistency().await;
-        })
-    }
-}
+// // TODO: check this
+// impl Drop for Env {
+//     fn drop(&mut self) {
+//         tokio::runtime::Handle::current().block_on(async {
+//             self.verify_storage_consistency().await;
+//         })
+//     }
+// }
 
 impl Deref for Env {
     type Target = Account;

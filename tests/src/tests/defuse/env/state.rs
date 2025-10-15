@@ -25,7 +25,7 @@ pub struct AccountData {
 
     pub nonces: HashSet<Nonce>,
 
-    pub token_balances: HashMap<TokenId, u128>,
+    pub token_balances: HashMap<AccountId, u128>,
 
     pub disable_auth_by_predecessor: bool,
 }

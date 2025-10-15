@@ -84,7 +84,7 @@ impl ExecuteIntentsExt for near_workspaces::Account {
             // return simulation_err if execute_ok
             .and_then(|res| simulation_result.map(|_| res));
 
-        println!("!!! defuse_execute_intents: {res:#?}");
+        println!("defuse_execute_intents result: {res:#?}");
         res
     }
 
