@@ -3,17 +3,9 @@ mod nonces;
 
 pub use self::{entry::*, nonces::MaybeLegacyAccountNonces};
 
-use std::borrow::Cow;
-
 use bitflags::bitflags;
 use defuse_bitmap::U256;
-use defuse_core::{
-    NoncePrefix, Result,
-    accounts::{AccountEvent, PublicKeyEvent},
-    crypto::PublicKey,
-    events::DefuseEvent,
-    intents::account::SetAuthByPredecessorId,
-};
+use defuse_core::{NoncePrefix, Result, crypto::PublicKey};
 
 use defuse_near_utils::NestPrefix;
 use impl_tools::autoimpl;
@@ -67,19 +59,7 @@ impl Account {
     #[inline]
     #[must_use]
     pub fn add_public_key(&mut self, me: &AccountIdRef, public_key: PublicKey) -> bool {
-        if !self.maybe_add_public_key(me, public_key) {
-            return false;
-        }
-
-        DefuseEvent::PublicKeyAdded(AccountEvent::new(
-            Cow::Borrowed(me),
-            PublicKeyEvent {
-                public_key: Cow::Borrowed(&public_key),
-            },
-        ))
-        .emit();
-
-        true
+        self.maybe_add_public_key(me, public_key)
     }
 
     #[inline]
@@ -97,19 +77,7 @@ impl Account {
     #[inline]
     #[must_use]
     pub fn remove_public_key(&mut self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
-        if !self.maybe_remove_public_key(me, public_key) {
-            return false;
-        }
-
-        DefuseEvent::PublicKeyRemoved(AccountEvent::new(
-            Cow::Borrowed(me),
-            PublicKeyEvent {
-                public_key: Cow::Borrowed(public_key),
-            },
-        ))
-        .emit();
-
-        true
+        self.maybe_remove_public_key(me, public_key)
     }
 
     #[inline]
@@ -179,18 +147,12 @@ impl Account {
     /// Sets whether authentication by `PREDECESSOR_ID` is enabled.
     /// Returns whether authentication by `PREDECESSOR_ID` was enabled
     /// before.
-    pub fn set_auth_by_predecessor_id(&mut self, me: &AccountIdRef, enable: bool) -> bool {
+    pub fn set_auth_by_predecessor_id(&mut self, _me: &AccountIdRef, enable: bool) -> bool {
         let was_enabled = self.is_auth_by_predecessor_id_enabled();
         let toggle = was_enabled ^ enable;
         if toggle {
             self.flags
                 .toggle(AccountFlags::AUTH_BY_PREDECESSOR_ID_DISABLED);
-
-            DefuseEvent::SetAuthByPredecessorId(AccountEvent::new(
-                Cow::Borrowed(me),
-                SetAuthByPredecessorId { enabled: enable },
-            ))
-            .emit();
         }
         was_enabled
     }

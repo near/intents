@@ -194,19 +194,21 @@ impl Contract {
                 .ok_or(DefuseError::BalanceOverflow)?;
         }
 
-        MtEvent::MtTransfer(
-            [MtTransferEvent {
-                authorized_id: None,
-                old_owner_id: sender_id.into(),
-                new_owner_id: Cow::Borrowed(receiver_id),
-                token_ids: token_ids.into(),
-                amounts: amounts.into(),
-                memo: memo.map(Into::into),
-            }]
-            .as_slice()
+        self.emit_defuse_event(
+            MtEvent::MtTransfer(
+                [MtTransferEvent {
+                    authorized_id: None,
+                    old_owner_id: sender_id.into(),
+                    new_owner_id: Cow::Borrowed(receiver_id),
+                    token_ids: token_ids.into(),
+                    amounts: amounts.into(),
+                    memo: memo.map(Into::into),
+                }]
+                .as_slice()
+                .into(),
+            )
             .into(),
-        )
-        .emit();
+        );
 
         Ok(())
     }

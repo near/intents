@@ -2,7 +2,7 @@ use core::mem;
 use std::borrow::Cow;
 
 use defuse_core::{
-    events::DefuseIntentEmit,
+    events::Dip4Event,
     fees::{FeeChangedEvent, FeeCollectorChangedEvent, Pips},
 };
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
@@ -21,11 +21,13 @@ impl FeesManager for Contract {
         assert_one_yocto();
         require!(self.fees.fee != fee, "same");
         mem::swap(&mut self.fees.fee, &mut fee);
-        FeeChangedEvent {
-            old_fee: fee,
-            new_fee: self.fees.fee,
-        }
-        .emit();
+        self.emit_defuse_event(
+            Dip4Event::FeeChanged(FeeChangedEvent {
+                old_fee: fee,
+                new_fee: self.fees.fee,
+            })
+            .into(),
+        );
     }
 
     fn fee(&self) -> Pips {
@@ -39,11 +41,13 @@ impl FeesManager for Contract {
         assert_one_yocto();
         require!(self.fees.fee_collector != fee_collector, "same");
         mem::swap(&mut self.fees.fee_collector, &mut fee_collector);
-        FeeCollectorChangedEvent {
-            old_fee_collector: fee_collector.into(),
-            new_fee_collector: Cow::Borrowed(self.fees.fee_collector.as_ref()),
-        }
-        .emit();
+        self.emit_defuse_event(
+            Dip4Event::FeeCollectorChanged(FeeCollectorChangedEvent {
+                old_fee_collector: fee_collector.into(),
+                new_fee_collector: Cow::Borrowed(self.fees.fee_collector.as_ref()),
+            })
+            .into(),
+        );
     }
 
     fn fee_collector(&self) -> &AccountId {

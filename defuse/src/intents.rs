@@ -34,6 +34,9 @@ pub struct SimulationOutput {
     /// Intent hashes along with corresponding signers
     pub intents_executed: Vec<IntentEvent<AccountEvent<'static, NonceEvent>>>,
 
+    /// All events that would be emitted during execution
+    pub events: Vec<defuse_core::events::DefuseEvent<'static>>,
+
     /// Minimum deadline among all simulated intents
     pub min_deadline: Deadline,
 

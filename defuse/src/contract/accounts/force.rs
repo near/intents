@@ -1,9 +1,11 @@
 use defuse_core::{
-    DefuseError, Result, accounts::AccountEvent, engine::StateView, events::DefuseEvent,
+    DefuseError, Result, accounts::AccountEvent, engine::StateView, events::Dip4Event,
+    intents::account::SetAuthByPredecessorId,
 };
 use defuse_near_utils::Lock;
 use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{AccountId, assert_one_yocto, near};
+use std::borrow::Cow;
 
 use crate::{
     accounts::ForceAccountManager,
@@ -26,7 +28,9 @@ impl ForceAccountManager for Contract {
             .lock()
             .is_some();
         if locked {
-            DefuseEvent::AccountLocked(AccountEvent::new(account_id, ())).emit();
+            self.emit_defuse_event(
+                Dip4Event::AccountLocked(AccountEvent::new(account_id, ())).into(),
+            );
         }
         locked
     }
@@ -41,7 +45,9 @@ impl ForceAccountManager for Contract {
             .and_then(Lock::unlock)
             .is_some();
         if unlocked {
-            DefuseEvent::AccountUnlocked(AccountEvent::new(account_id, ())).emit();
+            self.emit_defuse_event(
+                Dip4Event::AccountUnlocked(AccountEvent::new(account_id, ())).into(),
+            );
         }
         unlocked
     }
@@ -89,5 +95,16 @@ impl Contract {
         .get_mut_maybe_forced(force)
         .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))
         .map(|account| account.set_auth_by_predecessor_id(account_id, enable))
+        .inspect(|was_enabled| {
+            if was_enabled ^ enable {
+                self.emit_defuse_event(
+                    Dip4Event::SetAuthByPredecessorId(AccountEvent::new(
+                        Cow::Borrowed(account_id.as_ref()),
+                        SetAuthByPredecessorId { enabled: enable },
+                    ))
+                    .into(),
+                );
+            }
+        })
     }
 }

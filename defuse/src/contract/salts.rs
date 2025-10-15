@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use defuse_core::{Salt, accounts::SaltRotationEvent, events::DefuseIntentEmit};
+use defuse_core::{Salt, accounts::SaltRotationEvent, events::Dip4Event};
 use defuse_near_utils::UnwrapOrPanic;
 use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{assert_one_yocto, near};
@@ -18,11 +18,13 @@ impl SaltManager for Contract {
         self.salts.set_new().unwrap_or_panic();
         let current = self.salts.current();
 
-        SaltRotationEvent {
-            current,
-            invalidated: BTreeSet::new(),
-        }
-        .emit();
+        self.emit_defuse_event(
+            Dip4Event::SaltRotation(SaltRotationEvent {
+                current,
+                invalidated: BTreeSet::new(),
+            })
+            .into(),
+        );
 
         current
     }
@@ -40,11 +42,13 @@ impl SaltManager for Contract {
 
         let current = self.salts.current();
 
-        SaltRotationEvent {
-            current,
-            invalidated,
-        }
-        .emit();
+        self.emit_defuse_event(
+            Dip4Event::SaltRotation(SaltRotationEvent {
+                current,
+                invalidated,
+            })
+            .into(),
+        );
 
         current
     }

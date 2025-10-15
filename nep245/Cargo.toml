@@ -8,6 +8,10 @@ repository.workspace = true
 [dependencies]
 derive_more.workspace = true
 near-sdk.workspace = true
+schemars = { workspace = true, optional = true }
+
+[features]
+abi = ["dep:schemars"]
 
 [lints]
 workspace = true

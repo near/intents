@@ -3,7 +3,6 @@ mod abi;
 mod accounts;
 mod admin;
 pub mod config;
-mod events;
 mod fees;
 mod intents;
 mod salts;
@@ -13,9 +12,11 @@ mod upgrade;
 mod versioned;
 
 use core::iter;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 use defuse_borsh_utils::adapters::As;
-use defuse_core::Result;
+use defuse_core::{EventSink, Result, events::DefuseEvent};
 use impl_tools::autoimpl;
 use near_plugins::{AccessControlRole, AccessControllable, Pausable, access_control};
 use near_sdk::{
@@ -24,7 +25,7 @@ use near_sdk::{
 };
 use versioned::MaybeVersionedContractStorage;
 
-use crate::{Defuse, contract::events::PostponedMtBurnEvents};
+use crate::Defuse;
 
 use self::{
     accounts::Accounts,
@@ -77,7 +78,25 @@ pub struct Contract {
     storage: ContractStorage,
 
     #[borsh(skip)]
-    runtime: Runtime,
+    event_sink: Rc<RefCell<EventSink>>,
+}
+
+impl Contract {
+    pub fn emit_defuse_event(&self, ev: DefuseEvent<'_>) {
+        self.event_sink.borrow_mut().consume_event(ev);
+    }
+
+    pub fn postpone_defuse_event(&self, ev: DefuseEvent<'_>) {
+        self.event_sink.borrow_mut().postpone_event(ev.into_owned());
+    }
+
+    pub fn record_events_instead_of_emitting(&self) {
+        self.event_sink.borrow_mut().record_only_mode();
+    }
+
+    pub fn event_sink_handle(&self) -> Rc<RefCell<EventSink>> {
+        Rc::clone(&self.event_sink)
+    }
 }
 
 #[derive(Debug)]
@@ -92,11 +111,6 @@ pub struct ContractStorage {
     relayer_keys: LookupSet<near_sdk::PublicKey>,
 }
 
-#[derive(Debug, Default)]
-pub struct Runtime {
-    pub postponed_burns: PostponedMtBurnEvents,
-}
-
 #[near]
 impl Contract {
     #[must_use]
@@ -109,7 +123,7 @@ impl Contract {
                 state: ContractState::new(Prefix::State, config.wnear_id, config.fees),
                 relayer_keys: LookupSet::new(Prefix::RelayerKeys),
             },
-            runtime: Runtime::default(),
+            event_sink: Rc::new(RefCell::new(EventSink::default())),
         };
         contract.init_acl(config.roles);
         contract

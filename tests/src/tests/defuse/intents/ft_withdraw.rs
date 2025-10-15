@@ -11,6 +11,7 @@ use defuse::core::{
     Deadline,
     intents::{DefuseIntents, tokens::FtWithdraw},
 };
+use defuse::core::{accounts::AccountEvent, intents::IntentEvent};
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
     core::fees::{FeesConfig, Pips},
@@ -19,6 +20,7 @@ use defuse_randomness::Rng;
 use defuse_test_utils::{asserts::ResultAssertsExt, random::rng};
 use near_sdk::{AccountId, Gas, NearToken};
 use rstest::rstest;
+use std::borrow::Cow;
 use std::time::Duration;
 
 #[tokio::test]
@@ -391,4 +393,86 @@ async fn ft_withdraw_intent_msg(
             .unwrap(),
         1000
     );
+}
+
+#[tokio::test]
+#[rstest]
+#[trace]
+async fn ft_withdraw_simulate_records_events(#[notrace] mut rng: impl Rng) {
+    use defuse::core::events::Dip4Event;
+    use defuse_crypto::Payload;
+
+    let env = Env::builder().build().await;
+
+    let other_user_id: AccountId = "other-user.near".parse().unwrap();
+
+    // Deposit tokens to user1
+    env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
+        .await
+        .unwrap();
+
+    let ft1 = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
+
+    // Verify initial balance
+    assert_eq!(
+        env.mt_contract_balance_of(env.defuse.id(), env.user1.id(), &ft1.to_string())
+            .await
+            .unwrap(),
+        1000
+    );
+
+    // Register other_user in ft1 token so they can receive it
+    env.poa_factory
+        .ft_storage_deposit_many(&env.ft1, &[&other_user_id])
+        .await
+        .unwrap();
+
+    let nonce = rng.random();
+
+    let ft_withdraw_intent = FtWithdraw {
+        token: env.ft1.clone(),
+        receiver_id: other_user_id.clone(),
+        amount: 1000.into(),
+        memo: None,
+        msg: None,
+        storage_deposit: None,
+        min_gas: None,
+    };
+
+    let ft_withdraw_payload = env.user1.sign_defuse_message(
+        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        env.defuse.id(),
+        nonce,
+        Deadline::MAX,
+        DefuseIntents {
+            intents: [ft_withdraw_intent.clone().into()].into(),
+        },
+    );
+
+    // Assert that exactly one FtWithdraw event is emitted with the expected fields
+    let expected_events = vec![
+        Dip4Event::FtWithdraw(Cow::Owned(vec![IntentEvent {
+            intent_hash: ft_withdraw_payload.hash(),
+            event: AccountEvent {
+                account_id: env.user1.id().clone().into(),
+                event: Cow::Owned(ft_withdraw_intent),
+            },
+        }]))
+        .into(),
+    ];
+
+    assert_eq!(
+        env.defuse
+            .simulate_intents([ft_withdraw_payload.clone()])
+            .await
+            .unwrap()
+            .events,
+        expected_events
+    );
+
+    // TODO: Due to CachedState some calles are not forwarded to actual contract impl that emits events
+    // assert!(matches!(
+    //     result.events.last().expect("events emitted"),
+    //     DefuseEvent::Nep245Event(MtEvent::MtBurn(_))
+    // ));
 }

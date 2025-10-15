@@ -4,12 +4,14 @@ use crate::{
     accounts::AccountEvent,
     amounts::Amounts,
     engine::{Engine, Inspector, State, StateView},
-    events::DefuseEvent,
+    events::Dip4Event,
     fees::Pips,
     token_id::{TokenId, TokenIdType},
 };
 use defuse_num_utils::CheckedMulDiv;
 use impl_tools::autoimpl;
+#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+use near_sdk::serde;
 use near_sdk::{AccountId, AccountIdRef, CryptoHash, near};
 use serde_with::{DisplayFromStr, serde_as};
 use std::{borrow::Cow, collections::BTreeMap};
@@ -24,7 +26,7 @@ pub type TokenDeltas = Amounts<BTreeMap<TokenId, i128>>;
     not(all(feature = "abi", not(target_arch = "wasm32"))),
     serde_as(schemars = false)
 )]
-#[near(serializers = [borsh, json])]
+#[near(serializers = [json])]
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 #[autoimpl(Deref using self.diff)]
 #[autoimpl(DerefMut using self.diff)]
@@ -84,20 +86,19 @@ impl ExecutableIntent for TokenDiff {
             }
         }
 
-        engine.inspector.on_event(DefuseEvent::TokenDiff(
-            [IntentEvent::new(
-                AccountEvent::new(
-                    signer_id,
-                    TokenDiffEvent {
-                        diff: Cow::Borrowed(&self),
-                        fees_collected: fees_collected.clone(),
-                    },
-                ),
-                intent_hash,
-            )]
-            .as_slice()
-            .into(),
-        ));
+        let event = TokenDiffEvent {
+            diff: Cow::Borrowed(&self),
+            fees_collected: fees_collected.clone(),
+        };
+        engine
+            .inspector
+            .on_event(Dip4Event::TokenDiff(Cow::Borrowed(
+                [IntentEvent::new(
+                    AccountEvent::new(signer_id, event),
+                    intent_hash,
+                )]
+                .as_slice(),
+            )));
 
         // deposit fees to collector
         if !fees_collected.is_empty() {
@@ -119,14 +120,14 @@ impl ExecutableIntent for TokenDiff {
     serde_as(schemars = false)
 )]
 #[near(serializers = [json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// An event emitted when a `TokenDiff` intent is executed.
 pub struct TokenDiffEvent<'a> {
     #[serde(flatten)]
     pub diff: Cow<'a, TokenDiff>,
 
     #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
-    #[serde(skip_serializing_if = "Amounts::is_empty")]
+    #[serde(default, skip_serializing_if = "Amounts::is_empty")]
     pub fees_collected: Amounts,
 }
 

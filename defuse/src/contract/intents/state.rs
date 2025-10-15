@@ -1,7 +1,9 @@
 use defuse_core::{
     DefuseError, Nonce, NoncePrefix, Result, Salt,
+    accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
     engine::{State, StateView},
+    events::Dip4Event,
     fees::Pips,
     intents::{
         auth::AuthCall,
@@ -105,6 +107,17 @@ impl State for Contract {
             .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))?
             .add_public_key(&account_id, public_key)
             .then_some(())
+            .inspect(|()| {
+                self.emit_defuse_event(
+                    Dip4Event::PublicKeyAdded(AccountEvent::new(
+                        Cow::Borrowed(account_id.as_ref()),
+                        PublicKeyEvent {
+                            public_key: Cow::Borrowed(&public_key),
+                        },
+                    ))
+                    .into(),
+                );
+            })
             .ok_or(DefuseError::PublicKeyExists(account_id, public_key))
     }
 
@@ -116,6 +129,17 @@ impl State for Contract {
             .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))?
             .remove_public_key(&account_id, &public_key)
             .then_some(())
+            .inspect(|()| {
+                self.emit_defuse_event(
+                    Dip4Event::PublicKeyRemoved(AccountEvent::new(
+                        Cow::Borrowed(account_id.as_ref()),
+                        PublicKeyEvent {
+                            public_key: Cow::Borrowed(&public_key),
+                        },
+                    ))
+                    .into(),
+                );
+            })
             .ok_or(DefuseError::PublicKeyNotExist(account_id, public_key))
     }
 

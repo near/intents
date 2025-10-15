@@ -73,7 +73,7 @@ impl ExecutableIntent for RemovePublicKey {
     serde_as(schemars = false)
 )]
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SetAuthByPredecessorId {
     pub enabled: bool,
 }

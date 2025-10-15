@@ -15,7 +15,7 @@ use near_contract_standards::storage_management::ext_storage_management;
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
 use near_sdk::{
     AccountId, Gas, GasWeight, NearToken, Promise, PromiseOrValue, PromiseResult, assert_one_yocto,
-    env,
+    env::{self},
     json_types::U128,
     near, require,
     serde_json::{self, json},

@@ -747,6 +747,7 @@ dependencies = [
  "near-contract-standards",
  "near-sdk",
  "rstest",
+ "schemars",
  "serde_with",
  "strum 0.27.1",
  "thiserror 2.0.12",
@@ -814,6 +815,7 @@ version = "0.1.0"
 dependencies = [
  "derive_more 2.0.1",
  "near-sdk",
+ "schemars",
 ]
 
 [[package]]
@@ -919,6 +921,7 @@ dependencies = [
  "bnum",
  "chrono",
  "defuse",
+ "defuse-crypto",
  "defuse-near-utils",
  "defuse-poa-factory",
  "defuse-randomness",

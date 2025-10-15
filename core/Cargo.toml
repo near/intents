@@ -33,6 +33,7 @@ impl-tools.workspace = true
 near-account-id.workspace = true
 near-contract-standards.workspace = true
 near-sdk.workspace = true
+schemars.workspace = true
 serde_with.workspace = true
 strum.workspace = true
 thiserror.workspace = true
@@ -41,6 +42,7 @@ thiserror.workspace = true
 abi = [
     "defuse-crypto/abi",
     "defuse-erc191/abi",
+    "defuse-nep245/abi",
     "defuse-nep413/abi",
     "defuse-sep53/abi",
     "defuse-tip191/abi",

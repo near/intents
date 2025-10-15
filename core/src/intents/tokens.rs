@@ -9,7 +9,7 @@ use crate::{
     accounts::AccountEvent,
     amounts::Amounts,
     engine::{Engine, Inspector, State},
-    events::DefuseEvent,
+    events::Dip4Event,
 };
 
 use super::{ExecutableIntent, IntentEvent};
@@ -23,7 +23,7 @@ use super::{ExecutableIntent, IntentEvent};
     serde_as(schemars = false)
 )]
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// Transfer a set of tokens from the signer to a specified account id, within the intents contract.
 pub struct Transfer {
     pub receiver_id: AccountId,
@@ -50,15 +50,13 @@ impl ExecutableIntent for Transfer {
             return Err(DefuseError::InvalidIntent);
         }
 
-        engine
-            .inspector
-            .on_event(DefuseEvent::Transfer(Cow::Borrowed(
-                [IntentEvent::new(
-                    AccountEvent::new(sender_id, Cow::Borrowed(&self)),
-                    intent_hash,
-                )]
-                .as_slice(),
-            )));
+        engine.inspector.on_event(Dip4Event::Transfer(Cow::Borrowed(
+            [IntentEvent::new(
+                AccountEvent::new(sender_id, Cow::Borrowed(&self)),
+                intent_hash,
+            )]
+            .as_slice(),
+        )));
 
         engine
             .state
@@ -71,7 +69,7 @@ impl ExecutableIntent for Transfer {
 }
 
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// Withdraw given FT tokens from the intents contract to a given external account id (external being outside of intents).
 pub struct FtWithdraw {
     pub token: AccountId,
@@ -153,7 +151,7 @@ impl ExecutableIntent for FtWithdraw {
     {
         engine
             .inspector
-            .on_event(DefuseEvent::FtWithdraw(Cow::Borrowed(
+            .on_event(Dip4Event::FtWithdraw(Cow::Borrowed(
                 [IntentEvent::new(
                     AccountEvent::new(owner_id, Cow::Borrowed(&self)),
                     intent_hash,
@@ -166,7 +164,7 @@ impl ExecutableIntent for FtWithdraw {
 }
 
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// Withdraw given NFT tokens from the intents contract to a given external account id (external being outside of intents).
 pub struct NftWithdraw {
     pub token: AccountId,
@@ -248,7 +246,7 @@ impl ExecutableIntent for NftWithdraw {
     {
         engine
             .inspector
-            .on_event(DefuseEvent::NftWithdraw(Cow::Borrowed(
+            .on_event(Dip4Event::NftWithdraw(Cow::Borrowed(
                 [IntentEvent::new(
                     AccountEvent::new(owner_id, Cow::Borrowed(&self)),
                     intent_hash,
@@ -261,7 +259,7 @@ impl ExecutableIntent for NftWithdraw {
 }
 
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// Withdraw given MT tokens (i.e. [NEP-245](https://github.com/near/NEPs/blob/master/neps/nep-0245.md)) from the intents contract
 /// to a given to an external account id (external being outside of intents).
 ///
@@ -350,7 +348,7 @@ impl ExecutableIntent for MtWithdraw {
     {
         engine
             .inspector
-            .on_event(DefuseEvent::MtWithdraw(Cow::Borrowed(
+            .on_event(Dip4Event::MtWithdraw(Cow::Borrowed(
                 [IntentEvent::new(
                     AccountEvent::new(owner_id, Cow::Borrowed(&self)),
                     intent_hash,
@@ -363,7 +361,7 @@ impl ExecutableIntent for MtWithdraw {
 }
 
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// Withdraw native tokens (NEAR) from the intents contract to a given external account id (external being outside of intents).
 /// This will subtract from the account's wNEAR balance, and will be sent to the account specified as native NEAR.
 /// NOTE: the `wNEAR` will not be refunded in case of fail (e.g. `receiver_id`
@@ -387,7 +385,7 @@ impl ExecutableIntent for NativeWithdraw {
     {
         engine
             .inspector
-            .on_event(DefuseEvent::NativeWithdraw(Cow::Borrowed(
+            .on_event(Dip4Event::NativeWithdraw(Cow::Borrowed(
                 [IntentEvent::new(
                     AccountEvent::new(owner_id, Cow::Borrowed(&self)),
                     intent_hash,
@@ -411,7 +409,7 @@ impl ExecutableIntent for NativeWithdraw {
 /// are not guaranteed to be executed sequentially, in the order of the provided intents in
 /// `DefuseIntents`.
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StorageDeposit {
     pub contract_id: AccountId,
     #[serde(
@@ -437,7 +435,7 @@ impl ExecutableIntent for StorageDeposit {
     {
         engine
             .inspector
-            .on_event(DefuseEvent::StorageDeposit(Cow::Borrowed(
+            .on_event(Dip4Event::StorageDeposit(Cow::Borrowed(
                 [IntentEvent::new(
                     AccountEvent::new(owner_id, Cow::Borrowed(&self)),
                     intent_hash,

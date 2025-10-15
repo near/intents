@@ -11,9 +11,11 @@ use defuse::{
     core::{
         Deadline,
         crypto::PublicKey,
+        events::Dip4Event,
         intents::{DefuseIntents, tokens::NativeWithdraw},
         token_id::{TokenId, nep141::Nep141TokenId},
     },
+    nep245::MtEvent,
     tokens::DepositMessage,
 };
 use defuse_randomness::Rng;
@@ -131,4 +133,96 @@ async fn native_withdraw_intent(mut rng: impl Rng) {
             "wrong NEAR balance for {receiver_id}: expected minimum {amount}, got {balance}"
         );
     }
+}
+
+#[tokio::test]
+#[rstest]
+async fn native_withdraw_postpones_burn_event(mut rng: impl Rng) {
+    let env = Env::new().await;
+
+    let withdraw_amount = NearToken::from_near(77);
+    let transfer_amount = NearToken::from_near(33);
+
+    // Deposit wNEAR to user1 (for both withdraw and transfer)
+    env.near_deposit(
+        env.wnear.id(),
+        NearToken::from_yoctonear(withdraw_amount.as_yoctonear() + transfer_amount.as_yoctonear()),
+    )
+    .await
+    .expect("failed to wrap NEAR");
+
+    env.defuse_ft_deposit(
+        env.defuse.id(),
+        env.wnear.id(),
+        withdraw_amount.as_yoctonear() + transfer_amount.as_yoctonear(),
+        DepositMessage::new(env.user1.id().clone()),
+    )
+    .await
+    .expect("failed to deposit wNEAR to user1");
+
+    // Execute native withdraw intent followed by transfer intent
+    let result = env
+        .defuse_execute_intents(
+            env.defuse.id(),
+            [env.user1.sign_defuse_message(
+                SigningStandard::default(),
+                env.defuse.id(),
+                rng.random(),
+                Deadline::timeout(Duration::from_secs(120)),
+                DefuseIntents {
+                    intents: vec![
+                        NativeWithdraw {
+                            receiver_id: env.user1.id().clone(),
+                            amount: withdraw_amount,
+                        }
+                        .into(),
+                        defuse::core::intents::tokens::Transfer {
+                            receiver_id: env.user2.id().clone(),
+                            tokens: defuse::core::amounts::Amounts::new(
+                                std::iter::once((
+                                    TokenId::Nep141(Nep141TokenId::new(env.wnear.id().clone())),
+                                    transfer_amount.as_yoctonear(),
+                                ))
+                                .collect(),
+                            ),
+                            memo: Some("test transfer".to_string()),
+                        }
+                        .into(),
+                    ],
+                },
+            )],
+        )
+        .await
+        .expect("execute_intents failed");
+
+    // Collect all EVENT_JSON logs
+    let events: Vec<&str> = result
+        .logs()
+        .iter()
+        .filter_map(|l| l.strip_prefix("EVENT_JSON:"))
+        .collect();
+
+    assert_eq!(events.len(), 5);
+    assert!(matches!(
+        serde_json::from_str::<Dip4Event>(events[0]).unwrap(),
+        Dip4Event::NativeWithdraw(_)
+    ));
+    assert!(matches!(
+        serde_json::from_str::<Dip4Event>(events[1]).unwrap(),
+        Dip4Event::Transfer(_)
+    ));
+    assert!(matches!(
+        serde_json::from_str::<MtEvent>(events[2]).unwrap(),
+        MtEvent::MtTransfer(_)
+    ));
+    assert!(matches!(
+        serde_json::from_str::<Dip4Event>(events[3]).unwrap(),
+        Dip4Event::IntentsExecuted(_)
+    ));
+
+    // NativeWtithdraw emits mt_burn event taht should be posponed
+    assert!(matches!(
+        serde_json::from_str::<MtEvent>(events[4]).unwrap(),
+        MtEvent::MtBurn(_)
+    ));
 }

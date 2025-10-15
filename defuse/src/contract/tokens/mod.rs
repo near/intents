@@ -61,7 +61,7 @@ impl Contract {
         }
 
         if !mint_event.amounts.is_empty() {
-            MtEvent::MtMint([mint_event].as_slice().into()).emit();
+            self.emit_defuse_event(MtEvent::MtMint([mint_event].as_slice().into()).into());
         }
 
         Ok(())
@@ -115,7 +115,7 @@ impl Contract {
         // `mt_transfer` arrives. This can happen due to postponed
         // delta-matching during intents execution.
         if !burn_event.amounts.is_empty() {
-            self.runtime.postponed_burns.mt_burn(burn_event);
+            self.postpone_defuse_event(MtEvent::MtBurn([burn_event].as_slice().into()).into());
         }
 
         Ok(())
