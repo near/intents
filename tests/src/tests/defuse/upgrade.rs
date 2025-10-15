@@ -1,6 +1,12 @@
 use super::DEFUSE_WASM;
-use crate::{tests::defuse::accounts::AccountManagerExt, utils::mt::MtExt};
-use defuse::core::crypto::PublicKey;
+use crate::{
+    tests::defuse::{accounts::AccountManagerExt, env::Env, intents::ExecuteIntentsExt},
+    utils::mt::MtExt,
+};
+use defuse::core::{
+    crypto::PublicKey,
+    intents::{Intent, account::AddPublicKey},
+};
 use defuse_randomness::Rng;
 use defuse_test_utils::random::rng;
 use near_sdk::AccountId;
@@ -62,4 +68,36 @@ async fn upgrade(mut rng: impl Rng) {
                 .unwrap()
         );
     }
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_upgrade_with_persistence(mut rng: impl Rng) {
+    // initialize with persistent state and migration from legacy
+    let env = Env::builder().with_legacy().build().await;
+
+    let state = env
+        .arbitrary_state
+        .as_ref()
+        .expect("arbitrary state should be initialized");
+
+    // Make some changes existing users:
+    let user1 = state.get_random_account(&mut rng);
+    let user2 = state.get_random_account(&mut rng);
+
+    // Create new users
+    let user3 = &env.create_user("user3").await;
+    let user4 = &env.create_user("user4").await;
+
+    // let intents = [user1, user2, user3, user4].map(|user| {
+    //     sign_intents(
+    //         env.defuse.id(),
+    //         &user,
+    //         vec![Intent::AddPublicKey(AddPublicKey {
+    //             public_key: PublicKey::Ed25519(rng.random()),
+    //         })],
+    //     )
+    // });
+
+    // env.execute_intents(intents).await.unwrap();
 }

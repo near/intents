@@ -1,19 +1,31 @@
 #![allow(dead_code)]
 
-mod arbitrary_state;
 mod builder;
+mod state;
 mod storage;
 
 use super::{DefuseExt, accounts::AccountManagerExt};
 use crate::{
     tests::{
-        defuse::{env::builder::EnvBuilder, tokens::nep141::traits::DefuseFtReceiver},
+        defuse::{
+            DefuseSigner, SigningStandard,
+            env::{builder::EnvBuilder, state::PermanentState, storage::StorageMigration},
+            tokens::nep141::traits::DefuseFtReceiver,
+        },
         poa::factory::PoAFactoryExt,
     },
     utils::{Sandbox, ft::FtExt, read_wasm},
 };
 use anyhow::anyhow;
-use defuse::tokens::DepositMessage;
+use defuse::{
+    core::{
+        Deadline,
+        intents::{DefuseIntents, Intent},
+        payload::multi::MultiPayload,
+    },
+    tokens::DepositMessage,
+};
+use defuse_randomness::{Rng, make_true_rng};
 use near_sdk::{AccountId, NearToken};
 use near_workspaces::{
     Account, Contract, Network, Worker,
@@ -37,6 +49,8 @@ pub struct Env {
 
     pub disable_ft_storage_deposit: bool,
     pub disable_registration: bool,
+
+    pub arbitrary_state: Option<PermanentState>,
 }
 
 impl Env {
@@ -111,7 +125,7 @@ impl Env {
         let account = self.sandbox.create_account(name).await;
 
         account
-            .add_public_key(self.defuse.id(), get_defuse_public_key(&account))
+            .add_public_key(self.defuse.id(), get_account_public_key(&account))
             .await
             .unwrap();
 
@@ -194,6 +208,26 @@ impl Env {
     pub fn sandbox_mut(&mut self) -> &mut Sandbox {
         &mut self.sandbox
     }
+
+    pub fn sign_intents(&self, account: &Account, intents: Vec<Intent>) -> MultiPayload {
+        let nonce = make_true_rng().random();
+        account.sign_defuse_message(
+            SigningStandard::default(),
+            self.defuse.id(),
+            nonce,
+            Deadline::MAX,
+            DefuseIntents { intents },
+        )
+    }
+}
+
+// TODO: check this
+impl Drop for Env {
+    fn drop(&mut self) {
+        tokio::runtime::Handle::current().block_on(async {
+            self.verify_storage_consistency().await;
+        })
+    }
 }
 
 impl Deref for Env {
@@ -237,7 +271,7 @@ async fn deploy_token_without_registration<N: Network + 'static>(
         .unwrap();
 }
 
-pub fn get_defuse_public_key(account: &Account) -> defuse::core::crypto::PublicKey {
+pub fn get_account_public_key(account: &Account) -> defuse::core::crypto::PublicKey {
     account
         .secret_key()
         .public_key()

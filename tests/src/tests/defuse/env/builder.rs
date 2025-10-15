@@ -1,6 +1,9 @@
 use super::DefuseExt;
 use crate::{
-    tests::{defuse::env::Env, poa::factory::PoAFactoryExt},
+    tests::{
+        defuse::env::{Env, storage::StorageMigration},
+        poa::factory::PoAFactoryExt,
+    },
     utils::{Sandbox, wnear::WNearExt},
 };
 use defuse::{
@@ -98,16 +101,6 @@ impl EnvBuilder {
         root.deploy_defuse(id, cfg, legacy).await.unwrap()
     }
 
-    async fn deploy_legacy_and_migrate(&self, root: &Account, wnear: &Contract) -> Contract {
-        let contract = self.deploy_defuse(root, &wnear, true).await;
-
-        // TODO: fill contract storage
-
-        contract.upgrade_defuse().await.unwrap();
-
-        contract
-    }
-
     fn grant_roles(&mut self, root: &Account) {
         if self.self_as_super_admin {
             self.roles
@@ -131,20 +124,23 @@ impl EnvBuilder {
 
         let migrate_from_legacy = std::env::var("MIGRATE_FROM_LEGACY").is_ok_and(|v| v != "0");
 
-        let defuse = if migrate_from_legacy || self.build_legacy {
-            self.deploy_legacy_and_migrate(&root, &wnear).await
-        } else {
-            self.deploy_defuse(&root, &wnear, false).await
-        };
+        let deploy_legacy = migrate_from_legacy || self.build_legacy;
+        let defuse = self.deploy_defuse(&root, &wnear, deploy_legacy).await;
 
-        let env = Env {
+        let mut env = Env {
             defuse,
             wnear,
             poa_factory: poa_factory.clone(),
             sandbox,
             disable_ft_storage_deposit: self.disable_ft_storage_deposit,
             disable_registration: self.disable_registration,
+            arbitrary_state: None,
         };
+
+        if deploy_legacy {
+            env.apply_storage_data().await;
+            env.defuse.upgrade_defuse().await.unwrap();
+        }
 
         env.near_deposit(env.wnear.id(), NearToken::from_near(100))
             .await

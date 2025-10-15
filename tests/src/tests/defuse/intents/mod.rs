@@ -69,7 +69,8 @@ impl ExecuteIntentsExt for near_workspaces::Account {
             "execute_intents({})",
             serde_json::to_string_pretty(&args).unwrap()
         );
-        self.call(defuse_id, "execute_intents")
+        let res = self
+            .call(defuse_id, "execute_intents")
             .args_json(args)
             .max_gas()
             .transact()
@@ -81,7 +82,10 @@ impl ExecuteIntentsExt for near_workspaces::Account {
             .map(Into::into)
             .map_err(Into::into)
             // return simulation_err if execute_ok
-            .and_then(|res| simulation_result.map(|_| res))
+            .and_then(|res| simulation_result.map(|_| res));
+
+        println!("!!! defuse_execute_intents: {res:#?}");
+        res
     }
 
     async fn execute_intents(
