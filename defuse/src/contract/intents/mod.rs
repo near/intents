@@ -14,7 +14,7 @@ use defuse_nep245::MtEvent;
 use execute::ExecuteInspector;
 use near_plugins::{Pausable, pause};
 use near_sdk::{FunctionError, near};
-use simulate::SimulateInspector;
+use simulate::{SimulateInspector, SimulationReport};
 
 use crate::intents::{Intents, SimulationOutput, StateOutput};
 
@@ -46,9 +46,16 @@ impl Intents for Contract {
             Err(err) => err.panic(),
         };
 
+        let SimulationReport {
+            intents_executed,
+            logs,
+            min_deadline,
+        } = inspector.into_report();
+
         SimulationOutput {
-            intents_executed: inspector.intents_executed,
-            min_deadline: inspector.min_deadline,
+            intents_executed,
+            logs,
+            min_deadline,
             invariant_violated,
             state: StateOutput {
                 fee: self.fee(),
