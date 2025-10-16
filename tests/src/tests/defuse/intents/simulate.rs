@@ -5,7 +5,7 @@ use crate::tests::utils::AsNearSdkLog;
 use crate::utils::{ft::FtExt, mt::MtExt, nft::NftExt, wnear::WNearExt};
 use defuse_crypto::{Payload, PublicKey};
 use arbitrary::{Arbitrary, Unstructured};
-use defuse::{contract::config::{DefuseConfig, RolesConfig}, core::{accounts::NonceEvent, Nonce}};
+use defuse::{contract::config::{DefuseConfig, RolesConfig}, core::{accounts::{NonceEvent, PublicKeyEvent}, Nonce}};
 use defuse::core::fees::{FeesConfig, Pips};
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
@@ -669,6 +669,11 @@ async fn simulate_add_public_key_intent(
     // TODO: AddPublicKey should emit PublicKeyAdd event through the inspector
     // For now, we only check for the nonce event
     assert_eq!(result.logs, vec![
+        DefuseEvent::PublicKeyAdded(AccountEvent::new(
+            env.user1.id(),
+            PublicKeyEvent{public_key: Cow::Borrowed(&new_public_key)},
+        ))
+        .as_near_sdk_log(),
         AccountNonceIntentEvent::new(&env.user1.id(), nonce, add_public_key_payload.clone()).into_event_log(),
     ]);
 }
@@ -738,6 +743,11 @@ async fn simulate_remove_public_key_intent(
     // TODO: RemovePublicKey should emit PublicKeyEvent through the inspector
     // For now, we only check for the nonce event
     assert_eq!(result.logs, vec![
+       DefuseEvent::PublicKeyRemoved(AccountEvent::new(
+            env.user1.id(),
+            PublicKeyEvent{public_key: Cow::Borrowed(&new_public_key)},
+        ))
+        .as_near_sdk_log(),
         AccountNonceIntentEvent::new(&env.user1.id(), remove_nonce, remove_public_key_payload.clone()).into_event_log(),
     ]);
 }
