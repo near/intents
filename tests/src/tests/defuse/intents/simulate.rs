@@ -2,7 +2,7 @@ use crate::{tests::defuse::{DefuseExt, DefuseSigner}, tests::defuse::accounts::A
 use crate::tests::defuse::intents::ExecuteIntentsExt;
 use crate::tests::defuse::SigningStandard;
 use crate::tests::utils::AsNearSdkLog;
-use crate::utils::{crypto::Signer, mt::MtExt, nft::NftExt, test_log::TestLog};
+use crate::utils::{crypto::Signer, ft::FtExt, mt::MtExt, nft::NftExt, test_log::TestLog, wnear::WNearExt};
 use defuse_crypto::Payload;
 use arbitrary::{Arbitrary, Unstructured};
 use defuse::contract::config::{DefuseConfig, RolesConfig};
@@ -18,7 +18,7 @@ use defuse::{
         events::DefuseEvent,
         intents::{
             DefuseIntents, IntentEvent,
-            tokens::{FtWithdraw, MtWithdraw, NftWithdraw, Transfer},
+            tokens::{FtWithdraw, MtWithdraw, NftWithdraw, StorageDeposit, Transfer},
         },
         payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
     },
@@ -407,6 +407,93 @@ async fn simulate_mt_withdraw_intent(
             event: AccountEvent {
                 account_id: env.user1.id().clone().into(),
                 event: Cow::Owned(mt_withdraw_intent),
+            },
+        }]))
+        .as_near_sdk_log();
+
+    result.logs.iter().for_each(|log| println!("{}", log));
+    println!("{}", near_sdk::serde_json::to_string_pretty(&result).unwrap());
+
+    assert!(result.logs.iter().any(|log| log == &expected_log));
+    result.into_result().unwrap();
+}
+
+#[tokio::test]
+#[rstest]
+#[trace]
+async fn simulate_storage_deposit_intent(
+    #[notrace] mut rng: impl Rng,
+) {
+    let env = Env::builder()
+        .no_registration(true)
+        .build()
+        .await;
+
+    let wnear_token_id = TokenId::from(Nep141TokenId::new(env.wnear.id().clone()));
+
+    // Step 1: Deposit NEAR to get wNEAR
+    let wnear_amount = NearToken::from_millinear(100);
+    env.user1
+        .near_deposit(env.wnear.id(), wnear_amount)
+        .await
+        .unwrap();
+
+    // Step 2: Transfer wNEAR to Defuse contract
+    env.user1
+        .ft_transfer_call(
+            env.wnear.id(),
+            env.defuse.id(),
+            wnear_amount.as_yoctonear(),
+            None,
+            &env.user1.id().to_string(), // Recipient in Defuse
+        )
+        .await
+        .unwrap();
+
+    // Verify wNEAR balance in Defuse
+    assert_eq!(
+        env.defuse
+            .mt_balance_of(env.user1.id(), &wnear_token_id.to_string())
+            .await
+            .unwrap(),
+        wnear_amount.as_yoctonear()
+    );
+
+    let nonce = rng.random();
+
+    // Step 3: Create StorageDeposit intent
+    let storage_deposit_amount = NearToken::from_millinear(10);
+    let storage_deposit_intent = StorageDeposit {
+        contract_id: env.ft1.clone(), // Deposit storage on ft1 contract
+        deposit_for_account_id: env.user2.id().clone(), // For user2
+        amount: storage_deposit_amount,
+    };
+
+    let storage_deposit_payload = env.user1.sign_defuse_message(
+        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        env.defuse.id(),
+        nonce,
+        Deadline::MAX,
+        DefuseIntents {
+            intents: vec![storage_deposit_intent.clone().into()],
+        },
+    );
+
+    // Step 4: Simulate the intent
+    let result = env
+        .defuse
+        .simulate_intents([storage_deposit_payload.clone()])
+        .await
+        .unwrap();
+
+    assert_eq!(result.intents_executed.len(), 1);
+
+    // Step 5: Prepare expected StorageDeposit event
+    let expected_log = DefuseEvent::StorageDeposit(Cow::Owned(vec![IntentEvent {
+            intent_hash: storage_deposit_payload.hash(),
+            event: AccountEvent {
+                account_id: env.user1.id().clone().into(),
+                event: Cow::Owned(storage_deposit_intent),
             },
         }]))
         .as_near_sdk_log();
