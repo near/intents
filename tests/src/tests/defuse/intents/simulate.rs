@@ -18,6 +18,7 @@ use defuse::{
         events::DefuseEvent,
         intents::{
             DefuseIntents, IntentEvent,
+            token_diff::{TokenDiff, TokenDeltas},
             tokens::{FtWithdraw, MtWithdraw, NftWithdraw, StorageDeposit, Transfer},
         },
         payload::{DefusePayload, ExtractDefusePayload, multi::MultiPayload},
@@ -502,6 +503,113 @@ async fn simulate_storage_deposit_intent(
     println!("{}", near_sdk::serde_json::to_string_pretty(&result).unwrap());
 
     assert!(result.logs.iter().any(|log| log == &expected_log));
+    result.into_result().unwrap();
+}
+
+#[tokio::test]
+#[rstest]
+#[trace]
+async fn simulate_token_diff_intent(
+    #[notrace] mut rng: impl Rng,
+) {
+    let env = Env::builder()
+        .fee(Pips::ZERO)
+        .no_registration(true)
+        .build()
+        .await;
+
+    let ft1_token_id = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
+    let ft2_token_id = TokenId::from(Nep141TokenId::new(env.ft2.clone()));
+
+    // Step 1: Deposit tokens to users
+    // user1 has 100 ft1
+    env.defuse_ft_deposit_to(&env.ft1, 100, env.user1.id())
+        .await
+        .unwrap();
+
+    // user2 has 200 ft2
+    env.defuse_ft_deposit_to(&env.ft2, 200, env.user2.id())
+        .await
+        .unwrap();
+
+    // Verify initial balances
+    assert_eq!(
+        env.defuse
+            .mt_balance_of(env.user1.id(), &ft1_token_id.to_string())
+            .await
+            .unwrap(),
+        100
+    );
+    assert_eq!(
+        env.defuse
+            .mt_balance_of(env.user2.id(), &ft2_token_id.to_string())
+            .await
+            .unwrap(),
+        200
+    );
+
+    let nonce1 = rng.random();
+    let nonce2 = rng.random();
+
+    // Step 2: Create TokenDiff intents for P2P swap
+    // user1: swap -100 ft1 for +200 ft2
+    let user1_token_diff = TokenDiff {
+        diff: TokenDeltas::default()
+            .with_apply_deltas([
+                (ft1_token_id.clone(), -100),
+                (ft2_token_id.clone(), 200),
+            ])
+            .unwrap(),
+        memo: None,
+        referral: None,
+    };
+
+    // user2: swap -200 ft2 for +100 ft1
+    let user2_token_diff = TokenDiff {
+        diff: TokenDeltas::default()
+            .with_apply_deltas([
+                (ft1_token_id.clone(), 100),
+                (ft2_token_id.clone(), -200),
+            ])
+            .unwrap(),
+        memo: None,
+        referral: None,
+    };
+
+    // Step 3: Sign both intents
+    let user1_payload = env.user1.sign_defuse_message(
+        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        env.defuse.id(),
+        nonce1,
+        Deadline::MAX,
+        DefuseIntents {
+            intents: vec![user1_token_diff.clone().into()],
+        },
+    );
+
+    let user2_payload = env.user2.sign_defuse_message(
+        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        env.defuse.id(),
+        nonce2,
+        Deadline::MAX,
+        DefuseIntents {
+            intents: vec![user2_token_diff.clone().into()],
+        },
+    );
+
+    // Step 4: Simulate both intents
+    let result = env
+        .defuse
+        .simulate_intents([user1_payload.clone(), user2_payload.clone()])
+        .await
+        .unwrap();
+
+    assert_eq!(result.intents_executed.len(), 2);
+
+    // Step 5: Verify the simulation succeeded (no invariant violation)
+    result.logs.iter().for_each(|log| println!("{}", log));
+    println!("{}", near_sdk::serde_json::to_string_pretty(&result).unwrap());
+
     result.into_result().unwrap();
 }
 
