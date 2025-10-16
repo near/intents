@@ -16,7 +16,11 @@ impl Inspector for ExecuteInspector {
     fn on_deadline(&mut self, _deadline: Deadline) {}
 
     fn on_event(&mut self, event: DefuseEvent<'_>) {
-        event.emit();
+        //NOTE: Public key managemant can happen either through Intents or 
+        //directly through `AccountManager`. Therefore emit happens in `defuse::contract::accounts::account::Account` 
+        if !matches!(event, DefuseEvent::PublicKeyAdded(_) | DefuseEvent::PublicKeyRemoved(_)) {
+            event.emit();
+        }
     }
 
     #[inline]
