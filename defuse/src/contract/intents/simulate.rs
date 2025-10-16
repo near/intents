@@ -36,7 +36,7 @@ impl SimulateInspector {
                 .chain(std::iter::once(intents_executed_event.to_json()))
                 .map(|elem|
                 //NOTE: match exact format of events as when emitted by near-sdk
-                ::std::format!("EVENT_JSON:{}", elem.to_string()))
+                ::std::format!("EVENT_JSON:{elem}"))
                 .collect(),
             intents_executed: self.intents_executed,
             min_deadline: self.min_deadline,
