@@ -1,4 +1,3 @@
-use core::num;
 use std::collections::{HashMap, HashSet};
 
 use arbitrary::{Arbitrary, Unstructured};
@@ -17,7 +16,7 @@ use defuse::core::{
 use defuse_near_utils::arbitrary::ArbitraryAccountId;
 use defuse_randomness::{Rng, make_true_rng};
 use defuse_test_utils::random::random_bytes;
-use near_sdk::{AccountId, store::vec};
+use near_sdk::AccountId;
 use tokio::task::JoinSet;
 
 use crate::{
@@ -142,31 +141,74 @@ impl Env {
         accounts
     }
 
-    // async fn generate_tokens(&self, accounts: &[&AccountData]) -> Vec<TokenId> {
+    async fn generate_tokens(&self) -> Vec<AccountId> {
+        let mut tokens = vec![];
+        let num_tokens = make_true_rng().random_range(2..=MAX_TOKENS);
+
+        for num in 0..=num_tokens {
+            let root = self.sandbox.root_account().clone();
+            let poa_factory = self.poa_factory.clone();
+            let defuse = self.defuse.clone();
+
+            let token = root
+                .poa_factory_deploy_token(&poa_factory.id(), &format!("ft_{}", num), None)
+                .await
+                .unwrap();
+
+            poa_factory
+                .ft_storage_deposit_many(&token, &[root.id(), defuse.id()])
+                .await
+                .unwrap();
+
+            root.poa_factory_ft_deposit(
+                poa_factory.id(),
+                &self.poa_ft_name(&token),
+                root.id(),
+                1_000_000_000,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
+
+            tokens.push(token);
+        }
+
+        tokens
+    }
+
+    // async fn generate_tokens(&self) -> Vec<AccountId> {
     //     let mut set = JoinSet::new();
     //     let num_tokens = make_true_rng().random_range(2..=MAX_TOKENS);
-    //     let accounts = accounts
-    //         .iter()
-    //         .map(|a| a.account.id().clone())
-    //         .collect::<Vec<_>>();
 
     //     for num in 0..=num_tokens {
-    //         // TODO: reduce cloning
     //         let root = self.sandbox.root_account().clone();
-    //         let poa = self.poa_factory.clone();
-    //         let accounts = accounts.clone();
+    //         let poa_factory = self.poa_factory.clone();
+    //         let defuse = self.defuse.clone();
 
     //         set.spawn(async move {
-    //             let token_id = root
-    //                 .poa_factory_deploy_token(&poa.id(), &format!("ft_{}", num), None)
+    //             let token = root
+    //                 .poa_factory_deploy_token(&poa_factory.id(), &format!("ft_{}", num), None)
     //                 .await
     //                 .unwrap();
 
-    //             poa.ft_storage_deposit_many(&token_id, &accounts)
+    //             poa_factory
+    //                 .ft_storage_deposit_many(&token, &[root.id(), defuse.id()])
     //                 .await
     //                 .unwrap();
 
-    //             TokenId::from(Nep141TokenId::new(token_id))
+    //             root.poa_factory_ft_deposit(
+    //                 poa_factory.id(),
+    //                 &poa_ft_name(token),
+    //                 root.id(),
+    //                 1_000_000_000,
+    //                 None,
+    //                 None,
+    //             )
+    //             .await
+    //             .unwrap();
+
+    //             let root_balance = root.ft_token_balance_of(&token, root.id()).await.unwrap();
     //         });
     //     }
 
@@ -177,29 +219,6 @@ impl Env {
 
     //     tokens
     // }
-
-    async fn generate_tokens(&self) -> Vec<AccountId> {
-        let mut set = JoinSet::new();
-        let num_tokens = make_true_rng().random_range(2..=MAX_TOKENS);
-
-        for num in 0..=num_tokens {
-            let root = self.sandbox.root_account().clone();
-            let poa_id = self.poa_factory.id().clone();
-
-            set.spawn(async move {
-                root.poa_factory_deploy_token(&poa_id, &format!("ft_{}", num), None)
-                    .await
-                    .unwrap()
-            });
-        }
-
-        let mut tokens = vec![];
-        while let Some(result) = set.join_next().await {
-            tokens.push(result.unwrap());
-        }
-
-        tokens
-    }
 
     fn generate_public_key_changes(
         &self,
@@ -240,55 +259,39 @@ impl Env {
     async fn apply_accounts(&self, rng: &mut impl Rng, random_bytes: &[u8]) -> Vec<AccountData> {
         let mut accounts = self.generate_account_data(rng).await;
 
-        // let payload: Vec<_> = accounts
-        //     .iter_mut()
-        //     .map(|account| {
-        //         let intents = self.generate_public_key_changes(account, rng, random_bytes);
-        //         self.sign_intents(&account.account, intents)
-        //     })
-        //     .collect();
+        let payload: Vec<_> = accounts
+            .iter_mut()
+            .map(|account| {
+                let intents = self.generate_public_key_changes(account, rng, random_bytes);
+                self.sign_intents(&account.account, intents)
+            })
+            .collect();
 
-        // self.defuse.execute_intents(payload).await.unwrap();
+        self.defuse.execute_intents(payload).await.unwrap();
 
         accounts
     }
 
     async fn apply_trades(&self, rng: &mut impl Rng, accounts: &mut Vec<AccountData>) {
         let tokens = self.generate_tokens().await;
-        let trades = self.generate_trades(rng, accounts, &tokens);
+        let (trades, required_deposits) = self.generate_trades(rng, accounts, &tokens);
 
-        self.deposit_for_trades(accounts).await;
+        self.deposit_for_trades(required_deposits).await;
 
         self.defuse.execute_intents(trades).await.unwrap();
     }
 
     // TODO: make it parallel!
-    async fn deposit_for_trades(&self, accounts: &[AccountData]) {
-        for account in accounts {
-            for (token, balance) in &account.token_balances {
-                let id = account.account.id();
-
-                // TODO: move it to token creation
-                self.poa_factory_ft_deposit(
-                    self.poa_factory.id(),
-                    &self.poa_ft_name(token),
-                    self.sandbox.root_account().id(),
-                    1_000_000_000,
-                    None,
-                    None,
-                )
+    async fn deposit_for_trades(&self, required_deposits: HashMap<(AccountId, AccountId), u128>) {
+        for ((account_id, token), amount) in required_deposits {
+            self.poa_factory
+                .ft_storage_deposit(&token, Some(&account_id))
                 .await
                 .unwrap();
 
-                self.poa_factory
-                    .ft_storage_deposit(token, Some(id))
-                    .await
-                    .unwrap();
-
-                self.defuse_ft_deposit_to(&token, *balance, id)
-                    .await
-                    .unwrap();
-            }
+            self.defuse_ft_deposit_to(&token, amount, &account_id)
+                .await
+                .unwrap();
         }
     }
 
@@ -297,13 +300,15 @@ impl Env {
         rng: &mut impl Rng,
         accounts: &mut [AccountData],
         tokens: &[AccountId],
-    ) -> Vec<MultiPayload> {
+    ) -> (Vec<MultiPayload>, HashMap<(AccountId, AccountId), u128>) {
         if tokens.is_empty() {
-            return vec![];
+            return (vec![], HashMap::new());
         }
 
         let num_trades = rng.random_range(1..=MAX_TRADES);
         let mut payload = Vec::with_capacity(num_trades * 2);
+
+        let mut required_deposits: HashMap<(AccountId, AccountId), u128> = HashMap::new();
 
         for _ in 0..num_trades {
             let (ft1_ix, ft2_ix) = get_random_pair_indices(rng, tokens.len());
@@ -321,6 +326,11 @@ impl Env {
             // Process account 1
             {
                 let acc = &mut accounts[acc1_ix];
+
+                *required_deposits
+                    .entry((acc.account.id().clone(), ft1.clone()))
+                    .or_insert(0) += amount_in as u128;
+
                 payload.push(self.sign_intents(
                     &acc.account,
                     vec![Intent::TokenDiff(TokenDiff {
@@ -337,6 +347,11 @@ impl Env {
             // Process account 2
             {
                 let acc = &mut accounts[acc2_ix];
+
+                *required_deposits
+                    .entry((acc.account.id().clone(), ft2.clone()))
+                    .or_insert(0) += amount_out as u128;
+
                 payload.push(self.sign_intents(
                     &acc.account,
                     vec![Intent::TokenDiff(TokenDiff {
@@ -351,7 +366,7 @@ impl Env {
             }
         }
 
-        payload
+        (payload, required_deposits)
     }
 }
 
