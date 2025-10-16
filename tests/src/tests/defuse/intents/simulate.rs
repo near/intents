@@ -71,7 +71,7 @@ async fn simulate_transfer_intent(
     };
 
     let transfer_intent_payload = env.user1.sign_defuse_message(
-        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        SigningStandard::default(),
         env.defuse.id(),
         nonce,
         Deadline::MAX,
@@ -140,7 +140,7 @@ async fn simulate_ft_withdraw_intent(
     };
 
     let ft_withdraw_payload = env.user1.sign_defuse_message(
-        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        SigningStandard::default(),
         env.defuse.id(),
         nonce,
         Deadline::MAX,
@@ -258,7 +258,7 @@ async fn simulate_nft_withdraw_intent(
     };
 
     let nft_withdraw_payload = env.user1.sign_defuse_message(
-        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        SigningStandard::default(),
         env.defuse.id(),
         nonce,
         Deadline::MAX,
@@ -383,7 +383,7 @@ async fn simulate_mt_withdraw_intent(
     };
 
     let mt_withdraw_payload = env.user1.sign_defuse_message(
-        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        SigningStandard::default(),
         defuse2.id(), // Sign for defuse2 since we're simulating on it
         nonce,
         Deadline::MAX,
@@ -463,7 +463,7 @@ async fn simulate_storage_deposit_intent(
     };
 
     let storage_deposit_payload = env.user1.sign_defuse_message(
-        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        SigningStandard::default(),
         env.defuse.id(),
         nonce,
         Deadline::MAX,
@@ -564,7 +564,8 @@ async fn simulate_token_diff_intent(
 
     // Step 3: Sign both intents
     let user1_payload = env.user1.sign_defuse_message(
-        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        // SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        SigningStandard::default(),
         env.defuse.id(),
         nonce1,
         Deadline::MAX,
@@ -574,7 +575,7 @@ async fn simulate_token_diff_intent(
     );
 
     let user2_payload = env.user2.sign_defuse_message(
-        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        SigningStandard::default(),
         env.defuse.id(),
         nonce2,
         Deadline::MAX,
@@ -649,7 +650,7 @@ async fn simulate_add_public_key_intent(
     };
 
     let add_public_key_payload = env.user1.sign_defuse_message(
-        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        SigningStandard::default(),
         env.defuse.id(),
         nonce,
         Deadline::MAX,
@@ -696,7 +697,7 @@ async fn simulate_remove_public_key_intent(
     };
 
     let add_public_key_payload = env.user1.sign_defuse_message(
-        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        SigningStandard::default(),
         env.defuse.id(),
         add_nonce,
         Deadline::MAX,
@@ -718,7 +719,7 @@ async fn simulate_remove_public_key_intent(
     };
 
     let remove_public_key_payload = env.user1.sign_defuse_message(
-        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        SigningStandard::default(),
         env.defuse.id(),
         remove_nonce,
         Deadline::MAX,
@@ -760,7 +761,7 @@ async fn simulate_set_auth_by_predecessor_id_intent(
     };
 
     let set_auth_payload = env.user1.sign_defuse_message(
-        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        SigningStandard::default(),
         env.defuse.id(),
         nonce,
         Deadline::MAX,
@@ -838,7 +839,7 @@ async fn simulate_auth_call_intent(
     };
 
     let auth_call_payload = env.user1.sign_defuse_message(
-        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        SigningStandard::default(),
         env.defuse.id(),
         nonce,
         Deadline::MAX,
