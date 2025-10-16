@@ -18,7 +18,8 @@ use defuse::{
         events::DefuseEvent,
         intents::{
             DefuseIntents, IntentEvent,
-            account::{AddPublicKey, RemovePublicKey},
+            account::{AddPublicKey, RemovePublicKey, SetAuthByPredecessorId},
+            auth::AuthCall,
             token_diff::{TokenDiff, TokenDeltas},
             tokens::{FtWithdraw, MtWithdraw, NftWithdraw, StorageDeposit, Transfer},
         },
@@ -734,6 +735,136 @@ async fn simulate_remove_public_key_intent(
     // Step 5: Verify the simulation succeeded
     // Note: RemovePublicKey doesn't emit events through the inspector,
     // so we just verify that the simulation completed successfully
+    result.logs.iter().for_each(|log| println!("{}", log));
+    println!("{}", near_sdk::serde_json::to_string_pretty(&result).unwrap());
+
+    result.into_result().unwrap();
+}
+
+#[tokio::test]
+#[rstest]
+#[trace]
+async fn simulate_set_auth_by_predecessor_id_intent(
+    #[notrace] mut rng: impl Rng,
+) {
+    let env = Env::builder()
+        .no_registration(true)
+        .build()
+        .await;
+
+    let nonce = rng.random();
+
+    // Step 1: Create SetAuthByPredecessorId intent to enable auth by predecessor
+    let set_auth_intent = SetAuthByPredecessorId {
+        enabled: true,
+    };
+
+    let set_auth_payload = env.user1.sign_defuse_message(
+        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        env.defuse.id(),
+        nonce,
+        Deadline::MAX,
+        DefuseIntents {
+            intents: vec![set_auth_intent.clone().into()],
+        },
+    );
+
+    // Step 2: Simulate the intent
+    let result = env
+        .defuse
+        .simulate_intents([set_auth_payload.clone()])
+        .await
+        .unwrap();
+
+    assert_eq!(result.intents_executed.len(), 1);
+
+    // Step 3: Verify the expected SetAuthByPredecessorId event
+    let expected_log = DefuseEvent::SetAuthByPredecessorId(AccountEvent::new(
+        env.user1.id(),
+        set_auth_intent,
+    ))
+    .as_near_sdk_log();
+
+    result.logs.iter().for_each(|log| println!("{}", log));
+    println!("{}", near_sdk::serde_json::to_string_pretty(&result).unwrap());
+
+    assert!(result.logs.iter().any(|log| log == &expected_log));
+    result.into_result().unwrap();
+}
+
+#[tokio::test]
+#[rstest]
+#[trace]
+async fn simulate_auth_call_intent(
+    #[notrace] mut rng: impl Rng,
+) {
+    let env = Env::builder()
+        .no_registration(true)
+        .build()
+        .await;
+
+    let wnear_token_id = TokenId::from(Nep141TokenId::new(env.wnear.id().clone()));
+
+    // Step 1: Deposit wNEAR for the user (needed if we want to attach deposit)
+    let wnear_amount = NearToken::from_millinear(100);
+    env.user1
+        .near_deposit(env.wnear.id(), wnear_amount)
+        .await
+        .unwrap();
+
+    // Step 2: Transfer wNEAR to Defuse contract
+    env.user1
+        .ft_transfer_call(
+            env.wnear.id(),
+            env.defuse.id(),
+            wnear_amount.as_yoctonear(),
+            None,
+            &env.user1.id().to_string(),
+        )
+        .await
+        .unwrap();
+
+    // Verify wNEAR balance
+    assert_eq!(
+        env.defuse
+            .mt_balance_of(env.user1.id(), &wnear_token_id.to_string())
+            .await
+            .unwrap(),
+        wnear_amount.as_yoctonear()
+    );
+
+    let nonce = rng.random();
+
+    // Step 3: Create AuthCall intent with attached deposit
+    let auth_call_intent = AuthCall {
+        contract_id: env.ft1.clone(), // Call to ft1 contract
+        msg: "test_message".to_string(),
+        attached_deposit: NearToken::from_millinear(10),
+        min_gas: None,
+    };
+
+    let auth_call_payload = env.user1.sign_defuse_message(
+        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        env.defuse.id(),
+        nonce,
+        Deadline::MAX,
+        DefuseIntents {
+            intents: vec![auth_call_intent.into()],
+        },
+    );
+
+    // Step 4: Simulate the intent
+    let result = env
+        .defuse
+        .simulate_intents([auth_call_payload.clone()])
+        .await
+        .unwrap();
+
+    assert_eq!(result.intents_executed.len(), 1);
+
+    // Step 5: Verify the simulation succeeded
+    // Note: AuthCall doesn't emit a specific event through the inspector,
+    // it only deducts wNEAR balance if attached_deposit is non-zero
     result.logs.iter().for_each(|log| println!("{}", log));
     println!("{}", near_sdk::serde_json::to_string_pretty(&result).unwrap());
 
