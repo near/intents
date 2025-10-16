@@ -209,6 +209,7 @@ impl Env {
         &mut self.sandbox
     }
 
+    // TODO: move it to account impl
     pub fn sign_intents(&self, account: &Account, intents: Vec<Intent>) -> MultiPayload {
         let nonce = make_true_rng().random();
         account.sign_defuse_message(
@@ -220,15 +221,6 @@ impl Env {
         )
     }
 }
-
-// // TODO: check this
-// impl Drop for Env {
-//     fn drop(&mut self) {
-//         tokio::runtime::Handle::current().block_on(async {
-//             self.verify_storage_consistency().await;
-//         })
-//     }
-// }
 
 impl Deref for Env {
     type Target = Account;

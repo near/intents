@@ -1,113 +1,119 @@
 use std::collections::{HashMap, HashSet};
 
+use anyhow::Result;
 use arbitrary::{Arbitrary, Unstructured};
 use arbitrary_with::{ArbitraryAs, As};
 use defuse::core::{
-    Nonce, Salt,
+    Nonce,
     crypto::PublicKey,
     fees::{FeesConfig, Pips},
 };
 use defuse_near_utils::arbitrary::ArbitraryAccountId;
-use defuse_randomness::Rng;
+use defuse_randomness::{Rng, make_true_rng, seq::IndexedRandom};
+use defuse_test_utils::random::random_bytes;
 use near_sdk::AccountId;
 
-use defuse::core::{intents::Intent, token_id::TokenId};
-use near_workspaces::Account;
+use defuse::core::token_id::TokenId;
 
 const MAX_ACCOUNTS: usize = 5;
-const MAX_SALTS: usize = 5;
+const MAX_NONCES: usize = 5;
+const MAX_TOKENS: usize = 3;
 
-#[derive(Debug, Clone)]
+const MIN_BALANCE_AMOUNT: u128 = 1_000;
+const MAX_BALANCE_AMOUNT: u128 = 10_000;
+
+#[derive(Arbitrary, Debug, Clone)]
 pub struct AccountData {
-    pub account: Account,
+    #[arbitrary(with = As::<ArbitraryAccountId>::arbitrary)]
+    pub account_id: AccountId,
 
+    // #[arbitrary(with = As::<LimitLen<MAX_ACCOUNTS, _>>::arbitrary)]
+    #[arbitrary(with = generate_limited_arbitrary::<MAX_ACCOUNTS, _, _>)]
     pub public_keys: HashSet<PublicKey>,
 
+    // #[arbitrary(with = As::<LimitLen<MAX_NONCES, HashSet<Nonce>>>::arbitrary)]
+    #[arbitrary(with = generate_limited_arbitrary::<MAX_NONCES, _, _>)]
     pub nonces: HashSet<Nonce>,
-
-    pub token_balances: HashMap<AccountId, u128>,
 
     pub disable_auth_by_predecessor: bool,
 }
 
-// #[derive(Arbitrary, Debug, Clone, PartialEq, Eq)]
-// pub struct AccountData {
-//     #[arbitrary(with = generate_arbitrary_account)]
-//     pub account: Account,
-
-//     #[arbitrary(with = generate_arbitrary_pubkeys)]
-//     pub public_keys: HashSet<PublicKey>,
-
-//     #[arbitrary(with = arbitrary_default)]
-//     pub nonces: HashSet<Nonce>,
-
-//     #[arbitrary(with = arbitrary_default)]
-//     pub token_balances: HashMap<TokenId, u128>,
-
-//     pub disable_auth_by_predecessor: bool,
-// }
-
-// fn generate_arbitrary_account(u: &mut Unstructured) -> arbitrary::Result<HashSet<PublicKey>> {
-//     let num_keys = u.int_in_range(0..=MAX_KEYS_PER_ACCOUNT)?;
-
-//     (0..num_keys)
-//         .map(|_| {
-//             let key_bytes: [u8; 32] = u.arbitrary()?;
-//             Ok(PublicKey::Ed25519(key_bytes))
-//         })
-//         .collect()
-// }
-
-// fn generate_arbitrary_pubkeys(u: &mut Unstructured) -> arbitrary::Result<HashSet<PublicKey>> {
-//     let num_keys = u.int_in_range(0..=MAX_KEYS_PER_ACCOUNT)?;
-
-//     (0..num_keys)
-//         .map(|_| {
-//             let key_bytes: [u8; 32] = u.arbitrary()?;
-//             Ok(PublicKey::Ed25519(key_bytes))
-//         })
-//         .collect()
-// }
-
-// fn arbitrary_default<T: Default>(_u: &mut Unstructured) -> arbitrary::Result<T> {
-//     Ok(T::default())
-// }
-
-/// Generates arbitrary but consistent state changes through intents
+/// Generates arbitrary but consistent state changes
 #[derive(Debug)]
 pub struct PermanentState {
     pub accounts: Vec<AccountData>,
     pub fees: FeesConfig,
+    pub token_balances: HashMap<AccountId, HashMap<TokenId, u128>>,
+    pub tokens: Vec<TokenId>,
 }
 
 impl PermanentState {
-    pub fn get_random_account(&self, rng: &mut impl Rng) -> &Account {
+    pub fn get_random_account(&self, rng: &mut impl Rng) -> &AccountId {
         let index = rng.random_range(0..self.accounts.len());
-        &self.accounts[index].account
+        &self.accounts[index].account_id
     }
-    // pub fn generate(rng: &mut impl Rng, random_bytes: &[u8]) -> Self {
-    //     let u = &mut Unstructured::new(&random_bytes);
 
-    //     let num_accounts = rng.random_range(1..=MAX_ACCOUNTS);
-    //     let accounts = (0..num_accounts)
-    //         .map(|_| AccountData::arbitrary(u).unwrap())
-    //         .collect::<Vec<_>>();
+    pub fn generate() -> Result<Self> {
+        let mut rng = make_true_rng();
+        let random_bytes = random_bytes(50..1000, &mut rng);
+        let u = &mut Unstructured::new(&random_bytes);
 
-    //     let fee: u32 = rng.random_range(..=1000);
-    //     let fee_collector = ArbitraryAccountId::arbitrary_as(u).unwrap();
-    //     let fees = FeesConfig {
-    //         fee: Pips::from_pips(fee).unwrap(),
-    //         fee_collector,
-    //     };
+        let accounts = generate_limited_arbitrary::<MAX_ACCOUNTS, Vec<AccountData>, _>(u)?;
 
-    //     let salts = (0..MAX_SALTS)
-    //         .map(|_| {
-    //             let salt = Salt::arbitrary(u).unwrap();
-    //             let value = rng.random();
-    //             (salt, value)
-    //         })
-    //         .collect();
+        let fee: u32 = rng.random_range(..=Pips::MAX.as_pips());
+        let fee_collector = ArbitraryAccountId::arbitrary_as(u).unwrap();
+        let fees = FeesConfig {
+            fee: Pips::from_pips(fee).unwrap(),
+            fee_collector,
+        };
 
-    //     Self { accounts, fees }
-    // }
+        // TODO: generate_only_fts
+        let tokens = generate_limited_arbitrary::<MAX_TOKENS, Vec<TokenId>, _>(u)?;
+
+        let token_balances = generate_balances(&mut rng, &accounts, &tokens);
+
+        Ok(Self {
+            accounts,
+            fees,
+            tokens,
+            token_balances,
+        })
+    }
+}
+
+fn generate_limited_arbitrary<const MAX: usize, T, A>(u: &mut Unstructured) -> arbitrary::Result<T>
+where
+    A: for<'a> Arbitrary<'a>,
+    T: FromIterator<A>,
+{
+    let len = u.int_in_range(0..=MAX).unwrap_or(0);
+
+    Ok((0..len).filter_map(|_| A::arbitrary(u).ok()).collect::<T>())
+}
+
+fn generate_balances(
+    mut rng: &mut impl Rng,
+    accounts: &[AccountData],
+    tokens: &[TokenId],
+) -> HashMap<AccountId, HashMap<TokenId, u128>> {
+    if tokens.is_empty() {
+        return HashMap::new();
+    }
+
+    accounts
+        .into_iter()
+        .map(|account| {
+            let num_tokens = rng.random_range(1..=tokens.len());
+
+            let balances = tokens
+                .choose_multiple(&mut rng, num_tokens)
+                .map(|token| {
+                    let amount = rng.random_range(MIN_BALANCE_AMOUNT..=MAX_BALANCE_AMOUNT);
+                    (token.clone(), amount)
+                })
+                .collect();
+
+            (account.account_id.clone(), balances)
+        })
+        .collect()
 }

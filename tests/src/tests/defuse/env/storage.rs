@@ -1,12 +1,18 @@
-use std::collections::{HashMap, HashSet};
+use anyhow::Result;
+use near_workspaces::Account;
+use std::{
+    collections::{HashMap, HashSet},
+    os::macos::raw::stat,
+};
 
 use arbitrary::{Arbitrary, Unstructured};
 use arbitrary_with::ArbitraryAs;
 use defuse::core::{
+    Deadline,
     crypto::PublicKey,
     fees::{FeesConfig, Pips},
     intents::{
-        Intent,
+        DefuseIntents, Intent,
         account::AddPublicKey,
         token_diff::{TokenDeltas, TokenDiff},
     },
@@ -16,16 +22,21 @@ use defuse::core::{
 use defuse_near_utils::arbitrary::ArbitraryAccountId;
 use defuse_randomness::{Rng, make_true_rng};
 use defuse_test_utils::random::random_bytes;
+use futures::stream;
+use futures::stream::TryStreamExt;
+use futures::{StreamExt, stream::FuturesUnordered};
 use near_sdk::AccountId;
+use std::future::Future;
 use tokio::task::JoinSet;
 
 use crate::{
     tests::{
         defuse::{
+            DefuseSigner, SigningStandard,
             accounts::AccountManagerExt,
             env::{
                 Env,
-                state::{AccountData, PermanentState},
+                state::{self, AccountData, PermanentState},
             },
             intents::ExecuteIntentsExt,
             state::FeesManagerExt,
@@ -45,20 +56,35 @@ const MIN_TRADE_AMOUNT: u128 = 1_000;
 const MAX_TRADE_AMOUNT: u128 = 10_000;
 
 pub trait StorageMigration {
-    async fn apply_storage_data(&mut self);
+    async fn generate_storage_data(&mut self);
     async fn verify_storage_consistency(&self);
+}
+macro_rules! execute_parallel {
+    ($self:expr, $items:expr, $task:ident) => {{
+        $items
+            .iter()
+            .map(|item| $self.$task(item))
+            .collect::<FuturesUnordered<_>>()
+            .try_collect::<Vec<_>>()
+            .await
+    }};
 }
 
 impl StorageMigration for Env {
-    async fn apply_storage_data(&mut self) {
-        let mut rng = make_true_rng();
-        let random_bytes = random_bytes(50..1000, &mut rng);
+    async fn generate_storage_data(&mut self) {
+        let state = PermanentState::generate().unwrap();
 
-        let mut accounts = self.apply_accounts(&mut rng, &random_bytes).await;
-        self.apply_trades(&mut rng, &mut accounts).await;
-        let fees = self.apply_fees(&mut rng, &random_bytes).await;
+        // pub accounts: Vec<AccountData>,
 
-        self.arbitrary_state = Some(PermanentState { accounts, fees });
+        execute_parallel!(self, &state.tokens, apply_token).expect("Failed to apply tokens");
+        execute_parallel!(self, &state.tokens, apply_token_balance)
+            .expect("Failed to apply token balances");
+
+        self.apply_fees().await.expect("Failed to apply fees");
+
+        self.apply_accounts().await;
+
+        self.arbitrary_state = Some(state);
     }
 
     async fn verify_storage_consistency(&self) {
@@ -121,252 +147,120 @@ impl StorageMigration for Env {
 }
 
 impl Env {
-    // TODO: make it parallel!
-    async fn generate_account_data(&self, rng: &mut impl Rng) -> Vec<AccountData> {
-        let mut accounts = Vec::new();
-        let num_accs = make_true_rng().random_range(2..=MAX_ACCOUNTS);
+    async fn apply_token(&self, token: &TokenId) -> Result<()> {
+        let root = self.sandbox.root_account();
 
-        for num in 0..=num_accs {
-            let account = self.create_user(&format!("account_{}", num)).await;
+        let token = root
+            .poa_factory_deploy_token(&self.poa_factory.id(), &format!("ft_{}", 123), None)
+            .await?;
 
-            accounts.push(AccountData {
-                account: account.clone(),
-                disable_auth_by_predecessor: rng.random(),
-                public_keys: HashSet::new(),
-                nonces: HashSet::new(),
-                token_balances: HashMap::new(),
-            });
-        }
+        // TODO:  Create with futures
+        self.poa_factory
+            .ft_storage_deposit_many(&token, &[root.id(), self.defuse.id()])
+            .await?;
 
-        accounts
+        root.poa_factory_ft_deposit(
+            self.poa_factory.id(),
+            &self.poa_ft_name(&token),
+            root.id(),
+            1_000_000_000,
+            None,
+            None,
+        )
+        .await?;
+
+        Ok(())
     }
 
-    async fn generate_tokens(&self) -> Vec<AccountId> {
-        let mut tokens = vec![];
-        let num_tokens = make_true_rng().random_range(2..=MAX_TOKENS);
+    async fn apply_token_balance(&self, data: (AccountId, HashMap<AccountId, u128>)) -> Result<()> {
+        let (account_id, balances) = data;
 
-        for num in 0..=num_tokens {
-            let root = self.sandbox.root_account().clone();
-            let poa_factory = self.poa_factory.clone();
-            let defuse = self.defuse.clone();
+        balances
+            .iter()
+            .map(|(token, amount)| async {
+                self.defuse_ft_deposit_to(token, *amount, &account_id).await
+            })
+            .collect::<FuturesUnordered<_>>()
+            .try_collect::<Vec<_>>()
+            .await?;
 
-            let token = root
-                .poa_factory_deploy_token(&poa_factory.id(), &format!("ft_{}", num), None)
-                .await
-                .unwrap();
-
-            poa_factory
-                .ft_storage_deposit_many(&token, &[root.id(), defuse.id()])
-                .await
-                .unwrap();
-
-            root.poa_factory_ft_deposit(
-                poa_factory.id(),
-                &self.poa_ft_name(&token),
-                root.id(),
-                1_000_000_000,
-                None,
-                None,
-            )
-            .await
-            .unwrap();
-
-            tokens.push(token);
-        }
-
-        tokens
+        Ok(())
     }
 
-    // async fn generate_tokens(&self) -> Vec<AccountId> {
-    //     let mut set = JoinSet::new();
-    //     let num_tokens = make_true_rng().random_range(2..=MAX_TOKENS);
+    async fn apply_fees(&self) -> Result<()> {
+        let state = self.arbitrary_state.as_ref().unwrap();
 
-    //     for num in 0..=num_tokens {
-    //         let root = self.sandbox.root_account().clone();
-    //         let poa_factory = self.poa_factory.clone();
-    //         let defuse = self.defuse.clone();
+        self.defuse
+            .set_fee(self.defuse.id(), state.fees.fee)
+            .await?;
 
-    //         set.spawn(async move {
-    //             let token = root
-    //                 .poa_factory_deploy_token(&poa_factory.id(), &format!("ft_{}", num), None)
-    //                 .await
-    //                 .unwrap();
+        self.defuse
+            .set_fee_collector(self.defuse.id(), &state.fees.fee_collector)
+            .await?;
 
-    //             poa_factory
-    //                 .ft_storage_deposit_many(&token, &[root.id(), defuse.id()])
-    //                 .await
-    //                 .unwrap();
+        Ok(())
+    }
 
-    //             root.poa_factory_ft_deposit(
-    //                 poa_factory.id(),
-    //                 &poa_ft_name(token),
-    //                 root.id(),
-    //                 1_000_000_000,
-    //                 None,
-    //                 None,
-    //             )
-    //             .await
-    //             .unwrap();
-
-    //             let root_balance = root.ft_token_balance_of(&token, root.id()).await.unwrap();
-    //         });
-    //     }
-
-    //     let mut tokens = vec![];
-    //     while let Some(result) = set.join_next().await {
-    //         tokens.push(result.unwrap());
-    //     }
-
-    //     tokens
-    // }
-
-    fn generate_public_key_changes(
-        &self,
-        acc: &mut AccountData,
-        rng: &mut impl Rng,
-        random_bytes: &[u8],
-    ) -> Vec<Intent> {
-        let u = &mut Unstructured::new(random_bytes);
-        let num_operations = rng.random_range(0..=MAX_PUBKEYS_PER_ACCOUNT);
-
-        (0..num_operations)
-            .map(|_| {
-                let public_key = PublicKey::arbitrary(u).unwrap();
-
-                acc.public_keys.insert(public_key.clone());
-
+    async fn apply_public_keys(&self, acc: &Account, data: &AccountData) -> Result<()> {
+        let intents = data
+            .public_keys
+            .iter()
+            .map(|public_key| {
                 Intent::AddPublicKey(AddPublicKey {
                     public_key: public_key.clone(),
                 })
             })
-            .collect()
-    }
-
-    async fn apply_fees(&self, rng: &mut impl Rng, random_bytes: &[u8]) -> FeesConfig {
-        let fee = Pips::from_pips(rng.random_range(0..=Pips::MAX.as_pips())).unwrap();
-        let u = &mut Unstructured::new(random_bytes);
-        let fee_collector = ArbitraryAccountId::arbitrary_as(u).unwrap();
-
-        self.defuse.set_fee(self.defuse.id(), fee).await.unwrap();
-        self.defuse
-            .set_fee_collector(self.defuse.id(), &fee_collector)
-            .await
-            .unwrap();
-
-        return FeesConfig { fee, fee_collector };
-    }
-
-    async fn apply_accounts(&self, rng: &mut impl Rng, random_bytes: &[u8]) -> Vec<AccountData> {
-        let mut accounts = self.generate_account_data(rng).await;
-
-        let payload: Vec<_> = accounts
-            .iter_mut()
-            .map(|account| {
-                let intents = self.generate_public_key_changes(account, rng, random_bytes);
-                self.sign_intents(&account.account, intents)
-            })
             .collect();
 
-        self.defuse.execute_intents(payload).await.unwrap();
+        self.defuse
+            .execute_intents([self.sign_intents(&acc, intents)])
+            .await?;
 
-        accounts
+        Ok(())
     }
 
-    async fn apply_trades(&self, rng: &mut impl Rng, accounts: &mut Vec<AccountData>) {
-        let tokens = self.generate_tokens().await;
-        let (trades, required_deposits) = self.generate_trades(rng, accounts, &tokens);
+    async fn apply_nonces(&self, acc: &Account, data: &AccountData) -> Result<()> {
+        let payload = data
+            .nonces
+            .iter()
+            .map(|nonce| {
+                acc.sign_defuse_message(
+                    SigningStandard::default(),
+                    self.defuse.id(),
+                    *nonce,
+                    Deadline::MAX,
+                    DefuseIntents { intents: vec![] },
+                )
+            })
+            .collect::<Vec<_>>();
 
-        self.deposit_for_trades(required_deposits).await;
+        self.defuse.execute_intents(payload).await?;
 
-        self.defuse.execute_intents(trades).await.unwrap();
+        Ok(())
     }
 
-    // TODO: make it parallel!
-    async fn deposit_for_trades(&self, required_deposits: HashMap<(AccountId, AccountId), u128>) {
-        for ((account_id, token), amount) in required_deposits {
-            self.poa_factory
-                .ft_storage_deposit(&token, Some(&account_id))
-                .await
-                .unwrap();
+    async fn apply_accounts(&self) -> Result<()> {
+        let state = self.arbitrary_state.as_ref().unwrap();
 
-            self.defuse_ft_deposit_to(&token, amount, &account_id)
-                .await
-                .unwrap();
-        }
-    }
+        // state.accounts.iter().map(|data| {
 
-    fn generate_trades(
-        &self,
-        rng: &mut impl Rng,
-        accounts: &mut [AccountData],
-        tokens: &[AccountId],
-    ) -> (Vec<MultiPayload>, HashMap<(AccountId, AccountId), u128>) {
-        if tokens.is_empty() {
-            return (vec![], HashMap::new());
-        }
+        // });
 
-        let num_trades = rng.random_range(1..=MAX_TRADES);
-        let mut payload = Vec::with_capacity(num_trades * 2);
+        for account in &state.accounts {
+            // TODO: fix this
+            let acc = self.create_user("123").await;
 
-        let mut required_deposits: HashMap<(AccountId, AccountId), u128> = HashMap::new();
-
-        for _ in 0..num_trades {
-            let (ft1_ix, ft2_ix) = get_random_pair_indices(rng, tokens.len());
-            let (acc1_ix, acc2_ix) = get_random_pair_indices(rng, accounts.len());
-
-            let amount_in = rng.random_range(MIN_TRADE_AMOUNT..=MAX_TRADE_AMOUNT) as i128;
-            let amount_out = rng.random_range(MIN_TRADE_AMOUNT..=MAX_TRADE_AMOUNT) as i128;
-
-            let ft1 = &tokens[ft1_ix];
-            let ft2 = &tokens[ft2_ix];
-
-            let deltas1 = create_deltas(ft1, ft2, -amount_in, amount_out);
-            let deltas2 = create_deltas(ft1, ft2, amount_in, -amount_out);
-
-            // Process account 1
-            {
-                let acc = &mut accounts[acc1_ix];
-
-                *required_deposits
-                    .entry((acc.account.id().clone(), ft1.clone()))
-                    .or_insert(0) += amount_in as u128;
-
-                payload.push(self.sign_intents(
-                    &acc.account,
-                    vec![Intent::TokenDiff(TokenDiff {
-                        diff: deltas1,
-                        memo: None,
-                        referral: None,
-                    })],
-                ));
-
-                update_balance(&mut acc.token_balances, ft1, -amount_in);
-                update_balance(&mut acc.token_balances, ft2, amount_out);
+            if account.disable_auth_by_predecessor {
+                self.defuse
+                    .disable_auth_by_predecessor_id(&acc.id())
+                    .await?;
             }
 
-            // Process account 2
-            {
-                let acc = &mut accounts[acc2_ix];
-
-                *required_deposits
-                    .entry((acc.account.id().clone(), ft2.clone()))
-                    .or_insert(0) += amount_out as u128;
-
-                payload.push(self.sign_intents(
-                    &acc.account,
-                    vec![Intent::TokenDiff(TokenDiff {
-                        diff: deltas2,
-                        memo: None,
-                        referral: None,
-                    })],
-                ));
-
-                update_balance(&mut acc.token_balances, ft1, amount_in);
-                update_balance(&mut acc.token_balances, ft2, -amount_out);
-            }
+            self.apply_public_keys(&acc, account).await?;
+            self.apply_nonces(&acc, account).await?;
         }
 
-        (payload, required_deposits)
+        Ok(())
     }
 }
 
@@ -396,15 +290,4 @@ fn create_deltas(
     TokenDeltas::default()
         .with_apply_deltas([(token1, delta1), (token2, delta2)])
         .expect("Failed to create deltas")
-}
-
-fn update_balance(balances: &mut HashMap<AccountId, u128>, token: &AccountId, delta: i128) {
-    let entry = balances.entry(token.clone()).or_insert(0);
-
-    *entry = entry.saturating_add(delta as u128);
-    // if delta < 0 {
-    //     *entry = entry.saturating_sub((-delta) as u128);
-    // } else {
-    //     *entry = entry.saturating_add(delta as u128);
-    // }
 }

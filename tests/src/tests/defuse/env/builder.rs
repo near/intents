@@ -138,8 +138,9 @@ impl EnvBuilder {
         };
 
         if deploy_legacy {
-            env.apply_storage_data().await;
+            env.generate_storage_data().await;
             env.defuse.upgrade_defuse().await.unwrap();
+            env.verify_storage_consistency().await;
         }
 
         env.near_deposit(env.wnear.id(), NearToken::from_near(100))
