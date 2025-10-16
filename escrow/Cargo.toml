@@ -19,7 +19,9 @@ near-contract-standards.workspace = true
 near-sdk.workspace = true
 
 chrono = { workspace = true, features = ["serde"] }
+serde_with = { workspace = true, features = ["chrono_0_4"] }
+impl-tools.workspace = true
 
 [features]
-abi = []
+abi = ["serde_with/schemars_0_8"]
 contract = []

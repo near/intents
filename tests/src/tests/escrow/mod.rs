@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use defuse_escrow::{Contract as EscrowContract, State, TakerMessage};
+use defuse_escrow::{Contract as EscrowContract, Params, State, TakerMessage};
 use defuse_poa_factory::contract::Role as POAFactoryRole;
 
 use near_sdk::NearToken;
@@ -76,12 +76,15 @@ async fn test_escrow() {
     escrow
         .call("new")
         .args_json(json!({
-            "config": EscrowContract {
+            "params": Params {
+                maker_id: maker.id().clone(),
                 maker_token_id: maker_token.clone(),
                 maker_amount: MAKER_AMOUNT,
                 taker_token_id: taker_token.clone(),
                 taker_amount: TAKER_AMOUNT,
-                taker_asset_receiver_id: maker.id().clone(),
+                receiver_id: None,
+                receiver_memo: None,
+                receiver_msg: None,
                 state: State::Init,
                 salt: [0; 4],
             }
@@ -116,6 +119,8 @@ async fn test_escrow() {
             None,
             &serde_json::to_string(&TakerMessage {
                 receiver_id: taker.id().clone(),
+                memo: None,
+                msg: None,
             })
             .unwrap(),
         )
