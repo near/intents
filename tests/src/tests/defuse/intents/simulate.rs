@@ -3,7 +3,7 @@ use crate::tests::defuse::intents::ExecuteIntentsExt;
 use crate::tests::defuse::SigningStandard;
 use crate::tests::utils::AsNearSdkLog;
 use crate::utils::{crypto::Signer, ft::FtExt, mt::MtExt, nft::NftExt, test_log::TestLog, wnear::WNearExt};
-use defuse_crypto::Payload;
+use defuse_crypto::{Payload, PublicKey};
 use arbitrary::{Arbitrary, Unstructured};
 use defuse::contract::config::{DefuseConfig, RolesConfig};
 use defuse::core::fees::{FeesConfig, Pips};
@@ -18,6 +18,7 @@ use defuse::{
         events::DefuseEvent,
         intents::{
             DefuseIntents, IntentEvent,
+            account::{AddPublicKey, RemovePublicKey},
             token_diff::{TokenDiff, TokenDeltas},
             tokens::{FtWithdraw, MtWithdraw, NftWithdraw, StorageDeposit, Transfer},
         },
@@ -607,6 +608,132 @@ async fn simulate_token_diff_intent(
     assert_eq!(result.intents_executed.len(), 2);
 
     // Step 5: Verify the simulation succeeded (no invariant violation)
+    result.logs.iter().for_each(|log| println!("{}", log));
+    println!("{}", near_sdk::serde_json::to_string_pretty(&result).unwrap());
+
+    result.into_result().unwrap();
+}
+
+// TODO: make sure PublicKeyAdd is recorded in simulation log
+#[tokio::test]
+#[rstest]
+#[trace]
+async fn simulate_add_public_key_intent(
+    #[notrace] mut rng: impl Rng,
+) {
+    let env = Env::builder()
+        .no_registration(true)
+        .build()
+        .await;
+
+    let nonce = rng.random();
+
+    // Step 1: Generate a new public key to add
+    // We'll use a randomly generated Ed25519 public key
+    let mut random_key_bytes = [0u8; 32];
+    rng.fill_bytes(&mut random_key_bytes);
+    let new_public_key = PublicKey::Ed25519(random_key_bytes);
+
+    // Step 2: Create AddPublicKey intent
+    let add_public_key_intent = AddPublicKey {
+        public_key: new_public_key,
+    };
+
+    let add_public_key_payload = env.user1.sign_defuse_message(
+        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        env.defuse.id(),
+        nonce,
+        Deadline::MAX,
+        DefuseIntents {
+            intents: vec![add_public_key_intent.into()],
+        },
+    );
+
+    // Step 3: Simulate the intent
+    let result = env
+        .defuse
+        .simulate_intents([add_public_key_payload.clone()])
+        .await
+        .unwrap();
+
+    assert_eq!(result.intents_executed.len(), 1);
+
+    // Step 4: Verify the simulation succeeded
+    // Note: AddPublicKey doesn't emit events through the inspector,
+    // so we just verify that the simulation completed successfully
+    result.logs.iter().for_each(|log| println!("{}", log));
+    println!("{}", near_sdk::serde_json::to_string_pretty(&result).unwrap());
+
+    result.into_result().unwrap();
+}
+
+// TODO: make sure PublicKeyEvent is recorded in simulation log
+#[tokio::test]
+#[rstest]
+#[trace]
+async fn simulate_remove_public_key_intent(
+    #[notrace] mut rng: impl Rng,
+) {
+    let env = Env::builder()
+        .no_registration(true)
+        .build()
+        .await;
+
+    // Step 1: Generate a new public key to add and then remove
+    let mut random_key_bytes = [0u8; 32];
+    rng.fill_bytes(&mut random_key_bytes);
+    let new_public_key = PublicKey::Ed25519(random_key_bytes);
+
+    // Step 2: First, actually execute AddPublicKey to add the key to the state
+    let add_nonce = rng.random();
+    let add_public_key_intent = AddPublicKey {
+        public_key: new_public_key,
+    };
+
+    let add_public_key_payload = env.user1.sign_defuse_message(
+        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        env.defuse.id(),
+        add_nonce,
+        Deadline::MAX,
+        DefuseIntents {
+            intents: vec![add_public_key_intent.into()],
+        },
+    );
+
+    // Execute the add intent (not simulate) to actually add the key
+    env.defuse
+        .execute_intents([add_public_key_payload])
+        .await
+        .unwrap();
+
+    // Step 3: Create RemovePublicKey intent to remove the key we just added
+    let remove_nonce = rng.random();
+    let remove_public_key_intent = RemovePublicKey {
+        public_key: new_public_key,
+    };
+
+    let remove_public_key_payload = env.user1.sign_defuse_message(
+        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        env.defuse.id(),
+        remove_nonce,
+        Deadline::MAX,
+        DefuseIntents {
+            intents: vec![remove_public_key_intent.into()],
+        },
+    );
+
+    // Step 4: Simulate the remove intent
+    let result = env
+        .defuse
+        .simulate_intents([remove_public_key_payload.clone()])
+        .await
+        .unwrap();
+
+    assert_eq!(result.intents_executed.len(), 1);
+
+    // Step 5: Verify the simulation succeeded
+    // Note: RemovePublicKey doesn't emit events through the inspector,
+    // so we just verify that the simulation completed successfully
     result.logs.iter().for_each(|log| println!("{}", log));
     println!("{}", near_sdk::serde_json::to_string_pretty(&result).unwrap());
 
