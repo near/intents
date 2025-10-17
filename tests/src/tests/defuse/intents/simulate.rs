@@ -23,7 +23,7 @@ use defuse::core::{
         account::{AddPublicKey, RemovePublicKey, SetAuthByPredecessorId},
         auth::AuthCall,
         token_diff::{TokenDeltas, TokenDiff, TokenDiffEvent},
-        tokens::{FtWithdraw, MtWithdraw, NftWithdraw, StorageDeposit, Transfer},
+        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
     },
 };
 use defuse_crypto::Payload;
@@ -151,6 +151,82 @@ async fn simulate_ft_withdraw_intent(#[notrace] mut rng: impl Rng) {
             }]))
             .as_near_sdk_log(),
             AccountNonceIntentEvent::new(&env.user1.id(), nonce, &ft_withdraw_payload)
+                .into_event_log(),
+        ]
+    );
+}
+
+#[tokio::test]
+#[rstest]
+#[trace]
+async fn simulate_native_withdraw_intent(#[notrace] mut rng: impl Rng) {
+    let env = Env::builder().no_registration(true).build().await;
+
+    let wnear_token_id = TokenId::from(Nep141TokenId::new(env.wnear.id().clone()));
+
+    // Deposit wNEAR to user1's Defuse account
+    let wnear_amount = NearToken::from_millinear(100);
+    env.user1
+        .near_deposit(env.wnear.id(), wnear_amount)
+        .await
+        .unwrap();
+
+    env.user1
+        .ft_transfer_call(
+            env.wnear.id(),
+            env.defuse.id(),
+            wnear_amount.as_yoctonear(),
+            None,
+            env.user1.id().as_ref(),
+        )
+        .await
+        .unwrap();
+
+    // Verify wNEAR balance in Defuse
+    assert_eq!(
+        env.defuse
+            .mt_balance_of(env.user1.id(), &wnear_token_id.to_string())
+            .await
+            .unwrap(),
+        wnear_amount.as_yoctonear()
+    );
+
+    let nonce = rng.random();
+
+    let withdraw_amount = NearToken::from_millinear(50);
+    let native_withdraw_intent = NativeWithdraw {
+        receiver_id: env.user2.id().clone(),
+        amount: withdraw_amount,
+    };
+
+    let native_withdraw_payload = env.user1.sign_defuse_message(
+        SigningStandard::default(),
+        env.defuse.id(),
+        nonce,
+        Deadline::MAX,
+        DefuseIntents {
+            intents: vec![native_withdraw_intent.clone().into()],
+        },
+    );
+
+    let result = env
+        .defuse
+        .simulate_intents([native_withdraw_payload.clone()])
+        .await
+        .unwrap();
+
+    assert_eq!(
+        result.logs,
+        vec![
+            DefuseEvent::NativeWithdraw(Cow::Owned(vec![IntentEvent {
+                intent_hash: native_withdraw_payload.hash(),
+                event: AccountEvent {
+                    account_id: env.user1.id().clone().into(),
+                    event: Cow::Owned(native_withdraw_intent),
+                },
+            }]))
+            .as_near_sdk_log(),
+            AccountNonceIntentEvent::new(&env.user1.id(), nonce, &native_withdraw_payload)
                 .into_event_log(),
         ]
     );
