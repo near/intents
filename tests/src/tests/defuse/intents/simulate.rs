@@ -624,7 +624,6 @@ async fn simulate_token_diff_intent(
     ]);
 }
 
-// TODO: make sure PublicKeyAdd is recorded in simulation log
 #[tokio::test]
 #[rstest]
 #[trace]
@@ -666,8 +665,6 @@ async fn simulate_add_public_key_intent(
         .await
         .unwrap();
 
-    // TODO: AddPublicKey should emit PublicKeyAdd event through the inspector
-    // For now, we only check for the nonce event
     assert_eq!(result.logs, vec![
         DefuseEvent::PublicKeyAdded(AccountEvent::new(
             env.user1.id(),

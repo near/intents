@@ -32,13 +32,10 @@ async fn execute_add_public_key_intent_no_duplicate_events(
 
     let nonce = rng.random();
 
-    // Step 1: Generate a new public key to add
-    // We'll use a randomly generated Ed25519 public key
     let mut random_key_bytes = [0u8; 32];
     rng.fill_bytes(&mut random_key_bytes);
     let new_public_key = PublicKey::Ed25519(random_key_bytes);
 
-    // Step 2: Create AddPublicKey intent
     let add_public_key_intent = AddPublicKey {
         public_key: new_public_key,
     };
@@ -53,21 +50,18 @@ async fn execute_add_public_key_intent_no_duplicate_events(
         },
     );
 
-    // Step 3: Execute the intent
     let result = env
         .defuse
         .execute_intents([add_public_key_payload.clone()])
         .await
         .unwrap();
 
-    // Step 4: Collect all logs from receipts (where the actual execution happens)
     let all_receipt_logs: Vec<&String> = result
         .logs_and_gas_burnt_in_receipts()
         .iter()
         .flat_map(|(logs, _gas)| logs.iter())
         .collect();
 
-    // Step 5: Verify that PublicKeyAdded event appears exactly once in the logs
     let public_key_added_count = all_receipt_logs
         .iter()
         .filter(|log| log.contains("\"event\":\"public_key_added\""))
