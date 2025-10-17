@@ -62,14 +62,7 @@ impl Account {
     }
 
     #[inline]
-    #[must_use]
-    pub fn add_public_key(&mut self, me: &AccountIdRef, public_key: PublicKey) -> bool {
-        self.maybe_add_public_key(me, public_key)
-    }
-
-    #[inline]
-    #[must_use]
-    fn maybe_add_public_key(&mut self, me: &AccountIdRef, public_key: PublicKey) -> bool {
+    pub fn maybe_add_public_key(&mut self, me: &AccountIdRef, public_key: PublicKey) -> bool {
         if me == public_key.to_implicit_account_id() {
             let was_removed = self.is_implicit_public_key_removed();
             self.set_implicit_public_key_removed(false);
@@ -80,14 +73,7 @@ impl Account {
     }
 
     #[inline]
-    #[must_use]
-    pub fn remove_public_key(&mut self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
-        self.maybe_remove_public_key(me, public_key)
-    }
-
-    #[inline]
-    #[must_use]
-    fn maybe_remove_public_key(&mut self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
+    pub fn maybe_remove_public_key(&mut self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
         if me == public_key.to_implicit_account_id() {
             let was_removed = self.is_implicit_public_key_removed();
             self.set_implicit_public_key_removed(true);
