@@ -1,5 +1,5 @@
 use crate::tests::defuse::SigningStandard;
-use crate::tests::defuse::intents::ExecuteIntentsExt;
+use crate::tests::defuse::intents::{AccountNonceIntentEvent, ExecuteIntentsExt, NonceEvent};
 use crate::tests::utils::AsNearSdkLog;
 use crate::utils::{ft::FtExt, mt::MtExt, nft::NftExt, wnear::WNearExt};
 use crate::{
@@ -7,6 +7,7 @@ use crate::{
     tests::defuse::env::Env,
     tests::defuse::{DefuseExt, DefuseSigner},
 };
+use defuse::contract::config::{DefuseConfig, RolesConfig};
 use defuse::core::fees::{FeesConfig, Pips};
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
@@ -14,7 +15,7 @@ use defuse::core::token_id::nep171::Nep171TokenId;
 use defuse::core::token_id::nep245::Nep245TokenId;
 use defuse::core::{
     Deadline,
-    accounts::AccountEvent,
+    accounts::{AccountEvent, PublicKeyEvent},
     amounts::Amounts,
     events::DefuseEvent,
     intents::{
@@ -25,46 +26,16 @@ use defuse::core::{
         tokens::{FtWithdraw, MtWithdraw, NftWithdraw, StorageDeposit, Transfer},
     },
 };
-use defuse::{
-    contract::config::{DefuseConfig, RolesConfig},
-    core::{
-        Nonce,
-        accounts::{NonceEvent, PublicKeyEvent},
-    },
-};
-use defuse_crypto::{Payload, PublicKey};
+use defuse_crypto::Payload;
+use defuse_crypto::PublicKey;
 use defuse_randomness::Rng;
 use defuse_test_utils::random::{gen_random_string, random_bytes, rng};
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata, TokenMetadata,
 };
-use near_sdk::{AccountId, AccountIdRef, CryptoHash, NearToken, json_types::Base64VecU8};
+use near_sdk::{NearToken, json_types::Base64VecU8};
 use rstest::rstest;
 use std::borrow::Cow;
-
-pub struct AccountNonceIntentEvent(AccountId, Nonce, CryptoHash);
-
-impl AccountNonceIntentEvent {
-    fn new(
-        account_id: impl AsRef<AccountIdRef> + Clone,
-        nonce: Nonce,
-        payload: &impl Payload,
-    ) -> Self {
-        let acc = account_id.as_ref().to_owned();
-        Self(acc, nonce, payload.hash())
-    }
-
-    fn into_event_log(self) -> String {
-        DefuseEvent::IntentsExecuted(
-            vec![IntentEvent::new(
-                AccountEvent::new(self.0, NonceEvent::new(self.1)),
-                self.2,
-            )]
-            .into(),
-        )
-        .as_near_sdk_log()
-    }
-}
 
 #[tokio::test]
 #[rstest]

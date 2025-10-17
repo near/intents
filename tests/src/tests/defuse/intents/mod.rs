@@ -7,8 +7,8 @@ use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
 use defuse::{
     core::{
-        Deadline,
-        accounts::AccountEvent,
+        Deadline, Nonce,
+        accounts::{AccountEvent, NonceEvent},
         amounts::Amounts,
         events::DefuseEvent,
         intents::{
@@ -22,10 +22,34 @@ use defuse::{
 use defuse_crypto::Payload;
 use defuse_randomness::Rng;
 use defuse_test_utils::random::rng;
-use near_sdk::{AccountId, AccountIdRef};
+use near_sdk::{AccountId, AccountIdRef, CryptoHash};
 use rstest::rstest;
 use serde_json::json;
 use std::borrow::Cow;
+
+pub struct AccountNonceIntentEvent(AccountId, Nonce, CryptoHash);
+
+impl AccountNonceIntentEvent {
+    pub fn new(
+        account_id: impl AsRef<AccountIdRef> + Clone,
+        nonce: Nonce,
+        payload: &impl Payload,
+    ) -> Self {
+        let acc = account_id.as_ref().to_owned();
+        Self(acc, nonce, payload.hash())
+    }
+
+    pub fn into_event_log(self) -> String {
+        DefuseEvent::IntentsExecuted(
+            vec![IntentEvent::new(
+                AccountEvent::new(self.0, NonceEvent::new(self.1)),
+                self.2,
+            )]
+            .into(),
+        )
+        .as_near_sdk_log()
+    }
+}
 
 mod ft_withdraw;
 mod native_withdraw;

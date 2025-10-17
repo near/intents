@@ -1,8 +1,11 @@
 use crate::tests::defuse::SigningStandard;
-use crate::tests::defuse::intents::ExecuteIntentsExt;
+use crate::tests::defuse::intents::{AccountNonceIntentEvent, ExecuteIntentsExt};
+use crate::tests::utils::AsNearSdkLog;
 use crate::{tests::defuse::DefuseSigner, tests::defuse::env::Env};
 use defuse::core::{
     Deadline,
+    accounts::{AccountEvent, PublicKeyEvent},
+    events::DefuseEvent,
     intents::{
         DefuseIntents,
         account::{AddPublicKey, RemovePublicKey},
@@ -12,15 +15,44 @@ use defuse_crypto::PublicKey;
 use defuse_randomness::Rng;
 use defuse_test_utils::random::rng;
 use rstest::rstest;
+use std::borrow::Cow;
 
-/// Test that verifies AddPublicKey intent emits the PublicKeyAdded event exactly once
-/// when executed. This test ensures no duplicate events occur due to the special handling
-/// in defuse/src/contract/intents/execute.rs:19-23 where PublicKeyAdded/Removed events
-/// are filtered out in the on_event callback to prevent duplicates.
+macro_rules! assert_eq_event_logs {
+    ($left:expr, $right:expr) => {{
+        let left_normalized: Vec<String> = $left
+            .iter()
+            .cloned()
+            .map(|log: String| {
+                let json_str = log
+                    .strip_prefix("EVENT_JSON:")
+                    .expect(&format!("Log missing EVENT_JSON: prefix: {}", log));
+                let json_value: serde_json::Value = serde_json::from_str(json_str)
+                    .expect(&format!("Failed to parse JSON: {}", json_str));
+                serde_json::to_string(&json_value).expect("Failed to serialize JSON")
+            })
+            .collect();
+
+        let right_normalized: Vec<String> = $right
+            .iter()
+            .cloned()
+            .map(|log: String| {
+                let json_str = log
+                    .strip_prefix("EVENT_JSON:")
+                    .expect(&format!("Log missing EVENT_JSON: prefix: {}", log));
+                let json_value: serde_json::Value = serde_json::from_str(json_str)
+                    .expect(&format!("Failed to parse JSON: {}", json_str));
+                serde_json::to_string(&json_value).expect("Failed to serialize JSON")
+            })
+            .collect();
+
+        assert_eq!(left_normalized, right_normalized);
+    }};
+}
+
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn execute_add_public_key_intent_no_duplicate_events(#[notrace] mut rng: impl Rng) {
+async fn execute_add_public_key_intent(#[notrace] mut rng: impl Rng) {
     let env = Env::builder().no_registration(true).build().await;
 
     let nonce = rng.random();
@@ -49,57 +81,32 @@ async fn execute_add_public_key_intent_no_duplicate_events(#[notrace] mut rng: i
         .await
         .unwrap();
 
-    let all_receipt_logs: Vec<&String> = result
-        .logs_and_gas_burnt_in_receipts()
-        .iter()
-        .flat_map(|(logs, _gas)| logs.iter())
-        .collect();
-
-    let public_key_added_count = all_receipt_logs
-        .iter()
-        .filter(|log| log.contains("\"event\":\"public_key_added\""))
-        .count();
-
-    assert_eq!(
-        public_key_added_count, 1,
-        "PublicKeyAdded event should appear exactly once in logs, but appeared {public_key_added_count} times.\nAll logs: {all_receipt_logs:?}"
-    );
-
-    // Step 6: Verify the event contains the correct account_id and public_key
-    let public_key_added_log = all_receipt_logs
-        .iter()
-        .find(|log| log.contains("\"event\":\"public_key_added\""))
-        .expect("PublicKeyAdded event should be present in logs");
-
-    // Verify the log contains the correct account ID
-    assert!(
-        public_key_added_log.contains(&format!("\"account_id\":\"{}\"", env.user1.id())),
-        "PublicKeyAdded event should contain the correct account_id"
-    );
-
-    // Verify the log contains the correct public key
-    assert!(
-        public_key_added_log.contains(&format!("\"public_key\":\"{new_public_key}\"")),
-        "PublicKeyAdded event should contain the correct public_key"
+    assert_eq_event_logs!(
+        result.logs().to_vec(),
+        [
+            DefuseEvent::PublicKeyAdded(AccountEvent::new(
+                env.user1.id(),
+                PublicKeyEvent {
+                    public_key: Cow::Borrowed(&new_public_key),
+                },
+            ))
+            .as_near_sdk_log(),
+            AccountNonceIntentEvent::new(&env.user1.id(), nonce, &add_public_key_payload)
+                .into_event_log(),
+        ]
     );
 }
 
-/// Test that verifies RemovePublicKey intent emits the PublicKeyRemoved event exactly once
-/// when executed. This test ensures no duplicate events occur due to the special handling
-/// in defuse/src/contract/intents/execute.rs:19-23 where PublicKeyAdded/Removed events
-/// are filtered out in the on_event callback to prevent duplicates.
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn execute_remove_public_key_intent_no_duplicate_events(#[notrace] mut rng: impl Rng) {
+async fn execute_remove_public_key_intent(#[notrace] mut rng: impl Rng) {
     let env = Env::builder().no_registration(true).build().await;
 
-    // Step 1: Generate a new public key to add and then remove
     let mut random_key_bytes = [0u8; 32];
     rng.fill_bytes(&mut random_key_bytes);
     let new_public_key = PublicKey::Ed25519(random_key_bytes);
 
-    // Step 2: First, execute AddPublicKey to add the key to the state
     let add_nonce = rng.random();
     let add_public_key_intent = AddPublicKey {
         public_key: new_public_key,
@@ -115,13 +122,11 @@ async fn execute_remove_public_key_intent_no_duplicate_events(#[notrace] mut rng
         },
     );
 
-    // Execute the add intent to actually add the key
     env.defuse
         .execute_intents([add_public_key_payload])
         .await
         .unwrap();
 
-    // Step 3: Create RemovePublicKey intent to remove the key we just added
     let remove_nonce = rng.random();
     let remove_public_key_intent = RemovePublicKey {
         public_key: new_public_key,
@@ -137,46 +142,24 @@ async fn execute_remove_public_key_intent_no_duplicate_events(#[notrace] mut rng
         },
     );
 
-    // Step 4: Execute the remove intent
     let result = env
         .defuse
         .execute_intents([remove_public_key_payload.clone()])
         .await
         .unwrap();
 
-    // Step 5: Collect all logs from receipts (where the actual execution happens)
-    let all_receipt_logs: Vec<&String> = result
-        .logs_and_gas_burnt_in_receipts()
-        .iter()
-        .flat_map(|(logs, _gas)| logs.iter())
-        .collect();
-
-    // Step 6: Verify that PublicKeyRemoved event appears exactly once in the logs
-    let public_key_removed_count = all_receipt_logs
-        .iter()
-        .filter(|log| log.contains("\"event\":\"public_key_removed\""))
-        .count();
-
-    assert_eq!(
-        public_key_removed_count, 1,
-        "PublicKeyRemoved event should appear exactly once in logs, but appeared {public_key_removed_count} times.\nAll logs: {all_receipt_logs:?}"
-    );
-
-    // Step 7: Verify the event contains the correct account_id and public_key
-    let public_key_removed_log = all_receipt_logs
-        .iter()
-        .find(|log| log.contains("\"event\":\"public_key_removed\""))
-        .expect("PublicKeyRemoved event should be present in logs");
-
-    // Verify the log contains the correct account ID
-    assert!(
-        public_key_removed_log.contains(&format!("\"account_id\":\"{}\"", env.user1.id())),
-        "PublicKeyRemoved event should contain the correct account_id"
-    );
-
-    // Verify the log contains the correct public key
-    assert!(
-        public_key_removed_log.contains(&format!("\"public_key\":\"{new_public_key}\"")),
-        "PublicKeyRemoved event should contain the correct public_key"
+    assert_eq_event_logs!(
+        result.logs().to_vec(),
+        [
+            DefuseEvent::PublicKeyRemoved(AccountEvent::new(
+                env.user1.id(),
+                PublicKeyEvent {
+                    public_key: Cow::Borrowed(&new_public_key),
+                },
+            ))
+            .as_near_sdk_log(),
+            AccountNonceIntentEvent::new(&env.user1.id(), remove_nonce, &remove_public_key_payload)
+                .into_event_log(),
+        ]
     );
 }
