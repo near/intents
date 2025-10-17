@@ -8,10 +8,7 @@ use std::borrow::Cow;
 use bitflags::bitflags;
 use defuse_bitmap::U256;
 use defuse_core::{
-    NoncePrefix, Result,
-    accounts::{AccountEvent, PublicKeyEvent},
-    crypto::PublicKey,
-    events::DefuseEvent,
+    NoncePrefix, Result, accounts::AccountEvent, crypto::PublicKey, events::DefuseEvent,
     intents::account::SetAuthByPredecessorId,
 };
 
@@ -67,19 +64,7 @@ impl Account {
     #[inline]
     #[must_use]
     pub fn add_public_key(&mut self, me: &AccountIdRef, public_key: PublicKey) -> bool {
-        if !self.maybe_add_public_key(me, public_key) {
-            return false;
-        }
-
-        DefuseEvent::PublicKeyAdded(AccountEvent::new(
-            Cow::Borrowed(me),
-            PublicKeyEvent {
-                public_key: Cow::Borrowed(&public_key),
-            },
-        ))
-        .emit();
-
-        true
+        self.maybe_add_public_key(me, public_key)
     }
 
     #[inline]
@@ -97,19 +82,7 @@ impl Account {
     #[inline]
     #[must_use]
     pub fn remove_public_key(&mut self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
-        if !self.maybe_remove_public_key(me, public_key) {
-            return false;
-        }
-
-        DefuseEvent::PublicKeyRemoved(AccountEvent::new(
-            Cow::Borrowed(me),
-            PublicKeyEvent {
-                public_key: Cow::Borrowed(public_key),
-            },
-        ))
-        .emit();
-
-        true
+        self.maybe_remove_public_key(me, public_key)
     }
 
     #[inline]

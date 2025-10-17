@@ -38,9 +38,8 @@ pub trait AsNearSdkLog {
     fn as_near_sdk_log(&self) -> String;
 }
 
-
 impl AsNearSdkLog for DefuseEvent<'_> {
     fn as_near_sdk_log(&self) -> String {
-        ::std::format!("EVENT_JSON:{}", self.to_json().to_string())
+        ::std::format!("EVENT_JSON:{}", self.to_json())
     }
 }

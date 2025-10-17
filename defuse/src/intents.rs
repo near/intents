@@ -1,5 +1,10 @@
 use defuse_core::{
-    accounts::{AccountEvent, NonceEvent}, engine::deltas::InvariantViolated, fees::Pips, intents::IntentEvent, payload::multi::MultiPayload, Deadline, Result, Salt
+    Deadline, Result, Salt,
+    accounts::{AccountEvent, NonceEvent},
+    engine::deltas::InvariantViolated,
+    fees::Pips,
+    intents::IntentEvent,
+    payload::multi::MultiPayload,
 };
 
 use near_plugins::AccessControllable;

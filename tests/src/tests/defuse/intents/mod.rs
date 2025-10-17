@@ -2,7 +2,6 @@ use super::{DefuseSigner, accounts::AccountManagerExt, env::Env};
 use crate::tests::defuse::SigningStandard;
 use crate::tests::utils::AsNearSdkLog;
 use crate::utils::{crypto::Signer, mt::MtExt, test_log::TestLog};
-use defuse_crypto::Payload;
 use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
@@ -20,6 +19,7 @@ use defuse::{
     },
     intents::SimulationOutput,
 };
+use defuse_crypto::Payload;
 use defuse_randomness::Rng;
 use defuse_test_utils::random::rng;
 use near_sdk::{AccountId, AccountIdRef};
@@ -29,10 +29,10 @@ use std::borrow::Cow;
 
 mod ft_withdraw;
 mod native_withdraw;
-mod relayers;
-mod token_diff;
-mod simulate;
 mod public_key;
+mod relayers;
+mod simulate;
+mod token_diff;
 
 pub trait ExecuteIntentsExt: AccountManagerExt {
     async fn defuse_execute_intents(
@@ -203,13 +203,13 @@ async fn simulate_is_view_method(
 
     // Prepare expected transfer event
     let expected_log = DefuseEvent::Transfer(Cow::Owned(vec![IntentEvent {
-            intent_hash: transfer_intent_payload.hash(),
-            event: AccountEvent {
-                account_id: env.user1.id().clone().into(),
-                event: Cow::Owned(transfer_intent),
-            },
-        }]))
-        .as_near_sdk_log();
+        intent_hash: transfer_intent_payload.hash(),
+        event: AccountEvent {
+            account_id: env.user1.id().clone().into(),
+            event: Cow::Owned(transfer_intent),
+        },
+    }]))
+    .as_near_sdk_log();
 
     assert!(result.logs.iter().any(|log| log == &expected_log));
     //TODO: update

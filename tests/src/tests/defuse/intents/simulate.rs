@@ -1,63 +1,76 @@
-use crate::{tests::defuse::{DefuseExt, DefuseSigner}, tests::defuse::accounts::AccountManagerExt, tests::defuse::env::Env};
-use crate::tests::defuse::intents::ExecuteIntentsExt;
 use crate::tests::defuse::SigningStandard;
+use crate::tests::defuse::intents::ExecuteIntentsExt;
 use crate::tests::utils::AsNearSdkLog;
 use crate::utils::{ft::FtExt, mt::MtExt, nft::NftExt, wnear::WNearExt};
-use defuse_crypto::{Payload, PublicKey};
-use arbitrary::{Arbitrary, Unstructured};
-use defuse::{contract::config::{DefuseConfig, RolesConfig}, core::{accounts::{NonceEvent, PublicKeyEvent}, Nonce}};
+use crate::{
+    tests::defuse::accounts::AccountManagerExt,
+    tests::defuse::env::Env,
+    tests::defuse::{DefuseExt, DefuseSigner},
+};
 use defuse::core::fees::{FeesConfig, Pips};
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
 use defuse::core::token_id::nep171::Nep171TokenId;
-use defuse::{
-    core::{
-        Deadline,
-        accounts::AccountEvent,
-        amounts::Amounts,
-        events::DefuseEvent,
-        intents::{
-            DefuseIntents, IntentEvent,
-            account::{AddPublicKey, RemovePublicKey, SetAuthByPredecessorId},
-            auth::AuthCall,
-            token_diff::{TokenDiff, TokenDeltas, TokenDiffEvent},
-            tokens::{FtWithdraw, MtWithdraw, NftWithdraw, StorageDeposit, Transfer},
-        },
+use defuse::core::token_id::nep245::Nep245TokenId;
+use defuse::core::{
+    Deadline,
+    accounts::AccountEvent,
+    amounts::Amounts,
+    events::DefuseEvent,
+    intents::{
+        DefuseIntents, IntentEvent,
+        account::{AddPublicKey, RemovePublicKey, SetAuthByPredecessorId},
+        auth::AuthCall,
+        token_diff::{TokenDeltas, TokenDiff, TokenDiffEvent},
+        tokens::{FtWithdraw, MtWithdraw, NftWithdraw, StorageDeposit, Transfer},
     },
 };
+use defuse::{
+    contract::config::{DefuseConfig, RolesConfig},
+    core::{
+        Nonce,
+        accounts::{NonceEvent, PublicKeyEvent},
+    },
+};
+use defuse_crypto::{Payload, PublicKey};
 use defuse_randomness::Rng;
 use defuse_test_utils::random::{gen_random_string, random_bytes, rng};
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata, TokenMetadata,
 };
-use near_sdk::{json_types::Base64VecU8, AccountId, AccountIdRef, CryptoHash, NearToken};
+use near_sdk::{AccountId, AccountIdRef, CryptoHash, NearToken, json_types::Base64VecU8};
 use rstest::rstest;
-use serde_json::json;
 use std::borrow::Cow;
 
 pub struct AccountNonceIntentEvent(AccountId, Nonce, CryptoHash);
 
 impl AccountNonceIntentEvent {
-    fn new(account_id: impl AsRef<AccountIdRef> + Clone, nonce: Nonce, payload: impl Payload) -> Self {
+    fn new(
+        account_id: impl AsRef<AccountIdRef> + Clone,
+        nonce: Nonce,
+        payload: &impl Payload,
+    ) -> Self {
         let acc = account_id.as_ref().to_owned();
-        AccountNonceIntentEvent(acc, nonce, payload.hash())
+        Self(acc, nonce, payload.hash())
     }
 
     fn into_event_log(self) -> String {
-         DefuseEvent::IntentsExecuted(vec![IntentEvent::new(AccountEvent::new(self.0, NonceEvent::new(self.1)), self.2)].into()).as_near_sdk_log()
+        DefuseEvent::IntentsExecuted(
+            vec![IntentEvent::new(
+                AccountEvent::new(self.0, NonceEvent::new(self.1)),
+                self.2,
+            )]
+            .into(),
+        )
+        .as_near_sdk_log()
     }
 }
 
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_transfer_intent(
-    #[notrace] mut rng: impl Rng,
-) {
-    let env = Env::builder()
-        .no_registration(true)
-        .build()
-        .await;
+async fn simulate_transfer_intent(#[notrace] mut rng: impl Rng) {
+    let env = Env::builder().no_registration(true).build().await;
 
     env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
         .await
@@ -66,7 +79,9 @@ async fn simulate_transfer_intent(
     let nonce = rng.random();
     let transfer_intent = Transfer {
         receiver_id: env.user2.id().clone(),
-        tokens: Amounts::new(std::iter::once((TokenId::from(Nep141TokenId::new(env.ft1.clone())), 1000)).collect()),
+        tokens: Amounts::new(
+            std::iter::once((TokenId::from(Nep141TokenId::new(env.ft1.clone())), 1000)).collect(),
+        ),
         memo: None,
     };
 
@@ -85,39 +100,38 @@ async fn simulate_transfer_intent(
         .await
         .unwrap();
 
-    assert_eq!(result.logs, vec![
-        DefuseEvent::Transfer(vec![IntentEvent {
-            intent_hash: transfer_intent_payload.hash(),
-            event: AccountEvent {
-                account_id: env.user1.id().clone().into(),
-                event: Cow::Owned(transfer_intent),
-            },
-        }].into())
-        .as_near_sdk_log(),
-        AccountNonceIntentEvent::new(&env.user1.id(), nonce, transfer_intent_payload.clone()).into_event_log(),
-    ]);
-
+    assert_eq!(
+        result.logs,
+        vec![
+            DefuseEvent::Transfer(
+                vec![IntentEvent {
+                    intent_hash: transfer_intent_payload.hash(),
+                    event: AccountEvent {
+                        account_id: env.user1.id().clone().into(),
+                        event: Cow::Owned(transfer_intent),
+                    },
+                }]
+                .into()
+            )
+            .as_near_sdk_log(),
+            AccountNonceIntentEvent::new(&env.user1.id(), nonce, &transfer_intent_payload)
+                .into_event_log(),
+        ]
+    );
 }
 
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_ft_withdraw_intent(
-    #[notrace] mut rng: impl Rng,
-) {
-    let env = Env::builder()
-        .no_registration(true)
-        .build()
-        .await;
+async fn simulate_ft_withdraw_intent(#[notrace] mut rng: impl Rng) {
+    let env = Env::builder().no_registration(true).build().await;
 
-    // Step 1: Deposit FT to user1 in Defuse
     env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
         .await
         .unwrap();
 
     let ft1_token_id = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
 
-    // Verify balance in Defuse
     assert_eq!(
         env.defuse
             .mt_balance_of(env.user1.id(), &ft1_token_id.to_string())
@@ -128,7 +142,6 @@ async fn simulate_ft_withdraw_intent(
 
     let nonce = rng.random();
 
-    // Step 2: Create FtWithdraw intent to withdraw tokens from Defuse to external account
     let ft_withdraw_intent = FtWithdraw {
         token: env.ft1.clone(),
         receiver_id: env.user2.id().clone(),
@@ -149,45 +162,40 @@ async fn simulate_ft_withdraw_intent(
         },
     );
 
-    // Step 3: Simulate the intent
     let result = env
         .defuse
         .simulate_intents([ft_withdraw_payload.clone()])
         .await
         .unwrap();
 
-
-    assert_eq!(result.logs, vec![
-        DefuseEvent::FtWithdraw(Cow::Owned(vec![IntentEvent {
-            intent_hash: ft_withdraw_payload.hash(),
-            event: AccountEvent {
-                account_id: env.user1.id().clone().into(),
-                event: Cow::Owned(ft_withdraw_intent),
-            },
-        }]))
-        .as_near_sdk_log(),
-        AccountNonceIntentEvent::new(&env.user1.id(), nonce, ft_withdraw_payload.clone()).into_event_log(),
-    ]);
+    assert_eq!(
+        result.logs,
+        vec![
+            DefuseEvent::FtWithdraw(Cow::Owned(vec![IntentEvent {
+                intent_hash: ft_withdraw_payload.hash(),
+                event: AccountEvent {
+                    account_id: env.user1.id().clone().into(),
+                    event: Cow::Owned(ft_withdraw_intent),
+                },
+            }]))
+            .as_near_sdk_log(),
+            AccountNonceIntentEvent::new(&env.user1.id(), nonce, &ft_withdraw_payload)
+                .into_event_log(),
+        ]
+    );
 }
 
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_nft_withdraw_intent(
-    #[notrace] mut rng: impl Rng,
-) {
-    let env = Env::builder()
-        .no_registration(true)
-        .build()
-        .await;
+async fn simulate_nft_withdraw_intent(#[notrace] mut rng: impl Rng) {
+    let env = Env::builder().no_registration(true).build().await;
 
-    // Transfer NEAR to user1 for NFT contract deployment
     env.transfer_near(env.user1.id(), NearToken::from_near(100))
         .await
         .unwrap()
         .unwrap();
 
-    // Deploy NFT contract
     let nft_contract = env
         .user1
         .deploy_vanilla_nft_issuer(
@@ -205,9 +213,8 @@ async fn simulate_nft_withdraw_intent(
         .await
         .unwrap();
 
-    // Mint NFT to user1
     let nft_id = gen_random_string(&mut rng, 32..=32);
-    let nft = env
+    let _nft = env
         .user1
         .nft_mint(
             nft_contract.id(),
@@ -218,24 +225,20 @@ async fn simulate_nft_withdraw_intent(
         .await
         .unwrap();
 
-    // Create the token id for the NFT in Defuse
-    let nft_token_id = TokenId::from(
-        Nep171TokenId::new(nft_contract.id().to_owned(), nft_id.clone()).unwrap(),
-    );
+    let nft_token_id =
+        TokenId::from(Nep171TokenId::new(nft_contract.id().to_owned(), nft_id.clone()).unwrap());
 
-    // Transfer NFT to Defuse contract (deposit)
     env.user1
         .nft_transfer_call(
             nft_contract.id(),
             env.defuse.id(),
             nft_id.clone(),
             None,
-            env.user1.id().to_string(), // Recipient in Defuse
+            env.user1.id().to_string(),
         )
         .await
         .unwrap();
 
-    // Verify NFT is deposited in Defuse
     assert_eq!(
         env.defuse
             .mt_balance_of(env.user1.id(), &nft_token_id.to_string())
@@ -246,7 +249,6 @@ async fn simulate_nft_withdraw_intent(
 
     let nonce = rng.random();
 
-    // Create NftWithdraw intent
     let nft_withdraw_intent = NftWithdraw {
         token: nft_contract.id().clone(),
         receiver_id: env.user2.id().clone(),
@@ -267,35 +269,34 @@ async fn simulate_nft_withdraw_intent(
         },
     );
 
-    // Simulate the intent
     let result = env
         .defuse
         .simulate_intents([nft_withdraw_payload.clone()])
         .await
         .unwrap();
 
-    assert_eq!(result.logs, vec![
-        DefuseEvent::NftWithdraw(Cow::Owned(vec![IntentEvent {
-            intent_hash: nft_withdraw_payload.hash(),
-            event: AccountEvent {
-                account_id: env.user1.id().clone().into(),
-                event: Cow::Owned(nft_withdraw_intent),
-            },
-        }]))
-        .as_near_sdk_log(),
-        AccountNonceIntentEvent::new(&env.user1.id(), nonce, nft_withdraw_payload.clone()).into_event_log(),
-    ]);
+    assert_eq!(
+        result.logs,
+        vec![
+            DefuseEvent::NftWithdraw(Cow::Owned(vec![IntentEvent {
+                intent_hash: nft_withdraw_payload.hash(),
+                event: AccountEvent {
+                    account_id: env.user1.id().clone().into(),
+                    event: Cow::Owned(nft_withdraw_intent),
+                },
+            }]))
+            .as_near_sdk_log(),
+            AccountNonceIntentEvent::new(&env.user1.id(), nonce, &nft_withdraw_payload)
+                .into_event_log(),
+        ]
+    );
 }
 
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_mt_withdraw_intent(
-    #[notrace] mut rng: impl Rng,
-) {
-    let env = Env::builder()
-        .build()
-        .await;
+async fn simulate_mt_withdraw_intent(#[notrace] mut rng: impl Rng) {
+    let env = Env::builder().build().await;
 
     // Deploy a second Defuse contract which supports NEP-245 operations
     let defuse2 = env
@@ -314,7 +315,8 @@ async fn simulate_mt_withdraw_intent(
         .unwrap();
 
     // Register user1's public key on defuse2
-    let user1_secret_key: near_crypto::SecretKey = env.user1.secret_key().to_string().parse().unwrap();
+    let user1_secret_key: near_crypto::SecretKey =
+        env.user1.secret_key().to_string().parse().unwrap();
     if let near_crypto::PublicKey::ED25519(pk) = user1_secret_key.public_key() {
         env.user1
             .add_public_key(defuse2.id(), defuse_crypto::PublicKey::Ed25519(pk.0))
@@ -354,10 +356,8 @@ async fn simulate_mt_withdraw_intent(
         .unwrap();
 
     // Verify tokens are now in defuse2 as NEP-245 tokens
-    use defuse::core::token_id::nep245::Nep245TokenId;
-    let nep245_token_id = TokenId::from(
-        Nep245TokenId::new(env.defuse.id().to_owned(), ft1.to_string()).unwrap()
-    );
+    let nep245_token_id =
+        TokenId::from(Nep245TokenId::new(env.defuse.id().to_owned(), ft1.to_string()).unwrap());
 
     assert_eq!(
         defuse2
@@ -398,47 +398,44 @@ async fn simulate_mt_withdraw_intent(
         .await
         .unwrap();
 
-    assert_eq!(result.logs, vec![
-        DefuseEvent::MtWithdraw(Cow::Owned(vec![IntentEvent {
-            intent_hash: mt_withdraw_payload.hash(),
-            event: AccountEvent {
-                account_id: env.user1.id().clone().into(),
-                event: Cow::Owned(mt_withdraw_intent),
-            },
-        }]))
-        .as_near_sdk_log(),
-        AccountNonceIntentEvent::new(&env.user1.id(), nonce, mt_withdraw_payload.clone()).into_event_log(),
-    ]);
+    assert_eq!(
+        result.logs,
+        vec![
+            DefuseEvent::MtWithdraw(Cow::Owned(vec![IntentEvent {
+                intent_hash: mt_withdraw_payload.hash(),
+                event: AccountEvent {
+                    account_id: env.user1.id().clone().into(),
+                    event: Cow::Owned(mt_withdraw_intent),
+                },
+            }]))
+            .as_near_sdk_log(),
+            AccountNonceIntentEvent::new(&env.user1.id(), nonce, &mt_withdraw_payload)
+                .into_event_log(),
+        ]
+    );
 }
 
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_storage_deposit_intent(
-    #[notrace] mut rng: impl Rng,
-) {
-    let env = Env::builder()
-        .no_registration(true)
-        .build()
-        .await;
+async fn simulate_storage_deposit_intent(#[notrace] mut rng: impl Rng) {
+    let env = Env::builder().no_registration(true).build().await;
 
     let wnear_token_id = TokenId::from(Nep141TokenId::new(env.wnear.id().clone()));
 
-    // Step 1: Deposit NEAR to get wNEAR
     let wnear_amount = NearToken::from_millinear(100);
     env.user1
         .near_deposit(env.wnear.id(), wnear_amount)
         .await
         .unwrap();
 
-    // Step 2: Transfer wNEAR to Defuse contract
     env.user1
         .ft_transfer_call(
             env.wnear.id(),
             env.defuse.id(),
             wnear_amount.as_yoctonear(),
             None,
-            &env.user1.id().to_string(), // Recipient in Defuse
+            env.user1.id().as_ref(), // Recipient in Defuse
         )
         .await
         .unwrap();
@@ -454,7 +451,6 @@ async fn simulate_storage_deposit_intent(
 
     let nonce = rng.random();
 
-    // Step 3: Create StorageDeposit intent
     let storage_deposit_amount = NearToken::from_millinear(10);
     let storage_deposit_intent = StorageDeposit {
         contract_id: env.ft1.clone(), // Deposit storage on ft1 contract
@@ -472,32 +468,33 @@ async fn simulate_storage_deposit_intent(
         },
     );
 
-    // Step 4: Simulate the intent
     let result = env
         .defuse
         .simulate_intents([storage_deposit_payload.clone()])
         .await
         .unwrap();
 
-    assert_eq!(result.logs, vec![
-        DefuseEvent::StorageDeposit(Cow::Owned(vec![IntentEvent {
-            intent_hash: storage_deposit_payload.hash(),
-            event: AccountEvent {
-                account_id: env.user1.id().clone().into(),
-                event: Cow::Owned(storage_deposit_intent),
-            },
-        }]))
-        .as_near_sdk_log(),
-        AccountNonceIntentEvent::new(&env.user1.id(), nonce, storage_deposit_payload.clone()).into_event_log(),
-    ]);
+    assert_eq!(
+        result.logs,
+        vec![
+            DefuseEvent::StorageDeposit(Cow::Owned(vec![IntentEvent {
+                intent_hash: storage_deposit_payload.hash(),
+                event: AccountEvent {
+                    account_id: env.user1.id().clone().into(),
+                    event: Cow::Owned(storage_deposit_intent),
+                },
+            }]))
+            .as_near_sdk_log(),
+            AccountNonceIntentEvent::new(&env.user1.id(), nonce, &storage_deposit_payload)
+                .into_event_log(),
+        ]
+    );
 }
 
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_token_diff_intent(
-    #[notrace] mut rng: impl Rng,
-) {
+async fn simulate_token_diff_intent(#[notrace] mut rng: impl Rng) {
     let env = Env::builder()
         .fee(Pips::ZERO)
         .no_registration(true)
@@ -507,7 +504,6 @@ async fn simulate_token_diff_intent(
     let ft1_token_id = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
     let ft2_token_id = TokenId::from(Nep141TokenId::new(env.ft2.clone()));
 
-    // Step 1: Deposit tokens to users
     // user1 has 100 ft1
     env.defuse_ft_deposit_to(&env.ft1, 100, env.user1.id())
         .await
@@ -537,14 +533,10 @@ async fn simulate_token_diff_intent(
     let nonce1 = rng.random();
     let nonce2 = rng.random();
 
-    // Step 2: Create TokenDiff intents for P2P swap
     // user1: swap -100 ft1 for +200 ft2
     let user1_token_diff = TokenDiff {
         diff: TokenDeltas::default()
-            .with_apply_deltas([
-                (ft1_token_id.clone(), -100),
-                (ft2_token_id.clone(), 200),
-            ])
+            .with_apply_deltas([(ft1_token_id.clone(), -100), (ft2_token_id.clone(), 200)])
             .unwrap(),
         memo: None,
         referral: None,
@@ -553,16 +545,12 @@ async fn simulate_token_diff_intent(
     // user2: swap -200 ft2 for +100 ft1
     let user2_token_diff = TokenDiff {
         diff: TokenDeltas::default()
-            .with_apply_deltas([
-                (ft1_token_id.clone(), 100),
-                (ft2_token_id.clone(), -200),
-            ])
+            .with_apply_deltas([(ft1_token_id.clone(), 100), (ft2_token_id.clone(), -200)])
             .unwrap(),
         memo: None,
         referral: None,
     };
 
-    // Step 3: Sign both intents
     let user1_payload = env.user1.sign_defuse_message(
         // SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
         SigningStandard::default(),
@@ -584,66 +572,67 @@ async fn simulate_token_diff_intent(
         },
     );
 
-    // Step 4: Simulate both intents
     let result = env
         .defuse
         .simulate_intents([user1_payload.clone(), user2_payload.clone()])
         .await
         .unwrap();
 
-    // When multiple intents are executed together:
-    // 1. All specific intent events are emitted first (one per intent)
-    // 2. Then ONE IntentsExecuted event with all nonces is emitted at the end
-    assert_eq!(result.logs, vec![
-        DefuseEvent::TokenDiff(Cow::Owned(vec![IntentEvent {
-            intent_hash: user1_payload.hash(),
-            event: AccountEvent {
-                account_id: env.user1.id().clone().into(),
-                event: TokenDiffEvent {
-                    diff: Cow::Owned(user1_token_diff),
-                    fees_collected: Amounts::default(),
+    assert_eq!(
+        result.logs,
+        vec![
+            DefuseEvent::TokenDiff(Cow::Owned(vec![IntentEvent {
+                intent_hash: user1_payload.hash(),
+                event: AccountEvent {
+                    account_id: env.user1.id().clone().into(),
+                    event: TokenDiffEvent {
+                        diff: Cow::Owned(user1_token_diff),
+                        fees_collected: Amounts::default(),
+                    },
                 },
-            },
-        }]))
-        .as_near_sdk_log(),
-        DefuseEvent::TokenDiff(Cow::Owned(vec![IntentEvent {
-            intent_hash: user2_payload.hash(),
-            event: AccountEvent {
-                account_id: env.user2.id().clone().into(),
-                event: TokenDiffEvent {
-                    diff: Cow::Owned(user2_token_diff),
-                    fees_collected: Amounts::default(),
+            }]))
+            .as_near_sdk_log(),
+            DefuseEvent::TokenDiff(Cow::Owned(vec![IntentEvent {
+                intent_hash: user2_payload.hash(),
+                event: AccountEvent {
+                    account_id: env.user2.id().clone().into(),
+                    event: TokenDiffEvent {
+                        diff: Cow::Owned(user2_token_diff),
+                        fees_collected: Amounts::default(),
+                    },
                 },
-            },
-        }]))
-        .as_near_sdk_log(),
-        DefuseEvent::IntentsExecuted(vec![
-            IntentEvent::new(AccountEvent::new(env.user1.id(), NonceEvent::new(nonce1)), user1_payload.hash()),
-            IntentEvent::new(AccountEvent::new(env.user2.id(), NonceEvent::new(nonce2)), user2_payload.hash()),
-        ].into()).as_near_sdk_log(),
-    ]);
+            }]))
+            .as_near_sdk_log(),
+            DefuseEvent::IntentsExecuted(
+                vec![
+                    IntentEvent::new(
+                        AccountEvent::new(env.user1.id(), NonceEvent::new(nonce1)),
+                        user1_payload.hash()
+                    ),
+                    IntentEvent::new(
+                        AccountEvent::new(env.user2.id(), NonceEvent::new(nonce2)),
+                        user2_payload.hash()
+                    ),
+                ]
+                .into()
+            )
+            .as_near_sdk_log(),
+        ]
+    );
 }
 
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_add_public_key_intent(
-    #[notrace] mut rng: impl Rng,
-) {
-    let env = Env::builder()
-        .no_registration(true)
-        .build()
-        .await;
+async fn simulate_add_public_key_intent(#[notrace] mut rng: impl Rng) {
+    let env = Env::builder().no_registration(true).build().await;
 
     let nonce = rng.random();
 
-    // Step 1: Generate a new public key to add
-    // We'll use a randomly generated Ed25519 public key
     let mut random_key_bytes = [0u8; 32];
     rng.fill_bytes(&mut random_key_bytes);
     let new_public_key = PublicKey::Ed25519(random_key_bytes);
 
-    // Step 2: Create AddPublicKey intent
     let add_public_key_intent = AddPublicKey {
         public_key: new_public_key,
     };
@@ -658,40 +647,38 @@ async fn simulate_add_public_key_intent(
         },
     );
 
-    // Step 3: Simulate the intent
     let result = env
         .defuse
         .simulate_intents([add_public_key_payload.clone()])
         .await
         .unwrap();
 
-    assert_eq!(result.logs, vec![
-        DefuseEvent::PublicKeyAdded(AccountEvent::new(
-            env.user1.id(),
-            PublicKeyEvent{public_key: Cow::Borrowed(&new_public_key)},
-        ))
-        .as_near_sdk_log(),
-        AccountNonceIntentEvent::new(&env.user1.id(), nonce, add_public_key_payload.clone()).into_event_log(),
-    ]);
+    assert_eq!(
+        result.logs,
+        vec![
+            DefuseEvent::PublicKeyAdded(AccountEvent::new(
+                env.user1.id(),
+                PublicKeyEvent {
+                    public_key: Cow::Borrowed(&new_public_key)
+                },
+            ))
+            .as_near_sdk_log(),
+            AccountNonceIntentEvent::new(&env.user1.id(), nonce, &add_public_key_payload)
+                .into_event_log(),
+        ]
+    );
 }
 
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_remove_public_key_intent(
-    #[notrace] mut rng: impl Rng,
-) {
-    let env = Env::builder()
-        .no_registration(true)
-        .build()
-        .await;
+async fn simulate_remove_public_key_intent(#[notrace] mut rng: impl Rng) {
+    let env = Env::builder().no_registration(true).build().await;
 
-    // Step 1: Generate a new public key to add and then remove
     let mut random_key_bytes = [0u8; 32];
     rng.fill_bytes(&mut random_key_bytes);
     let new_public_key = PublicKey::Ed25519(random_key_bytes);
 
-    // Step 2: First, actually execute AddPublicKey to add the key to the state
     let add_nonce = rng.random();
     let add_public_key_intent = AddPublicKey {
         public_key: new_public_key,
@@ -713,7 +700,6 @@ async fn simulate_remove_public_key_intent(
         .await
         .unwrap();
 
-    // Step 3: Create RemovePublicKey intent to remove the key we just added
     let remove_nonce = rng.random();
     let remove_public_key_intent = RemovePublicKey {
         public_key: new_public_key,
@@ -729,7 +715,6 @@ async fn simulate_remove_public_key_intent(
         },
     );
 
-    // Step 4: Simulate the remove intent
     let result = env
         .defuse
         .simulate_intents([remove_public_key_payload.clone()])
@@ -738,33 +723,31 @@ async fn simulate_remove_public_key_intent(
 
     // TODO: RemovePublicKey should emit PublicKeyEvent through the inspector
     // For now, we only check for the nonce event
-    assert_eq!(result.logs, vec![
-       DefuseEvent::PublicKeyRemoved(AccountEvent::new(
-            env.user1.id(),
-            PublicKeyEvent{public_key: Cow::Borrowed(&new_public_key)},
-        ))
-        .as_near_sdk_log(),
-        AccountNonceIntentEvent::new(&env.user1.id(), remove_nonce, remove_public_key_payload.clone()).into_event_log(),
-    ]);
+    assert_eq!(
+        result.logs,
+        vec![
+            DefuseEvent::PublicKeyRemoved(AccountEvent::new(
+                env.user1.id(),
+                PublicKeyEvent {
+                    public_key: Cow::Borrowed(&new_public_key)
+                },
+            ))
+            .as_near_sdk_log(),
+            AccountNonceIntentEvent::new(&env.user1.id(), remove_nonce, &remove_public_key_payload)
+                .into_event_log(),
+        ]
+    );
 }
 
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_set_auth_by_predecessor_id_intent(
-    #[notrace] mut rng: impl Rng,
-) {
-    let env = Env::builder()
-        .no_registration(true)
-        .build()
-        .await;
+async fn simulate_set_auth_by_predecessor_id_intent(#[notrace] mut rng: impl Rng) {
+    let env = Env::builder().no_registration(true).build().await;
 
     let nonce = rng.random();
 
-    // Step 1: Create SetAuthByPredecessorId intent to enable auth by predecessor
-    let set_auth_intent = SetAuthByPredecessorId {
-        enabled: true,
-    };
+    let set_auth_intent = SetAuthByPredecessorId { enabled: true };
 
     let set_auth_payload = env.user1.sign_defuse_message(
         SigningStandard::default(),
@@ -776,51 +759,46 @@ async fn simulate_set_auth_by_predecessor_id_intent(
         },
     );
 
-    // Step 2: Simulate the intent
     let result = env
         .defuse
         .simulate_intents([set_auth_payload.clone()])
         .await
         .unwrap();
 
-    assert_eq!(result.logs, vec![
-        DefuseEvent::SetAuthByPredecessorId(AccountEvent::new(
-            env.user1.id(),
-            set_auth_intent,
-        ))
-        .as_near_sdk_log(),
-        AccountNonceIntentEvent::new(&env.user1.id(), nonce, set_auth_payload.clone()).into_event_log(),
-    ]);
+    assert_eq!(
+        result.logs,
+        vec![
+            DefuseEvent::SetAuthByPredecessorId(
+                AccountEvent::new(env.user1.id(), set_auth_intent,)
+            )
+            .as_near_sdk_log(),
+            AccountNonceIntentEvent::new(&env.user1.id(), nonce, &set_auth_payload)
+                .into_event_log(),
+        ]
+    );
 }
 
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_auth_call_intent(
-    #[notrace] mut rng: impl Rng,
-) {
-    let env = Env::builder()
-        .no_registration(true)
-        .build()
-        .await;
+async fn simulate_auth_call_intent(#[notrace] mut rng: impl Rng) {
+    let env = Env::builder().no_registration(true).build().await;
 
     let wnear_token_id = TokenId::from(Nep141TokenId::new(env.wnear.id().clone()));
 
-    // Step 1: Deposit wNEAR for the user (needed if we want to attach deposit)
     let wnear_amount = NearToken::from_millinear(100);
     env.user1
         .near_deposit(env.wnear.id(), wnear_amount)
         .await
         .unwrap();
 
-    // Step 2: Transfer wNEAR to Defuse contract
     env.user1
         .ft_transfer_call(
             env.wnear.id(),
             env.defuse.id(),
             wnear_amount.as_yoctonear(),
             None,
-            &env.user1.id().to_string(),
+            env.user1.id().as_ref(),
         )
         .await
         .unwrap();
@@ -836,7 +814,6 @@ async fn simulate_auth_call_intent(
 
     let nonce = rng.random();
 
-    // Step 3: Create AuthCall intent with attached deposit
     let auth_call_intent = AuthCall {
         contract_id: env.ft1.clone(), // Call to ft1 contract
         msg: "test_message".to_string(),
@@ -854,19 +831,17 @@ async fn simulate_auth_call_intent(
         },
     );
 
-    // Step 4: Simulate the intent
     let result = env
         .defuse
         .simulate_intents([auth_call_payload.clone()])
         .await
         .unwrap();
 
-    // Note: AuthCall doesn't emit a specific event through the inspector,
-    // it only deducts wNEAR balance if attached_deposit is non-zero
-    // So we only check for the nonce event
-    assert_eq!(result.logs, vec![
-        AccountNonceIntentEvent::new(&env.user1.id(), nonce, auth_call_payload.clone()).into_event_log(),
-    ]);
+    assert_eq!(
+        result.logs,
+        vec![
+            AccountNonceIntentEvent::new(&env.user1.id(), nonce, &auth_call_payload)
+                .into_event_log(),
+        ]
+    );
 }
-
-

@@ -38,7 +38,7 @@ impl ExecutableIntent for AddPublicKey {
         engine
             .state
             .add_public_key(signer_id.to_owned(), self.public_key)
-            .inspect(|_| {
+            .inspect(|()| {
                 engine
                     .inspector
                     .on_event(crate::events::DefuseEvent::PublicKeyAdded(
@@ -48,7 +48,7 @@ impl ExecutableIntent for AddPublicKey {
                                 public_key: Cow::Borrowed(&self.public_key),
                             },
                         ),
-                    ))
+                    ));
             })
     }
 }
@@ -75,7 +75,7 @@ impl ExecutableIntent for RemovePublicKey {
         engine
             .state
             .remove_public_key(signer_id.to_owned(), self.public_key)
-            .inspect(|_| {
+            .inspect(|()| {
                 engine
                     .inspector
                     .on_event(crate::events::DefuseEvent::PublicKeyRemoved(
@@ -85,9 +85,8 @@ impl ExecutableIntent for RemovePublicKey {
                                 public_key: Cow::Borrowed(&self.public_key),
                             },
                         ),
-                    ))
+                    ));
             })
-
     }
 }
 

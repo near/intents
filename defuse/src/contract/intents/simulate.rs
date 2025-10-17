@@ -7,10 +7,7 @@ use defuse_core::{
     events::DefuseEvent,
     intents::IntentEvent,
 };
-use near_sdk::{
-    AccountIdRef, CryptoHash,
-    serde_json::{self, Value as JsonValue},
-};
+use near_sdk::{AccountIdRef, CryptoHash, serde_json::Value as JsonValue};
 
 pub struct SimulateInspector {
     intents_executed: Vec<IntentEvent<AccountEvent<'static, NonceEvent>>>,

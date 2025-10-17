@@ -1,16 +1,14 @@
-use crate::{tests::defuse::{DefuseExt, DefuseSigner}, tests::defuse::accounts::AccountManagerExt, tests::defuse::env::Env};
-use crate::tests::defuse::intents::ExecuteIntentsExt;
 use crate::tests::defuse::SigningStandard;
-use defuse_crypto::PublicKey;
-use defuse::{
-    core::{
-        Deadline,
-        intents::{
-            DefuseIntents,
-            account::{AddPublicKey, RemovePublicKey},
-        },
+use crate::tests::defuse::intents::ExecuteIntentsExt;
+use crate::{tests::defuse::DefuseSigner, tests::defuse::env::Env};
+use defuse::core::{
+    Deadline,
+    intents::{
+        DefuseIntents,
+        account::{AddPublicKey, RemovePublicKey},
     },
 };
+use defuse_crypto::PublicKey;
 use defuse_randomness::Rng;
 use defuse_test_utils::random::rng;
 use rstest::rstest;
@@ -22,13 +20,8 @@ use rstest::rstest;
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn execute_add_public_key_intent_no_duplicate_events(
-    #[notrace] mut rng: impl Rng,
-) {
-    let env = Env::builder()
-        .no_registration(true)
-        .build()
-        .await;
+async fn execute_add_public_key_intent_no_duplicate_events(#[notrace] mut rng: impl Rng) {
+    let env = Env::builder().no_registration(true).build().await;
 
     let nonce = rng.random();
 
@@ -69,9 +62,7 @@ async fn execute_add_public_key_intent_no_duplicate_events(
 
     assert_eq!(
         public_key_added_count, 1,
-        "PublicKeyAdded event should appear exactly once in logs, but appeared {} times.\nAll logs: {:?}",
-        public_key_added_count,
-        all_receipt_logs
+        "PublicKeyAdded event should appear exactly once in logs, but appeared {public_key_added_count} times.\nAll logs: {all_receipt_logs:?}"
     );
 
     // Step 6: Verify the event contains the correct account_id and public_key
@@ -88,7 +79,7 @@ async fn execute_add_public_key_intent_no_duplicate_events(
 
     // Verify the log contains the correct public key
     assert!(
-        public_key_added_log.contains(&format!("\"public_key\":\"{}\"", new_public_key)),
+        public_key_added_log.contains(&format!("\"public_key\":\"{new_public_key}\"")),
         "PublicKeyAdded event should contain the correct public_key"
     );
 }
@@ -100,13 +91,8 @@ async fn execute_add_public_key_intent_no_duplicate_events(
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn execute_remove_public_key_intent_no_duplicate_events(
-    #[notrace] mut rng: impl Rng,
-) {
-    let env = Env::builder()
-        .no_registration(true)
-        .build()
-        .await;
+async fn execute_remove_public_key_intent_no_duplicate_events(#[notrace] mut rng: impl Rng) {
+    let env = Env::builder().no_registration(true).build().await;
 
     // Step 1: Generate a new public key to add and then remove
     let mut random_key_bytes = [0u8; 32];
@@ -173,9 +159,7 @@ async fn execute_remove_public_key_intent_no_duplicate_events(
 
     assert_eq!(
         public_key_removed_count, 1,
-        "PublicKeyRemoved event should appear exactly once in logs, but appeared {} times.\nAll logs: {:?}",
-        public_key_removed_count,
-        all_receipt_logs
+        "PublicKeyRemoved event should appear exactly once in logs, but appeared {public_key_removed_count} times.\nAll logs: {all_receipt_logs:?}"
     );
 
     // Step 7: Verify the event contains the correct account_id and public_key
@@ -192,7 +176,7 @@ async fn execute_remove_public_key_intent_no_duplicate_events(
 
     // Verify the log contains the correct public key
     assert!(
-        public_key_removed_log.contains(&format!("\"public_key\":\"{}\"", new_public_key)),
+        public_key_removed_log.contains(&format!("\"public_key\":\"{new_public_key}\"")),
         "PublicKeyRemoved event should contain the correct public_key"
     );
 }
