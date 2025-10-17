@@ -678,7 +678,6 @@ async fn simulate_add_public_key_intent(
     ]);
 }
 
-// TODO: make sure PublicKeyEvent is recorded in simulation log
 #[tokio::test]
 #[rstest]
 #[trace]

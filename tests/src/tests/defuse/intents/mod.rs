@@ -32,6 +32,7 @@ mod native_withdraw;
 mod relayers;
 mod token_diff;
 mod simulate;
+mod public_key;
 
 pub trait ExecuteIntentsExt: AccountManagerExt {
     async fn defuse_execute_intents(
