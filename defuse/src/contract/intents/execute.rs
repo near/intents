@@ -15,7 +15,9 @@ impl Inspector for ExecuteInspector {
     #[inline]
     fn on_deadline(&mut self, _deadline: Deadline) {}
 
-    fn on_event(&mut self, _event: DefuseEvent<'_>) {}
+    fn on_event(&mut self, event: DefuseEvent<'_>) {
+        event.emit();
+    }
 
     #[inline]
     fn on_intent_executed(
