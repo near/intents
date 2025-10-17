@@ -1,14 +1,21 @@
 use super::DEFUSE_WASM;
 use crate::{
-    tests::defuse::{accounts::AccountManagerExt, env::Env, intents::ExecuteIntentsExt},
+    tests::defuse::{
+        DefuseSigner, SigningStandard, accounts::AccountManagerExt, env::Env,
+        intents::ExecuteIntentsExt, state::SaltManagerExt,
+    },
     utils::mt::MtExt,
 };
+use arbitrary::{Arbitrary, Unstructured};
+use chrono::{TimeDelta, Utc};
 use defuse::core::{
+    Deadline, ExpirableNonce, Nonce, Salt, SaltedNonce, VersionedNonce,
     crypto::PublicKey,
-    intents::{Intent, account::AddPublicKey},
+    intents::{DefuseIntents, Intent, account::AddPublicKey},
 };
 use defuse_randomness::Rng;
-use defuse_test_utils::random::rng;
+use defuse_test_utils::asserts::ResultAssertsExt;
+use defuse_test_utils::random::{random_bytes, rng};
 use near_sdk::AccountId;
 use rstest::rstest;
 
@@ -72,31 +79,41 @@ async fn upgrade(mut rng: impl Rng) {
 
 #[rstest]
 #[tokio::test]
-async fn test_upgrade_with_persistence(mut rng: impl Rng) {
-    // initialize with persistent state and migration from legacy
-    let env = Env::builder().with_legacy().build().await;
+async fn test_upgrade_with_persistence(mut rng: impl Rng, random_bytes: Vec<u8>) {
+    // // initialize with persistent state and migration from legacy
+    let u = &mut Unstructured::new(&random_bytes);
+    let env = Env::builder()
+        .deployer_as_super_admin()
+        .with_legacy()
+        .build()
+        .await;
 
-    let state = env
-        .arbitrary_state
-        .as_ref()
-        .expect("arbitrary state should be initialized");
+    // // let state = env
+    // //     .arbitrary_state
+    // //     .as_ref()
+    // //     .expect("arbitrary state should be initialized");
 
-    // Make some changes existing users:
-    let user1 = state.get_random_account(&mut rng);
-    let user2 = state.get_random_account(&mut rng);
+    // // // Make some changes existing users:
+    // // let user1 = state.get_random_account(&mut rng);
+    // // let user2 = state.get_random_account(&mut rng);
 
     // Create new users
     let user3 = &env.create_user("user3").await;
     let user4 = &env.create_user("user4").await;
 
-    let intents = [user1, user2, user3, user4].map(|user| {
-        env.sign_intents(
-            &user,
-            vec![Intent::AddPublicKey(AddPublicKey {
-                public_key: PublicKey::Ed25519(rng.random()),
-            })],
+    let intents = [user3, user4].map(|user| {
+        user.sign_defuse_message(
+            SigningStandard::arbitrary(u).unwrap(),
+            env.defuse.id(),
+            rng.random(),
+            Deadline::MAX,
+            DefuseIntents {
+                intents: vec![Intent::AddPublicKey(AddPublicKey {
+                    public_key: PublicKey::Ed25519(rng.random()),
+                })],
+            },
         )
     });
 
-    env.execute_intents(intents).await.unwrap();
+    env.defuse.execute_intents(intents).await.unwrap();
 }

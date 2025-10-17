@@ -32,10 +32,10 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
     let ft1 = env.create_token("ft1").await;
     let ft2 = env.create_token("ft2").await;
 
-    env.storage_deposit_for_users(vec![user1.id(), user2.id()], &[&ft1, &ft2])
+    env.ft_storage_deposit_for_users(vec![user1.id(), user2.id()], &[&ft1, &ft2])
         .await;
 
-    env.deposit_to_root(&[&ft1, &ft2]).await;
+    env.ft_deposit_to_root(&[&ft1, &ft2]).await;
 
     {
         assert!(
@@ -312,9 +312,9 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
     let ft2 = env.create_token("ft2").await;
     let ft3 = env.create_token("ft3").await;
 
-    env.storage_deposit_for_users(vec![user1.id()], &[&ft1, &ft2, &ft3])
+    env.ft_storage_deposit_for_users(vec![user1.id()], &[&ft1, &ft2, &ft3])
         .await;
-    env.deposit_to_root(&[&ft1, &ft2, &ft3]).await;
+    env.ft_deposit_to_root(&[&ft1, &ft2, &ft3]).await;
 
     {
         assert!(
@@ -497,9 +497,9 @@ async fn multitoken_withdrawals() {
     let ft2 = env.create_token("ft2").await;
     let ft3 = env.create_token("ft3").await;
 
-    env.storage_deposit_for_users(vec![user1.id()], &[&ft1, &ft2, &ft3])
+    env.ft_storage_deposit_for_users(vec![user1.id()], &[&ft1, &ft2, &ft3])
         .await;
-    env.deposit_to_root(&[&ft1, &ft2, &ft3]).await;
+    env.ft_deposit_to_root(&[&ft1, &ft2, &ft3]).await;
 
     let defuse2 = env
         .deploy_defuse(

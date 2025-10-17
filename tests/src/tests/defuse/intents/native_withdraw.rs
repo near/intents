@@ -29,7 +29,7 @@ async fn native_withdraw_intent(mut rng: impl Rng) {
     let user = env.create_user("user").await;
     let other_user = env.create_user("other_user").await;
 
-    env.storage_deposit_for_users(vec![user.id(), other_user.id()], &[])
+    env.ft_storage_deposit_for_users(vec![user.id(), other_user.id()], &[])
         .await;
 
     let amounts_to_withdraw = [

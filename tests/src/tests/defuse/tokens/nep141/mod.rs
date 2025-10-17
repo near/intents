@@ -39,8 +39,9 @@ async fn deposit_withdraw(#[values(false, true)] no_registration: bool) {
     let user = env.create_user("user").await;
     let ft = env.create_token("ft").await;
 
-    env.storage_deposit_for_users(vec![user.id()], &[&ft]).await;
-    env.deposit_to_root(&[&ft]).await;
+    env.ft_storage_deposit_for_users(vec![user.id()], &[&ft])
+        .await;
+    env.ft_deposit_to_root(&[&ft]).await;
 
     env.defuse_ft_deposit_to(&ft, 1000, user.id())
         .await
@@ -85,7 +86,8 @@ async fn poa_deposit(#[values(false, true)] no_registration: bool) {
     let ft = env.create_token("ft").await;
     let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
 
-    env.storage_deposit_for_users(vec![user.id()], &[&ft]).await;
+    env.ft_storage_deposit_for_users(vec![user.id()], &[&ft])
+        .await;
 
     env.poa_factory_ft_deposit(
         env.poa_factory.id(),
@@ -126,7 +128,7 @@ async fn deposit_withdraw_intent(
 
     let ft = env.create_token("ft").await;
 
-    env.storage_deposit_for_users(vec![user.id(), other_user.id()], &[&ft])
+    env.ft_storage_deposit_for_users(vec![user.id(), other_user.id()], &[&ft])
         .await;
 
     env.poa_factory_ft_deposit(
@@ -223,7 +225,8 @@ async fn deposit_withdraw_intent_refund(
     let user = env.create_user("user").await;
     let ft = env.create_token("ft").await;
 
-    env.storage_deposit_for_users(vec![user.id()], &[&ft]).await;
+    env.ft_storage_deposit_for_users(vec![user.id()], &[&ft])
+        .await;
 
     env.poa_factory_ft_deposit(
         env.poa_factory.id(),
@@ -302,9 +305,9 @@ async fn ft_force_withdraw(#[values(false, true)] no_registration: bool) {
 
     let ft = env.create_token("ft").await;
 
-    env.storage_deposit_for_users(vec![user.id(), other_user.id()], &[&ft])
+    env.ft_storage_deposit_for_users(vec![user.id(), other_user.id()], &[&ft])
         .await;
-    env.deposit_to_root(&[&ft]).await;
+    env.ft_deposit_to_root(&[&ft]).await;
 
     env.defuse_ft_deposit_to(&ft, 1000, user.id())
         .await

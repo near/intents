@@ -1,20 +1,21 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    hash::Hash,
+};
 
 use anyhow::Result;
 use arbitrary::{Arbitrary, Unstructured};
-use arbitrary_with::{ArbitraryAs, As};
+use arbitrary_with::ArbitraryAs;
 use defuse::core::{
     Nonce,
     crypto::PublicKey,
     fees::{FeesConfig, Pips},
 };
 use defuse_near_utils::arbitrary::ArbitraryAccountId;
-use defuse_randomness::{Rng, make_true_rng, seq::IndexedRandom};
+use defuse_randomness::{Rng, make_true_rng, seq::IteratorRandom};
 use defuse_test_utils::random::random_bytes;
-use near_sdk::AccountId;
 
-use defuse::core::token_id::TokenId;
-
+const MAX_PUBLIC_KEYS: usize = 10;
 const MAX_ACCOUNTS: usize = 5;
 const MAX_NONCES: usize = 5;
 const MAX_TOKENS: usize = 3;
@@ -22,98 +23,115 @@ const MAX_TOKENS: usize = 3;
 const MIN_BALANCE_AMOUNT: u128 = 1_000;
 const MAX_BALANCE_AMOUNT: u128 = 10_000;
 
-#[derive(Arbitrary, Debug, Clone)]
+#[derive(Arbitrary, Debug, Clone, PartialEq, Eq)]
 pub struct AccountData {
-    #[arbitrary(with = As::<ArbitraryAccountId>::arbitrary)]
-    pub account_id: AccountId,
+    #[arbitrary(with = generate_arbitrary_name)]
+    pub name: String,
 
-    // #[arbitrary(with = As::<LimitLen<MAX_ACCOUNTS, _>>::arbitrary)]
-    #[arbitrary(with = generate_limited_arbitrary::<MAX_ACCOUNTS, _, _>)]
+    #[arbitrary(with = generate_limited_arbitrary::<MAX_ACCOUNTS, PublicKey>)]
     pub public_keys: HashSet<PublicKey>,
 
-    // #[arbitrary(with = As::<LimitLen<MAX_NONCES, HashSet<Nonce>>>::arbitrary)]
-    #[arbitrary(with = generate_limited_arbitrary::<MAX_NONCES, _, _>)]
+    #[arbitrary(with = generate_limited_arbitrary::<MAX_NONCES, Nonce>)]
     pub nonces: HashSet<Nonce>,
 
     pub disable_auth_by_predecessor: bool,
 }
 
+impl Hash for AccountData {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+    }
+}
+
+fn generate_arbitrary_name(u: &mut Unstructured) -> arbitrary::Result<String> {
+    Ok(format!("test_user_{}", u8::arbitrary(u)?))
+}
+
 /// Generates arbitrary but consistent state changes
 #[derive(Debug)]
 pub struct PermanentState {
-    pub accounts: Vec<AccountData>,
+    pub accounts: HashSet<AccountData>,
     pub fees: FeesConfig,
-    pub token_balances: HashMap<AccountId, HashMap<TokenId, u128>>,
-    pub tokens: Vec<TokenId>,
+    // Using String for token names for simplicity - there are used only NEP-141 tokens in tests
+    pub token_balances: HashMap<String, HashMap<String, u128>>,
+    pub token_names: HashSet<String>,
 }
 
 impl PermanentState {
-    pub fn get_random_account(&self, rng: &mut impl Rng) -> &AccountId {
-        let index = rng.random_range(0..self.accounts.len());
-        &self.accounts[index].account_id
-    }
-
     pub fn generate() -> Result<Self> {
         let mut rng = make_true_rng();
         let random_bytes = random_bytes(50..1000, &mut rng);
         let u = &mut Unstructured::new(&random_bytes);
 
-        let accounts = generate_limited_arbitrary::<MAX_ACCOUNTS, Vec<AccountData>, _>(u)?;
+        let accounts = generate_limited_arbitrary::<MAX_ACCOUNTS, AccountData>(u)?;
 
-        let fee: u32 = rng.random_range(..=Pips::MAX.as_pips());
-        let fee_collector = ArbitraryAccountId::arbitrary_as(u).unwrap();
-        let fees = FeesConfig {
-            fee: Pips::from_pips(fee).unwrap(),
-            fee_collector,
-        };
+        let fees = generate_fees(u, &mut rng);
 
-        // TODO: generate_only_fts
-        let tokens = generate_limited_arbitrary::<MAX_TOKENS, Vec<TokenId>, _>(u)?;
+        let token_count = rng.random_range(1..=MAX_TOKENS);
+        let token_names = (1..=token_count)
+            .map(|i| format!("test_token_{}", i))
+            .collect::<HashSet<_>>();
 
-        let token_balances = generate_balances(&mut rng, &accounts, &tokens);
+        let token_balances = generate_balances(&mut rng, &accounts, &token_names);
 
         Ok(Self {
             accounts,
             fees,
-            tokens,
+            token_names,
             token_balances,
         })
     }
 }
 
-fn generate_limited_arbitrary<const MAX: usize, T, A>(u: &mut Unstructured) -> arbitrary::Result<T>
-where
-    A: for<'a> Arbitrary<'a>,
-    T: FromIterator<A>,
-{
-    let len = u.int_in_range(0..=MAX).unwrap_or(0);
+fn generate_fees(u: &mut Unstructured, rng: &mut impl Rng) -> FeesConfig {
+    let fee = rng.random_range(0..=Pips::MAX.as_pips());
+    let fee_collector = ArbitraryAccountId::arbitrary_as(u).unwrap();
 
-    Ok((0..len).filter_map(|_| A::arbitrary(u).ok()).collect::<T>())
+    FeesConfig {
+        fee: Pips::from_pips(fee).unwrap(),
+        fee_collector,
+    }
+}
+
+fn generate_limited_arbitrary<const MAX: usize, T>(
+    u: &mut Unstructured,
+) -> arbitrary::Result<HashSet<T>>
+where
+    T: for<'a> Arbitrary<'a>,
+    T: Eq + Hash,
+{
+    let len = u.int_in_range(2..=MAX).unwrap_or(0);
+
+    Ok((0..len)
+        .filter_map(|_| T::arbitrary(u).ok())
+        .collect::<HashSet<T>>())
 }
 
 fn generate_balances(
     mut rng: &mut impl Rng,
-    accounts: &[AccountData],
-    tokens: &[TokenId],
-) -> HashMap<AccountId, HashMap<TokenId, u128>> {
-    if tokens.is_empty() {
+    accounts: &HashSet<AccountData>,
+    token_names: &HashSet<String>,
+) -> HashMap<String, HashMap<String, u128>> {
+    if token_names.is_empty() {
         return HashMap::new();
     }
 
     accounts
         .into_iter()
         .map(|account| {
-            let num_tokens = rng.random_range(1..=tokens.len());
+            let num_tokens = rng.random_range(1..=token_names.len());
 
-            let balances = tokens
+            let balances = token_names
+                .iter()
                 .choose_multiple(&mut rng, num_tokens)
+                .into_iter()
                 .map(|token| {
                     let amount = rng.random_range(MIN_BALANCE_AMOUNT..=MAX_BALANCE_AMOUNT);
                     (token.clone(), amount)
                 })
                 .collect();
 
-            (account.account_id.clone(), balances)
+            (account.name.clone(), balances)
         })
         .collect()
 }

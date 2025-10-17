@@ -33,7 +33,13 @@ pub trait ExecuteIntentsExt: AccountManagerExt {
         defuse_id: &AccountId,
         intents: impl IntoIterator<Item = MultiPayload>,
     ) -> anyhow::Result<TestLog>;
+
     async fn execute_intents(
+        &self,
+        intents: impl IntoIterator<Item = MultiPayload> + Clone,
+    ) -> anyhow::Result<TestLog>;
+
+    async fn execute_intents_without_simulation(
         &self,
         intents: impl IntoIterator<Item = MultiPayload>,
     ) -> anyhow::Result<TestLog>;
@@ -43,6 +49,7 @@ pub trait ExecuteIntentsExt: AccountManagerExt {
         defuse_id: &AccountId,
         intents: impl IntoIterator<Item = MultiPayload>,
     ) -> anyhow::Result<SimulationOutput>;
+
     async fn simulate_intents(
         &self,
         intents: impl IntoIterator<Item = MultiPayload>,
@@ -55,22 +62,16 @@ impl ExecuteIntentsExt for near_workspaces::Account {
         defuse_id: &AccountId,
         intents: impl IntoIterator<Item = MultiPayload>,
     ) -> anyhow::Result<TestLog> {
-        let intents = intents.into_iter().collect::<Vec<_>>();
-
-        // simulate before execution
-        let simulation_result = self
-            .defuse_simulate_intents(defuse_id, intents.clone())
-            .await;
-
         let args = json!({
-            "signed": intents,
+            "signed": intents.into_iter().collect::<Vec<_>>(),
         });
+
         println!(
             "execute_intents({})",
             serde_json::to_string_pretty(&args).unwrap()
         );
-        let res = self
-            .call(defuse_id, "execute_intents")
+
+        self.call(defuse_id, "execute_intents")
             .args_json(args)
             .max_gas()
             .transact()
@@ -81,14 +82,23 @@ impl ExecuteIntentsExt for near_workspaces::Account {
             })
             .map(Into::into)
             .map_err(Into::into)
-            // return simulation_err if execute_ok
-            .and_then(|res| simulation_result.map(|_| res));
-
-        println!("defuse_execute_intents result: {res:#?}");
-        res
     }
 
     async fn execute_intents(
+        &self,
+        intents: impl IntoIterator<Item = MultiPayload> + Clone,
+    ) -> anyhow::Result<TestLog> {
+        let simulation_result = self
+            .defuse_simulate_intents(self.id(), intents.clone())
+            .await;
+
+        self.defuse_execute_intents(self.id(), intents)
+            .await
+            // return simulation_err if execute_ok
+            .and_then(|res| simulation_result.map(|_| res))
+    }
+
+    async fn execute_intents_without_simulation(
         &self,
         intents: impl IntoIterator<Item = MultiPayload>,
     ) -> anyhow::Result<TestLog> {
@@ -133,9 +143,18 @@ impl ExecuteIntentsExt for near_workspaces::Contract {
     }
     async fn execute_intents(
         &self,
-        intents: impl IntoIterator<Item = MultiPayload>,
+        intents: impl IntoIterator<Item = MultiPayload> + Clone,
     ) -> anyhow::Result<TestLog> {
         self.as_account().execute_intents(intents).await
+    }
+
+    async fn execute_intents_without_simulation(
+        &self,
+        intents: impl IntoIterator<Item = MultiPayload>,
+    ) -> anyhow::Result<TestLog> {
+        self.as_account()
+            .execute_intents_without_simulation(intents)
+            .await
     }
 
     async fn defuse_simulate_intents(
@@ -173,9 +192,9 @@ async fn simulate_is_view_method(
     let ft = env.create_token("ft").await;
     let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
 
-    env.storage_deposit_for_users(vec![user.id(), other_user.id()], &[&ft])
+    env.ft_storage_deposit_for_users(vec![user.id(), other_user.id()], &[&ft])
         .await;
-    env.deposit_to_root(&[&ft]).await;
+    env.ft_deposit_to_root(&[&ft]).await;
 
     // deposit
     env.defuse_ft_deposit_to(&ft, 1000, user.id())
@@ -243,8 +262,9 @@ async fn webauthn(#[values(false, true)] no_registration: bool) {
     let ft = env.create_token("ft1").await;
     let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
 
-    env.storage_deposit_for_users(vec![user.id()], &[&ft]).await;
-    env.deposit_to_root(&[&ft]).await;
+    env.ft_storage_deposit_for_users(vec![user.id()], &[&ft])
+        .await;
+    env.ft_deposit_to_root(&[&ft]).await;
 
     // deposit
     env.defuse_ft_deposit_to(&ft, 2000, &SIGNER_ID.to_owned())

@@ -8,8 +8,7 @@ use super::{DefuseExt, accounts::AccountManagerExt};
 use crate::{
     tests::{
         defuse::{
-            DefuseSigner, SigningStandard,
-            env::{builder::EnvBuilder, state::PermanentState, storage::StorageMigration},
+            env::{builder::EnvBuilder, state::PermanentState},
             tokens::nep141::traits::DefuseFtReceiver,
         },
         poa::factory::PoAFactoryExt,
@@ -17,15 +16,7 @@ use crate::{
     utils::{Sandbox, ft::FtExt, read_wasm},
 };
 use anyhow::anyhow;
-use defuse::{
-    core::{
-        Deadline,
-        intents::{DefuseIntents, Intent},
-        payload::multi::MultiPayload,
-    },
-    tokens::DepositMessage,
-};
-use defuse_randomness::{Rng, make_true_rng};
+use defuse::tokens::DepositMessage;
 use near_sdk::{AccountId, NearToken};
 use near_workspaces::{
     Account, Contract, Network, Worker,
@@ -133,7 +124,7 @@ impl Env {
     }
 
     // if no tokens provided - only wnear storage deposit will be done
-    pub async fn storage_deposit_for_users(
+    pub async fn ft_storage_deposit_for_users(
         &self,
         mut accounts: Vec<&AccountId>,
         tokens: &[&AccountId],
@@ -159,7 +150,7 @@ impl Env {
         }
     }
 
-    pub async fn deposit_to_root(&self, tokens: &[&AccountId]) {
+    pub async fn ft_deposit_to_root(&self, tokens: &[&AccountId]) {
         let root = self.sandbox.root_account();
 
         for ft in tokens {
@@ -207,18 +198,6 @@ impl Env {
 
     pub fn sandbox_mut(&mut self) -> &mut Sandbox {
         &mut self.sandbox
-    }
-
-    // TODO: move it to account impl
-    pub fn sign_intents(&self, account: &Account, intents: Vec<Intent>) -> MultiPayload {
-        let nonce = make_true_rng().random();
-        account.sign_defuse_message(
-            SigningStandard::default(),
-            self.defuse.id(),
-            nonce,
-            Deadline::MAX,
-            DefuseIntents { intents },
-        )
     }
 }
 

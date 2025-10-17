@@ -41,8 +41,9 @@ async fn ft_withdraw_intent(
 
     let ft = env.create_token("ft").await;
     let token_id = TokenId::from(Nep141TokenId::new(ft.clone()));
-    env.storage_deposit_for_users(vec![user.id()], &[&ft]).await;
-    env.deposit_to_root(&[&ft]).await;
+    env.ft_storage_deposit_for_users(vec![user.id()], &[&ft])
+        .await;
+    env.ft_deposit_to_root(&[&ft]).await;
 
     {
         env.defuse_ft_deposit_to(&ft, 1000, user.id())
@@ -266,8 +267,9 @@ async fn ft_withdraw_intent_msg(
     let other_user_id: AccountId = "other-user.near".parse().unwrap();
 
     let ft = env.create_token("ft").await;
-    env.storage_deposit_for_users(vec![user.id()], &[&ft]).await;
-    env.deposit_to_root(&[&ft]).await;
+    env.ft_storage_deposit_for_users(vec![user.id()], &[&ft])
+        .await;
+    env.ft_deposit_to_root(&[&ft]).await;
 
     let defuse2 = env
         .deploy_defuse(

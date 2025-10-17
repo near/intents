@@ -1,5 +1,6 @@
 use std::{fs, ops::Deref, path::Path};
 
+use near_sdk::AccountId;
 use near_workspaces::{Account, Network, Worker, types::NearToken};
 
 pub fn read_wasm(dir: &str, name: impl AsRef<Path>) -> Vec<u8> {
@@ -59,6 +60,12 @@ impl Sandbox {
     pub async fn create_account(&self, name: &str) -> Account {
         self.create_subaccount(name, NearToken::from_near(10))
             .await
+            .unwrap()
+    }
+
+    pub fn get_subaccount_id(&self, name: &str) -> AccountId {
+        format!("{}.{}", name, self.root_account.id())
+            .parse()
             .unwrap()
     }
 }

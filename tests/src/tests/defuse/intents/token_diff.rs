@@ -46,9 +46,9 @@ async fn swap_p2p(
     let ft1_token_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
     let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
 
-    env.storage_deposit_for_users(vec![user1.id(), user2.id()], &[&ft1, &ft2])
+    env.ft_storage_deposit_for_users(vec![user1.id(), user2.id()], &[&ft1, &ft2])
         .await;
-    env.deposit_to_root(&[&ft1, &ft2]).await;
+    env.ft_deposit_to_root(&[&ft1, &ft2]).await;
 
     test_ft_diffs(
         &env,
@@ -122,12 +122,12 @@ async fn swap_many(
     let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
     let ft3_token_id = TokenId::from(Nep141TokenId::new(ft3.clone()));
 
-    env.storage_deposit_for_users(
+    env.ft_storage_deposit_for_users(
         vec![user1.id(), user2.id(), user3.id()],
         &[&ft1, &ft2, &ft3],
     )
     .await;
-    env.deposit_to_root(&[&ft1, &ft2, &ft3]).await;
+    env.ft_deposit_to_root(&[&ft1, &ft2, &ft3]).await;
 
     test_ft_diffs(
         &env,
@@ -304,9 +304,9 @@ async fn invariant_violated(
     let ft1_token_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
     let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
 
-    env.storage_deposit_for_users(vec![user1.id(), user2.id()], &[&ft1, &ft2])
+    env.ft_storage_deposit_for_users(vec![user1.id(), user2.id()], &[&ft1, &ft2])
         .await;
-    env.deposit_to_root(&[&ft1, &ft2]).await;
+    env.ft_deposit_to_root(&[&ft1, &ft2]).await;
 
     // deposit
     env.defuse_ft_deposit_to(&ft1, 1000, user1.id())
@@ -427,9 +427,9 @@ async fn solver_user_closure(
     let ft1 = env.create_token("ft1").await;
     let ft2 = env.create_token("ft2").await;
 
-    env.storage_deposit_for_users(vec![user.id(), solver.id()], &[&ft1, &ft2])
+    env.ft_storage_deposit_for_users(vec![user.id(), solver.id()], &[&ft1, &ft2])
         .await;
-    env.deposit_to_root(&[&ft1, &ft2]).await;
+    env.ft_deposit_to_root(&[&ft1, &ft2]).await;
 
     // deposit
     env.defuse_ft_deposit_to(&ft1, USER_BALANCE, user.id())
