@@ -314,6 +314,7 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
 
     env.ft_storage_deposit_for_users(vec![user1.id()], &[&ft1, &ft2, &ft3])
         .await;
+
     env.ft_deposit_to_root(&[&ft1, &ft2, &ft3]).await;
 
     {

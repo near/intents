@@ -68,61 +68,13 @@ impl StorageMigration for Env {
             return;
         };
 
-        let fee = self.defuse.fee(&self.defuse.id()).await.unwrap();
-        assert_eq!(fee, state.fees.fee);
+        self.verify_fees_consistency(state).await;
 
-        let fee_collector = self.defuse.fee_collector(&self.defuse.id()).await.unwrap();
-        assert_eq!(fee_collector, state.fees.fee_collector);
+        self.verify_accounts_consistency(state).await;
 
-        for data in &state.accounts {
-            let account_id = self.sandbox.get_subaccount_id(&data.name);
+        self.verify_token_balances_consistency(state).await;
 
-            let enabled = self
-                .defuse
-                .is_auth_by_predecessor_id_enabled(&account_id)
-                .await
-                .unwrap();
-
-            assert_eq!(data.disable_auth_by_predecessor, !enabled);
-
-            for pubkey in &data.public_keys {
-                assert!(
-                    self.defuse
-                        .has_public_key(&account_id, pubkey)
-                        .await
-                        .unwrap()
-                );
-            }
-
-            for nonce in &data.nonces {
-                assert!(self.defuse.is_nonce_used(&account_id, nonce).await.unwrap());
-            }
-        }
-
-        for (account_name, balance) in &state.token_balances {
-            let account_id = self.sandbox.get_subaccount_id(&account_name);
-
-            let tokens = balance
-                .keys()
-                .map(|t| {
-                    TokenId::from(Nep141TokenId::new(Account::token_id(
-                        t,
-                        self.poa_factory.id(),
-                    )))
-                    .to_string()
-                })
-                .collect::<Vec<_>>();
-
-            let balances = self
-                .mt_contract_batch_balance_of(self.defuse.id(), &account_id, &tokens)
-                .await
-                .unwrap();
-
-            // FIXME: looks like total shit
-            let expected = balance.values().cloned().collect::<Vec<_>>();
-
-            assert_eq!(balances, expected);
-        }
+        self.verify_token_registration(state).await;
     }
 }
 
@@ -246,5 +198,92 @@ impl Env {
         self.apply_nonces(&acc, account).await?;
 
         Ok(())
+    }
+
+    async fn verify_fees_consistency(&self, state: &PermanentState) {
+        let fee = self.defuse.fee(&self.defuse.id()).await.unwrap();
+        assert_eq!(fee, state.fees.fee, "Fee should match migrated state");
+
+        let fee_collector = self.defuse.fee_collector(&self.defuse.id()).await.unwrap();
+        assert_eq!(fee_collector, state.fees.fee_collector, "Fee collector should match migrated state");
+    }
+
+    async fn verify_accounts_consistency(&self, state: &PermanentState) {
+        for data in &state.accounts {
+            let account_id = self.sandbox.get_subaccount_id(&data.name);
+
+            let enabled = self
+                .defuse
+                .is_auth_by_predecessor_id_enabled(&account_id)
+                .await
+                .unwrap();
+
+            assert_eq!(
+                data.disable_auth_by_predecessor, !enabled,
+                "Auth by predecessor setting mismatch for account {}", data.name
+            );
+
+            for pubkey in &data.public_keys {
+                let has_key = self.defuse.has_public_key(&account_id, pubkey).await.unwrap();
+                assert!(
+                    has_key,
+                    "Missing public key for account {}: {:?}", data.name, pubkey
+                );
+            }
+
+            for nonce in &data.nonces {
+                let is_used = self.defuse.is_nonce_used(&account_id, nonce).await.unwrap();
+                assert!(is_used, "Nonce not marked as used for account {}: {:?}", data.name, nonce);
+            }
+        }
+    }
+
+    async fn verify_token_balances_consistency(&self, state: &PermanentState) {
+        for (account_name, expected_balances) in &state.token_balances {
+            let account_id = self.sandbox.get_subaccount_id(account_name);
+
+            let tokens: Vec<String> = expected_balances
+                .keys()
+                .map(|token_name| {
+                    TokenId::from(Nep141TokenId::new(Account::token_id(
+                        token_name,
+                        self.poa_factory.id(),
+                    )))
+                    .to_string()
+                })
+                .collect();
+
+            let actual_balances = self
+                .mt_contract_batch_balance_of(self.defuse.id(), &account_id, &tokens)
+                .await
+                .unwrap();
+
+            let expected_values: Vec<u128> = expected_balances.values().cloned().collect();
+
+            assert_eq!(
+                actual_balances, expected_values,
+                "Token balances mismatch for account {account_name}",
+            );
+        }
+    }
+
+    async fn verify_token_registration(&self, state: &PermanentState) {
+        let all_tokens = self.mt_tokens(self.defuse.id(), ..).await.unwrap();
+        
+        for token_name in &state.token_names {
+            let token_id = TokenId::from(Nep141TokenId::new(Account::token_id(
+                token_name,
+                self.poa_factory.id(),
+            )));
+
+            let is_registered = all_tokens
+                .iter()
+                .any(|t| t.token_id == token_id.to_string());
+            
+            assert!(
+                is_registered,
+                "Token {} not properly registered after migration", token_name
+            );
+        }
     }
 }

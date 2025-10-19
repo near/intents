@@ -137,6 +137,7 @@ impl Env {
         self.upgrade_defuse(self.defuse.id())
             .await
             .expect("Failed to upgrade defuse");
+
         self.verify_storage_consistency().await;
     }
 
