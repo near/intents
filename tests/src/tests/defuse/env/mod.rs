@@ -113,12 +113,15 @@ impl Env {
     }
 
     pub async fn create_user(&self, name: &str) -> Account {
+        let exists = self.sandbox.account_exists(name).await;
         let account = self.sandbox.create_account(name).await;
 
-        account
-            .add_public_key(self.defuse.id(), get_account_public_key(&account))
-            .await
-            .unwrap();
+        if !exists {
+            account
+                .add_public_key(self.defuse.id(), get_account_public_key(&account))
+                .await
+                .unwrap();
+        }
 
         account
     }

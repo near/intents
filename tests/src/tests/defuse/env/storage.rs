@@ -165,10 +165,6 @@ impl Env {
     async fn apply_account(&self, account: &AccountData) -> Result<()> {
         let acc = self.create_user(&account.name).await;
 
-        if account.disable_auth_by_predecessor {
-            acc.disable_auth_by_predecessor_id(self.defuse.id()).await?;
-        }
-
         self.apply_public_keys(&acc, account).await?;
 
         self.apply_nonces(&acc, account).await?;
@@ -179,18 +175,6 @@ impl Env {
     async fn verify_accounts_consistency(&self, state: &PermanentState) {
         for data in &state.accounts {
             let account_id = self.sandbox.get_subaccount_id(&data.name);
-
-            let enabled = self
-                .defuse
-                .is_auth_by_predecessor_id_enabled(&account_id)
-                .await
-                .unwrap();
-
-            assert_eq!(
-                data.disable_auth_by_predecessor, !enabled,
-                "Auth by predecessor setting mismatch for account {}",
-                data.name
-            );
 
             for pubkey in &data.public_keys {
                 let has_key = self

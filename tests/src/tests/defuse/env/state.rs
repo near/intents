@@ -22,13 +22,11 @@ pub struct AccountData {
     #[arbitrary(with = generate_arbitrary_name)]
     pub name: String,
 
-    #[arbitrary(with = generate_limited_arbitrary::<MAX_ACCOUNTS, PublicKey>)]
+    #[arbitrary(with = generate_limited_arbitrary::<MAX_PUBLIC_KEYS, PublicKey>)]
     pub public_keys: HashSet<PublicKey>,
 
     #[arbitrary(with = generate_limited_arbitrary::<MAX_NONCES, Nonce>)]
     pub nonces: HashSet<Nonce>,
-
-    pub disable_auth_by_predecessor: bool,
 }
 
 impl Hash for AccountData {

@@ -63,6 +63,12 @@ impl Sandbox {
             .unwrap()
     }
 
+    pub async fn account_exists(&self, name: &str) -> bool {
+        let account_id = self.get_subaccount_id(name);
+
+        self.worker.view_account(&account_id).await.is_ok()
+    }
+
     pub fn get_subaccount_id(&self, name: &str) -> AccountId {
         format!("{}.{}", name, self.root_account.id())
             .parse()
