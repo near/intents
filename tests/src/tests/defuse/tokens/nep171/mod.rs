@@ -21,7 +21,7 @@ use std::collections::HashMap;
 #[tokio::test]
 #[rstest]
 async fn transfer_nft_to_verifier(mut rng: impl Rng) {
-    let env = Env::builder().build().await;
+    let env = Env::builder().build_without_migration().await;
 
     let user1 = env.create_user("user1").await;
     let user2 = env.create_user("user2").await;

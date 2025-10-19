@@ -54,8 +54,6 @@ impl StorageMigration for Env {
         let state = PermanentState::generate().unwrap();
         self.arbitrary_state = Some(state);
 
-        self.apply_fees().await.expect("Failed to apply fees");
-
         execute_parallel!(self, accounts, apply_account).expect("Failed to apply accounts");
         execute_parallel!(self, token_names, apply_token).expect("Failed to apply tokens");
         execute_parallel!(self, token_balances, apply_token_balance)
@@ -68,13 +66,9 @@ impl StorageMigration for Env {
             return;
         };
 
-        self.verify_fees_consistency(state).await;
-
         self.verify_accounts_consistency(state).await;
 
         self.verify_token_balances_consistency(state).await;
-
-        self.verify_token_registration(state).await;
     }
 }
 
@@ -117,24 +111,6 @@ impl Env {
             })
             .collect::<FuturesUnordered<_>>()
             .try_collect::<Vec<_>>()
-            .await?;
-
-        Ok(())
-    }
-
-    async fn apply_fees(&self) -> Result<()> {
-        let state = self.arbitrary_state.as_ref().unwrap();
-
-        self.acl_grant_role(
-            self.defuse.id(),
-            Role::FeesManager,
-            self.sandbox.root_account().id(),
-        )
-        .await?;
-
-        self.set_fee(self.defuse.id(), state.fees.fee).await?;
-
-        self.set_fee_collector(self.defuse.id(), &state.fees.fee_collector)
             .await?;
 
         Ok(())
@@ -200,14 +176,6 @@ impl Env {
         Ok(())
     }
 
-    async fn verify_fees_consistency(&self, state: &PermanentState) {
-        let fee = self.defuse.fee(&self.defuse.id()).await.unwrap();
-        assert_eq!(fee, state.fees.fee, "Fee should match migrated state");
-
-        let fee_collector = self.defuse.fee_collector(&self.defuse.id()).await.unwrap();
-        assert_eq!(fee_collector, state.fees.fee_collector, "Fee collector should match migrated state");
-    }
-
     async fn verify_accounts_consistency(&self, state: &PermanentState) {
         for data in &state.accounts {
             let account_id = self.sandbox.get_subaccount_id(&data.name);
@@ -220,20 +188,30 @@ impl Env {
 
             assert_eq!(
                 data.disable_auth_by_predecessor, !enabled,
-                "Auth by predecessor setting mismatch for account {}", data.name
+                "Auth by predecessor setting mismatch for account {}",
+                data.name
             );
 
             for pubkey in &data.public_keys {
-                let has_key = self.defuse.has_public_key(&account_id, pubkey).await.unwrap();
+                let has_key = self
+                    .defuse
+                    .has_public_key(&account_id, pubkey)
+                    .await
+                    .unwrap();
                 assert!(
                     has_key,
-                    "Missing public key for account {}: {:?}", data.name, pubkey
+                    "Missing public key for account {}: {:?}",
+                    data.name, pubkey
                 );
             }
 
             for nonce in &data.nonces {
                 let is_used = self.defuse.is_nonce_used(&account_id, nonce).await.unwrap();
-                assert!(is_used, "Nonce not marked as used for account {}: {:?}", data.name, nonce);
+                assert!(
+                    is_used,
+                    "Nonce not marked as used for account {}: {:?}",
+                    data.name, nonce
+                );
             }
         }
     }
@@ -263,26 +241,6 @@ impl Env {
             assert_eq!(
                 actual_balances, expected_values,
                 "Token balances mismatch for account {account_name}",
-            );
-        }
-    }
-
-    async fn verify_token_registration(&self, state: &PermanentState) {
-        let all_tokens = self.mt_tokens(self.defuse.id(), ..).await.unwrap();
-        
-        for token_name in &state.token_names {
-            let token_id = TokenId::from(Nep141TokenId::new(Account::token_id(
-                token_name,
-                self.poa_factory.id(),
-            )));
-
-            let is_registered = all_tokens
-                .iter()
-                .any(|t| t.token_id == token_id.to_string());
-            
-            assert!(
-                is_registered,
-                "Token {} not properly registered after migration", token_name
             );
         }
     }

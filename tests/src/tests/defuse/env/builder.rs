@@ -29,7 +29,6 @@ pub struct EnvBuilder {
     deployer_as_super_admin: bool,
     disable_ft_storage_deposit: bool,
     disable_registration: bool,
-    build_legacy: bool,
 }
 
 impl EnvBuilder {
@@ -78,11 +77,6 @@ impl EnvBuilder {
         self
     }
 
-    pub const fn with_legacy(mut self) -> Self {
-        self.build_legacy = true;
-        self
-    }
-
     async fn deploy_defuse(&self, root: &Account, wnear: &Contract, legacy: bool) -> Contract {
         let id = "defuse";
         let cfg = DefuseConfig {
@@ -113,15 +107,12 @@ impl EnvBuilder {
         }
     }
 
-    pub async fn build(mut self) -> Env {
+    pub async fn build_env(&mut self, deploy_legacy: bool) -> Env {
         let sandbox = Sandbox::new().await.unwrap();
         let root = sandbox.root_account().clone();
 
         let poa_factory = deploy_poa_factory(&root).await;
         let wnear = sandbox.deploy_wrap_near("wnear").await.unwrap();
-
-        let migrate_from_legacy = std::env::var("MIGRATE_FROM_LEGACY").is_ok_and(|v| v != "0");
-        let deploy_legacy = migrate_from_legacy || self.build_legacy;
 
         self.grant_roles(&root, deploy_legacy);
 
@@ -146,6 +137,20 @@ impl EnvBuilder {
             .unwrap();
 
         env
+    }
+
+    pub async fn build_without_migration(&mut self) -> Env {
+        self.build_env(false).await
+    }
+
+    pub async fn build_with_migration(&mut self) -> Env {
+        self.build_env(true).await
+    }
+
+    pub async fn build(&mut self) -> Env {
+        let migrate_from_legacy = std::env::var("MIGRATE_FROM_LEGACY").is_ok_and(|v| v != "0");
+
+        self.build_env(migrate_from_legacy).await
     }
 }
 

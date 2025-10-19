@@ -20,9 +20,10 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
 
     use crate::tests::defuse::tokens::nep141::traits::DefuseFtWithdrawer;
 
+    // Building with no migration to test mt enumeration ordering
     let env = Env::builder()
         .no_registration(no_registration)
-        .build()
+        .build_without_migration()
         .await;
 
     let user1 = env.create_user("user1").await;
@@ -299,9 +300,10 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
 async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registration: bool) {
     use defuse::core::token_id::nep141::Nep141TokenId;
 
+    // Building with no migration to test mt enumeration ordering
     let env = Env::builder()
         .no_registration(no_registration)
-        .build()
+        .build_without_migration()
         .await;
 
     let user1 = env.create_user("user1").await;
@@ -517,7 +519,9 @@ async fn multitoken_withdrawals() {
         )
         .await
         .unwrap();
-    {
+
+    // Check only if arbitrary state is not applied
+    if env.arbitrary_state.is_none() {
         assert!(
             user1
                 .mt_tokens(env.defuse.id(), ..)

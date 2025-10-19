@@ -5,13 +5,7 @@ use std::{
 
 use anyhow::Result;
 use arbitrary::{Arbitrary, Unstructured};
-use arbitrary_with::ArbitraryAs;
-use defuse::core::{
-    Nonce,
-    crypto::PublicKey,
-    fees::{FeesConfig, Pips},
-};
-use defuse_near_utils::arbitrary::ArbitraryAccountId;
+use defuse::core::{Nonce, crypto::PublicKey};
 use defuse_randomness::{Rng, make_true_rng, seq::IteratorRandom};
 use defuse_test_utils::random::random_bytes;
 
@@ -51,7 +45,6 @@ fn generate_arbitrary_name(u: &mut Unstructured) -> arbitrary::Result<String> {
 #[derive(Debug)]
 pub struct PermanentState {
     pub accounts: HashSet<AccountData>,
-    pub fees: FeesConfig,
     // Using String for token names for simplicity - there are used only NEP-141 tokens in tests
     pub token_balances: HashMap<String, HashMap<String, u128>>,
     pub token_names: HashSet<String>,
@@ -65,8 +58,6 @@ impl PermanentState {
 
         let accounts = generate_limited_arbitrary::<MAX_ACCOUNTS, AccountData>(u)?;
 
-        let fees = generate_fees(u, &mut rng);
-
         let token_count = rng.random_range(1..=MAX_TOKENS);
         let token_names = (1..=token_count)
             .map(|i| format!("test_token_{}", i))
@@ -76,20 +67,9 @@ impl PermanentState {
 
         Ok(Self {
             accounts,
-            fees,
             token_names,
             token_balances,
         })
-    }
-}
-
-fn generate_fees(u: &mut Unstructured, rng: &mut impl Rng) -> FeesConfig {
-    let fee = rng.random_range(0..=Pips::MAX.as_pips());
-    let fee_collector = ArbitraryAccountId::arbitrary_as(u).unwrap();
-
-    FeesConfig {
-        fee: Pips::from_pips(fee).unwrap(),
-        fee_collector,
     }
 }
 

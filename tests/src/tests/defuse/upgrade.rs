@@ -82,7 +82,7 @@ async fn upgrade(mut rng: impl Rng) {
 async fn test_upgrade_with_persistence(mut rng: impl Rng, random_bytes: Vec<u8>) {
     // // initialize with persistent state and migration from legacy
     let u = &mut Unstructured::new(&random_bytes);
-    let env = Env::builder().with_legacy().build().await;
+    let env = Env::builder().build_with_migration().await;
 
     // // let state = env
     // //     .arbitrary_state
