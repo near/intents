@@ -8,15 +8,15 @@ use super::{DefuseExt, accounts::AccountManagerExt};
 use crate::{
     tests::{
         defuse::{
-            env::{builder::EnvBuilder, state::PermanentState},
+            env::{builder::EnvBuilder, state::PermanentState, storage::StorageMigration},
             tokens::nep141::traits::DefuseFtReceiver,
         },
         poa::factory::PoAFactoryExt,
     },
-    utils::{Sandbox, ft::FtExt, read_wasm},
+    utils::{Sandbox, acl::AclExt, ft::FtExt, read_wasm},
 };
 use anyhow::anyhow;
-use defuse::tokens::DepositMessage;
+use defuse::{contract::Role, tokens::DepositMessage};
 use near_sdk::{AccountId, NearToken};
 use near_workspaces::{
     Account, Contract, Network, Worker,
@@ -121,6 +121,23 @@ impl Env {
             .unwrap();
 
         account
+    }
+
+    pub async fn upgrade_legacy(&mut self) {
+        self.generate_storage_data().await;
+
+        self.acl_grant_role(
+            self.defuse.id(),
+            Role::Upgrader,
+            self.sandbox.root_account().id(),
+        )
+        .await
+        .expect("Failed to grant upgrader role");
+
+        self.upgrade_defuse(self.defuse.id())
+            .await
+            .expect("Failed to upgrade defuse");
+        self.verify_storage_consistency().await;
     }
 
     // if no tokens provided - only wnear storage deposit will be done

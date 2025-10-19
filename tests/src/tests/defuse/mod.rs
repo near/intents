@@ -23,6 +23,7 @@ use defuse::{
     },
 };
 use near_sdk::{AccountId, serde::Serialize, serde_json::json};
+use near_sdk::{Gas, NearToken};
 use near_workspaces::Contract;
 use std::sync::LazyLock;
 
@@ -38,7 +39,7 @@ pub trait DefuseExt: AccountManagerExt {
         legacy: bool,
     ) -> anyhow::Result<Contract>;
 
-    async fn upgrade_defuse(&self) -> anyhow::Result<()>;
+    async fn upgrade_defuse(&self, defuse_contract_id: &AccountId) -> anyhow::Result<()>;
 }
 
 impl DefuseExt for near_workspaces::Account {
@@ -69,9 +70,14 @@ impl DefuseExt for near_workspaces::Account {
         Ok(contract)
     }
 
-    // NOTE: it can be done also by function call
-    async fn upgrade_defuse(&self) -> anyhow::Result<()> {
-        self.deploy(&DEFUSE_WASM).await?.into_result()?;
+    async fn upgrade_defuse(&self, defuse_contract_id: &AccountId) -> anyhow::Result<()> {
+        self.call(defuse_contract_id, "upgrade")
+            .deposit(NearToken::from_yoctonear(1))
+            .args_borsh((DEFUSE_WASM.clone(), None::<Gas>))
+            .max_gas()
+            .transact()
+            .await?
+            .into_result()?;
 
         Ok(())
     }
@@ -87,8 +93,8 @@ impl DefuseExt for Contract {
         self.as_account().deploy_defuse(id, config, legacy).await
     }
 
-    async fn upgrade_defuse(&self) -> anyhow::Result<()> {
-        self.as_account().upgrade_defuse().await
+    async fn upgrade_defuse(&self, defuse_contract_id: &AccountId) -> anyhow::Result<()> {
+        self.as_account().upgrade_defuse(defuse_contract_id).await
     }
 }
 
