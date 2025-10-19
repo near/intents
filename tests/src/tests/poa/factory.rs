@@ -27,6 +27,7 @@ pub trait PoAFactoryExt {
     fn token_id(token: &str, factory: &AccountId) -> AccountId {
         format!("{token}.{factory}").parse().unwrap()
     }
+
     async fn poa_factory_deploy_token(
         &self,
         factory: &AccountId,
@@ -113,6 +114,7 @@ impl PoAFactoryExt for near_workspaces::Account {
             .transact()
             .await?
             .into_result()?;
+
         Ok(Self::token_id(token, factory))
     }
 

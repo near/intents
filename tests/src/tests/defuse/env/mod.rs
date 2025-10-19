@@ -16,7 +16,12 @@ use crate::{
     utils::{Sandbox, acl::AclExt, ft::FtExt, read_wasm},
 };
 use anyhow::anyhow;
-use defuse::{contract::Role, tokens::DepositMessage};
+use defuse::{
+    contract::Role,
+    core::{Deadline, ExpirableNonce, Nonce, Salt, SaltedNonce, VersionedNonce},
+    tokens::DepositMessage,
+};
+use defuse_randomness::Rng;
 use near_sdk::{AccountId, NearToken};
 use near_workspaces::{
     Account, Contract, Network, Worker,
@@ -270,4 +275,15 @@ pub fn get_account_public_key(account: &Account) -> defuse::core::crypto::Public
         .to_string()
         .parse()
         .unwrap()
+}
+
+pub fn create_random_salted_nonce(salt: Salt, deadline: Deadline, mut rng: impl Rng) -> Nonce {
+    VersionedNonce::V1(SaltedNonce::new(
+        salt,
+        ExpirableNonce {
+            deadline,
+            nonce: rng.random::<[u8; 15]>(),
+        },
+    ))
+    .into()
 }

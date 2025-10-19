@@ -2,9 +2,7 @@ use arbitrary::{Arbitrary, Unstructured};
 use chrono::{TimeDelta, Utc};
 use defuse::{
     contract::Role,
-    core::{
-        Deadline, ExpirableNonce, Nonce, Salt, SaltedNonce, VersionedNonce, intents::DefuseIntents,
-    },
+    core::{Deadline, Nonce, Salt, intents::DefuseIntents},
 };
 use itertools::Itertools;
 
@@ -20,22 +18,15 @@ use rstest::rstest;
 
 use crate::{
     tests::defuse::{
-        DefuseSigner, SigningStandard, accounts::AccountManagerExt, env::Env,
-        garbage_collector::GarbageCollectorExt, intents::ExecuteIntentsExt, state::SaltManagerExt,
+        DefuseSigner, SigningStandard,
+        accounts::AccountManagerExt,
+        env::{Env, create_random_salted_nonce},
+        garbage_collector::GarbageCollectorExt,
+        intents::ExecuteIntentsExt,
+        state::SaltManagerExt,
     },
     utils::acl::AclExt,
 };
-
-fn create_random_salted_nonce(salt: Salt, deadline: Deadline, mut rng: impl Rng) -> Nonce {
-    VersionedNonce::V1(SaltedNonce::new(
-        salt,
-        ExpirableNonce {
-            deadline,
-            nonce: rng.random::<[u8; 15]>(),
-        },
-    ))
-    .into()
-}
 
 #[tokio::test]
 #[rstest]

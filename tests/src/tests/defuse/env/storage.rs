@@ -1,14 +1,12 @@
 use anyhow::Result;
+use near_sdk::AccountId;
 use near_workspaces::Account;
 use std::collections::HashMap;
 
-use defuse::{
-    contract::Role,
-    core::{
-        Deadline,
-        intents::{DefuseIntents, Intent, account::AddPublicKey},
-        token_id::{TokenId, nep141::Nep141TokenId},
-    },
+use defuse::core::{
+    Deadline,
+    intents::{DefuseIntents, Intent, account::AddPublicKey},
+    token_id::{TokenId, nep141::Nep141TokenId},
 };
 use defuse_randomness::{Rng, make_true_rng};
 use futures::stream::FuturesUnordered;
@@ -24,11 +22,10 @@ use crate::{
                 state::{AccountData, PermanentState},
             },
             intents::ExecuteIntentsExt,
-            state::FeesManagerExt,
         },
         poa::factory::PoAFactoryExt,
     },
-    utils::{acl::AclExt, ft::FtExt, mt::MtExt},
+    utils::{ParentAccount, ft::FtExt, mt::MtExt},
 };
 
 pub trait StorageMigration {
@@ -51,11 +48,14 @@ macro_rules! execute_parallel {
 
 impl StorageMigration for Env {
     async fn generate_storage_data(&mut self) {
-        let state = PermanentState::generate().unwrap();
+        let state =
+            PermanentState::generate(&self.sandbox.root_account(), &self.poa_factory.as_account())
+                .unwrap();
+
         self.arbitrary_state = Some(state);
 
         execute_parallel!(self, accounts, apply_account).expect("Failed to apply accounts");
-        execute_parallel!(self, token_names, apply_token).expect("Failed to apply tokens");
+        execute_parallel!(self, tokens, apply_token).expect("Failed to apply tokens");
         execute_parallel!(self, token_balances, apply_token_balance)
             .expect("Failed to apply token balances");
     }
@@ -73,11 +73,14 @@ impl StorageMigration for Env {
 }
 
 impl Env {
-    async fn apply_token(&self, token_name: &str) -> Result<()> {
+    async fn apply_token(&self, token_id: &Nep141TokenId) -> Result<()> {
         let root = self.sandbox.root_account();
+        let token_name = self
+            .poa_factory
+            .subaccount_name(&token_id.clone().into_contract_id());
 
         let token = root
-            .poa_factory_deploy_token(&self.poa_factory.id(), token_name, None)
+            .poa_factory_deploy_token(&self.poa_factory.id(), &token_name, None)
             .await?;
 
         self.poa_factory
@@ -86,7 +89,7 @@ impl Env {
 
         root.poa_factory_ft_deposit(
             self.poa_factory.id(),
-            token_name,
+            &token_name,
             root.id(),
             1_000_000_000,
             None,
@@ -97,16 +100,16 @@ impl Env {
         Ok(())
     }
 
-    async fn apply_token_balance(&self, data: (&String, &HashMap<String, u128>)) -> Result<()> {
-        let (account_name, balances) = data;
-        let account_id = self.sandbox.get_subaccount_id(&account_name);
+    async fn apply_token_balance(
+        &self,
+        data: (&AccountId, &HashMap<Nep141TokenId, u128>),
+    ) -> Result<()> {
+        let (account_id, balances) = data;
 
         balances
             .iter()
             .map(|(token, amount)| async {
-                let token_id = Account::token_id(token, self.poa_factory.id());
-
-                self.defuse_ft_deposit_to(&token_id, *amount, &account_id)
+                self.defuse_ft_deposit_to(&token.clone().into_contract_id(), *amount, &account_id)
                     .await
             })
             .collect::<FuturesUnordered<_>>()
@@ -162,57 +165,43 @@ impl Env {
         Ok(())
     }
 
-    async fn apply_account(&self, account: &AccountData) -> Result<()> {
-        let acc = self.create_user(&account.name).await;
+    async fn apply_account(&self, data: (&AccountId, &AccountData)) -> Result<Account> {
+        let (account_id, account) = data;
+        let acc = self
+            .create_user(&self.sandbox.subaccount_name(account_id))
+            .await;
 
         self.apply_public_keys(&acc, account).await?;
 
         self.apply_nonces(&acc, account).await?;
 
-        Ok(())
+        Ok(acc)
     }
 
     async fn verify_accounts_consistency(&self, state: &PermanentState) {
-        for data in &state.accounts {
-            let account_id = self.sandbox.get_subaccount_id(&data.name);
-
+        for (account_id, data) in &state.accounts {
             for pubkey in &data.public_keys {
                 let has_key = self
                     .defuse
                     .has_public_key(&account_id, pubkey)
                     .await
                     .unwrap();
-                assert!(
-                    has_key,
-                    "Missing public key for account {}: {:?}",
-                    data.name, pubkey
-                );
+
+                assert!(has_key);
             }
 
             for nonce in &data.nonces {
                 let is_used = self.defuse.is_nonce_used(&account_id, nonce).await.unwrap();
-                assert!(
-                    is_used,
-                    "Nonce not marked as used for account {}: {:?}",
-                    data.name, nonce
-                );
+                assert!(is_used);
             }
         }
     }
 
     async fn verify_token_balances_consistency(&self, state: &PermanentState) {
-        for (account_name, expected_balances) in &state.token_balances {
-            let account_id = self.sandbox.get_subaccount_id(account_name);
-
+        for (account_id, expected_balances) in &state.token_balances {
             let tokens: Vec<String> = expected_balances
                 .keys()
-                .map(|token_name| {
-                    TokenId::from(Nep141TokenId::new(Account::token_id(
-                        token_name,
-                        self.poa_factory.id(),
-                    )))
-                    .to_string()
-                })
+                .map(|token_id| TokenId::Nep141(token_id.clone()).to_string())
                 .collect();
 
             let actual_balances = self
@@ -222,10 +211,7 @@ impl Env {
 
             let expected_values: Vec<u128> = expected_balances.values().cloned().collect();
 
-            assert_eq!(
-                actual_balances, expected_values,
-                "Token balances mismatch for account {account_name}",
-            );
+            assert_eq!(actual_balances, expected_values,);
         }
     }
 }

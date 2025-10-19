@@ -1,10 +1,7 @@
 use super::DefuseExt;
 use crate::{
-    tests::{
-        defuse::env::{Env, storage::StorageMigration},
-        poa::factory::PoAFactoryExt,
-    },
-    utils::{Sandbox, acl::AclExt, wnear::WNearExt},
+    tests::{defuse::env::Env, poa::factory::PoAFactoryExt},
+    utils::{Sandbox, wnear::WNearExt},
 };
 use defuse::{
     contract::{
