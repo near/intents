@@ -18,7 +18,7 @@ pub fn nonce(mut rng: impl Rng) -> Nonce {
             .checked_add_signed(TimeDelta::days(1))
             .unwrap(),
     );
-    let salt: Salt = u.arbitrary().unwrap();
+    let salt: Salt = Salt::derive(0);
     let salted = SaltedNonce::new(salt, ExpirableNonce::new(deadline, nonce_bytes));
     VersionedNonce::V1(salted).into()
 }

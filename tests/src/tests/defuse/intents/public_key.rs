@@ -1,7 +1,9 @@
+use crate::tests::defuse::state::SaltManagerExt;
 use crate::tests::defuse::SigningStandard;
 use crate::tests::defuse::intents::{AccountNonceIntentEvent, ExecuteIntentsExt};
 use crate::utils::fixtures::{nonce, public_key, signing_standard};
 use crate::{assert_eq_event_logs, tests::defuse::DefuseSigner, tests::defuse::env::Env};
+use defuse::core::VersionedNonce;
 use defuse::core::{
     Deadline, Nonce,
     accounts::{AccountEvent, PublicKeyEvent},
@@ -25,6 +27,12 @@ async fn execute_add_public_key_intent(
     signing_standard: SigningStandard,
 ) {
     let env = Env::builder().no_registration(true).build().await;
+
+    let current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
+
+    let versioned_nonce = VersionedNonce::maybe_from(nonce).unwrap();
+    println!("{current_salt:#?}");
+    println!("{:#?}", versioned_nonce);
 
     let new_public_key = public_key;
 

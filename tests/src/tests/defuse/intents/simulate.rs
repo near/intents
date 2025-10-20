@@ -669,7 +669,7 @@ async fn simulate_add_public_key_intent(
     public_key: PublicKey,
     signing_standard: SigningStandard,
 ) {
-    let env = Env::builder().no_registration(true).build().await;
+    let env = Env::builder().build().await;
 
     let new_public_key = public_key;
 
@@ -785,7 +785,7 @@ async fn simulate_set_auth_by_predecessor_id_intent(
     nonce: Nonce,
     signing_standard: SigningStandard,
 ) {
-    let env = Env::builder().no_registration(true).build().await;
+    let env = Env::builder().build().await;
 
     let set_auth_intent = SetAuthByPredecessorId { enabled: true };
 
@@ -822,7 +822,7 @@ async fn simulate_set_auth_by_predecessor_id_intent(
 #[rstest]
 #[trace]
 async fn simulate_auth_call_intent(nonce: Nonce, signing_standard: SigningStandard) {
-    let env = Env::builder().no_registration(true).build().await;
+    let env = Env::builder().build().await;
 
     let wnear_token_id = TokenId::from(Nep141TokenId::new(env.wnear.id().clone()));
 
