@@ -521,7 +521,7 @@ async fn multitoken_withdrawals() {
         .unwrap();
 
     // Check only if arbitrary state is not applied
-    if env.arbitrary_state.is_none() {
+    if env.persistent_state.is_none() {
         assert!(
             user1
                 .mt_tokens(env.defuse.id(), ..)

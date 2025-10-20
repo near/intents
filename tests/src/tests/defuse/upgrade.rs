@@ -196,7 +196,7 @@ async fn test_upgrade_with_persistence(mut rng: impl Rng, random_bytes: Vec<u8>)
     {
         let tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
 
-        let old_tokens = &env.arbitrary_state.as_ref().unwrap().tokens;
+        let old_tokens = &env.persistent_state.as_ref().unwrap().tokens;
 
         // Check old tokens
         assert!(old_tokens.iter().all(|t| {

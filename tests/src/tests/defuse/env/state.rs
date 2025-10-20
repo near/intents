@@ -6,12 +6,11 @@ use std::{
 use anyhow::Result;
 use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::{Nonce, crypto::PublicKey, token_id::nep141::Nep141TokenId};
+use defuse_near_utils::arbitrary::ArbitraryNamedAccountId;
 use defuse_randomness::{Rng, make_true_rng, seq::IteratorRandom};
 use defuse_test_utils::random::random_bytes;
 use near_sdk::AccountId;
 use near_workspaces::Account;
-
-use crate::utils::ParentAccount;
 
 const MAX_PUBLIC_KEYS: usize = 10;
 const MAX_ACCOUNTS: usize = 5;
@@ -20,9 +19,6 @@ const MAX_TOKENS: usize = 3;
 
 const MIN_BALANCE_AMOUNT: u128 = 1_000;
 const MAX_BALANCE_AMOUNT: u128 = 10_000;
-
-const ACCOUNT_NAME_PREFIX: &str = "test_user_";
-const TOKEN_NAME_PREFIX: &str = "test_token_";
 
 #[derive(Arbitrary, Debug, Clone, PartialEq, Eq)]
 pub struct AccountData {
@@ -33,19 +29,15 @@ pub struct AccountData {
     pub nonces: HashSet<Nonce>,
 }
 
-fn generate_arbitrary_name(u: &mut Unstructured) -> arbitrary::Result<String> {
-    Ok(format!("{}{}", ACCOUNT_NAME_PREFIX, u8::arbitrary(u)?))
-}
-
 /// Generates arbitrary but consistent state changes
 #[derive(Debug)]
-pub struct PermanentState {
+pub struct PersistentState {
     pub accounts: HashMap<AccountId, AccountData>,
     pub token_balances: HashMap<AccountId, HashMap<Nep141TokenId, u128>>,
     pub tokens: HashSet<Nep141TokenId>,
 }
 
-impl PermanentState {
+impl PersistentState {
     pub fn generate(root: &Account, factory: &Account) -> Result<Self> {
         let mut rng = make_true_rng();
         let random_bytes = random_bytes(50..1000, &mut rng);
@@ -66,9 +58,9 @@ impl PermanentState {
         let number = u.int_in_range(1..=MAX_ACCOUNTS).unwrap();
 
         (0..number)
-            .map(|num| {
+            .map(|_| {
                 (
-                    root.subaccount_id(format!("{}{}", ACCOUNT_NAME_PREFIX, num).as_str()),
+                    ArbitraryNamedAccountId::arbitrary_subaccount(u, Some(root.id())).unwrap(),
                     AccountData::arbitrary(u).unwrap(),
                 )
             })
@@ -79,9 +71,9 @@ impl PermanentState {
         let number = u.int_in_range(1..=MAX_TOKENS).unwrap();
 
         (0..number)
-            .map(|num| {
+            .map(|_| {
                 Nep141TokenId::new(
-                    factory.subaccount_id(format!("{}{}", TOKEN_NAME_PREFIX, num).as_str()),
+                    ArbitraryNamedAccountId::arbitrary_subaccount(u, Some(factory.id())).unwrap(),
                 )
             })
             .collect()

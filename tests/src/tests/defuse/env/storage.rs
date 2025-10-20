@@ -19,7 +19,7 @@ use crate::{
             accounts::AccountManagerExt,
             env::{
                 Env,
-                state::{AccountData, PermanentState},
+                state::{AccountData, PersistentState},
             },
             intents::ExecuteIntentsExt,
         },
@@ -32,9 +32,10 @@ pub trait StorageMigration {
     async fn generate_storage_data(&mut self);
     async fn verify_storage_consistency(&self);
 }
+
 macro_rules! execute_parallel {
     ($self:expr, $items:ident, $task:ident) => {{
-        let state = $self.arbitrary_state.as_ref().unwrap();
+        let state = $self.persistent_state.as_ref().unwrap();
 
         state
             .$items
@@ -49,10 +50,10 @@ macro_rules! execute_parallel {
 impl StorageMigration for Env {
     async fn generate_storage_data(&mut self) {
         let state =
-            PermanentState::generate(&self.sandbox.root_account(), &self.poa_factory.as_account())
+            PersistentState::generate(&self.sandbox.root_account(), &self.poa_factory.as_account())
                 .unwrap();
 
-        self.arbitrary_state = Some(state);
+        self.persistent_state = Some(state);
 
         execute_parallel!(self, accounts, apply_account).expect("Failed to apply accounts");
         execute_parallel!(self, tokens, apply_token).expect("Failed to apply tokens");
@@ -61,7 +62,7 @@ impl StorageMigration for Env {
     }
 
     async fn verify_storage_consistency(&self) {
-        let Some(state) = self.arbitrary_state.as_ref() else {
+        let Some(state) = self.persistent_state.as_ref() else {
             println!("Nothing to verify - persistent state is not set");
             return;
         };
@@ -178,7 +179,7 @@ impl Env {
         Ok(acc)
     }
 
-    async fn verify_accounts_consistency(&self, state: &PermanentState) {
+    async fn verify_accounts_consistency(&self, state: &PersistentState) {
         for (account_id, data) in &state.accounts {
             for pubkey in &data.public_keys {
                 let has_key = self
@@ -197,7 +198,7 @@ impl Env {
         }
     }
 
-    async fn verify_token_balances_consistency(&self, state: &PermanentState) {
+    async fn verify_token_balances_consistency(&self, state: &PersistentState) {
         for (account_id, expected_balances) in &state.token_balances {
             let tokens: Vec<String> = expected_balances
                 .keys()

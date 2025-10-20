@@ -255,7 +255,10 @@ mod tests {
     async fn deploy_mint() {
         let sandbox = Sandbox::new().await.unwrap();
         let root = sandbox.root_account();
-        let user = sandbox.create_account("user1").await;
+        let user = sandbox
+            .create_account("user1")
+            .await
+            .expect("Failed to create user");
 
         let poa_factory = root
             .deploy_poa_factory(

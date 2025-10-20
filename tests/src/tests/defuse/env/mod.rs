@@ -8,14 +8,14 @@ use super::{DefuseExt, accounts::AccountManagerExt};
 use crate::{
     tests::{
         defuse::{
-            env::{builder::EnvBuilder, state::PermanentState, storage::StorageMigration},
+            env::{builder::EnvBuilder, state::PersistentState, storage::StorageMigration},
             tokens::nep141::traits::DefuseFtReceiver,
         },
         poa::factory::PoAFactoryExt,
     },
     utils::{Sandbox, acl::AclExt, ft::FtExt, read_wasm},
 };
-use anyhow::anyhow;
+use anyhow::{Ok, Result, anyhow};
 use defuse::{
     contract::Role,
     core::{Deadline, ExpirableNonce, Nonce, Salt, SaltedNonce, VersionedNonce},
@@ -46,7 +46,7 @@ pub struct Env {
     pub disable_ft_storage_deposit: bool,
     pub disable_registration: bool,
 
-    pub arbitrary_state: Option<PermanentState>,
+    pub persistent_state: Option<PersistentState>,
 }
 
 impl Env {
@@ -117,18 +117,21 @@ impl Env {
         ft
     }
 
-    pub async fn create_user(&self, name: &str) -> Account {
-        let exists = self.sandbox.account_exists(name).await;
-        let account = self.sandbox.create_account(name).await;
+    pub async fn create_named_user(&self, name: &str) -> Result<Account> {
+        let account = self.sandbox.create_account(name).await?;
+        let pubkey = get_account_public_key(&account);
 
-        if !exists {
-            account
-                .add_public_key(self.defuse.id(), get_account_public_key(&account))
-                .await
-                .unwrap();
+        if !self.defuse.has_public_key(account.id(), &pubkey).await? {
+            account.add_public_key(self.defuse.id(), pubkey).await?
         }
 
-        account
+        Ok(account)
+    }
+
+    pub async fn create_user(&self, name: &str) -> Account {
+        self.create_named_user(name)
+            .await
+            .expect("Failed to create user account")
     }
 
     pub async fn upgrade_legacy(&mut self) {

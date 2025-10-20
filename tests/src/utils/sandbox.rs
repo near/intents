@@ -1,3 +1,4 @@
+use anyhow::Result;
 use std::{fs, ops::Deref, path::Path};
 
 use near_sdk::AccountId;
@@ -43,11 +44,10 @@ impl Sandbox {
         &self.root_account
     }
 
-    pub async fn create_account(&self, name: &str) -> Account {
+    pub async fn create_account(&self, name: &str) -> Result<Account> {
         self.root_account
             .create_new_subaccount(name, NearToken::from_near(10))
             .await
-            .unwrap()
     }
 
     pub async fn account_exists(&self, name: &str) -> bool {
