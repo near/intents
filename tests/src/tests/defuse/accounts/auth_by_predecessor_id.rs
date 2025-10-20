@@ -24,7 +24,7 @@ async fn auth_by_predecessor_id(random_bytes: Vec<u8>) {
     let mut u = Unstructured::new(&random_bytes);
     let mut env = Env::new().await;
 
-    let ft = env.create_token("ft").await;
+    let ft = env.create_token().await;
     let user = env.get_or_create_user().await;
 
     env.ft_storage_deposit_for_users(vec![user.id()], &[&ft])

@@ -36,7 +36,7 @@ async fn test_lock_account(random_bytes: Vec<u8>) {
     let account_locker = env.get_or_create_user().await;
     let unlocked_account = env.get_or_create_user().await;
 
-    let ft = env.create_token("ft").await;
+    let ft = env.create_token().await;
 
     env.ft_storage_deposit_for_users(vec![locked_account.id(), unlocked_account.id()], &[&ft])
         .await;

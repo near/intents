@@ -43,7 +43,7 @@ async fn storage_deposit_success(
     let user = env.get_or_create_user().await;
     let other_user = env.get_or_create_user().await;
 
-    let ft = env.create_token("ft").await;
+    let ft = env.create_token().await;
 
     env.fund_account_with_near(user.id(), NearToken::from_near(1000))
         .await;
@@ -146,7 +146,7 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents(mut rng: impl Rng)
     let user = env.get_or_create_user().await;
     let other_user = env.get_or_create_user().await;
 
-    let ft = env.create_token("ft").await;
+    let ft = env.create_token().await;
 
     env.fund_account_with_near(&user.id().to_owned(), NearToken::from_near(1000))
         .await;

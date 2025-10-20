@@ -95,8 +95,10 @@ impl Env {
         Ok(())
     }
 
-    pub async fn create_token(&self, name: &str) -> AccountId {
+    pub async fn create_named_token(&self, name: &str) -> AccountId {
         let root = self.sandbox.root_account();
+
+        println!("Creating token: {}", name);
 
         let ft = root
             .poa_factory_deploy_token(self.poa_factory.id(), name, None)
@@ -120,6 +122,13 @@ impl Env {
         }
 
         ft
+    }
+
+    pub async fn create_token(&self) -> AccountId {
+        let account_id = self.generate_random_account_id(self.poa_factory.id());
+
+        self.create_named_token(self.poa_factory.subaccount_name(&account_id).as_str())
+            .await
     }
 
     pub async fn create_named_user(&self, name: &str) -> Result<Account> {
@@ -161,11 +170,10 @@ impl Env {
                         })
                 }
             })
-            .unwrap_or_else(|| self.generate_random_account_id())
+            .unwrap_or_else(|| self.generate_random_account_id(self.sandbox.root_account().id()))
     }
 
-    fn generate_random_account_id(&self) -> AccountId {
-        let parent_id = self.sandbox.root_account().id();
+    fn generate_random_account_id(&self, parent_id: &AccountId) -> AccountId {
         let mut rng = make_true_rng();
         let bytes = rng.random::<[u8; 64]>();
         let u = &mut Unstructured::new(&bytes);

@@ -21,7 +21,7 @@ use std::collections::HashMap;
 #[tokio::test]
 #[rstest]
 async fn transfer_nft_to_verifier(mut rng: impl Rng) {
-    let mut env = Env::builder().build().await;
+    let mut env = Env::builder().create_unique_users().build().await;
 
     let user1 = env.get_or_create_user().await;
     let user2 = env.get_or_create_user().await;
@@ -174,12 +174,16 @@ async fn transfer_nft_to_verifier(mut rng: impl Rng) {
     {
         // mt_tokens
         {
+            let existing_mt_amount = env.persistent_state.map(|s| s.tokens.len()).unwrap_or(0);
             let nfts_in_verifier = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
-            assert_eq!(nfts_in_verifier.len(), 2);
+
+            assert_eq!(nfts_in_verifier.len(), existing_mt_amount + 2);
+
             let nfts_in_verifier_map = nfts_in_verifier
                 .into_iter()
                 .map(|v| (v.token_id.clone(), v))
                 .collect::<HashMap<_, _>>();
+
             assert!(nfts_in_verifier_map.contains_key(&nft1_mt_token_id.to_string()));
             assert!(nfts_in_verifier_map.contains_key(&nft2_mt_token_id.to_string()));
         }

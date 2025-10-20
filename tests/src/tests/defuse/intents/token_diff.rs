@@ -40,8 +40,8 @@ async fn swap_p2p(
     let user1 = env.get_or_create_user().await;
     let user2 = env.get_or_create_user().await;
 
-    let ft1 = env.create_token("ft1").await;
-    let ft2 = env.create_token("ft2").await;
+    let ft1 = env.create_token().await;
+    let ft2 = env.create_token().await;
 
     let ft1_token_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
     let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
@@ -114,9 +114,9 @@ async fn swap_many(
     let user2 = env.get_or_create_user().await;
     let user3 = env.get_or_create_user().await;
 
-    let ft1 = env.create_token("ft1").await;
-    let ft2 = env.create_token("ft2").await;
-    let ft3 = env.create_token("ft3").await;
+    let ft1 = env.create_token().await;
+    let ft2 = env.create_token().await;
+    let ft3 = env.create_token().await;
 
     let ft1_token_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
     let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
@@ -298,8 +298,8 @@ async fn invariant_violated(
     let user1 = env.get_or_create_user().await;
     let user2 = env.get_or_create_user().await;
 
-    let ft1 = env.create_token("ft1").await;
-    let ft2 = env.create_token("ft2").await;
+    let ft1 = env.create_token().await;
+    let ft2 = env.create_token().await;
 
     let ft1_token_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
     let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
@@ -424,8 +424,8 @@ async fn solver_user_closure(
     let user = env.get_or_create_user().await;
     let solver = env.get_or_create_user().await;
 
-    let ft1 = env.create_token("ft1").await;
-    let ft2 = env.create_token("ft2").await;
+    let ft1 = env.create_token().await;
+    let ft2 = env.create_token().await;
 
     env.ft_storage_deposit_for_users(vec![user.id(), solver.id()], &[&ft1, &ft2])
         .await;

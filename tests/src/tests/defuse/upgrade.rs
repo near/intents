@@ -102,7 +102,7 @@ async fn test_upgrade_with_persistence(mut rng: impl Rng, random_bytes: Vec<u8>)
     let user4 = &env.create_named_user("second_new_user").await.unwrap();
 
     // Create new tokens
-    let ft1 = env.create_token("new_ft1").await;
+    let ft1 = env.create_token().await;
 
     // Check users
     {

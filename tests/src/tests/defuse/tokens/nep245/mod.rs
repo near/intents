@@ -30,8 +30,8 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
     let user2 = env.get_or_create_user().await;
     let user3 = env.get_or_create_user().await;
 
-    let ft1 = env.create_token("ft1").await;
-    let ft2 = env.create_token("ft2").await;
+    let ft1 = env.create_token().await;
+    let ft2 = env.create_token().await;
 
     env.ft_storage_deposit_for_users(vec![user1.id(), user2.id()], &[&ft1, &ft2])
         .await;
@@ -325,9 +325,9 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
     let user2 = env.get_or_create_user().await;
     let user3 = env.get_or_create_user().await;
 
-    let ft1 = env.create_token("ft1").await;
-    let ft2 = env.create_token("ft2").await;
-    let ft3 = env.create_token("ft3").await;
+    let ft1 = env.create_token().await;
+    let ft2 = env.create_token().await;
+    let ft3 = env.create_token().await;
 
     env.ft_storage_deposit_for_users(vec![user1.id()], &[&ft1, &ft2, &ft3])
         .await;
@@ -510,19 +510,26 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
 #[tokio::test]
 #[rstest]
 async fn multitoken_withdrawals() {
-    let mut env = Env::builder().build().await;
+    let mut env = Env::builder().create_unique_users().build().await;
 
     let user1 = env.get_or_create_user().await;
     let user2 = env.get_or_create_user().await;
     let user3 = env.get_or_create_user().await;
 
-    let ft1 = env.create_token("ft1").await;
-    let ft2 = env.create_token("ft2").await;
-    let ft3 = env.create_token("ft3").await;
+    let ft1 = env.create_token().await;
+    let ft2 = env.create_token().await;
+    let ft3 = env.create_token().await;
 
     env.ft_storage_deposit_for_users(vec![user1.id()], &[&ft1, &ft2, &ft3])
         .await;
     env.ft_deposit_to_root(&[&ft1, &ft2, &ft3]).await;
+
+    // Check already existing tokens from persistent state
+    let persistent_tokens: Vec<Token> = env
+        .persistent_state
+        .as_ref()
+        .map(|s| s.get_mt_tokens())
+        .unwrap_or_default();
 
     let defuse2 = env
         .deploy_defuse(
@@ -540,14 +547,10 @@ async fn multitoken_withdrawals() {
         .await
         .unwrap();
 
-    // Check only if arbitrary state is not applied
-    if env.persistent_state.is_none() {
-        assert!(
-            user1
-                .mt_tokens(env.defuse.id(), ..)
-                .await
-                .unwrap()
-                .is_empty(),
+    {
+        assert_eq!(
+            user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
+            persistent_tokens
         );
         assert!(
             user1
