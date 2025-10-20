@@ -1,7 +1,7 @@
 use super::{DefuseSigner, accounts::AccountManagerExt, env::Env};
 use crate::tests::defuse::SigningStandard;
-use crate::tests::utils::NearSdkLog;
 use crate::utils::{crypto::Signer, mt::MtExt, test_log::TestLog};
+use defuse_near_utils::NearSdkLog;
 use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;

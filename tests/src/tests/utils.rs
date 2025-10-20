@@ -1,4 +1,4 @@
-use defuse::core::{events::DefuseEvent, fees::Pips};
+use defuse::core::fees::Pips;
 use defuse_randomness::Rng;
 use defuse_test_utils::random::rng;
 use near_sdk::borsh;
@@ -32,14 +32,4 @@ fn pips_borsch_serialization_back_and_forth(mut rng: impl Rng) {
 fn pip_borsch_deserialization_selected_values(#[case] serialized: &[u8], #[case] pips: u32) {
     let deserialized: Pips = borsh::from_slice(serialized).unwrap();
     assert_eq!(deserialized, Pips::from_pips(pips).unwrap());
-}
-
-pub trait NearSdkLog {
-    fn to_near_sdk_log(&self) -> String;
-}
-
-impl NearSdkLog for DefuseEvent<'_> {
-    fn to_near_sdk_log(&self) -> String {
-        ::std::format!("EVENT_JSON:{}", self.to_json())
-    }
 }

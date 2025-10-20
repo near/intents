@@ -1,7 +1,7 @@
 use crate::tests::defuse::SigningStandard;
 use crate::tests::defuse::intents::{AccountNonceIntentEvent, ExecuteIntentsExt, NonceEvent};
-use crate::tests::utils::NearSdkLog;
 use crate::utils::{ft::FtExt, mt::MtExt, nft::NftExt, wnear::WNearExt};
+use defuse_near_utils::NearSdkLog;
 use crate::{
     tests::defuse::accounts::AccountManagerExt,
     tests::defuse::env::Env,

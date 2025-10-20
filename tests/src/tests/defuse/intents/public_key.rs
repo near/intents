@@ -1,7 +1,7 @@
 use crate::tests::defuse::SigningStandard;
 use crate::tests::defuse::intents::{AccountNonceIntentEvent, ExecuteIntentsExt};
-use crate::tests::utils::NearSdkLog;
 use crate::{tests::defuse::DefuseSigner, tests::defuse::env::Env};
+use defuse_near_utils::NearSdkLog;
 use defuse::core::{
     Deadline,
     accounts::{AccountEvent, PublicKeyEvent},
