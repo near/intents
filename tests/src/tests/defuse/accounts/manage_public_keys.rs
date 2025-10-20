@@ -6,13 +6,12 @@ use defuse::core::{
     events::DefuseEvent,
 };
 use defuse_near_utils::NearSdkLog;
-use defuse_test_utils::random::public_key;
 use rstest::rstest;
 
 use crate::{
     assert_eq_event_logs,
     tests::defuse::{accounts::AccountManagerExt, env::Env},
-    utils::test_log::TestLog,
+    utils::{fixtures::public_key, test_log::TestLog},
 };
 
 #[tokio::test]

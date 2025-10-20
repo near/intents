@@ -1,5 +1,6 @@
 use crate::tests::defuse::SigningStandard;
 use crate::tests::defuse::intents::{AccountNonceIntentEvent, ExecuteIntentsExt, NonceEvent};
+use crate::utils::fixtures::{nonce, public_key, signing_standard};
 use crate::utils::{ft::FtExt, mt::MtExt, nft::NftExt, wnear::WNearExt};
 use crate::{
     tests::defuse::accounts::AccountManagerExt,
@@ -28,9 +29,7 @@ use defuse::core::{
 };
 use defuse_near_utils::NearSdkLog;
 use defuse_randomness::Rng;
-use defuse_test_utils::random::{
-    gen_random_string, nonce, public_key, random_bytes, rng, signing_standard,
-};
+use defuse_test_utils::random::{gen_random_string, random_bytes, rng};
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata, TokenMetadata,
 };

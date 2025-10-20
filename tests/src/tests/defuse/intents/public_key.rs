@@ -1,5 +1,6 @@
 use crate::tests::defuse::SigningStandard;
 use crate::tests::defuse::intents::{AccountNonceIntentEvent, ExecuteIntentsExt};
+use crate::utils::fixtures::{nonce, public_key, signing_standard};
 use crate::{assert_eq_event_logs, tests::defuse::DefuseSigner, tests::defuse::env::Env};
 use defuse::core::{
     Deadline, Nonce,
@@ -12,7 +13,6 @@ use defuse::core::{
     },
 };
 use defuse_near_utils::NearSdkLog;
-use defuse_test_utils::random::{nonce, public_key, signing_standard};
 use rstest::rstest;
 use std::borrow::Cow;
 
