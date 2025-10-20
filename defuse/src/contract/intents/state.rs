@@ -276,19 +276,7 @@ impl State for Contract {
     }
 
     fn set_auth_by_predecessor_id(&mut self, account_id: AccountId, enable: bool) -> Result<bool> {
-        if enable {
-            let Some(account) = self.accounts.get_mut(&account_id) else {
-                // no need to create an account: not-yet-existing accounts
-                // have auth by PREDECESSOR_ID enabled by default
-                return Ok(true);
-            };
-            account
-        } else {
-            self.accounts.get_or_create(account_id.clone())
-        }
-        .get_mut()
-        .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))
-        .map(|account| account.set_auth_by_predecessor_id(&account_id, enable))
+        self.internal_set_auth_by_predecessor_id(&account_id, enable, false)
     }
 
     fn auth_call(&mut self, signer_id: &AccountIdRef, auth_call: AuthCall) -> Result<()> {
