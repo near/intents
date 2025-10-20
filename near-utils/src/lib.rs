@@ -3,7 +3,7 @@ pub mod arbitrary;
 mod cache;
 #[cfg(feature = "digest")]
 pub mod digest;
-pub mod event;
+mod event;
 mod gas;
 mod lock;
 mod panic;
