@@ -175,3 +175,14 @@ pub fn public_key(mut rng: impl Rng) -> PublicKey {
     let mut u = Unstructured::new(&random_bytes);
     u.arbitrary().unwrap()
 }
+
+#[fixture]
+pub fn signing_standard<T>(mut rng: impl Rng) -> T
+where
+    for<'a> T: Arbitrary<'a>,
+{
+    let mut random_bytes = [0u8; 8];
+    rng.fill_bytes(&mut random_bytes);
+    let mut u = Unstructured::new(&random_bytes);
+    u.arbitrary().unwrap()
+}

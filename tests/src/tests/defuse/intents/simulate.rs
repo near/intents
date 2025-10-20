@@ -28,7 +28,7 @@ use defuse::core::{
 };
 use defuse_near_utils::NearSdkLog;
 use defuse_randomness::Rng;
-use defuse_test_utils::random::{gen_random_string, nonce, public_key, random_bytes, rng};
+use defuse_test_utils::random::{gen_random_string, nonce, public_key, random_bytes, rng, signing_standard};
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata, TokenMetadata,
 };
@@ -40,7 +40,7 @@ use std::borrow::Cow;
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_transfer_intent(nonce: Nonce) {
+async fn simulate_transfer_intent(nonce: Nonce, signing_standard: SigningStandard) {
     let env = Env::builder().no_registration(true).build().await;
 
     env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
@@ -55,7 +55,7 @@ async fn simulate_transfer_intent(nonce: Nonce) {
     };
 
     let transfer_intent_payload = env.user1.sign_defuse_message(
-        SigningStandard::default(),
+        signing_standard,
         env.defuse.id(),
         nonce,
         Deadline::MAX,
@@ -92,7 +92,7 @@ async fn simulate_transfer_intent(nonce: Nonce) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_ft_withdraw_intent(nonce: Nonce) {
+async fn simulate_ft_withdraw_intent(nonce: Nonce, signing_standard: SigningStandard) {
     let env = Env::builder().no_registration(true).build().await;
 
     env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
@@ -120,7 +120,7 @@ async fn simulate_ft_withdraw_intent(nonce: Nonce) {
     };
 
     let ft_withdraw_payload = env.user1.sign_defuse_message(
-        SigningStandard::default(),
+        signing_standard,
         env.defuse.id(),
         nonce,
         Deadline::MAX,
@@ -155,7 +155,7 @@ async fn simulate_ft_withdraw_intent(nonce: Nonce) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_native_withdraw_intent(nonce: Nonce) {
+async fn simulate_native_withdraw_intent(nonce: Nonce, signing_standard: SigningStandard) {
     let env = Env::builder().no_registration(true).build().await;
 
     let wnear_token_id = TokenId::from(Nep141TokenId::new(env.wnear.id().clone()));
@@ -194,7 +194,7 @@ async fn simulate_native_withdraw_intent(nonce: Nonce) {
     };
 
     let native_withdraw_payload = env.user1.sign_defuse_message(
-        SigningStandard::default(),
+        signing_standard,
         env.defuse.id(),
         nonce,
         Deadline::MAX,
@@ -229,7 +229,7 @@ async fn simulate_native_withdraw_intent(nonce: Nonce) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_nft_withdraw_intent(#[notrace] mut rng: impl Rng, nonce: Nonce) {
+async fn simulate_nft_withdraw_intent(#[notrace] mut rng: impl Rng, nonce: Nonce, signing_standard: SigningStandard) {
     let env = Env::builder().no_registration(true).build().await;
 
     env.transfer_near(env.user1.id(), NearToken::from_near(100))
@@ -299,7 +299,7 @@ async fn simulate_nft_withdraw_intent(#[notrace] mut rng: impl Rng, nonce: Nonce
     };
 
     let nft_withdraw_payload = env.user1.sign_defuse_message(
-        SigningStandard::default(),
+        signing_standard,
         env.defuse.id(),
         nonce,
         Deadline::MAX,
@@ -334,7 +334,7 @@ async fn simulate_nft_withdraw_intent(#[notrace] mut rng: impl Rng, nonce: Nonce
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_mt_withdraw_intent(nonce: Nonce) {
+async fn simulate_mt_withdraw_intent(nonce: Nonce, signing_standard: SigningStandard) {
     let env = Env::builder().build().await;
 
     // Deploy a second Defuse contract which supports NEP-245 operations
@@ -419,7 +419,7 @@ async fn simulate_mt_withdraw_intent(nonce: Nonce) {
     };
 
     let mt_withdraw_payload = env.user1.sign_defuse_message(
-        SigningStandard::default(),
+        signing_standard,
         defuse2.id(), // Sign for defuse2 since we're simulating on it
         nonce,
         Deadline::MAX,
@@ -454,7 +454,7 @@ async fn simulate_mt_withdraw_intent(nonce: Nonce) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_storage_deposit_intent(nonce: Nonce) {
+async fn simulate_storage_deposit_intent(nonce: Nonce, signing_standard: SigningStandard) {
     let env = Env::builder().no_registration(true).build().await;
 
     let wnear_token_id = TokenId::from(Nep141TokenId::new(env.wnear.id().clone()));
@@ -493,7 +493,7 @@ async fn simulate_storage_deposit_intent(nonce: Nonce) {
     };
 
     let storage_deposit_payload = env.user1.sign_defuse_message(
-        SigningStandard::default(),
+        signing_standard,
         env.defuse.id(),
         nonce,
         Deadline::MAX,
@@ -528,7 +528,12 @@ async fn simulate_storage_deposit_intent(nonce: Nonce) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_token_diff_intent(#[from(nonce)] nonce1: Nonce, #[from(nonce)] nonce2: Nonce) {
+async fn simulate_token_diff_intent(
+    #[from(nonce)] nonce1: Nonce,
+    #[from(nonce)] nonce2: Nonce,
+    #[from(signing_standard)] signing_standard1: SigningStandard,
+    #[from(signing_standard)] signing_standard2: SigningStandard,
+) {
     let env = Env::builder()
         .fee(Pips::ZERO)
         .no_registration(true)
@@ -583,8 +588,7 @@ async fn simulate_token_diff_intent(#[from(nonce)] nonce1: Nonce, #[from(nonce)]
     };
 
     let user1_payload = env.user1.sign_defuse_message(
-        // SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
-        SigningStandard::default(),
+        signing_standard1,
         env.defuse.id(),
         nonce1,
         Deadline::MAX,
@@ -594,7 +598,7 @@ async fn simulate_token_diff_intent(#[from(nonce)] nonce1: Nonce, #[from(nonce)]
     );
 
     let user2_payload = env.user2.sign_defuse_message(
-        SigningStandard::default(),
+        signing_standard2,
         env.defuse.id(),
         nonce2,
         Deadline::MAX,
@@ -655,7 +659,7 @@ async fn simulate_token_diff_intent(#[from(nonce)] nonce1: Nonce, #[from(nonce)]
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_add_public_key_intent(nonce: Nonce, public_key: PublicKey) {
+async fn simulate_add_public_key_intent(nonce: Nonce, public_key: PublicKey, signing_standard: SigningStandard) {
     let env = Env::builder().no_registration(true).build().await;
 
     let new_public_key = public_key;
@@ -665,7 +669,7 @@ async fn simulate_add_public_key_intent(nonce: Nonce, public_key: PublicKey) {
     };
 
     let add_public_key_payload = env.user1.sign_defuse_message(
-        SigningStandard::default(),
+        signing_standard,
         env.defuse.id(),
         nonce,
         Deadline::MAX,
@@ -703,6 +707,8 @@ async fn simulate_remove_public_key_intent(
     #[from(nonce)] add_nonce: Nonce,
     #[from(nonce)] remove_nonce: Nonce,
     public_key: PublicKey,
+    #[from(signing_standard)] add_signing_standard: SigningStandard,
+    #[from(signing_standard)] remove_signing_standard: SigningStandard,
 ) {
     let env = Env::builder().no_registration(true).build().await;
 
@@ -712,7 +718,7 @@ async fn simulate_remove_public_key_intent(
     };
 
     let add_public_key_payload = env.user1.sign_defuse_message(
-        SigningStandard::default(),
+        add_signing_standard,
         env.defuse.id(),
         add_nonce,
         Deadline::MAX,
@@ -732,7 +738,7 @@ async fn simulate_remove_public_key_intent(
     };
 
     let remove_public_key_payload = env.user1.sign_defuse_message(
-        SigningStandard::default(),
+        remove_signing_standard,
         env.defuse.id(),
         remove_nonce,
         Deadline::MAX,
@@ -768,13 +774,13 @@ async fn simulate_remove_public_key_intent(
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_set_auth_by_predecessor_id_intent(nonce: Nonce) {
+async fn simulate_set_auth_by_predecessor_id_intent(nonce: Nonce, signing_standard: SigningStandard) {
     let env = Env::builder().no_registration(true).build().await;
 
     let set_auth_intent = SetAuthByPredecessorId { enabled: true };
 
     let set_auth_payload = env.user1.sign_defuse_message(
-        SigningStandard::default(),
+        signing_standard,
         env.defuse.id(),
         nonce,
         Deadline::MAX,
@@ -805,7 +811,7 @@ async fn simulate_set_auth_by_predecessor_id_intent(nonce: Nonce) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_auth_call_intent(nonce: Nonce) {
+async fn simulate_auth_call_intent(nonce: Nonce, signing_standard: SigningStandard) {
     let env = Env::builder().no_registration(true).build().await;
 
     let wnear_token_id = TokenId::from(Nep141TokenId::new(env.wnear.id().clone()));
@@ -844,7 +850,7 @@ async fn simulate_auth_call_intent(nonce: Nonce) {
     };
 
     let auth_call_payload = env.user1.sign_defuse_message(
-        SigningStandard::default(),
+        signing_standard,
         env.defuse.id(),
         nonce,
         Deadline::MAX,

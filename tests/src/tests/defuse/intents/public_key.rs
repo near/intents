@@ -12,7 +12,7 @@ use defuse::core::{
     },
 };
 use defuse_near_utils::NearSdkLog;
-use defuse_test_utils::random::{nonce, public_key};
+use defuse_test_utils::random::{nonce, public_key, signing_standard};
 use rstest::rstest;
 use std::borrow::Cow;
 
@@ -51,7 +51,7 @@ macro_rules! assert_eq_event_logs {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn execute_add_public_key_intent(nonce: Nonce, public_key: PublicKey) {
+async fn execute_add_public_key_intent(nonce: Nonce, public_key: PublicKey, signing_standard: SigningStandard) {
     let env = Env::builder().no_registration(true).build().await;
 
     let new_public_key = public_key;
@@ -61,7 +61,7 @@ async fn execute_add_public_key_intent(nonce: Nonce, public_key: PublicKey) {
     };
 
     let add_public_key_payload = env.user1.sign_defuse_message(
-        SigningStandard::default(),
+        signing_standard,
         env.defuse.id(),
         nonce,
         Deadline::MAX,
@@ -99,6 +99,8 @@ async fn execute_remove_public_key_intent(
     #[from(nonce)] add_nonce: Nonce,
     #[from(nonce)] remove_nonce: Nonce,
     public_key: PublicKey,
+    #[from(signing_standard)] add_signing_standard: SigningStandard,
+    #[from(signing_standard)] remove_signing_standard: SigningStandard,
 ) {
     let env = Env::builder().no_registration(true).build().await;
 
@@ -108,7 +110,7 @@ async fn execute_remove_public_key_intent(
     };
 
     let add_public_key_payload = env.user1.sign_defuse_message(
-        SigningStandard::default(),
+        add_signing_standard,
         env.defuse.id(),
         add_nonce,
         Deadline::MAX,
@@ -127,7 +129,7 @@ async fn execute_remove_public_key_intent(
     };
 
     let remove_public_key_payload = env.user1.sign_defuse_message(
-        SigningStandard::default(),
+        remove_signing_standard,
         env.defuse.id(),
         remove_nonce,
         Deadline::MAX,
