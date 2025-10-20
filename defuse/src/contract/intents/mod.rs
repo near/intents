@@ -16,7 +16,10 @@ use near_plugins::{Pausable, pause};
 use near_sdk::{FunctionError, near};
 use simulate::SimulateInspector;
 
-use crate::intents::{Intents, SimulationOutput, StateOutput};
+use crate::{
+    intents::Intents,
+    simulation_output::{SimulationOutput, StateOutput},
+};
 
 use super::{Contract, ContractExt};
 

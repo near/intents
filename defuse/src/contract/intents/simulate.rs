@@ -1,4 +1,3 @@
-use near_sdk::near;
 use std::borrow::Cow;
 
 use defuse_core::{
@@ -10,18 +9,12 @@ use defuse_core::{
 };
 use near_sdk::{AccountIdRef, CryptoHash, serde_json::Value as JsonValue};
 
+use crate::simulation_output::SimulationReport;
+
 pub struct SimulateInspector {
     intents_executed: Vec<IntentEvent<AccountEvent<'static, NonceEvent>>>,
     recorded_events: Vec<JsonValue>,
     min_deadline: Deadline,
-}
-
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
-pub struct SimulationReport {
-    pub intents_executed: Vec<IntentEvent<AccountEvent<'static, NonceEvent>>>,
-    pub logs: Vec<String>,
-    pub min_deadline: Deadline,
 }
 
 impl SimulateInspector {
