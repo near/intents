@@ -762,8 +762,6 @@ async fn simulate_remove_public_key_intent(
         .await
         .unwrap();
 
-    // TODO: RemovePublicKey should emit PublicKeyEvent through the inspector
-    // For now, we only check for the nonce event
     assert_eq!(
         result.report.logs,
         vec![

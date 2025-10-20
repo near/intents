@@ -18,7 +18,7 @@ use crate::{
 #[rstest]
 #[trace]
 async fn test_add_public_key(public_key: PublicKey) {
-    let env = Env::builder().no_registration(true).build().await;
+    let env = Env::builder().build().await;
 
     assert!(
         !env.defuse
@@ -66,7 +66,7 @@ async fn test_add_public_key(public_key: PublicKey) {
 #[rstest]
 #[trace]
 async fn test_add_and_remove_public_key(public_key: PublicKey) {
-    let env = Env::builder().no_registration(true).build().await;
+    let env = Env::builder().build().await;
 
     env.user1
         .add_public_key(env.defuse.id(), public_key)
