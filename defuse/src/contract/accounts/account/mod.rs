@@ -74,7 +74,7 @@ impl Account {
     }
 
     #[inline]
-    pub fn maybe_remove_public_key(&mut self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
+    pub fn remove_public_key(&mut self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
         if me == public_key.to_implicit_account_id() {
             let was_removed = self.is_implicit_public_key_removed();
             self.set_implicit_public_key_removed(true);
