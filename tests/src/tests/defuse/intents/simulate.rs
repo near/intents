@@ -28,7 +28,7 @@ use defuse::core::{
 };
 use defuse_near_utils::NearSdkLog;
 use defuse_randomness::Rng;
-use defuse_test_utils::random::{gen_random_string, nonce, random_bytes, rng};
+use defuse_test_utils::random::{gen_random_string, nonce, public_key, random_bytes, rng};
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata, TokenMetadata,
 };
@@ -655,12 +655,10 @@ async fn simulate_token_diff_intent(#[from(nonce)] nonce1: Nonce, #[from(nonce)]
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_add_public_key_intent(#[notrace] mut rng: impl Rng, nonce: Nonce) {
+async fn simulate_add_public_key_intent(nonce: Nonce, public_key: PublicKey) {
     let env = Env::builder().no_registration(true).build().await;
 
-    let mut random_key_bytes = [0u8; 32];
-    rng.fill_bytes(&mut random_key_bytes);
-    let new_public_key = PublicKey::Ed25519(random_key_bytes);
+    let new_public_key = public_key;
 
     let add_public_key_intent = AddPublicKey {
         public_key: new_public_key,
@@ -702,15 +700,13 @@ async fn simulate_add_public_key_intent(#[notrace] mut rng: impl Rng, nonce: Non
 #[rstest]
 #[trace]
 async fn simulate_remove_public_key_intent(
-    #[notrace] mut rng: impl Rng,
     #[from(nonce)] add_nonce: Nonce,
     #[from(nonce)] remove_nonce: Nonce,
+    public_key: PublicKey,
 ) {
     let env = Env::builder().no_registration(true).build().await;
 
-    let mut random_key_bytes = [0u8; 32];
-    rng.fill_bytes(&mut random_key_bytes);
-    let new_public_key = PublicKey::Ed25519(random_key_bytes);
+    let new_public_key = public_key;
     let add_public_key_intent = AddPublicKey {
         public_key: new_public_key,
     };

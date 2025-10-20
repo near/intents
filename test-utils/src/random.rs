@@ -1,5 +1,5 @@
 use arbitrary_with::{Arbitrary, Unstructured};
-use defuse_core::Nonce;
+use defuse_core::{Nonce, crypto::PublicKey};
 pub use defuse_randomness::{self as randomness, CryptoRng, Rng, SeedableRng, seq::IteratorRandom};
 use rand_chacha::{ChaChaRng, rand_core::RngCore};
 use rstest::fixture;
@@ -163,6 +163,14 @@ where
 #[fixture]
 pub fn nonce(mut rng: impl Rng) -> Nonce {
     let mut random_bytes = [0u8; 32];
+    rng.fill_bytes(&mut random_bytes);
+    let mut u = Unstructured::new(&random_bytes);
+    u.arbitrary().unwrap()
+}
+
+#[fixture]
+pub fn public_key(mut rng: impl Rng) -> PublicKey {
+    let mut random_bytes = [0u8; 64];
     rng.fill_bytes(&mut random_bytes);
     let mut u = Unstructured::new(&random_bytes);
     u.arbitrary().unwrap()
