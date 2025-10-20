@@ -319,7 +319,7 @@ async fn ton_connect_sign_intent_example(#[notrace] mut rng: impl Rng) {
 
     let intents = DefuseIntents {
         intents: [FtWithdraw {
-            token: ft_id.clone(),
+            token: ft_id,
             receiver_id: "bob.near".parse().unwrap(),
             amount: 1000.into(),
             memo: None,

@@ -3,6 +3,7 @@ mod mt_transfer_resolve_gas;
 pub mod traits;
 
 use crate::tests::defuse::DefuseExt;
+use crate::tests::defuse::env::PersistentState;
 use crate::tests::defuse::tokens::nep245::traits::DefuseMtWithdrawer;
 use crate::{tests::defuse::env::Env, utils::mt::MtExt};
 use defuse::contract::config::{DefuseConfig, RolesConfig};
@@ -42,7 +43,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
     let persistent_tokens: Vec<Token> = env
         .persistent_state
         .as_ref()
-        .map(|s| s.get_mt_tokens())
+        .map(PersistentState::get_mt_tokens)
         .unwrap_or_default();
 
     let from_token_index = persistent_tokens.len();
@@ -338,7 +339,7 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
     let persistent_tokens: Vec<Token> = env
         .persistent_state
         .as_ref()
-        .map(|s| s.get_mt_tokens())
+        .map(PersistentState::get_mt_tokens)
         .unwrap_or_default();
 
     {
@@ -528,7 +529,7 @@ async fn multitoken_withdrawals() {
     let persistent_tokens: Vec<Token> = env
         .persistent_state
         .as_ref()
-        .map(|s| s.get_mt_tokens())
+        .map(PersistentState::get_mt_tokens)
         .unwrap_or_default();
 
     let defuse2 = env

@@ -6,7 +6,7 @@ use near_workspaces::{Account, Contract, Network, Worker, types::NearToken};
 
 pub fn read_wasm(dir: &str, name: impl AsRef<Path>) -> Vec<u8> {
     let filename = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join(format!("../{}/", dir))
+        .join(format!("../{dir}/"))
         .join(name)
         .with_extension("wasm");
     fs::read(filename).unwrap()
@@ -90,11 +90,7 @@ impl ParentAccount for near_workspaces::Account {
         format!("{}.{}", name, self.id()).parse().unwrap()
     }
 
-    async fn create_new_subaccount(
-        &self,
-        name: &str,
-        balance: NearToken,
-    ) -> anyhow::Result<Account> {
+    async fn create_new_subaccount(&self, name: &str, balance: NearToken) -> anyhow::Result<Self> {
         self.create_subaccount(name)
             .initial_balance(balance)
             .transact()

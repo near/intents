@@ -50,8 +50,7 @@ macro_rules! execute_parallel {
 impl StorageMigration for Env {
     async fn generate_storage_data(&mut self) {
         let state =
-            PersistentState::generate(&self.sandbox.root_account(), &self.poa_factory.as_account())
-                .unwrap();
+            PersistentState::generate(self.sandbox.root_account(), self.poa_factory.as_account());
 
         self.persistent_state = Some(state);
 
@@ -81,7 +80,7 @@ impl Env {
             .subaccount_name(&token_id.clone().into_contract_id());
 
         let token = root
-            .poa_factory_deploy_token(&self.poa_factory.id(), &token_name, None)
+            .poa_factory_deploy_token(self.poa_factory.id(), &token_name, None)
             .await?;
 
         self.poa_factory
@@ -110,7 +109,7 @@ impl Env {
         balances
             .iter()
             .map(|(token, amount)| async {
-                self.defuse_ft_deposit_to(&token.clone().into_contract_id(), *amount, &account_id)
+                self.defuse_ft_deposit_to(&token.clone().into_contract_id(), *amount, account_id)
                     .await
             })
             .collect::<FuturesUnordered<_>>()
@@ -126,7 +125,7 @@ impl Env {
             .iter()
             .map(|public_key| {
                 Intent::AddPublicKey(AddPublicKey {
-                    public_key: public_key.clone(),
+                    public_key: *public_key,
                 })
             })
             .collect();
@@ -184,7 +183,7 @@ impl Env {
             for pubkey in &data.public_keys {
                 let has_key = self
                     .defuse
-                    .has_public_key(&account_id, pubkey)
+                    .has_public_key(account_id, pubkey)
                     .await
                     .unwrap();
 
@@ -192,7 +191,7 @@ impl Env {
             }
 
             for nonce in &data.nonces {
-                let is_used = self.defuse.is_nonce_used(&account_id, nonce).await.unwrap();
+                let is_used = self.defuse.is_nonce_used(account_id, nonce).await.unwrap();
                 assert!(is_used);
             }
         }
@@ -206,11 +205,11 @@ impl Env {
                 .collect();
 
             let actual_balances = self
-                .mt_contract_batch_balance_of(self.defuse.id(), &account_id, &tokens)
+                .mt_contract_batch_balance_of(self.defuse.id(), account_id, &tokens)
                 .await
                 .unwrap();
 
-            let expected_values: Vec<u128> = expected_balances.values().cloned().collect();
+            let expected_values: Vec<u128> = expected_balances.values().copied().collect();
 
             assert_eq!(actual_balances, expected_values,);
         }

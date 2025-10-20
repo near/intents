@@ -8,7 +8,7 @@ use super::{DefuseExt, accounts::AccountManagerExt};
 use crate::{
     tests::{
         defuse::{
-            env::{builder::EnvBuilder, state::PersistentState, storage::StorageMigration},
+            env::{builder::EnvBuilder, storage::StorageMigration},
             tokens::nep141::traits::DefuseFtReceiver,
         },
         poa::factory::PoAFactoryExt,
@@ -32,6 +32,8 @@ use near_workspaces::{
 };
 use serde_json::json;
 use std::{ops::Deref, sync::LazyLock};
+
+pub use state::PersistentState;
 
 pub static POA_TOKEN_WASM_NO_REGISTRATION: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("res", "poa-token-no-registration/defuse_poa_token"));
@@ -98,8 +100,6 @@ impl Env {
     pub async fn create_named_token(&self, name: &str) -> AccountId {
         let root = self.sandbox.root_account();
 
-        println!("Creating token: {}", name);
-
         let ft = root
             .poa_factory_deploy_token(self.poa_factory.id(), name, None)
             .await
@@ -125,7 +125,7 @@ impl Env {
     }
 
     pub async fn create_token(&self) -> AccountId {
-        let account_id = self.generate_random_account_id(self.poa_factory.id());
+        let account_id = generate_random_account_id(self.poa_factory.id());
 
         self.create_named_token(self.poa_factory.subaccount_name(&account_id).as_str())
             .await
@@ -136,7 +136,7 @@ impl Env {
         let pubkey = get_account_public_key(&account);
 
         if !self.defuse.has_public_key(account.id(), &pubkey).await? {
-            account.add_public_key(self.defuse.id(), pubkey).await?
+            account.add_public_key(self.defuse.id(), pubkey).await?;
         }
 
         Ok(account)
@@ -170,16 +170,7 @@ impl Env {
                         })
                 }
             })
-            .unwrap_or_else(|| self.generate_random_account_id(self.sandbox.root_account().id()))
-    }
-
-    fn generate_random_account_id(&self, parent_id: &AccountId) -> AccountId {
-        let mut rng = make_true_rng();
-        let bytes = rng.random::<[u8; 64]>();
-        let u = &mut Unstructured::new(&bytes);
-
-        ArbitraryNamedAccountId::arbitrary_subaccount(u, Some(parent_id))
-            .expect("Failed to generate account ID")
+            .unwrap_or_else(|| generate_random_account_id(self.sandbox.root_account().id()))
     }
 
     pub async fn upgrade_legacy(&mut self) {
@@ -337,4 +328,13 @@ pub fn create_random_salted_nonce(salt: Salt, deadline: Deadline, mut rng: impl 
         },
     ))
     .into()
+}
+
+fn generate_random_account_id(parent_id: &AccountId) -> AccountId {
+    let mut rng = make_true_rng();
+    let bytes = rng.random::<[u8; 64]>();
+    let u = &mut Unstructured::new(&bytes);
+
+    ArbitraryNamedAccountId::arbitrary_subaccount(u, Some(parent_id))
+        .expect("Failed to generate account ID")
 }

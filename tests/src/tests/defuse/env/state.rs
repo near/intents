@@ -3,7 +3,6 @@ use std::{
     hash::Hash,
 };
 
-use anyhow::Result;
 use arbitrary::{Arbitrary, Unstructured};
 use defuse::{
     core::{
@@ -14,8 +13,7 @@ use defuse::{
     nep245::Token,
 };
 use defuse_near_utils::arbitrary::ArbitraryNamedAccountId;
-use defuse_randomness::{Rng, make_true_rng};
-use defuse_test_utils::random::random_bytes;
+use defuse_randomness::{Rng, RngCore, make_true_rng};
 use near_sdk::AccountId;
 use near_workspaces::Account;
 
@@ -32,6 +30,7 @@ pub struct AccountData {
     #[arbitrary(with = generate_limited_arbitrary::<MAX_PUBLIC_KEYS, PublicKey>)]
     pub public_keys: HashSet<PublicKey>,
 
+    // NOTE: Generating legacy nonces for compatibility testing
     #[arbitrary(with = generate_limited_arbitrary::<MAX_NONCES, Nonce>)]
     pub nonces: HashSet<Nonce>,
 }
@@ -40,25 +39,27 @@ pub struct AccountData {
 #[derive(Debug)]
 pub struct PersistentState {
     pub accounts: HashMap<AccountId, AccountData>,
-    pub token_balances: HashMap<AccountId, HashMap<Nep141TokenId, u128>>,
     pub tokens: HashSet<Nep141TokenId>,
+    pub token_balances: HashMap<AccountId, HashMap<Nep141TokenId, u128>>,
 }
 
 impl PersistentState {
-    pub fn generate(root: &Account, factory: &Account) -> Result<Self> {
+    pub fn generate(root: &Account, factory: &Account) -> Self {
         let mut rng = make_true_rng();
-        let random_bytes = random_bytes(100..1000, &mut rng);
+        let mut random_bytes = [0u8; 1024];
+        rng.fill_bytes(&mut random_bytes);
+
         let u = &mut Unstructured::new(&random_bytes);
 
         let accounts = Self::generate_accounts(u, root);
         let tokens = Self::generate_tokens(u, factory);
         let token_balances = Self::generate_balances(&mut rng, &accounts, &tokens);
 
-        Ok(Self {
+        Self {
             accounts,
             tokens,
             token_balances,
-        })
+        }
     }
 
     pub fn get_mt_tokens(&self) -> Vec<Token> {
@@ -102,7 +103,7 @@ impl PersistentState {
         tokens: &HashSet<Nep141TokenId>,
     ) -> HashMap<AccountId, HashMap<Nep141TokenId, u128>> {
         accounts
-            .into_iter()
+            .iter()
             .map(|(account_id, _)| {
                 let balances = tokens
                     .iter()
@@ -118,12 +119,12 @@ impl PersistentState {
     }
 }
 
+#[allow(clippy::unnecessary_wraps)]
 fn generate_limited_arbitrary<const MAX: usize, T>(
     u: &mut Unstructured,
 ) -> arbitrary::Result<HashSet<T>>
 where
-    T: for<'a> Arbitrary<'a>,
-    T: Eq + Hash,
+    T: for<'a> Arbitrary<'a> + Eq + Hash,
 {
     let len = u.int_in_range(2..=MAX).unwrap_or(0);
 

@@ -21,6 +21,7 @@ use defuse::{
         intents::{DefuseIntents, Intent, tokens::Transfer},
         token_id::{TokenId, nep141::Nep141TokenId},
     },
+    nep245::Token,
 };
 use defuse_randomness::Rng;
 use defuse_test_utils::random::{random_bytes, rng};
@@ -89,7 +90,7 @@ async fn upgrade(mut rng: impl Rng) {
 #[rstest]
 #[tokio::test]
 async fn test_upgrade_with_persistence(mut rng: impl Rng, random_bytes: Vec<u8>) {
-    // // initialize with persistent state and migration from legacy
+    // initialize with persistent state and migration from legacy
     let u = &mut Unstructured::new(&random_bytes);
     let mut env = Env::builder().build_with_migration().await;
 
@@ -101,7 +102,7 @@ async fn test_upgrade_with_persistence(mut rng: impl Rng, random_bytes: Vec<u8>)
     let user3 = &env.create_named_user("first_new_user").await.unwrap();
     let user4 = &env.create_named_user("second_new_user").await.unwrap();
 
-    // Create new tokens
+    // Create new token
     let ft1 = env.create_token().await;
 
     // Check users
@@ -196,24 +197,16 @@ async fn test_upgrade_with_persistence(mut rng: impl Rng, random_bytes: Vec<u8>)
     {
         let tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
 
-        let old_tokens = &env.persistent_state.as_ref().unwrap().tokens;
+        // Old tokens
+        let mut expected_tokens = env.persistent_state.as_ref().unwrap().get_mt_tokens();
 
-        // Check old tokens
-        assert!(old_tokens.iter().all(|t| {
-            let token_id = TokenId::Nep141(t.clone()).to_string();
+        // New token
+        expected_tokens.push(Token {
+            token_id: TokenId::Nep141(Nep141TokenId::new(ft1.clone())).to_string(),
+            owner_id: None,
+        });
 
-            tokens.iter().find(|ti| ti.token_id == token_id).is_some()
-        }));
-
-        // Check new token
-        assert!(
-            tokens
-                .iter()
-                .find(|ti| {
-                    ti.token_id == TokenId::Nep141(Nep141TokenId::new(ft1.clone())).to_string()
-                })
-                .is_some()
-        );
+        assert_eq!(tokens, expected_tokens);
     }
 
     // Check fee
