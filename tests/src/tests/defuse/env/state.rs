@@ -40,7 +40,7 @@ pub struct PersistentState {
 impl PersistentState {
     pub fn generate(root: &Account, factory: &Account) -> Result<Self> {
         let mut rng = make_true_rng();
-        let random_bytes = random_bytes(50..1000, &mut rng);
+        let random_bytes = random_bytes(100..1000, &mut rng);
         let u = &mut Unstructured::new(&random_bytes);
 
         let accounts = Self::generate_accounts(u, root);

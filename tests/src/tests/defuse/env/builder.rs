@@ -26,6 +26,8 @@ pub struct EnvBuilder {
     deployer_as_super_admin: bool,
     disable_ft_storage_deposit: bool,
     disable_registration: bool,
+
+    create_unique_users: bool,
 }
 
 impl EnvBuilder {
@@ -71,6 +73,11 @@ impl EnvBuilder {
 
     pub const fn no_registration(mut self, no_reg_value: bool) -> Self {
         self.disable_registration = no_reg_value;
+        self
+    }
+
+    pub const fn create_unique_users(mut self) -> Self {
+        self.create_unique_users = true;
         self
     }
 
@@ -123,10 +130,16 @@ impl EnvBuilder {
             disable_ft_storage_deposit: self.disable_ft_storage_deposit,
             disable_registration: self.disable_registration,
             persistent_state: None,
+            current_user_index: 0,
         };
 
         if deploy_legacy {
             env.upgrade_legacy().await;
+
+            if self.create_unique_users {
+                let state = env.persistent_state.as_ref().unwrap();
+                env.current_user_index = state.accounts.len();
+            }
         }
 
         env.near_deposit(env.wnear.id(), NearToken::from_near(100))

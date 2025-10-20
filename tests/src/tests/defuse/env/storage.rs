@@ -169,8 +169,8 @@ impl Env {
     async fn apply_account(&self, data: (&AccountId, &AccountData)) -> Result<Account> {
         let (account_id, account) = data;
         let acc = self
-            .create_user(&self.sandbox.subaccount_name(account_id))
-            .await;
+            .create_named_user(&self.sandbox.subaccount_name(account_id))
+            .await?;
 
         self.apply_public_keys(&acc, account).await?;
 

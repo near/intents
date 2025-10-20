@@ -13,15 +13,17 @@ use crate::{
         },
         poa::factory::PoAFactoryExt,
     },
-    utils::{Sandbox, acl::AclExt, ft::FtExt, read_wasm},
+    utils::{ParentAccount, Sandbox, acl::AclExt, ft::FtExt, read_wasm},
 };
 use anyhow::{Ok, Result, anyhow};
+use arbitrary::Unstructured;
 use defuse::{
     contract::Role,
     core::{Deadline, ExpirableNonce, Nonce, Salt, SaltedNonce, VersionedNonce},
     tokens::DepositMessage,
 };
-use defuse_randomness::Rng;
+use defuse_near_utils::arbitrary::ArbitraryNamedAccountId;
+use defuse_randomness::{Rng, make_true_rng};
 use near_sdk::{AccountId, NearToken};
 use near_workspaces::{
     Account, Contract, Network, Worker,
@@ -47,6 +49,7 @@ pub struct Env {
     pub disable_registration: bool,
 
     pub persistent_state: Option<PersistentState>,
+    pub current_user_index: usize,
 }
 
 impl Env {
@@ -128,10 +131,40 @@ impl Env {
         Ok(account)
     }
 
-    pub async fn create_user(&self, name: &str) -> Account {
-        self.create_named_user(name)
+    pub async fn get_or_create_user(&mut self) -> Account {
+        let account_id = self.get_next_account_id();
+        let root = self.sandbox.root_account();
+
+        self.create_named_user(&root.subaccount_name(&account_id))
             .await
             .expect("Failed to create user account")
+    }
+
+    fn get_next_account_id(&mut self) -> AccountId {
+        if let Some(state) = &self.persistent_state {
+            let account_id = state
+                .accounts
+                .keys()
+                .nth(self.current_user_index)
+                .expect("No more accounts in persistent state")
+                .clone();
+
+            self.current_user_index += 1;
+
+            account_id
+        } else {
+            self.generate_random_account_id()
+        }
+    }
+
+    fn generate_random_account_id(&self) -> AccountId {
+        let parent_id = self.sandbox.root_account().id();
+        let mut rng = make_true_rng();
+        let bytes = rng.random::<[u8; 64]>();
+        let u = &mut Unstructured::new(&bytes);
+
+        ArbitraryNamedAccountId::arbitrary_subaccount(u, Some(parent_id))
+            .expect("Failed to generate account ID")
     }
 
     pub async fn upgrade_legacy(&mut self) {
