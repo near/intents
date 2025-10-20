@@ -387,11 +387,11 @@ async fn test_lock_account(random_bytes: Vec<u8>) {
 async fn test_force_set_auth_by_predecessor_id(random_bytes: Vec<u8>) {
     let mut u = Unstructured::new(&random_bytes);
 
-    let env = Env::builder().deployer_as_super_admin().build().await;
+    let mut env = Env::builder().deployer_as_super_admin().build().await;
 
-    let user_account = &env.user1;
-    let account_locker = &env.user2;
-    let account_unlocker = &env.user3;
+    let user_account = &env.get_or_create_user().await;
+    let account_locker = &env.get_or_create_user().await;
+    let account_unlocker = &env.get_or_create_user().await;
 
     // disable auth by predecessor id
     {
