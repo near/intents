@@ -1,7 +1,6 @@
 use crate::tests::defuse::SigningStandard;
 use crate::tests::defuse::intents::{AccountNonceIntentEvent, ExecuteIntentsExt, NonceEvent};
 use crate::utils::{ft::FtExt, mt::MtExt, nft::NftExt, wnear::WNearExt};
-use defuse_near_utils::NearSdkLog;
 use crate::{
     tests::defuse::accounts::AccountManagerExt,
     tests::defuse::env::Env,
@@ -27,6 +26,7 @@ use defuse::core::{
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
     },
 };
+use defuse_near_utils::NearSdkLog;
 use defuse_randomness::Rng;
 use defuse_test_utils::random::{gen_random_string, random_bytes, rng};
 use near_contract_standards::non_fungible_token::metadata::{
@@ -72,7 +72,7 @@ async fn simulate_transfer_intent(#[notrace] mut rng: impl Rng) {
         .unwrap();
 
     assert_eq!(
-        result.logs,
+        result.report.logs,
         vec![
             DefuseEvent::Transfer(
                 vec![IntentEvent {
@@ -140,7 +140,7 @@ async fn simulate_ft_withdraw_intent(#[notrace] mut rng: impl Rng) {
         .unwrap();
 
     assert_eq!(
-        result.logs,
+        result.report.logs,
         vec![
             DefuseEvent::FtWithdraw(Cow::Owned(vec![IntentEvent {
                 intent_hash: ft_withdraw_payload.hash(),
@@ -216,7 +216,7 @@ async fn simulate_native_withdraw_intent(#[notrace] mut rng: impl Rng) {
         .unwrap();
 
     assert_eq!(
-        result.logs,
+        result.report.logs,
         vec![
             DefuseEvent::NativeWithdraw(Cow::Owned(vec![IntentEvent {
                 intent_hash: native_withdraw_payload.hash(),
@@ -323,7 +323,7 @@ async fn simulate_nft_withdraw_intent(#[notrace] mut rng: impl Rng) {
         .unwrap();
 
     assert_eq!(
-        result.logs,
+        result.report.logs,
         vec![
             DefuseEvent::NftWithdraw(Cow::Owned(vec![IntentEvent {
                 intent_hash: nft_withdraw_payload.hash(),
@@ -445,7 +445,7 @@ async fn simulate_mt_withdraw_intent(#[notrace] mut rng: impl Rng) {
         .unwrap();
 
     assert_eq!(
-        result.logs,
+        result.report.logs,
         vec![
             DefuseEvent::MtWithdraw(Cow::Owned(vec![IntentEvent {
                 intent_hash: mt_withdraw_payload.hash(),
@@ -521,7 +521,7 @@ async fn simulate_storage_deposit_intent(#[notrace] mut rng: impl Rng) {
         .unwrap();
 
     assert_eq!(
-        result.logs,
+        result.report.logs,
         vec![
             DefuseEvent::StorageDeposit(Cow::Owned(vec![IntentEvent {
                 intent_hash: storage_deposit_payload.hash(),
@@ -625,7 +625,7 @@ async fn simulate_token_diff_intent(#[notrace] mut rng: impl Rng) {
         .unwrap();
 
     assert_eq!(
-        result.logs,
+        result.report.logs,
         vec![
             DefuseEvent::TokenDiff(Cow::Owned(vec![IntentEvent {
                 intent_hash: user1_payload.hash(),
@@ -700,7 +700,7 @@ async fn simulate_add_public_key_intent(#[notrace] mut rng: impl Rng) {
         .unwrap();
 
     assert_eq!(
-        result.logs,
+        result.report.logs,
         vec![
             DefuseEvent::PublicKeyAdded(AccountEvent::new(
                 env.user1.id(),
@@ -770,7 +770,7 @@ async fn simulate_remove_public_key_intent(#[notrace] mut rng: impl Rng) {
     // TODO: RemovePublicKey should emit PublicKeyEvent through the inspector
     // For now, we only check for the nonce event
     assert_eq!(
-        result.logs,
+        result.report.logs,
         vec![
             DefuseEvent::PublicKeyRemoved(AccountEvent::new(
                 env.user1.id(),
@@ -812,7 +812,7 @@ async fn simulate_set_auth_by_predecessor_id_intent(#[notrace] mut rng: impl Rng
         .unwrap();
 
     assert_eq!(
-        result.logs,
+        result.report.logs,
         vec![
             DefuseEvent::SetAuthByPredecessorId(
                 AccountEvent::new(env.user1.id(), set_auth_intent,)
@@ -884,7 +884,7 @@ async fn simulate_auth_call_intent(#[notrace] mut rng: impl Rng) {
         .unwrap();
 
     assert_eq!(
-        result.logs,
+        result.report.logs,
         vec![
             AccountNonceIntentEvent::new(&env.user1.id(), nonce, &auth_call_payload)
                 .into_event_log(),

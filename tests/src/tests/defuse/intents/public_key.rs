@@ -1,7 +1,6 @@
 use crate::tests::defuse::SigningStandard;
 use crate::tests::defuse::intents::{AccountNonceIntentEvent, ExecuteIntentsExt};
 use crate::{tests::defuse::DefuseSigner, tests::defuse::env::Env};
-use defuse_near_utils::NearSdkLog;
 use defuse::core::{
     Deadline,
     accounts::{AccountEvent, PublicKeyEvent},
@@ -12,6 +11,7 @@ use defuse::core::{
         account::{AddPublicKey, RemovePublicKey},
     },
 };
+use defuse_near_utils::NearSdkLog;
 use defuse_randomness::Rng;
 use defuse_test_utils::random::rng;
 use rstest::rstest;

@@ -1,3 +1,4 @@
+use near_sdk::near;
 use std::borrow::Cow;
 
 use defuse_core::{
@@ -15,6 +16,8 @@ pub struct SimulateInspector {
     min_deadline: Deadline,
 }
 
+#[near(serializers = [json])]
+#[derive(Debug, Clone)]
 pub struct SimulationReport {
     pub intents_executed: Vec<IntentEvent<AccountEvent<'static, NonceEvent>>>,
     pub logs: Vec<String>,

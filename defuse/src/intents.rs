@@ -1,10 +1,5 @@
 use defuse_core::{
-    Deadline, Result, Salt,
-    accounts::{AccountEvent, NonceEvent},
-    engine::deltas::InvariantViolated,
-    fees::Pips,
-    intents::IntentEvent,
-    payload::multi::MultiPayload,
+    Result, Salt, engine::deltas::InvariantViolated, fees::Pips, payload::multi::MultiPayload,
 };
 
 use near_plugins::AccessControllable;
@@ -31,14 +26,8 @@ pub trait Intents: FeesManager + SaltManager {
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct SimulationOutput {
-    /// Intent hashes along with corresponding signers
-    pub intents_executed: Vec<IntentEvent<AccountEvent<'static, NonceEvent>>>,
-
-    /// Intent hashes along with corresponding signers
-    pub logs: Vec<String>,
-
-    /// Minimum deadline among all simulated intents
-    pub min_deadline: Deadline,
+    #[serde(flatten)]
+    pub report: crate::contract::intents::simulate::SimulationReport,
 
     /// Unmatched token deltas needed to keep the invariant.
     /// If not empty, can be used along with fee to calculate `token_diff` closure.
