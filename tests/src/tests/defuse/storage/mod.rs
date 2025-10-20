@@ -34,14 +34,14 @@ async fn storage_deposit_success(
     #[case] amount_to_deposit: NearToken,
     #[case] expected_deposited: Option<NearToken>,
 ) {
-    let env = Env::builder()
+    let mut env = Env::builder()
         .disable_ft_storage_deposit()
         .no_registration(false)
         .build()
         .await;
 
-    let user = env.create_user("user").await;
-    let other_user = env.create_user("other_user").await;
+    let user = env.get_or_create_user().await;
+    let other_user = env.get_or_create_user().await;
 
     let ft = env.create_token("ft").await;
 
@@ -137,14 +137,14 @@ async fn storage_deposit_success(
 #[tokio::test]
 #[rstest]
 async fn storage_deposit_fails_user_has_no_balance_in_intents(mut rng: impl Rng) {
-    let env = Env::builder()
+    let mut env = Env::builder()
         .disable_ft_storage_deposit()
         .no_registration(false)
         .build()
         .await;
 
-    let user = env.create_user("user").await;
-    let other_user = env.create_user("other_user").await;
+    let user = env.get_or_create_user().await;
+    let other_user = env.get_or_create_user().await;
 
     let ft = env.create_token("ft").await;
 

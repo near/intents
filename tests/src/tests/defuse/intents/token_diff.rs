@@ -31,14 +31,14 @@ async fn swap_p2p(
 ) {
     use defuse::core::token_id::nep141::Nep141TokenId;
 
-    let env = Env::builder()
+    let mut env = Env::builder()
         .fee(fee)
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user1 = env.create_user("user1").await;
-    let user2 = env.create_user("user2").await;
+    let user1 = env.get_or_create_user().await;
+    let user2 = env.get_or_create_user().await;
 
     let ft1 = env.create_token("ft1").await;
     let ft2 = env.create_token("ft2").await;
@@ -104,15 +104,15 @@ async fn swap_many(
     #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
     #[values(false, true)] no_registration: bool,
 ) {
-    let env = Env::builder()
+    let mut env = Env::builder()
         .fee(fee)
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user1 = env.create_user("user1").await;
-    let user2 = env.create_user("user2").await;
-    let user3 = env.create_user("user3").await;
+    let user1 = env.get_or_create_user().await;
+    let user2 = env.get_or_create_user().await;
+    let user3 = env.get_or_create_user().await;
 
     let ft1 = env.create_token("ft1").await;
     let ft2 = env.create_token("ft2").await;
@@ -290,13 +290,13 @@ async fn invariant_violated(
     #[notrace] mut rng: impl Rng,
     #[values(false, true)] no_registration: bool,
 ) {
-    let env = Env::builder()
+    let mut env = Env::builder()
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user1 = env.create_user("user1").await;
-    let user2 = env.create_user("user2").await;
+    let user1 = env.get_or_create_user().await;
+    let user2 = env.get_or_create_user().await;
 
     let ft1 = env.create_token("ft1").await;
     let ft2 = env.create_token("ft2").await;
@@ -415,14 +415,14 @@ async fn solver_user_closure(
     // RFQ: 1000 token_in -> ??? token_out
     const USER_DELTA_IN: i128 = -1000;
 
-    let env = Env::builder()
+    let mut env = Env::builder()
         .fee(fee)
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user = env.create_user("user").await;
-    let solver = env.create_user("solver").await;
+    let user = env.get_or_create_user().await;
+    let solver = env.get_or_create_user().await;
 
     let ft1 = env.create_token("ft1").await;
     let ft2 = env.create_token("ft2").await;

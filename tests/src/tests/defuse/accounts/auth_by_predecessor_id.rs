@@ -22,12 +22,13 @@ use crate::{
 #[rstest]
 async fn auth_by_predecessor_id(random_bytes: Vec<u8>) {
     let mut u = Unstructured::new(&random_bytes);
-    let env = Env::new().await;
+    let mut env = Env::new().await;
 
     let ft = env.create_token("ft").await;
-    let user = env.create_user("user").await;
+    let user = env.get_or_create_user().await;
 
-    env.ft_storage_deposit_for_users(vec![user.id()], &[&ft]).await;
+    env.ft_storage_deposit_for_users(vec![user.id()], &[&ft])
+        .await;
     env.ft_deposit_to_root(&[&ft]).await;
 
     let receiver_id: AccountId = "receiver_id.near".parse().unwrap();

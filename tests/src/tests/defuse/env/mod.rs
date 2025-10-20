@@ -48,6 +48,8 @@ pub struct Env {
     pub disable_ft_storage_deposit: bool,
     pub disable_registration: bool,
 
+    // Persistent state generated in case of migration tests
+    // used to fetch existing accounts
     pub persistent_state: Option<PersistentState>,
     pub current_user_index: usize,
 }
@@ -131,6 +133,8 @@ impl Env {
         Ok(account)
     }
 
+    // Fetches user from persistent state or creates a new random one
+    // in case if all users from persistent state are already used
     pub async fn get_or_create_user(&mut self) -> Account {
         let account_id = self.get_next_account_id();
         let root = self.sandbox.root_account();
@@ -141,20 +145,23 @@ impl Env {
     }
 
     fn get_next_account_id(&mut self) -> AccountId {
-        if let Some(state) = &self.persistent_state {
-            let account_id = state
-                .accounts
-                .keys()
-                .nth(self.current_user_index)
-                .expect("No more accounts in persistent state")
-                .clone();
-
-            self.current_user_index += 1;
-
-            account_id
-        } else {
-            self.generate_random_account_id()
-        }
+        self.persistent_state
+            .as_ref()
+            .and_then(|state| {
+                if self.current_user_index >= state.accounts.len() {
+                    None
+                } else {
+                    state
+                        .accounts
+                        .keys()
+                        .nth(self.current_user_index)
+                        .map(|id| {
+                            self.current_user_index += 1;
+                            id.clone()
+                        })
+                }
+            })
+            .unwrap_or_else(|| self.generate_random_account_id())
     }
 
     fn generate_random_account_id(&self) -> AccountId {

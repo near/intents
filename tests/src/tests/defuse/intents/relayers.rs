@@ -15,14 +15,14 @@ use crate::{
 async fn relayer_keys(#[values(false, true)] no_registration: bool) {
     use near_workspaces::Contract;
 
-    let env = Env::builder()
+    let mut env = Env::builder()
         .deployer_as_super_admin()
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user = env.create_user("user").await;
-    let other_user = env.create_user("userother_user").await;
+    let user = env.get_or_create_user().await;
+    let other_user = env.get_or_create_user().await;
 
     env.acl_grant_role(env.defuse.id(), Role::RelayerKeysManager, user.id())
         .await

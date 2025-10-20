@@ -11,11 +11,11 @@ use crate::{
 #[tokio::test]
 #[rstest]
 async fn update_current_salt() {
-    let env = Env::builder().deployer_as_super_admin().build().await;
+    let mut env = Env::builder().deployer_as_super_admin().build().await;
     let prev_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
 
-    let user1 = env.create_user("user1").await;
-    let user2 = env.create_user("user2").await;
+    let user1 = env.get_or_create_user().await;
+    let user2 = env.get_or_create_user().await;
 
     // only DAO or salt manager can rotate salt
     {
@@ -52,12 +52,12 @@ async fn update_current_salt() {
 #[tokio::test]
 #[rstest]
 async fn invalidate_salts() {
-    let env = Env::builder().deployer_as_super_admin().build().await;
+    let mut env = Env::builder().deployer_as_super_admin().build().await;
     let mut current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
     let mut prev_salt = current_salt;
 
-    let user1 = env.create_user("user1").await;
-    let user2 = env.create_user("user2").await;
+    let user1 = env.get_or_create_user().await;
+    let user2 = env.get_or_create_user().await;
 
     // only DAO or salt manager can invalidate salt
     {

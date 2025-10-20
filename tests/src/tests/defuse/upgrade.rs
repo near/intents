@@ -91,15 +91,15 @@ async fn upgrade(mut rng: impl Rng) {
 async fn test_upgrade_with_persistence(mut rng: impl Rng, random_bytes: Vec<u8>) {
     // // initialize with persistent state and migration from legacy
     let u = &mut Unstructured::new(&random_bytes);
-    let env = Env::builder().build_with_migration().await;
+    let mut env = Env::builder().build_with_migration().await;
 
     // Make some changes existing users:
-    let user1 = &env.create_user("test_user_0").await;
-    let user2 = &env.create_user("test_user_1").await;
+    let user1 = &env.get_or_create_user().await;
+    let user2 = &env.get_or_create_user().await;
 
     // Create new users
-    let user3 = &env.create_user("new_user1").await;
-    let user4 = &env.create_user("new_user2").await;
+    let user3 = &env.create_named_user("first_new_user").await.unwrap();
+    let user4 = &env.create_named_user("second_new_user").await.unwrap();
 
     // Create new tokens
     let ft1 = env.create_token("new_ft1").await;

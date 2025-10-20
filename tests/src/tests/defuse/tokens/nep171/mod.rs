@@ -21,11 +21,11 @@ use std::collections::HashMap;
 #[tokio::test]
 #[rstest]
 async fn transfer_nft_to_verifier(mut rng: impl Rng) {
-    let env = Env::builder().build_without_migration().await;
+    let mut env = Env::builder().build().await;
 
-    let user1 = env.create_user("user1").await;
-    let user2 = env.create_user("user2").await;
-    let user3 = env.create_user("user3").await;
+    let user1 = env.get_or_create_user().await;
+    let user2 = env.get_or_create_user().await;
+    let user3 = env.get_or_create_user().await;
 
     env.transfer_near(user1.id(), NearToken::from_near(100))
         .await

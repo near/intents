@@ -27,6 +27,7 @@ pub struct EnvBuilder {
     disable_ft_storage_deposit: bool,
     disable_registration: bool,
 
+    // Create only unique users (no reusing from persistent state)
     create_unique_users: bool,
 }
 
@@ -134,6 +135,9 @@ impl EnvBuilder {
         };
 
         if deploy_legacy {
+            // Legacy version deployed -> arbitrary data applied to the
+            // contract before upgrade -> upgrade to the latest version ->
+            // verify that the data is preserved after the upgrade
             env.upgrade_legacy().await;
 
             if self.create_unique_users {
@@ -147,10 +151,6 @@ impl EnvBuilder {
             .unwrap();
 
         env
-    }
-
-    pub async fn build_without_migration(&mut self) -> Env {
-        self.build_env(false).await
     }
 
     pub async fn build_with_migration(&mut self) -> Env {

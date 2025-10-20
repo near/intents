@@ -181,13 +181,13 @@ async fn simulate_is_view_method(
     #[notrace] mut rng: impl Rng,
     #[values(false, true)] no_registration: bool,
 ) {
-    let env = Env::builder()
+    let mut env = Env::builder()
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user = env.create_user("user").await;
-    let other_user = env.create_user("other_user").await;
+    let user = env.get_or_create_user().await;
+    let other_user = env.get_or_create_user().await;
 
     let ft = env.create_token("ft").await;
     let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
@@ -257,7 +257,7 @@ async fn webauthn(#[values(false, true)] no_registration: bool) {
         .build()
         .await;
 
-    let user = env.create_user("user1").await;
+    let user = env.create_named_user("user1").await.unwrap();
 
     let ft = env.create_token("ft1").await;
     let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));

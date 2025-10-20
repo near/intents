@@ -31,13 +31,13 @@ use crate::{
 #[tokio::test]
 #[rstest]
 async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng) {
-    let env = Env::builder().deployer_as_super_admin().build().await;
+    let mut env = Env::builder().deployer_as_super_admin().build().await;
     let current_timestamp = Utc::now();
     let current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
     let timeout_delta = TimeDelta::days(1);
     let u = &mut Unstructured::new(&random_bytes);
 
-    let user = env.create_user("user").await;
+    let user = env.get_or_create_user().await;
 
     // legacy nonce
     {
@@ -199,8 +199,8 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
 async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
     const WAITING_TIME: TimeDelta = TimeDelta::seconds(3);
 
-    let env = Env::builder().deployer_as_super_admin().build().await;
-    let user = env.create_user("user").await;
+    let mut env = Env::builder().deployer_as_super_admin().build().await;
+    let user = env.get_or_create_user().await;
 
     let current_timestamp = Utc::now();
     let current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
@@ -354,8 +354,8 @@ async fn cleanup_multiple_nonces(
     const CHUNK_SIZE: usize = 10;
     const WAITING_TIME: TimeDelta = TimeDelta::seconds(3);
 
-    let env = Env::builder().deployer_as_super_admin().build().await;
-    let user = env.create_user("user").await;
+    let mut env = Env::builder().deployer_as_super_admin().build().await;
+    let user = env.get_or_create_user().await;
 
     let mut nonces = Vec::with_capacity(nonce_count);
     let current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();

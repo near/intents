@@ -20,15 +20,15 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
 
     use crate::tests::defuse::tokens::nep141::traits::DefuseFtWithdrawer;
 
-    // Building with no migration to test mt enumeration ordering
-    let env = Env::builder()
+    let mut env = Env::builder()
         .no_registration(no_registration)
-        .build_without_migration()
+        .create_unique_users()
+        .build()
         .await;
 
-    let user1 = env.create_user("user1").await;
-    let user2 = env.create_user("user2").await;
-    let user3 = env.create_user("user3").await;
+    let user1 = env.get_or_create_user().await;
+    let user2 = env.get_or_create_user().await;
+    let user3 = env.get_or_create_user().await;
 
     let ft1 = env.create_token("ft1").await;
     let ft2 = env.create_token("ft2").await;
@@ -38,13 +38,19 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
 
     env.ft_deposit_to_root(&[&ft1, &ft2]).await;
 
+    // Check already existing tokens from persistent state
+    let persistent_tokens: Vec<Token> = env
+        .persistent_state
+        .as_ref()
+        .map(|s| s.get_mt_tokens())
+        .unwrap_or_default();
+
+    let from_token_index = persistent_tokens.len();
+
     {
-        assert!(
-            user1
-                .mt_tokens(env.defuse.id(), ..)
-                .await
-                .unwrap()
-                .is_empty(),
+        assert_eq!(
+            user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
+            persistent_tokens
         );
         assert!(
             user1
@@ -78,7 +84,10 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
 
     {
         assert_eq!(
-            user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
+            user1
+                .mt_tokens(env.defuse.id(), from_token_index..)
+                .await
+                .unwrap(),
             [Token {
                 token_id: ft1_id.to_string(),
                 owner_id: None
@@ -116,7 +125,10 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
 
     {
         assert_eq!(
-            user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
+            user1
+                .mt_tokens(env.defuse.id(), from_token_index..)
+                .await
+                .unwrap(),
             [Token {
                 token_id: ft1_id.to_string(),
                 owner_id: None
@@ -157,7 +169,10 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
 
     {
         assert_eq!(
-            user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
+            user1
+                .mt_tokens(env.defuse.id(), from_token_index..)
+                .await
+                .unwrap(),
             [
                 Token {
                     token_id: ft1_id.to_string(),
@@ -222,7 +237,10 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
 
     {
         assert_eq!(
-            user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
+            user1
+                .mt_tokens(env.defuse.id(), from_token_index..)
+                .await
+                .unwrap(),
             [Token {
                 token_id: ft2_id.to_string(),
                 owner_id: None
@@ -264,12 +282,9 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
     );
 
     {
-        assert!(
-            user1
-                .mt_tokens(env.defuse.id(), ..)
-                .await
-                .unwrap()
-                .is_empty(),
+        assert_eq!(
+            user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
+            persistent_tokens
         );
         assert!(
             user1
@@ -300,15 +315,15 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
 async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registration: bool) {
     use defuse::core::token_id::nep141::Nep141TokenId;
 
-    // Building with no migration to test mt enumeration ordering
-    let env = Env::builder()
+    let mut env = Env::builder()
         .no_registration(no_registration)
-        .build_without_migration()
+        .create_unique_users()
+        .build()
         .await;
 
-    let user1 = env.create_user("user1").await;
-    let user2 = env.create_user("user2").await;
-    let user3 = env.create_user("user3").await;
+    let user1 = env.get_or_create_user().await;
+    let user2 = env.get_or_create_user().await;
+    let user3 = env.get_or_create_user().await;
 
     let ft1 = env.create_token("ft1").await;
     let ft2 = env.create_token("ft2").await;
@@ -319,14 +334,19 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
 
     env.ft_deposit_to_root(&[&ft1, &ft2, &ft3]).await;
 
+    // Check already existing tokens from persistent state
+    let persistent_tokens: Vec<Token> = env
+        .persistent_state
+        .as_ref()
+        .map(|s| s.get_mt_tokens())
+        .unwrap_or_default();
+
     {
-        assert!(
-            user1
-                .mt_tokens(env.defuse.id(), ..)
-                .await
-                .unwrap()
-                .is_empty(),
+        assert_eq!(
+            user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
+            persistent_tokens
         );
+
         assert!(
             user1
                 .mt_tokens_for_owner(env.defuse.id(), user1.id(), ..)
@@ -379,37 +399,37 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
                 owner_id: None,
             },
         ];
+
+        let from_token = persistent_tokens.len();
+
         assert_eq!(
-            user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
+            user1
+                .mt_tokens(env.defuse.id(), from_token..)
+                .await
+                .unwrap(),
             expected[..]
         );
 
-        for i in 0..=3 {
+        for i in 0..=expected.len() {
             assert_eq!(
-                user1.mt_tokens(env.defuse.id(), i..).await.unwrap(),
+                user1
+                    .mt_tokens(env.defuse.id(), from_token + i..)
+                    .await
+                    .unwrap(),
                 expected[i..]
             );
         }
 
-        for i in 0..=3 {
-            assert_eq!(
-                user1.mt_tokens(env.defuse.id(), ..i).await.unwrap(),
-                expected[..i]
-            );
-        }
-
-        for i in 1..=3 {
-            assert_eq!(
-                user1.mt_tokens(env.defuse.id(), 1..i).await.unwrap(),
-                expected[1..i]
-            );
-        }
-
-        for i in 2..=3 {
-            assert_eq!(
-                user1.mt_tokens(env.defuse.id(), 2..i).await.unwrap(),
-                expected[2..i]
-            );
+        for start in 0..expected.len() - 1 {
+            for end in start..=expected.len() {
+                assert_eq!(
+                    user1
+                        .mt_tokens(env.defuse.id(), from_token + start..from_token + end)
+                        .await
+                        .unwrap(),
+                    expected[start..end]
+                );
+            }
         }
     }
 
@@ -490,11 +510,11 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
 #[tokio::test]
 #[rstest]
 async fn multitoken_withdrawals() {
-    let env = Env::builder().build().await;
+    let mut env = Env::builder().build().await;
 
-    let user1 = env.create_user("user1").await;
-    let user2 = env.create_user("user2").await;
-    let user3 = env.create_user("user3").await;
+    let user1 = env.get_or_create_user().await;
+    let user2 = env.get_or_create_user().await;
+    let user3 = env.get_or_create_user().await;
 
     let ft1 = env.create_token("ft1").await;
     let ft2 = env.create_token("ft2").await;

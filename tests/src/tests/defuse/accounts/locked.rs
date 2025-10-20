@@ -30,11 +30,11 @@ use crate::{
 async fn test_lock_account(random_bytes: Vec<u8>) {
     let mut u = Unstructured::new(&random_bytes);
 
-    let env = Env::builder().deployer_as_super_admin().build().await;
+    let mut env = Env::builder().deployer_as_super_admin().build().await;
 
-    let locked_account = env.create_user("locked_account").await;
-    let account_locker = env.create_user("account_locker").await;
-    let unlocked_account = env.create_user("unlocked_account").await;
+    let locked_account = env.get_or_create_user().await;
+    let account_locker = env.get_or_create_user().await;
+    let unlocked_account = env.get_or_create_user().await;
 
     let ft = env.create_token("ft").await;
 

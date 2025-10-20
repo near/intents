@@ -31,12 +31,12 @@ use std::time::Duration;
 #[rstest]
 #[trace]
 async fn deposit_withdraw(#[values(false, true)] no_registration: bool) {
-    let env = Env::builder()
+    let mut env = Env::builder()
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user = env.create_user("user").await;
+    let user = env.get_or_create_user().await;
     let ft = env.create_token("ft").await;
 
     env.ft_storage_deposit_for_users(vec![user.id()], &[&ft])
@@ -76,12 +76,12 @@ async fn deposit_withdraw(#[values(false, true)] no_registration: bool) {
 #[tokio::test]
 #[rstest]
 async fn poa_deposit(#[values(false, true)] no_registration: bool) {
-    let env = Env::builder()
+    let mut env = Env::builder()
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user = env.create_user("user").await;
+    let user = env.get_or_create_user().await;
 
     let ft = env.create_token("ft").await;
     let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
@@ -118,13 +118,13 @@ async fn deposit_withdraw_intent(
 ) {
     use crate::tests::defuse::tokens::nep141::traits::DefuseFtReceiver;
 
-    let env = Env::builder()
+    let mut env = Env::builder()
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user = env.create_user("user").await;
-    let other_user = env.create_user("other_user").await;
+    let user = env.get_or_create_user().await;
+    let other_user = env.get_or_create_user().await;
 
     let ft = env.create_token("ft").await;
 
@@ -217,12 +217,12 @@ async fn deposit_withdraw_intent_refund(
 
     use crate::tests::defuse::{SigningStandard, tokens::nep141::traits::DefuseFtReceiver};
 
-    let env = Env::builder()
+    let mut env = Env::builder()
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user = env.create_user("user").await;
+    let user = env.get_or_create_user().await;
     let ft = env.create_token("ft").await;
 
     env.ft_storage_deposit_for_users(vec![user.id()], &[&ft])
@@ -294,14 +294,14 @@ async fn ft_force_withdraw(#[values(false, true)] no_registration: bool) {
 
     use crate::tests::defuse::tokens::nep141::traits::DefuseFtWithdrawer;
 
-    let env = Env::builder()
+    let mut env = Env::builder()
         .deployer_as_super_admin()
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user = env.create_user("user").await;
-    let other_user = env.create_user("other_user").await;
+    let user = env.get_or_create_user().await;
+    let other_user = env.get_or_create_user().await;
 
     let ft = env.create_token("ft").await;
 

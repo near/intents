@@ -31,12 +31,12 @@ async fn ft_withdraw_intent(
     // intentionally large deposit
     const STORAGE_DEPOSIT: NearToken = NearToken::from_near(1000);
 
-    let env = Env::builder()
+    let mut env = Env::builder()
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user = env.create_user("user").await;
+    let user = env.get_or_create_user().await;
     let other_user_id: AccountId = "other-user.near".parse().unwrap();
 
     let ft = env.create_token("ft").await;
@@ -258,12 +258,12 @@ async fn ft_withdraw_intent_msg(
     #[notrace] mut rng: impl Rng,
     #[values(false, true)] no_registration: bool,
 ) {
-    let env = Env::builder()
+    let mut env = Env::builder()
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user = env.create_user("user").await;
+    let user = env.get_or_create_user().await;
     let other_user_id: AccountId = "other-user.near".parse().unwrap();
 
     let ft = env.create_token("ft").await;

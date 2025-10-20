@@ -5,9 +5,16 @@ use std::{
 
 use anyhow::Result;
 use arbitrary::{Arbitrary, Unstructured};
-use defuse::core::{Nonce, crypto::PublicKey, token_id::nep141::Nep141TokenId};
+use defuse::{
+    core::{
+        Nonce,
+        crypto::PublicKey,
+        token_id::{TokenId, nep141::Nep141TokenId},
+    },
+    nep245::Token,
+};
 use defuse_near_utils::arbitrary::ArbitraryNamedAccountId;
-use defuse_randomness::{Rng, make_true_rng, seq::IteratorRandom};
+use defuse_randomness::{Rng, make_true_rng};
 use defuse_test_utils::random::random_bytes;
 use near_sdk::AccountId;
 use near_workspaces::Account;
@@ -54,6 +61,16 @@ impl PersistentState {
         })
     }
 
+    pub fn get_mt_tokens(&self) -> Vec<Token> {
+        self.tokens
+            .iter()
+            .map(|t| Token {
+                token_id: TokenId::Nep141(t.clone()).to_string(),
+                owner_id: None,
+            })
+            .collect()
+    }
+
     fn generate_accounts(u: &mut Unstructured, root: &Account) -> HashMap<AccountId, AccountData> {
         let number = u.int_in_range(1..=MAX_ACCOUNTS).unwrap();
 
@@ -80,19 +97,15 @@ impl PersistentState {
     }
 
     fn generate_balances(
-        mut rng: &mut impl Rng,
+        rng: &mut impl Rng,
         accounts: &HashMap<AccountId, AccountData>,
         tokens: &HashSet<Nep141TokenId>,
     ) -> HashMap<AccountId, HashMap<Nep141TokenId, u128>> {
         accounts
             .into_iter()
             .map(|(account_id, _)| {
-                let num_tokens = rng.random_range(1..=tokens.len());
-
                 let balances = tokens
                     .iter()
-                    .choose_multiple(&mut rng, num_tokens)
-                    .into_iter()
                     .map(|token| {
                         let amount = rng.random_range(MIN_BALANCE_AMOUNT..=MAX_BALANCE_AMOUNT);
                         (token.clone(), amount)
