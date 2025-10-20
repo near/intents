@@ -154,23 +154,22 @@ impl Env {
     }
 
     fn get_next_account_id(&mut self) -> AccountId {
-        self.persistent_state
-            .as_ref()
-            .and_then(|state| {
-                if self.current_user_index >= state.accounts.len() {
-                    None
-                } else {
-                    state
-                        .accounts
-                        .keys()
-                        .nth(self.current_user_index)
-                        .map(|id| {
-                            self.current_user_index += 1;
-                            id.clone()
-                        })
-                }
-            })
-            .unwrap_or_else(|| generate_random_account_id(self.sandbox.root_account().id()))
+        if let Some(state) = self.persistent_state.as_ref() {
+            if self.current_user_index < state.accounts.len() {
+                let account_id = state
+                    .accounts
+                    .keys()
+                    .nth(self.current_user_index)
+                    .expect("Failed to get account ID")
+                    .clone();
+
+                self.current_user_index += 1;
+
+                return account_id;
+            }
+        }
+
+        generate_random_account_id(self.sandbox.root_account().id())
     }
 
     pub async fn upgrade_legacy(&mut self) {

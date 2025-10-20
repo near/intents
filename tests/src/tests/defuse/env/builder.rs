@@ -141,7 +141,10 @@ impl EnvBuilder {
             env.upgrade_legacy().await;
 
             if self.create_unique_users {
-                let state = env.persistent_state.as_ref().unwrap();
+                let state = env
+                    .persistent_state
+                    .as_ref()
+                    .expect("persistent_state must be set by upgrade_legacy()");
                 env.current_user_index = state.accounts.len();
             }
         }
