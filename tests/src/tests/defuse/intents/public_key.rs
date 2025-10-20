@@ -1,6 +1,6 @@
 use crate::tests::defuse::SigningStandard;
 use crate::tests::defuse::intents::{AccountNonceIntentEvent, ExecuteIntentsExt};
-use crate::{tests::defuse::DefuseSigner, tests::defuse::env::Env};
+use crate::{assert_eq_event_logs, tests::defuse::DefuseSigner, tests::defuse::env::Env};
 use defuse::core::{
     Deadline, Nonce,
     accounts::{AccountEvent, PublicKeyEvent},
@@ -16,42 +16,14 @@ use defuse_test_utils::random::{nonce, public_key, signing_standard};
 use rstest::rstest;
 use std::borrow::Cow;
 
-macro_rules! assert_eq_event_logs {
-    ($left:expr, $right:expr) => {{
-        let left_normalized: Vec<String> = $left
-            .iter()
-            .cloned()
-            .map(|log: String| {
-                let json_str = log
-                    .strip_prefix("EVENT_JSON:")
-                    .expect(&format!("Log missing EVENT_JSON: prefix: {}", log));
-                let json_value: serde_json::Value = serde_json::from_str(json_str)
-                    .expect(&format!("Failed to parse JSON: {}", json_str));
-                serde_json::to_string(&json_value).expect("Failed to serialize JSON")
-            })
-            .collect();
-
-        let right_normalized: Vec<String> = $right
-            .iter()
-            .cloned()
-            .map(|log: String| {
-                let json_str = log
-                    .strip_prefix("EVENT_JSON:")
-                    .expect(&format!("Log missing EVENT_JSON: prefix: {}", log));
-                let json_value: serde_json::Value = serde_json::from_str(json_str)
-                    .expect(&format!("Failed to parse JSON: {}", json_str));
-                serde_json::to_string(&json_value).expect("Failed to serialize JSON")
-            })
-            .collect();
-
-        assert_eq!(left_normalized, right_normalized);
-    }};
-}
-
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn execute_add_public_key_intent(nonce: Nonce, public_key: PublicKey, signing_standard: SigningStandard) {
+async fn execute_add_public_key_intent(
+    nonce: Nonce,
+    public_key: PublicKey,
+    signing_standard: SigningStandard,
+) {
     let env = Env::builder().no_registration(true).build().await;
 
     let new_public_key = public_key;

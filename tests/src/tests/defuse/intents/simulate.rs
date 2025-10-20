@@ -28,7 +28,9 @@ use defuse::core::{
 };
 use defuse_near_utils::NearSdkLog;
 use defuse_randomness::Rng;
-use defuse_test_utils::random::{gen_random_string, nonce, public_key, random_bytes, rng, signing_standard};
+use defuse_test_utils::random::{
+    gen_random_string, nonce, public_key, random_bytes, rng, signing_standard,
+};
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata, TokenMetadata,
 };
@@ -229,7 +231,11 @@ async fn simulate_native_withdraw_intent(nonce: Nonce, signing_standard: Signing
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_nft_withdraw_intent(#[notrace] mut rng: impl Rng, nonce: Nonce, signing_standard: SigningStandard) {
+async fn simulate_nft_withdraw_intent(
+    #[notrace] mut rng: impl Rng,
+    nonce: Nonce,
+    signing_standard: SigningStandard,
+) {
     let env = Env::builder().no_registration(true).build().await;
 
     env.transfer_near(env.user1.id(), NearToken::from_near(100))
@@ -659,7 +665,11 @@ async fn simulate_token_diff_intent(
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_add_public_key_intent(nonce: Nonce, public_key: PublicKey, signing_standard: SigningStandard) {
+async fn simulate_add_public_key_intent(
+    nonce: Nonce,
+    public_key: PublicKey,
+    signing_standard: SigningStandard,
+) {
     let env = Env::builder().no_registration(true).build().await;
 
     let new_public_key = public_key;
@@ -774,7 +784,10 @@ async fn simulate_remove_public_key_intent(
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_set_auth_by_predecessor_id_intent(nonce: Nonce, signing_standard: SigningStandard) {
+async fn simulate_set_auth_by_predecessor_id_intent(
+    nonce: Nonce,
+    signing_standard: SigningStandard,
+) {
     let env = Env::builder().no_registration(true).build().await;
 
     let set_auth_intent = SetAuthByPredecessorId { enabled: true };
