@@ -719,7 +719,7 @@ async fn simulate_remove_public_key_intent(
     #[from(signing_standard)] add_signing_standard: SigningStandard,
     #[from(signing_standard)] remove_signing_standard: SigningStandard,
 ) {
-    let env = Env::builder().no_registration(true).build().await;
+    let env = Env::builder().build().await;
 
     let new_public_key = public_key;
     let add_public_key_intent = AddPublicKey {

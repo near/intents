@@ -29,11 +29,6 @@ async fn execute_add_public_key_intent(
     let env = Env::builder().no_registration(true).build().await;
 
     let current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
-
-    let versioned_nonce = VersionedNonce::maybe_from(nonce).unwrap();
-    println!("{current_salt:#?}");
-    println!("{:#?}", versioned_nonce);
-
     let new_public_key = public_key;
 
     let add_public_key_intent = AddPublicKey {
