@@ -2,7 +2,7 @@ use crate::tests::defuse::SigningStandard;
 use crate::tests::defuse::intents::{AccountNonceIntentEvent, ExecuteIntentsExt};
 use crate::{tests::defuse::DefuseSigner, tests::defuse::env::Env};
 use defuse::core::{
-    Deadline,
+    Deadline, Nonce,
     accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
     events::DefuseEvent,
@@ -13,7 +13,7 @@ use defuse::core::{
 };
 use defuse_near_utils::NearSdkLog;
 use defuse_randomness::Rng;
-use defuse_test_utils::random::rng;
+use defuse_test_utils::random::{nonce, rng};
 use rstest::rstest;
 use std::borrow::Cow;
 
@@ -52,10 +52,8 @@ macro_rules! assert_eq_event_logs {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn execute_add_public_key_intent(#[notrace] mut rng: impl Rng) {
+async fn execute_add_public_key_intent(#[notrace] mut rng: impl Rng, nonce: Nonce) {
     let env = Env::builder().no_registration(true).build().await;
-
-    let nonce = rng.random();
 
     let mut random_key_bytes = [0u8; 32];
     rng.fill_bytes(&mut random_key_bytes);
@@ -100,14 +98,16 @@ async fn execute_add_public_key_intent(#[notrace] mut rng: impl Rng) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn execute_remove_public_key_intent(#[notrace] mut rng: impl Rng) {
+async fn execute_remove_public_key_intent(
+    #[notrace] mut rng: impl Rng,
+    #[from(nonce)] add_nonce: Nonce,
+    #[from(nonce)] remove_nonce: Nonce,
+) {
     let env = Env::builder().no_registration(true).build().await;
 
     let mut random_key_bytes = [0u8; 32];
     rng.fill_bytes(&mut random_key_bytes);
     let new_public_key = PublicKey::Ed25519(random_key_bytes);
-
-    let add_nonce = rng.random();
     let add_public_key_intent = AddPublicKey {
         public_key: new_public_key,
     };
@@ -127,7 +127,6 @@ async fn execute_remove_public_key_intent(#[notrace] mut rng: impl Rng) {
         .await
         .unwrap();
 
-    let remove_nonce = rng.random();
     let remove_public_key_intent = RemovePublicKey {
         public_key: new_public_key,
     };

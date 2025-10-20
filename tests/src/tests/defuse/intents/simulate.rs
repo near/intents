@@ -14,7 +14,7 @@ use defuse::core::token_id::nep141::Nep141TokenId;
 use defuse::core::token_id::nep171::Nep171TokenId;
 use defuse::core::token_id::nep245::Nep245TokenId;
 use defuse::core::{
-    Deadline,
+    Deadline, Nonce,
     accounts::{AccountEvent, PublicKeyEvent},
     amounts::Amounts,
     events::DefuseEvent,
@@ -28,7 +28,7 @@ use defuse::core::{
 };
 use defuse_near_utils::NearSdkLog;
 use defuse_randomness::Rng;
-use defuse_test_utils::random::{gen_random_string, random_bytes, rng};
+use defuse_test_utils::random::{gen_random_string, nonce, random_bytes, rng};
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata, TokenMetadata,
 };
@@ -40,14 +40,12 @@ use std::borrow::Cow;
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_transfer_intent(#[notrace] mut rng: impl Rng) {
+async fn simulate_transfer_intent(nonce: Nonce) {
     let env = Env::builder().no_registration(true).build().await;
 
     env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
         .await
         .unwrap();
-
-    let nonce = rng.random();
     let transfer_intent = Transfer {
         receiver_id: env.user2.id().clone(),
         tokens: Amounts::new(
@@ -94,7 +92,7 @@ async fn simulate_transfer_intent(#[notrace] mut rng: impl Rng) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_ft_withdraw_intent(#[notrace] mut rng: impl Rng) {
+async fn simulate_ft_withdraw_intent(nonce: Nonce) {
     let env = Env::builder().no_registration(true).build().await;
 
     env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
@@ -110,8 +108,6 @@ async fn simulate_ft_withdraw_intent(#[notrace] mut rng: impl Rng) {
             .unwrap(),
         1000
     );
-
-    let nonce = rng.random();
 
     let ft_withdraw_intent = FtWithdraw {
         token: env.ft1.clone(),
@@ -159,7 +155,7 @@ async fn simulate_ft_withdraw_intent(#[notrace] mut rng: impl Rng) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_native_withdraw_intent(#[notrace] mut rng: impl Rng) {
+async fn simulate_native_withdraw_intent(nonce: Nonce) {
     let env = Env::builder().no_registration(true).build().await;
 
     let wnear_token_id = TokenId::from(Nep141TokenId::new(env.wnear.id().clone()));
@@ -190,8 +186,6 @@ async fn simulate_native_withdraw_intent(#[notrace] mut rng: impl Rng) {
             .unwrap(),
         wnear_amount.as_yoctonear()
     );
-
-    let nonce = rng.random();
 
     let withdraw_amount = NearToken::from_millinear(50);
     let native_withdraw_intent = NativeWithdraw {
@@ -235,7 +229,7 @@ async fn simulate_native_withdraw_intent(#[notrace] mut rng: impl Rng) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_nft_withdraw_intent(#[notrace] mut rng: impl Rng) {
+async fn simulate_nft_withdraw_intent(#[notrace] mut rng: impl Rng, nonce: Nonce) {
     let env = Env::builder().no_registration(true).build().await;
 
     env.transfer_near(env.user1.id(), NearToken::from_near(100))
@@ -294,8 +288,6 @@ async fn simulate_nft_withdraw_intent(#[notrace] mut rng: impl Rng) {
         1
     );
 
-    let nonce = rng.random();
-
     let nft_withdraw_intent = NftWithdraw {
         token: nft_contract.id().clone(),
         receiver_id: env.user2.id().clone(),
@@ -342,7 +334,7 @@ async fn simulate_nft_withdraw_intent(#[notrace] mut rng: impl Rng) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_mt_withdraw_intent(#[notrace] mut rng: impl Rng) {
+async fn simulate_mt_withdraw_intent(nonce: Nonce) {
     let env = Env::builder().build().await;
 
     // Deploy a second Defuse contract which supports NEP-245 operations
@@ -413,8 +405,6 @@ async fn simulate_mt_withdraw_intent(#[notrace] mut rng: impl Rng) {
         500
     );
 
-    let nonce = rng.random();
-
     // Step 3: Create MtWithdraw intent to withdraw MT tokens from defuse2 back to defuse1
     // Now we're simulating on defuse2, withdrawing to defuse1
     let mt_withdraw_intent = MtWithdraw {
@@ -464,7 +454,7 @@ async fn simulate_mt_withdraw_intent(#[notrace] mut rng: impl Rng) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_storage_deposit_intent(#[notrace] mut rng: impl Rng) {
+async fn simulate_storage_deposit_intent(nonce: Nonce) {
     let env = Env::builder().no_registration(true).build().await;
 
     let wnear_token_id = TokenId::from(Nep141TokenId::new(env.wnear.id().clone()));
@@ -494,8 +484,6 @@ async fn simulate_storage_deposit_intent(#[notrace] mut rng: impl Rng) {
             .unwrap(),
         wnear_amount.as_yoctonear()
     );
-
-    let nonce = rng.random();
 
     let storage_deposit_amount = NearToken::from_millinear(10);
     let storage_deposit_intent = StorageDeposit {
@@ -540,7 +528,7 @@ async fn simulate_storage_deposit_intent(#[notrace] mut rng: impl Rng) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_token_diff_intent(#[notrace] mut rng: impl Rng) {
+async fn simulate_token_diff_intent(#[from(nonce)] nonce1: Nonce, #[from(nonce)] nonce2: Nonce) {
     let env = Env::builder()
         .fee(Pips::ZERO)
         .no_registration(true)
@@ -575,9 +563,6 @@ async fn simulate_token_diff_intent(#[notrace] mut rng: impl Rng) {
             .unwrap(),
         200
     );
-
-    let nonce1 = rng.random();
-    let nonce2 = rng.random();
 
     // user1: swap -100 ft1 for +200 ft2
     let user1_token_diff = TokenDiff {
@@ -670,10 +655,8 @@ async fn simulate_token_diff_intent(#[notrace] mut rng: impl Rng) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_add_public_key_intent(#[notrace] mut rng: impl Rng) {
+async fn simulate_add_public_key_intent(#[notrace] mut rng: impl Rng, nonce: Nonce) {
     let env = Env::builder().no_registration(true).build().await;
-
-    let nonce = rng.random();
 
     let mut random_key_bytes = [0u8; 32];
     rng.fill_bytes(&mut random_key_bytes);
@@ -718,14 +701,16 @@ async fn simulate_add_public_key_intent(#[notrace] mut rng: impl Rng) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_remove_public_key_intent(#[notrace] mut rng: impl Rng) {
+async fn simulate_remove_public_key_intent(
+    #[notrace] mut rng: impl Rng,
+    #[from(nonce)] add_nonce: Nonce,
+    #[from(nonce)] remove_nonce: Nonce,
+) {
     let env = Env::builder().no_registration(true).build().await;
 
     let mut random_key_bytes = [0u8; 32];
     rng.fill_bytes(&mut random_key_bytes);
     let new_public_key = PublicKey::Ed25519(random_key_bytes);
-
-    let add_nonce = rng.random();
     let add_public_key_intent = AddPublicKey {
         public_key: new_public_key,
     };
@@ -746,7 +731,6 @@ async fn simulate_remove_public_key_intent(#[notrace] mut rng: impl Rng) {
         .await
         .unwrap();
 
-    let remove_nonce = rng.random();
     let remove_public_key_intent = RemovePublicKey {
         public_key: new_public_key,
     };
@@ -788,10 +772,8 @@ async fn simulate_remove_public_key_intent(#[notrace] mut rng: impl Rng) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_set_auth_by_predecessor_id_intent(#[notrace] mut rng: impl Rng) {
+async fn simulate_set_auth_by_predecessor_id_intent(nonce: Nonce) {
     let env = Env::builder().no_registration(true).build().await;
-
-    let nonce = rng.random();
 
     let set_auth_intent = SetAuthByPredecessorId { enabled: true };
 
@@ -827,7 +809,7 @@ async fn simulate_set_auth_by_predecessor_id_intent(#[notrace] mut rng: impl Rng
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_auth_call_intent(#[notrace] mut rng: impl Rng) {
+async fn simulate_auth_call_intent(nonce: Nonce) {
     let env = Env::builder().no_registration(true).build().await;
 
     let wnear_token_id = TokenId::from(Nep141TokenId::new(env.wnear.id().clone()));
@@ -857,8 +839,6 @@ async fn simulate_auth_call_intent(#[notrace] mut rng: impl Rng) {
             .unwrap(),
         wnear_amount.as_yoctonear()
     );
-
-    let nonce = rng.random();
 
     let auth_call_intent = AuthCall {
         contract_id: env.ft1.clone(), // Call to ft1 contract
