@@ -103,7 +103,7 @@ impl State for Contract {
             .get_or_create(account_id.clone())
             .get_mut()
             .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))?
-            .maybe_add_public_key(&account_id, public_key)
+            .add_public_key(&account_id, public_key)
             .then_some(())
             .ok_or(DefuseError::PublicKeyExists(account_id, public_key))
     }
@@ -114,7 +114,7 @@ impl State for Contract {
             .get_or_create(account_id.clone())
             .get_mut()
             .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))?
-            .maybe_remove_public_key(&account_id, &public_key)
+            .remove_public_key(&account_id, &public_key)
             .then_some(())
             .ok_or(DefuseError::PublicKeyNotExist(account_id, public_key))
     }

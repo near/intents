@@ -1,6 +1,6 @@
 use crate::tests::defuse::SigningStandard;
 use crate::tests::defuse::intents::{AccountNonceIntentEvent, ExecuteIntentsExt, NonceEvent};
-use crate::tests::utils::AsNearSdkLog;
+use crate::tests::utils::NearSdkLog;
 use crate::utils::{ft::FtExt, mt::MtExt, nft::NftExt, wnear::WNearExt};
 use crate::{
     tests::defuse::accounts::AccountManagerExt,
@@ -8,6 +8,7 @@ use crate::{
     tests::defuse::{DefuseExt, DefuseSigner},
 };
 use defuse::contract::config::{DefuseConfig, RolesConfig};
+use defuse::core::crypto::{Payload, PublicKey};
 use defuse::core::fees::{FeesConfig, Pips};
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
@@ -26,13 +27,12 @@ use defuse::core::{
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
     },
 };
-use defuse_crypto::Payload;
-use defuse_crypto::PublicKey;
 use defuse_randomness::Rng;
 use defuse_test_utils::random::{gen_random_string, random_bytes, rng};
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata, TokenMetadata,
 };
+use near_crypto::SecretKey;
 use near_sdk::{NearToken, json_types::Base64VecU8};
 use rstest::rstest;
 use std::borrow::Cow;
@@ -84,7 +84,7 @@ async fn simulate_transfer_intent(#[notrace] mut rng: impl Rng) {
                 }]
                 .into()
             )
-            .as_near_sdk_log(),
+            .to_near_sdk_log(),
             AccountNonceIntentEvent::new(&env.user1.id(), nonce, &transfer_intent_payload)
                 .into_event_log(),
         ]
@@ -149,7 +149,7 @@ async fn simulate_ft_withdraw_intent(#[notrace] mut rng: impl Rng) {
                     event: Cow::Owned(ft_withdraw_intent),
                 },
             }]))
-            .as_near_sdk_log(),
+            .to_near_sdk_log(),
             AccountNonceIntentEvent::new(&env.user1.id(), nonce, &ft_withdraw_payload)
                 .into_event_log(),
         ]
@@ -225,7 +225,7 @@ async fn simulate_native_withdraw_intent(#[notrace] mut rng: impl Rng) {
                     event: Cow::Owned(native_withdraw_intent),
                 },
             }]))
-            .as_near_sdk_log(),
+            .to_near_sdk_log(),
             AccountNonceIntentEvent::new(&env.user1.id(), nonce, &native_withdraw_payload)
                 .into_event_log(),
         ]
@@ -332,7 +332,7 @@ async fn simulate_nft_withdraw_intent(#[notrace] mut rng: impl Rng) {
                     event: Cow::Owned(nft_withdraw_intent),
                 },
             }]))
-            .as_near_sdk_log(),
+            .to_near_sdk_log(),
             AccountNonceIntentEvent::new(&env.user1.id(), nonce, &nft_withdraw_payload)
                 .into_event_log(),
         ]
@@ -362,11 +362,10 @@ async fn simulate_mt_withdraw_intent(#[notrace] mut rng: impl Rng) {
         .unwrap();
 
     // Register user1's public key on defuse2
-    let user1_secret_key: near_crypto::SecretKey =
-        env.user1.secret_key().to_string().parse().unwrap();
+    let user1_secret_key: SecretKey = env.user1.secret_key().to_string().parse().unwrap();
     if let near_crypto::PublicKey::ED25519(pk) = user1_secret_key.public_key() {
         env.user1
-            .add_public_key(defuse2.id(), defuse_crypto::PublicKey::Ed25519(pk.0))
+            .add_public_key(defuse2.id(), PublicKey::Ed25519(pk.0))
             .await
             .unwrap();
     }
@@ -455,7 +454,7 @@ async fn simulate_mt_withdraw_intent(#[notrace] mut rng: impl Rng) {
                     event: Cow::Owned(mt_withdraw_intent),
                 },
             }]))
-            .as_near_sdk_log(),
+            .to_near_sdk_log(),
             AccountNonceIntentEvent::new(&env.user1.id(), nonce, &mt_withdraw_payload)
                 .into_event_log(),
         ]
@@ -531,7 +530,7 @@ async fn simulate_storage_deposit_intent(#[notrace] mut rng: impl Rng) {
                     event: Cow::Owned(storage_deposit_intent),
                 },
             }]))
-            .as_near_sdk_log(),
+            .to_near_sdk_log(),
             AccountNonceIntentEvent::new(&env.user1.id(), nonce, &storage_deposit_payload)
                 .into_event_log(),
         ]
@@ -638,7 +637,7 @@ async fn simulate_token_diff_intent(#[notrace] mut rng: impl Rng) {
                     },
                 },
             }]))
-            .as_near_sdk_log(),
+            .to_near_sdk_log(),
             DefuseEvent::TokenDiff(Cow::Owned(vec![IntentEvent {
                 intent_hash: user2_payload.hash(),
                 event: AccountEvent {
@@ -649,7 +648,7 @@ async fn simulate_token_diff_intent(#[notrace] mut rng: impl Rng) {
                     },
                 },
             }]))
-            .as_near_sdk_log(),
+            .to_near_sdk_log(),
             DefuseEvent::IntentsExecuted(
                 vec![
                     IntentEvent::new(
@@ -663,7 +662,7 @@ async fn simulate_token_diff_intent(#[notrace] mut rng: impl Rng) {
                 ]
                 .into()
             )
-            .as_near_sdk_log(),
+            .to_near_sdk_log(),
         ]
     );
 }
@@ -709,7 +708,7 @@ async fn simulate_add_public_key_intent(#[notrace] mut rng: impl Rng) {
                     public_key: Cow::Borrowed(&new_public_key)
                 },
             ))
-            .as_near_sdk_log(),
+            .to_near_sdk_log(),
             AccountNonceIntentEvent::new(&env.user1.id(), nonce, &add_public_key_payload)
                 .into_event_log(),
         ]
@@ -779,7 +778,7 @@ async fn simulate_remove_public_key_intent(#[notrace] mut rng: impl Rng) {
                     public_key: Cow::Borrowed(&new_public_key)
                 },
             ))
-            .as_near_sdk_log(),
+            .to_near_sdk_log(),
             AccountNonceIntentEvent::new(&env.user1.id(), remove_nonce, &remove_public_key_payload)
                 .into_event_log(),
         ]
@@ -818,7 +817,7 @@ async fn simulate_set_auth_by_predecessor_id_intent(#[notrace] mut rng: impl Rng
             DefuseEvent::SetAuthByPredecessorId(
                 AccountEvent::new(env.user1.id(), set_auth_intent,)
             )
-            .as_near_sdk_log(),
+            .to_near_sdk_log(),
             AccountNonceIntentEvent::new(&env.user1.id(), nonce, &set_auth_payload)
                 .into_event_log(),
         ]

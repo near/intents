@@ -34,12 +34,12 @@ fn pip_borsch_deserialization_selected_values(#[case] serialized: &[u8], #[case]
     assert_eq!(deserialized, Pips::from_pips(pips).unwrap());
 }
 
-pub trait AsNearSdkLog {
-    fn as_near_sdk_log(&self) -> String;
+pub trait NearSdkLog {
+    fn to_near_sdk_log(&self) -> String;
 }
 
-impl AsNearSdkLog for DefuseEvent<'_> {
-    fn as_near_sdk_log(&self) -> String {
+impl NearSdkLog for DefuseEvent<'_> {
+    fn to_near_sdk_log(&self) -> String {
         ::std::format!("EVENT_JSON:{}", self.to_json())
     }
 }

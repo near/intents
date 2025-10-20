@@ -1,17 +1,17 @@
 use crate::tests::defuse::SigningStandard;
 use crate::tests::defuse::intents::{AccountNonceIntentEvent, ExecuteIntentsExt};
-use crate::tests::utils::AsNearSdkLog;
+use crate::tests::utils::NearSdkLog;
 use crate::{tests::defuse::DefuseSigner, tests::defuse::env::Env};
 use defuse::core::{
     Deadline,
     accounts::{AccountEvent, PublicKeyEvent},
+    crypto::PublicKey,
     events::DefuseEvent,
     intents::{
         DefuseIntents,
         account::{AddPublicKey, RemovePublicKey},
     },
 };
-use defuse_crypto::PublicKey;
 use defuse_randomness::Rng;
 use defuse_test_utils::random::rng;
 use rstest::rstest;
@@ -90,7 +90,7 @@ async fn execute_add_public_key_intent(#[notrace] mut rng: impl Rng) {
                     public_key: Cow::Borrowed(&new_public_key),
                 },
             ))
-            .as_near_sdk_log(),
+            .to_near_sdk_log(),
             AccountNonceIntentEvent::new(&env.user1.id(), nonce, &add_public_key_payload)
                 .into_event_log(),
         ]
@@ -157,7 +157,7 @@ async fn execute_remove_public_key_intent(#[notrace] mut rng: impl Rng) {
                     public_key: Cow::Borrowed(&new_public_key),
                 },
             ))
-            .as_near_sdk_log(),
+            .to_near_sdk_log(),
             AccountNonceIntentEvent::new(&env.user1.id(), remove_nonce, &remove_public_key_payload)
                 .into_event_log(),
         ]

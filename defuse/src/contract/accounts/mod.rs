@@ -40,7 +40,7 @@ impl AccountManager for Contract {
     #[payable]
     fn add_public_key(&mut self, public_key: PublicKey) {
         assert_one_yocto();
-        let account_id = self.ensure_auth_predecessor_id().clone();
+        let account_id = self.ensure_auth_predecessor_id();
         State::add_public_key(self, account_id.clone(), public_key).unwrap_or_panic();
 
         DefuseEvent::PublicKeyAdded(AccountEvent::new(
@@ -55,9 +55,8 @@ impl AccountManager for Contract {
     #[payable]
     fn remove_public_key(&mut self, public_key: PublicKey) {
         assert_one_yocto();
-        let account_id = self.ensure_auth_predecessor_id().clone();
-        State::remove_public_key(self, self.ensure_auth_predecessor_id().clone(), public_key)
-            .unwrap_or_panic();
+        let account_id = self.ensure_auth_predecessor_id();
+        State::remove_public_key(self, account_id.clone(), public_key).unwrap_or_panic();
 
         DefuseEvent::PublicKeyRemoved(AccountEvent::new(
             Cow::Borrowed(account_id.as_ref()),

@@ -1,6 +1,6 @@
 use super::{DefuseSigner, accounts::AccountManagerExt, env::Env};
 use crate::tests::defuse::SigningStandard;
-use crate::tests::utils::AsNearSdkLog;
+use crate::tests::utils::NearSdkLog;
 use crate::utils::{crypto::Signer, mt::MtExt, test_log::TestLog};
 use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::token_id::TokenId;
@@ -10,6 +10,7 @@ use defuse::{
         Deadline, Nonce,
         accounts::{AccountEvent, NonceEvent},
         amounts::Amounts,
+        crypto::Payload,
         events::DefuseEvent,
         intents::{
             DefuseIntents, IntentEvent,
@@ -19,7 +20,6 @@ use defuse::{
     },
     intents::SimulationOutput,
 };
-use defuse_crypto::Payload;
 use defuse_randomness::Rng;
 use defuse_test_utils::random::rng;
 use near_sdk::{AccountId, AccountIdRef, CryptoHash};
@@ -47,7 +47,7 @@ impl AccountNonceIntentEvent {
             )]
             .into(),
         )
-        .as_near_sdk_log()
+        .to_near_sdk_log()
     }
 }
 
@@ -233,7 +233,7 @@ async fn simulate_is_view_method(
             event: Cow::Owned(transfer_intent),
         },
     }]))
-    .as_near_sdk_log();
+    .to_near_sdk_log();
 
     assert!(result.logs.iter().any(|log| log == &expected_log));
     //TODO: update
