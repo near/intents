@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build_and_upload_reproducible:
+    name: Build and Upload Reproducible Contract
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required to upload assets to release
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Install cargo-near CLI
+        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/download/cargo-near-v0.15.0/cargo-near-installer.sh | sh
+
+      - name: Build Reproducible WASM
+        run: cargo near build reproducible-wasm --manifest-path defuse/Cargo.toml
+
+      - name: Rename WASM with version
+        run: |
+          VERSION=${{ github.event.release.tag_name }}
+          cp target/near/defuse/defuse.wasm defuse-${VERSION}.wasm
+
+      - name: Upload WASM to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./defuse-${{ github.event.release.tag_name }}.wasm
+          asset_name: defuse-${{ github.event.release.tag_name }}.wasm
+          asset_content_type: application/wasm
