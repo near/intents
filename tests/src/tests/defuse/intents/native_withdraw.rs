@@ -26,8 +26,8 @@ use rstest::rstest;
 async fn native_withdraw_intent(mut rng: impl Rng) {
     let mut env = Env::new().await;
 
-    let user = env.get_or_create_user().await;
-    let other_user = env.get_or_create_user().await;
+    let user = env.create_user().await;
+    let other_user = env.create_user().await;
 
     env.ft_storage_deposit_for_users(vec![user.id(), other_user.id()], &[])
         .await;

@@ -21,8 +21,8 @@ async fn relayer_keys(#[values(false, true)] no_registration: bool) {
         .build()
         .await;
 
-    let user = env.get_or_create_user().await;
-    let other_user = env.get_or_create_user().await;
+    let user = env.create_user().await;
+    let other_user = env.create_user().await;
 
     env.acl_grant_role(env.defuse.id(), Role::RelayerKeysManager, user.id())
         .await
@@ -41,7 +41,7 @@ async fn relayer_keys(#[values(false, true)] no_registration: bool) {
         new_relayer_secret_key.clone(),
         &worker,
     )
-    .execute_intents([]) // Empty because it's just to ensure that authorization works/doesn't work
+    .execute_intents(env.defuse.id(), []) // Empty because it's just to ensure that authorization works/doesn't work
     .await
     .assert_err_contains("Failed to query access key");
 
@@ -68,7 +68,7 @@ async fn relayer_keys(#[values(false, true)] no_registration: bool) {
         new_relayer_secret_key.clone(),
         &worker,
     )
-    .execute_intents([]) // Empty because it's just to ensure that authorization works/doesn't work
+    .execute_intents(env.defuse.id(), []) // Empty because it's just to ensure that authorization works/doesn't work
     .await
     .unwrap();
 

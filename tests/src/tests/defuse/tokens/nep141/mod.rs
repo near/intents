@@ -36,7 +36,7 @@ async fn deposit_withdraw(#[values(false, true)] no_registration: bool) {
         .build()
         .await;
 
-    let user = env.get_or_create_user().await;
+    let user = env.create_user().await;
     let ft = env.create_token().await;
 
     env.ft_storage_deposit_for_users(vec![user.id()], &[&ft])
@@ -81,7 +81,7 @@ async fn poa_deposit(#[values(false, true)] no_registration: bool) {
         .build()
         .await;
 
-    let user = env.get_or_create_user().await;
+    let user = env.create_user().await;
 
     let ft = env.create_token().await;
     let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
@@ -123,8 +123,8 @@ async fn deposit_withdraw_intent(
         .build()
         .await;
 
-    let user = env.get_or_create_user().await;
-    let other_user = env.get_or_create_user().await;
+    let user = env.create_user().await;
+    let other_user = env.create_user().await;
 
     let ft = env.create_token().await;
 
@@ -222,7 +222,7 @@ async fn deposit_withdraw_intent_refund(
         .build()
         .await;
 
-    let user = env.get_or_create_user().await;
+    let user = env.create_user().await;
     let ft = env.create_token().await;
 
     env.ft_storage_deposit_for_users(vec![user.id()], &[&ft])
@@ -300,8 +300,8 @@ async fn ft_force_withdraw(#[values(false, true)] no_registration: bool) {
         .build()
         .await;
 
-    let user = env.get_or_create_user().await;
-    let other_user = env.get_or_create_user().await;
+    let user = env.create_user().await;
+    let other_user = env.create_user().await;
 
     let ft = env.create_token().await;
 

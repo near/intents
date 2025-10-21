@@ -37,8 +37,8 @@ async fn swap_p2p(
         .build()
         .await;
 
-    let user1 = env.get_or_create_user().await;
-    let user2 = env.get_or_create_user().await;
+    let user1 = env.create_user().await;
+    let user2 = env.create_user().await;
 
     let ft1 = env.create_token().await;
     let ft2 = env.create_token().await;
@@ -110,9 +110,9 @@ async fn swap_many(
         .build()
         .await;
 
-    let user1 = env.get_or_create_user().await;
-    let user2 = env.get_or_create_user().await;
-    let user3 = env.get_or_create_user().await;
+    let user1 = env.create_user().await;
+    let user2 = env.create_user().await;
+    let user3 = env.create_user().await;
 
     let ft1 = env.create_token().await;
     let ft2 = env.create_token().await;
@@ -260,7 +260,10 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
         .unwrap();
 
     // verify
-    env.defuse.execute_intents(signed).await.unwrap();
+    env.defuse
+        .execute_intents(env.defuse.id(), signed)
+        .await
+        .unwrap();
 
     // check balances
     for account in accounts {
@@ -295,8 +298,8 @@ async fn invariant_violated(
         .build()
         .await;
 
-    let user1 = env.get_or_create_user().await;
-    let user2 = env.get_or_create_user().await;
+    let user1 = env.create_user().await;
+    let user2 = env.create_user().await;
 
     let ft1 = env.create_token().await;
     let ft2 = env.create_token().await;
@@ -376,7 +379,10 @@ async fn invariant_violated(
         ))
     );
 
-    env.defuse.execute_intents(signed).await.unwrap_err();
+    env.defuse
+        .execute_intents(env.defuse.id(), signed)
+        .await
+        .unwrap_err();
 
     // balances should stay the same
     assert_eq!(
@@ -421,8 +427,8 @@ async fn solver_user_closure(
         .build()
         .await;
 
-    let user = env.get_or_create_user().await;
-    let solver = env.get_or_create_user().await;
+    let user = env.create_user().await;
+    let solver = env.create_user().await;
 
     let ft1 = env.create_token().await;
     let ft2 = env.create_token().await;
@@ -547,7 +553,7 @@ async fn solver_user_closure(
 
     // execute intents
     env.defuse
-        .execute_intents([solver_commitment, user_commitment])
+        .execute_intents(env.defuse.id(), [solver_commitment, user_commitment])
         .await
         .unwrap();
 

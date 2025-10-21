@@ -27,9 +27,9 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
         .build()
         .await;
 
-    let user1 = env.get_or_create_user().await;
-    let user2 = env.get_or_create_user().await;
-    let user3 = env.get_or_create_user().await;
+    let user1 = env.create_user().await;
+    let user2 = env.create_user().await;
+    let user3 = env.create_user().await;
 
     let ft1 = env.create_token().await;
     let ft2 = env.create_token().await;
@@ -322,9 +322,9 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
         .build()
         .await;
 
-    let user1 = env.get_or_create_user().await;
-    let user2 = env.get_or_create_user().await;
-    let user3 = env.get_or_create_user().await;
+    let user1 = env.create_user().await;
+    let user2 = env.create_user().await;
+    let user3 = env.create_user().await;
 
     let ft1 = env.create_token().await;
     let ft2 = env.create_token().await;
@@ -513,9 +513,9 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
 async fn multitoken_withdrawals() {
     let mut env = Env::builder().create_unique_users().build().await;
 
-    let user1 = env.get_or_create_user().await;
-    let user2 = env.get_or_create_user().await;
-    let user3 = env.get_or_create_user().await;
+    let user1 = env.create_user().await;
+    let user2 = env.create_user().await;
+    let user3 = env.create_user().await;
 
     let ft1 = env.create_token().await;
     let ft2 = env.create_token().await;

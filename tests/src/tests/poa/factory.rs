@@ -11,8 +11,7 @@ use serde_json::json;
 
 use crate::utils::{account::AccountExt, read_wasm};
 
-static POA_FACTORY_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm("res", "defuse_poa_factory"));
+static POA_FACTORY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("res/defuse_poa_factory"));
 
 pub trait PoAFactoryExt {
     async fn deploy_poa_factory(

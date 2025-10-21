@@ -25,7 +25,7 @@ async fn auth_by_predecessor_id(random_bytes: Vec<u8>) {
     let mut env = Env::new().await;
 
     let ft = env.create_token().await;
-    let user = env.get_or_create_user().await;
+    let user = env.create_user().await;
 
     env.ft_storage_deposit_for_users(vec![user.id()], &[&ft])
         .await;
@@ -118,21 +118,24 @@ async fn auth_by_predecessor_id(random_bytes: Vec<u8>) {
     // transfer via intent should succeed
     {
         env.defuse
-            .execute_intents([user.sign_defuse_message(
-                u.arbitrary().unwrap(),
+            .execute_intents(
                 env.defuse.id(),
-                u.arbitrary().unwrap(),
-                Deadline::timeout(Duration::from_secs(120)),
-                DefuseIntents {
-                    intents: [Transfer {
-                        receiver_id: receiver_id.clone(),
-                        tokens: Amounts::new([(ft.clone(), 200)].into()),
-                        memo: None,
-                    }
-                    .into()]
-                    .into(),
-                },
-            )])
+                [user.sign_defuse_message(
+                    u.arbitrary().unwrap(),
+                    env.defuse.id(),
+                    u.arbitrary().unwrap(),
+                    Deadline::timeout(Duration::from_secs(120)),
+                    DefuseIntents {
+                        intents: [Transfer {
+                            receiver_id: receiver_id.clone(),
+                            tokens: Amounts::new([(ft.clone(), 200)].into()),
+                            memo: None,
+                        }
+                        .into()]
+                        .into(),
+                    },
+                )],
+            )
             .await
             .unwrap();
 
@@ -155,15 +158,18 @@ async fn auth_by_predecessor_id(random_bytes: Vec<u8>) {
     // enable auth by PREDECESSOR_ID back (by intent)
     {
         env.defuse
-            .execute_intents([user.sign_defuse_message(
-                u.arbitrary().unwrap(),
+            .execute_intents(
                 env.defuse.id(),
-                u.arbitrary().unwrap(),
-                Deadline::timeout(Duration::from_secs(120)),
-                DefuseIntents {
-                    intents: [SetAuthByPredecessorId { enabled: true }.into()].into(),
-                },
-            )])
+                [user.sign_defuse_message(
+                    u.arbitrary().unwrap(),
+                    env.defuse.id(),
+                    u.arbitrary().unwrap(),
+                    Deadline::timeout(Duration::from_secs(120)),
+                    DefuseIntents {
+                        intents: [SetAuthByPredecessorId { enabled: true }.into()].into(),
+                    },
+                )],
+            )
             .await
             .unwrap();
 

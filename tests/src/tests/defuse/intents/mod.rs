@@ -36,8 +36,19 @@ pub trait ExecuteIntentsExt: AccountManagerExt {
 
     async fn execute_intents(
         &self,
-        intents: impl IntoIterator<Item = MultiPayload> + Clone,
-    ) -> anyhow::Result<TestLog>;
+        defuse_id: &AccountId,
+        intents: impl IntoIterator<Item = MultiPayload>,
+    ) -> anyhow::Result<TestLog> {
+        let intents = intents.into_iter().collect::<Vec<_>>();
+        let simulation_result = self
+            .defuse_simulate_intents(defuse_id, intents.clone())
+            .await;
+
+        self.defuse_execute_intents(defuse_id, intents)
+            .await
+            // return simulation_err if execute_ok
+            .and_then(|res| simulation_result.map(|_| res))
+    }
 
     async fn execute_intents_without_simulation(
         &self,
@@ -82,20 +93,6 @@ impl ExecuteIntentsExt for near_workspaces::Account {
             })
             .map(Into::into)
             .map_err(Into::into)
-    }
-
-    async fn execute_intents(
-        &self,
-        intents: impl IntoIterator<Item = MultiPayload> + Clone,
-    ) -> anyhow::Result<TestLog> {
-        let simulation_result = self
-            .defuse_simulate_intents(self.id(), intents.clone())
-            .await;
-
-        self.defuse_execute_intents(self.id(), intents)
-            .await
-            // return simulation_err if execute_ok
-            .and_then(|res| simulation_result.map(|_| res))
     }
 
     async fn execute_intents_without_simulation(
@@ -143,9 +140,10 @@ impl ExecuteIntentsExt for near_workspaces::Contract {
     }
     async fn execute_intents(
         &self,
-        intents: impl IntoIterator<Item = MultiPayload> + Clone,
+        defuse_id: &AccountId,
+        intents: impl IntoIterator<Item = MultiPayload>,
     ) -> anyhow::Result<TestLog> {
-        self.as_account().execute_intents(intents).await
+        self.as_account().execute_intents(defuse_id, intents).await
     }
 
     async fn execute_intents_without_simulation(
@@ -186,8 +184,8 @@ async fn simulate_is_view_method(
         .build()
         .await;
 
-    let user = env.get_or_create_user().await;
-    let other_user = env.get_or_create_user().await;
+    let user = env.create_user().await;
+    let other_user = env.create_user().await;
 
     let ft = env.create_token().await;
     let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
@@ -272,7 +270,7 @@ async fn webauthn(#[values(false, true)] no_registration: bool) {
         .unwrap();
 
     env.defuse
-        .execute_intents([serde_json::from_str(r#"{
+        .execute_intents(env.defuse.id(), [serde_json::from_str(r#"{
   "standard": "webauthn",
   "payload": "{\"signer_id\":\"0x3602b546589a8fcafdce7fad64a46f91db0e4d50\",\"verifying_contract\":\"defuse.test.near\",\"deadline\":\"2050-03-30T00:00:00Z\",\"nonce\":\"A3nsY1GMVjzyXL3mUzOOP3KT+5a0Ruy+QDNWPhchnxM=\",\"intents\":[{\"intent\":\"transfer\",\"receiver_id\":\"user1.test.near\",\"tokens\":{\"nep141:ft1.poa-factory.test.near\":\"1000\"}}]}",
   "public_key": "p256:2V8Np9vGqLiwVZ8qmMmpkxU7CTRqje4WtwFeLimSwuuyF1rddQK5fELiMgxUnYbVjbZHCNnGc6fAe4JeDcVxgj3Q",

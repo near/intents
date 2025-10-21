@@ -32,9 +32,9 @@ async fn test_lock_account(random_bytes: Vec<u8>) {
 
     let mut env = Env::builder().deployer_as_super_admin().build().await;
 
-    let locked_account = env.get_or_create_user().await;
-    let account_locker = env.get_or_create_user().await;
-    let unlocked_account = env.get_or_create_user().await;
+    let locked_account = env.create_user().await;
+    let account_locker = env.create_user().await;
+    let unlocked_account = env.create_user().await;
 
     let ft = env.create_token().await;
 
@@ -289,13 +289,16 @@ async fn test_lock_account(random_bytes: Vec<u8>) {
     {
         let nonce: Nonce = u.arbitrary().unwrap();
         env.defuse
-            .execute_intents([locked_account.sign_defuse_message(
-                SigningStandard::Nep413,
+            .execute_intents(
                 env.defuse.id(),
-                nonce,
-                Deadline::timeout(Duration::from_secs(120)),
-                DefuseIntents { intents: [].into() },
-            )])
+                [locked_account.sign_defuse_message(
+                    SigningStandard::Nep413,
+                    env.defuse.id(),
+                    nonce,
+                    Deadline::timeout(Duration::from_secs(120)),
+                    DefuseIntents { intents: [].into() },
+                )],
+            )
             .await
             .assert_err_contains(
                 DefuseError::AccountLocked(locked_account.id().clone()).to_string(),
@@ -389,9 +392,9 @@ async fn test_force_set_auth_by_predecessor_id(random_bytes: Vec<u8>) {
 
     let mut env = Env::builder().deployer_as_super_admin().build().await;
 
-    let user_account = &env.get_or_create_user().await;
-    let account_locker = &env.get_or_create_user().await;
-    let account_unlocker = &env.get_or_create_user().await;
+    let user_account = &env.create_user().await;
+    let account_locker = &env.create_user().await;
+    let account_unlocker = &env.create_user().await;
 
     // disable auth by predecessor id
     {

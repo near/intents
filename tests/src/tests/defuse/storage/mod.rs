@@ -40,8 +40,8 @@ async fn storage_deposit_success(
         .build()
         .await;
 
-    let user = env.get_or_create_user().await;
-    let other_user = env.get_or_create_user().await;
+    let user = env.create_user().await;
+    let other_user = env.create_user().await;
 
     let ft = env.create_token().await;
 
@@ -106,21 +106,25 @@ async fn storage_deposit_success(
     let nonce = rng.random();
 
     env.defuse
-        .execute_intents([other_user.sign_defuse_message(
-            SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        .execute_intents(
             env.defuse.id(),
-            nonce,
-            Deadline::timeout(std::time::Duration::from_secs(120)),
-            DefuseIntents {
-                intents: [StorageDeposit {
-                    contract_id: ft.clone(),
-                    deposit_for_account_id: other_user.id().clone(),
-                    amount: amount_to_deposit,
-                }
-                .into()]
-                .into(),
-            },
-        )])
+            [other_user.sign_defuse_message(
+                SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
+                    .unwrap(),
+                env.defuse.id(),
+                nonce,
+                Deadline::timeout(std::time::Duration::from_secs(120)),
+                DefuseIntents {
+                    intents: [StorageDeposit {
+                        contract_id: ft.clone(),
+                        deposit_for_account_id: other_user.id().clone(),
+                        amount: amount_to_deposit,
+                    }
+                    .into()]
+                    .into(),
+                },
+            )],
+        )
         .await
         .unwrap();
 
@@ -143,8 +147,8 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents(mut rng: impl Rng)
         .build()
         .await;
 
-    let user = env.get_or_create_user().await;
-    let other_user = env.get_or_create_user().await;
+    let user = env.create_user().await;
+    let other_user = env.create_user().await;
 
     let ft = env.create_token().await;
 
@@ -216,7 +220,7 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents(mut rng: impl Rng)
 
     // Fails because the user does not own any wNEAR in the intents smart contract. They should first deposit wNEAR.
     env.defuse
-        .execute_intents(signed_intents)
+        .execute_intents(env.defuse.id(), signed_intents)
         .await
         .unwrap_err();
 }

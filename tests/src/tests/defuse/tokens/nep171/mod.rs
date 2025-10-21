@@ -23,9 +23,9 @@ use std::collections::HashMap;
 async fn transfer_nft_to_verifier(mut rng: impl Rng) {
     let mut env = Env::builder().create_unique_users().build().await;
 
-    let user1 = env.get_or_create_user().await;
-    let user2 = env.get_or_create_user().await;
-    let user3 = env.get_or_create_user().await;
+    let user1 = env.create_user().await;
+    let user2 = env.create_user().await;
+    let user3 = env.create_user().await;
 
     env.transfer_near(user1.id(), NearToken::from_near(100))
         .await
@@ -242,26 +242,29 @@ async fn transfer_nft_to_verifier(mut rng: impl Rng) {
         let nonce = rng.random();
 
         env.defuse
-            .execute_intents([user3.sign_defuse_message(
-                SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
-                    .unwrap(),
+            .execute_intents(
                 env.defuse.id(),
-                nonce,
-                Deadline::timeout(std::time::Duration::from_secs(120)),
-                DefuseIntents {
-                    intents: [NftWithdraw {
-                        token: nft_issuer_contract.id().clone(),
-                        receiver_id: user1.id().clone(),
-                        token_id: nft1_id,
-                        memo: None,
-                        msg: None,
-                        storage_deposit: None,
-                        min_gas: None,
-                    }
-                    .into()]
-                    .into(),
-                },
-            )])
+                [user3.sign_defuse_message(
+                    SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
+                        .unwrap(),
+                    env.defuse.id(),
+                    nonce,
+                    Deadline::timeout(std::time::Duration::from_secs(120)),
+                    DefuseIntents {
+                        intents: [NftWithdraw {
+                            token: nft_issuer_contract.id().clone(),
+                            receiver_id: user1.id().clone(),
+                            token_id: nft1_id,
+                            memo: None,
+                            msg: None,
+                            storage_deposit: None,
+                            min_gas: None,
+                        }
+                        .into()]
+                        .into(),
+                    },
+                )],
+            )
             .await
             .unwrap();
 

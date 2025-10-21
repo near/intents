@@ -36,7 +36,7 @@ use std::{ops::Deref, sync::LazyLock};
 pub use state::PersistentState;
 
 pub static POA_TOKEN_WASM_NO_REGISTRATION: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm("res", "poa-token-no-registration/defuse_poa_token"));
+    LazyLock::new(|| read_wasm("res/poa-token-no-registration/defuse_poa_token"));
 
 pub struct Env {
     sandbox: Sandbox,
@@ -144,7 +144,7 @@ impl Env {
 
     // Fetches user from persistent state or creates a new random one
     // in case if all users from persistent state are already used
-    pub async fn get_or_create_user(&mut self) -> Account {
+    pub async fn create_user(&mut self) -> Account {
         let account_id = self.get_next_account_id();
         let root = self.sandbox.root_account();
 

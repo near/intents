@@ -231,7 +231,7 @@ async fn mt_transfer_resolve_gas(rng: impl Rng) {
     let rng = Arc::new(tokio::sync::Mutex::new(rng));
     for gen_mode in GenerationMode::iter() {
         let mut env = Env::new().await;
-        let user = env.get_or_create_user().await;
+        let user = env.create_user().await;
 
         let env = Arc::new(env);
 

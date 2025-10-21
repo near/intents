@@ -95,8 +95,8 @@ async fn test_upgrade_with_persistence(mut rng: impl Rng, random_bytes: Vec<u8>)
     let mut env = Env::builder().build_with_migration().await;
 
     // Make some changes existing users:
-    let user1 = &env.get_or_create_user().await;
-    let user2 = &env.get_or_create_user().await;
+    let user1 = &env.create_user().await;
+    let user2 = &env.create_user().await;
 
     // Create new users
     let user3 = &env.create_named_user("first_new_user").await.unwrap();
@@ -160,7 +160,10 @@ async fn test_upgrade_with_persistence(mut rng: impl Rng, random_bytes: Vec<u8>)
                 })
                 .collect::<Vec<_>>();
 
-            env.defuse.execute_intents(payloads).await.unwrap();
+            env.defuse
+                .execute_intents(env.defuse.id(), payloads)
+                .await
+                .unwrap();
         }
 
         // Check auth_by_predecessor
