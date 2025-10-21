@@ -38,7 +38,9 @@ impl AccountManager for Contract {
     fn add_public_key(&mut self, public_key: PublicKey) {
         assert_one_yocto();
         State::add_public_key(self, self.ensure_auth_predecessor_id().clone(), public_key)
-            .unwrap_or_panic();
+            .unwrap_or_panic()
+            
+            ;
     }
 
     #[payable]

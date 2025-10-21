@@ -13,6 +13,19 @@ use near_sdk::{
 };
 use serde_with::{TimestampNanoSeconds as SerdeTimestampNanoSeconds, serde_as};
 
+// No `ft_transfer_call()` reasoning:
+// * retries with same `msg`
+// * NEP-141 vulnerability makes it possible to lose funds if no storage_deposit
+// * somethimes logic of ft_transfer_call can be so hard, that it requires additional
+//   storage_deposits on THE RECEIVER of the tokens, not only for token itself (e.g. omni-bridge)
+// * everything can (and should??) be implemented via off-chain indexers and relayers fo finalize any custom logic
+// TODO: add support for custom ".on_settled()" hooks?
+
+// TODO: streaming swaps:
+// * cancel of long streaming swaps?
+// solution: time-lock (i.e. "delayed" canceling)
+// + solver can confirm that he acknoliged the cancel, so it's a multisig 2-of-2 for immediate cancellation
+
 // TODO: partial fills:
 // * allow_partial_fills: bool
 // * memo/msg:
@@ -49,6 +62,7 @@ pub struct Params {
     pub maker_amount: u128,
 
     pub taker_token_id: AccountId,
+    // TODO: or ratio? seems like to be needed only for partial fills
     pub taker_amount: u128,
     pub taker_whitelist: BTreeSet<AccountId>,
 
@@ -58,7 +72,6 @@ pub struct Params {
     pub receiver_msg: Option<String>,
 
     pub state: State,
-
     // TODO: what if only partially filled when deadline expires?
     // * is it safe to send funds via msg?
     // #[borsh(
@@ -68,10 +81,42 @@ pub struct Params {
     // )]
     // #[serde_as(as = "SerdeTimestampNanoSeconds")]
     // pub deadline: DateTime<Utc>,
-    pub salt: [u8; 4],
+    // pub salt: [u8; 4], // TODO: only for NEP-616
     // TODO: fees:
     // * hard-code protocol fee_collector
     // * app fees
+}
+
+// TODO: maker_asset cannot have msg, since it will be set by taker
+#[near(serializers = [borsh, json])]
+// TODO: serde tag
+pub enum TakerAsset {
+    Nep141 {
+        contract_id: AccountId,
+        amount: u128,
+
+        receiver_id: AccountId,
+        memo: Option<String>,
+        msg: Option<String>,
+    },
+    Nep171 {
+        contract_id: AccountId,
+        token_id: String,
+
+        receiver_id: AccountId,
+        memo: Option<String>,
+        msg: Option<String>,
+    },
+    Nep245 {
+        contract_id: AccountId,
+        token_id: String,
+        amount: u128,
+
+        receiver_id: AccountId,
+        memo: Option<String>,
+        msg: Option<String>,
+    },
+    // TODO: custom_resolve / governor?
 }
 
 impl Params {
@@ -85,15 +130,6 @@ impl Params {
 pub struct PartialFillsParams {
     pub claim_manually: bool,
     pub solvers_whitelist: BTreeSet<AccountId>, // Or IterableSet?
-}
-
-// TODO: maker_asset cannot have msg, since it will be set by taker
-pub enum EscrowAsset {
-    Nep141 {
-        contract_id: AccountId,
-        receiver_id: AccountId,
-        msg: Option<String>,
-    },
 }
 
 #[near(serializers = [borsh, json])]
@@ -224,6 +260,7 @@ impl Contract {
     // TODO: docs
     /// Returns transferred amount
     fn ft_resolve_withdraw(result_idx: u64, amount: u128, is_call: bool) -> u128 {
+        // TODO: check register length
         match env::promise_result(result_idx) {
             PromiseResult::Successful(value) => {
                 if is_call {
@@ -301,13 +338,21 @@ impl Contract {
     }
 
     // TODO
-    // pub fn lost_found(&mut self) -> Promise {
-    //     let State::LostFound {
-    //         taker_token_ok,
-    //         maker_token_ok,
-    //     } = self.state
-    //     else {
-    //         env::panic_str("wrong state");
-    //     };
-    // }
+    pub fn lost_found(&mut self) -> Promise {
+        let State::LostFound {
+            // TODO: if we store a map for takers and their amounts,
+            // then how can we allow anyone to transfer to them permissionlessly if the taer could have added `msg`?
+            // do we want to store this data on a contract? what if we
+            // run out of storage and the contract wouldn't be able to keep these refunds
+            // But here is a point: MMs are smart and can use only
+            // `ft_transfer()`s and manually index transfer events, right?
+            taker_asset_lost,
+            // what if maker asset was lost_found and he set msg param?
+            maker_asset_lost,
+        } = self.state
+        else {
+            env::panic_str("wrong state");
+        };
+        todo!()
+    }
 }
