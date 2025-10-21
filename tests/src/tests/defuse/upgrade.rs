@@ -29,6 +29,8 @@ use itertools::Itertools;
 use near_sdk::AccountId;
 use rstest::rstest;
 
+use futures::future::try_join_all;
+
 #[ignore = "only for simple upgrades"]
 #[tokio::test]
 #[rstest]
@@ -92,41 +94,46 @@ async fn upgrade(mut rng: impl Rng) {
 async fn test_upgrade_with_persistence(mut rng: impl Rng, random_bytes: Vec<u8>) {
     // initialize with persistent state and migration from legacy
     let u = &mut Unstructured::new(&random_bytes);
-    let mut env = Env::builder().build_with_migration().await;
+    let env = Env::builder().build_with_migration().await;
 
     // Make some changes existing users:
-    let user1 = &env.create_user().await;
-    let user2 = &env.create_user().await;
+    let (user1, user2) = futures::join!(env.create_user(), env.create_user());
 
     // Create new users
-    let user3 = &env.create_named_user("first_new_user").await.unwrap();
-    let user4 = &env.create_named_user("second_new_user").await.unwrap();
+    let (user3, user4) = futures::try_join!(
+        env.create_named_user("first_new_user"),
+        env.create_named_user("second_new_user")
+    )
+    .expect("Failed to create new users");
 
     // Create new token
     let ft1 = env.create_token().await;
 
     // Check users
     {
-        env.ft_storage_deposit_for_users(
+        env.ft_storage_deposit_for_accounts(
             vec![user1.id(), user2.id(), user3.id(), user4.id()],
-            &[&ft1],
+            vec![&ft1],
         )
         .await;
 
-        env.ft_deposit_to_root(&[&ft1]).await;
+        let users = vec![&user1, &user2, &user3, &user4];
 
-        for user in [user1, user2, user3, user4] {
-            env.defuse_ft_deposit_to(&ft1, (10_000).try_into().unwrap(), user.id())
-                .await
-                .unwrap();
-        }
+        // Additional deposits to new users
+        try_join_all(
+            users
+                .iter()
+                .map(|user| env.defuse_ft_deposit_to(&ft1, 10_000, user.id())),
+        )
+        .await
+        .expect("Failed to deposit to users");
 
         // Interactions between new and old users
         {
             let current_timestamp = Utc::now();
             let current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
 
-            let payloads = [user1, user2, user3, user4]
+            let payloads = users
                 .iter()
                 .combinations(2)
                 .map(|accounts| {

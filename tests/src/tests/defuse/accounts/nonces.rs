@@ -28,10 +28,12 @@ use crate::{
     utils::acl::AclExt,
 };
 
+use futures::future::try_join_all;
+
 #[tokio::test]
 #[rstest]
 async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng) {
-    let mut env = Env::builder().deployer_as_super_admin().build().await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
     let current_timestamp = Utc::now();
     let current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
     let timeout_delta = TimeDelta::days(1);
@@ -220,7 +222,7 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
 async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
     const WAITING_TIME: TimeDelta = TimeDelta::seconds(3);
 
-    let mut env = Env::builder().deployer_as_super_admin().build().await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
     let user = env.create_user().await;
 
     let current_timestamp = Utc::now();
@@ -384,7 +386,7 @@ async fn cleanup_multiple_nonces(
     const CHUNK_SIZE: usize = 10;
     const WAITING_TIME: TimeDelta = TimeDelta::seconds(3);
 
-    let mut env = Env::builder().deployer_as_super_admin().build().await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
     let user = env.create_user().await;
 
     let mut nonces = Vec::with_capacity(nonce_count);
@@ -425,9 +427,19 @@ async fn cleanup_multiple_nonces(
     sleep(Duration::from_secs_f64(WAITING_TIME.as_seconds_f64())).await;
 
     let gas_used = user
-        .cleanup_nonces(env.defuse.id(), vec![(user.id().clone(), nonces)])
+        .cleanup_nonces(env.defuse.id(), vec![(user.id().clone(), nonces.clone())])
         .await
         .unwrap();
+
+    let checks = try_join_all(
+        nonces
+            .iter()
+            .map(|n| env.defuse.is_nonce_used(user.id(), &n)),
+    )
+    .await
+    .expect("Failed to check cleaned nonces");
+
+    assert!(checks.into_iter().all(|is_used| !is_used));
 
     println!(
         "Gas used to clear {} nonces: {}",

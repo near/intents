@@ -31,19 +31,18 @@ async fn ft_withdraw_intent(
     // intentionally large deposit
     const STORAGE_DEPOSIT: NearToken = NearToken::from_near(1000);
 
-    let mut env = Env::builder()
+    let env = Env::builder()
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user = env.create_user().await;
-    let other_user_id: AccountId = "other-user.near".parse().unwrap();
+    let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
-    let ft = env.create_token().await;
+    let other_user_id: AccountId = "other-user.near".parse().unwrap();
     let token_id = TokenId::from(Nep141TokenId::new(ft.clone()));
-    env.ft_storage_deposit_for_users(vec![user.id()], &[&ft])
+
+    env.ft_storage_deposit_for_accounts(vec![user.id()], vec![&ft])
         .await;
-    env.ft_deposit_to_root(&[&ft]).await;
 
     {
         env.defuse_ft_deposit_to(&ft, 1000, user.id())
@@ -266,18 +265,13 @@ async fn ft_withdraw_intent_msg(
     #[notrace] mut rng: impl Rng,
     #[values(false, true)] no_registration: bool,
 ) {
-    let mut env = Env::builder()
+    let env = Env::builder()
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user = env.create_user().await;
+    let (user, ft) = futures::join!(env.create_user(), env.create_token());
     let other_user_id: AccountId = "other-user.near".parse().unwrap();
-
-    let ft = env.create_token().await;
-    env.ft_storage_deposit_for_users(vec![user.id()], &[&ft])
-        .await;
-    env.ft_deposit_to_root(&[&ft]).await;
 
     let defuse2 = env
         .deploy_defuse(
@@ -295,10 +289,8 @@ async fn ft_withdraw_intent_msg(
         .await
         .unwrap();
 
-    env.poa_factory
-        .ft_storage_deposit_many(&ft, &[defuse2.id()])
-        .await
-        .unwrap();
+    env.ft_storage_deposit_for_accounts(vec![user.id(), defuse2.id()], vec![&ft])
+        .await;
 
     env.defuse_ft_deposit_to(&ft, 1000, user.id())
         .await

@@ -24,6 +24,7 @@ use defuse::{
 };
 use defuse_near_utils::arbitrary::ArbitraryNamedAccountId;
 use defuse_randomness::{Rng, make_true_rng};
+use futures::future::try_join_all;
 use near_sdk::{AccountId, NearToken};
 use near_workspaces::{
     Account, Contract, Network, Worker,
@@ -32,6 +33,7 @@ use near_workspaces::{
 };
 use serde_json::json;
 use std::{ops::Deref, sync::LazyLock};
+use tokio::sync::Mutex;
 
 pub use state::PersistentState;
 
@@ -53,7 +55,7 @@ pub struct Env {
     // Persistent state generated in case of migration tests
     // used to fetch existing accounts
     pub persistent_state: Option<PersistentState>,
-    pub current_user_index: usize,
+    pub current_user_index: Mutex<usize>,
 }
 
 impl Env {
@@ -144,8 +146,8 @@ impl Env {
 
     // Fetches user from persistent state or creates a new random one
     // in case if all users from persistent state are already used
-    pub async fn create_user(&mut self) -> Account {
-        let account_id = self.get_next_account_id();
+    pub async fn create_user(&self) -> Account {
+        let account_id = self.get_next_account_id().await;
         let root = self.sandbox.root_account();
 
         self.create_named_user(&root.subaccount_name(&account_id))
@@ -153,19 +155,14 @@ impl Env {
             .expect("Failed to create user account")
     }
 
-    fn get_next_account_id(&mut self) -> AccountId {
+    async fn get_next_account_id(&self) -> AccountId {
         if let Some(state) = self.persistent_state.as_ref() {
-            if self.current_user_index < state.accounts.len() {
-                let account_id = state
-                    .accounts
-                    .keys()
-                    .nth(self.current_user_index)
-                    .expect("Failed to get account ID")
-                    .clone();
+            let mut index = self.current_user_index.lock().await;
 
-                self.current_user_index += 1;
+            if let Some(account_id) = state.accounts.keys().nth(*index) {
+                *index += 1;
 
-                return account_id;
+                return account_id.clone();
             }
         }
 
@@ -191,47 +188,64 @@ impl Env {
     }
 
     // if no tokens provided - only wnear storage deposit will be done
-    pub async fn ft_storage_deposit_for_users(
+    pub async fn ft_storage_deposit_for_accounts(
         &self,
-        mut accounts: Vec<&AccountId>,
-        tokens: &[&AccountId],
+        accounts: impl IntoIterator<Item = &AccountId>,
+        tokens: impl IntoIterator<Item = &AccountId>,
     ) {
+        if self.disable_ft_storage_deposit {
+            return;
+        }
+
         let root = self.sandbox.root_account();
+        let mut all_accounts: Vec<&AccountId> = accounts.into_iter().collect();
 
-        accounts.push(self.defuse.id());
-        accounts.push(root.id());
+        all_accounts.push(self.defuse.id());
+        all_accounts.push(root.id());
 
-        if !self.disable_ft_storage_deposit {
-            // Wnear storage deposit
-            root.ft_storage_deposit_many(self.wnear.id(), &accounts)
+        // deposit WNEAR storage
+        self.ft_deposit_for_accounts(&self.wnear.id(), all_accounts.clone())
+            .await
+            .expect("Failed to deposit Wnear storage");
+
+        // deposit ALL tokens storage
+        for token in tokens {
+            self.ft_deposit_for_accounts(token, all_accounts.clone())
                 .await
-                .unwrap();
+                .expect("Failed to deposit FT storage");
 
-            // FT storage deposit
-            for token in tokens {
-                self.poa_factory
-                    .ft_storage_deposit_many(token, &accounts)
-                    .await
-                    .unwrap();
-            }
+            // Deposit FTs to root for transfers to users
+            self.ft_deposit_to_root(token)
+                .await
+                .expect("Failed to deposit FT storage to root");
         }
     }
 
-    pub async fn ft_deposit_to_root(&self, tokens: &[&AccountId]) {
-        let root = self.sandbox.root_account();
+    async fn ft_deposit_for_accounts(
+        &self,
+        token: &AccountId,
+        accounts: impl IntoIterator<Item = &AccountId>,
+    ) -> Result<()> {
+        try_join_all(
+            accounts
+                .into_iter()
+                .map(|acc| self.poa_factory.ft_storage_deposit(token, Some(acc))),
+        )
+        .await?;
 
-        for ft in tokens {
-            self.poa_factory_ft_deposit(
-                self.poa_factory.id(),
-                &self.poa_ft_name(ft),
-                root.id(),
-                1_000_000_000,
-                None,
-                None,
-            )
-            .await
-            .unwrap();
-        }
+        Ok(())
+    }
+
+    async fn ft_deposit_to_root(&self, token: &AccountId) -> Result<()> {
+        self.poa_factory_ft_deposit(
+            self.poa_factory.id(),
+            &self.poa_ft_name(token),
+            self.sandbox.root_account().id(),
+            1_000_000_000,
+            None,
+            None,
+        )
+        .await
     }
 
     pub fn poa_ft_name(&self, ft: &AccountId) -> String {

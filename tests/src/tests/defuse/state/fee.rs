@@ -12,7 +12,7 @@ use crate::{
 #[tokio::test]
 #[rstest]
 async fn set_fee() {
-    let mut env = Env::builder().deployer_as_super_admin().build().await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
     let prev_fee = env.defuse.fee(env.defuse.id()).await.unwrap();
     let fee = Pips::from_pips(100).unwrap();
 
@@ -48,7 +48,7 @@ async fn set_fee() {
 #[tokio::test]
 #[rstest]
 async fn set_fee_collector() {
-    let mut env = Env::builder().deployer_as_super_admin().build().await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
     let fee_collector: AccountId = "fee-collector.near".to_string().parse().unwrap();
 
     let user1 = env.create_user().await;

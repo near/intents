@@ -33,7 +33,7 @@ pub trait StorageMigration {
     async fn verify_storage_consistency(&self);
 }
 
-macro_rules! execute_parallel {
+macro_rules! execute_tasks {
     ($self:expr, $items:ident, $task:ident) => {{
         let state = $self.persistent_state.as_ref().unwrap();
 
@@ -54,9 +54,9 @@ impl StorageMigration for Env {
 
         self.persistent_state = Some(state);
 
-        execute_parallel!(self, accounts, apply_account).expect("Failed to apply accounts");
-        execute_parallel!(self, tokens, apply_token).expect("Failed to apply tokens");
-        execute_parallel!(self, token_balances, apply_token_balance)
+        execute_tasks!(self, accounts, apply_account).expect("Failed to apply accounts");
+        execute_tasks!(self, tokens, apply_token).expect("Failed to apply tokens");
+        execute_tasks!(self, token_balances, apply_token_balance)
             .expect("Failed to apply token balances");
     }
 

@@ -179,20 +179,18 @@ async fn simulate_is_view_method(
     #[notrace] mut rng: impl Rng,
     #[values(false, true)] no_registration: bool,
 ) {
-    let mut env = Env::builder()
+    let env = Env::builder()
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user = env.create_user().await;
-    let other_user = env.create_user().await;
+    let (user, other_user, ft) =
+        futures::join!(env.create_user(), env.create_user(), env.create_token());
 
-    let ft = env.create_token().await;
     let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
 
-    env.ft_storage_deposit_for_users(vec![user.id(), other_user.id()], &[&ft])
+    env.ft_storage_deposit_for_accounts(vec![user.id(), other_user.id()], vec![&ft])
         .await;
-    env.ft_deposit_to_root(&[&ft]).await;
 
     // deposit
     env.defuse_ft_deposit_to(&ft, 1000, user.id())
@@ -260,9 +258,8 @@ async fn webauthn(#[values(false, true)] no_registration: bool) {
     let ft = env.create_named_token("ft1").await;
     let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
 
-    env.ft_storage_deposit_for_users(vec![user.id()], &[&ft])
+    env.ft_storage_deposit_for_accounts(vec![user.id()], vec![&ft])
         .await;
-    env.ft_deposit_to_root(&[&ft]).await;
 
     // deposit
     env.defuse_ft_deposit_to(&ft, 2000, &SIGNER_ID.to_owned())

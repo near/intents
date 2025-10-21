@@ -30,17 +30,20 @@ use crate::{
 async fn test_lock_account(random_bytes: Vec<u8>) {
     let mut u = Unstructured::new(&random_bytes);
 
-    let mut env = Env::builder().deployer_as_super_admin().build().await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
 
-    let locked_account = env.create_user().await;
-    let account_locker = env.create_user().await;
-    let unlocked_account = env.create_user().await;
+    let (locked_account, account_locker, unlocked_account, ft) = futures::join!(
+        env.create_user(),
+        env.create_user(),
+        env.create_user(),
+        env.create_token()
+    );
 
-    let ft = env.create_token().await;
-
-    env.ft_storage_deposit_for_users(vec![locked_account.id(), unlocked_account.id()], &[&ft])
-        .await;
-    env.ft_deposit_to_root(&[&ft]).await;
+    env.ft_storage_deposit_for_accounts(
+        vec![locked_account.id(), unlocked_account.id()],
+        vec![&ft],
+    )
+    .await;
 
     // deposit tokens
     let ft1: TokenId = Nep141TokenId::new(ft.clone()).into();
@@ -390,11 +393,10 @@ async fn test_lock_account(random_bytes: Vec<u8>) {
 async fn test_force_set_auth_by_predecessor_id(random_bytes: Vec<u8>) {
     let mut u = Unstructured::new(&random_bytes);
 
-    let mut env = Env::builder().deployer_as_super_admin().build().await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
 
-    let user_account = &env.create_user().await;
-    let account_locker = &env.create_user().await;
-    let account_unlocker = &env.create_user().await;
+    let (user_account, account_locker, account_unlocker) =
+        futures::join!(env.create_user(), env.create_user(), env.create_user());
 
     // disable auth by predecessor id
     {

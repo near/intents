@@ -13,6 +13,7 @@ use defuse::{
 use defuse_poa_factory::contract::Role as POAFactoryRole;
 use near_sdk::{AccountId, NearToken};
 use near_workspaces::{Account, Contract};
+use tokio::sync::Mutex;
 
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Default)]
@@ -131,7 +132,7 @@ impl EnvBuilder {
             disable_ft_storage_deposit: self.disable_ft_storage_deposit,
             disable_registration: self.disable_registration,
             persistent_state: None,
-            current_user_index: 0,
+            current_user_index: Mutex::new(0),
         };
 
         if deploy_legacy {
@@ -145,7 +146,7 @@ impl EnvBuilder {
                     .persistent_state
                     .as_ref()
                     .expect("persistent_state must be set by upgrade_legacy()");
-                env.current_user_index = state.accounts.len();
+                *env.current_user_index.lock().await = state.accounts.len();
             }
         }
 

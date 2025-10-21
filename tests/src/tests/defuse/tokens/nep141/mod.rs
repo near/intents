@@ -31,17 +31,15 @@ use std::time::Duration;
 #[rstest]
 #[trace]
 async fn deposit_withdraw(#[values(false, true)] no_registration: bool) {
-    let mut env = Env::builder()
+    let env = Env::builder()
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user = env.create_user().await;
-    let ft = env.create_token().await;
+    let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
-    env.ft_storage_deposit_for_users(vec![user.id()], &[&ft])
+    env.ft_storage_deposit_for_accounts(vec![user.id()], vec![&ft])
         .await;
-    env.ft_deposit_to_root(&[&ft]).await;
 
     env.defuse_ft_deposit_to(&ft, 1000, user.id())
         .await
@@ -76,17 +74,16 @@ async fn deposit_withdraw(#[values(false, true)] no_registration: bool) {
 #[tokio::test]
 #[rstest]
 async fn poa_deposit(#[values(false, true)] no_registration: bool) {
-    let mut env = Env::builder()
+    let env = Env::builder()
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user = env.create_user().await;
+    let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
-    let ft = env.create_token().await;
     let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
 
-    env.ft_storage_deposit_for_users(vec![user.id()], &[&ft])
+    env.ft_storage_deposit_for_accounts(vec![user.id()], vec![&ft])
         .await;
 
     env.poa_factory_ft_deposit(
@@ -118,17 +115,15 @@ async fn deposit_withdraw_intent(
 ) {
     use crate::tests::defuse::tokens::nep141::traits::DefuseFtReceiver;
 
-    let mut env = Env::builder()
+    let env = Env::builder()
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user = env.create_user().await;
-    let other_user = env.create_user().await;
+    let (user, other_user, ft) =
+        futures::join!(env.create_user(), env.create_user(), env.create_token());
 
-    let ft = env.create_token().await;
-
-    env.ft_storage_deposit_for_users(vec![user.id(), other_user.id()], &[&ft])
+    env.ft_storage_deposit_for_accounts(vec![user.id(), other_user.id()], vec![&ft])
         .await;
 
     env.poa_factory_ft_deposit(
@@ -217,15 +212,14 @@ async fn deposit_withdraw_intent_refund(
 
     use crate::tests::defuse::{SigningStandard, tokens::nep141::traits::DefuseFtReceiver};
 
-    let mut env = Env::builder()
+    let env = Env::builder()
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user = env.create_user().await;
-    let ft = env.create_token().await;
+    let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
-    env.ft_storage_deposit_for_users(vec![user.id()], &[&ft])
+    env.ft_storage_deposit_for_accounts(vec![user.id()], vec![&ft])
         .await;
 
     env.poa_factory_ft_deposit(
@@ -294,20 +288,17 @@ async fn ft_force_withdraw(#[values(false, true)] no_registration: bool) {
 
     use crate::tests::defuse::tokens::nep141::traits::DefuseFtWithdrawer;
 
-    let mut env = Env::builder()
+    let env = Env::builder()
         .deployer_as_super_admin()
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user = env.create_user().await;
-    let other_user = env.create_user().await;
+    let (user, other_user, ft) =
+        futures::join!(env.create_user(), env.create_user(), env.create_token());
 
-    let ft = env.create_token().await;
-
-    env.ft_storage_deposit_for_users(vec![user.id(), other_user.id()], &[&ft])
+    env.ft_storage_deposit_for_accounts(vec![user.id(), other_user.id()], vec![&ft])
         .await;
-    env.ft_deposit_to_root(&[&ft]).await;
 
     env.defuse_ft_deposit_to(&ft, 1000, user.id())
         .await

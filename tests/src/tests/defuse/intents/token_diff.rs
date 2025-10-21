@@ -31,24 +31,24 @@ async fn swap_p2p(
 ) {
     use defuse::core::token_id::nep141::Nep141TokenId;
 
-    let mut env = Env::builder()
+    let env = Env::builder()
         .fee(fee)
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user1 = env.create_user().await;
-    let user2 = env.create_user().await;
-
-    let ft1 = env.create_token().await;
-    let ft2 = env.create_token().await;
+    let (user1, user2, ft1, ft2) = futures::join!(
+        env.create_user(),
+        env.create_user(),
+        env.create_token(),
+        env.create_token()
+    );
 
     let ft1_token_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
     let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
 
-    env.ft_storage_deposit_for_users(vec![user1.id(), user2.id()], &[&ft1, &ft2])
+    env.ft_storage_deposit_for_accounts(vec![user1.id(), user2.id()], vec![&ft1, &ft2])
         .await;
-    env.ft_deposit_to_root(&[&ft1, &ft2]).await;
 
     test_ft_diffs(
         &env,
@@ -104,30 +104,30 @@ async fn swap_many(
     #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
     #[values(false, true)] no_registration: bool,
 ) {
-    let mut env = Env::builder()
+    let env = Env::builder()
         .fee(fee)
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user1 = env.create_user().await;
-    let user2 = env.create_user().await;
-    let user3 = env.create_user().await;
-
-    let ft1 = env.create_token().await;
-    let ft2 = env.create_token().await;
-    let ft3 = env.create_token().await;
+    let (user1, user2, user3, ft1, ft2, ft3) = futures::join!(
+        env.create_user(),
+        env.create_user(),
+        env.create_user(),
+        env.create_token(),
+        env.create_token(),
+        env.create_token()
+    );
 
     let ft1_token_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
     let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
     let ft3_token_id = TokenId::from(Nep141TokenId::new(ft3.clone()));
 
-    env.ft_storage_deposit_for_users(
+    env.ft_storage_deposit_for_accounts(
         vec![user1.id(), user2.id(), user3.id()],
-        &[&ft1, &ft2, &ft3],
+        vec![&ft1, &ft2, &ft3],
     )
     .await;
-    env.ft_deposit_to_root(&[&ft1, &ft2, &ft3]).await;
 
     test_ft_diffs(
         &env,
@@ -293,31 +293,30 @@ async fn invariant_violated(
     #[notrace] mut rng: impl Rng,
     #[values(false, true)] no_registration: bool,
 ) {
-    let mut env = Env::builder()
+    let env = Env::builder()
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user1 = env.create_user().await;
-    let user2 = env.create_user().await;
-
-    let ft1 = env.create_token().await;
-    let ft2 = env.create_token().await;
+    let (user1, user2, ft1, ft2) = futures::join!(
+        env.create_user(),
+        env.create_user(),
+        env.create_token(),
+        env.create_token(),
+    );
 
     let ft1_token_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
     let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
 
-    env.ft_storage_deposit_for_users(vec![user1.id(), user2.id()], &[&ft1, &ft2])
+    env.ft_storage_deposit_for_accounts(vec![user1.id(), user2.id()], vec![&ft1, &ft2])
         .await;
-    env.ft_deposit_to_root(&[&ft1, &ft2]).await;
 
     // deposit
-    env.defuse_ft_deposit_to(&ft1, 1000, user1.id())
-        .await
-        .unwrap();
-    env.defuse_ft_deposit_to(&ft2, 2000, user2.id())
-        .await
-        .unwrap();
+    futures::try_join!(
+        env.defuse_ft_deposit_to(&ft1, 1000, user1.id()),
+        env.defuse_ft_deposit_to(&ft2, 2000, user2.id())
+    )
+    .expect("Failed to deposit tokens");
 
     let nonce1 = rng.random();
     let nonce2 = rng.random();
@@ -421,29 +420,28 @@ async fn solver_user_closure(
     // RFQ: 1000 token_in -> ??? token_out
     const USER_DELTA_IN: i128 = -1000;
 
-    let mut env = Env::builder()
+    let env = Env::builder()
         .fee(fee)
         .no_registration(no_registration)
         .build()
         .await;
 
-    let user = env.create_user().await;
-    let solver = env.create_user().await;
+    let (user, solver, ft1, ft2) = futures::join!(
+        env.create_user(),
+        env.create_user(),
+        env.create_token(),
+        env.create_token()
+    );
 
-    let ft1 = env.create_token().await;
-    let ft2 = env.create_token().await;
-
-    env.ft_storage_deposit_for_users(vec![user.id(), solver.id()], &[&ft1, &ft2])
+    env.ft_storage_deposit_for_accounts(vec![user.id(), solver.id()], vec![&ft1, &ft2])
         .await;
-    env.ft_deposit_to_root(&[&ft1, &ft2]).await;
 
     // deposit
-    env.defuse_ft_deposit_to(&ft1, USER_BALANCE, user.id())
-        .await
-        .unwrap();
-    env.defuse_ft_deposit_to(&ft2, SOLVER_BALANCE, solver.id())
-        .await
-        .unwrap();
+    futures::try_join!(
+        env.defuse_ft_deposit_to(&ft1, USER_BALANCE, user.id()),
+        env.defuse_ft_deposit_to(&ft2, SOLVER_BALANCE, solver.id())
+    )
+    .expect("Failed to deposit tokens");
 
     let token_in = TokenId::from(Nep141TokenId::new(ft1.clone()));
     let token_out = TokenId::from(Nep141TokenId::new(ft2.clone()));

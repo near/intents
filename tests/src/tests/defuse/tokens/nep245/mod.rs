@@ -21,23 +21,22 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
 
     use crate::tests::defuse::tokens::nep141::traits::DefuseFtWithdrawer;
 
-    let mut env = Env::builder()
+    let env = Env::builder()
         .no_registration(no_registration)
         .create_unique_users()
         .build()
         .await;
 
-    let user1 = env.create_user().await;
-    let user2 = env.create_user().await;
-    let user3 = env.create_user().await;
+    let (user1, user2, user3, ft1, ft2) = futures::join!(
+        env.create_user(),
+        env.create_user(),
+        env.create_user(),
+        env.create_token(),
+        env.create_token()
+    );
 
-    let ft1 = env.create_token().await;
-    let ft2 = env.create_token().await;
-
-    env.ft_storage_deposit_for_users(vec![user1.id(), user2.id()], &[&ft1, &ft2])
+    env.ft_storage_deposit_for_accounts(vec![user1.id(), user2.id()], vec![&ft1, &ft2])
         .await;
-
-    env.ft_deposit_to_root(&[&ft1, &ft2]).await;
 
     // Check already existing tokens from persistent state
     let persistent_tokens: Vec<Token> = env
@@ -316,24 +315,23 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
 async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registration: bool) {
     use defuse::core::token_id::nep141::Nep141TokenId;
 
-    let mut env = Env::builder()
+    let env = Env::builder()
         .no_registration(no_registration)
         .create_unique_users()
         .build()
         .await;
 
-    let user1 = env.create_user().await;
-    let user2 = env.create_user().await;
-    let user3 = env.create_user().await;
+    let (user1, user2, user3, ft1, ft2, ft3) = futures::join!(
+        env.create_user(),
+        env.create_user(),
+        env.create_user(),
+        env.create_token(),
+        env.create_token(),
+        env.create_token()
+    );
 
-    let ft1 = env.create_token().await;
-    let ft2 = env.create_token().await;
-    let ft3 = env.create_token().await;
-
-    env.ft_storage_deposit_for_users(vec![user1.id()], &[&ft1, &ft2, &ft3])
+    env.ft_storage_deposit_for_accounts(vec![user1.id()], vec![&ft1, &ft2, &ft3])
         .await;
-
-    env.ft_deposit_to_root(&[&ft1, &ft2, &ft3]).await;
 
     // Check already existing tokens from persistent state
     let persistent_tokens: Vec<Token> = env
@@ -511,19 +509,19 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
 #[tokio::test]
 #[rstest]
 async fn multitoken_withdrawals() {
-    let mut env = Env::builder().create_unique_users().build().await;
+    let env = Env::builder().create_unique_users().build().await;
 
-    let user1 = env.create_user().await;
-    let user2 = env.create_user().await;
-    let user3 = env.create_user().await;
+    let (user1, user2, user3, ft1, ft2, ft3) = futures::join!(
+        env.create_user(),
+        env.create_user(),
+        env.create_user(),
+        env.create_token(),
+        env.create_token(),
+        env.create_token()
+    );
 
-    let ft1 = env.create_token().await;
-    let ft2 = env.create_token().await;
-    let ft3 = env.create_token().await;
-
-    env.ft_storage_deposit_for_users(vec![user1.id()], &[&ft1, &ft2, &ft3])
+    env.ft_storage_deposit_for_accounts(vec![user1.id()], vec![&ft1, &ft2, &ft3])
         .await;
-    env.ft_deposit_to_root(&[&ft1, &ft2, &ft3]).await;
 
     // Check already existing tokens from persistent state
     let persistent_tokens: Vec<Token> = env

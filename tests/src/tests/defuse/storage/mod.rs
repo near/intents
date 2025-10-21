@@ -34,7 +34,7 @@ async fn storage_deposit_success(
     #[case] amount_to_deposit: NearToken,
     #[case] expected_deposited: Option<NearToken>,
 ) {
-    let mut env = Env::builder()
+    let env = Env::builder()
         .disable_ft_storage_deposit()
         .no_registration(false)
         .build()
@@ -141,7 +141,7 @@ async fn storage_deposit_success(
 #[tokio::test]
 #[rstest]
 async fn storage_deposit_fails_user_has_no_balance_in_intents(mut rng: impl Rng) {
-    let mut env = Env::builder()
+    let env = Env::builder()
         .disable_ft_storage_deposit()
         .no_registration(false)
         .build()

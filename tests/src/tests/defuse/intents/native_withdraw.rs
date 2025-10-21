@@ -24,12 +24,11 @@ use rstest::rstest;
 #[tokio::test]
 #[rstest]
 async fn native_withdraw_intent(mut rng: impl Rng) {
-    let mut env = Env::new().await;
+    let env = Env::new().await;
 
-    let user = env.create_user().await;
-    let other_user = env.create_user().await;
+    let (user, other_user) = futures::join!(env.create_user(), env.create_user());
 
-    env.ft_storage_deposit_for_users(vec![user.id(), other_user.id()], &[])
+    env.ft_storage_deposit_for_accounts(vec![user.id(), other_user.id()], &[])
         .await;
 
     let amounts_to_withdraw = [

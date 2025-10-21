@@ -11,7 +11,7 @@ use crate::{
 #[tokio::test]
 #[rstest]
 async fn update_current_salt() {
-    let mut env = Env::builder().deployer_as_super_admin().build().await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
     let prev_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
 
     let user1 = env.create_user().await;
@@ -52,7 +52,7 @@ async fn update_current_salt() {
 #[tokio::test]
 #[rstest]
 async fn invalidate_salts() {
-    let mut env = Env::builder().deployer_as_super_admin().build().await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
     let mut current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
     let mut prev_salt = current_salt;
 
