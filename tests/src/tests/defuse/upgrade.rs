@@ -117,7 +117,7 @@ async fn test_upgrade_with_persistence(mut rng: impl Rng, random_bytes: Vec<u8>)
         )
         .await;
 
-        let users = vec![&user1, &user2, &user3, &user4];
+        let users = [&user1, &user2, &user3, &user4];
 
         // Additional deposits to new users
         try_join_all(

@@ -434,7 +434,7 @@ async fn cleanup_multiple_nonces(
     let checks = try_join_all(
         nonces
             .iter()
-            .map(|n| env.defuse.is_nonce_used(user.id(), &n)),
+            .map(|n| env.defuse.is_nonce_used(user.id(), n)),
     )
     .await
     .expect("Failed to check cleaned nonces");

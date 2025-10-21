@@ -6,7 +6,7 @@ use near_workspaces::{Account, Contract, Network, Worker, types::NearToken};
 
 pub fn read_wasm(path: impl AsRef<Path>) -> Vec<u8> {
     let filename = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join(format!("../"))
+        .join("../")
         .join(path)
         .with_extension("wasm");
 

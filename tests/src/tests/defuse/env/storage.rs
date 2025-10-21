@@ -53,7 +53,7 @@ impl Env {
             state
                 .tokens
                 .iter()
-                .map(|token_id| self.apply_token(&token_id)),
+                .map(|token_id| self.apply_token(token_id)),
         )
         .await
         .expect("Failed to apply tokens");
@@ -218,7 +218,7 @@ impl Env {
                 .token_balances
                 .iter()
                 .map(|(account_id, expected_balances)| {
-                    self.verify_token_balance(&account_id, &expected_balances)
+                    self.verify_token_balance(account_id, expected_balances)
                 }),
         )
         .await
@@ -236,7 +236,7 @@ impl Env {
             .collect();
 
         let actual_balances = self
-            .mt_contract_batch_balance_of(self.defuse.id(), &account_id, &tokens)
+            .mt_contract_batch_balance_of(self.defuse.id(), account_id, &tokens)
             .await?;
 
         let expected_values: Vec<u128> = expected_balances.values().copied().collect();

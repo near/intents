@@ -164,6 +164,7 @@ impl Env {
 
             if let Some(account_id) = state.accounts.keys().nth(*index) {
                 *index += 1;
+                drop(index);
 
                 return account_id.clone();
             }
@@ -207,7 +208,7 @@ impl Env {
         all_accounts.push(root.id());
 
         // deposit WNEAR storage
-        self.ft_storage_deposit_for_accounts(&self.wnear.id(), all_accounts.clone())
+        self.ft_storage_deposit_for_accounts(self.wnear.id(), all_accounts.clone())
             .await
             .expect("Failed to deposit Wnear storage");
 

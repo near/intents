@@ -23,10 +23,10 @@ impl GarbageCollectorExt for near_workspaces::Account {
             .into_iter()
             .map(|(acc, nonces)| {
                 let base64_nonces: Vec<AsBase64<Nonce>> =
-                    nonces.into_iter().map(|nonce| AsBase64(nonce)).collect();
-                (acc.clone(), base64_nonces)
+                    nonces.into_iter().map(AsBase64).collect();
+                (acc, base64_nonces)
             })
-            .collect::<Vec<(AccountId, Vec<AsBase64<Nonce>>)>>();
+            .collect::<Vec<_>>();
 
         let res = self
             .call(defuse_contract_id, "cleanup_nonces")
