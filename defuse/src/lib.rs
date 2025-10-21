@@ -6,6 +6,7 @@ pub mod accounts;
 pub mod fees;
 pub mod intents;
 pub mod salts;
+pub mod simulation_output;
 pub mod tokens;
 
 pub use defuse_core as core;

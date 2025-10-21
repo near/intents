@@ -4,12 +4,14 @@ mod state;
 
 pub use self::{account::*, state::*};
 
-use std::collections::HashSet;
+use std::{borrow::Cow, collections::HashSet};
 
 use defuse_core::{
     DefuseError, ExpirableNonce, Nonce, SaltedNonce, VersionedNonce,
+    accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
     engine::{State, StateView},
+    events::DefuseEvent,
 };
 use defuse_near_utils::{Lock, NestPrefix, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic};
 use defuse_serde_utils::base64::AsBase64;
@@ -38,15 +40,31 @@ impl AccountManager for Contract {
     #[payable]
     fn add_public_key(&mut self, public_key: PublicKey) {
         assert_one_yocto();
-        State::add_public_key(self, self.ensure_auth_predecessor_id().clone(), public_key)
-            .unwrap_or_panic();
+        let account_id = self.ensure_auth_predecessor_id();
+        State::add_public_key(self, account_id.clone(), public_key).unwrap_or_panic();
+
+        DefuseEvent::PublicKeyAdded(AccountEvent::new(
+            Cow::Borrowed(account_id.as_ref()),
+            PublicKeyEvent {
+                public_key: Cow::Borrowed(&public_key),
+            },
+        ))
+        .emit();
     }
 
     #[payable]
     fn remove_public_key(&mut self, public_key: PublicKey) {
         assert_one_yocto();
-        State::remove_public_key(self, self.ensure_auth_predecessor_id().clone(), public_key)
-            .unwrap_or_panic();
+        let account_id = self.ensure_auth_predecessor_id();
+        State::remove_public_key(self, account_id.clone(), public_key).unwrap_or_panic();
+
+        DefuseEvent::PublicKeyRemoved(AccountEvent::new(
+            Cow::Borrowed(account_id.as_ref()),
+            PublicKeyEvent {
+                public_key: Cow::Borrowed(&public_key),
+            },
+        ))
+        .emit();
     }
 
     fn is_nonce_used(&self, account_id: &AccountId, nonce: AsBase64<Nonce>) -> bool {

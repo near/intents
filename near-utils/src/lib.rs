@@ -3,6 +3,7 @@ pub mod arbitrary;
 mod cache;
 #[cfg(feature = "digest")]
 pub mod digest;
+mod event;
 mod gas;
 mod lock;
 mod panic;
@@ -11,7 +12,7 @@ mod prefix;
 #[cfg(feature = "time")]
 pub mod time;
 
-pub use self::{cache::*, gas::*, lock::*, panic::*, panic_on_clone::*, prefix::*};
+pub use self::{cache::*, event::*, gas::*, lock::*, panic::*, panic_on_clone::*, prefix::*};
 
 #[macro_export]
 macro_rules! method_name {

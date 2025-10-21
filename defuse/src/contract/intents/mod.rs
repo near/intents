@@ -1,7 +1,7 @@
 mod auth_call;
 mod execute;
 mod relayer;
-mod simulate;
+pub mod simulate;
 mod state;
 
 use defuse_core::{
@@ -16,7 +16,10 @@ use near_plugins::{Pausable, pause};
 use near_sdk::{FunctionError, near};
 use simulate::SimulateInspector;
 
-use crate::intents::{Intents, SimulationOutput, StateOutput};
+use crate::{
+    intents::Intents,
+    simulation_output::{SimulationOutput, StateOutput},
+};
 
 use super::{Contract, ContractExt};
 
@@ -47,8 +50,7 @@ impl Intents for Contract {
         };
 
         SimulationOutput {
-            intents_executed: inspector.intents_executed,
-            min_deadline: inspector.min_deadline,
+            report: inspector.into_report(),
             invariant_violated,
             state: StateOutput {
                 fee: self.fee(),

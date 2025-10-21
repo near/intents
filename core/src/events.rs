@@ -76,3 +76,9 @@ pub trait DefuseIntentEmit<'a>: Into<DefuseEvent<'a>> {
 }
 
 impl<'a, T> DefuseIntentEmit<'a> for T where T: Into<DefuseEvent<'a>> {}
+
+impl defuse_near_utils::NearSdkLog for DefuseEvent<'_> {
+    fn to_near_sdk_log(&self) -> String {
+        ::std::format!("EVENT_JSON:{}", self.to_json())
+    }
+}
