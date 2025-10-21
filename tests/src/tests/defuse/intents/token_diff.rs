@@ -47,7 +47,7 @@ async fn swap_p2p(
     let ft1_token_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
     let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
 
-    env.ft_storage_deposit_for_accounts(vec![user1.id(), user2.id()], vec![&ft1, &ft2])
+    env.initial_ft_storage_deposit(vec![user1.id(), user2.id()], vec![&ft1, &ft2])
         .await;
 
     test_ft_diffs(
@@ -123,7 +123,7 @@ async fn swap_many(
     let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
     let ft3_token_id = TokenId::from(Nep141TokenId::new(ft3.clone()));
 
-    env.ft_storage_deposit_for_accounts(
+    env.initial_ft_storage_deposit(
         vec![user1.id(), user2.id(), user3.id()],
         vec![&ft1, &ft2, &ft3],
     )
@@ -308,7 +308,7 @@ async fn invariant_violated(
     let ft1_token_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
     let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
 
-    env.ft_storage_deposit_for_accounts(vec![user1.id(), user2.id()], vec![&ft1, &ft2])
+    env.initial_ft_storage_deposit(vec![user1.id(), user2.id()], vec![&ft1, &ft2])
         .await;
 
     // deposit
@@ -433,7 +433,7 @@ async fn solver_user_closure(
         env.create_token()
     );
 
-    env.ft_storage_deposit_for_accounts(vec![user.id(), solver.id()], vec![&ft1, &ft2])
+    env.initial_ft_storage_deposit(vec![user.id(), solver.id()], vec![&ft1, &ft2])
         .await;
 
     // deposit

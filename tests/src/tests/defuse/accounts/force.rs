@@ -39,11 +39,8 @@ async fn test_lock_account(random_bytes: Vec<u8>) {
         env.create_token()
     );
 
-    env.ft_storage_deposit_for_accounts(
-        vec![locked_account.id(), unlocked_account.id()],
-        vec![&ft],
-    )
-    .await;
+    env.initial_ft_storage_deposit(vec![locked_account.id(), unlocked_account.id()], vec![&ft])
+        .await;
 
     // deposit tokens
     let ft1: TokenId = Nep141TokenId::new(ft.clone()).into();

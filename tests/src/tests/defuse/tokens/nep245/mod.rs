@@ -35,7 +35,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
         env.create_token()
     );
 
-    env.ft_storage_deposit_for_accounts(vec![user1.id(), user2.id()], vec![&ft1, &ft2])
+    env.initial_ft_storage_deposit(vec![user1.id(), user2.id()], vec![&ft1, &ft2])
         .await;
 
     // Check already existing tokens from persistent state
@@ -330,7 +330,7 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
         env.create_token()
     );
 
-    env.ft_storage_deposit_for_accounts(vec![user1.id()], vec![&ft1, &ft2, &ft3])
+    env.initial_ft_storage_deposit(vec![user1.id()], vec![&ft1, &ft2, &ft3])
         .await;
 
     // Check already existing tokens from persistent state
@@ -520,7 +520,7 @@ async fn multitoken_withdrawals() {
         env.create_token()
     );
 
-    env.ft_storage_deposit_for_accounts(vec![user1.id()], vec![&ft1, &ft2, &ft3])
+    env.initial_ft_storage_deposit(vec![user1.id()], vec![&ft1, &ft2, &ft3])
         .await;
 
     // Check already existing tokens from persistent state

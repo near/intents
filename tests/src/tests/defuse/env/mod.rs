@@ -7,10 +7,7 @@ mod storage;
 use super::{DefuseExt, accounts::AccountManagerExt};
 use crate::{
     tests::{
-        defuse::{
-            env::{builder::EnvBuilder, storage::StorageMigration},
-            tokens::nep141::traits::DefuseFtReceiver,
-        },
+        defuse::{env::builder::EnvBuilder, tokens::nep141::traits::DefuseFtReceiver},
         poa::factory::PoAFactoryExt,
     },
     utils::{ParentAccount, Sandbox, acl::AclExt, ft::FtExt, read_wasm},
@@ -65,6 +62,12 @@ impl Env {
 
     pub async fn new() -> Self {
         Self::builder().build().await
+    }
+
+    pub fn state(&self) -> &PersistentState {
+        self.persistent_state
+            .as_ref()
+            .expect("Persistent state is not set")
     }
 
     pub async fn ft_storage_deposit(
@@ -188,7 +191,7 @@ impl Env {
     }
 
     // if no tokens provided - only wnear storage deposit will be done
-    pub async fn ft_storage_deposit_for_accounts(
+    pub async fn initial_ft_storage_deposit(
         &self,
         accounts: impl IntoIterator<Item = &AccountId>,
         tokens: impl IntoIterator<Item = &AccountId>,
@@ -204,13 +207,13 @@ impl Env {
         all_accounts.push(root.id());
 
         // deposit WNEAR storage
-        self.ft_deposit_for_accounts(&self.wnear.id(), all_accounts.clone())
+        self.ft_storage_deposit_for_accounts(&self.wnear.id(), all_accounts.clone())
             .await
             .expect("Failed to deposit Wnear storage");
 
         // deposit ALL tokens storage
         for token in tokens {
-            self.ft_deposit_for_accounts(token, all_accounts.clone())
+            self.ft_storage_deposit_for_accounts(token, all_accounts.clone())
                 .await
                 .expect("Failed to deposit FT storage");
 
@@ -221,7 +224,7 @@ impl Env {
         }
     }
 
-    async fn ft_deposit_for_accounts(
+    async fn ft_storage_deposit_for_accounts(
         &self,
         token: &AccountId,
         accounts: impl IntoIterator<Item = &AccountId>,

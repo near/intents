@@ -38,7 +38,7 @@ async fn deposit_withdraw(#[values(false, true)] no_registration: bool) {
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
-    env.ft_storage_deposit_for_accounts(vec![user.id()], vec![&ft])
+    env.initial_ft_storage_deposit(vec![user.id()], vec![&ft])
         .await;
 
     env.defuse_ft_deposit_to(&ft, 1000, user.id())
@@ -83,7 +83,7 @@ async fn poa_deposit(#[values(false, true)] no_registration: bool) {
 
     let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
 
-    env.ft_storage_deposit_for_accounts(vec![user.id()], vec![&ft])
+    env.initial_ft_storage_deposit(vec![user.id()], vec![&ft])
         .await;
 
     env.poa_factory_ft_deposit(
@@ -123,7 +123,7 @@ async fn deposit_withdraw_intent(
     let (user, other_user, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
-    env.ft_storage_deposit_for_accounts(vec![user.id(), other_user.id()], vec![&ft])
+    env.initial_ft_storage_deposit(vec![user.id(), other_user.id()], vec![&ft])
         .await;
 
     env.poa_factory_ft_deposit(
@@ -219,7 +219,7 @@ async fn deposit_withdraw_intent_refund(
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
-    env.ft_storage_deposit_for_accounts(vec![user.id()], vec![&ft])
+    env.initial_ft_storage_deposit(vec![user.id()], vec![&ft])
         .await;
 
     env.poa_factory_ft_deposit(
@@ -297,7 +297,7 @@ async fn ft_force_withdraw(#[values(false, true)] no_registration: bool) {
     let (user, other_user, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
-    env.ft_storage_deposit_for_accounts(vec![user.id(), other_user.id()], vec![&ft])
+    env.initial_ft_storage_deposit(vec![user.id(), other_user.id()], vec![&ft])
         .await;
 
     env.defuse_ft_deposit_to(&ft, 1000, user.id())

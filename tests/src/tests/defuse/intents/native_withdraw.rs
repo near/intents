@@ -28,7 +28,7 @@ async fn native_withdraw_intent(mut rng: impl Rng) {
 
     let (user, other_user) = futures::join!(env.create_user(), env.create_user());
 
-    env.ft_storage_deposit_for_accounts(vec![user.id(), other_user.id()], &[])
+    env.initial_ft_storage_deposit(vec![user.id(), other_user.id()], &[])
         .await;
 
     let amounts_to_withdraw = [

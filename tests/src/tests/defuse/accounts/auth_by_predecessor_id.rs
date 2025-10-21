@@ -26,7 +26,7 @@ async fn auth_by_predecessor_id(random_bytes: Vec<u8>) {
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
-    env.ft_storage_deposit_for_accounts(vec![user.id()], vec![&ft])
+    env.initial_ft_storage_deposit(vec![user.id()], vec![&ft])
         .await;
 
     let receiver_id: AccountId = "receiver_id.near".parse().unwrap();

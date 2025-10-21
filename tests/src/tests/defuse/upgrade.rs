@@ -111,7 +111,7 @@ async fn test_upgrade_with_persistence(mut rng: impl Rng, random_bytes: Vec<u8>)
 
     // Check users
     {
-        env.ft_storage_deposit_for_accounts(
+        env.initial_ft_storage_deposit(
             vec![user1.id(), user2.id(), user3.id(), user4.id()],
             vec![&ft1],
         )
@@ -208,7 +208,7 @@ async fn test_upgrade_with_persistence(mut rng: impl Rng, random_bytes: Vec<u8>)
         let tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
 
         // Old tokens
-        let mut expected_tokens = env.persistent_state.as_ref().unwrap().get_mt_tokens();
+        let mut expected_tokens = env.state().get_mt_tokens();
 
         // New token
         expected_tokens.push(Token {
