@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     hash::Hash,
 };
 
@@ -39,8 +39,8 @@ pub struct AccountData {
 #[derive(Debug)]
 pub struct PersistentState {
     pub accounts: HashMap<AccountId, AccountData>,
-    pub tokens: HashSet<Nep141TokenId>,
-    pub token_balances: HashMap<Nep141TokenId, HashMap<AccountId, u128>>,
+    pub tokens: BTreeSet<Nep141TokenId>,
+    pub token_balances: BTreeMap<Nep141TokenId, HashMap<AccountId, u128>>,
 }
 
 impl PersistentState {
@@ -85,7 +85,7 @@ impl PersistentState {
             .collect()
     }
 
-    fn generate_tokens(u: &mut Unstructured, factory: &Account) -> HashSet<Nep141TokenId> {
+    fn generate_tokens(u: &mut Unstructured, factory: &Account) -> BTreeSet<Nep141TokenId> {
         let number = u.int_in_range(1..=MAX_TOKENS).unwrap();
 
         (0..number)
@@ -100,8 +100,8 @@ impl PersistentState {
     fn generate_balances(
         u: &mut Unstructured,
         accounts: &HashMap<AccountId, AccountData>,
-        tokens: &HashSet<Nep141TokenId>,
-    ) -> HashMap<Nep141TokenId, HashMap<AccountId, u128>> {
+        tokens: &BTreeSet<Nep141TokenId>,
+    ) -> BTreeMap<Nep141TokenId, HashMap<AccountId, u128>> {
         tokens
             .iter()
             .map(|token_id| {
