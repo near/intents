@@ -13,7 +13,7 @@ use defuse::{
     nep245::Token,
 };
 use defuse_near_utils::arbitrary::ArbitraryNamedAccountId;
-use defuse_randomness::{Rng, RngCore, make_true_rng};
+use defuse_randomness::{RngCore, make_true_rng};
 use near_sdk::AccountId;
 use near_workspaces::Account;
 
@@ -53,7 +53,7 @@ impl PersistentState {
 
         let accounts = Self::generate_accounts(u, root);
         let tokens = Self::generate_tokens(u, factory);
-        let token_balances = Self::generate_balances(&mut rng, &accounts, &tokens);
+        let token_balances = Self::generate_balances(u, &accounts, &tokens);
 
         Self {
             accounts,
@@ -98,7 +98,7 @@ impl PersistentState {
     }
 
     fn generate_balances(
-        rng: &mut impl Rng,
+        u: &mut Unstructured,
         accounts: &HashMap<AccountId, AccountData>,
         tokens: &HashSet<Nep141TokenId>,
     ) -> HashMap<AccountId, HashMap<Nep141TokenId, u128>> {
@@ -108,7 +108,9 @@ impl PersistentState {
                 let balances = tokens
                     .iter()
                     .map(|token| {
-                        let amount = rng.random_range(MIN_BALANCE_AMOUNT..=MAX_BALANCE_AMOUNT);
+                        let amount = u
+                            .int_in_range(MIN_BALANCE_AMOUNT..=MAX_BALANCE_AMOUNT)
+                            .unwrap();
                         (token.clone(), amount)
                     })
                     .collect();
