@@ -231,11 +231,11 @@ async fn simulate_is_view_method(
     let nonce = rng.random();
 
     let transfer_intent = Transfer {
-        receiver_id: env.user2.id().clone(),
-        tokens: Amounts::new(std::iter::once((ft1.clone(), 1000)).collect()),
+        receiver_id: other_user.id().clone(),
+        tokens: Amounts::new(std::iter::once((ft_id.clone(), 1000)).collect()),
         memo: None,
     };
-    let transfer_intent_payload = env.user1.sign_defuse_message(
+    let transfer_intent_payload = user.sign_defuse_message(
         SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
         env.defuse.id(),
         nonce,
@@ -256,7 +256,7 @@ async fn simulate_is_view_method(
     let expected_log = DefuseEvent::Transfer(Cow::Owned(vec![IntentEvent {
         intent_hash: transfer_intent_payload.hash(),
         event: AccountEvent {
-            account_id: env.user1.id().clone().into(),
+            account_id: user.id().clone().into(),
             event: Cow::Owned(transfer_intent),
         },
     }]))

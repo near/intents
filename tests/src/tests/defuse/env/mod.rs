@@ -164,6 +164,7 @@ impl Env {
 
             if let Some(account_id) = state.accounts.keys().nth(*index) {
                 *index += 1;
+                drop(index);
 
                 return account_id.clone();
             }
