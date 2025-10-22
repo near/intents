@@ -175,7 +175,7 @@ impl DefuseSigner for near_workspaces::Account {
     }
 }
 
-#[derive(Default, Arbitrary)]
+#[derive(Debug, Default, Arbitrary)]
 pub enum SigningStandard {
     #[default]
     Nep413,

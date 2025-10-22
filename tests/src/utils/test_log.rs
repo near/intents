@@ -1,3 +1,36 @@
+#[macro_export]
+macro_rules! assert_eq_event_logs {
+    ($left:expr, $right:expr) => {{
+        let left_normalized: Vec<String> = $left
+            .iter()
+            .cloned()
+            .map(|log: String| {
+                let json_str = log
+                    .strip_prefix("EVENT_JSON:")
+                    .expect(&format!("Log missing EVENT_JSON: prefix: {}", log));
+                let json_value: serde_json::Value = serde_json::from_str(json_str)
+                    .expect(&format!("Failed to parse JSON: {}", json_str));
+                serde_json::to_string(&json_value).expect("Failed to serialize JSON")
+            })
+            .collect();
+
+        let right_normalized: Vec<String> = $right
+            .iter()
+            .cloned()
+            .map(|log: String| {
+                let json_str = log
+                    .strip_prefix("EVENT_JSON:")
+                    .expect(&format!("Log missing EVENT_JSON: prefix: {}", log));
+                let json_value: serde_json::Value = serde_json::from_str(json_str)
+                    .expect(&format!("Failed to parse JSON: {}", json_str));
+                serde_json::to_string(&json_value).expect("Failed to serialize JSON")
+            })
+            .collect();
+
+        assert_eq!(left_normalized, right_normalized);
+    }};
+}
+
 use near_sdk::Gas;
 use near_workspaces::result::ExecutionResult;
 

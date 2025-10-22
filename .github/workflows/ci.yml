@@ -80,6 +80,32 @@ jobs:
           name: res
           path: ./res/
 
+  build_reproducible:
+    name: Build Reproducible
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      # No need to install Rust or cargo - reproducible build uses a preset Docker container
+      - name: Install cargo-near CLI
+        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/download/cargo-near-v0.15.0/cargo-near-installer.sh | sh
+      - name: Build Reproducible WASM
+        run: cargo near build reproducible-wasm --manifest-path defuse/Cargo.toml
+      - name: Calculate SHA-256 and prepare artifacts
+        run: |
+          SHA256=$(sha256sum target/near/defuse/defuse.wasm | awk '{print $1}')
+          cp target/near/defuse/defuse.wasm defuse.wasm
+          echo "${SHA256}" > defuse.sha256
+      - name: Upload Reproducible Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: defuse
+          path: |
+            defuse.wasm
+            defuse.sha256
+          compression-level: 0
+
   tests:
     name: Tests
     runs-on: ubuntu-latest

@@ -1,66 +1,17 @@
-use defuse_core::{
-    Deadline, Result, Salt,
-    accounts::{AccountEvent, NonceEvent},
-    engine::deltas::InvariantViolated,
-    fees::Pips,
-    intents::IntentEvent,
-    payload::multi::MultiPayload,
-};
+use defuse_core::payload::multi::MultiPayload;
 
 use near_plugins::AccessControllable;
-use near_sdk::{Promise, PublicKey, ext_contract, near};
-use serde_with::serde_as;
+use near_sdk::{Promise, PublicKey, ext_contract};
 
 use crate::{fees::FeesManager, salts::SaltManager};
+
+pub use crate::simulation_output::{SimulationOutput, StateOutput};
 
 #[ext_contract(ext_intents)]
 pub trait Intents: FeesManager + SaltManager {
     fn execute_intents(&mut self, signed: Vec<MultiPayload>);
 
     fn simulate_intents(&self, signed: Vec<MultiPayload>) -> SimulationOutput;
-}
-
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
-pub struct SimulationOutput {
-    /// Intent hashes along with corresponding signers
-    pub intents_executed: Vec<IntentEvent<AccountEvent<'static, NonceEvent>>>,
-
-    /// Minimum deadline among all simulated intents
-    pub min_deadline: Deadline,
-
-    /// Unmatched token deltas needed to keep the invariant.
-    /// If not empty, can be used along with fee to calculate `token_diff` closure.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub invariant_violated: Option<InvariantViolated>,
-
-    /// Additional info about current state
-    pub state: StateOutput,
-}
-
-impl SimulationOutput {
-    pub fn into_result(self) -> Result<(), InvariantViolated> {
-        if let Some(unmatched_deltas) = self.invariant_violated {
-            return Err(unmatched_deltas);
-        }
-        Ok(())
-    }
-}
-
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
-pub struct StateOutput {
-    pub fee: Pips,
-
-    pub current_salt: Salt,
 }
 
 #[ext_contract(ext_relayer_keys)]

@@ -1,10 +1,12 @@
+use std::borrow::Cow;
+
 use defuse_crypto::PublicKey;
 use near_sdk::{AccountIdRef, CryptoHash, near};
 use serde_with::serde_as;
 
 use crate::{
     Result,
-    accounts::AccountEvent,
+    accounts::{AccountEvent, PublicKeyEvent},
     engine::{Engine, Inspector, State},
 };
 
@@ -35,7 +37,19 @@ impl ExecutableIntent for AddPublicKey {
     {
         engine
             .state
-            .add_public_key(signer_id.to_owned(), self.public_key)
+            .add_public_key(signer_id.to_owned(), self.public_key)?;
+
+        engine
+            .inspector
+            .on_event(crate::events::DefuseEvent::PublicKeyAdded(
+                AccountEvent::new(
+                    Cow::Borrowed(signer_id),
+                    PublicKeyEvent {
+                        public_key: Cow::Borrowed(&self.public_key),
+                    },
+                ),
+            ));
+        Ok(())
     }
 }
 
@@ -60,7 +74,18 @@ impl ExecutableIntent for RemovePublicKey {
     {
         engine
             .state
-            .remove_public_key(signer_id.to_owned(), self.public_key)
+            .remove_public_key(signer_id.to_owned(), self.public_key)?;
+        engine
+            .inspector
+            .on_event(crate::events::DefuseEvent::PublicKeyRemoved(
+                AccountEvent::new(
+                    Cow::Borrowed(signer_id),
+                    PublicKeyEvent {
+                        public_key: Cow::Borrowed(&self.public_key),
+                    },
+                ),
+            ));
+        Ok(())
     }
 }
 
