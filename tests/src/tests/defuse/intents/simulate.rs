@@ -47,9 +47,13 @@ async fn simulate_transfer_intent(nonce: Nonce, signing_standard: SigningStandar
     let (user1, user2, ft1) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
+    env.initial_ft_storage_deposit(vec![user1.id(), user2.id()], vec![&ft1])
+        .await;
+
     env.defuse_ft_deposit_to(&ft1, 1000, user1.id())
         .await
         .unwrap();
+
     let transfer_intent = Transfer {
         receiver_id: user2.id().clone(),
         tokens: Amounts::new(
@@ -101,6 +105,9 @@ async fn simulate_ft_withdraw_intent(nonce: Nonce, signing_standard: SigningStan
 
     let (user1, user2, ft1) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
+
+    env.initial_ft_storage_deposit(vec![user1.id(), user2.id()], vec![&ft1])
+        .await;
 
     env.defuse_ft_deposit_to(&ft1, 1000, user1.id())
         .await
@@ -165,6 +172,9 @@ async fn simulate_native_withdraw_intent(nonce: Nonce, signing_standard: Signing
     let env = Env::builder().no_registration(true).build().await;
 
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
+
+    env.initial_ft_storage_deposit(vec![user1.id(), user2.id()], &[])
+        .await;
 
     let wnear_token_id = TokenId::from(Nep141TokenId::new(env.wnear.id().clone()));
 
@@ -244,7 +254,7 @@ async fn simulate_nft_withdraw_intent(
 ) {
     let env = Env::builder().no_registration(true).build().await;
 
-    let (user1, user2) = futures::join!(env.create_user(), env.create_user(),);
+    let (user1, user2) = futures::join!(env.create_user(), env.create_user());
 
     env.transfer_near(user1.id(), NearToken::from_near(100))
         .await
@@ -369,6 +379,9 @@ async fn simulate_mt_withdraw_intent(nonce: Nonce, signing_standard: SigningStan
         .await
         .unwrap();
 
+    env.initial_ft_storage_deposit(vec![user1.id(), user2.id()], vec![&ft1])
+        .await;
+
     // Register user1's public key on defuse2
     let user1_secret_key: SecretKey = user1.secret_key().to_string().parse().unwrap();
     if let near_crypto::PublicKey::ED25519(pk) = user1_secret_key.public_key() {
@@ -426,7 +439,7 @@ async fn simulate_mt_withdraw_intent(nonce: Nonce, signing_standard: SigningStan
     let mt_withdraw_intent = MtWithdraw {
         token: env.defuse.id().clone(),  // External NEP-245 contract (defuse1)
         receiver_id: user2.id().clone(), // Withdraw to user2's account in defuse1
-        token_ids: vec![ft1.to_string()], // The FT token ID within defuse1
+        token_ids: vec![ft1_id.to_string()], // The FT token ID within defuse1
         amounts: vec![near_sdk::json_types::U128(200)],
         memo: None,
         msg: None,
@@ -474,6 +487,9 @@ async fn simulate_storage_deposit_intent(nonce: Nonce, signing_standard: Signing
 
     let (user1, user2, ft1) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
+
+    env.initial_ft_storage_deposit(vec![user1.id()], vec![&ft1])
+        .await;
 
     let wnear_token_id = TokenId::from(Nep141TokenId::new(env.wnear.id().clone()));
 
@@ -564,6 +580,9 @@ async fn simulate_token_diff_intent(
         env.create_token(),
         env.create_token()
     );
+
+    env.initial_ft_storage_deposit(vec![user1.id(), user2.id()], vec![&ft1, &ft2])
+        .await;
 
     let ft1_token_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
     let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
@@ -849,6 +868,9 @@ async fn simulate_auth_call_intent(nonce: Nonce, signing_standard: SigningStanda
 
     let (user1, ft1) = futures::join!(env.create_user(), env.create_token());
 
+    env.initial_ft_storage_deposit(vec![user1.id()], vec![&ft1])
+        .await;
+
     let wnear_token_id = TokenId::from(Nep141TokenId::new(env.wnear.id().clone()));
 
     let wnear_amount = NearToken::from_millinear(100);
@@ -905,3 +927,5 @@ async fn simulate_auth_call_intent(nonce: Nonce, signing_standard: SigningStanda
         vec![AccountNonceIntentEvent::new(&user1.id(), nonce, &auth_call_payload).into_event_log(),]
     );
 }
+
+// ::intents::simulate::simulate_mt_withdraw_intent ... FAILED

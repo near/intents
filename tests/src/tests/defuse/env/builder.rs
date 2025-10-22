@@ -159,7 +159,7 @@ impl EnvBuilder {
     }
 
     pub async fn build(&mut self) -> Env {
-        let migrate_from_legacy = std::env::var("MIGRATE_FROM_LEGACY")
+        let migrate_from_legacy = std::env::var("DEFUSE_MIGRATE_FROM_LEGACY")
             .is_ok_and(|v| !["0", "false"].contains(&v.to_lowercase().as_str()));
 
         self.build_env(migrate_from_legacy).await
