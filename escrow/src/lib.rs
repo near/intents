@@ -13,6 +13,17 @@ use near_sdk::{
 };
 use serde_with::{TimestampNanoSeconds as SerdeTimestampNanoSeconds, serde_as};
 
+// QUESTIONS:
+// * settle every time via `mt_transfer()`? if not, i.e. accumulate and send as batch, then:
+//   * what do we do with deadline: what if not expired yet but filled 99%?
+//   * why to pay for gas when it could have been done by solvers and embedded into the price?
+//   *
+// * cancel by 2-of-2 multisig: user + SolverBus?
+//   * why not 1-of-2 by SolverBus?
+//
+
+// governor: partial release
+
 // No `ft_transfer_call()` reasoning:
 // * retries with same `msg`
 // * NEP-141 vulnerability makes it possible to lose funds if no storage_deposit
@@ -70,6 +81,9 @@ pub struct Params {
     pub receiver_memo: Option<String>,
     // TODO: receiver_msg only if nep141, for sFTs state init might be needed
     pub receiver_msg: Option<String>,
+
+    // TODO: can it then be a deteministic contract supporting multisig or any-of functionality
+    pub cancel_authority: Option<AccountId>,
 
     pub state: State,
     // TODO: what if only partially filled when deadline expires?
