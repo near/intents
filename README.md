@@ -57,7 +57,7 @@ Run integration tests:
 cargo make test
 ```
 
-For state migration testing set environmental var `MIGRATE_FROM_LEGACY=1`
+For state migration testing set environmental var `DEFUSE_MIGRATE_FROM_LEGACY=1`
 State migrations will be applied before all tests.
 The tests will use data created prior to migration combined with newly created data to verify the integrity of the state.
 

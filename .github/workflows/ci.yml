@@ -137,6 +137,8 @@ jobs:
           name: res
           path: ./res
       - name: Run Tests
+        env:
+          DEFUSE_MIGRATE_FROM_LEGACY: "true"
         run: cargo make run-tests -- --show-output
 
   security_audit_report:
