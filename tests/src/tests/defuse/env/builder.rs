@@ -15,6 +15,8 @@ use near_sdk::{AccountId, NearToken};
 use near_workspaces::{Account, Contract};
 use tokio::sync::Mutex;
 
+const MIGRATE_FROM_LEGACY_ENV_NAME: &str = "DEFUSE_MIGRATE_FROM_LEGACY";
+
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Default)]
 pub struct EnvBuilder {
@@ -159,7 +161,7 @@ impl EnvBuilder {
     }
 
     pub async fn build(&mut self) -> Env {
-        let migrate_from_legacy = std::env::var("DEFUSE_MIGRATE_FROM_LEGACY")
+        let migrate_from_legacy = std::env::var(MIGRATE_FROM_LEGACY_ENV_NAME)
             .is_ok_and(|v| !["0", "false"].contains(&v.to_lowercase().as_str()));
 
         self.build_env(migrate_from_legacy).await

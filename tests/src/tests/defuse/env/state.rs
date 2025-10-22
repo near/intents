@@ -40,7 +40,7 @@ pub struct AccountData {
 pub struct PersistentState {
     pub accounts: HashMap<AccountId, AccountData>,
     pub tokens: HashSet<Nep141TokenId>,
-    pub token_balances: HashMap<AccountId, HashMap<Nep141TokenId, u128>>,
+    pub token_balances: HashMap<Nep141TokenId, HashMap<AccountId, u128>>,
 }
 
 impl PersistentState {
@@ -101,21 +101,21 @@ impl PersistentState {
         u: &mut Unstructured,
         accounts: &HashMap<AccountId, AccountData>,
         tokens: &HashSet<Nep141TokenId>,
-    ) -> HashMap<AccountId, HashMap<Nep141TokenId, u128>> {
-        accounts
+    ) -> HashMap<Nep141TokenId, HashMap<AccountId, u128>> {
+        tokens
             .iter()
-            .map(|(account_id, _)| {
-                let balances = tokens
+            .map(|token_id| {
+                let balances = accounts
                     .iter()
-                    .map(|token| {
+                    .map(|(account_id, _)| {
                         let amount = u
                             .int_in_range(MIN_BALANCE_AMOUNT..=MAX_BALANCE_AMOUNT)
                             .unwrap();
-                        (token.clone(), amount)
+                        (account_id.clone(), amount)
                     })
                     .collect();
 
-                (account_id.clone(), balances)
+                (token_id.clone(), balances)
             })
             .collect()
     }

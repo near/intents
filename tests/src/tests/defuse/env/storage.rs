@@ -36,6 +36,7 @@ impl Env {
         self.persistent_state = Some(state);
 
         futures::join!(self.apply_tokens(), self.apply_accounts());
+
         self.apply_token_balances().await;
     }
 
@@ -70,14 +71,16 @@ impl Env {
     async fn apply_token_balances(&self) {
         let state = self.state();
 
-        try_join_all(
-            state
-                .token_balances
-                .iter()
-                .map(|data| self.apply_token_balance(data)),
-        )
-        .await
-        .expect("Failed to apply token balances");
+        // NOTE: should be sequential to match contract token ordering
+        for (token_id, balances) in &state.token_balances {
+            let token_id = token_id.clone().into_contract_id();
+
+            try_join_all(balances.iter().map(|(account_id, amount)| {
+                self.defuse_ft_deposit_to(&token_id, *amount, account_id)
+            }))
+            .await
+            .expect("Failed to apply token balances");
+        }
     }
 
     async fn apply_token(&self, token_id: &Nep141TokenId) -> Result<()> {
@@ -94,23 +97,6 @@ impl Env {
             .await?;
 
         self.ft_deposit_to_root(&token).await?;
-
-        Ok(())
-    }
-
-    async fn apply_token_balance(
-        &self,
-        data: (&AccountId, &HashMap<Nep141TokenId, u128>),
-    ) -> Result<()> {
-        let (account_id, balances) = data;
-
-        // NOTE: should be sequential to match contract token ordering
-        for (token, amount) in balances {
-            let token_id = token.clone().into_contract_id();
-
-            self.defuse_ft_deposit_to(&token_id, *amount, account_id)
-                .await?;
-        }
 
         Ok(())
     }
@@ -217,8 +203,8 @@ impl Env {
             state
                 .token_balances
                 .iter()
-                .map(|(account_id, expected_balances)| {
-                    self.verify_token_balance(account_id, expected_balances)
+                .map(|(token_id, expected_balances)| {
+                    self.verify_token_balance(token_id, expected_balances)
                 }),
         )
         .await
@@ -227,21 +213,31 @@ impl Env {
 
     async fn verify_token_balance(
         &self,
-        account_id: &AccountId,
-        expected_balances: &HashMap<Nep141TokenId, u128>,
+        token_id: &Nep141TokenId,
+        expected_balances: &HashMap<AccountId, u128>,
     ) -> Result<()> {
-        let tokens: Vec<String> = expected_balances
-            .keys()
-            .map(|token_id| TokenId::Nep141(token_id.clone()).to_string())
-            .collect();
+        try_join_all(
+            expected_balances
+                .iter()
+                .map(|(account_id, amount)| self.check_balance(account_id, token_id, *amount)),
+        )
+        .await?;
 
-        let actual_balances = self
-            .mt_contract_batch_balance_of(self.defuse.id(), account_id, &tokens)
+        Ok(())
+    }
+
+    async fn check_balance(
+        &self,
+        account_id: &AccountId,
+        token_id: &Nep141TokenId,
+        amount: u128,
+    ) -> Result<()> {
+        let token_id = TokenId::Nep141(token_id.clone()).to_string();
+        let received = self
+            .mt_contract_balance_of(self.defuse.id(), account_id, &token_id)
             .await?;
 
-        let expected_values: Vec<u128> = expected_balances.values().copied().collect();
-
-        if actual_balances != expected_values {
+        if received != amount {
             anyhow::bail!("Token balances mismatch");
         }
 
