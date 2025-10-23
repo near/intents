@@ -110,7 +110,50 @@ impl DefuseExt for Contract {
 
 static GLOBAL_SEED_COUNTER: std::sync::atomic::AtomicU64 = AtomicU64::new(0);
 
-pub trait DefusePayloadBuilder: DefuseSigner {
+pub trait DefuseNonceExt {
+    #[must_use]
+    async fn get_unique_nonce(
+        &self,
+        defuse_contract_id: &AccountId,
+        deadline: Option<Deadline>,
+    ) -> anyhow::Result<(Nonce, Deadline)>;
+}
+
+impl DefuseNonceExt for near_workspaces::Account {
+    async fn get_unique_nonce(
+        &self,
+        defuse_contract_id: &AccountId,
+        deadline: Option<Deadline>,
+    ) -> anyhow::Result<(Nonce, Deadline)> {
+        let seed_value = GLOBAL_SEED_COUNTER.fetch_add(1, Ordering::Relaxed);
+        let mut nonce_bytes = [0u8; 15];
+        TestRng::from_entropy().fill_bytes(&mut nonce_bytes);
+        nonce_bytes[..8].copy_from_slice(&seed_value.to_le_bytes());
+
+        let deadline =
+            deadline.unwrap_or_else(|| Deadline::timeout(std::time::Duration::from_secs(120)));
+        let salt = self.current_salt(defuse_contract_id).await?;
+        let salted = SaltedNonce::new(salt, ExpirableNonce::new(deadline, nonce_bytes));
+
+        let nonce: Nonce = VersionedNonce::V1(salted).into();
+        Ok((nonce, deadline))
+    }
+}
+
+impl DefuseNonceExt for near_workspaces::Contract {
+    async fn get_unique_nonce(
+        &self,
+        defuse_contract_id: &AccountId,
+        deadline: Option<Deadline>,
+    ) -> anyhow::Result<(Nonce, Deadline)> {
+        self.as_account()
+            .get_unique_nonce(defuse_contract_id, deadline)
+            .await
+    }
+}
+
+pub trait DefusePayloadBuilder: DefuseSigner + DefuseNonceExt {
+
     #[must_use]
     async fn create_defuse_payload<T>(
         &self,
@@ -130,19 +173,7 @@ impl DefusePayloadBuilder for near_workspaces::Account {
     where
         T: Into<Intent>,
     {
-        // randomize seed then insert bytes from local counter
-        // [ 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ]
-        //   <---ATOMIC----> <---SEED---->
-        let seed_value = GLOBAL_SEED_COUNTER.fetch_add(1, Ordering::Relaxed);
-        let mut nonce_bytes = [0u8; 15];
-        TestRng::from_entropy().fill_bytes(&mut nonce_bytes);
-        nonce_bytes[..8].copy_from_slice(&seed_value.to_le_bytes());
-
-        let deadline = Deadline::timeout(std::time::Duration::from_secs(120));
-        let salt = self.current_salt(defuse_contract_id).await?;
-
-        let salted = SaltedNonce::new(salt, ExpirableNonce::new(deadline, nonce_bytes));
-        let nonce: Nonce = VersionedNonce::V1(salted.clone()).into();
+        let (nonce, deadline) = self.get_unique_nonce(defuse_contract_id, None).await?;
         let defuse_intents = DefuseIntents {
             intents: intents.into_iter().map(Into::into).collect(),
         };
