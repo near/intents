@@ -23,13 +23,14 @@ use defuse_test_utils::random::{Seed, TestRng, rng};
 use itertools::Itertools;
 use near_sdk::AccountId;
 use rstest::rstest;
+use crate::utils::fixtures::{ed25519_pk, secp256k1_pk, p256_pk};
 
 use futures::future::try_join_all;
 
 #[ignore = "only for simple upgrades"]
 #[tokio::test]
 #[rstest]
-async fn upgrade(mut rng: impl Rng) {
+async fn upgrade(ed25519_pk: PublicKey, secp256k1_pk: PublicKey, p256_pk: PublicKey) {
     let old_contract_id: AccountId = "intents.near".parse().unwrap();
     let mainnet = near_workspaces::mainnet()
         .rpc_addr("https://nearrpc.aurora.dev")
@@ -64,9 +65,7 @@ async fn upgrade(mut rng: impl Rng) {
     );
 
     for public_key in [
-        PublicKey::Ed25519(rng.random()),
-        PublicKey::Secp256k1(rng.random()),
-        PublicKey::P256(rng.random()),
+        ed25519_pk, secp256k1_pk, p256_pk
     ] {
         assert!(
             new_contract

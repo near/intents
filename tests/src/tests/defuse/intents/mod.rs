@@ -1,9 +1,11 @@
 use super::{DefuseSigner, accounts::AccountManagerExt, env::Env};
 use crate::tests::defuse::SigningStandard;
+use crate::utils::fixtures::msg_address;
 use crate::utils::{crypto::Signer, mt::MtExt, test_log::TestLog};
 use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
+use defuse::core::ton_connect::tlb_ton::MsgAddress;
 use defuse::{
     core::{
         Deadline, Nonce,
@@ -349,13 +351,10 @@ async fn webauthn(#[values(false, true)] no_registration: bool) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn ton_connect_sign_intent_example(#[notrace] mut rng: impl Rng) {
-    use defuse::core::ton_connect::tlb_ton::MsgAddress;
-
+async fn ton_connect_sign_intent_example(msg_address: MsgAddress) {
     let env: Env = Env::builder().no_registration(false).build().await;
 
     let ft_id: AccountId = "ft.test.near".parse().unwrap();
-    let address = MsgAddress::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 32]>())).unwrap();
 
     let intents = DefuseIntents {
         intents: [FtWithdraw {
@@ -370,9 +369,10 @@ async fn ton_connect_sign_intent_example(#[notrace] mut rng: impl Rng) {
         .into()]
         .into(),
     };
+    let (nonce, _) = env.get_unique_nonce(None).await.unwrap();
 
     let payload = defuse::core::ton_connect::TonConnectPayload {
-        address,
+        address: msg_address,
         domain: "example.com".to_string(),
         timestamp: defuse_near_utils::time::now(),
         payload: defuse::core::ton_connect::TonConnectPayloadSchema::Text {
@@ -380,7 +380,7 @@ async fn ton_connect_sign_intent_example(#[notrace] mut rng: impl Rng) {
                 signer_id: "alice.near".parse().unwrap(),
                 verifying_contract: "intent.near".parse().unwrap(),
                 deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
-                nonce: rng.random(),
+                nonce,
                 message: intents,
             })
             .unwrap(),
