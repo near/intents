@@ -1,4 +1,3 @@
-use derive_more::derive::From;
 use crate::tests::defuse::DefusePayloadBuilder;
 use crate::tests::defuse::intents::{AccountNonceIntentEvent, ExecuteIntentsExt, NonceEvent};
 use crate::utils::fixtures::public_key;
@@ -9,6 +8,7 @@ use crate::{
 };
 use defuse::contract::config::{DefuseConfig, RolesConfig};
 use defuse::core::crypto::Payload;
+use derive_more::derive::From;
 
 use defuse::core::crypto::PublicKey;
 use defuse::core::fees::{FeesConfig, Pips};
@@ -278,8 +278,9 @@ async fn simulate_nft_withdraw_intent() {
         .await
         .unwrap();
 
-    let nft_token_id =
-        TokenId::from(Nep171TokenId::new(nft_contract.id().to_owned(), DUMMY_NFT_ID.to_string()).unwrap());
+    let nft_token_id = TokenId::from(
+        Nep171TokenId::new(nft_contract.id().to_owned(), DUMMY_NFT_ID.to_string()).unwrap(),
+    );
 
     user1
         .nft_transfer_call(
