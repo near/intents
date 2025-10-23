@@ -6,13 +6,13 @@ mod state;
 mod storage;
 mod tokens;
 mod upgrade;
-use std::sync::atomic::AtomicU64;
-use std::sync::atomic::Ordering;
-use defuse::core::intents::DefuseIntents;
 use defuse::core::ExpirableNonce;
 use defuse::core::SaltedNonce;
 use defuse::core::VersionedNonce;
+use defuse::core::intents::DefuseIntents;
 use defuse_randomness::RngCore;
+use std::sync::atomic::AtomicU64;
+use std::sync::atomic::Ordering;
 
 use self::accounts::AccountManagerExt;
 use crate::utils::{account::AccountExt, crypto::Signer, read_wasm};
@@ -116,7 +116,9 @@ pub trait DefusePayloadBuilder: DefuseSigner {
         &self,
         defuse_contract_id: &AccountId,
         intents: impl IntoIterator<Item = T>,
-    ) -> anyhow::Result<MultiPayload> where T: Into<Intent> ;
+    ) -> anyhow::Result<MultiPayload>
+    where
+        T: Into<Intent>;
 }
 
 impl DefusePayloadBuilder for near_workspaces::Account {
@@ -124,15 +126,16 @@ impl DefusePayloadBuilder for near_workspaces::Account {
         &self,
         defuse_contract_id: &AccountId,
         intents: impl IntoIterator<Item = T>, //Intent>,
-    ) -> anyhow::Result<MultiPayload> where
-     T: Into<Intent>,
-     {
+    ) -> anyhow::Result<MultiPayload>
+    where
+        T: Into<Intent>,
+    {
         // randomize seed then insert bytes from local counter
         // [ 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 ]
         //   <---ATOMIC----> <---SEED---->
         let seed_value = GLOBAL_SEED_COUNTER.fetch_add(1, Ordering::Relaxed);
         let mut nonce_bytes = [0u8; 15];
-        let mut rng = TestRng::from_entropy().fill_bytes(&mut nonce_bytes);
+        TestRng::from_entropy().fill_bytes(&mut nonce_bytes);
         nonce_bytes[..8].copy_from_slice(&seed_value.to_le_bytes());
 
         let deadline = Deadline::timeout(std::time::Duration::from_secs(120));
@@ -141,9 +144,15 @@ impl DefusePayloadBuilder for near_workspaces::Account {
         let salted = SaltedNonce::new(salt, ExpirableNonce::new(deadline, nonce_bytes));
         let nonce: Nonce = VersionedNonce::V1(salted.clone()).into();
         let defuse_intents = DefuseIntents {
-            intents: intents.into_iter().map(Into::into).collect(), 
+            intents: intents.into_iter().map(Into::into).collect(),
         };
-        Ok(self.sign_defuse_message(SigningStandard::default(), defuse_contract_id, nonce, deadline, defuse_intents))
+        Ok(self.sign_defuse_message(
+            SigningStandard::default(),
+            defuse_contract_id,
+            nonce,
+            deadline,
+            defuse_intents,
+        ))
     }
 }
 

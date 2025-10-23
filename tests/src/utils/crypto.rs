@@ -14,7 +14,6 @@ pub trait Signer {
     fn sign_sep53(&self, payload: Sep53Payload) -> SignedSep53Payload;
 }
 
-
 impl Signer for Account {
     fn secret_key(&self) -> near_crypto::SecretKey {
         // near_sdk does not expose near_crypto API
