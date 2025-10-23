@@ -16,8 +16,7 @@ async fn set_fee() {
     let prev_fee = env.defuse.fee(env.defuse.id()).await.unwrap();
     let fee = Pips::from_pips(100).unwrap();
 
-    let user1 = env.create_user().await;
-    let user2 = env.create_user().await;
+    let (user1, user2) = futures::join!(env.create_user(), env.create_user());
 
     // only DAO or fee manager can set fee
     {
@@ -51,8 +50,7 @@ async fn set_fee_collector() {
     let env = Env::builder().deployer_as_super_admin().build().await;
     let fee_collector: AccountId = "fee-collector.near".to_string().parse().unwrap();
 
-    let user1 = env.create_user().await;
-    let user2 = env.create_user().await;
+    let (user1, user2) = futures::join!(env.create_user(), env.create_user());
 
     // only DAO or fee manager can set fee collector
     {

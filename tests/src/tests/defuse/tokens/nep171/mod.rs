@@ -173,7 +173,7 @@ async fn transfer_nft_to_verifier(mut rng: impl Rng) {
     {
         // mt_tokens
         {
-            let existing_mt_amount = env.persistent_state.map_or(0, |s| s.tokens.len());
+            let existing_mt_amount = env.persistent_state.map_or(0, |s| s.token_balances.len());
             let nfts_in_verifier = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
 
             assert_eq!(nfts_in_verifier.len(), existing_mt_amount + 2);

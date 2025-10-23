@@ -39,7 +39,6 @@ pub struct AccountData {
 #[derive(Debug)]
 pub struct PersistentState {
     pub accounts: HashMap<AccountId, AccountData>,
-    pub tokens: BTreeSet<Nep141TokenId>,
     pub token_balances: BTreeMap<Nep141TokenId, HashMap<AccountId, u128>>,
 }
 
@@ -57,14 +56,13 @@ impl PersistentState {
 
         Self {
             accounts,
-            tokens,
             token_balances,
         }
     }
 
     pub fn get_mt_tokens(&self) -> Vec<Token> {
-        self.tokens
-            .iter()
+        self.token_balances
+            .keys()
             .map(|t| Token {
                 token_id: TokenId::Nep141(t.clone()).to_string(),
                 owner_id: None,
@@ -97,16 +95,19 @@ impl PersistentState {
             .collect()
     }
 
-    fn generate_balances(
+    fn generate_balances<'a>(
         u: &mut Unstructured,
-        accounts: &HashMap<AccountId, AccountData>,
-        tokens: &BTreeSet<Nep141TokenId>,
+        accounts: impl IntoIterator<Item = (&'a AccountId, &'a AccountData)>,
+        tokens: impl IntoIterator<Item = &'a Nep141TokenId>,
     ) -> BTreeMap<Nep141TokenId, HashMap<AccountId, u128>> {
+        let accounts = accounts.into_iter().collect::<Vec<_>>();
+
         tokens
-            .iter()
+            .into_iter()
             .map(|token_id| {
                 let balances = accounts
-                    .iter()
+                    .clone()
+                    .into_iter()
                     .map(|(account_id, _)| {
                         let amount = u
                             .int_in_range(MIN_BALANCE_AMOUNT..=MAX_BALANCE_AMOUNT)

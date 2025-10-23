@@ -22,6 +22,7 @@ use defuse::{
 use defuse_near_utils::arbitrary::ArbitraryNamedAccountId;
 use defuse_randomness::{Rng, make_true_rng};
 use futures::future::try_join_all;
+use futures::lock::Mutex;
 use near_sdk::{AccountId, NearToken};
 use near_workspaces::{
     Account, Contract, Network, Worker,
@@ -30,7 +31,6 @@ use near_workspaces::{
 };
 use serde_json::json;
 use std::{ops::Deref, sync::LazyLock};
-use tokio::sync::Mutex;
 
 pub use state::PersistentState;
 
