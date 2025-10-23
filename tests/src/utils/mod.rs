@@ -6,6 +6,7 @@ pub mod crypto;
 pub mod fixtures;
 pub mod ft;
 pub mod mt;
+pub mod payload;
 pub mod native;
 pub mod nft;
 mod sandbox;

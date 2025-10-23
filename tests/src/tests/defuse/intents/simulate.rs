@@ -1,7 +1,9 @@
-use crate::tests::defuse::SigningStandard;
+use crate::tests::defuse::{DefusePayloadBuilder, SigningStandard};
+use derive_more::derive::From;
 use crate::tests::defuse::intents::{AccountNonceIntentEvent, ExecuteIntentsExt, NonceEvent};
 use crate::utils::fixtures::{nonce, public_key, signing_standard};
 use crate::utils::{ft::FtExt, mt::MtExt, nft::NftExt, wnear::WNearExt};
+use crate::utils::payload::ExtractNonceExt;
 use crate::{
     tests::defuse::accounts::AccountManagerExt,
     tests::defuse::env::Env,
@@ -41,7 +43,7 @@ use std::borrow::Cow;
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_transfer_intent(nonce: Nonce, signing_standard: SigningStandard) {
+async fn simulate_transfer_intent() {
     let env = Env::builder().no_registration(true).build().await;
 
     let (user1, user2, ft1) =
@@ -54,23 +56,16 @@ async fn simulate_transfer_intent(nonce: Nonce, signing_standard: SigningStandar
         .await
         .unwrap();
 
+
     let transfer_intent = Transfer {
         receiver_id: user2.id().clone(),
-        tokens: Amounts::new(
-            std::iter::once((TokenId::from(Nep141TokenId::new(ft1.clone())), 1000)).collect(),
-        ),
+        tokens: Amounts::new(std::iter::once((TokenId::from(Nep141TokenId::new(ft1.clone())), 1000)).collect()),
         memo: None,
     };
 
-    let transfer_intent_payload = user1.sign_defuse_message(
-        signing_standard,
-        env.defuse.id(),
-        nonce,
-        Deadline::MAX,
-        DefuseIntents {
-            intents: vec![transfer_intent.clone().into()],
-        },
-    );
+    let transfer_intent_payload = user1.create_defuse_payload(&env.defuse.id(), [transfer_intent.clone()]).await.unwrap();
+    let nonce = transfer_intent_payload.extract_nonce().unwrap();
+
     let result = env
         .defuse
         .simulate_intents([transfer_intent_payload.clone()])
