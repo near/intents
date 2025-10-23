@@ -1,12 +1,8 @@
 use crate::{
-    tests::defuse::{DefuseSigner, SigningStandard, env::Env, intents::ExecuteIntentsExt},
+    tests::defuse::{DefusePayloadBuilder, env::Env, intents::ExecuteIntentsExt},
     utils::{storage_management::StorageManagementExt, wnear::WNearExt},
 };
-use arbitrary::{Arbitrary, Unstructured};
-use defuse::core::Deadline;
-use defuse::core::intents::{DefuseIntents, tokens::StorageDeposit};
-use defuse_randomness::Rng;
-use defuse_test_utils::random::rng;
+use defuse::core::intents::tokens::StorageDeposit;
 use near_sdk::NearToken;
 use rstest::rstest;
 
@@ -30,7 +26,6 @@ const ONE_YOCTO_NEAR: NearToken = NearToken::from_yoctonear(1);
     Some(MIN_FT_STORAGE_DEPOSIT_VALUE)
 )]
 async fn storage_deposit_success(
-    #[notrace] mut rng: impl Rng,
     #[case] amount_to_deposit: NearToken,
     #[case] expected_deposited: Option<NearToken>,
 ) {
@@ -103,28 +98,20 @@ async fn storage_deposit_success(
     .await
     .unwrap();
 
-    let nonce = rng.random();
+    let storage_deposit_payload = other_user
+        .create_defuse_payload(
+            &env.defuse.id(),
+            [StorageDeposit {
+                contract_id: ft.clone(),
+                deposit_for_account_id: other_user.id().clone(),
+                amount: amount_to_deposit,
+            }],
+        )
+        .await
+        .unwrap();
 
     env.defuse
-        .execute_intents(
-            env.defuse.id(),
-            [other_user.sign_defuse_message(
-                SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
-                    .unwrap(),
-                env.defuse.id(),
-                nonce,
-                Deadline::timeout(std::time::Duration::from_secs(120)),
-                DefuseIntents {
-                    intents: [StorageDeposit {
-                        contract_id: ft.clone(),
-                        deposit_for_account_id: other_user.id().clone(),
-                        amount: amount_to_deposit,
-                    }
-                    .into()]
-                    .into(),
-                },
-            )],
-        )
+        .execute_intents(env.defuse.id(), [storage_deposit_payload])
         .await
         .unwrap();
 
@@ -140,7 +127,7 @@ async fn storage_deposit_success(
 
 #[tokio::test]
 #[rstest]
-async fn storage_deposit_fails_user_has_no_balance_in_intents(mut rng: impl Rng) {
+async fn storage_deposit_fails_user_has_no_balance_in_intents() {
     let env = Env::builder()
         .disable_ft_storage_deposit()
         .no_registration(false)
@@ -200,23 +187,17 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents(mut rng: impl Rng)
         .await
         .unwrap();
 
-    let nonce = rng.random();
-
-    let signed_intents = [other_user.sign_defuse_message(
-        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
-        env.defuse.id(),
-        nonce,
-        Deadline::timeout(std::time::Duration::from_secs(120)),
-        DefuseIntents {
-            intents: [StorageDeposit {
+    let signed_intents = [other_user
+        .create_defuse_payload(
+            &env.defuse.id(),
+            [StorageDeposit {
                 contract_id: ft.clone(),
                 deposit_for_account_id: other_user.id().clone(),
                 amount: MIN_FT_STORAGE_DEPOSIT_VALUE,
-            }
-            .into()]
-            .into(),
-        },
-    )];
+            }],
+        )
+        .await
+        .unwrap()];
 
     // Fails because the user does not own any wNEAR in the intents smart contract. They should first deposit wNEAR.
     env.defuse

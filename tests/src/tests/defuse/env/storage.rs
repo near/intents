@@ -9,13 +9,12 @@ use defuse::core::{
     intents::{DefuseIntents, Intent, account::AddPublicKey},
     token_id::{TokenId, nep141::Nep141TokenId},
 };
-use defuse_randomness::{Rng, make_true_rng};
 use futures::future::try_join_all;
 
 use crate::{
     tests::{
         defuse::{
-            DefuseSigner, SigningStandard,
+            DefusePayloadBuilder, DefuseSigner, SigningStandard,
             accounts::AccountManagerExt,
             env::{
                 Env,
@@ -102,24 +101,22 @@ impl Env {
     }
 
     async fn apply_public_keys(&self, acc: &Account, data: &AccountData) -> Result<()> {
-        let intents = data
-            .public_keys
-            .iter()
-            .map(|public_key| {
-                Intent::AddPublicKey(AddPublicKey {
-                    public_key: *public_key,
-                })
-            })
-            .collect();
+        if data.public_keys.is_empty() {
+            return Ok(());
+        }
+
+        let payload = acc
+            .create_defuse_payload(
+                &self.defuse.id(),
+                data.public_keys
+                    .iter()
+                    .copied()
+                    .map(|public_key| Intent::AddPublicKey(AddPublicKey { public_key })),
+            )
+            .await?;
 
         self.defuse
-            .execute_intents_without_simulation([acc.sign_defuse_message(
-                SigningStandard::default(),
-                self.defuse.id(),
-                make_true_rng().random(),
-                Deadline::MAX,
-                DefuseIntents { intents },
-            )])
+            .execute_intents_without_simulation([payload])
             .await?;
 
         Ok(())

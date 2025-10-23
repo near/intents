@@ -1,27 +1,23 @@
-use std::time::Duration;
-
-use arbitrary::Unstructured;
 use defuse::core::{
-    Deadline, DefuseError,
+    DefuseError,
     amounts::Amounts,
-    intents::{DefuseIntents, account::SetAuthByPredecessorId, tokens::Transfer},
+    intents::{account::SetAuthByPredecessorId, tokens::Transfer},
     token_id::{TokenId, nep141::Nep141TokenId},
 };
-use defuse_test_utils::{asserts::ResultAssertsExt, random::random_bytes};
+use defuse_test_utils::asserts::ResultAssertsExt;
 use near_sdk::AccountId;
 use rstest::rstest;
 
 use crate::{
     tests::defuse::{
-        DefuseSigner, accounts::AccountManagerExt, env::Env, intents::ExecuteIntentsExt,
+        DefusePayloadBuilder, accounts::AccountManagerExt, env::Env, intents::ExecuteIntentsExt,
     },
     utils::mt::MtExt,
 };
 
 #[tokio::test]
 #[rstest]
-async fn auth_by_predecessor_id(random_bytes: Vec<u8>) {
-    let mut u = Unstructured::new(&random_bytes);
+async fn auth_by_predecessor_id() {
     let env = Env::new().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
@@ -115,25 +111,20 @@ async fn auth_by_predecessor_id(random_bytes: Vec<u8>) {
 
     // transfer via intent should succeed
     {
-        env.defuse
-            .execute_intents(
-                env.defuse.id(),
-                [user.sign_defuse_message(
-                    u.arbitrary().unwrap(),
-                    env.defuse.id(),
-                    u.arbitrary().unwrap(),
-                    Deadline::timeout(Duration::from_secs(120)),
-                    DefuseIntents {
-                        intents: [Transfer {
-                            receiver_id: receiver_id.clone(),
-                            tokens: Amounts::new([(ft.clone(), 200)].into()),
-                            memo: None,
-                        }
-                        .into()]
-                        .into(),
-                    },
-                )],
+        let transfer_payload = user
+            .create_defuse_payload(
+                &env.defuse.id(),
+                [Transfer {
+                    receiver_id: receiver_id.clone(),
+                    tokens: Amounts::new([(ft.clone(), 200)].into()),
+                    memo: None,
+                }],
             )
+            .await
+            .unwrap();
+
+        env.defuse
+            .execute_intents(env.defuse.id(), [transfer_payload])
             .await
             .unwrap();
 
@@ -155,19 +146,13 @@ async fn auth_by_predecessor_id(random_bytes: Vec<u8>) {
 
     // enable auth by PREDECESSOR_ID back (by intent)
     {
+        let enable_auth_payload = user
+            .create_defuse_payload(&env.defuse.id(), [SetAuthByPredecessorId { enabled: true }])
+            .await
+            .unwrap();
+
         env.defuse
-            .execute_intents(
-                env.defuse.id(),
-                [user.sign_defuse_message(
-                    u.arbitrary().unwrap(),
-                    env.defuse.id(),
-                    u.arbitrary().unwrap(),
-                    Deadline::timeout(Duration::from_secs(120)),
-                    DefuseIntents {
-                        intents: [SetAuthByPredecessorId { enabled: true }.into()].into(),
-                    },
-                )],
-            )
+            .execute_intents(env.defuse.id(), [enable_auth_payload])
             .await
             .unwrap();
 

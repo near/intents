@@ -30,7 +30,7 @@ use defuse::{
         ton_connect::TonConnectPayload,
     },
 };
-use defuse_test_utils::random::{Seed, TestRng};
+use defuse_test_utils::random::TestRng;
 use near_sdk::{AccountId, serde::Serialize, serde_json::json};
 use near_sdk::{Gas, NearToken};
 use near_workspaces::Contract;

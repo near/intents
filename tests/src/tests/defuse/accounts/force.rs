@@ -1,34 +1,31 @@
-use std::time::Duration;
-
-use arbitrary::Unstructured;
 use defuse::{
     contract::Role,
     core::{
-        Deadline, DefuseError, Nonce,
+        DefuseError,
         crypto::PublicKey,
-        intents::DefuseIntents,
+        intents::Intent,
         token_id::{TokenId, nep141::Nep141TokenId},
     },
 };
+use crate::utils::fixtures::public_key;
 
-use defuse_test_utils::{asserts::ResultAssertsExt, random::random_bytes};
+use defuse_test_utils::asserts::ResultAssertsExt;
 use rstest::rstest;
 
 use crate::{
     tests::defuse::{
-        DefuseSigner, SigningStandard,
+        DefusePayloadBuilder,
         accounts::{AccountManagerExt, traits::ForceAccountManagerExt},
         env::Env,
         intents::ExecuteIntentsExt,
         tokens::nep141::traits::DefuseFtWithdrawer,
     },
-    utils::{acl::AclExt, mt::MtExt},
+    utils::{acl::AclExt, mt::MtExt, payload::ExtractNonceExt},
 };
 
 #[tokio::test]
 #[rstest]
-async fn test_lock_account(random_bytes: Vec<u8>) {
-    let mut u = Unstructured::new(&random_bytes);
+async fn test_lock_account(public_key: PublicKey) {
 
     let env = Env::builder().deployer_as_super_admin().build().await;
 
@@ -123,10 +120,8 @@ async fn test_lock_account(random_bytes: Vec<u8>) {
 
     // try to add public key to locked account
     {
-        let pk: PublicKey = u.arbitrary().unwrap();
-
         locked_account
-            .add_public_key(env.defuse.id(), pk)
+            .add_public_key(env.defuse.id(), public_key)
             .await
             .assert_err_contains(
                 DefuseError::AccountLocked(locked_account.id().clone()).to_string(),
@@ -134,7 +129,7 @@ async fn test_lock_account(random_bytes: Vec<u8>) {
 
         assert!(
             !env.defuse
-                .has_public_key(locked_account.id(), &pk)
+                .has_public_key(locked_account.id(), &public_key)
                 .await
                 .unwrap()
         );
@@ -287,18 +282,14 @@ async fn test_lock_account(random_bytes: Vec<u8>) {
 
     // try to execute intents on behalf of locked account
     {
-        let nonce: Nonce = u.arbitrary().unwrap();
+        let locked_payload = locked_account
+            .create_defuse_payload(&env.defuse.id(), Vec::<Intent>::new())
+            .await
+            .unwrap();
+        let nonce = locked_payload.extract_nonce().unwrap();
+
         env.defuse
-            .execute_intents(
-                env.defuse.id(),
-                [locked_account.sign_defuse_message(
-                    SigningStandard::Nep413,
-                    env.defuse.id(),
-                    nonce,
-                    Deadline::timeout(Duration::from_secs(120)),
-                    DefuseIntents { intents: [].into() },
-                )],
-            )
+            .execute_intents(env.defuse.id(), [locked_payload])
             .await
             .assert_err_contains(
                 DefuseError::AccountLocked(locked_account.id().clone()).to_string(),
@@ -387,8 +378,7 @@ async fn test_lock_account(random_bytes: Vec<u8>) {
 
 #[tokio::test]
 #[rstest]
-async fn test_force_set_auth_by_predecessor_id(random_bytes: Vec<u8>) {
-    let mut u = Unstructured::new(&random_bytes);
+async fn test_force_set_auth_by_predecessor_id(public_key: PublicKey) {
 
     let env = Env::builder().deployer_as_super_admin().build().await;
 
@@ -439,17 +429,16 @@ async fn test_force_set_auth_by_predecessor_id(random_bytes: Vec<u8>) {
         }
     }
 
-    let pk: PublicKey = u.arbitrary().unwrap();
 
     // try to execute tx from user's account with disabled auth by predecessor id
     {
         user_account
-            .add_public_key(env.defuse.id(), pk)
+            .add_public_key(env.defuse.id(), public_key)
             .await
             .unwrap_err();
         assert!(
             !env.defuse
-                .has_public_key(user_account.id(), &pk)
+                .has_public_key(user_account.id(), &public_key)
                 .await
                 .unwrap()
         );
@@ -502,12 +491,12 @@ async fn test_force_set_auth_by_predecessor_id(random_bytes: Vec<u8>) {
     // try to execute tx from user's account with enabled auth by predecessor id
     {
         user_account
-            .add_public_key(env.defuse.id(), pk)
+            .add_public_key(env.defuse.id(), public_key)
             .await
             .unwrap();
         assert!(
             env.defuse
-                .has_public_key(user_account.id(), &pk)
+                .has_public_key(user_account.id(), &public_key)
                 .await
                 .unwrap()
         );

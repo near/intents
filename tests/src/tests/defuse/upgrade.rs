@@ -9,7 +9,6 @@ use crate::{
     },
     utils::{acl::AclExt, mt::MtExt},
 };
-use arbitrary::{Arbitrary, Unstructured};
 use chrono::{TimeDelta, Utc};
 use defuse::{
     contract::Role,
@@ -24,7 +23,7 @@ use defuse::{
     nep245::Token,
 };
 use defuse_randomness::Rng;
-use defuse_test_utils::random::{random_bytes, rng};
+use defuse_test_utils::random::{Seed, TestRng, rng};
 use itertools::Itertools;
 use near_sdk::AccountId;
 use rstest::rstest;
@@ -91,9 +90,8 @@ async fn upgrade(mut rng: impl Rng) {
 
 #[rstest]
 #[tokio::test]
-async fn test_upgrade_with_persistence(mut rng: impl Rng, random_bytes: Vec<u8>) {
+async fn test_upgrade_with_persistence() {
     // initialize with persistent state and migration from legacy
-    let u = &mut Unstructured::new(&random_bytes);
     let env = Env::builder().build_with_migration().await;
 
     // Make some changes existing users:
@@ -133,6 +131,7 @@ async fn test_upgrade_with_persistence(mut rng: impl Rng, random_bytes: Vec<u8>)
             let current_timestamp = Utc::now();
             let current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
 
+            let mut nonce_seed = 0u64;
             let payloads = users
                 .iter()
                 .combinations(2)
@@ -145,11 +144,13 @@ async fn test_upgrade_with_persistence(mut rng: impl Rng, random_bytes: Vec<u8>)
                             .checked_add_signed(TimeDelta::days(1))
                             .unwrap(),
                     );
+                    let mut deterministic_rng = TestRng::new(Seed::from_u64(nonce_seed));
+                    nonce_seed = nonce_seed.wrapping_add(1);
                     let expired_nonce =
-                        create_random_salted_nonce(current_salt, deadline, &mut rng);
+                        create_random_salted_nonce(current_salt, deadline, &mut deterministic_rng);
 
                     sender.sign_defuse_message(
-                        SigningStandard::arbitrary(u).unwrap(),
+                        SigningStandard::default(),
                         env.defuse.id(),
                         expired_nonce,
                         deadline,

@@ -1,13 +1,8 @@
-use crate::tests::defuse::SigningStandard;
-use crate::tests::defuse::{DefuseSigner, env::Env, intents::ExecuteIntentsExt};
+use crate::tests::defuse::{DefusePayloadBuilder, env::Env, intents::ExecuteIntentsExt};
 use crate::utils::{mt::MtExt, nft::NftExt};
-use arbitrary::{Arbitrary, Unstructured};
+use defuse::core::intents::tokens::NftWithdraw;
 use defuse::core::token_id::TokenId as DefuseTokenId;
 use defuse::core::token_id::nep171::Nep171TokenId;
-use defuse::core::{
-    Deadline,
-    intents::{DefuseIntents, tokens::NftWithdraw},
-};
 use defuse_randomness::Rng;
 use defuse_test_utils::random::{gen_random_string, random_bytes, rng};
 use near_contract_standards::non_fungible_token::metadata::{
@@ -238,32 +233,24 @@ async fn transfer_nft_to_verifier(mut rng: impl Rng) {
             );
         }
 
-        let nonce = rng.random();
+        let withdraw_payload = user3
+            .create_defuse_payload(
+                &env.defuse.id(),
+                [NftWithdraw {
+                    token: nft_issuer_contract.id().clone(),
+                    receiver_id: user1.id().clone(),
+                    token_id: nft1_id,
+                    memo: None,
+                    msg: None,
+                    storage_deposit: None,
+                    min_gas: None,
+                }],
+            )
+            .await
+            .unwrap();
 
         env.defuse
-            .execute_intents(
-                env.defuse.id(),
-                [user3.sign_defuse_message(
-                    SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
-                        .unwrap(),
-                    env.defuse.id(),
-                    nonce,
-                    Deadline::timeout(std::time::Duration::from_secs(120)),
-                    DefuseIntents {
-                        intents: [NftWithdraw {
-                            token: nft_issuer_contract.id().clone(),
-                            receiver_id: user1.id().clone(),
-                            token_id: nft1_id,
-                            memo: None,
-                            msg: None,
-                            storage_deposit: None,
-                            min_gas: None,
-                        }
-                        .into()]
-                        .into(),
-                    },
-                )],
-            )
+            .execute_intents(env.defuse.id(), [withdraw_payload])
             .await
             .unwrap();
 

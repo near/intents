@@ -1,33 +1,24 @@
 use super::ExecuteIntentsExt;
-use crate::tests::defuse::DefuseExt;
 use crate::tests::defuse::tokens::nep141::traits::DefuseFtReceiver;
+use crate::tests::defuse::{DefuseExt, DefusePayloadBuilder};
 use crate::{
-    tests::defuse::{DefuseSigner, SigningStandard, env::Env},
+    tests::defuse::env::Env,
     utils::{ft::FtExt, mt::MtExt, wnear::WNearExt},
 };
-use arbitrary::{Arbitrary, Unstructured};
+use defuse::core::intents::tokens::FtWithdraw;
 use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
-use defuse::core::{
-    Deadline,
-    intents::{DefuseIntents, tokens::FtWithdraw},
-};
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
     core::fees::{FeesConfig, Pips},
 };
-use defuse_randomness::Rng;
-use defuse_test_utils::{asserts::ResultAssertsExt, random::rng};
+use defuse_test_utils::asserts::ResultAssertsExt;
 use near_sdk::{AccountId, Gas, NearToken};
 use rstest::rstest;
-use std::time::Duration;
 
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn ft_withdraw_intent(
-    #[notrace] mut rng: impl Rng,
-    #[values(false, true)] no_registration: bool,
-) {
+async fn ft_withdraw_intent(#[values(false, true)] no_registration: bool) {
     // intentionally large deposit
     const STORAGE_DEPOSIT: NearToken = NearToken::from_near(1000);
 
@@ -57,32 +48,24 @@ async fn ft_withdraw_intent(
         );
     }
 
-    let nonce = rng.random();
+    let initial_withdraw_payload = user
+        .create_defuse_payload(
+            &env.defuse.id(),
+            [FtWithdraw {
+                token: ft.clone(),
+                receiver_id: other_user_id.clone(),
+                amount: 1000.into(),
+                memo: None,
+                msg: None,
+                storage_deposit: None,
+                min_gas: None,
+            }],
+        )
+        .await
+        .unwrap();
 
     env.defuse
-        .execute_intents(
-            env.defuse.id(),
-            [user.sign_defuse_message(
-                SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
-                    .unwrap(),
-                env.defuse.id(),
-                nonce,
-                Deadline::timeout(Duration::from_secs(120)),
-                DefuseIntents {
-                    intents: [FtWithdraw {
-                        token: ft.clone(),
-                        receiver_id: other_user_id.clone(),
-                        amount: 1000.into(),
-                        memo: None,
-                        msg: None,
-                        storage_deposit: None,
-                        min_gas: None,
-                    }
-                    .into()]
-                    .into(),
-                },
-            )],
-        )
+        .execute_intents(env.defuse.id(), [initial_withdraw_payload])
         .await
         .unwrap();
 
@@ -98,33 +81,25 @@ async fn ft_withdraw_intent(
         0
     );
 
-    let nonce = rng.random();
+    let missing_storage_payload = user
+        .create_defuse_payload(
+            &env.defuse.id(),
+            [FtWithdraw {
+                token: ft.clone(),
+                receiver_id: other_user_id.clone(),
+                amount: 1000.into(),
+                memo: None,
+                msg: None,
+                // user has no wnear yet
+                storage_deposit: Some(STORAGE_DEPOSIT),
+                min_gas: None,
+            }],
+        )
+        .await
+        .unwrap();
 
     env.defuse
-        .execute_intents(
-            env.defuse.id(),
-            [user.sign_defuse_message(
-                SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
-                    .unwrap(),
-                env.defuse.id(),
-                nonce,
-                Deadline::MAX,
-                DefuseIntents {
-                    intents: [FtWithdraw {
-                        token: ft.clone(),
-                        receiver_id: other_user_id.clone(),
-                        amount: 1000.into(),
-                        memo: None,
-                        msg: None,
-                        // user has no wnear yet
-                        storage_deposit: Some(STORAGE_DEPOSIT),
-                        min_gas: None,
-                    }
-                    .into()]
-                    .into(),
-                },
-            )],
-        )
+        .execute_intents(env.defuse.id(), [missing_storage_payload])
         .await
         .unwrap_err();
 
@@ -167,58 +142,46 @@ async fn ft_withdraw_intent(
         .unwrap()
         .balance;
 
-    let nonce = rng.random();
-
     // too large min_gas specified
-    env.defuse_execute_intents(
-        env.defuse.id(),
-        [user.sign_defuse_message(
-            SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
-            env.defuse.id(),
-            nonce,
-            Deadline::MAX,
-            DefuseIntents {
-                intents: [FtWithdraw {
-                    token: ft.clone(),
-                    receiver_id: other_user_id.clone(),
-                    amount: 1000.into(),
-                    memo: None,
-                    msg: None,
-                    storage_deposit,
-                    min_gas: Some(Gas::from_tgas(300)),
-                }
-                .into()]
-                .into(),
-            },
-        )],
-    )
-    .await
-    .assert_err_contains("Exceeded the prepaid gas.");
+    let too_large_min_gas_payload = user
+        .create_defuse_payload(
+            &env.defuse.id(),
+            [FtWithdraw {
+                token: ft.clone(),
+                receiver_id: other_user_id.clone(),
+                amount: 1000.into(),
+                memo: None,
+                msg: None,
+                storage_deposit,
+                min_gas: Some(Gas::from_tgas(300)),
+            }],
+        )
+        .await
+        .unwrap();
 
-    env.defuse_execute_intents(
-        env.defuse.id(),
-        [user.sign_defuse_message(
-            SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
-            env.defuse.id(),
-            nonce,
-            Deadline::MAX,
-            DefuseIntents {
-                intents: [FtWithdraw {
-                    token: ft.clone(),
-                    receiver_id: other_user_id.clone(),
-                    amount: 1000.into(),
-                    memo: None,
-                    msg: None,
-                    storage_deposit,
-                    min_gas: None,
-                }
-                .into()]
-                .into(),
-            },
-        )],
-    )
-    .await
-    .unwrap();
+    env.defuse_execute_intents(env.defuse.id(), [too_large_min_gas_payload])
+        .await
+        .assert_err_contains("Exceeded the prepaid gas.");
+
+    let valid_payload = user
+        .create_defuse_payload(
+            &env.defuse.id(),
+            [FtWithdraw {
+                token: ft.clone(),
+                receiver_id: other_user_id.clone(),
+                amount: 1000.into(),
+                memo: None,
+                msg: None,
+                storage_deposit,
+                min_gas: None,
+            }],
+        )
+        .await
+        .unwrap();
+
+    env.defuse_execute_intents(env.defuse.id(), [valid_payload])
+        .await
+        .unwrap();
     let new_defuse_balance = env
         .defuse
         .as_account()
@@ -261,10 +224,7 @@ async fn ft_withdraw_intent(
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn ft_withdraw_intent_msg(
-    #[notrace] mut rng: impl Rng,
-    #[values(false, true)] no_registration: bool,
-) {
+async fn ft_withdraw_intent_msg(#[values(false, true)] no_registration: bool) {
     let env = Env::builder()
         .no_registration(no_registration)
         .build()
@@ -300,31 +260,25 @@ async fn ft_withdraw_intent_msg(
 
     // too small min_gas
     {
-        env.defuse
-            .execute_intents(
-                env.defuse.id(),
-                [user.sign_defuse_message(
-                    SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
-                        .unwrap(),
-                    env.defuse.id(),
-                    rng.random(),
-                    Deadline::timeout(Duration::from_secs(120)),
-                    DefuseIntents {
-                        intents: [FtWithdraw {
-                            token: ft.clone(),
-                            receiver_id: defuse2.id().clone(),
-                            amount: 400.into(),
-                            memo: Some("defuse-to-defuse".to_string()),
-                            msg: Some(other_user_id.to_string()),
-                            storage_deposit: None,
-                            // too small, but minimum of 30TGas will be used
-                            min_gas: Some(Gas::from_tgas(1)),
-                        }
-                        .into()]
-                        .into(),
-                    },
-                )],
+        let low_min_gas_payload = user
+            .create_defuse_payload(
+                &env.defuse.id(),
+                [FtWithdraw {
+                    token: ft.clone(),
+                    receiver_id: defuse2.id().clone(),
+                    amount: 400.into(),
+                    memo: Some("defuse-to-defuse".to_string()),
+                    msg: Some(other_user_id.to_string()),
+                    storage_deposit: None,
+                    // too small, but minimum of 30TGas will be used
+                    min_gas: Some(Gas::from_tgas(1)),
+                }],
             )
+            .await
+            .unwrap();
+
+        env.defuse
+            .execute_intents(env.defuse.id(), [low_min_gas_payload])
             .await
             .unwrap();
 
@@ -351,30 +305,24 @@ async fn ft_withdraw_intent_msg(
         );
     }
 
-    env.defuse
-        .execute_intents(
-            env.defuse.id(),
-            [user.sign_defuse_message(
-                SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
-                    .unwrap(),
-                env.defuse.id(),
-                rng.random(),
-                Deadline::timeout(Duration::from_secs(120)),
-                DefuseIntents {
-                    intents: [FtWithdraw {
-                        token: ft.clone(),
-                        receiver_id: defuse2.id().clone(),
-                        amount: 600.into(),
-                        memo: Some("defuse-to-defuse".to_string()),
-                        msg: Some(other_user_id.to_string()),
-                        storage_deposit: None,
-                        min_gas: None,
-                    }
-                    .into()]
-                    .into(),
-                },
-            )],
+    let remaining_withdraw_payload = user
+        .create_defuse_payload(
+            &env.defuse.id(),
+            [FtWithdraw {
+                token: ft.clone(),
+                receiver_id: defuse2.id().clone(),
+                amount: 600.into(),
+                memo: Some("defuse-to-defuse".to_string()),
+                msg: Some(other_user_id.to_string()),
+                storage_deposit: None,
+                min_gas: None,
+            }],
         )
+        .await
+        .unwrap();
+
+    env.defuse
+        .execute_intents(env.defuse.id(), [remaining_withdraw_payload])
         .await
         .unwrap();
 
