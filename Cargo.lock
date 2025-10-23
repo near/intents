@@ -819,6 +819,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "defuse-borsh-utils",
+ "defuse-map-utils",
  "defuse-near-utils",
  "defuse-nep245",
  "defuse-token-id",
@@ -826,6 +827,7 @@ dependencies = [
  "near-contract-standards",
  "near-sdk",
  "serde_with",
+ "thiserror 2.0.12",
 ]
 
 [[package]]

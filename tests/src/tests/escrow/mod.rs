@@ -78,7 +78,7 @@ async fn test_escrow() {
         .args_json(json!({
             "params": Params {
                 maker_id: maker.id().clone(),
-                maker_token_id: maker_token.clone(),
+                maker_asset: maker_token.clone(),
                 maker_amount: MAKER_AMOUNT,
                 taker_token_id: taker_token.clone(),
                 taker_amount: TAKER_AMOUNT,

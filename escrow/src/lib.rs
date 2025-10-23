@@ -1,55 +1,27 @@
-use std::collections::BTreeSet;
+use std::{collections::BTreeMap, iter};
 
 use chrono::{DateTime, Utc};
 use defuse_borsh_utils::adapters::{
     As as BorshAs, TimestampNanoSeconds as BorshTimestampNanoSeconds,
 };
-use defuse_near_utils::UnwrapOrPanicError;
+use defuse_map_utils::cleanup::DefaultMap;
+use defuse_near_utils::{UnwrapOrPanic, time::now};
+use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
+use defuse_token_id::nep245::Nep245TokenId as TokenId;
 use impl_tools::autoimpl;
-use near_contract_standards::fungible_token::{core::ext_ft_core, receiver::FungibleTokenReceiver};
 use near_sdk::{
-    AccountId, AccountIdRef, NearToken, PanicOnDefault, Promise, PromiseOrValue, PromiseResult,
-    env, json_types::U128, near, require, serde_json,
+    AccountId, FunctionError, NearToken, PanicOnDefault, Promise, PromiseOrValue, PromiseResult,
+    assert_one_yocto, env, json_types::U128, near, require, serde_json,
 };
 use serde_with::{TimestampNanoSeconds as SerdeTimestampNanoSeconds, serde_as};
+use thiserror::Error as ThisError;
 
-// QUESTIONS:
-// * settle every time via `mt_transfer()`? if not, i.e. accumulate and send as batch, then:
-//   * what do we do with deadline: what if not expired yet but filled 99%?
-//   * why to pay for gas when it could have been done by solvers and embedded into the price?
-//   *
-// * cancel by 2-of-2 multisig: user + SolverBus?
-//   * why not 1-of-2 by SolverBus?
-//
+// mod old;
 
-// governor: partial release
+// TODO: refund storage_deposits from maker/taker on received tokens
+// solution: use intents.near NEP-245
 
-// No `ft_transfer_call()` reasoning:
-// * retries with same `msg`
-// * NEP-141 vulnerability makes it possible to lose funds if no storage_deposit
-// * somethimes logic of ft_transfer_call can be so hard, that it requires additional
-//   storage_deposits on THE RECEIVER of the tokens, not only for token itself (e.g. omni-bridge)
-// * everything can (and should??) be implemented via off-chain indexers and relayers fo finalize any custom logic
-// TODO: add support for custom ".on_settled()" hooks?
-
-// TODO: streaming swaps:
-// * cancel of long streaming swaps?
-// solution: time-lock (i.e. "delayed" canceling)
-// + solver can confirm that he acknoliged the cancel, so it's a multisig 2-of-2 for immediate cancellation
-
-// TODO: partial fills:
-// * allow_partial_fills: bool
-// * memo/msg:
-//   * send as batch all at once?
-//   * if we send only when full fill was reached, then it disincentivize the last solver to give full amount, so he can just send 1 unit less
-//      * can we incentivize by releasing some locked NEAR?
-//   * if it's a user-only claims, then this ruins UX: we need to ask user to
-//     claim once the funds are available
-//   * if we allow third-party to claim, then there are two approaches:
-//      * permissioned: only trusted account can claim funds with propper msg
-//         * or a per-claim smart-contract?
-//      * permissionless:
-#[near(contract_state, serializers = [borsh, json])]
+#[near(contract_state)]
 #[autoimpl(Deref using self.0)]
 #[autoimpl(DerefMut using self.0)]
 #[derive(Debug, PanicOnDefault)]
@@ -66,307 +38,223 @@ pub struct Contract(Params);
 #[near(serializers = [borsh, json])]
 #[derive(Debug)]
 pub struct Params {
-    // TODO: cancel: who is able?
-    pub maker_id: AccountId,
-
-    pub maker_token_id: AccountId,
+    pub maker_asset: TokenId,
     pub maker_amount: u128,
 
-    pub taker_token_id: AccountId,
-    // TODO: or ratio? seems like to be needed only for partial fills
+    pub taker_asset: TokenId,
+    // ratio is not a good approach, since adding more maker_tokens
+    // would keep the ratio same, rather than decreasing it
     pub taker_amount: u128,
-    pub taker_whitelist: BTreeSet<AccountId>,
 
-    pub receiver_id: Option<AccountId>, // maker_id otherwise
-    pub receiver_memo: Option<String>,
-    // TODO: receiver_msg only if nep141, for sFTs state init might be needed
-    pub receiver_msg: Option<String>,
+    pub taker_asset_receiver_id: AccountId,
 
-    // TODO: can it then be a deteministic contract supporting multisig or any-of functionality
+    // TODO: store only merkle root? leaves have salts
+    // pub taker_whitelist: BTreeSet<AccountId>,
+
+    // TODO
+    #[borsh(
+        serialize_with = "BorshAs::<BorshTimestampNanoSeconds>::serialize",
+        deserialize_with = "BorshAs::<BorshTimestampNanoSeconds>::deserialize"
+    )]
+    #[serde_as(as = "SerdeTimestampNanoSeconds")]
+    pub deadline: DateTime<Utc>,
     pub cancel_authority: Option<AccountId>,
 
+    pub lost_found: BTreeMap<AccountId, BTreeMap<TokenId, u128>>,
     pub state: State,
-    // TODO: what if only partially filled when deadline expires?
-    // * is it safe to send funds via msg?
-    // #[borsh(
-    //     skip,
-    //     // serialize_with = "As::<TimestampNanoSeconds>::serialize",
-    //     // deserialize_with = "As::<TimestampNanoSeconds>::deserialize"
-    // )]
-    // #[serde_as(as = "SerdeTimestampNanoSeconds")]
-    // pub deadline: DateTime<Utc>,
-    // pub salt: [u8; 4], // TODO: only for NEP-616
-    // TODO: fees:
-    // * hard-code protocol fee_collector
-    // * app fees
-}
-
-// TODO: maker_asset cannot have msg, since it will be set by taker
-#[near(serializers = [borsh, json])]
-// TODO: serde tag
-pub enum TakerAsset {
-    Nep141 {
-        contract_id: AccountId,
-        amount: u128,
-
-        receiver_id: AccountId,
-        memo: Option<String>,
-        msg: Option<String>,
-    },
-    Nep171 {
-        contract_id: AccountId,
-        token_id: String,
-
-        receiver_id: AccountId,
-        memo: Option<String>,
-        msg: Option<String>,
-    },
-    Nep245 {
-        contract_id: AccountId,
-        token_id: String,
-        amount: u128,
-
-        receiver_id: AccountId,
-        memo: Option<String>,
-        msg: Option<String>,
-    },
-    // TODO: custom_resolve / governor?
+    // TODO: keep number of pending promises
 }
 
 impl Params {
-    #[inline]
-    pub fn taker_asset_receiver_id(&self) -> &AccountId {
-        self.receiver_id.as_ref().unwrap_or(&self.maker_id)
+    pub fn is_alive(&self) -> bool {
+        !matches!(self.state, State::Cancelled) && self.deadline > now()
     }
 }
 
-// TODO
-pub struct PartialFillsParams {
-    pub claim_manually: bool,
-    pub solvers_whitelist: BTreeSet<AccountId>, // Or IterableSet?
-}
+// escrow     <- one-of-solvers <- solver
+//            --------------------> solver
+//   (refund) -> one-of-solvers -> solver
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug)]
 pub enum State {
-    // Just initialized
+    // Just created, no assets received
     Init,
-    /// I.e. received & locked maker asset
+
+    // I.e. received & locked maker asset
     Open,
 
-    Settling,
+    // TODO: settling what part?
+    // Settling,
 
-    // TODO: settling
-    LostFound {
-        taker_asset_lost: u128,
-        maker_asset_lost: u128,
-    },
+    // TODO
+    Cancelled,
+}
+
+#[near]
+impl MultiTokenReceiver for Contract {
+    fn mt_on_transfer(
+        &mut self,
+        sender_id: AccountId,
+        previous_owner_ids: Vec<AccountId>,
+        token_ids: Vec<defuse_nep245::TokenId>,
+        amounts: Vec<U128>,
+        msg: String,
+    ) -> PromiseOrValue<Vec<U128>> {
+        let (token_id, amount) = single(token_ids)
+            .zip(single(amounts))
+            .ok_or(Error::WrongAsset)
+            .unwrap_or_panic();
+
+        let asset = TokenId::new(env::predecessor_account_id(), token_id)
+            // TODO
+            .unwrap();
+
+        require!(self.is_alive(), "expired or cancelled");
+
+        // TODO: allow for extended deadline prolongation in msg?
+        // TODO: but how can we verify sender_id to allow for that?
+
+        match self.state {
+            State::Init => {
+                require!(asset == self.maker_asset, "wrong asset");
+                // TODO: verify sender_id?
+                require!(amount.0 >= self.maker_amount, "insufficient amount");
+                // TODO: are we sure that we want to update amount?
+                self.maker_amount = amount.0;
+
+                self.state = State::Open;
+                return PromiseOrValue::Value(vec![U128(0)]);
+            }
+            State::Open => {
+                if asset == self.maker_asset {
+                    // TODO: add support for increase maker asset amount
+                    self.maker_amount += amount.0;
+                    return PromiseOrValue::Value(vec![U128(0)]);
+                }
+                require!(asset == self.taker_asset, "wrong asset");
+                // TODO: partial fills
+                let refund = amount
+                    .0
+                    .checked_sub(self.taker_amount)
+                    .ok_or("insufficient amount")
+                    .unwrap_or_panic();
+
+                let msg: TakerMessage = serde_json::from_str(&msg).unwrap();
+                let maker_asset_receiver_id = msg.receiver_id.unwrap_or(sender_id);
+
+                // TODO: self.filled += ...?
+
+                // TODO: settle now?
+                // detached send
+                let _ = Self::send(
+                    self.taker_asset.clone(),
+                    self.taker_asset_receiver_id.clone(),
+                    // TODO: add previously failed lost_found amounts?
+                    self.taker_amount,
+                )
+                .and(Self::send(
+                    self.maker_asset.clone(),
+                    maker_asset_receiver_id.clone(),
+                    self.maker_amount,
+                ))
+                .then(Self::ext(env::current_account_id()).maybe_cleanup());
+
+                PromiseOrValue::Value(vec![U128(refund)])
+            }
+            State::Cancelled => unreachable!(), // TODO
+        }
+    }
+}
+
+impl Contract {
+    fn send(asset: TokenId, receiver_id: AccountId, amount: u128) -> Promise {
+        // TODO: msg for *_transfer_call()?
+        let (contract_id, token_id) = asset.clone().into_contract_id_and_mt_token_id();
+        ext_mt_core::ext(contract_id)
+            .with_attached_deposit(NearToken::from_yoctonear(1))
+            // TODO: static gas?
+            .mt_transfer(receiver_id.clone(), token_id, U128(amount), None, None)
+            .then(
+                Self::ext(env::current_account_id())
+                    // TODO: static gas?
+                    .resolve_transfer(asset, receiver_id, U128(amount)),
+            )
+    }
+}
+
+#[near]
+impl Contract {
+    #[private]
+    pub fn resolve_transfer(
+        &mut self,
+        asset: TokenId,
+        receiver_id: AccountId,
+        amount: U128,
+    ) -> U128 {
+        let ok = matches!(env::promise_result(0), PromiseResult::Successful(v) if v.is_empty());
+
+        let used = ok.then_some(amount.0).unwrap_or(0);
+        let refund = amount.0.saturating_sub(used);
+        if refund != 0 {
+            let mut receiver = self.lost_found.entry_or_default(receiver_id);
+            let mut lost = receiver.entry_or_default(asset);
+            *lost = lost
+                .checked_add(refund)
+                // TODO: is it?
+                .unwrap_or_else(|| unreachable!());
+        }
+        U128(used)
+    }
+
+    // permissionless
+    // TODO: return value?
+    pub fn lost_found(&mut self, retry: BTreeMap<AccountId, BTreeMap<TokenId, U128>>) {
+        for (receiver_id, (asset, amount)) in retry
+            .into_iter()
+            .flat_map(|(receiver_id, amounts)| iter::repeat(receiver_id).zip(amounts))
+        {
+            // TODO: detach? are we sure
+            let _ = Self::send(asset, receiver_id, amount.0);
+        }
+    }
+
+    #[payable]
+    pub fn cancel(&mut self) {
+        assert_one_yocto();
+        require!(
+            self.cancel_authority == Some(env::predecessor_account_id()),
+            "unauthorized"
+        );
+
+        // TODO: send the rest & delete myself
+
+        // TODO: emit logs
+
+        self.state = State::Cancelled;
+    }
+
+    pub fn maybe_cleanup(self) {
+        // self
+    }
 }
 
 #[near(serializers = [json])]
 pub struct TakerMessage {
-    // TODO: Option, or sender_id of ft_on_transfer
-    pub receiver_id: AccountId,
-    pub memo: Option<String>,
-    pub msg: Option<String>,
-    // TODO: storage_deposit???
-    // TODO: min_gas
+    pub receiver_id: Option<AccountId>,
 }
 
-#[near]
-impl FungibleTokenReceiver for Contract {
-    fn ft_on_transfer(
-        &mut self,
-        // it could have been EscrowFactory who forwarded funds to us
-        sender_id: AccountId,
-        amount: U128,
-        msg: String,
-    ) -> PromiseOrValue<U128> {
-        // TODO: verify self.taker_asset != self.maker_asset && amounts != 0
-        let token_id = env::predecessor_account_id();
-
-        match self.state {
-            State::Init => {
-                require!(token_id == self.maker_token_id, "wrong asset");
-                // TODO: verify sender_id
-
-                let refund = self
-                    .maker_amount
-                    .checked_sub(amount.0)
-                    .ok_or("insufficient amount")
-                    .unwrap_or_panic_static_str();
-
-                self.state = State::Open;
-
-                PromiseOrValue::Value(U128(refund))
-            }
-            State::Open => {
-                // TODO: support adding more
-                require!(token_id == self.taker_token_id, "wrong asset");
-                let msg: TakerMessage = serde_json::from_str(&msg).unwrap();
-                // TODO: check taker is in whitelist
-
-                let refund = self
-                    .taker_amount
-                    .checked_sub(amount.0)
-                    .ok_or("insufficient amount")
-                    .unwrap_or_panic_str();
-
-                self.settle(msg, refund)
-            }
-            _ => unimplemented!(),
-        }
-    }
+#[derive(Debug, ThisError, FunctionError)]
+pub enum Error {
+    #[error("wrong asset")]
+    WrongAsset,
+    #[error("wrong amount")]
+    WrongAmount,
 }
 
-impl Contract {
-    fn settle(&mut self, taker_msg: TakerMessage, refund: u128) -> PromiseOrValue<U128> {
-        self.state = State::Settling;
-        // TODO: set state
+pub type Result<T, E = Error> = ::core::result::Result<T, E>;
 
-        let finalize = Self::ext(env::current_account_id()).finalize(
-            U128(self.taker_amount),
-            self.receiver_msg.is_some(),
-            U128(self.maker_amount),
-            taker_msg.msg.is_some(),
-            U128(refund),
-        );
-
-        Self::send(
-            self.taker_token_id.clone(),
-            self.taker_asset_receiver_id().clone(),
-            self.taker_amount,
-            // TODO: memo: what if it was withdrawal via PoA?
-            // should we withdraw all at once or by parts?
-            self.receiver_memo.clone(),
-            self.receiver_msg.clone(),
-        )
-        .and(Self::send(
-            self.maker_token_id.clone(),
-            taker_msg.receiver_id,
-            self.maker_amount,
-            taker_msg.memo,
-            taker_msg.msg,
-        ))
-        .then(finalize)
-        .into()
-    }
-
-    fn send(
-        token_contract_id: AccountId,
-        receiver_id: AccountId,
-        amount: u128,
-        memo: Option<String>,
-        msg: Option<String>,
-    ) -> Promise {
-        // TODO: storage_deposits?
-
-        let p = ext_ft_core::ext(token_contract_id)
-            // TODO: static gas?
-            .with_attached_deposit(NearToken::from_yoctonear(1));
-        if let Some(msg) = msg {
-            p.ft_transfer_call(receiver_id, U128(amount), memo, msg)
-        } else {
-            p.ft_transfer(receiver_id, U128(amount), memo)
-        }
-    }
-
-    // TODO: docs
-    /// Returns transferred amount
-    fn ft_resolve_withdraw(result_idx: u64, amount: u128, is_call: bool) -> u128 {
-        // TODO: check register length
-        match env::promise_result(result_idx) {
-            PromiseResult::Successful(value) => {
-                if is_call {
-                    // `ft_transfer_call` returns successfully transferred amount
-                    serde_json::from_slice::<U128>(&value)
-                        .unwrap_or_default()
-                        .0
-                        .min(amount)
-                } else if value.is_empty() {
-                    // `ft_transfer` returns empty result on success
-                    amount
-                } else {
-                    0
-                }
-            }
-            PromiseResult::Failed => {
-                if is_call {
-                    // do not refund on failed `ft_transfer_call` due to
-                    // NEP-141 vulnerability: `ft_resolve_transfer` fails to
-                    // read result of `ft_on_transfer` due to insufficient gas
-                    amount
-                } else {
-                    0
-                }
-            }
-        }
-    }
-}
-
-#[near]
-impl Contract {
-    #[init]
-    pub fn new(params: Params) -> Self {
-        Self(params)
-    }
-
-    // pub fn cancel(&mut self) {
-    //     require!(
-    //         // TODO
-    //         defuse_near_utils::BLOCK_TIMESTAMP.clone() > self.deadline,
-    //         "deadline has not expired yet"
-    //     );
-    // }
-
-    #[private]
-    pub fn finalize(
-        &mut self,
-        taker_asset_amount: U128,
-        taker_asset_is_call: bool,
-        maker_asset_amount: U128,
-        maker_asset_is_call: bool,
-        refund: U128,
-    ) -> U128 {
-        // TODO: assert state is Settling?
-
-        let [taker_asset_used, maker_asset_used] = [
-            (0, taker_asset_amount, taker_asset_is_call),
-            (1, maker_asset_amount, maker_asset_is_call),
-        ]
-        .map(|(result_idx, amount, is_call)| {
-            Self::ft_resolve_withdraw(result_idx, amount.0, is_call)
-        });
-
-        if taker_asset_used == taker_asset_amount.0 && maker_asset_used == maker_asset_amount.0 {
-            let _ = Promise::new(env::current_account_id())
-                .delete_account(self.taker_asset_receiver_id().clone());
-        } else {
-            self.state = State::LostFound {
-                taker_asset_lost: taker_asset_amount.0.saturating_sub(taker_asset_used),
-                maker_asset_lost: maker_asset_amount.0.saturating_sub(maker_asset_amount.0),
-            }
-        }
-
-        refund
-    }
-
-    // TODO
-    pub fn lost_found(&mut self) -> Promise {
-        let State::LostFound {
-            // TODO: if we store a map for takers and their amounts,
-            // then how can we allow anyone to transfer to them permissionlessly if the taer could have added `msg`?
-            // do we want to store this data on a contract? what if we
-            // run out of storage and the contract wouldn't be able to keep these refunds
-            // But here is a point: MMs are smart and can use only
-            // `ft_transfer()`s and manually index transfer events, right?
-            taker_asset_lost,
-            // what if maker asset was lost_found and he set msg param?
-            maker_asset_lost,
-        } = self.state
-        else {
-            env::panic_str("wrong state");
-        };
-        todo!()
-    }
+fn single<T>(v: Vec<T>) -> Option<T> {
+    let [a] = v.try_into().ok()?;
+    Some(a)
 }
