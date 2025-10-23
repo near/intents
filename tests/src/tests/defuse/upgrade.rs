@@ -1,11 +1,7 @@
 use super::DEFUSE_WASM;
 use crate::{
     tests::defuse::{
-        DefuseSigner, SigningStandard,
-        accounts::AccountManagerExt,
-        env::{Env, create_random_salted_nonce},
-        intents::ExecuteIntentsExt,
-        state::{FeesManagerExt, SaltManagerExt},
+        accounts::AccountManagerExt, env::{create_random_salted_nonce, Env}, intents::ExecuteIntentsExt, state::{FeesManagerExt, SaltManagerExt}, DefusePayloadBuilder, DefuseSigner, SigningStandard
     },
     utils::{acl::AclExt, mt::MtExt},
 };
@@ -132,41 +128,24 @@ async fn test_upgrade_with_persistence() {
             let current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
 
             let mut nonce_seed = 0u64;
-            let payloads = users
+            let payloads = futures::future::try_join_all(users
                 .iter()
                 .combinations(2)
                 .map(|accounts| {
                     let sender = accounts[0];
                     let receiver = accounts[1];
-
-                    let deadline = Deadline::new(
-                        current_timestamp
-                            .checked_add_signed(TimeDelta::days(1))
-                            .unwrap(),
-                    );
-                    let mut deterministic_rng = TestRng::new(Seed::from_u64(nonce_seed));
-                    nonce_seed = nonce_seed.wrapping_add(1);
-                    let expired_nonce =
-                        create_random_salted_nonce(current_salt, deadline, &mut deterministic_rng);
-
-                    sender.sign_defuse_message(
-                        SigningStandard::default(),
+                    sender.create_defuse_payload(
                         env.defuse.id(),
-                        expired_nonce,
-                        deadline,
-                        DefuseIntents {
-                            intents: vec![Intent::Transfer(Transfer {
+                        [Transfer {
                                 receiver_id: receiver.id().clone(),
                                 tokens: Amounts::new(
                                     [(TokenId::Nep141(Nep141TokenId::new(ft1.clone())), 1000)]
                                         .into(),
                                 ),
                                 memo: None,
-                            })],
-                        },
+                        }],
                     )
-                })
-                .collect::<Vec<_>>();
+                })).await.unwrap();
 
             env.defuse
                 .execute_intents(env.defuse.id(), payloads)
