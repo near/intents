@@ -11,9 +11,9 @@ use defuse::{
     core::fees::{FeesConfig, Pips},
 };
 use defuse_poa_factory::contract::Role as POAFactoryRole;
+use futures::lock::Mutex;
 use near_sdk::{AccountId, NearToken};
 use near_workspaces::{Account, Contract};
-use tokio::sync::Mutex;
 
 const MIGRATE_FROM_LEGACY_ENV_NAME: &str = "DEFUSE_MIGRATE_FROM_LEGACY";
 

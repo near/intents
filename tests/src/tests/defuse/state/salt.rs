@@ -14,8 +14,7 @@ async fn update_current_salt() {
     let env = Env::builder().deployer_as_super_admin().build().await;
     let prev_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
 
-    let user1 = env.create_user().await;
-    let user2 = env.create_user().await;
+    let (user1, user2) = futures::join!(env.create_user(), env.create_user());
 
     // only DAO or salt manager can rotate salt
     {
@@ -56,8 +55,7 @@ async fn invalidate_salts() {
     let mut current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
     let mut prev_salt = current_salt;
 
-    let user1 = env.create_user().await;
-    let user2 = env.create_user().await;
+    let (user1, user2) = futures::join!(env.create_user(), env.create_user());
 
     // only DAO or salt manager can invalidate salt
     {

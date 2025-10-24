@@ -1,7 +1,10 @@
 use anyhow::Result;
 use near_sdk::AccountId;
 use near_workspaces::Account;
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    convert::Infallible,
+};
 
 use defuse::core::{
     Deadline, Nonce,
@@ -10,7 +13,7 @@ use defuse::core::{
     token_id::{TokenId, nep141::Nep141TokenId},
 };
 use defuse_randomness::{Rng, make_true_rng};
-use futures::future::try_join_all;
+use futures::{StreamExt, TryStreamExt, future::try_join_all};
 
 use crate::{
     tests::{
@@ -52,8 +55,8 @@ impl Env {
 
         try_join_all(
             state
-                .tokens
-                .iter()
+                .token_balances
+                .keys()
                 .map(|token_id| self.apply_token(token_id)),
         )
         .await
@@ -173,27 +176,23 @@ impl Env {
     }
 
     async fn verify_public_keys(&self, account_id: &AccountId, public_keys: &HashSet<PublicKey>) {
-        let res = try_join_all(
-            public_keys
-                .iter()
-                .map(|p| self.defuse.has_public_key(account_id, p)),
-        )
-        .await
-        .expect("Failed to verify publick keys");
-
-        assert!(res.into_iter().all(|has_key| has_key),);
+        assert!(
+            futures::stream::iter(public_keys)
+                .map(Ok::<_, Infallible>)
+                .try_all(|n| async { self.defuse.has_public_key(account_id, n).await.unwrap() })
+                .await
+                .unwrap()
+        );
     }
 
     async fn verify_nonces(&self, account_id: &AccountId, nonces: &HashSet<Nonce>) {
-        let res = try_join_all(
-            nonces
-                .iter()
-                .map(|n| self.defuse.is_nonce_used(account_id, n)),
-        )
-        .await
-        .expect("Failed to verify nonces");
-
-        assert!(res.into_iter().all(|is_used| is_used));
+        assert!(
+            futures::stream::iter(nonces)
+                .map(Ok::<_, Infallible>)
+                .try_all(|n| async { self.defuse.is_nonce_used(account_id, n).await.unwrap() })
+                .await
+                .unwrap()
+        );
     }
 
     async fn verify_token_balances_consistency(&self) {
@@ -204,29 +203,27 @@ impl Env {
                 .token_balances
                 .iter()
                 .map(|(token_id, expected_balances)| {
-                    self.verify_token_balance(token_id, expected_balances)
+                    self.check_nep141_balances_eq(token_id, expected_balances)
                 }),
         )
         .await
         .expect("Failed to verify token balances");
     }
 
-    async fn verify_token_balance(
+    async fn check_nep141_balances_eq(
         &self,
         token_id: &Nep141TokenId,
         expected_balances: &HashMap<AccountId, u128>,
     ) -> Result<()> {
-        try_join_all(
-            expected_balances
-                .iter()
-                .map(|(account_id, amount)| self.check_balance(account_id, token_id, *amount)),
-        )
+        try_join_all(expected_balances.iter().map(|(account_id, amount)| {
+            self.check_nep141_balance_eq(account_id, token_id, *amount)
+        }))
         .await?;
 
         Ok(())
     }
 
-    async fn check_balance(
+    async fn check_nep141_balance_eq(
         &self,
         account_id: &AccountId,
         token_id: &Nep141TokenId,
