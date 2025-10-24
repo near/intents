@@ -1,0 +1,39 @@
+[package]
+name = "defuse-token-id"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+defuse-nep245.workspace = true
+
+near-account-id.workspace = true
+near-contract-standards.workspace = true
+near-sdk.workspace = true
+
+derive_more.workspace = true
+serde_with.workspace = true
+strum.workspace = true
+thiserror.workspace = true
+
+defuse-near-utils = { workspace = true, optional = true }
+
+arbitrary = { workspace = true, optional = true }
+arbitrary_with = { workspace = true, optional = true }
+
+[features]
+abi = []
+arbitrary = ["dep:arbitrary", "dep:arbitrary_with", "dep:defuse-near-utils"]
+
+[dev-dependencies]
+defuse-near-utils.workspace = true
+defuse-test-utils.workspace = true
+
+arbitrary.workspace = true
+arbitrary_with.workspace = true
+hex.workspace = true
+rstest.workspace = true

@@ -1,5 +1,5 @@
 use defuse_core::{
-    DefuseError, Nonce, Result,
+    DefuseError, Nonce, NoncePrefix, Result, Salt,
     crypto::PublicKey,
     engine::{State, StateView},
     fees::Pips,
@@ -90,6 +90,10 @@ impl StateView for Contract {
             .map(Lock::as_inner_unchecked)
             .is_none_or(Account::is_auth_by_predecessor_id_enabled)
     }
+
+    fn is_valid_salt(&self, salt: Salt) -> bool {
+        self.salts.is_valid(salt)
+    }
 }
 
 impl State for Contract {
@@ -125,22 +129,18 @@ impl State for Contract {
     }
 
     #[inline]
-    fn cleanup_expired_nonces(
+    fn cleanup_nonce_by_prefix(
         &mut self,
-        account_id: &AccountId,
-        nonces: impl IntoIterator<Item = Nonce>,
-    ) -> Result<()> {
+        account_id: &AccountIdRef,
+        prefix: NoncePrefix,
+    ) -> Result<bool> {
         let account = self
             .accounts
             .get_mut(account_id)
-            .ok_or_else(|| DefuseError::AccountNotFound(account_id.clone()))?
+            .ok_or_else(|| DefuseError::AccountNotFound(account_id.to_owned()))?
             .as_inner_unchecked_mut();
 
-        for n in nonces {
-            account.clear_expired_nonce(n);
-        }
-
-        Ok(())
+        Ok(account.cleanup_nonce_by_prefix(prefix))
     }
 
     fn internal_add_balance(
@@ -276,19 +276,7 @@ impl State for Contract {
     }
 
     fn set_auth_by_predecessor_id(&mut self, account_id: AccountId, enable: bool) -> Result<bool> {
-        if enable {
-            let Some(account) = self.accounts.get_mut(&account_id) else {
-                // no need to create an account: not-yet-existing accounts
-                // have auth by PREDECESSOR_ID enabled by default
-                return Ok(true);
-            };
-            account
-        } else {
-            self.accounts.get_or_create(account_id.clone())
-        }
-        .get_mut()
-        .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))
-        .map(|account| account.set_auth_by_predecessor_id(&account_id, enable))
+        self.internal_set_auth_by_predecessor_id(&account_id, enable, false)
     }
 
     fn auth_call(&mut self, signer_id: &AccountIdRef, auth_call: AuthCall) -> Result<()> {

@@ -22,3 +22,7 @@ serde = ["dep:serde_with"]
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+near-sdk = { workspace = true, features = ["unstable", "unit-testing"] }
+rstest.workspace = true

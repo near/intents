@@ -42,7 +42,7 @@ where
     }
 
     #[inline]
-    pub fn clear_by_prefix(&mut self, prefix: [u8; 31]) -> bool {
+    pub fn cleanup_by_prefix(&mut self, prefix: U248) -> bool {
         self.0.remove(&prefix).is_some()
     }
 

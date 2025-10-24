@@ -1,16 +1,14 @@
 mod entry;
+mod nonces;
 
-pub use self::entry::*;
+pub use self::{entry::*, nonces::MaybeLegacyAccountNonces};
 
 use std::borrow::Cow;
 
 use bitflags::bitflags;
-use defuse_bitmap::{U248, U256};
+use defuse_bitmap::U256;
 use defuse_core::{
-    Nonces, Result,
-    accounts::{AccountEvent, PublicKeyEvent},
-    crypto::PublicKey,
-    events::DefuseEvent,
+    NoncePrefix, Result, accounts::AccountEvent, crypto::PublicKey, events::DefuseEvent,
     intents::account::SetAuthByPredecessorId,
 };
 
@@ -32,7 +30,7 @@ use super::AccountState;
 #[autoimpl(Deref using self.state)]
 #[autoimpl(DerefMut using self.state)]
 pub struct Account {
-    nonces: Nonces<LookupMap<U248, U256>>,
+    nonces: MaybeLegacyAccountNonces,
 
     flags: AccountFlags,
     public_keys: IterableSet<PublicKey>,
@@ -51,8 +49,8 @@ impl Account {
         let prefix = prefix.into_storage_key();
 
         Self {
-            nonces: Nonces::new(LookupMap::new(
-                prefix.as_slice().nest(AccountPrefix::Nonces),
+            nonces: MaybeLegacyAccountNonces::new(LookupMap::with_hasher(
+                prefix.as_slice().nest(AccountPrefix::OptimizedNonces),
             )),
             flags: (!me.get_account_type().is_implicit())
                 .then_some(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
@@ -66,24 +64,6 @@ impl Account {
     #[inline]
     #[must_use]
     pub fn add_public_key(&mut self, me: &AccountIdRef, public_key: PublicKey) -> bool {
-        if !self.maybe_add_public_key(me, public_key) {
-            return false;
-        }
-
-        DefuseEvent::PublicKeyAdded(AccountEvent::new(
-            Cow::Borrowed(me),
-            PublicKeyEvent {
-                public_key: Cow::Borrowed(&public_key),
-            },
-        ))
-        .emit();
-
-        true
-    }
-
-    #[inline]
-    #[must_use]
-    fn maybe_add_public_key(&mut self, me: &AccountIdRef, public_key: PublicKey) -> bool {
         if me == public_key.to_implicit_account_id() {
             let was_removed = self.is_implicit_public_key_removed();
             self.set_implicit_public_key_removed(false);
@@ -96,24 +76,6 @@ impl Account {
     #[inline]
     #[must_use]
     pub fn remove_public_key(&mut self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
-        if !self.maybe_remove_public_key(me, public_key) {
-            return false;
-        }
-
-        DefuseEvent::PublicKeyRemoved(AccountEvent::new(
-            Cow::Borrowed(me),
-            PublicKeyEvent {
-                public_key: Cow::Borrowed(public_key),
-            },
-        ))
-        .emit();
-
-        true
-    }
-
-    #[inline]
-    #[must_use]
-    fn maybe_remove_public_key(&mut self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
         if me == public_key.to_implicit_account_id() {
             let was_removed = self.is_implicit_public_key_removed();
             self.set_implicit_public_key_removed(true);
@@ -144,16 +106,16 @@ impl Account {
     }
 
     #[inline]
-    pub fn commit_nonce(&mut self, n: U256) -> Result<()> {
-        self.nonces.commit(n)
+    pub fn commit_nonce(&mut self, nonce: U256) -> Result<()> {
+        self.nonces.commit(nonce)
     }
 
-    /// Clears the nonce if it was expired.
-    /// Returns whether the nonces was cleared. If the nonce has not expired yet, then returns `false`,
+    /// Clears the all nonces with corresponding prefix if it was expired/invalidated.
+    /// Returns whether the nonces was cleared,
     /// regardless of whether it was previously committed or not.
     #[inline]
-    pub fn clear_expired_nonce(&mut self, n: U256) -> bool {
-        self.nonces.clear_expired(n)
+    pub fn cleanup_nonce_by_prefix(&mut self, prefix: NoncePrefix) -> bool {
+        self.nonces.cleanup_by_prefix(prefix)
     }
 
     #[inline]
@@ -195,13 +157,22 @@ impl Account {
     }
 }
 
-#[derive(BorshSerialize, BorshStorageKey)]
-#[borsh(crate = "::near_sdk::borsh")]
-enum AccountPrefix {
-    Nonces,
-    PublicKeys,
-    State,
+#[allow(deprecated)]
+mod prefix {
+    use super::{BorshSerialize, BorshStorageKey};
+
+    #[derive(BorshSerialize, BorshStorageKey)]
+    #[borsh(crate = "::near_sdk::borsh")]
+    pub enum AccountPrefix {
+        #[deprecated(note = "Please use `AccountPrefix::OptimizedNonces` instead.")]
+        _LegacyNonces,
+        PublicKeys,
+        State,
+        OptimizedNonces,
+    }
 }
+
+use prefix::AccountPrefix;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[near(serializers = [borsh])]

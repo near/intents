@@ -26,6 +26,7 @@ members = [
     "tests",
     "test-utils",
     "tip191",
+    "token-id",
     "ton-connect",
     "wnear",
 ]
@@ -60,6 +61,7 @@ defuse-poa-token.path = "poa-token"
 defuse-sep53.path = "sep53"
 defuse-serde-utils.path = "serde-utils"
 defuse-tip191.path = "tip191"
+defuse-token-id.path = "token-id"
 defuse-ton-connect.path = "ton-connect"
 defuse-wnear.path = "wnear"
 

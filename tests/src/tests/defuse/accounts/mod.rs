@@ -1,5 +1,6 @@
 mod auth_by_predecessor_id;
-mod locked;
+mod force;
+mod manage_public_keys;
 mod nonces;
 mod traits;
 
@@ -23,8 +24,9 @@ pub trait AccountManagerExt {
         public_key: PublicKey,
     ) -> anyhow::Result<()>;
 
-    async fn cleanup_expired_nonces(
+    async fn cleanup_nonces(
         &self,
+        defuse_contract_id: &AccountId,
         data: &[(AccountId, Vec<Nonce>)],
     ) -> anyhow::Result<TestLog>;
 
@@ -60,7 +62,6 @@ impl AccountManagerExt for near_workspaces::Account {
         defuse_contract_id: &AccountId,
         public_key: PublicKey,
     ) -> anyhow::Result<()> {
-        // TODO: check bool output
         self.call(defuse_contract_id, "add_public_key")
             .deposit(NearToken::from_yoctonear(1))
             .args_json(json!({
@@ -90,8 +91,9 @@ impl AccountManagerExt for near_workspaces::Account {
         Ok(())
     }
 
-    async fn cleanup_expired_nonces(
+    async fn cleanup_nonces(
         &self,
+        defuse_contract_id: &AccountId,
         data: &[(AccountId, Vec<Nonce>)],
     ) -> anyhow::Result<TestLog> {
         let nonces = data
@@ -104,7 +106,8 @@ impl AccountManagerExt for near_workspaces::Account {
             .collect::<Vec<(AccountId, Vec<AsBase64<Nonce>>)>>();
 
         let res = self
-            .call(self.id(), "cleanup_expired_nonces")
+            .call(defuse_contract_id, "cleanup_nonces")
+            .deposit(NearToken::from_yoctonear(1))
             .args_json(json!({
                 "nonces": nonces,
             }))
@@ -201,11 +204,14 @@ impl AccountManagerExt for near_workspaces::Contract {
             .await
     }
 
-    async fn cleanup_expired_nonces(
+    async fn cleanup_nonces(
         &self,
+        defuse_contract_id: &AccountId,
         data: &[(AccountId, Vec<Nonce>)],
     ) -> anyhow::Result<TestLog> {
-        self.as_account().cleanup_expired_nonces(data).await
+        self.as_account()
+            .cleanup_nonces(defuse_contract_id, data)
+            .await
     }
 
     async fn defuse_has_public_key(

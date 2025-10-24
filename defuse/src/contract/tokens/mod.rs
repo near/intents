@@ -18,6 +18,7 @@ impl Contract {
         memo: Option<&str>,
     ) -> Result<()> {
         let owner = self
+            .storage
             .accounts
             .get_or_create(owner_id.clone())
             // deposits are allowed for locked accounts
@@ -39,6 +40,7 @@ impl Contract {
             mint_event.amounts.to_mut().push(U128(amount));
 
             let total_supply = self
+                .storage
                 .state
                 .total_supplies
                 .add(token_id.clone(), amount)
@@ -51,6 +53,7 @@ impl Contract {
                 }
                 TokenId::Nep141(_) | TokenId::Nep245(_) => {}
             }
+
             owner
                 .token_balances
                 .add(token_id, amount)
@@ -72,6 +75,7 @@ impl Contract {
         force: bool,
     ) -> Result<()> {
         let owner = self
+            .storage
             .accounts
             .get_mut(owner_id)
             .ok_or_else(|| DefuseError::AccountNotFound(owner_id.to_owned()))?
@@ -99,7 +103,8 @@ impl Contract {
                 .sub(token_id.clone(), amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
 
-            self.state
+            self.storage
+                .state
                 .total_supplies
                 .sub(token_id, amount)
                 .ok_or(DefuseError::BalanceOverflow)?;
@@ -110,7 +115,7 @@ impl Contract {
         // `mt_transfer` arrives. This can happen due to postponed
         // delta-matching during intents execution.
         if !burn_event.amounts.is_empty() {
-            self.postponed_burns.mt_burn(burn_event);
+            self.runtime.postponed_burns.mt_burn(burn_event);
         }
 
         Ok(())

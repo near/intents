@@ -6,22 +6,25 @@ pub mod config;
 mod events;
 mod fees;
 mod intents;
+mod salts;
 mod state;
 mod tokens;
 mod upgrade;
+mod versioned;
 
 use core::iter;
 
+use defuse_borsh_utils::adapters::As;
 use defuse_core::Result;
-
-use events::PostponedMtBurnEvents;
 use impl_tools::autoimpl;
 use near_plugins::{AccessControlRole, AccessControllable, Pausable, access_control};
 use near_sdk::{
-    BorshStorageKey, PanicOnDefault, borsh::BorshDeserialize, near, require, store::LookupSet,
+    BorshStorageKey, IntoStorageKey, PanicOnDefault, borsh::BorshDeserialize, near, require,
+    store::LookupSet,
 };
+use versioned::MaybeVersionedContractStorage;
 
-use crate::Defuse;
+use crate::{Defuse, contract::events::PostponedMtBurnEvents};
 
 use self::{
     accounts::Accounts,
@@ -45,6 +48,10 @@ pub enum Role {
 
     UnrestrictedAccountLocker,
     UnrestrictedAccountUnlocker,
+
+    SaltManager,
+
+    GarbageCollector,
 }
 
 #[access_control(role_type(Role))]
@@ -60,16 +67,34 @@ pub enum Role {
         standard(standard = "nep245", version = "1.0.0"),
     )
 )]
+#[autoimpl(Deref using self.storage)]
+#[autoimpl(DerefMut using self.storage)]
+pub struct Contract {
+    #[borsh(
+        deserialize_with = "As::<MaybeVersionedContractStorage>::deserialize",
+        serialize_with = "As::<MaybeVersionedContractStorage>::serialize"
+    )]
+    storage: ContractStorage,
+
+    #[borsh(skip)]
+    runtime: Runtime,
+}
+
+#[derive(Debug)]
 #[autoimpl(Deref using self.state)]
 #[autoimpl(DerefMut using self.state)]
-pub struct Contract {
+#[near(serializers = [borsh])]
+pub struct ContractStorage {
     accounts: Accounts,
+
     state: ContractState,
 
     relayer_keys: LookupSet<near_sdk::PublicKey>,
+}
 
-    #[borsh(skip)]
-    postponed_burns: PostponedMtBurnEvents,
+#[derive(Debug, Default)]
+pub struct Runtime {
+    pub postponed_burns: PostponedMtBurnEvents,
 }
 
 #[near]
@@ -79,10 +104,12 @@ impl Contract {
     #[allow(clippy::use_self)] // Clippy seems to not play well with near-sdk, or there is a bug in clippy - seen in shared security analysis
     pub fn new(config: DefuseConfig) -> Self {
         let mut contract = Self {
-            accounts: Accounts::new(Prefix::Accounts),
-            state: ContractState::new(Prefix::State, config.wnear_id, config.fees),
-            relayer_keys: LookupSet::new(Prefix::RelayerKeys),
-            postponed_burns: PostponedMtBurnEvents::new(),
+            storage: ContractStorage {
+                accounts: Accounts::new(Prefix::Accounts),
+                state: ContractState::new(Prefix::State, config.wnear_id, config.fees),
+                relayer_keys: LookupSet::new(Prefix::RelayerKeys),
+            },
+            runtime: Runtime::default(),
         };
         contract.init_acl(config.roles);
         contract
@@ -119,4 +146,10 @@ enum Prefix {
     Accounts,
     State,
     RelayerKeys,
+}
+
+pub trait MigrateStorageWithPrefix<T>: Sized {
+    fn migrate<S>(val: T, prefix: S) -> Self
+    where
+        S: IntoStorageKey;
 }

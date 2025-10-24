@@ -17,7 +17,7 @@ use rstest::rstest;
 use crate::{
     tests::defuse::{
         DefuseSigner, SigningStandard,
-        accounts::{AccountManagerExt, traits::AccountForceLockerExt},
+        accounts::{AccountManagerExt, traits::ForceAccountManagerExt},
         env::Env,
         intents::ExecuteIntentsExt,
         tokens::nep141::traits::DefuseFtWithdrawer,
@@ -370,6 +370,136 @@ async fn test_lock_account(random_bytes: Vec<u8>) {
                 .await
                 .unwrap(),
             3000 - 200 + 50
+        );
+    }
+}
+
+#[tokio::test]
+#[rstest]
+async fn test_force_set_auth_by_predecessor_id(random_bytes: Vec<u8>) {
+    let mut u = Unstructured::new(&random_bytes);
+
+    let env = Env::builder().deployer_as_super_admin().build().await;
+
+    let user_account = &env.user1;
+    let account_locker = &env.user2;
+    let account_unlocker = &env.user3;
+
+    // disable auth by predecessor id
+    {
+        // no permisson
+        {
+            account_locker
+                .force_disable_auth_by_predecessor_ids(env.defuse.id(), [user_account.id().clone()])
+                .await
+                .expect_err(&format!(
+                    "{} doesn't have {:?} role yet",
+                    account_locker.id(),
+                    Role::UnrestrictedAccountLocker,
+                ));
+            assert!(
+                env.defuse
+                    .is_auth_by_predecessor_id_enabled(user_account.id())
+                    .await
+                    .unwrap()
+            );
+        }
+
+        // grant UnrestrictedAccountLocker role
+        env.acl_grant_role(
+            env.defuse.id(),
+            Role::UnrestrictedAccountLocker,
+            account_locker.id(),
+        )
+        .await
+        .unwrap();
+
+        // permisson granted
+        {
+            account_locker
+                .force_disable_auth_by_predecessor_ids(env.defuse.id(), [user_account.id().clone()])
+                .await
+                .unwrap();
+            assert!(
+                !env.defuse
+                    .is_auth_by_predecessor_id_enabled(user_account.id())
+                    .await
+                    .unwrap()
+            );
+        }
+    }
+
+    let pk: PublicKey = u.arbitrary().unwrap();
+
+    // try to execute tx from user's account with disabled auth by predecessor id
+    {
+        user_account
+            .add_public_key(env.defuse.id(), pk)
+            .await
+            .unwrap_err();
+        assert!(
+            !env.defuse
+                .has_public_key(user_account.id(), &pk)
+                .await
+                .unwrap()
+        );
+    }
+
+    // enable auth by predecessor id
+    {
+        // no permisson
+        {
+            account_unlocker
+                .force_enable_auth_by_predecessor_ids(env.defuse.id(), [user_account.id().clone()])
+                .await
+                .expect_err(&format!(
+                    "{} doesn't have {:?} role yet",
+                    account_unlocker.id(),
+                    Role::UnrestrictedAccountUnlocker,
+                ));
+            assert!(
+                !env.defuse
+                    .is_auth_by_predecessor_id_enabled(user_account.id())
+                    .await
+                    .unwrap()
+            );
+        }
+
+        // grant UnrestrictedAccountUnlocker role
+        env.acl_grant_role(
+            env.defuse.id(),
+            Role::UnrestrictedAccountUnlocker,
+            account_unlocker.id(),
+        )
+        .await
+        .unwrap();
+
+        // permisson granted
+        {
+            account_unlocker
+                .force_enable_auth_by_predecessor_ids(env.defuse.id(), [user_account.id().clone()])
+                .await
+                .unwrap();
+            assert!(
+                env.defuse
+                    .is_auth_by_predecessor_id_enabled(user_account.id())
+                    .await
+                    .unwrap()
+            );
+        }
+    }
+
+    // try to execute tx from user's account with enabled auth by predecessor id
+    {
+        user_account
+            .add_public_key(env.defuse.id(), pk)
+            .await
+            .unwrap();
+        assert!(
+            env.defuse
+                .has_public_key(user_account.id(), &pk)
+                .await
+                .unwrap()
         );
     }
 }
