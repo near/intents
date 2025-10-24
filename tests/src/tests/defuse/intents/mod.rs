@@ -64,7 +64,24 @@ pub trait ExecuteIntentsExt: AccountManagerExt {
         defuse_id: &AccountId,
         intents: impl IntoIterator<Item = MultiPayload>,
     ) -> anyhow::Result<TestLog>;
+
     async fn execute_intents(
+        &self,
+        defuse_id: &AccountId,
+        intents: impl IntoIterator<Item = MultiPayload>,
+    ) -> anyhow::Result<TestLog> {
+        let intents = intents.into_iter().collect::<Vec<_>>();
+        let simulation_result = self
+            .defuse_simulate_intents(defuse_id, intents.clone())
+            .await;
+
+        self.defuse_execute_intents(defuse_id, intents)
+            .await
+            // return simulation_err if execute_ok
+            .and_then(|res| simulation_result.map(|_| res))
+    }
+
+    async fn execute_intents_without_simulation(
         &self,
         intents: impl IntoIterator<Item = MultiPayload>,
     ) -> anyhow::Result<TestLog>;
@@ -74,6 +91,7 @@ pub trait ExecuteIntentsExt: AccountManagerExt {
         defuse_id: &AccountId,
         intents: impl IntoIterator<Item = MultiPayload>,
     ) -> anyhow::Result<SimulationOutput>;
+
     async fn simulate_intents(
         &self,
         intents: impl IntoIterator<Item = MultiPayload>,
@@ -86,20 +104,15 @@ impl ExecuteIntentsExt for near_workspaces::Account {
         defuse_id: &AccountId,
         intents: impl IntoIterator<Item = MultiPayload>,
     ) -> anyhow::Result<TestLog> {
-        let intents = intents.into_iter().collect::<Vec<_>>();
-
-        // simulate before execution
-        let simulation_result = self
-            .defuse_simulate_intents(defuse_id, intents.clone())
-            .await;
-
         let args = json!({
-            "signed": intents,
+            "signed": intents.into_iter().collect::<Vec<_>>(),
         });
+
         println!(
             "execute_intents({})",
             serde_json::to_string_pretty(&args).unwrap()
         );
+
         self.call(defuse_id, "execute_intents")
             .args_json(args)
             .max_gas()
@@ -111,11 +124,9 @@ impl ExecuteIntentsExt for near_workspaces::Account {
             })
             .map(Into::into)
             .map_err(Into::into)
-            // return simulation_err if execute_ok
-            .and_then(|res| simulation_result.map(|_| res))
     }
 
-    async fn execute_intents(
+    async fn execute_intents_without_simulation(
         &self,
         intents: impl IntoIterator<Item = MultiPayload>,
     ) -> anyhow::Result<TestLog> {
@@ -160,9 +171,19 @@ impl ExecuteIntentsExt for near_workspaces::Contract {
     }
     async fn execute_intents(
         &self,
+        defuse_id: &AccountId,
         intents: impl IntoIterator<Item = MultiPayload>,
     ) -> anyhow::Result<TestLog> {
-        self.as_account().execute_intents(intents).await
+        self.as_account().execute_intents(defuse_id, intents).await
+    }
+
+    async fn execute_intents_without_simulation(
+        &self,
+        intents: impl IntoIterator<Item = MultiPayload>,
+    ) -> anyhow::Result<TestLog> {
+        self.as_account()
+            .execute_intents_without_simulation(intents)
+            .await
     }
 
     async fn defuse_simulate_intents(
@@ -194,21 +215,27 @@ async fn simulate_is_view_method(
         .build()
         .await;
 
-    let ft1 = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
+    let (user, other_user, ft) =
+        futures::join!(env.create_user(), env.create_user(), env.create_token());
+
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
+
+    env.initial_ft_storage_deposit(vec![user.id(), other_user.id()], vec![&ft])
+        .await;
 
     // deposit
-    env.defuse_ft_deposit_to(&env.ft1, 1000, env.user1.id())
+    env.defuse_ft_deposit_to(&ft, 1000, user.id())
         .await
         .unwrap();
 
     let nonce = rng.random();
 
     let transfer_intent = Transfer {
-        receiver_id: env.user2.id().clone(),
-        tokens: Amounts::new(std::iter::once((ft1.clone(), 1000)).collect()),
+        receiver_id: other_user.id().clone(),
+        tokens: Amounts::new(std::iter::once((ft_id.clone(), 1000)).collect()),
         memo: None,
     };
-    let transfer_intent_payload = env.user1.sign_defuse_message(
+    let transfer_intent_payload = user.sign_defuse_message(
         SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
         env.defuse.id(),
         nonce,
@@ -229,7 +256,7 @@ async fn simulate_is_view_method(
     let expected_log = DefuseEvent::Transfer(Cow::Owned(vec![IntentEvent {
         intent_hash: transfer_intent_payload.hash(),
         event: AccountEvent {
-            account_id: env.user1.id().clone().into(),
+            account_id: user.id().clone().into(),
             event: Cow::Owned(transfer_intent),
         },
     }]))
@@ -246,14 +273,14 @@ async fn simulate_is_view_method(
     // Verify balances haven't changed (simulate is a view method)
     assert_eq!(
         env.defuse
-            .mt_balance_of(env.user1.id(), &ft1.to_string())
+            .mt_balance_of(user.id(), &ft_id.to_string())
             .await
             .unwrap(),
         1000
     );
     assert_eq!(
         env.defuse
-            .mt_balance_of(env.user2.id(), &ft1.to_string())
+            .mt_balance_of(other_user.id(), &ft_id.to_string())
             .await
             .unwrap(),
         0
@@ -271,15 +298,21 @@ async fn webauthn(#[values(false, true)] no_registration: bool) {
         .build()
         .await;
 
-    let ft1 = TokenId::from(Nep141TokenId::new(env.ft1.clone()));
+    let user = env.create_named_user("user1").await.unwrap();
+
+    let ft = env.create_named_token("ft1").await;
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
+
+    env.initial_ft_storage_deposit(vec![user.id()], vec![&ft])
+        .await;
 
     // deposit
-    env.defuse_ft_deposit_to(&env.ft1, 2000, &SIGNER_ID.to_owned())
+    env.defuse_ft_deposit_to(&ft, 2000, &SIGNER_ID.to_owned())
         .await
         .unwrap();
 
     env.defuse
-        .execute_intents([serde_json::from_str(r#"{
+        .execute_intents(env.defuse.id(), [serde_json::from_str(r#"{
   "standard": "webauthn",
   "payload": "{\"signer_id\":\"0x3602b546589a8fcafdce7fad64a46f91db0e4d50\",\"verifying_contract\":\"defuse.test.near\",\"deadline\":\"2050-03-30T00:00:00Z\",\"nonce\":\"A3nsY1GMVjzyXL3mUzOOP3KT+5a0Ruy+QDNWPhchnxM=\",\"intents\":[{\"intent\":\"transfer\",\"receiver_id\":\"user1.test.near\",\"tokens\":{\"nep141:ft1.poa-factory.test.near\":\"1000\"}}]}",
   "public_key": "p256:2V8Np9vGqLiwVZ8qmMmpkxU7CTRqje4WtwFeLimSwuuyF1rddQK5fELiMgxUnYbVjbZHCNnGc6fAe4JeDcVxgj3Q",
@@ -299,14 +332,14 @@ async fn webauthn(#[values(false, true)] no_registration: bool) {
 
     assert_eq!(
         env.defuse
-            .mt_balance_of(env.user1.id(), &ft1.to_string())
+            .mt_balance_of(user.id(), &ft_id.to_string())
             .await
             .unwrap(),
         2000
     );
     assert_eq!(
         env.defuse
-            .mt_balance_of(&SIGNER_ID.to_owned(), &ft1.to_string())
+            .mt_balance_of(&SIGNER_ID.to_owned(), &ft_id.to_string())
             .await
             .unwrap(),
         0
@@ -321,11 +354,12 @@ async fn ton_connect_sign_intent_example(#[notrace] mut rng: impl Rng) {
 
     let env: Env = Env::builder().no_registration(false).build().await;
 
+    let ft_id: AccountId = "ft.test.near".parse().unwrap();
     let address = MsgAddress::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 32]>())).unwrap();
 
     let intents = DefuseIntents {
         intents: [FtWithdraw {
-            token: env.ft1.clone(),
+            token: ft_id,
             receiver_id: "bob.near".parse().unwrap(),
             amount: 1000.into(),
             memo: None,

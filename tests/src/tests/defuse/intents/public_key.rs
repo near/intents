@@ -26,13 +26,15 @@ async fn execute_add_public_key_intent(
 ) {
     let env = Env::builder().no_registration(true).build().await;
 
+    let user = env.create_user().await;
+
     let new_public_key = public_key;
 
     let add_public_key_intent = AddPublicKey {
         public_key: new_public_key,
     };
 
-    let add_public_key_payload = env.user1.sign_defuse_message(
+    let add_public_key_payload = user.sign_defuse_message(
         signing_standard,
         env.defuse.id(),
         nonce,
@@ -44,7 +46,7 @@ async fn execute_add_public_key_intent(
 
     let result = env
         .defuse
-        .execute_intents([add_public_key_payload.clone()])
+        .execute_intents(env.defuse.id(), [add_public_key_payload.clone()])
         .await
         .unwrap();
 
@@ -52,13 +54,13 @@ async fn execute_add_public_key_intent(
         result.logs().to_vec(),
         [
             DefuseEvent::PublicKeyAdded(AccountEvent::new(
-                env.user1.id(),
+                user.id(),
                 PublicKeyEvent {
                     public_key: Cow::Borrowed(&new_public_key),
                 },
             ))
             .to_near_sdk_log(),
-            AccountNonceIntentEvent::new(&env.user1.id(), nonce, &add_public_key_payload)
+            AccountNonceIntentEvent::new(&user.id(), nonce, &add_public_key_payload)
                 .into_event_log(),
         ]
     );
@@ -76,12 +78,14 @@ async fn execute_remove_public_key_intent(
 ) {
     let env = Env::builder().no_registration(true).build().await;
 
+    let user = env.create_user().await;
+
     let new_public_key = public_key;
     let add_public_key_intent = AddPublicKey {
         public_key: new_public_key,
     };
 
-    let add_public_key_payload = env.user1.sign_defuse_message(
+    let add_public_key_payload = user.sign_defuse_message(
         add_signing_standard,
         env.defuse.id(),
         add_nonce,
@@ -92,7 +96,7 @@ async fn execute_remove_public_key_intent(
     );
 
     env.defuse
-        .execute_intents([add_public_key_payload])
+        .execute_intents(env.defuse.id(), [add_public_key_payload])
         .await
         .unwrap();
 
@@ -100,7 +104,7 @@ async fn execute_remove_public_key_intent(
         public_key: new_public_key,
     };
 
-    let remove_public_key_payload = env.user1.sign_defuse_message(
+    let remove_public_key_payload = user.sign_defuse_message(
         remove_signing_standard,
         env.defuse.id(),
         remove_nonce,
@@ -112,7 +116,7 @@ async fn execute_remove_public_key_intent(
 
     let result = env
         .defuse
-        .execute_intents([remove_public_key_payload.clone()])
+        .execute_intents(env.defuse.id(), [remove_public_key_payload.clone()])
         .await
         .unwrap();
 
@@ -120,13 +124,13 @@ async fn execute_remove_public_key_intent(
         result.logs().to_vec(),
         [
             DefuseEvent::PublicKeyRemoved(AccountEvent::new(
-                env.user1.id(),
+                user.id(),
                 PublicKeyEvent {
                     public_key: Cow::Borrowed(&new_public_key),
                 },
             ))
             .to_near_sdk_log(),
-            AccountNonceIntentEvent::new(&env.user1.id(), remove_nonce, &remove_public_key_payload)
+            AccountNonceIntentEvent::new(&user.id(), remove_nonce, &remove_public_key_payload)
                 .into_event_log(),
         ]
     );

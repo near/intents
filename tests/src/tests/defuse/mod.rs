@@ -23,19 +23,40 @@ use defuse::{
     },
 };
 use near_sdk::{AccountId, serde::Serialize, serde_json::json};
+use near_sdk::{Gas, NearToken};
 use near_workspaces::Contract;
 use std::sync::LazyLock;
 
-static DEFUSE_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("defuse"));
+static DEFUSE_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("res/defuse"));
+static DEFUSE_LEGACY_WASM: LazyLock<Vec<u8>> =
+    LazyLock::new(|| read_wasm("releases/defuse-0.2.10.wasm"));
 
 pub trait DefuseExt: AccountManagerExt {
-    #[allow(clippy::too_many_arguments)]
-    async fn deploy_defuse(&self, id: &str, config: DefuseConfig) -> anyhow::Result<Contract>;
+    async fn deploy_defuse(
+        &self,
+        id: &str,
+        config: DefuseConfig,
+        legacy: bool,
+    ) -> anyhow::Result<Contract>;
+
+    async fn upgrade_defuse(&self, defuse_contract_id: &AccountId) -> anyhow::Result<()>;
 }
 
 impl DefuseExt for near_workspaces::Account {
-    async fn deploy_defuse(&self, id: &str, config: DefuseConfig) -> anyhow::Result<Contract> {
-        let contract = self.deploy_contract(id, &DEFUSE_WASM).await?;
+    async fn deploy_defuse(
+        &self,
+        id: &str,
+        config: DefuseConfig,
+        legacy: bool,
+    ) -> anyhow::Result<Contract> {
+        let wasm = if legacy {
+            &DEFUSE_LEGACY_WASM
+        } else {
+            &DEFUSE_WASM
+        };
+
+        let contract = self.deploy_contract(id, wasm).await?;
+
         contract
             .call("new")
             .args_json(json!({
@@ -45,13 +66,35 @@ impl DefuseExt for near_workspaces::Account {
             .transact()
             .await?
             .into_result()?;
+
         Ok(contract)
+    }
+
+    async fn upgrade_defuse(&self, defuse_contract_id: &AccountId) -> anyhow::Result<()> {
+        self.call(defuse_contract_id, "upgrade")
+            .deposit(NearToken::from_yoctonear(1))
+            .args_borsh((DEFUSE_WASM.clone(), None::<Gas>))
+            .max_gas()
+            .transact()
+            .await?
+            .into_result()?;
+
+        Ok(())
     }
 }
 
 impl DefuseExt for Contract {
-    async fn deploy_defuse(&self, id: &str, config: DefuseConfig) -> anyhow::Result<Self> {
-        self.as_account().deploy_defuse(id, config).await
+    async fn deploy_defuse(
+        &self,
+        id: &str,
+        config: DefuseConfig,
+        legacy: bool,
+    ) -> anyhow::Result<Self> {
+        self.as_account().deploy_defuse(id, config, legacy).await
+    }
+
+    async fn upgrade_defuse(&self, defuse_contract_id: &AccountId) -> anyhow::Result<()> {
+        self.as_account().upgrade_defuse(defuse_contract_id).await
     }
 }
 

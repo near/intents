@@ -27,14 +27,14 @@ enum GenerationMode {
     LongestPossible,
 }
 
-async fn make_account(mode: GenerationMode, env: &Env) -> Account {
+async fn make_account(mode: GenerationMode, env: &Env, user: &Account) -> Account {
     match mode {
         GenerationMode::ShortestPossible => {
-            env.transfer_near(env.user1.id(), NearToken::from_near(1000))
+            env.transfer_near(user.id(), NearToken::from_near(1000))
                 .await
                 .unwrap()
                 .unwrap();
-            env.user1.clone()
+            user.clone()
         }
         GenerationMode::LongestPossible => {
             env.transfer_near(env.defuse.id(), NearToken::from_near(1000))
@@ -43,8 +43,7 @@ async fn make_account(mode: GenerationMode, env: &Env) -> Account {
                 .unwrap();
 
             let implicit_account_id = crypto::PublicKey::Ed25519(
-                env.user1
-                    .secret_key()
+                user.secret_key()
                     .public_key()
                     .key_data()
                     .try_into()
@@ -59,7 +58,7 @@ async fn make_account(mode: GenerationMode, env: &Env) -> Account {
 
             let implicit_account = Account::from_secret_key(
                 implicit_account_id,
-                env.user1.secret_key().clone(),
+                user.secret_key().clone(),
                 env.sandbox().worker(),
             );
 
@@ -102,6 +101,7 @@ async fn run_resolve_gas_test(
     gen_mode: GenerationMode,
     token_count: usize,
     env: Arc<Env>,
+    user_account: Account,
     author_account: Account,
     rng: Arc<tokio::sync::Mutex<impl Rng>>,
 ) -> anyhow::Result<()> {
@@ -124,15 +124,15 @@ async fn run_resolve_gas_test(
         })
         .collect::<Vec<_>>();
 
-    // Deposit a fictitious token, nep245:user1.test.near:<token-id>, into defuse.
+    // Deposit a fictitious token, nep245:user.test.near:<token-id>, into defuse.
     // This is possible because `mt_on_transfer` creates a token from any contract,
     // where the token id (first part, the contract id part), comes from the caller
     // account id.
     let _on_transfer_test_log: TestLog = author_account
         .call(env.defuse.id(), "mt_on_transfer")
         .args_json(json!({
-            "sender_id": env.user1.id(),
-            "previous_owner_ids": [env.user1.id()],
+            "sender_id": user_account.id(),
+            "previous_owner_ids": [user_account.id()],
             "token_ids": &token_ids,
             "amounts": amounts.iter().map(ToString::to_string).collect::<Vec<_>>(),
             "msg": "",
@@ -160,8 +160,7 @@ async fn run_resolve_gas_test(
 
     // We attempt to do a transfer of fictitious token ids from defuse to an arbitrary user.
     // These will fail, but there should be enough gas to do refunds successfully.
-    let res = env
-        .user1
+    let res = user_account
         .mt_batch_transfer_call(
             env.defuse.id(),
             // Non-existing account id
@@ -233,12 +232,14 @@ async fn mt_transfer_resolve_gas(rng: impl Rng) {
     for gen_mode in GenerationMode::iter() {
         let env = Arc::new(Env::new().await);
 
+        let user = env.create_user().await;
+
         env.transfer_near(env.defuse.id(), NearToken::from_near(1000))
             .await
             .unwrap()
             .unwrap();
 
-        let author_account = make_account(gen_mode, &env).await;
+        let author_account = make_account(gen_mode, &env, &user).await;
 
         let min_token_count = 1;
         let max_token_count = 200;
@@ -252,6 +253,7 @@ async fn mt_transfer_resolve_gas(rng: impl Rng) {
                     gen_mode,
                     token_count,
                     env.clone(),
+                    user.clone(),
                     author_account.clone(),
                     rng.clone(),
                 )

@@ -16,6 +16,7 @@ defuse-serde-utils = { workspace = true }
 defuse-randomness.workspace = true
 defuse-test-utils.workspace = true
 
+futures = "0.3"
 anyhow.workspace = true
 arbitrary.workspace = true
 arbitrary_with = { workspace = true }

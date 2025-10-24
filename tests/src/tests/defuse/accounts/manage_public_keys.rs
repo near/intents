@@ -20,15 +20,16 @@ use crate::{
 async fn test_add_public_key(public_key: PublicKey) {
     let env = Env::builder().build().await;
 
+    let user = env.create_user().await;
+
     assert!(
         !env.defuse
-            .has_public_key(env.user1.id(), &public_key)
+            .has_public_key(user.id(), &public_key)
             .await
             .unwrap()
     );
 
-    let result = env
-        .user1
+    let result = user
         .call(env.defuse.id(), "add_public_key")
         .deposit(near_sdk::NearToken::from_yoctonear(1))
         .args_json(serde_json::json!({
@@ -46,7 +47,7 @@ async fn test_add_public_key(public_key: PublicKey) {
     assert_eq_event_logs!(
         test_log.logs().to_vec(),
         [DefuseEvent::PublicKeyAdded(AccountEvent::new(
-            env.user1.id(),
+            user.id(),
             PublicKeyEvent {
                 public_key: Cow::Borrowed(&public_key),
             },
@@ -56,7 +57,7 @@ async fn test_add_public_key(public_key: PublicKey) {
 
     assert!(
         env.defuse
-            .has_public_key(env.user1.id(), &public_key)
+            .has_public_key(user.id(), &public_key)
             .await
             .unwrap()
     );
@@ -68,20 +69,20 @@ async fn test_add_public_key(public_key: PublicKey) {
 async fn test_add_and_remove_public_key(public_key: PublicKey) {
     let env = Env::builder().build().await;
 
-    env.user1
-        .add_public_key(env.defuse.id(), public_key)
+    let user = env.create_user().await;
+
+    user.add_public_key(env.defuse.id(), public_key)
         .await
         .unwrap();
 
     assert!(
         env.defuse
-            .has_public_key(env.user1.id(), &public_key)
+            .has_public_key(user.id(), &public_key)
             .await
             .unwrap()
     );
 
-    let result = env
-        .user1
+    let result = user
         .call(env.defuse.id(), "remove_public_key")
         .deposit(near_sdk::NearToken::from_yoctonear(1))
         .args_json(serde_json::json!({
@@ -99,7 +100,7 @@ async fn test_add_and_remove_public_key(public_key: PublicKey) {
     assert_eq_event_logs!(
         test_log.logs().to_vec(),
         [DefuseEvent::PublicKeyRemoved(AccountEvent::new(
-            env.user1.id(),
+            user.id(),
             PublicKeyEvent {
                 public_key: Cow::Borrowed(&public_key),
             },
@@ -109,7 +110,7 @@ async fn test_add_and_remove_public_key(public_key: PublicKey) {
 
     assert!(
         !env.defuse
-            .has_public_key(env.user1.id(), &public_key)
+            .has_public_key(user.id(), &public_key)
             .await
             .unwrap()
     );

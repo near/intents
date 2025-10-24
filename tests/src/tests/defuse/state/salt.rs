@@ -14,9 +14,11 @@ async fn update_current_salt() {
     let env = Env::builder().deployer_as_super_admin().build().await;
     let prev_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
 
+    let (user1, user2) = futures::join!(env.create_user(), env.create_user());
+
     // only DAO or salt manager can rotate salt
     {
-        env.user2
+        user2
             .update_current_salt(env.defuse.id())
             .await
             .assert_err_contains("Insufficient permissions for method");
@@ -24,12 +26,11 @@ async fn update_current_salt() {
 
     // rotate salt by salt manager
     {
-        env.acl_grant_role(env.defuse.id(), Role::SaltManager, env.user1.id())
+        env.acl_grant_role(env.defuse.id(), Role::SaltManager, user1.id())
             .await
             .expect("failed to grant role");
 
-        let new_salt = env
-            .user1
+        let new_salt = user1
             .update_current_salt(env.defuse.id())
             .await
             .expect("unable to rotate salt");
@@ -54,9 +55,11 @@ async fn invalidate_salts() {
     let mut current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
     let mut prev_salt = current_salt;
 
+    let (user1, user2) = futures::join!(env.create_user(), env.create_user());
+
     // only DAO or salt manager can invalidate salt
     {
-        env.user2
+        user2
             .invalidate_salts(env.defuse.id(), &[prev_salt])
             .await
             .assert_err_contains("Insufficient permissions for method");
@@ -64,17 +67,16 @@ async fn invalidate_salts() {
 
     // invalidate prev salt by salt manager
     {
-        env.acl_grant_role(env.defuse.id(), Role::SaltManager, env.user1.id())
+        env.acl_grant_role(env.defuse.id(), Role::SaltManager, user1.id())
             .await
             .expect("failed to grant role");
 
-        current_salt = env
-            .user1
+        current_salt = user1
             .update_current_salt(env.defuse.id())
             .await
             .expect("unable to rotate salt");
 
-        env.user1
+        user1
             .invalidate_salts(env.defuse.id(), &[prev_salt])
             .await
             .expect("unable to rotate salt");
@@ -90,8 +92,7 @@ async fn invalidate_salts() {
     // invalidate current salt by salt manager
     {
         prev_salt = current_salt;
-        current_salt = env
-            .user1
+        current_salt = user1
             .invalidate_salts(env.defuse.id(), &[current_salt])
             .await
             .expect("unable to rotate salt");

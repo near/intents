@@ -16,9 +16,11 @@ async fn set_fee() {
     let prev_fee = env.defuse.fee(env.defuse.id()).await.unwrap();
     let fee = Pips::from_pips(100).unwrap();
 
+    let (user1, user2) = futures::join!(env.create_user(), env.create_user());
+
     // only DAO or fee manager can set fee
     {
-        env.user2
+        user2
             .set_fee(env.defuse.id(), fee)
             .await
             .assert_err_contains("Insufficient permissions for method");
@@ -26,11 +28,11 @@ async fn set_fee() {
 
     // set fee by fee manager
     {
-        env.acl_grant_role(env.defuse.id(), Role::FeesManager, env.user1.id())
+        env.acl_grant_role(env.defuse.id(), Role::FeesManager, user1.id())
             .await
             .expect("failed to grant role");
 
-        env.user1
+        user1
             .set_fee(env.defuse.id(), fee)
             .await
             .expect("unable to set fee");
@@ -48,9 +50,11 @@ async fn set_fee_collector() {
     let env = Env::builder().deployer_as_super_admin().build().await;
     let fee_collector: AccountId = "fee-collector.near".to_string().parse().unwrap();
 
+    let (user1, user2) = futures::join!(env.create_user(), env.create_user());
+
     // only DAO or fee manager can set fee collector
     {
-        env.user2
+        user2
             .set_fee_collector(env.defuse.id(), &fee_collector)
             .await
             .assert_err_contains("Insufficient permissions for method");
@@ -58,11 +62,11 @@ async fn set_fee_collector() {
 
     // set fee by fee manager
     {
-        env.acl_grant_role(env.defuse.id(), Role::FeesManager, env.user1.id())
+        env.acl_grant_role(env.defuse.id(), Role::FeesManager, user1.id())
             .await
             .expect("failed to grant role");
 
-        env.user1
+        user1
             .set_fee_collector(env.defuse.id(), &fee_collector)
             .await
             .expect("unable to set fee");

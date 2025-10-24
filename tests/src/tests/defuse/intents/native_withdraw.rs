@@ -26,6 +26,11 @@ use rstest::rstest;
 async fn native_withdraw_intent(mut rng: impl Rng) {
     let env = Env::new().await;
 
+    let (user, other_user) = futures::join!(env.create_user(), env.create_user());
+
+    env.initial_ft_storage_deposit(vec![user.id(), other_user.id()], &[])
+        .await;
+
     let amounts_to_withdraw = [
         // Check for different account_id types
         // See https://github.com/near/nearcore/blob/dcfb6b9fb9f896b839b8728b8033baab963de344/core/parameters/src/cost.rs#L691-L709
@@ -37,7 +42,7 @@ async fn native_withdraw_intent(mut rng: impl Rng) {
             PublicKey::Secp256k1(rng.random()).to_implicit_account_id(),
             NearToken::from_near(200),
         ),
-        (env.user1.id().to_owned(), NearToken::from_near(300)),
+        (user.id().to_owned(), NearToken::from_near(300)),
     ];
 
     let initial_balances = {
@@ -72,7 +77,7 @@ async fn native_withdraw_intent(mut rng: impl Rng) {
         env.defuse.id(),
         env.wnear.id(),
         total_amount_yocto,
-        DepositMessage::new(env.user2.id().clone()),
+        DepositMessage::new(other_user.id().clone()),
     )
     .await
     .expect("failed to deposit wNEAR to user2");
@@ -80,7 +85,7 @@ async fn native_withdraw_intent(mut rng: impl Rng) {
     // withdraw native NEAR to corresponding receivers
     env.defuse_execute_intents(
         env.defuse.id(),
-        [env.user2.sign_defuse_message(
+        [other_user.sign_defuse_message(
             SigningStandard::default(),
             env.defuse.id(),
             rng.random(),
@@ -106,7 +111,7 @@ async fn native_withdraw_intent(mut rng: impl Rng) {
     assert_eq!(
         env.defuse
             .mt_balance_of(
-                env.user1.id(),
+                user.id(),
                 &TokenId::Nep141(Nep141TokenId::new(env.wnear.id().clone())).to_string()
             )
             .await

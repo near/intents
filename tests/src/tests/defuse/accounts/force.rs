@@ -32,18 +32,24 @@ async fn test_lock_account(random_bytes: Vec<u8>) {
 
     let env = Env::builder().deployer_as_super_admin().build().await;
 
-    let locked_account = &env.user1;
-    let account_locker = &env.user2;
-    let unlocked_account = &env.user3;
+    let (locked_account, account_locker, unlocked_account, ft) = futures::join!(
+        env.create_user(),
+        env.create_user(),
+        env.create_user(),
+        env.create_token()
+    );
+
+    env.initial_ft_storage_deposit(vec![locked_account.id(), unlocked_account.id()], vec![&ft])
+        .await;
 
     // deposit tokens
-    let ft1: TokenId = Nep141TokenId::new(env.ft1.clone()).into();
+    let ft1: TokenId = Nep141TokenId::new(ft.clone()).into();
     {
-        env.defuse_ft_deposit_to(&env.ft1, 1000, locked_account.id())
+        env.defuse_ft_deposit_to(&ft, 1000, locked_account.id())
             .await
             .unwrap();
 
-        env.defuse_ft_deposit_to(&env.ft1, 3000, unlocked_account.id())
+        env.defuse_ft_deposit_to(&ft, 3000, unlocked_account.id())
             .await
             .unwrap();
     }
@@ -118,10 +124,14 @@ async fn test_lock_account(random_bytes: Vec<u8>) {
     // try to add public key to locked account
     {
         let pk: PublicKey = u.arbitrary().unwrap();
+
         locked_account
             .add_public_key(env.defuse.id(), pk)
             .await
-            .assert_err_contains(DefuseError::AccountLocked(env.user1.id().clone()).to_string());
+            .assert_err_contains(
+                DefuseError::AccountLocked(locked_account.id().clone()).to_string(),
+            );
+
         assert!(
             !env.defuse
                 .has_public_key(locked_account.id(), &pk)
@@ -138,10 +148,14 @@ async fn test_lock_account(random_bytes: Vec<u8>) {
             .to_string()
             .parse()
             .unwrap();
+
         locked_account
             .remove_public_key(env.defuse.id(), locked_pk)
             .await
-            .assert_err_contains(DefuseError::AccountLocked(env.user1.id().clone()).to_string());
+            .assert_err_contains(
+                DefuseError::AccountLocked(locked_account.id().clone()).to_string(),
+            );
+
         assert!(
             env.defuse
                 .has_public_key(locked_account.id(), &locked_pk)
@@ -182,14 +196,7 @@ async fn test_lock_account(random_bytes: Vec<u8>) {
     {
         for msg in [None, Some(String::new())] {
             locked_account
-                .defuse_ft_withdraw(
-                    env.defuse.id(),
-                    unlocked_account.id(),
-                    &env.ft1,
-                    100,
-                    None,
-                    msg,
-                )
+                .defuse_ft_withdraw(env.defuse.id(), unlocked_account.id(), &ft, 100, None, msg)
                 .await
                 .expect_err("locked account shouldn't be able to withdraw");
         }
@@ -206,7 +213,7 @@ async fn test_lock_account(random_bytes: Vec<u8>) {
 
     // deposit to locked account
     {
-        env.defuse_ft_deposit_to(&env.ft1, 100, locked_account.id())
+        env.defuse_ft_deposit_to(&ft, 100, locked_account.id())
             .await
             .expect("deposits to locked account should be allowed");
 
@@ -268,6 +275,7 @@ async fn test_lock_account(random_bytes: Vec<u8>) {
             3000 - 200,
             "sender balance shouldn't change"
         );
+
         assert_eq!(
             env.defuse
                 .mt_balance_of(locked_account.id(), &ft1.to_string())
@@ -281,13 +289,16 @@ async fn test_lock_account(random_bytes: Vec<u8>) {
     {
         let nonce: Nonce = u.arbitrary().unwrap();
         env.defuse
-            .execute_intents([env.user1.sign_defuse_message(
-                SigningStandard::Nep413,
+            .execute_intents(
                 env.defuse.id(),
-                nonce,
-                Deadline::timeout(Duration::from_secs(120)),
-                DefuseIntents { intents: [].into() },
-            )])
+                [locked_account.sign_defuse_message(
+                    SigningStandard::Nep413,
+                    env.defuse.id(),
+                    nonce,
+                    Deadline::timeout(Duration::from_secs(120)),
+                    DefuseIntents { intents: [].into() },
+                )],
+            )
             .await
             .assert_err_contains(
                 DefuseError::AccountLocked(locked_account.id().clone()).to_string(),
@@ -381,9 +392,8 @@ async fn test_force_set_auth_by_predecessor_id(random_bytes: Vec<u8>) {
 
     let env = Env::builder().deployer_as_super_admin().build().await;
 
-    let user_account = &env.user1;
-    let account_locker = &env.user2;
-    let account_unlocker = &env.user3;
+    let (user_account, account_locker, account_unlocker) =
+        futures::join!(env.create_user(), env.create_user(), env.create_user());
 
     // disable auth by predecessor id
     {
