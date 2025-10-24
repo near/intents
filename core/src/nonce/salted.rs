@@ -118,7 +118,7 @@ impl SaltRegistry {
     fn derive_next_salt(&self) -> Result<Salt> {
         (0..=u8::MAX)
             .map(Salt::derive)
-            .find(|s| !self.is_valid(*s))
+            .find(|s| !self.is_used(*s))
             .ok_or(DefuseError::SaltGenerationFailed)
     }
 
@@ -149,6 +149,11 @@ impl SaltRegistry {
     #[inline]
     pub fn is_valid(&self, salt: Salt) -> bool {
         salt == self.current || self.previous.get(&salt).is_some_and(|v| *v)
+    }
+
+    #[inline]
+    fn is_used(&self, salt: Salt) -> bool {
+        salt == self.current || self.previous.get(&salt).is_some()
     }
 
     #[inline]
@@ -255,5 +260,18 @@ mod tests {
         assert!(salts.invalidate(current).is_ok());
         assert!(!salts.is_valid(current));
         assert_eq!(salts.current(), new_salt);
+    }
+
+    #[rstest]
+    fn derive_next_test(random_bytes: Vec<u8>) {
+        let mut salt_registry = SaltRegistry::new(random_bytes);
+
+        let prev = salt_registry.set_new().unwrap();
+
+        salt_registry.invalidate(prev).unwrap();
+        salt_registry.set_new().unwrap();
+
+        assert!(!salt_registry.is_valid(prev));
+        assert!(salt_registry.is_used(prev));
     }
 }

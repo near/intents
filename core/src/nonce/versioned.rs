@@ -18,6 +18,7 @@ pub enum VersionedNonce {
     V1(SaltedNonce<ExpirableNonce<[u8; 15]>>),
 }
 
+// NOTE: Legacy nonces can still be used at this time, but will be prohibited out in the near future.
 impl VersionedNonce {
     /// Magic prefixes (first 4 bytes of `sha256(<versioned_nonce>)`) used to mark versioned nonces:
     pub const VERSIONED_MAGIC_PREFIX: [u8; 4] = hex!("5628f6c6");
