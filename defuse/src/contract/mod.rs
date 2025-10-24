@@ -5,6 +5,7 @@ mod admin;
 pub mod config;
 mod events;
 mod fees;
+mod garbage_collector;
 mod intents;
 mod salts;
 mod state;

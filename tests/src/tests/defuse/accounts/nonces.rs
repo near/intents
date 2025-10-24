@@ -21,7 +21,7 @@ use rstest::rstest;
 use crate::{
     tests::defuse::{
         DefuseSigner, SigningStandard, accounts::AccountManagerExt, env::Env,
-        intents::ExecuteIntentsExt, state::SaltManagerExt,
+        garbage_collector::GarbageCollectorExt, intents::ExecuteIntentsExt, state::SaltManagerExt,
     },
     utils::acl::AclExt,
 };
@@ -269,7 +269,7 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
         env.user1
             .cleanup_nonces(
                 env.defuse.id(),
-                &[(env.user1.id().clone(), vec![expirable_nonce])],
+                vec![(env.user1.id().clone(), vec![expirable_nonce])],
             )
             .await
             .assert_err_contains("Insufficient permissions for method");
@@ -284,7 +284,7 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
         env.user1
             .cleanup_nonces(
                 env.defuse.id(),
-                &[(env.user1.id().clone(), vec![expirable_nonce])],
+                vec![(env.user1.id().clone(), vec![expirable_nonce])],
             )
             .await
             .unwrap();
@@ -304,7 +304,7 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
         env.user1
             .cleanup_nonces(
                 env.defuse.id(),
-                &[
+                vec![
                     (env.user1.id().clone(), vec![expirable_nonce]),
                     (env.user1.id().clone(), vec![legacy_nonce]),
                     (env.user1.id().clone(), vec![long_term_expirable_nonce]),
@@ -343,7 +343,7 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
         env.user1
             .cleanup_nonces(
                 env.defuse.id(),
-                &[(env.user1.id().clone(), vec![long_term_expirable_nonce])],
+                vec![(env.user1.id().clone(), vec![long_term_expirable_nonce])],
             )
             .await
             .unwrap();
@@ -403,7 +403,7 @@ async fn cleanup_multiple_nonces(
 
     let gas_used = env
         .user1
-        .cleanup_nonces(env.defuse.id(), &[(env.user1.id().clone(), nonces)])
+        .cleanup_nonces(env.defuse.id(), vec![(env.user1.id().clone(), nonces)])
         .await
         .unwrap();
 
