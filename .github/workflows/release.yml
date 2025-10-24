@@ -20,19 +20,13 @@ jobs:
         run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/download/cargo-near-v0.15.0/cargo-near-installer.sh | sh
 
       - name: Build Reproducible WASM
-        run: cargo near build reproducible-wasm --manifest-path defuse/Cargo.toml
-
-      - name: Rename WASM with version
-        run: |
-          VERSION=${{ github.event.release.tag_name }}
-          cp target/near/defuse/defuse.wasm defuse-${VERSION}.wasm
+        run: cargo near build reproducible-wasm --manifest-path ./defuse/Cargo.toml --out-dir ./res
 
       - name: Upload WASM to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: svenstaro/upload-release-action@v2
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./defuse-${{ github.event.release.tag_name }}.wasm
-          asset_name: defuse-${{ github.event.release.tag_name }}.wasm
-          asset_content_type: application/wasm
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.event.release.tag_name }}
+          file: res/*
+          file_glob: true
+          overwrite: true
