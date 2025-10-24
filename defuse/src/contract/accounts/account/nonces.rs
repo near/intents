@@ -74,16 +74,13 @@ where
     }
 }
 
-
 #[cfg(test)]
 pub(super) mod tests {
 
     use super::*;
 
-    use near_sdk::IntoStorageKey;
+    use near_sdk::{test_utils::VMContextBuilder, testing_env, Gas, IntoStorageKey, VMContext};
     use proptest::{collection::vec, prelude::*};
-
-
 
     #[derive(Debug, Clone)]
     struct StoragePrefix(pub Vec<u8>);
@@ -98,9 +95,7 @@ pub(super) mod tests {
         type Strategy = BoxedStrategy<Self>;
 
         fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
-            vec(any::<u8>(),   50..=1000)
-                .prop_map(StoragePrefix)
-                .boxed()
+            vec(any::<u8>(), 50..=1000).prop_map(StoragePrefix).boxed()
         }
     }
 
@@ -111,42 +106,59 @@ pub(super) mod tests {
         type Strategy = BoxedStrategy<Self>;
 
         fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
-            vec(any::<U256>(), 10..100)
-                .prop_map(NoncesVec)
-                .boxed()
+            vec(any::<U256>(), 10..100).prop_map(NoncesVec).boxed()
         }
     }
 
-    impl Iterator for NoncesVec {
-        type Item = U256;
-        fn next(&mut self) -> Option<U256> {
-            self.0.pop()
+    impl NoncesVec {
+        pub fn iter(&self) -> std::slice::Iter<'_, U256> {
+            self.0.iter()
         }
     }
 
+    impl<'a> IntoIterator for &'a NoncesVec {
+        type Item = &'a U256;
+        type IntoIter = std::slice::Iter<'a, U256>;
 
-    fn get_legacy_map(nonces: impl Iterator<Item = U256> + Clone, prefix: impl IntoStorageKey) -> Nonces<LookupMap<U248, U256>> {
+        fn into_iter(self) -> Self::IntoIter {
+            self.0.iter()
+        }
+    }
+
+    fn get_legacy_map<'a>(
+        nonces: impl IntoIterator<Item = &'a U256> + Clone,
+        prefix: impl IntoStorageKey,
+    ) -> Nonces<LookupMap<U248, U256>> {
         let mut legacy_nonces = Nonces::new(LookupMap::new(prefix));
         for nonce in nonces {
             legacy_nonces
-                .commit(nonce)
+                .commit(*nonce)
                 .expect("unable to commit nonce");
         }
 
         legacy_nonces
     }
 
-
-
     fn prefix_strategy() -> impl Strategy<Value = Vec<u8>> {
         vec(any::<u8>(), 1..=32)
+    }
+
+
+    fn increase_max_gas()
+    {
+        let context = VMContextBuilder::new()
+            .prepaid_gas(Gas::from_tgas(300))
+            .build();
+        testing_env!(context.clone());
     }
 
 
     proptest! {
         #[test]
         fn new_from_legacy(nonces: NoncesVec, storage_prefix: StoragePrefix) {
-            let legacy_nonces = get_legacy_map(nonces.clone(), storage_prefix.clone());
+            increase_max_gas();
+
+            let legacy_nonces = get_legacy_map(&nonces, storage_prefix.clone());
             let new = MaybeLegacyAccountNonces::with_legacy(
                 legacy_nonces,
                 LookupMap::with_hasher(storage_prefix),
@@ -154,10 +166,10 @@ pub(super) mod tests {
 
             let legacy_map = new.legacy.as_ref().expect("No legacy nonces present");
 
-            for nonce in nonces {
-                assert!(legacy_map.is_used(nonce));
-                assert!(!new.nonces.is_used(nonce));
-                assert!(new.is_used(nonce));
+            for nonce in &nonces {
+                assert!(legacy_map.is_used(*nonce));
+                assert!(!new.nonces.is_used(*nonce));
+                assert!(new.is_used(*nonce));
             }
         }
     }
@@ -165,6 +177,7 @@ pub(super) mod tests {
     proptest! {
         #[test]
         fn commit_new_nonce(storage_prefix: StoragePrefix, new_nonce: [u8;32], legacy_nonce: [u8; 32]) {
+            increase_max_gas();
             prop_assume!(new_nonce != legacy_nonce);
             let mut new = MaybeLegacyAccountNonces::new(LookupMap::with_hasher(storage_prefix));
 
@@ -182,65 +195,72 @@ pub(super) mod tests {
         }
     }
 
-    // proptest! {
-    //     #[test]
-    //     fn commit_existing_legacy_nonce(nonces: NoncesVec, prefix: StoragePrefix) {
-    //          let legacy_nonces = get_legacy_map(nonces.clone(), storage_prefix.clone());
-    //         let new = MaybeLegacyAccountNonces::with_legacy(
-    //             legacy_nonces,
-    //             LookupMap::with_hasher(storage_prefix),
-    //         );
-    //
-    //         assert!(matches!(
-    //             new.commit(random_nonces[0]).unwrap_err(),
-    //             DefuseError::NonceUsed
-    //         ));
-    //     }
-    // }
-    //
     proptest! {
         #[test]
-        fn commit_duplicate_nonce(random_bytes in prefix_strategy(), nonce in any::<U256>()) {
-            let mut new = MaybeLegacyAccountNonces::new(LookupMap::with_hasher(random_bytes));
+        fn commit_existing_legacy_nonce(nonces: NoncesVec, storage_prefix: StoragePrefix) {
+            increase_max_gas();
+            println!("HELLO0");
+            let legacy_nonces = get_legacy_map(&nonces, storage_prefix.clone());
+            println!("HELLO1");
+            let mut new = MaybeLegacyAccountNonces::with_legacy(
+                legacy_nonces,
+                LookupMap::with_hasher(storage_prefix),
+            );
 
+            println!("HELLO2");
+            for nonce in &nonces {
+            assert!(matches!(
+                new.commit(*nonce),
+                Err(DefuseError::NonceUsed)
+            ));
+            }
+            println!("HELLO3");
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn commit_duplicate_nonce(nonce: U256, storage_prefix: StoragePrefix) {
+            let mut new = MaybeLegacyAccountNonces::new(LookupMap::with_hasher(storage_prefix));
             new.commit(nonce).expect("First commit should succeed");
 
             assert!(matches!(
-                new.commit(nonce).unwrap_err(),
-                DefuseError::NonceUsed
+                new.commit(nonce),
+                Err(DefuseError::NonceUsed)
             ));
         }
     }
 
-    // proptest! {
-    //     #[test]
-    //     fn check_used_nonces(legacy_nonces in nonces_vec_with_size(0..=16), random_nonces in nonces_vec_with_size(0..=16), random_bytes in prefix_strategy()) {
-    //         let legacy_map = get_legacy_map(&legacy_nonces, random_bytes.clone());
-    //         let mut new =
-    //             MaybeLegacyAccountNonces::with_legacy(legacy_map, LookupMap::with_hasher(random_bytes));
-    //
-    //         for nonce in &random_nonces {
-    //             new.commit(*nonce).expect("unable to commit nonce");
-    //         }
-    //
-    //         for nonce in random_nonces.iter().chain(&legacy_nonces) {
-    //             assert!(new.is_used(*nonce));
-    //         }
-    //     }
-    // }
-    //
-    // proptest! {
-    //     #[test]
-    //     fn legacy_nonces_cant_be_cleared(random_bytes in prefix_strategy(), random_nonce in any::<U256>()) {
-    //         let legacy_nonces = get_legacy_map(&[random_nonce], random_bytes.clone());
-    //         let mut new = MaybeLegacyAccountNonces::with_legacy(
-    //             legacy_nonces,
-    //             LookupMap::with_hasher(random_bytes),
-    //         );
-    //
-    //         let [prefix @ .., _] = random_nonce;
-    //         assert!(!new.cleanup_by_prefix(prefix));
-    //         assert!(new.is_used(random_nonce));
-    //     }
-    // }
+    proptest! {
+        #[test]
+        fn check_used_nonces(legacy_nonces: NoncesVec, random_nonces: NoncesVec, storage_prefix: StoragePrefix) {
+            increase_max_gas();
+            let legacy_map = get_legacy_map(&legacy_nonces, storage_prefix.clone());
+            let mut new =
+                MaybeLegacyAccountNonces::with_legacy(legacy_map, LookupMap::with_hasher(storage_prefix));
+
+            for nonce in &random_nonces {
+                new.commit(*nonce).expect("unable to commit nonce");
+            }
+
+            for nonce in random_nonces.iter().chain(&legacy_nonces) {
+                assert!(new.is_used(*nonce));
+            }
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn legacy_nonces_cant_be_cleared(storage_prefix: StoragePrefix, random_nonce : U256) {
+            let legacy_nonces = get_legacy_map(&[random_nonce], storage_prefix.clone());
+            let mut new = MaybeLegacyAccountNonces::with_legacy(
+                legacy_nonces,
+                LookupMap::with_hasher(storage_prefix),
+            );
+
+            let [prefix @ .., _] = random_nonce;
+            assert!(!new.cleanup_by_prefix(prefix));
+            assert!(new.is_used(random_nonce));
+        }
+    }
 }
