@@ -3,7 +3,6 @@ mod mt_transfer_resolve_gas;
 pub mod traits;
 
 use crate::tests::defuse::DefuseExt;
-use crate::tests::defuse::env::PersistentState;
 use crate::tests::defuse::tokens::nep245::traits::DefuseMtWithdrawer;
 use crate::{tests::defuse::env::Env, utils::mt::MtExt};
 use defuse::contract::config::{DefuseConfig, RolesConfig};
@@ -38,14 +37,8 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
     env.initial_ft_storage_deposit(vec![user1.id(), user2.id()], vec![&ft1, &ft2])
         .await;
 
-    // Check already existing tokens from persistent state
-    let persistent_tokens: Vec<Token> = env
-        .persistent_state
-        .as_ref()
-        .map(PersistentState::get_mt_tokens)
-        .unwrap_or_default();
-
-    let from_token_index = persistent_tokens.len();
+    // Check already existing tokens from persistent state if it was applied
+    let persistent_tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
 
     {
         assert_eq!(
@@ -81,6 +74,8 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
 
     let ft1_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
     let ft2_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
+
+    let from_token_index = persistent_tokens.len();
 
     {
         assert_eq!(
@@ -333,19 +328,10 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
     env.initial_ft_storage_deposit(vec![user1.id()], vec![&ft1, &ft2, &ft3])
         .await;
 
-    // Check already existing tokens from persistent state
-    let persistent_tokens: Vec<Token> = env
-        .persistent_state
-        .as_ref()
-        .map(PersistentState::get_mt_tokens)
-        .unwrap_or_default();
+    // Check already existing tokens from persistent state if it was applied
+    let persistent_tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
 
     {
-        assert_eq!(
-            user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
-            persistent_tokens
-        );
-
         assert!(
             user1
                 .mt_tokens_for_owner(env.defuse.id(), user1.id(), ..)
@@ -523,12 +509,8 @@ async fn multitoken_withdrawals() {
     env.initial_ft_storage_deposit(vec![user1.id()], vec![&ft1, &ft2, &ft3])
         .await;
 
-    // Check already existing tokens from persistent state
-    let persistent_tokens: Vec<Token> = env
-        .persistent_state
-        .as_ref()
-        .map(PersistentState::get_mt_tokens)
-        .unwrap_or_default();
+    // Check already existing tokens from persistent state if it was applied
+    let persistent_tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
 
     let defuse2 = env
         .deploy_defuse(

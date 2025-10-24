@@ -1,16 +1,16 @@
 use anyhow::Result;
 use near_sdk::AccountId;
 use near_workspaces::Account;
-use std::{
-    collections::{HashMap, HashSet},
-    convert::Infallible,
-};
+use std::{collections::HashSet, convert::Infallible};
 
-use defuse::core::{
-    Deadline, Nonce,
-    crypto::PublicKey,
-    intents::{DefuseIntents, Intent, account::AddPublicKey},
-    token_id::{TokenId, nep141::Nep141TokenId},
+use defuse::{
+    core::{
+        Deadline, Nonce,
+        crypto::PublicKey,
+        intents::{DefuseIntents, Intent, account::AddPublicKey},
+        token_id::{TokenId, nep141::Nep141TokenId},
+    },
+    nep245::Token,
 };
 use defuse_randomness::{Rng, make_true_rng};
 use futures::{StreamExt, TryStreamExt, future::try_join_all};
@@ -22,7 +22,7 @@ use crate::{
             accounts::AccountManagerExt,
             env::{
                 Env,
-                state::{AccountData, PersistentState},
+                state::{AccountWithTokens, PersistentState},
             },
             intents::ExecuteIntentsExt,
         },
@@ -32,58 +32,41 @@ use crate::{
 };
 
 impl Env {
-    pub async fn generate_storage_data(&mut self) {
-        let state =
-            PersistentState::generate(self.sandbox.root_account(), self.poa_factory.as_account());
+    pub async fn generate_storage_data(&self) -> Result<PersistentState> {
+        let state = PersistentState::generate(
+            self.sandbox.root_account(),
+            self.poa_factory.as_account(),
+            self.seed,
+        )?;
 
-        self.persistent_state = Some(state);
+        self.apply_tokens(&state).await?;
+        self.apply_accounts(&state).await?;
 
-        futures::join!(self.apply_tokens(), self.apply_accounts());
-
-        self.apply_token_balances().await;
+        Ok(state)
     }
 
-    pub async fn verify_storage_consistency(&self) {
+    pub async fn verify_storage_consistency(&self, state: &PersistentState) {
         futures::join!(
-            self.verify_accounts_consistency(),
-            self.verify_token_balances_consistency()
+            self.verify_accounts_consistency(state),
+            self.verify_mt_tokens_consistency(state)
         );
     }
 
-    pub async fn apply_tokens(&self) {
-        let state = self.state();
+    pub async fn apply_tokens(&self, state: &PersistentState) -> Result<()> {
+        let tokens = state.get_tokens();
+        try_join_all(tokens.iter().map(|token| self.apply_token(token)))
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to apply tokens: {}", e))?;
 
-        try_join_all(
-            state
-                .token_balances
-                .keys()
-                .map(|token_id| self.apply_token(token_id)),
-        )
-        .await
-        .expect("Failed to apply tokens");
+        Ok(())
     }
 
-    async fn apply_accounts(&self) {
-        let state = self.state();
-
+    async fn apply_accounts(&self, state: &PersistentState) -> Result<()> {
         try_join_all(state.accounts.iter().map(|data| self.apply_account(data)))
             .await
-            .expect("Failed to apply accounts");
-    }
+            .map_err(|e| anyhow::anyhow!("Failed to apply accounts: {}", e))?;
 
-    async fn apply_token_balances(&self) {
-        let state = self.state();
-
-        // NOTE: should be sequential to match contract token ordering
-        for (token_id, balances) in &state.token_balances {
-            let token_id = token_id.clone().into_contract_id();
-
-            try_join_all(balances.iter().map(|(account_id, amount)| {
-                self.defuse_ft_deposit_to(&token_id, *amount, account_id)
-            }))
-            .await
-            .expect("Failed to apply token balances");
-        }
+        Ok(())
     }
 
     async fn apply_token(&self, token_id: &Nep141TokenId) -> Result<()> {
@@ -104,8 +87,9 @@ impl Env {
         Ok(())
     }
 
-    async fn apply_public_keys(&self, acc: &Account, data: &AccountData) -> Result<()> {
+    async fn apply_public_keys(&self, acc: &Account, data: &AccountWithTokens) -> Result<()> {
         let intents = data
+            .data
             .public_keys
             .iter()
             .map(|public_key| {
@@ -128,8 +112,9 @@ impl Env {
         Ok(())
     }
 
-    async fn apply_nonces(&self, acc: &Account, data: &AccountData) -> Result<()> {
+    async fn apply_nonces(&self, acc: &Account, data: &AccountWithTokens) -> Result<()> {
         let payload = data
+            .data
             .nonces
             .iter()
             .map(|nonce| {
@@ -150,7 +135,19 @@ impl Env {
         Ok(())
     }
 
-    async fn apply_account(&self, data: (&AccountId, &AccountData)) -> Result<Account> {
+    async fn apply_token_balance(&self, acc: &Account, data: &AccountWithTokens) -> Result<()> {
+        try_join_all(data.tokens.iter().map(|(token_id, balance)| async {
+            let token_id = token_id.clone().into_contract_id();
+
+            self.defuse_ft_deposit_to(&token_id, *balance, acc.id())
+                .await
+        }))
+        .await?;
+
+        Ok(())
+    }
+
+    async fn apply_account(&self, data: (&AccountId, &AccountWithTokens)) -> Result<Account> {
         let (account_id, account) = data;
         let acc = self
             .create_named_user(&self.sandbox.subaccount_name(account_id))
@@ -158,19 +155,19 @@ impl Env {
 
         futures::try_join!(
             self.apply_public_keys(&acc, account),
-            self.apply_nonces(&acc, account)
+            self.apply_nonces(&acc, account),
+            self.apply_token_balance(&acc, account),
         )?;
 
         Ok(acc)
     }
 
-    async fn verify_accounts_consistency(&self) {
-        let state = self.state();
-
+    async fn verify_accounts_consistency(&self, state: &PersistentState) {
         for (account_id, data) in &state.accounts {
             futures::join!(
-                self.verify_public_keys(account_id, &data.public_keys),
-                self.verify_nonces(account_id, &data.nonces)
+                self.verify_public_keys(account_id, &data.data.public_keys),
+                self.verify_nonces(account_id, &data.data.nonces),
+                self.verify_account_nep141_balance(account_id, data.tokens.clone()),
             );
         }
     }
@@ -195,49 +192,43 @@ impl Env {
         );
     }
 
-    async fn verify_token_balances_consistency(&self) {
-        let state = self.state();
-
-        try_join_all(
-            state
-                .token_balances
-                .iter()
-                .map(|(token_id, expected_balances)| {
-                    self.check_nep141_balances_eq(token_id, expected_balances)
-                }),
-        )
-        .await
-        .expect("Failed to verify token balances");
-    }
-
-    async fn check_nep141_balances_eq(
-        &self,
-        token_id: &Nep141TokenId,
-        expected_balances: &HashMap<AccountId, u128>,
-    ) -> Result<()> {
-        try_join_all(expected_balances.iter().map(|(account_id, amount)| {
-            self.check_nep141_balance_eq(account_id, token_id, *amount)
-        }))
-        .await?;
-
-        Ok(())
-    }
-
-    async fn check_nep141_balance_eq(
+    async fn verify_account_nep141_balance(
         &self,
         account_id: &AccountId,
-        token_id: &Nep141TokenId,
-        amount: u128,
-    ) -> Result<()> {
-        let token_id = TokenId::Nep141(token_id.clone()).to_string();
-        let received = self
-            .mt_contract_balance_of(self.defuse.id(), account_id, &token_id)
-            .await?;
+        tokens: impl IntoIterator<Item = (Nep141TokenId, u128)>,
+    ) {
+        let (tokens, amounts): (Vec<Nep141TokenId>, Vec<u128>) = tokens.into_iter().unzip();
+        let tokens = tokens
+            .iter()
+            .map(|t| TokenId::Nep141(t.clone()).to_string())
+            .collect::<Vec<_>>();
 
-        if received != amount {
-            anyhow::bail!("Token balances mismatch");
-        }
+        let result = self
+            .defuse
+            .mt_batch_balance_of(account_id, &tokens)
+            .await
+            .expect("Failed to fetch balance");
 
-        Ok(())
+        assert_eq!(result, amounts);
+    }
+
+    async fn verify_mt_tokens_consistency(&self, state: &PersistentState) {
+        let expected = state
+            .get_tokens()
+            .into_iter()
+            .map(|token_id| Token {
+                token_id: TokenId::Nep141(token_id).to_string(),
+                owner_id: None,
+            })
+            .collect::<Vec<_>>();
+
+        let mut tokens = self
+            .mt_tokens(self.defuse.id(), ..)
+            .await
+            .expect("Failed to fetch tokens");
+
+        tokens.sort();
+
+        assert_eq!(tokens, expected);
     }
 }

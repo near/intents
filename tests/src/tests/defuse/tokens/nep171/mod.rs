@@ -28,6 +28,8 @@ async fn transfer_nft_to_verifier() {
         .unwrap()
         .unwrap();
 
+    let persistent_tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
+
     let nft_issuer_contract = user1
         .deploy_vanilla_nft_issuer(
             "nft1",
@@ -174,10 +176,9 @@ async fn transfer_nft_to_verifier() {
     {
         // mt_tokens
         {
-            let existing_mt_amount = env.persistent_state.map_or(0, |s| s.token_balances.len());
             let nfts_in_verifier = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
 
-            assert_eq!(nfts_in_verifier.len(), existing_mt_amount + 2);
+            assert_eq!(nfts_in_verifier.len(), persistent_tokens.len() + 2);
 
             let nfts_in_verifier_map = nfts_in_verifier
                 .into_iter()
