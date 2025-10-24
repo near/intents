@@ -13,6 +13,7 @@ use defuse_test_utils::{
     asserts::ResultAssertsExt,
     random::{Rng, random_bytes, rng},
 };
+use futures::StreamExt;
 use near_sdk::AccountId;
 use rstest::rstest;
 
@@ -21,13 +22,12 @@ use crate::{
         DefuseSigner, SigningStandard,
         accounts::AccountManagerExt,
         env::{Env, create_random_salted_nonce},
+        garbage_collector::GarbageCollectorExt,
         intents::ExecuteIntentsExt,
         state::SaltManagerExt,
     },
     utils::acl::AclExt,
 };
-
-use futures::future::try_join_all;
 
 #[tokio::test]
 #[rstest]
@@ -292,7 +292,7 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
     {
         user.cleanup_nonces(
             env.defuse.id(),
-            &[(user.id().clone(), vec![expirable_nonce])],
+            vec![(user.id().clone(), vec![expirable_nonce])],
         )
         .await
         .assert_err_contains("Insufficient permissions for method");
@@ -306,7 +306,7 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
 
         user.cleanup_nonces(
             env.defuse.id(),
-            &[(user.id().clone(), vec![expirable_nonce])],
+            vec![(user.id().clone(), vec![expirable_nonce])],
         )
         .await
         .unwrap();
@@ -325,7 +325,7 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
 
         user.cleanup_nonces(
             env.defuse.id(),
-            &[
+            vec![
                 (user.id().clone(), vec![expirable_nonce]),
                 (user.id().clone(), vec![legacy_nonce]),
                 (user.id().clone(), vec![long_term_expirable_nonce]),
@@ -362,7 +362,7 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
 
         user.cleanup_nonces(
             env.defuse.id(),
-            &[(user.id().clone(), vec![long_term_expirable_nonce])],
+            vec![(user.id().clone(), vec![long_term_expirable_nonce])],
         )
         .await
         .unwrap();
@@ -401,6 +401,8 @@ async fn cleanup_multiple_nonces(
         let intents = chunk
             .map(|_| {
                 // commit expirable nonce
+
+                use crate::tests::defuse::env::create_random_salted_nonce;
                 let deadline =
                     Deadline::new(current_timestamp.checked_add_signed(WAITING_TIME).unwrap());
                 let expirable_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
@@ -426,19 +428,20 @@ async fn cleanup_multiple_nonces(
     sleep(Duration::from_secs_f64(WAITING_TIME.as_seconds_f64())).await;
 
     let gas_used = user
-        .cleanup_nonces(env.defuse.id(), &[(user.id().clone(), nonces.clone())])
+        .cleanup_nonces(env.defuse.id(), vec![(user.id().clone(), nonces.clone())])
         .await
         .unwrap();
 
-    let checks = try_join_all(
-        nonces
-            .iter()
-            .map(|n| env.defuse.is_nonce_used(user.id(), n)),
-    )
-    .await
-    .expect("Failed to check cleaned nonces");
+    assert!(
+        futures::stream::iter(nonces)
+            .all(|n| {
+                let defuse = env.defuse.clone();
+                let user_id = user.id().clone();
 
-    assert!(checks.into_iter().all(|is_used| !is_used));
+                async move { !defuse.is_nonce_used(&user_id, &n).await.unwrap() }
+            })
+            .await
+    );
 
     println!(
         "Gas used to clear {} nonces: {}",
