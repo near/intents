@@ -153,7 +153,7 @@ impl SaltRegistry {
 
     #[inline]
     fn is_used(&self, salt: Salt) -> bool {
-        salt == self.current || self.previous.get(&salt).is_some()
+        salt == self.current || self.previous.contains_key(&salt)
     }
 
     #[inline]
