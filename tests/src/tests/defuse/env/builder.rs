@@ -136,14 +136,14 @@ impl EnvBuilder {
             disable_ft_storage_deposit: self.disable_ft_storage_deposit,
             disable_registration: self.disable_registration,
             seed: Seed::from_entropy(),
-            new_user_index: AtomicUsize::new(0),
+            next_user_index: AtomicUsize::new(0),
         };
 
         if deploy_legacy {
             // Legacy version deployed -> arbitrary data applied to the
             // contract before upgrade -> upgrade to the latest version ->
             // verify that the data is preserved after the upgrade
-            env.upgrade_legacy(self.create_unique_users).await;
+            env.upgrade_legacy(!self.create_unique_users).await;
         }
 
         env.near_deposit(env.wnear.id(), NearToken::from_near(100))

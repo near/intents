@@ -10,12 +10,11 @@ use crate::{
         defuse::{env::builder::EnvBuilder, tokens::nep141::traits::DefuseFtReceiver},
         poa::factory::PoAFactoryExt,
     },
-    utils::{ParentAccount, Sandbox, acl::AclExt, ft::FtExt, read_wasm},
+    utils::{ParentAccount, Sandbox, ft::FtExt, read_wasm},
 };
 use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;
 use defuse::{
-    contract::Role,
     core::{Deadline, ExpirableNonce, Nonce, Salt, SaltedNonce, VersionedNonce},
     tokens::DepositMessage,
 };
@@ -55,7 +54,7 @@ pub struct Env {
 
     // Persistent state generated in case of migration tests
     // used to fetch existing accounts
-    pub new_user_index: AtomicUsize,
+    pub next_user_index: AtomicUsize,
     pub seed: Seed,
 }
 
@@ -169,36 +168,10 @@ impl Env {
         let root = self.sandbox.root_account().id();
 
         if rand.random() {
-            let index = self.new_user_index.fetch_add(1, Ordering::SeqCst);
+            let index = self.next_user_index.fetch_add(1, Ordering::SeqCst);
             generate_deterministic_user_account_id(root, self.seed, index)
         } else {
             generate_random_account_id(root, &mut Unstructured::new(&rand.random::<[u8; 64]>()))
-        }
-    }
-
-    pub async fn upgrade_legacy(&self, create_unique_users: bool) {
-        let state = self
-            .generate_storage_data()
-            .await
-            .expect("Failed to generate state");
-
-        self.acl_grant_role(
-            self.defuse.id(),
-            Role::Upgrader,
-            self.sandbox.root_account().id(),
-        )
-        .await
-        .expect("Failed to grant upgrader role");
-
-        self.upgrade_defuse(self.defuse.id())
-            .await
-            .expect("Failed to upgrade defuse");
-
-        self.verify_storage_consistency(&state).await;
-
-        if create_unique_users {
-            self.new_user_index
-                .store(state.accounts.len(), Ordering::Relaxed);
         }
     }
 

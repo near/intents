@@ -99,7 +99,7 @@ async fn test_upgrade_with_persistence(mut rng: impl Rng, random_bytes: Vec<u8>)
     // Make some changes existing users:
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
 
-    let mut persistent_tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
+    let existing_tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
 
     // Create new users
     let (user3, user4) = futures::try_join!(
@@ -210,12 +210,16 @@ async fn test_upgrade_with_persistence(mut rng: impl Rng, random_bytes: Vec<u8>)
         let tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
 
         // New token
-        persistent_tokens.push(Token {
-            token_id: TokenId::Nep141(Nep141TokenId::new(ft1.clone())).to_string(),
-            owner_id: None,
-        });
+        let expected: Vec<_> = existing_tokens
+            .clone()
+            .into_iter()
+            .chain(std::iter::once(Token {
+                token_id: TokenId::Nep141(Nep141TokenId::new(ft1.clone())).to_string(),
+                owner_id: None,
+            }))
+            .collect();
 
-        assert_eq!(tokens, persistent_tokens);
+        assert_eq!(tokens, expected);
     }
 
     // Check fee
