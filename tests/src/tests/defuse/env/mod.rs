@@ -21,18 +21,22 @@ use defuse::{
 };
 use defuse_near_utils::arbitrary::ArbitraryNamedAccountId;
 use defuse_randomness::{Rng, make_true_rng};
+use defuse_test_utils::random::{Seed, rng};
 use futures::future::try_join_all;
-use futures::lock::Mutex;
-use near_sdk::{AccountId, NearToken};
+use near_sdk::{AccountId, NearToken, env::sha256};
 use near_workspaces::{
     Account, Contract, Network, Worker,
     operations::Function,
     types::{PublicKey, SecretKey},
 };
 use serde_json::json;
-use std::{ops::Deref, sync::LazyLock};
-
-pub use state::PersistentState;
+use std::{
+    ops::Deref,
+    sync::{
+        LazyLock,
+        atomic::{AtomicUsize, Ordering},
+    },
+};
 
 pub static POA_TOKEN_WASM_NO_REGISTRATION: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("res/poa-token-no-registration/defuse_poa_token"));
@@ -51,8 +55,8 @@ pub struct Env {
 
     // Persistent state generated in case of migration tests
     // used to fetch existing accounts
-    pub persistent_state: Option<PersistentState>,
-    pub current_user_index: Mutex<usize>,
+    pub new_user_index: AtomicUsize,
+    pub seed: Seed,
 }
 
 impl Env {
@@ -62,12 +66,6 @@ impl Env {
 
     pub async fn new() -> Self {
         Self::builder().build().await
-    }
-
-    pub fn state(&self) -> &PersistentState {
-        self.persistent_state
-            .as_ref()
-            .expect("Persistent state is not set")
     }
 
     pub async fn ft_storage_deposit(
@@ -130,7 +128,12 @@ impl Env {
     }
 
     pub async fn create_token(&self) -> AccountId {
-        let account_id = generate_random_account_id(self.poa_factory.id());
+        let mut rng = make_true_rng();
+        let bytes = rng.random::<[u8; 64]>();
+        let mut u = &mut Unstructured::new(&bytes);
+
+        let account_id = generate_random_account_id(self.poa_factory.id(), &mut u)
+            .expect("Failed to generate random account ID");
 
         self.create_named_token(self.poa_factory.subaccount_name(&account_id).as_str())
             .await
@@ -147,10 +150,11 @@ impl Env {
         Ok(account)
     }
 
-    // Fetches user from persistent state or creates a new random one
-    // in case if all users from persistent state are already used
     pub async fn create_user(&self) -> Account {
-        let account_id = self.get_next_account_id().await;
+        let account_id = self
+            .get_next_account_id()
+            .await
+            .expect("Failed to generate next account id");
         let root = self.sandbox.root_account();
 
         self.create_named_user(&root.subaccount_name(&account_id))
@@ -158,23 +162,29 @@ impl Env {
             .expect("Failed to create user account")
     }
 
-    async fn get_next_account_id(&self) -> AccountId {
-        if let Some(state) = self.persistent_state.as_ref() {
-            let mut index = self.current_user_index.lock().await;
+    // Randomly derives account ID from seed and unique index
+    // (to match existing accounts in migration tests)
+    // Or create new arbitrary account id
+    async fn get_next_account_id(&self) -> Result<AccountId> {
+        let mut rand = make_true_rng();
+        let root = self.sandbox.root_account().id();
 
-            if let Some(account_id) = state.accounts.keys().nth(*index) {
-                *index += 1;
-                drop(index);
-
-                return account_id.clone();
-            }
+        if rand.random() {
+            let index = self.new_user_index.fetch_add(1, Ordering::SeqCst);
+            generate_determined_user_account_id(root, self.seed, index)
+        } else {
+            generate_random_account_id(
+                root,
+                &mut Unstructured::new(&rand.random::<[u8; 64]>().to_vec()),
+            )
         }
-
-        generate_random_account_id(self.sandbox.root_account().id())
     }
 
-    pub async fn upgrade_legacy(&mut self) {
-        self.generate_storage_data().await;
+    pub async fn upgrade_legacy(&mut self, create_unique_users: bool) {
+        let state = self
+            .generate_storage_data()
+            .await
+            .expect("Failed to generate state");
 
         self.acl_grant_role(
             self.defuse.id(),
@@ -188,7 +198,12 @@ impl Env {
             .await
             .expect("Failed to upgrade defuse");
 
-        self.verify_storage_consistency().await;
+        self.verify_storage_consistency(&state).await;
+
+        if create_unique_users {
+            self.new_user_index
+                .store(state.accounts.len(), Ordering::Relaxed);
+        }
     }
 
     // if no tokens provided - only wnear storage deposit will be done
@@ -347,11 +362,25 @@ pub fn create_random_salted_nonce(salt: Salt, deadline: Deadline, mut rng: impl 
     .into()
 }
 
-fn generate_random_account_id(parent_id: &AccountId) -> AccountId {
-    let mut rng = make_true_rng();
-    let bytes = rng.random::<[u8; 64]>();
-    let u = &mut Unstructured::new(&bytes);
-
+fn generate_random_account_id(parent_id: &AccountId, u: &mut Unstructured) -> Result<AccountId> {
     ArbitraryNamedAccountId::arbitrary_subaccount(u, Some(parent_id))
-        .expect("Failed to generate account ID")
+        .map_err(|e| anyhow::anyhow!("Failed to generate account ID : {}", e))
+}
+
+fn generate_determined_user_account_id(
+    parent_id: &AccountId,
+    seed: Seed,
+    index: usize,
+) -> Result<AccountId> {
+    let bytes = sha256(&(seed.as_u64() + index as u64).to_be_bytes())[..8]
+        .try_into()
+        .map_err(|_| anyhow::anyhow!("Failed to create account ID"))?;
+
+    let seed = Seed::from_u64(u64::from_be_bytes(bytes));
+    let mut rng = rng(seed);
+
+    generate_random_account_id(
+        &parent_id,
+        &mut Unstructured::new(&rng.random::<[u8; 64]>()),
+    )
 }

@@ -94,8 +94,7 @@ args = [
 ]
 
 [tasks.test]
-dependencies = ["build"]
-run_task = "tests"
+alias = "tests"
 
 [tasks.nextest]
 dependencies = ["build"]
@@ -103,25 +102,8 @@ command = "cargo"
 args = ["nextest", "run", "--all", "${@}"]
 
 [tasks.tests]
-dependencies = ["print-migration-mode", "run-tests"]
-
-[tasks.print-migration-mode]
 dependencies = ["build"]
-script = '''
-#!/bin/bash
-echo "--------------------------------------------"
-
-case "$DEFUSE_MIGRATE_FROM_LEGACY" in
-    1|true|TRUE|yes|YES)
-        echo "Migration Mode: ENABLED"
-        ;;
-    *)
-        echo "Migration Mode: DISABLED"
-        ;;
-esac
-
-echo "--------------------------------------------"
-'''
+run_task = "run-tests"
 
 [tasks.run-tests]
 command = "cargo"

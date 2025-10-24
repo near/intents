@@ -1,3 +1,5 @@
+use std::sync::atomic::AtomicUsize;
+
 use super::DefuseExt;
 use crate::{
     tests::{defuse::env::Env, poa::factory::PoAFactoryExt},
@@ -11,7 +13,7 @@ use defuse::{
     core::fees::{FeesConfig, Pips},
 };
 use defuse_poa_factory::contract::Role as POAFactoryRole;
-use futures::lock::Mutex;
+use defuse_test_utils::random::Seed;
 use near_sdk::{AccountId, NearToken};
 use near_workspaces::{Account, Contract};
 
@@ -133,20 +135,15 @@ impl EnvBuilder {
             sandbox,
             disable_ft_storage_deposit: self.disable_ft_storage_deposit,
             disable_registration: self.disable_registration,
-            persistent_state: None,
-            current_user_index: Mutex::new(0),
+            seed: Seed::from_entropy(),
+            new_user_index: AtomicUsize::new(0),
         };
 
         if deploy_legacy {
             // Legacy version deployed -> arbitrary data applied to the
             // contract before upgrade -> upgrade to the latest version ->
             // verify that the data is preserved after the upgrade
-            env.upgrade_legacy().await;
-
-            if self.create_unique_users {
-                let state = env.state();
-                *env.current_user_index.lock().await = state.accounts.len();
-            }
+            env.upgrade_legacy(self.create_unique_users).await;
         }
 
         env.near_deposit(env.wnear.id(), NearToken::from_near(100))
@@ -163,6 +160,15 @@ impl EnvBuilder {
     pub async fn build(&mut self) -> Env {
         let migrate_from_legacy = std::env::var(MIGRATE_FROM_LEGACY_ENV_NAME)
             .is_ok_and(|v| !["0", "false"].contains(&v.to_lowercase().as_str()));
+
+        println!(
+            "Test migration mode: {}",
+            if migrate_from_legacy {
+                "enabled"
+            } else {
+                "disabled"
+            }
+        );
 
         self.build_env(migrate_from_legacy).await
     }
