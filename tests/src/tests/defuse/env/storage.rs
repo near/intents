@@ -32,7 +32,7 @@ use crate::{
 };
 
 impl Env {
-    pub async fn generate_storage_data(&mut self) -> Result<PersistentState> {
+    pub async fn generate_storage_data(&self) -> Result<PersistentState> {
         let state = PersistentState::generate(
             self.sandbox.root_account(),
             self.poa_factory.as_account(),
@@ -209,7 +209,7 @@ impl Env {
             .await
             .expect("Failed to fetch balance");
 
-        assert_eq!(result, amounts)
+        assert_eq!(result, amounts);
     }
 
     async fn verify_mt_tokens_consistency(&self, state: &PersistentState) {
@@ -217,7 +217,7 @@ impl Env {
             .get_tokens()
             .into_iter()
             .map(|token_id| Token {
-                token_id: TokenId::Nep141(token_id.clone()).to_string(),
+                token_id: TokenId::Nep141(token_id).to_string(),
                 owner_id: None,
             })
             .collect::<Vec<_>>();

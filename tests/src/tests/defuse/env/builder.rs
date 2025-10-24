@@ -128,7 +128,7 @@ impl EnvBuilder {
 
         let defuse = self.deploy_defuse(&root, &wnear, deploy_legacy).await;
 
-        let mut env = Env {
+        let env = Env {
             defuse,
             wnear,
             poa_factory: poa_factory.clone(),

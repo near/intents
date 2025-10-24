@@ -130,9 +130,9 @@ impl Env {
     pub async fn create_token(&self) -> AccountId {
         let mut rng = make_true_rng();
         let bytes = rng.random::<[u8; 64]>();
-        let mut u = &mut Unstructured::new(&bytes);
+        let u = &mut Unstructured::new(&bytes);
 
-        let account_id = generate_random_account_id(self.poa_factory.id(), &mut u)
+        let account_id = generate_random_account_id(self.poa_factory.id(), u)
             .expect("Failed to generate random account ID");
 
         self.create_named_token(self.poa_factory.subaccount_name(&account_id).as_str())
@@ -153,7 +153,6 @@ impl Env {
     pub async fn create_user(&self) -> Account {
         let account_id = self
             .get_next_account_id()
-            .await
             .expect("Failed to generate next account id");
         let root = self.sandbox.root_account();
 
@@ -165,7 +164,7 @@ impl Env {
     // Randomly derives account ID from seed and unique index
     // (to match existing accounts in migration tests)
     // Or create new arbitrary account id
-    async fn get_next_account_id(&self) -> Result<AccountId> {
+    fn get_next_account_id(&self) -> Result<AccountId> {
         let mut rand = make_true_rng();
         let root = self.sandbox.root_account().id();
 
@@ -173,14 +172,11 @@ impl Env {
             let index = self.new_user_index.fetch_add(1, Ordering::SeqCst);
             generate_determined_user_account_id(root, self.seed, index)
         } else {
-            generate_random_account_id(
-                root,
-                &mut Unstructured::new(&rand.random::<[u8; 64]>().to_vec()),
-            )
+            generate_random_account_id(root, &mut Unstructured::new(&rand.random::<[u8; 64]>()))
         }
     }
 
-    pub async fn upgrade_legacy(&mut self, create_unique_users: bool) {
+    pub async fn upgrade_legacy(&self, create_unique_users: bool) {
         let state = self
             .generate_storage_data()
             .await
@@ -372,15 +368,12 @@ fn generate_determined_user_account_id(
     seed: Seed,
     index: usize,
 ) -> Result<AccountId> {
-    let bytes = sha256(&(seed.as_u64() + index as u64).to_be_bytes())[..8]
+    let bytes = sha256(&(seed.as_u64() + u64::try_from(index)?).to_be_bytes())[..8]
         .try_into()
         .map_err(|_| anyhow::anyhow!("Failed to create account ID"))?;
 
     let seed = Seed::from_u64(u64::from_be_bytes(bytes));
     let mut rng = rng(seed);
 
-    generate_random_account_id(
-        &parent_id,
-        &mut Unstructured::new(&rng.random::<[u8; 64]>()),
-    )
+    generate_random_account_id(parent_id, &mut Unstructured::new(&rng.random::<[u8; 64]>()))
 }

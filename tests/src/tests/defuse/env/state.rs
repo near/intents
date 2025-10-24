@@ -52,7 +52,9 @@ impl AccountWithTokens {
 
         let tokens = (0..selected_token_amount)
             .map(|_| {
-                let ix = u.int_in_range(0..=tokens.len() - 1)?;
+                // Because of inclusive range requirement
+                #[allow(clippy::range_minus_one)]
+                let ix = u.int_in_range(0..=(tokens.len() - 1))?;
                 let token = tokens[ix].clone();
                 let amount = u.int_in_range(MIN_BALANCE_AMOUNT..=MAX_BALANCE_AMOUNT)?;
 
@@ -87,7 +89,7 @@ impl PersistentState {
     pub fn get_tokens(&self) -> Vec<Nep141TokenId> {
         self.accounts
             .iter()
-            .flat_map(|(_, account)| account.tokens.keys().map(|t| t.clone()))
+            .flat_map(|(_, account)| account.tokens.keys().cloned())
             .unique()
             .sorted()
             .collect()
