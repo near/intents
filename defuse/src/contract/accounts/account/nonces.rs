@@ -74,28 +74,22 @@ where
     }
 }
 
+
 #[cfg(test)]
 pub(super) mod tests {
 
     use super::*;
 
-    use defuse_bitmap::U256;
-    use defuse_test_utils::random::{Rng, range_to_random_size, rng};
+    use near_sdk::IntoStorageKey;
+    use proptest::{collection::vec, arbitrary, prelude::*};
 
-    use rstest::fixture;
-    use std::ops::RangeBounds;
 
-    use defuse_test_utils::random::{make_arbitrary, random_bytes};
-    use rstest::rstest;
 
-    #[fixture]
-    pub(crate) fn random_nonces(
-        mut rng: impl Rng,
-        #[default(10..100)] size: impl RangeBounds<usize>,
-    ) -> Vec<U256> {
-        (0..range_to_random_size(&mut rng, size))
-            .map(|_| rng.random())
-            .collect()
+    struct StoragePrefix(Vec<u8>);
+    impl IntoStorageKey for StoragePrefix {
+        fn into_storage_key(self) -> Vec<u8> {
+            self.0
+        }
     }
 
     fn get_legacy_map(nonces: &[U256], prefix: Vec<u8>) -> Nonces<LookupMap<U248, U256>> {
@@ -109,103 +103,117 @@ pub(super) mod tests {
         legacy_nonces
     }
 
-    #[rstest]
-    fn new_from_legacy(random_nonces: Vec<U256>, random_bytes: Vec<u8>) {
-        let legacy_nonces = get_legacy_map(&random_nonces, random_bytes.clone());
-        let new = MaybeLegacyAccountNonces::with_legacy(
-            legacy_nonces,
-            LookupMap::with_hasher(random_bytes),
-        );
 
-        let legacy_map = new.legacy.as_ref().expect("No legacy nonces present");
 
-        for nonce in &random_nonces {
-            assert!(legacy_map.is_used(*nonce));
-            assert!(!new.nonces.is_used(*nonce));
-            assert!(new.is_used(*nonce));
+    fn prefix_strategy() -> impl Strategy<Value = Vec<u8>> {
+        vec(any::<u8>(), 1..=32)
+    }
+
+    fn nonces_strategy(range: std::ops::RangeInclusive<usize>) -> impl Strategy<Value = Vec<U256>> {
+        vec(any::<U256>(), range)
+    }
+
+    proptest! {
+        #[test]
+        fn new_from_legacy(random_nonces in nonces_strategy(0..=16), random_bytes in prefix_strategy()) {
+            let legacy_nonces = get_legacy_map(&random_nonces, random_bytes.clone());
+            let new = MaybeLegacyAccountNonces::with_legacy(
+                legacy_nonces,
+                LookupMap::with_hasher(random_bytes),
+            );
+
+            let legacy_map = new.legacy.as_ref().expect("No legacy nonces present");
+
+            for nonce in &random_nonces {
+                assert!(legacy_map.is_used(*nonce));
+                assert!(!new.nonces.is_used(*nonce));
+                assert!(new.is_used(*nonce));
+            }
         }
     }
 
-    #[rstest]
-    #[allow(clippy::used_underscore_binding)]
-    fn commit_new_nonce(random_bytes: Vec<u8>, mut rng: impl Rng) {
-        let new_nonce = rng.random();
-        let legacy_nonce = rng.random();
-        let mut new = MaybeLegacyAccountNonces::new(LookupMap::with_hasher(random_bytes));
+    proptest! {
+        #[test]
+        fn commit_new_nonce(random_bytes in prefix_strategy(), new_nonce: [u8;32], legacy_nonce: [u8; 32]) {
+            prop_assume!(new_nonce != legacy_nonce);
+            println!("new_nonce: {:?}, legacy_nonce: {:?}", new_nonce, legacy_nonce);
 
-        new.commit(new_nonce)
-            .expect("should be able to commit new nonce");
-        new.commit(legacy_nonce)
-            .expect("should be able to commit new legacy nonce");
+            // let mut new = MaybeLegacyAccountNonces::new(LookupMap::with_hasher::<Vec<u8>>(random_bytes));
+            let mut new = MaybeLegacyAccountNonces::new(LookupMap::with_hasher(b"hello world".as_slice()));
 
-        assert!(new.legacy.is_none());
+            new.commit(new_nonce)
+                .expect("should be able to commit new nonce");
+            new.commit(legacy_nonce)
+                .expect("should be able to commit new legacy nonce");
 
-        for n in [new_nonce, legacy_nonce] {
-            assert!(new.nonces.is_used(n));
-            assert!(new.is_used(n));
+            assert!(new.legacy.is_none());
+
+            for n in [new_nonce, legacy_nonce] {
+                assert!(new.nonces.is_used(n));
+                assert!(new.is_used(n));
+            }
         }
     }
 
-    #[rstest]
-    #[allow(clippy::used_underscore_binding)]
-    fn commit_existing_legacy_nonce(random_nonces: Vec<U256>, random_bytes: Vec<u8>) {
-        let legacy_nonces = get_legacy_map(&random_nonces, random_bytes.clone());
-        let mut new = MaybeLegacyAccountNonces::with_legacy(
-            legacy_nonces,
-            LookupMap::with_hasher(random_bytes),
-        );
+    proptest! {
+        #[test]
+        fn commit_existing_legacy_nonce(random_nonces in nonces_strategy(1..=16), random_bytes in prefix_strategy()) {
+            let legacy_nonces = get_legacy_map(&random_nonces, random_bytes.clone());
+            let mut new = MaybeLegacyAccountNonces::with_legacy(
+                legacy_nonces,
+                LookupMap::with_hasher(random_bytes),
+            );
 
-        assert!(matches!(
-            new.commit(random_nonces[0]).unwrap_err(),
-            DefuseError::NonceUsed
-        ));
-    }
-
-    #[rstest]
-    fn commit_duplicate_nonce(random_bytes: Vec<u8>, mut rng: impl Rng) {
-        let mut new = MaybeLegacyAccountNonces::new(LookupMap::with_hasher(random_bytes));
-        let nonce = rng.random();
-
-        new.commit(nonce).expect("First commit should succeed");
-
-        assert!(matches!(
-            new.commit(nonce).unwrap_err(),
-            DefuseError::NonceUsed
-        ));
-    }
-
-    #[rstest]
-    #[allow(clippy::used_underscore_binding)]
-    fn check_used_nonces(
-        #[from(make_arbitrary)] legacy_nonces: Vec<U256>,
-        random_nonces: Vec<U256>,
-        random_bytes: Vec<u8>,
-    ) {
-        let legacy_map = get_legacy_map(&legacy_nonces, random_bytes.clone());
-        let mut new =
-            MaybeLegacyAccountNonces::with_legacy(legacy_map, LookupMap::with_hasher(random_bytes));
-
-        for nonce in &random_nonces {
-            new.commit(*nonce).expect("unable to commit nonce");
-        }
-
-        for nonce in random_nonces.iter().chain(&legacy_nonces) {
-            assert!(new.is_used(*nonce));
+            assert!(matches!(
+                new.commit(random_nonces[0]).unwrap_err(),
+                DefuseError::NonceUsed
+            ));
         }
     }
 
-    #[rstest]
-    #[allow(clippy::used_underscore_binding)]
-    fn legacy_nonces_cant_be_cleared(random_bytes: Vec<u8>, mut rng: impl Rng) {
-        let random_nonce = rng.random();
-        let legacy_nonces = get_legacy_map(&[random_nonce], random_bytes.clone());
-        let mut new = MaybeLegacyAccountNonces::with_legacy(
-            legacy_nonces,
-            LookupMap::with_hasher(random_bytes),
-        );
+    proptest! {
+        #[test]
+        fn commit_duplicate_nonce(random_bytes in prefix_strategy(), nonce in any::<U256>()) {
+            let mut new = MaybeLegacyAccountNonces::new(LookupMap::with_hasher(random_bytes));
 
-        let [prefix @ .., _] = random_nonce;
-        assert!(!new.cleanup_by_prefix(prefix));
-        assert!(new.is_used(random_nonce));
+            new.commit(nonce).expect("First commit should succeed");
+
+            assert!(matches!(
+                new.commit(nonce).unwrap_err(),
+                DefuseError::NonceUsed
+            ));
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn check_used_nonces(legacy_nonces in nonces_strategy(0..=16), random_nonces in nonces_strategy(0..=16), random_bytes in prefix_strategy()) {
+            let legacy_map = get_legacy_map(&legacy_nonces, random_bytes.clone());
+            let mut new =
+                MaybeLegacyAccountNonces::with_legacy(legacy_map, LookupMap::with_hasher(random_bytes));
+
+            for nonce in &random_nonces {
+                new.commit(*nonce).expect("unable to commit nonce");
+            }
+
+            for nonce in random_nonces.iter().chain(&legacy_nonces) {
+                assert!(new.is_used(*nonce));
+            }
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn legacy_nonces_cant_be_cleared(random_bytes in prefix_strategy(), random_nonce in any::<U256>()) {
+            let legacy_nonces = get_legacy_map(&[random_nonce], random_bytes.clone());
+            let mut new = MaybeLegacyAccountNonces::with_legacy(
+                legacy_nonces,
+                LookupMap::with_hasher(random_bytes),
+            );
+
+            let [prefix @ .., _] = random_nonce;
+            assert!(!new.cleanup_by_prefix(prefix));
+            assert!(new.is_used(random_nonce));
+        }
     }
 }

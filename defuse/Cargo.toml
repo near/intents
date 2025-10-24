@@ -70,5 +70,6 @@ chrono.workspace = true
 
 arbitrary_with.workspace = true
 itertools.workspace = true
+proptest = { workspace = true }
 rstest.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
