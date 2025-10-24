@@ -21,7 +21,6 @@ use crate::{
         DefuseSigner, SigningStandard,
         accounts::AccountManagerExt,
         env::{Env, create_random_salted_nonce},
-        garbage_collector::GarbageCollectorExt,
         intents::ExecuteIntentsExt,
         state::SaltManagerExt,
     },
@@ -293,7 +292,7 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
     {
         user.cleanup_nonces(
             env.defuse.id(),
-            vec![(user.id().clone(), vec![expirable_nonce])],
+            &[(user.id().clone(), vec![expirable_nonce])],
         )
         .await
         .assert_err_contains("Insufficient permissions for method");
@@ -307,7 +306,7 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
 
         user.cleanup_nonces(
             env.defuse.id(),
-            vec![(user.id().clone(), vec![expirable_nonce])],
+            &[(user.id().clone(), vec![expirable_nonce])],
         )
         .await
         .unwrap();
@@ -326,7 +325,7 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
 
         user.cleanup_nonces(
             env.defuse.id(),
-            vec![
+            &[
                 (user.id().clone(), vec![expirable_nonce]),
                 (user.id().clone(), vec![legacy_nonce]),
                 (user.id().clone(), vec![long_term_expirable_nonce]),
@@ -363,7 +362,7 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
 
         user.cleanup_nonces(
             env.defuse.id(),
-            vec![(user.id().clone(), vec![long_term_expirable_nonce])],
+            &[(user.id().clone(), vec![long_term_expirable_nonce])],
         )
         .await
         .unwrap();
@@ -427,7 +426,7 @@ async fn cleanup_multiple_nonces(
     sleep(Duration::from_secs_f64(WAITING_TIME.as_seconds_f64())).await;
 
     let gas_used = user
-        .cleanup_nonces(env.defuse.id(), vec![(user.id().clone(), nonces.clone())])
+        .cleanup_nonces(env.defuse.id(), &[(user.id().clone(), nonces.clone())])
         .await
         .unwrap();
 

@@ -29,6 +29,11 @@ pub trait AccountManager {
     /// [permit2 nonce schema](https://docs.uniswap.org/contracts/permit2/reference/signature-transfer#nonce-schema).
     fn is_nonce_used(&self, account_id: &AccountId, nonce: AsBase64<Nonce>) -> bool;
 
+    /// Clears all expired nonces for given accounts by its prefix.
+    /// Omitting any errors, e.g. if account doesn't exist or nonces are not expired.
+    /// NOTE: MUST attach 1 yⓃ for security purposes.
+    fn cleanup_nonces(&mut self, nonces: Vec<(AccountId, Vec<AsBase64<Nonce>>)>);
+
     /// Returns whether authentication by PREDECESSOR_ID is enabled
     /// for given `account_id`.
     ///

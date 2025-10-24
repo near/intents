@@ -4,7 +4,6 @@ pub mod contract;
 
 pub mod accounts;
 pub mod fees;
-pub mod garbage_collector;
 pub mod intents;
 pub mod salts;
 pub mod simulation_output;

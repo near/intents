@@ -1,6 +1,5 @@
 pub mod accounts;
 mod env;
-mod garbage_collector;
 mod intents;
 mod state;
 mod storage;
