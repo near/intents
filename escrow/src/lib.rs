@@ -1,4 +1,7 @@
-use std::{collections::BTreeMap, iter};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    intrinsics::simd::simd_reduce_all,
+};
 
 use chrono::{DateTime, Utc};
 use defuse_borsh_utils::adapters::{
@@ -7,6 +10,7 @@ use defuse_borsh_utils::adapters::{
 use defuse_map_utils::cleanup::DefaultMap;
 use defuse_near_utils::{UnwrapOrPanic, time::now};
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
+use defuse_num_utils::CheckedMulDiv;
 use defuse_token_id::nep245::Nep245TokenId as TokenId;
 use impl_tools::autoimpl;
 use near_sdk::{
@@ -39,14 +43,18 @@ pub struct Contract(Params);
 #[derive(Debug)]
 pub struct Params {
     pub maker_asset: TokenId,
+    // TODO: remaining_amount?
     pub maker_amount: u128,
 
     pub taker_asset: TokenId,
     // ratio is not a good approach, since adding more maker_tokens
     // would keep the ratio same, rather than decreasing it
+    // TODO: remaining_amount?
     pub taker_amount: u128,
 
     pub taker_asset_receiver_id: AccountId,
+
+    pub allow_partial_fills: bool,
 
     // TODO: store only merkle root? leaves have salts
     // pub taker_whitelist: BTreeSet<AccountId>,
@@ -67,7 +75,7 @@ pub struct Params {
 
 impl Params {
     pub fn is_alive(&self) -> bool {
-        !matches!(self.state, State::Cancelled) && self.deadline > now()
+        !matches!(self.state, State::Closed) && self.deadline > now()
     }
 }
 
@@ -88,7 +96,7 @@ pub enum State {
     // Settling,
 
     // TODO
-    Cancelled,
+    Closed,
 }
 
 #[near]
@@ -128,17 +136,39 @@ impl MultiTokenReceiver for Contract {
             }
             State::Open => {
                 if asset == self.maker_asset {
+                    // TODO: verify sender_id?
                     // TODO: add support for increase maker asset amount
                     self.maker_amount += amount.0;
                     return PromiseOrValue::Value(vec![U128(0)]);
                 }
                 require!(asset == self.taker_asset, "wrong asset");
-                // TODO: partial fills
-                let refund = amount
+
+                let ( refund, maker_amount) = if amount.0 < self.taker_amount {
+                    require!(self.allow_partial_fills, "partial fills are not allowed");
+
+                    // rem_maker_amount / rem_taker_amount == (rem_maker_amount - maker_amount) / (rem_taker_amount - taker_amount)
+                    // (rem_maker_amount - maker_amount) = rem_maker_amount * (rem_taker_amount - taker_amount) / rem_taker_amount
+                    // maker_amount = rem_maker_amount * taker_amount / rem_taker_amount
+                    let maker_amount = self
+                        .maker_amount
+                        .checked_mul_div(amount.0, self.taker_amount)
+                        // taker_amount / rem_taker_amount < 1
+                        .unwrap_or_else(|| unreachable!());
+                    self.maker_amount = self.maker_amount.saturating_sub(maker_amount);
+                    self.taker_amount = self.taker_amount.saturating_sub(amount.0);
+
+
+                    (0, maker_amount)
+                    // TODO: partial fills
+                } else {
+                    amount
                     .0
                     .checked_sub(self.taker_amount)
                     .ok_or("insufficient amount")
-                    .unwrap_or_panic();
+                    .unwrap_or_panic()
+                }
+
+                let refund = ;
 
                 let msg: TakerMessage = serde_json::from_str(&msg).unwrap();
                 let maker_asset_receiver_id = msg.receiver_id.unwrap_or(sender_id);
@@ -158,11 +188,12 @@ impl MultiTokenReceiver for Contract {
                     maker_asset_receiver_id.clone(),
                     self.maker_amount,
                 ))
+                // TODO: optimize and handle lost&found in a single callback
                 .then(Self::ext(env::current_account_id()).maybe_cleanup());
 
                 PromiseOrValue::Value(vec![U128(refund)])
             }
-            State::Cancelled => unreachable!(), // TODO
+            State::Closed => unreachable!(), // TODO
         }
     }
 }
@@ -176,6 +207,7 @@ impl Contract {
             // TODO: static gas?
             .mt_transfer(receiver_id.clone(), token_id, U128(amount), None, None)
             .then(
+                // TODO: maybe resolve multiple `*_transfer`s at once (i.e. joint promise)
                 Self::ext(env::current_account_id())
                     // TODO: static gas?
                     .resolve_transfer(asset, receiver_id, U128(amount)),
@@ -201,22 +233,29 @@ impl Contract {
             let mut lost = receiver.entry_or_default(asset);
             *lost = lost
                 .checked_add(refund)
-                // TODO: is it?
+                // TODO: is it? no, there can be a malcious token
                 .unwrap_or_else(|| unreachable!());
+        } else {
+            // TODO: maybe cleanup?
         }
         U128(used)
     }
 
     // permissionless
     // TODO: return value?
-    pub fn lost_found(&mut self, retry: BTreeMap<AccountId, BTreeMap<TokenId, U128>>) {
-        for (receiver_id, (asset, amount)) in retry
-            .into_iter()
-            .flat_map(|(receiver_id, amounts)| iter::repeat(receiver_id).zip(amounts))
-        {
-            // TODO: detach? are we sure
-            let _ = Self::send(asset, receiver_id, amount.0);
+    pub fn lost_found(&mut self, retry: BTreeMap<AccountId, BTreeSet<TokenId>>) {
+        // TODO: add support for all-at-once and all-assets-of-receiver-at-once
+        for (receiver_id, assets) in retry {
+            let mut lost_amounts = self.lost_found.entry_or_default(receiver_id);
+            for asset in assets {
+                if let Some(lost_amount) = (*lost_amounts).remove(&asset) {
+                    // TODO: detach? are we sure
+                    let _ = Self::send(asset, lost_amounts.key().clone(), lost_amount);
+                }
+            }
         }
+
+        // TODO: maybe cleanup?
     }
 
     #[payable]
@@ -231,11 +270,24 @@ impl Contract {
 
         // TODO: emit logs
 
-        self.state = State::Cancelled;
+        self.state = State::Closed;
     }
+    // TODO: cancel_by_resolver?
 
-    pub fn maybe_cleanup(self) {
-        // self
+    pub fn maybe_cleanup(&mut self) {
+        if !self.lost_found.is_empty() {
+            return;
+        }
+
+        // check pending callbacks counter
+        // if self.pending_callbacks != 0 {
+        //   return;
+        // }
+
+        self.state = State::Closed;
+        let _ = Promise::new(env::current_account_id())
+            // TODO: are we sure we don't hold any NEAR for storage_deposits, etc..?
+            .delete_account(self.taker_asset_receiver_id.clone());
     }
 }
 

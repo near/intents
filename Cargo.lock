@@ -822,6 +822,7 @@ dependencies = [
  "defuse-map-utils",
  "defuse-near-utils",
  "defuse-nep245",
+ "defuse-num-utils",
  "defuse-token-id",
  "impl-tools",
  "near-contract-standards",

@@ -14,6 +14,7 @@ defuse-borsh-utils = { workspace = true, features = ["chrono"] }
 defuse-map-utils.workspace = true
 defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
+defuse-num-utils.workspace = true
 defuse-token-id.workspace = true
 
 near-contract-standards.workspace = true
