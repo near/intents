@@ -208,16 +208,20 @@ struct AccountFtDiff<'a> {
 }
 
 async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
-
     futures::future::try_join_all(accounts.iter().flat_map(move |account| {
-        account.init_balances.iter().map(move |(token_id, balance)| {
-            env.defuse_ft_deposit_to(
-                token_id,
-                (*balance).try_into().unwrap(),
-                account.account.id(),
-            )
-        })
-    })).await.unwrap();
+        account
+            .init_balances
+            .iter()
+            .map(move |(token_id, balance)| {
+                env.defuse_ft_deposit_to(
+                    token_id,
+                    (*balance).try_into().unwrap(),
+                    account.account.id(),
+                )
+            })
+    }))
+    .await
+    .unwrap();
 
     let signed = futures::future::try_join_all(accounts.iter().flat_map(move |account| {
         account.diff.iter().cloned().map(move |diff| {
@@ -227,10 +231,12 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
                     diff,
                     memo: None,
                     referral: None,
-                }]
+                }],
             )
         })
-    })).await.unwrap();
+    }))
+    .await
+    .unwrap();
 
     // simulate
     env.defuse
@@ -296,36 +302,36 @@ async fn invariant_violated(#[values(false, true)] no_registration: bool) {
     )
     .expect("Failed to deposit tokens");
 
-
     let signed = futures::future::try_join_all([
-        user1
-            .create_defuse_payload(
-                &env.defuse.id(),
-                [TokenDiff {
-                    diff: TokenDeltas::default()
-                        .with_apply_deltas([
-                            (ft1_token_id.clone(), -1000),
-                            (ft2_token_id.clone(), 2000),
-                        ])
-                        .unwrap(),
-                    memo: None,
-                    referral: None,
-                }],
-            ),
-        user1
-            .create_defuse_payload(
-                &env.defuse.id(),
-                [TokenDiff {
-                    diff: TokenDeltas::default()
-                        .with_apply_deltas([
-                            (ft1_token_id.clone(), 1000),
-                            (ft2_token_id.clone(), -1999),
-                        ])
-                        .unwrap(),
-                    memo: None,
-                    referral: None,
-                }],
-            )]).await.unwrap();
+        user1.create_defuse_payload(
+            &env.defuse.id(),
+            [TokenDiff {
+                diff: TokenDeltas::default()
+                    .with_apply_deltas([
+                        (ft1_token_id.clone(), -1000),
+                        (ft2_token_id.clone(), 2000),
+                    ])
+                    .unwrap(),
+                memo: None,
+                referral: None,
+            }],
+        ),
+        user1.create_defuse_payload(
+            &env.defuse.id(),
+            [TokenDiff {
+                diff: TokenDeltas::default()
+                    .with_apply_deltas([
+                        (ft1_token_id.clone(), 1000),
+                        (ft2_token_id.clone(), -1999),
+                    ])
+                    .unwrap(),
+                memo: None,
+                referral: None,
+            }],
+        ),
+    ])
+    .await
+    .unwrap();
 
     assert_eq!(
         env.defuse

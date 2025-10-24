@@ -1,3 +1,4 @@
+use crate::utils::fixtures::{ed25519_pk, secp256k1_pk};
 use crate::{
     tests::defuse::{
         DefusePayloadBuilder, env::Env, intents::ExecuteIntentsExt,
@@ -13,7 +14,6 @@ use defuse::{
     },
     tokens::DepositMessage,
 };
-use crate::utils::fixtures::{ed25519_pk, secp256k1_pk};
 use near_sdk::NearToken;
 use rstest::rstest;
 
@@ -26,7 +26,6 @@ async fn native_withdraw_intent(ed25519_pk: PublicKey, secp256k1_pk: PublicKey) 
 
     env.initial_ft_storage_deposit(vec![user.id(), other_user.id()], &[])
         .await;
-
 
     let amounts_to_withdraw = [
         // Check for different account_id types

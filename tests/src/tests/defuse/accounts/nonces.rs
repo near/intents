@@ -18,7 +18,12 @@ use rstest::rstest;
 
 use crate::{
     tests::defuse::{
-        accounts::AccountManagerExt, env::{create_random_salted_nonce, Env}, garbage_collector::GarbageCollectorExt, intents::ExecuteIntentsExt, state::SaltManagerExt, DefusePayloadBuilder, DefuseSigner, SigningStandard
+        DefusePayloadBuilder, DefuseSigner, SigningStandard,
+        accounts::AccountManagerExt,
+        env::{Env, create_random_salted_nonce},
+        garbage_collector::GarbageCollectorExt,
+        intents::ExecuteIntentsExt,
+        state::SaltManagerExt,
     },
     utils::acl::AclExt,
 };

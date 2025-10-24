@@ -153,7 +153,6 @@ impl DefuseNonceExt for near_workspaces::Contract {
 }
 
 pub trait DefusePayloadBuilder: DefuseSigner + DefuseNonceExt {
-
     #[must_use]
     async fn create_defuse_payload<T>(
         &self,

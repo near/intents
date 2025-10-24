@@ -46,7 +46,11 @@ async fn transfer_nft_to_verifier() {
 
     // Create the token id, expected inside the verifier contract
     let nft1_mt_token_id = DefuseTokenId::from(
-        Nep171TokenId::new(nft_issuer_contract.id().to_owned(), DUMMY_NFT1_ID.to_string()).unwrap(),
+        Nep171TokenId::new(
+            nft_issuer_contract.id().to_owned(),
+            DUMMY_NFT1_ID.to_string(),
+        )
+        .unwrap(),
     );
 
     let nft1: Token = user1
@@ -64,7 +68,11 @@ async fn transfer_nft_to_verifier() {
 
     // Create the token id, expected inside the verifier contract
     let nft2_mt_token_id = DefuseTokenId::from(
-        Nep171TokenId::new(nft_issuer_contract.id().to_owned(), DUMMY_NFT2_ID.to_string()).unwrap(),
+        Nep171TokenId::new(
+            nft_issuer_contract.id().to_owned(),
+            DUMMY_NFT2_ID.to_string(),
+        )
+        .unwrap(),
     );
 
     let nft2: Token = user1

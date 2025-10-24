@@ -4,7 +4,7 @@ mod builder;
 mod state;
 mod storage;
 
-use super::{accounts::AccountManagerExt, DefuseExt, DefuseNonceExt};
+use super::{DefuseExt, DefuseNonceExt, accounts::AccountManagerExt};
 use crate::{
     tests::{
         defuse::{env::builder::EnvBuilder, tokens::nep141::traits::DefuseFtReceiver},
@@ -81,7 +81,10 @@ impl Env {
             .await
     }
 
-    pub async fn get_unique_nonce(&self, deadline: Option<Deadline>) -> anyhow::Result<(Nonce, Deadline)>{
+    pub async fn get_unique_nonce(
+        &self,
+        deadline: Option<Deadline>,
+    ) -> anyhow::Result<(Nonce, Deadline)> {
         let root = self.sandbox.root_account();
         root.get_unique_nonce(self.defuse.id(), deadline).await
     }

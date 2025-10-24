@@ -1,7 +1,7 @@
 use arbitrary_with::Unstructured;
 use defuse::core::crypto::PublicKey;
-use defuse_test_utils::random::{Rng, rng};
 use defuse::core::ton_connect::tlb_ton::MsgAddress;
+use defuse_test_utils::random::{Rng, rng};
 use rstest::fixture;
 
 #[fixture]
@@ -15,7 +15,6 @@ pub fn public_key(mut rng: impl Rng) -> PublicKey {
 #[fixture]
 pub fn ed25519_pk(mut rng: impl Rng) -> PublicKey {
     PublicKey::Ed25519(rng.random())
-
 }
 
 #[fixture]
@@ -32,7 +31,6 @@ pub fn p256_pk(mut rng: impl Rng) -> PublicKey {
 pub fn msg_address(mut rng: impl Rng) -> MsgAddress {
     let mut random_bytes = [0u8; 32];
     rng.fill_bytes(&mut random_bytes);
-    let mut u = Unstructured::new(& mut random_bytes);
+    let mut u = Unstructured::new(&mut random_bytes);
     u.arbitrary().unwrap()
 }
-

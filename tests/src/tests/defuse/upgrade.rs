@@ -1,7 +1,12 @@
 use super::DEFUSE_WASM;
+use crate::utils::fixtures::{ed25519_pk, p256_pk, secp256k1_pk};
 use crate::{
     tests::defuse::{
-        accounts::AccountManagerExt, env::{create_random_salted_nonce, Env}, intents::ExecuteIntentsExt, state::{FeesManagerExt, SaltManagerExt}, DefusePayloadBuilder, DefuseSigner, SigningStandard
+        DefusePayloadBuilder, DefuseSigner, SigningStandard,
+        accounts::AccountManagerExt,
+        env::{Env, create_random_salted_nonce},
+        intents::ExecuteIntentsExt,
+        state::{FeesManagerExt, SaltManagerExt},
     },
     utils::{acl::AclExt, mt::MtExt},
 };
@@ -23,7 +28,6 @@ use defuse_test_utils::random::{Seed, TestRng, rng};
 use itertools::Itertools;
 use near_sdk::AccountId;
 use rstest::rstest;
-use crate::utils::fixtures::{ed25519_pk, secp256k1_pk, p256_pk};
 
 use futures::future::try_join_all;
 
@@ -64,9 +68,7 @@ async fn upgrade(ed25519_pk: PublicKey, secp256k1_pk: PublicKey, p256_pk: Public
         0
     );
 
-    for public_key in [
-        ed25519_pk, secp256k1_pk, p256_pk
-    ] {
+    for public_key in [ed25519_pk, secp256k1_pk, p256_pk] {
         assert!(
             new_contract
                 .has_public_key(&public_key.to_implicit_account_id(), &public_key)
@@ -127,24 +129,23 @@ async fn test_upgrade_with_persistence() {
             let current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
 
             let mut nonce_seed = 0u64;
-            let payloads = futures::future::try_join_all(users
-                .iter()
-                .combinations(2)
-                .map(|accounts| {
+            let payloads =
+                futures::future::try_join_all(users.iter().combinations(2).map(|accounts| {
                     let sender = accounts[0];
                     let receiver = accounts[1];
                     sender.create_defuse_payload(
                         env.defuse.id(),
                         [Transfer {
-                                receiver_id: receiver.id().clone(),
-                                tokens: Amounts::new(
-                                    [(TokenId::Nep141(Nep141TokenId::new(ft1.clone())), 1000)]
-                                        .into(),
-                                ),
-                                memo: None,
+                            receiver_id: receiver.id().clone(),
+                            tokens: Amounts::new(
+                                [(TokenId::Nep141(Nep141TokenId::new(ft1.clone())), 1000)].into(),
+                            ),
+                            memo: None,
                         }],
                     )
-                })).await.unwrap();
+                }))
+                .await
+                .unwrap();
 
             env.defuse
                 .execute_intents(env.defuse.id(), payloads)

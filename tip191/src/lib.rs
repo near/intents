@@ -67,13 +67,9 @@ impl SignedPayload for SignedTip191Payload {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use defuse_test_utils::{
-        random::{Rng, rng},
-        tamper::{tamper_bytes, tamper_string},
-    };
-    use rstest::rstest;
+    use hex_literal::hex;
 
-    fn fix_v_in_signature(mut sig: [u8; 65]) -> [u8; 65] {
+    const fn fix_v_in_signature(mut sig: [u8; 65]) -> [u8; 65] {
         if *sig.last().unwrap() >= 27 {
             // Ethereum only uses uncompressed keys, with corresponding value v=27/28
             // https://bitcoin.stackexchange.com/a/38909/58790
@@ -82,101 +78,61 @@ mod tests {
         sig
     }
 
+    // NOTE: Public key can be derived using `ethers_signers` crate:
+    // let wallet = LocalWallet::from_str(
+    //     "a4b319a82adfc43584e4537fec97a80516e16673db382cd91eba97abbab8ca56",
+    // )?;
+    // let signing_key = wallet.signer();
+    // let verifying_key = signing_key.verifying_key();
+    // let public_key = verifying_key.to_encoded_point(false);
+    // // Notice that we skip the first byte, 0x04
+    // println!("Public key: 0x{}", hex::encode(public_key.as_bytes()[1..]));
+
+    const REFERENCE_MESSAGE: &str = "Hello, TRON!";
+    const NOK_REFERENCE_MESSAGE: &str = "this is not TRON reference input message";
+    const REFERENCE_SIGNATURE: [u8; 65] = hex!(
+        "eea1651a60600ec4d9c45e8ae81da1a78377f789f0ac2019de66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c1c"
+    );
+    const NOK_REFERENCE_SIGNATURE: [u8; 65] = hex!(
+        "0000000011111111000000001110111110000000011111111e66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c1c"
+    );
+    const REFERENCE_PUBKEY: [u8; 64] = hex!(
+        "85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"
+    );
+
     #[test]
-    fn verify() {
-        let msg = "Hello, TRON!";
-
-        // Signature constructed in TronLink, using private key: a4b319a82adfc43584e4537fec97a80516e16673db382cd91eba97abbab8ca56
-        let signature = hex_literal::hex!(
-            "eea1651a60600ec4d9c45e8ae81da1a78377f789f0ac2019de66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c1c"
+    fn test_reference_signature_verification_works() {
+        assert_eq!(
+            SignedTip191Payload {
+                payload: Tip191Payload(REFERENCE_MESSAGE.to_string()),
+                signature: fix_v_in_signature(REFERENCE_SIGNATURE),
+            }
+            .verify(),
+            Some(REFERENCE_PUBKEY)
         );
-        let signature = fix_v_in_signature(signature);
-
-        // Public key can be derived using `ethers_signers` crate:
-        // let wallet = LocalWallet::from_str(
-        //     "a4b319a82adfc43584e4537fec97a80516e16673db382cd91eba97abbab8ca56",
-        // )?;
-        // let signing_key = wallet.signer();
-        // let verifying_key = signing_key.verifying_key();
-        // let public_key = verifying_key.to_encoded_point(false);
-        // // Notice that we skip the first byte, 0x04
-        // println!("Public key: 0x{}", hex::encode(public_key.as_bytes()[1..]));
-
-        let public_key = hex_literal::hex!(
-            "85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"
-        );
-
-        let signed_payload = SignedTip191Payload {
-            payload: Tip191Payload(msg.to_string()),
-            signature,
-        };
-
-        assert_eq!(signed_payload.verify(), Some(public_key));
     }
 
-    #[rstest]
-    fn tamper_message_fails(mut rng: impl Rng) {
-        let msg = "Hello, TRON!";
-
-        let signature = hex_literal::hex!(
-            "eea1651a60600ec4d9c45e8ae81da1a78377f789f0ac2019de66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c1c"
+    #[test]
+    fn test_invalid_reference_message_verification_fails() {
+        assert_ne!(
+            SignedTip191Payload {
+                payload: Tip191Payload(NOK_REFERENCE_MESSAGE.to_string()),
+                signature: fix_v_in_signature(REFERENCE_SIGNATURE),
+            }
+            .verify(),
+            Some(REFERENCE_PUBKEY)
         );
-        let signature = fix_v_in_signature(signature);
-
-        let public_key = hex_literal::hex!(
-            "85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"
-        );
-
-        {
-            let signed_payload = SignedTip191Payload {
-                payload: Tip191Payload(msg.to_string()),
-                signature,
-            };
-
-            assert_eq!(signed_payload.verify(), Some(public_key));
-        }
-
-        {
-            let bad_signed_payload = SignedTip191Payload {
-                payload: Tip191Payload(tamper_string(&mut rng, msg)),
-                signature,
-            };
-
-            assert_ne!(bad_signed_payload.verify(), Some(public_key));
-        }
     }
 
-    #[rstest]
-    fn tamper_signature_fails(mut rng: impl Rng) {
-        let msg = "Hello, TRON!";
-
-        let signature = hex_literal::hex!(
-            "eea1651a60600ec4d9c45e8ae81da1a78377f789f0ac2019de66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c1c"
+    #[test]
+    fn test_invalid_reference_signature_verification_fails() {
+        assert_ne!(
+            SignedTip191Payload {
+                payload: Tip191Payload(REFERENCE_MESSAGE.to_string()),
+                signature: fix_v_in_signature(NOK_REFERENCE_SIGNATURE),
+            }
+            .verify(),
+            Some(REFERENCE_PUBKEY)
         );
-        let signature = fix_v_in_signature(signature);
-
-        let public_key = hex_literal::hex!(
-            "85a66984273f338ce4ef7b85e5430b008307e8591bb7c1b980852cf6423770b801f41e9438155eb53a5e20f748640093bb42ae3aeca035f7b7fd7a1a21f22f68"
-        );
-
-        {
-            let signed_payload = SignedTip191Payload {
-                payload: Tip191Payload(msg.to_string()),
-                signature,
-            };
-
-            assert_eq!(signed_payload.verify(), Some(public_key));
-        }
-
-        {
-            let bad_signed_payload = SignedTip191Payload {
-                payload: Tip191Payload(msg.to_string()),
-                signature: tamper_bytes(&mut rng, &signature, false)
-                    .try_into()
-                    .unwrap(),
-            };
-
-            assert_ne!(bad_signed_payload.verify(), Some(public_key));
-        }
     }
 }

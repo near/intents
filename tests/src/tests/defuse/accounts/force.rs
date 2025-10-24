@@ -1,3 +1,4 @@
+use crate::utils::fixtures::public_key;
 use defuse::{
     contract::Role,
     core::{
@@ -7,7 +8,6 @@ use defuse::{
         token_id::{TokenId, nep141::Nep141TokenId},
     },
 };
-use crate::utils::fixtures::public_key;
 
 use defuse_test_utils::asserts::ResultAssertsExt;
 use rstest::rstest;
@@ -26,7 +26,6 @@ use crate::{
 #[tokio::test]
 #[rstest]
 async fn test_lock_account(public_key: PublicKey) {
-
     let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (locked_account, account_locker, unlocked_account, ft) = futures::join!(
@@ -379,7 +378,6 @@ async fn test_lock_account(public_key: PublicKey) {
 #[tokio::test]
 #[rstest]
 async fn test_force_set_auth_by_predecessor_id(public_key: PublicKey) {
-
     let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (user_account, account_locker, account_unlocker) =
@@ -428,7 +426,6 @@ async fn test_force_set_auth_by_predecessor_id(public_key: PublicKey) {
             );
         }
     }
-
 
     // try to execute tx from user's account with disabled auth by predecessor id
     {
