@@ -6,15 +6,15 @@ use std::{
 use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::{Nonce, crypto::PublicKey, token_id::nep141::Nep141TokenId};
 use defuse_near_utils::arbitrary::ArbitraryNamedAccountId;
-use defuse_randomness::{RngCore, make_true_rng};
-use defuse_test_utils::random::Seed;
+use defuse_randomness::RngCore;
+use defuse_test_utils::random::{Seed, rng};
 use itertools::Itertools;
 use near_sdk::AccountId;
 use near_workspaces::Account;
 
 use anyhow::Result;
 
-use crate::tests::defuse::env::generate_determined_user_account_id;
+use crate::tests::defuse::env::generate_deterministic_user_account_id;
 
 const MAX_PUBLIC_KEYS: usize = 10;
 const MAX_ACCOUNTS: usize = 5;
@@ -74,7 +74,7 @@ pub struct PersistentState {
 
 impl PersistentState {
     pub fn generate(root: &Account, factory: &Account, seed: Seed) -> Result<Self> {
-        let mut rng = make_true_rng();
+        let mut rng = rng(seed);
         let mut random_bytes = [0u8; 1024];
         rng.fill_bytes(&mut random_bytes);
 
@@ -106,7 +106,7 @@ impl PersistentState {
 
         (0..number)
             .map(|index| {
-                let account_id = generate_determined_user_account_id(root.id(), seed, index)?;
+                let account_id = generate_deterministic_user_account_id(root.id(), seed, index)?;
                 let account = AccountWithTokens::generate(tokens.clone(), u)?;
                 Ok((account_id, account))
             })

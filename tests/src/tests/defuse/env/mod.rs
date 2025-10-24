@@ -170,7 +170,7 @@ impl Env {
 
         if rand.random() {
             let index = self.new_user_index.fetch_add(1, Ordering::SeqCst);
-            generate_determined_user_account_id(root, self.seed, index)
+            generate_deterministic_user_account_id(root, self.seed, index)
         } else {
             generate_random_account_id(root, &mut Unstructured::new(&rand.random::<[u8; 64]>()))
         }
@@ -363,14 +363,14 @@ fn generate_random_account_id(parent_id: &AccountId, u: &mut Unstructured) -> Re
         .map_err(|e| anyhow::anyhow!("Failed to generate account ID : {}", e))
 }
 
-fn generate_determined_user_account_id(
+fn generate_deterministic_user_account_id(
     parent_id: &AccountId,
     seed: Seed,
     index: usize,
 ) -> Result<AccountId> {
     let bytes = sha256(&(seed.as_u64() + u64::try_from(index)?).to_be_bytes())[..8]
         .try_into()
-        .map_err(|_| anyhow::anyhow!("Failed to create account ID"))?;
+        .map_err(|_| anyhow::anyhow!("Failed to create new account seed"))?;
 
     let seed = Seed::from_u64(u64::from_be_bytes(bytes));
     let mut rng = rng(seed);
