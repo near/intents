@@ -9,7 +9,7 @@ use defuse_borsh_utils::adapters::{
     As as BorshAs, TimestampNanoSeconds as BorshTimestampNanoSeconds,
 };
 use defuse_map_utils::cleanup::DefaultMap;
-use defuse_near_utils::{UnwrapOrPanic, UnwrapOrPanicError, time::now};
+use defuse_near_utils::{UnwrapOrPanic, time::now};
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
 
 use defuse_token_id::nep245::Nep245TokenId as TokenId;
@@ -56,8 +56,7 @@ pub struct Params {
 
     // TODO: check != maker_asset
     pub taker_asset: TokenId,
-    // TODO: multiplier?
-    /// maker / taker (in 10^-6)
+    /// maker / taker (in 10^-9)
     pub price: Price,
 
     // ratio is not a good approach, since adding more maker_tokens
@@ -92,21 +91,6 @@ pub struct Params {
 // escrow     <- one-of-solvers <- solver
 //            --------------------> solver
 //   (refund) -> one-of-solvers -> solver
-// #[near(serializers = [borsh, json])]
-// #[derive(Debug)]
-// pub enum State {
-//     // Just created, no assets received
-//     Init,
-
-//     // I.e. received & locked maker asset
-//     Open,
-
-//     // TODO: settling what part?
-//     // Settling,
-
-//     // TODO
-//     Closed,
-// }
 
 #[near(serializers = [json])]
 #[derive(Debug, Default)]
@@ -125,9 +109,6 @@ impl MultiTokenReceiver for Contract {
         amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
-        // TODO: utilize for our needs, refund after being closed or expired?
-        require!(!self.closed && now() <= self.deadline, "closed");
-
         let (token_id, amount) = single(token_ids)
             .zip(single(amounts))
             .ok_or(Error::WrongAsset)
@@ -137,90 +118,134 @@ impl MultiTokenReceiver for Contract {
             // TODO
             .unwrap();
 
-        // TODO: allow for extended deadline prolongation in msg?
-        // TODO: but how can we verify sender_id to allow for that?
-
-        let refund = if asset == self.maker_asset {
-            require!(sender_id == self.maker, "unauthorized");
-
-            let msg: MakerMessage = if msg.is_empty() {
-                Default::default()
-            } else {
-                serde_json::from_str(&msg)
-                    .unwrap_or_else(|err| env::panic_str(&format!("JSON: {err}")))
-            };
-
-            self.maker_remaining = self
-                .maker_remaining
-                .checked_add(amount.0)
-                .ok_or("overflow")
-                .unwrap_or_panic_static_str();
-
-            if let Some(new_price) = msg.new_price {
-                require!(new_price > self.price, "can't set lower price");
-                self.price = new_price;
-            }
-
-            0
-        } else if asset == self.taker_asset {
-            // TODO: taker whitelist
-            let msg: TakerMessage = if msg.is_empty() {
-                Default::default()
-            } else {
-                serde_json::from_str(&msg)
-                    .unwrap_or_else(|err| env::panic_str(&format!("JSON: {err}")))
-            };
-
-            let (maker_amount, taker_amount) = {
-                let want_maker_amount = self
-                    .price
-                    .src_amount(amount.0)
-                    .ok_or("overflow")
-                    .unwrap_or_panic_static_str();
-
-                // TODO: fees
-                if want_maker_amount < self.maker_remaining {
-                    require!(self.partial_fills_allowed, "partial fills disallowed");
-                    (want_maker_amount, amount.0)
-                } else {
-                    (
-                        self.maker_remaining,
-                        self.price
-                            .dst_amount(self.maker_remaining)
-                            .ok_or("overflow")
-                            .unwrap_or_panic_static_str(),
-                    )
-                }
-            };
-            self.maker_remaining -= maker_amount;
-            let refund = amount.0 - taker_amount;
-
-            // TODO: settle now?
-            // TODO: detached send?
-            let _ = Self::send(
-                self.taker_asset.clone(),
-                self.taker_asset_receiver_id.clone(),
-                // TODO: add previously failed lost_found amounts?
-                taker_amount,
-            )
-            .and(Self::send(
-                self.maker_asset.clone(),
-                msg.receiver_id.unwrap_or(sender_id),
-                maker_amount,
-            ))
-            // TODO: optimize and handle lost&found in a single callback
-            .then(Self::ext(env::current_account_id()).maybe_cleanup());
-
-            refund
-        } else {
-            env::panic_str("wrong asset");
-        };
+        let refund = self
+            .on_receive(sender_id, asset, amount.0, &msg)
+            .unwrap_or_panic();
 
         PromiseOrValue::Value(vec![U128(refund)])
     }
 }
 
 impl Contract {
+    /// Returns refund amount
+    fn on_receive(
+        &mut self,
+        sender_id: AccountId,
+        asset: TokenId,
+        amount: u128,
+        msg: &str,
+    ) -> Result<u128> {
+        if self.closed || now() > self.deadline {
+            // TODO: utilize for our needs, refund after being closed or expired?
+            return Err(Error::Closed);
+        }
+
+        if asset == self.maker_asset {
+            return self.on_maker_receive(
+                sender_id,
+                amount,
+                if msg.is_empty() {
+                    Default::default()
+                } else {
+                    serde_json::from_str(&msg)
+                        .unwrap_or_else(|err| env::panic_str(&format!("JSON: {err}")))
+                },
+            );
+        }
+
+        if asset != self.taker_asset {
+            return Err(Error::WrongAsset);
+        }
+
+        self.on_taker_receive(
+            sender_id,
+            amount,
+            if msg.is_empty() {
+                Default::default()
+            } else {
+                serde_json::from_str(&msg)
+                    .unwrap_or_else(|err| env::panic_str(&format!("JSON: {err}")))
+            },
+        )
+    }
+
+    fn on_maker_receive(
+        &mut self,
+        sender_id: AccountId,
+        amount: u128,
+        msg: MakerMessage,
+    ) -> Result<u128> {
+        if sender_id != self.maker {
+            return Err(Error::Unauthorized);
+        }
+
+        self.maker_remaining = self
+            .maker_remaining
+            .checked_add(amount)
+            .ok_or(Error::Overflow)?;
+
+        // TODO: allow for extended deadline prolongation in msg?
+        // TODO: but how can we verify sender_id to allow for that?
+
+        if let Some(new_price) = msg.new_price {
+            if new_price < self.price {
+                // TODO: or ignore?
+                return Err(Error::LowerPrice);
+            }
+            self.price = new_price;
+        }
+
+        Ok(0)
+    }
+
+    fn on_taker_receive(
+        &mut self,
+        sender_id: AccountId,
+        amount: u128,
+        msg: TakerMessage,
+    ) -> Result<u128> {
+        // TODO: taker whitelist
+
+        let (maker_amount, taker_amount) = {
+            let want_maker_amount = self.price.src_amount(amount).ok_or(Error::Overflow)?;
+
+            // TODO: fees
+            if want_maker_amount < self.maker_remaining {
+                if !self.partial_fills_allowed {
+                    return Err(Error::PartialFillsNotAllowed);
+                }
+                (want_maker_amount, amount)
+            } else {
+                (
+                    self.maker_remaining,
+                    self.price
+                        .dst_amount(self.maker_remaining)
+                        .ok_or(Error::Overflow)?,
+                )
+            }
+        };
+        self.maker_remaining -= maker_amount;
+        let refund = amount - taker_amount;
+
+        // TODO: settle now? YES
+        // TODO: detached send?
+        let _ = Self::send(
+            self.taker_asset.clone(),
+            self.taker_asset_receiver_id.clone(),
+            // TODO: add previously failed lost_found amounts?
+            taker_amount,
+        )
+        .and(Self::send(
+            self.maker_asset.clone(),
+            msg.receiver_id.unwrap_or(sender_id),
+            maker_amount,
+        ))
+        // TODO: optimize and handle lost&found in a single callback
+        .then(Self::ext(env::current_account_id()).maybe_cleanup());
+
+        Ok(refund)
+    }
+
     fn send(asset: TokenId, receiver_id: AccountId, amount: u128) -> Promise {
         // TODO: msg for *_transfer_call()?
         let (contract_id, token_id) = asset.clone().into_contract_id_and_mt_token_id();
@@ -294,7 +319,7 @@ impl Contract {
 
         // TODO: emit logs
 
-        self.state = State::Closed;
+        self.closed = true;
     }
     // TODO: cancel_by_resolver?
 
@@ -308,7 +333,7 @@ impl Contract {
         //   return;
         // }
 
-        self.state = State::Closed;
+        self.closed = true;
         let _ = Promise::new(env::current_account_id())
             // TODO: are we sure we don't hold any NEAR for storage_deposits, etc..?
             .delete_account(self.taker_asset_receiver_id.clone());
@@ -325,8 +350,16 @@ pub struct TakerMessage {
 pub enum Error {
     #[error("wrong asset")]
     WrongAsset,
-    #[error("wrong amount")]
-    WrongAmount,
+    #[error("unauthorized")]
+    Unauthorized,
+    #[error("overflow")]
+    Overflow,
+    #[error("can't set to lower price")]
+    LowerPrice,
+    #[error("partial fills are not allowed")]
+    PartialFillsNotAllowed,
+    #[error("closed")]
+    Closed,
 }
 
 pub type Result<T, E = Error> = ::core::result::Result<T, E>;
