@@ -298,9 +298,11 @@ async fn webauthn(#[values(false, true)] no_registration: bool) {
         .build()
         .await;
 
-    let user = env.create_named_user("user1").await.unwrap();
+    let (user, ft) = futures::join!(
+        env.create_named_user("user1"),
+        env.create_named_token("ft1")
+    );
 
-    let ft = env.create_named_token("ft1").await;
     let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
 
     env.initial_ft_storage_deposit(vec![user.id()], vec![&ft])

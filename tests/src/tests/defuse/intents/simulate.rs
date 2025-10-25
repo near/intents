@@ -254,7 +254,8 @@ async fn simulate_nft_withdraw_intent(
 ) {
     let env = Env::builder().no_registration(true).build().await;
 
-    let (user1, user2) = futures::join!(env.create_user(), env.create_user());
+    let (user1, user2) =
+        futures::join!(env.create_named_user("nft_issuer_admin"), env.create_user());
 
     env.transfer_near(user1.id(), NearToken::from_near(100))
         .await
