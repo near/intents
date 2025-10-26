@@ -230,6 +230,7 @@ impl Contract {
             }
         };
         self.src_remaining -= taker_src_amount;
+        
         let refund = amount - maker_dst_amount;
 
         // TODO: settle now? YES
