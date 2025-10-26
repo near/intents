@@ -32,3 +32,11 @@ sequenceDiagram
     escrow ->> mt: mt_transfer(user)
     escrow ->> escrow: resolve_transfer(user)
 ```
+
+## Fees
+
+```rust
+let src_amount_usd = 100_000.000_000;
+let price = 115_000.00_000_000;
+BTC = 115_000_000
+```

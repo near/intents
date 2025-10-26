@@ -8,6 +8,7 @@ use chrono::{DateTime, Utc};
 use defuse_borsh_utils::adapters::{
     As as BorshAs, TimestampNanoSeconds as BorshTimestampNanoSeconds,
 };
+use defuse_fees::Pips;
 use defuse_map_utils::cleanup::DefaultMap;
 use defuse_near_utils::{UnwrapOrPanic, time::now};
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
@@ -50,12 +51,12 @@ pub struct Contract(Params);
 #[derive(Debug)]
 pub struct Params {
     pub maker: AccountId,
-    pub maker_asset: TokenId,
+    pub src_asset: TokenId,
     // TODO: remaining_amount?
-    pub maker_remaining: u128,
+    pub src_remaining: u128,
 
     // TODO: check != maker_asset
-    pub taker_asset: TokenId,
+    pub dst_asset: TokenId,
     /// maker / taker (in 10^-9)
     pub price: Price,
 
@@ -66,7 +67,7 @@ pub struct Params {
     // since there could have been in-flight taker assets coming to the escrow
     // TODO: remaining_amount?
     // pub taker_amount: u128,
-    pub taker_asset_receiver_id: AccountId,
+    pub maker_dst_receiver_id: AccountId,
 
     pub partial_fills_allowed: bool,
 
@@ -85,6 +86,7 @@ pub struct Params {
     pub lost_found: BTreeMap<AccountId, BTreeMap<TokenId, u128>>,
 
     pub closed: bool,
+    pub fees: BTreeMap<AccountId, Pips>,
     // TODO: keep number of pending promises
 }
 
@@ -140,8 +142,8 @@ impl Contract {
             return Err(Error::Closed);
         }
 
-        if asset == self.maker_asset {
-            return self.on_maker_receive(
+        if asset == self.src_asset {
+            return self.on_src_receive(
                 sender_id,
                 amount,
                 if msg.is_empty() {
@@ -153,11 +155,11 @@ impl Contract {
             );
         }
 
-        if asset != self.taker_asset {
+        if asset != self.dst_asset {
             return Err(Error::WrongAsset);
         }
 
-        self.on_taker_receive(
+        self.on_dst_receive(
             sender_id,
             amount,
             if msg.is_empty() {
@@ -169,7 +171,7 @@ impl Contract {
         )
     }
 
-    fn on_maker_receive(
+    fn on_src_receive(
         &mut self,
         sender_id: AccountId,
         amount: u128,
@@ -179,10 +181,10 @@ impl Contract {
             return Err(Error::Unauthorized);
         }
 
-        self.maker_remaining = self
-            .maker_remaining
+        self.src_remaining = self
+            .src_remaining
             .checked_add(amount)
-            .ok_or(Error::Overflow)?;
+            .ok_or(Error::IntegerOverflow)?;
 
         // TODO: allow for extended deadline prolongation in msg?
         // TODO: but how can we verify sender_id to allow for that?
@@ -198,7 +200,7 @@ impl Contract {
         Ok(0)
     }
 
-    fn on_taker_receive(
+    fn on_dst_receive(
         &mut self,
         sender_id: AccountId,
         amount: u128,
@@ -206,39 +208,42 @@ impl Contract {
     ) -> Result<u128> {
         // TODO: taker whitelist
 
-        let (maker_amount, taker_amount) = {
-            let want_maker_amount = self.price.src_amount(amount).ok_or(Error::Overflow)?;
+        let (taker_src_amount, maker_dst_amount) = {
+            let want_src_amount = self
+                .price
+                .src_amount(amount)
+                .ok_or(Error::IntegerOverflow)?;
 
             // TODO: fees
-            if want_maker_amount < self.maker_remaining {
+            if want_src_amount < self.src_remaining {
                 if !self.partial_fills_allowed {
                     return Err(Error::PartialFillsNotAllowed);
                 }
-                (want_maker_amount, amount)
+                (want_src_amount, amount)
             } else {
                 (
-                    self.maker_remaining,
+                    self.src_remaining,
                     self.price
-                        .dst_amount(self.maker_remaining)
-                        .ok_or(Error::Overflow)?,
+                        .dst_amount(self.src_remaining)
+                        .ok_or(Error::IntegerOverflow)?,
                 )
             }
         };
-        self.maker_remaining -= maker_amount;
-        let refund = amount - taker_amount;
+        self.src_remaining -= taker_src_amount;
+        let refund = amount - maker_dst_amount;
 
         // TODO: settle now? YES
         // TODO: detached send?
         let _ = Self::send(
-            self.taker_asset.clone(),
-            self.taker_asset_receiver_id.clone(),
+            self.dst_asset.clone(),
+            self.maker_dst_receiver_id.clone(),
             // TODO: add previously failed lost_found amounts?
-            taker_amount,
+            maker_dst_amount,
         )
         .and(Self::send(
-            self.maker_asset.clone(),
+            self.src_asset.clone(),
             msg.receiver_id.unwrap_or(sender_id),
-            maker_amount,
+            taker_src_amount,
         ))
         // TODO: optimize and handle lost&found in a single callback
         .then(Self::ext(env::current_account_id()).maybe_cleanup());
@@ -336,7 +341,12 @@ impl Contract {
         self.closed = true;
         let _ = Promise::new(env::current_account_id())
             // TODO: are we sure we don't hold any NEAR for storage_deposits, etc..?
-            .delete_account(self.taker_asset_receiver_id.clone());
+            .delete_account(self.maker_dst_receiver_id.clone());
+    }
+
+    // TODO
+    pub fn effective_price(&self) -> u128 {
+        todo!()
     }
 }
 
@@ -352,8 +362,8 @@ pub enum Error {
     WrongAsset,
     #[error("unauthorized")]
     Unauthorized,
-    #[error("overflow")]
-    Overflow,
+    #[error("integer overflow")]
+    IntegerOverflow,
     #[error("can't set to lower price")]
     LowerPrice,
     #[error("partial fills are not allowed")]

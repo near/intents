@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 defuse-borsh-utils = { workspace = true, features = ["chrono"] }
+defuse-fees.workspace = true
 defuse-map-utils.workspace = true
 defuse-near-utils.workspace = true
 defuse-nep245.workspace = true

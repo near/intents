@@ -11,6 +11,12 @@ impl Price {
     // TODO: check for most decimals?
     pub const ONE: Self = Self(10u128.pow(9));
 
+    pub fn ratio(src_amount: u128, dst_amount: u128) -> Option<Self> {
+        dst_amount
+            .checked_mul_div(Self::ONE.0, src_amount)
+            .map(Self)
+    }
+
     pub fn dst_amount(&self, src_amount: u128) -> Option<u128> {
         src_amount.checked_mul_div(Self::ONE.0, self.0)
     }
