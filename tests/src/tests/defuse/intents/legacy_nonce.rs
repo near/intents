@@ -1,14 +1,20 @@
-use defuse::core::{amounts::Amounts, intents::{tokens::Transfer, DefuseIntents}, token_id::{nep141::Nep141TokenId, TokenId}, Deadline, Nonce};
-use crate::{tests::defuse::{env::Env, intents::ExecuteIntentsExt, DefuseSigner, SigningStandard}, utils::mt::MtExt};
-use defuse_test_utils::random::{make_arbitrary};
+use crate::{
+    tests::defuse::{DefuseSigner, SigningStandard, env::Env, intents::ExecuteIntentsExt},
+    utils::mt::MtExt,
+};
+use defuse::core::{
+    Deadline, Nonce,
+    amounts::Amounts,
+    intents::{DefuseIntents, tokens::Transfer},
+    token_id::{TokenId, nep141::Nep141TokenId},
+};
+use defuse_test_utils::random::make_arbitrary;
 use rstest::rstest;
 
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn execute_intent_with_legacy_nonce(
-    #[from(make_arbitrary)] legacy_nonce: Nonce,
-) {
+async fn execute_intent_with_legacy_nonce(#[from(make_arbitrary)] legacy_nonce: Nonce) {
     let env = Env::builder().no_registration(true).build().await;
 
     let (user1, user2, ft1) =
@@ -21,16 +27,18 @@ async fn execute_intent_with_legacy_nonce(
         .await
         .unwrap();
 
+    let token_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
+
     assert_eq!(
         env.defuse
-            .mt_balance_of(user1.id(), &ft1.to_string())
+            .mt_balance_of(user1.id(), &token_id.to_string())
             .await
             .unwrap(),
         1000
     );
     assert_eq!(
         env.defuse
-            .mt_balance_of(user2.id(), &ft1.to_string())
+            .mt_balance_of(user2.id(), &token_id.to_string())
             .await
             .unwrap(),
         0
@@ -38,16 +46,21 @@ async fn execute_intent_with_legacy_nonce(
 
     let transfer_intent = Transfer {
         receiver_id: user2.id().clone(),
-        tokens: Amounts::new(
-            std::iter::once((TokenId::from(Nep141TokenId::new(ft1.clone())), 1000)).collect(),
-        ),
+        tokens: Amounts::new(std::iter::once((token_id.clone(), 1000)).collect()),
         memo: None,
     };
 
-    let transfer_intent_payload = user1
-        .sign_defuse_message(SigningStandard::default(), env.defuse.id(), legacy_nonce, Deadline::MAX, DefuseIntents{intents: vec![transfer_intent.into()]});
+    let transfer_intent_payload = user1.sign_defuse_message(
+        SigningStandard::default(),
+        env.defuse.id(),
+        legacy_nonce,
+        Deadline::MAX,
+        DefuseIntents {
+            intents: vec![transfer_intent.into()],
+        },
+    );
 
-    let result = env
+    let _ = env
         .defuse
         .execute_intents(env.defuse.id(), [transfer_intent_payload])
         .await
@@ -55,7 +68,7 @@ async fn execute_intent_with_legacy_nonce(
 
     assert_eq!(
         env.defuse
-            .mt_balance_of(user1.id(), &ft1.to_string())
+            .mt_balance_of(user1.id(), &token_id.to_string())
             .await
             .unwrap(),
         0
@@ -63,11 +76,9 @@ async fn execute_intent_with_legacy_nonce(
 
     assert_eq!(
         env.defuse
-            .mt_balance_of(user2.id(), &ft1.to_string())
+            .mt_balance_of(user2.id(), &token_id.to_string())
             .await
             .unwrap(),
         1000
     );
-
-
 }

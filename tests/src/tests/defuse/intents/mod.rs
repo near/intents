@@ -54,12 +54,12 @@ impl AccountNonceIntentEvent {
 }
 
 mod ft_withdraw;
+mod legacy_nonce;
 mod native_withdraw;
 mod public_key;
 mod relayers;
 mod simulate;
 mod token_diff;
-mod legacy_nonce;
 
 pub trait ExecuteIntentsExt: AccountManagerExt {
     async fn defuse_execute_intents(
@@ -267,7 +267,14 @@ async fn simulate_is_view_method(
 
     assert!(result.report.logs.iter().any(|log| log == &expected_log));
     assert_eq!(
-        result.report.intents_executed.first().unwrap().event.event.nonce,
+        result
+            .report
+            .intents_executed
+            .first()
+            .unwrap()
+            .event
+            .event
+            .nonce,
         nonce
     );
     result.into_result().unwrap();
@@ -401,4 +408,3 @@ async fn ton_connect_sign_intent_example(msg_address: MsgAddress) {
 
     let _decoded_payload: DefusePayload<DefuseIntents> = signed.extract_defuse_payload().unwrap();
 }
-
