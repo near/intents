@@ -10,12 +10,11 @@ use crate::{
         defuse::{env::builder::EnvBuilder, tokens::nep141::traits::DefuseFtReceiver},
         poa::factory::PoAFactoryExt,
     },
-    utils::{ParentAccount, Sandbox, acl::AclExt, ft::FtExt, read_wasm},
+    utils::{ParentAccount, Sandbox, ft::FtExt, read_wasm},
 };
 use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;
 use defuse::{
-    contract::Role,
     core::{Deadline, ExpirableNonce, Nonce, Salt, SaltedNonce, VersionedNonce},
     tokens::DepositMessage,
 };

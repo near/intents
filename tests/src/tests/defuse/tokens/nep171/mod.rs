@@ -28,7 +28,7 @@ async fn transfer_nft_to_verifier() {
         .unwrap()
         .unwrap();
 
-    let persistent_tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
+    let _persistent_tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
 
     let nft_issuer_contract = user1
         .deploy_vanilla_nft_issuer(
@@ -242,7 +242,7 @@ async fn transfer_nft_to_verifier() {
 
         let withdraw_payload = user3
             .create_defuse_payload(
-                &env.defuse.id(),
+                env.defuse.id(),
                 [NftWithdraw {
                     token: nft_issuer_contract.id().clone(),
                     receiver_id: user1.id().clone(),

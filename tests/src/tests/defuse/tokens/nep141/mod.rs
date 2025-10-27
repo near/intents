@@ -124,7 +124,7 @@ async fn deposit_withdraw_intent(#[values(false, true)] no_registration: bool) {
 
     let withdraw_intent_payload = user
         .create_defuse_payload(
-            &env.defuse.id(),
+            env.defuse.id(),
             [FtWithdraw {
                 token: ft.clone(),
                 receiver_id: other_user.id().clone(),
@@ -206,7 +206,7 @@ async fn deposit_withdraw_intent_refund(#[values(false, true)] no_registration: 
 
     let overflow_withdraw_payload = user
         .create_defuse_payload(
-            &env.defuse.id(),
+            env.defuse.id(),
             [FtWithdraw {
                 token: ft.clone(),
                 receiver_id: user.id().clone(),

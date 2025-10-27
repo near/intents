@@ -1,31 +1,27 @@
 use super::DEFUSE_WASM;
 
 use crate::tests::defuse::DefusePayloadBuilder;
+use crate::tests::defuse::accounts::AccountManagerExt;
 use crate::utils::fixtures::{ed25519_pk, p256_pk, secp256k1_pk};
-use crate::{tests::defuse::accounts::AccountManagerExt};
 use crate::{
     tests::defuse::{
-        env::{Env, create_random_salted_nonce},
+        env::Env,
         intents::ExecuteIntentsExt,
         state::{FeesManagerExt, SaltManagerExt},
     },
     utils::{acl::AclExt, mt::MtExt},
 };
-use chrono::{TimeDelta, Utc};
 use defuse::{
     contract::Role,
     core::{
-        Deadline,
         amounts::Amounts,
         crypto::PublicKey,
         fees::Pips,
-        intents::{DefuseIntents, Intent, tokens::Transfer},
+        intents::tokens::Transfer,
         token_id::{TokenId, nep141::Nep141TokenId},
     },
     nep245::Token,
 };
-use defuse_randomness::Rng;
-use defuse_test_utils::random::{Seed, TestRng, rng};
 use itertools::Itertools;
 use near_sdk::AccountId;
 use rstest::rstest;
@@ -128,10 +124,6 @@ async fn test_upgrade_with_persistence() {
 
         // Interactions between new and old users
         {
-            let current_timestamp = Utc::now();
-            let current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
-
-            let mut nonce_seed = 0u64;
             let payloads =
                 futures::future::try_join_all(users.iter().combinations(2).map(|accounts| {
                     let sender = accounts[0];

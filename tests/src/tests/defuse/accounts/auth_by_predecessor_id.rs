@@ -113,7 +113,7 @@ async fn auth_by_predecessor_id() {
     {
         let transfer_payload = user
             .create_defuse_payload(
-                &env.defuse.id(),
+                env.defuse.id(),
                 [Transfer {
                     receiver_id: receiver_id.clone(),
                     tokens: Amounts::new([(ft.clone(), 200)].into()),
@@ -147,7 +147,7 @@ async fn auth_by_predecessor_id() {
     // enable auth by PREDECESSOR_ID back (by intent)
     {
         let enable_auth_payload = user
-            .create_defuse_payload(&env.defuse.id(), [SetAuthByPredecessorId { enabled: true }])
+            .create_defuse_payload(env.defuse.id(), [SetAuthByPredecessorId { enabled: true }])
             .await
             .unwrap();
 

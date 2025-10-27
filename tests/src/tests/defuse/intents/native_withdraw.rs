@@ -81,7 +81,7 @@ async fn native_withdraw_intent(ed25519_pk: PublicKey, secp256k1_pk: PublicKey) 
     // withdraw native NEAR to corresponding receivers
     let withdraw_payload = other_user
         .create_defuse_payload(
-            &env.defuse.id(),
+            env.defuse.id(),
             amounts_to_withdraw
                 .iter()
                 .cloned()

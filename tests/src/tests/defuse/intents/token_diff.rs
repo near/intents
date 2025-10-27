@@ -6,7 +6,6 @@ use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
 use defuse::core::{
     fees::Pips,
     intents::token_diff::{TokenDeltas, TokenDiff},
-    payload::multi::MultiPayload,
 };
 use near_sdk::AccountId;
 use near_workspaces::Account;
@@ -304,7 +303,7 @@ async fn invariant_violated(#[values(false, true)] no_registration: bool) {
 
     let signed = futures::future::try_join_all([
         user1.create_defuse_payload(
-            &env.defuse.id(),
+            env.defuse.id(),
             [TokenDiff {
                 diff: TokenDeltas::default()
                     .with_apply_deltas([
@@ -317,7 +316,7 @@ async fn invariant_violated(#[values(false, true)] no_registration: bool) {
             }],
         ),
         user1.create_defuse_payload(
-            &env.defuse.id(),
+            env.defuse.id(),
             [TokenDiff {
                 diff: TokenDeltas::default()
                     .with_apply_deltas([
@@ -424,7 +423,7 @@ async fn solver_user_closure(
     // solver signs his intent
     let solver_commitment = solver
         .create_defuse_payload(
-            &env.defuse.id(),
+            env.defuse.id(),
             [TokenDiff {
                 diff: TokenDeltas::new(
                     [
@@ -479,7 +478,7 @@ async fn solver_user_closure(
     // user signs the message
     let user_commitment = user
         .create_defuse_payload(
-            &env.defuse.id(),
+            env.defuse.id(),
             [TokenDiff {
                 diff: TokenDeltas::new(
                     [

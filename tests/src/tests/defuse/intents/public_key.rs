@@ -25,9 +25,9 @@ async fn execute_add_public_key_intent(public_key: PublicKey) {
 
     let add_public_key_payload = user
         .create_defuse_payload(
-            &env.defuse.id(),
+            env.defuse.id(),
             [AddPublicKey {
-                public_key: new_public_key.clone(),
+                public_key: new_public_key,
             }],
         )
         .await
@@ -67,9 +67,9 @@ async fn execute_remove_public_key_intent(public_key: PublicKey) {
     let new_public_key = public_key;
     let add_public_key_payload = user
         .create_defuse_payload(
-            &env.defuse.id(),
+            env.defuse.id(),
             [AddPublicKey {
-                public_key: new_public_key.clone(),
+                public_key: new_public_key,
             }],
         )
         .await
@@ -83,9 +83,9 @@ async fn execute_remove_public_key_intent(public_key: PublicKey) {
 
     let remove_public_key_payload = user
         .create_defuse_payload(
-            &env.defuse.id(),
+            env.defuse.id(),
             [RemovePublicKey {
-                public_key: new_public_key.clone(),
+                public_key: new_public_key,
             }],
         )
         .await

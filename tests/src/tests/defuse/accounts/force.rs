@@ -119,7 +119,6 @@ async fn test_lock_account(public_key: PublicKey) {
 
     // try to add public key to locked account
     {
-
         locked_account
             .add_public_key(env.defuse.id(), public_key)
             .await
@@ -283,7 +282,7 @@ async fn test_lock_account(public_key: PublicKey) {
     // try to execute intents on behalf of locked account
     {
         let locked_payload = locked_account
-            .create_defuse_payload(&env.defuse.id(), Vec::<Intent>::new())
+            .create_defuse_payload(env.defuse.id(), Vec::<Intent>::new())
             .await
             .unwrap();
         let nonce = locked_payload.extract_nonce().unwrap();

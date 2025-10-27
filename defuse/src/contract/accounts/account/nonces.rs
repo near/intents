@@ -79,7 +79,7 @@ pub(super) mod tests {
 
     use super::*;
 
-    use near_sdk::{test_utils::VMContextBuilder, testing_env, Gas, IntoStorageKey, VMContext};
+    use near_sdk::{Gas, IntoStorageKey, test_utils::VMContextBuilder, testing_env};
     use proptest::{collection::vec, prelude::*};
 
     #[derive(Debug, Clone)]
@@ -139,19 +139,17 @@ pub(super) mod tests {
         legacy_nonces
     }
 
+    #[allow(dead_code)]
     fn prefix_strategy() -> impl Strategy<Value = Vec<u8>> {
         vec(any::<u8>(), 1..=32)
     }
 
-
-    fn increase_max_gas()
-    {
+    fn increase_max_gas() {
         let context = VMContextBuilder::new()
             .prepaid_gas(Gas::from_tgas(300))
             .build();
-        testing_env!(context.clone());
+        testing_env!(context);
     }
-
 
     proptest! {
         #[test]
@@ -176,6 +174,7 @@ pub(super) mod tests {
 
     proptest! {
         #[test]
+        #[allow(clippy::tuple_array_conversions)]
         fn commit_new_nonce(storage_prefix: StoragePrefix, new_nonce: [u8;32], legacy_nonce: [u8; 32]) {
             increase_max_gas();
             prop_assume!(new_nonce != legacy_nonce);
@@ -188,7 +187,7 @@ pub(super) mod tests {
 
             assert!(new.legacy.is_none());
 
-            for n in [new_nonce, legacy_nonce] {
+            for &n in &[new_nonce, legacy_nonce] {
                 assert!(new.nonces.is_used(n));
                 assert!(new.is_used(n));
             }

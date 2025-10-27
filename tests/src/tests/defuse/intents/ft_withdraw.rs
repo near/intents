@@ -50,7 +50,7 @@ async fn ft_withdraw_intent(#[values(false, true)] no_registration: bool) {
 
     let initial_withdraw_payload = user
         .create_defuse_payload(
-            &env.defuse.id(),
+            env.defuse.id(),
             [FtWithdraw {
                 token: ft.clone(),
                 receiver_id: other_user_id.clone(),
@@ -83,7 +83,7 @@ async fn ft_withdraw_intent(#[values(false, true)] no_registration: bool) {
 
     let missing_storage_payload = user
         .create_defuse_payload(
-            &env.defuse.id(),
+            env.defuse.id(),
             [FtWithdraw {
                 token: ft.clone(),
                 receiver_id: other_user_id.clone(),
@@ -145,7 +145,7 @@ async fn ft_withdraw_intent(#[values(false, true)] no_registration: bool) {
     // too large min_gas specified
     let too_large_min_gas_payload = user
         .create_defuse_payload(
-            &env.defuse.id(),
+            env.defuse.id(),
             [FtWithdraw {
                 token: ft.clone(),
                 receiver_id: other_user_id.clone(),
@@ -165,7 +165,7 @@ async fn ft_withdraw_intent(#[values(false, true)] no_registration: bool) {
 
     let valid_payload = user
         .create_defuse_payload(
-            &env.defuse.id(),
+            env.defuse.id(),
             [FtWithdraw {
                 token: ft.clone(),
                 receiver_id: other_user_id.clone(),
@@ -262,7 +262,7 @@ async fn ft_withdraw_intent_msg(#[values(false, true)] no_registration: bool) {
     {
         let low_min_gas_payload = user
             .create_defuse_payload(
-                &env.defuse.id(),
+                env.defuse.id(),
                 [FtWithdraw {
                     token: ft.clone(),
                     receiver_id: defuse2.id().clone(),
@@ -307,7 +307,7 @@ async fn ft_withdraw_intent_msg(#[values(false, true)] no_registration: bool) {
 
     let remaining_withdraw_payload = user
         .create_defuse_payload(
-            &env.defuse.id(),
+            env.defuse.id(),
             [FtWithdraw {
                 token: ft.clone(),
                 receiver_id: defuse2.id().clone(),

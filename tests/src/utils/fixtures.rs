@@ -31,6 +31,6 @@ pub fn p256_pk(mut rng: impl Rng) -> PublicKey {
 pub fn msg_address(mut rng: impl Rng) -> MsgAddress {
     let mut random_bytes = [0u8; 32];
     rng.fill_bytes(&mut random_bytes);
-    let mut u = Unstructured::new(&mut random_bytes);
+    let mut u = Unstructured::new(&random_bytes);
     u.arbitrary().unwrap()
 }

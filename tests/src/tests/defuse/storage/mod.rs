@@ -98,7 +98,7 @@ async fn storage_deposit_success(
 
     let storage_deposit_payload = other_user
         .create_defuse_payload(
-            &env.defuse.id(),
+            env.defuse.id(),
             [StorageDeposit {
                 contract_id: ft.clone(),
                 deposit_for_account_id: other_user.id().clone(),
@@ -135,11 +135,11 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents() {
     let (user, other_user, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
-    env.fund_account_with_near(&user.id().to_owned(), NearToken::from_near(1000))
+    env.fund_account_with_near(user.id(), NearToken::from_near(1000))
         .await;
-    env.fund_account_with_near(&other_user.id().to_owned(), NearToken::from_near(1000))
+    env.fund_account_with_near(other_user.id(), NearToken::from_near(1000))
         .await;
-    env.fund_account_with_near(&env.defuse.id().to_owned(), NearToken::from_near(10000))
+    env.fund_account_with_near(env.defuse.id(), NearToken::from_near(10000))
         .await;
 
     {
@@ -183,9 +183,9 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents() {
         .await
         .unwrap();
 
-    let signed_intents = [
-        other_user.create_defuse_payload(
-            &env.defuse.id(),
+    let signed_intents = [other_user
+        .create_defuse_payload(
+            env.defuse.id(),
             [StorageDeposit {
                 contract_id: ft.clone(),
                 deposit_for_account_id: other_user.id().clone(),
