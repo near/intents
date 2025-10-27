@@ -119,6 +119,7 @@ async fn test_lock_account(public_key: PublicKey) {
 
     // try to add public key to locked account
     {
+
         locked_account
             .add_public_key(env.defuse.id(), public_key)
             .await

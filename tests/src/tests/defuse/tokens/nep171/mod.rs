@@ -178,7 +178,7 @@ async fn transfer_nft_to_verifier() {
         {
             let nfts_in_verifier = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
 
-            assert_eq!(nfts_in_verifier.len(), persistent_tokens.len() + 2);
+            assert_eq!(nfts_in_verifier.len(), 2);
 
             let nfts_in_verifier_map = nfts_in_verifier
                 .into_iter()

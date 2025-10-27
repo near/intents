@@ -184,32 +184,6 @@ impl Env {
         }
     }
 
-    pub async fn upgrade_legacy(&self, create_unique_users: bool) {
-        let state = self
-            .generate_storage_data()
-            .await
-            .expect("Failed to generate state");
-
-        self.acl_grant_role(
-            self.defuse.id(),
-            Role::Upgrader,
-            self.sandbox.root_account().id(),
-        )
-        .await
-        .expect("Failed to grant upgrader role");
-
-        self.upgrade_defuse(self.defuse.id())
-            .await
-            .expect("Failed to upgrade defuse");
-
-        self.verify_storage_consistency(&state).await;
-
-        if create_unique_users {
-            self.new_user_index
-                .store(state.accounts.len(), Ordering::Relaxed);
-        }
-    }
-
     // if no tokens provided - only wnear storage deposit will be done
     pub async fn initial_ft_storage_deposit(
         &self,

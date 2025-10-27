@@ -1,9 +1,10 @@
 use anyhow::Result;
 use near_sdk::AccountId;
 use near_workspaces::Account;
-use std::{collections::HashSet, convert::Infallible};
+use std::{collections::HashSet, convert::Infallible, sync::atomic::Ordering};
 
 use defuse::{
+    contract::Role,
     core::{
         Deadline, Nonce,
         crypto::PublicKey,
@@ -18,7 +19,7 @@ use futures::{StreamExt, TryStreamExt, future::try_join_all};
 use crate::{
     tests::{
         defuse::{
-            DefusePayloadBuilder, DefuseSigner, SigningStandard,
+            DefuseExt, DefuseSigner, SigningStandard,
             accounts::AccountManagerExt,
             env::{
                 Env,
@@ -28,11 +29,37 @@ use crate::{
         },
         poa::factory::PoAFactoryExt,
     },
-    utils::{ParentAccount, mt::MtExt},
+    utils::{ParentAccount, acl::AclExt, mt::MtExt},
 };
 
 impl Env {
-    pub async fn generate_storage_data(&self) -> Result<PersistentState> {
+    pub async fn upgrade_legacy(&self, reuse_accounts: bool) {
+        let state = self
+            .generate_storage_data()
+            .await
+            .expect("Failed to generate state");
+
+        self.acl_grant_role(
+            self.defuse.id(),
+            Role::Upgrader,
+            self.sandbox.root_account().id(),
+        )
+        .await
+        .expect("Failed to grant upgrader role");
+
+        self.upgrade_defuse(self.defuse.id())
+            .await
+            .expect("Failed to upgrade defuse");
+
+        self.verify_storage_consistency(&state).await;
+
+        if !reuse_accounts {
+            self.new_user_index
+                .store(state.accounts.len(), Ordering::Relaxed);
+        }
+    }
+
+    async fn generate_storage_data(&self) -> Result<PersistentState> {
         let state = PersistentState::generate(
             self.sandbox.root_account(),
             self.poa_factory.as_account(),
@@ -45,14 +72,14 @@ impl Env {
         Ok(state)
     }
 
-    pub async fn verify_storage_consistency(&self, state: &PersistentState) {
+    async fn verify_storage_consistency(&self, state: &PersistentState) {
         futures::join!(
             self.verify_accounts_consistency(state),
             self.verify_mt_tokens_consistency(state)
         );
     }
 
-    pub async fn apply_tokens(&self, state: &PersistentState) -> Result<()> {
+    async fn apply_tokens(&self, state: &PersistentState) -> Result<()> {
         let tokens = state.get_tokens();
         try_join_all(tokens.iter().map(|token| self.apply_token(token)))
             .await

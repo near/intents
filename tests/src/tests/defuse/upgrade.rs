@@ -1,9 +1,10 @@
 use super::DEFUSE_WASM;
+
+use crate::tests::defuse::DefusePayloadBuilder;
 use crate::utils::fixtures::{ed25519_pk, p256_pk, secp256k1_pk};
+use crate::{tests::defuse::accounts::AccountManagerExt};
 use crate::{
     tests::defuse::{
-        DefusePayloadBuilder, DefuseSigner, SigningStandard,
-        accounts::AccountManagerExt,
         env::{Env, create_random_salted_nonce},
         intents::ExecuteIntentsExt,
         state::{FeesManagerExt, SaltManagerExt},

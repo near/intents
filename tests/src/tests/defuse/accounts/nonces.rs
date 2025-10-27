@@ -13,6 +13,7 @@ use defuse_test_utils::{
     asserts::ResultAssertsExt,
     random::{Rng, random_bytes, rng},
 };
+use futures::StreamExt;
 use near_sdk::AccountId;
 use rstest::rstest;
 
@@ -431,7 +432,7 @@ async fn cleanup_multiple_nonces(
         .await
         .unwrap();
 
-    let checks = try_join_all(
+     let checks = try_join_all(
         nonces
             .iter()
             .map(|n| env.defuse.is_nonce_used(user.id(), n)),

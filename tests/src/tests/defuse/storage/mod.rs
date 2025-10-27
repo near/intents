@@ -183,8 +183,8 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents() {
         .await
         .unwrap();
 
-    let signed_intents = [other_user
-        .create_defuse_payload(
+    let signed_intents = [
+        other_user.create_defuse_payload(
             &env.defuse.id(),
             [StorageDeposit {
                 contract_id: ft.clone(),

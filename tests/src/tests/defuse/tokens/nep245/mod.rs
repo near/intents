@@ -38,12 +38,12 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
         .await;
 
     // Check already existing tokens from persistent state if it was applied
-    let persistent_tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
+    let existing_tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
 
     {
         assert_eq!(
             user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
-            persistent_tokens
+            existing_tokens
         );
         assert!(
             user1
@@ -75,7 +75,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
     let ft1_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
     let ft2_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
 
-    let from_token_index = persistent_tokens.len();
+    let from_token_index = existing_tokens.len();
 
     {
         assert_eq!(
@@ -279,7 +279,7 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
     {
         assert_eq!(
             user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
-            persistent_tokens
+            existing_tokens
         );
         assert!(
             user1
@@ -329,7 +329,7 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
         .await;
 
     // Check already existing tokens from persistent state if it was applied
-    let persistent_tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
+    let existing_tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
 
     {
         assert!(
@@ -385,7 +385,7 @@ async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registrati
             },
         ];
 
-        let from_token = persistent_tokens.len();
+        let from_token = existing_tokens.len();
 
         assert_eq!(
             user1
@@ -510,7 +510,7 @@ async fn multitoken_withdrawals() {
         .await;
 
     // Check already existing tokens from persistent state if it was applied
-    let persistent_tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
+    let existing_tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
 
     let defuse2 = env
         .deploy_defuse(
@@ -531,7 +531,7 @@ async fn multitoken_withdrawals() {
     {
         assert_eq!(
             user1.mt_tokens(env.defuse.id(), ..).await.unwrap(),
-            persistent_tokens
+            existing_tokens
         );
         assert!(
             user1
