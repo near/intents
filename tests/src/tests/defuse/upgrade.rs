@@ -97,7 +97,7 @@ async fn test_upgrade_with_persistence() {
         env.create_token()
     );
 
-    let mut persistent_tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
+    let existing_tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
 
     // Check users
     {
@@ -179,12 +179,16 @@ async fn test_upgrade_with_persistence() {
         let tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
 
         // New token
-        persistent_tokens.push(Token {
-            token_id: TokenId::Nep141(Nep141TokenId::new(ft1.clone())).to_string(),
-            owner_id: None,
-        });
+        let expected: Vec<_> = existing_tokens
+            .clone()
+            .into_iter()
+            .chain(std::iter::once(Token {
+                token_id: TokenId::Nep141(Nep141TokenId::new(ft1.clone())).to_string(),
+                owner_id: None,
+            }))
+            .collect();
 
-        assert_eq!(tokens, persistent_tokens);
+        assert_eq!(tokens, expected);
     }
 
     // Check fee

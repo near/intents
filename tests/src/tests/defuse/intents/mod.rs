@@ -1,6 +1,5 @@
 use super::{DefuseSigner, accounts::AccountManagerExt, env::Env};
 use crate::tests::defuse::SigningStandard;
-use crate::utils::fixtures::msg_address;
 use crate::utils::{crypto::Signer, mt::MtExt, test_log::TestLog};
 use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::token_id::TokenId;
@@ -60,6 +59,11 @@ mod public_key;
 mod relayers;
 mod simulate;
 mod token_diff;
+
+pub const DUMMY_MSG_ADDRESS: MsgAddress = MsgAddress {
+    workchain_id: 1234i32,
+    address: [12u8; 32],
+};
 
 pub trait ExecuteIntentsExt: AccountManagerExt {
     async fn defuse_execute_intents(
@@ -360,7 +364,7 @@ async fn webauthn(#[values(false, true)] no_registration: bool) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn ton_connect_sign_intent_example(msg_address: MsgAddress) {
+async fn ton_connect_sign_intent_example() {
     let env: Env = Env::builder().no_registration(false).build().await;
 
     let ft_id: AccountId = "ft.test.near".parse().unwrap();
@@ -381,7 +385,7 @@ async fn ton_connect_sign_intent_example(msg_address: MsgAddress) {
     let (nonce, _) = env.get_unique_nonce(None).await.unwrap();
 
     let payload = defuse::core::ton_connect::TonConnectPayload {
-        address: msg_address,
+        address: DUMMY_MSG_ADDRESS,
         domain: "example.com".to_string(),
         timestamp: defuse_near_utils::time::now(),
         payload: defuse::core::ton_connect::TonConnectPayloadSchema::Text {

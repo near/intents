@@ -28,8 +28,6 @@ use crate::{
     utils::acl::AclExt,
 };
 
-use futures::future::try_join_all;
-
 #[tokio::test]
 #[rstest]
 async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng) {
@@ -383,6 +381,8 @@ async fn cleanup_multiple_nonces(
     #[notrace] mut rng: impl Rng,
     #[values(1, 10, 100)] nonce_count: usize,
 ) {
+    use futures::StreamExt;
+
     const CHUNK_SIZE: usize = 10;
     const WAITING_TIME: TimeDelta = TimeDelta::seconds(3);
 
@@ -431,15 +431,16 @@ async fn cleanup_multiple_nonces(
         .await
         .unwrap();
 
-    let checks = try_join_all(
-        nonces
-            .iter()
-            .map(|n| env.defuse.is_nonce_used(user.id(), n)),
-    )
-    .await
-    .expect("Failed to check cleaned nonces");
+    assert!(
+        futures::stream::iter(nonces)
+            .all(|n| {
+                let defuse = env.defuse.clone();
+                let user_id = user.id().clone();
 
-    assert!(checks.into_iter().all(|is_used| !is_used));
+                async move { !defuse.is_nonce_used(&user_id, &n).await.unwrap() }
+            })
+            .await
+    );
 
     println!(
         "Gas used to clear {} nonces: {}",

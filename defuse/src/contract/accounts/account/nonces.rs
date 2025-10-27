@@ -79,7 +79,7 @@ pub(super) mod tests {
 
     use super::*;
 
-    use near_sdk::{Gas, IntoStorageKey, test_utils::VMContextBuilder, testing_env};
+    use near_sdk::{IntoStorageKey, test_utils::VMContextBuilder, testing_env};
     use proptest::{collection::vec, prelude::*};
 
     #[derive(Debug, Clone)]
@@ -139,15 +139,8 @@ pub(super) mod tests {
         legacy_nonces
     }
 
-    #[allow(dead_code)]
-    fn prefix_strategy() -> impl Strategy<Value = Vec<u8>> {
-        vec(any::<u8>(), 1..=32)
-    }
-
     fn increase_max_gas() {
-        let context = VMContextBuilder::new()
-            .prepaid_gas(Gas::from_tgas(300))
-            .build();
+        let context = VMContextBuilder::new().build();
         testing_env!(context);
     }
 
@@ -198,22 +191,18 @@ pub(super) mod tests {
         #[test]
         fn commit_existing_legacy_nonce(nonces: NoncesVec, storage_prefix: StoragePrefix) {
             increase_max_gas();
-            println!("HELLO0");
             let legacy_nonces = get_legacy_map(&nonces, storage_prefix.clone());
-            println!("HELLO1");
             let mut new = MaybeLegacyAccountNonces::with_legacy(
                 legacy_nonces,
                 LookupMap::with_hasher(storage_prefix),
             );
 
-            println!("HELLO2");
             for nonce in &nonces {
             assert!(matches!(
                 new.commit(*nonce),
                 Err(DefuseError::NonceUsed)
             ));
             }
-            println!("HELLO3");
         }
     }
 
