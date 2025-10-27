@@ -54,7 +54,7 @@ impl Env {
         self.verify_storage_consistency(&state).await;
 
         if !reuse_accounts {
-            self.new_user_index
+            self.next_user_index
                 .store(state.accounts.len(), Ordering::Relaxed);
         }
     }

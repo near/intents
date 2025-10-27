@@ -54,7 +54,7 @@ pub struct Env {
 
     // Persistent state generated in case of migration tests
     // used to fetch existing accounts
-    pub new_user_index: AtomicUsize,
+    pub next_user_index: AtomicUsize,
     pub seed: Seed,
 }
 
@@ -176,7 +176,7 @@ impl Env {
         let root = self.sandbox.root_account().id();
 
         if rand.random() {
-            let index = self.new_user_index.fetch_add(1, Ordering::SeqCst);
+            let index = self.next_user_index.fetch_add(1, Ordering::SeqCst);
             generate_deterministic_user_account_id(root, self.seed, index)
         } else {
             generate_random_account_id(root, &mut Unstructured::new(&rand.random::<[u8; 64]>()))
