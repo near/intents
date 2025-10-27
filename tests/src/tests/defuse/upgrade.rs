@@ -96,20 +96,16 @@ async fn test_upgrade_with_persistence(mut rng: impl Rng, random_bytes: Vec<u8>)
     let u = &mut Unstructured::new(&random_bytes);
     let env = Env::builder().build_with_migration().await;
 
-    // Make some changes existing users:
-    let (user1, user2) = futures::join!(env.create_user(), env.create_user());
+    // Make some changes existing users + create new users and token
+    let (user1, user2, user3, user4, ft1) = futures::join!(
+        env.create_user(),
+        env.create_user(),
+        env.create_named_user("first_new_user"),
+        env.create_named_user("second_new_user"),
+        env.create_token()
+    );
 
     let existing_tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
-
-    // Create new users
-    let (user3, user4) = futures::try_join!(
-        env.create_named_user("first_new_user"),
-        env.create_named_user("second_new_user")
-    )
-    .expect("Failed to create new users");
-
-    // Create new token
-    let ft1 = env.create_token().await;
 
     // Check users
     {
