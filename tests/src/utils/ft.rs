@@ -146,7 +146,7 @@ impl FtExt for Account {
             .into_result()
             .inspect(|outcome| {
                 println!(
-                    "ft_transfer_call Logs: {:?}",
+                    "ft_transfer_call Logs: {:#?}",
                     TestLog::from(outcome.clone())
                 );
             })?
