@@ -146,15 +146,27 @@ impl Env {
             .await
     }
 
-    pub async fn create_named_user(&self, name: &str) -> Result<Account> {
-        let account = self.sandbox.create_account(name).await?;
+    pub async fn create_named_user(&self, name: &str) -> Account {
+        let account = self
+            .sandbox
+            .create_account(name)
+            .await
+            .expect("Failed to create account");
         let pubkey = get_account_public_key(&account);
 
-        if !self.defuse.has_public_key(account.id(), &pubkey).await? {
-            account.add_public_key(self.defuse.id(), pubkey).await?;
+        if !self
+            .defuse
+            .has_public_key(account.id(), &pubkey)
+            .await
+            .expect("Failed to check publick key")
+        {
+            account
+                .add_public_key(self.defuse.id(), pubkey)
+                .await
+                .expect("Failed to add pubkey");
         }
 
-        Ok(account)
+        account
     }
 
     pub async fn create_user(&self) -> Account {
@@ -165,7 +177,6 @@ impl Env {
 
         self.create_named_user(&root.subaccount_name(&account_id))
             .await
-            .expect("Failed to create user account")
     }
 
     // Randomly derives account ID from seed and unique index

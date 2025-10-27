@@ -178,7 +178,7 @@ impl Env {
         let (account_id, account) = data;
         let acc = self
             .create_named_user(&self.sandbox.subaccount_name(account_id))
-            .await?;
+            .await;
 
         futures::try_join!(
             self.apply_public_keys(&acc, account),
