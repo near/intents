@@ -13,7 +13,6 @@ use defuse::{
     core::fees::{FeesConfig, Pips},
 };
 use defuse_poa_factory::contract::Role as POAFactoryRole;
-use defuse_test_utils::random::Seed;
 use near_sdk::{AccountId, NearToken};
 use near_workspaces::{Account, Contract};
 

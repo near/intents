@@ -20,9 +20,8 @@ use defuse::{
 };
 use defuse_near_utils::arbitrary::ArbitraryNamedAccountId;
 use defuse_randomness::{Rng, make_true_rng};
-use defuse_test_utils::random::{Seed, rng};
 use futures::future::try_join_all;
-use near_sdk::{AccountId, NearToken, env::sha256};
+use near_sdk::{AccountId, NearToken};
 use near_workspaces::{
     Account, Contract, Network, Worker,
     operations::Function,

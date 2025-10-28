@@ -1,21 +1,13 @@
-use std::{
-    collections::{HashMap, HashSet},
-    hash::Hash,
-};
+use std::collections::{HashMap, HashSet};
 
 use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::{Nonce, crypto::PublicKey, token_id::nep141::Nep141TokenId};
-use defuse_near_utils::arbitrary::ArbitraryNamedAccountId;
-use defuse_randomness::RngCore;
-use defuse_test_utils::random::{Seed, rng};
 use itertools::Itertools;
 use near_sdk::{
     AccountId,
     env::{keccak512, sha256},
 };
 use near_workspaces::Account;
-
-use anyhow::Result;
 
 use crate::{
     tests::defuse::env::generate_deterministic_legacy_user_account_id, utils::ParentAccount,
@@ -48,16 +40,16 @@ pub struct PersistentState {
 }
 
 impl PersistentState {
-    pub fn generate(root: &Account, factory: &Account) -> Result<Self> {
+    pub fn generate(root: &Account, factory: &Account) -> Self {
         let tokens = (0..MAX_TOKENS)
             .map(|token_id| {
                 Nep141TokenId::new(factory.subaccount_id(&format!("test-token-{token_id}")))
             })
-            .collect();
+            .collect::<Vec<_>>();
 
-        Ok(Self {
-            accounts: Self::generate_accounts(root, tokens),
-        })
+        Self {
+            accounts: Self::generate_accounts(root, tokens.as_slice()),
+        }
     }
 
     pub fn get_tokens(&self) -> Vec<Nep141TokenId> {
@@ -71,7 +63,7 @@ impl PersistentState {
 
     fn generate_accounts(
         prefix: &Account,
-        tokens: Vec<Nep141TokenId>,
+        tokens: &[Nep141TokenId],
     ) -> HashMap<AccountId, AccountWithTokens> {
         (0..MAX_ACCOUNTS)
             .map(|idx| {
@@ -97,9 +89,10 @@ impl PersistentState {
                     })
                     .collect();
 
+                #[allow(clippy::as_conversions)]
                 let account_tokens = tokens
                     .iter()
-                    .map(|token| (token.clone(), MIN_BALANCE_AMOUNT + (idx as u128) * 1000u128))
+                    .map(|token| (token.clone(), MIN_BALANCE_AMOUNT + (idx as u128 * 1000u128)))
                     .collect();
                 (
                     subaccount,

@@ -61,7 +61,7 @@ impl Env {
 
     async fn generate_storage_data(&self) -> Result<PersistentState> {
         let state =
-            PersistentState::generate(self.sandbox.root_account(), self.poa_factory.as_account())?;
+            PersistentState::generate(self.sandbox.root_account(), self.poa_factory.as_account());
 
         self.apply_tokens(&state).await?;
         self.apply_accounts(&state).await?;
