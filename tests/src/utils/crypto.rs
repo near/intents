@@ -4,6 +4,7 @@ use defuse::core::{
     sep53::{Sep53Payload, SignedSep53Payload},
     ton_connect::{SignedTonConnectPayload, TonConnectPayload},
 };
+use defuse_bip322::{Address, SignedBip322Payload};
 use near_workspaces::Account;
 
 pub trait Signer {
@@ -12,6 +13,7 @@ pub trait Signer {
     fn sign_nep413(&self, payload: Nep413Payload) -> SignedNep413Payload;
     fn sign_ton_connect(&self, payload: TonConnectPayload) -> SignedTonConnectPayload;
     fn sign_sep53(&self, payload: Sep53Payload) -> SignedSep53Payload;
+    fn sign_bip322(&self, message: String) -> SignedBip322Payload;
 }
 
 impl Signer for Account {
@@ -62,6 +64,34 @@ impl Signer for Account {
                 }
             }
             _ => unreachable!(),
+        }
+    }
+
+    //TODO: BIP-322 replace with some realistic test vector.
+    fn sign_bip322(&self, message: String) -> SignedBip322Payload {
+        // For testing purposes, create a dummy BIP-322 signature
+        // In a real implementation, this would need proper Bitcoin ECDSA signing
+
+        // Create a dummy P2WPKH address for testing
+        // Using a valid mainnet address format: bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4
+        let address: Address = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"
+            .parse()
+            .unwrap_or({
+                // Fallback: create P2PKH with dummy data if parsing fails
+                Address::P2PKH {
+                    pubkey_hash: [0u8; 20],
+                }
+            });
+
+        // Create empty 65-byte signature (signature verification will fail, but structure is correct for testing)
+        let signature = defuse_bip322::Bip322Signature::Compact {
+            signature: [0u8; 65],
+        };
+
+        SignedBip322Payload {
+            address,
+            message,
+            signature,
         }
     }
 }

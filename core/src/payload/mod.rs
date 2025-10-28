@@ -1,3 +1,4 @@
+pub mod bip322;
 pub mod erc191;
 pub mod multi;
 pub mod nep413;
