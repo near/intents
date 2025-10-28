@@ -54,8 +54,11 @@ impl Env {
         self.verify_storage_consistency(&state).await;
 
         if !reuse_accounts {
+            // Skip all legacy accounts by setting index beyond them
+            // Legacy accounts are at even indexes (0, 2, 4, ...) which map to account index / 2
+            // So to skip N legacy accounts, we need to set next_user_index to N * 2
             self.next_user_index
-                .store(state.accounts.len(), Ordering::Relaxed);
+                .store(state.accounts.len() * 2, Ordering::Relaxed);
         }
     }
 
