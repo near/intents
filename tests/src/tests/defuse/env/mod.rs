@@ -55,7 +55,6 @@ pub struct Env {
     // Persistent state generated in case of migration tests
     // used to fetch existing accounts
     pub next_user_index: AtomicUsize,
-    pub seed: Seed,
 }
 
 impl Env {
@@ -184,13 +183,15 @@ impl Env {
     // Or create new arbitrary account id
     fn get_next_account_id(&self) -> Result<AccountId> {
         let mut rand = make_true_rng();
-        let root = self.sandbox.root_account().id();
+        let root = self.sandbox.root_account();
 
-        if rand.random() {
-            let index = self.next_user_index.fetch_add(1, Ordering::SeqCst);
-            generate_deterministic_user_account_id(root, self.seed, index)
+        // NOTE: every second account is legacy
+        let id = self.next_user_index.fetch_add(1, Ordering::SeqCst);
+        if id % 2 == 0 {
+            let index = id / 2;
+            Ok(generate_deterministic_legacy_user_account_id(root, index))
         } else {
-            generate_random_account_id(root, &mut Unstructured::new(&rand.random::<[u8; 64]>()))
+            generate_random_account_id(root.id(), &mut Unstructured::new(&rand.random::<[u8; 64]>()))
         }
     }
 
@@ -355,17 +356,9 @@ fn generate_random_account_id(parent_id: &AccountId, u: &mut Unstructured) -> Re
         .map_err(|e| anyhow::anyhow!("Failed to generate account ID : {}", e))
 }
 
-fn generate_deterministic_user_account_id(
-    parent_id: &AccountId,
-    seed: Seed,
+fn generate_deterministic_legacy_user_account_id(
+    parent_id: &Account,
     index: usize,
-) -> Result<AccountId> {
-    let bytes = sha256(&(seed.as_u64() + u64::try_from(index)?).to_be_bytes())[..8]
-        .try_into()
-        .map_err(|_| anyhow::anyhow!("Failed to create new account seed"))?;
-
-    let seed = Seed::from_u64(u64::from_be_bytes(bytes));
-    let mut rng = rng(seed);
-
-    generate_random_account_id(parent_id, &mut Unstructured::new(&rng.random::<[u8; 64]>()))
+) -> AccountId {
+    parent_id.subaccount_id(&format!("user-with-legacy-nonces-{index}"))
 }

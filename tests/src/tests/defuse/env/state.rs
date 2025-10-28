@@ -9,12 +9,12 @@ use defuse_near_utils::arbitrary::ArbitraryNamedAccountId;
 use defuse_randomness::RngCore;
 use defuse_test_utils::random::{Seed, rng};
 use itertools::Itertools;
-use near_sdk::AccountId;
+use near_sdk::{env::{keccak512, sha256}, AccountId};
 use near_workspaces::Account;
 
 use anyhow::Result;
 
-use crate::tests::defuse::env::generate_deterministic_user_account_id;
+use crate::{tests::defuse::env::generate_deterministic_legacy_user_account_id, utils::ParentAccount};
 
 const MAX_PUBLIC_KEYS: usize = 10;
 const MAX_ACCOUNTS: usize = 5;
@@ -26,11 +26,7 @@ const MAX_BALANCE_AMOUNT: u128 = 10_000;
 
 #[derive(Arbitrary, Debug, Clone, PartialEq, Eq)]
 pub struct AccountData {
-    #[arbitrary(with = generate_limited_arbitrary::<MAX_PUBLIC_KEYS, PublicKey>)]
     pub public_keys: HashSet<PublicKey>,
-
-    // NOTE: Generating legacy nonces for compatibility testing
-    #[arbitrary(with = generate_limited_arbitrary::<MAX_NONCES, Nonce>)]
     pub nonces: HashSet<Nonce>,
 }
 
@@ -40,31 +36,6 @@ pub struct AccountWithTokens {
     pub tokens: HashMap<Nep141TokenId, u128>,
 }
 
-impl AccountWithTokens {
-    pub fn generate(
-        tokens: impl IntoIterator<Item = Nep141TokenId>,
-        u: &mut Unstructured,
-    ) -> Result<Self> {
-        let data = AccountData::arbitrary(u)?;
-        let tokens = tokens.into_iter().collect::<Vec<_>>();
-
-        let selected_token_amount = u.int_in_range(1..=tokens.len())?;
-
-        let tokens = (0..selected_token_amount)
-            .map(|_| {
-                // Because of inclusive range requirement
-                #[allow(clippy::range_minus_one)]
-                let ix = u.int_in_range(0..=(tokens.len() - 1))?;
-                let token = tokens[ix].clone();
-                let amount = u.int_in_range(MIN_BALANCE_AMOUNT..=MAX_BALANCE_AMOUNT)?;
-
-                anyhow::Ok((token, amount))
-            })
-            .collect::<Result<_, _>>()?;
-
-        Ok(Self { data, tokens })
-    }
-}
 
 /// Generates arbitrary but consistent state changes
 #[derive(Debug)]
@@ -73,17 +44,13 @@ pub struct PersistentState {
 }
 
 impl PersistentState {
-    pub fn generate(root: &Account, factory: &Account, seed: Seed) -> Result<Self> {
-        let mut rng = rng(seed);
-        let mut random_bytes = [0u8; 1024];
-        rng.fill_bytes(&mut random_bytes);
+    pub fn generate(root: &Account, factory: &Account) -> Result<Self> {
+        let tokens = (0..MAX_TOKENS)
+            .map(|token_id| 
+                Nep141TokenId::new(factory.subaccount_id(&format!("test-token-{token_id}")))
+            ).collect();
 
-        let u = &mut Unstructured::new(&random_bytes);
-
-        let tokens = Self::generate_tokens(u, factory)?;
-        let accounts = Self::generate_accounts(u, root, tokens, seed)?;
-
-        Ok(Self { accounts })
+        Ok(Self { accounts : Self::generate_accounts(root, tokens) })
     }
 
     pub fn get_tokens(&self) -> Vec<Nep141TokenId> {
@@ -96,47 +63,38 @@ impl PersistentState {
     }
 
     fn generate_accounts(
-        u: &mut Unstructured,
-        root: &Account,
-        tokens: impl IntoIterator<Item = Nep141TokenId>,
-        seed: Seed,
-    ) -> Result<HashMap<AccountId, AccountWithTokens>> {
-        let number = u.int_in_range(1..=MAX_ACCOUNTS)?;
-        let tokens = tokens.into_iter().collect::<Vec<_>>();
+        prefix: &Account,
+        tokens: Vec<Nep141TokenId>
+    ) -> HashMap<AccountId, AccountWithTokens> {
 
-        (0..number)
-            .map(|index| {
-                let account_id = generate_deterministic_user_account_id(root.id(), seed, index)?;
-                let account = AccountWithTokens::generate(tokens.clone(), u)?;
-                Ok((account_id, account))
+        (0..MAX_ACCOUNTS)
+            .map(|idx| {
+                let subaccount = generate_deterministic_legacy_user_account_id(prefix, idx);
+
+                let public_keys = (0..MAX_PUBLIC_KEYS).map(|pk_index| {
+                    let pkey_source = keccak512(format!("{subaccount}-public-key-{pk_index}").as_bytes());
+                    let mut u = Unstructured::new(pkey_source.as_slice());
+                    u.arbitrary().unwrap()
+                }
+                ).collect();
+
+                let nonces = (0..MAX_NONCES).map(|nonce_index| 
+                        Unstructured::new(sha256(
+                            format!("{subaccount}-nonce-{nonce_index}")
+                                .as_bytes()
+                        ).as_slice())
+                        .arbitrary()
+                        .unwrap()
+                ).collect();
+
+                let account_tokens = tokens.iter()
+                    .map(| token| 
+                        (token.clone(), MIN_BALANCE_AMOUNT + (idx as u128) * 1000u128)
+                    )
+                    .collect();
+                (subaccount, AccountWithTokens { data: AccountData { public_keys, nonces }, tokens: account_tokens })
+
             })
             .collect()
     }
-
-    fn generate_tokens(u: &mut Unstructured, factory: &Account) -> Result<HashSet<Nep141TokenId>> {
-        let number = u.int_in_range(1..=MAX_TOKENS)?;
-
-        (0..number)
-            .map(|_| {
-                let account_id =
-                    ArbitraryNamedAccountId::arbitrary_subaccount(u, Some(factory.id()))?;
-
-                Ok(Nep141TokenId::new(account_id))
-            })
-            .collect()
-    }
-}
-
-#[allow(clippy::unnecessary_wraps)]
-fn generate_limited_arbitrary<const MAX: usize, T>(
-    u: &mut Unstructured,
-) -> arbitrary::Result<HashSet<T>>
-where
-    T: for<'a> Arbitrary<'a> + Eq + Hash,
-{
-    let len = u.int_in_range(2..=MAX).unwrap_or(0);
-
-    Ok((0..len)
-        .filter_map(|_| T::arbitrary(u).ok())
-        .collect::<HashSet<T>>())
 }

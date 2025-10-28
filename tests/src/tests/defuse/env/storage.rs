@@ -63,7 +63,6 @@ impl Env {
         let state = PersistentState::generate(
             self.sandbox.root_account(),
             self.poa_factory.as_account(),
-            self.seed,
         )?;
 
         self.apply_tokens(&state).await?;

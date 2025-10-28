@@ -135,7 +135,6 @@ impl EnvBuilder {
             sandbox,
             disable_ft_storage_deposit: self.disable_ft_storage_deposit,
             disable_registration: self.disable_registration,
-            seed: Seed::from_entropy(),
             next_user_index: AtomicUsize::new(0),
         };
 
