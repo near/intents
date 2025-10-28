@@ -191,7 +191,10 @@ impl Env {
             let index = id / 2;
             Ok(generate_deterministic_legacy_user_account_id(root, index))
         } else {
-            generate_random_account_id(root.id(), &mut Unstructured::new(&rand.random::<[u8; 64]>()))
+            generate_random_account_id(
+                root.id(),
+                &mut Unstructured::new(&rand.random::<[u8; 64]>()),
+            )
         }
     }
 
@@ -356,9 +359,6 @@ fn generate_random_account_id(parent_id: &AccountId, u: &mut Unstructured) -> Re
         .map_err(|e| anyhow::anyhow!("Failed to generate account ID : {}", e))
 }
 
-fn generate_deterministic_legacy_user_account_id(
-    parent_id: &Account,
-    index: usize,
-) -> AccountId {
+fn generate_deterministic_legacy_user_account_id(parent_id: &Account, index: usize) -> AccountId {
     parent_id.subaccount_id(&format!("user-with-legacy-nonces-{index}"))
 }
