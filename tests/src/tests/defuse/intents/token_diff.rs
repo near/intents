@@ -1,5 +1,5 @@
 use crate::{
-    tests::defuse::{DefusePayloadBuilder, env::Env},
+    tests::defuse::{env::Env,  DefuseSignerExt},
     utils::mt::MtExt,
 };
 use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
@@ -224,7 +224,7 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
 
     let signed = futures::future::try_join_all(accounts.iter().flat_map(move |account| {
         account.diff.iter().cloned().map(move |diff| {
-            account.account.create_defuse_payload(
+            account.account.sign_defuse_payload_default(
                 env.defuse.id(),
                 [TokenDiff {
                     diff,
@@ -302,7 +302,7 @@ async fn invariant_violated(#[values(false, true)] no_registration: bool) {
     .expect("Failed to deposit tokens");
 
     let signed = futures::future::try_join_all([
-        user1.create_defuse_payload(
+        user1.sign_defuse_payload_default(
             env.defuse.id(),
             [TokenDiff {
                 diff: TokenDeltas::default()
@@ -315,7 +315,7 @@ async fn invariant_violated(#[values(false, true)] no_registration: bool) {
                 referral: None,
             }],
         ),
-        user1.create_defuse_payload(
+        user1.sign_defuse_payload_default(
             env.defuse.id(),
             [TokenDiff {
                 diff: TokenDeltas::default()
@@ -422,7 +422,7 @@ async fn solver_user_closure(
 
     // solver signs his intent
     let solver_commitment = solver
-        .create_defuse_payload(
+        .sign_defuse_payload_default(
             env.defuse.id(),
             [TokenDiff {
                 diff: TokenDeltas::new(
@@ -477,7 +477,7 @@ async fn solver_user_closure(
 
     // user signs the message
     let user_commitment = user
-        .create_defuse_payload(
+        .sign_defuse_payload_default(
             env.defuse.id(),
             [TokenDiff {
                 diff: TokenDeltas::new(

@@ -382,7 +382,7 @@ async fn ton_connect_sign_intent_example() {
         .into()]
         .into(),
     };
-    let (nonce, _) = env.get_unique_nonce(None).await.unwrap();
+    let nonce = env.get_unique_nonce(None).await.unwrap();
 
     let payload = defuse::core::ton_connect::TonConnectPayload {
         address: DUMMY_MSG_ADDRESS,

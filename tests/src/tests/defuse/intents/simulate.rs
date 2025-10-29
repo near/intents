@@ -1,4 +1,4 @@
-use crate::tests::defuse::DefusePayloadBuilder;
+use crate::tests::defuse::{ DefuseSignerExt};
 use crate::tests::defuse::intents::{AccountNonceIntentEvent, ExecuteIntentsExt, NonceEvent};
 use crate::utils::fixtures::public_key;
 use crate::utils::payload::ExtractNonceExt;
@@ -61,7 +61,7 @@ async fn simulate_transfer_intent() {
     };
 
     let transfer_intent_payload = user1
-        .create_defuse_payload(env.defuse.id(), [transfer_intent.clone()])
+        .sign_defuse_payload_default(env.defuse.id(), [transfer_intent.clone()])
         .await
         .unwrap();
     let nonce = transfer_intent_payload.extract_nonce().unwrap();
@@ -129,7 +129,7 @@ async fn simulate_ft_withdraw_intent() {
     };
 
     let ft_withdraw_payload = user1
-        .create_defuse_payload(env.defuse.id(), [ft_withdraw_intent.clone()])
+        .sign_defuse_payload_default(env.defuse.id(), [ft_withdraw_intent.clone()])
         .await
         .unwrap();
     let nonce = ft_withdraw_payload.extract_nonce().unwrap();
@@ -203,7 +203,7 @@ async fn simulate_native_withdraw_intent() {
     };
 
     let native_withdraw_payload = user1
-        .create_defuse_payload(env.defuse.id(), [native_withdraw_intent.clone()])
+        .sign_defuse_payload_default(env.defuse.id(), [native_withdraw_intent.clone()])
         .await
         .unwrap();
     let nonce = native_withdraw_payload.extract_nonce().unwrap();
@@ -309,7 +309,7 @@ async fn simulate_nft_withdraw_intent() {
     };
 
     let nft_withdraw_payload = user1
-        .create_defuse_payload(env.defuse.id(), [nft_withdraw_intent.clone()])
+        .sign_defuse_payload_default(env.defuse.id(), [nft_withdraw_intent.clone()])
         .await
         .unwrap();
     let nonce = nft_withdraw_payload.extract_nonce().unwrap();
@@ -432,7 +432,7 @@ async fn simulate_mt_withdraw_intent() {
     };
 
     let mt_withdraw_payload = user1
-        .create_defuse_payload(defuse2.id(), [mt_withdraw_intent.clone()])
+        .sign_defuse_payload_default(defuse2.id(), [mt_withdraw_intent.clone()])
         .await
         .unwrap();
     let nonce = mt_withdraw_payload.extract_nonce().unwrap();
@@ -507,7 +507,7 @@ async fn simulate_storage_deposit_intent() {
     };
 
     let storage_deposit_payload = user1
-        .create_defuse_payload(env.defuse.id(), [storage_deposit_intent.clone()])
+        .sign_defuse_payload_default(env.defuse.id(), [storage_deposit_intent.clone()])
         .await
         .unwrap();
     let nonce = storage_deposit_payload.extract_nonce().unwrap();
@@ -603,13 +603,13 @@ async fn simulate_token_diff_intent() {
     };
 
     let user1_payload = user1
-        .create_defuse_payload(env.defuse.id(), [user1_token_diff.clone()])
+        .sign_defuse_payload_default(env.defuse.id(), [user1_token_diff.clone()])
         .await
         .unwrap();
     let nonce1 = user1_payload.extract_nonce().unwrap();
 
     let user2_payload = user2
-        .create_defuse_payload(env.defuse.id(), [user2_token_diff.clone()])
+        .sign_defuse_payload_default(env.defuse.id(), [user2_token_diff.clone()])
         .await
         .unwrap();
     let nonce2 = user2_payload.extract_nonce().unwrap();
@@ -678,7 +678,7 @@ async fn simulate_add_public_key_intent(public_key: PublicKey) {
     };
 
     let add_public_key_payload = user1
-        .create_defuse_payload(env.defuse.id(), [add_public_key_intent])
+        .sign_defuse_payload_default(env.defuse.id(), [add_public_key_intent])
         .await
         .unwrap();
     let nonce = add_public_key_payload.extract_nonce().unwrap();
@@ -719,7 +719,7 @@ async fn simulate_remove_public_key_intent(public_key: PublicKey) {
     };
 
     let add_public_key_payload = user1
-        .create_defuse_payload(env.defuse.id(), [add_public_key_intent])
+        .sign_defuse_payload_default(env.defuse.id(), [add_public_key_intent])
         .await
         .unwrap();
 
@@ -734,7 +734,7 @@ async fn simulate_remove_public_key_intent(public_key: PublicKey) {
     };
 
     let remove_public_key_payload = user1
-        .create_defuse_payload(env.defuse.id(), [remove_public_key_intent])
+        .sign_defuse_payload_default(env.defuse.id(), [remove_public_key_intent])
         .await
         .unwrap();
     let remove_nonce = remove_public_key_payload.extract_nonce().unwrap();
@@ -772,7 +772,7 @@ async fn simulate_set_auth_by_predecessor_id_intent() {
     let set_auth_intent = SetAuthByPredecessorId { enabled: true };
 
     let set_auth_payload = user1
-        .create_defuse_payload(env.defuse.id(), [set_auth_intent.clone()])
+        .sign_defuse_payload_default(env.defuse.id(), [set_auth_intent.clone()])
         .await
         .unwrap();
     let nonce = set_auth_payload.extract_nonce().unwrap();
@@ -840,7 +840,7 @@ async fn simulate_auth_call_intent() {
     };
 
     let auth_call_payload = user1
-        .create_defuse_payload(env.defuse.id(), [auth_call_intent])
+        .sign_defuse_payload_default(env.defuse.id(), [auth_call_intent])
         .await
         .unwrap();
     let nonce = auth_call_payload.extract_nonce().unwrap();

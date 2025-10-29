@@ -10,7 +10,7 @@ use rstest::rstest;
 
 use crate::{
     tests::defuse::{
-        DefusePayloadBuilder, accounts::AccountManagerExt, env::Env, intents::ExecuteIntentsExt,
+        accounts::AccountManagerExt, env::Env, intents::ExecuteIntentsExt,  DefuseSignerExt
     },
     utils::mt::MtExt,
 };
@@ -112,7 +112,7 @@ async fn auth_by_predecessor_id() {
     // transfer via intent should succeed
     {
         let transfer_payload = user
-            .create_defuse_payload(
+            .sign_defuse_payload_default(
                 env.defuse.id(),
                 [Transfer {
                     receiver_id: receiver_id.clone(),
@@ -147,7 +147,7 @@ async fn auth_by_predecessor_id() {
     // enable auth by PREDECESSOR_ID back (by intent)
     {
         let enable_auth_payload = user
-            .create_defuse_payload(env.defuse.id(), [SetAuthByPredecessorId { enabled: true }])
+            .sign_defuse_payload_default(env.defuse.id(), [SetAuthByPredecessorId { enabled: true }])
             .await
             .unwrap();
 

@@ -3,7 +3,7 @@ pub mod traits;
 use crate::tests::defuse::tokens::nep141::traits::DefuseFtWithdrawer;
 use crate::{
     tests::{
-        defuse::{DefusePayloadBuilder, env::Env},
+        defuse::{ env::Env},
         poa::factory::PoAFactoryExt,
     },
     utils::{acl::AclExt, ft::FtExt, mt::MtExt},
@@ -98,7 +98,7 @@ async fn poa_deposit(#[values(false, true)] no_registration: bool) {
 #[rstest]
 #[trace]
 async fn deposit_withdraw_intent(#[values(false, true)] no_registration: bool) {
-    use crate::tests::defuse::tokens::nep141::traits::DefuseFtReceiver;
+    use crate::tests::defuse::{tokens::nep141::traits::DefuseFtReceiver, DefuseSignerExt};
 
     let env = Env::builder()
         .no_registration(no_registration)
@@ -123,7 +123,7 @@ async fn deposit_withdraw_intent(#[values(false, true)] no_registration: bool) {
     .unwrap();
 
     let withdraw_intent_payload = user
-        .create_defuse_payload(
+        .sign_defuse_payload_default(
             env.defuse.id(),
             [FtWithdraw {
                 token: ft.clone(),
@@ -181,7 +181,7 @@ async fn deposit_withdraw_intent(#[values(false, true)] no_registration: bool) {
 #[rstest]
 #[trace]
 async fn deposit_withdraw_intent_refund(#[values(false, true)] no_registration: bool) {
-    use crate::tests::defuse::tokens::nep141::traits::DefuseFtReceiver;
+    use crate::tests::defuse::{tokens::nep141::traits::DefuseFtReceiver, DefuseSignerExt};
 
     let env = Env::builder()
         .no_registration(no_registration)
@@ -205,7 +205,7 @@ async fn deposit_withdraw_intent_refund(#[values(false, true)] no_registration: 
     .unwrap();
 
     let overflow_withdraw_payload = user
-        .create_defuse_payload(
+        .sign_defuse_payload_default(
             env.defuse.id(),
             [FtWithdraw {
                 token: ft.clone(),

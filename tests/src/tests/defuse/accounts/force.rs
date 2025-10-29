@@ -1,4 +1,4 @@
-use crate::utils::fixtures::public_key;
+use crate::{tests::defuse::DefuseSignerExt, utils::fixtures::public_key};
 use defuse::{
     contract::Role,
     core::{
@@ -14,7 +14,7 @@ use rstest::rstest;
 
 use crate::{
     tests::defuse::{
-        DefusePayloadBuilder,
+        
         accounts::{AccountManagerExt, traits::ForceAccountManagerExt},
         env::Env,
         intents::ExecuteIntentsExt,
@@ -282,7 +282,7 @@ async fn test_lock_account(public_key: PublicKey) {
     // try to execute intents on behalf of locked account
     {
         let locked_payload = locked_account
-            .create_defuse_payload(env.defuse.id(), Vec::<Intent>::new())
+            .sign_defuse_payload_default(env.defuse.id(), Vec::<Intent>::new())
             .await
             .unwrap();
         let nonce = locked_payload.extract_nonce().unwrap();

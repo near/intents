@@ -1,4 +1,5 @@
-use crate::tests::defuse::{DefusePayloadBuilder, env::Env, intents::ExecuteIntentsExt};
+use crate::tests::defuse::DefuseSignerExt;
+use crate::tests::defuse::{ env::Env, intents::ExecuteIntentsExt};
 use crate::utils::{mt::MtExt, nft::NftExt};
 use defuse::core::intents::tokens::NftWithdraw;
 use defuse::core::token_id::TokenId as DefuseTokenId;
@@ -244,7 +245,7 @@ async fn transfer_nft_to_verifier() {
         }
 
         let withdraw_payload = user3
-            .create_defuse_payload(
+            .sign_defuse_payload_default(
                 env.defuse.id(),
                 [NftWithdraw {
                     token: nft_issuer_contract.id().clone(),

@@ -1,6 +1,6 @@
 use super::ExecuteIntentsExt;
 use crate::tests::defuse::tokens::nep141::traits::DefuseFtReceiver;
-use crate::tests::defuse::{DefuseExt, DefusePayloadBuilder};
+use crate::tests::defuse::{DefuseExt};
 use crate::{
     tests::defuse::env::Env,
     utils::{ft::FtExt, mt::MtExt, wnear::WNearExt},
@@ -19,6 +19,8 @@ use rstest::rstest;
 #[rstest]
 #[trace]
 async fn ft_withdraw_intent(#[values(false, true)] no_registration: bool) {
+    use crate::tests::defuse::DefuseSignerExt;
+
     // intentionally large deposit
     const STORAGE_DEPOSIT: NearToken = NearToken::from_near(1000);
 
@@ -49,7 +51,7 @@ async fn ft_withdraw_intent(#[values(false, true)] no_registration: bool) {
     }
 
     let initial_withdraw_payload = user
-        .create_defuse_payload(
+        .sign_defuse_payload_default(
             env.defuse.id(),
             [FtWithdraw {
                 token: ft.clone(),
@@ -82,7 +84,7 @@ async fn ft_withdraw_intent(#[values(false, true)] no_registration: bool) {
     );
 
     let missing_storage_payload = user
-        .create_defuse_payload(
+        .sign_defuse_payload_default(
             env.defuse.id(),
             [FtWithdraw {
                 token: ft.clone(),
@@ -144,7 +146,7 @@ async fn ft_withdraw_intent(#[values(false, true)] no_registration: bool) {
 
     // too large min_gas specified
     let too_large_min_gas_payload = user
-        .create_defuse_payload(
+        .sign_defuse_payload_default(
             env.defuse.id(),
             [FtWithdraw {
                 token: ft.clone(),
@@ -164,7 +166,7 @@ async fn ft_withdraw_intent(#[values(false, true)] no_registration: bool) {
         .assert_err_contains("Exceeded the prepaid gas.");
 
     let valid_payload = user
-        .create_defuse_payload(
+        .sign_defuse_payload_default(
             env.defuse.id(),
             [FtWithdraw {
                 token: ft.clone(),
@@ -225,6 +227,8 @@ async fn ft_withdraw_intent(#[values(false, true)] no_registration: bool) {
 #[rstest]
 #[trace]
 async fn ft_withdraw_intent_msg(#[values(false, true)] no_registration: bool) {
+    use crate::tests::defuse::DefuseSignerExt;
+
     let env = Env::builder()
         .no_registration(no_registration)
         .build()
@@ -261,7 +265,7 @@ async fn ft_withdraw_intent_msg(#[values(false, true)] no_registration: bool) {
     // too small min_gas
     {
         let low_min_gas_payload = user
-            .create_defuse_payload(
+            .sign_defuse_payload_default(
                 env.defuse.id(),
                 [FtWithdraw {
                     token: ft.clone(),
@@ -306,7 +310,7 @@ async fn ft_withdraw_intent_msg(#[values(false, true)] no_registration: bool) {
     }
 
     let remaining_withdraw_payload = user
-        .create_defuse_payload(
+        .sign_defuse_payload_default(
             env.defuse.id(),
             [FtWithdraw {
                 token: ft.clone(),

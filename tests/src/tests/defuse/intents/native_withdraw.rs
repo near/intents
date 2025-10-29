@@ -1,7 +1,8 @@
+use crate::tests::defuse::DefuseSignerExt;
 use crate::utils::fixtures::{ed25519_pk, secp256k1_pk};
 use crate::{
     tests::defuse::{
-        DefusePayloadBuilder, env::Env, intents::ExecuteIntentsExt,
+         env::Env, intents::ExecuteIntentsExt,
         tokens::nep141::traits::DefuseFtReceiver,
     },
     utils::{mt::MtExt, wnear::WNearExt},
@@ -80,7 +81,7 @@ async fn native_withdraw_intent(ed25519_pk: PublicKey, secp256k1_pk: PublicKey) 
 
     // withdraw native NEAR to corresponding receivers
     let withdraw_payload = other_user
-        .create_defuse_payload(
+        .sign_defuse_payload_default(
             env.defuse.id(),
             amounts_to_withdraw
                 .iter()

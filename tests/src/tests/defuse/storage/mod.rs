@@ -1,5 +1,5 @@
 use crate::{
-    tests::defuse::{DefusePayloadBuilder, env::Env, intents::ExecuteIntentsExt},
+    tests::defuse::{ DefuseSignerExt, env::Env, intents::ExecuteIntentsExt},
     utils::{storage_management::StorageManagementExt, wnear::WNearExt},
 };
 use defuse::core::intents::tokens::StorageDeposit;
@@ -97,7 +97,7 @@ async fn storage_deposit_success(
     .unwrap();
 
     let storage_deposit_payload = other_user
-        .create_defuse_payload(
+        .sign_defuse_payload_default(
             env.defuse.id(),
             [StorageDeposit {
                 contract_id: ft.clone(),
@@ -184,7 +184,7 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents() {
         .unwrap();
 
     let signed_intents = [other_user
-        .create_defuse_payload(
+        .sign_defuse_payload_default(
             env.defuse.id(),
             [StorageDeposit {
                 contract_id: ft.clone(),

@@ -4,7 +4,7 @@ mod builder;
 mod state;
 mod storage;
 
-use super::{DefuseExt, DefuseNonceExt, accounts::AccountManagerExt};
+use super::{accounts::AccountManagerExt, DefuseExt, DefuseSignerExt};
 use crate::{
     tests::{
         defuse::{env::builder::EnvBuilder, tokens::nep141::traits::DefuseFtReceiver},
@@ -81,9 +81,9 @@ impl Env {
     pub async fn get_unique_nonce(
         &self,
         deadline: Option<Deadline>,
-    ) -> anyhow::Result<(Nonce, Deadline)> {
+    ) -> anyhow::Result<Nonce> {
         let root = self.sandbox.root_account();
-        root.get_unique_nonce(self.defuse.id(), deadline).await
+        root.unique_nonce(self.defuse.id(), deadline).await
     }
 
     pub async fn defuse_ft_deposit_to(

@@ -1,6 +1,6 @@
 use super::DEFUSE_WASM;
 
-use crate::tests::defuse::DefusePayloadBuilder;
+use crate::tests::defuse::{ DefuseSignerExt};
 use crate::tests::defuse::accounts::AccountManagerExt;
 use crate::utils::fixtures::{ed25519_pk, p256_pk, secp256k1_pk};
 use crate::{
@@ -124,7 +124,7 @@ async fn test_upgrade_with_persistence() {
                 futures::future::try_join_all(users.iter().combinations(2).map(|accounts| {
                     let sender = accounts[0];
                     let receiver = accounts[1];
-                    sender.create_defuse_payload(
+                    sender.sign_defuse_payload_default(
                         env.defuse.id(),
                         [Transfer {
                             receiver_id: receiver.id().clone(),
