@@ -24,9 +24,11 @@ near-contract-standards.workspace = true
 near-sdk.workspace = true
 
 chrono = { workspace = true, features = ["serde"] }
+derive_more = { workspace = true, features = ["from"] }
+hex.workspace = true
 impl-tools.workspace = true
+serde_with = { workspace = true, features = ["chrono_0_4", "hex"] }
 thiserror.workspace = true
-serde_with = { workspace = true, features = ["chrono_0_4"] }
 
 [dev-dependencies]
 defuse = { workspace = true, features = ["contract"] }

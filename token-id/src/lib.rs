@@ -14,6 +14,7 @@ use near_sdk::near;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 use strum::{EnumDiscriminants, EnumIter, EnumString};
 
+#[cfg(feature = "bounded")]
 const MAX_ALLOWED_TOKEN_ID_LEN: usize = 127;
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]

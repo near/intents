@@ -4,7 +4,7 @@ use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
     core::fees::FeesConfig,
 };
-use defuse_escrow::State;
+use defuse_escrow::{FixedParams, Params, Storage};
 use defuse_fees::Pips;
 use futures::join;
 use impl_tools::autoimpl;
@@ -21,7 +21,7 @@ use near_api::{
     },
 };
 use near_sdk::{
-    AccountId, Gas, NearToken, borsh, env,
+    AccountId, Gas, NearToken,
     serde_json::{self, json},
 };
 
@@ -176,17 +176,15 @@ impl Env {
         (account_id, signer)
     }
 
-    pub async fn create_escrow(&self, params: State) -> Contract {
-        let escrow_id = {
-            let serialized = borsh::to_vec(&params).unwrap();
-            println!("serialized: {} bytes", serialized.len());
-            self.subaccount(hex::encode(
-                &env::keccak256_array(&serialized)
-                    [32 - (AccountId::MAX_LEN - self.root_id().len() - 1).div_ceil(2)..32],
-            ))
-        };
+    pub async fn create_escrow(&self, fixed: &FixedParams, params: Params) -> Contract {
+        let init_args = json!({
+            "fixed": fixed,
+            "params": params,
+        });
 
-        Transaction::construct(self.sandbox.root_id().clone(), escrow_id.clone())
+        let account_id = Storage::new(fixed, params).derive_account_id(self.root_id());
+
+        Transaction::construct(self.sandbox.root_id().clone(), account_id.clone())
             .add_action(Action::CreateAccount(CreateAccountAction {}))
             .add_action(Action::UseGlobalContract(
                 UseGlobalContractAction {
@@ -199,10 +197,7 @@ impl Env {
             .add_action(Action::FunctionCall(
                 FunctionCallAction {
                     method_name: "new".to_string(),
-                    args: serde_json::to_vec(&json!({
-                        "params": params,
-                    }))
-                    .unwrap(),
+                    args: serde_json::to_vec(&init_args).unwrap(),
                     gas: Gas::from_tgas(10),
                     deposit: NearToken::from_yoctonear(0),
                 }
@@ -215,6 +210,6 @@ impl Env {
             .into_result()
             .unwrap();
 
-        Contract(escrow_id)
+        Contract(account_id)
     }
 }

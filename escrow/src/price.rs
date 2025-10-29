@@ -1,22 +1,30 @@
 use defuse_num_utils::CheckedMulDiv;
 use near_sdk::near;
+use serde_with::{DisplayFromStr, serde_as};
 
 /// Maker / Taker
+#[cfg_attr(
+    all(feature = "abi", not(target_arch = "wasm32")),
+    serde_as(schemars = true)
+)]
+#[cfg_attr(
+    not(all(feature = "abi", not(target_arch = "wasm32"))),
+    serde_as(schemars = false)
+)]
 #[near(serializers = [borsh, json])]
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Price(
-    // TODO: serde_as
-    u128,
-);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Price(#[serde_as(as = "DisplayFromStr")] u128);
 
 impl Price {
+    // TODO: check for most decimals? NEAR?
+    const DECIMALS: u32 = 9;
+
     pub const ZERO: Self = Self(0);
-    // TODO: check for most decimals?
-    pub const ONE: Self = Self(10u128.pow(9));
+    pub const ONE: Self = Self(10u128.pow(Self::DECIMALS));
 
     pub fn ratio(src_amount: u128, dst_amount: u128) -> Option<Self> {
-        dst_amount
-            .checked_mul_div(Self::ONE.0, src_amount)
+        src_amount
+            .checked_mul_div(Self::ONE.0, dst_amount)
             .map(Self)
     }
 
@@ -32,3 +40,5 @@ impl Price {
         self.0 as f64 / Self::ONE.0 as f64
     }
 }
+
+// TODO: ops

@@ -953,6 +953,7 @@ dependencies = [
  "defuse-nep245",
  "defuse-num-utils",
  "defuse-token-id",
+ "derive_more 2.0.1",
  "futures",
  "hex",
  "impl-tools",
@@ -2552,9 +2553,9 @@ dependencies = [
 
 [[package]]
 name = "near-api"
-version = "0.7.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c7dc862c18b01f170a24dd93d06a49a6d5f1e897ed6a0b6e34a964e93d64a6b"
+checksum = "f3b9c5957070e4d49e7f6702906d4563f16241d1ddf29a1081c869a4b143aae5"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -2580,9 +2581,9 @@ dependencies = [
 
 [[package]]
 name = "near-api-types"
-version = "0.7.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96092705a1376121f58c2ac2adaa6492410fd209cccd2c89660b3e43e1264a6b"
+checksum = "332a916f94ec80656c32f14379f2576d77c49ee36c2985166595edae5389e4e4"
 dependencies = [
  "base64 0.22.1",
  "borsh",
@@ -4271,7 +4272,7 @@ version = "0.8.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1c97747dbf44bb1ca44a561ece23508e99cb592e862f22222dcf42f51d1e451"
 dependencies = [
- "heck 0.5.0",
+ "heck 0.4.1",
  "proc-macro2",
  "quote",
  "syn 2.0.101",

@@ -3,11 +3,15 @@ mod env;
 use std::time::Duration;
 
 use chrono::Utc;
-use defuse_escrow::{Price, State};
+use defuse_escrow::{Action, FillAction, FixedParams, OpenAction, Params, Price, TransferMessage};
 use defuse_fees::Pips;
 use defuse_token_id::{TokenId, nep245::Nep245TokenId};
-use futures::join;
-use near_sdk::{AccountId, NearToken, json_types::U128, serde_json::json};
+use futures::{StreamExt, join, stream::FuturesOrdered};
+use near_sdk::{
+    AccountId, NearToken,
+    json_types::U128,
+    serde_json::{self, json},
+};
 
 use crate::env::Env;
 
@@ -116,8 +120,39 @@ async fn escrow() {
 
     let [src_asset, dst_asset] = [src_asset, dst_asset].map(|t| TokenId::Nep245(t));
 
-    let show_balances = || {
-        [
+    let [src_asset, dst_asset] = [src_asset.clone(), dst_asset.clone()]
+        .map(|token_id| Nep245TokenId::new(env.verifier.0.clone(), token_id.to_string()).unwrap());
+
+    let fixed_params = FixedParams {
+        maker: maker.0.clone(),
+        src_asset: src_asset.clone(),
+        dst_asset: dst_asset.clone(),
+        maker_dst_receiver_id: Some(maker.0.clone()),
+        partial_fills_allowed: true,
+        fees: [&fee_collector1.0, &fee_collector2.0, &fee_collector3.0]
+            .into_iter()
+            .cloned()
+            .enumerate()
+            .map(|(percent, a)| (a, Pips::from_percent(percent as u32 + 1).unwrap()))
+            .collect(),
+        taker_whitelist: [taker1.0.clone(), taker2.0.clone(), taker3.0.clone()].into(),
+        maker_authority: Some(cancel_authorify.0.clone()),
+    };
+
+    let escrow = env
+        .create_escrow(
+            &fixed_params,
+            Params {
+                price: Price::ratio(MAKER_AMOUNT, TAKER_AMOUNT).unwrap(),
+                deadline: Utc::now() + Duration::from_secs(120),
+            },
+        )
+        .await;
+    println!("escrow id: {}", escrow.0);
+
+    let show_balances = || async {
+        let mut balances = [
+            &escrow.0,
             &maker.0,
             &taker1.0,
             &taker2.0,
@@ -131,15 +166,15 @@ async fn escrow() {
         ]
         .into_iter()
         .map(|account_id| {
-            let (src_asset, dst_asset) = (&src_asset, &dst_asset);
-            async {
+            let (src_asset, dst_asset, env) = (&src_asset, &dst_asset, &env);
+            async move {
                 let balances: Vec<U128> = env
                     .verifier
                     .call_function(
                         "mt_batch_balance_of",
                         json!({
                             "account_id": account_id,
-                            "token_ids": [src_asset, dst_asset],
+                            "token_ids": [src_asset.mt_token_id(), dst_asset.mt_token_id()],
                         }),
                     )
                     .unwrap()
@@ -148,56 +183,49 @@ async fn escrow() {
                     .await
                     .unwrap()
                     .data;
+                (
+                    account_id,
+                    <[U128; 2]>::try_from(balances).unwrap().map(|a| a.0),
+                )
             }
-        });
+        })
+        .collect::<FuturesOrdered<_>>();
+
+        println!("balances:");
+        while let Some((account_id, [src_balance, dst_balance])) = balances.next().await {
+            println!("{account_id}\tsrc: {src_balance}\tdst: {dst_balance}");
+        }
     };
 
-    let [src_asset, dst_asset] = [src_asset, dst_asset]
-        .map(|token_id| Nep245TokenId::new(env.verifier.0.clone(), token_id.to_string()).unwrap());
+    let view = || async {
+        let view = escrow
+            .call_function("view", ())
+            .unwrap()
+            .read_only::<serde_json::Value>()
+            .fetch_from(env.network_config())
+            .await
+            .unwrap()
+            .data;
+        println!("view: {}", view);
+    };
 
-    let escrow = env
-        .create_escrow(State {
-            maker: maker.0.clone(),
-            src_asset: src_asset.clone(),
-            dst_asset: dst_asset.clone(),
-            price: Price::ratio(MAKER_AMOUNT, TAKER_AMOUNT).unwrap(),
-            src_remaining: 0,
-            deadline: Utc::now() + Duration::from_secs(120),
-            taker_whitelist: [
-                taker1.0.clone(),
-                // taker2.0.clone(),
-                // taker3.0.clone(),
-            ]
-            .into(),
-            partial_fills_allowed: true,
-            fees: [
-                // &fee_collector1.0,
-                // &fee_collector2.0,
-                // &fee_collector3.0,
-            ]
-            .into_iter()
-            .cloned()
-            .enumerate()
-            .map(|(percent, a)| (a, Pips::from_percent(percent as u32 + 1).unwrap()))
-            .collect(),
-            maker_dst_receiver_id: Some(maker.0.clone()),
-            closed: false,
-            cancel_authority: Some(cancel_authorify.0.clone()),
-        })
-        .await;
-
-    println!("escrow: {}", escrow.0);
+    view().await;
+    show_balances().await;
 
     // maker deposit
     {
-        env.verifier
+        let deposited = env
+            .verifier
             .call_function(
                 "mt_transfer_call",
                 json!({
                     "receiver_id": escrow.0.clone(),
                     "token_id": src_asset.mt_token_id(),
                     "amount": U128(MAKER_AMOUNT),
-                    "msg": "",
+                    "msg": serde_json::to_string(&TransferMessage {
+                        fixed_params: fixed_params.clone(),
+                        action: Action::Open(OpenAction { new_price: None }),
+                    }).unwrap(),
                 }),
             )
             .unwrap()
@@ -208,42 +236,53 @@ async fn escrow() {
             .await
             .unwrap()
             .into_result()
-            .unwrap();
+            .unwrap()
+            .json::<Vec<U128>>()
+            .unwrap()[0]
+            .0;
+
+        println!("maker deposited: {deposited}");
+        show_balances().await;
+
+        assert_eq!(deposited, MAKER_AMOUNT);
     }
 
+    view().await;
+
+    // taker deposit
     {
-        // taker deposit
-        {
-            env.verifier
-                .call_function(
-                    "mt_transfer_call",
-                    json!({
-                        "receiver_id": escrow.0.clone(),
-                        "token_id": dst_asset.mt_token_id(),
-                        "amount": U128(TAKER_AMOUNT),
-                        "msg": "",
-                    }),
-                )
-                .unwrap()
-                .transaction()
-                .deposit(NearToken::from_yoctonear(1))
-                .with_signer(taker1.0.clone(), taker1.1.clone())
-                .send_to(env.network_config())
-                .await
-                .unwrap()
-                .into_result()
-                .unwrap();
-        }
+        let deposited = env
+            .verifier
+            .call_function(
+                "mt_transfer_call",
+                json!({
+                    "receiver_id": escrow.0.clone(),
+                    "token_id": dst_asset.mt_token_id(),
+                    "amount": U128(TAKER_AMOUNT),
+                    "msg": serde_json::to_string(&TransferMessage {
+                        fixed_params,
+                        action: Action::Fill(FillAction { receiver_id: None }),
+                    }).unwrap(),
+                }),
+            )
+            .unwrap()
+            .transaction()
+            .deposit(NearToken::from_yoctonear(1))
+            .with_signer(taker1.0.clone(), taker1.1.clone())
+            .send_to(env.network_config())
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap()
+            .json::<Vec<U128>>()
+            .unwrap()[0]
+            .0;
+
+        println!("taker deposited: {deposited}");
+        show_balances().await;
+
+        assert_eq!(deposited, TAKER_AMOUNT);
     }
 
-    let params: State = escrow
-        .call_function("params", ())
-        .unwrap()
-        .read_only()
-        .fetch_from(env.network_config())
-        .await
-        .unwrap()
-        .data;
-
-    println!("params: {:?}", params);
+    view().await;
 }

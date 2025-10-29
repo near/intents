@@ -27,6 +27,7 @@ arbitrary_with = { workspace = true, optional = true }
 [features]
 abi = []
 arbitrary = ["dep:arbitrary", "dep:arbitrary_with", "dep:defuse-near-utils"]
+bounded = []
 
 [dev-dependencies]
 defuse-near-utils.workspace = true
