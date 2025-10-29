@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::{Nonce, crypto::PublicKey, token_id::nep141::Nep141TokenId};
+use defuse_test_utils::random::Seed;
 use itertools::Itertools;
 use near_sdk::{
     AccountId,
@@ -9,9 +10,7 @@ use near_sdk::{
 };
 use near_workspaces::Account;
 
-use crate::{
-    tests::defuse::env::generate_deterministic_legacy_user_account_id, utils::ParentAccount,
-};
+use crate::{tests::defuse::env::generate_legacy_user_account_id, utils::ParentAccount};
 
 const MAX_PUBLIC_KEYS: usize = 10;
 const MAX_ACCOUNTS: usize = 5;
@@ -40,7 +39,7 @@ pub struct PersistentState {
 }
 
 impl PersistentState {
-    pub fn generate(root: &Account, factory: &Account) -> Self {
+    pub fn generate(root: &Account, factory: &Account, seed: Seed) -> Self {
         let tokens = (0..MAX_TOKENS)
             .map(|token_id| {
                 Nep141TokenId::new(factory.subaccount_id(&format!("test-token-{token_id}")))
@@ -48,7 +47,7 @@ impl PersistentState {
             .collect::<Vec<_>>();
 
         Self {
-            accounts: Self::generate_accounts(root, tokens.as_slice()),
+            accounts: Self::generate_accounts(root, tokens.as_slice(), seed),
         }
     }
 
@@ -64,10 +63,12 @@ impl PersistentState {
     fn generate_accounts(
         prefix: &Account,
         tokens: &[Nep141TokenId],
+        seed: Seed,
     ) -> HashMap<AccountId, AccountWithTokens> {
         (0..MAX_ACCOUNTS)
             .map(|idx| {
-                let subaccount = generate_deterministic_legacy_user_account_id(prefix, idx);
+                let subaccount = generate_legacy_user_account_id(prefix, idx, seed)
+                    .expect("Failed to generate account ID");
 
                 let public_keys = (0..MAX_PUBLIC_KEYS)
                     .map(|pk_index| {

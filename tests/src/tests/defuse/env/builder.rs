@@ -13,6 +13,7 @@ use defuse::{
     core::fees::{FeesConfig, Pips},
 };
 use defuse_poa_factory::contract::Role as POAFactoryRole;
+use defuse_test_utils::random::Seed;
 use near_sdk::{AccountId, NearToken};
 use near_workspaces::{Account, Contract};
 
@@ -134,6 +135,7 @@ impl EnvBuilder {
             sandbox,
             disable_ft_storage_deposit: self.disable_ft_storage_deposit,
             disable_registration: self.disable_registration,
+            seed: Seed::from_entropy(),
             next_user_index: AtomicUsize::new(0),
         };
 

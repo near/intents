@@ -20,8 +20,9 @@ use defuse::{
 };
 use defuse_near_utils::arbitrary::ArbitraryNamedAccountId;
 use defuse_randomness::{Rng, make_true_rng};
+use defuse_test_utils::random::{Seed, rng};
 use futures::future::try_join_all;
-use near_sdk::{AccountId, NearToken};
+use near_sdk::{AccountId, NearToken, env::sha256};
 use near_workspaces::{
     Account, Contract, Network, Worker,
     operations::Function,
@@ -54,6 +55,7 @@ pub struct Env {
     // Persistent state generated in case of migration tests
     // used to fetch existing accounts
     pub next_user_index: AtomicUsize,
+    pub seed: Seed,
 }
 
 impl Env {
@@ -133,11 +135,7 @@ impl Env {
     }
 
     pub async fn create_token(&self) -> AccountId {
-        let mut rng = make_true_rng();
-        let bytes = rng.random::<[u8; 64]>();
-        let u = &mut Unstructured::new(&bytes);
-
-        let account_id = generate_random_account_id(self.poa_factory.id(), u)
+        let account_id = generate_random_account_id(self.poa_factory.id(), Some("token-"))
             .expect("Failed to generate random account ID");
 
         self.create_named_token(self.poa_factory.subaccount_name(&account_id).as_str())
@@ -187,12 +185,10 @@ impl Env {
         // NOTE: every second account is legacy
         if rand.random() {
             let index = self.next_user_index.fetch_add(1, Ordering::SeqCst);
-            Ok(generate_deterministic_legacy_user_account_id(root, index))
+            Ok(generate_legacy_user_account_id(root, index, self.seed)
+                .expect("Failed to generate account ID"))
         } else {
-            generate_random_account_id(
-                root.id(),
-                &mut Unstructured::new(&rand.random::<[u8; 64]>()),
-            )
+            generate_random_account_id(root.id(), None)
         }
     }
 
@@ -352,11 +348,30 @@ pub fn create_random_salted_nonce(salt: Salt, deadline: Deadline, mut rng: impl 
     .into()
 }
 
-fn generate_random_account_id(parent_id: &AccountId, u: &mut Unstructured) -> Result<AccountId> {
-    ArbitraryNamedAccountId::arbitrary_subaccount(u, Some(parent_id))
-        .map_err(|e| anyhow::anyhow!("Failed to generate account ID : {}", e))
+fn generate_random_account_id(parent_id: &AccountId, prefix: Option<&str>) -> Result<AccountId> {
+    let mut rng = make_true_rng();
+    ArbitraryNamedAccountId::arbitrary_subaccount(
+        &mut Unstructured::new(&rng.random::<[u8; 64]>()),
+        prefix,
+        Some(parent_id),
+    )
+    .map_err(|e| anyhow::anyhow!("Failed to generate account ID : {}", e))
 }
 
-fn generate_deterministic_legacy_user_account_id(parent_id: &Account, index: usize) -> AccountId {
-    parent_id.subaccount_id(&format!("user-with-legacy-nonces-{index}"))
+fn generate_legacy_user_account_id(
+    parent_id: &Account,
+    index: usize,
+    seed: Seed,
+) -> Result<AccountId> {
+    let bytes = sha256(&(seed.as_u64() + u64::try_from(index)?).to_be_bytes())[..8]
+        .try_into()
+        .map_err(|_| anyhow::anyhow!("Failed to create new account seed"))?;
+    let seed = Seed::from_u64(u64::from_be_bytes(bytes));
+    let mut rng = rng(seed);
+    ArbitraryNamedAccountId::arbitrary_subaccount(
+        &mut Unstructured::new(&rng.random::<[u8; 64]>()),
+        Some(&format!("legacy-user{index}-")),
+        Some(parent_id.id()),
+    )
+    .map_err(|e| anyhow::anyhow!("Failed to generate account ID : {}", e))
 }
