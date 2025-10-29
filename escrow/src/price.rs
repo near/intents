@@ -4,7 +4,10 @@ use near_sdk::near;
 /// Maker / Taker
 #[near(serializers = [borsh, json])]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Price(u128);
+pub struct Price(
+    // TODO: serde_as
+    u128,
+);
 
 impl Price {
     pub const ZERO: Self = Self(0);

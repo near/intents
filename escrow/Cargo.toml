@@ -2,6 +2,8 @@
 name = "defuse-escrow"
 edition.workspace = true
 version = "0.1.0"
+rust-version.workspace = true
+repository.workspace = true
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -13,7 +15,7 @@ workspace = true
 defuse-borsh-utils = { workspace = true, features = ["chrono"] }
 defuse-fees.workspace = true
 defuse-map-utils.workspace = true
-defuse-near-utils.workspace = true
+defuse-near-utils = { workspace = true, features = ["time"] }
 defuse-nep245.workspace = true
 defuse-num-utils.workspace = true
 defuse-token-id.workspace = true
@@ -25,6 +27,19 @@ chrono = { workspace = true, features = ["serde"] }
 impl-tools.workspace = true
 thiserror.workspace = true
 serde_with = { workspace = true, features = ["chrono_0_4"] }
+
+[dev-dependencies]
+defuse = { workspace = true, features = ["contract"] }
+
+near-api.workspace = true
+near-sandbox.workspace = true
+near-sdk = { workspace = true, features = ["unit-testing"] }
+
+anyhow.workspace = true
+futures.workspace = true
+hex.workspace = true
+impl-tools.workspace = true
+tokio = { workspace = true, features = ["macros"] }
 
 [features]
 abi = ["serde_with/schemars_0_8"]

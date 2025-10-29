@@ -9,20 +9,30 @@ use defuse_borsh_utils::adapters::{
     As as BorshAs, TimestampNanoSeconds as BorshTimestampNanoSeconds,
 };
 use defuse_fees::Pips;
-use defuse_map_utils::cleanup::DefaultMap;
+
 use defuse_near_utils::{UnwrapOrPanic, time::now};
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
+use defuse_num_utils::CheckedAdd;
 
 use defuse_token_id::nep245::Nep245TokenId as TokenId;
 use impl_tools::autoimpl;
 use near_sdk::{
-    AccountId, FunctionError, NearToken, PanicOnDefault, Promise, PromiseOrValue, PromiseResult,
-    assert_one_yocto, env, json_types::U128, near, require, serde_json,
+    AccountId, FunctionError, Gas, NearToken, PanicOnDefault, Promise, PromiseOrValue,
+    assert_one_yocto, env, ext_contract, json_types::U128, near, require, serde_json,
 };
-use serde_with::{TimestampNanoSeconds as SerdeTimestampNanoSeconds, serde_as};
+use serde_with::{DisplayFromStr, TimestampNanoSeconds as SerdeTimestampNanoSeconds, serde_as};
 use thiserror::Error as ThisError;
 
+const MT_TRANSFER_GAS: Gas = Gas::from_tgas(15);
+
+#[ext_contract(escrow)]
+pub trait Escrow: MultiTokenReceiver {
+    fn close(&mut self) -> Promise;
+}
+
 // mod old;
+
+// TODO: lost&found?
 
 // TODO: emit logs
 
@@ -33,11 +43,26 @@ use thiserror::Error as ThisError;
 
 // TODO: custom_resolve()
 
+// ratio is not a good approach, since adding more maker_tokens
+// would keep the ratio same, rather than decreasing it
+// BUT: maker doesn't want to blindly add assets, he wants to increase to a specific ratio
+// so, he should send maker_asset and forward target_price, the rest will be refunded to him,
+// since there could have been in-flight taker assets coming to the escrow
+// TODO: remaining_amount?
+// pub taker_amount: u128,
+
+// TODO: versioned account state?
+
+// TODO: too large state (> ZBA limits)
+// solution?: keep hashes of immutable data?
+// or maybe even compare with current_account_id?
+
+// TODO: keep number of pending promises
 #[near(contract_state)]
 #[autoimpl(Deref using self.0)]
 #[autoimpl(DerefMut using self.0)]
 #[derive(Debug, PanicOnDefault)]
-pub struct Contract(Params);
+pub struct Contract(State);
 
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
@@ -49,50 +74,79 @@ pub struct Contract(Params);
 )]
 #[near(serializers = [borsh, json])]
 #[derive(Debug)]
-pub struct Params {
-    pub maker: AccountId,
-    pub src_asset: TokenId,
-    // TODO: remaining_amount?
-    pub src_remaining: u128,
+pub struct State {
+    #[serde_as(as = "Hex")]
+    pub persistent_state_hash: [u8; 32],
 
-    // TODO: check != maker_asset
-    pub dst_asset: TokenId,
     /// maker / taker (in 10^-9)
+    /// TODO: check non-zero
     pub price: Price,
 
-    // ratio is not a good approach, since adding more maker_tokens
-    // would keep the ratio same, rather than decreasing it
-    // BUT: maker doesn't want to blindly add assets, he wants to increase to a specific ratio
-    // so, he should send maker_asset and forward target_price, the rest will be refunded to him,
-    // since there could have been in-flight taker assets coming to the escrow
-    // TODO: remaining_amount?
-    // pub taker_amount: u128,
-    pub maker_dst_receiver_id: AccountId,
+    #[serde_as(as = "DisplayFromStr")]
+    pub src_remaining: u128,
 
-    pub partial_fills_allowed: bool,
-
-    // TODO: store only merkle root? leaves have salts
-    // pub taker_whitelist: BTreeSet<AccountId>,
-
-    // TODO
+    // TODO: check that not expired at create?
     #[borsh(
         serialize_with = "BorshAs::<BorshTimestampNanoSeconds>::serialize",
-        deserialize_with = "BorshAs::<BorshTimestampNanoSeconds>::deserialize"
+        deserialize_with = "BorshAs::<BorshTimestampNanoSeconds>::deserialize",
+        schema(with_funcs(
+            declaration = "i64::declaration",
+            definitions = "i64::add_definitions_recursively",
+        ))
     )]
     #[serde_as(as = "SerdeTimestampNanoSeconds")]
     pub deadline: DateTime<Utc>,
-    pub cancel_authority: Option<AccountId>,
 
-    pub lost_found: BTreeMap<AccountId, BTreeMap<TokenId, u128>>,
-
+    // TODO: store only merkle root? leaves have salts
+    #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
+    pub taker_whitelist: BTreeSet<AccountId>,
+    // TODO: whitelist: Option<signer_id>
+    #[serde(default, skip_serializing_if = "::core::ops::Not::not")]
     pub closed: bool,
-    pub fees: BTreeMap<AccountId, Pips>,
-    // TODO: keep number of pending promises
+    // TODO: lost_found: store zero for beging transfer, otherwise - fail
+
+    // TODO: recovery() method with 0 src_remaining
 }
 
-// escrow     <- one-of-solvers <- solver
-//            --------------------> solver
-//   (refund) -> one-of-solvers -> solver
+#[cfg_attr(
+    all(feature = "abi", not(target_arch = "wasm32")),
+    serde_as(schemars = true)
+)]
+#[cfg_attr(
+    not(all(feature = "abi", not(target_arch = "wasm32"))),
+    serde_as(schemars = false)
+)]
+#[near(serializers = [borsh, json])]
+#[derive(Debug)]
+pub struct PersistentState {
+    pub maker: AccountId,
+
+    // TODO: nep245: token_id length is less than max on intents.near
+    // TODO: check != src_asset
+    #[serde_as(as = "DisplayFromStr")]
+    pub src_asset: TokenId,
+    #[serde_as(as = "DisplayFromStr")]
+    pub dst_asset: TokenId,
+
+    // TODO: maker msg
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub maker_dst_receiver_id: Option<AccountId>,
+
+    #[serde(default)]
+    pub partial_fills_allowed: bool,
+
+    // TODO: check that fees are non-zero
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub fees: BTreeMap<AccountId, Pips>,
+
+    // allows:
+    //   * price update (solver message: min_price)
+    //   * deadline update (short)
+    //   * cancel before deadline (longer, shorter)
+    // TODO: allow .on_auth()
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub maker_authority: Option<AccountId>,
+}
 
 #[near(serializers = [json])]
 #[derive(Debug, Default)]
@@ -101,7 +155,7 @@ pub struct MakerMessage {
     // TODO: exact_out support?
 }
 
-// #[near]
+#[near]
 impl MultiTokenReceiver for Contract {
     fn mt_on_transfer(
         &mut self,
@@ -128,6 +182,37 @@ impl MultiTokenReceiver for Contract {
     }
 }
 
+#[near]
+impl Escrow for Contract {
+    // TODO: cancel_by_resolver?
+
+    #[payable]
+    fn close(&mut self) -> Promise {
+        if now() <= self.deadline {
+            // TODO: what if swapped everything already?
+            // what if more assets are about to arrive?
+            require!(
+                self.cancel_authority == Some(env::predecessor_account_id()),
+                "unauthorized"
+            );
+            assert_one_yocto();
+        }
+
+        require!(!self.closed, "already closed");
+        self.closed = true;
+
+        // TODO: ensure src_remaining > 0
+
+        Self::send(
+            self.src_asset.clone(),
+            // TODO: refund_to?
+            self.maker.clone(),
+            self.src_remaining,
+        )
+        .and(Promise::new(env::current_account_id()).delete_account(self.maker.clone()))
+    }
+}
+
 impl Contract {
     /// Returns refund amount
     fn on_receive(
@@ -149,8 +234,7 @@ impl Contract {
                 if msg.is_empty() {
                     Default::default()
                 } else {
-                    serde_json::from_str(&msg)
-                        .unwrap_or_else(|err| env::panic_str(&format!("JSON: {err}")))
+                    serde_json::from_str(&msg)?
                 },
             );
         }
@@ -165,8 +249,7 @@ impl Contract {
             if msg.is_empty() {
                 Default::default()
             } else {
-                serde_json::from_str(&msg)
-                    .unwrap_or_else(|err| env::panic_str(&format!("JSON: {err}")))
+                serde_json::from_str(&msg)?
             },
         )
     }
@@ -203,51 +286,61 @@ impl Contract {
     fn on_dst_receive(
         &mut self,
         sender_id: AccountId,
-        amount: u128,
+        dst_amount: u128,
         msg: TakerMessage,
     ) -> Result<u128> {
         // TODO: taker whitelist
 
-        let (taker_src_amount, maker_dst_amount) = {
+        let (taker_src_amount, mut maker_dst_amount) = {
             let want_src_amount = self
                 .price
-                .src_amount(amount)
+                .src_amount(dst_amount)
                 .ok_or(Error::IntegerOverflow)?;
-
             // TODO: fees
             if want_src_amount < self.src_remaining {
                 if !self.partial_fills_allowed {
                     return Err(Error::PartialFillsNotAllowed);
                 }
-                (want_src_amount, amount)
+                (want_src_amount, dst_amount)
             } else {
                 (
                     self.src_remaining,
                     self.price
+                        // TODO: rounding inside?
                         .dst_amount(self.src_remaining)
                         .ok_or(Error::IntegerOverflow)?,
                 )
             }
         };
-        self.src_remaining -= taker_src_amount;
-        
-        let refund = amount - maker_dst_amount;
 
-        // TODO: settle now? YES
-        // TODO: detached send?
+        // TODO: check taker_src_amount != 0 && maker_dst_amount != 0
+        self.src_remaining -= taker_src_amount;
+        let refund = dst_amount - maker_dst_amount;
+
+        // send to taker
         let _ = Self::send(
-            self.dst_asset.clone(),
-            self.maker_dst_receiver_id.clone(),
-            // TODO: add previously failed lost_found amounts?
-            maker_dst_amount,
-        )
-        .and(Self::send(
             self.src_asset.clone(),
             msg.receiver_id.unwrap_or(sender_id),
             taker_src_amount,
-        ))
-        // TODO: optimize and handle lost&found in a single callback
-        .then(Self::ext(env::current_account_id()).maybe_cleanup());
+        );
+
+        // send fees
+        for (fee_collector, fee) in &self.fees {
+            let fee_amount = fee.fee_ceil(maker_dst_amount);
+            maker_dst_amount = maker_dst_amount
+                .checked_sub(fee_amount)
+                .ok_or(Error::IntegerOverflow)?;
+            let _ = Self::send(self.dst_asset.clone(), fee_collector.clone(), fee_amount);
+        }
+
+        let _ = Self::send(
+            self.dst_asset.clone(),
+            self.maker_dst_receiver_id
+                .as_ref()
+                .unwrap_or(&self.maker)
+                .clone(),
+            maker_dst_amount,
+        );
 
         Ok(refund)
     }
@@ -256,93 +349,31 @@ impl Contract {
         // TODO: msg for *_transfer_call()?
         let (contract_id, token_id) = asset.clone().into_contract_id_and_mt_token_id();
         ext_mt_core::ext(contract_id)
+            // TODO: are we sure we have that???
             .with_attached_deposit(NearToken::from_yoctonear(1))
-            // TODO: static gas?
-            .mt_transfer(receiver_id.clone(), token_id, U128(amount), None, None)
-            .then(
-                // TODO: maybe resolve multiple `*_transfer`s at once (i.e. joint promise)
-                Self::ext(env::current_account_id())
-                    // TODO: static gas?
-                    .resolve_transfer(asset, receiver_id, U128(amount)),
-            )
+            .with_static_gas(MT_TRANSFER_GAS)
+            .mt_transfer(receiver_id, token_id, U128(amount), None, None)
     }
 }
 
 #[near]
 impl Contract {
-    #[private]
-    pub fn resolve_transfer(
-        &mut self,
-        asset: TokenId,
-        receiver_id: AccountId,
-        amount: U128,
-    ) -> U128 {
-        let ok = matches!(env::promise_result(0), PromiseResult::Successful(v) if v.is_empty());
-
-        let used = ok.then_some(amount.0).unwrap_or(0);
-        let refund = amount.0.saturating_sub(used);
-        if refund != 0 {
-            let mut receiver = self.lost_found.entry_or_default(receiver_id);
-            let mut lost = receiver.entry_or_default(asset);
-            *lost = lost
-                .checked_add(refund)
-                // TODO: is it? no, there can be a malcious token
-                .unwrap_or_else(|| unreachable!());
-        } else {
-            // TODO: maybe cleanup?
-        }
-        U128(used)
+    #[init]
+    pub fn new(params: State) -> Self {
+        Self(params)
     }
 
-    // permissionless
-    // TODO: #[payable] and accept storage_deposits? TODO: set_refund_to()
-    // TODO: settle same token in single receipt
-    // TODO: return value?
-    pub fn lost_found(&mut self, retry: BTreeMap<AccountId, BTreeSet<TokenId>>) {
-        // TODO: add support for all-at-once and all-assets-of-receiver-at-once
-        for (receiver_id, assets) in retry {
-            let mut lost_amounts = self.lost_found.entry_or_default(receiver_id);
-            for asset in assets {
-                if let Some(lost_amount) = (*lost_amounts).remove(&asset) {
-                    // TODO: detach? are we sure
-                    let _ = Self::send(asset, lost_amounts.key().clone(), lost_amount);
-                }
-            }
-        }
-
-        // TODO: maybe cleanup?
+    pub fn params(&self) -> &State {
+        &self.0
     }
 
-    #[payable]
-    pub fn cancel(&mut self) {
-        assert_one_yocto();
-        require!(
-            self.cancel_authority == Some(env::predecessor_account_id()),
-            "unauthorized"
-        );
-
-        // TODO: send the rest & delete myself
-
-        // TODO: emit logs
-
-        self.closed = true;
-    }
-    // TODO: cancel_by_resolver?
-
-    pub fn maybe_cleanup(&mut self) {
-        if !self.lost_found.is_empty() {
-            return;
-        }
-
-        // check pending callbacks counter
-        // if self.pending_callbacks != 0 {
-        //   return;
-        // }
-
-        self.closed = true;
-        let _ = Promise::new(env::current_account_id())
-            // TODO: are we sure we don't hold any NEAR for storage_deposits, etc..?
-            .delete_account(self.maker_dst_receiver_id.clone());
+    pub fn total_fee(&self) -> Pips {
+        self.fees
+            .values()
+            .copied()
+            .try_fold(Pips::ZERO, |total, fee| total.checked_add(fee))
+            .ok_or(Error::IntegerOverflow)
+            .unwrap_or_panic()
     }
 
     // TODO
@@ -371,6 +402,8 @@ pub enum Error {
     PartialFillsNotAllowed,
     #[error("closed")]
     Closed,
+    #[error("JSON: {0}")]
+    JSON(#[from] serde_json::Error),
 }
 
 pub type Result<T, E = Error> = ::core::result::Result<T, E>;

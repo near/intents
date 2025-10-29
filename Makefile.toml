@@ -60,6 +60,23 @@ args = [
     "--no-embed-abi",
 ]
 
+# [tasks.build-escrow-factory]
+# dependencies = ["build-escrow"]
+# command = "cargo"
+# args = [
+#     "near",
+#     "build",
+#     "non-reproducible-wasm",
+#     "--locked",
+#     "--manifest-path",
+#     "./escrow/factory/Cargo.toml",
+#     "--features",
+#     "abi,contract",
+#     "--out-dir",
+#     "${TARGET_DIR}",
+#     "--no-embed-abi",
+# ]
+
 [tasks.build-poa-factory]
 dependencies = ["add-cache-dir-tag", "build-poa-token"]
 command = "cargo"
