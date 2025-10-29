@@ -93,6 +93,7 @@ impl PersistentState {
                 #[allow(clippy::as_conversions)]
                 let account_tokens = tokens
                     .iter()
+                    .take(idx + 1)
                     .map(|token| (token.clone(), MIN_BALANCE_AMOUNT + (idx as u128 * 1000u128)))
                     .collect();
                 (
