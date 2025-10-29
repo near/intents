@@ -185,9 +185,8 @@ impl Env {
         let root = self.sandbox.root_account();
 
         // NOTE: every second account is legacy
-        let id = self.next_user_index.fetch_add(1, Ordering::SeqCst);
-        if id % 2 == 0 {
-            let index = id / 2;
+        if rand.random() {
+            let index = self.next_user_index.fetch_add(1, Ordering::SeqCst);
             Ok(generate_deterministic_legacy_user_account_id(root, index))
         } else {
             generate_random_account_id(

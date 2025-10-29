@@ -808,17 +808,20 @@ async fn simulate_auth_call_intent() {
 
     let wnear_amount = NearToken::from_millinear(100);
 
-    futures::try_join!(
-        user1.near_deposit(env.wnear.id(), wnear_amount),
-        user1.ft_transfer_call(
+    user1
+        .near_deposit(env.wnear.id(), wnear_amount)
+        .await
+        .unwrap();
+    user1
+        .ft_transfer_call(
             env.wnear.id(),
             env.defuse.id(),
             wnear_amount.as_yoctonear(),
             None,
             user1.id().as_ref(),
         )
-    )
-    .unwrap();
+        .await
+        .unwrap();
 
     // Verify wNEAR balance
     assert_eq!(
