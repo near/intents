@@ -81,11 +81,11 @@ mod tests {
     const REFERENCE_SIGNATURE: [u8; 65] = hex!(
         "7800a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e471c"
     );
-    const NOK_REFERENCE_SIGNATURE: [u8; 65] = hex!(
+    const INVALID_REFERENCE_SIGNATURE: [u8; 65] = hex!(
         "7900a70d05cde2c49ed546a6ce887ce6027c2c268c0285f6efef0cdfc4366b23643790f67a86468ee8301ed12cfffcb07c6530f90a9327ec057800fabd332e471c"
     );
     const REFERENCE_MESSAGE: &str = "Hello world!";
-    const NOK_REFERENCE_MESSAGE: &str = "Hello, NEAR!";
+    const INVALID_REFERENCE_MESSAGE: &str = "Hello, NEAR!";
 
     // Public key can be derived using `ethers_signers` crate:
     // let wallet = LocalWallet::from_str(
@@ -116,7 +116,7 @@ mod tests {
     fn test_invalid_reference_message_verification_fails() {
         assert_ne!(
             SignedErc191Payload {
-                payload: Erc191Payload(NOK_REFERENCE_MESSAGE.to_string()),
+                payload: Erc191Payload(INVALID_REFERENCE_MESSAGE.to_string()),
                 signature: fix_v_in_signature(REFERENCE_SIGNATURE),
             }
             .verify(),
@@ -129,7 +129,7 @@ mod tests {
         assert_ne!(
             SignedErc191Payload {
                 payload: Erc191Payload(REFERENCE_MESSAGE.to_string()),
-                signature: fix_v_in_signature(NOK_REFERENCE_SIGNATURE),
+                signature: fix_v_in_signature(INVALID_REFERENCE_SIGNATURE),
             }
             .verify(),
             Some(REFERENCE_PUBKEY)

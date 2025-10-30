@@ -89,11 +89,11 @@ mod tests {
     // println!("Public key: 0x{}", hex::encode(public_key.as_bytes()[1..]));
 
     const REFERENCE_MESSAGE: &str = "Hello, TRON!";
-    const NOK_REFERENCE_MESSAGE: &str = "this is not TRON reference input message";
+    const INVALID_REFERENCE_MESSAGE: &str = "this is not TRON reference input message";
     const REFERENCE_SIGNATURE: [u8; 65] = hex!(
         "eea1651a60600ec4d9c45e8ae81da1a78377f789f0ac2019de66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c1c"
     );
-    const NOK_REFERENCE_SIGNATURE: [u8; 65] = hex!(
+    const INVALID_REFERENCE_SIGNATURE: [u8; 65] = hex!(
         "0000000011111111000000001110111110000000011111111e66ad943459913015ef9256809ee0e6bb76e303a0b4802e475c1d26ade5d585292b80c9fe9cb10c1c"
     );
     const REFERENCE_PUBKEY: [u8; 64] = hex!(
@@ -116,7 +116,7 @@ mod tests {
     fn test_invalid_reference_message_verification_fails() {
         assert_ne!(
             SignedTip191Payload {
-                payload: Tip191Payload(NOK_REFERENCE_MESSAGE.to_string()),
+                payload: Tip191Payload(INVALID_REFERENCE_MESSAGE.to_string()),
                 signature: fix_v_in_signature(REFERENCE_SIGNATURE),
             }
             .verify(),
@@ -129,7 +129,7 @@ mod tests {
         assert_ne!(
             SignedTip191Payload {
                 payload: Tip191Payload(REFERENCE_MESSAGE.to_string()),
-                signature: fix_v_in_signature(NOK_REFERENCE_SIGNATURE),
+                signature: fix_v_in_signature(INVALID_REFERENCE_SIGNATURE),
             }
             .verify(),
             Some(REFERENCE_PUBKEY)
