@@ -15,10 +15,13 @@ serde_with = { workspace = true, optional = true }
 strum.workspace = true
 thiserror.workspace = true
 
+near-api-types = { workspace = true, optional = true }
+
 [features]
 abi = ["serde", "serde_with/schemars_0_8"]
 arbitrary = ["dep:arbitrary"]
 serde = ["dep:serde_with"]
+near-api-types = ["dep:near-api-types"]
 
 [lints]
 workspace = true

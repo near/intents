@@ -27,11 +27,13 @@ chrono = { workspace = true, features = ["serde"] }
 derive_more = { workspace = true, features = ["from"] }
 hex.workspace = true
 impl-tools.workspace = true
+itertools.workspace = true
 serde_with = { workspace = true, features = ["chrono_0_4", "hex"] }
 thiserror.workspace = true
 
 [dev-dependencies]
 defuse = { workspace = true, features = ["contract"] }
+defuse-crypto = { workspace = true, features = ["near-api-types"] }
 
 near-api.workspace = true
 near-sandbox.workspace = true

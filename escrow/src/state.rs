@@ -77,6 +77,9 @@ impl Storage {
 pub struct FixedParams {
     pub maker: AccountId,
 
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub refund_to: Option<AccountId>,
+
     // TODO: nep245: token_id length is less than max on intents.near
     // TODO: check != src_asset
     #[serde_as(as = "DisplayFromStr")]
@@ -105,8 +108,8 @@ pub struct FixedParams {
     //   * deadline update (short)
     //   * cancel before deadline (longer, shorter)
     // TODO: allow .on_auth()
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub maker_authority: Option<AccountId>,
+    // #[serde(default, skip_serializing_if = "Option::is_none")]
+    // pub maker_authority: Option<AccountId>,
     // TODO: salt?
     // TODO: refund_to
 }

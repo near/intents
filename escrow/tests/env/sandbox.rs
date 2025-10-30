@@ -1,14 +1,12 @@
-use std::sync::Arc;
-
+use impl_tools::autoimpl;
 use near_api::{NetworkConfig, RPCEndpoint, Signer};
 use near_sandbox::GenesisAccount;
-use near_sdk::AccountId;
 
+use crate::env::{Account, SigningAccount};
+
+#[autoimpl(Deref using self.root)]
 pub struct Sandbox {
-    network_config: NetworkConfig,
-
-    root_id: AccountId,
-    root_signer: Arc<Signer>,
+    root: SigningAccount,
 
     #[allow(dead_code)] // keep ownership
     sandbox: near_sandbox::Sandbox,
@@ -25,33 +23,15 @@ impl Sandbox {
         };
 
         let root = GenesisAccount::default();
-        let root_id: AccountId = root.account_id;
-        let root_signer: Arc<Signer> =
+        let signer =
             Signer::new(Signer::from_secret_key(root.private_key.parse().unwrap())).unwrap();
-
         Self {
-            network_config,
-            root_id,
-            root_signer,
+            root: SigningAccount::new(Account::new(root.account_id, network_config), signer),
             sandbox,
         }
     }
 
-    pub const fn root_id(&self) -> &AccountId {
-        &self.root_id
-    }
-
-    pub fn root_signer(&self) -> Arc<Signer> {
-        self.root_signer.clone()
-    }
-
-    pub fn network_config(&self) -> &NetworkConfig {
-        &self.network_config
-    }
-
-    pub fn subaccount(&self, name: impl AsRef<str>) -> AccountId {
-        format!("{}.{}", name.as_ref(), self.root_id())
-            .parse()
-            .unwrap()
+    pub fn root(&self) -> &SigningAccount {
+        &self.root
     }
 }

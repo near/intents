@@ -1,7 +1,7 @@
 use std::{borrow::Cow, collections::BTreeMap};
 
 use derive_more::From;
-use near_sdk::{AccountId, near};
+use near_sdk::{AccountId, AccountIdRef, near};
 use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{FixedParams, Params};
@@ -19,7 +19,7 @@ pub enum EscrowEvent<'a> {
     AddSrc(AddSrcEvent),
 
     #[event_version("0.1.0")]
-    Fill(FillEvent),
+    Fill(FillEvent<'a>),
 
     #[event_version("0.1.0")]
     Close,
@@ -67,8 +67,8 @@ pub struct AddSrcEvent {
 )]
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
-pub struct FillEvent {
-    pub taker: AccountId,
+pub struct FillEvent<'a> {
+    pub taker: Cow<'a, AccountIdRef>,
 
     #[serde_as(as = "DisplayFromStr")]
     pub src_amount: u128,
@@ -76,10 +76,10 @@ pub struct FillEvent {
     pub dst_amount: u128,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub taker_receiver_id: Option<AccountId>,
+    pub taker_receiver_id: Option<Cow<'a, AccountIdRef>>,
 
     #[serde_as(as = "BTreeMap<_, DisplayFromStr>")]
-    pub dst_fees_collected: BTreeMap<AccountId, u128>,
+    pub dst_fees_collected: BTreeMap<Cow<'a, AccountIdRef>, u128>,
     // TODO
 }
 

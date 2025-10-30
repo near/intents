@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, mem};
 
 use defuse_near_utils::{UnwrapOrPanic, time::now};
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
@@ -11,8 +11,8 @@ use near_sdk::{
 };
 
 use crate::{
-    Action, CreatedEvent, Error, Escrow, EscrowIntentEmit, FillAction, FixedParams, OpenAction,
-    Params, Result, Storage, TransferMessage,
+    Action, AddSrcEvent, CreatedEvent, Error, Escrow, EscrowIntentEmit, FillAction, FillEvent,
+    FixedParams, OpenAction, Params, Result, Storage, TransferMessage,
 };
 
 const MT_TRANSFER_GAS: Gas = Gas::from_tgas(15);
@@ -109,31 +109,51 @@ impl Escrow for Contract {
 
     // TODO: cancel_by_resolver?
     #[payable]
-    fn close(&mut self) -> Promise {
+    fn close(&mut self, fixed_params: FixedParams) -> PromiseOrValue<U128> {
         // TODO
-        todo!()
-        // if now() <= self.params.deadline {
-        //     // TODO: what if swapped everything already?
-        //     // what if more assets are about to arrive?
-        //     require!(
-        //         self.cancel_authority == Some(env::predecessor_account_id()),
-        //         "unauthorized"
-        //     );
-        //     assert_one_yocto();
-        // }
+        if now() <= self.params.deadline {
+            // TODO: allow to close permissionlessly if src_remaining == 0
 
-        // require!(!self.state.closed, "already closed");
-        // self.state.closed = true;
+            // TODO: what if swapped everything already?
+            // what if more assets are about to arrive?
+            // require!(
+            //     self.cancel_authority == Some(env::predecessor_account_id()),
+            //     "unauthorized"
+            // );
+            // assert_one_yocto();
+        }
 
-        // // TODO: ensure src_remaining > 0
+        // TODO: allow retries
+        require!(!self.state.closed, "already closed");
+        self.state.closed = true;
 
-        // Self::send(
-        //     self.src_asset.clone(),
-        //     // TODO: refund_to?
-        //     self.maker.clone(),
-        //     self.src_remaining,
-        // )
-        // .and(Promise::new(env::current_account_id()).delete_account(self.maker.clone()))
+        let refund_to = fixed_params.refund_to.unwrap_or(fixed_params.maker);
+
+        if self.state.src_remaining == 0 {
+            let _ = Promise::new(env::current_account_id()).delete_account(refund_to);
+
+            return PromiseOrValue::Value(U128(0));
+        }
+
+        let refund = mem::take(&mut self.state.src_remaining);
+        Self::send(
+            fixed_params.src_asset,
+            // TODO: refund_to
+            refund_to,
+            refund,
+            None,
+            None,
+        )
+        .then(
+            Self::ext(env::current_account_id())
+                // TODO: static gas
+                .resolve_maker(
+                    U128(self.state.src_remaining),
+                    // TODO: msg?
+                    false,
+                ),
+        )
+        .into()
     }
 }
 
@@ -181,6 +201,13 @@ impl Contract {
             .src_remaining
             .checked_add(amount)
             .ok_or(Error::IntegerOverflow)?;
+
+        AddSrcEvent {
+            maker: sender_id,
+            src_amount_added: amount,
+            src_remaining: self.state.src_remaining,
+        }
+        .emit();
 
         // TODO: allow for extended deadline prolongation in msg?
         // TODO: but how can we verify sender_id to allow for that?
@@ -233,28 +260,45 @@ impl Contract {
         self.state.src_remaining -= taker_src_amount;
         let refund = dst_amount - maker_dst_amount;
 
+        let dst_fees_collected = fixed
+            .fees
+            .iter()
+            .map(|(fee_collector, fee)| {
+                let fee_amount = fee.fee_ceil(maker_dst_amount);
+                maker_dst_amount = maker_dst_amount
+                    .checked_sub(fee_amount)
+                    .ok_or(Error::IntegerOverflow)?;
+
+                let _ = Self::send(
+                    fixed.dst_asset.clone(),
+                    fee_collector.clone(),
+                    fee_amount,
+                    None,
+                    None,
+                );
+                Ok((fee_collector.into(), fee_amount))
+            })
+            .collect::<Result<_>>()?;
+
+        FillEvent {
+            taker: Cow::Borrowed(&sender_id),
+            src_amount: taker_src_amount,
+            dst_amount,
+            taker_receiver_id: msg.receiver_id.as_deref().map(Cow::Borrowed),
+            dst_fees_collected,
+        }
+        .emit();
+
         // send to taker
         let _ = Self::send(
             fixed.src_asset,
             msg.receiver_id.unwrap_or(sender_id),
             taker_src_amount,
             None,
+            None,
         );
 
-        // send fees
-        for (fee_collector, fee) in &fixed.fees {
-            let fee_amount = fee.fee_ceil(maker_dst_amount);
-            maker_dst_amount = maker_dst_amount
-                .checked_sub(fee_amount)
-                .ok_or(Error::IntegerOverflow)?;
-            let _ = Self::send(
-                fixed.dst_asset.clone(),
-                fee_collector.clone(),
-                fee_amount,
-                None,
-            );
-        }
-
+        // send to maker
         let _ = Self::send(
             fixed.dst_asset,
             fixed
@@ -264,12 +308,19 @@ impl Contract {
                 .clone(),
             maker_dst_amount,
             None,
+            None,
         );
 
         Ok(refund)
     }
 
-    fn send(asset: TokenId, receiver_id: AccountId, amount: u128, msg: Option<String>) -> Promise {
+    fn send(
+        asset: TokenId,
+        receiver_id: AccountId,
+        amount: u128,
+        memo: Option<String>,
+        msg: Option<String>,
+    ) -> Promise {
         // TODO: msg for *_transfer_call()?
         let (contract_id, token_id) = asset.clone().into_contract_id_and_mt_token_id();
 
@@ -284,7 +335,7 @@ impl Contract {
                 token_id,
                 U128(amount),
                 None,
-                None,
+                memo,
             )
         }
     }
@@ -324,8 +375,15 @@ impl Contract {
 
         let refund = amount.0.saturating_sub(used);
         if refund > 0 {
-            // TODO
+            self.state.src_remaining = self
+                .state
+                .src_remaining
+                .checked_add(refund)
+                // TODO: is it?
+                .unwrap_or_else(|| unreachable!());
+            // TODO: emit event
         }
+        // TODO: maybe delete self?
     }
 }
 

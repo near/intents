@@ -1,4 +1,10 @@
-use std::sync::{Arc, LazyLock};
+mod mt;
+mod sandbox;
+mod utils;
+
+pub use self::utils::*;
+
+use std::sync::LazyLock;
 
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
@@ -8,27 +14,10 @@ use defuse_escrow::{FixedParams, Params, Storage};
 use defuse_fees::Pips;
 use futures::join;
 use impl_tools::autoimpl;
-use near_api::{
-    Account, Contract, Signer, Transaction,
-    signer::generate_secret_key,
-    types::{
-        Action,
-        transaction::actions::{
-            CreateAccountAction, DeployContractAction, DeployGlobalContractAction,
-            FunctionCallAction, GlobalContractDeployMode, GlobalContractIdentifier, TransferAction,
-            UseGlobalContractAction,
-        },
-    },
-};
-use near_sdk::{
-    AccountId, Gas, NearToken,
-    serde_json::{self, json},
-};
+use near_api::types::transaction::actions::{GlobalContractDeployMode, GlobalContractIdentifier};
+use near_sdk::{AccountId, Gas, NearToken, serde_json::json};
 
 use crate::env::{sandbox::Sandbox, utils::read_wasm};
-
-mod sandbox;
-mod utils;
 
 pub static WNEAR_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("../tests/contracts/wnear"));
 pub static VERIFIER_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("defuse"));
@@ -36,9 +25,9 @@ pub static ESCROW_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("defuse_e
 
 #[autoimpl(Deref using self.sandbox)]
 pub struct Env {
-    pub wnear: Contract,
-    pub verifier: Contract,
-    pub escrow_global_id: AccountId,
+    pub wnear: Account,
+    pub verifier: Account,
+    pub escrow_global: GlobalContractIdentifier,
 
     sandbox: Sandbox,
 }
@@ -47,169 +36,107 @@ impl Env {
     pub async fn new() -> Self {
         let sandbox = Sandbox::new().await;
 
-        let env = Env {
-            wnear: Contract(sandbox.subaccount("wnear")),
+        let wnear = sandbox.deploy_wnear("wnear").await;
+        let (verifier, escrow_global) = join!(
             // match len of intents.near
-            verifier: Contract(sandbox.subaccount("vrfr")),
-            escrow_global_id: sandbox.subaccount("escrow"),
-            sandbox,
-        };
-
-        join!(
-            env.deploy_wnear(),
-            env.deploy_verifier(),
-            env.deploy_escrow_global()
+            sandbox.deploy_verifier("vrfr", wnear.id().clone()),
+            sandbox.deploy_escrow_global("escrow"),
         );
 
-        env
+        Env {
+            wnear,
+            verifier,
+            escrow_global,
+            sandbox,
+        }
     }
 
-    fn subaccount(&self, name: impl AsRef<str>) -> AccountId {
-        format!("{}.{}", name.as_ref(), self.root_id())
-            .parse()
-            .unwrap()
-    }
-
-    async fn deploy_wnear(&self) {
-        Transaction::construct(self.root_id().clone(), self.wnear.0.clone())
-            .add_action(Action::CreateAccount(CreateAccountAction {}))
-            .add_action(Action::Transfer(TransferAction {
-                deposit: NearToken::from_near(20),
-            }))
-            .add_action(Action::DeployContract(DeployContractAction {
-                code: WNEAR_WASM.clone(),
-            }))
-            .add_action(Action::FunctionCall(
-                FunctionCallAction {
-                    method_name: "new".to_string(),
-                    args: vec![],
-                    gas: Gas::from_tgas(50),
-                    deposit: NearToken::from_yoctonear(0),
-                }
-                .into(),
-            ))
-            .with_signer(self.root_signer())
-            .send_to(self.network_config())
-            .await
-            .unwrap()
-            .into_result()
-            .unwrap();
-    }
-
-    async fn deploy_verifier(&self) {
-        Transaction::construct(self.root_id().clone(), self.verifier.0.clone())
-            .add_action(Action::CreateAccount(CreateAccountAction {}))
-            .add_action(Action::Transfer(TransferAction {
-                deposit: NearToken::from_near(20),
-            }))
-            .add_action(Action::DeployContract(DeployContractAction {
-                code: VERIFIER_WASM.clone(),
-            }))
-            .add_action(Action::FunctionCall(
-                FunctionCallAction {
-                    method_name: "new".to_string(),
-                    args: serde_json::to_vec(&json!({
-                        "config": DefuseConfig {
-                            wnear_id: self.wnear.0.clone(),
-                            fees: FeesConfig {
-                                fee: Pips::from_percent(1).unwrap(),
-                                fee_collector: self.root_id().clone()
-                            },
-                            roles: RolesConfig::default()
-                        }
-                    }))
-                    .unwrap(),
-                    gas: Gas::from_tgas(50),
-                    deposit: NearToken::from_yoctonear(0),
-                }
-                .into(),
-            ))
-            .with_signer(self.root_signer())
-            .send_to(self.network_config())
-            .await
-            .unwrap()
-            .into_result()
-            .unwrap();
-    }
-
-    async fn deploy_escrow_global(&self) {
-        // deploy escrow as global contract
-        Transaction::construct(self.root_id().clone(), self.escrow_global_id.clone())
-            .add_action(Action::CreateAccount(CreateAccountAction {}))
-            .add_action(Action::Transfer(TransferAction {
-                deposit: NearToken::from_near(100),
-            }))
-            .add_action(Action::DeployGlobalContract(DeployGlobalContractAction {
-                code: ESCROW_WASM.clone(),
-                deploy_mode: GlobalContractDeployMode::AccountId,
-            }))
-            .with_signer(self.root_signer())
-            .send_to(self.network_config())
-            .await
-            .unwrap()
-            .into_result()
-            .unwrap();
-    }
-
-    pub async fn create_subaccount(
-        &self,
-        name: impl AsRef<str>,
-        balance: NearToken,
-    ) -> (AccountId, Arc<Signer>) {
-        let account_id = self.subaccount(name);
-
-        let secret_key = generate_secret_key().unwrap();
-        let public_key = secret_key.public_key();
-        let signer = Signer::new(Signer::from_secret_key(secret_key)).unwrap();
-
-        Account::create_account(account_id.clone())
-            .fund_myself(self.root_id().clone(), balance)
-            .public_key(public_key)
-            .unwrap()
-            .with_signer(self.root_signer())
-            .send_to(self.network_config())
-            .await
-            .unwrap()
-            .into_result()
-            .unwrap();
-
-        (account_id, signer)
-    }
-
-    pub async fn create_escrow(&self, fixed: &FixedParams, params: Params) -> Contract {
+    pub async fn create_escrow(&self, fixed: &FixedParams, params: Params) -> Account {
         let init_args = json!({
             "fixed": fixed,
             "params": params,
         });
 
-        let account_id = Storage::new(fixed, params).derive_account_id(self.root_id());
+        let account_id = Storage::new(fixed, params).derive_account_id(self.id());
 
-        Transaction::construct(self.sandbox.root_id().clone(), account_id.clone())
-            .add_action(Action::CreateAccount(CreateAccountAction {}))
-            .add_action(Action::UseGlobalContract(
-                UseGlobalContractAction {
-                    contract_identifier: GlobalContractIdentifier::AccountId(
-                        self.escrow_global_id.clone(),
-                    ),
-                }
-                .into(),
-            ))
-            .add_action(Action::FunctionCall(
-                FunctionCallAction {
-                    method_name: "new".to_string(),
-                    args: serde_json::to_vec(&init_args).unwrap(),
-                    gas: Gas::from_tgas(10),
-                    deposit: NearToken::from_yoctonear(0),
-                }
-                .into(),
-            ))
-            .with_signer(self.root_signer())
-            .send_to(self.network_config())
+        self.tx(account_id.clone())
+            .create_account()
+            .use_global(self.escrow_global.clone())
+            .function_call_json(
+                "new",
+                init_args,
+                Gas::from_tgas(10),
+                NearToken::from_yoctonear(0),
+            )
+            .await
+            .unwrap()
+            .into_result()
+            .inspect(|r| println!("create escrow {account_id}::new(): {:#?}", r.logs()))
+            .unwrap();
+
+        Account::new(account_id, self.network_config().clone())
+    }
+}
+
+impl SigningAccount {
+    async fn deploy_wnear(&self, name: impl AsRef<str>) -> Account {
+        let account = self.subaccount(name);
+
+        self.tx(account.id().clone())
+            .create_account()
+            .transfer(NearToken::from_near(20))
+            .deploy(WNEAR_WASM.clone())
+            .function_call_json("new", (), Gas::from_tgas(50), NearToken::from_yoctonear(0))
             .await
             .unwrap()
             .into_result()
             .unwrap();
 
-        Contract(account_id)
+        account
+    }
+
+    async fn deploy_verifier(&self, name: impl AsRef<str>, wnear_id: AccountId) -> Account {
+        let account = self.subaccount(name);
+
+        self.tx(account.id().clone())
+            .create_account()
+            .transfer(NearToken::from_near(20))
+            .deploy(VERIFIER_WASM.clone())
+            .function_call_json(
+                "new",
+                json!({
+                    "config": DefuseConfig {
+                        wnear_id,
+                        fees: FeesConfig {
+                            fee: Pips::from_percent(1).unwrap(),
+                            fee_collector: self.id().clone()
+                        },
+                        roles: RolesConfig::default()
+                    }
+                }),
+                Gas::from_tgas(50),
+                NearToken::from_yoctonear(0),
+            )
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap();
+
+        account
+    }
+
+    async fn deploy_escrow_global(&self, name: impl AsRef<str>) -> GlobalContractIdentifier {
+        let account = self.subaccount(name);
+
+        self.tx(account.id().clone())
+            .create_account()
+            .transfer(NearToken::from_near(100))
+            .deploy_global(ESCROW_WASM.clone(), GlobalContractDeployMode::AccountId)
+            .await
+            .unwrap()
+            .into_result()
+            .unwrap();
+
+        GlobalContractIdentifier::AccountId(account.id().clone())
     }
 }
