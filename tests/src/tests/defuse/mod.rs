@@ -136,7 +136,7 @@ pub trait DefuseSignerExt: DefuseSigner + SaltManagerExt {
         let salt = self
             .current_salt(defuse_contract_id)
             .await
-            .expect("can fetch salt");
+            .expect("should be able to fetch salt");
 
         let mut nonce_bytes = [0u8; 15];
         TestRng::from_entropy().fill_bytes(&mut nonce_bytes);
