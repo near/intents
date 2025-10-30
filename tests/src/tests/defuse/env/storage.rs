@@ -55,7 +55,7 @@ impl Env {
 
         if !reuse_accounts {
             self.next_user_index
-                .store(state.accounts.len() * 2, Ordering::Relaxed);
+                .store(state.accounts.len(), Ordering::Relaxed);
         }
     }
 
