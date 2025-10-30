@@ -168,7 +168,7 @@ impl TestEnv {
 }
 
 #[tokio::test]
-async fn escrow() {
+async fn partial_fills() {
     const SRC_TOKEN_ID: &str = "src";
     const DST_TOKEN_ID: &str = "dst";
 
@@ -240,16 +240,15 @@ async fn escrow() {
     {
         let sent = env
             .maker
-            .mt_transfer_call(
+            .mt_transfer_call_json(
                 env.verifier.id(),
                 escrow.id(),
                 src_verifier_asset.to_string(),
                 MAKER_AMOUNT,
-                serde_json::to_string(&TransferMessage {
+                TransferMessage {
                     fixed_params: fixed_params.clone(),
-                    action: Action::Open(OpenAction { new_price: None }),
-                })
-                .unwrap(),
+                    action: OpenAction { new_price: None }.into(),
+                },
             )
             .await;
 
@@ -274,16 +273,15 @@ async fn escrow() {
     {
         for (taker, amount) in env.takers.iter().zip([100, 50, 30]) {
             let sent = taker
-                .mt_transfer_call(
+                .mt_transfer_call_json(
                     env.verifier.id(),
                     escrow.id(),
                     dst_verifier_asset.to_string(),
                     amount,
-                    serde_json::to_string(&TransferMessage {
+                    TransferMessage {
                         fixed_params: fixed_params.clone(),
-                        action: Action::Fill(FillAction { receiver_id: None }),
-                    })
-                    .unwrap(),
+                        action: FillAction { receiver_id: None }.into(),
+                    },
                 )
                 .await;
 

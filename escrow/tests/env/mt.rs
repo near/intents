@@ -1,4 +1,9 @@
-use near_sdk::{AccountIdRef, Gas, NearToken, json_types::U128, serde_json::json};
+use near_sdk::{
+    AccountIdRef, Gas, NearToken,
+    json_types::U128,
+    serde::Serialize,
+    serde_json::{self, json},
+};
 
 use crate::env::SigningAccount;
 
@@ -36,5 +41,23 @@ impl SigningAccount {
             .try_into()
             .expect("sent more than one token");
         sent.0
+    }
+
+    pub async fn mt_transfer_call_json(
+        &self,
+        mt: &AccountIdRef,
+        receiver_id: &AccountIdRef,
+        token_id: impl AsRef<str>,
+        amount: u128,
+        msg: impl Serialize,
+    ) -> u128 {
+        self.mt_transfer_call(
+            mt,
+            receiver_id,
+            token_id,
+            amount,
+            serde_json::to_string(&msg).unwrap(),
+        )
+        .await
     }
 }

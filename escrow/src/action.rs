@@ -1,3 +1,4 @@
+use derive_more::From;
 use near_sdk::{AccountId, near};
 
 use crate::{FixedParams, Price};
@@ -11,7 +12,7 @@ pub struct TransferMessage {
 
 #[near(serializers = [json])]
 #[serde(tag = "type", content = "data")]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, From)]
 pub enum Action {
     Open(OpenAction),
     Fill(FillAction),
