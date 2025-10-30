@@ -11,8 +11,6 @@ use defuse::core::SaltedNonce;
 use defuse::core::VersionedNonce;
 use defuse::core::intents::DefuseIntents;
 use defuse_randomness::RngCore;
-use std::sync::atomic::AtomicU64;
-use std::sync::atomic::Ordering;
 
 use self::accounts::AccountManagerExt;
 use crate::utils::{account::AccountExt, crypto::Signer, read_wasm};
@@ -108,8 +106,6 @@ impl DefuseExt for Contract {
     }
 }
 
-static GLOBAL_SEED_COUNTER: std::sync::atomic::AtomicU64 = AtomicU64::new(0);
-
 pub trait DefuseSigner: Signer {
     #[must_use]
     fn sign_defuse_message<T>(
@@ -132,15 +128,12 @@ pub trait DefuseSignerExt: DefuseSigner + SaltManagerExt {
     ) -> anyhow::Result<Nonce> {
         let deadline =
             deadline.unwrap_or_else(|| Deadline::timeout(std::time::Duration::from_secs(120)));
-        let seed_value = GLOBAL_SEED_COUNTER.fetch_add(1, Ordering::Relaxed);
         let salt = self
             .current_salt(defuse_contract_id)
             .await
             .expect("should be able to fetch salt");
-
         let mut nonce_bytes = [0u8; 15];
         TestRng::from_entropy().fill_bytes(&mut nonce_bytes);
-        nonce_bytes[..8].copy_from_slice(&seed_value.to_le_bytes());
 
         let salted = SaltedNonce::new(salt, ExpirableNonce::new(deadline, nonce_bytes));
         Ok(VersionedNonce::V1(salted).into())
