@@ -66,9 +66,9 @@ impl PersistentState {
         tokens: &[Nep141TokenId],
         seed: Seed,
     ) -> HashMap<AccountId, AccountWithTokens> {
-        let accounts_count = TestRng::new(seed).random_range(0..MAX_ACCOUNTS);
+        let accounts_count = TestRng::new(seed).random_range(1..MAX_ACCOUNTS);
 
-        (1..accounts_count)
+        (0..accounts_count)
             .map(|idx| {
                 let subaccount = generate_legacy_user_account_id(prefix, idx, seed)
                     .expect("Failed to generate account ID");
