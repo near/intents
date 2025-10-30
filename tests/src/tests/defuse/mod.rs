@@ -130,7 +130,6 @@ pub trait DefuseSignerExt: DefuseSigner + SaltManagerExt {
         defuse_contract_id: &AccountId,
         deadline: Option<Deadline>,
     ) -> anyhow::Result<Nonce> {
-        deadline.unwrap_or_else(|| Deadline::timeout(std::time::Duration::from_secs(120)));
         let deadline =
             deadline.unwrap_or_else(|| Deadline::timeout(std::time::Duration::from_secs(120)));
         let seed_value = GLOBAL_SEED_COUNTER.fetch_add(1, Ordering::Relaxed);
