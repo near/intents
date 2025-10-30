@@ -21,7 +21,6 @@ use crate::contract::accounts::{
     account::{
         AccountEntry,
         entry::{AccountV0, MaybeVersionedAccountEntry, VersionedAccountEntry, v1::AccountV1},
-        nonces::tests::random_nonces,
     },
 };
 
@@ -58,7 +57,10 @@ fn deserialize_and_check_legacy_account(
 }
 
 #[rstest]
-fn legacy_upgrade(#[from(make_arbitrary)] data: AccountData, random_nonces: Vec<U256>) {
+fn legacy_upgrade(
+    #[from(make_arbitrary)] data: AccountData,
+    #[from(make_arbitrary)] random_nonces: Vec<U256>,
+) {
     // legacy accounts have no wrappers around them
     let legacy_acc = data.make_legacy_account::<AccountV0>();
     let serialized_legacy = borsh::to_vec(&legacy_acc).expect("unable to serialize legacy Account");
@@ -74,7 +76,7 @@ fn legacy_upgrade(#[from(make_arbitrary)] data: AccountData, random_nonces: Vec<
 #[allow(clippy::used_underscore_binding)]
 fn versioned_upgrade<T>(
     #[from(make_arbitrary)] data: AccountData,
-    random_nonces: Vec<U256>,
+    #[from(make_arbitrary)] random_nonces: Vec<U256>,
     #[case] _marker: PhantomData<T>,
 ) where
     T: LegacyAccountBuilder + BorshSerialize + BorshDeserialize,

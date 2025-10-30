@@ -1,30 +1,27 @@
 use super::DEFUSE_WASM;
+
+use crate::tests::defuse::DefuseSignerExt;
+use crate::tests::defuse::accounts::AccountManagerExt;
+use crate::utils::fixtures::{ed25519_pk, p256_pk, secp256k1_pk};
 use crate::{
     tests::defuse::{
-        DefuseSigner, SigningStandard,
-        accounts::AccountManagerExt,
-        env::{Env, create_random_salted_nonce},
+        env::Env,
         intents::ExecuteIntentsExt,
         state::{FeesManagerExt, SaltManagerExt},
     },
     utils::{acl::AclExt, mt::MtExt},
 };
-use arbitrary::{Arbitrary, Unstructured};
-use chrono::{TimeDelta, Utc};
 use defuse::{
     contract::Role,
     core::{
-        Deadline,
         amounts::Amounts,
         crypto::PublicKey,
         fees::Pips,
-        intents::{DefuseIntents, Intent, tokens::Transfer},
+        intents::tokens::Transfer,
         token_id::{TokenId, nep141::Nep141TokenId},
     },
     nep245::Token,
 };
-use defuse_randomness::Rng;
-use defuse_test_utils::random::{random_bytes, rng};
 use itertools::Itertools;
 use near_sdk::AccountId;
 use rstest::rstest;
@@ -34,7 +31,7 @@ use futures::future::try_join_all;
 #[ignore = "only for simple upgrades"]
 #[tokio::test]
 #[rstest]
-async fn upgrade(mut rng: impl Rng) {
+async fn upgrade(ed25519_pk: PublicKey, secp256k1_pk: PublicKey, p256_pk: PublicKey) {
     let old_contract_id: AccountId = "intents.near".parse().unwrap();
     let mainnet = near_workspaces::mainnet()
         .rpc_addr("https://nearrpc.aurora.dev")
@@ -68,11 +65,7 @@ async fn upgrade(mut rng: impl Rng) {
         0
     );
 
-    for public_key in [
-        PublicKey::Ed25519(rng.random()),
-        PublicKey::Secp256k1(rng.random()),
-        PublicKey::P256(rng.random()),
-    ] {
+    for public_key in [ed25519_pk, secp256k1_pk, p256_pk] {
         assert!(
             new_contract
                 .has_public_key(&public_key.to_implicit_account_id(), &public_key)
@@ -91,9 +84,8 @@ async fn upgrade(mut rng: impl Rng) {
 
 #[rstest]
 #[tokio::test]
-async fn test_upgrade_with_persistence(mut rng: impl Rng, random_bytes: Vec<u8>) {
+async fn test_upgrade_with_persistence() {
     // initialize with persistent state and migration from legacy
-    let u = &mut Unstructured::new(&random_bytes);
     let env = Env::builder().build_with_migration().await;
 
     // Make some changes existing users + create new users and token
@@ -128,42 +120,23 @@ async fn test_upgrade_with_persistence(mut rng: impl Rng, random_bytes: Vec<u8>)
 
         // Interactions between new and old users
         {
-            let current_timestamp = Utc::now();
-            let current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
-
-            let payloads = users
-                .iter()
-                .combinations(2)
-                .map(|accounts| {
+            let payloads =
+                futures::future::try_join_all(users.iter().combinations(2).map(|accounts| {
                     let sender = accounts[0];
                     let receiver = accounts[1];
-
-                    let deadline = Deadline::new(
-                        current_timestamp
-                            .checked_add_signed(TimeDelta::days(1))
-                            .unwrap(),
-                    );
-                    let expired_nonce =
-                        create_random_salted_nonce(current_salt, deadline, &mut rng);
-
-                    sender.sign_defuse_message(
-                        SigningStandard::arbitrary(u).unwrap(),
+                    sender.sign_defuse_payload_default(
                         env.defuse.id(),
-                        expired_nonce,
-                        deadline,
-                        DefuseIntents {
-                            intents: vec![Intent::Transfer(Transfer {
-                                receiver_id: receiver.id().clone(),
-                                tokens: Amounts::new(
-                                    [(TokenId::Nep141(Nep141TokenId::new(ft1.clone())), 1000)]
-                                        .into(),
-                                ),
-                                memo: None,
-                            })],
-                        },
+                        [Transfer {
+                            receiver_id: receiver.id().clone(),
+                            tokens: Amounts::new(
+                                [(TokenId::Nep141(Nep141TokenId::new(ft1.clone())), 1000)].into(),
+                            ),
+                            memo: None,
+                        }],
                     )
-                })
-                .collect::<Vec<_>>();
+                }))
+                .await
+                .unwrap();
 
             env.defuse
                 .execute_intents(env.defuse.id(), payloads)

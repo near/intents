@@ -61,13 +61,15 @@ impl ArbitraryNamedAccountId {
 
     pub fn arbitrary_subaccount(
         u: &mut Unstructured<'_>,
+        prefix: Option<&str>,
         parent: Option<&AccountIdRef>,
     ) -> Result<AccountId> {
+        let prefix_len = prefix.map_or(0, str::len);
         let len_bounds = parent.map_or(
             // TLA
-            2..=MAX_ACCOUNT_ID_LENGTH,
+            2..=MAX_ACCOUNT_ID_LENGTH - prefix_len,
             #[allow(clippy::range_minus_one)]
-            |parent| 1..=MAX_ACCOUNT_ID_LENGTH - parent.len() - 1,
+            |parent| 1..=MAX_ACCOUNT_ID_LENGTH - parent.len() - prefix_len - 1,
         );
 
         let len = u
@@ -99,6 +101,7 @@ impl ArbitraryNamedAccountId {
                 .collect::<Result<_>>()?
         };
 
+        let subaccount = format!("{}{subaccount}", prefix.unwrap_or_default());
         if let Some(parent) = parent {
             format!("{subaccount}.{parent}")
         } else {
@@ -112,12 +115,12 @@ impl ArbitraryNamedAccountId {
 impl<'a> ArbitraryAs<'a, AccountId> for ArbitraryNamedAccountId {
     fn arbitrary_as(u: &mut Unstructured<'a>) -> Result<AccountId> {
         // TLA
-        let mut account_id = Self::arbitrary_subaccount(u, None).unwrap();
+        let mut account_id = Self::arbitrary_subaccount(u, None, None).unwrap();
 
         // keep adding subaccounts while there is enough space for at least
         // single character + '.'
         while account_id.len() < MAX_ACCOUNT_ID_LENGTH - 2 && u.arbitrary()? {
-            account_id = Self::arbitrary_subaccount(u, Some(&account_id))?;
+            account_id = Self::arbitrary_subaccount(u, None, Some(&account_id))?;
         }
         Ok(account_id)
     }
@@ -169,7 +172,7 @@ mod tests {
     fn named_tla(random_bytes: Vec<u8>) {
         let mut u = Unstructured::new(&random_bytes);
         assert!(
-            ArbitraryNamedAccountId::arbitrary_subaccount(&mut u, None)
+            ArbitraryNamedAccountId::arbitrary_subaccount(&mut u, None, None)
                 .unwrap()
                 .is_top_level()
         );
@@ -182,7 +185,28 @@ mod tests {
         let mut u = Unstructured::new(&random_bytes);
 
         assert!(
-            ArbitraryNamedAccountId::arbitrary_subaccount(&mut u, Some(TLA))
+            ArbitraryNamedAccountId::arbitrary_subaccount(&mut u, None, Some(TLA))
+                .unwrap()
+                .is_sub_account_of(TLA)
+        );
+    }
+
+    #[rstest]
+    fn prefixed_subaccount(random_bytes: Vec<u8>) {
+        const TLA: &AccountIdRef = AccountIdRef::new_or_panic("near");
+
+        let mut u = Unstructured::new(&random_bytes);
+        let prefix = "prefix";
+
+        assert!(
+            ArbitraryNamedAccountId::arbitrary_subaccount(&mut u, Some(prefix), Some(TLA))
+                .unwrap()
+                .as_str()
+                .starts_with(prefix)
+        );
+
+        assert!(
+            ArbitraryNamedAccountId::arbitrary_subaccount(&mut u, None, Some(TLA))
                 .unwrap()
                 .is_sub_account_of(TLA)
         );

@@ -13,7 +13,6 @@ use defuse_test_utils::{
     asserts::ResultAssertsExt,
     random::{Rng, random_bytes, rng},
 };
-use futures::StreamExt;
 use near_sdk::AccountId;
 use rstest::rstest;
 
@@ -382,6 +381,8 @@ async fn cleanup_multiple_nonces(
     #[notrace] mut rng: impl Rng,
     #[values(1, 10, 100)] nonce_count: usize,
 ) {
+    use futures::StreamExt;
+
     const CHUNK_SIZE: usize = 10;
     const WAITING_TIME: TimeDelta = TimeDelta::seconds(3);
 
@@ -401,8 +402,6 @@ async fn cleanup_multiple_nonces(
         let intents = chunk
             .map(|_| {
                 // commit expirable nonce
-
-                use crate::tests::defuse::env::create_random_salted_nonce;
                 let deadline =
                     Deadline::new(current_timestamp.checked_add_signed(WAITING_TIME).unwrap());
                 let expirable_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
