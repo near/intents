@@ -2,7 +2,8 @@ use std::collections::{HashMap, HashSet};
 
 use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::{Nonce, crypto::PublicKey, token_id::nep141::Nep141TokenId};
-use defuse_test_utils::random::Seed;
+use defuse_randomness::Rng;
+use defuse_test_utils::random::{Seed, TestRng};
 use itertools::Itertools;
 use near_sdk::{
     AccountId,
@@ -65,7 +66,9 @@ impl PersistentState {
         tokens: &[Nep141TokenId],
         seed: Seed,
     ) -> HashMap<AccountId, AccountWithTokens> {
-        (0..MAX_ACCOUNTS)
+        let accounts_count = TestRng::new(seed).random_range(0..MAX_ACCOUNTS);
+
+        (1..accounts_count)
             .map(|idx| {
                 let subaccount = generate_legacy_user_account_id(prefix, idx, seed)
                     .expect("Failed to generate account ID");
