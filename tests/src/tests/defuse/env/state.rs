@@ -71,6 +71,7 @@ impl PersistentState {
                     .expect("Failed to generate account ID");
 
                 let public_keys = (0..MAX_PUBLIC_KEYS)
+                    .take(idx + 1)
                     .map(|pk_index| {
                         let pkey_source =
                             keccak512(format!("{subaccount}-public-key-{pk_index}").as_bytes());
@@ -80,6 +81,7 @@ impl PersistentState {
                     .collect();
 
                 let nonces = (0..MAX_NONCES)
+                    .take(idx + 1)
                     .map(|nonce_index| {
                         Unstructured::new(
                             sha256(format!("{subaccount}-nonce-{nonce_index}").as_bytes())
