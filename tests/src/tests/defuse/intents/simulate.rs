@@ -1,4 +1,4 @@
-use crate::tests::defuse::{ DefuseSignerExt};
+use crate::tests::defuse::DefuseSignerExt;
 use crate::tests::defuse::intents::{AccountNonceIntentEvent, ExecuteIntentsExt, NonceEvent};
 use crate::utils::fixtures::public_key;
 use crate::utils::payload::ExtractNonceExt;

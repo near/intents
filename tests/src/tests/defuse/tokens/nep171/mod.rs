@@ -1,5 +1,5 @@
 use crate::tests::defuse::DefuseSignerExt;
-use crate::tests::defuse::{ env::Env, intents::ExecuteIntentsExt};
+use crate::tests::defuse::{env::Env, intents::ExecuteIntentsExt};
 use crate::utils::{mt::MtExt, nft::NftExt};
 use defuse::core::intents::tokens::NftWithdraw;
 use defuse::core::token_id::TokenId as DefuseTokenId;

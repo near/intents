@@ -1,5 +1,5 @@
 use crate::{
-    tests::defuse::{env::Env,  DefuseSignerExt},
+    tests::defuse::{DefuseSignerExt, env::Env},
     utils::mt::MtExt,
 };
 use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};

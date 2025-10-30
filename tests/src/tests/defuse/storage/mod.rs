@@ -1,5 +1,5 @@
 use crate::{
-    tests::defuse::{ DefuseSignerExt, env::Env, intents::ExecuteIntentsExt},
+    tests::defuse::{DefuseSignerExt, env::Env, intents::ExecuteIntentsExt},
     utils::{storage_management::StorageManagementExt, wnear::WNearExt},
 };
 use defuse::core::intents::tokens::StorageDeposit;

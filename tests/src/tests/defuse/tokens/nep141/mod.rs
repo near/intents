@@ -2,10 +2,7 @@ pub mod traits;
 
 use crate::tests::defuse::tokens::nep141::traits::DefuseFtWithdrawer;
 use crate::{
-    tests::{
-        defuse::{ env::Env},
-        poa::factory::PoAFactoryExt,
-    },
+    tests::{defuse::env::Env, poa::factory::PoAFactoryExt},
     utils::{acl::AclExt, ft::FtExt, mt::MtExt},
 };
 use defuse::core::token_id::TokenId;
@@ -98,7 +95,7 @@ async fn poa_deposit(#[values(false, true)] no_registration: bool) {
 #[rstest]
 #[trace]
 async fn deposit_withdraw_intent(#[values(false, true)] no_registration: bool) {
-    use crate::tests::defuse::{tokens::nep141::traits::DefuseFtReceiver, DefuseSignerExt};
+    use crate::tests::defuse::{DefuseSignerExt, tokens::nep141::traits::DefuseFtReceiver};
 
     let env = Env::builder()
         .no_registration(no_registration)
@@ -181,7 +178,7 @@ async fn deposit_withdraw_intent(#[values(false, true)] no_registration: bool) {
 #[rstest]
 #[trace]
 async fn deposit_withdraw_intent_refund(#[values(false, true)] no_registration: bool) {
-    use crate::tests::defuse::{tokens::nep141::traits::DefuseFtReceiver, DefuseSignerExt};
+    use crate::tests::defuse::{DefuseSignerExt, tokens::nep141::traits::DefuseFtReceiver};
 
     let env = Env::builder()
         .no_registration(no_registration)

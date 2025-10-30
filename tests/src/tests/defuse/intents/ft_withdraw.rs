@@ -1,6 +1,6 @@
 use super::ExecuteIntentsExt;
+use crate::tests::defuse::DefuseExt;
 use crate::tests::defuse::tokens::nep141::traits::DefuseFtReceiver;
-use crate::tests::defuse::{DefuseExt};
 use crate::{
     tests::defuse::env::Env,
     utils::{ft::FtExt, mt::MtExt, wnear::WNearExt},

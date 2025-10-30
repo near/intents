@@ -125,17 +125,19 @@ pub trait DefuseSigner: Signer {
 }
 
 pub trait DefuseSignerExt: DefuseSigner + SaltManagerExt {
-
     async fn unique_nonce(
         &self,
         defuse_contract_id: &AccountId,
         deadline: Option<Deadline>,
-   ) -> anyhow::Result<Nonce>
-    {
+    ) -> anyhow::Result<Nonce> {
         deadline.unwrap_or_else(|| Deadline::timeout(std::time::Duration::from_secs(120)));
-        let deadline = deadline.unwrap_or_else(|| Deadline::timeout(std::time::Duration::from_secs(120)));
+        let deadline =
+            deadline.unwrap_or_else(|| Deadline::timeout(std::time::Duration::from_secs(120)));
         let seed_value = GLOBAL_SEED_COUNTER.fetch_add(1, Ordering::Relaxed);
-        let salt = self.current_salt(defuse_contract_id).await.expect("can fetch salt");
+        let salt = self
+            .current_salt(defuse_contract_id)
+            .await
+            .expect("can fetch salt");
 
         let mut nonce_bytes = [0u8; 15];
         TestRng::from_entropy().fill_bytes(&mut nonce_bytes);
@@ -149,13 +151,14 @@ pub trait DefuseSignerExt: DefuseSigner + SaltManagerExt {
         &self,
         defuse_contract_id: &AccountId,
         intents: impl IntoIterator<Item = T>, //Intent>,
-   ) -> anyhow::Result<MultiPayload>
+    ) -> anyhow::Result<MultiPayload>
     where
         T: Into<Intent>,
     {
         let deadline = Deadline::timeout(std::time::Duration::from_secs(120));
-        let nonce = self.unique_nonce(defuse_contract_id, Some(deadline)).await?;
-
+        let nonce = self
+            .unique_nonce(defuse_contract_id, Some(deadline))
+            .await?;
 
         let defuse_intents = DefuseIntents {
             intents: intents.into_iter().map(Into::into).collect(),
@@ -167,11 +170,9 @@ pub trait DefuseSignerExt: DefuseSigner + SaltManagerExt {
             deadline,
             defuse_intents,
         ))
-
     }
 }
 impl<T> DefuseSignerExt for T where T: DefuseSigner + SaltManagerExt {}
-
 
 impl DefuseSigner for near_workspaces::Account {
     fn sign_defuse_message<T>(

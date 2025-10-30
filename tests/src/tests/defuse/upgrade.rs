@@ -1,6 +1,6 @@
 use super::DEFUSE_WASM;
 
-use crate::tests::defuse::{ DefuseSignerExt};
+use crate::tests::defuse::DefuseSignerExt;
 use crate::tests::defuse::accounts::AccountManagerExt;
 use crate::utils::fixtures::{ed25519_pk, p256_pk, secp256k1_pk};
 use crate::{

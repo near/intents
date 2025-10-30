@@ -10,7 +10,7 @@ use rstest::rstest;
 
 use crate::{
     tests::defuse::{
-        accounts::AccountManagerExt, env::Env, intents::ExecuteIntentsExt,  DefuseSignerExt
+        DefuseSignerExt, accounts::AccountManagerExt, env::Env, intents::ExecuteIntentsExt,
     },
     utils::mt::MtExt,
 };
@@ -147,7 +147,10 @@ async fn auth_by_predecessor_id() {
     // enable auth by PREDECESSOR_ID back (by intent)
     {
         let enable_auth_payload = user
-            .sign_defuse_payload_default(env.defuse.id(), [SetAuthByPredecessorId { enabled: true }])
+            .sign_defuse_payload_default(
+                env.defuse.id(),
+                [SetAuthByPredecessorId { enabled: true }],
+            )
             .await
             .unwrap();
 

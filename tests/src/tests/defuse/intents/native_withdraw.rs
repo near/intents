@@ -2,8 +2,7 @@ use crate::tests::defuse::DefuseSignerExt;
 use crate::utils::fixtures::{ed25519_pk, secp256k1_pk};
 use crate::{
     tests::defuse::{
-         env::Env, intents::ExecuteIntentsExt,
-        tokens::nep141::traits::DefuseFtReceiver,
+        env::Env, intents::ExecuteIntentsExt, tokens::nep141::traits::DefuseFtReceiver,
     },
     utils::{mt::MtExt, wnear::WNearExt},
 };

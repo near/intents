@@ -14,7 +14,6 @@ use rstest::rstest;
 
 use crate::{
     tests::defuse::{
-        
         accounts::{AccountManagerExt, traits::ForceAccountManagerExt},
         env::Env,
         intents::ExecuteIntentsExt,
