@@ -64,7 +64,7 @@ impl Env {
             self.sandbox.root_account(),
             self.poa_factory.as_account(),
             self.seed,
-        )?;
+        );
 
         self.apply_tokens(&state).await?;
         self.apply_accounts(&state).await?;

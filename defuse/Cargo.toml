@@ -53,6 +53,7 @@ container_build_command = [
 
 [features]
 abi = ["defuse-core/abi"]
+arbitrary = ["defuse-core/arbitrary"]
 contract = [
     "dep:defuse-bitmap",
     "dep:defuse-borsh-utils",
@@ -69,5 +70,6 @@ chrono.workspace = true
 
 arbitrary_with.workspace = true
 itertools.workspace = true
+proptest = { workspace = true }
 rstest.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }

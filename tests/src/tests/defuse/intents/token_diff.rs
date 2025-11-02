@@ -1,24 +1,16 @@
 use crate::{
-    tests::defuse::{DefuseSigner, SigningStandard, env::Env},
+    tests::defuse::{DefuseSignerExt, env::Env},
     utils::mt::MtExt,
 };
-use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
 use defuse::core::{
-    Deadline,
     fees::Pips,
-    intents::{
-        DefuseIntents,
-        token_diff::{TokenDeltas, TokenDiff},
-    },
-    payload::multi::MultiPayload,
+    intents::token_diff::{TokenDeltas, TokenDiff},
 };
-use defuse_randomness::{Rng, make_true_rng};
-use defuse_test_utils::random::rng;
 use near_sdk::AccountId;
 use near_workspaces::Account;
 use rstest::rstest;
-use std::{collections::BTreeMap, time::Duration};
+use std::collections::BTreeMap;
 
 use super::ExecuteIntentsExt;
 
@@ -215,41 +207,35 @@ struct AccountFtDiff<'a> {
 }
 
 async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
-    // deposit
-    for account in &accounts {
-        for (token_id, balance) in &account.init_balances {
-            env.defuse_ft_deposit_to(
-                token_id,
-                (*balance).try_into().unwrap(),
-                account.account.id(),
-            )
-            .await
-            .unwrap();
-        }
-    }
-
-    let signed: Vec<MultiPayload> = accounts
-        .iter()
-        .flat_map(move |account| {
-            account.diff.iter().cloned().map(move |diff| {
-                account.account.sign_defuse_message(
-                    SigningStandard::default(),
-                    env.defuse.id(),
-                    make_true_rng().random(),
-                    Deadline::timeout(Duration::from_secs(120)),
-                    DefuseIntents {
-                        intents: [TokenDiff {
-                            diff,
-                            memo: None,
-                            referral: None,
-                        }
-                        .into()]
-                        .into(),
-                    },
+    futures::future::try_join_all(accounts.iter().flat_map(move |account| {
+        account
+            .init_balances
+            .iter()
+            .map(move |(token_id, balance)| {
+                env.defuse_ft_deposit_to(
+                    token_id,
+                    (*balance).try_into().unwrap(),
+                    account.account.id(),
                 )
             })
+    }))
+    .await
+    .unwrap();
+
+    let signed = futures::future::try_join_all(accounts.iter().flat_map(move |account| {
+        account.diff.iter().cloned().map(move |diff| {
+            account.account.sign_defuse_payload_default(
+                env.defuse.id(),
+                [TokenDiff {
+                    diff,
+                    memo: None,
+                    referral: None,
+                }],
+            )
         })
-        .collect();
+    }))
+    .await
+    .unwrap();
 
     // simulate
     env.defuse
@@ -289,10 +275,7 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn invariant_violated(
-    #[notrace] mut rng: impl Rng,
-    #[values(false, true)] no_registration: bool,
-) {
+async fn invariant_violated(#[values(false, true)] no_registration: bool) {
     let env = Env::builder()
         .no_registration(no_registration)
         .build()
@@ -318,52 +301,36 @@ async fn invariant_violated(
     )
     .expect("Failed to deposit tokens");
 
-    let nonce1 = rng.random();
-    let nonce2 = rng.random();
-
-    let signed: Vec<_> = [
-        user1.sign_defuse_message(
-            SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+    let signed = futures::future::try_join_all([
+        user1.sign_defuse_payload_default(
             env.defuse.id(),
-            nonce1,
-            Deadline::MAX,
-            DefuseIntents {
-                intents: [TokenDiff {
-                    diff: TokenDeltas::default()
-                        .with_apply_deltas([
-                            (ft1_token_id.clone(), -1000),
-                            (ft2_token_id.clone(), 2000),
-                        ])
-                        .unwrap(),
-                    memo: None,
-                    referral: None,
-                }
-                .into()]
-                .into(),
-            },
+            [TokenDiff {
+                diff: TokenDeltas::default()
+                    .with_apply_deltas([
+                        (ft1_token_id.clone(), -1000),
+                        (ft2_token_id.clone(), 2000),
+                    ])
+                    .unwrap(),
+                memo: None,
+                referral: None,
+            }],
         ),
-        user1.sign_defuse_message(
-            SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
+        user1.sign_defuse_payload_default(
             env.defuse.id(),
-            nonce2,
-            Deadline::MAX,
-            DefuseIntents {
-                intents: [TokenDiff {
-                    diff: TokenDeltas::default()
-                        .with_apply_deltas([
-                            (ft1_token_id.clone(), 1000),
-                            (ft2_token_id.clone(), -1999),
-                        ])
-                        .unwrap(),
-                    memo: None,
-                    referral: None,
-                }
-                .into()]
-                .into(),
-            },
+            [TokenDiff {
+                diff: TokenDeltas::default()
+                    .with_apply_deltas([
+                        (ft1_token_id.clone(), 1000),
+                        (ft2_token_id.clone(), -1999),
+                    ])
+                    .unwrap(),
+                memo: None,
+                referral: None,
+            }],
         ),
-    ]
-    .into();
+    ])
+    .await
+    .unwrap();
 
     assert_eq!(
         env.defuse
@@ -410,7 +377,6 @@ async fn invariant_violated(
 #[tokio::test]
 #[trace]
 async fn solver_user_closure(
-    #[notrace] mut rng: impl Rng,
     #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
     #[values(false, true)] no_registration: bool,
 ) {
@@ -454,16 +420,11 @@ async fn solver_user_closure(
     let solver_delta_out = solver_delta_in * -2;
     dbg!(solver_delta_in, solver_delta_out);
 
-    let nonce = rng.random();
-
     // solver signs his intent
-    let solver_commitment = solver.sign_defuse_message(
-        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
-        env.defuse.id(),
-        nonce,
-        Deadline::timeout(Duration::from_secs(90)),
-        DefuseIntents {
-            intents: [TokenDiff {
+    let solver_commitment = solver
+        .sign_defuse_payload_default(
+            env.defuse.id(),
+            [TokenDiff {
                 diff: TokenDeltas::new(
                     [
                         (token_in.clone(), solver_delta_in),
@@ -474,11 +435,10 @@ async fn solver_user_closure(
                 ),
                 memo: None,
                 referral: None,
-            }
-            .into()]
-            .into(),
-        },
-    );
+            }],
+        )
+        .await
+        .unwrap();
 
     // simulate before returning quote
     let simulation_before_return_quote = env
@@ -515,16 +475,11 @@ async fn solver_user_closure(
             .unwrap();
     dbg!(user_delta_out);
 
-    let nonce = rng.random();
-
     // user signs the message
-    let user_commitment = user.sign_defuse_message(
-        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
-        env.defuse.id(),
-        nonce,
-        Deadline::timeout(Duration::from_secs(90)),
-        DefuseIntents {
-            intents: [TokenDiff {
+    let user_commitment = user
+        .sign_defuse_payload_default(
+            env.defuse.id(),
+            [TokenDiff {
                 diff: TokenDeltas::new(
                     [
                         (token_in.clone(), USER_DELTA_IN),
@@ -535,11 +490,10 @@ async fn solver_user_closure(
                 ),
                 memo: None,
                 referral: None,
-            }
-            .into()]
-            .into(),
-        },
-    );
+            }],
+        )
+        .await
+        .unwrap();
 
     // simulating both solver's and user's intents now should succeed
     env.defuse

@@ -1,15 +1,9 @@
-use crate::tests::defuse::SigningStandard;
-use crate::tests::defuse::{DefuseSigner, env::Env, intents::ExecuteIntentsExt};
+use crate::tests::defuse::DefuseSignerExt;
+use crate::tests::defuse::{env::Env, intents::ExecuteIntentsExt};
 use crate::utils::{mt::MtExt, nft::NftExt};
-use arbitrary::{Arbitrary, Unstructured};
+use defuse::core::intents::tokens::NftWithdraw;
 use defuse::core::token_id::TokenId as DefuseTokenId;
 use defuse::core::token_id::nep171::Nep171TokenId;
-use defuse::core::{
-    Deadline,
-    intents::{DefuseIntents, tokens::NftWithdraw},
-};
-use defuse_randomness::Rng;
-use defuse_test_utils::random::{gen_random_string, random_bytes, rng};
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata,
 };
@@ -18,9 +12,13 @@ use near_sdk::{NearToken, json_types::Base64VecU8};
 use rstest::rstest;
 use std::collections::HashMap;
 
+const DUMMY_REFERENCE_HASH: [u8; 32] = [33; 32];
+const DUMMY_NFT1_ID: &str = "thisisdummynftid1";
+const DUMMY_NFT2_ID: &str = "thisisdummythisisdummynnthisisdummynftid2";
+
 #[tokio::test]
 #[rstest]
-async fn transfer_nft_to_verifier(mut rng: impl Rng) {
+async fn transfer_nft_to_verifier() {
     let env = Env::builder().create_unique_users().build().await;
 
     let (user1, user2, user3) = futures::join!(
@@ -41,7 +39,7 @@ async fn transfer_nft_to_verifier(mut rng: impl Rng) {
             "nft1",
             NFTContractMetadata {
                 reference: Some("http://abc.com/xyz/".to_string()),
-                reference_hash: Some(Base64VecU8(random_bytes(32..=32, &mut rng))),
+                reference_hash: Some(Base64VecU8(DUMMY_REFERENCE_HASH.to_vec())),
                 spec: NFT_METADATA_SPEC.to_string(),
                 name: "Token nft1".to_string(),
                 symbol: "NFT_TKN".to_string(),
@@ -52,44 +50,48 @@ async fn transfer_nft_to_verifier(mut rng: impl Rng) {
         .await
         .unwrap();
 
-    let nft1_id = gen_random_string(&mut rng, 32..=32);
-
     // Create the token id, expected inside the verifier contract
     let nft1_mt_token_id = DefuseTokenId::from(
-        Nep171TokenId::new(nft_issuer_contract.id().to_owned(), nft1_id.clone()).unwrap(),
+        Nep171TokenId::new(
+            nft_issuer_contract.id().to_owned(),
+            DUMMY_NFT1_ID.to_string(),
+        )
+        .unwrap(),
     );
 
     let nft1: Token = user1
         .nft_mint(
             nft_issuer_contract.id(),
-            &nft1_id,
+            &DUMMY_NFT1_ID.to_string(),
             user2.id(),
             &TokenMetadata::default(),
         )
         .await
         .unwrap();
 
-    assert_eq!(nft1.token_id, nft1_id);
+    assert_eq!(nft1.token_id, DUMMY_NFT1_ID.to_string());
     assert_eq!(nft1.owner_id, *user2.id());
-
-    let nft2_id = gen_random_string(&mut rng, 32..=32);
 
     // Create the token id, expected inside the verifier contract
     let nft2_mt_token_id = DefuseTokenId::from(
-        Nep171TokenId::new(nft_issuer_contract.id().to_owned(), nft2_id.clone()).unwrap(),
+        Nep171TokenId::new(
+            nft_issuer_contract.id().to_owned(),
+            DUMMY_NFT2_ID.to_string(),
+        )
+        .unwrap(),
     );
 
     let nft2: Token = user1
         .nft_mint(
             nft_issuer_contract.id(),
-            &nft2_id,
+            &DUMMY_NFT2_ID.to_string(),
             user3.id(),
             &TokenMetadata::default(),
         )
         .await
         .unwrap();
 
-    assert_eq!(nft2.token_id, nft2_id);
+    assert_eq!(nft2.token_id, DUMMY_NFT2_ID.to_string());
     assert_eq!(nft2.owner_id, *user3.id());
 
     {
@@ -242,32 +244,24 @@ async fn transfer_nft_to_verifier(mut rng: impl Rng) {
             );
         }
 
-        let nonce = rng.random();
+        let withdraw_payload = user3
+            .sign_defuse_payload_default(
+                env.defuse.id(),
+                [NftWithdraw {
+                    token: nft_issuer_contract.id().clone(),
+                    receiver_id: user1.id().clone(),
+                    token_id: DUMMY_NFT1_ID.to_string(),
+                    memo: None,
+                    msg: None,
+                    storage_deposit: None,
+                    min_gas: None,
+                }],
+            )
+            .await
+            .unwrap();
 
         env.defuse
-            .execute_intents(
-                env.defuse.id(),
-                [user3.sign_defuse_message(
-                    SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
-                        .unwrap(),
-                    env.defuse.id(),
-                    nonce,
-                    Deadline::timeout(std::time::Duration::from_secs(120)),
-                    DefuseIntents {
-                        intents: [NftWithdraw {
-                            token: nft_issuer_contract.id().clone(),
-                            receiver_id: user1.id().clone(),
-                            token_id: nft1_id,
-                            memo: None,
-                            msg: None,
-                            storage_deposit: None,
-                            min_gas: None,
-                        }
-                        .into()]
-                        .into(),
-                    },
-                )],
-            )
+            .execute_intents(env.defuse.id(), [withdraw_payload])
             .await
             .unwrap();
 

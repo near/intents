@@ -157,6 +157,15 @@ async fn run_resolve_gas_test(
     // );
 
     let non_existent_account = ArbitraryAccountId::arbitrary_as(&mut u).unwrap();
+    println!("Non-existent account: {non_existent_account}");
+
+    assert!(
+        env.defuse
+            .mt_tokens_for_owner(env.defuse.id(), &non_existent_account, ..=2) // 2 because we only need to check the first N tokens. Good enough.
+            .await
+            .unwrap()
+            .is_empty(),
+    );
 
     // We attempt to do a transfer of fictitious token ids from defuse to an arbitrary user.
     // These will fail, but there should be enough gas to do refunds successfully.

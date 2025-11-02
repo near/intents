@@ -1,31 +1,16 @@
 pub mod traits;
 
-use crate::tests::defuse::SigningStandard;
 use crate::tests::defuse::tokens::nep141::traits::DefuseFtWithdrawer;
 use crate::{
-    tests::{
-        defuse::{DefuseSigner, env::Env},
-        poa::factory::PoAFactoryExt,
-    },
+    tests::{defuse::env::Env, poa::factory::PoAFactoryExt},
     utils::{acl::AclExt, ft::FtExt, mt::MtExt},
 };
-use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
 
-use defuse::{
-    contract::Role,
-    core::{
-        Deadline,
-        intents::{DefuseIntents, tokens::FtWithdraw},
-    },
-    tokens::DepositMessage,
-};
-use defuse_randomness::Rng;
-use defuse_test_utils::random::rng;
+use defuse::{contract::Role, core::intents::tokens::FtWithdraw, tokens::DepositMessage};
 use near_sdk::json_types::U128;
 use rstest::rstest;
-use std::time::Duration;
 
 #[tokio::test]
 #[rstest]
@@ -109,11 +94,8 @@ async fn poa_deposit(#[values(false, true)] no_registration: bool) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn deposit_withdraw_intent(
-    #[notrace] mut rng: impl Rng,
-    #[values(false, true)] no_registration: bool,
-) {
-    use crate::tests::defuse::tokens::nep141::traits::DefuseFtReceiver;
+async fn deposit_withdraw_intent(#[values(false, true)] no_registration: bool) {
+    use crate::tests::defuse::{DefuseSignerExt, tokens::nep141::traits::DefuseFtReceiver};
 
     let env = Env::builder()
         .no_registration(no_registration)
@@ -137,7 +119,21 @@ async fn deposit_withdraw_intent(
     .await
     .unwrap();
 
-    let nonce = rng.random();
+    let withdraw_intent_payload = user
+        .sign_defuse_payload_default(
+            env.defuse.id(),
+            [FtWithdraw {
+                token: ft.clone(),
+                receiver_id: other_user.id().clone(),
+                amount: U128(600),
+                memo: None,
+                msg: None,
+                storage_deposit: None,
+                min_gas: None,
+            }],
+        )
+        .await
+        .unwrap();
 
     assert_eq!(
         user.defuse_ft_deposit(
@@ -146,30 +142,7 @@ async fn deposit_withdraw_intent(
             1000,
             DepositMessage {
                 receiver_id: user.id().clone(),
-                execute_intents: [user.sign_defuse_message(
-                    SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
-                        .unwrap(),
-                    env.defuse.id(),
-                    nonce,
-                    Deadline::timeout(Duration::from_secs(120)),
-                    DefuseIntents {
-                        intents: [
-                            // withdrawal is a detached promise
-                            FtWithdraw {
-                                token: ft.clone(),
-                                receiver_id: other_user.id().clone(),
-                                amount: U128(600),
-                                memo: None,
-                                msg: None,
-                                storage_deposit: None,
-                                min_gas: None,
-                            }
-                            .into(),
-                        ]
-                        .into(),
-                    },
-                )]
-                .into(),
+                execute_intents: [withdraw_intent_payload].into(),
                 // another promise will be created for `execute_intents()`
                 refund_if_fails: false,
             },
@@ -204,13 +177,8 @@ async fn deposit_withdraw_intent(
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn deposit_withdraw_intent_refund(
-    #[notrace] mut rng: impl Rng,
-    #[values(false, true)] no_registration: bool,
-) {
-    use arbitrary::{Arbitrary, Unstructured};
-
-    use crate::tests::defuse::{SigningStandard, tokens::nep141::traits::DefuseFtReceiver};
+async fn deposit_withdraw_intent_refund(#[values(false, true)] no_registration: bool) {
+    use crate::tests::defuse::{DefuseSignerExt, tokens::nep141::traits::DefuseFtReceiver};
 
     let env = Env::builder()
         .no_registration(no_registration)
@@ -233,7 +201,21 @@ async fn deposit_withdraw_intent_refund(
     .await
     .unwrap();
 
-    let nonce = rng.random();
+    let overflow_withdraw_payload = user
+        .sign_defuse_payload_default(
+            env.defuse.id(),
+            [FtWithdraw {
+                token: ft.clone(),
+                receiver_id: user.id().clone(),
+                amount: U128(1001),
+                memo: None,
+                msg: None,
+                storage_deposit: None,
+                min_gas: None,
+            }],
+        )
+        .await
+        .unwrap();
 
     assert_eq!(
         user.defuse_ft_deposit(
@@ -242,27 +224,7 @@ async fn deposit_withdraw_intent_refund(
             1000,
             DepositMessage {
                 receiver_id: user.id().clone(),
-                execute_intents: [user.sign_defuse_message(
-                    SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
-                        .unwrap(),
-                    env.defuse.id(),
-                    nonce,
-                    Deadline::MAX,
-                    DefuseIntents {
-                        intents: [FtWithdraw {
-                            token: ft.clone(),
-                            receiver_id: user.id().clone(),
-                            amount: U128(1001),
-                            memo: None,
-                            msg: None,
-                            storage_deposit: None,
-                            min_gas: None,
-                        }
-                        .into(),]
-                        .into(),
-                    },
-                )]
-                .into(),
+                execute_intents: [overflow_withdraw_payload].into(),
                 refund_if_fails: true,
             },
         )
