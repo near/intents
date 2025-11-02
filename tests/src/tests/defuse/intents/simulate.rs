@@ -1,5 +1,7 @@
 use crate::tests::defuse::SigningStandard;
+use crate::tests::defuse::env::create_random_salted_nonce;
 use crate::tests::defuse::intents::{AccountNonceIntentEvent, ExecuteIntentsExt, NonceEvent};
+use crate::tests::defuse::state::SaltManagerExt;
 use crate::utils::fixtures::{nonce, public_key, signing_standard};
 use crate::utils::{ft::FtExt, mt::MtExt, nft::NftExt, wnear::WNearExt};
 use crate::{
@@ -7,6 +9,8 @@ use crate::{
     tests::defuse::env::Env,
     tests::defuse::{DefuseExt, DefuseSigner},
 };
+use arbitrary::{Arbitrary, Unstructured};
+use chrono::{TimeDelta, Utc};
 use defuse::contract::config::{DefuseConfig, RolesConfig};
 use defuse::core::crypto::{Payload, PublicKey};
 use defuse::core::fees::{FeesConfig, Pips};
@@ -928,4 +932,47 @@ async fn simulate_auth_call_intent(nonce: Nonce, signing_standard: SigningStanda
         result.report.logs,
         vec![AccountNonceIntentEvent::new(&user1.id(), nonce, &auth_call_payload).into_event_log(),]
     );
+}
+
+#[tokio::test]
+#[rstest]
+#[trace]
+async fn simulation_fails_on_used_nonce(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng) {
+    let env = Env::builder().build().await;
+    let current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
+    let u = &mut Unstructured::new(&random_bytes);
+
+    let user = env.create_user().await;
+
+    let current_timestamp = Utc::now();
+    let deadline = Deadline::new(
+        current_timestamp
+            .checked_add_signed(TimeDelta::days(1))
+            .unwrap(),
+    );
+    let expirable_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
+
+    let payload = [user.sign_defuse_message(
+        SigningStandard::arbitrary(u).unwrap(),
+        env.defuse.id(),
+        expirable_nonce,
+        deadline,
+        DefuseIntents { intents: [].into() },
+    )];
+
+    env.defuse
+        .execute_intents(env.defuse.id(), payload.clone())
+        .await
+        .unwrap();
+
+    assert!(
+        env.defuse
+            .is_nonce_used(user.id(), &expirable_nonce)
+            .await
+            .unwrap(),
+    );
+
+    let result = env.defuse.simulate_intents(payload).await;
+
+    assert!(result.is_err());
 }
