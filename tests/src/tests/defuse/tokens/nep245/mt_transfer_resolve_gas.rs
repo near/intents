@@ -5,7 +5,11 @@ use crate::{
 use anyhow::Context;
 use arbitrary_with::ArbitraryAs;
 use defuse::core::{
+    accounts::AccountEvent,
+    amounts::Amounts,
     crypto,
+    events::DefuseEvent,
+    intents::{IntentEvent, tokens::Transfer},
     token_id::{TokenId, nep245::Nep245TokenId},
 };
 use defuse_near_utils::arbitrary::ArbitraryAccountId;
@@ -15,9 +19,12 @@ use near_sdk::NearToken;
 use near_workspaces::Account;
 use rstest::rstest;
 use serde_json::json;
-use std::future::Future;
 use std::sync::Arc;
+use std::{borrow::Cow, collections::BTreeMap, future::Future};
 use strum::IntoEnumIterator;
+
+const DUMMY_HASH: [u8; 32] = [1u8; 32];
+const TOTAL_LOG_LENGTH_LIMIT: usize = 16384;
 
 /// We generate things based on whether we want everything to be "as long as possible"
 /// or "as short as possible", because these affect how much gas is spent.
@@ -94,6 +101,44 @@ fn make_amounts(mode: GenerationMode, token_count: usize) -> Vec<u128> {
     }
 }
 
+fn validate_mt_batch_transfer_log_size(
+    defuse_id: &near_workspaces::AccountId,
+    receiver_id: &near_sdk::AccountId,
+    token_ids: &[String],
+    amounts: &[u128],
+) -> anyhow::Result<()> {
+    let token_amounts = token_ids
+        .iter()
+        .zip(amounts.iter().copied())
+        .map(|(token_id, amount)| {
+            token_id
+                .parse::<TokenId>()
+                .with_context(|| format!("failed to parse `{token_id}` as TokenId"))
+                .map(|parsed| (parsed, amount))
+        })
+        .collect::<anyhow::Result<BTreeMap<_, _>>>()?;
+
+    let transfer = Transfer {
+        receiver_id: receiver_id.clone(),
+        tokens: Amounts::new(token_amounts),
+        memo: Some("deposit".to_owned()),
+    };
+    let account_event = AccountEvent::new(defuse_id.clone(), Cow::Borrowed(&transfer));
+    let intents = [IntentEvent::new(account_event, DUMMY_HASH)];
+    let expected_transfer_event = DefuseEvent::Transfer(Cow::Borrowed(&intents));
+    let longest_transfer_log = format!(
+        "EVENT_JSON:{}",
+        serde_json::to_string(&expected_transfer_event)?
+    );
+
+    anyhow::ensure!(
+        longest_transfer_log.len() <= TOTAL_LOG_LENGTH_LIMIT,
+        "transfer log will exceed maximum log limit"
+    );
+
+    Ok(())
+}
+
 /// In this test, we want to ensure that any transfer (with many generation modes) will always succeed and refund.
 /// This test is designed to return an error on gracious failure (i.e., when a refund is successful), but to panic
 /// if it fails due to failure in refunds.
@@ -151,13 +196,18 @@ async fn run_resolve_gas_test(
         .context("Failed at mt_on_transfer 2")?
         .into();
 
-    // println!(
-    //     "({token_count}, {})",
-    //     on_transfer_test_log.total_gas_burnt()
-    // );
-
     let non_existent_account = ArbitraryAccountId::arbitrary_as(&mut u).unwrap();
     println!("Non-existent account: {non_existent_account}");
+
+    // NOTE: `mt_on_transfer` emits an `MtMint` event, but `mt_batch_transfer_call` emits `mt_transfer`
+    // events that serialize more fields. These transfer logs approach the hard log-size limit, so
+    // we pre-calculate the worst-case payload to fail fast if the limit would be exceeded.
+    validate_mt_batch_transfer_log_size(
+        env.defuse.id(),
+        &non_existent_account,
+        &token_ids,
+        &amounts,
+    )?;
 
     assert!(
         env.defuse
