@@ -11,6 +11,7 @@ use defuse::core::crypto::Payload;
 
 use defuse::core::crypto::PublicKey;
 use defuse::core::fees::{FeesConfig, Pips};
+use defuse::core::intents::Intent;
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
 use defuse::core::token_id::nep171::Nep171TokenId;
@@ -867,7 +868,7 @@ async fn simulation_fails_on_used_nonce() {
     let user = env.create_user().await;
 
     let payload = user
-        .sign_defuse_payload_default(env.defuse.id(), Vec::<Transfer>::new())
+        .sign_defuse_payload_default(env.defuse.id(), Vec::<Intent>::new())
         .await
         .unwrap();
 
