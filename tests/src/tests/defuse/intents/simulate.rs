@@ -1,30 +1,26 @@
-use crate::tests::defuse::SigningStandard;
-use crate::tests::defuse::env::create_random_salted_nonce;
+use crate::tests::defuse::DefuseSignerExt;
 use crate::tests::defuse::intents::{AccountNonceIntentEvent, ExecuteIntentsExt, NonceEvent};
-use crate::tests::defuse::state::SaltManagerExt;
-use crate::utils::fixtures::{nonce, public_key, signing_standard};
+use crate::utils::fixtures::public_key;
+use crate::utils::payload::ExtractNonceExt;
 use crate::utils::{ft::FtExt, mt::MtExt, nft::NftExt, wnear::WNearExt};
 use crate::{
-    tests::defuse::accounts::AccountManagerExt,
-    tests::defuse::env::Env,
-    tests::defuse::{DefuseExt, DefuseSigner},
+    tests::defuse::DefuseExt, tests::defuse::accounts::AccountManagerExt, tests::defuse::env::Env,
 };
-use arbitrary::{Arbitrary, Unstructured};
-use chrono::{TimeDelta, Utc};
 use defuse::contract::config::{DefuseConfig, RolesConfig};
-use defuse::core::crypto::{Payload, PublicKey};
+use defuse::core::crypto::Payload;
+
+use defuse::core::crypto::PublicKey;
 use defuse::core::fees::{FeesConfig, Pips};
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
 use defuse::core::token_id::nep171::Nep171TokenId;
 use defuse::core::token_id::nep245::Nep245TokenId;
 use defuse::core::{
-    Deadline, Nonce,
     accounts::{AccountEvent, PublicKeyEvent},
     amounts::Amounts,
     events::DefuseEvent,
     intents::{
-        DefuseIntents, IntentEvent,
+        IntentEvent,
         account::{AddPublicKey, RemovePublicKey, SetAuthByPredecessorId},
         auth::AuthCall,
         token_diff::{TokenDeltas, TokenDiff, TokenDiffEvent},
@@ -32,8 +28,6 @@ use defuse::core::{
     },
 };
 use defuse_near_utils::NearSdkLog;
-use defuse_randomness::Rng;
-use defuse_test_utils::random::{gen_random_string, random_bytes, rng};
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata, TokenMetadata,
 };
@@ -45,7 +39,7 @@ use std::borrow::Cow;
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_transfer_intent(nonce: Nonce, signing_standard: SigningStandard) {
+async fn simulate_transfer_intent() {
     let env = Env::builder().no_registration(true).build().await;
 
     let (user1, user2, ft1) =
@@ -66,15 +60,12 @@ async fn simulate_transfer_intent(nonce: Nonce, signing_standard: SigningStandar
         memo: None,
     };
 
-    let transfer_intent_payload = user1.sign_defuse_message(
-        signing_standard,
-        env.defuse.id(),
-        nonce,
-        Deadline::MAX,
-        DefuseIntents {
-            intents: vec![transfer_intent.clone().into()],
-        },
-    );
+    let transfer_intent_payload = user1
+        .sign_defuse_payload_default(env.defuse.id(), [transfer_intent.clone()])
+        .await
+        .unwrap();
+    let nonce = transfer_intent_payload.extract_nonce().unwrap();
+
     let result = env
         .defuse
         .simulate_intents([transfer_intent_payload.clone()])
@@ -104,7 +95,7 @@ async fn simulate_transfer_intent(nonce: Nonce, signing_standard: SigningStandar
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_ft_withdraw_intent(nonce: Nonce, signing_standard: SigningStandard) {
+async fn simulate_ft_withdraw_intent() {
     let env = Env::builder().no_registration(true).build().await;
 
     let (user1, user2, ft1) =
@@ -137,15 +128,11 @@ async fn simulate_ft_withdraw_intent(nonce: Nonce, signing_standard: SigningStan
         min_gas: None,
     };
 
-    let ft_withdraw_payload = user1.sign_defuse_message(
-        signing_standard,
-        env.defuse.id(),
-        nonce,
-        Deadline::MAX,
-        DefuseIntents {
-            intents: vec![ft_withdraw_intent.clone().into()],
-        },
-    );
+    let ft_withdraw_payload = user1
+        .sign_defuse_payload_default(env.defuse.id(), [ft_withdraw_intent.clone()])
+        .await
+        .unwrap();
+    let nonce = ft_withdraw_payload.extract_nonce().unwrap();
 
     let result = env
         .defuse
@@ -172,7 +159,7 @@ async fn simulate_ft_withdraw_intent(nonce: Nonce, signing_standard: SigningStan
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_native_withdraw_intent(nonce: Nonce, signing_standard: SigningStandard) {
+async fn simulate_native_withdraw_intent() {
     let env = Env::builder().no_registration(true).build().await;
 
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
@@ -215,15 +202,11 @@ async fn simulate_native_withdraw_intent(nonce: Nonce, signing_standard: Signing
         amount: withdraw_amount,
     };
 
-    let native_withdraw_payload = user1.sign_defuse_message(
-        signing_standard,
-        env.defuse.id(),
-        nonce,
-        Deadline::MAX,
-        DefuseIntents {
-            intents: vec![native_withdraw_intent.clone().into()],
-        },
-    );
+    let native_withdraw_payload = user1
+        .sign_defuse_payload_default(env.defuse.id(), [native_withdraw_intent.clone()])
+        .await
+        .unwrap();
+    let nonce = native_withdraw_payload.extract_nonce().unwrap();
 
     let result = env
         .defuse
@@ -248,14 +231,14 @@ async fn simulate_native_withdraw_intent(nonce: Nonce, signing_standard: Signing
     );
 }
 
+pub const DUMMY_NFT_URL: &str = "http://example.com/nft/";
+pub const DUMMY_NFT_REFERENCE_HASH: [u8; 32] = [13; 32];
+pub const DUMMY_NFT_ID: &str = "thisisdummynftid";
+
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_nft_withdraw_intent(
-    #[notrace] mut rng: impl Rng,
-    nonce: Nonce,
-    signing_standard: SigningStandard,
-) {
+async fn simulate_nft_withdraw_intent() {
     let env = Env::builder().no_registration(true).build().await;
 
     let (user1, user2) =
@@ -270,8 +253,8 @@ async fn simulate_nft_withdraw_intent(
         .deploy_vanilla_nft_issuer(
             "nft1",
             NFTContractMetadata {
-                reference: Some("http://example.com/nft/".to_string()),
-                reference_hash: Some(Base64VecU8(random_bytes(32..=32, &mut rng))),
+                reference: Some(DUMMY_NFT_URL.to_string()),
+                reference_hash: Some(Base64VecU8(DUMMY_NFT_REFERENCE_HASH.to_vec())),
                 spec: NFT_METADATA_SPEC.to_string(),
                 name: "Test NFT".to_string(),
                 symbol: "TNFT".to_string(),
@@ -282,25 +265,25 @@ async fn simulate_nft_withdraw_intent(
         .await
         .unwrap();
 
-    let nft_id = gen_random_string(&mut rng, 32..=32);
     let _nft = user1
         .nft_mint(
             nft_contract.id(),
-            &nft_id,
+            &DUMMY_NFT_ID.to_string(),
             user1.id(),
             &TokenMetadata::default(),
         )
         .await
         .unwrap();
 
-    let nft_token_id =
-        TokenId::from(Nep171TokenId::new(nft_contract.id().to_owned(), nft_id.clone()).unwrap());
+    let nft_token_id = TokenId::from(
+        Nep171TokenId::new(nft_contract.id().to_owned(), DUMMY_NFT_ID.to_string()).unwrap(),
+    );
 
     user1
         .nft_transfer_call(
             nft_contract.id(),
             env.defuse.id(),
-            nft_id.clone(),
+            DUMMY_NFT_ID.to_string(),
             None,
             user1.id().to_string(),
         )
@@ -318,22 +301,18 @@ async fn simulate_nft_withdraw_intent(
     let nft_withdraw_intent = NftWithdraw {
         token: nft_contract.id().clone(),
         receiver_id: user2.id().clone(),
-        token_id: nft_id.clone(),
+        token_id: DUMMY_NFT_ID.to_string(),
         memo: None,
         msg: None,
         storage_deposit: None,
         min_gas: None,
     };
 
-    let nft_withdraw_payload = user1.sign_defuse_message(
-        signing_standard,
-        env.defuse.id(),
-        nonce,
-        Deadline::MAX,
-        DefuseIntents {
-            intents: vec![nft_withdraw_intent.clone().into()],
-        },
-    );
+    let nft_withdraw_payload = user1
+        .sign_defuse_payload_default(env.defuse.id(), [nft_withdraw_intent.clone()])
+        .await
+        .unwrap();
+    let nonce = nft_withdraw_payload.extract_nonce().unwrap();
 
     let result = env
         .defuse
@@ -361,7 +340,7 @@ async fn simulate_nft_withdraw_intent(
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_mt_withdraw_intent(nonce: Nonce, signing_standard: SigningStandard) {
+async fn simulate_mt_withdraw_intent() {
     let env = Env::builder().build().await;
 
     let (user1, user2, ft1) =
@@ -452,15 +431,11 @@ async fn simulate_mt_withdraw_intent(nonce: Nonce, signing_standard: SigningStan
         min_gas: None,
     };
 
-    let mt_withdraw_payload = user1.sign_defuse_message(
-        signing_standard,
-        defuse2.id(), // Sign for defuse2 since we're simulating on it
-        nonce,
-        Deadline::MAX,
-        DefuseIntents {
-            intents: vec![mt_withdraw_intent.clone().into()],
-        },
-    );
+    let mt_withdraw_payload = user1
+        .sign_defuse_payload_default(defuse2.id(), [mt_withdraw_intent.clone()])
+        .await
+        .unwrap();
+    let nonce = mt_withdraw_payload.extract_nonce().unwrap();
 
     // Simulate the intent on defuse2 (which has the tokens)
     let result = defuse2
@@ -487,7 +462,7 @@ async fn simulate_mt_withdraw_intent(nonce: Nonce, signing_standard: SigningStan
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_storage_deposit_intent(nonce: Nonce, signing_standard: SigningStandard) {
+async fn simulate_storage_deposit_intent() {
     let env = Env::builder().no_registration(true).build().await;
 
     let (user1, user2, ft1) =
@@ -531,15 +506,11 @@ async fn simulate_storage_deposit_intent(nonce: Nonce, signing_standard: Signing
         amount: storage_deposit_amount,
     };
 
-    let storage_deposit_payload = user1.sign_defuse_message(
-        signing_standard,
-        env.defuse.id(),
-        nonce,
-        Deadline::MAX,
-        DefuseIntents {
-            intents: vec![storage_deposit_intent.clone().into()],
-        },
-    );
+    let storage_deposit_payload = user1
+        .sign_defuse_payload_default(env.defuse.id(), [storage_deposit_intent.clone()])
+        .await
+        .unwrap();
+    let nonce = storage_deposit_payload.extract_nonce().unwrap();
 
     let result = env
         .defuse
@@ -567,12 +538,7 @@ async fn simulate_storage_deposit_intent(nonce: Nonce, signing_standard: Signing
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_token_diff_intent(
-    #[from(nonce)] nonce1: Nonce,
-    #[from(nonce)] nonce2: Nonce,
-    #[from(signing_standard)] signing_standard1: SigningStandard,
-    #[from(signing_standard)] signing_standard2: SigningStandard,
-) {
+async fn simulate_token_diff_intent() {
     let env = Env::builder()
         .fee(Pips::ZERO)
         .no_registration(true)
@@ -636,25 +602,17 @@ async fn simulate_token_diff_intent(
         referral: None,
     };
 
-    let user1_payload = user1.sign_defuse_message(
-        signing_standard1,
-        env.defuse.id(),
-        nonce1,
-        Deadline::MAX,
-        DefuseIntents {
-            intents: vec![user1_token_diff.clone().into()],
-        },
-    );
+    let user1_payload = user1
+        .sign_defuse_payload_default(env.defuse.id(), [user1_token_diff.clone()])
+        .await
+        .unwrap();
+    let nonce1 = user1_payload.extract_nonce().unwrap();
 
-    let user2_payload = user2.sign_defuse_message(
-        signing_standard2,
-        env.defuse.id(),
-        nonce2,
-        Deadline::MAX,
-        DefuseIntents {
-            intents: vec![user2_token_diff.clone().into()],
-        },
-    );
+    let user2_payload = user2
+        .sign_defuse_payload_default(env.defuse.id(), [user2_token_diff.clone()])
+        .await
+        .unwrap();
+    let nonce2 = user2_payload.extract_nonce().unwrap();
 
     let result = env
         .defuse
@@ -708,11 +666,7 @@ async fn simulate_token_diff_intent(
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_add_public_key_intent(
-    nonce: Nonce,
-    public_key: PublicKey,
-    signing_standard: SigningStandard,
-) {
+async fn simulate_add_public_key_intent(public_key: PublicKey) {
     let env = Env::builder().build().await;
 
     let user1 = env.create_user().await;
@@ -723,15 +677,11 @@ async fn simulate_add_public_key_intent(
         public_key: new_public_key,
     };
 
-    let add_public_key_payload = user1.sign_defuse_message(
-        signing_standard,
-        env.defuse.id(),
-        nonce,
-        Deadline::MAX,
-        DefuseIntents {
-            intents: vec![add_public_key_intent.into()],
-        },
-    );
+    let add_public_key_payload = user1
+        .sign_defuse_payload_default(env.defuse.id(), [add_public_key_intent])
+        .await
+        .unwrap();
+    let nonce = add_public_key_payload.extract_nonce().unwrap();
 
     let result = env
         .defuse
@@ -758,13 +708,7 @@ async fn simulate_add_public_key_intent(
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_remove_public_key_intent(
-    #[from(nonce)] add_nonce: Nonce,
-    #[from(nonce)] remove_nonce: Nonce,
-    public_key: PublicKey,
-    #[from(signing_standard)] add_signing_standard: SigningStandard,
-    #[from(signing_standard)] remove_signing_standard: SigningStandard,
-) {
+async fn simulate_remove_public_key_intent(public_key: PublicKey) {
     let env = Env::builder().build().await;
 
     let user1 = env.create_user().await;
@@ -774,15 +718,10 @@ async fn simulate_remove_public_key_intent(
         public_key: new_public_key,
     };
 
-    let add_public_key_payload = user1.sign_defuse_message(
-        add_signing_standard,
-        env.defuse.id(),
-        add_nonce,
-        Deadline::MAX,
-        DefuseIntents {
-            intents: vec![add_public_key_intent.into()],
-        },
-    );
+    let add_public_key_payload = user1
+        .sign_defuse_payload_default(env.defuse.id(), [add_public_key_intent])
+        .await
+        .unwrap();
 
     // Execute the add intent (not simulate) to actually add the key
     env.defuse
@@ -794,15 +733,11 @@ async fn simulate_remove_public_key_intent(
         public_key: new_public_key,
     };
 
-    let remove_public_key_payload = user1.sign_defuse_message(
-        remove_signing_standard,
-        env.defuse.id(),
-        remove_nonce,
-        Deadline::MAX,
-        DefuseIntents {
-            intents: vec![remove_public_key_intent.into()],
-        },
-    );
+    let remove_public_key_payload = user1
+        .sign_defuse_payload_default(env.defuse.id(), [remove_public_key_intent])
+        .await
+        .unwrap();
+    let remove_nonce = remove_public_key_payload.extract_nonce().unwrap();
 
     let result = env
         .defuse
@@ -829,25 +764,18 @@ async fn simulate_remove_public_key_intent(
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_set_auth_by_predecessor_id_intent(
-    nonce: Nonce,
-    signing_standard: SigningStandard,
-) {
+async fn simulate_set_auth_by_predecessor_id_intent() {
     let env = Env::builder().build().await;
 
     let user1 = env.create_user().await;
 
     let set_auth_intent = SetAuthByPredecessorId { enabled: true };
 
-    let set_auth_payload = user1.sign_defuse_message(
-        signing_standard,
-        env.defuse.id(),
-        nonce,
-        Deadline::MAX,
-        DefuseIntents {
-            intents: vec![set_auth_intent.clone().into()],
-        },
-    );
+    let set_auth_payload = user1
+        .sign_defuse_payload_default(env.defuse.id(), [set_auth_intent.clone()])
+        .await
+        .unwrap();
+    let nonce = set_auth_payload.extract_nonce().unwrap();
 
     let result = env
         .defuse
@@ -868,7 +796,7 @@ async fn simulate_set_auth_by_predecessor_id_intent(
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_auth_call_intent(nonce: Nonce, signing_standard: SigningStandard) {
+async fn simulate_auth_call_intent() {
     let env = Env::builder().build().await;
 
     let (user1, ft1) = futures::join!(env.create_user(), env.create_token());
@@ -884,7 +812,6 @@ async fn simulate_auth_call_intent(nonce: Nonce, signing_standard: SigningStanda
         .near_deposit(env.wnear.id(), wnear_amount)
         .await
         .unwrap();
-
     user1
         .ft_transfer_call(
             env.wnear.id(),
@@ -912,15 +839,12 @@ async fn simulate_auth_call_intent(nonce: Nonce, signing_standard: SigningStanda
         min_gas: None,
     };
 
-    let auth_call_payload = user1.sign_defuse_message(
-        signing_standard,
-        env.defuse.id(),
-        nonce,
-        Deadline::MAX,
-        DefuseIntents {
-            intents: vec![auth_call_intent.into()],
-        },
-    );
+    let auth_call_payload = user1
+        .sign_defuse_payload_default(env.defuse.id(), [auth_call_intent])
+        .await
+        .unwrap();
+
+    let nonce = auth_call_payload.extract_nonce().unwrap();
 
     let result = env
         .defuse
@@ -937,42 +861,29 @@ async fn simulate_auth_call_intent(nonce: Nonce, signing_standard: SigningStanda
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulation_fails_on_used_nonce(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng) {
+async fn simulation_fails_on_used_nonce() {
     let env = Env::builder().build().await;
-    let current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
-    let u = &mut Unstructured::new(&random_bytes);
 
     let user = env.create_user().await;
 
-    let current_timestamp = Utc::now();
-    let deadline = Deadline::new(
-        current_timestamp
-            .checked_add_signed(TimeDelta::days(1))
-            .unwrap(),
-    );
-    let expirable_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
-
-    let payload = [user.sign_defuse_message(
-        SigningStandard::arbitrary(u).unwrap(),
-        env.defuse.id(),
-        expirable_nonce,
-        deadline,
-        DefuseIntents { intents: [].into() },
-    )];
+    let payload = user
+        .sign_defuse_payload_default(env.defuse.id(), Vec::<Transfer>::new())
+        .await
+        .unwrap();
 
     env.defuse
-        .execute_intents(env.defuse.id(), payload.clone())
+        .execute_intents(env.defuse.id(), [payload.clone()])
         .await
         .unwrap();
 
     assert!(
         env.defuse
-            .is_nonce_used(user.id(), &expirable_nonce)
+            .is_nonce_used(user.id(), &payload.extract_nonce().unwrap())
             .await
             .unwrap(),
     );
 
-    let result = env.defuse.simulate_intents(payload).await;
+    let result = env.defuse.simulate_intents([payload]).await;
 
     assert!(result.is_err());
 }

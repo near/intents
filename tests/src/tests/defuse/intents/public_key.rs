@@ -1,16 +1,13 @@
-use crate::tests::defuse::SigningStandard;
+use crate::tests::defuse::DefuseSignerExt;
 use crate::tests::defuse::intents::{AccountNonceIntentEvent, ExecuteIntentsExt};
-use crate::utils::fixtures::{nonce, public_key, signing_standard};
-use crate::{assert_eq_event_logs, tests::defuse::DefuseSigner, tests::defuse::env::Env};
+use crate::utils::fixtures::public_key;
+use crate::utils::payload::ExtractNonceExt;
+use crate::{assert_eq_event_logs, tests::defuse::env::Env};
 use defuse::core::{
-    Deadline, Nonce,
     accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
     events::DefuseEvent,
-    intents::{
-        DefuseIntents,
-        account::{AddPublicKey, RemovePublicKey},
-    },
+    intents::account::{AddPublicKey, RemovePublicKey},
 };
 use defuse_near_utils::NearSdkLog;
 use rstest::rstest;
@@ -19,30 +16,23 @@ use std::borrow::Cow;
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn execute_add_public_key_intent(
-    nonce: Nonce,
-    public_key: PublicKey,
-    signing_standard: SigningStandard,
-) {
+async fn execute_add_public_key_intent(public_key: PublicKey) {
     let env = Env::builder().no_registration(true).build().await;
 
     let user = env.create_user().await;
 
     let new_public_key = public_key;
 
-    let add_public_key_intent = AddPublicKey {
-        public_key: new_public_key,
-    };
-
-    let add_public_key_payload = user.sign_defuse_message(
-        signing_standard,
-        env.defuse.id(),
-        nonce,
-        Deadline::MAX,
-        DefuseIntents {
-            intents: vec![add_public_key_intent.into()],
-        },
-    );
+    let add_public_key_payload = user
+        .sign_defuse_payload_default(
+            env.defuse.id(),
+            [AddPublicKey {
+                public_key: new_public_key,
+            }],
+        )
+        .await
+        .unwrap();
+    let nonce = add_public_key_payload.extract_nonce().unwrap();
 
     let result = env
         .defuse
@@ -69,50 +59,38 @@ async fn execute_add_public_key_intent(
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn execute_remove_public_key_intent(
-    #[from(nonce)] add_nonce: Nonce,
-    #[from(nonce)] remove_nonce: Nonce,
-    public_key: PublicKey,
-    #[from(signing_standard)] add_signing_standard: SigningStandard,
-    #[from(signing_standard)] remove_signing_standard: SigningStandard,
-) {
+async fn execute_remove_public_key_intent(public_key: PublicKey) {
     let env = Env::builder().no_registration(true).build().await;
 
     let user = env.create_user().await;
 
     let new_public_key = public_key;
-    let add_public_key_intent = AddPublicKey {
-        public_key: new_public_key,
-    };
-
-    let add_public_key_payload = user.sign_defuse_message(
-        add_signing_standard,
-        env.defuse.id(),
-        add_nonce,
-        Deadline::MAX,
-        DefuseIntents {
-            intents: vec![add_public_key_intent.into()],
-        },
-    );
+    let add_public_key_payload = user
+        .sign_defuse_payload_default(
+            env.defuse.id(),
+            [AddPublicKey {
+                public_key: new_public_key,
+            }],
+        )
+        .await
+        .unwrap();
+    let _add_nonce = add_public_key_payload.extract_nonce().unwrap();
 
     env.defuse
         .execute_intents(env.defuse.id(), [add_public_key_payload])
         .await
         .unwrap();
 
-    let remove_public_key_intent = RemovePublicKey {
-        public_key: new_public_key,
-    };
-
-    let remove_public_key_payload = user.sign_defuse_message(
-        remove_signing_standard,
-        env.defuse.id(),
-        remove_nonce,
-        Deadline::MAX,
-        DefuseIntents {
-            intents: vec![remove_public_key_intent.into()],
-        },
-    );
+    let remove_public_key_payload = user
+        .sign_defuse_payload_default(
+            env.defuse.id(),
+            [RemovePublicKey {
+                public_key: new_public_key,
+            }],
+        )
+        .await
+        .unwrap();
+    let remove_nonce = remove_public_key_payload.extract_nonce().unwrap();
 
     let result = env
         .defuse

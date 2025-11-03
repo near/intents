@@ -9,7 +9,7 @@ repository.workspace = true
 workspace = true
 
 [dev-dependencies]
-defuse = { workspace = true, features = ["contract"] }
+defuse = { workspace = true, features = ["contract", "arbitrary"] }
 defuse-near-utils = { workspace = true, features = ["arbitrary"] }
 defuse-poa-factory = { workspace = true, features = ["contract"] }
 defuse-serde-utils = { workspace = true }

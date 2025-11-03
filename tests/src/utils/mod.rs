@@ -8,6 +8,7 @@ pub mod ft;
 pub mod mt;
 pub mod native;
 pub mod nft;
+pub mod payload;
 mod sandbox;
 pub mod storage_management;
 pub mod test_log;
