@@ -231,9 +231,19 @@ impl Contract {
             force,
         )?;
 
+        Self::call_receiver_mt_on_transfer(sender_id, receiver_id, token_ids, amounts, msg)
+    }
+
+    pub(crate) fn call_receiver_mt_on_transfer(
+        sender_id: AccountId,
+        receiver_id: AccountId,
+        token_ids: Vec<defuse_nep245::TokenId>,
+        amounts: Vec<U128>,
+        msg: String,
+    ) -> Result<PromiseOrValue<Vec<U128>>> {
         let previous_owner_ids = vec![sender_id.clone(); token_ids.len()];
 
-        Ok(ext_mt_receiver::ext(receiver_id.clone())
+        let amounts = ext_mt_receiver::ext(receiver_id.clone())
             .mt_on_transfer(
                 sender_id,
                 previous_owner_ids.clone(),
@@ -248,7 +258,9 @@ impl Contract {
                     .with_unused_gas_weight(0)
                     .mt_resolve_transfer(previous_owner_ids, receiver_id, token_ids, amounts, None),
             )
-            .into())
+            .into();
+
+        Ok(amounts)
     }
 
     #[must_use]

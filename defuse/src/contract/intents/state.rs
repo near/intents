@@ -214,7 +214,23 @@ impl State for Contract {
     #[inline]
     fn mt_transfer(&mut self, sender_id: &AccountIdRef, transfer: Transfer) -> Result<()> {
         self.internal_sub_balance(sender_id, transfer.tokens.clone())?;
-        self.internal_add_balance(transfer.receiver_id, transfer.tokens)?;
+        self.internal_add_balance(transfer.receiver_id.clone(), transfer.tokens.clone())?;
+
+        if let Some(msg) = transfer.msg {
+            let (token_ids, amounts): (Vec<String>, Vec<U128>) = transfer
+                .tokens
+                .iter()
+                .map(|(token_id, amount)| (token_id.to_string(), U128(*amount)))
+                .unzip();
+
+            Self::call_receiver_mt_on_transfer(
+                sender_id.into(),
+                transfer.receiver_id,
+                token_ids,
+                amounts,
+                msg,
+            )?;
+        }
 
         Ok(())
     }

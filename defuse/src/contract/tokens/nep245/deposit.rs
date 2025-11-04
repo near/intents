@@ -29,6 +29,7 @@ impl MultiTokenReceiver for Contract {
     ) -> PromiseOrValue<Vec<U128>> {
         let _previous_owner_ids = previous_owner_ids;
         let token = &*PREDECESSOR_ACCOUNT_ID;
+
         require!(
             token_ids.len() == amounts.len() && !amounts.is_empty(),
             "invalid args"

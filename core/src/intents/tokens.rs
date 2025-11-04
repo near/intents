@@ -34,7 +34,8 @@ pub struct Transfer {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<String>,
 
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    // TODO: fix this
+    // #[serde(default, skip_serializing, deserialize_with = "Option::deserialize")]
     pub msg: Option<String>,
 }
 
@@ -63,14 +64,7 @@ impl ExecutableIntent for Transfer {
                 .as_slice(),
             )));
 
-        engine
-            .state
-            .internal_sub_balance(sender_id, self.tokens.clone())?;
-        engine
-            .state
-            .internal_add_balance(self.receiver_id, self.tokens)?;
-
-        Ok(())
+        engine.state.mt_transfer(sender_id, self)
     }
 }
 
