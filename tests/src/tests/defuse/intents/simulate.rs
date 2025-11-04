@@ -11,6 +11,7 @@ use defuse::core::crypto::Payload;
 
 use defuse::core::crypto::PublicKey;
 use defuse::core::fees::{FeesConfig, Pips};
+use defuse::core::intents::Intent;
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
 use defuse::core::token_id::nep171::Nep171TokenId;
@@ -843,6 +844,7 @@ async fn simulate_auth_call_intent() {
         .sign_defuse_payload_default(env.defuse.id(), [auth_call_intent])
         .await
         .unwrap();
+
     let nonce = auth_call_payload.extract_nonce().unwrap();
 
     let result = env
@@ -855,4 +857,34 @@ async fn simulate_auth_call_intent() {
         result.report.logs,
         vec![AccountNonceIntentEvent::new(&user1.id(), nonce, &auth_call_payload).into_event_log(),]
     );
+}
+
+#[tokio::test]
+#[rstest]
+#[trace]
+async fn simulation_fails_on_used_nonce() {
+    let env = Env::builder().build().await;
+
+    let user = env.create_user().await;
+
+    let payload = user
+        .sign_defuse_payload_default(env.defuse.id(), Vec::<Intent>::new())
+        .await
+        .unwrap();
+
+    env.defuse
+        .execute_intents(env.defuse.id(), [payload.clone()])
+        .await
+        .unwrap();
+
+    assert!(
+        env.defuse
+            .is_nonce_used(user.id(), &payload.extract_nonce().unwrap())
+            .await
+            .unwrap(),
+    );
+
+    let result = env.defuse.simulate_intents([payload]).await;
+
+    assert!(result.is_err());
 }
