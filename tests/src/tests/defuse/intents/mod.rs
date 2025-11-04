@@ -241,7 +241,9 @@ async fn simulate_is_view_method(
         receiver_id: other_user.id().clone(),
         tokens: Amounts::new(std::iter::once((ft_id.clone(), 1000)).collect()),
         memo: None,
+        msg: None,
     };
+
     let transfer_intent_payload = user.sign_defuse_message(
         SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
         env.defuse.id(),

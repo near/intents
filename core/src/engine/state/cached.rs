@@ -4,7 +4,7 @@ use crate::{
     fees::Pips,
     intents::{
         auth::AuthCall,
-        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
+        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
     },
     token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
 };
@@ -308,6 +308,14 @@ where
                         .map(|amount| (self.wnear_token_id(), amount.as_yoctonear())),
                 ),
         )
+    }
+
+    #[inline]
+    fn mt_transfer(&mut self, sender_id: &AccountIdRef, transfer: Transfer) -> Result<()> {
+        self.internal_sub_balance(sender_id, transfer.tokens.clone())?;
+        self.internal_add_balance(transfer.receiver_id, transfer.tokens)?;
+
+        Ok(())
     }
 
     fn native_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: NativeWithdraw) -> Result<()> {

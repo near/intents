@@ -6,7 +6,7 @@ use crate::{
     fees::Pips,
     intents::{
         auth::AuthCall,
-        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
+        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
     },
     token_id::{TokenId, nep141::Nep141TokenId},
 };
@@ -101,6 +101,8 @@ pub trait State: StateView {
     fn nft_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: NftWithdraw) -> Result<()>;
 
     fn mt_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: MtWithdraw) -> Result<()>;
+
+    fn mt_transfer(&mut self, sender_id: &AccountIdRef, transfer: Transfer) -> Result<()>;
 
     fn native_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: NativeWithdraw) -> Result<()>;
 

@@ -33,6 +33,9 @@ pub struct Transfer {
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<String>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub msg: Option<String>,
 }
 
 impl ExecutableIntent for Transfer {
@@ -66,6 +69,7 @@ impl ExecutableIntent for Transfer {
         engine
             .state
             .internal_add_balance(self.receiver_id, self.tokens)?;
+
         Ok(())
     }
 }

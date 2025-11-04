@@ -5,7 +5,7 @@ use crate::{
     intents::{
         auth::AuthCall,
         token_diff::TokenDeltas,
-        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
+        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
     },
     token_id::TokenId,
 };
@@ -179,6 +179,11 @@ where
     #[inline]
     fn native_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: NativeWithdraw) -> Result<()> {
         self.state.native_withdraw(owner_id, withdraw)
+    }
+
+    #[inline]
+    fn mt_transfer(&mut self, sender_id: &AccountIdRef, transfer: Transfer) -> Result<()> {
+        self.state.mt_transfer(sender_id, transfer)
     }
 
     #[inline]

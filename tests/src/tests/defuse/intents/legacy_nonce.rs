@@ -48,6 +48,7 @@ async fn execute_intent_with_legacy_nonce(#[from(make_arbitrary)] legacy_nonce: 
         receiver_id: user2.id().clone(),
         tokens: Amounts::new(std::iter::once((token_id.clone(), 1000)).collect()),
         memo: None,
+        msg: None,
     };
 
     let transfer_intent_payload = user1.sign_defuse_message(
