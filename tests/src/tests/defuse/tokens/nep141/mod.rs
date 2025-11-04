@@ -145,6 +145,7 @@ async fn deposit_withdraw_intent(#[values(false, true)] no_registration: bool) {
                 execute_intents: [withdraw_intent_payload].into(),
                 // another promise will be created for `execute_intents()`
                 refund_if_fails: false,
+                message: String::new(),
             },
         )
         .await
@@ -226,6 +227,7 @@ async fn deposit_withdraw_intent_refund(#[values(false, true)] no_registration: 
                 receiver_id: user.id().clone(),
                 execute_intents: [overflow_withdraw_payload].into(),
                 refund_if_fails: true,
+                message: String::new(),
             },
         )
         .await

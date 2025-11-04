@@ -23,6 +23,9 @@ pub struct DepositMessage {
 
     #[serde(default, skip_serializing_if = "::core::ops::Not::not")]
     pub refund_if_fails: bool,
+
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub message: String,
 }
 
 impl DepositMessage {
@@ -33,6 +36,7 @@ impl DepositMessage {
             receiver_id,
             execute_intents: Vec::new(),
             refund_if_fails: false,
+            message: String::new(),
         }
     }
 
