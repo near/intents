@@ -1,10 +1,12 @@
-use impl_tools::autoimpl;
+mod account;
+mod tx;
+
+pub use self::{account::*, tx::*};
+pub use near_api as api;
+
 use near_api::{NetworkConfig, RPCEndpoint, Signer};
 use near_sandbox::GenesisAccount;
 
-use crate::env::{Account, SigningAccount};
-
-#[autoimpl(Deref using self.root)]
 pub struct Sandbox {
     root: SigningAccount,
 

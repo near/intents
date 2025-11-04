@@ -23,6 +23,7 @@ members = [
     "poa-factory",
     "poa-token",
     "randomness",
+    "sandbox",
     "sep53",
     "serde-utils",
     "tests",
@@ -63,6 +64,7 @@ defuse-num-utils.path = "num-utils"
 defuse-webauthn.path = "webauthn"
 defuse-poa-factory.path = "poa-factory"
 defuse-poa-token.path = "poa-token"
+defuse-sandbox.path = "sandbox"
 defuse-sep53.path = "sep53"
 defuse-serde-utils.path = "serde-utils"
 defuse-tip191.path = "tip191"

@@ -1,6 +1,6 @@
 mod action;
 #[cfg(feature = "contract")]
-mod contract;
+pub mod contract;
 mod error;
 mod event;
 mod price;

@@ -13,7 +13,7 @@ use crate::{FixedParams, Params};
 #[derive(Debug, Clone, From)]
 pub enum EscrowEvent<'a> {
     #[event_version("0.1.0")]
-    Created(CreatedEvent<'a>),
+    Create(CreateEvent<'a>),
 
     #[event_version("0.1.0")]
     AddSrc(AddSrcEvent),
@@ -28,7 +28,7 @@ pub enum EscrowEvent<'a> {
 #[must_use = "make sure to `.emit()` this event"]
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
-pub struct CreatedEvent<'a> {
+pub struct CreateEvent<'a> {
     #[serde(flatten)]
     pub fixed: Cow<'a, FixedParams>,
     #[serde(flatten)]

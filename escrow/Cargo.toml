@@ -33,11 +33,7 @@ thiserror.workspace = true
 
 [dev-dependencies]
 defuse = { workspace = true, features = ["contract"] }
-defuse-crypto = { workspace = true, features = ["near-api-types"] }
-
-near-api.workspace = true
-near-sandbox.workspace = true
-near-sdk = { workspace = true, features = ["unit-testing"] }
+defuse-sandbox.workspace = true
 
 anyhow.workspace = true
 futures.workspace = true

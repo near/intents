@@ -948,21 +948,19 @@ dependencies = [
  "chrono",
  "defuse",
  "defuse-borsh-utils",
- "defuse-crypto",
  "defuse-fees",
  "defuse-map-utils",
  "defuse-near-utils",
  "defuse-nep245",
  "defuse-num-utils",
+ "defuse-sandbox",
  "defuse-token-id",
  "derive_more 2.0.1",
  "futures",
  "hex",
  "impl-tools",
  "itertools 0.14.0",
- "near-api",
  "near-contract-standards",
- "near-sandbox",
  "near-sdk",
  "serde_with",
  "thiserror 2.0.12",
@@ -1066,6 +1064,21 @@ name = "defuse-randomness"
 version = "0.1.0"
 dependencies = [
  "rand 0.9.1",
+]
+
+[[package]]
+name = "defuse-sandbox"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "defuse-crypto",
+ "defuse-randomness",
+ "futures",
+ "impl-tools",
+ "near-api",
+ "near-sandbox",
+ "near-sdk",
+ "thiserror 2.0.12",
 ]
 
 [[package]]

@@ -1,5 +1,5 @@
 use derive_more::From;
-use near_sdk::{AccountId, near};
+use near_sdk::{AccountId, Gas, near};
 
 use crate::{FixedParams, Price};
 
@@ -31,4 +31,13 @@ pub struct OpenAction {
 pub struct FillAction {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub receiver_id: Option<AccountId>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub memo: Option<String>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub msg: Option<String>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_gas: Option<Gas>,
 }

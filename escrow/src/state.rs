@@ -46,13 +46,15 @@ impl Storage {
 
     // TODO: nep616 feature
     pub fn derive_account_id(&self, factory: impl AsRef<AccountIdRef>) -> AccountId {
+        const PREFIX: &str = "escrow-";
+
         let factory = factory.as_ref();
 
         let serialized = borsh::to_vec(self).unwrap_or_else(|_| unreachable!());
         let hash = env::keccak256_array(&serialized);
 
-        let len = AccountId::MAX_LEN - 1 - factory.len();
-        format!("{}.{factory}", hex::encode(&hash[32 - len / 2..32]))
+        let len = AccountId::MAX_LEN - 1 - factory.len() - PREFIX.len();
+        format!("{PREFIX}{}.{factory}", hex::encode(&hash[32 - len / 2..32]))
             .parse()
             .unwrap_or_else(|_| unreachable!())
     }

@@ -11,11 +11,15 @@ use near_sdk::{
 };
 
 use crate::{
-    Action, AddSrcEvent, CreatedEvent, Error, Escrow, EscrowIntentEmit, FillAction, FillEvent,
-    FixedParams, OpenAction, Params, Result, Storage, TransferMessage,
+    Action, AddSrcEvent, CreateEvent, Error, Escrow, EscrowEvent, EscrowIntentEmit, FillAction,
+    FillEvent, FixedParams, OpenAction, Params, Result, Storage, TransferMessage,
 };
 
-const MT_TRANSFER_GAS: Gas = Gas::from_tgas(15);
+const MT_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(15);
+const MT_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(15);
+
+const MT_TRANSFER_CALL_GAS_MIN: Gas = Gas::from_tgas(30);
+const MT_TRANSFER_CALL_GAS_DEFAULT: Gas = Gas::from_tgas(50);
 
 // mod old;
 
@@ -56,7 +60,7 @@ pub struct Contract(Storage);
 impl Contract {
     #[init]
     pub fn new(fixed: &FixedParams, params: Params) -> Self {
-        CreatedEvent {
+        CreateEvent {
             fixed: Cow::Borrowed(&fixed),
             params: Cow::Borrowed(&params),
         }
@@ -124,8 +128,13 @@ impl Escrow for Contract {
         }
 
         // TODO: allow retries
-        require!(!self.state.closed, "already closed");
+        require!(
+            !self.state.closed || self.state.src_remaining > 0,
+            "already closed or closing"
+        );
         self.state.closed = true;
+        // TODO: enrich event
+        EscrowEvent::Close.emit();
 
         let refund_to = fixed_params.refund_to.unwrap_or(fixed_params.maker);
 
@@ -138,9 +147,9 @@ impl Escrow for Contract {
         let refund = mem::take(&mut self.state.src_remaining);
         Self::send(
             fixed_params.src_asset,
-            // TODO: refund_to
-            refund_to,
+            refund_to.clone(),
             refund,
+            None,
             None,
             None,
         )
@@ -148,9 +157,10 @@ impl Escrow for Contract {
             Self::ext(env::current_account_id())
                 // TODO: static gas
                 .resolve_maker(
-                    U128(self.state.src_remaining),
+                    U128(refund),
                     // TODO: msg?
                     false,
+                    refund_to,
                 ),
         )
         .into()
@@ -230,7 +240,10 @@ impl Contract {
         dst_amount: u128,
         msg: FillAction,
     ) -> Result<u128> {
-        // TODO: taker whitelist
+        if !fixed.taker_whitelist.contains(&sender_id) {
+            // TODO: taker whitelist
+            return Err(Error::Unauthorized);
+        }
 
         let (taker_src_amount, mut maker_dst_amount) = {
             let want_src_amount = self
@@ -275,6 +288,7 @@ impl Contract {
                     fee_amount,
                     None,
                     None,
+                    None,
                 );
                 Ok((fee_collector.into(), fee_amount))
             })
@@ -294,8 +308,9 @@ impl Contract {
             fixed.src_asset,
             msg.receiver_id.unwrap_or(sender_id),
             taker_src_amount,
-            None,
-            None,
+            msg.memo,
+            msg.msg,
+            msg.min_gas,
         );
 
         // send to maker
@@ -309,6 +324,7 @@ impl Contract {
             maker_dst_amount,
             None,
             None,
+            None,
         );
 
         Ok(refund)
@@ -320,6 +336,7 @@ impl Contract {
         amount: u128,
         memo: Option<String>,
         msg: Option<String>,
+        min_gas: Option<Gas>,
     ) -> Promise {
         // TODO: msg for *_transfer_call()?
         let (contract_id, token_id) = asset.clone().into_contract_id_and_mt_token_id();
@@ -328,16 +345,35 @@ impl Contract {
             // TODO: are we sure we have that???
             .with_attached_deposit(NearToken::from_yoctonear(1));
         if let Some(msg) = msg {
-            todo!()
-        } else {
-            p.with_static_gas(MT_TRANSFER_GAS).mt_transfer(
-                receiver_id,
-                token_id,
-                U128(amount),
-                None,
-                memo,
+            p.with_static_gas(
+                min_gas
+                    .unwrap_or(MT_TRANSFER_CALL_GAS_DEFAULT)
+                    .max(MT_TRANSFER_CALL_GAS_MIN),
             )
+            .mt_transfer_call(receiver_id, token_id, U128(amount), None, memo, msg)
+        } else {
+            p.with_static_gas(
+                min_gas
+                    .unwrap_or(MT_TRANSFER_GAS_DEFAULT)
+                    .max(MT_TRANSFER_GAS_MIN),
+            )
+            .mt_transfer(receiver_id, token_id, U128(amount), None, memo)
         }
+    }
+
+    // TODO: rename
+    fn maybe_cleanup(&mut self, beneficiary_id: AccountId) -> Option<Promise> {
+        if self.params.deadline > now() {
+            // TODO: are we sure?
+            self.state.closed = true;
+        }
+
+        if !self.state.closed || self.state.src_remaining > 0 {
+            return None;
+        }
+
+        // TODO: refund storage_deposits?
+        Some(Promise::new(env::current_account_id()).delete_account(beneficiary_id))
     }
 }
 
@@ -345,7 +381,12 @@ impl Contract {
 impl Contract {
     #[private]
     // TODO: was it dst or src (i.e. close)?
-    pub fn resolve_maker(&mut self, amount: U128, is_call: bool) {
+    pub fn resolve_maker(
+        &mut self,
+        amount: U128,
+        is_call: bool,
+        beneficiary_id: AccountId,
+    ) -> U128 {
         let used = match env::promise_result(0) {
             PromiseResult::Successful(value) => {
                 if is_call {
@@ -383,6 +424,11 @@ impl Contract {
                 .unwrap_or_else(|| unreachable!());
             // TODO: emit event
         }
+
+        // detach promise
+        let _ = self.maybe_cleanup(beneficiary_id);
+
+        U128(refund)
         // TODO: maybe delete self?
     }
 }
