@@ -31,7 +31,7 @@ pub struct DepositMessage {
 impl DepositMessage {
     #[must_use]
     #[inline]
-    pub const fn new(receiver_id: AccountId) -> Self {
+    pub fn new(receiver_id: AccountId) -> Self {
         Self {
             receiver_id,
             execute_intents: Vec::new(),

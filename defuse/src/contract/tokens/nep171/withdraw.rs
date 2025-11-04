@@ -118,6 +118,72 @@ impl Contract {
         // only with storage_deposit
         .saturating_add(STORAGE_DEPOSIT_GAS);
 
+    // #[must_use]
+    // #[private]
+    // pub fn refund_mt_on_transfer(withdraw: NftWithdraw) -> Promise {
+    //
+    //     // let amount: Balance = amount.into();
+    //     //
+    //     // // Get the unused amount from the `ft_on_transfer` call result.
+    //     // let unused_amount = match env::promise_result(0) {
+    //     //     PromiseResult::Successful(value) => {
+    //     //         if let Ok(unused_amount) = near_sdk::serde_json::from_slice::<U128>(&value) {
+    //     //             std::cmp::min(amount, unused_amount.0)
+    //     //         } else {
+    //     //             amount
+    //     //         }
+    //     //     }
+    //     //     PromiseResult::Failed => amount,
+    //     // };
+    //     //
+    //     // if unused_amount > 0 {
+    //     //     let receiver_balance = self.accounts.get(&receiver_id).unwrap_or(0);
+    //     //     if receiver_balance > 0 {
+    //     //         let refund_amount = std::cmp::min(receiver_balance, unused_amount);
+    //     //         if let Some(new_receiver_balance) = receiver_balance.checked_sub(refund_amount) {
+    //     //             self.accounts.insert(&receiver_id, &new_receiver_balance);
+    //     //         } else {
+    //     //             env::panic_str("The receiver account doesn't have enough balance");
+    //     //         }
+    //     //
+    //     //         if let Some(sender_balance) = self.accounts.get(sender_id) {
+    //     //             if let Some(new_sender_balance) = sender_balance.checked_add(refund_amount) {
+    //     //                 self.accounts.insert(sender_id, &new_sender_balance);
+    //     //             } else {
+    //     //                 env::panic_str("Sender balance overflow");
+    //     //             }
+    //     //
+    //     //             FtTransfer {
+    //     //                 old_owner_id: &receiver_id,
+    //     //                 new_owner_id: sender_id,
+    //     //                 amount: U128(refund_amount),
+    //     //                 memo: Some("refund"),
+    //     //             }
+    //     //             .emit();
+    //     //             let used_amount = amount
+    //     //                 .checked_sub(refund_amount)
+    //     //                 .unwrap_or_else(|| env::panic_str(ERR_TOTAL_SUPPLY_OVERFLOW));
+    //     //             return (used_amount, 0);
+    //     //         } else {
+    //     //             // Sender's account was deleted, so we need to burn tokens.
+    //     //             self.total_supply = self
+    //     //                 .total_supply
+    //     //                 .checked_sub(refund_amount)
+    //     //                 .unwrap_or_else(|| env::panic_str(ERR_TOTAL_SUPPLY_OVERFLOW));
+    //     //             log!("The account of the sender was deleted");
+    //     //             FtBurn {
+    //     //                 owner_id: &receiver_id,
+    //     //                 amount: U128(refund_amount),
+    //     //                 memo: Some("refund"),
+    //     //             }
+    //     //             .emit();
+    //     //             return (amount, refund_amount);
+    //     //         }
+    //     //     }
+    //     // }
+    //     // (amount, 0)
+    // }
+
     #[must_use]
     #[private]
     pub fn do_nft_withdraw(withdraw: NftWithdraw) -> Promise {
