@@ -129,39 +129,40 @@ impl Escrow for Contract {
 
         // TODO: allow retries
         require!(
-            !self.state.closed || self.state.src_remaining > 0,
+            !self.state.closed || self.state.maker_src_remaining > 0,
             "already closed or closing"
         );
         self.state.closed = true;
         // TODO: enrich event
         EscrowEvent::Close.emit();
 
-        let refund_to = fixed_params.refund_to.unwrap_or(fixed_params.maker);
+        let refund_to = fixed_params
+            .refund_src_to
+            .receiver_id
+            .unwrap_or(fixed_params.maker);
 
-        if self.state.src_remaining == 0 {
+        if self.state.maker_src_remaining == 0 {
             let _ = Promise::new(env::current_account_id()).delete_account(refund_to);
 
             return PromiseOrValue::Value(U128(0));
         }
 
-        let refund = mem::take(&mut self.state.src_remaining);
+        let refund = mem::take(&mut self.state.maker_src_remaining);
+
+        let is_call = fixed_params.refund_src_to.msg.is_some();
         Self::send(
             fixed_params.src_asset,
             refund_to.clone(),
             refund,
-            None,
-            None,
-            None,
+            fixed_params.refund_src_to.memo,
+            fixed_params.refund_src_to.msg,
+            fixed_params.refund_src_to.min_gas,
         )
         .then(
             Self::ext(env::current_account_id())
-                // TODO: static gas
-                .resolve_maker(
-                    U128(refund),
-                    // TODO: msg?
-                    false,
-                    refund_to,
-                ),
+                .with_static_gas(Self::RESOLVE_MAKER_GAS)
+                .with_unused_gas_weight(0)
+                .resolve_maker(U128(refund), is_call, refund_to),
         )
         .into()
     }
@@ -206,16 +207,16 @@ impl Contract {
             return Err(Error::Unauthorized);
         }
 
-        self.state.src_remaining = self
+        self.state.maker_src_remaining = self
             .state
-            .src_remaining
+            .maker_src_remaining
             .checked_add(amount)
             .ok_or(Error::IntegerOverflow)?;
 
         AddSrcEvent {
             maker: sender_id,
             src_amount_added: amount,
-            src_remaining: self.state.src_remaining,
+            src_remaining: self.state.maker_src_remaining,
         }
         .emit();
 
@@ -252,25 +253,25 @@ impl Contract {
                 .src_amount(dst_amount)
                 .ok_or(Error::IntegerOverflow)?;
             // TODO: fees
-            if want_src_amount < self.state.src_remaining {
+            if want_src_amount < self.state.maker_src_remaining {
                 if !fixed.partial_fills_allowed {
                     return Err(Error::PartialFillsNotAllowed);
                 }
                 (want_src_amount, dst_amount)
             } else {
                 (
-                    self.state.src_remaining,
+                    self.state.maker_src_remaining,
                     self.params
                         .price
                         // TODO: rounding inside?
-                        .dst_amount(self.state.src_remaining)
+                        .dst_amount(self.state.maker_src_remaining)
                         .ok_or(Error::IntegerOverflow)?,
                 )
             }
         };
 
         // TODO: check taker_src_amount != 0 && maker_dst_amount != 0
-        self.state.src_remaining -= taker_src_amount;
+        self.state.maker_src_remaining -= taker_src_amount;
         let refund = dst_amount - maker_dst_amount;
 
         let dst_fees_collected = fixed
@@ -298,7 +299,7 @@ impl Contract {
             taker: Cow::Borrowed(&sender_id),
             src_amount: taker_src_amount,
             dst_amount,
-            taker_receiver_id: msg.receiver_id.as_deref().map(Cow::Borrowed),
+            taker_receiver_id: msg.receive_src_to.receiver_id.as_deref().map(Cow::Borrowed),
             dst_fees_collected,
         }
         .emit();
@@ -306,25 +307,26 @@ impl Contract {
         // send to taker
         let _ = Self::send(
             fixed.src_asset,
-            msg.receiver_id.unwrap_or(sender_id),
+            msg.receive_src_to.receiver_id.unwrap_or(sender_id),
             taker_src_amount,
-            msg.memo,
-            msg.msg,
-            msg.min_gas,
+            msg.receive_src_to.memo,
+            msg.receive_src_to.msg,
+            msg.receive_src_to.min_gas,
         );
 
         // send to maker
         let _ = Self::send(
             fixed.dst_asset,
             fixed
-                .maker_dst_receiver_id
+                .receive_dst_to
+                .receiver_id
                 .as_ref()
                 .unwrap_or(&fixed.maker)
                 .clone(),
             maker_dst_amount,
-            None,
-            None,
-            None,
+            fixed.receive_dst_to.memo,
+            fixed.receive_dst_to.msg, // TODO: resolve?
+            fixed.receive_dst_to.min_gas,
         );
 
         Ok(refund)
@@ -338,8 +340,7 @@ impl Contract {
         msg: Option<String>,
         min_gas: Option<Gas>,
     ) -> Promise {
-        // TODO: msg for *_transfer_call()?
-        let (contract_id, token_id) = asset.clone().into_contract_id_and_mt_token_id();
+        let (contract_id, token_id) = asset.into_contract_id_and_mt_token_id();
 
         let p = ext_mt_core::ext(contract_id)
             // TODO: are we sure we have that???
@@ -368,17 +369,22 @@ impl Contract {
             self.state.closed = true;
         }
 
-        if !self.state.closed || self.state.src_remaining > 0 {
+        if !self.state.closed || self.state.maker_src_remaining > 0 {
             return None;
         }
 
-        // TODO: refund storage_deposits?
+        // NOTE: Unfortunately, we can't refund `storage_deposit`s on src and dst
+        // tokens back to maker or any other beneficiary, since
+        // `storage_unregister()` internally detaches transfer Promise, so we
+        // don't know when it arrives and can't schedule the cleanup afterwards.
         Some(Promise::new(env::current_account_id()).delete_account(beneficiary_id))
     }
 }
 
 #[near]
 impl Contract {
+    const RESOLVE_MAKER_GAS: Gas = Gas::from_tgas(10);
+
     #[private]
     // TODO: was it dst or src (i.e. close)?
     pub fn resolve_maker(
@@ -416,9 +422,9 @@ impl Contract {
 
         let refund = amount.0.saturating_sub(used);
         if refund > 0 {
-            self.state.src_remaining = self
+            self.state.maker_src_remaining = self
                 .state
-                .src_remaining
+                .maker_src_remaining
                 .checked_add(refund)
                 // TODO: is it?
                 .unwrap_or_else(|| unreachable!());

@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::{Error, Price, Result};
+use crate::{Error, Price, Result, SendParams};
 
 use chrono::{DateTime, Utc};
 use defuse_borsh_utils::adapters::{
@@ -79,8 +79,8 @@ impl Storage {
 pub struct FixedParams {
     pub maker: AccountId,
 
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub refund_to: Option<AccountId>,
+    #[serde(default, skip_serializing_if = "crate::utils::is_default")]
+    pub refund_src_to: SendParams,
 
     // TODO: nep245: token_id length is less than max on intents.near
     // TODO: check != src_asset
@@ -89,9 +89,8 @@ pub struct FixedParams {
     #[serde_as(as = "DisplayFromStr")]
     pub dst_asset: TokenId,
 
-    // TODO: maker msg
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub maker_dst_receiver_id: Option<AccountId>,
+    #[serde(default, skip_serializing_if = "crate::utils::is_default")]
+    pub receive_dst_to: SendParams,
 
     #[serde(default)]
     pub partial_fills_allowed: bool,
@@ -162,7 +161,7 @@ pub struct Params {
 #[derive(Debug, Default, Clone)]
 pub struct State {
     #[serde_as(as = "DisplayFromStr")]
-    pub src_remaining: u128,
+    pub maker_src_remaining: u128,
 
     #[serde(default, skip_serializing_if = "::core::ops::Not::not")]
     pub closed: bool,

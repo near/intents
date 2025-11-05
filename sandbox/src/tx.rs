@@ -255,7 +255,10 @@ impl Debug for TestExecutionOutcome<'_> {
         match self.0.clone().into_result() {
             Ok(v) => {
                 if let ValueOrReceiptId::Value(value) = v {
-                    write!(f, ", OK: {:?}", value.raw_bytes().unwrap())?;
+                    let bytes = value.raw_bytes().unwrap();
+                    if !bytes.is_empty() {
+                        write!(f, ", OK: {:?}", bytes)?;
+                    }
                 }
                 Ok(())
             }

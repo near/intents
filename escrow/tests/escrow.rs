@@ -3,7 +3,9 @@ mod env;
 use std::time::Duration;
 
 use chrono::Utc;
-use defuse_escrow::{FillAction, FixedParams, OpenAction, Params, Price, TransferMessage};
+use defuse_escrow::{
+    FillAction, FixedParams, OpenAction, Params, Price, SendParams, TransferMessage,
+};
 use defuse_fees::Pips;
 use defuse_sandbox::{
     Account, MtExt, MtViewExt, SigningAccount, TxResult,
@@ -16,6 +18,179 @@ use itertools::Itertools;
 use near_sdk::{AccountId, AccountIdRef, NearToken, serde_json};
 
 use crate::env::{BaseEnv, EscrowExt, EscrowViewExt};
+
+#[tokio::test]
+async fn partial_fills() {
+    const SRC_TOKEN_ID: &str = "src";
+    const DST_TOKEN_ID: &str = "dst";
+
+    const MAKER_AMOUNT: u128 = 100;
+    const TAKER_AMOUNT: u128 = 200;
+
+    let env = EscrowEnv::new().await.unwrap();
+
+    try_join!(
+        env.src_deposit_to_verifier(env.maker.id(), SRC_TOKEN_ID, MAKER_AMOUNT),
+        env.dst_deposit_to_verifier(env.takers[0].id(), DST_TOKEN_ID, TAKER_AMOUNT),
+        env.dst_deposit_to_verifier(env.takers[1].id(), DST_TOKEN_ID, TAKER_AMOUNT),
+        env.dst_deposit_to_verifier(env.takers[2].id(), DST_TOKEN_ID, TAKER_AMOUNT),
+    )
+    .unwrap();
+
+    let [src_verifier_asset, dst_verifier_asset] = [
+        (env.src_mt.id(), SRC_TOKEN_ID),
+        (env.mt_dst.id(), DST_TOKEN_ID),
+    ]
+    .map(|(contract_id, token_id)| {
+        Nep245TokenId::new(contract_id.clone(), token_id.to_string()).unwrap()
+    })
+    .map(TokenId::from);
+
+    let [src_asset, dst_asset] = [&src_verifier_asset, &dst_verifier_asset].map(|token_id| {
+        Nep245TokenId::new(env.verifier.id().clone(), token_id.to_string()).unwrap()
+    });
+
+    let fixed_params = FixedParams {
+        maker: env.maker.id().clone(),
+        refund_src_to: SendParams::default(),
+        src_asset: src_asset.clone(),
+        dst_asset: dst_asset.clone(),
+        receive_dst_to: SendParams::default(),
+        partial_fills_allowed: true,
+        fees: env
+            .fee_collectors
+            .iter()
+            .map(|a| a.id())
+            .cloned()
+            .enumerate()
+            .map(|(percent, a)| (a, Pips::from_percent(percent as u32 + 1).unwrap()))
+            .collect(),
+        taker_whitelist: env.takers.iter().map(|a| a.id()).cloned().collect(),
+        // maker_authority: Some(cancel_authorify.0.clone()),
+    };
+
+    let escrow = env
+        .create_escrow(
+            &fixed_params,
+            Params {
+                price: Price::ratio(MAKER_AMOUNT, TAKER_AMOUNT).unwrap(),
+                deadline: Utc::now() + Duration::from_secs(120),
+            },
+        )
+        .await
+        .unwrap();
+    env.view_escrow(&escrow).await;
+    env.show_verifier_balances(
+        [escrow.id(), env.maker.id()]
+            .into_iter()
+            .chain(env.takers.iter().map(|a| a.id()))
+            .chain(env.fee_collectors.iter().map(|a| a.id()))
+            .map(|a| a.as_ref()),
+        &[&src_verifier_asset, &dst_verifier_asset],
+    )
+    .await;
+
+    // maker deposit
+    {
+        let sent = env
+            .maker
+            .mt_transfer_call(
+                env.verifier.id().clone(),
+                escrow.id(),
+                src_verifier_asset.to_string(),
+                MAKER_AMOUNT,
+                None,
+                serde_json::to_string(&TransferMessage {
+                    fixed_params: fixed_params.clone(),
+                    action: OpenAction { new_price: None }.into(),
+                })
+                .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        println!("maker deposited: {sent}");
+
+        env.show_verifier_balances(
+            [escrow.id(), env.maker.id()]
+                .into_iter()
+                .chain(env.takers.iter().map(|a| a.id()))
+                .chain(env.fee_collectors.iter().map(|a| a.id()))
+                .map(|a| a.as_ref()),
+            &[&src_verifier_asset, &dst_verifier_asset],
+        )
+        .await;
+
+        assert_eq!(sent, MAKER_AMOUNT);
+        env.view_escrow(&escrow).await;
+    }
+
+    // takers deposit
+    {
+        for (taker, amount) in env.takers.iter().zip([100, 50, 30]) {
+            let sent = taker
+                .mt_transfer_call(
+                    env.verifier.id().clone(),
+                    escrow.id(),
+                    dst_verifier_asset.to_string(),
+                    amount,
+                    None,
+                    serde_json::to_string(&TransferMessage {
+                        fixed_params: fixed_params.clone(),
+                        action: FillAction {
+                            receive_src_to: SendParams {
+                                memo: Some("taker memo".to_string()),
+                                // msg: Some("taker msg".to_string()),
+                                ..Default::default()
+                            },
+                        }
+                        .into(),
+                    })
+                    .unwrap(),
+                )
+                .await
+                .unwrap();
+
+            println!("taker deposited: {sent}");
+
+            env.show_verifier_balances(
+                [escrow.id(), env.maker.id()]
+                    .into_iter()
+                    .chain(env.takers.iter().map(|a| a.id()))
+                    .chain(env.fee_collectors.iter().map(|a| a.id()))
+                    .map(|a| a.as_ref()),
+                &[&src_verifier_asset, &dst_verifier_asset],
+            )
+            .await;
+
+            assert_eq!(sent, amount);
+        }
+        env.view_escrow(&escrow).await;
+    }
+
+    // maker closes the escrow
+    {
+        env.maker
+            .close_escrow(escrow.id().clone(), fixed_params.clone())
+            .await
+            .unwrap();
+
+        env.show_verifier_balances(
+            [escrow.id(), env.maker.id()]
+                .into_iter()
+                .chain(env.takers.iter().map(|a| a.id()))
+                .chain(env.fee_collectors.iter().map(|a| a.id()))
+                .map(|a| a.as_ref()),
+            &[&src_verifier_asset, &dst_verifier_asset],
+        )
+        .await;
+
+        escrow
+            .view()
+            .await
+            .expect_err("cleanup should have been performed");
+    }
+}
 
 #[autoimpl(Deref using self.env)]
 struct EscrowEnv {
@@ -144,178 +319,10 @@ impl EscrowEnv {
 
     pub async fn view_escrow(&self, escrow: &Account) {
         let s = escrow.view_escrow().await.unwrap();
-        println!("{}::view() -> {:#?}", escrow.id(), s);
-    }
-}
-
-#[tokio::test]
-async fn partial_fills() {
-    const SRC_TOKEN_ID: &str = "src";
-    const DST_TOKEN_ID: &str = "dst";
-
-    const MAKER_AMOUNT: u128 = 100;
-    const TAKER_AMOUNT: u128 = 200;
-
-    let env = EscrowEnv::new().await.unwrap();
-
-    try_join!(
-        env.src_deposit_to_verifier(env.maker.id(), SRC_TOKEN_ID, MAKER_AMOUNT),
-        env.dst_deposit_to_verifier(env.takers[0].id(), DST_TOKEN_ID, TAKER_AMOUNT),
-        env.dst_deposit_to_verifier(env.takers[1].id(), DST_TOKEN_ID, TAKER_AMOUNT),
-        env.dst_deposit_to_verifier(env.takers[2].id(), DST_TOKEN_ID, TAKER_AMOUNT),
-    )
-    .unwrap();
-
-    let [src_verifier_asset, dst_verifier_asset] = [
-        (env.src_mt.id(), SRC_TOKEN_ID),
-        (env.mt_dst.id(), DST_TOKEN_ID),
-    ]
-    .map(|(contract_id, token_id)| {
-        Nep245TokenId::new(contract_id.clone(), token_id.to_string()).unwrap()
-    })
-    .map(TokenId::from);
-
-    let [src_asset, dst_asset] = [&src_verifier_asset, &dst_verifier_asset].map(|token_id| {
-        Nep245TokenId::new(env.verifier.id().clone(), token_id.to_string()).unwrap()
-    });
-
-    let fixed_params = FixedParams {
-        maker: env.maker.id().clone(),
-        refund_to: Some(env.maker.id().clone()),
-        src_asset: src_asset.clone(),
-        dst_asset: dst_asset.clone(),
-        maker_dst_receiver_id: Some(env.maker.id().clone()),
-        partial_fills_allowed: true,
-        fees: env
-            .fee_collectors
-            .iter()
-            .map(|a| a.id())
-            .cloned()
-            .enumerate()
-            .map(|(percent, a)| (a, Pips::from_percent(percent as u32 + 1).unwrap()))
-            .collect(),
-        taker_whitelist: env.takers.iter().map(|a| a.id()).cloned().collect(),
-        // maker_authority: Some(cancel_authorify.0.clone()),
-    };
-
-    let escrow = env
-        .create_escrow(
-            &fixed_params,
-            Params {
-                price: Price::ratio(MAKER_AMOUNT, TAKER_AMOUNT).unwrap(),
-                deadline: Utc::now() + Duration::from_secs(120),
-            },
-        )
-        .await
-        .unwrap();
-    env.view_escrow(&escrow).await;
-    env.show_verifier_balances(
-        [escrow.id(), env.maker.id()]
-            .into_iter()
-            .chain(env.takers.iter().map(|a| a.id()))
-            .chain(env.fee_collectors.iter().map(|a| a.id()))
-            .map(|a| a.as_ref()),
-        &[&src_verifier_asset, &dst_verifier_asset],
-    )
-    .await;
-
-    // maker deposit
-    {
-        let sent = env
-            .maker
-            .mt_transfer_call(
-                env.verifier.id().clone(),
-                escrow.id(),
-                src_verifier_asset.to_string(),
-                MAKER_AMOUNT,
-                None,
-                serde_json::to_string(&TransferMessage {
-                    fixed_params: fixed_params.clone(),
-                    action: OpenAction { new_price: None }.into(),
-                })
-                .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        println!("maker deposited: {sent}");
-
-        env.show_verifier_balances(
-            [escrow.id(), env.maker.id()]
-                .into_iter()
-                .chain(env.takers.iter().map(|a| a.id()))
-                .chain(env.fee_collectors.iter().map(|a| a.id()))
-                .map(|a| a.as_ref()),
-            &[&src_verifier_asset, &dst_verifier_asset],
-        )
-        .await;
-
-        assert_eq!(sent, MAKER_AMOUNT);
-        env.view_escrow(&escrow).await;
-    }
-
-    // takers deposit
-    {
-        for (taker, amount) in env.takers.iter().zip([100, 50, 30]) {
-            let sent = taker
-                .mt_transfer_call(
-                    env.verifier.id().clone(),
-                    escrow.id(),
-                    dst_verifier_asset.to_string(),
-                    amount,
-                    None,
-                    serde_json::to_string(&TransferMessage {
-                        fixed_params: fixed_params.clone(),
-                        action: FillAction {
-                            receiver_id: None,
-                            memo: Some("taker memo".to_string()),
-                            msg: Some("taker msg".to_string()),
-                            min_gas: None,
-                        }
-                        .into(),
-                    })
-                    .unwrap(),
-                )
-                .await
-                .unwrap();
-
-            println!("taker deposited: {sent}");
-
-            env.show_verifier_balances(
-                [escrow.id(), env.maker.id()]
-                    .into_iter()
-                    .chain(env.takers.iter().map(|a| a.id()))
-                    .chain(env.fee_collectors.iter().map(|a| a.id()))
-                    .map(|a| a.as_ref()),
-                &[&src_verifier_asset, &dst_verifier_asset],
-            )
-            .await;
-
-            assert_eq!(sent, amount);
-        }
-        env.view_escrow(&escrow).await;
-    }
-
-    // maker closes the escrow
-    {
-        env.maker
-            .close_escrow(escrow.id().clone(), fixed_params.clone())
-            .await
-            .unwrap();
-
-        env.show_verifier_balances(
-            [escrow.id(), env.maker.id()]
-                .into_iter()
-                .chain(env.takers.iter().map(|a| a.id()))
-                .chain(env.fee_collectors.iter().map(|a| a.id()))
-                .map(|a| a.as_ref()),
-            &[&src_verifier_asset, &dst_verifier_asset],
-        )
-        .await;
-
-        escrow
-            .view()
-            .await
-            .expect_err("cleanup should have been performed");
+        println!(
+            "{}::view() -> {:#}",
+            escrow.id(),
+            serde_json::to_value(&s).unwrap()
+        );
     }
 }
