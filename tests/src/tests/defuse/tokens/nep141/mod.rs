@@ -334,7 +334,7 @@ async fn ft_force_withdraw(#[values(false, true)] no_registration: bool) {
 }
 
 #[tokio::test]
-async fn ft_transfer_call_stub_action_message() {
+async fn ft_transfer_call_calls_mt_on_transfer_and_there_is_nothing_to_refund() {
     use crate::utils::account::AccountExt;
     use multi_token_receiver_stub::StubAction;
     use near_sdk::serde_json;
@@ -356,20 +356,65 @@ async fn ft_transfer_call_stub_action_message() {
 
     let root = env.sandbox().root_account();
     assert!(env.ft_token_balance_of(&ft, root.id()).await.unwrap() > 0);
-
-    // root.ft_transfer_call(&ft, user.id(), 1000, None, "").await.unwrap();
-
     root.ft_transfer(&ft, user.id(), 1000, None).await.unwrap();
     assert_eq!(env.ft_token_balance_of(&ft, user.id()).await.unwrap(), 1000);
 
     let deposit_message = DepositMessage::new(receiver.id().clone())
         .with_refund_if_fails()
-        .with_message(serde_json::to_string(&StubAction::ReturnValue(100.into())).unwrap());
+        .with_message(serde_json::to_string(&StubAction::ReturnValue(0.into())).unwrap());
 
     user.ft_transfer_call(
         &ft,
         env.defuse.id(),
-        800,
+        1000,
+        None,
+        &serde_json::to_string(&deposit_message).unwrap(),
+    ).await.unwrap();
+
+    assert_eq!(env.ft_token_balance_of(&ft, user.id()).await.unwrap(), 0);
+
+    assert_eq!(
+        env.mt_contract_balance_of(env.defuse.id(), receiver.id(), &ft_id.to_string())
+            .await
+            .unwrap(),
+        1000
+    );
+}
+
+#[tokio::test]
+async fn ft_transfer_call_calls_mt_on_transfer_with_refund_of_unused_tokens() {
+    use crate::utils::account::AccountExt;
+    use multi_token_receiver_stub::StubAction;
+    use near_sdk::serde_json;
+
+    let env = Env::builder()
+        .deployer_as_super_admin()
+        .no_registration(false)
+        .build()
+        .await;
+
+    let (user, receiver, ft) =
+        futures::join!(env.create_user(), env.create_user(), env.create_token());
+
+    receiver.deploy(MT_RECEIVER_STUB_WASM.as_slice()).await.unwrap().unwrap();
+
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
+    env.initial_ft_storage_deposit(vec![user.id(), receiver.id()], vec![&ft])
+        .await;
+
+    let root = env.sandbox().root_account();
+    assert!(env.ft_token_balance_of(&ft, root.id()).await.unwrap() > 0);
+    root.ft_transfer(&ft, user.id(), 1000, None).await.unwrap();
+    assert_eq!(env.ft_token_balance_of(&ft, user.id()).await.unwrap(), 1000);
+
+    let deposit_message = DepositMessage::new(receiver.id().clone())
+        .with_refund_if_fails()
+        .with_message(serde_json::to_string(&StubAction::ReturnValue(300.into())).unwrap());
+
+    user.ft_transfer_call(
+        &ft,
+        env.defuse.id(),
+        1000,
         None,
         &serde_json::to_string(&deposit_message).unwrap(),
     ).await.unwrap();
@@ -382,5 +427,53 @@ async fn ft_transfer_call_stub_action_message() {
             .unwrap(),
         700
     );
+}
 
+
+#[tokio::test]
+async fn ft_transfer_call_calls_mt_on_transfer_with_malicous_refund() {
+    use crate::utils::account::AccountExt;
+    use multi_token_receiver_stub::StubAction;
+    use near_sdk::serde_json;
+
+    let env = Env::builder()
+        .deployer_as_super_admin()
+        .no_registration(false)
+        .build()
+        .await;
+
+    let (user, receiver, ft) =
+        futures::join!(env.create_user(), env.create_user(), env.create_token());
+
+    receiver.deploy(MT_RECEIVER_STUB_WASM.as_slice()).await.unwrap().unwrap();
+
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
+    env.initial_ft_storage_deposit(vec![user.id(), receiver.id()], vec![&ft])
+        .await;
+
+    let root = env.sandbox().root_account();
+    assert!(env.ft_token_balance_of(&ft, root.id()).await.unwrap() > 0);
+    root.ft_transfer(&ft, user.id(), 1000, None).await.unwrap();
+    assert_eq!(env.ft_token_balance_of(&ft, user.id()).await.unwrap(), 1000);
+
+    let deposit_message = DepositMessage::new(receiver.id().clone())
+        .with_refund_if_fails()
+        .with_message(serde_json::to_string(&StubAction::ReturnValue(2000.into())).unwrap());
+
+    user.ft_transfer_call(
+        &ft,
+        env.defuse.id(),
+        1000,
+        None,
+        &serde_json::to_string(&deposit_message).unwrap(),
+    ).await.unwrap();
+
+    assert_eq!(env.ft_token_balance_of(&ft, user.id()).await.unwrap(), 1000);
+
+    assert_eq!(
+        env.mt_contract_balance_of(env.defuse.id(), receiver.id(), &ft_id.to_string())
+            .await
+            .unwrap(),
+        0
+    );
 }
