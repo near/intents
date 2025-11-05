@@ -383,7 +383,7 @@ async fn ft_transfer_call_stub_action_message() {
 
     let deposit_message = DepositMessage::new(receiver.id().clone())
         .with_refund_if_fails()
-        .with_message(serde_json::to_string(&StubAction::ReturnValue(0.into())).unwrap());
+        .with_message(serde_json::to_string(&StubAction::ReturnValue(100.into())).unwrap());
 
     user.ft_transfer_call(
         &ft,
@@ -393,13 +393,13 @@ async fn ft_transfer_call_stub_action_message() {
         &serde_json::to_string(&deposit_message).unwrap(),
     ).await.unwrap();
 
-    assert_eq!(env.ft_token_balance_of(&ft, user.id()).await.unwrap(), 200);
+    assert_eq!(env.ft_token_balance_of(&ft, user.id()).await.unwrap(), 300);
 
     assert_eq!(
         env.mt_contract_balance_of(env.defuse.id(), receiver.id(), &ft_id.to_string())
             .await
             .unwrap(),
-        800
+        700
     );
 
     // assert_eq!(env.ft_token_balance_of(&ft, user.id()).await.unwrap(), 0);
@@ -412,12 +412,6 @@ async fn ft_transfer_call_stub_action_message() {
     //     .unwrap();
 
 
-    let stub = env
-        .sandbox()
-        .root_account()
-        .deploy_contract("stub-mt-receiver", MT_RECEIVER_STUB_WASM.as_slice())
-        .await
-        .expect("deploy stub receiver");
     //
     // let deposit_message = DepositMessage {
     //     receiver_id: receiver.id().clone(),

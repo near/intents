@@ -114,7 +114,6 @@ impl FungibleTokenReceiver for Contract {
                     )
                     .then(
                         Self::ext(CURRENT_ACCOUNT_ID.clone())
-                            .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS)
                             // do not distribute remaining gas here
                             .with_unused_gas_weight(0)
                             .ft_resolve_deposit(
@@ -148,7 +147,7 @@ impl FungibleTokenReceiver for Contract {
                     )
                     .then(
                         Self::ext(CURRENT_ACCOUNT_ID.clone())
-                            .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS)
+                            .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS_HUGE)
                             // do not distribute remaining gas here
                             .with_unused_gas_weight(0)
                             .ft_resolve_deposit(
@@ -168,6 +167,7 @@ impl FungibleTokenReceiver for Contract {
 #[near]
 impl Contract {
     const FT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
+    const FT_RESOLVE_DEPOSIT_GAS_HUGE: Gas = Gas::from_tgas(100);
 
     #[private]
     pub fn ft_resolve_deposit(
