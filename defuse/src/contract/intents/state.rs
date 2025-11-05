@@ -217,7 +217,7 @@ impl State for Contract {
         self.internal_add_balance(transfer.receiver_id.clone(), transfer.tokens.clone())?;
 
         if let Some(msg) = transfer.msg {
-            let (token_ids, amounts): (Vec<String>, Vec<U128>) = transfer
+            let (token_ids, amounts) = transfer
                 .tokens
                 .iter()
                 .map(|(token_id, amount)| (token_id.to_string(), U128(*amount)))
