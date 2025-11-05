@@ -6,7 +6,7 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-derive_more.workspace = true
+derive_more = { workspace = true, features = ["from"] }
 near-sdk.workspace = true
 
 [lints]

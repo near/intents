@@ -40,6 +40,9 @@ use std::{
 pub static POA_TOKEN_WASM_NO_REGISTRATION: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("res/poa-token-no-registration/defuse_poa_token"));
 
+pub static MT_RECEIVER_STUB_WASM: LazyLock<Vec<u8>> =
+    LazyLock::new(|| read_wasm("res/multi-token-receiver-stub/multi_token_receiver_stub"));
+
 pub struct Env {
     sandbox: Sandbox,
 

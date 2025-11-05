@@ -5,13 +5,15 @@ edition.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
-base64 = "0.22"
 defuse-nep245.workspace = true
 near-sdk.workspace = true
 
 [dev-dependencies]
-near-sdk.workspace = true
+near-sdk = { workspace = true, features = ["unit-testing"] }
 near-workspaces.workspace = true
 tokio.workspace = true
 serde_json.workspace = true

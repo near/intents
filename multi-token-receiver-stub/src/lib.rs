@@ -1,4 +1,3 @@
-use base64::{Engine as _, engine::general_purpose::STANDARD};
 use defuse_nep245::{TokenId, receiver::MultiTokenReceiver};
 use near_sdk::{
     AccountId, PromiseOrValue,
@@ -9,13 +8,26 @@ use near_sdk::{
 };
 
 /// Minimal stub contract used for integration tests.
+#[derive(Default)]
 #[near(contract_state)]
-pub struct Contract {}
+pub struct Contract;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub enum StubAction {
     ReturnValue(U128),
+}
+
+impl StubAction {
+    fn decode(msg: &str) -> Self {
+        serde_json::from_str(msg)
+            .unwrap_or_else(|err| panic!("failed to deserialize StubAction: {err}"))
+    }
+
+    #[cfg(test)]
+    fn encode(&self) -> String {
+        serde_json::to_string(self).expect("StubAction::encode serialization should succeed")
+    }
 }
 
 #[near]
@@ -28,8 +40,7 @@ impl MultiTokenReceiver for Contract {
         _amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
-        let action: StubAction = serde_json::from_str(&msg).unwrap();
-        match action{
+        match StubAction::decode(&msg) {
             StubAction::ReturnValue(value) => PromiseOrValue::Value(vec![value]),
         }
     }
@@ -43,8 +54,8 @@ mod tests {
 
     #[test]
     fn mt_on_transfer_returns_requested_value() {
-        let mut contract = Contract {};
-        let message = serde_json::to_string(&StubAction::ReturnValue(U128(42))).unwrap();
+        let mut contract = Contract;
+        let message = StubAction::ReturnValue(U128(42)).encode();
 
         let PromiseOrValue::Value(result) = contract.mt_on_transfer(
             AccountId::from_str("sender.testnet").unwrap(),

@@ -63,43 +63,103 @@ impl FungibleTokenReceiver for Contract {
         let token_account = PREDECESSOR_ACCOUNT_ID.clone();
         let resolver_receiver_id = receiver_id.clone();
 
-        let callback = ext_mt_receiver::ext(receiver_id.clone())
-            .mt_on_transfer(
-                sender_id.clone(),
-                previous_owner_ids,
-                token_ids,
-                amounts,
-                message,
-            )
-            .then(
-                Self::ext(CURRENT_ACCOUNT_ID.clone())
-                    .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS)
-                    // do not distribute remaining gas here
-                    .with_unused_gas_weight(0)
-                    .ft_resolve_deposit(
-                        sender_id,
-                        resolver_receiver_id,
-                        token_account,
-                        U128(amount_value),
-                    ),
-            );
+        let intents_to_execute = if !msg.execute_intents.is_empty() {
+            Some(&msg.execute_intents)
+        } else {
+            None
+        };
 
-        if !msg.execute_intents.is_empty() {
-            if msg.refund_if_fails {
+        let notification = if !msg.message.is_empty() {
+            Some(&msg.message)
+        } else {
+            None
+        };
+
+        match (intents_to_execute, notification, &msg.refund_if_fails) {
+            (Some(intents), Some(notification), refund @ true) => {
                 self.execute_intents(msg.execute_intents);
-                callback.into()
-            } else {
-                // detach promise
-                ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
-                    .execute_intents(msg.execute_intents)
-                    .and(callback)
+                ext_mt_receiver::ext(receiver_id.clone())
+                    .mt_on_transfer(
+                        sender_id.clone(),
+                        previous_owner_ids,
+                        token_ids,
+                        amounts,
+                        message,
+                    )
+                    .then(
+                        Self::ext(CURRENT_ACCOUNT_ID.clone())
+                            .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS)
+                            // do not distribute remaining gas here
+                            .with_unused_gas_weight(0)
+                            .ft_resolve_deposit(
+                                sender_id,
+                                resolver_receiver_id,
+                                token_account,
+                                U128(amount_value),
+                            ),
+                    )
                     .into()
             }
-        } else {
-            callback.into()
-        }
+            (Some(intents), Some(notification), refund @ false) => {
+                let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
+                    .execute_intents(msg.execute_intents);
 
-        // .into()
+                ext_mt_receiver::ext(receiver_id.clone())
+                    .mt_on_transfer(
+                        sender_id.clone(),
+                        previous_owner_ids,
+                        token_ids,
+                        amounts,
+                        message,
+                    )
+                    .then(
+                        Self::ext(CURRENT_ACCOUNT_ID.clone())
+                            .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS)
+                            // do not distribute remaining gas here
+                            .with_unused_gas_weight(0)
+                            .ft_resolve_deposit(
+                                sender_id,
+                                resolver_receiver_id,
+                                token_account,
+                                U128(amount_value),
+                            ),
+                    )
+                    .into()
+            }
+            (Some(intents), None, refund @ true) => {
+                self.execute_intents(msg.execute_intents);
+                PromiseOrValue::Value(U128(0))
+            }
+            (Some(intents), None, refund @ false) => {
+                let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
+                    .execute_intents(msg.execute_intents);
+                PromiseOrValue::Value(U128(0))
+            }
+            (None, Some(notification), _) => {
+                ext_mt_receiver::ext(receiver_id.clone())
+                    .mt_on_transfer(
+                        sender_id.clone(),
+                        previous_owner_ids,
+                        token_ids,
+                        amounts,
+                        message,
+                    )
+                    .then(
+                        Self::ext(CURRENT_ACCOUNT_ID.clone())
+                            .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS)
+                            // do not distribute remaining gas here
+                            .with_unused_gas_weight(0)
+                            .ft_resolve_deposit(
+                                sender_id,
+                                resolver_receiver_id,
+                                token_account,
+                                U128(amount_value),
+                            ),
+                    )
+                    .into()
+            }
+            (None, None, _) => PromiseOrValue::Value(U128(0)),
+        }
     }
 }
 
