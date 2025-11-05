@@ -34,12 +34,13 @@ impl StubAction {
 impl MultiTokenReceiver for Contract {
     fn mt_on_transfer(
         &mut self,
-        _sender_id: AccountId,
-        _previous_owner_ids: Vec<AccountId>,
-        _token_ids: Vec<TokenId>,
-        _amounts: Vec<U128>,
+        sender_id: AccountId,
+        previous_owner_ids: Vec<AccountId>,
+        token_ids: Vec<TokenId>,
+        amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
+        near_sdk::env::log_str(&format!("FOO FOO FOO FOO FOO FOO FOO FOO FOO FOO "));
         match StubAction::decode(&msg) {
             StubAction::ReturnValue(value) => PromiseOrValue::Value(vec![value]),
         }

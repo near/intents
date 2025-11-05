@@ -53,6 +53,13 @@ impl DepositMessage {
         self.refund_if_fails = true;
         self
     }
+
+    #[must_use]
+    #[inline]
+    pub fn with_message(mut self, message: String) -> Self {
+        self.message = message;
+        self
+    }
 }
 
 impl Display for DepositMessage {

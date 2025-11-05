@@ -136,7 +136,9 @@ impl FungibleTokenReceiver for Contract {
                 PromiseOrValue::Value(U128(0))
             }
             (None, Some(notification), _) => {
+                env::log_str("BLAH BLAH BLAH BLAH BLAH BLAH BLAH BLAH BLAH BLAH");
                 ext_mt_receiver::ext(receiver_id.clone())
+                    .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS)
                     .mt_on_transfer(
                         sender_id.clone(),
                         previous_owner_ids,
