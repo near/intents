@@ -1,11 +1,16 @@
-use defuse_core::token_id::{TokenId as CoreTokenId, nep141::Nep141TokenId};
+use defuse_core::{
+    intents::tokens::FtWithdraw,
+    token_id::{TokenId as CoreTokenId, nep141::Nep141TokenId},
+};
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
 use defuse_nep245::receiver::ext_mt_receiver;
 use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 use near_plugins::{Pausable, pause};
-use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near, require};
+use near_sdk::{
+    AccountId, Gas, PromiseOrValue, PromiseResult, env, json_types::U128, near, require, serde_json,
+};
 
 use crate::{
     contract::{Contract, ContractExt},
@@ -55,41 +60,120 @@ impl FungibleTokenReceiver for Contract {
         let amounts = vec![U128(amount_value)];
         let message = msg.message.clone();
 
+        let token_account = PREDECESSOR_ACCOUNT_ID.clone();
+        let resolver_receiver_id = receiver_id.clone();
+
+        let callback = ext_mt_receiver::ext(receiver_id.clone())
+            .mt_on_transfer(
+                sender_id.clone(),
+                previous_owner_ids,
+                token_ids,
+                amounts,
+                message,
+            )
+            .then(
+                Self::ext(CURRENT_ACCOUNT_ID.clone())
+                    .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS)
+                    // do not distribute remaining gas here
+                    .with_unused_gas_weight(0)
+                    .ft_resolve_deposit(
+                        sender_id,
+                        resolver_receiver_id,
+                        token_account,
+                        U128(amount_value),
+                    ),
+            );
+
         if !msg.execute_intents.is_empty() {
             if msg.refund_if_fails {
                 self.execute_intents(msg.execute_intents);
+                callback.into()
+
             } else {
                 // detach promise
-                let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
-                    .execute_intents(msg.execute_intents);
+                ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
+                    .execute_intents(msg.execute_intents)
+                    .and(callback).into()
+
             }
+        }else{
+            callback.into()
         }
 
-        // ext_mt_receiver::ext(receiver_id)
-        //     .mt_on_transfer(sender_id, previous_owner_ids, token_ids, amounts, message)
-        //     .then(
-        //         // schedule storage_deposit() only after near_withdraw() returns
-        //         Self::ext(CURRENT_ACCOUNT_ID.clone())
-        //             .with_static_gas(
-        //                 Self::DO_NFT_WITHDRAW_GAS
-        //                     .checked_add(withdraw.min_gas())
-        //                     .ok_or(DefuseError::GasOverflow)
-        //                     .unwrap_or_panic(),
-        //             )
-        //             .do_nft_withdraw(withdraw.clone()),
-        //     ).into()
 
-        // promise.and(ext_intents::ext(CURRENT_ACCOUNT_ID).execute_intents(msg.execute_intents));
-        //
-        //     .then(
-        //         ext_ft_resolver::ext(env::current_account_id())
-        //             .with_static_gas(GAS_FOR_RESOLVE_TRANSFER)
-        //             // do not distribute remaining gas for `ft_resolve_transfer`
-        //             .with_unused_gas_weight(0)
-        //             .ft_resolve_transfer(sender_id, receiver_id, amount.into()),
-        //     )
-        //
+            // .into()
+    }
+}
 
-        PromiseOrValue::Value(U128(0))
+#[near]
+impl Contract {
+    const FT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
+
+    #[private]
+    pub fn ft_resolve_deposit(
+        &mut self,
+        sender_id: AccountId,
+        receiver_id: AccountId,
+        token: AccountId,
+        amount: U128,
+    ) -> U128 {
+        require!(
+            env::predecessor_account_id() == *CURRENT_ACCOUNT_ID,
+            "only self"
+        );
+
+        let requested_refund = match env::promise_result(0) {
+            PromiseResult::Successful(value) => serde_json::from_slice::<Vec<U128>>(&value)
+                .ok()
+                .and_then(|refunds| refunds.first().cloned())
+                .map(|refund| refund.0)
+                .unwrap_or(amount.0),
+            PromiseResult::Failed => amount.0,
+        }
+        .min(amount.0);
+
+        if requested_refund == 0 {
+            return U128(0);
+        }
+
+        let token_id = CoreTokenId::Nep141(Nep141TokenId::new(token.clone()));
+        let available = {
+            let receiver = self.accounts.get(receiver_id.as_ref());
+            receiver
+                .map(|account| {
+                    account
+                        .as_inner_unchecked()
+                        .token_balances
+                        .amount_for(&token_id)
+                })
+                .unwrap_or(0)
+        };
+
+        let refund_amount = requested_refund.min(available);
+        if refund_amount == 0 {
+            return U128(0);
+        }
+
+        let withdraw = FtWithdraw {
+            token,
+            receiver_id: sender_id,
+            amount: U128(refund_amount),
+            memo: Some("refund".to_string()),
+            msg: None,
+            storage_deposit: None,
+            min_gas: None,
+        };
+
+        match self
+            .internal_ft_withdraw(receiver_id, withdraw, true)
+            .unwrap_or_panic()
+        {
+            PromiseOrValue::Promise(promise) => {
+                let _ = promise;
+            }
+            PromiseOrValue::Value(_) => {}
+        }
+
+        U128(0)
     }
 }
