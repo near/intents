@@ -348,23 +348,11 @@ async fn ft_transfer_call_stub_action_message() {
     let (user, receiver, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
-
-    println!("deploying stub contract");
     receiver.deploy(MT_RECEIVER_STUB_WASM.as_slice()).await.unwrap().unwrap();
-    println!("deployed!!!");
-
 
     let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
-
-    println!("ft_id: {}", ft.to_string());
-    println!("user_id: {}", user.id().to_string());
-    println!("receiver_id: {}", receiver.id().to_string());
     env.initial_ft_storage_deposit(vec![user.id(), receiver.id()], vec![&ft])
         .await;
-
-    // env.defuse_ft_deposit_to(&ft, 1000, user.id())
-    //     .await
-    //     .unwrap();
 
     let root = env.sandbox().root_account();
     assert!(env.ft_token_balance_of(&ft, root.id()).await.unwrap() > 0);
@@ -373,13 +361,6 @@ async fn ft_transfer_call_stub_action_message() {
 
     root.ft_transfer(&ft, user.id(), 1000, None).await.unwrap();
     assert_eq!(env.ft_token_balance_of(&ft, user.id()).await.unwrap(), 1000);
-
-    // user.ft_transfer(&ft, receiver.id(), 1000, None)
-    //     .await
-    //     .unwrap();
-    //
-
-
 
     let deposit_message = DepositMessage::new(receiver.id().clone())
         .with_refund_if_fails()
@@ -402,37 +383,4 @@ async fn ft_transfer_call_stub_action_message() {
         700
     );
 
-    // assert_eq!(env.ft_token_balance_of(&ft, user.id()).await.unwrap(), 0);
-    // assert_eq!(env.ft_token_balance_of(&ft, receiver.id()).await.unwrap(), 1000);
-
-    // user.ft_transfer(&ft, user.id(), 1000, None).await.unwrap();
-
-    // env.ft_transfer_call(&ft, user.id(), 1000, None, "")
-    //     .await
-    //     .unwrap();
-
-
-    //
-    // let deposit_message = DepositMessage {
-    //     receiver_id: receiver.id().clone(),
-    //     execute_intents: Vec::new(),
-    //     refund_if_fails: false,
-    //     // message: serde_json::to_string(&StubAction::ReturnValue(U128(0u128))).unwrap(),
-    //     message: String::new(),
-    // };
-    //
-    // let result = user
-    //     .defuse_ft_deposit(env.defuse.id(), &ft, 1000, Some(deposit_message))
-    //     .await
-    //     .expect("ft_transfer_call should succeed");
-    //
-    //
-    // assert_eq!(
-    //     env.mt_contract_balance_of(env.defuse.id(), receiver.id(), &ft_id.to_string())
-    //         .await
-    //         .unwrap(),
-    //     1000
-    // );
-    //
-    // assert_eq!(env.ft_token_balance_of(&ft, user.id()).await.unwrap(), 0);
 }
