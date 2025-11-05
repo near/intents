@@ -229,7 +229,7 @@ impl State for Contract {
                 token_ids,
                 amounts,
                 msg,
-            )?;
+            );
         }
 
         Ok(())
