@@ -218,6 +218,8 @@ async fn simulate_is_view_method(
     #[notrace] mut rng: impl Rng,
     #[values(false, true)] no_registration: bool,
 ) {
+    use defuse::core::accounts::TransferEvent;
+
     let env = Env::builder()
         .no_registration(no_registration)
         .build()
@@ -267,7 +269,11 @@ async fn simulate_is_view_method(
         intent_hash: transfer_intent_payload.hash(),
         event: AccountEvent {
             account_id: user.id().clone().into(),
-            event: Cow::Owned(transfer_intent),
+            event: TransferEvent {
+                receiver_id: Cow::Borrowed(&transfer_intent.receiver_id),
+                tokens: Cow::Borrowed(&transfer_intent.tokens),
+                memo: Cow::Borrowed(&transfer_intent.memo),
+            },
         },
     }]))
     .to_near_sdk_log();

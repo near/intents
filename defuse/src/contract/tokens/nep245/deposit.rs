@@ -38,6 +38,7 @@ impl MultiTokenReceiver for Contract {
             token != &*CURRENT_ACCOUNT_ID,
             "self-wrapping is not allowed"
         );
+
         let msg = if msg.is_empty() {
             DepositMessage::new(sender_id)
         } else {

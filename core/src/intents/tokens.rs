@@ -6,7 +6,7 @@ use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
     DefuseError, Result,
-    accounts::AccountEvent,
+    accounts::{AccountEvent, TransferEvent},
     amounts::Amounts,
     engine::{Engine, Inspector, State},
     events::DefuseEvent,
@@ -34,8 +34,7 @@ pub struct Transfer {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<String>,
 
-    // TODO: fix this
-    // #[serde(default, skip_serializing, deserialize_with = "Option::deserialize")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub msg: Option<String>,
 }
 
@@ -58,7 +57,14 @@ impl ExecutableIntent for Transfer {
             .inspector
             .on_event(DefuseEvent::Transfer(Cow::Borrowed(
                 [IntentEvent::new(
-                    AccountEvent::new(sender_id, Cow::Borrowed(&self)),
+                    AccountEvent::new(
+                        sender_id,
+                        TransferEvent {
+                            receiver_id: Cow::Borrowed(&self.receiver_id),
+                            tokens: Cow::Borrowed(&self.tokens),
+                            memo: Cow::Borrowed(&self.memo),
+                        },
+                    ),
                     intent_hash,
                 )]
                 .as_slice(),

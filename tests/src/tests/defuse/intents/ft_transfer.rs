@@ -5,6 +5,7 @@ use crate::{
     utils::{ft::FtExt, mt::MtExt},
 };
 use defuse::core::intents::tokens::Transfer;
+use defuse::core::token_id::nep245::Nep245TokenId;
 use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
@@ -154,14 +155,20 @@ async fn ft_transfer_intent_msg(#[values(false, true)] no_registration: bool) {
     );
 
     assert_eq!(user.mt_tokens(defuse2.id(), ..).await.unwrap().len(), 1);
+    assert_eq!(
+        user.mt_tokens_for_owner(defuse2.id(), &other_user_id, ..)
+            .await
+            .unwrap()
+            .len(),
+        1
+    );
+    assert_eq!(env.ft_token_balance_of(&ft, defuse2.id()).await.unwrap(), 0);
 
-    let tokens = user.mt_tokens(defuse2.id(), ..).await.unwrap();
-
-    println!("Tokens: {:?}", tokens);
-    println!("FT1: {}", ft1);
+    let defuse_ft1 =
+        TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), ft1.to_string()).unwrap());
 
     assert_eq!(
-        env.mt_contract_balance_of(defuse2.id(), &other_user_id, &ft1.to_string())
+        env.mt_contract_balance_of(defuse2.id(), &other_user_id, &defuse_ft1.to_string())
             .await
             .unwrap(),
         1000
