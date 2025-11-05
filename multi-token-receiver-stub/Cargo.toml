@@ -6,6 +6,8 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
+base64 = "0.22"
+defuse-nep245.workspace = true
 near-sdk.workspace = true
 
 [dev-dependencies]

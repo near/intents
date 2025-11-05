@@ -88,20 +88,18 @@ impl FungibleTokenReceiver for Contract {
             if msg.refund_if_fails {
                 self.execute_intents(msg.execute_intents);
                 callback.into()
-
             } else {
                 // detach promise
                 ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
                     .execute_intents(msg.execute_intents)
-                    .and(callback).into()
-
+                    .and(callback)
+                    .into()
             }
-        }else{
+        } else {
             callback.into()
         }
 
-
-            // .into()
+        // .into()
     }
 }
 

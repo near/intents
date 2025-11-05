@@ -1,55 +1,61 @@
-// Find all our documentation at https://docs.near.org
-use near_sdk::{log, near};
+use base64::{Engine as _, engine::general_purpose::STANDARD};
+use defuse_nep245::{TokenId, receiver::MultiTokenReceiver};
+use near_sdk::{
+    AccountId, PromiseOrValue,
+    json_types::U128,
+    near,
+    serde::{Deserialize, Serialize},
+    serde_json,
+};
 
-// Define the contract structure
+/// Minimal stub contract used for integration tests.
 #[near(contract_state)]
-pub struct Contract {
-    greeting: String,
+pub struct Contract {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub enum StubAction {
+    ReturnValue(U128),
 }
 
-// Define the default, which automatically initializes the contract
-impl Default for Contract {
-    fn default() -> Self {
-        Self {
-            greeting: "Hello".to_string(),
+#[near]
+impl MultiTokenReceiver for Contract {
+    fn mt_on_transfer(
+        &mut self,
+        _sender_id: AccountId,
+        _previous_owner_ids: Vec<AccountId>,
+        _token_ids: Vec<TokenId>,
+        _amounts: Vec<U128>,
+        msg: String,
+    ) -> PromiseOrValue<Vec<U128>> {
+        let action: StubAction = serde_json::from_str(&msg).unwrap();
+        match action{
+            StubAction::ReturnValue(value) => PromiseOrValue::Value(vec![value]),
         }
     }
 }
 
-// Implement the contract structure
-#[near]
-impl Contract {
-    // Public method - returns the greeting saved, defaulting to DEFAULT_GREETING
-    pub fn get_greeting(&self) -> String {
-        self.greeting.clone()
-    }
-
-    // Public method - accepts a greeting, such as "howdy", and records it
-    pub fn set_greeting(&mut self, greeting: String) {
-        log!("Saving greeting: {greeting}");
-        self.greeting = greeting;
-    }
-}
-
-/*
- * The rest of this file holds the inline tests for the code above
- * Learn more about Rust tests: https://doc.rust-lang.org/book/ch11-01-writing-tests.html
- */
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use super::*;
 
     #[test]
-    fn get_default_greeting() {
-        let contract = Contract::default();
-        // this test did not call set_greeting so should return the default "Hello" greeting
-        assert_eq!(contract.get_greeting(), "Hello");
-    }
+    fn mt_on_transfer_returns_requested_value() {
+        let mut contract = Contract {};
+        let message = serde_json::to_string(&StubAction::ReturnValue(U128(42))).unwrap();
 
-    #[test]
-    fn set_then_get_greeting() {
-        let mut contract = Contract::default();
-        contract.set_greeting("howdy".to_string());
-        assert_eq!(contract.get_greeting(), "howdy");
+        let PromiseOrValue::Value(result) = contract.mt_on_transfer(
+            AccountId::from_str("sender.testnet").unwrap(),
+            vec![],
+            vec!["token".to_string()],
+            vec![U128(1)],
+            message,
+        ) else {
+            panic!("expected value promise");
+        };
+
+        assert_eq!(result, vec![U128(42)]);
     }
 }

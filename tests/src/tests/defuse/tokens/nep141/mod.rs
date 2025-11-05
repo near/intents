@@ -1,6 +1,6 @@
 pub mod traits;
 
-use crate::tests::defuse::tokens::nep141::traits::DefuseFtWithdrawer;
+use crate::tests::defuse::tokens::nep141::traits::{DefuseFtReceiver, DefuseFtWithdrawer};
 use crate::{
     tests::{defuse::env::Env, poa::factory::PoAFactoryExt},
     utils::{acl::AclExt, ft::FtExt, mt::MtExt},
@@ -327,5 +327,62 @@ async fn ft_force_withdraw(#[values(false, true)] no_registration: bool) {
     assert_eq!(
         env.ft_token_balance_of(&ft, other_user.id()).await.unwrap(),
         1000
+    );
+}
+
+#[tokio::test]
+async fn ft_transfer_call_stub_action_message() {
+    use crate::utils::account::AccountExt;
+    use base64::{Engine as _, engine::general_purpose::STANDARD};
+    use multi_token_receiver_stub::StubAction;
+    use near_sdk::serde_json;
+
+    let env = Env::builder().build().await;
+
+    let (user, ft) = futures::join!(env.create_user(), env.create_token());
+    let initial_balance = env.ft_token_balance_of(&ft, user.id()).await.unwrap();
+
+    let project_path =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../multi-token-receiver-stub");
+    let stub_wasm =
+        near_workspaces::compile_project(project_path.to_str().expect("valid stub path"))
+            .await
+            .expect("compile stub project");
+
+    let stub = env
+        .sandbox()
+        .root_account()
+        .deploy_contract("stub-mt-receiver", &stub_wasm)
+        .await
+        .expect("deploy stub receiver");
+
+    let amount = 600u128;
+
+    let deposit_message = DepositMessage {
+        receiver_id: stub.id().clone(),
+        execute_intents: Vec::new(),
+        refund_if_fails: false,
+        message: serde_json::to_string(&StubAction::ReturnValue(U128(amount))).unwrap(),
+    };
+
+    let result = user
+        .defuse_ft_deposit(env.defuse.id(), &ft, amount, Some(deposit_message))
+        .await
+        .expect("ft_transfer_call should succeed");
+
+    assert_eq!(result, 0);
+
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
+
+    assert_eq!(
+        env.mt_contract_balance_of(env.defuse.id(), stub.id(), &ft_id.to_string())
+            .await
+            .unwrap(),
+        0
+    );
+
+    assert_eq!(
+        env.ft_token_balance_of(&ft, user.id()).await.unwrap(),
+        initial_balance
     );
 }
