@@ -18,7 +18,7 @@ defuse-map-utils.workspace = true
 defuse-near-utils = { workspace = true, features = ["time"] }
 defuse-nep245.workspace = true
 defuse-num-utils.workspace = true
-defuse-token-id.workspace = true
+defuse-token-id = { workspace = true, features = ["unbounded"] }
 
 near-contract-standards.workspace = true
 near-sdk.workspace = true
@@ -42,5 +42,10 @@ impl-tools.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 
 [features]
-abi = ["serde_with/schemars_0_8"]
+default = ["nep141", "nep245"]
+
+nep141 = ["defuse-token-id/nep141"]
+nep245 = ["defuse-token-id/nep245"]
+
+abi = ["serde_with/schemars_0_8", "defuse-token-id/abi"]
 contract = []

@@ -80,7 +80,7 @@ pub struct FillEvent<'a> {
 
     #[serde_as(as = "BTreeMap<_, DisplayFromStr>")]
     pub dst_fees_collected: BTreeMap<Cow<'a, AccountIdRef>, u128>,
-    // TODO
+    // TODO: how much dst will maker receive?
 }
 
 pub trait EscrowIntentEmit<'a>: Into<EscrowEvent<'a>> {

@@ -8,7 +8,7 @@ pub enum TokenIdError {
     AccountId(#[from] ParseAccountError),
     #[error(transparent)]
     ParseError(#[from] strum::ParseError),
-    #[cfg(feature = "bounded")]
+    #[cfg(not(feature = "unbounded"))]
     #[error(
         "token_id is too long. Max length is {max}, got {0}",
         max = super::MAX_ALLOWED_TOKEN_ID_LEN,

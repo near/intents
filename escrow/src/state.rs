@@ -7,7 +7,8 @@ use defuse_borsh_utils::adapters::{
     As as BorshAs, TimestampNanoSeconds as BorshTimestampNanoSeconds,
 };
 use defuse_fees::Pips;
-use defuse_token_id::nep245::Nep245TokenId as TokenId;
+use defuse_num_utils::CheckedAdd;
+use defuse_token_id::TokenId;
 use near_sdk::{AccountId, AccountIdRef, CryptoHash, borsh, env, near};
 use serde_with::{
     DisplayFromStr, TimestampNanoSeconds as SerdeTimestampNanoSeconds, hex::Hex, serde_as,
@@ -46,6 +47,7 @@ impl Storage {
 
     // TODO: nep616 feature
     pub fn derive_account_id(&self, factory: impl AsRef<AccountIdRef>) -> AccountId {
+        // TODO: remove
         const PREFIX: &str = "escrow-";
 
         let factory = factory.as_ref();
@@ -60,9 +62,19 @@ impl Storage {
     }
 
     pub fn verify(&self, fixed: &FixedParams) -> Result<()> {
-        (fixed.hash() == self.fixed_params_hash)
-            .then_some(())
-            .ok_or(Error::WrongData)
+        if fixed.hash() != self.fixed_params_hash {
+            return Err(Error::WrongData);
+        }
+
+        if fixed.src_asset == fixed.dst_asset {
+            return Err(Error::SameAsset);
+        }
+
+        if fixed.total_fee().ok_or(Error::ExcessiveFees)? >= Pips::MAX {
+            return Err(Error::ExcessiveFees);
+        }
+
+        Ok(())
     }
 }
 
@@ -79,15 +91,12 @@ impl Storage {
 pub struct FixedParams {
     pub maker: AccountId,
 
+    // TODO: check != src_asset
+    pub src_asset: TokenId,
+    pub dst_asset: TokenId,
+
     #[serde(default, skip_serializing_if = "crate::utils::is_default")]
     pub refund_src_to: SendParams,
-
-    // TODO: nep245: token_id length is less than max on intents.near
-    // TODO: check != src_asset
-    #[serde_as(as = "DisplayFromStr")]
-    pub src_asset: TokenId,
-    #[serde_as(as = "DisplayFromStr")]
-    pub dst_asset: TokenId,
 
     #[serde(default, skip_serializing_if = "crate::utils::is_default")]
     pub receive_dst_to: SendParams,
@@ -113,6 +122,15 @@ pub struct FixedParams {
     // pub maker_authority: Option<AccountId>,
     // TODO: salt?
     // TODO: refund_to
+}
+
+impl FixedParams {
+    pub fn total_fee(&self) -> Option<Pips> {
+        self.fees
+            .iter()
+            .map(|(_, fee)| *fee)
+            .try_fold(Pips::ZERO, |total, fee| total.checked_add(fee))
+    }
 }
 
 impl FixedParams {

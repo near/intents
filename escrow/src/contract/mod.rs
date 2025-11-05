@@ -1,13 +1,14 @@
+mod tokens;
+mod utils;
+
 use std::{borrow::Cow, mem};
 
-use defuse_near_utils::{UnwrapOrPanic, time::now};
-use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
-
-use defuse_token_id::nep245::Nep245TokenId as TokenId;
+use defuse_near_utils::time::now;
+use defuse_token_id::TokenId;
 use impl_tools::autoimpl;
 use near_sdk::{
-    AccountId, Gas, NearToken, PanicOnDefault, Promise, PromiseOrValue, PromiseResult, env,
-    json_types::U128, near, require, serde_json,
+    AccountId, Gas, PanicOnDefault, Promise, PromiseOrValue, PromiseResult, env, json_types::U128,
+    near, require, serde_json,
 };
 
 use crate::{
@@ -15,20 +16,11 @@ use crate::{
     FillEvent, FixedParams, OpenAction, Params, Result, Storage, TransferMessage,
 };
 
-const MT_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(15);
-const MT_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(15);
-
-const MT_TRANSFER_CALL_GAS_MIN: Gas = Gas::from_tgas(30);
-const MT_TRANSFER_CALL_GAS_DEFAULT: Gas = Gas::from_tgas(50);
+use self::tokens::Sender;
 
 // mod old;
 
 // TODO: lost&found?
-
-// TODO: emit logs
-
-// TODO: refund storage_deposits from maker/taker on received tokens
-// solution: use intents.near NEP-245
 
 // TODO: coinsidence of wants?
 
@@ -44,10 +36,6 @@ const MT_TRANSFER_CALL_GAS_DEFAULT: Gas = Gas::from_tgas(50);
 
 // TODO: versioned account state?
 // TODO: recovery() method with 0 src_remaining
-
-// TODO: too large state (> ZBA limits)
-// solution?: keep hashes of immutable data?
-// or maybe even compare with current_account_id?
 
 // TODO: keep number of pending promises
 #[near(contract_state)]
@@ -75,33 +63,6 @@ impl Contract {
         );
 
         Self(s)
-    }
-}
-
-#[near]
-impl MultiTokenReceiver for Contract {
-    fn mt_on_transfer(
-        &mut self,
-        sender_id: AccountId,
-        previous_owner_ids: Vec<AccountId>,
-        token_ids: Vec<defuse_nep245::TokenId>,
-        amounts: Vec<U128>,
-        msg: String,
-    ) -> PromiseOrValue<Vec<U128>> {
-        let (token_id, amount) = single(token_ids)
-            .zip(single(amounts))
-            .ok_or(Error::WrongAsset)
-            .unwrap_or_panic();
-
-        let asset = TokenId::new(env::predecessor_account_id(), token_id)
-            // TODO
-            .unwrap();
-
-        let refund = self
-            .on_receive(sender_id, asset, amount.0, &msg)
-            .unwrap_or_panic();
-
-        PromiseOrValue::Value(vec![U128(refund)])
     }
 }
 
@@ -177,6 +138,7 @@ impl Contract {
         amount: u128,
         msg: &str,
     ) -> Result<u128> {
+        // TODO: check amount non-zero
         if self.state.closed || now() > self.params.deadline {
             // TODO: utilize for our needs, refund after being closed or expired?
             return Err(Error::Closed);
@@ -241,18 +203,18 @@ impl Contract {
         dst_amount: u128,
         msg: FillAction,
     ) -> Result<u128> {
-        if !fixed.taker_whitelist.contains(&sender_id) {
-            // TODO: taker whitelist
+        if !(fixed.taker_whitelist.is_empty() || fixed.taker_whitelist.contains(&sender_id)) {
+            // TODO: or authority?
             return Err(Error::Unauthorized);
         }
 
-        let (taker_src_amount, mut maker_dst_amount) = {
+        let (taker_src_amount, dst_used) = {
             let want_src_amount = self
                 .params
                 .price
                 .src_amount(dst_amount)
                 .ok_or(Error::IntegerOverflow)?;
-            // TODO: fees
+            // TODO: what if zero?
             if want_src_amount < self.state.maker_src_remaining {
                 if !fixed.partial_fills_allowed {
                     return Err(Error::PartialFillsNotAllowed);
@@ -270,39 +232,49 @@ impl Contract {
             }
         };
 
-        // TODO: check taker_src_amount != 0 && maker_dst_amount != 0
         self.state.maker_src_remaining -= taker_src_amount;
-        let refund = dst_amount - maker_dst_amount;
+        let refund = dst_amount - dst_used;
 
-        let dst_fees_collected = fixed
-            .fees
-            .iter()
-            .map(|(fee_collector, fee)| {
-                let fee_amount = fee.fee_ceil(maker_dst_amount);
-                maker_dst_amount = maker_dst_amount
-                    .checked_sub(fee_amount)
-                    .ok_or(Error::IntegerOverflow)?;
+        let mut maker_dst_amount = dst_used;
 
-                let _ = Self::send(
-                    fixed.dst_asset.clone(),
-                    fee_collector.clone(),
-                    fee_amount,
-                    None,
-                    None,
-                    None,
-                );
-                Ok((fee_collector.into(), fee_amount))
-            })
-            .collect::<Result<_>>()?;
+        // collect, subtract and send fees
+        {
+            let dst_fees_collected = fixed
+                .fees
+                .iter()
+                .map(|(fee_collector, fee)| {
+                    let fee_amount = fee.fee_ceil(dst_used);
 
-        FillEvent {
-            taker: Cow::Borrowed(&sender_id),
-            src_amount: taker_src_amount,
-            dst_amount,
-            taker_receiver_id: msg.receive_src_to.receiver_id.as_deref().map(Cow::Borrowed),
-            dst_fees_collected,
+                    maker_dst_amount = maker_dst_amount
+                        .checked_sub(fee_amount)
+                        .ok_or(Error::ExcessiveFees)?;
+
+                    let _ = Self::send(
+                        fixed.dst_asset.clone(),
+                        fee_collector.clone(),
+                        fee_amount,
+                        Some("fee".to_string()),
+                        None,
+                        None,
+                    );
+                    Ok((fee_collector.into(), fee_amount))
+                })
+                .collect::<Result<_>>()?;
+
+            FillEvent {
+                taker: Cow::Borrowed(&sender_id),
+                src_amount: taker_src_amount,
+                dst_amount,
+                taker_receiver_id: msg.receive_src_to.receiver_id.as_deref().map(Cow::Borrowed),
+                dst_fees_collected,
+            }
+            .emit();
         }
-        .emit();
+
+        if taker_src_amount == 0 || maker_dst_amount == 0 {
+            // TODO: maybe check earlier?
+            return Err(Error::InsufficientAmount);
+        }
 
         // send to taker
         let _ = Self::send(
@@ -314,6 +286,7 @@ impl Contract {
             msg.receive_src_to.min_gas,
         );
 
+        // TODO: lost&found?
         // send to maker
         let _ = Self::send(
             fixed.dst_asset,
@@ -323,43 +296,13 @@ impl Contract {
                 .as_ref()
                 .unwrap_or(&fixed.maker)
                 .clone(),
-            maker_dst_amount,
+            maker_dst_amount, // TODO: check non-zero
             fixed.receive_dst_to.memo,
-            fixed.receive_dst_to.msg, // TODO: resolve?
+            fixed.receive_dst_to.msg,
             fixed.receive_dst_to.min_gas,
         );
 
         Ok(refund)
-    }
-
-    fn send(
-        asset: TokenId,
-        receiver_id: AccountId,
-        amount: u128,
-        memo: Option<String>,
-        msg: Option<String>,
-        min_gas: Option<Gas>,
-    ) -> Promise {
-        let (contract_id, token_id) = asset.into_contract_id_and_mt_token_id();
-
-        let p = ext_mt_core::ext(contract_id)
-            // TODO: are we sure we have that???
-            .with_attached_deposit(NearToken::from_yoctonear(1));
-        if let Some(msg) = msg {
-            p.with_static_gas(
-                min_gas
-                    .unwrap_or(MT_TRANSFER_CALL_GAS_DEFAULT)
-                    .max(MT_TRANSFER_CALL_GAS_MIN),
-            )
-            .mt_transfer_call(receiver_id, token_id, U128(amount), None, memo, msg)
-        } else {
-            p.with_static_gas(
-                min_gas
-                    .unwrap_or(MT_TRANSFER_GAS_DEFAULT)
-                    .max(MT_TRANSFER_GAS_MIN),
-            )
-            .mt_transfer(receiver_id, token_id, U128(amount), None, memo)
-        }
     }
 
     // TODO: rename
@@ -393,32 +336,7 @@ impl Contract {
         is_call: bool,
         beneficiary_id: AccountId,
     ) -> U128 {
-        let used = match env::promise_result(0) {
-            PromiseResult::Successful(value) => {
-                if is_call {
-                    // `ft_transfer_call` returns successfully transferred amount
-                    serde_json::from_slice::<U128>(&value)
-                        .unwrap_or_default()
-                        .0
-                        .min(amount.0)
-                } else if value.is_empty() {
-                    // `ft_transfer` returns empty result on success
-                    amount.0
-                } else {
-                    0
-                }
-            }
-            PromiseResult::Failed => {
-                if is_call {
-                    // do not refund on failed `ft_transfer_call` due to
-                    // NEP-141 vulnerability: `ft_resolve_transfer` fails to
-                    // read result of `ft_on_transfer` due to insufficient gas
-                    amount.0
-                } else {
-                    0
-                }
-            }
-        };
+        let used = resolve_mt_transfer(0, amount.0, is_call);
 
         let refund = amount.0.saturating_sub(used);
         if refund > 0 {
@@ -439,7 +357,31 @@ impl Contract {
     }
 }
 
-fn single<T>(v: Vec<T>) -> Option<T> {
-    let [a] = v.try_into().ok()?;
-    Some(a)
+// Returns actually transferred amount of a single MT token.
+fn resolve_mt_transfer(result_idx: u64, amount: u128, is_call: bool) -> u128 {
+    match env::promise_result(result_idx) {
+        PromiseResult::Successful(value) => {
+            if is_call {
+                // `mt_transfer_call` returns successfully transferred amounts
+                serde_json::from_slice::<[U128; 1]>(&value).unwrap_or_default()[0]
+                    .0
+                    .min(amount)
+            } else if value.is_empty() {
+                // `mt_transfer` returns empty result on success
+                amount
+            } else {
+                0
+            }
+        }
+        PromiseResult::Failed => {
+            if is_call {
+                // do not refund on failed `mt_transfer_call` due to
+                // NEP-141 vulnerability: `mt_resolve_transfer` fails to
+                // read result of `mt_on_transfer` due to insufficient gas
+                amount
+            } else {
+                0
+            }
+        }
+    }
 }

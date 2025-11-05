@@ -6,7 +6,7 @@ use near_sdk::{AccountId, AccountIdRef, near};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 #[cfg(any(feature = "arbitrary", test))]
-use arbitrary_with::{Arbitrary, As, LimitLen};
+use arbitrary_with::{Arbitrary, As};
 #[cfg(any(feature = "arbitrary", test))]
 use defuse_near_utils::arbitrary::ArbitraryAccountId;
 
@@ -23,14 +23,14 @@ pub struct Nep171TokenId {
     contract_id: AccountId,
 
     #[cfg_attr(
-        all(feature = "bounded", any(feature = "arbitrary", test)),
-        arbitrary(with = As::<LimitLen<{crate::MAX_ALLOWED_TOKEN_ID_LEN}>>::arbitrary),
+        all(not(feature = "unbounded"), any(feature = "arbitrary", test)),
+        arbitrary(with = As::<::arbitrary_with::LimitLen<{crate::MAX_ALLOWED_TOKEN_ID_LEN}>>::arbitrary),
     )]
     nft_token_id: TokenId,
 }
 
 impl Nep171TokenId {
-    #[cfg(feature = "bounded")]
+    #[cfg(not(feature = "unbounded"))]
     pub fn new(contract_id: AccountId, nft_token_id: TokenId) -> Result<Self, TokenIdError> {
         if nft_token_id.len() > crate::MAX_ALLOWED_TOKEN_ID_LEN {
             return Err(TokenIdError::TokenIdTooLarge(nft_token_id.len()));
@@ -42,7 +42,7 @@ impl Nep171TokenId {
         })
     }
 
-    #[cfg(not(feature = "bounded"))]
+    #[cfg(feature = "unbounded")]
     pub fn new(
         contract_id: AccountId,
         nft_token_id: TokenId,
@@ -108,7 +108,7 @@ mod tests {
         assert_eq!(got, token_id);
     }
 
-    #[cfg(feature = "bounded")]
+    #[cfg(not(feature = "unbounded"))]
     #[rstest]
     fn token_id_length(random_bytes: Vec<u8>) {
         let mut u = Unstructured::new(&random_bytes);

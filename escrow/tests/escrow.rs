@@ -24,8 +24,8 @@ async fn partial_fills() {
     const SRC_TOKEN_ID: &str = "src";
     const DST_TOKEN_ID: &str = "dst";
 
-    const MAKER_AMOUNT: u128 = 100;
-    const TAKER_AMOUNT: u128 = 200;
+    const MAKER_AMOUNT: u128 = 10000;
+    const TAKER_AMOUNT: u128 = 20000;
 
     let env = EscrowEnv::new().await.unwrap();
 
@@ -46,9 +46,11 @@ async fn partial_fills() {
     })
     .map(TokenId::from);
 
-    let [src_asset, dst_asset] = [&src_verifier_asset, &dst_verifier_asset].map(|token_id| {
-        Nep245TokenId::new(env.verifier.id().clone(), token_id.to_string()).unwrap()
-    });
+    let [src_asset, dst_asset] = [&src_verifier_asset, &dst_verifier_asset]
+        .map(|token_id| {
+            Nep245TokenId::new(env.verifier.id().clone(), token_id.to_string()).unwrap()
+        })
+        .map(Into::<TokenId>::into);
 
     let fixed_params = FixedParams {
         maker: env.maker.id().clone(),
@@ -127,7 +129,7 @@ async fn partial_fills() {
 
     // takers deposit
     {
-        for (taker, amount) in env.takers.iter().zip([100, 50, 30]) {
+        for (taker, amount) in env.takers.iter().zip([10000, 5000, 3000]) {
             let sent = taker
                 .mt_transfer_call(
                     env.verifier.id().clone(),

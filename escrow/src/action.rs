@@ -1,5 +1,5 @@
 use derive_more::From;
-use near_sdk::{AccountId, Gas, near};
+use near_sdk::near;
 
 use crate::{FixedParams, Price, SendParams};
 

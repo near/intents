@@ -1,3 +1,5 @@
+use core::convert::Infallible;
+
 use crate::{
     engine::deltas::InvariantViolated,
     token_id::{TokenId, error::TokenIdError, nep171::Nep171TokenId},
@@ -66,4 +68,10 @@ pub enum DefuseError {
 
     #[error("wrong verifying_contract")]
     WrongVerifyingContract,
+}
+
+impl From<Infallible> for DefuseError {
+    fn from(value: Infallible) -> Self {
+        match value {}
+    }
 }

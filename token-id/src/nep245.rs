@@ -8,7 +8,7 @@ use serde_with::{DeserializeFromStr, SerializeDisplay};
 use crate::error::TokenIdError;
 
 #[cfg(any(feature = "arbitrary", test))]
-use arbitrary_with::{Arbitrary, As, LimitLen};
+use arbitrary_with::{Arbitrary, As};
 #[cfg(any(feature = "arbitrary", test))]
 use defuse_near_utils::arbitrary::ArbitraryAccountId;
 
@@ -23,14 +23,14 @@ pub struct Nep245TokenId {
     contract_id: AccountId,
 
     #[cfg_attr(
-        all(feature = "bounded", any(feature = "arbitrary", test)),
-        arbitrary(with = As::<LimitLen<{crate::MAX_ALLOWED_TOKEN_ID_LEN}>>::arbitrary),
+        all(not(feature = "unbounded"), any(feature = "arbitrary", test)),
+        arbitrary(with = As::<::arbitrary_with::LimitLen<{crate::MAX_ALLOWED_TOKEN_ID_LEN}>>::arbitrary),
     )]
     mt_token_id: TokenId,
 }
 
 impl Nep245TokenId {
-    #[cfg(feature = "bounded")]
+    #[cfg(not(feature = "unbounded"))]
     pub fn new(contract_id: AccountId, mt_token_id: TokenId) -> Result<Self, TokenIdError> {
         if mt_token_id.len() > crate::MAX_ALLOWED_TOKEN_ID_LEN {
             return Err(TokenIdError::TokenIdTooLarge(mt_token_id.len()));
@@ -42,7 +42,7 @@ impl Nep245TokenId {
         })
     }
 
-    #[cfg(not(feature = "bounded"))]
+    #[cfg(feature = "unbounded")]
     pub fn new(
         contract_id: AccountId,
         mt_token_id: TokenId,
@@ -109,7 +109,7 @@ mod tests {
         assert_eq!(got, token_id);
     }
 
-    #[cfg(feature = "bounded")]
+    #[cfg(not(feature = "unbounded"))]
     #[rstest]
     fn token_id_length(random_bytes: Vec<u8>) {
         let mut u = Unstructured::new(&random_bytes);

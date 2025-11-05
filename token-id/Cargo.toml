@@ -25,9 +25,15 @@ arbitrary = { workspace = true, optional = true }
 arbitrary_with = { workspace = true, optional = true }
 
 [features]
+default = ["nep141", "nep171", "nep245"]
+
+nep141 = []
+nep171 = []
+nep245 = []
+
 abi = []
 arbitrary = ["dep:arbitrary", "dep:arbitrary_with", "dep:defuse-near-utils"]
-bounded = []
+unbounded = []
 
 [dev-dependencies]
 defuse-near-utils.workspace = true

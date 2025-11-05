@@ -9,11 +9,10 @@ mod utils;
 
 pub use self::{action::*, error::*, event::*, price::*, state::*};
 
-use defuse_nep245::receiver::MultiTokenReceiver;
 use near_sdk::{AccountId, Gas, PromiseOrValue, ext_contract, json_types::U128, near};
 
 #[ext_contract(ext_escrow)]
-pub trait Escrow: MultiTokenReceiver {
+pub trait Escrow {
     fn view(&self) -> &Storage;
     fn close(&mut self, fixed_params: FixedParams) -> PromiseOrValue<U128>;
 

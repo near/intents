@@ -1,11 +1,12 @@
 pub mod error;
+#[cfg(feature = "nep141")]
 pub mod nep141;
+#[cfg(feature = "nep171")]
 pub mod nep171;
+#[cfg(feature = "nep245")]
 pub mod nep245;
 
-use crate::{
-    error::TokenIdError, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId,
-};
+use crate::error::TokenIdError;
 use core::{
     fmt::{self, Debug, Display},
     str::FromStr,
@@ -14,7 +15,7 @@ use near_sdk::near;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 use strum::{EnumDiscriminants, EnumIter, EnumString};
 
-#[cfg(feature = "bounded")]
+#[cfg(not(feature = "unbounded"))]
 const MAX_ALLOWED_TOKEN_ID_LEN: usize = 127;
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
@@ -36,24 +37,31 @@ const MAX_ALLOWED_TOKEN_ID_LEN: usize = 127;
     strum(serialize_all = "snake_case"),
     vis(pub)
 )]
-#[near(serializers = [borsh])]
+#[near(serializers = [borsh(use_discriminant=true)])]
 // Private: Because we need construction to go through the TokenId struct to check for length
+#[repr(u8)]
 pub enum TokenId {
-    Nep141(Nep141TokenId),
-    Nep171(Nep171TokenId),
-    Nep245(Nep245TokenId),
+    #[cfg(feature = "nep141")]
+    Nep141(crate::nep141::Nep141TokenId) = 0,
+    #[cfg(feature = "nep171")]
+    Nep171(crate::nep171::Nep171TokenId) = 1,
+    #[cfg(feature = "nep245")]
+    Nep245(crate::nep245::Nep245TokenId) = 2,
 }
 
 impl Debug for TokenId {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            #[cfg(feature = "nep141")]
             Self::Nep141(token_id) => {
                 write!(f, "{}:{}", TokenIdType::Nep141, token_id)
             }
+            #[cfg(feature = "nep171")]
             Self::Nep171(token_id) => {
                 write!(f, "{}:{}", TokenIdType::Nep171, token_id)
             }
+            #[cfg(feature = "nep245")]
             Self::Nep245(token_id) => {
                 write!(f, "{}:{}", TokenIdType::Nep245, token_id)
             }
@@ -77,8 +85,11 @@ impl FromStr for TokenId {
             .split_once(':')
             .ok_or(strum::ParseError::VariantNotFound)?;
         match typ.parse()? {
+            #[cfg(feature = "nep141")]
             TokenIdType::Nep141 => data.parse().map(Self::Nep141),
+            #[cfg(feature = "nep171")]
             TokenIdType::Nep171 => data.parse().map(Self::Nep171),
+            #[cfg(feature = "nep245")]
             TokenIdType::Nep245 => data.parse().map(Self::Nep245),
         }
     }
@@ -106,17 +117,25 @@ mod abi {
                 extensions: [(
                     "examples",
                     [
-                        TokenId::Nep141(Nep141TokenId::new("ft.near".parse().unwrap())),
+                        #[cfg(feature = "nep141")]
+                        TokenId::Nep141(crate::nep141::Nep141TokenId::new(
+                            "ft.near".parse().unwrap(),
+                        )),
+                        #[cfg(feature = "nep171")]
                         TokenId::Nep171(
-                            Nep171TokenId::new(
+                            crate::nep171::Nep171TokenId::new(
                                 "nft.near".parse().unwrap(),
                                 "token_id1".to_string(),
                             )
                             .unwrap(),
                         ),
+                        #[cfg(feature = "nep245")]
                         TokenId::Nep245(
-                            Nep245TokenId::new("mt.near".parse().unwrap(), "token_id1".to_string())
-                                .unwrap(),
+                            crate::nep245::Nep245TokenId::new(
+                                "mt.near".parse().unwrap(),
+                                "token_id1".to_string(),
+                            )
+                            .unwrap(),
                         ),
                     ]
                     .map(|s| s.to_string())
