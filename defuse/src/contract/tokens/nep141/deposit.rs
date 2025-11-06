@@ -9,7 +9,8 @@ use defuse_nep245::receiver::ext_mt_receiver;
 use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 use near_plugins::{Pausable, pause};
 use near_sdk::{
-    AccountId, Gas, PromiseOrValue, PromiseResult, env, json_types::U128, near, require, serde_json,
+    AccountId, Gas, Promise, PromiseOrValue, PromiseResult, env, json_types::U128, near, require,
+    serde_json,
 };
 
 use crate::{
@@ -75,98 +76,119 @@ impl FungibleTokenReceiver for Contract {
             None
         };
 
-        match (intents_to_execute, notification, &msg.refund_if_fails) {
-            (Some(intents), Some(notification), refund @ true) => {
+        let maybe_promise: Option<Promise> = if !msg.execute_intents.is_empty() {
+            if msg.refund_if_fails {
                 self.execute_intents(msg.execute_intents);
-                ext_mt_receiver::ext(receiver_id.clone())
-                    .mt_on_transfer(
-                        sender_id.clone(),
-                        previous_owner_ids,
-                        token_ids,
-                        amounts,
-                        message,
-                    )
-                    .then(
-                        Self::ext(CURRENT_ACCOUNT_ID.clone())
-                            .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS)
-                            // do not distribute remaining gas here
-                            .with_unused_gas_weight(0)
-                            .ft_resolve_deposit(
-                                sender_id,
-                                resolver_receiver_id,
-                                token_account,
-                                U128(amount_value),
-                            ),
-                    )
-                    .into()
+                None
+            } else {
+                // detach promise
+                Some(
+                    ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
+                        .execute_intents(msg.execute_intents),
+                )
             }
-            (Some(intents), Some(notification), refund @ false) => {
-                let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
-                    .execute_intents(msg.execute_intents);
+        } else {
+            None
+        };
 
-                ext_mt_receiver::ext(receiver_id.clone())
-                    .mt_on_transfer(
-                        sender_id.clone(),
-                        previous_owner_ids,
-                        token_ids,
-                        amounts,
-                        message,
-                    )
-                    .then(
-                        Self::ext(CURRENT_ACCOUNT_ID.clone())
-                            // do not distribute remaining gas here
-                            .with_unused_gas_weight(0)
-                            .ft_resolve_deposit(
-                                sender_id,
-                                resolver_receiver_id,
-                                token_account,
-                                U128(amount_value),
-                            ),
-                    )
-                    .into()
+        if !msg.message.is_empty() {
+            let p = ext_mt_receiver::ext(receiver_id.clone())
+                .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS_HUGE)
+                .mt_on_transfer(
+                    sender_id.clone(),
+                    previous_owner_ids,
+                    token_ids,
+                    amounts,
+                    message,
+                )
+                .then(
+                    Self::ext(CURRENT_ACCOUNT_ID.clone())
+                        .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS_HUGE)
+                        // do not distribute remaining gas here
+                        .with_unused_gas_weight(0)
+                        .ft_resolve_deposit(
+                            sender_id,
+                            resolver_receiver_id,
+                            token_account,
+                            U128(amount_value),
+                        ),
+                );
+
+            match maybe_promise {
+                Some(promise) => promise.then(p).into(),
+                None => p.into(),
             }
-            (Some(intents), None, refund @ true) => {
-                self.execute_intents(msg.execute_intents);
-                PromiseOrValue::Value(U128(0))
-            }
-            (Some(intents), None, refund @ false) => {
-                let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
-                    .execute_intents(msg.execute_intents);
-                PromiseOrValue::Value(U128(0))
-            }
-            (None, Some(notification), _) => {
-                env::log_str("BLAH BLAH BLAH BLAH BLAH BLAH BLAH BLAH BLAH BLAH");
-                ext_mt_receiver::ext(receiver_id.clone())
-                    .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS)
-                    .mt_on_transfer(
-                        sender_id.clone(),
-                        previous_owner_ids,
-                        token_ids,
-                        amounts,
-                        message,
-                    )
-                    .then(
-                        Self::ext(CURRENT_ACCOUNT_ID.clone())
-                            .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS_HUGE)
-                            // do not distribute remaining gas here
-                            .with_unused_gas_weight(0)
-                            .ft_resolve_deposit(
-                                sender_id,
-                                resolver_receiver_id,
-                                token_account,
-                                U128(amount_value),
-                            ),
-                    )
-                    .into()
-            }
-            (None, None, _) => PromiseOrValue::Value(U128(0)),
+        } else {
+            PromiseOrValue::Value(U128(0))
         }
+
+        // match maybe_promise {
+        //     Some(promise) => promise.then(
+        //
+        //     )
+        // }
+        //
+        // match maybe_promise {
+        //     Some(promise) => promise.then(
+        //     ext_mt_receiver::ext(receiver_id.clone())
+        //         .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS_HUGE)
+        //         .mt_on_transfer(
+        //             sender_id.clone(),
+        //             previous_owner_ids,
+        //             token_ids,
+        //             amounts,
+        //             message,
+        //         )
+        //         .then(
+        //             Self::ext(CURRENT_ACCOUNT_ID.clone())
+        //                 .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS_HUGE)
+        //                 // do not distribute remaining gas here
+        //                 .with_unused_gas_weight(0)
+        //                 .ft_resolve_deposit(
+        //                     sender_id,
+        //                     resolver_receiver_id,
+        //                     token_account,
+        //                     U128(amount_value),
+        //                 ),
+        //         )
+        //         .into()
+        //     ),
+        //     None => PromiseOrValue::Value(U128(0)),
+        // }
+        //
+        // if !msg.message.is_empty() {
+        //     ext_mt_receiver::ext(receiver_id.clone())
+        //         .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS_HUGE)
+        //         .mt_on_transfer(
+        //             sender_id.clone(),
+        //             previous_owner_ids,
+        //             token_ids,
+        //             amounts,
+        //             message,
+        //         )
+        //         .then(
+        //             Self::ext(CURRENT_ACCOUNT_ID.clone())
+        //                 .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS_HUGE)
+        //                 // do not distribute remaining gas here
+        //                 .with_unused_gas_weight(0)
+        //                 .ft_resolve_deposit(
+        //                     sender_id,
+        //                     resolver_receiver_id,
+        //                     token_account,
+        //                     U128(amount_value),
+        //                 ),
+        //         )
+        //         .into()
+        // }else{
+        //     PromiseOrValue::Value(U128(0))
+        // }
     }
 }
 
 #[near]
 impl Contract {
     const FT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
+    //TODO: find actual gas value
     const FT_RESOLVE_DEPOSIT_GAS_HUGE: Gas = Gas::from_tgas(100);
 
     #[private]
@@ -188,7 +210,7 @@ impl Contract {
                 .and_then(|refunds| refunds.first().cloned())
                 .map(|refund| refund.0)
                 .unwrap_or(amount.0),
-            PromiseResult::Failed => amount.0,
+            PromiseResult::Failed => 0u128,
         }
         .min(amount.0);
 

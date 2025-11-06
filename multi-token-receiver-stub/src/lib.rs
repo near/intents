@@ -1,6 +1,6 @@
 use defuse_nep245::{TokenId, receiver::MultiTokenReceiver};
 use near_sdk::{
-    AccountId, PromiseOrValue,
+    AccountId, PromiseOrValue, env,
     json_types::U128,
     near,
     serde::{Deserialize, Serialize},
@@ -16,6 +16,8 @@ pub struct Contract;
 #[serde(crate = "near_sdk::serde")]
 pub enum StubAction {
     ReturnValue(U128),
+    Panic,
+    MaliciousReturn,
 }
 
 impl StubAction {
@@ -40,9 +42,15 @@ impl MultiTokenReceiver for Contract {
         amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
-        near_sdk::env::log_str(&format!("FOO FOO FOO FOO FOO FOO FOO FOO FOO FOO "));
+        near_sdk::env::log_str(&format!(
+            "STUB::mt_on_transfer: sender_id={sender_id}, previous_owner_ids={previous_owner_ids:?}, token_ids={token_ids:?}, amounts={amounts:?}, msg={msg}"
+        ));
         match StubAction::decode(&msg) {
             StubAction::ReturnValue(value) => PromiseOrValue::Value(vec![value]),
+            StubAction::Panic => env::panic_str("StubAction::Panic"),
+            StubAction::MaliciousReturn => {
+                PromiseOrValue::Value(vec![U128(0xffffffffffffffffffffffffffffffff); 250000])
+            }
         }
     }
 }
