@@ -1,6 +1,7 @@
 use defuse_nep245::{TokenId, receiver::MultiTokenReceiver};
 use near_sdk::{
     AccountId, PromiseOrValue,
+    env::sha256,
     json_types::U128,
     log, near,
     serde::{Deserialize, Serialize},
@@ -35,6 +36,7 @@ impl MTReceiverMode {
 
 #[near]
 impl MultiTokenReceiver for Contract {
+    #[allow(unused_variables)]
     fn mt_on_transfer(
         &mut self,
         sender_id: AccountId,
@@ -44,20 +46,25 @@ impl MultiTokenReceiver for Contract {
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
         match MTReceiverMode::decode(&msg) {
-            MTReceiverMode::ReturnValue(value) => PromiseOrValue::Value(vec![value]),
+            MTReceiverMode::ReturnValue(value) => return PromiseOrValue::Value(vec![value]),
             MTReceiverMode::AcceptAll => {
                 return PromiseOrValue::Value(vec![U128(0); amounts.len()]);
             }
-            MTReceiverMode::ExceedGasLimit => loop {},
+            MTReceiverMode::ExceedGasLimit => {
+                for i in 0..100 {
+                    sha256(i.to_string().as_bytes());
+                }
+            }
             MTReceiverMode::ExceedLogLimit => {
                 for _ in 0..100 {
                     log!(
                         "NEAR Intents is a multichain transaction protocol where users specify what they want and let third parties compete to provide the best solution. This works for everything from token swaps to pizza delivery, creating a universal marketplace across crypto and traditional services."
                     );
                 }
-                unreachable!()
             }
         }
+
+        unreachable!()
     }
 }
 
