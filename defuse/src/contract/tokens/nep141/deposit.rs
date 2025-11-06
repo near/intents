@@ -68,7 +68,6 @@ impl FungibleTokenReceiver for Contract {
             self.execute_intents(execute_intents);
             None
         } else {
-            // Detach promise to execute intents asynchronously.
             Some(
                 ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
                     .execute_intents(execute_intents),
@@ -80,7 +79,6 @@ impl FungibleTokenReceiver for Contract {
         }
 
         let notification = ext_mt_receiver::ext(receiver_id.clone())
-            .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS_HUGE)
             .mt_on_transfer(
                 sender_id.clone(),
                 vec![sender_id.clone()],
@@ -88,9 +86,9 @@ impl FungibleTokenReceiver for Contract {
                 vec![U128(amount_value)],
                 message,
             );
+
         let resolution = Self::ext(CURRENT_ACCOUNT_ID.clone())
-            .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS_HUGE)
-            // do not distribute remaining gas here
+            .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS)
             .with_unused_gas_weight(0)
             .ft_resolve_deposit(
                 sender_id,
@@ -109,9 +107,7 @@ impl FungibleTokenReceiver for Contract {
 
 #[near]
 impl Contract {
-    const FT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
-    //TODO: find actual gas value
-    const FT_RESOLVE_DEPOSIT_GAS_HUGE: Gas = Gas::from_tgas(100);
+    const FT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(50);
 
     #[private]
     pub fn ft_resolve_deposit(
@@ -132,7 +128,9 @@ impl Contract {
                 .and_then(|refunds| refunds.first().cloned())
                 .map(|refund| refund.0)
                 .unwrap_or(amount.0),
-            PromiseResult::Failed => 0u128,
+            // as in token standard spec, refund whole amount in case of failure
+            PromiseResult::Failed => amount.0,
+            // PromiseResult::Failed => 0u128,
         }
         .min(amount.0);
 
