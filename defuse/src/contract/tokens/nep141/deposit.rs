@@ -92,7 +92,7 @@ impl FungibleTokenReceiver for Contract {
         };
 
         if !msg.message.is_empty() {
-            let p = ext_mt_receiver::ext(receiver_id.clone())
+            let p2 = ext_mt_receiver::ext(receiver_id.clone())
                 .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS_HUGE)
                 .mt_on_transfer(
                     sender_id.clone(),
@@ -100,8 +100,8 @@ impl FungibleTokenReceiver for Contract {
                     token_ids,
                     amounts,
                     message,
-                )
-                .then(
+                );
+            let p3 = 
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
                         .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS_HUGE)
                         // do not distribute remaining gas here
@@ -111,12 +111,11 @@ impl FungibleTokenReceiver for Contract {
                             resolver_receiver_id,
                             token_account,
                             U128(amount_value),
-                        ),
-                );
+                        );
 
             match maybe_promise {
-                Some(promise) => promise.then(p).into(),
-                None => p.into(),
+                Some(promise) => promise.then(p2).then(p3).into(),
+                None => p2.then(p3).into(),
             }
         } else {
             PromiseOrValue::Value(U128(0))

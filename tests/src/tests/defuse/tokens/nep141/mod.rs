@@ -415,7 +415,7 @@ async fn ft_force_withdraw(#[values(false, true)] no_registration: bool) {
     expected_sender_ft_balance: 1000,
     expected_receiver_mt_balance: 0,
 })]
-#[case::refund_full_amount_after_failed_transfer3(TransferCallExpectation {
+#[case::refund_requested_amount_after_failed_transfer3(TransferCallExpectation {
     action: StubAction::ReturnValue(200.into()),
     intent_transfer_amount: Some(1100),
     refund_if_fails: false,
