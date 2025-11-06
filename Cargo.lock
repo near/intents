@@ -947,6 +947,7 @@ dependencies = [
  "hex-literal",
  "impl-tools",
  "itertools 0.14.0",
+ "multi-token-receiver-stub",
  "near-contract-standards",
  "near-crypto",
  "near-sdk",

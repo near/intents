@@ -11,6 +11,7 @@ use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
     core::fees::{FeesConfig, Pips},
 };
+use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::AccountId;
 use rstest::rstest;
 
@@ -21,11 +22,8 @@ use crate::tests::defuse::DefuseSignerExt;
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn ft_transfer_intent(#[values(false, true)] no_registration: bool) {
-    let env = Env::builder()
-        .no_registration(no_registration)
-        .build()
-        .await;
+async fn ft_transfer_intent() {
+    let env = Env::builder().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
@@ -76,11 +74,8 @@ async fn ft_transfer_intent(#[values(false, true)] no_registration: bool) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn ft_transfer_intent_to_defuse(#[values(false, true)] no_registration: bool) {
-    let env = Env::builder()
-        .no_registration(no_registration)
-        .build()
-        .await;
+async fn ft_transfer_intent_to_defuse() {
+    let env = Env::builder().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
     let other_user_id: AccountId = "other-user.near".parse().unwrap();
@@ -176,46 +171,26 @@ async fn ft_transfer_intent_to_defuse(#[values(false, true)] no_registration: bo
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn ft_transfer_intent_to_mt_receiver_smc(#[values(false, true)] no_registration: bool) {
-    use crate::utils::account::AccountExt;
+async fn ft_transfer_intent_to_mt_receiver_smc(
+    #[values(
+        MTReceiverMode::ReturnValue(500.into()),
+        MTReceiverMode::ReturnValue(1500.into()),
+        MTReceiverMode::ExceedGasLimit,
+        MTReceiverMode::ExceedLogLimit,
+        MTReceiverMode::AcceptAll
 
+    )]
+    mt_receiver_mode: MTReceiverMode,
+) {
     let initial_amount = 1000;
-    let used_amount = 500;
 
-    let env = Env::builder()
-        .no_registration(no_registration)
-        .build()
-        .await;
+    let env = Env::builder().build().await;
 
-    let (user, ft) = futures::join!(env.create_user(), env.create_token());
-
-    const MT_RECEIVER_CODE: &[u8] = include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/contracts/shy_receiver.wasm"
-    ));
-
-    let mt_receiver = env
-        .sandbox()
-        .root_account()
-        .deploy_contract("shy_receiver", MT_RECEIVER_CODE)
-        .await
-        .unwrap();
-
-    // let mt_receiver = env
-    //     .deploy_defuse(
-    //         "defuse2",
-    //         DefuseConfig {
-    //             wnear_id: env.wnear.id().clone(),
-    //             fees: FeesConfig {
-    //                 fee: Pips::ZERO,
-    //                 fee_collector: env.id().clone(),
-    //             },
-    //             roles: RolesConfig::default(),
-    //         },
-    //         false,
-    //     )
-    //     .await
-    //     .unwrap();
+    let (user, ft, mt_receiver) = futures::join!(
+        env.create_user(),
+        env.create_token(),
+        env.deploy_mt_receiver_stub()
+    );
 
     env.initial_ft_storage_deposit(vec![user.id()], vec![&ft])
         .await;
@@ -225,6 +200,8 @@ async fn ft_transfer_intent_to_mt_receiver_smc(#[values(false, true)] no_registr
         .unwrap();
 
     let ft1 = TokenId::from(Nep141TokenId::new(ft.clone()));
+
+    let msg = serde_json::to_string(&mt_receiver_mode).unwrap();
 
     let transfer_intent = Transfer {
         receiver_id: mt_receiver.id().clone(),
@@ -236,7 +213,7 @@ async fn ft_transfer_intent_to_mt_receiver_smc(#[values(false, true)] no_registr
             .collect(),
         ),
         memo: None,
-        msg: Some(used_amount.to_string()),
+        msg: Some(msg),
     };
 
     let transfer_payload = user
@@ -249,17 +226,53 @@ async fn ft_transfer_intent_to_mt_receiver_smc(#[values(false, true)] no_registr
         .await
         .unwrap();
 
-    assert_eq!(
-        env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft1.to_string())
-            .await
-            .unwrap(),
-        initial_amount - used_amount
-    );
+    match mt_receiver_mode {
+        MTReceiverMode::AcceptAll => {
+            assert_eq!(
+                env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft1.to_string())
+                    .await
+                    .unwrap(),
+                0
+            );
 
-    assert_eq!(
-        env.mt_contract_balance_of(env.defuse.id(), mt_receiver.id(), &ft1.to_string())
-            .await
-            .unwrap(),
-        used_amount
-    );
+            assert_eq!(
+                env.mt_contract_balance_of(env.defuse.id(), mt_receiver.id(), &ft1.to_string())
+                    .await
+                    .unwrap(),
+                initial_amount
+            );
+        }
+        MTReceiverMode::ReturnValue(used_amount) if used_amount.0 == 500 => {
+            assert_eq!(
+                env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft1.to_string())
+                    .await
+                    .unwrap(),
+                initial_amount - used_amount.0
+            );
+
+            assert_eq!(
+                env.mt_contract_balance_of(env.defuse.id(), mt_receiver.id(), &ft1.to_string())
+                    .await
+                    .unwrap(),
+                used_amount.0
+            );
+        }
+
+        // in other cases - exceeds gas, exceeds log limit, returns more than transferred - should be refunded
+        _ => {
+            assert_eq!(
+                env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft1.to_string())
+                    .await
+                    .unwrap(),
+                initial_amount
+            );
+
+            assert_eq!(
+                env.mt_contract_balance_of(env.defuse.id(), mt_receiver.id(), &ft1.to_string())
+                    .await
+                    .unwrap(),
+                0
+            );
+        }
+    }
 }
