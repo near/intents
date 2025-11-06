@@ -19,7 +19,8 @@ use rstest::rstest;
 #[derive(Debug, Clone)]
 struct TransferCallExpectation {
     action: StubAction,
-    transfer_amount: u128,
+    intent_transfer_amount: Option<u128>,
+    refund_if_fails: bool,
     expected_sender_ft_balance: u128,
     expected_receiver_mt_balance: u128,
 }
@@ -346,38 +347,87 @@ async fn ft_force_withdraw(#[values(false, true)] no_registration: bool) {
 #[rstest]
 #[case::nothing_to_refund(TransferCallExpectation {
     action: StubAction::ReturnValue(0.into()),
-    transfer_amount: 1_000,
+    intent_transfer_amount: None,
+    refund_if_fails: true,
     expected_sender_ft_balance: 0,
     expected_receiver_mt_balance: 1_000,
 })]
 #[case::partial_refund(TransferCallExpectation {
     action: StubAction::ReturnValue(300.into()),
-    transfer_amount: 1_000,
+    intent_transfer_amount: None,
+    refund_if_fails: true,
     expected_sender_ft_balance: 300,
     expected_receiver_mt_balance: 700,
 })]
 #[case::malicious_refund(TransferCallExpectation {
     action: StubAction::ReturnValue(2_000.into()),
-    transfer_amount: 1_000,
+    intent_transfer_amount: None,
+    refund_if_fails: true,
     expected_sender_ft_balance: 1_000,
     expected_receiver_mt_balance: 0,
 })]
 #[case::receiver_panics(TransferCallExpectation {
     action: StubAction::Panic,
-    transfer_amount: 1_000,
+    intent_transfer_amount: None,
+    refund_if_fails: true,
     expected_sender_ft_balance: 0,
     expected_receiver_mt_balance: 1_000,
 })]
 #[case::malicious_receiver(TransferCallExpectation {
     action: StubAction::MaliciousReturn,
-    transfer_amount: 1_000,
+    intent_transfer_amount: None,
+    refund_if_fails: true,
     expected_sender_ft_balance: 0,
     expected_receiver_mt_balance: 1_000,
+})]
+#[case::refund_everything_on_failed_transfer(TransferCallExpectation {
+    action: StubAction::ReturnValue(0.into()),
+    intent_transfer_amount: Some(1100),
+    refund_if_fails: true,
+    expected_sender_ft_balance: 1000,
+    expected_receiver_mt_balance: 0,
+})]
+#[case::refund_after_transfer_intent(TransferCallExpectation {
+    action: StubAction::ReturnValue(200.into()),
+    intent_transfer_amount: Some(500),
+    refund_if_fails: true,
+    expected_sender_ft_balance: 200,
+    expected_receiver_mt_balance: 300,
+})]
+#[case::refund_after_transfer_intent_less_than_requested(TransferCallExpectation {
+    action: StubAction::ReturnValue(1000.into()),
+    intent_transfer_amount: Some(500),
+    refund_if_fails: true,
+    expected_sender_ft_balance: 500,
+    expected_receiver_mt_balance: 0,
+})]
+#[case::refund_full_amount_after_failed_transfer1(TransferCallExpectation {
+    action: StubAction::ReturnValue(1000.into()),
+    intent_transfer_amount: Some(1100),
+    refund_if_fails: false,
+    expected_sender_ft_balance: 1000,
+    expected_receiver_mt_balance: 0,
+})]
+#[case::refund_full_amount_after_failed_transfer2(TransferCallExpectation {
+    action: StubAction::ReturnValue(2000.into()),
+    intent_transfer_amount: Some(1100),
+    refund_if_fails: false,
+    expected_sender_ft_balance: 1000,
+    expected_receiver_mt_balance: 0,
+})]
+#[case::refund_full_amount_after_failed_transfer3(TransferCallExpectation {
+    action: StubAction::ReturnValue(200.into()),
+    intent_transfer_amount: Some(1100),
+    refund_if_fails: false,
+    expected_sender_ft_balance: 200,
+    expected_receiver_mt_balance: 800,
 })]
 async fn ft_transfer_call_calls_mt_on_transfer_variants(
     #[case] expectation: TransferCallExpectation,
 ) {
-    use crate::utils::account::AccountExt;
+    use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
+
+    use crate::tests::defuse::DefuseSignerExt;
 
     let env = Env::builder()
         .deployer_as_super_admin()
@@ -385,8 +435,8 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
         .build()
         .await;
 
-    let (user, receiver, ft) =
-        futures::join!(env.create_user(), env.create_user(), env.create_token());
+    let (user, receiver, intent_receiver, ft) =
+        futures::join!(env.create_user(), env.create_user(), env.create_user(), env.create_token());
 
     receiver
         .deploy(MT_RECEIVER_STUB_WASM.as_slice())
@@ -395,27 +445,41 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
         .unwrap();
 
     let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
-    env.initial_ft_storage_deposit(vec![user.id(), receiver.id()], vec![&ft])
+    env.initial_ft_storage_deposit(vec![user.id(), receiver.id(), intent_receiver.id()], vec![&ft])
         .await;
 
     let root = env.sandbox().root_account();
     assert!(env.ft_token_balance_of(&ft, root.id()).await.unwrap() > 0);
-    root.ft_transfer(&ft, user.id(), expectation.transfer_amount, None)
-        .await
-        .unwrap();
-    assert_eq!(
-        env.ft_token_balance_of(&ft, user.id()).await.unwrap(),
-        expectation.transfer_amount
-    );
+    root.ft_transfer(&ft, user.id(), 1000, None).await.unwrap();
+    assert_eq!(env.ft_token_balance_of(&ft, user.id()).await.unwrap(), 1000);
 
-    let deposit_message = DepositMessage::new(receiver.id().clone())
-        .with_refund_if_fails()
-        .with_message(serde_json::to_string(&expectation.action).unwrap());
+
+    let intents = match &expectation.intent_transfer_amount {
+        Some(amount) => 
+        vec![receiver
+            .sign_defuse_payload_default(
+                env.defuse.id(),
+                [Transfer {
+                    receiver_id: intent_receiver.id().clone(),
+                    tokens: Amounts::new(std::iter::once((TokenId::from(ft_id.clone()), *amount)).collect()),
+                    memo: None,
+                }],
+            ).await.unwrap()]
+        ,
+        None => vec![],
+    };
+
+    let deposit_message = DepositMessage {
+        receiver_id: receiver.id().clone(),
+        execute_intents: intents,
+        refund_if_fails: expectation.refund_if_fails,
+        message: serde_json::to_string(&expectation.action).unwrap(),
+    };
 
     user.ft_transfer_call(
         &ft,
         env.defuse.id(),
-        expectation.transfer_amount,
+        1000,
         None,
         &serde_json::to_string(&deposit_message).unwrap(),
     )
