@@ -19,6 +19,14 @@ use defuse::core::amounts::Amounts;
 
 use crate::tests::defuse::DefuseSignerExt;
 
+#[derive(Debug, Clone)]
+struct TransferCallExpectation {
+    mode: MTReceiverMode,
+    intent_transfer_amount: Option<u128>,
+    expected_sender_balance: u128,
+    expected_receiver_balance: u128,
+}
+
 #[tokio::test]
 #[rstest]
 #[trace]
@@ -171,18 +179,40 @@ async fn ft_transfer_intent_to_defuse() {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn ft_transfer_intent_to_mt_receiver_smc(
-    #[values(
-        MTReceiverMode::ReturnValue(500.into()),
-        MTReceiverMode::ReturnValue(1500.into()),
-        MTReceiverMode::ExceedGasLimit,
-        MTReceiverMode::ExceedLogLimit,
-        MTReceiverMode::AcceptAll
-
-    )]
-    mt_receiver_mode: MTReceiverMode,
-) {
-    let initial_amount = 1000;
+#[case::nothing_to_refund(TransferCallExpectation {
+    mode: MTReceiverMode::AcceptAll,
+    intent_transfer_amount: Some(1_000),
+    expected_sender_balance: 0,
+    expected_receiver_balance: 1_000,
+})]
+#[case::partial_refund(TransferCallExpectation {
+    mode: MTReceiverMode::ReturnValue(300.into()),
+    intent_transfer_amount: Some(1_000),
+    expected_sender_balance: 300,
+    expected_receiver_balance: 700,
+})]
+#[case::malicious_refund(TransferCallExpectation {
+    mode: MTReceiverMode::ReturnValue(2_000.into()),
+    intent_transfer_amount: Some(1_000),
+    expected_sender_balance: 1_000,
+    expected_receiver_balance: 0,
+})]
+#[case::receiver_panics(TransferCallExpectation {
+    mode: MTReceiverMode::Panic,
+    intent_transfer_amount: Some(1_000),
+    expected_sender_balance: 1000,
+    expected_receiver_balance: 0,
+})]
+#[case::malicious_receiver(TransferCallExpectation {
+    mode: MTReceiverMode::LargeReturn,
+    intent_transfer_amount: Some(1_000),
+    expected_sender_balance: 1000,
+    expected_receiver_balance: 0,
+})]
+async fn ft_transfer_intent_to_mt_receiver_smc(#[case] expectation: TransferCallExpectation) {
+    let initial_amount = expectation
+        .intent_transfer_amount
+        .expect("Transfer amount should be specified");
 
     let env = Env::builder().build().await;
 
@@ -201,7 +231,7 @@ async fn ft_transfer_intent_to_mt_receiver_smc(
 
     let ft1 = TokenId::from(Nep141TokenId::new(ft.clone()));
 
-    let msg = serde_json::to_string(&mt_receiver_mode).unwrap();
+    let msg = serde_json::to_string(&expectation.mode).unwrap();
 
     let transfer_intent = Transfer {
         receiver_id: mt_receiver.id().clone(),
@@ -226,53 +256,17 @@ async fn ft_transfer_intent_to_mt_receiver_smc(
         .await
         .unwrap();
 
-    match mt_receiver_mode {
-        MTReceiverMode::AcceptAll => {
-            assert_eq!(
-                env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft1.to_string())
-                    .await
-                    .unwrap(),
-                0
-            );
+    assert_eq!(
+        env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft1.to_string())
+            .await
+            .unwrap(),
+        expectation.expected_sender_balance
+    );
 
-            assert_eq!(
-                env.mt_contract_balance_of(env.defuse.id(), mt_receiver.id(), &ft1.to_string())
-                    .await
-                    .unwrap(),
-                initial_amount
-            );
-        }
-        MTReceiverMode::ReturnValue(used_amount) if used_amount.0 == 500 => {
-            assert_eq!(
-                env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft1.to_string())
-                    .await
-                    .unwrap(),
-                initial_amount - used_amount.0
-            );
-
-            assert_eq!(
-                env.mt_contract_balance_of(env.defuse.id(), mt_receiver.id(), &ft1.to_string())
-                    .await
-                    .unwrap(),
-                used_amount.0
-            );
-        }
-
-        // in other cases - exceeds gas, exceeds log limit, returns more than transferred - should be refunded
-        _ => {
-            assert_eq!(
-                env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft1.to_string())
-                    .await
-                    .unwrap(),
-                initial_amount
-            );
-
-            assert_eq!(
-                env.mt_contract_balance_of(env.defuse.id(), mt_receiver.id(), &ft1.to_string())
-                    .await
-                    .unwrap(),
-                0
-            );
-        }
-    }
+    assert_eq!(
+        env.mt_contract_balance_of(env.defuse.id(), mt_receiver.id(), &ft1.to_string())
+            .await
+            .unwrap(),
+        expectation.expected_receiver_balance
+    );
 }

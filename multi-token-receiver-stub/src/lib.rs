@@ -12,9 +12,8 @@ pub enum MTReceiverMode {
     #[default]
     AcceptAll,
     ReturnValue(U128),
-    ExceedGasLimit,
-    ExceedLogLimit,
-    MaliciousReturn,
+    Panic,
+    LargeReturn,
 }
 
 #[near]
@@ -33,12 +32,11 @@ impl MultiTokenReceiver for Contract {
         match mode {
             MTReceiverMode::ReturnValue(value) => PromiseOrValue::Value(vec![value]),
             MTReceiverMode::AcceptAll => PromiseOrValue::Value(vec![U128(0); amounts.len()]),
-            MTReceiverMode::ExceedGasLimit | MTReceiverMode::ExceedLogLimit => {
-                panic!("mt_on_transfer invoked with mode: {:?}", mode);
+            MTReceiverMode::Panic => {
+                panic!("MTReceiverMode::Panic triggered panic in mt_on_transfer");
             }
-            MTReceiverMode::MaliciousReturn => {
-                PromiseOrValue::Value(vec![U128(0xffffffffffffffffffffffffffffffff); 250000])
-            }
+            // 16 * 250_000 = 4 MB, which is the limit for a contract return value
+            MTReceiverMode::LargeReturn => PromiseOrValue::Value(vec![U128(123); 250_000]),
         }
     }
 }
@@ -85,10 +83,10 @@ mod tests {
     }
 
     #[test]
-    fn mt_on_transfer_exceeds_gas_limit() {
+    fn mt_on_transfer_panic() {
         let result = std::panic::catch_unwind(|| {
             let mut contract = Contract;
-            let message = serde_json::to_string(&MTReceiverMode::ExceedGasLimit).unwrap();
+            let message = serde_json::to_string(&MTReceiverMode::Panic).unwrap();
 
             contract.mt_on_transfer(
                 AccountId::from_str("sender.testnet").unwrap(),
@@ -103,27 +101,9 @@ mod tests {
     }
 
     #[test]
-    fn mt_on_transfer_exceeds_log_limit() {
-        let result = std::panic::catch_unwind(|| {
-            let mut contract = Contract;
-            let message = serde_json::to_string(&MTReceiverMode::ExceedLogLimit).unwrap();
-
-            contract.mt_on_transfer(
-                AccountId::from_str("sender.testnet").unwrap(),
-                vec![],
-                vec!["token".to_string()],
-                vec![U128(1)],
-                message,
-            );
-        });
-
-        assert!(result.is_err());
-    }
-
-    #[test]
     fn mt_on_transfer_with_malicious_return() {
         let mut contract = Contract;
-        let message = serde_json::to_string(&MTReceiverMode::MaliciousReturn).unwrap();
+        let message = serde_json::to_string(&MTReceiverMode::LargeReturn).unwrap();
 
         let PromiseOrValue::Value(result) = contract.mt_on_transfer(
             AccountId::from_str("sender.testnet").unwrap(),
@@ -135,9 +115,6 @@ mod tests {
             panic!("expected value promise");
         };
 
-        assert_eq!(
-            result,
-            vec![U128(0xffffffffffffffffffffffffffffffff); 250000]
-        );
+        assert_eq!(result, vec![U128(123); 250000]);
     }
 }
