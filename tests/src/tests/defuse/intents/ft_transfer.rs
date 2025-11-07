@@ -1,7 +1,7 @@
 use super::ExecuteIntentsExt;
 use crate::tests::defuse::DefuseExt;
 use crate::{
-    tests::defuse::env::Env,
+    tests::defuse::env::{Env, TransferCallExpectation},
     utils::{ft::FtExt, mt::MtExt},
 };
 use defuse::core::intents::tokens::Transfer;
@@ -18,14 +18,6 @@ use rstest::rstest;
 use defuse::core::amounts::Amounts;
 
 use crate::tests::defuse::DefuseSignerExt;
-
-#[derive(Debug, Clone)]
-struct TransferCallExpectation {
-    mode: MTReceiverMode,
-    intent_transfer_amount: Option<u128>,
-    expected_sender_balance: u128,
-    expected_receiver_balance: u128,
-}
 
 #[tokio::test]
 #[rstest]

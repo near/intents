@@ -22,6 +22,7 @@ use defuse_near_utils::arbitrary::ArbitraryNamedAccountId;
 use defuse_randomness::{Rng, make_true_rng};
 use defuse_test_utils::random::{Seed, rng};
 use futures::future::try_join_all;
+use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::{AccountId, NearToken, env::sha256};
 use near_workspaces::{
     Account, Contract, Network, Worker,
@@ -334,6 +335,14 @@ async fn deploy_token_without_registration<N: Network + 'static>(
         .unwrap()
         .into_result()
         .unwrap();
+}
+
+#[derive(Debug, Clone)]
+pub struct TransferCallExpectation {
+    pub mode: MTReceiverMode,
+    pub intent_transfer_amount: Option<u128>,
+    pub expected_sender_balance: u128,
+    pub expected_receiver_balance: u128,
 }
 
 pub fn get_account_public_key(account: &Account) -> defuse::core::crypto::PublicKey {
