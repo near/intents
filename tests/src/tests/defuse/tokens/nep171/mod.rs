@@ -285,3 +285,193 @@ async fn transfer_nft_to_verifier() {
         }
     }
 }
+
+#[derive(Debug, Clone)]
+struct NftTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction,
+    intent_transfer: bool,
+    refund_if_fails: bool,
+    expected_sender_owns_nft: bool,
+    expected_receiver_mt_balance: u128,
+}
+
+#[tokio::test]
+#[rstest]
+#[case::nothing_to_refund(NftTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::ReturnValue(0.into()),
+    intent_transfer: false,
+    refund_if_fails: true,
+    expected_sender_owns_nft: false,
+    expected_receiver_mt_balance: 1,
+})]
+#[case::request_refund(NftTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::ReturnValue(1.into()),
+    intent_transfer: false,
+    refund_if_fails: true,
+    expected_sender_owns_nft: true,
+    expected_receiver_mt_balance: 0,
+})]
+#[case::receiver_panics(NftTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::Panic,
+    intent_transfer: false,
+    refund_if_fails: true,
+    expected_sender_owns_nft: true,
+    expected_receiver_mt_balance: 0,
+})]
+#[case::malicious_receiver(NftTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::MaliciousReturn,
+    intent_transfer: false,
+    refund_if_fails: true,
+    expected_sender_owns_nft: true,
+    expected_receiver_mt_balance: 0,
+})]
+#[case::refund_everything_on_failed_transfer(NftTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::ReturnValue(0.into()),
+    intent_transfer: true,
+    refund_if_fails: true,
+    expected_sender_owns_nft: true,
+    expected_receiver_mt_balance: 0,
+})]
+#[case::refund_after_transfer_intent(NftTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::ReturnValue(1.into()),
+    intent_transfer: true,
+    refund_if_fails: true,
+    expected_sender_owns_nft: true,
+    expected_receiver_mt_balance: 0,
+})]
+#[case::no_refund_after_transfer_intent_kept(NftTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::ReturnValue(0.into()),
+    intent_transfer: true,
+    refund_if_fails: false,
+    expected_sender_owns_nft: false,
+    expected_receiver_mt_balance: 0,
+})]
+#[case::refund_after_failed_transfer(NftTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::ReturnValue(1.into()),
+    intent_transfer: true,
+    refund_if_fails: false,
+    expected_sender_owns_nft: true,
+    expected_receiver_mt_balance: 0,
+})]
+async fn nft_transfer_call_calls_mt_on_transfer_variants(
+    #[case] expectation: NftTransferCallExpectation,
+) {
+    use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
+    use defuse::tokens::DepositMessage;
+    use crate::tests::defuse::env::MT_RECEIVER_STUB_WASM;
+
+    let env = Env::builder()
+        .deployer_as_super_admin()
+        .build()
+        .await;
+
+    let (user, receiver, intent_receiver) = futures::join!(
+        env.create_user(),
+        env.create_user(),
+        env.create_user()
+    );
+
+    receiver
+        .deploy(MT_RECEIVER_STUB_WASM.as_slice())
+        .await
+        .unwrap()
+        .unwrap();
+
+    env.transfer_near(user.id(), NearToken::from_near(100))
+        .await
+        .unwrap()
+        .unwrap();
+
+    let nft_issuer_contract = user
+        .deploy_vanilla_nft_issuer(
+            "nft_test",
+            NFTContractMetadata {
+                reference: Some("http://test.com/".to_string()),
+                reference_hash: Some(Base64VecU8(DUMMY_REFERENCE_HASH.to_vec())),
+                spec: NFT_METADATA_SPEC.to_string(),
+                name: "Test NFT".to_string(),
+                symbol: "TNFT".to_string(),
+                icon: None,
+                base_uri: None,
+            },
+        )
+        .await
+        .unwrap();
+
+    let nft: Token = user
+        .nft_mint(
+            nft_issuer_contract.id(),
+            &DUMMY_NFT1_ID.to_string(),
+            user.id(),
+            &TokenMetadata::default(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(nft.token_id, DUMMY_NFT1_ID.to_string());
+    assert_eq!(nft.owner_id, *user.id());
+
+    let nft_token_id = DefuseTokenId::from(
+        Nep171TokenId::new(
+            nft_issuer_contract.id().clone(),
+            DUMMY_NFT1_ID.to_string(),
+        )
+        .unwrap(),
+    );
+
+    let intents = if expectation.intent_transfer {
+        vec![receiver
+            .sign_defuse_payload_default(
+                env.defuse.id(),
+                [Transfer {
+                    receiver_id: intent_receiver.id().clone(),
+                    tokens: Amounts::new(std::iter::once((nft_token_id.clone(), 1)).collect()),
+                    memo: None,
+                }],
+            )
+            .await
+            .unwrap()]
+    } else {
+        vec![]
+    };
+
+    let deposit_message = DepositMessage {
+        receiver_id: receiver.id().clone(),
+        execute_intents: intents,
+        refund_if_fails: expectation.refund_if_fails,
+        message: near_sdk::serde_json::to_string(&expectation.action).unwrap(),
+    };
+
+    user.nft_transfer_call(
+        nft_issuer_contract.id(),
+        env.defuse.id(),
+        nft.token_id.clone(),
+        None,
+        near_sdk::serde_json::to_string(&deposit_message).unwrap(),
+    )
+    .await
+    .unwrap();
+
+    // Check ownership on the NFT contract
+    let nft_owner = user
+        .nft_token(nft_issuer_contract.id(), &nft.token_id)
+        .await
+        .unwrap()
+        .unwrap()
+        .owner_id;
+
+    if expectation.expected_sender_owns_nft {
+        assert_eq!(nft_owner, *user.id(), "NFT should be owned by sender");
+    } else {
+        assert_eq!(nft_owner, *env.defuse.id(), "NFT should be owned by defuse contract");
+    }
+
+    // Check MT balance
+    assert_eq!(
+        env.mt_contract_balance_of(env.defuse.id(), receiver.id(), &nft_token_id.to_string())
+            .await
+            .unwrap(),
+        expectation.expected_receiver_mt_balance,
+        "Receiver MT balance mismatch"
+    );
+}
