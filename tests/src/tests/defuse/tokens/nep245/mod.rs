@@ -907,77 +907,77 @@ struct MtTransferCallExpectation {
 
 #[tokio::test]
 #[rstest]
-#[case::nothing_to_refund_single_token(MtTransferCallExpectation {
+#[case::receiver_accepts_all_tokens_no_refund(MtTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::ReturnValue(0.into()),
     intent_transfer_amounts: vec![None],
     refund_if_fails: true,
     expected_sender_mt_balances: vec![0],
     expected_receiver_mt_balances: vec![1000],
 })]
-#[case::partial_refund_single_token(MtTransferCallExpectation {
+#[case::receiver_requests_partial_refund_300_of_1000(MtTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::ReturnValue(300.into()),
     intent_transfer_amounts: vec![None],
     refund_if_fails: true,
     expected_sender_mt_balances: vec![300],
     expected_receiver_mt_balances: vec![700],
 })]
-#[case::malicious_refund_single_token(MtTransferCallExpectation {
+#[case::receiver_requests_excessive_refund_capped_at_transferred_amount(MtTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::ReturnValue(2_000.into()),
     intent_transfer_amounts: vec![None],
     refund_if_fails: true,
     expected_sender_mt_balances: vec![1_000],
     expected_receiver_mt_balances: vec![0],
 })]
-#[case::receiver_panics_single_token(MtTransferCallExpectation {
+#[case::receiver_panics_no_refund_sender_loses_tokens(MtTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::Panic,
     intent_transfer_amounts: vec![None],
     refund_if_fails: true,
-    expected_sender_mt_balances: vec![1000],
-    expected_receiver_mt_balances: vec![0],
+    expected_sender_mt_balances: vec![0],
+    expected_receiver_mt_balances: vec![1000],
 })]
-#[case::malicious_receiver_single_token(MtTransferCallExpectation {
+#[case::receiver_returns_oversized_data_no_refund_sender_loses_tokens(MtTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::MaliciousReturn,
     intent_transfer_amounts: vec![None],
     refund_if_fails: true,
-    expected_sender_mt_balances: vec![1000],
-    expected_receiver_mt_balances: vec![0],
+    expected_sender_mt_balances: vec![0],
+    expected_receiver_mt_balances: vec![1000],
 })]
-#[case::refund_everything_on_failed_transfer_single_token(MtTransferCallExpectation {
+#[case::intent_transfer_fails_all_tokens_refunded_to_sender(MtTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::ReturnValue(0.into()),
     intent_transfer_amounts: vec![Some(1100)],
     refund_if_fails: true,
     expected_sender_mt_balances: vec![1000],
     expected_receiver_mt_balances: vec![0],
 })]
-#[case::refund_after_transfer_intent_single_token(MtTransferCallExpectation {
+#[case::intent_transfers_500_then_200_refunded_300_kept_by_receiver(MtTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::ReturnValue(200.into()),
     intent_transfer_amounts: vec![Some(500)],
     refund_if_fails: true,
     expected_sender_mt_balances: vec![200],
     expected_receiver_mt_balances: vec![300],
 })]
-#[case::refund_after_transfer_intent_less_than_requested(MtTransferCallExpectation {
+#[case::intent_transfers_500_receiver_requests_1000_refund_capped_at_500(MtTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::ReturnValue(1000.into()),
     intent_transfer_amounts: vec![Some(500)],
     refund_if_fails: true,
     expected_sender_mt_balances: vec![500],
     expected_receiver_mt_balances: vec![0],
 })]
-#[case::refund_full_amount_after_failed_transfer1(MtTransferCallExpectation {
+#[case::intent_fails_without_refund_if_fails_all_tokens_refunded(MtTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::ReturnValue(1000.into()),
     intent_transfer_amounts: vec![Some(1100)],
     refund_if_fails: false,
     expected_sender_mt_balances: vec![1000],
     expected_receiver_mt_balances: vec![0],
 })]
-#[case::refund_full_amount_after_failed_transfer2(MtTransferCallExpectation {
+#[case::intent_fails_receiver_requests_excessive_refund_all_tokens_returned(MtTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::ReturnValue(2000.into()),
     intent_transfer_amounts: vec![Some(1100)],
     refund_if_fails: false,
     expected_sender_mt_balances: vec![1000],
     expected_receiver_mt_balances: vec![0],
 })]
-#[case::refund_requested_amount_after_failed_transfer3(MtTransferCallExpectation {
+#[case::intent_fails_receiver_requests_200_refund_800_kept(MtTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::ReturnValue(200.into()),
     intent_transfer_amounts: vec![Some(1100)],
     refund_if_fails: false,
@@ -1029,6 +1029,14 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
         .deploy(MT_RECEIVER_STUB_WASM.as_slice())
         .await
         .unwrap()
+        .unwrap();
+
+    // Register receiver's public key in defuse2 so it can execute intents
+    use crate::tests::defuse::accounts::AccountManagerExt;
+    use crate::tests::defuse::env::get_account_public_key;
+    receiver
+        .add_public_key(defuse2.id(), get_account_public_key(&receiver))
+        .await
         .unwrap();
 
     env.initial_ft_storage_deposit(vec![user.id(), receiver.id(), intent_receiver.id()], vec![&ft])
@@ -1130,11 +1138,25 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     action: multi_token_receiver_stub::StubAction::Panic,
     intent_transfer_amounts: vec![None, None],
     refund_if_fails: true,
-    expected_sender_mt_balances: vec![1000, 2000],
-    expected_receiver_mt_balances: vec![0, 0],
+    expected_sender_mt_balances: vec![0, 0],
+    expected_receiver_mt_balances: vec![1000, 2000],
 })]
 #[case::malicious_receiver_multi_token(MtTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::MaliciousReturn,
+    intent_transfer_amounts: vec![None, None],
+    refund_if_fails: true,
+    expected_sender_mt_balances: vec![0, 0],
+    expected_receiver_mt_balances: vec![1000, 2000],
+})]
+#[case::wrong_length_return_too_short(MtTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::ReturnValues(vec![100.into()]),
+    intent_transfer_amounts: vec![None, None],
+    refund_if_fails: true,
+    expected_sender_mt_balances: vec![1000, 2000],
+    expected_receiver_mt_balances: vec![0, 0],
+})]
+#[case::wrong_length_return_too_long(MtTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::ReturnValues(vec![100.into(), 200.into(), 300.into()]),
     intent_transfer_amounts: vec![None, None],
     refund_if_fails: true,
     expected_sender_mt_balances: vec![1000, 2000],
@@ -1202,6 +1224,14 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
         .unwrap()
         .unwrap();
 
+    // Register receiver's public key in defuse2 so it can execute intents
+    use crate::tests::defuse::accounts::AccountManagerExt;
+    use crate::tests::defuse::env::get_account_public_key;
+    receiver
+        .add_public_key(defuse2.id(), get_account_public_key(&receiver))
+        .await
+        .unwrap();
+
     env.initial_ft_storage_deposit(
         vec![user.id(), receiver.id(), intent_receiver.id()],
         vec![&ft1, &ft2],
@@ -1229,6 +1259,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
 
     // Build transfer intents if specified
     let mut intent_map = std::collections::BTreeMap::new();
+
     if let Some(Some(amount1)) = expectation.intent_transfer_amounts.get(0) {
         intent_map.insert(nep245_ft1_id.clone(), *amount1);
     }
@@ -1260,7 +1291,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     };
 
     // Transfer both tokens from user in defuse1 to defuse2 using batch transfer
-    user.call(env.defuse.id(), "mt_batch_transfer_call")
+    let _x = user.call(env.defuse.id(), "mt_batch_transfer_call")
         .deposit(near_workspaces::types::NearToken::from_yoctonear(1))
         .args_json(near_sdk::serde_json::json!({
             "receiver_id": defuse2.id(),
@@ -1276,6 +1307,8 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
         .unwrap()
         .into_result()
         .unwrap();
+
+
 
     // Check balances in defuse1 (original sender)
     assert_eq!(

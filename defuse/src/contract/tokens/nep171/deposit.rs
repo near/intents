@@ -1,7 +1,4 @@
-use defuse_core::{
-    intents::tokens::NftWithdraw,
-    token_id::{TokenId as CoreTokenId, nep171::Nep171TokenId},
-};
+use defuse_core::token_id::{TokenId as CoreTokenId, nep171::Nep171TokenId};
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
@@ -104,7 +101,7 @@ impl Contract {
     #[private]
     pub fn nft_resolve_deposit(
         &mut self,
-        sender_id: AccountId,
+        _sender_id: AccountId,
         receiver_id: AccountId,
         token: AccountId,
         token_id: near_contract_standards::non_fungible_token::TokenId,
@@ -123,7 +120,7 @@ impl Contract {
                     .unwrap_or(true)
             }
             // as in token standard spec, refund on failure
-            PromiseResult::Failed => true,
+            PromiseResult::Failed => false,
         };
 
         if !should_refund {
@@ -149,30 +146,13 @@ impl Contract {
             return PromiseOrValue::Value(false);
         }
 
-        let withdraw = NftWithdraw {
-            token,
-            token_id,
-            receiver_id: sender_id,
-            memo: Some("refund".to_string()),
-            msg: None,
-            storage_deposit: None,
-            min_gas: None,
-        };
-
-
-
-        // Withdraw the NFT from receiver's internal balance
-        // The NFT contract will handle returning the actual NFT to the sender
-
-        match self
-            .internal_nft_withdraw(receiver_id, withdraw, true)
-            .unwrap_or_panic()
-        {
-            PromiseOrValue::Promise(promise) => {
-                let _ = promise;
-            }
-            PromiseOrValue::Value(_) => {}
-        }
+        self.withdraw(
+            receiver_id.as_ref(),
+            [(core_token_id, 1)],
+            Some("refund unused token"),
+            false,
+        )
+        .unwrap_or_default();
 
         PromiseOrValue::Value(true)
     }

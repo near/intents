@@ -47,7 +47,7 @@ impl MultiTokenReceiver for Contract {
             }
             StubAction::Panic => env::panic_str("StubAction::Panic"),
             StubAction::MaliciousReturn => {
-                PromiseOrValue::Value(vec![U128(0xffffffffffffffffffffffffffffffff); 250000])
+                PromiseOrValue::Value(vec![U128(0xffffffffffffffffffffffffffffffff); 2500000])
             }
         }
     }

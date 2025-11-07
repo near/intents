@@ -315,15 +315,15 @@ struct NftTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::Panic,
     intent_transfer: false,
     refund_if_fails: true,
-    expected_sender_owns_nft: true,
-    expected_receiver_owns_nft: false,
+    expected_sender_owns_nft: false,
+    expected_receiver_owns_nft: true,
 })]
 #[case::malicious_receiver(NftTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::MaliciousReturn,
     intent_transfer: false,
     refund_if_fails: true,
-    expected_sender_owns_nft: true,
-    expected_receiver_owns_nft: false,
+    expected_sender_owns_nft: false,
+    expected_receiver_owns_nft: true,
 })]
 #[case::cannot_refund_after_intent_transfer(NftTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::ReturnValue(1.into()),
@@ -351,8 +351,10 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
         .build()
         .await;
 
+    // Ensure the NFT issuer account name stays short enough to host `nft_test.<user>`
+    // subaccounts; randomly generated names occasionally exceed the NEAR 64-char limit.
     let (user, receiver, intent_receiver) = futures::join!(
-        env.create_user(),
+        env.create_named_user("nft_transfer_sender"),
         env.create_user(),
         env.create_user()
     );

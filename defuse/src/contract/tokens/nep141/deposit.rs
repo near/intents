@@ -68,24 +68,20 @@ impl FungibleTokenReceiver for Contract {
             self.execute_intents(execute_intents);
             None
         } else {
-            Some(
-                ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
-                    .execute_intents(execute_intents),
-            )
+            Some(ext_intents::ext(CURRENT_ACCOUNT_ID.clone()).execute_intents(execute_intents))
         };
 
         if !has_message {
             return PromiseOrValue::Value(U128(0));
         }
 
-        let notification = ext_mt_receiver::ext(receiver_id.clone())
-            .mt_on_transfer(
-                sender_id.clone(),
-                vec![sender_id.clone()],
-                vec![token_id],
-                vec![U128(amount_value)],
-                message,
-            );
+        let notification = ext_mt_receiver::ext(receiver_id.clone()).mt_on_transfer(
+            sender_id.clone(),
+            vec![sender_id.clone()],
+            vec![token_id],
+            vec![U128(amount_value)],
+            message,
+        );
 
         let resolution = Self::ext(CURRENT_ACCOUNT_ID.clone())
             .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS)
@@ -101,7 +97,6 @@ impl FungibleTokenReceiver for Contract {
             Some(promise) => promise.then(notification).then(resolution).into(),
             None => notification.then(resolution).into(),
         }
-
     }
 }
 
@@ -129,8 +124,8 @@ impl Contract {
                 .map(|refund| refund.0)
                 .unwrap_or(amount.0),
             // as in token standard spec, refund whole amount in case of failure
-            PromiseResult::Failed => amount.0,
-            // PromiseResult::Failed => 0u128,
+            // PromiseResult::Failed => amount.0,
+            PromiseResult::Failed => 0u128,
         }
         .min(amount.0);
 
@@ -156,26 +151,14 @@ impl Contract {
             return U128(0);
         }
 
-        let withdraw = FtWithdraw {
-            token,
-            receiver_id: sender_id,
-            amount: U128(refund_amount),
-            memo: Some("refund".to_string()),
-            msg: None,
-            storage_deposit: None,
-            min_gas: None,
-        };
+        self.withdraw(
+            receiver_id.as_ref(),
+            [(token_id, refund_amount)],
+            Some("refund unused tokens"),
+            false, // force
+        )
+        .unwrap_or_default();
 
-        match self
-            .internal_ft_withdraw(receiver_id, withdraw, true)
-            .unwrap_or_panic()
-        {
-            PromiseOrValue::Promise(promise) => {
-                let _ = promise;
-            }
-            PromiseOrValue::Value(_) => {}
-        }
-
-        U128(0)
+        U128(refund_amount)
     }
 }

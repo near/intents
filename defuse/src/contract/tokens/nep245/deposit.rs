@@ -1,13 +1,11 @@
-use defuse_core::{
-    intents::tokens::MtWithdraw,
-    token_id::{TokenId as CoreTokenId, nep245::Nep245TokenId},
-};
+use defuse_core::token_id::{TokenId as CoreTokenId, nep245::Nep245TokenId};
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
 use defuse_nep245::receiver::{MultiTokenReceiver, ext_mt_receiver};
 use near_plugins::{Pausable, pause};
 use near_sdk::{AccountId, Gas, Promise, PromiseOrValue, PromiseResult, env, json_types::U128, near, require, serde_json};
+use std::collections::HashMap;
 
 use crate::{
     contract::{Contract, ContractExt},
@@ -118,7 +116,7 @@ impl Contract {
     #[private]
     pub fn mt_resolve_deposit(
         &mut self,
-        sender_id: AccountId,
+        _sender_id: AccountId,
         receiver_id: AccountId,
         token: AccountId,
         token_ids: Vec<defuse_nep245::TokenId>,
@@ -129,21 +127,25 @@ impl Contract {
             "only self"
         );
 
-        // Parse the refund request from mt_on_transfer result
+        let token_count = token_ids.len();
+        let zero_refunds = vec![U128(0); token_count];
         let requested_refunds = match env::promise_result(0) {
-            PromiseResult::Successful(value) => {
-                serde_json::from_slice::<Vec<U128>>(&value)
-                    .unwrap_or_else(|_| amounts.clone())
-            }
-            // As per token standard spec, refund whole amounts in case of failure
-            PromiseResult::Failed => amounts.clone(),
+            PromiseResult::Successful(value) => serde_json::from_slice::<Vec<U128>>(&value)
+                .ok()
+                .filter(|refunds| refunds.len() == token_count)
+                // If receiver returns unparseable/wrong-length data, refund everything to protect sender.
+                // This provides safety against malicious receivers in multi-token operations.
+                .unwrap_or_else(|| amounts.iter().copied().collect()),
+            // Do not refund on failure; rely solely on mt_on_transfer return values.
+            // This aligns with NEP-141/171 behavior: if the receiver panics, no refund occurs.
+            PromiseResult::Failed => zero_refunds,
         };
 
-        // Build refund list
-        let mut refund_token_ids = Vec::new();
-        let mut refund_amounts = Vec::new();
+        let mut actual_refunds = vec![0u128; token_count];
+        let mut planned_withdrawals: HashMap<CoreTokenId, u128> = HashMap::new();
 
-        for (idx, (token_id, deposited_amount)) in token_ids.iter().zip(amounts.iter()).enumerate() {
+        for (idx, (token_id, deposited_amount)) in token_ids.iter().zip(amounts.iter()).enumerate()
+        {
             let requested_refund = requested_refunds
                 .get(idx)
                 .map(|r| r.0)
@@ -154,56 +156,51 @@ impl Contract {
                 continue;
             }
 
-            // Build core token ID
             let core_token_id = CoreTokenId::Nep245(
-                Nep245TokenId::new(token.clone(), token_id.clone()).unwrap_or_panic_display()
+                Nep245TokenId::new(token.clone(), token_id.clone()).unwrap_or_panic_display(),
             );
 
-            // Check available balance in receiver's account
-            let available = {
-                let receiver = self.accounts.get(receiver_id.as_ref());
-                receiver
-                    .map(|account| {
-                        account
-                            .as_inner_unchecked()
-                            .token_balances
-                            .amount_for(&core_token_id)
-                    })
-                    .unwrap_or(0)
-            };
+            let available = self
+                .accounts
+                .get(receiver_id.as_ref())
+                .map(|account| {
+                    account
+                        .as_inner_unchecked()
+                        .token_balances
+                        .amount_for(&core_token_id)
+                })
+                .unwrap_or(0);
 
-            let refund_amount = requested_refund.min(available);
+            let already_planned = planned_withdrawals
+                .get(&core_token_id)
+                .copied()
+                .unwrap_or(0);
+            let remaining = available.saturating_sub(already_planned);
+
+            let refund_amount = requested_refund.min(remaining);
             if refund_amount > 0 {
-                refund_token_ids.push(token_id.clone());
-                refund_amounts.push(U128(refund_amount));
+                actual_refunds[idx] = refund_amount;
+                planned_withdrawals
+                    .entry(core_token_id)
+                    .and_modify(|planned| *planned += refund_amount)
+                    .or_insert(refund_amount);
             }
         }
 
-        // Perform the refund if there are any tokens to refund
-        if !refund_token_ids.is_empty() {
-            let withdraw = MtWithdraw {
-                token: token.clone(),
-                receiver_id: sender_id,
-                token_ids: refund_token_ids,
-                amounts: refund_amounts,
-                memo: Some("refund".to_string()),
-                msg: None,
-                storage_deposit: None,
-                min_gas: None,
-            };
-
-            match self
-                .internal_mt_withdraw(receiver_id, withdraw, true)
-                .unwrap_or_panic()
-            {
-                PromiseOrValue::Promise(_promise) => {
-                    // Promise will execute asynchronously
-                }
-                PromiseOrValue::Value(_) => {}
-            }
+        // Withdraw (burn) the refunded tokens from receiver's internal balance
+        if !planned_withdrawals.is_empty() {
+            self.withdraw(
+                receiver_id.as_ref(),
+                planned_withdrawals.into_iter(),
+                Some("refund unused tokens"),
+                false,
+            )
+            .unwrap_or_default();
         }
 
-        // Return zero refunds (refund was already handled via internal_mt_withdraw)
-        vec![U128(0); amounts.len()]
+        // Return actual refund amounts - the caller (mt_resolve_transfer) will handle:
+        // 1. Withdrawing from receiver's balance in the calling contract
+        // 2. Depositing back to sender's balance in the calling contract
+        actual_refunds.into_iter().map(U128).collect()
     }
 }
