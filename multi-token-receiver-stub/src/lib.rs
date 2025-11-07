@@ -16,6 +16,7 @@ pub struct Contract;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StubAction {
     ReturnValue(U128),
+    ReturnValues(Vec<U128>),
     Panic,
     MaliciousReturn,
 }
@@ -36,7 +37,14 @@ impl MultiTokenReceiver for Contract {
         let action: StubAction = serde_json::from_str(&msg)
             .unwrap_or_else(|err| panic!("failed to deserialize StubAction: {err}"));
         match action {
-            StubAction::ReturnValue(value) => PromiseOrValue::Value(vec![value]),
+            StubAction::ReturnValue(value) => {
+                // Return the same refund value for each token
+                PromiseOrValue::Value(vec![value; amounts.len()])
+            }
+            StubAction::ReturnValues(values) => {
+                // Return specific refund values for each token
+                PromiseOrValue::Value(values)
+            }
             StubAction::Panic => env::panic_str("StubAction::Panic"),
             StubAction::MaliciousReturn => {
                 PromiseOrValue::Value(vec![U128(0xffffffffffffffffffffffffffffffff); 250000])

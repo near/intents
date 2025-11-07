@@ -895,3 +895,417 @@ async fn multitoken_withdrawals() {
         );
     }
 }
+
+#[derive(Debug, Clone)]
+struct MtTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction,
+    intent_transfer_amounts: Vec<Option<u128>>,
+    refund_if_fails: bool,
+    expected_sender_mt_balances: Vec<u128>,
+    expected_receiver_mt_balances: Vec<u128>,
+}
+
+#[tokio::test]
+#[rstest]
+#[case::nothing_to_refund_single_token(MtTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::ReturnValue(0.into()),
+    intent_transfer_amounts: vec![None],
+    refund_if_fails: true,
+    expected_sender_mt_balances: vec![0],
+    expected_receiver_mt_balances: vec![1000],
+})]
+#[case::partial_refund_single_token(MtTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::ReturnValue(300.into()),
+    intent_transfer_amounts: vec![None],
+    refund_if_fails: true,
+    expected_sender_mt_balances: vec![300],
+    expected_receiver_mt_balances: vec![700],
+})]
+#[case::malicious_refund_single_token(MtTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::ReturnValue(2_000.into()),
+    intent_transfer_amounts: vec![None],
+    refund_if_fails: true,
+    expected_sender_mt_balances: vec![1_000],
+    expected_receiver_mt_balances: vec![0],
+})]
+#[case::receiver_panics_single_token(MtTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::Panic,
+    intent_transfer_amounts: vec![None],
+    refund_if_fails: true,
+    expected_sender_mt_balances: vec![1000],
+    expected_receiver_mt_balances: vec![0],
+})]
+#[case::malicious_receiver_single_token(MtTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::MaliciousReturn,
+    intent_transfer_amounts: vec![None],
+    refund_if_fails: true,
+    expected_sender_mt_balances: vec![1000],
+    expected_receiver_mt_balances: vec![0],
+})]
+#[case::refund_everything_on_failed_transfer_single_token(MtTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::ReturnValue(0.into()),
+    intent_transfer_amounts: vec![Some(1100)],
+    refund_if_fails: true,
+    expected_sender_mt_balances: vec![1000],
+    expected_receiver_mt_balances: vec![0],
+})]
+#[case::refund_after_transfer_intent_single_token(MtTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::ReturnValue(200.into()),
+    intent_transfer_amounts: vec![Some(500)],
+    refund_if_fails: true,
+    expected_sender_mt_balances: vec![200],
+    expected_receiver_mt_balances: vec![300],
+})]
+#[case::refund_after_transfer_intent_less_than_requested(MtTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::ReturnValue(1000.into()),
+    intent_transfer_amounts: vec![Some(500)],
+    refund_if_fails: true,
+    expected_sender_mt_balances: vec![500],
+    expected_receiver_mt_balances: vec![0],
+})]
+#[case::refund_full_amount_after_failed_transfer1(MtTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::ReturnValue(1000.into()),
+    intent_transfer_amounts: vec![Some(1100)],
+    refund_if_fails: false,
+    expected_sender_mt_balances: vec![1000],
+    expected_receiver_mt_balances: vec![0],
+})]
+#[case::refund_full_amount_after_failed_transfer2(MtTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::ReturnValue(2000.into()),
+    intent_transfer_amounts: vec![Some(1100)],
+    refund_if_fails: false,
+    expected_sender_mt_balances: vec![1000],
+    expected_receiver_mt_balances: vec![0],
+})]
+#[case::refund_requested_amount_after_failed_transfer3(MtTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::ReturnValue(200.into()),
+    intent_transfer_amounts: vec![Some(1100)],
+    refund_if_fails: false,
+    expected_sender_mt_balances: vec![200],
+    expected_receiver_mt_balances: vec![800],
+})]
+async fn mt_transfer_call_calls_mt_on_transfer_single_token(
+    #[case] expectation: MtTransferCallExpectation,
+) {
+    use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
+    use defuse::contract::config::{DefuseConfig, RolesConfig};
+    use defuse::core::fees::{FeesConfig, Pips};
+    use defuse::tokens::DepositMessage;
+    use crate::tests::defuse::DefuseSignerExt;
+    use crate::tests::defuse::env::MT_RECEIVER_STUB_WASM;
+
+    let env = Env::builder()
+        .deployer_as_super_admin()
+        .no_registration(false)
+        .build()
+        .await;
+
+    let (user, intent_receiver, ft) = futures::join!(
+        env.create_user(),
+        env.create_user(),
+        env.create_token()
+    );
+
+    // Deploy second defuse instance as the receiver
+    let defuse2 = env
+        .deploy_defuse(
+            "defuse2",
+            DefuseConfig {
+                wnear_id: env.wnear.id().clone(),
+                fees: FeesConfig {
+                    fee: Pips::ZERO,
+                    fee_collector: env.id().clone(),
+                },
+                roles: RolesConfig::default(),
+            },
+            false,
+        )
+        .await
+        .unwrap();
+
+    // Deploy stub receiver for testing mt_on_transfer behavior
+    let receiver = env.create_user().await;
+    receiver
+        .deploy(MT_RECEIVER_STUB_WASM.as_slice())
+        .await
+        .unwrap()
+        .unwrap();
+
+    env.initial_ft_storage_deposit(vec![user.id(), receiver.id(), intent_receiver.id()], vec![&ft])
+        .await;
+
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
+
+    // Fund user with tokens in defuse1
+    env.defuse_ft_deposit_to(&ft, 1000, user.id())
+        .await
+        .unwrap();
+
+    // Get the nep245 token id for defuse1's wrapped token in defuse2
+    let nep245_ft_id = TokenId::Nep245(
+        Nep245TokenId::new(env.defuse.id().clone(), ft_id.to_string()).unwrap()
+    );
+
+    // Build transfer intent if specified
+    let intents = match expectation.intent_transfer_amounts.first() {
+        Some(Some(amount)) => {
+            vec![receiver
+                .sign_defuse_payload_default(
+                    defuse2.id(),
+                    [Transfer {
+                        receiver_id: intent_receiver.id().clone(),
+                        tokens: Amounts::new(std::iter::once((nep245_ft_id.clone(), *amount)).collect()),
+                        memo: None,
+                    }],
+                )
+                .await
+                .unwrap()]
+        }
+        _ => vec![],
+    };
+
+    let deposit_message = DepositMessage {
+        receiver_id: receiver.id().clone(),
+        execute_intents: intents,
+        refund_if_fails: expectation.refund_if_fails,
+        message: near_sdk::serde_json::to_string(&expectation.action).unwrap(),
+    };
+
+    // Transfer from defuse1 to defuse2 using mt_transfer_call
+    user.mt_transfer_call(
+        env.defuse.id(),
+        defuse2.id(),
+        &ft_id.to_string(),
+        1000,
+        None,
+        None,
+        near_sdk::serde_json::to_string(&deposit_message).unwrap(),
+    )
+    .await
+    .unwrap();
+
+    // Check balances in defuse1 (original sender)
+    assert_eq!(
+        env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft_id.to_string())
+            .await
+            .unwrap(),
+        expectation.expected_sender_mt_balances[0],
+        "Sender balance in defuse1 should match expected"
+    );
+
+    // Check balances in defuse2 (receiver) - token is wrapped as NEP-245
+    assert_eq!(
+        env.mt_contract_balance_of(defuse2.id(), receiver.id(), &nep245_ft_id.to_string())
+            .await
+            .unwrap(),
+        expectation.expected_receiver_mt_balances[0],
+        "Receiver balance in defuse2 should match expected"
+    );
+}
+
+#[tokio::test]
+#[rstest]
+#[case::nothing_to_refund_multi_token(MtTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::ReturnValues(vec![0.into(), 0.into()]),
+    intent_transfer_amounts: vec![None, None],
+    refund_if_fails: true,
+    expected_sender_mt_balances: vec![0, 0],
+    expected_receiver_mt_balances: vec![1000, 2000],
+})]
+#[case::partial_refund_first_token(MtTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::ReturnValues(vec![300.into(), 0.into()]),
+    intent_transfer_amounts: vec![None, None],
+    refund_if_fails: true,
+    expected_sender_mt_balances: vec![300, 0],
+    expected_receiver_mt_balances: vec![700, 2000],
+})]
+#[case::malicious_refund_multi_token(MtTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::ReturnValues(vec![3_000.into(), 3_000.into()]),
+    intent_transfer_amounts: vec![None, None],
+    refund_if_fails: true,
+    expected_sender_mt_balances: vec![1000, 2000],
+    expected_receiver_mt_balances: vec![0, 0],
+})]
+#[case::receiver_panics_multi_token(MtTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::Panic,
+    intent_transfer_amounts: vec![None, None],
+    refund_if_fails: true,
+    expected_sender_mt_balances: vec![1000, 2000],
+    expected_receiver_mt_balances: vec![0, 0],
+})]
+#[case::malicious_receiver_multi_token(MtTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::MaliciousReturn,
+    intent_transfer_amounts: vec![None, None],
+    refund_if_fails: true,
+    expected_sender_mt_balances: vec![1000, 2000],
+    expected_receiver_mt_balances: vec![0, 0],
+})]
+#[case::refund_after_intent_first_token(MtTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::ReturnValues(vec![200.into(), 0.into()]),
+    intent_transfer_amounts: vec![Some(500), None],
+    refund_if_fails: true,
+    expected_sender_mt_balances: vec![200, 0],
+    expected_receiver_mt_balances: vec![300, 2000],
+})]
+#[case::refund_after_intent_both_tokens(MtTransferCallExpectation {
+    action: multi_token_receiver_stub::StubAction::ReturnValues(vec![200.into(), 500.into()]),
+    intent_transfer_amounts: vec![Some(500), Some(1000)],
+    refund_if_fails: true,
+    expected_sender_mt_balances: vec![200, 500],
+    expected_receiver_mt_balances: vec![300, 500],
+})]
+async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
+    #[case] expectation: MtTransferCallExpectation,
+) {
+    use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
+    use defuse::contract::config::{DefuseConfig, RolesConfig};
+    use defuse::core::fees::{FeesConfig, Pips};
+    use defuse::tokens::DepositMessage;
+    use crate::tests::defuse::DefuseSignerExt;
+    use crate::tests::defuse::env::MT_RECEIVER_STUB_WASM;
+
+    let env = Env::builder()
+        .deployer_as_super_admin()
+        .no_registration(false)
+        .build()
+        .await;
+
+    let (user, intent_receiver, ft1, ft2) = futures::join!(
+        env.create_user(),
+        env.create_user(),
+        env.create_token(),
+        env.create_token()
+    );
+
+    // Deploy second defuse instance as the receiver
+    let defuse2 = env
+        .deploy_defuse(
+            "defuse2",
+            DefuseConfig {
+                wnear_id: env.wnear.id().clone(),
+                fees: FeesConfig {
+                    fee: Pips::ZERO,
+                    fee_collector: env.id().clone(),
+                },
+                roles: RolesConfig::default(),
+            },
+            false,
+        )
+        .await
+        .unwrap();
+
+    // Deploy stub receiver for testing mt_on_transfer behavior
+    let receiver = env.create_user().await;
+    receiver
+        .deploy(MT_RECEIVER_STUB_WASM.as_slice())
+        .await
+        .unwrap()
+        .unwrap();
+
+    env.initial_ft_storage_deposit(
+        vec![user.id(), receiver.id(), intent_receiver.id()],
+        vec![&ft1, &ft2],
+    )
+    .await;
+
+    let ft1_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
+    let ft2_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
+
+    // Fund user with tokens in defuse1
+    env.defuse_ft_deposit_to(&ft1, 1000, user.id())
+        .await
+        .unwrap();
+    env.defuse_ft_deposit_to(&ft2, 2000, user.id())
+        .await
+        .unwrap();
+
+    // Get the nep245 token ids for defuse1's wrapped tokens in defuse2
+    let nep245_ft1_id = TokenId::Nep245(
+        Nep245TokenId::new(env.defuse.id().clone(), ft1_id.to_string()).unwrap()
+    );
+    let nep245_ft2_id = TokenId::Nep245(
+        Nep245TokenId::new(env.defuse.id().clone(), ft2_id.to_string()).unwrap()
+    );
+
+    // Build transfer intents if specified
+    let mut intent_map = std::collections::BTreeMap::new();
+    if let Some(Some(amount1)) = expectation.intent_transfer_amounts.get(0) {
+        intent_map.insert(nep245_ft1_id.clone(), *amount1);
+    }
+    if let Some(Some(amount2)) = expectation.intent_transfer_amounts.get(1) {
+        intent_map.insert(nep245_ft2_id.clone(), *amount2);
+    }
+
+    let intents = if intent_map.is_empty() {
+        vec![]
+    } else {
+        vec![receiver
+            .sign_defuse_payload_default(
+                defuse2.id(),
+                [Transfer {
+                    receiver_id: intent_receiver.id().clone(),
+                    tokens: Amounts::new(intent_map),
+                    memo: None,
+                }],
+            )
+            .await
+            .unwrap()]
+    };
+
+    let deposit_message = DepositMessage {
+        receiver_id: receiver.id().clone(),
+        execute_intents: intents,
+        refund_if_fails: expectation.refund_if_fails,
+        message: near_sdk::serde_json::to_string(&expectation.action).unwrap(),
+    };
+
+    // Transfer both tokens from user in defuse1 to defuse2 using batch transfer
+    user.call(env.defuse.id(), "mt_batch_transfer_call")
+        .deposit(near_workspaces::types::NearToken::from_yoctonear(1))
+        .args_json(near_sdk::serde_json::json!({
+            "receiver_id": defuse2.id(),
+            "token_ids": vec![ft1_id.to_string(), ft2_id.to_string()],
+            "amounts": vec![near_sdk::json_types::U128(1000), near_sdk::json_types::U128(2000)],
+            "approvals": Option::<Vec<Option<(near_sdk::AccountId, u64)>>>::None,
+            "memo": Option::<String>::None,
+            "msg": near_sdk::serde_json::to_string(&deposit_message).unwrap(),
+        }))
+        .max_gas()
+        .transact()
+        .await
+        .unwrap()
+        .into_result()
+        .unwrap();
+
+    // Check balances in defuse1 (original sender)
+    assert_eq!(
+        env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft1_id.to_string())
+            .await
+            .unwrap(),
+        expectation.expected_sender_mt_balances[0],
+        "Sender balance for ft1 in defuse1 should match expected"
+    );
+    assert_eq!(
+        env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft2_id.to_string())
+            .await
+            .unwrap(),
+        expectation.expected_sender_mt_balances[1],
+        "Sender balance for ft2 in defuse1 should match expected"
+    );
+
+    // Check balances in defuse2 (receiver)
+    assert_eq!(
+        env.mt_contract_balance_of(defuse2.id(), receiver.id(), &nep245_ft1_id.to_string())
+            .await
+            .unwrap(),
+        expectation.expected_receiver_mt_balances[0],
+        "Receiver balance for ft1 in defuse2 should match expected"
+    );
+    assert_eq!(
+        env.mt_contract_balance_of(defuse2.id(), receiver.id(), &nep245_ft2_id.to_string())
+            .await
+            .unwrap(),
+        expectation.expected_receiver_mt_balances[1],
+        "Receiver balance for ft2 in defuse2 should match expected"
+    );
+}
