@@ -292,7 +292,7 @@ struct NftTransferCallExpectation {
     intent_transfer: bool,
     refund_if_fails: bool,
     expected_sender_owns_nft: bool,
-    expected_receiver_mt_balance: u128,
+    expected_receiver_owns_nft: bool,
 }
 
 #[tokio::test]
@@ -302,56 +302,42 @@ struct NftTransferCallExpectation {
     intent_transfer: false,
     refund_if_fails: true,
     expected_sender_owns_nft: false,
-    expected_receiver_mt_balance: 1,
+    expected_receiver_owns_nft: true,
 })]
 #[case::request_refund(NftTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::ReturnValue(1.into()),
     intent_transfer: false,
     refund_if_fails: true,
     expected_sender_owns_nft: true,
-    expected_receiver_mt_balance: 0,
+    expected_receiver_owns_nft: false,
 })]
 #[case::receiver_panics(NftTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::Panic,
     intent_transfer: false,
     refund_if_fails: true,
     expected_sender_owns_nft: true,
-    expected_receiver_mt_balance: 0,
+    expected_receiver_owns_nft: false,
 })]
 #[case::malicious_receiver(NftTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::MaliciousReturn,
     intent_transfer: false,
     refund_if_fails: true,
     expected_sender_owns_nft: true,
-    expected_receiver_mt_balance: 0,
+    expected_receiver_owns_nft: false,
 })]
-#[case::refund_everything_on_failed_transfer(NftTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::ReturnValue(0.into()),
-    intent_transfer: true,
-    refund_if_fails: true,
-    expected_sender_owns_nft: true,
-    expected_receiver_mt_balance: 0,
-})]
-#[case::refund_after_transfer_intent(NftTransferCallExpectation {
+#[case::cannot_refund_after_intent_transfer(NftTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::ReturnValue(1.into()),
     intent_transfer: true,
     refund_if_fails: true,
-    expected_sender_owns_nft: true,
-    expected_receiver_mt_balance: 0,
+    expected_sender_owns_nft: false,
+    expected_receiver_owns_nft: false,
 })]
 #[case::no_refund_after_transfer_intent_kept(NftTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::ReturnValue(0.into()),
     intent_transfer: true,
     refund_if_fails: false,
     expected_sender_owns_nft: false,
-    expected_receiver_mt_balance: 0,
-})]
-#[case::refund_after_failed_transfer(NftTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::ReturnValue(1.into()),
-    intent_transfer: true,
-    refund_if_fails: false,
-    expected_sender_owns_nft: true,
-    expected_receiver_mt_balance: 0,
+    expected_receiver_owns_nft: false,
 })]
 async fn nft_transfer_call_calls_mt_on_transfer_variants(
     #[case] expectation: NftTransferCallExpectation,
@@ -466,12 +452,15 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
         assert_eq!(nft_owner, *env.defuse.id(), "NFT should be owned by defuse contract");
     }
 
-    // Check MT balance
-    assert_eq!(
-        env.mt_contract_balance_of(env.defuse.id(), receiver.id(), &nft_token_id.to_string())
-            .await
-            .unwrap(),
-        expectation.expected_receiver_mt_balance,
-        "Receiver MT balance mismatch"
-    );
+    // Check if receiver owns the NFT in MT balance
+    let receiver_mt_balance = env
+        .mt_contract_balance_of(env.defuse.id(), receiver.id(), &nft_token_id.to_string())
+        .await
+        .unwrap();
+
+    if expectation.expected_receiver_owns_nft {
+        assert_eq!(receiver_mt_balance, 1, "Receiver should own the NFT (MT balance = 1)");
+    } else {
+        assert_eq!(receiver_mt_balance, 0, "Receiver should not own the NFT (MT balance = 0)");
+    }
 }

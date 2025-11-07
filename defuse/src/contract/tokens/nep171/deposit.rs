@@ -108,7 +108,7 @@ impl Contract {
         receiver_id: AccountId,
         token: AccountId,
         token_id: near_contract_standards::non_fungible_token::TokenId,
-    ) -> bool {
+    ) -> PromiseOrValue<bool> {
         require!(
             env::predecessor_account_id() == *CURRENT_ACCOUNT_ID,
             "only self"
@@ -127,7 +127,7 @@ impl Contract {
         };
 
         if !should_refund {
-            return false;
+            return PromiseOrValue::Value(false);
         }
 
         let core_token_id = CoreTokenId::Nep171(
@@ -146,20 +146,34 @@ impl Contract {
         };
 
         if available == 0 {
-            return false;
+            return PromiseOrValue::Value(false);
         }
+
+        let withdraw = NftWithdraw {
+            token,
+            token_id,
+            receiver_id: sender_id,
+            memo: Some("refund".to_string()),
+            msg: None,
+            storage_deposit: None,
+            min_gas: None,
+        };
+
+
 
         // Withdraw the NFT from receiver's internal balance
         // The NFT contract will handle returning the actual NFT to the sender
-        self.withdraw(
-            &receiver_id,
-            [(core_token_id, 1)],
-            Some("refund"),
-            true,
-        )
-        .unwrap_or_panic();
 
-        // Return true to tell the NFT contract to return the NFT to the original sender
-        true
+        match self
+            .internal_nft_withdraw(receiver_id, withdraw, true)
+            .unwrap_or_panic()
+        {
+            PromiseOrValue::Promise(promise) => {
+                let _ = promise;
+            }
+            PromiseOrValue::Value(_) => {}
+        }
+
+        PromiseOrValue::Value(true)
     }
 }
