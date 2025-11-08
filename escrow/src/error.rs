@@ -7,6 +7,8 @@ pub type Result<T, E = Error> = ::core::result::Result<T, E>;
 pub enum Error {
     #[error("closed")]
     Closed,
+    #[error("cleanup in progress")]
+    CleanupInProgress,
     #[error("excessive fees")]
     ExcessiveFees,
     #[error("integer overflow")]
@@ -19,7 +21,7 @@ pub enum Error {
     PartialFillsNotAllowed,
     #[error("same asset")]
     SameAsset,
-    #[error("too small amount")]
+    #[error("insufficient amount")]
     InsufficientAmount,
     #[error("unauthorized")]
     Unauthorized,

@@ -28,7 +28,6 @@ members = [
     "serde-utils",
     "tests",
     "test-utils",
-    "token-id",
     "tip191",
     "token-id",
     "ton-connect",

@@ -9,11 +9,15 @@ mod utils;
 
 pub use self::{action::*, error::*, event::*, price::*, state::*};
 
+pub use defuse_near_utils::time::Deadline;
+
+// TODO: more pub re-exports
+
 use near_sdk::{AccountId, Gas, PromiseOrValue, ext_contract, json_types::U128, near};
 
 #[ext_contract(ext_escrow)]
 pub trait Escrow {
-    fn view(&self) -> &Storage;
+    fn view(&self) -> &ContractState;
     fn close(&mut self, fixed_params: FixedParams) -> PromiseOrValue<U128>;
 
     // TODO: total_fee()

@@ -23,7 +23,6 @@ defuse-token-id = { workspace = true, features = ["unbounded"] }
 near-contract-standards.workspace = true
 near-sdk.workspace = true
 
-chrono = { workspace = true, features = ["serde"] }
 derive_more = { workspace = true, features = ["from"] }
 hex.workspace = true
 impl-tools.workspace = true
@@ -47,5 +46,9 @@ default = ["nep141", "nep245"]
 nep141 = ["defuse-token-id/nep141"]
 nep245 = ["defuse-token-id/nep245"]
 
-abi = ["serde_with/schemars_0_8", "defuse-token-id/abi"]
+abi = [
+    "defuse-token-id/abi",
+    "defuse-near-utils/abi",
+    "serde_with/schemars_0_8",
+]
 contract = []

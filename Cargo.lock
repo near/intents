@@ -945,7 +945,6 @@ name = "defuse-escrow"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "chrono",
  "defuse",
  "defuse-borsh-utils",
  "defuse-fees",

@@ -2,17 +2,23 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{Error, Price, Result, SendParams};
 
-use chrono::{DateTime, Utc};
 use defuse_borsh_utils::adapters::{
     As as BorshAs, TimestampNanoSeconds as BorshTimestampNanoSeconds,
 };
 use defuse_fees::Pips;
+use defuse_near_utils::time::Deadline;
 use defuse_num_utils::CheckedAdd;
 use defuse_token_id::TokenId;
 use near_sdk::{AccountId, AccountIdRef, CryptoHash, borsh, env, near};
-use serde_with::{
-    DisplayFromStr, TimestampNanoSeconds as SerdeTimestampNanoSeconds, hex::Hex, serde_as,
-};
+use serde_with::{DisplayFromStr, hex::Hex, serde_as};
+
+#[near(serializers = [borsh, json])]
+#[serde(tag = "state", content = "data", rename_all = "snake_case")]
+#[derive(Debug)]
+pub enum ContractState {
+    Alive(Storage),
+    Cleanup,
+}
 
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
@@ -113,6 +119,8 @@ pub struct FixedParams {
     pub taker_whitelist: BTreeSet<AccountId>,
     // TODO: whitelist: Option<signer_id>
 
+    // TODO: authority
+
     // allows:
     //   * price update (solver message: min_price)
     //   * deadline update (short)
@@ -163,8 +171,8 @@ pub struct Params {
             definitions = "i64::add_definitions_recursively",
         ))
     )]
-    #[serde_as(as = "SerdeTimestampNanoSeconds")] // TODO: RFC-3339
-    pub deadline: DateTime<Utc>,
+    // #[serde_as(as = "SerdeTimestampNanoSeconds")] // TODO: RFC-3339
+    pub deadline: Deadline,
 }
 
 #[cfg_attr(
@@ -183,5 +191,8 @@ pub struct State {
 
     #[serde(default, skip_serializing_if = "::core::ops::Not::not")]
     pub closed: bool,
+
+    pub callbacks_in_flight: u32,
     // TODO: lost_found: store zero for beging transfer, otherwise - fail
+    // pub cleanup_in_progress: bool,
 }

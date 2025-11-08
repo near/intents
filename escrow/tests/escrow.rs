@@ -2,9 +2,8 @@ mod env;
 
 use std::time::Duration;
 
-use chrono::Utc;
 use defuse_escrow::{
-    FillAction, FixedParams, OpenAction, Params, Price, SendParams, TransferMessage,
+    Deadline, FillAction, FixedParams, OpenAction, Params, Price, SendParams, TransferMessage,
 };
 use defuse_fees::Pips;
 use defuse_sandbox::{
@@ -54,7 +53,13 @@ async fn partial_fills() {
 
     let fixed_params = FixedParams {
         maker: env.maker.id().clone(),
-        refund_src_to: SendParams::default(),
+        refund_src_to: SendParams {
+            receiver_id: None,
+            memo: None,
+            msg: Some("fail".to_string()),
+            min_gas: None,
+        },
+        // refund_src_to: SendParams::default(),
         src_asset: src_asset.clone(),
         dst_asset: dst_asset.clone(),
         receive_dst_to: SendParams::default(),
@@ -76,7 +81,7 @@ async fn partial_fills() {
             &fixed_params,
             Params {
                 price: Price::ratio(MAKER_AMOUNT, TAKER_AMOUNT).unwrap(),
-                deadline: Utc::now() + Duration::from_secs(120),
+                deadline: Deadline::timeout(Duration::from_secs(60 * 10)),
             },
         )
         .await

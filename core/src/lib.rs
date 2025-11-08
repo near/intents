@@ -1,6 +1,5 @@
 pub mod accounts;
 pub mod amounts;
-mod deadline;
 pub mod engine;
 mod error;
 pub mod events;
@@ -9,7 +8,9 @@ pub mod intents;
 mod nonce;
 pub mod payload;
 
-pub use self::{deadline::*, error::*, nonce::*};
+pub use self::{error::*, nonce::*};
+
+pub use defuse_near_utils::time::Deadline;
 
 pub use defuse_crypto as crypto;
 pub use defuse_erc191 as erc191;
