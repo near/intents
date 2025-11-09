@@ -10,6 +10,7 @@ use near_contract_standards::non_fungible_token::metadata::{
 use near_contract_standards::non_fungible_token::{Token, metadata::TokenMetadata};
 use near_sdk::{NearToken, json_types::Base64VecU8};
 use rstest::rstest;
+use multi_token_receiver_stub::StubAction;
 use std::collections::HashMap;
 
 const DUMMY_REFERENCE_HASH: [u8; 32] = [33; 32];
@@ -298,42 +299,42 @@ struct NftTransferCallExpectation {
 #[tokio::test]
 #[rstest]
 #[case::nothing_to_refund(NftTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::ReturnValue(0.into()),
+    action: StubAction::ReturnValue(0.into()),
     intent_transfer: false,
     refund_if_fails: true,
     expected_sender_owns_nft: false,
     expected_receiver_owns_nft: true,
 })]
 #[case::request_refund(NftTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::ReturnValue(1.into()),
+    action: StubAction::ReturnValue(1.into()),
     intent_transfer: false,
     refund_if_fails: true,
     expected_sender_owns_nft: true,
     expected_receiver_owns_nft: false,
 })]
 #[case::receiver_panics(NftTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::Panic,
+    action: StubAction::Panic,
     intent_transfer: false,
     refund_if_fails: true,
     expected_sender_owns_nft: false,
     expected_receiver_owns_nft: true,
 })]
 #[case::malicious_receiver(NftTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::MaliciousReturn,
+    action: StubAction::MaliciousReturn,
     intent_transfer: false,
     refund_if_fails: true,
     expected_sender_owns_nft: false,
     expected_receiver_owns_nft: true,
 })]
-#[case::cannot_refund_after_intent_transfer(NftTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::ReturnValue(1.into()),
+#[case::cannot_refund_after_nft_transfer_to_another_user_thorough_intent(NftTransferCallExpectation {
+    action: StubAction::ReturnValue(1.into()),
     intent_transfer: true,
     refund_if_fails: true,
     expected_sender_owns_nft: false,
     expected_receiver_owns_nft: false,
 })]
 #[case::no_refund_after_transfer_intent_kept(NftTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::ReturnValue(0.into()),
+    action: StubAction::ReturnValue(0.into()),
     intent_transfer: true,
     refund_if_fails: false,
     expected_sender_owns_nft: false,

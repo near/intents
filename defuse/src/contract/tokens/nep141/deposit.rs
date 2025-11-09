@@ -1,5 +1,4 @@
 use defuse_core::{
-    intents::tokens::FtWithdraw,
     token_id::{TokenId as CoreTokenId, nep141::Nep141TokenId},
 };
 use defuse_near_utils::{
@@ -107,7 +106,7 @@ impl Contract {
     #[private]
     pub fn ft_resolve_deposit(
         &mut self,
-        sender_id: AccountId,
+        _sender_id: AccountId,
         receiver_id: AccountId,
         token: AccountId,
         amount: U128,
@@ -129,36 +128,15 @@ impl Contract {
         }
         .min(amount.0);
 
-        if requested_refund == 0 {
-            return U128(0);
-        }
-
         let token_id = CoreTokenId::Nep141(Nep141TokenId::new(token.clone()));
-        let available = {
-            let receiver = self.accounts.get(receiver_id.as_ref());
-            receiver
-                .map(|account| {
-                    account
-                        .as_inner_unchecked()
-                        .token_balances
-                        .amount_for(&token_id)
-                })
-                .unwrap_or(0)
-        };
 
-        let refund_amount = requested_refund.min(available);
-        if refund_amount == 0 {
-            return U128(0);
-        }
+        let refunds = self.resolve_deposit_internal(
+            &receiver_id,
+            vec![token_id],
+            vec![amount.0],
+            vec![requested_refund],
+        );
 
-        self.withdraw(
-            receiver_id.as_ref(),
-            [(token_id, refund_amount)],
-            Some("refund unused tokens"),
-            false, // force
-        )
-        .unwrap_or_default();
-
-        U128(refund_amount)
+        U128(refunds[0])
     }
 }

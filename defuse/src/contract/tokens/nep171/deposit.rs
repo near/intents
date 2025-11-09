@@ -111,49 +111,29 @@ impl Contract {
             "only self"
         );
 
-        let should_refund = match env::promise_result(0) {
+        let requested_refund = match env::promise_result(0) {
             PromiseResult::Successful(value) => {
                 near_sdk::serde_json::from_slice::<Vec<near_sdk::json_types::U128>>(&value)
                     .ok()
                     .and_then(|refunds| refunds.first().cloned())
-                    .map(|refund| refund.0 > 0)
-                    .unwrap_or(true)
+                    .map(|refund| if refund.0 > 0 { 1 } else { 0 })
+                    .unwrap_or(1)
             }
             // as in token standard spec, refund on failure
-            PromiseResult::Failed => false,
+            PromiseResult::Failed => 0,
         };
-
-        if !should_refund {
-            return PromiseOrValue::Value(false);
-        }
 
         let core_token_id = CoreTokenId::Nep171(
             Nep171TokenId::new(token.clone(), token_id.clone()).unwrap_or_panic_display()
         );
-        let available = {
-            let receiver = self.accounts.get(receiver_id.as_ref());
-            receiver
-                .map(|account| {
-                    account
-                        .as_inner_unchecked()
-                        .token_balances
-                        .amount_for(&core_token_id)
-                })
-                .unwrap_or(0)
-        };
 
-        if available == 0 {
-            return PromiseOrValue::Value(false);
-        }
+        let refunds = self.resolve_deposit_internal(
+            &receiver_id,
+            vec![core_token_id],
+            vec![1],
+            vec![requested_refund],
+        );
 
-        self.withdraw(
-            receiver_id.as_ref(),
-            [(core_token_id, 1)],
-            Some("refund unused token"),
-            false,
-        )
-        .unwrap_or_default();
-
-        PromiseOrValue::Value(true)
+        PromiseOrValue::Value(refunds[0] > 0)
     }
 }
