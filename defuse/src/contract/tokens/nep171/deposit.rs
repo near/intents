@@ -49,7 +49,6 @@ impl NonFungibleTokenReceiver for Contract {
             .unwrap_or_panic();
 
         let has_message = !message.is_empty();
-        let token_account = PREDECESSOR_ACCOUNT_ID.clone();
         let resolver_receiver_id = receiver_id.clone();
 
         let intents_promise: Option<Promise> = if execute_intents.is_empty() {
@@ -80,12 +79,14 @@ impl NonFungibleTokenReceiver for Contract {
         let resolution = Self::ext(CURRENT_ACCOUNT_ID.clone())
             .with_static_gas(Self::NFT_RESOLVE_DEPOSIT_GAS)
             .with_unused_gas_weight(0)
-            .nft_resolve_deposit(
-                sender_id,
-                resolver_receiver_id,
-                token_account,
-                token_id,
-            );
+
+            .resolve_deposit_internal(&receiver_id, vec![core_token_id], vec![1]);
+            // .nft_resolve_deposit(
+            //     sender_id,
+            //     resolver_receiver_id,
+            //     token_account,
+            //     token_id,
+            // );
 
         match intents_promise {
             Some(promise) => promise.then(notification).then(resolution).into(),
@@ -94,47 +95,47 @@ impl NonFungibleTokenReceiver for Contract {
     }
 }
 
-#[near]
-impl Contract {
-    //TODO: figure out precise value
-    const NFT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(50);
-
-    #[private]
-    pub fn nft_resolve_deposit(
-        &mut self,
-        _sender_id: AccountId,
-        receiver_id: AccountId,
-        token: AccountId,
-        token_id: near_contract_standards::non_fungible_token::TokenId,
-    ) -> PromiseOrValue<bool> {
-        require!(
-            env::predecessor_account_id() == *CURRENT_ACCOUNT_ID,
-            "only self"
-        );
-
-        let requested_refund = match env::promise_result(0) {
-            PromiseResult::Successful(value) => {
-                near_sdk::serde_json::from_slice::<Vec<near_sdk::json_types::U128>>(&value)
-                    .ok()
-                    .and_then(|refunds| refunds.first().cloned())
-                    .map(|refund| if refund.0 > 0 { 1 } else { 0 })
-                    .unwrap_or(1)
-            }
-            // as in token standard spec, refund on failure
-            PromiseResult::Failed => 0,
-        };
-
-        let core_token_id = CoreTokenId::Nep171(
-            Nep171TokenId::new(token.clone(), token_id.clone()).unwrap_or_panic_display()
-        );
-
-        let refunds = self.resolve_deposit_internal(
-            &receiver_id,
-            vec![core_token_id],
-            vec![1],
-            vec![requested_refund],
-        ).unwrap();
-
-        PromiseOrValue::Value(refunds[0] > 0)
-    }
-}
+// #[near]
+// impl Contract {
+//     //TODO: figure out precise value
+//     const NFT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(50);
+//
+//     #[private]
+//     pub fn nft_resolve_deposit(
+//         &mut self,
+//         _sender_id: AccountId,
+//         receiver_id: AccountId,
+//         token: AccountId,
+//         token_id: near_contract_standards::non_fungible_token::TokenId,
+//     ) -> PromiseOrValue<bool> {
+//         require!(
+//             env::predecessor_account_id() == *CURRENT_ACCOUNT_ID,
+//             "only self"
+//         );
+//
+//         let requested_refund = match env::promise_result(0) {
+//             PromiseResult::Successful(value) => {
+//                 near_sdk::serde_json::from_slice::<Vec<near_sdk::json_types::U128>>(&value)
+//                     .ok()
+//                     .and_then(|refunds| refunds.first().cloned())
+//                     .map(|refund| if refund.0 > 0 { 1 } else { 0 })
+//                     .unwrap_or(1)
+//             }
+//             // as in token standard spec, refund on failure
+//             PromiseResult::Failed => 0,
+//         };
+//
+//         let core_token_id = CoreTokenId::Nep171(
+//             Nep171TokenId::new(token.clone(), token_id.clone()).unwrap_or_panic_display()
+//         );
+//
+//         let refunds = self.resolve_deposit_internal(
+//             &receiver_id,
+//             vec![core_token_id],
+//             vec![1],
+//             vec![requested_refund],
+//         ).unwrap();
+//
+//         PromiseOrValue::Value(refunds[0] > 0)
+//     }
+// }

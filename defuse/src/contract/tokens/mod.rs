@@ -3,11 +3,21 @@ mod nep171;
 mod nep245;
 
 use super::Contract;
-use defuse_core::{token_id::{self, TokenId}, DefuseError, Result};
+use crate::contract::ContractExt;
+use defuse_core::{
+    DefuseError, Result,
+    token_id::{self, TokenId},
+};
+use defuse_near_utils::CURRENT_ACCOUNT_ID;
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
-use itertools::{izip, multizip, Itertools, Unique};
-use near_sdk::{AccountId, AccountIdRef, Gas, json_types::U128};
-use std::{borrow::Cow, collections::{HashMap, HashSet}};
+use itertools::{Itertools, Unique, izip, multizip};
+use near_sdk::{
+    AccountId, AccountIdRef, Gas, PromiseResult, env, json_types::U128, near, require, serde_json,
+};
+use std::{
+    borrow::Cow,
+    collections::{HashMap, HashSet},
+};
 
 pub const STORAGE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
 
@@ -122,7 +132,15 @@ impl Contract {
         Ok(())
     }
     //TODO: test for withdrawing more than deposited but with enought balance from previous deposit
-    //TODO: test for circular transfer between 2 defuse instances 
+    //TODO: test for circular transfer between 2 defuse instances
+}
+
+#[near]
+impl Contract {
+    //TODO: figure out prcise value
+    const FT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(50);
+    const NFT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(50);
+    const MT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(50);
 
     /// Generic internal helper for resolving deposit refunds across all token standards (NEP-141, NEP-171, NEP-245).
     ///
@@ -133,32 +151,57 @@ impl Contract {
     /// 4. Caps refunds at both the deposited amount and available balance
     /// 5. Performs a single batched withdrawal for all refunded tokens
     /// 6. Returns the actual refund amounts for each request
-    pub(crate) fn resolve_deposit_internal(
+    #[private]
+    pub fn resolve_deposit_internal(
         &mut self,
         receiver_id: &AccountId,
         token_ids: Vec<TokenId>,
         deposited_amounts: Vec<u128>,
-        requested_refunds: Vec<u128>,
-    ) -> Result<Vec<u128>> {
-        let token_count = token_ids.len();
+    ) -> Vec<U128> {
+        require!(
+            env::predecessor_account_id() == *CURRENT_ACCOUNT_ID,
+            "only self"
+        );
+        let tokens_count = token_ids.len();
 
-        if !token_ids.iter().all_unique(){
-            return Err(DefuseError::InvalidIntent);
+        if tokens_count != deposited_amounts.len() {
+            panic!("token_ids and amounts must have the same length");
         }
 
-        let actual_refunds = izip!(token_ids, deposited_amounts, &requested_refunds).map(|(token, deposited, refund)| {
-            let available = self
-                .accounts
-                .get(receiver_id.as_ref())
-                .map(|account| {
-                    account
-                        .as_inner_unchecked()
-                        .token_balances
-                        .amount_for(&token)
-                })
-                .unwrap_or(0);
-            (token, available.min(deposited.min(*refund)))
-        }).collect::<Vec<_>>();
+        if !token_ids.iter().all_unique() {
+            panic!("token_ids must be unique");
+        }
+
+        let requested_refunds = match env::promise_result(0) {
+            PromiseResult::Successful(value) => serde_json::from_slice::<Vec<U128>>(&value)
+                .ok()
+                .map(|refunds| refunds.into_iter().map(|elem| elem.0).collect())
+                .unwrap_or(vec![0u128; tokens_count]),
+            // as in token standard spec, refund whole amount in case of failure
+            // PromiseResult::Failed => amount.0,
+            PromiseResult::Failed => vec![0u128; tokens_count],
+        };
+
+        let actual_refunds = izip!(token_ids, deposited_amounts, &requested_refunds)
+            .map(|(token, deposited, refund)| {
+                let available = self
+                    .accounts
+                    .get(receiver_id.as_ref())
+                    .map(|account| {
+                        account
+                            .as_inner_unchecked()
+                            .token_balances
+                            .amount_for(&token)
+                    })
+                    .unwrap_or(0);
+                (token, available.min(deposited.min(*refund)))
+            })
+            .collect::<Vec<_>>();
+
+
+        actual_refunds.iter().for_each(|elem| 
+            env::log_str(&format!("refund {elem:?}"))
+        );
 
         if !requested_refunds.is_empty() {
             self.withdraw(
@@ -170,6 +213,9 @@ impl Contract {
             .unwrap_or_default();
         }
 
-        Ok(actual_refunds.into_iter().map(|(_, amount)| amount).collect())
+        actual_refunds
+            .into_iter()
+            .map(|(_, amount)| amount.into())
+            .collect()
     }
 }
