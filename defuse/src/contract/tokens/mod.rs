@@ -3,10 +3,11 @@ mod nep171;
 mod nep245;
 
 use super::Contract;
-use defuse_core::{DefuseError, Result, token_id::TokenId};
+use defuse_core::{token_id::{self, TokenId}, DefuseError, Result};
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
+use itertools::{izip, multizip, Itertools, Unique};
 use near_sdk::{AccountId, AccountIdRef, Gas, json_types::U128};
-use std::{borrow::Cow, collections::HashMap};
+use std::{borrow::Cow, collections::{HashMap, HashSet}};
 
 pub const STORAGE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
 
@@ -120,6 +121,8 @@ impl Contract {
 
         Ok(())
     }
+    //TODO: test for withdrawing more than deposited but with enought balance from previous deposit
+    //TODO: test for circular transfer between 2 defuse instances 
 
     /// Generic internal helper for resolving deposit refunds across all token standards (NEP-141, NEP-171, NEP-245).
     ///
@@ -136,20 +139,14 @@ impl Contract {
         token_ids: Vec<TokenId>,
         deposited_amounts: Vec<u128>,
         requested_refunds: Vec<u128>,
-    ) -> Vec<u128> {
+    ) -> Result<Vec<u128>> {
         let token_count = token_ids.len();
-        let mut actual_refunds = vec![0u128; token_count];
-        let mut planned_withdrawals: HashMap<TokenId, u128> = HashMap::new();
 
-        for idx in 0..token_count {
-            let requested_refund = requested_refunds[idx];
-            if requested_refund == 0 {
-                continue;
-            }
+        if !token_ids.iter().all_unique(){
+            return Err(DefuseError::InvalidIntent);
+        }
 
-            let token_id = &token_ids[idx];
-            let deposited_amount = deposited_amounts[idx];
-
+        let actual_refunds = izip!(token_ids, deposited_amounts, &requested_refunds).map(|(token, deposited, refund)| {
             let available = self
                 .accounts
                 .get(receiver_id.as_ref())
@@ -157,39 +154,22 @@ impl Contract {
                     account
                         .as_inner_unchecked()
                         .token_balances
-                        .amount_for(token_id)
+                        .amount_for(&token)
                 })
                 .unwrap_or(0);
+            (token, available.min(deposited.min(*refund)))
+        }).collect::<Vec<_>>();
 
-            let already_planned = planned_withdrawals
-                .get(token_id)
-                .copied()
-                .unwrap_or(0);
-            let remaining = available.saturating_sub(already_planned);
-
-            let refund_amount = requested_refund
-                .min(deposited_amount)
-                .min(remaining);
-
-            if refund_amount > 0 {
-                actual_refunds[idx] = refund_amount;
-                planned_withdrawals
-                    .entry(token_id.clone())
-                    .and_modify(|planned| *planned += refund_amount)
-                    .or_insert(refund_amount);
-            }
-        }
-
-        if !planned_withdrawals.is_empty() {
+        if !requested_refunds.is_empty() {
             self.withdraw(
                 receiver_id.as_ref(),
-                planned_withdrawals.into_iter(),
+                actual_refunds.clone(),
                 Some("refund unused tokens"),
                 false,
             )
             .unwrap_or_default();
         }
 
-        actual_refunds
+        Ok(actual_refunds.into_iter().map(|(_, amount)| amount).collect())
     }
 }

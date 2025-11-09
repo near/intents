@@ -101,6 +101,7 @@ impl FungibleTokenReceiver for Contract {
 
 #[near]
 impl Contract {
+    //TODO: figure out prcise value
     const FT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(50);
 
     #[private]
@@ -135,7 +136,7 @@ impl Contract {
             vec![token_id],
             vec![amount.0],
             vec![requested_refund],
-        );
+        ).unwrap();
 
         U128(refunds[0])
     }

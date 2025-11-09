@@ -96,6 +96,7 @@ impl NonFungibleTokenReceiver for Contract {
 
 #[near]
 impl Contract {
+    //TODO: figure out precise value
     const NFT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(50);
 
     #[private]
@@ -132,7 +133,7 @@ impl Contract {
             vec![core_token_id],
             vec![1],
             vec![requested_refund],
-        );
+        ).unwrap();
 
         PromiseOrValue::Value(refunds[0] > 0)
     }

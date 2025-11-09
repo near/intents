@@ -110,6 +110,7 @@ impl MultiTokenReceiver for Contract {
 
 #[near]
 impl Contract {
+    //TODO: figure out precise value
     const MT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(50);
 
     #[private]
@@ -157,7 +158,7 @@ impl Contract {
             core_token_ids,
             deposited_amounts,
             requested_refunds_u128,
-        );
+        ).unwrap();
 
         // Return actual refund amounts - the caller (mt_resolve_transfer) will handle:
         // 1. Withdrawing from receiver's balance in the calling contract
