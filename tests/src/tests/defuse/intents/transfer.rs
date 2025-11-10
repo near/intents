@@ -201,7 +201,7 @@ async fn transfer_intent_to_defuse() {
     expected_sender_balance: 1000,
     expected_receiver_balance: 0,
 })]
-async fn transfer_intent_to_mt_receiver_smc(#[case] expectation: TransferCallExpectation) {
+async fn transfer_intent_with_msg_to_receiver_smc(#[case] expectation: TransferCallExpectation) {
     let initial_amount = expectation
         .intent_transfer_amount
         .expect("Transfer amount should be specified");
