@@ -179,9 +179,12 @@ pub struct Params {
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Default, Clone)]
 pub struct State {
+    /// Deposited or lost src remaining
     #[serde_as(as = "DisplayFromStr")]
     pub maker_src_remaining: u128,
 
+    // Store only lost for maker, since we're bounded in state size
+    // So, we don't store lost&found for takers and fee_collectors
     #[serde_as(as = "DisplayFromStr")]
     pub maker_dst_lost: u128,
 

@@ -41,6 +41,11 @@ const MAX_ALLOWED_TOKEN_ID_LEN: usize = 127;
         DeserializeFromStr,
     ),
     strum(serialize_all = "snake_case"),
+    cfg_attr(
+        all(feature = "abi", not(target_arch = "wasm32")),
+        derive(::near_sdk::NearSchema),
+        schemars(with = "String"),
+    ),
     vis(pub)
 )]
 #[near(serializers = [borsh(use_discriminant=true)])]

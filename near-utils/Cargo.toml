@@ -14,7 +14,7 @@ digest = { workspace = true, optional = true }
 impl-tools.workspace = true
 hex = { workspace = true, optional = true }
 near-account-id = { workspace = true, optional = true }
-near-sdk.workspace = true
+near-sdk = { workspace = true, features = ["unstable"] }
 
 [features]
 abi = []

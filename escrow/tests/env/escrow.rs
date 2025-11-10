@@ -1,11 +1,11 @@
-use defuse_escrow::{ContractState, FixedParams, Params, Storage};
+use defuse_escrow::{FixedParams, Params, Storage};
 use defuse_sandbox::{
     Account, SigningAccount, TxResult, api::types::transaction::actions::GlobalContractIdentifier,
 };
 use near_sdk::{AccountId, Gas, NearToken, json_types::U128, serde_json::json};
 
 pub trait EscrowViewExt {
-    async fn view_escrow(&self) -> anyhow::Result<ContractState>;
+    async fn view_escrow(&self) -> anyhow::Result<Storage>;
 }
 
 pub trait EscrowExt {
@@ -16,7 +16,7 @@ pub trait EscrowExt {
         params: Params,
     ) -> TxResult<Account>;
 
-    async fn close_escrow(&self, escrow: AccountId, fixed_params: FixedParams) -> TxResult<u128>;
+    async fn close_escrow(&self, escrow: AccountId, fixed_params: FixedParams) -> TxResult<bool>;
 }
 impl EscrowExt for SigningAccount {
     async fn deploy_escrow(
@@ -47,9 +47,9 @@ impl EscrowExt for SigningAccount {
         Ok(Account::new(account_id, self.network_config().clone()))
     }
 
-    async fn close_escrow(&self, escrow: AccountId, fixed_params: FixedParams) -> TxResult<u128> {
+    async fn close_escrow(&self, escrow: AccountId, fixed_params: FixedParams) -> TxResult<bool> {
         self.tx(escrow.clone())
-            .function_call_json::<U128>(
+            .function_call_json(
                 "close",
                 json!({
                     "fixed_params": fixed_params,
@@ -58,12 +58,11 @@ impl EscrowExt for SigningAccount {
                 NearToken::from_yoctonear(0),
             )
             .await
-            .map(|a| a.0)
     }
 }
 
 impl EscrowViewExt for Account {
-    async fn view_escrow(&self) -> anyhow::Result<ContractState> {
+    async fn view_escrow(&self) -> anyhow::Result<Storage> {
         self.call_function_json("view", ()).await
     }
 }

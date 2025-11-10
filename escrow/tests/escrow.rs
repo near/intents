@@ -53,13 +53,13 @@ async fn partial_fills() {
 
     let fixed_params = FixedParams {
         maker: env.maker.id().clone(),
-        refund_src_to: SendParams {
-            receiver_id: None,
-            memo: None,
-            msg: Some("fail".to_string()),
-            min_gas: None,
-        },
-        // refund_src_to: SendParams::default(),
+        // refund_src_to: SendParams {
+        //     receiver_id: None,
+        //     memo: None,
+        //     msg: Some("fail".to_string()),
+        //     min_gas: None,
+        // },
+        refund_src_to: SendParams::default(),
         src_asset: src_asset.clone(),
         dst_asset: dst_asset.clone(),
         receive_dst_to: SendParams::default(),

@@ -3,10 +3,10 @@ mod nep141;
 #[cfg(feature = "nep245")]
 mod nep245;
 
-// use defuse_token_id::TokenId;
-use near_sdk::{AccountId, Gas, Promise, PromiseResult, env};
+// TODO: assert any(feature = "nep141", feature = "nep245")
 
-use crate::contract::SentAsset;
+// use defuse_token_id::TokenId;
+use near_sdk::{AccountId, Gas, Promise};
 
 pub trait Token {
     fn send(
@@ -21,11 +21,6 @@ pub trait Token {
 
     // Returns actually transferred amount of a single token.
     fn resolve(result_idx: u64, amount: u128, is_call: bool) -> u128;
-}
-
-/// Returns refund
-pub fn resolve_transfer(result_idx: u64, sent: SentAsset) -> u128 {
-    todo!()
 }
 
 // pub trait TokenType {
