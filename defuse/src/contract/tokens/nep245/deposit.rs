@@ -1,10 +1,10 @@
-use defuse_core::token_id::nep245::Nep245TokenId;
+use defuse_core::token_id::{TokenId as CoreTokenId, nep245::Nep245TokenId};
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
-use defuse_nep245::receiver::MultiTokenReceiver;
+use defuse_nep245::receiver::{MultiTokenReceiver, ext_mt_receiver};
 use near_plugins::{Pausable, pause};
-use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near, require};
+use near_sdk::{AccountId, Gas, Promise, PromiseOrValue, json_types::U128, near, require};
 
 use crate::{
     contract::{Contract, ContractExt},
@@ -27,7 +27,6 @@ impl MultiTokenReceiver for Contract {
         amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
-        let _previous_owner_ids = previous_owner_ids;
         let token = &*PREDECESSOR_ACCOUNT_ID;
         require!(
             token_ids.len() == amounts.len() && !amounts.is_empty(),
@@ -37,36 +36,89 @@ impl MultiTokenReceiver for Contract {
             token != &*CURRENT_ACCOUNT_ID,
             "self-wrapping is not allowed"
         );
-        let msg = if msg.is_empty() {
-            DepositMessage::new(sender_id)
+
+        let DepositMessage {
+            receiver_id,
+            execute_intents,
+            refund_if_fails,
+            message,
+        } = if msg.is_empty() {
+            DepositMessage::new(sender_id.clone())
         } else {
             msg.parse().unwrap_or_panic_display()
         };
 
         let n = amounts.len();
 
+        let wrapped_tokens: Vec<CoreTokenId> = token_ids
+            .iter()
+            .map(|token_id| Nep245TokenId::new(token.clone(), token_id.clone()))
+            .map(UnwrapOrPanicError::unwrap_or_panic_display)
+            .map(Into::into)
+            .collect();
+        let native_amounts = amounts.iter().map(|elem| elem.0).collect::<Vec<_>>();
+
         self.deposit(
-            msg.receiver_id,
-            token_ids
+            receiver_id.clone(),
+            wrapped_tokens
+                .clone()
                 .into_iter()
-                .map(|token_id| Nep245TokenId::new(token.clone(), token_id))
-                .map(UnwrapOrPanicError::unwrap_or_panic_display)
-                .map(Into::into)
-                .zip(amounts.into_iter().map(|a| a.0)),
+                .zip(native_amounts.clone()),
             Some("deposit"),
         )
         .unwrap_or_panic();
 
-        if !msg.execute_intents.is_empty() {
-            if msg.refund_if_fails {
-                self.execute_intents(msg.execute_intents);
-            } else {
-                // detach promise
-                let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
-                    .execute_intents(msg.execute_intents);
-            }
+        let intents_promise: Option<Promise> = if execute_intents.is_empty() {
+            None
+        } else if refund_if_fails {
+            self.execute_intents(execute_intents);
+            None
+        } else {
+            Some(ext_intents::ext(CURRENT_ACCOUNT_ID.clone()).execute_intents(execute_intents))
+        };
+
+        if message.is_empty() {
+            return PromiseOrValue::Value(vec![U128(0); n]);
         }
 
-        PromiseOrValue::Value(vec![U128(0); n])
+        let notification = ext_mt_receiver::ext(receiver_id.clone()).mt_on_transfer(
+            sender_id,
+            previous_owner_ids,
+            token_ids,
+            amounts,
+            message,
+        );
+
+        let resolution = Self::ext(CURRENT_ACCOUNT_ID.clone())
+            .with_static_gas(Self::MT_RESOLVE_DEPOSIT_GAS)
+            .with_unused_gas_weight(0)
+            .mt_resolve_deposit(&receiver_id, wrapped_tokens, native_amounts);
+
+        match intents_promise {
+            Some(promise) => promise.then(notification).then(resolution).into(),
+            None => notification.then(resolution).into(),
+        }
+    }
+}
+
+#[near]
+impl Contract {
+    //TODO: figure out prcise value
+    //TODO: test for withdrawing more than deposited but with enought balance from previous deposit
+    //TODO: test for circular transfer between 2 defuse instances
+    const MT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(50);
+
+    #[private]
+    pub fn mt_resolve_deposit(
+        &mut self,
+        receiver_id: &AccountId,
+        token_ids: Vec<CoreTokenId>,
+        deposited_amounts: Vec<u128>,
+    ) -> PromiseOrValue<Vec<U128>> {
+        PromiseOrValue::Value(self.resolve_deposit_internal(
+            receiver_id,
+            token_ids,
+            deposited_amounts,
+        ))
     }
 }

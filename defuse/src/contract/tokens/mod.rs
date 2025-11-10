@@ -4,8 +4,12 @@ mod nep245;
 
 use super::Contract;
 use defuse_core::{DefuseError, Result, token_id::TokenId};
+use defuse_near_utils::CURRENT_ACCOUNT_ID;
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
-use near_sdk::{AccountId, AccountIdRef, Gas, json_types::U128};
+use itertools::{Itertools, izip};
+use near_sdk::{
+    AccountId, AccountIdRef, Gas, PromiseResult, env, json_types::U128, require, serde_json,
+};
 use std::borrow::Cow;
 
 pub const STORAGE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
@@ -119,5 +123,80 @@ impl Contract {
         }
 
         Ok(())
+    }
+}
+
+// #[near]
+impl Contract {
+    /// Generic internal helper for resolving deposit refunds across all token standards (NEP-141, NEP-171, NEP-245).
+    ///
+    /// This function:
+    /// 1. Takes parallel vectors of token IDs, deposited amounts, and requested refunds
+    /// 2. Checks available balance for each token in the receiver's account
+    /// 3. Handles duplicate token IDs correctly by tracking planned withdrawals
+    /// 4. Caps refunds at both the deposited amount and available balance
+    /// 5. Performs a single batched withdrawal for all refunded tokens
+    /// 6. Returns the actual refund amounts for each request
+    pub fn resolve_deposit_internal(
+        &mut self,
+        receiver_id: &AccountId,
+        token_ids: Vec<TokenId>,
+        deposited_amounts: Vec<u128>,
+    ) -> Vec<U128> {
+        require!(
+            env::predecessor_account_id() == *CURRENT_ACCOUNT_ID,
+            "only self"
+        );
+        let tokens_count = token_ids.len();
+
+        assert!(
+            (tokens_count == deposited_amounts.len()),
+            "token_ids and amounts must have the same length"
+        );
+
+        assert!(token_ids.iter().all_unique(), "token_ids must be unique");
+
+        let requested_refunds = match env::promise_result(0) {
+            PromiseResult::Successful(value) => serde_json::from_slice::<Vec<U128>>(&value)
+                .ok()
+                .filter(|refunds| refunds.len() == tokens_count)
+                .map_or_else(
+                    || vec![0u128; tokens_count],
+                    |refunds| refunds.into_iter().map(|elem| elem.0).collect(),
+                ),
+            // Do not refund on failure; rely solely on mt_on_transfer return values.
+            // This aligns with NEP-141/171 behavior: if the receiver panics, no refund occurs.
+            PromiseResult::Failed => vec![0u128; tokens_count],
+        };
+
+        let actual_refunds = izip!(token_ids, deposited_amounts, &requested_refunds)
+            .map(|(token, deposited, refund)| {
+                let available = self
+                    .accounts
+                    .get(receiver_id.as_ref())
+                    .map_or(0, |account| {
+                        account
+                            .as_inner_unchecked()
+                            .token_balances
+                            .amount_for(&token)
+                    });
+                (token, available.min(deposited.min(*refund)))
+            })
+            .collect::<Vec<_>>();
+
+        if !requested_refunds.is_empty() {
+            self.withdraw(
+                receiver_id.as_ref(),
+                actual_refunds.clone(),
+                Some("refund unused tokens"),
+                false,
+            )
+            .unwrap_or_default();
+        }
+
+        actual_refunds
+            .into_iter()
+            .map(|(_, amount)| amount.into())
+            .collect()
     }
 }

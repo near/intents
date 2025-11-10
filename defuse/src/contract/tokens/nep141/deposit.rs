@@ -1,10 +1,11 @@
-use defuse_core::token_id::nep141::Nep141TokenId;
+use defuse_core::token_id::{TokenId as CoreTokenId, nep141::Nep141TokenId};
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
+use defuse_nep245::receiver::ext_mt_receiver;
 use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 use near_plugins::{Pausable, pause};
-use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near, require};
+use near_sdk::{AccountId, Gas, Promise, PromiseOrValue, json_types::U128, near, require};
 
 use crate::{
     contract::{Contract, ContractExt},
@@ -25,34 +26,80 @@ impl FungibleTokenReceiver for Contract {
         amount: U128,
         msg: String,
     ) -> PromiseOrValue<U128> {
-        require!(amount.0 > 0, "zero amount");
+        let amount_value = amount.0;
+        require!(amount_value > 0, "zero amount");
 
-        let msg = if msg.is_empty() {
-            DepositMessage::new(sender_id)
+        let DepositMessage {
+            receiver_id,
+            execute_intents,
+            refund_if_fails,
+            message,
+        } = if msg.is_empty() {
+            DepositMessage::new(sender_id.clone())
         } else {
             msg.parse().unwrap_or_panic_display()
         };
 
         self.deposit(
-            msg.receiver_id,
+            receiver_id.clone(),
             [(
                 Nep141TokenId::new(PREDECESSOR_ACCOUNT_ID.clone()).into(),
-                amount.0,
+                amount_value,
             )],
             Some("deposit"),
         )
         .unwrap_or_panic();
 
-        if !msg.execute_intents.is_empty() {
-            if msg.refund_if_fails {
-                self.execute_intents(msg.execute_intents);
-            } else {
-                // detach promise
-                let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
-                    .execute_intents(msg.execute_intents);
-            }
+        let token_id = CoreTokenId::Nep141(Nep141TokenId::new(PREDECESSOR_ACCOUNT_ID.clone()));
+
+        let intents_promise: Option<Promise> = if execute_intents.is_empty() {
+            None
+        } else if refund_if_fails {
+            self.execute_intents(execute_intents);
+            None
+        } else {
+            Some(ext_intents::ext(CURRENT_ACCOUNT_ID.clone()).execute_intents(execute_intents))
+        };
+
+        if message.is_empty() {
+            return PromiseOrValue::Value(U128(0));
         }
 
-        PromiseOrValue::Value(U128(0))
+        let notification = ext_mt_receiver::ext(receiver_id.clone()).mt_on_transfer(
+            sender_id.clone(),
+            vec![sender_id],
+            vec![token_id.to_string()],
+            vec![U128(amount_value)],
+            message,
+        );
+
+        let resolution = Self::ext(CURRENT_ACCOUNT_ID.clone())
+            .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS)
+            .with_unused_gas_weight(0)
+            .ft_resolve_deposit(&receiver_id, vec![token_id], vec![amount_value]);
+
+        match intents_promise {
+            Some(promise) => promise.then(notification).then(resolution).into(),
+            None => notification.then(resolution).into(),
+        }
+    }
+}
+
+#[near]
+impl Contract {
+    //TODO: figure out prcise value
+    const FT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(50);
+
+    #[private]
+    pub fn ft_resolve_deposit(
+        &mut self,
+        receiver_id: &AccountId,
+        token_ids: Vec<CoreTokenId>,
+        deposited_amounts: Vec<u128>,
+    ) -> PromiseOrValue<U128> {
+        self.resolve_deposit_internal(receiver_id, token_ids, deposited_amounts)
+            .first()
+            .map(|elem| PromiseOrValue::Value(*elem))
+            .unwrap()
     }
 }
