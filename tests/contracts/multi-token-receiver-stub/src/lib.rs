@@ -115,6 +115,6 @@ mod tests {
             panic!("expected value promise");
         };
 
-        assert_eq!(result, vec![U128(123); 250000]);
+        assert_eq!(result, vec![U128(u128::MAX); 250000]);
     }
 }
