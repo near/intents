@@ -288,6 +288,7 @@ async fn transfer_nft_to_verifier() {
 }
 
 #[derive(Debug, Clone)]
+#[allow(clippy::struct_excessive_bools)]
 struct NftTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction,
     intent_transfer: bool,

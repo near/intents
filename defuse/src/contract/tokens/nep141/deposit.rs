@@ -6,8 +6,7 @@ use defuse_nep245::receiver::ext_mt_receiver;
 use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 use near_plugins::{Pausable, pause};
 use near_sdk::{
-    AccountId, Gas, Promise, PromiseOrValue, PromiseResult, env, json_types::U128, near, require,
-    serde_json,
+    AccountId, Gas, Promise, PromiseOrValue, json_types::U128, near, require,
 };
 
 use crate::{
@@ -71,7 +70,7 @@ impl FungibleTokenReceiver for Contract {
 
         let notification = ext_mt_receiver::ext(receiver_id.clone()).mt_on_transfer(
             sender_id.clone(),
-            vec![sender_id.clone()],
+            vec![sender_id],
             vec![token_id.to_string()],
             vec![U128(amount_value)],
             message,

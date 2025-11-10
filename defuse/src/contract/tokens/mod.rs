@@ -3,20 +3,18 @@ mod nep171;
 mod nep245;
 
 use super::Contract;
-use crate::contract::ContractExt;
 use defuse_core::{
     DefuseError, Result,
-    token_id::{self, TokenId},
+    token_id::TokenId,
 };
 use defuse_near_utils::CURRENT_ACCOUNT_ID;
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
-use itertools::{Itertools, Unique, izip, multizip};
+use itertools::{Itertools, izip};
 use near_sdk::{
-    AccountId, AccountIdRef, Gas, PromiseResult, env, json_types::U128, near, require, serde_json,
+    AccountId, AccountIdRef, Gas, PromiseResult, env, json_types::U128, require, serde_json,
 };
 use std::{
     borrow::Cow,
-    collections::{HashMap, HashSet},
 };
 
 pub const STORAGE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
@@ -156,21 +154,14 @@ impl Contract {
         );
         let tokens_count = token_ids.len();
 
-        if tokens_count != deposited_amounts.len() {
-            panic!("token_ids and amounts must have the same length");
-        }
+        assert!((tokens_count == deposited_amounts.len()), "token_ids and amounts must have the same length");
 
-        if !token_ids.iter().all_unique() {
-            panic!("token_ids must be unique");
-        }
+        assert!(token_ids.iter().all_unique(), "token_ids must be unique");
 
         let requested_refunds = match env::promise_result(0) {
             PromiseResult::Successful(value) => serde_json::from_slice::<Vec<U128>>(&value)
                 .ok()
-                .filter(|refunds| refunds.len() == tokens_count)
-                .map(|refunds| refunds.into_iter().map(|elem| elem.0).collect())
-                // If receiver returns unparseable/wrong-length data, treat as no refund requested.
-                .unwrap_or(vec![0u128; tokens_count]),
+                .filter(|refunds| refunds.len() == tokens_count).map_or_else(|| vec![0u128; tokens_count], |refunds| refunds.into_iter().map(|elem| elem.0).collect()),
             // Do not refund on failure; rely solely on mt_on_transfer return values.
             // This aligns with NEP-141/171 behavior: if the receiver panics, no refund occurs.
             PromiseResult::Failed => vec![0u128; tokens_count],
@@ -181,13 +172,12 @@ impl Contract {
                 let available = self
                     .accounts
                     .get(receiver_id.as_ref())
-                    .map(|account| {
+                    .map_or(0, |account| {
                         account
                             .as_inner_unchecked()
                             .token_balances
                             .amount_for(&token)
-                    })
-                    .unwrap_or(0);
+                    });
                 (token, available.min(deposited.min(*refund)))
             })
             .collect::<Vec<_>>();

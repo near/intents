@@ -4,7 +4,7 @@ use defuse_near_utils::{
 };
 use defuse_nep245::receiver::{MultiTokenReceiver, ext_mt_receiver};
 use near_plugins::{Pausable, pause};
-use near_sdk::{AccountId, Gas, Promise, PromiseOrValue, PromiseResult, env, json_types::U128, near, require, serde_json};
+use near_sdk::{AccountId, Gas, Promise, PromiseOrValue, json_types::U128, near, require};
 
 use crate::{
     contract::{Contract, ContractExt},
@@ -50,16 +50,16 @@ impl MultiTokenReceiver for Contract {
 
         let n = amounts.len();
 
-        let wrapped_tokens: Vec<CoreTokenId> = token_ids.clone().into_iter()
+        let wrapped_tokens: Vec<CoreTokenId> = token_ids.iter()
                 .map(|token_id| Nep245TokenId::new(token.clone(), token_id.clone()))
                 .map(UnwrapOrPanicError::unwrap_or_panic_display)
                 .map(Into::into)
                 .collect();
-        let native_amounts = amounts.clone().iter().map(|elem| elem.0).collect::<Vec<_>>();
+        let native_amounts = amounts.iter().map(|elem| elem.0).collect::<Vec<_>>();
 
         self.deposit(
             receiver_id.clone(),
-            wrapped_tokens.clone().into_iter().zip(native_amounts.clone()).collect::<Vec<_>>(),
+            wrapped_tokens.clone().into_iter().zip(native_amounts.clone()),
             Some("deposit"),
         )
         .unwrap_or_panic();
@@ -79,10 +79,10 @@ impl MultiTokenReceiver for Contract {
 
         let notification = ext_mt_receiver::ext(receiver_id.clone())
             .mt_on_transfer(
-                sender_id.clone(),
+                sender_id,
                 previous_owner_ids,
-                token_ids.clone(),
-                amounts.clone(),
+                token_ids,
+                amounts,
                 message,
             );
 

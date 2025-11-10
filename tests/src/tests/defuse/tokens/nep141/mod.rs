@@ -1,6 +1,6 @@
 pub mod traits;
 
-use crate::tests::defuse::tokens::nep141::traits::{DefuseFtReceiver, DefuseFtWithdrawer};
+use crate::tests::defuse::tokens::nep141::traits::DefuseFtWithdrawer;
 use crate::{
     tests::{
         defuse::env::{Env, MT_RECEIVER_STUB_WASM},
@@ -461,7 +461,7 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
                 env.defuse.id(),
                 [Transfer {
                     receiver_id: intent_receiver.id().clone(),
-                    tokens: Amounts::new(std::iter::once((TokenId::from(ft_id.clone()), *amount)).collect()),
+                    tokens: Amounts::new(std::iter::once((ft_id.clone(), *amount)).collect()),
                     memo: None,
                 }],
             ).await.unwrap()]

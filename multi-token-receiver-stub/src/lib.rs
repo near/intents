@@ -3,7 +3,6 @@ use near_sdk::{
     AccountId, PromiseOrValue, env,
     json_types::U128,
     near,
-    serde::{Deserialize, Serialize},
     serde_json,
 };
 

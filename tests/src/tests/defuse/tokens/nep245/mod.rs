@@ -3,8 +3,10 @@ mod mt_transfer_resolve_gas;
 pub mod traits;
 
 use crate::tests::defuse::DefuseExt;
+use crate::tests::defuse::accounts::AccountManagerExt;
+use crate::tests::defuse::env::{Env, get_account_public_key};
 use crate::tests::defuse::tokens::nep245::traits::DefuseMtWithdrawer;
-use crate::{tests::defuse::env::Env, utils::mt::MtExt};
+use crate::utils::mt::MtExt;
 use defuse::contract::config::{DefuseConfig, RolesConfig};
 use defuse::core::fees::{FeesConfig, Pips};
 use defuse::core::token_id::TokenId;
@@ -988,8 +990,6 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     #[case] expectation: MtTransferCallExpectation,
 ) {
     use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
-    use defuse::contract::config::{DefuseConfig, RolesConfig};
-    use defuse::core::fees::{FeesConfig, Pips};
     use defuse::tokens::DepositMessage;
     use crate::tests::defuse::DefuseSignerExt;
     use crate::tests::defuse::env::MT_RECEIVER_STUB_WASM;
@@ -1032,8 +1032,6 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
         .unwrap();
 
     // Register receiver's public key in defuse2 so it can execute intents
-    use crate::tests::defuse::accounts::AccountManagerExt;
-    use crate::tests::defuse::env::get_account_public_key;
     receiver
         .add_public_key(defuse2.id(), get_account_public_key(&receiver))
         .await
@@ -1180,8 +1178,6 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     #[case] expectation: MtTransferCallExpectation,
 ) {
     use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
-    use defuse::contract::config::{DefuseConfig, RolesConfig};
-    use defuse::core::fees::{FeesConfig, Pips};
     use defuse::tokens::DepositMessage;
     use crate::tests::defuse::DefuseSignerExt;
     use crate::tests::defuse::env::MT_RECEIVER_STUB_WASM;
@@ -1225,8 +1221,6 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
         .unwrap();
 
     // Register receiver's public key in defuse2 so it can execute intents
-    use crate::tests::defuse::accounts::AccountManagerExt;
-    use crate::tests::defuse::env::get_account_public_key;
     receiver
         .add_public_key(defuse2.id(), get_account_public_key(&receiver))
         .await
@@ -1261,7 +1255,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     let intents = if let Some(amounts) = &expectation.intent_transfer_amounts {
         let mut intent_map = std::collections::BTreeMap::new();
 
-        if let Some(&amount1) = amounts.get(0) {
+        if let Some(&amount1) = amounts.first() {
             intent_map.insert(nep245_ft1_id.clone(), amount1);
         }
         if let Some(&amount2) = amounts.get(1) {

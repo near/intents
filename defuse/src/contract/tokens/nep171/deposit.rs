@@ -5,7 +5,7 @@ use defuse_near_utils::{
 use defuse_nep245::receiver::ext_mt_receiver;
 use near_contract_standards::non_fungible_token::core::NonFungibleTokenReceiver;
 use near_plugins::{Pausable, pause};
-use near_sdk::{AccountId, Gas, Promise, PromiseOrValue, PromiseResult, env, near, require};
+use near_sdk::{AccountId, Gas, Promise, PromiseOrValue, near};
 
 use crate::{
     contract::{Contract, ContractExt},
@@ -41,7 +41,7 @@ impl NonFungibleTokenReceiver for Contract {
             msg.parse().unwrap_or_panic_display()
         };
 
-        let core_token_id: CoreTokenId = Nep171TokenId::new(PREDECESSOR_ACCOUNT_ID.clone(), token_id.clone())
+        let core_token_id: CoreTokenId = Nep171TokenId::new(PREDECESSOR_ACCOUNT_ID.clone(), token_id)
             .unwrap_or_panic_display()
             .into();
 
@@ -60,14 +60,14 @@ impl NonFungibleTokenReceiver for Contract {
             )
         };
 
-        if !!message.is_empty() {
+        if message.is_empty() {
             return PromiseOrValue::Value(false);
         }
 
         let notification = ext_mt_receiver::ext(receiver_id.clone())
             .mt_on_transfer(
                 sender_id.clone(),
-                vec![sender_id.clone()],
+                vec![sender_id],
                 vec![core_token_id.to_string()],
                 vec![near_sdk::json_types::U128(1)],
                 message,
@@ -99,7 +99,7 @@ impl Contract {
     ) -> PromiseOrValue<bool> {
         self.resolve_deposit_internal(receiver_id, token_ids, deposited_amounts)
             .first()
-            .cloned()
+            .copied()
             .map(|elem| PromiseOrValue::Value( elem == 1.into()))
             .unwrap()
     }
