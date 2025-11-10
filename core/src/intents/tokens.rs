@@ -1,5 +1,6 @@
 use std::{borrow::Cow, collections::BTreeMap};
 
+use defuse_near_utils::{UnwrapOrPanic, UnwrapOrPanicError};
 use near_contract_standards::non_fungible_token;
 use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, NearToken, json_types::U128, near};
 use serde_with::{DisplayFromStr, serde_as};
@@ -27,6 +28,7 @@ use super::{ExecutableIntent, IntentEvent};
 pub struct NotifyOnTransfer {
     pub msg: String,
 
+    // Min gas per single call
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub min_gas: Option<Gas>,
 }
@@ -323,8 +325,8 @@ pub struct MtWithdraw {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub storage_deposit: Option<NearToken>,
 
-    /// Optional minimum required Near gas for created Promise to succeed:
-    /// * `mt_batch_transfer`:      minimum: 15TGas, default: 15TGas
+    /// Optional minimum required Near gas for created Promise to succeed per token:
+    /// * `mt_batch_transfer`:      minimum: 20TGas, default: 20TGas
     /// * `mt_batch_transfer_call`: minimum: 35TGas, default: 50TGas
     ///
     /// Remaining gas will be distributed evenly across all Function Call
@@ -334,7 +336,8 @@ pub struct MtWithdraw {
 }
 
 impl MtWithdraw {
-    // TODO: gas_base + gas_per_token * token_ids.len()
+    const MT_BATCH_TRANSFER_BASE_GAS: Gas = Gas::from_tgas(8);
+
     const MT_BATCH_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(20);
     const MT_BATCH_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(20);
 
@@ -362,14 +365,21 @@ impl MtWithdraw {
             )
         };
 
-        self.min_gas
+        let gas_per_token = self
+            .min_gas
             .unwrap_or(default)
             // We need to set hard minimum for gas to prevent loss of funds
             // due to insufficient gas:
             // 1. We don't refund wNEAR taken for `storage_deposit()`,
             //    which is executed in the same receipt as `mt_batch_transfer[_call]()`
             // 2. We don't refund if `mt_batch_transfer_call()` Promise fails
-            .max(min)
+            .max(min);
+
+        let token_count: u64 = self.token_ids.len().try_into().unwrap_or_panic_display();
+
+        Self::MT_BATCH_TRANSFER_BASE_GAS
+            .checked_add(gas_per_token.checked_mul(token_count).unwrap_or_panic())
+            .unwrap_or_panic()
     }
 }
 

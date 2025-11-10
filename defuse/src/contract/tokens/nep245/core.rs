@@ -277,14 +277,12 @@ impl Contract {
         const MT_RESOLVE_TRANSFER_BASE_GAS: Gas = Gas::from_tgas(8);
         let token_count: u64 = token_count.try_into().unwrap_or_panic_display();
 
-        let default_gas = MT_RESOLVE_TRANSFER_BASE_GAS
-            .checked_add(
-                MT_RESOLVE_TRANSFER_PER_TOKEN_GAS
-                    .checked_mul(token_count)
-                    .unwrap_or_panic(),
-            )
-            .unwrap_or_panic();
+        let gas_per_token = min_gas
+            .unwrap_or(MT_RESOLVE_TRANSFER_PER_TOKEN_GAS)
+            .max(MT_RESOLVE_TRANSFER_PER_TOKEN_GAS);
 
-        min_gas.map_or(default_gas, |g| g.max(default_gas))
+        MT_RESOLVE_TRANSFER_BASE_GAS
+            .checked_add(gas_per_token.checked_mul(token_count).unwrap_or_panic())
+            .unwrap_or_panic()
     }
 }
