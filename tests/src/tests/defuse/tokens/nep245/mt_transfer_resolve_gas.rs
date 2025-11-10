@@ -247,9 +247,7 @@ async fn run_resolve_gas_test(
 
     let longest_emited_log = call_test_log.logs().iter().map(String::len).max().unwrap();
 
-    assert_eq!(
-        longest_emited_log, expected_transfer_log,
-    );
+    assert_eq!(longest_emited_log, expected_transfer_log,);
 
     println!("{{{token_count}, {}}},", call_test_log.total_gas_burnt());
 

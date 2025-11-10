@@ -1,10 +1,5 @@
 use defuse_nep245::{TokenId, receiver::MultiTokenReceiver};
-use near_sdk::{
-    AccountId, PromiseOrValue, env,
-    json_types::U128,
-    near,
-    serde_json,
-};
+use near_sdk::{AccountId, PromiseOrValue, env, json_types::U128, near, serde_json};
 
 /// Minimal stub contract used for integration tests.
 #[derive(Default)]

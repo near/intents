@@ -5,16 +5,13 @@ use defuse_near_utils::{
 use defuse_nep245::receiver::ext_mt_receiver;
 use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 use near_plugins::{Pausable, pause};
-use near_sdk::{
-    AccountId, Gas, Promise, PromiseOrValue, json_types::U128, near, require,
-};
+use near_sdk::{AccountId, Gas, Promise, PromiseOrValue, json_types::U128, near, require};
 
 use crate::{
     contract::{Contract, ContractExt},
     intents::{Intents, ext_intents},
     tokens::DepositMessage,
 };
-
 
 #[near]
 impl FungibleTokenReceiver for Contract {

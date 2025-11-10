@@ -3,19 +3,14 @@ mod nep171;
 mod nep245;
 
 use super::Contract;
-use defuse_core::{
-    DefuseError, Result,
-    token_id::TokenId,
-};
+use defuse_core::{DefuseError, Result, token_id::TokenId};
 use defuse_near_utils::CURRENT_ACCOUNT_ID;
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
 use itertools::{Itertools, izip};
 use near_sdk::{
     AccountId, AccountIdRef, Gas, PromiseResult, env, json_types::U128, require, serde_json,
 };
-use std::{
-    borrow::Cow,
-};
+use std::borrow::Cow;
 
 pub const STORAGE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
 
@@ -154,14 +149,21 @@ impl Contract {
         );
         let tokens_count = token_ids.len();
 
-        assert!((tokens_count == deposited_amounts.len()), "token_ids and amounts must have the same length");
+        assert!(
+            (tokens_count == deposited_amounts.len()),
+            "token_ids and amounts must have the same length"
+        );
 
         assert!(token_ids.iter().all_unique(), "token_ids must be unique");
 
         let requested_refunds = match env::promise_result(0) {
             PromiseResult::Successful(value) => serde_json::from_slice::<Vec<U128>>(&value)
                 .ok()
-                .filter(|refunds| refunds.len() == tokens_count).map_or_else(|| vec![0u128; tokens_count], |refunds| refunds.into_iter().map(|elem| elem.0).collect()),
+                .filter(|refunds| refunds.len() == tokens_count)
+                .map_or_else(
+                    || vec![0u128; tokens_count],
+                    |refunds| refunds.into_iter().map(|elem| elem.0).collect(),
+                ),
             // Do not refund on failure; rely solely on mt_on_transfer return values.
             // This aligns with NEP-141/171 behavior: if the receiver panics, no refund occurs.
             PromiseResult::Failed => vec![0u128; tokens_count],

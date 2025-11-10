@@ -435,8 +435,12 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
         .build()
         .await;
 
-    let (user, receiver, intent_receiver, ft) =
-        futures::join!(env.create_user(), env.create_user(), env.create_user(), env.create_token());
+    let (user, receiver, intent_receiver, ft) = futures::join!(
+        env.create_user(),
+        env.create_user(),
+        env.create_user(),
+        env.create_token()
+    );
 
     receiver
         .deploy(MT_RECEIVER_STUB_WASM.as_slice())
@@ -445,27 +449,31 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
         .unwrap();
 
     let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
-    env.initial_ft_storage_deposit(vec![user.id(), receiver.id(), intent_receiver.id()], vec![&ft])
-        .await;
+    env.initial_ft_storage_deposit(
+        vec![user.id(), receiver.id(), intent_receiver.id()],
+        vec![&ft],
+    )
+    .await;
 
     let root = env.sandbox().root_account();
     assert!(env.ft_token_balance_of(&ft, root.id()).await.unwrap() > 0);
     root.ft_transfer(&ft, user.id(), 1000, None).await.unwrap();
     assert_eq!(env.ft_token_balance_of(&ft, user.id()).await.unwrap(), 1000);
 
-
     let intents = match &expectation.intent_transfer_amount {
-        Some(amount) => 
-        vec![receiver
-            .sign_defuse_payload_default(
-                env.defuse.id(),
-                [Transfer {
-                    receiver_id: intent_receiver.id().clone(),
-                    tokens: Amounts::new(std::iter::once((ft_id.clone(), *amount)).collect()),
-                    memo: None,
-                }],
-            ).await.unwrap()]
-        ,
+        Some(amount) => vec![
+            receiver
+                .sign_defuse_payload_default(
+                    env.defuse.id(),
+                    [Transfer {
+                        receiver_id: intent_receiver.id().clone(),
+                        tokens: Amounts::new(std::iter::once((ft_id.clone(), *amount)).collect()),
+                        memo: None,
+                    }],
+                )
+                .await
+                .unwrap(),
+        ],
         None => vec![],
     };
 

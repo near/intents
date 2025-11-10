@@ -50,16 +50,20 @@ impl MultiTokenReceiver for Contract {
 
         let n = amounts.len();
 
-        let wrapped_tokens: Vec<CoreTokenId> = token_ids.iter()
-                .map(|token_id| Nep245TokenId::new(token.clone(), token_id.clone()))
-                .map(UnwrapOrPanicError::unwrap_or_panic_display)
-                .map(Into::into)
-                .collect();
+        let wrapped_tokens: Vec<CoreTokenId> = token_ids
+            .iter()
+            .map(|token_id| Nep245TokenId::new(token.clone(), token_id.clone()))
+            .map(UnwrapOrPanicError::unwrap_or_panic_display)
+            .map(Into::into)
+            .collect();
         let native_amounts = amounts.iter().map(|elem| elem.0).collect::<Vec<_>>();
 
         self.deposit(
             receiver_id.clone(),
-            wrapped_tokens.clone().into_iter().zip(native_amounts.clone()),
+            wrapped_tokens
+                .clone()
+                .into_iter()
+                .zip(native_amounts.clone()),
             Some("deposit"),
         )
         .unwrap_or_panic();
@@ -77,19 +81,18 @@ impl MultiTokenReceiver for Contract {
             return PromiseOrValue::Value(vec![U128(0); n]);
         }
 
-        let notification = ext_mt_receiver::ext(receiver_id.clone())
-            .mt_on_transfer(
-                sender_id,
-                previous_owner_ids,
-                token_ids,
-                amounts,
-                message,
-            );
+        let notification = ext_mt_receiver::ext(receiver_id.clone()).mt_on_transfer(
+            sender_id,
+            previous_owner_ids,
+            token_ids,
+            amounts,
+            message,
+        );
 
         let resolution = Self::ext(CURRENT_ACCOUNT_ID.clone())
             .with_static_gas(Self::MT_RESOLVE_DEPOSIT_GAS)
             .with_unused_gas_weight(0)
-            .mt_resolve_deposit(&receiver_id, wrapped_tokens,native_amounts);
+            .mt_resolve_deposit(&receiver_id, wrapped_tokens, native_amounts);
 
         match intents_promise {
             Some(promise) => promise.then(notification).then(resolution).into(),
@@ -112,8 +115,10 @@ impl Contract {
         token_ids: Vec<CoreTokenId>,
         deposited_amounts: Vec<u128>,
     ) -> PromiseOrValue<Vec<U128>> {
-        PromiseOrValue::Value(
-            self.resolve_deposit_internal(receiver_id, token_ids, deposited_amounts)
-            )
+        PromiseOrValue::Value(self.resolve_deposit_internal(
+            receiver_id,
+            token_ids,
+            deposited_amounts,
+        ))
     }
 }

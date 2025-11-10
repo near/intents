@@ -4,13 +4,13 @@ use crate::utils::{mt::MtExt, nft::NftExt};
 use defuse::core::intents::tokens::NftWithdraw;
 use defuse::core::token_id::TokenId as DefuseTokenId;
 use defuse::core::token_id::nep171::Nep171TokenId;
+use multi_token_receiver_stub::StubAction;
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata,
 };
 use near_contract_standards::non_fungible_token::{Token, metadata::TokenMetadata};
 use near_sdk::{NearToken, json_types::Base64VecU8};
 use rstest::rstest;
-use multi_token_receiver_stub::StubAction;
 use std::collections::HashMap;
 
 const DUMMY_REFERENCE_HASH: [u8; 32] = [33; 32];
@@ -344,14 +344,11 @@ struct NftTransferCallExpectation {
 async fn nft_transfer_call_calls_mt_on_transfer_variants(
     #[case] expectation: NftTransferCallExpectation,
 ) {
+    use crate::tests::defuse::env::MT_RECEIVER_STUB_WASM;
     use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
     use defuse::tokens::DepositMessage;
-    use crate::tests::defuse::env::MT_RECEIVER_STUB_WASM;
 
-    let env = Env::builder()
-        .deployer_as_super_admin()
-        .build()
-        .await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
 
     // Ensure the NFT issuer account name stays short enough to host `nft_test.<user>`
     // subaccounts; randomly generated names occasionally exceed the NEAR 64-char limit.
@@ -402,25 +399,23 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
     assert_eq!(nft.owner_id, *user.id());
 
     let nft_token_id = DefuseTokenId::from(
-        Nep171TokenId::new(
-            nft_issuer_contract.id().clone(),
-            DUMMY_NFT1_ID.to_string(),
-        )
-        .unwrap(),
+        Nep171TokenId::new(nft_issuer_contract.id().clone(), DUMMY_NFT1_ID.to_string()).unwrap(),
     );
 
     let intents = if expectation.intent_transfer {
-        vec![receiver
-            .sign_defuse_payload_default(
-                env.defuse.id(),
-                [Transfer {
-                    receiver_id: intent_receiver.id().clone(),
-                    tokens: Amounts::new(std::iter::once((nft_token_id.clone(), 1)).collect()),
-                    memo: None,
-                }],
-            )
-            .await
-            .unwrap()]
+        vec![
+            receiver
+                .sign_defuse_payload_default(
+                    env.defuse.id(),
+                    [Transfer {
+                        receiver_id: intent_receiver.id().clone(),
+                        tokens: Amounts::new(std::iter::once((nft_token_id.clone(), 1)).collect()),
+                        memo: None,
+                    }],
+                )
+                .await
+                .unwrap(),
+        ]
     } else {
         vec![]
     };
@@ -453,7 +448,11 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
     if expectation.expected_sender_owns_nft {
         assert_eq!(nft_owner, *user.id(), "NFT should be owned by sender");
     } else {
-        assert_eq!(nft_owner, *env.defuse.id(), "NFT should be owned by defuse contract");
+        assert_eq!(
+            nft_owner,
+            *env.defuse.id(),
+            "NFT should be owned by defuse contract"
+        );
     }
 
     // Check if receiver owns the NFT in MT balance
@@ -463,8 +462,14 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
         .unwrap();
 
     if expectation.expected_receiver_owns_nft {
-        assert_eq!(receiver_mt_balance, 1, "Receiver should own the NFT (MT balance = 1)");
+        assert_eq!(
+            receiver_mt_balance, 1,
+            "Receiver should own the NFT (MT balance = 1)"
+        );
     } else {
-        assert_eq!(receiver_mt_balance, 0, "Receiver should not own the NFT (MT balance = 0)");
+        assert_eq!(
+            receiver_mt_balance, 0,
+            "Receiver should not own the NFT (MT balance = 0)"
+        );
     }
 }

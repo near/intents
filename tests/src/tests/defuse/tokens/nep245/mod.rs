@@ -989,10 +989,10 @@ struct MtTransferCallExpectation {
 async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     #[case] expectation: MtTransferCallExpectation,
 ) {
-    use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
-    use defuse::tokens::DepositMessage;
     use crate::tests::defuse::DefuseSignerExt;
     use crate::tests::defuse::env::MT_RECEIVER_STUB_WASM;
+    use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
+    use defuse::tokens::DepositMessage;
 
     let env = Env::builder()
         .deployer_as_super_admin()
@@ -1000,11 +1000,8 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
         .build()
         .await;
 
-    let (user, intent_receiver, ft) = futures::join!(
-        env.create_user(),
-        env.create_user(),
-        env.create_token()
-    );
+    let (user, intent_receiver, ft) =
+        futures::join!(env.create_user(), env.create_user(), env.create_token());
 
     // Deploy second defuse instance as the receiver
     let defuse2 = env
@@ -1037,8 +1034,11 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
         .await
         .unwrap();
 
-    env.initial_ft_storage_deposit(vec![user.id(), receiver.id(), intent_receiver.id()], vec![&ft])
-        .await;
+    env.initial_ft_storage_deposit(
+        vec![user.id(), receiver.id(), intent_receiver.id()],
+        vec![&ft],
+    )
+    .await;
 
     let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
 
@@ -1048,24 +1048,27 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
         .unwrap();
 
     // Get the nep245 token id for defuse1's wrapped token in defuse2
-    let nep245_ft_id = TokenId::Nep245(
-        Nep245TokenId::new(env.defuse.id().clone(), ft_id.to_string()).unwrap()
-    );
+    let nep245_ft_id =
+        TokenId::Nep245(Nep245TokenId::new(env.defuse.id().clone(), ft_id.to_string()).unwrap());
 
     // Build transfer intent if specified
     let intents = match &expectation.intent_transfer_amounts {
         Some(amounts) if !amounts.is_empty() => {
-            vec![receiver
-                .sign_defuse_payload_default(
-                    defuse2.id(),
-                    [Transfer {
-                        receiver_id: intent_receiver.id().clone(),
-                        tokens: Amounts::new(std::iter::once((nep245_ft_id.clone(), amounts[0])).collect()),
-                        memo: None,
-                    }],
-                )
-                .await
-                .unwrap()]
+            vec![
+                receiver
+                    .sign_defuse_payload_default(
+                        defuse2.id(),
+                        [Transfer {
+                            receiver_id: intent_receiver.id().clone(),
+                            tokens: Amounts::new(
+                                std::iter::once((nep245_ft_id.clone(), amounts[0])).collect(),
+                            ),
+                            memo: None,
+                        }],
+                    )
+                    .await
+                    .unwrap(),
+            ]
         }
         _ => vec![],
     };
@@ -1177,10 +1180,10 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
 async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     #[case] expectation: MtTransferCallExpectation,
 ) {
-    use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
-    use defuse::tokens::DepositMessage;
     use crate::tests::defuse::DefuseSignerExt;
     use crate::tests::defuse::env::MT_RECEIVER_STUB_WASM;
+    use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
+    use defuse::tokens::DepositMessage;
 
     let env = Env::builder()
         .deployer_as_super_admin()
@@ -1244,12 +1247,10 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
         .unwrap();
 
     // Get the nep245 token ids for defuse1's wrapped tokens in defuse2
-    let nep245_ft1_id = TokenId::Nep245(
-        Nep245TokenId::new(env.defuse.id().clone(), ft1_id.to_string()).unwrap()
-    );
-    let nep245_ft2_id = TokenId::Nep245(
-        Nep245TokenId::new(env.defuse.id().clone(), ft2_id.to_string()).unwrap()
-    );
+    let nep245_ft1_id =
+        TokenId::Nep245(Nep245TokenId::new(env.defuse.id().clone(), ft1_id.to_string()).unwrap());
+    let nep245_ft2_id =
+        TokenId::Nep245(Nep245TokenId::new(env.defuse.id().clone(), ft2_id.to_string()).unwrap());
 
     // Build transfer intents if specified
     let intents = if let Some(amounts) = &expectation.intent_transfer_amounts {
@@ -1262,17 +1263,19 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
             intent_map.insert(nep245_ft2_id.clone(), amount2);
         }
 
-        vec![receiver
-            .sign_defuse_payload_default(
-                defuse2.id(),
-                [Transfer {
-                    receiver_id: intent_receiver.id().clone(),
-                    tokens: Amounts::new(intent_map),
-                    memo: None,
-                }],
-            )
-            .await
-            .unwrap()]
+        vec![
+            receiver
+                .sign_defuse_payload_default(
+                    defuse2.id(),
+                    [Transfer {
+                        receiver_id: intent_receiver.id().clone(),
+                        tokens: Amounts::new(intent_map),
+                        memo: None,
+                    }],
+                )
+                .await
+                .unwrap(),
+        ]
     } else {
         vec![]
     };
@@ -1285,7 +1288,8 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     };
 
     // Transfer both tokens from user in defuse1 to defuse2 using batch transfer
-    let _x = user.call(env.defuse.id(), "mt_batch_transfer_call")
+    let _x = user
+        .call(env.defuse.id(), "mt_batch_transfer_call")
         .deposit(near_workspaces::types::NearToken::from_yoctonear(1))
         .args_json(near_sdk::serde_json::json!({
             "receiver_id": defuse2.id(),
@@ -1301,8 +1305,6 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
         .unwrap()
         .into_result()
         .unwrap();
-
-
 
     // Check balances in defuse1 (original sender)
     assert_eq!(
