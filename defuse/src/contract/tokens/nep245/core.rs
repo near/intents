@@ -251,38 +251,43 @@ impl Contract {
     ) -> PromiseOrValue<Vec<U128>> {
         let previous_owner_ids = vec![sender_id.clone(); token_ids.len()];
 
-        ext_mt_receiver::ext(receiver_id.clone())
-            .mt_on_transfer(
-                sender_id,
-                previous_owner_ids.clone(),
-                token_ids.clone(),
-                amounts.clone(),
-                msg,
-            )
-            .then(
-                Self::ext(CURRENT_ACCOUNT_ID.clone())
-                    .with_static_gas(Self::mt_resolve_gas(token_ids.len(), min_gas))
-                    // do not distribute remaining gas here (so that all that's left goes to `mt_on_transfer`)
-                    .with_unused_gas_weight(0)
-                    .mt_resolve_transfer(previous_owner_ids, receiver_id, token_ids, amounts, None),
-            )
-            .into()
+        let mut call = ext_mt_receiver::ext(receiver_id.clone());
+
+        if let Some(min_gas) = min_gas {
+            call = call.with_static_gas(min_gas);
+        }
+
+        call.mt_on_transfer(
+            sender_id,
+            previous_owner_ids.clone(),
+            token_ids.clone(),
+            amounts.clone(),
+            msg,
+        )
+        .then(
+            Self::ext(CURRENT_ACCOUNT_ID.clone())
+                .with_static_gas(Self::mt_resolve_gas(token_ids.len()))
+                // do not distribute remaining gas here (so that all that's left goes to `mt_on_transfer`)
+                .with_unused_gas_weight(0)
+                .mt_resolve_transfer(previous_owner_ids, receiver_id, token_ids, amounts, None),
+        )
+        .into()
     }
 
     #[must_use]
-    fn mt_resolve_gas(token_count: usize, min_gas: Option<Gas>) -> Gas {
+    fn mt_resolve_gas(token_count: usize) -> Gas {
         // These represent a linear model total_gas_cost = per_token*n + base,
         // where `n` is the number of tokens.
         const MT_RESOLVE_TRANSFER_PER_TOKEN_GAS: Gas = Gas::from_tgas(2);
         const MT_RESOLVE_TRANSFER_BASE_GAS: Gas = Gas::from_tgas(8);
         let token_count: u64 = token_count.try_into().unwrap_or_panic_display();
 
-        let gas_per_token = min_gas
-            .unwrap_or(MT_RESOLVE_TRANSFER_PER_TOKEN_GAS)
-            .max(MT_RESOLVE_TRANSFER_PER_TOKEN_GAS);
-
         MT_RESOLVE_TRANSFER_BASE_GAS
-            .checked_add(gas_per_token.checked_mul(token_count).unwrap_or_panic())
+            .checked_add(
+                MT_RESOLVE_TRANSFER_PER_TOKEN_GAS
+                    .checked_mul(token_count)
+                    .unwrap_or_panic(),
+            )
             .unwrap_or_panic()
     }
 }

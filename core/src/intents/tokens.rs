@@ -33,6 +33,17 @@ pub struct NotifyOnTransfer {
     pub min_gas: Option<Gas>,
 }
 
+impl NotifyOnTransfer {
+    pub const MT_ON_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(5);
+    pub const MT_ON_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(10);
+
+    pub fn min_gas(&self) -> Gas {
+        self.min_gas
+            .unwrap_or(Self::MT_ON_TRANSFER_GAS_DEFAULT)
+            .max(Self::MT_ON_TRANSFER_GAS_MIN)
+    }
+}
+
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
     serde_as(schemars = true)
@@ -336,7 +347,8 @@ pub struct MtWithdraw {
 }
 
 impl MtWithdraw {
-    const MT_BATCH_TRANSFER_BASE_GAS: Gas = Gas::from_tgas(8);
+    const MT_BATCH_TRANSFER_BASE: Gas = Gas::from_tgas(20);
+    const MT_BATCH_TRANSFER_CALL_BASE: Gas = Gas::from_tgas(35);
 
     const MT_BATCH_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(20);
     const MT_BATCH_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(20);
@@ -353,15 +365,17 @@ impl MtWithdraw {
     /// Returns minimum required gas
     #[inline]
     pub fn min_gas(&self) -> Gas {
-        let (min, default) = if self.is_call() {
+        let (min, default, base) = if self.is_call() {
             (
                 Self::MT_BATCH_TRANSFER_CALL_GAS_MIN,
                 Self::MT_BATCH_TRANSFER_CALL_GAS_DEFAULT,
+                Self::MT_BATCH_TRANSFER_CALL_BASE,
             )
         } else {
             (
                 Self::MT_BATCH_TRANSFER_GAS_MIN,
                 Self::MT_BATCH_TRANSFER_GAS_DEFAULT,
+                Self::MT_BATCH_TRANSFER_BASE,
             )
         };
 
@@ -377,8 +391,7 @@ impl MtWithdraw {
 
         let token_count: u64 = self.token_ids.len().try_into().unwrap_or_panic_display();
 
-        Self::MT_BATCH_TRANSFER_BASE_GAS
-            .checked_add(gas_per_token.checked_mul(token_count).unwrap_or_panic())
+        base.checked_add(gas_per_token.checked_mul(token_count).unwrap_or_panic())
             .unwrap_or_panic()
     }
 }

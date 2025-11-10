@@ -257,13 +257,15 @@ impl State for Contract {
             .map(|(token_id, amount)| (token_id.to_string(), U128(*amount)))
             .unzip();
 
+        let min_gas = notification.min_gas();
+
         Self::call_receiver_mt_on_transfer(
             sender_id,
             receiver_id,
             token_ids,
             amounts,
             notification.msg,
-            notification.min_gas,
+            Some(min_gas),
         );
     }
 
