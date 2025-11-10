@@ -131,17 +131,10 @@ impl Contract {
 
         Ok(())
     }
-    //TODO: test for withdrawing more than deposited but with enought balance from previous deposit
-    //TODO: test for circular transfer between 2 defuse instances
 }
 
-#[near]
+// #[near]
 impl Contract {
-    //TODO: figure out prcise value
-    const FT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(50);
-    const NFT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(50);
-    const MT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(50);
-
     /// Generic internal helper for resolving deposit refunds across all token standards (NEP-141, NEP-171, NEP-245).
     ///
     /// This function:
@@ -151,7 +144,6 @@ impl Contract {
     /// 4. Caps refunds at both the deposited amount and available balance
     /// 5. Performs a single batched withdrawal for all refunded tokens
     /// 6. Returns the actual refund amounts for each request
-    #[private]
     pub fn resolve_deposit_internal(
         &mut self,
         receiver_id: &AccountId,
@@ -175,10 +167,12 @@ impl Contract {
         let requested_refunds = match env::promise_result(0) {
             PromiseResult::Successful(value) => serde_json::from_slice::<Vec<U128>>(&value)
                 .ok()
+                .filter(|refunds| refunds.len() == tokens_count)
                 .map(|refunds| refunds.into_iter().map(|elem| elem.0).collect())
+                // If receiver returns unparseable/wrong-length data, treat as no refund requested.
                 .unwrap_or(vec![0u128; tokens_count]),
-            // as in token standard spec, refund whole amount in case of failure
-            // PromiseResult::Failed => amount.0,
+            // Do not refund on failure; rely solely on mt_on_transfer return values.
+            // This aligns with NEP-141/171 behavior: if the receiver panics, no refund occurs.
             PromiseResult::Failed => vec![0u128; tokens_count],
         };
 
@@ -197,11 +191,6 @@ impl Contract {
                 (token, available.min(deposited.min(*refund)))
             })
             .collect::<Vec<_>>();
-
-
-        actual_refunds.iter().for_each(|elem| 
-            env::log_str(&format!("refund {elem:?}"))
-        );
 
         if !requested_refunds.is_empty() {
             self.withdraw(

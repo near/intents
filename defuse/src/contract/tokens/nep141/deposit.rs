@@ -55,9 +55,6 @@ impl FungibleTokenReceiver for Contract {
         .unwrap_or_panic();
 
         let token_id = CoreTokenId::Nep141(Nep141TokenId::new(PREDECESSOR_ACCOUNT_ID.clone()));
-        let has_message = !message.is_empty();
-        let token_account = PREDECESSOR_ACCOUNT_ID.clone();
-        let resolver_receiver_id = receiver_id.clone();
 
         let intents_promise: Option<Promise> = if execute_intents.is_empty() {
             None
@@ -68,7 +65,7 @@ impl FungibleTokenReceiver for Contract {
             Some(ext_intents::ext(CURRENT_ACCOUNT_ID.clone()).execute_intents(execute_intents))
         };
 
-        if !has_message {
+        if message.is_empty() {
             return PromiseOrValue::Value(U128(0));
         }
 
@@ -83,7 +80,7 @@ impl FungibleTokenReceiver for Contract {
         let resolution = Self::ext(CURRENT_ACCOUNT_ID.clone())
             .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS)
             .with_unused_gas_weight(0)
-            .resolve_deposit_internal(&receiver_id, vec![token_id], vec![amount_value]);
+            .ft_resolve_deposit(&receiver_id, vec![token_id], vec![amount_value]);
 
         match intents_promise {
             Some(promise) => promise.then(notification).then(resolution).into(),
@@ -92,45 +89,21 @@ impl FungibleTokenReceiver for Contract {
     }
 }
 
-// #[near]
-// impl Contract {
-//     //TODO: figure out prcise value
-//     const FT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(50);
-//
-//     #[private]
-//     pub fn ft_resolve_deposit(
-//         &mut self,
-//         _sender_id: AccountId,
-//         receiver_id: AccountId,
-//         token: AccountId,
-//         amount: U128,
-//     ) -> U128 {
-//         require!(
-//             env::predecessor_account_id() == *CURRENT_ACCOUNT_ID,
-//             "only self"
-//         );
-//
-//         let requested_refund = match env::promise_result(0) {
-//             PromiseResult::Successful(value) => serde_json::from_slice::<Vec<U128>>(&value)
-//                 .ok()
-//                 .and_then(|refunds| refunds.first().cloned())
-//                 .map(|refund| refund.0)
-//                 .unwrap_or(amount.0),
-//             // as in token standard spec, refund whole amount in case of failure
-//             // PromiseResult::Failed => amount.0,
-//             PromiseResult::Failed => 0u128,
-//         }
-//         .min(amount.0);
-//
-//         let token_id = CoreTokenId::Nep141(Nep141TokenId::new(token.clone()));
-//
-//         let refunds = self.resolve_deposit_internal(
-//             &receiver_id,
-//             vec![token_id],
-//             vec![amount.0],
-//             vec![requested_refund],
-//         ).unwrap();
-//
-//         U128(refunds[0])
-//     }
-// }
+#[near]
+impl Contract {
+    //TODO: figure out prcise value
+    const FT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(50);
+
+    #[private]
+    pub fn ft_resolve_deposit(
+        &mut self,
+        receiver_id: &AccountId,
+        token_ids: Vec<CoreTokenId>,
+        deposited_amounts: Vec<u128>,
+    ) -> PromiseOrValue<U128> {
+        self.resolve_deposit_internal(receiver_id, token_ids, deposited_amounts)
+            .first()
+            .map(|elem| PromiseOrValue::Value(*elem))
+            .unwrap()
+    }
+}

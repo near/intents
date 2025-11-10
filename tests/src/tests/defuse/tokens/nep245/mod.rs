@@ -1152,15 +1152,15 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     action: multi_token_receiver_stub::StubAction::ReturnValues(vec![100.into()]),
     intent_transfer_amounts: None,
     refund_if_fails: true,
-    expected_sender_mt_balances: vec![1000, 2000],
-    expected_receiver_mt_balances: vec![0, 0],
+    expected_sender_mt_balances: vec![0, 0],
+    expected_receiver_mt_balances: vec![1000, 2000],
 })]
 #[case::wrong_length_return_too_long(MtTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::ReturnValues(vec![100.into(), 200.into(), 300.into()]),
     intent_transfer_amounts: None,
     refund_if_fails: true,
-    expected_sender_mt_balances: vec![1000, 2000],
-    expected_receiver_mt_balances: vec![0, 0],
+    expected_sender_mt_balances: vec![0, 0],
+    expected_receiver_mt_balances: vec![1000, 2000],
 })]
 #[case::refund_after_intent_first_token(MtTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::ReturnValues(vec![200.into(), 0.into()]),
