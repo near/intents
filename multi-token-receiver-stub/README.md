@@ -1,1 +1,0 @@
-Helper contract for testing transfer callbacks
