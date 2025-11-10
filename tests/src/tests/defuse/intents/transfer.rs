@@ -22,7 +22,7 @@ use crate::tests::defuse::DefuseSignerExt;
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn ft_transfer_intent() {
+async fn transfer_intent() {
     let env = Env::builder().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
@@ -74,7 +74,7 @@ async fn ft_transfer_intent() {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn ft_transfer_intent_to_defuse() {
+async fn transfer_intent_to_defuse() {
     let env = Env::builder().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
@@ -201,7 +201,7 @@ async fn ft_transfer_intent_to_defuse() {
     expected_sender_balance: 1000,
     expected_receiver_balance: 0,
 })]
-async fn ft_transfer_intent_to_mt_receiver_smc(#[case] expectation: TransferCallExpectation) {
+async fn transfer_intent_to_mt_receiver_smc(#[case] expectation: TransferCallExpectation) {
     let initial_amount = expectation
         .intent_transfer_amount
         .expect("Transfer amount should be specified");

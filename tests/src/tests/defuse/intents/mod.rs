@@ -52,7 +52,6 @@ impl AccountNonceIntentEvent {
     }
 }
 
-mod ft_transfer;
 mod ft_withdraw;
 mod legacy_nonce;
 mod native_withdraw;
@@ -60,6 +59,7 @@ mod public_key;
 mod relayers;
 mod simulate;
 mod token_diff;
+mod transfer;
 
 pub const DUMMY_MSG_ADDRESS: MsgAddress = MsgAddress {
     workchain_id: 1234i32,

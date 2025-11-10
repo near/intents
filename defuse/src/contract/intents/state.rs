@@ -211,30 +211,6 @@ impl State for Contract {
             .map(|_promise| ())
     }
 
-    #[inline]
-    fn mt_transfer(&mut self, sender_id: &AccountIdRef, transfer: Transfer) -> Result<()> {
-        self.internal_sub_balance(sender_id, transfer.tokens.clone())?;
-        self.internal_add_balance(transfer.receiver_id.clone(), transfer.tokens.clone())?;
-
-        if let Some(msg) = transfer.msg {
-            let (token_ids, amounts) = transfer
-                .tokens
-                .iter()
-                .map(|(token_id, amount)| (token_id.to_string(), U128(*amount)))
-                .unzip();
-
-            Self::call_receiver_mt_on_transfer(
-                sender_id.into(),
-                transfer.receiver_id,
-                token_ids,
-                amounts,
-                msg,
-            );
-        }
-
-        Ok(())
-    }
-
     fn native_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: NativeWithdraw) -> Result<()> {
         self.withdraw(
             owner_id,
@@ -263,6 +239,23 @@ impl State for Contract {
             );
 
         Ok(())
+    }
+
+    #[inline]
+    fn notify_on_transfer(&mut self, sender_id: &AccountIdRef, msg: String, transfer: Transfer) {
+        let (token_ids, amounts) = transfer
+            .tokens
+            .iter()
+            .map(|(token_id, amount)| (token_id.to_string(), U128(*amount)))
+            .unzip();
+
+        Self::call_receiver_mt_on_transfer(
+            sender_id.into(),
+            transfer.receiver_id,
+            token_ids,
+            amounts,
+            msg,
+        );
     }
 
     fn storage_deposit(

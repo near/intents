@@ -182,8 +182,8 @@ where
     }
 
     #[inline]
-    fn mt_transfer(&mut self, sender_id: &AccountIdRef, transfer: Transfer) -> Result<()> {
-        self.state.mt_transfer(sender_id, transfer)
+    fn notify_on_transfer(&mut self, sender_id: &AccountIdRef, msg: String, transfer: Transfer) {
+        self.state.notify_on_transfer(sender_id, msg, transfer);
     }
 
     #[inline]

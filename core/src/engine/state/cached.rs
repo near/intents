@@ -310,14 +310,6 @@ where
         )
     }
 
-    #[inline]
-    fn mt_transfer(&mut self, sender_id: &AccountIdRef, transfer: Transfer) -> Result<()> {
-        self.internal_sub_balance(sender_id, transfer.tokens.clone())?;
-        self.internal_add_balance(transfer.receiver_id, transfer.tokens)?;
-
-        Ok(())
-    }
-
     fn native_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: NativeWithdraw) -> Result<()> {
         self.internal_sub_balance(
             owner_id,
@@ -326,6 +318,11 @@ where
                 withdraw.amount.as_yoctonear(),
             )],
         )
+    }
+
+    // NOTE: Simulation that uses a cached state cannot create promises, as it is a view call
+    #[inline]
+    fn notify_on_transfer(&mut self, _sender_id: &AccountIdRef, _msg: String, _transfer: Transfer) {
     }
 
     fn storage_deposit(

@@ -102,9 +102,9 @@ pub trait State: StateView {
 
     fn mt_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: MtWithdraw) -> Result<()>;
 
-    fn mt_transfer(&mut self, sender_id: &AccountIdRef, transfer: Transfer) -> Result<()>;
-
     fn native_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: NativeWithdraw) -> Result<()>;
+
+    fn notify_on_transfer(&mut self, sender_id: &AccountIdRef, msg: String, transfer: Transfer);
 
     fn storage_deposit(
         &mut self,

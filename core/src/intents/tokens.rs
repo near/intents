@@ -70,7 +70,20 @@ impl ExecutableIntent for Transfer {
                 .as_slice(),
             )));
 
-        engine.state.mt_transfer(sender_id, self)
+        engine
+            .state
+            .internal_sub_balance(sender_id, self.tokens.clone())?;
+        engine
+            .state
+            .internal_add_balance(self.receiver_id.clone(), self.tokens.clone())?;
+
+        if let Some(msg) = &self.msg {
+            engine
+                .state
+                .notify_on_transfer(sender_id, msg.clone(), self);
+        }
+
+        Ok(())
     }
 }
 
