@@ -118,7 +118,7 @@ async fn auth_by_predecessor_id() {
                     receiver_id: receiver_id.clone(),
                     tokens: Amounts::new([(ft.clone(), 200)].into()),
                     memo: None,
-                    msg: None,
+                    notification: None,
                 }],
             )
             .await

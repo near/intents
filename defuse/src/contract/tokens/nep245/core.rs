@@ -237,6 +237,7 @@ impl Contract {
             token_ids,
             amounts,
             msg,
+            None,
         ))
     }
 
@@ -246,6 +247,7 @@ impl Contract {
         token_ids: Vec<defuse_nep245::TokenId>,
         amounts: Vec<U128>,
         msg: String,
+        min_gas: Option<Gas>,
     ) -> PromiseOrValue<Vec<U128>> {
         let previous_owner_ids = vec![sender_id.clone(); token_ids.len()];
 
@@ -259,7 +261,7 @@ impl Contract {
             )
             .then(
                 Self::ext(CURRENT_ACCOUNT_ID.clone())
-                    .with_static_gas(Self::mt_resolve_gas(token_ids.len()))
+                    .with_static_gas(Self::mt_resolve_gas(token_ids.len(), min_gas))
                     // do not distribute remaining gas here (so that all that's left goes to `mt_on_transfer`)
                     .with_unused_gas_weight(0)
                     .mt_resolve_transfer(previous_owner_ids, receiver_id, token_ids, amounts, None),
@@ -268,19 +270,21 @@ impl Contract {
     }
 
     #[must_use]
-    fn mt_resolve_gas(token_count: usize) -> Gas {
+    fn mt_resolve_gas(token_count: usize, min_gas: Option<Gas>) -> Gas {
         // These represent a linear model total_gas_cost = per_token*n + base,
         // where `n` is the number of tokens.
         const MT_RESOLVE_TRANSFER_PER_TOKEN_GAS: Gas = Gas::from_tgas(2);
         const MT_RESOLVE_TRANSFER_BASE_GAS: Gas = Gas::from_tgas(8);
         let token_count: u64 = token_count.try_into().unwrap_or_panic_display();
 
-        MT_RESOLVE_TRANSFER_BASE_GAS
+        let default_gas = MT_RESOLVE_TRANSFER_BASE_GAS
             .checked_add(
                 MT_RESOLVE_TRANSFER_PER_TOKEN_GAS
                     .checked_mul(token_count)
                     .unwrap_or_panic(),
             )
-            .unwrap_or_panic()
+            .unwrap_or_panic();
+
+        min_gas.map_or(default_gas, |g| g.max(default_gas))
     }
 }

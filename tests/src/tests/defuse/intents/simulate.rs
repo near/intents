@@ -60,7 +60,7 @@ async fn simulate_transfer_intent() {
             std::iter::once((TokenId::from(Nep141TokenId::new(ft1.clone())), 1000)).collect(),
         ),
         memo: None,
-        msg: None,
+        notification: None,
     };
 
     let transfer_intent_payload = user1

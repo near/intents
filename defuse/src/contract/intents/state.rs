@@ -1,11 +1,14 @@
 use defuse_core::{
     DefuseError, Nonce, NoncePrefix, Result, Salt,
+    amounts::Amounts,
     crypto::PublicKey,
     engine::{State, StateView},
     fees::Pips,
     intents::{
         auth::AuthCall,
-        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
+        tokens::{
+            FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, NotifyOnTransfer, StorageDeposit,
+        },
     },
     token_id::{TokenId, nep141::Nep141TokenId},
 };
@@ -242,19 +245,25 @@ impl State for Contract {
     }
 
     #[inline]
-    fn notify_on_transfer(&mut self, sender_id: &AccountIdRef, msg: String, transfer: Transfer) {
-        let (token_ids, amounts) = transfer
-            .tokens
+    fn notify_on_transfer(
+        &self,
+        sender_id: AccountId,
+        receiver_id: AccountId,
+        tokens: Amounts,
+        notification: NotifyOnTransfer,
+    ) {
+        let (token_ids, amounts) = tokens
             .iter()
             .map(|(token_id, amount)| (token_id.to_string(), U128(*amount)))
             .unzip();
 
         Self::call_receiver_mt_on_transfer(
-            sender_id.into(),
-            transfer.receiver_id,
+            sender_id,
+            receiver_id,
             token_ids,
             amounts,
-            msg,
+            notification.msg,
+            notification.min_gas,
         );
     }
 

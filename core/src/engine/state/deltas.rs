@@ -5,7 +5,9 @@ use crate::{
     intents::{
         auth::AuthCall,
         token_diff::TokenDeltas,
-        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
+        tokens::{
+            FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, NotifyOnTransfer, StorageDeposit,
+        },
     },
     token_id::TokenId,
 };
@@ -182,8 +184,15 @@ where
     }
 
     #[inline]
-    fn notify_on_transfer(&mut self, sender_id: &AccountIdRef, msg: String, transfer: Transfer) {
-        self.state.notify_on_transfer(sender_id, msg, transfer);
+    fn notify_on_transfer(
+        &self,
+        sender_id: AccountId,
+        receiver_id: AccountId,
+        tokens: Amounts,
+        notification: NotifyOnTransfer,
+    ) {
+        self.state
+            .notify_on_transfer(sender_id, receiver_id, tokens, notification);
     }
 
     #[inline]

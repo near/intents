@@ -24,6 +24,23 @@ use super::{ExecutableIntent, IntentEvent};
 )]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
+pub struct NotifyOnTransfer {
+    pub msg: String,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_gas: Option<Gas>,
+}
+
+#[cfg_attr(
+    all(feature = "abi", not(target_arch = "wasm32")),
+    serde_as(schemars = true)
+)]
+#[cfg_attr(
+    not(all(feature = "abi", not(target_arch = "wasm32"))),
+    serde_as(schemars = false)
+)]
+#[near(serializers = [borsh, json])]
+#[derive(Debug, Clone)]
 /// Transfer a set of tokens from the signer to a specified account id, within the intents contract.
 pub struct Transfer {
     pub receiver_id: AccountId,
@@ -35,7 +52,7 @@ pub struct Transfer {
     pub memo: Option<String>,
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub msg: Option<String>,
+    pub notification: Option<NotifyOnTransfer>,
 }
 
 impl ExecutableIntent for Transfer {
@@ -77,10 +94,13 @@ impl ExecutableIntent for Transfer {
             .state
             .internal_add_balance(self.receiver_id.clone(), self.tokens.clone())?;
 
-        if let Some(msg) = &self.msg {
-            engine
-                .state
-                .notify_on_transfer(sender_id, msg.clone(), self);
+        if let Some(notification) = self.notification {
+            engine.state.notify_on_transfer(
+                sender_id.into(),
+                self.receiver_id,
+                self.tokens,
+                notification,
+            );
         }
 
         Ok(())

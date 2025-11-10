@@ -4,7 +4,7 @@ use crate::{
     tests::defuse::env::{Env, TransferCallExpectation},
     utils::{ft::FtExt, mt::MtExt},
 };
-use defuse::core::intents::tokens::Transfer;
+use defuse::core::intents::tokens::{NotifyOnTransfer, Transfer};
 use defuse::core::token_id::nep245::Nep245TokenId;
 use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
 use defuse::{
@@ -12,7 +12,7 @@ use defuse::{
     core::fees::{FeesConfig, Pips},
 };
 use multi_token_receiver_stub::MTReceiverMode;
-use near_sdk::AccountId;
+use near_sdk::{AccountId, Gas};
 use rstest::rstest;
 
 use defuse::core::amounts::Amounts;
@@ -43,7 +43,7 @@ async fn transfer_intent() {
             std::iter::once((TokenId::from(Nep141TokenId::new(ft.clone())), 1000)).collect(),
         ),
         memo: None,
-        msg: None,
+        notification: None,
     };
 
     let initial_transfer_payload = user
@@ -105,67 +105,98 @@ async fn transfer_intent_to_defuse() {
 
     let ft1 = TokenId::from(Nep141TokenId::new(ft.clone()));
 
-    let transfer_intent = Transfer {
-        receiver_id: defuse2.id().clone(),
-        tokens: Amounts::new(
-            std::iter::once((TokenId::from(Nep141TokenId::new(ft.clone())), 1000)).collect(),
-        ),
-        memo: None,
-        msg: Some(other_user_id.to_string()),
-    };
+    // large gas limit
+    {
+        let transfer_intent = Transfer {
+            receiver_id: defuse2.id().clone(),
+            tokens: Amounts::new(
+                std::iter::once((TokenId::from(Nep141TokenId::new(ft.clone())), 1000)).collect(),
+            ),
+            memo: None,
+            notification: Some(NotifyOnTransfer {
+                msg: other_user_id.to_string(),
+                min_gas: Some(Gas::from_tgas(500)),
+            }),
+        };
 
-    let transfer_payload = user
-        .sign_defuse_payload_default(env.defuse.id(), [transfer_intent])
-        .await
-        .unwrap();
-
-    assert!(user.mt_tokens(defuse2.id(), ..).await.unwrap().is_empty());
-
-    env.defuse
-        .execute_intents(env.defuse.id(), [transfer_payload])
-        .await
-        .unwrap();
-
-    assert_eq!(
-        env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft1.to_string())
+        let transfer_payload = user
+            .sign_defuse_payload_default(env.defuse.id(), [transfer_intent])
             .await
-            .unwrap(),
-        0
-    );
+            .unwrap();
 
-    assert_eq!(
-        env.mt_contract_balance_of(env.defuse.id(), defuse2.id(), &ft1.to_string())
+        env.defuse
+            .execute_intents(env.defuse.id(), [transfer_payload])
             .await
-            .unwrap(),
-        1000
-    );
+            .expect_err("Exceeded the prepaid gas");
+    }
 
-    assert_eq!(user.mt_tokens(defuse2.id(), ..).await.unwrap().len(), 1);
-    assert_eq!(
-        user.mt_tokens_for_owner(defuse2.id(), &other_user_id, ..)
+    // Should pass default gas limit in case of low gas
+    {
+        let transfer_intent = Transfer {
+            receiver_id: defuse2.id().clone(),
+            tokens: Amounts::new(
+                std::iter::once((TokenId::from(Nep141TokenId::new(ft.clone())), 1000)).collect(),
+            ),
+            memo: None,
+            notification: Some(NotifyOnTransfer {
+                msg: other_user_id.to_string(),
+                min_gas: Some(Gas::from_tgas(1)),
+            }),
+        };
+
+        let transfer_payload = user
+            .sign_defuse_payload_default(env.defuse.id(), [transfer_intent])
             .await
-            .unwrap()
-            .len(),
-        1
-    );
-    assert_eq!(env.ft_token_balance_of(&ft, defuse2.id()).await.unwrap(), 0);
+            .unwrap();
 
-    let defuse_ft1 =
-        TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), ft1.to_string()).unwrap());
+        assert!(user.mt_tokens(defuse2.id(), ..).await.unwrap().is_empty());
 
-    assert_eq!(
-        env.mt_contract_balance_of(defuse2.id(), &other_user_id, &defuse_ft1.to_string())
+        env.defuse
+            .execute_intents(env.defuse.id(), [transfer_payload])
             .await
-            .unwrap(),
-        1000
-    );
+            .unwrap();
 
-    assert_eq!(
-        env.ft_token_balance_of(&ft, env.defuse.id()).await.unwrap(),
-        1000
-    );
+        assert_eq!(
+            env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft1.to_string())
+                .await
+                .unwrap(),
+            0
+        );
 
-    assert_eq!(env.ft_token_balance_of(&ft, defuse2.id()).await.unwrap(), 0);
+        assert_eq!(
+            env.mt_contract_balance_of(env.defuse.id(), defuse2.id(), &ft1.to_string())
+                .await
+                .unwrap(),
+            1000
+        );
+
+        assert_eq!(user.mt_tokens(defuse2.id(), ..).await.unwrap().len(), 1);
+        assert_eq!(
+            user.mt_tokens_for_owner(defuse2.id(), &other_user_id, ..)
+                .await
+                .unwrap()
+                .len(),
+            1
+        );
+        assert_eq!(env.ft_token_balance_of(&ft, defuse2.id()).await.unwrap(), 0);
+
+        let defuse_ft1 =
+            TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), ft1.to_string()).unwrap());
+
+        assert_eq!(
+            env.mt_contract_balance_of(defuse2.id(), &other_user_id, &defuse_ft1.to_string())
+                .await
+                .unwrap(),
+            1000
+        );
+
+        assert_eq!(
+            env.ft_token_balance_of(&ft, env.defuse.id()).await.unwrap(),
+            1000
+        );
+
+        assert_eq!(env.ft_token_balance_of(&ft, defuse2.id()).await.unwrap(), 0);
+    }
 }
 
 #[tokio::test]
@@ -235,7 +266,7 @@ async fn transfer_intent_with_msg_to_receiver_smc(#[case] expectation: TransferC
             .collect(),
         ),
         memo: None,
-        msg: Some(msg),
+        notification: Some(NotifyOnTransfer { msg, min_gas: None }),
     };
 
     let transfer_payload = user

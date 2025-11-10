@@ -132,7 +132,7 @@ async fn test_upgrade_with_persistence() {
                                 [(TokenId::Nep141(Nep141TokenId::new(ft1.clone())), 1000)].into(),
                             ),
                             memo: None,
-                            msg: None,
+                            notification: None,
                         }],
                     )
                 }))
