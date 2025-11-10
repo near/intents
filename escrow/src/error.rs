@@ -9,6 +9,10 @@ pub enum Error {
     Closed,
     #[error("cleanup in progress")]
     CleanupInProgress,
+    #[error("deadline has expired")]
+    DeadlineExpired,
+    #[error("deadline has not expired yet")]
+    DeadlineNotExpired,
     #[error("excessive fees")]
     ExcessiveFees,
     #[error("integer overflow")]

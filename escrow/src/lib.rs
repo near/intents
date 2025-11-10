@@ -13,13 +13,34 @@ pub use defuse_near_utils::time::Deadline;
 
 // TODO: more pub re-exports
 
-use near_sdk::{AccountId, Gas, PromiseOrValue, ext_contract, json_types::U128, near};
+use near_sdk::{AccountId, Gas, PromiseOrValue, ext_contract, near};
+
+// TODO: create sub_escrow for a single solver and lock NEAR
 
 #[ext_contract(ext_escrow)]
 pub trait Escrow {
-    fn view(&self) -> &ContractState;
-    fn close(&mut self, fixed_params: FixedParams) -> PromiseOrValue<U128>;
+    fn view(&self) -> &Storage;
 
+    /// Closes the escrow + performs lost_found().
+    ///
+    /// It's allowed to close when:
+    /// * Deadline has expired (permissionless)
+    /// * maker_src_remaining == 0 && predecessor == maker
+    /// * taker_whitelist == [predecessor]
+    ///
+    /// If deadline has not exceeded yet, then fails.
+    /// Returns whether was closed just now, or false if was already closed.
+    fn close(&mut self, fixed_params: FixedParams) -> PromiseOrValue<bool>;
+
+    /// Retries sending:
+    /// * `maker_src_remaining` if the escrow was closed
+    /// * `maker_dst_lost` if any
+    ///
+    /// Returns whether contract was fully cleaned up, so you can
+    /// stop indexing it.
+    /// Otherwise, there MIGHT be lost assets there
+    /// or they might come in the future.
+    fn lost_found(&mut self, fixed_params: FixedParams) -> PromiseOrValue<bool>;
     // TODO: total_fee()
     // TODO: effective_price()
 }
@@ -41,4 +62,15 @@ pub struct SendParams {
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub min_gas: Option<Gas>,
+}
+
+impl SendParams {
+    pub fn verify(&self) -> Result<()> {
+        // TODO: verify min_gas < MAX_GAS
+        Ok(())
+    }
+
+    pub const fn is_call(&self) -> bool {
+        self.msg.is_some()
+    }
 }

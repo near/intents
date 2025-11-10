@@ -12,14 +12,6 @@ use defuse_token_id::TokenId;
 use near_sdk::{AccountId, AccountIdRef, CryptoHash, borsh, env, near};
 use serde_with::{DisplayFromStr, hex::Hex, serde_as};
 
-#[near(serializers = [borsh, json])]
-#[serde(tag = "state", content = "data", rename_all = "snake_case")]
-#[derive(Debug)]
-pub enum ContractState {
-    Alive(Storage),
-    Cleanup,
-}
-
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
     serde_as(schemars = true)
@@ -120,6 +112,7 @@ pub struct FixedParams {
     // TODO: whitelist: Option<signer_id>
 
     // TODO: authority
+    // TODO: close authority: intents adapter for on_auth
 
     // allows:
     //   * price update (solver message: min_price)
@@ -189,10 +182,16 @@ pub struct State {
     #[serde_as(as = "DisplayFromStr")]
     pub maker_src_remaining: u128,
 
+    #[serde_as(as = "DisplayFromStr")]
+    pub maker_dst_lost: u128,
+
     #[serde(default, skip_serializing_if = "::core::ops::Not::not")]
     pub closed: bool,
 
     pub callbacks_in_flight: u32,
     // TODO: lost_found: store zero for beging transfer, otherwise - fail
     // pub cleanup_in_progress: bool,
+    // #[serde_as(as = "Option<Hex>")]
+    // #[serde(default, skip_serializing_if = "Option::is_none")]
+    // pub yield_id: Option<CryptoHash>,
 }

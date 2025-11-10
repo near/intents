@@ -4,19 +4,23 @@ mod utils;
 
 use std::{borrow::Cow, mem};
 
-use defuse_near_utils::{UnwrapOrPanic, UnwrapOrPanicError, time::now};
-use defuse_token_id::TokenId;
-use impl_tools::autoimpl;
+use defuse_near_utils::{UnwrapOrPanic, UnwrapOrPanicError};
+use defuse_token_id::{TokenId, TokenIdType};
 use near_sdk::{
-    AccountId, Gas, PanicOnDefault, Promise, PromiseOrValue, env, json_types::U128, near, require,
-    serde_json,
+    AccountId, Gas, Promise, PromiseOrValue, env,
+    json_types::U128,
+    near, require,
+    serde_json::{self},
 };
+use serde_with::{DisplayFromStr, serde_as};
+use strum::IntoDiscriminant;
 
 #[cfg(feature = "nep141")]
 use crate::contract::tokens::Token;
 use crate::{
-    Action, AddSrcEvent, ContractState, CreateEvent, Error, Escrow, EscrowEvent, EscrowIntentEmit,
-    FillAction, FillEvent, FixedParams, OpenAction, Params, Result, Storage, TransferMessage,
+    Action, AddSrcEvent, CreateEvent, Error, Escrow, EscrowEvent, EscrowIntentEmit, FillAction,
+    FillEvent, FixedParams, OpenAction, Params, Result, Storage, TransferMessage,
+    contract::tokens::resolve_transfer,
 };
 
 use self::utils::{MaybePromise, PromiseExt};
@@ -38,14 +42,42 @@ use self::utils::{MaybePromise, PromiseExt};
 // pub taker_amount: u128,
 
 // TODO: versioned account state?
-// TODO: recovery() method with 0 src_remaining
+// TODO: recovery() method with 0 src_remaining or without msg
 
 // TODO: keep number of pending promises
 #[near(contract_state)] // TODO: (key = "")
-#[autoimpl(Deref using self.0)]
-#[autoimpl(DerefMut using self.0)]
-#[derive(Debug, PanicOnDefault)]
-pub struct Contract(ContractState);
+#[derive(Debug)]
+pub enum Contract {
+    Alive(Storage),
+    Cleanup,
+}
+
+// TODO: #[derive(PanicOnDefault)]
+impl Default for Contract {
+    fn default() -> Self {
+        env::panic_str("Contract was not initialized")
+    }
+}
+
+#[near]
+impl Escrow for Contract {
+    fn view(&self) -> &Storage {
+        self.try_as_alive().unwrap_or_panic()
+    }
+
+    // TODO: cancel_by_resolver?
+    #[payable]
+    fn close(&mut self, fixed_params: FixedParams) -> PromiseOrValue<bool> {
+        self.internal_close(fixed_params).unwrap_or_panic()
+    }
+
+    fn lost_found(&mut self, fixed_params: FixedParams) -> PromiseOrValue<bool> {
+        self.internal_lost_found(fixed_params).unwrap_or_panic()
+    }
+
+    // TODO: separate lost_found method to be able to claim before deadline
+    // expired
+}
 
 #[near]
 impl Contract {
@@ -65,48 +97,76 @@ impl Contract {
             "wrong params or factory"
         );
 
-        Self(ContractState::Alive(s))
+        Self::Alive(s)
     }
-}
-
-#[near]
-impl Escrow for Contract {
-    fn view(&self) -> &ContractState {
-        &self.0
-    }
-
-    // TODO: cancel_by_resolver?
-    #[payable]
-    fn close(&mut self, fixed_params: FixedParams) -> PromiseOrValue<U128> {
-        self.close(fixed_params).unwrap_or_panic()
-    }
-}
-
-#[near]
-impl Contract {
-    const RESOLVE_TRANSFERS_GAS: Gas = Gas::from_tgas(10);
-
-    const RESOLVE_MAKER_GAS: Gas = Gas::from_tgas(10);
 
     #[private]
-    pub fn resolve_transfers(
+    pub fn resolve_maker_dst(
         &mut self,
+        maker_dst: SentAsset,
+        taker_refund: U128,
         beneficiary_id: AccountId,
-        return_value: serde_json::Value,
     ) -> serde_json::Value {
-        let (result, cleanup) = self
-            .try_as_alive()
+        self.internal_resolve_maker_dst(maker_dst, taker_refund, beneficiary_id)
             .unwrap_or_panic()
-            .resolve_transfers(return_value)
-            .into_inner();
-
-        if cleanup {
-            // detached
-            let _ = self.do_cleanup(beneficiary_id);
-        }
-
-        result
     }
+
+    #[private]
+    pub fn resolve_lost_found(
+        &mut self,
+        maker_src: Option<SentAsset>,
+        maker_dst: Option<SentAsset>,
+        beneficiary_id: AccountId,
+    ) -> bool {
+        self.internal_resolve_lost_found(maker_src, maker_dst, beneficiary_id)
+            .unwrap_or_panic()
+    }
+
+    const CLOSE_GAS: Gas = Gas::from_tgas(10);
+    const RESOLVE_LOST_FOUND_GAS: Gas = Gas::from_tgas(10);
+
+    const RESOLVE_TRANSFERS_GAS: Gas = Gas::from_tgas(10);
+    const RESOLVE_MAKER_GAS: Gas = Gas::from_tgas(10);
+
+    // #[private]
+    // pub fn resolve_transfers(
+    //     &mut self,
+    //     maker_src: Option<RefundParams>,
+    //     maker_dst: Option<RefundParams>,
+    //     beneficiary_id: AccountId,
+    //     return_value: serde_json::Value,
+    // ) -> serde_json::Value {
+    //     let storage = self.try_as_alive_mut().unwrap_or_panic();
+    //     storage.on_callback();
+
+    //     // let mut promise_results = PromiseResults::new();
+
+    //     if let Some(RefundParams {
+    //         asset_type,
+    //         amount,
+    //         is_call,
+    //     }) = maker_src
+    //     {
+    //         // TODO
+    //         // promise_results
+    //         //     .next()
+    //         //     .ok_or("no PromiseResult")
+    //         //     .unwrap_or_panic_static_str();
+    //     }
+
+    //     // TODO
+
+    //     if storage.should_cleanup() {
+    //         // detached
+    //         let _ = self.do_cleanup(beneficiary_id);
+    //     }
+
+    //     // TODO: sometimes we need to adjust return value
+    //     return_value
+    // }
+
+    // TODO
+    // fn lost_found(lost_found: &mut u128, params: RefundParams) ->
 
     // #[private]
     // // TODO: was it dst or src (i.e. close)?
@@ -145,13 +205,13 @@ impl Contract {
         amount: u128,
         msg: &str,
     ) -> Result<PromiseOrValue<u128>> {
-        self.try_as_alive()?
+        self.try_as_alive_mut()?
             .on_receive(sender_id, token_id, amount, msg)
     }
 
     #[must_use]
     fn do_cleanup(&mut self, beneficiary_id: AccountId) -> Promise {
-        self.0 = ContractState::Cleanup;
+        *self = Self::Cleanup;
         // NOTE: Unfortunately, we can't refund `storage_deposit`s on src and dst
         // tokens back to maker or any other beneficiary, since
         // `storage_unregister()` internally detaches transfer Promise, so we
@@ -159,96 +219,308 @@ impl Contract {
         Promise::new(env::current_account_id()).delete_account(beneficiary_id)
     }
 
-    fn close(&mut self, fixed_params: FixedParams) -> Result<PromiseOrValue<U128>> {
-        let (result, cleanup) = self.try_as_alive()?.close(fixed_params)?.into_inner();
-        if cleanup {
+    fn internal_close(&mut self, fixed: FixedParams) -> Result<PromiseOrValue<bool>> {
+        let this = self.try_as_alive_mut()?;
+        this.verify(&fixed)?;
+
+        if !(this.params.deadline.has_expired()
+            || this.state.maker_src_remaining == 0 && env::predecessor_account_id() == fixed.maker
+            || fixed.taker_whitelist == [env::predecessor_account_id()].into())
+        {
+            // TODO: allow to close permissionlessly if src_remaining == 0
+            // TODO: what if more assets are about to arrive? allow only for maker
+            // TODO: allow force close by authority (`force: bool` param?)
+            // TODO: different error
+            return Err(Error::DeadlineNotExpired);
+        }
+
+        let just_closed = !mem::replace(&mut this.state.closed, true);
+
+        // TODO: what if already closed? maybe not allow closing twice?
+        if just_closed {
+            // TODO: allow retries
+            // TODO: enrich event
+            // TODO: do not emit event twice
+            EscrowEvent::Close.emit();
+        }
+
+        // TODO: this will call try_as_alive_mut() and verify(fixed) twice
+        self.internal_lost_found(fixed)
+    }
+
+    fn internal_lost_found(&mut self, fixed: FixedParams) -> Result<PromiseOrValue<bool>> {
+        let this = self.try_as_alive_mut()?;
+        this.verify(&fixed)?;
+
+        // if this.state.callbacks_in_flight > 0 {
+        //     let (promise_idx, yield_id) = promise_yield_create(
+        //         // TODO: retry or lost_found()?
+        //         // TODO: beneficiary predecessor_id
+        //         "close",
+        //         &serde_json::to_vec(&json!({
+        //             "fixed_params": fixed,
+        //         }))
+        //         .unwrap_or_else(|_| unreachable!()),
+        //         Self::CLOSE_GAS,
+        //         GasWeight(1),
+        //     );
+
+        //     // TODO: what if replaces the old one?
+        //     // TODO: maybe not store at all? it will be resumed afterwards
+        //     debug_assert_eq!(this.state.yield_id.replace(yield_id), None);
+        //     // TODO: return
+        //     return todo!();
+        // }
+
+        let (sent_src, send_src_p) = this
+            .state
+            .closed
+            .then(|| mem::take(&mut this.state.maker_src_remaining))
+            .filter(|a| *a > 0)
+            .map(|amount| {
+                Self::send_with_sent(
+                    fixed.src_asset,
+                    fixed
+                        .refund_src_to
+                        .receiver_id
+                        .unwrap_or_else(|| fixed.maker.clone()),
+                    amount,
+                    fixed.refund_src_to.memo,
+                    fixed.refund_src_to.msg,
+                    fixed.refund_src_to.min_gas,
+                    true, // unused gas
+                )
+            })
+            .unzip();
+
+        // TODO: maybe don't retry dst_lost here?
+        let (sent_dst, send_dst_p) = Some(mem::take(&mut this.state.maker_dst_lost))
+            .filter(|a| *a > 0)
+            .map(|amount| {
+                Self::send_with_sent(
+                    fixed.dst_asset,
+                    fixed.receive_dst_to.receiver_id.unwrap_or(fixed.maker),
+                    amount,
+                    fixed.receive_dst_to.memo,
+                    fixed.receive_dst_to.msg,
+                    fixed.receive_dst_to.min_gas,
+                    true, // unused gas
+                )
+            })
+            .unzip();
+
+        let Some(send) = send_src_p
+            .into_iter()
+            .chain(send_dst_p)
+            .reduce(Promise::and)
+        else {
+            let cleanup = this.state.should_cleanup();
+            if cleanup {
+                // detached
+                let _ = self.do_cleanup(env::predecessor_account_id());
+            }
+            return Ok(PromiseOrValue::Value(cleanup));
+        };
+
+        Ok(send
+            .then(
+                this.callback()
+                    .with_static_gas(Self::RESOLVE_LOST_FOUND_GAS)
+                    .with_unused_gas_weight(0)
+                    .resolve_lost_found(sent_src, sent_dst, env::predecessor_account_id()),
+            )
+            .into())
+
+        // let refund_src = Some(mem::take(&mut storage.state.maker_src_remaining)).filter(|a| a > 0)
+
+        // let [refund_src_amount, refund_dst_amount] = [
+        //     &mut storage.state.maker_src_remaining,
+        //     &mut storage.state.maker_dst_lost,
+        // ]
+        // .map(mem::take)
+        // .map(Some);
+
+        // let refund_src = RefundParams {
+        //     asset_type: fixed_params.src_asset.discriminant(),
+        //     amount: refund_src_amount,
+        //     is_call: fixed_params.refund_src_to.msg.is_some(),
+        // };
+
+        // let refund_dst = RefundParams {
+        //     asset_type: fixed_params.dst_asset.discriminant(),
+        //     amount: mem::take(&mut storage.state.maker_dst_lost),
+        //     is_call: fixed_params.receive_dst_to.msg.is_some(),
+        // };
+
+        // Ok(Self::send(
+        //     fixed.src_asset,
+        //     refund_to.clone(),
+        //     sent_src.amount,
+        //     fixed.refund_src_to.memo,
+        //     fixed.refund_src_to.msg,
+        //     fixed.refund_src_to.min_gas,
+        //     true,
+        // ) // TODO: .and() refund dst_lost
+        // .then(
+        //     this.callback()
+        //         .with_static_gas(Contract::RESOLVE_TRANSFERS_GAS)
+        //         .with_unused_gas_weight(0)
+        //         .resolve_lost_found(maker_src, maker_dst, refund_to),
+        //     // // TODO
+        //     // .resolve_transfers(
+        //     //     Some(refund_src),
+        //     //     None,
+        //     //     refund_to,
+        //     //     serde_json::to_value(&U128(refund_src)).unwrap_or_else(|_| unreachable!()),
+        //     // ),
+        // )
+        // // .then(
+        // //     Self::ext(env::current_account_id())
+        // //         .with_static_gas(Self::RESOLVE_MAKER_GAS)
+        // //         .with_unused_gas_weight(0)
+        // //         .resolve_maker(U128(refund), is_call, refund_to),
+        // // )
+        // .into())
+
+        // let (result, cleanup_to) = self.try_as_alive_mut()?.close(fixed_params)?.into_inner();
+        // if let Some(beneficiary_id) = cleanup_to {
+        //     // detached
+        //     let _ = self.do_cleanup(beneficiary_id);
+        // }
+
+        // Ok(result)
+    }
+
+    fn send(
+        token: TokenId,
+        receiver_id: AccountId,
+        amount: u128,
+        memo: Option<String>,
+        msg: Option<String>,
+        min_gas: Option<Gas>,
+        unused_gas: bool,
+    ) -> Promise {
+        match token {
+            #[cfg(feature = "nep141")]
+            TokenId::Nep141(token) => {
+                token.send(receiver_id, amount, memo, msg, min_gas, unused_gas)
+            }
+            #[cfg(feature = "nep245")]
+            TokenId::Nep245(token) => {
+                token.send(receiver_id, amount, memo, msg, min_gas, unused_gas)
+            }
+        }
+    }
+
+    fn send_with_sent(
+        token: TokenId,
+        receiver_id: AccountId,
+        amount: u128,
+        memo: Option<String>,
+        msg: Option<String>,
+        min_gas: Option<Gas>,
+        unused_gas: bool,
+    ) -> (SentAsset, Promise) {
+        (
+            SentAsset {
+                asset_type: token.discriminant(),
+                amount,
+                is_call: msg.is_some(),
+            },
+            Self::send(token, receiver_id, amount, memo, msg, min_gas, unused_gas),
+        )
+    }
+
+    fn internal_resolve_maker_dst(
+        &mut self,
+        maker_dst_sent: SentAsset,
+        taker_dst_refund: U128,
+        beneficiary_id: AccountId,
+    ) -> Result<serde_json::Value> {
+        let maker_dst_lost = maker_dst_sent
+            .amount
+            .saturating_sub(resolve_transfer(0, maker_dst_sent));
+
+        let this = self.try_as_alive_mut()?;
+        this.on_callback();
+
+        this.state.maker_dst_lost = this
+            .state
+            .maker_dst_lost
+            .checked_add(maker_dst_lost)
+            .ok_or(Error::IntegerOverflow)?;
+
+        if this.should_cleanup() {
+            // TODO: should we refund src_remaining here if deadline exceeded?
+
             // detached
-            let _ = self.do_cleanup(todo!());
+            let _ = self.do_cleanup(beneficiary_id);
         }
 
-        Ok(result)
-    }
-
-    const fn as_alive(&mut self) -> Option<&mut Storage> {
-        match &mut self.0 {
-            ContractState::Alive(storage) => Some(storage),
-            ContractState::Cleanup => None,
+        match maker_dst_sent.asset_type {
+            #[cfg(feature = "nep141")]
+            TokenIdType::Nep141 => serde_json::to_value(&taker_dst_refund),
+            #[cfg(feature = "nep245")]
+            TokenIdType::Nep245 => serde_json::to_value(&[taker_dst_refund]),
         }
+        .map_err(Into::into)
     }
 
-    fn try_as_alive(&mut self) -> Result<&mut Storage> {
+    fn internal_resolve_lost_found(
+        &mut self,
+        maker_src: Option<SentAsset>,
+        maker_dst: Option<SentAsset>,
+        beneficiary_id: AccountId,
+    ) -> Result<bool> {
+        let this = self.try_as_alive_mut()?;
+        this.on_callback();
+
+        for (result_idx, (sent, lost)) in maker_src
+            .map(|s| (s, &mut this.state.maker_src_remaining))
+            .into_iter()
+            .chain(maker_dst.map(|s| (s, &mut this.state.maker_dst_lost)))
+            .enumerate()
+        {
+            let refund = resolve_transfer(
+                result_idx.try_into().unwrap_or_else(|_| unreachable!()),
+                sent,
+            );
+
+            *lost = lost.checked_add(refund).ok_or(Error::IntegerOverflow)?;
+        }
+
+        let cleanup = this.state.should_cleanup();
+        if cleanup {
+            // detach
+            let _ = self.do_cleanup(beneficiary_id);
+        }
+        Ok(cleanup)
+    }
+
+    fn try_as_alive(&self) -> Result<&Storage> {
         self.as_alive().ok_or(Error::CleanupInProgress)
+    }
+
+    fn try_as_alive_mut(&mut self) -> Result<&mut Storage> {
+        self.as_alive_mut().ok_or(Error::CleanupInProgress)
+    }
+
+    const fn as_alive(&self) -> Option<&Storage> {
+        match self {
+            Self::Alive(storage) => Some(storage),
+            Self::Cleanup => None,
+        }
+    }
+
+    const fn as_alive_mut(&mut self) -> Option<&mut Storage> {
+        match self {
+            Self::Alive(storage) => Some(storage),
+            Self::Cleanup => None,
+        }
     }
 }
 
 impl Storage {
-    fn close(&mut self, fixed_params: FixedParams) -> Result<WithCleanup<PromiseOrValue<U128>>> {
-        // TODO: verify fixed params
-        // TODO
-        if !self.params.deadline.has_expired() {
-            // TODO: allow to close permissionlessly if src_remaining == 0
-
-            // TODO: what if swapped everything already?
-            // what if more assets are about to arrive?
-            // require!(
-            //     self.cancel_authority == Some(env::predecessor_account_id()),
-            //     "unauthorized"
-            // );
-            // assert_one_yocto();
-        }
-
-        // TODO: allow retries
-        require!(
-            !self.state.closed || self.state.maker_src_remaining > 0,
-            "already closed or closing"
-        );
-        self.state.closed = true;
-        // TODO: enrich event
-        // TODO: do not emit event twice
-        EscrowEvent::Close.emit();
-
-        if self.should_cleanup() {
-            return Ok(WithCleanup::new(PromiseOrValue::Value(U128(0)), true));
-        }
-
-        let refund_to = fixed_params
-            .refund_src_to
-            .receiver_id
-            .unwrap_or(fixed_params.maker);
-
-        let refund = mem::take(&mut self.state.maker_src_remaining);
-
-        let is_call = fixed_params.refund_src_to.msg.is_some();
-        Ok(WithCleanup::no_cleanup(
-            Self::send(
-                fixed_params.src_asset,
-                refund_to.clone(),
-                refund,
-                fixed_params.refund_src_to.memo,
-                fixed_params.refund_src_to.msg,
-                fixed_params.refund_src_to.min_gas,
-                true,
-            )
-            .then(
-                self.callback()
-                    .with_static_gas(Contract::RESOLVE_TRANSFERS_GAS)
-                    .with_unused_gas_weight(0)
-                    // TODO
-                    .resolve_transfers(
-                        refund_to,
-                        serde_json::to_value(&U128(refund)).unwrap_or_else(|_| unreachable!()),
-                    ),
-            )
-            // .then(
-            //     Self::ext(env::current_account_id())
-            //         .with_static_gas(Self::RESOLVE_MAKER_GAS)
-            //         .with_unused_gas_weight(0)
-            //         .resolve_maker(U128(refund), is_call, refund_to),
-            // )
-            .into(),
-        ))
-    }
-
     /// Returns refund amount
     fn on_receive(
         &mut self,
@@ -369,7 +641,7 @@ impl Storage {
                             .checked_sub(fee_amount)
                             .ok_or(Error::ExcessiveFees)?;
 
-                        sends = Some(sends.take().and_or(Self::send(
+                        sends = Some(sends.take().and_or(Contract::send(
                             fixed.dst_asset.clone(),
                             fee_collector.clone(),
                             fee_amount,
@@ -401,6 +673,8 @@ impl Storage {
             return Err(Error::InsufficientAmount);
         }
 
+        // let refund_to =
+
         let resolve = self
             .callback()
             .with_static_gas(Contract::RESOLVE_TRANSFERS_GAS)
@@ -418,7 +692,7 @@ impl Storage {
 
         // TODO: lost&found?
         // send to maker
-        Ok(Self::send(
+        Ok(Contract::send(
             fixed.dst_asset,
             fixed.receive_dst_to.receiver_id.unwrap_or(fixed.maker),
             maker_dst_amount, // TODO: check non-zero
@@ -428,7 +702,7 @@ impl Storage {
             true, // unused gas
         )
         // send to taker
-        .and(Self::send(
+        .and(Contract::send(
             fixed.src_asset,
             msg.receive_src_to.receiver_id.unwrap_or(sender_id),
             taker_src_amount,
@@ -440,38 +714,6 @@ impl Storage {
         .maybe_and(send_fees)
         .then(resolve)
         .into())
-    }
-
-    fn send(
-        token: TokenId,
-        receiver_id: AccountId,
-        amount: u128,
-        memo: Option<String>,
-        msg: Option<String>,
-        min_gas: Option<Gas>,
-        unused_gas: bool,
-    ) -> Promise {
-        match token {
-            #[cfg(feature = "nep141")]
-            TokenId::Nep141(token) => {
-                token.send(receiver_id, amount, memo, msg, min_gas, unused_gas)
-            }
-            #[cfg(feature = "nep245")]
-            TokenId::Nep245(token) => {
-                token.send(receiver_id, amount, memo, msg, min_gas, unused_gas)
-            }
-        }
-    }
-
-    fn resolve_transfers(
-        &mut self,
-        return_value: serde_json::Value,
-    ) -> WithCleanup<serde_json::Value> {
-        self.on_callback();
-
-        // TODO
-
-        WithCleanup::new(return_value, self.should_cleanup())
     }
 
     fn callback(&mut self) -> ContractExt {
@@ -491,6 +733,8 @@ impl Storage {
             .checked_sub(1)
             .ok_or("unregistered callback")
             .unwrap_or_panic_static_str();
+
+        // TODO: resume lost_found?
     }
 
     fn check_deadline_expired(&mut self) -> bool {
@@ -512,26 +756,45 @@ impl Storage {
     }
 }
 
-#[derive(Debug)]
-pub struct WithCleanup<T> {
-    value: T,
-    cleanup: bool,
-}
+// #[must_use]
+// #[derive(Debug)]
+// struct WithCleanup<T> {
+//     value: T,
+//     cleanup_to: Option<AccountId>,
+// }
 
-impl<T> WithCleanup<T> {
-    pub const fn new(value: T, cleanup: bool) -> Self {
-        Self { value, cleanup }
-    }
+// impl<T> WithCleanup<T> {
+//     pub fn new(value: T, cleanup_to: impl Into<Option<AccountId>>) -> Self {
+//         Self {
+//             value,
+//             cleanup_to: cleanup_to.into(),
+//         }
+//     }
 
-    pub const fn with_cleanup(value: T) -> Self {
-        Self::new(value, true)
-    }
+//     pub fn no_cleanup(value: T) -> Self {
+//         Self::new(value, None)
+//     }
 
-    pub const fn no_cleanup(value: T) -> Self {
-        Self::new(value, false)
-    }
+//     pub fn into_inner(self) -> (T, Option<AccountId>) {
+//         (self.value, self.cleanup_to)
+//     }
+// }
 
-    pub fn into_inner(self) -> (T, bool) {
-        (self.value, self.cleanup)
-    }
+#[cfg_attr(
+    all(feature = "abi", not(target_arch = "wasm32")),
+    serde_as(schemars = true)
+)]
+#[cfg_attr(
+    not(all(feature = "abi", not(target_arch = "wasm32"))),
+    serde_as(schemars = false)
+)]
+#[near(serializers = [json])]
+struct SentAsset {
+    asset_type: TokenIdType,
+
+    #[serde_as(as = "DisplayFromStr")]
+    amount: u128,
+
+    #[serde(default, skip_serializing_if = "::core::ops::Not::not")]
+    is_call: bool,
 }

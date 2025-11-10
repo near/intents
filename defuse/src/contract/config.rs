@@ -10,6 +10,7 @@ use super::Role;
 pub struct DefuseConfig {
     pub wnear_id: AccountId,
     pub fees: FeesConfig,
+    #[serde(default)]
     pub roles: RolesConfig,
 }
 

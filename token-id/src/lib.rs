@@ -33,7 +33,13 @@ const MAX_ALLOWED_TOKEN_ID_LEN: usize = 127;
 )]
 #[strum_discriminants(
     name(TokenIdType),
-    derive(strum::Display, EnumString, EnumIter),
+    derive(
+        strum::Display,
+        EnumString,
+        EnumIter,
+        SerializeDisplay,
+        DeserializeFromStr,
+    ),
     strum(serialize_all = "snake_case"),
     vis(pub)
 )]

@@ -5,10 +5,6 @@ pub use self::escrow::*;
 
 use std::sync::LazyLock;
 
-use defuse::{
-    contract::config::{DefuseConfig, RolesConfig},
-    core::fees::FeesConfig,
-};
 use defuse_escrow::{FixedParams, Params};
 use defuse_fees::Pips;
 use defuse_sandbox::{
@@ -92,14 +88,13 @@ impl AccountExt for SigningAccount {
             .function_call_json::<()>(
                 "new",
                 json!({
-                    "config": DefuseConfig {
-                        wnear_id,
-                        fees: FeesConfig {
-                            fee: Pips::from_percent(1).unwrap(),
-                            fee_collector: self.id().clone()
+                    "config": json!({
+                        "wnear_id": wnear_id,
+                        "fees": {
+                            "fee": Pips::from_percent(1).unwrap(),
+                            "fee_collector": self.id().clone(),
                         },
-                        roles: RolesConfig::default()
-                    }
+                    }),
                 }),
                 Gas::from_tgas(50),
                 NearToken::from_yoctonear(0),
