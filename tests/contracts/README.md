@@ -1,7 +1,7 @@
 # Contracts
 This directory contains contracts which are used as helpers in tests
 
-## Multi token receiver stub
+## Multi-token receiver stub
 Helper contract for testing transfer callbacks
 
 ## Target

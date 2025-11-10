@@ -30,13 +30,13 @@ impl MultiTokenReceiver for Contract {
         let mode = serde_json::from_str(&msg).unwrap_or_default();
 
         match mode {
-            MTReceiverMode::ReturnValue(value) => PromiseOrValue::Value(vec![value]),
+            MTReceiverMode::ReturnValue(value) => PromiseOrValue::Value(vec![value; amounts.len()]),
             MTReceiverMode::AcceptAll => PromiseOrValue::Value(vec![U128(0); amounts.len()]),
             MTReceiverMode::Panic => {
                 panic!("MTReceiverMode::Panic triggered panic in mt_on_transfer");
             }
             // 16 * 250_000 = 4 MB, which is the limit for a contract return value
-            MTReceiverMode::LargeReturn => PromiseOrValue::Value(vec![U128(123); 250_000]),
+            MTReceiverMode::LargeReturn => PromiseOrValue::Value(vec![U128(u128::MAX); 250_000]),
         }
     }
 }
