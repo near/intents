@@ -170,6 +170,10 @@ where
     }
 
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
+        if self.view.is_nonce_used(&account_id, nonce) {
+            return Err(DefuseError::NonceUsed);
+        }
+
         self.accounts
             .get_or_create(account_id.clone(), |account_id| {
                 self.view.is_account_locked(account_id)

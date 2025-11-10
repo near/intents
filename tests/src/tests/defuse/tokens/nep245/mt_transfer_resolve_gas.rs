@@ -249,7 +249,6 @@ async fn run_resolve_gas_test(
 
     assert_eq!(
         longest_emited_log, expected_transfer_log,
-        "transfer log will does not match expected transfer log"
     );
 
     println!("{{{token_count}, {}}},", call_test_log.total_gas_burnt());
