@@ -41,8 +41,10 @@ pub trait Escrow {
     /// Otherwise, there MIGHT be lost assets there
     /// or they might come in the future.
     fn lost_found(&mut self, fixed_params: FixedParams) -> PromiseOrValue<bool>;
-    // TODO: total_fee()
-    // TODO: effective_price()
+    // TODO: decrease_price()
+    // TODO: prolongate_deadline()
+    // TODO: total_fee(&self)
+    // TODO: effective_price(&self)
 }
 
 // TODO: notify on_close()

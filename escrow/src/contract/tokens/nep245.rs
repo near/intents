@@ -10,7 +10,7 @@ use crate::{
     Error,
     contract::{
         Contract, ContractExt,
-        tokens::Token,
+        tokens::Sendable,
         utils::{ResultExt, single},
     },
 };
@@ -41,6 +41,7 @@ impl MultiTokenReceiver for Contract {
             ResultExt::into_ok(Nep245TokenId::new(env::predecessor_account_id(), token_id)).into();
 
         match self
+            .cleanup_guard()
             .on_receive(sender_id, token_id, amount.0, &msg)
             .unwrap_or_panic()
         {
@@ -56,7 +57,7 @@ const MT_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(15);
 const MT_TRANSFER_CALL_GAS_MIN: Gas = Gas::from_tgas(30);
 const MT_TRANSFER_CALL_GAS_DEFAULT: Gas = Gas::from_tgas(50);
 
-impl Token for Nep245TokenId {
+impl Sendable for Nep245TokenId {
     fn send(
         self,
         receiver_id: AccountId,

@@ -920,6 +920,7 @@ dependencies = [
  "itertools 0.14.0",
  "near-contract-standards",
  "near-sdk",
+ "rstest",
  "serde_with",
  "strum 0.27.1",
  "thiserror 2.0.12",

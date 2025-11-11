@@ -6,7 +6,7 @@ use near_sdk::{
     serde_json,
 };
 
-use crate::contract::{Contract, tokens::Token};
+use crate::contract::{Contract, tokens::Sendable};
 
 impl FungibleTokenReceiver for Contract {
     fn ft_on_transfer(
@@ -18,6 +18,7 @@ impl FungibleTokenReceiver for Contract {
         let token_id: TokenId = Nep141TokenId::new(env::predecessor_account_id()).into();
 
         match self
+            .cleanup_guard()
             .on_receive(sender_id, token_id, amount.0, &msg)
             .unwrap_or_panic()
         {
@@ -33,7 +34,7 @@ const FT_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(15);
 const FT_TRANSFER_CALL_GAS_MIN: Gas = Gas::from_tgas(30);
 const FT_TRANSFER_CALL_GAS_DEFAULT: Gas = Gas::from_tgas(50);
 
-impl Token for Nep141TokenId {
+impl Sendable for Nep141TokenId {
     fn send(
         self,
         receiver_id: AccountId,

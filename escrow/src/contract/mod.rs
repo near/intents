@@ -1,3 +1,4 @@
+mod cleanup;
 mod state;
 mod tokens;
 mod utils;
@@ -6,8 +7,10 @@ use std::{borrow::Cow, mem};
 
 use defuse_near_utils::{UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_token_id::{TokenId, TokenIdType};
+
 use near_sdk::{
-    AccountId, Gas, GasWeight, NearToken, Promise, PromiseOrValue, PromiseResult, env,
+    AccountId, Gas, GasWeight, NearToken, PanicOnDefault, Promise, PromiseOrValue, PromiseResult,
+    env,
     json_types::U128,
     near, require,
     serde_json::{self},
@@ -15,14 +18,16 @@ use near_sdk::{
 use serde_with::{DisplayFromStr, serde_as};
 use strum::IntoDiscriminant;
 
-#[cfg(feature = "nep141")]
-use crate::contract::tokens::Token;
 use crate::{
     Action, AddSrcEvent, CreateEvent, Error, Escrow, EscrowEvent, EscrowIntentEmit, FillAction,
     FillEvent, FixedParams, OpenAction, Params, Result, Storage, TransferMessage,
 };
 
-use self::utils::{MaybePromise, PromiseExt};
+use self::{
+    cleanup::CleanupGuard,
+    tokens::Sendable,
+    utils::{MaybePromise, PromiseExt},
+};
 
 // mod old;
 
@@ -47,18 +52,8 @@ use self::utils::{MaybePromise, PromiseExt};
 
 // TODO: keep number of pending promises
 #[near(contract_state)] // TODO: (key = "")
-#[derive(Debug)]
-pub enum Contract {
-    Alive(Storage),
-    Cleanup,
-}
-
-// TODO: #[derive(PanicOnDefault)]
-impl Default for Contract {
-    fn default() -> Self {
-        env::panic_str("Contract was not initialized")
-    }
-}
+#[derive(Debug, PanicOnDefault)]
+pub struct Contract(Option<Storage>);
 
 #[near]
 impl Escrow for Contract {
@@ -69,11 +64,15 @@ impl Escrow for Contract {
     // TODO: cancel_by_resolver?
     #[payable]
     fn close(&mut self, fixed_params: FixedParams) -> PromiseOrValue<bool> {
-        self.internal_close(fixed_params).unwrap_or_panic()
+        self.cleanup_guard()
+            .internal_close(fixed_params)
+            .unwrap_or_panic()
     }
 
     fn lost_found(&mut self, fixed_params: FixedParams) -> PromiseOrValue<bool> {
-        self.internal_lost_found(fixed_params).unwrap_or_panic()
+        self.cleanup_guard()
+            .internal_lost_found(fixed_params)
+            .unwrap_or_panic()
     }
 
     // TODO: separate lost_found method to be able to claim before deadline
@@ -101,7 +100,7 @@ impl Contract {
             "wrong params or factory"
         );
 
-        Self::Alive(s)
+        Self(Some(s))
     }
 
     #[private]
@@ -111,47 +110,59 @@ impl Contract {
         maker_dst: Option<SentAsset>,
         beneficiary_id: AccountId,
     ) -> bool {
-        self.internal_resolve_lost_found(maker_src, maker_dst, beneficiary_id)
+        self.cleanup_guard()
+            .internal_resolve_lost_found(maker_src, maker_dst, beneficiary_id)
             .unwrap_or_panic()
     }
 }
 
 impl Contract {
-    const fn as_alive(&self) -> Option<&Storage> {
-        match self {
-            Self::Alive(storage) => Some(storage),
-            Self::Cleanup => None,
-        }
+    const fn cleanup_guard(&mut self) -> CleanupGuard<'_> {
+        CleanupGuard::new(self)
     }
 
-    const fn as_alive_mut(&mut self) -> Option<&mut Storage> {
-        match self {
-            Self::Alive(storage) => Some(storage),
-            Self::Cleanup => None,
-        }
+    const fn as_alive(&self) -> Option<&Storage> {
+        self.0.as_ref()
     }
 
     fn try_as_alive(&self) -> Result<&Storage> {
         self.as_alive().ok_or(Error::CleanupInProgress)
     }
 
-    fn try_as_alive_mut(&mut self) -> Result<&mut Storage> {
-        self.as_alive_mut().ok_or(Error::CleanupInProgress)
+    fn send_with_sent(
+        token: TokenId,
+        receiver_id: AccountId,
+        amount: u128,
+        memo: Option<String>,
+        msg: Option<String>,
+        min_gas: Option<Gas>,
+        unused_gas: bool,
+    ) -> (SentAsset, Promise) {
+        (
+            SentAsset {
+                asset_type: token.discriminant(),
+                amount,
+                is_call: msg.is_some(),
+            },
+            token.send(receiver_id, amount, memo, msg, min_gas, unused_gas),
+        )
     }
+}
 
-    fn on_receive(
-        &mut self,
+impl CleanupGuard<'_> {
+    pub fn on_receive(
+        mut self,
         sender_id: AccountId,
         token_id: TokenId,
         amount: u128,
         msg: &str,
     ) -> Result<PromiseOrValue<u128>> {
-        self.try_as_alive_mut()?
+        self.try_get_mut()?
             .on_receive(sender_id, token_id, amount, msg)
     }
 
     fn internal_close(&mut self, fixed: FixedParams) -> Result<PromiseOrValue<bool>> {
-        let this = self.try_as_alive_mut()?;
+        let this = self.try_get_mut()?;
         this.verify(&fixed)?;
 
         // TODO: authority
@@ -182,7 +193,7 @@ impl Contract {
     }
 
     fn internal_lost_found(&mut self, fixed: FixedParams) -> Result<PromiseOrValue<bool>> {
-        let this = self.try_as_alive_mut()?;
+        let this = self.try_get_mut()?;
         this.verify(&fixed)?;
 
         // if this.state.callbacks_in_flight > 0 {
@@ -211,7 +222,7 @@ impl Contract {
             .then(|| mem::take(&mut this.state.maker_src_remaining))
             .filter(|a| *a > 0)
             .map(|amount| {
-                Self::send_with_sent(
+                Contract::send_with_sent(
                     fixed.src_asset,
                     fixed
                         .refund_src_to
@@ -230,7 +241,7 @@ impl Contract {
         let (sent_dst, send_dst_p) = Some(mem::take(&mut this.state.maker_dst_lost))
             .filter(|a| *a > 0)
             .map(|amount| {
-                Self::send_with_sent(
+                Contract::send_with_sent(
                     fixed.dst_asset,
                     fixed.receive_dst_to.receiver_id.unwrap_or(fixed.maker),
                     amount,
@@ -247,18 +258,13 @@ impl Contract {
             .chain(send_dst_p)
             .reduce(Promise::and)
         else {
-            let cleanup = this.state.should_cleanup();
-            if cleanup {
-                // detached
-                let _ = self.do_cleanup(env::predecessor_account_id());
-            }
-            return Ok(PromiseOrValue::Value(cleanup));
+            return Ok(PromiseOrValue::Value(self.maybe_cleanup(None).is_some()));
         };
 
         Ok(send
             .then(
                 this.callback()
-                    .with_static_gas(Self::RESOLVE_LOST_FOUND_GAS)
+                    .with_static_gas(Contract::RESOLVE_LOST_FOUND_GAS)
                     .with_unused_gas_weight(0)
                     .resolve_lost_found(sent_src, sent_dst, env::predecessor_account_id()),
             )
@@ -271,7 +277,7 @@ impl Contract {
         maker_dst: Option<SentAsset>,
         beneficiary_id: AccountId,
     ) -> Result<bool> {
-        let this = self.try_as_alive_mut()?;
+        let this = self.try_get_mut()?;
         this.on_callback();
 
         for (result_idx, (sent, lost)) in maker_src
@@ -286,65 +292,20 @@ impl Contract {
             *lost = lost.checked_add(refund).ok_or(Error::IntegerOverflow)?;
         }
 
-        let cleanup = this.state.should_cleanup();
-        if cleanup {
-            // detach
-            let _ = self.do_cleanup(beneficiary_id);
-        }
-        Ok(cleanup)
+        Ok(self.maybe_cleanup(beneficiary_id).is_some())
     }
 
-    fn send(
-        token: TokenId,
-        receiver_id: AccountId,
-        amount: u128,
-        memo: Option<String>,
-        msg: Option<String>,
-        min_gas: Option<Gas>,
-        unused_gas: bool,
-    ) -> Promise {
-        match token {
-            #[cfg(feature = "nep141")]
-            TokenId::Nep141(token) => {
-                token.send(receiver_id, amount, memo, msg, min_gas, unused_gas)
-            }
-            #[cfg(feature = "nep245")]
-            TokenId::Nep245(token) => {
-                token.send(receiver_id, amount, memo, msg, min_gas, unused_gas)
-            }
-        }
-    }
-
-    fn send_with_sent(
-        token: TokenId,
-        receiver_id: AccountId,
-        amount: u128,
-        memo: Option<String>,
-        msg: Option<String>,
-        min_gas: Option<Gas>,
-        unused_gas: bool,
-    ) -> (SentAsset, Promise) {
-        (
-            SentAsset {
-                asset_type: token.discriminant(),
-                amount,
-                is_call: msg.is_some(),
-            },
-            Self::send(token, receiver_id, amount, memo, msg, min_gas, unused_gas),
-        )
-    }
-
-    #[must_use]
-    fn do_cleanup(&mut self, beneficiary_id: AccountId) -> Promise {
-        // TODO: can we make it all in Drop?
-        // emit event
-        *self = Self::Cleanup;
-        // NOTE: Unfortunately, we can't refund `storage_deposit`s on src and dst
-        // tokens back to maker or any other beneficiary, since
-        // `storage_unregister()` internally detaches transfer Promise, so we
-        // don't know when it arrives and can't schedule the cleanup afterwards.
-        Promise::new(env::current_account_id()).delete_account(beneficiary_id)
-    }
+    // #[must_use]
+    // fn do_cleanup(&mut self, beneficiary_id: AccountId) -> Promise {
+    //     // TODO: can we make it all in Drop?
+    //     // emit event
+    //     *self = Self::Cleanup;
+    //     // NOTE: Unfortunately, we can't refund `storage_deposit`s on src and dst
+    //     // tokens back to maker or any other beneficiary, since
+    //     // `storage_unregister()` internally detaches transfer Promise, so we
+    //     // don't know when it arrives and can't schedule the cleanup afterwards.
+    //     Promise::new(env::current_account_id()).delete_account(beneficiary_id)
+    // }
 }
 
 impl Storage {
@@ -469,8 +430,7 @@ impl Storage {
                             .checked_sub(fee_amount)
                             .ok_or(Error::ExcessiveFees)?;
 
-                        sends = Some(sends.take().and_or(Contract::send(
-                            fixed.dst_asset.clone(),
+                        sends = Some(sends.take().and_or(fixed.dst_asset.clone().send(
                             fee_collector.clone(),
                             fee_amount,
                             Some("fee".to_string()),
@@ -534,8 +494,7 @@ impl Storage {
         // TODO: lost&found?
         Ok(maker_dst_p
             // send to taker
-            .and(Contract::send(
-                fixed.src_asset,
+            .and(fixed.src_asset.send(
                 msg.receive_src_to.receiver_id.unwrap_or(sender_id),
                 taker_src_amount,
                 msg.receive_src_to.memo,
@@ -569,23 +528,23 @@ impl Storage {
         // TODO: resume lost_found?
     }
 
-    // fn check_deadline_expired(&mut self) -> bool {
-    //     let just_closed =
-    //         self.params.deadline.has_expired() && !mem::replace(&mut self.state.closed, true);
-    //     if just_closed {
-    //         EscrowEvent::Close.emit();
-    //     }
-    //     just_closed
-    // }
+    fn check_deadline_expired(&mut self) -> bool {
+        let just_closed =
+            self.params.deadline.has_expired() && !mem::replace(&mut self.state.closed, true);
+        if just_closed {
+            EscrowEvent::Close.emit();
+        }
+        just_closed
+    }
 
-    // // TODO: rename
-    // #[must_use]
-    // fn should_cleanup(&mut self) -> bool {
-    //     // TODO: are we sure? what if we got more tokens from maker with prolonged deadline after close?
-    //     self.check_deadline_expired();
+    // TODO: rename
+    #[must_use]
+    fn should_cleanup(&mut self) -> bool {
+        // TODO: are we sure? what if we got more tokens from maker with prolonged deadline after close?
+        self.check_deadline_expired();
 
-    //     self.state.should_cleanup()
-    // }
+        self.state.should_cleanup()
+    }
 }
 
 // #[must_use]

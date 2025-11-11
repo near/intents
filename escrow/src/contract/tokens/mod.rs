@@ -5,10 +5,11 @@ mod nep245;
 
 // TODO: assert any(feature = "nep141", feature = "nep245")
 
+use defuse_token_id::TokenId;
 // use defuse_token_id::TokenId;
 use near_sdk::{AccountId, Gas, Promise};
 
-pub trait Token {
+pub trait Sendable {
     fn send(
         self,
         receiver_id: AccountId,
@@ -21,6 +22,29 @@ pub trait Token {
 
     // Returns actually transferred amount of a single token.
     fn resolve(result_idx: u64, amount: u128, is_call: bool) -> u128;
+}
+
+impl Sendable for TokenId {
+    fn send(
+        self,
+        receiver_id: AccountId,
+        amount: u128,
+        memo: Option<String>,
+        msg: Option<String>,
+        min_gas: Option<Gas>,
+        unused_gas: bool,
+    ) -> Promise {
+        match self {
+            #[cfg(feature = "nep141")]
+            Self::Nep141(token) => token.send(receiver_id, amount, memo, msg, min_gas, unused_gas),
+            #[cfg(feature = "nep245")]
+            Self::Nep245(token) => token.send(receiver_id, amount, memo, msg, min_gas, unused_gas),
+        }
+    }
+
+    fn resolve(result_idx: u64, amount: u128, is_call: bool) -> u128 {
+        todo!()
+    }
 }
 
 // pub trait TokenType {

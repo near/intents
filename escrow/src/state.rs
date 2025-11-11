@@ -153,6 +153,7 @@ impl FixedParams {
 pub struct Params {
     /// maker / taker (in 10^-9)
     /// TODO: check non-zero
+    /// TODO: exact out? i.e. partial fills are not allowed
     pub price: Price,
 
     // TODO: check that not expired at create?
@@ -168,6 +169,8 @@ pub struct Params {
     pub deadline: Deadline,
 }
 
+// TODO: (Optional but nice) bump a version so indexers/UIs know the latest state
+
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
     serde_as(schemars = true)
@@ -179,7 +182,7 @@ pub struct Params {
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Default, Clone)]
 pub struct State {
-    /// Deposited or lost src remaining
+    /// Deposited or lost (after close) src remaining
     #[serde_as(as = "DisplayFromStr")]
     pub maker_src_remaining: u128,
 
@@ -191,6 +194,7 @@ pub struct State {
     #[serde(default, skip_serializing_if = "::core::ops::Not::not")]
     pub closed: bool,
 
+    // TODO: serde skip if zero
     pub callbacks_in_flight: u32,
     // TODO: lost_found: store zero for beging transfer, otherwise - fail
     // pub cleanup_in_progress: bool,
@@ -198,3 +202,16 @@ pub struct State {
     // #[serde(default, skip_serializing_if = "Option::is_none")]
     // pub yield_id: Option<CryptoHash>,
 }
+
+// TODO: CoW schema:
+// {
+//    "uid":"0xaa4eb7b4da14b93ce42963ac4085fd8eee4a04170b36454f9f8b91b91f69705387a04752e5//16548b0d5d4df97384c0b22b64917965a801c1",
+//    "sellToken": "0xdef1ca1fb7fbcdc777520aa7f396b4e015f497ab",
+//    "buyToken": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+//    "sellAmount": "1000000000000000000000",
+//    "buyAmount": "284138335",
+//    "feeAmount": "0",
+//    "kind": "sell",
+//    "partiallyFillable": false,
+//    "class": "limit"
+//}

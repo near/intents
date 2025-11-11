@@ -12,15 +12,16 @@ use serde_with::{DisplayFromStr, serde_as};
     serde_as(schemars = false)
 )]
 // TODO: deserialize not zero?
+// TODO: store as (scale, mantissa)
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Price(#[serde_as(as = "DisplayFromStr")] u128);
 
 impl Price {
-    // TODO: check for most decimals? NEAR?
-    const DECIMALS: u32 = 9;
+    // TODO: check for most decimals? check wrap.near?
+    const DECIMALS: u32 = 18;
 
-    pub const ZERO: Self = Self(0);
+    // pub const ZERO: Self = Self(0);
     pub const ONE: Self = Self(10u128.pow(Self::DECIMALS));
 
     pub fn ratio(src_amount: u128, dst_amount: u128) -> Option<Self> {
@@ -52,16 +53,24 @@ impl Price {
 // TODO: more tests
 #[cfg(test)]
 mod tests {
+    use near_sdk::NearToken;
+    use rstest::rstest;
+
     use super::*;
 
-    #[test]
-    fn ratio() {
-        let p = Price::ratio(100, 200).unwrap();
-        assert_eq!(p.dst_amount(100), Some(200));
+    #[rstest]
+    #[case(100, 200)]
+    // TODO
+    // #[case(NearToken::from_near(1).as_yoctonear(), 10u128.pow(8)/100_000)]
+    fn ratio(#[case] src_amount: u128, #[case] dst_amount: u128) {
+        let p = Price::ratio(src_amount, dst_amount).unwrap();
+        assert_eq!(p.dst_amount(src_amount), Some(dst_amount));
     }
 
-    #[test]
-    fn zero() {
-        assert_eq!(Price::ratio(0, 100), None);
+    #[rstest]
+    #[case(0, 100)]
+    #[case(100, 0)]
+    fn zero(#[case] src_amount: u128, #[case] dst_amount: u128) {
+        assert_eq!(Price::ratio(src_amount, dst_amount), None);
     }
 }

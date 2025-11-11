@@ -31,4 +31,5 @@ pub struct OpenAction {
 pub struct FillAction {
     #[serde(default, skip_serializing_if = "crate::utils::is_default")]
     pub receive_src_to: SendParams,
+    // TODO: min_src_out?
 }
