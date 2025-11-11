@@ -59,6 +59,7 @@ mod public_key;
 mod relayers;
 mod simulate;
 mod token_diff;
+mod transfer;
 
 pub const DUMMY_MSG_ADDRESS: MsgAddress = MsgAddress {
     workchain_id: 1234i32,
@@ -217,6 +218,8 @@ async fn simulate_is_view_method(
     #[notrace] mut rng: impl Rng,
     #[values(false, true)] no_registration: bool,
 ) {
+    use defuse::core::accounts::TransferEvent;
+
     let env = Env::builder()
         .no_registration(no_registration)
         .build()
@@ -241,7 +244,9 @@ async fn simulate_is_view_method(
         receiver_id: other_user.id().clone(),
         tokens: Amounts::new(std::iter::once((ft_id.clone(), 1000)).collect()),
         memo: None,
+        notification: None,
     };
+
     let transfer_intent_payload = user.sign_defuse_message(
         SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
         env.defuse.id(),
@@ -264,7 +269,11 @@ async fn simulate_is_view_method(
         intent_hash: transfer_intent_payload.hash(),
         event: AccountEvent {
             account_id: user.id().clone().into(),
-            event: Cow::Owned(transfer_intent),
+            event: TransferEvent {
+                receiver_id: Cow::Borrowed(&transfer_intent.receiver_id),
+                tokens: Cow::Borrowed(&transfer_intent.tokens),
+                memo: Cow::Borrowed(&transfer_intent.memo),
+            },
         },
     }]))
     .to_near_sdk_log();

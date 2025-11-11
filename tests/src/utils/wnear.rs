@@ -4,8 +4,10 @@ use serde_json::json;
 
 use super::{account::AccountExt, ft::FtExt};
 
-const WNEAR_WASM: &[u8] =
-    include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/contracts/wnear.wasm"));
+const WNEAR_WASM: &[u8] = include_bytes!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/contracts/target/wnear.wasm"
+));
 
 pub trait WNearExt: FtExt {
     async fn deploy_wrap_near(&self, token: &str) -> anyhow::Result<Contract>;

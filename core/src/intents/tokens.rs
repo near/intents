@@ -6,13 +6,42 @@ use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
     DefuseError, Result,
-    accounts::AccountEvent,
+    accounts::{AccountEvent, TransferEvent},
     amounts::Amounts,
     engine::{Engine, Inspector, State},
     events::DefuseEvent,
 };
 
 use super::{ExecutableIntent, IntentEvent};
+
+#[cfg_attr(
+    all(feature = "abi", not(target_arch = "wasm32")),
+    serde_as(schemars = true)
+)]
+#[cfg_attr(
+    not(all(feature = "abi", not(target_arch = "wasm32"))),
+    serde_as(schemars = false)
+)]
+#[near(serializers = [borsh, json])]
+#[derive(Debug, Clone)]
+pub struct NotifyOnTransfer {
+    pub msg: String,
+
+    // Min gas per single call
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_gas: Option<Gas>,
+}
+
+impl NotifyOnTransfer {
+    pub const MT_ON_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(5);
+    pub const MT_ON_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(10);
+
+    pub fn min_gas(&self) -> Gas {
+        self.min_gas
+            .unwrap_or(Self::MT_ON_TRANSFER_GAS_DEFAULT)
+            .max(Self::MT_ON_TRANSFER_GAS_MIN)
+    }
+}
 
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
@@ -33,6 +62,9 @@ pub struct Transfer {
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<String>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub notification: Option<NotifyOnTransfer>,
 }
 
 impl ExecutableIntent for Transfer {
@@ -54,7 +86,14 @@ impl ExecutableIntent for Transfer {
             .inspector
             .on_event(DefuseEvent::Transfer(Cow::Borrowed(
                 [IntentEvent::new(
-                    AccountEvent::new(sender_id, Cow::Borrowed(&self)),
+                    AccountEvent::new(
+                        sender_id,
+                        TransferEvent {
+                            receiver_id: Cow::Borrowed(&self.receiver_id),
+                            tokens: Cow::Borrowed(&self.tokens),
+                            memo: Cow::Borrowed(&self.memo),
+                        },
+                    ),
                     intent_hash,
                 )]
                 .as_slice(),
@@ -65,7 +104,17 @@ impl ExecutableIntent for Transfer {
             .internal_sub_balance(sender_id, self.tokens.clone())?;
         engine
             .state
-            .internal_add_balance(self.receiver_id, self.tokens)?;
+            .internal_add_balance(self.receiver_id.clone(), self.tokens.clone())?;
+
+        if let Some(notification) = self.notification {
+            engine.state.notify_on_transfer(
+                sender_id.into(),
+                self.receiver_id,
+                self.tokens,
+                notification,
+            );
+        }
+
         Ok(())
     }
 }
@@ -286,8 +335,8 @@ pub struct MtWithdraw {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub storage_deposit: Option<NearToken>,
 
-    /// Optional minimum required Near gas for created Promise to succeed:
-    /// * `mt_batch_transfer`:      minimum: 15TGas, default: 15TGas
+    /// Optional minimum required Near gas for created Promise to succeed per token:
+    /// * `mt_batch_transfer`:      minimum: 20TGas, default: 20TGas
     /// * `mt_batch_transfer_call`: minimum: 35TGas, default: 50TGas
     ///
     /// Remaining gas will be distributed evenly across all Function Call
@@ -297,7 +346,6 @@ pub struct MtWithdraw {
 }
 
 impl MtWithdraw {
-    // TODO: gas_base + gas_per_token * token_ids.len()
     const MT_BATCH_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(20);
     const MT_BATCH_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(20);
 

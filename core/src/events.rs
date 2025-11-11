@@ -4,13 +4,13 @@ use derive_more::derive::From;
 use near_sdk::{near, serde::Deserialize};
 
 use crate::{
-    accounts::{AccountEvent, NonceEvent, PublicKeyEvent, SaltRotationEvent},
+    accounts::{AccountEvent, NonceEvent, PublicKeyEvent, SaltRotationEvent, TransferEvent},
     fees::{FeeChangedEvent, FeeCollectorChangedEvent},
     intents::{
         IntentEvent,
         account::SetAuthByPredecessorId,
         token_diff::TokenDiffEvent,
-        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
+        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
     },
 };
 
@@ -31,7 +31,7 @@ pub enum DefuseEvent<'a> {
     FeeCollectorChanged(FeeCollectorChangedEvent<'a>),
 
     #[event_version("0.3.0")]
-    Transfer(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, Transfer>>>]>),
+    Transfer(Cow<'a, [IntentEvent<AccountEvent<'a, TransferEvent<'a>>>]>),
 
     #[event_version("0.3.0")]
     TokenDiff(Cow<'a, [IntentEvent<AccountEvent<'a, TokenDiffEvent<'a>>>]>),

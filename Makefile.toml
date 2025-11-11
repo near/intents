@@ -7,6 +7,8 @@ TARGET_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/res"
 POA_TOKEN_WASM = "${TARGET_DIR}/defuse_poa_token.wasm"
 POA_TOKEN_WITH_NO_REGISTRATION_DIR = "${TARGET_DIR}/poa-token-no-registration"
 POA_TOKEN_WASM_NO_REGISTRATION_WASM = "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}/defuse_poa_token.wasm"
+MT_RECEIVER_STUB_DIR = "${TARGET_DIR}/multi-token-receiver-stub"
+MT_RECEIVER_STUB_WASM = "${MT_RECEIVER_STUB_DIR}/multi_token_receiver_stub.wasm"
 
 [tasks.default]
 alias = "build"
@@ -23,6 +25,7 @@ dependencies = [
     "build-poa-factory",
     "contract-stats",
     "build-poa-token-no-registration",
+    "build-multi-token-receiver-stub",
 ]
 
 [tasks.build-defuse]
@@ -90,6 +93,21 @@ args = [
     "contract,no-registration",
     "--out-dir",
     "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}",
+    "--no-embed-abi",
+]
+
+[tasks.build-multi-token-receiver-stub]
+dependencies = ["add-cache-dir-tag"]
+command = "cargo"
+args = [
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--locked",
+    "--manifest-path",
+    "./tests/contracts/multi-token-receiver-stub/Cargo.toml",
+    "--out-dir",
+    "${MT_RECEIVER_STUB_DIR}",
     "--no-embed-abi",
 ]
 

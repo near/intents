@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.1]
+
+### Added
+- Notification message to transfer intent (containing message string + optional minimum required gas) - so receiver now is notified with mt_on_transfer if such message present
+
 ## [0.3.0]
 
 ### Added
