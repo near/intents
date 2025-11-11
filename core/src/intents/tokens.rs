@@ -1,6 +1,5 @@
 use std::{borrow::Cow, collections::BTreeMap};
 
-use defuse_near_utils::{UnwrapOrPanic, UnwrapOrPanicError};
 use near_contract_standards::non_fungible_token;
 use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, NearToken, json_types::U128, near};
 use serde_with::{DisplayFromStr, serde_as};
@@ -347,9 +346,6 @@ pub struct MtWithdraw {
 }
 
 impl MtWithdraw {
-    const MT_BATCH_TRANSFER_BASE: Gas = Gas::from_tgas(20);
-    const MT_BATCH_TRANSFER_CALL_BASE: Gas = Gas::from_tgas(35);
-
     const MT_BATCH_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(20);
     const MT_BATCH_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(20);
 
@@ -365,34 +361,26 @@ impl MtWithdraw {
     /// Returns minimum required gas
     #[inline]
     pub fn min_gas(&self) -> Gas {
-        let (min, default, base) = if self.is_call() {
+        let (min, default) = if self.is_call() {
             (
                 Self::MT_BATCH_TRANSFER_CALL_GAS_MIN,
                 Self::MT_BATCH_TRANSFER_CALL_GAS_DEFAULT,
-                Self::MT_BATCH_TRANSFER_CALL_BASE,
             )
         } else {
             (
                 Self::MT_BATCH_TRANSFER_GAS_MIN,
                 Self::MT_BATCH_TRANSFER_GAS_DEFAULT,
-                Self::MT_BATCH_TRANSFER_BASE,
             )
         };
 
-        let gas_per_token = self
-            .min_gas
+        self.min_gas
             .unwrap_or(default)
             // We need to set hard minimum for gas to prevent loss of funds
             // due to insufficient gas:
             // 1. We don't refund wNEAR taken for `storage_deposit()`,
             //    which is executed in the same receipt as `mt_batch_transfer[_call]()`
             // 2. We don't refund if `mt_batch_transfer_call()` Promise fails
-            .max(min);
-
-        let token_count: u64 = self.token_ids.len().try_into().unwrap_or_panic_display();
-
-        base.checked_add(gas_per_token.checked_mul(token_count).unwrap_or_panic())
-            .unwrap_or_panic()
+            .max(min)
     }
 }
 
