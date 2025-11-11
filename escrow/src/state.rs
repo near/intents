@@ -136,6 +136,7 @@ impl FixedParams {
 
 impl FixedParams {
     pub fn hash(&self) -> CryptoHash {
+        // TODO: prefix?
         env::keccak256_array(&borsh::to_vec(self).unwrap_or_else(|_| unreachable!()))
     }
 }
@@ -182,6 +183,9 @@ pub struct Params {
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Default, Clone)]
 pub struct State {
+    #[serde(default, skip_serializing_if = "::core::ops::Not::not")]
+    pub closed: bool,
+
     /// Deposited or lost (after close) src remaining
     #[serde_as(as = "DisplayFromStr")]
     pub maker_src_remaining: u128,
@@ -191,16 +195,9 @@ pub struct State {
     #[serde_as(as = "DisplayFromStr")]
     pub maker_dst_lost: u128,
 
-    #[serde(default, skip_serializing_if = "::core::ops::Not::not")]
-    pub closed: bool,
-
-    // TODO: serde skip if zero
+    #[serde(skip)]
     pub callbacks_in_flight: u32,
     // TODO: lost_found: store zero for beging transfer, otherwise - fail
-    // pub cleanup_in_progress: bool,
-    // #[serde_as(as = "Option<Hex>")]
-    // #[serde(default, skip_serializing_if = "Option::is_none")]
-    // pub yield_id: Option<CryptoHash>,
 }
 
 // TODO: CoW schema:

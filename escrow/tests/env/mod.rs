@@ -23,7 +23,7 @@ pub static ESCROW_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("defuse_e
 
 #[autoimpl(Deref using self.sandbox)]
 pub struct BaseEnv {
-    pub wnear: Account,
+    // pub wnear: Account,
     pub verifier: Account,
     pub escrow_global: GlobalContractIdentifier,
 
@@ -42,7 +42,7 @@ impl BaseEnv {
         );
 
         Ok(BaseEnv {
-            wnear,
+            // wnear,
             verifier,
             escrow_global,
             sandbox,

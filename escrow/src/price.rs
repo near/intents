@@ -53,7 +53,6 @@ impl Price {
 // TODO: more tests
 #[cfg(test)]
 mod tests {
-    use near_sdk::NearToken;
     use rstest::rstest;
 
     use super::*;

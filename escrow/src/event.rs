@@ -21,6 +21,8 @@ pub enum EscrowEvent<'a> {
     #[event_version("0.1.0")]
     Fill(FillEvent<'a>),
 
+    // TODO: enrich with:
+    // closed_by: maker/taker/authority
     #[event_version("0.1.0")]
     Close,
 }
@@ -70,8 +72,11 @@ pub struct AddSrcEvent {
 pub struct FillEvent<'a> {
     pub taker: Cow<'a, AccountIdRef>,
 
+    // TODO: src_token
+    // TODO: dst_token
     #[serde_as(as = "DisplayFromStr")]
     pub src_amount: u128,
+    // TODO: is it how much will the maker get? or how much taker spent?
     #[serde_as(as = "DisplayFromStr")]
     pub dst_amount: u128,
 

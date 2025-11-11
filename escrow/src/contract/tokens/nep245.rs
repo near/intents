@@ -1,10 +1,7 @@
 use defuse_near_utils::UnwrapOrPanic;
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
 use defuse_token_id::{TokenId, nep245::Nep245TokenId};
-use near_sdk::{
-    AccountId, Gas, NearToken, PromiseOrValue, PromiseResult, env, json_types::U128, near, require,
-    serde_json,
-};
+use near_sdk::{AccountId, Gas, NearToken, PromiseOrValue, env, json_types::U128, near, require};
 
 use crate::{
     Error,
@@ -103,31 +100,31 @@ impl Sendable for Nep245TokenId {
         }
     }
 
-    fn resolve(result_idx: u64, amount: u128, is_call: bool) -> u128 {
-        match env::promise_result(result_idx) {
-            PromiseResult::Successful(value) => {
-                if is_call {
-                    // `mt_transfer_call` returns successfully transferred amounts
-                    serde_json::from_slice::<[U128; 1]>(&value).unwrap_or_default()[0]
-                        .0
-                        .min(amount)
-                } else if value.is_empty() {
-                    // `mt_transfer` returns empty result on success
-                    amount
-                } else {
-                    0
-                }
-            }
-            PromiseResult::Failed => {
-                if is_call {
-                    // do not refund on failed `mt_transfer_call` due to
-                    // NEP-245 vulnerability: `mt_resolve_transfer` fails to
-                    // read result of `mt_on_transfer` due to insufficient gas
-                    amount
-                } else {
-                    0
-                }
-            }
-        }
-    }
+    // fn resolve(result_idx: u64, amount: u128, is_call: bool) -> u128 {
+    //     match env::promise_result(result_idx) {
+    //         PromiseResult::Successful(value) => {
+    //             if is_call {
+    //                 // `mt_transfer_call` returns successfully transferred amounts
+    //                 serde_json::from_slice::<[U128; 1]>(&value).unwrap_or_default()[0]
+    //                     .0
+    //                     .min(amount)
+    //             } else if value.is_empty() {
+    //                 // `mt_transfer` returns empty result on success
+    //                 amount
+    //             } else {
+    //                 0
+    //             }
+    //         }
+    //         PromiseResult::Failed => {
+    //             if is_call {
+    //                 // do not refund on failed `mt_transfer_call` due to
+    //                 // NEP-245 vulnerability: `mt_resolve_transfer` fails to
+    //                 // read result of `mt_on_transfer` due to insufficient gas
+    //                 amount
+    //             } else {
+    //                 0
+    //             }
+    //         }
+    //     }
+    // }
 }

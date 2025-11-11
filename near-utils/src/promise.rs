@@ -1,6 +1,34 @@
 use std::{iter::FusedIterator, ops::Range};
 
-use near_sdk::{CryptoHash, Gas, GasWeight, PromiseIndex, PromiseResult, env, sys};
+use near_sdk::{CryptoHash, Gas, GasWeight, Promise, PromiseIndex, PromiseResult, env, sys};
+
+pub trait PromiseExt: Sized {
+    fn maybe_and(self, p: Option<Promise>) -> Promise;
+}
+
+impl PromiseExt for Promise {
+    #[inline]
+    fn maybe_and(self, p: Option<Promise>) -> Promise {
+        if let Some(p) = p { self.and(p) } else { self }
+    }
+}
+
+pub trait MaybePromise {
+    fn and_or(self, p: Promise) -> Promise;
+    fn then_or(self, p: Promise) -> Promise;
+}
+
+impl MaybePromise for Option<Promise> {
+    #[inline]
+    fn and_or(self, p: Promise) -> Promise {
+        if let Some(s) = self { s.and(p) } else { p }
+    }
+
+    #[inline]
+    fn then_or(self, p: Promise) -> Promise {
+        if let Some(s) = self { s.then(p) } else { p }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct PromiseResults(Range<u64>);

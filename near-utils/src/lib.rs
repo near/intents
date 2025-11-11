@@ -1,6 +1,7 @@
 #[cfg(feature = "arbitrary")]
 pub mod arbitrary;
 mod cache;
+
 #[cfg(feature = "digest")]
 pub mod digest;
 mod gas;

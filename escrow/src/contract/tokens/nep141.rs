@@ -1,10 +1,7 @@
 use defuse_near_utils::UnwrapOrPanic;
 use defuse_token_id::{TokenId, nep141::Nep141TokenId};
 use near_contract_standards::fungible_token::{core::ext_ft_core, receiver::FungibleTokenReceiver};
-use near_sdk::{
-    AccountId, Gas, NearToken, Promise, PromiseOrValue, PromiseResult, env, json_types::U128,
-    serde_json,
-};
+use near_sdk::{AccountId, Gas, NearToken, Promise, PromiseOrValue, env, json_types::U128};
 
 use crate::contract::{Contract, tokens::Sendable};
 
@@ -65,32 +62,32 @@ impl Sendable for Nep141TokenId {
         }
     }
 
-    fn resolve(result_idx: u64, amount: u128, is_call: bool) -> u128 {
-        match env::promise_result(result_idx) {
-            PromiseResult::Successful(value) => {
-                if is_call {
-                    // `ft_transfer_call` returns successfully transferred amounts
-                    serde_json::from_slice::<U128>(&value)
-                        .unwrap_or_default()
-                        .0
-                        .min(amount)
-                } else if value.is_empty() {
-                    // `ft_transfer` returns empty result on success
-                    amount
-                } else {
-                    0
-                }
-            }
-            PromiseResult::Failed => {
-                if is_call {
-                    // do not refund on failed `ft_transfer_call` due to
-                    // NEP-141 vulnerability: `ft_resolve_transfer` fails to
-                    // read result of `ft_on_transfer` due to insufficient gas
-                    amount
-                } else {
-                    0
-                }
-            }
-        }
-    }
+    // fn resolve(result_idx: u64, amount: u128, is_call: bool) -> u128 {
+    //     match env::promise_result(result_idx) {
+    //         PromiseResult::Successful(value) => {
+    //             if is_call {
+    //                 // `ft_transfer_call` returns successfully transferred amounts
+    //                 serde_json::from_slice::<U128>(&value)
+    //                     .unwrap_or_default()
+    //                     .0
+    //                     .min(amount)
+    //             } else if value.is_empty() {
+    //                 // `ft_transfer` returns empty result on success
+    //                 amount
+    //             } else {
+    //                 0
+    //             }
+    //         }
+    //         PromiseResult::Failed => {
+    //             if is_call {
+    //                 // do not refund on failed `ft_transfer_call` due to
+    //                 // NEP-141 vulnerability: `ft_resolve_transfer` fails to
+    //                 // read result of `ft_on_transfer` due to insufficient gas
+    //                 amount
+    //             } else {
+    //                 0
+    //             }
+    //         }
+    //     }
+    // }
 }

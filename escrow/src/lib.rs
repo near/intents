@@ -19,7 +19,7 @@ use near_sdk::{AccountId, Gas, PromiseOrValue, ext_contract, near};
 
 #[ext_contract(ext_escrow)]
 pub trait Escrow {
-    fn view(&self) -> &Storage;
+    fn escrow_view(&self) -> &Storage;
 
     /// Closes the escrow + performs lost_found().
     ///
@@ -30,7 +30,7 @@ pub trait Escrow {
     ///
     /// If deadline has not exceeded yet, then fails.
     /// Returns whether was closed just now, or false if was already closed.
-    fn close(&mut self, fixed_params: FixedParams) -> PromiseOrValue<bool>;
+    fn escrow_close(&mut self, fixed_params: FixedParams) -> PromiseOrValue<bool>;
 
     /// Retries sending:
     /// * `maker_src_remaining` if the escrow was closed
@@ -40,7 +40,7 @@ pub trait Escrow {
     /// stop indexing it.
     /// Otherwise, there MIGHT be lost assets there
     /// or they might come in the future.
-    fn lost_found(&mut self, fixed_params: FixedParams) -> PromiseOrValue<bool>;
+    fn escrow_lost_found(&mut self, fixed_params: FixedParams) -> PromiseOrValue<bool>;
     // TODO: decrease_price()
     // TODO: prolongate_deadline()
     // TODO: total_fee(&self)

@@ -1,7 +1,7 @@
-mod ft;
+
 mod mt;
 
-pub use self::{ft::*, mt::*};
+pub use self::mt::*;
 
 use std::sync::Arc;
 

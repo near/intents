@@ -2,7 +2,7 @@ use defuse_escrow::{FixedParams, Params, Storage};
 use defuse_sandbox::{
     Account, SigningAccount, TxResult, api::types::transaction::actions::GlobalContractIdentifier,
 };
-use near_sdk::{AccountId, Gas, NearToken, json_types::U128, serde_json::json};
+use near_sdk::{AccountId, Gas, NearToken, serde_json::json};
 
 pub trait EscrowViewExt {
     async fn view_escrow(&self) -> anyhow::Result<Storage>;
@@ -36,7 +36,7 @@ impl EscrowExt for SigningAccount {
             .create_account()
             .use_global(global_id)
             .function_call_json::<()>(
-                "new",
+                "escrow_init",
                 init_args,
                 Gas::from_tgas(10),
                 NearToken::from_yoctonear(0),
@@ -50,7 +50,7 @@ impl EscrowExt for SigningAccount {
     async fn close_escrow(&self, escrow: AccountId, fixed_params: FixedParams) -> TxResult<bool> {
         self.tx(escrow.clone())
             .function_call_json(
-                "close",
+                "escrow_close",
                 json!({
                     "fixed_params": fixed_params,
                 }),
@@ -63,6 +63,6 @@ impl EscrowExt for SigningAccount {
 
 impl EscrowViewExt for Account {
     async fn view_escrow(&self) -> anyhow::Result<Storage> {
-        self.call_function_json("view", ()).await
+        self.call_function_json("escrow_view", ()).await
     }
 }
