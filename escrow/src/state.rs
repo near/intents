@@ -120,6 +120,7 @@ pub struct FixedParams {
     //   * cancel before deadline (longer, shorter)
     // TODO: allow .on_auth()
     // #[serde(default, skip_serializing_if = "Option::is_none")]
+    // TODO: can it then be a deteministic contract supporting multisig or any-of functionality
     // pub maker_authority: Option<AccountId>,
     // TODO: salt?
     // TODO: refund_to

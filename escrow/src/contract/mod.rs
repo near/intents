@@ -22,9 +22,19 @@ use crate::{
 
 use self::{cleanup::CleanupGuard, return_value::ReturnValueExt, tokens::Sendable};
 
-// mod old;
+// QUESTIONS:
+// * cancel by 2-of-2 multisig: user + SolverBus?
+//   * why not 1-of-2 by SolverBus?
+//
 
-// TODO: lost&found?
+// governor: partial release
+
+// TODO: add support for custom ".on_settled()" hooks?
+
+// TODO: streaming swaps:
+// * cancel of long streaming swaps?
+// solution: time-lock (i.e. "delayed" canceling)
+// + solver can confirm that he acknoliged the cancel, so it's a multisig 2-of-2 for immediate cancellation
 
 // TODO: solver: create_subescrow and lock NEAR on it
 // TODO: refund locked NEAR back to taker if closed Ok, otherwise...?
@@ -254,6 +264,7 @@ impl Storage {
     /// Returns refund amount
     fn on_receive(
         &mut self,
+        // TODO: it could have been EscrowFactory who forwarded funds to us
         sender_id: AccountId,
         token_id: TokenId,
         amount: u128,

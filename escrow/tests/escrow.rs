@@ -107,37 +107,39 @@ async fn partial_fills() {
 
     // maker deposit
     {
-        let sent = env
-            .maker
-            .mt_transfer_call(
-                env.verifier.id().clone(),
-                escrow.id(),
-                src_verifier_asset.to_string(),
-                MAKER_AMOUNT,
-                None,
-                serde_json::to_string(&TransferMessage {
-                    fixed_params: fixed_params.clone(),
-                    action: OpenAction { new_price: None }.into(),
-                })
-                .unwrap(),
+        for amount in [MAKER_AMOUNT - 100, 100] {
+            let sent = env
+                .maker
+                .mt_transfer_call(
+                    env.verifier.id().clone(),
+                    escrow.id(),
+                    src_verifier_asset.to_string(),
+                    amount,
+                    None,
+                    serde_json::to_string(&TransferMessage {
+                        fixed_params: fixed_params.clone(),
+                        action: OpenAction { new_price: None }.into(),
+                    })
+                    .unwrap(),
+                )
+                .await
+                .unwrap();
+
+            println!("maker deposited: {sent}");
+
+            env.show_verifier_balances(
+                [escrow.id(), env.maker.id()]
+                    .into_iter()
+                    .chain(env.takers.iter().map(|a| a.id()))
+                    .chain(env.fee_collectors.iter().map(|a| a.id()))
+                    .map(|a| a.as_ref()),
+                &[&src_verifier_asset, &dst_verifier_asset],
             )
-            .await
-            .unwrap();
+            .await;
 
-        println!("maker deposited: {sent}");
-
-        env.show_verifier_balances(
-            [escrow.id(), env.maker.id()]
-                .into_iter()
-                .chain(env.takers.iter().map(|a| a.id()))
-                .chain(env.fee_collectors.iter().map(|a| a.id()))
-                .map(|a| a.as_ref()),
-            &[&src_verifier_asset, &dst_verifier_asset],
-        )
-        .await;
-
-        assert_eq!(sent, MAKER_AMOUNT);
-        env.view_escrow(&escrow).await;
+            assert_eq!(sent, amount);
+            env.view_escrow(&escrow).await;
+        }
     }
 
     // takers deposit
