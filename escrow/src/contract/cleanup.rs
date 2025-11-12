@@ -37,7 +37,10 @@ impl<'a> CleanupGuard<'a> {
     }
 
     pub fn on_callback(&mut self) -> Result<&mut Storage> {
-        let this = self.try_as_alive_mut()?.no_verify_mut();
+        let this = self
+            .try_as_alive_mut()?
+            // callbacks should be only executed on verified data
+            .no_verify_mut();
         this.on_callback();
         Ok(this)
     }

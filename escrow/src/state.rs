@@ -24,8 +24,6 @@ use serde_with::{DisplayFromStr, hex::Hex, serde_as};
 #[derive(Debug, Clone, PartialEq, Eq)]
 
 pub struct ContractStorage {
-    // TODO: better design: get() and get_unchecked() return struct with fields
-    // below
     #[serde_as(as = "Hex")]
     fixed_params_hash: [u8; 32],
 
@@ -34,19 +32,11 @@ pub struct ContractStorage {
 }
 
 impl ContractStorage {
-    pub fn new(fixed: &FixedParams, params: Params) -> Result<Self> {
-        if fixed.src_token == fixed.dst_token {
-            return Err(Error::SameAsset);
-        }
-
-        if fixed.total_fee().ok_or(Error::ExcessiveFees)? >= Pips::MAX {
-            return Err(Error::ExcessiveFees);
-        }
-
-        Ok(Self {
+    pub fn new(fixed: &FixedParams, params: Params) -> Self {
+        Self {
             fixed_params_hash: fixed.hash(),
             storage: Storage::new(params),
-        })
+        }
     }
 
     // TODO: nep616 feature
@@ -156,9 +146,9 @@ pub struct FixedParams {
 impl FixedParams {
     pub fn total_fee(&self) -> Option<Pips> {
         self.fees
-            .iter()
-            .map(|(_, fee)| *fee)
-            .try_fold(Pips::ZERO, |total, fee| total.checked_add(fee))
+            .values()
+            .copied()
+            .try_fold(Pips::ZERO, Pips::checked_add)
     }
 }
 
@@ -225,7 +215,6 @@ pub struct State {
 
     #[serde(skip)] // callers shouldn't care
     pub callbacks_in_flight: u32,
-    // TODO: lost_found: store zero for beging transfer, otherwise - fail
 }
 
 #[near(serializers = [borsh, json])]

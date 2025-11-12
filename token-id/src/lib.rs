@@ -7,13 +7,13 @@ pub mod nep171;
 #[cfg(feature = "nep245")]
 pub mod nep245;
 
-const _: () = assert!(
-    cfg!(any(
-        feature = "nep141",
-        feature = "nep171",
-        feature = "nep245",
-    )),
-    "at least one of these features should be enabled: ['nep141', 'nep171', 'nep245']"
+#[cfg(not(any(feature = "nep141", feature = "nep171", feature = "nep245")))]
+compile_error!(
+    r#"At least one of these features should be enabled:
+- "nep141"
+- "nep171"
+- "nep245"
+"#
 );
 
 use crate::error::TokenIdError;

@@ -78,6 +78,7 @@ async fn partial_fills() {
             .enumerate()
             .map(|(percent, a)| (a, Pips::from_percent(percent as u32 + 1).unwrap()))
             .collect(),
+        // taker_whitelist: Default::default(),
         taker_whitelist: env.takers.iter().map(|a| a.id()).cloned().collect(),
         // maker_authority: Some(cancel_authorify.0.clone()),
     };
@@ -115,7 +116,7 @@ async fn partial_fills() {
                     escrow.id(),
                     src_verifier_asset.to_string(),
                     amount,
-                    None,
+                    "maker deposit".to_string(),
                     serde_json::to_string(&TransferMessage {
                         fixed_params: fixed_params.clone(),
                         action: OpenAction { new_price: None }.into(),
@@ -151,7 +152,7 @@ async fn partial_fills() {
                     escrow.id(),
                     dst_verifier_asset.to_string(),
                     amount,
-                    None,
+                    "taker fill".to_string(),
                     serde_json::to_string(&TransferMessage {
                         fixed_params: fixed_params.clone(),
                         action: FillAction {

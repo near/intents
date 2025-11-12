@@ -101,4 +101,12 @@ impl TokenIdExt for Nep245TokenId {
             )
         }
     }
+
+    fn transfer_gas_min_default(&self, is_call: bool) -> (Gas, Gas) {
+        if is_call {
+            (MT_TRANSFER_CALL_GAS_MIN, MT_TRANSFER_CALL_GAS_DEFAULT)
+        } else {
+            (MT_TRANSFER_GAS_MIN, MT_TRANSFER_GAS_DEFAULT)
+        }
+    }
 }

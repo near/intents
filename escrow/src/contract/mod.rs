@@ -6,17 +6,19 @@ mod utils;
 
 use std::{borrow::Cow, mem};
 
+use defuse_fees::Pips;
 use defuse_near_utils::{MaybePromise, PromiseExt, UnwrapOrPanic};
 use defuse_token_id::TokenId;
 
 use near_sdk::{
-    AccountId, PanicOnDefault, Promise, PromiseOrValue, env, near, require, serde_json,
+    AccountId, Gas, PanicOnDefault, Promise, PromiseOrValue, env, near, require, serde_json,
 };
 
 use crate::{
     Action, AddSrcEvent, ContractStorage, CreateEvent, Error, Escrow, EscrowEvent,
     EscrowIntentEmit, FillAction, FillEvent, FixedParams, OpenAction, Params, Result, Storage,
-    TransferMessage, contract::tokens::TokenIdTypeExt,
+    TransferMessage,
+    contract::{return_value::RETURN_VALUE_GAS, tokens::TokenIdTypeExt},
 };
 
 use self::{return_value::ReturnValueExt, tokens::TokenIdExt};
@@ -42,14 +44,6 @@ use self::{return_value::ReturnValueExt, tokens::TokenIdExt};
 
 // TODO: custom_resolve()
 
-// ratio is not a good approach, since adding more maker_tokens
-// would keep the ratio same, rather than decreasing it
-// BUT: maker doesn't want to blindly add assets, he wants to increase to a specific ratio
-// so, he should send maker_asset and forward target_price, the rest will be refunded to him,
-// since there could have been in-flight taker assets coming to the escrow
-// TODO: remaining_amount?
-// pub taker_amount: u128,
-
 // TODO: recovery() method with 0 src_remaining or without msg
 #[near(contract_state)] // TODO: (key = "")
 #[derive(Debug, PanicOnDefault)]
@@ -65,7 +59,9 @@ impl Contract {
         }
         .emit();
 
-        let s = ContractStorage::new(fixed, params).unwrap_or_panic();
+        fixed.validate().unwrap_or_panic();
+
+        let s = ContractStorage::new(fixed, params);
 
         // just for the safety
         require!(
@@ -341,7 +337,10 @@ impl Storage {
         if !(self.state.closed
             || self.params.deadline.has_expired()
             || self.state.maker_src_remaining == 0 && fixed.maker == env::predecessor_account_id()
-            || fixed.taker_whitelist == [env::predecessor_account_id()].into())
+            || fixed.taker_whitelist.len() == 1
+                && fixed
+                    .taker_whitelist
+                    .contains(&env::predecessor_account_id()))
         {
             // TODO: require 1yN for permissioned
 
@@ -386,7 +385,6 @@ impl Storage {
             })
             .unzip();
 
-        // TODO: maybe don't retry dst_lost here?
         let (sent_dst, send_dst_p) = Some(mem::take(&mut self.state.maker_dst_lost))
             .filter(|a| *a > 0)
             .map(|amount| {
@@ -417,5 +415,67 @@ impl Storage {
                     .escrow_resolve_transfers(sent_src, sent_dst, env::predecessor_account_id()),
             )
             .into())
+    }
+}
+
+impl FixedParams {
+    pub fn validate(&self) -> Result<()> {
+        self.validate_tokens()?;
+        self.validate_fee()?;
+        self.validate_gas()?;
+        Ok(())
+    }
+
+    fn validate_tokens(&self) -> Result<()> {
+        (self.src_token != self.dst_token)
+            .then_some(())
+            .ok_or(Error::SameAsset)
+    }
+
+    fn validate_fee(&self) -> Result<()> {
+        const MAX_FEE_PERCENT: u32 = 25;
+        const MAX_FEE: Pips = Pips::ONE_PERCENT.checked_mul(MAX_FEE_PERCENT).unwrap();
+
+        self.total_fee()
+            .is_some_and(|total| total <= MAX_FEE)
+            .then_some(())
+            .ok_or(Error::ExcessiveFees)
+    }
+
+    fn validate_gas(&self) -> Result<()> {
+        // mt_on_transfer() with p256 signature validation
+        const MAX_FILL_GAS: Gas = Gas::from_tgas(300 - 30 - 10);
+
+        self.required_gas_to_fill()
+            .is_some_and(|total| total <= MAX_FILL_GAS)
+            .then_some(())
+            .ok_or(Error::ExcessiveGas)
+    }
+
+    fn required_gas_to_fill(&self) -> Option<Gas> {
+        const FILL_GAS: Gas = Gas::from_tgas(10);
+
+        FILL_GAS
+            .checked_add(self.dst_token.transfer_gas(
+                self.receive_dst_to.min_gas,
+                self.receive_dst_to.msg.is_some(),
+            ))?
+            .checked_add(
+                self.src_token
+                    .transfer_gas(self.refund_src_to.min_gas, self.refund_src_to.msg.is_some()),
+            )?
+            .checked_add(
+                self.dst_token.transfer_gas(None, false).checked_mul(
+                    self.fees
+                        .values()
+                        .copied()
+                        .filter(|fee| !fee.is_zero())
+                        .count()
+                        .try_into()
+                        .unwrap_or_else(|_| unreachable!()),
+                )?,
+            )?
+            .checked_add(Contract::ESCROW_RESOLVE_TRANSFERS_GAS)?
+            .checked_add(RETURN_VALUE_GAS)
     }
 }

@@ -30,9 +30,7 @@ impl EscrowExt for SigningAccount {
             "params": params,
         });
 
-        let account_id = ContractStorage::new(fixed, params)
-            .unwrap()
-            .derive_account_id(self.id());
+        let account_id = ContractStorage::new(fixed, params).derive_account_id(self.id());
 
         self.tx(account_id.clone())
             .create_account()

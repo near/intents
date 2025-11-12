@@ -1,6 +1,6 @@
 use near_sdk::{Gas, GasWeight, NearToken, Promise};
 
-const RETURN_VALUE_GAS: Gas = Gas::from_ggas(500);
+pub const RETURN_VALUE_GAS: Gas = Gas::from_ggas(500);
 
 // optimized implementation without `#[near]` macro
 #[cfg(target_arch = "wasm32")]

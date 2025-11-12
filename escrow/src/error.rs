@@ -15,6 +15,8 @@ pub enum Error {
     DeadlineNotExpired,
     #[error("excessive fees")]
     ExcessiveFees,
+    #[error("impossible to fill: required gas is too big")]
+    ExcessiveGas,
     #[error("integer overflow")]
     IntegerOverflow,
     #[error("JSON: {0}")]
