@@ -5,7 +5,7 @@ use std::time::Duration;
 use defuse_escrow::{
     Deadline, Price,
     state::{FixedParams, OverrideSend, Params},
-    transfer::{FillAction, Message as TransferMessage, OpenAction},
+    tokens::{FillAction, OpenAction, TransferMessage},
 };
 use defuse_fees::Pips;
 use defuse_sandbox::{

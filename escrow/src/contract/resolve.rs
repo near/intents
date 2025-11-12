@@ -1,5 +1,5 @@
 use defuse_near_utils::UnwrapOrPanic;
-use near_sdk::{AccountId, Gas, near};
+use near_sdk::{Gas, near};
 
 use crate::{Error, Result, state::State};
 
@@ -14,9 +14,8 @@ impl Contract {
         &mut self,
         maker_src: Option<Sent>,
         maker_dst: Option<Sent>,
-        beneficiary_id: AccountId,
     ) -> bool {
-        self.resolve_transfers(maker_src, maker_dst, beneficiary_id)
+        self.resolve_transfers(maker_src, maker_dst)
             .unwrap_or_panic()
     }
 }
@@ -26,16 +25,15 @@ impl Contract {
         &mut self,
         maker_src: Option<Sent>,
         maker_dst: Option<Sent>,
-        beneficiary_id: AccountId,
     ) -> Result<bool> {
-        let mut guard = self.cleanup_guard(None);
+        let mut guard = self.cleanup_guard();
 
         guard
             .on_callback()?
             .state
             .resolve_transfers(maker_src, maker_dst)?;
 
-        Ok(guard.maybe_cleanup(beneficiary_id).is_some())
+        Ok(guard.maybe_cleanup().is_some())
     }
 }
 

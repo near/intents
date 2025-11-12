@@ -25,10 +25,7 @@ impl Contract {
     ) -> Result<PromiseOrValue<()>> {
         let msg: Message = serde_json::from_str(&msg)?;
 
-        let mut guard = self.cleanup_guard(
-            // reimburse to the predecessor, i.e. relayer
-            None,
-        );
+        let mut guard = self.cleanup_guard();
         let this = guard.try_as_alive_mut()?.verify_mut(&msg.fixed_params)?;
 
         if !msg

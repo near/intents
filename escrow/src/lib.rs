@@ -7,7 +7,7 @@ mod error;
 mod event;
 mod price;
 pub mod state;
-pub mod transfer;
+pub mod tokens;
 mod utils;
 
 pub use self::{error::*, event::*, price::*};

@@ -1,7 +1,7 @@
 use core::mem;
 
 use defuse_near_utils::UnwrapOrPanicError;
-use near_sdk::{AccountId, Promise, env};
+use near_sdk::{Promise, env};
 
 use crate::{
     ContractStorage, Error, EscrowEvent, Result,
@@ -11,12 +11,8 @@ use crate::{
 use super::{Contract, ContractExt};
 
 impl Contract {
-    pub(super) fn cleanup_guard(
-        &mut self,
-        // TODO: check usages
-        beneficiary_id: impl Into<Option<AccountId>>,
-    ) -> CleanupGuard<'_> {
-        CleanupGuard::new(self, beneficiary_id)
+    pub(super) fn cleanup_guard(&mut self) -> CleanupGuard<'_> {
+        CleanupGuard(self)
     }
 
     pub(super) const fn as_alive(&self) -> Option<&ContractStorage> {
@@ -28,21 +24,11 @@ impl Contract {
     }
 }
 
-pub struct CleanupGuard<'a> {
-    contract: &'a mut Contract,
-    beneficiary_id: Option<AccountId>,
-}
+pub struct CleanupGuard<'a>(&'a mut Contract);
 
 impl<'a> CleanupGuard<'a> {
-    pub fn new(contract: &'a mut Contract, beneficiary_id: impl Into<Option<AccountId>>) -> Self {
-        Self {
-            contract,
-            beneficiary_id: beneficiary_id.into(),
-        }
-    }
-
     pub const fn as_alive_mut(&mut self) -> Option<&mut ContractStorage> {
-        self.contract.0.as_mut()
+        self.0.0.as_mut()
     }
 
     pub fn try_as_alive_mut(&mut self) -> Result<&mut ContractStorage> {
@@ -58,28 +44,21 @@ impl<'a> CleanupGuard<'a> {
         Ok(this)
     }
 
-    pub fn maybe_cleanup(
-        &mut self,
-        beneficiary_id: impl Into<Option<AccountId>>,
-    ) -> Option<Promise> {
-        self.contract
+    pub fn maybe_cleanup(&mut self) -> Option<Promise> {
+        self.0
             .0
             .take_if(|s| s.no_verify_mut().should_cleanup())
             .map(|_storage| {
-                Promise::new(env::current_account_id()).delete_account(
-                    beneficiary_id
-                        .into()
-                        .or(self.beneficiary_id.take())
-                        // TODO: or env::signer_id?
-                        .unwrap_or_else(env::predecessor_account_id),
-                )
+                Promise::new(env::current_account_id())
+                    // reimburse signer/relayer
+                    .delete_account(env::signer_account_id())
             })
     }
 }
 
 impl<'a> Drop for CleanupGuard<'a> {
     fn drop(&mut self) {
-        self.maybe_cleanup(None);
+        self.maybe_cleanup();
     }
 }
 

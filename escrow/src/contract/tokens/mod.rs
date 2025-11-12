@@ -12,8 +12,35 @@ compile_error!(
 );
 
 use defuse_token_id::{TokenId, TokenIdType};
-use near_sdk::{AccountId, Gas, Promise, PromiseResult, env, json_types::U128, near, serde_json};
+use near_sdk::{
+    AccountId, Gas, Promise, PromiseOrValue, PromiseResult, env, json_types::U128, near, serde_json,
+};
 use serde_with::{DisplayFromStr, serde_as};
+
+use crate::{Error, Result, tokens::TransferMessage};
+
+use super::Contract;
+
+impl Contract {
+    pub fn on_receive(
+        &mut self,
+        sender_id: AccountId,
+        token_id: TokenId,
+        amount: u128,
+        msg: &str,
+    ) -> Result<PromiseOrValue<u128>> {
+        if amount == 0 {
+            return Err(Error::InsufficientAmount);
+        }
+
+        let msg: TransferMessage = serde_json::from_str(msg)?;
+
+        self.cleanup_guard()
+            .try_as_alive_mut()?
+            .verify_mut(&msg.fixed_params)?
+            .on_receive(msg.fixed_params, sender_id, token_id, amount, msg.action)
+    }
+}
 
 pub trait TokenIdExt: Sized {
     fn token_type(&self) -> TokenIdType;

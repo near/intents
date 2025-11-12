@@ -128,6 +128,8 @@ pub struct FixedParams {
     #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
     pub taker_whitelist: BTreeSet<AccountId>,
     // TODO: whitelist: Option<signer_id>
+
+    // TODO: or parent account id?
     #[cfg(feature = "auth_call")] // TODO: borsh order?
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub auth_caller: Option<AccountId>,

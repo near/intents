@@ -12,14 +12,12 @@ use defuse_fees::Pips;
 use defuse_near_utils::{MaybePromise, PromiseExt, UnwrapOrPanic};
 use defuse_token_id::TokenId;
 
-use near_sdk::{
-    AccountId, Gas, PanicOnDefault, Promise, PromiseOrValue, env, near, require, serde_json,
-};
+use near_sdk::{AccountId, Gas, PanicOnDefault, Promise, PromiseOrValue, env, near, require};
 
 use crate::{
     AddSrcEvent, CreateEvent, Error, Escrow, EscrowEvent, EscrowIntentEmit, FillEvent, Result,
     state::{ContractStorage, FixedParams, Params, Storage},
-    transfer::{Action as TransferAction, FillAction, Message as TransferMessage, OpenAction},
+    tokens::{FillAction, OpenAction, TransferAction},
 };
 
 use self::{
@@ -104,7 +102,7 @@ impl Contract {
         signer_id: AccountId,
         fixed_params: FixedParams,
     ) -> Result<PromiseOrValue<bool>> {
-        let mut guard = self.cleanup_guard(None);
+        let mut guard = self.cleanup_guard();
 
         let this = guard.try_as_alive_mut()?.verify_mut(&fixed_params)?;
 
@@ -112,42 +110,21 @@ impl Contract {
             if let Some(promise) = this.close(signer_id, fixed_params)? {
                 PromiseOrValue::Promise(promise)
             } else {
-                PromiseOrValue::Value(guard.maybe_cleanup(None).is_some())
+                PromiseOrValue::Value(guard.maybe_cleanup().is_some())
             },
         )
     }
 
     fn lost_found(&mut self, fixed_params: FixedParams) -> Result<PromiseOrValue<bool>> {
-        let mut guard = self.cleanup_guard(None);
+        let mut guard = self.cleanup_guard();
 
         let this = guard.try_as_alive_mut()?.verify_mut(&fixed_params)?;
 
         Ok(if let Some(promise) = this.lost_found(fixed_params)? {
             PromiseOrValue::Promise(promise)
         } else {
-            PromiseOrValue::Value(guard.maybe_cleanup(None).is_some())
+            PromiseOrValue::Value(guard.maybe_cleanup().is_some())
         })
-    }
-}
-
-impl Contract {
-    pub fn on_receive(
-        &mut self,
-        sender_id: AccountId,
-        token_id: TokenId,
-        amount: u128,
-        msg: &str,
-    ) -> Result<PromiseOrValue<u128>> {
-        if amount == 0 {
-            return Err(Error::InsufficientAmount);
-        }
-
-        let msg: TransferMessage = serde_json::from_str(msg)?;
-
-        self.cleanup_guard(sender_id.clone())
-            .try_as_alive_mut()?
-            .verify_mut(&msg.fixed_params)?
-            .on_receive(msg.fixed_params, sender_id, token_id, amount, msg.action)
     }
 }
 
@@ -162,10 +139,7 @@ impl Storage {
         amount: u128,
         action: TransferAction,
     ) -> Result<PromiseOrValue<u128>> {
-        // TODO: check amount non-zero
         if self.state.closed || self.params.deadline.has_expired() {
-            // TODO: utilize for our needs, refund after being closed or expired?
-            // TODO: what if maker wants to reopen and prolongate deadline?
             return Err(Error::Closed);
         }
 
@@ -276,7 +250,7 @@ impl Storage {
                             fee_collector.clone(),
                             fee_amount,
                             Some("fee".to_string()),
-                            None, // TODO: msg for fee_collectors?
+                            None,
                             None,
                             false, // no unused gas
                         );
@@ -335,13 +309,7 @@ impl Storage {
                 self.callback()
                     .with_static_gas(Contract::ESCROW_RESOLVE_TRANSFERS_GAS)
                     .with_unused_gas_weight(0)
-                    .escrow_resolve_transfers(
-                        None,
-                        Some(maker_dst),
-                        // TODO: who is beneficiary_id?
-                        // TODO: what about sub-escrow case?
-                        sender_id,
-                    )
+                    .escrow_resolve_transfers(None, Some(maker_dst))
                     .return_value(maker_dst.token_type.refund_value(refund)?),
             )
             .into())
@@ -424,12 +392,7 @@ impl Storage {
                 self.callback()
                     .with_static_gas(Contract::ESCROW_RESOLVE_TRANSFERS_GAS)
                     .with_unused_gas_weight(0)
-                    .escrow_resolve_transfers(
-                        sent_src,
-                        sent_dst,
-                        // TODO
-                        env::predecessor_account_id(),
-                    ),
+                    .escrow_resolve_transfers(sent_src, sent_dst),
             )
             .into())
     }

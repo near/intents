@@ -1,19 +1,22 @@
 use derive_more::From;
 use near_sdk::near;
 
-use crate::{FixedParams, Price, state::OverrideSend};
+use crate::{
+    Price,
+    state::{FixedParams, OverrideSend},
+};
 
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
-pub struct Message {
+pub struct TransferMessage {
     pub fixed_params: FixedParams,
-    pub action: Action,
+    pub action: TransferAction,
 }
 
 #[near(serializers = [json])]
 #[serde(tag = "type", content = "data", rename_all = "snake_case")]
 #[derive(Debug, Clone, From)]
-pub enum Action {
+pub enum TransferAction {
     Open(OpenAction),
     Fill(FillAction),
 }
