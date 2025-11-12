@@ -1,7 +1,7 @@
 use derive_more::From;
 use near_sdk::near;
 
-use crate::{FixedParams, Price, SendParams};
+use crate::{FixedParams, Price, OverrideSend};
 
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
@@ -30,6 +30,6 @@ pub struct OpenAction {
 #[derive(Debug, Clone)]
 pub struct FillAction {
     #[serde(default, skip_serializing_if = "crate::utils::is_default")]
-    pub receive_src_to: SendParams,
+    pub receive_src_to: OverrideSend,
     // TODO: min_src_out?
 }

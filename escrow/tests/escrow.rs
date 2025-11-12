@@ -3,7 +3,7 @@ mod env;
 use std::time::Duration;
 
 use defuse_escrow::{
-    Deadline, FillAction, FixedParams, OpenAction, Params, Price, SendParams, TransferMessage,
+    Deadline, FillAction, FixedParams, OpenAction, OverrideSend, Params, Price, TransferMessage,
 };
 use defuse_fees::Pips;
 use defuse_sandbox::{
@@ -59,10 +59,10 @@ async fn partial_fills() {
         //     msg: Some("fail".to_string()),
         //     min_gas: None,
         // },
-        refund_src_to: SendParams::default(),
+        refund_src_to: OverrideSend::default(),
         src_token: src_asset.clone(),
         dst_token: dst_asset.clone(),
-        receive_dst_to: SendParams::default(),
+        receive_dst_to: OverrideSend::default(),
         // receive_dst_to: SendParams {
         //     receiver_id: None,
         //     memo: None,
@@ -155,7 +155,7 @@ async fn partial_fills() {
                     serde_json::to_string(&TransferMessage {
                         fixed_params: fixed_params.clone(),
                         action: FillAction {
-                            receive_src_to: SendParams {
+                            receive_src_to: OverrideSend {
                                 memo: Some("taker memo".to_string()),
                                 // msg: Some("taker msg".to_string()),
                                 ..Default::default()

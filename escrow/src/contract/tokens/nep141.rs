@@ -15,7 +15,6 @@ impl FungibleTokenReceiver for Contract {
         let token_id: TokenId = Nep141TokenId::new(env::predecessor_account_id()).into();
 
         match self
-            .cleanup_guard()
             .on_receive(sender_id, token_id, amount.0, &msg)
             .unwrap_or_panic()
         {
@@ -66,33 +65,4 @@ impl TokenIdExt for Nep141TokenId {
             .ft_transfer(receiver_id, U128(amount), memo)
         }
     }
-
-    // fn resolve(result_idx: u64, amount: u128, is_call: bool) -> u128 {
-    //     match env::promise_result(result_idx) {
-    //         PromiseResult::Successful(value) => {
-    //             if is_call {
-    //                 // `ft_transfer_call` returns successfully transferred amounts
-    //                 serde_json::from_slice::<U128>(&value)
-    //                     .unwrap_or_default()
-    //                     .0
-    //                     .min(amount)
-    //             } else if value.is_empty() {
-    //                 // `ft_transfer` returns empty result on success
-    //                 amount
-    //             } else {
-    //                 0
-    //             }
-    //         }
-    //         PromiseResult::Failed => {
-    //             if is_call {
-    //                 // do not refund on failed `ft_transfer_call` due to
-    //                 // NEP-141 vulnerability: `ft_resolve_transfer` fails to
-    //                 // read result of `ft_on_transfer` due to insufficient gas
-    //                 amount
-    //             } else {
-    //                 0
-    //             }
-    //         }
-    //     }
-    // }
 }

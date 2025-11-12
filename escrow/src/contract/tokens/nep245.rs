@@ -32,13 +32,10 @@ impl MultiTokenReceiver for Contract {
             .ok_or(Error::WrongAsset)
             .unwrap_or_panic();
 
-        require!(amount.0 != 0, "zero amount");
-
         let token_id: TokenId =
             ResultExt::into_ok(Nep245TokenId::new(env::predecessor_account_id(), token_id)).into();
 
         match self
-            .cleanup_guard()
             .on_receive(sender_id, token_id, amount.0, &msg)
             .unwrap_or_panic()
         {
@@ -104,32 +101,4 @@ impl TokenIdExt for Nep245TokenId {
             )
         }
     }
-
-    // fn resolve(result_idx: u64, amount: u128, is_call: bool) -> u128 {
-    //     match env::promise_result(result_idx) {
-    //         PromiseResult::Successful(value) => {
-    //             if is_call {
-    //                 // `mt_transfer_call` returns successfully transferred amounts
-    //                 serde_json::from_slice::<[U128; 1]>(&value).unwrap_or_default()[0]
-    //                     .0
-    //                     .min(amount)
-    //             } else if value.is_empty() {
-    //                 // `mt_transfer` returns empty result on success
-    //                 amount
-    //             } else {
-    //                 0
-    //             }
-    //         }
-    //         PromiseResult::Failed => {
-    //             if is_call {
-    //                 // do not refund on failed `mt_transfer_call` due to
-    //                 // NEP-245 vulnerability: `mt_resolve_transfer` fails to
-    //                 // read result of `mt_on_transfer` due to insufficient gas
-    //                 amount
-    //             } else {
-    //                 0
-    //             }
-    //         }
-    //     }
-    // }
 }

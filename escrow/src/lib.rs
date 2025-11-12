@@ -1,6 +1,7 @@
-mod action;
 #[cfg(feature = "contract")]
-pub mod contract;
+mod contract;
+
+mod action;
 mod error;
 mod event;
 mod price;
@@ -13,13 +14,11 @@ pub use defuse_near_utils::time::Deadline;
 
 // TODO: more pub re-exports
 
-use near_sdk::{AccountId, Gas, PromiseOrValue, ext_contract, near};
-
-// TODO: create sub_escrow for a single solver and lock NEAR
+use near_sdk::{PromiseOrValue, ext_contract};
 
 #[ext_contract(ext_escrow)]
 pub trait Escrow {
-    fn escrow_view(&self) -> &Storage;
+    fn escrow_view(&self) -> &ContractStorage;
 
     /// Closes the escrow + performs lost_found().
     ///
@@ -40,39 +39,15 @@ pub trait Escrow {
     /// stop indexing it.
     /// Otherwise, there MIGHT be lost assets there
     /// or they might come in the future.
+    /// TODO: maker custom params for withdrawal
     fn escrow_lost_found(&mut self, fixed_params: FixedParams) -> PromiseOrValue<bool>;
+    // TODO: recover()
     // TODO: decrease_price()
     // TODO: prolongate_deadline()
     // TODO: total_fee(&self)
     // TODO: effective_price(&self)
+    // TODO: create sub_escrow for a single solver and lock NEAR
 }
 
 // TODO: notify on_close()
 // TODO: on_auth
-
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct SendParams {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub receiver_id: Option<AccountId>,
-
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub memo: Option<String>,
-
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub msg: Option<String>,
-
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub min_gas: Option<Gas>,
-}
-
-impl SendParams {
-    pub fn verify(&self) -> Result<()> {
-        // TODO: verify min_gas < MAX_GAS
-        Ok(())
-    }
-
-    pub const fn is_call(&self) -> bool {
-        self.msg.is_some()
-    }
-}

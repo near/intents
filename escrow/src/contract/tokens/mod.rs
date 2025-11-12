@@ -10,7 +10,6 @@ const _: () = assert!(
 
 use defuse_token_id::{TokenId, TokenIdType};
 use near_sdk::{AccountId, Gas, Promise, PromiseResult, env, json_types::U128, near, serde_json};
-
 use serde_with::{DisplayFromStr, serde_as};
 
 pub trait TokenIdExt: Sized {
@@ -26,7 +25,7 @@ pub trait TokenIdExt: Sized {
         unused_gas: bool,
     ) -> Promise;
 
-    fn send_to_resolve_later(
+    fn send_for_resolve(
         self,
         receiver_id: AccountId,
         amount: u128,

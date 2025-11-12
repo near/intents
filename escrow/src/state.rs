@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::{Error, Price, Result, SendParams};
+use crate::{Error, Price, Result};
 
 use defuse_borsh_utils::adapters::{
     As as BorshAs, TimestampNanoSeconds as BorshTimestampNanoSeconds,
@@ -9,7 +9,7 @@ use defuse_fees::Pips;
 use defuse_near_utils::time::Deadline;
 use defuse_num_utils::CheckedAdd;
 use defuse_token_id::TokenId;
-use near_sdk::{AccountId, AccountIdRef, CryptoHash, borsh, env, near};
+use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, borsh, env, near};
 use serde_with::{DisplayFromStr, hex::Hex, serde_as};
 
 #[cfg_attr(
@@ -23,24 +23,30 @@ use serde_with::{DisplayFromStr, hex::Hex, serde_as};
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 
-pub struct Storage {
+pub struct ContractStorage {
+    // TODO: better design: get() and get_unchecked() return struct with fields
+    // below
     #[serde_as(as = "Hex")]
-    pub fixed_params_hash: [u8; 32],
+    fixed_params_hash: [u8; 32],
 
     #[serde(flatten)]
-    pub params: Params,
-
-    #[serde(flatten)]
-    pub state: State,
+    storage: Storage,
 }
 
-impl Storage {
-    pub fn new(fixed: &FixedParams, params: Params) -> Self {
-        Self {
-            fixed_params_hash: fixed.hash(),
-            params,
-            state: State::default(),
+impl ContractStorage {
+    pub fn new(fixed: &FixedParams, params: Params) -> Result<Self> {
+        if fixed.src_token == fixed.dst_token {
+            return Err(Error::SameAsset);
         }
+
+        if fixed.total_fee().ok_or(Error::ExcessiveFees)? >= Pips::MAX {
+            return Err(Error::ExcessiveFees);
+        }
+
+        Ok(Self {
+            fixed_params_hash: fixed.hash(),
+            storage: Storage::new(params),
+        })
     }
 
     // TODO: nep616 feature
@@ -59,20 +65,42 @@ impl Storage {
             .unwrap_or_else(|_| unreachable!())
     }
 
-    pub fn verify(&self, fixed: &FixedParams) -> Result<()> {
-        if fixed.hash() != self.fixed_params_hash {
-            return Err(Error::WrongData);
-        }
+    pub const fn no_verify(&self) -> &Storage {
+        &self.storage
+    }
 
-        if fixed.src_token == fixed.dst_token {
-            return Err(Error::SameAsset);
-        }
+    pub const fn no_verify_mut(&mut self) -> &mut Storage {
+        &mut self.storage
+    }
 
-        if fixed.total_fee().ok_or(Error::ExcessiveFees)? >= Pips::MAX {
-            return Err(Error::ExcessiveFees);
-        }
+    pub fn verify(&self, fixed: &FixedParams) -> Result<&Storage> {
+        (self.fixed_params_hash == fixed.hash())
+            .then_some(&self.storage)
+            .ok_or(Error::WrongData)
+    }
 
-        Ok(())
+    pub fn verify_mut(&mut self, fixed: &FixedParams) -> Result<&mut Storage> {
+        self.verify(fixed)?;
+        Ok(&mut self.storage)
+    }
+}
+
+#[near(serializers = [borsh, json])]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Storage {
+    #[serde(flatten)]
+    pub params: Params,
+
+    #[serde(flatten)]
+    pub state: State,
+}
+
+impl Storage {
+    pub fn new(params: Params) -> Self {
+        Self {
+            params,
+            state: State::default(),
+        }
     }
 }
 
@@ -90,14 +118,13 @@ pub struct FixedParams {
     pub maker: AccountId,
 
     // TODO: check != src_asset
-    // TODO: rename to "*_token?"
     pub src_token: TokenId,
     pub dst_token: TokenId,
 
     #[serde(default, skip_serializing_if = "crate::utils::is_default")]
-    pub refund_src_to: SendParams,
+    pub refund_src_to: OverrideSend,
     #[serde(default, skip_serializing_if = "crate::utils::is_default")]
-    pub receive_dst_to: SendParams,
+    pub receive_dst_to: OverrideSend,
 
     #[serde(default)]
     pub partial_fills_allowed: bool,
@@ -199,6 +226,29 @@ pub struct State {
     #[serde(skip)] // callers shouldn't care
     pub callbacks_in_flight: u32,
     // TODO: lost_found: store zero for beging transfer, otherwise - fail
+}
+
+#[near(serializers = [borsh, json])]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct OverrideSend {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub receiver_id: Option<AccountId>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub memo: Option<String>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub msg: Option<String>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_gas: Option<Gas>,
+}
+
+impl OverrideSend {
+    pub fn verify(&self) -> Result<()> {
+        // TODO: verify min_gas < MAX_GAS
+        Ok(())
+    }
 }
 
 // TODO: CoW schema:
