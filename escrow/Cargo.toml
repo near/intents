@@ -31,6 +31,8 @@ serde_with = { workspace = true, features = ["chrono_0_4", "hex"] }
 strum.workspace = true
 thiserror.workspace = true
 
+defuse-auth-call = { workspace = true, optional = true }
+
 [dev-dependencies]
 defuse-sandbox.workspace = true
 
@@ -42,8 +44,9 @@ rstest.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 
 [features]
-default = ["nep141", "nep245"]
+default = ["auth_call", "nep141", "nep245"]
 
+auth_call = ["dep:defuse-auth-call"]
 nep141 = ["defuse-token-id/nep141"]
 nep245 = ["defuse-token-id/nep245"]
 

@@ -1,7 +1,7 @@
 use defuse_near_utils::UnwrapOrPanic;
 use near_sdk::{AccountId, Gas, near};
 
-use crate::{Error, Result, State};
+use crate::{Error, Result, state::State};
 
 use super::{Contract, ContractExt, tokens::Sent};
 
@@ -28,7 +28,7 @@ impl Contract {
         maker_dst: Option<Sent>,
         beneficiary_id: AccountId,
     ) -> Result<bool> {
-        let mut guard = self.cleanup_guard();
+        let mut guard = self.cleanup_guard(None);
 
         guard
             .on_callback()?

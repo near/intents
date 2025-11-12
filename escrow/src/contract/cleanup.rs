@@ -3,13 +3,20 @@ use core::mem;
 use defuse_near_utils::UnwrapOrPanicError;
 use near_sdk::{AccountId, Promise, env};
 
-use crate::{ContractStorage, Error, EscrowEvent, Result, State, Storage, contract::ContractExt};
+use crate::{
+    ContractStorage, Error, EscrowEvent, Result,
+    state::{State, Storage},
+};
 
-use super::Contract;
+use super::{Contract, ContractExt};
 
 impl Contract {
-    pub(super) const fn cleanup_guard(&mut self) -> CleanupGuard<'_> {
-        CleanupGuard::new(self)
+    pub(super) fn cleanup_guard(
+        &mut self,
+        // TODO: check usages
+        beneficiary_id: impl Into<Option<AccountId>>,
+    ) -> CleanupGuard<'_> {
+        CleanupGuard::new(self, beneficiary_id)
     }
 
     pub(super) const fn as_alive(&self) -> Option<&ContractStorage> {
@@ -21,15 +28,21 @@ impl Contract {
     }
 }
 
-pub struct CleanupGuard<'a>(&'a mut Contract);
+pub struct CleanupGuard<'a> {
+    contract: &'a mut Contract,
+    beneficiary_id: Option<AccountId>,
+}
 
 impl<'a> CleanupGuard<'a> {
-    pub const fn new(contract: &'a mut Contract) -> Self {
-        Self(contract)
+    pub fn new(contract: &'a mut Contract, beneficiary_id: impl Into<Option<AccountId>>) -> Self {
+        Self {
+            contract,
+            beneficiary_id: beneficiary_id.into(),
+        }
     }
 
     pub const fn as_alive_mut(&mut self) -> Option<&mut ContractStorage> {
-        self.0.0.as_mut()
+        self.contract.0.as_mut()
     }
 
     pub fn try_as_alive_mut(&mut self) -> Result<&mut ContractStorage> {
@@ -49,13 +62,15 @@ impl<'a> CleanupGuard<'a> {
         &mut self,
         beneficiary_id: impl Into<Option<AccountId>>,
     ) -> Option<Promise> {
-        self.0
+        self.contract
             .0
             .take_if(|s| s.no_verify_mut().should_cleanup())
             .map(|_storage| {
                 Promise::new(env::current_account_id()).delete_account(
                     beneficiary_id
                         .into()
+                        .or(self.beneficiary_id.take())
+                        // TODO: or env::signer_id?
                         .unwrap_or_else(env::predecessor_account_id),
                 )
             })

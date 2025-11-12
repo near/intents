@@ -1,3 +1,5 @@
+#[cfg(feature = "auth_call")]
+mod auth_call;
 mod cleanup;
 mod resolve;
 mod return_value;
@@ -15,13 +17,15 @@ use near_sdk::{
 };
 
 use crate::{
-    Action, AddSrcEvent, ContractStorage, CreateEvent, Error, Escrow, EscrowEvent,
-    EscrowIntentEmit, FillAction, FillEvent, FixedParams, OpenAction, Params, Result, Storage,
-    TransferMessage,
-    contract::{return_value::RETURN_VALUE_GAS, tokens::TokenIdTypeExt},
+    AddSrcEvent, CreateEvent, Error, Escrow, EscrowEvent, EscrowIntentEmit, FillEvent, Result,
+    state::{ContractStorage, FixedParams, Params, Storage},
+    transfer::{Action as TransferAction, FillAction, Message as TransferMessage, OpenAction},
 };
 
-use self::{return_value::ReturnValueExt, tokens::TokenIdExt};
+use self::{
+    return_value::{RETURN_VALUE_GAS, ReturnValueExt},
+    tokens::{TokenIdExt, TokenIdTypeExt},
+};
 
 // QUESTIONS:
 // * cancel by 2-of-2 multisig: user + SolverBus?
@@ -76,13 +80,17 @@ impl Contract {
 #[near]
 impl Escrow for Contract {
     fn escrow_view(&self) -> &ContractStorage {
-        self.try_as_alive().unwrap_or_panic()
+        self.try_as_alive()
+            // if cleanup is in progress, the contract will be
+            // soon deleted anyway, so it's ok to panic here
+            .unwrap_or_panic()
     }
 
     // TODO: cancel_by_resolver?
     #[payable]
     fn escrow_close(&mut self, fixed_params: FixedParams) -> PromiseOrValue<bool> {
-        self.close(fixed_params).unwrap_or_panic()
+        self.close(env::predecessor_account_id(), fixed_params)
+            .unwrap_or_panic()
     }
 
     fn escrow_lost_found(&mut self, fixed_params: FixedParams) -> PromiseOrValue<bool> {
@@ -91,20 +99,26 @@ impl Escrow for Contract {
 }
 
 impl Contract {
-    fn close(&mut self, fixed_params: FixedParams) -> Result<PromiseOrValue<bool>> {
-        let mut guard = self.cleanup_guard();
+    fn close(
+        &mut self,
+        signer_id: AccountId,
+        fixed_params: FixedParams,
+    ) -> Result<PromiseOrValue<bool>> {
+        let mut guard = self.cleanup_guard(None);
 
         let this = guard.try_as_alive_mut()?.verify_mut(&fixed_params)?;
 
-        Ok(if let Some(promise) = this.close(fixed_params)? {
-            PromiseOrValue::Promise(promise)
-        } else {
-            PromiseOrValue::Value(guard.maybe_cleanup(None).is_some())
-        })
+        Ok(
+            if let Some(promise) = this.close(signer_id, fixed_params)? {
+                PromiseOrValue::Promise(promise)
+            } else {
+                PromiseOrValue::Value(guard.maybe_cleanup(None).is_some())
+            },
+        )
     }
 
     fn lost_found(&mut self, fixed_params: FixedParams) -> Result<PromiseOrValue<bool>> {
-        let mut guard = self.cleanup_guard();
+        let mut guard = self.cleanup_guard(None);
 
         let this = guard.try_as_alive_mut()?.verify_mut(&fixed_params)?;
 
@@ -130,7 +144,7 @@ impl Contract {
 
         let msg: TransferMessage = serde_json::from_str(msg)?;
 
-        self.cleanup_guard()
+        self.cleanup_guard(sender_id.clone())
             .try_as_alive_mut()?
             .verify_mut(&msg.fixed_params)?
             .on_receive(msg.fixed_params, sender_id, token_id, amount, msg.action)
@@ -146,7 +160,7 @@ impl Storage {
         sender_id: AccountId,
         token_id: TokenId,
         amount: u128,
-        action: Action,
+        action: TransferAction,
     ) -> Result<PromiseOrValue<u128>> {
         // TODO: check amount non-zero
         if self.state.closed || self.params.deadline.has_expired() {
@@ -156,13 +170,13 @@ impl Storage {
         }
 
         match action {
-            Action::Open(open) if token_id == fixed.src_token => {
+            TransferAction::Open(open) if token_id == fixed.src_token => {
                 self.on_open(fixed, sender_id, amount, open)
             }
-            Action::Fill(fill) if token_id == fixed.dst_token => {
+            TransferAction::Fill(fill) if token_id == fixed.dst_token => {
                 self.on_fill(fixed, sender_id, amount, fill)
             }
-            _ => Err(Error::WrongAsset),
+            _ => Err(Error::WrongToken),
         }
     }
 
@@ -324,7 +338,8 @@ impl Storage {
                     .escrow_resolve_transfers(
                         None,
                         Some(maker_dst),
-                        // TODO: beneficiary_id
+                        // TODO: who is beneficiary_id?
+                        // TODO: what about sub-escrow case?
                         sender_id,
                     )
                     .return_value(maker_dst.token_type.refund_value(refund)?),
@@ -332,15 +347,12 @@ impl Storage {
             .into())
     }
 
-    fn close(&mut self, fixed: FixedParams) -> Result<Option<Promise>> {
+    fn close(&mut self, signer_id: AccountId, fixed: FixedParams) -> Result<Option<Promise>> {
         // TODO: authority
         if !(self.state.closed
             || self.params.deadline.has_expired()
-            || self.state.maker_src_remaining == 0 && fixed.maker == env::predecessor_account_id()
-            || fixed.taker_whitelist.len() == 1
-                && fixed
-                    .taker_whitelist
-                    .contains(&env::predecessor_account_id()))
+            || self.state.maker_src_remaining == 0 && signer_id == fixed.maker
+            || fixed.taker_whitelist.len() == 1 && fixed.taker_whitelist.contains(&signer_id))
         {
             // TODO: require 1yN for permissioned
 
@@ -412,7 +424,12 @@ impl Storage {
                 self.callback()
                     .with_static_gas(Contract::ESCROW_RESOLVE_TRANSFERS_GAS)
                     .with_unused_gas_weight(0)
-                    .escrow_resolve_transfers(sent_src, sent_dst, env::predecessor_account_id()),
+                    .escrow_resolve_transfers(
+                        sent_src,
+                        sent_dst,
+                        // TODO
+                        env::predecessor_account_id(),
+                    ),
             )
             .into())
     }
@@ -429,7 +446,7 @@ impl FixedParams {
     fn validate_tokens(&self) -> Result<()> {
         (self.src_token != self.dst_token)
             .then_some(())
-            .ok_or(Error::SameAsset)
+            .ok_or(Error::SameTokens)
     }
 
     fn validate_fee(&self) -> Result<()> {

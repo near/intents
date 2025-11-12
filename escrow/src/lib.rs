@@ -1,16 +1,22 @@
 #[cfg(feature = "contract")]
 mod contract;
 
-mod action;
+#[cfg(feature = "auth_call")]
+pub mod auth_call;
 mod error;
 mod event;
 mod price;
-mod state;
+pub mod state;
+pub mod transfer;
 mod utils;
 
-pub use self::{action::*, error::*, event::*, price::*, state::*};
+pub use self::{error::*, event::*, price::*};
 
+pub use defuse_fees::Pips;
 pub use defuse_near_utils::time::Deadline;
+pub use defuse_token_id::TokenId;
+
+use crate::state::{ContractStorage, FixedParams};
 
 // TODO: more pub re-exports
 
@@ -48,6 +54,3 @@ pub trait Escrow {
     // TODO: effective_price(&self)
     // TODO: create sub_escrow for a single solver and lock NEAR
 }
-
-// TODO: notify on_close()
-// TODO: on_auth

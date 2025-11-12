@@ -29,7 +29,7 @@ impl MultiTokenReceiver for Contract {
 
         let (token_id, amount) = single(token_ids)
             .zip(single(amounts))
-            .ok_or(Error::WrongAsset)
+            .ok_or(Error::WrongToken)
             .unwrap_or_panic();
 
         let token_id: TokenId =

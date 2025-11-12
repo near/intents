@@ -4,7 +4,7 @@ use derive_more::From;
 use near_sdk::{AccountId, AccountIdRef, near};
 use serde_with::{DisplayFromStr, serde_as};
 
-use crate::{FixedParams, Params};
+use crate::{FixedParams, state::Params};
 
 #[near(event_json(
     // TODO

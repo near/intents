@@ -3,7 +3,9 @@ mod env;
 use std::time::Duration;
 
 use defuse_escrow::{
-    Deadline, FillAction, FixedParams, OpenAction, OverrideSend, Params, Price, TransferMessage,
+    Deadline, Price,
+    state::{FixedParams, OverrideSend, Params},
+    transfer::{FillAction, Message as TransferMessage, OpenAction},
 };
 use defuse_fees::Pips;
 use defuse_sandbox::{
@@ -80,6 +82,8 @@ async fn partial_fills() {
             .collect(),
         // taker_whitelist: Default::default(),
         taker_whitelist: env.takers.iter().map(|a| a.id()).cloned().collect(),
+        #[cfg(feature = "auth_call")]
+        auth_caller: Some(env.verifier.id().clone()),
         // maker_authority: Some(cancel_authorify.0.clone()),
     };
 

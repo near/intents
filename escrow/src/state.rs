@@ -1,16 +1,17 @@
-use std::collections::{BTreeMap, BTreeSet};
+use defuse_fees::Pips;
+use defuse_near_utils::time::Deadline;
+use defuse_token_id::TokenId;
 
-use crate::{Error, Price, Result};
+use std::collections::{BTreeMap, BTreeSet};
 
 use defuse_borsh_utils::adapters::{
     As as BorshAs, TimestampNanoSeconds as BorshTimestampNanoSeconds,
 };
-use defuse_fees::Pips;
-use defuse_near_utils::time::Deadline;
 use defuse_num_utils::CheckedAdd;
-use defuse_token_id::TokenId;
 use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, borsh, env, near};
 use serde_with::{DisplayFromStr, hex::Hex, serde_as};
+
+use crate::{Error, Price, Result};
 
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
@@ -66,7 +67,7 @@ impl ContractStorage {
     pub fn verify(&self, fixed: &FixedParams) -> Result<&Storage> {
         (self.fixed_params_hash == fixed.hash())
             .then_some(&self.storage)
-            .ok_or(Error::WrongData)
+            .ok_or(Error::InvalidData)
     }
 
     pub fn verify_mut(&mut self, fixed: &FixedParams) -> Result<&mut Storage> {
@@ -127,7 +128,9 @@ pub struct FixedParams {
     #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
     pub taker_whitelist: BTreeSet<AccountId>,
     // TODO: whitelist: Option<signer_id>
-
+    #[cfg(feature = "auth_call")] // TODO: borsh order?
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub auth_caller: Option<AccountId>,
     // TODO: authority
     // TODO: close authority: intents adapter for on_auth
 
