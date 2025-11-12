@@ -60,8 +60,8 @@ async fn partial_fills() {
         //     min_gas: None,
         // },
         refund_src_to: SendParams::default(),
-        src_asset: src_asset.clone(),
-        dst_asset: dst_asset.clone(),
+        src_token: src_asset.clone(),
+        dst_token: dst_asset.clone(),
         receive_dst_to: SendParams::default(),
         // receive_dst_to: SendParams {
         //     receiver_id: None,
@@ -186,7 +186,7 @@ async fn partial_fills() {
     }
 
     // TODO: fast-forward
-    tokio::time::sleep(TIMEOUT).await;
+    // tokio::time::sleep(TIMEOUT).await;
 
     // maker closes the escrow
     {

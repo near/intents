@@ -6,21 +6,19 @@ mod utils;
 use std::{borrow::Cow, mem};
 
 use defuse_near_utils::{MaybePromise, PromiseExt, UnwrapOrPanic, UnwrapOrPanicError};
-use defuse_token_id::{TokenId, TokenIdType};
+use defuse_token_id::TokenId;
 
 use near_sdk::{
-    AccountId, Gas, PanicOnDefault, Promise, PromiseOrValue, env, json_types::U128, near, require,
-    serde_json,
+    AccountId, Gas, PanicOnDefault, Promise, PromiseOrValue, env, near, require, serde_json,
 };
-use strum::IntoDiscriminant;
 
 use crate::{
     Action, AddSrcEvent, CreateEvent, Error, Escrow, EscrowEvent, EscrowIntentEmit, FillAction,
     FillEvent, FixedParams, OpenAction, Params, Result, Storage, TransferMessage,
-    contract::tokens::SentAsset,
+    contract::tokens::{Sent, TokenIdTypeExt},
 };
 
-use self::{cleanup::CleanupGuard, return_value::ReturnValueExt, tokens::Sendable};
+use self::{cleanup::CleanupGuard, return_value::ReturnValueExt, tokens::TokenIdExt};
 
 // QUESTIONS:
 // * cancel by 2-of-2 multisig: user + SolverBus?
@@ -109,25 +107,6 @@ impl Contract {
     fn try_as_alive(&self) -> Result<&Storage> {
         self.as_alive().ok_or(Error::CleanupInProgress)
     }
-
-    fn send_with_sent(
-        token: TokenId,
-        receiver_id: AccountId,
-        amount: u128,
-        memo: Option<String>,
-        msg: Option<String>,
-        min_gas: Option<Gas>,
-        unused_gas: bool,
-    ) -> (SentAsset, Promise) {
-        (
-            SentAsset {
-                asset_type: token.discriminant(),
-                amount,
-                is_call: msg.is_some(),
-            },
-            token.send(receiver_id, amount, memo, msg, min_gas, unused_gas),
-        )
-    }
 }
 
 impl CleanupGuard<'_> {
@@ -185,8 +164,7 @@ impl CleanupGuard<'_> {
             .then(|| mem::take(&mut this.state.maker_src_remaining))
             .filter(|a| *a > 0)
             .map(|amount| {
-                Contract::send_with_sent(
-                    fixed.src_asset,
+                fixed.src_token.send_to_resolve_later(
                     fixed
                         .refund_src_to
                         .receiver_id
@@ -204,8 +182,7 @@ impl CleanupGuard<'_> {
         let (sent_dst, send_dst_p) = Some(mem::take(&mut this.state.maker_dst_lost))
             .filter(|a| *a > 0)
             .map(|amount| {
-                Contract::send_with_sent(
-                    fixed.dst_asset,
+                fixed.dst_token.send_to_resolve_later(
                     fixed.receive_dst_to.receiver_id.unwrap_or(fixed.maker),
                     amount,
                     fixed.receive_dst_to.memo,
@@ -236,8 +213,8 @@ impl CleanupGuard<'_> {
 
     fn resolve_transfers(
         &mut self,
-        maker_src: Option<SentAsset>,
-        maker_dst: Option<SentAsset>,
+        maker_src: Option<Sent>,
+        maker_dst: Option<Sent>,
         beneficiary_id: AccountId,
     ) -> Result<bool> {
         let this = self.try_get_mut()?;
@@ -281,10 +258,10 @@ impl Storage {
         self.verify(&msg.fixed_params)?;
 
         match msg.action {
-            Action::Open(open) if token_id == msg.fixed_params.src_asset => {
+            Action::Open(open) if token_id == msg.fixed_params.src_token => {
                 self.on_open(msg.fixed_params, sender_id, amount, open)
             }
-            Action::Fill(fill) if token_id == msg.fixed_params.dst_asset => {
+            Action::Fill(fill) if token_id == msg.fixed_params.dst_token => {
                 self.on_fill(msg.fixed_params, sender_id, amount, fill)
             }
             _ => Err(Error::WrongAsset),
@@ -383,7 +360,7 @@ impl Storage {
                             .checked_sub(fee_amount)
                             .ok_or(Error::ExcessiveFees)?;
 
-                        sends = Some(sends.take().and_or(fixed.dst_asset.clone().send(
+                        sends = Some(sends.take().and_or(fixed.dst_token.clone().send(
                             fee_collector.clone(),
                             fee_amount,
                             Some("fee".to_string()),
@@ -415,8 +392,7 @@ impl Storage {
         }
 
         // send to maker
-        let (maker_dst, maker_dst_p) = Contract::send_with_sent(
-            fixed.dst_asset,
+        let (maker_dst, maker_dst_p) = fixed.dst_token.send_to_resolve_later(
             fixed.receive_dst_to.receiver_id.unwrap_or(fixed.maker),
             maker_dst_amount,
             fixed.receive_dst_to.memo,
@@ -429,7 +405,7 @@ impl Storage {
         Ok(maker_dst_p
             // send to taker
             .and(
-                fixed.src_asset.send(
+                fixed.src_token.send(
                     msg.receive_src_to
                         .receiver_id
                         .unwrap_or_else(|| sender_id.clone()),
@@ -441,14 +417,7 @@ impl Storage {
                 ),
             )
             .maybe_and(send_fees)
-            .then({
-                let refund_value = match &maker_dst.asset_type {
-                    #[cfg(feature = "nep141")]
-                    TokenIdType::Nep141 => serde_json::to_vec(&U128(refund)),
-                    #[cfg(feature = "nep245")]
-                    TokenIdType::Nep245 => serde_json::to_vec(&[U128(refund)]),
-                }?;
-
+            .then(
                 self.callback()
                     .with_static_gas(Contract::ESCROW_RESOLVE_TRANSFERS_GAS)
                     .with_unused_gas_weight(0)
@@ -458,8 +427,8 @@ impl Storage {
                         // TODO: beneficiary_id
                         sender_id,
                     )
-                    .return_value(refund_value)
-            })
+                    .return_value(maker_dst.token_type.refund_value(refund)?),
+            )
             .into())
     }
 
@@ -490,8 +459,8 @@ impl Contract {
     #[private]
     pub fn escrow_resolve_transfers(
         &mut self,
-        maker_src: Option<SentAsset>,
-        maker_dst: Option<SentAsset>,
+        maker_src: Option<Sent>,
+        maker_dst: Option<Sent>,
         beneficiary_id: AccountId,
     ) -> bool {
         self.cleanup_guard()

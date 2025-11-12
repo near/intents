@@ -37,8 +37,6 @@ pub struct SimulationOutput {
     /// Minimum deadline among all simulated intents
     pub min_deadline: Deadline,
 
-    
-
     /// Unmatched token deltas needed to keep the invariant.
     /// If not empty, can be used along with fee to calculate `token_diff` closure.
     #[serde(default, skip_serializing_if = "Option::is_none")]

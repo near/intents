@@ -67,8 +67,8 @@ impl Storage {
 impl State {
     const fn should_cleanup(&self) -> bool {
         self.closed
+            && self.callbacks_in_flight == 0
             && self.maker_src_remaining == 0
             && self.maker_dst_lost == 0
-            && self.callbacks_in_flight == 0
     }
 }

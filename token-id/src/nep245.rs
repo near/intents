@@ -96,9 +96,7 @@ impl FromStr for Nep245TokenId {
 mod tests {
     use super::*;
 
-    use arbitrary::Unstructured;
-    use arbitrary_with::UnstructuredExt;
-    use defuse_test_utils::random::{make_arbitrary, random_bytes};
+    use defuse_test_utils::random::make_arbitrary;
     use rstest::rstest;
 
     #[rstest]
@@ -112,6 +110,10 @@ mod tests {
     #[cfg(not(feature = "unbounded"))]
     #[rstest]
     fn token_id_length(random_bytes: Vec<u8>) {
+        use arbitrary::Unstructured;
+        use arbitrary_with::UnstructuredExt;
+        use defuse_test_utils::random::random_bytes;
+
         let mut u = Unstructured::new(&random_bytes);
         let contract_id = u.arbitrary_as::<_, ArbitraryAccountId>().unwrap();
         let token_id: String = u.arbitrary().unwrap();

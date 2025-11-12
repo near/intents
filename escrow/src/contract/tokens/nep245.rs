@@ -1,13 +1,13 @@
 use defuse_near_utils::UnwrapOrPanic;
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
-use defuse_token_id::{TokenId, nep245::Nep245TokenId};
+use defuse_token_id::{TokenId, TokenIdType, nep245::Nep245TokenId};
 use near_sdk::{AccountId, Gas, NearToken, PromiseOrValue, env, json_types::U128, near, require};
 
 use crate::{
     Error,
     contract::{
         Contract, ContractExt,
-        tokens::Sendable,
+        tokens::TokenIdExt,
         utils::{ResultExt, single},
     },
 };
@@ -54,7 +54,12 @@ const MT_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(15);
 const MT_TRANSFER_CALL_GAS_MIN: Gas = Gas::from_tgas(30);
 const MT_TRANSFER_CALL_GAS_DEFAULT: Gas = Gas::from_tgas(50);
 
-impl Sendable for Nep245TokenId {
+impl TokenIdExt for Nep245TokenId {
+    #[inline]
+    fn token_type(&self) -> TokenIdType {
+        TokenIdType::Nep245
+    }
+
     fn send(
         self,
         receiver_id: AccountId,

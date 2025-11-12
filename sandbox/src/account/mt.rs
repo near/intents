@@ -1,5 +1,3 @@
-
-
 use near_api::types::errors::{DataConversionError, ExecutionError};
 use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, json_types::U128, serde_json::json};
 

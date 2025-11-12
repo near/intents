@@ -21,7 +21,7 @@ use serde_with::{DisplayFromStr, hex::Hex, serde_as};
     serde_as(schemars = false)
 )]
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 
 pub struct Storage {
     #[serde_as(as = "Hex")]
@@ -64,7 +64,7 @@ impl Storage {
             return Err(Error::WrongData);
         }
 
-        if fixed.src_asset == fixed.dst_asset {
+        if fixed.src_token == fixed.dst_token {
             return Err(Error::SameAsset);
         }
 
@@ -85,17 +85,17 @@ impl Storage {
     serde_as(schemars = false)
 )]
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FixedParams {
     pub maker: AccountId,
 
     // TODO: check != src_asset
-    pub src_asset: TokenId,
-    pub dst_asset: TokenId,
+    // TODO: rename to "*_token?"
+    pub src_token: TokenId,
+    pub dst_token: TokenId,
 
     #[serde(default, skip_serializing_if = "crate::utils::is_default")]
     pub refund_src_to: SendParams,
-
     #[serde(default, skip_serializing_if = "crate::utils::is_default")]
     pub receive_dst_to: SendParams,
 
@@ -151,7 +151,7 @@ impl FixedParams {
     serde_as(schemars = false)
 )]
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Params {
     /// maker / taker (in 10^-9)
     /// TODO: check non-zero
@@ -182,7 +182,7 @@ pub struct Params {
     serde_as(schemars = false)
 )]
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct State {
     #[serde(default, skip_serializing_if = "::core::ops::Not::not")]
     pub closed: bool,
@@ -196,7 +196,7 @@ pub struct State {
     #[serde_as(as = "DisplayFromStr")]
     pub maker_dst_lost: u128,
 
-    #[serde(skip)]
+    #[serde(skip)] // callers shouldn't care
     pub callbacks_in_flight: u32,
     // TODO: lost_found: store zero for beging transfer, otherwise - fail
 }

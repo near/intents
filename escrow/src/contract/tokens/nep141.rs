@@ -1,9 +1,9 @@
 use defuse_near_utils::UnwrapOrPanic;
-use defuse_token_id::{TokenId, nep141::Nep141TokenId};
+use defuse_token_id::{TokenId, TokenIdType, nep141::Nep141TokenId};
 use near_contract_standards::fungible_token::{core::ext_ft_core, receiver::FungibleTokenReceiver};
 use near_sdk::{AccountId, Gas, NearToken, Promise, PromiseOrValue, env, json_types::U128};
 
-use crate::contract::{Contract, tokens::Sendable};
+use crate::contract::{Contract, tokens::TokenIdExt};
 
 impl FungibleTokenReceiver for Contract {
     fn ft_on_transfer(
@@ -31,7 +31,12 @@ const FT_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(15);
 const FT_TRANSFER_CALL_GAS_MIN: Gas = Gas::from_tgas(30);
 const FT_TRANSFER_CALL_GAS_DEFAULT: Gas = Gas::from_tgas(50);
 
-impl Sendable for Nep141TokenId {
+impl TokenIdExt for Nep141TokenId {
+    #[inline]
+    fn token_type(&self) -> TokenIdType {
+        TokenIdType::Nep141
+    }
+
     fn send(
         self,
         receiver_id: AccountId,
