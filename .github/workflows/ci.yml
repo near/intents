@@ -85,8 +85,24 @@ jobs:
     runs-on: ubuntu-latest
     needs: check
     steps:
+      - name: Install Dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: libudev-dev # dependency for cargo-near
+          version: 1.0
       - name: Checkout sources
         uses: actions/checkout@v4
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          # this action doesn't allow passing `shared-key` to Swatinem/rust-cache,
+          # so we setup cache manually in the next step
+          cache: false
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+          cache-all-crates: "true" # Yes, it's a string
       - name: Install Cargo Plugins
         run: cargo install cargo-make cargo-near --locked
       - name: Build Reproducible WASM
