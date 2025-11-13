@@ -109,6 +109,7 @@ pub struct FixedParams {
     pub maker: AccountId,
 
     // TODO: check != src_asset
+    // TODO: support one_of for dst
     pub src_token: TokenId,
     pub dst_token: TokenId,
 
@@ -127,14 +128,34 @@ pub struct FixedParams {
     // TODO: store only merkle root? leaves have salts
     #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
     pub taker_whitelist: BTreeSet<AccountId>,
+    // taker_whitelist: ["solver-bus-proxy.near"] (knows SolverBus public key)
+
+    // solver -> intents.near::mt_transfer_call():
+    //   * solver-bus-proxy.near::mt_on_transfer(sender_id, token_id, amount, msg):
+    //      msg.extract_solver_bus_signature()
+    //               verify_signature()
+    //               if ok -> forward transfer to escrow specified in msg
+    //               if not ok -> refund solver
+    //
+    // solver-bus.near -> solver-bus-proxy.near::close(escrow_contract_id)
+    //                 -> escrow-0x1234....abc::close()
+    //
+
+    //
+
     // TODO: whitelist: Option<signer_id>
 
     // TODO: or parent account id?
     #[cfg(feature = "auth_call")] // TODO: borsh order?
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub auth_caller: Option<AccountId>,
+
+    #[serde_as(as = "Hex")]
+    pub salt: [u8; 4],
     // TODO: authority
     // TODO: close authority: intents adapter for on_auth
+
+    // TODO: taker-change authority should be implemented as taker-gateway, which keeps taker whitelist in runtime
 
     // allows:
     //   * price update (solver message: min_price)

@@ -30,6 +30,8 @@ use self::{
 //   * why not 1-of-2 by SolverBus?
 //
 
+// TODO: add support for NFTs
+
 // governor: partial release
 
 // TODO: add support for custom ".on_settled()" hooks?
@@ -43,6 +45,23 @@ use self::{
 // TODO: refund locked NEAR back to taker if closed Ok, otherwise...?
 
 // TODO: coinsidence of wants?
+// user1: locked 1 BTC in escrow for swap to 100k USDC
+// user2: sends RFQ to SolverBus to swap 10k USDC to BTC
+// SolverBus sends him address of escrow contract, 
+// user2 signs "transfer" intent:
+// `{
+//   "receiver_id": "0s123...abc" // address of escrow
+//   "token": "<USDC ADDRESS>",
+//   "amount": "10k",
+//   "msg": "FILL MSG + SOLVER_BUS SIGNATURE",
+// }`
+// user2 transfers to "solver-bus-proxy.near" escrow, tries to fill, if fail -> refund
+// OR: we can have intermediary contract to refund to ANOTHER ESCROW to reduce failure rate
+// 
+// if we make solvers to be MMs, then solver-bus-proxy.near can
+// implement CLOB
+
+
 
 // TODO: custom_resolve()
 
@@ -289,7 +308,6 @@ impl Storage {
             true, // unused gas
         );
 
-        // TODO: lost&found?
         Ok(maker_dst_p
             // send to taker
             .and(
@@ -401,7 +419,7 @@ impl Storage {
 impl FixedParams {
     pub fn validate(&self) -> Result<()> {
         self.validate_tokens()?;
-        self.validate_fee()?;
+        self.validate_fees()?;
         self.validate_gas()?;
         Ok(())
     }
@@ -412,9 +430,11 @@ impl FixedParams {
             .ok_or(Error::SameTokens)
     }
 
-    fn validate_fee(&self) -> Result<()> {
+    fn validate_fees(&self) -> Result<()> {
         const MAX_FEE_PERCENT: u32 = 25;
         const MAX_FEE: Pips = Pips::ONE_PERCENT.checked_mul(MAX_FEE_PERCENT).unwrap();
+
+        // TODO: limit each individual fee
 
         self.total_fee()
             .is_some_and(|total| total <= MAX_FEE)

@@ -84,6 +84,7 @@ async fn partial_fills() {
         taker_whitelist: env.takers.iter().map(|a| a.id()).cloned().collect(),
         #[cfg(feature = "auth_call")]
         auth_caller: Some(env.verifier.id().clone()),
+        salt: [0; 4],
         // maker_authority: Some(cancel_authorify.0.clone()),
     };
 
