@@ -42,6 +42,19 @@ args = [
     "--no-embed-abi",
 ]
 
+[tasks.build-defuse-reproducible]
+dependencies = ["add-cache-dir-tag"]
+command = "cargo"
+args = [
+    "near",
+    "build",
+    "reproducible-wasm",
+    "--manifest-path",
+    "./defuse/Cargo.toml",
+    "--out-dir",
+    "${TARGET_DIR}",
+]
+
 [tasks.build-poa-factory]
 dependencies = ["add-cache-dir-tag", "build-poa-token"]
 command = "cargo"
