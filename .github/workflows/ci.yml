@@ -83,7 +83,7 @@ jobs:
   build_reproducible:
     name: Build Reproducible
     runs-on: ubuntu-latest
-    needs: check
+    needs: build
     steps:
       - name: Install Dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1
