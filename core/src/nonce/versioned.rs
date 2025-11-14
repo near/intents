@@ -2,7 +2,7 @@ use hex_literal::hex;
 use near_sdk::borsh::{BorshDeserialize, BorshSerialize};
 
 use crate::{
-    Nonce,
+    DefuseError, Nonce, Result,
     nonce::{expirable::ExpirableNonce, salted::SaltedNonce},
 };
 
@@ -22,10 +22,17 @@ pub enum VersionedNonce {
 impl VersionedNonce {
     /// Magic prefixes (first 4 bytes of `sha256(<versioned_nonce>)`) used to mark versioned nonces:
     pub const VERSIONED_MAGIC_PREFIX: [u8; 4] = hex!("5628f6c6");
+}
 
-    pub fn maybe_from(n: Nonce) -> Option<Self> {
-        let mut versioned = n.strip_prefix(&Self::VERSIONED_MAGIC_PREFIX)?;
-        Self::deserialize_reader(&mut versioned).ok()
+impl TryFrom<Nonce> for VersionedNonce {
+    type Error = DefuseError;
+
+    fn try_from(nonce: Nonce) -> Result<Self> {
+        let mut versioned = nonce
+            .strip_prefix(&Self::VERSIONED_MAGIC_PREFIX)
+            .ok_or(DefuseError::InvalidNonce)?;
+
+        Self::deserialize_reader(&mut versioned).map_err(|_| DefuseError::InvalidNonce)
     }
 }
 
@@ -57,8 +64,8 @@ mod tests {
         let mut u = Unstructured::new(&random_bytes);
         let legacy_nonce: Nonce = u.arbitrary().unwrap();
 
-        let expected = VersionedNonce::maybe_from(legacy_nonce);
-        assert!(expected.is_none());
+        let expected = VersionedNonce::try_from(legacy_nonce);
+        assert!(matches!(expected, Err(DefuseError::InvalidNonce)));
 
         let mut u = Unstructured::new(&random_bytes);
         let nonce_bytes: [u8; 15] = u.arbitrary().unwrap();
@@ -68,7 +75,7 @@ mod tests {
         let salted = SaltedNonce::new(salt, ExpirableNonce::new(now, nonce_bytes));
         let nonce: Nonce = VersionedNonce::V1(salted.clone()).into();
 
-        let exp = VersionedNonce::maybe_from(nonce);
-        assert_eq!(exp, Some(VersionedNonce::V1(salted)));
+        let exp = VersionedNonce::try_from(nonce).unwrap();
+        assert_eq!(exp, VersionedNonce::V1(salted));
     }
 }

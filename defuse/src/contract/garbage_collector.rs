@@ -30,7 +30,8 @@ impl GarbageCollector for Contract {
 impl Contract {
     #[inline]
     fn is_nonce_cleanable(&self, nonce: Nonce) -> bool {
-        let Some(versioned_nonce) = VersionedNonce::maybe_from(nonce) else {
+        // legacy nonces can not be cleaned up
+        let Ok(versioned_nonce) = VersionedNonce::try_from(nonce) else {
             return false;
         };
 
