@@ -4,7 +4,7 @@ use near_sdk::{AccountId, PromiseOrValue, env, near, serde_json};
 
 use crate::{
     Error, Result,
-    auth_call::{Action, CloseAction, Message},
+    auth_call::{Action, Message},
 };
 
 use super::{Contract, ContractExt};
@@ -38,8 +38,8 @@ impl Contract {
         }
 
         match msg.action {
-            Action::Close(CloseAction { fixed_params }) => Ok(this
-                .close(signer_id, fixed_params)?
+            Action::Close(params) => Ok(this
+                .close(signer_id, params)?
                 .map(PromiseOrValue::Promise)
                 .unwrap_or(PromiseOrValue::Value(()))),
         }

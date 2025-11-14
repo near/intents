@@ -16,7 +16,7 @@ use near_sdk::{AccountId, PanicOnDefault, Promise, PromiseOrValue, env, near, re
 use crate::{
     AddSrcEvent, Error, Escrow, EscrowIntentEmit, Event, FillEvent, Result,
     state::{Params, State, Storage},
-    tokens::{FillAction, OpenAction, TransferAction},
+    tokens::{FillAction, TransferAction},
 };
 
 use self::{
@@ -104,30 +104,24 @@ impl Escrow for Contract {
 }
 
 impl Contract {
-    fn close(
-        &mut self,
-        signer_id: AccountId,
-        fixed_params: Params,
-    ) -> Result<PromiseOrValue<bool>> {
+    fn close(&mut self, signer_id: AccountId, params: Params) -> Result<PromiseOrValue<bool>> {
         let mut guard = self.cleanup_guard();
 
-        let this = guard.try_as_alive_mut()?.verify_mut(&fixed_params)?;
+        let state = guard.try_as_alive_mut()?.verify_mut(&params)?;
 
-        Ok(
-            if let Some(promise) = this.close(signer_id, fixed_params)? {
-                PromiseOrValue::Promise(promise)
-            } else {
-                PromiseOrValue::Value(guard.maybe_cleanup().is_some())
-            },
-        )
+        Ok(if let Some(promise) = state.close(signer_id, params)? {
+            PromiseOrValue::Promise(promise)
+        } else {
+            PromiseOrValue::Value(guard.maybe_cleanup().is_some())
+        })
     }
 
-    fn lost_found(&mut self, fixed_params: Params) -> Result<PromiseOrValue<bool>> {
+    fn lost_found(&mut self, params: Params) -> Result<PromiseOrValue<bool>> {
         let mut guard = self.cleanup_guard();
 
-        let this = guard.try_as_alive_mut()?.verify_mut(&fixed_params)?;
+        let this = guard.try_as_alive_mut()?.verify_mut(&params)?;
 
-        Ok(if let Some(promise) = this.lost_found(fixed_params)? {
+        Ok(if let Some(promise) = this.lost_found(params)? {
             PromiseOrValue::Promise(promise)
         } else {
             PromiseOrValue::Value(guard.maybe_cleanup().is_some())
@@ -139,7 +133,7 @@ impl State {
     /// Returns refund amount
     fn on_receive(
         &mut self,
-        fixed: Params,
+        params: Params,
         // TODO: it could have been EscrowFactory who forwarded funds to us
         sender_id: AccountId,
         token_id: TokenId,
@@ -151,11 +145,11 @@ impl State {
         }
 
         match action {
-            TransferAction::Open(open) if token_id == fixed.src_token => {
-                self.on_open(fixed, sender_id, amount, open)
+            TransferAction::Open if token_id == params.src_token => {
+                self.on_open(params, sender_id, amount)
             }
-            TransferAction::Fill(fill) if token_id == fixed.dst_token => {
-                self.on_fill(fixed, sender_id, amount, fill)
+            TransferAction::Fill(fill) if token_id == params.dst_token => {
+                self.on_fill(params, sender_id, amount, fill)
             }
             _ => Err(Error::WrongToken),
         }
@@ -163,12 +157,11 @@ impl State {
 
     fn on_open(
         &mut self,
-        fixed: Params,
+        params: Params,
         sender_id: AccountId,
         amount: u128,
-        msg: OpenAction,
     ) -> Result<PromiseOrValue<u128>> {
-        if sender_id != fixed.maker {
+        if sender_id != params.maker {
             return Err(Error::Unauthorized);
         }
 
@@ -199,31 +192,31 @@ impl State {
 
     fn on_fill(
         &mut self,
-        fixed: Params,
+        params: Params,
         sender_id: AccountId,
         dst_amount: u128,
         msg: FillAction,
     ) -> Result<PromiseOrValue<u128>> {
-        if !(fixed.taker_whitelist.is_empty() || fixed.taker_whitelist.contains(&sender_id)) {
+        if !(params.taker_whitelist.is_empty() || params.taker_whitelist.contains(&sender_id)) {
             // TODO: or authority?
             return Err(Error::Unauthorized);
         }
 
         let (taker_src_amount, dst_used) = {
-            let want_src_amount = fixed
+            let want_src_amount = params
                 .price
                 .src_amount(dst_amount)
                 .ok_or(Error::IntegerOverflow)?;
             // TODO: what if zero?
             if want_src_amount < self.maker_src_remaining {
-                if !fixed.partial_fills_allowed {
+                if !params.partial_fills_allowed {
                     return Err(Error::PartialFillsNotAllowed);
                 }
                 (want_src_amount, dst_amount)
             } else {
                 (
                     self.maker_src_remaining,
-                    fixed
+                    params
                         .price
                         // TODO: rounding inside?
                         .dst_amount(self.maker_src_remaining)
@@ -240,7 +233,7 @@ impl State {
         // collect, subtract and send fees
         let send_fees = {
             let mut sends: Option<Promise> = None;
-            let dst_fees_collected = fixed
+            let dst_fees_collected = params
                 .fees
                 .iter()
                 .map(|(fee_collector, fee)| {
@@ -250,7 +243,7 @@ impl State {
                             .checked_sub(fee_amount)
                             .ok_or(Error::ExcessiveFees)?;
 
-                        let send = fixed.dst_token.clone().send(
+                        let send = params.dst_token.clone().send(
                             fee_collector.clone(),
                             fee_amount,
                             Some("fee".to_string()),
@@ -284,19 +277,19 @@ impl State {
         }
 
         // send to maker
-        let (maker_dst, maker_dst_p) = fixed.dst_token.send_for_resolve(
-            fixed.receive_dst_to.receiver_id.unwrap_or(fixed.maker),
+        let (maker_dst, maker_dst_p) = params.dst_token.send_for_resolve(
+            params.receive_dst_to.receiver_id.unwrap_or(params.maker),
             maker_dst_amount,
-            fixed.receive_dst_to.memo,
-            fixed.receive_dst_to.msg,
-            fixed.receive_dst_to.min_gas,
+            params.receive_dst_to.memo,
+            params.receive_dst_to.msg,
+            params.receive_dst_to.min_gas,
             true, // unused gas
         );
 
         Ok(maker_dst_p
             // send to taker
             .and(
-                fixed.src_token.send(
+                params.src_token.send(
                     msg.receive_src_to
                         .receiver_id
                         .unwrap_or_else(|| sender_id.clone()),
@@ -318,12 +311,12 @@ impl State {
             .into())
     }
 
-    fn close(&mut self, signer_id: AccountId, fixed: Params) -> Result<Option<Promise>> {
+    fn close(&mut self, signer_id: AccountId, params: Params) -> Result<Option<Promise>> {
         // TODO: authority
         if !(self.closed
             || self.deadline.has_expired()
-            || self.maker_src_remaining == 0 && signer_id == fixed.maker
-            || fixed.taker_whitelist.len() == 1 && fixed.taker_whitelist.contains(&signer_id))
+            || self.maker_src_remaining == 0 && signer_id == params.maker
+            || params.taker_whitelist.len() == 1 && params.taker_whitelist.contains(&signer_id))
         {
             // TODO: require 1yN for permissioned
 
@@ -344,24 +337,24 @@ impl State {
             Event::Close.emit();
         }
 
-        self.lost_found(fixed)
+        self.lost_found(params)
     }
 
-    fn lost_found(&mut self, fixed: Params) -> Result<Option<Promise>> {
+    fn lost_found(&mut self, params: Params) -> Result<Option<Promise>> {
         let (sent_src, send_src_p) = self
             .closed
             .then(|| mem::take(&mut self.maker_src_remaining))
             .filter(|a| *a > 0)
             .map(|amount| {
-                fixed.src_token.send_for_resolve(
-                    fixed
+                params.src_token.send_for_resolve(
+                    params
                         .refund_src_to
                         .receiver_id
-                        .unwrap_or_else(|| fixed.maker.clone()),
+                        .unwrap_or_else(|| params.maker.clone()),
                     amount,
-                    fixed.refund_src_to.memo,
-                    fixed.refund_src_to.msg,
-                    fixed.refund_src_to.min_gas,
+                    params.refund_src_to.memo,
+                    params.refund_src_to.msg,
+                    params.refund_src_to.min_gas,
                     true, // unused gas
                 )
             })
@@ -370,12 +363,12 @@ impl State {
         let (sent_dst, send_dst_p) = Some(mem::take(&mut self.maker_dst_lost))
             .filter(|a| *a > 0)
             .map(|amount| {
-                fixed.dst_token.send_for_resolve(
-                    fixed.receive_dst_to.receiver_id.unwrap_or(fixed.maker),
+                params.dst_token.send_for_resolve(
+                    params.receive_dst_to.receiver_id.unwrap_or(params.maker),
                     amount,
-                    fixed.receive_dst_to.memo,
-                    fixed.receive_dst_to.msg,
-                    fixed.receive_dst_to.min_gas,
+                    params.receive_dst_to.memo,
+                    params.receive_dst_to.msg,
+                    params.receive_dst_to.min_gas,
                     true, // unused gas
                 )
             })

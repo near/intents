@@ -20,19 +20,10 @@ pub struct TransferMessage {
 #[serde(tag = "action", content = "data", rename_all = "snake_case")]
 #[derive(Debug, Clone, From)]
 pub enum TransferAction {
-    Open(OpenAction),
+    Open,
     Fill(FillAction),
     // Borrow(BorrowAction),
     // Repay(RepayAction),
-}
-
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
-pub struct OpenAction {
-    // #[serde(default, skip_serializing_if = "Option::is_none")]
-    // pub new_price: Option<Price>,
-    // TODO: deadline prolong?
-    // TODO: exact_out support?
 }
 
 #[near(serializers = [json])]

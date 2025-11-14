@@ -26,7 +26,7 @@ use crate::{Error, Price, Result, tokens::TokenIdExt};
 
 pub struct Storage {
     #[serde_as(as = "Hex")]
-    fixed_params_hash: [u8; 32],
+    params_hash: [u8; 32],
 
     #[serde(flatten)]
     state: State,
@@ -37,11 +37,11 @@ impl Storage {
         params.validate()?;
 
         Ok(Self {
-            fixed_params_hash: params.hash(),
+            params_hash: params.hash(),
             state: State {
-                deadline: params.deadline,
                 maker_src_remaining: 0,
                 maker_dst_lost: 0,
+                deadline: params.deadline,
                 closed: false,
                 in_flight: 0,
             },
@@ -73,7 +73,7 @@ impl Storage {
     }
 
     pub fn verify(&self, fixed: &Params) -> Result<&State> {
-        (self.fixed_params_hash == fixed.hash())
+        (self.params_hash == fixed.hash())
             .then_some(&self.state)
             .ok_or(Error::InvalidData)
     }
@@ -242,6 +242,15 @@ impl Params {
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct State {
+    /// Deposited or lost (after close) src remaining
+    #[serde_as(as = "DisplayFromStr")]
+    pub maker_src_remaining: u128,
+
+    // Store only lost for maker, since we're bounded in state size
+    // So, we don't store lost&found for takers and fee_collectors
+    #[serde_as(as = "DisplayFromStr")]
+    pub maker_dst_lost: u128,
+
     // TODO: check that not expired at create?
     #[borsh(
         serialize_with = "BorshAs::<BorshTimestampNanoSeconds>::serialize",
@@ -254,20 +263,10 @@ pub struct State {
     // #[serde_as(as = "SerdeTimestampNanoSeconds")] // TODO: RFC-3339
     pub deadline: Deadline,
 
-    /// Deposited or lost (after close) src remaining
-    #[serde_as(as = "DisplayFromStr")]
-    pub maker_src_remaining: u128,
-
-    // Store only lost for maker, since we're bounded in state size
-    // So, we don't store lost&found for takers and fee_collectors
-    #[serde_as(as = "DisplayFromStr")]
-    pub maker_dst_lost: u128,
-
     #[serde(default, skip_serializing_if = "::core::ops::Not::not")]
     pub closed: bool,
 
-    // TODO: maybe not skip for loans
-    #[serde(skip)] // callers shouldn't care
+    #[serde(default, skip_serializing_if = "crate::utils::is_default")]
     pub in_flight: u32,
 }
 
