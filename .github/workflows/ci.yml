@@ -70,16 +70,6 @@ jobs:
         with:
           save-if: ${{ github.ref == 'refs/heads/main' }}
           cache-all-crates: "true" # Yes, it's a string
-
-      - name: Debug - Check cargo bin
-        run: |
-          echo "CARGO BIN DIR:"
-          ls -la ~/.cargo/bin/ || echo "Directory does not exist"
-          echo "CARGO MAKE:"
-          which cargo-make || echo "cargo-make not found"
-          echo "CARGO NEAR:"
-          which cargo-near || echo "cargo-near not found"
-          
       - name: Install Cargo Plugins
         run: cargo install cargo-make cargo-near --locked
       - name: Build
@@ -113,16 +103,6 @@ jobs:
         with:
           save-if: ${{ github.ref == 'refs/heads/main' }}
           cache-all-crates: "true" # Yes, it's a string
-
-      - name: Debug - Check cargo bin
-        run: |
-          echo "CARGO BIN DIR:"
-          ls -la ~/.cargo/bin/ || echo "Directory does not exist"
-          echo "CARGO MAKE:"
-          which cargo-make || echo "cargo-make not found"
-          echo "CARGO NEAR:"
-          which cargo-near || echo "cargo-near not found"
-    
       - name: Install Cargo Plugins
         run: cargo install cargo-make cargo-near --locked
       - name: Build Reproducible WASM
