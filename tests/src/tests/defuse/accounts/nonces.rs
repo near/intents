@@ -2,7 +2,7 @@ use arbitrary::{Arbitrary, Unstructured};
 use chrono::{TimeDelta, Utc};
 use defuse::{
     contract::Role,
-    core::{Deadline, Nonce, Salt, intents::DefuseIntents},
+    core::{Deadline, Salt, intents::DefuseIntents},
 };
 use itertools::Itertools;
 
@@ -39,7 +39,7 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
 
     let user = env.create_user().await;
 
-    // legacy nonce
+    // can't commit legacy nonce
     {
         let deadline = Deadline::MAX;
         let legacy_nonce = rng.random();
@@ -56,14 +56,7 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
                 )],
             )
             .await
-            .unwrap();
-
-        assert!(
-            env.defuse
-                .is_nonce_used(user.id(), &legacy_nonce)
-                .await
-                .unwrap(),
-        );
+            .assert_err_contains("invalid nonce");
     }
 
     // invalid salt
@@ -238,7 +231,6 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
             .unwrap(),
     );
 
-    let legacy_nonce: Nonce = rng.random();
     let expirable_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
     let long_term_expirable_nonce =
         create_random_salted_nonce(current_salt, long_term_deadline, &mut rng);
@@ -249,16 +241,6 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
             .execute_intents(
                 env.defuse.id(),
                 [
-                    user.sign_defuse_message(
-                        SigningStandard::arbitrary(&mut Unstructured::new(
-                            &rng.random::<[u8; 1]>(),
-                        ))
-                        .unwrap(),
-                        env.defuse.id(),
-                        legacy_nonce,
-                        deadline,
-                        DefuseIntents { intents: [].into() },
-                    ),
                     user.sign_defuse_message(
                         SigningStandard::arbitrary(&mut Unstructured::new(
                             &rng.random::<[u8; 1]>(),
@@ -326,20 +308,12 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
             env.defuse.id(),
             vec![
                 (user.id().clone(), vec![expirable_nonce]),
-                (user.id().clone(), vec![legacy_nonce]),
                 (user.id().clone(), vec![long_term_expirable_nonce]),
                 (unknown_user, vec![expirable_nonce]),
             ],
         )
         .await
         .unwrap();
-
-        assert!(
-            env.defuse
-                .is_nonce_used(user.id(), &legacy_nonce)
-                .await
-                .unwrap(),
-        );
 
         assert!(
             env.defuse

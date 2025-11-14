@@ -1,5 +1,6 @@
 use super::{DefuseSigner, accounts::AccountManagerExt, env::Env};
 use crate::tests::defuse::SigningStandard;
+use crate::utils::payload::ExtractNonceExt;
 use crate::utils::{crypto::Signer, mt::MtExt, test_log::TestLog};
 use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::token_id::TokenId;
@@ -217,6 +218,8 @@ async fn simulate_is_view_method(
     #[notrace] mut rng: impl Rng,
     #[values(false, true)] no_registration: bool,
 ) {
+    use crate::tests::defuse::DefuseSignerExt;
+
     let env = Env::builder()
         .no_registration(no_registration)
         .build()
@@ -235,22 +238,19 @@ async fn simulate_is_view_method(
         .await
         .unwrap();
 
-    let nonce = rng.random();
-
     let transfer_intent = Transfer {
         receiver_id: other_user.id().clone(),
         tokens: Amounts::new(std::iter::once((ft_id.clone(), 1000)).collect()),
         memo: None,
     };
-    let transfer_intent_payload = user.sign_defuse_message(
-        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
-        env.defuse.id(),
-        nonce,
-        Deadline::MAX,
-        DefuseIntents {
-            intents: vec![transfer_intent.clone().into()],
-        },
-    );
+
+    let transfer_intent_payload = user
+        .sign_defuse_payload_default(env.defuse.id(), vec![transfer_intent.clone().into()])
+        .await
+        .unwrap();
+
+    let nonce = transfer_intent_payload.extract_nonce().unwrap();
+
     let result = env
         .defuse
         .simulate_intents([transfer_intent_payload.clone()])
