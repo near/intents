@@ -1,15 +1,16 @@
 use defuse_near_utils::UnwrapOrPanic;
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
-use defuse_token_id::{TokenId, TokenIdType, nep245::Nep245TokenId};
+use defuse_token_id::{TokenId, nep245::Nep245TokenId};
 use near_sdk::{AccountId, Gas, NearToken, PromiseOrValue, env, json_types::U128, near, require};
 
 use crate::{
     Error,
     contract::{
         Contract, ContractExt,
-        tokens::TokenIdExt,
+        tokens::Sendable,
         utils::{ResultExt, single},
     },
+    tokens::TokenIdExt,
 };
 
 #[near]
@@ -45,18 +46,7 @@ impl MultiTokenReceiver for Contract {
     }
 }
 
-const MT_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(15);
-const MT_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(15);
-
-const MT_TRANSFER_CALL_GAS_MIN: Gas = Gas::from_tgas(30);
-const MT_TRANSFER_CALL_GAS_DEFAULT: Gas = Gas::from_tgas(50);
-
-impl TokenIdExt for Nep245TokenId {
-    #[inline]
-    fn token_type(&self) -> TokenIdType {
-        TokenIdType::Nep245
-    }
-
+impl Sendable for Nep245TokenId {
     fn send(
         self,
         receiver_id: AccountId,
@@ -66,19 +56,17 @@ impl TokenIdExt for Nep245TokenId {
         min_gas: Option<Gas>,
         unused_gas: bool,
     ) -> near_sdk::Promise {
+        let gas = self.transfer_gas(min_gas, msg.is_some());
+
         let (contract_id, token_id) = self.into_contract_id_and_mt_token_id();
 
         let p = ext_mt_core::ext(contract_id)
             // TODO: are we sure we have that???
             .with_attached_deposit(NearToken::from_yoctonear(1))
+            .with_static_gas(gas)
             .with_unused_gas_weight(unused_gas.into());
         if let Some(msg) = msg {
-            p.with_static_gas(
-                min_gas
-                    .unwrap_or(MT_TRANSFER_CALL_GAS_DEFAULT)
-                    .max(MT_TRANSFER_CALL_GAS_MIN),
-            )
-            .mt_transfer_call(
+            p.mt_transfer_call(
                 receiver_id,
                 token_id,
                 U128(amount),
@@ -87,26 +75,13 @@ impl TokenIdExt for Nep245TokenId {
                 msg,
             )
         } else {
-            p.with_static_gas(
-                min_gas
-                    .unwrap_or(MT_TRANSFER_GAS_DEFAULT)
-                    .max(MT_TRANSFER_GAS_MIN),
-            )
-            .mt_transfer(
+            p.mt_transfer(
                 receiver_id,
                 token_id,
                 U128(amount),
                 None, // approval
                 memo,
             )
-        }
-    }
-
-    fn transfer_gas_min_default(&self, is_call: bool) -> (Gas, Gas) {
-        if is_call {
-            (MT_TRANSFER_CALL_GAS_MIN, MT_TRANSFER_CALL_GAS_DEFAULT)
-        } else {
-            (MT_TRANSFER_GAS_MIN, MT_TRANSFER_GAS_DEFAULT)
         }
     }
 }

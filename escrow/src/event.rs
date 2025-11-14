@@ -4,16 +4,16 @@ use derive_more::From;
 use near_sdk::{AccountId, AccountIdRef, near};
 use serde_with::{DisplayFromStr, serde_as};
 
-use crate::{FixedParams, state::Params};
+use crate::Params;
 
 #[near(event_json(
     // TODO
     standard = "escrow",
 ))]
 #[derive(Debug, Clone, From)]
-pub enum EscrowEvent<'a> {
+pub enum Event<'a> {
     #[event_version("0.1.0")]
-    Create(CreateEvent<'a>),
+    Create(Cow<'a, Params>),
 
     #[event_version("0.1.0")]
     AddSrc(AddSrcEvent),
@@ -25,16 +25,9 @@ pub enum EscrowEvent<'a> {
     // closed_by: maker/taker/authority
     #[event_version("0.1.0")]
     Close,
-}
 
-#[must_use = "make sure to `.emit()` this event"]
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
-pub struct CreateEvent<'a> {
-    #[serde(flatten)]
-    pub fixed: Cow<'a, FixedParams>,
-    #[serde(flatten)]
-    pub params: Cow<'a, Params>,
+    #[event_version("0.1.0")]
+    Cleanup,
 }
 
 #[must_use = "make sure to `.emit()` this event"]
@@ -88,11 +81,11 @@ pub struct FillEvent<'a> {
     // TODO: how much dst will maker receive?
 }
 
-pub trait EscrowIntentEmit<'a>: Into<EscrowEvent<'a>> {
+pub trait EscrowIntentEmit<'a>: Into<Event<'a>> {
     #[inline]
     fn emit(self) {
-        EscrowEvent::emit(&self.into());
+        Event::emit(&self.into());
     }
 }
 
-impl<'a, T> EscrowIntentEmit<'a> for T where T: Into<EscrowEvent<'a>> {}
+impl<'a, T> EscrowIntentEmit<'a> for T where T: Into<Event<'a>> {}

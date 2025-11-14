@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use defuse_escrow::{
     Deadline, Price,
-    state::{FixedParams, OverrideSend, Params},
+    state::{OverrideSend, Params},
     tokens::{FillAction, OpenAction, TransferMessage},
 };
 use defuse_fees::Pips;
@@ -53,25 +53,24 @@ async fn partial_fills() {
         })
         .map(Into::<TokenId>::into);
 
-    let fixed_params = FixedParams {
+    const TIMEOUT: Duration = Duration::from_secs(60);
+
+    let params = Params {
         maker: env.maker.id().clone(),
-        // refund_src_to: SendParams {
-        //     receiver_id: None,
-        //     memo: None,
-        //     msg: Some("fail".to_string()),
-        //     min_gas: None,
-        // },
-        refund_src_to: OverrideSend::default(),
+
         src_token: src_asset.clone(),
         dst_token: dst_asset.clone(),
-        receive_dst_to: OverrideSend::default(),
-        // receive_dst_to: SendParams {
-        //     receiver_id: None,
-        //     memo: None,
-        //     msg: Some("fail".to_string()),
-        //     min_gas: None,
-        // },
+
+        price: Price::ratio(MAKER_AMOUNT, TAKER_AMOUNT).unwrap(),
+        deadline: Deadline::timeout(TIMEOUT),
+
         partial_fills_allowed: true,
+
+        refund_src_to: OverrideSend::default(),
+        receive_dst_to: OverrideSend::default(),
+
+        // taker_whitelist: Default::default(),
+        taker_whitelist: env.takers.iter().map(|a| a.id()).cloned().collect(),
         fees: env
             .fee_collectors
             .iter()
@@ -80,26 +79,14 @@ async fn partial_fills() {
             .enumerate()
             .map(|(percent, a)| (a, Pips::from_percent(percent as u32 + 1).unwrap()))
             .collect(),
-        // taker_whitelist: Default::default(),
-        taker_whitelist: env.takers.iter().map(|a| a.id()).cloned().collect(),
+
         #[cfg(feature = "auth_call")]
         auth_caller: Some(env.verifier.id().clone()),
         salt: [0; 4],
         // maker_authority: Some(cancel_authorify.0.clone()),
     };
 
-    const TIMEOUT: Duration = Duration::from_secs(60);
-
-    let escrow = env
-        .create_escrow(
-            &fixed_params,
-            Params {
-                price: Price::ratio(MAKER_AMOUNT, TAKER_AMOUNT).unwrap(),
-                deadline: Deadline::timeout(TIMEOUT),
-            },
-        )
-        .await
-        .unwrap();
+    let escrow = env.create_escrow(&params).await.unwrap();
     env.view_escrow(&escrow).await;
     env.show_verifier_balances(
         [escrow.id(), env.maker.id()]
@@ -123,8 +110,8 @@ async fn partial_fills() {
                     amount,
                     "maker deposit".to_string(),
                     serde_json::to_string(&TransferMessage {
-                        fixed_params: fixed_params.clone(),
-                        action: OpenAction { new_price: None }.into(),
+                        params: params.clone(),
+                        action: OpenAction {}.into(),
                     })
                     .unwrap(),
                 )
@@ -159,7 +146,7 @@ async fn partial_fills() {
                     amount,
                     "taker fill".to_string(),
                     serde_json::to_string(&TransferMessage {
-                        fixed_params: fixed_params.clone(),
+                        params: params.clone(),
                         action: FillAction {
                             receive_src_to: OverrideSend {
                                 memo: Some("taker memo".to_string()),
@@ -197,7 +184,7 @@ async fn partial_fills() {
     // maker closes the escrow
     {
         env.maker
-            .close_escrow(escrow.id().clone(), fixed_params.clone())
+            .close_escrow(escrow.id().clone(), params.clone())
             .await
             .unwrap();
 

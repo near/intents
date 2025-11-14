@@ -1,36 +1,33 @@
-use defuse_escrow::state::{ContractStorage, FixedParams, Params};
+use defuse_escrow::state::{Params, Storage};
 use defuse_sandbox::{
     Account, SigningAccount, TxResult, api::types::transaction::actions::GlobalContractIdentifier,
 };
 use near_sdk::{AccountId, Gas, NearToken, serde_json::json};
 
 pub trait EscrowViewExt {
-    async fn view_escrow(&self) -> anyhow::Result<ContractStorage>;
+    async fn view_escrow(&self) -> anyhow::Result<Storage>;
 }
 
 pub trait EscrowExt {
     async fn deploy_escrow(
         &self,
         global_id: GlobalContractIdentifier,
-        fixed: &FixedParams,
-        params: Params,
+        params: &Params,
     ) -> TxResult<Account>;
 
-    async fn close_escrow(&self, escrow: AccountId, fixed_params: FixedParams) -> TxResult<bool>;
+    async fn close_escrow(&self, escrow: AccountId, params: Params) -> TxResult<bool>;
 }
 impl EscrowExt for SigningAccount {
     async fn deploy_escrow(
         &self,
         global_id: GlobalContractIdentifier,
-        fixed: &FixedParams,
-        params: Params,
+        params: &Params,
     ) -> TxResult<Account> {
         let init_args = json!({
-            "fixed": fixed,
             "params": params,
         });
 
-        let account_id = ContractStorage::new(fixed, params).derive_account_id(self.id());
+        let account_id = Storage::new(params).unwrap().derive_account_id(self.id());
 
         self.tx(account_id.clone())
             .create_account()
@@ -47,12 +44,12 @@ impl EscrowExt for SigningAccount {
         Ok(Account::new(account_id, self.network_config().clone()))
     }
 
-    async fn close_escrow(&self, escrow: AccountId, fixed_params: FixedParams) -> TxResult<bool> {
+    async fn close_escrow(&self, escrow: AccountId, params: Params) -> TxResult<bool> {
         self.tx(escrow.clone())
             .function_call_json(
                 "escrow_close",
                 json!({
-                    "fixed_params": fixed_params,
+                    "params": params,
                 }),
                 Gas::from_tgas(300),
                 NearToken::from_yoctonear(0),
@@ -62,7 +59,7 @@ impl EscrowExt for SigningAccount {
 }
 
 impl EscrowViewExt for Account {
-    async fn view_escrow(&self) -> anyhow::Result<ContractStorage> {
+    async fn view_escrow(&self) -> anyhow::Result<Storage> {
         self.call_function_json("escrow_view", ()).await
     }
 }

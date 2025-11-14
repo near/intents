@@ -1,3 +1,11 @@
+#[cfg(not(any(feature = "nep141", feature = "nep245")))]
+compile_error!(
+    r#"At least one of these features should be enabled:
+- "nep141"
+- "nep245"
+"#
+);
+
 #[cfg(feature = "contract")]
 mod contract;
 
@@ -16,7 +24,7 @@ pub use defuse_fees::Pips;
 pub use defuse_near_utils::time::Deadline;
 pub use defuse_token_id::TokenId;
 
-use crate::state::{ContractStorage, FixedParams};
+use crate::state::{Params, Storage};
 
 // TODO: more pub re-exports
 
@@ -24,7 +32,7 @@ use near_sdk::{PromiseOrValue, ext_contract};
 
 #[ext_contract(ext_escrow)]
 pub trait Escrow {
-    fn escrow_view(&self) -> &ContractStorage;
+    fn escrow_view(&self) -> &Storage;
 
     /// Closes the escrow + performs lost_found().
     ///
@@ -35,7 +43,7 @@ pub trait Escrow {
     ///
     /// If deadline has not exceeded yet, then fails.
     /// Returns whether was closed just now, or false if was already closed.
-    fn escrow_close(&mut self, fixed_params: FixedParams) -> PromiseOrValue<bool>;
+    fn escrow_close(&mut self, params: Params) -> PromiseOrValue<bool>;
 
     /// Retries sending:
     /// * `maker_src_remaining` if the escrow was closed
@@ -46,7 +54,7 @@ pub trait Escrow {
     /// Otherwise, there MIGHT be lost assets there
     /// or they might come in the future.
     /// TODO: maker custom params for withdrawal
-    fn escrow_lost_found(&mut self, fixed_params: FixedParams) -> PromiseOrValue<bool>;
+    fn escrow_lost_found(&mut self, params: Params) -> PromiseOrValue<bool>;
     // TODO: recover()
     // TODO: decrease_price()
     // TODO: prolongate_deadline()

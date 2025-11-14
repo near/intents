@@ -1,11 +1,11 @@
 use near_sdk::near;
 
-use crate::state::FixedParams;
+use crate::state::Params;
 
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct Message {
-    pub fixed_params: FixedParams,
+    pub params: Params,
     pub action: Action,
 }
 
@@ -19,5 +19,5 @@ pub enum Action {
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct CloseAction {
-    pub fixed_params: FixedParams,
+    pub fixed_params: Params,
 }

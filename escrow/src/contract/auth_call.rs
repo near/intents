@@ -26,10 +26,10 @@ impl Contract {
         let msg: Message = serde_json::from_str(&msg)?;
 
         let mut guard = self.cleanup_guard();
-        let this = guard.try_as_alive_mut()?.verify_mut(&msg.fixed_params)?;
+        let this = guard.try_as_alive_mut()?.verify_mut(&msg.params)?;
 
         if !msg
-            .fixed_params
+            .params
             .auth_caller
             .as_ref()
             .is_some_and(|a| *a == env::predecessor_account_id())

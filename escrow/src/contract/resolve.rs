@@ -7,7 +7,7 @@ use super::{Contract, ContractExt, tokens::Sent};
 
 #[near]
 impl Contract {
-    pub(crate) const ESCROW_RESOLVE_TRANSFERS_GAS: Gas = Gas::from_tgas(10);
+    pub(super) const ESCROW_RESOLVE_TRANSFERS_GAS: Gas = Gas::from_tgas(10);
 
     #[private]
     pub fn escrow_resolve_transfers(
@@ -30,7 +30,6 @@ impl Contract {
 
         guard
             .on_callback()?
-            .state
             .resolve_transfers(maker_src, maker_dst)?;
 
         Ok(guard.maybe_cleanup().is_some())

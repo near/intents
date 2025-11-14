@@ -5,7 +5,7 @@ pub use self::escrow::*;
 
 use std::sync::LazyLock;
 
-use defuse_escrow::state::{FixedParams, Params};
+use defuse_escrow::state::Params;
 use defuse_fees::Pips;
 use defuse_sandbox::{
     Account, Sandbox, SigningAccount, TxResult,
@@ -49,9 +49,9 @@ impl BaseEnv {
         })
     }
 
-    pub async fn create_escrow(&self, fixed: &FixedParams, params: Params) -> TxResult<Account> {
+    pub async fn create_escrow(&self, params: &Params) -> TxResult<Account> {
         self.root()
-            .deploy_escrow(self.escrow_global.clone(), fixed, params)
+            .deploy_escrow(self.escrow_global.clone(), params)
             .await
     }
 }
