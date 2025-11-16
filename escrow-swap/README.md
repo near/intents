@@ -133,7 +133,7 @@ Makers fund the escrow with `ft_transfer_call` or `mt_transfer_call`:
 
 ```jsonc
 {
-  "params": { ... },
+  "params": { /* ... */ },
   "action": "fund"
 }
 ```
@@ -146,14 +146,14 @@ Takers send `dst_token` directly to the escrow contract via `*_transfer_call` on
 
 ```jsonc
 {
-  "params": { ... },
+  "params": { /* ... */ },
   "action": {
     "fill": {
-      "price": "1.045",
+      "price": "0.171",
       "receive_src_to": {
         "receiver_id": "taker.alt.near",
-        "memo": "order-42",
-        "msg": null,
+        "memo": "<MEMO>",
+        "msg": "<MESSAGE>",
         "min_gas": "20000000000000"
       }
     }
@@ -217,10 +217,10 @@ Takers send `dst_token` directly to the escrow contract via `*_transfer_call` on
 - **Message format**:
   ```jsonc
   {
-    "params": { ... },
+    "params": { /* ... */ },
     "action": {
       "close": {
-        "params": { ... }
+        "params": { /* ... */ }
       }
     }
   }
@@ -335,7 +335,7 @@ Every event is logged via `EVENT_JSON:` following the NEAR standard. The snippet
       "dst_token": "nep245:intents.near:nep141:wrap.near",
 
       // taker quoted price vs maker listing price
-      "taker_price": "0.169",
+      "taker_price": "0.171",
       "maker_price": "0.167",
 
       // Amount of dst the taker sent in, how much was used, and resulting maker/taker balances
