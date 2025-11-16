@@ -18,7 +18,7 @@ All user-facing entrypoints accept a canonical `Params` struct. The struct is se
 
 Use the commented JSON template below (JSONC) as a reference—each field is documented inline to keep the spec and the data definition in one place. Every call must resend the exact same serialized data so the stored hash matches.
 
-```json5
+```jsonc
 {
   // owner that funds src_token and authorizes close when inventory is empty
   "maker": "maker.near",
@@ -121,7 +121,7 @@ Field | Description
 
 Token transfers land in `ft_on_transfer`/`mt_on_transfer` with a UTF-8 JSON message that wraps a `TransferMessage`:
 
-```json5
+```jsonc
 {
   "params": { /* full Params serialized as JSON */ },
   "action": "fund"               // or {"fill": {...}} (see below)
@@ -131,7 +131,7 @@ Token transfers land in `ft_on_transfer`/`mt_on_transfer` with a UTF-8 JSON mess
 ### Funding
 Makers fund the escrow with `ft_transfer_call` or `mt_transfer_call`:
 
-```json5
+```jsonc
 {
   "params": { ... },
   "action": "fund"
@@ -144,7 +144,7 @@ Makers fund the escrow with `ft_transfer_call` or `mt_transfer_call`:
 ### Filling
 Takers send `dst_token` directly to the escrow contract via `*_transfer_call` on `params.dst_token` with:
 
-```json5
+```jsonc
 {
   "params": { ... },
   "action": {
@@ -215,7 +215,7 @@ Takers send `dst_token` directly to the escrow contract via `*_transfer_call` on
 - **Feature gate**: requires `auth_call`.
 - **Purpose**: integrates with `defuse-auth-call` so a relayer can forward off-chain signed instructions.
 - **Message format**:
-  ```json5
+  ```jsonc
   {
     "params": { ... },
     "action": {
@@ -244,7 +244,7 @@ Events follow the `escrow-swap` standard (`standard: "escrow-swap"`):
 Every event is logged via `EVENT_JSON:` following the NEAR standard. The snippets below use JSONC so each field can be documented inline.
 
 #### Create (`event = "create"`)
-```json5
+```jsonc
 {
   "standard": "escrow-swap", // event namespace
   "version": "0.1.0",        // see #[event_version]
@@ -291,7 +291,7 @@ Every event is logged via `EVENT_JSON:` following the NEAR standard. The snippet
 ```
 
 #### Funded (`event = "funded"`)
-```json5
+```jsonc
 {
   "standard": "escrow-swap",
   "version": "0.1.0",
@@ -318,7 +318,7 @@ Every event is logged via `EVENT_JSON:` following the NEAR standard. The snippet
 ```
 
 #### Fill (`event = "fill"`)
-```json5
+```jsonc
 {
   "standard": "escrow-swap",
   "version": "0.1.0",
@@ -364,7 +364,7 @@ Every event is logged via `EVENT_JSON:` following the NEAR standard. The snippet
 ```
 
 #### MakerLost (`event = "maker_lost"`)
-```json5
+```jsonc
 {
   "standard": "escrow-swap",
   "version": "0.1.0",
@@ -390,7 +390,7 @@ Every event is logged via `EVENT_JSON:` following the NEAR standard. The snippet
 ```
 
 #### Closed (`event = "closed"`)
-```json5
+```jsonc
 {
   "standard": "escrow-swap",
   "version": "0.1.0",
@@ -405,7 +405,7 @@ Every event is logged via `EVENT_JSON:` following the NEAR standard. The snippet
 ```
 
 #### Cleanup (`event = "cleanup"`)
-```json5
+```jsonc
 {
   "standard": "escrow-swap",
   "version": "0.1.0",
