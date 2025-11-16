@@ -1,4 +1,4 @@
-# Defuse Escrow Smart Contract
+# Escrow-Swap Smart Contract
 
 Deterministic escrow contract that holds one maker order and lets takers fill it via FT (`NEP-141`) or MT (`NEP-245`) transfers. The contract keeps all settlement parameters immutable by hashing them into storage at initialization and exposes explicit methods to close and sweep the escrow. This document describes the contract behavior and provides a detailed specification of every public method and its parameters.
 
@@ -14,11 +14,11 @@ Deterministic escrow contract that holds one maker order and lets takers fill it
 
 All user-facing entrypoints accept a canonical `Params` struct. The struct is serialized (Borsh) and hashed inside storage; each call re-validates the hash to prevent tampering.
 
-### `Params` JSON Template
+### `Params`
 
 Use the commented JSON template below (JSONC) as a reference—each field is documented inline to keep the spec and the data definition in one place. Every call must resend the exact same serialized data so the stored hash matches.
 
-```jsonc
+```json5
 {
   // owner that funds src_token and authorizes close when inventory is empty
   "maker": "maker.near",
@@ -44,10 +44,10 @@ Use the commented JSON template below (JSONC) as a reference—each field is doc
     "receiver_id": "maker.vault.near",
 
     // optional memo forwarded to the token contract
-    "memo": "escrow-refund-42",
+    "memo": "<MEMO>",
 
-    // using mt_transfer_call to refund dst_token with a payload
-    "msg": "MESSAGE",
+    // optionally, use mt_transfer_call to refund dst_token with a payload
+    "msg": "<MESSAGE>",
 
     // optional minimum gas (in yocto-gas) reserved for the outgoing transfer
     "min_gas": "25000000000000"
@@ -59,10 +59,10 @@ Use the commented JSON template below (JSONC) as a reference—each field is doc
     "receiver_id": "maker.treasury.near",
 
     // optional memo forwarded to dst token contract
-    "memo": "escrow-fill-42",
+    "memo": "<MEMO>",
 
-    // using mt_transfer_call to forward dst_token with a payload
-    "msg": "MESSAGE",
+    // optionally, use mt_transfer_call to forward dst_token with a payload
+    "msg": "<MESSAGE>",
 
     // optional minimum gas reserved for the outgoing transfer
     "min_gas": "40000000000000"
@@ -71,13 +71,13 @@ Use the commented JSON template below (JSONC) as a reference—each field is doc
   // optional set limiting who can fill; a single taker may close early
   "taker_whitelist": ["solver-bus-proxy.near"],
 
-  // pct-based protocol fees
+  // pct-based protocol fees (values are in pips; 1 pip = 0.0001%)
   "protocol_fees": {
-    // 2.50% of taker_dst_used sent to collector
-    "fee": "250",
+    // 0.5% of taker_dst_used sent to collector -> 5,000 pips
+    "fee": 5000,
 
-    // 0.50% of price improvement above maker price
-    "surplus": "50",
+    // 5% of price improvement above maker's price -> 50,000 pips
+    "surplus": 50000,
 
     // destination for protocol fees
     "collector": "protocol.near"
@@ -85,8 +85,10 @@ Use the commented JSON template below (JSONC) as a reference—each field is doc
 
   // additional fee share paid in dst_token
   "integrator_fees": {
-    // 1% fee share sent to partner.near
-    "partner.near": "100"
+    // 1% fee share sent to partner.near -> 10,000 pips
+    "front-end.near": 10000,
+        // 0.1% fee share sent to partner.near -> 1,000 pips
+    "partner.near": 1000
   },
 
   // optional contract allowed to call on_auth
@@ -96,8 +98,6 @@ Use the commented JSON template below (JSONC) as a reference—each field is doc
   "salt": "9e3779b97f4a7c1552d27dcd1234567890abcdef1234567890abcdef1234"
 }
 ```
-
-> **NEP-245 serialization:** when Params are serialized (e.g., hashed by the factory), each NEP-245 token becomes the canonical string `nep245:<CONTRACT_ID>:<TOKEN_ID>` defined in `defuse-token-id`. Reuse exactly the same casing and separators or the on-chain `params_hash` equality check will fail.
 
 ### `OverrideSend`
 
@@ -111,7 +111,7 @@ Field | Description
 `min_gas` | Minimum gas to reserve for the outgoing transfer. If lower than the token's minimum, the contract automatically bumps it.
 
 ### Fees
-- `ProtocolFees { fee, surplus, collector }` takes two pips amounts:
+- `ProtocolFees { fee, surplus, collector }` takes two pips amounts (1 pip = 1/100 of a bip = 0.0001%):
   - `fee` applies to `taker_dst_used`.
   - `surplus` applies to any price improvement (`taker_dst_used - maker_price`). Both are capped so total fees ≤ 25% (`Error::ExcessiveFees`).
 - `integrator_fees` is a map of `AccountId -> Pips` capped by the same aggregate limit.
@@ -121,7 +121,7 @@ Field | Description
 
 Token transfers land in `ft_on_transfer`/`mt_on_transfer` with a UTF-8 JSON message that wraps a `TransferMessage`:
 
-```json
+```json5
 {
   "params": { /* full Params serialized as JSON */ },
   "action": "fund"               // or {"fill": {...}} (see below)
@@ -131,7 +131,7 @@ Token transfers land in `ft_on_transfer`/`mt_on_transfer` with a UTF-8 JSON mess
 ### Funding
 Makers fund the escrow with `ft_transfer_call` or `mt_transfer_call`:
 
-```json
+```json5
 {
   "params": { ... },
   "action": "fund"
@@ -144,7 +144,7 @@ Makers fund the escrow with `ft_transfer_call` or `mt_transfer_call`:
 ### Filling
 Takers send `dst_token` directly to the escrow contract via `*_transfer_call` on `params.dst_token` with:
 
-```json
+```json5
 {
   "params": { ... },
   "action": {
@@ -200,7 +200,7 @@ Takers send `dst_token` directly to the escrow contract via `*_transfer_call` on
 - **Effects**:
   - Marks the escrow as `closed`.
   - Triggers `lost_found` internally to send leftover maker funds.
-  - Returns `true` if the contract storage was cleaned up (i.e. deleted) as part of the call; otherwise returns/propagates the Promise chain that settles transfers.
+  - Returns `true` if the contract was cleaned up (i.e. deleted) as part of the call
 - **Errors**: `Error::Unauthorized` when caller doesn't satisfy the above, `Error::InvalidData` when params mismatch.
 
 ### Sweeping: `escrow_lost_found(params: Params) -> PromiseOrValue<bool>`
@@ -209,13 +209,13 @@ Takers send `dst_token` directly to the escrow contract via `*_transfer_call` on
   - Attempts to send any remaining `maker_src_remaining` (only possible after close) to `refund_src_to.receiver_id` or maker.
   - Sends accumulated `maker_dst_lost` (from failed maker receipts) to `receive_dst_to.receiver_id` or maker.
   - Chains callbacks to `escrow_resolve_transfers` to account for partial refunds.
-  - Returns `true` once the account met cleanup conditions (closed + zero balances + no callbacks).
+  - Returns `true` once the contract was cleanup (closed + zero balances + no callbacks).
 
 ### Optional Auth Call: `on_auth(signer_id: AccountId, msg: String) -> PromiseOrValue<()>`
 - **Feature gate**: requires `auth_call`.
 - **Purpose**: integrates with `defuse-auth-call` so a relayer can forward off-chain signed instructions.
 - **Message format**:
-  ```json
+  ```json5
   {
     "params": { ... },
     "action": {
@@ -244,7 +244,7 @@ Events follow the `escrow-swap` standard (`standard: "escrow-swap"`):
 Every event is logged via `EVENT_JSON:` following the NEAR standard. The snippets below use JSONC so each field can be documented inline.
 
 #### Create (`event = "create"`)
-```jsonc
+```json5
 {
   "standard": "escrow-swap", // event namespace
   "version": "0.1.0",        // see #[event_version]
@@ -275,12 +275,12 @@ Every event is logged via `EVENT_JSON:` following the NEAR standard. The snippet
           "solver-bus-proxy.near"
         ],
         "protocol_fees": {
-          "fee": "250",
-          "surplus": "50",
+          "fee": 25000,
+          "surplus": 5000,
           "collector": "protocol.near"
         },
         "integrator_fees": {
-          "partner.near": "100"
+          "partner.near": 10000
         },
         "auth_caller": "intents.near",
         "salt": "9e3779b97f4a7c1552d27dcd1234567890abcdef1234567890abcdef1234"
@@ -291,7 +291,7 @@ Every event is logged via `EVENT_JSON:` following the NEAR standard. The snippet
 ```
 
 #### Funded (`event = "funded"`)
-```jsonc
+```json5
 {
   "standard": "escrow-swap",
   "version": "0.1.0",
@@ -318,7 +318,7 @@ Every event is logged via `EVENT_JSON:` following the NEAR standard. The snippet
 ```
 
 #### Fill (`event = "fill"`)
-```jsonc
+```json5
 {
   "standard": "escrow-swap",
   "version": "0.1.0",
@@ -364,7 +364,7 @@ Every event is logged via `EVENT_JSON:` following the NEAR standard. The snippet
 ```
 
 #### MakerLost (`event = "maker_lost"`)
-```jsonc
+```json5
 {
   "standard": "escrow-swap",
   "version": "0.1.0",
@@ -390,7 +390,7 @@ Every event is logged via `EVENT_JSON:` following the NEAR standard. The snippet
 ```
 
 #### Closed (`event = "closed"`)
-```jsonc
+```json5
 {
   "standard": "escrow-swap",
   "version": "0.1.0",
@@ -405,7 +405,7 @@ Every event is logged via `EVENT_JSON:` following the NEAR standard. The snippet
 ```
 
 #### Cleanup (`event = "cleanup"`)
-```jsonc
+```json5
 {
   "standard": "escrow-swap",
   "version": "0.1.0",
