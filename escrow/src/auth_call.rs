@@ -13,5 +13,11 @@ pub struct Message {
 #[serde(tag = "action", content = "data", rename_all = "snake_case")]
 #[derive(Debug, Clone)]
 pub enum Action {
-    Close(Params),
+    Close(CloseAction),
+}
+
+#[near(serializers = [json])]
+#[derive(Debug, Clone)]
+pub struct CloseAction {
+    pub params: Params,
 }

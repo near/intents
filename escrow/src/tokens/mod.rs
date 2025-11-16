@@ -34,6 +34,7 @@ pub trait TokenIdExt: Sized {
 
     fn transfer_gas_min_default(&self, is_call: bool) -> (Gas, Gas);
 
+    #[inline]
     fn transfer_gas(&self, min_gas: Option<Gas>, is_call: bool) -> Gas {
         let (min, default) = self.transfer_gas_min_default(is_call);
         min_gas.unwrap_or(default).max(min)
@@ -46,6 +47,7 @@ impl TokenIdExt for TokenId {
         self.into()
     }
 
+    #[inline]
     fn transfer_gas_min_default(&self, is_call: bool) -> (Gas, Gas) {
         match self {
             #[cfg(feature = "nep141")]

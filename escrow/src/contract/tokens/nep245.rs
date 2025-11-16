@@ -32,7 +32,7 @@ impl MultiTokenReceiver for Contract {
             .unwrap_or_panic();
 
         let token_id: TokenId = Nep245TokenId::new(env::predecessor_account_id(), token_id)
-            .unwrap_or_else(|err: Infallible| match err {})
+            .unwrap_or_else(|err: Infallible| match err {}) // `.into_ok` isn't stabilized yet
             .into();
 
         match self
@@ -60,7 +60,6 @@ impl Sendable for Nep245TokenId {
         let (contract_id, token_id) = self.into_contract_id_and_mt_token_id();
 
         let p = ext_mt_core::ext(contract_id)
-            // TODO: are we sure we have that???
             .with_attached_deposit(NearToken::from_yoctonear(1))
             .with_static_gas(gas)
             .with_unused_gas_weight(unused_gas.into());

@@ -53,7 +53,6 @@ impl Escrow for Contract {
             .unwrap_or_panic()
     }
 
-    #[payable]
     fn escrow_close(&mut self, params: Params) -> PromiseOrValue<bool> {
         self.close(&env::predecessor_account_id(), params)
             .unwrap_or_panic()

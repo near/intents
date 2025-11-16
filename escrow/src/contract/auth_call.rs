@@ -38,8 +38,8 @@ impl Contract {
         }
 
         match msg.action {
-            Action::Close(params) => Ok(this
-                .close(signer_id, params)?
+            Action::Close(close) => Ok(this
+                .close(signer_id, close.params)?
                 .map(PromiseOrValue::Promise)
                 .unwrap_or(PromiseOrValue::Value(()))),
         }

@@ -41,7 +41,6 @@ impl Sendable for Nep141TokenId {
         let gas = self.transfer_gas(min_gas, msg.is_some());
 
         let p = ext_ft_core::ext(self.into_contract_id())
-            // TODO: are we sure we have that???
             .with_attached_deposit(NearToken::from_yoctonear(1))
             .with_static_gas(gas)
             .with_unused_gas_weight(unused_gas.into());

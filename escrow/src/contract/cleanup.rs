@@ -12,14 +12,17 @@ use crate::{
 use super::{Contract, ContractExt};
 
 impl Contract {
+    #[inline]
     pub(super) fn cleanup_guard(&mut self) -> CleanupGuard<'_> {
         CleanupGuard(self)
     }
 
+    #[inline]
     pub(super) const fn as_alive(&self) -> Option<&Storage> {
         self.0.as_ref()
     }
 
+    #[inline]
     pub(super) fn try_as_alive(&self) -> Result<&Storage> {
         self.as_alive().ok_or(Error::CleanupInProgress)
     }
@@ -28,14 +31,17 @@ impl Contract {
 pub struct CleanupGuard<'a>(&'a mut Contract);
 
 impl<'a> CleanupGuard<'a> {
+    #[inline]
     pub const fn as_alive_mut(&mut self) -> Option<&mut Storage> {
         self.0.0.as_mut()
     }
 
+    #[inline]
     pub fn try_as_alive_mut(&mut self) -> Result<&mut Storage> {
         self.as_alive_mut().ok_or(Error::CleanupInProgress)
     }
 
+    #[inline]
     pub fn on_callback(&mut self) -> Result<&mut State> {
         let state = self
             .try_as_alive_mut()?
@@ -66,6 +72,7 @@ impl<'a> Drop for CleanupGuard<'a> {
 }
 
 impl State {
+    #[inline]
     pub(super) fn callback(&mut self) -> ContractExt {
         self.in_flight = self
             .in_flight
@@ -75,6 +82,7 @@ impl State {
         Contract::ext(env::current_account_id())
     }
 
+    #[inline]
     fn on_callback(&mut self) {
         self.in_flight = self
             .in_flight
@@ -84,6 +92,7 @@ impl State {
     }
 
     /// Returns whether just closed
+    #[inline]
     pub(super) fn close_unchecked(&mut self, reason: CloseReason) -> bool {
         let just_closed = !mem::replace(&mut self.closed, true);
         if just_closed {
@@ -93,6 +102,7 @@ impl State {
     }
 
     #[must_use]
+    #[inline]
     fn should_cleanup(&mut self) -> bool {
         if self.deadline.has_expired() {
             self.close_unchecked(CloseReason::DeadlineExpired);

@@ -63,14 +63,17 @@ impl Storage {
             .unwrap_or_else(|_| unreachable!())
     }
 
+    #[inline]
     pub const fn no_verify(&self) -> &State {
         &self.state
     }
 
+    #[inline]
     pub const fn no_verify_mut(&mut self) -> &mut State {
         &mut self.state
     }
 
+    #[inline]
     pub fn verify(&self, fixed: &Params) -> Result<&State> {
         if self.params_hash != fixed.hash() {
             return Err(Error::InvalidData);
@@ -78,6 +81,7 @@ impl Storage {
         Ok(&self.state)
     }
 
+    #[inline]
     pub fn verify_mut(&mut self, fixed: &Params) -> Result<&mut State> {
         self.verify(fixed)?;
         Ok(&mut self.state)
@@ -100,8 +104,7 @@ pub struct Params {
     pub src_token: TokenId,
     pub dst_token: TokenId, // TODO: one_of
 
-    /// TODO: dutch auction
-    pub price: Price,
+    pub price: Price, // TODO: dutch auction
 
     #[borsh(
         serialize_with = "BorshAs::<BorshTimestampNanoSeconds>::serialize",
@@ -140,16 +143,16 @@ pub struct Params {
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub integrator_fees: BTreeMap<AccountId, Pips>,
 
-    // TODO: or parent account id?
     #[cfg(feature = "auth_call")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub auth_caller: Option<AccountId>,
+    pub auth_caller: Option<AccountId>, // TODO: or parent account id?
 
     #[serde_as(as = "Hex")]
     pub salt: [u8; 32],
 }
 
 impl Params {
+    #[inline]
     pub fn hash(&self) -> CryptoHash {
         // TODO: prefix?
         env::keccak256_array(&borsh::to_vec(self).unwrap_or_else(|_| unreachable!()))
@@ -221,6 +224,7 @@ impl Params {
                     self.integrator_fees
                         .values()
                         .copied()
+                        .chain(self.protocol_fees.as_ref().map(|p| p.fee + p.surplus))
                         .filter(|fee| !fee.is_zero())
                         .count()
                         .try_into()
