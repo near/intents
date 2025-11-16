@@ -2,7 +2,7 @@ mod env;
 
 use std::time::Duration;
 
-use defuse_escrow::{
+use defuse_escrow_swap::{
     Deadline, OverrideSend,
     action::{FillAction, TransferAction, TransferMessage},
     price::Price,

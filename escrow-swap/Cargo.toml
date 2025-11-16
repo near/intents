@@ -1,5 +1,5 @@
 [package]
-name = "defuse-escrow"
+name = "defuse-escrow-swap"
 edition.workspace = true
 version = "0.1.0"
 rust-version.workspace = true

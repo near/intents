@@ -43,7 +43,7 @@ args = [
     "--no-embed-abi",
 ]
 
-[tasks.build-escrow]
+[tasks.build-escrow-swap]
 dependencies = ["add-cache-dir-tag"]
 command = "cargo"
 args = [
@@ -52,7 +52,7 @@ args = [
     "non-reproducible-wasm",
     "--locked",
     "--manifest-path",
-    "./escrow/Cargo.toml",
+    "./escrow-swap/Cargo.toml",
     "--features",
     "abi,contract",
     "--out-dir",

@@ -5,7 +5,7 @@ pub use self::escrow::*;
 
 use std::sync::LazyLock;
 
-use defuse_escrow::Params;
+use defuse_escrow_swap::Params;
 use defuse_fees::Pips;
 use defuse_sandbox::{
     Account, Sandbox, SigningAccount, TxResult,

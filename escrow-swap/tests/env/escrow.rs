@@ -1,4 +1,4 @@
-use defuse_escrow::{Params, Storage};
+use defuse_escrow_swap::{Params, Storage};
 use defuse_sandbox::{
     Account, SigningAccount, TxResult, api::types::transaction::actions::GlobalContractIdentifier,
 };

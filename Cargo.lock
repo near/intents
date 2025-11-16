@@ -905,7 +905,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-escrow"
+name = "defuse-escrow-swap"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -1109,7 +1109,6 @@ dependencies = [
  "bnum",
  "chrono",
  "defuse",
- "defuse-escrow",
  "defuse-near-utils",
  "defuse-poa-factory",
  "defuse-randomness",
