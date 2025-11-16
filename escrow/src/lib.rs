@@ -12,13 +12,12 @@ mod contract;
 #[cfg(feature = "auth_call")]
 pub mod auth_call;
 mod error;
-mod event;
-// mod price;
+pub mod event;
 pub mod state;
 pub mod tokens;
 mod utils;
 
-pub use self::{error::*, event::*};
+pub use self::error::*;
 
 pub use defuse_fees::Pips;
 pub use defuse_near_utils::time::Deadline;

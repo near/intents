@@ -8,10 +8,6 @@ repository.workspace = true
 [lints]
 workspace = true
 
-[features]
-default = ["abi"] # TODO: remove
-abi = []
-
 [dependencies]
 defuse-num-utils.workspace = true
 
@@ -21,3 +17,4 @@ thiserror.workspace = true
 
 [dev-dependencies]
 rstest.workspace = true
+near-sdk = { workspace = true, features = ["non-contract-usage"] }

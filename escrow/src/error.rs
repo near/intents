@@ -25,7 +25,7 @@ pub enum Error {
     InvalidData,
     #[error("JSON: {0}")]
     JSON(#[from] serde_json::Error),
-    #[error("price too low")]
+    #[error("price is too low")]
     PriceTooLow,
     #[error("partial fills are not allowed")]
     PartialFillsNotAllowed,

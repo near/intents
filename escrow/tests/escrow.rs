@@ -5,7 +5,7 @@ use std::time::Duration;
 use defuse_escrow::{
     Deadline,
     price::Price,
-    state::Params,
+    state::{Params, ProtocolFees},
     tokens::{FillAction, OverrideSend, TransferAction, TransferMessage},
 };
 use defuse_fees::Pips;
@@ -55,7 +55,7 @@ async fn partial_fills() {
         .map(Into::<TokenId>::into);
 
     const TIMEOUT: Duration = Duration::from_secs(60);
-    let price = Price::new(1, 5).unwrap();
+    let price: Price = "2".parse().unwrap();
 
     let params = Params {
         maker: env.maker.id().clone(),
@@ -73,7 +73,13 @@ async fn partial_fills() {
 
         // taker_whitelist: Default::default(),
         taker_whitelist: env.takers.iter().map(|a| a.id()).cloned().collect(),
-        protocol_fees: None,
+        protocol_fees: ProtocolFees {
+            // fee: Pips::ZERO,
+            fee: Pips::from_percent(1).unwrap(),
+            surplus: Pips::from_percent(10).unwrap(),
+            collector: env.fee_collectors[0].id().clone(),
+        }
+        .into(),
         integrator_fees: env
             .fee_collectors
             .iter()
@@ -81,6 +87,7 @@ async fn partial_fills() {
             .cloned()
             .enumerate()
             .map(|(percent, a)| (a, Pips::from_percent(percent as u32 + 1).unwrap()))
+            .skip(1)
             .collect(),
 
         #[cfg(feature = "auth_call")]
@@ -151,7 +158,7 @@ async fn partial_fills() {
                     serde_json::to_string(&TransferMessage {
                         params: params.clone(),
                         action: FillAction {
-                            price,
+                            price: "2.5".parse().unwrap(),
                             receive_src_to: OverrideSend {
                                 memo: Some("taker memo".to_string()),
                                 // msg: Some("taker msg".to_string()),
@@ -241,7 +248,7 @@ impl EscrowEnv {
             taker1,
             taker2,
             taker3,
-            fee_collector1,
+            protocol_fee_collector,
             fee_collector2,
             fee_collector3,
         ) = try_join!(
@@ -251,7 +258,7 @@ impl EscrowEnv {
             root.create_subaccount(long("taker1"), NearToken::from_near(10)),
             root.create_subaccount(long("taker2"), NearToken::from_near(10)),
             root.create_subaccount(long("taker3"), NearToken::from_near(10)),
-            root.create_subaccount(long("fee-collector1"), NearToken::from_near(10)),
+            root.create_subaccount(long("protocol-fee-collector"), NearToken::from_near(10)),
             root.create_subaccount(long("fee-collector2"), NearToken::from_near(10)),
             root.create_subaccount(long("fee-collector3"), NearToken::from_near(10)),
         )?;
@@ -262,7 +269,7 @@ impl EscrowEnv {
             mt_dst,
             maker,
             takers: [taker1, taker2, taker3],
-            fee_collectors: [fee_collector1, fee_collector2, fee_collector3],
+            fee_collectors: [protocol_fee_collector, fee_collector2, fee_collector3],
         })
     }
 

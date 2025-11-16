@@ -1,21 +1,22 @@
+mod ops;
 mod str;
 
 pub use self::str::*;
 
 use defuse_num_utils::CheckedMulDiv;
-use near_sdk::near;
+use near_sdk::borsh::{BorshDeserialize, BorshSerialize, io};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
-/// Floating point unsigned decimal price, i.e. src per 1 dst
+/// Floating point unsigned decimal price, i.e. dst per 1 src
 /// always reduced (i.e. normalized)
 /// TODO: docs
-#[near(serializers = [borsh])]
-#[cfg_attr(
-    feature = "abi",
-    derive(near_sdk::NearSchema),
-    schemars(with = "String")
+#[derive(near_sdk::NearSchema)]
+#[abi(json, borsh)]
+#[schemars(with = "String")]
+#[derive(
+    Clone, Copy, PartialEq, Eq, Hash, BorshSerialize, SerializeDisplay, DeserializeFromStr,
 )]
-#[derive(Clone, Copy, PartialEq, Eq, Hash, SerializeDisplay, DeserializeFromStr)]
+#[borsh(crate = "::near_sdk::borsh")]
 pub struct Price(u8, u128);
 
 impl Price {
@@ -63,23 +64,41 @@ impl Price {
             .pow(self.decimals() as u32)
     }
 
-    #[inline]
-    pub fn dst_ceil(self, src_amount: u128) -> Option<u128> {
-        src_amount.checked_mul_div_ceil(self.denominator(), self.digits())
+    pub const fn is_zero(&self) -> bool {
+        self.digits() == 0
     }
 
     #[inline]
-    pub fn dst_floor(self, src_amount: u128) -> Option<u128> {
-        src_amount.checked_mul_div(self.denominator(), self.digits())
+    pub fn dst_ceil_checked(self, src_amount: u128) -> Option<u128> {
+        src_amount.checked_mul_div_ceil(self.digits(), self.denominator())
     }
 
     #[inline]
-    pub fn src_ceil(self, dst_amount: u128) -> Option<u128> {
-        dst_amount.checked_mul_div_ceil(self.digits(), self.denominator())
+    pub fn dst_floor_checked(self, src_amount: u128) -> Option<u128> {
+        src_amount.checked_mul_div(self.digits(), self.denominator())
     }
 
     #[inline]
-    pub fn src_floor(self, dst_amount: u128) -> Option<u128> {
-        dst_amount.checked_mul_div(self.digits(), self.denominator())
+    pub fn src_ceil_checked(self, dst_amount: u128) -> Option<u128> {
+        dst_amount.checked_mul_div_ceil(self.denominator(), self.digits())
+    }
+
+    #[inline]
+    pub fn src_floor_checked(self, dst_amount: u128) -> Option<u128> {
+        dst_amount.checked_mul_div(self.denominator(), self.digits())
+    }
+}
+
+impl From<u128> for Price {
+    #[inline]
+    fn from(value: u128) -> Self {
+        Self(0, value)
+    }
+}
+
+impl BorshDeserialize for Price {
+    fn deserialize_reader<R: io::Read>(reader: &mut R) -> io::Result<Self> {
+        let (decimals, digits) = BorshDeserialize::deserialize_reader(reader)?;
+        Self::new(decimals, digits).ok_or_else(|| io::ErrorKind::InvalidData.into())
     }
 }

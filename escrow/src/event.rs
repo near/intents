@@ -98,8 +98,29 @@ pub struct FillEvent<'a> {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub maker_receive_dst_to: Option<Cow<'a, AccountIdRef>>,
 
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub protocol_dst_fees: Option<ProtocolFeesCollected<'a>>,
+
     #[serde_as(as = "BTreeMap<_, DisplayFromStr>")]
-    pub dst_fees: BTreeMap<Cow<'a, AccountIdRef>, u128>,
+    pub integrator_dst_fees: BTreeMap<Cow<'a, AccountIdRef>, u128>,
+}
+
+#[cfg_attr(
+    all(feature = "abi", not(target_arch = "wasm32")),
+    serde_as(schemars = true)
+)]
+#[cfg_attr(
+    not(all(feature = "abi", not(target_arch = "wasm32"))),
+    serde_as(schemars = false)
+)]
+#[near(serializers = [json])]
+#[derive(Debug, Clone)]
+pub struct ProtocolFeesCollected<'a> {
+    #[serde_as(as = "DisplayFromStr")]
+    pub fee: u128,
+    #[serde_as(as = "DisplayFromStr")]
+    pub surplus: u128,
+    pub collector: Cow<'a, AccountIdRef>,
 }
 
 #[must_use = "make sure to `.emit()` this event"]

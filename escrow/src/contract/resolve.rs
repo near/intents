@@ -1,7 +1,12 @@
 use defuse_near_utils::UnwrapOrPanic;
 use near_sdk::{Gas, near};
 
-use crate::{Error, EscrowIntentEmit, MakerLost, Result, state::State, tokens::Sent};
+use crate::{
+    Error, Result,
+    event::{EscrowIntentEmit, MakerLost},
+    state::State,
+    tokens::Sent,
+};
 
 use super::{Contract, ContractExt};
 

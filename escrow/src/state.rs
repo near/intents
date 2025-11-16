@@ -129,11 +129,8 @@ pub struct Params {
     #[serde(default, skip_serializing_if = "crate::utils::is_default")]
     pub receive_dst_to: OverrideSend,
 
-    #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
-    pub taker_whitelist: BTreeSet<AccountId>,
-
     // taker_whitelist: ["solver-bus-proxy.near"] (knows SolverBus public key)
-
+    //
     // solver -> intents.near::mt_transfer_call():
     //   * solver-bus-proxy.near::mt_on_transfer(sender_id, token_id, amount, msg):
     //      msg.extract_solver_bus_signature()
@@ -143,6 +140,9 @@ pub struct Params {
     //
     // solver-bus.near -> solver-bus-proxy.near::close(escrow_contract_id)
     //                 -> escrow-0x1234....abc::close()
+    #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
+    pub taker_whitelist: BTreeSet<AccountId>,
+
     pub protocol_fees: Option<ProtocolFees>,
 
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
@@ -161,10 +161,10 @@ pub struct Params {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProtocolFees {
     #[serde(default, skip_serializing_if = "Pips::is_zero")]
-    fee: Pips,
+    pub fee: Pips,
     #[serde(default, skip_serializing_if = "Pips::is_zero")]
-    surplus: Pips,
-    collector: AccountId,
+    pub surplus: Pips,
+    pub collector: AccountId,
 }
 
 impl Params {

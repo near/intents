@@ -6,15 +6,18 @@ mod return_value;
 mod tokens;
 mod utils;
 
-use std::{borrow::Cow, mem};
+use std::{borrow::Cow, collections::BTreeMap, mem};
 
 use defuse_near_utils::{MaybePromise, PromiseExt, UnwrapOrPanic};
 use defuse_token_id::TokenId;
 
-use near_sdk::{AccountId, PanicOnDefault, Promise, PromiseOrValue, env, near, require};
+use near_sdk::{
+    AccountId, AccountIdRef, PanicOnDefault, Promise, PromiseOrValue, env, near, require,
+};
 
 use crate::{
-    AddSrcEvent, CloseReason, Error, Escrow, EscrowIntentEmit, Event, FillEvent, Result,
+    Error, Escrow, Result,
+    event::{AddSrcEvent, CloseReason, EscrowIntentEmit, Event, FillEvent, ProtocolFeesCollected},
     state::{Params, State, Storage},
     tokens::{FillAction, TransferAction},
 };
@@ -191,90 +194,118 @@ impl State {
             return Err(Error::Unauthorized);
         }
 
-        // TODO: use taker's price
+        if msg.price < params.price {
+            return Err(Error::PriceTooLow);
+        }
 
+        // TODO: rounding everywhere?
         let (src_out, taker_dst_used) = {
-            let want_src = params
+            let taker_want_src = msg
                 .price
-                .src_floor(taker_dst_in)
+                .src_floor_checked(taker_dst_in)
                 .ok_or(Error::IntegerOverflow)?;
             // TODO: what if zero?
-            if want_src < self.maker_src_remaining {
+            if taker_want_src < self.maker_src_remaining {
                 if !params.partial_fills_allowed {
                     return Err(Error::PartialFillsNotAllowed);
                 }
-                (want_src, taker_dst_in)
+                (taker_want_src, taker_dst_in)
             } else {
                 (
                     self.maker_src_remaining,
-                    params
-                        .price
-                        // TODO: rounding inside?
-                        .dst_ceil(self.maker_src_remaining)
+                    msg.price
+                        .dst_ceil_checked(self.maker_src_remaining)
                         .ok_or(Error::IntegerOverflow)?,
                 )
             }
         };
 
-        // TODO: surplus
         self.maker_src_remaining -= src_out;
-        let refund = taker_dst_in - taker_dst_used;
+        let taker_dst_refund = taker_dst_in - taker_dst_used;
+
+        let protocol_dst_fees = params
+            .protocol_fees
+            .map(|p| {
+                Ok::<_, Error>(ProtocolFeesCollected {
+                    fee: p.fee.fee_ceil(taker_dst_used),
+                    surplus: if !p.surplus.is_zero() {
+                        let maker_want_dst = params
+                            .price
+                            .dst_ceil_checked(src_out)
+                            .ok_or(Error::IntegerOverflow)?;
+                        let surplus = taker_dst_used.saturating_sub(maker_want_dst);
+                        p.surplus.fee_ceil(surplus)
+                    } else {
+                        0
+                    },
+                    collector: p.collector.into(),
+                })
+            })
+            .transpose()?;
+
+        let integrator_dst_fees: BTreeMap<Cow<AccountIdRef>, _> = params
+            .integrator_fees
+            .into_iter()
+            .map(|(collector, fee)| (collector.into(), fee.fee_ceil(taker_dst_used)))
+            .collect();
 
         let mut maker_dst_out = taker_dst_used;
-
-        // collect, subtract and send fees
-        let send_fees = {
-            let mut sends: Option<Promise> = None;
-            let dst_fees = params
-                .integrator_fees
-                .iter()
-                .map(|(fee_collector, fee)| {
-                    let fee_amount = fee.fee_ceil(taker_dst_used);
-                    if fee_amount > 0 {
-                        maker_dst_out = maker_dst_out
-                            .checked_sub(fee_amount)
-                            .ok_or(Error::ExcessiveFees)?;
-
-                        let send = params.dst_token.clone().send(
-                            fee_collector.clone(),
-                            fee_amount,
-                            Some("fee".to_string()),
-                            None,
-                            None,
-                            false, // no unused gas
-                        );
-
-                        sends = Some(sends.take().and_or(send));
-                    }
-
-                    Ok((fee_collector.into(), fee_amount))
-                })
-                .collect::<Result<_>>()?;
-
-            FillEvent {
-                taker: Cow::Borrowed(&sender_id),
-                maker: Cow::Borrowed(&params.maker),
-                src_token: Cow::Borrowed(&params.src_token),
-                dst_token: Cow::Borrowed(&params.dst_token),
-                taker_price: msg.price,
-                maker_price: params.price,
-                taker_dst_in,
-                taker_dst_used,
-                src_out,
-                maker_dst_out,
-                maker_src_remaining: self.maker_src_remaining,
-                maker_receive_dst_to: params
-                    .receive_dst_to
-                    .receiver_id
-                    .as_deref()
-                    .map(Cow::Borrowed),
-                taker_receive_src_to: msg.receive_src_to.receiver_id.as_deref().map(Cow::Borrowed),
-                dst_fees,
+        let mut send_fees = None;
+        for (collector, fee_amount) in integrator_dst_fees
+            .iter()
+            .map(|(collector, amount)| (collector.as_ref(), *amount))
+            // chain with protocol fees
+            .chain(
+                protocol_dst_fees
+                    .as_ref()
+                    .map(|p| {
+                        p.fee
+                            .checked_add(p.surplus)
+                            .map(|a| (p.collector.as_ref(), a))
+                            .ok_or(Error::IntegerOverflow)
+                    })
+                    .transpose()?,
+            )
+        {
+            if fee_amount == 0 {
+                continue;
             }
-            .emit();
+            maker_dst_out = maker_dst_out
+                .checked_sub(fee_amount)
+                .ok_or(Error::ExcessiveFees)?;
 
-            sends
-        };
+            send_fees = Some(send_fees.take().and_or(params.dst_token.clone().send(
+                collector.to_owned(),
+                fee_amount,
+                Some("fee".to_string()),
+                None,
+                None,
+                false, // no unused gas
+            )));
+        }
+
+        FillEvent {
+            taker: Cow::Borrowed(&sender_id),
+            maker: Cow::Borrowed(&params.maker),
+            src_token: Cow::Borrowed(&params.src_token),
+            dst_token: Cow::Borrowed(&params.dst_token),
+            taker_price: msg.price,
+            maker_price: params.price,
+            taker_dst_in,
+            taker_dst_used,
+            src_out,
+            maker_dst_out,
+            maker_src_remaining: self.maker_src_remaining,
+            maker_receive_dst_to: params
+                .receive_dst_to
+                .receiver_id
+                .as_deref()
+                .map(Cow::Borrowed),
+            taker_receive_src_to: msg.receive_src_to.receiver_id.as_deref().map(Cow::Borrowed),
+            protocol_dst_fees,
+            integrator_dst_fees,
+        }
+        .emit();
 
         if src_out == 0 || maker_dst_out == 0 {
             // TODO: maybe check earlier?
@@ -311,7 +342,7 @@ impl State {
                     .with_static_gas(Contract::ESCROW_RESOLVE_TRANSFERS_GAS)
                     .with_unused_gas_weight(0)
                     .escrow_resolve_transfers(None, Some(maker_dst))
-                    .return_value(maker_dst.token_type.refund_value(refund)?),
+                    .return_value(maker_dst.token_type.refund_value(taker_dst_refund)?),
             )
             .into())
     }

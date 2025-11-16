@@ -3,7 +3,11 @@ use core::mem;
 use defuse_near_utils::UnwrapOrPanicError;
 use near_sdk::{Promise, env};
 
-use crate::{CloseReason, Error, Event, Result, Storage, state::State};
+use crate::{
+    Error, Result, Storage,
+    event::{CloseReason, Event},
+    state::State,
+};
 
 use super::{Contract, ContractExt};
 
