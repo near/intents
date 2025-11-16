@@ -218,11 +218,7 @@ Takers send `dst_token` directly to the escrow contract via `*_transfer_call` on
   ```jsonc
   {
     "params": { /* ... */ },
-    "action": {
-      "close": {
-        "params": { /* ... */ }
-      }
-    }
+    "action": "close",
   }
   ```
 - **Checks**: `env::predecessor_account_id()` must equal `params.auth_caller`. The provided Params are validated the same way as other methods.
