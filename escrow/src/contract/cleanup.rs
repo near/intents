@@ -3,7 +3,7 @@ use core::mem;
 use defuse_near_utils::UnwrapOrPanicError;
 use near_sdk::{Promise, env};
 
-use crate::{Error, Event, Result, Storage, state::State};
+use crate::{CloseReason, Error, Event, Result, Storage, state::State};
 
 use super::{Contract, ContractExt};
 
@@ -79,22 +79,20 @@ impl State {
             .unwrap_or_panic_static_str();
     }
 
-    fn check_deadline_expired(&mut self) -> bool {
-        let just_closed = self.deadline.has_expired() && !mem::replace(&mut self.closed, true);
+    /// Returns whether just closed
+    pub(super) fn close_unchecked(&mut self, reason: CloseReason) -> bool {
+        let just_closed = !mem::replace(&mut self.closed, true);
         if just_closed {
-            // TODO: enrich
-            Event::Close.emit();
+            Event::Close { reason }.emit();
         }
         just_closed
     }
 
-    // TODO: rename
     #[must_use]
     fn should_cleanup(&mut self) -> bool {
-        // TODO: are we sure? what if we got more tokens from maker with prolonged deadline after close?
-        // the answer is: we never know
-        // if we allow only maker to close, then we will end up with a lot of unclosed contracts
-        self.check_deadline_expired();
+        if self.deadline.has_expired() {
+            self.close_unchecked(CloseReason::DeadlineExpired);
+        }
 
         self.closed
             && self.in_flight == 0

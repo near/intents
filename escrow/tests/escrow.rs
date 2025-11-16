@@ -3,9 +3,10 @@ mod env;
 use std::time::Duration;
 
 use defuse_escrow::{
-    Deadline, Price,
-    state::{OverrideSend, Params},
-    tokens::{FillAction, OpenAction, TransferMessage},
+    Deadline,
+    price::Price,
+    state::Params,
+    tokens::{FillAction, OverrideSend, TransferAction, TransferMessage},
 };
 use defuse_fees::Pips;
 use defuse_sandbox::{
@@ -54,6 +55,7 @@ async fn partial_fills() {
         .map(Into::<TokenId>::into);
 
     const TIMEOUT: Duration = Duration::from_secs(60);
+    let price = Price::new(1, 5).unwrap();
 
     let params = Params {
         maker: env.maker.id().clone(),
@@ -61,7 +63,7 @@ async fn partial_fills() {
         src_token: src_asset.clone(),
         dst_token: dst_asset.clone(),
 
-        price: Price::ratio(MAKER_AMOUNT, TAKER_AMOUNT).unwrap(),
+        price,
         deadline: Deadline::timeout(TIMEOUT),
 
         partial_fills_allowed: true,
@@ -71,7 +73,8 @@ async fn partial_fills() {
 
         // taker_whitelist: Default::default(),
         taker_whitelist: env.takers.iter().map(|a| a.id()).cloned().collect(),
-        fees: env
+        protocol_fees: None,
+        integrator_fees: env
             .fee_collectors
             .iter()
             .map(|a| a.id())
@@ -82,7 +85,7 @@ async fn partial_fills() {
 
         #[cfg(feature = "auth_call")]
         auth_caller: Some(env.verifier.id().clone()),
-        salt: [0; 4],
+        salt: [0; 32],
         // maker_authority: Some(cancel_authorify.0.clone()),
     };
 
@@ -111,7 +114,7 @@ async fn partial_fills() {
                     "maker deposit".to_string(),
                     serde_json::to_string(&TransferMessage {
                         params: params.clone(),
-                        action: OpenAction {}.into(),
+                        action: TransferAction::Open,
                     })
                     .unwrap(),
                 )
@@ -148,6 +151,7 @@ async fn partial_fills() {
                     serde_json::to_string(&TransferMessage {
                         params: params.clone(),
                         action: FillAction {
+                            price,
                             receive_src_to: OverrideSend {
                                 memo: Some("taker memo".to_string()),
                                 // msg: Some("taker msg".to_string()),

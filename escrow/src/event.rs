@@ -1,10 +1,11 @@
 use std::{borrow::Cow, collections::BTreeMap};
 
+use defuse_token_id::TokenId;
 use derive_more::From;
 use near_sdk::{AccountId, AccountIdRef, near};
 use serde_with::{DisplayFromStr, serde_as};
 
-use crate::Params;
+use crate::{Params, price::Price, tokens::Sent};
 
 #[near(event_json(
     // TODO
@@ -21,10 +22,19 @@ pub enum Event<'a> {
     #[event_version("0.1.0")]
     Fill(FillEvent<'a>),
 
-    // TODO: enrich with:
-    // closed_by: maker/taker/authority
+    // TODO: emit
     #[event_version("0.1.0")]
-    Close,
+    MakerLost(MakerLost),
+
+    #[event_version("0.1.0")]
+    MakerLostFound {
+        // TODO
+    },
+
+    // TODO: enrich with:
+    // closed_by: maker/taker
+    #[event_version("0.1.0")]
+    Close { reason: CloseReason },
 
     #[event_version("0.1.0")]
     Cleanup,
@@ -63,22 +73,60 @@ pub struct AddSrcEvent {
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct FillEvent<'a> {
+    pub maker: Cow<'a, AccountIdRef>,
     pub taker: Cow<'a, AccountIdRef>,
 
-    // TODO: src_token
-    // TODO: dst_token
-    #[serde_as(as = "DisplayFromStr")]
-    pub src_amount: u128,
-    // TODO: is it how much will the maker get? or how much taker spent?
-    #[serde_as(as = "DisplayFromStr")]
-    pub dst_amount: u128,
+    pub src_token: Cow<'a, TokenId>,
+    pub dst_token: Cow<'a, TokenId>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub taker_receiver_id: Option<Cow<'a, AccountIdRef>>,
+    pub taker_price: Price,
+    pub maker_price: Price,
+
+    #[serde_as(as = "DisplayFromStr")]
+    pub taker_dst_in: u128,
+    #[serde_as(as = "DisplayFromStr")]
+    pub taker_dst_used: u128,
+    #[serde_as(as = "DisplayFromStr")]
+    pub src_out: u128,
+    #[serde_as(as = "DisplayFromStr")]
+    pub maker_dst_out: u128,
+    #[serde_as(as = "DisplayFromStr")]
+    pub maker_src_remaining: u128,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub taker_receive_src_to: Option<Cow<'a, AccountIdRef>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub maker_receive_dst_to: Option<Cow<'a, AccountIdRef>>,
 
     #[serde_as(as = "BTreeMap<_, DisplayFromStr>")]
-    pub dst_fees_collected: BTreeMap<Cow<'a, AccountIdRef>, u128>,
-    // TODO: how much dst will maker receive?
+    pub dst_fees: BTreeMap<Cow<'a, AccountIdRef>, u128>,
+}
+
+#[must_use = "make sure to `.emit()` this event"]
+#[cfg_attr(
+    all(feature = "abi", not(target_arch = "wasm32")),
+    serde_as(schemars = true)
+)]
+#[cfg_attr(
+    not(all(feature = "abi", not(target_arch = "wasm32"))),
+    serde_as(schemars = false)
+)]
+#[near(serializers = [json])]
+#[derive(Debug, Clone)]
+pub struct MakerLost {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub src: Option<Sent>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dst: Option<Sent>,
+}
+
+#[near(serializers = [json])]
+#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CloseReason {
+    DeadlineExpired,
+    ByMaker,
+    BySingleTaker,
 }
 
 pub trait EscrowIntentEmit<'a>: Into<Event<'a>> {

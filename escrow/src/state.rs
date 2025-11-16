@@ -1,17 +1,20 @@
-use defuse_fees::Pips;
-use defuse_near_utils::time::Deadline;
-use defuse_token_id::TokenId;
-
 use std::collections::{BTreeMap, BTreeSet};
 
 use defuse_borsh_utils::adapters::{
     As as BorshAs, TimestampNanoSeconds as BorshTimestampNanoSeconds,
 };
+use defuse_fees::Pips;
+use defuse_near_utils::time::Deadline;
 use defuse_num_utils::CheckedAdd;
+use defuse_token_id::TokenId;
 use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, borsh, env, near};
 use serde_with::{DisplayFromStr, hex::Hex, serde_as};
 
-use crate::{Error, Price, Result, tokens::TokenIdExt};
+use crate::{
+    Error, Result,
+    price::Price,
+    tokens::{OverrideSend, TokenIdExt},
+};
 
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
@@ -26,7 +29,7 @@ use crate::{Error, Price, Result, tokens::TokenIdExt};
 
 pub struct Storage {
     #[serde_as(as = "Hex")]
-    params_hash: [u8; 32],
+    params_hash: CryptoHash,
 
     #[serde(flatten)]
     state: State,
@@ -103,7 +106,6 @@ pub struct Params {
 
     /// maker / taker (in 10^-9)
     /// TODO: check non-zero
-    /// TODO: exact out? i.e. partial fills are not allowed
     /// TODO: dutch auction
     pub price: Price,
 
@@ -141,18 +143,28 @@ pub struct Params {
     //
     // solver-bus.near -> solver-bus-proxy.near::close(escrow_contract_id)
     //                 -> escrow-0x1234....abc::close()
+    pub protocol_fees: Option<ProtocolFees>,
 
-    //
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub fees: BTreeMap<AccountId, Pips>,
+    pub integrator_fees: BTreeMap<AccountId, Pips>,
 
     // TODO: or parent account id?
-    #[cfg(feature = "auth_call")] // TODO: borsh order?
+    #[cfg(feature = "auth_call")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub auth_caller: Option<AccountId>,
 
     #[serde_as(as = "Hex")]
-    pub salt: [u8; 4], // TODO: more bytes?
+    pub salt: [u8; 32],
+}
+
+#[near(serializers = [borsh, json])]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProtocolFees {
+    #[serde(default, skip_serializing_if = "Pips::is_zero")]
+    fee: Pips,
+    #[serde(default, skip_serializing_if = "Pips::is_zero")]
+    surplus: Pips,
+    collector: AccountId,
 }
 
 impl Params {
@@ -162,7 +174,7 @@ impl Params {
     }
 
     pub fn total_fee(&self) -> Option<Pips> {
-        self.fees
+        self.integrator_fees
             .values()
             .copied()
             .try_fold(Pips::ZERO, Pips::checked_add)
@@ -170,6 +182,7 @@ impl Params {
 
     pub fn validate(&self) -> Result<()> {
         self.validate_tokens()?;
+        self.validate_price()?;
         self.validate_fees()?;
         self.validate_gas()?;
         Ok(())
@@ -181,11 +194,14 @@ impl Params {
             .ok_or(Error::SameTokens)
     }
 
+    fn validate_price(&self) -> Result<()> {
+        // TODO: non zero
+        Ok(())
+    }
+
     fn validate_fees(&self) -> Result<()> {
         const MAX_FEE_PERCENT: u32 = 25;
         const MAX_FEE: Pips = Pips::ONE_PERCENT.checked_mul(MAX_FEE_PERCENT).unwrap();
-
-        // TODO: limit each individual fee
 
         self.total_fee()
             .is_some_and(|total| total <= MAX_FEE)
@@ -217,7 +233,7 @@ impl Params {
             )?
             .checked_add(
                 self.dst_token.transfer_gas(None, false).checked_mul(
-                    self.fees
+                    self.integrator_fees
                         .values()
                         .copied()
                         .filter(|fee| !fee.is_zero())
@@ -228,8 +244,6 @@ impl Params {
             )
     }
 }
-
-// TODO: (Optional but nice) bump a version so indexers/UIs know the latest state
 
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
@@ -269,32 +283,3 @@ pub struct State {
     #[serde(default, skip_serializing_if = "crate::utils::is_default")]
     pub in_flight: u32,
 }
-
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct OverrideSend {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub receiver_id: Option<AccountId>,
-
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub memo: Option<String>,
-
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub msg: Option<String>,
-
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub min_gas: Option<Gas>,
-}
-
-// TODO: CoW schema:
-// {
-//    "uid":"0xaa4eb7b4da14b93ce42963ac4085fd8eee4a04170b36454f9f8b91b91f69705387a04752e5//16548b0d5d4df97384c0b22b64917965a801c1",
-//    "sellToken": "0xdef1ca1fb7fbcdc777520aa7f396b4e015f497ab",
-//    "buyToken": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-//    "sellAmount": "1000000000000000000000",
-//    "buyAmount": "284138335",
-//    "feeAmount": "0",
-//    "kind": "sell",
-//    "partiallyFillable": false,
-//    "class": "limit"
-//}

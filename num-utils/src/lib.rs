@@ -1,5 +1,9 @@
-// mod float;
-// pub use self::float::*;
+#![cfg_attr(not(test), no_std)]
+
+// #[cfg(feature = "decimal")]
+// pub mod decimal;
+// #[cfg(feature = "num-traits")]
+// pub use num_traits as traits;
 
 use core::ops::Mul;
 
@@ -69,17 +73,18 @@ macro_rules! impl_checked_sub {
         }
     };
 }
-macro_rules! impl_checked_add_sub {
+
+macro_rules! impl_checked {
     ($unsigned:ty, $signed:ty) => {
         impl_checked_add!($unsigned, $signed);
         impl_checked_sub!($unsigned, $signed);
     };
 }
-impl_checked_add_sub!(u8, i8);
-impl_checked_add_sub!(u16, i16);
-impl_checked_add_sub!(u32, i32);
-impl_checked_add_sub!(u64, i64);
-impl_checked_add_sub!(u128, i128);
+impl_checked!(u8, i8);
+impl_checked!(u16, i16);
+impl_checked!(u32, i32);
+impl_checked!(u64, i64);
+impl_checked!(u128, i128);
 
 pub trait CheckedMulDiv<RHS = Self>: Sized {
     fn checked_mul_div(self, mul: RHS, div: RHS) -> Option<Self>;

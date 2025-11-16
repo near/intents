@@ -5,13 +5,12 @@ mod nep245;
 
 use defuse_token_id::{TokenId, TokenIdType};
 use near_sdk::{
-    AccountId, Gas, Promise, PromiseOrValue, PromiseResult, env, json_types::U128, near, serde_json,
+    AccountId, Gas, Promise, PromiseOrValue, PromiseResult, env, json_types::U128, serde_json,
 };
-use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
     Error, Result,
-    tokens::{TokenIdExt, TransferMessage},
+    tokens::{Sent, TokenIdExt, TransferMessage},
 };
 
 use super::Contract;
@@ -85,27 +84,6 @@ impl Sendable for TokenId {
             Self::Nep245(token) => token.send(receiver_id, amount, memo, msg, min_gas, unused_gas),
         }
     }
-}
-
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
-#[near(serializers = [json])]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[must_use]
-pub struct Sent {
-    pub token_type: TokenIdType,
-
-    #[serde_as(as = "DisplayFromStr")]
-    pub amount: u128,
-
-    #[serde(default, skip_serializing_if = "::core::ops::Not::not")]
-    pub is_call: bool,
 }
 
 impl Sent {

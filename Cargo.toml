@@ -22,6 +22,7 @@ members = [
     "webauthn",
     "poa-factory",
     "poa-token",
+    "price",
     "randomness",
     "sandbox",
     "sep53",
@@ -63,6 +64,7 @@ defuse-num-utils.path = "num-utils"
 defuse-webauthn.path = "webauthn"
 defuse-poa-factory.path = "poa-factory"
 defuse-poa-token.path = "poa-token"
+defuse-price.path = "price"
 defuse-sandbox.path = "sandbox"
 defuse-sep53.path = "sep53"
 defuse-serde-utils.path = "serde-utils"
@@ -79,7 +81,7 @@ arbitrary = "1"
 arbitrary_with = "0.3"
 array-util = "1"
 bitflags = "2.9.1"
-bnum = { version = "0.13", features = ["borsh"] }
+bnum = { version = "0.12", features = ["borsh"] }
 chrono = { version = "0.4", default-features = false }
 derive_more = "2.0"
 digest = { version = "0.10", default-features = false }
@@ -98,10 +100,12 @@ near-plugins = { git = "https://github.com/Near-One/near-plugins", tag = "v0.5.0
 near-sdk = "5.15"
 near-sandbox = "0.2"
 near-workspaces = "0.20"
+num-traits = "0.2"
 p256 = { version = "0.13", default-features = false, features = ["ecdsa"] }
 rand = "0.9"
 rand_chacha = "0.9"
 rstest = "0.25"
+fastnum = "0.2.10"
 schemars = "0.8"
 serde_json = "1"
 serde_with = "3.14"

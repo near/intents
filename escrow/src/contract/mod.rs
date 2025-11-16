@@ -14,7 +14,7 @@ use defuse_token_id::TokenId;
 use near_sdk::{AccountId, PanicOnDefault, Promise, PromiseOrValue, env, near, require};
 
 use crate::{
-    AddSrcEvent, Error, Escrow, EscrowIntentEmit, Event, FillEvent, Result,
+    AddSrcEvent, CloseReason, Error, Escrow, EscrowIntentEmit, Event, FillEvent, Result,
     state::{Params, State, Storage},
     tokens::{FillAction, TransferAction},
 };
@@ -177,16 +177,6 @@ impl State {
         }
         .emit();
 
-        // TODO: allow for extended deadline prolongation in msg?
-        // TODO: but how can we verify sender_id to allow for that?
-        // if let Some(new_price) = msg.new_price {
-        //     if new_price < self.params.price {
-        //         // TODO: or ignore?
-        //         return Err(Error::LowerPrice);
-        //     }
-        //     self.params.price = new_price;
-        // }
-
         Ok(PromiseOrValue::Value(0))
     }
 
@@ -194,52 +184,54 @@ impl State {
         &mut self,
         params: Params,
         sender_id: AccountId,
-        dst_amount: u128,
+        taker_dst_in: u128,
         msg: FillAction,
     ) -> Result<PromiseOrValue<u128>> {
         if !(params.taker_whitelist.is_empty() || params.taker_whitelist.contains(&sender_id)) {
-            // TODO: or authority?
             return Err(Error::Unauthorized);
         }
 
-        let (taker_src_amount, dst_used) = {
-            let want_src_amount = params
+        // TODO: use taker's price
+
+        let (src_out, taker_dst_used) = {
+            let want_src = params
                 .price
-                .src_amount(dst_amount)
+                .src_floor(taker_dst_in)
                 .ok_or(Error::IntegerOverflow)?;
             // TODO: what if zero?
-            if want_src_amount < self.maker_src_remaining {
+            if want_src < self.maker_src_remaining {
                 if !params.partial_fills_allowed {
                     return Err(Error::PartialFillsNotAllowed);
                 }
-                (want_src_amount, dst_amount)
+                (want_src, taker_dst_in)
             } else {
                 (
                     self.maker_src_remaining,
                     params
                         .price
                         // TODO: rounding inside?
-                        .dst_amount(self.maker_src_remaining)
+                        .dst_ceil(self.maker_src_remaining)
                         .ok_or(Error::IntegerOverflow)?,
                 )
             }
         };
 
-        self.maker_src_remaining -= taker_src_amount;
-        let refund = dst_amount - dst_used;
+        // TODO: surplus
+        self.maker_src_remaining -= src_out;
+        let refund = taker_dst_in - taker_dst_used;
 
-        let mut maker_dst_amount = dst_used;
+        let mut maker_dst_out = taker_dst_used;
 
         // collect, subtract and send fees
         let send_fees = {
             let mut sends: Option<Promise> = None;
-            let dst_fees_collected = params
-                .fees
+            let dst_fees = params
+                .integrator_fees
                 .iter()
                 .map(|(fee_collector, fee)| {
-                    let fee_amount = fee.fee_ceil(dst_used);
+                    let fee_amount = fee.fee_ceil(taker_dst_used);
                     if fee_amount > 0 {
-                        maker_dst_amount = maker_dst_amount
+                        maker_dst_out = maker_dst_out
                             .checked_sub(fee_amount)
                             .ok_or(Error::ExcessiveFees)?;
 
@@ -261,17 +253,30 @@ impl State {
 
             FillEvent {
                 taker: Cow::Borrowed(&sender_id),
-                src_amount: taker_src_amount,
-                dst_amount,
-                taker_receiver_id: msg.receive_src_to.receiver_id.as_deref().map(Cow::Borrowed),
-                dst_fees_collected,
+                maker: Cow::Borrowed(&params.maker),
+                src_token: Cow::Borrowed(&params.src_token),
+                dst_token: Cow::Borrowed(&params.dst_token),
+                taker_price: msg.price,
+                maker_price: params.price,
+                taker_dst_in,
+                taker_dst_used,
+                src_out,
+                maker_dst_out,
+                maker_src_remaining: self.maker_src_remaining,
+                maker_receive_dst_to: params
+                    .receive_dst_to
+                    .receiver_id
+                    .as_deref()
+                    .map(Cow::Borrowed),
+                taker_receive_src_to: msg.receive_src_to.receiver_id.as_deref().map(Cow::Borrowed),
+                dst_fees,
             }
             .emit();
 
             sends
         };
 
-        if taker_src_amount == 0 || maker_dst_amount == 0 {
+        if src_out == 0 || maker_dst_out == 0 {
             // TODO: maybe check earlier?
             return Err(Error::InsufficientAmount);
         }
@@ -279,7 +284,7 @@ impl State {
         // send to maker
         let (maker_dst, maker_dst_p) = params.dst_token.send_for_resolve(
             params.receive_dst_to.receiver_id.unwrap_or(params.maker),
-            maker_dst_amount,
+            maker_dst_out,
             params.receive_dst_to.memo,
             params.receive_dst_to.msg,
             params.receive_dst_to.min_gas,
@@ -293,7 +298,7 @@ impl State {
                     msg.receive_src_to
                         .receiver_id
                         .unwrap_or_else(|| sender_id.clone()),
-                    taker_src_amount,
+                    src_out,
                     msg.receive_src_to.memo,
                     msg.receive_src_to.msg,
                     msg.receive_src_to.min_gas,
@@ -312,29 +317,20 @@ impl State {
     }
 
     fn close(&mut self, signer_id: AccountId, params: Params) -> Result<Option<Promise>> {
-        // TODO: authority
-        if !(self.closed
-            || self.deadline.has_expired()
-            || self.maker_src_remaining == 0 && signer_id == params.maker
-            || params.taker_whitelist.len() == 1 && params.taker_whitelist.contains(&signer_id))
-        {
-            // TODO: require 1yN for permissioned
+        if !self.closed {
+            let reason = if self.deadline.has_expired() {
+                CloseReason::DeadlineExpired
+            } else if self.maker_src_remaining == 0 && signer_id == params.maker {
+                CloseReason::ByMaker
+            } else if params.taker_whitelist.len() == 1
+                && params.taker_whitelist.contains(&signer_id)
+            {
+                CloseReason::BySingleTaker
+            } else {
+                return Err(Error::Unauthorized);
+            };
 
-            // TODO: allow to close permissionlessly if src_remaining == 0
-            // TODO: what if more assets are about to arrive? allow only for maker
-            // TODO: allow force close by authority (`force: bool` param?)
-            // TODO: different error
-
-            // TODO:
-            return Err(Error::DeadlineNotExpired);
-        }
-
-        let just_closed = !mem::replace(&mut self.closed, true);
-        // TODO: what if already closed? maybe not allow closing twice?
-        if just_closed {
-            // TODO: allow retries
-            // TODO: enrich event
-            Event::Close.emit();
+            self.close_unchecked(reason);
         }
 
         self.lost_found(params)
@@ -381,6 +377,8 @@ impl State {
         else {
             return Ok(None);
         };
+
+        // TODO: emit event
 
         Ok(send
             .then(

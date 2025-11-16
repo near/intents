@@ -1,9 +1,9 @@
 use defuse_near_utils::UnwrapOrPanic;
 use near_sdk::{Gas, near};
 
-use crate::{Error, Result, state::State};
+use crate::{Error, EscrowIntentEmit, MakerLost, Result, state::State, tokens::Sent};
 
-use super::{Contract, ContractExt, tokens::Sent};
+use super::{Contract, ContractExt};
 
 #[near]
 impl Contract {
@@ -39,13 +39,14 @@ impl Contract {
 impl State {
     fn resolve_transfers(
         &mut self,
-        maker_src: Option<Sent>,
-        maker_dst: Option<Sent>,
+        mut maker_src: Option<Sent>,
+        mut maker_dst: Option<Sent>,
     ) -> Result<()> {
         for (result_idx, (sent, lost)) in maker_src
+            .as_mut()
             .map(|s| (s, &mut self.maker_src_remaining))
             .into_iter()
-            .chain(maker_dst.map(|s| (s, &mut self.maker_dst_lost)))
+            .chain(maker_dst.as_mut().map(|s| (s, &mut self.maker_dst_lost)))
             .enumerate()
         {
             let refund =
@@ -53,6 +54,17 @@ impl State {
 
             // TODO: emit event if non-zero refund?
             *lost = lost.checked_add(refund).ok_or(Error::IntegerOverflow)?;
+            sent.amount = refund;
+        }
+
+        {
+            let event = MakerLost {
+                src: maker_src.take_if(|s| s.amount > 0),
+                dst: maker_dst.take_if(|s| s.amount > 0),
+            };
+            if event.src.is_some() || event.dst.is_some() {
+                event.emit();
+            }
         }
 
         Ok(())

@@ -19,18 +19,19 @@ pub enum Error {
     ExcessiveGas,
     #[error("integer overflow")]
     IntegerOverflow,
+    #[error("insufficient amount")]
+    InsufficientAmount,
     #[error("invalid data")]
     InvalidData,
     #[error("JSON: {0}")]
     JSON(#[from] serde_json::Error),
-    #[error("can't set to lower price")]
-    LowerPrice,
+    #[error("price too low")]
+    PriceTooLow,
     #[error("partial fills are not allowed")]
     PartialFillsNotAllowed,
     #[error("same tokens")]
     SameTokens,
-    #[error("insufficient amount")]
-    InsufficientAmount,
+
     #[error("unauthorized")]
     Unauthorized,
     #[error("wrong token")]

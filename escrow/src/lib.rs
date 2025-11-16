@@ -13,22 +13,23 @@ mod contract;
 pub mod auth_call;
 mod error;
 mod event;
-mod price;
+// mod price;
 pub mod state;
 pub mod tokens;
 mod utils;
 
-pub use self::{error::*, event::*, price::*};
+pub use self::{error::*, event::*};
 
 pub use defuse_fees::Pips;
 pub use defuse_near_utils::time::Deadline;
-pub use defuse_token_id::TokenId;
+pub use defuse_price as price;
+pub use defuse_token_id as token_id;
+
+use near_sdk::{PromiseOrValue, ext_contract};
 
 use crate::state::{Params, Storage};
 
 // TODO: more pub re-exports
-
-use near_sdk::{PromiseOrValue, ext_contract};
 
 #[ext_contract(ext_escrow)]
 pub trait Escrow {
