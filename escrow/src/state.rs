@@ -241,6 +241,9 @@ pub struct ProtocolFees {
     pub fee: Pips,
     #[serde(default, skip_serializing_if = "Pips::is_zero")]
     pub surplus: Pips,
+
+    /// NOTE: make sure to have `storage_deposit` for this recepient
+    /// on `dst_token`
     pub collector: AccountId,
 }
 
@@ -253,6 +256,10 @@ pub struct OverrideSend {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<String>,
 
+    /// NOTE: No refund will be made in case of
+    /// `*_transfer_call()` failed. Reasons for it to fail:
+    /// * no `storage_deposit` for receipent
+    /// * insufficient gas (see `min_gas` below)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub msg: Option<String>,
 
