@@ -23,14 +23,14 @@ Use the commented JSON template below (JSONC) as a reference—each field is doc
   // owner that funds src_token and authorizes close when inventory is empty
   "maker": "maker.near",
 
-  // primary use case: intents.near wrapping another token; canonical NEP-245 string
-  "src_token": "nep245:intents.near:nep141:btc.omft.near",
+  // primary use case: intents.near wrapping USDT (NEP-141) as an NEP-245 asset
+  "src_token": "nep245:intents.near:nep141:usdt.tether-token.near",
 
-  // taker provides another intents.near-wrapped asset to receive the maker's src_token
+  // taker pays with intents.near-wrapped wNEAR (dst token)
   "dst_token": "nep245:intents.near:nep141:wrap.near",
 
-  // maker wants to receive at least 28,250.1234 dst per 1 src
-  "price": "28250.1234",
+  // maker wants to receive at least 0.167 NEAR per 1 USDT (dst per src)
+  "price": "0.167",
 
   // RFC3339 timestamp string; fills after this instant fail and anyone may close
   "deadline": "2024-07-09T00:00:00Z",
@@ -239,6 +239,184 @@ Events follow the `escrow-swap` standard (`standard: "escrow-swap"`):
 - `Event::MakerLost` – records assets that could not be delivered and now sit in `lost_found`.
 - `Event::Closed` – indicates why the escrow shut down (`deadline_expired`, `by_maker`, `by_single_taker`).
 - `Event::Cleanup` – contract deleted itself (no assets left).
+
+### Event JSON Examples
+Every event is logged via `EVENT_JSON:` following the NEAR standard. The snippets below use JSONC so each field can be documented inline.
+
+#### Create (`event = "create"`)
+```jsonc
+{
+  "standard": "escrow-swap", // event namespace
+  "version": "0.1.0",        // see #[event_version]
+  "event": "create",
+  "data": [
+    {
+      // Full Params echoed back to indexers
+      "params": {
+        "maker": "maker.near",
+        "src_token": "nep245:intents.near:nep141:usdt.tether-token.near",
+        "dst_token": "nep245:intents.near:nep141:wrap.near",
+        "price": "0.167",
+        "deadline": "2024-07-09T00:00:00Z",
+        "partial_fills_allowed": true,
+        "refund_src_to": {
+          "receiver_id": "maker.vault.near",
+          "memo": "escrow-refund-42",
+          "msg": "MESSAGE",
+          "min_gas": "25000000000000"
+        },
+        "receive_dst_to": {
+          "receiver_id": "maker.treasury.near",
+          "memo": "escrow-fill-42",
+          "msg": "MESSAGE",
+          "min_gas": "40000000000000"
+        },
+        "taker_whitelist": [
+          "solver-bus-proxy.near"
+        ],
+        "protocol_fees": {
+          "fee": "250",
+          "surplus": "50",
+          "collector": "protocol.near"
+        },
+        "integrator_fees": {
+          "partner.near": "100"
+        },
+        "auth_caller": "intents.near",
+        "salt": "9e3779b97f4a7c1552d27dcd1234567890abcdef1234567890abcdef1234"
+      }
+    }
+  ]
+}
+```
+
+#### Funded (`event = "funded"`)
+```jsonc
+{
+  "standard": "escrow-swap",
+  "version": "0.1.0",
+  "event": "funded",
+  "data": [
+    {
+      // maker that supplied liquidity
+      "maker": "maker.near",
+
+      // Token ids are logged exactly as stored
+      "src_token": "nep245:intents.near:nep141:usdt.tether-token.near",
+      "dst_token": "nep245:intents.near:nep141:wrap.near",
+
+      // maker's asking price and deadline snapshot
+      "maker_price": "0.167",
+      "deadline": "2024-07-09T00:00:00Z",
+
+      // Added amount in token's base units (yocto, if NEP-141)
+      "maker_src_added": "5000000000000000000000000",
+      "maker_src_remaining": "5000000000000000000000000"
+    }
+  ]
+}
+```
+
+#### Fill (`event = "fill"`)
+```jsonc
+{
+  "standard": "escrow-swap",
+  "version": "0.1.0",
+  "event": "fill",
+  "data": [
+    {
+      // taker that provided dst_token
+      "taker": "solver.near",
+      // maker receiving the fill
+      "maker": "maker.near",
+
+      // tokens involved in the swap
+      "src_token": "nep245:intents.near:nep141:usdt.tether-token.near",
+      "dst_token": "nep245:intents.near:nep141:wrap.near",
+
+      // taker quoted price vs maker listing price
+      "taker_price": "0.169",
+      "maker_price": "0.167",
+
+      // Amount of dst the taker sent in, how much was used, and resulting maker/taker balances
+      "taker_dst_in": "3500000000000000000000000",
+      "taker_dst_used": "3300000000000000000000000",
+      "src_out": "117000000000000000000000",
+      "maker_dst_out": "3050000000000000000000000",
+      "maker_src_remaining": "4883000000000000000000000",
+
+      // Optional override addresses (None omitted)
+      "taker_receive_src_to": "solver.near",
+      "maker_receive_dst_to": "maker.treasury.near",
+
+      // Protocol & integrator fee breakdowns (amounts in dst_token units)
+      "protocol_dst_fees": {
+        "fee": "82500000000000000000000",
+        "surplus": "16500000000000000000000",
+        "collector": "protocol.near"
+      },
+      "integrator_dst_fees": {
+        "partner.near": "33000000000000000000000"
+      }
+    }
+  ]
+}
+```
+
+#### MakerLost (`event = "maker_lost"`)
+```jsonc
+{
+  "standard": "escrow-swap",
+  "version": "0.1.0",
+  "event": "maker_lost",
+  "data": [
+    {
+      // Amount of src that failed to refund back to maker (e.g., due to lack of storage)
+      "src": {
+        "token_type": "nep245",
+        "amount": "1000000000000000000000",
+        "is_call": true // true => transfer_call was attempted, so no refund on FT/MT failure
+      },
+
+      // Amount of dst that failed to reach maker
+      "dst": {
+        "token_type": "nep245",
+        "amount": "25000000000000000000000",
+        "is_call": true
+      }
+    }
+  ]
+}
+```
+
+#### Closed (`event = "closed"`)
+```jsonc
+{
+  "standard": "escrow-swap",
+  "version": "0.1.0",
+  "event": "closed",
+  "data": [
+    {
+      // reason is one of: deadline_expired, by_maker, by_single_taker
+      "reason": "deadline_expired"
+    }
+  ]
+}
+```
+
+#### Cleanup (`event = "cleanup"`)
+```jsonc
+{
+  "standard": "escrow-swap",
+  "version": "0.1.0",
+  "event": "cleanup",
+  "data": [
+    {
+      // empty payload—the event simply signals account deletion succeeded
+    }
+  ]
+}
+```
 
 ## Error Codes
 Error | Meaning
