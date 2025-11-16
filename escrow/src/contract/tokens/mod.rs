@@ -9,13 +9,15 @@ use near_sdk::{
 };
 
 use crate::{
-    Error, Result,
-    tokens::{Sent, TokenIdExt, TransferMessage},
+    Error, Params, Result, State,
+    action::{TransferAction, TransferMessage},
+    tokens::{Sent, TokenIdExt},
 };
 
 use super::Contract;
 
 impl Contract {
+    /// Returns amount to be refunded
     pub fn on_receive(
         &mut self,
         sender_id: AccountId,
@@ -33,6 +35,33 @@ impl Contract {
             .try_as_alive_mut()?
             .verify_mut(&msg.params)?
             .on_receive(msg.params, sender_id, token_id, amount, msg.action)
+    }
+}
+
+impl State {
+    /// Returns amount to be refunded
+    fn on_receive(
+        &mut self,
+        params: Params,
+        // TODO: it could have been EscrowFactory who forwarded funds to us
+        sender_id: AccountId,
+        token_id: TokenId,
+        amount: u128,
+        action: TransferAction,
+    ) -> Result<PromiseOrValue<u128>> {
+        if self.closed || self.deadline.has_expired() {
+            return Err(Error::Closed);
+        }
+
+        match action {
+            TransferAction::Fund if token_id == params.src_token => {
+                self.on_fund(params, sender_id, amount)
+            }
+            TransferAction::Fill(fill) if token_id == params.dst_token => {
+                self.on_fill(params, sender_id, amount, fill)
+            }
+            _ => Err(Error::WrongToken),
+        }
     }
 }
 

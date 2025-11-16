@@ -1,3 +1,5 @@
+use core::convert::Infallible;
+
 use defuse_near_utils::UnwrapOrPanic;
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
 use defuse_token_id::{TokenId, nep245::Nep245TokenId};
@@ -5,11 +7,7 @@ use near_sdk::{AccountId, Gas, NearToken, PromiseOrValue, env, json_types::U128,
 
 use crate::{
     Error,
-    contract::{
-        Contract, ContractExt,
-        tokens::Sendable,
-        utils::{ResultExt, single},
-    },
+    contract::{Contract, ContractExt, tokens::Sendable},
     tokens::TokenIdExt,
 };
 
@@ -33,8 +31,9 @@ impl MultiTokenReceiver for Contract {
             .ok_or(Error::WrongToken)
             .unwrap_or_panic();
 
-        let token_id: TokenId =
-            ResultExt::into_ok(Nep245TokenId::new(env::predecessor_account_id(), token_id)).into();
+        let token_id: TokenId = Nep245TokenId::new(env::predecessor_account_id(), token_id)
+            .unwrap_or_else(|err: Infallible| match err {})
+            .into();
 
         match self
             .on_receive(sender_id, token_id, amount.0, &msg)
@@ -84,4 +83,9 @@ impl Sendable for Nep245TokenId {
             )
         }
     }
+}
+
+fn single<T>(v: Vec<T>) -> Option<T> {
+    let [a] = v.try_into().ok()?;
+    Some(a)
 }

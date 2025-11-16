@@ -10,11 +10,7 @@ use defuse_token_id::TokenId;
 use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, borsh, env, near};
 use serde_with::{DisplayFromStr, hex::Hex, serde_as};
 
-use crate::{
-    Error, Result,
-    price::Price,
-    tokens::{OverrideSend, TokenIdExt},
-};
+use crate::{Error, Result, price::Price, tokens::TokenIdExt};
 
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
@@ -76,9 +72,10 @@ impl Storage {
     }
 
     pub fn verify(&self, fixed: &Params) -> Result<&State> {
-        (self.params_hash == fixed.hash())
-            .then_some(&self.state)
-            .ok_or(Error::InvalidData)
+        if self.params_hash != fixed.hash() {
+            return Err(Error::InvalidData);
+        }
+        Ok(&self.state)
     }
 
     pub fn verify_mut(&mut self, fixed: &Params) -> Result<&mut State> {
@@ -100,16 +97,12 @@ impl Storage {
 pub struct Params {
     pub maker: AccountId,
 
-    // TODO: support one_of for dst
-    pub src_token: TokenId, // in case of loan: dst_asset
-    pub dst_token: TokenId, // in case of loan:
+    pub src_token: TokenId,
+    pub dst_token: TokenId, // TODO: one_of
 
-    /// maker / taker (in 10^-9)
-    /// TODO: check non-zero
     /// TODO: dutch auction
     pub price: Price,
 
-    // TODO: check that not expired at create?
     #[borsh(
         serialize_with = "BorshAs::<BorshTimestampNanoSeconds>::serialize",
         deserialize_with = "BorshAs::<BorshTimestampNanoSeconds>::deserialize",
@@ -118,7 +111,6 @@ pub struct Params {
             definitions = "i64::add_definitions_recursively",
         ))
     )]
-    // #[serde_as(as = "SerdeTimestampNanoSeconds")] // TODO: RFC-3339
     pub deadline: Deadline,
 
     #[serde(default)]
@@ -157,16 +149,6 @@ pub struct Params {
     pub salt: [u8; 32],
 }
 
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ProtocolFees {
-    #[serde(default, skip_serializing_if = "Pips::is_zero")]
-    pub fee: Pips,
-    #[serde(default, skip_serializing_if = "Pips::is_zero")]
-    pub surplus: Pips,
-    pub collector: AccountId,
-}
-
 impl Params {
     pub fn hash(&self) -> CryptoHash {
         // TODO: prefix?
@@ -189,13 +171,16 @@ impl Params {
     }
 
     fn validate_tokens(&self) -> Result<()> {
-        (self.src_token != self.dst_token)
-            .then_some(())
-            .ok_or(Error::SameTokens)
+        if self.src_token == self.dst_token {
+            return Err(Error::SameTokens);
+        }
+        Ok(())
     }
 
     fn validate_price(&self) -> Result<()> {
-        // TODO: non zero
+        if self.price.is_zero() {
+            return Err(Error::PriceTooLow);
+        }
         Ok(())
     }
 
@@ -245,6 +230,32 @@ impl Params {
     }
 }
 
+#[near(serializers = [borsh, json])]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProtocolFees {
+    #[serde(default, skip_serializing_if = "Pips::is_zero")]
+    pub fee: Pips,
+    #[serde(default, skip_serializing_if = "Pips::is_zero")]
+    pub surplus: Pips,
+    pub collector: AccountId,
+}
+
+#[near(serializers = [borsh, json])]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct OverrideSend {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub receiver_id: Option<AccountId>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub memo: Option<String>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub msg: Option<String>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_gas: Option<Gas>,
+}
+
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
     serde_as(schemars = true)
@@ -256,7 +267,7 @@ impl Params {
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct State {
-    /// Deposited or lost (after close) src remaining
+    /// Funded or lost (after close) src remaining
     #[serde_as(as = "DisplayFromStr")]
     pub maker_src_remaining: u128,
 
@@ -265,7 +276,6 @@ pub struct State {
     #[serde_as(as = "DisplayFromStr")]
     pub maker_dst_lost: u128,
 
-    // TODO: check that not expired at create?
     #[borsh(
         serialize_with = "BorshAs::<BorshTimestampNanoSeconds>::serialize",
         deserialize_with = "BorshAs::<BorshTimestampNanoSeconds>::deserialize",
@@ -274,7 +284,6 @@ pub struct State {
             definitions = "i64::add_definitions_recursively",
         ))
     )]
-    // #[serde_as(as = "SerdeTimestampNanoSeconds")] // TODO: RFC-3339
     pub deadline: Deadline,
 
     #[serde(default, skip_serializing_if = "::core::ops::Not::not")]

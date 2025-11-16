@@ -9,15 +9,16 @@ compile_error!(
 #[cfg(feature = "contract")]
 mod contract;
 
+pub mod action;
 #[cfg(feature = "auth_call")]
 pub mod auth_call;
 mod error;
 pub mod event;
-pub mod state;
+mod state;
 pub mod tokens;
 mod utils;
 
-pub use self::error::*;
+pub use self::{error::*, state::*};
 
 pub use defuse_fees::Pips;
 pub use defuse_near_utils::time::Deadline;
@@ -26,23 +27,16 @@ pub use defuse_token_id as token_id;
 
 use near_sdk::{PromiseOrValue, ext_contract};
 
-use crate::state::{Params, Storage};
-
-// TODO: more pub re-exports
-
 #[ext_contract(ext_escrow)]
 pub trait Escrow {
     fn escrow_view(&self) -> &Storage;
 
-    /// Closes the escrow + performs lost_found().
+    /// Closes the escrow + performs escrow_lost_found().
     ///
     /// It's allowed to close when:
     /// * Deadline has expired (permissionless)
     /// * maker_src_remaining == 0 && predecessor == maker
     /// * taker_whitelist == [predecessor]
-    ///
-    /// If deadline has not exceeded yet, then fails.
-    /// Returns whether was closed just now, or false if was already closed.
     fn escrow_close(&mut self, params: Params) -> PromiseOrValue<bool>;
 
     /// Retries sending:
@@ -53,12 +47,38 @@ pub trait Escrow {
     /// stop indexing it.
     /// Otherwise, there MIGHT be lost assets there
     /// or they might come in the future.
-    /// TODO: maker custom params for withdrawal
+    // TODO: maker custom params for withdrawal
     fn escrow_lost_found(&mut self, params: Params) -> PromiseOrValue<bool>;
-    // TODO: recover()
-    // TODO: decrease_price()
-    // TODO: prolongate_deadline()
-    // TODO: total_fee(&self)
-    // TODO: effective_price(&self)
-    // TODO: create sub_escrow for a single solver and lock NEAR
 }
+
+// TODO: add support for NFTs
+// TODO: recover()
+// TODO: total_fee(&self)
+// TODO: effective_price(&self)
+// TODO: solver: create_subescrow and lock NEAR on it
+// TODO: refund locked NEAR back to taker if closed Ok, otherwise...?
+// TODO: add support for custom ".on_settled()" hooks?
+
+// TODO: coinsidence of wants?
+// user1: locked 1 BTC in escrow for swap to 100k USDC
+// user2: sends RFQ to SolverBus to swap 10k USDC to BTC
+// SolverBus sends him address of escrow contract,
+// user2 signs "transfer" intent:
+// `{
+//   "receiver_id": "0s123...abc" // address of escrow
+//   "token": "<USDC ADDRESS>",
+//   "amount": "10k",
+//   "msg": "FILL MSG + SOLVER_BUS SIGNATURE",
+// }`
+// user2 transfers to "solver-bus-proxy.near" escrow, tries to fill, if fail -> refund
+// OR: we can have intermediary contract to refund to ANOTHER ESCROW to reduce failure rate
+//
+// if we make solvers to be MMs, then solver-bus-proxy.near can
+// implement CLOB
+
+// TODO: lending
+// solver -> escrow::mt_on_transfer(sender_id, token_id, amount, msg)
+//        * msg: loan
+//
+//        -> escrow_loan:
+//

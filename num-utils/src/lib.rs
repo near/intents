@@ -1,10 +1,5 @@
 #![cfg_attr(not(test), no_std)]
 
-// #[cfg(feature = "decimal")]
-// pub mod decimal;
-// #[cfg(feature = "num-traits")]
-// pub use num_traits as traits;
-
 use core::ops::Mul;
 
 use bnum::{BInt, BUint, cast::As};

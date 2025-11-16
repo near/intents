@@ -11,8 +11,6 @@ pub enum Error {
     CleanupInProgress,
     #[error("deadline has expired")]
     DeadlineExpired,
-    #[error("deadline has not expired yet")]
-    DeadlineNotExpired,
     #[error("excessive fees")]
     ExcessiveFees,
     #[error("impossible to fill: required gas is too big")]
@@ -25,13 +23,12 @@ pub enum Error {
     InvalidData,
     #[error("JSON: {0}")]
     JSON(#[from] serde_json::Error),
-    #[error("price is too low")]
-    PriceTooLow,
     #[error("partial fills are not allowed")]
     PartialFillsNotAllowed,
+    #[error("price is too low")]
+    PriceTooLow,
     #[error("same tokens")]
     SameTokens,
-
     #[error("unauthorized")]
     Unauthorized,
     #[error("wrong token")]

@@ -3,66 +3,10 @@ mod nep141;
 #[cfg(feature = "nep245")]
 mod nep245;
 
-use defuse_token_id::{TokenId, TokenIdType};
-use derive_more::From;
-use near_sdk::{AccountId, Gas, near};
+use near_sdk::{Gas, near};
 use serde_with::{DisplayFromStr, serde_as};
 
-use crate::{price::Price, state::Params};
-
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
-pub struct TransferMessage {
-    pub params: Params,
-    pub action: TransferAction,
-}
-
-#[near(serializers = [json])]
-#[serde(tag = "action", content = "data", rename_all = "snake_case")]
-#[derive(Debug, Clone, From)]
-pub enum TransferAction {
-    Open,
-    Fill(FillAction),
-    // Borrow(BorrowAction),
-    // Repay(RepayAction),
-}
-
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
-pub struct FillAction {
-    pub price: Price,
-
-    #[serde(default, skip_serializing_if = "crate::utils::is_default")]
-    pub receive_src_to: OverrideSend,
-    // TODO: price? for surplus
-    // TODO: min_src_out?
-}
-
-// #[near(serializers = [json])]
-// #[derive(Debug, Clone)]
-// pub struct BorrowAction {
-
-// }
-
-// #[near(serializers = [json])]
-// #[derive(Debug, Clone)]
-// pub struct RepayAction {}
-
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct OverrideSend {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub receiver_id: Option<AccountId>,
-
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub memo: Option<String>,
-
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub msg: Option<String>,
-
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub min_gas: Option<Gas>,
-}
+use crate::token_id::{TokenId, TokenIdType};
 
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),

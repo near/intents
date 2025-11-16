@@ -1,6 +1,6 @@
 use near_sdk::near;
 
-use crate::state::Params;
+use crate::Params;
 
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]

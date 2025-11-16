@@ -5,20 +5,8 @@ version.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 
-[features]
-default = ["decimal"] # TODO: remove
-
-decimal = ["num-traits", "dep:thiserror"]
-num-traits = ["dep:num-traits"]
+[lints]
+workspace = true
 
 [dependencies]
 bnum.workspace = true
-
-num-traits = { workspace = true, optional = true }
-thiserror = { workspace = true, optional = true }
-
-[dev-dependencies]
-rstest.workspace = true
-
-[lints]
-workspace = true

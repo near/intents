@@ -87,7 +87,7 @@ impl State {
     pub(super) fn close_unchecked(&mut self, reason: CloseReason) -> bool {
         let just_closed = !mem::replace(&mut self.closed, true);
         if just_closed {
-            Event::Close { reason }.emit();
+            Event::Closed { reason }.emit();
         }
         just_closed
     }

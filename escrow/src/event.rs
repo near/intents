@@ -1,28 +1,23 @@
 use std::{borrow::Cow, collections::BTreeMap};
 
-use defuse_token_id::TokenId;
 use derive_more::From;
-use near_sdk::{AccountId, AccountIdRef, near};
+use near_sdk::{AccountIdRef, near};
 use serde_with::{DisplayFromStr, serde_as};
 
-use crate::{Params, price::Price, tokens::Sent};
+use crate::{Deadline, Params, price::Price, token_id::TokenId, tokens::Sent};
 
-#[near(event_json(
-    // TODO
-    standard = "escrow",
-))]
+#[near(event_json(standard = "escrow-swap"))]
 #[derive(Debug, Clone, From)]
 pub enum Event<'a> {
     #[event_version("0.1.0")]
     Create(Cow<'a, Params>),
 
     #[event_version("0.1.0")]
-    AddSrc(AddSrcEvent),
+    Funded(FundedEvent<'a>),
 
     #[event_version("0.1.0")]
     Fill(FillEvent<'a>),
 
-    // TODO: emit
     #[event_version("0.1.0")]
     MakerLost(MakerLost),
 
@@ -31,10 +26,8 @@ pub enum Event<'a> {
         // TODO
     },
 
-    // TODO: enrich with:
-    // closed_by: maker/taker
     #[event_version("0.1.0")]
-    Close { reason: CloseReason },
+    Closed { reason: CloseReason },
 
     #[event_version("0.1.0")]
     Cleanup,
@@ -51,14 +44,20 @@ pub enum Event<'a> {
 )]
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
-pub struct AddSrcEvent {
-    pub maker: AccountId,
+pub struct FundedEvent<'a> {
+    pub maker: Cow<'a, AccountIdRef>,
+
+    pub src_token: Cow<'a, TokenId>,
+    pub dst_token: Cow<'a, TokenId>,
+
+    pub maker_price: Price,
+
+    pub deadline: Deadline,
 
     #[serde_as(as = "DisplayFromStr")]
-    pub src_amount_added: u128,
+    pub maker_src_added: u128,
     #[serde_as(as = "DisplayFromStr")]
-    pub src_remaining: u128,
-    // TODO: include price
+    pub maker_src_remaining: u128,
 }
 
 #[must_use = "make sure to `.emit()` this event"]
@@ -156,5 +155,4 @@ pub trait EscrowIntentEmit<'a>: Into<Event<'a>> {
         Event::emit(&self.into());
     }
 }
-
 impl<'a, T> EscrowIntentEmit<'a> for T where T: Into<Event<'a>> {}

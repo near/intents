@@ -2,9 +2,8 @@ use defuse_near_utils::UnwrapOrPanic;
 use near_sdk::{Gas, near};
 
 use crate::{
-    Error, Result,
+    Error, Result, State,
     event::{EscrowIntentEmit, MakerLost},
-    state::State,
     tokens::Sent,
 };
 
@@ -57,19 +56,16 @@ impl State {
             let refund =
                 sent.resolve_refund(result_idx.try_into().unwrap_or_else(|_| unreachable!()));
 
-            // TODO: emit event if non-zero refund?
             *lost = lost.checked_add(refund).ok_or(Error::IntegerOverflow)?;
             sent.amount = refund;
         }
 
-        {
-            let event = MakerLost {
-                src: maker_src.take_if(|s| s.amount > 0),
-                dst: maker_dst.take_if(|s| s.amount > 0),
-            };
-            if event.src.is_some() || event.dst.is_some() {
-                event.emit();
-            }
+        let event = MakerLost {
+            src: maker_src.filter(|s| s.amount > 0),
+            dst: maker_dst.filter(|s| s.amount > 0),
+        };
+        if event.src.is_some() || event.dst.is_some() {
+            event.emit();
         }
 
         Ok(())

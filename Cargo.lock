@@ -1002,9 +1002,6 @@ name = "defuse-num-utils"
 version = "0.1.0"
 dependencies = [
  "bnum",
- "num-traits",
- "rstest",
- "thiserror 2.0.12",
 ]
 
 [[package]]

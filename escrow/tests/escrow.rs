@@ -3,10 +3,10 @@ mod env;
 use std::time::Duration;
 
 use defuse_escrow::{
-    Deadline,
+    Deadline, OverrideSend,
+    action::{FillAction, TransferAction, TransferMessage},
     price::Price,
-    state::{Params, ProtocolFees},
-    tokens::{FillAction, OverrideSend, TransferAction, TransferMessage},
+    {Params, ProtocolFees},
 };
 use defuse_fees::Pips;
 use defuse_sandbox::{
@@ -121,7 +121,7 @@ async fn partial_fills() {
                     "maker deposit".to_string(),
                     serde_json::to_string(&TransferMessage {
                         params: params.clone(),
-                        action: TransferAction::Open,
+                        action: TransferAction::Fund,
                     })
                     .unwrap(),
                 )
@@ -158,7 +158,7 @@ async fn partial_fills() {
                     serde_json::to_string(&TransferMessage {
                         params: params.clone(),
                         action: FillAction {
-                            price: "2.5".parse().unwrap(),
+                            price: "2".parse().unwrap(),
                             receive_src_to: OverrideSend {
                                 memo: Some("taker memo".to_string()),
                                 // msg: Some("taker msg".to_string()),
