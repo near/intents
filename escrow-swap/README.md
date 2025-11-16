@@ -71,7 +71,7 @@ Use the commented JSON template below (JSONC) as a reference—each field is doc
   // optional set limiting who can fill; a single taker may close early
   "taker_whitelist": ["solver-bus-proxy.near"],
 
-  // pct-based protocol fees (values are in pips; 1 pip = 0.0001%)
+  // protocol fees (values are in pips; 1 pip = 0.0001%)
   "protocol_fees": {
     // 0.5% of taker_dst_used sent to collector -> 5,000 pips
     "fee": 5000,
@@ -85,9 +85,10 @@ Use the commented JSON template below (JSONC) as a reference—each field is doc
 
   // additional fee share paid in dst_token
   "integrator_fees": {
-    // 1% fee share sent to partner.near -> 10,000 pips
-    "front-end.near": 10000,
-        // 0.1% fee share sent to partner.near -> 1,000 pips
+    // 1.5% fee share sent to front-end.near -> 15,000 pips
+    "front-end.near": 15000,
+
+    // 0.1% fee share sent to partner.near -> 1,000 pips
     "partner.near": 1000
   },
 
@@ -98,24 +99,6 @@ Use the commented JSON template below (JSONC) as a reference—each field is doc
   "salt": "9e3779b97f4a7c1552d27dcd1234567890abcdef1234567890abcdef1234"
 }
 ```
-
-### `OverrideSend`
-
-All fields in `OverrideSend` are optional; leaving the entire object empty (or omitting it) makes the contract use its built-in defaults.
-
-Field | Description
---- | ---
-`receiver_id` | Override for the default receiver (`maker` or taker). Fallbacks: maker for dst, sender for src.
-`memo` | Optional NEAR FT/MT `memo`/`msg` field.
-`msg` | When set, the contract uses `transfer_call`. Failing `*_transfer_call` **does not** trigger refunds.
-`min_gas` | Minimum gas to reserve for the outgoing transfer. If lower than the token's minimum, the contract automatically bumps it.
-
-### Fees
-- `ProtocolFees { fee, surplus, collector }` takes two pips amounts (1 pip = 1/100 of a bip = 0.0001%):
-  - `fee` applies to `taker_dst_used`.
-  - `surplus` applies to any price improvement (`taker_dst_used - maker_price`). Both are capped so total fees ≤ 25% (`Error::ExcessiveFees`).
-- `integrator_fees` is a map of `AccountId -> Pips` capped by the same aggregate limit.
-- Fees are paid in `dst_token` during fills and incur separate transfers. Ensure every collector has enough storage on the token contract.
 
 ## Transfer Message Reference
 
@@ -276,7 +259,8 @@ Every event is logged via `EVENT_JSON:` following the NEAR standard. The snippet
           "collector": "protocol.near"
         },
         "integrator_fees": {
-          "partner.near": 10000
+          "front-end.near": 10000,
+          "partner.near": 1000
         },
         "auth_caller": "intents.near",
         "salt": "9e3779b97f4a7c1552d27dcd1234567890abcdef1234567890abcdef1234"
@@ -301,11 +285,11 @@ Every event is logged via `EVENT_JSON:` following the NEAR standard. The snippet
       "src_token": "nep245:intents.near:nep141:usdt.tether-token.near",
       "dst_token": "nep245:intents.near:nep141:wrap.near",
 
-      // maker's asking price and deadline snapshot
+      // maker's asking price and deadline
       "maker_price": "0.167",
       "deadline": "2024-07-09T00:00:00Z",
 
-      // Added amount in token's base units (yocto, if NEP-141)
+      // Added amount in token's base units
       "maker_src_added": "5000000000000000000000000",
       "maker_src_remaining": "5000000000000000000000000"
     }
@@ -335,11 +319,11 @@ Every event is logged via `EVENT_JSON:` following the NEAR standard. The snippet
       "maker_price": "0.167",
 
       // Amount of dst the taker sent in, how much was used, and resulting maker/taker balances
-      "taker_dst_in": "3500000000000000000000000",
-      "taker_dst_used": "3300000000000000000000000",
-      "src_out": "117000000000000000000000",
-      "maker_dst_out": "3050000000000000000000000",
-      "maker_src_remaining": "4883000000000000000000000",
+      "taker_dst_in": "600000000000000000000000",
+      "taker_dst_used": "525000000000000000000000",
+      "src_out": "3000000000000000000000000",
+      "maker_dst_out": "506505000000000000000000",
+      "maker_src_remaining": "2000000000000000000000000",
 
       // Optional override addresses (None omitted)
       "taker_receive_src_to": "solver.near",
@@ -347,12 +331,13 @@ Every event is logged via `EVENT_JSON:` following the NEAR standard. The snippet
 
       // Protocol & integrator fee breakdowns (amounts in dst_token units)
       "protocol_dst_fees": {
-        "fee": "82500000000000000000000",
-        "surplus": "16500000000000000000000",
+        "fee": "13125000000000000000000",
+        "surplus": "120000000000000000000",
         "collector": "protocol.near"
       },
       "integrator_dst_fees": {
-        "partner.near": "33000000000000000000000"
+        "front-end.near": "5250000000000000000000",
+        "partner.near": "525000000000000000000"
       }
     }
   ]
@@ -450,3 +435,44 @@ Error | Meaning
 6. **Lost & Found** can be retried until all balances are drained, after which the contract emits `Cleanup` and deletes itself.
 
 By following the method specifications and message formats above, integrators can safely interact with the escrow and build higher-level order flow or RFQ systems on top of it.
+
+### On-chain Flow (Mermaid)
+
+```mermaid
+sequenceDiagram
+    participant Maker
+    participant Taker
+    participant SrcToken as src_token FT/MT
+    participant DstToken as dst_token FT/MT
+    participant Escrow as escrow-swap
+
+    rect rgb(230,240,255)
+        Maker->>SrcToken: ft/mt_transfer_call(action=fund, params)
+        SrcToken->>Escrow: ft_on_transfer(sender=Maker, amount, msg=Fund)
+        Escrow->>Escrow: on_fund() updates maker_src_remaining
+    end
+
+    rect rgb(230,255,230)
+        Taker->>DstToken: ft/mt_transfer_call(action=fill, params, FillAction)
+        DstToken->>Escrow: ft_on_transfer(sender=Taker, amount, msg=Fill)
+        Escrow->>Escrow: on_fill() price checks + fee accounting
+        Escrow->>DstToken: transfer dst to Maker (+ fees)
+        Escrow->>SrcToken: transfer src to Taker
+        Escrow-->>Taker: return_value(refund unused dst)
+    end
+
+    rect rgb(255,240,230)
+        alt Maker src exhausted
+            Maker->>Escrow: escrow_close(params)
+        else Deadline expired
+            Taker->>Escrow: escrow_close(params) (permissionless)
+        else Single taker whitelist
+            Taker->>Escrow: escrow_close(params) (only that taker)
+        else Already closed, assets stuck
+            Taker->>Escrow: escrow_lost_found(params)
+        end
+        Escrow->>SrcToken: refund remaining src (if any)
+        Escrow->>DstToken: forward lost dst (if any)
+        Escrow-->>Maker: Event::Closed / Event::Cleanup
+    end
+```
