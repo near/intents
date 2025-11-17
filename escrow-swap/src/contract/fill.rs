@@ -1,20 +1,18 @@
 use std::{borrow::Cow, collections::BTreeMap};
 
 use defuse_near_utils::{PromiseExt, UnwrapOrPanic};
+#[cfg(feature = "nep141")]
 use near_sdk::{AccountId, AccountIdRef, Promise, PromiseOrValue};
 
 use crate::{
     Error, Params, ProtocolFees, Result, State,
     action::FillAction,
-    contract::{
-        Contract,
-        return_value::ReturnValueExt,
-        tokens::{Sendable, TokenIdTypeExt},
-    },
     event::{EscrowIntentEmit, FillEvent, ProtocolFeesCollected},
     price::Price,
     token_id::TokenId,
 };
+
+use super::{Contract, return_value::ReturnValueExt, tokens::Sendable};
 
 impl State {
     pub(super) fn fill(
@@ -68,7 +66,7 @@ impl State {
             maker_price: params.price,
             taker_dst_in,
             taker_dst_used,
-            src_out: taker_src_out,
+            taker_src_out,
             maker_dst_out,
             maker_src_remaining: self.maker_src_remaining,
             maker_receive_dst_to: params
@@ -116,11 +114,7 @@ impl State {
                     .with_static_gas(Contract::ESCROW_RESOLVE_TRANSFERS_GAS)
                     .with_unused_gas_weight(0)
                     .escrow_resolve_transfers(None, Some(maker_dst))
-                    .return_value(
-                        maker_dst
-                            .token_type
-                            .refund_value(taker_dst_in - taker_dst_used)?,
-                    ),
+                    .return_value(maker_dst.refund_value(taker_dst_in - taker_dst_used)?),
             )
             .into())
     }

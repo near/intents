@@ -4,10 +4,9 @@ use near_sdk::{Gas, near};
 use crate::{
     Error, Result, State,
     event::{EscrowIntentEmit, Event, MakerSent},
-    tokens::Sent,
 };
 
-use super::{Contract, ContractExt};
+use super::{Contract, ContractExt, tokens::Sent};
 
 #[near]
 impl Contract {
@@ -66,5 +65,15 @@ impl State {
         }
 
         Ok(())
+    }
+}
+
+impl MakerSent {
+    #[inline]
+    pub(super) fn from_sent(src: Option<Sent>, dst: Option<Sent>) -> Self {
+        Self {
+            src: src.map_or(0, |s| s.amount),
+            dst: dst.map_or(0, |s| s.amount),
+        }
     }
 }

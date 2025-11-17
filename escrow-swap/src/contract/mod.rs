@@ -8,6 +8,7 @@ mod lost_found;
 mod resolve;
 mod return_value;
 mod tokens;
+mod validate;
 
 use std::borrow::Cow;
 
@@ -29,9 +30,11 @@ impl Contract {
     pub fn escrow_init(params: &Params) -> Self {
         Event::Created(Cow::Borrowed(&params)).emit();
 
+        params.validate_gas().unwrap_or_panic();
         if params.deadline.has_expired() {
             Error::DeadlineExpired.panic();
         }
+
         let s = Storage::new(params).unwrap_or_panic();
 
         // just for the safety

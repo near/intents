@@ -8,7 +8,6 @@ use near_sdk::{AccountId, Gas, NearToken, PromiseOrValue, env, json_types::U128,
 use crate::{
     Error,
     contract::{Contract, ContractExt, tokens::Sendable},
-    tokens::TokenIdExt,
 };
 
 #[near]
@@ -45,7 +44,22 @@ impl MultiTokenReceiver for Contract {
     }
 }
 
+const MT_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(15);
+const MT_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(15);
+
+const MT_TRANSFER_CALL_GAS_MIN: Gas = Gas::from_tgas(30);
+const MT_TRANSFER_CALL_GAS_DEFAULT: Gas = Gas::from_tgas(50);
+
 impl Sendable for Nep245TokenId {
+    #[inline]
+    fn transfer_gas_min_default(&self, is_call: bool) -> (Gas, Gas) {
+        if is_call {
+            (MT_TRANSFER_CALL_GAS_MIN, MT_TRANSFER_CALL_GAS_DEFAULT)
+        } else {
+            (MT_TRANSFER_GAS_MIN, MT_TRANSFER_GAS_DEFAULT)
+        }
+    }
+
     fn send(
         self,
         receiver_id: AccountId,

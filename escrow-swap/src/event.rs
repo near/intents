@@ -4,7 +4,7 @@ use derive_more::From;
 use near_sdk::{AccountIdRef, near};
 use serde_with::{DisplayFromStr, serde_as};
 
-use crate::{Deadline, Params, price::Price, token_id::TokenId, tokens::Sent};
+use crate::{Deadline, Params, price::Price, token_id::TokenId};
 
 #[near(event_json(standard = "escrow-swap"))]
 #[derive(Debug, Clone, From)]
@@ -86,7 +86,7 @@ pub struct FillEvent<'a> {
     #[serde_as(as = "DisplayFromStr")]
     pub taker_dst_used: u128,
     #[serde_as(as = "DisplayFromStr")]
-    pub src_out: u128,
+    pub taker_src_out: u128,
     #[serde_as(as = "DisplayFromStr")]
     pub maker_dst_out: u128,
     #[serde_as(as = "DisplayFromStr")]
@@ -151,14 +151,6 @@ pub struct MakerSent {
 }
 
 impl MakerSent {
-    #[inline]
-    pub fn from_sent(src: Option<Sent>, dst: Option<Sent>) -> Self {
-        Self {
-            src: src.map_or(0, |s| s.amount),
-            dst: dst.map_or(0, |s| s.amount),
-        }
-    }
-
     #[inline]
     pub const fn is_empty(&self) -> bool {
         self.src == 0 && self.dst == 0

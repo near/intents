@@ -5,13 +5,13 @@ mod nep245;
 
 use defuse_token_id::{TokenId, TokenIdType};
 use near_sdk::{
-    AccountId, Gas, Promise, PromiseOrValue, PromiseResult, env, json_types::U128, serde_json,
+    AccountId, Gas, Promise, PromiseOrValue, PromiseResult, env, json_types::U128, near, serde_json,
 };
+use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
     Error, Params, Result, State,
     action::{TransferAction, TransferMessage},
-    tokens::{Sent, TokenIdExt},
 };
 
 use super::Contract;
@@ -65,7 +65,12 @@ impl State {
     }
 }
 
-pub trait Sendable: TokenIdExt + Sized {
+pub trait Sendable: Sized
+where
+    for<'a> &'a Self: Into<TokenIdType>,
+{
+    fn transfer_gas_min_default(&self, is_call: bool) -> (Gas, Gas);
+
     fn send(
         self,
         receiver_id: AccountId,
@@ -76,6 +81,13 @@ pub trait Sendable: TokenIdExt + Sized {
         unused_gas: bool,
     ) -> Promise;
 
+    #[inline]
+    fn transfer_gas(&self, min_gas: Option<Gas>, is_call: bool) -> Gas {
+        let (min, default) = self.transfer_gas_min_default(is_call);
+        min_gas.unwrap_or(default).max(min)
+    }
+
+    #[inline]
     fn send_for_resolve(
         self,
         receiver_id: AccountId,
@@ -87,7 +99,7 @@ pub trait Sendable: TokenIdExt + Sized {
     ) -> (Sent, Promise) {
         (
             Sent {
-                token_type: self.token_type(),
+                token_type: (&self).into(),
                 amount,
                 is_call: msg.is_some(),
             },
@@ -97,6 +109,17 @@ pub trait Sendable: TokenIdExt + Sized {
 }
 
 impl Sendable for TokenId {
+    #[inline]
+    fn transfer_gas_min_default(&self, is_call: bool) -> (Gas, Gas) {
+        match self {
+            #[cfg(feature = "nep141")]
+            TokenId::Nep141(token) => token.transfer_gas_min_default(is_call),
+            #[cfg(feature = "nep245")]
+            TokenId::Nep245(token) => token.transfer_gas_min_default(is_call),
+        }
+    }
+
+    #[inline]
     fn send(
         self,
         receiver_id: AccountId,
@@ -115,49 +138,31 @@ impl Sendable for TokenId {
     }
 }
 
+#[cfg_attr(
+    all(feature = "abi", not(target_arch = "wasm32")),
+    serde_as(schemars = true)
+)]
+#[cfg_attr(
+    not(all(feature = "abi", not(target_arch = "wasm32"))),
+    serde_as(schemars = false)
+)]
+#[near(serializers = [json])]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[must_use]
+pub struct Sent {
+    pub token_type: TokenIdType,
+
+    #[serde_as(as = "DisplayFromStr")]
+    pub amount: u128,
+
+    #[serde(default, skip_serializing_if = "::core::ops::Not::not")]
+    pub is_call: bool,
+}
+
 impl Sent {
-    /// Returns refund
-    #[must_use]
-    pub fn resolve_refund(&self, result_idx: u64) -> u128 {
-        self.amount.saturating_sub(self.resolve_used(result_idx))
-    }
-
-    #[must_use]
-    fn resolve_used(&self, result_idx: u64) -> u128 {
-        match env::promise_result(result_idx) {
-            PromiseResult::Successful(value) => {
-                if self.is_call {
-                    self.token_type.parse_transfer_call(value).min(self.amount)
-                } else if value.is_empty() {
-                    // `{ft,mt}_transfer` returns empty result on success
-                    self.amount
-                } else {
-                    0
-                }
-            }
-            PromiseResult::Failed => {
-                if self.is_call {
-                    // do not refund on failed `{ft,mt}_transfer_call` due to
-                    // vulnerability in reference implementations of FT and MT:
-                    // `{ft,mt}_resolve_transfer` can fail to huge read result
-                    // returned by `{ft,mt}_on_transfer` due to insufficient gas
-                    self.amount
-                } else {
-                    0
-                }
-            }
-        }
-    }
-}
-
-pub trait TokenIdTypeExt {
-    fn refund_value(&self, refund: u128) -> serde_json::Result<Vec<u8>>;
-    fn parse_transfer_call(&self, value: Vec<u8>) -> u128;
-}
-
-impl TokenIdTypeExt for TokenIdType {
-    fn refund_value(&self, refund: u128) -> serde_json::Result<Vec<u8>> {
-        match self {
+    #[inline]
+    pub fn refund_value(&self, refund: u128) -> serde_json::Result<Vec<u8>> {
+        match self.token_type {
             #[cfg(feature = "nep141")]
             TokenIdType::Nep141 => serde_json::to_vec(&U128(refund)),
             #[cfg(feature = "nep245")]
@@ -165,18 +170,55 @@ impl TokenIdTypeExt for TokenIdType {
         }
     }
 
-    fn parse_transfer_call(&self, value: Vec<u8>) -> u128 {
-        match self {
-            #[cfg(feature = "nep141")]
-            Self::Nep141 => {
-                // `ft_transfer_call` returns successfully transferred amount
-                serde_json::from_slice::<U128>(&value).unwrap_or_default().0
+    /// Returns refund
+    #[must_use]
+    #[inline]
+    pub fn resolve_refund(&self, result_idx: u64) -> u128 {
+        self.amount.saturating_sub(self.resolve_used(result_idx))
+    }
+
+    #[must_use]
+    fn resolve_used(&self, result_idx: u64) -> u128 {
+        match env::promise_result(result_idx) {
+            PromiseResult::Successful(value) => self.parse_transfer_ok(value),
+            PromiseResult::Failed => self.parse_transfer_fail(),
+        }
+    }
+
+    #[inline]
+    fn parse_transfer_ok(&self, value: Vec<u8>) -> u128 {
+        if self.is_call {
+            match self.token_type {
+                #[cfg(feature = "nep141")]
+                TokenIdType::Nep141 => {
+                    // `ft_transfer_call` returns successfully transferred amount
+                    serde_json::from_slice::<U128>(&value).unwrap_or_default().0
+                }
+                #[cfg(feature = "nep245")]
+                TokenIdType::Nep245 => {
+                    // `mt_transfer_call` returns successfully transferred amounts
+                    serde_json::from_slice::<[U128; 1]>(&value).unwrap_or_default()[0].0
+                }
             }
-            #[cfg(feature = "nep245")]
-            Self::Nep245 => {
-                // `mt_transfer_call` returns successfully transferred amounts
-                serde_json::from_slice::<[U128; 1]>(&value).unwrap_or_default()[0].0
-            }
+            .min(self.amount)
+        } else if value.is_empty() {
+            // `{ft,mt}_transfer` returns empty result on success
+            self.amount
+        } else {
+            0
+        }
+    }
+
+    #[inline]
+    fn parse_transfer_fail(&self) -> u128 {
+        if self.is_call {
+            // do not refund on failed `{ft,mt}_transfer_call` due to
+            // vulnerability in reference implementations of FT and MT:
+            // `{ft,mt}_resolve_transfer` can fail to huge read result
+            // returned by `{ft,mt}_on_transfer` due to insufficient gas
+            self.amount
+        } else {
+            0
         }
     }
 }

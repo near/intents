@@ -10,7 +10,7 @@ use arbitrary_with::{Arbitrary, As};
 #[cfg(any(feature = "arbitrary", test))]
 use defuse_near_utils::arbitrary::ArbitraryAccountId;
 
-use crate::error::TokenIdError;
+use crate::{TokenIdType, error::TokenIdError};
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(Arbitrary))]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr)]
@@ -89,6 +89,13 @@ impl FromStr for Nep171TokenId {
             .split_once(':')
             .ok_or(strum::ParseError::VariantNotFound)?;
         Self::new(contract_id.parse()?, token_id.to_string()).map_err(Into::into)
+    }
+}
+
+impl From<&Nep171TokenId> for TokenIdType {
+    #[inline]
+    fn from(_: &Nep171TokenId) -> Self {
+        Self::Nep171
     }
 }
 
