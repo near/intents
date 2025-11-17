@@ -22,8 +22,8 @@ dependencies = [
     "add-cache-dir-tag",
     "build-defuse",
     "build-poa-factory",
-    "contract-stats",
     "build-poa-token-no-registration",
+    "contract-stats",
 ]
 
 [tasks.build-defuse]
@@ -103,9 +103,9 @@ dependencies = [
     "add-cache-dir-tag",
     "build-defuse-reproducible",
     "build-poa-factory-reproducible",
-    "contract-stats",
     "build-poa-token-no-registration-reproducible",
     "defuse-reproducible-checksum",
+    "contract-stats",
 ]
 
 [tasks.build-defuse-reproducible]
