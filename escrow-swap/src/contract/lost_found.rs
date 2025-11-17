@@ -12,13 +12,15 @@ use crate::{
 impl Contract {
     pub(super) fn lost_found(&mut self, params: Params) -> Result<PromiseOrValue<bool>> {
         let mut guard = self.cleanup_guard();
-        let this = guard.try_as_alive_mut()?.verify_mut(&params)?;
 
-        Ok(if let Some(promise) = this.lost_found(params)? {
-            PromiseOrValue::Promise(promise)
-        } else {
-            PromiseOrValue::Value(guard.maybe_cleanup().is_some())
-        })
+        Ok(guard
+            .try_as_alive_mut()?
+            .verify_mut(&params)?
+            .lost_found(params)?
+            .map_or_else(
+                || PromiseOrValue::Value(guard.maybe_cleanup().is_some()),
+                PromiseOrValue::Promise,
+            ))
     }
 }
 

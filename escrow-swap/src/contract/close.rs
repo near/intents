@@ -12,13 +12,14 @@ impl Contract {
     ) -> Result<PromiseOrValue<bool>> {
         let mut guard = self.cleanup_guard();
 
-        let state = guard.try_as_alive_mut()?.verify_mut(&params)?;
-
-        Ok(if let Some(promise) = state.close(signer_id, params)? {
-            PromiseOrValue::Promise(promise)
-        } else {
-            PromiseOrValue::Value(guard.maybe_cleanup().is_some())
-        })
+        Ok(guard
+            .try_as_alive_mut()?
+            .verify_mut(&params)?
+            .close(signer_id, params)?
+            .map_or_else(
+                || PromiseOrValue::Value(guard.maybe_cleanup().is_some()),
+                PromiseOrValue::Promise,
+            ))
     }
 }
 

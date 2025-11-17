@@ -26,7 +26,7 @@ impl Contract {
         let msg: Message = serde_json::from_str(&msg)?;
 
         let mut guard = self.cleanup_guard();
-        let this = guard.try_as_alive_mut()?.verify_mut(&msg.params)?;
+        let state = guard.try_as_alive_mut()?.verify_mut(&msg.params)?;
 
         if !msg
             .params
@@ -38,7 +38,7 @@ impl Contract {
         }
 
         match msg.action {
-            Action::Close => Ok(this
+            Action::Close => Ok(state
                 .close(signer_id, msg.params)?
                 .map(PromiseOrValue::Promise)
                 .unwrap_or(PromiseOrValue::Value(()))),
