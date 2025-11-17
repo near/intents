@@ -3,7 +3,6 @@ mod nep141;
 #[cfg(feature = "nep245")]
 mod nep245;
 
-use defuse_token_id::{TokenId, TokenIdType};
 use near_sdk::{
     AccountId, Gas, Promise, PromiseOrValue, PromiseResult, env, json_types::U128, near, serde_json,
 };
@@ -12,6 +11,7 @@ use serde_with::{DisplayFromStr, serde_as};
 use crate::{
     Error, Params, Result, State,
     action::{TransferAction, TransferMessage},
+    token_id::{TokenId, TokenIdType},
 };
 
 use super::Contract;

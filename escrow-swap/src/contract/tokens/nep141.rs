@@ -1,9 +1,11 @@
 use defuse_near_utils::UnwrapOrPanic;
-use defuse_token_id::{TokenId, nep141::Nep141TokenId};
 use near_contract_standards::fungible_token::{core::ext_ft_core, receiver::FungibleTokenReceiver};
 use near_sdk::{AccountId, Gas, NearToken, Promise, PromiseOrValue, env, json_types::U128, near};
 
-use crate::contract::{Contract, ContractExt, tokens::Sendable};
+use crate::{
+    contract::{Contract, ContractExt, tokens::Sendable},
+    token_id::{TokenId, nep141::Nep141TokenId},
+};
 
 #[near]
 impl FungibleTokenReceiver for Contract {

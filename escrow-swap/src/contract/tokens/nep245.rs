@@ -2,12 +2,12 @@ use core::convert::Infallible;
 
 use defuse_near_utils::UnwrapOrPanic;
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
-use defuse_token_id::{TokenId, nep245::Nep245TokenId};
 use near_sdk::{AccountId, Gas, NearToken, PromiseOrValue, env, json_types::U128, near, require};
 
 use crate::{
     Error,
     contract::{Contract, ContractExt, tokens::Sendable},
+    token_id::{TokenId, nep245::Nep245TokenId},
 };
 
 #[near]
