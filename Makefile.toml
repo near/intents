@@ -86,7 +86,7 @@ args = [
     "${TARGET_DIR}",
     "--no-embed-abi",
 ]
-env = { "POA_TOKEN_WASM" = "wasm-deps/defuse_poa_token.wasm" }
+env = { "POA_TOKEN_WASM" = "releases/defuse_poa_token.wasm" }
 
 [tasks.build-poa-factory-reproducible]
 dependencies = ["add-cache-dir-tag", "build-poa-token-reproducible"]
