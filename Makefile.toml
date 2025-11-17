@@ -10,6 +10,9 @@ POA_TOKEN_WASM = "${TARGET_DIR}/defuse_poa_token.wasm"
 POA_TOKEN_WITH_NO_REGISTRATION_DIR = "${TARGET_DIR}/poa-token-no-registration"
 POA_TOKEN_WASM_NO_REGISTRATION_WASM = "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}/defuse_poa_token.wasm"
 
+MT_RECEIVER_STUB_DIR = "${TARGET_DIR}/multi-token-receiver-stub"
+MT_RECEIVER_STUB_WASM = "${MT_RECEIVER_STUB_DIR}/multi_token_receiver_stub.wasm"
+
 [tasks.default]
 alias = "build"
 
@@ -24,6 +27,7 @@ dependencies = [
     "build-poa-factory",
     "build-poa-token-no-registration",
     "contract-stats",
+    "build-multi-token-receiver-stub",
 ]
 
 [tasks.build-defuse]
@@ -215,4 +219,19 @@ condition = { platforms = ["linux", "mac"] }
 script = [
     "mkdir -p target res",
     "echo 'Signature: 8a477f597d28d172789f06886806bc55' | tee target/CACHEDIR.TAG res/CACHEDIR.TAG > /dev/null",
+]
+
+[tasks.build-multi-token-receiver-stub]
+dependencies = ["add-cache-dir-tag"]
+command = "cargo"
+args = [
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--locked",
+    "--manifest-path",
+    "./tests/contracts/multi-token-receiver-stub/Cargo.toml",
+    "--out-dir",
+    "${MT_RECEIVER_STUB_DIR}",
+    "--no-embed-abi",
 ]
