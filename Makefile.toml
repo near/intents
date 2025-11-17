@@ -3,10 +3,9 @@ default_to_workspace = false
 skip_core_tasks = true
 
 [env]
-RELEASE_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/release"
 TARGET_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/res"
+RELEASES_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/releases"
 
-POA_TOKEN_WASM_REPRODUCIBLE = "${RELEASE_DIR}/defuse_poa_token.wasm"
 POA_TOKEN_WASM = "${TARGET_DIR}/defuse_poa_token.wasm"
 POA_TOKEN_WITH_NO_REGISTRATION_DIR = "${TARGET_DIR}/poa-token-no-registration"
 POA_TOKEN_WASM_NO_REGISTRATION_WASM = "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}/defuse_poa_token.wasm"
@@ -34,7 +33,7 @@ dependencies = [
     "build-defuse-reproducible",
     "build-poa-factory-reproducible",
     "contract-stats",
-    # "build-poa-token-no-registration-reproducible",
+    "build-poa-token-no-registration-reproducible",
 ]
 
 [tasks.build-defuse]
@@ -67,12 +66,6 @@ args = [
     "${TARGET_DIR}",
 ]
 
-[tasks.prepare-embedded-wasm]
-dependencies = ["build-poa-token-reproducible"]
-script = [
-    "cp ${TARGET_DIR}/defuse_poa_token.wasm releases/defuse_poa_token.wasm"
-]
-
 [tasks.build-poa-factory]
 dependencies = ["add-cache-dir-tag"]
 command = "cargo"
@@ -89,7 +82,6 @@ args = [
     "${TARGET_DIR}",
     "--no-embed-abi",
 ]
-env = { "POA_TOKEN_WASM" = "${POA_TOKEN_WASM_REPRODUCIBLE}" }
 
 [tasks.build-poa-factory-reproducible]
 dependencies = ["add-cache-dir-tag", "build-poa-token-reproducible"]
@@ -103,6 +95,7 @@ args = [
     "--out-dir",
     "${TARGET_DIR}",
 ]
+env = { "POA_TOKEN_WASM" = "../../releases/defuse_poa_token.wasm" }
 
 [tasks.build-poa-token]
 dependencies = ["add-cache-dir-tag"]
@@ -123,15 +116,9 @@ args = [
 
 [tasks.build-poa-token-reproducible]
 dependencies = ["add-cache-dir-tag"]
-command = "cargo"
-args = [
-    "near",
-    "build",
-    "reproducible-wasm",
-    "--manifest-path",
-    "./poa-token/Cargo.toml",
-    "--out-dir",
-    "${TARGET_DIR}",
+script = [
+    "cargo near build reproducible-wasm --manifest-path ./poa-token/Cargo.toml --out-dir ${TARGET_DIR}",
+    "cp ${TARGET_DIR}/defuse_poa_token.wasm ${RELEASES_DIR}/defuse_poa_token.wasm",
 ]
 
 [tasks.build-poa-token-no-registration]
@@ -150,6 +137,14 @@ args = [
     "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}",
     "--no-embed-abi",
 ]
+
+[tasks.build-poa-token-no-registration-reproducible]
+dependencies = ["add-cache-dir-tag"]
+script = [
+    "cargo near build reproducible-wasm --manifest-path ./poa-token/Cargo.toml --out-dir ${TARGET_DIR} --variant reproducible_build_no_registration",
+    "cp ${TARGET_DIR}/defuse_poa_token.wasm ${RELEASES_DIR}/defuse_poa_token.wasm",
+]
+
 
 # [tasks.build-poa-token-no-registration-reproducible]
 # dependencies = ["add-cache-dir-tag"]
