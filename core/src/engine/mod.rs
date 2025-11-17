@@ -86,11 +86,7 @@ where
 
     #[inline]
     fn verify_intent_nonce(&self, nonce: Nonce, intent_deadline: Deadline) -> Result<()> {
-        let Some(nonce) = VersionedNonce::maybe_from(nonce) else {
-            return Ok(());
-        };
-
-        match nonce {
+        match nonce.try_into()? {
             VersionedNonce::V1(SaltedNonce {
                 salt,
                 nonce: ExpirableNonce { deadline, .. },
