@@ -4,7 +4,9 @@ use crate::{
     fees::Pips,
     intents::{
         auth::AuthCall,
-        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
+        tokens::{
+            FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, NotifyOnTransfer, StorageDeposit,
+        },
     },
     token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
 };
@@ -318,6 +320,17 @@ where
                 withdraw.amount.as_yoctonear(),
             )],
         )
+    }
+
+    // NOTE: Simulation that uses a cached state cannot create promises, as it is a view call
+    #[inline]
+    fn notify_on_transfer(
+        &self,
+        _sender_id: &AccountIdRef,
+        _receiver_id: AccountId,
+        _tokens: Amounts,
+        _notification: NotifyOnTransfer,
+    ) {
     }
 
     fn storage_deposit(

@@ -7,6 +7,7 @@ use crate::{
     tests::defuse::DefuseExt, tests::defuse::accounts::AccountManagerExt, tests::defuse::env::Env,
 };
 use defuse::contract::config::{DefuseConfig, RolesConfig};
+use defuse::core::accounts::TransferEvent;
 use defuse::core::crypto::Payload;
 
 use defuse::core::crypto::PublicKey;
@@ -59,6 +60,7 @@ async fn simulate_transfer_intent() {
             std::iter::once((TokenId::from(Nep141TokenId::new(ft1.clone())), 1000)).collect(),
         ),
         memo: None,
+        notification: None,
     };
 
     let transfer_intent_payload = user1
@@ -81,7 +83,11 @@ async fn simulate_transfer_intent() {
                     intent_hash: transfer_intent_payload.hash(),
                     event: AccountEvent {
                         account_id: user1.id().clone().into(),
-                        event: Cow::Owned(transfer_intent),
+                        event: TransferEvent {
+                            receiver_id: Cow::Borrowed(&transfer_intent.receiver_id),
+                            tokens: Cow::Borrowed(&transfer_intent.tokens),
+                            memo: Cow::Borrowed(&transfer_intent.memo),
+                        },
                     },
                 }]
                 .into()
