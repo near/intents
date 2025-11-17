@@ -61,7 +61,7 @@ impl FungibleTokenReceiver for Contract {
             Some(ext_intents::ext(CURRENT_ACCOUNT_ID.clone()).execute_intents(execute_intents))
         };
 
-        if message.as_ref().map_or(true, |s| s.is_empty()) {
+        if message.as_ref().is_none_or(String::is_empty) {
             return PromiseOrValue::Value(U128(0));
         }
 
