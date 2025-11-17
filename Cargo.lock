@@ -917,6 +917,7 @@ dependencies = [
  "futures",
  "hex",
  "impl-tools",
+ "itertools 0.14.0",
  "near-contract-standards",
  "near-sdk",
  "rstest",

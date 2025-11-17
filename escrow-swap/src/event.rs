@@ -10,7 +10,7 @@ use crate::{Deadline, Params, price::Price, token_id::TokenId};
 #[derive(Debug, Clone, From)]
 pub enum Event<'a> {
     #[event_version("0.1.0")]
-    Created(Cow<'a, Params>),
+    Init(Cow<'a, Params>),
 
     #[event_version("0.1.0")]
     Funded(FundedEvent<'a>),

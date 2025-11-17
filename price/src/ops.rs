@@ -9,7 +9,7 @@ impl Ord for Price {
         let [sm, om] = [self, other].map(Self::digits);
 
         match sd.cmp(&od) {
-            Ordering::Equal => return sm.cmp(&om),
+            Ordering::Equal => sm.cmp(&om),
             Ordering::Less => sm
                 .checked_mul(Self::BASE.pow((od - sd) as u32))
                 .map_or(Ordering::Greater, |sr| sr.cmp(&om)),
