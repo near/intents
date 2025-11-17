@@ -35,7 +35,7 @@ impl FungibleTokenReceiver for Contract {
             refund_if_fails,
             message,
         } = if msg.is_empty() {
-            DepositMessage::new(sender_id.clone())
+            DepositMessage::new(sender_id)
         } else {
             msg.parse().unwrap_or_panic_display()
         };
@@ -66,8 +66,8 @@ impl FungibleTokenReceiver for Contract {
         }
 
         let notification = ext_mt_receiver::ext(receiver_id.clone()).mt_on_transfer(
-            sender_id.clone(),
-            vec![sender_id],
+            receiver_id.clone(),
+            vec![receiver_id.clone()],
             vec![token_id.to_string()],
             vec![U128(amount_value)],
             message,
