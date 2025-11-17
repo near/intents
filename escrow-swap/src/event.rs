@@ -122,6 +122,13 @@ pub struct ProtocolFeesCollected<'a> {
     pub collector: Cow<'a, AccountIdRef>,
 }
 
+impl ProtocolFeesCollected<'_> {
+    #[inline]
+    pub const fn total(&self) -> Option<u128> {
+        self.fee.checked_add(self.surplus)
+    }
+}
+
 #[must_use = "make sure to `.emit()` this event"]
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),

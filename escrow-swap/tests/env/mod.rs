@@ -19,7 +19,7 @@ use crate::env::utils::read_wasm;
 
 pub static WNEAR_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("../tests/contracts/wnear"));
 pub static VERIFIER_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("defuse"));
-pub static ESCROW_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("defuse_escrow"));
+pub static ESCROW_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("defuse_escrow_swap"));
 
 #[autoimpl(Deref using self.sandbox)]
 pub struct BaseEnv {

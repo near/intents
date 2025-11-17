@@ -55,10 +55,10 @@ impl State {
 
         match action {
             TransferAction::Fund if token_id == params.src_token => {
-                self.on_fund(params, sender_id, amount)
+                self.fund(params, sender_id, amount)
             }
             TransferAction::Fill(fill) if token_id == params.dst_token => {
-                self.on_fill(params, sender_id, amount, fill)
+                self.fill(params, sender_id, amount, fill)
             }
             _ => Err(Error::WrongToken),
         }

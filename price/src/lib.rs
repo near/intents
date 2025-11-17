@@ -48,12 +48,12 @@ impl Price {
     }
 
     #[inline]
-    pub const fn decimals(self) -> u8 {
+    pub const fn decimals(&self) -> u8 {
         self.0
     }
 
     #[inline]
-    pub const fn digits(self) -> u128 {
+    pub const fn digits(&self) -> u128 {
         self.1
     }
 

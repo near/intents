@@ -1,87 +1,13 @@
-use std::{iter::FusedIterator, ops::Range};
-
-use near_sdk::{CryptoHash, Gas, GasWeight, Promise, PromiseIndex, PromiseResult, env, sys};
+use near_sdk::{CryptoHash, Gas, GasWeight, Promise, PromiseIndex, env, sys};
 
 pub trait PromiseExt: Sized {
-    fn maybe_and(self, p: Option<Promise>) -> Promise;
+    fn and_maybe(self, p: Option<Promise>) -> Promise;
 }
 
 impl PromiseExt for Promise {
     #[inline]
-    fn maybe_and(self, p: Option<Promise>) -> Promise {
+    fn and_maybe(self, p: Option<Promise>) -> Promise {
         if let Some(p) = p { self.and(p) } else { self }
-    }
-}
-
-pub trait MaybePromise {
-    fn and_or(self, p: Promise) -> Promise;
-    fn then_or(self, p: Promise) -> Promise;
-}
-
-impl MaybePromise for Option<Promise> {
-    #[inline]
-    fn and_or(self, p: Promise) -> Promise {
-        if let Some(s) = self { s.and(p) } else { p }
-    }
-
-    #[inline]
-    fn then_or(self, p: Promise) -> Promise {
-        if let Some(s) = self { s.then(p) } else { p }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct PromiseResults(Range<u64>);
-
-impl PromiseResults {
-    #[inline]
-    pub fn new() -> Self {
-        Self(0..env::promise_results_count())
-    }
-
-    #[inline]
-    pub const fn next_promise_index(&self) -> u64 {
-        self.0.start
-    }
-}
-
-impl Iterator for PromiseResults {
-    type Item = PromiseResult;
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(env::promise_result)
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        self.0.size_hint()
-    }
-
-    #[inline]
-    fn nth(&mut self, n: usize) -> Option<Self::Item> {
-        self.0.nth(n).map(env::promise_result)
-    }
-}
-
-impl ExactSizeIterator for PromiseResults {
-    #[inline]
-    fn len(&self) -> usize {
-        self.0.end.try_into().unwrap_or_else(|_| unreachable!())
-    }
-}
-
-impl FusedIterator for PromiseResults {}
-
-impl DoubleEndedIterator for PromiseResults {
-    #[inline]
-    fn next_back(&mut self) -> Option<Self::Item> {
-        self.0.next_back().map(env::promise_result)
-    }
-
-    #[inline]
-    fn nth_back(&mut self, n: usize) -> Option<Self::Item> {
-        self.0.nth_back(n).map(env::promise_result)
     }
 }
 

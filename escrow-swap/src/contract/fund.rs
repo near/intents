@@ -8,7 +8,7 @@ use crate::{
 };
 
 impl State {
-    pub(super) fn on_fund(
+    pub(super) fn fund(
         &mut self,
         params: Params,
         sender_id: AccountId,
