@@ -105,19 +105,13 @@ jobs:
           cache-all-crates: "true" # Yes, it's a string
       - name: Install Cargo Plugins
         run: cargo install cargo-make cargo-near --locked
-      - name: Build Reproducible WASM
+      - name: Build Reproducible WASM and calculate checksum
         run: cargo make build-reproducible
-      - name: Calculate SHA-256 and prepare artifacts
-        run: |
-          SHA256=$(sha256sum res/defuse.wasm | awk '{print $1}')
-          echo "${SHA256}" > defuse.sha256
       - name: Upload Reproducible Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: res_reproducible
-          path: |
-            defuse.sha256
-            ./res/
+          path: ./res/
           compression-level: 0
 
   tests:

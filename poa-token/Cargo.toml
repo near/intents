@@ -21,7 +21,9 @@ container_build_command = [
     "build",
     "non-reproducible-wasm",
     "--locked",
-    "--features=contract"
+    "--features=contract",
+    "--no-embed-abi"
+
 ]
 
 [package.metadata.near.reproducible_build.variant.no_registration]
