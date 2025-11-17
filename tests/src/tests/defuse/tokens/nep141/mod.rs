@@ -506,3 +506,120 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
         expectation.expected_receiver_mt_balance
     );
 }
+
+#[tokio::test]
+async fn ft_transfer_call_with_intent_and_panic_refunds_from_initial_user_balance() {
+    use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
+
+    use crate::tests::defuse::DefuseSignerExt;
+
+    let env = Env::builder()
+        .deployer_as_super_admin()
+        .no_registration(false)
+        .build()
+        .await;
+
+    let (user, receiver, intent_receiver, ft) = futures::join!(
+        env.create_user(),
+        env.create_user(),
+        env.create_user(),
+        env.create_token()
+    );
+
+    // Deploy the stub receiver contract
+    receiver
+        .deploy(MT_RECEIVER_STUB_WASM.as_slice())
+        .await
+        .unwrap()
+        .unwrap();
+
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
+    env.initial_ft_storage_deposit(
+        vec![user.id(), receiver.id(), intent_receiver.id()],
+        vec![&ft],
+    )
+    .await;
+
+    // Step 1: Deposit 1000 tokens to user's MT balance
+    env.defuse_ft_deposit_to(&ft, 1000, user.id())
+        .await
+        .unwrap();
+
+    assert_eq!(
+        env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft_id.to_string())
+            .await
+            .unwrap(),
+        1000
+    );
+
+    // Give user 1000 FT tokens for the ft_transfer_call
+    let root = env.sandbox().root_account();
+    root.ft_transfer(&ft, user.id(), 1000, None).await.unwrap();
+    assert_eq!(env.ft_token_balance_of(&ft, user.id()).await.unwrap(), 1000);
+
+    // Step 2: Create intent to transfer 500 tokens from user to intent_receiver
+    let transfer_intent = user
+        .sign_defuse_payload_default(
+            env.defuse.id(),
+            [Transfer {
+                receiver_id: intent_receiver.id().clone(),
+                tokens: Amounts::new(std::iter::once((ft_id.clone(), 500)).collect()),
+                memo: None,
+            }],
+        )
+        .await
+        .unwrap();
+
+    // Step 3: ft_transfer_call with 1000 tokens, intent, and message that causes panic
+    let deposit_message = DepositMessage {
+        receiver_id: receiver.id().clone(),
+        execute_intents: vec![transfer_intent],
+        refund_if_fails: true,
+        message: Some(serde_json::to_string(&StubAction::Panic).unwrap()),
+    };
+
+    user.ft_transfer_call(
+        &ft,
+        env.defuse.id(),
+        1000,
+        None,
+        &serde_json::to_string(&deposit_message).unwrap(),
+    )
+    .await
+    .unwrap();
+
+    // Step 4: Verify final balances
+    // User should get full refund of 1000 FT tokens from ft_transfer_call
+    assert_eq!(
+        env.ft_token_balance_of(&ft, user.id()).await.unwrap(),
+        1000,
+        "User should receive full refund of 1000 FT tokens"
+    );
+
+    // User's MT balance should be 500 (1000 initial - 500 transferred via intent)
+    assert_eq!(
+        env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft_id.to_string())
+            .await
+            .unwrap(),
+        500,
+        "User's MT balance should be 500 after intent transfer"
+    );
+
+    // Receiver should have 0 MT balance (deposit was refunded due to panic)
+    assert_eq!(
+        env.mt_contract_balance_of(env.defuse.id(), receiver.id(), &ft_id.to_string())
+            .await
+            .unwrap(),
+        0,
+        "Receiver's MT balance should be 0 after refund"
+    );
+
+    // intent_receiver should have 500 MT tokens from the intent transfer
+    assert_eq!(
+        env.mt_contract_balance_of(env.defuse.id(), intent_receiver.id(), &ft_id.to_string())
+            .await
+            .unwrap(),
+        500,
+        "Intent receiver should have 500 MT tokens"
+    );
+}
