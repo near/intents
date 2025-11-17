@@ -1338,3 +1338,81 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
         "Receiver balance for ft2 in defuse2 should match expected"
     );
 }
+
+#[tokio::test]
+async fn mt_transfer_call_between_defuse_instances_with_message() {
+    use defuse::tokens::DepositMessage;
+
+    let env = Env::builder()
+        .deployer_as_super_admin()
+        .no_registration(false)
+        .build()
+        .await;
+
+    let (user, ft) = futures::join!(env.create_user(), env.create_token());
+
+    let defuse2 = env
+        .deploy_defuse(
+            "defuse2",
+            DefuseConfig {
+                wnear_id: env.wnear.id().clone(),
+                fees: FeesConfig {
+                    fee: Pips::ZERO,
+                    fee_collector: env.id().clone(),
+                },
+                roles: RolesConfig::default(),
+            },
+            false,
+        )
+        .await
+        .unwrap();
+
+    env.initial_ft_storage_deposit(vec![user.id()], vec![&ft])
+        .await;
+
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
+
+    // Step 1: Deposit tokens to user in defuse1
+    env.defuse_ft_deposit_to(&ft, 1000, user.id())
+        .await
+        .unwrap();
+
+    assert_eq!(
+        env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft_id.to_string())
+            .await
+            .unwrap(),
+        1000,
+        "User should have 1000 tokens in defuse1"
+    );
+
+    // NOTE: Transfer tokens from defuse1 to defuse2 with message set
+    // Set receiver_id to defuse1 (the first Defuse instance) and message to trigger mt_on_transfer
+    let deposit_message = DepositMessage {
+        receiver_id: env.defuse.id().clone(), // Set first Defuse instance as receiver
+        execute_intents: vec![],
+        refund_if_fails: false,
+        message: Some("test message to trigger mt_on_transfer".to_string()),
+    };
+
+    let refund_amounts = user.mt_transfer_call(
+        env.defuse.id(),
+        defuse2.id(),
+        &ft_id.to_string(),
+        600,
+        None,
+        None,
+        near_sdk::serde_json::to_string(&deposit_message).unwrap(),
+    )
+    .await
+    .expect("mt_transfer_call should succeed");
+
+    assert!(
+        !refund_amounts.is_empty(),
+        "mt_transfer_call should return refund amounts, confirming mt_on_transfer was called"
+    );
+
+    // Verify user's balance after the transfer
+    let user_balance_defuse1 = env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft_id.to_string())
+        .await
+        .unwrap();
+}

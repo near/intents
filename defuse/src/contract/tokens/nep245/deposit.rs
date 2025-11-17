@@ -104,8 +104,6 @@ impl MultiTokenReceiver for Contract {
 #[near]
 impl Contract {
     //TODO: figure out precise value
-    //TODO: test for withdrawing more than deposited but with enought balance from previous deposit
-    //TODO: test for circular transfer between 2 defuse instances
     const MT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(50);
 
     #[private]
