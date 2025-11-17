@@ -370,15 +370,15 @@ async fn ft_force_withdraw(#[values(false, true)] no_registration: bool) {
     action: StubAction::Panic,
     intent_transfer_amount: None,
     refund_if_fails: true,
-    expected_sender_ft_balance: 0,
-    expected_receiver_mt_balance: 1000,
+    expected_sender_ft_balance: 1000,
+    expected_receiver_mt_balance: 0,
 })]
 #[case::malicious_receiver(TransferCallExpectation {
     action: StubAction::MaliciousReturn,
     intent_transfer_amount: None,
     refund_if_fails: true,
-    expected_sender_ft_balance: 0,
-    expected_receiver_mt_balance: 1000,
+    expected_sender_ft_balance: 1000,
+    expected_receiver_mt_balance: 0,
 })]
 #[case::refund_everything_on_failed_transfer(TransferCallExpectation {
     action: StubAction::ReturnValue(0.into()),

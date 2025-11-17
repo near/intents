@@ -317,15 +317,15 @@ struct NftTransferCallExpectation {
     action: StubAction::Panic,
     intent_transfer: false,
     refund_if_fails: true,
-    expected_sender_owns_nft: false,
-    expected_receiver_owns_nft: true,
+    expected_sender_owns_nft: true,
+    expected_receiver_owns_nft: false,
 })]
 #[case::malicious_receiver(NftTransferCallExpectation {
     action: StubAction::MaliciousReturn,
     intent_transfer: false,
     refund_if_fails: true,
-    expected_sender_owns_nft: false,
-    expected_receiver_owns_nft: true,
+    expected_sender_owns_nft: true,
+    expected_receiver_owns_nft: false,
 })]
 #[case::cannot_refund_after_nft_transfer_to_another_user_thorough_intent(NftTransferCallExpectation {
     action: StubAction::ReturnValue(1.into()),

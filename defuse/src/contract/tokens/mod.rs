@@ -161,12 +161,12 @@ impl Contract {
                 .ok()
                 .filter(|refunds| refunds.len() == tokens_count)
                 .map_or_else(
-                    || vec![0u128; tokens_count],
+                    || deposited_amounts.clone(),
                     |refunds| refunds.into_iter().map(|elem| elem.0).collect(),
                 ),
             // Do not refund on failure; rely solely on mt_on_transfer return values.
             // This aligns with NEP-141/171 behavior: if the receiver panics, no refund occurs.
-            PromiseResult::Failed => vec![0u128; tokens_count],
+            PromiseResult::Failed => deposited_amounts.clone(),
         };
 
         let actual_refunds = izip!(token_ids, deposited_amounts, &requested_refunds)

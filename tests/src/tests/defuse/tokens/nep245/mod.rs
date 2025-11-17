@@ -934,15 +934,15 @@ struct MtTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::Panic,
     intent_transfer_amounts: None,
     refund_if_fails: true,
-    expected_sender_mt_balances: vec![0],
-    expected_receiver_mt_balances: vec![1000],
+    expected_sender_mt_balances: vec![1000],
+    expected_receiver_mt_balances: vec![0],
 })]
 #[case::receiver_returns_oversized_data_no_refund_sender_loses_tokens(MtTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::MaliciousReturn,
     intent_transfer_amounts: None,
     refund_if_fails: true,
-    expected_sender_mt_balances: vec![0],
-    expected_receiver_mt_balances: vec![1000],
+    expected_sender_mt_balances: vec![1000],
+    expected_receiver_mt_balances: vec![0],
 })]
 #[case::intent_transfer_fails_all_tokens_refunded_to_sender(MtTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::ReturnValue(0.into()),
@@ -1139,29 +1139,29 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     action: multi_token_receiver_stub::StubAction::Panic,
     intent_transfer_amounts: None,
     refund_if_fails: true,
-    expected_sender_mt_balances: vec![0, 0],
-    expected_receiver_mt_balances: vec![1000, 2000],
+    expected_sender_mt_balances: vec![1000, 2000],
+    expected_receiver_mt_balances: vec![0, 0],
 })]
 #[case::malicious_receiver_multi_token(MtTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::MaliciousReturn,
     intent_transfer_amounts: None,
     refund_if_fails: true,
-    expected_sender_mt_balances: vec![0, 0],
-    expected_receiver_mt_balances: vec![1000, 2000],
+    expected_sender_mt_balances: vec![1000, 2000],
+    expected_receiver_mt_balances: vec![0, 0],
 })]
 #[case::wrong_length_return_too_short(MtTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::ReturnValues(vec![100.into()]),
     intent_transfer_amounts: None,
     refund_if_fails: true,
-    expected_sender_mt_balances: vec![0, 0],
-    expected_receiver_mt_balances: vec![1000, 2000],
+    expected_sender_mt_balances: vec![1000, 2000],
+    expected_receiver_mt_balances: vec![0, 0],
 })]
 #[case::wrong_length_return_too_long(MtTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::ReturnValues(vec![100.into(), 200.into(), 300.into()]),
     intent_transfer_amounts: None,
     refund_if_fails: true,
-    expected_sender_mt_balances: vec![0, 0],
-    expected_receiver_mt_balances: vec![1000, 2000],
+    expected_sender_mt_balances: vec![1000, 2000],
+    expected_receiver_mt_balances: vec![0, 0],
 })]
 #[case::refund_after_intent_first_token(MtTransferCallExpectation {
     action: multi_token_receiver_stub::StubAction::ReturnValues(vec![200.into(), 0.into()]),
