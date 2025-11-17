@@ -25,21 +25,37 @@ use super::{ExecutableIntent, IntentEvent};
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
 pub struct NotifyOnTransfer {
+    /// Message to pass to `mt_on_transfer`
     pub msg: String,
 
     // Min gas per single call
+    /// If it is not specified optional minimum required Near gas will be used for created Promise to succeed:
+    /// * `mt_on_transfer`:      minimum: 5 TGas, default: 15TGas
+    ///
+    /// Remaining gas will be distributed evenly across all Function Call
+    /// Promises created during execution of current receipt.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub min_gas: Option<Gas>,
 }
 
 impl NotifyOnTransfer {
     pub const MT_ON_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(5);
-    pub const MT_ON_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(10);
+    pub const MT_ON_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(15);
 
     pub fn min_gas(&self) -> Gas {
         self.min_gas
             .unwrap_or(Self::MT_ON_TRANSFER_GAS_DEFAULT)
             .max(Self::MT_ON_TRANSFER_GAS_MIN)
+    }
+
+    pub const fn new(msg: String) -> Self {
+        Self { msg, min_gas: None }
+    }
+
+    #[must_use]
+    pub const fn with_min_gas(mut self, min_gas: Gas) -> Self {
+        self.min_gas = Some(min_gas);
+        self
     }
 }
 
@@ -63,7 +79,7 @@ pub struct Transfer {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<String>,
 
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(flatten, default, skip_serializing_if = "Option::is_none")]
     pub notification: Option<NotifyOnTransfer>,
 }
 
@@ -107,12 +123,9 @@ impl ExecutableIntent for Transfer {
             .internal_add_balance(self.receiver_id.clone(), self.tokens.clone())?;
 
         if let Some(notification) = self.notification {
-            engine.state.notify_on_transfer(
-                sender_id.into(),
-                self.receiver_id,
-                self.tokens,
-                notification,
-            );
+            engine
+                .state
+                .notify_on_transfer(sender_id, self.receiver_id, self.tokens, notification);
         }
 
         Ok(())

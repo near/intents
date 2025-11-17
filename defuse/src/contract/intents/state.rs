@@ -247,7 +247,7 @@ impl State for Contract {
     #[inline]
     fn notify_on_transfer(
         &self,
-        sender_id: AccountId,
+        sender_id: &AccountIdRef,
         receiver_id: AccountId,
         tokens: Amounts,
         notification: NotifyOnTransfer,
@@ -260,7 +260,7 @@ impl State for Contract {
         let min_gas = notification.min_gas();
 
         Self::call_receiver_mt_on_transfer(
-            sender_id,
+            sender_id.to_owned(),
             receiver_id,
             token_ids,
             amounts,

@@ -326,7 +326,7 @@ where
     #[inline]
     fn notify_on_transfer(
         &self,
-        _sender_id: AccountId,
+        _sender_id: &AccountIdRef,
         _receiver_id: AccountId,
         _tokens: Amounts,
         _notification: NotifyOnTransfer,

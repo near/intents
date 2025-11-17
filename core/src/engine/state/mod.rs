@@ -109,7 +109,7 @@ pub trait State: StateView {
 
     fn notify_on_transfer(
         &self,
-        sender_id: AccountId,
+        sender_id: &AccountIdRef,
         receiver_id: AccountId,
         tokens: Amounts,
         notification: NotifyOnTransfer,

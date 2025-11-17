@@ -113,10 +113,9 @@ async fn transfer_intent_to_defuse() {
                 std::iter::once((TokenId::from(Nep141TokenId::new(ft.clone())), 1000)).collect(),
             ),
             memo: None,
-            notification: Some(NotifyOnTransfer {
-                msg: other_user_id.to_string(),
-                min_gas: Some(Gas::from_tgas(500)),
-            }),
+            notification: NotifyOnTransfer::new(other_user_id.to_string())
+                .with_min_gas(Gas::from_tgas(500))
+                .into(),
         };
 
         let transfer_payload = user
@@ -138,10 +137,9 @@ async fn transfer_intent_to_defuse() {
                 std::iter::once((TokenId::from(Nep141TokenId::new(ft.clone())), 1000)).collect(),
             ),
             memo: None,
-            notification: Some(NotifyOnTransfer {
-                msg: other_user_id.to_string(),
-                min_gas: Some(Gas::from_tgas(1)),
-            }),
+            notification: NotifyOnTransfer::new(other_user_id.to_string())
+                .with_min_gas(Gas::from_tgas(1))
+                .into(),
         };
 
         let transfer_payload = user
@@ -266,7 +264,7 @@ async fn transfer_intent_with_msg_to_receiver_smc(#[case] expectation: TransferC
             .collect(),
         ),
         memo: None,
-        notification: Some(NotifyOnTransfer { msg, min_gas: None }),
+        notification: NotifyOnTransfer::new(msg).into(),
     };
 
     let transfer_payload = user
