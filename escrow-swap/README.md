@@ -162,7 +162,7 @@ Common envelope:
 
 ```jsonc
 {
-  "params": { ... },
+  "params": { /* ... */ },
   "action": "fund"
 }
 ```
@@ -175,7 +175,7 @@ Common envelope:
 
 ```jsonc
 {
-  "params": { ... },
+  "params": { /* ... */ },
   "action": {
     "fill": {
       // taker’s quote per raw src unit (1 USDT = 1_000_000 units), equals 0.175 NEAR / USDT
