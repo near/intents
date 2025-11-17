@@ -1,8 +1,6 @@
-use super::{DefuseSigner, accounts::AccountManagerExt, env::Env};
-use crate::tests::defuse::SigningStandard;
+use super::{accounts::AccountManagerExt, env::Env};
 use crate::utils::payload::ExtractNonceExt;
 use crate::utils::{crypto::Signer, mt::MtExt, test_log::TestLog};
-use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
 use defuse::core::ton_connect::tlb_ton::MsgAddress;
@@ -22,8 +20,6 @@ use defuse::{
     intents::SimulationOutput,
 };
 use defuse_near_utils::NearSdkLog;
-use defuse_randomness::Rng;
-use defuse_test_utils::random::rng;
 use near_sdk::{AccountId, AccountIdRef, CryptoHash};
 use rstest::rstest;
 use serde_json::json;
@@ -213,10 +209,7 @@ impl ExecuteIntentsExt for near_workspaces::Contract {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_is_view_method(
-    #[notrace] mut rng: impl Rng,
-    #[values(false, true)] no_registration: bool,
-) {
+async fn simulate_is_view_method(#[values(false, true)] no_registration: bool) {
     use crate::tests::defuse::DefuseSignerExt;
 
     let env = Env::builder()
