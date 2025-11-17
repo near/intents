@@ -64,8 +64,15 @@ args = [
     "${TARGET_DIR}",
 ]
 
+[tasks.prepare-embedded-wasm]
+dependencies = ["build-poa-token-reproducible"]
+script = [
+   "mkdir -p poa-factory/wasm-deps",
+    "cp ${TARGET_DIR}/defuse_poa_token.wasm poa-factory/wasm-deps/"
+]
+
 [tasks.build-poa-factory]
-dependencies = ["add-cache-dir-tag", "build-poa-token"]
+dependencies = ["add-cache-dir-tag", "prepare-embedded-wasm"]
 command = "cargo"
 args = [
     "near",
@@ -80,6 +87,7 @@ args = [
     "${TARGET_DIR}",
     "--no-embed-abi",
 ]
+env = { "POA_TOKEN_WASM" = "wasm-deps/defuse_poa_token.wasm" }
 
 [tasks.build-poa-factory-reproducible]
 dependencies = ["add-cache-dir-tag", "build-poa-token-reproducible"]
