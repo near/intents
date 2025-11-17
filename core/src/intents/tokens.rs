@@ -40,7 +40,7 @@ pub struct NotifyOnTransfer {
 
 impl NotifyOnTransfer {
     pub const MT_ON_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(5);
-    pub const MT_ON_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(15);
+    pub const MT_ON_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(30);
 
     pub fn min_gas(&self) -> Gas {
         self.min_gas
