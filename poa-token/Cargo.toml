@@ -24,7 +24,7 @@ container_build_command = [
     "--features=contract"
 ]
 
-[package.metadata.near.reproducible_build_no_registration]
+[package.metadata.near.reproducible_build.variant.no_registration]
 image = "sourcescan/cargo-near:0.16.2-rust-1.86.0"
 image_digest = "sha256:74c24d4d912f893198b8b13e01d43e0f78f3b00b3df45bf555a707eb4918a54e"
 passed_env = ["POA_TOKEN_WITH_NO_REGISTRATION_DIR"]
