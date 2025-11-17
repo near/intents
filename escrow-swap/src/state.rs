@@ -267,6 +267,28 @@ pub struct OverrideSend {
     pub min_gas: Option<Gas>,
 }
 
+impl OverrideSend {
+    pub fn receiver_id(mut self, receiver_id: impl Into<AccountId>) -> Self {
+        self.receiver_id = Some(receiver_id.into());
+        self
+    }
+
+    pub fn memo(mut self, memo: impl Into<String>) -> Self {
+        self.memo = Some(memo.into());
+        self
+    }
+
+    pub fn msg(mut self, msg: impl Into<String>) -> Self {
+        self.msg = Some(msg.into());
+        self
+    }
+
+    pub fn min_gas(mut self, min_gas: Gas) -> Self {
+        self.min_gas = Some(min_gas);
+        self
+    }
+}
+
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
     serde_as(schemars = true)
@@ -275,7 +297,7 @@ pub struct OverrideSend {
     not(all(feature = "abi", not(target_arch = "wasm32"))),
     serde_as(schemars = false)
 )]
-#[near(serializers = [borsh, json])]
+#[near(serializers = [json, borsh])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct State {
     /// Funded or lost (after close) src remaining
@@ -285,6 +307,7 @@ pub struct State {
     // Store only lost for maker, since we're bounded in state size
     // So, we don't store lost&found for takers and fee_collectors
     #[serde_as(as = "DisplayFromStr")]
+    #[serde(default, skip_serializing_if = "crate::utils::is_default")]
     pub maker_dst_lost: u128,
 
     #[borsh(
@@ -303,3 +326,7 @@ pub struct State {
     #[serde(default, skip_serializing_if = "crate::utils::is_default")]
     pub in_flight: u32,
 }
+
+// fix JsonSchema macro bug
+#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+use near_sdk::serde;

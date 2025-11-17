@@ -157,13 +157,14 @@ impl State {
         integrator_fees: &BTreeMap<Cow<AccountIdRef>, u128>,
         out: &mut u128,
     ) -> Result<Option<Promise>> {
-        Ok(integrator_fees
-            .iter()
-            .map(|(collector, amount)| (collector.as_ref(), *amount))
+        Ok(protocol_fees
+            .map(ProtocolFeesCollected::to_collector_amount)
+            .transpose()?
+            .into_iter()
             .chain(
-                protocol_fees
-                    .map(ProtocolFeesCollected::to_collector_amount)
-                    .transpose()?,
+                integrator_fees
+                    .iter()
+                    .map(|(collector, amount)| (collector.as_ref(), *amount)),
             )
             .filter(|(_, fee_amount)| *fee_amount > 0)
             .inspect(|(_, fee_amount)| {

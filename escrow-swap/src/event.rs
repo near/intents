@@ -10,7 +10,7 @@ use crate::{Deadline, Params, price::Price, token_id::TokenId, tokens::Sent};
 #[derive(Debug, Clone, From)]
 pub enum Event<'a> {
     #[event_version("0.1.0")]
-    Create(Cow<'a, Params>),
+    Created(Cow<'a, Params>),
 
     #[event_version("0.1.0")]
     Funded(FundedEvent<'a>),
@@ -19,15 +19,15 @@ pub enum Event<'a> {
     Fill(FillEvent<'a>),
 
     #[event_version("0.1.0")]
-    MakerLost(MakerLost),
-
-    #[event_version("0.1.0")]
-    MakerLostFound {
-        // TODO
-    },
-
-    #[event_version("0.1.0")]
     Closed { reason: CloseReason },
+
+    #[from(skip)]
+    #[event_version("0.1.0")]
+    MakerRefunded(MakerSent),
+
+    #[from(skip)]
+    #[event_version("0.1.0")]
+    MakerLost(MakerSent),
 
     #[event_version("0.1.0")]
     Cleanup,
@@ -140,11 +140,29 @@ impl ProtocolFeesCollected<'_> {
 )]
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
-pub struct MakerLost {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub src: Option<Sent>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub dst: Option<Sent>,
+pub struct MakerSent {
+    #[serde_as(as = "DisplayFromStr")]
+    #[serde(default, skip_serializing_if = "crate::utils::is_default")]
+    pub src: u128,
+
+    #[serde_as(as = "DisplayFromStr")]
+    #[serde(default, skip_serializing_if = "crate::utils::is_default")]
+    pub dst: u128,
+}
+
+impl MakerSent {
+    #[inline]
+    pub fn from_sent(src: Option<Sent>, dst: Option<Sent>) -> Self {
+        Self {
+            src: src.map_or(0, |s| s.amount),
+            dst: dst.map_or(0, |s| s.amount),
+        }
+    }
+
+    #[inline]
+    pub const fn is_empty(&self) -> bool {
+        self.src == 0 && self.dst == 0
+    }
 }
 
 #[near(serializers = [json])]
@@ -163,3 +181,7 @@ pub trait EscrowIntentEmit<'a>: Into<Event<'a>> {
     }
 }
 impl<'a, T> EscrowIntentEmit<'a> for T where T: Into<Event<'a>> {}
+
+// fix JsonSchema macro bug
+#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+use near_sdk::serde;

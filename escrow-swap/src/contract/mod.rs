@@ -27,7 +27,7 @@ pub struct Contract(Option<Storage>);
 impl Contract {
     #[init]
     pub fn escrow_init(params: &Params) -> Self {
-        Event::Create(Cow::Borrowed(&params)).emit();
+        Event::Created(Cow::Borrowed(&params)).emit();
 
         if params.deadline.has_expired() {
             Error::DeadlineExpired.panic();

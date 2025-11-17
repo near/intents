@@ -3,7 +3,7 @@ use near_sdk::{Gas, near};
 
 use crate::{
     Error, Result, State,
-    event::{EscrowIntentEmit, MakerLost},
+    event::{EscrowIntentEmit, Event, MakerSent},
     tokens::Sent,
 };
 
@@ -60,12 +60,9 @@ impl State {
             sent.amount = refund;
         }
 
-        let event = MakerLost {
-            src: maker_src.filter(|s| s.amount > 0),
-            dst: maker_dst.filter(|s| s.amount > 0),
-        };
-        if event.src.is_some() || event.dst.is_some() {
-            event.emit();
+        let lost = MakerSent::from_sent(maker_src, maker_dst);
+        if !lost.is_empty() {
+            Event::MakerLost(lost).emit();
         }
 
         Ok(())

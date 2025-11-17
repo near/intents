@@ -70,7 +70,6 @@ async fn partial_fills() {
 
         refund_src_to: OverrideSend::default(),
         receive_dst_to: OverrideSend::default(),
-
         // taker_whitelist: Default::default(),
         taker_whitelist: env.takers.iter().map(|a| a.id()).cloned().collect(),
         protocol_fees: ProtocolFees {
@@ -93,7 +92,6 @@ async fn partial_fills() {
         #[cfg(feature = "auth_call")]
         auth_caller: Some(env.verifier.id().clone()),
         salt: [0; 32],
-        // maker_authority: Some(cancel_authorify.0.clone()),
     };
 
     let escrow = env.create_escrow(&params).await.unwrap();

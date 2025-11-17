@@ -5,13 +5,13 @@ use near_sdk::{Promise, PromiseOrValue};
 use crate::{
     Result,
     contract::{Contract, tokens::Sendable},
+    event::{EscrowIntentEmit, Event, MakerSent},
     state::{Params, State},
 };
 
 impl Contract {
     pub(super) fn lost_found(&mut self, params: Params) -> Result<PromiseOrValue<bool>> {
         let mut guard = self.cleanup_guard();
-
         let this = guard.try_as_alive_mut()?.verify_mut(&params)?;
 
         Ok(if let Some(promise) = this.lost_found(params)? {
@@ -65,7 +65,7 @@ impl State {
             return Ok(None);
         };
 
-        // TODO: emit event
+        Event::MakerRefunded(MakerSent::from_sent(sent_src, sent_dst)).emit();
 
         Ok(send
             .then(
