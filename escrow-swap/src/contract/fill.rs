@@ -1,7 +1,6 @@
 use std::{borrow::Cow, collections::BTreeMap};
 
 use defuse_near_utils::{PromiseExt, UnwrapOrPanic};
-#[cfg(feature = "nep141")]
 use near_sdk::{AccountId, AccountIdRef, Promise, PromiseOrValue};
 
 use crate::{
