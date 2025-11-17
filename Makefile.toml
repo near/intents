@@ -67,8 +67,7 @@ args = [
 [tasks.prepare-embedded-wasm]
 dependencies = ["build-poa-token-reproducible"]
 script = [
-   "mkdir -p poa-factory/wasm-deps",
-    "cp ${TARGET_DIR}/defuse_poa_token.wasm poa-factory/wasm-deps/"
+    "cp ${TARGET_DIR}/defuse_poa_token.wasm releases/defuse_poa_token.wasm"
 ]
 
 [tasks.build-poa-factory]
