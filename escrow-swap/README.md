@@ -147,23 +147,16 @@ Every user-facing entrypoint receives the full `Params` struct. The contract has
 
 ## Transfer Messages
 
-Funding and filling both use NEAR standards `ft_transfer_call` / `mt_transfer_call`. The message payload is a JSON blob matching `TransferMessage`.
-
-Common envelope:
-
-```jsonc
-{
-  "params": { /* full Params JSON (see template above) */ },
-  "action": "fund" // or {"fill": {...}} shown below
-}
-```
+Funding and filling both use NEAR standards `ft_transfer_call` / `mt_transfer_call`. The message payload is a JSON blob matching `TransferMessage`:
 
 ### Funding (`action = "fund"`)
 
 ```jsonc
 {
   "params": { /* ... */ },
-  "action": "fund"
+  "action": {
+    "action": "fund"
+  }
 }
 ```
 
@@ -177,7 +170,8 @@ Common envelope:
 {
   "params": { /* ... */ },
   "action": {
-    "fill": {
+    "action": "fill",
+    "data": {
       // taker’s quote per raw src unit (1 USDT = 1_000_000 units), equals 0.175 NEAR / USDT
       "price": "0.000000175",
 
