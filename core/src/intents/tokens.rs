@@ -30,7 +30,7 @@ pub struct NotifyOnTransfer {
 
     // Min gas per single call
     /// If it is not specified optional minimum required Near gas will be used for created Promise to succeed:
-    /// * `mt_on_transfer`:      minimum: 5 TGas, default: 15TGas
+    /// * `mt_on_transfer`:      minimum: 5TGas, default: 30TGas
     ///
     /// Remaining gas will be distributed evenly across all Function Call
     /// Promises created during execution of current receipt.
