@@ -138,28 +138,21 @@ args = [
     "--no-embed-abi",
 ]
 
+
 [tasks.build-poa-token-no-registration-reproducible]
 dependencies = ["add-cache-dir-tag"]
-script = [
-    "cargo near build reproducible-wasm --manifest-path ./poa-token/Cargo.toml --out-dir ${TARGET_DIR} --variant no_registration",
-    "cp ${TARGET_DIR}/defuse_poa_token.wasm ${RELEASES_DIR}/defuse_poa_token.wasm",
+command = "cargo"
+args = [
+    "near",
+    "build",
+    "reproducible-wasm",
+    "--manifest-path",
+    "./poa-token/Cargo.toml",
+    "--out-dir",
+    "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}",
+    "--variant",
+    "no_registration",
 ]
-
-
-# [tasks.build-poa-token-no-registration-reproducible]
-# dependencies = ["add-cache-dir-tag"]
-# command = "cargo"
-# args = [
-#     "near",
-#     "build",
-#     "reproducible-wasm",
-#     "--manifest-path",
-#     "./poa-token/Cargo.toml",
-#     "--features",
-#     "contract,no-registration",
-#     "--out-dir",
-#     "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}",
-# ]
 
 [tasks.test]
 alias = "tests"
