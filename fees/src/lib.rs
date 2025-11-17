@@ -70,6 +70,20 @@ impl Pips {
     }
 
     #[inline]
+    pub fn checked_add(self, rhs: Self) -> Option<Self> {
+        self.as_pips()
+            .checked_add(rhs.as_pips())
+            .and_then(Self::from_pips)
+    }
+
+    #[inline]
+    pub fn checked_sub(self, rhs: Self) -> Option<Self> {
+        self.as_pips()
+            .checked_sub(rhs.as_pips())
+            .and_then(Self::from_pips)
+    }
+
+    #[inline]
     pub const fn checked_mul(self, rhs: u32) -> Option<Self> {
         let Some(pips) = self.as_pips().checked_mul(rhs) else {
             return None;
@@ -109,9 +123,7 @@ impl Pips {
 impl CheckedAdd for Pips {
     #[inline]
     fn checked_add(self, rhs: Self) -> Option<Self> {
-        self.as_pips()
-            .checked_add(rhs.as_pips())
-            .and_then(Self::from_pips)
+        self.checked_add(rhs)
     }
 }
 
@@ -127,9 +139,7 @@ impl Add for Pips {
 impl CheckedSub for Pips {
     #[inline]
     fn checked_sub(self, rhs: Self) -> Option<Self> {
-        self.as_pips()
-            .checked_sub(rhs.as_pips())
-            .and_then(Self::from_pips)
+        self.checked_sub(rhs)
     }
 }
 

@@ -14,10 +14,8 @@ workspace = true
 [dependencies]
 defuse-borsh-utils = { workspace = true, features = ["chrono"] }
 defuse-fees.workspace = true
-defuse-map-utils.workspace = true
 defuse-near-utils = { workspace = true, features = ["time"] }
 defuse-nep245.workspace = true
-defuse-num-utils.workspace = true
 defuse-price.workspace = true
 defuse-token-id = { workspace = true, features = ["unbounded"] }
 
@@ -25,13 +23,8 @@ near-contract-standards.workspace = true
 near-sdk.workspace = true
 
 derive_more = { workspace = true, features = ["from"] }
-fastnum = { workspace = true, features = ["serde", "numtraits"] }
 hex.workspace = true
-impl-tools.workspace = true
-itertools.workspace = true
-num-traits.workspace = true
 serde_with = { workspace = true, features = ["chrono_0_4", "hex"] }
-strum.workspace = true
 thiserror.workspace = true
 
 defuse-auth-call = { workspace = true, optional = true }

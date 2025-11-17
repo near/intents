@@ -289,11 +289,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f781dba93de3a5ef6dc5b17c9958b208f6f3f021623b360fb605ea51ce443f10"
 dependencies = [
  "borsh",
- "num-integer",
- "num-traits",
  "rand 0.8.5",
- "serde",
- "serde-big-array",
 ]
 
 [[package]]
@@ -912,25 +908,19 @@ dependencies = [
  "defuse-auth-call",
  "defuse-borsh-utils",
  "defuse-fees",
- "defuse-map-utils",
  "defuse-near-utils",
  "defuse-nep245",
- "defuse-num-utils",
  "defuse-price",
  "defuse-sandbox",
  "defuse-token-id",
  "derive_more 2.0.1",
- "fastnum",
  "futures",
  "hex",
  "impl-tools",
- "itertools 0.14.0",
  "near-contract-standards",
  "near-sdk",
- "num-traits",
  "rstest",
  "serde_with",
- "strum 0.27.1",
  "thiserror 2.0.12",
  "tokio",
 ]
@@ -1440,18 +1430,6 @@ checksum = "cea14ef9355e3beab063703aa9dab15afd25f0667c341310c1e5274bb1d0da18"
 dependencies = [
  "libc",
  "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "fastnum"
-version = "0.2.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4451747a4f0b0237f73f79227f7842926ba640e774d46b70b86eebb8c60e5af"
-dependencies = [
- "autocfg",
- "bnum",
- "num-traits",
- "serde",
 ]
 
 [[package]]
@@ -3996,15 +3974,6 @@ checksum = "9a8e94ea7f378bd32cbbd37198a4a91436180c5bb472411e48b5ec2e2124ae9e"
 dependencies = [
  "serde_core",
  "serde_derive",
-]
-
-[[package]]
-name = "serde-big-array"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11fc7cc2c76d73e0f27ee52abbd64eec84d46f370c88371120433196934e4b7f"
-dependencies = [
- "serde",
 ]
 
 [[package]]

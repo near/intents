@@ -125,7 +125,6 @@ impl State {
         let taker_want_src = taker_price
             .src_floor_checked(taker_dst_in)
             .ok_or(Error::IntegerOverflow)?;
-        // TODO: what if zero?
         if taker_want_src < self.maker_src_remaining {
             if !partial_fills_allowed {
                 return Err(Error::PartialFillsNotAllowed);

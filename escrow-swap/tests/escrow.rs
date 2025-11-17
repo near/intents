@@ -340,6 +340,7 @@ impl EscrowEnv {
     }
 
     pub async fn view_escrow(&self, escrow: &Account) {
+        println!("{}: {:?}", escrow.id(), escrow.view().await.unwrap());
         let s = escrow.view_escrow().await.unwrap();
         println!(
             "{}::escrow_view() -> {:#}",
