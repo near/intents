@@ -1,5 +1,5 @@
 use defuse_near_utils::UnwrapOrPanic;
-use near_sdk::{Gas, near};
+use near_sdk::{Gas, Promise, near};
 
 use crate::{
     Error, Result, State,
@@ -10,7 +10,7 @@ use super::{Contract, ContractExt, tokens::Sent};
 
 #[near]
 impl Contract {
-    pub(super) const ESCROW_RESOLVE_TRANSFERS_GAS: Gas = Gas::from_tgas(10);
+    const ESCROW_RESOLVE_TRANSFERS_GAS: Gas = Gas::from_tgas(10);
 
     #[private]
     pub fn escrow_resolve_transfers(
@@ -40,6 +40,17 @@ impl Contract {
 }
 
 impl State {
+    pub(super) fn callback_resolve_transfers(
+        &mut self,
+        maker_src: Option<Sent>,
+        maker_dst: Option<Sent>,
+    ) -> Promise {
+        self.callback()
+            .with_static_gas(Contract::ESCROW_RESOLVE_TRANSFERS_GAS)
+            .with_unused_gas_weight(0)
+            .escrow_resolve_transfers(maker_src, maker_dst)
+    }
+
     fn resolve_transfers(
         &mut self,
         mut maker_src: Option<Sent>,

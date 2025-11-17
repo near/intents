@@ -70,12 +70,7 @@ impl State {
         Event::MakerRefunded(MakerSent::from_sent(sent_src, sent_dst)).emit();
 
         Ok(send
-            .then(
-                self.callback()
-                    .with_static_gas(Contract::ESCROW_RESOLVE_TRANSFERS_GAS)
-                    .with_unused_gas_weight(0)
-                    .escrow_resolve_transfers(sent_src, sent_dst),
-            )
+            .then(self.callback_resolve_transfers(sent_src, sent_dst))
             .into())
     }
 }

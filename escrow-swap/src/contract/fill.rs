@@ -12,7 +12,7 @@ use crate::{
     token_id::TokenId,
 };
 
-use super::{Contract, return_value::ReturnValueExt, tokens::Sendable};
+use super::{return_value::ReturnValueExt, tokens::Sendable};
 
 impl State {
     pub(super) fn fill(
@@ -110,10 +110,7 @@ impl State {
             .and(taker_src_p)
             .and_maybe(send_fees)
             .then(
-                self.callback()
-                    .with_static_gas(Contract::ESCROW_RESOLVE_TRANSFERS_GAS)
-                    .with_unused_gas_weight(0)
-                    .escrow_resolve_transfers(None, Some(maker_dst))
+                self.callback_resolve_transfers(None, Some(maker_dst))
                     .return_value(maker_dst.refund_value(taker_dst_in - taker_dst_used)?),
             )
             .into())

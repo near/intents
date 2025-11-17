@@ -40,8 +40,7 @@ impl Contract {
         match msg.action {
             Action::Close => Ok(state
                 .close(signer_id, msg.params)?
-                .map(PromiseOrValue::Promise)
-                .unwrap_or(PromiseOrValue::Value(()))),
+                .map_or(PromiseOrValue::Value(()), PromiseOrValue::Promise)),
         }
     }
 }

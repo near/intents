@@ -31,7 +31,8 @@ impl MultiTokenReceiver for Contract {
             .unwrap_or_panic();
 
         let token_id: TokenId = Nep245TokenId::new(env::predecessor_account_id(), token_id)
-            .unwrap_or_else(|err: Infallible| match err {}) // `.into_ok` isn't stabilized yet
+            // `.into_ok()` isn't stabilized yet
+            .unwrap_or_else(|err: Infallible| match err {})
             .into();
 
         match self
