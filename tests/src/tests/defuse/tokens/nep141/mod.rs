@@ -158,7 +158,7 @@ async fn deposit_withdraw_intent(#[values(false, true)] no_registration: bool) {
                 execute_intents: [withdraw_intent_payload].into(),
                 // another promise will be created for `execute_intents()`
                 refund_if_fails: false,
-                message: String::new(),
+                message: None,
             },
         )
         .await
@@ -240,7 +240,7 @@ async fn deposit_withdraw_intent_refund(#[values(false, true)] no_registration: 
                 receiver_id: user.id().clone(),
                 execute_intents: [overflow_withdraw_payload].into(),
                 refund_if_fails: true,
-                message: String::new(),
+                message: None,
             },
         )
         .await
@@ -481,7 +481,7 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
         receiver_id: receiver.id().clone(),
         execute_intents: intents,
         refund_if_fails: expectation.refund_if_fails,
-        message: serde_json::to_string(&expectation.action).unwrap(),
+        message: Some(serde_json::to_string(&expectation.action).unwrap()),
     };
 
     user.ft_transfer_call(

@@ -62,7 +62,7 @@ impl NonFungibleTokenReceiver for Contract {
             Some(ext_intents::ext(CURRENT_ACCOUNT_ID.clone()).execute_intents(execute_intents))
         };
 
-        if message.is_empty() {
+        if message.as_ref().map_or(true, |s| s.is_empty()) {
             return PromiseOrValue::Value(false);
         }
 
@@ -71,7 +71,7 @@ impl NonFungibleTokenReceiver for Contract {
             vec![sender_id],
             vec![core_token_id.to_string()],
             vec![near_sdk::json_types::U128(1)],
-            message,
+            message.unwrap(),
         );
 
         let resolution = Self::ext(CURRENT_ACCOUNT_ID.clone())

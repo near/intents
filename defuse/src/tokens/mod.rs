@@ -24,8 +24,8 @@ pub struct DepositMessage {
     #[serde(default, skip_serializing_if = "::core::ops::Not::not")]
     pub refund_if_fails: bool,
 
-    #[serde(default, skip_serializing_if = "String::is_empty")]
-    pub message: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
 }
 
 impl DepositMessage {
@@ -36,7 +36,7 @@ impl DepositMessage {
             receiver_id,
             execute_intents: Vec::new(),
             refund_if_fails: false,
-            message: String::new(),
+            message: None,
         }
     }
 
@@ -57,7 +57,7 @@ impl DepositMessage {
     #[must_use]
     #[inline]
     pub fn with_message(mut self, message: String) -> Self {
-        self.message = message;
+        self.message = Some(message);
         self
     }
 }

@@ -424,7 +424,7 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
         receiver_id: receiver.id().clone(),
         execute_intents: intents,
         refund_if_fails: expectation.refund_if_fails,
-        message: near_sdk::serde_json::to_string(&expectation.action).unwrap(),
+        message: Some(near_sdk::serde_json::to_string(&expectation.action).unwrap()),
     };
 
     user.nft_transfer_call(

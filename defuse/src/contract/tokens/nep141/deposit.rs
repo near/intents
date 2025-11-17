@@ -61,7 +61,7 @@ impl FungibleTokenReceiver for Contract {
             Some(ext_intents::ext(CURRENT_ACCOUNT_ID.clone()).execute_intents(execute_intents))
         };
 
-        if message.is_empty() {
+        if message.as_ref().map_or(true, |s| s.is_empty()) {
             return PromiseOrValue::Value(U128(0));
         }
 
@@ -70,7 +70,7 @@ impl FungibleTokenReceiver for Contract {
             vec![receiver_id.clone()],
             vec![token_id.to_string()],
             vec![U128(amount_value)],
-            message,
+            message.unwrap(),
         );
 
         let resolution = Self::ext(CURRENT_ACCOUNT_ID.clone())
