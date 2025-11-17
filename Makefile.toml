@@ -44,7 +44,7 @@ args = [
 ]
 
 [tasks.build-poa-factory]
-dependencies = ["add-cache-dir-tag"]
+dependencies = ["add-cache-dir-tag", "build-poa-token"]
 command = "cargo"
 args = [
     "near",
