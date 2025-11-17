@@ -4,7 +4,7 @@ skip_core_tasks = true
 
 [env]
 TARGET_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/res"
-POA_TOKEN_WASM = "${TARGET_DIR}/defuse_poa_token.wasm"
+POA_TOKEN_WASM1 = "${TARGET_DIR}/defuse_poa_token.wasm"
 POA_TOKEN_WITH_NO_REGISTRATION_DIR = "${TARGET_DIR}/poa-token-no-registration"
 POA_TOKEN_WASM_NO_REGISTRATION_WASM = "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}/defuse_poa_token.wasm"
 
