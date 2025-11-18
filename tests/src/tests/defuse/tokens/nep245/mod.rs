@@ -1288,7 +1288,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     };
 
     // Transfer both tokens from user in defuse1 to defuse2 using batch transfer
-    let _x = user
+    let _ = user
         .call(env.defuse.id(), "mt_batch_transfer_call")
         .deposit(near_workspaces::types::NearToken::from_yoctonear(1))
         .args_json(near_sdk::serde_json::json!({
@@ -1340,7 +1340,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
 }
 
 #[tokio::test]
-async fn mt_transfer_call_between_defuse_instances_with_message() {
+async fn mt_transfer_call_circullar_callback() {
     use defuse::tokens::DepositMessage;
 
     let env = Env::builder()
@@ -1385,14 +1385,24 @@ async fn mt_transfer_call_between_defuse_instances_with_message() {
         "User should have 1000 tokens in defuse1"
     );
 
-    // NOTE: Transfer tokens from defuse1 to defuse2 with message set
-    // Set receiver_id to defuse1 (the first Defuse instance) and message to trigger mt_on_transfer
+    // NOTE: Test circular callback case: defuse1 → defuse2 → defuse1
+    // Set receiver_id to defuse1 to create circular callback
+    // With empty inner message to avoid further callbacks
     let deposit_message = DepositMessage {
-        receiver_id: env.defuse.id().clone(), // Set first Defuse instance as receiver
+        receiver_id: env.defuse.id().clone(), // Circular: back to defuse1
         execute_intents: vec![],
         refund_if_fails: false,
-        message: Some("test message to trigger mt_on_transfer".to_string()),
+        message: Some(near_sdk::serde_json::to_string(&DepositMessage {
+            receiver_id: user.id().clone(),
+            execute_intents: vec![],
+            refund_if_fails: false,
+            message: None, // No further callbacks
+        }).unwrap()),
     };
+
+    // Get the nep245 token id for defuse1's wrapped token in defuse2
+    let nep245_ft_id =
+        TokenId::Nep245(Nep245TokenId::new(env.defuse.id().clone(), ft_id.to_string()).unwrap());
 
     let refund_amounts = user.mt_transfer_call(
         env.defuse.id(),
@@ -1406,13 +1416,42 @@ async fn mt_transfer_call_between_defuse_instances_with_message() {
     .await
     .expect("mt_transfer_call should succeed");
 
-    assert!(
-        !refund_amounts.is_empty(),
-        "mt_transfer_call should return refund amounts, confirming mt_on_transfer was called"
+    // The inner callback to defuse1 should succeed and keep all tokens
+    assert_eq!(
+        refund_amounts,
+        vec![600],
+        "Should return 600 (amount used) since tokens were successfully deposited in circular callback"
     );
 
-    // Verify user's balance after the transfer
-    let user_balance_defuse1 = env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft_id.to_string())
+    assert_eq!(
+        env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft_id.to_string())
         .await
-        .unwrap();
+        .unwrap(),
+        400,
+        "User should have 400 tokens in defuse1 after transfer"
+    );
+
+    // In the circular callback flow:
+    // 1. defuse2 receives 600 tokens, deposits them to defuse1 (receiver_id in outer message)
+    // 2. defuse2 calls defuse1.mt_on_transfer as a notification (with inner message)
+    // 3. defuse1.mt_on_transfer processes the notification and returns no refund
+    //
+    // IMPORTANT: mt_on_transfer is just a notification callback, it doesn't transfer tokens again.
+    // The tokens are already deposited in defuse2, owned by defuse1.
+
+    assert_eq!(
+        env.mt_contract_balance_of(defuse2.id(), env.defuse.id(), &nep245_ft_id.to_string())
+        .await
+        .unwrap(),
+        600,
+        "defuse1 should have 600 wrapped tokens in defuse2 after circular callback"
+    );
+
+    assert_eq!(
+        env.mt_contract_balance_of(defuse2.id(), user.id(), &nep245_ft_id.to_string())
+        .await
+        .unwrap(),
+        0,
+        "User should have 0 wrapped tokens in defuse2"
+    );
 }
