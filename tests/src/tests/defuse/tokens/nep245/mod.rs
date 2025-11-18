@@ -1064,6 +1064,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
                                 std::iter::once((nep245_ft_id.clone(), amounts[0])).collect(),
                             ),
                             memo: None,
+                            notification: None,
                         }],
                     )
                     .await
@@ -1271,6 +1272,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
                         receiver_id: intent_receiver.id().clone(),
                         tokens: Amounts::new(intent_map),
                         memo: None,
+                        notification: None,
                     }],
                 )
                 .await
@@ -1392,29 +1394,33 @@ async fn mt_transfer_call_circullar_callback() {
         receiver_id: env.defuse.id().clone(), // Circular: back to defuse1
         execute_intents: vec![],
         refund_if_fails: false,
-        message: Some(near_sdk::serde_json::to_string(&DepositMessage {
-            receiver_id: user.id().clone(),
-            execute_intents: vec![],
-            refund_if_fails: false,
-            message: None, // No further callbacks
-        }).unwrap()),
+        message: Some(
+            near_sdk::serde_json::to_string(&DepositMessage {
+                receiver_id: user.id().clone(),
+                execute_intents: vec![],
+                refund_if_fails: false,
+                message: None, // No further callbacks
+            })
+            .unwrap(),
+        ),
     };
 
     // Get the nep245 token id for defuse1's wrapped token in defuse2
     let nep245_ft_id =
         TokenId::Nep245(Nep245TokenId::new(env.defuse.id().clone(), ft_id.to_string()).unwrap());
 
-    let refund_amounts = user.mt_transfer_call(
-        env.defuse.id(),
-        defuse2.id(),
-        &ft_id.to_string(),
-        600,
-        None,
-        None,
-        near_sdk::serde_json::to_string(&deposit_message).unwrap(),
-    )
-    .await
-    .expect("mt_transfer_call should succeed");
+    let refund_amounts = user
+        .mt_transfer_call(
+            env.defuse.id(),
+            defuse2.id(),
+            &ft_id.to_string(),
+            600,
+            None,
+            None,
+            near_sdk::serde_json::to_string(&deposit_message).unwrap(),
+        )
+        .await
+        .expect("mt_transfer_call should succeed");
 
     // The inner callback to defuse1 should succeed and keep all tokens
     assert_eq!(
@@ -1425,8 +1431,8 @@ async fn mt_transfer_call_circullar_callback() {
 
     assert_eq!(
         env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft_id.to_string())
-        .await
-        .unwrap(),
+            .await
+            .unwrap(),
         400,
         "User should have 400 tokens in defuse1 after transfer"
     );
@@ -1441,16 +1447,16 @@ async fn mt_transfer_call_circullar_callback() {
 
     assert_eq!(
         env.mt_contract_balance_of(defuse2.id(), env.defuse.id(), &nep245_ft_id.to_string())
-        .await
-        .unwrap(),
+            .await
+            .unwrap(),
         600,
         "defuse1 should have 600 wrapped tokens in defuse2 after circular callback"
     );
 
     assert_eq!(
         env.mt_contract_balance_of(defuse2.id(), user.id(), &nep245_ft_id.to_string())
-        .await
-        .unwrap(),
+            .await
+            .unwrap(),
         0,
         "User should have 0 wrapped tokens in defuse2"
     );

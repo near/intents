@@ -133,9 +133,9 @@ impl Contract {
         const MT_RESOLVE_DEPOSIT_PER_TOKEN_GAS: Gas = Gas::from_tgas(2);
         const MT_RESOLVE_DEPOSIT_BASE_GAS: Gas = Gas::from_tgas(4);
 
-        let token_count: u64 = token_count.try_into().unwrap_or_else(|_| {
-            env::panic_str(&format!("token_count overflow: {token_count}"))
-        });
+        let token_count: u64 = token_count
+            .try_into()
+            .unwrap_or_else(|_| env::panic_str(&format!("token_count overflow: {token_count}")));
 
         MT_RESOLVE_DEPOSIT_BASE_GAS
             .checked_add(

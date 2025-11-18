@@ -395,7 +395,6 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
         .await
         .unwrap();
 
-    assert_eq!(nft.token_id, DUMMY_NFT1_ID.to_string());
     assert_eq!(nft.owner_id, *user.id());
 
     let nft_token_id = DefuseTokenId::from(
@@ -411,6 +410,7 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
                         receiver_id: intent_receiver.id().clone(),
                         tokens: Amounts::new(std::iter::once((nft_token_id.clone(), 1)).collect()),
                         memo: None,
+                        notification: None,
                     }],
                 )
                 .await

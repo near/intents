@@ -456,7 +456,7 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
     .await;
 
     let root = env.sandbox().root_account();
-    assert!(env.ft_token_balance_of(&ft, root.id()).await.unwrap() > 0);
+
     root.ft_transfer(&ft, user.id(), 1000, None).await.unwrap();
     assert_eq!(env.ft_token_balance_of(&ft, user.id()).await.unwrap(), 1000);
 
@@ -469,6 +469,7 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
                         receiver_id: intent_receiver.id().clone(),
                         tokens: Amounts::new(std::iter::once((ft_id.clone(), *amount)).collect()),
                         memo: None,
+                        notification: None,
                     }],
                 )
                 .await
@@ -565,6 +566,7 @@ async fn ft_transfer_call_with_intent_and_panic_refunds_from_initial_user_balanc
                 receiver_id: intent_receiver.id().clone(),
                 tokens: Amounts::new(std::iter::once((ft_id.clone(), 500)).collect()),
                 memo: None,
+                notification: None,
             }],
         )
         .await

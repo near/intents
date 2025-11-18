@@ -4,7 +4,7 @@ use defuse_near_utils::{
 };
 use defuse_nep245::receiver::{MultiTokenReceiver, ext_mt_receiver};
 use near_plugins::{Pausable, pause};
-use near_sdk::{AccountId, Promise, PromiseOrValue, json_types::U128, near, require};
+use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near, require};
 
 use crate::{
     contract::{Contract, ContractExt},
@@ -49,8 +49,6 @@ impl MultiTokenReceiver for Contract {
             msg.parse().unwrap_or_panic_display()
         };
 
-        let n = amounts.len();
-
         let wrapped_tokens: Vec<CoreTokenId> = token_ids
             .iter()
             .map(|token_id| Nep245TokenId::new(token.clone(), token_id.clone()))
@@ -69,17 +67,9 @@ impl MultiTokenReceiver for Contract {
         )
         .unwrap_or_panic();
 
-        let intents_promise: Option<Promise> = if execute_intents.is_empty() {
-            None
-        } else if refund_if_fails {
-            self.execute_intents(execute_intents);
-            None
-        } else {
-            Some(ext_intents::ext(CURRENT_ACCOUNT_ID.clone()).execute_intents(execute_intents))
-        };
 
         if message.as_ref().is_none_or(String::is_empty) {
-            return PromiseOrValue::Value(vec![U128(0); n]);
+            return PromiseOrValue::Value(vec![U128(0); token_ids.len()]);
         }
 
         let notification = ext_mt_receiver::ext(receiver_id.clone()).mt_on_transfer(
@@ -95,10 +85,19 @@ impl MultiTokenReceiver for Contract {
             .with_unused_gas_weight(0)
             .mt_resolve_deposit(&receiver_id, wrapped_tokens, native_amounts);
 
-        match intents_promise {
-            Some(promise) => promise.then(notification).then(resolution).into(),
-            None => notification.then(resolution).into(),
+
+       if execute_intents.is_empty() {
+            notification.then(resolution).into()
+        }else{
+            if refund_if_fails {
+                self.execute_intents(execute_intents);
+                notification.then(resolution).into()
+            } else {
+                ext_intents::ext(CURRENT_ACCOUNT_ID.clone()).execute_intents(execute_intents)
+                .then(notification).then(resolution).into()
+            }
         }
+  
     }
 }
 

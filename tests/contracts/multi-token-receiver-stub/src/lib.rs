@@ -1,5 +1,5 @@
 use defuse_nep245::{TokenId, receiver::MultiTokenReceiver};
-use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near, serde_json};
+use near_sdk::{AccountId, PromiseOrValue, env, json_types::U128, near, serde_json};
 
 /// Minimal stub contract used for integration tests.
 #[derive(Default)]
@@ -12,13 +12,13 @@ pub enum MTReceiverMode {
     #[default]
     AcceptAll,
     ReturnValue(U128),
+    ReturnValues(Vec<U128>),
     Panic,
     LargeReturn,
 }
 
 #[near]
 impl MultiTokenReceiver for Contract {
-    #[allow(unused_variables)]
     fn mt_on_transfer(
         &mut self,
         sender_id: AccountId,
@@ -27,18 +27,32 @@ impl MultiTokenReceiver for Contract {
         amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
+        near_sdk::env::log_str(&format!(
+            "STUB::mt_on_transfer: sender_id={sender_id}, previous_owner_ids={previous_owner_ids:?}, token_ids={token_ids:?}, amounts={amounts:?}, msg={msg}"
+        ));
         let mode = serde_json::from_str(&msg).unwrap_or_default();
 
         match mode {
             MTReceiverMode::ReturnValue(value) => PromiseOrValue::Value(vec![value; amounts.len()]),
+            MTReceiverMode::ReturnValues(values) => PromiseOrValue::Value(values),
             MTReceiverMode::AcceptAll => PromiseOrValue::Value(vec![U128(0); amounts.len()]),
-            MTReceiverMode::Panic => {
-                panic!("MTReceiverMode::Panic triggered panic in mt_on_transfer");
-            }
+            MTReceiverMode::Panic => env::panic_str("MTReceiverMode::Panic"),
             // 16 * 250_000 = 4 MB, which is the limit for a contract return value
             MTReceiverMode::LargeReturn => PromiseOrValue::Value(vec![U128(u128::MAX); 250_000]),
         }
     }
+}
+
+// Re-export for backwards compatibility with existing tests
+pub use MTReceiverMode as StubAction;
+
+// Add backward compatibility variants
+impl MTReceiverMode {
+    pub const MALICIOUS_RETURN: Self = Self::LargeReturn;
+
+    // Deprecated alias for backwards compatibility
+    #[allow(non_upper_case_globals)]
+    pub const MaliciousReturn: Self = Self::MALICIOUS_RETURN;
 }
 
 #[cfg(test)]
@@ -83,6 +97,25 @@ mod tests {
     }
 
     #[test]
+    fn mt_on_transfer_return_values() {
+        let mut contract = Contract;
+        let message =
+            serde_json::to_string(&MTReceiverMode::ReturnValues(vec![U128(10), U128(20)])).unwrap();
+
+        let PromiseOrValue::Value(result) = contract.mt_on_transfer(
+            AccountId::from_str("sender.testnet").unwrap(),
+            vec![],
+            vec!["token1".to_string(), "token2".to_string()],
+            vec![U128(100), U128(200)],
+            message,
+        ) else {
+            panic!("expected value promise");
+        };
+
+        assert_eq!(result, vec![U128(10), U128(20)]);
+    }
+
+    #[test]
     fn mt_on_transfer_panic() {
         let result = std::panic::catch_unwind(|| {
             let mut contract = Contract;
@@ -101,7 +134,7 @@ mod tests {
     }
 
     #[test]
-    fn mt_on_transfer_with_malicious_return() {
+    fn mt_on_transfer_with_large_return() {
         let mut contract = Contract;
         let message = serde_json::to_string(&MTReceiverMode::LargeReturn).unwrap();
 

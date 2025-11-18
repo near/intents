@@ -5,7 +5,7 @@ use defuse_near_utils::{
 use defuse_nep245::receiver::ext_mt_receiver;
 use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 use near_plugins::{Pausable, pause};
-use near_sdk::{AccountId, Promise, PromiseOrValue, json_types::U128, near, require};
+use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near, require};
 
 use crate::{
     contract::{Contract, ContractExt},
@@ -29,6 +29,8 @@ impl FungibleTokenReceiver for Contract {
         let amount_value = amount.0;
         require!(amount_value > 0, "zero amount");
 
+        let token_id = CoreTokenId::Nep141(Nep141TokenId::new(PREDECESSOR_ACCOUNT_ID.clone()));
+
         let DepositMessage {
             receiver_id,
             execute_intents,
@@ -50,17 +52,6 @@ impl FungibleTokenReceiver for Contract {
         )
         .unwrap_or_panic();
 
-        let token_id = CoreTokenId::Nep141(Nep141TokenId::new(PREDECESSOR_ACCOUNT_ID.clone()));
-
-        let intents_promise: Option<Promise> = if execute_intents.is_empty() {
-            None
-        } else if refund_if_fails {
-            self.execute_intents(execute_intents);
-            None
-        } else {
-            Some(ext_intents::ext(CURRENT_ACCOUNT_ID.clone()).execute_intents(execute_intents))
-        };
-
         if message.as_ref().is_none_or(String::is_empty) {
             return PromiseOrValue::Value(U128(0));
         }
@@ -78,9 +69,16 @@ impl FungibleTokenReceiver for Contract {
             .with_unused_gas_weight(0)
             .ft_resolve_deposit(&receiver_id, vec![token_id], vec![amount_value]);
 
-        match intents_promise {
-            Some(promise) => promise.then(notification).then(resolution).into(),
-            None => notification.then(resolution).into(),
+        if execute_intents.is_empty() {
+            notification.then(resolution).into()
+        }else{
+            if refund_if_fails {
+                self.execute_intents(execute_intents);
+                notification.then(resolution).into()
+            } else {
+                ext_intents::ext(CURRENT_ACCOUNT_ID.clone()).execute_intents(execute_intents)
+                .then(notification).then(resolution).into()
+            }
         }
     }
 }
