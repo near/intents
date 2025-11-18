@@ -21,13 +21,7 @@ use near_sdk::{
 
 use crate::PoaFactory;
 
-#[cfg(not(clippy))]
-const POA_TOKEN_WASM: &[u8] = include_bytes!(std::env!(
-    "POA_TOKEN_WASM",
-    "Set ${POA_TOKEN_WASM} to be the path of the PoA token binary",
-));
-#[cfg(clippy)]
-const POA_TOKEN_WASM: &[u8] = b"";
+const POA_TOKEN_WASM: &[u8] = include_bytes!(std::env!("POA_TOKEN_WASM"));
 
 const POA_TOKEN_INIT_BALANCE: NearToken = NearToken::from_near(3);
 const POA_TOKEN_NEW_GAS: Gas = Gas::from_tgas(10);
