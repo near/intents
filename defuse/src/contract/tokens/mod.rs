@@ -167,12 +167,12 @@ impl Contract {
         );
         let tokens_count = token_ids.len();
 
-        assert!(
+        require!(
             (tokens_count == deposited_amounts.len()),
             "token_ids and amounts must have the same length"
         );
 
-        assert!(token_ids.iter().all_unique(), "token_ids must be unique");
+        require!(token_ids.iter().all_unique(), "token_ids must be unique");
 
         let requested_refunds = match env::promise_result(0) {
             PromiseResult::Successful(value) => serde_json::from_slice::<Vec<U128>>(&value)
@@ -186,6 +186,11 @@ impl Contract {
             // This aligns with NEP-141/171 behavior: if the receiver panics, no refund occurs.
             PromiseResult::Failed => deposited_amounts.clone(),
         };
+
+        require!(
+            (requested_refunds.len() == tokens_count),
+            "requested refunds length must match token_ids length"
+        );
 
         let actual_refunds = izip!(token_ids, deposited_amounts, &requested_refunds)
             .map(|(token, deposited, refund)| {
