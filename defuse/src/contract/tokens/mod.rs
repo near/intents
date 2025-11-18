@@ -130,9 +130,8 @@ impl Contract {
 impl Contract {
     #[must_use]
     pub(crate) fn mt_resolve_deposit_gas(token_count: usize) -> Gas {
-        // Values chosen to be similar to `mt_resolve_withdraw_gas` values
         const MT_RESOLVE_DEPOSIT_PER_TOKEN_GAS: Gas = Gas::from_tgas(2);
-        const MT_RESOLVE_DEPOSIT_BASE_GAS: Gas = Gas::from_tgas(8);
+        const MT_RESOLVE_DEPOSIT_BASE_GAS: Gas = Gas::from_tgas(4);
 
         let token_count: u64 = token_count.try_into().unwrap_or_else(|_| {
             env::panic_str(&format!("token_count overflow: {token_count}"))

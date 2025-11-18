@@ -5,7 +5,7 @@ use defuse_near_utils::{
 use defuse_nep245::receiver::ext_mt_receiver;
 use near_contract_standards::non_fungible_token::core::NonFungibleTokenReceiver;
 use near_plugins::{Pausable, pause};
-use near_sdk::{AccountId, Gas, Promise, PromiseOrValue, near};
+use near_sdk::{AccountId, Promise, PromiseOrValue, near};
 
 use crate::{
     contract::{Contract, ContractExt},
