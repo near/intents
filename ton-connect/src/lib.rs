@@ -119,13 +119,14 @@ impl Payload for TonConnectPayload {
 #[serde(tag = "type", rename_all = "snake_case")]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TonConnectPayloadSchema {
-    Text {
-        text: String,
-    },
+    #[cfg(feature = "text")]
+    Text { text: String },
+    #[cfg(feature = "binary")]
     Binary {
         #[serde_as(as = "Base64")]
         bytes: Vec<u8>,
     },
+    #[cfg(feature = "cell")]
     Cell {
         schema_crc: u32,
         #[serde_as(as = "AsBoC<Base64>")]

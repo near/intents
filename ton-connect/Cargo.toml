@@ -21,7 +21,11 @@ serde_with = { workspace = true, features = ["chrono_0_4"] }
 tlb-ton = { workspace = true, features = ["serde"] }
 
 [features]
+default = ["text"]
 abi = ["defuse-crypto/abi", "defuse-serde-utils/abi"]
+binary = []
+cell = []
+text = []
 
 [dev-dependencies]
 defuse-test-utils.workspace = true
