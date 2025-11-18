@@ -518,6 +518,9 @@ state:
 
 ## Future Improvements
 
+* **Embedded Lending**: (opt-in) allow takers to borrow `src_token`
+  against collateral in `dst_token` by the fixed `price` and LTV ratio
+  specified at the initialization stage.
 * **Sharded FTs**: we will need to adjust the implementation to add support for sharded fungible
   token standard once it's released.
 
