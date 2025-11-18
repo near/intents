@@ -9,14 +9,6 @@ use near_sdk::{borsh, env, near};
 use serde_with::serde_as;
 
 /// See [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md)
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
 #[near(serializers = [borsh, json])]
 #[serde(rename_all = "camelCase")]
 #[derive(Debug, Clone)]
@@ -84,14 +76,6 @@ impl Payload for Nep413Payload {
     }
 }
 
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
 #[near(serializers = [json])]
 #[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone)]
