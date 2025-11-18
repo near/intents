@@ -135,8 +135,6 @@ args = [
     "--out-dir",
     "${TARGET_DIR}",
 ]
-env = { "POA_TOKEN_WASM" = "../../releases/defuse_poa_token.wasm" }
-
 [tasks.build-poa-token-reproducible]
 dependencies = ["add-cache-dir-tag"]
 command = "cargo"
@@ -147,7 +145,7 @@ args = [
     "--manifest-path",
     "./poa-token/Cargo.toml",
     "--out-dir",
-    "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}",
+    "${TARGET_DIR}",
 ]
 
 [tasks.build-poa-token-no-registration-reproducible]
