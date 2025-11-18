@@ -38,12 +38,7 @@ impl MultiTokenReceiver for Contract {
             "self-wrapping is not allowed"
         );
 
-        let DepositMessage {
-            receiver_id,
-            execute_intents,
-            refund_if_fails,
-            message,
-        } = if msg.is_empty() {
+        let deposit_message = if msg.is_empty() {
             DepositMessage::new(sender_id.clone())
         } else {
             msg.parse().unwrap_or_panic_display()
@@ -58,7 +53,7 @@ impl MultiTokenReceiver for Contract {
         let native_amounts = amounts.iter().map(|elem| elem.0).collect::<Vec<_>>();
 
         self.deposit(
-            receiver_id.clone(),
+            deposit_message.receiver_id.clone(),
             wrapped_tokens
                 .clone()
                 .into_iter()
@@ -67,37 +62,86 @@ impl MultiTokenReceiver for Contract {
         )
         .unwrap_or_panic();
 
-
-        if message.as_ref().is_none_or(String::is_empty) {
-            return PromiseOrValue::Value(vec![U128(0); token_ids.len()]);
+        match deposit_message {
+            DepositMessage {
+                execute_intents,
+                message: None,
+                ..
+            } if execute_intents.is_empty() => {
+                PromiseOrValue::Value(vec![U128(0); token_ids.len()])
+            }
+            DepositMessage {
+                refund_if_fails: true,
+                message: None,
+                execute_intents,
+                ..
+            } => {
+                self.execute_intents(execute_intents);
+                PromiseOrValue::Value(vec![U128(0); token_ids.len()])
+            }
+            DepositMessage {
+                refund_if_fails: false,
+                message: None,
+                execute_intents,
+                ..
+            } => {
+                let _ =
+                    ext_intents::ext(CURRENT_ACCOUNT_ID.clone()).execute_intents(execute_intents);
+                PromiseOrValue::Value(vec![U128(0); token_ids.len()])
+            }
+            DepositMessage {
+                message: Some(_), ..
+            } => self.handle_mt_deposit_with_notification(
+                deposit_message,
+                sender_id,
+                previous_owner_ids,
+                token_ids,
+                amounts,
+                wrapped_tokens,
+                native_amounts,
+            ),
         }
+    }
+}
 
-        let notification = ext_mt_receiver::ext(receiver_id.clone()).mt_on_transfer(
-            sender_id,
-            previous_owner_ids,
-            token_ids,
-            amounts,
-            message.unwrap(),
-        );
+impl Contract {
+    #[allow(clippy::too_many_arguments)]
+    fn handle_mt_deposit_with_notification(
+        &mut self,
+        deposit_message: DepositMessage,
+        sender_id: AccountId,
+        previous_owner_ids: Vec<AccountId>,
+        token_ids: Vec<defuse_nep245::TokenId>,
+        amounts: Vec<U128>,
+        wrapped_tokens: Vec<CoreTokenId>,
+        native_amounts: Vec<u128>,
+    ) -> PromiseOrValue<Vec<U128>> {
+        let notification = ext_mt_receiver::ext(deposit_message.receiver_id.clone())
+            .mt_on_transfer(
+                sender_id,
+                previous_owner_ids,
+                token_ids,
+                amounts,
+                deposit_message.message.unwrap(),
+            );
 
         let resolution = Self::ext(CURRENT_ACCOUNT_ID.clone())
             .with_static_gas(Self::mt_resolve_deposit_gas(wrapped_tokens.len()))
             .with_unused_gas_weight(0)
-            .mt_resolve_deposit(&receiver_id, wrapped_tokens, native_amounts);
+            .mt_resolve_deposit(&deposit_message.receiver_id, wrapped_tokens, native_amounts);
 
-
-       if execute_intents.is_empty() {
+        if deposit_message.execute_intents.is_empty() {
             notification.then(resolution).into()
-        }else{
-            if refund_if_fails {
-                self.execute_intents(execute_intents);
-                notification.then(resolution).into()
-            } else {
-                ext_intents::ext(CURRENT_ACCOUNT_ID.clone()).execute_intents(execute_intents)
-                .then(notification).then(resolution).into()
-            }
+        } else if deposit_message.refund_if_fails {
+            self.execute_intents(deposit_message.execute_intents);
+            notification.then(resolution).into()
+        } else {
+            ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
+                .execute_intents(deposit_message.execute_intents)
+                .then(notification)
+                .then(resolution)
+                .into()
         }
-  
     }
 }
 

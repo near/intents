@@ -5,7 +5,7 @@ use defuse_near_utils::{
 use defuse_nep245::receiver::ext_mt_receiver;
 use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 use near_plugins::{Pausable, pause};
-use near_sdk::{AccountId, Promise, PromiseOrValue, json_types::U128, near, require};
+use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near, require};
 
 use crate::{
     contract::{Contract, ContractExt},
@@ -47,7 +47,7 @@ impl FungibleTokenReceiver for Contract {
         )
         .unwrap_or_panic();
 
-        match &deposit_message {
+        match deposit_message {
             DepositMessage {
                 execute_intents,
                 message: None,
@@ -72,13 +72,13 @@ impl FungibleTokenReceiver for Contract {
             }
             DepositMessage {
                 message: Some(_), ..
-            } => self.handle_deposit_with_notification(deposit_message, token_id, amount_value),
+            } => self.handle_ft_deposit_with_notification(deposit_message, token_id, amount_value),
         }
     }
 }
 
 impl Contract {
-    fn handle_deposit_with_notification(
+    fn handle_ft_deposit_with_notification(
         &mut self,
         deposit_message: DepositMessage,
         token_id: CoreTokenId,
@@ -104,17 +104,15 @@ impl Contract {
 
         if deposit_message.execute_intents.is_empty() {
             notification.then(resolution).into()
+        } else if deposit_message.refund_if_fails {
+            self.execute_intents(deposit_message.execute_intents);
+            notification.then(resolution).into()
         } else {
-            if deposit_message.refund_if_fails {
-                self.execute_intents(deposit_message.execute_intents);
-                notification.then(resolution).into()
-            } else {
-                ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
-                    .execute_intents(deposit_message.execute_intents)
-                    .then(notification)
-                    .then(resolution)
-                    .into()
-            }
+            ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
+                .execute_intents(deposit_message.execute_intents)
+                .then(notification)
+                .then(resolution)
+                .into()
         }
     }
 }
