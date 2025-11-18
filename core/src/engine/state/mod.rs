@@ -3,10 +3,13 @@ pub mod deltas;
 
 use crate::{
     Nonce, NoncePrefix, Result, Salt,
+    amounts::Amounts,
     fees::Pips,
     intents::{
         auth::AuthCall,
-        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
+        tokens::{
+            FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, NotifyOnTransfer, StorageDeposit,
+        },
     },
     token_id::{TokenId, nep141::Nep141TokenId},
 };
@@ -103,6 +106,14 @@ pub trait State: StateView {
     fn mt_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: MtWithdraw) -> Result<()>;
 
     fn native_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: NativeWithdraw) -> Result<()>;
+
+    fn notify_on_transfer(
+        &self,
+        sender_id: &AccountIdRef,
+        receiver_id: AccountId,
+        tokens: Amounts,
+        notification: NotifyOnTransfer,
+    );
 
     fn storage_deposit(
         &mut self,

@@ -10,7 +10,7 @@ use crate::{
         defuse::{env::builder::EnvBuilder, tokens::nep141::traits::DefuseFtReceiver},
         poa::factory::PoAFactoryExt,
     },
-    utils::{ParentAccount, Sandbox, ft::FtExt, read_wasm},
+    utils::{ParentAccount, Sandbox, account::AccountExt, ft::FtExt, read_wasm},
 };
 use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;
@@ -22,6 +22,7 @@ use defuse_near_utils::arbitrary::ArbitraryNamedAccountId;
 use defuse_randomness::{Rng, make_true_rng};
 use defuse_test_utils::random::{Seed, rng};
 use futures::future::try_join_all;
+use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::{AccountId, NearToken, env::sha256};
 use near_workspaces::{
     Account, Contract, Network, Worker,
@@ -269,6 +270,14 @@ impl Env {
             .unwrap();
     }
 
+    pub async fn deploy_mt_receiver_stub(&self) -> Contract {
+        self.sandbox()
+            .root_account()
+            .deploy_contract("mt_receiver_stub", &MT_RECEIVER_STUB_WASM)
+            .await
+            .unwrap()
+    }
+
     pub async fn near_balance(&self, account_id: &AccountId) -> NearToken {
         self.sandbox
             .worker()
@@ -326,6 +335,14 @@ async fn deploy_token_without_registration<N: Network + 'static>(
         .unwrap()
         .into_result()
         .unwrap();
+}
+
+#[derive(Debug, Clone)]
+pub struct TransferCallExpectation {
+    pub mode: MTReceiverMode,
+    pub intent_transfer_amount: Option<u128>,
+    pub expected_sender_balance: u128,
+    pub expected_receiver_balance: u128,
 }
 
 pub fn get_account_public_key(account: &Account) -> defuse::core::crypto::PublicKey {

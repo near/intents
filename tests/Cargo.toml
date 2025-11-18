@@ -36,4 +36,4 @@ serde_json.workspace = true
 strum.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 tlb-ton = { workspace = true, features = ["arbitrary"] }
-multi-token-receiver-stub = { path = "../multi-token-receiver-stub" }
+multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }

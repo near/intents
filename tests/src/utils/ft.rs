@@ -13,7 +13,7 @@ const TOTAL_SUPPLY: u128 = 1_000_000_000;
 
 const FUNGIBLE_TOKEN_WASM: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/contracts/fungible-token.wasm"
+    "/contracts/target/fungible-token.wasm"
 ));
 
 pub trait FtExt: StorageManagementExt {
