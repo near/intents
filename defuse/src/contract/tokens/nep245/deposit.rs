@@ -90,7 +90,7 @@ impl MultiTokenReceiver for Contract {
         );
 
         let resolution = Self::ext(CURRENT_ACCOUNT_ID.clone())
-            .with_static_gas(Self::MT_RESOLVE_DEPOSIT_GAS)
+            .with_static_gas(Self::mt_resolve_deposit_gas(wrapped_tokens.len()))
             .with_unused_gas_weight(0)
             .mt_resolve_deposit(&receiver_id, wrapped_tokens, native_amounts);
 
@@ -103,9 +103,6 @@ impl MultiTokenReceiver for Contract {
 
 #[near]
 impl Contract {
-    //TODO: figure out precise value
-    const MT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(50);
-
     #[private]
     pub fn mt_resolve_deposit(
         &mut self,

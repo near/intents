@@ -74,7 +74,7 @@ impl FungibleTokenReceiver for Contract {
         );
 
         let resolution = Self::ext(CURRENT_ACCOUNT_ID.clone())
-            .with_static_gas(Self::FT_RESOLVE_DEPOSIT_GAS)
+            .with_static_gas(Self::mt_resolve_deposit_gas(1))
             .with_unused_gas_weight(0)
             .ft_resolve_deposit(&receiver_id, vec![token_id], vec![amount_value]);
 
@@ -87,9 +87,6 @@ impl FungibleTokenReceiver for Contract {
 
 #[near]
 impl Contract {
-    //TODO: figure out prcise value
-    const FT_RESOLVE_DEPOSIT_GAS: Gas = Gas::from_tgas(50);
-
     #[private]
     pub fn ft_resolve_deposit(
         &mut self,
