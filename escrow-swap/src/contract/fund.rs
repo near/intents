@@ -24,11 +24,7 @@ impl State {
             .ok_or(Error::IntegerOverflow)?;
 
         FundedEvent {
-            maker: sender_id.into(),
-            src_token: Cow::Owned(params.src_token),
-            dst_token: Cow::Owned(params.dst_token),
-            maker_price: params.price,
-            deadline: params.deadline,
+            params: Cow::Owned(params),
             maker_src_added: amount,
             maker_src_remaining: self.maker_src_remaining,
         }

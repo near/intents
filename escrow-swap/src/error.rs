@@ -5,10 +5,10 @@ pub type Result<T, E = Error> = ::core::result::Result<T, E>;
 
 #[derive(Debug, ThisError, FunctionError)]
 pub enum Error {
-    #[error("closed")]
-    Closed,
     #[error("cleanup in progress")]
     CleanupInProgress,
+    #[error("closed")]
+    Closed,
     #[error("deadline has expired")]
     DeadlineExpired,
     #[error("excessive fees")]

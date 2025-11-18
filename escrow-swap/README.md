@@ -1,350 +1,513 @@
-# Defuse Escrow Swap
+# Escrow-Swap Smart-Contract
 
-Deterministic single-escrow contract that locks the maker’s source asset and lets whitelisted (or permissionless) takers fill it via NEP-141/NEP-245 transfers. All settlement parameters are immutable and verified on every call through a stored hash.
+Deterministic escrow contract that locks the maker’s `src_token` and lets whitelisted (or permissionless) takers fill it by sending `dst_token`.
 
-## Highlights
-- **Deterministic deployment** – the escrow account id is derived from the serialized `Storage` blob (which embeds `Params`) so factory + salt uniquely define an escrow.
-- **Token-agnostic** – both `src_token` and `dst_token` are typed `TokenId` (NEP-141 or NEP-245). In JSON they are canonically serialized as `"<variant>:<contract_id>:<token_id?>"`.
-- **Immutable intent** – every method expects the exact same `Params` JSON. Any deviation trips `Error::InvalidData`.
-- **Maker-centric safety** – maker funds remain locked until filled, the deadline expires, or an authorized closer triggers `escrow_close`. Partial fills are opt-in.
-- **Robust accounting** – fee collectors are paid during fills, refunds rely on `return_value`, and `MakerRefunded`/`MakerLost` events track every outgoing transfer.
-- **Cleanup aware** – once all balances are zero and callbacks settled, the contract deletes its own account and emits `Cleanup`.
+## Features
 
----
+* **Deterministic deployment**: the AccountId is deterministically derived from [params](#params).
+* **Immutable**: all [params](#params) are immutable and fixed at the time of initialization.
+* **Off-chain auction**: can be implemented by whitelisting a single proxy-taker.
+* **Partial fills**: opt-in which enables better prices and allows to swap large amounts with
+  fewer liquidity available.
+* **Token-agnostic**: supports any [NEP-141][3] and [NEP-245][4] tokens for `src_token` and `dst_token`.
+* **Composability**: both maker and takers can receive tokens to any other account via
+  `ft/mt_transfer[_call]()`.
+* **Automatic cleanup**: once closed and all balances are zero and callbacks finished, the
+  contracts automatically deletes itself.
 
-## Actors & Lifecycle Summary
-1. **Factory** deploys `escrow-<hash>.<factory>` and calls `escrow_init(params)`.
-2. **Maker** funds the escrow by sending `src_token` via `ft_transfer_call` or `mt_transfer_call` with `action = "fund"`.
-3. **Takers** send `dst_token` to fill the escrow using `action = {"fill": {...}}`. Fill logic enforces prices, whitelists, and fee schedules.
-4. **Closers** (maker, anyone after the deadline, or a single whitelisted taker) call `escrow_close`. Anyone can retry settlements with `escrow_lost_found`.
-5. **Cleanup** happens automatically when the escrow is closed, has zero balances, and no callbacks in flight.
+## Params
 
----
+All params of the escrow are fixed at the time of initialization and immutable:
 
-## On-chain Flow
-
-```mermaid
-sequenceDiagram
-    participant Maker
-    participant SrcToken as src_token FT/MT
-    participant Escrow as escrow-swap
-    participant DstToken as dst_token FT/MT
-    participant Taker
-
-    rect rgb(230,240,255)
-        Maker->>SrcToken: ft/mt_transfer_call(params, action=\"fund\")
-        SrcToken->>Escrow: ft_on_transfer(sender=maker, amount, msg)
-        Escrow->>Escrow: verify params & on_fund() increases maker_src_remaining
-    end
-
-    rect rgb(230,255,230)
-        Taker->>DstToken: ft/mt_transfer_call(params, action={fill})
-        DstToken->>Escrow: ft_on_transfer(sender=taker, amount, msg)
-        Escrow->>Escrow: on_fill() checks whitelist, prices, gas budget
-        Escrow->>DstToken: pay maker (receive_dst_to) + protocol/integrator collectors
-        Escrow->>SrcToken: send src_token to taker (receive_src_to)
-        Escrow-->>Taker: return_value(refund unused dst_token, if any)
-    end
-
-    rect rgb(255,240,230)
-        alt Maker inventory is zero
-            Maker->>Escrow: escrow_close(params)
-        else Deadline expired
-            Taker->>Escrow: escrow_close(params) (permissionless)
-        else Single whitelisted taker wants out
-            Taker->>Escrow: escrow_close(params) (only that taker is allowed)
-        end
-        Escrow->>SrcToken: send remaining src_token per refund policy
-        Escrow->>DstToken: send maker_dst_lost (if any) to receive_dst_to
-        Escrow-->>Maker: MakerRefunded event + callback scheduling
-        Escrow->>Escrow: escrow_resolve_transfers() accounts for failures
-        opt Transfers failed (missing storage, etc.)
-            Escrow-->>Maker: MakerLost event with amounts still stuck
-        end
-        opt Balances == 0 and no callbacks
-            Escrow-->>Maker: Cleanup event (account deleted)
-        end
-    end
-
-    rect rgb(255,255,220)
-        Taker->>Escrow: escrow_lost_found(params)
-        Escrow->>SrcToken: retry maker refunds
-        Escrow->>DstToken: retry maker lost payouts
-        Escrow-->>Maker: MakerRefunded event (if anything was sent)
-    end
-```
-
----
-
-## `Params` JSON Template
-
-Every user-facing entrypoint receives the full `Params` struct. The contract hashes the canonical serialization, so callers **must** provide bit-identical data. Token ids below follow the NEP-245 string encoding (`nep245:<contract_id>:<token_id>`).
+> Fields are required unless annotated with `(optional)`.
 
 ```jsonc
 {
-  // maker locking the src token and authorizing specific closings
+  // The only maker authorized to fund the contract with `src_token`
   "maker": "maker.near",
 
-  // token the maker deposits (intents.near wrapping USDT as NEP-245)
+  // The token the maker wants to sell. Supported variants:
+  // * `nep141:<CONTRACT_ID>`
+  // * `nep245:<CONTRACT_ID>:<TOKEN_ID>`
   "src_token": "nep245:intents.near:nep141:usdt.tether-token.near",
 
-  // token takers pay with (intents.near wrapping wNEAR)
+  // The token the maker expects to receive in return. Supported variants:
+  // * `nep141:<CONTRACT_ID>`
+  // * `nep245:<CONTRACT_ID>:<TOKEN_ID>`
   "dst_token": "nep245:intents.near:nep141:wrap.near",
 
-  // maker wants at least 0.1667 NEAR per 1 USDT (dst per src).
-  // Expressed per raw src unit (1 USDT = 1_000_000 units), so 0.0000001667 NEAR.
+  // The mininum price, expressed as decimal floating-point number
+  // representing the amount of raw units of `dst_token` per 1 raw unit
+  // of `src_token`, i.e. dst per 1 src.
   "price": "0.0000001667",
 
-  // RFC3339 timestamp – fills after this instant fail and anyone may close
+  // Deadline for taker(s) to fill the escrow, in RFC3339 format.
+  // After deadline has exceeded, anyone can close the escrow (permissionless).
   "deadline": "2024-07-09T00:00:00Z",
 
-  // allow partial fills; otherwise taker must consume the entire escrow
+  // (optional) Whether partial fills are allowed.
   "partial_fills_allowed": true,
 
-  // optional override describing where leftover src_token should be refunded
+  // (optional) Override where to refund `src_token` after escrow is closed.
   "refund_src_to": {
-    "receiver_id": "maker.vault.near",
-    "memo": "escrow-refund-42",
-    "msg": "{\"tag\":\"refund\"}",
-    "min_gas": "25000000000000"
+    // (optional) Receiver's account_id, `maker` otherwise.
+    "receiver_id": "vault.maker.near",
+    // (optional) memo for `ft/mt_transfer[_call]()`
+    "memo": "<MEMO>",
+    // (optional) Message for `ft/mt_transfer_call()`.
+    // If not specified, `ft/mt_transfer()` will be used by default.
+    "msg": "<MESSAGE>",
+    // (optional) Minimum amount of gas that should be attached
+    // to `ft/mt_transfer[_call]()`
+    "min_gas": "50000000000000"
   },
 
-  // optional override for maker’s dst_token payout destination
+  // (optional) Override where to receive `dst_token` on each fill.
   "receive_dst_to": {
-    "receiver_id": "maker.treasury.near",
-    "memo": "escrow-fill-42",
-    "msg": "{\"route\":\"treasury\"}",
-    "min_gas": "40000000000000"
+    // (optional) Receiver's account_id, `maker` otherwise.
+    "receiver_id": "treasury.maker.near",
+    // (optional) memo for `ft/mt_transfer[_call]()`
+    "memo": "<MEMO>",
+    // (optional) Message for `ft/mt_transfer_call()`.
+    // If not specified, `ft/mt_transfer()` will be used by default.
+    "msg": "<MESSAGE>",
+    // (optional) Minimum amount of gas that should be attached
+    // to `ft/mt_transfer[_call]()`.
+    "min_gas": "50000000000000"
   },
 
-  // restrict fills to trusted takers (single entry enables “taker cancel” close)
+  // (optional) Whitelist for takers that allowed to fill the escrow.
+  //
+  // Empty whitelist means anyone can fill.
+  //
+  // If consists of a single taker, then he has a permission to close
+  // the escrow even before the deadline.
   "taker_whitelist": ["solver-bus-proxy.near"],
 
-  // pct-based protocol fees (values are pips: 1 pip = 0.0001%)
+  // (optional) Protocol fees (collected on on `dst_token`)
   "protocol_fees": {
-    "fee": 5000,     // 0.5% of taker_dst_used paid every fill
-    "surplus": 50000, // 5% of price improvement above maker_price
+    // The fee that is taken on `taker_dst_used` on every fill.
+    //
+    // Fees are measured in "pips", where:
+    // 1 pip == 1/100th of bip == 0.0001%.
+    "fee": 2000, // 0.2%
+
+    // The fee that is taken on surplus, i.e. price improvement
+    // above maker's `price` (see above), i.e. difference between
+    // `taker_dst_used` and `maker_want_dst = src_out * price`.
+    //
+    // Fees are measured in "pips", where:
+    // 1 pip == 1/100th of bip == 0.0001%.
+    "surplus": 50000, // 5%
+
+    // Recepient of protocol fees.
     "collector": "protocol.near"
   },
 
-  // arbitrary fee split among integrators (also pips)
+  // (optional) Integrator fees: mapping between fee collector
+  // and corresponding fee taker on `taker_dst_used`.
+  //
+  // Fees are measured in "pips", where:
+  // 1 pip == 1/100th of bip == 0.0001%.
   "integrator_fees": {
-    "front-end.near": 15000, // 1.5% of taker_dst_used
-    "partner.near": 1000     // 0.1%
+    "front-end.near": 3000, // 0.3%
+    "partner.near":   1000  // 0.1%
   },
 
-  // optional contract allowed to forward authenticated calls (feature gated)
+  // (optional) Contract that's allowed to forward `on_auth()` calls
   "auth_caller": "intents.near",
 
-  // 32 bytes of entropy, used by factories for deterministic account ids
+  // 32 bytes of entropy encoded in hex, used for address derivation.
   "salt": "9e3779b97f4a7c1552d27dcd1234567890abcdef1234567890abcdef1234"
 }
 ```
 
-> **Tip**: keep copies of this template when crafting fills—`TransferMessage` always embeds the **entire** `Params` object, not just the fields you changed.
+The escrow AccountId is deterministically derived from its initialization code and data as
+defined in [NEP-616][1].
 
----
+> Due to storage limitations, the contract only stores the keccak256 hash
+> of borsh-serialized `Params`, so it needs to be included in full for every
+> external interaction.
 
-## Transfer Messages
+## On-chain Flow
 
-Funding and filling both use NEAR standards `ft_transfer_call` / `mt_transfer_call`. The message payload is a JSON blob matching `TransferMessage`:
+### Deploy and Fund
 
-### Funding (`action = "fund"`)
+In order to fund the contract with `src_token`, the maker sends it to the escrow contract
+by calling `src_token::ft/mt_ransfer_call()` with following `msg` param:
 
 ```jsonc
 {
-  "params": { /* ... */ },
+  "params": { /* full `Params` */ },
   "action": {
     "action": "fund"
   }
 }
 ```
 
-- `sender_id` must equal `params.maker`.
-- Token must equal `params.src_token`.
-- Amount increases `maker_src_remaining`.
+The contract also needs to be initialized via [`state_init()`][2] first.
+This can be done either by maker or any other account permissionlessly before trigerring the
+transfer, or there can be a custom support for calling [`state_init()`][2] before
+`ft/mt_on_transfer()` implemented on `src_token` level (e.g. `intents.near`):
 
-### Filling (`action = {"fill": {...}}`)
+> **NOTE**: Maker is free to top-up the escrow contract with `src_token` multiple times
+> before the deadline is exceeded.
+
+```mermaid
+sequenceDiagram
+  participant maker as maker.near
+  participant maker as maker.near
+  participant src_token as src_token FT/MT
+
+  alt src_token supports state_init (e.g. intents.near)
+    maker->>+src_token: ft/mt_transfer_call(msg: {params, action: "fund"}, ?state_init)
+    create participant escrow as escrow (0s...)
+    src_token->>escrow: state_init(params)
+  else src_token doesn't support state_init
+    maker->>escrow: state_init(params)
+    maker->>src_token: ft/mt_transfer_call(msg: {params, action: "fund"})
+  end
+  src_token->>+escrow: ft/mt_on_transfer(msg = {params, action: "fund"})
+  deactivate src_token
+  alt Deadline expired
+    src_token--xescrow: FAIL -> full refund
+  else 
+    Note over escrow: Funded
+    escrow-->>src_token: no refund
+    deactivate escrow
+  end
+  src_token->>+src_token: ft/mt_resolve_transfer()
+  src_token-->>-maker: refund
+```
+
+> **NOTE**: the contract doesn't support paying for `storage_deposits`, so it's a
+> responsibility of both maker and takers to ensure that they can receive
+> corresponding tokens.
+
+### Fill
+
+In order to fill an escrow, the taker sends `dst_token` to the escrow contract
+by calling `dst_token::ft/mt_transfer_call()` with following `msg` param:
 
 ```jsonc
 {
-  "params": { /* ... */ },
+  "params": { /* full `Params` */ },
   "action": {
     "action": "fill",
     "data": {
-      // taker’s quote per raw src unit (1 USDT = 1_000_000 units), equals 0.175 NEAR / USDT
+      // The actual price to fill at, expressed as decimal floating-point number
+      // representing the amount of raw units of `dst_token` per 1 raw unit
+      // of `src_token`, i.e. dst per 1 src.
+      // 
+      // The price MUST be greater than or equal to maker's price (see in `params`).
       "price": "0.000000175",
 
-      // optional override for where src_token is delivered
+      // (optional) Override where to receive `src_token` to.
       "receive_src_to": {
-        "receiver_id": "solver.near",
-        "memo": "swap-42",
-        "msg": "{\"claim\":\"vault\"}",
-        "min_gas": "30000000000000"
+        // (optional) Receiver's account_id, `sender_id` otherwise.
+        "receiver_id": "treasury.taker.near",
+        // (optional) memo for `ft/mt_transfer[_call]()`
+        "memo": "<MEMO>",
+        // (optional) Message for `ft/mt_transfer_call()`.
+        // If not specified, `ft/mt_transfer()` will be used by default.
+        "msg": "<MESSAGE>",
+        // (optional) Minimum amount of gas that should be attached
+        // to `ft/mt_transfer[_call]()`
+        "min_gas": "50000000000000"
       }
     }
   }
 }
 ```
 
-- Token must equal `params.dst_token`.
-- Caller must be in `taker_whitelist` if one is configured.
-- `receive_src_to` defaults to the taker when omitted.
-- Any unused `dst_token` is refunded via `return_value` (so the FT resolves naturally).
+> **WARN**: The contract doesn't track refunds for takers, mainly due to limited
+> storage size. As a result, any refund of `src_token` sent to taker's receiver
+> will be PERMANENTLY LOST.  
+> Thus, takers need to make sure that they have enough `storage_deposit` on
+> `src_token` and specified `min_gas` is sufficient to cover corresponding
+> `src_token::ft/mt_transfer[_call]()`.
 
----
+```mermaid
+sequenceDiagram
+  participant maker as maker.near
+  participant src_token as src_token FT/MT
+  participant escrow as escrow (0s...)
+  participant dst_token as dst_token FT/MT
+  participant taker as taker.near
 
-## Contract Interface
+  taker->>+dst_token: ft/mt_transfer_call(msg = {params, action: "fill", data={...}})
 
-| Method | Description |
-| --- | --- |
-| `escrow_init(params: &Params)` | Deploy-time initializer. Validates params, emits `Created`, and stores the params hash. |
-| `escrow_view(&self) -> &Storage` | View call returning `Storage { params_hash, state }`. Useful for indexers that already know the params. |
-| `escrow_close(&mut self, params: Params)` | Closes the escrow when: (a) maker calls and `maker_src_remaining == 0`, (b) anyone calls after `deadline`, or (c) the sole whitelisted taker calls. Triggers `lost_found`. |
-| `escrow_lost_found(&mut self, params: Params)` | Permissionless sweep that resends maker refunds (`MakerRefunded`) and schedules callbacks to detect losses. |
-| `escrow_resolve_transfers(maker_src, maker_dst)` | Private callback. Accounts for refunds, emits `MakerLost` for any failed payouts, and attempts cleanup. |
-| `on_auth(&mut self, signer, msg)` | Available when the `auth_call` feature is enabled. Expects a signed JSON payload (`{ params, action }`) and enforces `params.auth_caller == predecessor`. Currently supports closing. |
+  dst_token->>-escrow: ft_on_transfer(msg = {params, action: "fill", data={...}})
 
-All methods return `PromiseOrValue<_>` so callers can await token transfer completion. Attempting to mutate state while a cleanup promise is pending results in `Error::CleanupInProgress`.
+  activate escrow
+  alt taker ∉ whitelist || fill.price < params.price || (!partial_fills_allowed && taker_dst_in < params.price * maker_src_remaining)
+    dst_token--xescrow: FAIL (full refund)
+  else OK
+    Note over escrow: Fill
+    par Maker Payout
+      rect rgba(136, 192, 208, 0.5)
+        alt no "msg"
+          escrow->>dst_token: ft/mt_transfer(receiver_id=maker.near)
+        else "msg"
+          escrow->>+dst_token: ft/mt_transfer_call(receiver_id=maker.near, msg)
+          dst_token->>-maker: ft/mt_on_transfer(msg)
+          maker-->>dst_token: refund
+          dst_token->>+dst_token: ft/mt_resolve_transfer()
+          dst_token-->>-escrow: refund (tracked)
+        end
+      end
+    and Taker Payout
+      rect rgba(136, 192, 208, 0.5)
+        alt no "msg"
+          escrow->>src_token: ft/mt_transfer(receiver_id=taker.near)
+        else "msg"
+          escrow->>+src_token: ft/mt_transfer_call(receiver_id=taker.near, msg)
+          src_token->>-taker: ft/mt_on_transfer(msg)
+          taker-->>src_token: refund
+          src_token->>+src_token: ft/mt_resolve_transfer()
+          src_token-->>escrow: refund (WILL BE LOST PERMANENTLY)
+          deactivate src_token
+        end
+      end
+    and
+      rect rgba(136, 192, 208, 0.5)
+        opt Protocol & Surplus Fees
+          escrow->>dst_token: ft/mt_transfer(receiver_id=protocol.near)
+        end
+      end
+    and
+      rect rgba(136, 192, 208, 0.5)
+        opt Integrators Fees
+          par
+            escrow->>dst_token: ft/mt_transfer(receiver_id=integrator1.near)
+          and
+            escrow->>-dst_token: ft/mt_transfer(receiver_id=integrator2.near)
+          end
+        end
+      end
+    end
+    escrow->>+escrow: escrow_resolve_transfers()
+    opt
+      Note over escrow: MakerLost {dst: amount}
+    end
+    escrow-->>dst_token: refund (taker_dst_in - taker_dst_used)
+    opt closed && maker_src_remaining == 0 && maker_dst_lost == 0
+      Note over escrow: Cleanup
+      deactivate escrow
+      destroy escrow
+      escrow-->>taker: cleanup (reimburse tx signer)
+    end
+  end
 
----
+  dst_token->>+dst_token: ft/mt_resolve_transfer()
+  dst_token-->>-taker: refund
+```
 
-## Events
+### Close and Refund
 
-| Event | When | Payload snapshot |
-| --- | --- | --- |
-| `Created` | `escrow_init` | Full `Params`. |
-| `Funded` | `on_fund` | Maker id, tokens, price, deadline, amounts added/remaining. |
-| `Fill` | `on_fill` | Maker + taker ids, token ids, price comparison, volumes, payout overrides, fee breakdowns. |
-| `Closed` | `escrow_close` | `reason` ∈ `{deadline_expired, by_maker, by_single_taker}`. |
-| `MakerRefunded` | `escrow_lost_found` | Amounts sent back to maker after closing. |
-| `MakerLost` | `escrow_resolve_transfers` | Amounts that bounced (e.g., missing storage deposit). |
-| `Cleanup` | Account deletion succeeded. |
+The escrow contract can be closed by calling `escrow_close({"params": {...}})`
+method if at least one of the following conditions is met:
+* `deadline` has already expired (permissionless)
+* by single-whitelisted taker, i.e. to refund the maker before the `deadline`
+* by `maker` when `maker_src_remaining` is zero
 
-### Event JSON (JSONC) Examples
+After being closed, the contract does not allow funding and anymore.
+Instead, the contract automatically refunds `maker_src_remaining` (if any)
+and retries sending `maker_dst_lost` (if any) and deletes itself if no more
+tokens were lost.
 
-#### Created
+Alternatively, a fully permissionless `lost_found({"params": {...}})` method can be called
+to retry sending `maker_dst_lost` (if any) even before the `deadline`.
+
+Both methods return a boolean indicating whether the contract was deleted, so
+you can stop indexing it. Otherwise, there MAY still be some lost tokens there
+(or in-flight).
+
+```mermaid
+sequenceDiagram
+  participant maker as maker.near
+  participant src_token as src_token FT/MT
+  participant escrow as escrow
+  participant dst_token as dst_token FT/MT
+  participant taker as taker.near
+
+  alt Close
+    rect rgba(208, 135, 112, 0.5)
+      alt closed || deadline expired (permissionless)
+        maker->>+escrow: escrow_close(params)
+      else single-whitelisted taker
+        taker->>escrow: escrow_close(params)
+      else maker_src_remaining == 0
+        maker->>escrow: escrow_close(params)
+      end
+    end
+    Note over escrow: Close
+  else Lost/Found (permissionless)
+    maker->>escrow: escrow_lost_found(params)
+  end
+  
+  rect rgba(143, 188, 187, 0.1)
+    opt maker_src_remaining > 0 || maker_dst_lost > 0
+      Note over escrow: MakerRefund { ?src, ?dst }
+      par maker_src_remaining > 0
+        rect rgba(136, 192, 208, 0.5)
+          alt no "msg"
+            escrow->>src_token: ft/mt_transfer(receiver_id=maker.near)
+          else "msg"
+            escrow->>+src_token: ft/mt_transfer_call(receiver_id=maker.near, msg)
+            src_token->>-maker: ft/mt_on_transfer(msg)
+            maker-->>src_token: refund
+            src_token->>+src_token: ft/mt_resolve_transfer()
+            src_token-->>-escrow: refund
+          end
+        end
+      and maker_dst_lost > 0
+        rect rgba(136, 192, 208, 0.5)
+          alt no "msg"
+            escrow->>-dst_token: ft/mt_transfer(receiver_id=maker.near)
+          else "msg"
+            escrow->>+dst_token: ft/mt_transfer_call(receiver_id=maker.near, msg)
+            dst_token->>-maker: ft/mt_on_transfer(msg)
+            maker-->>dst_token: refund
+            dst_token->>+dst_token: ft/mt_resolve_transfer()
+            dst_token-->>-escrow: refund
+          end
+        end
+      end
+      
+      escrow->>+escrow: escrow_resolve_transfers()
+      opt
+        Note over escrow: MakerLost { ?src, ?dst }
+      end
+    end
+    opt closed && maker_src_remaining == 0 && maker_dst_lost == 0
+      Note over escrow: Cleanup
+      deactivate escrow
+      destroy escrow
+      escrow-->>taker: cleanup (reimburse tx signer)
+    end
+  end
+```
+
+## View Methods
+
+Once deployed, `escrow_view()` view-method can be used to retrieve the current
+state:
+
 ```jsonc
 {
-  "standard": "escrow-swap",
-  "version": "0.1.0",
-  "event": "created",
-  "data": [
-    {
-      "maker": "maker.near",
-      "src_token": "nep245:intents.near:nep141:usdt.tether-token.near",
-      "dst_token": "nep245:intents.near:nep141:wrap.near",
-      "price": "0.0000001667",
-      "deadline": "2024-07-09T00:00:00Z",
-      "partial_fills_allowed": true,
-      "refund_src_to": { "receiver_id": "maker.vault.near", "memo": "escrow-refund-42", "msg": "{\"tag\":\"refund\"}", "min_gas": "25000000000000" },
-      "receive_dst_to": { "receiver_id": "maker.treasury.near", "memo": "escrow-fill-42", "msg": "{\"route\":\"treasury\"}", "min_gas": "40000000000000" },
-      "taker_whitelist": ["solver-bus-proxy.near"],
-      "protocol_fees": { "fee": 5000, "surplus": 50000, "collector": "protocol.near" },
-      "integrator_fees": { "front-end.near": 15000, "partner.near": 1000 },
-      "auth_caller": "intents.near",
-      "salt": "9e3779b97f4a7c1552d27dcd1234567890abcdef1234567890abcdef1234"
-    }
-  ]
+  // keccak256 hash of borsh-serialized `Params` above, encoded in hex.
+  "params_hash": "dde72b47ba69d9bee23ad59a962970637c781352fecff450479c956620c3623c",
+
+  // (optional) Whether the escrow was closed
+  "closed": false,
+
+  // Deadline for taker(s) to fill the escrow, in RFC3339 format.
+  // MUST be equal to `deadline` specified in `Params`.
+  // After deadline has exceeded, anyone can close the escrow (permissionless).
+  "deadline": "2025-11-18T18:35:36.572677Z",
+
+  // Maker's remaining amount of `src_token` to be filled.
+  "maker_src_remaining": "1000000",
+
+  // (optional) Maker's amount of `dst_token` lost during payouts.
+  "maker_dst_lost": "0",
+
+  // (optional) Internal counter of in-flight callbacks.
+  "in_flight": 0,
 }
 ```
 
-#### Funded
+## Events
+
+#### `funded`
+
 ```jsonc
 {
   "standard": "escrow-swap",
   "version": "0.1.0",
   "event": "funded",
-  "data": [
-    {
-      "maker": "maker.near",
-      "src_token": "nep245:intents.near:nep141:usdt.tether-token.near",
-      "dst_token": "nep245:intents.near:nep141:wrap.near",
-      "maker_price": "0.0000001667",
-      "deadline": "2024-07-09T00:00:00Z",
-      "maker_src_added": "5000000",   // 5 USDT (6-decimal asset)
-      "maker_src_remaining": "5000000"
-    }
-  ]
+  "data": {
+    "params": { /* ... */ },
+    "maker_src_added": "5000000",
+    "maker_src_remaining": "5000000"
+  }
 }
 ```
 
-#### Fill
+#### `fill`
 ```jsonc
 {
   "standard": "escrow-swap",
   "version": "0.1.0",
   "event": "fill",
-  "data": [
-    {
-      "taker": "solver.near",
-      "maker": "maker.near",
-      "src_token": "nep245:intents.near:nep141:usdt.tether-token.near",
-      "dst_token": "nep245:intents.near:nep141:wrap.near",
-      "taker_price": "0.000000175",
-      "maker_price": "0.0000001667",
-      "taker_dst_in": "525000000000000000000000",    // 0.525 NEAR sent
-      "taker_dst_used": "525000000000000000000000",  // full amount consumed
-      "src_out": "3000000",                          // 3 USDT delivered
-      "maker_dst_out": "512730000000000000000000",   // 0.51273 NEAR after fees
-      "maker_src_remaining": "2000000",              // 2 USDT left
-      "taker_receive_src_to": "solver.near",
-      "maker_receive_dst_to": "maker.treasury.near",
-      "protocol_dst_fees": {
-        "fee": "2625000000000000000000",          // 0.5% of taker_dst_used
-        "surplus": "1245000000000000000000",      // 5% of price improvement
-        "collector": "protocol.near"
-      },
-      "integrator_dst_fees": {
-        "front-end.near": "7875000000000000000000", // 1.5%
-        "partner.near": "525000000000000000000"     // 0.1%
-      }
+  "data": {
+    "maker": "maker.near",
+    "taker": "taker.near",
+    "src_token": "nep245:intents.near:nep141:usdt.tether-token.near",
+    "dst_token": "nep245:intents.near:nep141:wrap.near",
+    "taker_price": "0.000000175",
+    "maker_price": "0.0000001667",
+    "taker_dst_in": "525000000000000000000000",    // received from taker
+    "taker_dst_used": "525000000000000000000000",  // actually consumed
+    "src_out": "3000000",                          // sent to taker
+    "maker_dst_out": "512730000000000000000000",   // sent to maker
+    "maker_src_remaining": "2000000",              // remaining src after sent
+    "taker_receive_src_to": "solver.near",         // taker's src receiver
+    "maker_receive_dst_to": "maker.treasury.near", // maker's dst receiver
+    "protocol_dst_fees": {                 // (optional)
+      "fee": "2625000000000000000000",     // (optional)
+      "surplus": "1245000000000000000000", // (optional)
+      "collector": "protocol.near"
+    },
+    "integrator_dst_fees": { // (optional)
+      "front-end.near": "7875000000000000000000",
+      "partner.near": "525000000000000000000"
     }
-  ]
+  }
 }
 ```
 
-#### Closed
+#### `closed`
 ```jsonc
 {
   "standard": "escrow-swap",
   "version": "0.1.0",
   "event": "closed",
-  "data": [
-    { "reason": "deadline_expired" }
-  ]
+  "data": {
+    "reason": "deadline_expired" // or: "by_single_taker", "by_maker"
+  }
 }
 ```
 
-#### MakerRefunded
+#### `maker_refunded`
 ```jsonc
 {
   "standard": "escrow-swap",
   "version": "0.1.0",
   "event": "maker_refunded",
-  "data": [
-    {
-      "src": "2000000", // src returned after close (2 USDT)
-    }
-  ]
+  "data": {
+    "src": "2000000", // (optional) src_token refunded after close
+    "dst": "0", // (optional) dst_token returned after being lost
+  }
 }
 ```
 
-#### MakerLost
+#### `maker_lost`
 ```jsonc
 {
   "standard": "escrow-swap",
   "version": "0.1.0",
   "event": "maker_lost",
-  "data": [
-    {
-      "dst": "2000000000000000000000" // dst that failed to reach maker (e.g., lack of storage_deposit)
-    }
-  ]
+  "data": {
+    "src": "1234", // (optional) src_token lost after close
+    "dst": "1000" // (optional) maker's lost dst (e.g. lack of `storage_deposit`)
+  }
 }
 ```
 
-#### Cleanup
+#### `cleanup`
+
 ```jsonc
 {
   "standard": "escrow-swap",
@@ -353,34 +516,12 @@ All methods return `PromiseOrValue<_>` so callers can await token transfer compl
 }
 ```
 
----
+## Future Improvements
 
-## Error Codes
+* **Sharded FTs**: we will need to adjust the implementation to add support for sharded fungible
+  token standard once it's released.
 
-| Error | When it occurs |
-| --- | --- |
-| `Closed` | Funding or filling after the escrow is closed. |
-| `CleanupInProgress` | Any mutation while the cleanup guard already dropped the state. |
-| `DeadlineExpired` | Initialization with an already-expired deadline or fill after it elapsed. |
-| `ExcessiveFees` | Sum of integrator fees exceeds 25% or protocol fee calculations overflow. |
-| `ExcessiveGas` | Required outbound transfer gas exceeds safe limits. |
-| `IntegerOverflow` | Arithmetic overflow during accounting. |
-| `InsufficientAmount` | Transfer amount was zero or too small. |
-| `InvalidData` | Provided `Params` hash mismatched stored `params_hash`. |
-| `JSON` | Malformed transfer/auth message. |
-| `PartialFillsNotAllowed` | Maker disabled partial fills yet taker attempted one. |
-| `PriceTooLow` | Maker price zero during init or taker price < maker price. |
-| `SameTokens` | `src_token == dst_token`. |
-| `Unauthorized` | Caller not permitted (fund vs. fill vs. close). |
-| `WrongToken` | Transfer received on an unexpected token contract. |
-
----
-
-## Example Lifecycle (numbers correspond to the JSON above)
-
-1. **Deploy** – factory derives `escrow-<hash>.factory.near`, deploys Wasm, and calls `escrow_init(params)`. Event: `Created`.
-2. **Fund** – maker sends `5` USDT (raw `5e6` units) via `mt_transfer_call`. Event: `Funded`.
-3. **Fill** – whitelisted taker sends `0.525` NEAR (quoted at `0.175` NEAR / USDT, i.e. `0.000000175` per raw unit). Contract delivers `3` USDT, pays protocol + integrators, refunds nothing (entire dst was used). Event: `Fill`.
-4. **Close** – once `deadline` passes or `maker_src_remaining == 0`, an authorized closer calls `escrow_close`. Event: `Closed`.
-5. **Sweep** – anyone can call `escrow_lost_found` to return the remaining `2` USDT. Event: `MakerRefunded`. Failed payouts later emit `MakerLost`.
-6. **Cleanup** – after refunds settle and balances hit zero, `Cleanup` fires and the account deletes itself.
+[1]: https://github.com/near/NEPs/blob/master/neps/nep-0616.md#deterministic-accountids "NEP-616: Deterministic AccountIds"
+[2]: https://github.com/near/NEPs/blob/master/neps/nep-0616.md#stateinit-action "NEP-616: `state_init()`"
+[3]: https://github.com/near/NEPs/blob/master/neps/nep-0141.md "NEP-141: Fungible Token Standard"
+[4]: https://github.com/near/NEPs/blob/master/neps/nep-0245.md "NEP-245: Multi Token Standard"

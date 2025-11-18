@@ -137,6 +137,7 @@ pub struct Params {
     #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
     pub taker_whitelist: BTreeSet<AccountId>,
 
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub protocol_fees: Option<ProtocolFees>,
 
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]

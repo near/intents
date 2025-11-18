@@ -4,11 +4,12 @@ use derive_more::From;
 use near_sdk::{AccountIdRef, near};
 use serde_with::{DisplayFromStr, serde_as};
 
-use crate::{Deadline, Params, price::Price, token_id::TokenId};
+use crate::{Params, price::Price, token_id::TokenId};
 
 #[near(event_json(standard = "escrow-swap"))]
 #[derive(Debug, Clone, From)]
 pub enum Event<'a> {
+    // TODO: remove due to state_init()
     #[event_version("0.1.0")]
     Init(Cow<'a, Params>),
 
@@ -45,14 +46,7 @@ pub enum Event<'a> {
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct FundedEvent<'a> {
-    pub maker: Cow<'a, AccountIdRef>,
-
-    pub src_token: Cow<'a, TokenId>,
-    pub dst_token: Cow<'a, TokenId>,
-
-    pub maker_price: Price,
-
-    pub deadline: Deadline,
+    pub params: Cow<'a, Params>,
 
     #[serde_as(as = "DisplayFromStr")]
     pub maker_src_added: u128,
