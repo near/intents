@@ -8,7 +8,7 @@ use std::str::FromStr;
 fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
     let workdir = "../poa-token";
     let env_var_key = "POA_TOKEN_WASM";
-    let manifest = Utf8PathBuf::from_str(&workdir)?.join("Cargo.toml");
+    let manifest = Utf8PathBuf::from_str(workdir)?.join("Cargo.toml");
 
     let build_opts = BuildOpts::builder()
         .manifest_path(manifest)
