@@ -152,7 +152,7 @@ This can be done either by maker or any other account permissionlessly before tr
 transfer, or there can be a custom support for calling [`state_init()`][2] before
 `ft/mt_on_transfer()` implemented on `src_token` level (e.g. `intents.near`):
 
-> **NOTE**: Maker is free to top-up the escrow contract with `src_token` multiple times
+> **NOTE**: Maker can top-up the escrow contract with `src_token` multiple times
 > before the deadline is exceeded.
 
 ```mermaid
