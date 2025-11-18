@@ -1,6 +1,8 @@
 # Escrow-Swap Smart-Contract
 
-Deterministic escrow contract that locks the maker’s `src_token` and lets whitelisted (or permissionless) takers fill it by sending `dst_token`.
+Deterministic escrow-swap smart-contract that locks the maker’s
+`src_token` and lets whitelisted (or permissionless) takers fill it by
+sending `dst_token`.
 
 ## Features
 
