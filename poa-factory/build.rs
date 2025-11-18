@@ -1,38 +1,40 @@
+use cargo_near_build::{
+    BuildOpts, bon,
+    camino::Utf8PathBuf,
+    env_keys,
+    extended::{BuildOptsExtended, BuildScriptOpts, build},
+};
 use std::str::FromStr;
-
-use cargo_near_build::BuildOpts;
-use cargo_near_build::{bon, camino, extended};
 
 fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
     let workdir = "../poa-token";
     let nep330_contract_path = "./poa-token";
+    let cargo_override = "../target/build-poa-token";
+    let stub_path = "../target/poa-token.wasm";
+    let env_var_key = "POA_TOKEN_WASM";
 
-    let manifest = camino::Utf8PathBuf::from_str(&workdir)
-        .expect("pathbuf from str")
-        .join("Cargo.toml");
+    let manifest = Utf8PathBuf::from_str(&workdir)?.join("Cargo.toml");
 
     let build_opts = BuildOpts::builder()
         .manifest_path(manifest)
         .override_nep330_contract_path(nep330_contract_path)
-        .override_cargo_target_dir("../target/build-poa-token")
+        .override_cargo_target_dir(cargo_override)
         .no_abi(true)
         .build();
 
-    let build_script_opts = extended::BuildScriptOpts::builder()
+    let build_script_opts = BuildScriptOpts::builder()
         .rerun_if_changed_list(bon::vec![workdir, "Cargo.toml", "../Cargo.lock"])
-        .build_skipped_when_env_is(vec![(
-            cargo_near_build::env_keys::BUILD_RS_ABI_STEP_HINT,
-            "true",
-        )])
-        .stub_path("../target/poa-token.wasm")
-        .result_env_key("POA_TOKEN_WASM")
+        .build_skipped_when_env_is(vec![(env_keys::BUILD_RS_ABI_STEP_HINT, "true")])
+        .stub_path(stub_path)
+        .result_env_key(env_var_key)
         .build();
 
-    let extended_opts = extended::BuildOptsExtended::builder()
+    let extended_opts = BuildOptsExtended::builder()
         .build_opts(build_opts)
         .build_script_opts(build_script_opts)
         .build();
 
-    cargo_near_build::extended::build(extended_opts)?;
+    build(extended_opts)?;
+
     Ok(())
 }
