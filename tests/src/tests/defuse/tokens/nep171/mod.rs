@@ -4,7 +4,7 @@ use crate::utils::{mt::MtExt, nft::NftExt};
 use defuse::core::intents::tokens::NftWithdraw;
 use defuse::core::token_id::TokenId as DefuseTokenId;
 use defuse::core::token_id::nep171::Nep171TokenId;
-use defuse::tokens::{DepositMessage, DepositMessageV2, DepositMessageActionV2, ExecuteIntents};
+use defuse::tokens::{DepositMessage, DepositMessageActionV2, DepositMessageV2, ExecuteIntents};
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata,

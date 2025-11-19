@@ -5,12 +5,12 @@ use defuse_near_utils::{
 use defuse_nep245::{TokenId, receiver::ext_mt_receiver};
 use near_contract_standards::non_fungible_token::core::NonFungibleTokenReceiver;
 use near_plugins::{Pausable, pause};
-use near_sdk::{json_types::U128, near, AccountId, PromiseOrValue};
+use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near};
 
 use crate::{
     contract::{Contract, ContractExt},
     intents::{Intents, ext_intents},
-    tokens::{DepositMessage, DepositMessageV2, DepositMessageActionV2},
+    tokens::{DepositMessage, DepositMessageActionV2, DepositMessageV2},
 };
 
 #[near]

@@ -9,7 +9,7 @@ use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near, require};
 use crate::{
     contract::{Contract, ContractExt},
     intents::{Intents, ext_intents},
-    tokens::{DepositMessage, DepositMessageV2, DepositMessageActionV2},
+    tokens::{DepositMessage, DepositMessageActionV2, DepositMessageV2},
 };
 
 #[near]

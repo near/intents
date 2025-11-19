@@ -97,7 +97,7 @@ impl DepositMessage {
     }
 
     #[must_use]
-    pub fn receiver_id(&self) -> &AccountId {
+    pub const fn receiver_id(&self) -> &AccountId {
         match self {
             Self::V2(v2) => &v2.receiver_id,
             Self::V1(v1) => &v1.receiver_id,
@@ -155,7 +155,7 @@ impl DepositMessageV2 {
 
     #[must_use]
     #[inline]
-    pub fn with_refund_if_fails(mut self) -> Self {
+    pub const fn with_refund_if_fails(mut self) -> Self {
         if let Some(DepositMessageActionV2::Execute(ref mut exec)) = self.action {
             exec.refund_if_fails = true;
         }
@@ -373,19 +373,22 @@ mod tests {
 
         let v2 = msg.into_v2();
         assert_eq!(v2.receiver_id.as_str(), "alice.near");
-        assert!(matches!(v2.action, Some(DepositMessageActionV2::Execute(_))));
+        assert!(matches!(
+            v2.action,
+            Some(DepositMessageActionV2::Execute(_))
+        ));
     }
 
     #[test]
     fn test_into_v2_enum_v2() {
         // DepositMessage::V2 returns itself
-        let v2_original = DepositMessageV2::new("alice.near".parse().unwrap())
-            .with_notify(NotifyOnTransfer {
+        let v2_original =
+            DepositMessageV2::new("alice.near".parse().unwrap()).with_notify(NotifyOnTransfer {
                 msg: "test".to_string(),
                 min_gas: None,
             });
 
-        let msg = DepositMessage::V2(v2_original.clone());
+        let msg = DepositMessage::V2(v2_original);
         let v2 = msg.into_v2();
 
         assert_eq!(v2.receiver_id.as_str(), "alice.near");
@@ -411,8 +414,8 @@ mod tests {
     #[test]
     fn test_serialize_v2() {
         // V2 serialization with tagged action
-        let v2 = DepositMessageV2::new("alice.near".parse().unwrap())
-            .with_notify(NotifyOnTransfer {
+        let v2 =
+            DepositMessageV2::new("alice.near".parse().unwrap()).with_notify(NotifyOnTransfer {
                 msg: "hello".to_string(),
                 min_gas: None,
             });

@@ -14,7 +14,7 @@ use defuse::core::token_id::nep141::Nep141TokenId;
 use defuse::{
     contract::Role,
     core::intents::tokens::FtWithdraw,
-    tokens::{DepositMessage, DepositMessageV2, DepositMessageActionV2, ExecuteIntents},
+    tokens::{DepositMessage, DepositMessageActionV2, DepositMessageV2, ExecuteIntents},
 };
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_sdk::{json_types::U128, serde_json};

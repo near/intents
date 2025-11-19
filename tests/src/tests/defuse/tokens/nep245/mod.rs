@@ -13,7 +13,7 @@ use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
 use defuse::core::token_id::nep245::Nep245TokenId;
 use defuse::nep245::Token;
-use defuse::tokens::{DepositMessage, DepositMessageV2, DepositMessageActionV2, ExecuteIntents};
+use defuse::tokens::{DepositMessage, DepositMessageActionV2, DepositMessageV2, ExecuteIntents};
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use rstest::rstest;
 
