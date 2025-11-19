@@ -10,7 +10,7 @@ use near_sdk::{AccountId, PromiseOrValue, near};
 use crate::{
     contract::{Contract, ContractExt},
     intents::{Intents, ext_intents},
-    tokens::DepositMessage,
+    tokens::{DepositMessage, DepositMessageAction},
 };
 
 #[near]
@@ -30,7 +30,10 @@ impl NonFungibleTokenReceiver for Contract {
         #[allow(clippy::no_effect_underscore_binding)]
         let _previous_owner_id = previous_owner_id;
 
-        let deposit_message = if msg.is_empty() {
+        let DepositMessage {
+            receiver_id,
+            action,
+        } = if msg.is_empty() {
             DepositMessage::new(sender_id.clone())
         } else {
             msg.parse().unwrap_or_panic_display()
@@ -42,78 +45,44 @@ impl NonFungibleTokenReceiver for Contract {
                 .into();
 
         self.deposit(
-            deposit_message.receiver_id.clone(),
+            receiver_id.clone(),
             [(core_token_id.clone(), 1)],
             Some("deposit"),
         )
         .unwrap_or_panic();
 
-        match deposit_message {
-            DepositMessage {
-                execute_intents,
-                message: None,
-                ..
-            } if execute_intents.is_empty() => PromiseOrValue::Value(false),
-            DepositMessage {
-                refund_if_fails: true,
-                message: None,
-                execute_intents,
-                ..
-            } => {
-                self.execute_intents(execute_intents);
+        match action {
+            Some(DepositMessageAction::Notify(notify)) => {
+                let mut on_transfer = ext_mt_receiver::ext(receiver_id.clone());
+                if let Some(gas) = notify.min_gas {
+                    on_transfer = on_transfer.with_static_gas(gas);
+                }
+
+                let on_transfer = on_transfer.mt_on_transfer(
+                    sender_id.clone(),
+                    vec![sender_id],
+                    vec![core_token_id.to_string()],
+                    vec![near_sdk::json_types::U128(1)],
+                    notify.msg,
+                );
+
+                let resolution = Self::ext(CURRENT_ACCOUNT_ID.clone())
+                    .with_static_gas(Self::mt_resolve_deposit_gas(1))
+                    .with_unused_gas_weight(0)
+                    .nft_resolve_deposit(&receiver_id, core_token_id);
+
+                on_transfer.then(resolution).into()
+            }
+            Some(DepositMessageAction::Execute(execute)) => {
+                if execute.refund_if_fails {
+                    self.execute_intents(execute.execute_intents);
+                } else {
+                    let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
+                        .execute_intents(execute.execute_intents);
+                }
                 PromiseOrValue::Value(false)
             }
-            DepositMessage {
-                refund_if_fails: false,
-                message: None,
-                execute_intents,
-                ..
-            } => {
-                let _ =
-                    ext_intents::ext(CURRENT_ACCOUNT_ID.clone()).execute_intents(execute_intents);
-                PromiseOrValue::Value(false)
-            }
-            DepositMessage {
-                message: Some(_), ..
-            } => {
-                self.handle_nft_deposit_with_notification(deposit_message, sender_id, core_token_id)
-            }
-        }
-    }
-}
-
-impl Contract {
-    fn handle_nft_deposit_with_notification(
-        &mut self,
-        deposit_message: DepositMessage,
-        sender_id: AccountId,
-        core_token_id: CoreTokenId,
-    ) -> PromiseOrValue<bool> {
-        let notification = ext_mt_receiver::ext(deposit_message.receiver_id.clone())
-            .mt_on_transfer(
-                sender_id.clone(),
-                vec![sender_id],
-                vec![core_token_id.to_string()],
-                vec![near_sdk::json_types::U128(1)],
-                deposit_message.message.unwrap(),
-            );
-
-        let resolution = Self::ext(CURRENT_ACCOUNT_ID.clone())
-            .with_static_gas(Self::mt_resolve_deposit_gas(1))
-            .with_unused_gas_weight(0)
-            .nft_resolve_deposit(&deposit_message.receiver_id, vec![core_token_id], vec![1]);
-
-        if deposit_message.execute_intents.is_empty() {
-            notification.then(resolution).into()
-        } else if deposit_message.refund_if_fails {
-            self.execute_intents(deposit_message.execute_intents);
-            notification.then(resolution).into()
-        } else {
-            ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
-                .execute_intents(deposit_message.execute_intents)
-                .then(notification)
-                .then(resolution)
-                .into()
+            None => PromiseOrValue::Value(false),
         }
     }
 }
@@ -124,13 +93,14 @@ impl Contract {
     pub fn nft_resolve_deposit(
         &mut self,
         receiver_id: &AccountId,
-        token_ids: Vec<CoreTokenId>,
-        deposited_amounts: Vec<u128>,
+        token_ids: CoreTokenId,
     ) -> PromiseOrValue<bool> {
-        self.resolve_deposit_internal(receiver_id, token_ids, deposited_amounts)
-            .first()
-            .copied()
-            .map(|elem| PromiseOrValue::Value(elem == 1.into()))
-            .unwrap()
+        let [result] = self
+            .resolve_deposit_internal(receiver_id, vec![token_ids], vec![1])
+            .try_into()
+            .unwrap_or_else(|_| {
+                unreachable!("nft_resolve_deposit expects return value of length == 1")
+            });
+        PromiseOrValue::Value(result == 1.into())
     }
 }

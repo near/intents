@@ -11,8 +11,12 @@ use crate::{
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
 
-use defuse::{contract::Role, core::intents::tokens::FtWithdraw, tokens::DepositMessage};
-use multi_token_receiver_stub::StubAction;
+use defuse::{
+    contract::Role,
+    core::intents::tokens::FtWithdraw,
+    tokens::{DepositMessage, DepositMessageAction, ExecuteIntents},
+};
+use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_sdk::{json_types::U128, serde_json};
 use rstest::rstest;
 
@@ -155,10 +159,11 @@ async fn deposit_withdraw_intent(#[values(false, true)] no_registration: bool) {
             1000,
             DepositMessage {
                 receiver_id: user.id().clone(),
-                execute_intents: [withdraw_intent_payload].into(),
-                // another promise will be created for `execute_intents()`
-                refund_if_fails: false,
-                message: None,
+                action: Some(DepositMessageAction::Execute(ExecuteIntents {
+                    execute_intents: [withdraw_intent_payload].into(),
+                    // another promise will be created for `execute_intents()`
+                    refund_if_fails: false,
+                })),
             },
         )
         .await
@@ -238,9 +243,10 @@ async fn deposit_withdraw_intent_refund(#[values(false, true)] no_registration: 
             1000,
             DepositMessage {
                 receiver_id: user.id().clone(),
-                execute_intents: [overflow_withdraw_payload].into(),
-                refund_if_fails: true,
-                message: None,
+                action: Some(DepositMessageAction::Execute(ExecuteIntents {
+                    execute_intents: [overflow_withdraw_payload].into(),
+                    refund_if_fails: true,
+                })),
             },
         )
         .await
@@ -380,48 +386,6 @@ async fn ft_force_withdraw(#[values(false, true)] no_registration: bool) {
     expected_sender_ft_balance: 1000,
     expected_receiver_mt_balance: 0,
 })]
-#[case::refund_everything_on_failed_transfer(TransferCallExpectation {
-    action: StubAction::ReturnValue(0.into()),
-    intent_transfer_amount: Some(1100),
-    refund_if_fails: true,
-    expected_sender_ft_balance: 1000,
-    expected_receiver_mt_balance: 0,
-})]
-#[case::refund_after_transfer_intent(TransferCallExpectation {
-    action: StubAction::ReturnValue(200.into()),
-    intent_transfer_amount: Some(500),
-    refund_if_fails: true,
-    expected_sender_ft_balance: 200,
-    expected_receiver_mt_balance: 300,
-})]
-#[case::refund_after_transfer_intent_less_than_requested(TransferCallExpectation {
-    action: StubAction::ReturnValue(1000.into()),
-    intent_transfer_amount: Some(500),
-    refund_if_fails: true,
-    expected_sender_ft_balance: 500,
-    expected_receiver_mt_balance: 0,
-})]
-#[case::refund_full_amount_after_failed_transfer1(TransferCallExpectation {
-    action: StubAction::ReturnValue(1000.into()),
-    intent_transfer_amount: Some(1100),
-    refund_if_fails: false,
-    expected_sender_ft_balance: 1000,
-    expected_receiver_mt_balance: 0,
-})]
-#[case::refund_full_amount_after_failed_transfer2(TransferCallExpectation {
-    action: StubAction::ReturnValue(2000.into()),
-    intent_transfer_amount: Some(1100),
-    refund_if_fails: false,
-    expected_sender_ft_balance: 1000,
-    expected_receiver_mt_balance: 0,
-})]
-#[case::refund_requested_amount_after_failed_transfer3(TransferCallExpectation {
-    action: StubAction::ReturnValue(200.into()),
-    intent_transfer_amount: Some(1100),
-    refund_if_fails: false,
-    expected_sender_ft_balance: 200,
-    expected_receiver_mt_balance: 800,
-})]
 async fn ft_transfer_call_calls_mt_on_transfer_variants(
     #[case] expectation: TransferCallExpectation,
 ) {
@@ -478,11 +442,24 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
         None => vec![],
     };
 
-    let deposit_message = DepositMessage {
-        receiver_id: receiver.id().clone(),
-        execute_intents: intents,
-        refund_if_fails: expectation.refund_if_fails,
-        message: Some(serde_json::to_string(&expectation.action).unwrap()),
+    let deposit_message = if intents.is_empty() {
+        DepositMessage {
+            receiver_id: receiver.id().clone(),
+            action: Some(DepositMessageAction::Notify(
+                defuse::core::intents::tokens::NotifyOnTransfer {
+                    msg: serde_json::to_string(&expectation.action).unwrap(),
+                    min_gas: None,
+                },
+            )),
+        }
+    } else {
+        DepositMessage {
+            receiver_id: receiver.id().clone(),
+            action: Some(DepositMessageAction::Execute(ExecuteIntents {
+                execute_intents: intents,
+                refund_if_fails: expectation.refund_if_fails,
+            })),
+        }
     };
 
     user.ft_transfer_call(
@@ -509,7 +486,7 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
 }
 
 #[tokio::test]
-async fn ft_transfer_call_with_intent_and_panic_refunds_from_initial_user_balance() {
+async fn ft_transfer_call_with_intent_transfers_from_initial_user_balance() {
     use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
 
     use crate::tests::defuse::DefuseSignerExt;
@@ -572,12 +549,13 @@ async fn ft_transfer_call_with_intent_and_panic_refunds_from_initial_user_balanc
         .await
         .unwrap();
 
-    // Step 3: ft_transfer_call with 1000 tokens, intent, and message that causes panic
+    // Step 3: ft_transfer_call with 1000 tokens and intent to transfer 500 tokens
     let deposit_message = DepositMessage {
         receiver_id: receiver.id().clone(),
-        execute_intents: vec![transfer_intent],
-        refund_if_fails: true,
-        message: Some(serde_json::to_string(&StubAction::Panic).unwrap()),
+        action: Some(DepositMessageAction::Execute(ExecuteIntents {
+            execute_intents: vec![transfer_intent],
+            refund_if_fails: true,
+        })),
     };
 
     user.ft_transfer_call(
@@ -591,11 +569,11 @@ async fn ft_transfer_call_with_intent_and_panic_refunds_from_initial_user_balanc
     .unwrap();
 
     // Step 4: Verify final balances
-    // User should get full refund of 1000 FT tokens from ft_transfer_call
+    // User FT balance should be 0 (all deposited, no refund since intent succeeded)
     assert_eq!(
         env.ft_token_balance_of(&ft, user.id()).await.unwrap(),
-        1000,
-        "User should receive full refund of 1000 FT tokens"
+        0,
+        "User FT balance should be 0 after successful deposit and intent execution"
     );
 
     // User's MT balance should be 500 (1000 initial - 500 transferred via intent)
@@ -607,13 +585,13 @@ async fn ft_transfer_call_with_intent_and_panic_refunds_from_initial_user_balanc
         "User's MT balance should be 500 after intent transfer"
     );
 
-    // Receiver should have 0 MT balance (deposit was refunded due to panic)
+    // Receiver should have 1000 MT balance (from the ft_transfer_call deposit)
     assert_eq!(
         env.mt_contract_balance_of(env.defuse.id(), receiver.id(), &ft_id.to_string())
             .await
             .unwrap(),
-        0,
-        "Receiver's MT balance should be 0 after refund"
+        1000,
+        "Receiver's MT balance should be 1000 from deposit"
     );
 
     // intent_receiver should have 500 MT tokens from the intent transfer

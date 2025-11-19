@@ -13,6 +13,8 @@ use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
 use defuse::core::token_id::nep245::Nep245TokenId;
 use defuse::nep245::Token;
+use defuse::tokens::{DepositMessage, DepositMessageAction, ExecuteIntents};
+use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use rstest::rstest;
 
 #[tokio::test]
@@ -900,7 +902,7 @@ async fn multitoken_withdrawals() {
 
 #[derive(Debug, Clone)]
 struct MtTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction,
+    action: StubAction,
     intent_transfer_amounts: Option<Vec<u128>>,
     refund_if_fails: bool,
     expected_sender_mt_balances: Vec<u128>,
@@ -910,81 +912,39 @@ struct MtTransferCallExpectation {
 #[tokio::test]
 #[rstest]
 #[case::receiver_accepts_all_tokens_no_refund(MtTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::ReturnValue(0.into()),
+    action: StubAction::ReturnValue(0.into()),
     intent_transfer_amounts: None,
     refund_if_fails: true,
     expected_sender_mt_balances: vec![0],
     expected_receiver_mt_balances: vec![1000],
 })]
 #[case::receiver_requests_partial_refund_300_of_1000(MtTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::ReturnValue(300.into()),
+    action: StubAction::ReturnValue(300.into()),
     intent_transfer_amounts: None,
     refund_if_fails: true,
     expected_sender_mt_balances: vec![300],
     expected_receiver_mt_balances: vec![700],
 })]
 #[case::receiver_requests_excessive_refund_capped_at_transferred_amount(MtTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::ReturnValue(2_000.into()),
+    action: StubAction::ReturnValue(2_000.into()),
     intent_transfer_amounts: None,
     refund_if_fails: true,
     expected_sender_mt_balances: vec![1_000],
     expected_receiver_mt_balances: vec![0],
 })]
 #[case::receiver_panics_no_refund_sender_loses_tokens(MtTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::Panic,
+    action: StubAction::Panic,
     intent_transfer_amounts: None,
     refund_if_fails: true,
     expected_sender_mt_balances: vec![1000],
     expected_receiver_mt_balances: vec![0],
 })]
 #[case::receiver_returns_oversized_data_no_refund_sender_loses_tokens(MtTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::MaliciousReturn,
+    action: StubAction::MaliciousReturn,
     intent_transfer_amounts: None,
     refund_if_fails: true,
     expected_sender_mt_balances: vec![1000],
     expected_receiver_mt_balances: vec![0],
-})]
-#[case::intent_transfer_fails_all_tokens_refunded_to_sender(MtTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::ReturnValue(0.into()),
-    intent_transfer_amounts: Some(vec![1100]),
-    refund_if_fails: true,
-    expected_sender_mt_balances: vec![1000],
-    expected_receiver_mt_balances: vec![0],
-})]
-#[case::intent_transfers_500_then_200_refunded_300_kept_by_receiver(MtTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::ReturnValue(200.into()),
-    intent_transfer_amounts: Some(vec![500]),
-    refund_if_fails: true,
-    expected_sender_mt_balances: vec![200],
-    expected_receiver_mt_balances: vec![300],
-})]
-#[case::intent_transfers_500_receiver_requests_1000_refund_capped_at_500(MtTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::ReturnValue(1000.into()),
-    intent_transfer_amounts: Some(vec![500]),
-    refund_if_fails: true,
-    expected_sender_mt_balances: vec![500],
-    expected_receiver_mt_balances: vec![0],
-})]
-#[case::intent_fails_without_refund_if_fails_all_tokens_refunded(MtTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::ReturnValue(1000.into()),
-    intent_transfer_amounts: Some(vec![1100]),
-    refund_if_fails: false,
-    expected_sender_mt_balances: vec![1000],
-    expected_receiver_mt_balances: vec![0],
-})]
-#[case::intent_fails_receiver_requests_excessive_refund_all_tokens_returned(MtTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::ReturnValue(2000.into()),
-    intent_transfer_amounts: Some(vec![1100]),
-    refund_if_fails: false,
-    expected_sender_mt_balances: vec![1000],
-    expected_receiver_mt_balances: vec![0],
-})]
-#[case::intent_fails_receiver_requests_200_refund_800_kept(MtTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::ReturnValue(200.into()),
-    intent_transfer_amounts: Some(vec![1100]),
-    refund_if_fails: false,
-    expected_sender_mt_balances: vec![200],
-    expected_receiver_mt_balances: vec![800],
 })]
 async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     #[case] expectation: MtTransferCallExpectation,
@@ -992,7 +952,6 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     use crate::tests::defuse::DefuseSignerExt;
     use crate::tests::defuse::env::MT_RECEIVER_STUB_WASM;
     use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
-    use defuse::tokens::DepositMessage;
 
     let env = Env::builder()
         .deployer_as_super_admin()
@@ -1074,11 +1033,24 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
         _ => vec![],
     };
 
-    let deposit_message = DepositMessage {
-        receiver_id: receiver.id().clone(),
-        execute_intents: intents,
-        refund_if_fails: expectation.refund_if_fails,
-        message: Some(near_sdk::serde_json::to_string(&expectation.action).unwrap()),
+    let deposit_message = if intents.is_empty() {
+        DepositMessage {
+            receiver_id: receiver.id().clone(),
+            action: Some(DepositMessageAction::Notify(
+                defuse::core::intents::tokens::NotifyOnTransfer {
+                    msg: near_sdk::serde_json::to_string(&expectation.action).unwrap(),
+                    min_gas: None,
+                },
+            )),
+        }
+    } else {
+        DepositMessage {
+            receiver_id: receiver.id().clone(),
+            action: Some(DepositMessageAction::Execute(ExecuteIntents {
+                execute_intents: intents,
+                refund_if_fails: expectation.refund_if_fails,
+            })),
+        }
     };
 
     // Transfer from defuse1 to defuse2 using mt_transfer_call
@@ -1116,67 +1088,53 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
 #[tokio::test]
 #[rstest]
 #[case::nothing_to_refund_multi_token(MtTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::ReturnValues(vec![0.into(), 0.into()]),
+    action: StubAction::ReturnValues(vec![0.into(), 0.into()]),
     intent_transfer_amounts: None,
     refund_if_fails: true,
     expected_sender_mt_balances: vec![0, 0],
     expected_receiver_mt_balances: vec![1000, 2000],
 })]
 #[case::partial_refund_first_token(MtTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::ReturnValues(vec![300.into(), 0.into()]),
+    action: StubAction::ReturnValues(vec![300.into(), 0.into()]),
     intent_transfer_amounts: None,
     refund_if_fails: true,
     expected_sender_mt_balances: vec![300, 0],
     expected_receiver_mt_balances: vec![700, 2000],
 })]
 #[case::malicious_refund_multi_token(MtTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::ReturnValues(vec![3_000.into(), 3_000.into()]),
+    action: StubAction::ReturnValues(vec![3_000.into(), 3_000.into()]),
     intent_transfer_amounts: None,
     refund_if_fails: true,
     expected_sender_mt_balances: vec![1000, 2000],
     expected_receiver_mt_balances: vec![0, 0],
 })]
 #[case::receiver_panics_multi_token(MtTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::Panic,
+    action: StubAction::Panic,
     intent_transfer_amounts: None,
     refund_if_fails: true,
     expected_sender_mt_balances: vec![1000, 2000],
     expected_receiver_mt_balances: vec![0, 0],
 })]
 #[case::malicious_receiver_multi_token(MtTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::MaliciousReturn,
+    action: StubAction::MaliciousReturn,
     intent_transfer_amounts: None,
     refund_if_fails: true,
     expected_sender_mt_balances: vec![1000, 2000],
     expected_receiver_mt_balances: vec![0, 0],
 })]
 #[case::wrong_length_return_too_short(MtTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::ReturnValues(vec![100.into()]),
+    action: StubAction::ReturnValues(vec![100.into()]),
     intent_transfer_amounts: None,
     refund_if_fails: true,
     expected_sender_mt_balances: vec![1000, 2000],
     expected_receiver_mt_balances: vec![0, 0],
 })]
 #[case::wrong_length_return_too_long(MtTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::ReturnValues(vec![100.into(), 200.into(), 300.into()]),
+    action: StubAction::ReturnValues(vec![100.into(), 200.into(), 300.into()]),
     intent_transfer_amounts: None,
     refund_if_fails: true,
     expected_sender_mt_balances: vec![1000, 2000],
     expected_receiver_mt_balances: vec![0, 0],
-})]
-#[case::refund_after_intent_first_token(MtTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::ReturnValues(vec![200.into(), 0.into()]),
-    intent_transfer_amounts: Some(vec![500]),
-    refund_if_fails: true,
-    expected_sender_mt_balances: vec![200, 0],
-    expected_receiver_mt_balances: vec![300, 2000],
-})]
-#[case::refund_after_intent_both_tokens(MtTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction::ReturnValues(vec![200.into(), 500.into()]),
-    intent_transfer_amounts: Some(vec![500, 1000]),
-    refund_if_fails: true,
-    expected_sender_mt_balances: vec![200, 500],
-    expected_receiver_mt_balances: vec![300, 500],
 })]
 async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     #[case] expectation: MtTransferCallExpectation,
@@ -1282,11 +1240,24 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
         vec![]
     };
 
-    let deposit_message = DepositMessage {
-        receiver_id: receiver.id().clone(),
-        execute_intents: intents,
-        refund_if_fails: expectation.refund_if_fails,
-        message: Some(near_sdk::serde_json::to_string(&expectation.action).unwrap()),
+    let deposit_message = if intents.is_empty() {
+        DepositMessage {
+            receiver_id: receiver.id().clone(),
+            action: Some(DepositMessageAction::Notify(
+                defuse::core::intents::tokens::NotifyOnTransfer {
+                    msg: near_sdk::serde_json::to_string(&expectation.action).unwrap(),
+                    min_gas: None,
+                },
+            )),
+        }
+    } else {
+        DepositMessage {
+            receiver_id: receiver.id().clone(),
+            action: Some(DepositMessageAction::Execute(ExecuteIntents {
+                execute_intents: intents,
+                refund_if_fails: expectation.refund_if_fails,
+            })),
+        }
     };
 
     // Transfer both tokens from user in defuse1 to defuse2 using batch transfer
@@ -1392,17 +1363,16 @@ async fn mt_transfer_call_circullar_callback() {
     // With empty inner message to avoid further callbacks
     let deposit_message = DepositMessage {
         receiver_id: env.defuse.id().clone(), // Circular: back to defuse1
-        execute_intents: vec![],
-        refund_if_fails: false,
-        message: Some(
-            near_sdk::serde_json::to_string(&DepositMessage {
-                receiver_id: user.id().clone(),
-                execute_intents: vec![],
-                refund_if_fails: false,
-                message: None, // No further callbacks
-            })
-            .unwrap(),
-        ),
+        action: Some(DepositMessageAction::Notify(
+            defuse::core::intents::tokens::NotifyOnTransfer {
+                msg: near_sdk::serde_json::to_string(&DepositMessage {
+                    receiver_id: user.id().clone(),
+                    action: None, // No further callbacks
+                })
+                .unwrap(),
+                min_gas: None,
+            },
+        )),
     };
 
     // Get the nep245 token id for defuse1's wrapped token in defuse2

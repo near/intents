@@ -43,9 +43,6 @@ impl MultiTokenReceiver for Contract {
     }
 }
 
-// Re-export for backwards compatibility with existing tests
-pub use MTReceiverMode as StubAction;
-
 // Add backward compatibility variants
 impl MTReceiverMode {
     pub const MALICIOUS_RETURN: Self = Self::LargeReturn;

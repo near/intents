@@ -4,7 +4,8 @@ use crate::utils::{mt::MtExt, nft::NftExt};
 use defuse::core::intents::tokens::NftWithdraw;
 use defuse::core::token_id::TokenId as DefuseTokenId;
 use defuse::core::token_id::nep171::Nep171TokenId;
-use multi_token_receiver_stub::StubAction;
+use defuse::tokens::{DepositMessage, DepositMessageAction, ExecuteIntents};
+use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata,
 };
@@ -290,7 +291,7 @@ async fn transfer_nft_to_verifier() {
 #[derive(Debug, Clone)]
 #[allow(clippy::struct_excessive_bools)]
 struct NftTransferCallExpectation {
-    action: multi_token_receiver_stub::StubAction,
+    action: StubAction,
     intent_transfer: bool,
     refund_if_fails: bool,
     expected_sender_owns_nft: bool,
@@ -327,26 +328,11 @@ struct NftTransferCallExpectation {
     expected_sender_owns_nft: true,
     expected_receiver_owns_nft: false,
 })]
-#[case::cannot_refund_after_nft_transfer_to_another_user_thorough_intent(NftTransferCallExpectation {
-    action: StubAction::ReturnValue(1.into()),
-    intent_transfer: true,
-    refund_if_fails: true,
-    expected_sender_owns_nft: false,
-    expected_receiver_owns_nft: false,
-})]
-#[case::no_refund_after_transfer_intent_kept(NftTransferCallExpectation {
-    action: StubAction::ReturnValue(0.into()),
-    intent_transfer: true,
-    refund_if_fails: false,
-    expected_sender_owns_nft: false,
-    expected_receiver_owns_nft: false,
-})]
 async fn nft_transfer_call_calls_mt_on_transfer_variants(
     #[case] expectation: NftTransferCallExpectation,
 ) {
     use crate::tests::defuse::env::MT_RECEIVER_STUB_WASM;
     use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
-    use defuse::tokens::DepositMessage;
 
     let env = Env::builder().deployer_as_super_admin().build().await;
 
@@ -420,11 +406,24 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
         vec![]
     };
 
-    let deposit_message = DepositMessage {
-        receiver_id: receiver.id().clone(),
-        execute_intents: intents,
-        refund_if_fails: expectation.refund_if_fails,
-        message: Some(near_sdk::serde_json::to_string(&expectation.action).unwrap()),
+    let deposit_message = if intents.is_empty() {
+        DepositMessage {
+            receiver_id: receiver.id().clone(),
+            action: Some(DepositMessageAction::Notify(
+                defuse::core::intents::tokens::NotifyOnTransfer {
+                    msg: near_sdk::serde_json::to_string(&expectation.action).unwrap(),
+                    min_gas: None,
+                },
+            )),
+        }
+    } else {
+        DepositMessage {
+            receiver_id: receiver.id().clone(),
+            action: Some(DepositMessageAction::Execute(ExecuteIntents {
+                execute_intents: intents,
+                refund_if_fails: expectation.refund_if_fails,
+            })),
+        }
     };
 
     user.nft_transfer_call(
