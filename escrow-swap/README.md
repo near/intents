@@ -6,7 +6,7 @@ sending `dst_token`.
 
 ## Features
 
-* **Deterministic deployment**: the AccountId is deterministically derived from [params](#params).
+* **Deterministic deployment**: the AccountId is [deterministically derived][1] from [params](#params).
 * **Immutable**: all [params](#params) are immutable and fixed at the time of initialization.
 * **Off-chain auction**: can be implemented by whitelisting a single proxy-taker.
 * **Partial fills**: opt-in which enables better prices and allows to swap large amounts with
