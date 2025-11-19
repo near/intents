@@ -18,6 +18,10 @@ use tlb_ton::{
 
 pub use tlb_ton;
 
+use crate::schema::TonConnectPayloadSchema;
+
+mod schema;
+
 #[cfg_attr(test, derive(arbitrary::Arbitrary))]
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
@@ -54,6 +58,7 @@ impl TonConnectPayload {
             .timestamp()
             .try_into()
             .map_err(|_| Error::custom("negative timestamp"))?;
+
         match &self.payload {
             TonConnectPayloadSchema::Text { .. } | TonConnectPayloadSchema::Binary { .. } => {
                 #[allow(clippy::match_wildcard_for_single_variants)]
@@ -103,35 +108,6 @@ impl Payload for TonConnectPayload {
     fn hash(&self) -> near_sdk::CryptoHash {
         self.try_hash().unwrap_or_panic_str()
     }
-}
-
-/// See <https://docs.tonconsole.com/academy/sign-data#choosing-the-right-format>
-#[cfg_attr(test, derive(arbitrary::Arbitrary))]
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
-#[near(serializers = [json])]
-#[serde(tag = "type", rename_all = "snake_case")]
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TonConnectPayloadSchema {
-    #[cfg(feature = "text")]
-    Text { text: String },
-    #[cfg(feature = "binary")]
-    Binary {
-        #[serde_as(as = "Base64")]
-        bytes: Vec<u8>,
-    },
-    #[cfg(feature = "cell")]
-    Cell {
-        schema_crc: u32,
-        #[serde_as(as = "AsBoC<Base64>")]
-        cell: Cell,
-    },
 }
 
 /// ```tlb
