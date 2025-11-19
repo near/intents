@@ -10,7 +10,7 @@ use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near, require};
 use crate::{
     contract::{Contract, ContractExt},
     intents::{Intents, ext_intents},
-    tokens::{DepositMessage, DepositMessageAction},
+    tokens::{DepositMessage, DepositMessageV2, DepositMessageActionV2},
 };
 
 #[near]
@@ -31,14 +31,15 @@ impl FungibleTokenReceiver for Contract {
 
         let token_id = CoreTokenId::Nep141(Nep141TokenId::new(PREDECESSOR_ACCOUNT_ID.clone()));
 
-        let DepositMessage {
+        let DepositMessageV2 {
             receiver_id,
             action,
         } = if msg.is_empty() {
             DepositMessage::new(sender_id)
         } else {
             msg.parse().unwrap_or_panic_display()
-        };
+        }
+        .into_v2();
 
         self.deposit(
             receiver_id.clone(),
@@ -48,7 +49,7 @@ impl FungibleTokenReceiver for Contract {
         .unwrap_or_panic();
 
         match action {
-            Some(DepositMessageAction::Notify(notify)) => {
+            Some(DepositMessageActionV2::Notify(notify)) => {
                 let mut on_transfer = ext_mt_receiver::ext(receiver_id.clone());
 
                 if let Some(gas) = notify.min_gas {
@@ -70,7 +71,7 @@ impl FungibleTokenReceiver for Contract {
 
                 on_transfer.then(resolution).into()
             }
-            Some(DepositMessageAction::Execute(execute)) => {
+            Some(DepositMessageActionV2::Execute(execute)) => {
                 if execute.refund_if_fails {
                     self.execute_intents(execute.execute_intents);
                 } else {

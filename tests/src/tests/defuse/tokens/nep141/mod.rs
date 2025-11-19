@@ -14,7 +14,7 @@ use defuse::core::token_id::nep141::Nep141TokenId;
 use defuse::{
     contract::Role,
     core::intents::tokens::FtWithdraw,
-    tokens::{DepositMessage, DepositMessageAction, ExecuteIntents},
+    tokens::{DepositMessage, DepositMessageV2, DepositMessageActionV2, ExecuteIntents},
 };
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_sdk::{json_types::U128, serde_json};
@@ -157,14 +157,14 @@ async fn deposit_withdraw_intent(#[values(false, true)] no_registration: bool) {
             env.defuse.id(),
             &ft,
             1000,
-            DepositMessage {
+            DepositMessage::V2(DepositMessageV2 {
                 receiver_id: user.id().clone(),
-                action: Some(DepositMessageAction::Execute(ExecuteIntents {
+                action: Some(DepositMessageActionV2::Execute(ExecuteIntents {
                     execute_intents: [withdraw_intent_payload].into(),
                     // another promise will be created for `execute_intents()`
                     refund_if_fails: false,
                 })),
-            },
+            }),
         )
         .await
         .unwrap(),
@@ -241,13 +241,13 @@ async fn deposit_withdraw_intent_refund(#[values(false, true)] no_registration: 
             env.defuse.id(),
             &ft,
             1000,
-            DepositMessage {
+            DepositMessage::V2(DepositMessageV2 {
                 receiver_id: user.id().clone(),
-                action: Some(DepositMessageAction::Execute(ExecuteIntents {
+                action: Some(DepositMessageActionV2::Execute(ExecuteIntents {
                     execute_intents: [overflow_withdraw_payload].into(),
                     refund_if_fails: true,
                 })),
-            },
+            }),
         )
         .await
         .unwrap(),
@@ -443,23 +443,23 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
     };
 
     let deposit_message = if intents.is_empty() {
-        DepositMessage {
+        DepositMessage::V2(DepositMessageV2 {
             receiver_id: receiver.id().clone(),
-            action: Some(DepositMessageAction::Notify(
+            action: Some(DepositMessageActionV2::Notify(
                 defuse::core::intents::tokens::NotifyOnTransfer {
                     msg: serde_json::to_string(&expectation.action).unwrap(),
                     min_gas: None,
                 },
             )),
-        }
+        })
     } else {
-        DepositMessage {
+        DepositMessage::V2(DepositMessageV2 {
             receiver_id: receiver.id().clone(),
-            action: Some(DepositMessageAction::Execute(ExecuteIntents {
+            action: Some(DepositMessageActionV2::Execute(ExecuteIntents {
                 execute_intents: intents,
                 refund_if_fails: expectation.refund_if_fails,
             })),
-        }
+        })
     };
 
     user.ft_transfer_call(
@@ -550,13 +550,13 @@ async fn ft_transfer_call_with_intent_transfers_from_initial_user_balance() {
         .unwrap();
 
     // Step 3: ft_transfer_call with 1000 tokens and intent to transfer 500 tokens
-    let deposit_message = DepositMessage {
+    let deposit_message = DepositMessage::V2(DepositMessageV2 {
         receiver_id: receiver.id().clone(),
-        action: Some(DepositMessageAction::Execute(ExecuteIntents {
+        action: Some(DepositMessageActionV2::Execute(ExecuteIntents {
             execute_intents: vec![transfer_intent],
             refund_if_fails: true,
         })),
-    };
+    });
 
     user.ft_transfer_call(
         &ft,

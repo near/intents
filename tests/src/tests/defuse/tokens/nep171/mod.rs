@@ -4,7 +4,7 @@ use crate::utils::{mt::MtExt, nft::NftExt};
 use defuse::core::intents::tokens::NftWithdraw;
 use defuse::core::token_id::TokenId as DefuseTokenId;
 use defuse::core::token_id::nep171::Nep171TokenId;
-use defuse::tokens::{DepositMessage, DepositMessageAction, ExecuteIntents};
+use defuse::tokens::{DepositMessage, DepositMessageV2, DepositMessageActionV2, ExecuteIntents};
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata,
@@ -407,23 +407,23 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
     };
 
     let deposit_message = if intents.is_empty() {
-        DepositMessage {
+        DepositMessage::V2(DepositMessageV2 {
             receiver_id: receiver.id().clone(),
-            action: Some(DepositMessageAction::Notify(
+            action: Some(DepositMessageActionV2::Notify(
                 defuse::core::intents::tokens::NotifyOnTransfer {
                     msg: near_sdk::serde_json::to_string(&expectation.action).unwrap(),
                     min_gas: None,
                 },
             )),
-        }
+        })
     } else {
-        DepositMessage {
+        DepositMessage::V2(DepositMessageV2 {
             receiver_id: receiver.id().clone(),
-            action: Some(DepositMessageAction::Execute(ExecuteIntents {
+            action: Some(DepositMessageActionV2::Execute(ExecuteIntents {
                 execute_intents: intents,
                 refund_if_fails: expectation.refund_if_fails,
             })),
-        }
+        })
     };
 
     user.nft_transfer_call(

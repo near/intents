@@ -5,7 +5,7 @@ use crate::contract::{Contract, ContractExt};
 
 #[near]
 impl Contract {
-    pub(crate) const DO_NATIVE_WITHDRAW_GAS: Gas = Gas::from_tgas(10);
+    pub(crate) const DO_NATIVE_WITHDRAW_GAS: Gas = Gas::from_tgas(11);
 
     #[must_use]
     #[private]
