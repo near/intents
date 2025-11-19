@@ -20,7 +20,6 @@ use defuse::{
     },
     intents::SimulationOutput,
 };
-use defuse_near_utils::NearSdkLog;
 use defuse_randomness::Rng;
 use defuse_test_utils::random::rng;
 use near_sdk::{AccountId, AccountIdRef, CryptoHash};
@@ -40,7 +39,7 @@ impl AccountNonceIntentEvent {
         Self(acc, nonce, payload.hash())
     }
 
-    pub fn into_event_log(self) -> String {
+    pub fn into_event(self) -> DefuseEvent<'static> {
         DefuseEvent::IntentsExecuted(
             vec![IntentEvent::new(
                 AccountEvent::new(self.0, NonceEvent::new(self.1)),
@@ -48,7 +47,6 @@ impl AccountNonceIntentEvent {
             )]
             .into(),
         )
-        .to_near_sdk_log()
     }
 }
 
@@ -276,7 +274,7 @@ async fn simulate_is_view_method(
             },
         },
     }]))
-    .to_near_sdk_log();
+    .to_event_log();
 
     assert!(result.report.logs.iter().any(|log| log == &expected_log));
     assert_eq!(

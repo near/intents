@@ -8,7 +8,7 @@ use defuse_near_utils::UnwrapOrPanicError;
 use defuse_serde_utils::{base64::Base64, tlb::AsBoC};
 use impl_tools::autoimpl;
 use near_sdk::{env, near};
-use serde_with::{PickFirst, TimestampSeconds, serde_as};
+use serde_with::{DisplayFromStr, PickFirst, TimestampSeconds, serde_as};
 use tlb_ton::{
     Cell, Error, MsgAddress, StringError,
     r#as::{Ref, SnakeData},
@@ -25,10 +25,7 @@ pub use tlb_ton;
 pub struct TonConnectPayload {
     /// Wallet address in either [Raw](https://docs.ton.org/v3/documentation/smart-contracts/addresses/address-formats#raw-address) representation
     /// or [user-friendly](https://docs.ton.org/v3/documentation/smart-contracts/addresses/address-formats#user-friendly-address) format
-    #[cfg_attr(
-        all(feature = "abi", not(target_arch = "wasm32")),
-        schemars(with = "String")
-    )]
+    #[serde_as(as = "DisplayFromStr")]
     pub address: MsgAddress,
     /// dApp domain
     pub domain: String,

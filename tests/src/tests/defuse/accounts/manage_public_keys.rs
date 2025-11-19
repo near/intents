@@ -5,7 +5,6 @@ use defuse::core::{
     crypto::PublicKey,
     events::DefuseEvent,
 };
-use defuse_near_utils::NearSdkLog;
 use rstest::rstest;
 
 use crate::{
@@ -52,7 +51,7 @@ async fn test_add_public_key(public_key: PublicKey) {
                 public_key: Cow::Borrowed(&public_key),
             },
         ))
-        .to_near_sdk_log(),]
+        .to_event_log(),]
     );
 
     assert!(
@@ -105,7 +104,7 @@ async fn test_add_and_remove_public_key(public_key: PublicKey) {
                 public_key: Cow::Borrowed(&public_key),
             },
         ))
-        .to_near_sdk_log(),]
+        .to_event_log(),]
     );
 
     assert!(

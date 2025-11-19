@@ -94,8 +94,8 @@ rand_chacha = "0.9"
 proptest = "1.5"
 rstest = "0.25"
 schemars = "0.8"
-serde_json = "1"
-serde_with = "3.9"
+serde_json = { version = "1", features = ["preserve_order"] }
+serde_with = "3.11"
 stellar-strkey = "0.0"
 strum = { version = "0.27", features = ["derive"] }
 thiserror = "2"
@@ -103,7 +103,7 @@ tlb-ton = { version = "0.5", default-features = false }
 tokio = { version = "1.45", default-features = false }
 
 [patch.crates-io]
-near-sdk = { git = "https://github.com/near/near-sdk-rs", rev = "fdfa88d629299a71c8384be22135f498f3136fda" }
+near-sdk = { path = "/Users/mat/near-sdk-rs/near-sdk" }
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }

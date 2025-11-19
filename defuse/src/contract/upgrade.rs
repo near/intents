@@ -21,7 +21,7 @@ impl ControllerUpgradable for Contract {
         Promise::new(CURRENT_ACCOUNT_ID.clone())
             .deploy_contract(code)
             .function_call(
-                STATE_MIGRATE_FUNCTION.into(),
+                STATE_MIGRATE_FUNCTION,
                 Vec::new(),
                 NearToken::from_yoctonear(0),
                 state_migration_gas.unwrap_or(STATE_MIGRATE_DEFAULT_GAS),
