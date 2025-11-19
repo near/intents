@@ -12,6 +12,7 @@ fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
 
     let build_opts = BuildOpts::builder()
         .manifest_path(manifest)
+        .features("contract")
         .no_abi(true)
         .build();
 
