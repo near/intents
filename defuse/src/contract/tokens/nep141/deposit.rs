@@ -74,6 +74,9 @@ impl FungibleTokenReceiver for Contract {
 
                 on_transfer.then(resolution).into()
             }
+            DepositAction::Execute(execute) if execute.execute_intents.is_empty() => {
+                PromiseOrValue::Value(0.into())
+            }
             DepositAction::Execute(execute) => {
                 if execute.refund_if_fails {
                     self.execute_intents(execute.execute_intents);
