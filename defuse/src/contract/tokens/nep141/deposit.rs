@@ -35,7 +35,7 @@ impl FungibleTokenReceiver for Contract {
             receiver_id,
             action,
         } = if msg.is_empty() {
-            DepositMessage::new(sender_id)
+            DepositMessage::new(sender_id.clone())
         } else {
             msg.parse().unwrap_or_panic_display()
         };
@@ -56,7 +56,7 @@ impl FungibleTokenReceiver for Contract {
                 }
 
                 let on_transfer = on_transfer.mt_on_transfer(
-                    receiver_id.clone(),
+                    sender_id,
                     vec![receiver_id.clone()],
                     vec![token_id.to_string()],
                     vec![U128(amount_value)],
