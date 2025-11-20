@@ -29,10 +29,18 @@ impl MultiTokenReceiver for Contract {
     ) -> PromiseOrValue<Vec<U128>> {
         let token = &*PREDECESSOR_ACCOUNT_ID;
 
+        require!(!amounts.is_empty(), "invalid args");
+
         require!(
-            token_ids.len() == amounts.len() && !amounts.is_empty(),
-            "invalid args"
+            token_ids.len() == amounts.len(),
+            "NEP-245: Contract MUST panic if `token_ids` length does not equals `amounts` length"
         );
+
+        require!(
+            previous_owner_ids.len() == token_ids.len(),
+            "NEP-245: Contract MUST panic if `previous_owner_ids` length does not equals `token_ids` length"
+        );
+
         require!(
             token != &*CURRENT_ACCOUNT_ID,
             "self-wrapping is not allowed"

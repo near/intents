@@ -126,7 +126,6 @@ impl Contract {
     }
 }
 
-// #[near]
 impl Contract {
     #[must_use]
     pub(crate) fn mt_resolve_deposit_gas(token_count: usize) -> Gas {
