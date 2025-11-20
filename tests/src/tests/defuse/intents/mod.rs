@@ -397,8 +397,8 @@ async fn ton_connect_sign_intent_example() {
         address: DUMMY_MSG_ADDRESS,
         domain: "example.com".to_string(),
         timestamp: defuse_near_utils::time::now(),
-        payload: defuse::core::ton_connect::TonConnectPayloadSchema::Text {
-            text: serde_json::to_string(&DefusePayload {
+        payload: defuse::core::ton_connect::TonConnectPayloadSchema::text(
+            serde_json::to_string(&DefusePayload {
                 signer_id: "alice.near".parse().unwrap(),
                 verifying_contract: "intent.near".parse().unwrap(),
                 deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
@@ -406,7 +406,7 @@ async fn ton_connect_sign_intent_example() {
                 message: intents,
             })
             .unwrap(),
-        },
+        ),
     };
 
     let root_secret_key = env.sandbox().root_account().secret_key();
