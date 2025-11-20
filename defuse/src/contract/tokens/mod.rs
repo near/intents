@@ -205,7 +205,7 @@ impl Contract {
             self.withdraw(
                 receiver_id.as_ref(),
                 actual_refunds,
-                Some("refund unused tokens"),
+                Some("refund"),
                 false,
             )
             .unwrap_or_default();
