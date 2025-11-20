@@ -45,7 +45,7 @@ All params of the escrow are fixed at the time of initialization and immutable:
 
   // Deadline for taker(s) to fill the escrow, in RFC3339 format.
   // After deadline has exceeded, anyone can close the escrow (permissionless).
-  "deadline": "2024-07-09T00:00:00Z",
+  "deadline": "2024-07-09T00:01:00Z",
 
   // (optional) Whether partial fills are allowed.
   "partial_fills_allowed": true,
@@ -204,6 +204,13 @@ by calling `dst_token::ft/mt_transfer_call()` with following `msg` param:
       // The price MUST be greater than or equal to maker's price (see in `params`).
       "price": "0.000000175",
 
+      // Taker's deadline for this fill.
+      //
+      // If exceeded at the time of arrival of `dst_token` to the escrow
+      // contract then the contract fails, i.e. no fill happens and taker
+      // gets a full refund.
+      "deadline": "2024-07-09T00:00:59Z",
+
       // (optional) Override where to receive `src_token` to.
       "receive_src_to": {
         // (optional) Receiver's account_id, `sender_id` otherwise.
@@ -242,7 +249,7 @@ sequenceDiagram
   dst_token->>-escrow: ft_on_transfer(msg = {params, action: "fill", data={...}})
 
   activate escrow
-  alt taker ∉ whitelist || fill.price < params.price || (!partial_fills_allowed && taker_dst_in < params.price * maker_src_remaining)
+  alt closed || params.deadline expired || taker ∉ whitelist || fill.price < params.price || fill.deadline expired || (!partial_fills_allowed && taker_dst_in < params.price * maker_src_remaining)
     dst_token--xescrow: FAIL (full refund)
   else OK
     Note over escrow: Fill
