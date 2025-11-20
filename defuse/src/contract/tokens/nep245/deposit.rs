@@ -1,4 +1,4 @@
-use defuse_core::token_id::{TokenId as CoreTokenId, nep245::Nep245TokenId};
+use defuse_core::token_id::{TokenId, nep245::Nep245TokenId};
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
@@ -47,7 +47,7 @@ impl MultiTokenReceiver for Contract {
             msg.parse().unwrap_or_panic_display()
         };
 
-        let wrapped_tokens: Vec<CoreTokenId> = token_ids
+        let wrapped_tokens: Vec<TokenId> = token_ids
             .iter()
             .map(|token_id| Nep245TokenId::new(token.clone(), token_id.clone()))
             .map(UnwrapOrPanicError::unwrap_or_panic_display)
@@ -107,7 +107,7 @@ impl Contract {
     pub fn mt_resolve_deposit(
         &mut self,
         receiver_id: &AccountId,
-        token_ids: Vec<CoreTokenId>,
+        token_ids: Vec<TokenId>,
         deposited_amounts: Vec<u128>,
     ) -> PromiseOrValue<Vec<U128>> {
         let tokens_count = token_ids.len();

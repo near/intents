@@ -1,4 +1,4 @@
-use defuse_core::token_id::{TokenId as CoreTokenId, nep141::Nep141TokenId};
+use defuse_core::token_id::{TokenId, nep141::Nep141TokenId};
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
@@ -29,7 +29,7 @@ impl FungibleTokenReceiver for Contract {
         let amount_value = amount.0;
         require!(amount_value > 0, "zero amount");
 
-        let token_id = CoreTokenId::Nep141(Nep141TokenId::new(PREDECESSOR_ACCOUNT_ID.clone()));
+        let token_id = TokenId::Nep141(Nep141TokenId::new(PREDECESSOR_ACCOUNT_ID.clone()));
 
         let DepositMessage {
             receiver_id,
@@ -91,7 +91,7 @@ impl Contract {
     pub fn ft_resolve_deposit(
         &mut self,
         receiver_id: &AccountId,
-        token_ids: CoreTokenId,
+        token_ids: TokenId,
         deposited_amounts: u128,
     ) -> PromiseOrValue<U128> {
         let [result] = self

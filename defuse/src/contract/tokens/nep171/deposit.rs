@@ -1,8 +1,8 @@
-use defuse_core::token_id::{TokenId as CoreTokenId, nep171::Nep171TokenId};
+use defuse_core::token_id::{TokenId, nep171::Nep171TokenId};
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
-use defuse_nep245::{TokenId, receiver::ext_mt_receiver};
+use defuse_nep245::{receiver::ext_mt_receiver};
 use near_contract_standards::non_fungible_token::core::NonFungibleTokenReceiver;
 use near_plugins::{Pausable, pause};
 use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near};
@@ -24,7 +24,7 @@ impl NonFungibleTokenReceiver for Contract {
         &mut self,
         sender_id: AccountId,
         previous_owner_id: AccountId,
-        token_id: TokenId,
+        token_id: defuse_nep245::TokenId,
         msg: String,
     ) -> PromiseOrValue<bool> {
         #[allow(clippy::no_effect_underscore_binding)]
@@ -39,7 +39,7 @@ impl NonFungibleTokenReceiver for Contract {
             msg.parse().unwrap_or_panic_display()
         };
 
-        let core_token_id: CoreTokenId =
+        let core_token_id: TokenId =
             Nep171TokenId::new(PREDECESSOR_ACCOUNT_ID.clone(), token_id)
                 .unwrap_or_panic_display()
                 .into();
@@ -93,7 +93,7 @@ impl Contract {
     pub fn nft_resolve_deposit(
         &mut self,
         receiver_id: &AccountId,
-        token_ids: CoreTokenId,
+        token_ids: TokenId,
     ) -> PromiseOrValue<bool> {
         let [result] = self
             .resolve_deposit_internal(receiver_id, vec![token_ids], vec![1])
