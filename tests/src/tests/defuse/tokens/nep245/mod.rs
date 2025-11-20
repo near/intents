@@ -13,7 +13,7 @@ use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
 use defuse::core::token_id::nep245::Nep245TokenId;
 use defuse::nep245::Token;
-use defuse::tokens::{DepositMessage, DepositMessageActionV2, DepositMessageV2, ExecuteIntents};
+use defuse::tokens::{DepositMessage, DepositMessageAction, ExecuteIntents};
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use rstest::rstest;
 
@@ -1034,23 +1034,23 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     };
 
     let deposit_message = if intents.is_empty() {
-        DepositMessage::V2(DepositMessageV2 {
+        DepositMessage {
             receiver_id: receiver.id().clone(),
-            action: Some(DepositMessageActionV2::Notify(
+            action: Some(DepositMessageAction::Notify(
                 defuse::core::intents::tokens::NotifyOnTransfer {
                     msg: near_sdk::serde_json::to_string(&expectation.action).unwrap(),
                     min_gas: None,
                 },
             )),
-        })
+        }
     } else {
-        DepositMessage::V2(DepositMessageV2 {
+        DepositMessage {
             receiver_id: receiver.id().clone(),
-            action: Some(DepositMessageActionV2::Execute(ExecuteIntents {
+            action: Some(DepositMessageAction::Execute(ExecuteIntents {
                 execute_intents: intents,
                 refund_if_fails: expectation.refund_if_fails,
             })),
-        })
+        }
     };
 
     // Transfer from defuse1 to defuse2 using mt_transfer_call
@@ -1241,23 +1241,23 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     };
 
     let deposit_message = if intents.is_empty() {
-        DepositMessage::V2(DepositMessageV2 {
+        DepositMessage {
             receiver_id: receiver.id().clone(),
-            action: Some(DepositMessageActionV2::Notify(
+            action: Some(DepositMessageAction::Notify(
                 defuse::core::intents::tokens::NotifyOnTransfer {
                     msg: near_sdk::serde_json::to_string(&expectation.action).unwrap(),
                     min_gas: None,
                 },
             )),
-        })
+        }
     } else {
-        DepositMessage::V2(DepositMessageV2 {
+        DepositMessage {
             receiver_id: receiver.id().clone(),
-            action: Some(DepositMessageActionV2::Execute(ExecuteIntents {
+            action: Some(DepositMessageAction::Execute(ExecuteIntents {
                 execute_intents: intents,
                 refund_if_fails: expectation.refund_if_fails,
             })),
-        })
+        }
     };
 
     // Transfer both tokens from user in defuse1 to defuse2 using batch transfer
@@ -1361,19 +1361,19 @@ async fn mt_transfer_call_circullar_callback() {
     // NOTE: Test circular callback case: defuse1 → defuse2 → defuse1
     // Set receiver_id to defuse1 to create circular callback
     // With empty inner message to avoid further callbacks
-    let deposit_message = DepositMessage::V2(DepositMessageV2 {
+    let deposit_message = DepositMessage {
         receiver_id: env.defuse.id().clone(), // Circular: back to defuse1
-        action: Some(DepositMessageActionV2::Notify(
+        action: Some(DepositMessageAction::Notify(
             defuse::core::intents::tokens::NotifyOnTransfer {
-                msg: near_sdk::serde_json::to_string(&DepositMessage::V2(DepositMessageV2 {
+                msg: near_sdk::serde_json::to_string(&DepositMessage {
                     receiver_id: user.id().clone(),
                     action: None, // No further callbacks
-                }))
+                })
                 .unwrap(),
                 min_gas: None,
             },
         )),
-    });
+    };
 
     // Get the nep245 token id for defuse1's wrapped token in defuse2
     let nep245_ft_id =

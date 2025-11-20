@@ -149,9 +149,9 @@ impl Contract {
     /// Generic internal helper for resolving deposit refunds across all token standards (NEP-141, NEP-171, NEP-245).
     ///
     /// This function:
-    /// 1. Takes parallel vectors of token IDs, deposited amounts, and requested refunds
-    /// 2. Checks available balance for each token in the receiver's account
-    /// 3. Handles duplicate token IDs correctly by tracking planned withdrawals
+    /// 1. Checks that all received ids are unique
+    /// 2. Takes parallel vectors of token IDs, deposited amounts, and requested refunds
+    /// 3. Checks available balance for each token in the receiver's account
     /// 4. Caps refunds at both the deposited amount and available balance
     /// 5. Performs a single batched withdrawal for all refunded tokens
     /// 6. Returns the actual refund amounts for each request

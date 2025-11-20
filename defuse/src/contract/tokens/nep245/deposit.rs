@@ -9,7 +9,7 @@ use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near, require};
 use crate::{
     contract::{Contract, ContractExt},
     intents::{Intents, ext_intents},
-    tokens::{DepositMessage, DepositMessageActionV2, DepositMessageV2},
+    tokens::{DepositMessage, DepositMessageAction},
 };
 
 #[near]
@@ -38,15 +38,14 @@ impl MultiTokenReceiver for Contract {
             "self-wrapping is not allowed"
         );
 
-        let DepositMessageV2 {
+        let DepositMessage {
             receiver_id,
             action,
         } = if msg.is_empty() {
             DepositMessage::new(sender_id.clone())
         } else {
             msg.parse().unwrap_or_panic_display()
-        }
-        .into_v2();
+        };
 
         let wrapped_tokens: Vec<CoreTokenId> = token_ids
             .iter()
@@ -67,7 +66,7 @@ impl MultiTokenReceiver for Contract {
         .unwrap_or_panic();
 
         match action {
-            Some(DepositMessageActionV2::Notify(notify)) => {
+            Some(DepositMessageAction::Notify(notify)) => {
                 let mut on_transfer = ext_mt_receiver::ext(receiver_id.clone());
                 if let Some(gas) = notify.min_gas {
                     on_transfer = on_transfer.with_static_gas(gas);
@@ -88,7 +87,7 @@ impl MultiTokenReceiver for Contract {
 
                 on_transfer.then(resolution).into()
             }
-            Some(DepositMessageActionV2::Execute(execute)) => {
+            Some(DepositMessageAction::Execute(execute)) => {
                 if execute.refund_if_fails {
                     self.execute_intents(execute.execute_intents);
                 } else {
