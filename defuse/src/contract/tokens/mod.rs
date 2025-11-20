@@ -185,11 +185,6 @@ impl Contract {
             PromiseResult::Failed => deposited_amounts.clone(),
         };
 
-        require!(
-            (requested_refunds.len() == tokens_count),
-            "requested refunds length must match token_ids length"
-        );
-
         let actual_refunds = izip!(token_ids, deposited_amounts, &requested_refunds)
             .map(|(token, deposited, refund)| {
                 let available = self
@@ -204,20 +199,18 @@ impl Contract {
                 (token, available.min(deposited.min(*refund)))
             })
             .collect::<Vec<_>>();
+        let refunds_values = actual_refunds.iter().map(|(_, amount)| U128(*amount)).collect_vec();
 
         if !requested_refunds.is_empty() {
             self.withdraw(
                 receiver_id.as_ref(),
-                actual_refunds.clone(),
+                actual_refunds,
                 Some("refund unused tokens"),
                 false,
             )
             .unwrap_or_default();
         }
 
-        actual_refunds
-            .into_iter()
-            .map(|(_, amount)| amount.into())
-            .collect()
+        refunds_values
     }
 }
