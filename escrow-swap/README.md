@@ -527,6 +527,8 @@ state:
 
 ## Future Improvements
 
+* **Dutch Auction**: allow both maker and takers to specify
+  decreasing-over-time price points to avoid free options
 * **Embedded Lending**: (opt-in) allow takers to borrow `src_token`
   against collateral in `dst_token` by the fixed `price` and LTV ratio
   specified at the initialization stage.
