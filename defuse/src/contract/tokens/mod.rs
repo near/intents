@@ -6,11 +6,10 @@ use super::Contract;
 use defuse_core::{DefuseError, Result, token_id::TokenId};
 use defuse_near_utils::CURRENT_ACCOUNT_ID;
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
-use itertools::{Itertools, izip};
 use near_sdk::{
     AccountId, AccountIdRef, Gas, PromiseResult, env, json_types::U128, require, serde_json,
 };
-use std::{borrow::Cow, collections::HashMap};
+use std::borrow::Cow;
 
 pub const STORAGE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
 
@@ -152,13 +151,14 @@ impl Contract {
     /// 2. Takes parallel vectors of token IDs, deposited amounts, and requested refunds
     /// 3. Checks available balance for each token in the receiver's account
     /// 4. Caps refunds at both the deposited amount and available balance
-    /// 5. Performs a single batched withdrawal for all refunded tokens
-    /// 6. Returns the actual refund amounts for each request
+    /// 5. Directly modifies account balances and total supplies one by one
+    /// 6. Postpones MT burn event emission to the end of the transaction
+    /// 7. Returns the actual refund (burned) amounts for each request
     pub fn resolve_deposit_internal(
         &mut self,
         receiver_id: &AccountId,
-        token_ids: Vec<TokenId>,
-        deposited_amounts: Vec<u128>,
+        token_ids: &[TokenId],
+        deposited_amounts: &[u128],
     ) -> Vec<U128> {
         require!(
             env::predecessor_account_id() == *CURRENT_ACCOUNT_ID,
@@ -171,61 +171,72 @@ impl Contract {
             "token_ids and amounts must have the same length"
         );
 
-        require!(token_ids.iter().all_unique(), "token_ids must be unique");
-
         let requested_refunds = match env::promise_result(0) {
             PromiseResult::Successful(value) => serde_json::from_slice::<Vec<U128>>(&value)
                 .ok()
                 .filter(|refunds| refunds.len() == tokens_count)
                 .map_or_else(
-                    || deposited_amounts.clone(),
+                    || deposited_amounts.to_owned(),
                     |refunds| refunds.into_iter().map(|elem| elem.0).collect(),
                 ),
-            PromiseResult::Failed => deposited_amounts.clone(),
+            PromiseResult::Failed => deposited_amounts.to_owned(),
         };
 
-        let available_balance = token_ids.iter().map(|token_id| {
-            (token_id, self.accounts
-                .get(receiver_id.as_ref())
-                .map_or(0, |account| {
-                    account
-                        .as_inner_unchecked()
-                        .token_balances
-                        .amount_for(token_id)
-                }))
-        }).collect::<HashMap<_, _>>();
+        let mut burn_event = MtBurnEvent {
+            owner_id: Cow::Owned(receiver_id.clone()),
+            authorized_id: None,
+            token_ids: Vec::new().into(),
+            amounts: Vec::new().into(),
+            memo: Some("refund".into()),
+        };
 
-        let mut maximum_possible_refund = token_ids
+        let mut result = Vec::with_capacity(tokens_count);
+
+        let Some(owner) = self.storage.accounts.get_mut(receiver_id.as_ref()) else {
+            return vec![U128(0); tokens_count];
+        };
+
+        let Some(unlocked_owner) = owner.get_mut_maybe_forced(false) else {
+            return vec![U128(0); tokens_count];
+        };
+
+        for (token_id, (requested, actual)) in token_ids
             .iter()
-            .zip(deposited_amounts.iter())
-            .fold(HashMap::new(),| mut map, (token_id, amount)| {
-                let avilalble = available_balance.get(token_id).copied().unwrap_or_default();
+            .zip(deposited_amounts.iter().zip(requested_refunds))
+        {
+            let balance = unlocked_owner.token_balances.amount_for(token_id);
+            let amount = balance.min(*requested).min(actual);
 
-                map.entry(token_id)
-                    .and_modify(|val| *val = avilalble.min(*amount + amount))
-                    .or_insert(avilalble.min(*amount));
-                map
-            });
+            // Add to result vector (one per token)
+            result.push(U128(amount));
 
-        let actual_refunds = izip!(&token_ids, &requested_refunds)
-            .map(|(token, refund)| {
-                match maximum_possible_refund.get_mut(token) {
-                    None => (token.clone(), 0),
-                    Some(available) => {
-                        let refund = (*refund).min(*available);
-                        *available -= refund;
-                        (token.clone(), refund)
-                    }
-                }
-            })
-            .collect_vec();
-        let refunds_values = actual_refunds.iter().map(|(_, amount)| U128(*amount)).collect_vec();
+            if amount == 0 {
+                continue;
+            }
 
-        if !actual_refunds.is_empty() {
-            self.withdraw(receiver_id.as_ref(), actual_refunds, Some("refund"), false)
-                .unwrap_or_default();
+            // Add to burn event for non-zero amounts
+            burn_event.token_ids.to_mut().push(token_id.to_string());
+            burn_event.amounts.to_mut().push(U128(amount));
+
+            // Subtract from account balance
+            unlocked_owner
+                .token_balances
+                .sub(token_id.clone(), amount)
+                .unwrap_or_else(|| env::panic_str("balance underflow"));
+
+            // Subtract from total supply
+            self.storage
+                .state
+                .total_supplies
+                .sub(token_id.clone(), amount)
+                .unwrap_or_else(|| env::panic_str("total supply underflow"));
         }
 
-        refunds_values
+        // Emit mt_burn event immediately for refunds
+        if !burn_event.amounts.is_empty() {
+            MtEvent::MtBurn([burn_event].as_slice().into()).emit();
+        }
+
+        result
     }
 }

@@ -94,7 +94,7 @@ impl Contract {
         token_ids: TokenId,
     ) -> PromiseOrValue<bool> {
         let [result] = self
-            .resolve_deposit_internal(receiver_id, vec![token_ids], vec![1])
+            .resolve_deposit_internal(receiver_id, &[token_ids], &[1])
             .try_into()
             .unwrap_or_else(|_| {
                 unreachable!("nft_resolve_deposit expects return value of length == 1")

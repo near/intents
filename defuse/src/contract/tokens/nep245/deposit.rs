@@ -121,10 +121,11 @@ impl Contract {
     ) -> PromiseOrValue<Vec<U128>> {
         let tokens_count = token_ids.len();
 
+        let amounts_vec: Vec<u128> = deposited_amounts.iter().map(|val| val.0).collect();
         let result = self.resolve_deposit_internal(
             receiver_id,
-            token_ids,
-            deposited_amounts.iter().map(|val| val.0).collect(),
+            &token_ids,
+            &amounts_vec,
         );
 
         if result.len() != tokens_count {

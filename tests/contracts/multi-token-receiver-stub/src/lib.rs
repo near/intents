@@ -52,13 +52,11 @@ impl MultiTokenReceiver for Contract {
                 intents_json,
                 refund_amounts,
             } => {
-                let intents: serde_json::Value = serde_json::from_str(&intents_json)
-                    .expect("Failed to parse intents JSON");
+                let intents: serde_json::Value =
+                    serde_json::from_str(&intents_json).expect("Failed to parse intents JSON");
                 ext_intents::ext(env::predecessor_account_id())
                     .execute_intents(intents)
-                    .then(
-                        Self::ext(env::current_account_id()).return_refunds(refund_amounts),
-                    )
+                    .then(Self::ext(env::current_account_id()).return_refunds(refund_amounts))
                     .into()
             }
         }

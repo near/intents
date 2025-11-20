@@ -96,7 +96,7 @@ impl Contract {
         deposited_amounts: U128,
     ) -> PromiseOrValue<U128> {
         let [result] = self
-            .resolve_deposit_internal(receiver_id, vec![token_ids], vec![deposited_amounts.0])
+            .resolve_deposit_internal(receiver_id, &[token_ids], &[deposited_amounts.0])
             .try_into()
             .unwrap_or_else(|_| {
                 unreachable!("ft_resolve_deposit expects return value of length == 1")

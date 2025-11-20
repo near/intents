@@ -1553,18 +1553,14 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
 
     println!("\n=== Transaction Logs ===");
     for (i, log) in result.logs().iter().enumerate() {
-        println!("[{}] {}", i, log);
+        println!("[{i}] {log}");
     }
 
-    let all_logs: Vec<String> = result.logs().iter().map(|s| s.to_string()).collect();
+    let all_logs: Vec<String> = result.logs().iter().map(std::string::ToString::to_string).collect();
     let _ = result.into_result().unwrap();
 
     // Token IDs for events
-    let ft_token_ids = [
-        ft1_id.to_string(),
-        ft2_id.to_string(),
-        ft1_id.to_string(),
-    ];
+    let ft_token_ids = [ft1_id.to_string(), ft2_id.to_string(), ft1_id.to_string()];
     let mt_token_ids = [
         nep245_ft1_id.to_string(),
         nep245_ft2_id.to_string(),
@@ -1587,7 +1583,7 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
         old_owner_id: Cow::Borrowed(defuse2.id().as_ref()),
         new_owner_id: Cow::Borrowed(user.id().as_ref()),
         token_ids: Cow::Borrowed(&ft_token_ids),
-        amounts: Cow::Borrowed(&refund_amounts),  // Use capped refund amounts
+        amounts: Cow::Borrowed(&refund_amounts), // Use capped refund amounts
         memo: Some(Cow::Borrowed("refund")),
     }];
     let expected_mt_transfer = MtEvent::MtTransfer(Cow::Borrowed(&transfer_events));
