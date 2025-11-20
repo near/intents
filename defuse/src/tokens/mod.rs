@@ -19,7 +19,7 @@ pub struct DepositMessage {
     pub receiver_id: AccountId,
 
     #[serde(flatten, default, skip_serializing_if = "Option::is_none")]
-    pub action: Option<DepositMessageAction>,
+    pub action: Option<DepositAction>,
 }
 
 #[near(serializers = [json])]
@@ -34,7 +34,7 @@ pub struct ExecuteIntents {
 #[near(serializers = [json])]
 #[serde(untagged)]
 #[derive(Debug, Clone)]
-pub enum DepositMessageAction {
+pub enum DepositAction {
     Execute(ExecuteIntents),
     Notify(NotifyOnTransfer),
 }
@@ -52,7 +52,7 @@ impl DepositMessage {
     #[must_use]
     #[inline]
     pub fn with_execute_intents(mut self, intents: impl IntoIterator<Item = MultiPayload>) -> Self {
-        self.action = Some(DepositMessageAction::Execute(ExecuteIntents {
+        self.action = Some(DepositAction::Execute(ExecuteIntents {
             execute_intents: intents.into_iter().collect(),
             refund_if_fails: false,
         }));
@@ -62,7 +62,7 @@ impl DepositMessage {
     #[must_use]
     #[inline]
     pub const fn with_refund_if_fails(mut self) -> Self {
-        if let Some(DepositMessageAction::Execute(ref mut exec)) = self.action {
+        if let Some(DepositAction::Execute(ref mut exec)) = self.action {
             exec.refund_if_fails = true;
         }
         self
@@ -71,13 +71,13 @@ impl DepositMessage {
     #[must_use]
     #[inline]
     pub fn with_notify(mut self, notify: NotifyOnTransfer) -> Self {
-        self.action = Some(DepositMessageAction::Notify(notify));
+        self.action = Some(DepositAction::Notify(notify));
         self
     }
 
     #[must_use]
     #[inline]
-    pub fn with_action(mut self, action: DepositMessageAction) -> Self {
+    pub fn with_action(mut self, action: DepositAction) -> Self {
         self.action = Some(action);
         self
     }
@@ -88,7 +88,7 @@ impl Display for DepositMessage {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.action {
             None => f.write_str(self.receiver_id.as_str()),
-            Some(DepositMessageAction::Execute(exec)) if exec.execute_intents.is_empty() => {
+            Some(DepositAction::Execute(exec)) if exec.execute_intents.is_empty() => {
                 f.write_str(self.receiver_id.as_str())
             }
             Some(_) => f.write_str(&serde_json::to_string(self).unwrap_or_panic_display()),
@@ -144,7 +144,7 @@ mod tests {
 
         assert_eq!(msg.receiver_id.as_str(), "alice.near");
         match msg.action {
-            Some(DepositMessageAction::Notify(notify)) => {
+            Some(DepositAction::Notify(notify)) => {
                 assert_eq!(notify.msg, "hello world");
                 assert!(notify.min_gas.is_none());
             }
@@ -164,7 +164,7 @@ mod tests {
 
         assert_eq!(msg.receiver_id.as_str(), "alice.near");
         match msg.action {
-            Some(DepositMessageAction::Execute(exec)) => {
+            Some(DepositAction::Execute(exec)) => {
                 assert!(exec.execute_intents.is_empty());
                 assert!(exec.refund_if_fails);
             }
@@ -249,7 +249,7 @@ mod tests {
 
         assert_eq!(msg.receiver_id.as_str(), "alice.near");
         match msg.action {
-            Some(DepositMessageAction::Execute(exec)) => {
+            Some(DepositAction::Execute(exec)) => {
                 assert!(exec.execute_intents.is_empty());
                 assert!(exec.refund_if_fails);
             }
@@ -265,7 +265,7 @@ mod tests {
 
         assert_eq!(msg.receiver_id.as_str(), "alice.near");
         match msg.action {
-            Some(DepositMessageAction::Notify(notify)) => {
+            Some(DepositAction::Notify(notify)) => {
                 assert_eq!(notify.msg, "test");
             }
             _ => panic!("Expected Notify action"),
@@ -286,11 +286,11 @@ mod tests {
 
         assert_eq!(deposit_msg.receiver_id.as_str(), "alice.near");
         match deposit_msg.action {
-            Some(DepositMessageAction::Execute(exec)) => {
+            Some(DepositAction::Execute(exec)) => {
                 assert!(exec.execute_intents.is_empty());
                 assert!(exec.refund_if_fails);
             }
-            Some(DepositMessageAction::Notify(_)) => {
+            Some(DepositAction::Notify(_)) => {
                 panic!("Expected Execute action, got Notify instead");
             }
             None => panic!("Expected Execute action, got None"),
@@ -306,7 +306,7 @@ mod tests {
 
         assert_eq!(msg.receiver_id.as_str(), "alice.near");
         match msg.action {
-            Some(DepositMessageAction::Execute(exec)) => {
+            Some(DepositAction::Execute(exec)) => {
                 assert!(exec.refund_if_fails);
             }
             _ => panic!("Expected Execute action"),
@@ -323,6 +323,6 @@ mod tests {
             });
 
         assert_eq!(msg.receiver_id.as_str(), "alice.near");
-        assert!(matches!(msg.action, Some(DepositMessageAction::Notify(_))));
+        assert!(matches!(msg.action, Some(DepositAction::Notify(_))));
     }
 }

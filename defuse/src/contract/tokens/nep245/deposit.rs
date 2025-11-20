@@ -9,7 +9,7 @@ use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near, require};
 use crate::{
     contract::{Contract, ContractExt},
     intents::{Intents, ext_intents},
-    tokens::{DepositMessage, DepositMessageAction},
+    tokens::{DepositMessage, DepositAction},
 };
 
 #[near]
@@ -70,7 +70,7 @@ impl MultiTokenReceiver for Contract {
         };
 
         match action {
-            DepositMessageAction::Notify(notify) => {
+            DepositAction::Notify(notify) => {
                 let mut on_transfer = ext_mt_receiver::ext(receiver_id.clone());
                 if let Some(gas) = notify.min_gas {
                     on_transfer = on_transfer.with_static_gas(gas);
@@ -91,7 +91,7 @@ impl MultiTokenReceiver for Contract {
 
                 on_transfer.then(resolution).into()
             }
-            DepositMessageAction::Execute(execute) => {
+            DepositAction::Execute(execute) => {
                 if execute.refund_if_fails {
                     self.execute_intents(execute.execute_intents);
                 } else {
