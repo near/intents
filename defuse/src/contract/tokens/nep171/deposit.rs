@@ -55,7 +55,7 @@ impl NonFungibleTokenReceiver for Contract {
             DepositAction::Notify(notify) => ext_mt_receiver::ext(receiver_id.clone())
                 .with_static_gas(notify.min_gas.unwrap_or_default())
                 .mt_on_transfer(
-                    sender_id.clone(),
+                    sender_id,
                     vec![previous_owner_id],
                     vec![core_token_id.to_string()],
                     vec![U128(1)],
@@ -68,10 +68,11 @@ impl NonFungibleTokenReceiver for Contract {
                         .nft_resolve_deposit(&receiver_id, core_token_id),
                 )
                 .into(),
-            DepositAction::Execute(execute) if execute.execute_intents.is_empty() => {
-                PromiseOrValue::Value(false)
-            }
             DepositAction::Execute(execute) => {
+                if execute.execute_intents.is_empty() {
+                    return PromiseOrValue::Value(false);
+                }
+
                 if execute.refund_if_fails {
                     self.execute_intents(execute.execute_intents);
                 } else {

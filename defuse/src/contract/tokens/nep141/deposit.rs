@@ -56,22 +56,23 @@ impl FungibleTokenReceiver for Contract {
                 .with_static_gas(notify.min_gas.unwrap_or_default())
                 .mt_on_transfer(
                     sender_id.clone(),
-                    vec![sender_id.clone()],
+                    vec![sender_id],
                     vec![token_id.to_string()],
-                    vec![U128(amount_value)],
+                    vec![amount],
                     notify.msg,
                 )
                 .then(
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
                         .with_static_gas(Self::mt_resolve_deposit_gas(1))
                         .with_unused_gas_weight(0)
-                        .ft_resolve_deposit(&receiver_id, token_id, amount_value),
+                        .ft_resolve_deposit(&receiver_id, token_id, amount),
                 )
                 .into(),
-            DepositAction::Execute(execute) if execute.execute_intents.is_empty() => {
-                PromiseOrValue::Value(0.into())
-            }
             DepositAction::Execute(execute) => {
+                if execute.execute_intents.is_empty() {
+                    return PromiseOrValue::Value(0.into());
+                }
+
                 if execute.refund_if_fails {
                     self.execute_intents(execute.execute_intents);
                 } else {
@@ -92,10 +93,10 @@ impl Contract {
         &mut self,
         receiver_id: &AccountId,
         token_ids: TokenId,
-        deposited_amounts: u128,
+        deposited_amounts: U128,
     ) -> PromiseOrValue<U128> {
         let [result] = self
-            .resolve_deposit_internal(receiver_id, vec![token_ids], vec![deposited_amounts])
+            .resolve_deposit_internal(receiver_id, vec![token_ids], vec![deposited_amounts.0])
             .try_into()
             .unwrap_or_else(|_| {
                 unreachable!("ft_resolve_deposit expects return value of length == 1")

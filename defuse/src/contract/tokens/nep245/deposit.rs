@@ -57,10 +57,7 @@ impl MultiTokenReceiver for Contract {
 
         self.deposit(
             receiver_id.clone(),
-            wrapped_tokens
-                .clone()
-                .into_iter()
-                .zip(native_amounts.clone()),
+            wrapped_tokens.clone().into_iter().zip(native_amounts),
             Some("deposit"),
         )
         .unwrap_or_panic();
@@ -76,26 +73,28 @@ impl MultiTokenReceiver for Contract {
                     sender_id,
                     previous_owner_ids,
                     token_ids,
-                    amounts,
+                    amounts.clone(),
                     notify.msg,
                 )
                 .then(
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
                         .with_static_gas(Self::mt_resolve_deposit_gas(wrapped_tokens.len()))
                         .with_unused_gas_weight(0)
-                        .mt_resolve_deposit(&receiver_id, wrapped_tokens, native_amounts),
+                        .mt_resolve_deposit(&receiver_id, wrapped_tokens, amounts),
                 )
                 .into(),
-            DepositAction::Execute(execute) if execute.execute_intents.is_empty() => {
-                PromiseOrValue::Value(vec![U128(0); token_ids.len()])
-            }
             DepositAction::Execute(execute) => {
+                if execute.execute_intents.is_empty() {
+                    return PromiseOrValue::Value(vec![U128(0); token_ids.len()]);
+                }
+
                 if execute.refund_if_fails {
                     self.execute_intents(execute.execute_intents);
                 } else {
                     let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
                         .execute_intents(execute.execute_intents);
                 }
+
                 PromiseOrValue::Value(vec![U128(0); token_ids.len()])
             }
         }
@@ -105,15 +104,20 @@ impl MultiTokenReceiver for Contract {
 #[near]
 impl Contract {
     #[private]
+    #[allow(clippy::needless_pass_by_value)]
     pub fn mt_resolve_deposit(
         &mut self,
         receiver_id: &AccountId,
         token_ids: Vec<TokenId>,
-        deposited_amounts: Vec<u128>,
+        deposited_amounts: Vec<U128>,
     ) -> PromiseOrValue<Vec<U128>> {
         let tokens_count = token_ids.len();
 
-        let result = self.resolve_deposit_internal(receiver_id, token_ids, deposited_amounts);
+        let result = self.resolve_deposit_internal(
+            receiver_id,
+            token_ids,
+            deposited_amounts.iter().map(|val| val.0).collect(),
+        );
 
         if result.len() != tokens_count {
             unreachable!("mt_resolve_deposit expects return value of length == token_ids.len()");
