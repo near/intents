@@ -27,6 +27,9 @@ impl State {
         if msg.price < params.price {
             return Err(Error::PriceTooLow);
         }
+        if msg.deadline.has_expired() {
+            return Err(Error::DeadlineExpired);
+        }
 
         let (taker_src_out, taker_dst_used) =
             self.taker_swap(taker_dst_in, msg.price, params.partial_fills_allowed)?;

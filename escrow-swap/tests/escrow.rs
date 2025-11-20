@@ -157,6 +157,7 @@ async fn partial_fills() {
                         params: params.clone(),
                         action: FillAction {
                             price: "2".parse().unwrap(),
+                            deadline: Deadline::timeout(Duration::from_secs(10)),
                             receive_src_to: OverrideSend {
                                 memo: Some("taker memo".to_string()),
                                 // msg: Some("taker msg".to_string()),
