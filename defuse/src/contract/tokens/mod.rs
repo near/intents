@@ -199,16 +199,14 @@ impl Contract {
                 (token, available.min(deposited.min(*refund)))
             })
             .collect::<Vec<_>>();
-        let refunds_values = actual_refunds.iter().map(|(_, amount)| U128(*amount)).collect_vec();
+        let refunds_values = actual_refunds
+            .iter()
+            .map(|(_, amount)| U128(*amount))
+            .collect_vec();
 
         if !requested_refunds.is_empty() {
-            self.withdraw(
-                receiver_id.as_ref(),
-                actual_refunds,
-                Some("refund"),
-                false,
-            )
-            .unwrap_or_default();
+            self.withdraw(receiver_id.as_ref(), actual_refunds, Some("refund"), false)
+                .unwrap_or_default();
         }
 
         refunds_values
