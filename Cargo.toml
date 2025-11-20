@@ -29,7 +29,6 @@ members = [
     "token-id",
     "ton-connect",
     "wnear",
-    "tests/contracts/multi-token-receiver-stub",
 ]
 default-members = ["defuse"]
 
