@@ -10,7 +10,7 @@ use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near, require};
 use crate::{
     contract::{Contract, ContractExt},
     intents::{Intents, ext_intents},
-    tokens::{DepositMessage, DepositAction},
+    tokens::{DepositAction, DepositMessage},
 };
 
 #[near]
@@ -52,28 +52,22 @@ impl FungibleTokenReceiver for Contract {
         };
 
         match action {
-            DepositAction::Notify(notify) => {
-                let mut on_transfer = ext_mt_receiver::ext(receiver_id.clone());
-
-                if let Some(gas) = notify.min_gas {
-                    on_transfer = on_transfer.with_static_gas(gas);
-                }
-
-                let on_transfer = on_transfer.mt_on_transfer(
+            DepositAction::Notify(notify) => ext_mt_receiver::ext(receiver_id.clone())
+                .with_static_gas(notify.min_gas.unwrap_or_default())
+                .mt_on_transfer(
                     sender_id,
                     vec![receiver_id.clone()],
                     vec![token_id.to_string()],
                     vec![U128(amount_value)],
                     notify.msg,
-                );
-
-                let resolution = Self::ext(CURRENT_ACCOUNT_ID.clone())
-                    .with_static_gas(Self::mt_resolve_deposit_gas(1))
-                    .with_unused_gas_weight(0)
-                    .ft_resolve_deposit(&receiver_id, token_id, amount_value);
-
-                on_transfer.then(resolution).into()
-            }
+                )
+                .then(
+                    Self::ext(CURRENT_ACCOUNT_ID.clone())
+                        .with_static_gas(Self::mt_resolve_deposit_gas(1))
+                        .with_unused_gas_weight(0)
+                        .ft_resolve_deposit(&receiver_id, token_id, amount_value),
+                )
+                .into(),
             DepositAction::Execute(execute) if execute.execute_intents.is_empty() => {
                 PromiseOrValue::Value(0.into())
             }

@@ -10,7 +10,7 @@ use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near};
 use crate::{
     contract::{Contract, ContractExt},
     intents::{Intents, ext_intents},
-    tokens::{DepositMessage, DepositAction},
+    tokens::{DepositAction, DepositMessage},
 };
 
 #[near]
@@ -55,27 +55,22 @@ impl NonFungibleTokenReceiver for Contract {
         };
 
         match action {
-            DepositAction::Notify(notify) => {
-                let mut on_transfer = ext_mt_receiver::ext(receiver_id.clone());
-                if let Some(gas) = notify.min_gas {
-                    on_transfer = on_transfer.with_static_gas(gas);
-                }
-
-                let on_transfer = on_transfer.mt_on_transfer(
+            DepositAction::Notify(notify) => ext_mt_receiver::ext(receiver_id.clone())
+                .with_static_gas(notify.min_gas.unwrap_or_default())
+                .mt_on_transfer(
                     sender_id.clone(),
                     vec![sender_id],
                     vec![core_token_id.to_string()],
                     vec![U128(1)],
                     notify.msg,
-                );
-
-                let resolution = Self::ext(CURRENT_ACCOUNT_ID.clone())
-                    .with_static_gas(Self::mt_resolve_deposit_gas(1))
-                    .with_unused_gas_weight(0)
-                    .nft_resolve_deposit(&receiver_id, core_token_id);
-
-                on_transfer.then(resolution).into()
-            }
+                )
+                .then(
+                    Self::ext(CURRENT_ACCOUNT_ID.clone())
+                        .with_static_gas(Self::mt_resolve_deposit_gas(1))
+                        .with_unused_gas_weight(0)
+                        .nft_resolve_deposit(&receiver_id, core_token_id),
+                )
+                .into(),
             DepositAction::Execute(execute) if execute.execute_intents.is_empty() => {
                 PromiseOrValue::Value(false)
             }

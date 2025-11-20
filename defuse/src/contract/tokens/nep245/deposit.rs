@@ -9,7 +9,7 @@ use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near, require};
 use crate::{
     contract::{Contract, ContractExt},
     intents::{Intents, ext_intents},
-    tokens::{DepositMessage, DepositAction},
+    tokens::{DepositAction, DepositMessage},
 };
 
 #[near]
@@ -70,27 +70,22 @@ impl MultiTokenReceiver for Contract {
         };
 
         match action {
-            DepositAction::Notify(notify) => {
-                let mut on_transfer = ext_mt_receiver::ext(receiver_id.clone());
-                if let Some(gas) = notify.min_gas {
-                    on_transfer = on_transfer.with_static_gas(gas);
-                }
-
-                let on_transfer = on_transfer.mt_on_transfer(
+            DepositAction::Notify(notify) => ext_mt_receiver::ext(receiver_id.clone())
+                .with_static_gas(notify.min_gas.unwrap_or_default())
+                .mt_on_transfer(
                     sender_id,
                     previous_owner_ids,
                     token_ids,
                     amounts,
                     notify.msg,
-                );
-
-                let resolution = Self::ext(CURRENT_ACCOUNT_ID.clone())
-                    .with_static_gas(Self::mt_resolve_deposit_gas(wrapped_tokens.len()))
-                    .with_unused_gas_weight(0)
-                    .mt_resolve_deposit(&receiver_id, wrapped_tokens, native_amounts);
-
-                on_transfer.then(resolution).into()
-            }
+                )
+                .then(
+                    Self::ext(CURRENT_ACCOUNT_ID.clone())
+                        .with_static_gas(Self::mt_resolve_deposit_gas(wrapped_tokens.len()))
+                        .with_unused_gas_weight(0)
+                        .mt_resolve_deposit(&receiver_id, wrapped_tokens, native_amounts),
+                )
+                .into(),
             DepositAction::Execute(execute) if execute.execute_intents.is_empty() => {
                 PromiseOrValue::Value(vec![U128(0); token_ids.len()])
             }
