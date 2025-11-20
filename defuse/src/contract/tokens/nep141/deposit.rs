@@ -47,8 +47,12 @@ impl FungibleTokenReceiver for Contract {
         )
         .unwrap_or_panic();
 
+        let Some(action) = action else {
+            return PromiseOrValue::Value(0.into());
+        };
+
         match action {
-            Some(DepositMessageAction::Notify(notify)) => {
+            DepositMessageAction::Notify(notify) => {
                 let mut on_transfer = ext_mt_receiver::ext(receiver_id.clone());
 
                 if let Some(gas) = notify.min_gas {
@@ -70,7 +74,7 @@ impl FungibleTokenReceiver for Contract {
 
                 on_transfer.then(resolution).into()
             }
-            Some(DepositMessageAction::Execute(execute)) => {
+            DepositMessageAction::Execute(execute) => {
                 if execute.refund_if_fails {
                     self.execute_intents(execute.execute_intents);
                 } else {
@@ -80,7 +84,6 @@ impl FungibleTokenReceiver for Contract {
                 }
                 PromiseOrValue::Value(0.into())
             }
-            None => PromiseOrValue::Value(0.into()),
         }
     }
 }

@@ -2,7 +2,7 @@ use defuse_core::token_id::{TokenId, nep171::Nep171TokenId};
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
-use defuse_nep245::{receiver::ext_mt_receiver};
+use defuse_nep245::receiver::ext_mt_receiver;
 use near_contract_standards::non_fungible_token::core::NonFungibleTokenReceiver;
 use near_plugins::{Pausable, pause};
 use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near};
@@ -39,10 +39,9 @@ impl NonFungibleTokenReceiver for Contract {
             msg.parse().unwrap_or_panic_display()
         };
 
-        let core_token_id: TokenId =
-            Nep171TokenId::new(PREDECESSOR_ACCOUNT_ID.clone(), token_id)
-                .unwrap_or_panic_display()
-                .into();
+        let core_token_id: TokenId = Nep171TokenId::new(PREDECESSOR_ACCOUNT_ID.clone(), token_id)
+            .unwrap_or_panic_display()
+            .into();
 
         self.deposit(
             receiver_id.clone(),
@@ -51,8 +50,12 @@ impl NonFungibleTokenReceiver for Contract {
         )
         .unwrap_or_panic();
 
+        let Some(action) = action else {
+            return PromiseOrValue::Value(false);
+        };
+
         match action {
-            Some(DepositMessageAction::Notify(notify)) => {
+            DepositMessageAction::Notify(notify) => {
                 let mut on_transfer = ext_mt_receiver::ext(receiver_id.clone());
                 if let Some(gas) = notify.min_gas {
                     on_transfer = on_transfer.with_static_gas(gas);
@@ -73,7 +76,7 @@ impl NonFungibleTokenReceiver for Contract {
 
                 on_transfer.then(resolution).into()
             }
-            Some(DepositMessageAction::Execute(execute)) => {
+            DepositMessageAction::Execute(execute) => {
                 if execute.refund_if_fails {
                     self.execute_intents(execute.execute_intents);
                 } else {
@@ -82,7 +85,6 @@ impl NonFungibleTokenReceiver for Contract {
                 }
                 PromiseOrValue::Value(false)
             }
-            None => PromiseOrValue::Value(false),
         }
     }
 }
