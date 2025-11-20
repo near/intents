@@ -2,20 +2,29 @@ mod letter_gen;
 mod mt_transfer_resolve_gas;
 pub mod traits;
 
+use crate::assert_a_contains_b;
 use crate::tests::defuse::DefuseExt;
+use crate::tests::defuse::DefuseSignerExt;
 use crate::tests::defuse::accounts::AccountManagerExt;
+use crate::tests::defuse::env::MT_RECEIVER_STUB_WASM;
 use crate::tests::defuse::env::{Env, get_account_public_key};
 use crate::tests::defuse::tokens::nep245::traits::DefuseMtWithdrawer;
 use crate::utils::mt::MtExt;
 use defuse::contract::config::{DefuseConfig, RolesConfig};
+use defuse::core::amounts::Amounts;
 use defuse::core::fees::{FeesConfig, Pips};
+use defuse::core::intents::tokens::{NotifyOnTransfer, Transfer};
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
 use defuse::core::token_id::nep245::Nep245TokenId;
 use defuse::nep245::Token;
+use defuse::nep245::{MtBurnEvent, MtEvent, MtTransferEvent};
 use defuse::tokens::{DepositAction, DepositMessage, ExecuteIntents};
+use defuse_near_utils::NearSdkLog;
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
+use near_sdk::json_types::U128;
 use rstest::rstest;
+use std::borrow::Cow;
 
 #[tokio::test]
 #[rstest]
@@ -1429,5 +1438,185 @@ async fn mt_transfer_call_circullar_callback() {
             .unwrap(),
         0,
         "User should have 0 wrapped tokens in defuse2"
+    );
+}
+
+#[tokio::test]
+async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
+    let env = Env::builder()
+        .deployer_as_super_admin()
+        .no_registration(false)
+        .build()
+        .await;
+
+    let (user, another_receiver, ft1, ft2) = futures::join!(
+        env.create_user(),
+        env.create_user(),
+        env.create_token(),
+        env.create_token()
+    );
+
+    let defuse2 = env
+        .deploy_defuse(
+            "defuse2",
+            DefuseConfig {
+                wnear_id: env.wnear.id().clone(),
+                fees: FeesConfig {
+                    fee: Pips::ZERO,
+                    fee_collector: env.id().clone(),
+                },
+                roles: RolesConfig::default(),
+            },
+            false,
+        )
+        .await
+        .unwrap();
+
+    let stub_receiver = env.create_user().await;
+    stub_receiver
+        .deploy(MT_RECEIVER_STUB_WASM.as_slice())
+        .await
+        .unwrap()
+        .unwrap();
+
+    // Register stub's public key in defuse2 so it can execute intents
+    stub_receiver
+        .add_public_key(defuse2.id(), get_account_public_key(&stub_receiver))
+        .await
+        .unwrap();
+
+    env.initial_ft_storage_deposit(vec![user.id(), stub_receiver.id()], vec![&ft1, &ft2])
+        .await;
+
+    let transfer_amounts = [1000, 2000, 3000].map(U128::from).to_vec();
+    let refund_amounts = [1000, 2000, 1000].map(U128::from).to_vec();
+
+    let ft1_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
+    let ft2_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
+
+    let nep245_ft1_id =
+        TokenId::Nep245(Nep245TokenId::new(env.defuse.id().clone(), ft1_id.to_string()).unwrap());
+    let nep245_ft2_id =
+        TokenId::Nep245(Nep245TokenId::new(env.defuse.id().clone(), ft2_id.to_string()).unwrap());
+
+    env.defuse_ft_deposit_to(&ft1, 4000, user.id())
+        .await
+        .unwrap();
+    env.defuse_ft_deposit_to(&ft2, 2000, user.id())
+        .await
+        .unwrap();
+
+    // Create stub action that executes the intent and returns refund amounts
+    let stub_action = StubAction::ExecuteAndRefund {
+        intents_json: near_sdk::serde_json::to_string(&vec![
+            stub_receiver
+                .sign_defuse_payload_default(
+                    defuse2.id(),
+                    [Transfer {
+                        receiver_id: another_receiver.id().clone(),
+                        tokens: Amounts::new([(nep245_ft1_id.clone(), 2000)].into()),
+                        memo: None,
+                        notification: None,
+                    }],
+                )
+                .await
+                .unwrap(),
+        ])
+        .unwrap(),
+        refund_amounts: refund_amounts.clone(),
+    };
+
+    let deposit_message = DepositMessage {
+        receiver_id: stub_receiver.id().clone(),
+        action: Some(DepositAction::Notify(NotifyOnTransfer {
+            msg: near_sdk::serde_json::to_string(&stub_action).unwrap(),
+            min_gas: None,
+        })),
+    };
+
+    // Transfer with duplicates: (token1, 1000), (token2, 2000), (token1, 3000)
+    let result = user
+        .call(env.defuse.id(), "mt_batch_transfer_call")
+        .deposit(near_workspaces::types::NearToken::from_yoctonear(1))
+        .args_json(near_sdk::serde_json::json!({
+            "receiver_id": defuse2.id(),
+            "token_ids": vec![ft1_id.to_string(), ft2_id.to_string(), ft1_id.to_string()],
+            "amounts": transfer_amounts,
+            "approvals": Option::<Vec<Option<(near_sdk::AccountId, u64)>>>::None,
+            "memo": Option::<String>::None,
+            "msg": near_sdk::serde_json::to_string(&deposit_message).unwrap(),
+        }))
+        .max_gas()
+        .transact()
+        .await
+        .unwrap();
+
+    println!("\n=== Transaction Logs ===");
+    for (i, log) in result.logs().iter().enumerate() {
+        println!("[{}] {}", i, log);
+    }
+
+    let all_logs: Vec<String> = result.logs().iter().map(|s| s.to_string()).collect();
+    let _ = result.into_result().unwrap();
+
+    // Token IDs for events
+    let ft_token_ids = [
+        ft1_id.to_string(),
+        ft2_id.to_string(),
+        ft1_id.to_string(),
+    ];
+    let mt_token_ids = [
+        nep245_ft1_id.to_string(),
+        nep245_ft2_id.to_string(),
+        nep245_ft1_id.to_string(),
+    ];
+
+    // Expected mt_burn event with capped refunds [1000, 2000, 1000]
+    let burn_events = [MtBurnEvent {
+        owner_id: Cow::Borrowed(stub_receiver.id().as_ref()),
+        authorized_id: None,
+        token_ids: Cow::Borrowed(&mt_token_ids),
+        amounts: Cow::Borrowed(&refund_amounts),
+        memo: Some(Cow::Borrowed("refund")),
+    }];
+    let expected_mt_burn = MtEvent::MtBurn(Cow::Borrowed(&burn_events));
+
+    // Expected mt_transfer event with capped refunds [1000, 2000, 1000]
+    let transfer_events = [MtTransferEvent {
+        authorized_id: None,
+        old_owner_id: Cow::Borrowed(defuse2.id().as_ref()),
+        new_owner_id: Cow::Borrowed(user.id().as_ref()),
+        token_ids: Cow::Borrowed(&ft_token_ids),
+        amounts: Cow::Borrowed(&refund_amounts),  // Use capped refund amounts
+        memo: Some(Cow::Borrowed("refund")),
+    }];
+    let expected_mt_transfer = MtEvent::MtTransfer(Cow::Borrowed(&transfer_events));
+
+    // Verify events match expected structure
+    assert_a_contains_b!(
+        a: all_logs,
+        b: [
+            expected_mt_burn.to_near_sdk_log(),
+            expected_mt_transfer.to_near_sdk_log(),
+        ]
+    );
+
+    // Check final balances in defuse1
+    // User should have: 1000 (first refund) + 1000 (third refund capped) = 2000 of token1
+    assert_eq!(
+        env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft1_id.to_string())
+            .await
+            .unwrap(),
+        2000,
+        "User should have 2000 of token1 after refunds"
+    );
+
+    // User should have: 2000 (second refund) = 2000 of token2 (all refunded)
+    assert_eq!(
+        env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft2_id.to_string())
+            .await
+            .unwrap(),
+        2000,
+        "User should have 2000 of token2 after refund"
     );
 }

@@ -951,6 +951,7 @@ dependencies = [
 name = "defuse-nep245"
 version = "0.1.0"
 dependencies = [
+ "defuse-near-utils",
  "derive_more 2.0.1",
  "near-sdk",
 ]

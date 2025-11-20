@@ -1,10 +1,15 @@
 use defuse_nep245::{TokenId, receiver::MultiTokenReceiver};
-use near_sdk::{AccountId, PromiseOrValue, env, json_types::U128, near, serde_json};
+use near_sdk::{AccountId, PromiseOrValue, env, ext_contract, json_types::U128, near, serde_json};
 
 /// Minimal stub contract used for integration tests.
 #[derive(Default)]
 #[near(contract_state)]
 pub struct Contract;
+
+#[ext_contract(ext_intents)]
+pub trait Intents {
+    fn execute_intents(&mut self, signed: serde_json::Value);
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 #[near(serializers = [json])]
@@ -15,6 +20,10 @@ pub enum MTReceiverMode {
     ReturnValues(Vec<U128>),
     Panic,
     LargeReturn,
+    ExecuteAndRefund {
+        intents_json: String,
+        refund_amounts: Vec<U128>,
+    },
 }
 
 #[near]
@@ -39,7 +48,28 @@ impl MultiTokenReceiver for Contract {
             MTReceiverMode::Panic => env::panic_str("MTReceiverMode::Panic"),
             // 16 * 250_000 = 4 MB, which is the limit for a contract return value
             MTReceiverMode::LargeReturn => PromiseOrValue::Value(vec![U128(u128::MAX); 250_000]),
+            MTReceiverMode::ExecuteAndRefund {
+                intents_json,
+                refund_amounts,
+            } => {
+                let intents: serde_json::Value = serde_json::from_str(&intents_json)
+                    .expect("Failed to parse intents JSON");
+                ext_intents::ext(env::predecessor_account_id())
+                    .execute_intents(intents)
+                    .then(
+                        Self::ext(env::current_account_id()).return_refunds(refund_amounts),
+                    )
+                    .into()
+            }
         }
+    }
+}
+
+#[near]
+impl Contract {
+    #[private]
+    pub fn return_refunds(&self, refund_amounts: Vec<U128>) -> Vec<U128> {
+        refund_amounts
     }
 }
 

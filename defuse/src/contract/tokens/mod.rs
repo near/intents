@@ -10,7 +10,7 @@ use itertools::{Itertools, izip};
 use near_sdk::{
     AccountId, AccountIdRef, Gas, PromiseResult, env, json_types::U128, require, serde_json,
 };
-use std::borrow::Cow;
+use std::{borrow::Cow, collections::HashMap};
 
 pub const STORAGE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
 
@@ -184,27 +184,44 @@ impl Contract {
             PromiseResult::Failed => deposited_amounts.clone(),
         };
 
-        let actual_refunds = izip!(token_ids, deposited_amounts, &requested_refunds)
-            .map(|(token, deposited, refund)| {
-                let available = self
-                    .accounts
-                    .get(receiver_id.as_ref())
-                    .map_or(0, |account| {
-                        account
-                            .as_inner_unchecked()
-                            .token_balances
-                            .amount_for(&token)
-                    });
-                (token, available.min(deposited.min(*refund)))
+        let available_balance = token_ids.iter().map(|token_id| {
+            (token_id, self.accounts
+                .get(receiver_id.as_ref())
+                .map_or(0, |account| {
+                    account
+                        .as_inner_unchecked()
+                        .token_balances
+                        .amount_for(token_id)
+                }))
+        }).collect::<HashMap<_, _>>();
+
+        let mut maximum_possible_refund = token_ids
+            .iter()
+            .zip(deposited_amounts.iter())
+            .fold(HashMap::new(),| mut map, (token_id, amount)| {
+                let avilalble = available_balance.get(token_id).copied().unwrap_or_default();
+
+                map.entry(token_id)
+                    .and_modify(|val| *val = avilalble.min(*amount + amount))
+                    .or_insert(avilalble.min(*amount));
+                map
+            });
+
+        let actual_refunds = izip!(&token_ids, &requested_refunds)
+            .map(|(token, refund)| {
+                match maximum_possible_refund.get_mut(token) {
+                    None => (token.clone(), 0),
+                    Some(available) => {
+                        let refund = (*refund).min(*available);
+                        *available -= refund;
+                        (token.clone(), refund)
+                    }
+                }
             })
             .collect_vec();
+        let refunds_values = actual_refunds.iter().map(|(_, amount)| U128(*amount)).collect_vec();
 
-        let refunds_values = actual_refunds
-            .iter()
-            .map(|(_, amount)| U128(*amount))
-            .collect();
-
-        if !requested_refunds.is_empty() {
+        if !actual_refunds.is_empty() {
             self.withdraw(receiver_id.as_ref(), actual_refunds, Some("refund"), false)
                 .unwrap_or_default();
         }
