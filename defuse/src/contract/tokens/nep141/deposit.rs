@@ -55,8 +55,8 @@ impl FungibleTokenReceiver for Contract {
             DepositAction::Notify(notify) => ext_mt_receiver::ext(receiver_id.clone())
                 .with_static_gas(notify.min_gas.unwrap_or_default())
                 .mt_on_transfer(
-                    sender_id,
-                    vec![receiver_id.clone()],
+                    sender_id.clone(),
+                    vec![sender_id.clone()],
                     vec![token_id.to_string()],
                     vec![U128(amount_value)],
                     notify.msg,

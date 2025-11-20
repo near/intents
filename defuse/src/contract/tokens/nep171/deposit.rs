@@ -27,9 +27,6 @@ impl NonFungibleTokenReceiver for Contract {
         token_id: defuse_nep245::TokenId,
         msg: String,
     ) -> PromiseOrValue<bool> {
-        #[allow(clippy::no_effect_underscore_binding)]
-        let _previous_owner_id = previous_owner_id;
-
         let DepositMessage {
             receiver_id,
             action,
@@ -59,7 +56,7 @@ impl NonFungibleTokenReceiver for Contract {
                 .with_static_gas(notify.min_gas.unwrap_or_default())
                 .mt_on_transfer(
                     sender_id.clone(),
-                    vec![sender_id],
+                    vec![previous_owner_id],
                     vec![core_token_id.to_string()],
                     vec![U128(1)],
                     notify.msg,
