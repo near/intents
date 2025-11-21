@@ -9,6 +9,7 @@ repository.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+defuse = { workspace = true }
 defuse-nep245.workspace = true
 near-sdk.workspace = true
 
@@ -17,3 +18,7 @@ near-sdk = { workspace = true, features = ["unit-testing"] }
 near-workspaces.workspace = true
 tokio.workspace = true
 serde_json.workspace = true
+
+[features]
+default = []
+abi = ["defuse/abi"]
