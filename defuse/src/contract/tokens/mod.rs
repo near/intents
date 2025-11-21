@@ -143,17 +143,6 @@ impl Contract {
             )
             .unwrap_or_else(|| env::panic_str("gas calculation overflow"))
     }
-
-    /// Generic internal helper for resolving deposit refunds across all token standards (NEP-141, NEP-171, NEP-245).
-    ///
-    /// This function:
-    /// 1. Checks that all received ids are unique
-    /// 2. Takes parallel vectors of token IDs, deposited amounts, and requested refunds
-    /// 3. Checks available balance for each token in the receiver's account
-    /// 4. Caps refunds at both the deposited amount and available balance
-    /// 5. Directly modifies account balances and total supplies one by one
-    /// 6. Postpones MT burn event emission to the end of the transaction
-    /// 7. Returns the actual refund (burned) amounts for each request
     pub fn resolve_deposit_internal(
         &mut self,
         receiver_id: &AccountId,
