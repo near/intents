@@ -213,7 +213,7 @@ script = "cd ${TARGET_DIR} && du -ah *.wasm"
 [tasks.clippy]
 dependencies = ["add-cache-dir-tag"]
 command = "cargo"
-args = ["clippy", "--workspace", "--all-targets", "--no-deps"]
+args = ["clippy", "--workspace", "--all-targets", "--no-deps", "--no-default-features"]
 
 # We add CACHEDIR.TAG as it helps in making system level applications, e.g., backup systems, understand that this directory is just for disposable things.
 [tasks.add-cache-dir-tag]
