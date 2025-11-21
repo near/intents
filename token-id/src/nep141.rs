@@ -1,7 +1,6 @@
 use std::{fmt, str::FromStr};
 
 use near_sdk::{AccountId, AccountIdRef, near};
-use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 use crate::error::TokenIdError;
 

@@ -6,9 +6,7 @@ use super::Contract;
 use defuse_core::{DefuseError, Result, token_id::TokenId};
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
 use itertools::{Either, Itertools};
-use near_sdk::{
-    AccountId, AccountIdRef, Gas, PromiseResult, env, json_types::U128, serde_json,
-};
+use near_sdk::{AccountId, AccountIdRef, Gas, PromiseResult, env, json_types::U128, serde_json};
 use std::borrow::Cow;
 
 pub const STORAGE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
@@ -187,10 +185,10 @@ impl Contract {
             let requested_refund = requested_refund.unwrap_or(*deposited);
             let balance_left = receiver.token_balances.amount_for(&token_id);
             let refund_amount = balance_left.min(requested_refund);
+            *deposited = refund_amount;
             if refund_amount == 0 {
                 continue;
             }
-            *deposited = refund_amount;
 
             burn_event.token_ids.to_mut().push(token_id.to_string());
             burn_event.amounts.to_mut().push(U128(refund_amount));

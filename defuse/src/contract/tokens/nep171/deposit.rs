@@ -36,9 +36,9 @@ impl NonFungibleTokenReceiver for Contract {
             msg.parse().unwrap_or_panic_display()
         };
 
-        let nep171_token_id = Nep171TokenId::new(PREDECESSOR_ACCOUNT_ID.clone(), token_id)
-            .unwrap_or_panic_display();
-        let core_token_id= TokenId::from(nep171_token_id.clone());
+        let nep171_token_id =
+            Nep171TokenId::new(PREDECESSOR_ACCOUNT_ID.clone(), token_id).unwrap_or_panic_display();
+        let core_token_id = TokenId::from(nep171_token_id.clone());
 
         self.deposit(
             receiver_id.clone(),
@@ -87,6 +87,7 @@ impl NonFungibleTokenReceiver for Contract {
 #[near]
 impl Contract {
     #[private]
+    #[allow(clippy::needless_pass_by_value)]
     pub fn nft_resolve_deposit(
         &mut self,
         receiver_id: AccountId,

@@ -87,6 +87,7 @@ impl FungibleTokenReceiver for Contract {
 #[near]
 impl Contract {
     #[private]
+    #[allow(clippy::needless_pass_by_value)]
     pub fn ft_resolve_deposit(
         &mut self,
         receiver_id: AccountId,

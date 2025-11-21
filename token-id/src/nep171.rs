@@ -3,7 +3,6 @@ pub use near_contract_standards::non_fungible_token::TokenId;
 use std::{fmt, str::FromStr};
 
 use near_sdk::{AccountId, AccountIdRef, near};
-use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 use crate::{MAX_ALLOWED_TOKEN_ID_LEN, error::TokenIdError};
 

@@ -62,10 +62,12 @@ impl MultiTokenReceiver for Contract {
             .map(Into::into)
             .collect();
 
-
         self.deposit(
             receiver_id.clone(),
-            wrapped_tokens.iter().cloned().zip(amounts.iter().map(|amount| amount.0)),
+            wrapped_tokens
+                .iter()
+                .cloned()
+                .zip(amounts.iter().map(|amount| amount.0)),
             Some("deposit"),
         )
         .unwrap_or_panic();
@@ -88,8 +90,11 @@ impl MultiTokenReceiver for Contract {
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
                         .with_static_gas(Self::mt_resolve_deposit_gas(wrapped_tokens.len()))
                         .with_unused_gas_weight(0)
-                        .mt_resolve_deposit(receiver_id, token.clone(), token_ids.into_iter().zip(amounts.into_iter()).collect()
-                        )
+                        .mt_resolve_deposit(
+                            receiver_id,
+                            token.clone(),
+                            token_ids.into_iter().zip(amounts.into_iter()).collect(),
+                        ),
                 )
                 .into(),
             DepositAction::Execute(execute) => {
@@ -117,16 +122,23 @@ impl Contract {
         contract_id: AccountId,
         amounts: Vec<(defuse_nep245::TokenId, U128)>,
     ) -> PromiseOrValue<Vec<U128>> {
-        let (tokens, mut amounts): (Vec<TokenId>, Vec<U128>) = amounts.into_iter()
-            .map(|(token_id, amount)|
-                (Nep245TokenId::new(contract_id.clone(), token_id).unwrap_or_panic_display().into(), amount)
-            ).unzip();
+        let (tokens, mut amounts): (Vec<TokenId>, Vec<U128>) = amounts
+            .into_iter()
+            .map(|(token_id, amount)| {
+                (
+                    Nep245TokenId::new(contract_id.clone(), token_id)
+                        .unwrap_or_panic_display()
+                        .into(),
+                    amount,
+                )
+            })
+            .unzip();
 
         self.resolve_deposit_internal(
             &receiver_id,
             tokens
                 .into_iter()
-                .zip(amounts.iter_mut().map(|amount| &mut amount.0))
+                .zip(amounts.iter_mut().map(|amount| &mut amount.0)),
         );
 
         PromiseOrValue::Value(amounts)
