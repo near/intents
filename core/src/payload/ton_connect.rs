@@ -28,7 +28,7 @@ where
         let text = self
             .payload
             .try_extract_text()
-            .ok_or(Error::custom("only text payload supported"))?;
+            .ok_or_else(|| Error::custom("only text payload supported"))?;
 
         let p: DefusePayload<T> = serde_json::from_str(&text)?;
 

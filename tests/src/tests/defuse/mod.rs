@@ -202,7 +202,7 @@ impl DefuseSigner for near_workspaces::Account {
                     domain: "intents.test.near".to_string(),
                     timestamp: defuse_near_utils::time::now(),
                     payload: defuse::core::ton_connect::TonConnectPayloadSchema::text(
-                        serde_json::to_string(&DefusePayload {
+                        &serde_json::to_string(&DefusePayload {
                             signer_id: self.id().clone(),
                             verifying_contract: defuse_contract.clone(),
                             deadline,

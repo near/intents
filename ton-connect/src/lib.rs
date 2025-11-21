@@ -51,11 +51,13 @@ impl TonConnectPayload {
             .try_into()
             .map_err(|_| Error::custom("negative timestamp"))?;
 
-        self.payload.hash_with_context(&TonConnectPayloadContext {
-            address: self.address.clone(),
+        let context = TonConnectPayloadContext {
+            address: self.address,
             domain: self.domain.clone(),
             timestamp,
-        })
+        };
+
+        self.payload.hash_with_context(context)
     }
 }
 
@@ -126,7 +128,7 @@ mod tests {
                         .unwrap(),
                     domain: "ton-connect.github.io".to_string(),
                     timestamp: DateTime::from_timestamp(1747759882, 0).unwrap(),
-                    payload: TonConnectPayloadSchema::text("Hello, TON!".repeat(100)),
+                    payload: TonConnectPayloadSchema::text(&"Hello, TON!".repeat(100)),
                 },
                 public_key: hex!(
                     "22e795a07e832fc9084ca35a488a711f1dbedef637d4e886a6997d93ee2c2e37"

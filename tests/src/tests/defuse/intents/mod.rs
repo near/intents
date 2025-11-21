@@ -398,7 +398,7 @@ async fn ton_connect_sign_intent_example() {
         domain: "example.com".to_string(),
         timestamp: defuse_near_utils::time::now(),
         payload: defuse::core::ton_connect::TonConnectPayloadSchema::text(
-            serde_json::to_string(&DefusePayload {
+            &serde_json::to_string(&DefusePayload {
                 signer_id: "alice.near".parse().unwrap(),
                 verifying_contract: "intent.near".parse().unwrap(),
                 deadline: Deadline::timeout(std::time::Duration::from_secs(120)),

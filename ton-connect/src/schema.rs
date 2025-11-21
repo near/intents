@@ -13,18 +13,44 @@ use tlb_ton::{
     ser::{CellBuilder, CellBuilderError, CellSerialize, CellSerializeExt},
 };
 
-pub use tlb_ton;
-
 pub struct TonConnectPayloadContext {
     pub address: MsgAddress,
     pub domain: String,
     pub timestamp: u64,
 }
 
+impl TonConnectPayloadContext {
+    pub fn create_payload_hash(
+        &self,
+        payload_prefix: &[u8],
+        payload: &[u8],
+    ) -> Result<near_sdk::CryptoHash, StringError> {
+        let bytes = [
+            [0xff, 0xff].as_slice(),
+            b"ton-connect/sign-data/",
+            &self.address.workchain_id.to_be_bytes(),
+            &self.address.address,
+            &u32::try_from(self.domain.len())
+                .map_err(|_| Error::custom("domain: overflow"))?
+                .to_be_bytes(),
+            self.domain.as_bytes(),
+            &self.timestamp.to_be_bytes(),
+            payload_prefix,
+            &u32::try_from(payload.len())
+                .map_err(|_| Error::custom("payload: overflow"))?
+                .to_be_bytes(),
+            payload,
+        ]
+        .concat();
+
+        Ok(env::sha256_array(&bytes))
+    }
+}
+
 pub trait PayloadSchema: Debug + Clone + PartialEq + Eq {
     fn hash_with_context(
         &self,
-        context: &TonConnectPayloadContext,
+        context: TonConnectPayloadContext,
     ) -> Result<near_sdk::CryptoHash, StringError>;
 }
 
@@ -42,57 +68,61 @@ pub trait PayloadSchema: Debug + Clone + PartialEq + Eq {
 #[serde(tag = "type", rename_all = "snake_case")]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TonConnectPayloadSchema {
-    // #[cfg(feature = "text")]
+    #[cfg(feature = "text")]
     Text(TextPayload),
-    // #[cfg(feature = "binary")]
+    #[cfg(feature = "binary")]
     Binary(BinaryPayload),
-    // #[cfg(feature = "cell")]
+    #[cfg(feature = "cell")]
     Cell(CellPayload),
 }
 
 impl TonConnectPayloadSchema {
-    pub fn text(txt: impl ToString) -> Self {
+    pub fn try_extract_text(&self) -> Option<String> {
+        match self {
+            #[cfg(feature = "text")]
+            Self::Text(payload) => Some(payload.text.clone()),
+            _ => None,
+        }
+    }
+
+    #[cfg(feature = "text")]
+    pub fn text(txt: &impl ToString) -> Self {
         Self::Text(TextPayload {
             text: txt.to_string(),
         })
     }
 
+    #[cfg(feature = "binary")]
     pub fn binary(bytes: &[u8]) -> Self {
         Self::Binary(BinaryPayload {
             bytes: bytes.to_vec(),
         })
     }
 
-    pub fn cell(schema_crc: u32, cell: Cell) -> Self {
+    #[cfg(feature = "cell")]
+    pub const fn cell(schema_crc: u32, cell: Cell) -> Self {
         Self::Cell(CellPayload { schema_crc, cell })
-    }
-
-    pub fn try_extract_text(&self) -> Option<String> {
-        match self {
-            #[cfg(feature = "text")]
-            TonConnectPayloadSchema::Text(payload) => Some(payload.text.clone()),
-            _ => None,
-        }
     }
 }
 
 impl PayloadSchema for TonConnectPayloadSchema {
     fn hash_with_context(
         &self,
-        context: &TonConnectPayloadContext,
+        context: TonConnectPayloadContext,
     ) -> Result<near_sdk::CryptoHash, StringError> {
         match self {
-            // #[cfg(feature = "text")]
-            TonConnectPayloadSchema::Text(payload) => payload.hash_with_context(context),
-            // #[cfg(feature = "binary")]
-            TonConnectPayloadSchema::Binary(payload) => payload.hash_with_context(context),
-            // #[cfg(feature = "cell")]
-            TonConnectPayloadSchema::Cell(payload) => payload.hash_with_context(context),
+            #[cfg(feature = "text")]
+            Self::Text(payload) => payload.hash_with_context(context),
+            #[cfg(feature = "binary")]
+            Self::Binary(payload) => payload.hash_with_context(context),
+            #[cfg(feature = "cell")]
+            Self::Cell(payload) => payload.hash_with_context(context),
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(test, derive(arbitrary::Arbitrary))]
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
     serde_as(schemars = true)
@@ -103,7 +133,6 @@ impl PayloadSchema for TonConnectPayloadSchema {
 )]
 #[near(serializers = [json])]
 #[autoimpl(Deref using self.text)]
-#[cfg_attr(test, derive(arbitrary::Arbitrary))]
 pub struct TextPayload {
     text: String,
 }
@@ -111,12 +140,14 @@ pub struct TextPayload {
 impl PayloadSchema for TextPayload {
     fn hash_with_context(
         &self,
-        context: &TonConnectPayloadContext,
+        context: TonConnectPayloadContext,
     ) -> Result<near_sdk::CryptoHash, StringError> {
-        create_payload_hash(context, b"txt", self.as_bytes())
+        context.create_payload_hash(b"txt", self.as_bytes())
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(test, derive(arbitrary::Arbitrary))]
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
     serde_as(schemars = true)
@@ -126,9 +157,7 @@ impl PayloadSchema for TextPayload {
     serde_as(schemars = false)
 )]
 #[near(serializers = [json])]
-#[derive(Debug, Clone, PartialEq, Eq)]
 #[autoimpl(Deref using self.bytes)]
-#[cfg_attr(test, derive(arbitrary::Arbitrary))]
 pub struct BinaryPayload {
     #[serde_as(as = "Base64")]
     bytes: Vec<u8>,
@@ -137,38 +166,14 @@ pub struct BinaryPayload {
 impl PayloadSchema for BinaryPayload {
     fn hash_with_context(
         &self,
-        context: &TonConnectPayloadContext,
+        context: TonConnectPayloadContext,
     ) -> Result<near_sdk::CryptoHash, StringError> {
-        create_payload_hash(context, b"bin", self.as_slice())
+        context.create_payload_hash(b"bin", self.as_slice())
     }
 }
 
-pub fn create_payload_hash(
-    context: &TonConnectPayloadContext,
-    payload_prefix: &[u8],
-    payload: &[u8],
-) -> Result<near_sdk::CryptoHash, StringError> {
-    Ok(env::sha256_array(
-        &[
-            [0xff, 0xff].as_slice(),
-            b"ton-connect/sign-data/",
-            &context.address.workchain_id.to_be_bytes(),
-            &context.address.address,
-            &u32::try_from(context.domain.len())
-                .map_err(|_| Error::custom("domain: overflow"))?
-                .to_be_bytes(),
-            context.domain.as_bytes(),
-            &context.timestamp.to_be_bytes(),
-            payload_prefix,
-            &u32::try_from(payload.len())
-                .map_err(|_| Error::custom("payload: overflow"))?
-                .to_be_bytes(),
-            payload,
-        ]
-        .concat(),
-    ))
-}
-
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(test, derive(arbitrary::Arbitrary))]
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
     serde_as(schemars = true)
@@ -178,8 +183,6 @@ pub fn create_payload_hash(
     serde_as(schemars = false)
 )]
 #[near(serializers = [json])]
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(test, derive(arbitrary::Arbitrary))]
 pub struct CellPayload {
     schema_crc: u32,
     #[serde_as(as = "AsBoC<Base64>")]
@@ -230,17 +233,18 @@ where
 impl PayloadSchema for CellPayload {
     fn hash_with_context(
         &self,
-        context: &TonConnectPayloadContext,
+        context: TonConnectPayloadContext,
     ) -> Result<near_sdk::CryptoHash, StringError> {
-        Ok(TonConnectCellMessage {
+        let cell = TonConnectCellMessage {
             schema_crc: self.schema_crc,
             timestamp: context.timestamp,
             user_address: Cow::Borrowed(&context.address),
             app_domain: Cow::Borrowed(context.domain.as_str()),
             payload: self.cell.clone(),
         }
-        .to_cell()?
+        .to_cell()?;
+
         // use host function for recursive hash calculation
-        .hash_digest::<defuse_near_utils::digest::Sha256>())
+        Ok(cell.hash_digest::<defuse_near_utils::digest::Sha256>())
     }
 }

@@ -27,6 +27,8 @@ binary = []
 cell = []
 text = []
 
+all_schemas = ["text", "binary", "cell"]
+
 [dev-dependencies]
 defuse-test-utils.workspace = true
 
