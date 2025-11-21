@@ -25,8 +25,10 @@ where
     type Error = serde_json::Error;
 
     fn extract_defuse_payload(self) -> Result<DefusePayload<T>, Self::Error> {
-        let TonConnectPayloadSchema::Text { text } = self.payload else {
-            return Err(Error::custom("only text payload supported"));
+        let text = match self.payload {
+            TonConnectPayloadSchema::Text(payload) => payload.text,
+            #[allow(unreachable_patterns)]
+            _ => return Err(Error::custom("only text payload supported")),
         };
 
         let p: DefusePayload<T> = serde_json::from_str(&text)?;
