@@ -1,4 +1,4 @@
-use defuse_core::token_id::{TokenId, nep245::Nep245TokenId};
+use defuse_core::token_id::nep245::Nep245TokenId;
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
@@ -55,17 +55,13 @@ impl MultiTokenReceiver for Contract {
             msg.parse().unwrap_or_panic_display()
         };
 
-        let wrapped_tokens: Vec<TokenId> = token_ids
-            .iter()
-            .map(|token_id| Nep245TokenId::new(token.clone(), token_id.clone()))
-            .map(UnwrapOrPanicError::unwrap_or_panic_display)
-            .map(Into::into)
-            .collect();
-
         self.deposit(
             receiver_id.clone(),
-            wrapped_tokens
-                .into_iter()
+            token_ids
+                .iter()
+                .map(|token_id| Nep245TokenId::new(token.clone(), token_id.clone()))
+                .map(UnwrapOrPanicError::unwrap_or_panic_display)
+                .map(Into::into)
                 .zip(amounts.iter().map(|amount| amount.0)),
             Some("deposit"),
         )
@@ -118,17 +114,13 @@ impl Contract {
         tokens: Vec<defuse_nep245::TokenId>,
         #[allow(unused_mut)] mut amounts: Vec<U128>,
     ) -> PromiseOrValue<Vec<U128>> {
-        let tokens: Vec<TokenId> = tokens
-            .iter()
-            .map(|token_id| Nep245TokenId::new(contract_id.clone(), token_id.clone()))
-            .map(UnwrapOrPanicError::unwrap_or_panic_display)
-            .map(Into::into)
-            .collect();
-
         self.resolve_deposit_internal(
             &receiver_id,
             tokens
-                .into_iter()
+                .iter()
+                .map(|token_id| Nep245TokenId::new(contract_id.clone(), token_id.clone()))
+                .map(UnwrapOrPanicError::unwrap_or_panic_display)
+                .map(Into::into)
                 .zip(amounts.iter_mut().map(|amount| &mut amount.0)),
         );
 

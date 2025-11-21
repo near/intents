@@ -97,7 +97,15 @@ impl Contract {
     ) -> PromiseOrValue<bool> {
         let mut amount = 1u128;
 
-        self.resolve_deposit_internal(&receiver_id, [(Nep171TokenId::new(contract_id, nft_token_id).unwrap_or_panic_display().into(), &mut amount)]);
+        self.resolve_deposit_internal(
+            &receiver_id,
+            [(
+                Nep171TokenId::new(contract_id, nft_token_id)
+                    .unwrap_or_panic_display()
+                    .into(),
+                &mut amount,
+            )],
+        );
         PromiseOrValue::Value(amount == 1)
     }
 }
