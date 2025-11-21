@@ -26,7 +26,7 @@ impl FungibleTokenReceiver for Contract {
         amount: U128,
         msg: String,
     ) -> PromiseOrValue<U128> {
-        require!(amount > 0.into(), "zero amount");
+        require!(amount.0 > 0, "zero amount");
 
         let nep141_token_id = Nep141TokenId::new(PREDECESSOR_ACCOUNT_ID.clone());
         let token_id = TokenId::Nep141(nep141_token_id.clone());

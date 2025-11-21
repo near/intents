@@ -65,8 +65,7 @@ impl MultiTokenReceiver for Contract {
         self.deposit(
             receiver_id.clone(),
             wrapped_tokens
-                .iter()
-                .cloned()
+                .into_iter()
                 .zip(amounts.iter().map(|amount| amount.0)),
             Some("deposit"),
         )
@@ -88,13 +87,9 @@ impl MultiTokenReceiver for Contract {
                 )
                 .then(
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
-                        .with_static_gas(Self::mt_resolve_deposit_gas(wrapped_tokens.len()))
+                        .with_static_gas(Self::mt_resolve_deposit_gas(amounts.len()))
                         .with_unused_gas_weight(0)
-                        .mt_resolve_deposit(
-                            receiver_id,
-                            token.clone(),
-                            token_ids.into_iter().zip(amounts.into_iter()).collect(),
-                        ),
+                        .mt_resolve_deposit(receiver_id, token.clone(), token_ids, amounts),
                 )
                 .into(),
             DepositAction::Execute(execute) => {
@@ -120,19 +115,15 @@ impl Contract {
         &mut self,
         receiver_id: AccountId,
         contract_id: AccountId,
-        amounts: Vec<(defuse_nep245::TokenId, U128)>,
+        tokens: Vec<defuse_nep245::TokenId>,
+        #[allow(unused_mut)] mut amounts: Vec<U128>,
     ) -> PromiseOrValue<Vec<U128>> {
-        let (tokens, mut amounts): (Vec<TokenId>, Vec<U128>) = amounts
-            .into_iter()
-            .map(|(token_id, amount)| {
-                (
-                    Nep245TokenId::new(contract_id.clone(), token_id)
-                        .unwrap_or_panic_display()
-                        .into(),
-                    amount,
-                )
-            })
-            .unzip();
+        let tokens: Vec<TokenId> = tokens
+            .iter()
+            .map(|token_id| Nep245TokenId::new(contract_id.clone(), token_id.clone()))
+            .map(UnwrapOrPanicError::unwrap_or_panic_display)
+            .map(Into::into)
+            .collect();
 
         self.resolve_deposit_internal(
             &receiver_id,
