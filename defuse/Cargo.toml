@@ -13,7 +13,6 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [dependencies]
-itertools.workspace = true
 defuse-admin-utils.workspace = true
 defuse-auth-call.workspace = true
 defuse-bitmap = { workspace = true, optional = true }

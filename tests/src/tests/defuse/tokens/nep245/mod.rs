@@ -1556,7 +1556,11 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
         println!("[{i}] {log}");
     }
 
-    let all_logs: Vec<String> = result.logs().iter().map(std::string::ToString::to_string).collect();
+    let all_logs: Vec<String> = result
+        .logs()
+        .iter()
+        .map(std::string::ToString::to_string)
+        .collect();
     let _ = result.into_result().unwrap();
 
     // Token IDs for events

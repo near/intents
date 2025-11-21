@@ -207,24 +207,20 @@ impl Contract {
             let balance = unlocked_owner.token_balances.amount_for(token_id);
             let amount = balance.min(*requested).min(actual);
 
-            // Add to result vector (one per token)
             result.push(U128(amount));
 
             if amount == 0 {
                 continue;
             }
 
-            // Add to burn event for non-zero amounts
             burn_event.token_ids.to_mut().push(token_id.to_string());
             burn_event.amounts.to_mut().push(U128(amount));
 
-            // Subtract from account balance
             unlocked_owner
                 .token_balances
                 .sub(token_id.clone(), amount)
                 .unwrap_or_else(|| env::panic_str("balance underflow"));
 
-            // Subtract from total supply
             self.storage
                 .state
                 .total_supplies
@@ -232,7 +228,6 @@ impl Contract {
                 .unwrap_or_else(|| env::panic_str("total supply underflow"));
         }
 
-        // Emit mt_burn event immediately for refunds
         if !burn_event.amounts.is_empty() {
             MtEvent::MtBurn([burn_event].as_slice().into()).emit();
         }
