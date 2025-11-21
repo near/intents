@@ -20,25 +20,27 @@ pub struct TonConnectPayloadContext {
 }
 
 impl TonConnectPayloadContext {
+    // See https://docs.tonconsole.com/academy/sign-data#how-the-signature-is-built
     pub fn create_payload_hash(
         &self,
         payload_prefix: &[u8],
         payload: &[u8],
     ) -> Result<near_sdk::CryptoHash, StringError> {
+        let domain_len =
+            u32::try_from(self.domain.len()).map_err(|_| Error::custom("domain: overflow"))?;
+        let payload_len =
+            u32::try_from(payload.len()).map_err(|_| Error::custom("payload: overflow"))?;
+
         let bytes = [
             [0xff, 0xff].as_slice(),
             b"ton-connect/sign-data/",
             &self.address.workchain_id.to_be_bytes(),
-            &self.address.address,
-            &u32::try_from(self.domain.len())
-                .map_err(|_| Error::custom("domain: overflow"))?
-                .to_be_bytes(),
+            self.address.address.as_ref(),
+            &domain_len.to_be_bytes(),
             self.domain.as_bytes(),
             &self.timestamp.to_be_bytes(),
             payload_prefix,
-            &u32::try_from(payload.len())
-                .map_err(|_| Error::custom("payload: overflow"))?
-                .to_be_bytes(),
+            &payload_len.to_be_bytes(),
             payload,
         ]
         .concat();
@@ -77,14 +79,6 @@ pub enum TonConnectPayloadSchema {
 }
 
 impl TonConnectPayloadSchema {
-    pub fn try_extract_text(&self) -> Option<String> {
-        match self {
-            #[cfg(feature = "text")]
-            Self::Text(payload) => Some(payload.text.clone()),
-            _ => None,
-        }
-    }
-
     #[cfg(feature = "text")]
     pub fn text(txt: &impl ToString) -> Self {
         Self::Text(TextPayload {
@@ -102,6 +96,15 @@ impl TonConnectPayloadSchema {
     #[cfg(feature = "cell")]
     pub const fn cell(schema_crc: u32, cell: Cell) -> Self {
         Self::Cell(CellPayload { schema_crc, cell })
+    }
+
+    #[cfg(feature = "text")]
+    pub fn try_extract_text(&self) -> Option<String> {
+        if let Self::Text(payload) = self {
+            Some(payload.text.clone())
+        } else {
+            None
+        }
     }
 }
 
