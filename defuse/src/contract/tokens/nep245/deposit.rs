@@ -61,11 +61,13 @@ impl MultiTokenReceiver for Contract {
             .map(UnwrapOrPanicError::unwrap_or_panic_display)
             .map(Into::into)
             .collect();
-        let native_amounts = amounts.iter().map(|elem| elem.0).collect::<Vec<_>>();
+
+        let token_amounts = wrapped_tokens.iter().cloned().zip(amounts.iter().copied()).collect::<Vec<_>>();
 
         self.deposit(
             receiver_id.clone(),
-            wrapped_tokens.clone().into_iter().zip(native_amounts),
+            //TODO: get rid of it
+            token_amounts.iter().map(|(token, amount)| (token.clone(), amount.0)).collect::<Vec<_>>(),
             Some("deposit"),
         )
         .unwrap_or_panic();
@@ -88,7 +90,11 @@ impl MultiTokenReceiver for Contract {
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
                         .with_static_gas(Self::mt_resolve_deposit_gas(wrapped_tokens.len()))
                         .with_unused_gas_weight(0)
-                        .mt_resolve_deposit(&receiver_id, wrapped_tokens, amounts),
+                        .mt_resolve_deposit(
+                            &receiver_id,
+                            token_amounts,
+
+                        ),
                 )
                 .into(),
             DepositAction::Execute(execute) => {
@@ -116,18 +122,18 @@ impl Contract {
     pub fn mt_resolve_deposit(
         &mut self,
         receiver_id: &AccountId,
-        token_ids: Vec<TokenId>,
-        deposited_amounts: Vec<U128>,
+        amounts: Vec<(TokenId, U128)>,
     ) -> PromiseOrValue<Vec<U128>> {
-        let tokens_count = token_ids.len();
+        let (tokens, mut amounts): (Vec<TokenId>, Vec<U128>) = amounts.into_iter().unzip();
+        self.resolve_deposit_internal(
+            receiver_id,
+            tokens
+                .iter()
+                .zip(amounts.iter_mut())
+                .map(|(token, amount)| (token.clone(), &mut amount.0))
+                .into_iter()
+        );
 
-        let amounts_vec: Vec<u128> = deposited_amounts.iter().map(|elem| elem.0).collect();
-        let result = self.resolve_deposit_internal(receiver_id, &token_ids, &amounts_vec);
-
-        if result.len() != tokens_count {
-            unreachable!("mt_resolve_deposit expects return value of length == token_ids.len()");
-        }
-
-        PromiseOrValue::Value(result.into_iter().map(U128).collect())
+        PromiseOrValue::Value(amounts)
     }
 }

@@ -92,15 +92,11 @@ impl Contract {
     pub fn ft_resolve_deposit(
         &mut self,
         receiver_id: &AccountId,
-        token_ids: TokenId,
-        deposited_amounts: U128,
+        token_id: TokenId,
+        mut amount: U128,
     ) -> PromiseOrValue<U128> {
-        let [result] = self
-            .resolve_deposit_internal(receiver_id, &[token_ids], &[deposited_amounts.0])
-            .try_into()
-            .unwrap_or_else(|_| {
-                unreachable!("ft_resolve_deposit expects return value of length == 1")
-            });
-        PromiseOrValue::Value(U128(result))
+        self
+            .resolve_deposit_internal(receiver_id, [(token_id, & mut amount.0)]);
+        PromiseOrValue::Value(amount)
     }
 }

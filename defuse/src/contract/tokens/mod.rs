@@ -6,6 +6,7 @@ use super::Contract;
 use defuse_core::{DefuseError, Result, token_id::TokenId};
 use defuse_near_utils::CURRENT_ACCOUNT_ID;
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
+use itertools::Either;
 use near_sdk::{
     AccountId, AccountIdRef, Gas, PromiseResult, env, json_types::U128, require, serde_json,
 };
@@ -143,34 +144,32 @@ impl Contract {
             )
             .unwrap_or_else(|| env::panic_str("gas calculation overflow"))
     }
-    pub fn resolve_deposit_internal(
-        &mut self,
-        receiver_id: &AccountId,
-        token_ids: &[TokenId],
-        deposited_amounts: &[u128],
-    ) -> Vec<u128> {
+    pub fn resolve_deposit_internal<'a, I>(&mut self, receiver_id: &AccountId, tokens: I)
+    where
+        I: IntoIterator<Item = (TokenId, &'a mut u128)>,
+        I::IntoIter: ExactSizeIterator,
+    {
+        let tokens_iter = tokens.into_iter();
+        let tokens_count = tokens_iter.len();
+
         require!(
             env::predecessor_account_id() == *CURRENT_ACCOUNT_ID,
             "only self"
-        );
-        let tokens_count = token_ids.len();
-
-        require!(
-            (tokens_count == deposited_amounts.len()),
-            "token_ids and amounts must have the same length"
         );
 
         let requested_refunds = match env::promise_result(0) {
             PromiseResult::Successful(value) => serde_json::from_slice::<Vec<U128>>(&value)
                 .ok()
-                .filter(|refunds| refunds.len() == tokens_count)
-                .map_or_else(
-                    || deposited_amounts.to_owned(),
-                    |refunds| refunds.into_iter().map(|elem| elem.0).collect(),
-                ),
-            PromiseResult::Failed => deposited_amounts.to_owned(),
+                .filter(|refunds| refunds.len() == tokens_count),
+            PromiseResult::Failed => None,
         };
 
+        let x = requested_refunds.map_or_else(
+            || Either::Right(std::iter::repeat_with(|| None).take(tokens_count)),
+            |v| Either::Left(v.into_iter().map(|elem| Some(elem.0))),
+        );
+
+        // let refunds_iter = requested_refunds.map_or_else(|| vec![None, ]
         let mut burn_event = MtBurnEvent {
             owner_id: Cow::Owned(receiver_id.clone()),
             authorized_id: None,
@@ -179,48 +178,48 @@ impl Contract {
             memo: Some("refund".into()),
         };
 
-        let mut result = Vec::with_capacity(tokens_count);
 
         let Some(owner) = self.storage.accounts.get_mut(receiver_id.as_ref()) else {
-            return vec![0; tokens_count];
+            tokens_iter.for_each(|(_, amount)| *amount = 0);
+            return;
         };
 
         let Some(unlocked_owner) = owner.get_mut_maybe_forced(false) else {
-            return vec![0; tokens_count];
+            tokens_iter.into_iter().for_each(|(_, amount)| *amount = 0);
+            return;
         };
 
-        for (token_id, (requested, actual)) in token_ids
-            .iter()
-            .zip(deposited_amounts.iter().zip(requested_refunds))
-        {
-            let balance = unlocked_owner.token_balances.amount_for(token_id);
-            let amount = balance.min(*requested).min(actual);
 
-            result.push(amount);
+        for ((token_id, deposited), requested_refund) in tokens_iter.zip(x) {
+            let balance = unlocked_owner.token_balances.amount_for(&token_id);
 
-            if amount == 0 {
+            // NOTE: refund defaults to the amount of the deposit
+            let requested_refund = requested_refund.unwrap_or(*deposited);
+            let refund_amount = balance.min(requested_refund).min(*deposited);
+            if refund_amount == 0 {
                 continue;
             }
+            *deposited = refund_amount;
 
             burn_event.token_ids.to_mut().push(token_id.to_string());
-            burn_event.amounts.to_mut().push(U128(amount));
+            burn_event.amounts.to_mut().push(U128(refund_amount));
+
 
             unlocked_owner
                 .token_balances
-                .sub(token_id.clone(), amount)
+                .sub(token_id.clone(), refund_amount)
                 .unwrap_or_else(|| env::panic_str("balance underflow"));
 
             self.storage
                 .state
                 .total_supplies
-                .sub(token_id.clone(), amount)
+                .sub(token_id.clone(), refund_amount)
                 .unwrap_or_else(|| env::panic_str("total supply underflow"));
         }
+
 
         if !burn_event.amounts.is_empty() {
             MtEvent::MtBurn([burn_event].as_slice().into()).emit();
         }
-
-        result
     }
 }

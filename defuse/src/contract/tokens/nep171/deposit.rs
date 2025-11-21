@@ -93,12 +93,9 @@ impl Contract {
         receiver_id: &AccountId,
         token_ids: TokenId,
     ) -> PromiseOrValue<bool> {
-        let [result] = self
-            .resolve_deposit_internal(receiver_id, &[token_ids], &[1])
-            .try_into()
-            .unwrap_or_else(|_| {
-                unreachable!("nft_resolve_deposit expects return value of length == 1")
-            });
-        PromiseOrValue::Value(result == 1)
+        let mut amount = 1u128;
+        self
+            .resolve_deposit_internal(receiver_id, [(token_ids, &mut amount)]);
+        PromiseOrValue::Value(amount == 1)
     }
 }
