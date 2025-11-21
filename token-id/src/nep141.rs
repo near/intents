@@ -1,6 +1,7 @@
 use std::{fmt, str::FromStr};
 
 use near_sdk::{AccountId, AccountIdRef, near};
+use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 use crate::error::TokenIdError;
 
@@ -10,8 +11,8 @@ use arbitrary_with::{Arbitrary, As};
 use defuse_near_utils::arbitrary::ArbitraryAccountId;
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(Arbitrary))]
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[near(serializers = [borsh, json])]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr)]
+#[near(serializers = [borsh])]
 pub struct Nep141TokenId {
     #[cfg_attr(
         any(feature = "arbitrary", test),

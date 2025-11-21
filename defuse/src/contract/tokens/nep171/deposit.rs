@@ -36,9 +36,10 @@ impl NonFungibleTokenReceiver for Contract {
             msg.parse().unwrap_or_panic_display()
         };
 
-        let nep171_token_id =
-            Nep171TokenId::new(PREDECESSOR_ACCOUNT_ID.clone(), token_id).unwrap_or_panic_display();
-        let core_token_id = TokenId::from(nep171_token_id.clone());
+        let core_token_id = TokenId::from(
+            Nep171TokenId::new(PREDECESSOR_ACCOUNT_ID.clone(), token_id.clone())
+                .unwrap_or_panic_display(),
+        );
 
         self.deposit(
             receiver_id.clone(),
@@ -65,7 +66,7 @@ impl NonFungibleTokenReceiver for Contract {
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
                         .with_static_gas(Self::mt_resolve_deposit_gas(1))
                         .with_unused_gas_weight(0)
-                        .nft_resolve_deposit(receiver_id, nep171_token_id),
+                        .nft_resolve_deposit(receiver_id, PREDECESSOR_ACCOUNT_ID.clone(), token_id),
                 )
                 .into(),
             DepositAction::Execute(execute) => {
@@ -91,10 +92,12 @@ impl Contract {
     pub fn nft_resolve_deposit(
         &mut self,
         receiver_id: AccountId,
-        token_id: Nep171TokenId,
+        contract_id: AccountId,
+        nft_token_id: defuse_nep245::TokenId,
     ) -> PromiseOrValue<bool> {
         let mut amount = 1u128;
-        self.resolve_deposit_internal(&receiver_id, [(token_id.into(), &mut amount)]);
+
+        self.resolve_deposit_internal(&receiver_id, [(Nep171TokenId::new(contract_id, nft_token_id).unwrap_or_panic_display().into(), &mut amount)]);
         PromiseOrValue::Value(amount == 1)
     }
 }

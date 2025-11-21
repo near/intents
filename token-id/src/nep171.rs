@@ -3,6 +3,7 @@ pub use near_contract_standards::non_fungible_token::TokenId;
 use std::{fmt, str::FromStr};
 
 use near_sdk::{AccountId, AccountIdRef, near};
+use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 use crate::{MAX_ALLOWED_TOKEN_ID_LEN, error::TokenIdError};
 
@@ -12,8 +13,8 @@ use arbitrary_with::{Arbitrary, As, LimitLen};
 use defuse_near_utils::arbitrary::ArbitraryAccountId;
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(Arbitrary))]
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[near(serializers = [json, borsh])]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr)]
+#[near(serializers = [borsh])]
 pub struct Nep171TokenId {
     #[cfg_attr(
         any(feature = "arbitrary", test),

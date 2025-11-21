@@ -28,8 +28,7 @@ impl FungibleTokenReceiver for Contract {
     ) -> PromiseOrValue<U128> {
         require!(amount.0 > 0, "zero amount");
 
-        let nep141_token_id = Nep141TokenId::new(PREDECESSOR_ACCOUNT_ID.clone());
-        let token_id = TokenId::Nep141(nep141_token_id.clone());
+        let token_id = TokenId::Nep141(Nep141TokenId::new(PREDECESSOR_ACCOUNT_ID.clone()));
 
         let DepositMessage {
             receiver_id,
@@ -65,7 +64,7 @@ impl FungibleTokenReceiver for Contract {
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
                         .with_static_gas(Self::mt_resolve_deposit_gas(1))
                         .with_unused_gas_weight(0)
-                        .ft_resolve_deposit(receiver_id, nep141_token_id, amount),
+                        .ft_resolve_deposit(receiver_id, PREDECESSOR_ACCOUNT_ID.clone(), amount),
                 )
                 .into(),
             DepositAction::Execute(execute) => {
@@ -91,10 +90,13 @@ impl Contract {
     pub fn ft_resolve_deposit(
         &mut self,
         receiver_id: AccountId,
-        token_id: Nep141TokenId,
+        contract_id: AccountId,
         #[allow(unused_mut)] mut amount: U128,
     ) -> PromiseOrValue<U128> {
-        self.resolve_deposit_internal(&receiver_id, [(token_id.into(), &mut amount.0)]);
+        self.resolve_deposit_internal(
+            &receiver_id,
+            [(Nep141TokenId::new(contract_id).into(), &mut amount.0)],
+        );
         PromiseOrValue::Value(amount)
     }
 }
