@@ -1507,21 +1507,18 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
         .unwrap();
 
     let stub_action = StubAction::ExecuteAndRefund {
-        intents_json: near_sdk::serde_json::to_string(&vec![
-            stub_receiver
-                .sign_defuse_payload_default(
-                    defuse2.id(),
-                    [Transfer {
-                        receiver_id: another_receiver.id().clone(),
-                        tokens: Amounts::new([(nep245_ft1_id.clone(), 2000)].into()),
-                        memo: None,
-                        notification: None,
-                    }],
-                )
-                .await
-                .unwrap(),
-        ])
-        .unwrap(),
+        multipayload: stub_receiver
+            .sign_defuse_payload_default(
+                defuse2.id(),
+                [Transfer {
+                    receiver_id: another_receiver.id().clone(),
+                    tokens: Amounts::new([(nep245_ft1_id.clone(), 2000)].into()),
+                    memo: None,
+                    notification: None,
+                }],
+            )
+            .await
+            .unwrap(),
         refund_amounts: refund_amounts.clone(),
     };
 
