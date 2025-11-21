@@ -1567,7 +1567,6 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
         nep245_ft1_id.to_string(),
     ];
 
-    // Expected mt_burn event with capped refunds [1000, 2000, 1000]
     let burn_events = [MtBurnEvent {
         owner_id: Cow::Borrowed(stub_receiver.id().as_ref()),
         authorized_id: None,
@@ -1577,7 +1576,6 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
     }];
     let expected_mt_burn = MtEvent::MtBurn(Cow::Borrowed(&burn_events));
 
-    // Expected mt_transfer event with capped refunds [1000, 2000, 1000]
     let transfer_events = [MtTransferEvent {
         authorized_id: None,
         old_owner_id: Cow::Borrowed(defuse2.id().as_ref()),
@@ -1588,7 +1586,6 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
     }];
     let expected_mt_transfer = MtEvent::MtTransfer(Cow::Borrowed(&transfer_events));
 
-    // Verify events match expected structure
     assert_a_contains_b!(
         a: all_logs,
         b: [
@@ -1597,7 +1594,6 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
         ]
     );
 
-    // Check final balances in defuse1
     // User should have: 1000 (first refund) + 1000 (third refund capped) = 2000 of token1
     assert_eq!(
         env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft1_id.to_string())
