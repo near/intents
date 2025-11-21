@@ -64,7 +64,6 @@ chrono = { workspace = true, features = ["now"] }
 [dev-dependencies]
 defuse-test-utils.workspace = true
 defuse-near-utils = { workspace = true, features = ["arbitrary"] }
-defuse-ton-connect = { workspace = true, features = ["all_schemas"] }
 
 arbitrary.workspace = true
 arbitrary_with.workspace = true

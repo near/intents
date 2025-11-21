@@ -97,15 +97,6 @@ impl TonConnectPayloadSchema {
     pub const fn cell(schema_crc: u32, cell: Cell) -> Self {
         Self::Cell(CellPayload { schema_crc, cell })
     }
-
-    #[cfg(feature = "text")]
-    pub fn try_extract_text(&self) -> Option<String> {
-        if let Self::Text(payload) = self {
-            Some(payload.text.clone())
-        } else {
-            None
-        }
-    }
 }
 
 impl PayloadSchema for TonConnectPayloadSchema {
@@ -137,7 +128,7 @@ impl PayloadSchema for TonConnectPayloadSchema {
 #[near(serializers = [json])]
 #[autoimpl(Deref using self.text)]
 pub struct TextPayload {
-    text: String,
+    pub text: String,
 }
 
 impl PayloadSchema for TextPayload {
@@ -163,7 +154,7 @@ impl PayloadSchema for TextPayload {
 #[autoimpl(Deref using self.bytes)]
 pub struct BinaryPayload {
     #[serde_as(as = "Base64")]
-    bytes: Vec<u8>,
+    pub bytes: Vec<u8>,
 }
 
 impl PayloadSchema for BinaryPayload {
@@ -187,9 +178,9 @@ impl PayloadSchema for BinaryPayload {
 )]
 #[near(serializers = [json])]
 pub struct CellPayload {
-    schema_crc: u32,
+    pub schema_crc: u32,
     #[serde_as(as = "AsBoC<Base64>")]
-    cell: Cell,
+    pub cell: Cell,
 }
 
 /// ```tlb

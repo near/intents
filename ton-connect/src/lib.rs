@@ -118,6 +118,7 @@ mod tests {
     use rstest::rstest;
     use tlb_ton::UnixTimestamp;
 
+    #[cfg(feature = "text")]
     #[rstest]
     fn verify_text(random_bytes: Vec<u8>) {
         verify(
@@ -141,6 +142,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "binary")]
     #[rstest]
     fn verify_binary(random_bytes: Vec<u8>) {
         verify(
@@ -164,6 +166,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "cell")]
     #[rstest]
     fn verify_cell(random_bytes: Vec<u8>) {
         use tlb_ton::BagOfCells;

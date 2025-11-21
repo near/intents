@@ -1,4 +1,4 @@
-use defuse_ton_connect::{SignedTonConnectPayload, TonConnectPayload};
+use defuse_ton_connect::{SignedTonConnectPayload, TonConnectPayload, TonConnectPayloadSchema};
 use near_sdk::{
     serde::de::{DeserializeOwned, Error},
     serde_json,
@@ -25,10 +25,9 @@ where
     type Error = serde_json::Error;
 
     fn extract_defuse_payload(self) -> Result<DefusePayload<T>, Self::Error> {
-        let text = self
-            .payload
-            .try_extract_text()
-            .ok_or_else(|| Error::custom("only text payload supported"))?;
+        let text = match self.payload {
+            TonConnectPayloadSchema::Text(payload) => payload.text,
+        };
 
         let p: DefusePayload<T> = serde_json::from_str(&text)?;
 
