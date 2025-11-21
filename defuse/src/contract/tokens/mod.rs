@@ -4,6 +4,7 @@ mod nep245;
 
 use super::Contract;
 use defuse_core::{DefuseError, Result, token_id::TokenId};
+use defuse_near_utils::Lock;
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
 use itertools::{Either, Itertools};
 use near_sdk::{AccountId, AccountIdRef, Gas, PromiseResult, env, json_types::U128, serde_json};
@@ -168,8 +169,7 @@ impl Contract {
             .storage
             .accounts
             .get_mut(receiver_id.as_ref())
-            //TODO: fix
-            .and_then(|account| account.get_mut_maybe_forced(false))
+            .map(Lock::as_inner_unchecked_mut)
         else {
             tokens_iter.for_each(|(_, amount)| *amount = 0);
             return;
