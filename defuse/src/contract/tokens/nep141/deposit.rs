@@ -101,6 +101,6 @@ impl Contract {
             .unwrap_or_else(|_| {
                 unreachable!("ft_resolve_deposit expects return value of length == 1")
             });
-        PromiseOrValue::Value(result)
+        PromiseOrValue::Value(U128(result))
     }
 }

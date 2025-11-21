@@ -99,6 +99,6 @@ impl Contract {
             .unwrap_or_else(|_| {
                 unreachable!("nft_resolve_deposit expects return value of length == 1")
             });
-        PromiseOrValue::Value(result == 1.into())
+        PromiseOrValue::Value(result == 1)
     }
 }

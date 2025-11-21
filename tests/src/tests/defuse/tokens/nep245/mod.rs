@@ -1506,7 +1506,6 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
         .await
         .unwrap();
 
-    // Create stub action that executes the intent and returns refund amounts
     let stub_action = StubAction::ExecuteAndRefund {
         intents_json: near_sdk::serde_json::to_string(&vec![
             stub_receiver
@@ -1534,7 +1533,6 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
         })),
     };
 
-    // Transfer with duplicates: (token1, 1000), (token2, 2000), (token1, 3000)
     let result = user
         .call(env.defuse.id(), "mt_batch_transfer_call")
         .deposit(near_workspaces::types::NearToken::from_yoctonear(1))
@@ -1598,21 +1596,19 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
         ]
     );
 
-    // User should have: 1000 (first refund) + 1000 (third refund capped) = 2000 of token1
     assert_eq!(
         env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft1_id.to_string())
             .await
             .unwrap(),
         2000,
-        "User should have 2000 of token1 after refunds"
+        "User should have: 1000 (first refund) + 1000 (third refund capped) = 2000 of token1"
     );
 
-    // User should have: 2000 (second refund) = 2000 of token2 (all refunded)
     assert_eq!(
         env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft2_id.to_string())
             .await
             .unwrap(),
         2000,
-        "User should have 2000 of token2 after refund"
+        "User should have: 2000 (second refund) = 2000 of token2 (all refunded)"
     );
 }

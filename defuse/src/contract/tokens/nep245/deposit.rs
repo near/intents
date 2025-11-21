@@ -121,13 +121,13 @@ impl Contract {
     ) -> PromiseOrValue<Vec<U128>> {
         let tokens_count = token_ids.len();
 
-        let amounts_vec: Vec<u128> = deposited_amounts.iter().map(|val| val.0).collect();
+        let amounts_vec: Vec<u128> = deposited_amounts.iter().map(|elem| elem.0).collect();
         let result = self.resolve_deposit_internal(receiver_id, &token_ids, &amounts_vec);
 
         if result.len() != tokens_count {
             unreachable!("mt_resolve_deposit expects return value of length == token_ids.len()");
         }
 
-        PromiseOrValue::Value(result)
+        PromiseOrValue::Value(result.into_iter().map(U128).collect())
     }
 }

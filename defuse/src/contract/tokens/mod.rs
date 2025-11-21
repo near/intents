@@ -159,7 +159,7 @@ impl Contract {
         receiver_id: &AccountId,
         token_ids: &[TokenId],
         deposited_amounts: &[u128],
-    ) -> Vec<U128> {
+    ) -> Vec<u128> {
         require!(
             env::predecessor_account_id() == *CURRENT_ACCOUNT_ID,
             "only self"
@@ -193,11 +193,11 @@ impl Contract {
         let mut result = Vec::with_capacity(tokens_count);
 
         let Some(owner) = self.storage.accounts.get_mut(receiver_id.as_ref()) else {
-            return vec![U128(0); tokens_count];
+            return vec![0; tokens_count];
         };
 
         let Some(unlocked_owner) = owner.get_mut_maybe_forced(false) else {
-            return vec![U128(0); tokens_count];
+            return vec![0; tokens_count];
         };
 
         for (token_id, (requested, actual)) in token_ids
@@ -207,7 +207,7 @@ impl Contract {
             let balance = unlocked_owner.token_balances.amount_for(token_id);
             let amount = balance.min(*requested).min(actual);
 
-            result.push(U128(amount));
+            result.push(amount);
 
             if amount == 0 {
                 continue;
