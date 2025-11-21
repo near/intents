@@ -4,11 +4,10 @@ mod nep245;
 
 use super::Contract;
 use defuse_core::{DefuseError, Result, token_id::TokenId};
-use defuse_near_utils::CURRENT_ACCOUNT_ID;
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
-use itertools::Either;
+use itertools::{Either, Itertools};
 use near_sdk::{
-    AccountId, AccountIdRef, Gas, PromiseResult, env, json_types::U128, require, serde_json,
+    AccountId, AccountIdRef, Gas, PromiseResult, env, json_types::U128, serde_json,
 };
 use std::borrow::Cow;
 
@@ -144,6 +143,7 @@ impl Contract {
             )
             .unwrap_or_else(|| env::panic_str("gas calculation overflow"))
     }
+
     pub fn resolve_deposit_internal<'a, I>(&mut self, receiver_id: &AccountId, tokens: I)
     where
         I: IntoIterator<Item = (TokenId, &'a mut u128)>,
@@ -151,12 +151,6 @@ impl Contract {
     {
         let tokens_iter = tokens.into_iter();
         let tokens_count = tokens_iter.len();
-
-        require!(
-            env::predecessor_account_id() == *CURRENT_ACCOUNT_ID,
-            "only self"
-        );
-
         let requested_refunds = match env::promise_result(0) {
             PromiseResult::Successful(value) => serde_json::from_slice::<Vec<U128>>(&value)
                 .ok()
@@ -164,38 +158,35 @@ impl Contract {
             PromiseResult::Failed => None,
         };
 
-        let x = requested_refunds.map_or_else(
-            || Either::Right(std::iter::repeat_with(|| None).take(tokens_count)),
-            |v| Either::Left(v.into_iter().map(|elem| Some(elem.0))),
-        );
-
-        // let refunds_iter = requested_refunds.map_or_else(|| vec![None, ]
         let mut burn_event = MtBurnEvent {
             owner_id: Cow::Owned(receiver_id.clone()),
             authorized_id: None,
-            token_ids: Vec::new().into(),
-            amounts: Vec::new().into(),
+            token_ids: Vec::with_capacity(tokens_count).into(),
+            amounts: Vec::with_capacity(tokens_count).into(),
             memo: Some("refund".into()),
         };
 
-
-        let Some(owner) = self.storage.accounts.get_mut(receiver_id.as_ref()) else {
+        let Some(receiver) = self
+            .storage
+            .accounts
+            .get_mut(receiver_id.as_ref())
+            //TODO: fix
+            .and_then(|account| account.get_mut_maybe_forced(false))
+        else {
             tokens_iter.for_each(|(_, amount)| *amount = 0);
             return;
         };
 
-        let Some(unlocked_owner) = owner.get_mut_maybe_forced(false) else {
-            tokens_iter.into_iter().for_each(|(_, amount)| *amount = 0);
-            return;
-        };
-
-
-        for ((token_id, deposited), requested_refund) in tokens_iter.zip(x) {
-            let balance = unlocked_owner.token_balances.amount_for(&token_id);
-
-            // NOTE: refund defaults to the amount of the deposit
+        for ((token_id, deposited), requested_refund) in
+            tokens_iter.zip_eq(requested_refunds.map_or_else(
+                || Either::Right(std::iter::repeat_n(None, tokens_count)),
+                |v| Either::Left(v.into_iter().map(|elem| Some(elem.0))),
+            ))
+        {
+            //NOTE: refunds are capped by deposited amounts
             let requested_refund = requested_refund.unwrap_or(*deposited);
-            let refund_amount = balance.min(requested_refund).min(*deposited);
+            let balance_left = receiver.token_balances.amount_for(&token_id);
+            let refund_amount = balance_left.min(requested_refund);
             if refund_amount == 0 {
                 continue;
             }
@@ -204,8 +195,7 @@ impl Contract {
             burn_event.token_ids.to_mut().push(token_id.to_string());
             burn_event.amounts.to_mut().push(U128(refund_amount));
 
-
-            unlocked_owner
+            receiver
                 .token_balances
                 .sub(token_id.clone(), refund_amount)
                 .unwrap_or_else(|| env::panic_str("balance underflow"));
@@ -213,10 +203,9 @@ impl Contract {
             self.storage
                 .state
                 .total_supplies
-                .sub(token_id.clone(), refund_amount)
+                .sub(token_id, refund_amount)
                 .unwrap_or_else(|| env::panic_str("total supply underflow"));
         }
-
 
         if !burn_event.amounts.is_empty() {
             MtEvent::MtBurn([burn_event].as_slice().into()).emit();

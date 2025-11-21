@@ -36,9 +36,9 @@ impl NonFungibleTokenReceiver for Contract {
             msg.parse().unwrap_or_panic_display()
         };
 
-        let core_token_id: TokenId = Nep171TokenId::new(PREDECESSOR_ACCOUNT_ID.clone(), token_id)
-            .unwrap_or_panic_display()
-            .into();
+        let nep171_token_id = Nep171TokenId::new(PREDECESSOR_ACCOUNT_ID.clone(), token_id)
+            .unwrap_or_panic_display();
+        let core_token_id= TokenId::from(nep171_token_id.clone());
 
         self.deposit(
             receiver_id.clone(),
@@ -65,20 +65,19 @@ impl NonFungibleTokenReceiver for Contract {
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
                         .with_static_gas(Self::mt_resolve_deposit_gas(1))
                         .with_unused_gas_weight(0)
-                        .nft_resolve_deposit(&receiver_id, core_token_id),
+                        .nft_resolve_deposit(receiver_id, nep171_token_id),
                 )
                 .into(),
             DepositAction::Execute(execute) => {
-                if execute.execute_intents.is_empty() {
-                    return PromiseOrValue::Value(false);
+                if !execute.execute_intents.is_empty() {
+                    if execute.refund_if_fails {
+                        self.execute_intents(execute.execute_intents);
+                    } else {
+                        let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
+                            .execute_intents(execute.execute_intents);
+                    }
                 }
 
-                if execute.refund_if_fails {
-                    self.execute_intents(execute.execute_intents);
-                } else {
-                    let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
-                        .execute_intents(execute.execute_intents);
-                }
                 PromiseOrValue::Value(false)
             }
         }
@@ -90,12 +89,11 @@ impl Contract {
     #[private]
     pub fn nft_resolve_deposit(
         &mut self,
-        receiver_id: &AccountId,
-        token_ids: TokenId,
+        receiver_id: AccountId,
+        token_id: Nep171TokenId,
     ) -> PromiseOrValue<bool> {
         let mut amount = 1u128;
-        self
-            .resolve_deposit_internal(receiver_id, [(token_ids, &mut amount)]);
+        self.resolve_deposit_internal(&receiver_id, [(token_id.into(), &mut amount)]);
         PromiseOrValue::Value(amount == 1)
     }
 }

@@ -26,10 +26,10 @@ impl FungibleTokenReceiver for Contract {
         amount: U128,
         msg: String,
     ) -> PromiseOrValue<U128> {
-        let amount_value = amount.0;
-        require!(amount_value > 0, "zero amount");
+        require!(amount > 0.into(), "zero amount");
 
-        let token_id = TokenId::Nep141(Nep141TokenId::new(PREDECESSOR_ACCOUNT_ID.clone()));
+        let nep141_token_id = Nep141TokenId::new(PREDECESSOR_ACCOUNT_ID.clone());
+        let token_id = TokenId::Nep141(nep141_token_id.clone());
 
         let DepositMessage {
             receiver_id,
@@ -42,7 +42,7 @@ impl FungibleTokenReceiver for Contract {
 
         self.deposit(
             receiver_id.clone(),
-            [(token_id.clone(), amount_value)],
+            [(token_id.clone(), amount.0)],
             Some("deposit"),
         )
         .unwrap_or_panic();
@@ -65,20 +65,18 @@ impl FungibleTokenReceiver for Contract {
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
                         .with_static_gas(Self::mt_resolve_deposit_gas(1))
                         .with_unused_gas_weight(0)
-                        .ft_resolve_deposit(&receiver_id, token_id, amount),
+                        .ft_resolve_deposit(receiver_id, nep141_token_id, amount),
                 )
                 .into(),
             DepositAction::Execute(execute) => {
-                if execute.execute_intents.is_empty() {
-                    return PromiseOrValue::Value(0.into());
-                }
-
-                if execute.refund_if_fails {
-                    self.execute_intents(execute.execute_intents);
-                } else {
-                    // detach promise
-                    let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
-                        .execute_intents(execute.execute_intents);
+                if !execute.execute_intents.is_empty() {
+                    if execute.refund_if_fails {
+                        self.execute_intents(execute.execute_intents);
+                    } else {
+                        // detach promise
+                        let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
+                            .execute_intents(execute.execute_intents);
+                    }
                 }
                 PromiseOrValue::Value(0.into())
             }
@@ -91,12 +89,11 @@ impl Contract {
     #[private]
     pub fn ft_resolve_deposit(
         &mut self,
-        receiver_id: &AccountId,
-        token_id: TokenId,
-        mut amount: U128,
+        receiver_id: AccountId,
+        token_id: Nep141TokenId,
+        #[allow(unused_mut)] mut amount: U128,
     ) -> PromiseOrValue<U128> {
-        self
-            .resolve_deposit_internal(receiver_id, [(token_id, & mut amount.0)]);
+        self.resolve_deposit_internal(&receiver_id, [(token_id.into(), &mut amount.0)]);
         PromiseOrValue::Value(amount)
     }
 }

@@ -13,8 +13,8 @@ use arbitrary_with::{Arbitrary, As, LimitLen};
 use defuse_near_utils::arbitrary::ArbitraryAccountId;
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(Arbitrary))]
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr)]
-#[near(serializers = [borsh])]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[near(serializers = [json, borsh])]
 pub struct Nep171TokenId {
     #[cfg_attr(
         any(feature = "arbitrary", test),

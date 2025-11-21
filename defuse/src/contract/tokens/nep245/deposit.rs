@@ -62,12 +62,10 @@ impl MultiTokenReceiver for Contract {
             .map(Into::into)
             .collect();
 
-        let token_amounts = wrapped_tokens.iter().cloned().zip(amounts.iter().copied()).collect::<Vec<_>>();
 
         self.deposit(
             receiver_id.clone(),
-            //TODO: get rid of it
-            token_amounts.iter().map(|(token, amount)| (token.clone(), amount.0)).collect::<Vec<_>>(),
+            wrapped_tokens.iter().cloned().zip(amounts.iter().map(|amount| amount.0)),
             Some("deposit"),
         )
         .unwrap_or_panic();
@@ -82,7 +80,7 @@ impl MultiTokenReceiver for Contract {
                 .mt_on_transfer(
                     sender_id,
                     previous_owner_ids,
-                    token_ids,
+                    token_ids.clone(),
                     amounts.clone(),
                     notify.msg,
                 )
@@ -90,25 +88,19 @@ impl MultiTokenReceiver for Contract {
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
                         .with_static_gas(Self::mt_resolve_deposit_gas(wrapped_tokens.len()))
                         .with_unused_gas_weight(0)
-                        .mt_resolve_deposit(
-                            &receiver_id,
-                            token_amounts,
-
-                        ),
+                        .mt_resolve_deposit(receiver_id, token.clone(), token_ids.into_iter().zip(amounts.into_iter()).collect()
+                        )
                 )
                 .into(),
             DepositAction::Execute(execute) => {
-                if execute.execute_intents.is_empty() {
-                    return PromiseOrValue::Value(vec![U128(0); token_ids.len()]);
+                if !execute.execute_intents.is_empty() {
+                    if execute.refund_if_fails {
+                        self.execute_intents(execute.execute_intents);
+                    } else {
+                        let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
+                            .execute_intents(execute.execute_intents);
+                    }
                 }
-
-                if execute.refund_if_fails {
-                    self.execute_intents(execute.execute_intents);
-                } else {
-                    let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
-                        .execute_intents(execute.execute_intents);
-                }
-
                 PromiseOrValue::Value(vec![U128(0); token_ids.len()])
             }
         }
@@ -121,17 +113,20 @@ impl Contract {
     #[allow(clippy::needless_pass_by_value)]
     pub fn mt_resolve_deposit(
         &mut self,
-        receiver_id: &AccountId,
-        amounts: Vec<(TokenId, U128)>,
+        receiver_id: AccountId,
+        contract_id: AccountId,
+        amounts: Vec<(defuse_nep245::TokenId, U128)>,
     ) -> PromiseOrValue<Vec<U128>> {
-        let (tokens, mut amounts): (Vec<TokenId>, Vec<U128>) = amounts.into_iter().unzip();
+        let (tokens, mut amounts): (Vec<TokenId>, Vec<U128>) = amounts.into_iter()
+            .map(|(token_id, amount)|
+                (Nep245TokenId::new(contract_id.clone(), token_id).unwrap_or_panic_display().into(), amount)
+            ).unzip();
+
         self.resolve_deposit_internal(
-            receiver_id,
+            &receiver_id,
             tokens
-                .iter()
-                .zip(amounts.iter_mut())
-                .map(|(token, amount)| (token.clone(), &mut amount.0))
                 .into_iter()
+                .zip(amounts.iter_mut().map(|amount| &mut amount.0))
         );
 
         PromiseOrValue::Value(amounts)
