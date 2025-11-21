@@ -18,7 +18,9 @@ pub struct Sandbox {
 
 impl Sandbox {
     pub async fn new() -> Self {
-        let sandbox = near_sandbox::Sandbox::start_sandbox().await.unwrap();
+        let sandbox = near_sandbox::Sandbox::start_sandbox_with_version("2.10-release")
+            .await
+            .unwrap();
 
         let network_config = NetworkConfig {
             network_name: "sandbox".to_string(),

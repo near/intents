@@ -20,7 +20,8 @@ defuse-price.workspace = true
 defuse-token-id = { workspace = true, features = ["unbounded"] }
 
 near-contract-standards.workspace = true
-near-sdk.workspace = true
+near-sdk = { workspace = true, features = ["deterministic-accounts"] }
+# near-sdk = { workspace = true }
 
 derive_more = { workspace = true, features = ["from"] }
 hex.workspace = true

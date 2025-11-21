@@ -11,14 +11,14 @@ use serde_with::{DisplayFromStr, hex::Hex, serde_as};
 
 use crate::{Error, Result, price::Price};
 
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
+// #[cfg_attr(
+//     all(feature = "abi", not(target_arch = "wasm32")),
+//     serde_as(schemars = true)
+// )]
+// #[cfg_attr(
+//     not(all(feature = "abi", not(target_arch = "wasm32"))),
+//     serde_as(schemars = false)
+// )]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 
@@ -87,14 +87,14 @@ impl Storage {
     }
 }
 
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
+// #[cfg_attr(
+//     all(feature = "abi", not(target_arch = "wasm32")),
+//     serde_as(schemars = true)
+// )]
+// #[cfg_attr(
+//     not(all(feature = "abi", not(target_arch = "wasm32"))),
+//     serde_as(schemars = false)
+// )]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Params {
@@ -252,14 +252,14 @@ impl OverrideSend {
     }
 }
 
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
+// #[cfg_attr(
+//     all(feature = "abi", not(target_arch = "wasm32")),
+//     serde_as(schemars = true)
+// )]
+// #[cfg_attr(
+//     not(all(feature = "abi", not(target_arch = "wasm32"))),
+//     serde_as(schemars = false)
+// )]
 #[near(serializers = [json, borsh])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct State {
