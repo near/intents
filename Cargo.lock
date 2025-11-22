@@ -865,6 +865,7 @@ dependencies = [
  "defuse-borsh-utils",
  "defuse-crypto",
  "defuse-erc191",
+ "defuse-fees",
  "defuse-map-utils",
  "defuse-near-utils",
  "defuse-nep245",
@@ -917,6 +918,15 @@ dependencies = [
  "near-sdk",
  "rstest",
  "serde_with",
+]
+
+[[package]]
+name = "defuse-fees"
+version = "0.1.0"
+dependencies = [
+ "defuse-num-utils",
+ "near-sdk",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
