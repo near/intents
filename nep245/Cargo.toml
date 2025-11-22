@@ -8,6 +8,14 @@ repository.workspace = true
 [dependencies]
 derive_more = { workspace = true, features = ["from"] }
 near-sdk.workspace = true
+borsh = { version = "1.5.7", features = ["unstable__schema"] }
+chrono = { workspace = true, default-features = false, features = ["serde"] }
+serde_with = { workspace = true, features = ["chrono_0_4", "schemars_0_8"] }
+defuse-borsh-utils = { workspace = true, features = ["chrono"] }
+schemars.workspace = true
+
+[dev-dependencies]
+hex = "0.4.3"
 
 [lints]
 workspace = true

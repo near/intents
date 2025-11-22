@@ -951,8 +951,14 @@ dependencies = [
 name = "defuse-nep245"
 version = "0.1.0"
 dependencies = [
+ "borsh",
+ "chrono",
+ "defuse-borsh-utils",
  "derive_more 2.0.1",
+ "hex",
  "near-sdk",
+ "schemars",
+ "serde_with",
 ]
 
 [[package]]
