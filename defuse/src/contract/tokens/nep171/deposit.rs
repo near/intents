@@ -24,7 +24,7 @@ impl NonFungibleTokenReceiver for Contract {
         &mut self,
         sender_id: AccountId,
         previous_owner_id: AccountId,
-        token_id: defuse_nep245::TokenId,
+        token_id: near_contract_standards::non_fungible_token::TokenId,
         msg: String,
     ) -> PromiseOrValue<bool> {
         let DepositMessage {
@@ -93,7 +93,7 @@ impl Contract {
         &mut self,
         receiver_id: AccountId,
         contract_id: AccountId,
-        nft_token_id: defuse_nep245::TokenId,
+        nft_token_id: near_contract_standards::non_fungible_token::TokenId,
     ) -> PromiseOrValue<bool> {
         let mut amount = 1u128;
 
