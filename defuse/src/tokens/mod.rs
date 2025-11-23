@@ -48,39 +48,6 @@ impl DepositMessage {
             action: None,
         }
     }
-
-    #[must_use]
-    #[inline]
-    pub fn with_execute_intents(mut self, intents: impl IntoIterator<Item = MultiPayload>) -> Self {
-        self.action = Some(DepositAction::Execute(ExecuteIntents {
-            execute_intents: intents.into_iter().collect(),
-            refund_if_fails: false,
-        }));
-        self
-    }
-
-    #[must_use]
-    #[inline]
-    pub const fn with_refund_if_fails(mut self) -> Self {
-        if let Some(DepositAction::Execute(ref mut exec)) = self.action {
-            exec.refund_if_fails = true;
-        }
-        self
-    }
-
-    #[must_use]
-    #[inline]
-    pub fn with_notify(mut self, notify: NotifyOnTransfer) -> Self {
-        self.action = Some(DepositAction::Notify(notify));
-        self
-    }
-
-    #[must_use]
-    #[inline]
-    pub fn with_action(mut self, action: DepositAction) -> Self {
-        self.action = Some(action);
-        self
-    }
 }
 
 impl Display for DepositMessage {
@@ -186,11 +153,13 @@ mod tests {
     #[test]
     fn test_serialize_with_notify() {
         // Serialization with notify action
-        let msg =
-            DepositMessage::new("alice.near".parse().unwrap()).with_notify(NotifyOnTransfer {
+        let msg = DepositMessage {
+            receiver_id: "alice.near".parse().unwrap(),
+            action: Some(DepositAction::Notify(NotifyOnTransfer {
                 msg: "hello".to_string(),
                 min_gas: None,
-            });
+            })),
+        };
         let json = serde_json::to_string(&msg).unwrap();
 
         // Should serialize with flattened notify fields
@@ -201,9 +170,13 @@ mod tests {
     #[test]
     fn test_serialize_with_execute() {
         // Serialization with execute action
-        let msg = DepositMessage::new("alice.near".parse().unwrap())
-            .with_execute_intents(vec![])
-            .with_refund_if_fails();
+        let msg = DepositMessage {
+            receiver_id: "alice.near".parse().unwrap(),
+            action: Some(DepositAction::Execute(ExecuteIntents {
+                execute_intents: vec![],
+                refund_if_fails: true,
+            })),
+        };
         let json = serde_json::to_string(&msg).unwrap();
 
         // Should serialize with flattened execute fields
@@ -222,11 +195,13 @@ mod tests {
     #[test]
     fn test_display_with_action() {
         // Display for message with action (should be JSON)
-        let msg =
-            DepositMessage::new("alice.near".parse().unwrap()).with_notify(NotifyOnTransfer {
+        let msg = DepositMessage {
+            receiver_id: "alice.near".parse().unwrap(),
+            action: Some(DepositAction::Notify(NotifyOnTransfer {
                 msg: "test".to_string(),
                 min_gas: None,
-            });
+            })),
+        };
         let display = msg.to_string();
 
         assert!(display.starts_with('{'));
@@ -299,10 +274,14 @@ mod tests {
 
     #[test]
     fn test_builder_methods() {
-        // Test builder pattern
-        let msg = DepositMessage::new("alice.near".parse().unwrap())
-            .with_execute_intents(vec![])
-            .with_refund_if_fails();
+        // Test direct construction
+        let msg = DepositMessage {
+            receiver_id: "alice.near".parse().unwrap(),
+            action: Some(DepositAction::Execute(ExecuteIntents {
+                execute_intents: vec![],
+                refund_if_fails: true,
+            })),
+        };
 
         assert_eq!(msg.receiver_id.as_str(), "alice.near");
         match msg.action {
@@ -315,12 +294,14 @@ mod tests {
 
     #[test]
     fn test_builder_with_notify() {
-        // Test builder with notify
-        let msg =
-            DepositMessage::new("alice.near".parse().unwrap()).with_notify(NotifyOnTransfer {
+        // Test direct construction with notify
+        let msg = DepositMessage {
+            receiver_id: "alice.near".parse().unwrap(),
+            action: Some(DepositAction::Notify(NotifyOnTransfer {
                 msg: "test".to_string(),
                 min_gas: None,
-            });
+            })),
+        };
 
         assert_eq!(msg.receiver_id.as_str(), "alice.near");
         assert!(matches!(msg.action, Some(DepositAction::Notify(_))));
