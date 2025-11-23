@@ -106,6 +106,6 @@ impl Contract {
                 &mut amount,
             )],
         );
-        PromiseOrValue::Value(amount == 1)
+        PromiseOrValue::Value(amount != 0)
     }
 }

@@ -4,7 +4,7 @@ mod nep245;
 
 use super::Contract;
 use defuse_core::{DefuseError, Result, token_id::TokenId};
-use defuse_near_utils::Lock;
+use defuse_near_utils::{Lock, UnwrapOrPanic};
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
 use itertools::{Either, Itertools};
 use near_sdk::{AccountId, AccountIdRef, Gas, PromiseResult, env, json_types::U128, serde_json};
@@ -143,7 +143,7 @@ impl Contract {
             .unwrap_or_else(|| env::panic_str("gas calculation overflow"))
     }
 
-    pub fn resolve_deposit_internal<'a, I>(&mut self, receiver_id: &AccountId, tokens: I)
+    pub fn resolve_deposit_internal<'a, I>(&mut self, receiver_id: &AccountIdRef, tokens: I)
     where
         I: IntoIterator<Item = (TokenId, &'a mut u128)>,
         I::IntoIter: ExactSizeIterator,
@@ -158,7 +158,7 @@ impl Contract {
         };
 
         let mut burn_event = MtBurnEvent {
-            owner_id: Cow::Owned(receiver_id.clone()),
+            owner_id: Cow::Owned(receiver_id.to_owned()),
             authorized_id: None,
             token_ids: Vec::with_capacity(tokens_count).into(),
             amounts: Vec::with_capacity(tokens_count).into(),
@@ -168,7 +168,7 @@ impl Contract {
         let Some(receiver) = self
             .storage
             .accounts
-            .get_mut(receiver_id.as_ref())
+            .get_mut(receiver_id)
             .map(Lock::as_inner_unchecked_mut)
         else {
             tokens_iter.for_each(|(_, amount)| *amount = 0);
@@ -196,13 +196,15 @@ impl Contract {
             receiver
                 .token_balances
                 .sub(token_id.clone(), refund_amount)
-                .unwrap_or_else(|| env::panic_str("balance underflow"));
+                .ok_or(DefuseError::BalanceOverflow)
+                .unwrap_or_panic();
 
             self.storage
                 .state
                 .total_supplies
                 .sub(token_id, refund_amount)
-                .unwrap_or_else(|| env::panic_str("total supply underflow"));
+                .ok_or(DefuseError::BalanceOverflow)
+                .unwrap_or_panic();
         }
 
         if !burn_event.amounts.is_empty() {

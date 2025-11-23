@@ -59,7 +59,8 @@ impl MultiTokenReceiver for Contract {
             receiver_id.clone(),
             token_ids
                 .iter()
-                .map(|token_id| Nep245TokenId::new(token.clone(), token_id.clone()))
+                .cloned()
+                .map(|token_id| Nep245TokenId::new(token.clone(), token_id))
                 .map(UnwrapOrPanicError::unwrap_or_panic_display)
                 .map(Into::into)
                 .zip(amounts.iter().map(|amount| amount.0)),
@@ -118,7 +119,8 @@ impl Contract {
             &receiver_id,
             tokens
                 .iter()
-                .map(|token_id| Nep245TokenId::new(contract_id.clone(), token_id.clone()))
+                .cloned()
+                .map(|token_id| Nep245TokenId::new(contract_id.clone(), token_id))
                 .map(UnwrapOrPanicError::unwrap_or_panic_display)
                 .map(Into::into)
                 .zip(amounts.iter_mut().map(|amount| &mut amount.0)),
