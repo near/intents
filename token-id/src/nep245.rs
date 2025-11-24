@@ -43,14 +43,11 @@ impl Nep245TokenId {
     }
 
     #[cfg(feature = "unbounded")]
-    pub fn new(
-        contract_id: AccountId,
-        mt_token_id: TokenId,
-    ) -> Result<Self, ::core::convert::Infallible> {
-        Ok(Self {
+    pub fn new(contract_id: AccountId, mt_token_id: TokenId) -> Self {
+        Self {
             contract_id,
             mt_token_id,
-        })
+        }
     }
 
     #[allow(clippy::missing_const_for_fn)]
@@ -88,7 +85,11 @@ impl FromStr for Nep245TokenId {
         let (contract_id, token_id) = data
             .split_once(':')
             .ok_or(strum::ParseError::VariantNotFound)?;
-        Self::new(contract_id.parse()?, token_id.to_string()).map_err(Into::into)
+        let r = Self::new(contract_id.parse()?, token_id.to_string());
+        #[cfg(feature = "unbounded")]
+        return Ok(r);
+        #[cfg(not(feature = "unbounded"))]
+        return r;
     }
 }
 
@@ -103,9 +104,9 @@ impl From<&Nep245TokenId> for TokenIdType {
 mod tests {
     use super::*;
 
-    use arbitrary::Unstructured;
-    use arbitrary_with::UnstructuredExt;
-    use defuse_test_utils::random::{make_arbitrary, random_bytes};
+    use defuse_test_utils::random::make_arbitrary;
+    #[cfg(not(feature = "unbounded"))]
+    use defuse_test_utils::random::random_bytes;
     use rstest::rstest;
 
     #[rstest]
@@ -119,6 +120,9 @@ mod tests {
     #[cfg(not(feature = "unbounded"))]
     #[rstest]
     fn token_id_length(random_bytes: Vec<u8>) {
+        use arbitrary::Unstructured;
+        use arbitrary_with::UnstructuredExt;
+
         let mut u = Unstructured::new(&random_bytes);
         let contract_id = u.arbitrary_as::<_, ArbitraryAccountId>().unwrap();
         let token_id: String = u.arbitrary().unwrap();
