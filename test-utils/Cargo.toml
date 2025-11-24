@@ -9,7 +9,6 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-defuse-core.workspace = true
 defuse-randomness.workspace = true
 
 arbitrary_with.workspace = true

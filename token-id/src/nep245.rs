@@ -5,12 +5,12 @@ use std::{fmt, str::FromStr};
 use near_sdk::{AccountId, AccountIdRef, near};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
-use crate::{MAX_ALLOWED_TOKEN_ID_LEN, error::TokenIdError};
-
 #[cfg(any(feature = "arbitrary", test))]
-use arbitrary_with::{Arbitrary, As, LimitLen};
+use arbitrary_with::{Arbitrary, As};
 #[cfg(any(feature = "arbitrary", test))]
 use defuse_near_utils::arbitrary::ArbitraryAccountId;
+
+use crate::{TokenIdType, error::TokenIdError};
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(Arbitrary))]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr)]
@@ -23,15 +23,16 @@ pub struct Nep245TokenId {
     contract_id: AccountId,
 
     #[cfg_attr(
-        any(feature = "arbitrary", test),
-        arbitrary(with = As::<LimitLen<MAX_ALLOWED_TOKEN_ID_LEN>>::arbitrary),
+        all(not(feature = "unbounded"), any(feature = "arbitrary", test)),
+        arbitrary(with = As::<::arbitrary_with::LimitLen<{crate::MAX_ALLOWED_TOKEN_ID_LEN}>>::arbitrary),
     )]
     mt_token_id: TokenId,
 }
 
 impl Nep245TokenId {
+    #[cfg(not(feature = "unbounded"))]
     pub fn new(contract_id: AccountId, mt_token_id: TokenId) -> Result<Self, TokenIdError> {
-        if mt_token_id.len() > MAX_ALLOWED_TOKEN_ID_LEN {
+        if mt_token_id.len() > crate::MAX_ALLOWED_TOKEN_ID_LEN {
             return Err(TokenIdError::TokenIdTooLarge(mt_token_id.len()));
         }
 
@@ -39,6 +40,14 @@ impl Nep245TokenId {
             contract_id,
             mt_token_id,
         })
+    }
+
+    #[cfg(feature = "unbounded")]
+    pub fn new(contract_id: AccountId, mt_token_id: TokenId) -> Self {
+        Self {
+            contract_id,
+            mt_token_id,
+        }
     }
 
     #[allow(clippy::missing_const_for_fn)]
@@ -76,7 +85,18 @@ impl FromStr for Nep245TokenId {
         let (contract_id, token_id) = data
             .split_once(':')
             .ok_or(strum::ParseError::VariantNotFound)?;
-        Self::new(contract_id.parse()?, token_id.to_string())
+        let r = Self::new(contract_id.parse()?, token_id.to_string());
+        #[cfg(feature = "unbounded")]
+        return Ok(r);
+        #[cfg(not(feature = "unbounded"))]
+        return r;
+    }
+}
+
+impl From<&Nep245TokenId> for TokenIdType {
+    #[inline]
+    fn from(_: &Nep245TokenId) -> Self {
+        Self::Nep245
     }
 }
 
@@ -84,9 +104,9 @@ impl FromStr for Nep245TokenId {
 mod tests {
     use super::*;
 
-    use arbitrary::Unstructured;
-    use arbitrary_with::UnstructuredExt;
-    use defuse_test_utils::random::{make_arbitrary, random_bytes};
+    use defuse_test_utils::random::make_arbitrary;
+    #[cfg(not(feature = "unbounded"))]
+    use defuse_test_utils::random::random_bytes;
     use rstest::rstest;
 
     #[rstest]
@@ -97,14 +117,18 @@ mod tests {
         assert_eq!(got, token_id);
     }
 
+    #[cfg(not(feature = "unbounded"))]
     #[rstest]
     fn token_id_length(random_bytes: Vec<u8>) {
+        use arbitrary::Unstructured;
+        use arbitrary_with::UnstructuredExt;
+
         let mut u = Unstructured::new(&random_bytes);
         let contract_id = u.arbitrary_as::<_, ArbitraryAccountId>().unwrap();
         let token_id: String = u.arbitrary().unwrap();
 
         let r = Nep245TokenId::new(contract_id, token_id.clone());
-        if token_id.len() > MAX_ALLOWED_TOKEN_ID_LEN {
+        if token_id.len() > crate::MAX_ALLOWED_TOKEN_ID_LEN {
             assert!(matches!(r.unwrap_err(), TokenIdError::TokenIdTooLarge(_)));
         } else {
             r.unwrap();

@@ -3,7 +3,7 @@ use std::{fmt, str::FromStr};
 use near_sdk::{AccountId, AccountIdRef, near};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
-use crate::error::TokenIdError;
+use crate::{TokenIdType, error::TokenIdError};
 
 #[cfg(any(feature = "arbitrary", test))]
 use arbitrary_with::{Arbitrary, As};
@@ -56,6 +56,13 @@ impl FromStr for Nep141TokenId {
         Ok(Self {
             contract_id: data.parse()?,
         })
+    }
+}
+
+impl From<&Nep141TokenId> for TokenIdType {
+    #[inline]
+    fn from(_: &Nep141TokenId) -> Self {
+        Self::Nep141
     }
 }
 
