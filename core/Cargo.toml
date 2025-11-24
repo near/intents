@@ -10,6 +10,7 @@ defuse-auth-call.workspace = true
 defuse-bitmap.workspace = true
 defuse-crypto = { workspace = true, features = ["serde"] }
 defuse-erc191.workspace = true
+defuse-fees.workspace = true
 defuse-nep245.workspace = true
 defuse-nep413.workspace = true
 defuse-map-utils.workspace = true
