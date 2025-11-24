@@ -4,6 +4,10 @@ use near_sdk::{
 };
 use serde_with::{DeserializeAs, SerializeAs};
 
+#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+use near_sdk::NearSchema;
+
+#[cfg_attr(all(feature = "abi", not(target_arch = "wasm32")), derive(NearSchema))]
 pub struct Base58;
 
 impl<T> SerializeAs<T> for Base58
@@ -36,40 +40,5 @@ where
                 "can't convert a byte vector of length {length} into the output type"
             ))
         })
-    }
-}
-
-#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
-mod abi {
-    use super::*;
-
-    use near_sdk::schemars::{
-        JsonSchema,
-        r#gen::SchemaGenerator,
-        schema::{InstanceType, Schema, SchemaObject},
-    };
-    use serde_with::schemars_0_8::JsonSchemaAs;
-
-    impl<T> JsonSchemaAs<T> for Base58 {
-        fn schema_name() -> String {
-            String::schema_name()
-        }
-
-        fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
-            // TODO: use #[schemars(extend(...))] when released
-            SchemaObject {
-                instance_type: Some(InstanceType::String.into()),
-                extensions: [("contentEncoding", "base58".into())]
-                    .into_iter()
-                    .map(|(k, v)| (k.to_string(), v))
-                    .collect(),
-                ..Default::default()
-            }
-            .into()
-        }
-
-        fn is_referenceable() -> bool {
-            false
-        }
     }
 }
