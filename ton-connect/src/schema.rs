@@ -13,13 +13,13 @@ use tlb_ton::{
     ser::{CellBuilder, CellBuilderError, CellSerialize, CellSerializeExt},
 };
 
-pub struct TonConnectPayloadContext {
+pub struct TonConnectPayloadContext<'a> {
     pub address: MsgAddress,
-    pub domain: String,
+    pub domain: Cow<'a, str>,
     pub timestamp: u64,
 }
 
-impl TonConnectPayloadContext {
+impl TonConnectPayloadContext<'_> {
     // See https://docs.tonconsole.com/academy/sign-data#how-the-signature-is-built
     pub fn create_payload_hash(
         &self,
@@ -49,7 +49,7 @@ impl TonConnectPayloadContext {
     }
 }
 
-pub trait PayloadSchema: Debug + Clone + PartialEq + Eq {
+pub trait PayloadSchema {
     fn hash_with_context(
         &self,
         context: TonConnectPayloadContext,
@@ -231,7 +231,7 @@ impl PayloadSchema for CellPayload {
             schema_crc: self.schema_crc,
             timestamp: context.timestamp,
             user_address: Cow::Borrowed(&context.address),
-            app_domain: Cow::Borrowed(context.domain.as_str()),
+            app_domain: context.domain,
             payload: self.cell.clone(),
         }
         .to_cell()?;

@@ -1,6 +1,8 @@
 //! TON Connect [signData](https://github.com/ton-blockchain/ton-connect/blob/main/requests-responses.md#sign-data)
 mod schema;
 
+use std::borrow::Cow;
+
 use chrono::{DateTime, Utc};
 use defuse_crypto::{Curve, Ed25519, Payload, SignedPayload, serde::AsCurve};
 use defuse_near_utils::UnwrapOrPanicError;
@@ -53,7 +55,7 @@ impl TonConnectPayload {
 
         let context = TonConnectPayloadContext {
             address: self.address,
-            domain: self.domain.clone(),
+            domain: Cow::Borrowed(self.domain.as_str()),
             timestamp,
         };
 
