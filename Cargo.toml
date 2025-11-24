@@ -8,6 +8,7 @@ members = [
     "controller",
     "core",
     "crypto",
+    "deadline",
     "defuse",
     "erc191",
     "escrow-swap",
@@ -51,6 +52,7 @@ defuse-controller.path = "controller"
 defuse-core.path = "core"
 defuse-crypto.path = "crypto"
 defuse.path = "defuse"
+defuse-deadline.path = "deadline"
 defuse-erc191.path = "erc191"
 defuse-escrow-swap.path = "escrow-swap"
 defuse-fees.path = "fees"
@@ -70,7 +72,9 @@ defuse-sep53.path = "sep53"
 defuse-serde-utils.path = "serde-utils"
 defuse-tip191.path = "tip191"
 defuse-token-id = { path = "token-id", default-features = false }
-defuse-ton-connect.path = "ton-connect"
+defuse-ton-connect = { path = "ton-connect", default-features = false, features = [
+    "text",
+] }
 defuse-wnear.path = "wnear"
 
 defuse-randomness.path = "randomness"
@@ -100,10 +104,12 @@ near-plugins = { git = "https://github.com/Near-One/near-plugins", tag = "v0.5.0
 near-sdk = "5.15"
 near-sandbox = "0.2"
 near-workspaces = "0.20"
-num-traits = "0.2"
+cargo-near-build = "0.9.0"
+
 p256 = { version = "0.13", default-features = false, features = ["ecdsa"] }
 rand = "0.9"
 rand_chacha = "0.9"
+proptest = "1.5"
 rstest = "0.25"
 fastnum = "0.2.10"
 schemars = "0.8"

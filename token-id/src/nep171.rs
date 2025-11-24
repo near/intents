@@ -10,7 +10,7 @@ use arbitrary_with::{Arbitrary, As};
 #[cfg(any(feature = "arbitrary", test))]
 use defuse_near_utils::arbitrary::ArbitraryAccountId;
 
-use crate::{TokenIdType, error::TokenIdError};
+use crate::{TokenIdError, TokenIdType};
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(Arbitrary))]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr)]
@@ -43,14 +43,11 @@ impl Nep171TokenId {
     }
 
     #[cfg(feature = "unbounded")]
-    pub fn new(
-        contract_id: AccountId,
-        nft_token_id: TokenId,
-    ) -> Result<Self, ::core::convert::Infallible> {
-        Ok(Self {
+    pub fn new(contract_id: AccountId, nft_token_id: TokenId) -> Self {
+        Self {
             contract_id,
             nft_token_id,
-        })
+        }
     }
 
     #[allow(clippy::missing_const_for_fn)]
@@ -88,7 +85,11 @@ impl FromStr for Nep171TokenId {
         let (contract_id, token_id) = data
             .split_once(':')
             .ok_or(strum::ParseError::VariantNotFound)?;
-        Self::new(contract_id.parse()?, token_id.to_string()).map_err(Into::into)
+        let r = Self::new(contract_id.parse()?, token_id.to_string());
+        #[cfg(feature = "unbounded")]
+        return Ok(r);
+        #[cfg(not(feature = "unbounded"))]
+        return r;
     }
 }
 

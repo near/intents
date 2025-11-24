@@ -1,5 +1,3 @@
-use core::convert::Infallible;
-
 use defuse_near_utils::UnwrapOrPanic;
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
 use near_sdk::{AccountId, Gas, NearToken, PromiseOrValue, env, json_types::U128, near, require};
@@ -30,10 +28,7 @@ impl MultiTokenReceiver for Contract {
             .ok_or(Error::WrongToken)
             .unwrap_or_panic();
 
-        let token_id: TokenId = Nep245TokenId::new(env::predecessor_account_id(), token_id)
-            // `.into_ok()` isn't stabilized yet
-            .unwrap_or_else(|err: Infallible| match err {})
-            .into();
+        let token_id: TokenId = Nep245TokenId::new(env::predecessor_account_id(), token_id).into();
 
         match self
             .on_receive(sender_id, token_id, amount.0, &msg)

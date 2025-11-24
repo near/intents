@@ -42,8 +42,9 @@ where
 
     /// Reads all remaining data into a buffer and writes it to the internal writer.
     fn read_to_end(&mut self, buf: &mut Vec<u8>) -> Result<usize> {
+        let len = buf.len();
         let n = self.reader.read_to_end(buf)?;
-        self.writer.write_all(&buf[..n])?;
+        self.writer.write_all(&buf[len..])?;
         Ok(n)
     }
 }

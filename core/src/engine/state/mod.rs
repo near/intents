@@ -2,11 +2,14 @@ pub mod cached;
 pub mod deltas;
 
 use crate::{
-    Nonce, Result,
+    Nonce, NoncePrefix, Result, Salt,
+    amounts::Amounts,
     fees::Pips,
     intents::{
         auth::AuthCall,
-        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
+        tokens::{
+            FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, NotifyOnTransfer, StorageDeposit,
+        },
     },
     token_id::{TokenId, nep141::Nep141TokenId},
 };
@@ -42,6 +45,9 @@ pub trait StateView {
     /// Returns whether authentication by `PREDECESSOR_ID` is enabled.
     fn is_auth_by_predecessor_id_enabled(&self, account_id: &AccountIdRef) -> bool;
 
+    /// Returns whether salt in nonce is valid
+    fn is_valid_salt(&self, salt: Salt) -> bool;
+
     #[inline]
     fn cached(self) -> CachedState<Self>
     where
@@ -59,11 +65,11 @@ pub trait State: StateView {
 
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()>;
 
-    fn cleanup_expired_nonces(
+    fn cleanup_nonce_by_prefix(
         &mut self,
-        account_id: &AccountId,
-        nonces: impl IntoIterator<Item = Nonce>,
-    ) -> Result<()>;
+        account_id: &AccountIdRef,
+        prefix: NoncePrefix,
+    ) -> Result<bool>;
 
     fn internal_add_balance(
         &mut self,
@@ -100,6 +106,14 @@ pub trait State: StateView {
     fn mt_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: MtWithdraw) -> Result<()>;
 
     fn native_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: NativeWithdraw) -> Result<()>;
+
+    fn notify_on_transfer(
+        &self,
+        sender_id: &AccountIdRef,
+        receiver_id: AccountId,
+        tokens: Amounts,
+        notification: NotifyOnTransfer,
+    );
 
     fn storage_deposit(
         &mut self,

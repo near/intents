@@ -2,9 +2,9 @@ use defuse_crypto::PublicKey;
 use defuse_serde_utils::base64::Base64;
 use near_sdk::{AccountIdRef, near};
 use serde_with::serde_as;
-use std::borrow::Cow;
+use std::{borrow::Cow, collections::BTreeSet};
 
-use crate::Nonce;
+use crate::{Nonce, Salt, amounts::Amounts};
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(serializers = [json])]
@@ -62,4 +62,31 @@ impl NonceEvent {
     pub const fn new(nonce: Nonce) -> Self {
         Self { nonce }
     }
+}
+
+#[must_use = "make sure to `.emit()` this event"]
+#[near(serializers = [json])]
+#[derive(Debug, Clone)]
+pub struct SaltRotationEvent {
+    pub current: Salt,
+    pub invalidated: BTreeSet<Salt>,
+}
+
+#[cfg_attr(
+    all(feature = "abi", not(target_arch = "wasm32")),
+    serde_as(schemars = true)
+)]
+#[cfg_attr(
+    not(all(feature = "abi", not(target_arch = "wasm32"))),
+    serde_as(schemars = false)
+)]
+#[near(serializers = [json])]
+#[derive(Debug, Clone)]
+pub struct TransferEvent<'a> {
+    pub receiver_id: Cow<'a, AccountIdRef>,
+
+    pub tokens: Cow<'a, Amounts>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub memo: Cow<'a, Option<String>>,
 }

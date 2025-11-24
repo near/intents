@@ -8,10 +8,7 @@ use std::borrow::Cow;
 use bitflags::bitflags;
 use defuse_bitmap::U256;
 use defuse_core::{
-    Result,
-    accounts::{AccountEvent, PublicKeyEvent},
-    crypto::PublicKey,
-    events::DefuseEvent,
+    NoncePrefix, Result, accounts::AccountEvent, crypto::PublicKey, events::DefuseEvent,
     intents::account::SetAuthByPredecessorId,
 };
 
@@ -67,24 +64,6 @@ impl Account {
     #[inline]
     #[must_use]
     pub fn add_public_key(&mut self, me: &AccountIdRef, public_key: PublicKey) -> bool {
-        if !self.maybe_add_public_key(me, public_key) {
-            return false;
-        }
-
-        DefuseEvent::PublicKeyAdded(AccountEvent::new(
-            Cow::Borrowed(me),
-            PublicKeyEvent {
-                public_key: Cow::Borrowed(&public_key),
-            },
-        ))
-        .emit();
-
-        true
-    }
-
-    #[inline]
-    #[must_use]
-    fn maybe_add_public_key(&mut self, me: &AccountIdRef, public_key: PublicKey) -> bool {
         if me == public_key.to_implicit_account_id() {
             let was_removed = self.is_implicit_public_key_removed();
             self.set_implicit_public_key_removed(false);
@@ -97,24 +76,6 @@ impl Account {
     #[inline]
     #[must_use]
     pub fn remove_public_key(&mut self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
-        if !self.maybe_remove_public_key(me, public_key) {
-            return false;
-        }
-
-        DefuseEvent::PublicKeyRemoved(AccountEvent::new(
-            Cow::Borrowed(me),
-            PublicKeyEvent {
-                public_key: Cow::Borrowed(public_key),
-            },
-        ))
-        .emit();
-
-        true
-    }
-
-    #[inline]
-    #[must_use]
-    fn maybe_remove_public_key(&mut self, me: &AccountIdRef, public_key: &PublicKey) -> bool {
         if me == public_key.to_implicit_account_id() {
             let was_removed = self.is_implicit_public_key_removed();
             self.set_implicit_public_key_removed(true);
@@ -149,12 +110,12 @@ impl Account {
         self.nonces.commit(nonce)
     }
 
-    /// Clears the nonce if it was expired.
-    /// Returns whether the nonces was cleared. If the nonce has not expired yet, then returns `false`,
+    /// Clears the all nonces with corresponding prefix if it was expired/invalidated.
+    /// Returns whether the nonces was cleared,
     /// regardless of whether it was previously committed or not.
     #[inline]
-    pub fn clear_expired_nonce(&mut self, nonce: U256) -> bool {
-        self.nonces.clear_expired(nonce)
+    pub fn cleanup_nonce_by_prefix(&mut self, prefix: NoncePrefix) -> bool {
+        self.nonces.cleanup_by_prefix(prefix)
     }
 
     #[inline]

@@ -4,12 +4,11 @@ use defuse_borsh_utils::adapters::{
     As as BorshAs, TimestampNanoSeconds as BorshTimestampNanoSeconds,
 };
 use defuse_fees::Pips;
-use defuse_near_utils::time::Deadline;
 use defuse_token_id::TokenId;
 use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, borsh, env, near};
 use serde_with::{DisplayFromStr, hex::Hex, serde_as};
 
-use crate::{Error, Result, price::Price};
+use crate::{Deadline, Error, Result, price::Price};
 
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),

@@ -4,13 +4,13 @@ use derive_more::derive::From;
 use near_sdk::{near, serde::Deserialize};
 
 use crate::{
-    accounts::{AccountEvent, NonceEvent, PublicKeyEvent},
+    accounts::{AccountEvent, NonceEvent, PublicKeyEvent, SaltRotationEvent, TransferEvent},
     fees::{FeeChangedEvent, FeeCollectorChangedEvent},
     intents::{
         IntentEvent,
         account::SetAuthByPredecessorId,
         token_diff::TokenDiffEvent,
-        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
+        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
     },
 };
 
@@ -31,7 +31,7 @@ pub enum DefuseEvent<'a> {
     FeeCollectorChanged(FeeCollectorChangedEvent<'a>),
 
     #[event_version("0.3.0")]
-    Transfer(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, Transfer>>>]>),
+    Transfer(Cow<'a, [IntentEvent<AccountEvent<'a, TransferEvent<'a>>>]>),
 
     #[event_version("0.3.0")]
     TokenDiff(Cow<'a, [IntentEvent<AccountEvent<'a, TokenDiffEvent<'a>>>]>),
@@ -63,6 +63,9 @@ pub enum DefuseEvent<'a> {
 
     #[event_version("0.3.0")]
     SetAuthByPredecessorId(AccountEvent<'a, SetAuthByPredecessorId>),
+
+    #[event_version("0.4.0")]
+    SaltRotation(SaltRotationEvent),
 }
 
 pub trait DefuseIntentEmit<'a>: Into<DefuseEvent<'a>> {
@@ -73,3 +76,9 @@ pub trait DefuseIntentEmit<'a>: Into<DefuseEvent<'a>> {
 }
 
 impl<'a, T> DefuseIntentEmit<'a> for T where T: Into<DefuseEvent<'a>> {}
+
+impl defuse_near_utils::NearSdkLog for DefuseEvent<'_> {
+    fn to_near_sdk_log(&self) -> String {
+        ::std::format!("EVENT_JSON:{}", self.to_json())
+    }
+}

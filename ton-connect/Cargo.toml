@@ -10,7 +10,7 @@ workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, features = ["serde"] }
-defuse-near-utils = { workspace = true, features = ["digest"] }
+defuse-near-utils = { workspace = true, features = ["digest", "time"] }
 defuse-serde-utils = { workspace = true, features = ["tlb"] }
 
 chrono = { workspace = true, features = ["serde"] }
@@ -21,7 +21,11 @@ serde_with = { workspace = true, features = ["chrono_0_4"] }
 tlb-ton = { workspace = true, features = ["serde"] }
 
 [features]
+default = ["text", "binary", "cell"]
 abi = ["defuse-crypto/abi", "defuse-serde-utils/abi"]
+binary = []
+cell = []
+text = []
 
 [dev-dependencies]
 defuse-test-utils.workspace = true

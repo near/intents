@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 
-pub use defuse_fees::Pips;
-
+pub use defuse_fees::{Pips, PipsOutOfRange};
 use near_sdk::{AccountId, AccountIdRef, near};
 
 #[near(serializers = [borsh, json])]

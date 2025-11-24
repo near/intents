@@ -25,3 +25,7 @@ near-api-types = ["dep:near-api-types"]
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+near-sdk = { workspace = true, features = ["unstable", "unit-testing"] }
+rstest.workspace = true

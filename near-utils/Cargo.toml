@@ -17,8 +17,6 @@ near-account-id = { workspace = true, optional = true }
 near-sdk = { workspace = true, features = ["unstable"] }
 
 [features]
-abi = []
-
 arbitrary = ["dep:arbitrary_with", "dep:hex", "dep:near-account-id"]
 digest = ["dep:digest"]
 time = ["dep:chrono"]

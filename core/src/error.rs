@@ -2,7 +2,7 @@ use core::convert::Infallible;
 
 use crate::{
     engine::deltas::InvariantViolated,
-    token_id::{TokenId, error::TokenIdError, nep171::Nep171TokenId},
+    token_id::{TokenId, TokenIdError, nep171::Nep171TokenId},
 };
 use defuse_crypto::PublicKey;
 use near_sdk::{AccountId, FunctionError, serde_json};
@@ -57,6 +57,9 @@ pub enum DefuseError {
     #[error("nonce was already expired")]
     NonceExpired,
 
+    #[error("invalid nonce")]
+    InvalidNonce,
+
     #[error("public key '{1}' already exists for account '{0}'")]
     PublicKeyExists(AccountId, PublicKey),
 
@@ -68,6 +71,12 @@ pub enum DefuseError {
 
     #[error("wrong verifying_contract")]
     WrongVerifyingContract,
+
+    #[error("invalid salt")]
+    InvalidSalt,
+
+    #[error("maximum attempts to generate a new salt reached")]
+    SaltGenerationFailed,
 }
 
 impl From<Infallible> for DefuseError {

@@ -1,6 +1,6 @@
 [package]
 name = "defuse"
-version = "0.2.9"
+version = "0.4.0"
 edition.workspace = true
 rust-version.workspace = true
 repository.workspace = true
@@ -29,6 +29,7 @@ defuse-wnear = { workspace = true, optional = true }
 bitflags = { workspace = true, optional = true }
 bnum.workspace = true
 impl-tools.workspace = true
+itertools.workspace = true
 near-account-id.workspace = true
 near-contract-standards.workspace = true
 near-plugins.workspace = true
@@ -37,8 +38,23 @@ serde_with.workspace = true
 strum.workspace = true
 thiserror.workspace = true
 
+[package.metadata.near.reproducible_build]
+image = "sourcescan/cargo-near:0.16.2-rust-1.86.0"
+image_digest = "sha256:74c24d4d912f893198b8b13e01d43e0f78f3b00b3df45bf555a707eb4918a54e"
+passed_env = []
+container_build_command = [
+    "cargo",
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--locked",
+    "--features=abi,contract",
+    "--no-embed-abi"
+]
+
 [features]
 abi = ["defuse-core/abi"]
+arbitrary = ["defuse-core/arbitrary"]
 contract = [
     "dep:defuse-bitmap",
     "dep:defuse-borsh-utils",
@@ -55,5 +71,6 @@ chrono.workspace = true
 
 arbitrary_with.workspace = true
 itertools.workspace = true
+proptest = { workspace = true }
 rstest.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }

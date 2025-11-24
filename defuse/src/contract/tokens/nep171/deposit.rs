@@ -1,15 +1,16 @@
-use defuse_core::token_id::nep171::Nep171TokenId;
+use defuse_core::token_id::{TokenId, nep171::Nep171TokenId};
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
+use defuse_nep245::receiver::ext_mt_receiver;
 use near_contract_standards::non_fungible_token::core::NonFungibleTokenReceiver;
 use near_plugins::{Pausable, pause};
-use near_sdk::{AccountId, PromiseOrValue, near};
+use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near};
 
 use crate::{
     contract::{Contract, ContractExt},
     intents::{Intents, ext_intents},
-    tokens::DepositMessage,
+    tokens::{DepositAction, DepositMessage},
 };
 
 #[near]
@@ -26,31 +27,85 @@ impl NonFungibleTokenReceiver for Contract {
         token_id: near_contract_standards::non_fungible_token::TokenId,
         msg: String,
     ) -> PromiseOrValue<bool> {
-        #[allow(clippy::no_effect_underscore_binding)]
-        let _previous_owner_id = previous_owner_id;
-        let msg = if msg.is_empty() {
-            DepositMessage::new(sender_id)
+        let DepositMessage {
+            receiver_id,
+            action,
+        } = if msg.is_empty() {
+            DepositMessage::new(sender_id.clone())
         } else {
             msg.parse().unwrap_or_panic_display()
         };
 
-        let token_id = Nep171TokenId::new(PREDECESSOR_ACCOUNT_ID.clone(), token_id)
-            .unwrap_or_panic_display()
-            .into();
+        let core_token_id = TokenId::from(
+            Nep171TokenId::new(PREDECESSOR_ACCOUNT_ID.clone(), token_id.clone())
+                .unwrap_or_panic_display(),
+        );
 
-        self.deposit(msg.receiver_id, [(token_id, 1)], Some("deposit"))
-            .unwrap_or_panic();
+        self.deposit(
+            receiver_id.clone(),
+            [(core_token_id.clone(), 1)],
+            Some("deposit"),
+        )
+        .unwrap_or_panic();
 
-        if !msg.execute_intents.is_empty() {
-            if msg.refund_if_fails {
-                self.execute_intents(msg.execute_intents);
-            } else {
-                // detach promise
-                let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
-                    .execute_intents(msg.execute_intents);
+        let Some(action) = action else {
+            return PromiseOrValue::Value(false);
+        };
+
+        match action {
+            DepositAction::Notify(notify) => ext_mt_receiver::ext(receiver_id.clone())
+                .with_static_gas(notify.min_gas.unwrap_or_default())
+                .mt_on_transfer(
+                    sender_id,
+                    vec![previous_owner_id],
+                    vec![core_token_id.to_string()],
+                    vec![U128(1)],
+                    notify.msg,
+                )
+                .then(
+                    Self::ext(CURRENT_ACCOUNT_ID.clone())
+                        .with_static_gas(Self::mt_resolve_deposit_gas(1))
+                        .with_unused_gas_weight(0)
+                        .nft_resolve_deposit(receiver_id, PREDECESSOR_ACCOUNT_ID.clone(), token_id),
+                )
+                .into(),
+            DepositAction::Execute(execute) => {
+                if !execute.execute_intents.is_empty() {
+                    if execute.refund_if_fails {
+                        self.execute_intents(execute.execute_intents);
+                    } else {
+                        let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
+                            .execute_intents(execute.execute_intents);
+                    }
+                }
+
+                PromiseOrValue::Value(false)
             }
         }
+    }
+}
 
-        PromiseOrValue::Value(false)
+#[near]
+impl Contract {
+    #[private]
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn nft_resolve_deposit(
+        &mut self,
+        receiver_id: AccountId,
+        contract_id: AccountId,
+        nft_token_id: near_contract_standards::non_fungible_token::TokenId,
+    ) -> PromiseOrValue<bool> {
+        let mut amount = 1u128;
+
+        self.resolve_deposit_internal(
+            &receiver_id,
+            [(
+                Nep171TokenId::new(contract_id, nft_token_id)
+                    .unwrap_or_panic_display()
+                    .into(),
+                &mut amount,
+            )],
+        );
+        PromiseOrValue::Value(amount != 0)
     }
 }

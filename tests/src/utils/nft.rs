@@ -9,7 +9,7 @@ use serde_json::json;
 
 const NON_FUNGIBLE_TOKEN_WASM: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/contracts/non-fungible-token.wasm"
+    "/contracts/target/non-fungible-token.wasm"
 ));
 
 pub trait NftExt {

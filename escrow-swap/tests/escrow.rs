@@ -43,15 +43,11 @@ async fn partial_fills() {
         (env.src_mt.id(), SRC_TOKEN_ID),
         (env.mt_dst.id(), DST_TOKEN_ID),
     ]
-    .map(|(contract_id, token_id)| {
-        Nep245TokenId::new(contract_id.clone(), token_id.to_string()).unwrap()
-    })
+    .map(|(contract_id, token_id)| Nep245TokenId::new(contract_id.clone(), token_id.to_string()))
     .map(TokenId::from);
 
     let [src_asset, dst_asset] = [&src_verifier_asset, &dst_verifier_asset]
-        .map(|token_id| {
-            Nep245TokenId::new(env.verifier.id().clone(), token_id.to_string()).unwrap()
-        })
+        .map(|token_id| Nep245TokenId::new(env.verifier.id().clone(), token_id.to_string()))
         .map(Into::<TokenId>::into);
 
     const TIMEOUT: Duration = Duration::from_secs(60);

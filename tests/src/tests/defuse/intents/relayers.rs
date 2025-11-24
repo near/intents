@@ -21,7 +21,9 @@ async fn relayer_keys(#[values(false, true)] no_registration: bool) {
         .build()
         .await;
 
-    env.acl_grant_role(env.defuse.id(), Role::RelayerKeysManager, env.user1.id())
+    let (user, other_user) = futures::join!(env.create_user(), env.create_user());
+
+    env.acl_grant_role(env.defuse.id(), Role::RelayerKeysManager, user.id())
         .await
         .unwrap();
 
@@ -33,32 +35,29 @@ async fn relayer_keys(#[values(false, true)] no_registration: bool) {
     let new_relayer_public_key_near_sdk = new_relayer_public_key.to_string().parse().unwrap();
 
     // Attempt to use the key that we still didn't add, to execute an intent, which fails
-
     Contract::from_secret_key(
         env.defuse.id().clone(),
         new_relayer_secret_key.clone(),
         &worker,
     )
-    .execute_intents([]) // Empty because it's just to ensure that authorization works/doesn't work
+    .execute_intents(env.defuse.id(), []) // Empty because it's just to ensure that authorization works/doesn't work
     .await
     .assert_err_contains("Failed to query access key");
 
     // A random, unauthorized user attempts to add a key (no role `Role::RelayerKeysManager`) and fails
-    env.user2
+    other_user
         .add_relayer_key(env.defuse.id(), &new_relayer_public_key_near_sdk)
         .await
         .assert_err_contains("Requires one of these roles:");
 
     // A `Role::RelayerKeysManager` attempts to add the key, successfully
-    env.user1
-        .add_relayer_key(env.defuse.id(), &new_relayer_public_key_near_sdk)
+    user.add_relayer_key(env.defuse.id(), &new_relayer_public_key_near_sdk)
         .await
         .unwrap();
 
     // Attempt to add a key that already exists
 
-    env.user1
-        .add_relayer_key(env.defuse.id(), &new_relayer_public_key_near_sdk)
+    user.add_relayer_key(env.defuse.id(), &new_relayer_public_key_near_sdk)
         .await
         .assert_err_contains("key already exists");
 
@@ -68,26 +67,24 @@ async fn relayer_keys(#[values(false, true)] no_registration: bool) {
         new_relayer_secret_key.clone(),
         &worker,
     )
-    .execute_intents([]) // Empty because it's just to ensure that authorization works/doesn't work
+    .execute_intents(env.defuse.id(), []) // Empty because it's just to ensure that authorization works/doesn't work
     .await
     .unwrap();
 
     // Attempt to delete the key by an unauthorized user
-    env.user2
+    other_user
         .delete_relayer_key(env.defuse.id(), &new_relayer_public_key_near_sdk)
         .await
         .assert_err_contains("Requires one of these roles:");
 
     // Delete the relayer key by the authorized entity
-    env.user1
-        .delete_relayer_key(env.defuse.id(), &new_relayer_public_key_near_sdk)
+    user.delete_relayer_key(env.defuse.id(), &new_relayer_public_key_near_sdk)
         .await
         .unwrap();
 
     // Delete the same key again, which won't work
 
-    env.user1
-        .delete_relayer_key(env.defuse.id(), &new_relayer_public_key_near_sdk)
+    user.delete_relayer_key(env.defuse.id(), &new_relayer_public_key_near_sdk)
         .await
         .assert_err_contains("key not found");
 

@@ -6,7 +6,7 @@ use near_sdk::{
     store::{LookupMap, key::Sha256},
 };
 
-use defuse_core::{DefuseError, Nonce, Nonces, Result};
+use defuse_core::{DefuseError, Nonce, NoncePrefix, Nonces, Result};
 
 pub type MaybeLegacyAccountNonces =
     MaybeLegacyNonces<LookupMap<U248, U256, Sha256>, LookupMap<U248, U256>>;
@@ -61,10 +61,6 @@ where
 
     #[inline]
     pub fn is_used(&self, nonce: Nonce) -> bool {
-        // Check legacy map only if the nonce is not expirable
-        // otherwise check both maps
-
-        // TODO: legacy nonces which have expirable prefix can be committed twice, check probability!
         self.nonces.is_used(nonce)
             || self
                 .legacy
@@ -73,9 +69,8 @@ where
     }
 
     #[inline]
-    pub fn clear_expired(&mut self, nonce: Nonce) -> bool {
-        // Expirable nonces can not be in the legacy map
-        self.nonces.clear_expired(nonce)
+    pub fn cleanup_by_prefix(&mut self, prefix: NoncePrefix) -> bool {
+        self.nonces.cleanup_by_prefix(prefix)
     }
 }
 
@@ -83,36 +78,8 @@ where
 pub(super) mod tests {
 
     use super::*;
-
-    use chrono::{Days, Utc};
-    use defuse_bitmap::U256;
-    use defuse_core::{Deadline, ExpirableNonce};
-    use defuse_test_utils::random::{Rng, range_to_random_size, rng};
-
-    use rstest::fixture;
-    use std::ops::RangeBounds;
-
-    use defuse_test_utils::random::{make_arbitrary, random_bytes};
-    use rstest::rstest;
-
-    fn generate_nonce(expirable: bool, mut rng: impl Rng) -> U256 {
-        if expirable {
-            let future_deadline = Deadline::new(Utc::now().checked_add_days(Days::new(1)).unwrap());
-            ExpirableNonce::new(future_deadline, rng.random()).into()
-        } else {
-            rng.random()
-        }
-    }
-
-    #[fixture]
-    pub(crate) fn random_nonces(
-        mut rng: impl Rng,
-        #[default(10..100)] size: impl RangeBounds<usize>,
-    ) -> Vec<U256> {
-        (0..range_to_random_size(&mut rng, size))
-            .map(|_| generate_nonce(rng.random(), &mut rng))
-            .collect()
-    }
+    use near_sdk::{test_utils::VMContextBuilder, testing_env};
+    use proptest::{collection::vec, prelude::*};
 
     fn get_legacy_map(nonces: &[U256], prefix: Vec<u8>) -> Nonces<LookupMap<U248, U256>> {
         let mut legacy_nonces = Nonces::new(LookupMap::new(prefix));
@@ -125,133 +92,124 @@ pub(super) mod tests {
         legacy_nonces
     }
 
-    #[rstest]
-    fn new_from_legacy(random_nonces: Vec<U256>, random_bytes: Vec<u8>) {
-        let legacy_nonces = get_legacy_map(&random_nonces, random_bytes.clone());
-        let new = MaybeLegacyAccountNonces::with_legacy(
-            legacy_nonces,
-            LookupMap::with_hasher(random_bytes),
-        );
+    fn increase_max_gas() {
+        let context = VMContextBuilder::new().build();
+        testing_env!(context);
+    }
 
-        let legacy_map = new.legacy.as_ref().expect("No legacy nonces present");
+    fn nonces() -> impl Strategy<Value = Vec<U256>> {
+        vec(any::<U256>(), 10..100)
+    }
 
-        for nonce in &random_nonces {
-            assert!(legacy_map.is_used(*nonce));
-            assert!(!new.nonces.is_used(*nonce));
-            assert!(new.is_used(*nonce));
+    fn storage_prefixes() -> impl Strategy<Value = Vec<u8>> {
+        vec(any::<u8>(), 50..=1000)
+    }
+
+    proptest! {
+        #[test]
+        fn new_from_legacy(nonces in nonces(), storage_prefix in storage_prefixes()) {
+            increase_max_gas();
+
+            let legacy_nonces = get_legacy_map(&nonces, storage_prefix.clone());
+            let new = MaybeLegacyAccountNonces::with_legacy(
+                legacy_nonces,
+                LookupMap::with_hasher(storage_prefix),
+            );
+
+            let legacy_map = new.legacy.as_ref().expect("No legacy nonces present");
+
+            for nonce in &nonces {
+                assert!(legacy_map.is_used(*nonce));
+                assert!(!new.nonces.is_used(*nonce));
+                assert!(new.is_used(*nonce));
+            }
         }
     }
 
-    #[rstest]
-    #[allow(clippy::used_underscore_binding)]
-    fn commit_new_nonce(random_bytes: Vec<u8>, mut rng: impl Rng) {
-        let expirable_nonce = generate_nonce(true, &mut rng);
-        let legacy_nonce = generate_nonce(false, &mut rng);
-        let mut new = MaybeLegacyAccountNonces::new(LookupMap::with_hasher(random_bytes));
+    proptest! {
+        #[test]
+        #[allow(clippy::tuple_array_conversions)]
+        fn commit_new_nonce(storage_prefix in storage_prefixes(), new_nonce: [u8;32], legacy_nonce: [u8; 32]) {
+            increase_max_gas();
+            prop_assume!(new_nonce != legacy_nonce);
+            let mut new = MaybeLegacyAccountNonces::new(LookupMap::with_hasher(storage_prefix));
 
-        new.commit(expirable_nonce)
-            .expect("should be able to commit new expirable nonce");
-        new.commit(legacy_nonce)
-            .expect("should be able to commit new legacy nonce");
+            new.commit(new_nonce)
+                .expect("should be able to commit new nonce");
+            new.commit(legacy_nonce)
+                .expect("should be able to commit new legacy nonce");
 
-        assert!(new.legacy.is_none());
+            assert!(new.legacy.is_none());
 
-        for n in [expirable_nonce, legacy_nonce] {
-            assert!(new.nonces.is_used(n));
-            assert!(new.is_used(n));
+            for &n in &[new_nonce, legacy_nonce] {
+                assert!(new.nonces.is_used(n));
+                assert!(new.is_used(n));
+            }
         }
     }
 
-    #[rstest]
-    #[allow(clippy::used_underscore_binding)]
-    fn commit_existing_legacy_nonce(random_nonces: Vec<U256>, random_bytes: Vec<u8>) {
-        let legacy_nonces = get_legacy_map(&random_nonces, random_bytes.clone());
-        let mut new = MaybeLegacyAccountNonces::with_legacy(
-            legacy_nonces,
-            LookupMap::with_hasher(random_bytes),
-        );
+    proptest! {
+        #[test]
+        fn commit_existing_legacy_nonce(nonces in nonces(), storage_prefix in storage_prefixes()) {
+            increase_max_gas();
+            let legacy_nonces = get_legacy_map(&nonces, storage_prefix.clone());
+            let mut new = MaybeLegacyAccountNonces::with_legacy(
+                legacy_nonces,
+                LookupMap::with_hasher(storage_prefix),
+            );
 
-        assert!(matches!(
-            new.commit(random_nonces[0]).unwrap_err(),
-            DefuseError::NonceUsed
-        ));
-    }
-
-    #[rstest]
-    fn commit_duplicate_nonce(random_bytes: Vec<u8>, mut rng: impl Rng) {
-        let mut new = MaybeLegacyAccountNonces::new(LookupMap::with_hasher(random_bytes));
-        let nonce = generate_nonce(false, &mut rng);
-
-        new.commit(nonce).expect("First commit should succeed");
-
-        assert!(matches!(
-            new.commit(nonce).unwrap_err(),
-            DefuseError::NonceUsed
-        ));
-    }
-
-    #[rstest]
-    fn commit_expired_nonce(random_bytes: Vec<u8>, mut rng: impl Rng) {
-        let expired_deadline = Deadline::new(Utc::now().checked_sub_days(Days::new(1)).unwrap());
-        let expired_nonce = ExpirableNonce::new(expired_deadline, rng.random()).into();
-
-        let mut new = MaybeLegacyAccountNonces::new(LookupMap::with_hasher(random_bytes));
-
-        assert!(matches!(
-            new.commit(expired_nonce).unwrap_err(),
-            DefuseError::NonceExpired
-        ));
-    }
-
-    #[rstest]
-    #[allow(clippy::used_underscore_binding)]
-    fn check_used_nonces(
-        #[from(make_arbitrary)] legacy_nonces: Vec<U256>,
-        random_nonces: Vec<U256>,
-        random_bytes: Vec<u8>,
-    ) {
-        let legacy_map = get_legacy_map(&legacy_nonces, random_bytes.clone());
-        let mut new =
-            MaybeLegacyAccountNonces::with_legacy(legacy_map, LookupMap::with_hasher(random_bytes));
-
-        for nonce in &random_nonces {
-            new.commit(*nonce).expect("unable to commit nonce");
-        }
-
-        for nonce in random_nonces.iter().chain(&legacy_nonces) {
-            assert!(new.is_used(*nonce));
+            for nonce in &nonces {
+            assert!(matches!(
+                new.commit(*nonce),
+                Err(DefuseError::NonceUsed)
+            ));
+            }
         }
     }
 
-    #[rstest]
-    #[allow(clippy::used_underscore_binding)]
-    fn legacy_nonces_cant_be_cleared(
-        #[values(true, false)] expirable: bool,
-        random_bytes: Vec<u8>,
-        mut rng: impl Rng,
-    ) {
-        let random_nonce = generate_nonce(expirable, &mut rng);
-        let legacy_nonces = get_legacy_map(&[random_nonce], random_bytes.clone());
-        let mut new = MaybeLegacyAccountNonces::with_legacy(
-            legacy_nonces,
-            LookupMap::with_hasher(random_bytes),
-        );
+    proptest! {
+        #[test]
+        fn commit_duplicate_nonce(nonce: U256, storage_prefix in storage_prefixes()) {
+            let mut new = MaybeLegacyAccountNonces::new(LookupMap::with_hasher(storage_prefix));
+            new.commit(nonce).expect("First commit should succeed");
 
-        assert!(!new.clear_expired(random_nonce));
-        assert!(new.is_used(random_nonce));
+            assert!(matches!(
+                new.commit(nonce),
+                Err(DefuseError::NonceUsed)
+            ));
+        }
     }
 
-    #[rstest]
-    fn clear_active_nonce_fails(random_bytes: Vec<u8>, mut rng: impl Rng) {
-        let future_deadline = Deadline::new(Utc::now().checked_add_days(Days::new(1)).unwrap());
-        let valid_nonce = ExpirableNonce::new(future_deadline, rng.random()).into();
+    proptest! {
+        #[test]
+        fn check_used_nonces(legacy_nonces in nonces(), random_nonces in nonces(), storage_prefix in storage_prefixes()) {
+            increase_max_gas();
+            let legacy_map = get_legacy_map(&legacy_nonces, storage_prefix.clone());
+            let mut new =
+                MaybeLegacyAccountNonces::with_legacy(legacy_map, LookupMap::with_hasher(storage_prefix));
 
-        let mut new = MaybeLegacyAccountNonces::new(LookupMap::with_hasher(random_bytes));
+            for nonce in &random_nonces {
+                new.commit(*nonce).expect("unable to commit nonce");
+            }
 
-        new.commit(valid_nonce)
-            .expect("should be able to commit new expirable nonce");
+            for nonce in random_nonces.iter().chain(&legacy_nonces) {
+                assert!(new.is_used(*nonce));
+            }
+        }
+    }
 
-        assert!(!new.clear_expired(valid_nonce));
-        assert!(new.is_used(valid_nonce));
+    proptest! {
+        #[test]
+        fn legacy_nonces_cant_be_cleared(storage_prefix in storage_prefixes(), random_nonce : U256) {
+            let legacy_nonces = get_legacy_map(&[random_nonce], storage_prefix.clone());
+            let mut new = MaybeLegacyAccountNonces::with_legacy(
+                legacy_nonces,
+                LookupMap::with_hasher(storage_prefix),
+            );
+
+            let [prefix @ .., _] = random_nonce;
+            assert!(!new.cleanup_by_prefix(prefix));
+            assert!(new.is_used(random_nonce));
+        }
     }
 }

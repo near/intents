@@ -19,8 +19,8 @@ mod utils;
 
 pub use self::{error::*, state::*};
 
+pub use defuse_deadline::Deadline;
 pub use defuse_fees::Pips;
-pub use defuse_near_utils::time::Deadline;
 pub use defuse_price as price;
 pub use defuse_token_id as token_id;
 

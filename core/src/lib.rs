@@ -10,9 +10,8 @@ pub mod payload;
 
 pub use self::{error::*, nonce::*};
 
-pub use defuse_near_utils::time::Deadline;
-
 pub use defuse_crypto as crypto;
+pub use defuse_deadline::*;
 pub use defuse_erc191 as erc191;
 pub use defuse_nep413 as nep413;
 pub use defuse_sep53 as sep53;

@@ -1,5 +1,6 @@
 mod auth_by_predecessor_id;
-mod locked;
+mod force;
+mod manage_public_keys;
 mod nonces;
 mod traits;
 
@@ -7,8 +8,6 @@ use defuse::core::{Nonce, crypto::PublicKey};
 use defuse_serde_utils::base64::AsBase64;
 use near_sdk::{AccountId, AccountIdRef, Gas, NearToken};
 use serde_json::json;
-
-use crate::utils::test_log::TestLog;
 
 pub trait AccountManagerExt {
     async fn add_public_key(
@@ -22,11 +21,6 @@ pub trait AccountManagerExt {
         defuse_contract_id: &AccountId,
         public_key: PublicKey,
     ) -> anyhow::Result<()>;
-
-    async fn cleanup_expired_nonces(
-        &self,
-        data: &[(AccountId, Vec<Nonce>)],
-    ) -> anyhow::Result<TestLog>;
 
     async fn defuse_has_public_key(
         &self,
@@ -60,7 +54,6 @@ impl AccountManagerExt for near_workspaces::Account {
         defuse_contract_id: &AccountId,
         public_key: PublicKey,
     ) -> anyhow::Result<()> {
-        // TODO: check bool output
         self.call(defuse_contract_id, "add_public_key")
             .deposit(NearToken::from_yoctonear(1))
             .args_json(json!({
@@ -88,33 +81,6 @@ impl AccountManagerExt for near_workspaces::Account {
             .await?
             .into_result()?;
         Ok(())
-    }
-
-    async fn cleanup_expired_nonces(
-        &self,
-        data: &[(AccountId, Vec<Nonce>)],
-    ) -> anyhow::Result<TestLog> {
-        let nonces = data
-            .iter()
-            .map(|(acc, nonces)| {
-                let base64_nonces: Vec<AsBase64<Nonce>> =
-                    nonces.iter().map(|nonce| AsBase64(*nonce)).collect();
-                (acc.clone(), base64_nonces)
-            })
-            .collect::<Vec<(AccountId, Vec<AsBase64<Nonce>>)>>();
-
-        let res = self
-            .call(self.id(), "cleanup_expired_nonces")
-            .args_json(json!({
-                "nonces": nonces,
-            }))
-            .max_gas()
-            .transact()
-            .await?
-            .into_result()
-            .map(TestLog::from)?;
-
-        Ok(res)
     }
 
     async fn defuse_has_public_key(
@@ -199,13 +165,6 @@ impl AccountManagerExt for near_workspaces::Contract {
         self.as_account()
             .remove_public_key(defuse_contract_id, public_key)
             .await
-    }
-
-    async fn cleanup_expired_nonces(
-        &self,
-        data: &[(AccountId, Vec<Nonce>)],
-    ) -> anyhow::Result<TestLog> {
-        self.as_account().cleanup_expired_nonces(data).await
     }
 
     async fn defuse_has_public_key(

@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build_and_upload_reproducible:
+    name: Build and Upload Reproducible Contract
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required to upload assets to release
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Install Cargo Plugins
+        run: cargo install cargo-make cargo-near --locked
+        
+      - name: Build Reproducible WASM
+        run: cargo make build-defuse-reproducible
+
+      - name: Upload WASM to Release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.event.release.tag_name }}
+          file: res/*
+          file_glob: true
+          overwrite: true

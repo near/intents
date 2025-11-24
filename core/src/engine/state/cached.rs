@@ -1,10 +1,12 @@
 use crate::{
-    DefuseError, Nonce, Nonces, Result,
+    DefuseError, Nonce, NoncePrefix, Nonces, Result, Salt,
     amounts::Amounts,
     fees::Pips,
     intents::{
         auth::AuthCall,
-        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
+        tokens::{
+            FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, NotifyOnTransfer, StorageDeposit,
+        },
     },
     token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
 };
@@ -119,6 +121,10 @@ where
             .is_some_and(|a| a.auth_by_predecessor_id_toggled);
         was_enabled ^ toggled
     }
+
+    fn is_valid_salt(&self, salt: Salt) -> bool {
+        self.view.is_valid_salt(salt)
+    }
 }
 
 impl<W> State for CachedState<W>
@@ -166,6 +172,10 @@ where
     }
 
     fn commit_nonce(&mut self, account_id: AccountId, nonce: Nonce) -> Result<()> {
+        if self.view.is_nonce_used(&account_id, nonce) {
+            return Err(DefuseError::NonceUsed);
+        }
+
         self.accounts
             .get_or_create(account_id.clone(), |account_id| {
                 self.view.is_account_locked(account_id)
@@ -175,22 +185,18 @@ where
             .commit_nonce(nonce)
     }
 
-    fn cleanup_expired_nonces(
+    fn cleanup_nonce_by_prefix(
         &mut self,
-        account_id: &AccountId,
-        nonces: impl IntoIterator<Item = Nonce>,
-    ) -> Result<()> {
+        account_id: &AccountIdRef,
+        prefix: NoncePrefix,
+    ) -> Result<bool> {
         let account = self
             .accounts
             .get_mut(account_id)
-            .ok_or_else(|| DefuseError::AccountNotFound(account_id.clone()))?
+            .ok_or_else(|| DefuseError::AccountNotFound(account_id.to_owned()))?
             .as_inner_unchecked_mut();
 
-        for n in nonces {
-            account.clear_expired_nonce(n);
-        }
-
-        Ok(())
+        Ok(account.cleanup_nonce_by_prefix(prefix))
     }
 
     fn internal_add_balance(
@@ -316,6 +322,17 @@ where
         )
     }
 
+    // NOTE: Simulation that uses a cached state cannot create promises, as it is a view call
+    #[inline]
+    fn notify_on_transfer(
+        &self,
+        _sender_id: &AccountIdRef,
+        _receiver_id: AccountId,
+        _tokens: Amounts,
+        _notification: NotifyOnTransfer,
+    ) {
+    }
+
     fn storage_deposit(
         &mut self,
         owner_id: &AccountIdRef,
@@ -417,7 +434,7 @@ impl CachedAccount {
     }
 
     #[inline]
-    pub fn clear_expired_nonce(&mut self, n: U256) -> bool {
-        self.nonces.clear_expired(n)
+    pub fn cleanup_nonce_by_prefix(&mut self, prefix: NoncePrefix) -> bool {
+        self.nonces.cleanup_by_prefix(prefix)
     }
 }

@@ -11,7 +11,7 @@ use serde_json::json;
 
 use crate::utils::{account::AccountExt, read_wasm};
 
-static POA_FACTORY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("defuse_poa_factory"));
+static POA_FACTORY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("res/defuse_poa_factory"));
 
 pub trait PoAFactoryExt {
     async fn deploy_poa_factory(
@@ -26,6 +26,7 @@ pub trait PoAFactoryExt {
     fn token_id(token: &str, factory: &AccountId) -> AccountId {
         format!("{token}.{factory}").parse().unwrap()
     }
+
     async fn poa_factory_deploy_token(
         &self,
         factory: &AccountId,
@@ -112,6 +113,7 @@ impl PoAFactoryExt for near_workspaces::Account {
             .transact()
             .await?
             .into_result()?;
+
         Ok(Self::token_id(token, factory))
     }
 
@@ -252,7 +254,10 @@ mod tests {
     async fn deploy_mint() {
         let sandbox = Sandbox::new().await.unwrap();
         let root = sandbox.root_account();
-        let user = sandbox.create_account("user1").await;
+        let user = sandbox
+            .create_account("user1")
+            .await
+            .expect("Failed to create user");
 
         let poa_factory = root
             .deploy_poa_factory(

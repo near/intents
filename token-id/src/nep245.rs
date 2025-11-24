@@ -5,12 +5,12 @@ use std::{fmt, str::FromStr};
 use near_sdk::{AccountId, AccountIdRef, near};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
-use crate::{TokenIdType, error::TokenIdError};
-
 #[cfg(any(feature = "arbitrary", test))]
 use arbitrary_with::{Arbitrary, As};
 #[cfg(any(feature = "arbitrary", test))]
 use defuse_near_utils::arbitrary::ArbitraryAccountId;
+
+use crate::{TokenIdType, error::TokenIdError};
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(Arbitrary))]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr)]
@@ -43,14 +43,11 @@ impl Nep245TokenId {
     }
 
     #[cfg(feature = "unbounded")]
-    pub fn new(
-        contract_id: AccountId,
-        mt_token_id: TokenId,
-    ) -> Result<Self, ::core::convert::Infallible> {
-        Ok(Self {
+    pub fn new(contract_id: AccountId, mt_token_id: TokenId) -> Self {
+        Self {
             contract_id,
             mt_token_id,
-        })
+        }
     }
 
     #[allow(clippy::missing_const_for_fn)]
@@ -88,7 +85,11 @@ impl FromStr for Nep245TokenId {
         let (contract_id, token_id) = data
             .split_once(':')
             .ok_or(strum::ParseError::VariantNotFound)?;
-        Self::new(contract_id.parse()?, token_id.to_string()).map_err(Into::into)
+        let r = Self::new(contract_id.parse()?, token_id.to_string());
+        #[cfg(feature = "unbounded")]
+        return Ok(r);
+        #[cfg(not(feature = "unbounded"))]
+        return r;
     }
 }
 
@@ -104,6 +105,8 @@ mod tests {
     use super::*;
 
     use defuse_test_utils::random::make_arbitrary;
+    #[cfg(not(feature = "unbounded"))]
+    use defuse_test_utils::random::random_bytes;
     use rstest::rstest;
 
     #[rstest]
@@ -119,7 +122,6 @@ mod tests {
     fn token_id_length(random_bytes: Vec<u8>) {
         use arbitrary::Unstructured;
         use arbitrary_with::UnstructuredExt;
-        use defuse_test_utils::random::random_bytes;
 
         let mut u = Unstructured::new(&random_bytes);
         let contract_id = u.arbitrary_as::<_, ArbitraryAccountId>().unwrap();

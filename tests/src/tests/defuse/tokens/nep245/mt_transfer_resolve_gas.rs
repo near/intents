@@ -4,20 +4,25 @@ use crate::{
 };
 use anyhow::Context;
 use arbitrary_with::ArbitraryAs;
-use defuse::core::{
-    crypto,
-    token_id::{TokenId, nep245::Nep245TokenId},
+use defuse::{
+    core::{
+        crypto,
+        token_id::{TokenId, nep245::Nep245TokenId},
+    },
+    nep245::{MtEvent, MtTransferEvent},
 };
 use defuse_near_utils::arbitrary::ArbitraryAccountId;
 use defuse_randomness::Rng;
 use defuse_test_utils::random::{gen_random_string, random_bytes, rng};
-use near_sdk::NearToken;
+use near_sdk::{NearToken, json_types::U128};
 use near_workspaces::Account;
 use rstest::rstest;
 use serde_json::json;
-use std::future::Future;
 use std::sync::Arc;
+use std::{borrow::Cow, future::Future};
 use strum::IntoEnumIterator;
+
+const TOTAL_LOG_LENGTH_LIMIT: usize = 16384;
 
 /// We generate things based on whether we want everything to be "as long as possible"
 /// or "as short as possible", because these affect how much gas is spent.
@@ -27,14 +32,14 @@ enum GenerationMode {
     LongestPossible,
 }
 
-async fn make_account(mode: GenerationMode, env: &Env) -> Account {
+async fn make_account(mode: GenerationMode, env: &Env, user: &Account) -> Account {
     match mode {
         GenerationMode::ShortestPossible => {
-            env.transfer_near(env.user1.id(), NearToken::from_near(1000))
+            env.transfer_near(user.id(), NearToken::from_near(1000))
                 .await
                 .unwrap()
                 .unwrap();
-            env.user1.clone()
+            user.clone()
         }
         GenerationMode::LongestPossible => {
             env.transfer_near(env.defuse.id(), NearToken::from_near(1000))
@@ -43,8 +48,7 @@ async fn make_account(mode: GenerationMode, env: &Env) -> Account {
                 .unwrap();
 
             let implicit_account_id = crypto::PublicKey::Ed25519(
-                env.user1
-                    .secret_key()
+                user.secret_key()
                     .public_key()
                     .key_data()
                     .try_into()
@@ -59,7 +63,7 @@ async fn make_account(mode: GenerationMode, env: &Env) -> Account {
 
             let implicit_account = Account::from_secret_key(
                 implicit_account_id,
-                env.user1.secret_key().clone(),
+                user.secret_key().clone(),
                 env.sandbox().worker(),
             );
 
@@ -95,6 +99,31 @@ fn make_amounts(mode: GenerationMode, token_count: usize) -> Vec<u128> {
     }
 }
 
+fn validate_mt_batch_transfer_log_size(
+    sender_id: &near_workspaces::AccountId,
+    receiver_id: &near_workspaces::AccountId,
+    token_ids: &[String],
+    amounts: &[u128],
+) -> anyhow::Result<usize> {
+    let mt_transfer_event = MtEvent::MtTransfer(Cow::Owned(vec![MtTransferEvent {
+        authorized_id: None,
+        old_owner_id: Cow::Borrowed(receiver_id),
+        new_owner_id: Cow::Borrowed(sender_id),
+        token_ids: Cow::Owned(token_ids.to_vec()),
+        amounts: Cow::Owned(amounts.iter().copied().map(U128).collect()),
+        memo: Some(Cow::Borrowed("refund")),
+    }]));
+
+    let longest_transfer_log = format!("JSON_EVENT:{}", mt_transfer_event.to_json());
+
+    anyhow::ensure!(
+        longest_transfer_log.len() <= TOTAL_LOG_LENGTH_LIMIT,
+        "transfer log will exceed maximum log limit"
+    );
+
+    Ok(longest_transfer_log.len())
+}
+
 /// In this test, we want to ensure that any transfer (with many generation modes) will always succeed and refund.
 /// This test is designed to return an error on gracious failure (i.e., when a refund is successful), but to panic
 /// if it fails due to failure in refunds.
@@ -102,9 +131,11 @@ async fn run_resolve_gas_test(
     gen_mode: GenerationMode,
     token_count: usize,
     env: Arc<Env>,
+    user_account: Account,
     author_account: Account,
     rng: Arc<tokio::sync::Mutex<impl Rng>>,
 ) -> anyhow::Result<()> {
+    println!("token count: {token_count}");
     let mut rng = rng.lock().await;
     let bytes = random_bytes(..1000, &mut rng);
     let mut u = arbitrary::Unstructured::new(&bytes);
@@ -124,15 +155,15 @@ async fn run_resolve_gas_test(
         })
         .collect::<Vec<_>>();
 
-    // Deposit a fictitious token, nep245:user1.test.near:<token-id>, into defuse.
+    // Deposit a fictitious token, nep245:user.test.near:<token-id>, into defuse.
     // This is possible because `mt_on_transfer` creates a token from any contract,
     // where the token id (first part, the contract id part), comes from the caller
     // account id.
     let _on_transfer_test_log: TestLog = author_account
         .call(env.defuse.id(), "mt_on_transfer")
         .args_json(json!({
-            "sender_id": env.user1.id(),
-            "previous_owner_ids": [env.user1.id()],
+            "sender_id": user_account.id(),
+            "previous_owner_ids": vec![user_account.id(); token_ids.len()],
             "token_ids": &token_ids,
             "amounts": amounts.iter().map(ToString::to_string).collect::<Vec<_>>(),
             "msg": "",
@@ -151,17 +182,33 @@ async fn run_resolve_gas_test(
         .context("Failed at mt_on_transfer 2")?
         .into();
 
-    // println!(
-    //     "({token_count}, {})",
-    //     on_transfer_test_log.total_gas_burnt()
-    // );
-
     let non_existent_account = ArbitraryAccountId::arbitrary_as(&mut u).unwrap();
+
+    // NOTE: `mt_on_transfer` emits an `MtMint` event, but `mt_batch_transfer_call` emits `mt_transfer`
+    // events that serialize more fields. These transfer logs approach the hard log-size limit, so
+    // we pre-calculate the worst-case payload to fail fast if the limit would be exceeded.
+    let expected_transfer_log = validate_mt_batch_transfer_log_size(
+        user_account.id(),
+        &non_existent_account,
+        &defuse_token_ids,
+        &amounts,
+    )?;
+
+    println!("Non-existent account: {non_existent_account}");
+
+    assert!(
+        env.defuse
+            .mt_tokens_for_owner(env.defuse.id(), &non_existent_account, ..=2) // 2 because we only need to check the first N tokens. Good enough.
+            .await
+            .unwrap()
+            .is_empty(),
+    );
+
+    println!("max transfer amount: {}", amounts.iter().max().unwrap());
 
     // We attempt to do a transfer of fictitious token ids from defuse to an arbitrary user.
     // These will fail, but there should be enough gas to do refunds successfully.
-    let res = env
-        .user1
+    let res = user_account
         .mt_batch_transfer_call(
             env.defuse.id(),
             // Non-existing account id
@@ -172,7 +219,12 @@ async fn run_resolve_gas_test(
             None,
             String::new(),
         )
-        .await;
+        .await
+        .inspect_err(|e| {
+            println!(
+                "`mt_batch_transfer_call` failed (expected) for token count `{token_count}`: {e}"
+            );
+        });
 
     // Assert that a refund happened, since the receiver is non-existent.
     // This is necessary because near-workspaces fails if *any* of the receipts fail within a call.
@@ -192,6 +244,13 @@ async fn run_resolve_gas_test(
             );
         })
         .context("Failed at mt_batch_transfer, but refunds succeeded")?;
+
+    let longest_emited_log = call_test_log.logs().iter().map(String::len).max().unwrap();
+
+    assert_eq!(
+        longest_emited_log, expected_transfer_log,
+        "transfer log does not match expected transfer log"
+    );
 
     println!("{{{token_count}, {}}},", call_test_log.total_gas_burnt());
 
@@ -233,12 +292,14 @@ async fn mt_transfer_resolve_gas(rng: impl Rng) {
     for gen_mode in GenerationMode::iter() {
         let env = Arc::new(Env::new().await);
 
+        let user = env.create_user().await;
+
         env.transfer_near(env.defuse.id(), NearToken::from_near(1000))
             .await
             .unwrap()
             .unwrap();
 
-        let author_account = make_account(gen_mode, &env).await;
+        let author_account = make_account(gen_mode, &env, &user).await;
 
         let min_token_count = 1;
         let max_token_count = 200;
@@ -252,6 +313,7 @@ async fn mt_transfer_resolve_gas(rng: impl Rng) {
                     gen_mode,
                     token_count,
                     env.clone(),
+                    user.clone(),
                     author_account.clone(),
                     rng.clone(),
                 )

@@ -9,13 +9,14 @@ repository.workspace = true
 workspace = true
 
 [dev-dependencies]
-defuse = { workspace = true, features = ["contract"] }
+defuse = { workspace = true, features = ["contract", "arbitrary"] }
 defuse-near-utils = { workspace = true, features = ["arbitrary"] }
 defuse-poa-factory = { workspace = true, features = ["contract"] }
 defuse-serde-utils = { workspace = true }
 defuse-randomness.workspace = true
 defuse-test-utils.workspace = true
 
+futures = "0.3"
 anyhow.workspace = true
 arbitrary.workspace = true
 arbitrary_with = { workspace = true }
@@ -35,3 +36,4 @@ serde_json.workspace = true
 strum.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 tlb-ton = { workspace = true, features = ["arbitrary"] }
+multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }

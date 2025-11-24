@@ -13,8 +13,8 @@ workspace = true
 
 [dependencies]
 defuse-borsh-utils = { workspace = true, features = ["chrono"] }
+defuse-deadline.workspace = true
 defuse-fees.workspace = true
-defuse-near-utils = { workspace = true, features = ["time"] }
 defuse-nep245.workspace = true
 defuse-price.workspace = true
 defuse-token-id = { workspace = true, features = ["unbounded"] }
@@ -28,6 +28,7 @@ serde_with = { workspace = true, features = ["chrono_0_4", "hex"] }
 thiserror.workspace = true
 
 defuse-auth-call = { workspace = true, optional = true }
+defuse-near-utils = { workspace = true, optional = true }
 
 [dev-dependencies]
 defuse-sandbox.workspace = true
@@ -47,9 +48,5 @@ auth_call = ["dep:defuse-auth-call"]
 nep141 = ["defuse-token-id/nep141"]
 nep245 = ["defuse-token-id/nep245"]
 
-abi = [
-    "defuse-token-id/abi",
-    "defuse-near-utils/abi",
-    "serde_with/schemars_0_8",
-]
-contract = []
+abi = ["defuse-deadline/abi", "defuse-token-id/abi", "serde_with/schemars_0_8"]
+contract = ["dep:defuse-near-utils"]

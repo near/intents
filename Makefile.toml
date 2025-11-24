@@ -8,22 +8,25 @@ POA_TOKEN_WASM = "${TARGET_DIR}/defuse_poa_token.wasm"
 POA_TOKEN_WITH_NO_REGISTRATION_DIR = "${TARGET_DIR}/poa-token-no-registration"
 POA_TOKEN_WASM_NO_REGISTRATION_WASM = "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}/defuse_poa_token.wasm"
 
+MT_RECEIVER_STUB_DIR = "${TARGET_DIR}/multi-token-receiver-stub"
+MT_RECEIVER_STUB_WASM = "${MT_RECEIVER_STUB_DIR}/multi_token_receiver_stub.wasm"
+
 [tasks.default]
 alias = "build"
 
-[tasks.clippy]
-dependencies = ["add-cache-dir-tag"]
-command = "cargo"
-args = ["clippy", "--workspace", "--all-targets", "--no-deps"]
+# ============================================================================
+# Build tasks
+# ============================================================================
 
 [tasks.build]
 dependencies = [
     "add-cache-dir-tag",
     "build-defuse",
-    "build-escrow",
+    "build-escrow-swap",
     "build-poa-factory",
-    "contract-stats",
     "build-poa-token-no-registration",
+    "contract-stats",
+    "build-multi-token-receiver-stub",
 ]
 
 [tasks.build-defuse]
@@ -128,6 +131,84 @@ args = [
     "--no-embed-abi",
 ]
 
+# ============================================================================
+# Build reproducible tasks
+# ============================================================================
+
+[tasks.build-reproducible]
+dependencies = [
+    "add-cache-dir-tag",
+    "build-defuse-reproducible",
+    "build-poa-factory-reproducible",
+    "build-poa-token-no-registration-reproducible",
+    "defuse-reproducible-checksum",
+    "contract-stats",
+]
+
+[tasks.build-defuse-reproducible]
+dependencies = ["add-cache-dir-tag"]
+command = "cargo"
+args = [
+    "near",
+    "build",
+    "reproducible-wasm",
+    "--manifest-path",
+    "./defuse/Cargo.toml",
+    "--out-dir",
+    "${TARGET_DIR}",
+]
+
+[tasks.build-poa-factory-reproducible]
+dependencies = ["add-cache-dir-tag", "build-poa-token-reproducible"]
+command = "cargo"
+args = [
+    "near",
+    "build",
+    "reproducible-wasm",
+    "--manifest-path",
+    "./poa-factory/Cargo.toml",
+    "--out-dir",
+    "${TARGET_DIR}",
+]
+[tasks.build-poa-token-reproducible]
+dependencies = ["add-cache-dir-tag"]
+command = "cargo"
+args = [
+    "near",
+    "build",
+    "reproducible-wasm",
+    "--manifest-path",
+    "./poa-token/Cargo.toml",
+    "--out-dir",
+    "${TARGET_DIR}",
+]
+
+[tasks.build-poa-token-no-registration-reproducible]
+dependencies = ["add-cache-dir-tag"]
+command = "cargo"
+args = [
+    "near",
+    "build",
+    "reproducible-wasm",
+    "--manifest-path",
+    "./poa-token/Cargo.toml",
+    "--out-dir",
+    "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}",
+    "--variant",
+    "no_registration",
+]
+
+[tasks.defuse-reproducible-checksum]
+dependencies = ["build-defuse-reproducible"]
+script = [
+    "SHA256=$(sha256sum ${TARGET_DIR}/defuse.wasm | awk '{print $1}')",
+    'echo "${SHA256}" > ${TARGET_DIR}/defuse.sha256',
+]
+
+# ============================================================================
+# Test tasks
+# ============================================================================
+
 [tasks.test]
 alias = "tests"
 
@@ -144,6 +225,10 @@ run_task = "run-tests"
 command = "cargo"
 args = ["test", "--workspace", "--all-targets", "${@}"]
 
+# ============================================================================
+# Cleanup tasks
+# ============================================================================
+
 [tasks.clean]
 dependencies = ["rm-contracts"]
 command = "cargo"
@@ -156,10 +241,36 @@ script = "rm -rf ${TARGET_DIR}"
 category = "Tools"
 script = "cd ${TARGET_DIR} && du -ah *.wasm"
 
+# ============================================================================
+# Helpers
+# ============================================================================
+
+[tasks.clippy]
+dependencies = ["add-cache-dir-tag"]
+command = "cargo"
+args = ["clippy", "--workspace", "--all-targets", "--no-deps"]
+
 # We add CACHEDIR.TAG as it helps in making system level applications, e.g., backup systems, understand that this directory is just for disposable things.
 [tasks.add-cache-dir-tag]
 condition = { platforms = ["linux", "mac"] }
 script = [
     "mkdir -p target res",
     "echo 'Signature: 8a477f597d28d172789f06886806bc55' | tee target/CACHEDIR.TAG res/CACHEDIR.TAG > /dev/null",
+]
+
+[tasks.build-multi-token-receiver-stub]
+dependencies = ["add-cache-dir-tag"]
+command = "cargo"
+args = [
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--locked",
+    "--manifest-path",
+    "./tests/contracts/multi-token-receiver-stub/Cargo.toml",
+    "--features",
+    "abi",
+    "--out-dir",
+    "${MT_RECEIVER_STUB_DIR}",
+    "--no-embed-abi",
 ]
