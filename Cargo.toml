@@ -103,7 +103,7 @@ tlb-ton = { version = "0.5", default-features = false }
 tokio = { version = "1.45", default-features = false }
 
 [patch.crates-io]
-near-sdk = { path = "/Users/mat/near-sdk-rs/near-sdk" }
+near-sdk = { git = "https://github.com/near/near-sdk-rs", branch = "master" }
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }
