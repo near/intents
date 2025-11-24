@@ -31,6 +31,55 @@ macro_rules! assert_eq_event_logs {
     }};
 }
 
+/// Assert that collection `a` contains collection `b`.
+/// Checks that all elements in `b` are present in `a`.
+///
+/// # Examples
+/// ```ignore
+/// assert_a_contains_b!(a: all_logs, b: [expected_event1, expected_event2]);
+/// ```
+#[macro_export]
+macro_rules! assert_a_contains_b {
+    (a: $a:expr, b: $b:expr) => {{
+        let a_normalized: Vec<String> = $a
+            .iter()
+            .cloned()
+            .filter_map(|log: String| {
+                log
+                    .strip_prefix("EVENT_JSON:")
+                    .and_then(|json_str| {
+                        serde_json::from_str::<serde_json::Value>(json_str)
+                            .ok()
+                            .and_then(|json_value| serde_json::to_string(&json_value).ok())
+                    })
+            })
+            .collect();
+
+        let b_normalized: Vec<String> = $b
+            .iter()
+            .cloned()
+            .map(|log: String| {
+                let json_str = log
+                    .strip_prefix("EVENT_JSON:")
+                    .unwrap_or(&log);
+                let json_value: serde_json::Value = serde_json::from_str(json_str)
+                    .expect(&format!("Failed to parse 'b' JSON: {}", json_str));
+                serde_json::to_string(&json_value).expect("Failed to serialize JSON")
+            })
+            .collect();
+
+        for expected_event in &b_normalized {
+            if !a_normalized.contains(expected_event) {
+                panic!(
+                    "\n\nExpected event not found in 'a':\n{}\n\nActual event logs in 'a':\n{:#?}\n",
+                    expected_event,
+                    a_normalized
+                );
+            }
+        }
+    }};
+}
+
 use near_sdk::Gas;
 use near_workspaces::result::ExecutionResult;
 

@@ -1,0 +1,15 @@
+[package]
+name = "defuse-fees"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+defuse-num-utils.workspace = true
+
+near-sdk.workspace = true
+thiserror.workspace = true
