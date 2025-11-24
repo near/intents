@@ -88,7 +88,7 @@ impl FromStr for Nep171TokenId {
         let (contract_id, token_id) = data
             .split_once(':')
             .ok_or(strum::ParseError::VariantNotFound)?;
-        Self::new(contract_id.parse()?, token_id.to_string())
+        Self::new(contract_id.parse()?, token_id.to_string()).map_err(Into::into)
     }
 }
 
