@@ -158,7 +158,7 @@ impl Contract {
         };
 
         let mut burn_event = MtBurnEvent {
-            owner_id: Cow::Owned(receiver_id.to_owned()),
+            owner_id: Cow::Borrowed(receiver_id),
             authorized_id: None,
             token_ids: Vec::with_capacity(tokens_count).into(),
             amounts: Vec::with_capacity(tokens_count).into(),

@@ -118,8 +118,7 @@ impl Contract {
         self.resolve_deposit_internal(
             &receiver_id,
             tokens
-                .iter()
-                .cloned()
+                .into_iter()
                 .map(|token_id| Nep245TokenId::new(contract_id.clone(), token_id))
                 .map(UnwrapOrPanicError::unwrap_or_panic_display)
                 .map(Into::into)
