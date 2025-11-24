@@ -8,8 +8,10 @@ members = [
     "controller",
     "core",
     "crypto",
+    "deadline",
     "defuse",
     "erc191",
+    "fees",
     "io-utils",
     "map-utils",
     "near-utils",
@@ -47,7 +49,9 @@ defuse-controller.path = "controller"
 defuse-core.path = "core"
 defuse-crypto.path = "crypto"
 defuse.path = "defuse"
+defuse-deadline.path = "deadline"
 defuse-erc191.path = "erc191"
+defuse-fees.path = "fees"
 defuse-io-utils.path = "io-utils"
 defuse-map-utils.path = "map-utils"
 defuse-near-utils.path = "near-utils"
