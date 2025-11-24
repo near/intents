@@ -80,10 +80,8 @@ pub enum TonConnectPayloadSchema {
 
 impl TonConnectPayloadSchema {
     #[cfg(feature = "text")]
-    pub fn text(txt: &impl ToString) -> Self {
-        Self::Text(TextPayload {
-            text: txt.to_string(),
-        })
+    pub fn text(txt: impl Into<String>) -> Self {
+        Self::Text(TextPayload { text: txt.into() })
     }
 
     #[cfg(feature = "binary")]
