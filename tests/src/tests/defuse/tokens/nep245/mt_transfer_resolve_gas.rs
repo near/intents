@@ -163,7 +163,7 @@ async fn run_resolve_gas_test(
         .call(env.defuse.id(), "mt_on_transfer")
         .args_json(json!({
             "sender_id": user_account.id(),
-            "previous_owner_ids": [user_account.id()],
+            "previous_owner_ids": vec![user_account.id(); token_ids.len()],
             "token_ids": &token_ids,
             "amounts": amounts.iter().map(ToString::to_string).collect::<Vec<_>>(),
             "msg": "",

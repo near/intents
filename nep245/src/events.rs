@@ -62,3 +62,9 @@ pub trait MtEventEmit<'a>: Into<MtEvent<'a>> {
     }
 }
 impl<'a, T> MtEventEmit<'a> for T where T: Into<MtEvent<'a>> {}
+
+impl defuse_near_utils::NearSdkLog for MtEvent<'_> {
+    fn to_near_sdk_log(&self) -> String {
+        ::std::format!("EVENT_JSON:{}", self.to_json())
+    }
+}
