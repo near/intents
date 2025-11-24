@@ -155,7 +155,7 @@ mod tests {
                         .unwrap(),
                     domain: "ton-connect.github.io".to_string(),
                     timestamp: DateTime::from_timestamp(1747760435, 0).unwrap(),
-                    payload: TonConnectPayloadSchema::binary(&hex!("48656c6c6f2c20544f4e21")),
+                    payload: TonConnectPayloadSchema::binary(hex!("48656c6c6f2c20544f4e21")),
                 },
                 public_key: hex!(
                     "22e795a07e832fc9084ca35a488a711f1dbedef637d4e886a6997d93ee2c2e37"
