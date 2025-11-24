@@ -17,7 +17,8 @@ use near_sdk::{AccountId, Gas, NearToken, serde_json::json};
 
 use crate::env::utils::read_wasm;
 
-pub static WNEAR_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("../tests/contracts/target/wnear"));
+pub static WNEAR_WASM: LazyLock<Vec<u8>> =
+    LazyLock::new(|| read_wasm("../tests/contracts/target/wnear"));
 pub static VERIFIER_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("defuse"));
 pub static ESCROW_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("defuse_escrow_swap"));
 
