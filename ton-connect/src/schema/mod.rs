@@ -85,9 +85,9 @@ impl TonConnectPayloadSchema {
     }
 
     #[cfg(feature = "binary")]
-    pub fn binary(bytes: &[u8]) -> Self {
+    pub fn binary(bytes: impl Into<Vec<u8>>) -> Self {
         Self::Binary(binary::BinaryPayload {
-            bytes: bytes.to_vec(),
+            bytes: bytes.into(),
         })
     }
 
