@@ -1,6 +1,6 @@
 use crate::{
     engine::deltas::InvariantViolated,
-    token_id::{TokenId, error::TokenIdError, nep171::Nep171TokenId},
+    token_id::{TokenId, TokenIdError, nep171::Nep171TokenId},
 };
 use defuse_crypto::PublicKey;
 use near_sdk::{AccountId, FunctionError, serde_json};
