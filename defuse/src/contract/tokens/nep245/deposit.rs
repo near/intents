@@ -2,14 +2,14 @@ use defuse_core::token_id::nep245::Nep245TokenId;
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
-use defuse_nep245::receiver::MultiTokenReceiver;
+use defuse_nep245::receiver::{MultiTokenReceiver, ext_mt_receiver};
 use near_plugins::{Pausable, pause};
 use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near, require};
 
 use crate::{
     contract::{Contract, ContractExt},
     intents::{Intents, ext_intents},
-    tokens::DepositMessage,
+    tokens::{DepositAction, DepositMessage},
 };
 
 #[near]
@@ -27,48 +27,104 @@ impl MultiTokenReceiver for Contract {
         amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
-        let _previous_owner_ids = previous_owner_ids;
         let token = &*PREDECESSOR_ACCOUNT_ID;
 
+        require!(!amounts.is_empty(), "invalid args");
+
         require!(
-            token_ids.len() == amounts.len() && !amounts.is_empty(),
-            "invalid args"
+            token_ids.len() == amounts.len(),
+            "NEP-245: Contract MUST panic if `token_ids` length does not equals `amounts` length"
         );
+
+        require!(
+            previous_owner_ids.len() == token_ids.len(),
+            "NEP-245: Contract MUST panic if `previous_owner_ids` length does not equals `token_ids` length"
+        );
+
         require!(
             token != &*CURRENT_ACCOUNT_ID,
             "self-wrapping is not allowed"
         );
 
-        let msg = if msg.is_empty() {
-            DepositMessage::new(sender_id)
+        let DepositMessage {
+            receiver_id,
+            action,
+        } = if msg.is_empty() {
+            DepositMessage::new(sender_id.clone())
         } else {
             msg.parse().unwrap_or_panic_display()
         };
 
-        let n = amounts.len();
-
         self.deposit(
-            msg.receiver_id,
+            receiver_id.clone(),
             token_ids
-                .into_iter()
+                .iter()
+                .cloned()
                 .map(|token_id| Nep245TokenId::new(token.clone(), token_id))
                 .map(UnwrapOrPanicError::unwrap_or_panic_display)
                 .map(Into::into)
-                .zip(amounts.into_iter().map(|a| a.0)),
+                .zip(amounts.iter().map(|amount| amount.0)),
             Some("deposit"),
         )
         .unwrap_or_panic();
 
-        if !msg.execute_intents.is_empty() {
-            if msg.refund_if_fails {
-                self.execute_intents(msg.execute_intents);
-            } else {
-                // detach promise
-                let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
-                    .execute_intents(msg.execute_intents);
+        let Some(action) = action else {
+            return PromiseOrValue::Value(vec![U128(0); token_ids.len()]);
+        };
+
+        match action {
+            DepositAction::Notify(notify) => ext_mt_receiver::ext(receiver_id.clone())
+                .with_static_gas(notify.min_gas.unwrap_or_default())
+                .mt_on_transfer(
+                    sender_id,
+                    previous_owner_ids,
+                    token_ids.clone(),
+                    amounts.clone(),
+                    notify.msg,
+                )
+                .then(
+                    Self::ext(CURRENT_ACCOUNT_ID.clone())
+                        .with_static_gas(Self::mt_resolve_deposit_gas(amounts.len()))
+                        .with_unused_gas_weight(0)
+                        .mt_resolve_deposit(receiver_id, token.clone(), token_ids, amounts),
+                )
+                .into(),
+            DepositAction::Execute(execute) => {
+                if !execute.execute_intents.is_empty() {
+                    if execute.refund_if_fails {
+                        self.execute_intents(execute.execute_intents);
+                    } else {
+                        let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
+                            .execute_intents(execute.execute_intents);
+                    }
+                }
+                PromiseOrValue::Value(vec![U128(0); token_ids.len()])
             }
         }
+    }
+}
 
-        PromiseOrValue::Value(vec![U128(0); n])
+#[near]
+impl Contract {
+    #[private]
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn mt_resolve_deposit(
+        &mut self,
+        receiver_id: AccountId,
+        contract_id: AccountId,
+        tokens: Vec<defuse_nep245::TokenId>,
+        #[allow(unused_mut)] mut amounts: Vec<U128>,
+    ) -> PromiseOrValue<Vec<U128>> {
+        self.resolve_deposit_internal(
+            &receiver_id,
+            tokens
+                .into_iter()
+                .map(|token_id| Nep245TokenId::new(contract_id.clone(), token_id))
+                .map(UnwrapOrPanicError::unwrap_or_panic_display)
+                .map(Into::into)
+                .zip(amounts.iter_mut().map(|amount| &mut amount.0)),
+        );
+
+        PromiseOrValue::Value(amounts)
     }
 }

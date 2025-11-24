@@ -233,6 +233,8 @@ args = [
     "--locked",
     "--manifest-path",
     "./tests/contracts/multi-token-receiver-stub/Cargo.toml",
+    "--features",
+    "abi",
     "--out-dir",
     "${MT_RECEIVER_STUB_DIR}",
     "--no-embed-abi",
