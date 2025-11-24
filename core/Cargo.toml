@@ -9,12 +9,13 @@ repository.workspace = true
 defuse-auth-call.workspace = true
 defuse-bitmap.workspace = true
 defuse-crypto = { workspace = true, features = ["serde"] }
+defuse-deadline.workspace = true
 defuse-erc191.workspace = true
 defuse-fees.workspace = true
 defuse-nep245.workspace = true
 defuse-nep413.workspace = true
 defuse-map-utils.workspace = true
-defuse-near-utils = { workspace = true, features = ["time"] }
+defuse-near-utils.workspace = true
 defuse-num-utils.workspace = true
 defuse-serde-utils.workspace = true
 defuse-sep53.workspace = true
@@ -26,7 +27,6 @@ defuse-webauthn.workspace = true
 arbitrary = { workspace = true, optional = true }
 arbitrary_with = { workspace = true, optional = true }
 defuse-borsh-utils = { workspace = true, features = ["chrono"] }
-chrono = { workspace = true, features = ["serde"] }
 derive_more = { workspace = true, features = ["from"] }
 hex.workspace = true
 hex-literal.workspace = true
