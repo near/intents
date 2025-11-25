@@ -15,8 +15,5 @@ impl-tools.workspace = true
 near-sdk.workspace = true
 serde_with.workspace = true
 
-[features]
-abi = ["defuse-serde-utils/abi", "defuse-crypto/abi"]
-
 [lints]
 workspace = true
