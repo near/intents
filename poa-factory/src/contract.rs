@@ -19,7 +19,7 @@ use near_sdk::{
     store::IterableSet,
 };
 
-use crate::PoaFactory;
+use crate::{PoaFactory, TokenFullAccessKeys};
 
 const POA_TOKEN_INIT_BALANCE: NearToken = NearToken::from_near(3);
 const POA_TOKEN_NEW_GAS: Gas = Gas::from_tgas(10);
@@ -87,19 +87,6 @@ impl Contract {
             "failed to set roles"
         );
         contract
-    }
-
-    #[access_control_any(roles(Role::DAO))]
-    #[payable]
-    pub fn add_token_full_access_key(
-        &mut self,
-        token: AccountId,
-        public_key: PublicKey,
-    ) -> Promise {
-        assert_one_yocto();
-        ext_full_access_keys::ext(Self::token_id(token))
-            .with_attached_deposit(NearToken::from_yoctonear(1))
-            .add_full_access_key(public_key)
     }
 }
 
@@ -249,6 +236,27 @@ impl FullAccessKeys for Contract {
     fn delete_key(&mut self, public_key: PublicKey) -> Promise {
         assert_one_yocto();
         Promise::new(CURRENT_ACCOUNT_ID.clone()).delete_key(public_key)
+    }
+}
+
+#[near]
+impl TokenFullAccessKeys for Contract {
+    #[access_control_any(roles(Role::DAO))]
+    #[payable]
+    fn add_token_full_access_key(&mut self, token: AccountId, public_key: PublicKey) -> Promise {
+        assert_one_yocto();
+        ext_full_access_keys::ext(Self::token_id(token))
+            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .add_full_access_key(public_key)
+    }
+
+    #[access_control_any(roles(Role::DAO))]
+    #[payable]
+    fn delete_token_full_access_key(&mut self, token: AccountId, public_key: PublicKey) -> Promise {
+        assert_one_yocto();
+        ext_full_access_keys::ext(Self::token_id(token))
+            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .delete_key(public_key)
     }
 }
 

@@ -14,7 +14,7 @@ use near_sdk::{
     assert_one_yocto, borsh::BorshSerialize, env, json_types::U128, near, require, store::Lazy,
 };
 
-use crate::{PoaFungibleToken, WITHDRAW_MEMO_PREFIX};
+use crate::{NoRegistration, PoaFungibleToken, WITHDRAW_MEMO_PREFIX};
 
 #[near(
     contract_state,
@@ -75,13 +75,6 @@ impl Contract {
     #[only(self, owner)]
     #[payable]
     pub fn migrate(&mut self, no_registration: bool) {
-        assert_one_yocto();
-        self.no_registration = no_registration;
-    }
-
-    #[only(self, owner)]
-    #[payable]
-    pub fn set_no_registration(&mut self, no_registration: bool) {
         assert_one_yocto();
         self.no_registration = no_registration;
     }
@@ -234,6 +227,20 @@ impl FullAccessKeys for Contract {
     fn delete_key(&mut self, public_key: PublicKey) -> Promise {
         assert_one_yocto();
         Promise::new(CURRENT_ACCOUNT_ID.clone()).delete_key(public_key)
+    }
+}
+
+#[near]
+impl NoRegistration for Contract {
+    fn is_no_registration(&self) -> bool {
+        self.no_registration
+    }
+
+    #[only(self, owner)]
+    #[payable]
+    fn set_no_registration(&mut self, no_registration: bool) {
+        assert_one_yocto();
+        self.no_registration = no_registration;
     }
 }
 
