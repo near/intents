@@ -24,7 +24,6 @@ use crate::schema::{PayloadSchema, TonConnectPayloadContext};
 pub struct TonConnectPayload {
     /// Wallet address in either [Raw](https://docs.ton.org/v3/documentation/smart-contracts/addresses/address-formats#raw-address) representation
     /// or [user-friendly](https://docs.ton.org/v3/documentation/smart-contracts/addresses/address-formats#user-friendly-address) format
-    #[serde_as(as = "DisplayFromStr")]
     pub address: MsgAddress,
     /// dApp domain
     pub domain: String,
