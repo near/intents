@@ -380,7 +380,7 @@ fn generate_legacy_user_account_id(
     index: usize,
     seed: Seed,
 ) -> Result<AccountId> {
-    let bytes = sha256(&(seed.as_u64() + u64::try_from(index)?).to_be_bytes())[..8]
+    let bytes = sha256((seed.as_u64() + u64::try_from(index)?).to_be_bytes())[..8]
         .try_into()
         .map_err(|_| anyhow::anyhow!("Failed to create new account seed"))?;
     let seed = Seed::from_u64(u64::from_be_bytes(bytes));

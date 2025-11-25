@@ -24,7 +24,7 @@ impl Tip191Payload {
 impl Payload for Tip191Payload {
     #[inline]
     fn hash(&self) -> CryptoHash {
-        env::keccak256_array(&self.prehash())
+        env::keccak256_array(self.prehash())
     }
 }
 

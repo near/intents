@@ -23,7 +23,7 @@ impl Erc191Payload {
 impl Payload for Erc191Payload {
     #[inline]
     fn hash(&self) -> CryptoHash {
-        env::keccak256_array(&self.prehash())
+        env::keccak256_array(self.prehash())
     }
 }
 

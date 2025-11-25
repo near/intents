@@ -72,7 +72,7 @@ impl Nep413Payload {
 impl Payload for Nep413Payload {
     #[inline]
     fn hash(&self) -> CryptoHash {
-        env::sha256_array(&self.prehash())
+        env::sha256_array(self.prehash())
     }
 }
 

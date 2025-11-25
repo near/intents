@@ -3,7 +3,6 @@ use std::fmt::Debug;
 
 use impl_tools::autoimpl;
 use near_sdk::near;
-use serde_with::serde_as;
 use tlb_ton::StringError;
 
 use crate::schema::{PayloadSchema, TonConnectPayloadContext};

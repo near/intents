@@ -26,7 +26,7 @@ impl Sep53Payload {
 impl Payload for Sep53Payload {
     #[inline]
     fn hash(&self) -> CryptoHash {
-        env::sha256_array(&self.prehash())
+        env::sha256_array(self.prehash())
     }
 }
 

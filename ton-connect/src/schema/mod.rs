@@ -3,7 +3,6 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 
 use near_sdk::{env, near};
-use serde_with::serde_as;
 use tlb_ton::{Error, MsgAddress, StringError};
 
 #[cfg(feature = "binary")]

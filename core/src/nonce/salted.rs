@@ -30,7 +30,7 @@ impl Salt {
         input[32] = num;
 
         Self(
-            sha256_array(&input)[..SIZE]
+            sha256_array(input)[..SIZE]
                 .try_into()
                 .unwrap_or_else(|_| unreachable!()),
         )
