@@ -4411,9 +4411,9 @@ dependencies = [
 
 [[package]]
 name = "tlb-ton"
-version = "0.5.4"
+version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b04abc3181f4c46388bd513d299e02603ad4a9dd4e04d36c669c87436958e48e"
+checksum = "6c0d6bdfbbef23bb3da70dd66622a899e9619c20c1bcd53f2577707382052ab4"
 dependencies = [
  "arbitrary",
  "base64 0.21.7",
@@ -4425,6 +4425,7 @@ dependencies = [
  "lazy_static",
  "num-bigint 0.4.6",
  "num-traits",
+ "schemars",
  "serde_with",
  "strum 0.25.0",
  "tlb",
