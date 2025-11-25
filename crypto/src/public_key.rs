@@ -128,7 +128,6 @@ impl FromStr for PublicKey {
 
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
 const _: () = {
-
     use near_sdk::{
         schemars::{
             JsonSchema,

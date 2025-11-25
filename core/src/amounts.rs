@@ -229,7 +229,6 @@ where
 
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
 const _: () = {
-
     use near_sdk::schemars::{
         JsonSchema,
         r#gen::SchemaGenerator,

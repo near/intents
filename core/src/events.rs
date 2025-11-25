@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use derive_more::derive::From;
-use near_sdk::{near, serde::Deserialize, AsNep297Event};
+use near_sdk::{AsNep297Event, near, serde::Deserialize};
 
 use crate::{
     accounts::{AccountEvent, NonceEvent, PublicKeyEvent, SaltRotationEvent, TransferEvent},

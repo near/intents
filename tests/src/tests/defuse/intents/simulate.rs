@@ -93,7 +93,8 @@ async fn simulate_transfer_intent() {
             )
             .to_event_log(),
             AccountNonceIntentEvent::new(&user1.id(), nonce, &transfer_intent_payload)
-                .into_event().to_event_log(),
+                .into_event()
+                .to_event_log(),
         ]
     );
 }
@@ -157,7 +158,9 @@ async fn simulate_ft_withdraw_intent() {
                 },
             }]))
             .to_event_log(),
-            AccountNonceIntentEvent::new(&user1.id(), nonce, &ft_withdraw_payload).into_event().to_event_log(),
+            AccountNonceIntentEvent::new(&user1.id(), nonce, &ft_withdraw_payload)
+                .into_event()
+                .to_event_log(),
         ]
     );
 }
@@ -232,7 +235,8 @@ async fn simulate_native_withdraw_intent() {
             }]))
             .to_event_log(),
             AccountNonceIntentEvent::new(&user1.id(), nonce, &native_withdraw_payload)
-                .into_event().to_event_log(),
+                .into_event()
+                .to_event_log(),
         ]
     );
 }
@@ -338,7 +342,8 @@ async fn simulate_nft_withdraw_intent() {
             }]))
             .to_event_log(),
             AccountNonceIntentEvent::new(&user1.id(), nonce, &nft_withdraw_payload)
-                .into_event().to_event_log(),
+                .into_event()
+                .to_event_log(),
         ]
     );
 }
@@ -460,7 +465,9 @@ async fn simulate_mt_withdraw_intent() {
                 },
             }]))
             .to_event_log(),
-            AccountNonceIntentEvent::new(&user1.id(), nonce, &mt_withdraw_payload).into_event().to_event_log(),
+            AccountNonceIntentEvent::new(&user1.id(), nonce, &mt_withdraw_payload)
+                .into_event()
+                .to_event_log(),
         ]
     );
 }
@@ -536,7 +543,8 @@ async fn simulate_storage_deposit_intent() {
             }]))
             .to_event_log(),
             AccountNonceIntentEvent::new(&user1.id(), nonce, &storage_deposit_payload)
-                .into_event().to_event_log(),
+                .into_event()
+                .to_event_log(),
         ]
     );
 }
@@ -706,7 +714,8 @@ async fn simulate_add_public_key_intent(public_key: PublicKey) {
             ))
             .to_event_log(),
             AccountNonceIntentEvent::new(&user1.id(), nonce, &add_public_key_payload)
-                .into_event().to_event_log(),
+                .into_event()
+                .to_event_log(),
         ]
     );
 }
@@ -762,7 +771,8 @@ async fn simulate_remove_public_key_intent(public_key: PublicKey) {
             ))
             .to_event_log(),
             AccountNonceIntentEvent::new(&user1.id(), remove_nonce, &remove_public_key_payload)
-                .into_event().to_event_log(),
+                .into_event()
+                .to_event_log(),
         ]
     );
 }
@@ -794,7 +804,9 @@ async fn simulate_set_auth_by_predecessor_id_intent() {
         vec![
             DefuseEvent::SetAuthByPredecessorId(AccountEvent::new(user1.id(), set_auth_intent,))
                 .to_event_log(),
-            AccountNonceIntentEvent::new(&user1.id(), nonce, &set_auth_payload).into_event().to_event_log(),
+            AccountNonceIntentEvent::new(&user1.id(), nonce, &set_auth_payload)
+                .into_event()
+                .to_event_log(),
         ]
     );
 }
@@ -860,7 +872,11 @@ async fn simulate_auth_call_intent() {
 
     assert_eq!(
         result.report.logs,
-        vec![AccountNonceIntentEvent::new(&user1.id(), nonce, &auth_call_payload).into_event().to_event_log(),]
+        vec![
+            AccountNonceIntentEvent::new(&user1.id(), nonce, &auth_call_payload)
+                .into_event()
+                .to_event_log(),
+        ]
     );
 }
 

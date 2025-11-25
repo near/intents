@@ -1,8 +1,8 @@
 use crate::tests::defuse::DefuseSignerExt;
+use crate::tests::defuse::env::Env;
 use crate::tests::defuse::intents::{AccountNonceIntentEvent, ExecuteIntentsExt};
 use crate::utils::fixtures::public_key;
 use crate::utils::payload::ExtractNonceExt;
-use crate::tests::defuse::env::Env;
 use defuse::core::{
     accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
@@ -39,16 +39,21 @@ async fn execute_add_public_key_intent(public_key: PublicKey) {
         .await
         .unwrap();
 
-    assert_eq!(result.logs().to_vec(), vec![
+    assert_eq!(
+        result.logs().to_vec(),
+        vec![
             DefuseEvent::PublicKeyAdded(AccountEvent::new(
                 user.id(),
                 PublicKeyEvent {
                     public_key: Cow::Borrowed(&new_public_key),
                 },
-            )).to_event_log(),
-            AccountNonceIntentEvent::new(&user.id(), nonce, &add_public_key_payload).into_event().to_event_log(),
-    ]);
-
+            ))
+            .to_event_log(),
+            AccountNonceIntentEvent::new(&user.id(), nonce, &add_public_key_payload)
+                .into_event()
+                .to_event_log(),
+        ]
+    );
 }
 
 #[tokio::test]
@@ -93,13 +98,19 @@ async fn execute_remove_public_key_intent(public_key: PublicKey) {
         .await
         .unwrap();
 
-    assert_eq!(result.logs().to_vec(), vec![
+    assert_eq!(
+        result.logs().to_vec(),
+        vec![
             DefuseEvent::PublicKeyRemoved(AccountEvent::new(
                 user.id(),
                 PublicKeyEvent {
                     public_key: Cow::Borrowed(&new_public_key),
                 },
-            )).to_event_log(),
-            AccountNonceIntentEvent::new(&user.id(), remove_nonce, &remove_public_key_payload).into_event().to_event_log(),
-    ]);
+            ))
+            .to_event_log(),
+            AccountNonceIntentEvent::new(&user.id(), remove_nonce, &remove_public_key_payload)
+                .into_event()
+                .to_event_log(),
+        ]
+    );
 }
