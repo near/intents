@@ -20,7 +20,11 @@ defuse-num-utils.workspace = true
 defuse-serde-utils.workspace = true
 defuse-sep53.workspace = true
 defuse-tip191.workspace = true
-defuse-token-id.workspace = true
+defuse-token-id = { workspace = true, features = [
+    "nep141",
+    "nep171",
+    "nep245",
+] }
 defuse-ton-connect.workspace = true
 defuse-webauthn.workspace = true
 
