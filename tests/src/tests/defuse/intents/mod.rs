@@ -22,7 +22,7 @@ use defuse::{
 };
 use defuse_randomness::Rng;
 use defuse_test_utils::random::rng;
-use near_sdk::{AccountId, AccountIdRef, CryptoHash};
+use near_sdk::{AccountId, AccountIdRef, AsNep297Event, CryptoHash};
 use rstest::rstest;
 use serde_json::json;
 use std::borrow::Cow;
@@ -274,6 +274,7 @@ async fn simulate_is_view_method(
             },
         },
     }]))
+    .to_nep297_event()
     .to_event_log();
 
     assert!(result.report.logs.iter().any(|log| log == &expected_log));

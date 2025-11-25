@@ -1,6 +1,6 @@
 use super::TokenId;
 use derive_more::derive::From;
-use near_sdk::{AccountIdRef, AsNep297Event, json_types::U128, near, serde::Deserialize};
+use near_sdk::{AccountIdRef, json_types::U128, near, serde::Deserialize};
 use std::borrow::Cow;
 
 #[must_use = "make sure to `.emit()` this event"]
@@ -62,9 +62,3 @@ pub trait MtEventEmit<'a>: Into<MtEvent<'a>> {
     }
 }
 impl<'a, T> MtEventEmit<'a> for T where T: Into<MtEvent<'a>> {}
-
-impl MtEvent<'_> {
-    pub fn to_event_log(&self) -> String {
-        self.to_nep297_event().to_event_log()
-    }
-}

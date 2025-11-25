@@ -5,6 +5,7 @@ use defuse::core::{
     crypto::PublicKey,
     events::DefuseEvent,
 };
+use near_sdk::AsNep297Event;
 use rstest::rstest;
 
 use crate::{
@@ -51,6 +52,7 @@ async fn test_add_public_key(public_key: PublicKey) {
                 public_key: Cow::Borrowed(&public_key),
             },
         ))
+        .to_nep297_event()
         .to_event_log(),]
     );
 
@@ -104,6 +106,7 @@ async fn test_add_and_remove_public_key(public_key: PublicKey) {
                 public_key: Cow::Borrowed(&public_key),
             },
         ))
+        .to_nep297_event()
         .to_event_log(),]
     );
 

@@ -9,6 +9,7 @@ use defuse::core::{
     events::DefuseEvent,
     intents::account::{AddPublicKey, RemovePublicKey},
 };
+use near_sdk::AsNep297Event;
 use rstest::rstest;
 use std::borrow::Cow;
 
@@ -48,9 +49,11 @@ async fn execute_add_public_key_intent(public_key: PublicKey) {
                     public_key: Cow::Borrowed(&new_public_key),
                 },
             ))
+            .to_nep297_event()
             .to_event_log(),
             AccountNonceIntentEvent::new(&user.id(), nonce, &add_public_key_payload)
                 .into_event()
+                .to_nep297_event()
                 .to_event_log(),
         ]
     );
@@ -107,9 +110,11 @@ async fn execute_remove_public_key_intent(public_key: PublicKey) {
                     public_key: Cow::Borrowed(&new_public_key),
                 },
             ))
+            .to_nep297_event()
             .to_event_log(),
             AccountNonceIntentEvent::new(&user.id(), remove_nonce, &remove_public_key_payload)
                 .into_event()
+                .to_nep297_event()
                 .to_event_log(),
         ]
     );

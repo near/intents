@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use derive_more::derive::From;
-use near_sdk::{AsNep297Event, near, serde::Deserialize};
+use near_sdk::{near, serde::Deserialize};
 
 use crate::{
     accounts::{AccountEvent, NonceEvent, PublicKeyEvent, SaltRotationEvent, TransferEvent},
@@ -76,9 +76,3 @@ pub trait DefuseIntentEmit<'a>: Into<DefuseEvent<'a>> {
 }
 
 impl<'a, T> DefuseIntentEmit<'a> for T where T: Into<DefuseEvent<'a>> {}
-
-impl DefuseEvent<'_> {
-    pub fn to_event_log(&self) -> String {
-        self.to_nep297_event().to_event_log()
-    }
-}
