@@ -58,9 +58,7 @@ impl FromStr for Salt {
 }
 
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
-mod abi {
-    use super::*;
-
+const _: () = {
     use near_sdk::{
         schemars::{
             JsonSchema,
@@ -91,7 +89,7 @@ mod abi {
             .into()
         }
     }
-}
+};
 
 /// Contains current valid salt and set of previous
 /// salts that can be valid or invalid.

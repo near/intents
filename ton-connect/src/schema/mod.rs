@@ -58,14 +58,6 @@ pub trait PayloadSchema {
 
 /// See <https://docs.tonconsole.com/academy/sign-data#choosing-the-right-format>
 #[cfg_attr(test, derive(arbitrary::Arbitrary))]
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
 #[near(serializers = [json])]
 #[serde(tag = "type", rename_all = "snake_case")]
 #[derive(Debug, Clone, PartialEq, Eq)]

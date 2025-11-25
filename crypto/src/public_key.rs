@@ -127,8 +127,7 @@ impl FromStr for PublicKey {
 }
 
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
-mod abi {
-    use super::*;
+const _: () = {
 
     use near_sdk::{
         schemars::{
@@ -184,7 +183,7 @@ mod abi {
                 .unwrap()
         }
     }
-}
+};
 
 #[cfg(test)]
 mod tests {

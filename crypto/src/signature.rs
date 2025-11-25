@@ -83,9 +83,7 @@ impl FromStr for Signature {
 }
 
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
-mod abi {
-    use super::*;
-
+const _: () = {
     use near_sdk::{
         schemars::{
             JsonSchema,
@@ -140,7 +138,7 @@ mod abi {
                 .unwrap()
         }
     }
-}
+};
 
 #[cfg(test)]
 mod tests {

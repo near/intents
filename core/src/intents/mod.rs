@@ -134,10 +134,6 @@ impl ExecutableIntent for Intent {
 #[derive(Debug, Clone)]
 pub struct IntentEvent<T> {
     #[serde_as(as = "Base58")]
-    #[cfg_attr(
-        all(feature = "abi", not(target_arch = "wasm32")),
-        schemars(with = "String")
-    )]
     pub intent_hash: CryptoHash,
 
     #[serde(flatten)]
