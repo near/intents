@@ -20,7 +20,7 @@ alias = "build"
 dependencies = [
     "add-cache-dir-tag",
     "build-defuse",
-    "build-poa-factory",
+    "build-poa-factory-global",
     "contract-stats",
     "build-multi-token-receiver-stub",
 ]
@@ -37,6 +37,23 @@ args = [
     "./defuse/Cargo.toml",
     "--features",
     "abi,contract",
+    "--out-dir",
+    "${TARGET_DIR}",
+    "--no-embed-abi",
+]
+
+[tasks.build-poa-factory-global]
+dependencies = ["add-cache-dir-tag", "build-poa-token"]
+command = "cargo"
+args = [
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--locked",
+    "--manifest-path",
+    "./poa-factory/Cargo.toml",
+    "--features",
+    "contract,global_contracts",
     "--out-dir",
     "${TARGET_DIR}",
     "--no-embed-abi",
@@ -114,6 +131,7 @@ args = [
     "--out-dir",
     "${TARGET_DIR}",
 ]
+
 [tasks.build-poa-token-reproducible]
 dependencies = ["add-cache-dir-tag"]
 command = "cargo"
@@ -141,13 +159,19 @@ script = [
 [tasks.test]
 alias = "tests"
 
+[tasks.test-build]
+dependencies = [
+    "build-defuse",
+    "build-poa-factory",
+]
+
 [tasks.nextest]
-dependencies = ["build"]
+dependencies = ["test-build"]
 command = "cargo"
 args = ["nextest", "run", "--all", "${@}"]
 
 [tasks.tests]
-dependencies = ["build"]
+dependencies = ["test-build"]
 run_task = "run-tests"
 
 [tasks.run-tests]

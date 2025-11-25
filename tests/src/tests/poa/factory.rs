@@ -32,12 +32,14 @@ pub trait PoAFactoryExt {
         factory: &AccountId,
         token: &str,
         metadata: impl Into<Option<FungibleTokenMetadata>>,
+        no_registration: bool,
     ) -> anyhow::Result<AccountId>;
 
     async fn poa_deploy_token(
         &self,
         token: &str,
         metadata: impl Into<Option<FungibleTokenMetadata>>,
+        no_registration: bool,
     ) -> anyhow::Result<AccountId>;
 
     async fn poa_factory_ft_deposit(
@@ -102,11 +104,13 @@ impl PoAFactoryExt for near_workspaces::Account {
         factory: &AccountId,
         token: &str,
         metadata: impl Into<Option<FungibleTokenMetadata>>,
+        no_registration: bool,
     ) -> anyhow::Result<AccountId> {
         self.call(factory, "deploy_token")
             .args_json(json!({
                 "token": token,
                 "metadata": metadata.into(),
+                "no_registration": no_registration,
             }))
             .deposit(NearToken::from_near(4))
             .max_gas()
@@ -121,8 +125,9 @@ impl PoAFactoryExt for near_workspaces::Account {
         &self,
         token: &str,
         metadata: impl Into<Option<FungibleTokenMetadata>>,
+        no_registration: bool,
     ) -> anyhow::Result<AccountId> {
-        self.poa_factory_deploy_token(self.id(), token, metadata)
+        self.poa_factory_deploy_token(self.id(), token, metadata, no_registration)
             .await
     }
 
@@ -192,9 +197,10 @@ impl PoAFactoryExt for near_workspaces::Contract {
         factory: &AccountId,
         token: &str,
         metadata: impl Into<Option<FungibleTokenMetadata>>,
+        no_registration: bool,
     ) -> anyhow::Result<AccountId> {
         self.as_account()
-            .poa_factory_deploy_token(factory, token, metadata)
+            .poa_factory_deploy_token(factory, token, metadata, no_registration)
             .await
     }
 
@@ -202,8 +208,11 @@ impl PoAFactoryExt for near_workspaces::Contract {
         &self,
         token: &str,
         metadata: impl Into<Option<FungibleTokenMetadata>>,
+        no_registration: bool,
     ) -> anyhow::Result<AccountId> {
-        self.as_account().poa_deploy_token(token, metadata).await
+        self.as_account()
+            .poa_deploy_token(token, metadata, no_registration)
+            .await
     }
 
     async fn poa_factory_ft_deposit(
@@ -275,20 +284,20 @@ mod tests {
             .await
             .unwrap();
 
-        user.poa_factory_deploy_token(poa_factory.id(), "ft1", None)
+        user.poa_factory_deploy_token(poa_factory.id(), "ft1", None, true)
             .await
             .unwrap_err();
 
-        root.poa_factory_deploy_token(poa_factory.id(), "ft1.abc", None)
+        root.poa_factory_deploy_token(poa_factory.id(), "ft1.abc", None, true)
             .await
             .unwrap_err();
 
         let ft1 = root
-            .poa_factory_deploy_token(poa_factory.id(), "ft1", None)
+            .poa_factory_deploy_token(poa_factory.id(), "ft1", None, true)
             .await
             .unwrap();
 
-        root.poa_factory_deploy_token(poa_factory.id(), "ft1", None)
+        root.poa_factory_deploy_token(poa_factory.id(), "ft1", None, true)
             .await
             .unwrap_err();
 

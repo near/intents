@@ -38,7 +38,7 @@ impl Contract {
     pub fn new(
         owner_id: Option<AccountId>,
         metadata: Option<FungibleTokenMetadata>,
-        no_registration: bool,
+        no_registration: Option<bool>,
     ) -> Self {
         let metadata = metadata.unwrap_or_else(|| FungibleTokenMetadata {
             spec: FT_METADATA_SPEC.to_string(),
@@ -54,7 +54,7 @@ impl Contract {
         let contract = Self {
             token: FungibleToken::new(Prefix::FungibleToken),
             metadata: Lazy::new(Prefix::Metadata, metadata),
-            no_registration,
+            no_registration: no_registration.unwrap_or_default(),
         };
 
         let owner = owner_id.unwrap_or_else(|| PREDECESSOR_ACCOUNT_ID.clone());
@@ -75,6 +75,13 @@ impl Contract {
     #[only(self, owner)]
     #[payable]
     pub fn migrate(&mut self, no_registration: bool) {
+        assert_one_yocto();
+        self.no_registration = no_registration;
+    }
+
+    #[only(self, owner)]
+    #[payable]
+    pub fn set_no_registration(&mut self, no_registration: bool) {
         assert_one_yocto();
         self.no_registration = no_registration;
     }

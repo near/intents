@@ -12,7 +12,12 @@ use near_sdk::{AccountId, Promise, ext_contract, json_types::U128};
 pub trait PoaFactory: AccessControllable + FullAccessKeys {
     /// Deploys new token to `token.<CURRENT_ACCOUNT_ID>`.
     /// Requires to attach enough Ⓝ to cover storage costs.
-    fn deploy_token(&mut self, token: String, metadata: Option<FungibleTokenMetadata>) -> Promise;
+    fn deploy_token(
+        &mut self,
+        token: String,
+        metadata: Option<FungibleTokenMetadata>,
+        no_registration: Option<bool>,
+    ) -> Promise;
 
     /// Sets metadata on `token.<CURRENT_ACCOUNT_ID>`.
     /// NOTE: MUST attach 1 yⓃ for security purposes.

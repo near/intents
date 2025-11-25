@@ -24,12 +24,7 @@ use defuse_test_utils::random::{Seed, rng};
 use futures::future::try_join_all;
 use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::{AccountId, NearToken, env::sha256};
-use near_workspaces::{
-    Account, Contract, Network, Worker,
-    operations::Function,
-    types::{PublicKey, SecretKey},
-};
-use serde_json::json;
+use near_workspaces::{Account, Contract};
 use std::{
     ops::Deref,
     sync::{
@@ -37,9 +32,6 @@ use std::{
         atomic::{AtomicUsize, Ordering},
     },
 };
-
-pub static POA_TOKEN_WASM_NO_REGISTRATION: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm("res/poa-token-no-registration/defuse_poa_token"));
 
 pub static MT_RECEIVER_STUB_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("res/multi-token-receiver-stub/multi_token_receiver_stub"));
@@ -112,25 +104,9 @@ impl Env {
         let root = self.sandbox.root_account();
 
         let ft = root
-            .poa_factory_deploy_token(self.poa_factory.id(), name, None)
+            .poa_factory_deploy_token(self.poa_factory.id(), name, None, self.disable_registration)
             .await
             .unwrap();
-
-        if self.disable_registration {
-            let root_secret_key = root.secret_key();
-            let root_access_key = root_secret_key.public_key();
-
-            let worker = self.sandbox.worker().clone();
-
-            deploy_token_without_registration(
-                self,
-                &ft,
-                &root_access_key,
-                root_secret_key,
-                worker.clone(),
-            )
-            .await;
-        }
 
         ft
     }
@@ -302,39 +278,6 @@ impl Deref for Env {
     fn deref(&self) -> &Self::Target {
         self.sandbox.root_account()
     }
-}
-
-async fn deploy_token_without_registration<N: Network + 'static>(
-    env_result: &Env,
-    ft: &AccountId,
-    root_access_key: &PublicKey,
-    root_secret_key: &SecretKey,
-    worker: Worker<N>,
-) {
-    env_result
-        .poa_factory
-        .as_account()
-        .batch(ft)
-        .call(
-            Function::new("add_full_access_key")
-                .args_json(json!({"public_key": root_access_key}))
-                .deposit(NearToken::from_yoctonear(1)),
-        )
-        .transact()
-        .await
-        .unwrap()
-        .into_result()
-        .unwrap();
-
-    Contract::from_secret_key(ft.clone(), root_secret_key.clone(), &worker)
-        .batch()
-        .deploy(&POA_TOKEN_WASM_NO_REGISTRATION)
-        .delete_key(root_access_key.clone())
-        .transact()
-        .await
-        .unwrap()
-        .into_result()
-        .unwrap();
 }
 
 #[derive(Debug, Clone)]

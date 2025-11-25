@@ -21,7 +21,7 @@ container_build_command = [
     "build",
     "non-reproducible-wasm",
     "--locked",
-    "--features=contract",
+    "--features=contract,global-contracts",
     "--no-embed-abi"
 
 ]
@@ -33,10 +33,11 @@ defuse-poa-token.workspace = true
 
 near-contract-standards.workspace = true
 near-plugins.workspace = true
-near-sdk = {workspace = true, features = ["global-contracts"] }
+near-sdk.workspace = true
 
 [features]
 contract = []
+global_contracts = ["near-sdk/global-contracts"]
 
 [build-dependencies]
 cargo-near-build = { workspace = true, features = ["build_external"] }
