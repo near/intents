@@ -26,6 +26,10 @@ pub struct DefusePayload<T> {
     pub verifying_contract: AccountId,
     pub deadline: Deadline,
     #[serde_as(as = "Base64")]
+    #[cfg_attr(
+        all(feature = "abi", not(target_arch = "wasm32")),
+        schemars(example = "self::examples::nonce")
+    )]
     pub nonce: Nonce,
 
     #[serde(flatten)]
@@ -44,5 +48,16 @@ impl<T> ExtractDefusePayload<T> for DefusePayload<T> {
     #[inline]
     fn extract_defuse_payload(self) -> Result<Self, Self::Error> {
         Ok(self)
+    }
+}
+
+#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+mod examples {
+    use super::*;
+
+    use near_sdk::base64::{self, Engine};
+
+    pub fn nonce() -> String {
+        base64::engine::general_purpose::STANDARD.encode(Nonce::default())
     }
 }
