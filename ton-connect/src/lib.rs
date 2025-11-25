@@ -8,7 +8,6 @@ use defuse_crypto::{Curve, Ed25519, Payload, SignedPayload, serde::AsCurve};
 use defuse_near_utils::UnwrapOrPanicError;
 use impl_tools::autoimpl;
 use near_sdk::near;
-use serde_with::DisplayFromStr;
 use serde_with::{PickFirst, TimestampSeconds, serde_as};
 use tlb_ton::{Error, MsgAddress, StringError};
 
