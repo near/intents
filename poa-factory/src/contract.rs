@@ -1,7 +1,7 @@
 use core::iter;
 use std::collections::{HashMap, HashSet};
 
-use defuse_admin_utils::full_access_keys::FullAccessKeys;
+use defuse_admin_utils::full_access_keys::{FullAccessKeys, ext_full_access_keys};
 use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanicError, gas_left};
 use defuse_poa_token::ext_poa_fungible_token;
 use near_contract_standards::fungible_token::{core::ext_ft_core, metadata::FungibleTokenMetadata};
@@ -20,8 +20,6 @@ use near_sdk::{
 };
 
 use crate::PoaFactory;
-
-const POA_TOKEN_WASM: &[u8] = include_bytes!(std::env!("POA_TOKEN_WASM"));
 
 const POA_TOKEN_INIT_BALANCE: NearToken = NearToken::from_near(3);
 const POA_TOKEN_NEW_GAS: Gas = Gas::from_tgas(10);
@@ -87,6 +85,19 @@ impl Contract {
         );
         contract
     }
+
+    #[access_control_any(roles(Role::DAO))]
+    #[payable]
+    pub fn add_token_full_access_key(
+        &mut self,
+        token: AccountId,
+        public_key: PublicKey,
+    ) -> Promise {
+        assert_one_yocto();
+        ext_full_access_keys::ext(Self::token_id(token))
+            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .add_full_access_key(public_key)
+    }
 }
 
 #[near]
@@ -111,10 +122,15 @@ impl PoaFactory for Contract {
             "not enough deposit attached to deploy PoA token"
         );
 
+        near_sdk::log!(
+            "Deployed with global contract ID: {}",
+            env::current_account_id()
+        );
+
         Promise::new(Self::token_id(token))
             .create_account()
             .transfer(POA_TOKEN_INIT_BALANCE)
-            .deploy_contract(POA_TOKEN_WASM.to_vec())
+            .use_global_contract_by_account_id(CURRENT_ACCOUNT_ID.clone())
             .function_call(
                 "new".to_string(),
                 serde_json::to_vec(&json!({

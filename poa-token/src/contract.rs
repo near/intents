@@ -28,13 +28,18 @@ use crate::{PoaFungibleToken, WITHDRAW_MEMO_PREFIX};
 pub struct Contract {
     token: FungibleToken,
     metadata: Lazy<FungibleTokenMetadata>,
+    no_registration: bool,
 }
 
 #[near]
 impl Contract {
     #[init]
     #[allow(dead_code)]
-    pub fn new(owner_id: Option<AccountId>, metadata: Option<FungibleTokenMetadata>) -> Self {
+    pub fn new(
+        owner_id: Option<AccountId>,
+        metadata: Option<FungibleTokenMetadata>,
+        no_registration: bool,
+    ) -> Self {
         let metadata = metadata.unwrap_or_else(|| FungibleTokenMetadata {
             spec: FT_METADATA_SPEC.to_string(),
             name: Default::default(),
@@ -49,6 +54,7 @@ impl Contract {
         let contract = Self {
             token: FungibleToken::new(Prefix::FungibleToken),
             metadata: Lazy::new(Prefix::Metadata, metadata),
+            no_registration,
         };
 
         let owner = owner_id.unwrap_or_else(|| PREDECESSOR_ACCOUNT_ID.clone());
@@ -57,12 +63,20 @@ impl Contract {
             contract.owner_storage_key(),
             owner.as_bytes()
         ));
+
         OwnershipTransferred {
             previous_owner: None,
             new_owner: Some(owner),
         }
         .emit();
         contract
+    }
+
+    #[only(self, owner)]
+    #[payable]
+    pub fn migrate(&mut self, no_registration: bool) {
+        assert_one_yocto();
+        self.no_registration = no_registration;
     }
 }
 
@@ -81,6 +95,9 @@ impl PoaFungibleToken for Contract {
     fn ft_deposit(&mut self, owner_id: AccountId, amount: U128, memo: Option<String>) {
         self.token.storage_deposit(Some(owner_id.clone()), None);
         self.token.internal_deposit(&owner_id, amount.into());
+
+        near_sdk::log!("TEST LOG: ft_deposit called on global contract");
+
         FtMint {
             owner_id: &owner_id,
             amount,
@@ -145,12 +162,14 @@ impl FungibleTokenResolver for Contract {
 #[near]
 impl StorageManagement for Contract {
     #[payable]
-    #[cfg_attr(feature = "no-registration", only(self, owner))]
+    #[only(self, owner)]
     fn storage_deposit(
         &mut self,
         account_id: Option<AccountId>,
         registration_only: Option<bool>,
     ) -> StorageBalance {
+        require!(self.no_registration, "registration is enabled");
+
         self.token.storage_deposit(account_id, registration_only)
     }
 

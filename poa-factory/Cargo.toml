@@ -33,7 +33,7 @@ defuse-poa-token.workspace = true
 
 near-contract-standards.workspace = true
 near-plugins.workspace = true
-near-sdk.workspace = true
+near-sdk = {workspace = true, features = ["global-contracts"] }
 
 [features]
 contract = []
