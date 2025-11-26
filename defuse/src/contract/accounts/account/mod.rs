@@ -41,13 +41,6 @@ pub struct Account {
     prefix: Vec<u8>,
 }
 
-fn has_implicit_public_key(account: &AccountIdRef) -> bool {
-    match account.get_account_type(){
-        AccountType::NearImplicitAccount | AccountType::EthImplicitAccount => true,
-        AccountType::NamedAccount /* | AccountType::NearDeterministicAccount */ => false
-    }
-}
-
 impl Account {
     #[inline]
     pub fn new<S>(prefix: S, me: &AccountIdRef) -> Self
@@ -162,6 +155,13 @@ impl Account {
             .emit();
         }
         was_enabled
+    }
+}
+
+fn has_implicit_public_key(account: &AccountIdRef) -> bool {
+    match account.get_account_type(){
+        AccountType::NearImplicitAccount | AccountType::EthImplicitAccount => true,
+        AccountType::NamedAccount /* | AccountType::NearDeterministicAccount */ => false
     }
 }
 
