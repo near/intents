@@ -1,5 +1,7 @@
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
+use defuse_borsh_utils::adapters::As;
 use defuse_near_utils::{CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID};
+use impl_tools::autoimpl;
 use near_contract_standards::{
     fungible_token::{
         FungibleToken, FungibleTokenCore, FungibleTokenResolver,
@@ -14,7 +16,12 @@ use near_sdk::{
     assert_one_yocto, borsh::BorshSerialize, env, json_types::U128, near, require, store::Lazy,
 };
 
-use crate::{NoRegistration, PoaFungibleToken, WITHDRAW_MEMO_PREFIX};
+use crate::{
+    NoRegistration, PoaFungibleToken, WITHDRAW_MEMO_PREFIX,
+    contract::state::{DEFAULT_NO_REGISTRATION, MaybeVersionedContractState, State, StateV0},
+};
+
+mod state;
 
 #[near(
     contract_state,
@@ -25,10 +32,14 @@ use crate::{NoRegistration, PoaFungibleToken, WITHDRAW_MEMO_PREFIX};
     )
 )]
 #[derive(Ownable, PanicOnDefault)]
+#[autoimpl(Deref using self.state)]
+#[autoimpl(DerefMut using self.state)]
 pub struct Contract {
-    token: FungibleToken,
-    metadata: Lazy<FungibleTokenMetadata>,
-    no_registration: bool,
+    #[borsh(
+        deserialize_with = "As::<MaybeVersionedContractState>::deserialize",
+        serialize_with = "As::<MaybeVersionedContractState>::serialize"
+    )]
+    state: State,
 }
 
 #[near]
@@ -52,9 +63,11 @@ impl Contract {
         metadata.assert_valid();
 
         let contract = Self {
-            token: FungibleToken::new(Prefix::FungibleToken),
-            metadata: Lazy::new(Prefix::Metadata, metadata),
-            no_registration: no_registration.unwrap_or_default(),
+            state: State {
+                token: FungibleToken::new(Prefix::FungibleToken),
+                metadata: Lazy::new(Prefix::Metadata, metadata),
+                no_registration: no_registration.unwrap_or(DEFAULT_NO_REGISTRATION),
+            },
         };
 
         let owner = owner_id.unwrap_or_else(|| PREDECESSOR_ACCOUNT_ID.clone());
@@ -72,11 +85,19 @@ impl Contract {
         contract
     }
 
-    #[only(self, owner)]
     #[payable]
-    pub fn migrate(&mut self, no_registration: bool) {
+    #[init(ignore_state)]
+    #[private]
+    #[allow(dead_code)]
+    pub fn migrate(no_registration: bool) -> Self {
         assert_one_yocto();
-        self.no_registration = no_registration;
+
+        let old_state: StateV0 = env::state_read().expect("failed");
+
+        let mut state: State = old_state.into();
+        state.no_registration = no_registration;
+
+        Self { state }
     }
 }
 
@@ -96,7 +117,7 @@ impl PoaFungibleToken for Contract {
         self.token.storage_deposit(Some(owner_id.clone()), None);
         self.token.internal_deposit(&owner_id, amount.into());
 
-        near_sdk::log!("TEST LOG: ft_deposit called on global contract");
+        near_sdk::log!("GLOBAL SMC LOG: ft_deposit called on global contract");
 
         FtMint {
             owner_id: &owner_id,

@@ -1019,11 +1019,16 @@ dependencies = [
 name = "defuse-poa-token"
 version = "0.1.0"
 dependencies = [
+ "arbitrary_with",
  "defuse-admin-utils",
+ "defuse-borsh-utils",
  "defuse-near-utils",
+ "defuse-test-utils",
+ "impl-tools",
  "near-contract-standards",
  "near-plugins",
  "near-sdk",
+ "rstest",
 ]
 
 [[package]]

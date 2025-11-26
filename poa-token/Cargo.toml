@@ -29,10 +29,18 @@ container_build_command = [
 [dependencies]
 defuse-admin-utils.workspace = true
 defuse-near-utils.workspace = true
+defuse-borsh-utils.workspace = true
 
 near-contract-standards.workspace = true
 near-plugins.workspace = true
 near-sdk = { workspace = true, features = ["unstable"] }
+
+impl-tools.workspace = true
+
+[dev-dependencies]
+rstest.workspace = true
+defuse-test-utils.workspace = true
+arbitrary_with.workspace = true
 
 [features]
 contract = []

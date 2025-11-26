@@ -21,8 +21,13 @@ use near_sdk::{
 
 use crate::{PoaFactory, TokenFullAccessKeys};
 
-/// Initial balance to deploy each PoA token contract with size ~ 500B
+/// Initial balance to deploy each token contract with size ~ 500B
+#[cfg(feature = "global_contracts")]
 const POA_TOKEN_INIT_BALANCE: NearToken = NearToken::from_millinear(5);
+
+#[cfg(not(feature = "global_contracts"))]
+const POA_TOKEN_INIT_BALANCE: NearToken = NearToken::from_near(3);
+
 const POA_TOKEN_NEW_GAS: Gas = Gas::from_tgas(10);
 const POA_TOKEN_FT_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
 /// Copied from `near_contract_standards::fungible_token::core_impl::GAS_FOR_FT_TRANSFER_CALL`
@@ -131,11 +136,8 @@ impl PoaFactory for Contract {
         #[cfg(feature = "global_contracts")]
         {
             near_sdk::env::log_str("Deploying contract with global contracts feature");
-            promise = promise.use_global_contract_by_account_id(
-                "globaltoken.testnet".parse().unwrap_or_panic_display(),
-            );
             // TODO: do we need to revert on failure here?
-            // promise = promise.use_global_contract_by_account_id(CURRENT_ACCOUNT_ID.clone());
+            promise = promise.use_global_contract_by_account_id(CURRENT_ACCOUNT_ID.clone());
         }
 
         promise.function_call(
