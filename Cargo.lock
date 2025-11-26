@@ -2794,8 +2794,7 @@ checksum = "2dc45bb3760350de7f957c11827e1e20c5a4aff8d95d19fd2c0c492d795bfb02"
 [[package]]
 name = "near-sdk"
 version = "5.17.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29b8a870f6bfe533f2f5b35f6f1fb1a818105de80b2de6c0d78000f78729e4cc"
+source = "git+https://github.com/near/near-sdk-rs?rev=eabeecf676a97b73bc287915b36a8a8239967427#eabeecf676a97b73bc287915b36a8a8239967427"
 dependencies = [
  "base64 0.22.1",
  "borsh",
@@ -2813,14 +2812,14 @@ dependencies = [
  "once_cell",
  "serde",
  "serde_json",
+ "serde_with",
  "wee_alloc",
 ]
 
 [[package]]
 name = "near-sdk-macros"
 version = "5.17.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "342e608e586394911a799adb2536e3ac93c45e83cc472acdc882f603c18b6046"
+source = "git+https://github.com/near/near-sdk-rs?rev=eabeecf676a97b73bc287915b36a8a8239967427#eabeecf676a97b73bc287915b36a8a8239967427"
 dependencies = [
  "Inflector",
  "darling 0.20.11",
@@ -2848,8 +2847,7 @@ checksum = "7e3c38fc0843ef7c5bca717cc4daaf2af05441c3cb9cf259824e226387b18740"
 [[package]]
 name = "near-sys"
 version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e64e114297f37c94aa20df6a6f92822a1b41da76b4961298caf08ba80b7779b2"
+source = "git+https://github.com/near/near-sdk-rs?rev=eabeecf676a97b73bc287915b36a8a8239967427#eabeecf676a97b73bc287915b36a8a8239967427"
 
 [[package]]
 name = "near-time"
@@ -3891,6 +3889,7 @@ version = "1.0.140"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20068b6e96dc6c9bd23e01df8827e6c7e1f2fddd43c21810382803c136b99373"
 dependencies = [
+ "indexmap 2.9.0",
  "itoa",
  "memchr",
  "ryu",
@@ -4412,9 +4411,9 @@ dependencies = [
 
 [[package]]
 name = "tlb-ton"
-version = "0.5.4"
+version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b04abc3181f4c46388bd513d299e02603ad4a9dd4e04d36c669c87436958e48e"
+checksum = "783a2fd0d92b0439b67e4f0f8ae2395edf91adc3bf5e188fb58b251d7a3ba3f9"
 dependencies = [
  "arbitrary",
  "base64 0.21.7",
@@ -4426,6 +4425,7 @@ dependencies = [
  "lazy_static",
  "num-bigint 0.4.6",
  "num-traits",
+ "schemars",
  "serde_with",
  "strum 0.25.0",
  "tlb",

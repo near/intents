@@ -18,8 +18,5 @@ hex-literal.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
 
-[features]
-abi = ["defuse-crypto/abi"]
-
 [lints]
 workspace = true

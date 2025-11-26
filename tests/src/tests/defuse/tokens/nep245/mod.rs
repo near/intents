@@ -20,8 +20,8 @@ use defuse::core::token_id::nep245::Nep245TokenId;
 use defuse::nep245::Token;
 use defuse::nep245::{MtBurnEvent, MtEvent, MtTransferEvent};
 use defuse::tokens::{DepositAction, DepositMessage, ExecuteIntents};
-use defuse_near_utils::NearSdkLog;
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
+use near_sdk::AsNep297Event;
 use near_sdk::json_types::U128;
 use rstest::rstest;
 use std::borrow::Cow;
@@ -1588,8 +1588,8 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
     assert_a_contains_b!(
         a: all_logs,
         b: [
-            expected_mt_burn.to_near_sdk_log(),
-            expected_mt_transfer.to_near_sdk_log(),
+            expected_mt_burn.to_nep297_event().to_event_log(),
+            expected_mt_transfer.to_nep297_event().to_event_log(),
         ]
     );
 

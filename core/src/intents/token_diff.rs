@@ -16,14 +16,6 @@ use std::{borrow::Cow, collections::BTreeMap};
 
 pub type TokenDeltas = Amounts<BTreeMap<TokenId, i128>>;
 
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 #[autoimpl(Deref using self.diff)]
@@ -110,14 +102,6 @@ impl ExecutableIntent for TokenDiff {
     }
 }
 
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 /// An event emitted when a `TokenDiff` intent is executed.

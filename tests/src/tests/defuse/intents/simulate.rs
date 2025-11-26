@@ -29,12 +29,11 @@ use defuse::core::{
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
     },
 };
-use defuse_near_utils::NearSdkLog;
 use near_contract_standards::non_fungible_token::metadata::{
     NFT_METADATA_SPEC, NFTContractMetadata, TokenMetadata,
 };
 use near_crypto::SecretKey;
-use near_sdk::{NearToken, json_types::Base64VecU8};
+use near_sdk::{AsNep297Event, NearToken, json_types::Base64VecU8};
 use rstest::rstest;
 use std::borrow::Cow;
 
@@ -92,9 +91,12 @@ async fn simulate_transfer_intent() {
                 }]
                 .into()
             )
-            .to_near_sdk_log(),
+            .to_nep297_event()
+            .to_event_log(),
             AccountNonceIntentEvent::new(&user1.id(), nonce, &transfer_intent_payload)
-                .into_event_log(),
+                .into_event()
+                .to_nep297_event()
+                .to_event_log(),
         ]
     );
 }
@@ -157,8 +159,12 @@ async fn simulate_ft_withdraw_intent() {
                     event: Cow::Owned(ft_withdraw_intent),
                 },
             }]))
-            .to_near_sdk_log(),
-            AccountNonceIntentEvent::new(&user1.id(), nonce, &ft_withdraw_payload).into_event_log(),
+            .to_nep297_event()
+            .to_event_log(),
+            AccountNonceIntentEvent::new(&user1.id(), nonce, &ft_withdraw_payload)
+                .into_event()
+                .to_nep297_event()
+                .to_event_log(),
         ]
     );
 }
@@ -231,9 +237,12 @@ async fn simulate_native_withdraw_intent() {
                     event: Cow::Owned(native_withdraw_intent),
                 },
             }]))
-            .to_near_sdk_log(),
+            .to_nep297_event()
+            .to_event_log(),
             AccountNonceIntentEvent::new(&user1.id(), nonce, &native_withdraw_payload)
-                .into_event_log(),
+                .into_event()
+                .to_nep297_event()
+                .to_event_log(),
         ]
     );
 }
@@ -337,9 +346,12 @@ async fn simulate_nft_withdraw_intent() {
                     event: Cow::Owned(nft_withdraw_intent),
                 },
             }]))
-            .to_near_sdk_log(),
+            .to_nep297_event()
+            .to_event_log(),
             AccountNonceIntentEvent::new(&user1.id(), nonce, &nft_withdraw_payload)
-                .into_event_log(),
+                .into_event()
+                .to_nep297_event()
+                .to_event_log(),
         ]
     );
 }
@@ -460,8 +472,12 @@ async fn simulate_mt_withdraw_intent() {
                     event: Cow::Owned(mt_withdraw_intent),
                 },
             }]))
-            .to_near_sdk_log(),
-            AccountNonceIntentEvent::new(&user1.id(), nonce, &mt_withdraw_payload).into_event_log(),
+            .to_nep297_event()
+            .to_event_log(),
+            AccountNonceIntentEvent::new(&user1.id(), nonce, &mt_withdraw_payload)
+                .into_event()
+                .to_nep297_event()
+                .to_event_log(),
         ]
     );
 }
@@ -535,9 +551,12 @@ async fn simulate_storage_deposit_intent() {
                     event: Cow::Owned(storage_deposit_intent),
                 },
             }]))
-            .to_near_sdk_log(),
+            .to_nep297_event()
+            .to_event_log(),
             AccountNonceIntentEvent::new(&user1.id(), nonce, &storage_deposit_payload)
-                .into_event_log(),
+                .into_event()
+                .to_nep297_event()
+                .to_event_log(),
         ]
     );
 }
@@ -640,7 +659,8 @@ async fn simulate_token_diff_intent() {
                     },
                 },
             }]))
-            .to_near_sdk_log(),
+            .to_nep297_event()
+            .to_event_log(),
             DefuseEvent::TokenDiff(Cow::Owned(vec![IntentEvent {
                 intent_hash: user2_payload.hash(),
                 event: AccountEvent {
@@ -651,7 +671,8 @@ async fn simulate_token_diff_intent() {
                     },
                 },
             }]))
-            .to_near_sdk_log(),
+            .to_nep297_event()
+            .to_event_log(),
             DefuseEvent::IntentsExecuted(
                 vec![
                     IntentEvent::new(
@@ -665,7 +686,8 @@ async fn simulate_token_diff_intent() {
                 ]
                 .into()
             )
-            .to_near_sdk_log(),
+            .to_nep297_event()
+            .to_event_log(),
         ]
     );
 }
@@ -705,9 +727,12 @@ async fn simulate_add_public_key_intent(public_key: PublicKey) {
                     public_key: Cow::Borrowed(&new_public_key)
                 },
             ))
-            .to_near_sdk_log(),
+            .to_nep297_event()
+            .to_event_log(),
             AccountNonceIntentEvent::new(&user1.id(), nonce, &add_public_key_payload)
-                .into_event_log(),
+                .into_event()
+                .to_nep297_event()
+                .to_event_log(),
         ]
     );
 }
@@ -761,9 +786,12 @@ async fn simulate_remove_public_key_intent(public_key: PublicKey) {
                     public_key: Cow::Borrowed(&new_public_key)
                 },
             ))
-            .to_near_sdk_log(),
+            .to_nep297_event()
+            .to_event_log(),
             AccountNonceIntentEvent::new(&user1.id(), remove_nonce, &remove_public_key_payload)
-                .into_event_log(),
+                .into_event()
+                .to_nep297_event()
+                .to_event_log(),
         ]
     );
 }
@@ -794,8 +822,12 @@ async fn simulate_set_auth_by_predecessor_id_intent() {
         result.report.logs,
         vec![
             DefuseEvent::SetAuthByPredecessorId(AccountEvent::new(user1.id(), set_auth_intent,))
-                .to_near_sdk_log(),
-            AccountNonceIntentEvent::new(&user1.id(), nonce, &set_auth_payload).into_event_log(),
+                .to_nep297_event()
+                .to_event_log(),
+            AccountNonceIntentEvent::new(&user1.id(), nonce, &set_auth_payload)
+                .into_event()
+                .to_nep297_event()
+                .to_event_log(),
         ]
     );
 }
@@ -861,7 +893,12 @@ async fn simulate_auth_call_intent() {
 
     assert_eq!(
         result.report.logs,
-        vec![AccountNonceIntentEvent::new(&user1.id(), nonce, &auth_call_payload).into_event_log(),]
+        vec![
+            AccountNonceIntentEvent::new(&user1.id(), nonce, &auth_call_payload)
+                .into_event()
+                .to_nep297_event()
+                .to_event_log(),
+        ]
     );
 }
 

@@ -22,7 +22,7 @@ impl RelayerKeys for Contract {
                 public_key,
                 Allowance::Unlimited,
                 CURRENT_ACCOUNT_ID.clone(),
-                EXECUTE_INTENTS_FUNC.into(),
+                EXECUTE_INTENTS_FUNC,
             )
     }
 

@@ -16,14 +16,6 @@ use crate::schema::{PayloadSchema, TonConnectPayloadContext};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(test, derive(arbitrary::Arbitrary))]
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
 #[near(serializers = [json])]
 pub struct CellPayload {
     pub schema_crc: u32,

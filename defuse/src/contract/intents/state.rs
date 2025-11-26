@@ -266,7 +266,8 @@ impl State for Contract {
             amounts,
             notification.msg,
             Some(min_gas),
-        );
+        )
+        .detach();
     }
 
     fn storage_deposit(

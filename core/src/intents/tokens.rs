@@ -14,14 +14,6 @@ use crate::{
 
 use super::{ExecutableIntent, IntentEvent};
 
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
 pub struct NotifyOnTransfer {
@@ -59,14 +51,6 @@ impl NotifyOnTransfer {
     }
 }
 
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
 /// Transfer a set of tokens from the signer to a specified account id, within the intents contract.
