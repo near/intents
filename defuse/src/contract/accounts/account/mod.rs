@@ -120,7 +120,7 @@ impl Account {
     }
 
     #[inline]
-    pub(crate) const fn is_implicit_public_key_removed(&self) -> bool {
+    const fn is_implicit_public_key_removed(&self) -> bool {
         self.flags
             .contains(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
     }
