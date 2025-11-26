@@ -127,7 +127,7 @@ impl Account {
     }
 
     #[inline]
-    const fn is_implicit_public_key_removed(&self) -> bool {
+    pub(crate) const fn is_implicit_public_key_removed(&self) -> bool {
         self.flags
             .contains(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
     }
@@ -218,6 +218,38 @@ mod tests {
             borsh::to_vec(&flags).unwrap(),
             serialized_legacy,
             "unknown flags set"
+        );
+    }
+
+    #[test]
+    fn near_implicit_account_has_implicit_public_key() {
+        assert!(
+            !Account::new(
+                b"prefix".to_vec(),
+                AccountIdRef::new_or_panic(
+                    "98793cd91a3f870fb126f66285808c7e094afcfc4eda8a970f6648cdf0dbd6de"
+                ),
+            )
+            .is_implicit_public_key_removed()
+        );
+    }
+
+    #[test]
+    fn eth_implicit_account_has_implicit_public_key() {
+        assert!(
+            !Account::new(
+                b"prefix".to_vec(),
+                AccountIdRef::new_or_panic("0x0000000000000000000000000000000000000001"),
+            )
+            .is_implicit_public_key_removed()
+        );
+    }
+
+    #[test]
+    fn named_account_has_no_implicit_public_key() {
+        assert!(
+            Account::new(b"prefix".to_vec(), AccountIdRef::new_or_panic("alice.near"),)
+                .is_implicit_public_key_removed()
         );
     }
 }
