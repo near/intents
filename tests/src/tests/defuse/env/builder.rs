@@ -30,7 +30,7 @@ pub struct EnvBuilder {
     self_as_super_admin: bool,
     deployer_as_super_admin: bool,
     disable_ft_storage_deposit: bool,
-    disable_registration: bool,
+    no_registration: bool,
 
     // Create only unique users (no reusing from persistent state)
     create_unique_users: bool,
@@ -77,8 +77,8 @@ impl EnvBuilder {
         self
     }
 
-    pub const fn no_registration(mut self, no_reg_value: bool) -> Self {
-        self.disable_registration = no_reg_value;
+    pub const fn no_registration(mut self, no_registration: bool) -> Self {
+        self.no_registration = no_registration;
         self
     }
 
@@ -134,7 +134,7 @@ impl EnvBuilder {
             poa_factory: poa_factory.clone(),
             sandbox,
             disable_ft_storage_deposit: self.disable_ft_storage_deposit,
-            disable_registration: self.disable_registration,
+            disable_registration: self.no_registration,
             seed: Seed::from_entropy(),
             next_user_index: AtomicUsize::new(0),
         };

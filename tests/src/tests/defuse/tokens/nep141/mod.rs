@@ -32,11 +32,8 @@ struct TransferCallExpectation {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn deposit_withdraw(#[values(false, true)] no_registration: bool) {
-    let env = Env::builder()
-        .no_registration(no_registration)
-        .build()
-        .await;
+async fn deposit_withdraw() {
+    let env = Env::builder().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
@@ -75,11 +72,8 @@ async fn deposit_withdraw(#[values(false, true)] no_registration: bool) {
 
 #[tokio::test]
 #[rstest]
-async fn poa_deposit(#[values(false, true)] no_registration: bool) {
-    let env = Env::builder()
-        .no_registration(no_registration)
-        .build()
-        .await;
+async fn poa_deposit() {
+    let env = Env::builder().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
@@ -111,13 +105,10 @@ async fn poa_deposit(#[values(false, true)] no_registration: bool) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn deposit_withdraw_intent(#[values(false, true)] no_registration: bool) {
+async fn deposit_withdraw_intent() {
     use crate::tests::defuse::{DefuseSignerExt, tokens::nep141::traits::DefuseFtReceiver};
 
-    let env = Env::builder()
-        .no_registration(no_registration)
-        .build()
-        .await;
+    let env = Env::builder().build().await;
 
     let (user, other_user, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
@@ -196,13 +187,10 @@ async fn deposit_withdraw_intent(#[values(false, true)] no_registration: bool) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn deposit_withdraw_intent_refund(#[values(false, true)] no_registration: bool) {
+async fn deposit_withdraw_intent_refund() {
     use crate::tests::defuse::{DefuseSignerExt, tokens::nep141::traits::DefuseFtReceiver};
 
-    let env = Env::builder()
-        .no_registration(no_registration)
-        .build()
-        .await;
+    let env = Env::builder().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
@@ -266,16 +254,12 @@ async fn deposit_withdraw_intent_refund(#[values(false, true)] no_registration: 
 
 #[tokio::test]
 #[rstest]
-async fn ft_force_withdraw(#[values(false, true)] no_registration: bool) {
+async fn ft_force_withdraw() {
     use defuse::core::token_id::nep141::Nep141TokenId;
 
     use crate::tests::defuse::tokens::nep141::traits::DefuseFtWithdrawer;
 
-    let env = Env::builder()
-        .deployer_as_super_admin()
-        .no_registration(no_registration)
-        .build()
-        .await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (user, other_user, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
@@ -393,11 +377,7 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
 
     use crate::tests::defuse::DefuseSignerExt;
 
-    let env = Env::builder()
-        .deployer_as_super_admin()
-        .no_registration(false)
-        .build()
-        .await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (user, receiver, intent_receiver, ft) = futures::join!(
         env.create_user(),

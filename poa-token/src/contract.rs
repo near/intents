@@ -162,13 +162,18 @@ impl FungibleTokenResolver for Contract {
 #[near]
 impl StorageManagement for Contract {
     #[payable]
-    #[only(self, owner)]
     fn storage_deposit(
         &mut self,
         account_id: Option<AccountId>,
         registration_only: Option<bool>,
     ) -> StorageBalance {
-        require!(self.no_registration, "registration is enabled");
+        if self.no_registration {
+            require!(
+                *PREDECESSOR_ACCOUNT_ID == self.owner_get().unwrap_or_else(|| unreachable!())
+                    || *PREDECESSOR_ACCOUNT_ID == *CURRENT_ACCOUNT_ID,
+                "Method is private"
+            );
+        }
 
         self.token.storage_deposit(account_id, registration_only)
     }

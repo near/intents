@@ -103,12 +103,9 @@ impl Env {
     pub async fn create_named_token(&self, name: &str) -> AccountId {
         let root = self.sandbox.root_account();
 
-        let ft = root
-            .poa_factory_deploy_token(self.poa_factory.id(), name, None, self.disable_registration)
+        root.poa_factory_deploy_token(self.poa_factory.id(), name, None, self.disable_registration)
             .await
-            .unwrap();
-
-        ft
+            .unwrap()
     }
 
     pub async fn create_token(&self) -> AccountId {

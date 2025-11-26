@@ -17,7 +17,7 @@ use std::borrow::Cow;
 #[rstest]
 #[trace]
 async fn execute_add_public_key_intent(public_key: PublicKey) {
-    let env = Env::builder().no_registration(true).build().await;
+    let env = Env::builder().build().await;
 
     let user = env.create_user().await;
 
@@ -60,7 +60,7 @@ async fn execute_add_public_key_intent(public_key: PublicKey) {
 #[rstest]
 #[trace]
 async fn execute_remove_public_key_intent(public_key: PublicKey) {
-    let env = Env::builder().no_registration(true).build().await;
+    let env = Env::builder().build().await;
 
     let user = env.create_user().await;
 

@@ -29,11 +29,7 @@ async fn storage_deposit_success(
     #[case] amount_to_deposit: NearToken,
     #[case] expected_deposited: Option<NearToken>,
 ) {
-    let env = Env::builder()
-        .disable_ft_storage_deposit()
-        .no_registration(false)
-        .build()
-        .await;
+    let env = Env::builder().disable_ft_storage_deposit().build().await;
 
     let (user, other_user, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
@@ -71,7 +67,6 @@ async fn storage_deposit_success(
 
     {
         let storage_balance_ft1_user1 = env.storage_balance_of(&ft, user.id()).await.unwrap();
-
         let storage_balance_ft1_user2 = env.storage_balance_of(&ft, other_user.id()).await.unwrap();
 
         assert_eq!(
@@ -126,11 +121,7 @@ async fn storage_deposit_success(
 #[tokio::test]
 #[rstest]
 async fn storage_deposit_fails_user_has_no_balance_in_intents() {
-    let env = Env::builder()
-        .disable_ft_storage_deposit()
-        .no_registration(false)
-        .build()
-        .await;
+    let env = Env::builder().disable_ft_storage_deposit().build().await;
 
     let (user, other_user, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
@@ -167,7 +158,6 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents() {
 
     {
         let storage_balance_ft1_user1 = env.storage_balance_of(&ft, user.id()).await.unwrap();
-
         let storage_balance_ft1_user2 = env.storage_balance_of(&ft, other_user.id()).await.unwrap();
 
         assert_eq!(

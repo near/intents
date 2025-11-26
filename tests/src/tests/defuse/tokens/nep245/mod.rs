@@ -28,16 +28,12 @@ use std::borrow::Cow;
 
 #[tokio::test]
 #[rstest]
-async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
+async fn multitoken_enumeration() {
     use defuse::core::token_id::nep141::Nep141TokenId;
 
     use crate::tests::defuse::tokens::nep141::traits::DefuseFtWithdrawer;
 
-    let env = Env::builder()
-        .no_registration(no_registration)
-        .create_unique_users()
-        .build()
-        .await;
+    let env = Env::builder().create_unique_users().build().await;
 
     let (user1, user2, user3, ft1, ft2) = futures::join!(
         env.create_user(),
@@ -320,14 +316,10 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
 
 #[tokio::test]
 #[rstest]
-async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registration: bool) {
+async fn multitoken_enumeration_with_ranges() {
     use defuse::core::token_id::nep141::Nep141TokenId;
 
-    let env = Env::builder()
-        .no_registration(no_registration)
-        .create_unique_users()
-        .build()
-        .await;
+    let env = Env::builder().create_unique_users().build().await;
 
     let (user1, user2, user3, ft1, ft2, ft3) = futures::join!(
         env.create_user(),
@@ -962,11 +954,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     use crate::tests::defuse::env::MT_RECEIVER_STUB_WASM;
     use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
 
-    let env = Env::builder()
-        .deployer_as_super_admin()
-        .no_registration(false)
-        .build()
-        .await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (user, intent_receiver, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
@@ -1153,11 +1141,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
     use defuse::tokens::DepositMessage;
 
-    let env = Env::builder()
-        .deployer_as_super_admin()
-        .no_registration(false)
-        .build()
-        .await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (user, intent_receiver, ft1, ft2) = futures::join!(
         env.create_user(),
@@ -1325,11 +1309,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
 async fn mt_transfer_call_circullar_callback() {
     use defuse::tokens::DepositMessage;
 
-    let env = Env::builder()
-        .deployer_as_super_admin()
-        .no_registration(false)
-        .build()
-        .await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
@@ -1443,11 +1423,7 @@ async fn mt_transfer_call_circullar_callback() {
 
 #[tokio::test]
 async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
-    let env = Env::builder()
-        .deployer_as_super_admin()
-        .no_registration(false)
-        .build()
-        .await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (user, another_receiver, ft1, ft2) = futures::join!(
         env.create_user(),

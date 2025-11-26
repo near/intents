@@ -18,16 +18,13 @@ use rstest::rstest;
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn ft_withdraw_intent(#[values(false, true)] no_registration: bool) {
+async fn ft_withdraw_intent() {
     use crate::tests::defuse::DefuseSignerExt;
 
     // intentionally large deposit
     const STORAGE_DEPOSIT: NearToken = NearToken::from_near(1000);
 
-    let env = Env::builder()
-        .no_registration(no_registration)
-        .build()
-        .await;
+    let env = Env::builder().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
@@ -111,10 +108,12 @@ async fn ft_withdraw_intent(#[values(false, true)] no_registration: bool) {
         .unwrap()
         .into_result()
         .unwrap();
+
     // wrap NEAR
     user.near_deposit(env.wnear.id(), STORAGE_DEPOSIT)
         .await
         .unwrap();
+
     // deposit wNEAR
     user.defuse_ft_deposit(
         env.defuse.id(),
@@ -124,17 +123,6 @@ async fn ft_withdraw_intent(#[values(false, true)] no_registration: bool) {
     )
     .await
     .unwrap();
-
-    if no_registration {
-        // IN no_registration case, only token owner can register a new user
-        env.poa_factory
-            .ft_storage_deposit_many(&ft, &[&other_user_id])
-            .await
-            .unwrap();
-    }
-
-    // in case of registration enabled, the user now has wNEAR to pay for it
-    let storage_deposit = (!no_registration).then_some(STORAGE_DEPOSIT);
 
     let old_defuse_balance = env
         .defuse
@@ -154,7 +142,7 @@ async fn ft_withdraw_intent(#[values(false, true)] no_registration: bool) {
                 amount: 1000.into(),
                 memo: None,
                 msg: None,
-                storage_deposit,
+                storage_deposit: Some(STORAGE_DEPOSIT),
                 min_gas: Some(Gas::from_tgas(300)),
             }],
         )
@@ -174,7 +162,7 @@ async fn ft_withdraw_intent(#[values(false, true)] no_registration: bool) {
                 amount: 1000.into(),
                 memo: None,
                 msg: None,
-                storage_deposit,
+                storage_deposit: Some(STORAGE_DEPOSIT),
                 min_gas: None,
             }],
         )
@@ -184,6 +172,7 @@ async fn ft_withdraw_intent(#[values(false, true)] no_registration: bool) {
     env.defuse_execute_intents(env.defuse.id(), [valid_payload])
         .await
         .unwrap();
+
     let new_defuse_balance = env
         .defuse
         .as_account()
@@ -191,6 +180,7 @@ async fn ft_withdraw_intent(#[values(false, true)] no_registration: bool) {
         .await
         .unwrap()
         .balance;
+
     assert!(
         new_defuse_balance >= old_defuse_balance,
         "contract balance must not decrease"
@@ -203,19 +193,17 @@ async fn ft_withdraw_intent(#[values(false, true)] no_registration: bool) {
         0
     );
 
-    if !no_registration {
-        // When no_registration is enabled, the storage deposit is done manually, not through intents
-        assert_eq!(
-            env.mt_contract_balance_of(
-                env.defuse.id(),
-                user.id(),
-                &TokenId::from(Nep141TokenId::new(env.wnear.id().clone())).to_string()
-            )
-            .await
-            .unwrap(),
-            0,
-        );
-    }
+    // When no_registration is enabled, the storage deposit is done manually, not through intents
+    assert_eq!(
+        env.mt_contract_balance_of(
+            env.defuse.id(),
+            user.id(),
+            &TokenId::from(Nep141TokenId::new(env.wnear.id().clone())).to_string()
+        )
+        .await
+        .unwrap(),
+        0,
+    );
 
     assert_eq!(
         env.ft_token_balance_of(&ft, &other_user_id).await.unwrap(),
@@ -226,13 +214,10 @@ async fn ft_withdraw_intent(#[values(false, true)] no_registration: bool) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn ft_withdraw_intent_msg(#[values(false, true)] no_registration: bool) {
+async fn ft_withdraw_intent_msg() {
     use crate::tests::defuse::DefuseSignerExt;
 
-    let env = Env::builder()
-        .no_registration(no_registration)
-        .build()
-        .await;
+    let env = Env::builder().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
     let other_user_id: AccountId = "other-user.near".parse().unwrap();
