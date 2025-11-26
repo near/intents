@@ -21,7 +21,7 @@ container_build_command = [
     "build",
     "non-reproducible-wasm",
     "--locked",
-    "--features=contract,global-contracts",
+    "--features=contract,global_contracts",
     "--no-embed-abi"
 
 ]
