@@ -21,6 +21,7 @@ use near_sdk::{
 
 use crate::{PoaFactory, TokenFullAccessKeys};
 
+/// Initial balance to deploy each PoA token contract with size ~ 500B
 const POA_TOKEN_INIT_BALANCE: NearToken = NearToken::from_millinear(5);
 const POA_TOKEN_NEW_GAS: Gas = Gas::from_tgas(10);
 const POA_TOKEN_FT_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
@@ -130,7 +131,11 @@ impl PoaFactory for Contract {
         #[cfg(feature = "global_contracts")]
         {
             near_sdk::env::log_str("Deploying contract with global contracts feature");
-            promise = promise.use_global_contract_by_account_id(CURRENT_ACCOUNT_ID.clone());
+            promise = promise.use_global_contract_by_account_id(
+                "globaltoken.testnet".parse().unwrap_or_panic_display(),
+            );
+            // TODO: do we need to revert on failure here?
+            // promise = promise.use_global_contract_by_account_id(CURRENT_ACCOUNT_ID.clone());
         }
 
         promise.function_call(
@@ -243,7 +248,7 @@ impl FullAccessKeys for Contract {
 impl TokenFullAccessKeys for Contract {
     #[access_control_any(roles(Role::DAO))]
     #[payable]
-    fn add_token_full_access_key(&mut self, token: AccountId, public_key: PublicKey) -> Promise {
+    fn add_token_full_access_key(&mut self, token: String, public_key: PublicKey) -> Promise {
         assert_one_yocto();
         ext_full_access_keys::ext(Self::token_id(token))
             .with_attached_deposit(NearToken::from_yoctonear(1))
@@ -252,7 +257,7 @@ impl TokenFullAccessKeys for Contract {
 
     #[access_control_any(roles(Role::DAO))]
     #[payable]
-    fn delete_token_full_access_key(&mut self, token: AccountId, public_key: PublicKey) -> Promise {
+    fn delete_token_full_access_key(&mut self, token: String, public_key: PublicKey) -> Promise {
         assert_one_yocto();
         ext_full_access_keys::ext(Self::token_id(token))
             .with_attached_deposit(NearToken::from_yoctonear(1))

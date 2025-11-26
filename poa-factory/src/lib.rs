@@ -11,11 +11,11 @@ use near_sdk::{AccountId, Promise, PublicKey, ext_contract, json_types::U128};
 pub trait TokenFullAccessKeys {
     /// Adds a full access key to the given token contract.
     /// NOTE: MUST attach 1 yⓃ for security purposes.
-    fn add_token_full_access_key(&mut self, token: AccountId, public_key: PublicKey) -> Promise;
+    fn add_token_full_access_key(&mut self, token: String, public_key: PublicKey) -> Promise;
 
     /// Deletes a full access key from the given token contract.
     /// NOTE: MUST attach 1 yⓃ for security purposes.
-    fn delete_token_full_access_key(&mut self, token: AccountId, public_key: PublicKey) -> Promise;
+    fn delete_token_full_access_key(&mut self, token: String, public_key: PublicKey) -> Promise;
 }
 
 #[ext_contract(ext_poa_factory)]
