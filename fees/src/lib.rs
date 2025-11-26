@@ -69,6 +69,20 @@ impl Pips {
         f64::from(self.as_pips()) / f64::from(Self::MAX.as_pips())
     }
 
+    pub const fn checked_add(self, rhs: Self) -> Option<Self> {
+        let Some(pips) = self.as_pips().checked_add(rhs.as_pips()) else {
+            return None;
+        };
+        Self::from_pips(pips)
+    }
+
+    pub const fn checked_sub(self, rhs: Self) -> Option<Self> {
+        let Some(pips) = self.as_pips().checked_sub(rhs.as_pips()) else {
+            return None;
+        };
+        Self::from_pips(pips)
+    }
+
     #[inline]
     pub const fn checked_mul(self, rhs: u32) -> Option<Self> {
         let Some(pips) = self.as_pips().checked_mul(rhs) else {
@@ -109,9 +123,7 @@ impl Pips {
 impl CheckedAdd for Pips {
     #[inline]
     fn checked_add(self, rhs: Self) -> Option<Self> {
-        self.as_pips()
-            .checked_add(rhs.as_pips())
-            .and_then(Self::from_pips)
+        self.checked_add(rhs)
     }
 }
 
@@ -127,9 +139,7 @@ impl Add for Pips {
 impl CheckedSub for Pips {
     #[inline]
     fn checked_sub(self, rhs: Self) -> Option<Self> {
-        self.as_pips()
-            .checked_sub(rhs.as_pips())
-            .and_then(Self::from_pips)
+        self.checked_sub(rhs)
     }
 }
 
@@ -190,11 +200,11 @@ pub struct PipsOutOfRange;
 
 impl BorshDeserialize for Pips {
     fn deserialize_reader<R: std::io::Read>(reader: &mut R) -> std::io::Result<Self> {
-        let pips: u32 = near_sdk::borsh::BorshDeserialize::deserialize_reader(reader)?;
+        let pips = u32::deserialize_reader(reader)?;
         Self::from_pips(pips).ok_or_else(|| {
             std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
-                format!("{PipsOutOfRange} - Invalid pips value: {pips}"),
+                format!("pips: {pips} is {PipsOutOfRange}"),
             )
         })
     }
