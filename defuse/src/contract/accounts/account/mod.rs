@@ -14,6 +14,7 @@ use defuse_core::{
 
 use defuse_near_utils::NestPrefix;
 use impl_tools::autoimpl;
+use near_account_id::AccountType;
 use near_sdk::{
     AccountIdRef, BorshStorageKey, IntoStorageKey,
     borsh::BorshSerialize,
@@ -40,6 +41,13 @@ pub struct Account {
     prefix: Vec<u8>,
 }
 
+fn has_implicit_public_key(account: &AccountIdRef) -> bool {
+    match account.get_account_type(){
+        AccountType::NearImplicitAccount | AccountType::EthImplicitAccount => true,
+        AccountType::NamedAccount /* | AccountType::NearDeterministicAccount */ => false
+    }
+}
+
 impl Account {
     #[inline]
     pub fn new<S>(prefix: S, me: &AccountIdRef) -> Self
@@ -52,7 +60,7 @@ impl Account {
             nonces: MaybeLegacyAccountNonces::new(LookupMap::with_hasher(
                 prefix.as_slice().nest(AccountPrefix::OptimizedNonces),
             )),
-            flags: (!me.get_account_type().is_implicit())
+            flags: (!has_implicit_public_key(me))
                 .then_some(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
                 .unwrap_or_else(AccountFlags::empty),
             public_keys: IterableSet::new(prefix.as_slice().nest(AccountPrefix::PublicKeys)),
