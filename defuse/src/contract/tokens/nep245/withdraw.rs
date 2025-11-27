@@ -13,15 +13,13 @@ use defuse_core::{
     token_id::{nep141::Nep141TokenId, nep245::Nep245TokenId},
 };
 use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError};
+use defuse_nep245::ext_mt_core;
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::storage_management::ext_storage_management;
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
 use near_sdk::{
-    AccountId, Gas, GasWeight, NearToken, Promise, PromiseOrValue, PromiseResult, assert_one_yocto,
-    env,
-    json_types::U128,
-    near, require,
-    serde_json::{self, json},
+    AccountId, Gas, NearToken, Promise, PromiseOrValue, PromiseResult, assert_one_yocto, env,
+    json_types::U128, near, require, serde_json,
 };
 
 #[near]
@@ -169,22 +167,28 @@ impl Contract {
         } else {
             Promise::new(withdraw.token)
         };
-        if let Some(msg) = withdraw.msg.as_deref() {
+
+        let p = ext_mt_core::ext_on(p)
+            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .with_static_gas(min_gas)
+            // distribute remaining gas here
+            .with_unused_gas_weight(1);
+        if let Some(msg) = withdraw.msg {
             p.mt_batch_transfer_call(
-                &withdraw.receiver_id,
-                &withdraw.token_ids,
-                &withdraw.amounts,
-                withdraw.memo.as_deref(),
+                withdraw.receiver_id,
+                withdraw.token_ids,
+                withdraw.amounts,
+                None,
+                withdraw.memo,
                 msg,
-                min_gas,
             )
         } else {
             p.mt_batch_transfer(
-                &withdraw.receiver_id,
-                &withdraw.token_ids,
-                &withdraw.amounts,
-                withdraw.memo.as_deref(),
-                min_gas,
+                withdraw.receiver_id,
+                withdraw.token_ids,
+                withdraw.amounts,
+                None,
+                withdraw.memo,
             )
         }
     }
@@ -290,76 +294,5 @@ impl MultiTokenForcedWithdrawer for Contract {
             true,
         )
         .unwrap_or_panic()
-    }
-}
-
-pub trait MtExt {
-    fn mt_batch_transfer(
-        self,
-        receiver_id: &AccountId,
-        token_ids: &[defuse_nep245::TokenId],
-        amounts: &[U128],
-        memo: Option<&str>,
-        min_gas: Gas,
-    ) -> Self;
-
-    fn mt_batch_transfer_call(
-        self,
-        receiver_id: &AccountId,
-        token_ids: &[defuse_nep245::TokenId],
-        amounts: &[U128],
-        memo: Option<&str>,
-        msg: &str,
-        min_gas: Gas,
-    ) -> Self;
-}
-
-impl MtExt for Promise {
-    fn mt_batch_transfer(
-        self,
-        receiver_id: &AccountId,
-        token_ids: &[defuse_nep245::TokenId],
-        amounts: &[U128],
-        memo: Option<&str>,
-        min_gas: Gas,
-    ) -> Self {
-        self.function_call_weight(
-            "mt_batch_transfer".to_string(),
-            serde_json::to_vec(&json!({
-                "receiver_id": receiver_id,
-                "token_ids": token_ids,
-                "amounts": amounts,
-                "memo": memo,
-            }))
-            .unwrap_or_panic_display(),
-            NearToken::from_yoctonear(1),
-            min_gas,
-            GasWeight::default(),
-        )
-    }
-
-    fn mt_batch_transfer_call(
-        self,
-        receiver_id: &AccountId,
-        token_ids: &[defuse_nep245::TokenId],
-        amounts: &[U128],
-        memo: Option<&str>,
-        msg: &str,
-        min_gas: Gas,
-    ) -> Self {
-        self.function_call_weight(
-            "mt_batch_transfer_call".to_string(),
-            serde_json::to_vec(&json!({
-                "receiver_id": receiver_id,
-                "token_ids": token_ids,
-                "amounts": amounts,
-                "memo": memo,
-                "msg": msg,
-            }))
-            .unwrap_or_panic_display(),
-            NearToken::from_yoctonear(1),
-            min_gas,
-            GasWeight::default(),
-        )
     }
 }
