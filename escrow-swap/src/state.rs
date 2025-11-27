@@ -12,6 +12,38 @@ use crate::{Deadline, Error, Result, price::Price};
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ContractStorage(pub(crate) Option<Storage>);
+
+impl ContractStorage {
+    pub(crate) const STATE_KEY: &[u8] = b"";
+
+    #[inline]
+    pub fn init(params: &Params) -> Result<Self> {
+        Storage::new(params).map(Some).map(Self)
+    }
+
+    pub fn init_state(params: &Params) -> Result<BTreeMap<Vec<u8>, Vec<u8>>> {
+        let state = Self::init(params)?;
+        Ok([(
+            Self::STATE_KEY.to_vec(),
+            borsh::to_vec(&state).map_err(Error::Borsh)?,
+        )]
+        .into())
+    }
+
+    #[inline]
+    pub(super) const fn as_alive(&self) -> Option<&Storage> {
+        self.0.as_ref()
+    }
+
+    #[inline]
+    pub(super) fn try_as_alive(&self) -> Result<&Storage> {
+        self.as_alive().ok_or(Error::CleanupInProgress)
+    }
+}
+
+#[near(serializers = [borsh, json])]
+#[derive(Debug, Clone, PartialEq, Eq)]
 
 pub struct Storage {
     #[serde_as(as = "Hex")]

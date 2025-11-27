@@ -130,13 +130,13 @@ near-sys = { git = "https://github.com/mitinarseny/near-sdk-rs.git", branch = "f
 near-workspaces = { git = "https://github.com/mitinarseny/near-workspaces-rs.git", branch = "feat/deterministic-accounts-release" }
 near-jsonrpc-client = { git = "https://github.com/mitinarseny/near-jsonrpc-client-rs.git", branch = "feat/deterministic-accounts-release" }
 
-# near-api = { git = "https://github.com/mitinarseny/near-api-rs", branch = "feat/deterministic-accounts-release" }
-# near-api-types = { git = "https://github.com/mitinarseny/near-api-rs", branch = "feat/deterministic-accounts-release" }
+near-api = { git = "https://github.com/mitinarseny/near-api-rs", branch = "feat/deterministic-accounts-release" }
+near-api-types = { git = "https://github.com/mitinarseny/near-api-rs", branch = "feat/deterministic-accounts-release" }
 
-# near-openapi-client = { git = "https://github.com/mitinarseny/near-openapi-client", branch = "feat/deterministic-accounts-release" }
-# near-openapi-types = { git = "https://github.com/mitinarseny/near-openapi-client", branch = "feat/deterministic-accounts-release" }
+near-openapi-client = { git = "https://github.com/mitinarseny/near-openapi-client", branch = "feat/deterministic-accounts-release" }
+near-openapi-types = { git = "https://github.com/mitinarseny/near-openapi-client", branch = "feat/deterministic-accounts-release" }
 
-# near-sandbox = { git = "https://github.com/mitinarseny/near-sandbox-rs", branch = "feat/deterministic-accounts-release" }
+near-sandbox = { git = "https://github.com/mitinarseny/near-sandbox-rs", branch = "feat/deterministic-accounts-release" }
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }

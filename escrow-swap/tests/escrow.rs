@@ -2,52 +2,57 @@ mod env;
 
 use std::time::Duration;
 
+use defuse::{
+    core::intents::tokens::NotifyOnTransfer,
+    tokens::{DepositAction, DepositMessage},
+};
 use defuse_escrow_swap::{
-    Deadline, OverrideSend,
+    ContractStorage, Deadline, OverrideSend, Params, ProtocolFees,
     action::{FillAction, TransferAction, TransferMessage},
     price::Price,
-    {Params, ProtocolFees},
 };
 use defuse_fees::Pips;
 use defuse_sandbox::{
     Account, MtExt, MtViewExt, SigningAccount, TxResult,
     api::types::errors::{DataConversionError, ExecutionError},
 };
-use defuse_token_id::{TokenId, nep245::Nep245TokenId};
+use defuse_token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId};
 use futures::{TryStreamExt, stream::FuturesOrdered, try_join};
 use impl_tools::autoimpl;
 use itertools::Itertools;
-use near_sdk::{AccountId, AccountIdRef, NearToken, serde_json};
+use near_sdk::{
+    AccountId, AccountIdRef, Gas, NearToken,
+    json_types::U128,
+    serde_json::{self, json},
+    state_init::{StateInit, StateInitV1},
+};
 
 use crate::env::{BaseEnv, EscrowExt, EscrowViewExt};
 
 #[tokio::test]
 async fn partial_fills() {
-    const SRC_TOKEN_ID: &str = "src";
-    const DST_TOKEN_ID: &str = "dst";
-
     const MAKER_AMOUNT: u128 = 10000;
     const TAKER_AMOUNT: u128 = 20000;
 
     let env = EscrowEnv::new().await.unwrap();
 
-    try_join!(
-        env.src_deposit_to_verifier(env.maker.id(), SRC_TOKEN_ID, MAKER_AMOUNT),
-        env.dst_deposit_to_verifier(env.takers[0].id(), DST_TOKEN_ID, TAKER_AMOUNT),
-        env.dst_deposit_to_verifier(env.takers[1].id(), DST_TOKEN_ID, TAKER_AMOUNT),
-        env.dst_deposit_to_verifier(env.takers[2].id(), DST_TOKEN_ID, TAKER_AMOUNT),
-    )
-    .unwrap();
+    // try_join!(
+    //     env.src_deposit_to_verifier(env.maker.id(), SRC_TOKEN_ID, MAKER_AMOUNT),
+    //     env.dst_deposit_to_verifier(env.takers[0].id(), DST_TOKEN_ID, TAKER_AMOUNT),
+    //     env.dst_deposit_to_verifier(env.takers[1].id(), DST_TOKEN_ID, TAKER_AMOUNT),
+    //     env.dst_deposit_to_verifier(env.takers[2].id(), DST_TOKEN_ID, TAKER_AMOUNT),
+    // )
+    // .unwrap();
 
-    let [src_verifier_asset, dst_verifier_asset] = [
-        (env.src_mt.id(), SRC_TOKEN_ID),
-        (env.mt_dst.id(), DST_TOKEN_ID),
-    ]
-    .map(|(contract_id, token_id)| Nep245TokenId::new(contract_id.clone(), token_id.to_string()))
-    .map(TokenId::from);
+    let [src_verifier_asset, dst_verifier_asset] =
+        [env.src_ft.id().clone(), env.dst_ft.id().clone()]
+            .map(Nep141TokenId::new)
+            .map(TokenId::from);
 
-    let [src_asset, dst_asset] = [&src_verifier_asset, &dst_verifier_asset]
-        .map(|token_id| Nep245TokenId::new(env.verifier.id().clone(), token_id.to_string()))
+    let [src_token, dst_token] = [&src_verifier_asset, &dst_verifier_asset]
+        .map(|token_id| {
+            Nep245TokenId::new(env.verifier.id().clone(), token_id.to_string()).unwrap()
+        })
         .map(Into::<TokenId>::into);
 
     const TIMEOUT: Duration = Duration::from_secs(60);
@@ -56,8 +61,8 @@ async fn partial_fills() {
     let params = Params {
         maker: env.maker.id().clone(),
 
-        src_token: src_asset.clone(),
-        dst_token: dst_asset.clone(),
+        src_token: src_token.clone(),
+        dst_token: dst_token.clone(),
 
         price,
         deadline: Deadline::timeout(TIMEOUT),
@@ -89,9 +94,15 @@ async fn partial_fills() {
         auth_caller: Some(env.verifier.id().clone()),
         salt: [0; 32],
     };
+    let state_init = StateInit::V1(StateInitV1 {
+        code: env.escrow_global.clone().into(),
+        data: ContractStorage::init_state(&params).unwrap(),
+    });
 
-    let escrow = env.create_escrow(&params).await.unwrap();
-    env.view_escrow(&escrow).await;
+    let escrow = Account::new(
+        state_init.derive_account_id(),
+        env.root().network_config().clone(),
+    );
     env.show_verifier_balances(
         [escrow.id(), env.maker.id()]
             .into_iter()
@@ -105,24 +116,34 @@ async fn partial_fills() {
     // maker deposit
     {
         for amount in [MAKER_AMOUNT - 100, 100] {
-            let sent = env
-                .maker
-                .mt_transfer_call(
-                    env.verifier.id().clone(),
-                    escrow.id(),
-                    src_verifier_asset.to_string(),
-                    amount,
-                    "maker deposit".to_string(),
-                    serde_json::to_string(&TransferMessage {
-                        params: params.clone(),
-                        action: TransferAction::Fund,
-                    })
-                    .unwrap(),
+            let refund = env
+                .src_ft
+                .tx(env.verifier.id().clone())
+                .function_call_json::<U128>(
+                    "ft_on_transfer",
+                    json!({
+                        "sender_id": env.maker.id(),
+                        "amount": U128(amount),
+                        "msg": serde_json::to_string(
+                            &DepositMessage::new(escrow.id().clone())
+                                .with_action(DepositAction::Notify(
+                                    NotifyOnTransfer::new(
+                                        serde_json::to_string(&TransferMessage {
+                                            params: params.clone(),
+                                            action: TransferAction::Fund,
+                                        })
+                                            .unwrap(),
+                                    ).with_state_init(state_init.clone())))
+                        ).unwrap()
+                    }),
+                    Gas::from_tgas(300),
+                    NearToken::from_yoctonear(0),
                 )
                 .await
-                .unwrap();
+                .unwrap()
+                .0;
 
-            println!("maker deposited: {sent}");
+            println!("maker sent: {amount}, refund: {refund}");
 
             env.show_verifier_balances(
                 [escrow.id(), env.maker.id()]
@@ -134,7 +155,7 @@ async fn partial_fills() {
             )
             .await;
 
-            assert_eq!(sent, amount);
+            assert_eq!(refund, 0);
             env.view_escrow(&escrow).await;
         }
     }
@@ -142,32 +163,43 @@ async fn partial_fills() {
     // takers deposit
     {
         for (taker, amount) in env.takers.iter().zip([10000, 5000, 20000]) {
-            let sent = taker
-                .mt_transfer_call(
-                    env.verifier.id().clone(),
-                    escrow.id(),
-                    dst_verifier_asset.to_string(),
-                    amount,
-                    "taker fill".to_string(),
-                    serde_json::to_string(&TransferMessage {
-                        params: params.clone(),
-                        action: FillAction {
-                            price: "2".parse().unwrap(),
-                            deadline: Deadline::timeout(Duration::from_secs(10)),
-                            receive_src_to: OverrideSend {
-                                memo: Some("taker memo".to_string()),
-                                // msg: Some("taker msg".to_string()),
-                                ..Default::default()
-                            },
-                        }
-                        .into(),
-                    })
-                    .unwrap(),
+            let refund = env
+                .dst_ft
+                .tx(env.verifier.id().clone())
+                .function_call_json::<U128>(
+                    "ft_on_transfer",
+                    json!({
+                        "sender_id": taker.id(),
+                        "amount": U128(amount),
+                        "msg": serde_json::to_string(&DepositMessage::new(escrow.id().clone())
+                            .with_action(
+                                DepositAction::Notify(NotifyOnTransfer::new(
+                                    serde_json::to_string(&TransferMessage {
+                                        params: params.clone(),
+                                        action: FillAction {
+                                            price: "2".parse().unwrap(),
+                                            deadline: Deadline::timeout(Duration::from_secs(10)),
+                                            receive_src_to: OverrideSend {
+                                                memo: Some("taker memo".to_string()),
+                                                // msg: Some("taker msg".to_string()),
+                                                ..Default::default()
+                                            },
+                                        }
+                                        .into()
+                                    })
+                                    .unwrap()
+                                ))
+                            ))
+                        .unwrap()
+                    }),
+                    Gas::from_tgas(300),
+                    NearToken::from_yoctonear(0),
                 )
                 .await
-                .unwrap();
+                .unwrap()
+                .0;
 
-            println!("taker deposited: {sent}");
+            println!("taker sent: {amount}, refund: {refund}");
 
             env.show_verifier_balances(
                 [escrow.id(), env.maker.id()]
@@ -215,8 +247,8 @@ async fn partial_fills() {
 struct EscrowEnv {
     env: BaseEnv,
 
-    src_mt: SigningAccount,
-    mt_dst: SigningAccount,
+    src_ft: SigningAccount,
+    dst_ft: SigningAccount,
 
     maker: SigningAccount,
     takers: [SigningAccount; 3],
@@ -229,16 +261,9 @@ impl EscrowEnv {
         let env = BaseEnv::new().await?;
         let root = env.root();
 
-        let long = |name: &str| {
-            format!(
-                "{name}-{}",
-                "0".repeat(AccountId::MAX_LEN - root.id().len() - 1 - name.len() - 1)
-            )
-        };
-
         let (
-            mt_src,
-            mt_dst,
+            src_ft,
+            dst_ft,
             maker,
             taker1,
             taker2,
@@ -247,69 +272,69 @@ impl EscrowEnv {
             fee_collector2,
             fee_collector3,
         ) = try_join!(
-            root.create_subaccount(long("mt-src"), NearToken::from_near(10)),
-            root.create_subaccount(long("mt-dst"), NearToken::from_near(10)),
-            root.create_subaccount(long("maker"), NearToken::from_near(10)),
-            root.create_subaccount(long("taker1"), NearToken::from_near(10)),
-            root.create_subaccount(long("taker2"), NearToken::from_near(10)),
-            root.create_subaccount(long("taker3"), NearToken::from_near(10)),
-            root.create_subaccount(long("protocol-fee-collector"), NearToken::from_near(10)),
-            root.create_subaccount(long("fee-collector2"), NearToken::from_near(10)),
-            root.create_subaccount(long("fee-collector3"), NearToken::from_near(10)),
+            root.create_subaccount("src-ft", NearToken::from_near(10)),
+            root.create_subaccount("dst-ft", NearToken::from_near(10)),
+            root.create_subaccount("maker", NearToken::from_near(10)),
+            root.create_subaccount("taker1", NearToken::from_near(10)),
+            root.create_subaccount("taker2", NearToken::from_near(10)),
+            root.create_subaccount("taker3", NearToken::from_near(10)),
+            root.create_subaccount("protocol-fee-collector", NearToken::from_near(10)),
+            root.create_subaccount("fee-collector2", NearToken::from_near(10)),
+            root.create_subaccount("fee-collector3", NearToken::from_near(10)),
         )?;
 
         Ok(Self {
             env,
-            src_mt: mt_src,
-            mt_dst,
+            src_ft,
+            dst_ft,
             maker,
             takers: [taker1, taker2, taker3],
             fee_collectors: [protocol_fee_collector, fee_collector2, fee_collector3],
         })
     }
 
-    pub async fn src_deposit_to_verifier(
-        &self,
-        receiver_id: &AccountIdRef,
-        token_id: &str,
-        amount: u128,
-    ) -> TxResult<u128> {
-        self.deposit_to_verifier(&self.src_mt, receiver_id, token_id, amount)
-            .await
-    }
+    // pub async fn src_deposit_to_verifier(
+    //     &self,
+    //     receiver_id: &AccountIdRef,
+    //     token_id: &str,
+    //     amount: u128,
+    // ) -> TxResult<u128> {
+    //     self.deposit_to_verifier(&self.src_ft, receiver_id, token_id, amount)
+    //         .await
+    // }
 
-    pub async fn dst_deposit_to_verifier(
-        &self,
-        receiver_id: &AccountIdRef,
-        token_id: &str,
-        amount: u128,
-    ) -> TxResult<u128> {
-        self.deposit_to_verifier(&self.mt_dst, receiver_id, token_id, amount)
-            .await
-    }
+    // pub async fn dst_deposit_to_verifier(
+    //     &self,
+    //     receiver_id: &AccountIdRef,
+    //     token_id: &str,
+    //     amount: u128,
+    // ) -> TxResult<u128> {
+    //     self.deposit_to_verifier(&self.mt_dst, receiver_id, token_id, amount)
+    //         .await
+    // }
 
-    async fn deposit_to_verifier(
-        &self,
-        mt: &SigningAccount,
-        receiver_id: &AccountIdRef,
-        token_id: &str,
-        amount: u128,
-    ) -> TxResult<u128> {
-        mt.mt_on_transfer(
-            mt.id(),
-            self.verifier.id().clone(),
-            [(token_id.to_string(), amount)],
-            receiver_id.to_string(),
-        )
-        .await
-        .and_then(|refunds| {
-            let [refund] = refunds
-                .try_into()
-                .map_err(|refunds: Vec<_>| DataConversionError::IncorrectLength(refunds.len()))
-                .map_err(Into::<ExecutionError>::into)?;
-            Ok(refund)
-        })
-    }
+    // async fn deposit_to_verifier(
+    //     &self,
+    //     mt: &SigningAccount,
+    //     receiver_id: &AccountIdRef,
+    //     token_id: &str,
+    //     amount: u128,
+    // ) -> TxResult<u128> {
+    //     mt.mt_on_transfer(
+    //         mt.id(),
+    //         self.verifier.id().clone(),
+    //         [(token_id.to_string(), amount)],
+    //         receiver_id.to_string(),
+    //     )
+    //     .await
+    //     .and_then(|refunds| {
+    //         let [refund] = refunds
+    //             .try_into()
+    //             .map_err(|refunds: Vec<_>| DataConversionError::IncorrectLength(refunds.len()))
+    //             .map_err(Into::<ExecutionError>::into)?;
+    //         Ok(refund)
+    //     })
+    // }
 
     pub async fn show_verifier_balances(
         &self,

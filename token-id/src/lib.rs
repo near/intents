@@ -26,7 +26,7 @@ use strum::{EnumDiscriminants, EnumIter, EnumString};
 
 pub use self::error::TokenIdError;
 
-#[cfg(not(feature = "unbounded"))]
+#[cfg(feature = "bounded")]
 const MAX_ALLOWED_TOKEN_ID_LEN: usize = 127;
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
@@ -125,12 +125,12 @@ const _: () = {
         schema::{InstanceType, Schema, SchemaObject},
     };
 
-    #[cfg(feature = "unbounded")]
+    #[cfg(not(feature = "bounded"))]
     fn unwrap<T>(r: T) -> T {
         r
     }
 
-    #[cfg(not(feature = "unbounded"))]
+    #[cfg(feature = "bounded")]
     fn unwrap<T>(r: Result<T, TokenIdError>) -> T {
         r.unwrap()
     }

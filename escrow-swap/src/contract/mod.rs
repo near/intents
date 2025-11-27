@@ -10,42 +10,16 @@ mod return_value;
 mod tokens;
 mod validate;
 
-use std::borrow::Cow;
-
 use defuse_near_utils::UnwrapOrPanic;
-use near_sdk::{FunctionError, PanicOnDefault, PromiseOrValue, env, near, require};
+use impl_tools::autoimpl;
+use near_sdk::{PanicOnDefault, PromiseOrValue, env, near};
 
-use crate::{
-    Error, Escrow, Params, Storage,
-    event::{EscrowIntentEmit, Event},
-};
+use crate::{ContractStorage, Escrow, Params, Storage};
 
-#[near(contract_state)] // TODO: (key = "")
+#[near(contract_state(key = ContractStorage::STATE_KEY))]
+#[autoimpl(Deref using self.0)]
 #[derive(Debug, PanicOnDefault)]
-pub struct Contract(Option<Storage>);
-
-#[near]
-impl Contract {
-    #[init]
-    pub fn escrow_init(params: &Params) -> Self {
-        Event::Init(Cow::Borrowed(&params)).emit();
-
-        params.validate_gas().unwrap_or_panic();
-        if params.deadline.has_expired() {
-            Error::DeadlineExpired.panic();
-        }
-
-        let s = Storage::new(params).unwrap_or_panic();
-
-        // just for the safety
-        require!(
-            env::current_account_id() == s.derive_account_id(env::predecessor_account_id()),
-            "wrong params or factory"
-        );
-
-        Self(Some(s))
-    }
-}
+pub struct Contract(ContractStorage);
 
 #[near]
 impl Escrow for Contract {

@@ -4,7 +4,7 @@ use defuse_near_utils::UnwrapOrPanicError;
 use near_sdk::{Promise, env};
 
 use crate::{
-    Error, Result, Storage,
+    ContractStorage, Error, Result, Storage,
     event::{CloseReason, Event},
     state::State,
 };
@@ -14,21 +14,11 @@ use super::{Contract, ContractExt};
 impl Contract {
     #[inline]
     pub(super) fn cleanup_guard(&mut self) -> CleanupGuard<'_> {
-        CleanupGuard(self)
-    }
-
-    #[inline]
-    pub(super) const fn as_alive(&self) -> Option<&Storage> {
-        self.0.as_ref()
-    }
-
-    #[inline]
-    pub(super) fn try_as_alive(&self) -> Result<&Storage> {
-        self.as_alive().ok_or(Error::CleanupInProgress)
+        CleanupGuard(&mut self.0)
     }
 }
 
-pub struct CleanupGuard<'a>(&'a mut Contract);
+pub struct CleanupGuard<'a>(&'a mut ContractStorage);
 
 impl<'a> CleanupGuard<'a> {
     #[inline]

@@ -23,14 +23,14 @@ pub struct Nep245TokenId {
     contract_id: AccountId,
 
     #[cfg_attr(
-        all(not(feature = "unbounded"), any(feature = "arbitrary", test)),
+        all(feature = "bounded", any(feature = "arbitrary", test)),
         arbitrary(with = As::<::arbitrary_with::LimitLen<{crate::MAX_ALLOWED_TOKEN_ID_LEN}>>::arbitrary),
     )]
     mt_token_id: TokenId,
 }
 
 impl Nep245TokenId {
-    #[cfg(not(feature = "unbounded"))]
+    #[cfg(feature = "bounded")]
     pub fn new(contract_id: AccountId, mt_token_id: TokenId) -> Result<Self, TokenIdError> {
         if mt_token_id.len() > crate::MAX_ALLOWED_TOKEN_ID_LEN {
             return Err(TokenIdError::TokenIdTooLarge(mt_token_id.len()));
@@ -42,7 +42,7 @@ impl Nep245TokenId {
         })
     }
 
-    #[cfg(feature = "unbounded")]
+    #[cfg(not(feature = "bounded"))]
     pub fn new(contract_id: AccountId, mt_token_id: TokenId) -> Self {
         Self {
             contract_id,
@@ -86,9 +86,9 @@ impl FromStr for Nep245TokenId {
             .split_once(':')
             .ok_or(strum::ParseError::VariantNotFound)?;
         let r = Self::new(contract_id.parse()?, token_id.to_string());
-        #[cfg(feature = "unbounded")]
+        #[cfg(not(feature = "bounded"))]
         return Ok(r);
-        #[cfg(not(feature = "unbounded"))]
+        #[cfg(feature = "bounded")]
         return r;
     }
 }
@@ -105,7 +105,7 @@ mod tests {
     use super::*;
 
     use defuse_test_utils::random::make_arbitrary;
-    #[cfg(not(feature = "unbounded"))]
+    #[cfg(feature = "bounded")]
     use defuse_test_utils::random::random_bytes;
     use rstest::rstest;
 
@@ -117,7 +117,7 @@ mod tests {
         assert_eq!(got, token_id);
     }
 
-    #[cfg(not(feature = "unbounded"))]
+    #[cfg(feature = "bounded")]
     #[rstest]
     fn token_id_length(random_bytes: Vec<u8>) {
         use arbitrary::Unstructured;

@@ -17,13 +17,14 @@ defuse-deadline.workspace = true
 defuse-fees.workspace = true
 defuse-nep245.workspace = true
 defuse-price.workspace = true
-defuse-token-id = { workspace = true, features = ["unbounded"] }
+defuse-token-id.workspace = true
 
 near-contract-standards.workspace = true
 near-sdk.workspace = true
 
 derive_more = { workspace = true, features = ["from"] }
 hex.workspace = true
+impl-tools.workspace = true
 serde_with = { workspace = true, features = ["chrono_0_4", "hex"] }
 thiserror.workspace = true
 
@@ -31,13 +32,14 @@ defuse-auth-call = { workspace = true, optional = true }
 defuse-near-utils = { workspace = true, optional = true }
 
 [dev-dependencies]
+defuse.workspace = true
 defuse-sandbox.workspace = true
 
 anyhow.workspace = true
 futures.workspace = true
 hex.workspace = true
-impl-tools.workspace = true
 itertools.workspace = true
+near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 

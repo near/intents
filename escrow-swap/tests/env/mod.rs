@@ -9,11 +9,11 @@ use defuse_escrow_swap::Params;
 use defuse_fees::Pips;
 use defuse_sandbox::{
     Account, Sandbox, SigningAccount, TxResult,
-    api::types::transaction::actions::{GlobalContractDeployMode, GlobalContractIdentifier},
+    api::types::transaction::actions::GlobalContractDeployMode,
 };
 use futures::join;
 use impl_tools::autoimpl;
-use near_sdk::{AccountId, Gas, NearToken, serde_json::json};
+use near_sdk::{AccountId, Gas, GlobalContractId, NearToken, serde_json::json};
 
 use crate::env::utils::read_wasm;
 
@@ -26,7 +26,7 @@ pub static ESCROW_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("defuse_e
 pub struct BaseEnv {
     // pub wnear: Account,
     pub verifier: Account,
-    pub escrow_global: GlobalContractIdentifier,
+    pub escrow_global: GlobalContractId,
 
     sandbox: Sandbox,
 }
@@ -50,17 +50,17 @@ impl BaseEnv {
         })
     }
 
-    pub async fn create_escrow(&self, params: &Params) -> TxResult<Account> {
-        self.root()
-            .deploy_escrow(self.escrow_global.clone(), params)
-            .await
-    }
+    // pub async fn create_escrow(&self, params: &Params) -> TxResult<Account> {
+    //     self.root()
+    //         .deploy_escrow(self.escrow_global.clone(), params)
+    //         .await
+    // }
 }
 
 pub trait AccountExt {
     async fn deploy_wnear(&self, name: impl AsRef<str>) -> Account;
     async fn deploy_verifier(&self, name: impl AsRef<str>, wnear_id: AccountId) -> Account;
-    async fn deploy_escrow_global(&self, name: impl AsRef<str>) -> GlobalContractIdentifier;
+    async fn deploy_escrow_global(&self, name: impl AsRef<str>) -> GlobalContractId;
 }
 
 impl AccountExt for SigningAccount {
@@ -107,7 +107,7 @@ impl AccountExt for SigningAccount {
         account
     }
 
-    async fn deploy_escrow_global(&self, name: impl AsRef<str>) -> GlobalContractIdentifier {
+    async fn deploy_escrow_global(&self, name: impl AsRef<str>) -> GlobalContractId {
         let account = self.subaccount(name);
 
         self.tx(account.id().clone())
@@ -117,6 +117,6 @@ impl AccountExt for SigningAccount {
             .await
             .unwrap();
 
-        GlobalContractIdentifier::AccountId(account.id().clone())
+        GlobalContractId::AccountId(account.id().clone())
     }
 }

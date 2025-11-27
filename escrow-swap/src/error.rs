@@ -1,10 +1,12 @@
-use near_sdk::{FunctionError, serde_json};
+use near_sdk::{FunctionError, borsh::io, serde_json};
 use thiserror::Error as ThisError;
 
 pub type Result<T, E = Error> = ::core::result::Result<T, E>;
 
 #[derive(Debug, ThisError, FunctionError)]
 pub enum Error {
+    #[error("borsh: {0}")]
+    Borsh(io::Error),
     #[error("cleanup in progress")]
     CleanupInProgress,
     #[error("closed")]
