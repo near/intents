@@ -11,6 +11,7 @@ members = [
     "deadline",
     "defuse",
     "erc191",
+    "escrow-proxy",
     "fees",
     "io-utils",
     "map-utils",
@@ -51,6 +52,7 @@ defuse-crypto.path = "crypto"
 defuse.path = "defuse"
 defuse-deadline.path = "deadline"
 defuse-erc191.path = "erc191"
+defuse-escrow-proxy.path = "escrow-proxy"
 defuse-fees.path = "fees"
 defuse-io-utils.path = "io-utils"
 defuse-map-utils.path = "map-utils"
