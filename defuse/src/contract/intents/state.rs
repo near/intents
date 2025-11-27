@@ -259,7 +259,7 @@ impl State for Contract {
 
         let min_gas = notification.min_gas();
 
-        Self::call_receiver_mt_on_transfer(
+        Self::notify_and_resolve_transfer(
             sender_id.to_owned(),
             receiver_id,
             token_ids,

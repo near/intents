@@ -1,8 +1,8 @@
-use defuse_core::token_id::nep245::Nep245TokenId;
+use defuse_core::token_id::{TokenId, nep245::Nep245TokenId};
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
-use defuse_nep245::receiver::{MultiTokenReceiver, ext_mt_receiver};
+use defuse_nep245::receiver::MultiTokenReceiver;
 use near_plugins::{Pausable, pause};
 use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near, require};
 
@@ -55,14 +55,19 @@ impl MultiTokenReceiver for Contract {
             msg.parse().unwrap_or_panic_display()
         };
 
+        let core_token_ids: Vec<TokenId> = token_ids
+            .iter()
+            .cloned()
+            .map(|token_id| Nep245TokenId::new(token.clone(), token_id))
+            .map(UnwrapOrPanicError::unwrap_or_panic_display)
+            .map(Into::into)
+            .collect();
+
         self.deposit(
             receiver_id.clone(),
-            token_ids
+            core_token_ids
                 .iter()
                 .cloned()
-                .map(|token_id| Nep245TokenId::new(token.clone(), token_id))
-                .map(UnwrapOrPanicError::unwrap_or_panic_display)
-                .map(Into::into)
                 .zip(amounts.iter().map(|amount| amount.0)),
             Some("deposit"),
         )
@@ -73,22 +78,22 @@ impl MultiTokenReceiver for Contract {
         };
 
         match action {
-            DepositAction::Notify(notify) => ext_mt_receiver::ext(receiver_id.clone())
-                .with_static_gas(notify.min_gas.unwrap_or_default())
-                .mt_on_transfer(
-                    sender_id,
-                    previous_owner_ids,
-                    token_ids.clone(),
-                    amounts.clone(),
-                    notify.msg,
-                )
-                .then(
-                    Self::ext(CURRENT_ACCOUNT_ID.clone())
-                        .with_static_gas(Self::mt_resolve_deposit_gas(amounts.len()))
-                        .with_unused_gas_weight(0)
-                        .mt_resolve_deposit(receiver_id, token.clone(), token_ids, amounts),
-                )
-                .into(),
+            DepositAction::Notify(notify) => Self::notify_on_transfer(
+                sender_id,
+                previous_owner_ids,
+                receiver_id.clone(),
+                core_token_ids.iter().map(ToString::to_string).collect(),
+                amounts.clone(),
+                notify.msg,
+                notify.min_gas,
+            )
+            .then(
+                Self::ext(CURRENT_ACCOUNT_ID.clone())
+                    .with_static_gas(Self::mt_resolve_deposit_gas(amounts.len()))
+                    .with_unused_gas_weight(0)
+                    .mt_resolve_deposit(receiver_id, token.clone(), token_ids, amounts),
+            )
+            .into(),
             DepositAction::Execute(execute) => {
                 if !execute.execute_intents.is_empty() {
                     if execute.refund_if_fails {
