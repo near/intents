@@ -26,10 +26,8 @@ impl<'de, C: TypedCurve, const N: usize> DeserializeAs<'de, [u8; N]> for AsCurve
     }
 }
 
-#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
-mod abi {
-    use super::*;
-
+#[cfg(feature = "abi")]
+const _: () = {
     use near_sdk::schemars::{
         JsonSchema,
         r#gen::SchemaGenerator,
@@ -65,4 +63,4 @@ mod abi {
             false
         }
     }
-}
+};

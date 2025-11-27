@@ -48,7 +48,7 @@ defuse-borsh-utils.path = "borsh-utils"
 defuse-controller.path = "controller"
 defuse-core.path = "core"
 defuse-crypto.path = "crypto"
-defuse.path = "defuse"
+defuse = { path = "defuse", default-features = false }
 defuse-deadline.path = "deadline"
 defuse-erc191.path = "erc191"
 defuse-fees.path = "fees"

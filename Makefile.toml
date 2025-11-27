@@ -39,10 +39,10 @@ args = [
     "--manifest-path",
     "./defuse/Cargo.toml",
     "--features",
-    "abi,contract",
+    "contract",
     "--out-dir",
     "${TARGET_DIR}",
-    "--no-embed-abi",
+    "--no-abi",
 ]
 
 [tasks.build-poa-factory]
@@ -59,7 +59,7 @@ args = [
     "contract",
     "--out-dir",
     "${TARGET_DIR}",
-    "--no-embed-abi",
+    "--no-abi",
 ]
 
 [tasks.build-poa-token]
@@ -76,7 +76,7 @@ args = [
     "contract",
     "--out-dir",
     "${TARGET_DIR}",
-    "--no-embed-abi",
+    "--no-abi",
 ]
 
 [tasks.build-poa-token-no-registration]
@@ -93,7 +93,7 @@ args = [
     "contract,no-registration",
     "--out-dir",
     "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}",
-    "--no-embed-abi",
+    "--no-abi",
 ]
 
 # ============================================================================
@@ -233,9 +233,7 @@ args = [
     "--locked",
     "--manifest-path",
     "./tests/contracts/multi-token-receiver-stub/Cargo.toml",
-    "--features",
-    "abi",
     "--out-dir",
     "${MT_RECEIVER_STUB_DIR}",
-    "--no-embed-abi",
+    "--no-abi",
 ]

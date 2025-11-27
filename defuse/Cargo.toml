@@ -48,12 +48,13 @@ container_build_command = [
     "build",
     "non-reproducible-wasm",
     "--locked",
-    "--features=abi,contract",
-    "--no-embed-abi"
+    "--features=contract",
+    "--no-abi"
 ]
 
 [features]
-abi = ["defuse-core/abi"]
+default = ["contract"]
+abi = ["defuse-core/abi", "near-sdk/__abi-generate"]
 arbitrary = ["defuse-core/arbitrary"]
 contract = [
     "dep:defuse-bitmap",

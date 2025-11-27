@@ -9,7 +9,7 @@ repository.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-defuse = { workspace = true }
+defuse = { workspace = true, default-features = false }
 defuse-nep245.workspace = true
 near-sdk.workspace = true
 

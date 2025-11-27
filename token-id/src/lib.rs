@@ -52,11 +52,7 @@ const MAX_ALLOWED_TOKEN_ID_LEN: usize = 127;
         DeserializeFromStr
     ),
     strum(serialize_all = "snake_case"),
-    cfg_attr(
-        all(feature = "abi", not(target_arch = "wasm32")),
-        derive(::near_sdk::NearSchema),
-        schemars(with = "String"),
-    ),
+    cfg_attr(feature = "abi", derive(::near_sdk::NearSchema), schemars(with = "String")),
     vis(pub)
 )]
 #[near(serializers = [borsh(use_discriminant=true)])]
@@ -117,10 +113,8 @@ impl FromStr for TokenId {
     }
 }
 
-#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
-mod abi {
-    use super::*;
-
+#[cfg(feature = "abi")]
+const _: () = {
     use near_sdk::schemars::{
         JsonSchema,
         r#gen::SchemaGenerator,
@@ -171,7 +165,7 @@ mod abi {
             .into()
         }
     }
-}
+};
 
 #[cfg(test)]
 mod tests {
