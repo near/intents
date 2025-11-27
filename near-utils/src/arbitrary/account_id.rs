@@ -11,15 +11,19 @@ pub struct ArbitraryAccountId;
 impl<'a> ArbitraryAs<'a, AccountId> for ArbitraryAccountId {
     fn arbitrary_as(u: &mut Unstructured<'a>) -> Result<AccountId> {
         match u.choose(&[
+            AccountType::NamedAccount,
             AccountType::NearImplicitAccount,
             AccountType::EthImplicitAccount,
-            AccountType::NamedAccount,
+            AccountType::NearDeterministicAccount,
         ])? {
             AccountType::NamedAccount => u.arbitrary_as::<_, ArbitraryNamedAccountId>(),
             AccountType::NearImplicitAccount => {
                 u.arbitrary_as::<_, ArbitraryImplicitNearAccountId>()
             }
             AccountType::EthImplicitAccount => u.arbitrary_as::<_, ArbitraryImplicitEthAccountId>(),
+            AccountType::NearDeterministicAccount => {
+                u.arbitrary_as::<_, ArbitraryDeterministicAccountId>()
+            }
         }
     }
 }
@@ -39,6 +43,16 @@ pub struct ArbitraryImplicitEthAccountId;
 impl<'a> ArbitraryAs<'a, AccountId> for ArbitraryImplicitEthAccountId {
     fn arbitrary_as(u: &mut Unstructured<'a>) -> Result<AccountId> {
         format!("0x{}", hex::encode(<[u8; 20]>::arbitrary(u)?))
+            .parse()
+            .map_err(|_| Error::IncorrectFormat)
+    }
+}
+
+pub struct ArbitraryDeterministicAccountId;
+
+impl<'a> ArbitraryAs<'a, AccountId> for ArbitraryDeterministicAccountId {
+    fn arbitrary_as(u: &mut Unstructured<'a>) -> Result<AccountId> {
+        format!("0s{}", hex::encode(<[u8; 20]>::arbitrary(u)?))
             .parse()
             .map_err(|_| Error::IncorrectFormat)
     }
