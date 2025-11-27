@@ -10,9 +10,12 @@ workspace = true
 
 [dev-dependencies]
 defuse = { workspace = true, features = ["contract", "arbitrary"] }
+defuse-crypto.workspace = true
+defuse-escrow-proxy.workspace = true
 defuse-near-utils = { workspace = true, features = ["arbitrary"] }
 defuse-poa-factory = { workspace = true, features = ["contract"] }
 defuse-serde-utils = { workspace = true }
+defuse-token-id.workspace = true
 defuse-randomness.workspace = true
 defuse-test-utils.workspace = true
 

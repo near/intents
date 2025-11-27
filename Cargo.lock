@@ -1063,11 +1063,14 @@ dependencies = [
  "bnum",
  "chrono",
  "defuse",
+ "defuse-crypto",
+ "defuse-escrow-proxy",
  "defuse-near-utils",
  "defuse-poa-factory",
  "defuse-randomness",
  "defuse-serde-utils",
  "defuse-test-utils",
+ "defuse-token-id",
  "derive_more 2.0.1",
  "futures",
  "hex",
@@ -3936,7 +3939,7 @@ version = "1.0.145"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "402a6f66d8c709116cf22f558eab210f5a50187f702eb4d7e5ef38d9a7f1c79c"
 dependencies = [
- "indexmap 2.9.0",
+ "indexmap 2.12.1",
  "itoa",
  "memchr",
  "ryu",
@@ -4476,7 +4479,7 @@ dependencies = [
  "lazy_static",
  "num-bigint 0.4.6",
  "num-traits",
- "schemars",
+ "schemars 0.8.22",
  "serde_with",
  "strum 0.25.0",
  "tlb",
