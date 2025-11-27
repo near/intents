@@ -138,14 +138,6 @@ impl Sendable for TokenId {
     }
 }
 
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
 #[near(serializers = [json])]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[must_use]

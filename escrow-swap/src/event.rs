@@ -35,14 +35,6 @@ pub enum Event<'a> {
 }
 
 #[must_use = "make sure to `.emit()` this event"]
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct FundedEvent<'a> {
@@ -55,14 +47,6 @@ pub struct FundedEvent<'a> {
 }
 
 #[must_use = "make sure to `.emit()` this event"]
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct FillEvent<'a> {
@@ -98,14 +82,6 @@ pub struct FillEvent<'a> {
     pub integrator_dst_fees: BTreeMap<Cow<'a, AccountIdRef>, u128>,
 }
 
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct ProtocolFeesCollected<'a> {
@@ -124,14 +100,6 @@ impl ProtocolFeesCollected<'_> {
 }
 
 #[must_use = "make sure to `.emit()` this event"]
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct MakerSent {
