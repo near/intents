@@ -86,12 +86,12 @@ hex = "0.4"
 hex-literal = "1.0"
 impl-tools = "0.11"
 itertools = "0.14"
-near-account-id = "1.1"
+near-account-id = "2"
 near-contract-standards = "5.15"
-near-crypto = "0.30"
+near-crypto = "0.34.0-rc.2"
 near-plugins = { git = "https://github.com/Near-One/near-plugins", tag = "v0.5.0" }
 near-sdk = "5.15"
-near-workspaces = "0.20"
+near-workspaces = "0.21"
 cargo-near-build = "0.9.0"
 
 p256 = { version = "0.13", default-features = false, features = ["ecdsa"] }
@@ -109,7 +109,21 @@ tlb-ton = { version = "0.5.6", default-features = false }
 tokio = { version = "1.45", default-features = false }
 
 [patch.crates-io]
-near-sdk = { git = "https://github.com/near/near-sdk-rs", rev = "eabeecf676a97b73bc287915b36a8a8239967427" }
+# near-sdk = { git = "https://github.com/near/near-sdk-rs", rev = "eabeecf676a97b73bc287915b36a8a8239967427" }
+near-contract-standards = { git = "https://github.com/mitinarseny/near-sdk-rs.git", branch = "feat/deterministic-accounts-release" }
+near-sdk = { git = "https://github.com/mitinarseny/near-sdk-rs.git", branch = "feat/deterministic-accounts-release" }
+near-sdk-macros = { git = "https://github.com/mitinarseny/near-sdk-rs.git", branch = "feat/deterministic-accounts-release" }
+near-sys = { git = "https://github.com/mitinarseny/near-sdk-rs.git", branch = "feat/deterministic-accounts-release" }
+near-workspaces = { git = "https://github.com/mitinarseny/near-workspaces-rs.git", branch = "feat/deterministic-accounts-release" }
+near-jsonrpc-client = { git = "https://github.com/mitinarseny/near-jsonrpc-client-rs.git", branch = "feat/deterministic-accounts-release" }
+
+# near-api = { git = "https://github.com/mitinarseny/near-api-rs", branch = "feat/deterministic-accounts-release" }
+# near-api-types = { git = "https://github.com/mitinarseny/near-api-rs", branch = "feat/deterministic-accounts-release" }
+
+# near-openapi-client = { git = "https://github.com/mitinarseny/near-openapi-client", branch = "feat/deterministic-accounts-release" }
+# near-openapi-types = { git = "https://github.com/mitinarseny/near-openapi-client", branch = "feat/deterministic-accounts-release" }
+
+# near-sandbox = { git = "https://github.com/mitinarseny/near-sandbox-rs", branch = "feat/deterministic-accounts-release" }
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }
