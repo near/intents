@@ -1,5 +1,7 @@
 use crate::contract::{Contract, ContractExt};
-use defuse_core::{DefuseError, Result, engine::StateView, token_id::TokenId};
+use defuse_core::{
+    DefuseError, Result, engine::StateView, intents::tokens::NotifyOnTransfer, token_id::TokenId,
+};
 use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::{MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver};
 use near_plugins::{Pausable, pause};
@@ -237,8 +239,7 @@ impl Contract {
             receiver_id,
             token_ids,
             amounts,
-            msg,
-            None,
+            NotifyOnTransfer::new(msg),
         ))
     }
 
@@ -247,8 +248,7 @@ impl Contract {
         receiver_id: AccountId,
         token_ids: Vec<defuse_nep245::TokenId>,
         amounts: Vec<U128>,
-        msg: String,
-        min_gas: Option<Gas>,
+        notification: NotifyOnTransfer,
     ) -> PromiseOrValue<Vec<U128>> {
         let previous_owner_ids = vec![sender_id.clone(); token_ids.len()];
 
@@ -258,8 +258,7 @@ impl Contract {
             receiver_id.clone(),
             token_ids.clone(),
             amounts.clone(),
-            msg,
-            min_gas,
+            notification,
         )
         .then(
             Self::ext(CURRENT_ACCOUNT_ID.clone())
@@ -277,14 +276,19 @@ impl Contract {
         receiver_id: AccountId,
         token_ids: Vec<defuse_nep245::TokenId>,
         amounts: Vec<U128>,
-        msg: String,
-        min_gas: Option<Gas>,
+        notify: NotifyOnTransfer,
     ) -> Promise {
         ext_mt_receiver::ext(receiver_id)
-            .with_static_gas(min_gas.unwrap_or_default())
+            .with_static_gas(notify.min_gas.unwrap_or_default())
             // distribute remaining gas here
             .with_unused_gas_weight(1)
-            .mt_on_transfer(sender_id, previous_owner_ids, token_ids, amounts, msg)
+            .mt_on_transfer(
+                sender_id,
+                previous_owner_ids,
+                token_ids,
+                amounts,
+                notify.msg,
+            )
     }
 
     #[must_use]

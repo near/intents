@@ -82,8 +82,7 @@ impl MultiTokenReceiver for Contract {
                 receiver_id.clone(),
                 core_token_ids.map(|t| t.to_string()).collect(),
                 amounts.clone(),
-                notify.msg,
-                notify.min_gas,
+                notify,
             )
             .then(
                 Self::ext(CURRENT_ACCOUNT_ID.clone())
