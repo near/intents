@@ -95,7 +95,6 @@ pub enum ParseDepositMessageError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use defuse_core::intents::tokens::NotifyOnTransfer;
 
     #[test]
     fn test_deserialize_simple() {
@@ -163,10 +162,9 @@ mod tests {
         // Serialization with notify action
         let msg = DepositMessage {
             receiver_id: "alice.near".parse().unwrap(),
-            action: Some(DepositAction::Notify(NotifyOnTransfer {
-                msg: "hello".to_string(),
-                min_gas: None,
-            })),
+            action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+                "hello".to_string(),
+            ))),
         };
         let json = serde_json::to_string(&msg).unwrap();
 
@@ -205,10 +203,9 @@ mod tests {
         // Display for message with action (should be JSON)
         let msg = DepositMessage {
             receiver_id: "alice.near".parse().unwrap(),
-            action: Some(DepositAction::Notify(NotifyOnTransfer {
-                msg: "test".to_string(),
-                min_gas: None,
-            })),
+            action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+                "test".to_string(),
+            ))),
         };
         let display = msg.to_string();
 
@@ -305,10 +302,9 @@ mod tests {
         // Test direct construction with notify
         let msg = DepositMessage {
             receiver_id: "alice.near".parse().unwrap(),
-            action: Some(DepositAction::Notify(NotifyOnTransfer {
-                msg: "test".to_string(),
-                min_gas: None,
-            })),
+            action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+                "test".to_string(),
+            ))),
         };
 
         assert_eq!(msg.receiver_id.as_str(), "alice.near");
