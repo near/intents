@@ -6,12 +6,7 @@ use defuse_core::{
     intents::IntentEvent,
 };
 
-// #[cfg_attr(
-//     all(feature = "abi", not(target_arch = "wasm32")),
-//     serde_as(schemars = true)
-// )]
 use near_sdk::near;
-// use serde_with::serde_as;
 
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]

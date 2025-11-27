@@ -257,16 +257,14 @@ impl State for Contract {
             .map(|(token_id, amount)| (token_id.to_string(), U128(*amount)))
             .unzip();
 
-        let min_gas = notification.min_gas();
-
-        Self::call_receiver_mt_on_transfer(
+        Self::notify_and_resolve_transfer(
             sender_id.to_owned(),
             receiver_id,
             token_ids,
             amounts,
-            notification.msg,
-            Some(min_gas),
-        );
+            notification,
+        )
+        .detach();
     }
 
     fn storage_deposit(

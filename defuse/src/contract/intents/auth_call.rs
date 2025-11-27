@@ -8,7 +8,6 @@ use crate::contract::{Contract, ContractExt};
 impl Contract {
     pub(crate) const DO_AUTH_CALL_MIN_GAS: Gas = Gas::from_tgas(5);
 
-    #[must_use]
     #[private]
     pub fn do_auth_call(signer_id: AccountId, auth_call: AuthCall) -> Promise {
         if !auth_call.attached_deposit.is_zero() {

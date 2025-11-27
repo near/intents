@@ -14,23 +14,13 @@ use crate::{
 
 use super::{ExecutableIntent, IntentEvent};
 
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
 pub struct NotifyOnTransfer {
     /// Message to pass to `mt_on_transfer`
     pub msg: String,
 
-    // Min gas per single call
-    /// If it is not specified optional minimum required Near gas will be used for created Promise to succeed:
-    /// * `mt_on_transfer`:      minimum: 5TGas, default: 30TGas
+    /// Minimum gas for `mt_on_transfer()`
     ///
     /// Remaining gas will be distributed evenly across all Function Call
     /// Promises created during execution of current receipt.
@@ -39,15 +29,6 @@ pub struct NotifyOnTransfer {
 }
 
 impl NotifyOnTransfer {
-    pub const MT_ON_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(5);
-    pub const MT_ON_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(30);
-
-    pub fn min_gas(&self) -> Gas {
-        self.min_gas
-            .unwrap_or(Self::MT_ON_TRANSFER_GAS_DEFAULT)
-            .max(Self::MT_ON_TRANSFER_GAS_MIN)
-    }
-
     pub const fn new(msg: String) -> Self {
         Self { msg, min_gas: None }
     }
@@ -59,14 +40,6 @@ impl NotifyOnTransfer {
     }
 }
 
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
 /// Transfer a set of tokens from the signer to a specified account id, within the intents contract.
@@ -79,8 +52,18 @@ pub struct Transfer {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<String>,
 
+    /// Optionally notify receiver_id via `mt_on_transfer()`
+    ///
+    /// NOTE: `min_gas` is adjusted with following values:
+    /// * default: 30TGas
+    /// * minimum: 5TGas
     #[serde(flatten, default, skip_serializing_if = "Option::is_none")]
     pub notification: Option<NotifyOnTransfer>,
+}
+
+impl Transfer {
+    pub const MT_ON_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(5);
+    pub const MT_ON_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(30);
 }
 
 impl ExecutableIntent for Transfer {
@@ -122,7 +105,13 @@ impl ExecutableIntent for Transfer {
             .state
             .internal_add_balance(self.receiver_id.clone(), self.tokens.clone())?;
 
-        if let Some(notification) = self.notification {
+        if let Some(mut notification) = self.notification {
+            notification.min_gas = Some(
+                notification
+                    .min_gas
+                    .unwrap_or(Self::MT_ON_TRANSFER_GAS_DEFAULT)
+                    .max(Self::MT_ON_TRANSFER_GAS_MIN),
+            );
             engine
                 .state
                 .notify_on_transfer(sender_id, self.receiver_id, self.tokens, notification);

@@ -69,6 +69,20 @@ impl Pips {
         f64::from(self.as_pips()) / f64::from(Self::MAX.as_pips())
     }
 
+    pub const fn checked_add(self, rhs: Self) -> Option<Self> {
+        let Some(pips) = self.as_pips().checked_add(rhs.as_pips()) else {
+            return None;
+        };
+        Self::from_pips(pips)
+    }
+
+    pub const fn checked_sub(self, rhs: Self) -> Option<Self> {
+        let Some(pips) = self.as_pips().checked_sub(rhs.as_pips()) else {
+            return None;
+        };
+        Self::from_pips(pips)
+    }
+
     #[inline]
     pub fn checked_add(self, rhs: Self) -> Option<Self> {
         self.as_pips()

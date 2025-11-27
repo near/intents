@@ -216,6 +216,7 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
                     token_id,
                     (*balance).try_into().unwrap(),
                     account.account.id(),
+                    None,
                 )
             })
     }))
@@ -296,8 +297,8 @@ async fn invariant_violated(#[values(false, true)] no_registration: bool) {
 
     // deposit
     futures::try_join!(
-        env.defuse_ft_deposit_to(&ft1, 1000, user1.id()),
-        env.defuse_ft_deposit_to(&ft2, 2000, user2.id())
+        env.defuse_ft_deposit_to(&ft1, 1000, user1.id(), None),
+        env.defuse_ft_deposit_to(&ft2, 2000, user2.id(), None)
     )
     .expect("Failed to deposit tokens");
 
@@ -404,8 +405,8 @@ async fn solver_user_closure(
 
     // deposit
     futures::try_join!(
-        env.defuse_ft_deposit_to(&ft1, USER_BALANCE, user.id()),
-        env.defuse_ft_deposit_to(&ft2, SOLVER_BALANCE, solver.id())
+        env.defuse_ft_deposit_to(&ft1, USER_BALANCE, user.id(), None),
+        env.defuse_ft_deposit_to(&ft2, SOLVER_BALANCE, solver.id(), None)
     )
     .expect("Failed to deposit tokens");
 

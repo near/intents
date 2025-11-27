@@ -7,7 +7,6 @@ use crate::contract::{Contract, ContractExt};
 impl Contract {
     pub(crate) const DO_NATIVE_WITHDRAW_GAS: Gas = Gas::from_tgas(10);
 
-    #[must_use]
     #[private]
     pub fn do_native_withdraw(withdraw: NativeWithdraw) -> Promise {
         require!(

@@ -13,14 +13,14 @@ use defuse_core::{
 };
 use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
-use near_contract_standards::{non_fungible_token, storage_management::ext_storage_management};
+use near_contract_standards::{
+    non_fungible_token::{self, core::ext_nft_core},
+    storage_management::ext_storage_management,
+};
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
 use near_sdk::{
-    AccountId, Gas, GasWeight, NearToken, Promise, PromiseOrValue, PromiseResult, assert_one_yocto,
-    env,
-    json_types::U128,
-    near, require,
-    serde_json::{self, json},
+    AccountId, Gas, NearToken, Promise, PromiseOrValue, PromiseResult, assert_one_yocto, env,
+    json_types::U128, near, require, serde_json,
 };
 use std::iter;
 
@@ -118,7 +118,6 @@ impl Contract {
         // only with storage_deposit
         .saturating_add(STORAGE_DEPOSIT_GAS);
 
-    #[must_use]
     #[private]
     pub fn do_nft_withdraw(withdraw: NftWithdraw) -> Promise {
         let min_gas = withdraw.min_gas();
@@ -138,21 +137,21 @@ impl Contract {
             Promise::new(withdraw.token)
         };
 
-        if let Some(msg) = withdraw.msg.as_deref() {
+        let p = ext_nft_core::ext_on(p)
+            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .with_static_gas(min_gas)
+            // distribute remaining gas here
+            .with_unused_gas_weight(1);
+        if let Some(msg) = withdraw.msg {
             p.nft_transfer_call(
-                &withdraw.receiver_id,
-                &withdraw.token_id,
-                withdraw.memo.as_deref(),
+                withdraw.receiver_id,
+                withdraw.token_id,
+                None,
+                withdraw.memo,
                 msg,
-                min_gas,
             )
         } else {
-            p.nft_transfer(
-                &withdraw.receiver_id,
-                &withdraw.token_id,
-                withdraw.memo.as_deref(),
-                min_gas,
-            )
+            p.nft_transfer(withdraw.receiver_id, withdraw.token_id, None, withdraw.memo)
         }
     }
 }
@@ -224,70 +223,5 @@ impl NonFungibleTokenForceWithdrawer for Contract {
             true,
         )
         .unwrap_or_panic()
-    }
-}
-
-pub trait NftExt {
-    fn nft_transfer(
-        self,
-        receiver_id: &AccountId,
-        token_id: &non_fungible_token::TokenId,
-        memo: Option<&str>,
-        min_gas: Gas,
-    ) -> Self;
-
-    fn nft_transfer_call(
-        self,
-        receiver_id: &AccountId,
-        token_id: &non_fungible_token::TokenId,
-        memo: Option<&str>,
-        msg: &str,
-        min_gas: Gas,
-    ) -> Self;
-}
-
-impl NftExt for Promise {
-    fn nft_transfer(
-        self,
-        receiver_id: &AccountId,
-        token_id: &non_fungible_token::TokenId,
-        memo: Option<&str>,
-        min_gas: Gas,
-    ) -> Self {
-        self.function_call_weight(
-            "nft_transfer".to_string(),
-            serde_json::to_vec(&json!({
-                "receiver_id": receiver_id,
-                "token_id": token_id,
-                "memo": memo,
-            }))
-            .unwrap_or_panic_display(),
-            NearToken::from_yoctonear(1),
-            min_gas,
-            GasWeight::default(),
-        )
-    }
-
-    fn nft_transfer_call(
-        self,
-        receiver_id: &AccountId,
-        token_id: &non_fungible_token::TokenId,
-        memo: Option<&str>,
-        msg: &str,
-        min_gas: Gas,
-    ) -> Self {
-        self.function_call_weight(
-            "nft_transfer_call".to_string(),
-            serde_json::to_vec(&json!({
-                "receiver_id": receiver_id,
-                "token_id": token_id,
-                "memo": memo,
-                "msg": msg,
-            }))
-            .unwrap_or_panic_display(),
-            NearToken::from_yoctonear(1),
-            min_gas,
-            GasWeight::default(),
-        )
     }
 }

@@ -2,7 +2,6 @@ use defuse_core::token_id::{TokenId, nep171::Nep171TokenId};
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
-use defuse_nep245::receiver::ext_mt_receiver;
 use near_contract_standards::non_fungible_token::core::NonFungibleTokenReceiver;
 use near_plugins::{Pausable, pause};
 use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near};
@@ -53,22 +52,21 @@ impl NonFungibleTokenReceiver for Contract {
         };
 
         match action {
-            DepositAction::Notify(notify) => ext_mt_receiver::ext(receiver_id.clone())
-                .with_static_gas(notify.min_gas.unwrap_or_default())
-                .mt_on_transfer(
-                    sender_id,
-                    vec![previous_owner_id],
-                    vec![core_token_id.to_string()],
-                    vec![U128(1)],
-                    notify.msg,
-                )
-                .then(
-                    Self::ext(CURRENT_ACCOUNT_ID.clone())
-                        .with_static_gas(Self::mt_resolve_deposit_gas(1))
-                        .with_unused_gas_weight(0)
-                        .nft_resolve_deposit(receiver_id, PREDECESSOR_ACCOUNT_ID.clone(), token_id),
-                )
-                .into(),
+            DepositAction::Notify(notify) => Self::notify_on_transfer(
+                sender_id,
+                vec![previous_owner_id],
+                receiver_id.clone(),
+                vec![core_token_id.to_string()],
+                vec![U128(1)],
+                notify,
+            )
+            .then(
+                Self::ext(CURRENT_ACCOUNT_ID.clone())
+                    .with_static_gas(Self::mt_resolve_deposit_gas(1))
+                    .with_unused_gas_weight(0)
+                    .nft_resolve_deposit(receiver_id, PREDECESSOR_ACCOUNT_ID.clone(), token_id),
+            )
+            .into(),
             DepositAction::Execute(execute) => {
                 if !execute.execute_intents.is_empty() {
                     if execute.refund_if_fails {

@@ -9,7 +9,6 @@ impl Contract {
     pub(crate) const DO_STORAGE_DEPOSIT_GAS: Gas =
         Gas::from_tgas(5).saturating_add(STORAGE_DEPOSIT_GAS);
 
-    #[must_use]
     #[private]
     pub fn do_storage_deposit(storage_deposit: StorageDeposit) -> Promise {
         require!(

@@ -40,11 +40,11 @@ async fn test_lock_account(public_key: PublicKey) {
     // deposit tokens
     let ft1: TokenId = Nep141TokenId::new(ft.clone()).into();
     {
-        env.defuse_ft_deposit_to(&ft, 1000, locked_account.id())
+        env.defuse_ft_deposit_to(&ft, 1000, locked_account.id(), None)
             .await
             .unwrap();
 
-        env.defuse_ft_deposit_to(&ft, 3000, unlocked_account.id())
+        env.defuse_ft_deposit_to(&ft, 3000, unlocked_account.id(), None)
             .await
             .unwrap();
     }
@@ -206,7 +206,7 @@ async fn test_lock_account(public_key: PublicKey) {
 
     // deposit to locked account
     {
-        env.defuse_ft_deposit_to(&ft, 100, locked_account.id())
+        env.defuse_ft_deposit_to(&ft, 100, locked_account.id(), None)
             .await
             .expect("deposits to locked account should be allowed");
 

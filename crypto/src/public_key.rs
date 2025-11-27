@@ -69,7 +69,7 @@ impl PublicKey {
                 // "0x" .. hex(keccak256("p256" .. pk)[12..32])
                 format!(
                     "0x{}",
-                    hex::encode(&env::keccak256_array(&[b"p256".as_slice(), pk].concat())[12..32])
+                    hex::encode(&env::keccak256_array([b"p256".as_slice(), pk].concat())[12..32])
                 )
             }
         }
@@ -127,9 +127,7 @@ impl FromStr for PublicKey {
 }
 
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
-mod abi {
-    use super::*;
-
+const _: () = {
     use near_sdk::{
         schemars::{
             JsonSchema,
@@ -184,7 +182,7 @@ mod abi {
                 .unwrap()
         }
     }
-}
+};
 
 #[cfg(feature = "near-api-types")]
 const _: () = {

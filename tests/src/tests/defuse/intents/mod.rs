@@ -20,10 +20,9 @@ use defuse::{
     },
     intents::SimulationOutput,
 };
-use defuse_near_utils::NearSdkLog;
 use defuse_randomness::Rng;
 use defuse_test_utils::random::rng;
-use near_sdk::{AccountId, AccountIdRef, CryptoHash};
+use near_sdk::{AccountId, AccountIdRef, AsNep297Event, CryptoHash};
 use rstest::rstest;
 use serde_json::json;
 use std::borrow::Cow;
@@ -40,7 +39,7 @@ impl AccountNonceIntentEvent {
         Self(acc, nonce, payload.hash())
     }
 
-    pub fn into_event_log(self) -> String {
+    pub fn into_event(self) -> DefuseEvent<'static> {
         DefuseEvent::IntentsExecuted(
             vec![IntentEvent::new(
                 AccountEvent::new(self.0, NonceEvent::new(self.1)),
@@ -48,7 +47,6 @@ impl AccountNonceIntentEvent {
             )]
             .into(),
         )
-        .to_near_sdk_log()
     }
 }
 
@@ -234,7 +232,7 @@ async fn simulate_is_view_method(
         .await;
 
     // deposit
-    env.defuse_ft_deposit_to(&ft, 1000, user.id())
+    env.defuse_ft_deposit_to(&ft, 1000, user.id(), None)
         .await
         .unwrap();
 
@@ -276,7 +274,8 @@ async fn simulate_is_view_method(
             },
         },
     }]))
-    .to_near_sdk_log();
+    .to_nep297_event()
+    .to_event_log();
 
     assert!(result.report.logs.iter().any(|log| log == &expected_log));
     assert_eq!(
@@ -331,7 +330,7 @@ async fn webauthn(#[values(false, true)] no_registration: bool) {
         .await;
 
     // deposit
-    env.defuse_ft_deposit_to(&ft, 2000, &SIGNER_ID.to_owned())
+    env.defuse_ft_deposit_to(&ft, 2000, &SIGNER_ID.to_owned(), None)
         .await
         .unwrap();
 

@@ -80,9 +80,7 @@ impl<T> AsBase64<T> {
 }
 
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
-mod abi {
-    use super::*;
-
+const _: () = {
     use near_sdk::schemars::{
         JsonSchema,
         r#gen::SchemaGenerator,
@@ -116,4 +114,4 @@ mod abi {
             false
         }
     }
-}
+};

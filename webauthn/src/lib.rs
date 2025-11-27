@@ -3,14 +3,6 @@ use defuse_serde_utils::base64::{Base64, Unpadded, UrlSafe};
 use near_sdk::{env, near, serde_json};
 use serde_with::serde_as;
 
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct PayloadSignature {
@@ -101,14 +93,6 @@ impl PayloadSignature {
 }
 
 /// For more details, refer to [WebAuthn specification](https://w3c.github.io/webauthn/#dictdef-collectedclientdata).
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct CollectedClientData {
@@ -133,14 +117,6 @@ pub enum ClientDataType {
     Get,
 }
 
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true)
-)]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
 #[near(serializers = [json])]
 #[serde(untagged)]
 #[derive(Debug, Clone)]

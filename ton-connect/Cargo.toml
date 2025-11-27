@@ -22,7 +22,7 @@ tlb-ton = { workspace = true, features = ["serde"] }
 
 [features]
 default = ["text", "binary", "cell"]
-abi = ["defuse-crypto/abi", "defuse-serde-utils/abi"]
+abi = ["tlb-ton/schemars_0_8"]
 binary = []
 cell = []
 text = []
