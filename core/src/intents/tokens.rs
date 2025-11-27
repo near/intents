@@ -33,13 +33,6 @@ pub struct NotifyOnTransfer {
 impl NotifyOnTransfer {
     pub const MT_ON_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(5);
     pub const MT_ON_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(30);
-
-    pub fn min_gas(&self) -> Gas {
-        self.min_gas
-            .unwrap_or(Self::MT_ON_TRANSFER_GAS_DEFAULT)
-            .max(Self::MT_ON_TRANSFER_GAS_MIN)
-    }
-
     pub const fn new(msg: String) -> Self {
         Self { msg, min_gas: None }
     }
@@ -48,6 +41,12 @@ impl NotifyOnTransfer {
     pub const fn with_min_gas(mut self, min_gas: Gas) -> Self {
         self.min_gas = Some(min_gas);
         self
+    }
+
+    pub fn min_gas(&self) -> Gas {
+        self.min_gas
+            .unwrap_or(Self::MT_ON_TRANSFER_GAS_DEFAULT)
+            .max(Self::MT_ON_TRANSFER_GAS_MIN)
     }
 }
 
