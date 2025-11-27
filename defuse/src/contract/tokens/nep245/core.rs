@@ -4,7 +4,8 @@ use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::{MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver};
 use near_plugins::{Pausable, pause};
 use near_sdk::{
-    AccountId, AccountIdRef, Gas, PromiseOrValue, assert_one_yocto, json_types::U128, near, require,
+    AccountId, AccountIdRef, Gas, Promise, PromiseOrValue, assert_one_yocto, json_types::U128,
+    near, require,
 };
 use std::borrow::Cow;
 
@@ -231,7 +232,7 @@ impl Contract {
             force,
         )?;
 
-        Ok(Self::call_receiver_mt_on_transfer(
+        Ok(Self::notify_and_resolve_transfer(
             sender_id,
             receiver_id,
             token_ids,
@@ -241,7 +242,7 @@ impl Contract {
         ))
     }
 
-    pub(crate) fn call_receiver_mt_on_transfer(
+    pub(crate) fn notify_and_resolve_transfer(
         sender_id: AccountId,
         receiver_id: AccountId,
         token_ids: Vec<defuse_nep245::TokenId>,
@@ -251,18 +252,14 @@ impl Contract {
     ) -> PromiseOrValue<Vec<U128>> {
         let previous_owner_ids = vec![sender_id.clone(); token_ids.len()];
 
-        let mut call = ext_mt_receiver::ext(receiver_id.clone());
-
-        if let Some(min_gas) = min_gas {
-            call = call.with_static_gas(min_gas);
-        }
-
-        call.mt_on_transfer(
+        Self::notify_on_transfer(
             sender_id,
             previous_owner_ids.clone(),
+            receiver_id.clone(),
             token_ids.clone(),
             amounts.clone(),
             msg,
+            min_gas,
         )
         .then(
             Self::ext(CURRENT_ACCOUNT_ID.clone())
@@ -272,6 +269,22 @@ impl Contract {
                 .mt_resolve_transfer(previous_owner_ids, receiver_id, token_ids, amounts, None),
         )
         .into()
+    }
+
+    pub(crate) fn notify_on_transfer(
+        sender_id: AccountId,
+        previous_owner_ids: Vec<AccountId>,
+        receiver_id: AccountId,
+        token_ids: Vec<defuse_nep245::TokenId>,
+        amounts: Vec<U128>,
+        msg: String,
+        min_gas: Option<Gas>,
+    ) -> Promise {
+        ext_mt_receiver::ext(receiver_id)
+            .with_static_gas(min_gas.unwrap_or_default())
+            // distribute remaining gas here
+            .with_unused_gas_weight(1)
+            .mt_on_transfer(sender_id, previous_owner_ids, token_ids, amounts, msg)
     }
 
     #[must_use]

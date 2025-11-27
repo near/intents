@@ -113,7 +113,7 @@ async fn test_upgrade_with_persistence() {
         try_join_all(
             users
                 .iter()
-                .map(|user| env.defuse_ft_deposit_to(&ft1, 10_000, user.id())),
+                .map(|user| env.defuse_ft_deposit_to(&ft1, 10_000, user.id(), None)),
         )
         .await
         .expect("Failed to deposit to users");
