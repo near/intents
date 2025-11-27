@@ -55,19 +55,17 @@ impl MultiTokenReceiver for Contract {
             msg.parse().unwrap_or_panic_display()
         };
 
-        let core_token_ids: Vec<TokenId> = token_ids
+        let core_token_ids = token_ids
             .iter()
             .cloned()
             .map(|token_id| Nep245TokenId::new(token.clone(), token_id))
             .map(UnwrapOrPanicError::unwrap_or_panic_display)
-            .map(Into::into)
-            .collect();
+            .map(Into::into);
 
         self.deposit(
             receiver_id.clone(),
             core_token_ids
-                .iter()
-                .cloned()
+                .clone()
                 .zip(amounts.iter().map(|amount| amount.0)),
             Some("deposit"),
         )
@@ -82,7 +80,7 @@ impl MultiTokenReceiver for Contract {
                 sender_id,
                 previous_owner_ids,
                 receiver_id.clone(),
-                core_token_ids.iter().map(ToString::to_string).collect(),
+                core_token_ids.map(|t| t.to_string()).collect(),
                 amounts.clone(),
                 notify.msg,
                 notify.min_gas,
