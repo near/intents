@@ -1,4 +1,4 @@
-use defuse_core::token_id::{TokenId, nep245::Nep245TokenId};
+use defuse_core::token_id::nep245::Nep245TokenId;
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
