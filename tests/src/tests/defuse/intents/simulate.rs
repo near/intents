@@ -49,7 +49,7 @@ async fn simulate_transfer_intent() {
     env.initial_ft_storage_deposit(vec![user1.id(), user2.id()], vec![&ft1])
         .await;
 
-    env.defuse_ft_deposit_to(&ft1, 1000, user1.id())
+    env.defuse_ft_deposit_to(&ft1, 1000, user1.id(), None)
         .await
         .unwrap();
 
@@ -113,7 +113,7 @@ async fn simulate_ft_withdraw_intent() {
     env.initial_ft_storage_deposit(vec![user1.id(), user2.id()], vec![&ft1])
         .await;
 
-    env.defuse_ft_deposit_to(&ft1, 1000, user1.id())
+    env.defuse_ft_deposit_to(&ft1, 1000, user1.id(), None)
         .await
         .unwrap();
 
@@ -397,7 +397,7 @@ async fn simulate_mt_withdraw_intent() {
     let ft1_id = TokenId::from(Nep141TokenId::new(ft1.clone()));
 
     // Step 1: Deposit FT to user1 in the first Defuse contract (stored as MT internally)
-    env.defuse_ft_deposit_to(&ft1, 1000, user1.id())
+    env.defuse_ft_deposit_to(&ft1, 1000, user1.id(), None)
         .await
         .unwrap();
 
@@ -585,12 +585,12 @@ async fn simulate_token_diff_intent() {
     let ft2_token_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
 
     // user1 has 100 ft1
-    env.defuse_ft_deposit_to(&ft1, 100, user1.id())
+    env.defuse_ft_deposit_to(&ft1, 100, user1.id(), None)
         .await
         .unwrap();
 
     // user2 has 200 ft2
-    env.defuse_ft_deposit_to(&ft2, 200, user2.id())
+    env.defuse_ft_deposit_to(&ft2, 200, user2.id(), None)
         .await
         .unwrap();
 

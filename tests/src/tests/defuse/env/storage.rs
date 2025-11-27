@@ -166,7 +166,7 @@ impl Env {
         try_join_all(data.tokens.iter().map(|(token_id, balance)| async {
             let token_id = token_id.clone().into_contract_id();
 
-            self.defuse_ft_deposit_to(&token_id, *balance, acc.id())
+            self.defuse_ft_deposit_to(&token_id, *balance, acc.id(), None)
                 .await
         }))
         .await?;

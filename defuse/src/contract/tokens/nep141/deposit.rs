@@ -2,7 +2,6 @@ use defuse_core::token_id::{TokenId, nep141::Nep141TokenId};
 use defuse_near_utils::{
     CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
 };
-use defuse_nep245::receiver::ext_mt_receiver;
 use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 use near_plugins::{Pausable, pause};
 use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near, require};
@@ -51,22 +50,22 @@ impl FungibleTokenReceiver for Contract {
         };
 
         match action {
-            DepositAction::Notify(notify) => ext_mt_receiver::ext(receiver_id.clone())
-                .with_static_gas(notify.min_gas.unwrap_or_default())
-                .mt_on_transfer(
-                    sender_id.clone(),
-                    vec![sender_id],
-                    vec![token_id.to_string()],
-                    vec![amount],
-                    notify.msg,
-                )
-                .then(
-                    Self::ext(CURRENT_ACCOUNT_ID.clone())
-                        .with_static_gas(Self::mt_resolve_deposit_gas(1))
-                        .with_unused_gas_weight(0)
-                        .ft_resolve_deposit(receiver_id, PREDECESSOR_ACCOUNT_ID.clone(), amount),
-                )
-                .into(),
+            DepositAction::Notify(notify) => Self::notify_on_transfer(
+                sender_id.clone(),
+                vec![sender_id],
+                receiver_id.clone(),
+                vec![token_id.to_string()],
+                vec![amount],
+                notify.msg,
+                notify.min_gas,
+            )
+            .then(
+                Self::ext(CURRENT_ACCOUNT_ID.clone())
+                    .with_static_gas(Self::mt_resolve_deposit_gas(1))
+                    .with_unused_gas_weight(0)
+                    .ft_resolve_deposit(receiver_id, PREDECESSOR_ACCOUNT_ID.clone(), amount),
+            )
+            .into(),
             DepositAction::Execute(execute) => {
                 if !execute.execute_intents.is_empty() {
                     if execute.refund_if_fails {

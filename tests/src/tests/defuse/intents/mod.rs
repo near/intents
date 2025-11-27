@@ -232,7 +232,7 @@ async fn simulate_is_view_method(
         .await;
 
     // deposit
-    env.defuse_ft_deposit_to(&ft, 1000, user.id())
+    env.defuse_ft_deposit_to(&ft, 1000, user.id(), None)
         .await
         .unwrap();
 
@@ -330,7 +330,7 @@ async fn webauthn(#[values(false, true)] no_registration: bool) {
         .await;
 
     // deposit
-    env.defuse_ft_deposit_to(&ft, 2000, &SIGNER_ID.to_owned())
+    env.defuse_ft_deposit_to(&ft, 2000, &SIGNER_ID.to_owned(), None)
         .await
         .unwrap();
 

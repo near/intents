@@ -16,7 +16,7 @@ use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;
 use defuse::{
     core::{Deadline, ExpirableNonce, Nonce, Salt, SaltedNonce, VersionedNonce},
-    tokens::DepositMessage,
+    tokens::{DepositAction, DepositMessage},
 };
 use defuse_near_utils::arbitrary::ArbitraryNamedAccountId;
 use defuse_randomness::{Rng, make_true_rng};
@@ -92,13 +92,14 @@ impl Env {
         token_id: &AccountId,
         amount: u128,
         to: &AccountId,
+        action: impl Into<Option<DepositAction>>,
     ) -> anyhow::Result<()> {
         if self
             .defuse_ft_deposit(
                 self.defuse.id(),
                 token_id,
                 amount,
-                DepositMessage::new(to.clone()),
+                DepositMessage::new(to.clone()).with_action(action),
             )
             .await?
             != amount
