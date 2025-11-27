@@ -131,9 +131,11 @@ async fn partial_fills() {
                                         serde_json::to_string(&TransferMessage {
                                             params: params.clone(),
                                             action: TransferAction::Fund,
-                                        })
-                                            .unwrap(),
-                                    ).with_state_init(state_init.clone())))
+                                        }).unwrap(),
+                                    )
+                                        .with_state_init(state_init.clone())
+                                )
+                            )
                         ).unwrap()
                     }),
                     Gas::from_tgas(300),
