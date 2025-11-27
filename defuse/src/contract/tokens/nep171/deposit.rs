@@ -58,8 +58,7 @@ impl NonFungibleTokenReceiver for Contract {
                 receiver_id.clone(),
                 vec![core_token_id.to_string()],
                 vec![U128(1)],
-                notify.msg,
-                notify.min_gas,
+                notify,
             )
             .then(
                 Self::ext(CURRENT_ACCOUNT_ID.clone())

@@ -56,8 +56,7 @@ impl FungibleTokenReceiver for Contract {
                 receiver_id.clone(),
                 vec![token_id.to_string()],
                 vec![amount],
-                notify.msg,
-                notify.min_gas,
+                notify,
             )
             .then(
                 Self::ext(CURRENT_ACCOUNT_ID.clone())
