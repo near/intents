@@ -248,7 +248,7 @@ impl Contract {
         receiver_id: AccountId,
         token_ids: Vec<defuse_nep245::TokenId>,
         amounts: Vec<U128>,
-        notification: NotifyOnTransfer,
+        notify: NotifyOnTransfer,
     ) -> PromiseOrValue<Vec<U128>> {
         let previous_owner_ids = vec![sender_id.clone(); token_ids.len()];
 
@@ -258,7 +258,7 @@ impl Contract {
             receiver_id.clone(),
             token_ids.clone(),
             amounts.clone(),
-            notification,
+            notify,
         )
         .then(
             Self::ext(CURRENT_ACCOUNT_ID.clone())
