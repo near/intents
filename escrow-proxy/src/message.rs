@@ -31,13 +31,13 @@ pub struct EscrowParams {
 }
 
 /// Nonce for replay protection (base64-encoded 32-byte salt)
-pub type Nonce = String;
+pub type Nonce = u64;
 
 /// Authorization message signed by relay
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct FillAuthorization {
-    pub escrow_params: EscrowParams,
+    pub escrow: AccountId,
     pub price: Price,
     pub amount: U128,
     pub token: TokenId,
@@ -63,5 +63,6 @@ impl FillAuthorization {
 #[derive(Debug, Clone)]
 pub struct TransferMessage {
     pub authorization: FillAuthorization,
+    pub escrow_params: EscrowParams,
     pub signature: Signature,
 }

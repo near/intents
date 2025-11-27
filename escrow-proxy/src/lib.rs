@@ -1,8 +1,12 @@
 mod message;
 
 use defuse_crypto::{Curve, Ed25519, PublicKey, Signature};
-use defuse_nep245::receiver::MultiTokenReceiver;
-use near_sdk::{env, json_types::U128, near, AccountId, PanicOnDefault, PromiseOrValue};
+use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
+use near_sdk::{
+    Gas, NearToken, PromiseOrValue, PromiseResult,
+    env, json_types::U128, near, AccountId, PanicOnDefault,
+    serde_json,
+};
 
 pub use message::*;
 
@@ -16,28 +20,33 @@ pub struct Contract {
 #[near]
 impl Contract {
     #[init]
-    pub fn new(relay_public_key: PublicKey, owner_id: AccountId) -> Self {
+    #[must_use]
+    #[allow(clippy::use_self)]
+    pub const fn new(relay_public_key: PublicKey, owner_id: AccountId) -> Contract {
         Self {
             relay_public_key,
             owner_id,
         }
     }
 
-    pub fn get_relay_public_key(&self) -> &PublicKey {
+    #[must_use]
+    pub const fn get_relay_public_key(&self) -> &PublicKey {
         &self.relay_public_key
     }
 
-    pub fn get_owner(&self) -> &AccountId {
+    #[must_use]
+    pub const fn get_owner(&self) -> &AccountId {
         &self.owner_id
     }
 }
 
 #[near]
 impl MultiTokenReceiver for Contract {
+    #[allow(clippy::used_underscore_binding)]
     fn mt_on_transfer(
         &mut self,
         sender_id: AccountId,
-        _previous_owner_ids: Vec<AccountId>,
+        previous_owner_ids: Vec<AccountId>,
         token_ids: Vec<defuse_nep245::TokenId>,
         amounts: Vec<U128>,
         msg: String,
@@ -77,12 +86,58 @@ impl MultiTokenReceiver for Contract {
 
         // TODO Phase 2: Verify token_ids[0] matches authorization.token
         // TODO Phase 2: Verify and commit nonce
-        // TODO Phase 2: Forward to escrow via mt_transfer_call
 
         near_sdk::log!("Authorization valid for solver {}", sender_id);
 
-        // Phase 1: Return full refund (validation only)
-        PromiseOrValue::Value(amounts)
+        // 6. Forward tokens to escrow via mt_transfer_call
+        let token_contract = env::predecessor_account_id();
+        let escrow_address = transfer_msg.authorization.escrow.clone();
+
+        // Build escrow message with fill parameters
+        let escrow_msg = serde_json::to_string(&transfer_msg.escrow_params)
+            .expect("escrow_params serialization should not fail");
+
+        // Call mt_transfer_call on the token contract to forward to escrow
+        PromiseOrValue::Promise(
+            ext_mt_core::ext(token_contract)
+                .with_attached_deposit(NearToken::from_yoctonear(1))
+                .with_static_gas(Gas::from_tgas(50))
+                .mt_transfer_call(
+                    escrow_address,
+                    token_ids[0].clone(),
+                    amounts[0],
+                    None, // approval
+                    None, // memo
+                    escrow_msg,
+                )
+                .then(
+                    Self::ext(env::current_account_id())
+                        .with_static_gas(Gas::from_tgas(10))
+                        .resolve_transfer(amounts),
+                ),
+        )
+    }
+}
+
+#[near]
+impl Contract {
+    /// Callback to resolve the escrow transfer result
+    #[private]
+    pub fn resolve_transfer(&self, original_amounts: Vec<U128>) -> Vec<U128> {
+        match env::promise_result(0) {
+            PromiseResult::Successful(value) => {
+                // mt_transfer_call returns the refunded amounts
+                // We pass through whatever the escrow refunded
+                serde_json::from_slice::<Vec<U128>>(&value).unwrap_or_else(|_| {
+                    near_sdk::log!("Failed to parse escrow response");
+                    original_amounts
+                })
+            }
+            PromiseResult::Failed => {
+                near_sdk::log!("Escrow transfer failed, refunding");
+                original_amounts
+            }
+        }
     }
 }
 
