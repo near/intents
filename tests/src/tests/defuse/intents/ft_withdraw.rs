@@ -193,7 +193,7 @@ async fn ft_withdraw_intent() {
         0
     );
 
-    // When no_registration is enabled, the storage deposit is done manually, not through intents
+    // The storage deposit consumed the wNEAR balance
     assert_eq!(
         env.mt_contract_balance_of(
             env.defuse.id(),

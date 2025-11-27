@@ -130,13 +130,10 @@ impl PoaFactory for Contract {
         // TODO: Remove it as soon as near-workspaces-rs supports deploying global contracts
         #[cfg(not(feature = "global_contracts"))]
         {
-            near_sdk::env::log_str("Deploying contract without global contracts feature");
             promise = promise.deploy_contract(POA_TOKEN_WASM.to_vec());
         }
         #[cfg(feature = "global_contracts")]
         {
-            near_sdk::env::log_str("Deploying contract with global contracts feature");
-            // TODO: do we need to revert on failure here?
             promise = promise.use_global_contract_by_account_id(CURRENT_ACCOUNT_ID.clone());
         }
 

@@ -86,15 +86,15 @@ impl Contract {
     }
 
     #[payable]
-    #[init(ignore_state)]
     #[private]
+    #[init(ignore_state)]
     #[allow(dead_code)]
     pub fn migrate(no_registration: bool) -> Self {
         assert_one_yocto();
 
-        let old_state: StateV0 = env::state_read().expect("failed");
-
+        let old_state: StateV0 = env::state_read().expect("failed to load state");
         let mut state: State = old_state.into();
+
         state.no_registration = no_registration;
 
         Self { state }
@@ -116,8 +116,6 @@ impl PoaFungibleToken for Contract {
     fn ft_deposit(&mut self, owner_id: AccountId, amount: U128, memo: Option<String>) {
         self.token.storage_deposit(Some(owner_id.clone()), None);
         self.token.internal_deposit(&owner_id, amount.into());
-
-        near_sdk::log!("GLOBAL SMC LOG: ft_deposit called on global contract");
 
         FtMint {
             owner_id: &owner_id,
@@ -258,7 +256,7 @@ impl FullAccessKeys for Contract {
 
 #[near]
 impl NoRegistration for Contract {
-    fn is_no_registration(&self) -> bool {
+    fn no_registration(&self) -> bool {
         self.no_registration
     }
 

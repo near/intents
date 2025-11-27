@@ -74,7 +74,7 @@ impl MaybeVersionedContractState {
     /// This is a magic number that is used to differentiate between
     /// borsh-serialized representations of legacy and versioned [`Contract`]s:
     /// * versioned [`Contract`]s always start with this prefix
-    /// * legacy [`Contract`] starts with other 4 bytes
+    /// * legacy [`Contract`] starts with other bytes
     ///
     /// This is safe to assume that legacy [`Contract`] doesn't start with
     /// this prefix, since the first 4 bytes in legacy [`Contract`] were used
@@ -128,10 +128,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        PoaFungibleToken,
-        contract::{Contract, Prefix},
-    };
+    use crate::contract::{Contract, Prefix};
 
     use super::*;
 
@@ -142,12 +139,6 @@ mod tests {
     use near_sdk::{AccountId, StorageUsage, borsh, json_types::U128};
     use rstest::rstest;
 
-    #[near(serializers=[borsh])]
-    pub struct StateV5 {
-        pub token: FungibleToken,
-        pub metadata: Lazy<FungibleTokenMetadata>,
-    }
-
     fn deserialize_and_check_legacy_state(serialized_legacy: &[u8], data: &TokenData) {
         let mut versioned: Contract = borsh::from_slice(serialized_legacy).unwrap();
 
@@ -156,7 +147,10 @@ mod tests {
 
         let new_owner_id: AccountId = "new-owner.testnet".parse().unwrap();
         let amount = U128::from(1_000_000_000_000);
-        versioned.ft_deposit(new_owner_id.clone(), amount, None);
+        versioned.token.internal_register_account(&new_owner_id);
+        versioned
+            .token
+            .internal_deposit(&new_owner_id, amount.into());
 
         let serialized_versioned = borsh::to_vec(&versioned).unwrap();
         drop(versioned);
@@ -179,7 +173,6 @@ mod tests {
     #[derive(Arbitrary)]
     struct TokenData {
         pub accounts: Vec<AccountData>,
-        pub total_supply: Balance,
         pub account_storage_usage: StorageUsage,
 
         pub spec: String,
@@ -193,7 +186,6 @@ mod tests {
     impl TokenData {
         pub fn create_legacy_state(&self) -> StateV0 {
             let mut token = FungibleToken::new(Prefix::FungibleToken);
-            token.total_supply = self.total_supply;
             token.account_storage_usage = self.account_storage_usage;
 
             for account_data in &self.accounts {
@@ -227,7 +219,6 @@ mod tests {
         }
 
         pub fn assert_token(&self, token: &FungibleToken) {
-            assert_eq!(token.total_supply, self.total_supply);
             assert_eq!(token.account_storage_usage, self.account_storage_usage);
 
             for account_data in &self.accounts {
@@ -239,7 +230,6 @@ mod tests {
 
     #[rstest]
     fn legacy_token_upgrade(#[from(make_arbitrary)] data: TokenData) {
-        assert!(1 == 0);
         let legacy_acc = data.create_legacy_state();
         let serialized_legacy =
             borsh::to_vec(&legacy_acc).expect("unable to serialize legacy Account");

@@ -14,7 +14,7 @@ use near_sdk::{AccountId, ext_contract, json_types::U128};
 
 pub trait NoRegistration {
     /// Returns whether the token allows accounts initialize storage deposits by itself.
-    fn is_no_registration(&self) -> bool;
+    fn no_registration(&self) -> bool;
 
     /// Enables/disables registration.
     /// NOTE: MUST attach 1 yⓃ for security purposes.
