@@ -1,6 +1,6 @@
 //! Integration tests for the escrow-proxy contract.
 //!
-//! This module tests the SolverBus proxy contract which receives tokens via `mt_on_transfer`
+//! This module tests the `SolverBus` proxy contract which receives tokens via `mt_on_transfer`
 //! and forwards them to an escrow account after verifying a relay signature.
 
 use crate::{
@@ -11,16 +11,17 @@ use crate::{
     utils::{account::AccountExt, mt::MtExt, read_wasm},
 };
 use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
-use defuse_escrow_proxy::{EscrowParams, FillAuthorization, TransferMessage};
+use defuse_escrow_proxy::{EscrowParams, FillAuthorization, Role, RolesConfig, TransferMessage};
 use defuse_token_id::TokenId as ProxyTokenId;
 use near_sdk::json_types::U128;
 use serde_json::json;
+use std::collections::{HashMap, HashSet};
 use std::sync::LazyLock;
 
 static ESCROW_PROXY_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("res/escrow-proxy/defuse_escrow_proxy"));
 
-/// Helper trait for signing FillAuthorization messages
+/// Helper trait for signing `FillAuthorization` messages
 trait FillAuthorizationSigner {
     fn sign_fill_authorization(&self, auth: &FillAuthorization) -> defuse_crypto::Signature;
 }
@@ -34,7 +35,7 @@ impl FillAuthorizationSigner for near_workspaces::Account {
             near_crypto::Signature::ED25519(sig) => {
                 defuse_crypto::Signature::Ed25519(sig.to_bytes())
             }
-            _ => unreachable!(),
+            near_crypto::Signature::SECP256K1(_) => unreachable!(),
         }
     }
 }
@@ -44,6 +45,15 @@ fn get_ed25519_public_key(account: &near_workspaces::Account) -> defuse_crypto::
     let pk_str = account.secret_key().public_key().to_string();
     // Format is "ed25519:BASE58" - parse it
     pk_str.parse().unwrap()
+}
+
+/// Create a `RolesConfig` with the given owner as super admin
+fn create_roles_config(owner: &near_workspaces::Account) -> RolesConfig {
+    RolesConfig {
+        super_admins: HashSet::from([owner.id().clone()]),
+        admins: HashMap::new(),
+        grantees: HashMap::from([(Role::Owner, HashSet::from([owner.id().clone()]))]),
+    }
 }
 
 #[tokio::test]
@@ -94,11 +104,12 @@ async fn escrow_proxy_forwards_tokens_to_escrow() {
         .unwrap();
 
     // Initialize the proxy contract
+    let roles = create_roles_config(env.sandbox().root_account());
     proxy
         .call("new")
         .args_json(json!({
             "relay_public_key": relay_public_key,
-            "owner_id": env.id(),
+            "roles": roles,
         }))
         .max_gas()
         .transact()
@@ -117,11 +128,11 @@ async fn escrow_proxy_forwards_tokens_to_escrow() {
 
     // 7. Build the transfer message with relay signature
     let transfer_amount = 5_000u128;
-    let deadline_ns = u128::from(std::time::SystemTime::now()
+    let deadline_ns = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
-        .as_nanos())
-        + 120_000_000_000u128; // 2 minutes from now
+        .as_nanos()
+        + 120_000_000_000; // 2 minutes from now
 
     let fill_authorization = FillAuthorization {
         escrow: escrow_receiver.id().clone(),
@@ -231,11 +242,12 @@ async fn escrow_proxy_refunds_on_invalid_signature() {
         .await
         .unwrap();
 
+    let roles = create_roles_config(env.sandbox().root_account());
     proxy
         .call("new")
         .args_json(json!({
             "relay_public_key": relay_public_key,
-            "owner_id": env.id(),
+            "roles": roles,
         }))
         .max_gas()
         .transact()
@@ -251,11 +263,11 @@ async fn escrow_proxy_refunds_on_invalid_signature() {
         .unwrap();
 
     let transfer_amount = 5_000u128;
-    let deadline_ns = u128::from(std::time::SystemTime::now()
+    let deadline_ns = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
-        .as_nanos())
-        + 120_000_000_000u128;
+        .as_nanos()
+        + 120_000_000_000;
 
     let fill_authorization = FillAuthorization {
         escrow: escrow_receiver.id().clone(),
@@ -348,11 +360,12 @@ async fn escrow_proxy_refunds_on_expired_deadline() {
         .await
         .unwrap();
 
+    let roles = create_roles_config(env.sandbox().root_account());
     proxy
         .call("new")
         .args_json(json!({
             "relay_public_key": relay_public_key,
-            "owner_id": env.id(),
+            "roles": roles,
         }))
         .max_gas()
         .transact()
@@ -460,11 +473,12 @@ async fn escrow_proxy_refunds_on_amount_mismatch() {
         .await
         .unwrap();
 
+    let roles = create_roles_config(env.sandbox().root_account());
     proxy
         .call("new")
         .args_json(json!({
             "relay_public_key": relay_public_key,
-            "owner_id": env.id(),
+            "roles": roles,
         }))
         .max_gas()
         .transact()
@@ -482,11 +496,11 @@ async fn escrow_proxy_refunds_on_amount_mismatch() {
     let authorized_amount = 5_000u128;
     let actual_transfer_amount = 3_000u128; // Different from authorized!
 
-    let deadline_ns = u128::from(std::time::SystemTime::now()
+    let deadline_ns = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
-        .as_nanos())
-        + 120_000_000_000u128;
+        .as_nanos()
+        + 120_000_000_000;
 
     let fill_authorization = FillAuthorization {
         escrow: escrow_receiver.id().clone(),

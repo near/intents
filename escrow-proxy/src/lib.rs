@@ -1,20 +1,47 @@
+mod admin;
 mod message;
+mod upgrade;
+mod storage;
+
+use core::iter;
+use std::collections::{HashMap, HashSet};
 
 use defuse_crypto::{Curve, Ed25519, PublicKey, Signature};
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
+use near_plugins::{AccessControlRole, access_control};
 use near_sdk::{
-    Gas, NearToken, PromiseOrValue, PromiseResult,
-    env, json_types::U128, near, AccountId, PanicOnDefault,
-    serde_json,
+    AccountId, Gas, NearToken, PanicOnDefault, PromiseOrValue, PromiseResult, env,
+    json_types::U128, near, require, serde_json,
 };
 
 pub use message::*;
 
+#[near(serializers = [json])]
+#[derive(AccessControlRole, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Role {
+    /// Can upgrade the contract
+    Owner,
+    /// Can call cancel on the proxy contract (forwarded to escrow)
+    Canceller,
+    /// Can rotate the relay public key
+    KeyManager,
+}
+
+/// Configuration for role-based access control
+#[near(serializers = [json])]
+#[derive(Debug, Clone, Default)]
+pub struct RolesConfig {
+    pub super_admins: HashSet<AccountId>,
+    pub admins: HashMap<Role, HashSet<AccountId>>,
+    pub grantees: HashMap<Role, HashSet<AccountId>>,
+}
+
+#[access_control(role_type(Role))]
 #[near(contract_state)]
 #[derive(PanicOnDefault)]
 pub struct Contract {
     pub relay_public_key: PublicKey,
-    pub owner_id: AccountId,
+    pub nonces: HashSet<>,
 }
 
 #[near]
@@ -22,21 +49,36 @@ impl Contract {
     #[init]
     #[must_use]
     #[allow(clippy::use_self)]
-    pub const fn new(relay_public_key: PublicKey, owner_id: AccountId) -> Contract {
-        Self {
-            relay_public_key,
-            owner_id,
-        }
+    pub fn new(relay_public_key: PublicKey, roles: RolesConfig) -> Contract {
+        let mut contract = Self { relay_public_key };
+        contract.init_acl(roles);
+        contract
+    }
+
+    fn init_acl(&mut self, roles: RolesConfig) {
+        let mut acl = self.acl_get_or_init();
+        require!(
+            roles
+                .super_admins
+                .into_iter()
+                .all(|super_admin| acl.add_super_admin_unchecked(&super_admin))
+                && roles
+                    .admins
+                    .into_iter()
+                    .flat_map(|(role, admins)| iter::repeat(role).zip(admins))
+                    .all(|(role, admin)| acl.add_admin_unchecked(role, &admin))
+                && roles
+                    .grantees
+                    .into_iter()
+                    .flat_map(|(role, grantees)| iter::repeat(role).zip(grantees))
+                    .all(|(role, grantee)| acl.grant_role_unchecked(role, &grantee)),
+            "failed to set roles"
+        );
     }
 
     #[must_use]
     pub const fn get_relay_public_key(&self) -> &PublicKey {
         &self.relay_public_key
-    }
-
-    #[must_use]
-    pub const fn get_owner(&self) -> &AccountId {
-        &self.owner_id
     }
 }
 
@@ -51,6 +93,8 @@ impl MultiTokenReceiver for Contract {
         amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
+        let _ = previous_owner_ids;
+
         // 1. Parse message
         let transfer_msg: TransferMessage = match near_sdk::serde_json::from_str(&msg) {
             Ok(m) => m,

@@ -373,7 +373,7 @@ fn generate_random_account_id(parent_id: &AccountId, prefix: Option<&str>) -> Re
         prefix,
         Some(parent_id),
     )
-    .map_err(|e| anyhow::anyhow!("Failed to generate account ID : {}", e))
+    .map_err(|e| anyhow::anyhow!("Failed to generate account ID : {e}"))
 }
 
 fn generate_legacy_user_account_id(
@@ -391,5 +391,5 @@ fn generate_legacy_user_account_id(
         Some(&format!("legacy-user{index}-")),
         Some(parent_id.id()),
     )
-    .map_err(|e| anyhow::anyhow!("Failed to generate account ID : {}", e))
+    .map_err(|e| anyhow::anyhow!("Failed to generate account ID : {e}"))
 }
