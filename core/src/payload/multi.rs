@@ -1,5 +1,6 @@
 use defuse_crypto::{Payload, PublicKey, SignedPayload};
 use defuse_erc191::SignedErc191Payload;
+use defuse_sr25519::SignedSr25519Payload;
 use defuse_nep413::SignedNep413Payload;
 use defuse_sep53::SignedSep53Payload;
 use defuse_tip191::SignedTip191Payload;
@@ -51,6 +52,10 @@ pub enum MultiPayload {
     /// SEP-53: The standard for signing data off-chain for Stellar accounts.
     /// See [SEP-53](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md)
     Sep53(SignedSep53Payload),
+
+    /// Sr25519: Message signing for Polkadot/Substrate chains using Sr25519 signatures.
+    /// Follows Substrate's signing conventions. Compatible with Polkadot.js and other Substrate wallets.
+    Sr25519(SignedSr25519Payload),
 }
 
 impl Payload for MultiPayload {
@@ -68,6 +73,7 @@ impl Payload for MultiPayload {
             Self::WebAuthn(payload) => payload.hash(),
             Self::TonConnect(payload) => payload.hash(),
             Self::Sep53(payload) => payload.hash(),
+            Self::Sr25519(payload) => payload.hash(),
         }
     }
 }
@@ -85,6 +91,7 @@ impl SignedPayload for MultiPayload {
             Self::WebAuthn(payload) => payload.verify(),
             Self::TonConnect(payload) => payload.verify().map(PublicKey::Ed25519),
             Self::Sep53(payload) => payload.verify().map(PublicKey::Ed25519),
+            Self::Sr25519(payload) => payload.verify().map(PublicKey::Sr25519),
         }
     }
 }
@@ -105,6 +112,7 @@ where
             Self::WebAuthn(payload) => payload.extract_defuse_payload(),
             Self::TonConnect(payload) => payload.extract_defuse_payload(),
             Self::Sep53(payload) => payload.extract_defuse_payload(),
+            Self::Sr25519(payload) => payload.extract_defuse_payload(),
         }
     }
 }

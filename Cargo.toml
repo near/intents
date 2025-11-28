@@ -12,6 +12,7 @@ members = [
     "defuse",
     "erc191",
     "fees",
+    "sr25519",
     "io-utils",
     "map-utils",
     "near-utils",
@@ -52,6 +53,7 @@ defuse.path = "defuse"
 defuse-deadline.path = "deadline"
 defuse-erc191.path = "erc191"
 defuse-fees.path = "fees"
+defuse-sr25519.path = "sr25519"
 defuse-io-utils.path = "io-utils"
 defuse-map-utils.path = "map-utils"
 defuse-near-utils.path = "near-utils"
@@ -99,6 +101,7 @@ rand = "0.9"
 rand_chacha = "0.9"
 proptest = "1.5"
 rstest = "0.25"
+schnorrkel = { version = "0.11", default-features = false }
 schemars = "0.8"
 serde_json = "1"
 serde_with = "3.9"

@@ -6,7 +6,8 @@ use core::{
 use near_sdk::{AccountId, AccountIdRef, bs58, env, near};
 
 use crate::{
-    Curve, CurveType, Ed25519, P256, ParseCurveError, Secp256k1, parse::checked_base58_decode_array,
+    Curve, CurveType, Ed25519, P256, ParseCurveError, Secp256k1, Sr25519,
+    parse::checked_base58_decode_array,
 };
 
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
@@ -20,6 +21,7 @@ pub enum PublicKey {
     Ed25519(<Ed25519 as Curve>::PublicKey),
     Secp256k1(<Secp256k1 as Curve>::PublicKey),
     P256(<P256 as Curve>::PublicKey),
+    Sr25519(<Sr25519 as Curve>::PublicKey),
 }
 
 impl PublicKey {
@@ -29,6 +31,7 @@ impl PublicKey {
             Self::Ed25519(_) => CurveType::Ed25519,
             Self::Secp256k1(_) => CurveType::Secp256k1,
             Self::P256(_) => CurveType::P256,
+            Self::Sr25519(_) => CurveType::Sr25519,
         }
     }
 
@@ -39,6 +42,7 @@ impl PublicKey {
             Self::Ed25519(data) => data,
             Self::Secp256k1(data) => data,
             Self::P256(data) => data,
+            Self::Sr25519(data) => data,
         }
     }
 
@@ -70,6 +74,14 @@ impl PublicKey {
                 format!(
                     "0x{}",
                     hex::encode(&env::keccak256_array([b"p256".as_slice(), pk].concat())[12..32])
+                )
+            }
+            Self::Sr25519(pk) => {
+                // Similar to P256, we use the Eth Implicit schema with
+                // "sr25519" prefix to avoid collisions
+                format!(
+                    "0x{}",
+                    hex::encode(&env::keccak256_array([b"sr25519".as_slice(), pk].concat())[12..32])
                 )
             }
         }
@@ -122,6 +134,7 @@ impl FromStr for PublicKey {
             CurveType::Ed25519 => checked_base58_decode_array(data).map(Self::Ed25519),
             CurveType::Secp256k1 => checked_base58_decode_array(data).map(Self::Secp256k1),
             CurveType::P256 => checked_base58_decode_array(data).map(Self::P256),
+            CurveType::Sr25519 => checked_base58_decode_array(data).map(Self::Sr25519),
         }
     }
 }
