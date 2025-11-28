@@ -21,8 +21,7 @@ dependencies = [
     "add-cache-dir-tag",
     "build-defuse",
     "build-poa-factory-global",
-    "contract-stats",
-    "build-multi-token-receiver-stub",
+    "contract-stats"
 ]
 
 [tasks.build-defuse]
@@ -163,6 +162,7 @@ alias = "tests"
 dependencies = [
     "build-defuse",
     "build-poa-factory",
+    "build-multi-token-receiver-stub"
 ]
 
 [tasks.nextest]
