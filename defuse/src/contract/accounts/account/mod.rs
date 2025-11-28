@@ -18,6 +18,7 @@ use near_account_id::AccountType;
 use near_sdk::{
     AccountIdRef, BorshStorageKey, IntoStorageKey,
     borsh::BorshSerialize,
+    env::sha256,
     near,
     store::{IterableSet, LookupMap},
 };
@@ -47,7 +48,7 @@ impl Account {
     where
         S: IntoStorageKey,
     {
-        let prefix = prefix.into_storage_key();
+        let prefix = sha256(prefix.into_storage_key());
 
         Self {
             nonces: MaybeLegacyAccountNonces::new(LookupMap::with_hasher(
