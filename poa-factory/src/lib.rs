@@ -6,13 +6,28 @@ use std::collections::HashMap;
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_plugins::AccessControllable;
-use near_sdk::{AccountId, Promise, ext_contract, json_types::U128};
+use near_sdk::{AccountId, Promise, PublicKey, ext_contract, json_types::U128};
+
+pub trait TokenFullAccessKeys {
+    /// Adds a full access key to the given token contract.
+    /// NOTE: MUST attach 1 yⓃ for security purposes.
+    fn add_token_full_access_key(&mut self, token: String, public_key: PublicKey) -> Promise;
+
+    /// Deletes a full access key from the given token contract.
+    /// NOTE: MUST attach 1 yⓃ for security purposes.
+    fn delete_token_full_access_key(&mut self, token: String, public_key: PublicKey) -> Promise;
+}
 
 #[ext_contract(ext_poa_factory)]
-pub trait PoaFactory: AccessControllable + FullAccessKeys {
+pub trait PoaFactory: AccessControllable + FullAccessKeys + TokenFullAccessKeys {
     /// Deploys new token to `token.<CURRENT_ACCOUNT_ID>`.
     /// Requires to attach enough Ⓝ to cover storage costs.
-    fn deploy_token(&mut self, token: String, metadata: Option<FungibleTokenMetadata>) -> Promise;
+    fn deploy_token(
+        &mut self,
+        token: String,
+        metadata: Option<FungibleTokenMetadata>,
+        no_registration: Option<bool>,
+    ) -> Promise;
 
     /// Sets metadata on `token.<CURRENT_ACCOUNT_ID>`.
     /// NOTE: MUST attach 1 yⓃ for security purposes.

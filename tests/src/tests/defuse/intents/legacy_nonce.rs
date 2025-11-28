@@ -15,7 +15,7 @@ use rstest::rstest;
 #[rstest]
 #[trace]
 async fn execute_intent_with_legacy_nonce(#[from(make_arbitrary)] legacy_nonce: Nonce) {
-    let env = Env::builder().no_registration(true).build().await;
+    let env = Env::builder().build().await;
 
     let (user1, user2, ft1) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());

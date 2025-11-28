@@ -17,17 +17,10 @@ use super::ExecuteIntentsExt;
 #[rstest]
 #[tokio::test]
 #[trace]
-async fn swap_p2p(
-    #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
-    #[values(false, true)] no_registration: bool,
-) {
+async fn swap_p2p(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips) {
     use defuse::core::token_id::nep141::Nep141TokenId;
 
-    let env = Env::builder()
-        .fee(fee)
-        .no_registration(no_registration)
-        .build()
-        .await;
+    let env = Env::builder().fee(fee).build().await;
 
     let (user1, user2, ft1, ft2) = futures::join!(
         env.create_user(),
@@ -92,15 +85,8 @@ async fn swap_p2p(
 #[rstest]
 #[tokio::test]
 #[trace]
-async fn swap_many(
-    #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
-    #[values(false, true)] no_registration: bool,
-) {
-    let env = Env::builder()
-        .fee(fee)
-        .no_registration(no_registration)
-        .build()
-        .await;
+async fn swap_many(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips) {
+    let env = Env::builder().fee(fee).build().await;
 
     let (user1, user2, user3, ft1, ft2, ft3) = futures::join!(
         env.create_user(),
@@ -276,11 +262,8 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn invariant_violated(#[values(false, true)] no_registration: bool) {
-    let env = Env::builder()
-        .no_registration(no_registration)
-        .build()
-        .await;
+async fn invariant_violated() {
+    let env = Env::builder().build().await;
 
     let (user1, user2, ft1, ft2) = futures::join!(
         env.create_user(),
@@ -377,21 +360,14 @@ async fn invariant_violated(#[values(false, true)] no_registration: bool) {
 #[rstest]
 #[tokio::test]
 #[trace]
-async fn solver_user_closure(
-    #[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips,
-    #[values(false, true)] no_registration: bool,
-) {
+async fn solver_user_closure(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips) {
     const USER_BALANCE: u128 = 1100;
     const SOLVER_BALANCE: u128 = 2100;
 
     // RFQ: 1000 token_in -> ??? token_out
     const USER_DELTA_IN: i128 = -1000;
 
-    let env = Env::builder()
-        .fee(fee)
-        .no_registration(no_registration)
-        .build()
-        .await;
+    let env = Env::builder().fee(fee).build().await;
 
     let (user, solver, ft1, ft2) = futures::join!(
         env.create_user(),

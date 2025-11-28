@@ -41,7 +41,7 @@ use std::borrow::Cow;
 #[rstest]
 #[trace]
 async fn simulate_transfer_intent() {
-    let env = Env::builder().no_registration(true).build().await;
+    let env = Env::builder().build().await;
 
     let (user1, user2, ft1) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
@@ -105,7 +105,7 @@ async fn simulate_transfer_intent() {
 #[rstest]
 #[trace]
 async fn simulate_ft_withdraw_intent() {
-    let env = Env::builder().no_registration(true).build().await;
+    let env = Env::builder().build().await;
 
     let (user1, user2, ft1) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
@@ -173,7 +173,7 @@ async fn simulate_ft_withdraw_intent() {
 #[rstest]
 #[trace]
 async fn simulate_native_withdraw_intent() {
-    let env = Env::builder().no_registration(true).build().await;
+    let env = Env::builder().build().await;
 
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
 
@@ -255,7 +255,7 @@ pub const DUMMY_NFT_ID: &str = "thisisdummynftid";
 #[rstest]
 #[trace]
 async fn simulate_nft_withdraw_intent() {
-    let env = Env::builder().no_registration(true).build().await;
+    let env = Env::builder().build().await;
 
     let (user1, user2) =
         futures::join!(env.create_named_user("nft_issuer_admin"), env.create_user());
@@ -486,7 +486,7 @@ async fn simulate_mt_withdraw_intent() {
 #[rstest]
 #[trace]
 async fn simulate_storage_deposit_intent() {
-    let env = Env::builder().no_registration(true).build().await;
+    let env = Env::builder().build().await;
 
     let (user1, user2, ft1) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
@@ -565,11 +565,7 @@ async fn simulate_storage_deposit_intent() {
 #[rstest]
 #[trace]
 async fn simulate_token_diff_intent() {
-    let env = Env::builder()
-        .fee(Pips::ZERO)
-        .no_registration(true)
-        .build()
-        .await;
+    let env = Env::builder().fee(Pips::ZERO).build().await;
 
     let (user1, user2, ft1, ft2) = futures::join!(
         env.create_user(),

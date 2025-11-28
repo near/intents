@@ -21,7 +21,7 @@ container_build_command = [
     "build",
     "non-reproducible-wasm",
     "--locked",
-    "--features=contract",
+    "--features=contract,global_contracts",
     "--no-embed-abi"
 
 ]
@@ -37,6 +37,7 @@ near-sdk.workspace = true
 
 [features]
 contract = []
+global_contracts = ["near-sdk/global-contracts"]
 
 [build-dependencies]
 cargo-near-build = { workspace = true, features = ["build_external"] }
