@@ -905,8 +905,11 @@ name = "defuse-escrow-proxy"
 version = "0.1.0"
 dependencies = [
  "defuse-admin-utils",
+ "defuse-borsh-utils",
  "defuse-controller",
  "defuse-crypto",
+ "defuse-deadline",
+ "defuse-fees",
  "defuse-near-utils",
  "defuse-nep245",
  "defuse-token-id",
@@ -914,6 +917,7 @@ dependencies = [
  "near-sdk",
  "near-workspaces",
  "serde_json",
+ "serde_with",
  "tokio",
 ]
 
@@ -1068,6 +1072,7 @@ dependencies = [
  "chrono",
  "defuse",
  "defuse-crypto",
+ "defuse-deadline",
  "defuse-escrow-proxy",
  "defuse-near-utils",
  "defuse-poa-factory",

@@ -2,25 +2,7 @@ use defuse_crypto::Signature;
 use defuse_token_id::TokenId;
 use near_sdk::{json_types::U128, near, AccountId};
 
-/// Destination override for token sends
-#[near(serializers = [json])]
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct OverrideSend {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub account_id: Option<AccountId>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub inner_id: Option<AccountId>,
-}
-
-/// Placeholder escrow params (minimal for Phase 1)
-/// TODO: Import from escrow-swap or expand as needed
-#[near(serializers = [json])]
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct EscrowParams {
-    pub maker: AccountId,
-    pub src_token: TokenId,
-    pub dst_token: TokenId,
-}
+pub use crate::escrow_params::{OverrideSend, Params as EscrowParams};
 
 /// Nonce for replay protection (base64-encoded 32-byte salt)
 pub type Nonce = u64;

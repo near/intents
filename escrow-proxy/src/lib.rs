@@ -1,7 +1,8 @@
 mod admin;
 mod message;
-mod upgrade;
 mod storage;
+mod upgrade;
+mod escrow_params;
 
 use core::iter;
 use std::collections::{HashMap, HashSet};
@@ -14,8 +15,6 @@ use near_sdk::{
     json_types::U128, near, require, serde_json,
 };
 
-pub use message::*;
-
 #[near(serializers = [json])]
 #[derive(AccessControlRole, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Role {
@@ -26,6 +25,8 @@ pub enum Role {
     /// Can rotate the relay public key
     KeyManager,
 }
+
+pub use message::*;
 
 /// Configuration for role-based access control
 #[near(serializers = [json])]
@@ -41,7 +42,6 @@ pub struct RolesConfig {
 #[derive(PanicOnDefault)]
 pub struct Contract {
     pub relay_public_key: PublicKey,
-    pub nonces: HashSet<>,
 }
 
 #[near]
@@ -110,11 +110,12 @@ impl MultiTokenReceiver for Contract {
             return PromiseOrValue::Value(amounts);
         }
 
-        // 3. Check deadline (nanoseconds since epoch)
-        if u128::from(env::block_timestamp()) > transfer_msg.authorization.deadline.0 {
-            near_sdk::log!("Deadline expired");
-            return PromiseOrValue::Value(amounts);
-        }
+        //TODO: fetch deadline from escrow
+        // // 3. Check deadline (nanoseconds since epoch)
+        // if u128::from(env::block_timestamp()) > transfer_msg.authorization.deadline.0 {
+        //     near_sdk::log!("Deadline expired");
+        //     return PromiseOrValue::Value(amounts);
+        // }
 
         // 4. Validate single token transfer
         if token_ids.len() != 1 || amounts.len() != 1 {

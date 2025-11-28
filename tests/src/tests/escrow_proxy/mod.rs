@@ -11,11 +11,13 @@ use crate::{
     utils::{account::AccountExt, mt::MtExt, read_wasm},
 };
 use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
+use defuse_deadline::Deadline;
+use std::time::Duration;
 use defuse_escrow_proxy::{EscrowParams, FillAuthorization, Role, RolesConfig, TransferMessage};
 use defuse_token_id::TokenId as ProxyTokenId;
 use near_sdk::json_types::U128;
 use serde_json::json;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::sync::LazyLock;
 
 static ESCROW_PROXY_WASM: LazyLock<Vec<u8>> =
@@ -151,6 +153,15 @@ async fn escrow_proxy_forwards_tokens_to_escrow() {
         maker: solver.id().clone(),
         src_token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
         dst_token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
+        price: U128(1),
+        deadline: Deadline::timeout(Duration::from_secs(120)),
+        partial_fills_allowed: false,
+        refund_src_to: Default::default(),
+        receive_dst_to: Default::default(),
+        taker_whitelist: BTreeSet::new(),
+        protocol_fees: None,
+        integrator_fees: BTreeMap::new(),
+        salt: [0u8; 32],
     };
 
     let transfer_msg = TransferMessage {
@@ -286,6 +297,15 @@ async fn escrow_proxy_refunds_on_invalid_signature() {
         maker: solver.id().clone(),
         src_token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
         dst_token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
+        price: U128(1),
+        deadline: Deadline::timeout(Duration::from_secs(120)),
+        partial_fills_allowed: false,
+        refund_src_to: Default::default(),
+        receive_dst_to: Default::default(),
+        taker_whitelist: BTreeSet::new(),
+        protocol_fees: None,
+        integrator_fees: BTreeMap::new(),
+        salt: [0u8; 32],
     };
 
     let transfer_msg = TransferMessage {
@@ -400,6 +420,15 @@ async fn escrow_proxy_refunds_on_expired_deadline() {
         maker: solver.id().clone(),
         src_token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
         dst_token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
+        price: U128(1),
+        deadline: Deadline::timeout(Duration::from_secs(120)),
+        partial_fills_allowed: false,
+        refund_src_to: Default::default(),
+        receive_dst_to: Default::default(),
+        taker_whitelist: BTreeSet::new(),
+        protocol_fees: None,
+        integrator_fees: BTreeMap::new(),
+        salt: [0u8; 32],
     };
 
     let transfer_msg = TransferMessage {
@@ -518,6 +547,15 @@ async fn escrow_proxy_refunds_on_amount_mismatch() {
         maker: solver.id().clone(),
         src_token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
         dst_token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
+        price: U128(1),
+        deadline: Deadline::timeout(Duration::from_secs(120)),
+        partial_fills_allowed: false,
+        refund_src_to: Default::default(),
+        receive_dst_to: Default::default(),
+        taker_whitelist: BTreeSet::new(),
+        protocol_fees: None,
+        integrator_fees: BTreeMap::new(),
+        salt: [0u8; 32],
     };
 
     let transfer_msg = TransferMessage {

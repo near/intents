@@ -29,12 +29,16 @@ container_build_command = [
 defuse-admin-utils.workspace = true
 defuse-controller.workspace = true
 defuse-crypto = { workspace = true, features = ["serde"] }
+defuse-deadline.workspace = true
+defuse-borsh-utils.workspace = true
+defuse-fees.workspace = true
 defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-token-id = { workspace = true, default-features = false, features = ["nep141", "nep245"] }
 
 near-plugins.workspace = true
 near-sdk = { workspace = true, features = ["unstable"] }
+serde_with.workspace = true
 
 [dev-dependencies]
 near-sdk = { workspace = true, features = ["unstable", "unit-testing"] }
