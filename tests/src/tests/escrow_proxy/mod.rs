@@ -11,7 +11,7 @@ use crate::{
     utils::{account::AccountExt, mt::MtExt, read_wasm},
 };
 use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
-use defuse_escrow_proxy::{EscrowParams, FillAuthorization, Price, TransferMessage};
+use defuse_escrow_proxy::{EscrowParams, FillAuthorization, TransferMessage};
 use defuse_token_id::TokenId as ProxyTokenId;
 use near_sdk::json_types::U128;
 use serde_json::json;
@@ -125,10 +125,7 @@ async fn escrow_proxy_forwards_tokens_to_escrow() {
 
     let fill_authorization = FillAuthorization {
         escrow: escrow_receiver.id().clone(),
-        price: Price {
-            numerator: U128(1),
-            denominator: U128(1),
-        },
+        price: U128(1),
         amount: U128(transfer_amount),
         token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
         receive_src_to: None,
@@ -262,10 +259,7 @@ async fn escrow_proxy_refunds_on_invalid_signature() {
 
     let fill_authorization = FillAuthorization {
         escrow: escrow_receiver.id().clone(),
-        price: Price {
-            numerator: U128(1),
-            denominator: U128(1),
-        },
+        price: U128(1),
         amount: U128(transfer_amount),
         token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
         receive_src_to: None,
@@ -379,10 +373,7 @@ async fn escrow_proxy_refunds_on_expired_deadline() {
 
     let fill_authorization = FillAuthorization {
         escrow: escrow_receiver.id().clone(),
-        price: Price {
-            numerator: U128(1),
-            denominator: U128(1),
-        },
+        price: U128(1),
         amount: U128(transfer_amount),
         token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
         receive_src_to: None,
@@ -499,10 +490,7 @@ async fn escrow_proxy_refunds_on_amount_mismatch() {
 
     let fill_authorization = FillAuthorization {
         escrow: escrow_receiver.id().clone(),
-        price: Price {
-            numerator: U128(1),
-            denominator: U128(1),
-        },
+        price: U128(1),
         amount: U128(authorized_amount), // Authorization says 5000
         token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
         receive_src_to: None,

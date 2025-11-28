@@ -12,14 +12,6 @@ pub struct OverrideSend {
     pub inner_id: Option<AccountId>,
 }
 
-/// Price as numerator/denominator ratio
-#[near(serializers = [json])]
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Price {
-    pub numerator: U128,
-    pub denominator: U128,
-}
-
 /// Placeholder escrow params (minimal for Phase 1)
 /// TODO: Import from escrow-swap or expand as needed
 #[near(serializers = [json])]
@@ -38,7 +30,7 @@ pub type Nonce = u64;
 #[derive(Debug, Clone)]
 pub struct FillAuthorization {
     pub escrow: AccountId,
-    pub price: Price,
+    pub price: U128,
     pub amount: U128,
     pub token: TokenId,
     #[serde(default, skip_serializing_if = "Option::is_none")]
