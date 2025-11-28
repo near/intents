@@ -2404,8 +2404,8 @@ dependencies = [
 
 [[package]]
 name = "near-contract-standards"
-version = "5.17.2"
-source = "git+https://github.com/mitinarseny/near-sdk-rs.git?branch=feat%2Fdeterministic-accounts-release#e501dbd02faf0d777dc51482e744a28038a18f69"
+version = "5.18.0"
+source = "git+https://github.com/mitinarseny/near-sdk-rs.git?branch=feat%2Fdeterministic-accounts-release#3194a50c87372f79f469ef52d2f641b6568b1838"
 dependencies = [
  "near-sdk",
 ]
@@ -2636,8 +2636,8 @@ checksum = "3de26af432325f680cf083a7e60ed6a322ef5a33a483b5292e8c156e48ed8857"
 
 [[package]]
 name = "near-sdk"
-version = "5.17.2"
-source = "git+https://github.com/mitinarseny/near-sdk-rs.git?branch=feat%2Fdeterministic-accounts-release#4596ef84399df0033d6f72415b179f7b1c0a3267"
+version = "5.18.0"
+source = "git+https://github.com/mitinarseny/near-sdk-rs.git?branch=feat%2Fdeterministic-accounts-release#3194a50c87372f79f469ef52d2f641b6568b1838"
 dependencies = [
  "base64 0.22.1",
  "borsh",
@@ -2662,8 +2662,8 @@ dependencies = [
 
 [[package]]
 name = "near-sdk-macros"
-version = "5.17.2"
-source = "git+https://github.com/mitinarseny/near-sdk-rs.git?branch=feat%2Fdeterministic-accounts-release#4596ef84399df0033d6f72415b179f7b1c0a3267"
+version = "5.18.0"
+source = "git+https://github.com/mitinarseny/near-sdk-rs.git?branch=feat%2Fdeterministic-accounts-release#3194a50c87372f79f469ef52d2f641b6568b1838"
 dependencies = [
  "Inflector",
  "darling 0.20.11",
@@ -2685,7 +2685,7 @@ checksum = "c17dfbe40eb314555130e633a690b946d0fe8688b55f7940ee47a76fb4cce2aa"
 [[package]]
 name = "near-sys"
 version = "0.2.5"
-source = "git+https://github.com/mitinarseny/near-sdk-rs.git?branch=feat%2Fdeterministic-accounts-release#4596ef84399df0033d6f72415b179f7b1c0a3267"
+source = "git+https://github.com/mitinarseny/near-sdk-rs.git?branch=feat%2Fdeterministic-accounts-release#3194a50c87372f79f469ef52d2f641b6568b1838"
 
 [[package]]
 name = "near-time"
