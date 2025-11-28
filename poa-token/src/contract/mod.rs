@@ -88,7 +88,6 @@ impl Contract {
     #[payable]
     #[private]
     #[init(ignore_state)]
-    #[allow(dead_code)]
     pub fn migrate(no_registration: bool) -> Self {
         assert_one_yocto();
 

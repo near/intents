@@ -24,8 +24,9 @@ impl From<VersionedState<'_>> for State {
         // Borsh always deserializes into `Cow::Owned`, so it's
         // safe to call `Cow::<PanicOnClone<_>>::into_owned()` here.
         match versioned {
-            VersionedState::V0(contract) => contract.into_owned().into_inner().into(),
-            VersionedState::Latest(contract) => contract.into_owned().into_inner(),
+            VersionedState::V0(Cow::Owned(contract)) => contract.into_inner().into(),
+            VersionedState::Latest(Cow::Owned(contract)) => contract.into_inner(),
+            _ => unreachable!("Borsh always deserializes into `Cow::Owned`"),
         }
     }
 }
