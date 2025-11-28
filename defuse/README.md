@@ -49,16 +49,16 @@ Data:
 - Random bytes: `027015ec13dc11864973138fe6812f`. 
 
 Encoded bytes (hex):  
-56 28 f6 c6 | 00 | 25 28 12 b3 | c0 dd ca fb b0 19 08 00 | 02 70 15 ec 13 dc 11 86 49 73 13 8f e6 81 2f
+56 28 f6 c6 | 00 | 25 28 12 b3 | 00 36 72 90 57 5b a4 1f | 02 70 15 ec 13 dc 11 86 49 73 13 8f e6 81 2f
 
 | Field        | Bytes                                          | Size | Meaning                                |
 | ------------ | ---------------------------------------------- | ---- | -------------------------------------- |
 | **Prefix**   | `56 28 f6 c6`                                  | 4    | Magic prefix                           |
 | **Version**  | `00`                                           | 1    | Version `0`                            |
 | **Salt**     | `25 28 12 b3`                                  | 4    | Salt bytes                             |
-| **Deadline** | `c0 dd ca fb b0 19 08 00`                      | 8    | Little-endian-encoded timestamp        |
+| **Deadline** | `00 36 72 90 57 5b a4 1f`                      | 8    | Little-endian-encoded timestamp        |
 | **Nonce**    | `02 70 15 ec 13 dc 11 86 49 73 13 8f e6 81 2f` | 15   | Random nonce bytes                     |
 
 
 Result as Base64 string:   
-Vij2xgAlKBKzwN3K+7AZCAACcBXsE9wRhklzE4/mgS8=
+Vij2xgAlKBKzADZykFdbpB8CcBXsE9wRhklzE4/mgS8=
