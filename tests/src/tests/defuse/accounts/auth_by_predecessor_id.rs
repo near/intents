@@ -28,7 +28,7 @@ async fn auth_by_predecessor_id() {
     let receiver_id: AccountId = "receiver_id.near".parse().unwrap();
 
     // deposit tokens
-    env.defuse_ft_deposit_to(&ft, 1000, user.id())
+    env.defuse_ft_deposit_to(&ft, 1000, user.id(), None)
         .await
         .unwrap();
 

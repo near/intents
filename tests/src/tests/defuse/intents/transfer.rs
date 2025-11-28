@@ -33,7 +33,7 @@ async fn transfer_intent() {
     env.initial_ft_storage_deposit(vec![user.id()], vec![&ft])
         .await;
 
-    env.defuse_ft_deposit_to(&ft, 1000, user.id())
+    env.defuse_ft_deposit_to(&ft, 1000, user.id(), None)
         .await
         .unwrap();
 
@@ -99,7 +99,7 @@ async fn transfer_intent_to_defuse() {
     env.initial_ft_storage_deposit(vec![user.id(), defuse2.id()], vec![&ft])
         .await;
 
-    env.defuse_ft_deposit_to(&ft, 1000, user.id())
+    env.defuse_ft_deposit_to(&ft, 1000, user.id(), None)
         .await
         .unwrap();
 
@@ -246,7 +246,7 @@ async fn transfer_intent_with_msg_to_receiver_smc(#[case] expectation: TransferC
     env.initial_ft_storage_deposit(vec![user.id()], vec![&ft])
         .await;
 
-    env.defuse_ft_deposit_to(&ft, initial_amount, user.id())
+    env.defuse_ft_deposit_to(&ft, initial_amount, user.id(), None)
         .await
         .unwrap();
 

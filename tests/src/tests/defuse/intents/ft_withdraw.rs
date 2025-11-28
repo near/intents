@@ -35,7 +35,7 @@ async fn ft_withdraw_intent() {
         .await;
 
     {
-        env.defuse_ft_deposit_to(&ft, 1000, user.id())
+        env.defuse_ft_deposit_to(&ft, 1000, user.id(), None)
             .await
             .unwrap();
 
@@ -241,7 +241,7 @@ async fn ft_withdraw_intent_msg() {
     env.initial_ft_storage_deposit(vec![user.id(), defuse2.id()], vec![&ft])
         .await;
 
-    env.defuse_ft_deposit_to(&ft, 1000, user.id())
+    env.defuse_ft_deposit_to(&ft, 1000, user.id(), None)
         .await
         .unwrap();
 

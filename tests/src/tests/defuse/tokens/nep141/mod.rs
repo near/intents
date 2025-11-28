@@ -40,7 +40,7 @@ async fn deposit_withdraw() {
     env.initial_ft_storage_deposit(vec![user.id()], vec![&ft])
         .await;
 
-    env.defuse_ft_deposit_to(&ft, 1000, user.id())
+    env.defuse_ft_deposit_to(&ft, 1000, user.id(), None)
         .await
         .unwrap();
 
@@ -267,7 +267,7 @@ async fn ft_force_withdraw() {
     env.initial_ft_storage_deposit(vec![user.id(), other_user.id()], vec![&ft])
         .await;
 
-    env.defuse_ft_deposit_to(&ft, 1000, user.id())
+    env.defuse_ft_deposit_to(&ft, 1000, user.id(), None)
         .await
         .unwrap();
 

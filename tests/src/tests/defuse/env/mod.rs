@@ -16,7 +16,7 @@ use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;
 use defuse::{
     core::{Deadline, ExpirableNonce, Nonce, Salt, SaltedNonce, VersionedNonce},
-    tokens::DepositMessage,
+    tokens::{DepositAction, DepositMessage},
 };
 use defuse_near_utils::arbitrary::ArbitraryNamedAccountId;
 use defuse_randomness::{Rng, make_true_rng};
@@ -84,13 +84,14 @@ impl Env {
         token_id: &AccountId,
         amount: u128,
         to: &AccountId,
+        action: impl Into<Option<DepositAction>>,
     ) -> anyhow::Result<()> {
         if self
             .defuse_ft_deposit(
                 self.defuse.id(),
                 token_id,
                 amount,
-                DepositMessage::new(to.clone()),
+                DepositMessage::new(to.clone()).with_action(action),
             )
             .await?
             != amount
@@ -320,7 +321,7 @@ fn generate_legacy_user_account_id(
     index: usize,
     seed: Seed,
 ) -> Result<AccountId> {
-    let bytes = sha256(&(seed.as_u64() + u64::try_from(index)?).to_be_bytes())[..8]
+    let bytes = sha256((seed.as_u64() + u64::try_from(index)?).to_be_bytes())[..8]
         .try_into()
         .map_err(|_| anyhow::anyhow!("Failed to create new account seed"))?;
     let seed = Seed::from_u64(u64::from_be_bytes(bytes));

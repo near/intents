@@ -1,33 +1,9 @@
 #[macro_export]
 macro_rules! assert_eq_event_logs {
     ($left:expr, $right:expr) => {{
-        let left_normalized: Vec<String> = $left
-            .iter()
-            .cloned()
-            .map(|log: String| {
-                let json_str = log
-                    .strip_prefix("EVENT_JSON:")
-                    .expect(&format!("Log missing EVENT_JSON: prefix: {}", log));
-                let json_value: serde_json::Value = serde_json::from_str(json_str)
-                    .expect(&format!("Failed to parse JSON: {}", json_str));
-                serde_json::to_string(&json_value).expect("Failed to serialize JSON")
-            })
-            .collect();
-
-        let right_normalized: Vec<String> = $right
-            .iter()
-            .cloned()
-            .map(|log: String| {
-                let json_str = log
-                    .strip_prefix("EVENT_JSON:")
-                    .expect(&format!("Log missing EVENT_JSON: prefix: {}", log));
-                let json_value: serde_json::Value = serde_json::from_str(json_str)
-                    .expect(&format!("Failed to parse JSON: {}", json_str));
-                serde_json::to_string(&json_value).expect("Failed to serialize JSON")
-            })
-            .collect();
-
-        assert_eq!(left_normalized, right_normalized);
+        let left: Vec<String> = $left.iter().map(ToString::to_string).collect();
+        let right: Vec<String> = $right.iter().map(ToString::to_string).collect();
+        assert_eq!(left, right);
     }};
 }
 
@@ -41,39 +17,15 @@ macro_rules! assert_eq_event_logs {
 #[macro_export]
 macro_rules! assert_a_contains_b {
     (a: $a:expr, b: $b:expr) => {{
-        let a_normalized: Vec<String> = $a
-            .iter()
-            .cloned()
-            .filter_map(|log: String| {
-                log
-                    .strip_prefix("EVENT_JSON:")
-                    .and_then(|json_str| {
-                        serde_json::from_str::<serde_json::Value>(json_str)
-                            .ok()
-                            .and_then(|json_value| serde_json::to_string(&json_value).ok())
-                    })
-            })
-            .collect();
+        let a: Vec<String> = $a.iter().map(ToString::to_string).collect();
+        let b: Vec<String> = $b.iter().map(ToString::to_string).collect();
 
-        let b_normalized: Vec<String> = $b
-            .iter()
-            .cloned()
-            .map(|log: String| {
-                let json_str = log
-                    .strip_prefix("EVENT_JSON:")
-                    .unwrap_or(&log);
-                let json_value: serde_json::Value = serde_json::from_str(json_str)
-                    .expect(&format!("Failed to parse 'b' JSON: {}", json_str));
-                serde_json::to_string(&json_value).expect("Failed to serialize JSON")
-            })
-            .collect();
-
-        for expected_event in &b_normalized {
-            if !a_normalized.contains(expected_event) {
+        for expected_event in &b {
+            if !a.contains(expected_event) {
                 panic!(
                     "\n\nExpected event not found in 'a':\n{}\n\nActual event logs in 'a':\n{:#?}\n",
                     expected_event,
-                    a_normalized
+                    a
                 );
             }
         }

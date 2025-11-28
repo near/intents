@@ -9,16 +9,15 @@ use defuse_core::{
     DefuseError, Result, engine::StateView, intents::tokens::FtWithdraw,
     token_id::nep141::Nep141TokenId,
 };
-use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError};
+use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic};
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
-use near_contract_standards::storage_management::ext_storage_management;
+use near_contract_standards::{
+    fungible_token::core::ext_ft_core, storage_management::ext_storage_management,
+};
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
 use near_sdk::{
-    AccountId, Gas, GasWeight, NearToken, Promise, PromiseOrValue, PromiseResult, assert_one_yocto,
-    env,
-    json_types::U128,
-    near, require,
-    serde_json::{self, json},
+    AccountId, Gas, NearToken, Promise, PromiseOrValue, PromiseResult, assert_one_yocto, env,
+    json_types::U128, near, require, serde_json,
 };
 
 #[near]
@@ -115,7 +114,6 @@ impl Contract {
         // only with storage_deposit
         .saturating_add(STORAGE_DEPOSIT_GAS);
 
-    #[must_use]
     #[private]
     pub fn do_ft_withdraw(withdraw: FtWithdraw) -> Promise {
         let min_gas = withdraw.min_gas();
@@ -135,21 +133,15 @@ impl Contract {
             Promise::new(withdraw.token)
         };
 
-        if let Some(msg) = withdraw.msg.as_deref() {
-            p.ft_transfer_call(
-                &withdraw.receiver_id,
-                withdraw.amount.0,
-                withdraw.memo.as_deref(),
-                msg,
-                min_gas,
-            )
+        let p = ext_ft_core::ext_on(p)
+            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .with_static_gas(min_gas)
+            // distribute remaining gas here
+            .with_unused_gas_weight(1);
+        if let Some(msg) = withdraw.msg {
+            p.ft_transfer_call(withdraw.receiver_id, withdraw.amount, withdraw.memo, msg)
         } else {
-            p.ft_transfer(
-                &withdraw.receiver_id,
-                withdraw.amount.0,
-                withdraw.memo.as_deref(),
-                min_gas,
-            )
+            p.ft_transfer(withdraw.receiver_id, withdraw.amount, withdraw.memo)
         }
     }
 }
@@ -233,69 +225,5 @@ impl FungibleTokenForceWithdrawer for Contract {
             true,
         )
         .unwrap_or_panic()
-    }
-}
-
-pub trait FtExt {
-    fn ft_transfer(
-        self,
-        receiver_id: &AccountId,
-        amount: u128,
-        memo: Option<&str>,
-        min_gas: Gas,
-    ) -> Self;
-    fn ft_transfer_call(
-        self,
-        receiver_id: &AccountId,
-        amount: u128,
-        memo: Option<&str>,
-        msg: &str,
-        min_gas: Gas,
-    ) -> Self;
-}
-
-impl FtExt for Promise {
-    fn ft_transfer(
-        self,
-        receiver_id: &AccountId,
-        amount: u128,
-        memo: Option<&str>,
-        min_gas: Gas,
-    ) -> Self {
-        self.function_call_weight(
-            "ft_transfer".to_string(),
-            serde_json::to_vec(&json!({
-                "receiver_id": receiver_id,
-                "amount": U128(amount),
-                "memo": memo,
-            }))
-            .unwrap_or_panic_display(),
-            NearToken::from_yoctonear(1),
-            min_gas,
-            GasWeight::default(),
-        )
-    }
-
-    fn ft_transfer_call(
-        self,
-        receiver_id: &AccountId,
-        amount: u128,
-        memo: Option<&str>,
-        msg: &str,
-        min_gas: Gas,
-    ) -> Self {
-        self.function_call_weight(
-            "ft_transfer_call".to_string(),
-            serde_json::to_vec(&json!({
-                "receiver_id": receiver_id,
-                "amount": U128(amount),
-                "memo": memo,
-                "msg": msg,
-            }))
-            .unwrap_or_panic_display(),
-            NearToken::from_yoctonear(1),
-            min_gas,
-            GasWeight::default(),
-        )
     }
 }

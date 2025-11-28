@@ -20,8 +20,8 @@ use defuse::core::token_id::nep245::Nep245TokenId;
 use defuse::nep245::Token;
 use defuse::nep245::{MtBurnEvent, MtEvent, MtTransferEvent};
 use defuse::tokens::{DepositAction, DepositMessage, ExecuteIntents};
-use defuse_near_utils::NearSdkLog;
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
+use near_sdk::AsNep297Event;
 use near_sdk::json_types::U128;
 use rstest::rstest;
 use std::borrow::Cow;
@@ -77,7 +77,7 @@ async fn multitoken_enumeration() {
         );
     }
 
-    env.defuse_ft_deposit_to(&ft1, 1000, user1.id())
+    env.defuse_ft_deposit_to(&ft1, 1000, user1.id(), None)
         .await
         .unwrap();
 
@@ -123,7 +123,7 @@ async fn multitoken_enumeration() {
         );
     }
 
-    env.defuse_ft_deposit_to(&ft1, 2000, user2.id())
+    env.defuse_ft_deposit_to(&ft1, 2000, user2.id(), None)
         .await
         .unwrap();
 
@@ -167,7 +167,7 @@ async fn multitoken_enumeration() {
         );
     }
 
-    env.defuse_ft_deposit_to(&ft2, 5000, user1.id())
+    env.defuse_ft_deposit_to(&ft2, 5000, user1.id(), None)
         .await
         .unwrap();
 
@@ -360,13 +360,13 @@ async fn multitoken_enumeration_with_ranges() {
         );
     }
 
-    env.defuse_ft_deposit_to(&ft1, 1000, user1.id())
+    env.defuse_ft_deposit_to(&ft1, 1000, user1.id(), None)
         .await
         .unwrap();
-    env.defuse_ft_deposit_to(&ft2, 2000, user1.id())
+    env.defuse_ft_deposit_to(&ft2, 2000, user1.id(), None)
         .await
         .unwrap();
-    env.defuse_ft_deposit_to(&ft3, 3000, user1.id())
+    env.defuse_ft_deposit_to(&ft3, 3000, user1.id(), None)
         .await
         .unwrap();
 
@@ -561,27 +561,27 @@ async fn multitoken_withdrawals() {
         );
     }
 
-    env.defuse_ft_deposit_to(&ft1, 1000, user1.id())
+    env.defuse_ft_deposit_to(&ft1, 1000, user1.id(), None)
         .await
         .unwrap();
 
-    env.defuse_ft_deposit_to(&ft2, 5000, user1.id())
+    env.defuse_ft_deposit_to(&ft2, 5000, user1.id(), None)
         .await
         .unwrap();
 
-    env.defuse_ft_deposit_to(&ft3, 8000, user1.id())
+    env.defuse_ft_deposit_to(&ft3, 8000, user1.id(), None)
         .await
         .unwrap();
 
-    env.defuse_ft_deposit_to(&ft1, 1000, user2.id())
+    env.defuse_ft_deposit_to(&ft1, 1000, user2.id(), None)
         .await
         .unwrap();
 
-    env.defuse_ft_deposit_to(&ft2, 5000, user2.id())
+    env.defuse_ft_deposit_to(&ft2, 5000, user2.id(), None)
         .await
         .unwrap();
 
-    env.defuse_ft_deposit_to(&ft3, 8000, user2.id())
+    env.defuse_ft_deposit_to(&ft3, 8000, user2.id(), None)
         .await
         .unwrap();
 
@@ -999,7 +999,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
 
     // Fund user with tokens in defuse1
-    env.defuse_ft_deposit_to(&ft, 1000, user.id())
+    env.defuse_ft_deposit_to(&ft, 1000, user.id(), None)
         .await
         .unwrap();
 
@@ -1191,10 +1191,10 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     let ft2_id = TokenId::from(Nep141TokenId::new(ft2.clone()));
 
     // Fund user with tokens in defuse1
-    env.defuse_ft_deposit_to(&ft1, 1000, user.id())
+    env.defuse_ft_deposit_to(&ft1, 1000, user.id(), None)
         .await
         .unwrap();
-    env.defuse_ft_deposit_to(&ft2, 2000, user.id())
+    env.defuse_ft_deposit_to(&ft2, 2000, user.id(), None)
         .await
         .unwrap();
 
@@ -1335,7 +1335,7 @@ async fn mt_transfer_call_circullar_callback() {
     let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
 
     // Step 1: Deposit tokens to user in defuse1
-    env.defuse_ft_deposit_to(&ft, 1000, user.id())
+    env.defuse_ft_deposit_to(&ft, 1000, user.id(), None)
         .await
         .unwrap();
 
@@ -1422,6 +1422,108 @@ async fn mt_transfer_call_circullar_callback() {
 }
 
 #[tokio::test]
+async fn mt_transfer_call_circullar_deposit() {
+    use defuse::tokens::DepositMessage;
+
+    let env = Env::builder()
+        .deployer_as_super_admin()
+        .no_registration(false)
+        .build()
+        .await;
+
+    let (user, ft) = futures::join!(env.create_user(), env.create_token());
+
+    let defuse2 = env
+        .deploy_defuse(
+            "defuse2",
+            DefuseConfig {
+                wnear_id: env.wnear.id().clone(),
+                fees: FeesConfig {
+                    fee: Pips::ZERO,
+                    fee_collector: env.id().clone(),
+                },
+                roles: RolesConfig::default(),
+            },
+            false,
+        )
+        .await
+        .unwrap();
+    env.initial_ft_storage_deposit(vec![user.id()], vec![&ft])
+        .await;
+
+    // Step 1: Deposit tokens to defuse2 in defuse1
+    env.defuse_ft_deposit_to(
+        &ft,
+        1000,
+        defuse2.id(),
+        // NOTE: Test circular callback case: defuse2 → defuse1
+        // Set receiver_id to defuse1 to create circular callback
+        // With empty inner message to avoid further callbacks
+        DepositAction::Notify(NotifyOnTransfer::new(
+            near_sdk::serde_json::to_string(&DepositMessage {
+                receiver_id: env.defuse.id().clone(), // Circular: back to defuse1
+                action: Some(DepositAction::Notify(
+                    defuse::core::intents::tokens::NotifyOnTransfer {
+                        msg: near_sdk::serde_json::to_string(&DepositMessage {
+                            receiver_id: user.id().clone(),
+                            action: None, // No further callbacks
+                        })
+                        .unwrap(),
+                        min_gas: None,
+                    },
+                )),
+            })
+            .unwrap(),
+        )),
+    )
+    .await
+    .unwrap();
+
+    // Get the nep245 token id for defuse1
+    let defuse1_ft_id: TokenId = Nep141TokenId::new(ft.clone()).into();
+
+    assert_eq!(
+        env.mt_contract_balance_of(env.defuse.id(), defuse2.id(), &defuse1_ft_id.to_string())
+            .await
+            .unwrap(),
+        1000,
+        "defuse2 should have 1000 tokens in defuse1"
+    );
+
+    let defuse2_nep245_ft_id = TokenId::Nep245(
+        Nep245TokenId::new(env.defuse.id().clone(), defuse1_ft_id.to_string()).unwrap(),
+    );
+
+    assert_eq!(
+        env.mt_contract_balance_of(
+            defuse2.id(),
+            env.defuse.id(),
+            &defuse2_nep245_ft_id.to_string()
+        )
+        .await
+        .unwrap(),
+        1000,
+        "defuse1 should have 1000 tokens in defuse2 after wrapping"
+    );
+
+    let defuse1_defuse2_nep245_ft_id = TokenId::Nep245(
+        Nep245TokenId::new(defuse2.id().clone(), defuse2_nep245_ft_id.to_string()).unwrap(),
+    );
+
+    assert_eq!(
+        env.mt_contract_balance_of(
+            env.defuse.id(),
+            user.id(),
+            &defuse1_defuse2_nep245_ft_id.to_string()
+        )
+        .await
+        .unwrap(),
+        1000,
+        "user should have 1000 tokens in defuse1 after wrapping via defuse2"
+    );
+}
+
+#[tokio::test]
 async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
     let env = Env::builder().deployer_as_super_admin().build().await;
 
@@ -1475,10 +1577,10 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
     let nep245_ft2_id =
         TokenId::Nep245(Nep245TokenId::new(env.defuse.id().clone(), ft2_id.to_string()).unwrap());
 
-    env.defuse_ft_deposit_to(&ft1, 4000, user.id())
+    env.defuse_ft_deposit_to(&ft1, 4000, user.id(), None)
         .await
         .unwrap();
-    env.defuse_ft_deposit_to(&ft2, 2000, user.id())
+    env.defuse_ft_deposit_to(&ft2, 2000, user.id(), None)
         .await
         .unwrap();
 
@@ -1564,8 +1666,8 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
     assert_a_contains_b!(
         a: all_logs,
         b: [
-            expected_mt_burn.to_near_sdk_log(),
-            expected_mt_transfer.to_near_sdk_log(),
+            expected_mt_burn.to_nep297_event().to_event_log(),
+            expected_mt_transfer.to_nep297_event().to_event_log(),
         ]
     );
 

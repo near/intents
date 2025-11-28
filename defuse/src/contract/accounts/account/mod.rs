@@ -14,6 +14,7 @@ use defuse_core::{
 
 use defuse_near_utils::NestPrefix;
 use impl_tools::autoimpl;
+use near_account_id::AccountType;
 use near_sdk::{
     AccountIdRef, BorshStorageKey, IntoStorageKey,
     borsh::BorshSerialize,
@@ -52,7 +53,7 @@ impl Account {
             nonces: MaybeLegacyAccountNonces::new(LookupMap::with_hasher(
                 prefix.as_slice().nest(AccountPrefix::OptimizedNonces),
             )),
-            flags: (!me.get_account_type().is_implicit())
+            flags: (!has_implicit_public_key(me))
                 .then_some(AccountFlags::IMPLICIT_PUBLIC_KEY_REMOVED)
                 .unwrap_or_else(AccountFlags::empty),
             public_keys: IterableSet::new(prefix.as_slice().nest(AccountPrefix::PublicKeys)),
@@ -157,6 +158,13 @@ impl Account {
     }
 }
 
+fn has_implicit_public_key(account: &AccountIdRef) -> bool {
+    match account.get_account_type(){
+        AccountType::NearImplicitAccount | AccountType::EthImplicitAccount => true,
+        AccountType::NamedAccount /* | AccountType::NearDeterministicAccount */ => false
+    }
+}
+
 #[allow(deprecated)]
 mod prefix {
     use super::{BorshSerialize, BorshStorageKey};
@@ -210,6 +218,38 @@ mod tests {
             borsh::to_vec(&flags).unwrap(),
             serialized_legacy,
             "unknown flags set"
+        );
+    }
+
+    #[test]
+    fn near_implicit_account_has_implicit_public_key() {
+        assert!(
+            !Account::new(
+                b"prefix".to_vec(),
+                AccountIdRef::new_or_panic(
+                    "98793cd91a3f870fb126f66285808c7e094afcfc4eda8a970f6648cdf0dbd6de"
+                ),
+            )
+            .is_implicit_public_key_removed()
+        );
+    }
+
+    #[test]
+    fn eth_implicit_account_has_implicit_public_key() {
+        assert!(
+            !Account::new(
+                b"prefix".to_vec(),
+                AccountIdRef::new_or_panic("0x0000000000000000000000000000000000000001"),
+            )
+            .is_implicit_public_key_removed()
+        );
+    }
+
+    #[test]
+    fn named_account_has_no_implicit_public_key() {
+        assert!(
+            Account::new(b"prefix".to_vec(), AccountIdRef::new_or_panic("alice.near"),)
+                .is_implicit_public_key_removed()
         );
     }
 }

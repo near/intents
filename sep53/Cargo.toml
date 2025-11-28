@@ -20,8 +20,5 @@ rstest.workspace = true
 stellar-strkey.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 
-[features]
-abi = ["defuse-crypto/abi"]
-
 [lints]
 workspace = true

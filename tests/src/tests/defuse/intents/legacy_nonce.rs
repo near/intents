@@ -23,7 +23,7 @@ async fn execute_intent_with_legacy_nonce(#[from(make_arbitrary)] legacy_nonce: 
     env.initial_ft_storage_deposit(vec![user1.id(), user2.id()], vec![&ft1])
         .await;
 
-    env.defuse_ft_deposit_to(&ft1, 1000, user1.id())
+    env.defuse_ft_deposit_to(&ft1, 1000, user1.id(), None)
         .await
         .unwrap();
 

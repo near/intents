@@ -30,7 +30,7 @@ impl Salt {
         input[32] = num;
 
         Self(
-            sha256_array(&input)[..SIZE]
+            sha256_array(input)[..SIZE]
                 .try_into()
                 .unwrap_or_else(|_| unreachable!()),
         )
@@ -58,9 +58,7 @@ impl FromStr for Salt {
 }
 
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
-mod abi {
-    use super::*;
-
+const _: () = {
     use near_sdk::{
         schemars::{
             JsonSchema,
@@ -91,7 +89,7 @@ mod abi {
             .into()
         }
     }
-}
+};
 
 /// Contains current valid salt and set of previous
 /// salts that can be valid or invalid.

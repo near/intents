@@ -14,6 +14,7 @@ use defuse::{
 use defuse_near_utils::arbitrary::ArbitraryAccountId;
 use defuse_randomness::Rng;
 use defuse_test_utils::random::{gen_random_string, random_bytes, rng};
+use near_sdk::AsNep297Event;
 use near_sdk::{NearToken, json_types::U128};
 use near_workspaces::Account;
 use rstest::rstest;
@@ -114,7 +115,7 @@ fn validate_mt_batch_transfer_log_size(
         memo: Some(Cow::Borrowed("refund")),
     }]));
 
-    let longest_transfer_log = format!("JSON_EVENT:{}", mt_transfer_event.to_json());
+    let longest_transfer_log = mt_transfer_event.to_nep297_event().to_event_log();
 
     anyhow::ensure!(
         longest_transfer_log.len() <= TOTAL_LOG_LENGTH_LIMIT,
