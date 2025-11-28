@@ -1359,7 +1359,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -2405,7 +2405,7 @@ dependencies = [
 [[package]]
 name = "near-contract-standards"
 version = "5.18.0"
-source = "git+https://github.com/mitinarseny/near-sdk-rs.git?branch=feat%2Fdeterministic-accounts-release#3194a50c87372f79f469ef52d2f641b6568b1838"
+source = "git+https://github.com/mitinarseny/near-sdk-rs.git?branch=feat%2Fdeterministic-accounts-release#2ea848d4dcc6cbc026417096d5138f2787418009"
 dependencies = [
  "near-sdk",
 ]
@@ -2637,7 +2637,7 @@ checksum = "3de26af432325f680cf083a7e60ed6a322ef5a33a483b5292e8c156e48ed8857"
 [[package]]
 name = "near-sdk"
 version = "5.18.0"
-source = "git+https://github.com/mitinarseny/near-sdk-rs.git?branch=feat%2Fdeterministic-accounts-release#3194a50c87372f79f469ef52d2f641b6568b1838"
+source = "git+https://github.com/mitinarseny/near-sdk-rs.git?branch=feat%2Fdeterministic-accounts-release#2ea848d4dcc6cbc026417096d5138f2787418009"
 dependencies = [
  "base64 0.22.1",
  "borsh",
@@ -2663,7 +2663,7 @@ dependencies = [
 [[package]]
 name = "near-sdk-macros"
 version = "5.18.0"
-source = "git+https://github.com/mitinarseny/near-sdk-rs.git?branch=feat%2Fdeterministic-accounts-release#3194a50c87372f79f469ef52d2f641b6568b1838"
+source = "git+https://github.com/mitinarseny/near-sdk-rs.git?branch=feat%2Fdeterministic-accounts-release#2ea848d4dcc6cbc026417096d5138f2787418009"
 dependencies = [
  "Inflector",
  "darling 0.20.11",
@@ -2685,7 +2685,7 @@ checksum = "c17dfbe40eb314555130e633a690b946d0fe8688b55f7940ee47a76fb4cce2aa"
 [[package]]
 name = "near-sys"
 version = "0.2.5"
-source = "git+https://github.com/mitinarseny/near-sdk-rs.git?branch=feat%2Fdeterministic-accounts-release#3194a50c87372f79f469ef52d2f641b6568b1838"
+source = "git+https://github.com/mitinarseny/near-sdk-rs.git?branch=feat%2Fdeterministic-accounts-release#2ea848d4dcc6cbc026417096d5138f2787418009"
 
 [[package]]
 name = "near-time"
@@ -3494,7 +3494,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.11.0",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -4130,7 +4130,7 @@ dependencies = [
  "getrandom 0.3.4",
  "once_cell",
  "rustix 1.1.2",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
