@@ -6,8 +6,8 @@ use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::{MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver};
 use near_plugins::{Pausable, pause};
 use near_sdk::{
-    AccountId, AccountIdRef, Gas, Promise, PromiseOrValue, assert_one_yocto, json_types::U128,
-    near, require,
+    AccountId, AccountIdRef, Gas, NearToken, Promise, PromiseOrValue, assert_one_yocto,
+    json_types::U128, near, require,
 };
 use std::borrow::Cow;
 
@@ -278,7 +278,16 @@ impl Contract {
         amounts: Vec<U128>,
         notify: NotifyOnTransfer,
     ) -> Promise {
-        ext_mt_receiver::ext(receiver_id)
+        let mut p = Promise::new(receiver_id);
+        if let Some(state_init) = notify.state_init {
+            p = p.state_init(
+                state_init,
+                // TODO
+                NearToken::from_yoctonear(0),
+            );
+        }
+
+        ext_mt_receiver::ext_on(p)
             .with_static_gas(notify.min_gas.unwrap_or_default())
             // distribute remaining gas here
             .with_unused_gas_weight(1)

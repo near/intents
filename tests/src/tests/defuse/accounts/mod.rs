@@ -6,7 +6,8 @@ mod traits;
 
 use defuse::core::{Nonce, crypto::PublicKey};
 use defuse_serde_utils::base64::AsBase64;
-use near_sdk::{AccountId, AccountIdRef, Gas, NearToken};
+use near_sdk::{AccountId, AccountIdRef, NearToken};
+use near_workspaces::types::Gas;
 use serde_json::json;
 
 pub trait AccountManagerExt {
@@ -138,7 +139,7 @@ impl AccountManagerExt for near_workspaces::Account {
     ) -> anyhow::Result<()> {
         self.call(defuse_contract_id, "disable_auth_by_predecessor_id")
             .deposit(NearToken::from_yoctonear(1))
-            .gas(Gas::from_tgas(10))
+            .gas(Gas::from_teragas(10))
             .transact()
             .await?
             .into_result()?;

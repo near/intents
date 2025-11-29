@@ -1,7 +1,10 @@
 use std::{borrow::Cow, collections::BTreeMap};
 
 use near_contract_standards::non_fungible_token;
-use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, NearToken, json_types::U128, near};
+use near_sdk::{
+    AccountId, AccountIdRef, CryptoHash, Gas, NearToken, json_types::U128, near,
+    state_init::StateInit,
+};
 use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
@@ -17,6 +20,10 @@ use super::{ExecutableIntent, IntentEvent};
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
 pub struct NotifyOnTransfer {
+    /// 
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub state_init: Option<StateInit>,
+
     /// Message to pass to `mt_on_transfer`
     pub msg: String,
 
@@ -30,7 +37,16 @@ pub struct NotifyOnTransfer {
 
 impl NotifyOnTransfer {
     pub const fn new(msg: String) -> Self {
-        Self { msg, min_gas: None }
+        Self {
+            state_init: None,
+            msg,
+            min_gas: None,
+        }
+    }
+
+    pub fn with_state_init(mut self, state_init: StateInit) -> Self {
+        self.state_init = Some(state_init);
+        self
     }
 
     #[must_use]

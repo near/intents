@@ -159,9 +159,9 @@ impl Account {
 }
 
 fn has_implicit_public_key(account: &AccountIdRef) -> bool {
-    match account.get_account_type(){
+    match account.get_account_type() {
         AccountType::NearImplicitAccount | AccountType::EthImplicitAccount => true,
-        AccountType::NamedAccount /* | AccountType::NearDeterministicAccount */ => false
+        AccountType::NamedAccount | AccountType::NearDeterministicAccount => false,
     }
 }
 
