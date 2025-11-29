@@ -1,4 +1,5 @@
 pub mod erc191;
+pub mod sr25519;
 pub mod multi;
 pub mod nep413;
 pub mod raw;
