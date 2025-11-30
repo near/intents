@@ -98,6 +98,8 @@ impl State {
             self.close_unchecked(CloseReason::DeadlineExpired);
         }
 
+        // TODO: auto-close on maker_src_remaining == 0 && self.in_flight == 0
+
         self.closed
             && self.in_flight == 0
             && self.maker_src_remaining == 0
