@@ -1,6 +1,6 @@
-mod mt;
+mod extentions;
 
-pub use self::mt::*;
+pub use self::extentions::*;
 
 use std::sync::Arc;
 
@@ -45,7 +45,11 @@ impl Account {
         )
     }
 
-    pub async fn call_function_json<T>(&self, name: &str, args: impl Serialize) -> anyhow::Result<T>
+    pub async fn call_view_function_json<T>(
+        &self,
+        name: &str,
+        args: impl Serialize,
+    ) -> anyhow::Result<T>
     where
         T: DeserializeOwned + Send + Sync,
     {

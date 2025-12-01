@@ -19,3 +19,5 @@ near-api.workspace = true
 near-sandbox.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 thiserror.workspace = true
+
+near-contract-standards.workspace = true

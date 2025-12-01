@@ -61,27 +61,28 @@ pub trait FtExt: StorageManagementExt {
 
 impl FtExt for Account {
     async fn deploy_vanilla_ft_token(&self, token_name: &str) -> anyhow::Result<Contract> {
-        let contract = self
-            .deploy_contract(token_name, FUNGIBLE_TOKEN_WASM)
-            .await?;
-        contract
-            .call("new")
-            .args_json(json!({
-                "owner_id": self.id(),
-                "total_supply": TOTAL_SUPPLY.to_string(),
-                "metadata": {
-                    "spec": "ft-1.0.0",
-                    "name": format!("Token {}", token_name),
-                    "symbol": "TKN",
-                    "decimals": 18
-                }
-            }))
-            .max_gas()
-            .transact()
-            .await?
-            .into_result()?;
+        // let contract = self
+        //     .deploy_contract(token_name, FUNGIBLE_TOKEN_WASM)
+        //     .await?;
+        // contract
+        //     .call("new")
+        //     .args_json(json!({
+        //         "owner_id": self.id(),
+        //         "total_supply": TOTAL_SUPPLY.to_string(),
+        //         "metadata": {
+        //             "spec": "ft-1.0.0",
+        //             "name": format!("Token {}", token_name),
+        //             "symbol": "TKN",
+        //             "decimals": 18
+        //         }
+        //     }))
+        //     .max_gas()
+        //     .transact()
+        //     .await?
+        //     .into_result()?;
 
-        Ok(contract)
+        // Ok(contract)
+        unimplemented!()
     }
 
     async fn ft_token_balance_of(

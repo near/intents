@@ -59,24 +59,26 @@ impl NftExt for near_workspaces::Account {
         token_name: &str,
         metadata: NFTContractMetadata,
     ) -> anyhow::Result<Contract> {
-        let contract = self
-            .deploy_contract(token_name, NON_FUNGIBLE_TOKEN_WASM)
-            .await?;
+        unimplemented!()
 
-        let args = json!({
-            "owner_id": self.id(),
-            "metadata": metadata
-        });
+        // let contract = self
+        //     .deploy_contract(token_name, NON_FUNGIBLE_TOKEN_WASM)
+        //     .await?;
 
-        contract
-            .call("new")
-            .args_json(args)
-            .max_gas()
-            .transact()
-            .await?
-            .into_result()?;
+        // let args = json!({
+        //     "owner_id": self.id(),
+        //     "metadata": metadata
+        // });
 
-        Ok(contract)
+        // contract
+        //     .call("new")
+        //     .args_json(args)
+        //     .max_gas()
+        //     .transact()
+        //     .await?
+        //     .into_result()?;
+
+        // Ok(contract)
     }
     async fn nft_transfer(
         &self,

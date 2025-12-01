@@ -161,6 +161,7 @@ impl<T> TxBuilder<T> {
         )
     }
 
+    // TODO: may be add action separately?
     fn add_action<R>(
         mut self,
         action: Action,

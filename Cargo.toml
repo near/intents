@@ -69,6 +69,7 @@ defuse-tip191.path = "tip191"
 defuse-token-id = { path = "token-id", default-features = false }
 defuse-ton-connect = { path = "ton-connect", default-features = false, features = ["text"] }
 defuse-wnear.path = "wnear"
+defuse-sandbox.path = "sandbox"
 
 defuse-randomness.path = "randomness"
 defuse-test-utils.path = "test-utils"

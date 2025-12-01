@@ -17,15 +17,17 @@ pub trait WNearExt: FtExt {
 
 impl WNearExt for Account {
     async fn deploy_wrap_near(&self, token: &str) -> anyhow::Result<Contract> {
-        let contract = self.deploy_contract(token, WNEAR_WASM).await?;
-        contract
-            .call("new")
-            .args_json(json!({}))
-            .max_gas()
-            .transact()
-            .await?
-            .into_result()?;
-        Ok(contract)
+        unimplemented!()
+
+        // let contract = self.deploy_contract(token, WNEAR_WASM).await?;
+        // contract
+        //     .call("new")
+        //     .args_json(json!({}))
+        //     .max_gas()
+        //     .transact()
+        //     .await?
+        //     .into_result()?;
+        // Ok(contract)
     }
 
     async fn near_deposit(&self, wnear_id: &AccountId, amount: NearToken) -> anyhow::Result<()> {

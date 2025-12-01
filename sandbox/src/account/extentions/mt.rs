@@ -132,7 +132,7 @@ impl MtViewExt for Account {
         account_id: &AccountIdRef,
         token_ids: impl IntoIterator<Item = String>,
     ) -> anyhow::Result<Vec<u128>> {
-        self.call_function_json::<Vec<U128>>(
+        self.call_view_function_json::<Vec<U128>>(
             "mt_batch_balance_of",
             json!({
                 "account_id": account_id,
@@ -141,5 +141,17 @@ impl MtViewExt for Account {
         )
         .await
         .map(|balances| balances.into_iter().map(|b| b.0).collect())
+    }
+}
+
+impl MtViewExt for SigningAccount {
+    async fn mt_batch_balance_of(
+        &self,
+        account_id: &AccountIdRef,
+        token_ids: impl IntoIterator<Item = String>,
+    ) -> anyhow::Result<Vec<u128>> {
+        self.account
+            .mt_batch_balance_of(account_id, token_ids)
+            .await
     }
 }

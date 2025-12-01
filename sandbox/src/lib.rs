@@ -8,6 +8,7 @@ pub use near_api as api;
 
 use near_api::{NetworkConfig, RPCEndpoint, Signer};
 use near_sandbox::GenesisAccount;
+use near_sdk::NearToken;
 
 pub struct Sandbox {
     root: SigningAccount,
@@ -37,5 +38,12 @@ impl Sandbox {
 
     pub fn root(&self) -> &SigningAccount {
         &self.root
+    }
+
+    // TODO: to trait
+    pub async fn create_account(&self, name: &str) -> Result<SigningAccount, TxError> {
+        self.root
+            .create_subaccount(name, NearToken::from_near(10))
+            .await
     }
 }

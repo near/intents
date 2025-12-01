@@ -1,22 +1,48 @@
 #![allow(dead_code)]
 
-use near_sdk::NearToken;
-use near_workspaces::{Account, Contract};
+use defuse_sandbox::{Account, SigningAccount};
+use near_sdk::{Gas, NearToken, serde::Serialize};
 
-pub trait AccountExt {
-    async fn deploy_contract(&self, account_id: &str, wasm: &[u8]) -> anyhow::Result<Contract>;
+pub struct JsonFunctionCallArgs<T: Serialize> {
+    pub name: &'static str,
+    pub args: T,
 }
 
-impl AccountExt for Account {
-    async fn deploy_contract(&self, account_id: &str, wasm: &[u8]) -> anyhow::Result<Contract> {
-        self.create_subaccount(account_id)
-            .initial_balance(NearToken::from_near(15))
-            .transact()
-            .await?
-            .into_result()?
-            .deploy(wasm.as_ref())
-            .await?
-            .into_result()
-            .map_err(Into::into)
+pub trait AccountExt {
+    async fn deploy_contract<T: Serialize>(
+        &self,
+        name: &str,
+        wasm: impl Into<Vec<u8>>,
+        init_args: Option<JsonFunctionCallArgs<T>>,
+    ) -> anyhow::Result<Account>;
+}
+
+impl AccountExt for SigningAccount {
+    async fn deploy_contract<T: Serialize>(
+        &self,
+        name: &str,
+        wasm: impl Into<Vec<u8>>,
+        init_args: Option<JsonFunctionCallArgs<T>>,
+    ) -> anyhow::Result<Account> {
+        let account_id = self.subaccount(name).id().clone();
+
+        let mut tx = self
+            .tx(account_id.clone())
+            .create_account()
+            .transfer(NearToken::from_near(15))
+            .deploy(wasm.into());
+
+        if let Some(args) = init_args {
+            tx = tx.function_call_json::<()>(
+                args.name,
+                args.args,
+                Gas::from_tgas(10),
+                NearToken::from_yoctonear(0),
+            );
+        }
+
+        tx.no_result().await?;
+
+        Ok(Account::new(account_id, self.network_config().clone()))
     }
 }

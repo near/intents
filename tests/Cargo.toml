@@ -15,6 +15,8 @@ defuse-poa-factory = { workspace = true, features = ["contract"] }
 defuse-serde-utils = { workspace = true }
 defuse-randomness.workspace = true
 defuse-test-utils.workspace = true
+defuse-sandbox.workspace = true
+near-workspaces.workspace = true
 
 futures = "0.3"
 anyhow.workspace = true
@@ -29,7 +31,6 @@ impl-tools.workspace = true
 itertools.workspace = true
 near-crypto.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
-near-workspaces.workspace = true
 near-contract-standards.workspace = true
 rstest.workspace = true
 serde_json.workspace = true
