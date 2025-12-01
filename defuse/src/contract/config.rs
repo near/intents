@@ -10,13 +10,17 @@ use super::Role;
 pub struct DefuseConfig {
     pub wnear_id: AccountId,
     pub fees: FeesConfig,
+    #[serde(default)]
     pub roles: RolesConfig,
 }
 
 #[near(serializers = [json])]
 #[derive(Debug, Clone, Default)]
 pub struct RolesConfig {
+    #[serde(default)]
     pub super_admins: HashSet<AccountId>,
+    #[serde(default)]
     pub admins: HashMap<Role, HashSet<AccountId>>,
+    #[serde(default)]
     pub grantees: HashMap<Role, HashSet<AccountId>>,
 }

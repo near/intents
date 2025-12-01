@@ -16,7 +16,6 @@ async fn relayer_keys() {
     use near_workspaces::Contract;
 
     let env = Env::builder().deployer_as_super_admin().build().await;
-
     let (user, other_user) = futures::join!(env.create_user(), env.create_user());
 
     env.acl_grant_role(env.defuse.id(), Role::RelayerKeysManager, user.id())

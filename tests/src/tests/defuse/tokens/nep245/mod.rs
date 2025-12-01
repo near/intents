@@ -1425,11 +1425,7 @@ async fn mt_transfer_call_circullar_callback() {
 async fn mt_transfer_call_circullar_deposit() {
     use defuse::tokens::DepositMessage;
 
-    let env = Env::builder()
-        .deployer_as_super_admin()
-        .no_registration(false)
-        .build()
-        .await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
