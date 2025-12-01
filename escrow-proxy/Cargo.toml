@@ -48,4 +48,4 @@ serde_json.workspace = true
 
 [features]
 contract = []
-abi = ["defuse-crypto/abi", "defuse-token-id/abi"]
+abi = ["defuse-crypto/abi", "defuse-token-id/abi", "defuse-deadline/abi"]

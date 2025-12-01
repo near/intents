@@ -1,5 +1,5 @@
 use defuse_crypto::Signature;
-use defuse_token_id::TokenId;
+use defuse_token_id::nep245;
 use near_sdk::{json_types::U128, near, AccountId};
 
 pub use crate::escrow_params::{OverrideSend, Params as EscrowParams};
@@ -14,7 +14,7 @@ pub struct FillAuthorization {
     pub escrow: AccountId,
     pub price: U128,
     pub amount: U128,
-    pub token: TokenId,
+    pub token: nep245::TokenId,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub receive_src_to: Option<OverrideSend>,
     /// Unix timestamp in nanoseconds (epoch)

@@ -129,6 +129,11 @@ impl MultiTokenReceiver for Contract {
             return PromiseOrValue::Value(amounts);
         }
 
+        // if token_ids[0] != transfer_msg.authorization.token {
+        //     near_sdk::log!("Token mismatch");
+        //     return PromiseOrValue::Value(amounts);
+        // }
+        //
         // TODO Phase 2: Verify token_ids[0] matches authorization.token
         // TODO Phase 2: Verify and commit nonce
 

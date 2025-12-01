@@ -136,11 +136,13 @@ async fn escrow_proxy_forwards_tokens_to_escrow() {
         .as_nanos()
         + 120_000_000_000; // 2 minutes from now
 
+    let token_id = ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone()));
+
     let fill_authorization = FillAuthorization {
         escrow: escrow_receiver.id().clone(),
         price: U128(1),
         amount: U128(transfer_amount),
-        token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
+        token: token_id.to_string(),
         receive_src_to: None,
         deadline: U128(deadline_ns),
         nonce: 1,
@@ -151,8 +153,8 @@ async fn escrow_proxy_forwards_tokens_to_escrow() {
 
     let escrow_params = EscrowParams {
         maker: solver.id().clone(),
-        src_token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
-        dst_token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
+        src_token: token_id.clone(),
+        dst_token: token_id,
         price: U128(1),
         deadline: Deadline::timeout(Duration::from_secs(120)),
         partial_fills_allowed: false,
@@ -280,11 +282,13 @@ async fn escrow_proxy_refunds_on_invalid_signature() {
         .as_nanos()
         + 120_000_000_000;
 
+    let token_id = ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone()));
+
     let fill_authorization = FillAuthorization {
         escrow: escrow_receiver.id().clone(),
         price: U128(1),
         amount: U128(transfer_amount),
-        token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
+        token: token_id.to_string(),
         receive_src_to: None,
         deadline: U128(deadline_ns),
         nonce: 1,
@@ -295,8 +299,8 @@ async fn escrow_proxy_refunds_on_invalid_signature() {
 
     let escrow_params = EscrowParams {
         maker: solver.id().clone(),
-        src_token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
-        dst_token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
+        src_token: token_id.clone(),
+        dst_token: token_id,
         price: U128(1),
         deadline: Deadline::timeout(Duration::from_secs(120)),
         partial_fills_allowed: false,
@@ -404,11 +408,13 @@ async fn escrow_proxy_refunds_on_expired_deadline() {
     // Set deadline in the PAST (already expired)
     let deadline_ns = 1u128; // Very old timestamp
 
+    let token_id = ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone()));
+
     let fill_authorization = FillAuthorization {
         escrow: escrow_receiver.id().clone(),
         price: U128(1),
         amount: U128(transfer_amount),
-        token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
+        token: token_id.to_string(),
         receive_src_to: None,
         deadline: U128(deadline_ns),
         nonce: 1,
@@ -418,8 +424,8 @@ async fn escrow_proxy_refunds_on_expired_deadline() {
 
     let escrow_params = EscrowParams {
         maker: solver.id().clone(),
-        src_token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
-        dst_token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
+        src_token: token_id.clone(),
+        dst_token: token_id,
         price: U128(1),
         deadline: Deadline::timeout(Duration::from_secs(120)),
         partial_fills_allowed: false,
@@ -531,11 +537,13 @@ async fn escrow_proxy_refunds_on_amount_mismatch() {
         .as_nanos()
         + 120_000_000_000;
 
+    let token_id = ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone()));
+
     let fill_authorization = FillAuthorization {
         escrow: escrow_receiver.id().clone(),
         price: U128(1),
         amount: U128(authorized_amount), // Authorization says 5000
-        token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
+        token: token_id.to_string(),
         receive_src_to: None,
         deadline: U128(deadline_ns),
         nonce: 1,
@@ -545,8 +553,8 @@ async fn escrow_proxy_refunds_on_amount_mismatch() {
 
     let escrow_params = EscrowParams {
         maker: solver.id().clone(),
-        src_token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
-        dst_token: ProxyTokenId::Nep141(defuse_token_id::nep141::Nep141TokenId::new(ft.clone())),
+        src_token: token_id.clone(),
+        dst_token: token_id,
         price: U128(1),
         deadline: Deadline::timeout(Duration::from_secs(120)),
         partial_fills_allowed: false,
