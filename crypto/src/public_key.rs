@@ -81,7 +81,9 @@ impl PublicKey {
                 // "sr25519" prefix to avoid collisions
                 format!(
                     "0x{}",
-                    hex::encode(&env::keccak256_array([b"sr25519".as_slice(), pk].concat())[12..32])
+                    hex::encode(
+                        &env::keccak256_array([b"sr25519".as_slice(), pk].concat())[12..32]
+                    )
                 )
             }
         }

@@ -1,6 +1,4 @@
-use schnorrkel::{
-    PublicKey as SchnorrkelPublicKey, Signature as SchnorrkelSignature,
-};
+use schnorrkel::{PublicKey as SchnorrkelPublicKey, Signature as SchnorrkelSignature};
 
 use super::{Curve, CurveType, TypedCurve};
 

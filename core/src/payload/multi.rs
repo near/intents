@@ -1,8 +1,8 @@
 use defuse_crypto::{Payload, PublicKey, SignedPayload};
 use defuse_erc191::SignedErc191Payload;
-use defuse_sr25519::SignedSr25519Payload;
 use defuse_nep413::SignedNep413Payload;
 use defuse_sep53::SignedSep53Payload;
+use defuse_sr25519::SignedSr25519Payload;
 use defuse_tip191::SignedTip191Payload;
 use defuse_ton_connect::SignedTonConnectPayload;
 use derive_more::derive::From;

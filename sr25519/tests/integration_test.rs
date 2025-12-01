@@ -1,9 +1,9 @@
 //! Integration tests for Sr25519 signature verification
 
-use defuse_sr25519::{Sr25519Payload, SignedSr25519Payload};
-use defuse_crypto::{SignedPayload, Payload};
-use schnorrkel::Keypair;
+use defuse_crypto::{Payload, SignedPayload};
+use defuse_sr25519::{SignedSr25519Payload, Sr25519Payload};
 use rand::thread_rng;
+use schnorrkel::Keypair;
 
 #[test]
 fn test_sr25519_signature_verification() {
@@ -56,7 +56,10 @@ fn test_sr25519_invalid_signature() {
 
     // Verify should fail
     let verified_key = signed_payload.verify();
-    assert!(verified_key.is_none(), "Invalid signature was incorrectly verified");
+    assert!(
+        verified_key.is_none(),
+        "Invalid signature was incorrectly verified"
+    );
 }
 
 #[test]
@@ -79,7 +82,10 @@ fn test_sr25519_different_messages() {
         public_key: keypair.public.to_bytes(),
         signature: signature1.to_bytes(),
     };
-    assert!(signed_payload1.verify().is_some(), "First signature verification failed");
+    assert!(
+        signed_payload1.verify().is_some(),
+        "First signature verification failed"
+    );
 
     // Verify second signature
     let signed_payload2 = SignedSr25519Payload {
@@ -87,7 +93,10 @@ fn test_sr25519_different_messages() {
         public_key: keypair.public.to_bytes(),
         signature: signature2.to_bytes(),
     };
-    assert!(signed_payload2.verify().is_some(), "Second signature verification failed");
+    assert!(
+        signed_payload2.verify().is_some(),
+        "Second signature verification failed"
+    );
 
     // Cross-verification should fail (signature1 with message2)
     let cross_payload = SignedSr25519Payload {
@@ -95,7 +104,10 @@ fn test_sr25519_different_messages() {
         public_key: keypair.public.to_bytes(),
         signature: signature1.to_bytes(),
     };
-    assert!(cross_payload.verify().is_none(), "Cross-verification should fail");
+    assert!(
+        cross_payload.verify().is_none(),
+        "Cross-verification should fail"
+    );
 }
 
 #[test]

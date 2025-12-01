@@ -23,7 +23,7 @@ pub struct Sr25519Payload {
 
 impl Sr25519Payload {
     /// Create a new payload with a message
-    /// 
+    ///
     /// Note: This will use the standard "substrate" signing context
     /// which is the default for Polkadot/Substrate chains.
     #[inline]
@@ -58,7 +58,7 @@ pub struct SignedSr25519Payload {
     /// Sr25519 public key (32 bytes)
     #[serde_as(as = "AsCurve<Sr25519>")]
     pub public_key: <Sr25519 as Curve>::PublicKey,
-    
+
     /// Sr25519 signature (64 bytes)
     #[serde_as(as = "AsCurve<Sr25519>")]
     pub signature: <Sr25519 as Curve>::Signature,
@@ -105,36 +105,9 @@ mod tests {
         let hash = payload.hash();
         // Verify hash is 32 bytes
         assert_eq!(hash.len(), 32);
-        
+
         // Same message should produce same hash
         let payload2 = Sr25519Payload::new("test message".to_string());
         assert_eq!(payload.hash(), payload2.hash());
     }
-
-    // Note: Real Sr25519 signature verification tests would require
-    // generating valid signatures with schnorrkel, which is complex.
-    // For production use, you should:
-    // 1. Generate a keypair using schnorrkel
-    // 2. Sign a message with the correct context
-    // 3. Verify the signature here
-    //
-    // Example structure (would need schnorrkel in dev-dependencies):
-    // #[test]
-    // fn test_sr25519_verification() {
-    //     use schnorrkel::{Keypair, signing_context};
-    //     use rand::thread_rng;
-    //     
-    //     let keypair = Keypair::generate_with(thread_rng());
-    //     let context = signing_context(b"substrate");
-    //     let message = b"test";
-    //     let signature = keypair.sign_simple(&context, message);
-    //     
-    //     let signed_payload = SignedHydrationPayload {
-    //         payload: HydrationPayload::new("test".to_string()),
-    //         public_key: keypair.public.to_bytes(),
-    //         signature: signature.to_bytes(),
-    //     };
-    //     
-    //     assert!(signed_payload.verify().is_some());
-    // }
 }
