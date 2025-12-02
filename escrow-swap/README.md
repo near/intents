@@ -14,8 +14,8 @@ sending `dst_token`.
 * **Token-agnostic**: supports any [NEP-141][3] and [NEP-245][4] tokens for `src_token` and `dst_token`.
 * **Composability**: both maker and takers can receive tokens to any other account via
   `ft/mt_transfer[_call]()`.
-* **Automatic cleanup**: once closed and all balances are zero and callbacks finished, the
-  contracts automatically deletes itself.
+* **Automatic cleanup**: once closed, all balances are zero, callbacks finished and deadline expired,
+  the contracts automatically deletes itself.
 
 ## Params
 
