@@ -4,15 +4,15 @@ use std::{
 };
 
 use defuse_poa_factory::contract::Role;
-use defuse_sandbox::{Account, SigningAccount};
+use defuse_sandbox::{
+    Account, SigningAccount,
+    extensions::account::{AccountDeployerExt, JsonFunctionCallArgs},
+};
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_sdk::{AccountId, Gas, NearToken, json_types::U128};
 use serde_json::json;
 
-use crate::utils::{
-    account::{AccountExt, JsonFunctionCallArgs},
-    read_wasm,
-};
+use crate::utils::read_wasm;
 
 const POA_TOKEN_INIT_BALANCE: NearToken = NearToken::from_near(4);
 static POA_FACTORY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("res/defuse_poa_factory"));
@@ -113,6 +113,7 @@ impl PoAFactoryExt for SigningAccount {
                 Gas::from_tgas(300),
                 NearToken::from_near(POA_TOKEN_INIT_BALANCE.as_near()),
             )
+            .no_result()
             .await?;
 
         Ok(Self::token_id(token, factory))
@@ -147,8 +148,9 @@ impl PoAFactoryExt for SigningAccount {
                     "memo": memo,
                 }),
                 Gas::from_tgas(300),
-                NearToken::from_millinear(1),
+                NearToken::from_millinear(4),
             )
+            .no_result()
             .await?;
 
         Ok(())
@@ -180,7 +182,10 @@ impl PoAFactoryExt for SigningAccount {
 
 #[cfg(test)]
 mod tests {
-    use defuse_sandbox::{FtExt, FtViewExt, Sandbox};
+    use defuse_sandbox::{
+        Sandbox,
+        extensions::ft::{FtExt, FtViewExt},
+    };
     use futures::try_join;
     use rstest::rstest;
 

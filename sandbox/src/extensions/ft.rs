@@ -2,9 +2,9 @@ use near_api::types::errors::{DataConversionError, ExecutionError};
 use near_contract_standards::storage_management::StorageBalance;
 use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, json_types::U128, serde_json::json};
 
-use crate::SigningAccount;
-use crate::account::extentions::StorageManagementExt;
-use crate::{Account, TxResult};
+use crate::{
+    Account, SigningAccount, TxResult, extensions::storage_management::StorageManagementExt,
+};
 
 pub const FT_STORAGE_DEPOSIT: NearToken = NearToken::from_yoctonear(2_350_000_000_000_000_000_000);
 
@@ -123,6 +123,6 @@ impl FtViewExt for SigningAccount {
         token_id: &AccountIdRef,
         account_id: &AccountIdRef,
     ) -> anyhow::Result<u128> {
-        self.account.ft_balance_of(token_id, account_id).await
+        self.account().ft_balance_of(token_id, account_id).await
     }
 }

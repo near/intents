@@ -112,7 +112,7 @@ impl StorageViewExt for SigningAccount {
         contract_id: &AccountIdRef,
         account_id: &AccountIdRef,
     ) -> anyhow::Result<Option<StorageBalance>> {
-        self.account
+        self.account()
             .storage_balance_of(contract_id, account_id)
             .await
     }

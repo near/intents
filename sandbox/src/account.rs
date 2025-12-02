@@ -1,7 +1,3 @@
-mod extentions;
-
-pub use self::extentions::*;
-
 use std::sync::Arc;
 
 use impl_tools::autoimpl;
@@ -36,13 +32,6 @@ impl Account {
 
     pub fn network_config(&self) -> &NetworkConfig {
         &self.network_config
-    }
-
-    pub fn subaccount(&self, name: impl AsRef<str>) -> Self {
-        Self::new(
-            format!("{}.{}", name.as_ref(), self.id()).parse().unwrap(),
-            self.network_config.clone(),
-        )
     }
 
     pub async fn call_view_function_json<T>(
@@ -97,6 +86,10 @@ impl SigningAccount {
         Self::implicit(generate_secret_key().unwrap(), network_config)
     }
 
+    pub fn account(&self) -> &Account {
+        &self.account
+    }
+
     pub fn signer(&self) -> Arc<Signer> {
         self.signer.clone()
     }
@@ -111,27 +104,5 @@ impl SigningAccount {
         self.tx(account.id().clone()).transfer(deposit).await?;
 
         Ok(account)
-    }
-
-    pub async fn create_subaccount(
-        &self,
-        name: impl AsRef<str>,
-        balance: impl Into<Option<NearToken>>,
-    ) -> TxResult<Self> {
-        let secret_key = generate_secret_key().unwrap();
-        let public_key = secret_key.public_key();
-
-        let subaccount = Self::new(
-            self.subaccount(name),
-            Signer::new(Signer::from_secret_key(secret_key)).unwrap(),
-        );
-
-        let mut tx = self.tx(subaccount.id().clone()).create_account();
-        if let Some(balance) = balance.into() {
-            tx = tx.transfer(balance);
-        }
-        tx.add_full_access_key(public_key).await?;
-
-        Ok(subaccount)
     }
 }

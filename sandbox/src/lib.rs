@@ -1,14 +1,21 @@
 #![allow(async_fn_in_trait)]
 
 mod account;
+pub mod extensions;
 mod tx;
 
-pub use self::{account::*, tx::*};
+pub use {
+    account::{Account, SigningAccount},
+    tx::{TxBuilder, TxError, TxResult},
+};
+
 pub use near_api as api;
 
 use near_api::{NetworkConfig, RPCEndpoint, Signer};
 use near_sandbox::GenesisAccount;
 use near_sdk::NearToken;
+
+use crate::extensions::account::ParentAccount;
 
 pub struct Sandbox {
     root: SigningAccount,

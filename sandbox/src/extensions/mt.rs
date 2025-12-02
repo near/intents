@@ -150,7 +150,7 @@ impl MtViewExt for SigningAccount {
         account_id: &AccountIdRef,
         token_ids: impl IntoIterator<Item = String>,
     ) -> anyhow::Result<Vec<u128>> {
-        self.account
+        self.account()
             .mt_batch_balance_of(account_id, token_ids)
             .await
     }
