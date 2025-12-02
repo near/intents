@@ -1,7 +1,10 @@
 use near_contract_standards::storage_management::StorageBalance;
-use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, serde_json::json};
+use near_sdk::{AccountId, AccountIdRef, NearToken, serde_json::json};
 
-use crate::{Account, SigningAccount, TxResult};
+use crate::{
+    Account, SigningAccount,
+    tx::{FnCallBuilder, TxResult},
+};
 
 pub trait StorageManagementExt {
     async fn storage_deposit(
@@ -40,15 +43,16 @@ impl StorageManagementExt for SigningAccount {
         deposit: NearToken,
     ) -> TxResult<StorageBalance> {
         self.tx(contract_id.into())
-            .function_call_json(
-                "storage_deposit",
-                json!({
-                    "account_id": account_id.unwrap_or_else(|| self.id())
-                }),
-                Gas::from_tgas(300),
-                NearToken::from_yoctonear(deposit.as_yoctonear()),
+            .function_call(
+                FnCallBuilder::new("storage_deposit")
+                    .json_args(&json!({
+                        "account_id": account_id.unwrap_or_else(|| self.id())
+                    }))
+                    .with_deposit(NearToken::from_yoctonear(deposit.as_yoctonear())),
             )
-            .await
+            .await?
+            .json()
+            .map_err(Into::into)
     }
 
     async fn storage_withdraw(
@@ -57,15 +61,16 @@ impl StorageManagementExt for SigningAccount {
         amount: NearToken,
     ) -> TxResult<StorageBalance> {
         self.tx(contract_id.into())
-            .function_call_json(
-                "storage_withdraw",
-                json!({
-                    "amount": amount.as_yoctonear()
-                }),
-                Gas::from_tgas(300),
-                NearToken::from_yoctonear(1),
+            .function_call(
+                FnCallBuilder::new("storage_withdraw")
+                    .json_args(&json!({
+                        "amount": amount.as_yoctonear()
+                    }))
+                    .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await
+            .await?
+            .json()
+            .map_err(Into::into)
     }
 
     async fn storage_unregister(
@@ -74,15 +79,16 @@ impl StorageManagementExt for SigningAccount {
         force: Option<bool>,
     ) -> TxResult<bool> {
         self.tx(contract_id.into())
-            .function_call_json(
-                "storage_unregister",
-                json!({
-                    "force": force
-                }),
-                Gas::from_tgas(300),
-                NearToken::from_yoctonear(1),
+            .function_call(
+                FnCallBuilder::new("storage_unregister")
+                    .json_args(&json!({
+                        "force": force
+                    }))
+                    .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await
+            .await?
+            .json()
+            .map_err(Into::into)
     }
 }
 

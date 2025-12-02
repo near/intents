@@ -5,8 +5,7 @@ use std::{
 
 use defuse_poa_factory::contract::Role;
 use defuse_sandbox::{
-    Account, SigningAccount,
-    extensions::account::{AccountDeployerExt, JsonFunctionCallArgs},
+    Account, SigningAccount, extensions::account::AccountDeployerExt, tx::FnCallBuilder,
 };
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_sdk::{AccountId, Gas, NearToken, json_types::U128};
@@ -92,7 +91,7 @@ impl PoAFactoryExt for SigningAccount {
         self.deploy_contract(
             name,
             POA_FACTORY_WASM.as_slice(),
-            Some(JsonFunctionCallArgs { name: "new", args }),
+            Some(FnCallBuilder::new("new").json_args(&args)),
         )
         .await
     }
@@ -104,16 +103,14 @@ impl PoAFactoryExt for SigningAccount {
         metadata: impl Into<Option<FungibleTokenMetadata>>,
     ) -> anyhow::Result<AccountId> {
         self.tx(factory.clone())
-            .function_call_json::<()>(
-                "deploy_token",
-                json!({
-                    "token": token,
-                    "metadata": metadata.into(),
-                }),
-                Gas::from_tgas(300),
-                NearToken::from_near(POA_TOKEN_INIT_BALANCE.as_near()),
+            .function_call(
+                FnCallBuilder::new("deploy_token")
+                    .json_args(&json!({
+                        "token": token,
+                        "metadata": metadata.into(),
+                    }))
+                    .with_deposit(NearToken::from_near(POA_TOKEN_INIT_BALANCE.as_near())),
             )
-            .no_result()
             .await?;
 
         Ok(Self::token_id(token, factory))
@@ -138,19 +135,17 @@ impl PoAFactoryExt for SigningAccount {
         memo: Option<String>,
     ) -> anyhow::Result<()> {
         self.tx(factory.clone())
-            .function_call_json::<()>(
-                "ft_deposit",
-                json!({
-                    "token": token,
-                    "owner_id": owner_id,
-                    "amount": U128(amount),
-                    "msg": msg,
-                    "memo": memo,
-                }),
-                Gas::from_tgas(300),
-                NearToken::from_millinear(4),
+            .function_call(
+                FnCallBuilder::new("ft_deposit")
+                    .json_args(&json!({
+                            "token": token,
+                            "owner_id": owner_id,
+                            "amount": U128(amount),
+                        "msg": msg,
+                        "memo": memo,
+                    }))
+                    .with_deposit(NearToken::from_millinear(4)),
             )
-            .no_result()
             .await?;
 
         Ok(())

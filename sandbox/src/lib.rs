@@ -2,12 +2,9 @@
 
 mod account;
 pub mod extensions;
-mod tx;
+pub mod tx;
 
-pub use {
-    account::{Account, SigningAccount},
-    tx::{TxBuilder, TxError, TxResult},
-};
+pub use account::{Account, SigningAccount};
 
 pub use near_api as api;
 
@@ -15,7 +12,7 @@ use near_api::{NetworkConfig, RPCEndpoint, Signer};
 use near_sandbox::GenesisAccount;
 use near_sdk::NearToken;
 
-use crate::extensions::account::ParentAccount;
+use crate::{extensions::account::ParentAccountExt, tx::TxError};
 
 pub struct Sandbox {
     root: SigningAccount,

@@ -1,7 +1,10 @@
 use near_api::types::errors::{DataConversionError, ExecutionError};
 use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, json_types::U128, serde_json::json};
 
-use crate::{Account, SigningAccount, TxResult};
+use crate::{
+    Account, SigningAccount,
+    tx::{FnCallBuilder, TxResult},
+};
 
 pub trait MtViewExt {
     async fn mt_batch_balance_of(
@@ -50,18 +53,20 @@ impl MtExt for SigningAccount {
         memo: impl Into<Option<String>>,
     ) -> TxResult<()> {
         self.tx(contract)
-            .function_call_json(
-                "mt_transfer_call",
-                json!({
-                    "receiver_id": receiver_id,
-                    "token_id": token_id.as_ref(),
-                    "amount": U128(amount),
-                    "memo": memo.into(),
-                }),
-                Gas::from_tgas(15),
-                NearToken::from_yoctonear(1),
+            .function_call(
+                FnCallBuilder::new("mt_transfer")
+                    .json_args(&json!({
+                        "receiver_id": receiver_id,
+                        "token_id": token_id.as_ref(),
+                        "amount": U128(amount),
+                        "memo": memo.into(),
+                    }))
+                    .with_gas(Gas::from_tgas(15))
+                    .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await
+            .await?;
+
+        Ok(())
     }
 
     async fn mt_transfer_call(
@@ -74,19 +79,19 @@ impl MtExt for SigningAccount {
         msg: impl Into<String>,
     ) -> TxResult<u128> {
         self.tx(contract)
-            .function_call_json::<Vec<U128>>(
-                "mt_transfer_call",
-                json!({
-                    "receiver_id": receiver_id,
-                    "token_id": token_id.as_ref(),
-                    "amount": U128(amount),
-                    "memo": memo.into(),
-                    "msg": msg.into(),
-                }),
-                Gas::from_tgas(300),
-                NearToken::from_yoctonear(1),
+            .function_call(
+                FnCallBuilder::new("mt_transfer_call")
+                    .json_args(&json!({
+                        "receiver_id": receiver_id,
+                        "token_id": token_id.as_ref(),
+                        "amount": U128(amount),
+                        "memo": memo.into(),
+                        "msg": msg.into(),
+                    }))
+                    .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await
+            .await?
+            .json::<Vec<U128>>()
             .and_then(|amounts| {
                 let [amount] = amounts
                     .try_into()
@@ -94,6 +99,7 @@ impl MtExt for SigningAccount {
                     .map_err(Into::<ExecutionError>::into)?;
                 Ok(amount.0)
             })
+            .map_err(Into::into)
     }
 
     async fn mt_on_transfer(
@@ -109,20 +115,17 @@ impl MtExt for SigningAccount {
             .unzip();
 
         self.tx(receiver_id)
-            .function_call_json::<Vec<U128>>(
-                "mt_on_transfer",
-                json!({
-                    "sender_id": sender_id,
-                    "previous_owner_ids": [sender_id],
-                    "token_ids": token_ids,
-                    "amounts": amounts,
-                    "msg": msg.as_ref(),
-                }),
-                Gas::from_tgas(250),
-                NearToken::from_yoctonear(0),
-            )
-            .await
+            .function_call(FnCallBuilder::new("mt_on_transfer").json_args(&json!({
+                "sender_id": sender_id,
+                "previous_owner_ids": [sender_id],
+                "token_ids": token_ids,
+                "amounts": amounts,
+                "msg": msg.as_ref(),
+            })))
+            .await?
+            .json::<Vec<U128>>()
             .map(|refunds| refunds.into_iter().map(|a| a.0).collect())
+            .map_err(Into::into)
     }
 }
 

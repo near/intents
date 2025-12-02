@@ -1,6 +1,9 @@
-use near_sdk::{AccountIdRef, Gas, NearToken, serde_json::json};
+use near_sdk::{AccountIdRef, serde_json::json};
 
-use crate::{SigningAccount, TxResult};
+use crate::{
+    SigningAccount,
+    tx::{FnCallBuilder, TxResult},
+};
 
 pub trait AclExt {
     async fn acl_add_super_admin(
@@ -8,6 +11,7 @@ pub trait AclExt {
         contract_id: &AccountIdRef,
         account_id: &AccountIdRef,
     ) -> TxResult<()>;
+
     async fn acl_revoke_super_admin(
         &self,
         contract_id: &AccountIdRef,
@@ -20,6 +24,7 @@ pub trait AclExt {
         role: impl Into<String>,
         account_id: &AccountIdRef,
     ) -> TxResult<()>;
+
     async fn acl_revoke_admin(
         &self,
         contract_id: &AccountIdRef,
@@ -49,15 +54,12 @@ impl AclExt for SigningAccount {
         account_id: &AccountIdRef,
     ) -> TxResult<()> {
         self.tx(contract_id.into())
-            .function_call_json(
-                "acl_add_super_admin",
-                json!({
-                "account_id": account_id,
-                }),
-                Gas::from_tgas(300),
-                NearToken::from_yoctonear(0),
-            )
-            .await
+            .function_call(FnCallBuilder::new("acl_add_super_admin").json_args(&json!({
+            "account_id": account_id,
+            })))
+            .await?;
+
+        Ok(())
     }
 
     async fn acl_revoke_super_admin(
@@ -66,15 +68,14 @@ impl AclExt for SigningAccount {
         account_id: &AccountIdRef,
     ) -> TxResult<()> {
         self.tx(contract_id.into())
-            .function_call_json(
-                "acl_revoke_super_admin",
-                json!({
+            .function_call(
+                FnCallBuilder::new("acl_revoke_super_admin").json_args(&json!({
                 "account_id": account_id,
-                }),
-                Gas::from_tgas(300),
-                NearToken::from_yoctonear(0),
+                })),
             )
-            .await
+            .await?;
+
+        Ok(())
     }
 
     async fn acl_add_admin(
@@ -84,15 +85,12 @@ impl AclExt for SigningAccount {
         account_id: &AccountIdRef,
     ) -> TxResult<()> {
         self.tx(contract_id.into())
-            .function_call_json(
-                "acl_add_admin",
-                json!({
+            .function_call(FnCallBuilder::new("acl_add_admin").json_args(&json!({
                 "role": role.into(),
-                "account_id": account_id,                }),
-                Gas::from_tgas(300),
-                NearToken::from_yoctonear(0),
-            )
-            .await
+                "account_id": account_id,                })))
+            .await?;
+
+        Ok(())
     }
 
     async fn acl_revoke_admin(
@@ -102,15 +100,13 @@ impl AclExt for SigningAccount {
         account_id: &AccountIdRef,
     ) -> TxResult<()> {
         self.tx(contract_id.into())
-            .function_call_json(
-                "acl_revoke_admin",
-                json!({
+            .function_call(FnCallBuilder::new("acl_revoke_admin").json_args(&json!({
                 "role": role.into(),
-                "account_id": account_id,                }),
-                Gas::from_tgas(300),
-                NearToken::from_yoctonear(0),
-            )
-            .await
+                "account_id": account_id,
+            })))
+            .await?;
+
+        Ok(())
     }
 
     async fn acl_grant_role(
@@ -120,15 +116,13 @@ impl AclExt for SigningAccount {
         account_id: &AccountIdRef,
     ) -> TxResult<()> {
         self.tx(contract_id.into())
-            .function_call_json(
-                "acl_grant_role",
-                json!({
+            .function_call(FnCallBuilder::new("acl_grant_role").json_args(&json!({
                 "role": role.into(),
-                "account_id": account_id,                }),
-                Gas::from_tgas(300),
-                NearToken::from_yoctonear(0),
-            )
-            .await
+                "account_id": account_id,
+            })))
+            .await?;
+
+        Ok(())
     }
 
     async fn acl_revoke_role(
@@ -138,14 +132,12 @@ impl AclExt for SigningAccount {
         account_id: &AccountIdRef,
     ) -> TxResult<()> {
         self.tx(contract_id.into())
-            .function_call_json(
-                "acl_revoke_role",
-                json!({
+            .function_call(FnCallBuilder::new("acl_revoke_role").json_args(&json!({
                 "role": role.into(),
-                "account_id": account_id,                }),
-                Gas::from_tgas(300),
-                NearToken::from_yoctonear(0),
-            )
-            .await
+                "account_id": account_id,
+            })))
+            .await?;
+
+        Ok(())
     }
 }

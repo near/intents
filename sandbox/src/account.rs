@@ -10,7 +10,7 @@ use near_sdk::{
     serde::{Serialize, de::DeserializeOwned},
 };
 
-use crate::{TxBuilder, TxResult};
+use crate::tx::{TxBuilder, TxResult};
 
 #[derive(Clone)]
 pub struct Account {
@@ -34,6 +34,7 @@ impl Account {
         &self.network_config
     }
 
+    // TODO separate it to another trait
     pub async fn call_view_function_json<T>(
         &self,
         name: &str,

@@ -1,7 +1,10 @@
 use near_contract_standards::non_fungible_token::{Token, TokenId, metadata::TokenMetadata};
-use near_sdk::{AccountIdRef, Gas, NearToken, serde_json::json};
+use near_sdk::{AccountIdRef, NearToken, serde_json::json};
 
-use crate::{Account, SigningAccount, TxResult};
+use crate::{
+    Account, SigningAccount,
+    tx::{FnCallBuilder, TxResult},
+};
 
 pub trait NftExt {
     async fn nft_transfer(
@@ -47,17 +50,18 @@ impl NftExt for SigningAccount {
         memo: Option<String>,
     ) -> TxResult<()> {
         self.tx(collection.into())
-            .function_call_json(
-                "nft_transfer",
-                json!({
-                    "receiver_id": receiver_id,
-                    "token_id": token_id,
-                    "memo": memo,
-                }),
-                Gas::from_tgas(300),
-                NearToken::from_yoctonear(1),
+            .function_call(
+                FnCallBuilder::new("nft_transfer")
+                    .json_args(&json!({
+                        "receiver_id": receiver_id,
+                        "token_id": token_id,
+                        "memo": memo,
+                    }))
+                    .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await
+            .await?;
+
+        Ok(())
     }
 
     async fn nft_transfer_call(
@@ -69,19 +73,20 @@ impl NftExt for SigningAccount {
         msg: String,
     ) -> TxResult<bool> {
         self.tx(collection.into())
-            .function_call_json(
-                "nft_transfer_call",
-                json!({
-                    "receiver_id": receiver_id,
-                    "token_id": token_id,
-                    "memo": memo,
-                    "msg": msg,
+            .function_call(
+                FnCallBuilder::new("nft_transfer_call")
+                    .json_args(&json!({
+                            "receiver_id": receiver_id,
+                            "token_id": token_id,
+                            "memo": memo,
+                        "msg": msg,
 
-                }),
-                Gas::from_tgas(300),
-                NearToken::from_yoctonear(1),
+                    }))
+                    .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await
+            .await?
+            .json()
+            .map_err(Into::into)
     }
 
     async fn nft_mint(
@@ -92,18 +97,19 @@ impl NftExt for SigningAccount {
         token_metadata: &TokenMetadata,
     ) -> TxResult<Token> {
         self.tx(collection.into())
-            .function_call_json(
-                "nft_mint",
-                json!({
-                    "token_id": token_id,
-                    "token_owner_id": token_owner_id,
-                    "token_metadata": token_metadata,
+            .function_call(
+                FnCallBuilder::new("nft_mint")
+                    .json_args(&json!({
+                            "token_id": token_id,
+                            "token_owner_id": token_owner_id,
+                            "token_metadata": token_metadata,
 
-                }),
-                Gas::from_tgas(300),
-                NearToken::from_yoctonear(1),
+                    }))
+                    .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await
+            .await?
+            .json()
+            .map_err(Into::into)
     }
 }
 

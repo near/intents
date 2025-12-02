@@ -1,9 +1,10 @@
-use near_api::types::errors::{DataConversionError, ExecutionError};
 use near_contract_standards::storage_management::StorageBalance;
 use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, json_types::U128, serde_json::json};
 
 use crate::{
-    Account, SigningAccount, TxResult, extensions::storage_management::StorageManagementExt,
+    Account, SigningAccount,
+    extensions::storage_management::StorageManagementExt,
+    tx::{FnCallBuilder, TxResult},
 };
 
 pub const FT_STORAGE_DEPOSIT: NearToken = NearToken::from_yoctonear(2_350_000_000_000_000_000_000);
@@ -53,17 +54,18 @@ impl FtExt for SigningAccount {
         memo: Option<String>,
     ) -> TxResult<()> {
         self.tx(token_id.into())
-            .function_call_json(
-                "ft_transfer",
-                json!({
-                    "receiver_id": receiver_id,
-                    "amount": U128(amount),
-                    "memo": memo,
-                }),
-                Gas::from_tgas(15),
-                NearToken::from_yoctonear(1),
+            .function_call(
+                FnCallBuilder::new("ft_transfer")
+                    .json_args(&json!({
+                        "receiver_id": receiver_id,
+                        "amount": U128(amount),
+                        "memo": memo,
+                    }))
+                    .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await
+            .await?;
+
+        Ok(())
     }
 
     async fn ft_transfer_call(
@@ -75,25 +77,21 @@ impl FtExt for SigningAccount {
         msg: &str,
     ) -> TxResult<u128> {
         self.tx(token_id.into())
-            .function_call_json::<Vec<U128>>(
-                "ft_transfer_call",
-                json!({
-                            "receiver_id": receiver_id,
-                "amount": U128(amount),
-                "memo": memo,
-                "msg": msg,
-                }),
-                Gas::from_tgas(300),
-                NearToken::from_yoctonear(1),
+            .function_call(
+                FnCallBuilder::new("ft_transfer_call")
+                    .json_args(&json!({
+                        "receiver_id": receiver_id,
+                        "amount": U128(amount),
+                        "memo": memo,
+                        "msg": msg,
+                    }))
+                    .with_gas(Gas::from_tgas(300))
+                    .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await
-            .and_then(|amounts| {
-                let [amount] = amounts
-                    .try_into()
-                    .map_err(|amounts: Vec<_>| DataConversionError::IncorrectLength(amounts.len()))
-                    .map_err(Into::<ExecutionError>::into)?;
-                Ok(amount.0)
-            })
+            .await?
+            .json::<U128>()
+            .map(|v| v.0)
+            .map_err(Into::into)
     }
 }
 
