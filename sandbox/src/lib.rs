@@ -6,6 +6,7 @@ pub mod tx;
 
 pub use account::{Account, SigningAccount};
 
+pub use anyhow;
 pub use near_api as api;
 
 use near_api::{NetworkConfig, RPCEndpoint, Signer};

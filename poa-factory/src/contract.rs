@@ -23,7 +23,7 @@ use crate::PoaFactory;
 
 const POA_TOKEN_WASM: &[u8] = include_bytes!(std::env!("POA_TOKEN_WASM"));
 
-const POA_TOKEN_INIT_BALANCE: NearToken = NearToken::from_near(3);
+pub const POA_TOKEN_INIT_BALANCE: NearToken = NearToken::from_near(3);
 const POA_TOKEN_NEW_GAS: Gas = Gas::from_tgas(10);
 const POA_TOKEN_FT_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
 /// Copied from `near_contract_standards::fungible_token::core_impl::GAS_FOR_FT_TRANSFER_CALL`

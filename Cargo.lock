@@ -1136,6 +1136,7 @@ dependencies = [
  "defuse-admin-utils",
  "defuse-near-utils",
  "defuse-poa-token",
+ "defuse-sandbox",
  "near-contract-standards",
  "near-plugins",
  "near-sdk",

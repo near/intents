@@ -1,6 +1,9 @@
 #[cfg(feature = "contract")]
 pub mod contract;
 
+#[cfg(feature = "sandbox")]
+pub mod extensions;
+
 use std::collections::HashMap;
 
 use defuse_admin_utils::full_access_keys::FullAccessKeys;

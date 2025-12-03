@@ -1,7 +1,9 @@
 use near_api::{
-    Signer, signer::generate_secret_key, types::transaction::actions::FunctionCallAction,
+    Signer,
+    signer::generate_secret_key,
+    types::{errors::ExecutionError, transaction::actions::FunctionCallAction},
 };
-use near_sdk::{AccountId, AccountIdRef, NearToken, serde::Serialize};
+use near_sdk::{AccountId, AccountIdRef, NearToken};
 
 use crate::{Account, SigningAccount, tx::TxResult};
 
@@ -47,7 +49,11 @@ impl ParentAccountExt for SigningAccount {
         if let Some(balance) = balance.into() {
             tx = tx.transfer(balance);
         }
-        tx.add_full_access_key(public_key).await?;
+
+        tx.add_full_access_key(public_key)
+            .await?
+            .into_result()
+            .map_err(Into::<ExecutionError>::into)?;
 
         Ok(SigningAccount::new(
             Account::new(subaccount, self.network_config().clone()),
@@ -57,30 +63,37 @@ impl ParentAccountExt for SigningAccount {
 }
 
 pub trait AccountDeployerExt: ParentAccountExt {
-    async fn deploy_contract<T: Serialize>(
+    async fn deploy_contract(
         &self,
         name: &str,
         wasm: impl Into<Vec<u8>>,
+        deposit: NearToken,
         init_args: Option<impl Into<FunctionCallAction>>,
     ) -> anyhow::Result<Account>;
 }
 
 impl AccountDeployerExt for SigningAccount {
-    async fn deploy_contract<T: Serialize>(
+    async fn deploy_contract(
         &self,
         name: &str,
         wasm: impl Into<Vec<u8>>,
+        deposit: NearToken,
         init_args: Option<impl Into<FunctionCallAction>>,
     ) -> anyhow::Result<Account> {
-        let account_id = self.create_subaccount(name, None).await?.id().clone();
-        let mut tx = self.tx(account_id.clone()).deploy(wasm.into());
+        let subaccount = self.subaccount_id(name);
+
+        let mut tx = self
+            .tx(subaccount.clone())
+            .create_account()
+            .transfer(deposit)
+            .deploy(wasm.into());
 
         if let Some(args) = init_args {
             tx = tx.function_call(args);
         }
 
-        tx.await?;
+        tx.await?.into_result()?;
 
-        Ok(Account::new(account_id, self.network_config().clone()))
+        Ok(Account::new(subaccount, self.network_config().clone()))
     }
 }
