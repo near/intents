@@ -7,9 +7,12 @@ use crate::{
     tests::defuse::{
         accounts::AccountManagerExt,
         env::{Env, get_account_public_key},
+        DefuseSignerExt,
     },
     utils::{account::AccountExt, mt::MtExt, read_wasm},
 };
+use defuse::core::intents::auth::AuthCall;
+use near_sdk::NearToken;
 use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
 use defuse_deadline::Deadline;
 use std::time::Duration;
@@ -107,11 +110,13 @@ async fn escrow_proxy_forwards_tokens_to_escrow() {
 
     // Initialize the proxy contract
     let roles = create_roles_config(env.sandbox().root_account());
+    let allowed_auth_callers: HashSet<near_workspaces::AccountId> = HashSet::new();
     proxy
         .call("new")
         .args_json(json!({
             "relay_public_key": relay_public_key,
             "roles": roles,
+            "allowed_auth_callers": allowed_auth_callers,
         }))
         .max_gas()
         .transact()
@@ -256,11 +261,13 @@ async fn escrow_proxy_refunds_on_invalid_signature() {
         .unwrap();
 
     let roles = create_roles_config(env.sandbox().root_account());
+    let allowed_auth_callers: HashSet<near_workspaces::AccountId> = HashSet::new();
     proxy
         .call("new")
         .args_json(json!({
             "relay_public_key": relay_public_key,
             "roles": roles,
+            "allowed_auth_callers": allowed_auth_callers,
         }))
         .max_gas()
         .transact()
@@ -385,11 +392,13 @@ async fn escrow_proxy_refunds_on_expired_deadline() {
         .unwrap();
 
     let roles = create_roles_config(env.sandbox().root_account());
+    let allowed_auth_callers: HashSet<near_workspaces::AccountId> = HashSet::new();
     proxy
         .call("new")
         .args_json(json!({
             "relay_public_key": relay_public_key,
             "roles": roles,
+            "allowed_auth_callers": allowed_auth_callers,
         }))
         .max_gas()
         .transact()
@@ -509,11 +518,13 @@ async fn escrow_proxy_refunds_on_amount_mismatch() {
         .unwrap();
 
     let roles = create_roles_config(env.sandbox().root_account());
+    let allowed_auth_callers: HashSet<near_workspaces::AccountId> = HashSet::new();
     proxy
         .call("new")
         .args_json(json!({
             "relay_public_key": relay_public_key,
             "roles": roles,
+            "allowed_auth_callers": allowed_auth_callers,
         }))
         .max_gas()
         .transact()
@@ -607,5 +618,77 @@ async fn escrow_proxy_refunds_on_amount_mismatch() {
     assert_eq!(
         escrow_balance, 0,
         "Escrow receiver should have no tokens (transfer was rejected)"
+    );
+}
+
+#[tokio::test]
+async fn escrow_proxy_receives_auth_call_from_defuse() {
+    // Test that escrow-proxy can receive AuthCall intents from defuse
+    let env = Env::builder().create_unique_users().build().await;
+
+    let (user, relay) = futures::join!(env.create_user(), env.create_user());
+
+    // Deploy escrow-proxy with defuse as an allowed auth caller
+    let relay_public_key = get_ed25519_public_key(&relay);
+    let proxy = env
+        .deploy_contract("escrow-proxy-auth", &ESCROW_PROXY_WASM)
+        .await
+        .unwrap();
+
+    let roles = create_roles_config(env.sandbox().root_account());
+    // Allow defuse contract to call on_auth
+    let allowed_auth_callers: HashSet<near_workspaces::AccountId> =
+        HashSet::from([env.defuse.id().clone()]);
+
+    proxy
+        .call("new")
+        .args_json(json!({
+            "relay_public_key": relay_public_key,
+            "roles": roles,
+            "allowed_auth_callers": allowed_auth_callers,
+        }))
+        .max_gas()
+        .transact()
+        .await
+        .unwrap()
+        .into_result()
+        .unwrap();
+
+    // Register proxy's public key in defuse
+    proxy
+        .as_account()
+        .add_public_key(env.defuse.id(), get_account_public_key(proxy.as_account()))
+        .await
+        .unwrap();
+
+    // Create AuthCall intent targeting the proxy
+    let auth_call_intent = AuthCall {
+        contract_id: proxy.id().clone(),
+        msg: "test_auth_call_message".to_string(),
+        attached_deposit: NearToken::from_yoctonear(0),
+        min_gas: None,
+    };
+
+    // Sign and execute the intent
+    let auth_call_payload = user
+        .sign_defuse_payload_default(env.defuse.id(), [auth_call_intent])
+        .await
+        .unwrap();
+
+    let result = user
+        .call(env.defuse.id(), "execute_intents")
+        .args_json(json!({
+            "signed": vec![auth_call_payload],
+        }))
+        .max_gas()
+        .transact()
+        .await
+        .unwrap()
+        .into_result();
+
+    // The call should succeed (proxy logs the message)
+    assert!(
+        result.is_ok(),
+        "AuthCall to escrow-proxy should succeed: {result:?}"
     );
 }

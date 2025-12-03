@@ -7,6 +7,7 @@ mod escrow_params;
 use core::iter;
 use std::collections::{HashMap, HashSet};
 
+use defuse_auth_call::AuthCallee;
 use defuse_crypto::{Curve, Ed25519, PublicKey, Signature};
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
 use near_plugins::{AccessControlRole, access_control};
@@ -42,6 +43,7 @@ pub struct RolesConfig {
 #[derive(PanicOnDefault)]
 pub struct Contract {
     pub relay_public_key: PublicKey,
+    pub allowed_auth_callers: HashSet<AccountId>,
 }
 
 #[near]
@@ -49,8 +51,15 @@ impl Contract {
     #[init]
     #[must_use]
     #[allow(clippy::use_self)]
-    pub fn new(relay_public_key: PublicKey, roles: RolesConfig) -> Contract {
-        let mut contract = Self { relay_public_key };
+    pub fn new(
+        relay_public_key: PublicKey,
+        roles: RolesConfig,
+        allowed_auth_callers: HashSet<AccountId>,
+    ) -> Contract {
+        let mut contract = Self {
+            relay_public_key,
+            allowed_auth_callers,
+        };
         contract.init_acl(roles);
         contract
     }
@@ -202,5 +211,23 @@ impl Contract {
 
         let hash = msg.authorization.hash();
         Ed25519::verify(sig, &hash, relay_pk).is_some()
+    }
+}
+
+#[near]
+impl AuthCallee for Contract {
+    #[payable]
+    fn on_auth(&mut self, signer_id: AccountId, msg: String) -> PromiseOrValue<()> {
+        // Security: verify caller is an allowed defuse contract
+        require!(
+            self.allowed_auth_callers
+                .contains(&env::predecessor_account_id()),
+            "unauthorized caller"
+        );
+
+        // Placeholder implementation - log for now
+        near_sdk::log!("on_auth called by signer: {}, msg: {}", signer_id, msg);
+
+        PromiseOrValue::Value(())
     }
 }

@@ -27,6 +27,7 @@ container_build_command = [
 
 [dependencies]
 defuse-admin-utils.workspace = true
+defuse-auth-call.workspace = true
 defuse-controller.workspace = true
 defuse-crypto = { workspace = true, features = ["serde"] }
 defuse-deadline.workspace = true

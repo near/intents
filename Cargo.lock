@@ -905,6 +905,7 @@ name = "defuse-escrow-proxy"
 version = "0.1.0"
 dependencies = [
  "defuse-admin-utils",
+ "defuse-auth-call",
  "defuse-borsh-utils",
  "defuse-controller",
  "defuse-crypto",
