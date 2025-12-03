@@ -9,7 +9,7 @@ use crate::{
 
 pub const FT_STORAGE_DEPOSIT: NearToken = NearToken::from_yoctonear(2_350_000_000_000_000_000_000);
 
-pub trait FtExt: StorageManagementExt {
+pub trait FtExt {
     async fn ft_transfer(
         &self,
         token_id: &AccountIdRef,
@@ -27,14 +27,14 @@ pub trait FtExt: StorageManagementExt {
         msg: &str,
     ) -> TxResult<u128>;
 
-    async fn ft_storage_deposit(
-        &self,
-        token_id: &AccountIdRef,
-        account_id: Option<&AccountId>,
-    ) -> TxResult<StorageBalance> {
-        self.storage_deposit(token_id, account_id, FT_STORAGE_DEPOSIT)
-            .await
-    }
+    // async fn ft_storage_deposit(
+    //     &self,
+    //     token_id: &AccountIdRef,
+    //     account_id: Option<&AccountId>,
+    // ) -> TxResult<StorageBalance> {
+    //     self.storage_deposit(token_id, account_id, FT_STORAGE_DEPOSIT)
+    //         .await
+    // }
 }
 
 pub trait FtViewExt {

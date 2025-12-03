@@ -1,6 +1,5 @@
 mod letter_gen;
 mod mt_transfer_resolve_gas;
-pub mod traits;
 
 use crate::assert_a_contains_b;
 use crate::tests::defuse::DefuseExt;

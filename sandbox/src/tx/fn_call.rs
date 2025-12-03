@@ -42,8 +42,8 @@ impl FnCallBuilder {
         self
     }
 
-    pub fn json_args<T: serde::Serialize>(mut self, args: &T) -> Self {
-        self.args = serde_json::to_vec(args).unwrap();
+    pub fn json_args<T: serde::Serialize>(mut self, args: T) -> Self {
+        self.args = serde_json::to_vec(&args).unwrap();
         self
     }
 

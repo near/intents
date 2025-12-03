@@ -1,10 +1,7 @@
 use std::sync::atomic::AtomicUsize;
 
 use super::DefuseExt;
-use crate::{
-    tests::{defuse::env::Env, poa::factory::PoAFactoryExt},
-    utils::{Sandbox, wnear::WNearExt},
-};
+use crate::tests::defuse::env::Env;
 use defuse::{
     contract::{
         Role,
@@ -13,9 +10,9 @@ use defuse::{
     core::fees::{FeesConfig, Pips},
 };
 use defuse_poa_factory::contract::Role as POAFactoryRole;
+use defuse_sandbox::{Account, Sandbox};
 use defuse_test_utils::random::Seed;
 use near_sdk::{AccountId, NearToken};
-use near_workspaces::{Account, Contract};
 
 const MIGRATE_FROM_LEGACY_ENV_NAME: &str = "DEFUSE_MIGRATE_FROM_LEGACY";
 
@@ -118,8 +115,8 @@ impl EnvBuilder {
     }
 
     pub async fn build_env(&mut self, deploy_legacy: bool) -> Env {
-        let sandbox = Sandbox::new().await.unwrap();
-        let root = sandbox.root_account().clone();
+        let sandbox = Sandbox::new().await;
+        let root = sandbox.root().id().clone();
 
         let poa_factory = deploy_poa_factory(&root).await;
         let wnear = sandbox.deploy_wrap_near("wnear").await.unwrap();

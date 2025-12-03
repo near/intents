@@ -34,62 +34,6 @@ use near_workspaces::Contract;
 use state::SaltManagerExt;
 use std::sync::LazyLock;
 
-static DEFUSE_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("res/defuse"));
-static DEFUSE_LEGACY_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm("releases/defuse-0.2.10.wasm"));
-
-pub trait DefuseExt: AccountManagerExt {
-    async fn deploy_defuse(
-        &self,
-        id: &str,
-        config: DefuseConfig,
-        legacy: bool,
-    ) -> anyhow::Result<Contract>;
-
-    async fn upgrade_defuse(&self, defuse_contract_id: &AccountId) -> anyhow::Result<()>;
-}
-
-impl DefuseExt for near_workspaces::Account {
-    async fn deploy_defuse(
-        &self,
-        id: &str,
-        config: DefuseConfig,
-        legacy: bool,
-    ) -> anyhow::Result<Contract> {
-        let wasm = if legacy {
-            &DEFUSE_LEGACY_WASM
-        } else {
-            &DEFUSE_WASM
-        };
-
-        let contract = self.deploy_contract(id, wasm).await?;
-
-        contract
-            .call("new")
-            .args_json(json!({
-                "config": config,
-            }))
-            .max_gas()
-            .transact()
-            .await?
-            .into_result()?;
-
-        Ok(contract)
-    }
-
-    async fn upgrade_defuse(&self, defuse_contract_id: &AccountId) -> anyhow::Result<()> {
-        self.call(defuse_contract_id, "upgrade")
-            .deposit(NearToken::from_yoctonear(1))
-            .args_borsh((DEFUSE_WASM.clone(), None::<Gas>))
-            .max_gas()
-            .transact()
-            .await?
-            .into_result()?;
-
-        Ok(())
-    }
-}
-
 pub trait DefuseSigner: Signer {
     #[must_use]
     fn sign_defuse_message<T>(
