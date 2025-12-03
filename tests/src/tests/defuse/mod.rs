@@ -1,11 +1,10 @@
-pub mod accounts;
+// pub mod accounts;
 mod env;
-mod garbage_collector;
-mod intents;
-mod state;
-mod storage;
-mod tokens;
-mod upgrade;
+// mod intents;
+// mod state;
+// mod storage;
+// mod tokens;
+// mod upgrade;
 use defuse::core::ExpirableNonce;
 use defuse::core::SaltedNonce;
 use defuse::core::VersionedNonce;
@@ -13,7 +12,7 @@ use defuse::core::intents::DefuseIntents;
 use defuse_randomness::RngCore;
 
 use self::accounts::AccountManagerExt;
-use crate::utils::{account::AccountExt, crypto::Signer, read_wasm};
+use crate::utils::{crypto::Signer, read_wasm};
 use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::intents::Intent;
 use defuse::core::payload::DefusePayload;
@@ -88,21 +87,6 @@ impl DefuseExt for near_workspaces::Account {
             .into_result()?;
 
         Ok(())
-    }
-}
-
-impl DefuseExt for Contract {
-    async fn deploy_defuse(
-        &self,
-        id: &str,
-        config: DefuseConfig,
-        legacy: bool,
-    ) -> anyhow::Result<Self> {
-        self.as_account().deploy_defuse(id, config, legacy).await
-    }
-
-    async fn upgrade_defuse(&self, defuse_contract_id: &AccountId) -> anyhow::Result<()> {
-        self.as_account().upgrade_defuse(defuse_contract_id).await
     }
 }
 

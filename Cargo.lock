@@ -918,6 +918,7 @@ dependencies = [
  "defuse-map-utils",
  "defuse-near-utils",
  "defuse-nep245",
+ "defuse-sandbox",
  "defuse-serde-utils",
  "defuse-test-utils",
  "defuse-wnear",
@@ -1173,6 +1174,7 @@ dependencies = [
  "near-contract-standards",
  "near-sandbox",
  "near-sdk",
+ "near-workspaces",
  "thiserror 2.0.12",
 ]
 

@@ -20,4 +20,6 @@ near-sandbox.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 thiserror.workspace = true
 
+near-workspaces.workspace = true
+
 near-contract-standards.workspace = true

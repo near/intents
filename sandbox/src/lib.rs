@@ -1,5 +1,3 @@
-#![allow(async_fn_in_trait)]
-
 mod account;
 pub mod extensions;
 pub mod tx;

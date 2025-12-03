@@ -37,6 +37,32 @@ near-sdk.workspace = true
 serde_with.workspace = true
 strum.workspace = true
 thiserror.workspace = true
+# defuse-sandbox = {workspace = true, optional = true}
+defuse-sandbox.workspace = true
+
+[features]
+abi = ["defuse-core/abi"]
+arbitrary = ["defuse-core/arbitrary"]
+contract = [
+    "dep:defuse-bitmap",
+    "dep:defuse-borsh-utils",
+    "dep:defuse-io-utils",
+    "dep:defuse-map-utils",
+    "dep:defuse-wnear",
+    "dep:bitflags",
+]
+# sandbox = ["dep:defuse-sandbox"]
+
+[dev-dependencies]
+defuse-core = { workspace = true, features = ["arbitrary"] }
+defuse-test-utils.workspace = true
+chrono.workspace = true
+
+arbitrary_with.workspace = true
+itertools.workspace = true
+proptest = { workspace = true }
+rstest.workspace = true
+near-sdk = { workspace = true, features = ["unit-testing"] }
 
 [package.metadata.near.reproducible_build]
 image = "sourcescan/cargo-near:0.16.2-rust-1.86.0"
@@ -51,26 +77,3 @@ container_build_command = [
     "--features=abi,contract",
     "--no-embed-abi"
 ]
-
-[features]
-abi = ["defuse-core/abi"]
-arbitrary = ["defuse-core/arbitrary"]
-contract = [
-    "dep:defuse-bitmap",
-    "dep:defuse-borsh-utils",
-    "dep:defuse-io-utils",
-    "dep:defuse-map-utils",
-    "dep:defuse-wnear",
-    "dep:bitflags",
-]
-
-[dev-dependencies]
-defuse-core = { workspace = true, features = ["arbitrary"] }
-defuse-test-utils.workspace = true
-chrono.workspace = true
-
-arbitrary_with.workspace = true
-itertools.workspace = true
-proptest = { workspace = true }
-rstest.workspace = true
-near-sdk = { workspace = true, features = ["unit-testing"] }
