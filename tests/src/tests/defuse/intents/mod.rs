@@ -269,7 +269,7 @@ async fn simulate_is_view_method(
             account_id: user.id().clone().into(),
             event: TransferEvent {
                 receiver_id: Cow::Borrowed(&transfer_intent.receiver_id),
-                tokens: Cow::Borrowed(&transfer_intent.tokens),
+                tokens: transfer_intent.tokens,
                 memo: Cow::Borrowed(&transfer_intent.memo),
             },
         },
