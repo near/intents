@@ -9,8 +9,7 @@ use core::{
 
 use defuse_core::{intents::tokens::NotifyOnTransfer, payload::multi::MultiPayload};
 use defuse_near_utils::UnwrapOrPanicError;
-use near_account_id::ParseAccountError;
-use near_sdk::{AccountId, near, serde_json};
+use near_sdk::{AccountId, account_id::ParseAccountError, near, serde_json};
 use thiserror::Error as ThisError;
 
 #[must_use]

@@ -13,11 +13,10 @@ chrono = { workspace = true, optional = true }
 digest = { workspace = true, optional = true }
 impl-tools.workspace = true
 hex = { workspace = true, optional = true }
-near-account-id = { workspace = true, optional = true }
 near-sdk.workspace = true
 
 [features]
-arbitrary = ["dep:arbitrary_with", "dep:hex", "dep:near-account-id"]
+arbitrary = ["dep:arbitrary_with", "dep:hex"]
 digest = ["dep:digest"]
 time = ["dep:chrono"]
 
