@@ -84,7 +84,7 @@ async fn simulate_transfer_intent() {
                         account_id: user1.id().clone().into(),
                         event: TransferEvent {
                             receiver_id: Cow::Borrowed(&transfer_intent.receiver_id),
-                            tokens: Cow::Borrowed(&transfer_intent.tokens),
+                            tokens: transfer_intent.tokens,
                             memo: Cow::Borrowed(&transfer_intent.memo),
                         },
                     },
