@@ -37,10 +37,15 @@ near-sdk.workspace = true
 serde_with.workspace = true
 strum.workspace = true
 thiserror.workspace = true
-# defuse-sandbox = {workspace = true, optional = true}
-defuse-sandbox.workspace = true
+
+defuse-sandbox = {workspace = true, optional = true}
+arbitrary = {workspace = true, optional = true}
+defuse-test-utils = {workspace = true, optional = true}
+
+# defuse-sandbox.workspace = true
 
 [features]
+default = ["sandbox"]
 abi = ["defuse-core/abi"]
 arbitrary = ["defuse-core/arbitrary"]
 contract = [
@@ -51,7 +56,7 @@ contract = [
     "dep:defuse-wnear",
     "dep:bitflags",
 ]
-# sandbox = ["dep:defuse-sandbox"]
+sandbox = ["dep:defuse-sandbox", "dep:arbitrary", "dep:defuse-test-utils"]
 
 [dev-dependencies]
 defuse-core = { workspace = true, features = ["arbitrary"] }

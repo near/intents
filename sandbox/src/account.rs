@@ -67,11 +67,16 @@ impl Account {
 pub struct SigningAccount {
     account: Account,
     signer: Arc<Signer>,
+    private_key: SecretKey,
 }
 
 impl SigningAccount {
-    pub fn new(account: Account, signer: Arc<Signer>) -> Self {
-        Self { account, signer }
+    pub fn new(account: Account, secret_key: SecretKey) -> Self {
+        Self {
+            account,
+            signer: Signer::new(Signer::from_secret_key(secret_key.clone())).unwrap(),
+            private_key: secret_key,
+        }
     }
 
     pub fn implicit(secret_key: SecretKey, network_config: NetworkConfig) -> Self {
@@ -79,7 +84,7 @@ impl SigningAccount {
 
         Self::new(
             Account::new(public_key.to_implicit_account_id(), network_config),
-            Signer::new(Signer::from_secret_key(secret_key)).unwrap(),
+            secret_key,
         )
     }
 
@@ -93,6 +98,10 @@ impl SigningAccount {
 
     pub fn signer(&self) -> Arc<Signer> {
         self.signer.clone()
+    }
+
+    pub fn private_key(&self) -> &SecretKey {
+        &self.private_key
     }
 
     pub fn tx(&self, receiver_id: AccountId) -> TxBuilder {

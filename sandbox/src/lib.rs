@@ -7,7 +7,7 @@ pub use account::{Account, SigningAccount};
 pub use anyhow;
 pub use near_api as api;
 
-use near_api::{NetworkConfig, RPCEndpoint, Signer};
+use near_api::{NetworkConfig, RPCEndpoint};
 use near_sandbox::GenesisAccount;
 use near_sdk::NearToken;
 
@@ -31,10 +31,12 @@ impl Sandbox {
         };
 
         let root = GenesisAccount::default();
-        let signer =
-            Signer::new(Signer::from_secret_key(root.private_key.parse().unwrap())).unwrap();
+
         Self {
-            root: SigningAccount::new(Account::new(root.account_id, network_config), signer),
+            root: SigningAccount::new(
+                Account::new(root.account_id, network_config),
+                root.private_key.parse().unwrap(),
+            ),
             sandbox,
         }
     }

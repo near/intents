@@ -1,6 +1,4 @@
-use near_api::{
-    Signer, signer::generate_secret_key, types::transaction::actions::FunctionCallAction,
-};
+use near_api::{signer::generate_secret_key, types::transaction::actions::FunctionCallAction};
 use near_sdk::{AccountId, AccountIdRef, NearToken};
 
 use crate::{Account, SigningAccount};
@@ -57,7 +55,7 @@ impl ParentAccountExt for SigningAccount {
 
         Ok(SigningAccount::new(
             Account::new(subaccount, self.network_config().clone()),
-            Signer::new(Signer::from_secret_key(secret_key)).unwrap(),
+            secret_key,
         ))
     }
 }

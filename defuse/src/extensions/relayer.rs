@@ -1,52 +1,54 @@
-use near_sdk::{AccountId, AccountIdRef, NearToken};
-use serde_json::json;
+use defuse_sandbox::{SigningAccount, anyhow, tx::FnCallBuilder};
+use near_sdk::{AccountIdRef, NearToken, PublicKey, serde_json::json};
 
 pub trait RelayerKeysExt {
     async fn add_relayer_key(
         &self,
-        defuse_contract_id: &AccountId,
+        defuse_contract_id: &AccountIdRef,
         public_key: &PublicKey,
     ) -> anyhow::Result<()>;
 
     async fn delete_relayer_key(
         &self,
-        defuse_contract_id: &AccountId,
+        defuse_contract_id: &AccountIdRef,
         public_key: &PublicKey,
     ) -> anyhow::Result<()>;
 }
 
-impl RelayerKeysExt for Account {
+impl RelayerKeysExt for SigningAccount {
     async fn add_relayer_key(
         &self,
-        defuse_contract_id: &AccountId,
+        defuse_contract_id: &AccountIdRef,
         public_key: &PublicKey,
     ) -> anyhow::Result<()> {
-        self.call(defuse_contract_id, "add_relayer_key")
-            .deposit(NearToken::from_yoctonear(1))
-            .args_json(json!({
-                "public_key": public_key,
-            }))
-            .max_gas()
-            .transact()
-            .await?
-            .into_result()?;
+        self.tx(defuse_contract_id.into())
+            .function_call(
+                FnCallBuilder::new("add_relayer_key")
+                    .with_deposit(NearToken::from_yoctonear(1))
+                    .json_args(&json!({
+                        "public_key": public_key,
+                    })),
+            )
+            .await?;
+
         Ok(())
     }
 
     async fn delete_relayer_key(
         &self,
-        defuse_contract_id: &AccountId,
+        defuse_contract_id: &AccountIdRef,
         public_key: &PublicKey,
     ) -> anyhow::Result<()> {
-        self.call(defuse_contract_id, "delete_relayer_key")
-            .deposit(NearToken::from_yoctonear(1))
-            .args_json(json!({
-                "public_key": public_key,
-            }))
-            .max_gas()
-            .transact()
-            .await?
-            .into_result()?;
+        self.tx(defuse_contract_id.into())
+            .function_call(
+                FnCallBuilder::new("delete_relayer_key")
+                    .with_deposit(NearToken::from_yoctonear(1))
+                    .json_args(&json!({
+                        "public_key": public_key,
+                    })),
+            )
+            .await?;
+
         Ok(())
     }
 }
