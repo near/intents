@@ -14,6 +14,9 @@ MT_RECEIVER_STUB_WASM = "${MT_RECEIVER_STUB_DIR}/multi_token_receiver_stub.wasm"
 ESCROW_PROXY_DIR = "${TARGET_DIR}/escrow-proxy"
 ESCROW_PROXY_WASM = "${ESCROW_PROXY_DIR}/defuse_escrow_proxy.wasm"
 
+TRANSFER_AUTH_DIR = "${TARGET_DIR}/transfer-auth"
+TRANSFER_AUTH_WASM = "${TRANSFER_AUTH_DIR}/defuse_transfer_auth.wasm"
+
 [tasks.default]
 alias = "build"
 
@@ -28,6 +31,7 @@ dependencies = [
     "build-poa-factory",
     "build-poa-token-no-registration",
     "build-escrow-proxy",
+    "build-transfer-auth",
     "contract-stats",
     "build-multi-token-receiver-stub",
 ]
@@ -114,6 +118,23 @@ args = [
     "abi,contract",
     "--out-dir",
     "${ESCROW_PROXY_DIR}",
+    "--no-embed-abi",
+]
+
+[tasks.build-transfer-auth]
+dependencies = ["add-cache-dir-tag"]
+command = "cargo"
+args = [
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--locked",
+    "--manifest-path",
+    "./transfer-auth/Cargo.toml",
+    "--features",
+    "contract",
+    "--out-dir",
+    "${TRANSFER_AUTH_DIR}",
     "--no-embed-abi",
 ]
 

@@ -1,0 +1,26 @@
+[package]
+name = "defuse-transfer-auth"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+defuse-auth-call.workspace = true
+near-sdk = { workspace = true, features = ["unstable"] }
+serde_json.workspace = true
+
+[dev-dependencies]
+near-sdk = { workspace = true, features = ["unstable", "unit-testing"] }
+near-workspaces.workspace = true
+tokio.workspace = true
+serde_json.workspace = true
+
+[features]
+contract = []

@@ -769,7 +769,7 @@ dependencies = [
  "near-account-id",
  "near-contract-standards",
  "near-plugins",
- "near-sdk",
+ "near-sdk 5.18.1",
  "proptest",
  "rstest",
  "serde_with",
@@ -781,14 +781,14 @@ dependencies = [
 name = "defuse-admin-utils"
 version = "0.1.0"
 dependencies = [
- "near-sdk",
+ "near-sdk 5.18.1",
 ]
 
 [[package]]
 name = "defuse-auth-call"
 version = "0.1.0"
 dependencies = [
- "near-sdk",
+ "near-sdk 5.18.1",
 ]
 
 [[package]]
@@ -799,7 +799,7 @@ dependencies = [
  "bnum",
  "defuse-map-utils",
  "hex-literal",
- "near-sdk",
+ "near-sdk 5.18.1",
  "rstest",
 ]
 
@@ -811,14 +811,14 @@ dependencies = [
  "chrono",
  "defuse-io-utils",
  "impl-tools",
- "near-sdk",
+ "near-sdk 5.18.1",
 ]
 
 [[package]]
 name = "defuse-controller"
 version = "0.1.0"
 dependencies = [
- "near-sdk",
+ "near-sdk 5.18.1",
 ]
 
 [[package]]
@@ -854,7 +854,7 @@ dependencies = [
  "itertools 0.14.0",
  "near-account-id",
  "near-contract-standards",
- "near-sdk",
+ "near-sdk 5.18.1",
  "rstest",
  "serde_with",
  "strum 0.27.2",
@@ -868,7 +868,7 @@ dependencies = [
  "arbitrary",
  "ed25519-dalek",
  "hex",
- "near-sdk",
+ "near-sdk 5.18.1",
  "p256",
  "rstest",
  "serde_with",
@@ -884,7 +884,7 @@ dependencies = [
  "defuse-borsh-utils",
  "defuse-near-utils",
  "defuse-num-utils",
- "near-sdk",
+ "near-sdk 5.18.1",
 ]
 
 [[package]]
@@ -895,7 +895,7 @@ dependencies = [
  "defuse-test-utils",
  "hex-literal",
  "impl-tools",
- "near-sdk",
+ "near-sdk 5.18.1",
  "rstest",
  "serde_with",
 ]
@@ -915,7 +915,7 @@ dependencies = [
  "defuse-nep245",
  "defuse-token-id",
  "near-plugins",
- "near-sdk",
+ "near-sdk 5.18.1",
  "near-workspaces",
  "serde_json",
  "serde_with",
@@ -927,7 +927,7 @@ name = "defuse-fees"
 version = "0.1.0"
 dependencies = [
  "defuse-num-utils",
- "near-sdk",
+ "near-sdk 5.18.1",
  "thiserror 2.0.17",
 ]
 
@@ -940,7 +940,7 @@ name = "defuse-map-utils"
 version = "0.1.0"
 dependencies = [
  "impl-tools",
- "near-sdk",
+ "near-sdk 5.18.1",
 ]
 
 [[package]]
@@ -955,7 +955,7 @@ dependencies = [
  "hex",
  "impl-tools",
  "near-account-id",
- "near-sdk",
+ "near-sdk 5.18.1",
  "rstest",
 ]
 
@@ -965,7 +965,7 @@ version = "0.1.0"
 dependencies = [
  "defuse-near-utils",
  "derive_more 2.0.1",
- "near-sdk",
+ "near-sdk 5.18.1",
 ]
 
 [[package]]
@@ -977,7 +977,7 @@ dependencies = [
  "defuse-nep461",
  "defuse-serde-utils",
  "impl-tools",
- "near-sdk",
+ "near-sdk 5.18.1",
  "serde_with",
 ]
 
@@ -1002,7 +1002,7 @@ dependencies = [
  "defuse-poa-token",
  "near-contract-standards",
  "near-plugins",
- "near-sdk",
+ "near-sdk 5.18.1",
 ]
 
 [[package]]
@@ -1013,7 +1013,7 @@ dependencies = [
  "defuse-near-utils",
  "near-contract-standards",
  "near-plugins",
- "near-sdk",
+ "near-sdk 5.18.1",
 ]
 
 [[package]]
@@ -1032,7 +1032,7 @@ dependencies = [
  "ed25519-dalek",
  "impl-tools",
  "near-crypto 0.30.3",
- "near-sdk",
+ "near-sdk 5.18.1",
  "rstest",
  "serde_with",
  "stellar-strkey",
@@ -1043,7 +1043,7 @@ name = "defuse-serde-utils"
 version = "0.1.0"
 dependencies = [
  "derive_more 2.0.1",
- "near-sdk",
+ "near-sdk 5.18.1",
  "serde_with",
  "tlb-ton",
 ]
@@ -1057,7 +1057,7 @@ dependencies = [
  "derive_more 2.0.1",
  "hex",
  "near-account-id",
- "near-sdk",
+ "near-sdk 5.18.1",
  "rand_chacha 0.9.0",
  "rstest",
 ]
@@ -1090,7 +1090,7 @@ dependencies = [
  "multi-token-receiver-stub",
  "near-contract-standards",
  "near-crypto 0.30.3",
- "near-sdk",
+ "near-sdk 5.18.1",
  "near-workspaces",
  "rstest",
  "serde_json",
@@ -1107,7 +1107,7 @@ dependencies = [
  "defuse-test-utils",
  "hex-literal",
  "impl-tools",
- "near-sdk",
+ "near-sdk 5.18.1",
  "rstest",
  "serde_with",
 ]
@@ -1125,7 +1125,7 @@ dependencies = [
  "hex",
  "near-account-id",
  "near-contract-standards",
- "near-sdk",
+ "near-sdk 5.18.1",
  "rstest",
  "serde_with",
  "strum 0.27.2",
@@ -1144,11 +1144,22 @@ dependencies = [
  "defuse-test-utils",
  "hex-literal",
  "impl-tools",
- "near-sdk",
+ "near-sdk 5.18.1",
  "rstest",
  "schemars 0.8.22",
  "serde_with",
  "tlb-ton",
+]
+
+[[package]]
+name = "defuse-transfer-auth"
+version = "0.1.0"
+dependencies = [
+ "defuse-auth-call",
+ "near-sdk 5.18.1",
+ "near-workspaces",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]
@@ -1157,7 +1168,7 @@ version = "0.1.0"
 dependencies = [
  "defuse-crypto",
  "defuse-serde-utils",
- "near-sdk",
+ "near-sdk 5.18.1",
  "serde_with",
 ]
 
@@ -1166,7 +1177,7 @@ name = "defuse-wnear"
 version = "0.1.0"
 dependencies = [
  "near-contract-standards",
- "near-sdk",
+ "near-sdk 5.18.1",
 ]
 
 [[package]]
@@ -2334,7 +2345,7 @@ version = "0.1.0"
 dependencies = [
  "defuse",
  "defuse-nep245",
- "near-sdk",
+ "near-sdk 5.18.1",
  "near-workspaces",
  "serde_json",
  "tokio",
@@ -2473,7 +2484,7 @@ version = "5.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "add9ef7a84a3c5817aed105adc326ae14f3e0394274e8f1b58a9af91089f8d01"
 dependencies = [
- "near-sdk",
+ "near-sdk 5.18.0",
 ]
 
 [[package]]
@@ -2637,7 +2648,7 @@ source = "git+https://github.com/Near-One/near-plugins?tag=v0.5.0#e0cb09455ebb16
 dependencies = [
  "bitflags 1.3.2",
  "near-plugins-derive",
- "near-sdk",
+ "near-sdk 5.18.0",
  "serde",
 ]
 
@@ -2842,13 +2853,32 @@ dependencies = [
  "borsh",
  "bs58 0.5.1",
  "near-account-id",
+ "near-gas",
+ "near-sdk-macros 5.18.0",
+ "near-sys 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "near-token",
+ "once_cell",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "wee_alloc",
+]
+
+[[package]]
+name = "near-sdk"
+version = "5.18.1"
+dependencies = [
+ "base64 0.22.1",
+ "borsh",
+ "bs58 0.5.1",
+ "near-account-id",
  "near-crypto 0.31.1",
  "near-gas",
  "near-parameters 0.31.1",
  "near-primitives 0.31.1",
  "near-primitives-core 0.31.1",
- "near-sdk-macros",
- "near-sys",
+ "near-sdk-macros 5.18.1",
+ "near-sys 0.2.5",
  "near-token",
  "near-vm-runner",
  "once_cell",
@@ -2876,6 +2906,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "near-sdk-macros"
+version = "5.18.1"
+dependencies = [
+ "Inflector",
+ "darling 0.20.11",
+ "proc-macro2",
+ "quote",
+ "serde",
+ "serde_json",
+ "strum 0.26.3",
+ "strum_macros 0.26.4",
+ "syn 2.0.111",
+]
+
+[[package]]
 name = "near-stdx"
 version = "0.30.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2886,6 +2931,10 @@ name = "near-stdx"
 version = "0.31.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7e3c38fc0843ef7c5bca717cc4daaf2af05441c3cb9cf259824e226387b18740"
+
+[[package]]
+name = "near-sys"
+version = "0.2.5"
 
 [[package]]
 name = "near-sys"
