@@ -8,5 +8,4 @@ use near_sdk::{
 pub struct AuthMessage {
     pub solver_id: AccountId,
     pub escrow_params_hash: CryptoHash,
-    pub authorized: bool,
 }

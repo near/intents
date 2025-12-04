@@ -55,6 +55,7 @@ defuse-deadline.path = "deadline"
 defuse-erc191.path = "erc191"
 defuse-escrow-proxy.path = "escrow-proxy"
 defuse-fees.path = "fees"
+defuse-transfer-auth.path = "transfer-auth"
 defuse-io-utils.path = "io-utils"
 defuse-map-utils.path = "map-utils"
 defuse-near-utils.path = "near-utils"
@@ -93,7 +94,7 @@ near-account-id = "1.1"
 near-contract-standards = "5.15"
 near-crypto = "0.30"
 near-plugins = { git = "https://github.com/Near-One/near-plugins", tag = "v0.5.0" }
-near-sdk = { path = "../near-sdk-rs/near-sdk" }
+near-sdk = "5.18"
 near-workspaces = "0.20"
 cargo-near-build = "0.9.0"
 
