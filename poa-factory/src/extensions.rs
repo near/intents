@@ -8,7 +8,6 @@ use std::collections::{HashMap, HashSet};
 
 use crate::contract::{POA_TOKEN_INIT_BALANCE, Role};
 
-// TODO: impl it with futures
 #[allow(async_fn_in_trait)]
 pub trait PoAFactoryExt {
     async fn deploy_poa_factory(
@@ -96,8 +95,7 @@ impl PoAFactoryExt for SigningAccount {
                     }))
                     .with_deposit(NearToken::from_near(POA_TOKEN_INIT_BALANCE.as_near())),
             )
-            .await?
-            .into_result()?;
+            .await?;
 
         Ok(Self::token_id(token, factory))
     }
@@ -123,8 +121,7 @@ impl PoAFactoryExt for SigningAccount {
                     }))
                     .with_deposit(NearToken::from_millinear(4)),
             )
-            .await?
-            .into_result()?;
+            .await?;
 
         Ok(())
     }

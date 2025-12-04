@@ -58,8 +58,7 @@ impl AccountManagerExt for SigningAccount {
                         "public_key": public_key,
                     })),
             )
-            .await?
-            .into_result()?;
+            .await?;
 
         Ok(())
     }
@@ -77,8 +76,7 @@ impl AccountManagerExt for SigningAccount {
                         "public_key": public_key,
                     })),
             )
-            .await?
-            .into_result()?;
+            .await?;
         Ok(())
     }
 
@@ -92,8 +90,7 @@ impl AccountManagerExt for SigningAccount {
                     .with_deposit(NearToken::from_yoctonear(1))
                     .with_gas(Gas::from_tgas(10)),
             )
-            .await?
-            .into_result()?;
+            .await?;
         Ok(())
     }
 }

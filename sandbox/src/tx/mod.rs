@@ -1,24 +1,19 @@
-use std::{fmt::Debug, marker::PhantomData};
-
 use futures::{FutureExt, future::BoxFuture};
 use near_api::{
     PublicKey, Transaction,
-    errors::ExecuteTransactionError,
     types::{
         AccessKey, AccessKeyPermission, Action,
-        errors::{DataConversionError, ExecutionError},
         transaction::{
             actions::{
                 AddKeyAction, CreateAccountAction, DeployContractAction,
                 DeployGlobalContractAction, FunctionCallAction, GlobalContractDeployMode,
                 GlobalContractIdentifier, TransferAction, UseGlobalContractAction,
             },
-            result::{ExecutionFinalResult, ExecutionOutcome, ValueOrReceiptId},
+            result::ExecutionSuccess,
         },
     },
 };
 use near_sdk::{AccountId, NearToken};
-use thiserror::Error as ThisError;
 
 mod fn_call;
 mod wrappers;
@@ -106,7 +101,7 @@ impl TxBuilder {
 }
 
 impl IntoFuture for TxBuilder {
-    type Output = Result<ExecutionFinalResult, TxError>;
+    type Output = anyhow::Result<ExecutionSuccess>;
 
     type IntoFuture = BoxFuture<'static, Self::Output>;
 
@@ -117,20 +112,10 @@ impl IntoFuture for TxBuilder {
                 .with_signer(self.signer.signer())
                 .send_to(self.signer.network_config())
                 .await
-                .inspect(|r| eprintln!("{:#?}", TxOutcome::from(r)))
+                .inspect(|r| eprintln!("{:#?}", TxOutcome::from(r)))?
+                .into_result()
                 .map_err(Into::into)
         }
         .boxed()
     }
-}
-
-pub type TxResult<T, E = TxError> = Result<T, E>;
-
-#[derive(Debug, ThisError)]
-pub enum TxError {
-    #[error(transparent)]
-    ExecuteTransactionError(#[from] ExecuteTransactionError),
-
-    #[error(transparent)]
-    ExecutionError(#[from] ExecutionError),
 }

@@ -1,32 +1,31 @@
 use near_contract_standards::storage_management::StorageBalance;
 use near_sdk::{AccountId, AccountIdRef, NearToken, serde_json::json};
 
-use crate::{
-    Account, SigningAccount,
-    tx::{FnCallBuilder, TxResult},
-};
+use crate::{Account, SigningAccount, tx::FnCallBuilder};
 
+#[allow(async_fn_in_trait)]
 pub trait StorageManagementExt {
     async fn storage_deposit(
         &self,
         contract_id: &AccountIdRef,
         account_id: Option<&AccountId>,
         deposit: NearToken,
-    ) -> TxResult<StorageBalance>;
+    ) -> anyhow::Result<StorageBalance>;
 
     async fn storage_withdraw(
         &self,
         contract_id: &AccountIdRef,
         amount: NearToken,
-    ) -> TxResult<StorageBalance>;
+    ) -> anyhow::Result<StorageBalance>;
 
     async fn storage_unregister(
         &self,
         contract_id: &AccountIdRef,
         force: Option<bool>,
-    ) -> TxResult<bool>;
+    ) -> anyhow::Result<bool>;
 }
 
+#[allow(async_fn_in_trait)]
 pub trait StorageViewExt {
     async fn storage_balance_of(
         &self,
@@ -41,7 +40,7 @@ impl StorageManagementExt for SigningAccount {
         contract_id: &AccountIdRef,
         account_id: Option<&AccountId>,
         deposit: NearToken,
-    ) -> TxResult<StorageBalance> {
+    ) -> anyhow::Result<StorageBalance> {
         self.tx(contract_id.into())
             .function_call(
                 FnCallBuilder::new("storage_deposit")
@@ -59,7 +58,7 @@ impl StorageManagementExt for SigningAccount {
         &self,
         contract_id: &AccountIdRef,
         amount: NearToken,
-    ) -> TxResult<StorageBalance> {
+    ) -> anyhow::Result<StorageBalance> {
         self.tx(contract_id.into())
             .function_call(
                 FnCallBuilder::new("storage_withdraw")
@@ -77,7 +76,7 @@ impl StorageManagementExt for SigningAccount {
         &self,
         contract_id: &AccountIdRef,
         force: Option<bool>,
-    ) -> TxResult<bool> {
+    ) -> anyhow::Result<bool> {
         self.tx(contract_id.into())
             .function_call(
                 FnCallBuilder::new("storage_unregister")
@@ -111,7 +110,6 @@ impl StorageViewExt for Account {
     }
 }
 
-// TODO: make all rest
 impl StorageViewExt for SigningAccount {
     async fn storage_balance_of(
         &self,

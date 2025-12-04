@@ -1,14 +1,8 @@
-use near_contract_standards::storage_management::StorageBalance;
-use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, json_types::U128, serde_json::json};
+use near_sdk::{AccountIdRef, Gas, NearToken, json_types::U128, serde_json::json};
 
-use crate::{
-    Account, SigningAccount,
-    extensions::storage_management::StorageManagementExt,
-    tx::{FnCallBuilder, TxResult},
-};
+use crate::{Account, SigningAccount, tx::FnCallBuilder};
 
-pub const FT_STORAGE_DEPOSIT: NearToken = NearToken::from_yoctonear(2_350_000_000_000_000_000_000);
-
+#[allow(async_fn_in_trait)]
 pub trait FtExt {
     async fn ft_transfer(
         &self,
@@ -16,7 +10,7 @@ pub trait FtExt {
         receiver_id: &AccountIdRef,
         amount: u128,
         memo: Option<String>,
-    ) -> TxResult<()>;
+    ) -> anyhow::Result<()>;
 
     async fn ft_transfer_call(
         &self,
@@ -25,18 +19,10 @@ pub trait FtExt {
         amount: u128,
         memo: Option<String>,
         msg: &str,
-    ) -> TxResult<u128>;
-
-    // async fn ft_storage_deposit(
-    //     &self,
-    //     token_id: &AccountIdRef,
-    //     account_id: Option<&AccountId>,
-    // ) -> TxResult<StorageBalance> {
-    //     self.storage_deposit(token_id, account_id, FT_STORAGE_DEPOSIT)
-    //         .await
-    // }
+    ) -> anyhow::Result<u128>;
 }
 
+#[allow(async_fn_in_trait)]
 pub trait FtViewExt {
     async fn ft_balance_of(
         &self,
@@ -52,7 +38,7 @@ impl FtExt for SigningAccount {
         receiver_id: &AccountIdRef,
         amount: u128,
         memo: Option<String>,
-    ) -> TxResult<()> {
+    ) -> anyhow::Result<()> {
         self.tx(token_id.into())
             .function_call(
                 FnCallBuilder::new("ft_transfer")
@@ -75,7 +61,7 @@ impl FtExt for SigningAccount {
         amount: u128,
         memo: Option<String>,
         msg: &str,
-    ) -> TxResult<u128> {
+    ) -> anyhow::Result<u128> {
         self.tx(token_id.into())
             .function_call(
                 FnCallBuilder::new("ft_transfer_call")

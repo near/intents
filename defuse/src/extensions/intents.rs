@@ -16,7 +16,7 @@ pub trait ExecuteIntentsExt {
         &self,
         defuse_id: &AccountIdRef,
         intents: impl IntoIterator<Item = MultiPayload>,
-    ) -> anyhow::Result<ExecutionResult<Value>>;
+    ) -> anyhow::Result<()>;
 
     async fn simulate_intents(
         &self,
@@ -28,7 +28,7 @@ pub trait ExecuteIntentsExt {
         &self,
         defuse_id: &AccountIdRef,
         intents: impl IntoIterator<Item = MultiPayload>,
-    ) -> anyhow::Result<ExecutionResult<Value>> {
+    ) -> anyhow::Result<()> {
         let intents = intents.into_iter().collect::<Vec<_>>();
         let simulation_result = self.simulate_intents(defuse_id, intents.clone()).await;
 
@@ -44,7 +44,7 @@ impl ExecuteIntentsExt for SigningAccount {
         &self,
         defuse_id: &AccountIdRef,
         intents: impl IntoIterator<Item = MultiPayload>,
-    ) -> anyhow::Result<ExecutionResult<Value>> {
+    ) -> anyhow::Result<()> {
         let args = json!({
             "signed": intents.into_iter().collect::<Vec<_>>(),
         });
@@ -56,13 +56,12 @@ impl ExecuteIntentsExt for SigningAccount {
 
         self.tx(defuse_id.into())
             .function_call(FnCallBuilder::new("execute_intents").json_args(&args))
-            .await?
-            .into_result()
+            .await
             .inspect(|outcome| {
                 println!("execute_intents: {outcome:#?}");
-            })
-            .map(Into::into)
-            .map_err(Into::into)
+            })?;
+
+        Ok(())
     }
 
     async fn simulate_intents(

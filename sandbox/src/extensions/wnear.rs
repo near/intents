@@ -1,18 +1,17 @@
 use near_sdk::{AccountIdRef, NearToken, serde_json::json};
 
 use super::ft::FtExt;
-use crate::{
-    SigningAccount,
-    tx::{FnCallBuilder, TxResult},
-};
+use crate::{SigningAccount, tx::FnCallBuilder};
 
+#[allow(async_fn_in_trait)]
 pub trait WNearExt: FtExt {
-    async fn near_deposit(&self, wnear_id: &AccountIdRef, amount: NearToken) -> TxResult<()>;
-    async fn near_withdraw(&self, wnear_id: &AccountIdRef, amount: NearToken) -> TxResult<()>;
+    async fn near_deposit(&self, wnear_id: &AccountIdRef, amount: NearToken) -> anyhow::Result<()>;
+    async fn near_withdraw(&self, wnear_id: &AccountIdRef, amount: NearToken)
+    -> anyhow::Result<()>;
 }
 
 impl WNearExt for SigningAccount {
-    async fn near_deposit(&self, wnear_id: &AccountIdRef, amount: NearToken) -> TxResult<()> {
+    async fn near_deposit(&self, wnear_id: &AccountIdRef, amount: NearToken) -> anyhow::Result<()> {
         self.tx(wnear_id.into())
             .function_call(
                 FnCallBuilder::new("near_deposit")
@@ -23,7 +22,11 @@ impl WNearExt for SigningAccount {
         Ok(())
     }
 
-    async fn near_withdraw(&self, wnear_id: &AccountIdRef, amount: NearToken) -> TxResult<()> {
+    async fn near_withdraw(
+        &self,
+        wnear_id: &AccountIdRef,
+        amount: NearToken,
+    ) -> anyhow::Result<()> {
         self.tx(wnear_id.into())
             .function_call(FnCallBuilder::new("near_withdraw").json_args(&json!({
                 "amount": amount,

@@ -1,11 +1,9 @@
 use near_contract_standards::non_fungible_token::{Token, TokenId, metadata::TokenMetadata};
 use near_sdk::{AccountIdRef, NearToken, serde_json::json};
 
-use crate::{
-    Account, SigningAccount,
-    tx::{FnCallBuilder, TxResult},
-};
+use crate::{Account, SigningAccount, tx::FnCallBuilder};
 
+#[allow(async_fn_in_trait)]
 pub trait NftExt {
     async fn nft_transfer(
         &self,
@@ -13,7 +11,7 @@ pub trait NftExt {
         receiver_id: &AccountIdRef,
         token_id: TokenId,
         memo: Option<String>,
-    ) -> TxResult<()>;
+    ) -> anyhow::Result<()>;
 
     async fn nft_transfer_call(
         &self,
@@ -22,7 +20,7 @@ pub trait NftExt {
         token_id: TokenId,
         memo: Option<String>,
         msg: String,
-    ) -> TxResult<bool>;
+    ) -> anyhow::Result<bool>;
 
     async fn nft_mint(
         &self,
@@ -30,9 +28,10 @@ pub trait NftExt {
         token_id: &TokenId,
         token_owner_id: &AccountIdRef,
         token_metadata: &TokenMetadata,
-    ) -> TxResult<Token>;
+    ) -> anyhow::Result<Token>;
 }
 
+#[allow(async_fn_in_trait)]
 pub trait NftViewExt {
     async fn nft_token(
         &self,
@@ -48,7 +47,7 @@ impl NftExt for SigningAccount {
         receiver_id: &AccountIdRef,
         token_id: TokenId,
         memo: Option<String>,
-    ) -> TxResult<()> {
+    ) -> anyhow::Result<()> {
         self.tx(collection.into())
             .function_call(
                 FnCallBuilder::new("nft_transfer")
@@ -71,7 +70,7 @@ impl NftExt for SigningAccount {
         token_id: TokenId,
         memo: Option<String>,
         msg: String,
-    ) -> TxResult<bool> {
+    ) -> anyhow::Result<bool> {
         self.tx(collection.into())
             .function_call(
                 FnCallBuilder::new("nft_transfer_call")
@@ -95,7 +94,7 @@ impl NftExt for SigningAccount {
         token_id: &TokenId,
         token_owner_id: &AccountIdRef,
         token_metadata: &TokenMetadata,
-    ) -> TxResult<Token> {
+    ) -> anyhow::Result<Token> {
         self.tx(collection.into())
             .function_call(
                 FnCallBuilder::new("nft_mint")
@@ -119,6 +118,7 @@ impl NftViewExt for Account {
         collection: &AccountIdRef,
         token_id: &TokenId,
     ) -> anyhow::Result<Option<Token>> {
+        //TODO: remove this
         let account = Account::new(collection.into(), self.network_config().clone());
 
         account

@@ -74,8 +74,7 @@ impl DefuseMtWithdrawer for SigningAccount {
                         "msg": msg
                     })),
             )
-            .await?
-            .into_result()?;
+            .await?;
 
         let values = res
             .json::<Vec<U128>>()

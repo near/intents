@@ -30,7 +30,6 @@ impl SaltManagerExt for SigningAccount {
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
             .await?
-            .into_result()?
             .json()
             .map_err(Into::into)
     }
@@ -47,7 +46,6 @@ impl SaltManagerExt for SigningAccount {
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
             .await?
-            .into_result()?
             .json()
             .map_err(Into::into)
     }

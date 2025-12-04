@@ -1,19 +1,9 @@
-use near_api::types::errors::{DataConversionError, ExecutionError};
+use near_api::types::errors::DataConversionError;
 use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, json_types::U128, serde_json::json};
 
-use crate::{
-    Account, SigningAccount,
-    tx::{FnCallBuilder, TxResult},
-};
+use crate::{Account, SigningAccount, tx::FnCallBuilder};
 
-pub trait MtViewExt {
-    async fn mt_batch_balance_of(
-        &self,
-        account_id: &AccountIdRef,
-        token_ids: impl IntoIterator<Item = String>,
-    ) -> anyhow::Result<Vec<u128>>;
-}
-
+#[allow(async_fn_in_trait)]
 pub trait MtExt {
     async fn mt_transfer(
         &self,
@@ -22,7 +12,7 @@ pub trait MtExt {
         token_id: impl AsRef<str>,
         amount: u128,
         memo: impl Into<Option<String>>,
-    ) -> TxResult<()>;
+    ) -> anyhow::Result<()>;
 
     async fn mt_transfer_call(
         &self,
@@ -32,7 +22,7 @@ pub trait MtExt {
         amount: u128,
         memo: impl Into<Option<String>>,
         msg: impl Into<String>,
-    ) -> TxResult<u128>;
+    ) -> anyhow::Result<u128>;
 
     async fn mt_on_transfer(
         &self,
@@ -40,7 +30,16 @@ pub trait MtExt {
         receiver_id: AccountId,
         token_ids: impl IntoIterator<Item = (impl Into<String>, u128)>,
         msg: impl AsRef<str>,
-    ) -> TxResult<Vec<u128>>;
+    ) -> anyhow::Result<Vec<u128>>;
+}
+
+#[allow(async_fn_in_trait)]
+pub trait MtViewExt {
+    async fn mt_batch_balance_of(
+        &self,
+        account_id: &AccountIdRef,
+        token_ids: impl IntoIterator<Item = String>,
+    ) -> anyhow::Result<Vec<u128>>;
 }
 
 impl MtExt for SigningAccount {
@@ -51,7 +50,7 @@ impl MtExt for SigningAccount {
         token_id: impl AsRef<str>,
         amount: u128,
         memo: impl Into<Option<String>>,
-    ) -> TxResult<()> {
+    ) -> anyhow::Result<()> {
         self.tx(contract)
             .function_call(
                 FnCallBuilder::new("mt_transfer")
@@ -77,7 +76,7 @@ impl MtExt for SigningAccount {
         amount: u128,
         memo: impl Into<Option<String>>,
         msg: impl Into<String>,
-    ) -> TxResult<u128> {
+    ) -> anyhow::Result<u128> {
         self.tx(contract)
             .function_call(
                 FnCallBuilder::new("mt_transfer_call")
@@ -93,10 +92,9 @@ impl MtExt for SigningAccount {
             .await?
             .json::<Vec<U128>>()
             .and_then(|amounts| {
-                let [amount] = amounts
-                    .try_into()
-                    .map_err(|amounts: Vec<_>| DataConversionError::IncorrectLength(amounts.len()))
-                    .map_err(Into::<ExecutionError>::into)?;
+                let [amount] = amounts.try_into().map_err(|amounts: Vec<_>| {
+                    DataConversionError::IncorrectLength(amounts.len())
+                })?;
                 Ok(amount.0)
             })
             .map_err(Into::into)
@@ -108,7 +106,7 @@ impl MtExt for SigningAccount {
         receiver_id: AccountId,
         token_ids: impl IntoIterator<Item = (impl Into<String>, u128)>,
         msg: impl AsRef<str>,
-    ) -> TxResult<Vec<u128>> {
+    ) -> anyhow::Result<Vec<u128>> {
         let (token_ids, amounts): (Vec<_>, Vec<_>) = token_ids
             .into_iter()
             .map(|(token_id, amount)| (token_id.into(), U128(amount)))

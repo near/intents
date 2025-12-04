@@ -84,7 +84,6 @@ impl DefuseFtWithdrawer for SigningAccount {
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
             .await?
-            .into_result()?
             .json::<U128>()
             .map(|v| v.0)
             .map_err(Into::into)
@@ -114,7 +113,6 @@ impl DefuseFtWithdrawer for SigningAccount {
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
             .await?
-            .into_result()?
             .json::<U128>()
             .map(|v| v.0)
             .map_err(Into::into)

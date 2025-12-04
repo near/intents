@@ -1174,7 +1174,6 @@ dependencies = [
  "near-contract-standards",
  "near-sandbox",
  "near-sdk",
- "near-workspaces",
  "thiserror 2.0.12",
 ]
 

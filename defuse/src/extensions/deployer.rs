@@ -64,8 +64,7 @@ impl DefuseExt for SigningAccount {
                     .with_deposit(NearToken::from_yoctonear(1))
                     .borsh_args(&(DEFUSE_WASM.clone(), None::<Gas>)),
             )
-            .await?
-            .into_result()?;
+            .await?;
 
         Ok(())
     }

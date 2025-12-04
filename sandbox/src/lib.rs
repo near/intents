@@ -11,7 +11,7 @@ use near_api::{NetworkConfig, RPCEndpoint, Signer};
 use near_sandbox::GenesisAccount;
 use near_sdk::NearToken;
 
-use crate::{extensions::account::ParentAccountExt, tx::TxError};
+use crate::extensions::account::ParentAccountExt;
 
 pub struct Sandbox {
     root: SigningAccount,
@@ -44,7 +44,7 @@ impl Sandbox {
     }
 
     // TODO: to trait
-    pub async fn create_account(&self, name: &str) -> Result<SigningAccount, TxError> {
+    pub async fn create_account(&self, name: &str) -> anyhow::Result<SigningAccount> {
         self.root
             .create_subaccount(name, NearToken::from_near(10))
             .await

@@ -28,8 +28,7 @@ impl FeesManagerExt for SigningAccount {
                     }))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await?
-            .into_result()?;
+            .await?;
 
         Ok(())
     }
@@ -47,8 +46,7 @@ impl FeesManagerExt for SigningAccount {
                         "fee_collector": fee_collector,
                     })),
             )
-            .await?
-            .into_result()?;
+            .await?;
 
         Ok(())
     }

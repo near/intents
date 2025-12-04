@@ -1,12 +1,11 @@
 use near_api::{
-    Signer,
-    signer::generate_secret_key,
-    types::{errors::ExecutionError, transaction::actions::FunctionCallAction},
+    Signer, signer::generate_secret_key, types::transaction::actions::FunctionCallAction,
 };
 use near_sdk::{AccountId, AccountIdRef, NearToken};
 
-use crate::{Account, SigningAccount, tx::TxResult};
+use crate::{Account, SigningAccount};
 
+#[allow(async_fn_in_trait)]
 pub trait ParentAccountExt {
     fn root_id(&self) -> &AccountIdRef;
 
@@ -28,7 +27,7 @@ pub trait ParentAccountExt {
         &self,
         name: impl AsRef<str>,
         balance: impl Into<Option<NearToken>>,
-    ) -> TxResult<SigningAccount>;
+    ) -> anyhow::Result<SigningAccount>;
 }
 
 impl ParentAccountExt for SigningAccount {
@@ -40,20 +39,21 @@ impl ParentAccountExt for SigningAccount {
         &self,
         name: impl AsRef<str>,
         balance: impl Into<Option<NearToken>>,
-    ) -> TxResult<SigningAccount> {
+    ) -> anyhow::Result<SigningAccount> {
         let secret_key = generate_secret_key().unwrap();
         let public_key = secret_key.public_key();
         let subaccount = self.subaccount_id(name);
 
-        let mut tx = self.tx(subaccount.clone()).create_account();
+        let mut tx = self
+            .tx(subaccount.clone())
+            .create_account()
+            .add_full_access_key(public_key);
+
         if let Some(balance) = balance.into() {
             tx = tx.transfer(balance);
         }
 
-        tx.add_full_access_key(public_key)
-            .await?
-            .into_result()
-            .map_err(Into::<ExecutionError>::into)?;
+        tx.await?;
 
         Ok(SigningAccount::new(
             Account::new(subaccount, self.network_config().clone()),
@@ -62,6 +62,7 @@ impl ParentAccountExt for SigningAccount {
     }
 }
 
+#[allow(async_fn_in_trait)]
 pub trait AccountDeployerExt: ParentAccountExt {
     async fn deploy_contract(
         &self,
@@ -82,6 +83,7 @@ impl AccountDeployerExt for SigningAccount {
     ) -> anyhow::Result<Account> {
         let subaccount = self.subaccount_id(name);
 
+        // TODO: may be make optional?
         let mut tx = self
             .tx(subaccount.clone())
             .create_account()
@@ -92,7 +94,7 @@ impl AccountDeployerExt for SigningAccount {
             tx = tx.function_call(args);
         }
 
-        tx.await?.into_result()?;
+        tx.await?;
 
         Ok(Account::new(subaccount, self.network_config().clone()))
     }

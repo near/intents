@@ -10,7 +10,7 @@ use near_sdk::{
     serde::{Serialize, de::DeserializeOwned},
 };
 
-use crate::tx::{TxBuilder, TxResult};
+use crate::tx::TxBuilder;
 
 #[derive(Clone)]
 pub struct Account {
@@ -99,9 +99,10 @@ impl SigningAccount {
         TxBuilder::new(self.clone(), receiver_id)
     }
 
-    pub async fn fund_implicit(&self, deposit: NearToken) -> TxResult<Self> {
+    pub async fn fund_implicit(&self, deposit: NearToken) -> anyhow::Result<Self> {
         let account = Self::generate_implicit(self.network_config.clone());
 
+        // Todo - use it with create account
         self.tx(account.id().clone()).transfer(deposit).await?;
 
         Ok(account)

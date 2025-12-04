@@ -1,50 +1,48 @@
 use near_sdk::{AccountIdRef, serde_json::json};
 
-use crate::{
-    SigningAccount,
-    tx::{FnCallBuilder, TxResult},
-};
+use crate::{SigningAccount, tx::FnCallBuilder};
 
+#[allow(async_fn_in_trait)]
 pub trait AclExt {
     async fn acl_add_super_admin(
         &self,
         contract_id: &AccountIdRef,
         account_id: &AccountIdRef,
-    ) -> TxResult<()>;
+    ) -> anyhow::Result<()>;
 
     async fn acl_revoke_super_admin(
         &self,
         contract_id: &AccountIdRef,
         account_id: &AccountIdRef,
-    ) -> TxResult<()>;
+    ) -> anyhow::Result<()>;
 
     async fn acl_add_admin(
         &self,
         contract_id: &AccountIdRef,
         role: impl Into<String>,
         account_id: &AccountIdRef,
-    ) -> TxResult<()>;
+    ) -> anyhow::Result<()>;
 
     async fn acl_revoke_admin(
         &self,
         contract_id: &AccountIdRef,
         role: impl Into<String>,
         account_id: &AccountIdRef,
-    ) -> TxResult<()>;
+    ) -> anyhow::Result<()>;
 
     async fn acl_grant_role(
         &self,
         contract_id: &AccountIdRef,
         role: impl Into<String>,
         account_id: &AccountIdRef,
-    ) -> TxResult<()>;
+    ) -> anyhow::Result<()>;
 
     async fn acl_revoke_role(
         &self,
         contract_id: &AccountIdRef,
         role: impl Into<String>,
         account_id: &AccountIdRef,
-    ) -> TxResult<()>;
+    ) -> anyhow::Result<()>;
 }
 
 impl AclExt for SigningAccount {
@@ -52,7 +50,7 @@ impl AclExt for SigningAccount {
         &self,
         contract_id: &AccountIdRef,
         account_id: &AccountIdRef,
-    ) -> TxResult<()> {
+    ) -> anyhow::Result<()> {
         self.tx(contract_id.into())
             .function_call(FnCallBuilder::new("acl_add_super_admin").json_args(&json!({
             "account_id": account_id,
@@ -66,7 +64,7 @@ impl AclExt for SigningAccount {
         &self,
         contract_id: &AccountIdRef,
         account_id: &AccountIdRef,
-    ) -> TxResult<()> {
+    ) -> anyhow::Result<()> {
         self.tx(contract_id.into())
             .function_call(
                 FnCallBuilder::new("acl_revoke_super_admin").json_args(&json!({
@@ -83,7 +81,7 @@ impl AclExt for SigningAccount {
         contract_id: &AccountIdRef,
         role: impl Into<String>,
         account_id: &AccountIdRef,
-    ) -> TxResult<()> {
+    ) -> anyhow::Result<()> {
         self.tx(contract_id.into())
             .function_call(FnCallBuilder::new("acl_add_admin").json_args(&json!({
                 "role": role.into(),
@@ -98,7 +96,7 @@ impl AclExt for SigningAccount {
         contract_id: &AccountIdRef,
         role: impl Into<String>,
         account_id: &AccountIdRef,
-    ) -> TxResult<()> {
+    ) -> anyhow::Result<()> {
         self.tx(contract_id.into())
             .function_call(FnCallBuilder::new("acl_revoke_admin").json_args(&json!({
                 "role": role.into(),
@@ -114,7 +112,7 @@ impl AclExt for SigningAccount {
         contract_id: &AccountIdRef,
         role: impl Into<String>,
         account_id: &AccountIdRef,
-    ) -> TxResult<()> {
+    ) -> anyhow::Result<()> {
         self.tx(contract_id.into())
             .function_call(FnCallBuilder::new("acl_grant_role").json_args(&json!({
                 "role": role.into(),
@@ -130,7 +128,7 @@ impl AclExt for SigningAccount {
         contract_id: &AccountIdRef,
         role: impl Into<String>,
         account_id: &AccountIdRef,
-    ) -> TxResult<()> {
+    ) -> anyhow::Result<()> {
         self.tx(contract_id.into())
             .function_call(FnCallBuilder::new("acl_revoke_role").json_args(&json!({
                 "role": role.into(),
