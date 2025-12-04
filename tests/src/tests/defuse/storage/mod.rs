@@ -67,7 +67,6 @@ async fn storage_deposit_success(
 
     {
         let storage_balance_ft1_user1 = env.storage_balance_of(&ft, user.id()).await.unwrap();
-
         let storage_balance_ft1_user2 = env.storage_balance_of(&ft, other_user.id()).await.unwrap();
 
         assert_eq!(
@@ -160,7 +159,6 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents() {
 
     {
         let storage_balance_ft1_user1 = env.storage_balance_of(&ft, user.id()).await.unwrap();
-
         let storage_balance_ft1_user2 = env.storage_balance_of(&ft, other_user.id()).await.unwrap();
 
         assert_eq!(

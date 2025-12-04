@@ -108,10 +108,12 @@ async fn ft_withdraw_intent() {
         .unwrap()
         .into_result()
         .unwrap();
+
     // wrap NEAR
     user.near_deposit(env.wnear.id(), STORAGE_DEPOSIT)
         .await
         .unwrap();
+
     // deposit wNEAR
     user.defuse_ft_deposit(
         env.defuse.id(),
@@ -170,6 +172,7 @@ async fn ft_withdraw_intent() {
     env.defuse_execute_intents(env.defuse.id(), [valid_payload])
         .await
         .unwrap();
+
     let new_defuse_balance = env
         .defuse
         .as_account()
@@ -177,6 +180,7 @@ async fn ft_withdraw_intent() {
         .await
         .unwrap()
         .balance;
+
     assert!(
         new_defuse_balance >= old_defuse_balance,
         "contract balance must not decrease"

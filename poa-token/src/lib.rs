@@ -12,6 +12,15 @@ use near_contract_standards::{
 use near_plugins::Ownable;
 use near_sdk::{AccountId, ext_contract, json_types::U128};
 
+pub trait NoRegistration {
+    /// Returns whether the token allows accounts initialize storage deposits by itself.
+    fn no_registration(&self) -> bool;
+
+    /// Enables/disables registration.
+    /// NOTE: MUST attach 1 yⓃ for security purposes.
+    fn set_no_registration(&mut self, no_registration: bool);
+}
+
 /// Fungible token that allows minting only by its owner.
 /// To withdraw, users can call `ft_transfer` on the deployed token,
 /// pass token itself as `receiver_id` and provide destination address
@@ -24,6 +33,7 @@ pub trait PoaFungibleToken:
     + StorageManagement
     + Ownable
     + FullAccessKeys
+    + NoRegistration
 {
     /// Sets metadata.
     /// NOTE: MUST attach 1 yⓃ for security purposes.

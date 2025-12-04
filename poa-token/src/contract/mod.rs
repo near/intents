@@ -1,5 +1,7 @@
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
+use defuse_borsh_utils::adapters::As;
 use defuse_near_utils::{CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID};
+use impl_tools::autoimpl;
 use near_contract_standards::{
     fungible_token::{
         FungibleToken, FungibleTokenCore, FungibleTokenResolver,
@@ -14,7 +16,12 @@ use near_sdk::{
     assert_one_yocto, borsh::BorshSerialize, env, json_types::U128, near, require, store::Lazy,
 };
 
-use crate::{PoaFungibleToken, WITHDRAW_MEMO_PREFIX};
+use crate::{
+    NoRegistration, PoaFungibleToken, WITHDRAW_MEMO_PREFIX,
+    contract::state::{DEFAULT_NO_REGISTRATION, MaybeVersionedContractState, State, StateV0},
+};
+
+mod state;
 
 #[near(
     contract_state,
@@ -25,16 +32,25 @@ use crate::{PoaFungibleToken, WITHDRAW_MEMO_PREFIX};
     )
 )]
 #[derive(Ownable, PanicOnDefault)]
+#[autoimpl(Deref using self.state)]
+#[autoimpl(DerefMut using self.state)]
 pub struct Contract {
-    token: FungibleToken,
-    metadata: Lazy<FungibleTokenMetadata>,
+    #[borsh(
+        deserialize_with = "As::<MaybeVersionedContractState>::deserialize",
+        serialize_with = "As::<MaybeVersionedContractState>::serialize"
+    )]
+    state: State,
 }
 
 #[near]
 impl Contract {
     #[init]
     #[allow(dead_code)]
-    pub fn new(owner_id: Option<AccountId>, metadata: Option<FungibleTokenMetadata>) -> Self {
+    pub fn new(
+        owner_id: Option<AccountId>,
+        metadata: Option<FungibleTokenMetadata>,
+        no_registration: Option<bool>,
+    ) -> Self {
         let metadata = metadata.unwrap_or_else(|| FungibleTokenMetadata {
             spec: FT_METADATA_SPEC.to_string(),
             name: Default::default(),
@@ -47,8 +63,11 @@ impl Contract {
         metadata.assert_valid();
 
         let contract = Self {
-            token: FungibleToken::new(Prefix::FungibleToken),
-            metadata: Lazy::new(Prefix::Metadata, metadata),
+            state: State {
+                token: FungibleToken::new(Prefix::FungibleToken),
+                metadata: Lazy::new(Prefix::Metadata, metadata),
+                no_registration: no_registration.unwrap_or(DEFAULT_NO_REGISTRATION),
+            },
         };
 
         let owner = owner_id.unwrap_or_else(|| PREDECESSOR_ACCOUNT_ID.clone());
@@ -57,12 +76,27 @@ impl Contract {
             contract.owner_storage_key(),
             owner.as_bytes()
         ));
+
         OwnershipTransferred {
             previous_owner: None,
             new_owner: Some(owner),
         }
         .emit();
         contract
+    }
+
+    #[payable]
+    #[private]
+    #[init(ignore_state)]
+    pub fn migrate(no_registration: bool) -> Self {
+        assert_one_yocto();
+
+        let old_state: StateV0 = env::state_read().expect("failed to load state");
+        let mut state: State = old_state.into();
+
+        state.no_registration = no_registration;
+
+        Self { state }
     }
 }
 
@@ -81,6 +115,7 @@ impl PoaFungibleToken for Contract {
     fn ft_deposit(&mut self, owner_id: AccountId, amount: U128, memo: Option<String>) {
         self.token.storage_deposit(Some(owner_id.clone()), None);
         self.token.internal_deposit(&owner_id, amount.into());
+
         FtMint {
             owner_id: &owner_id,
             amount,
@@ -145,12 +180,19 @@ impl FungibleTokenResolver for Contract {
 #[near]
 impl StorageManagement for Contract {
     #[payable]
-    #[cfg_attr(feature = "no-registration", only(self, owner))]
     fn storage_deposit(
         &mut self,
         account_id: Option<AccountId>,
         registration_only: Option<bool>,
     ) -> StorageBalance {
+        if self.no_registration {
+            require!(
+                *PREDECESSOR_ACCOUNT_ID == self.owner_get().unwrap_or_else(|| unreachable!())
+                    || *PREDECESSOR_ACCOUNT_ID == *CURRENT_ACCOUNT_ID,
+                "Method is private"
+            );
+        }
+
         self.token.storage_deposit(account_id, registration_only)
     }
 
@@ -208,6 +250,20 @@ impl FullAccessKeys for Contract {
     fn delete_key(&mut self, public_key: PublicKey) -> Promise {
         assert_one_yocto();
         Promise::new(CURRENT_ACCOUNT_ID.clone()).delete_key(public_key)
+    }
+}
+
+#[near]
+impl NoRegistration for Contract {
+    fn no_registration(&self) -> bool {
+        self.no_registration
+    }
+
+    #[only(self, owner)]
+    #[payable]
+    fn set_no_registration(&mut self, no_registration: bool) {
+        assert_one_yocto();
+        self.no_registration = no_registration;
     }
 }
 

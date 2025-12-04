@@ -5,8 +5,6 @@ skip_core_tasks = true
 [env]
 TARGET_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/res"
 POA_TOKEN_WASM = "${TARGET_DIR}/defuse_poa_token.wasm"
-POA_TOKEN_WITH_NO_REGISTRATION_DIR = "${TARGET_DIR}/poa-token-no-registration"
-POA_TOKEN_WASM_NO_REGISTRATION_WASM = "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}/defuse_poa_token.wasm"
 
 MT_RECEIVER_STUB_DIR = "${TARGET_DIR}/multi-token-receiver-stub"
 MT_RECEIVER_STUB_WASM = "${MT_RECEIVER_STUB_DIR}/multi_token_receiver_stub.wasm"
@@ -22,10 +20,8 @@ alias = "build"
 dependencies = [
     "add-cache-dir-tag",
     "build-defuse",
-    "build-poa-factory",
-    "build-poa-token-no-registration",
-    "contract-stats",
-    "build-multi-token-receiver-stub",
+    "build-poa-factory-global",
+    "contract-stats"
 ]
 
 [tasks.build-defuse]
@@ -40,6 +36,23 @@ args = [
     "./defuse/Cargo.toml",
     "--features",
     "abi,contract",
+    "--out-dir",
+    "${TARGET_DIR}",
+    "--no-embed-abi",
+]
+
+[tasks.build-poa-factory-global]
+dependencies = ["add-cache-dir-tag", "build-poa-token"]
+command = "cargo"
+args = [
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--locked",
+    "--manifest-path",
+    "./poa-factory/Cargo.toml",
+    "--features",
+    "contract,global_contracts",
     "--out-dir",
     "${TARGET_DIR}",
     "--no-embed-abi",
@@ -79,23 +92,6 @@ args = [
     "--no-embed-abi",
 ]
 
-[tasks.build-poa-token-no-registration]
-dependencies = ["add-cache-dir-tag"]
-command = "cargo"
-args = [
-    "near",
-    "build",
-    "non-reproducible-wasm",
-    "--locked",
-    "--manifest-path",
-    "./poa-token/Cargo.toml",
-    "--features",
-    "contract,no-registration",
-    "--out-dir",
-    "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}",
-    "--no-embed-abi",
-]
-
 # ============================================================================
 # Build reproducible tasks
 # ============================================================================
@@ -105,7 +101,6 @@ dependencies = [
     "add-cache-dir-tag",
     "build-defuse-reproducible",
     "build-poa-factory-reproducible",
-    "build-poa-token-no-registration-reproducible",
     "defuse-reproducible-checksum",
     "contract-stats",
 ]
@@ -135,6 +130,7 @@ args = [
     "--out-dir",
     "${TARGET_DIR}",
 ]
+
 [tasks.build-poa-token-reproducible]
 dependencies = ["add-cache-dir-tag"]
 command = "cargo"
@@ -146,21 +142,6 @@ args = [
     "./poa-token/Cargo.toml",
     "--out-dir",
     "${TARGET_DIR}",
-]
-
-[tasks.build-poa-token-no-registration-reproducible]
-dependencies = ["add-cache-dir-tag"]
-command = "cargo"
-args = [
-    "near",
-    "build",
-    "reproducible-wasm",
-    "--manifest-path",
-    "./poa-token/Cargo.toml",
-    "--out-dir",
-    "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}",
-    "--variant",
-    "no_registration",
 ]
 
 [tasks.defuse-reproducible-checksum]
@@ -177,13 +158,20 @@ script = [
 [tasks.test]
 alias = "tests"
 
+[tasks.test-build]
+dependencies = [
+    "build-defuse",
+    "build-poa-factory",
+    "build-multi-token-receiver-stub"
+]
+
 [tasks.nextest]
-dependencies = ["build"]
+dependencies = ["test-build"]
 command = "cargo"
 args = ["nextest", "run", "--all", "${@}"]
 
 [tasks.tests]
-dependencies = ["build"]
+dependencies = ["test-build"]
 run_task = "run-tests"
 
 [tasks.run-tests]

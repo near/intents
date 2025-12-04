@@ -103,7 +103,7 @@ impl Env {
             .subaccount_name(&token_id.clone().into_contract_id());
 
         let token = root
-            .poa_factory_deploy_token(self.poa_factory.id(), &token_name, None)
+            .poa_factory_deploy_token(self.poa_factory.id(), &token_name, None, true)
             .await?;
 
         self.ft_storage_deposit_for_accounts(&token, vec![root.id(), self.defuse.id()])

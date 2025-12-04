@@ -25,7 +25,6 @@ use futures::future::try_join_all;
 use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::{AccountId, NearToken, env::sha256};
 use near_workspaces::{Account, Contract};
-
 use std::{
     ops::Deref,
     sync::{
@@ -105,7 +104,7 @@ impl Env {
     pub async fn create_named_token(&self, name: &str) -> AccountId {
         let root = self.sandbox.root_account();
 
-        root.poa_factory_deploy_token(self.poa_factory.id(), name, None)
+        root.poa_factory_deploy_token(self.poa_factory.id(), name, None, self.disable_registration)
             .await
             .unwrap()
     }
