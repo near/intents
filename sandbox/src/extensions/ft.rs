@@ -24,11 +24,7 @@ pub trait FtExt {
 
 #[allow(async_fn_in_trait)]
 pub trait FtViewExt {
-    async fn ft_balance_of(
-        &self,
-        token_id: &AccountIdRef,
-        account_id: &AccountIdRef,
-    ) -> anyhow::Result<u128>;
+    async fn ft_balance_of(&self, account_id: &AccountIdRef) -> anyhow::Result<u128>;
 }
 
 impl FtExt for SigningAccount {
@@ -82,31 +78,20 @@ impl FtExt for SigningAccount {
 }
 
 impl FtViewExt for Account {
-    async fn ft_balance_of(
-        &self,
-        token_id: &AccountIdRef,
-        account_id: &AccountIdRef,
-    ) -> anyhow::Result<u128> {
-        let account = Account::new(token_id.into(), self.network_config().clone());
-
-        account
-            .call_view_function_json::<U128>(
-                "ft_balance_of",
-                json!({
-                    "account_id": account_id,
-                }),
-            )
-            .await
-            .map(|v| v.0)
+    async fn ft_balance_of(&self, account_id: &AccountIdRef) -> anyhow::Result<u128> {
+        self.call_view_function_json::<U128>(
+            "ft_balance_of",
+            json!({
+                "account_id": account_id,
+            }),
+        )
+        .await
+        .map(|v| v.0)
     }
 }
 
 impl FtViewExt for SigningAccount {
-    async fn ft_balance_of(
-        &self,
-        token_id: &AccountIdRef,
-        account_id: &AccountIdRef,
-    ) -> anyhow::Result<u128> {
-        self.account().ft_balance_of(token_id, account_id).await
+    async fn ft_balance_of(&self, account_id: &AccountIdRef) -> anyhow::Result<u128> {
+        self.account().ft_balance_of(account_id).await
     }
 }

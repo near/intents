@@ -1,7 +1,6 @@
 use defuse_core::payload::multi::MultiPayload;
 use defuse_sandbox::{
-    Account, SigningAccount, anyhow,
-    api::types::transaction::result::{ExecutionResult, Value},
+    Account, SigningAccount, anyhow, api::types::transaction::result::ExecutionSuccess,
     tx::FnCallBuilder,
 };
 use near_sdk::{
@@ -16,7 +15,7 @@ pub trait ExecuteIntentsExt {
         &self,
         defuse_id: &AccountIdRef,
         intents: impl IntoIterator<Item = MultiPayload>,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<ExecutionSuccess>;
 
     async fn simulate_intents(
         &self,
@@ -28,7 +27,7 @@ pub trait ExecuteIntentsExt {
         &self,
         defuse_id: &AccountIdRef,
         intents: impl IntoIterator<Item = MultiPayload>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<ExecutionSuccess> {
         let intents = intents.into_iter().collect::<Vec<_>>();
         let simulation_result = self.simulate_intents(defuse_id, intents.clone()).await;
 
@@ -44,7 +43,7 @@ impl ExecuteIntentsExt for SigningAccount {
         &self,
         defuse_id: &AccountIdRef,
         intents: impl IntoIterator<Item = MultiPayload>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<ExecutionSuccess> {
         let args = json!({
             "signed": intents.into_iter().collect::<Vec<_>>(),
         });
@@ -59,9 +58,8 @@ impl ExecuteIntentsExt for SigningAccount {
             .await
             .inspect(|outcome| {
                 println!("execute_intents: {outcome:#?}");
-            })?;
-
-        Ok(())
+            })
+            .map(Into::into)
     }
 
     async fn simulate_intents(

@@ -22,7 +22,7 @@ use crate::contract::config::DefuseConfig;
 pub trait DefuseExt: AccountDeployerExt {
     async fn deploy_defuse(
         &self,
-        id: &str,
+        id: impl AsRef<str>,
         config: DefuseConfig,
         legacy: bool,
     ) -> anyhow::Result<Account>;
@@ -33,7 +33,7 @@ pub trait DefuseExt: AccountDeployerExt {
 impl DefuseExt for SigningAccount {
     async fn deploy_defuse(
         &self,
-        id: &str,
+        id: impl AsRef<str>,
         config: DefuseConfig,
         legacy: bool,
     ) -> anyhow::Result<Account> {
@@ -43,18 +43,15 @@ impl DefuseExt for SigningAccount {
             &DEFUSE_WASM
         };
 
-        let contract = self
-            .deploy_contract(
-                id,
-                wasm.as_slice(),
-                NearToken::from_near(100),
-                Some(FnCallBuilder::new("new").json_args(&json!({
-                    "config": config,
-                }))),
-            )
-            .await?;
-
-        Ok(contract)
+        self.deploy_contract(
+            id,
+            wasm.as_slice(),
+            NearToken::from_near(100),
+            Some(FnCallBuilder::new("new").json_args(&json!({
+                "config": config,
+            }))),
+        )
+        .await
     }
 
     async fn upgrade_defuse(&self, defuse_contract_id: &AccountIdRef) -> anyhow::Result<()> {

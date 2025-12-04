@@ -1,9 +1,7 @@
 use defuse_nep245::TokenId;
 use defuse_sandbox::{
-    SigningAccount, anyhow,
-    api::types::transaction::result::{ExecutionResult, Value},
-    extensions::mt::MtExt,
-    tx::FnCallBuilder,
+    SigningAccount, anyhow, api::types::transaction::result::ExecutionSuccess,
+    extensions::mt::MtExt, tx::FnCallBuilder,
 };
 use near_sdk::{AccountIdRef, NearToken, json_types::U128, serde_json::json};
 
@@ -26,7 +24,7 @@ pub trait DefuseMtWithdrawer {
         token_ids: Vec<TokenId>,
         amounts: Vec<u128>,
         msg: Option<String>,
-    ) -> anyhow::Result<(Vec<u128>, ExecutionResult<Value>)>;
+    ) -> anyhow::Result<(Vec<u128>, ExecutionSuccess)>;
 }
 
 impl DefuseMtDepositer for SigningAccount {
@@ -60,7 +58,7 @@ impl DefuseMtWithdrawer for SigningAccount {
         token_ids: Vec<TokenId>,
         amounts: Vec<u128>,
         msg: Option<String>,
-    ) -> anyhow::Result<(Vec<u128>, ExecutionResult<Value>)> {
+    ) -> anyhow::Result<(Vec<u128>, ExecutionSuccess)> {
         let res = self
             .tx(defuse_id.into())
             .function_call(

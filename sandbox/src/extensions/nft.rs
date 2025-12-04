@@ -33,11 +33,7 @@ pub trait NftExt {
 
 #[allow(async_fn_in_trait)]
 pub trait NftViewExt {
-    async fn nft_token(
-        &self,
-        collection: &AccountIdRef,
-        token_id: &TokenId,
-    ) -> anyhow::Result<Option<Token>>;
+    async fn nft_token(&self, token_id: &TokenId) -> anyhow::Result<Option<Token>>;
 }
 
 impl NftExt for SigningAccount {
@@ -113,31 +109,19 @@ impl NftExt for SigningAccount {
 }
 
 impl NftViewExt for Account {
-    async fn nft_token(
-        &self,
-        collection: &AccountIdRef,
-        token_id: &TokenId,
-    ) -> anyhow::Result<Option<Token>> {
-        //TODO: remove this
-        let account = Account::new(collection.into(), self.network_config().clone());
-
-        account
-            .call_view_function_json(
-                "nft_token",
-                json!({
-                    "token_id": token_id
-                }),
-            )
-            .await
+    async fn nft_token(&self, token_id: &TokenId) -> anyhow::Result<Option<Token>> {
+        self.call_view_function_json(
+            "nft_token",
+            json!({
+                "token_id": token_id
+            }),
+        )
+        .await
     }
 }
 
 impl NftViewExt for SigningAccount {
-    async fn nft_token(
-        &self,
-        collection: &AccountIdRef,
-        token_id: &TokenId,
-    ) -> anyhow::Result<Option<Token>> {
-        self.account().nft_token(collection, token_id).await
+    async fn nft_token(&self, token_id: &TokenId) -> anyhow::Result<Option<Token>> {
+        self.account().nft_token(token_id).await
     }
 }

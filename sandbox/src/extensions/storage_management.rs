@@ -29,7 +29,6 @@ pub trait StorageManagementExt {
 pub trait StorageViewExt {
     async fn storage_balance_of(
         &self,
-        contract_id: &AccountIdRef,
         account_id: &AccountIdRef,
     ) -> anyhow::Result<Option<StorageBalance>>;
 }
@@ -94,30 +93,23 @@ impl StorageManagementExt for SigningAccount {
 impl StorageViewExt for Account {
     async fn storage_balance_of(
         &self,
-        contract_id: &AccountIdRef,
         account_id: &AccountIdRef,
     ) -> anyhow::Result<Option<StorageBalance>> {
-        let account = Account::new(contract_id.into(), self.network_config().clone());
-
-        account
-            .call_view_function_json(
-                "storage_balance_of",
-                json!({
-                    "account_id": account_id
-                }),
-            )
-            .await
+        self.call_view_function_json(
+            "storage_balance_of",
+            json!({
+                "account_id": account_id
+            }),
+        )
+        .await
     }
 }
 
 impl StorageViewExt for SigningAccount {
     async fn storage_balance_of(
         &self,
-        contract_id: &AccountIdRef,
         account_id: &AccountIdRef,
     ) -> anyhow::Result<Option<StorageBalance>> {
-        self.account()
-            .storage_balance_of(contract_id, account_id)
-            .await
+        self.account().storage_balance_of(account_id).await
     }
 }

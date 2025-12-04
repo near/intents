@@ -66,7 +66,7 @@ impl ParentAccountExt for SigningAccount {
 pub trait AccountDeployerExt: ParentAccountExt {
     async fn deploy_contract(
         &self,
-        name: &str,
+        name: impl AsRef<str>,
         wasm: impl Into<Vec<u8>>,
         deposit: NearToken,
         init_args: Option<impl Into<FunctionCallAction>>,
@@ -76,7 +76,7 @@ pub trait AccountDeployerExt: ParentAccountExt {
 impl AccountDeployerExt for SigningAccount {
     async fn deploy_contract(
         &self,
-        name: &str,
+        name: impl AsRef<str>,
         wasm: impl Into<Vec<u8>>,
         deposit: NearToken,
         init_args: Option<impl Into<FunctionCallAction>>,
