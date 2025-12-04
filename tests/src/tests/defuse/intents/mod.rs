@@ -212,16 +212,10 @@ impl ExecuteIntentsExt for near_workspaces::Contract {
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn simulate_is_view_method(
-    #[notrace] mut rng: impl Rng,
-    #[values(false, true)] no_registration: bool,
-) {
+async fn simulate_is_view_method(#[notrace] mut rng: impl Rng) {
     use defuse::core::accounts::TransferEvent;
 
-    let env = Env::builder()
-        .no_registration(no_registration)
-        .build()
-        .await;
+    let env = Env::builder().build().await;
 
     let (user, other_user, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
@@ -269,7 +263,7 @@ async fn simulate_is_view_method(
             account_id: user.id().clone().into(),
             event: TransferEvent {
                 receiver_id: Cow::Borrowed(&transfer_intent.receiver_id),
-                tokens: Cow::Borrowed(&transfer_intent.tokens),
+                tokens: transfer_intent.tokens,
                 memo: Cow::Borrowed(&transfer_intent.memo),
             },
         },
@@ -310,14 +304,11 @@ async fn simulate_is_view_method(
 
 #[tokio::test]
 #[rstest]
-async fn webauthn(#[values(false, true)] no_registration: bool) {
+async fn webauthn() {
     const SIGNER_ID: &AccountIdRef =
         AccountIdRef::new_or_panic("0x3602b546589a8fcafdce7fad64a46f91db0e4d50");
 
-    let env = Env::builder()
-        .no_registration(no_registration)
-        .build()
-        .await;
+    let env = Env::builder().build().await;
 
     let (user, ft) = futures::join!(
         env.create_named_user("user1"),
@@ -373,7 +364,7 @@ async fn webauthn(#[values(false, true)] no_registration: bool) {
 #[rstest]
 #[trace]
 async fn ton_connect_sign_intent_example() {
-    let env: Env = Env::builder().no_registration(false).build().await;
+    let env: Env = Env::builder().build().await;
 
     let ft_id: AccountId = "ft.test.near".parse().unwrap();
 
