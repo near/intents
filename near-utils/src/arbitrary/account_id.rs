@@ -1,8 +1,7 @@
 use std::iter;
 
 use arbitrary_with::{Arbitrary, ArbitraryAs, Error, Result, Unstructured, UnstructuredExt};
-use near_account_id::AccountType;
-use near_sdk::{AccountId, AccountIdRef};
+use near_sdk::account_id::{AccountId, AccountIdRef, AccountType};
 
 const MAX_ACCOUNT_ID_LENGTH: usize = 64;
 
@@ -14,12 +13,16 @@ impl<'a> ArbitraryAs<'a, AccountId> for ArbitraryAccountId {
             AccountType::NearImplicitAccount,
             AccountType::EthImplicitAccount,
             AccountType::NamedAccount,
+            AccountType::NearDeterministicAccount,
         ])? {
             AccountType::NamedAccount => u.arbitrary_as::<_, ArbitraryNamedAccountId>(),
             AccountType::NearImplicitAccount => {
                 u.arbitrary_as::<_, ArbitraryImplicitNearAccountId>()
             }
             AccountType::EthImplicitAccount => u.arbitrary_as::<_, ArbitraryImplicitEthAccountId>(),
+            AccountType::NearDeterministicAccount => {
+                u.arbitrary_as::<_, ArbitraryDeterministicAccountId>()
+            }
         }
     }
 }
@@ -39,6 +42,16 @@ pub struct ArbitraryImplicitEthAccountId;
 impl<'a> ArbitraryAs<'a, AccountId> for ArbitraryImplicitEthAccountId {
     fn arbitrary_as(u: &mut Unstructured<'a>) -> Result<AccountId> {
         format!("0x{}", hex::encode(<[u8; 20]>::arbitrary(u)?))
+            .parse()
+            .map_err(|_| Error::IncorrectFormat)
+    }
+}
+
+pub struct ArbitraryDeterministicAccountId;
+
+impl<'a> ArbitraryAs<'a, AccountId> for ArbitraryDeterministicAccountId {
+    fn arbitrary_as(u: &mut Unstructured<'a>) -> Result<AccountId> {
+        format!("0s{}", hex::encode(<[u8; 20]>::arbitrary(u)?))
             .parse()
             .map_err(|_| Error::IncorrectFormat)
     }
@@ -131,7 +144,6 @@ mod tests {
     use super::*;
 
     use arbitrary_with::{Unstructured, UnstructuredExt};
-    use near_account_id::AccountType;
     use rstest::rstest;
 
     use defuse_test_utils::random::random_bytes;
