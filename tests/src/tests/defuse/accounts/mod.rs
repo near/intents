@@ -139,7 +139,7 @@ impl AccountManagerExt for near_workspaces::Account {
     ) -> anyhow::Result<()> {
         self.call(defuse_contract_id, "disable_auth_by_predecessor_id")
             .deposit(NearToken::from_yoctonear(1))
-            .gas(Gas::from_teragas(10))
+            .gas(Gas::from_tgas(10))
             .transact()
             .await?
             .into_result()?;

@@ -1,7 +1,7 @@
 use crate::tests::defuse::DefuseSignerExt;
 use crate::tests::defuse::{env::Env, intents::ExecuteIntentsExt};
 use crate::utils::{mt::MtExt, nft::NftExt};
-use defuse::core::intents::tokens::NftWithdraw;
+use defuse::core::intents::tokens::{NftWithdraw, NotifyOnTransfer};
 use defuse::core::token_id::TokenId as DefuseTokenId;
 use defuse::core::token_id::nep171::Nep171TokenId;
 use defuse::tokens::{DepositAction, DepositMessage, ExecuteIntents};
@@ -409,12 +409,9 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
     let deposit_message = if intents.is_empty() {
         DepositMessage {
             receiver_id: receiver.id().clone(),
-            action: Some(DepositAction::Notify(
-                defuse::core::intents::tokens::NotifyOnTransfer {
-                    msg: near_sdk::serde_json::to_string(&expectation.action).unwrap(),
-                    min_gas: None,
-                },
-            )),
+            action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+                near_sdk::serde_json::to_string(&expectation.action).unwrap(),
+            ))),
         }
     } else {
         DepositMessage {

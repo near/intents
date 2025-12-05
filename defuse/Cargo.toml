@@ -30,7 +30,6 @@ bitflags = { workspace = true, optional = true }
 bnum.workspace = true
 impl-tools.workspace = true
 itertools.workspace = true
-near-account-id.workspace = true
 near-contract-standards.workspace = true
 near-plugins.workspace = true
 near-sdk.workspace = true

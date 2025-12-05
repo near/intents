@@ -105,7 +105,7 @@ impl ExecutableIntent for Transfer {
                         sender_id,
                         TransferEvent {
                             receiver_id: Cow::Borrowed(&self.receiver_id),
-                            tokens: Cow::Borrowed(&self.tokens),
+                            tokens: self.tokens.clone(),
                             memo: Cow::Borrowed(&self.memo),
                         },
                     ),

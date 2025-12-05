@@ -28,16 +28,12 @@ use std::borrow::Cow;
 
 #[tokio::test]
 #[rstest]
-async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
+async fn multitoken_enumeration() {
     use defuse::core::token_id::nep141::Nep141TokenId;
 
     use crate::tests::defuse::tokens::nep141::traits::DefuseFtWithdrawer;
 
-    let env = Env::builder()
-        .no_registration(no_registration)
-        .create_unique_users()
-        .build()
-        .await;
+    let env = Env::builder().create_unique_users().build().await;
 
     let (user1, user2, user3, ft1, ft2) = futures::join!(
         env.create_user(),
@@ -320,14 +316,10 @@ async fn multitoken_enumeration(#[values(false, true)] no_registration: bool) {
 
 #[tokio::test]
 #[rstest]
-async fn multitoken_enumeration_with_ranges(#[values(false, true)] no_registration: bool) {
+async fn multitoken_enumeration_with_ranges() {
     use defuse::core::token_id::nep141::Nep141TokenId;
 
-    let env = Env::builder()
-        .no_registration(no_registration)
-        .create_unique_users()
-        .build()
-        .await;
+    let env = Env::builder().create_unique_users().build().await;
 
     let (user1, user2, user3, ft1, ft2, ft3) = futures::join!(
         env.create_user(),
@@ -962,11 +954,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     use crate::tests::defuse::env::MT_RECEIVER_STUB_WASM;
     use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
 
-    let env = Env::builder()
-        .deployer_as_super_admin()
-        .no_registration(false)
-        .build()
-        .await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (user, intent_receiver, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
@@ -1045,12 +1033,9 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     let deposit_message = if intents.is_empty() {
         DepositMessage {
             receiver_id: receiver.id().clone(),
-            action: Some(DepositAction::Notify(
-                defuse::core::intents::tokens::NotifyOnTransfer {
-                    msg: near_sdk::serde_json::to_string(&expectation.action).unwrap(),
-                    min_gas: None,
-                },
-            )),
+            action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+                near_sdk::serde_json::to_string(&expectation.action).unwrap(),
+            ))),
         }
     } else {
         DepositMessage {
@@ -1153,11 +1138,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
     use defuse::tokens::DepositMessage;
 
-    let env = Env::builder()
-        .deployer_as_super_admin()
-        .no_registration(false)
-        .build()
-        .await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (user, intent_receiver, ft1, ft2) = futures::join!(
         env.create_user(),
@@ -1252,12 +1233,9 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     let deposit_message = if intents.is_empty() {
         DepositMessage {
             receiver_id: receiver.id().clone(),
-            action: Some(DepositAction::Notify(
-                defuse::core::intents::tokens::NotifyOnTransfer {
-                    msg: near_sdk::serde_json::to_string(&expectation.action).unwrap(),
-                    min_gas: None,
-                },
-            )),
+            action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+                near_sdk::serde_json::to_string(&expectation.action).unwrap(),
+            ))),
         }
     } else {
         DepositMessage {
@@ -1325,11 +1303,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
 async fn mt_transfer_call_circullar_callback() {
     use defuse::tokens::DepositMessage;
 
-    let env = Env::builder()
-        .deployer_as_super_admin()
-        .no_registration(false)
-        .build()
-        .await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
@@ -1372,16 +1346,9 @@ async fn mt_transfer_call_circullar_callback() {
     // With empty inner message to avoid further callbacks
     let deposit_message = DepositMessage {
         receiver_id: env.defuse.id().clone(), // Circular: back to defuse1
-        action: Some(DepositAction::Notify(
-            defuse::core::intents::tokens::NotifyOnTransfer {
-                msg: near_sdk::serde_json::to_string(&DepositMessage {
-                    receiver_id: user.id().clone(),
-                    action: None, // No further callbacks
-                })
-                .unwrap(),
-                min_gas: None,
-            },
-        )),
+        action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+            serde_json::to_string(&DepositMessage::new(user.id().clone())).unwrap(),
+        ))),
     };
 
     // Get the nep245 token id for defuse1's wrapped token in defuse2
@@ -1445,11 +1412,7 @@ async fn mt_transfer_call_circullar_callback() {
 async fn mt_transfer_call_circullar_deposit() {
     use defuse::tokens::DepositMessage;
 
-    let env = Env::builder()
-        .deployer_as_super_admin()
-        .no_registration(false)
-        .build()
-        .await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
@@ -1482,16 +1445,9 @@ async fn mt_transfer_call_circullar_deposit() {
         DepositAction::Notify(NotifyOnTransfer::new(
             near_sdk::serde_json::to_string(&DepositMessage {
                 receiver_id: env.defuse.id().clone(), // Circular: back to defuse1
-                action: Some(DepositAction::Notify(
-                    defuse::core::intents::tokens::NotifyOnTransfer {
-                        msg: near_sdk::serde_json::to_string(&DepositMessage {
-                            receiver_id: user.id().clone(),
-                            action: None, // No further callbacks
-                        })
-                        .unwrap(),
-                        min_gas: None,
-                    },
-                )),
+                action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+                    serde_json::to_string(&DepositMessage::new(user.id().clone())).unwrap(),
+                ))),
             })
             .unwrap(),
         )),
@@ -1545,11 +1501,7 @@ async fn mt_transfer_call_circullar_deposit() {
 
 #[tokio::test]
 async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
-    let env = Env::builder()
-        .deployer_as_super_admin()
-        .no_registration(false)
-        .build()
-        .await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (user, another_receiver, ft1, ft2) = futures::join!(
         env.create_user(),
@@ -1626,10 +1578,9 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
 
     let deposit_message = DepositMessage {
         receiver_id: stub_receiver.id().clone(),
-        action: Some(DepositAction::Notify(NotifyOnTransfer {
-            msg: near_sdk::serde_json::to_string(&stub_action).unwrap(),
-            min_gas: None,
-        })),
+        action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+            near_sdk::serde_json::to_string(&stub_action).unwrap(),
+        ))),
     };
 
     let result = user

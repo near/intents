@@ -17,10 +17,10 @@ pub struct DefuseConfig {
 #[near(serializers = [json])]
 #[derive(Debug, Clone, Default)]
 pub struct RolesConfig {
-    #[serde(default, skip_serializing_if = "HashSet::is_empty")]
+    #[serde(default)]
     pub super_admins: HashSet<AccountId>,
-    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    #[serde(default)]
     pub admins: HashMap<Role, HashSet<AccountId>>,
-    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    #[serde(default)]
     pub grantees: HashMap<Role, HashSet<AccountId>>,
 }
