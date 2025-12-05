@@ -364,12 +364,13 @@ where
     }
 
     fn auth_call(&mut self, signer_id: &AccountIdRef, auth_call: AuthCall) -> Result<()> {
-        if !auth_call.attached_deposit.is_zero() {
+        let total_amount = auth_call.total_amount()?;
+        if !total_amount.is_zero() {
             self.internal_sub_balance(
                 signer_id,
                 [(
                     Nep141TokenId::new(self.wnear_id().into_owned()).into(),
-                    auth_call.attached_deposit.as_yoctonear(),
+                    total_amount.as_yoctonear(),
                 )],
             )?;
         }

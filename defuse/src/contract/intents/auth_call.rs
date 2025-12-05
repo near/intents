@@ -10,7 +10,7 @@ impl Contract {
 
     #[private]
     pub fn do_auth_call(signer_id: AccountId, auth_call: AuthCall) -> Promise {
-        if !auth_call.attached_deposit.is_zero() {
+        if !auth_call.is_zero_total_amount() {
             require!(
                 matches!(env::promise_result(0), PromiseResult::Successful(data) if data.is_empty()),
                 "near_withdraw failed",
@@ -18,8 +18,13 @@ impl Contract {
         }
 
         let min_gas = auth_call.min_gas();
+        let mut p = Promise::new(auth_call.contract_id);
 
-        ext_auth_callee::ext(auth_call.contract_id)
+        if let Some(state_init) = auth_call.state_init {
+            p = p.state_init(state_init.state_init, state_init.amount);
+        }
+
+        ext_auth_callee::ext_on(p)
             .with_attached_deposit(auth_call.attached_deposit)
             .with_static_gas(min_gas)
             .on_auth(signer_id, auth_call.msg)

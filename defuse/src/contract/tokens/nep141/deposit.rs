@@ -70,9 +70,9 @@ impl FungibleTokenReceiver for Contract {
                     if execute.refund_if_fails {
                         self.execute_intents(execute.execute_intents);
                     } else {
-                        // detach promise
-                        let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
-                            .execute_intents(execute.execute_intents);
+                        ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
+                            .execute_intents(execute.execute_intents)
+                            .detach();
                     }
                 }
                 PromiseOrValue::Value(0.into())

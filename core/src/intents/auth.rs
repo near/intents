@@ -1,9 +1,10 @@
 use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, NearToken, near};
 
 use crate::{
-    Result,
+    DefuseError, Result,
     engine::{Engine, Inspector, State},
     intents::ExecutableIntent,
+    state_init::StateInitWithAmount,
 };
 
 /// Call [`.on_auth`](::defuse_auth_call::AuthCallee::on_auth) with `signer_id`
@@ -13,6 +14,13 @@ use crate::{
 pub struct AuthCall {
     /// Callee for [`.on_auth`](::defuse_auth_call::AuthCallee::on_auth)
     pub contract_id: AccountId,
+
+    /// Optionally initialize the receiver's contract (Deterministic AccountId)
+    /// via [`state_init`](https://github.com/near/NEPs/blob/master/neps/nep-0616.md#stateinit-action)
+    /// right before calling [`.on_auth()`](::defuse_auth_call::AuthCallee::on_auth)
+    /// (in the same receipt).
+    #[serde(flatten, default, skip_serializing_if = "Option::is_none")]
+    pub state_init: Option<StateInitWithAmount>,
 
     /// `msg` to pass in [`.on_auth`](::defuse_auth_call::AuthCallee::on_auth)
     pub msg: String,
@@ -37,6 +45,23 @@ pub struct AuthCall {
 
 impl AuthCall {
     const MIN_GAS_DEFAULT: Gas = Gas::from_tgas(10);
+
+    #[inline]
+    pub fn total_amount(&self) -> Result<NearToken> {
+        self.attached_deposit
+            .checked_add(
+                self.state_init
+                    .as_ref()
+                    .map_or(NearToken::ZERO, |s| s.amount),
+            )
+            .ok_or(DefuseError::BalanceOverflow)
+    }
+
+    #[inline]
+    pub fn is_zero_total_amount(&self) -> bool {
+        self.attached_deposit.is_zero()
+            && self.state_init.as_ref().is_none_or(|s| s.amount.is_zero())
+    }
 
     #[inline]
     pub fn min_gas(&self) -> Gas {
