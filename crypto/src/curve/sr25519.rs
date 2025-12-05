@@ -21,7 +21,7 @@ impl Curve for Sr25519 {
         let signature_parsed = SchnorrkelSignature::from_bytes(signature).ok()?;
 
         // verify_simple in schnorrkel 0.11 signature is:
-        // pub fn verify_simple(&self, ctx: &'static [u8], msg: &[u8], sig: &Signature)
+        // pub fn verify_simple(&self, ctx: &[u8], msg: &[u8], signature: &Signature)
         // Using "substrate" as the default context following Substrate/Polkadot convention
         public_key_parsed
             .verify_simple(b"substrate", message, &signature_parsed)
