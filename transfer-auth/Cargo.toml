@@ -27,3 +27,4 @@ serde_json.workspace = true
 
 [features]
 contract = []
+abi = []

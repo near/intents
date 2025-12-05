@@ -47,3 +47,7 @@ impl ContractStorage {
         .into())
     }
 }
+
+// fix JsonSchema macro bug
+#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+use near_sdk::serde;
