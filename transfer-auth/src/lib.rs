@@ -2,6 +2,7 @@ use defuse_auth_call::AuthCallee;
 use near_sdk::{
     env, near, require, serde::Serialize, AccountId, CryptoHash, Gas, GasWeight, PanicOnDefault, Promise, PromiseError, PromiseIndex, PromiseOrValue, YieldId
 };
+use serde_json::json;
 
 
 pub enum PromiseOrPromiseIndexOrValue<T: Serialize> {
@@ -149,7 +150,17 @@ impl Contract {
             env::panic_str("wait_for_authorization called multiple times 22");
         }
 
-        let (promise, yield_id) = Promise::yield_create("is_authorized_resume", &b"create".to_vec(), Gas::from_tgas(0), GasWeight(1));
+        // let init_value = serde_json::to_string(&b"create".to_vec()).unwrap();
+        // env::log_str(&format!("wait_for_authorization called with init_value: {init_value}"));
+
+        let init_value = serde_json::to_vec(&String::from("hello world")).unwrap();
+        let args = json!({
+            "init_data": "hello world"
+        });
+        // serde_json::to_vec(&args).unwrap();
+
+
+        let (promise, yield_id) = Promise::yield_create("is_authorized_resume", &serde_json::to_vec(&args).unwrap(), Gas::from_tgas(0), GasWeight(1));
         self.yielded_promise_id = Some(yield_id);
         PromiseOrValue::Promise(promise)
     }
@@ -158,21 +169,22 @@ impl Contract {
     #[allow(clippy::needless_pass_by_value)]
     pub fn is_authorized_resume(
         &mut self,
-        // init_data: Vec<u8>, 
-        // #[callback_result] resume_data: Result<Vec<u8>, PromiseError>,
+        init_data: String, 
+        #[callback_result] resume_data: Result<String, PromiseError>,
     ) -> PromiseOrValue<bool> {
+        env::log_str(&format!("is_authorized_resume called with init_data: {init_data}"));
         // env::log_str(&format!("is_authorized_resume called with init_data: {init_data:?} and resume_data: {resume_data:?}"));
 
         // let init_data_str = String::from_utf8_lossy(&init_data);
         // env::log_str(&format!("is_authorized_resume init_data (str): {init_data_str}"));
-        // match resume_data {
-        //     Ok(resume_data) => {
-        //         env::log_str(&format!("is_authorized_resume resume_data (str): {}", String::from_utf8_lossy(&resume_data)));
-        //     }
-        //     Err(err) => {
-        //         env::log_str(&format!("is_authorized_resume error (str): {err:?}"));
-        //     }
-        // }
+        match resume_data {
+            Ok(resume_data) => {
+                env::log_str(&format!("is_authorized_resume resume_data (str): {}", resume_data));
+            }
+            Err(err) => {
+                env::log_str(&format!("is_authorized_resume error (str): {err:?}"));
+            }
+        }
         PromiseOrValue::Value(self.authorized)
     }
 }
@@ -205,7 +217,7 @@ impl AuthCallee for Contract {
         self.authorized = true;
         if let Some(yield_id) = self.yielded_promise_id {
             self.authorized = true;
-            yield_id.resume(&b"resume"); // detached 
+            yield_id.resume(&serde_json::to_vec("hello world 2").unwrap()); // detached 
             // let was_resumed = promise_yield_resume(yield_id);
             // env::log_str(&format!("Yielding promise: {:?}, status: {}", yield_id, was_resumed));
         }

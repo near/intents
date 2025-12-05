@@ -198,6 +198,10 @@ async fn transfer_auth_async_authorization() {
         .unwrap();
 
     let execution_result = wait_result.await.unwrap().into_result().unwrap();
+
+    execution_result.logs().iter().for_each(|log| {
+        println!("{}", log);
+    });
     // let authorized: bool = wait_result.json().unwrap();
     assert!(
         execution_result.json::<bool>().unwrap(),
@@ -250,6 +254,10 @@ async fn transfer_auth_timeout() {
     let task_result = wait_result.await.unwrap();
     let execution_result = task_result.into_future().await.unwrap();
 
+    execution_result.logs().iter().for_each(|log| {
+        println!("{}", log);
+    });
+
     // let execution_result = task_result.into_result().unwrap();
     let bytes = execution_result.raw_bytes().unwrap();
     let string_result = String::from_utf8(bytes).unwrap();
@@ -301,6 +309,11 @@ async fn transfer_auth_timeout_blocking() {
     println!("blocks skipped current block : {}", env.sandbox().block_height().await);
 
     let execution_result = task_result.into_result().unwrap();
+
+    execution_result.logs().iter().for_each(|log| {
+        println!("{}", log);
+    });
+
     let bytes = execution_result.raw_bytes().unwrap();
     let string_result = String::from_utf8(bytes).unwrap();
     println!("{string_result}");
