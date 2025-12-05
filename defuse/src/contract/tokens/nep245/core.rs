@@ -282,7 +282,7 @@ impl Contract {
         if let Some(state_init) = notify.state_init {
             p = p.state_init(
                 state_init,
-                // TODO
+                // nowhere to get native NEAR from during the deposits
                 NearToken::from_yoctonear(0),
             );
         }

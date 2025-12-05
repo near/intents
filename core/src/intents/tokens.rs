@@ -21,7 +21,9 @@ use super::{ExecutableIntent, IntentEvent};
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
 pub struct NotifyOnTransfer {
-    // TODO: docs
+    /// Optionally initialize the receiver's contract (Deterministic AccountId)
+    /// via [`state_init`](https://github.com/near/NEPs/blob/master/neps/nep-0616.md#stateinit-action)
+    /// right before calling `mt_on_transfer()` (in the same receipt).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub state_init: Option<StateInit>,
 
