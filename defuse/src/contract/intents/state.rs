@@ -303,8 +303,7 @@ impl State for Contract {
     }
 
     fn auth_call(&mut self, signer_id: &AccountIdRef, auth_call: AuthCall) -> Result<()> {
-        let total_amount = auth_call.total_amount()?;
-        if total_amount.is_zero() {
+        if auth_call.attached_deposit.is_zero() {
             Self::do_auth_call(signer_id.to_owned(), auth_call)
         } else {
             // withdraw from signer's wNEAR balance
@@ -312,7 +311,7 @@ impl State for Contract {
                 signer_id,
                 [(
                     Nep141TokenId::new(self.wnear_id().into_owned()).into(),
-                    total_amount.as_yoctonear(),
+                    auth_call.attached_deposit.as_yoctonear(),
                 )],
                 Some("withdraw"),
                 false,
@@ -323,7 +322,7 @@ impl State for Contract {
                 .with_static_gas(NEAR_WITHDRAW_GAS)
                 // do not distribute remaining gas here
                 .with_unused_gas_weight(0)
-                .near_withdraw(U128(total_amount.as_yoctonear()))
+                .near_withdraw(U128(auth_call.attached_deposit.as_yoctonear()))
                 .then(
                     // do_auth_call only after unwrapping NEAR
                     Self::ext(CURRENT_ACCOUNT_ID.clone())

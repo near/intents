@@ -1,10 +1,9 @@
-use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, NearToken, near};
+use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, NearToken, near, state_init::StateInit};
 
 use crate::{
-    DefuseError, Result,
+    Result,
     engine::{Engine, Inspector, State},
     intents::ExecutableIntent,
-    state_init::StateInitArgs,
 };
 
 /// Call [`.on_auth`](::defuse_auth_call::AuthCallee::on_auth) with `signer_id`
@@ -19,8 +18,8 @@ pub struct AuthCall {
     /// via [`state_init`](https://github.com/near/NEPs/blob/master/neps/nep-0616.md#stateinit-action)
     /// right before calling [`.on_auth()`](::defuse_auth_call::AuthCallee::on_auth)
     /// (in the same receipt).
-    #[serde(flatten, default, skip_serializing_if = "Option::is_none")]
-    pub state_init: Option<StateInitArgs>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub state_init: Option<StateInit>,
 
     /// `msg` to pass in [`.on_auth`](::defuse_auth_call::AuthCallee::on_auth)
     pub msg: String,
@@ -45,22 +44,6 @@ pub struct AuthCall {
 
 impl AuthCall {
     const MIN_GAS_DEFAULT: Gas = Gas::from_tgas(10);
-
-    #[inline]
-    pub fn total_amount(&self) -> Result<NearToken> {
-        self.attached_deposit
-            .checked_add(
-                self.state_init
-                    .as_ref()
-                    .map_or(NearToken::ZERO, |s| s.amount),
-            )
-            .ok_or(DefuseError::BalanceOverflow)
-    }
-
-    #[inline]
-    pub fn is_zero_total_amount(&self) -> bool {
-        self.total_amount().is_ok_and(|a| a.is_zero())
-    }
 
     #[inline]
     pub fn min_gas(&self) -> Gas {

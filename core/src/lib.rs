@@ -8,7 +8,6 @@ pub mod fees;
 pub mod intents;
 mod nonce;
 pub mod payload;
-pub mod state_init;
 
 pub use self::{error::*, nonce::*};
 
