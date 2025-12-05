@@ -20,30 +20,13 @@ pub struct Nep245TokenId {
         any(feature = "arbitrary", test),
         arbitrary(with = As::<ArbitraryAccountId>::arbitrary),
     )]
-    contract_id: AccountId,
+    pub contract_id: AccountId,
 
-    #[cfg_attr(
-        all(not(feature = "unbounded"), any(feature = "arbitrary", test)),
-        arbitrary(with = As::<::arbitrary_with::LimitLen<{crate::MAX_ALLOWED_TOKEN_ID_LEN}>>::arbitrary),
-    )]
-    mt_token_id: TokenId,
+    pub mt_token_id: TokenId,
 }
 
 impl Nep245TokenId {
-    #[cfg(not(feature = "unbounded"))]
-    pub fn new(contract_id: AccountId, mt_token_id: TokenId) -> Result<Self, TokenIdError> {
-        if mt_token_id.len() > crate::MAX_ALLOWED_TOKEN_ID_LEN {
-            return Err(TokenIdError::TokenIdTooLarge(mt_token_id.len()));
-        }
-
-        Ok(Self {
-            contract_id,
-            mt_token_id,
-        })
-    }
-
-    #[cfg(feature = "unbounded")]
-    pub fn new(contract_id: AccountId, mt_token_id: TokenId) -> Self {
+    pub const fn new(contract_id: AccountId, mt_token_id: TokenId) -> Self {
         Self {
             contract_id,
             mt_token_id,
@@ -85,11 +68,7 @@ impl FromStr for Nep245TokenId {
         let (contract_id, token_id) = data
             .split_once(':')
             .ok_or(strum::ParseError::VariantNotFound)?;
-        let r = Self::new(contract_id.parse()?, token_id.to_string());
-        #[cfg(feature = "unbounded")]
-        return Ok(r);
-        #[cfg(not(feature = "unbounded"))]
-        return r;
+        Ok(Self::new(contract_id.parse()?, token_id.to_string()))
     }
 }
 
@@ -105,8 +84,6 @@ mod tests {
     use super::*;
 
     use defuse_test_utils::random::make_arbitrary;
-    #[cfg(not(feature = "unbounded"))]
-    use defuse_test_utils::random::random_bytes;
     use rstest::rstest;
 
     #[rstest]
@@ -115,23 +92,5 @@ mod tests {
         let s = token_id.to_string();
         let got: Nep245TokenId = s.parse().unwrap();
         assert_eq!(got, token_id);
-    }
-
-    #[cfg(not(feature = "unbounded"))]
-    #[rstest]
-    fn token_id_length(random_bytes: Vec<u8>) {
-        use arbitrary::Unstructured;
-        use arbitrary_with::UnstructuredExt;
-
-        let mut u = Unstructured::new(&random_bytes);
-        let contract_id = u.arbitrary_as::<_, ArbitraryAccountId>().unwrap();
-        let token_id: String = u.arbitrary().unwrap();
-
-        let r = Nep245TokenId::new(contract_id, token_id.clone());
-        if token_id.len() > crate::MAX_ALLOWED_TOKEN_ID_LEN {
-            assert!(matches!(r.unwrap_err(), TokenIdError::TokenIdTooLarge(_)));
-        } else {
-            r.unwrap();
-        }
     }
 }

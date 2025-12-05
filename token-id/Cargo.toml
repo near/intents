@@ -33,8 +33,6 @@ nep141 = []
 nep171 = []
 nep245 = []
 
-unbounded = []
-
 abi = []
 arbitrary = ["dep:arbitrary", "dep:arbitrary_with", "dep:defuse-near-utils"]
 

@@ -57,13 +57,10 @@ async fn transfer_nft_to_verifier() {
         .unwrap();
 
     // Create the token id, expected inside the verifier contract
-    let nft1_mt_token_id = DefuseTokenId::from(
-        Nep171TokenId::new(
-            nft_issuer_contract.id().to_owned(),
-            DUMMY_NFT1_ID.to_string(),
-        )
-        .unwrap(),
-    );
+    let nft1_mt_token_id = DefuseTokenId::from(Nep171TokenId::new(
+        nft_issuer_contract.id().to_owned(),
+        DUMMY_NFT1_ID.to_string(),
+    ));
 
     let nft1: Token = user1
         .nft_mint(
@@ -79,13 +76,10 @@ async fn transfer_nft_to_verifier() {
     assert_eq!(nft1.owner_id, *user2.id());
 
     // Create the token id, expected inside the verifier contract
-    let nft2_mt_token_id = DefuseTokenId::from(
-        Nep171TokenId::new(
-            nft_issuer_contract.id().to_owned(),
-            DUMMY_NFT2_ID.to_string(),
-        )
-        .unwrap(),
-    );
+    let nft2_mt_token_id = DefuseTokenId::from(Nep171TokenId::new(
+        nft_issuer_contract.id().to_owned(),
+        DUMMY_NFT2_ID.to_string(),
+    ));
 
     let nft2: Token = user1
         .nft_mint(
@@ -387,9 +381,10 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
 
     assert_eq!(nft.owner_id, *user.id());
 
-    let nft_token_id = DefuseTokenId::from(
-        Nep171TokenId::new(nft_issuer_contract.id().clone(), DUMMY_NFT1_ID.to_string()).unwrap(),
-    );
+    let nft_token_id = DefuseTokenId::from(Nep171TokenId::new(
+        nft_issuer_contract.id().clone(),
+        DUMMY_NFT1_ID.to_string(),
+    ));
 
     let intents = if expectation.intent_transfer {
         vec![
