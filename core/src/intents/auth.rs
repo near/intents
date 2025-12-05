@@ -59,8 +59,7 @@ impl AuthCall {
 
     #[inline]
     pub fn is_zero_total_amount(&self) -> bool {
-        self.attached_deposit.is_zero()
-            && self.state_init.as_ref().is_none_or(|s| s.amount.is_zero())
+        self.total_amount().is_ok_and(|a| a.is_zero())
     }
 
     #[inline]
