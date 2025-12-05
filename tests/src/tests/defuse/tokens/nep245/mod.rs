@@ -2,27 +2,29 @@ mod letter_gen;
 mod mt_transfer_resolve_gas;
 pub mod traits;
 
-use crate::assert_a_contains_b;
-use crate::tests::defuse::DefuseExt;
-use crate::tests::defuse::DefuseSignerExt;
-use crate::tests::defuse::accounts::AccountManagerExt;
-use crate::tests::defuse::env::MT_RECEIVER_STUB_WASM;
-use crate::tests::defuse::env::{Env, get_account_public_key};
-use crate::tests::defuse::tokens::nep245::traits::DefuseMtWithdrawer;
-use crate::utils::mt::MtExt;
-use defuse::contract::config::{DefuseConfig, RolesConfig};
-use defuse::core::amounts::Amounts;
-use defuse::core::fees::{FeesConfig, Pips};
-use defuse::core::intents::tokens::{NotifyOnTransfer, Transfer};
-use defuse::core::token_id::TokenId;
-use defuse::core::token_id::nep141::Nep141TokenId;
-use defuse::core::token_id::nep245::Nep245TokenId;
-use defuse::nep245::Token;
-use defuse::nep245::{MtBurnEvent, MtEvent, MtTransferEvent};
-use defuse::tokens::{DepositAction, DepositMessage, ExecuteIntents};
+use crate::{
+    assert_a_contains_b,
+    tests::defuse::{
+        DefuseExt, DefuseSignerExt,
+        accounts::AccountManagerExt,
+        env::{Env, MT_RECEIVER_STUB_WASM, get_account_public_key},
+        tokens::nep245::traits::DefuseMtWithdrawer,
+    },
+    utils::mt::MtExt,
+};
+use defuse::{
+    contract::config::{DefuseConfig, RolesConfig},
+    core::{
+        amounts::Amounts,
+        fees::{FeesConfig, Pips},
+        intents::tokens::{NotifyOnTransfer, Transfer},
+        token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId},
+    },
+    nep245::{MtBurnEvent, MtEvent, MtTransferEvent, Token},
+    tokens::{DepositAction, DepositMessage, ExecuteIntents},
+};
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
-use near_sdk::AsNep297Event;
-use near_sdk::json_types::U128;
+use near_sdk::{AsNep297Event, json_types::U128};
 use rstest::rstest;
 use std::borrow::Cow;
 
@@ -1033,12 +1035,9 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     let deposit_message = if intents.is_empty() {
         DepositMessage {
             receiver_id: receiver.id().clone(),
-            action: Some(DepositAction::Notify(
-                defuse::core::intents::tokens::NotifyOnTransfer {
-                    msg: near_sdk::serde_json::to_string(&expectation.action).unwrap(),
-                    min_gas: None,
-                },
-            )),
+            action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+                serde_json::to_string(&expectation.action).unwrap(),
+            ))),
         }
     } else {
         DepositMessage {
@@ -1236,12 +1235,9 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     let deposit_message = if intents.is_empty() {
         DepositMessage {
             receiver_id: receiver.id().clone(),
-            action: Some(DepositAction::Notify(
-                defuse::core::intents::tokens::NotifyOnTransfer {
-                    msg: near_sdk::serde_json::to_string(&expectation.action).unwrap(),
-                    min_gas: None,
-                },
-            )),
+            action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+                serde_json::to_string(&expectation.action).unwrap(),
+            ))),
         }
     } else {
         DepositMessage {
@@ -1352,16 +1348,9 @@ async fn mt_transfer_call_circullar_callback() {
     // With empty inner message to avoid further callbacks
     let deposit_message = DepositMessage {
         receiver_id: env.defuse.id().clone(), // Circular: back to defuse1
-        action: Some(DepositAction::Notify(
-            defuse::core::intents::tokens::NotifyOnTransfer {
-                msg: near_sdk::serde_json::to_string(&DepositMessage {
-                    receiver_id: user.id().clone(),
-                    action: None, // No further callbacks
-                })
-                .unwrap(),
-                min_gas: None,
-            },
-        )),
+        action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+            serde_json::to_string(&DepositMessage::new(user.id().clone())).unwrap(),
+        ))),
     };
 
     // Get the nep245 token id for defuse1's wrapped token in defuse2
@@ -1456,18 +1445,11 @@ async fn mt_transfer_call_circullar_deposit() {
         // Set receiver_id to defuse1 to create circular callback
         // With empty inner message to avoid further callbacks
         DepositAction::Notify(NotifyOnTransfer::new(
-            near_sdk::serde_json::to_string(&DepositMessage {
+            serde_json::to_string(&DepositMessage {
                 receiver_id: env.defuse.id().clone(), // Circular: back to defuse1
-                action: Some(DepositAction::Notify(
-                    defuse::core::intents::tokens::NotifyOnTransfer {
-                        msg: near_sdk::serde_json::to_string(&DepositMessage {
-                            receiver_id: user.id().clone(),
-                            action: None, // No further callbacks
-                        })
-                        .unwrap(),
-                        min_gas: None,
-                    },
-                )),
+                action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+                    serde_json::to_string(&DepositMessage::new(user.id().clone())).unwrap(),
+                ))),
             })
             .unwrap(),
         )),
@@ -1598,10 +1580,9 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
 
     let deposit_message = DepositMessage {
         receiver_id: stub_receiver.id().clone(),
-        action: Some(DepositAction::Notify(NotifyOnTransfer {
-            msg: near_sdk::serde_json::to_string(&stub_action).unwrap(),
-            min_gas: None,
-        })),
+        action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+            near_sdk::serde_json::to_string(&stub_action).unwrap(),
+        ))),
     };
 
     let result = user
