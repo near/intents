@@ -1,7 +1,6 @@
 use defuse_auth_call::AuthCallee;
 use near_sdk::{
-    AccountId, CryptoHash, Gas, GasWeight, PanicOnDefault, Promise, PromiseError, PromiseIndex,
-    PromiseOrValue, YieldId, env, near, require, serde::Serialize,
+    env, ext_contract, near, require, serde::Serialize, AccountId, CryptoHash, Gas, GasWeight, PanicOnDefault, Promise, PromiseError, PromiseIndex, PromiseOrValue, YieldId
 };
 use serde_json::json;
 
@@ -25,6 +24,19 @@ pub use message::AuthMessage;
 #[derive(Debug, PanicOnDefault)]
 pub struct Contract(ContractStorage);
 
+#[ext_contract(ext_transfer_auth)]
+pub trait TransferAuth {
+    fn state(&self) -> &ContractStorage;
+}
+
+#[near]
+impl TransferAuth for Contract {
+    fn state(&self) -> &ContractStorage {
+        &self.0
+    }
+}
+
+
 #[near]
 impl Contract {
     #[init]
@@ -35,10 +47,11 @@ impl Contract {
 
     pub fn wait_for_authorization(
         &mut self,
-        signer_id: AccountId,
-        msg: String,
-        salt: CryptoHash,
     ) -> PromiseOrValue<bool> {
+        if env::predecessor_account_id() != self.state_init.querier {
+            env::panic_str("Unauthorized querier");
+        }
+
         if self.authorized {
             return PromiseOrValue::Value(true);
         }
