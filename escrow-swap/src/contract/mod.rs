@@ -14,7 +14,7 @@ use defuse_near_utils::UnwrapOrPanic;
 use impl_tools::autoimpl;
 use near_sdk::{PanicOnDefault, PromiseOrValue, env, near};
 
-use crate::{ContractStorage, Escrow, Params, Storage};
+use crate::{ContractStorage, Error, Escrow, Params, Result, Storage};
 
 #[near(contract_state(key = ContractStorage::STATE_KEY))]
 #[autoimpl(Deref using self.0)]
@@ -37,5 +37,17 @@ impl Escrow for Contract {
 
     fn escrow_lost_found(&mut self, params: Params) -> PromiseOrValue<bool> {
         self.lost_found(params).unwrap_or_panic()
+    }
+}
+
+impl ContractStorage {
+    #[inline]
+    const fn as_alive(&self) -> Option<&Storage> {
+        self.0.as_ref()
+    }
+
+    #[inline]
+    fn try_as_alive(&self) -> Result<&Storage> {
+        self.as_alive().ok_or(Error::CleanupInProgress)
     }
 }

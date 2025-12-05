@@ -1,3 +1,10 @@
+#![allow(
+    clippy::as_conversions,
+    clippy::cast_possible_truncation,
+    clippy::too_many_lines,
+    dead_code
+)]
+
 mod env;
 
 use std::time::Duration;
@@ -12,16 +19,13 @@ use defuse_escrow_swap::{
     price::Price,
 };
 use defuse_fees::Pips;
-use defuse_sandbox::{
-    Account, MtExt, MtViewExt, SigningAccount, TxResult,
-    api::types::errors::{DataConversionError, ExecutionError},
-};
+use defuse_sandbox::{Account, MtViewExt, SigningAccount, TxResult};
 use defuse_token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId};
 use futures::{TryStreamExt, stream::FuturesOrdered, try_join};
 use impl_tools::autoimpl;
 use itertools::Itertools;
 use near_sdk::{
-    AccountId, AccountIdRef, Gas, NearToken,
+    AccountIdRef, Gas, NearToken,
     json_types::U128,
     serde_json::{self, json},
     state_init::{StateInit, StateInitV1},
@@ -33,6 +37,7 @@ use crate::env::{BaseEnv, EscrowExt, EscrowViewExt};
 async fn partial_fills() {
     const MAKER_AMOUNT: u128 = 10000;
     const TAKER_AMOUNT: u128 = 20000;
+    const TIMEOUT: Duration = Duration::from_secs(60);
 
     let env = EscrowEnv::new().await.unwrap();
 
@@ -55,7 +60,6 @@ async fn partial_fills() {
         })
         .map(Into::<TokenId>::into);
 
-    const TIMEOUT: Duration = Duration::from_secs(60);
     let price: Price = "2".parse().unwrap();
 
     let params = Params {
@@ -95,7 +99,7 @@ async fn partial_fills() {
         salt: [0; 32],
     };
     let state_init = StateInit::V1(StateInitV1 {
-        code: env.escrow_global.clone().into(),
+        code: env.escrow_global.clone(),
         data: ContractStorage::init_state(&params).unwrap(),
     });
 
@@ -108,7 +112,7 @@ async fn partial_fills() {
             .into_iter()
             .chain(env.takers.iter().map(|a| a.id()))
             .chain(env.fee_collectors.iter().map(|a| a.id()))
-            .map(|a| a.as_ref()),
+            .map(AsRef::as_ref),
         &[&src_verifier_asset, &dst_verifier_asset],
     )
     .await;
@@ -152,7 +156,7 @@ async fn partial_fills() {
                     .into_iter()
                     .chain(env.takers.iter().map(|a| a.id()))
                     .chain(env.fee_collectors.iter().map(|a| a.id()))
-                    .map(|a| a.as_ref()),
+                    .map(AsRef::as_ref),
                 &[&src_verifier_asset, &dst_verifier_asset],
             )
             .await;
@@ -208,7 +212,7 @@ async fn partial_fills() {
                     .into_iter()
                     .chain(env.takers.iter().map(|a| a.id()))
                     .chain(env.fee_collectors.iter().map(|a| a.id()))
-                    .map(|a| a.as_ref()),
+                    .map(AsRef::as_ref),
                 &[&src_verifier_asset, &dst_verifier_asset],
             )
             .await;
@@ -233,7 +237,7 @@ async fn partial_fills() {
                 .into_iter()
                 .chain(env.takers.iter().map(|a| a.id()))
                 .chain(env.fee_collectors.iter().map(|a| a.id()))
-                .map(|a| a.as_ref()),
+                .map(AsRef::as_ref),
             &[&src_verifier_asset, &dst_verifier_asset],
         )
         .await;
@@ -349,7 +353,7 @@ impl EscrowEnv {
             .map(|account_id| async move {
                 let balances = self
                     .verifier
-                    .mt_batch_balance_of(account_id, token_ids.into_iter().map(ToString::to_string))
+                    .mt_batch_balance_of(account_id, token_ids.iter().map(ToString::to_string))
                     .await?;
                 anyhow::Ok((account_id, balances))
             })
@@ -359,7 +363,7 @@ impl EscrowEnv {
             println!(
                 "{:<64} {}",
                 account_id,
-                balances.into_iter().map(|b| format!("{:<30}", b)).join(" ")
+                balances.into_iter().map(|b| format!("{b:<30}")).join(" ")
             );
         }
     }

@@ -1119,7 +1119,7 @@ dependencies = [
  "futures",
  "impl-tools",
  "near-api",
- "near-sandbox 0.2.3",
+ "near-sandbox",
  "near-sdk",
  "thiserror 2.0.17",
 ]
@@ -2510,15 +2510,6 @@ dependencies = [
 
 [[package]]
 name = "near-account-id"
-version = "1.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "975bb8e272af403d97656893f71e095e1b178ccee571b3ec4a193152be0248f5"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "near-account-id"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cc9abfbee8838cdc236cdcb5d8c6c5d6121c63981f7c367a9234e3e42ac17475"
@@ -2564,7 +2555,7 @@ dependencies = [
  "bs58 0.5.1",
  "ed25519-dalek",
  "near-abi",
- "near-account-id 2.1.0",
+ "near-account-id",
  "near-gas",
  "near-openapi-types",
  "near-token",
@@ -2636,7 +2627,7 @@ dependencies = [
  "derive_more",
  "ed25519-dalek",
  "hex",
- "near-account-id 2.1.0",
+ "near-account-id",
  "near-config-utils",
  "near-schema-checker-lib",
  "near-stdx",
@@ -2730,7 +2721,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a8d5398e4fa9931e9d1639e36f80b3f0a365a93773d5e92b6094c6d6198d24b"
 dependencies = [
  "chrono",
- "near-account-id 2.1.0",
+ "near-account-id",
  "near-gas",
  "near-token",
  "serde",
@@ -2747,7 +2738,7 @@ checksum = "ed5e47794f75f3b4e12f249e3f9e9eec3facfcf7a89713b10fa28e02b7a2b66b"
 dependencies = [
  "borsh",
  "enum-map",
- "near-account-id 2.1.0",
+ "near-account-id",
  "near-primitives-core",
  "near-schema-checker-lib",
  "num-rational",
@@ -2835,7 +2826,7 @@ dependencies = [
  "bs58 0.4.0",
  "derive_more",
  "enum-map",
- "near-account-id 2.1.0",
+ "near-account-id",
  "near-gas",
  "near-schema-checker-lib",
  "near-token",
@@ -2849,34 +2840,14 @@ dependencies = [
 
 [[package]]
 name = "near-sandbox"
-version = "0.2.3"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f991a27f59330e97d47d416899c82077cec0974337f76f7c0e6836776ba71b66"
+checksum = "2da726a5ef6df27cc804719a5a011fe49560596520ec22f12916b2f31c597d5b"
 dependencies = [
  "binary-install",
  "fs4",
  "json-patch 4.1.0",
- "near-account-id 1.1.4",
- "near-token",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 2.0.17",
- "tokio",
- "tracing",
- "ureq",
-]
-
-[[package]]
-name = "near-sandbox"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "391b58aa4f484b1d604b462a2db1f553eb922ef2f26488f29e8f13672c51d5b3"
-dependencies = [
- "binary-install",
- "fs4",
- "json-patch 4.1.0",
- "near-account-id 2.1.0",
+ "near-account-id",
  "near-token",
  "serde",
  "serde_json",
@@ -2919,7 +2890,7 @@ dependencies = [
  "borsh",
  "bs58 0.5.1",
  "hex",
- "near-account-id 2.1.0",
+ "near-account-id",
  "near-crypto",
  "near-gas",
  "near-parameters",
@@ -3033,13 +3004,13 @@ dependencies = [
  "json-patch 2.0.0",
  "libc",
  "near-abi-client",
- "near-account-id 2.1.0",
+ "near-account-id",
  "near-crypto",
  "near-gas",
  "near-jsonrpc-client",
  "near-jsonrpc-primitives",
  "near-primitives",
- "near-sandbox 0.3.1",
+ "near-sandbox",
  "near-token",
  "rand 0.8.5",
  "reqwest",

@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, time::Duration};
+use std::time::Duration;
 
 use defuse::{
     core::intents::tokens::NotifyOnTransfer,
@@ -6,7 +6,7 @@ use defuse::{
 };
 use defuse_deadline::Deadline;
 use defuse_escrow_swap::{
-    ContractStorage, Params, ProtocolFees,
+    ContractStorage, OverrideSend, Params, ProtocolFees,
     action::{FillAction, TransferAction, TransferMessage},
 };
 use defuse_fees::Pips;
@@ -49,8 +49,8 @@ fn simple() {
         price: "2".parse().unwrap(), // 2 dst per 1 src,
         deadline: Deadline::timeout(Duration::from_secs(60 * 60)), // 1h
         partial_fills_allowed: false,
-        refund_src_to: Default::default(),
-        receive_dst_to: Default::default(),
+        refund_src_to: OverrideSend::default(),
+        receive_dst_to: OverrideSend::default(),
         taker_whitelist: [taker.clone()].into(),
         protocol_fees: Some(ProtocolFees {
             fee: Pips::from_bips(50).unwrap(),
@@ -109,7 +109,7 @@ fn simple() {
             "amount": U128(taker_price.dst_ceil_checked(maker_src_amount).unwrap() + /* excess */ 1_000_000),
             "memo": "fill escrow",
             "msg": serde_json::to_string(
-                &DepositMessage::new(escrow_id.clone())
+                &DepositMessage::new(escrow_id)
                     .with_action(DepositAction::Notify(
                         NotifyOnTransfer::new(
                             serde_json::to_string(&TransferMessage {
@@ -117,7 +117,7 @@ fn simple() {
                                 action: TransferAction::Fill(FillAction {
                                     price: taker_price,
                                     deadline: params.deadline,
-                                    receive_src_to: Default::default(),
+                                    receive_src_to: OverrideSend::default(),
                                 }),
                             })
                             .unwrap(),

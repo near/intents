@@ -1,7 +1,5 @@
 use defuse_escrow_swap::{Params, Storage};
-use defuse_sandbox::{
-    Account, SigningAccount, TxResult, api::types::transaction::actions::GlobalContractIdentifier,
-};
+use defuse_sandbox::{Account, SigningAccount, TxResult};
 use near_sdk::{AccountId, Gas, NearToken, serde_json::json};
 
 pub trait EscrowViewExt {

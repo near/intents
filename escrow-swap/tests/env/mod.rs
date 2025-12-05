@@ -5,7 +5,6 @@ pub use self::escrow::*;
 
 use std::sync::LazyLock;
 
-use defuse_escrow_swap::Params;
 use defuse_fees::Pips;
 use defuse_sandbox::{
     Account, Sandbox, SigningAccount, TxResult,
@@ -42,7 +41,7 @@ impl BaseEnv {
             sandbox.root().deploy_escrow_global("escrow"),
         );
 
-        Ok(BaseEnv {
+        Ok(Self {
             // wnear,
             verifier,
             escrow_global,

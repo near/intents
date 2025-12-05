@@ -29,15 +29,14 @@ impl Sandbox {
         };
 
         let root = GenesisAccount::default();
-        let signer =
-            Signer::new(Signer::from_secret_key(root.private_key.parse().unwrap())).unwrap();
+        let signer = Signer::from_secret_key(root.private_key.parse().unwrap()).unwrap();
         Self {
             root: SigningAccount::new(Account::new(root.account_id, network_config), signer),
             sandbox,
         }
     }
 
-    pub fn root(&self) -> &SigningAccount {
+    pub const fn root(&self) -> &SigningAccount {
         &self.root
     }
 }

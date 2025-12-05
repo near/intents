@@ -23,21 +23,22 @@ pub struct Account {
 }
 
 impl Account {
-    pub fn new(account_id: AccountId, network_config: NetworkConfig) -> Self {
+    pub const fn new(account_id: AccountId, network_config: NetworkConfig) -> Self {
         Self {
             account_id,
             network_config,
         }
     }
 
-    pub fn id(&self) -> &AccountId {
+    pub const fn id(&self) -> &AccountId {
         &self.account_id
     }
 
-    pub fn network_config(&self) -> &NetworkConfig {
+    pub const fn network_config(&self) -> &NetworkConfig {
         &self.network_config
     }
 
+    #[must_use]
     pub fn subaccount(&self, name: impl AsRef<str>) -> Self {
         Self::new(
             format!("{}.{}", name.as_ref(), self.id()).parse().unwrap(),
@@ -50,7 +51,7 @@ impl Account {
         T: DeserializeOwned + Send + Sync,
     {
         Contract(self.id().clone())
-            .call_function(name, args)?
+            .call_function(name, args)
             .read_only()
             .fetch_from(&self.network_config)
             .await
@@ -76,7 +77,7 @@ pub struct SigningAccount {
 }
 
 impl SigningAccount {
-    pub fn new(account: Account, signer: Arc<Signer>) -> Self {
+    pub const fn new(account: Account, signer: Arc<Signer>) -> Self {
         Self { account, signer }
     }
 
@@ -85,7 +86,7 @@ impl SigningAccount {
 
         Self::new(
             Account::new(public_key.to_implicit_account_id(), network_config),
-            Signer::new(Signer::from_secret_key(secret_key)).unwrap(),
+            Signer::from_secret_key(secret_key).unwrap(),
         )
     }
 
@@ -119,7 +120,7 @@ impl SigningAccount {
 
         let subaccount = Self::new(
             self.subaccount(name),
-            Signer::new(Signer::from_secret_key(secret_key)).unwrap(),
+            Signer::from_secret_key(secret_key).unwrap(),
         );
 
         let mut tx = self.tx(subaccount.id().clone()).create_account();

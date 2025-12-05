@@ -30,16 +30,6 @@ impl ContractStorage {
         )]
         .into())
     }
-
-    #[inline]
-    pub(super) const fn as_alive(&self) -> Option<&Storage> {
-        self.0.as_ref()
-    }
-
-    #[inline]
-    pub(super) fn try_as_alive(&self) -> Result<&Storage> {
-        self.as_alive().ok_or(Error::CleanupInProgress)
-    }
 }
 
 #[near(serializers = [borsh, json])]
