@@ -289,7 +289,7 @@ impl Contract {
             p = p.state_init(
                 state_init,
                 // we can't spend native NEAR from sender's account during the deposits
-                NearToken::from_yoctonear(0),
+                NearToken::ZERO,
             );
         }
 
