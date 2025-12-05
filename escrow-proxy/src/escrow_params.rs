@@ -131,6 +131,6 @@ pub struct Params {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub auth_caller: Option<AccountId>, // TODO: or parent account id?
 
-    #[serde_as(as = "Hex")]
+    // #[serde_as(as = "Hex")]
     pub salt: [u8; 32],
 }

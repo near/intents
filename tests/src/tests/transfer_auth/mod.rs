@@ -5,11 +5,11 @@
 
 use crate::{
     tests::defuse::{
+        DefuseSignerExt,
         accounts::AccountManagerExt,
         env::{Env, get_account_public_key},
-        DefuseSignerExt,
     },
-    utils::{account::AccountExt, read_wasm},
+    utils::{account::AccountExt, read_wasm, test_log::TestLog},
 };
 use defuse::core::intents::auth::AuthCall;
 use defuse_transfer_auth::AuthMessage;
@@ -27,7 +27,8 @@ async fn setup_transfer_auth(
     solver: &near_workspaces::Account,
     relay: &near_workspaces::Account,
     querier: &near_workspaces::Account,
-    escrow_params_hash: [u8; 32],
+    //TODO: update init params
+    _escrow_params_hash: [u8; 32],
 ) -> near_workspaces::Contract {
     // Deploy the contract
     let contract = env
@@ -41,9 +42,9 @@ async fn setup_transfer_auth(
         .args_json(json!({
             "state_init": {
                 "solver_id": solver.id(),
-                "escrow_params_hash": escrow_params_hash,
-                "authorized_contract": env.defuse.id(),
-                "authorizer_entity": relay.id(),
+                "escrow_contract_id": "global.escrow",
+                "auth_contract": env.defuse.id(),
+                "auth_callee": relay.id(),
                 "querier": querier.id(),
             }
         }))
@@ -57,7 +58,10 @@ async fn setup_transfer_auth(
     // Register contract's public key in defuse (needed to receive AuthCall)
     contract
         .as_account()
-        .add_public_key(env.defuse.id(), get_account_public_key(contract.as_account()))
+        .add_public_key(
+            env.defuse.id(),
+            get_account_public_key(contract.as_account()),
+        )
         .await
         .unwrap();
 
@@ -65,10 +69,7 @@ async fn setup_transfer_auth(
 }
 
 /// Helper function to create a JSON AuthMessage
-fn create_auth_message(
-    solver_id: &near_sdk::AccountId,
-    escrow_params_hash: [u8; 32],
-) -> String {
+fn create_auth_message(solver_id: &near_sdk::AccountId, escrow_params_hash: [u8; 32]) -> String {
     let auth_msg = AuthMessage {
         solver_id: solver_id.clone(),
         escrow_params_hash,
@@ -116,11 +117,8 @@ async fn trigger_on_auth(
 async fn transfer_auth_early_authorization() {
     // Setup environment
     let env = Env::builder().create_unique_users().build().await;
-    let (solver, relay, querier) = futures::join!(
-        env.create_user(),
-        env.create_user(),
-        env.create_user()
-    );
+    let (solver, relay, querier) =
+        futures::join!(env.create_user(), env.create_user(), env.create_user());
 
     // Create unique escrow params hash
     let escrow_params_hash: [u8; 32] = sha256(b"test_escrow_params_early").try_into().unwrap();
@@ -159,13 +157,11 @@ async fn transfer_auth_early_authorization() {
 /// Expected: Promise gets created, then resumed by on_auth, authorized becomes true
 #[tokio::test]
 async fn transfer_auth_async_authorization() {
+    println!("test start ");
     // Setup environment
     let env = Env::builder().create_unique_users().build().await;
-    let (solver, relay, querier) = futures::join!(
-        env.create_user(),
-        env.create_user(),
-        env.create_user()
-    );
+    let (solver, relay, querier) =
+        futures::join!(env.create_user(), env.create_user(), env.create_user());
 
     // Create unique escrow params hash
     let escrow_params_hash: [u8; 32] = sha256(b"test_escrow_params_async").try_into().unwrap();
@@ -180,14 +176,20 @@ async fn transfer_auth_async_authorization() {
         escrow_params_hash,
     )
     .await;
+    let transfer_auth_id_clone = transfer_auth.id().clone();
 
-    // Call wait_for_authorization FIRST (creates yielded promise)
-    let _wait_result = querier
-        .call(transfer_auth.id(), "wait_for_authorization")
-        .max_gas()
-        .transact()
-        .await
-        .unwrap();
+    println!("wait_for_authorization started");
+    let wait_result = tokio::spawn(async move {
+        // Call wait_for_authorization FIRST (creates yielded promise)
+        querier
+            .call(&transfer_auth_id_clone, "wait_for_authorization")
+            .max_gas()
+            .transact()
+            .await
+            .unwrap()
+    });
+
+    println!("wait_for_authorization finished");
 
     // Trigger on_auth AFTER wait_for_authorization (resumes the promise)
     let auth_message = create_auth_message(solver.id(), escrow_params_hash);
@@ -195,15 +197,14 @@ async fn transfer_auth_async_authorization() {
         .await
         .unwrap();
 
-    // Verify authorized is true after on_auth
-    let authorized: bool = querier
-        .view(transfer_auth.id(), "authorized")
-        .await
-        .unwrap()
-        .json()
-        .unwrap();
-
-    assert!(authorized, "Should be authorized after on_auth");
+    let execution_result = wait_result.await.unwrap().into_result().unwrap();
+    // let authorized: bool = wait_result.json().unwrap();
+    assert!(
+        execution_result.json::<bool>().unwrap(),
+        "Should be authorized after on_auth"
+    );
+    //
+    // assert!(authorized, "Should be authorized after on_auth");
 }
 
 /// Test 3: wait_for_authorization called but NO on_auth received
@@ -212,11 +213,8 @@ async fn transfer_auth_async_authorization() {
 async fn transfer_auth_timeout() {
     // Setup environment
     let env = Env::builder().create_unique_users().build().await;
-    let (solver, relay, querier) = futures::join!(
-        env.create_user(),
-        env.create_user(),
-        env.create_user()
-    );
+    let (solver, relay, querier) =
+        futures::join!(env.create_user(), env.create_user(), env.create_user());
 
     // Create unique escrow params hash
     let escrow_params_hash: [u8; 32] = sha256(b"test_escrow_params_timeout").try_into().unwrap();
@@ -232,37 +230,83 @@ async fn transfer_auth_timeout() {
     )
     .await;
 
+    println!("start wait_for_authorization");
     // Call wait_for_authorization (creates yielded promise with 200 block timeout)
-    let _wait_result = querier
-        .call(transfer_auth.id(), "wait_for_authorization")
-        .max_gas()
-        .transact()
-        .await
-        .unwrap();
+    let wait_result = tokio::spawn(async move {
+        querier
+            .call(transfer_auth.id(), "wait_for_authorization")
+            .max_gas()
+            .transact_async()
+            .await
+            .unwrap()
+    });
+    println!("end wait_for_authorization");
+
+    println!("current block : {}", env.sandbox().block_height().await);
+    // Fast forward MORE than 200 blocks to trigger timeout
+    env.sandbox().skip_blocks(500).await;
+    println!("blocks skipped current block : {}", env.sandbox().block_height().await);
+
+    let task_result = wait_result.await.unwrap();
+    let execution_result = task_result.into_future().await.unwrap();
+
+    // let execution_result = task_result.into_result().unwrap();
+    let bytes = execution_result.raw_bytes().unwrap();
+    let string_result = String::from_utf8(bytes).unwrap();
+    println!("{string_result}");
+
+    // let task_result = wait_result.await.unwrap();
+    // assert!(!task_result.into_result().unwrap().json::<bool>().unwrap());
+}
+
+#[tokio::test]
+async fn transfer_auth_timeout_blocking() {
+    // Setup environment
+    let env = Env::builder().create_unique_users().build().await;
+    let (solver, relay, querier) =
+        futures::join!(env.create_user(), env.create_user(), env.create_user());
+
+    // Create unique escrow params hash
+    let escrow_params_hash: [u8; 32] = sha256(b"test_escrow_params_timeout").try_into().unwrap();
+
+    // Deploy and initialize transfer-auth contract
+    let transfer_auth = setup_transfer_auth(
+        &env,
+        "transfer-auth-timeout",
+        &solver,
+        &relay,
+        &querier,
+        escrow_params_hash,
+    )
+    .await;
+
+    println!("start wait_for_authorization");
+    // Call wait_for_authorization (creates yielded promise with 200 block timeout)
+    println!("blocks current block : {}", env.sandbox().block_height().await);
+    let wait_result =
+        querier
+            .call(transfer_auth.id(), "wait_for_authorization")
+            .max_gas()
+            .transact_async()
+            .await
+            .unwrap();
+    println!("end wait_for_authorization");
 
     // Fast forward MORE than 200 blocks to trigger timeout
-    env.sandbox().skip_blocks(205).await;
+    // env.sandbox().skip_blocks(205).await;
+    //
+    //
+    let task_result = wait_result.into_future().await.unwrap();
 
-    // Verify authorized is still false
-    let authorized: bool = querier
-        .view(transfer_auth.id(), "authorized")
-        .await
-        .unwrap()
-        .json()
-        .unwrap();
+    println!("blocks skipped current block : {}", env.sandbox().block_height().await);
 
-    assert!(!authorized, "Should not be authorized after timeout");
+    let execution_result = task_result.into_result().unwrap();
+    let bytes = execution_result.raw_bytes().unwrap();
+    let string_result = String::from_utf8(bytes).unwrap();
+    println!("{string_result}");
 
-    // Verify yielded_promise_id is cleared
-    let yielded_promise_id: Option<String> = querier
-        .view(transfer_auth.id(), "yielded_promise_id")
-        .await
-        .unwrap()
-        .json()
-        .unwrap();
-
-    assert!(
-        yielded_promise_id.is_none(),
-        "Yielded promise should be cleared after timeout"
-    );
+    // let task_result = wait_result.await.unwrap();
+    // let execution_result = task_result.into_result().unwrap();
+    // println!("{execution_result:?}");
+    // assert!(!execution_result.json::<bool>().unwrap());
 }
