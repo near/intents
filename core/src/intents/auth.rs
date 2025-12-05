@@ -4,7 +4,7 @@ use crate::{
     DefuseError, Result,
     engine::{Engine, Inspector, State},
     intents::ExecutableIntent,
-    state_init::StateInitWithAmount,
+    state_init::StateInitArgs,
 };
 
 /// Call [`.on_auth`](::defuse_auth_call::AuthCallee::on_auth) with `signer_id`
@@ -20,7 +20,7 @@ pub struct AuthCall {
     /// right before calling [`.on_auth()`](::defuse_auth_call::AuthCallee::on_auth)
     /// (in the same receipt).
     #[serde(flatten, default, skip_serializing_if = "Option::is_none")]
-    pub state_init: Option<StateInitWithAmount>,
+    pub state_init: Option<StateInitArgs>,
 
     /// `msg` to pass in [`.on_auth`](::defuse_auth_call::AuthCallee::on_auth)
     pub msg: String,

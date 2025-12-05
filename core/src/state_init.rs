@@ -2,7 +2,7 @@ use near_sdk::{NearToken, near, state_init::StateInit};
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
-pub struct StateInitWithAmount {
+pub struct StateInitArgs {
     pub state_init: StateInit,
 
     #[serde(
