@@ -2,7 +2,7 @@ pub use defuse_nep245::TokenId;
 
 use std::{fmt, str::FromStr};
 
-use near_sdk::{AccountId, AccountIdRef, near};
+use near_sdk::{AccountId, near};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 #[cfg(any(feature = "arbitrary", test))]
@@ -32,25 +32,12 @@ impl Nep245TokenId {
             mt_token_id,
         }
     }
-
-    #[allow(clippy::missing_const_for_fn)]
-    pub fn contract_id(&self) -> &AccountIdRef {
-        &self.contract_id
-    }
-
-    pub const fn mt_token_id(&self) -> &TokenId {
-        &self.mt_token_id
-    }
-
-    pub fn into_contract_id_and_mt_token_id(self) -> (AccountId, TokenId) {
-        (self.contract_id, self.mt_token_id)
-    }
 }
 
 impl std::fmt::Debug for Nep245TokenId {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}", self.contract_id(), self.mt_token_id())
+        write!(f, "{}:{}", &self.contract_id, &self.mt_token_id)
     }
 }
 

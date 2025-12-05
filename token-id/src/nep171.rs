@@ -2,7 +2,7 @@ pub use near_contract_standards::non_fungible_token::TokenId;
 
 use std::{fmt, str::FromStr};
 
-use near_sdk::{AccountId, AccountIdRef, near};
+use near_sdk::{AccountId, near};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 #[cfg(any(feature = "arbitrary", test))]
@@ -32,25 +32,12 @@ impl Nep171TokenId {
             nft_token_id,
         }
     }
-
-    #[allow(clippy::missing_const_for_fn)]
-    pub fn contract_id(&self) -> &AccountIdRef {
-        &self.contract_id
-    }
-
-    pub const fn nft_token_id(&self) -> &TokenId {
-        &self.nft_token_id
-    }
-
-    pub fn into_contract_id_and_nft_token_id(self) -> (AccountId, TokenId) {
-        (self.contract_id, self.nft_token_id)
-    }
 }
 
 impl std::fmt::Debug for Nep171TokenId {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}", self.contract_id(), self.nft_token_id())
+        write!(f, "{}:{}", &self.contract_id, &self.nft_token_id)
     }
 }
 
