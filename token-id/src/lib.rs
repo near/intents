@@ -26,7 +26,7 @@ use strum::{EnumDiscriminants, EnumIter, EnumString};
 
 pub use self::error::TokenIdError;
 
-#[cfg(not(feature = "unbounded"))]
+#[cfg(feature = "bounded")]
 const MAX_ALLOWED_TOKEN_ID_LEN: usize = 127;
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
@@ -49,7 +49,7 @@ const MAX_ALLOWED_TOKEN_ID_LEN: usize = 127;
         EnumString,
         EnumIter,
         SerializeDisplay,
-        DeserializeFromStr
+        DeserializeFromStr,
     ),
     strum(serialize_all = "snake_case"),
     cfg_attr(
@@ -125,6 +125,16 @@ const _: () = {
         schema::{InstanceType, Schema, SchemaObject},
     };
 
+    #[cfg(not(feature = "bounded"))]
+    fn unwrap<T>(r: T) -> T {
+        r
+    }
+
+    #[cfg(feature = "bounded")]
+    fn unwrap<T>(r: Result<T, TokenIdError>) -> T {
+        r.unwrap()
+    }
+
     impl JsonSchema for TokenId {
         fn schema_name() -> String {
             stringify!(TokenId).to_string()
@@ -141,21 +151,15 @@ const _: () = {
                             "ft.near".parse().unwrap(),
                         )),
                         #[cfg(feature = "nep171")]
-                        TokenId::Nep171(
-                            crate::nep171::Nep171TokenId::new(
-                                "nft.near".parse().unwrap(),
-                                "token_id1".to_string(),
-                            )
-                            .unwrap(),
-                        ),
+                        TokenId::Nep171(unwrap(crate::nep171::Nep171TokenId::new(
+                            "nft.near".parse().unwrap(),
+                            "token_id1".to_string(),
+                        ))),
                         #[cfg(feature = "nep245")]
-                        TokenId::Nep245(
-                            crate::nep245::Nep245TokenId::new(
-                                "mt.near".parse().unwrap(),
-                                "token_id1".to_string(),
-                            )
-                            .unwrap(),
-                        ),
+                        TokenId::Nep245(unwrap(crate::nep245::Nep245TokenId::new(
+                            "mt.near".parse().unwrap(),
+                            "token_id1".to_string(),
+                        ))),
                     ]
                     .map(|s| s.to_string())
                     .to_vec()
@@ -189,7 +193,6 @@ mod tests {
         feature = "nep245",
         case("nep245:abc:xyz", "02030000006162630300000078797a")
     )]
-
     fn roundtrip_fixed(#[case] token_id_str: &str, #[case] borsh_expected_hex: &str) {
         let token_id: TokenId = token_id_str.parse().unwrap();
         let borsh_expected = hex::decode(borsh_expected_hex).unwrap();

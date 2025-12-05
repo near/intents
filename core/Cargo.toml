@@ -21,6 +21,7 @@ defuse-serde-utils.workspace = true
 defuse-sep53.workspace = true
 defuse-tip191.workspace = true
 defuse-token-id = { workspace = true, features = [
+    "bounded",
     "nep141",
     "nep171",
     "nep245",

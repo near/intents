@@ -15,3 +15,6 @@ defuse-num-utils.workspace = true
 
 near-sdk.workspace = true
 chrono = { workspace = true, features = ["serde"] }
+
+[features]
+abi = []

@@ -1,6 +1,6 @@
 pub use near_contract_standards::non_fungible_token::TokenId;
 
-use std::{fmt, str::FromStr};
+use core::{fmt, str::FromStr};
 
 use near_sdk::{AccountId, AccountIdRef, near};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
@@ -23,14 +23,14 @@ pub struct Nep171TokenId {
     contract_id: AccountId,
 
     #[cfg_attr(
-        all(not(feature = "unbounded"), any(feature = "arbitrary", test)),
+        all(feature = "bounded", any(feature = "arbitrary", test)),
         arbitrary(with = As::<::arbitrary_with::LimitLen<{crate::MAX_ALLOWED_TOKEN_ID_LEN}>>::arbitrary),
     )]
     nft_token_id: TokenId,
 }
 
 impl Nep171TokenId {
-    #[cfg(not(feature = "unbounded"))]
+    #[cfg(feature = "bounded")]
     pub fn new(contract_id: AccountId, nft_token_id: TokenId) -> Result<Self, TokenIdError> {
         if nft_token_id.len() > crate::MAX_ALLOWED_TOKEN_ID_LEN {
             return Err(TokenIdError::TokenIdTooLarge(nft_token_id.len()));
@@ -42,7 +42,7 @@ impl Nep171TokenId {
         })
     }
 
-    #[cfg(feature = "unbounded")]
+    #[cfg(not(feature = "bounded"))]
     pub fn new(contract_id: AccountId, nft_token_id: TokenId) -> Self {
         Self {
             contract_id,
@@ -86,9 +86,9 @@ impl FromStr for Nep171TokenId {
             .split_once(':')
             .ok_or(strum::ParseError::VariantNotFound)?;
         let r = Self::new(contract_id.parse()?, token_id.to_string());
-        #[cfg(feature = "unbounded")]
+        #[cfg(not(feature = "bounded"))]
         return Ok(r);
-        #[cfg(not(feature = "unbounded"))]
+        #[cfg(feature = "bounded")]
         return r;
     }
 }
@@ -103,9 +103,10 @@ impl From<&Nep171TokenId> for TokenIdType {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use arbitrary::Unstructured;
-    use arbitrary_with::UnstructuredExt;
-    use defuse_test_utils::random::{make_arbitrary, random_bytes};
+
+    use defuse_test_utils::random::make_arbitrary;
+    #[cfg(feature = "bounded")]
+    use defuse_test_utils::random::random_bytes;
     use rstest::rstest;
 
     #[rstest]
@@ -116,9 +117,12 @@ mod tests {
         assert_eq!(got, token_id);
     }
 
-    #[cfg(not(feature = "unbounded"))]
+    #[cfg(feature = "bounded")]
     #[rstest]
     fn token_id_length(random_bytes: Vec<u8>) {
+        use arbitrary::Unstructured;
+        use arbitrary_with::UnstructuredExt;
+
         let mut u = Unstructured::new(&random_bytes);
         let contract_id = u.arbitrary_as::<_, ArbitraryAccountId>().unwrap();
         let token_id: String = u.arbitrary().unwrap();
