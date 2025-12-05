@@ -2740,6 +2740,7 @@ dependencies = [
  "base64 0.22.1",
  "borsh",
  "bs58 0.5.1",
+ "hex",
  "near-account-id",
  "near-crypto",
  "near-gas",
