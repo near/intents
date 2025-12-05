@@ -279,6 +279,7 @@ impl Contract {
         notify: NotifyOnTransfer,
     ) -> Promise {
         let mut p = Promise::new(receiver_id);
+
         if let Some(state_init) = notify.state_init {
             p = p.state_init(
                 state_init,
