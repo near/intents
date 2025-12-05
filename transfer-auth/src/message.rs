@@ -1,6 +1,6 @@
 use near_sdk::{
-    serde::{Deserialize, Serialize},
     AccountId, CryptoHash,
+    serde::{Deserialize, Serialize},
 };
 
 #[derive(Serialize, Deserialize, Debug)]

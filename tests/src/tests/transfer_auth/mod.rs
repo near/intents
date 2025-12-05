@@ -250,7 +250,10 @@ async fn transfer_auth_timeout() {
     println!("current block : {}", env.sandbox().block_height().await);
     // Fast forward MORE than 200 blocks to trigger timeout
     env.sandbox().skip_blocks(500).await;
-    println!("blocks skipped current block : {}", env.sandbox().block_height().await);
+    println!(
+        "blocks skipped current block : {}",
+        env.sandbox().block_height().await
+    );
 
     let task_result = wait_result.await.unwrap();
     let execution_result = task_result.into_future().await.unwrap();
@@ -291,14 +294,16 @@ async fn transfer_auth_timeout_blocking() {
 
     println!("start wait_for_authorization");
     // Call wait_for_authorization (creates yielded promise with 200 block timeout)
-    println!("blocks current block : {}", env.sandbox().block_height().await);
-    let wait_result =
-        querier
-            .call(transfer_auth.id(), "wait_for_authorization")
-            .max_gas()
-            .transact_async()
-            .await
-            .unwrap();
+    println!(
+        "blocks current block : {}",
+        env.sandbox().block_height().await
+    );
+    let wait_result = querier
+        .call(transfer_auth.id(), "wait_for_authorization")
+        .max_gas()
+        .transact_async()
+        .await
+        .unwrap();
     println!("end wait_for_authorization");
 
     // Fast forward MORE than 200 blocks to trigger timeout
@@ -307,7 +312,10 @@ async fn transfer_auth_timeout_blocking() {
     //
     let task_result = wait_result.into_future().await.unwrap();
 
-    println!("blocks skipped current block : {}", env.sandbox().block_height().await);
+    println!(
+        "blocks skipped current block : {}",
+        env.sandbox().block_height().await
+    );
 
     let execution_result = task_result.into_result().unwrap();
 

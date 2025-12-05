@@ -22,13 +22,13 @@ impl FullAccessKeys for Contract {
     }
 }
 
-#[near]
-impl Contract {
-    /// Update the relay public key (for signature verification)
-    #[access_control_any(roles(Role::Owner, Role::KeyManager))]
-    #[payable]
-    pub fn set_relay_public_key(&mut self, relay_public_key: defuse_crypto::PublicKey) {
-        assert_one_yocto();
-        self.relay_public_key = relay_public_key;
-    }
-}
+// #[near]
+// impl Contract {
+//     /// Update the relay public key (for signature verification)
+//     #[access_control_any(roles(Role::Owner, Role::KeyManager))]
+//     #[payable]
+//     pub fn set_relay_public_key(&mut self, relay_public_key: defuse_crypto::PublicKey) {
+//         assert_one_yocto();
+//         self.relay_public_key = relay_public_key;
+//     }
+// }

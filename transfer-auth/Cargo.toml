@@ -15,9 +15,12 @@ workspace = true
 defuse-auth-call.workspace = true
 near-sdk = { workspace = true, features = ["unstable"] }
 serde_json.workspace = true
+impl-tools.workspace = true
+thiserror.workspace = true
+serde_with.workspace = true
 
 [dev-dependencies]
-near-sdk = { workspace = true, features = ["unstable", "unit-testing"] }
+near-sdk = { workspace = true, features = ["unstable", "unit-testing", "deterministic-account-ids"] }
 near-workspaces.workspace = true
 tokio.workspace = true
 serde_json.workspace = true

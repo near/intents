@@ -1,10 +1,15 @@
 mod admin;
+mod escrow_params;
 mod message;
 mod storage;
 mod upgrade;
-mod escrow_params;
 
 use core::iter;
+use defuse_near_utils::UnwrapOrPanicError;
+use near_sdk::{
+    env::keccak256,
+    state_init::{StateInit, StateInitV1},
+};
 use std::collections::{HashMap, HashSet};
 
 use defuse_auth_call::AuthCallee;
@@ -15,6 +20,8 @@ use near_sdk::{
     AccountId, Gas, NearToken, PanicOnDefault, PromiseOrValue, PromiseResult, env,
     json_types::U128, near, require, serde_json,
 };
+
+use defuse_transfer_auth::storage::{ContractStorage, State};
 
 #[near(serializers = [json])]
 #[derive(AccessControlRole, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -42,8 +49,38 @@ pub struct RolesConfig {
 #[near(contract_state)]
 #[derive(PanicOnDefault)]
 pub struct Contract {
-    pub relay_public_key: PublicKey,
-    pub allowed_auth_callers: HashSet<AccountId>,
+    // pub relay_public_key: PublicKey,
+    pub per_fill_global_contract_id: AccountId,
+    pub escrow_swap_global_contract_id: AccountId,
+}
+
+impl Contract {
+    fn derive_deteministic_escrow_per_fill_id(
+        &self,
+        solver_id: AccountId,
+        msg_hash: [u8; 32],
+    ) -> AccountId {
+        let state = State {
+            solver_id,
+            escrow_contract_id: todo!(),
+            auth_contract: todo!(),
+            auth_callee: todo!(),
+            querier: todo!(),
+            msg_hash,
+        };
+
+        let state_init = StateInit::V1(StateInitV1 {
+            code: near_sdk::GlobalContractId::AccountId(self.per_fill_global_contract_id.clone()),
+            //TODO: get rid of unwrap
+            data: ContractStorage::init_state(state).unwrap(),
+        });
+
+        state_init.derive_account_id()
+    }
+
+    fn derive_deteministic_escrow_swap_id(&self) -> AccountId {
+        unimplemented!()
+    }
 }
 
 #[near]
@@ -52,13 +89,13 @@ impl Contract {
     #[must_use]
     #[allow(clippy::use_self)]
     pub fn new(
-        relay_public_key: PublicKey,
         roles: RolesConfig,
-        allowed_auth_callers: HashSet<AccountId>,
+        per_fill_global_contract_id: AccountId,
+        escrow_swap_global_contract_id: AccountId,
     ) -> Contract {
         let mut contract = Self {
-            relay_public_key,
-            allowed_auth_callers,
+            per_fill_global_contract_id,
+            escrow_swap_global_contract_id,
         };
         contract.init_acl(roles);
         contract
@@ -84,11 +121,6 @@ impl Contract {
             "failed to set roles"
         );
     }
-
-    #[must_use]
-    pub const fn get_relay_public_key(&self) -> &PublicKey {
-        &self.relay_public_key
-    }
 }
 
 #[near]
@@ -102,39 +134,17 @@ impl MultiTokenReceiver for Contract {
         amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
+        //NOTE: instead of serializing and desrializing just hash origin message, relay
+        //can do the same when creating Auth intent with state init
+        //NOTE: its unique because of salt
+        let hash: [u8; 32] = keccak256(msg.as_bytes()).try_into().unwrap();
+        let auth_contract_id = self.derive_deteministic_escrow_per_fill_id(sender_id, hash);
+
         let _ = previous_owner_ids;
-
-        // 1. Parse message
-        let transfer_msg: TransferMessage = match near_sdk::serde_json::from_str(&msg) {
-            Ok(m) => m,
-            Err(e) => {
-                near_sdk::log!("Parse error: {}", e);
-                return PromiseOrValue::Value(amounts);
-            }
-        };
-
-        // 2. Verify signature
-        if !self.verify_signature(&transfer_msg) {
-            near_sdk::log!("Invalid signature");
-            return PromiseOrValue::Value(amounts);
-        }
-
-        //TODO: fetch deadline from escrow
-        // // 3. Check deadline (nanoseconds since epoch)
-        // if u128::from(env::block_timestamp()) > transfer_msg.authorization.deadline.0 {
-        //     near_sdk::log!("Deadline expired");
-        //     return PromiseOrValue::Value(amounts);
-        // }
 
         // 4. Validate single token transfer
         if token_ids.len() != 1 || amounts.len() != 1 {
             near_sdk::log!("Only single token transfers supported");
-            return PromiseOrValue::Value(amounts);
-        }
-
-        // 5. Validate amount matches
-        if amounts[0] != transfer_msg.authorization.amount {
-            near_sdk::log!("Amount mismatch");
             return PromiseOrValue::Value(amounts);
         }
 
@@ -146,15 +156,13 @@ impl MultiTokenReceiver for Contract {
         // TODO Phase 2: Verify token_ids[0] matches authorization.token
         // TODO Phase 2: Verify and commit nonce
 
-        near_sdk::log!("Authorization valid for solver {}", sender_id);
-
         // 6. Forward tokens to escrow via mt_transfer_call
         let token_contract = env::predecessor_account_id();
-        let escrow_address = transfer_msg.authorization.escrow.clone();
+        let escrow_address = self.derive_deteministic_escrow_swap_id();
 
-        // Build escrow message with fill parameters
-        let escrow_msg = serde_json::to_string(&transfer_msg.escrow_params)
-            .expect("escrow_params serialization should not fail");
+        // // Build escrow message with fill parameters
+        // let escrow_msg = serde_json::to_string(&transfer_msg.escrow_params)
+        //     .expect("escrow_params serialization should not fail");
 
         // Call mt_transfer_call on the token contract to forward to escrow
         PromiseOrValue::Promise(
@@ -167,7 +175,11 @@ impl MultiTokenReceiver for Contract {
                     amounts[0],
                     None, // approval
                     None, // memo
-                    escrow_msg,
+                    //TODO: will the hashes still be fine when serializing and desrializzint??
+                    //NOTE: for now lets pass origin message nad maybe have it aligned with
+                    //escrow-swap so that it ignores extra parameters, so we dont have to serialize
+                    //& ddeserialize
+                    msg,
                 )
                 .then(
                     Self::ext(env::current_account_id())
@@ -197,37 +209,5 @@ impl Contract {
                 original_amounts
             }
         }
-    }
-}
-
-impl Contract {
-    fn verify_signature(&self, msg: &TransferMessage) -> bool {
-        let PublicKey::Ed25519(relay_pk) = &self.relay_public_key else {
-            return false;
-        };
-        let Signature::Ed25519(sig) = &msg.signature else {
-            return false;
-        };
-
-        let hash = msg.authorization.hash();
-        Ed25519::verify(sig, &hash, relay_pk).is_some()
-    }
-}
-
-#[near]
-impl AuthCallee for Contract {
-    #[payable]
-    fn on_auth(&mut self, signer_id: AccountId, msg: String) -> PromiseOrValue<()> {
-        // Security: verify caller is an allowed defuse contract
-        require!(
-            self.allowed_auth_callers
-                .contains(&env::predecessor_account_id()),
-            "unauthorized caller"
-        );
-
-        // Placeholder implementation - log for now
-        near_sdk::log!("on_auth called by signer: {}, msg: {}", signer_id, msg);
-
-        PromiseOrValue::Value(())
     }
 }

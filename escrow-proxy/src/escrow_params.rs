@@ -1,18 +1,17 @@
 //TODO: remove once escrow is merged
 
 use defuse_deadline::Deadline;
-use near_sdk::{json_types::U128, near, AccountId};
+use defuse_fees::Pips;
 use defuse_token_id::TokenId;
 use near_sdk::Gas;
-use defuse_fees::Pips;
+use near_sdk::{AccountId, json_types::U128, near};
 use std::collections::{BTreeMap, BTreeSet};
 
-use serde_with::{hex::Hex};
+use serde_with::hex::Hex;
 
 use defuse_borsh_utils::adapters::{
     As as BorshAs, TimestampNanoSeconds as BorshTimestampNanoSeconds,
 };
-
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -26,7 +25,6 @@ pub struct ProtocolFees {
     /// on `dst_token`
     pub collector: AccountId,
 }
-
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -69,7 +67,6 @@ impl OverrideSend {
         self
     }
 }
-
 
 #[inline]
 pub fn is_default<T>(v: &T) -> bool

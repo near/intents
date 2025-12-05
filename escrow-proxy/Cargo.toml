@@ -36,6 +36,8 @@ defuse-fees.workspace = true
 defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-token-id = { workspace = true, default-features = false, features = ["nep141", "nep245"] }
+defuse-transfer-auth.workspace = true
+serde_json.workspace = true
 
 near-plugins.workspace = true
 near-sdk = { workspace = true, features = ["unstable"] }

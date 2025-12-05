@@ -943,6 +943,7 @@ dependencies = [
  "defuse-near-utils",
  "defuse-nep245",
  "defuse-token-id",
+ "defuse-transfer-auth",
  "near-plugins",
  "near-sdk",
  "near-workspaces",
@@ -1183,9 +1184,12 @@ name = "defuse-transfer-auth"
 version = "0.1.0"
 dependencies = [
  "defuse-auth-call",
+ "impl-tools",
  "near-sdk",
  "near-workspaces",
  "serde_json",
+ "serde_with",
+ "thiserror 2.0.12",
  "tokio",
 ]
 
@@ -2719,6 +2723,7 @@ dependencies = [
  "base64 0.22.1",
  "borsh",
  "bs58 0.5.1",
+ "hex",
  "near-account-id",
  "near-crypto",
  "near-gas",
