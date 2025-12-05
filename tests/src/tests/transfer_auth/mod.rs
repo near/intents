@@ -19,6 +19,7 @@ use std::sync::LazyLock;
 
 static TRANSFER_AUTH_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("res/transfer-auth/defuse_transfer_auth"));
+const ESCROW_ID: &str = "dummy_instance.escrow.near";
 
 /// Helper function to deploy and initialize the transfer-auth contract
 async fn setup_transfer_auth(
@@ -42,7 +43,7 @@ async fn setup_transfer_auth(
         .args_json(json!({
             "state_init": {
                 "solver_id": solver.id(),
-                "escrow_contract_id": "global.escrow",
+                "escrow_contract_id": ESCROW_ID.parse::<near_sdk::AccountId>().unwrap(),
                 "auth_contract": env.defuse.id(),
                 "auth_callee": relay.id(),
                 "querier": querier.id(),

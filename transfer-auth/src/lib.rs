@@ -139,8 +139,6 @@ impl Contract {
     }
 
     pub fn wait_for_authorization(&mut self) -> PromiseOrValue<bool> {
-        // require!(env::predecessor_account_id() == self.state_init.querier, "Unauthorized auth contract");
-        // require!(env::current_account_id() == self.state_init.auth_callee, "Unauthorized auth callee");
 
         if self.authorized {
             return PromiseOrValue::Value(true);
@@ -193,6 +191,9 @@ impl Contract {
 impl AuthCallee for Contract {
     #[payable]
     fn on_auth(&mut self, signer_id: AccountId, msg: String) -> PromiseOrValue<()> {
+        require!(env::predecessor_account_id() == self.state_init.auth_contract, "Unauthorized auth contract");
+        require!(signer_id == self.state_init.auth_callee, "Unauthorized auth callee");
+
         // Security: Validate caller is authorized
         require!(
             self.state_init.auth_contract != env::predecessor_account_id() ||
