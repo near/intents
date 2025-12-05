@@ -2,27 +2,29 @@ mod letter_gen;
 mod mt_transfer_resolve_gas;
 pub mod traits;
 
-use crate::assert_a_contains_b;
-use crate::tests::defuse::DefuseExt;
-use crate::tests::defuse::DefuseSignerExt;
-use crate::tests::defuse::accounts::AccountManagerExt;
-use crate::tests::defuse::env::MT_RECEIVER_STUB_WASM;
-use crate::tests::defuse::env::{Env, get_account_public_key};
-use crate::tests::defuse::tokens::nep245::traits::DefuseMtWithdrawer;
-use crate::utils::mt::MtExt;
-use defuse::contract::config::{DefuseConfig, RolesConfig};
-use defuse::core::amounts::Amounts;
-use defuse::core::fees::{FeesConfig, Pips};
-use defuse::core::intents::tokens::{NotifyOnTransfer, Transfer};
-use defuse::core::token_id::TokenId;
-use defuse::core::token_id::nep141::Nep141TokenId;
-use defuse::core::token_id::nep245::Nep245TokenId;
-use defuse::nep245::Token;
-use defuse::nep245::{MtBurnEvent, MtEvent, MtTransferEvent};
-use defuse::tokens::{DepositAction, DepositMessage, ExecuteIntents};
+use crate::{
+    assert_a_contains_b,
+    tests::defuse::{
+        DefuseExt, DefuseSignerExt,
+        accounts::AccountManagerExt,
+        env::{Env, MT_RECEIVER_STUB_WASM, get_account_public_key},
+        tokens::nep245::traits::DefuseMtWithdrawer,
+    },
+    utils::mt::MtExt,
+};
+use defuse::{
+    contract::config::{DefuseConfig, RolesConfig},
+    core::{
+        amounts::Amounts,
+        fees::{FeesConfig, Pips},
+        intents::tokens::{NotifyOnTransfer, Transfer},
+        token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId},
+    },
+    nep245::{MtBurnEvent, MtEvent, MtTransferEvent, Token},
+    tokens::{DepositAction, DepositMessage, ExecuteIntents},
+};
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
-use near_sdk::AsNep297Event;
-use near_sdk::json_types::U128;
+use near_sdk::{AsNep297Event, json_types::U128};
 use rstest::rstest;
 use std::borrow::Cow;
 

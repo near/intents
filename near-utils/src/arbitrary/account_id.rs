@@ -10,9 +10,9 @@ pub struct ArbitraryAccountId;
 impl<'a> ArbitraryAs<'a, AccountId> for ArbitraryAccountId {
     fn arbitrary_as(u: &mut Unstructured<'a>) -> Result<AccountId> {
         match u.choose(&[
-            AccountType::NamedAccount,
             AccountType::NearImplicitAccount,
             AccountType::EthImplicitAccount,
+            AccountType::NamedAccount,
             AccountType::NearDeterministicAccount,
         ])? {
             AccountType::NamedAccount => u.arbitrary_as::<_, ArbitraryNamedAccountId>(),

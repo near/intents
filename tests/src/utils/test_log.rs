@@ -32,7 +32,8 @@ macro_rules! assert_a_contains_b {
     }};
 }
 
-use near_workspaces::{result::ExecutionResult, types::Gas};
+use near_sdk::Gas;
+use near_workspaces::result::ExecutionResult;
 
 #[allow(dead_code)]
 #[derive(Debug)]
