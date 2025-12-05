@@ -17,10 +17,11 @@ use crate::{
 
 use super::{ExecutableIntent, IntentEvent};
 
+#[must_use]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
 pub struct NotifyOnTransfer {
-    /// 
+    // TODO: docs
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub state_init: Option<StateInit>,
 
@@ -49,7 +50,6 @@ impl NotifyOnTransfer {
         self
     }
 
-    #[must_use]
     pub const fn with_min_gas(mut self, min_gas: Gas) -> Self {
         self.min_gas = Some(min_gas);
         self
