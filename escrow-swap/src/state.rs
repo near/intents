@@ -170,7 +170,7 @@ impl Params {
     #[inline]
     pub fn hash(&self) -> CryptoHash {
         // TODO: prefix?
-        env::keccak256_array(&borsh::to_vec(self).unwrap_or_else(|_| unreachable!()))
+        env::keccak256_array(borsh::to_vec(self).unwrap_or_else(|_| unreachable!()))
     }
 
     pub fn total_fee(&self) -> Option<Pips> {
@@ -194,7 +194,7 @@ impl Params {
         Ok(())
     }
 
-    fn validate_price(&self) -> Result<()> {
+    const fn validate_price(&self) -> Result<()> {
         if self.price.is_zero() {
             return Err(Error::PriceTooLow);
         }
@@ -246,22 +246,26 @@ pub struct OverrideSend {
 }
 
 impl OverrideSend {
+    #[must_use]
     pub fn receiver_id(mut self, receiver_id: impl Into<AccountId>) -> Self {
         self.receiver_id = Some(receiver_id.into());
         self
     }
 
+    #[must_use]
     pub fn memo(mut self, memo: impl Into<String>) -> Self {
         self.memo = Some(memo.into());
         self
     }
 
+    #[must_use]
     pub fn msg(mut self, msg: impl Into<String>) -> Self {
         self.msg = Some(msg.into());
         self
     }
 
-    pub fn min_gas(mut self, min_gas: Gas) -> Self {
+    #[must_use]
+    pub const fn min_gas(mut self, min_gas: Gas) -> Self {
         self.min_gas = Some(min_gas);
         self
     }

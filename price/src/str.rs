@@ -24,8 +24,8 @@ impl Display for Price {
 
         let fract = digits % denominator;
         if fract != 0 {
-            let decimals = self.decimals() as usize;
-            write!(f, ".{:0decimals$}", fract)?;
+            let decimals = self.decimals().into();
+            write!(f, ".{fract:0decimals$}")?;
         }
         Ok(())
     }
@@ -45,9 +45,9 @@ impl FromStr for Price {
             if fract.is_none_or(str::is_empty) {
                 return Err(ParseDecimalError::InvalidFormat);
             }
-            0
+            0u128
         } else {
-            u128::from_str_radix(integer, Self::BASE as u32)?
+            integer.parse::<u128>()?
         };
 
         let decimals = if let Some(fract) = fract
@@ -65,9 +65,9 @@ impl FromStr for Price {
                 .filter(|d| *d <= Self::MAX_DECIMALS)
                 .ok_or(ParseDecimalError::Overflow)?;
 
-            let fract = u128::from_str_radix(fract, Self::BASE as u32)?;
+            let fract = fract.parse()?;
             digits = digits
-                .checked_mul(Self::BASE.pow(decimals as u32))
+                .checked_mul(10u128.pow(decimals.into()))
                 .and_then(|d| d.checked_add(fract))
                 .ok_or(ParseDecimalError::Overflow)?;
 
@@ -147,7 +147,7 @@ mod tests {
     )]
     fn roundtrip(#[case] input: &str, #[case] result: &str) {
         let p: Price = input.parse().unwrap();
-        assert_eq!(p.to_string(), result)
+        assert_eq!(p.to_string(), result);
     }
 
     #[rstest]

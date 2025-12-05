@@ -5,16 +5,16 @@ use crate::Price;
 impl Ord for Price {
     #[inline]
     fn cmp(&self, other: &Self) -> Ordering {
-        let [sd, od] = [self, other].map(Self::decimals);
+        let [sd, od]: [u32; 2] = [self, other].map(Self::decimals).map(Into::into);
         let [sm, om] = [self, other].map(Self::digits);
 
         match sd.cmp(&od) {
             Ordering::Equal => sm.cmp(&om),
             Ordering::Less => sm
-                .checked_mul(Self::BASE.pow((od - sd) as u32))
+                .checked_mul(10u128.pow(od - sd))
                 .map_or(Ordering::Greater, |sr| sr.cmp(&om)),
             Ordering::Greater => om
-                .checked_mul(Self::BASE.pow((sd - od) as u32))
+                .checked_mul(10u128.pow(sd - od))
                 .map_or(Ordering::Less, |or| sm.cmp(&or)),
         }
     }

@@ -20,8 +20,8 @@ use serde_with::{DeserializeFromStr, SerializeDisplay};
 pub struct Price(u8, u128);
 
 impl Price {
-    const BASE: u128 = 10u128;
-    const MAX_DECIMALS: u8 = u128::MAX.ilog(Self::BASE) as u8;
+    #[allow(clippy::as_conversions, clippy::cast_possible_truncation)]
+    const MAX_DECIMALS: u8 = u128::MAX.ilog10() as u8;
 
     pub const MIN: Self = Self(Self::MAX_DECIMALS, 1);
     pub const MAX: Self = Self(0, u128::MAX);
@@ -35,8 +35,8 @@ impl Price {
             return Some(Self::ZERO);
         }
 
-        while decimals > 0 && digits % Self::BASE == 0 {
-            digits /= Self::BASE;
+        while decimals > 0 && digits % 10 == 0 {
+            digits /= 10;
             decimals -= 1;
         }
 
@@ -58,10 +58,9 @@ impl Price {
     }
 
     #[inline]
-    const fn denominator(self) -> u128 {
-        Self::BASE
-            // this is safe since decimals are always <= Self::MAX_DECIMALS
-            .pow(self.decimals() as u32)
+    fn denominator(self) -> u128 {
+        // this is safe since decimals are always <= Self::MAX_DECIMALS
+        10u128.pow(self.decimals().into())
     }
 
     pub const fn is_zero(&self) -> bool {
