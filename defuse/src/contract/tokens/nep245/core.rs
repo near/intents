@@ -281,9 +281,14 @@ impl Contract {
         let mut p = Promise::new(receiver_id);
 
         if let Some(state_init) = notify.state_init {
+            // No need to require `receiver_id == state_init.derive_account_id()` here,
+            // since Near runtime does this validation for us and current receipt will
+            // fail in case of mismatch anyway:
+            // https://github.com/near/nearcore/blob/523c659ac47ea31205fec830a1427a71352c605a/runtime/runtime/src/verifier.rs#L637-L644
+
             p = p.state_init(
                 state_init,
-                // nowhere to get native NEAR from during the deposits
+                // we can't spend native NEAR from sender's account during the deposits
                 NearToken::from_yoctonear(0),
             );
         }
