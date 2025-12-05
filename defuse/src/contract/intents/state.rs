@@ -14,7 +14,7 @@ use defuse_core::{
 };
 use defuse_near_utils::{CURRENT_ACCOUNT_ID, Lock};
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
-use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, json_types::U128};
+use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, PromiseOrValue, json_types::U128};
 use std::borrow::Cow;
 
 use crate::contract::{Contract, accounts::Account};
@@ -198,17 +198,17 @@ impl State for Contract {
 
     fn ft_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: FtWithdraw) -> Result<()> {
         self.internal_ft_withdraw(owner_id.to_owned(), withdraw, false)
-            .map(|promise| promise.detach())
+            .map(PromiseOrValue::detach)
     }
 
     fn nft_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: NftWithdraw) -> Result<()> {
         self.internal_nft_withdraw(owner_id.to_owned(), withdraw, false)
-            .map(|promise| promise.detach())
+            .map(PromiseOrValue::detach)
     }
 
     fn mt_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: MtWithdraw) -> Result<()> {
         self.internal_mt_withdraw(owner_id.to_owned(), withdraw, false)
-            .map(|promise| promise.detach())
+            .map(PromiseOrValue::detach)
     }
 
     fn native_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: NativeWithdraw) -> Result<()> {
