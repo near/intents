@@ -14,7 +14,7 @@ use defuse_core::{
 };
 use defuse_near_utils::{CURRENT_ACCOUNT_ID, Lock};
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
-use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128};
+use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, json_types::U128};
 use std::borrow::Cow;
 
 use crate::contract::{Contract, accounts::Account};
@@ -329,7 +329,13 @@ impl State for Contract {
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
                         .with_static_gas(
                             Self::DO_AUTH_CALL_MIN_GAS
-                                .checked_add(auth_call.min_gas())
+                                .checked_add(
+                                    auth_call
+                                        .state_init
+                                        .as_ref()
+                                        .map_or(Gas::from_gas(0), |_| Self::STATE_INIT_GAS),
+                                )
+                                .and_then(|g| g.checked_add(auth_call.min_gas()))
                                 .ok_or(DefuseError::GasOverflow)?,
                         )
                         .do_auth_call(signer_id.to_owned(), auth_call),
