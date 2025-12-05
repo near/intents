@@ -1034,7 +1034,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
         DepositMessage {
             receiver_id: receiver.id().clone(),
             action: Some(DepositAction::Notify(NotifyOnTransfer::new(
-                near_sdk::serde_json::to_string(&expectation.action).unwrap(),
+                serde_json::to_string(&expectation.action).unwrap(),
             ))),
         }
     } else {
@@ -1234,7 +1234,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
         DepositMessage {
             receiver_id: receiver.id().clone(),
             action: Some(DepositAction::Notify(NotifyOnTransfer::new(
-                near_sdk::serde_json::to_string(&expectation.action).unwrap(),
+                serde_json::to_string(&expectation.action).unwrap(),
             ))),
         }
     } else {
@@ -1443,7 +1443,7 @@ async fn mt_transfer_call_circullar_deposit() {
         // Set receiver_id to defuse1 to create circular callback
         // With empty inner message to avoid further callbacks
         DepositAction::Notify(NotifyOnTransfer::new(
-            near_sdk::serde_json::to_string(&DepositMessage {
+            serde_json::to_string(&DepositMessage {
                 receiver_id: env.defuse.id().clone(), // Circular: back to defuse1
                 action: Some(DepositAction::Notify(NotifyOnTransfer::new(
                     serde_json::to_string(&DepositMessage::new(user.id().clone())).unwrap(),
