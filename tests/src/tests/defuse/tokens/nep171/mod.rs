@@ -1,15 +1,19 @@
-use crate::tests::defuse::DefuseSignerExt;
-use crate::tests::defuse::{env::Env, intents::ExecuteIntentsExt};
-use crate::utils::{mt::MtExt, nft::NftExt};
-use defuse::core::intents::tokens::NftWithdraw;
-use defuse::core::token_id::TokenId as DefuseTokenId;
-use defuse::core::token_id::nep171::Nep171TokenId;
-use defuse::tokens::{DepositAction, DepositMessage, ExecuteIntents};
-use multi_token_receiver_stub::MTReceiverMode as StubAction;
-use near_contract_standards::non_fungible_token::metadata::{
-    NFT_METADATA_SPEC, NFTContractMetadata,
+use crate::{
+    tests::defuse::{DefuseSignerExt, env::Env, intents::ExecuteIntentsExt},
+    utils::{mt::MtExt, nft::NftExt},
 };
-use near_contract_standards::non_fungible_token::{Token, metadata::TokenMetadata};
+use defuse::{
+    core::{
+        intents::tokens::{NftWithdraw, NotifyOnTransfer},
+        token_id::{TokenId as DefuseTokenId, nep171::Nep171TokenId},
+    },
+    tokens::{DepositAction, DepositMessage, ExecuteIntents},
+};
+use multi_token_receiver_stub::MTReceiverMode as StubAction;
+use near_contract_standards::non_fungible_token::{
+    Token,
+    metadata::{NFT_METADATA_SPEC, NFTContractMetadata, TokenMetadata},
+};
 use near_sdk::{NearToken, json_types::Base64VecU8};
 use rstest::rstest;
 use std::collections::HashMap;
@@ -409,12 +413,9 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
     let deposit_message = if intents.is_empty() {
         DepositMessage {
             receiver_id: receiver.id().clone(),
-            action: Some(DepositAction::Notify(
-                defuse::core::intents::tokens::NotifyOnTransfer {
-                    msg: near_sdk::serde_json::to_string(&expectation.action).unwrap(),
-                    min_gas: None,
-                },
-            )),
+            action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+                near_sdk::serde_json::to_string(&expectation.action).unwrap(),
+            ))),
         }
     } else {
         DepositMessage {

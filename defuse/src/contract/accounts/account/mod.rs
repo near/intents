@@ -14,9 +14,9 @@ use defuse_core::{
 
 use defuse_near_utils::NestPrefix;
 use impl_tools::autoimpl;
-use near_account_id::AccountType;
 use near_sdk::{
     AccountIdRef, BorshStorageKey, IntoStorageKey,
+    account_id::AccountType,
     borsh::BorshSerialize,
     near,
     store::{IterableSet, LookupMap},

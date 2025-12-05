@@ -1,8 +1,7 @@
 use std::iter;
 
 use arbitrary_with::{Arbitrary, ArbitraryAs, Error, Result, Unstructured, UnstructuredExt};
-use near_account_id::AccountType;
-use near_sdk::{AccountId, AccountIdRef};
+use near_sdk::account_id::{AccountId, AccountIdRef, AccountType};
 
 const MAX_ACCOUNT_ID_LENGTH: usize = 64;
 
@@ -11,9 +10,9 @@ pub struct ArbitraryAccountId;
 impl<'a> ArbitraryAs<'a, AccountId> for ArbitraryAccountId {
     fn arbitrary_as(u: &mut Unstructured<'a>) -> Result<AccountId> {
         match u.choose(&[
-            AccountType::NamedAccount,
             AccountType::NearImplicitAccount,
             AccountType::EthImplicitAccount,
+            AccountType::NamedAccount,
             AccountType::NearDeterministicAccount,
         ])? {
             AccountType::NamedAccount => u.arbitrary_as::<_, ArbitraryNamedAccountId>(),
@@ -145,7 +144,6 @@ mod tests {
     use super::*;
 
     use arbitrary_with::{Unstructured, UnstructuredExt};
-    use near_account_id::AccountType;
     use rstest::rstest;
 
     use defuse_test_utils::random::random_bytes;

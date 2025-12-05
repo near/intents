@@ -36,9 +36,8 @@ derive_more = { workspace = true, features = ["from"] }
 hex.workspace = true
 hex-literal.workspace = true
 impl-tools.workspace = true
-near-account-id.workspace = true
 near-contract-standards.workspace = true
-near-sdk.workspace = true
+near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 serde_with.workspace = true
 strum.workspace = true
 thiserror.workspace = true

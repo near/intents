@@ -1,4 +1,4 @@
-use near_account_id::ParseAccountError;
+use near_sdk::account_id::ParseAccountError;
 
 #[derive(thiserror::Error, Debug)]
 pub enum TokenIdError {

@@ -17,10 +17,13 @@ use crate::{
 
 use super::{ExecutableIntent, IntentEvent};
 
+#[must_use]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
 pub struct NotifyOnTransfer {
-    /// 
+    /// Optionally initialize the receiver's contract (Deterministic AccountId)
+    /// via [`state_init`](https://github.com/near/NEPs/blob/master/neps/nep-0616.md#stateinit-action)
+    /// right before calling `mt_on_transfer()` (in the same receipt).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub state_init: Option<StateInit>,
 
@@ -49,7 +52,6 @@ impl NotifyOnTransfer {
         self
     }
 
-    #[must_use]
     pub const fn with_min_gas(mut self, min_gas: Gas) -> Self {
         self.min_gas = Some(min_gas);
         self
@@ -105,7 +107,7 @@ impl ExecutableIntent for Transfer {
                         sender_id,
                         TransferEvent {
                             receiver_id: Cow::Borrowed(&self.receiver_id),
-                            tokens: Cow::Borrowed(&self.tokens),
+                            tokens: self.tokens.clone(),
                             memo: Cow::Borrowed(&self.memo),
                         },
                     ),
