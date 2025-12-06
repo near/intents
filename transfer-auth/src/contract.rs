@@ -6,7 +6,7 @@ use serde_json::json;
 
 
 use impl_tools::autoimpl;
-use crate::storage::{ContractStorage, State};
+use crate::storage::{ContractStorage, State, LazyYieldId, Fsm, FsmEvent};
 use crate::TransferAuth;
 use crate::AuthMessage;
 
@@ -15,6 +15,7 @@ use crate::AuthMessage;
 #[autoimpl(DerefMut using self.0)]
 #[derive(Debug, PanicOnDefault)]
 pub struct Contract(ContractStorage);
+
 
 
 #[near]
@@ -32,59 +33,32 @@ impl Contract {
             env::panic_str("Unauthorized querier");
         }
 
-        if self.authorized {
-            return PromiseOrValue::Value(true);
-        }
+        let mut yield_id = LazyYieldId::new();
+        self.fsm.handle(&FsmEvent::WaitForAuthorization(&mut yield_id));
 
-        if self.yielded_promise_id.is_some() {
-            env::panic_str("wait_for_authorization called multiple times 22");
-        }
-
-        // let init_value = serde_json::to_string(&b"create".to_vec()).unwrap();
-        // env::log_str(&format!("wait_for_authorization called with init_value: {init_value}"));
-
-        let init_value = serde_json::to_vec(&String::from("hello world")).unwrap();
-        let args = json!({
-            "init_data": "hello world"
-        });
-        // serde_json::to_vec(&args).unwrap();
-
-        let (promise, yield_id) = Promise::yield_create(
-            "is_authorized_resume",
-            &serde_json::to_vec(&args).unwrap(),
-            Gas::from_tgas(0),
-            GasWeight(1),
-        );
-        self.0.yielded_promise_id = Some(yield_id);
-        PromiseOrValue::Promise(promise)
+        yield_id
+            .into_promise()
+            .map(PromiseOrValue::Promise)
+            .unwrap_or_else(|| (PromiseOrValue::Value(self.fsm.is_authorized())))
     }
 
     #[private]
     #[allow(clippy::needless_pass_by_value)]
     pub fn is_authorized_resume(
         &mut self,
-        init_data: String,
-        #[callback_result] resume_data: Result<String, PromiseError>,
+        #[callback_result] resume_data: Result<(), PromiseError>,
     ) -> PromiseOrValue<bool> {
-        env::log_str(&format!(
-            "is_authorized_resume called with init_data: {init_data}"
-        ));
-        // env::log_str(&format!("is_authorized_resume called with init_data: {init_data:?} and resume_data: {resume_data:?}"));
-
-        // let init_data_str = String::from_utf8_lossy(&init_data);
-        // env::log_str(&format!("is_authorized_resume init_data (str): {init_data_str}"));
         match resume_data {
-            Ok(resume_data) => {
-                env::log_str(&format!(
-                    "is_authorized_resume resume_data (str): {}",
-                    resume_data
-                ));
+            Ok(_) => {
+                env::log_str(&format!( "is_authorized_resume",));
+                // self.fsm.handle(&FsmEvent::Authorize);
             }
             Err(err) => {
                 env::log_str(&format!("is_authorized_resume error (str): {err:?}"));
+                self.fsm.handle(&FsmEvent::Timeout);
             }
         }
-        PromiseOrValue::Value(self.authorized)
+        PromiseOrValue::Value(self.fsm.is_authorized())
     }
 }
 
@@ -92,6 +66,7 @@ impl Contract {
 impl AuthCallee for Contract {
     #[payable]
     fn on_auth(&mut self, signer_id: AccountId, msg: String) -> PromiseOrValue<()> {
+        let _ = msg;
         require!(
             env::predecessor_account_id() == self.state_init.auth_contract,
             "Unauthorized auth contract"
@@ -101,26 +76,7 @@ impl AuthCallee for Contract {
             "Unauthorized auth callee"
         );
         env::log_str(&format!("on_auth called by {signer_id} with msg: {msg}"));
-
-        // Parse message to extract authorization data
-        let auth_msg: AuthMessage =
-            serde_json::from_str(&msg).expect("Failed to parse auth message");
-
-        if auth_msg.solver_id != self.state_init.solver_id {
-            return PromiseOrValue::Value(());
-        }
-
-        // if auth_msg.escrow_params_hash != self.state_init.escrow_params_hash {
-        //     return PromiseOrValue::Value(());
-        // }
-
-        self.authorized = true;
-        if let Some(yield_id) = self.yielded_promise_id {
-            self.authorized = true;
-            yield_id.resume(&serde_json::to_vec("hello world 2").unwrap()); // detached 
-            // let was_resumed = promise_yield_resume(yield_id);
-            // env::log_str(&format!("Yielding promise: {:?}, status: {}", yield_id, was_resumed));
-        }
+        self.fsm.handle(&FsmEvent::Authorize);
         PromiseOrValue::Value(())
     }
 }

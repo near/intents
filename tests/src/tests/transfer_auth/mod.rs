@@ -181,15 +181,12 @@ async fn transfer_auth_async_authorization() {
     let transfer_auth_id_clone = transfer_auth.id().clone();
 
     println!("wait_for_authorization started");
-    let wait_result = tokio::spawn(async move {
-        // Call wait_for_authorization FIRST (creates yielded promise)
-        querier
+    let wait_result = querier
             .call(&transfer_auth_id_clone, "wait_for_authorization")
             .max_gas()
-            .transact()
+            .transact_async()
             .await
-            .unwrap()
-    });
+            .unwrap();
 
     println!("wait_for_authorization finished");
 
@@ -199,7 +196,7 @@ async fn transfer_auth_async_authorization() {
         .await
         .unwrap();
 
-    let execution_result = wait_result.await.unwrap().into_result().unwrap();
+    let execution_result = wait_result.into_future().await.unwrap().into_result().unwrap();
 
     execution_result.logs().iter().for_each(|log| {
         println!("{}", log);
