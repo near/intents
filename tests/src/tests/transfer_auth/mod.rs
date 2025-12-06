@@ -29,7 +29,7 @@ async fn setup_transfer_auth(
     relay: &near_workspaces::Account,
     querier: &near_workspaces::Account,
     //TODO: update init params
-    _escrow_params_hash: [u8; 32],
+    msg_hash: [u8; 32],
 ) -> near_workspaces::Contract {
     // Deploy the contract
     let contract = env
@@ -47,6 +47,7 @@ async fn setup_transfer_auth(
                 "auth_contract": env.defuse.id(),
                 "auth_callee": relay.id(),
                 "querier": querier.id(),
+                "msg_hash": msg_hash,
             }
         }))
         .max_gas()
