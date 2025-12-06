@@ -5,6 +5,8 @@ use near_sdk::{
 use serde_json::json;
 
 mod error;
+#[cfg(feature = "contract")]
+mod contract;
 pub mod storage;
 
 use impl_tools::autoimpl;

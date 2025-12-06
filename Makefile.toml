@@ -132,7 +132,7 @@ args = [
     "--manifest-path",
     "./transfer-auth/Cargo.toml",
     "--features",
-    "contract",
+    "abi,contract",
     "--out-dir",
     "${TRANSFER_AUTH_DIR}",
     "--no-abi",

@@ -27,7 +27,7 @@ pub struct TransferMessage {
 
     pub escrow_params: EscrowParams,
 
-    #[serde_as(as = "Hex")]
+    // #[serde_as(as = "Hex")]
     pub salt: [u8; 32],
 }
 

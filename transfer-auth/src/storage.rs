@@ -13,7 +13,7 @@ pub struct State {
     pub auth_contract: AccountId,
     pub auth_callee: AccountId,
     pub querier: AccountId,
-    #[serde_as(as = "Hex")]
+    // #[serde_as(as = "Hex")]
     pub msg_hash: [u8; 32],
 }
 
@@ -48,6 +48,3 @@ impl ContractStorage {
     }
 }
 
-// fix JsonSchema macro bug
-#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
-use near_sdk::serde;
