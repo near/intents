@@ -1184,6 +1184,7 @@ name = "defuse-transfer-auth"
 version = "0.1.0"
 dependencies = [
  "defuse-auth-call",
+ "defuse-near-utils",
  "impl-tools",
  "near-sdk",
  "near-workspaces",

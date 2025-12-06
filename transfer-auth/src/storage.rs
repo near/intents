@@ -4,6 +4,7 @@ use crate::error::Error;
 use near_sdk::{AccountId, CryptoHash, Gas, GasWeight, Promise, YieldId, borsh, near};
 use serde_with::{hex::Hex, serde_as};
 use std::cell::Cell;
+use thiserror::Error as ThisError;
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -17,6 +18,12 @@ pub enum Fsm {
 }
 
 pub (crate) struct LazyYieldId(Cell<Option<Promise>>);
+
+#[derive(Debug, ThisError)]
+pub enum FsmError {
+    #[error("InvalidStateTransition")]
+    InvalidStateTransition,
+}
 
 
 impl LazyYieldId {
@@ -56,7 +63,7 @@ impl std::fmt::Display for FsmEvent<'_> {
 }
 
 impl Fsm {
-    pub fn handle(&mut self, event: &FsmEvent<'_>) {
+    pub fn handle(&mut self, event: &FsmEvent<'_>) -> Result<(), FsmError> {
         near_sdk::env::log_str(&format!("Fsm: {self:?} -> {event}"));
         let next_state = match (&self, event) {
             (Fsm::Idle, FsmEvent::Authorize) => Fsm::Authorized,
@@ -75,14 +82,89 @@ impl Fsm {
             (Fsm::AsyncVerificationSuccessful, FsmEvent::NotifyYieldedPromiseResolved) => Fsm::Finished(true),
             (Fsm::AsyncVerificationSuccessful, FsmEvent::Timeout) => Fsm::Finished(false),
             (state, event) => {
-                near_sdk::env::panic_str(&format!("Invalid state transition state: {state:?} event: {event}"));
+                return Err(FsmError::InvalidStateTransition);
+                // near_sdk::env::panic_str(&format!("Invalid state transition state: {state:?} event: {event}"));
             }
         };
         *self = next_state;
+        Ok(())
     }
 
     pub fn is_authorized(&self) -> bool {
         matches!(self, Fsm::Finished(true))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    pub fn authorize_multiple_times_fails(){
+
+        let mut state_machine = Fsm::Idle;
+        state_machine
+            .handle(&FsmEvent::Authorize);
+        state_machine
+            .handle(&FsmEvent::Authorize);
+
+        assert_eq!(state_machine, Fsm::Finished(true));
+    }
+
+    #[test]
+    pub fn query_multiple_times_fails(){
+
+        let mut state_machine = Fsm::Idle;
+ 
+        state_machine
+            .handle(&FsmEvent::WaitForAuthorization(&LazyYieldId::new())).unwrap();
+        state_machine
+            .handle(&FsmEvent::WaitForAuthorization(&LazyYieldId::new())).unwrap_err();
+
+        assert_eq!(state_machine, Fsm::Finished(true));
+    }
+
+
+    #[test]
+    pub fn authroize_before_query(){
+
+        let mut state_machine = Fsm::Idle;
+
+        state_machine
+            .handle(&FsmEvent::Authorize).unwrap();
+
+        state_machine
+            .handle(&FsmEvent::WaitForAuthorization(&LazyYieldId::new())).unwrap_err();
+    }
+
+    #[test]
+    pub fn successful_query_before_authroize(){
+
+        let mut state_machine = Fsm::Idle;
+        let yield_id = LazyYieldId::new();
+        state_machine
+            .handle(&FsmEvent::WaitForAuthorization(&yield_id)).unwrap();
+        state_machine
+            .handle(&FsmEvent::Authorize).unwrap();
+
+        assert!(matches!(&state_machine, Fsm::AsyncVerificationSuccessful));
+        state_machine.handle(&FsmEvent::NotifyYieldedPromiseResolved).unwrap();
+        assert_eq!(state_machine, Fsm::Finished(true));
+    }
+
+    #[test]
+    pub fn timeout_query_before_authroize(){
+
+        let mut state_machine = Fsm::Idle;
+        let yield_id = LazyYieldId::new();
+        state_machine
+            .handle(&FsmEvent::WaitForAuthorization(&yield_id)).unwrap();
+        state_machine
+            .handle(&FsmEvent::Authorize).unwrap();
+
+        assert!(matches!(&state_machine, Fsm::AsyncVerificationSuccessful));
+        state_machine.handle(&FsmEvent::Timeout).unwrap();
+        assert_eq!(state_machine, Fsm::Finished(false));
     }
 }
 

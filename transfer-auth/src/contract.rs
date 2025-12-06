@@ -9,6 +9,7 @@ use impl_tools::autoimpl;
 use crate::storage::{ContractStorage, State, LazyYieldId, Fsm, FsmEvent};
 use crate::TransferAuth;
 use crate::AuthMessage;
+use defuse_near_utils::UnwrapOrPanicError;
 
 #[near(contract_state(key = ContractStorage::STATE_KEY))]
 #[autoimpl(Deref using self.0)]
@@ -32,7 +33,7 @@ impl Contract {
         }
 
         let mut yield_id = LazyYieldId::new();
-        self.fsm.handle(&FsmEvent::WaitForAuthorization(&mut yield_id));
+        self.fsm.handle(&FsmEvent::WaitForAuthorization(&mut yield_id)).unwrap_or_panic_display();
 
         yield_id
             .into_promise()
@@ -49,11 +50,11 @@ impl Contract {
         match resume_data {
             Ok(_) => {
                 env::log_str(&format!( "is_authorized_resume",));
-                self.fsm.handle(&FsmEvent::NotifyYieldedPromiseResolved);
+                self.fsm.handle(&FsmEvent::NotifyYieldedPromiseResolved).unwrap_or_panic_display();
             }
             Err(err) => {
                 env::log_str(&format!("is_authorized_resume error (str): {err:?}"));
-                self.fsm.handle(&FsmEvent::Timeout);
+                self.fsm.handle(&FsmEvent::Timeout).unwrap_or_panic_display();
             }
         }
         PromiseOrValue::Value(self.fsm.is_authorized())
@@ -74,7 +75,7 @@ impl AuthCallee for Contract {
             "Unauthorized auth callee"
         );
         env::log_str(&format!("on_auth called by {signer_id} with msg: {msg}"));
-        self.fsm.handle(&FsmEvent::Authorize);
+        self.fsm.handle(&FsmEvent::Authorize).unwrap_or_panic_display();
         PromiseOrValue::Value(())
     }
 }
