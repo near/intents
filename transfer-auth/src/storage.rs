@@ -10,7 +10,8 @@ use std::cell::Cell;
 pub enum Fsm {
     Idle,
     Authorized,
-    UnderVerification(YieldId),
+    AsyncVerification(YieldId),
+    AsyncVerificationSuccessful,
     TimedOut,
     Finished(bool),
 }
@@ -25,7 +26,7 @@ impl LazyYieldId {
 
     pub fn yield_create(&self) -> YieldId {
         let (promise, yield_id) =
-            Promise::yield_create("is_authorized_resume", &[], Gas::from_tgas(0), GasWeight(1));
+            Promise::yield_create("is_authorized_resume", serde_json::json!({}).to_string(), Gas::from_tgas(0), GasWeight(1));
 
         self.0.set(Some(promise));
         yield_id
@@ -39,6 +40,7 @@ impl LazyYieldId {
 pub (crate) enum FsmEvent<'a> {
     Authorize,
     WaitForAuthorization(&'a LazyYieldId),
+    NotifyYieldedPromiseResolved,
     Timeout,
 }
 
@@ -47,6 +49,7 @@ impl std::fmt::Display for FsmEvent<'_> {
         match self {
             FsmEvent::Authorize => write!(f, "Authorize"),
             FsmEvent::WaitForAuthorization(_) => write!(f, "WaitForAuthorization"),
+            FsmEvent::NotifyYieldedPromiseResolved => write!(f, "NotifyYieldedPromiseResolved"),
             FsmEvent::Timeout => write!(f, "Timeout"),
         }
     }
@@ -58,16 +61,19 @@ impl Fsm {
         let next_state = match (&self, event) {
             (Fsm::Idle, FsmEvent::Authorize) => Fsm::Authorized,
             (Fsm::Idle, FsmEvent::WaitForAuthorization(yield_id)) => {
-                Fsm::UnderVerification(yield_id.yield_create())
+                Fsm::AsyncVerification(yield_id.yield_create())
             },
 
             (Fsm::Authorized, FsmEvent::WaitForAuthorization(_)) => Fsm::Finished(true),
 
-            (Fsm::UnderVerification(_), FsmEvent::Timeout) => Fsm::Finished(false),
-            (Fsm::UnderVerification(yield_id), FsmEvent::Authorize) => {
+            (Fsm::AsyncVerification(_), FsmEvent::Timeout) => Fsm::Finished(false),
+            (Fsm::AsyncVerification(yield_id), FsmEvent::Authorize) => {
                 yield_id.resume(&[]);
-                Fsm::Finished(true)
-            }
+                Fsm::AsyncVerificationSuccessful
+            },
+
+            (Fsm::AsyncVerificationSuccessful, FsmEvent::NotifyYieldedPromiseResolved) => Fsm::Finished(true),
+            (Fsm::AsyncVerificationSuccessful, FsmEvent::Timeout) => Fsm::Finished(false),
             (state, event) => {
                 near_sdk::env::panic_str(&format!("Invalid state transition state: {state:?} event: {event}"));
             }

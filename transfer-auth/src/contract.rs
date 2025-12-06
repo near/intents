@@ -16,8 +16,6 @@ use crate::AuthMessage;
 #[derive(Debug, PanicOnDefault)]
 pub struct Contract(ContractStorage);
 
-
-
 #[near]
 impl Contract {
     #[init]
@@ -51,7 +49,7 @@ impl Contract {
         match resume_data {
             Ok(_) => {
                 env::log_str(&format!( "is_authorized_resume",));
-                // self.fsm.handle(&FsmEvent::Authorize);
+                self.fsm.handle(&FsmEvent::NotifyYieldedPromiseResolved);
             }
             Err(err) => {
                 env::log_str(&format!("is_authorized_resume error (str): {err:?}"));
