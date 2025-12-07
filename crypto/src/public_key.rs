@@ -184,6 +184,35 @@ const _: () = {
     }
 };
 
+#[cfg(feature = "near-api-types")]
+const _: () = {
+    use near_api_types::crypto::public_key::{
+        ED25519PublicKey, PublicKey as NearPublicKey, Secp256K1PublicKey,
+    };
+
+    impl From<NearPublicKey> for PublicKey {
+        fn from(pk: NearPublicKey) -> Self {
+            match pk {
+                NearPublicKey::ED25519(pk) => pk.into(),
+                NearPublicKey::SECP256K1(pk) => pk.into(),
+            }
+        }
+    }
+
+    impl From<ED25519PublicKey> for PublicKey {
+        fn from(pk: ED25519PublicKey) -> Self {
+            Self::Ed25519(pk.0)
+        }
+    }
+
+    impl From<Secp256K1PublicKey> for PublicKey {
+        fn from(pk: Secp256K1PublicKey) -> Self {
+            Self::Secp256k1(pk.0)
+        }
+    }
+};
+
+
 #[cfg(test)]
 mod tests {
     use rstest::rstest;

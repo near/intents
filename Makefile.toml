@@ -11,10 +11,10 @@ POA_TOKEN_WASM_NO_REGISTRATION_WASM = "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}/def
 MT_RECEIVER_STUB_DIR = "${TARGET_DIR}/multi-token-receiver-stub"
 MT_RECEIVER_STUB_WASM = "${MT_RECEIVER_STUB_DIR}/multi_token_receiver_stub.wasm"
 
-ESCROW_PROXY_DIR = "${TARGET_DIR}/escrow-proxy"
+ESCROW_PROXY_DIR = "${TARGET_DIR}/"
 ESCROW_PROXY_WASM = "${ESCROW_PROXY_DIR}/defuse_escrow_proxy.wasm"
 
-TRANSFER_AUTH_DIR = "${TARGET_DIR}/transfer-auth"
+TRANSFER_AUTH_DIR = "${TARGET_DIR}/"
 TRANSFER_AUTH_WASM = "${TRANSFER_AUTH_DIR}/defuse_transfer_auth.wasm"
 
 [tasks.default]

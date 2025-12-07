@@ -8,7 +8,6 @@ use serde_json::json;
 use impl_tools::autoimpl;
 use crate::storage::{ContractStorage, State, LazyYieldId, Fsm, FsmEvent};
 use crate::TransferAuth;
-use crate::AuthMessage;
 use defuse_near_utils::UnwrapOrPanicError;
 
 #[near(contract_state(key = ContractStorage::STATE_KEY))]

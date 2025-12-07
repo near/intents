@@ -12,7 +12,6 @@ use crate::{
     utils::{account::AccountExt, read_wasm, test_log::TestLog},
 };
 use defuse::core::intents::auth::AuthCall;
-use defuse_transfer_auth::AuthMessage;
 use near_sdk::{NearToken, env::sha256};
 use serde_json::json;
 use std::sync::LazyLock;
@@ -20,6 +19,7 @@ use std::sync::LazyLock;
 static TRANSFER_AUTH_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("res/transfer-auth/defuse_transfer_auth"));
 const ESCROW_ID: &str = "dummy_instance.escrow.near";
+const DUMMY_TRANSFER_MSG: &str = "dummy_transfer_msg";
 
 /// Helper function to deploy and initialize the transfer-auth contract
 async fn setup_transfer_auth(
@@ -70,14 +70,6 @@ async fn setup_transfer_auth(
     contract
 }
 
-/// Helper function to create a JSON AuthMessage
-fn create_auth_message(solver_id: &near_sdk::AccountId, escrow_params_hash: [u8; 32]) -> String {
-    let auth_msg = AuthMessage {
-        solver_id: solver_id.clone(),
-        escrow_params_hash,
-    };
-    serde_json::to_string(&auth_msg).unwrap()
-}
 
 /// Helper function to trigger on_auth via AuthCall intent through defuse
 async fn trigger_on_auth(
@@ -137,8 +129,7 @@ async fn transfer_auth_early_authorization() {
     .await;
 
     // Trigger on_auth FIRST (sets authorized = true)
-    let auth_message = create_auth_message(solver.id(), escrow_params_hash);
-    trigger_on_auth(&env, &relay, &transfer_auth, auth_message)
+    trigger_on_auth(&env, &relay, &transfer_auth, DUMMY_TRANSFER_MSG.to_string())
         .await
         .unwrap();
 
@@ -191,8 +182,7 @@ async fn transfer_auth_async_authorization() {
     println!("wait_for_authorization finished");
 
     // Trigger on_auth AFTER wait_for_authorization (resumes the promise)
-    let auth_message = create_auth_message(solver.id(), escrow_params_hash);
-    trigger_on_auth(&env, &relay, &transfer_auth, auth_message)
+    trigger_on_auth(&env, &relay, &transfer_auth, DUMMY_TRANSFER_MSG.to_string())
         .await
         .unwrap();
 

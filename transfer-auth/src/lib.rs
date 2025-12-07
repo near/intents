@@ -8,9 +8,7 @@ mod error;
 mod contract;
 pub mod storage;
 
-mod message;
 use storage::{ContractStorage, State};
-pub use message::AuthMessage;
 
 
 #[ext_contract(ext_transfer_auth)]

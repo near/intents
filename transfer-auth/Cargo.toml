@@ -40,6 +40,10 @@ near-sdk = { workspace = true, features = ["unstable", "unit-testing", "determin
 near-workspaces.workspace = true
 tokio.workspace = true
 serde_json.workspace = true
+defuse-fees.workspace = true
+defuse-sandbox.workspace = true
+futures.workspace = true
+anyhow.workspace = true
 
 [features]
 contract = []
