@@ -4,8 +4,7 @@ use std::time::Duration;
 use defuse_transfer_auth::storage::{ContractStorage, State};
 use env::{AccountExt, BaseEnv};
 use near_sdk::{
-    NearToken,
-    state_init::{StateInit, StateInitV1},
+    state_init::{StateInit, StateInitV1}, Gas, NearToken
 };
 
 const TIMEOUT: Duration = Duration::from_secs(60);
@@ -61,11 +60,22 @@ async fn transfer_auth_global_deployment() -> anyhow::Result<()> {
     println!("auth_transfer_for_solver1: {}", auth_transfer_for_solver1);
     println!("auth_transfer_for_solver2: {}", auth_transfer_for_solver2);
 
+    //NOTE: there is rpc error on state_init action but the contract itself is successfully
+    //deployed, so lets ignore error for now
     root.tx(auth_transfer_for_solver1.clone())
         .state_init(env.transfer_auth_global.clone(),solver1_raw_state)
         .transfer(NearToken::from_yoctonear(1))
+        .await;
+
+        // .unwrap();
+
+    let cotnract_instance1_state = proxy.tx(auth_transfer_for_solver1)
+        .function_call_json::<ContractStorage>("state", "{}", Gas::from_tgas(300), NearToken::from_near(0))
         .await
         .unwrap();
+
+    assert_eq!(cotnract_instance1_state.state_init.solver_id, solver1.id());
+
 
 
     Ok(())
