@@ -17,6 +17,12 @@ pub enum Fsm {
     Finished(bool),
 }
 
+// TODO: self cleanup after oneshot use
+impl Drop for Fsm {
+    fn drop(&mut self) {
+    }
+}
+
 pub (crate) struct LazyYieldId(Cell<Option<Promise>>);
 
 #[derive(Debug, ThisError)]

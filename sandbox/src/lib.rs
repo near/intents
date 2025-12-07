@@ -39,4 +39,8 @@ impl Sandbox {
     pub const fn root(&self) -> &SigningAccount {
         &self.root
     }
+
+    pub async fn fast_forward(&self, blocks: u64) {
+        self.sandbox.fast_forward(blocks).await.unwrap();
+    }
 }
