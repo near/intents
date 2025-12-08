@@ -57,6 +57,10 @@ impl BaseEnv {
         })
     }
 
+    pub async fn account_exists(&self, account_id: AccountId) -> bool {
+        Account::new(account_id, self.sandbox.root().network_config().clone()).exists().await
+    }
+
     // pub async fn create_escrow(&self, params: &Params) -> TxResult<Account> {
     //     self.root()
     //         .deploy_escrow(self.escrow_global.clone(), params)

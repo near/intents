@@ -46,6 +46,10 @@ impl Account {
         )
     }
 
+    pub async fn exists(&self) -> bool {
+        self.view().await.is_ok()
+    }
+
     pub async fn call_function_json<T>(&self, name: &str, args: impl Serialize) -> anyhow::Result<T>
     where
         T: DeserializeOwned + Send + Sync,

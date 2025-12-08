@@ -12,16 +12,17 @@ use near_sdk::{
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
 
+use near_plugins::{AccessControllable, access_control_any};
 use defuse_auth_call::AuthCallee;
 use defuse_crypto::{Curve, Ed25519, PublicKey, Signature};
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
 use near_plugins::{AccessControlRole, access_control};
 use near_sdk::{
     AccountId, Gas, NearToken, PanicOnDefault, PromiseOrValue, PromiseResult, env,
-    json_types::U128, near, require, serde_json,
+    ext_contract, json_types::U128, near, require, serde_json,
 };
 
-use defuse_transfer_auth::storage::{ContractStorage, State};
+use defuse_transfer_auth::{ext_transfer_auth, storage::{ContractStorage, State}};
 
 #[near(serializers = [json])]
 #[derive(AccessControlRole, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -36,6 +37,11 @@ pub enum Role {
 
 pub use message::*;
 
+#[ext_contract(ext_escrow_proxy)]
+pub trait EscrowProxy {
+    fn config(&self) -> &ProxyConfig;
+}
+
 /// Configuration for role-based access control
 #[near(serializers = [json])]
 #[derive(Debug, Clone, Default)]
@@ -46,8 +52,8 @@ pub struct RolesConfig {
 }
 
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
-pub struct ProxyConfig{
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProxyConfig {
     pub per_fill_global_contract_id: AccountId,
     pub escrow_swap_global_contract_id: AccountId,
     pub auth_contract: AccountId,
@@ -135,6 +141,13 @@ impl Contract {
 }
 
 #[near]
+impl EscrowProxy for Contract {
+    fn config(&self) -> &ProxyConfig {
+        &self.config
+    }
+}
+
+#[near]
 impl MultiTokenReceiver for Contract {
     #[allow(clippy::used_underscore_binding)]
     fn mt_on_transfer(
@@ -205,6 +218,28 @@ impl Contract {
                 original_amounts
             }
         }
+    }
+
+    //TODO: implement as trait imported from defuse
+    #[access_control_any(roles(Role::DAO))]
+    pub fn cancel_escrow(&self, escrow_address: AccountId) {
+        // ext_mt_core::ext(escrow_address)
+        //     .with_attached_deposit(NearToken::from_yoctonear(1))
+        //     .with_static_gas(Gas::from_tgas(50))
+        //     .cancel_escrow();
+    }
+
+
+    //TODO: implement as trait imported from defuse
+    #[access_control_any(roles(Role::DAO, Role::Canceller))]
+    pub fn close_auth(&self, solver_id: AccountId, msg: String) {
+        let hash: [u8; 32] = keccak256(msg.as_bytes()).try_into().unwrap();
+        let auth_contract_id = self.derive_deteministic_escrow_per_fill_id(solver_id, hash);
+
+        ext_transfer_auth::ext(auth_contract_id)
+            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .with_static_gas(Gas::from_tgas(50))
+            .close();
     }
 }
 

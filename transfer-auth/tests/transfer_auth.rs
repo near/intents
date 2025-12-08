@@ -184,6 +184,9 @@ async fn transfer_auth_early_authorization() {
         .deploy_transfer_auth_instance(env.transfer_auth_global.clone(), state)
         .await;
 
+
+    assert!(env.account_exists(transfer_auth_instance.clone()).await);
+
     auth_contract
         .tx(transfer_auth_instance.clone())
         .function_call_json::<()>(
@@ -209,13 +212,8 @@ async fn transfer_auth_early_authorization() {
         true
     );
 
-    assert_eq!(
-        Fsm::Finished(true),
-        root.get_transfer_auth_instance_state(transfer_auth_instance.clone())
-            .await
-            .unwrap()
-            .fsm,
-    );
+ 
+    assert!(!env.account_exists(transfer_auth_instance.clone()).await);
 }
 
 #[tokio::test]
@@ -264,6 +262,7 @@ async fn transfer_auth_async_authorization() {
     // replace with waiting for couple blocks
     tokio::time::sleep(Duration::from_secs(3)).await;
 
+    assert!(env.account_exists(transfer_auth_instance.clone()).await);
     auth_contract
         .tx(transfer_auth_instance.clone())
         .function_call_json::<()>(
@@ -277,13 +276,7 @@ async fn transfer_auth_async_authorization() {
 
     assert!(authorized.await.unwrap());
 
-    assert_eq!(
-        Fsm::Finished(true),
-        root.get_transfer_auth_instance_state(transfer_auth_instance.clone())
-            .await
-            .unwrap()
-            .fsm,
-    );
+    assert!(!env.account_exists(transfer_auth_instance.clone()).await);
 }
 
 #[tokio::test]
@@ -326,6 +319,7 @@ async fn transfer_auth_async_authorization_timeout() {
 
 
 
+    assert!(env.account_exists(transfer_auth_instance.clone()).await);
     let (authorized, _) = futures::join!(
         async { wait_for_authorization.await },
         forward_time
@@ -333,11 +327,5 @@ async fn transfer_auth_async_authorization_timeout() {
 
     assert!(!authorized.unwrap());
 
-    assert_eq!(
-        Fsm::Finished(false),
-        root.get_transfer_auth_instance_state(transfer_auth_instance.clone())
-            .await
-            .unwrap()
-            .fsm,
-    );
+    assert!(!env.account_exists(transfer_auth_instance.clone()).await);
 }

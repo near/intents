@@ -30,10 +30,14 @@ near-sdk = { workspace = true, features = ["unstable"] }
 serde_with.workspace = true
 
 [dev-dependencies]
+defuse-sandbox.workspace = true
+impl-tools.workspace = true
 near-sdk = { workspace = true, features = ["unstable", "unit-testing"] }
 near-workspaces.workspace = true
 tokio.workspace = true
 serde_json.workspace = true
+futures.workspace = true
+anyhow.workspace = true
 
 [features]
 contract = []

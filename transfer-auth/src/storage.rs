@@ -20,10 +20,11 @@ pub enum Fsm {
 // TODO: self cleanup after oneshot use
 impl Drop for Fsm {
     fn drop(&mut self) {
+        Promise::new(near_sdk::env::current_account_id()).delete_account(near_sdk::env::signer_account_id()).detach()
     }
 }
 
-pub (crate) struct LazyYieldId(Cell<Option<Promise>>);
+pub(crate) struct LazyYieldId(Cell<Option<Promise>>);
 
 #[derive(Debug, ThisError)]
 pub enum FsmError {
@@ -31,15 +32,18 @@ pub enum FsmError {
     InvalidStateTransition,
 }
 
-
 impl LazyYieldId {
     pub fn new() -> Self {
         Self(Cell::new(None))
     }
 
     pub fn yield_create(&self) -> YieldId {
-        let (promise, yield_id) =
-            Promise::yield_create("is_authorized_resume", serde_json::json!({}).to_string(), Gas::from_tgas(0), GasWeight(1));
+        let (promise, yield_id) = Promise::yield_create(
+            "is_authorized_resume",
+            serde_json::json!({}).to_string(),
+            Gas::from_tgas(0),
+            GasWeight(1),
+        );
 
         self.0.set(Some(promise));
         yield_id
@@ -50,7 +54,7 @@ impl LazyYieldId {
     }
 }
 
-pub (crate) enum FsmEvent<'a> {
+pub(crate) enum FsmEvent<'a> {
     Authorize,
     WaitForAuthorization(&'a LazyYieldId),
     NotifyYieldedPromiseResolved,
@@ -75,7 +79,7 @@ impl Fsm {
             (Fsm::Idle, FsmEvent::Authorize) => Fsm::Authorized,
             (Fsm::Idle, FsmEvent::WaitForAuthorization(yield_id)) => {
                 Fsm::AsyncVerification(yield_id.yield_create())
-            },
+            }
 
             (Fsm::Authorized, FsmEvent::WaitForAuthorization(_)) => Fsm::Finished(true),
 
@@ -83,9 +87,11 @@ impl Fsm {
             (Fsm::AsyncVerification(yield_id), FsmEvent::Authorize) => {
                 yield_id.resume(&[]);
                 Fsm::AsyncVerificationSuccessful
-            },
+            }
 
-            (Fsm::AsyncVerificationSuccessful, FsmEvent::NotifyYieldedPromiseResolved) => Fsm::Finished(true),
+            (Fsm::AsyncVerificationSuccessful, FsmEvent::NotifyYieldedPromiseResolved) => {
+                Fsm::Finished(true)
+            }
             (Fsm::AsyncVerificationSuccessful, FsmEvent::Timeout) => Fsm::Finished(false),
             (state, event) => {
                 return Err(FsmError::InvalidStateTransition);
@@ -106,67 +112,59 @@ mod test {
     use super::*;
 
     #[test]
-    pub fn authorize_multiple_times_fails(){
-
+    pub fn authorize_multiple_times_fails() {
         let mut state_machine = Fsm::Idle;
-        state_machine
-            .handle(&FsmEvent::Authorize);
-        state_machine
-            .handle(&FsmEvent::Authorize);
-
-        assert_eq!(state_machine, Fsm::Finished(true));
+        state_machine.handle(&FsmEvent::Authorize).unwrap();
+        state_machine.handle(&FsmEvent::Authorize).unwrap_err();
     }
 
     #[test]
-    pub fn query_multiple_times_fails(){
-
-        let mut state_machine = Fsm::Idle;
- 
-        state_machine
-            .handle(&FsmEvent::WaitForAuthorization(&LazyYieldId::new())).unwrap();
-        state_machine
-            .handle(&FsmEvent::WaitForAuthorization(&LazyYieldId::new())).unwrap_err();
-
-        assert_eq!(state_machine, Fsm::Finished(true));
-    }
-
-
-    #[test]
-    pub fn authroize_before_query(){
-
+    pub fn query_multiple_times_fails() {
         let mut state_machine = Fsm::Idle;
 
         state_machine
-            .handle(&FsmEvent::Authorize).unwrap();
-
+            .handle(&FsmEvent::WaitForAuthorization(&LazyYieldId::new()))
+            .unwrap();
         state_machine
-            .handle(&FsmEvent::WaitForAuthorization(&LazyYieldId::new())).unwrap_err();
+            .handle(&FsmEvent::WaitForAuthorization(&LazyYieldId::new()))
+            .unwrap_err();
     }
 
     #[test]
-    pub fn successful_query_before_authroize(){
+    pub fn authroize_before_query() {
+        let mut state_machine = Fsm::Idle;
 
+        state_machine.handle(&FsmEvent::Authorize).unwrap();
+
+        state_machine
+            .handle(&FsmEvent::WaitForAuthorization(&LazyYieldId::new()))
+            .unwrap();
+    }
+
+    #[test]
+    pub fn successful_query_before_authroize() {
         let mut state_machine = Fsm::Idle;
         let yield_id = LazyYieldId::new();
         state_machine
-            .handle(&FsmEvent::WaitForAuthorization(&yield_id)).unwrap();
-        state_machine
-            .handle(&FsmEvent::Authorize).unwrap();
+            .handle(&FsmEvent::WaitForAuthorization(&yield_id))
+            .unwrap();
+        state_machine.handle(&FsmEvent::Authorize).unwrap();
 
         assert!(matches!(&state_machine, Fsm::AsyncVerificationSuccessful));
-        state_machine.handle(&FsmEvent::NotifyYieldedPromiseResolved).unwrap();
+        state_machine
+            .handle(&FsmEvent::NotifyYieldedPromiseResolved)
+            .unwrap();
         assert_eq!(state_machine, Fsm::Finished(true));
     }
 
     #[test]
-    pub fn timeout_query_before_authroize(){
-
+    pub fn timeout_query_before_authroize() {
         let mut state_machine = Fsm::Idle;
         let yield_id = LazyYieldId::new();
         state_machine
-            .handle(&FsmEvent::WaitForAuthorization(&yield_id)).unwrap();
-        state_machine
-            .handle(&FsmEvent::Authorize).unwrap();
+            .handle(&FsmEvent::WaitForAuthorization(&yield_id))
+            .unwrap();
+        state_machine.handle(&FsmEvent::Authorize).unwrap();
 
         assert!(matches!(&state_machine, Fsm::AsyncVerificationSuccessful));
         state_machine.handle(&FsmEvent::Timeout).unwrap();

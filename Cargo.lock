@@ -974,6 +974,7 @@ dependencies = [
 name = "defuse-escrow-proxy"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "defuse-admin-utils",
  "defuse-auth-call",
  "defuse-borsh-utils",
@@ -983,8 +984,11 @@ dependencies = [
  "defuse-fees",
  "defuse-near-utils",
  "defuse-nep245",
+ "defuse-sandbox",
  "defuse-token-id",
  "defuse-transfer-auth",
+ "futures",
+ "impl-tools",
  "near-plugins",
  "near-sdk",
  "near-workspaces",

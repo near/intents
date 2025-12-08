@@ -58,6 +58,8 @@ impl Contract {
         }
         PromiseOrValue::Value(self.fsm.is_authorized())
     }
+
+    //TODO: allow proxy to delete contract on demand
 }
 
 #[near]
@@ -84,4 +86,13 @@ impl TransferAuth for Contract {
     fn state(&self) -> &ContractStorage {
         &self.0
     }
+
+    fn close(&self){
+        require!(env::predecessor_account_id() == self.state_init.querier || env::predecessor_account_id() == self.state_init.solver_id, "Unauthorized querier");
+        Promise::new(env::current_account_id())
+            .delete_account(env::signer_account_id()).detach();
+
+    }
+
+
 }
