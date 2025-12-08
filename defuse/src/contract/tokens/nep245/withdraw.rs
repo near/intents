@@ -69,9 +69,11 @@ impl Contract {
 
         self.withdraw(
             &owner_id,
-            iter::repeat(withdraw.token.clone())
-                .zip(withdraw.token_ids.iter().cloned())
-                .map(|(token, token_id)| Nep245TokenId::new(token, token_id))
+            withdraw
+                .token_ids
+                .iter()
+                .cloned()
+                .map(|token_id| Nep245TokenId::new(withdraw.token.clone(), token_id))
                 .map(Into::into)
                 .zip(withdraw.amounts.iter().map(|a| a.0))
                 .chain(withdraw.storage_deposit.map(|amount| {

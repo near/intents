@@ -49,15 +49,6 @@ impl MultiTokenReceiver for Contract {
             "self-wrapping is not allowed"
         );
 
-        let DepositMessage {
-            receiver_id,
-            action,
-        } = if msg.is_empty() {
-            DepositMessage::new(sender_id.clone())
-        } else {
-            msg.parse().unwrap_or_panic_display()
-        };
-
         let core_token_ids = token_ids
             .iter()
             .inspect(|token_id| {
@@ -68,6 +59,15 @@ impl MultiTokenReceiver for Contract {
             .cloned()
             .map(|token_id| Nep245TokenId::new(token.clone(), token_id))
             .map(Into::into);
+
+        let DepositMessage {
+            receiver_id,
+            action,
+        } = if msg.is_empty() {
+            DepositMessage::new(sender_id.clone())
+        } else {
+            msg.parse().unwrap_or_panic_display()
+        };
 
         self.deposit(
             receiver_id.clone(),
