@@ -8,12 +8,17 @@ use std::collections::{HashMap, HashSet};
 
 use crate::contract::{POA_TOKEN_INIT_BALANCE, Role};
 
+// TODO: make it prettier
+const POA_FACTORY_WASM: &[u8] = include_bytes!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../releases/defuse_poa_factory.wasm"
+));
+
 #[allow(async_fn_in_trait)]
 pub trait PoAFactoryExt {
     async fn deploy_poa_factory(
         &self,
         name: &str,
-        wasm: impl Into<Vec<u8>>,
         super_admins: impl IntoIterator<Item = AccountId>,
         admins: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
         grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
@@ -54,7 +59,6 @@ impl PoAFactoryExt for SigningAccount {
     async fn deploy_poa_factory(
         &self,
         name: &str,
-        wasm: impl Into<Vec<u8>>,
         super_admins: impl IntoIterator<Item = AccountId>,
         admins: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
         grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
@@ -73,7 +77,7 @@ impl PoAFactoryExt for SigningAccount {
 
         self.deploy_contract(
             name,
-            wasm,
+            POA_FACTORY_WASM,
             NearToken::from_near(100),
             Some(FnCallBuilder::new("new").json_args(&args)),
         )

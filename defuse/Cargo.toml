@@ -42,8 +42,6 @@ defuse-sandbox = {workspace = true, optional = true}
 arbitrary = {workspace = true, optional = true}
 defuse-test-utils = {workspace = true, optional = true}
 
-# defuse-sandbox.workspace = true
-
 [features]
 default = ["sandbox"]
 abi = ["defuse-core/abi"]
