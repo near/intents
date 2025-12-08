@@ -6,7 +6,7 @@ use defuse_sandbox::{
     api::types::transaction::actions::GlobalContractDeployMode, Account, SigningAccount, TxError,
 };
 use near_sdk::{
-    AccountId, Gas, NearToken,
+    AccountId, Gas, GlobalContractId, NearToken,
     json_types::U128,
     state_init::{StateInit, StateInitV1},
 };
@@ -25,6 +25,16 @@ pub static WNEAR_WASM: LazyLock<Vec<u8>> =
 pub static VERIFIER_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("defuse"));
 pub static TRANSFER_AUTH_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("defuse_transfer_auth"));
+
+/// Derive the transfer-auth instance account ID from its state
+pub fn derive_transfer_auth_account_id(global_contract_id: &AccountId, state: &State) -> AccountId {
+    let raw_state = ContractStorage::init_state(state.clone()).unwrap();
+    let state_init = StateInit::V1(StateInitV1 {
+        code: GlobalContractId::AccountId(global_contract_id.clone()),
+        data: raw_state,
+    });
+    state_init.derive_account_id()
+}
 
 pub trait TransferAuthAccountExt {
     async fn deploy_transfer_auth(&self, name: impl AsRef<str>) -> AccountId;
@@ -99,7 +109,7 @@ impl TransferAuthAccountExt for SigningAccount {
 // TODO: move to defuse
 pub trait DefuseAccountExt {
     async fn deploy_wnear(&self, name: impl AsRef<str>) -> Account;
-    async fn deploy_verifier(&self, name: impl AsRef<str>, wnear_id: AccountId) -> Account;
+    async fn deploy_verifier(&self, name: impl AsRef<str>, wnear_id: AccountId) -> SigningAccount;
 
     // WNEAR operations
     async fn near_deposit(&self, wnear: &Account, amount: NearToken) -> Result<(), TxError>;
@@ -132,6 +142,16 @@ pub trait DefuseAccountExt {
         amount: u128,
         msg: &str,
     ) -> Result<Vec<u128>, TxError>;
+
+    /// Call on_auth on a transfer-auth contract instance.
+    /// NOTE: In production, this should be done via AuthCall intent through defuse.
+    /// This direct call is for testing purposes only.
+    async fn call_on_auth(
+        &self,
+        transfer_auth_instance: &AccountId,
+        signer_id: &AccountId,
+        msg: &str,
+    ) -> Result<(), TxError>;
 }
 
 impl DefuseAccountExt for SigningAccount {
@@ -150,12 +170,10 @@ impl DefuseAccountExt for SigningAccount {
         account
     }
 
-    async fn deploy_verifier(&self, name: impl AsRef<str>, wnear_id: AccountId) -> Account {
-        let account = self.subaccount(name);
+    async fn deploy_verifier(&self, name: impl AsRef<str>, wnear_id: AccountId) -> SigningAccount {
+        let defuse = self.create_subaccount(name, NearToken::from_near(20)).await.unwrap();
 
-        self.tx(account.id().clone())
-            .create_account()
-            .transfer(NearToken::from_near(20))
+        defuse.tx(defuse.id().clone())
             .deploy(VERIFIER_WASM.clone())
             .function_call_json::<()>(
                 "new",
@@ -175,7 +193,7 @@ impl DefuseAccountExt for SigningAccount {
             .await
             .unwrap();
 
-        account
+        defuse
     }
 
     async fn near_deposit(&self, wnear: &Account, amount: NearToken) -> Result<(), TxError> {
@@ -262,5 +280,25 @@ impl DefuseAccountExt for SigningAccount {
             )
             .await
             .map(|v| v.into_iter().map(|u| u.0).collect())
+    }
+
+    async fn call_on_auth(
+        &self,
+        transfer_auth_instance: &AccountId,
+        signer_id: &AccountId,
+        msg: &str,
+    ) -> Result<(), TxError> {
+        self.tx(transfer_auth_instance.clone())
+            .function_call_json::<()>(
+                "on_auth",
+                json!({
+                    "signer_id": signer_id,
+                    "msg": msg,
+                }),
+                Gas::from_tgas(50),
+                NearToken::from_yoctonear(1),
+            )
+            .no_result()
+            .await
     }
 }

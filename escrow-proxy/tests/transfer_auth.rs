@@ -6,7 +6,9 @@ use defuse_deadline::Deadline;
 use defuse_escrow_proxy::{EscrowParams, FillAction, ProxyConfig, RolesConfig, TransferMessage};
 use defuse_sandbox::{Sandbox, SigningAccount};
 use defuse_token_id::{TokenId, nep141::Nep141TokenId};
-use defuse_transfer_auth::ext::{DefuseAccountExt, TransferAuthAccountExt};
+use defuse_transfer_auth::ext::{DefuseAccountExt, TransferAuthAccountExt, derive_transfer_auth_account_id};
+use defuse_transfer_auth::storage::{ContractStorage, State};
+use near_sdk::{Gas, env::keccak256};
 use env::AccountExt;
 use multi_token_receiver_stub::ext::MtReceiverStubAccountExt;
 use near_sdk::{NearToken, json_types::U128};
@@ -61,13 +63,13 @@ async fn test_deploy_transfer_auth_global_contract() {
     root.near_deposit(&wnear, deposit_amount).await.unwrap();
 
     // 2. Storage deposit for defuse contract on wnear (so defuse can receive tokens)
-    root.ft_storage_deposit(&wnear, Some(defuse.id()))
+    root.ft_storage_deposit(&wnear, Some(&defuse.id()))
         .await
         .unwrap();
 
     // 3. ft_transfer_call WNEAR to defuse with solver as msg (receiver)
     let transfer_amount: u128 = NearToken::from_near(5).as_yoctonear();
-    root.ft_transfer_call(&wnear, defuse.id(), transfer_amount, solver.id().as_str())
+    root.ft_transfer_call(&wnear, &defuse.id(), transfer_amount, solver.id().as_str())
         .await
         .unwrap();
 
@@ -154,5 +156,155 @@ async fn test_deploy_transfer_auth_global_contract() {
     assert_eq!(
         initial_solver_balance, final_solver_balance,
         "Solver balance should be unchanged after timeout refund"
+    );
+}
+
+/// Test that transfer succeeds when relay authorizes via on_auth call
+#[tokio::test]
+async fn test_transfer_authorized_by_relay() {
+    let sandbox = Sandbox::new().await;
+    let root = sandbox.root();
+
+    let wnear = root.deploy_wnear("wnear").await;
+    let (transfer_auth_global, defuse, mt_receiver_global) = futures::join!(
+        root.deploy_transfer_auth("global_transfer_auth"),
+        root.deploy_verifier("defuse", wnear.id().clone()),
+        root.deploy_mt_receiver_stub_global("mt_receiver_global"),
+    );
+
+    let relay = root.create_subaccount("relay", INIT_BALANCE).await.unwrap();
+    let solver = root.create_subaccount("solver", INIT_BALANCE).await.unwrap();
+
+    let roles = RolesConfig {
+        super_admins: HashSet::from([root.id()]),
+        admins: HashMap::new(),
+        grantees: HashMap::new(),
+    };
+
+    let config = ProxyConfig {
+        per_fill_global_contract_id: transfer_auth_global.clone(),
+        escrow_swap_global_contract_id: mt_receiver_global.clone(),
+        auth_contract: defuse.id().clone(),
+        auth_collee: relay.id().clone(),
+    };
+
+    let proxy = sandbox
+        .root()
+        .create_subaccount("proxy", INIT_BALANCE)
+        .await
+        .unwrap();
+    proxy.deploy_escrow_proxy(roles, config.clone()).await.unwrap();
+
+    // Setup: deposit WNEAR to defuse for solver
+    let deposit_amount = NearToken::from_near(10);
+    root.near_deposit(&wnear, deposit_amount).await.unwrap();
+    root.ft_storage_deposit(&wnear, Some(&defuse.id())).await.unwrap();
+
+    let transfer_amount: u128 = NearToken::from_near(5).as_yoctonear();
+    root.ft_transfer_call(&wnear, &defuse.id(), transfer_amount, solver.id().as_str())
+        .await
+        .unwrap();
+
+    let token_id = TokenId::from(Nep141TokenId::new(wnear.id().clone()));
+
+    // Record initial solver balance
+    let initial_solver_balance =
+        SigningAccount::mt_balance_of(&defuse, &solver.id(), &token_id.to_string())
+            .await
+            .unwrap();
+
+    // Build TransferMessage
+    let transfer_msg = TransferMessage {
+        fill_action: FillAction {
+            price: 1,
+            deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
+        },
+        escrow_params: EscrowParams {
+            maker: solver.id().clone(),
+            src_token: token_id.clone(),
+            dst_token: token_id.clone(),
+            price: U128(1),
+            deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
+            partial_fills_allowed: false,
+            refund_src_to: Default::default(),
+            receive_dst_to: Default::default(),
+            taker_whitelist: BTreeSet::new(),
+            protocol_fees: None,
+            integrator_fees: BTreeMap::new(),
+            salt: [0u8; 32],
+        },
+        salt: [2u8; 32], // Different salt from timeout test
+    };
+    let msg_json = serde_json::to_string(&transfer_msg).unwrap();
+
+    // Derive the transfer-auth instance address (same logic as proxy uses)
+    let msg_hash: [u8; 32] = keccak256(msg_json.as_bytes()).try_into().unwrap();
+    let auth_state = State {
+        solver_id: solver.id().clone(),
+        escrow_contract_id: config.escrow_swap_global_contract_id.clone(),
+        auth_contract: config.auth_contract.clone(),
+        auth_callee: config.auth_collee.clone(),
+        querier: proxy.id().clone(),
+        msg_hash,
+    };
+    let transfer_auth_instance_id = derive_transfer_auth_account_id(&transfer_auth_global, &auth_state);
+
+    let proxy_transfer_amount = NearToken::from_near(1).as_yoctonear();
+    let proxy_id = proxy.id().clone();
+    let token_id_str = token_id.to_string();
+    let relay_id = relay.id().clone();
+
+    // Build raw state for state_init (same as proxy does)
+    let raw_state = ContractStorage::init_state(auth_state).unwrap();
+
+    // Run transfer and on_auth call concurrently
+    // Transfer starts the yield promise, on_auth authorizes it
+    // TODO: Replace direct on_auth call with AuthCall intent through defuse
+    let (transfer_result, _auth_result) = futures::join!(
+        solver.mt_transfer_call(
+            &defuse,
+            &proxy_id,
+            &token_id_str,
+            proxy_transfer_amount,
+            &msg_json,
+        ),
+        // Call on_auth from defuse (auth_contract) with relay as signer_id
+        // Include state_init to deploy the transfer-auth instance if not already deployed
+        async {
+            defuse.tx(transfer_auth_instance_id.clone())
+                .state_init(transfer_auth_global.clone(), raw_state)
+                .function_call_json::<()>(
+                    "on_auth",
+                    serde_json::json!({
+                        "signer_id": relay_id,
+                        "msg": "",
+                    }),
+                    Gas::from_tgas(50),
+                    NearToken::from_yoctonear(1),
+                )
+                .no_result()
+                .await
+        }
+    );
+
+    let used_amounts = transfer_result.unwrap();
+
+    // When authorized, tokens should be forwarded (used_amount = transferred amount)
+    assert_eq!(
+        used_amounts,
+        vec![proxy_transfer_amount],
+        "Used amount should equal transferred amount when authorized"
+    );
+
+    // Verify solver balance decreased
+    let final_solver_balance =
+        SigningAccount::mt_balance_of(&defuse, &solver.id(), &token_id.to_string())
+            .await
+            .unwrap();
+
+    assert_eq!(
+        initial_solver_balance - proxy_transfer_amount,
+        final_solver_balance,
+        "Solver balance should decrease by transferred amount"
     );
 }
