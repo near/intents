@@ -3,10 +3,11 @@ use std::{fs, path::Path, sync::LazyLock};
 use crate::storage::{ContractStorage, State};
 use serde_json::json;
 use defuse_sandbox::{
-    api::types::transaction::actions::GlobalContractDeployMode, Account, SigningAccount
+    api::types::transaction::actions::GlobalContractDeployMode, Account, SigningAccount, TxError,
 };
 use near_sdk::{
     AccountId, Gas, NearToken,
+    json_types::U128,
     state_init::{StateInit, StateInitV1},
 };
 
@@ -99,6 +100,38 @@ impl TransferAuthAccountExt for SigningAccount {
 pub trait DefuseAccountExt {
     async fn deploy_wnear(&self, name: impl AsRef<str>) -> Account;
     async fn deploy_verifier(&self, name: impl AsRef<str>, wnear_id: AccountId) -> Account;
+
+    // WNEAR operations
+    async fn near_deposit(&self, wnear: &Account, amount: NearToken) -> Result<(), TxError>;
+    async fn ft_storage_deposit(
+        &self,
+        token: &Account,
+        account_id: Option<&AccountId>,
+    ) -> Result<(), TxError>;
+    async fn ft_transfer_call(
+        &self,
+        token: &Account,
+        receiver_id: &AccountId,
+        amount: u128,
+        msg: &str,
+    ) -> Result<u128, TxError>;
+
+    // Query MT balance
+    async fn mt_balance_of(
+        defuse: &Account,
+        account_id: &AccountId,
+        token_id: &str,
+    ) -> anyhow::Result<u128>;
+
+    // MT transfer call
+    async fn mt_transfer_call(
+        &self,
+        defuse: &Account,
+        receiver_id: &AccountId,
+        token_id: &str,
+        amount: u128,
+        msg: &str,
+    ) -> Result<Vec<u128>, TxError>;
 }
 
 impl DefuseAccountExt for SigningAccount {
@@ -143,5 +176,91 @@ impl DefuseAccountExt for SigningAccount {
             .unwrap();
 
         account
+    }
+
+    async fn near_deposit(&self, wnear: &Account, amount: NearToken) -> Result<(), TxError> {
+        self.tx(wnear.id().clone())
+            .function_call_json::<()>("near_deposit", json!({}), Gas::from_tgas(50), amount)
+            .no_result()
+            .await
+    }
+
+    async fn ft_storage_deposit(
+        &self,
+        token: &Account,
+        account_id: Option<&AccountId>,
+    ) -> Result<(), TxError> {
+        self.tx(token.id().clone())
+            .function_call_json::<serde_json::Value>(
+                "storage_deposit",
+                json!({ "account_id": account_id }),
+                Gas::from_tgas(50),
+                NearToken::from_millinear(50), // 0.05 NEAR for storage
+            )
+            .await
+            .map(|_| ())
+    }
+
+    async fn ft_transfer_call(
+        &self,
+        token: &Account,
+        receiver_id: &AccountId,
+        amount: u128,
+        msg: &str,
+    ) -> Result<u128, TxError> {
+        self.tx(token.id().clone())
+            .function_call_json::<U128>(
+                "ft_transfer_call",
+                json!({
+                    "receiver_id": receiver_id,
+                    "amount": U128(amount),
+                    "msg": msg,
+                }),
+                Gas::from_tgas(100),
+                NearToken::from_yoctonear(1),
+            )
+            .await
+            .map(|u| u.0)
+    }
+
+    async fn mt_balance_of(
+        defuse: &Account,
+        account_id: &AccountId,
+        token_id: &str,
+    ) -> anyhow::Result<u128> {
+        defuse
+            .call_function_json::<U128>(
+                "mt_balance_of",
+                json!({
+                    "account_id": account_id,
+                    "token_id": token_id,
+                }),
+            )
+            .await
+            .map(|u| u.0)
+    }
+
+    async fn mt_transfer_call(
+        &self,
+        defuse: &Account,
+        receiver_id: &AccountId,
+        token_id: &str,
+        amount: u128,
+        msg: &str,
+    ) -> Result<Vec<u128>, TxError> {
+        self.tx(defuse.id().clone())
+            .function_call_json::<Vec<U128>>(
+                "mt_transfer_call",
+                json!({
+                    "receiver_id": receiver_id,
+                    "token_id": token_id,
+                    "amount": U128(amount),
+                    "msg": msg,
+                }),
+                Gas::from_tgas(300),
+                NearToken::from_yoctonear(1),
+            )
+            .await
+            .map(|v| v.into_iter().map(|u| u.0).collect())
     }
 }
