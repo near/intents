@@ -8,12 +8,12 @@ use core::iter;
 use defuse_near_utils::UnwrapOrPanicError;
 use near_sdk::{
     env::keccak256,
-    state_init::{StateInit, StateInitV1},
+    state_init::{StateInit, StateInitV1}, Promise,
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 use near_plugins::{AccessControllable, access_control_any};
-use defuse_auth_call::AuthCallee;
+use defuse_auth_call::{ext_auth_callee, AuthCallee};
 use defuse_crypto::{Curve, Ed25519, PublicKey, Signature};
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
 use near_plugins::{AccessControlRole, access_control};
@@ -72,7 +72,7 @@ impl Contract {
         &self,
         solver_id: AccountId,
         msg_hash: [u8; 32],
-    ) -> AccountId {
+    ) -> StateInit{
 
         let state = State {
             solver_id,
@@ -88,8 +88,8 @@ impl Contract {
             //TODO: get rid of unwrap
             data: ContractStorage::init_state(state).unwrap(),
         });
+        state_init
 
-        state_init.derive_account_id()
     }
 
     fn derive_deteministic_escrow_swap_id(&self, params: EscrowParams) -> AccountId {
@@ -164,7 +164,10 @@ impl MultiTokenReceiver for Contract {
         let hash: [u8; 32] = keccak256(msg.as_bytes()).try_into().unwrap();
         let transfer_msg: TransferMessage = msg.parse().unwrap();
 
-        let auth_contract_id = self.derive_deteministic_escrow_per_fill_id(sender_id, hash);
+        let auth_contract_state_init = self.derive_deteministic_escrow_per_fill_id(sender_id.clone(), hash);
+        let auth_contract_id = auth_contract_state_init.derive_account_id();
+
+        let mut auth_call = Promise::new(auth_contract_id).state_init(auth_contract_state_init, NearToken::from_near(0));
 
         let _ = previous_owner_ids;
 
@@ -178,24 +181,27 @@ impl MultiTokenReceiver for Contract {
 
 
         // Call mt_transfer_call on the token contract to forward to escrow
-        PromiseOrValue::Promise(
-            ext_mt_core::ext(token_contract)
-                .with_attached_deposit(NearToken::from_yoctonear(1))
-                .with_static_gas(Gas::from_tgas(50))
-                .mt_transfer_call(
-                    escrow_address,
-                    token_ids[0].clone(),
-                    amounts[0],
-                    None, // approval
-                    None, // memo
-                    msg,
-                )
-                .then(
-                    Self::ext(env::current_account_id())
-                        .with_static_gas(Gas::from_tgas(10))
-                        .resolve_transfer(amounts),
-                ),
-        )
+        let forward_tokens = ext_mt_core::ext(token_contract)
+            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .with_static_gas(Gas::from_tgas(50))
+            .mt_transfer_call(
+                escrow_address,
+                token_ids[0].clone(),
+                amounts[0],
+                None, // approval
+                None, // memo
+                msg,
+            )
+            .then(
+                Self::ext(env::current_account_id())
+                    .with_static_gas(Gas::from_tgas(10))
+                    .resolve_transfer(amounts),
+            );
+
+        PromiseOrValue::Promise(ext_transfer_auth::ext_on(auth_call)
+            .wait_for_authorization()
+            .then(forward_tokens))
+
     }
 }
 
@@ -236,7 +242,7 @@ impl Contract {
         let hash: [u8; 32] = keccak256(msg.as_bytes()).try_into().unwrap();
         let auth_contract_id = self.derive_deteministic_escrow_per_fill_id(solver_id, hash);
 
-        ext_transfer_auth::ext(auth_contract_id)
+        ext_transfer_auth::ext(auth_contract_id.derive_account_id())
             .with_attached_deposit(NearToken::from_yoctonear(1))
             .with_static_gas(Gas::from_tgas(50))
             .close();

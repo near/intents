@@ -51,4 +51,5 @@ async fn test_deploy_transfer_auth_global_contract() {
         .unwrap();
     proxy.deploy_escrow_proxy(roles, config).await.unwrap();
 
+
 }
