@@ -32,6 +32,7 @@ serde_with.workspace = true
 [dev-dependencies]
 defuse-sandbox.workspace = true
 defuse-transfer-auth = { workspace = true, features = ["test-utils"] }
+multi-token-receiver-stub = { path = "../tests/contracts/multi-token-receiver-stub", features = ["test-utils"] }
 impl-tools.workspace = true
 near-sdk = { workspace = true, features = ["unstable", "unit-testing"] }
 near-workspaces.workspace = true

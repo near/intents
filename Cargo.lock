@@ -989,6 +989,7 @@ dependencies = [
  "defuse-transfer-auth",
  "futures",
  "impl-tools",
+ "multi-token-receiver-stub",
  "near-plugins",
  "near-sdk",
  "near-workspaces",
@@ -2444,8 +2445,10 @@ dependencies = [
 name = "multi-token-receiver-stub"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "defuse",
  "defuse-nep245",
+ "defuse-sandbox",
  "near-sdk",
  "near-workspaces",
  "serde_json",

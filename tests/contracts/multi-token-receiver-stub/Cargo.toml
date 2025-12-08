@@ -12,6 +12,8 @@ crate-type = ["cdylib", "rlib"]
 defuse = { workspace = true }
 defuse-nep245.workspace = true
 near-sdk.workspace = true
+defuse-sandbox = { workspace = true, optional = true }
+anyhow = { workspace = true, optional = true }
 
 [dev-dependencies]
 near-sdk = { workspace = true, features = ["unit-testing"] }
@@ -21,3 +23,4 @@ serde_json.workspace = true
 
 [features]
 abi = ["defuse/abi"]
+test-utils = ["defuse-sandbox", "anyhow"]
