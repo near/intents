@@ -1,7 +1,5 @@
 #![allow(clippy::too_many_arguments)]
 
-use core::iter;
-
 use crate::{
     contract::{Contract, ContractExt, Role, tokens::STORAGE_DEPOSIT_GAS},
     tokens::nep245::{
