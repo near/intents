@@ -67,16 +67,14 @@ impl Sendable for Nep245TokenId {
     ) -> near_sdk::Promise {
         let gas = self.transfer_gas(min_gas, msg.is_some());
 
-        let (contract_id, token_id) = self.into_contract_id_and_mt_token_id();
-
-        let p = ext_mt_core::ext(contract_id)
+        let p = ext_mt_core::ext(self.contract_id)
             .with_attached_deposit(NearToken::from_yoctonear(1))
             .with_static_gas(gas)
             .with_unused_gas_weight(unused_gas.into());
         if let Some(msg) = msg {
             p.mt_transfer_call(
                 receiver_id,
-                token_id,
+                self.mt_token_id,
                 U128(amount),
                 None, // approval
                 memo,
@@ -85,7 +83,7 @@ impl Sendable for Nep245TokenId {
         } else {
             p.mt_transfer(
                 receiver_id,
-                token_id,
+                self.mt_token_id,
                 U128(amount),
                 None, // approval
                 memo,
