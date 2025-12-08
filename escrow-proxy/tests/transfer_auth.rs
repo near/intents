@@ -205,10 +205,12 @@ async fn test_transfer_authorized_by_relay() {
 
     // Deploy the escrow instance via state_init
     // NOTE: Ignore RPC parsing errors - the tx succeeds but RPC response parsing may fail
-    let _ = root.tx(escrow_instance_id.clone())
+    println!("STATE INIT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    let result = root.tx(escrow_instance_id.clone())
         .state_init(mt_receiver_global.clone(), BTreeMap::new())
         .transfer(NearToken::from_yoctonear(1))
         .await;
+    println!("{result:?} INITIALIZED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 
     // Setup: deposit WNEAR to defuse for solver
     let deposit_amount = NearToken::from_near(10);
