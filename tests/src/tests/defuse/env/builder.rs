@@ -9,8 +9,14 @@ use defuse::{
     core::fees::{FeesConfig, Pips},
     extensions::deployer::DefuseExt,
 };
-use defuse_poa_factory::{contract::Role as POAFactoryRole, extensions::PoAFactoryExt};
-use defuse_sandbox::{Account, Sandbox, SigningAccount, extensions::wnear::WNearExt};
+use defuse_poa_factory::{
+    contract::Role as POAFactoryRole,
+    extensions::{PoAFactoryDeployerExt, PoAFactoryExt},
+};
+use defuse_sandbox::{
+    Account, Sandbox, SigningAccount,
+    extensions::wnear::{WNearDeployerExt, WNearExt},
+};
 use defuse_test_utils::random::Seed;
 use near_sdk::{AccountId, NearToken};
 
@@ -121,9 +127,9 @@ impl EnvBuilder {
         let poa_factory = deploy_poa_factory(root).await;
         let wnear = root.deploy_wrap_near("wnear").await.unwrap();
 
-        self.grant_roles(&root, deploy_legacy);
+        self.grant_roles(root, deploy_legacy);
 
-        let defuse = self.deploy_defuse(&root, &wnear, deploy_legacy).await;
+        let defuse = self.deploy_defuse(root, &wnear, deploy_legacy).await;
 
         let env = Env {
             defuse,

@@ -1,6 +1,6 @@
 use crate::{
     tests::defuse::{DefuseSignerExt, env::Env},
-    utils::{ExtractNonceExt, public_key},
+    utils::{fixtures::public_key, payload::ExtractNonceExt},
 };
 use defuse::{
     contract::Role,

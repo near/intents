@@ -100,7 +100,7 @@ impl Env {
         self.ft_storage_deposit_for_accounts(token.id(), vec![root.id(), self.defuse.id()])
             .await?;
 
-        self.ft_deposit_to_root(&token.id()).await?;
+        self.ft_deposit_to_root(token.id()).await?;
 
         Ok(())
     }

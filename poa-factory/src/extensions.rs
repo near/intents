@@ -1,4 +1,3 @@
-#[allow(async_fn_in_trait)]
 use defuse_sandbox::{
     Account, SigningAccount, anyhow, extensions::account::AccountDeployerExt, tx::FnCallBuilder,
 };
@@ -14,8 +13,7 @@ const POA_FACTORY_WASM: &[u8] = include_bytes!(concat!(
     "/../releases/defuse_poa_factory.wasm"
 ));
 
-#[allow(async_fn_in_trait)]
-pub trait PoAFactoryExt: PoAFactoryViewExt {
+pub trait PoAFactoryDeployerExt {
     async fn deploy_poa_factory(
         &self,
         name: &str,
@@ -23,8 +21,10 @@ pub trait PoAFactoryExt: PoAFactoryViewExt {
         admins: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
         grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
     ) -> anyhow::Result<Account>;
+}
 
-    #[track_caller]
+#[allow(async_fn_in_trait)]
+pub trait PoAFactoryExt: PoAFactoryViewExt {
     fn token_id(token: &str, factory: &AccountIdRef) -> AccountId {
         format!("{token}.{factory}").parse().unwrap()
     }
@@ -55,7 +55,7 @@ pub trait PoAFactoryViewExt {
     ) -> anyhow::Result<HashMap<String, AccountId>>;
 }
 
-impl PoAFactoryExt for SigningAccount {
+impl PoAFactoryDeployerExt for SigningAccount {
     async fn deploy_poa_factory(
         &self,
         name: &str,
@@ -82,7 +82,9 @@ impl PoAFactoryExt for SigningAccount {
         )
         .await
     }
+}
 
+impl PoAFactoryExt for SigningAccount {
     async fn poa_factory_deploy_token(
         &self,
         factory: &AccountIdRef,
@@ -92,7 +94,7 @@ impl PoAFactoryExt for SigningAccount {
         self.tx(factory.into())
             .function_call(
                 FnCallBuilder::new("deploy_token")
-                    .json_args(&json!({
+                    .json_args(json!({
                         "token": token,
                         "metadata": metadata.into(),
                     }))
@@ -118,7 +120,7 @@ impl PoAFactoryExt for SigningAccount {
         self.tx(factory.into())
             .function_call(
                 FnCallBuilder::new("ft_deposit")
-                    .json_args(&json!({
+                    .json_args(json!({
                             "token": token,
                             "owner_id": owner_id,
                             "amount": U128(amount),
@@ -139,9 +141,6 @@ impl PoAFactoryViewExt for SigningAccount {
         poa_factory: &AccountIdRef,
     ) -> anyhow::Result<HashMap<String, AccountId>> {
         let account = Account::new(poa_factory.into(), self.network_config().clone());
-        account
-            .call_view_function_json("tokens", ())
-            .await
-            .map_err(Into::into)
+        account.call_view_function_json("tokens", ()).await
     }
 }

@@ -37,7 +37,7 @@ const MT_RECEIVER_STUB_WASM: &[u8] = include_bytes!(concat!(
     "/../res/multi-token-receiver-stub/multi_token_receiver_stub.wasm"
 ));
 
-const TOKEN_STORAGE_DEPOSIT: NearToken = NearToken::from_millinear(1);
+const TOKEN_STORAGE_DEPOSIT: NearToken = NearToken::from_yoctonear(2_350_000_000_000_000_000_000);
 
 pub struct Env {
     sandbox: Sandbox,
@@ -67,7 +67,7 @@ impl Env {
     }
 
     pub fn root(&self) -> &SigningAccount {
-        &self.sandbox.root()
+        self.sandbox.root()
     }
 
     // pub async fn ft_storage_deposit(
@@ -273,7 +273,7 @@ impl Env {
             .root()
             .transfer_near(account_id, amount)
             .await
-            .unwrap()
+            .unwrap();
     }
 
     pub async fn deploy_mt_receiver_stub(&self) -> Account {
