@@ -3,6 +3,8 @@ use std::cell::Cell;
 use near_sdk::{Gas, GasWeight, Promise, YieldId, borsh, near};
 use thiserror::Error as ThisError;
 
+use crate::event::Event;
+
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Fsm {
@@ -16,11 +18,14 @@ pub enum Fsm {
 
 impl Drop for Fsm {
     fn drop(&mut self) {
-        Promise::new(near_sdk::env::current_account_id()).delete_account(near_sdk::env::signer_account_id()).detach()
+        if matches!(self, Fsm::Finished(_)) {
+            Event::Destroy.emit();
+            Promise::new(near_sdk::env::current_account_id()).delete_account(near_sdk::env::signer_account_id()).detach()
+        }
     }
 }
 
-pub(crate) struct LazyYieldId(Cell<Option<Promise>>);
+pub struct LazyYieldId(Cell<Option<Promise>>);
 
 #[derive(Debug, ThisError)]
 pub enum FsmError {
@@ -50,7 +55,7 @@ impl LazyYieldId {
     }
 }
 
-pub(crate) enum FsmEvent<'a> {
+pub enum FsmEvent<'a> {
     Authorize,
     WaitForAuthorization(&'a LazyYieldId),
     NotifyYieldedPromiseResolved,
@@ -70,17 +75,27 @@ impl std::fmt::Display for FsmEvent<'_> {
 
 impl Fsm {
     pub fn handle(&mut self, event: &FsmEvent<'_>) -> Result<(), FsmError> {
-        near_sdk::env::log_str(&format!("Fsm: {self:?} -> {event}"));
         let next_state = match (&self, event) {
-            (Fsm::Idle, FsmEvent::Authorize) => Fsm::Authorized,
+            (Fsm::Idle, FsmEvent::Authorize) => {
+                Event::Authorized.emit();
+                Fsm::Authorized
+            },
             (Fsm::Idle, FsmEvent::WaitForAuthorization(yield_id)) => {
+                Event::AuthorizationRequested.emit();
                 Fsm::AsyncVerification(yield_id.yield_create())
             }
 
-            (Fsm::Authorized, FsmEvent::WaitForAuthorization(_)) => Fsm::Finished(true),
+            (Fsm::Authorized, FsmEvent::WaitForAuthorization(_)) => {
+                Event::AuthorizationRequested.emit();
+                Fsm::Finished(true)
+            },
 
-            (Fsm::AsyncVerification(_), FsmEvent::Timeout) => Fsm::Finished(false),
+            (Fsm::AsyncVerification(_), FsmEvent::Timeout) => {
+                Event::Timeout.emit();
+                Fsm::Finished(false)
+            },
             (Fsm::AsyncVerification(yield_id), FsmEvent::Authorize) => {
+                Event::Authorized.emit();
                 yield_id.resume(&[]);
                 Fsm::AsyncVerificationSuccessful
             }
@@ -88,12 +103,16 @@ impl Fsm {
             (Fsm::AsyncVerificationSuccessful, FsmEvent::NotifyYieldedPromiseResolved) => {
                 Fsm::Finished(true)
             }
-            (Fsm::AsyncVerificationSuccessful, FsmEvent::Timeout) => Fsm::Finished(false),
+            (Fsm::AsyncVerificationSuccessful, FsmEvent::Timeout) => {
+                Event::Timeout.emit();
+                Fsm::Finished(false)
+            },
             (state, event) => {
                 return Err(FsmError::InvalidStateTransition);
                 // near_sdk::env::panic_str(&format!("Invalid state transition state: {state:?} event: {event}"));
             }
         };
+        near_sdk::env::log_str(&format!("{self:?} -----{event}----> {next_state:?}"));
         *self = next_state;
         Ok(())
     }

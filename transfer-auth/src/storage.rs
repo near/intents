@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 
 use crate::error::Error;
-use crate::state_machine::{FsmError, FsmEvent, LazyYieldId};
 use near_sdk::{AccountId, borsh, near};
 
 // Re-export for backward compatibility

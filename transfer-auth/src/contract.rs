@@ -6,7 +6,9 @@ use serde_json::json;
 
 
 use impl_tools::autoimpl;
-use crate::storage::{ContractStorage, State, LazyYieldId, Fsm, FsmEvent};
+use crate::storage::{ContractStorage, State, Fsm};
+use crate::state_machine::{LazyYieldId, FsmEvent};
+use crate::event::Event;
 use crate::TransferAuth;
 use defuse_near_utils::UnwrapOrPanicError;
 
@@ -48,12 +50,12 @@ impl Contract {
     ) -> PromiseOrValue<bool> {
         match resume_data {
             Ok(_) => {
-                env::log_str(&format!( "is_authorized_resume",));
                 self.fsm.handle(&FsmEvent::NotifyYieldedPromiseResolved).unwrap_or_panic_display();
+                Event::Authorized.emit();
             }
             Err(err) => {
-                env::log_str(&format!("is_authorized_resume error (str): {err:?}"));
                 self.fsm.handle(&FsmEvent::Timeout).unwrap_or_panic_display();
+                Event::Timeout.emit();
             }
         }
         PromiseOrValue::Value(self.fsm.is_authorized())
@@ -74,7 +76,6 @@ impl AuthCallee for Contract {
             signer_id == self.state_init.auth_callee,
             "Unauthorized auth callee"
         );
-        env::log_str(&format!("on_auth called by {signer_id} with msg: {msg}"));
         self.fsm.handle(&FsmEvent::Authorize).unwrap_or_panic_display();
         PromiseOrValue::Value(())
     }

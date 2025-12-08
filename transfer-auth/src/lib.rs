@@ -8,7 +8,7 @@ mod error;
 mod contract;
 pub mod storage;
 pub mod state_machine;
-mod event;
+pub mod event;
 
 use storage::{ContractStorage, State};
 
