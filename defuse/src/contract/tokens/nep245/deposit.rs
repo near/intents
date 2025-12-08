@@ -1,13 +1,16 @@
 use defuse_core::token_id::nep245::Nep245TokenId;
 use defuse_near_utils::{
-    CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
+    CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, PanicError, UnwrapOrPanic, UnwrapOrPanicError,
 };
 use defuse_nep245::receiver::MultiTokenReceiver;
 use near_plugins::{Pausable, pause};
 use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near, require};
 
 use crate::{
-    contract::{Contract, ContractExt},
+    contract::{
+        Contract, ContractExt,
+        tokens::{MAX_TOKEN_ID_LEN, TokenIdTooLarge},
+    },
     intents::{Intents, ext_intents},
     tokens::{DepositAction, DepositMessage},
 };
@@ -46,6 +49,17 @@ impl MultiTokenReceiver for Contract {
             "self-wrapping is not allowed"
         );
 
+        let core_token_ids = token_ids
+            .iter()
+            .inspect(|token_id| {
+                if token_id.len() > MAX_TOKEN_ID_LEN {
+                    TokenIdTooLarge(token_id.len()).panic_display();
+                }
+            })
+            .cloned()
+            .map(|token_id| Nep245TokenId::new(token.clone(), token_id))
+            .map(Into::into);
+
         let DepositMessage {
             receiver_id,
             action,
@@ -54,13 +68,6 @@ impl MultiTokenReceiver for Contract {
         } else {
             msg.parse().unwrap_or_panic_display()
         };
-
-        let core_token_ids = token_ids
-            .iter()
-            .cloned()
-            .map(|token_id| Nep245TokenId::new(token.clone(), token_id))
-            .map(UnwrapOrPanicError::unwrap_or_panic_display)
-            .map(Into::into);
 
         self.deposit(
             receiver_id.clone(),
@@ -122,7 +129,6 @@ impl Contract {
             tokens
                 .into_iter()
                 .map(|token_id| Nep245TokenId::new(contract_id.clone(), token_id))
-                .map(UnwrapOrPanicError::unwrap_or_panic_display)
                 .map(Into::into)
                 .zip(amounts.iter_mut().map(|amount| &mut amount.0)),
         );

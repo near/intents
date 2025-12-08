@@ -1,21 +1,24 @@
 pub mod traits;
 
-use crate::tests::defuse::tokens::nep141::traits::DefuseFtWithdrawer;
 use crate::{
     tests::{
-        defuse::env::{Env, MT_RECEIVER_STUB_WASM},
+        defuse::{
+            env::{Env, MT_RECEIVER_STUB_WASM},
+            tokens::nep141::traits::DefuseFtWithdrawer,
+        },
         poa::factory::PoAFactoryExt,
     },
     utils::{acl::AclExt, ft::FtExt, mt::MtExt},
 };
-use defuse::core::token_id::TokenId;
-use defuse::core::token_id::nep141::Nep141TokenId;
-
 use defuse::{
     contract::Role,
-    core::intents::tokens::FtWithdraw,
+    core::{
+        intents::tokens::{FtWithdraw, NotifyOnTransfer},
+        token_id::{TokenId, nep141::Nep141TokenId},
+    },
     tokens::{DepositAction, DepositMessage, ExecuteIntents},
 };
+
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_sdk::{json_types::U128, serde_json};
 use rstest::rstest;
@@ -425,12 +428,9 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
     let deposit_message = if intents.is_empty() {
         DepositMessage {
             receiver_id: receiver.id().clone(),
-            action: Some(DepositAction::Notify(
-                defuse::core::intents::tokens::NotifyOnTransfer {
-                    msg: serde_json::to_string(&expectation.action).unwrap(),
-                    min_gas: None,
-                },
-            )),
+            action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+                serde_json::to_string(&expectation.action).unwrap(),
+            ))),
         }
     } else {
         DepositMessage {

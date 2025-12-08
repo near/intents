@@ -1,4 +1,4 @@
-use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, NearToken, near};
+use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, NearToken, near, state_init::StateInit};
 
 use crate::{
     Result,
@@ -13,6 +13,13 @@ use crate::{
 pub struct AuthCall {
     /// Callee for [`.on_auth`](::defuse_auth_call::AuthCallee::on_auth)
     pub contract_id: AccountId,
+
+    /// Optionally initialize the receiver's contract (Deterministic AccountId)
+    /// via [`state_init`](https://github.com/near/NEPs/blob/master/neps/nep-0616.md#stateinit-action)
+    /// right before calling [`.on_auth()`](::defuse_auth_call::AuthCallee::on_auth)
+    /// (in the same receipt).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub state_init: Option<StateInit>,
 
     /// `msg` to pass in [`.on_auth`](::defuse_auth_call::AuthCallee::on_auth)
     pub msg: String,
