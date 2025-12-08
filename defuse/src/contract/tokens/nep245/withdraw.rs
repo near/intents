@@ -65,15 +65,13 @@ impl Contract {
             return Err(DefuseError::InvalidIntent);
         }
 
-        let token_ids = std::iter::repeat(withdraw.token.clone())
-            .zip(withdraw.token_ids.iter().cloned())
-            .map(|(token, token_id)| Nep245TokenId::new(token, token_id))
-            .collect::<Result<Vec<_>, _>>()?;
-
         self.withdraw(
             &owner_id,
-            token_ids
-                .into_iter()
+            withdraw
+                .token_ids
+                .iter()
+                .cloned()
+                .map(|token_id| Nep245TokenId::new(withdraw.token.clone(), token_id))
                 .map(Into::into)
                 .zip(withdraw.amounts.iter().map(|a| a.0))
                 .chain(withdraw.storage_deposit.map(|amount| {
@@ -248,10 +246,7 @@ impl MultiTokenWithdrawResolver for Contract {
                     used.0 = used.0.min(amount.0);
                     let refund = amount.0.saturating_sub(used.0);
                     if refund > 0 {
-                        let token_id = Nep245TokenId::new(token.clone(), token_id)
-                            .unwrap_or_panic_display()
-                            .into();
-                        Some((token_id, refund))
+                        Some((Nep245TokenId::new(token.clone(), token_id).into(), refund))
                     } else {
                         None
                     }

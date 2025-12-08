@@ -178,8 +178,8 @@ async fn transfer_intent_to_defuse() {
         );
         assert_eq!(env.ft_token_balance_of(&ft, defuse2.id()).await.unwrap(), 0);
 
-        let defuse_ft1 =
-            TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), ft1.to_string()).unwrap());
+        let defuse_ft1: TokenId =
+            Nep245TokenId::new(env.defuse.id().clone(), ft1.to_string()).into();
 
         assert_eq!(
             env.mt_contract_balance_of(defuse2.id(), &other_user_id, &defuse_ft1.to_string())

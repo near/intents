@@ -1,6 +1,6 @@
 use std::{fmt, str::FromStr};
 
-use near_sdk::{AccountId, AccountIdRef, near};
+use near_sdk::{AccountId, near};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 use crate::{TokenIdType, error::TokenIdError};
@@ -18,27 +18,19 @@ pub struct Nep141TokenId {
         any(feature = "arbitrary", test),
         arbitrary(with = As::<ArbitraryAccountId>::arbitrary),
     )]
-    contract_id: AccountId,
+    pub contract_id: AccountId,
 }
 
 impl Nep141TokenId {
     pub const fn new(contract_id: AccountId) -> Self {
         Self { contract_id }
     }
-
-    pub fn contract_id(&self) -> &AccountIdRef {
-        self.contract_id.as_ref()
-    }
-
-    pub fn into_contract_id(self) -> AccountId {
-        self.contract_id
-    }
 }
 
 impl std::fmt::Debug for Nep141TokenId {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.contract_id())
+        write!(f, "{}", &self.contract_id)
     }
 }
 
