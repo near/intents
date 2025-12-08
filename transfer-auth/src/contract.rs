@@ -79,7 +79,7 @@ impl TransferAuth for Contract {
 
     }
 
-    pub fn wait_for_authorization(
+    fn wait_for_authorization(
         &mut self,
     ) -> PromiseOrValue<bool> {
         if env::predecessor_account_id() != self.state_init.querier {

@@ -1,7 +1,4 @@
-use defuse_auth_call::AuthCallee;
-use near_sdk::{
-    ext_contract, near
-};
+use near_sdk::{ext_contract, PromiseOrValue};
 
 mod error;
 #[cfg(feature = "contract")]
@@ -19,5 +16,5 @@ use storage::{ContractStorage, State};
 pub trait TransferAuth {
     fn state(&self) -> &ContractStorage;
     fn close(&self);
-    fn wait_for_authorization( &mut self) -> bool;
+    fn wait_for_authorization(&mut self) -> PromiseOrValue<bool>;
 }
