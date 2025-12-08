@@ -43,7 +43,7 @@ impl StorageManagementExt for SigningAccount {
         self.tx(contract_id.into())
             .function_call(
                 FnCallBuilder::new("storage_deposit")
-                    .json_args(&json!({
+                    .json_args(json!({
                         "account_id": account_id.unwrap_or_else(|| self.id())
                     }))
                     .with_deposit(NearToken::from_yoctonear(deposit.as_yoctonear())),
@@ -61,7 +61,7 @@ impl StorageManagementExt for SigningAccount {
         self.tx(contract_id.into())
             .function_call(
                 FnCallBuilder::new("storage_withdraw")
-                    .json_args(&json!({
+                    .json_args(json!({
                         "amount": amount.as_yoctonear()
                     }))
                     .with_deposit(NearToken::from_yoctonear(1)),
@@ -79,7 +79,7 @@ impl StorageManagementExt for SigningAccount {
         self.tx(contract_id.into())
             .function_call(
                 FnCallBuilder::new("storage_unregister")
-                    .json_args(&json!({
+                    .json_args(json!({
                         "force": force
                     }))
                     .with_deposit(NearToken::from_yoctonear(1)),

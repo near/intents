@@ -1,9 +1,15 @@
+use near_api::{Account as NearApiAccount, PublicKey, types::AccessKey};
 use near_sdk::{AccountIdRef, serde_json::json};
 
-use crate::{SigningAccount, tx::FnCallBuilder};
+use crate::{Account, SigningAccount, tx::FnCallBuilder};
 
 #[allow(async_fn_in_trait)]
-pub trait AclExt {
+pub trait AclViewExt {
+    async fn view_access_keys(&self) -> anyhow::Result<Vec<(PublicKey, AccessKey)>>;
+}
+
+#[allow(async_fn_in_trait)]
+pub trait AclExt: AclViewExt {
     async fn acl_add_super_admin(
         &self,
         contract_id: &AccountIdRef,
@@ -45,6 +51,23 @@ pub trait AclExt {
     ) -> anyhow::Result<()>;
 }
 
+impl AclViewExt for Account {
+    async fn view_access_keys(&self) -> anyhow::Result<Vec<(PublicKey, AccessKey)>> {
+        NearApiAccount(self.id().clone())
+            .list_keys()
+            .fetch_from(self.network_config())
+            .await
+            .map(|d| d.data)
+            .map_err(Into::into)
+    }
+}
+
+impl AclViewExt for SigningAccount {
+    async fn view_access_keys(&self) -> anyhow::Result<Vec<(PublicKey, AccessKey)>> {
+        self.account().view_access_keys().await
+    }
+}
+
 impl AclExt for SigningAccount {
     async fn acl_add_super_admin(
         &self,
@@ -52,7 +75,7 @@ impl AclExt for SigningAccount {
         account_id: &AccountIdRef,
     ) -> anyhow::Result<()> {
         self.tx(contract_id.into())
-            .function_call(FnCallBuilder::new("acl_add_super_admin").json_args(&json!({
+            .function_call(FnCallBuilder::new("acl_add_super_admin").json_args(json!({
             "account_id": account_id,
             })))
             .await?;
@@ -67,7 +90,7 @@ impl AclExt for SigningAccount {
     ) -> anyhow::Result<()> {
         self.tx(contract_id.into())
             .function_call(
-                FnCallBuilder::new("acl_revoke_super_admin").json_args(&json!({
+                FnCallBuilder::new("acl_revoke_super_admin").json_args(json!({
                 "account_id": account_id,
                 })),
             )
@@ -83,7 +106,7 @@ impl AclExt for SigningAccount {
         account_id: &AccountIdRef,
     ) -> anyhow::Result<()> {
         self.tx(contract_id.into())
-            .function_call(FnCallBuilder::new("acl_add_admin").json_args(&json!({
+            .function_call(FnCallBuilder::new("acl_add_admin").json_args(json!({
                 "role": role.into(),
                 "account_id": account_id,                })))
             .await?;
@@ -98,7 +121,7 @@ impl AclExt for SigningAccount {
         account_id: &AccountIdRef,
     ) -> anyhow::Result<()> {
         self.tx(contract_id.into())
-            .function_call(FnCallBuilder::new("acl_revoke_admin").json_args(&json!({
+            .function_call(FnCallBuilder::new("acl_revoke_admin").json_args(json!({
                 "role": role.into(),
                 "account_id": account_id,
             })))
@@ -114,7 +137,7 @@ impl AclExt for SigningAccount {
         account_id: &AccountIdRef,
     ) -> anyhow::Result<()> {
         self.tx(contract_id.into())
-            .function_call(FnCallBuilder::new("acl_grant_role").json_args(&json!({
+            .function_call(FnCallBuilder::new("acl_grant_role").json_args(json!({
                 "role": role.into(),
                 "account_id": account_id,
             })))
@@ -130,7 +153,7 @@ impl AclExt for SigningAccount {
         account_id: &AccountIdRef,
     ) -> anyhow::Result<()> {
         self.tx(contract_id.into())
-            .function_call(FnCallBuilder::new("acl_revoke_role").json_args(&json!({
+            .function_call(FnCallBuilder::new("acl_revoke_role").json_args(json!({
                 "role": role.into(),
                 "account_id": account_id,
             })))

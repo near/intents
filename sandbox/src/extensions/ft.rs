@@ -38,7 +38,7 @@ impl FtExt for SigningAccount {
         self.tx(token_id.into())
             .function_call(
                 FnCallBuilder::new("ft_transfer")
-                    .json_args(&json!({
+                    .json_args(json!({
                         "receiver_id": receiver_id,
                         "amount": U128(amount),
                         "memo": memo,
@@ -61,7 +61,7 @@ impl FtExt for SigningAccount {
         self.tx(token_id.into())
             .function_call(
                 FnCallBuilder::new("ft_transfer_call")
-                    .json_args(&json!({
+                    .json_args(json!({
                         "receiver_id": receiver_id,
                         "amount": U128(amount),
                         "memo": memo,

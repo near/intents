@@ -26,7 +26,7 @@ impl RelayerKeysExt for SigningAccount {
             .function_call(
                 FnCallBuilder::new("add_relayer_key")
                     .with_deposit(NearToken::from_yoctonear(1))
-                    .json_args(&json!({
+                    .json_args(json!({
                         "public_key": public_key,
                     })),
             )
@@ -44,7 +44,7 @@ impl RelayerKeysExt for SigningAccount {
             .function_call(
                 FnCallBuilder::new("delete_relayer_key")
                     .with_deposit(NearToken::from_yoctonear(1))
-                    .json_args(&json!({
+                    .json_args(json!({
                         "public_key": public_key,
                     })),
             )

@@ -19,18 +19,18 @@ pub struct Account {
 }
 
 impl Account {
-    pub fn new(account_id: AccountId, network_config: NetworkConfig) -> Self {
+    pub const fn new(account_id: AccountId, network_config: NetworkConfig) -> Self {
         Self {
             account_id,
             network_config,
         }
     }
 
-    pub fn id(&self) -> &AccountId {
+    pub const fn id(&self) -> &AccountId {
         &self.account_id
     }
 
-    pub fn network_config(&self) -> &NetworkConfig {
+    pub const fn network_config(&self) -> &NetworkConfig {
         &self.network_config
     }
 
@@ -53,7 +53,14 @@ impl Account {
     }
 
     pub async fn view(&self) -> anyhow::Result<near_api::types::Account> {
-        NearApiAccount(self.id().clone())
+        self.view_account(self.id()).await
+    }
+
+    pub async fn view_account(
+        &self,
+        account_id: &AccountIdRef,
+    ) -> anyhow::Result<near_api::types::Account> {
+        NearApiAccount(account_id.into())
             .view()
             .fetch_from(&self.network_config)
             .await
@@ -92,7 +99,7 @@ impl SigningAccount {
         Self::implicit(generate_secret_key().unwrap(), network_config)
     }
 
-    pub fn account(&self) -> &Account {
+    pub const fn account(&self) -> &Account {
         &self.account
     }
 
@@ -100,7 +107,7 @@ impl SigningAccount {
         self.signer.clone()
     }
 
-    pub fn private_key(&self) -> &SecretKey {
+    pub const fn private_key(&self) -> &SecretKey {
         &self.private_key
     }
 

@@ -25,7 +25,7 @@ impl FeesManagerExt for SigningAccount {
         self.tx(defuse_contract_id.into())
             .function_call(
                 FnCallBuilder::new("set_fee")
-                    .json_args(&json!({
+                    .json_args(json!({
                         "fee": fee,
                     }))
                     .with_deposit(NearToken::from_yoctonear(1)),
@@ -44,7 +44,7 @@ impl FeesManagerExt for SigningAccount {
             .function_call(
                 FnCallBuilder::new("set_fee_collector")
                     .with_deposit(NearToken::from_yoctonear(1))
-                    .json_args(&json!({
+                    .json_args(json!({
                         "fee_collector": fee_collector,
                     })),
             )
@@ -56,15 +56,11 @@ impl FeesManagerExt for SigningAccount {
 
 impl FeesManagerViewExt for Account {
     async fn fee(&self) -> anyhow::Result<Pips> {
-        self.call_view_function_json("fee", ())
-            .await
-            .map_err(Into::into)
+        self.call_view_function_json("fee", ()).await
     }
 
     async fn fee_collector(&self) -> anyhow::Result<AccountId> {
-        self.call_view_function_json("fee_collector", ())
-            .await
-            .map_err(Into::into)
+        self.call_view_function_json("fee_collector", ()).await
     }
 }
 

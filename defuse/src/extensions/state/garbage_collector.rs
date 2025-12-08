@@ -31,7 +31,7 @@ impl GarbageCollectorExt for SigningAccount {
             .function_call(
                 FnCallBuilder::new("cleanup_nonces")
                     .with_deposit(NearToken::from_yoctonear(1))
-                    .json_args(&json!({
+                    .json_args(json!({
                         "nonces": nonces,
                     })),
             )

@@ -38,7 +38,7 @@ impl DefuseMtDepositer for SigningAccount {
         msg: impl Into<Option<String>>,
     ) -> anyhow::Result<Vec<u128>> {
         self.mt_on_transfer(
-            sender_id.into(),
+            sender_id,
             defuse_id.into(),
             token_ids,
             &msg.into()
@@ -47,7 +47,6 @@ impl DefuseMtDepositer for SigningAccount {
                 .unwrap_or_default(),
         )
         .await
-        .map_err(Into::into)
     }
 }
 
@@ -66,7 +65,7 @@ impl DefuseMtWithdrawer for SigningAccount {
             .function_call(
                 FnCallBuilder::new("mt_withdraw")
                     .with_deposit(NearToken::from_yoctonear(1))
-                    .json_args(&json!({
+                    .json_args(json!({
                         "token": token,
                         "receiver_id": receiver_id,
                         "token_ids": token_ids,

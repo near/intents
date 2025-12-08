@@ -27,39 +27,40 @@ impl FnCallBuilder {
         }
     }
 
-    pub fn with_gas(mut self, gas: Gas) -> Self {
+    #[must_use]
+    pub const fn with_gas(mut self, gas: Gas) -> Self {
         self.gas = gas;
         self
     }
 
-    pub fn with_deposit(mut self, deposit: NearToken) -> Self {
+    #[must_use]
+    pub const fn with_deposit(mut self, deposit: NearToken) -> Self {
         self.deposit = deposit;
         self
     }
 
+    #[must_use]
     pub fn raw_args(mut self, args: impl AsRef<[u8]>) -> Self {
         self.args = args.as_ref().to_vec();
         self
     }
 
+    #[must_use]
     pub fn json_args<T: serde::Serialize>(mut self, args: T) -> Self {
         self.args = serde_json::to_vec(&args).unwrap();
         self
     }
 
+    #[must_use]
     pub fn borsh_args<T: BorshSerialize>(mut self, args: &T) -> Self {
         self.args = borsh::to_vec(args).unwrap();
         self
-    }
-
-    pub fn into_action(self) -> FunctionCallAction {
-        self.into()
     }
 }
 
 impl From<FnCallBuilder> for FunctionCallAction {
     fn from(value: FnCallBuilder) -> Self {
-        FunctionCallAction {
+        Self {
             method_name: value.name,
             args: value.args,
             gas: value.gas,

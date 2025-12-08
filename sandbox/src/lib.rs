@@ -41,7 +41,7 @@ impl Sandbox {
         }
     }
 
-    pub fn root(&self) -> &SigningAccount {
+    pub const fn root(&self) -> &SigningAccount {
         &self.root
     }
 

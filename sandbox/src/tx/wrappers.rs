@@ -45,7 +45,7 @@ impl Debug for TestExecutionOutcome<'_> {
                 if let ValueOrReceiptId::Value(value) = v {
                     let bytes = value.raw_bytes().unwrap();
                     if !bytes.is_empty() {
-                        write!(f, ", OK: {:?}", bytes)?;
+                        write!(f, ", OK: {bytes:?}")?;
                     }
                 }
                 Ok(())

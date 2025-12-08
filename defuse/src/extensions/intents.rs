@@ -60,7 +60,6 @@ impl ExecuteIntentsExt for SigningAccount {
             .inspect(|outcome| {
                 println!("execute_intents: {outcome:#?}");
             })
-            .map(Into::into)
     }
 
     async fn simulate_intents(
@@ -82,6 +81,5 @@ impl ExecuteIntentsExt for SigningAccount {
         defuse
             .call_view_function_json("simulate_intents", args)
             .await
-            .map_err(Into::into)
     }
 }

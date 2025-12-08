@@ -32,7 +32,7 @@ pub struct TxBuilder {
 }
 
 impl TxBuilder {
-    pub fn new(signer: SigningAccount, receiver_id: AccountId) -> Self {
+    pub const fn new(signer: SigningAccount, receiver_id: AccountId) -> Self {
         Self {
             signer,
             receiver_id,
@@ -42,26 +42,31 @@ impl TxBuilder {
 }
 
 impl TxBuilder {
-    pub fn create_account(self) -> TxBuilder {
+    #[must_use]
+    pub fn create_account(self) -> Self {
         self.add_action(Action::CreateAccount(CreateAccountAction {}))
     }
 
-    pub fn transfer(self, deposit: NearToken) -> TxBuilder {
+    #[must_use]
+    pub fn transfer(self, deposit: NearToken) -> Self {
         self.add_action(Action::Transfer(TransferAction { deposit }))
     }
 
-    pub fn deploy(self, code: Vec<u8>) -> TxBuilder {
+    #[must_use]
+    pub fn deploy(self, code: Vec<u8>) -> Self {
         self.add_action(Action::DeployContract(DeployContractAction { code }))
     }
 
-    pub fn deploy_global(self, code: Vec<u8>, deploy_mode: GlobalContractDeployMode) -> TxBuilder {
+    #[must_use]
+    pub fn deploy_global(self, code: Vec<u8>, deploy_mode: GlobalContractDeployMode) -> Self {
         self.add_action(Action::DeployGlobalContract(DeployGlobalContractAction {
             code,
             deploy_mode,
         }))
     }
 
-    pub fn use_global(self, global_id: GlobalContractIdentifier) -> TxBuilder {
+    #[must_use]
+    pub fn use_global(self, global_id: GlobalContractIdentifier) -> Self {
         self.add_action(Action::UseGlobalContract(
             UseGlobalContractAction {
                 contract_identifier: global_id,
@@ -70,7 +75,8 @@ impl TxBuilder {
         ))
     }
 
-    pub fn add_full_access_key(self, pk: impl Into<PublicKey>) -> TxBuilder {
+    #[must_use]
+    pub fn add_full_access_key(self, pk: impl Into<PublicKey>) -> Self {
         self.add_key(
             pk,
             AccessKey {
@@ -80,11 +86,13 @@ impl TxBuilder {
         )
     }
 
-    pub fn function_call(self, action: impl Into<FunctionCallAction>) -> TxBuilder {
+    #[must_use]
+    pub fn function_call(self, action: impl Into<FunctionCallAction>) -> Self {
         self.add_action(Action::FunctionCall(action.into().into()))
     }
 
-    fn add_key(self, pk: impl Into<PublicKey>, access_key: AccessKey) -> TxBuilder {
+    #[must_use]
+    fn add_key(self, pk: impl Into<PublicKey>, access_key: AccessKey) -> Self {
         self.add_action(Action::AddKey(
             AddKeyAction {
                 public_key: pk.into(),
@@ -94,7 +102,8 @@ impl TxBuilder {
         ))
     }
 
-    fn add_action(mut self, action: Action) -> TxBuilder {
+    #[must_use]
+    fn add_action(mut self, action: Action) -> Self {
         self.actions.push(action);
         self
     }

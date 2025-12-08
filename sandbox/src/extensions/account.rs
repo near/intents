@@ -37,7 +37,7 @@ impl ParentAccountExt for SigningAccount {
         &self,
         name: impl AsRef<str>,
         balance: impl Into<Option<NearToken>>,
-    ) -> anyhow::Result<SigningAccount> {
+    ) -> anyhow::Result<Self> {
         let secret_key = generate_secret_key().unwrap();
         let public_key = secret_key.public_key();
         let subaccount = self.subaccount_id(name);
@@ -53,7 +53,7 @@ impl ParentAccountExt for SigningAccount {
 
         tx.await?;
 
-        Ok(SigningAccount::new(
+        Ok(Self::new(
             Account::new(subaccount, self.network_config().clone()),
             secret_key,
         ))

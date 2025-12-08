@@ -40,7 +40,7 @@ impl SaltManagerExt for SigningAccount {
         self.tx(defuse_contract_id.into())
             .function_call(
                 FnCallBuilder::new("invalidate_salts")
-                    .json_args(&json!({ "salts": salts }))
+                    .json_args(json!({ "salts": salts }))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
             .await?
@@ -53,13 +53,10 @@ impl SaltViewExt for Account {
     async fn is_valid_salt(&self, salt: &Salt) -> anyhow::Result<bool> {
         self.call_view_function_json("is_valid_salt", json!({ "salt": salt }))
             .await
-            .map_err(Into::into)
     }
 
     async fn current_salt(&self) -> anyhow::Result<Salt> {
-        self.call_view_function_json("current_salt", ())
-            .await
-            .map_err(Into::into)
+        self.call_view_function_json("current_salt", ()).await
     }
 }
 

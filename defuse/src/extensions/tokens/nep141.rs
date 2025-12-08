@@ -59,7 +59,6 @@ impl DefuseFtReceiver for SigningAccount {
                 .unwrap_or_default(),
         )
         .await
-        .map_err(Into::into)
     }
 }
 
@@ -76,7 +75,7 @@ impl DefuseFtWithdrawer for SigningAccount {
         self.tx(defuse_id.into())
             .function_call(
                 FnCallBuilder::new("ft_withdraw")
-                    .json_args(&json!({
+                    .json_args(json!({
                         "token": token,
                         "receiver_id": receiver_id,
                         "amount": U128(amount),
@@ -104,7 +103,7 @@ impl DefuseFtWithdrawer for SigningAccount {
         self.tx(defuse_id.into())
             .function_call(
                 FnCallBuilder::new("ft_force_withdraw")
-                    .json_args(&json!({
+                    .json_args(json!({
                         "owner_id": owner_id,
                         "token": token,
                         "receiver_id": receiver_id,

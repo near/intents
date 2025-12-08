@@ -10,14 +10,18 @@ const WNEAR_WASM: &[u8] = include_bytes!(concat!(
 ));
 
 #[allow(async_fn_in_trait)]
-pub trait WNearExt: FtExt {
+pub trait WNearDeployerExt {
     async fn deploy_wrap_near(&self, token: &str) -> anyhow::Result<Account>;
+}
+
+#[allow(async_fn_in_trait)]
+pub trait WNearExt: FtExt {
     async fn near_deposit(&self, wnear_id: &AccountIdRef, amount: NearToken) -> anyhow::Result<()>;
     async fn near_withdraw(&self, wnear_id: &AccountIdRef, amount: NearToken)
     -> anyhow::Result<()>;
 }
 
-impl WNearExt for SigningAccount {
+impl WNearDeployerExt for SigningAccount {
     async fn deploy_wrap_near(&self, token: &str) -> anyhow::Result<Account> {
         let contract = self
             .deploy_contract(token, WNEAR_WASM, Some(FnCallBuilder::new("new")))
@@ -25,7 +29,9 @@ impl WNearExt for SigningAccount {
 
         Ok(contract)
     }
+}
 
+impl WNearExt for SigningAccount {
     async fn near_deposit(&self, wnear_id: &AccountIdRef, amount: NearToken) -> anyhow::Result<()> {
         self.tx(wnear_id.into())
             .function_call(
@@ -43,7 +49,7 @@ impl WNearExt for SigningAccount {
         amount: NearToken,
     ) -> anyhow::Result<()> {
         self.tx(wnear_id.into())
-            .function_call(FnCallBuilder::new("near_withdraw").json_args(&json!({
+            .function_call(FnCallBuilder::new("near_withdraw").json_args(json!({
                 "amount": amount,
             })))
             .await?;

@@ -44,7 +44,7 @@ impl DefuseExt for SigningAccount {
         self.deploy_contract(
             id,
             wasm,
-            Some(FnCallBuilder::new("new").json_args(&json!({
+            Some(FnCallBuilder::new("new").json_args(json!({
                 "config": config,
             }))),
         )

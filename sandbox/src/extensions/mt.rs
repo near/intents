@@ -70,7 +70,7 @@ impl MtExt for SigningAccount {
         self.tx(contract.into())
             .function_call(
                 FnCallBuilder::new("mt_transfer")
-                    .json_args(&json!({
+                    .json_args(json!({
                         "receiver_id": receiver_id,
                         "token_id": token_id.as_ref(),
                         "amount": U128(amount),
@@ -96,7 +96,7 @@ impl MtExt for SigningAccount {
         self.tx(contract.into())
             .function_call(
                 FnCallBuilder::new("mt_transfer_call")
-                    .json_args(&json!({
+                    .json_args(json!({
                         "receiver_id": receiver_id,
                         "token_id": token_id.as_ref(),
                         "amount": U128(amount),
@@ -124,7 +124,7 @@ impl MtExt for SigningAccount {
             .unzip();
 
         self.tx(receiver_id)
-            .function_call(FnCallBuilder::new("mt_on_transfer").json_args(&json!({
+            .function_call(FnCallBuilder::new("mt_on_transfer").json_args(json!({
                 "sender_id": sender_id,
                 "previous_owner_ids": [sender_id],
                 "token_ids": token_ids,
@@ -162,7 +162,7 @@ impl MtViewExt for Account {
     ) -> anyhow::Result<u128> {
         self.call_view_function_json::<U128>(
             "mt_balance_of",
-            &json!({
+            json!({
                 "account_id": account_id,
                 "token_id": token_id,
             }),
@@ -192,7 +192,7 @@ impl MtViewExt for Account {
 
         self.call_view_function_json(
             "mt_tokens",
-            &json!({
+            json!({
                 "from_index": from.map(|v| U128(v.try_into().unwrap())),
                 "limit": limit,
             }),
@@ -225,7 +225,7 @@ impl MtViewExt for Account {
 
         self.call_view_function_json(
             "mt_tokens_for_owner",
-            &json!({
+            json!({
                 "account_id": account_id,
                 "from_index": from.map(|v| U128(v.try_into().unwrap())),
                 "limit": limit,
