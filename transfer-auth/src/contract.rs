@@ -26,21 +26,6 @@ impl Contract {
         Self(ContractStorage::new(state_init))
     }
 
-    pub fn wait_for_authorization(
-        &mut self,
-    ) -> PromiseOrValue<bool> {
-        if env::predecessor_account_id() != self.state_init.querier {
-            env::panic_str("Unauthorized querier");
-        }
-
-        let mut yield_id = LazyYieldId::new();
-        self.fsm.handle(&StateMachineEvent::WaitForAuthorization(&mut yield_id)).unwrap_or_panic_display();
-
-        yield_id
-            .into_promise()
-            .map(PromiseOrValue::Promise)
-            .unwrap_or_else(|| (PromiseOrValue::Value(self.fsm.is_authorized())))
-    }
 
     #[private]
     #[allow(clippy::needless_pass_by_value)]
@@ -92,6 +77,22 @@ impl TransferAuth for Contract {
         Promise::new(env::current_account_id())
             .delete_account(env::signer_account_id()).detach();
 
+    }
+
+    pub fn wait_for_authorization(
+        &mut self,
+    ) -> PromiseOrValue<bool> {
+        if env::predecessor_account_id() != self.state_init.querier {
+            env::panic_str("Unauthorized querier");
+        }
+
+        let mut yield_id = LazyYieldId::new();
+        self.fsm.handle(&StateMachineEvent::WaitForAuthorization(&mut yield_id)).unwrap_or_panic_display();
+
+        yield_id
+            .into_promise()
+            .map(PromiseOrValue::Promise)
+            .unwrap_or_else(|| (PromiseOrValue::Value(self.fsm.is_authorized())))
     }
 
 

@@ -2,6 +2,7 @@ use std::{fs, path::Path, sync::LazyLock};
 
 use defuse_escrow_proxy::{ProxyConfig, RolesConfig};
 use defuse_sandbox::{Account, Sandbox, SigningAccount, TxResult};
+use defuse_transfer_auth::ext::TransferAuthAccountExt;
 use impl_tools::autoimpl;
 use near_sdk::{AccountId, Gas, NearToken, serde_json::json};
 
@@ -19,12 +20,22 @@ pub static ESCROW_PROXY_WASM: LazyLock<Vec<u8>> =
 
 #[autoimpl(Deref using self.sandbox)]
 pub struct BaseEnv {
+    // pub verifier: Account,
+    // pub transfer_auth_global: AccountId,
+
     sandbox: Sandbox,
 }
 
 impl BaseEnv {
     pub async fn new() -> TxResult<Self> {
         let sandbox = Sandbox::new().await;
+
+        // let (verifier, transfer_auth_global) = join!(
+        //     // match len of intents.near
+        //     sandbox.root().deploy_verifier("vrfr", wnear.id().clone()),
+        //     sandbox.root().deploy_transfer_auth("auth"),
+        // );
+        //
 
         Ok(Self {
             sandbox,

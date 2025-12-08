@@ -1,6 +1,7 @@
 mod env;
 use std::time::Duration;
 
+use defuse_transfer_auth::ext::TransferAuthAccountExt;
 use defuse_transfer_auth::storage::{ContractStorage, State};
 use env::{AccountExt, BaseEnv};
 use near_sdk::{
