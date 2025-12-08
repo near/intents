@@ -1,6 +1,6 @@
 pub use near_contract_standards::non_fungible_token::TokenId;
 
-use core::{fmt, str::FromStr};
+use std::{fmt, str::FromStr};
 
 use near_sdk::{AccountId, near};
 use serde_with::{DeserializeFromStr, SerializeDisplay};

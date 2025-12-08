@@ -46,7 +46,7 @@ pub use self::error::TokenIdError;
         EnumString,
         EnumIter,
         SerializeDisplay,
-        DeserializeFromStr,
+        DeserializeFromStr
     ),
     strum(serialize_all = "snake_case"),
     cfg_attr(
@@ -121,16 +121,6 @@ const _: () = {
         r#gen::SchemaGenerator,
         schema::{InstanceType, Schema, SchemaObject},
     };
-
-    #[cfg(not(feature = "bounded"))]
-    fn unwrap<T>(r: T) -> T {
-        r
-    }
-
-    #[cfg(feature = "bounded")]
-    fn unwrap<T>(r: Result<T, TokenIdError>) -> T {
-        r.unwrap()
-    }
 
     impl JsonSchema for TokenId {
         fn schema_name() -> String {

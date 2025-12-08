@@ -6,8 +6,7 @@ mod traits;
 
 use defuse::core::{Nonce, crypto::PublicKey};
 use defuse_serde_utils::base64::AsBase64;
-use near_sdk::{AccountId, AccountIdRef, NearToken};
-use near_workspaces::types::Gas;
+use near_sdk::{AccountId, AccountIdRef, Gas, NearToken};
 use serde_json::json;
 
 pub trait AccountManagerExt {

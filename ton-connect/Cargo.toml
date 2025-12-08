@@ -10,7 +10,7 @@ workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, features = ["serde"] }
-defuse-near-utils = { workspace = true, features = ["digest", "time"] }
+defuse-near-utils = { workspace = true, features = ["digest"] }
 defuse-serde-utils = { workspace = true, features = ["tlb"] }
 
 chrono = { workspace = true, features = ["serde"] }

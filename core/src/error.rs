@@ -1,5 +1,3 @@
-use core::convert::Infallible;
-
 use crate::{
     engine::deltas::InvariantViolated,
     token_id::{TokenId, TokenIdError, nep171::Nep171TokenId},
@@ -77,10 +75,4 @@ pub enum DefuseError {
 
     #[error("maximum attempts to generate a new salt reached")]
     SaltGenerationFailed,
-}
-
-impl From<Infallible> for DefuseError {
-    fn from(value: Infallible) -> Self {
-        match value {}
-    }
 }
