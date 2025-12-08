@@ -180,6 +180,7 @@ mod tests {
         feature = "nep245",
         case("nep245:abc:xyz", "02030000006162630300000078797a")
     )]
+
     fn roundtrip_fixed(#[case] token_id_str: &str, #[case] borsh_expected_hex: &str) {
         let token_id: TokenId = token_id_str.parse().unwrap();
         let borsh_expected = hex::decode(borsh_expected_hex).unwrap();
