@@ -179,34 +179,74 @@ impl MultiTokenReceiver for Contract {
         let token_contract = env::predecessor_account_id();
         let escrow_address = self.derive_deteministic_escrow_swap_id(transfer_msg.escrow_params);
 
-
-        // Call mt_transfer_call on the token contract to forward to escrow
-        let forward_tokens = ext_mt_core::ext(token_contract)
-            .with_attached_deposit(NearToken::from_yoctonear(1))
-            .with_static_gas(Gas::from_tgas(50))
-            .mt_transfer_call(
-                escrow_address,
-                token_ids[0].clone(),
-                amounts[0],
-                None, // approval
-                None, // memo
-                msg,
-            )
-            .then(
-                Self::ext(env::current_account_id())
-                    .with_static_gas(Gas::from_tgas(10))
-                    .resolve_transfer(amounts),
-            );
-
-        PromiseOrValue::Promise(ext_transfer_auth::ext_on(auth_call)
-            .wait_for_authorization()
-            .then(forward_tokens))
-
+        // Chain: state_init → wait_for_authorization → check_and_forward → resolve_transfer
+        // We need a callback to check authorization result before forwarding
+        PromiseOrValue::Promise(
+            ext_transfer_auth::ext_on(auth_call)
+                .wait_for_authorization()
+                .then(
+                    Self::ext(env::current_account_id())
+                        .with_static_gas(Gas::from_tgas(100))
+                        .check_authorization_and_forward(
+                            token_contract,
+                            escrow_address,
+                            token_ids[0].clone(),
+                            amounts[0],
+                            msg,
+                            amounts,
+                        ),
+                ),
+        )
     }
 }
 
 #[near]
 impl Contract {
+    /// Callback after wait_for_authorization - checks result and forwards if authorized
+    #[private]
+    pub fn check_authorization_and_forward(
+        &self,
+        token_contract: AccountId,
+        escrow_address: AccountId,
+        token_id: defuse_nep245::TokenId,
+        amount: U128,
+        msg: String,
+        original_amounts: Vec<U128>,
+    ) -> PromiseOrValue<Vec<U128>> {
+        // Check the result of wait_for_authorization
+        let is_authorized = match env::promise_result(0) {
+            PromiseResult::Successful(value) => {
+                serde_json::from_slice::<bool>(&value).unwrap_or(false)
+            }
+            PromiseResult::Failed => false,
+        };
+
+        if !is_authorized {
+            near_sdk::log!("Authorization failed or timed out, refunding");
+            return PromiseOrValue::Value(original_amounts);
+        }
+
+        // Forward tokens to escrow
+        PromiseOrValue::Promise(
+            ext_mt_core::ext(token_contract)
+                .with_attached_deposit(NearToken::from_yoctonear(1))
+                .with_static_gas(Gas::from_tgas(50))
+                .mt_transfer_call(
+                    escrow_address,
+                    token_id,
+                    amount,
+                    None, // approval
+                    None, // memo
+                    msg,
+                )
+                .then(
+                    Self::ext(env::current_account_id())
+                        .with_static_gas(Gas::from_tgas(10))
+                        .resolve_transfer(original_amounts),
+                ),
+        )
+    }
+
     /// Callback to resolve the escrow transfer result
     #[private]
     pub fn resolve_transfer(&self, original_amounts: Vec<U128>) -> Vec<U128> {

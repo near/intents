@@ -118,37 +118,41 @@ async fn test_deploy_transfer_auth_global_contract() {
     let msg_json = serde_json::to_string(&transfer_msg).unwrap();
 
     // Transfer MT tokens from solver to proxy
-    // The proxy will attempt to do state_init for transfer-auth and call wait_for_authorization
-    // Currently the proxy has a bug with promise chaining, so the call will fail
-    // but tokens should still be refunded to solver
+    // Run transfer and fast_forward concurrently - fast_forward triggers yield promise timeout
     let proxy_transfer_amount = NearToken::from_near(1).as_yoctonear();
-    let used_amounts = solver
-        .mt_transfer_call(
+    let solver_id = solver.id().clone();
+    let proxy_id = proxy.id().clone();
+    let token_id_str = token_id.to_string();
+
+    let (transfer_result, _) = futures::join!(
+        solver.mt_transfer_call(
             &defuse,
-            &proxy.id(),
-            &token_id.to_string(),
+            &proxy_id,
+            &token_id_str,
             proxy_transfer_amount,
             &msg_json,
-        )
-        .await
-        .unwrap();
+        ),
+        sandbox.fast_forward(250)
+    );
+
+    let used_amounts = transfer_result.unwrap();
 
     // mt_transfer_call returns amounts that were "used" (not refunded)
-    // When receiver fails/refunds, the used amount should be 0
+    // When receiver times out/refunds, the used amount should be 0
     assert_eq!(
         used_amounts,
         vec![0],
-        "Used amount should be 0 when transfer fails/refunds"
+        "Used amount should be 0 when transfer times out and refunds"
     );
 
     // Verify solver balance is unchanged after refund
     let final_solver_balance =
-        SigningAccount::mt_balance_of(&defuse, &solver.id(), &token_id.to_string())
+        SigningAccount::mt_balance_of(&defuse, &solver_id, &token_id.to_string())
             .await
             .unwrap();
 
     assert_eq!(
         initial_solver_balance, final_solver_balance,
-        "Solver balance should be unchanged after refund"
+        "Solver balance should be unchanged after timeout refund"
     );
 }
