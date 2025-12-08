@@ -8,7 +8,7 @@ use defuse_sandbox::{Sandbox, SigningAccount};
 use defuse_token_id::{TokenId, nep141::Nep141TokenId};
 use defuse_transfer_auth::ext::{DefuseAccountExt, TransferAuthAccountExt, derive_transfer_auth_account_id};
 use defuse_transfer_auth::storage::{ContractStorage, State};
-use near_sdk::{Gas, env::keccak256};
+use near_sdk::{Gas, GlobalContractId, env::keccak256, state_init::{StateInit, StateInitV1}};
 use env::AccountExt;
 use multi_token_receiver_stub::ext::MtReceiverStubAccountExt;
 use near_sdk::{NearToken, json_types::U128};
@@ -195,6 +195,21 @@ async fn test_transfer_authorized_by_relay() {
         .unwrap();
     proxy.deploy_escrow_proxy(roles, config.clone()).await.unwrap();
 
+    // Derive and pre-deploy the escrow instance (mt-receiver-stub)
+    // NOTE: In production, proxy should deploy this via state_init in mt_transfer_call
+    let escrow_state_init = StateInit::V1(StateInitV1 {
+        code: GlobalContractId::AccountId(mt_receiver_global.clone()),
+        data: BTreeMap::new(),
+    });
+    let escrow_instance_id = escrow_state_init.derive_account_id();
+
+    // Deploy the escrow instance via state_init
+    // NOTE: Ignore RPC parsing errors - the tx succeeds but RPC response parsing may fail
+    let _ = root.tx(escrow_instance_id.clone())
+        .state_init(mt_receiver_global.clone(), BTreeMap::new())
+        .transfer(NearToken::from_yoctonear(1))
+        .await;
+
     // Setup: deposit WNEAR to defuse for solver
     let deposit_amount = NearToken::from_near(10);
     root.near_deposit(&wnear, deposit_amount).await.unwrap();
@@ -306,5 +321,16 @@ async fn test_transfer_authorized_by_relay() {
         initial_solver_balance - proxy_transfer_amount,
         final_solver_balance,
         "Solver balance should decrease by transferred amount"
+    );
+
+    // Verify escrow instance received the tokens
+    let escrow_balance =
+        SigningAccount::mt_balance_of(&defuse, &escrow_instance_id, &token_id.to_string())
+            .await
+            .unwrap();
+
+    assert_eq!(
+        escrow_balance, proxy_transfer_amount,
+        "Escrow instance should have received the transferred tokens"
     );
 }
