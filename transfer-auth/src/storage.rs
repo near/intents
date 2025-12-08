@@ -4,9 +4,8 @@ use crate::error::Error;
 use near_sdk::{AccountId, borsh, near};
 
 // Re-export for backward compatibility
-pub use crate::state_machine::Fsm;
+pub use crate::state_machine::StateMachine;
 
-//TODO: rename
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct State {
@@ -24,7 +23,7 @@ pub struct State {
 pub struct ContractStorage {
     #[serde(flatten)]
     pub state_init: State,
-    pub fsm: Fsm,
+    pub fsm: StateMachine,
 }
 
 impl ContractStorage {
@@ -34,7 +33,7 @@ impl ContractStorage {
     pub fn new(state: State) -> Self {
         Self {
             state_init: state,
-            fsm: Fsm::Idle,
+            fsm: StateMachine::Idle,
         }
     }
 
@@ -47,14 +46,3 @@ impl ContractStorage {
         .into())
     }
 }
-
-//TODO: handle in fsm::finished
-// pub struct CleanupGuard<'a>(&'a mut ContractStorage);
-//
-//
-// impl Drop for CleanupGuard<'_> {
-//     fn drop(&mut self) {
-//         self.0.authorized = false;
-//         self.0.yielded_promise_id = None;
-//     }
-// }

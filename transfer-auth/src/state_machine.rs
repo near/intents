@@ -7,7 +7,7 @@ use crate::event::Event;
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Fsm {
+pub enum StateMachine {
     Idle,
     Authorized,
     AsyncVerification(YieldId),
@@ -16,9 +16,9 @@ pub enum Fsm {
     Finished(bool),
 }
 
-impl Drop for Fsm {
+impl Drop for StateMachine {
     fn drop(&mut self) {
-        if matches!(self, Fsm::Finished(_)) {
+        if matches!(self, StateMachine::Finished(_)) {
             Event::Destroy.emit();
             Promise::new(near_sdk::env::current_account_id()).delete_account(near_sdk::env::signer_account_id()).detach()
         }
@@ -55,57 +55,57 @@ impl LazyYieldId {
     }
 }
 
-pub enum FsmEvent<'a> {
+pub enum StateMachineEvent<'a> {
     Authorize,
     WaitForAuthorization(&'a LazyYieldId),
     NotifyYieldedPromiseResolved,
     Timeout,
 }
 
-impl std::fmt::Display for FsmEvent<'_> {
+impl std::fmt::Display for StateMachineEvent<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            FsmEvent::Authorize => write!(f, "Authorize"),
-            FsmEvent::WaitForAuthorization(_) => write!(f, "WaitForAuthorization"),
-            FsmEvent::NotifyYieldedPromiseResolved => write!(f, "NotifyYieldedPromiseResolved"),
-            FsmEvent::Timeout => write!(f, "Timeout"),
+            StateMachineEvent::Authorize => write!(f, "Authorize"),
+            StateMachineEvent::WaitForAuthorization(_) => write!(f, "WaitForAuthorization"),
+            StateMachineEvent::NotifyYieldedPromiseResolved => write!(f, "NotifyYieldedPromiseResolved"),
+            StateMachineEvent::Timeout => write!(f, "Timeout"),
         }
     }
 }
 
-impl Fsm {
-    pub fn handle(&mut self, event: &FsmEvent<'_>) -> Result<(), FsmError> {
+impl StateMachine {
+    pub fn handle(&mut self, event: &StateMachineEvent<'_>) -> Result<(), FsmError> {
         let next_state = match (&self, event) {
-            (Fsm::Idle, FsmEvent::Authorize) => {
+            (StateMachine::Idle, StateMachineEvent::Authorize) => {
                 Event::Authorized.emit();
-                Fsm::Authorized
+                StateMachine::Authorized
             },
-            (Fsm::Idle, FsmEvent::WaitForAuthorization(yield_id)) => {
+            (StateMachine::Idle, StateMachineEvent::WaitForAuthorization(yield_id)) => {
                 Event::AuthorizationRequested.emit();
-                Fsm::AsyncVerification(yield_id.yield_create())
+                StateMachine::AsyncVerification(yield_id.yield_create())
             }
 
-            (Fsm::Authorized, FsmEvent::WaitForAuthorization(_)) => {
+            (StateMachine::Authorized, StateMachineEvent::WaitForAuthorization(_)) => {
                 Event::AuthorizationRequested.emit();
-                Fsm::Finished(true)
+                StateMachine::Finished(true)
             },
 
-            (Fsm::AsyncVerification(_), FsmEvent::Timeout) => {
+            (StateMachine::AsyncVerification(_), StateMachineEvent::Timeout) => {
                 Event::Timeout.emit();
-                Fsm::Finished(false)
+                StateMachine::Finished(false)
             },
-            (Fsm::AsyncVerification(yield_id), FsmEvent::Authorize) => {
+            (StateMachine::AsyncVerification(yield_id), StateMachineEvent::Authorize) => {
                 Event::Authorized.emit();
                 yield_id.resume(&[]);
-                Fsm::AsyncVerificationSuccessful
+                StateMachine::AsyncVerificationSuccessful
             }
 
-            (Fsm::AsyncVerificationSuccessful, FsmEvent::NotifyYieldedPromiseResolved) => {
-                Fsm::Finished(true)
+            (StateMachine::AsyncVerificationSuccessful, StateMachineEvent::NotifyYieldedPromiseResolved) => {
+                StateMachine::Finished(true)
             }
-            (Fsm::AsyncVerificationSuccessful, FsmEvent::Timeout) => {
+            (StateMachine::AsyncVerificationSuccessful, StateMachineEvent::Timeout) => {
                 Event::Timeout.emit();
-                Fsm::Finished(false)
+                StateMachine::Finished(false)
             },
             (state, event) => {
                 return Err(FsmError::InvalidStateTransition);
@@ -118,7 +118,7 @@ impl Fsm {
     }
 
     pub fn is_authorized(&self) -> bool {
-        matches!(self, Fsm::Finished(true))
+        matches!(self, StateMachine::Finished(true))
     }
 }
 
@@ -128,61 +128,61 @@ mod test {
 
     #[test]
     pub fn authorize_multiple_times_fails() {
-        let mut state_machine = Fsm::Idle;
-        state_machine.handle(&FsmEvent::Authorize).unwrap();
-        state_machine.handle(&FsmEvent::Authorize).unwrap_err();
+        let mut state_machine = StateMachine::Idle;
+        state_machine.handle(&StateMachineEvent::Authorize).unwrap();
+        state_machine.handle(&StateMachineEvent::Authorize).unwrap_err();
     }
 
     #[test]
     pub fn query_multiple_times_fails() {
-        let mut state_machine = Fsm::Idle;
+        let mut state_machine = StateMachine::Idle;
 
         state_machine
-            .handle(&FsmEvent::WaitForAuthorization(&LazyYieldId::new()))
+            .handle(&StateMachineEvent::WaitForAuthorization(&LazyYieldId::new()))
             .unwrap();
         state_machine
-            .handle(&FsmEvent::WaitForAuthorization(&LazyYieldId::new()))
+            .handle(&StateMachineEvent::WaitForAuthorization(&LazyYieldId::new()))
             .unwrap_err();
     }
 
     #[test]
     pub fn authroize_before_query() {
-        let mut state_machine = Fsm::Idle;
+        let mut state_machine = StateMachine::Idle;
 
-        state_machine.handle(&FsmEvent::Authorize).unwrap();
+        state_machine.handle(&StateMachineEvent::Authorize).unwrap();
 
         state_machine
-            .handle(&FsmEvent::WaitForAuthorization(&LazyYieldId::new()))
+            .handle(&StateMachineEvent::WaitForAuthorization(&LazyYieldId::new()))
             .unwrap();
     }
 
     #[test]
     pub fn successful_query_before_authroize() {
-        let mut state_machine = Fsm::Idle;
+        let mut state_machine = StateMachine::Idle;
         let yield_id = LazyYieldId::new();
         state_machine
-            .handle(&FsmEvent::WaitForAuthorization(&yield_id))
+            .handle(&StateMachineEvent::WaitForAuthorization(&yield_id))
             .unwrap();
-        state_machine.handle(&FsmEvent::Authorize).unwrap();
+        state_machine.handle(&StateMachineEvent::Authorize).unwrap();
 
-        assert!(matches!(&state_machine, Fsm::AsyncVerificationSuccessful));
+        assert!(matches!(&state_machine, StateMachine::AsyncVerificationSuccessful));
         state_machine
-            .handle(&FsmEvent::NotifyYieldedPromiseResolved)
+            .handle(&StateMachineEvent::NotifyYieldedPromiseResolved)
             .unwrap();
-        assert_eq!(state_machine, Fsm::Finished(true));
+        assert_eq!(state_machine, StateMachine::Finished(true));
     }
 
     #[test]
     pub fn timeout_query_before_authroize() {
-        let mut state_machine = Fsm::Idle;
+        let mut state_machine = StateMachine::Idle;
         let yield_id = LazyYieldId::new();
         state_machine
-            .handle(&FsmEvent::WaitForAuthorization(&yield_id))
+            .handle(&StateMachineEvent::WaitForAuthorization(&yield_id))
             .unwrap();
-        state_machine.handle(&FsmEvent::Authorize).unwrap();
+        state_machine.handle(&StateMachineEvent::Authorize).unwrap();
 
-        assert!(matches!(&state_machine, Fsm::AsyncVerificationSuccessful));
-        state_machine.handle(&FsmEvent::Timeout).unwrap();
-        assert_eq!(state_machine, Fsm::Finished(false));
+        assert!(matches!(&state_machine, StateMachine::AsyncVerificationSuccessful));
+        state_machine.handle(&StateMachineEvent::Timeout).unwrap();
+        assert_eq!(state_machine, StateMachine::Finished(false));
     }
 }

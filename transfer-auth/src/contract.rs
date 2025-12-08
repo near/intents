@@ -6,8 +6,8 @@ use serde_json::json;
 
 
 use impl_tools::autoimpl;
-use crate::storage::{ContractStorage, State, Fsm};
-use crate::state_machine::{LazyYieldId, FsmEvent};
+use crate::storage::{ContractStorage, State, StateMachine};
+use crate::state_machine::{LazyYieldId, StateMachineEvent};
 use crate::event::Event;
 use crate::TransferAuth;
 use defuse_near_utils::UnwrapOrPanicError;
@@ -34,7 +34,7 @@ impl Contract {
         }
 
         let mut yield_id = LazyYieldId::new();
-        self.fsm.handle(&FsmEvent::WaitForAuthorization(&mut yield_id)).unwrap_or_panic_display();
+        self.fsm.handle(&StateMachineEvent::WaitForAuthorization(&mut yield_id)).unwrap_or_panic_display();
 
         yield_id
             .into_promise()
@@ -50,11 +50,11 @@ impl Contract {
     ) -> PromiseOrValue<bool> {
         match resume_data {
             Ok(_) => {
-                self.fsm.handle(&FsmEvent::NotifyYieldedPromiseResolved).unwrap_or_panic_display();
+                self.fsm.handle(&StateMachineEvent::NotifyYieldedPromiseResolved).unwrap_or_panic_display();
                 Event::Authorized.emit();
             }
             Err(err) => {
-                self.fsm.handle(&FsmEvent::Timeout).unwrap_or_panic_display();
+                self.fsm.handle(&StateMachineEvent::Timeout).unwrap_or_panic_display();
                 Event::Timeout.emit();
             }
         }
@@ -76,7 +76,7 @@ impl AuthCallee for Contract {
             signer_id == self.state_init.auth_callee,
             "Unauthorized auth callee"
         );
-        self.fsm.handle(&FsmEvent::Authorize).unwrap_or_panic_display();
+        self.fsm.handle(&StateMachineEvent::Authorize).unwrap_or_panic_display();
         PromiseOrValue::Value(())
     }
 }
