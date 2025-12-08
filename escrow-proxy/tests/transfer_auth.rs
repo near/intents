@@ -39,7 +39,7 @@ async fn test_deploy_transfer_auth_global_contract() {
     let config = ProxyConfig {
         per_fill_global_contract_id: transfer_auth_global.clone(),
         //NOTE: not really used in this test YET
-        escrow_swap_global_contract_id: transfer_auth_global.clone(),
+        escrow_swap_global_contract_id: mt_receiver_global.clone(),
         auth_contract: defuse.id().clone(),
         auth_collee: relay.id().clone(),
     };
@@ -51,7 +51,4 @@ async fn test_deploy_transfer_auth_global_contract() {
         .unwrap();
     proxy.deploy_escrow_proxy(roles, config).await.unwrap();
 
-    // Verify mt-receiver deployments
-    println!("mt_receiver_global: {mt_receiver_global}");
-    println!("mt_receiver_instance: {mt_receiver_instance}");
 }
