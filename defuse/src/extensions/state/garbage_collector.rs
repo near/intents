@@ -3,6 +3,7 @@ use defuse_sandbox::{SigningAccount, anyhow, tx::FnCallBuilder};
 use defuse_serde_utils::base64::AsBase64;
 use near_sdk::{AccountId, AccountIdRef, NearToken, serde_json::json};
 
+#[allow(async_fn_in_trait)]
 pub trait GarbageCollectorExt {
     async fn cleanup_nonces(
         &self,

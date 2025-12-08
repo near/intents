@@ -10,6 +10,7 @@ use near_sdk::{
 
 use crate::intents::SimulationOutput;
 
+#[allow(async_fn_in_trait)]
 pub trait ExecuteIntentsExt {
     async fn execute_intents(
         &self,
@@ -23,7 +24,7 @@ pub trait ExecuteIntentsExt {
         intents: impl IntoIterator<Item = MultiPayload>,
     ) -> anyhow::Result<SimulationOutput>;
 
-    async fn execute_simulate_intents(
+    async fn simulate_and_execute_intents(
         &self,
         defuse_id: &AccountIdRef,
         intents: impl IntoIterator<Item = MultiPayload>,

@@ -1,6 +1,7 @@
 use defuse_sandbox::{SigningAccount, anyhow, tx::FnCallBuilder};
 use near_sdk::{AccountIdRef, NearToken, PublicKey, serde_json::json};
 
+#[allow(async_fn_in_trait)]
 pub trait RelayerKeysExt {
     async fn add_relayer_key(
         &self,

@@ -5,6 +5,7 @@ use near_sdk::{AccountIdRef, NearToken, json_types::U128, serde_json::json};
 
 use crate::tokens::DepositMessage;
 
+#[allow(async_fn_in_trait)]
 pub trait DefuseFtReceiver {
     async fn defuse_ft_deposit(
         &self,
@@ -15,6 +16,7 @@ pub trait DefuseFtReceiver {
     ) -> anyhow::Result<u128>;
 }
 
+#[allow(async_fn_in_trait)]
 pub trait DefuseFtWithdrawer {
     async fn defuse_ft_withdraw(
         &self,

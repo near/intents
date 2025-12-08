@@ -1,6 +1,7 @@
 use defuse_sandbox::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use near_sdk::{AccountId, AccountIdRef, NearToken, serde_json::json};
 
+#[allow(async_fn_in_trait)]
 pub trait ForceAccountManagerExt {
     async fn force_lock_account(
         &self,
@@ -27,6 +28,7 @@ pub trait ForceAccountManagerExt {
     ) -> anyhow::Result<()>;
 }
 
+#[allow(async_fn_in_trait)]
 pub trait ForceAccountViewExt {
     async fn is_account_locked(&self, account_id: &AccountIdRef) -> anyhow::Result<bool>;
 }

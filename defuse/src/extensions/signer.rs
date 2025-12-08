@@ -140,7 +140,6 @@ impl DefuseSigner for SigningAccount {
                     .unwrap(),
                 ))
                 .into(),
-            _ => unimplemented!(),
         }
     }
 }
@@ -156,52 +155,3 @@ pub enum SigningStandard {
     // RawEd25519,
     // WebAuthn,
 }
-
-// impl<T> DefuseSignerExt for T where T: DefuseSigner + SaltManagerViewExt {}
-
-// pub trait DefuseSignerExt: DefuseSigner + SaltManagerViewExt {
-//     async fn unique_nonce(
-//         &self,
-//         defuse_contract_id: &AccountId,
-//         deadline: Option<Deadline>,
-//     ) -> anyhow::Result<Nonce> {
-//         let deadline = deadline.unwrap_or_else(|| Deadline::timeout(Duration::from_secs(120)));
-
-//         let salt = self
-//             .current_salt()
-//             .await
-//             .expect("should be able to fetch salt");
-
-//         let mut nonce_bytes = [0u8; 15];
-//         TestRng::from_entropy().fill_bytes(&mut nonce_bytes);
-
-//         let salted = SaltedNonce::new(salt, ExpirableNonce::new(deadline, nonce_bytes));
-//         Ok(VersionedNonce::V1(salted).into())
-//     }
-
-//     async fn sign_defuse_payload_default<T>(
-//         &self,
-//         defuse_contract_id: &AccountId,
-//         intents: impl IntoIterator<Item = T>, //Intent>,
-//     ) -> anyhow::Result<MultiPayload>
-//     where
-//         T: Into<Intent>,
-//     {
-//         let deadline = Deadline::timeout(std::time::Duration::from_secs(120));
-//         let nonce = self
-//             .unique_nonce(defuse_contract_id, Some(deadline))
-//             .await?;
-
-//         let defuse_intents = DefuseIntents {
-//             intents: intents.into_iter().map(Into::into).collect(),
-//         };
-
-//         Ok(self.sign_defuse_message(
-//             SigningStandard::default(),
-//             defuse_contract_id,
-//             nonce,
-//             deadline,
-//             defuse_intents,
-//         ))
-//     }
-// }

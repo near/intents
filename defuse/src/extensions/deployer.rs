@@ -3,6 +3,8 @@ use defuse_sandbox::{
 };
 use near_sdk::{AccountIdRef, Gas, NearToken, serde_json::json};
 
+use crate::contract::config::DefuseConfig;
+
 // TODO: make it prettier
 const DEFUSE_WASM: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -14,7 +16,7 @@ const DEFUSE_LEGACY_WASM: &[u8] = include_bytes!(concat!(
     "/../releases/defuse-0.2.10.wasm"
 ));
 
-use crate::contract::config::DefuseConfig;
+#[allow(async_fn_in_trait)]
 pub trait DefuseExt: AccountDeployerExt {
     async fn deploy_defuse(
         &self,
@@ -42,7 +44,6 @@ impl DefuseExt for SigningAccount {
         self.deploy_contract(
             id,
             wasm,
-            NearToken::from_near(100),
             Some(FnCallBuilder::new("new").json_args(&json!({
                 "config": config,
             }))),
@@ -55,7 +56,7 @@ impl DefuseExt for SigningAccount {
             .function_call(
                 FnCallBuilder::new("upgrade")
                     .with_deposit(NearToken::from_yoctonear(1))
-                    .borsh_args(&(DEFUSE_WASM.clone(), None::<Gas>)),
+                    .borsh_args(&(DEFUSE_WASM, None::<Gas>)),
             )
             .await?;
 

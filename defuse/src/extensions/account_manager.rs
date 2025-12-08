@@ -3,7 +3,8 @@ use defuse_sandbox::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use defuse_serde_utils::base64::AsBase64;
 use near_sdk::{AccountIdRef, Gas, NearToken, serde_json::json};
 
-pub trait AccountManagerExt {
+#[allow(async_fn_in_trait)]
+pub trait AccountManagerExt: AccountViewExt {
     async fn add_public_key(
         &self,
         defuse_contract_id: &AccountIdRef,
@@ -22,6 +23,7 @@ pub trait AccountManagerExt {
     ) -> anyhow::Result<()>;
 }
 
+#[allow(async_fn_in_trait)]
 pub trait AccountViewExt {
     async fn has_public_key(
         &self,

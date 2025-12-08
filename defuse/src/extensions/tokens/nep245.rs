@@ -5,6 +5,7 @@ use defuse_sandbox::{
 };
 use near_sdk::{AccountIdRef, NearToken, json_types::U128, serde_json::json};
 
+#[allow(async_fn_in_trait)]
 pub trait DefuseMtDepositer {
     async fn defuse_mt_deposit(
         &self,
@@ -15,6 +16,7 @@ pub trait DefuseMtDepositer {
     ) -> anyhow::Result<Vec<u128>>;
 }
 
+#[allow(async_fn_in_trait)]
 pub trait DefuseMtWithdrawer {
     async fn defuse_mt_withdraw(
         &self,
