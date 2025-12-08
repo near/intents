@@ -22,7 +22,7 @@ pub static ESCROW_PROXY_WASM: LazyLock<Vec<u8>> =
 pub struct BaseEnv {
     // pub verifier: Account,
     // pub transfer_auth_global: AccountId,
-
+    //
     sandbox: Sandbox,
 }
 
@@ -30,7 +30,7 @@ impl BaseEnv {
     pub async fn new() -> TxResult<Self> {
         let sandbox = Sandbox::new().await;
 
-        // let (verifier, transfer_auth_global) = join!(
+        // let (verifier, transfer_auth_global) = futures::join!(
         //     // match len of intents.near
         //     sandbox.root().deploy_verifier("vrfr", wnear.id().clone()),
         //     sandbox.root().deploy_transfer_auth("auth"),
