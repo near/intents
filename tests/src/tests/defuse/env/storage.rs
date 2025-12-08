@@ -98,9 +98,7 @@ impl Env {
 
     async fn apply_token(&self, token_id: &Nep141TokenId) -> Result<()> {
         let root = self.sandbox.root_account();
-        let token_name = self
-            .poa_factory
-            .subaccount_name(&token_id.clone().into_contract_id());
+        let token_name = self.poa_factory.subaccount_name(&token_id.contract_id);
 
         let token = root
             .poa_factory_deploy_token(self.poa_factory.id(), &token_name, None)
@@ -164,9 +162,7 @@ impl Env {
 
     async fn apply_token_balance(&self, acc: &Account, data: &AccountWithTokens) -> Result<()> {
         try_join_all(data.tokens.iter().map(|(token_id, balance)| async {
-            let token_id = token_id.clone().into_contract_id();
-
-            self.defuse_ft_deposit_to(&token_id, *balance, acc.id(), None)
+            self.defuse_ft_deposit_to(&token_id.contract_id, *balance, acc.id(), None)
                 .await
         }))
         .await?;

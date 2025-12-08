@@ -39,7 +39,7 @@ fn simple() {
     let [src_escrow_token_id, dst_escrow_token_id] =
         [&src_verifier_token_id, &dst_verifier_token_id]
             .map(ToString::to_string)
-            .map(|token_id| Nep245TokenId::new(verifier.clone(), token_id).unwrap())
+            .map(|token_id| Nep245TokenId::new(verifier.clone(), token_id))
             .map(Into::<TokenId>::into);
 
     let params = Params {

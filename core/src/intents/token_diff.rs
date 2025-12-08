@@ -229,12 +229,12 @@ mod tests {
         #[values(
             (Nep141TokenId::new("ft.near".parse().unwrap()).into(), 1_000_000),
             (Nep141TokenId::new("ft.near".parse().unwrap()).into(), -1_000_000),
-            (Nep171TokenId::new("nft.near".parse().unwrap(), "1".to_string()).unwrap().into(), 1),
-            (Nep171TokenId::new("nft.near".parse().unwrap(), "1".to_string()).unwrap().into(), -1),
-            (Nep245TokenId::new("mt.near".parse().unwrap(), "ft1".to_string()).unwrap().into(), 1_000_000),
-            (Nep245TokenId::new("mt.near".parse().unwrap(), "ft1".to_string()).unwrap().into(), -1_000_000),
-            (Nep245TokenId::new("mt.near".parse().unwrap(), "nft1".to_string()).unwrap().into(), 1),
-            (Nep245TokenId::new("mt.near".parse().unwrap(), "nft1".to_string()).unwrap().into(), -1),
+            (Nep171TokenId::new("nft.near".parse().unwrap(), "1".to_string()).into(), 1),
+            (Nep171TokenId::new("nft.near".parse().unwrap(), "1".to_string()).into(), -1),
+            (Nep245TokenId::new("mt.near".parse().unwrap(), "ft1".to_string()).into(), 1_000_000),
+            (Nep245TokenId::new("mt.near".parse().unwrap(), "ft1".to_string()).into(), -1_000_000),
+            (Nep245TokenId::new("mt.near".parse().unwrap(), "nft1".to_string()).into(), 1),
+            (Nep245TokenId::new("mt.near".parse().unwrap(), "nft1".to_string()).into(), -1),
         )]
         token_delta: (TokenId, i128),
         #[values(

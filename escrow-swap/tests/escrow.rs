@@ -55,9 +55,7 @@ async fn partial_fills() {
             .map(TokenId::from);
 
     let [src_token, dst_token] = [&src_verifier_asset, &dst_verifier_asset]
-        .map(|token_id| {
-            Nep245TokenId::new(env.verifier.id().clone(), token_id.to_string()).unwrap()
-        })
+        .map(|token_id| Nep245TokenId::new(env.verifier.id().clone(), token_id.to_string()))
         .map(Into::<TokenId>::into);
 
     let price: Price = "2".parse().unwrap();

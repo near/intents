@@ -291,9 +291,8 @@ async fn simulate_nft_withdraw_intent() {
         .await
         .unwrap();
 
-    let nft_token_id = TokenId::from(
-        Nep171TokenId::new(nft_contract.id().to_owned(), DUMMY_NFT_ID.to_string()).unwrap(),
-    );
+    let nft_token_id: TokenId =
+        Nep171TokenId::new(nft_contract.id().to_owned(), DUMMY_NFT_ID.to_string()).into();
 
     user1
         .nft_transfer_call(
@@ -426,8 +425,8 @@ async fn simulate_mt_withdraw_intent() {
         .unwrap();
 
     // Verify tokens are now in defuse2 as NEP-245 tokens
-    let nep245_token_id =
-        TokenId::from(Nep245TokenId::new(env.defuse.id().to_owned(), ft1_id.to_string()).unwrap());
+    let nep245_token_id: TokenId =
+        Nep245TokenId::new(env.defuse.id().to_owned(), ft1_id.to_string()).into();
 
     assert_eq!(
         defuse2

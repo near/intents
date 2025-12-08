@@ -11,7 +11,7 @@ use defuse_core::{
     intents::tokens::NftWithdraw,
     token_id::{nep141::Nep141TokenId, nep171::Nep171TokenId},
 };
-use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError};
+use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic};
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::{
     non_fungible_token::{self, core::ext_nft_core},
@@ -64,7 +64,7 @@ impl Contract {
         self.withdraw(
             &owner_id,
             iter::once((
-                Nep171TokenId::new(withdraw.token.clone(), withdraw.token_id.clone())?.into(),
+                Nep171TokenId::new(withdraw.token.clone(), withdraw.token_id.clone()).into(),
                 1,
             ))
             .chain(withdraw.storage_deposit.map(|amount| {
@@ -182,13 +182,13 @@ impl NonFungibleTokenWithdrawResolver for Contract {
             PromiseResult::Failed => is_call,
         };
 
-        let token_id = Nep171TokenId::new(token, token_id)
-            .unwrap_or_panic_display()
-            .into();
-
         if !used {
-            self.deposit(sender_id, [(token_id, 1)], Some("refund"))
-                .unwrap_or_panic();
+            self.deposit(
+                sender_id,
+                [(Nep171TokenId::new(token, token_id).into(), 1)],
+                Some("refund"),
+            )
+            .unwrap_or_panic();
         }
 
         used

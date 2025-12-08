@@ -2,7 +2,7 @@ pub use near_contract_standards::non_fungible_token::TokenId;
 
 use core::{fmt, str::FromStr};
 
-use near_sdk::{AccountId, AccountIdRef, near};
+use near_sdk::{AccountId, near};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 #[cfg(any(feature = "arbitrary", test))]
@@ -20,54 +20,24 @@ pub struct Nep171TokenId {
         any(feature = "arbitrary", test),
         arbitrary(with = As::<ArbitraryAccountId>::arbitrary),
     )]
-    contract_id: AccountId,
+    pub contract_id: AccountId,
 
-    #[cfg_attr(
-        all(feature = "bounded", any(feature = "arbitrary", test)),
-        arbitrary(with = As::<::arbitrary_with::LimitLen<{crate::MAX_ALLOWED_TOKEN_ID_LEN}>>::arbitrary),
-    )]
-    nft_token_id: TokenId,
+    pub nft_token_id: TokenId,
 }
 
 impl Nep171TokenId {
-    #[cfg(feature = "bounded")]
-    pub fn new(contract_id: AccountId, nft_token_id: TokenId) -> Result<Self, TokenIdError> {
-        if nft_token_id.len() > crate::MAX_ALLOWED_TOKEN_ID_LEN {
-            return Err(TokenIdError::TokenIdTooLarge(nft_token_id.len()));
-        }
-
-        Ok(Self {
-            contract_id,
-            nft_token_id,
-        })
-    }
-
-    #[cfg(not(feature = "bounded"))]
-    pub fn new(contract_id: AccountId, nft_token_id: TokenId) -> Self {
+    pub const fn new(contract_id: AccountId, nft_token_id: TokenId) -> Self {
         Self {
             contract_id,
             nft_token_id,
         }
-    }
-
-    #[allow(clippy::missing_const_for_fn)]
-    pub fn contract_id(&self) -> &AccountIdRef {
-        &self.contract_id
-    }
-
-    pub const fn nft_token_id(&self) -> &TokenId {
-        &self.nft_token_id
-    }
-
-    pub fn into_contract_id_and_nft_token_id(self) -> (AccountId, TokenId) {
-        (self.contract_id, self.nft_token_id)
     }
 }
 
 impl std::fmt::Debug for Nep171TokenId {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}", self.contract_id(), self.nft_token_id())
+        write!(f, "{}:{}", &self.contract_id, &self.nft_token_id)
     }
 }
 
@@ -85,11 +55,7 @@ impl FromStr for Nep171TokenId {
         let (contract_id, token_id) = data
             .split_once(':')
             .ok_or(strum::ParseError::VariantNotFound)?;
-        let r = Self::new(contract_id.parse()?, token_id.to_string());
-        #[cfg(not(feature = "bounded"))]
-        return Ok(r);
-        #[cfg(feature = "bounded")]
-        return r;
+        Ok(Self::new(contract_id.parse()?, token_id.to_string()))
     }
 }
 
@@ -103,10 +69,7 @@ impl From<&Nep171TokenId> for TokenIdType {
 #[cfg(test)]
 mod tests {
     use super::*;
-
     use defuse_test_utils::random::make_arbitrary;
-    #[cfg(feature = "bounded")]
-    use defuse_test_utils::random::random_bytes;
     use rstest::rstest;
 
     #[rstest]
@@ -115,23 +78,5 @@ mod tests {
         let s = token_id.to_string();
         let got: Nep171TokenId = s.parse().unwrap();
         assert_eq!(got, token_id);
-    }
-
-    #[cfg(feature = "bounded")]
-    #[rstest]
-    fn token_id_length(random_bytes: Vec<u8>) {
-        use arbitrary::Unstructured;
-        use arbitrary_with::UnstructuredExt;
-
-        let mut u = Unstructured::new(&random_bytes);
-        let contract_id = u.arbitrary_as::<_, ArbitraryAccountId>().unwrap();
-        let token_id: String = u.arbitrary().unwrap();
-
-        let r = Nep171TokenId::new(contract_id, token_id.clone());
-        if token_id.len() > crate::MAX_ALLOWED_TOKEN_ID_LEN {
-            assert!(matches!(r.unwrap_err(), TokenIdError::TokenIdTooLarge(_)));
-        } else {
-            r.unwrap();
-        }
     }
 }
