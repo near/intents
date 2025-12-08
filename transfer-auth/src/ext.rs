@@ -1,9 +1,9 @@
 use std::{fs, path::Path, sync::LazyLock};
 
 use crate::storage::{ContractStorage, State};
+use serde_json::json;
 use defuse_sandbox::{
-    SigningAccount,
-    api::types::transaction::actions::GlobalContractDeployMode,
+    api::types::transaction::actions::GlobalContractDeployMode, Account, SigningAccount
 };
 use near_sdk::{
     AccountId, Gas, NearToken,
@@ -19,6 +19,9 @@ fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
     fs::read(filename.clone()).expect(&format!("file {filename:?} should exists"))
 }
 
+pub static WNEAR_WASM: LazyLock<Vec<u8>> =
+    LazyLock::new(|| read_wasm("../tests/contracts/target/wnear"));
+pub static VERIFIER_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("defuse"));
 pub static TRANSFER_AUTH_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("defuse_transfer_auth"));
 
@@ -88,5 +91,57 @@ impl TransferAuthAccountExt for SigningAccount {
                 NearToken::from_near(0),
             )
             .await?)
+    }
+}
+
+
+// TODO: move to defuse
+pub trait DefuseAccountExt {
+    async fn deploy_wnear(&self, name: impl AsRef<str>) -> Account;
+    async fn deploy_verifier(&self, name: impl AsRef<str>, wnear_id: AccountId) -> Account;
+}
+
+impl DefuseAccountExt for SigningAccount {
+    async fn deploy_wnear(&self, name: impl AsRef<str>) -> Account {
+        let account = self.subaccount(name);
+
+        self.tx(account.id().clone())
+            .create_account()
+            .transfer(NearToken::from_near(20))
+            .deploy(WNEAR_WASM.clone())
+            .function_call_json::<()>("new", (), Gas::from_tgas(50), NearToken::from_yoctonear(0))
+            .no_result()
+            .await
+            .unwrap();
+
+        account
+    }
+
+    async fn deploy_verifier(&self, name: impl AsRef<str>, wnear_id: AccountId) -> Account {
+        let account = self.subaccount(name);
+
+        self.tx(account.id().clone())
+            .create_account()
+            .transfer(NearToken::from_near(20))
+            .deploy(VERIFIER_WASM.clone())
+            .function_call_json::<()>(
+                "new",
+                json!({
+                    "config": json!({
+                        "wnear_id": wnear_id,
+                        "fees": {
+                            "fee": defuse_fees::Pips::from_percent(1).unwrap(),
+                            "fee_collector": self.id().clone(),
+                        },
+                    }),
+                }),
+                Gas::from_tgas(50),
+                NearToken::from_yoctonear(0),
+            )
+            .no_result()
+            .await
+            .unwrap();
+
+        account
     }
 }
