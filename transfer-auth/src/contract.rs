@@ -59,7 +59,6 @@ impl Contract {
         PromiseOrValue::Value(self.fsm.is_authorized())
     }
 
-    //TODO: allow proxy to delete contract on demand
 }
 
 #[near]
