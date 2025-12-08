@@ -3,7 +3,7 @@ use defuse_sandbox::{
     Account, SigningAccount, anyhow, extensions::account::AccountDeployerExt, tx::FnCallBuilder,
 };
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
-use near_sdk::{AccountId, NearToken, json_types::U128, serde_json::json};
+use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128, serde_json::json};
 use std::collections::{HashMap, HashSet};
 
 use crate::contract::{POA_TOKEN_INIT_BALANCE, Role};
@@ -15,7 +15,7 @@ const POA_FACTORY_WASM: &[u8] = include_bytes!(concat!(
 ));
 
 #[allow(async_fn_in_trait)]
-pub trait PoAFactoryExt {
+pub trait PoAFactoryExt: PoAFactoryViewExt {
     async fn deploy_poa_factory(
         &self,
         name: &str,
@@ -25,22 +25,22 @@ pub trait PoAFactoryExt {
     ) -> anyhow::Result<Account>;
 
     #[track_caller]
-    fn token_id(token: &str, factory: &AccountId) -> AccountId {
+    fn token_id(token: &str, factory: &AccountIdRef) -> AccountId {
         format!("{token}.{factory}").parse().unwrap()
     }
 
     async fn poa_factory_deploy_token(
         &self,
-        factory: &AccountId,
+        factory: &AccountIdRef,
         token: &str,
         metadata: impl Into<Option<FungibleTokenMetadata>>,
-    ) -> anyhow::Result<AccountId>;
+    ) -> anyhow::Result<Account>;
 
     async fn poa_factory_ft_deposit(
         &self,
-        factory: &AccountId,
+        factory: &AccountIdRef,
         token: &str,
-        owner_id: &AccountId,
+        owner_id: &AccountIdRef,
         amount: u128,
         msg: Option<String>,
         memo: Option<String>,
@@ -51,7 +51,7 @@ pub trait PoAFactoryExt {
 pub trait PoAFactoryViewExt {
     async fn poa_tokens(
         &self,
-        poa_factory: &AccountId,
+        poa_factory: &AccountIdRef,
     ) -> anyhow::Result<HashMap<String, AccountId>>;
 }
 
@@ -78,7 +78,6 @@ impl PoAFactoryExt for SigningAccount {
         self.deploy_contract(
             name,
             POA_FACTORY_WASM,
-            NearToken::from_near(100),
             Some(FnCallBuilder::new("new").json_args(&args)),
         )
         .await
@@ -86,11 +85,11 @@ impl PoAFactoryExt for SigningAccount {
 
     async fn poa_factory_deploy_token(
         &self,
-        factory: &AccountId,
+        factory: &AccountIdRef,
         token: &str,
         metadata: impl Into<Option<FungibleTokenMetadata>>,
-    ) -> anyhow::Result<AccountId> {
-        self.tx(factory.clone())
+    ) -> anyhow::Result<Account> {
+        self.tx(factory.into())
             .function_call(
                 FnCallBuilder::new("deploy_token")
                     .json_args(&json!({
@@ -101,19 +100,22 @@ impl PoAFactoryExt for SigningAccount {
             )
             .await?;
 
-        Ok(Self::token_id(token, factory))
+        Ok(Account::new(
+            Self::token_id(token, factory),
+            self.network_config().clone(),
+        ))
     }
 
     async fn poa_factory_ft_deposit(
         &self,
-        factory: &AccountId,
+        factory: &AccountIdRef,
         token: &str,
-        owner_id: &AccountId,
+        owner_id: &AccountIdRef,
         amount: u128,
         msg: Option<String>,
         memo: Option<String>,
     ) -> anyhow::Result<()> {
-        self.tx(factory.clone())
+        self.tx(factory.into())
             .function_call(
                 FnCallBuilder::new("ft_deposit")
                     .json_args(&json!({
@@ -134,9 +136,9 @@ impl PoAFactoryExt for SigningAccount {
 impl PoAFactoryViewExt for SigningAccount {
     async fn poa_tokens(
         &self,
-        poa_factory: &AccountId,
+        poa_factory: &AccountIdRef,
     ) -> anyhow::Result<HashMap<String, AccountId>> {
-        let account = Account::new(poa_factory.clone(), self.network_config().clone());
+        let account = Account::new(poa_factory.into(), self.network_config().clone());
         account
             .call_view_function_json("tokens", ())
             .await

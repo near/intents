@@ -1168,6 +1168,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "defuse-crypto",
+ "defuse-nep245",
  "defuse-randomness",
  "futures",
  "impl-tools",
@@ -1243,7 +1244,6 @@ dependencies = [
  "near-contract-standards",
  "near-crypto 0.30.1",
  "near-sdk",
- "near-workspaces",
  "rstest",
  "serde_json",
  "strum 0.27.1",
