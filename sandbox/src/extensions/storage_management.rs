@@ -1,5 +1,5 @@
 use near_contract_standards::storage_management::StorageBalance;
-use near_sdk::{AccountId, AccountIdRef, NearToken, serde_json::json};
+use near_sdk::{AccountIdRef, NearToken, serde_json::json};
 
 use crate::{Account, SigningAccount, tx::FnCallBuilder};
 
@@ -8,7 +8,7 @@ pub trait StorageManagementExt {
     async fn storage_deposit(
         &self,
         contract_id: &AccountIdRef,
-        account_id: Option<&AccountId>,
+        account_id: Option<&AccountIdRef>,
         deposit: NearToken,
     ) -> anyhow::Result<StorageBalance>;
 
@@ -37,7 +37,7 @@ impl StorageManagementExt for SigningAccount {
     async fn storage_deposit(
         &self,
         contract_id: &AccountIdRef,
-        account_id: Option<&AccountId>,
+        account_id: Option<&AccountIdRef>,
         deposit: NearToken,
     ) -> anyhow::Result<StorageBalance> {
         self.tx(contract_id.into())

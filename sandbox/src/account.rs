@@ -6,13 +6,13 @@ use near_api::{
     signer::generate_secret_key,
 };
 use near_sdk::{
-    AccountId, NearToken,
+    AccountId, AccountIdRef, NearToken,
     serde::{Serialize, de::DeserializeOwned},
 };
 
 use crate::tx::TxBuilder;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Account {
     account_id: AccountId,
     network_config: NetworkConfig,
@@ -115,5 +115,14 @@ impl SigningAccount {
         self.tx(account.id().clone()).transfer(deposit).await?;
 
         Ok(account)
+    }
+
+    pub async fn transfer_near(
+        &self,
+        receiver_id: &AccountIdRef,
+        deposit: NearToken,
+    ) -> anyhow::Result<()> {
+        self.tx(receiver_id.into()).transfer(deposit).await?;
+        Ok(())
     }
 }

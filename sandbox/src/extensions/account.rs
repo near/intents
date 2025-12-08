@@ -3,8 +3,9 @@ use near_sdk::{AccountId, AccountIdRef, NearToken};
 
 use crate::{Account, SigningAccount};
 
-#[allow(async_fn_in_trait)]
-pub trait ParentAccountExt {
+const CONTRACT_DEPOSIT: NearToken = NearToken::from_near(100);
+
+pub trait ParentAccountViewExt {
     fn root_id(&self) -> &AccountIdRef;
 
     fn subaccount_id(&self, name: impl AsRef<str>) -> AccountId {
@@ -20,7 +21,10 @@ pub trait ParentAccountExt {
             .unwrap()
             .to_string()
     }
+}
 
+#[allow(async_fn_in_trait)]
+pub trait ParentAccountExt: ParentAccountViewExt {
     async fn create_subaccount(
         &self,
         name: impl AsRef<str>,
@@ -29,10 +33,6 @@ pub trait ParentAccountExt {
 }
 
 impl ParentAccountExt for SigningAccount {
-    fn root_id(&self) -> &AccountIdRef {
-        self.id()
-    }
-
     async fn create_subaccount(
         &self,
         name: impl AsRef<str>,
@@ -60,13 +60,24 @@ impl ParentAccountExt for SigningAccount {
     }
 }
 
+impl ParentAccountViewExt for Account {
+    fn root_id(&self) -> &AccountIdRef {
+        self.id()
+    }
+}
+
+impl ParentAccountViewExt for SigningAccount {
+    fn root_id(&self) -> &AccountIdRef {
+        self.id()
+    }
+}
+
 #[allow(async_fn_in_trait)]
 pub trait AccountDeployerExt: ParentAccountExt {
     async fn deploy_contract(
         &self,
         name: impl AsRef<str>,
         wasm: impl Into<Vec<u8>>,
-        deposit: NearToken,
         init_args: Option<impl Into<FunctionCallAction>>,
     ) -> anyhow::Result<Account>;
 }
@@ -76,7 +87,6 @@ impl AccountDeployerExt for SigningAccount {
         &self,
         name: impl AsRef<str>,
         wasm: impl Into<Vec<u8>>,
-        deposit: NearToken,
         init_args: Option<impl Into<FunctionCallAction>>,
     ) -> anyhow::Result<Account> {
         let subaccount = self.subaccount_id(name);
@@ -85,7 +95,7 @@ impl AccountDeployerExt for SigningAccount {
         let mut tx = self
             .tx(subaccount.clone())
             .create_account()
-            .transfer(deposit)
+            .transfer(CONTRACT_DEPOSIT)
             .deploy(wasm.into());
 
         if let Some(args) = init_args {
