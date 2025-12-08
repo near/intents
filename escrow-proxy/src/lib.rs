@@ -10,7 +10,7 @@ use near_sdk::{
     env::keccak256,
     state_init::{StateInit, StateInitV1},
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use defuse_auth_call::AuthCallee;
 use defuse_crypto::{Curve, Ed25519, PublicKey, Signature};
@@ -27,11 +27,11 @@ use defuse_transfer_auth::storage::{ContractStorage, State};
 #[derive(AccessControlRole, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Role {
     /// Can upgrade the contract
-    Owner,
-    /// Can call cancel on the proxy contract (forwarded to escrow)
+    DAO,
+    /// Can upgrade the contract
+    Upgrader,
+    /// Can call cancel on the proxy contracts
     Canceller,
-    /// Can rotate the relay public key
-    KeyManager,
 }
 
 pub use message::*;
@@ -45,13 +45,20 @@ pub struct RolesConfig {
     pub grantees: HashMap<Role, HashSet<AccountId>>,
 }
 
+#[near(serializers = [borsh, json])]
+#[derive(Debug, Clone)]
+pub struct ProxyConfig{
+    pub per_fill_global_contract_id: AccountId,
+    pub escrow_swap_global_contract_id: AccountId,
+    pub auth_contract: AccountId,
+    pub auth_collee: AccountId,
+}
+
 #[access_control(role_type(Role))]
 #[near(contract_state)]
 #[derive(PanicOnDefault)]
 pub struct Contract {
-    // pub relay_public_key: PublicKey,
-    pub per_fill_global_contract_id: AccountId,
-    pub escrow_swap_global_contract_id: AccountId,
+    config: ProxyConfig,
 }
 
 impl Contract {
@@ -60,17 +67,18 @@ impl Contract {
         solver_id: AccountId,
         msg_hash: [u8; 32],
     ) -> AccountId {
+
         let state = State {
             solver_id,
-            escrow_contract_id: todo!(),
-            auth_contract: todo!(),
-            auth_callee: todo!(),
-            querier: todo!(),
+            escrow_contract_id: self.config.escrow_swap_global_contract_id.clone() ,
+            auth_contract: self.config.auth_contract.clone(),
+            auth_callee: self.config.auth_collee.clone(),
+            querier: env::current_account_id(),
             msg_hash,
         };
 
         let state_init = StateInit::V1(StateInitV1 {
-            code: near_sdk::GlobalContractId::AccountId(self.per_fill_global_contract_id.clone()),
+            code: near_sdk::GlobalContractId::AccountId(self.config.per_fill_global_contract_id.clone()),
             //TODO: get rid of unwrap
             data: ContractStorage::init_state(state).unwrap(),
         });
@@ -78,8 +86,13 @@ impl Contract {
         state_init.derive_account_id()
     }
 
-    fn derive_deteministic_escrow_swap_id(&self) -> AccountId {
-        unimplemented!()
+    fn derive_deteministic_escrow_swap_id(&self, params: EscrowParams) -> AccountId {
+        let state_init = StateInit::V1(StateInitV1 {
+            code: near_sdk::GlobalContractId::AccountId(self.config.escrow_swap_global_contract_id.clone()),
+            //TODO: use helper methods from escrow proxy
+            data: BTreeMap::new()
+        });
+        state_init.derive_account_id()
     }
 }
 
@@ -90,12 +103,10 @@ impl Contract {
     #[allow(clippy::use_self)]
     pub fn new(
         roles: RolesConfig,
-        per_fill_global_contract_id: AccountId,
-        escrow_swap_global_contract_id: AccountId,
+        config: ProxyConfig
     ) -> Contract {
         let mut contract = Self {
-            per_fill_global_contract_id,
-            escrow_swap_global_contract_id,
+            config
         };
         contract.init_acl(roles);
         contract
@@ -138,31 +149,20 @@ impl MultiTokenReceiver for Contract {
         //can do the same when creating Auth intent with state init
         //NOTE: its unique because of salt
         let hash: [u8; 32] = keccak256(msg.as_bytes()).try_into().unwrap();
+        let transfer_msg: TransferMessage = msg.parse().unwrap();
+
         let auth_contract_id = self.derive_deteministic_escrow_per_fill_id(sender_id, hash);
 
         let _ = previous_owner_ids;
 
-        // 4. Validate single token transfer
         if token_ids.len() != 1 || amounts.len() != 1 {
             near_sdk::log!("Only single token transfers supported");
             return PromiseOrValue::Value(amounts);
         }
 
-        // if token_ids[0] != transfer_msg.authorization.token {
-        //     near_sdk::log!("Token mismatch");
-        //     return PromiseOrValue::Value(amounts);
-        // }
-        //
-        // TODO Phase 2: Verify token_ids[0] matches authorization.token
-        // TODO Phase 2: Verify and commit nonce
-
-        // 6. Forward tokens to escrow via mt_transfer_call
         let token_contract = env::predecessor_account_id();
-        let escrow_address = self.derive_deteministic_escrow_swap_id();
+        let escrow_address = self.derive_deteministic_escrow_swap_id(transfer_msg.escrow_params);
 
-        // // Build escrow message with fill parameters
-        // let escrow_msg = serde_json::to_string(&transfer_msg.escrow_params)
-        //     .expect("escrow_params serialization should not fail");
 
         // Call mt_transfer_call on the token contract to forward to escrow
         PromiseOrValue::Promise(
@@ -175,10 +175,6 @@ impl MultiTokenReceiver for Contract {
                     amounts[0],
                     None, // approval
                     None, // memo
-                    //TODO: will the hashes still be fine when serializing and desrializzint??
-                    //NOTE: for now lets pass origin message nad maybe have it aligned with
-                    //escrow-swap so that it ignores extra parameters, so we dont have to serialize
-                    //& ddeserialize
                     msg,
                 )
                 .then(

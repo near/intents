@@ -3,7 +3,7 @@
 use defuse_deadline::Deadline;
 use defuse_fees::Pips;
 use defuse_token_id::TokenId;
-use near_sdk::Gas;
+use near_sdk::{borsh, CryptoHash, Gas};
 use near_sdk::{AccountId, json_types::U128, near};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -130,4 +130,11 @@ pub struct Params {
 
     // #[serde_as(as = "Hex")]
     pub salt: [u8; 32],
+}
+
+impl Params {
+    fn hash(&self) -> CryptoHash {
+        // TODO: prefix?
+        near_sdk::env::keccak256_array(borsh::to_vec(self).unwrap_or_else(|_| unreachable!()))
+    }
 }
