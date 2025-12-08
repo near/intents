@@ -6,7 +6,7 @@ use near_sdk::{AccountIdRef, Gas, NearToken, serde_json::json};
 use crate::contract::config::DefuseConfig;
 
 // TODO: make it prettier
-const DEFUSE_WASM: &[u8] = include_bytes!(concat!(
+pub const DEFUSE_WASM: &[u8] = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/../releases/defuse-0.4.0.wasm"
 ));

@@ -474,7 +474,7 @@ async fn solver_user_closure(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCE
     .unwrap();
 
     // execute intents
-    env.execute_intents(env.defuse.id(), [solver_commitment, user_commitment])
+    env.simulate_and_execute_intents(env.defuse.id(), [solver_commitment, user_commitment])
         .await
         .unwrap();
 

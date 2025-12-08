@@ -50,7 +50,7 @@ async fn transfer_intent() {
         .await
         .unwrap();
 
-    env.execute_intents(env.defuse.id(), [initial_transfer_payload])
+    env.simulate_and_execute_intents(env.defuse.id(), [initial_transfer_payload])
         .await
         .unwrap();
 
@@ -124,7 +124,7 @@ async fn transfer_intent_to_defuse() {
             .await
             .unwrap();
 
-        env.execute_intents(env.defuse.id(), [transfer_payload])
+        env.simulate_and_execute_intents(env.defuse.id(), [transfer_payload])
             .await
             .expect_err("Exceeded the prepaid gas");
     }
@@ -150,7 +150,7 @@ async fn transfer_intent_to_defuse() {
 
         assert!(defuse2.mt_tokens(..).await.unwrap().is_empty());
 
-        env.execute_intents(env.defuse.id(), [transfer_payload])
+        env.simulate_and_execute_intents(env.defuse.id(), [transfer_payload])
             .await
             .unwrap();
 
@@ -273,7 +273,7 @@ async fn transfer_intent_with_msg_to_receiver_smc(#[case] expectation: TransferC
         .await
         .unwrap();
 
-    env.execute_intents(env.defuse.id(), [transfer_payload])
+    env.simulate_and_execute_intents(env.defuse.id(), [transfer_payload])
         .await
         .unwrap();
 

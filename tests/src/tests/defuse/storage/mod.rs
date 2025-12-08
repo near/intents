@@ -1,8 +1,9 @@
-use crate::{
-    tests::defuse::{DefuseSignerExt, env::Env, intents::ExecuteIntentsExt},
-    utils::{storage_management::StorageManagementExt, wnear::WNearExt},
+use crate::tests::defuse::{DefuseSignerExt, env::Env};
+use defuse::{core::intents::tokens::StorageDeposit, extensions::intents::ExecuteIntentsExt};
+use defuse_sandbox::extensions::{
+    storage_management::{StorageManagementExt, StorageViewExt},
+    wnear::WNearExt,
 };
-use defuse::core::intents::tokens::StorageDeposit;
 use near_sdk::NearToken;
 use rstest::rstest;
 
@@ -42,33 +43,31 @@ async fn storage_deposit_success(
         .await;
 
     {
-        let storage_balance_ft1_user1 = env.storage_balance_of(&ft, user.id()).await.unwrap();
+        let storage_balance_ft1_user1 = ft.storage_balance_of(user.id()).await.unwrap();
 
-        let storage_balance_ft1_user2 = env.storage_balance_of(&ft, other_user.id()).await.unwrap();
+        let storage_balance_ft1_user2 = ft.storage_balance_of(other_user.id()).await.unwrap();
 
         assert!(storage_balance_ft1_user1.is_none());
         assert!(storage_balance_ft1_user2.is_none());
     }
 
     // For intents contract to have a balance in wnear, we make a storage deposit for it
-    env.poa_factory
-        .storage_deposit(
-            env.wnear.id(),
-            Some(env.defuse.id()),
-            NearToken::from_near(1),
-        )
-        .await
-        .unwrap();
+    env.storage_deposit(
+        env.wnear.id(),
+        Some(env.defuse.id()),
+        NearToken::from_near(1),
+    )
+    .await
+    .unwrap();
 
-    env.poa_factory
-        .storage_deposit(&ft, Some(user.id()), NearToken::from_near(1))
+    env.storage_deposit(ft.id(), Some(user.id()), NearToken::from_near(1))
         .await
         .unwrap();
 
     {
-        let storage_balance_ft1_user1 = env.storage_balance_of(&ft, user.id()).await.unwrap();
+        let storage_balance_ft1_user1 = ft.storage_balance_of(user.id()).await.unwrap();
 
-        let storage_balance_ft1_user2 = env.storage_balance_of(&ft, other_user.id()).await.unwrap();
+        let storage_balance_ft1_user2 = ft.storage_balance_of(other_user.id()).await.unwrap();
 
         assert_eq!(
             storage_balance_ft1_user1.unwrap().total,
@@ -95,9 +94,9 @@ async fn storage_deposit_success(
 
     let storage_deposit_payload = other_user
         .sign_defuse_payload_default(
-            env.defuse.id(),
+            &env.defuse,
             [StorageDeposit {
-                contract_id: ft.clone(),
+                contract_id: ft.id().clone(),
                 deposit_for_account_id: other_user.id().clone(),
                 amount: amount_to_deposit,
             }],
@@ -105,13 +104,12 @@ async fn storage_deposit_success(
         .await
         .unwrap();
 
-    env.defuse
-        .execute_intents(env.defuse.id(), [storage_deposit_payload])
+    env.simulate_and_execute_intents(env.defuse.id(), [storage_deposit_payload])
         .await
         .unwrap();
 
     {
-        let storage_balance_ft1_user2 = env.storage_balance_of(&ft, other_user.id()).await.unwrap();
+        let storage_balance_ft1_user2 = ft.storage_balance_of(other_user.id()).await.unwrap();
 
         assert_eq!(
             storage_balance_ft1_user2.map(|v| v.total),
@@ -136,9 +134,9 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents() {
         .await;
 
     {
-        let storage_balance_ft1_user1 = env.storage_balance_of(&ft, user.id()).await.unwrap();
+        let storage_balance_ft1_user1 = ft.storage_balance_of(user.id()).await.unwrap();
 
-        let storage_balance_ft1_user2 = env.storage_balance_of(&ft, other_user.id()).await.unwrap();
+        let storage_balance_ft1_user2 = ft.storage_balance_of(other_user.id()).await.unwrap();
 
         assert!(storage_balance_ft1_user1.is_none());
         assert!(storage_balance_ft1_user2.is_none());
@@ -153,15 +151,14 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents() {
     .await
     .unwrap();
 
-    env.poa_factory
-        .storage_deposit(&ft, Some(user.id()), NearToken::from_near(1))
+    env.storage_deposit(ft.id(), Some(user.id()), NearToken::from_near(1))
         .await
         .unwrap();
 
     {
-        let storage_balance_ft1_user1 = env.storage_balance_of(&ft, user.id()).await.unwrap();
+        let storage_balance_ft1_user1 = ft.storage_balance_of(user.id()).await.unwrap();
 
-        let storage_balance_ft1_user2 = env.storage_balance_of(&ft, other_user.id()).await.unwrap();
+        let storage_balance_ft1_user2 = ft.storage_balance_of(other_user.id()).await.unwrap();
 
         assert_eq!(
             storage_balance_ft1_user1.unwrap().total,
@@ -178,9 +175,9 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents() {
 
     let signed_intents = [other_user
         .sign_defuse_payload_default(
-            env.defuse.id(),
+            &env.defuse,
             [StorageDeposit {
-                contract_id: ft.clone(),
+                contract_id: ft.id().clone(),
                 deposit_for_account_id: other_user.id().clone(),
                 amount: MIN_FT_STORAGE_DEPOSIT_VALUE,
             }],
@@ -189,8 +186,7 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents() {
         .unwrap()];
 
     // Fails because the user does not own any wNEAR in the intents smart contract. They should first deposit wNEAR.
-    env.defuse
-        .execute_intents(env.defuse.id(), signed_intents)
+    env.simulate_and_execute_intents(env.defuse.id(), signed_intents)
         .await
         .unwrap_err();
 }

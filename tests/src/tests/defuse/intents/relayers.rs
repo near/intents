@@ -25,7 +25,7 @@ async fn relayer_keys() {
 
     // Attempt to use the key that we still didn't add, to execute an intent, which fails
     new_relayer_signer
-        .execute_intents(env.defuse.id(), []) // Empty because it's just to ensure that authorization works/doesn't work
+        .simulate_and_execute_intents(env.defuse.id(), []) // Empty because it's just to ensure that authorization works/doesn't work
         .await
         .assert_err_contains("Failed to query access key");
 
@@ -48,7 +48,7 @@ async fn relayer_keys() {
 
     // Create a Function-call Key, then use it to execute an (empty) intent
     new_relayer_signer
-        .execute_intents(env.defuse.id(), []) // Empty because it's just to ensure that authorization works/doesn't work
+        .simulate_and_execute_intents(env.defuse.id(), []) // Empty because it's just to ensure that authorization works/doesn't work
         .await
         .unwrap();
 

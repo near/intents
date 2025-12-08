@@ -9,10 +9,7 @@ use defuse::{
     core::fees::{FeesConfig, Pips},
     extensions::deployer::DefuseExt,
 };
-use defuse_poa_factory::{
-    contract::Role as POAFactoryRole,
-    extensions::{PoAFactoryDeployerExt, PoAFactoryExt},
-};
+use defuse_poa_factory::{contract::Role as POAFactoryRole, extensions::PoAFactoryDeployerExt};
 use defuse_sandbox::{
     Account, Sandbox, SigningAccount,
     extensions::wnear::{WNearDeployerExt, WNearExt},

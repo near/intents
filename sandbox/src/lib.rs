@@ -8,8 +8,8 @@ pub use anyhow;
 pub use near_api as api;
 
 use near_api::{NetworkConfig, RPCEndpoint};
-use near_sandbox::GenesisAccount;
-use near_sdk::NearToken;
+use near_sandbox::{FetchData, GenesisAccount};
+use near_sdk::{AccountIdRef, NearToken};
 
 use crate::extensions::account::ParentAccountExt;
 
@@ -50,5 +50,18 @@ impl Sandbox {
         self.root
             .create_subaccount(name, NearToken::from_near(10))
             .await
+    }
+
+    pub async fn import_contract(
+        &self,
+        account_id: &AccountIdRef,
+        rpc: impl AsRef<str>,
+    ) -> anyhow::Result<()> {
+        self.sandbox
+            .patch_state(account_id.into())
+            .fetch_from(rpc, FetchData::new().code())
+            .await?;
+
+        Ok(())
     }
 }

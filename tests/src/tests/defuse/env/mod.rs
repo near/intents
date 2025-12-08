@@ -10,6 +10,7 @@ use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;
 use defuse::extensions::account_manager::{AccountManagerExt, AccountViewExt};
 use defuse::extensions::signer::Signer;
+use defuse::extensions::tokens::nep141::DefuseFtReceiver;
 use defuse::{
     core::{Deadline, ExpirableNonce, Nonce, Salt, SaltedNonce, VersionedNonce},
     tokens::{DepositAction, DepositMessage},
@@ -20,7 +21,7 @@ use defuse_randomness::{Rng, make_true_rng};
 use defuse_sandbox::extensions::account::{AccountDeployerExt, ParentAccountViewExt};
 use defuse_sandbox::extensions::storage_management::StorageManagementExt;
 use defuse_sandbox::tx::FnCallBuilder;
-use defuse_sandbox::{Account, Sandbox, SigningAccount, extensions::ft::FtExt};
+use defuse_sandbox::{Account, Sandbox, SigningAccount};
 use defuse_test_utils::random::{Seed, rng};
 use futures::future::try_join_all;
 use multi_token_receiver_stub::MTReceiverMode;
@@ -70,39 +71,6 @@ impl Env {
         self.sandbox.root()
     }
 
-    // pub async fn ft_storage_deposit(
-    //     &self,
-    //     token: &Account,
-    //     accounts: &[&AccountIdRef],
-    // ) -> anyhow::Result<()> {
-
-    //     self.sandbox
-    //         .root()
-    //         .ft_storage_deposit_many(token, accounts)
-    //         .await
-    // }
-
-    // // TODO: do we need this?
-    // async fn defuse_ft_deposit(
-    //     &self,
-    //     defuse_id: &AccountIdRef,
-    //     token_id: &AccountIdRef,
-    //     amount: u128,
-    //     msg: impl Into<Option<DepositMessage>>,
-    // ) -> anyhow::Result<u128> {
-    //     self.ft_transfer_call(
-    //         token_id,
-    //         defuse_id,
-    //         amount,
-    //         None,
-    //         &msg.into()
-    //             .as_ref()
-    //             .map(ToString::to_string)
-    //             .unwrap_or_default(),
-    //     )
-    //     .await
-    // }
-
     pub async fn get_unique_nonce(&self, deadline: Option<Deadline>) -> anyhow::Result<Nonce> {
         let root = self.root();
         root.unique_nonce(&self.defuse, deadline).await
@@ -116,14 +84,11 @@ impl Env {
         action: impl Into<Option<DepositAction>>,
     ) -> anyhow::Result<()> {
         if self
-            .ft_transfer_call(
-                token_id,
+            .defuse_ft_deposit(
                 self.defuse.id(),
+                token_id,
                 amount,
-                None,
-                &DepositMessage::new(to.into())
-                    .with_action(action)
-                    .to_string(),
+                DepositMessage::new(to.into()).with_action(action),
             )
             .await?
             != amount

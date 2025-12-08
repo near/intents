@@ -1,21 +1,19 @@
-pub mod traits;
-
-use crate::tests::defuse::tokens::nep141::traits::DefuseFtWithdrawer;
-use crate::{
-    tests::{
-        defuse::env::{Env, MT_RECEIVER_STUB_WASM},
-        poa::factory::PoAFactoryExt,
-    },
-    utils::{acl::AclExt, ft::FtExt, mt::MtExt},
-};
+use crate::tests::defuse::env::Env;
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
 
+use defuse::extensions::tokens::nep141::{DefuseFtReceiver, DefuseFtWithdrawer};
 use defuse::{
     contract::Role,
     core::intents::tokens::FtWithdraw,
     tokens::{DepositAction, DepositMessage, ExecuteIntents},
 };
+use defuse_poa_factory::extensions::PoAFactoryExt;
+use defuse_sandbox::extensions::account::AccountDeployerExt;
+use defuse_sandbox::extensions::acl::AclExt;
+use defuse_sandbox::extensions::ft::FtViewExt;
+use defuse_sandbox::extensions::mt::MtViewExt;
+use defuse_sandbox::tx::FnCallBuilder;
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_sdk::{json_types::U128, serde_json};
 use rstest::rstest;
@@ -37,37 +35,39 @@ async fn deposit_withdraw() {
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
-    env.initial_ft_storage_deposit(vec![user.id()], vec![&ft])
+    env.initial_ft_storage_deposit(vec![user.id()], vec![ft.id()])
         .await;
 
-    env.defuse_ft_deposit_to(&ft, 1000, user.id(), None)
+    env.defuse_ft_deposit_to(ft.id(), 1000, user.id(), None)
         .await
         .unwrap();
 
-    let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.id().clone()));
 
     assert_eq!(
-        env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft_id.to_string())
+        env.defuse
+            .mt_balance_of(user.id(), &ft_id.to_string())
             .await
             .unwrap(),
         1000
     );
 
     assert_eq!(
-        user.defuse_ft_withdraw(env.defuse.id(), &ft, user.id(), 1000, None, None)
+        user.defuse_ft_withdraw(env.defuse.id(), ft.id(), user.id(), 1000, None, None)
             .await
             .unwrap(),
         1000
     );
 
     assert_eq!(
-        env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft_id.to_string())
+        env.defuse
+            .mt_balance_of(user.id(), &ft_id.to_string())
             .await
             .unwrap(),
         0
     );
 
-    assert_eq!(env.ft_token_balance_of(&ft, user.id()).await.unwrap(), 1000);
+    assert_eq!(ft.ft_balance_of(user.id()).await.unwrap(), 1000);
 }
 
 #[tokio::test]
@@ -77,14 +77,14 @@ async fn poa_deposit() {
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
-    let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.id().clone()));
 
-    env.initial_ft_storage_deposit(vec![user.id()], vec![&ft])
+    env.initial_ft_storage_deposit(vec![user.id()], vec![ft.id()])
         .await;
 
     env.poa_factory_ft_deposit(
         env.poa_factory.id(),
-        &env.poa_ft_name(&ft),
+        &env.poa_ft_name(ft.id()),
         user.id(),
         1000,
         Some(DepositMessage::new(user.id().clone()).to_string()),
@@ -93,9 +93,10 @@ async fn poa_deposit() {
     .await
     .unwrap();
 
-    assert_eq!(env.ft_token_balance_of(&ft, user.id()).await.unwrap(), 0);
+    assert_eq!(ft.ft_balance_of(user.id()).await.unwrap(), 0);
     assert_eq!(
-        env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft_id.to_string())
+        env.defuse
+            .mt_balance_of(user.id(), &ft_id.to_string())
             .await
             .unwrap(),
         0
@@ -106,19 +107,19 @@ async fn poa_deposit() {
 #[rstest]
 #[trace]
 async fn deposit_withdraw_intent() {
-    use crate::tests::defuse::{DefuseSignerExt, tokens::nep141::traits::DefuseFtReceiver};
+    use crate::tests::defuse::DefuseSignerExt;
 
     let env = Env::builder().build().await;
 
     let (user, other_user, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
-    env.initial_ft_storage_deposit(vec![user.id(), other_user.id()], vec![&ft])
+    env.initial_ft_storage_deposit(vec![user.id(), other_user.id()], vec![ft.id()])
         .await;
 
     env.poa_factory_ft_deposit(
         env.poa_factory.id(),
-        &env.poa_ft_name(&ft),
+        &env.poa_ft_name(ft.id()),
         user.id(),
         1000,
         None,
@@ -129,9 +130,9 @@ async fn deposit_withdraw_intent() {
 
     let withdraw_intent_payload = user
         .sign_defuse_payload_default(
-            env.defuse.id(),
+            &env.defuse,
             [FtWithdraw {
-                token: ft.clone(),
+                token: ft.id().clone(),
                 receiver_id: other_user.id().clone(),
                 amount: U128(600),
                 memo: None,
@@ -146,7 +147,7 @@ async fn deposit_withdraw_intent() {
     assert_eq!(
         user.defuse_ft_deposit(
             env.defuse.id(),
-            &ft,
+            ft.id(),
             1000,
             DepositMessage {
                 receiver_id: user.id().clone(),
@@ -162,44 +163,43 @@ async fn deposit_withdraw_intent() {
         1000
     );
 
-    let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.id().clone()));
 
-    assert_eq!(env.ft_token_balance_of(&ft, user.id()).await.unwrap(), 0);
+    assert_eq!(ft.ft_balance_of(user.id()).await.unwrap(), 0);
     assert_eq!(
-        env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft_id.to_string())
+        env.defuse
+            .mt_balance_of(user.id(), &ft_id.to_string())
             .await
             .unwrap(),
         400
     );
 
     assert_eq!(
-        env.mt_contract_balance_of(env.defuse.id(), other_user.id(), &ft_id.to_string())
+        env.defuse
+            .mt_balance_of(other_user.id(), &ft_id.to_string())
             .await
             .unwrap(),
         0
     );
-    assert_eq!(
-        env.ft_token_balance_of(&ft, other_user.id()).await.unwrap(),
-        600
-    );
+    assert_eq!(ft.ft_balance_of(other_user.id()).await.unwrap(), 600);
 }
 
 #[tokio::test]
 #[rstest]
 #[trace]
 async fn deposit_withdraw_intent_refund() {
-    use crate::tests::defuse::{DefuseSignerExt, tokens::nep141::traits::DefuseFtReceiver};
+    use crate::tests::defuse::DefuseSignerExt;
 
     let env = Env::builder().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
-    env.initial_ft_storage_deposit(vec![user.id()], vec![&ft])
+    env.initial_ft_storage_deposit(vec![user.id()], vec![ft.id()])
         .await;
 
     env.poa_factory_ft_deposit(
         env.poa_factory.id(),
-        &env.poa_ft_name(&ft),
+        &env.poa_ft_name(ft.id()),
         user.id(),
         1000,
         None,
@@ -210,9 +210,9 @@ async fn deposit_withdraw_intent_refund() {
 
     let overflow_withdraw_payload = user
         .sign_defuse_payload_default(
-            env.defuse.id(),
+            &env.defuse,
             [FtWithdraw {
-                token: ft.clone(),
+                token: ft.id().clone(),
                 receiver_id: user.id().clone(),
                 amount: U128(1001),
                 memo: None,
@@ -227,7 +227,7 @@ async fn deposit_withdraw_intent_refund() {
     assert_eq!(
         user.defuse_ft_deposit(
             env.defuse.id(),
-            &ft,
+            ft.id(),
             1000,
             DepositMessage {
                 receiver_id: user.id().clone(),
@@ -242,14 +242,15 @@ async fn deposit_withdraw_intent_refund() {
         0
     );
 
-    let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.id().clone()));
     assert_eq!(
-        env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft_id.to_string())
+        env.defuse
+            .mt_balance_of(user.id(), &ft_id.to_string())
             .await
             .unwrap(),
         0
     );
-    assert_eq!(env.ft_token_balance_of(&ft, user.id()).await.unwrap(), 1000);
+    assert_eq!(ft.ft_balance_of(user.id()).await.unwrap(), 1000);
 }
 
 #[tokio::test]
@@ -257,27 +258,25 @@ async fn deposit_withdraw_intent_refund() {
 async fn ft_force_withdraw() {
     use defuse::core::token_id::nep141::Nep141TokenId;
 
-    use crate::tests::defuse::tokens::nep141::traits::DefuseFtWithdrawer;
-
     let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (user, other_user, ft) =
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
-    env.initial_ft_storage_deposit(vec![user.id(), other_user.id()], vec![&ft])
+    env.initial_ft_storage_deposit(vec![user.id(), other_user.id()], vec![ft.id()])
         .await;
 
-    env.defuse_ft_deposit_to(&ft, 1000, user.id(), None)
+    env.defuse_ft_deposit_to(ft.id(), 1000, user.id(), None)
         .await
         .unwrap();
 
-    let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.id().clone()));
 
     other_user
         .defuse_ft_force_withdraw(
             env.defuse.id(),
             user.id(),
-            &ft,
+            ft.id(),
             other_user.id(),
             1000,
             None,
@@ -287,15 +286,13 @@ async fn ft_force_withdraw() {
         .unwrap_err();
 
     assert_eq!(
-        env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft_id.to_string())
+        env.defuse
+            .mt_balance_of(user.id(), &ft_id.to_string())
             .await
             .unwrap(),
         1000
     );
-    assert_eq!(
-        env.ft_token_balance_of(&ft, other_user.id()).await.unwrap(),
-        0
-    );
+    assert_eq!(ft.ft_balance_of(other_user.id()).await.unwrap(), 0);
 
     env.acl_grant_role(
         env.defuse.id(),
@@ -310,7 +307,7 @@ async fn ft_force_withdraw() {
             .defuse_ft_force_withdraw(
                 env.defuse.id(),
                 user.id(),
-                &ft,
+                ft.id(),
                 other_user.id(),
                 1000,
                 None,
@@ -322,15 +319,13 @@ async fn ft_force_withdraw() {
     );
 
     assert_eq!(
-        env.mt_contract_balance_of(env.defuse.id(), user.id(), &ft_id.to_string())
+        env.defuse
+            .mt_balance_of(user.id(), &ft_id.to_string())
             .await
             .unwrap(),
         0
     );
-    assert_eq!(
-        env.ft_token_balance_of(&ft, other_user.id()).await.unwrap(),
-        1000
-    );
+    assert_eq!(ft.ft_balance_of(other_user.id()).await.unwrap(), 1000);
 }
 
 #[tokio::test]
@@ -374,41 +369,45 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
     #[case] expectation: TransferCallExpectation,
 ) {
     use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
+    use defuse_sandbox::{SigningAccount, extensions::ft::FtExt};
 
-    use crate::tests::defuse::DefuseSignerExt;
+    use crate::tests::defuse::{DefuseSignerExt, tokens::MT_RECEIVER_STUB_WASM};
 
     let env = Env::builder().deployer_as_super_admin().build().await;
 
-    let (user, receiver, intent_receiver, ft) = futures::join!(
-        env.create_user(),
-        env.create_user(),
-        env.create_user(),
-        env.create_token()
+    let (user, intent_receiver, ft) =
+        futures::join!(env.create_user(), env.create_user(), env.create_token());
+
+    let receiver = SigningAccount::new(
+        env.deploy_contract(
+            "receiver_stub",
+            MT_RECEIVER_STUB_WASM,
+            None::<FnCallBuilder>,
+        )
+        .await
+        .unwrap(),
+        env.private_key().clone(),
     );
 
-    receiver
-        .deploy(MT_RECEIVER_STUB_WASM.as_slice())
-        .await
-        .unwrap()
-        .unwrap();
-
-    let ft_id = TokenId::from(Nep141TokenId::new(ft.clone()));
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.id().clone()));
     env.initial_ft_storage_deposit(
         vec![user.id(), receiver.id(), intent_receiver.id()],
-        vec![&ft],
+        vec![ft.id()],
     )
     .await;
 
-    let root = env.sandbox().root_account();
+    let root = env.sandbox().root();
 
-    root.ft_transfer(&ft, user.id(), 1000, None).await.unwrap();
-    assert_eq!(env.ft_token_balance_of(&ft, user.id()).await.unwrap(), 1000);
+    root.ft_transfer(ft.id(), user.id(), 1000, None)
+        .await
+        .unwrap();
+    assert_eq!(ft.ft_balance_of(user.id()).await.unwrap(), 1000);
 
     let intents = match &expectation.intent_transfer_amount {
         Some(amount) => vec![
             receiver
                 .sign_defuse_payload_default(
-                    env.defuse.id(),
+                    &env.defuse,
                     [Transfer {
                         receiver_id: intent_receiver.id().clone(),
                         tokens: Amounts::new(std::iter::once((ft_id.clone(), *amount)).collect()),
@@ -443,7 +442,7 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
     };
 
     user.ft_transfer_call(
-        &ft,
+        ft.id(),
         env.defuse.id(),
         1000,
         None,
@@ -453,12 +452,13 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
     .unwrap();
 
     assert_eq!(
-        env.ft_token_balance_of(&ft, user.id()).await.unwrap(),
+        ft.ft_balance_of(user.id()).await.unwrap(),
         expectation.expected_sender_ft_balance
     );
 
     assert_eq!(
-        env.mt_contract_balance_of(env.defuse.id(), receiver.id(), &ft_id.to_string())
+        env.defuse
+            .mt_balance_of(receiver.id(), &ft_id.to_string())
             .await
             .unwrap(),
         expectation.expected_receiver_mt_balance
