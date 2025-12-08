@@ -1,19 +1,21 @@
-use defuse::core::{
-    DefuseError,
-    amounts::Amounts,
-    intents::{account::SetAuthByPredecessorId, tokens::Transfer},
-    token_id::{TokenId, nep141::Nep141TokenId},
+use defuse::{
+    core::{
+        DefuseError,
+        amounts::Amounts,
+        intents::{account::SetAuthByPredecessorId, tokens::Transfer},
+        token_id::{TokenId, nep141::Nep141TokenId},
+    },
+    extensions::{
+        account_manager::{AccountManagerExt, AccountViewExt},
+        intents::ExecuteIntentsExt,
+    },
 };
+use defuse_sandbox::extensions::mt::{MtExt, MtViewExt};
 use defuse_test_utils::asserts::ResultAssertsExt;
 use near_sdk::AccountId;
 use rstest::rstest;
 
-use crate::{
-    tests::defuse::{
-        DefuseSignerExt, accounts::AccountManagerExt, env::Env, intents::ExecuteIntentsExt,
-    },
-    utils::mt::MtExt,
-};
+use crate::tests::defuse::{DefuseSignerExt, env::Env};
 
 #[tokio::test]
 #[rstest]
@@ -22,17 +24,17 @@ async fn auth_by_predecessor_id() {
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
-    env.initial_ft_storage_deposit(vec![user.id()], vec![&ft])
+    env.initial_ft_storage_deposit(vec![user.id()], vec![ft.id()])
         .await;
 
     let receiver_id: AccountId = "receiver_id.near".parse().unwrap();
 
     // deposit tokens
-    env.defuse_ft_deposit_to(&ft, 1000, user.id(), None)
+    env.defuse_ft_deposit_to(ft.id(), 1000, user.id(), None)
         .await
         .unwrap();
 
-    let ft: TokenId = Nep141TokenId::new(ft.clone()).into();
+    let ft: TokenId = Nep141TokenId::new(ft.id().clone()).into();
 
     assert_eq!(
         env.defuse
@@ -80,18 +82,11 @@ async fn auth_by_predecessor_id() {
             1000
         );
 
-        user.mt_transfer(
-            env.defuse.id(),
-            &receiver_id,
-            &ft.to_string(),
-            100,
-            None,
-            None,
-        )
-        .await
-        .assert_err_contains(
-            DefuseError::AuthByPredecessorIdDisabled(user.id().clone()).to_string(),
-        );
+        user.mt_transfer(env.defuse.id(), &receiver_id, &ft.to_string(), 100, None)
+            .await
+            .assert_err_contains(
+                DefuseError::AuthByPredecessorIdDisabled(user.id().clone()).to_string(),
+            );
 
         assert_eq!(
             env.defuse
@@ -113,7 +108,7 @@ async fn auth_by_predecessor_id() {
     {
         let transfer_payload = user
             .sign_defuse_payload_default(
-                env.defuse.id(),
+                &env.defuse,
                 [Transfer {
                     receiver_id: receiver_id.clone(),
                     tokens: Amounts::new([(ft.clone(), 200)].into()),
@@ -124,8 +119,7 @@ async fn auth_by_predecessor_id() {
             .await
             .unwrap();
 
-        env.defuse
-            .execute_intents(env.defuse.id(), [transfer_payload])
+        env.simulate_and_execute_intents(env.defuse.id(), [transfer_payload])
             .await
             .unwrap();
 
@@ -148,15 +142,11 @@ async fn auth_by_predecessor_id() {
     // enable auth by PREDECESSOR_ID back (by intent)
     {
         let enable_auth_payload = user
-            .sign_defuse_payload_default(
-                env.defuse.id(),
-                [SetAuthByPredecessorId { enabled: true }],
-            )
+            .sign_defuse_payload_default(&env.defuse, [SetAuthByPredecessorId { enabled: true }])
             .await
             .unwrap();
 
-        env.defuse
-            .execute_intents(env.defuse.id(), [enable_auth_payload])
+        env.simulate_and_execute_intents(env.defuse.id(), [enable_auth_payload])
             .await
             .unwrap();
 
@@ -171,16 +161,9 @@ async fn auth_by_predecessor_id() {
     // transfer via tx should succeed, since auth by PREDECESSOR_ID was
     // enabled back
     {
-        user.mt_transfer(
-            env.defuse.id(),
-            &receiver_id,
-            &ft.to_string(),
-            400,
-            None,
-            None,
-        )
-        .await
-        .unwrap();
+        user.mt_transfer(env.defuse.id(), &receiver_id, &ft.to_string(), 400, None)
+            .await
+            .unwrap();
 
         assert_eq!(
             env.defuse

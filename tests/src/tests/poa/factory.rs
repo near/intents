@@ -1,15 +1,11 @@
 use defuse_poa_factory::{contract::Role, extensions::PoAFactoryExt};
 use defuse_sandbox::{
     Sandbox,
-    extensions::ft::{FtExt, FtViewExt},
+    extensions::{ft::FtViewExt, storage_management::StorageManagementExt},
 };
 use futures::try_join;
+use near_sdk::NearToken;
 use rstest::rstest;
-use std::sync::LazyLock;
-
-use crate::utils::read_wasm;
-
-static POA_FACTORY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("res/defuse_poa_factory"));
 
 #[tokio::test]
 #[rstest]
@@ -24,7 +20,6 @@ async fn deploy_mint() {
     let poa_factory = root
         .deploy_poa_factory(
             "poa-factory",
-            POA_FACTORY_WASM.clone(),
             [root.id().clone()],
             [
                 (Role::TokenDeployer, [root.id().clone()]),
@@ -55,11 +50,11 @@ async fn deploy_mint() {
         .await
         .unwrap_err();
 
-    assert_eq!(root.ft_balance_of(&ft1, user.id()).await.unwrap(), 0);
+    assert_eq!(ft1.ft_balance_of(user.id()).await.unwrap(), 0);
 
     try_join!(
-        root.ft_storage_deposit(&ft1, Some(root.id())),
-        root.ft_storage_deposit(&ft1, Some(user.id()))
+        root.storage_deposit(ft1.id(), Some(root.id()), NearToken::from_near(1)),
+        root.storage_deposit(ft1.id(), Some(user.id()), NearToken::from_near(1))
     )
     .unwrap();
 
@@ -71,5 +66,5 @@ async fn deploy_mint() {
         .await
         .unwrap();
 
-    assert_eq!(root.ft_balance_of(&ft1, user.id()).await.unwrap(), 1000);
+    assert_eq!(ft1.ft_balance_of(user.id()).await.unwrap(), 1000);
 }

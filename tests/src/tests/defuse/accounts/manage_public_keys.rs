@@ -1,18 +1,17 @@
 use std::borrow::Cow;
 
-use defuse::core::{
-    accounts::{AccountEvent, PublicKeyEvent},
-    crypto::PublicKey,
-    events::DefuseEvent,
+use defuse::{
+    core::{
+        accounts::{AccountEvent, PublicKeyEvent},
+        crypto::PublicKey,
+        events::DefuseEvent,
+    },
+    extensions::account_manager::AccountViewExt,
 };
 use near_sdk::AsNep297Event;
 use rstest::rstest;
 
-use crate::{
-    assert_eq_event_logs,
-    tests::defuse::{accounts::AccountManagerExt, env::Env},
-    utils::{fixtures::public_key, test_log::TestLog},
-};
+use crate::tests::defuse::env::Env;
 
 #[tokio::test]
 #[rstest]

@@ -3,15 +3,15 @@ use std::collections::{HashMap, HashSet};
 use arbitrary::{Arbitrary, Unstructured};
 use defuse::core::{Nonce, crypto::PublicKey, token_id::nep141::Nep141TokenId};
 use defuse_randomness::Rng;
+use defuse_sandbox::{Account, SigningAccount, extensions::account::ParentAccountViewExt};
 use defuse_test_utils::random::{Seed, TestRng};
 use itertools::Itertools;
 use near_sdk::{
     AccountId,
     env::{keccak512, sha256},
 };
-use near_workspaces::Account;
 
-use crate::{tests::defuse::env::generate_legacy_user_account_id, utils::ParentAccount};
+use crate::tests::defuse::env::generate_legacy_user_account_id;
 
 const MAX_PUBLIC_KEYS: usize = 10;
 const MAX_ACCOUNTS: usize = 5;
@@ -40,7 +40,7 @@ pub struct PersistentState {
 }
 
 impl PersistentState {
-    pub fn generate(root: &Account, factory: &Account, seed: Seed) -> Self {
+    pub fn generate(root: &SigningAccount, factory: &Account, seed: Seed) -> Self {
         let tokens = (0..MAX_TOKENS)
             .map(|token_id| {
                 Nep141TokenId::new(factory.subaccount_id(&format!("test-token-{token_id}")))

@@ -1,6 +1,5 @@
 use std::sync::atomic::AtomicUsize;
 
-use super::DefuseExt;
 use crate::tests::defuse::env::Env;
 use defuse::{
     contract::{
@@ -8,9 +7,10 @@ use defuse::{
         config::{DefuseConfig, RolesConfig},
     },
     core::fees::{FeesConfig, Pips},
+    extensions::deployer::DefuseExt,
 };
-use defuse_poa_factory::contract::Role as POAFactoryRole;
-use defuse_sandbox::{Account, Sandbox};
+use defuse_poa_factory::{contract::Role as POAFactoryRole, extensions::PoAFactoryExt};
+use defuse_sandbox::{Account, Sandbox, SigningAccount, extensions::wnear::WNearExt};
 use defuse_test_utils::random::Seed;
 use near_sdk::{AccountId, NearToken};
 
@@ -84,7 +84,7 @@ impl EnvBuilder {
         self
     }
 
-    async fn deploy_defuse(&self, root: &Account, wnear: &Contract, legacy: bool) -> Contract {
+    async fn deploy_defuse(&self, root: &SigningAccount, wnear: &Account, legacy: bool) -> Account {
         let id = "defuse";
         let cfg = DefuseConfig {
             wnear_id: wnear.id().clone(),
@@ -116,10 +116,10 @@ impl EnvBuilder {
 
     pub async fn build_env(&mut self, deploy_legacy: bool) -> Env {
         let sandbox = Sandbox::new().await;
-        let root = sandbox.root().id().clone();
+        let root = sandbox.root();
 
-        let poa_factory = deploy_poa_factory(&root).await;
-        let wnear = sandbox.deploy_wrap_near("wnear").await.unwrap();
+        let poa_factory = deploy_poa_factory(root).await;
+        let wnear = root.deploy_wrap_near("wnear").await.unwrap();
 
         self.grant_roles(&root, deploy_legacy);
 
@@ -171,7 +171,7 @@ impl EnvBuilder {
     }
 }
 
-async fn deploy_poa_factory(root: &Account) -> Contract {
+async fn deploy_poa_factory(root: &SigningAccount) -> Account {
     root.deploy_poa_factory(
         "poa-factory",
         [root.id().clone()],
