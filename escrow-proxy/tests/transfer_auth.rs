@@ -3,7 +3,8 @@ mod env;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use defuse_deadline::Deadline;
-use defuse_escrow_proxy::{EscrowParams, FillAction, ProxyConfig, RolesConfig, TransferMessage};
+use defuse_escrow_proxy::{EscrowParams, FillAction, ProxyConfig, RolesConfig, TransferAction, TransferMessage};
+use defuse_escrow_swap::price::Price;
 use defuse_sandbox::{Sandbox, SigningAccount};
 use defuse_token_id::{TokenId, nep141::Nep141TokenId};
 use defuse_transfer_auth::ext::{DefuseAccountExt, TransferAuthAccountExt, derive_transfer_auth_account_id};
@@ -11,7 +12,7 @@ use defuse_transfer_auth::storage::{ContractStorage, State};
 use near_sdk::{Gas, GlobalContractId, env::keccak256, state_init::{StateInit, StateInitV1}};
 use env::AccountExt;
 use multi_token_receiver_stub::ext::MtReceiverStubAccountExt;
-use near_sdk::{NearToken, json_types::U128};
+use near_sdk::NearToken;
 
 const INIT_BALANCE: NearToken = NearToken::from_near(100);
 
@@ -76,7 +77,7 @@ async fn test_deploy_transfer_auth_global_contract() {
     // 4. Query mt_balance_of for solver on defuse
     // Token ID for NEP-141 is "nep141:<contract_id>"
     let token_id = TokenId::from(Nep141TokenId::new(wnear.id().clone()));
-    let balance = SigningAccount::mt_balance_of(&defuse, &solver.id(), &token_id.to_string())
+    let balance = SigningAccount::mt_balance_of(&defuse, &solver.id(), &token_id)
         .await
         .unwrap();
 
@@ -91,21 +92,17 @@ async fn test_deploy_transfer_auth_global_contract() {
 
     // Record initial solver balance
     let initial_solver_balance =
-        SigningAccount::mt_balance_of(&defuse, &solver.id(), &token_id.to_string())
+        SigningAccount::mt_balance_of(&defuse, &solver.id(), &token_id)
             .await
             .unwrap();
 
     // Build TransferMessage for the proxy
     let transfer_msg = TransferMessage {
-        fill_action: FillAction {
-            price: 1,
-            deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
-        },
-        escrow_params: EscrowParams {
+        params: EscrowParams {
             maker: solver.id().clone(),
             src_token: token_id.clone(),
             dst_token: token_id.clone(),
-            price: U128(1),
+            price: Price::ONE,
             deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
             partial_fills_allowed: false,
             refund_src_to: Default::default(),
@@ -113,8 +110,14 @@ async fn test_deploy_transfer_auth_global_contract() {
             taker_whitelist: BTreeSet::new(),
             protocol_fees: None,
             integrator_fees: BTreeMap::new(),
+            auth_caller: None,
             salt: [0u8; 32],
         },
+        action: TransferAction::Fill(FillAction {
+            price: Price::ONE,
+            deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
+            receive_src_to: Default::default(),
+        }),
         salt: [1u8; 32],
     };
     let msg_json = serde_json::to_string(&transfer_msg).unwrap();
@@ -124,13 +127,12 @@ async fn test_deploy_transfer_auth_global_contract() {
     let proxy_transfer_amount = NearToken::from_near(1).as_yoctonear();
     let solver_id = solver.id().clone();
     let proxy_id = proxy.id().clone();
-    let token_id_str = token_id.to_string();
 
     let (transfer_result, _) = futures::join!(
         solver.mt_transfer_call(
             &defuse,
             &proxy_id,
-            &token_id_str,
+            &token_id,
             proxy_transfer_amount,
             &msg_json,
         ),
@@ -149,7 +151,7 @@ async fn test_deploy_transfer_auth_global_contract() {
 
     // Verify solver balance is unchanged after refund
     let final_solver_balance =
-        SigningAccount::mt_balance_of(&defuse, &solver_id, &token_id.to_string())
+        SigningAccount::mt_balance_of(&defuse, &solver_id, &token_id)
             .await
             .unwrap();
 
@@ -226,21 +228,17 @@ async fn test_transfer_authorized_by_relay() {
 
     // Record initial solver balance
     let initial_solver_balance =
-        SigningAccount::mt_balance_of(&defuse, &solver.id(), &token_id.to_string())
+        SigningAccount::mt_balance_of(&defuse, &solver.id(), &token_id)
             .await
             .unwrap();
 
     // Build TransferMessage
     let transfer_msg = TransferMessage {
-        fill_action: FillAction {
-            price: 1,
-            deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
-        },
-        escrow_params: EscrowParams {
+        params: EscrowParams {
             maker: solver.id().clone(),
             src_token: token_id.clone(),
             dst_token: token_id.clone(),
-            price: U128(1),
+            price: Price::ONE,
             deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
             partial_fills_allowed: false,
             refund_src_to: Default::default(),
@@ -248,8 +246,14 @@ async fn test_transfer_authorized_by_relay() {
             taker_whitelist: BTreeSet::new(),
             protocol_fees: None,
             integrator_fees: BTreeMap::new(),
+            auth_caller: None,
             salt: [0u8; 32],
         },
+        action: TransferAction::Fill(FillAction {
+            price: Price::ONE,
+            deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
+            receive_src_to: Default::default(),
+        }),
         salt: [2u8; 32], // Different salt from timeout test
     };
     let msg_json = serde_json::to_string(&transfer_msg).unwrap();
@@ -268,7 +272,6 @@ async fn test_transfer_authorized_by_relay() {
 
     let proxy_transfer_amount = NearToken::from_near(1).as_yoctonear();
     let proxy_id = proxy.id().clone();
-    let token_id_str = token_id.to_string();
     let relay_id = relay.id().clone();
 
     // Build raw state for state_init (same as proxy does)
@@ -281,7 +284,7 @@ async fn test_transfer_authorized_by_relay() {
         solver.mt_transfer_call(
             &defuse,
             &proxy_id,
-            &token_id_str,
+            &token_id,
             proxy_transfer_amount,
             &msg_json,
         ),
@@ -315,7 +318,7 @@ async fn test_transfer_authorized_by_relay() {
 
     // Verify solver balance decreased
     let final_solver_balance =
-        SigningAccount::mt_balance_of(&defuse, &solver.id(), &token_id.to_string())
+        SigningAccount::mt_balance_of(&defuse, &solver.id(), &token_id)
             .await
             .unwrap();
 
@@ -327,7 +330,7 @@ async fn test_transfer_authorized_by_relay() {
 
     // Verify escrow instance received the tokens
     let escrow_balance =
-        SigningAccount::mt_balance_of(&defuse, &escrow_instance_id, &token_id.to_string())
+        SigningAccount::mt_balance_of(&defuse, &escrow_instance_id, &token_id)
             .await
             .unwrap();
 

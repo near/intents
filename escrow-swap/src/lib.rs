@@ -14,6 +14,8 @@ pub mod action;
 pub mod auth_call;
 mod error;
 pub mod event;
+#[cfg(feature = "test-utils")]
+pub mod ext;
 mod state;
 mod utils;
 

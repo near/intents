@@ -1,5 +1,4 @@
 mod admin;
-mod escrow_params;
 #[cfg(feature = "test-utils")]
 pub mod ext;
 mod message;
@@ -25,6 +24,8 @@ use near_sdk::{
 };
 
 use defuse_transfer_auth::{ext_transfer_auth, storage::{ContractStorage, State}};
+use defuse_escrow_swap::ContractStorage as EscrowContractStorage;
+use defuse_escrow_swap::action::TransferMessage as EscrowTransferMessage;
 
 #[near(serializers = [json])]
 #[derive(AccessControlRole, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -94,11 +95,11 @@ impl Contract {
 
     }
 
-    fn derive_deteministic_escrow_swap_id(&self, params: EscrowParams) -> AccountId {
+    fn derive_deteministic_escrow_swap_id(&self, params: &EscrowParams) -> AccountId {
+        let raw_state = EscrowContractStorage::init_state(params).unwrap();
         let state_init = StateInit::V1(StateInitV1 {
             code: near_sdk::GlobalContractId::AccountId(self.config.escrow_swap_global_contract_id.clone()),
-            //TODO: use helper methods from escrow proxy
-            data: BTreeMap::new()
+            data: raw_state,
         });
         state_init.derive_account_id()
     }
@@ -179,7 +180,7 @@ impl MultiTokenReceiver for Contract {
         }
 
         let token_contract = env::predecessor_account_id();
-        let escrow_address = self.derive_deteministic_escrow_swap_id(transfer_msg.escrow_params);
+        let escrow_address = self.derive_deteministic_escrow_swap_id(&transfer_msg.params);
 
         // Chain: state_init → wait_for_authorization → check_and_forward → resolve_transfer
         // We need a callback to check authorization result before forwarding

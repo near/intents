@@ -1,33 +1,28 @@
 use std::str::FromStr;
 
-use defuse_crypto::Signature;
-use defuse_deadline::Deadline;
-use defuse_token_id::nep245;
-use near_sdk::{AccountId, json_types::U128, near};
-use serde_with::{hex::Hex, serde_as};
+use near_sdk::near;
 
-pub use crate::escrow_params::{OverrideSend, Params as EscrowParams};
+pub use defuse_escrow_swap::{OverrideSend, Params as EscrowParams};
+pub use defuse_escrow_swap::action::{FillAction, TransferAction};
 
 /// Nonce for replay protection (base64-encoded 32-byte salt)
 pub type Nonce = u64;
 
-//TODO: use actual struct from escrow-swap
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
-pub struct FillAction {
-    pub price: u64,
-    pub deadline: Deadline,
-}
-
-/// Transfer message sent via mt_transfer_call msg parameter
+/// Transfer message sent via mt_transfer_call msg parameter to the proxy.
+///
+/// This message is a superset of escrow-swap's `TransferMessage` with an additional
+/// `salt` field for transfer-auth derivation. The field names match escrow-swap's
+/// format so the message can be forwarded directly.
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct TransferMessage {
-    pub fill_action: FillAction,
+    /// The escrow parameters - matches escrow-swap's TransferMessage.params
+    pub params: EscrowParams,
 
-    pub escrow_params: EscrowParams,
+    /// The transfer action (Fund or Fill) - matches escrow-swap's TransferMessage.action
+    pub action: TransferAction,
 
-    // #[serde_as(as = "Hex")]
+    /// Salt for deriving unique transfer-auth instance ID (ignored by escrow-swap)
     pub salt: [u8; 32],
 }
 

@@ -17,6 +17,7 @@ defuse-deadline.workspace = true
 defuse-fees.workspace = true
 defuse-nep245.workspace = true
 defuse-price.workspace = true
+defuse-sandbox = { workspace = true, optional = true }
 defuse-token-id.workspace = true
 
 near-contract-standards.workspace = true
@@ -52,3 +53,4 @@ nep245 = ["defuse-token-id/nep245"]
 
 abi = ["defuse-deadline/abi", "defuse-token-id/abi", "serde_with/schemars_0_8"]
 contract = ["dep:defuse-near-utils"]
+test-utils = ["dep:defuse-sandbox"]

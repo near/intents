@@ -5,6 +5,7 @@ use serde_json::json;
 use defuse_sandbox::{
     api::types::transaction::actions::GlobalContractDeployMode, Account, SigningAccount, TxError,
 };
+use defuse_token_id::TokenId;
 use near_sdk::{
     AccountId, Gas, GlobalContractId, NearToken,
     json_types::U128,
@@ -130,7 +131,7 @@ pub trait DefuseAccountExt {
     async fn mt_balance_of(
         defuse: &Account,
         account_id: &AccountId,
-        token_id: &str,
+        token_id: &TokenId,
     ) -> anyhow::Result<u128>;
 
     // MT transfer call
@@ -138,7 +139,7 @@ pub trait DefuseAccountExt {
         &self,
         defuse: &Account,
         receiver_id: &AccountId,
-        token_id: &str,
+        token_id: &TokenId,
         amount: u128,
         msg: &str,
     ) -> Result<Vec<u128>, TxError>;
@@ -244,14 +245,14 @@ impl DefuseAccountExt for SigningAccount {
     async fn mt_balance_of(
         defuse: &Account,
         account_id: &AccountId,
-        token_id: &str,
+        token_id: &TokenId,
     ) -> anyhow::Result<u128> {
         defuse
             .call_function_json::<U128>(
                 "mt_balance_of",
                 json!({
                     "account_id": account_id,
-                    "token_id": token_id,
+                    "token_id": token_id.to_string(),
                 }),
             )
             .await
@@ -262,7 +263,7 @@ impl DefuseAccountExt for SigningAccount {
         &self,
         defuse: &Account,
         receiver_id: &AccountId,
-        token_id: &str,
+        token_id: &TokenId,
         amount: u128,
         msg: &str,
     ) -> Result<Vec<u128>, TxError> {
@@ -271,7 +272,7 @@ impl DefuseAccountExt for SigningAccount {
                 "mt_transfer_call",
                 json!({
                     "receiver_id": receiver_id,
-                    "token_id": token_id,
+                    "token_id": token_id.to_string(),
                     "amount": U128(amount),
                     "msg": msg,
                 }),

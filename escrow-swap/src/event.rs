@@ -6,6 +6,10 @@ use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{Params, price::Price, token_id::TokenId};
 
+// fix JsonSchema macro bug
+#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+use near_sdk::serde;
+
 #[near(event_json(standard = "escrow-swap"))]
 #[derive(Debug, Clone, From)]
 pub enum Event<'a> {
@@ -135,7 +139,3 @@ pub trait EscrowIntentEmit<'a>: Into<Event<'a>> {
     }
 }
 impl<'a, T> EscrowIntentEmit<'a> for T where T: Into<Event<'a>> {}
-
-// fix JsonSchema macro bug
-#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
-use near_sdk::serde;

@@ -35,6 +35,7 @@ serde_with.workspace = true
 statig = { version = "0.4.1" }
 defuse-near-utils.workspace = true
 defuse-sandbox = { workspace = true, optional = true }
+defuse-token-id = { workspace = true, optional = true }
 anyhow = { workspace = true, optional = true }
 #TODO: remove when ext moved to defuse
 defuse-fees.workspace = true
@@ -53,4 +54,4 @@ anyhow.workspace = true
 [features]
 contract = []
 abi = []
-test-utils = ["dep:defuse-sandbox", "dep:anyhow"]
+test-utils = ["dep:defuse-sandbox", "dep:defuse-token-id", "dep:anyhow"]

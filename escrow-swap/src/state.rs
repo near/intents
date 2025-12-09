@@ -10,6 +10,10 @@ use serde_with::{DisplayFromStr, hex::Hex, serde_as};
 
 use crate::{Deadline, Error, Result, price::Price};
 
+// fix JsonSchema macro bug
+#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+use near_sdk::serde;
+
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ContractStorage(pub(crate) Option<Storage>);
@@ -290,7 +294,3 @@ pub struct State {
     #[serde(default, skip_serializing_if = "crate::utils::is_default")]
     pub in_flight: u32,
 }
-
-// fix JsonSchema macro bug
-#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
-use near_sdk::serde;

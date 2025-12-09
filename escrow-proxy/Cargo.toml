@@ -18,6 +18,7 @@ defuse-controller.workspace = true
 defuse-crypto = { workspace = true, features = ["serde"] }
 defuse-deadline.workspace = true
 defuse-borsh-utils.workspace = true
+defuse-escrow-swap.workspace = true
 defuse-fees.workspace = true
 defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
@@ -48,4 +49,4 @@ anyhow.workspace = true
 [features]
 contract = []
 test-utils = ["dep:defuse-sandbox", "dep:anyhow"]
-abi = ["defuse-crypto/abi", "defuse-token-id/abi", "defuse-deadline/abi", "defuse-transfer-auth/abi"]
+abi = ["defuse-crypto/abi", "defuse-token-id/abi", "defuse-deadline/abi", "defuse-transfer-auth/abi", "defuse-escrow-swap/abi"]

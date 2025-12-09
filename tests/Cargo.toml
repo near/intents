@@ -12,14 +12,17 @@ workspace = true
 defuse = { workspace = true, features = ["contract", "arbitrary"] }
 defuse-crypto.workspace = true
 defuse-deadline.workspace = true
-defuse-escrow-proxy.workspace = true
+defuse-escrow-proxy = { workspace = true, features = ["test-utils"] }
+defuse-escrow-swap = { workspace = true, features = ["test-utils"] }
 defuse-near-utils = { workspace = true, features = ["arbitrary"] }
 defuse-poa-factory = { workspace = true, features = ["contract"] }
+defuse-price.workspace = true
+defuse-sandbox.workspace = true
 defuse-serde-utils = { workspace = true }
 defuse-token-id.workspace = true
 defuse-randomness.workspace = true
 defuse-test-utils.workspace = true
-defuse-transfer-auth.workspace = true
+defuse-transfer-auth = { workspace = true, features = ["test-utils"] }
 
 futures = "0.3"
 anyhow.workspace = true
