@@ -76,7 +76,6 @@ defuse-test-utils.path = "test-utils"
 
 anyhow = "1"
 arbitrary = "1"
-arbitrary_with = "0.3.2"
 array-util = "1"
 bitflags = "2.9.1"
 bnum = { version = "0.13", features = ["borsh"] }

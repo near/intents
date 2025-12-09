@@ -21,7 +21,6 @@ strum.workspace = true
 thiserror.workspace = true
 
 arbitrary = { workspace = true, optional = true }
-arbitrary_with = { workspace = true, optional = true }
 
 [features]
 default = ["nep141", "nep171", "nep245"]
@@ -31,12 +30,11 @@ nep171 = []
 nep245 = []
 
 abi = []
-arbitrary = ["dep:arbitrary", "dep:arbitrary_with", "near-account-id/arbitrary"]
+arbitrary = ["dep:arbitrary", "near-account-id/arbitrary"]
 
 [dev-dependencies]
 defuse-test-utils.workspace = true
 
 arbitrary.workspace = true
-arbitrary_with.workspace = true
 hex.workspace = true
 rstest.workspace = true

@@ -29,7 +29,6 @@ defuse-ton-connect.workspace = true
 defuse-webauthn.workspace = true
 
 arbitrary = { workspace = true, optional = true }
-arbitrary_with = { workspace = true, optional = true }
 defuse-borsh-utils = { workspace = true, features = ["chrono"] }
 derive_more = { workspace = true, features = ["from"] }
 hex.workspace = true
@@ -51,7 +50,6 @@ abi = [
 ]
 arbitrary = [
     "dep:arbitrary",
-    "dep:arbitrary_with",
     "defuse-bitmap/arbitrary",
     "defuse-crypto/arbitrary",
     "defuse-token-id/arbitrary",
@@ -64,7 +62,6 @@ chrono = { workspace = true, features = ["now"] }
 defuse-test-utils.workspace = true
 
 arbitrary.workspace = true
-arbitrary_with.workspace = true
 hex-literal.workspace = true
 itertools.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }

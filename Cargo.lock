@@ -825,7 +825,6 @@ name = "defuse-core"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
- "arbitrary_with",
  "chrono",
  "defuse-auth-call",
  "defuse-bitmap",
@@ -1028,7 +1027,7 @@ dependencies = [
 name = "defuse-test-utils"
 version = "0.1.0"
 dependencies = [
- "arbitrary_with",
+ "arbitrary",
  "defuse-randomness",
  "derive_more",
  "hex",
@@ -1043,7 +1042,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "arbitrary",
- "arbitrary_with",
  "bnum",
  "chrono",
  "defuse",
@@ -1088,7 +1086,6 @@ name = "defuse-token-id"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
- "arbitrary_with",
  "defuse-nep245",
  "defuse-test-utils",
  "derive_more",
