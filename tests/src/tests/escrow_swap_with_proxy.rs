@@ -22,13 +22,18 @@ use defuse_sandbox::{Account, Sandbox, SigningAccount};
 use defuse_token_id::nep141::Nep141TokenId;
 use defuse_token_id::nep245::Nep245TokenId;
 use defuse_token_id::TokenId;
-use defuse_transfer_auth::ext::{DefuseAccountExt, TransferAuthAccountExt, derive_transfer_auth_account_id};
+use defuse_transfer_auth::ext::{DefuseAccountExt, TransferAuthAccountExt, derive_transfer_auth_account_id, public_key_from_secret};
 use defuse_transfer_auth::storage::State as TransferAuthState;
 use near_sdk::json_types::U128;
 use near_sdk::{AccountId, Gas, NearToken, env::keccak256};
 use serde_json::json;
 
 const INIT_BALANCE: NearToken = NearToken::from_near(100);
+const SWAP_AMOUNT:u128 = 1_000_000_000_000_000_000_000_000;
+
+/// Hardcoded test private key for relay (32 bytes) - FOR TESTING ONLY
+const PRIVATE_KEY_RELAY: [u8; 32] = [1u8; 32];
+const PRIVATE_KEY_SOLVER: [u8; 32] = [2u8; 32];
 
 // ============================================================================
 // Helper functions for deploying tokens via poa_factory using near-sandbox
@@ -430,7 +435,8 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     // Step 1: Execute AuthCall intent signed by relay to deploy and authorize transfer-auth
     // The relay signs an AuthCall intent with state_init, defuse executes it and calls on_auth
     // Note: Relay must be registered in defuse with their public key first
-    relay.execute_auth_call_intent(&defuse, &transfer_auth_global, &auth_state).await;
+    relay.defuse_add_public_key(&*defuse, public_key_from_secret(&PRIVATE_KEY_RELAY)).await.unwrap();
+    relay.execute_auth_call_intent(&defuse, &transfer_auth_global, &auth_state, &PRIVATE_KEY_RELAY, [0u8; 32]).await;
 
     // Verify transfer-auth instance EXISTS after on_auth call (state_init deployed it)
     assert!(
