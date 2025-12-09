@@ -11,7 +11,7 @@ pub fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
         .join(name)
         .with_extension("wasm");
 
-    fs::read(filename).unwrap()
+    fs::read(&filename).unwrap_or_else(|e| panic!("Failed to read WASM file at {filename:?}: {e}"))
 }
 
 pub struct TxOutcome<'a>(&'a ExecutionFinalResult);
