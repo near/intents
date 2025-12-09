@@ -73,7 +73,6 @@ async fn partial_fills() {
         // taker_whitelist: Default::default(),
         taker_whitelist: env.takers.iter().map(|a| a.id()).cloned().collect(),
         protocol_fees: ProtocolFees {
-            // fee: Pips::ZERO,
             fee: Pips::from_percent(1).unwrap(),
             surplus: Pips::from_percent(10).unwrap(),
             collector: env.fee_collectors[0].id().clone(),
@@ -178,7 +177,7 @@ async fn partial_fills() {
                                     serde_json::to_string(&TransferMessage {
                                         params: params.clone(),
                                         action: FillAction {
-                                            price: "2".parse().unwrap(),
+                                            price: "2.1".parse().unwrap(),
                                             deadline: Deadline::timeout(Duration::from_secs(10)),
                                             receive_src_to: OverrideSend {
                                                 memo: Some("taker memo".to_string()),

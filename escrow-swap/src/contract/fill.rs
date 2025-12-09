@@ -99,9 +99,7 @@ impl State {
 
         // send to taker (no resolve)
         let taker_src_p = params.src_token.send(
-            msg.receive_src_to
-                .receiver_id
-                .unwrap_or_else(|| sender_id.clone()),
+            msg.receive_src_to.receiver_id.unwrap_or(sender_id),
             taker_src_out,
             msg.receive_src_to.memo,
             msg.receive_src_to.msg,
@@ -125,9 +123,7 @@ impl State {
         taker_price: UD128,
         partial_fills_allowed: bool,
     ) -> Result<(u128, u128)> {
-        // TODO: rounding everywhere?
-        let taker_want_src = taker_dst_in
-            .checked_div_ceil(taker_price)
+        let taker_want_src = <u128 as CheckedDiv<UD128>>::checked_div(taker_dst_in, taker_price)
             .ok_or(Error::IntegerOverflow)?;
         if taker_want_src < self.maker_src_remaining {
             if !partial_fills_allowed {
@@ -190,8 +186,7 @@ impl ProtocolFees {
         Ok(ProtocolFeesCollected {
             fee: self.fee.fee_ceil(taker_dst_used),
             surplus: if !self.surplus.is_zero() {
-                let maker_want_dst = src_out
-                    .checked_mul_ceil(maker_price)
+                let maker_want_dst = <u128 as CheckedMul<UD128>>::checked_mul(src_out, maker_price)
                     .ok_or(Error::IntegerOverflow)?;
                 let surplus = taker_dst_used.saturating_sub(maker_want_dst);
                 self.surplus.fee_ceil(surplus)
