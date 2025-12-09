@@ -48,7 +48,7 @@ container_build_command = [
     "non-reproducible-wasm",
     "--locked",
     "--features=abi,contract",
-    "--no-embed-abi"
+    "--no-embed-abi",
 ]
 
 [features]
@@ -68,7 +68,7 @@ defuse-core = { workspace = true, features = ["arbitrary"] }
 defuse-test-utils.workspace = true
 chrono.workspace = true
 
-arbitrary_with.workspace = true
+arbitrary.workspace = true
 itertools.workspace = true
 proptest = { workspace = true }
 rstest.workspace = true

@@ -1,4 +1,4 @@
-use arbitrary_with::Unstructured;
+use arbitrary::Unstructured;
 use defuse::core::crypto::PublicKey;
 use defuse_test_utils::random::{Rng, rng};
 use rstest::fixture;
