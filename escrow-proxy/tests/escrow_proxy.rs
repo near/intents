@@ -27,7 +27,7 @@ async fn escrow_proxy_deployment_and_config() {
     };
 
     let roles = RolesConfig {
-        super_admins: HashSet::from([root.id()]),
+        super_admins: HashSet::from([root.id().clone()]),
         admins: HashMap::new(),
         grantees: HashMap::new(),
     };
@@ -64,12 +64,12 @@ async fn dao_can_upgrade_contract() {
     };
 
     let mut grantees = HashMap::new();
-    grantees.insert(defuse_escrow_proxy::Role::DAO, HashSet::from([dao.id()]));
+    grantees.insert(defuse_escrow_proxy::Role::DAO, HashSet::from([dao.id().clone()]));
 
     let roles = RolesConfig {
-        super_admins: HashSet::from([root.id()]),
+        super_admins: HashSet::from([root.id().clone()]),
         admins: HashMap::new(),
-        grantees: [(defuse_escrow_proxy::Role::DAO, [dao.id()].into())].into()
+        grantees: [(defuse_escrow_proxy::Role::DAO, [dao.id().clone()].into())].into()
     };
 
     proxy_account.deploy_escrow_proxy(roles, config).await.unwrap();

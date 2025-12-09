@@ -78,7 +78,7 @@ impl AccountExt for SigningAccount {
         &self,
     ) -> anyhow::Result<ProxyConfig> {
         Ok(self
-            .tx(self.id())
+            .tx(self.id().clone())
             .function_call_json::<ProxyConfig>(
                 "config",
                 "{}",

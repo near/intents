@@ -30,6 +30,7 @@ near-sdk = { workspace = true, features = ["unstable"] }
 serde_with.workspace = true
 
 [dev-dependencies]
+defuse-escrow-proxy = { path = ".", features = ["test-utils"] }
 defuse-sandbox.workspace = true
 defuse-transfer-auth = { workspace = true, features = ["test-utils"] }
 multi-token-receiver-stub = { path = "../tests/contracts/multi-token-receiver-stub", features = ["test-utils"] }
@@ -43,4 +44,5 @@ anyhow.workspace = true
 
 [features]
 contract = []
+test-utils = []
 abi = ["defuse-crypto/abi", "defuse-token-id/abi", "defuse-deadline/abi", "defuse-transfer-auth/abi"]

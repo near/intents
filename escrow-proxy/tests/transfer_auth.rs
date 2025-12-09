@@ -36,7 +36,7 @@ async fn test_deploy_transfer_auth_global_contract() {
     let solver = root.create_subaccount("solver", INIT_BALANCE).await.unwrap();
 
     let roles = RolesConfig {
-        super_admins: HashSet::from([root.id()]),
+        super_admins: HashSet::from([root.id().clone()]),
         admins: HashMap::new(),
         grantees: HashMap::new(),
     };
@@ -176,7 +176,7 @@ async fn test_transfer_authorized_by_relay() {
     let solver = root.create_subaccount("solver", INIT_BALANCE).await.unwrap();
 
     let roles = RolesConfig {
-        super_admins: HashSet::from([root.id()]),
+        super_admins: HashSet::from([root.id().clone()]),
         admins: HashMap::new(),
         grantees: HashMap::new(),
     };

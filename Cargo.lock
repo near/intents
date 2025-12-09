@@ -942,6 +942,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-escrow-proxy"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "defuse-admin-utils",
+ "defuse-auth-call",
+ "defuse-borsh-utils",
+ "defuse-controller",
+ "defuse-crypto",
+ "defuse-deadline",
+ "defuse-escrow-proxy",
+ "defuse-fees",
+ "defuse-near-utils",
+ "defuse-nep245",
+ "defuse-sandbox",
+ "defuse-token-id",
+ "defuse-transfer-auth",
+ "futures",
+ "impl-tools",
+ "multi-token-receiver-stub",
+ "near-plugins",
+ "near-sdk",
+ "near-workspaces",
+ "serde_json",
+ "serde_with",
+ "tokio",
+]
+
+[[package]]
 name = "defuse-escrow-swap"
 version = "0.1.0"
 dependencies = [
@@ -1143,11 +1172,16 @@ dependencies = [
  "bnum",
  "chrono",
  "defuse",
+ "defuse-crypto",
+ "defuse-deadline",
+ "defuse-escrow-proxy",
  "defuse-near-utils",
  "defuse-poa-factory",
  "defuse-randomness",
  "defuse-serde-utils",
  "defuse-test-utils",
+ "defuse-token-id",
+ "defuse-transfer-auth",
  "derive_more",
  "futures",
  "hex",
@@ -1215,6 +1249,27 @@ dependencies = [
  "schemars 0.8.22",
  "serde_with",
  "tlb-ton",
+]
+
+[[package]]
+name = "defuse-transfer-auth"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "defuse-auth-call",
+ "defuse-fees",
+ "defuse-near-utils",
+ "defuse-sandbox",
+ "defuse-transfer-auth",
+ "futures",
+ "impl-tools",
+ "near-sdk",
+ "near-workspaces",
+ "serde_json",
+ "serde_with",
+ "statig",
+ "thiserror 2.0.17",
+ "tokio",
 ]
 
 [[package]]
@@ -1461,7 +1516,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -2432,8 +2487,10 @@ dependencies = [
 name = "multi-token-receiver-stub"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "defuse",
  "defuse-nep245",
+ "defuse-sandbox",
  "near-sdk",
  "near-workspaces",
  "serde_json",
@@ -2884,8 +2941,6 @@ checksum = "79d63d022e686c6b92426c98f011908037730d557e815d6c813d5686030a6b53"
 [[package]]
 name = "near-sdk"
 version = "5.20.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad981c9f695f63ed31a2fb503a93da0010b897332024541580aefa6eb490fea3"
 dependencies = [
  "base64 0.22.1",
  "borsh",
@@ -2911,8 +2966,6 @@ dependencies = [
 [[package]]
 name = "near-sdk-macros"
 version = "5.20.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e35becf65e0597425d026a6dc57f1f88fbf9ba69096b2010de5bca3625bcd873"
 dependencies = [
  "Inflector",
  "darling 0.20.11",
@@ -2934,8 +2987,6 @@ checksum = "a501d5074c5c341725fe801ed191f45ef97e0a4d54d6ef5c3e87363930d4d0b1"
 [[package]]
 name = "near-sys"
 version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b99e9ce0020190ea152f70d1849e54fc8fc123738e7447800ad818c78f5167cc"
 
 [[package]]
 name = "near-time"
@@ -3398,6 +3449,7 @@ dependencies = [
  "proc-macro-error-attr2",
  "proc-macro2",
  "quote",
+ "syn 2.0.111",
 ]
 
 [[package]]
@@ -3780,7 +3832,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.11.0",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -4249,6 +4301,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
+name = "statig"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "03c04b4a9f2d66294d63bdd8df834caad9f8e181997c3cf766b6b4f6d12d4fbc"
+dependencies = [
+ "statig_macro",
+]
+
+[[package]]
+name = "statig_macro"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8090ca395ee30c4b38fee68cf4ddf0bcc5f01aa83364cd4c3ec737a1596dab4d"
+dependencies = [
+ "proc-macro-error2",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.111",
+]
+
+[[package]]
 name = "stellar-strkey"
 version = "0.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4450,7 +4523,7 @@ dependencies = [
  "getrandom 0.3.4",
  "once_cell",
  "rustix 1.1.2",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

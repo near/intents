@@ -102,10 +102,6 @@ impl SigningAccount {
         self.signer.clone()
     }
 
-    pub fn id(&self) -> AccountId {
-        self.account.id().clone()
-    }
-
     pub fn tx(&self, receiver_id: AccountId) -> TxBuilder {
         TxBuilder::new(self.clone(), receiver_id)
     }

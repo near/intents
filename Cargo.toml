@@ -107,7 +107,7 @@ near-contract-standards = "5.20"
 near-crypto = "0.34"
 near-plugins = { git = "https://github.com/Near-One/near-plugins", tag = "v0.5.0" }
 near-sandbox = "0.3.2"
-near-sdk = "5.20"
+near-sdk = { version = "5.20", features = ["deterministic-account-ids"] }
 near-workspaces = "0.22"
 p256 = { version = "0.13.2", default-features = false, features = ["ecdsa"] }
 rand = "0.9"
