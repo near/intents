@@ -10,7 +10,7 @@ workspace = true
 
 [dev-dependencies]
 defuse = { workspace = true, features = ["contract", "sandbox"] }
-defuse-near-utils = { workspace = true, features = ["arbitrary"] }
+defuse-near-utils = { workspace = true }
 defuse-poa-factory = { workspace = true, features = ["contract", "sandbox"] }
 defuse-serde-utils = { workspace = true }
 defuse-randomness.workspace = true
@@ -20,7 +20,6 @@ defuse-sandbox.workspace = true
 futures = "0.3"
 anyhow.workspace = true
 arbitrary.workspace = true
-arbitrary_with = { workspace = true }
 bnum = { workspace = true, features = ["rand"] }
 chrono.workspace = true
 derive_more.workspace = true

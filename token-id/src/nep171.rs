@@ -5,21 +5,12 @@ use std::{fmt, str::FromStr};
 use near_sdk::{AccountId, near};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
-#[cfg(any(feature = "arbitrary", test))]
-use arbitrary_with::{Arbitrary, As};
-#[cfg(any(feature = "arbitrary", test))]
-use defuse_near_utils::arbitrary::ArbitraryAccountId;
-
 use crate::{TokenIdError, TokenIdType};
 
-#[cfg_attr(any(feature = "arbitrary", test), derive(Arbitrary))]
+#[cfg_attr(any(feature = "arbitrary", test), derive(::arbitrary::Arbitrary))]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr)]
 #[near(serializers = [borsh])]
 pub struct Nep171TokenId {
-    #[cfg_attr(
-        any(feature = "arbitrary", test),
-        arbitrary(with = As::<ArbitraryAccountId>::arbitrary),
-    )]
     pub contract_id: AccountId,
 
     pub nft_token_id: TokenId,

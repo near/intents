@@ -41,6 +41,20 @@ defuse-sandbox = {workspace = true, optional = true}
 arbitrary = {workspace = true, optional = true}
 defuse-test-utils = {workspace = true, optional = true}
 
+[package.metadata.near.reproducible_build]
+image = "sourcescan/cargo-near:0.16.2-rust-1.86.0"
+image_digest = "sha256:74c24d4d912f893198b8b13e01d43e0f78f3b00b3df45bf555a707eb4918a54e"
+passed_env = []
+container_build_command = [
+    "cargo",
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--locked",
+    "--features=abi,contract",
+    "--no-embed-abi",
+]
+
 [features]
 abi = ["defuse-core/abi"]
 arbitrary = ["defuse-core/arbitrary", "dep:arbitrary",]
@@ -64,22 +78,8 @@ defuse-core = { workspace = true, features = ["arbitrary"] }
 defuse-test-utils.workspace = true
 chrono.workspace = true
 
-arbitrary_with.workspace = true
+arbitrary.workspace = true
 itertools.workspace = true
 proptest = { workspace = true }
 rstest.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
-
-[package.metadata.near.reproducible_build]
-image = "sourcescan/cargo-near:0.16.2-rust-1.86.0"
-image_digest = "sha256:74c24d4d912f893198b8b13e01d43e0f78f3b00b3df45bf555a707eb4918a54e"
-passed_env = []
-container_build_command = [
-    "cargo",
-    "near",
-    "build",
-    "non-reproducible-wasm",
-    "--locked",
-    "--features=abi,contract",
-    "--no-embed-abi"
-]

@@ -12,9 +12,9 @@ use defuse_core::{
     },
     token_id::{TokenId, nep141::Nep141TokenId},
 };
-use defuse_near_utils::{CURRENT_ACCOUNT_ID, Lock};
+use defuse_near_utils::Lock;
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
-use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, PromiseOrValue, json_types::U128};
+use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, PromiseOrValue, env, json_types::U128};
 use std::borrow::Cow;
 
 use crate::contract::{Contract, accounts::Account};
@@ -22,7 +22,7 @@ use crate::contract::{Contract, accounts::Account};
 impl StateView for Contract {
     #[inline]
     fn verifying_contract(&self) -> Cow<'_, AccountIdRef> {
-        Cow::Borrowed(CURRENT_ACCOUNT_ID.as_ref())
+        Cow::Owned(env::current_account_id())
     }
 
     #[inline]
@@ -230,7 +230,7 @@ impl State for Contract {
             .near_withdraw(U128(withdraw.amount.as_yoctonear()))
             .then(
                 // do_native_withdraw only after unwrapping NEAR
-                Self::ext(CURRENT_ACCOUNT_ID.clone())
+                Self::ext(env::current_account_id())
                     .with_static_gas(Self::DO_NATIVE_WITHDRAW_GAS)
                     // do not distribute remaining gas here
                     .with_unused_gas_weight(0)
@@ -287,7 +287,7 @@ impl State for Contract {
             .near_withdraw(U128(storage_deposit.amount.as_yoctonear()))
             .then(
                 // do_storage_deposit only after unwrapping NEAR
-                Self::ext(CURRENT_ACCOUNT_ID.clone())
+                Self::ext(env::current_account_id())
                     .with_static_gas(Self::DO_STORAGE_DEPOSIT_GAS)
                     // do not distribute remaining gas here
                     .with_unused_gas_weight(0)
@@ -325,7 +325,7 @@ impl State for Contract {
                 .near_withdraw(U128(auth_call.attached_deposit.as_yoctonear()))
                 .then(
                     // do_auth_call only after unwrapping NEAR
-                    Self::ext(CURRENT_ACCOUNT_ID.clone())
+                    Self::ext(env::current_account_id())
                         .with_static_gas(
                             Self::DO_AUTH_CALL_MIN_GAS
                                 .checked_add(

@@ -78,7 +78,6 @@ defuse-test-utils.path = "test-utils"
 
 anyhow = "1"
 arbitrary = "1"
-arbitrary_with = "0.3.2"
 array-util = "1"
 bitflags = "2.9.1"
 bnum = { version = "0.13", features = ["borsh"] }
@@ -100,8 +99,8 @@ near-sandbox = "0.3.2"
 near-contract-standards = "5.21"
 near-crypto = "0.30"
 near-plugins = { git = "https://github.com/Near-One/near-plugins", tag = "v0.5.0" }
-near-sdk = "5.18"
-near-workspaces = "0.20"
+near-sdk = "5.22"
+near-workspaces = "0.22"
 futures = "0.3"
 p256 = { version = "0.13.2", default-features = false, features = ["ecdsa"] }
 

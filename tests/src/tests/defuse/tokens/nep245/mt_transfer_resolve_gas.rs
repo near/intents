@@ -1,6 +1,6 @@
 use crate::tests::defuse::{env::Env, tokens::nep245::letter_gen::LetterCombinations};
 use anyhow::Context;
-use arbitrary_with::ArbitraryAs;
+use arbitrary::Arbitrary;
 use defuse::{
     core::{
         crypto,
@@ -8,7 +8,6 @@ use defuse::{
     },
     nep245::{MtEvent, MtTransferEvent},
 };
-use defuse_near_utils::arbitrary::ArbitraryAccountId;
 use defuse_randomness::Rng;
 use defuse_sandbox::{
     Account, SigningAccount,
@@ -170,7 +169,7 @@ async fn run_resolve_gas_test(
         })
         .context("Failed at mt_on_transfer")?;
 
-    let non_existent_account = ArbitraryAccountId::arbitrary_as(&mut u).unwrap();
+    let non_existent_account = AccountId::arbitrary(&mut u).unwrap();
 
     // NOTE: `mt_on_transfer` emits an `MtMint` event, but `mt_batch_transfer_call` emits `mt_transfer`
     // events that serialize more fields. These transfer logs approach the hard log-size limit, so
