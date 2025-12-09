@@ -1,6 +1,7 @@
 #[cfg(feature = "arbitrary")]
 pub mod arbitrary;
 mod cache;
+
 #[cfg(feature = "digest")]
 pub mod digest;
 mod event;
@@ -10,10 +11,11 @@ mod lock;
 mod panic;
 mod panic_on_clone;
 mod prefix;
+mod promise;
 #[cfg(feature = "time")]
 pub mod time;
 
-pub use self::{cache::*, gas::*, lock::*, panic::*, panic_on_clone::*, prefix::*};
+pub use self::{cache::*, gas::*, lock::*, panic::*, panic_on_clone::*, prefix::*, promise::*};
 
 #[macro_export]
 macro_rules! method_name {
