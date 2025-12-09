@@ -229,11 +229,7 @@ where
 
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
 const _: () = {
-    use near_sdk::schemars::{
-        JsonSchema,
-        r#gen::SchemaGenerator,
-        schema::{InstanceType, Schema, SchemaObject},
-    };
+    use near_sdk::schemars::{r#gen::SchemaGenerator, schema::Schema};
     use serde_with::schemars_0_8::JsonSchemaAs;
 
     impl<T, As> JsonSchemaAs<Amounts<T>> for Amounts<As>

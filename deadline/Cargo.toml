@@ -8,6 +8,9 @@ repository.workspace = true
 [lints]
 workspace = true
 
+[features]
+abi = []
+
 [dependencies]
 defuse-borsh-utils = { workspace = true, features = ["chrono"] }
 defuse-near-utils = { workspace = true, features = ["time"] }
@@ -15,6 +18,3 @@ defuse-num-utils.workspace = true
 
 near-sdk.workspace = true
 chrono = { workspace = true, features = ["serde"] }
-
-[features]
-abi = []

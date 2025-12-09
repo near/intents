@@ -82,15 +82,17 @@ defuse-test-utils.path = "test-utils"
 
 anyhow = "1"
 arbitrary = "1"
-arbitrary_with = "0.3"
+arbitrary_with = "0.3.2"
 array-util = "1"
 bitflags = "2.9.1"
 bnum = { version = "0.13", features = ["borsh"] }
+cargo-near-build = "0.9.0"
 chrono = { version = "0.4", default-features = false }
 derive_more = "2.0"
 digest = { version = "0.10", default-features = false }
 ed25519-dalek = { version = "2.1", default-features = false }
 futures = "0.3"
+generic-array = "1"
 hex = "0.4"
 hex-literal = "1.0"
 impl-tools = "0.11"
@@ -103,9 +105,7 @@ near-plugins = { git = "https://github.com/Near-One/near-plugins", tag = "v0.5.0
 near-sandbox = "0.3.2"
 near-sdk = "5.20"
 near-workspaces = "0.22"
-cargo-near-build = "0.9.0"
-
-p256 = { version = "0.13", default-features = false, features = ["ecdsa"] }
+p256 = { version = "0.13.2", default-features = false, features = ["ecdsa"] }
 rand = "0.9"
 rand_chacha = "0.9"
 proptest = "1.5"
@@ -113,8 +113,8 @@ rstest = "0.25"
 fastnum = "0.2.10"
 schemars = "0.8"
 serde_json = "1"
-serde_with = "3.14"
-stellar-strkey = "0.0"
+serde_with = "3.9"
+stellar-strkey = "0.0.13"
 strum = { version = "0.27", features = ["derive"] }
 thiserror = "2"
 tlb-ton = { version = "0.5.6", default-features = false }
