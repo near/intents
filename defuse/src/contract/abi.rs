@@ -8,7 +8,7 @@ use super::{Contract, ContractExt};
 
 #[near]
 impl Contract {
-    pub fn __abi_helper(types: AbiHelper) {}
+    pub fn __abi_helper(_types: AbiHelper) {}
 }
 
 #[near(serializers = [json])]
