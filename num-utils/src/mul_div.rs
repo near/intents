@@ -1,4 +1,3 @@
-
 use core::ops::Mul;
 
 use bnum::{BInt, BUint, cast::As};
