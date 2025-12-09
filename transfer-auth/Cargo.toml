@@ -36,6 +36,11 @@ statig = { version = "0.4.1" }
 defuse-near-utils.workspace = true
 defuse-sandbox = { workspace = true, optional = true }
 defuse-token-id = { workspace = true, optional = true }
+defuse-nep413 = { workspace = true, optional = true }
+defuse-deadline = { workspace = true, optional = true }
+defuse-crypto = { workspace = true, optional = true, features = ["serde"] }
+defuse-core = { workspace = true, optional = true }
+ed25519-dalek = { workspace = true, optional = true }
 anyhow = { workspace = true, optional = true }
 #TODO: remove when ext moved to defuse
 defuse-fees.workspace = true
@@ -54,4 +59,4 @@ anyhow.workspace = true
 [features]
 contract = []
 abi = []
-test-utils = ["dep:defuse-sandbox", "dep:defuse-token-id", "dep:anyhow"]
+test-utils = ["dep:defuse-sandbox", "dep:defuse-token-id", "dep:defuse-nep413", "dep:defuse-deadline", "dep:defuse-crypto", "dep:defuse-core", "dep:ed25519-dalek", "dep:anyhow"]

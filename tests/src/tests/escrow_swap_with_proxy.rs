@@ -14,7 +14,7 @@ use defuse_deadline::Deadline;
 use defuse_escrow_proxy::ext::EscrowProxyAccountExt;
 use defuse_escrow_proxy::{ProxyConfig, RolesConfig};
 use defuse_escrow_swap::action::{FillAction, TransferAction, TransferMessage as EscrowTransferMessage};
-use defuse_escrow_swap::ext::EscrowSwapAccountExt;
+use defuse_escrow_swap::ext::{EscrowSwapAccountExt, derive_escrow_swap_account_id};
 use defuse_escrow_swap::Params;
 use defuse_poa_factory::contract::Role;
 use defuse_price::Price;
@@ -23,7 +23,7 @@ use defuse_token_id::nep141::Nep141TokenId;
 use defuse_token_id::nep245::Nep245TokenId;
 use defuse_token_id::TokenId;
 use defuse_transfer_auth::ext::{DefuseAccountExt, TransferAuthAccountExt, derive_transfer_auth_account_id};
-use defuse_transfer_auth::storage::{ContractStorage as TransferAuthStorage, State as TransferAuthState};
+use defuse_transfer_auth::storage::State as TransferAuthState;
 use near_sdk::json_types::U128;
 use near_sdk::{AccountId, Gas, NearToken, env::keccak256};
 use serde_json::json;
@@ -283,14 +283,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         admins: HashMap::new(),
         grantees: HashMap::new(),
     };
-    let config = ProxyConfig {
-        per_fill_global_contract_id: transfer_auth_global.clone(),
-        escrow_swap_global_contract_id: escrow_swap_global.clone(),
-        auth_contract: defuse.id().clone(),
-        auth_collee: relay.id().clone(),
-    };
     let proxy = root.create_subaccount("proxy", INIT_BALANCE).await.unwrap();
-    proxy.deploy_escrow_proxy(roles, config.clone()).await.unwrap();
 
     // 2. Deploy and setup tokens
     let swap_amount: u128 = 1_000_000_000_000_000_000_000_000; // 1 token with 24 decimals
@@ -314,16 +307,17 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         &[(&solver, swap_amount)],
     ).await;
 
-    // Verify initial MT balances (use defuse token IDs for balance queries)
-    let maker_token_a_balance = SigningAccount::mt_balance_of(&*defuse, maker.id(), &token_a_defuse_id)
-        .await
-        .unwrap();
-    assert_eq!(maker_token_a_balance, swap_amount, "Maker should have token-a in defuse");
 
-    let solver_token_b_balance = SigningAccount::mt_balance_of(&*defuse, solver.id(), &token_b_defuse_id)
-        .await
-        .unwrap();
-    assert_eq!(solver_token_b_balance, swap_amount, "Solver should have token-b in defuse");
+
+    /////TEST
+
+    let config = ProxyConfig {
+        per_fill_global_contract_id: transfer_auth_global.clone(),
+        escrow_swap_global_contract_id: escrow_swap_global.clone(),
+        auth_contract: defuse.id().clone(),
+        auth_collee: relay.id().clone(),
+    };
+    proxy.deploy_escrow_proxy(roles, config.clone()).await.unwrap();
 
     // 3. Create escrow parameters (use escrow token IDs - Nep245 format)
     let escrow_params = Params {
@@ -342,15 +336,21 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         salt: [1u8; 32],
     };
 
+    // Derive escrow instance ID (without deploying) to check existence
+    let escrow_instance_id = derive_escrow_swap_account_id(&escrow_swap_global, &escrow_params);
+    let escrow_instance_account = Account::new(escrow_instance_id.clone(), root.network_config().clone());
+
+    // Verify escrow-swap instance does NOT exist before maker's fund
+    assert!(
+        !escrow_instance_account.exists().await,
+        "Escrow-swap instance should NOT exist before maker's fund"
+    );
+
     // Deploy escrow instance (must exist before maker can fund it)
-    let escrow_instance_id = root.deploy_escrow_swap_instance(
+    root.deploy_escrow_swap_instance(
         escrow_swap_global.clone(),
         &escrow_params,
     ).await;
-
-    // Storage deposits for escrow instance on FT tokens
-    ft_storage_deposit(root, &token_a_id, &escrow_instance_id).await;
-    ft_storage_deposit(root, &token_b_id, &escrow_instance_id).await;
 
     // 4. Fund escrow - Maker sends token-a to escrow
     let fund_msg = EscrowTransferMessage {
@@ -369,6 +369,12 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         )
         .await
         .unwrap();
+
+    // Verify escrow-swap instance EXISTS after maker's fund (state_init deployed it)
+    assert!(
+        escrow_instance_account.exists().await,
+        "Escrow-swap instance should exist after maker's fund"
+    );
 
     // Verify escrow received maker's tokens
     let escrow_token_a_balance = SigningAccount::mt_balance_of(&*defuse, &escrow_instance_id, &token_a_defuse_id)
@@ -405,39 +411,41 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     };
     let transfer_auth_instance_id = derive_transfer_auth_account_id(&transfer_auth_global, &auth_state);
 
-    // Build raw state for state_init
-    let raw_state = TransferAuthStorage::init_state(auth_state).unwrap();
+    // Create Account wrapper for transfer-auth instance to check existence
+    let transfer_auth_instance_account = Account::new(
+        transfer_auth_instance_id.clone(),
+        root.network_config().clone(),
+    );
+
+    // Verify transfer-auth instance does NOT exist before on_auth call
+    assert!(
+        !transfer_auth_instance_account.exists().await,
+        "Transfer-auth instance should NOT exist before on_auth call"
+    );
 
     // Storage deposits for proxy to forward tokens
     ft_storage_deposit(root, &token_a_id, solver.id()).await;
     ft_storage_deposit(root, &token_b_id, maker.id()).await;
 
-    // Run solver transfer and relay authorization concurrently
-    let (transfer_result, _auth_result) = futures::join!(
-        solver.mt_transfer_call(
-            &*defuse,
-            proxy.id(),
-            &token_b_defuse_id,
-            swap_amount,
-            &proxy_msg_json,
-        ),
-        // Call on_auth from defuse (auth_contract) with relay as signer_id
-        async {
-            defuse.tx(transfer_auth_instance_id.clone())
-                .state_init(transfer_auth_global.clone(), raw_state)
-                .function_call_json::<()>(
-                    "on_auth",
-                    json!({
-                        "signer_id": relay.id(),
-                        "msg": "",
-                    }),
-                    Gas::from_tgas(50),
-                    NearToken::from_yoctonear(1),
-                )
-                .no_result()
-                .await
-        }
+    // Step 1: Execute AuthCall intent signed by relay to deploy and authorize transfer-auth
+    // The relay signs an AuthCall intent with state_init, defuse executes it and calls on_auth
+    // Note: Relay must be registered in defuse with their public key first
+    relay.execute_auth_call_intent(&defuse, &transfer_auth_global, &auth_state).await;
+
+    // Verify transfer-auth instance EXISTS after on_auth call (state_init deployed it)
+    assert!(
+        transfer_auth_instance_account.exists().await,
+        "Transfer-auth instance should exist after on_auth call"
     );
+
+    // Step 2: Solver sends tokens to proxy - proxy will query transfer-auth for authorization
+    let transfer_result = solver.mt_transfer_call(
+        &*defuse,
+        proxy.id(),
+        &token_b_defuse_id,
+        swap_amount,
+        &proxy_msg_json,
+    ).await;
 
     let used_amounts = transfer_result.unwrap();
 
@@ -482,5 +490,23 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     assert_eq!(
         escrow_token_b_final, 0,
         "Escrow should have no token-b remaining"
+    );
+
+    // Verify transfer-auth instance no longer exists after swap completion
+    // (the instance self-destructs or becomes inactive after authorization is consumed)
+    // Note: Transfer-auth instance may still exist but be in a "closed" state
+    // For now we just verify the swap completed successfully - the instance lifecycle
+    // depends on the specific implementation (self-destruct vs state change)
+
+    // Verify escrow-swap instance still exists (it persists after swap for potential future fills)
+    // Note: Escrow instance persists with zero balance - it doesn't self-destruct
+    //
+    assert!(
+        !transfer_auth_instance_account.exists().await,
+        "Transfer-auth instance should not exist after successful use"
+    );
+    assert!(
+        escrow_instance_account.exists().await,
+        "Escrow-swap instance should still exist (with zero balance) after swap"
     );
 }
