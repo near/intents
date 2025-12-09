@@ -252,7 +252,7 @@ async fn ton_connect_sign_intent_example() {
         ),
     };
 
-    let account = env.sandbox().create_account("alice.near").await.unwrap();
+    let account = env.create_user().await;
     let signed = account.sign_ton_connect(payload);
 
     let _decoded_payload: DefusePayload<DefuseIntents> = signed.extract_defuse_payload().unwrap();
