@@ -10,6 +10,7 @@ workspace = true
 
 [dev-dependencies]
 defuse = { workspace = true, features = ["contract", "arbitrary"] }
+defuse-core.workspace = true
 defuse-crypto.workspace = true
 defuse-deadline.workspace = true
 defuse-escrow-proxy = { workspace = true, features = ["test-utils"] }

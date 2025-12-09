@@ -351,29 +351,34 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         "Escrow-swap instance should NOT exist before maker's fund"
     );
 
-    // Deploy escrow instance (must exist before maker can fund it)
-    root.deploy_escrow_swap_instance(
-        escrow_swap_global.clone(),
-        &escrow_params,
-    ).await;
-
-    // 4. Fund escrow - Maker sends token-a to escrow
+    // 4. Fund escrow via Transfer intent with state_init
+    // This deploys the escrow instance atomically with the token transfer
     let fund_msg = EscrowTransferMessage {
         params: escrow_params.clone(),
         action: TransferAction::Fund,
     };
     let fund_msg_json = serde_json::to_string(&fund_msg).unwrap();
 
-    maker
-        .mt_transfer_call(
-            &*defuse,
-            &escrow_instance_id,
-            &token_a_defuse_id,
-            swap_amount,
-            &fund_msg_json,
-        )
-        .await
-        .unwrap();
+    // Build state_init for escrow-swap instance
+    let escrow_raw_state = defuse_escrow_swap::ContractStorage::init_state(&escrow_params).unwrap();
+    let escrow_state_init = near_sdk::state_init::StateInit::V1(near_sdk::state_init::StateInitV1 {
+        code: near_sdk::GlobalContractId::AccountId(escrow_swap_global.clone()),
+        data: escrow_raw_state,
+    });
+
+    // Build Transfer intent with notification containing state_init
+    let transfer = defuse_core::intents::tokens::Transfer {
+        receiver_id: escrow_instance_id.clone(),
+        tokens: defuse_core::amounts::Amounts::new([(token_a_defuse_id.clone(), swap_amount)].into()),
+        memo: None,
+        notification: Some(defuse_core::intents::tokens::NotifyOnTransfer::new(fund_msg_json)
+            .with_state_init(escrow_state_init)),
+    };
+
+    // Maker registers public key and executes transfer intent
+    const PRIVATE_KEY_MAKER: [u8; 32] = [3u8; 32];
+    maker.defuse_add_public_key(&*defuse, public_key_from_secret(&PRIVATE_KEY_MAKER)).await.unwrap();
+    maker.execute_transfer_intent(&defuse, transfer, &PRIVATE_KEY_MAKER, [0u8; 32]).await.unwrap();
 
     // Verify escrow-swap instance EXISTS after maker's fund (state_init deployed it)
     assert!(

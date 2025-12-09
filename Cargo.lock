@@ -1173,6 +1173,7 @@ dependencies = [
  "bnum",
  "chrono",
  "defuse",
+ "defuse-core",
  "defuse-crypto",
  "defuse-deadline",
  "defuse-escrow-proxy",

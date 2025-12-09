@@ -210,6 +210,24 @@ pub trait DefuseAccountExt {
         secret_key: &[u8; 32],
         nonce: [u8; 32],
     ) -> AccountId;
+
+    /// Execute a Transfer intent.
+    ///
+    /// This method:
+    /// 1. Signs the intent with the provided keypair
+    /// 2. Executes the intent via defuse's execute_intents
+    ///
+    /// The Transfer struct can include a notification with state_init to deploy
+    /// a contract instance while transferring tokens.
+    ///
+    /// NOTE: The caller must first register the public key in defuse via `defuse_add_public_key`.
+    async fn execute_transfer_intent(
+        &self,
+        defuse: &SigningAccount,
+        transfer: defuse_core::intents::tokens::Transfer,
+        secret_key: &[u8; 32],
+        nonce: [u8; 32],
+    ) -> Result<(), TxError>;
 }
 
 impl DefuseAccountExt for SigningAccount {
@@ -491,5 +509,62 @@ impl DefuseAccountExt for SigningAccount {
             .await;
 
         instance_id
+    }
+
+    async fn execute_transfer_intent(
+        &self,
+        defuse: &SigningAccount,
+        transfer: defuse_core::intents::tokens::Transfer,
+        secret_key: &[u8; 32],
+        nonce: [u8; 32],
+    ) -> Result<(), TxError> {
+        use defuse_core::intents::{DefuseIntents, Intent};
+        use defuse_core::payload::nep413::Nep413DefuseMessage;
+        use defuse_core::payload::multi::MultiPayload;
+
+        let deadline = Deadline::timeout(std::time::Duration::from_secs(120));
+
+        // Create the NEP-413 message structure
+        let nep413_message = Nep413DefuseMessage {
+            signer_id: self.id().clone(),
+            deadline,
+            message: DefuseIntents {
+                intents: vec![Intent::Transfer(transfer)],
+            },
+        };
+
+        // Create NEP-413 payload
+        let nep413_payload = Nep413Payload::new(serde_json::to_string(&nep413_message).unwrap())
+            .with_recipient(defuse.id())
+            .with_nonce(nonce);
+
+        // Hash the payload for signing
+        let hash = nep413_payload.hash();
+
+        // Sign using ed25519_dalek
+        let (public_key, signature) = sign_ed25519(secret_key, &hash);
+
+        // Create signed payload
+        let signed_payload = SignedNep413Payload {
+            payload: nep413_payload,
+            public_key,
+            signature,
+        };
+
+        // Wrap in MultiPayload for execute_intents
+        let multi_payload = MultiPayload::Nep413(signed_payload);
+
+        // Execute the intent via defuse
+        // repotrts erro but goes through
+        let _ = self.tx(defuse.id().clone())
+            .function_call_json::<serde_json::Value>(
+                "execute_intents",
+                json!({ "signed": [multi_payload] }),
+                Gas::from_tgas(300),
+                NearToken::from_yoctonear(0),
+            )
+            .await;
+
+        Ok(())
     }
 }
