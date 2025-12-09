@@ -8,7 +8,6 @@ mod lost_found;
 mod resolve;
 mod return_value;
 mod tokens;
-mod validate;
 
 use defuse_near_utils::UnwrapOrPanic;
 use impl_tools::autoimpl;
