@@ -18,12 +18,11 @@ use defuse::{
     core::{Deadline, ExpirableNonce, Nonce, Salt, SaltedNonce, VersionedNonce},
     tokens::{DepositAction, DepositMessage},
 };
-use defuse_near_utils::arbitrary::ArbitraryNamedAccountId;
 use defuse_randomness::{Rng, make_true_rng};
 use defuse_test_utils::random::{Seed, rng};
 use futures::future::try_join_all;
 use multi_token_receiver_stub::MTReceiverMode;
-use near_sdk::{AccountId, NearToken, env::sha256};
+use near_sdk::{AccountId, NearToken, account_id::arbitrary::ArbitraryNamedAccountId, env::sha256};
 use near_workspaces::{Account, Contract};
 
 use std::{
@@ -111,7 +110,7 @@ impl Env {
     }
 
     pub async fn create_token(&self) -> AccountId {
-        let account_id = generate_random_account_id(self.poa_factory.id(), Some("token-"))
+        let account_id = generate_random_account_id(self.poa_factory.id())
             .expect("Failed to generate random account ID");
 
         self.create_named_token(self.poa_factory.subaccount_name(&account_id).as_str())
@@ -164,7 +163,7 @@ impl Env {
             Ok(generate_legacy_user_account_id(root, index, self.seed)
                 .expect("Failed to generate account ID"))
         } else {
-            generate_random_account_id(root.id(), None)
+            generate_random_account_id(root.id())
         }
     }
 
@@ -307,11 +306,10 @@ pub fn create_random_salted_nonce(salt: Salt, deadline: Deadline, mut rng: impl 
     .into()
 }
 
-fn generate_random_account_id(parent_id: &AccountId, prefix: Option<&str>) -> Result<AccountId> {
+fn generate_random_account_id(parent_id: &AccountId) -> Result<AccountId> {
     let mut rng = make_true_rng();
     ArbitraryNamedAccountId::arbitrary_subaccount(
         &mut Unstructured::new(&rng.random::<[u8; 64]>()),
-        prefix,
         Some(parent_id),
     )
     .map_err(|e| anyhow::anyhow!("Failed to generate account ID : {e}"))
@@ -329,7 +327,6 @@ fn generate_legacy_user_account_id(
     let mut rng = rng(seed);
     ArbitraryNamedAccountId::arbitrary_subaccount(
         &mut Unstructured::new(&rng.random::<[u8; 64]>()),
-        Some(&format!("legacy-user{index}-")),
         Some(parent_id.id()),
     )
     .map_err(|e| anyhow::anyhow!("Failed to generate account ID : {e}"))

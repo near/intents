@@ -3,7 +3,7 @@ use crate::{
     utils::{mt::MtExt, test_log::TestLog},
 };
 use anyhow::Context;
-use arbitrary_with::ArbitraryAs;
+use arbitrary::Arbitrary;
 use defuse::{
     core::{
         crypto,
@@ -11,10 +11,9 @@ use defuse::{
     },
     nep245::{MtEvent, MtTransferEvent},
 };
-use defuse_near_utils::arbitrary::ArbitraryAccountId;
 use defuse_randomness::Rng;
 use defuse_test_utils::random::{gen_random_string, random_bytes, rng};
-use near_sdk::AsNep297Event;
+use near_sdk::{AccountId, AsNep297Event};
 use near_sdk::{NearToken, json_types::U128};
 use near_workspaces::Account;
 use rstest::rstest;
@@ -184,7 +183,7 @@ async fn run_resolve_gas_test(
         .context("Failed at mt_on_transfer 2")?
         .into();
 
-    let non_existent_account = ArbitraryAccountId::arbitrary_as(&mut u).unwrap();
+    let non_existent_account = AccountId::arbitrary(&mut u).unwrap();
 
     // NOTE: `mt_on_transfer` emits an `MtMint` event, but `mt_batch_transfer_call` emits `mt_transfer`
     // events that serialize more fields. These transfer logs approach the hard log-size limit, so
