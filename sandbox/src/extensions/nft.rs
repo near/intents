@@ -1,14 +1,15 @@
+use std::sync::LazyLock;
+
 use near_api::types::nft::NFTContractMetadata;
 use near_contract_standards::non_fungible_token::{Token, TokenId, metadata::TokenMetadata};
 use near_sdk::{AccountIdRef, NearToken, serde_json::json};
 
-use crate::{Account, SigningAccount, extensions::account::AccountDeployerExt, tx::FnCallBuilder};
+use crate::{
+    Account, SigningAccount, extensions::account::AccountDeployerExt, read_wasm, tx::FnCallBuilder,
+};
 
-// TODO: make it prettier
-const NON_FUNGIBLE_TOKEN_WASM: &[u8] = include_bytes!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/../releases/non-fungible-token.wasm"
-));
+static NON_FUNGIBLE_TOKEN_WASM: LazyLock<Vec<u8>> =
+    LazyLock::new(|| read_wasm("releases/non-fungible-token.wasm"));
 
 #[allow(async_fn_in_trait)]
 pub trait NftExt {
@@ -137,7 +138,7 @@ impl NftDeployerExt for SigningAccount {
 
         self.deploy_contract(
             token_name,
-            NON_FUNGIBLE_TOKEN_WASM,
+            NON_FUNGIBLE_TOKEN_WASM.to_vec(),
             Some(FnCallBuilder::new("new").json_args(&args)),
         )
         .await

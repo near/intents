@@ -40,6 +40,7 @@ pub trait DefuseFtWithdrawer {
     ) -> anyhow::Result<u128>;
 }
 
+// TODO: may be replace it with ft_on_transfer?
 impl DefuseFtReceiver for SigningAccount {
     async fn defuse_ft_deposit(
         &self,

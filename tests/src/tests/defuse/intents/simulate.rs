@@ -388,7 +388,7 @@ async fn simulate_mt_withdraw_intent() {
     let user1_secret_key: SecretKey = user1.secret_key().to_string().parse().unwrap();
     if let near_crypto::PublicKey::ED25519(pk) = user1_secret_key.public_key() {
         user1
-            .add_public_key(defuse2.id(), PublicKey::Ed25519(pk.0))
+            .add_public_key(defuse2.id(), &PublicKey::Ed25519(pk.0))
             .await
             .unwrap();
     }

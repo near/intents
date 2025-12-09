@@ -118,3 +118,9 @@ impl ForceAccountViewExt for Account {
         .await
     }
 }
+
+impl ForceAccountViewExt for SigningAccount {
+    async fn is_account_locked(&self, account_id: &AccountIdRef) -> anyhow::Result<bool> {
+        self.account().is_account_locked(account_id).await
+    }
+}

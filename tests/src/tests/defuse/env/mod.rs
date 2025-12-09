@@ -110,7 +110,7 @@ impl Env {
         let account_id = generate_random_account_id(self.poa_factory.id(), Some("token-"))
             .expect("Failed to generate random account ID");
 
-        self.create_named_token(self.poa_factory.subaccount_name(&account_id).as_str())
+        self.create_named_token(&self.poa_factory.subaccount_name(&account_id).unwrap())
             .await
     }
 
@@ -130,7 +130,7 @@ impl Env {
             .expect("Failed to check publick key")
         {
             account
-                .add_public_key(self.defuse.id(), pubkey)
+                .add_public_key(self.defuse.id(), &pubkey)
                 .await
                 .expect("Failed to add pubkey");
         }
@@ -144,7 +144,7 @@ impl Env {
             .expect("Failed to generate next account id");
         let root = self.root();
 
-        self.create_named_user(&root.subaccount_name(&account_id))
+        self.create_named_user(&root.subaccount_name(&account_id).unwrap())
             .await
     }
 

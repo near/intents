@@ -1,8 +1,9 @@
+use std::sync::LazyLock;
+
 use crate::tests::defuse::DefuseSignerExt;
 use crate::tests::defuse::env::Env;
 use crate::utils::fixtures::{ed25519_pk, p256_pk, secp256k1_pk};
 use defuse::extensions::account_manager::{AccountManagerExt, AccountViewExt};
-use defuse::extensions::deployer::DEFUSE_WASM;
 use defuse::extensions::intents::ExecuteIntentsExt;
 use defuse::extensions::state::{FeesManagerExt, FeesManagerViewExt, SaltManagerExt, SaltViewExt};
 use defuse::{
@@ -18,11 +19,14 @@ use defuse::{
 };
 use defuse_sandbox::extensions::acl::AclExt;
 use defuse_sandbox::extensions::mt::MtViewExt;
-use defuse_sandbox::{Account, Sandbox, SigningAccount};
+use defuse_sandbox::sandbox::FetchData;
+use defuse_sandbox::{Account, Sandbox, SigningAccount, read_wasm};
 use itertools::Itertools;
 use rstest::rstest;
 
 use futures::future::try_join_all;
+
+static DEFUSE_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("res/defuse"));
 
 #[ignore = "only for simple upgrades"]
 #[tokio::test]
@@ -39,7 +43,9 @@ async fn upgrade(ed25519_pk: PublicKey, secp256k1_pk: PublicKey, p256_pk: Public
     );
 
     sandbox
-        .import_contract(contract.id(), "https://nearrpc.aurora.dev")
+        .sandbox()
+        .patch_state(contract.id().clone())
+        .fetch_from("https://nearrpc.aurora.dev", FetchData::new().code())
         .await
         .unwrap();
 

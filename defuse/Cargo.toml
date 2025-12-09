@@ -43,9 +43,8 @@ arbitrary = {workspace = true, optional = true}
 defuse-test-utils = {workspace = true, optional = true}
 
 [features]
-# default = ["sandbox"]
 abi = ["defuse-core/abi"]
-arbitrary = ["defuse-core/arbitrary"]
+arbitrary = ["defuse-core/arbitrary", "dep:arbitrary",]
 contract = [
     "dep:defuse-bitmap",
     "dep:defuse-borsh-utils",
@@ -58,7 +57,6 @@ contract = [
 sandbox = [
     "arbitrary",
     "dep:defuse-sandbox",
-    "dep:arbitrary",
     "dep:defuse-test-utils",
 ]
 

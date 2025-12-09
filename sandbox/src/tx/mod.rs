@@ -108,6 +108,7 @@ impl TxBuilder {
         self
     }
 
+    // Use this only if there is a need to get execution result - otherwise use awaiting TxBuilder directly
     pub async fn exec_transaction(self) -> anyhow::Result<ExecutionFinalResult> {
         Transaction::construct(self.signer.id().clone(), self.receiver_id)
             .add_actions(self.actions)

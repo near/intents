@@ -1,22 +1,24 @@
 mod account;
 pub mod extensions;
+pub mod helpers;
 pub mod tx;
 
 pub use account::{Account, SigningAccount};
+pub use helpers::*;
 
 pub use anyhow;
 pub use near_api as api;
+pub use near_sandbox as sandbox;
 
 use near_api::{NetworkConfig, RPCEndpoint};
-use near_sandbox::{FetchData, GenesisAccount};
-use near_sdk::{AccountIdRef, NearToken};
+use near_sandbox::GenesisAccount;
+use near_sdk::NearToken;
 
 use crate::extensions::account::ParentAccountExt;
 
 pub struct Sandbox {
     root: SigningAccount,
 
-    #[allow(dead_code)] // keep ownership
     sandbox: near_sandbox::Sandbox,
 }
 
@@ -45,23 +47,13 @@ impl Sandbox {
         &self.root
     }
 
-    // TODO: to trait
+    pub const fn sandbox(&self) -> &near_sandbox::Sandbox {
+        &self.sandbox
+    }
+
     pub async fn create_account(&self, name: &str) -> anyhow::Result<SigningAccount> {
         self.root
             .create_subaccount(name, NearToken::from_near(10))
             .await
-    }
-
-    pub async fn import_contract(
-        &self,
-        account_id: &AccountIdRef,
-        rpc: impl AsRef<str>,
-    ) -> anyhow::Result<()> {
-        self.sandbox
-            .patch_state(account_id.into())
-            .fetch_from(rpc, FetchData::new().code())
-            .await?;
-
-        Ok(())
     }
 }

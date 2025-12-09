@@ -29,6 +29,7 @@ pub trait DefuseMtWithdrawer {
     ) -> anyhow::Result<(Vec<u128>, ExecutionSuccess)>;
 }
 
+// TODO: may be replace it with mt_on_transfer?
 impl DefuseMtDepositer for SigningAccount {
     async fn defuse_mt_deposit(
         &self,

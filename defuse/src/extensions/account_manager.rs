@@ -8,13 +8,13 @@ pub trait AccountManagerExt: AccountViewExt {
     async fn add_public_key(
         &self,
         defuse_contract_id: &AccountIdRef,
-        public_key: PublicKey,
+        public_key: &PublicKey,
     ) -> anyhow::Result<()>;
 
     async fn remove_public_key(
         &self,
         defuse_contract_id: &AccountIdRef,
-        public_key: PublicKey,
+        public_key: &PublicKey,
     ) -> anyhow::Result<()>;
 
     async fn disable_auth_by_predecessor_id(
@@ -44,7 +44,7 @@ impl AccountManagerExt for SigningAccount {
     async fn add_public_key(
         &self,
         defuse_contract_id: &AccountIdRef,
-        public_key: PublicKey,
+        public_key: &PublicKey,
     ) -> anyhow::Result<()> {
         self.tx(defuse_contract_id.into())
             .function_call(
@@ -62,7 +62,7 @@ impl AccountManagerExt for SigningAccount {
     async fn remove_public_key(
         &self,
         defuse_contract_id: &AccountIdRef,
-        public_key: PublicKey,
+        public_key: &PublicKey,
     ) -> anyhow::Result<()> {
         self.tx(defuse_contract_id.into())
             .function_call(
@@ -73,6 +73,7 @@ impl AccountManagerExt for SigningAccount {
                     })),
             )
             .await?;
+
         Ok(())
     }
 
@@ -87,6 +88,7 @@ impl AccountManagerExt for SigningAccount {
                     .with_gas(Gas::from_tgas(10)),
             )
             .await?;
+
         Ok(())
     }
 }

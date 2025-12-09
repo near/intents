@@ -962,7 +962,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
 
     // Register receiver's public key in defuse2 so it can execute intents
     receiver
-        .add_public_key(defuse2.id(), get_account_public_key(&receiver))
+        .add_public_key(defuse2.id(), &get_account_public_key(&receiver))
         .await
         .unwrap();
 
@@ -1152,7 +1152,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
 
     // Register receiver's public key in defuse2 so it can execute intents
     receiver
-        .add_public_key(defuse2.id(), get_account_public_key(&receiver))
+        .add_public_key(defuse2.id(), &get_account_public_key(&receiver))
         .await
         .unwrap();
 
@@ -1531,7 +1531,7 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
 
     // Register stub's public key in defuse2 so it can execute intents
     stub_receiver
-        .add_public_key(defuse2.id(), get_account_public_key(&stub_receiver))
+        .add_public_key(defuse2.id(), &get_account_public_key(&stub_receiver))
         .await
         .unwrap();
 

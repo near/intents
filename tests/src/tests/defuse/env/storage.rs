@@ -91,7 +91,8 @@ impl Env {
         let root = self.root();
         let token_name = self
             .poa_factory
-            .subaccount_name(&token_id.clone().into_contract_id());
+            .subaccount_name(&token_id.clone().into_contract_id())
+            .unwrap();
 
         let token = root
             .poa_factory_deploy_token(self.poa_factory.id(), &token_name, None)
@@ -178,7 +179,7 @@ impl Env {
     ) -> Result<SigningAccount> {
         let (account_id, account) = data;
         let acc = self
-            .create_named_user(&self.root().subaccount_name(account_id))
+            .create_named_user(&self.root().subaccount_name(account_id).unwrap())
             .await;
 
         futures::try_join!(

@@ -129,7 +129,7 @@ async fn test_lock_account(public_key: PublicKey) {
     // try to add public key to locked account
     {
         locked_account
-            .add_public_key(env.defuse.id(), public_key)
+            .add_public_key(env.defuse.id(), &public_key)
             .await
             .assert_err_contains(
                 DefuseError::AccountLocked(locked_account.id().clone()).to_string(),
@@ -153,7 +153,7 @@ async fn test_lock_account(public_key: PublicKey) {
             .unwrap();
 
         locked_account
-            .remove_public_key(env.defuse.id(), locked_pk)
+            .remove_public_key(env.defuse.id(), &locked_pk)
             .await
             .assert_err_contains(
                 DefuseError::AccountLocked(locked_account.id().clone()).to_string(),
@@ -442,7 +442,7 @@ async fn test_force_set_auth_by_predecessor_id(public_key: PublicKey) {
     // try to execute tx from user's account with disabled auth by predecessor id
     {
         user_account
-            .add_public_key(env.defuse.id(), public_key)
+            .add_public_key(env.defuse.id(), &public_key)
             .await
             .unwrap_err();
         assert!(
@@ -500,7 +500,7 @@ async fn test_force_set_auth_by_predecessor_id(public_key: PublicKey) {
     // try to execute tx from user's account with enabled auth by predecessor id
     {
         user_account
-            .add_public_key(env.defuse.id(), public_key)
+            .add_public_key(env.defuse.id(), &public_key)
             .await
             .unwrap();
         assert!(

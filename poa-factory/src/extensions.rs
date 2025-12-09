@@ -1,17 +1,18 @@
 use defuse_sandbox::{
-    Account, SigningAccount, anyhow, extensions::account::AccountDeployerExt, tx::FnCallBuilder,
+    Account, SigningAccount, anyhow, extensions::account::AccountDeployerExt, read_wasm,
+    tx::FnCallBuilder,
 };
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128, serde_json::json};
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::LazyLock,
+};
 
 use crate::contract::{POA_TOKEN_INIT_BALANCE, Role};
 
-// TODO: make it prettier
-const POA_FACTORY_WASM: &[u8] = include_bytes!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/../releases/defuse_poa_factory.wasm"
-));
+static POA_FACTORY_WASM: LazyLock<Vec<u8>> =
+    LazyLock::new(|| read_wasm("releases/defuse_poa_factory.wasm"));
 
 #[allow(async_fn_in_trait)]
 pub trait PoAFactoryDeployerExt {
@@ -26,10 +27,6 @@ pub trait PoAFactoryDeployerExt {
 
 #[allow(async_fn_in_trait)]
 pub trait PoAFactoryExt: PoAFactoryViewExt {
-    fn token_id(token: &str, factory: &AccountIdRef) -> AccountId {
-        format!("{token}.{factory}").parse().unwrap()
-    }
-
     async fn poa_factory_deploy_token(
         &self,
         factory: &AccountIdRef,
@@ -50,6 +47,10 @@ pub trait PoAFactoryExt: PoAFactoryViewExt {
 
 #[allow(async_fn_in_trait)]
 pub trait PoAFactoryViewExt {
+    fn token_id(token: &str, factory: &AccountIdRef) -> AccountId {
+        format!("{token}.{factory}").parse().unwrap()
+    }
+
     async fn poa_tokens(
         &self,
         poa_factory: &AccountIdRef,
@@ -78,7 +79,7 @@ impl PoAFactoryDeployerExt for SigningAccount {
 
         self.deploy_contract(
             name,
-            POA_FACTORY_WASM,
+            POA_FACTORY_WASM.to_vec(),
             Some(FnCallBuilder::new("new").json_args(&args)),
         )
         .await
@@ -141,7 +142,8 @@ impl PoAFactoryViewExt for SigningAccount {
         &self,
         poa_factory: &AccountIdRef,
     ) -> anyhow::Result<HashMap<String, AccountId>> {
-        let account = Account::new(poa_factory.into(), self.network_config().clone());
-        account.call_view_function_json("tokens", ()).await
+        Account::new(poa_factory.into(), self.network_config().clone())
+            .call_view_function_json("tokens", ())
+            .await
     }
 }

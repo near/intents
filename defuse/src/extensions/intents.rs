@@ -34,7 +34,6 @@ pub trait ExecuteIntentsExt {
 
         self.execute_intents(defuse_id, intents)
             .await
-            // return simulation_err if execute_ok
             .and_then(|res| simulation_result.map(|_| res))
     }
 }

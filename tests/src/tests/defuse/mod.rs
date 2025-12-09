@@ -10,7 +10,6 @@ use defuse::core::SaltedNonce;
 use defuse::core::VersionedNonce;
 use defuse::core::intents::DefuseIntents;
 use defuse::extensions::signer::SigningStandard;
-use defuse::extensions::state::SaltManagerExt;
 use defuse::extensions::state::SaltViewExt;
 use defuse_randomness::RngCore;
 
@@ -64,4 +63,4 @@ pub trait DefuseSignerExt: DefuseSigner {
         ))
     }
 }
-impl<T> DefuseSignerExt for T where T: DefuseSigner + SaltManagerExt {}
+impl<T> DefuseSignerExt for T where T: DefuseSigner {}

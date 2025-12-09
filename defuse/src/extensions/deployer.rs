@@ -1,20 +1,16 @@
+use std::sync::LazyLock;
+
 use defuse_sandbox::{
-    Account, SigningAccount, anyhow, extensions::account::AccountDeployerExt, tx::FnCallBuilder,
+    Account, SigningAccount, anyhow, extensions::account::AccountDeployerExt, read_wasm,
+    tx::FnCallBuilder,
 };
 use near_sdk::{AccountIdRef, Gas, NearToken, serde_json::json};
 
 use crate::contract::config::DefuseConfig;
 
-// TODO: make it prettier
-pub const DEFUSE_WASM: &[u8] = include_bytes!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/../releases/defuse-0.4.0.wasm"
-));
-
-const DEFUSE_LEGACY_WASM: &[u8] = include_bytes!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/../releases/defuse-0.2.10.wasm"
-));
+static DEFUSE_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("releases/defuse-0.4.0.wasm"));
+static DEFUSE_LEGACY_WASM: LazyLock<Vec<u8>> =
+    LazyLock::new(|| read_wasm("releases/defuse-0.2.10.wasm"));
 
 #[allow(async_fn_in_trait)]
 pub trait DefuseExt: AccountDeployerExt {
@@ -36,14 +32,14 @@ impl DefuseExt for SigningAccount {
         legacy: bool,
     ) -> anyhow::Result<Account> {
         let wasm = if legacy {
-            DEFUSE_LEGACY_WASM
+            &DEFUSE_LEGACY_WASM
         } else {
-            DEFUSE_WASM
+            &DEFUSE_WASM
         };
 
         self.deploy_contract(
             id,
-            wasm,
+            wasm.to_vec(),
             Some(FnCallBuilder::new("new").json_args(json!({
                 "config": config,
             }))),
@@ -56,7 +52,7 @@ impl DefuseExt for SigningAccount {
             .function_call(
                 FnCallBuilder::new("upgrade")
                     .with_deposit(NearToken::from_yoctonear(1))
-                    .borsh_args(&(DEFUSE_WASM, None::<Gas>)),
+                    .borsh_args(&(&DEFUSE_WASM.to_vec(), None::<Gas>)),
             )
             .await?;
 

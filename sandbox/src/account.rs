@@ -34,7 +34,7 @@ impl Account {
         &self.network_config
     }
 
-    // TODO separate it to another trait
+    // TODO maybe separate it to another trait?
     pub async fn call_view_function_json<T>(
         &self,
         name: &str,
@@ -118,7 +118,6 @@ impl SigningAccount {
     pub async fn fund_implicit(&self, deposit: NearToken) -> anyhow::Result<Self> {
         let account = Self::generate_implicit(self.network_config.clone());
 
-        // Todo - use it with create account
         self.tx(account.id().clone()).transfer(deposit).await?;
 
         Ok(account)

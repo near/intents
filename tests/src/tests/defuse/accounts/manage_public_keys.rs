@@ -71,7 +71,7 @@ async fn test_add_and_remove_public_key(public_key: PublicKey) {
 
     let user = env.create_user().await;
 
-    user.add_public_key(env.defuse.id(), public_key)
+    user.add_public_key(env.defuse.id(), &public_key)
         .await
         .unwrap();
 

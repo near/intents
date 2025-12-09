@@ -11,15 +11,14 @@ pub trait ParentAccountViewExt {
     fn subaccount_id(&self, name: impl AsRef<str>) -> AccountId {
         format!("{}.{}", name.as_ref(), self.root_id())
             .parse()
-            .unwrap()
+            .expect("invalid subaccount name: must be a valid NEAR account ID")
     }
 
-    fn subaccount_name(&self, account_id: &AccountIdRef) -> String {
+    fn subaccount_name(&self, account_id: &AccountIdRef) -> Option<String> {
         account_id
             .as_str()
             .strip_suffix(&format!(".{}", self.root_id()))
-            .unwrap()
-            .to_string()
+            .map(ToString::to_string)
     }
 }
 
@@ -91,7 +90,6 @@ impl AccountDeployerExt for SigningAccount {
     ) -> anyhow::Result<Account> {
         let subaccount = self.subaccount_id(name);
 
-        // TODO: may be make optional?
         let mut tx = self
             .tx(subaccount.clone())
             .create_account()

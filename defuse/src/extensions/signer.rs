@@ -144,6 +144,7 @@ impl DefuseSigner for SigningAccount {
     }
 }
 
+// TODO: add support for other signing standards
 #[derive(Debug, Default, Arbitrary)]
 pub enum SigningStandard {
     #[default]

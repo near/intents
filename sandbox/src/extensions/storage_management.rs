@@ -1,3 +1,4 @@
+use near_api::types::json::U128;
 use near_contract_standards::storage_management::StorageBalance;
 use near_sdk::{AccountIdRef, NearToken, serde_json::json};
 
@@ -46,7 +47,7 @@ impl StorageManagementExt for SigningAccount {
                     .json_args(json!({
                         "account_id": account_id.unwrap_or_else(|| self.id())
                     }))
-                    .with_deposit(NearToken::from_yoctonear(deposit.as_yoctonear())),
+                    .with_deposit(deposit),
             )
             .await?
             .json()
@@ -62,7 +63,7 @@ impl StorageManagementExt for SigningAccount {
             .function_call(
                 FnCallBuilder::new("storage_withdraw")
                     .json_args(json!({
-                        "amount": amount.as_yoctonear()
+                        "amount": U128::from(amount.as_yoctonear())
                     }))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )

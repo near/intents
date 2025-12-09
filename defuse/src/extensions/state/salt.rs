@@ -9,7 +9,7 @@ pub trait SaltManagerExt: SaltViewExt {
     async fn invalidate_salts(
         &self,
         defuse_contract_id: &AccountIdRef,
-        salts: &[Salt],
+        salts: impl IntoIterator<Item = Salt>,
     ) -> anyhow::Result<Salt>;
 }
 
@@ -35,12 +35,12 @@ impl SaltManagerExt for SigningAccount {
     async fn invalidate_salts(
         &self,
         defuse_contract_id: &AccountIdRef,
-        salts: &[Salt],
+        salts: impl IntoIterator<Item = Salt>,
     ) -> anyhow::Result<Salt> {
         self.tx(defuse_contract_id.into())
             .function_call(
                 FnCallBuilder::new("invalidate_salts")
-                    .json_args(json!({ "salts": salts }))
+                    .json_args(json!({ "salts": salts.into_iter().collect::<Vec<_>>() }))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
             .await?
