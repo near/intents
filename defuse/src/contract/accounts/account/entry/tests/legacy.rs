@@ -4,11 +4,11 @@ use std::{
     marker::PhantomData,
 };
 
-use arbitrary_with::{Arbitrary, As, arbitrary};
+use arbitrary::Arbitrary;
 use defuse_bitmap::U256;
 use defuse_borsh_utils::adapters::to_vec_as;
 use defuse_core::{Result, crypto::PublicKey, token_id::TokenId};
-use defuse_near_utils::{Lock, PanicOnClone, arbitrary::ArbitraryAccountId};
+use defuse_near_utils::{Lock, PanicOnClone};
 use defuse_test_utils::random::make_arbitrary;
 use near_sdk::{
     AccountId,
@@ -98,7 +98,6 @@ fn versioned_upgrade<T>(
 #[derive(Arbitrary)]
 struct AccountData {
     prefix: Vec<u8>,
-    #[arbitrary(with = As::<ArbitraryAccountId>::arbitrary)]
     account_id: AccountId,
 
     public_keys: HashSet<PublicKey>,

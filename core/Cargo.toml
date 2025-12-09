@@ -54,7 +54,6 @@ arbitrary = [
     "dep:arbitrary_with",
     "defuse-bitmap/arbitrary",
     "defuse-crypto/arbitrary",
-    "defuse-near-utils/arbitrary",
     "defuse-token-id/arbitrary",
 ]
 
@@ -63,7 +62,6 @@ chrono = { workspace = true, features = ["now"] }
 
 [dev-dependencies]
 defuse-test-utils.workspace = true
-defuse-near-utils = { workspace = true, features = ["arbitrary"] }
 
 arbitrary.workspace = true
 arbitrary_with.workspace = true

@@ -747,7 +747,7 @@ checksum = "26bf8fc351c5ed29b5c2f0cbbac1b209b74f60ecd62e675a998df72c49af5204"
 name = "defuse"
 version = "0.4.1"
 dependencies = [
- "arbitrary_with",
+ "arbitrary",
  "bitflags 2.10.0",
  "bnum",
  "chrono",
@@ -925,7 +925,6 @@ dependencies = [
 name = "defuse-near-utils"
 version = "0.1.0"
 dependencies = [
- "arbitrary_with",
  "chrono",
  "defuse-borsh-utils",
  "defuse-test-utils",
@@ -1090,11 +1089,11 @@ version = "0.1.0"
 dependencies = [
  "arbitrary",
  "arbitrary_with",
- "defuse-near-utils",
  "defuse-nep245",
  "defuse-test-utils",
  "derive_more",
  "hex",
+ "near-account-id",
  "near-contract-standards",
  "near-sdk",
  "rstest",
@@ -2388,11 +2387,14 @@ dependencies = [
 
 [[package]]
 name = "near-account-id"
-version = "2.2.0"
+version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d895dcfceb6eeec6c76c0ed861b9422cb918ad857fa321c78eaa577a90514707"
+checksum = "359c8ca02a3d0ef676a5baf9474b16a50b4137360664b15031977708989342ef"
 dependencies = [
+ "arbitrary",
+ "arbitrary_with",
  "borsh",
+ "hex",
  "serde",
 ]
 
