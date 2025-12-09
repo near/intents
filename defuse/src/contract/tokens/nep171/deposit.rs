@@ -75,7 +75,7 @@ impl NonFungibleTokenReceiver for Contract {
                     if execute.refund_if_fails {
                         self.execute_intents(execute.execute_intents);
                     } else {
-                        ext_intents::ext(env::predecessor_account_id())
+                        ext_intents::ext(env::current_account_id())
                             .execute_intents(execute.execute_intents)
                             .detach();
                     }
