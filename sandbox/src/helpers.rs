@@ -11,8 +11,6 @@ pub fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
         .join(name)
         .with_extension("wasm");
 
-    println!("FILEPATH: {filename:?}",);
-
     fs::read(filename).unwrap()
 }
 

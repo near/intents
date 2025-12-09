@@ -2,8 +2,7 @@ mod letter_gen;
 mod mt_transfer_resolve_gas;
 
 use crate::tests::defuse::DefuseSignerExt;
-use crate::tests::defuse::env::{Env, get_account_public_key};
-use crate::tests::defuse::tokens::MT_RECEIVER_STUB_WASM;
+use crate::tests::defuse::env::{Env, MT_RECEIVER_STUB_WASM, get_account_public_key};
 use defuse::contract::config::{DefuseConfig, RolesConfig};
 use defuse::core::amounts::Amounts;
 use defuse::core::fees::{FeesConfig, Pips};
@@ -931,7 +930,7 @@ struct MtTransferCallExpectation {
 async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     #[case] expectation: MtTransferCallExpectation,
 ) {
-    use crate::tests::defuse::{DefuseSignerExt, tokens::MT_RECEIVER_STUB_WASM};
+    use crate::tests::defuse::DefuseSignerExt;
     use defuse::{
         core::{amounts::Amounts, intents::tokens::Transfer},
         extensions::account_manager::AccountManagerExt,
@@ -963,7 +962,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     let receiver = SigningAccount::new(
         env.deploy_contract(
             "receiver_stub",
-            MT_RECEIVER_STUB_WASM,
+            MT_RECEIVER_STUB_WASM.to_vec(),
             None::<FnCallBuilder>,
         )
         .await
@@ -1152,7 +1151,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     let receiver = SigningAccount::new(
         env.deploy_contract(
             "receiver_stub",
-            MT_RECEIVER_STUB_WASM,
+            MT_RECEIVER_STUB_WASM.to_vec(),
             None::<FnCallBuilder>,
         )
         .await
@@ -1522,7 +1521,7 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
     let stub_receiver = SigningAccount::new(
         env.deploy_contract(
             "receiver_stub",
-            MT_RECEIVER_STUB_WASM,
+            MT_RECEIVER_STUB_WASM.to_vec(),
             None::<FnCallBuilder>,
         )
         .await

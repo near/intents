@@ -371,7 +371,7 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
     use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
     use defuse_sandbox::{SigningAccount, extensions::ft::FtExt};
 
-    use crate::tests::defuse::{DefuseSignerExt, tokens::MT_RECEIVER_STUB_WASM};
+    use crate::tests::defuse::{DefuseSignerExt, env::MT_RECEIVER_STUB_WASM};
 
     let env = Env::builder().deployer_as_super_admin().build().await;
 
@@ -381,7 +381,7 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
     let receiver = SigningAccount::new(
         env.deploy_contract(
             "receiver_stub",
-            MT_RECEIVER_STUB_WASM,
+            MT_RECEIVER_STUB_WASM.to_vec(),
             None::<FnCallBuilder>,
         )
         .await
