@@ -26,9 +26,6 @@ use strum::{EnumDiscriminants, EnumIter, EnumString};
 
 pub use self::error::TokenIdError;
 
-#[cfg(not(feature = "unbounded"))]
-const MAX_ALLOWED_TOKEN_ID_LEN: usize = 127;
-
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[derive(
     Clone,
@@ -141,21 +138,15 @@ const _: () = {
                             "ft.near".parse().unwrap(),
                         )),
                         #[cfg(feature = "nep171")]
-                        TokenId::Nep171(
-                            crate::nep171::Nep171TokenId::new(
-                                "nft.near".parse().unwrap(),
-                                "token_id1".to_string(),
-                            )
-                            .unwrap(),
-                        ),
+                        TokenId::Nep171(crate::nep171::Nep171TokenId::new(
+                            "nft.near".parse().unwrap(),
+                            "token_id1".to_string(),
+                        )),
                         #[cfg(feature = "nep245")]
-                        TokenId::Nep245(
-                            crate::nep245::Nep245TokenId::new(
-                                "mt.near".parse().unwrap(),
-                                "token_id1".to_string(),
-                            )
-                            .unwrap(),
-                        ),
+                        TokenId::Nep245(crate::nep245::Nep245TokenId::new(
+                            "mt.near".parse().unwrap(),
+                            "token_id1".to_string(),
+                        )),
                     ]
                     .map(|s| s.to_string())
                     .to_vec()

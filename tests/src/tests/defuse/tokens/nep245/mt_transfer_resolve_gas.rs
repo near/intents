@@ -144,9 +144,10 @@ async fn run_resolve_gas_test(
     let defuse_token_ids = token_ids
         .iter()
         .map(|token_id| {
-            TokenId::Nep245(
-                Nep245TokenId::new(author_account.id().clone(), token_id.clone()).unwrap(),
-            )
+            TokenId::Nep245(Nep245TokenId::new(
+                author_account.id().clone(),
+                token_id.clone(),
+            ))
             .to_string()
         })
         .collect::<Vec<_>>();

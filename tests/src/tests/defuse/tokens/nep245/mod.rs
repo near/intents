@@ -23,8 +23,7 @@ use defuse_sandbox::extensions::mt::{MtExt, MtViewExt};
 use defuse_sandbox::tx::FnCallBuilder;
 use defuse_sandbox::{SigningAccount, assert_a_contains_b};
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
-use near_sdk::AsNep297Event;
-use near_sdk::json_types::U128;
+use near_sdk::{AsNep297Event, json_types::U128};
 use rstest::rstest;
 use std::borrow::Cow;
 
@@ -568,9 +567,10 @@ async fn multitoken_withdrawals() {
             defuse2
                 .mt_balance_of(
                     user1.id(),
-                    &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft1_id.to_string()).unwrap()
-                    )
+                    &TokenId::Nep245(Nep245TokenId::new(
+                        env.defuse.id().to_owned(),
+                        ft1_id.to_string()
+                    ))
                     .to_string(),
                 )
                 .await
@@ -582,9 +582,10 @@ async fn multitoken_withdrawals() {
             defuse2
                 .mt_balance_of(
                     user1.id(),
-                    &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft2_id.to_string()).unwrap()
-                    )
+                    &TokenId::Nep245(Nep245TokenId::new(
+                        env.defuse.id().to_owned(),
+                        ft2_id.to_string()
+                    ))
                     .to_string(),
                 )
                 .await
@@ -596,9 +597,10 @@ async fn multitoken_withdrawals() {
             defuse2
                 .mt_balance_of(
                     user1.id(),
-                    &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft3_id.to_string()).unwrap()
-                    )
+                    &TokenId::Nep245(Nep245TokenId::new(
+                        env.defuse.id().to_owned(),
+                        ft3_id.to_string()
+                    ))
                     .to_string(),
                 )
                 .await
@@ -652,9 +654,10 @@ async fn multitoken_withdrawals() {
             defuse2
                 .mt_balance_of(
                     user1.id(),
-                    &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft1_id.to_string()).unwrap()
-                    )
+                    &TokenId::Nep245(Nep245TokenId::new(
+                        env.defuse.id().to_owned(),
+                        ft1_id.to_string()
+                    ))
                     .to_string(),
                 )
                 .await
@@ -666,9 +669,10 @@ async fn multitoken_withdrawals() {
             defuse2
                 .mt_balance_of(
                     user1.id(),
-                    &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft2_id.to_string()).unwrap()
-                    )
+                    &TokenId::Nep245(Nep245TokenId::new(
+                        env.defuse.id().to_owned(),
+                        ft2_id.to_string()
+                    ))
                     .to_string(),
                 )
                 .await
@@ -680,9 +684,10 @@ async fn multitoken_withdrawals() {
             defuse2
                 .mt_balance_of(
                     user1.id(),
-                    &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft3_id.to_string()).unwrap()
-                    )
+                    &TokenId::Nep245(Nep245TokenId::new(
+                        env.defuse.id().to_owned(),
+                        ft3_id.to_string()
+                    ))
                     .to_string(),
                 )
                 .await
@@ -730,9 +735,10 @@ async fn multitoken_withdrawals() {
             defuse2
                 .mt_balance_of(
                     user1.id(),
-                    &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft1_id.to_string()).unwrap()
-                    )
+                    &TokenId::Nep245(Nep245TokenId::new(
+                        env.defuse.id().to_owned(),
+                        ft1_id.to_string()
+                    ))
                     .to_string(),
                 )
                 .await
@@ -744,9 +750,10 @@ async fn multitoken_withdrawals() {
             defuse2
                 .mt_balance_of(
                     user1.id(),
-                    &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft2_id.to_string()).unwrap()
-                    )
+                    &TokenId::Nep245(Nep245TokenId::new(
+                        env.defuse.id().to_owned(),
+                        ft2_id.to_string()
+                    ))
                     .to_string(),
                 )
                 .await
@@ -758,9 +765,10 @@ async fn multitoken_withdrawals() {
             defuse2
                 .mt_balance_of(
                     user1.id(),
-                    &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft3_id.to_string()).unwrap()
-                    )
+                    &TokenId::Nep245(Nep245TokenId::new(
+                        env.defuse.id().to_owned(),
+                        ft3_id.to_string()
+                    ))
                     .to_string(),
                 )
                 .await
@@ -831,9 +839,10 @@ async fn multitoken_withdrawals() {
             defuse2
                 .mt_balance_of(
                     user1.id(),
-                    &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft1_id.to_string()).unwrap()
-                    )
+                    &TokenId::Nep245(Nep245TokenId::new(
+                        env.defuse.id().to_owned(),
+                        ft1_id.to_string()
+                    ))
                     .to_string(),
                 )
                 .await
@@ -845,9 +854,10 @@ async fn multitoken_withdrawals() {
             defuse2
                 .mt_balance_of(
                     user1.id(),
-                    &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft2_id.to_string()).unwrap()
-                    )
+                    &TokenId::Nep245(Nep245TokenId::new(
+                        env.defuse.id().to_owned(),
+                        ft2_id.to_string()
+                    ))
                     .to_string(),
                 )
                 .await
@@ -859,9 +869,10 @@ async fn multitoken_withdrawals() {
             defuse2
                 .mt_balance_of(
                     user1.id(),
-                    &TokenId::Nep245(
-                        Nep245TokenId::new(env.defuse.id().to_owned(), ft3_id.to_string()).unwrap()
-                    )
+                    &TokenId::Nep245(Nep245TokenId::new(
+                        env.defuse.id().to_owned(),
+                        ft3_id.to_string()
+                    ))
                     .to_string(),
                 )
                 .await
@@ -979,8 +990,10 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
         .unwrap();
 
     // Get the nep245 token id for defuse1's wrapped token in defuse2
-    let nep245_ft_id =
-        TokenId::Nep245(Nep245TokenId::new(env.defuse.id().clone(), ft_id.to_string()).unwrap());
+    let nep245_ft_id = TokenId::Nep245(Nep245TokenId::new(
+        env.defuse.id().clone(),
+        ft_id.to_string(),
+    ));
 
     // Build transfer intent if specified
     let intents = match &expectation.intent_transfer_amounts {
@@ -1008,12 +1021,9 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     let deposit_message = if intents.is_empty() {
         DepositMessage {
             receiver_id: receiver.id().clone(),
-            action: Some(DepositAction::Notify(
-                defuse::core::intents::tokens::NotifyOnTransfer {
-                    msg: near_sdk::serde_json::to_string(&expectation.action).unwrap(),
-                    min_gas: None,
-                },
-            )),
+            action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+                serde_json::to_string(&expectation.action).unwrap(),
+            ))),
         }
     } else {
         DepositMessage {
@@ -1174,10 +1184,14 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
         .unwrap();
 
     // Get the nep245 token ids for defuse1's wrapped tokens in defuse2
-    let nep245_ft1_id =
-        TokenId::Nep245(Nep245TokenId::new(env.defuse.id().clone(), ft1_id.to_string()).unwrap());
-    let nep245_ft2_id =
-        TokenId::Nep245(Nep245TokenId::new(env.defuse.id().clone(), ft2_id.to_string()).unwrap());
+    let nep245_ft1_id = TokenId::Nep245(Nep245TokenId::new(
+        env.defuse.id().clone(),
+        ft1_id.to_string(),
+    ));
+    let nep245_ft2_id = TokenId::Nep245(Nep245TokenId::new(
+        env.defuse.id().clone(),
+        ft2_id.to_string(),
+    ));
 
     // Build transfer intents if specified
     let intents = if let Some(amounts) = &expectation.intent_transfer_amounts {
@@ -1211,12 +1225,9 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     let deposit_message = if intents.is_empty() {
         DepositMessage {
             receiver_id: receiver.id().clone(),
-            action: Some(DepositAction::Notify(
-                defuse::core::intents::tokens::NotifyOnTransfer {
-                    msg: near_sdk::serde_json::to_string(&expectation.action).unwrap(),
-                    min_gas: None,
-                },
-            )),
+            action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+                serde_json::to_string(&expectation.action).unwrap(),
+            ))),
         }
     } else {
         DepositMessage {
@@ -1327,21 +1338,16 @@ async fn mt_transfer_call_circullar_callback() {
     // With empty inner message to avoid further callbacks
     let deposit_message = DepositMessage {
         receiver_id: env.defuse.id().clone(), // Circular: back to defuse1
-        action: Some(DepositAction::Notify(
-            defuse::core::intents::tokens::NotifyOnTransfer {
-                msg: near_sdk::serde_json::to_string(&DepositMessage {
-                    receiver_id: user.id().clone(),
-                    action: None, // No further callbacks
-                })
-                .unwrap(),
-                min_gas: None,
-            },
-        )),
+        action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+            serde_json::to_string(&DepositMessage::new(user.id().clone())).unwrap(),
+        ))),
     };
 
     // Get the nep245 token id for defuse1's wrapped token in defuse2
-    let nep245_ft_id =
-        TokenId::Nep245(Nep245TokenId::new(env.defuse.id().clone(), ft_id.to_string()).unwrap());
+    let nep245_ft_id = TokenId::Nep245(Nep245TokenId::new(
+        env.defuse.id().clone(),
+        ft_id.to_string(),
+    ));
 
     let refund_amounts = user
         .mt_transfer_call(
@@ -1433,18 +1439,11 @@ async fn mt_transfer_call_circullar_deposit() {
         // Set receiver_id to defuse1 to create circular callback
         // With empty inner message to avoid further callbacks
         DepositAction::Notify(NotifyOnTransfer::new(
-            near_sdk::serde_json::to_string(&DepositMessage {
+            serde_json::to_string(&DepositMessage {
                 receiver_id: env.defuse.id().clone(), // Circular: back to defuse1
-                action: Some(DepositAction::Notify(
-                    defuse::core::intents::tokens::NotifyOnTransfer {
-                        msg: near_sdk::serde_json::to_string(&DepositMessage {
-                            receiver_id: user.id().clone(),
-                            action: None, // No further callbacks
-                        })
-                        .unwrap(),
-                        min_gas: None,
-                    },
-                )),
+                action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+                    serde_json::to_string(&DepositMessage::new(user.id().clone())).unwrap(),
+                ))),
             })
             .unwrap(),
         )),
@@ -1464,9 +1463,10 @@ async fn mt_transfer_call_circullar_deposit() {
         "defuse2 should have 1000 tokens in defuse1"
     );
 
-    let defuse2_nep245_ft_id = TokenId::Nep245(
-        Nep245TokenId::new(env.defuse.id().clone(), defuse1_ft_id.to_string()).unwrap(),
-    );
+    let defuse2_nep245_ft_id = TokenId::Nep245(Nep245TokenId::new(
+        env.defuse.id().clone(),
+        defuse1_ft_id.to_string(),
+    ));
 
     assert_eq!(
         defuse2
@@ -1477,9 +1477,10 @@ async fn mt_transfer_call_circullar_deposit() {
         "defuse1 should have 1000 tokens in defuse2 after wrapping"
     );
 
-    let defuse1_defuse2_nep245_ft_id = TokenId::Nep245(
-        Nep245TokenId::new(defuse2.id().clone(), defuse2_nep245_ft_id.to_string()).unwrap(),
-    );
+    let defuse1_defuse2_nep245_ft_id = TokenId::Nep245(Nep245TokenId::new(
+        defuse2.id().clone(),
+        defuse2_nep245_ft_id.to_string(),
+    ));
 
     assert_eq!(
         env.defuse
@@ -1547,10 +1548,14 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
     let ft1_id = TokenId::from(Nep141TokenId::new(ft1.id().clone()));
     let ft2_id = TokenId::from(Nep141TokenId::new(ft2.id().clone()));
 
-    let nep245_ft1_id =
-        TokenId::Nep245(Nep245TokenId::new(env.defuse.id().clone(), ft1_id.to_string()).unwrap());
-    let nep245_ft2_id =
-        TokenId::Nep245(Nep245TokenId::new(env.defuse.id().clone(), ft2_id.to_string()).unwrap());
+    let nep245_ft1_id = TokenId::Nep245(Nep245TokenId::new(
+        env.defuse.id().clone(),
+        ft1_id.to_string(),
+    ));
+    let nep245_ft2_id = TokenId::Nep245(Nep245TokenId::new(
+        env.defuse.id().clone(),
+        ft2_id.to_string(),
+    ));
 
     env.defuse_ft_deposit_to(ft1.id(), 4000, user.id(), None)
         .await
@@ -1577,10 +1582,9 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
 
     let deposit_message = DepositMessage {
         receiver_id: stub_receiver.id().clone(),
-        action: Some(DepositAction::Notify(NotifyOnTransfer {
-            msg: near_sdk::serde_json::to_string(&stub_action).unwrap(),
-            min_gas: None,
-        })),
+        action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+            near_sdk::serde_json::to_string(&stub_action).unwrap(),
+        ))),
     };
 
     let result = user

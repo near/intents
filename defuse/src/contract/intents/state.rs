@@ -14,7 +14,7 @@ use defuse_core::{
 };
 use defuse_near_utils::{CURRENT_ACCOUNT_ID, Lock};
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
-use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128};
+use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, PromiseOrValue, json_types::U128};
 use std::borrow::Cow;
 
 use crate::contract::{Contract, accounts::Account};
@@ -198,20 +198,17 @@ impl State for Contract {
 
     fn ft_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: FtWithdraw) -> Result<()> {
         self.internal_ft_withdraw(owner_id.to_owned(), withdraw, false)
-            // detach promise
-            .map(|_promise| ())
+            .map(PromiseOrValue::detach)
     }
 
     fn nft_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: NftWithdraw) -> Result<()> {
         self.internal_nft_withdraw(owner_id.to_owned(), withdraw, false)
-            // detach promise
-            .map(|_promise| ())
+            .map(PromiseOrValue::detach)
     }
 
     fn mt_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: MtWithdraw) -> Result<()> {
         self.internal_mt_withdraw(owner_id.to_owned(), withdraw, false)
-            // detach promise
-            .map(|_promise| ())
+            .map(PromiseOrValue::detach)
     }
 
     fn native_withdraw(&mut self, owner_id: &AccountIdRef, withdraw: NativeWithdraw) -> Result<()> {
@@ -225,8 +222,7 @@ impl State for Contract {
             false,
         )?;
 
-        // detach promise
-        let _ = ext_wnear::ext(self.wnear_id.clone())
+        ext_wnear::ext(self.wnear_id.clone())
             .with_attached_deposit(NearToken::from_yoctonear(1))
             .with_static_gas(NEAR_WITHDRAW_GAS)
             // do not distribute remaining gas here
@@ -239,7 +235,8 @@ impl State for Contract {
                     // do not distribute remaining gas here
                     .with_unused_gas_weight(0)
                     .do_native_withdraw(withdraw),
-            );
+            )
+            .detach();
 
         Ok(())
     }
@@ -282,8 +279,7 @@ impl State for Contract {
             false,
         )?;
 
-        // detach promise
-        let _ = ext_wnear::ext(self.wnear_id.clone())
+        ext_wnear::ext(self.wnear_id.clone())
             .with_attached_deposit(NearToken::from_yoctonear(1))
             .with_static_gas(NEAR_WITHDRAW_GAS)
             // do not distribute remaining gas here
@@ -296,7 +292,8 @@ impl State for Contract {
                     // do not distribute remaining gas here
                     .with_unused_gas_weight(0)
                     .do_storage_deposit(storage_deposit),
-            );
+            )
+            .detach();
 
         Ok(())
     }
@@ -306,8 +303,7 @@ impl State for Contract {
     }
 
     fn auth_call(&mut self, signer_id: &AccountIdRef, auth_call: AuthCall) -> Result<()> {
-        // detach promise
-        let _ = if auth_call.attached_deposit.is_zero() {
+        if auth_call.attached_deposit.is_zero() {
             Self::do_auth_call(signer_id.to_owned(), auth_call)
         } else {
             // withdraw from signer's wNEAR balance
@@ -331,11 +327,20 @@ impl State for Contract {
                     // do_auth_call only after unwrapping NEAR
                     Self::ext(CURRENT_ACCOUNT_ID.clone())
                         .with_static_gas(
-                            Self::DO_AUTH_CALL_MIN_GAS.saturating_add(auth_call.min_gas()),
+                            Self::DO_AUTH_CALL_MIN_GAS
+                                .checked_add(
+                                    auth_call
+                                        .state_init
+                                        .as_ref()
+                                        .map_or(Gas::from_gas(0), |_| Self::STATE_INIT_GAS),
+                                )
+                                .and_then(|g| g.checked_add(auth_call.min_gas()))
+                                .ok_or(DefuseError::GasOverflow)?,
                         )
                         .do_auth_call(signer_id.to_owned(), auth_call),
                 )
-        };
+        }
+        .detach();
 
         Ok(())
     }

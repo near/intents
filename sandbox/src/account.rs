@@ -44,7 +44,7 @@ impl Account {
         T: DeserializeOwned + Send + Sync,
     {
         Contract(self.id().clone())
-            .call_function(name, args)?
+            .call_function(name, args)
             .read_only()
             .fetch_from(&self.network_config)
             .await
@@ -81,7 +81,7 @@ impl SigningAccount {
     pub fn new(account: Account, secret_key: SecretKey) -> Self {
         Self {
             account,
-            signer: Signer::new(Signer::from_secret_key(secret_key.clone())).unwrap(),
+            signer: Signer::from_secret_key(secret_key.clone()).unwrap(),
             private_key: secret_key,
         }
     }

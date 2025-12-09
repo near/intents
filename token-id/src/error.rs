@@ -1,4 +1,4 @@
-use near_account_id::ParseAccountError;
+use near_sdk::account_id::ParseAccountError;
 
 #[derive(thiserror::Error, Debug)]
 pub enum TokenIdError {
@@ -6,7 +6,4 @@ pub enum TokenIdError {
     AccountId(#[from] ParseAccountError),
     #[error(transparent)]
     ParseError(#[from] strum::ParseError),
-    #[cfg(not(feature = "unbounded"))]
-    #[error("token_id is too long. Max length is {max}, got {0}", max = super::MAX_ALLOWED_TOKEN_ID_LEN)]
-    TokenIdTooLarge(usize),
 }

@@ -1,6 +1,6 @@
 [package]
 name = "defuse"
-version = "0.4.0"
+version = "0.4.1"
 edition.workspace = true
 rust-version.workspace = true
 repository.workspace = true
@@ -30,7 +30,6 @@ bitflags = { workspace = true, optional = true }
 bnum.workspace = true
 impl-tools.workspace = true
 itertools.workspace = true
-near-account-id.workspace = true
 near-contract-standards.workspace = true
 near-plugins.workspace = true
 near-sdk.workspace = true

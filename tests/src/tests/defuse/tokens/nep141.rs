@@ -5,7 +5,7 @@ use defuse::core::token_id::nep141::Nep141TokenId;
 use defuse::extensions::tokens::nep141::{DefuseFtReceiver, DefuseFtWithdrawer};
 use defuse::{
     contract::Role,
-    core::intents::tokens::FtWithdraw,
+    core::intents::tokens::{FtWithdraw, NotifyOnTransfer},
     tokens::{DepositAction, DepositMessage, ExecuteIntents},
 };
 use defuse_poa_factory::extensions::PoAFactoryExt;
@@ -424,12 +424,9 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
     let deposit_message = if intents.is_empty() {
         DepositMessage {
             receiver_id: receiver.id().clone(),
-            action: Some(DepositAction::Notify(
-                defuse::core::intents::tokens::NotifyOnTransfer {
-                    msg: serde_json::to_string(&expectation.action).unwrap(),
-                    min_gas: None,
-                },
-            )),
+            action: Some(DepositAction::Notify(NotifyOnTransfer::new(
+                serde_json::to_string(&expectation.action).unwrap(),
+            ))),
         }
     } else {
         DepositMessage {

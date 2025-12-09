@@ -10,7 +10,6 @@ pub mod distributions {
 
 pub mod rngs {
     pub use rand::rngs::OsRng;
-    pub use rand::rngs::mock::StepRng;
 }
 
 #[must_use]

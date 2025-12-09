@@ -10,7 +10,7 @@ use defuse_core::{
 };
 use defuse_sandbox::{
     SigningAccount,
-    api::{PublicKey, SecretKey, types::Signature},
+    api::{CryptoHash, PublicKey, SecretKey, types::Signature},
 };
 use near_sdk::{AccountId, serde::Serialize, serde_json};
 
@@ -30,7 +30,10 @@ impl Signer for SigningAccount {
     fn sign_nep413(&self, payload: Nep413Payload) -> SignedNep413Payload {
         let secret_key = Signer::secret_key(self);
 
-        match (secret_key.sign(&payload.hash()), secret_key.public_key()) {
+        match (
+            secret_key.sign(CryptoHash(payload.hash())),
+            secret_key.public_key(),
+        ) {
             (Signature::ED25519(sig), PublicKey::ED25519(pk)) => SignedNep413Payload {
                 payload,
                 public_key: pk.0,
@@ -43,7 +46,10 @@ impl Signer for SigningAccount {
     fn sign_ton_connect(&self, payload: TonConnectPayload) -> SignedTonConnectPayload {
         let secret_key = Signer::secret_key(self);
 
-        match (secret_key.sign(&payload.hash()), secret_key.public_key()) {
+        match (
+            secret_key.sign(CryptoHash(payload.hash())),
+            secret_key.public_key(),
+        ) {
             (Signature::ED25519(sig), PublicKey::ED25519(pk)) => SignedTonConnectPayload {
                 payload,
                 public_key: pk.0,
@@ -56,7 +62,10 @@ impl Signer for SigningAccount {
     fn sign_sep53(&self, payload: Sep53Payload) -> SignedSep53Payload {
         let secret_key = Signer::secret_key(self);
 
-        match (secret_key.sign(&payload.hash()), secret_key.public_key()) {
+        match (
+            secret_key.sign(CryptoHash(payload.hash())),
+            secret_key.public_key(),
+        ) {
             (Signature::ED25519(sig), PublicKey::ED25519(pk)) => SignedSep53Payload {
                 payload,
                 public_key: pk.0,
