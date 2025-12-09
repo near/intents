@@ -25,15 +25,15 @@ impl Debug for TxOutcome<'_> {
             self.0.transaction().signer_id(),
             self.0.transaction().receiver_id()
         )?;
-        let outcomes: Vec<_> = self
-            .0
-            .outcomes()
-            .into_iter()
-            .map(TestExecutionOutcome)
-            .collect();
-        if !outcomes.is_empty() {
-            f.debug_list().entries(outcomes).finish()?;
-        }
+        // let outcomes: Vec<_> = self
+        //     .0
+        //     .outcomes()
+        //     .into_iter()
+        //     .map(TestExecutionOutcome)
+        //     .collect();
+        // if !outcomes.is_empty() {
+        //     f.debug_list().entries(outcomes).finish()?;
+        // }
         Ok(())
     }
 }
