@@ -13,7 +13,7 @@ use rstest::rstest;
 #[tokio::test]
 #[rstest]
 async fn deploy_mint() {
-    let sandbox = Sandbox::new().await;
+    let sandbox = Sandbox::new("test.near".parse().unwrap()).await;
     let root = sandbox.root();
     let user = sandbox
         .create_account("user1")

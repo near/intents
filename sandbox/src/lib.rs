@@ -12,7 +12,7 @@ pub use near_sandbox as sandbox;
 
 use near_api::{NetworkConfig, RPCEndpoint};
 use near_sandbox::GenesisAccount;
-use near_sdk::NearToken;
+use near_sdk::{AccountId, NearToken};
 
 use crate::extensions::account::ParentAccountExt;
 
@@ -23,7 +23,25 @@ pub struct Sandbox {
 }
 
 impl Sandbox {
-    pub async fn new() -> Self {
+    pub async fn new(_name: AccountId) -> Self {
+        // FIX: HOW IT WORKS: why does test.ner exist in genesis cfg????
+        // let root = GenesisAccount::default_with_name(name);
+        // let pk = generate_secret_key().unwrap();
+        // let root = GenesisAccount {
+        //     account_id: name,
+        //     private_key: pk.to_string(),
+        //     public_key: pk.public_key().to_string(),
+        //     balance: NearToken::from_near(1000),
+        // };
+
+        // let sandbox = near_sandbox::Sandbox::start_sandbox_with_config(SandboxConfig {
+        //     additional_accounts: vec![root.clone()],
+        //     ..SandboxConfig::default()
+        // })
+        // .await
+        // .unwrap();
+
+        let root = GenesisAccount::default();
         let sandbox = near_sandbox::Sandbox::start_sandbox().await.unwrap();
 
         let network_config = NetworkConfig {
@@ -32,15 +50,12 @@ impl Sandbox {
             ..NetworkConfig::testnet()
         };
 
-        let root = GenesisAccount::default();
+        let root = SigningAccount::new(
+            Account::new(root.account_id, network_config),
+            root.private_key.parse().unwrap(),
+        );
 
-        Self {
-            root: SigningAccount::new(
-                Account::new(root.account_id, network_config),
-                root.private_key.parse().unwrap(),
-            ),
-            sandbox,
-        }
+        Self { root, sandbox }
     }
 
     pub const fn root(&self) -> &SigningAccount {

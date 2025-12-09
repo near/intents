@@ -36,12 +36,11 @@ async fn storage_deposit_success(
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
     env.fund_account_with_near(user.id(), NearToken::from_near(1000))
-        .await;
+        .await
+        .unwrap();
     env.fund_account_with_near(other_user.id(), NearToken::from_near(1000))
-        .await;
-    env.fund_account_with_near(env.defuse.id(), NearToken::from_near(10000))
-        .await;
-
+        .await
+        .unwrap();
     {
         let storage_balance_ft1_user1 = ft.storage_balance_of(user.id()).await.unwrap();
 
@@ -127,12 +126,11 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents() {
         futures::join!(env.create_user(), env.create_user(), env.create_token());
 
     env.fund_account_with_near(user.id(), NearToken::from_near(1000))
-        .await;
+        .await
+        .unwrap();
     env.fund_account_with_near(other_user.id(), NearToken::from_near(1000))
-        .await;
-    env.fund_account_with_near(env.defuse.id(), NearToken::from_near(10000))
-        .await;
-
+        .await
+        .unwrap();
     {
         let storage_balance_ft1_user1 = ft.storage_balance_of(user.id()).await.unwrap();
 

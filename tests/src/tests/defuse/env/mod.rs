@@ -231,12 +231,12 @@ impl Env {
             .to_string()
     }
 
-    pub async fn fund_account_with_near(&self, account_id: &AccountIdRef, amount: NearToken) {
-        self.sandbox
-            .root()
-            .transfer_near(account_id, amount)
-            .await
-            .unwrap();
+    pub async fn fund_account_with_near(
+        &self,
+        account_id: &AccountIdRef,
+        amount: NearToken,
+    ) -> Result<()> {
+        self.sandbox.root().transfer_near(account_id, amount).await
     }
 
     pub async fn deploy_mt_receiver_stub(&self) -> Account {

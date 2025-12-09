@@ -93,6 +93,7 @@ impl AccountDeployerExt for SigningAccount {
         let mut tx = self
             .tx(subaccount.clone())
             .create_account()
+            .add_full_access_key(self.private_key().public_key())
             .transfer(CONTRACT_DEPOSIT)
             .deploy(wasm.into());
 

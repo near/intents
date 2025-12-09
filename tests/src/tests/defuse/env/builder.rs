@@ -118,7 +118,7 @@ impl EnvBuilder {
     }
 
     pub async fn build_env(&mut self, deploy_legacy: bool) -> Env {
-        let sandbox = Sandbox::new().await;
+        let sandbox = Sandbox::new("test.near".parse().unwrap()).await;
         let root = sandbox.root();
 
         let poa_factory = deploy_poa_factory(root).await;
