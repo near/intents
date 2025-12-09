@@ -7,7 +7,7 @@ use near_api::{
             actions::{
                 AddKeyAction, CreateAccountAction, DeployContractAction, DeployGlobalContractAction, DeterministicAccountStateInit, DeterministicAccountStateInitV1, DeterministicStateInitAction, FunctionCallAction, GlobalContractDeployMode, GlobalContractIdentifier, TransferAction, UseGlobalContractAction
             },
-            result::{ExecutionFinalResult, ExecutionOutcome, ValueOrReceiptId},
+            result::{ExecutionFinalResult, ValueOrReceiptId},
         }, AccessKey, AccessKeyPermission, Action
     }, PublicKey, Transaction
 };
@@ -205,13 +205,29 @@ where
 
     fn into_future(self) -> Self::IntoFuture {
         async move {
-            let result = Transaction::construct(self.signer.id().clone(), self.receiver_id)
+            let tx_result = Transaction::construct(self.signer.id().clone(), self.receiver_id)
                 .add_actions(self.actions)
                 .with_signer(self.signer.signer())
                 .send_to(self.signer.network_config())
                 .await
-                .inspect(|r| eprintln!("{:#?}", TxOutcome(r)))?
+                .inspect(|r| eprintln!("{:#?}", TxOutcome(r)))?;
+
+            // Collect logs before consuming tx_result
+            let logs: Vec<_> = tx_result
+                .outcomes()
+                .iter()
+                .filter(|o| !o.logs.is_empty())
+                .map(|o| (o.executor_id.clone(), o.logs.clone()))
+                .collect();
+
+            let result = tx_result
                 .into_result()
+                .inspect_err(|_| {
+                    // Print logs from all outcomes on error
+                    for (executor_id, outcome_logs) in &logs {
+                        eprintln!("Logs from {}: {:?}", executor_id, outcome_logs);
+                    }
+                })
                 .map_err(Box::new)
                 .map_err(ExecutionError::TransactionFailure)?
                 .raw_bytes()?;
@@ -239,44 +255,80 @@ struct TxOutcome<'a>(&'a ExecutionFinalResult);
 
 impl Debug for TxOutcome<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
+        // Header: signer -> receiver
+        writeln!(
             f,
-            "{} -> {}: ",
+            "\n{} -> {}",
             self.0.transaction().signer_id(),
             self.0.transaction().receiver_id()
         )?;
-        let outcomes: Vec<_> = self
-            .0
-            .outcomes()
-            .into_iter()
-            .map(TestExecutionOutcome)
-            .collect();
-        if !outcomes.is_empty() {
-            f.debug_list().entries(outcomes).finish()?;
+
+        // Display transaction actions
+        let actions = self.0.transaction().actions();
+        for action in actions {
+            if let Action::FunctionCall(fc) = action {
+                writeln!(f, "  function: {}", fc.method_name)?;
+
+                let args_str = String::from_utf8_lossy(&fc.args);
+                // Pretty print JSON if possible
+                if let Ok(json) = serde_json::from_str::<serde_json::Value>(&args_str) {
+                    let pretty = serde_json::to_string_pretty(&json).unwrap_or_else(|_| args_str.into_owned());
+                    for line in pretty.lines() {
+                        writeln!(f, "    {line}")?;
+                    }
+                } else if !args_str.is_empty() {
+                    let args_display = if args_str.len() > 200 {
+                        format!("{}...", &args_str[..200])
+                    } else {
+                        args_str.into_owned()
+                    };
+                    writeln!(f, "    args: {args_display}")?;
+                }
+                writeln!(f, "  gas_limit: {}, deposit: {}", fc.gas, fc.deposit)?;
+            }
         }
+
+        // Calculate total gas
+        let total_gas: u64 = self.0.outcomes().iter().map(|o| o.gas_burnt.as_gas()).sum();
+        writeln!(f, "  total_gas: {:.2} TGas", total_gas as f64 / 1e12)?;
+
+        // Outcomes
+        writeln!(f, "  outcomes:")?;
+        for outcome in self.0.outcomes() {
+            write!(f, "    {} ({:.2} TGas)", outcome.executor_id, outcome.gas_burnt.as_gas() as f64 / 1e12)?;
+
+            // Show result status
+            match outcome.clone().into_result() {
+                Ok(v) => {
+                    if let ValueOrReceiptId::Value(value) = v {
+                        if let Ok(bytes) = value.raw_bytes() {
+                            if !bytes.is_empty() {
+                                write!(f, " -> OK")?;
+                                // Try to decode as JSON
+                                if let Ok(s) = String::from_utf8(bytes.clone()) {
+                                    if let Ok(json) = serde_json::from_str::<serde_json::Value>(&s) {
+                                        write!(f, ": {json}")?;
+                                    } else if !s.is_empty() {
+                                        write!(f, ": {s}")?;
+                                    }
+                                } else {
+                                    write!(f, ": {bytes:?}")?;
+                                }
+                            }
+                        }
+                    }
+                }
+                Err(err) => write!(f, " -> FAIL: {err}")?,
+            }
+            writeln!(f)?;
+
+            // Show logs indented
+            for log in &outcome.logs {
+                writeln!(f, "      log: {log}")?;
+            }
+        }
+
         Ok(())
     }
 }
 
-struct TestExecutionOutcome<'a>(&'a ExecutionOutcome);
-
-impl Debug for TestExecutionOutcome<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: ({}) ", self.0.executor_id, self.0.gas_burnt)?;
-        if !self.0.logs.is_empty() {
-            f.debug_list().entries(&self.0.logs).finish()?;
-        }
-        match self.0.clone().into_result() {
-            Ok(v) => {
-                if let ValueOrReceiptId::Value(value) = v {
-                    let bytes = value.raw_bytes().unwrap();
-                    if !bytes.is_empty() {
-                        write!(f, ", OK: {bytes:?}")?;
-                    }
-                }
-                Ok(())
-            }
-            Err(err) => write!(f, ", FAIL: {err:#?}"),
-        }
-    }
-}
