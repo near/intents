@@ -25,6 +25,9 @@ defuse-token-id = { workspace = true, default-features = false, features = ["nep
 defuse-transfer-auth.workspace = true
 serde_json.workspace = true
 
+defuse-sandbox = { workspace = true, optional = true }
+anyhow = { workspace = true, optional = true }
+
 near-plugins.workspace = true
 near-sdk = { workspace = true, features = ["unstable"] }
 serde_with.workspace = true
@@ -44,5 +47,5 @@ anyhow.workspace = true
 
 [features]
 contract = []
-test-utils = []
+test-utils = ["dep:defuse-sandbox", "dep:anyhow"]
 abi = ["defuse-crypto/abi", "defuse-token-id/abi", "defuse-deadline/abi", "defuse-transfer-auth/abi"]

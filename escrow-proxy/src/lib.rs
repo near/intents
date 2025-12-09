@@ -1,5 +1,7 @@
 mod admin;
 mod escrow_params;
+#[cfg(feature = "test-utils")]
+pub mod ext;
 mod message;
 mod storage;
 mod upgrade;
