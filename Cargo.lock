@@ -745,7 +745,7 @@ checksum = "26bf8fc351c5ed29b5c2f0cbbac1b209b74f60ecd62e675a998df72c49af5204"
 
 [[package]]
 name = "defuse"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "arbitrary_with",
  "bitflags 2.10.0",
