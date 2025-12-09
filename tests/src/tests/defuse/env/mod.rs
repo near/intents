@@ -20,22 +20,21 @@ use defuse_randomness::{Rng, make_true_rng};
 use defuse_sandbox::extensions::account::{AccountDeployerExt, ParentAccountViewExt};
 use defuse_sandbox::extensions::storage_management::StorageManagementExt;
 use defuse_sandbox::tx::FnCallBuilder;
-use defuse_sandbox::{Account, Sandbox, SigningAccount};
+use defuse_sandbox::{Account, Sandbox, SigningAccount, read_wasm};
 use defuse_test_utils::random::{Seed, rng};
 use futures::future::try_join_all;
 use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::AccountIdRef;
 use near_sdk::{AccountId, NearToken, account_id::arbitrary::ArbitraryNamedAccountId, env::sha256};
 
+use std::sync::LazyLock;
 use std::{
     ops::Deref,
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-const MT_RECEIVER_STUB_WASM: &[u8] = include_bytes!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/../res/multi-token-receiver-stub/multi_token_receiver_stub.wasm"
-));
+pub static MT_RECEIVER_STUB_WASM: LazyLock<Vec<u8>> =
+    LazyLock::new(|| read_wasm("res/multi-token-receiver-stub/multi_token_receiver_stub"));
 
 const TOKEN_STORAGE_DEPOSIT: NearToken = NearToken::from_yoctonear(2_350_000_000_000_000_000_000);
 
@@ -245,7 +244,7 @@ impl Env {
             .root()
             .deploy_contract(
                 "mt_receiver_stub",
-                MT_RECEIVER_STUB_WASM,
+                MT_RECEIVER_STUB_WASM.to_vec(),
                 None::<FnCallBuilder>,
             )
             .await
