@@ -43,7 +43,6 @@ impl State {
     fn on_receive(
         &mut self,
         params: Params,
-        // TODO: it could have been EscrowFactory who forwarded funds to us
         sender_id: AccountId,
         token_id: TokenId,
         amount: u128,

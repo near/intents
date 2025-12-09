@@ -6,15 +6,16 @@ use core::{
 
 use thiserror::Error as ThisError;
 
-use crate::Price;
+use crate::UD128;
 
-impl Debug for Price {
+impl Debug for UD128 {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         Display::fmt(self, f)
     }
 }
 
-impl Display for Price {
+impl Display for UD128 {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let digits = self.digits();
@@ -31,7 +32,7 @@ impl Display for Price {
     }
 }
 
-impl FromStr for Price {
+impl FromStr for UD128 {
     type Err = ParseDecimalError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -146,7 +147,7 @@ mod tests {
         "3.40282366920938463463374607431768211455"
     )]
     fn roundtrip(#[case] input: &str, #[case] result: &str) {
-        let p: Price = input.parse().unwrap();
+        let p: UD128 = input.parse().unwrap();
         assert_eq!(p.to_string(), result);
     }
 
@@ -178,6 +179,6 @@ mod tests {
     #[case::integer_overflow("3.40282366920938463463374607431768211456")]
     #[case::decimals_overflow(".000000000000000000000000000000000000001")]
     fn invalid(#[case] s: &str) {
-        s.parse::<Price>().unwrap_err();
+        s.parse::<UD128>().unwrap_err();
     }
 }

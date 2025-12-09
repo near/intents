@@ -5,10 +5,10 @@ use defuse_borsh_utils::adapters::{
 };
 use defuse_fees::Pips;
 use defuse_token_id::TokenId;
-use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, borsh, env, near};
+use near_sdk::{AccountId, CryptoHash, Gas, borsh, env, near};
 use serde_with::{DisplayFromStr, hex::Hex, serde_as};
 
-use crate::{Deadline, Error, Result, price::Price};
+use crate::{Deadline, Error, Result, decimal::UD128};
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -59,22 +59,6 @@ impl Storage {
         })
     }
 
-    // TODO: nep616 feature
-    pub fn derive_account_id(&self, factory: impl AsRef<AccountIdRef>) -> AccountId {
-        // TODO: remove
-        const PREFIX: &str = "escrow-";
-
-        let factory = factory.as_ref();
-
-        let serialized = borsh::to_vec(self).unwrap_or_else(|_| unreachable!());
-        let hash = env::keccak256_array(&serialized);
-
-        let len = AccountId::MAX_LEN - 1 - factory.len() - PREFIX.len();
-        format!("{PREFIX}{}.{factory}", hex::encode(&hash[32 - len / 2..32]))
-            .parse()
-            .unwrap_or_else(|_| unreachable!())
-    }
-
     #[inline]
     pub const fn no_verify(&self) -> &State {
         &self.state
@@ -108,7 +92,8 @@ pub struct Params {
     pub src_token: TokenId,
     pub dst_token: TokenId, // TODO: one_of
 
-    pub price: Price, // TODO: dutch auction
+    // TODO: direction? src per 1 dst vs dst per 1 src?
+    pub price: UD128, // TODO: dutch auction
 
     #[borsh(
         serialize_with = "BorshAs::<BorshTimestampNanoSeconds>::serialize",
@@ -150,7 +135,7 @@ pub struct Params {
 
     #[cfg(feature = "auth_call")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub auth_caller: Option<AccountId>, // TODO: or parent account id?
+    pub auth_caller: Option<AccountId>,
 
     #[serde_as(as = "Hex")]
     pub salt: [u8; 32],
@@ -159,7 +144,6 @@ pub struct Params {
 impl Params {
     #[inline]
     pub fn hash(&self) -> CryptoHash {
-        // TODO: prefix?
         env::keccak256_array(borsh::to_vec(self).unwrap_or_else(|_| unreachable!()))
     }
 

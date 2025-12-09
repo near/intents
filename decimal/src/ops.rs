@@ -1,8 +1,13 @@
-use core::cmp::Ordering;
+use core::{
+    cmp::Ordering,
+    ops::{Div, Mul},
+};
 
-use crate::Price;
+use defuse_num_utils::{CheckedDiv, CheckedMul, CheckedMulDiv};
 
-impl Ord for Price {
+use crate::UD128;
+
+impl Ord for UD128 {
     #[inline]
     fn cmp(&self, other: &Self) -> Ordering {
         let [sd, od]: [u32; 2] = [self, other].map(Self::decimals).map(Into::into);
@@ -20,10 +25,52 @@ impl Ord for Price {
     }
 }
 
-impl PartialOrd for Price {
+impl PartialOrd for UD128 {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
+    }
+}
+
+impl CheckedMul<UD128> for u128 {
+    #[inline]
+    fn checked_mul(self, rhs: UD128) -> Option<Self> {
+        self.checked_mul_div(rhs.digits(), rhs.denominator())
+    }
+
+    #[inline]
+    fn checked_mul_ceil(self, rhs: UD128) -> Option<Self> {
+        self.checked_mul_div_ceil(rhs.digits(), rhs.denominator())
+    }
+}
+
+impl Mul<UD128> for u128 {
+    type Output = Self;
+
+    #[inline]
+    fn mul(self, rhs: UD128) -> Self::Output {
+        CheckedMul::checked_mul(self, rhs).unwrap()
+    }
+}
+
+impl CheckedDiv<UD128> for u128 {
+    #[inline]
+    fn checked_div(self, rhs: UD128) -> Option<Self> {
+        self.checked_mul_div(rhs.denominator(), rhs.digits())
+    }
+
+    #[inline]
+    fn checked_div_ceil(self, rhs: UD128) -> Option<Self> {
+        self.checked_mul_div_ceil(rhs.denominator(), rhs.digits())
+    }
+}
+
+impl Div<UD128> for u128 {
+    type Output = Self;
+
+    #[inline]
+    fn div(self, rhs: UD128) -> Self::Output {
+        CheckedDiv::checked_div(self, rhs).unwrap()
     }
 }
 
@@ -52,8 +99,8 @@ mod tests {
         "34028236692093846346337460743176821145.5"
     )]
     fn cmp(#[case] a: &str, #[case] ord: Ordering, #[case] b: &str) {
-        let a: Price = a.parse().unwrap();
-        let b: Price = b.parse().unwrap();
+        let a: UD128 = a.parse().unwrap();
+        let b: UD128 = b.parse().unwrap();
 
         assert_eq!(a.cmp(&b), ord);
         assert_eq!(b.cmp(&a), ord.reverse(), "reverse ordering mismatch");

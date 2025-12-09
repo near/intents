@@ -8,9 +8,10 @@ use defuse_deadline::Deadline;
 use defuse_escrow_swap::{
     ContractStorage, OverrideSend, Params, ProtocolFees,
     action::{FillAction, TransferAction, TransferMessage},
+    decimal::UD128,
 };
 use defuse_fees::Pips;
-use defuse_price::Price;
+use defuse_num_utils::CheckedMul;
 use defuse_token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId};
 use near_sdk::{
     AccountId, AccountIdRef, GlobalContractId,
@@ -99,14 +100,14 @@ fn simple() {
         })
     );
 
-    let taker_price: Price = "2.1".parse().unwrap();
+    let taker_price: UD128 = "2.1".parse().unwrap();
     println!(
         "{} -> {}::ft_transfer_call({:#})",
         &taker,
         &dst_token_id,
         json!({
             "receiver_id": &verifier,
-            "amount": U128(taker_price.dst_ceil_checked(maker_src_amount).unwrap() + /* excess */ 1_000_000),
+            "amount": U128(maker_src_amount.checked_mul_ceil(taker_price).unwrap() + /* excess */ 1_000_000),
             "memo": "fill escrow",
             "msg": serde_json::to_string(
                 &DepositMessage::new(escrow_id)

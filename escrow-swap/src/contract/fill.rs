@@ -1,13 +1,14 @@
 use std::{borrow::Cow, collections::BTreeMap};
 
 use defuse_near_utils::{PromiseExt, UnwrapOrPanic};
+use defuse_num_utils::{CheckedDiv, CheckedMul};
 use near_sdk::{AccountId, AccountIdRef, Promise, PromiseOrValue};
 
 use crate::{
     Error, Params, ProtocolFees, Result, State,
     action::FillAction,
+    decimal::UD128,
     event::{EscrowIntentEmit, FillEvent, ProtocolFeesCollected},
-    price::Price,
     token_id::TokenId,
 };
 
@@ -121,12 +122,12 @@ impl State {
     fn taker_swap(
         &self,
         taker_dst_in: u128,
-        taker_price: Price,
+        taker_price: UD128,
         partial_fills_allowed: bool,
     ) -> Result<(u128, u128)> {
         // TODO: rounding everywhere?
-        let taker_want_src = taker_price
-            .src_floor_checked(taker_dst_in)
+        let taker_want_src = taker_dst_in
+            .checked_div_ceil(taker_price)
             .ok_or(Error::IntegerOverflow)?;
         if taker_want_src < self.maker_src_remaining {
             if !partial_fills_allowed {
@@ -136,8 +137,8 @@ impl State {
         } else {
             Ok((
                 self.maker_src_remaining,
-                taker_price
-                    .dst_ceil_checked(self.maker_src_remaining)
+                self.maker_src_remaining
+                    .checked_mul_ceil(taker_price)
                     .ok_or(Error::IntegerOverflow)?,
             ))
         }
@@ -184,13 +185,13 @@ impl ProtocolFees {
         self,
         src_out: u128,
         taker_dst_used: u128,
-        maker_price: Price,
+        maker_price: UD128,
     ) -> Result<ProtocolFeesCollected<'static>> {
         Ok(ProtocolFeesCollected {
             fee: self.fee.fee_ceil(taker_dst_used),
             surplus: if !self.surplus.is_zero() {
-                let maker_want_dst = maker_price
-                    .dst_ceil_checked(src_out)
+                let maker_want_dst = src_out
+                    .checked_mul_ceil(maker_price)
                     .ok_or(Error::IntegerOverflow)?;
                 let surplus = taker_dst_used.saturating_sub(maker_want_dst);
                 self.surplus.fee_ceil(surplus)

@@ -928,6 +928,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-decimal"
+version = "0.1.0"
+dependencies = [
+ "defuse-num-utils",
+ "near-sdk",
+ "rstest",
+ "serde_with",
+ "thiserror 2.0.17",
+]
+
+[[package]]
 name = "defuse-erc191"
 version = "0.1.0"
 dependencies = [
@@ -949,10 +960,11 @@ dependencies = [
  "defuse-auth-call",
  "defuse-borsh-utils",
  "defuse-deadline",
+ "defuse-decimal",
  "defuse-fees",
  "defuse-near-utils",
  "defuse-nep245",
- "defuse-price",
+ "defuse-num-utils",
  "defuse-sandbox",
  "defuse-token-id",
  "derive_more",
@@ -1058,17 +1070,6 @@ dependencies = [
  "near-contract-standards",
  "near-plugins",
  "near-sdk",
-]
-
-[[package]]
-name = "defuse-price"
-version = "0.1.0"
-dependencies = [
- "defuse-num-utils",
- "near-sdk",
- "rstest",
- "serde_with",
- "thiserror 2.0.17",
 ]
 
 [[package]]

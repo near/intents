@@ -16,7 +16,6 @@ use defuse::{
 use defuse_escrow_swap::{
     ContractStorage, Deadline, OverrideSend, Params, ProtocolFees,
     action::{FillAction, TransferAction, TransferMessage},
-    price::Price,
 };
 use defuse_fees::Pips;
 use defuse_sandbox::{Account, MtViewExt, SigningAccount, TxResult};
@@ -58,15 +57,13 @@ async fn partial_fills() {
         .map(|token_id| Nep245TokenId::new(env.verifier.id().clone(), token_id.to_string()))
         .map(Into::<TokenId>::into);
 
-    let price: Price = "2".parse().unwrap();
-
     let params = Params {
         maker: env.maker.id().clone(),
 
         src_token: src_token.clone(),
         dst_token: dst_token.clone(),
 
-        price,
+        price: "2".parse().unwrap(),
         deadline: Deadline::timeout(TIMEOUT),
 
         partial_fills_allowed: true,
