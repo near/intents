@@ -11,7 +11,6 @@ workspace = true
 [dependencies]
 defuse-nep245.workspace = true
 
-near-account-id.workspace = true
 near-contract-standards.workspace = true
 near-sdk.workspace = true
 
@@ -30,7 +29,7 @@ nep171 = []
 nep245 = []
 
 abi = []
-arbitrary = ["dep:arbitrary", "near-account-id/arbitrary"]
+arbitrary = ["dep:arbitrary", "near-sdk/arbitrary"]
 
 [dev-dependencies]
 defuse-test-utils.workspace = true

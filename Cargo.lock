@@ -1090,7 +1090,6 @@ dependencies = [
  "defuse-test-utils",
  "derive_more",
  "hex",
- "near-account-id",
  "near-contract-standards",
  "near-sdk",
  "rstest",
@@ -1353,7 +1352,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -2458,9 +2457,9 @@ dependencies = [
 
 [[package]]
 name = "near-contract-standards"
-version = "5.20.1"
+version = "5.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2587e2eaa4c552bb6e7b730ebc9425b8b9b844110ed7392b916921a52c85cdc6"
+checksum = "5f3bfabf324403cabfb66c9abc52b6199ac8f2b924a01f4dc147413d1004ce76"
 dependencies = [
  "near-sdk",
 ]
@@ -2716,10 +2715,10 @@ checksum = "79d63d022e686c6b92426c98f011908037730d557e815d6c813d5686030a6b53"
 
 [[package]]
 name = "near-sdk"
-version = "5.20.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad981c9f695f63ed31a2fb503a93da0010b897332024541580aefa6eb490fea3"
+version = "5.21.0"
+source = "git+https://github.com/near/near-sdk-rs?rev=15e0057581272f247745e2504918a46cd1963639#15e0057581272f247745e2504918a46cd1963639"
 dependencies = [
+ "arbitrary",
  "base64 0.22.1",
  "borsh",
  "bs58 0.5.1",
@@ -2743,9 +2742,8 @@ dependencies = [
 
 [[package]]
 name = "near-sdk-macros"
-version = "5.20.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e35becf65e0597425d026a6dc57f1f88fbf9ba69096b2010de5bca3625bcd873"
+version = "5.21.0"
+source = "git+https://github.com/near/near-sdk-rs?rev=15e0057581272f247745e2504918a46cd1963639#15e0057581272f247745e2504918a46cd1963639"
 dependencies = [
  "Inflector",
  "darling 0.20.11",
@@ -2767,8 +2765,7 @@ checksum = "a501d5074c5c341725fe801ed191f45ef97e0a4d54d6ef5c3e87363930d4d0b1"
 [[package]]
 name = "near-sys"
 version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b99e9ce0020190ea152f70d1849e54fc8fc123738e7447800ad818c78f5167cc"
+source = "git+https://github.com/near/near-sdk-rs?rev=15e0057581272f247745e2504918a46cd1963639#15e0057581272f247745e2504918a46cd1963639"
 
 [[package]]
 name = "near-time"
@@ -3578,7 +3575,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.11.0",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -4214,7 +4211,7 @@ dependencies = [
  "getrandom 0.3.4",
  "once_cell",
  "rustix 1.1.2",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
