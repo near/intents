@@ -1,7 +1,6 @@
 mod letter_gen;
 mod mt_transfer_resolve_gas;
 
-use crate::assert_a_contains_b;
 use crate::tests::defuse::DefuseSignerExt;
 use crate::tests::defuse::env::{Env, get_account_public_key};
 use crate::tests::defuse::tokens::MT_RECEIVER_STUB_WASM;
@@ -19,10 +18,10 @@ use defuse::nep245::Token;
 use defuse::nep245::{MtBurnEvent, MtEvent, MtTransferEvent};
 use defuse::tokens::DepositMessage;
 use defuse::tokens::{DepositAction, ExecuteIntents};
-use defuse_sandbox::SigningAccount;
 use defuse_sandbox::extensions::account::AccountDeployerExt;
 use defuse_sandbox::extensions::mt::{MtExt, MtViewExt};
 use defuse_sandbox::tx::FnCallBuilder;
+use defuse_sandbox::{SigningAccount, assert_a_contains_b};
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_sdk::AsNep297Event;
 use near_sdk::json_types::U128;
