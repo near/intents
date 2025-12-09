@@ -1352,7 +1352,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2457,9 +2457,9 @@ dependencies = [
 
 [[package]]
 name = "near-contract-standards"
-version = "5.21.0"
+version = "5.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f3bfabf324403cabfb66c9abc52b6199ac8f2b924a01f4dc147413d1004ce76"
+checksum = "885e2c40ee7b0dbd4fa78855ba3601ac5a681f256e94cac4b6c9e8e2e7b05b08"
 dependencies = [
  "near-sdk",
 ]
@@ -2715,8 +2715,9 @@ checksum = "79d63d022e686c6b92426c98f011908037730d557e815d6c813d5686030a6b53"
 
 [[package]]
 name = "near-sdk"
-version = "5.21.0"
-source = "git+https://github.com/near/near-sdk-rs?rev=15e0057581272f247745e2504918a46cd1963639#15e0057581272f247745e2504918a46cd1963639"
+version = "5.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1895ec5b53085800ba9559aee09bd629eb40ee1c52bb9aa96e452f49551c1623"
 dependencies = [
  "arbitrary",
  "base64 0.22.1",
@@ -2742,8 +2743,9 @@ dependencies = [
 
 [[package]]
 name = "near-sdk-macros"
-version = "5.21.0"
-source = "git+https://github.com/near/near-sdk-rs?rev=15e0057581272f247745e2504918a46cd1963639#15e0057581272f247745e2504918a46cd1963639"
+version = "5.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0d7b3c8d79e612150c0efb4d61a286b28995ef9bfa6090d338589b0422506af4"
 dependencies = [
  "Inflector",
  "darling 0.20.11",
@@ -2765,7 +2767,8 @@ checksum = "a501d5074c5c341725fe801ed191f45ef97e0a4d54d6ef5c3e87363930d4d0b1"
 [[package]]
 name = "near-sys"
 version = "0.2.6"
-source = "git+https://github.com/near/near-sdk-rs?rev=15e0057581272f247745e2504918a46cd1963639#15e0057581272f247745e2504918a46cd1963639"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b99e9ce0020190ea152f70d1849e54fc8fc123738e7447800ad818c78f5167cc"
 
 [[package]]
 name = "near-time"
@@ -3575,7 +3578,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.11.0",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -4211,7 +4214,7 @@ dependencies = [
  "getrandom 0.3.4",
  "once_cell",
  "rustix 1.1.2",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
