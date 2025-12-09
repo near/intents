@@ -13,6 +13,7 @@ const POA_FACTORY_WASM: &[u8] = include_bytes!(concat!(
     "/../releases/defuse_poa_factory.wasm"
 ));
 
+#[allow(async_fn_in_trait)]
 pub trait PoAFactoryDeployerExt {
     async fn deploy_poa_factory(
         &self,

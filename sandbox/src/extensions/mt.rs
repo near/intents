@@ -1,6 +1,7 @@
 use std::ops::RangeBounds;
 
 use defuse_nep245::{Token, TokenId};
+use near_api::types::transaction::result::ExecutionFinalResult;
 use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, json_types::U128, serde_json::json};
 
 use crate::{Account, SigningAccount, tx::FnCallBuilder};
@@ -25,6 +26,16 @@ pub trait MtExt {
         memo: impl Into<Option<String>>,
         msg: impl Into<String>,
     ) -> anyhow::Result<Vec<u128>>;
+
+    async fn mt_batch_transfer_call(
+        &self,
+        contract: &AccountIdRef,
+        receiver_id: &AccountIdRef,
+        token_ids: impl IntoIterator<Item = String>,
+        amounts: impl IntoIterator<Item = u128>,
+        memo: impl Into<Option<String>>,
+        msg: impl Into<String>,
+    ) -> anyhow::Result<ExecutionFinalResult>;
 
     async fn mt_on_transfer(
         &self,
@@ -109,6 +120,32 @@ impl MtExt for SigningAccount {
             .json::<Vec<U128>>()
             .map(|amounts| amounts.into_iter().map(|a| a.0).collect())
             .map_err(Into::into)
+    }
+
+    async fn mt_batch_transfer_call(
+        &self,
+        contract: &AccountIdRef,
+        receiver_id: &AccountIdRef,
+        token_ids: impl IntoIterator<Item = String>,
+        amounts: impl IntoIterator<Item = u128>,
+        memo: impl Into<Option<String>>,
+        msg: impl Into<String>,
+    ) -> anyhow::Result<ExecutionFinalResult> {
+        self.tx(contract.into())
+            .function_call(
+                FnCallBuilder::new("mt_batch_transfer_call")
+                    .json_args(json!({
+                        "receiver_id": receiver_id,
+                        "token_ids": token_ids.into_iter().collect::<Vec<_>>(),
+                        "amounts": amounts.into_iter().map(U128::from).collect::<Vec<_>>(),
+                        "approvals": Option::<Vec<Option<(near_sdk::AccountId, u64)>>>::None,
+                        "memo": memo.into(),
+                        "msg": msg.into(),
+                    }))
+                    .with_deposit(NearToken::from_yoctonear(1)),
+            )
+            .exec_transaction()
+            .await
     }
 
     async fn mt_on_transfer(

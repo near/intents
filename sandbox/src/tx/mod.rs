@@ -9,7 +9,7 @@ use near_api::{
                 DeployGlobalContractAction, FunctionCallAction, GlobalContractDeployMode,
                 GlobalContractIdentifier, TransferAction, UseGlobalContractAction,
             },
-            result::ExecutionSuccess,
+            result::{ExecutionFinalResult, ExecutionSuccess},
         },
     },
 };
@@ -107,6 +107,16 @@ impl TxBuilder {
         self.actions.push(action);
         self
     }
+
+    pub async fn exec_transaction(self) -> anyhow::Result<ExecutionFinalResult> {
+        Transaction::construct(self.signer.id().clone(), self.receiver_id)
+            .add_actions(self.actions)
+            .with_signer(self.signer.signer())
+            .send_to(self.signer.network_config())
+            .await
+            .inspect(|r| eprintln!("{:#?}", TxOutcome::from(r)))
+            .map_err(Into::into)
+    }
 }
 
 impl IntoFuture for TxBuilder {
@@ -116,12 +126,8 @@ impl IntoFuture for TxBuilder {
 
     fn into_future(self) -> Self::IntoFuture {
         async move {
-            Transaction::construct(self.signer.id().clone(), self.receiver_id)
-                .add_actions(self.actions)
-                .with_signer(self.signer.signer())
-                .send_to(self.signer.network_config())
-                .await
-                .inspect(|r| eprintln!("{:#?}", TxOutcome::from(r)))?
+            self.exec_transaction()
+                .await?
                 .into_result()
                 .map_err(Into::into)
         }

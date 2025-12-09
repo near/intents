@@ -1,16 +1,18 @@
 use crate::tests::defuse::DefuseSignerExt;
-use crate::tests::defuse::{env::Env, intents::ExecuteIntentsExt};
-use crate::utils::{mt::MtExt, nft::NftExt};
+use crate::tests::defuse::env::Env;
 use defuse::core::intents::tokens::NftWithdraw;
 use defuse::core::token_id::TokenId as DefuseTokenId;
 use defuse::core::token_id::nep171::Nep171TokenId;
+use defuse::extensions::intents::ExecuteIntentsExt;
 use defuse::tokens::{DepositAction, DepositMessage, ExecuteIntents};
+use defuse_sandbox::api::types::json::Base64VecU8;
+use defuse_sandbox::api::types::nft::NFTContractMetadata;
+use defuse_sandbox::extensions::mt::MtViewExt;
+use defuse_sandbox::extensions::nft::{NftDeployerExt, NftExt, NftViewExt};
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
-use near_contract_standards::non_fungible_token::metadata::{
-    NFT_METADATA_SPEC, NFTContractMetadata,
-};
+use near_contract_standards::non_fungible_token::metadata::NFT_METADATA_SPEC;
 use near_contract_standards::non_fungible_token::{Token, metadata::TokenMetadata};
-use near_sdk::{NearToken, json_types::Base64VecU8};
+use near_sdk::NearToken;
 use rstest::rstest;
 use std::collections::HashMap;
 
@@ -31,10 +33,9 @@ async fn transfer_nft_to_verifier() {
 
     env.transfer_near(user1.id(), NearToken::from_near(100))
         .await
-        .unwrap()
         .unwrap();
 
-    let existing_tokens = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
+    let existing_tokens = env.defuse.mt_tokens(..).await.unwrap();
 
     let nft_issuer_contract = user1
         .deploy_vanilla_nft_issuer(
@@ -112,8 +113,8 @@ async fn transfer_nft_to_verifier() {
                     .unwrap()
             );
 
-            let nft1_data = user2
-                .nft_token(nft_issuer_contract.id(), &nft1.token_id)
+            let nft1_data = nft_issuer_contract
+                .nft_token(&nft1.token_id)
                 .await
                 .unwrap()
                 .unwrap();
@@ -153,8 +154,8 @@ async fn transfer_nft_to_verifier() {
                     .unwrap()
             );
 
-            let nft2_data = user2
-                .nft_token(nft_issuer_contract.id(), &nft2.token_id)
+            let nft2_data = nft_issuer_contract
+                .nft_token(&nft2.token_id)
                 .await
                 .unwrap()
                 .unwrap();
@@ -182,7 +183,7 @@ async fn transfer_nft_to_verifier() {
     {
         // mt_tokens
         {
-            let nfts_in_verifier = user1.mt_tokens(env.defuse.id(), ..).await.unwrap();
+            let nfts_in_verifier = env.defuse.mt_tokens(..).await.unwrap();
 
             assert_eq!(nfts_in_verifier.len(), existing_tokens.len() + 2);
 
@@ -199,8 +200,9 @@ async fn transfer_nft_to_verifier() {
         {
             // User1
             {
-                let nfts_in_verifier = user1
-                    .mt_tokens_for_owner(env.defuse.id(), user1.id(), ..)
+                let nfts_in_verifier = env
+                    .defuse
+                    .mt_tokens_for_owner(user1.id(), ..)
                     .await
                     .unwrap();
                 assert_eq!(nfts_in_verifier.len(), 1);
@@ -209,8 +211,9 @@ async fn transfer_nft_to_verifier() {
 
             // User2
             {
-                let nfts_in_verifier = user1
-                    .mt_tokens_for_owner(env.defuse.id(), user2.id(), ..)
+                let nfts_in_verifier = env
+                    .defuse
+                    .mt_tokens_for_owner(user2.id(), ..)
                     .await
                     .unwrap();
                 assert_eq!(nfts_in_verifier.len(), 0);
@@ -218,8 +221,9 @@ async fn transfer_nft_to_verifier() {
 
             // User3
             {
-                let nfts_in_verifier = user1
-                    .mt_tokens_for_owner(env.defuse.id(), user3.id(), ..)
+                let nfts_in_verifier = env
+                    .defuse
+                    .mt_tokens_for_owner(user3.id(), ..)
                     .await
                     .unwrap();
                 assert_eq!(nfts_in_verifier.len(), 1);
@@ -230,8 +234,8 @@ async fn transfer_nft_to_verifier() {
 
     {
         {
-            let nft1_data = user2
-                .nft_token(nft_issuer_contract.id(), &nft1.token_id)
+            let nft1_data = nft_issuer_contract
+                .nft_token(&nft1.token_id)
                 .await
                 .unwrap()
                 .unwrap();
@@ -248,7 +252,7 @@ async fn transfer_nft_to_verifier() {
 
         let withdraw_payload = user3
             .sign_defuse_payload_default(
-                env.defuse.id(),
+                &env.defuse,
                 [NftWithdraw {
                     token: nft_issuer_contract.id().clone(),
                     receiver_id: user1.id().clone(),
@@ -262,8 +266,7 @@ async fn transfer_nft_to_verifier() {
             .await
             .unwrap();
 
-        env.defuse
-            .execute_intents(env.defuse.id(), [withdraw_payload])
+        env.simulate_and_execute_intents(env.defuse.id(), [withdraw_payload])
             .await
             .unwrap();
 
@@ -278,8 +281,8 @@ async fn transfer_nft_to_verifier() {
 
         // After withdrawing to user1, now they own the NFT
         {
-            let nft1_data = user2
-                .nft_token(nft_issuer_contract.id(), &nft1.token_id)
+            let nft1_data = nft_issuer_contract
+                .nft_token(&nft1.token_id)
                 .await
                 .unwrap()
                 .unwrap();
@@ -331,28 +334,36 @@ struct NftTransferCallExpectation {
 async fn nft_transfer_call_calls_mt_on_transfer_variants(
     #[case] expectation: NftTransferCallExpectation,
 ) {
-    use crate::tests::defuse::env::MT_RECEIVER_STUB_WASM;
     use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
+    use defuse_sandbox::{
+        SigningAccount, api::types::json::Base64VecU8, extensions::account::AccountDeployerExt,
+        tx::FnCallBuilder,
+    };
+
+    use crate::tests::defuse::tokens::MT_RECEIVER_STUB_WASM;
 
     let env = Env::builder().deployer_as_super_admin().build().await;
 
     // Ensure the NFT issuer account name stays short enough to host `nft_test.<user>`
     // subaccounts; randomly generated names occasionally exceed the NEAR 64-char limit.
-    let (user, receiver, intent_receiver) = futures::join!(
+    let (user, intent_receiver) = futures::join!(
         env.create_named_user("nft_transfer_sender"),
-        env.create_user(),
         env.create_user()
     );
 
-    receiver
-        .deploy(MT_RECEIVER_STUB_WASM.as_slice())
+    let receiver = SigningAccount::new(
+        env.deploy_contract(
+            "receiver_stub",
+            MT_RECEIVER_STUB_WASM,
+            None::<FnCallBuilder>,
+        )
         .await
-        .unwrap()
-        .unwrap();
+        .unwrap(),
+        env.private_key().clone(),
+    );
 
     env.transfer_near(user.id(), NearToken::from_near(100))
         .await
-        .unwrap()
         .unwrap();
 
     let nft_issuer_contract = user
@@ -391,7 +402,7 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
         vec![
             receiver
                 .sign_defuse_payload_default(
-                    env.defuse.id(),
+                    &env.defuse,
                     [Transfer {
                         receiver_id: intent_receiver.id().clone(),
                         tokens: Amounts::new(std::iter::once((nft_token_id.clone(), 1)).collect()),
@@ -437,8 +448,8 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
     .unwrap();
 
     // Check ownership on the NFT contract
-    let nft_owner = user
-        .nft_token(nft_issuer_contract.id(), &nft.token_id)
+    let nft_owner = nft_issuer_contract
+        .nft_token(&nft.token_id)
         .await
         .unwrap()
         .unwrap()
@@ -456,7 +467,8 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
 
     // Check if receiver owns the NFT in MT balance
     let receiver_mt_balance = env
-        .mt_contract_balance_of(env.defuse.id(), receiver.id(), &nft_token_id.to_string())
+        .defuse
+        .mt_balance_of(receiver.id(), &nft_token_id.to_string())
         .await
         .unwrap();
 
