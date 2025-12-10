@@ -68,8 +68,6 @@ pub trait Sendable: Sized
 where
     for<'a> &'a Self: Into<TokenIdType>,
 {
-    fn transfer_gas_min_default(&self, is_call: bool) -> (Gas, Gas);
-
     fn send(
         self,
         receiver_id: AccountId,
@@ -79,12 +77,6 @@ where
         min_gas: Option<Gas>,
         unused_gas: bool,
     ) -> Promise;
-
-    #[inline]
-    fn transfer_gas(&self, min_gas: Option<Gas>, is_call: bool) -> Gas {
-        let (min, default) = self.transfer_gas_min_default(is_call);
-        min_gas.unwrap_or(default).max(min)
-    }
 
     #[inline]
     fn send_for_resolve(
@@ -108,16 +100,6 @@ where
 }
 
 impl Sendable for TokenId {
-    #[inline]
-    fn transfer_gas_min_default(&self, is_call: bool) -> (Gas, Gas) {
-        match self {
-            #[cfg(feature = "nep141")]
-            TokenId::Nep141(token) => token.transfer_gas_min_default(is_call),
-            #[cfg(feature = "nep245")]
-            TokenId::Nep245(token) => token.transfer_gas_min_default(is_call),
-        }
-    }
-
     #[inline]
     fn send(
         self,
