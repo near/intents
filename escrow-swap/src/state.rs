@@ -210,7 +210,7 @@ pub struct OverrideSend {
 
     /// NOTE: No refund will be made in case of
     /// `*_transfer_call()` failed. Reasons for it to fail:
-    /// * no `storage_deposit` for receipent
+    /// * no `storage_deposit` for reciipent
     /// * insufficient gas (see `min_gas` below)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub msg: Option<String>,

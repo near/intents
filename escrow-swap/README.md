@@ -38,7 +38,7 @@ All params of the escrow are fixed at the time of initialization and immutable:
   // * `nep245:<CONTRACT_ID>:<TOKEN_ID>`
   "dst_token": "nep245:intents.near:nep141:wrap.near",
 
-  // The mininum price, expressed as decimal floating-point number
+  // The minimum price, expressed as decimal floating-point number
   // representing the amount of raw units of `dst_token` per 1 raw unit
   // of `src_token`, i.e. dst per 1 src.
   "price": "0.0000001667",
@@ -324,7 +324,7 @@ Instead, the contract automatically refunds `maker_src_remaining` (if any)
 and retries sending `maker_dst_lost` (if any) and deletes itself if no more
 tokens were lost.
 
-Alternatively, a fully permissionless `lost_found({"params": {...}})` method can be called
+Alternatively, a fully permissionless `escrow_lost_found({"params": {...}})` method can be called
 to retry sending `maker_dst_lost` (if any) even before the `deadline`.
 
 Both methods return a boolean indicating whether the contract was deleted, so
