@@ -163,7 +163,7 @@ impl MtExt for SigningAccount {
         self.tx(receiver_id)
             .function_call(FnCallBuilder::new("mt_on_transfer").json_args(json!({
                 "sender_id": sender_id,
-                "previous_owner_ids": [sender_id],
+                "previous_owner_ids": vec![sender_id; token_ids.len()],
                 "token_ids": token_ids,
                 "amounts": amounts,
                 "msg": msg.as_ref(),
