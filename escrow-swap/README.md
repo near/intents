@@ -102,7 +102,7 @@ All params of the escrow are fixed at the time of initialization and immutable:
     // 1 pip == 1/100th of bip == 0.0001%.
     "surplus": 50000, // 5%
 
-    // Recepient of protocol fees.
+    // Recipient of protocol fees.
     "collector": "protocol.near"
   },
 
@@ -136,7 +136,7 @@ defined in [NEP-616][1].
 ### Deploy and Fund
 
 In order to fund the contract with `src_token`, the maker sends it to the escrow contract
-by calling `src_token::ft/mt_ransfer_call()` with following `msg` param:
+by calling `src_token::ft/mt_transfer_call()` with following `msg` param:
 
 ```jsonc
 {
@@ -148,7 +148,7 @@ by calling `src_token::ft/mt_ransfer_call()` with following `msg` param:
 ```
 
 The contract also needs to be initialized via [`state_init()`][2] first.
-This can be done either by maker or any other account permissionlessly before trigerring the
+This can be done either by maker or any other account permissionlessly before triggering the
 transfer, or there can be a custom support for calling [`state_init()`][2] before
 `ft/mt_on_transfer()` implemented on `src_token` level (e.g. `intents.near`):
 
@@ -157,7 +157,6 @@ transfer, or there can be a custom support for calling [`state_init()`][2] befor
 
 ```mermaid
 sequenceDiagram
-  participant maker as maker.near
   participant maker as maker.near
   participant src_token as src_token FT/MT
 
@@ -320,7 +319,7 @@ method if at least one of the following conditions is met:
 * by single-whitelisted taker, i.e. to refund the maker before the `deadline`
 * by `maker` when `maker_src_remaining` is zero
 
-After being closed, the contract does not allow funding and anymore.
+After being closed, the contract does not allow funding anymore.
 Instead, the contract automatically refunds `maker_src_remaining` (if any)
 and retries sending `maker_dst_lost` (if any) and deletes itself if no more
 tokens were lost.

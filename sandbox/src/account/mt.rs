@@ -51,7 +51,7 @@ impl MtExt for SigningAccount {
     ) -> TxResult<()> {
         self.tx(contract)
             .function_call_json(
-                "mt_transfer_call",
+                "mt_transfer",
                 json!({
                     "receiver_id": receiver_id,
                     "token_id": token_id.as_ref(),

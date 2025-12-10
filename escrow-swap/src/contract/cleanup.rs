@@ -41,6 +41,7 @@ impl<'a> CleanupGuard<'a> {
         Ok(state)
     }
 
+    #[must_use]
     pub fn maybe_cleanup(&mut self) -> Option<Promise> {
         self.0
             .0
@@ -57,7 +58,7 @@ impl<'a> CleanupGuard<'a> {
 
 impl<'a> Drop for CleanupGuard<'a> {
     fn drop(&mut self) {
-        self.maybe_cleanup();
+        self.maybe_cleanup().map(Promise::detach);
     }
 }
 

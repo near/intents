@@ -194,7 +194,7 @@ pub struct ProtocolFees {
     #[serde(default, skip_serializing_if = "Pips::is_zero")]
     pub surplus: Pips,
 
-    /// NOTE: make sure to have `storage_deposit` for this recepient
+    /// NOTE: make sure to have `storage_deposit` for this recipient
     /// on `dst_token`
     pub collector: AccountId,
 }
