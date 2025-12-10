@@ -30,7 +30,6 @@ async fn transfer_auth_global_deployment() {
     .unwrap();
 
     let solver1_raw_state = ContractStorage::init_state(State {
-        solver_id: solver1.id().clone(),
         escrow_contract_id: escrow.id().clone(),
         auth_contract: auth_contract.id().clone(),
         auth_callee: relay.id().clone(),
@@ -44,7 +43,6 @@ async fn transfer_auth_global_deployment() {
     });
 
     let solver2_raw_state = ContractStorage::init_state(State {
-        solver_id: solver2.id().clone(),
         escrow_contract_id: escrow.id().clone(),
         auth_contract: auth_contract.id().clone(),
         auth_callee: relay.id().clone(),
@@ -83,7 +81,6 @@ async fn transfer_auth_global_deployment() {
         .await
         .unwrap();
 
-    assert_eq!(cotnract_instance1_state.state_init.solver_id, *solver1.id());
 }
 
 #[tokio::test]
@@ -103,7 +100,6 @@ async fn on_auth_call() {
     .unwrap();
 
     let state = State {
-        solver_id: solver.id().clone(),
         escrow_contract_id: escrow.id().clone(),
         auth_contract: auth_contract.id().clone(),
         auth_callee: relay.id().clone(),
@@ -168,7 +164,6 @@ async fn transfer_auth_early_authorization() {
     .unwrap();
 
     let state = State {
-        solver_id: solver.id().clone(),
         escrow_contract_id: escrow.id().clone(),
         auth_contract: auth_contract.id().clone(),
         auth_callee: relay.id().clone(),
@@ -227,7 +222,6 @@ async fn transfer_auth_async_authorization() {
     .unwrap();
 
     let state = State {
-        solver_id: solver.id().clone(),
         escrow_contract_id: escrow.id().clone(),
         auth_contract: auth_contract.id().clone(),
         auth_callee: relay.id().clone(),
@@ -293,7 +287,6 @@ async fn transfer_auth_async_authorization_timeout() {
     .unwrap();
 
     let state = State {
-        solver_id: solver.id().clone(),
         escrow_contract_id: escrow.id().clone(),
         auth_contract: auth_contract.id().clone(),
         auth_callee: relay.id().clone(),

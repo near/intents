@@ -9,7 +9,6 @@ pub use crate::state_machine::StateMachine;
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct State {
-    pub solver_id: AccountId,
     pub escrow_contract_id: AccountId,
     pub auth_contract: AccountId,
     pub auth_callee: AccountId,

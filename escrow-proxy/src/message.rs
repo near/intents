@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
-use near_sdk::near;
+use near_sdk::json_types::U128;
+use near_sdk::{near, AccountId};
 
 pub use defuse_escrow_swap::{OverrideSend, Params as EscrowParams};
 pub use defuse_escrow_swap::action::{FillAction, TransferAction};
@@ -16,13 +17,7 @@ pub type Nonce = u64;
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct TransferMessage {
-    /// The escrow parameters - matches escrow-swap's TransferMessage.params
-    pub params: EscrowParams,
-
-    /// The transfer action (Fund or Fill) - matches escrow-swap's TransferMessage.action
-    pub action: TransferAction,
-
-    /// Salt for deriving unique transfer-auth instance ID (ignored by escrow-swap)
+    pub receiver_id: AccountId,
     pub salt: [u8; 32],
 }
 

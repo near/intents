@@ -72,8 +72,9 @@ impl TransferAuth for Contract {
         &self.0
     }
 
+    // TODO: impl
     fn close(&self){
-        require!(env::predecessor_account_id() == self.state_init.querier || env::predecessor_account_id() == self.state_init.solver_id, "Unauthorized querier");
+        require!(env::predecessor_account_id() == self.state_init.querier, "Unauthorized querier");
         Promise::new(env::current_account_id())
             .delete_account(env::signer_account_id()).detach();
 

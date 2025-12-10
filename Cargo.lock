@@ -1267,6 +1267,7 @@ dependencies = [
  "defuse-deadline",
  "defuse-fees",
  "defuse-near-utils",
+ "defuse-nep245",
  "defuse-nep413",
  "defuse-sandbox",
  "defuse-token-id",

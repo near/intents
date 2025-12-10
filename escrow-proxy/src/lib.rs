@@ -11,7 +11,7 @@ use near_sdk::{
     env::keccak256,
     state_init::{StateInit, StateInitV1}, Promise,
 };
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::{borrow::Cow, collections::{BTreeMap, HashMap, HashSet}};
 
 use near_plugins::{AccessControllable, access_control_any};
 use defuse_auth_call::{ext_auth_callee, AuthCallee};
@@ -23,7 +23,7 @@ use near_sdk::{
     ext_contract, json_types::U128, near, require, serde_json,
 };
 
-use defuse_transfer_auth::{ext_transfer_auth, storage::{ContractStorage, State}};
+use defuse_transfer_auth::{ext_transfer_auth, storage::{ContractStorage, State}, TransferAuthContext};
 use defuse_escrow_swap::ContractStorage as EscrowContractStorage;
 use defuse_escrow_swap::action::TransferMessage as EscrowTransferMessage;
 
@@ -57,7 +57,9 @@ pub struct RolesConfig {
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProxyConfig {
+    // TODO: use global id instead of account
     pub per_fill_global_contract_id: AccountId,
+    // TODO: use global id instead of account
     pub escrow_swap_global_contract_id: AccountId,
     pub auth_contract: AccountId,
     pub auth_collee: AccountId,
@@ -73,12 +75,10 @@ pub struct Contract {
 impl Contract {
     fn derive_deteministic_escrow_per_fill_id(
         &self,
-        solver_id: AccountId,
         msg_hash: [u8; 32],
     ) -> StateInit{
 
         let state = State {
-            solver_id,
             escrow_contract_id: self.config.escrow_swap_global_contract_id.clone() ,
             auth_contract: self.config.auth_contract.clone(),
             auth_callee: self.config.auth_collee.clone(),
@@ -148,7 +148,9 @@ impl EscrowProxy for Contract {
     fn config(&self) -> &ProxyConfig {
         &self.config
     }
+
 }
+
 
 #[near]
 impl MultiTokenReceiver for Contract {
@@ -161,29 +163,23 @@ impl MultiTokenReceiver for Contract {
         amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
-        //NOTE: instead of serializing and desrializing just hash origin message, relay
-        //can do the same when creating Auth intent with state init
-        //NOTE: its unique because of salt
-        let hash: [u8; 32] = keccak256(msg.as_bytes()).try_into().unwrap();
-        let transfer_msg: TransferMessage = msg.parse().unwrap();
+        let context_hash = TransferAuthContext {
+            sender_id: Cow::Borrowed(&sender_id),
+            token_ids: Cow::Borrowed(&token_ids),
+            amounts: Cow::Borrowed(&amounts),
+            msg: Cow::Borrowed(&msg),
+        }.hash();
 
-        let auth_contract_state_init = self.derive_deteministic_escrow_per_fill_id(sender_id.clone(), hash);
+        let auth_contract_state_init = self.derive_deteministic_escrow_per_fill_id(context_hash);
         let auth_contract_id = auth_contract_state_init.derive_account_id();
-
         let mut auth_call = Promise::new(auth_contract_id).state_init(auth_contract_state_init, NearToken::from_near(0));
 
         let _ = previous_owner_ids;
 
-        if token_ids.len() != 1 || amounts.len() != 1 {
-            near_sdk::log!("Only single token transfers supported");
-            return PromiseOrValue::Value(amounts);
-        }
 
         let token_contract = env::predecessor_account_id();
-        let escrow_address = self.derive_deteministic_escrow_swap_id(&transfer_msg.params);
+        let transfer_message: TransferMessage = msg.parse().unwrap_or_panic_display();
 
-        // Chain: state_init → wait_for_authorization → check_and_forward → resolve_transfer
-        // We need a callback to check authorization result before forwarding
         PromiseOrValue::Promise(
             ext_transfer_auth::ext_on(auth_call)
                 .wait_for_authorization()
@@ -192,11 +188,10 @@ impl MultiTokenReceiver for Contract {
                         .with_static_gas(Gas::from_tgas(100))
                         .check_authorization_and_forward(
                             token_contract,
-                            escrow_address,
-                            token_ids[0].clone(),
-                            amounts[0],
-                            msg,
+                            transfer_message.receiver_id,
+                            token_ids,
                             amounts,
+                            msg,
                         ),
                 ),
         )
@@ -211,10 +206,9 @@ impl Contract {
         &self,
         token_contract: AccountId,
         escrow_address: AccountId,
-        token_id: defuse_nep245::TokenId,
-        amount: U128,
+        token_ids: Vec<defuse_nep245::TokenId>,
+        amounts: Vec<U128>,
         msg: String,
-        original_amounts: Vec<U128>,
     ) -> PromiseOrValue<Vec<U128>> {
         // Check the result of wait_for_authorization
         let is_authorized = match env::promise_result(0) {
@@ -226,7 +220,7 @@ impl Contract {
 
         if !is_authorized {
             near_sdk::log!("Authorization failed or timed out, refunding");
-            return PromiseOrValue::Value(original_amounts);
+            return PromiseOrValue::Value(amounts);
         }
 
         // Forward tokens to escrow
@@ -234,18 +228,18 @@ impl Contract {
             ext_mt_core::ext(token_contract)
                 .with_attached_deposit(NearToken::from_yoctonear(1))
                 .with_static_gas(Gas::from_tgas(50))
-                .mt_transfer_call(
+                .mt_batch_transfer_call(
                     escrow_address,
-                    token_id,
-                    amount,
+                    token_ids,
+                    amounts.clone(),
                     None, // approval
-                    None, // memo
+                    Some("proxy forward".to_string()), // memo
                     msg,
                 )
                 .then(
                     Self::ext(env::current_account_id())
                         .with_static_gas(Gas::from_tgas(10))
-                        .resolve_transfer(original_amounts),
+                        .resolve_transfer(amounts),
                 ),
         )
     }
@@ -280,15 +274,16 @@ impl Contract {
 
 
     //TODO: implement as trait imported from defuse
+    // just pass globla contract id
     #[access_control_any(roles(Role::DAO, Role::Canceller))]
-    pub fn close_auth(&self, solver_id: AccountId, msg: String) {
-        let hash: [u8; 32] = keccak256(msg.as_bytes()).try_into().unwrap();
-        let auth_contract_id = self.derive_deteministic_escrow_per_fill_id(solver_id, hash);
-
-        ext_transfer_auth::ext(auth_contract_id.derive_account_id())
-            .with_attached_deposit(NearToken::from_yoctonear(1))
-            .with_static_gas(Gas::from_tgas(50))
-            .close();
+    pub fn close_auth(&self, transfer_auth_id: AccountId) {
+        // let hash: [u8; 32] = keccak256(msg.as_bytes()).try_into().unwrap();
+        // let auth_contract_id = self.derive_deteministic_escrow_per_fill_id(solver_id, hash);
+        //
+        // ext_transfer_auth::ext(auth_contract_id.derive_account_id())
+        //     .with_attached_deposit(NearToken::from_yoctonear(1))
+        //     .with_static_gas(Gas::from_tgas(50))
+        //     .close();
     }
 }
 
