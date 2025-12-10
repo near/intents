@@ -18,7 +18,6 @@ use defuse::{
 use defuse_poa_factory::extensions::PoAFactoryExt;
 use defuse_randomness::{Rng, make_true_rng};
 use defuse_sandbox::extensions::account::{AccountDeployerExt, ParentAccountViewExt};
-use defuse_sandbox::extensions::acl::AclViewExt;
 use defuse_sandbox::extensions::storage_management::StorageManagementExt;
 use defuse_sandbox::tx::FnCallBuilder;
 use defuse_sandbox::{Account, Sandbox, SigningAccount, read_wasm};
