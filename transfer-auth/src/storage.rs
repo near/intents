@@ -1,10 +1,16 @@
 use std::collections::BTreeMap;
 
 use crate::error::Error;
-use near_sdk::{AccountId, borsh, near};
+use near_sdk::{AccountId, YieldId, borsh, near};
 
-// Re-export for backward compatibility
-pub use crate::state_machine::StateMachine;
+#[near(serializers = [borsh, json])]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+pub enum StateMachine {
+    Idle,
+    WaitingForAuthorization(YieldId),
+    Authorized,
+    Done,
+}
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]

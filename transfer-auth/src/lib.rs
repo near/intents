@@ -1,20 +1,19 @@
 use std::borrow::Cow;
 
 use crate::storage::{ContractStorage, State, StateMachine};
-use near_sdk::{env::keccak256, ext_contract, json_types::U128, near, AccountIdRef, PromiseOrValue};
+use near_sdk::{borsh, env::keccak256, ext_contract, json_types::U128, near, AccountIdRef, PromiseOrValue};
 
 #[cfg(feature = "contract")]
 mod contract;
 mod error;
 pub mod event;
-pub mod state_machine;
 pub mod storage;
 
 
 #[cfg(feature = "test-utils")]
 pub mod ext;
 
-#[near(serializers = [json])]
+#[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
 pub struct TransferAuthContext<'a> {
     pub sender_id: Cow<'a, AccountIdRef>,
@@ -25,8 +24,10 @@ pub struct TransferAuthContext<'a> {
 
 impl TransferAuthContext<'_> {
     pub fn hash(&self) -> [u8; 32] {
-        let serialized = serde_json::to_string(&self).unwrap();
-        keccak256(serialized.as_bytes()).try_into().unwrap()
+        let serialized = borsh::to_vec(&self)
+          .unwrap_or_else(|_| unreachable!("TransferAuthContext is always serializable"));
+        keccak256(&serialized).try_into()
+          .unwrap_or_else(|_| unreachable!())
     }
 }
 
@@ -35,6 +36,5 @@ pub trait TransferAuth {
     fn state(&self) -> &StateMachine;
     fn view(&self) -> &ContractStorage;
     fn is_authorized(&self) -> bool;
-    //TODO: change to void
     fn wait_for_authorization(&mut self) -> PromiseOrValue<bool>;
 }

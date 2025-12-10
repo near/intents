@@ -32,6 +32,7 @@ impl Contract {
         match self.fsm {
             StateMachine::WaitingForAuthorization(yield_id) => {
                 self.fsm = StateMachine::Idle;
+                Event::Timeout.emit();
             }
             StateMachine::Done | StateMachine::Authorized => {
                 self.fsm = StateMachine::Done;
