@@ -32,7 +32,6 @@ serde_json.workspace = true
 impl-tools.workspace = true
 thiserror.workspace = true
 serde_with.workspace = true
-statig = { version = "0.4.1" }
 defuse-near-utils.workspace = true
 defuse-sandbox = { workspace = true, optional = true }
 defuse-token-id = { workspace = true, optional = true }
