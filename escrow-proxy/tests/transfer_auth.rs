@@ -261,11 +261,10 @@ async fn test_transfer_authorized_by_relay() {
     // Derive the transfer-auth instance address (same logic as proxy uses)
     let msg_hash: [u8; 32] = keccak256(msg_json.as_bytes()).try_into().unwrap();
     let auth_state = State {
-        solver_id: solver.id().clone(),
         escrow_contract_id: config.escrow_swap_global_contract_id.clone(),
         auth_contract: config.auth_contract.clone(),
-        auth_callee: config.auth_collee.clone(),
-        querier: proxy.id().clone(),
+        on_auth_signer: config.auth_collee.clone(),
+        authorizee: proxy.id().clone(),
         msg_hash,
     };
     let transfer_auth_instance_id = derive_transfer_auth_account_id(&transfer_auth_global, &auth_state);

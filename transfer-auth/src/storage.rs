@@ -11,8 +11,8 @@ pub use crate::state_machine::StateMachine;
 pub struct State {
     pub escrow_contract_id: AccountId,
     pub auth_contract: AccountId,
-    pub auth_callee: AccountId,
-    pub querier: AccountId,
+    pub on_auth_signer: AccountId,
+    pub authorizee: AccountId,
     // #[serde_as(as = "Hex")]
     pub msg_hash: [u8; 32],
 }

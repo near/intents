@@ -58,7 +58,7 @@ impl AuthCallee for Contract {
             "Unauthorized auth contract"
         );
         require!(
-            signer_id == self.state_init.auth_callee,
+            signer_id == self.state_init.on_auth_signer,
             "Unauthorized auth callee"
         );
         self.fsm.handle(&StateMachineEvent::Authorize).unwrap_or_panic_display();
@@ -74,7 +74,7 @@ impl TransferAuth for Contract {
 
     // TODO: impl
     fn close(&self){
-        require!(env::predecessor_account_id() == self.state_init.querier, "Unauthorized querier");
+        require!(env::predecessor_account_id() == self.state_init.authorizee, "Unauthorized authorizee");
         Promise::new(env::current_account_id())
             .delete_account(env::signer_account_id()).detach();
 
@@ -83,8 +83,8 @@ impl TransferAuth for Contract {
     fn wait_for_authorization(
         &mut self,
     ) -> PromiseOrValue<bool> {
-        if env::predecessor_account_id() != self.state_init.querier {
-            env::panic_str("Unauthorized querier");
+        if env::predecessor_account_id() != self.state_init.authorizee {
+            env::panic_str("Unauthorized authorizee");
         }
 
         let mut yield_id = LazyYieldId::new();

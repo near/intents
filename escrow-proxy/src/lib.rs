@@ -81,8 +81,8 @@ impl Contract {
         let state = State {
             escrow_contract_id: self.config.escrow_swap_global_contract_id.clone() ,
             auth_contract: self.config.auth_contract.clone(),
-            auth_callee: self.config.auth_collee.clone(),
-            querier: env::current_account_id(),
+            on_auth_signer: self.config.auth_collee.clone(),
+            authorizee: env::current_account_id(),
             msg_hash,
         };
 

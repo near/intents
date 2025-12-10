@@ -32,8 +32,8 @@ async fn transfer_auth_global_deployment() {
     let solver1_raw_state = ContractStorage::init_state(State {
         escrow_contract_id: escrow.id().clone(),
         auth_contract: auth_contract.id().clone(),
-        auth_callee: relay.id().clone(),
-        querier: proxy.id().clone(),
+        on_auth_signer: relay.id().clone(),
+        authorizee: proxy.id().clone(),
         msg_hash: [0; 32],
     })
     .unwrap();
@@ -45,8 +45,8 @@ async fn transfer_auth_global_deployment() {
     let solver2_raw_state = ContractStorage::init_state(State {
         escrow_contract_id: escrow.id().clone(),
         auth_contract: auth_contract.id().clone(),
-        auth_callee: relay.id().clone(),
-        querier: proxy.id().clone(),
+        on_auth_signer: relay.id().clone(),
+        authorizee: proxy.id().clone(),
         msg_hash: [0; 32],
     })
     .unwrap();
@@ -102,8 +102,8 @@ async fn on_auth_call() {
     let state = State {
         escrow_contract_id: escrow.id().clone(),
         auth_contract: auth_contract.id().clone(),
-        auth_callee: relay.id().clone(),
-        querier: proxy.id().clone(),
+        on_auth_signer: relay.id().clone(),
+        authorizee: proxy.id().clone(),
         msg_hash: [0; 32],
     };
 
@@ -166,8 +166,8 @@ async fn transfer_auth_early_authorization() {
     let state = State {
         escrow_contract_id: escrow.id().clone(),
         auth_contract: auth_contract.id().clone(),
-        auth_callee: relay.id().clone(),
-        querier: proxy.id().clone(),
+        on_auth_signer: relay.id().clone(),
+        authorizee: proxy.id().clone(),
         msg_hash: [0; 32],
     };
 
@@ -224,8 +224,8 @@ async fn transfer_auth_async_authorization() {
     let state = State {
         escrow_contract_id: escrow.id().clone(),
         auth_contract: auth_contract.id().clone(),
-        auth_callee: relay.id().clone(),
-        querier: proxy.id().clone(),
+        on_auth_signer: relay.id().clone(),
+        authorizee: proxy.id().clone(),
         msg_hash: [0; 32],
     };
 
@@ -289,8 +289,8 @@ async fn transfer_auth_async_authorization_timeout() {
     let state = State {
         escrow_contract_id: escrow.id().clone(),
         auth_contract: auth_contract.id().clone(),
-        auth_callee: relay.id().clone(),
-        querier: proxy.id().clone(),
+        on_auth_signer: relay.id().clone(),
+        authorizee: proxy.id().clone(),
         msg_hash: [0; 32],
     };
 
