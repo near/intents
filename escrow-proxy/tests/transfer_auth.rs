@@ -1,15 +1,19 @@
 mod env;
 
+use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use defuse_deadline::Deadline;
 use defuse_escrow_proxy::{EscrowParams, FillAction, ProxyConfig, RolesConfig, TransferAction, TransferMessage};
+use defuse_escrow_swap::action::TransferMessage as EscrowTransferMessage;
 use defuse_escrow_swap::price::Price;
 use defuse_sandbox::{Sandbox, SigningAccount};
 use defuse_token_id::{TokenId, nep141::Nep141TokenId};
 use defuse_transfer_auth::ext::{DefuseAccountExt, TransferAuthAccountExt, derive_transfer_auth_account_id};
 use defuse_transfer_auth::storage::{ContractStorage, State};
-use near_sdk::{Gas, GlobalContractId, env::keccak256, state_init::{StateInit, StateInitV1}};
+use defuse_transfer_auth::TransferAuthContext;
+use near_sdk::json_types::U128;
+use near_sdk::{Gas, GlobalContractId, state_init::{StateInit, StateInitV1}};
 use env::AccountExt;
 use multi_token_receiver_stub::ext::MtReceiverStubAccountExt;
 use near_sdk::NearToken;
@@ -96,8 +100,8 @@ async fn test_deploy_transfer_auth_global_contract() {
             .await
             .unwrap();
 
-    // Build TransferMessage for the proxy
-    let transfer_msg = TransferMessage {
+    // Build the inner escrow-swap TransferMessage
+    let inner_msg = EscrowTransferMessage {
         params: EscrowParams {
             maker: solver.id().clone(),
             src_token: token_id.clone(),
@@ -118,7 +122,14 @@ async fn test_deploy_transfer_auth_global_contract() {
             deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
             receive_src_to: Default::default(),
         }),
+    };
+    let inner_msg_json = serde_json::to_string(&inner_msg).unwrap();
+
+    // Build TransferMessage for the proxy (wraps inner message)
+    let transfer_msg = TransferMessage {
+        receiver_id: mt_receiver_instance.clone(),
         salt: [1u8; 32],
+        msg: inner_msg_json,
     };
     let msg_json = serde_json::to_string(&transfer_msg).unwrap();
 
@@ -232,8 +243,8 @@ async fn test_transfer_authorized_by_relay() {
             .await
             .unwrap();
 
-    // Build TransferMessage
-    let transfer_msg = TransferMessage {
+    // Build the inner escrow-swap TransferMessage
+    let inner_msg = EscrowTransferMessage {
         params: EscrowParams {
             maker: solver.id().clone(),
             src_token: token_id.clone(),
@@ -254,22 +265,37 @@ async fn test_transfer_authorized_by_relay() {
             deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
             receive_src_to: Default::default(),
         }),
+    };
+    let inner_msg_json = serde_json::to_string(&inner_msg).unwrap();
+
+    // Build TransferMessage for the proxy (wraps inner message)
+    let transfer_msg = TransferMessage {
+        receiver_id: escrow_instance_id.clone(),
         salt: [2u8; 32], // Different salt from timeout test
+        msg: inner_msg_json,
     };
     let msg_json = serde_json::to_string(&transfer_msg).unwrap();
 
+    let proxy_transfer_amount = NearToken::from_near(1).as_yoctonear();
+
     // Derive the transfer-auth instance address (same logic as proxy uses)
-    let msg_hash: [u8; 32] = keccak256(msg_json.as_bytes()).try_into().unwrap();
+    // The hash is computed from TransferAuthContext, not the message itself
+    let context_hash = TransferAuthContext {
+        sender_id: Cow::Borrowed(&solver.id()),
+        token_ids: Cow::Owned(vec![token_id.to_string()]),
+        amounts: Cow::Owned(vec![U128(proxy_transfer_amount)]),
+        msg: Cow::Borrowed(&msg_json),
+    }.hash();
+
     let auth_state = State {
         escrow_contract_id: config.escrow_swap_global_contract_id.clone(),
         auth_contract: config.auth_contract.clone(),
         on_auth_signer: config.auth_collee.clone(),
         authorizee: proxy.id().clone(),
-        msg_hash,
+        msg_hash: context_hash,
     };
     let transfer_auth_instance_id = derive_transfer_auth_account_id(&transfer_auth_global, &auth_state);
 
-    let proxy_transfer_amount = NearToken::from_near(1).as_yoctonear();
     let proxy_id = proxy.id().clone();
     let relay_id = relay.id().clone();
 

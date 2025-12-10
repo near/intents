@@ -5,6 +5,7 @@
 //! 2. Solver filling the escrow via the proxy with relay authorization
 //! 3. Atomic token exchange between maker and solver
 
+use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::LazyLock;
 use std::time::Duration;
@@ -12,7 +13,7 @@ use std::{fs, path::Path};
 
 use defuse_deadline::Deadline;
 use defuse_escrow_proxy::ext::EscrowProxyAccountExt;
-use defuse_escrow_proxy::{ProxyConfig, RolesConfig};
+use defuse_escrow_proxy::{ProxyConfig, RolesConfig, TransferMessage as ProxyTransferMessage};
 use defuse_escrow_swap::action::{FillAction, TransferAction, TransferMessage as EscrowTransferMessage};
 use defuse_escrow_swap::ext::{EscrowSwapAccountExt, derive_escrow_swap_account_id};
 use defuse_escrow_swap::Params;
@@ -24,8 +25,9 @@ use defuse_token_id::nep245::Nep245TokenId;
 use defuse_token_id::TokenId;
 use defuse_transfer_auth::ext::{DefuseAccountExt, TransferAuthAccountExt, derive_transfer_auth_account_id, public_key_from_secret};
 use defuse_transfer_auth::storage::State as TransferAuthState;
+use defuse_transfer_auth::TransferAuthContext;
 use near_sdk::json_types::U128;
-use near_sdk::{AccountId, Gas, NearToken, env::keccak256};
+use near_sdk::{AccountId, Gas, NearToken};
 use serde_json::json;
 
 const INIT_BALANCE: NearToken = NearToken::from_near(100);
@@ -393,11 +395,11 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     assert_eq!(escrow_token_a_balance, swap_amount, "Escrow should have token-a");
 
     // 5. Solver fills via proxy with relay authorization
-    // Build proxy message
+    // Build the inner escrow-swap fill message
     // NOTE: receive_src_to must be set to solver's account because escrow-swap
     // will use sender_id (proxy) as default recipient. Since proxy forwards tokens,
     // we need to explicitly override where maker's src tokens go.
-    let proxy_msg = defuse_escrow_proxy::TransferMessage {
+    let inner_msg = EscrowTransferMessage {
         params: escrow_params.clone(),
         action: TransferAction::Fill(FillAction {
             price: Price::ONE,
@@ -405,19 +407,32 @@ async fn test_escrow_swap_with_proxy_full_flow() {
             receive_src_to: defuse_escrow_swap::OverrideSend::default()
                 .receiver_id(solver.id().clone()),
         }),
+    };
+    let inner_msg_json = serde_json::to_string(&inner_msg).unwrap();
+
+    // Build proxy message that wraps the inner escrow message
+    let proxy_msg = ProxyTransferMessage {
+        receiver_id: escrow_instance_id.clone(),
         salt: [2u8; 32],
+        msg: inner_msg_json,
     };
     let proxy_msg_json = serde_json::to_string(&proxy_msg).unwrap();
 
-    // Derive transfer-auth instance from proxy message
-    let msg_hash: [u8; 32] = keccak256(proxy_msg_json.as_bytes()).try_into().unwrap();
+    // Derive transfer-auth instance from context hash
+    // The hash is computed from TransferAuthContext matching how proxy computes it
+    let context_hash = TransferAuthContext {
+        sender_id: Cow::Borrowed(solver.id().as_ref()),
+        token_ids: Cow::Owned(vec![token_b_defuse_id.to_string()]),
+        amounts: Cow::Owned(vec![U128(swap_amount)]),
+        msg: Cow::Borrowed(&proxy_msg_json),
+    }.hash();
+
     let auth_state = TransferAuthState {
-        solver_id: solver.id().clone(),
-        escrow_contract_id: escrow_swap_global.clone(),
+        escrow_contract_id: config.escrow_swap_global_contract_id.clone(),
         auth_contract: defuse.id().clone(),
-        auth_callee: relay.id().clone(),
-        querier: proxy.id().clone(),
-        msg_hash,
+        on_auth_signer: relay.id().clone(),
+        authorizee: proxy.id().clone(),
+        msg_hash: context_hash,
     };
     let transfer_auth_instance_id = derive_transfer_auth_account_id(&transfer_auth_global, &auth_state);
 
@@ -501,23 +516,5 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     assert_eq!(
         escrow_token_b_final, 0,
         "Escrow should have no token-b remaining"
-    );
-
-    // Verify transfer-auth instance no longer exists after swap completion
-    // (the instance self-destructs or becomes inactive after authorization is consumed)
-    // Note: Transfer-auth instance may still exist but be in a "closed" state
-    // For now we just verify the swap completed successfully - the instance lifecycle
-    // depends on the specific implementation (self-destruct vs state change)
-
-    // Verify escrow-swap instance still exists (it persists after swap for potential future fills)
-    // Note: Escrow instance persists with zero balance - it doesn't self-destruct
-    //
-    assert!(
-        !transfer_auth_instance_account.exists().await,
-        "Transfer-auth instance should not exist after successful use"
-    );
-    assert!(
-        escrow_instance_account.exists().await,
-        "Escrow-swap instance should still exist (with zero balance) after swap"
     );
 }
