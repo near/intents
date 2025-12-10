@@ -1,9 +1,10 @@
 use defuse_controller::ControllerUpgradable;
 use defuse_near_utils::CURRENT_ACCOUNT_ID;
-use near_plugins::{AccessControllable, access_control_any};
-use near_sdk::{Gas, Promise, assert_one_yocto, near};
+use near_plugins::{access_control_any, AccessControllable};
+use near_sdk::{assert_one_yocto, near, Gas, Promise};
 
-use crate::{Contract, ContractExt, Role};
+use crate::Role;
+use super::{Contract, ContractExt};
 
 const STATE_MIGRATE_DEFAULT_GAS: Gas = Gas::from_tgas(5);
 
