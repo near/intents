@@ -2,7 +2,7 @@ mod env;
 
 use defuse_escrow_proxy::{ProxyConfig, RolesConfig};
 use env::{AccountExt, BaseEnv};
-use near_sdk::{Gas, NearToken};
+use near_sdk::{Gas, GlobalContractId, NearToken};
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
 
@@ -17,11 +17,11 @@ async fn escrow_proxy_deployment_and_config() {
     let proxy = root.create_subaccount("proxy", INIT_BALANCE).await.unwrap();
 
     let config = ProxyConfig {
-        per_fill_global_contract_id: root.subaccount("per_fill_global_contract_id").id().clone(),
-        escrow_swap_global_contract_id: root
-            .subaccount("escrow_swap_global_contract_id")
+        per_fill_contract_id: GlobalContractId::AccountId(root.subaccount("per_fill_contract_id").id().clone()),
+        escrow_swap_contract_id: GlobalContractId::AccountId(root
+            .subaccount("escrow_swap_contract_id")
             .id()
-            .clone(),
+            .clone()),
         auth_contract: root.subaccount("auth_contract").id().clone(),
         auth_collee: root.subaccount("auth_collee").id().clone(),
     };
@@ -54,11 +54,11 @@ async fn dao_can_upgrade_contract() {
     .unwrap();
 
     let config = ProxyConfig {
-        per_fill_global_contract_id: root.subaccount("per_fill_global_contract_id").id().clone(),
-        escrow_swap_global_contract_id: root
-            .subaccount("escrow_swap_global_contract_id")
+        per_fill_contract_id: GlobalContractId::AccountId(root.subaccount("per_fill_contract_id").id().clone()),
+        escrow_swap_contract_id: GlobalContractId::AccountId(root
+            .subaccount("escrow_swap_contract_id")
             .id()
-            .clone(),
+            .clone()),
         auth_contract: root.subaccount("auth_contract").id().clone(),
         auth_collee: root.subaccount("auth_collee").id().clone(),
     };

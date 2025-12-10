@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::error::Error;
-use near_sdk::{AccountId, YieldId, borsh, near};
+use near_sdk::{AccountId, GlobalContractId, YieldId, borsh, near};
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
@@ -15,7 +15,7 @@ pub enum StateMachine {
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StateInit {
-    pub escrow_contract_id: AccountId,
+    pub escrow_contract_id: GlobalContractId,
     #[cfg(feature = "auth-call")]
     pub auth_contract: AccountId,
     pub on_auth_signer: AccountId,

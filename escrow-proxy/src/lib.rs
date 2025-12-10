@@ -19,8 +19,8 @@ use defuse_crypto::{Curve, Ed25519, PublicKey, Signature};
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
 use near_plugins::{AccessControlRole, access_control};
 use near_sdk::{
-    AccountId, Gas, NearToken, PanicOnDefault, PromiseOrValue, PromiseResult, env,
-    ext_contract, json_types::U128, near, require, serde_json,
+    AccountId, Gas, GlobalContractId, NearToken, PanicOnDefault, PromiseOrValue, PromiseResult,
+    env, ext_contract, json_types::U128, near, require, serde_json,
 };
 
 use defuse_transfer_auth::{ext_transfer_auth, storage::{ContractStorage, StateInit as TransferAuthStateInit}, TransferAuthContext};
@@ -57,10 +57,8 @@ pub struct RolesConfig {
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProxyConfig {
-    // TODO: use global id instead of account
-    pub per_fill_global_contract_id: AccountId,
-    // TODO: use global id instead of account
-    pub escrow_swap_global_contract_id: AccountId,
+    pub per_fill_contract_id: GlobalContractId,
+    pub escrow_swap_contract_id: GlobalContractId,
     pub auth_contract: AccountId,
     pub auth_collee: AccountId,
 }
@@ -79,7 +77,7 @@ impl Contract {
     ) -> StateInit{
 
         let state = TransferAuthStateInit {
-            escrow_contract_id: self.config.escrow_swap_global_contract_id.clone() ,
+            escrow_contract_id: self.config.escrow_swap_contract_id.clone() ,
             auth_contract: self.config.auth_contract.clone(),
             on_auth_signer: self.config.auth_collee.clone(),
             authorizee: env::current_account_id(),
@@ -87,7 +85,7 @@ impl Contract {
         };
 
         let state_init = StateInit::V1(StateInitV1 {
-            code: near_sdk::GlobalContractId::AccountId(self.config.per_fill_global_contract_id.clone()),
+            code: self.config.per_fill_contract_id.clone(),
             //TODO: get rid of unwrap
             data: ContractStorage::init_state(state).unwrap(),
         });
@@ -98,7 +96,7 @@ impl Contract {
     fn derive_deteministic_escrow_swap_id(&self, params: &EscrowParams) -> AccountId {
         let raw_state = EscrowContractStorage::init_state(params).unwrap();
         let state_init = StateInit::V1(StateInitV1 {
-            code: near_sdk::GlobalContractId::AccountId(self.config.escrow_swap_global_contract_id.clone()),
+            code: self.config.escrow_swap_contract_id.clone(),
             data: raw_state,
         });
         state_init.derive_account_id()

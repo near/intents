@@ -47,9 +47,9 @@ async fn test_deploy_transfer_auth_global_contract() {
     };
 
     let config = ProxyConfig {
-        per_fill_global_contract_id: transfer_auth_global.clone(),
+        per_fill_contract_id: GlobalContractId::AccountId(transfer_auth_global.clone()),
         //NOTE: not really used in this test YET
-        escrow_swap_global_contract_id: mt_receiver_global.clone(),
+        escrow_swap_contract_id: GlobalContractId::AccountId(mt_receiver_global.clone()),
         auth_contract: defuse.id().clone(),
         auth_collee: relay.id().clone(),
     };
@@ -195,8 +195,8 @@ async fn test_transfer_authorized_by_relay() {
     };
 
     let config = ProxyConfig {
-        per_fill_global_contract_id: transfer_auth_global.clone(),
-        escrow_swap_global_contract_id: mt_receiver_global.clone(),
+        per_fill_contract_id: GlobalContractId::AccountId(transfer_auth_global.clone()),
+        escrow_swap_contract_id: GlobalContractId::AccountId(mt_receiver_global.clone()),
         auth_contract: defuse.id().clone(),
         auth_collee: relay.id().clone(),
     };
@@ -288,13 +288,13 @@ async fn test_transfer_authorized_by_relay() {
     }.hash();
 
     let auth_state = TransferAuthStateInit {
-        escrow_contract_id: config.escrow_swap_global_contract_id.clone(),
+        escrow_contract_id: config.escrow_swap_contract_id.clone(),
         auth_contract: config.auth_contract.clone(),
         on_auth_signer: config.auth_collee.clone(),
         authorizee: proxy.id().clone(),
         msg_hash: context_hash,
     };
-    let transfer_auth_instance_id = derive_transfer_auth_account_id(&transfer_auth_global, &auth_state);
+    let transfer_auth_instance_id = derive_transfer_auth_account_id(&GlobalContractId::AccountId(transfer_auth_global.clone()), &auth_state);
 
     let proxy_id = proxy.id().clone();
     let relay_id = relay.id().clone();

@@ -48,10 +48,10 @@ pub static TRANSFER_AUTH_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("defuse_transfer_auth"));
 
 /// Derive the transfer-auth instance account ID from its state
-pub fn derive_transfer_auth_account_id(global_contract_id: &AccountId, state: &TransferAuthStateInit) -> AccountId {
+pub fn derive_transfer_auth_account_id(global_contract_id: &GlobalContractId, state: &TransferAuthStateInit) -> AccountId {
     let raw_state = ContractStorage::init_state(state.clone()).unwrap();
     let state_init = StateInit::V1(StateInitV1 {
-        code: GlobalContractId::AccountId(global_contract_id.clone()),
+        code: global_contract_id.clone(),
         data: raw_state,
     });
     state_init.derive_account_id()

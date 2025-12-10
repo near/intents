@@ -27,7 +27,7 @@ use defuse_transfer_auth::ext::{DefuseAccountExt, TransferAuthAccountExt, derive
 use defuse_transfer_auth::storage::StateInit as TransferAuthState;
 use defuse_transfer_auth::TransferAuthContext;
 use near_sdk::json_types::U128;
-use near_sdk::{AccountId, Gas, NearToken};
+use near_sdk::{AccountId, Gas, GlobalContractId, NearToken};
 use serde_json::json;
 
 const INIT_BALANCE: NearToken = NearToken::from_near(100);
@@ -319,8 +319,8 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     /////TEST
 
     let config = ProxyConfig {
-        per_fill_global_contract_id: transfer_auth_global.clone(),
-        escrow_swap_global_contract_id: escrow_swap_global.clone(),
+        per_fill_contract_id: GlobalContractId::AccountId(transfer_auth_global.clone()),
+        escrow_swap_contract_id: GlobalContractId::AccountId(escrow_swap_global.clone()),
         auth_contract: defuse.id().clone(),
         auth_collee: relay.id().clone(),
     };
@@ -428,13 +428,13 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     }.hash();
 
     let auth_state = TransferAuthState {
-        escrow_contract_id: config.escrow_swap_global_contract_id.clone(),
+        escrow_contract_id: config.escrow_swap_contract_id.clone(),
         auth_contract: defuse.id().clone(),
         on_auth_signer: relay.id().clone(),
         authorizee: proxy.id().clone(),
         msg_hash: context_hash,
     };
-    let transfer_auth_instance_id = derive_transfer_auth_account_id(&transfer_auth_global, &auth_state);
+    let transfer_auth_instance_id = derive_transfer_auth_account_id(&GlobalContractId::AccountId(transfer_auth_global.clone()), &auth_state);
 
     // Create Account wrapper for transfer-auth instance to check existence
     let transfer_auth_instance_account = Account::new(
