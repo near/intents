@@ -1,6 +1,4 @@
-use near_api::types::transaction::result::{
-    ExecutionFinalResult, ExecutionOutcome, ValueOrReceiptId,
-};
+use near_api::types::transaction::result::{ExecutionOutcome, ValueOrReceiptId};
 use std::fmt::Debug;
 
 use std::{fs, path::Path};
@@ -12,36 +10,6 @@ pub fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
         .with_extension("wasm");
 
     fs::read(&filename).unwrap_or_else(|e| panic!("Failed to read WASM file at {filename:?}: {e}"))
-}
-
-pub struct TxOutcome<'a>(&'a ExecutionFinalResult);
-
-// TODO: add tracing
-impl Debug for TxOutcome<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{} -> {}: ",
-            self.0.transaction().signer_id(),
-            self.0.transaction().receiver_id()
-        )?;
-        // let outcomes: Vec<_> = self
-        //     .0
-        //     .outcomes()
-        //     .into_iter()
-        //     .map(TestExecutionOutcome)
-        //     .collect();
-        // if !outcomes.is_empty() {
-        //     f.debug_list().entries(outcomes).finish()?;
-        // }
-        Ok(())
-    }
-}
-
-impl<'a> From<&'a ExecutionFinalResult> for TxOutcome<'a> {
-    fn from(value: &'a ExecutionFinalResult) -> Self {
-        TxOutcome(value)
-    }
 }
 
 pub struct TestExecutionOutcome<'a>(&'a ExecutionOutcome);

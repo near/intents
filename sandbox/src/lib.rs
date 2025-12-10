@@ -27,7 +27,7 @@ pub struct Sandbox {
 
 impl Sandbox {
     pub async fn new(_name: AccountId) -> Self {
-        // FIX: HOW IT WORKS: why does test.ner exist in genesis cfg????
+        // FIX: why does test.ner exist in genesis cfg????
         // let root = GenesisAccount::default_with_name(name);
         // let pk = generate_secret_key().unwrap();
         // let root = GenesisAccount {

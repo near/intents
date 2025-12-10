@@ -186,7 +186,6 @@ args = ["nextest", "run", "--all", "${@}"]
 dependencies = ["build"]
 run_task = "run-tests"
 
-# TODO: Remove --test-threads 1 when concurrency issues are resolved
 [tasks.run-tests]
 command = "cargo"
 args = ["test", "--workspace", "--all-targets", "${@}"]
