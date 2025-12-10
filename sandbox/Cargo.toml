@@ -17,6 +17,7 @@ anyhow.workspace = true
 futures.workspace = true
 impl-tools.workspace = true
 near-api.workspace = true
+near-openapi-types.workspace = true
 near-sandbox.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 thiserror.workspace = true

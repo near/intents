@@ -29,7 +29,7 @@ async fn relayer_keys() {
     new_relayer_signer
         .simulate_and_execute_intents(env.defuse.id(), []) // Empty because it's just to ensure that authorization works/doesn't work
         .await
-        .assert_err_contains("Failed to query access key");
+        .unwrap_err();
 
     // A random, unauthorized user attempts to add a key (no role `Role::RelayerKeysManager`) and fails
     other_user

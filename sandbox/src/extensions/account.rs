@@ -1,4 +1,4 @@
-use near_api::{signer::generate_secret_key, types::transaction::actions::FunctionCallAction};
+use near_api::types::transaction::actions::FunctionCallAction;
 use near_sdk::{AccountId, AccountIdRef, NearToken};
 
 use crate::{Account, SigningAccount};
@@ -37,25 +37,32 @@ impl ParentAccountExt for SigningAccount {
         name: impl AsRef<str>,
         balance: impl Into<Option<NearToken>>,
     ) -> anyhow::Result<Self> {
-        let secret_key = generate_secret_key().unwrap();
+        // NOTE: subaccounts are created with the same key as the parent account
+        let secret_key = self.private_key().clone();
         let public_key = secret_key.public_key();
         let subaccount = self.subaccount_id(name);
 
-        let mut tx = self
-            .tx(subaccount.clone())
-            .create_account()
-            .add_full_access_key(public_key);
+        let account = Self::new(
+            Account::new(subaccount.clone(), self.network_config().clone()),
+            secret_key,
+        );
 
-        if let Some(balance) = balance.into() {
-            tx = tx.transfer(balance);
+        let exist = account.view().await.is_ok_and(|v| v.storage_usage > 0);
+
+        if !exist {
+            let mut tx = self
+                .tx(subaccount)
+                .create_account()
+                .add_full_access_key(public_key);
+
+            if let Some(balance) = balance.into() {
+                tx = tx.transfer(balance);
+            }
+
+            tx.await?;
         }
 
-        tx.await?;
-
-        Ok(Self::new(
-            Account::new(subaccount, self.network_config().clone()),
-            secret_key,
-        ))
+        Ok(account)
     }
 }
 

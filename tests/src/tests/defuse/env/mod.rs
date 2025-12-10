@@ -18,6 +18,7 @@ use defuse::{
 use defuse_poa_factory::extensions::PoAFactoryExt;
 use defuse_randomness::{Rng, make_true_rng};
 use defuse_sandbox::extensions::account::{AccountDeployerExt, ParentAccountViewExt};
+use defuse_sandbox::extensions::acl::AclViewExt;
 use defuse_sandbox::extensions::storage_management::StorageManagementExt;
 use defuse_sandbox::tx::FnCallBuilder;
 use defuse_sandbox::{Account, Sandbox, SigningAccount, read_wasm};
@@ -26,7 +27,6 @@ use futures::future::try_join_all;
 use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::AccountIdRef;
 use near_sdk::{AccountId, NearToken, account_id::arbitrary::ArbitraryNamedAccountId, env::sha256};
-// use defuse_sandbox::api::types::errors::{near_openapi_types::TxExecutionError, ActionError, ActionErrorKind};
 
 use std::sync::LazyLock;
 use std::{
@@ -114,11 +114,6 @@ impl Env {
     }
 
     pub async fn create_named_user(&self, name: &str) -> SigningAccount {
-        // let account = self.sandbox.create_account(name).await;
-        // if let Err(TxExecutionError::ActionError(ActionError{_, kind: ActionErrorKind::AccountAlreadyExists})) = account {
-        //     panic!("Account {} already exists", name);
-        // }
-
         let account = self
             .sandbox
             .create_account(name)

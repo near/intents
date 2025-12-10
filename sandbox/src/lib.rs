@@ -8,6 +8,8 @@ pub use helpers::*;
 
 pub use anyhow;
 pub use near_api as api;
+// NOTE: that is not ok - errors should be separated to another mod
+pub use near_openapi_types as openapi_types;
 pub use near_sandbox as sandbox;
 
 use near_api::{NetworkConfig, RPCEndpoint};
@@ -16,6 +18,7 @@ use near_sdk::{AccountId, NearToken};
 
 use crate::extensions::account::ParentAccountExt;
 
+const INITIAL_ACCOUNT_BALANCE: NearToken = NearToken::from_near(10);
 pub struct Sandbox {
     root: SigningAccount,
 
@@ -68,7 +71,7 @@ impl Sandbox {
 
     pub async fn create_account(&self, name: &str) -> anyhow::Result<SigningAccount> {
         self.root
-            .create_subaccount(name, NearToken::from_near(10))
+            .create_subaccount(name, INITIAL_ACCOUNT_BALANCE)
             .await
     }
 }

@@ -1053,6 +1053,7 @@ dependencies = [
  "impl-tools",
  "near-api",
  "near-contract-standards",
+ "near-openapi-types",
  "near-sandbox",
  "near-sdk",
  "thiserror 2.0.17",
