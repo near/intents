@@ -364,3 +364,101 @@ async fn test_transfer_authorized_by_relay() {
         "Escrow instance should have received the transferred tokens"
     );
 }
+
+/// Test that proxy's authorize function can authorize a transfer-auth instance
+#[tokio::test]
+async fn test_proxy_authorize_function() {
+    let sandbox = Sandbox::new().await;
+    let root = sandbox.root();
+
+    let wnear = root.deploy_wnear("wnear").await;
+    let (transfer_auth_global, defuse, mt_receiver_global) = futures::join!(
+        root.deploy_transfer_auth("global_transfer_auth"),
+        root.deploy_verifier("defuse", wnear.id().clone()),
+        root.deploy_mt_receiver_stub_global("mt_receiver_global"),
+    );
+
+    let relay = root.create_subaccount("relay", INIT_BALANCE).await.unwrap();
+
+    // Setup roles - relay has Canceller role which allows calling authorize
+    let roles = RolesConfig {
+        super_admins: HashSet::from([root.id().clone()]),
+        admins: HashMap::new(),
+        grantees: HashMap::from([(defuse_escrow_proxy::Role::Canceller, HashSet::from([relay.id().clone()]))]),
+    };
+
+    let config = ProxyConfig {
+        per_fill_contract_id: GlobalContractId::AccountId(transfer_auth_global.clone()),
+        escrow_swap_contract_id: GlobalContractId::AccountId(mt_receiver_global.clone()),
+        auth_contract: defuse.id().clone(),
+        auth_collee: relay.id().clone(),
+    };
+
+    let proxy = sandbox
+        .root()
+        .create_subaccount("proxy", INIT_BALANCE)
+        .await
+        .unwrap();
+    proxy.deploy_escrow_proxy(roles, config.clone()).await.unwrap();
+
+    // Create a transfer-auth instance state for testing
+    // on_auth_signer must be proxy since proxy.authorize() calls transfer-auth.authorized()
+    let test_msg_hash = [42u8; 32];
+    let auth_state = TransferAuthStateInit {
+        escrow_contract_id: config.escrow_swap_contract_id.clone(),
+        auth_contract: config.auth_contract.clone(),
+        on_auth_signer: proxy.id().clone(), // proxy is the one calling authorized()
+        authorizee: proxy.id().clone(),
+        msg_hash: test_msg_hash,
+    };
+    let transfer_auth_instance_id = derive_transfer_auth_account_id(
+        &GlobalContractId::AccountId(transfer_auth_global.clone()),
+        &auth_state,
+    );
+
+    // Deploy transfer-auth instance
+    let raw_state = ContractStorage::init_state(auth_state).unwrap();
+    let deploy_result = root
+        .tx(transfer_auth_instance_id.clone())
+        .state_init(transfer_auth_global.clone(), raw_state)
+        .transfer(NearToken::from_yoctonear(1))
+        .await;
+    println!("Deploy transfer-auth instance result: {deploy_result:?}");
+    println!("Transfer-auth instance ID: {transfer_auth_instance_id}");
+
+    // Call authorize from relay (has Canceller role) through the proxy
+    let authorize_result = relay
+        .tx(proxy.id().clone())
+        .function_call_json::<()>(
+            "authorize",
+            serde_json::json!({
+                "transfer_auth_id": transfer_auth_instance_id,
+            }),
+            Gas::from_tgas(100),
+            NearToken::from_yoctonear(1),
+        )
+        .no_result()
+        .await;
+
+    assert!(
+        authorize_result.is_ok(),
+        "authorize should succeed when called by account with Canceller role"
+    );
+
+    // Verify the transfer-auth instance is now authorized
+    let is_authorized: bool = root
+        .tx(transfer_auth_instance_id.clone())
+        .function_call_json(
+            "is_authorized",
+            serde_json::json!({}),
+            Gas::from_tgas(10),
+            NearToken::from_yoctonear(0),
+        )
+        .await
+        .unwrap();
+
+    assert!(
+        is_authorized,
+        "Transfer-auth instance should be authorized after proxy.authorize() call"
+    );
+}

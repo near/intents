@@ -26,6 +26,7 @@ use near_sdk::{
 use defuse_transfer_auth::{ext_transfer_auth, storage::{ContractStorage, StateInit as TransferAuthStateInit}, TransferAuthContext};
 use defuse_escrow_swap::ContractStorage as EscrowContractStorage;
 use defuse_escrow_swap::action::TransferMessage as EscrowTransferMessage;
+use defuse_escrow_swap::ext_escrow;
 
 #[near(serializers = [json])]
 #[derive(AccessControlRole, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -265,27 +266,22 @@ impl Contract {
         }
     }
 
-    //TODO: implement as trait imported from defuse
     #[access_control_any(roles(Role::DAO))]
-    pub fn cancel_escrow(&self, escrow_address: AccountId) {
-        // ext_mt_core::ext(escrow_address)
-        //     .with_attached_deposit(NearToken::from_yoctonear(1))
-        //     .with_static_gas(Gas::from_tgas(50))
-        //     .cancel_escrow();
+    pub fn cancel_escrow(&self, escrow_address: AccountId, params: EscrowParams) -> Promise {
+        //TODO: adjust gas 
+        ext_escrow::ext(escrow_address)
+            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .with_static_gas(Gas::from_tgas(50))
+            .escrow_close(params)
     }
 
 
-    //TODO: implement as trait imported from defuse
-    // just pass globla contract id
     #[access_control_any(roles(Role::DAO, Role::Canceller))]
-    pub fn close_auth(&self, transfer_auth_id: AccountId) {
-        // let hash: [u8; 32] = keccak256(msg.as_bytes()).try_into().unwrap();
-        // let auth_contract_id = self.derive_deteministic_escrow_per_fill_id(solver_id, hash);
-        //
-        // ext_transfer_auth::ext(auth_contract_id.derive_account_id())
-        //     .with_attached_deposit(NearToken::from_yoctonear(1))
-        //     .with_static_gas(Gas::from_tgas(50))
-        //     .close();
+    pub fn authorize(&self, transfer_auth_id: AccountId) -> Promise {
+        ext_transfer_auth::ext(transfer_auth_id)
+            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .with_static_gas(Gas::from_tgas(50))
+            .authorize()
     }
 }
 

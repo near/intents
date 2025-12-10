@@ -5,8 +5,6 @@ use near_sdk::{borsh, env::keccak256, ext_contract, json_types::U128, near, Acco
 
 #[cfg(feature = "contract")]
 mod contract;
-#[cfg(all(feature = "contract", feature = "auth-call"))]
-mod auth_call;
 mod error;
 pub mod event;
 pub mod storage;
@@ -39,4 +37,5 @@ pub trait TransferAuth {
     fn view(&self) -> &ContractStorage;
     fn is_authorized(&self) -> bool;
     fn wait_for_authorization(&mut self) -> PromiseOrValue<bool>;
+    fn authorize(&mut self);
 }

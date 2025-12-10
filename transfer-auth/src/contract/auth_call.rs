@@ -1,7 +1,7 @@
 use defuse_auth_call::AuthCallee;
 use near_sdk::{AccountId, PromiseOrValue, env, near, require};
 
-use crate::contract::Contract;
+use super::{Contract, ContractExt};
 
 #[near]
 impl AuthCallee for Contract {
@@ -17,7 +17,7 @@ impl AuthCallee for Contract {
             "Unauthorized on_auth signer"
         );
 
-        self.authorize();
+        self.do_authorize();
         PromiseOrValue::Value(())
     }
 }

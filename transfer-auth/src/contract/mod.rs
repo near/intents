@@ -1,3 +1,6 @@
+#[cfg(feature = "auth-call")]
+mod auth_call;
+
 use impl_tools::autoimpl;
 use near_sdk::PromiseError;
 use near_sdk::{
@@ -50,16 +53,7 @@ impl Contract {
 
 #[near]
 impl Contract {
-    pub fn authorized(&mut self) {
-        require!(
-            env::predecessor_account_id() == self.state_init.on_auth_signer,
-            "Unauthorized signer"
-        );
-
-        self.authorize();
-    }
-
-    fn authorize(&mut self) {
+    pub(crate) fn do_authorize(&mut self) {
         match self.state {
             StateMachine::Idle => self.state = StateMachine::Authorized,
             StateMachine::WaitingForAuthorization(yield_id) => {
@@ -123,5 +117,15 @@ impl TransferAuth for Contract {
         }
 
         PromiseOrValue::Value(matches!(self.state, StateMachine::Done))
+    }
+
+    #[payable]
+    fn authorize(&mut self) {
+        require!(
+            env::predecessor_account_id() == self.state_init.on_auth_signer,
+            "Unauthorized signer"
+        );
+
+        self.do_authorize();
     }
 }
