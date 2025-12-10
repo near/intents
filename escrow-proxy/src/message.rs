@@ -19,6 +19,7 @@ pub type Nonce = u64;
 pub struct TransferMessage {
     pub receiver_id: AccountId,
     pub salt: [u8; 32],
+    pub msg: String,
 }
 
 impl FromStr for TransferMessage {

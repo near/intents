@@ -13,13 +13,14 @@ pub struct State {
     pub auth_contract: AccountId,
     pub on_auth_signer: AccountId,
     pub authorizee: AccountId,
+    //TODO: fix
     // #[serde_as(as = "Hex")]
     pub msg_hash: [u8; 32],
 }
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ContractStorage {
+pub struct ContractStorage{
     #[serde(flatten)]
     pub state_init: State,
     pub fsm: StateMachine,
@@ -37,10 +38,10 @@ impl ContractStorage {
     }
 
     pub fn init_state(state: State) -> Result<BTreeMap<Vec<u8>, Vec<u8>>, Error> {
-        let state = Self::new(state);
+        let storage = Self::new(state);
         Ok([(
             Self::STATE_KEY.to_vec(),
-            borsh::to_vec(&state).map_err(Error::Borsh)?,
+            borsh::to_vec(&storage).map_err(Error::Borsh)?,
         )]
         .into())
     }

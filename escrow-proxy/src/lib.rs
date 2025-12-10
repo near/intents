@@ -163,6 +163,9 @@ impl MultiTokenReceiver for Contract {
         amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
+
+        //TODO: add helper method
+        //TODO: use borsh here
         let context_hash = TransferAuthContext {
             sender_id: Cow::Borrowed(&sender_id),
             token_ids: Cow::Borrowed(&token_ids),
@@ -191,7 +194,7 @@ impl MultiTokenReceiver for Contract {
                             transfer_message.receiver_id,
                             token_ids,
                             amounts,
-                            msg,
+                            transfer_message.msg,
                         ),
                 ),
         )
@@ -219,8 +222,7 @@ impl Contract {
         };
 
         if !is_authorized {
-            near_sdk::log!("Authorization failed or timed out, refunding");
-            return PromiseOrValue::Value(amounts);
+            near_sdk::env::panic_str("Authorization failed or timed out, refunding");
         }
 
         // Forward tokens to escrow
@@ -249,6 +251,8 @@ impl Contract {
     pub fn resolve_transfer(&self, original_amounts: Vec<U128>) -> Vec<U128> {
         match env::promise_result(0) {
             PromiseResult::Successful(value) => {
+                //TODO:: aling the outputs its not mt_transfer_call
+
                 // mt_transfer_call returns the refunded amounts
                 // We pass through whatever the escrow refunded
                 serde_json::from_slice::<Vec<U128>>(&value).unwrap_or_else(|_| {

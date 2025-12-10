@@ -1,21 +1,18 @@
 use defuse_auth_call::AuthCallee;
-use near_sdk::{
-    env, ext_contract, near, require, serde::Serialize, AccountId, CryptoHash, Gas, GasWeight, PanicOnDefault, Promise, PromiseError, PromiseIndex, PromiseOrValue, YieldId
-};
-use serde_json::json;
-
-
 use impl_tools::autoimpl;
-use crate::storage::{ContractStorage, State, StateMachine};
-use crate::state_machine::{LazyYieldId, StateMachineEvent};
-use crate::event::Event;
+use near_sdk::{
+    AccountId, Gas, GasWeight, PanicOnDefault, Promise, PromiseOrValue, env, near,
+    require,
+};
+
 use crate::TransferAuth;
-use defuse_near_utils::UnwrapOrPanicError;
+use crate::event::Event;
+use crate::storage::{ContractStorage, State, StateMachine};
 
 #[near(contract_state(key = ContractStorage::STATE_KEY))]
-#[autoimpl(Deref using self.0)]
-#[autoimpl(DerefMut using self.0)]
 #[derive(Debug, PanicOnDefault)]
+#[autoimpl(DerefMut using self.0)]
+#[autoimpl(Deref using self.0)]
 pub struct Contract(ContractStorage);
 
 #[near]
@@ -26,26 +23,15 @@ impl Contract {
         Self(ContractStorage::new(state_init))
     }
 
-
     #[private]
     #[allow(clippy::needless_pass_by_value)]
-    pub fn is_authorized_resume(
-        &mut self,
-        #[callback_result] resume_data: Result<(), PromiseError>,
-    ) -> PromiseOrValue<bool> {
-        match resume_data {
-            Ok(_) => {
-                self.fsm.handle(&StateMachineEvent::NotifyYieldedPromiseResolved).unwrap_or_panic_display();
-                Event::Authorized.emit();
-            }
-            Err(err) => {
-                self.fsm.handle(&StateMachineEvent::Timeout).unwrap_or_panic_display();
-                Event::Timeout.emit();
-            }
-        }
-        PromiseOrValue::Value(self.fsm.is_authorized())
+    pub fn is_authorized_resume(&mut self) {
+        require!(matches!(self.0.fsm, StateMachine::Done | StateMachine::Authorized), "timeout"); //otherwise timeouted
+        //NOTE: in some corener case when the promise can not be resumed(becuase of timeout) but
+        //the timeout was already scheduled, the contract is in StateMachine::Authroized state so
+        //we need to set it to StateMachine::Done
+        self.fsm = StateMachine::Done;
     }
-
 }
 
 #[near]
@@ -59,9 +45,25 @@ impl AuthCallee for Contract {
         );
         require!(
             signer_id == self.state_init.on_auth_signer,
-            "Unauthorized auth callee"
+            "Unauthorized on_auth signer"
         );
-        self.fsm.handle(&StateMachineEvent::Authorize).unwrap_or_panic_display();
+
+        match self.fsm {
+            StateMachine::Idle => self.fsm = StateMachine::Authorized,
+            StateMachine::WaitingForAuthorization(yield_id) => {
+                //TODO: handle set status == false ,to authorized
+                if yield_id.resume(&[]){
+                    self.fsm = StateMachine::Done;
+                }else{
+                    self.fsm = StateMachine::Authorized;
+                };
+            }
+            StateMachine::Authorized | StateMachine::Done=> {
+                env::panic_str("already authorized");
+            }
+        };
+
+        Event::Authorized.emit();
         PromiseOrValue::Value(())
     }
 }
@@ -72,29 +74,51 @@ impl TransferAuth for Contract {
         &self.0
     }
 
-    // TODO: impl
-    fn close(&self){
-        require!(env::predecessor_account_id() == self.state_init.authorizee, "Unauthorized authorizee");
-        Promise::new(env::current_account_id())
-            .delete_account(env::signer_account_id()).detach();
-
+    //TODO: remove
+    fn cancel(&self) {
+        // let storage = self
+        //     .0
+        //     .0
+        //     .as_ref()
+        //     .ok_or(Error::ContractIsBeingDestroyed)
+        //     .unwrap_or_panic_display();
+        //
+        // require!(
+        //     env::predecessor_account_id() == storage.state_init.authorizee,
+        //     "Unauthorized authorizee"
+        // );
+        // Promise::new(env::current_account_id())
+        //     .delete_account(env::signer_account_id())
+        //     .detach();
     }
 
-    fn wait_for_authorization(
-        &mut self,
-    ) -> PromiseOrValue<bool> {
+    fn wait_for_authorization(&mut self) -> PromiseOrValue<()> {
         if env::predecessor_account_id() != self.state_init.authorizee {
             env::panic_str("Unauthorized authorizee");
         }
 
-        let mut yield_id = LazyYieldId::new();
-        self.fsm.handle(&StateMachineEvent::WaitForAuthorization(&mut yield_id)).unwrap_or_panic_display();
-
-        yield_id
-            .into_promise()
-            .map(PromiseOrValue::Promise)
-            .unwrap_or_else(|| (PromiseOrValue::Value(self.fsm.is_authorized())))
+        match self.fsm {
+            StateMachine::Idle => {
+                let (promise, yield_id) = Promise::yield_create(
+                    "is_authorized_resume",
+                    serde_json::json!({}).to_string(),
+                    Gas::from_tgas(0),
+                    GasWeight(1),
+                );
+                self.fsm = StateMachine::WaitingForAuthorization(yield_id);
+                promise.into()
+            }
+            StateMachine::Authorized => {
+                //TODO: address
+                // guard.mark_for_cleanup();
+                PromiseOrValue::Value(())
+            }
+            StateMachine::WaitingForAuthorization(_) => {
+                env::panic_str("already waiting for authorization");
+            }
+            StateMachine::Done => {
+                env::panic_str("already done");
+            }
+        }
     }
-
-
 }
