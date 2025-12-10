@@ -245,22 +245,23 @@ impl Contract {
         )
     }
 
-    /// Callback to resolve the escrow transfer result
     #[private]
     pub fn resolve_transfer(&self, original_amounts: Vec<U128>) -> Vec<U128> {
         match env::promise_result(0) {
             PromiseResult::Successful(value) => {
-                //TODO:: aling the outputs its not mt_transfer_call
+                let transferred: Vec<U128> = serde_json::from_slice(&value).unwrap_or_else(|_| {
+                    near_sdk::log!("Failed to parse escrow response, refunding all");
+                    return vec![U128(0); original_amounts.len()];
+                });
 
-                // mt_transfer_call returns the refunded amounts
-                // We pass through whatever the escrow refunded
-                serde_json::from_slice::<Vec<U128>>(&value).unwrap_or_else(|_| {
-                    near_sdk::log!("Failed to parse escrow response");
-                    original_amounts
-                })
+                original_amounts
+                    .iter()
+                    .zip(transferred.iter())
+                    .map(|(original, transferred)| U128(original.0.saturating_sub(transferred.0)))
+                    .collect()
             }
             PromiseResult::Failed => {
-                near_sdk::log!("Escrow transfer failed, refunding");
+                near_sdk::log!("Escrow transfer failed, refunding all");
                 original_amounts
             }
         }
