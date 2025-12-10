@@ -56,9 +56,6 @@ impl ExecuteIntentsExt for SigningAccount {
         self.tx(defuse_id.into())
             .function_call(FnCallBuilder::new("execute_intents").json_args(&args))
             .await
-            .inspect(|outcome| {
-                println!("execute_intents: {outcome:#?}");
-            })
     }
 
     async fn simulate_intents(
