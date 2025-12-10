@@ -26,6 +26,7 @@ use futures::future::try_join_all;
 use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::AccountIdRef;
 use near_sdk::{AccountId, NearToken, account_id::arbitrary::ArbitraryNamedAccountId, env::sha256};
+// use defuse_sandbox::api::types::errors::{near_openapi_types::TxExecutionError, ActionError, ActionErrorKind};
 
 use std::sync::LazyLock;
 use std::{
@@ -113,11 +114,16 @@ impl Env {
     }
 
     pub async fn create_named_user(&self, name: &str) -> SigningAccount {
+        // let account = self.sandbox.create_account(name).await;
+        // if let Err(TxExecutionError::ActionError(ActionError{_, kind: ActionErrorKind::AccountAlreadyExists})) = account {
+        //     panic!("Account {} already exists", name);
+        // }
+
         let account = self
             .sandbox
             .create_account(name)
             .await
-            .expect("Failed to create account");
+            .expect("Failed to create user");
 
         let pubkey = get_account_public_key(&account);
 
@@ -141,6 +147,8 @@ impl Env {
             .get_next_account_id()
             .expect("Failed to generate next account id");
         let root = self.root();
+
+        println!("Creating user account: {}", &account_id);
 
         self.create_named_user(&root.subaccount_name(&account_id).unwrap())
             .await
