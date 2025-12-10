@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::error::Error;
 use near_sdk::{AccountId, GlobalContractId, YieldId, borsh, near};
+use serde_with::{DisplayFromStr, hex::Hex, serde_as};
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
@@ -20,8 +21,7 @@ pub struct StateInit {
     pub auth_contract: AccountId,
     pub on_auth_signer: AccountId,
     pub authorizee: AccountId,
-    //TODO: fix
-    // #[serde_as(as = "Hex")]
+    #[serde_as(as = "Hex")]
     pub msg_hash: [u8; 32],
 }
 
