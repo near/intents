@@ -3,7 +3,7 @@ use defuse_sandbox::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use near_sdk::{AccountIdRef, NearToken, serde_json::json};
 
 #[allow(async_fn_in_trait)]
-pub trait SaltManagerExt: SaltViewExt {
+pub trait SaltManagerExt {
     async fn update_current_salt(&self, defuse_contract_id: &AccountIdRef) -> anyhow::Result<Salt>;
 
     async fn invalidate_salts(
@@ -57,15 +57,5 @@ impl SaltViewExt for Account {
 
     async fn current_salt(&self) -> anyhow::Result<Salt> {
         self.call_view_function_json("current_salt", ()).await
-    }
-}
-
-impl SaltViewExt for SigningAccount {
-    async fn is_valid_salt(&self, salt: &Salt) -> anyhow::Result<bool> {
-        self.account().is_valid_salt(salt).await
-    }
-
-    async fn current_salt(&self) -> anyhow::Result<Salt> {
-        self.account().current_salt().await
     }
 }

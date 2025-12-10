@@ -89,9 +89,3 @@ impl FtViewExt for Account {
         .map(|v| v.0)
     }
 }
-
-impl FtViewExt for SigningAccount {
-    async fn ft_balance_of(&self, account_id: &AccountIdRef) -> anyhow::Result<u128> {
-        self.account().ft_balance_of(account_id).await
-    }
-}

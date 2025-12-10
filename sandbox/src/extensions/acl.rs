@@ -9,7 +9,7 @@ pub trait AclViewExt {
 }
 
 #[allow(async_fn_in_trait)]
-pub trait AclExt: AclViewExt {
+pub trait AclExt {
     async fn acl_add_super_admin(
         &self,
         contract_id: &AccountIdRef,
@@ -59,12 +59,6 @@ impl AclViewExt for Account {
             .await
             .map(|d| d.data)
             .map_err(Into::into)
-    }
-}
-
-impl AclViewExt for SigningAccount {
-    async fn view_access_keys(&self) -> anyhow::Result<Vec<(PublicKey, AccessKey)>> {
-        self.account().view_access_keys().await
     }
 }
 

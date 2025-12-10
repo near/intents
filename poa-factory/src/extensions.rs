@@ -16,6 +16,10 @@ static POA_FACTORY_WASM: LazyLock<Vec<u8>> =
 
 #[allow(async_fn_in_trait)]
 pub trait PoAFactoryDeployerExt {
+    fn token_id(token: &str, factory: &AccountIdRef) -> AccountId {
+        format!("{token}.{factory}").parse().unwrap()
+    }
+
     async fn deploy_poa_factory(
         &self,
         name: &str,
@@ -26,7 +30,7 @@ pub trait PoAFactoryDeployerExt {
 }
 
 #[allow(async_fn_in_trait)]
-pub trait PoAFactoryExt: PoAFactoryViewExt {
+pub trait PoAFactoryExt {
     async fn poa_factory_deploy_token(
         &self,
         factory: &AccountIdRef,
@@ -47,10 +51,6 @@ pub trait PoAFactoryExt: PoAFactoryViewExt {
 
 #[allow(async_fn_in_trait)]
 pub trait PoAFactoryViewExt {
-    fn token_id(token: &str, factory: &AccountIdRef) -> AccountId {
-        format!("{token}.{factory}").parse().unwrap()
-    }
-
     async fn poa_tokens(
         &self,
         poa_factory: &AccountIdRef,
@@ -134,16 +134,5 @@ impl PoAFactoryExt for SigningAccount {
             .await?;
 
         Ok(())
-    }
-}
-
-impl PoAFactoryViewExt for SigningAccount {
-    async fn poa_tokens(
-        &self,
-        poa_factory: &AccountIdRef,
-    ) -> anyhow::Result<HashMap<String, AccountId>> {
-        Account::new(poa_factory.into(), self.network_config().clone())
-            .call_view_function_json("tokens", ())
-            .await
     }
 }

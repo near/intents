@@ -63,13 +63,3 @@ impl FeesManagerViewExt for Account {
         self.call_view_function_json("fee_collector", ()).await
     }
 }
-
-impl FeesManagerViewExt for SigningAccount {
-    async fn fee(&self) -> anyhow::Result<Pips> {
-        self.account().fee().await
-    }
-
-    async fn fee_collector(&self) -> anyhow::Result<AccountId> {
-        self.account().fee_collector().await
-    }
-}

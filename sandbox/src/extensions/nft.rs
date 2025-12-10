@@ -156,9 +156,3 @@ impl NftViewExt for Account {
         .await
     }
 }
-
-impl NftViewExt for SigningAccount {
-    async fn nft_token(&self, token_id: &TokenId) -> anyhow::Result<Option<Token>> {
-        self.account().nft_token(token_id).await
-    }
-}

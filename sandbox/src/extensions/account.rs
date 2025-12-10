@@ -23,7 +23,7 @@ pub trait ParentAccountViewExt {
 }
 
 #[allow(async_fn_in_trait)]
-pub trait ParentAccountExt: ParentAccountViewExt {
+pub trait ParentAccountExt {
     async fn create_subaccount(
         &self,
         name: impl AsRef<str>,
@@ -67,12 +67,6 @@ impl ParentAccountExt for SigningAccount {
 }
 
 impl ParentAccountViewExt for Account {
-    fn root_id(&self) -> &AccountIdRef {
-        self.id()
-    }
-}
-
-impl ParentAccountViewExt for SigningAccount {
     fn root_id(&self) -> &AccountIdRef {
         self.id()
     }

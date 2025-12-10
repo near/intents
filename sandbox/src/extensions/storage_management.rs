@@ -105,12 +105,3 @@ impl StorageViewExt for Account {
         .await
     }
 }
-
-impl StorageViewExt for SigningAccount {
-    async fn storage_balance_of(
-        &self,
-        account_id: &AccountIdRef,
-    ) -> anyhow::Result<Option<StorageBalance>> {
-        self.account().storage_balance_of(account_id).await
-    }
-}

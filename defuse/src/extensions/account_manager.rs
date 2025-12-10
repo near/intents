@@ -4,7 +4,7 @@ use defuse_serde_utils::base64::AsBase64;
 use near_sdk::{AccountIdRef, Gas, NearToken, serde_json::json};
 
 #[allow(async_fn_in_trait)]
-pub trait AccountManagerExt: AccountViewExt {
+pub trait AccountManagerExt {
     async fn add_public_key(
         &self,
         defuse_contract_id: &AccountIdRef,
@@ -135,32 +135,5 @@ impl AccountViewExt for Account {
             }),
         )
         .await
-    }
-}
-
-impl AccountViewExt for SigningAccount {
-    async fn has_public_key(
-        &self,
-        account_id: &AccountIdRef,
-        public_key: &PublicKey,
-    ) -> anyhow::Result<bool> {
-        self.account().has_public_key(account_id, public_key).await
-    }
-
-    async fn is_nonce_used(
-        &self,
-        account_id: &AccountIdRef,
-        nonce: &Nonce,
-    ) -> anyhow::Result<bool> {
-        self.account().is_nonce_used(account_id, nonce).await
-    }
-
-    async fn is_auth_by_predecessor_id_enabled(
-        &self,
-        account_id: &AccountIdRef,
-    ) -> anyhow::Result<bool> {
-        self.account()
-            .is_auth_by_predecessor_id_enabled(account_id)
-            .await
     }
 }

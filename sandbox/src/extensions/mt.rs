@@ -271,35 +271,3 @@ impl MtViewExt for Account {
         .await
     }
 }
-
-impl MtViewExt for SigningAccount {
-    async fn mt_batch_balance_of(
-        &self,
-        account_id: &AccountIdRef,
-        token_ids: impl IntoIterator<Item = String>,
-    ) -> anyhow::Result<Vec<u128>> {
-        self.account()
-            .mt_batch_balance_of(account_id, token_ids)
-            .await
-    }
-
-    async fn mt_balance_of(
-        &self,
-        account_id: &AccountId,
-        token_id: &TokenId,
-    ) -> anyhow::Result<u128> {
-        self.account().mt_balance_of(account_id, token_id).await
-    }
-
-    async fn mt_tokens(&self, range: impl RangeBounds<usize>) -> anyhow::Result<Vec<Token>> {
-        self.account().mt_tokens(range).await
-    }
-
-    async fn mt_tokens_for_owner(
-        &self,
-        account_id: &AccountIdRef,
-        range: impl RangeBounds<usize>,
-    ) -> anyhow::Result<Vec<Token>> {
-        self.account().mt_tokens_for_owner(account_id, range).await
-    }
-}
