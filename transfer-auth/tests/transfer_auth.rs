@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use defuse_sandbox::{Account, Sandbox};
 use defuse_transfer_auth::ext::TransferAuthAccountExt;
-use defuse_transfer_auth::storage::{ContractStorage, State};
+use defuse_transfer_auth::storage::{ContractStorage, StateInit as TransferAuthStateInit};
 use near_sdk::{
     Gas, NearToken,
     state_init::{StateInit, StateInitV1},
@@ -29,7 +29,7 @@ async fn transfer_auth_global_deployment() {
     )
     .unwrap();
 
-    let solver1_raw_state = ContractStorage::init_state(State {
+    let solver1_raw_state = ContractStorage::init_state(TransferAuthStateInit {
         escrow_contract_id: escrow.id().clone(),
         auth_contract: auth_contract.id().clone(),
         on_auth_signer: relay.id().clone(),
@@ -42,7 +42,7 @@ async fn transfer_auth_global_deployment() {
         data: solver1_raw_state.clone(),
     });
 
-    let solver2_raw_state = ContractStorage::init_state(State {
+    let solver2_raw_state = ContractStorage::init_state(TransferAuthStateInit {
         escrow_contract_id: escrow.id().clone(),
         auth_contract: auth_contract.id().clone(),
         on_auth_signer: relay.id().clone(),
@@ -98,7 +98,7 @@ async fn on_auth_call() {
     )
     .unwrap();
 
-    let state = State {
+    let state = TransferAuthStateInit {
         escrow_contract_id: escrow.id().clone(),
         auth_contract: auth_contract.id().clone(),
         on_auth_signer: relay.id().clone(),
@@ -162,7 +162,7 @@ async fn transfer_auth_early_authorization() {
     )
     .unwrap();
 
-    let state = State {
+    let state = TransferAuthStateInit {
         escrow_contract_id: escrow.id().clone(),
         auth_contract: auth_contract.id().clone(),
         on_auth_signer: relay.id().clone(),
@@ -217,7 +217,7 @@ async fn transfer_auth_async_authorization() {
     )
     .unwrap();
 
-    let state = State {
+    let state = TransferAuthStateInit {
         escrow_contract_id: escrow.id().clone(),
         auth_contract: auth_contract.id().clone(),
         on_auth_signer: relay.id().clone(),
@@ -284,7 +284,7 @@ async fn transfer_auth_async_authorization_timeout() {
     )
     .unwrap();
 
-    let state = State {
+    let state = TransferAuthStateInit {
         escrow_contract_id: escrow.id().clone(),
         auth_contract: auth_contract.id().clone(),
         on_auth_signer: relay.id().clone(),
@@ -334,7 +334,7 @@ async fn transfer_auth_retry_after_timeout_with_on_auth() {
     )
     .unwrap();
 
-    let state = State {
+    let state = TransferAuthStateInit {
         escrow_contract_id: escrow.id().clone(),
         auth_contract: auth_contract.id().clone(),
         on_auth_signer: relay.id().clone(),
@@ -406,7 +406,7 @@ async fn transfer_auth_retry_after_timeout_with_on_auth2() {
     )
     .unwrap();
 
-    let state = State {
+    let state = TransferAuthStateInit {
         escrow_contract_id: escrow.id().clone(),
         auth_contract: auth_contract.id().clone(),
         on_auth_signer: relay.id().clone(),

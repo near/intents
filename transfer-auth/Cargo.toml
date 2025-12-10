@@ -26,7 +26,7 @@ container_build_command = [
 ]
 
 [dependencies]
-defuse-auth-call.workspace = true
+defuse-auth-call = { workspace = true, optional = true }
 near-sdk = { workspace = true, features = ["unstable"] }
 serde_json.workspace = true
 impl-tools.workspace = true
@@ -46,7 +46,7 @@ defuse-nep245.workspace = true
 defuse-fees.workspace = true
 
 [dev-dependencies]
-defuse-transfer-auth = { path = ".", features = ["test-utils"] }
+defuse-transfer-auth = { path = ".", features = ["test-utils", "auth-call"] }
 near-sdk = { workspace = true, features = ["unstable", "unit-testing", "deterministic-account-ids"] }
 near-workspaces.workspace = true
 tokio.workspace = true
@@ -59,4 +59,5 @@ anyhow.workspace = true
 [features]
 contract = []
 abi = []
+auth-call = ["dep:defuse-auth-call"]
 test-utils = ["dep:defuse-sandbox", "dep:defuse-token-id", "dep:defuse-nep413", "dep:defuse-deadline", "dep:defuse-crypto", "dep:defuse-core", "dep:ed25519-dalek", "dep:anyhow"]

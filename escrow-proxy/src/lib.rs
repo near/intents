@@ -23,7 +23,7 @@ use near_sdk::{
     ext_contract, json_types::U128, near, require, serde_json,
 };
 
-use defuse_transfer_auth::{ext_transfer_auth, storage::{ContractStorage, State}, TransferAuthContext};
+use defuse_transfer_auth::{ext_transfer_auth, storage::{ContractStorage, StateInit as TransferAuthStateInit}, TransferAuthContext};
 use defuse_escrow_swap::ContractStorage as EscrowContractStorage;
 use defuse_escrow_swap::action::TransferMessage as EscrowTransferMessage;
 
@@ -78,7 +78,7 @@ impl Contract {
         msg_hash: [u8; 32],
     ) -> StateInit{
 
-        let state = State {
+        let state = TransferAuthStateInit {
             escrow_contract_id: self.config.escrow_swap_global_contract_id.clone() ,
             auth_contract: self.config.auth_contract.clone(),
             on_auth_signer: self.config.auth_collee.clone(),

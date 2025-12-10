@@ -1,3 +1,4 @@
+#[cfg(feature = "auth-call")]
 use defuse_auth_call::AuthCallee;
 use impl_tools::autoimpl;
 use near_sdk::PromiseError;
@@ -7,7 +8,7 @@ use near_sdk::{
 
 use crate::TransferAuth;
 use crate::event::Event;
-use crate::storage::{ContractStorage, State, StateMachine};
+use crate::storage::{ContractStorage, StateInit, StateMachine};
 
 #[near(contract_state(key = ContractStorage::STATE_KEY))]
 #[derive(Debug, PanicOnDefault)]
@@ -19,7 +20,7 @@ pub struct Contract(ContractStorage);
 impl Contract {
     #[init]
     #[allow(clippy::missing_const_for_fn, clippy::use_self)]
-    pub fn new(state_init: State) -> Self {
+    pub fn new(state_init: StateInit) -> Self {
         Self(ContractStorage::new(state_init))
     }
 
@@ -29,13 +30,13 @@ impl Contract {
         &mut self,
         #[callback_result] resume_data: Result<(), PromiseError>,
     ) -> PromiseOrValue<bool> {
-        match self.fsm {
+        match self.state {
             StateMachine::WaitingForAuthorization(yield_id) => {
-                self.fsm = StateMachine::Idle;
+                self.state = StateMachine::Idle;
                 Event::Timeout.emit();
             }
             StateMachine::Done | StateMachine::Authorized => {
-                self.fsm = StateMachine::Done;
+                self.state = StateMachine::Done;
             }
             StateMachine::Idle => {
                 unreachable!()
@@ -45,14 +46,14 @@ impl Contract {
         //NOTE: in some corener case when the promise can not be resumed(becuase of timeout) but
         //the timeout was already scheduled, the contract is in StateMachine::Authroized state so
         //we need to set it to StateMachine::Done
-        PromiseOrValue::Value(matches!(self.fsm, StateMachine::Done))
+        PromiseOrValue::Value(matches!(self.state, StateMachine::Done))
     }
 }
 
+#[cfg(feature = "auth-call")]
 #[near]
 impl AuthCallee for Contract {
     #[payable]
-    //TODO: hide defuse dependency behind fature flag
     fn on_auth(&mut self, signer_id: AccountId, msg: String) -> PromiseOrValue<()> {
         let _ = msg;
         require!(
@@ -64,16 +65,33 @@ impl AuthCallee for Contract {
             "Unauthorized on_auth signer"
         );
 
-        match self.fsm {
-            StateMachine::Idle => self.fsm = StateMachine::Authorized,
+        self.authorize();
+        PromiseOrValue::Value(())
+    }
+}
+
+#[near]
+impl Contract {
+    pub fn authorized(&mut self) {
+        require!(
+            env::predecessor_account_id() == self.state_init.on_auth_signer,
+            "Unauthorized signer"
+        );
+
+        self.authorize();
+    }
+
+    fn authorize(&mut self) {
+        match self.state {
+            StateMachine::Idle => self.state = StateMachine::Authorized,
             StateMachine::WaitingForAuthorization(yield_id) => {
                 if yield_id.resume(&[]) {
-                    self.fsm = StateMachine::Done;
+                    self.state = StateMachine::Done;
                 } else {
-                    //NOTE: if resume returns false that means that it the yielded promise 
+                    //NOTE: if resume returns false that means that it the yielded promise
                     //no longer exists although maybe it will be resumed because of timeout
                     //from the perspective of the contract it is already authorized
-                    self.fsm = StateMachine::Authorized;
+                    self.state = StateMachine::Authorized;
                 };
             }
             StateMachine::Authorized | StateMachine::Done => {
@@ -82,7 +100,6 @@ impl AuthCallee for Contract {
         };
 
         Event::Authorized.emit();
-        PromiseOrValue::Value(())
     }
 }
 
@@ -93,11 +110,11 @@ impl TransferAuth for Contract {
     }
 
     fn state(&self) -> &StateMachine {
-        &self.fsm
+        &self.state
     }
 
     fn is_authorized(&self) -> bool {
-        matches!(self.fsm, StateMachine::Authorized| StateMachine::Done)
+        matches!(self.state, StateMachine::Authorized| StateMachine::Done)
     }
 
     fn wait_for_authorization(&mut self) -> PromiseOrValue<bool> {
@@ -105,7 +122,7 @@ impl TransferAuth for Contract {
             env::panic_str("Unauthorized authorizee");
         }
 
-        match self.fsm {
+        match self.state {
             StateMachine::Idle => {
                 let (promise, yield_id) = Promise::yield_create(
                     "is_authorized_resume",
@@ -113,11 +130,11 @@ impl TransferAuth for Contract {
                     Gas::from_tgas(0),
                     GasWeight(1),
                 );
-                self.fsm = StateMachine::WaitingForAuthorization(yield_id);
+                self.state = StateMachine::WaitingForAuthorization(yield_id);
                 return promise.into()
             }
             StateMachine::Authorized => {
-                self.fsm = StateMachine::Done;
+                self.state = StateMachine::Done;
             }
             StateMachine::WaitingForAuthorization(_) => {
                 env::panic_str("already waiting for authorization");
@@ -127,6 +144,6 @@ impl TransferAuth for Contract {
             }
         }
 
-        PromiseOrValue::Value(matches!(self.fsm, StateMachine::Done))
+        PromiseOrValue::Value(matches!(self.state, StateMachine::Done))
     }
 }

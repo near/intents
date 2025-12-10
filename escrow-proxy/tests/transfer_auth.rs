@@ -10,7 +10,7 @@ use defuse_escrow_swap::price::Price;
 use defuse_sandbox::{Sandbox, SigningAccount};
 use defuse_token_id::{TokenId, nep141::Nep141TokenId};
 use defuse_transfer_auth::ext::{DefuseAccountExt, TransferAuthAccountExt, derive_transfer_auth_account_id};
-use defuse_transfer_auth::storage::{ContractStorage, State};
+use defuse_transfer_auth::storage::{ContractStorage, StateInit as TransferAuthStateInit};
 use defuse_transfer_auth::TransferAuthContext;
 use near_sdk::json_types::U128;
 use near_sdk::{Gas, GlobalContractId, state_init::{StateInit, StateInitV1}};
@@ -287,7 +287,7 @@ async fn test_transfer_authorized_by_relay() {
         msg: Cow::Borrowed(&msg_json),
     }.hash();
 
-    let auth_state = State {
+    let auth_state = TransferAuthStateInit {
         escrow_contract_id: config.escrow_swap_global_contract_id.clone(),
         auth_contract: config.auth_contract.clone(),
         on_auth_signer: config.auth_collee.clone(),

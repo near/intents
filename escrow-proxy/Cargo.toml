@@ -23,7 +23,7 @@ defuse-fees.workspace = true
 defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-token-id = { workspace = true, default-features = false, features = ["nep141", "nep245"] }
-defuse-transfer-auth.workspace = true
+defuse-transfer-auth = { workspace = true, features = ["auth-call"] }
 serde_json.workspace = true
 
 defuse-sandbox = { workspace = true, optional = true }
@@ -36,7 +36,7 @@ serde_with.workspace = true
 [dev-dependencies]
 defuse-escrow-proxy = { path = ".", features = ["test-utils"] }
 defuse-sandbox.workspace = true
-defuse-transfer-auth = { workspace = true, features = ["test-utils"] }
+defuse-transfer-auth = { workspace = true, features = ["test-utils", "auth-call"] }
 multi-token-receiver-stub = { path = "../tests/contracts/multi-token-receiver-stub", features = ["test-utils"] }
 impl-tools.workspace = true
 near-sdk = { workspace = true, features = ["unstable", "unit-testing"] }

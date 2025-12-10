@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use crate::storage::{ContractStorage, State, StateMachine};
+use crate::storage::{ContractStorage, StateInit, StateMachine};
 use near_sdk::{borsh, env::keccak256, ext_contract, json_types::U128, near, AccountIdRef, PromiseOrValue};
 
 #[cfg(feature = "contract")]

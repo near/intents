@@ -1,6 +1,7 @@
 use std::{fs, path::Path, sync::LazyLock};
 
-use crate::storage::{ContractStorage, State};
+use crate::storage::{ContractStorage, StateInit as TransferAuthStateInit};
+pub use crate::storage::StateInit as State;
 use serde_json::json;
 use defuse_sandbox::{
     api::types::transaction::actions::GlobalContractDeployMode, Account, SigningAccount, TxError,
@@ -47,7 +48,7 @@ pub static TRANSFER_AUTH_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("defuse_transfer_auth"));
 
 /// Derive the transfer-auth instance account ID from its state
-pub fn derive_transfer_auth_account_id(global_contract_id: &AccountId, state: &State) -> AccountId {
+pub fn derive_transfer_auth_account_id(global_contract_id: &AccountId, state: &TransferAuthStateInit) -> AccountId {
     let raw_state = ContractStorage::init_state(state.clone()).unwrap();
     let state_init = StateInit::V1(StateInitV1 {
         code: GlobalContractId::AccountId(global_contract_id.clone()),

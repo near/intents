@@ -24,7 +24,7 @@ use defuse_token_id::nep141::Nep141TokenId;
 use defuse_token_id::nep245::Nep245TokenId;
 use defuse_token_id::TokenId;
 use defuse_transfer_auth::ext::{DefuseAccountExt, TransferAuthAccountExt, derive_transfer_auth_account_id, public_key_from_secret};
-use defuse_transfer_auth::storage::State as TransferAuthState;
+use defuse_transfer_auth::storage::StateInit as TransferAuthState;
 use defuse_transfer_auth::TransferAuthContext;
 use near_sdk::json_types::U128;
 use near_sdk::{AccountId, Gas, NearToken};
