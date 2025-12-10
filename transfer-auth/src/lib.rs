@@ -1,9 +1,8 @@
 use std::borrow::Cow;
 
+use crate::storage::{ContractStorage, State, StateMachine};
 use near_sdk::{env::keccak256, ext_contract, json_types::U128, near, AccountIdRef, PromiseOrValue};
 
-#[cfg(feature = "contract")]
-mod cleanup;
 #[cfg(feature = "contract")]
 mod contract;
 mod error;
@@ -14,9 +13,6 @@ pub mod storage;
 
 #[cfg(feature = "test-utils")]
 pub mod ext;
-
-use storage::ContractStorage;
-
 
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
@@ -36,8 +32,9 @@ impl TransferAuthContext<'_> {
 
 #[ext_contract(ext_transfer_auth)]
 pub trait TransferAuth {
-    fn state(&self) -> &ContractStorage;
-    fn cancel(&self);
+    fn state(&self) -> &StateMachine;
+    fn view(&self) -> &ContractStorage;
+    fn is_authorized(&self) -> bool;
     //TODO: change to void
-    fn wait_for_authorization(&mut self) -> PromiseOrValue<()>;
+    fn wait_for_authorization(&mut self) -> PromiseOrValue<bool>;
 }

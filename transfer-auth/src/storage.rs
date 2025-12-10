@@ -23,6 +23,7 @@ pub struct State {
 pub struct ContractStorage{
     #[serde(flatten)]
     pub state_init: State,
+    //TODO:rename to state
     pub fsm: StateMachine,
 }
 

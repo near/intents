@@ -73,7 +73,7 @@ async fn transfer_auth_global_deployment() {
     let cotnract_instance1_state = proxy
         .tx(auth_transfer_for_solver1)
         .function_call_json::<ContractStorage>(
-            "state",
+            "view",
             "{}",
             Gas::from_tgas(300),
             NearToken::from_near(0),
@@ -189,7 +189,7 @@ async fn transfer_auth_early_authorization() {
 
     proxy
         .tx(transfer_auth_instance.clone())
-        .function_call_json::<()>(
+        .function_call_json::<bool>(
             "wait_for_authorization",
             json!({}),
             Gas::from_tgas(300),
@@ -235,7 +235,7 @@ async fn transfer_auth_async_authorization() {
         async move {
             proxy
                 .tx(transfer_auth_instance.clone())
-                .function_call_json::<()>(
+                .function_call_json::<bool>(
                     "wait_for_authorization",
                     json!({}),
                     Gas::from_tgas(300),
@@ -299,7 +299,7 @@ async fn transfer_auth_async_authorization_timeout() {
     let network_config = root.network_config().clone();
     let wait_for_authorization = proxy
         .tx(transfer_auth_instance.clone())
-        .function_call_json::<()>(
+        .function_call_json::<bool>(
             "wait_for_authorization",
             json!({}),
             Gas::from_tgas(300),
@@ -311,7 +311,8 @@ async fn transfer_auth_async_authorization_timeout() {
     // assert!(Account::new(transfer_auth_instance.clone(), network_config.clone()).exists().await);
     let (authorized, _) = futures::join!(async { wait_for_authorization.await }, forward_time);
 
-    assert!(authorized.is_err());
+    // Timeout returns false (not authorized)
+    assert_eq!(authorized.unwrap(), false);
 
     // Contract should still exist after timeout (state reset to Idle for retry)
     // assert!(Account::new(transfer_auth_instance.clone(), network_config.clone()).exists().await);
@@ -350,7 +351,7 @@ async fn transfer_auth_retry_after_timeout_with_on_auth() {
     // First wait_for_authorization - will timeout
     let wait_for_authorization = proxy
         .tx(transfer_auth_instance.clone())
-        .function_call_json::<()>(
+        .function_call_json::<bool>(
             "wait_for_authorization",
             json!({}),
             Gas::from_tgas(300),
@@ -362,7 +363,7 @@ async fn transfer_auth_retry_after_timeout_with_on_auth() {
     let (authorized, _) = futures::join!(async { wait_for_authorization.await }, forward_time);
 
     // First attempt should timeout and return false
-    assert!(authorized.is_err());
+    assert_eq!(authorized.unwrap(), false);
 
     // Now call on_auth before second wait_for_authorization
     auth_contract
@@ -379,7 +380,7 @@ async fn transfer_auth_retry_after_timeout_with_on_auth() {
     // Second wait_for_authorization should succeed immediately (early authorization path)
     let authorized = proxy
         .tx(transfer_auth_instance.clone())
-        .function_call_json::<()>(
+        .function_call_json::<bool>(
             "wait_for_authorization",
             json!({}),
             Gas::from_tgas(300),
@@ -422,7 +423,7 @@ async fn transfer_auth_retry_after_timeout_with_on_auth2() {
     // First wait_for_authorization - will timeout
     let wait_for_authorization = proxy
         .tx(transfer_auth_instance.clone())
-        .function_call_json::<()>(
+        .function_call_json::<bool>(
             "wait_for_authorization",
             json!({}),
             Gas::from_tgas(300),
@@ -431,11 +432,11 @@ async fn transfer_auth_retry_after_timeout_with_on_auth2() {
     let forward_time = sandbox.fast_forward(200);
     let (authorized, _) = futures::join!(async { wait_for_authorization.await }, forward_time);
     // First attempt should timeout and return false
-    assert!(authorized.is_err());
+    assert_eq!(authorized.unwrap(), false);
 
     let wait_for_authorization = proxy
         .tx(transfer_auth_instance.clone())
-        .function_call_json::<()>(
+        .function_call_json::<bool>(
             "wait_for_authorization",
             json!({}),
             Gas::from_tgas(300),
@@ -457,6 +458,4 @@ async fn transfer_auth_retry_after_timeout_with_on_auth2() {
     });
 
     authorized.unwrap();
-    // First attempt should timeout and return false
-    // assert!(authorized.is_err());
 }

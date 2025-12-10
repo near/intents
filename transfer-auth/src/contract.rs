@@ -1,9 +1,8 @@
 use defuse_auth_call::AuthCallee;
-use near_sdk::PromiseError;
 use impl_tools::autoimpl;
+use near_sdk::PromiseError;
 use near_sdk::{
-    AccountId, Gas, GasWeight, PanicOnDefault, Promise, PromiseOrValue, env, near,
-    require,
+    AccountId, Gas, GasWeight, PanicOnDefault, Promise, PromiseOrValue, env, near, require,
 };
 
 use crate::TransferAuth;
@@ -26,21 +25,33 @@ impl Contract {
 
     #[private]
     #[allow(clippy::needless_pass_by_value)]
-    pub fn is_authorized_resume(&mut self,
+    pub fn is_authorized_resume(
+        &mut self,
         #[callback_result] resume_data: Result<(), PromiseError>,
-    ) -> PromiseOrValue<()> {
-        require!(matches!(self.0.fsm, StateMachine::Done | StateMachine::Authorized), "timeout"); //otherwise timeouted
+    ) -> PromiseOrValue<bool> {
+        match self.fsm {
+            StateMachine::WaitingForAuthorization(yield_id) => {
+                self.fsm = StateMachine::Idle;
+            }
+            StateMachine::Done | StateMachine::Authorized => {
+                self.fsm = StateMachine::Done;
+            }
+            StateMachine::Idle => {
+                unreachable!()
+            }
+        }
+
         //NOTE: in some corener case when the promise can not be resumed(becuase of timeout) but
         //the timeout was already scheduled, the contract is in StateMachine::Authroized state so
         //we need to set it to StateMachine::Done
-        self.fsm = StateMachine::Done;
-        PromiseOrValue::Value(())
+        PromiseOrValue::Value(matches!(self.fsm, StateMachine::Done))
     }
 }
 
 #[near]
 impl AuthCallee for Contract {
     #[payable]
+    //TODO: hide defuse dependency behind fature flag
     fn on_auth(&mut self, signer_id: AccountId, msg: String) -> PromiseOrValue<()> {
         let _ = msg;
         require!(
@@ -55,14 +66,16 @@ impl AuthCallee for Contract {
         match self.fsm {
             StateMachine::Idle => self.fsm = StateMachine::Authorized,
             StateMachine::WaitingForAuthorization(yield_id) => {
-                //TODO: handle set status == false ,to authorized
-                if yield_id.resume(&[]){
+                if yield_id.resume(&[]) {
                     self.fsm = StateMachine::Done;
-                }else{
+                } else {
+                    //NOTE: if resume returns false that means that it the yielded promise 
+                    //no longer exists although maybe it will be resumed because of timeout
+                    //from the perspective of the contract it is already authorized
                     self.fsm = StateMachine::Authorized;
                 };
             }
-            StateMachine::Authorized | StateMachine::Done=> {
+            StateMachine::Authorized | StateMachine::Done => {
                 env::panic_str("already authorized");
             }
         };
@@ -74,29 +87,19 @@ impl AuthCallee for Contract {
 
 #[near]
 impl TransferAuth for Contract {
-    fn state(&self) -> &ContractStorage {
+    fn view(&self) -> &ContractStorage {
         &self.0
     }
 
-    //TODO: remove
-    fn cancel(&self) {
-        // let storage = self
-        //     .0
-        //     .0
-        //     .as_ref()
-        //     .ok_or(Error::ContractIsBeingDestroyed)
-        //     .unwrap_or_panic_display();
-        //
-        // require!(
-        //     env::predecessor_account_id() == storage.state_init.authorizee,
-        //     "Unauthorized authorizee"
-        // );
-        // Promise::new(env::current_account_id())
-        //     .delete_account(env::signer_account_id())
-        //     .detach();
+    fn state(&self) -> &StateMachine {
+        &self.fsm
     }
 
-    fn wait_for_authorization(&mut self) -> PromiseOrValue<()> {
+    fn is_authorized(&self) -> bool {
+        matches!(self.fsm, StateMachine::Authorized| StateMachine::Done)
+    }
+
+    fn wait_for_authorization(&mut self) -> PromiseOrValue<bool> {
         if env::predecessor_account_id() != self.state_init.authorizee {
             env::panic_str("Unauthorized authorizee");
         }
@@ -110,12 +113,10 @@ impl TransferAuth for Contract {
                     GasWeight(1),
                 );
                 self.fsm = StateMachine::WaitingForAuthorization(yield_id);
-                promise.into()
+                return promise.into()
             }
             StateMachine::Authorized => {
-                //TODO: address
-                // guard.mark_for_cleanup();
-                PromiseOrValue::Value(())
+                self.fsm = StateMachine::Done;
             }
             StateMachine::WaitingForAuthorization(_) => {
                 env::panic_str("already waiting for authorization");
@@ -124,5 +125,7 @@ impl TransferAuth for Contract {
                 env::panic_str("already done");
             }
         }
+
+        PromiseOrValue::Value(matches!(self.fsm, StateMachine::Done))
     }
 }
