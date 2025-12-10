@@ -1,4 +1,5 @@
 use defuse_auth_call::AuthCallee;
+use near_sdk::PromiseError;
 use impl_tools::autoimpl;
 use near_sdk::{
     AccountId, Gas, GasWeight, PanicOnDefault, Promise, PromiseOrValue, env, near,
@@ -25,12 +26,15 @@ impl Contract {
 
     #[private]
     #[allow(clippy::needless_pass_by_value)]
-    pub fn is_authorized_resume(&mut self) {
+    pub fn is_authorized_resume(&mut self,
+        #[callback_result] resume_data: Result<(), PromiseError>,
+    ) -> PromiseOrValue<()> {
         require!(matches!(self.0.fsm, StateMachine::Done | StateMachine::Authorized), "timeout"); //otherwise timeouted
         //NOTE: in some corener case when the promise can not be resumed(becuase of timeout) but
         //the timeout was already scheduled, the contract is in StateMachine::Authroized state so
         //we need to set it to StateMachine::Done
         self.fsm = StateMachine::Done;
+        PromiseOrValue::Value(())
     }
 }
 
