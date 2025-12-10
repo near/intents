@@ -25,8 +25,12 @@ pub trait MtReceiverStubAccountExt {
     async fn deploy_mt_receiver_stub(&self, name: impl AsRef<str>) -> Account;
     /// Deploy as global contract (code only)
     async fn deploy_mt_receiver_stub_global(&self, name: impl AsRef<str>) -> AccountId;
-    /// Deploy instance referencing global contract
-    async fn deploy_mt_receiver_stub_instance(&self, global_contract_id: AccountId) -> AccountId;
+    /// Deploy instance referencing global contract with arbitrary raw state
+    async fn deploy_mt_receiver_stub_instance(
+        &self,
+        global_contract_id: AccountId,
+        raw_state: BTreeMap<Vec<u8>, Vec<u8>>,
+    ) -> AccountId;
 }
 
 impl MtReceiverStubAccountExt for SigningAccount {
@@ -60,12 +64,14 @@ impl MtReceiverStubAccountExt for SigningAccount {
         account.id().clone()
     }
 
-    async fn deploy_mt_receiver_stub_instance(&self, global_contract_id: AccountId) -> AccountId {
-        // The contract is stateless, so we use empty state
-        let raw_state: BTreeMap<Vec<u8>, Vec<u8>> = BTreeMap::new();
+    async fn deploy_mt_receiver_stub_instance(
+        &self,
+        global_contract_id: AccountId,
+        raw_state: BTreeMap<Vec<u8>, Vec<u8>>,
+    ) -> AccountId {
         let state_init = StateInit::V1(StateInitV1 {
             code: near_sdk::GlobalContractId::AccountId(global_contract_id.clone()),
-            data: raw_state,
+            data: raw_state.clone(),
         });
 
         let account = state_init.derive_account_id();
@@ -74,7 +80,7 @@ impl MtReceiverStubAccountExt for SigningAccount {
         // deployed, so lets ignore error for now
         let _ = self
             .tx(account.clone())
-            .state_init(global_contract_id, BTreeMap::new())
+            .state_init(global_contract_id, raw_state)
             .transfer(NearToken::from_yoctonear(1))
             .await;
 

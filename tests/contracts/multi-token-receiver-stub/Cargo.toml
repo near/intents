@@ -16,10 +16,13 @@ defuse-sandbox = { workspace = true, optional = true }
 anyhow = { workspace = true, optional = true }
 
 [dev-dependencies]
+multi-token-receiver-stub = { path = ".", features = ["test-utils"] }
+defuse-sandbox.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 near-workspaces.workspace = true
 tokio.workspace = true
 serde_json.workspace = true
+futures.workspace = true
 
 [features]
 abi = ["defuse/abi"]

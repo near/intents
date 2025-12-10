@@ -2502,6 +2502,8 @@ dependencies = [
  "defuse",
  "defuse-nep245",
  "defuse-sandbox",
+ "futures",
+ "multi-token-receiver-stub",
  "near-sdk",
  "near-workspaces",
  "serde_json",
