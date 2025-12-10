@@ -1,9 +1,7 @@
-#[cfg(feature = "auth-call")]
-use defuse_auth_call::AuthCallee;
 use impl_tools::autoimpl;
 use near_sdk::PromiseError;
 use near_sdk::{
-    AccountId, Gas, GasWeight, PanicOnDefault, Promise, PromiseOrValue, env, near, require,
+    Gas, GasWeight, PanicOnDefault, Promise, PromiseOrValue, env, near, require,
 };
 
 use crate::TransferAuth;
@@ -47,26 +45,6 @@ impl Contract {
         //the timeout was already scheduled, the contract is in StateMachine::Authroized state so
         //we need to set it to StateMachine::Done
         PromiseOrValue::Value(matches!(self.state, StateMachine::Done))
-    }
-}
-
-#[cfg(feature = "auth-call")]
-#[near]
-impl AuthCallee for Contract {
-    #[payable]
-    fn on_auth(&mut self, signer_id: AccountId, msg: String) -> PromiseOrValue<()> {
-        let _ = msg;
-        require!(
-            env::predecessor_account_id() == self.state_init.auth_contract,
-            "Unauthorized auth contract"
-        );
-        require!(
-            signer_id == self.state_init.on_auth_signer,
-            "Unauthorized on_auth signer"
-        );
-
-        self.authorize();
-        PromiseOrValue::Value(())
     }
 }
 

@@ -5,6 +5,8 @@ use near_sdk::{borsh, env::keccak256, ext_contract, json_types::U128, near, Acco
 
 #[cfg(feature = "contract")]
 mod contract;
+#[cfg(all(feature = "contract", feature = "auth-call"))]
+mod auth_call;
 mod error;
 pub mod event;
 pub mod storage;
