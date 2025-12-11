@@ -17,7 +17,7 @@ pub use near_api as api;
 pub use near_openapi_types as openapi_types;
 pub use near_sandbox;
 
-use near_api::{NetworkConfig, RPCEndpoint};
+use near_api::{NetworkConfig, RPCEndpoint, signer::generate_secret_key};
 use near_sandbox::{GenesisAccount, SandboxConfig};
 use near_sdk::{AccountId, NearToken};
 use rstest::fixture;
@@ -47,7 +47,14 @@ pub struct Sandbox {
 impl Sandbox {
     pub async fn new(root: AccountId) -> Self {
         // FIX: why does test.ner exist in genesis cfg????
-        let root = GenesisAccount::default_with_name(root);
+        let root_secret_key = generate_secret_key().unwrap();
+
+        let root = GenesisAccount {
+            account_id: root,
+            public_key: root_secret_key.public_key().to_string(),
+            private_key: root_secret_key.to_string(),
+            balance: NearToken::from_near(1_000_000_000),
+        };
 
         let sandbox = near_sandbox::Sandbox::start_sandbox_with_config(SandboxConfig {
             additional_accounts: vec![root.clone()],
