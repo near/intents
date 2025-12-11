@@ -13,6 +13,7 @@
 //! Note: This example only builds the intents without executing them on testnet.
 
 use defuse_core::intents::Intent;
+use defuse_token_id::nep245::Nep245TokenId;
 use defuse_transfer_auth::ext::DefuseAccountExt;
 use defuse_transfer_auth::ext::sign_intents;
 use defuse_transfer_auth::storage::StateInit as TransferAuthStateInit;
@@ -223,9 +224,9 @@ async fn main() -> Result<()> {
     let deadline = Deadline::timeout(Duration::from_secs(300));
     // ESCROW SWAP PARAMS
     let escrow_params = Params {
-        maker: root.id().clone(),
-        src_token: src_token.clone(),
-        dst_token: dst_token.clone(),
+        maker: maker_signing.id().clone(),
+        src_token: Nep245TokenId::new(VERIFIER_CONTRACT.parse().unwrap(), src_token.to_string() ).into(),
+        dst_token: Nep245TokenId::new(VERIFIER_CONTRACT.parse().unwrap(), dst_token.to_string() ).into(),
         price: Price::ONE,
         deadline: deadline, // 5 min
         partial_fills_allowed: false,
@@ -398,17 +399,17 @@ async fn main() -> Result<()> {
     println!("\nStep 2: Maker sends funds to escrow (deploys escrow-swap)...");
     root.execute_signed_intents(&defuse, &[maker_sends_funds_to_escrow])
         .await?;
-    // println!("  Done: escrow-swap instance deployed at {escrow_instance_id}");
-    //
-    // // Step 3: Root sends auth_call + taker sends funds to proxy (atomically)
-    // // This deploys transfer-auth instance and executes the fill through the proxy
-    // println!("\nStep 3: Root sends auth_call + taker sends funds to proxy...");
-    // root.execute_signed_intents(&defuse, &[root_sends_auth_call, taker_sends_funds_to_proxy])
-    //     .await?;
-    // println!("  Done: transfer-auth deployed at {transfer_auth_instance_id}");
-    // println!("  Done: taker filled the escrow through proxy");
-    //
-    // println!("\n=== Escrow Swap Demo Complete ===");
+    println!("  Done: escrow-swap instance deployed at {escrow_instance_id}");
+
+    // Step 3: Root sends auth_call + taker sends funds to proxy (atomically)
+    // This deploys transfer-auth instance and executes the fill through the proxy
+    println!("\nStep 3: Root sends auth_call + taker sends funds to proxy...");
+    root.execute_signed_intents(&defuse, &[root_sends_auth_call, taker_sends_funds_to_proxy])
+        .await?;
+    println!("  Done: transfer-auth deployed at {transfer_auth_instance_id}");
+    println!("  Done: taker filled the escrow through proxy");
+
+    println!("\n=== Escrow Swap Demo Complete ===");
 
     Ok(())
 }
