@@ -7,4 +7,3 @@ pub enum Error {
     #[error("borsh: {0}")]
     Borsh(near_sdk::borsh::io::Error),
 }
-

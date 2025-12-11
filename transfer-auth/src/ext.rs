@@ -1,10 +1,12 @@
 use std::{fs, path::Path, sync::LazyLock};
 
-use crate::storage::{ContractStorage, StateInit as TransferAuthStateInit};
 pub use crate::storage::StateInit as State;
-use serde_json::json;
+use crate::storage::{ContractStorage, StateInit as TransferAuthStateInit};
+use defuse_crypto::Payload;
+use defuse_deadline::Deadline;
+use defuse_nep413::{Nep413Payload, SignedNep413Payload};
 use defuse_sandbox::{
-    api::types::transaction::actions::GlobalContractDeployMode, Account, SigningAccount, TxError,
+    Account, SigningAccount, TxError, api::types::transaction::actions::GlobalContractDeployMode,
 };
 use defuse_token_id::TokenId;
 use near_sdk::{
@@ -12,9 +14,7 @@ use near_sdk::{
     json_types::U128,
     state_init::{StateInit, StateInitV1},
 };
-use defuse_deadline::Deadline;
-use defuse_nep413::{Nep413Payload, SignedNep413Payload};
-use defuse_crypto::Payload;
+use serde_json::json;
 
 /// Sign a message with Ed25519 using a raw 32-byte secret key.
 /// Returns (`public_key`, `signature`) as raw byte arrays.
@@ -42,8 +42,8 @@ pub fn sign_intents(
     intents: Vec<defuse_core::intents::Intent>,
 ) -> defuse_core::payload::multi::MultiPayload {
     use defuse_core::intents::DefuseIntents;
-    use defuse_core::payload::nep413::Nep413DefuseMessage;
     use defuse_core::payload::multi::MultiPayload;
+    use defuse_core::payload::nep413::Nep413DefuseMessage;
 
     let deadline = Deadline::timeout(std::time::Duration::from_secs(120));
 
@@ -83,7 +83,10 @@ pub static TRANSFER_AUTH_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("defuse_transfer_auth"));
 
 /// Derive the transfer-auth instance account ID from its state
-pub fn derive_transfer_auth_account_id(global_contract_id: &GlobalContractId, state: &TransferAuthStateInit) -> AccountId {
+pub fn derive_transfer_auth_account_id(
+    global_contract_id: &GlobalContractId,
+    state: &TransferAuthStateInit,
+) -> AccountId {
     let raw_state = ContractStorage::init_state(state.clone()).unwrap();
     let state_init = StateInit::V1(StateInitV1 {
         code: global_contract_id.clone(),
@@ -161,7 +164,6 @@ impl TransferAuthAccountExt for SigningAccount {
             .await?)
     }
 }
-
 
 // TODO: move to defuse
 #[allow(async_fn_in_trait)]
@@ -300,9 +302,13 @@ impl DefuseAccountExt for SigningAccount {
     }
 
     async fn deploy_verifier(&self, name: impl AsRef<str>, wnear_id: AccountId) -> Self {
-        let defuse = self.create_subaccount(name, NearToken::from_near(20)).await.unwrap();
+        let defuse = self
+            .create_subaccount(name, NearToken::from_near(20))
+            .await
+            .unwrap();
 
-        defuse.tx(defuse.id().clone())
+        defuse
+            .tx(defuse.id().clone())
             .deploy(VERIFIER_WASM.clone())
             .function_call_json::<()>(
                 "new",
@@ -568,7 +574,8 @@ impl DefuseAccountExt for SigningAccount {
 
         // 4. Execute the intent via defuse
         // Note: RPC may return parsing error but the tx succeeds
-        let _ = self.tx(defuse.id().clone())
+        let _ = self
+            .tx(defuse.id().clone())
             .function_call_json::<serde_json::Value>(
                 "execute_intents",
                 json!({ "signed": [multi_payload] }),
@@ -588,8 +595,8 @@ impl DefuseAccountExt for SigningAccount {
         nonce: [u8; 32],
     ) -> Result<(), TxError> {
         use defuse_core::intents::{DefuseIntents, Intent};
-        use defuse_core::payload::nep413::Nep413DefuseMessage;
         use defuse_core::payload::multi::MultiPayload;
+        use defuse_core::payload::nep413::Nep413DefuseMessage;
 
         let deadline = Deadline::timeout(std::time::Duration::from_secs(120));
 
@@ -625,7 +632,8 @@ impl DefuseAccountExt for SigningAccount {
 
         // Execute the intent via defuse
         // repotrts erro but goes through
-        let _ = self.tx(defuse.id().clone())
+        let _ = self
+            .tx(defuse.id().clone())
             .function_call_json::<serde_json::Value>(
                 "execute_intents",
                 json!({ "signed": [multi_payload] }),
@@ -643,7 +651,8 @@ impl DefuseAccountExt for SigningAccount {
         payloads: &[defuse_core::payload::multi::MultiPayload],
     ) -> Result<(), TxError> {
         // Note: RPC may return parsing error but the tx succeeds
-        let _ = self.tx(defuse.id().clone())
+        let _ = self
+            .tx(defuse.id().clone())
             .function_call_json::<serde_json::Value>(
                 "execute_intents",
                 json!({ "signed": payloads }),

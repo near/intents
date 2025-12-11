@@ -1,4 +1,4 @@
-use near_sdk::{near};
+use near_sdk::near;
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(event_json(standard = "transfer_auth"))]

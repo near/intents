@@ -3,9 +3,7 @@ mod auth_call;
 
 use impl_tools::autoimpl;
 use near_sdk::PromiseError;
-use near_sdk::{
-    Gas, GasWeight, PanicOnDefault, Promise, PromiseOrValue, env, near, require,
-};
+use near_sdk::{Gas, GasWeight, PanicOnDefault, Promise, PromiseOrValue, env, near, require};
 
 use crate::TransferAuth;
 use crate::event::Event;
@@ -86,7 +84,7 @@ impl TransferAuth for Contract {
     }
 
     fn is_authorized(&self) -> bool {
-        matches!(self.state, StateMachine::Authorized| StateMachine::Done)
+        matches!(self.state, StateMachine::Authorized | StateMachine::Done)
     }
 
     fn wait_for_authorization(&mut self) -> PromiseOrValue<bool> {
@@ -103,7 +101,7 @@ impl TransferAuth for Contract {
                     GasWeight(1),
                 );
                 self.state = StateMachine::WaitingForAuthorization(yield_id);
-                return promise.into()
+                return promise.into();
             }
             StateMachine::Authorized => {
                 self.state = StateMachine::Done;

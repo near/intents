@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use near_sdk::{near, AccountId, GlobalContractId};
+use near_sdk::{AccountId, GlobalContractId, near};
 
 use crate::Role;
 

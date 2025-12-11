@@ -53,7 +53,7 @@ const DEFUSE_INSTANCE: &str = "intents.nearseny.testnet";
 const TRANSFER_AUTH_GLOBAL_REF_ID: &str = "test2.pityjllk.testnet";
 const ESCROW_GLOBAL_REF_ID: &str = "escrowswap.pityjllk.testnet";
 
-// NOTE: 
+// NOTE:
 // near contract deploy escrowproxy.pityjllk.testnet use-file /Users/mat/intents/res/defuse_escrow_proxy.wasm with-init-call new json-args '{"roles":{"super_admins":["pityjllk.testnet"],"admins":{},"grantees":{}},"config":{"per_fill_contract_id":"test2.pityjllk.testnet","escrow_swap_contract_id":"escrowswap.pityjllk.testnet","auth_contract":"intents.nearseny.testnet","auth_collee":"pityjllk.testnet"}}' prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' network-config testnet sign-with-keychain send
 const PROXY: &str = "escrowproxy.pityjllk.testnet";
 
@@ -166,11 +166,15 @@ async fn fund_and_register_subaccount(
 async fn register_root_pkey_in_defuse(account: &SigningAccount, defuse: &Account) -> Result<()> {
     let pubkey = account.signer().get_public_key().await?;
     let defuse_pubkey: defuse_crypto::PublicKey = pubkey.into();
-    let has_key = SigningAccount::defuse_has_public_key(defuse, account.id(), &defuse_pubkey).await?;
+    let has_key =
+        SigningAccount::defuse_has_public_key(defuse, account.id(), &defuse_pubkey).await?;
     if has_key {
         println!("{} public key already registered in defuse", account.id());
     } else {
-        println!("{} public key NOT registered - registering...", account.id());
+        println!(
+            "{} public key NOT registered - registering...",
+            account.id()
+        );
         account.defuse_add_public_key(defuse, defuse_pubkey).await?;
         println!("{} public key registered", account.id());
     }
@@ -226,8 +230,10 @@ async fn main() -> Result<()> {
     // ESCROW SWAP PARAMS
     let escrow_params = Params {
         maker: maker_signing.id().clone(),
-        src_token: Nep245TokenId::new(VERIFIER_CONTRACT.parse().unwrap(), src_token.to_string() ).into(),
-        dst_token: Nep245TokenId::new(VERIFIER_CONTRACT.parse().unwrap(), dst_token.to_string() ).into(),
+        src_token: Nep245TokenId::new(VERIFIER_CONTRACT.parse().unwrap(), src_token.to_string())
+            .into(),
+        dst_token: Nep245TokenId::new(VERIFIER_CONTRACT.parse().unwrap(), dst_token.to_string())
+            .into(),
         price: Price::ONE,
         deadline, // 5 min
         partial_fills_allowed: false,
@@ -410,7 +416,6 @@ async fn main() -> Result<()> {
     println!("  Done: transfer-auth deployed at {transfer_auth_instance_id}");
     println!("  Done: taker filled the escrow through proxy");
 
-
     println!("\n=== Escrow Swap Demo Complete ===");
 
     // Query escrow-swap instance state
@@ -418,8 +423,10 @@ async fn main() -> Result<()> {
     let escrow_state: defuse_escrow_swap::Storage = escrow_account
         .call_function_json("escrow_view", serde_json::json!({}))
         .await?;
-    println!("  Escrow state: {}", serde_json::to_string_pretty(&escrow_state).unwrap());
-
+    println!(
+        "  Escrow state: {}",
+        serde_json::to_string_pretty(&escrow_state).unwrap()
+    );
 
     // Query transfer-auth instance state
     let transfer_auth_account =
@@ -427,8 +434,10 @@ async fn main() -> Result<()> {
     let transfer_auth_state: defuse_transfer_auth::storage::ContractStorage = transfer_auth_account
         .call_function_json("view", serde_json::json!({}))
         .await?;
-    println!("  Transfer-auth state: {}", serde_json::to_string_pretty(&transfer_auth_state).unwrap());
-
+    println!(
+        "  Transfer-auth state: {}",
+        serde_json::to_string_pretty(&transfer_auth_state).unwrap()
+    );
 
     Ok(())
 }

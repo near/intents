@@ -59,7 +59,8 @@ async fn transfer_auth_global_deployment() {
 
     //NOTE: there is rpc error on state_init action but the contract itself is successfully
     //deployed, so lets ignore error for now
-    let _ = root.tx(auth_transfer_for_solver1.clone())
+    let _ = root
+        .tx(auth_transfer_for_solver1.clone())
         .state_init(transfer_auth_global.clone(), solver1_raw_state)
         .transfer(NearToken::from_yoctonear(1))
         .await;
@@ -335,7 +336,6 @@ async fn transfer_auth_retry_after_timeout_with_on_auth() {
         .deploy_transfer_auth_instance(transfer_auth_global.clone(), state)
         .await;
 
-
     // First wait_for_authorization - will timeout
     let wait_for_authorization = proxy
         .tx(transfer_auth_instance.clone())
@@ -404,7 +404,6 @@ async fn transfer_auth_retry_after_timeout_with_on_auth2() {
     let transfer_auth_instance = root
         .deploy_transfer_auth_instance(transfer_auth_global.clone(), state)
         .await;
-
 
     // First wait_for_authorization - will timeout
     let wait_for_authorization = proxy

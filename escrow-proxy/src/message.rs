@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
-use near_sdk::{near, AccountId};
+use near_sdk::{AccountId, near};
 
-pub use defuse_escrow_swap::{OverrideSend, Params as EscrowParams};
 pub use defuse_escrow_swap::action::{FillAction, TransferAction};
+pub use defuse_escrow_swap::{OverrideSend, Params as EscrowParams};
 
 /// Nonce for replay protection (base64-encoded 32-byte salt)
 pub type Nonce = u64;

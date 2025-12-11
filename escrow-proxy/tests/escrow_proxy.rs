@@ -16,11 +16,12 @@ async fn escrow_proxy_deployment_and_config() {
     let proxy = root.create_subaccount("proxy", INIT_BALANCE).await.unwrap();
 
     let config = ProxyConfig {
-        per_fill_contract_id: GlobalContractId::AccountId(root.subaccount("per_fill_contract_id").id().clone()),
-        escrow_swap_contract_id: GlobalContractId::AccountId(root
-            .subaccount("escrow_swap_contract_id")
-            .id()
-            .clone()),
+        per_fill_contract_id: GlobalContractId::AccountId(
+            root.subaccount("per_fill_contract_id").id().clone(),
+        ),
+        escrow_swap_contract_id: GlobalContractId::AccountId(
+            root.subaccount("escrow_swap_contract_id").id().clone(),
+        ),
         auth_contract: root.subaccount("auth_contract").id().clone(),
         auth_collee: root.subaccount("auth_collee").id().clone(),
     };
@@ -31,11 +32,11 @@ async fn escrow_proxy_deployment_and_config() {
         grantees: HashMap::new(),
     };
 
-    proxy.deploy_escrow_proxy(roles, config.clone()).await.unwrap();
-    let actual_config = proxy
-        .get_escrow_proxy_config()
+    proxy
+        .deploy_escrow_proxy(roles, config.clone())
         .await
         .unwrap();
+    let actual_config = proxy.get_escrow_proxy_config().await.unwrap();
 
     assert_eq!(actual_config, config, "config should match");
 }
@@ -52,11 +53,12 @@ async fn dao_can_upgrade_contract() {
     .unwrap();
 
     let config = ProxyConfig {
-        per_fill_contract_id: GlobalContractId::AccountId(root.subaccount("per_fill_contract_id").id().clone()),
-        escrow_swap_contract_id: GlobalContractId::AccountId(root
-            .subaccount("escrow_swap_contract_id")
-            .id()
-            .clone()),
+        per_fill_contract_id: GlobalContractId::AccountId(
+            root.subaccount("per_fill_contract_id").id().clone(),
+        ),
+        escrow_swap_contract_id: GlobalContractId::AccountId(
+            root.subaccount("escrow_swap_contract_id").id().clone(),
+        ),
         auth_contract: root.subaccount("auth_contract").id().clone(),
         auth_collee: root.subaccount("auth_collee").id().clone(),
     };
@@ -64,9 +66,11 @@ async fn dao_can_upgrade_contract() {
     let roles = RolesConfig {
         super_admins: HashSet::from([root.id().clone()]),
         admins: HashMap::new(),
-        grantees: [(defuse_escrow_proxy::Role::DAO, [dao.id().clone()].into())].into()
+        grantees: [(defuse_escrow_proxy::Role::DAO, [dao.id().clone()].into())].into(),
     };
 
-    proxy_account.deploy_escrow_proxy(roles, config).await.unwrap();
-
+    proxy_account
+        .deploy_escrow_proxy(roles, config)
+        .await
+        .unwrap();
 }

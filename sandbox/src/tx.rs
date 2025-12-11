@@ -2,17 +2,28 @@ use std::{collections::BTreeMap, fmt::Debug};
 
 use futures::{FutureExt, future::BoxFuture};
 use near_api::{
-    errors::ExecuteTransactionError, types::{
-        errors::{DataConversionError, ExecutionError}, transaction::{
+    PublicKey, Transaction,
+    errors::ExecuteTransactionError,
+    types::{
+        AccessKey, AccessKeyPermission, Action,
+        errors::{DataConversionError, ExecutionError},
+        transaction::{
             actions::{
-                AddKeyAction, CreateAccountAction, DeployContractAction, DeployGlobalContractAction, DeterministicAccountStateInit, DeterministicAccountStateInitV1, DeterministicStateInitAction, FunctionCallAction, GlobalContractDeployMode, GlobalContractIdentifier, TransferAction, UseGlobalContractAction
+                AddKeyAction, CreateAccountAction, DeployContractAction,
+                DeployGlobalContractAction, DeterministicAccountStateInit,
+                DeterministicAccountStateInitV1, DeterministicStateInitAction, FunctionCallAction,
+                GlobalContractDeployMode, GlobalContractIdentifier, TransferAction,
+                UseGlobalContractAction,
             },
             result::{ExecutionFinalResult, ValueOrReceiptId},
-        }, AccessKey, AccessKeyPermission, Action
-    }, PublicKey, Transaction
+        },
+    },
 };
 use near_sdk::{
-    borsh::{self, BorshDeserialize, BorshSerialize}, serde::{de::DeserializeOwned, Serialize}, serde_json, AccountId, Gas, NearToken
+    AccountId, Gas, NearToken,
+    borsh::{self, BorshDeserialize, BorshSerialize},
+    serde::{Serialize, de::DeserializeOwned},
+    serde_json,
 };
 use thiserror::Error as ThisError;
 
@@ -61,7 +72,11 @@ impl<T> TxBuilder<T> {
         )
     }
 
-    pub fn state_init(self, global_contract: AccountId, state: BTreeMap<Vec<u8>, Vec<u8>>)  -> TxBuilder {
+    pub fn state_init(
+        self,
+        global_contract: AccountId,
+        state: BTreeMap<Vec<u8>, Vec<u8>>,
+    ) -> TxBuilder {
         // let StateInit::V1(StateInitV1 { code, data, .. }) = state;
         //
         // self.add_action(
@@ -70,15 +85,15 @@ impl<T> TxBuilder<T> {
         // );
         //
         self.add_action(
-            Action::DeterministicStateInit(Box::new(DeterministicStateInitAction 
-                { 
-                state_init: DeterministicAccountStateInit::V1( DeterministicAccountStateInitV1{ 
-                    code: GlobalContractIdentifier::AccountId(global_contract), 
-                    data: state, 
+            Action::DeterministicStateInit(Box::new(DeterministicStateInitAction {
+                state_init: DeterministicAccountStateInit::V1(DeterministicAccountStateInitV1 {
+                    code: GlobalContractIdentifier::AccountId(global_contract),
+                    data: state,
                 }),
-                deposit: NearToken::from_near(0) 
+                deposit: NearToken::from_near(0),
             })),
-            |_| Ok(()))
+            |_| Ok(()),
+        )
     }
 
     pub fn use_global(self, global_id: GlobalContractIdentifier) -> TxBuilder {
@@ -273,7 +288,8 @@ impl Debug for TxOutcome<'_> {
                 let args_str = String::from_utf8_lossy(&fc.args);
                 // Pretty print JSON if possible
                 if let Ok(json) = serde_json::from_str::<serde_json::Value>(&args_str) {
-                    let pretty = serde_json::to_string_pretty(&json).unwrap_or_else(|_| args_str.into_owned());
+                    let pretty = serde_json::to_string_pretty(&json)
+                        .unwrap_or_else(|_| args_str.into_owned());
                     for line in pretty.lines() {
                         writeln!(f, "    {line}")?;
                     }
@@ -296,7 +312,12 @@ impl Debug for TxOutcome<'_> {
         // Outcomes
         writeln!(f, "  outcomes:")?;
         for outcome in self.0.outcomes() {
-            write!(f, "    {} ({:.2} TGas)", outcome.executor_id, outcome.gas_burnt.as_gas() as f64 / 1e12)?;
+            write!(
+                f,
+                "    {} ({:.2} TGas)",
+                outcome.executor_id,
+                outcome.gas_burnt.as_gas() as f64 / 1e12
+            )?;
 
             // Show result status
             match outcome.clone().into_result() {
@@ -307,7 +328,8 @@ impl Debug for TxOutcome<'_> {
                                 write!(f, " -> OK")?;
                                 // Try to decode as JSON
                                 if let Ok(s) = String::from_utf8(bytes.clone()) {
-                                    if let Ok(json) = serde_json::from_str::<serde_json::Value>(&s) {
+                                    if let Ok(json) = serde_json::from_str::<serde_json::Value>(&s)
+                                    {
                                         write!(f, ": {json}")?;
                                     } else if !s.is_empty() {
                                         write!(f, ": {s}")?;
@@ -332,4 +354,3 @@ impl Debug for TxOutcome<'_> {
         Ok(())
     }
 }
-

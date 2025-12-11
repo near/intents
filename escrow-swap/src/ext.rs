@@ -1,9 +1,7 @@
 use std::{fs, path::Path, sync::LazyLock};
 
 use crate::state::{ContractStorage, Params};
-use defuse_sandbox::{
-    api::types::transaction::actions::GlobalContractDeployMode, SigningAccount,
-};
+use defuse_sandbox::{SigningAccount, api::types::transaction::actions::GlobalContractDeployMode};
 use near_sdk::{
     AccountId, GlobalContractId, NearToken,
     state_init::{StateInit, StateInitV1},
@@ -18,8 +16,7 @@ fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
     fs::read(filename.clone()).unwrap_or_else(|_| panic!("file {filename:?} should exist"))
 }
 
-pub static ESCROW_SWAP_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm("defuse_escrow_swap"));
+pub static ESCROW_SWAP_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("defuse_escrow_swap"));
 
 /// Derive the escrow-swap instance account ID from its params
 pub fn derive_escrow_swap_account_id(global_contract_id: &AccountId, params: &Params) -> AccountId {

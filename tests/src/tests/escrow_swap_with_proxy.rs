@@ -14,18 +14,23 @@ use std::{fs, path::Path};
 use defuse_deadline::Deadline;
 use defuse_escrow_proxy::ext::EscrowProxyAccountExt;
 use defuse_escrow_proxy::{ProxyConfig, RolesConfig, TransferMessage as ProxyTransferMessage};
-use defuse_escrow_swap::action::{FillAction, TransferAction, TransferMessage as EscrowTransferMessage};
-use defuse_escrow_swap::ext::{EscrowSwapAccountExt, derive_escrow_swap_account_id};
 use defuse_escrow_swap::Params;
+use defuse_escrow_swap::action::{
+    FillAction, TransferAction, TransferMessage as EscrowTransferMessage,
+};
+use defuse_escrow_swap::ext::{EscrowSwapAccountExt, derive_escrow_swap_account_id};
 use defuse_poa_factory::contract::Role;
 use defuse_price::Price;
 use defuse_sandbox::{Account, Sandbox, SigningAccount};
+use defuse_token_id::TokenId;
 use defuse_token_id::nep141::Nep141TokenId;
 use defuse_token_id::nep245::Nep245TokenId;
-use defuse_token_id::TokenId;
-use defuse_transfer_auth::ext::{DefuseAccountExt, TransferAuthAccountExt, derive_transfer_auth_account_id, public_key_from_secret};
-use defuse_transfer_auth::storage::StateInit as TransferAuthState;
 use defuse_transfer_auth::TransferAuthContext;
+use defuse_transfer_auth::ext::{
+    DefuseAccountExt, TransferAuthAccountExt, derive_transfer_auth_account_id,
+    public_key_from_secret,
+};
+use defuse_transfer_auth::storage::StateInit as TransferAuthState;
 use near_sdk::json_types::U128;
 use near_sdk::{AccountId, Gas, GlobalContractId, NearToken};
 use serde_json::json;
@@ -51,8 +56,7 @@ fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
     fs::read(filename.clone()).unwrap_or_else(|_| panic!("file {filename:?} should exist"))
 }
 
-static POA_FACTORY_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm("res/defuse_poa_factory"));
+static POA_FACTORY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("res/defuse_poa_factory"));
 
 /// Deploy a new FT token via `poa_factory` with initial balances for specified accounts.
 ///
@@ -158,11 +162,7 @@ async fn deploy_poa_factory(deployer: &SigningAccount, name: impl AsRef<str>) ->
 }
 
 /// Storage deposit for FT token
-async fn ft_storage_deposit(
-    payer: &SigningAccount,
-    token: &AccountId,
-    account: &AccountId,
-) {
+async fn ft_storage_deposit(payer: &SigningAccount, token: &AccountId, account: &AccountId) {
     payer
         .tx(token.clone())
         .function_call_json::<serde_json::Value>(
@@ -200,7 +200,8 @@ async fn deploy_mt_token(
         factory,
         token_name,
         &[(defuse.id(), 0)], // defuse needs storage to receive FT deposits
-    ).await;
+    )
+    .await;
 
     // 2. For each owner: storage deposit, mint, and wrap into MT
     for (owner, amount) in initial_balances {
@@ -304,7 +305,8 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         &defuse,
         "token-a",
         &[(&maker, swap_amount)],
-    ).await;
+    )
+    .await;
 
     // Deploy token-b: solver gets initial balance wrapped into defuse MT
     let (token_b_id, token_b_defuse_id, token_b_escrow_id) = deploy_mt_token(
@@ -313,9 +315,8 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         &defuse,
         "token-b",
         &[(&solver, swap_amount)],
-    ).await;
-
-
+    )
+    .await;
 
     /////TEST
 
@@ -325,19 +326,22 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         auth_contract: defuse.id().clone(),
         auth_collee: relay.id().clone(),
     };
-    proxy.deploy_escrow_proxy(roles, config.clone()).await.unwrap();
+    proxy
+        .deploy_escrow_proxy(roles, config.clone())
+        .await
+        .unwrap();
 
     // 3. Create escrow parameters (use escrow token IDs - Nep245 format)
     let escrow_params = Params {
         maker: maker.id().clone(),
-        src_token: token_a_escrow_id.clone(),  // What maker offers (Nep245 format)
-        dst_token: token_b_escrow_id.clone(),  // What maker wants (Nep245 format)
-        price: Price::ONE,                 // 1:1 exchange
+        src_token: token_a_escrow_id.clone(), // What maker offers (Nep245 format)
+        dst_token: token_b_escrow_id.clone(), // What maker wants (Nep245 format)
+        price: Price::ONE,                    // 1:1 exchange
         deadline: Deadline::timeout(Duration::from_secs(360)),
         partial_fills_allowed: false,
         refund_src_to: defuse_escrow_swap::OverrideSend::default(),
         receive_dst_to: defuse_escrow_swap::OverrideSend::default(),
-        taker_whitelist: [proxy.id().clone()].into(),  // Anyone can fill
+        taker_whitelist: [proxy.id().clone()].into(), // Anyone can fill
         protocol_fees: None,
         integrator_fees: BTreeMap::new(),
         auth_caller: None,
@@ -346,7 +350,8 @@ async fn test_escrow_swap_with_proxy_full_flow() {
 
     // Derive escrow instance ID (without deploying) to check existence
     let escrow_instance_id = derive_escrow_swap_account_id(&escrow_swap_global, &escrow_params);
-    let escrow_instance_account = Account::new(escrow_instance_id.clone(), root.network_config().clone());
+    let escrow_instance_account =
+        Account::new(escrow_instance_id.clone(), root.network_config().clone());
 
     // Verify escrow-swap instance does NOT exist before maker's fund
     assert!(
@@ -364,23 +369,34 @@ async fn test_escrow_swap_with_proxy_full_flow() {
 
     // Build state_init for escrow-swap instance
     let escrow_raw_state = defuse_escrow_swap::ContractStorage::init_state(&escrow_params).unwrap();
-    let escrow_state_init = near_sdk::state_init::StateInit::V1(near_sdk::state_init::StateInitV1 {
-        code: near_sdk::GlobalContractId::AccountId(escrow_swap_global.clone()),
-        data: escrow_raw_state,
-    });
+    let escrow_state_init =
+        near_sdk::state_init::StateInit::V1(near_sdk::state_init::StateInitV1 {
+            code: near_sdk::GlobalContractId::AccountId(escrow_swap_global.clone()),
+            data: escrow_raw_state,
+        });
 
     // Build Transfer intent with notification containing state_init
     let transfer = defuse_core::intents::tokens::Transfer {
         receiver_id: escrow_instance_id.clone(),
-        tokens: defuse_core::amounts::Amounts::new([(token_a_defuse_id.clone(), swap_amount)].into()),
+        tokens: defuse_core::amounts::Amounts::new(
+            [(token_a_defuse_id.clone(), swap_amount)].into(),
+        ),
         memo: None,
-        notification: Some(defuse_core::intents::tokens::NotifyOnTransfer::new(fund_msg_json)
-            .with_state_init(escrow_state_init)),
+        notification: Some(
+            defuse_core::intents::tokens::NotifyOnTransfer::new(fund_msg_json)
+                .with_state_init(escrow_state_init),
+        ),
     };
 
     // Maker registers public key and executes transfer intent
-    maker.defuse_add_public_key(&defuse, public_key_from_secret(&PRIVATE_KEY_MAKER)).await.unwrap();
-    maker.execute_transfer_intent(&defuse, transfer, &PRIVATE_KEY_MAKER, [0u8; 32]).await.unwrap();
+    maker
+        .defuse_add_public_key(&defuse, public_key_from_secret(&PRIVATE_KEY_MAKER))
+        .await
+        .unwrap();
+    maker
+        .execute_transfer_intent(&defuse, transfer, &PRIVATE_KEY_MAKER, [0u8; 32])
+        .await
+        .unwrap();
 
     // Verify escrow-swap instance EXISTS after maker's fund (state_init deployed it)
     assert!(
@@ -389,10 +405,14 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     );
 
     // Verify escrow received maker's tokens
-    let escrow_token_a_balance = SigningAccount::mt_balance_of(&defuse, &escrow_instance_id, &token_a_defuse_id)
-        .await
-        .unwrap();
-    assert_eq!(escrow_token_a_balance, swap_amount, "Escrow should have token-a");
+    let escrow_token_a_balance =
+        SigningAccount::mt_balance_of(&defuse, &escrow_instance_id, &token_a_defuse_id)
+            .await
+            .unwrap();
+    assert_eq!(
+        escrow_token_a_balance, swap_amount,
+        "Escrow should have token-a"
+    );
 
     // 5. Solver fills via proxy with relay authorization
     // Build the inner escrow-swap fill message
@@ -426,7 +446,8 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         amounts: Cow::Owned(vec![U128(swap_amount)]),
         salt: proxy_msg.salt,
         msg: Cow::Borrowed(&proxy_msg_json),
-    }.hash();
+    }
+    .hash();
 
     let auth_state = TransferAuthState {
         escrow_contract_id: config.escrow_swap_contract_id.clone(),
@@ -435,7 +456,10 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         authorizee: proxy.id().clone(),
         msg_hash: context_hash,
     };
-    let transfer_auth_instance_id = derive_transfer_auth_account_id(&GlobalContractId::AccountId(transfer_auth_global.clone()), &auth_state);
+    let transfer_auth_instance_id = derive_transfer_auth_account_id(
+        &GlobalContractId::AccountId(transfer_auth_global.clone()),
+        &auth_state,
+    );
 
     // Create Account wrapper for transfer-auth instance to check existence
     let transfer_auth_instance_account = Account::new(
@@ -456,8 +480,19 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     // Step 1: Execute AuthCall intent signed by relay to deploy and authorize transfer-auth
     // The relay signs an AuthCall intent with state_init, defuse executes it and calls on_auth
     // Note: Relay must be registered in defuse with their public key first
-    relay.defuse_add_public_key(&defuse, public_key_from_secret(&PRIVATE_KEY_RELAY)).await.unwrap();
-    relay.execute_auth_call_intent(&defuse, &transfer_auth_global, &auth_state, &PRIVATE_KEY_RELAY, [0u8; 32]).await;
+    relay
+        .defuse_add_public_key(&defuse, public_key_from_secret(&PRIVATE_KEY_RELAY))
+        .await
+        .unwrap();
+    relay
+        .execute_auth_call_intent(
+            &defuse,
+            &transfer_auth_global,
+            &auth_state,
+            &PRIVATE_KEY_RELAY,
+            [0u8; 32],
+        )
+        .await;
 
     // Verify transfer-auth instance EXISTS after on_auth call (state_init deployed it)
     assert!(
@@ -466,13 +501,15 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     );
 
     // Step 2: Solver sends tokens to proxy - proxy will query transfer-auth for authorization
-    let transfer_result = solver.mt_transfer_call(
-        &defuse,
-        proxy.id(),
-        &token_b_defuse_id,
-        swap_amount,
-        &proxy_msg_json,
-    ).await;
+    let transfer_result = solver
+        .mt_transfer_call(
+            &defuse,
+            proxy.id(),
+            &token_b_defuse_id,
+            swap_amount,
+            &proxy_msg_json,
+        )
+        .await;
 
     let used_amounts = transfer_result.unwrap();
 
@@ -485,35 +522,39 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     );
 
     // Maker should have received token-b
-    let maker_token_b_balance = SigningAccount::mt_balance_of(&defuse, maker.id(), &token_b_defuse_id)
-        .await
-        .unwrap();
+    let maker_token_b_balance =
+        SigningAccount::mt_balance_of(&defuse, maker.id(), &token_b_defuse_id)
+            .await
+            .unwrap();
     assert_eq!(
         maker_token_b_balance, swap_amount,
         "Maker should have received token-b"
     );
 
     // Solver should have received token-a
-    let solver_token_a_balance = SigningAccount::mt_balance_of(&defuse, solver.id(), &token_a_defuse_id)
-        .await
-        .unwrap();
+    let solver_token_a_balance =
+        SigningAccount::mt_balance_of(&defuse, solver.id(), &token_a_defuse_id)
+            .await
+            .unwrap();
     assert_eq!(
         solver_token_a_balance, swap_amount,
         "Solver should have received token-a"
     );
 
     // Escrow should be empty
-    let escrow_token_a_final = SigningAccount::mt_balance_of(&defuse, &escrow_instance_id, &token_a_defuse_id)
-        .await
-        .unwrap();
+    let escrow_token_a_final =
+        SigningAccount::mt_balance_of(&defuse, &escrow_instance_id, &token_a_defuse_id)
+            .await
+            .unwrap();
     assert_eq!(
         escrow_token_a_final, 0,
         "Escrow should have no token-a remaining"
     );
 
-    let escrow_token_b_final = SigningAccount::mt_balance_of(&defuse, &escrow_instance_id, &token_b_defuse_id)
-        .await
-        .unwrap();
+    let escrow_token_b_final =
+        SigningAccount::mt_balance_of(&defuse, &escrow_instance_id, &token_b_defuse_id)
+            .await
+            .unwrap();
     assert_eq!(
         escrow_token_b_final, 0,
         "Escrow should have no token-b remaining"

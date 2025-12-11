@@ -4,25 +4,26 @@ mod upgrade;
 use core::iter;
 use std::borrow::Cow;
 
+use defuse_escrow_swap::ContractStorage as EscrowContractStorage;
+use defuse_escrow_swap::ext_escrow;
 use defuse_near_utils::UnwrapOrPanicError;
 use defuse_nep245::receiver::MultiTokenReceiver;
 use defuse_transfer_auth::{
-    ext_transfer_auth,
+    TransferAuthContext, ext_transfer_auth,
     storage::{ContractStorage, StateInit as TransferAuthStateInit},
-    TransferAuthContext,
 };
-use defuse_escrow_swap::ContractStorage as EscrowContractStorage;
-use defuse_escrow_swap::ext_escrow;
-use near_plugins::{access_control, access_control_any, AccessControllable, AccessControlRole};
+use near_plugins::{AccessControlRole, AccessControllable, access_control, access_control_any};
 use near_sdk::{
-    env, ext_contract, json_types::U128, near, require, serde_json, AccountId, CryptoHash, Gas,
-    NearToken, PanicOnDefault, Promise, PromiseOrValue, PromiseResult,
+    AccountId, CryptoHash, Gas, NearToken, PanicOnDefault, Promise, PromiseOrValue, PromiseResult,
+    env, ext_contract,
+    json_types::U128,
+    near, require, serde_json,
     state_init::{StateInit, StateInitV1},
 };
 
 use crate::message::{EscrowParams, TransferMessage};
 use crate::state::{ProxyConfig, RolesConfig};
-use crate::{ext_mt_core, EscrowProxy, Role, RoleFlags};
+use crate::{EscrowProxy, Role, RoleFlags, ext_mt_core};
 
 #[access_control(role_type(Role))]
 #[near(contract_state)]
@@ -113,7 +114,6 @@ impl MultiTokenReceiver for Contract {
         amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
-
         let transfer_message: TransferMessage = msg.parse().unwrap_or_panic_display();
         let context_hash = TransferAuthContext {
             sender_id: Cow::Borrowed(&sender_id),
@@ -126,8 +126,8 @@ impl MultiTokenReceiver for Contract {
 
         let auth_contract_state_init = self.derive_deteministic_escrow_per_fill_id(context_hash);
         let auth_contract_id = auth_contract_state_init.derive_account_id();
-        let auth_call =
-            Promise::new(auth_contract_id).state_init(auth_contract_state_init, NearToken::from_near(0));
+        let auth_call = Promise::new(auth_contract_id)
+            .state_init(auth_contract_state_init, NearToken::from_near(0));
 
         let _ = previous_owner_ids;
 
@@ -184,7 +184,7 @@ impl Contract {
                     escrow_address,
                     token_ids,
                     amounts.clone(),
-                    None, // approval
+                    None,                              // approval
                     Some("proxy forward".to_string()), // memo
                     msg,
                 )

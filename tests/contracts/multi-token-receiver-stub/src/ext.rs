@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, fs, path::Path, sync::LazyLock};
 
 use defuse_sandbox::{
-    api::types::transaction::actions::GlobalContractDeployMode, Account, SigningAccount,
+    Account, SigningAccount, api::types::transaction::actions::GlobalContractDeployMode,
 };
 use near_sdk::{
     AccountId, NearToken,

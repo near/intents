@@ -43,7 +43,7 @@ pub trait AccountExt {
 }
 
 impl AccountExt for SigningAccount {
-    async fn deploy_escrow_proxy(&self, roles: RolesConfig, config: ProxyConfig) -> TxResult<()>{
+    async fn deploy_escrow_proxy(&self, roles: RolesConfig, config: ProxyConfig) -> TxResult<()> {
         self.tx(self.id().clone())
             .transfer(NearToken::from_near(20))
             .deploy(ESCROW_PROXY_WASM.clone())

@@ -1,14 +1,15 @@
 use std::borrow::Cow;
 
 use crate::storage::{ContractStorage, StateMachine};
-use near_sdk::{borsh, env::keccak256, ext_contract, json_types::U128, near, AccountIdRef, PromiseOrValue};
+use near_sdk::{
+    AccountIdRef, PromiseOrValue, borsh, env::keccak256, ext_contract, json_types::U128, near,
+};
 
 #[cfg(feature = "contract")]
 mod contract;
 mod error;
 pub mod event;
 pub mod storage;
-
 
 #[cfg(feature = "test-utils")]
 pub mod ext;
@@ -26,9 +27,10 @@ pub struct TransferAuthContext<'a> {
 impl TransferAuthContext<'_> {
     pub fn hash(&self) -> [u8; 32] {
         let serialized = borsh::to_vec(&self)
-          .unwrap_or_else(|_| unreachable!("TransferAuthContext is always serializable"));
-        keccak256(&serialized).try_into()
-          .unwrap_or_else(|_| unreachable!())
+            .unwrap_or_else(|_| unreachable!("TransferAuthContext is always serializable"));
+        keccak256(&serialized)
+            .try_into()
+            .unwrap_or_else(|_| unreachable!())
     }
 }
 

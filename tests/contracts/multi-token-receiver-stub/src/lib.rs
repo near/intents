@@ -46,7 +46,6 @@ impl MultiTokenReceiver for Contract {
             return PromiseOrValue::Value(vec![U128(0); amounts.len()]);
         };
 
-
         match mode {
             MTReceiverMode::ReturnValue(value) => PromiseOrValue::Value(vec![value; amounts.len()]),
             MTReceiverMode::ReturnValues(values) => PromiseOrValue::Value(values),

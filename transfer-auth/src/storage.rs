@@ -27,7 +27,7 @@ pub struct StateInit {
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ContractStorage{
+pub struct ContractStorage {
     #[serde(flatten)]
     pub state_init: StateInit,
     pub state: StateMachine,
