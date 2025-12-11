@@ -182,6 +182,13 @@ pub trait DefuseAccountExt {
         public_key: defuse_crypto::PublicKey,
     ) -> Result<(), TxError>;
 
+    /// Check if a public key is registered for an account in the defuse contract.
+    async fn defuse_has_public_key(
+        defuse: &Account,
+        account_id: &AccountId,
+        public_key: &defuse_crypto::PublicKey,
+    ) -> anyhow::Result<bool>;
+
     /// Get current salt from defuse for nonce generation
     async fn defuse_current_salt(defuse: &Account) -> anyhow::Result<[u8; 32]>;
 
@@ -394,6 +401,22 @@ impl DefuseAccountExt for SigningAccount {
                 NearToken::from_yoctonear(1),
             )
             .no_result()
+            .await
+    }
+
+    async fn defuse_has_public_key(
+        defuse: &Account,
+        account_id: &AccountId,
+        public_key: &defuse_crypto::PublicKey,
+    ) -> anyhow::Result<bool> {
+        defuse
+            .call_function_json(
+                "has_public_key",
+                json!({
+                    "account_id": account_id,
+                    "public_key": public_key,
+                }),
+            )
             .await
     }
 

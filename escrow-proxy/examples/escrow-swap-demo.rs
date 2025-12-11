@@ -116,15 +116,7 @@ async fn fund_and_register_subaccount(
     subaccount.defuse_add_public_key(defuse, defuse_pubkey.clone()).await?;
 
     // 3. Verify registration by querying has_public_key
-    let has_key: bool = defuse
-        .call_function_json(
-            "has_public_key",
-            serde_json::json!({
-                "account_id": subaccount.id(),
-                "public_key": defuse_pubkey,
-            }),
-        )
-        .await?;
+    let has_key = SigningAccount::defuse_has_public_key(defuse, subaccount.id(), &defuse_pubkey).await?;
     assert!(has_key, "Public key registration failed for {}", subaccount.id());
     println!("  Verified: {} public key registered in verifier", subaccount.id());
 
