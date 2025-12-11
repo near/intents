@@ -19,7 +19,7 @@ use defuse::{
 };
 use defuse_sandbox::extensions::acl::AclExt;
 use defuse_sandbox::extensions::mt::MtViewExt;
-use defuse_sandbox::sandbox::FetchData;
+use defuse_sandbox::near_sandbox::FetchData;
 use defuse_sandbox::{Account, Sandbox, SigningAccount, read_wasm};
 use itertools::Itertools;
 use rstest::rstest;
@@ -32,7 +32,7 @@ static DEFUSE_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("res/defuse")
 #[tokio::test]
 #[rstest]
 async fn upgrade(ed25519_pk: PublicKey, secp256k1_pk: PublicKey, p256_pk: PublicKey) {
-    let sandbox = Sandbox::new("test.near".parse().unwrap()).await;
+    let sandbox = Sandbox::new("test".parse().unwrap()).await;
     let root = sandbox.root();
     let contract = SigningAccount::new(
         Account::new(

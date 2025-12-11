@@ -12,6 +12,8 @@ workspace = true
 defuse-crypto = { workspace = true, features = ["near-api-types"] }
 defuse-randomness.workspace = true
 defuse-nep245.workspace = true
+tokio.workspace = true
+rstest.workspace = true
 
 anyhow.workspace = true
 futures.workspace = true

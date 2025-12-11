@@ -14,6 +14,8 @@ use crate::tx::TxBuilder;
 
 const CONTRACT_DEPOSIT: NearToken = NearToken::from_near(100);
 
+#[autoimpl(AsRef using self.account_id)]
+#[autoimpl(Deref using self.account_id)]
 #[derive(Clone, Debug)]
 pub struct Account {
     account_id: AccountId,

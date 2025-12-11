@@ -3,6 +3,11 @@ pub mod extensions;
 pub mod helpers;
 pub mod tx;
 
+use std::sync::{
+    Arc,
+    atomic::{AtomicUsize, Ordering},
+};
+
 pub use account::{Account, SigningAccount};
 pub use helpers::*;
 
@@ -10,40 +15,47 @@ pub use anyhow;
 pub use near_api as api;
 // NOTE: that is not ok - errors should be separated to another mod
 pub use near_openapi_types as openapi_types;
-pub use near_sandbox as sandbox;
+pub use near_sandbox;
 
 use near_api::{NetworkConfig, RPCEndpoint};
-use near_sandbox::GenesisAccount;
+use near_sandbox::{GenesisAccount, SandboxConfig};
 use near_sdk::{AccountId, NearToken};
+use rstest::fixture;
+use tokio::sync::OnceCell;
 
 const INITIAL_ACCOUNT_BALANCE: NearToken = NearToken::from_near(10);
+pub static SHARED_SANDBOX: OnceCell<Sandbox> = OnceCell::const_new();
+
+// TODO: use it in tests
+#[fixture]
+pub async fn sandbox(#[default(NearToken::ZERO)] amount: NearToken) -> Sandbox {
+    SHARED_SANDBOX
+        .get_or_init(|| Sandbox::new("test".parse().unwrap()))
+        .await
+        .sub_sandbox(amount)
+        .await
+        .unwrap()
+}
+
 pub struct Sandbox {
     root: SigningAccount,
 
-    sandbox: near_sandbox::Sandbox,
+    sub_counter: AtomicUsize,
+
+    sandbox: Arc<near_sandbox::Sandbox>,
 }
 
 impl Sandbox {
-    pub async fn new(_name: AccountId) -> Self {
+    pub async fn new(root: AccountId) -> Self {
         // FIX: why does test.ner exist in genesis cfg????
-        // let root = GenesisAccount::default_with_name(name);
-        // let pk = generate_secret_key().unwrap();
-        // let root = GenesisAccount {
-        //     account_id: name,
-        //     private_key: pk.to_string(),
-        //     public_key: pk.public_key().to_string(),
-        //     balance: NearToken::from_near(1000),
-        // };
+        let root = GenesisAccount::default_with_name(root);
 
-        // let sandbox = near_sandbox::Sandbox::start_sandbox_with_config(SandboxConfig {
-        //     additional_accounts: vec![root.clone()],
-        //     ..SandboxConfig::default()
-        // })
-        // .await
-        // .unwrap();
-
-        let root = GenesisAccount::default();
-        let sandbox = near_sandbox::Sandbox::start_sandbox().await.unwrap();
+        let sandbox = near_sandbox::Sandbox::start_sandbox_with_config(SandboxConfig {
+            additional_accounts: vec![root.clone()],
+            ..SandboxConfig::default()
+        })
+        .await
+        .unwrap();
 
         let network_config = NetworkConfig {
             network_name: "sandbox".to_string(),
@@ -56,15 +68,33 @@ impl Sandbox {
             root.private_key.parse().unwrap(),
         );
 
-        Self { root, sandbox }
+        Self {
+            root,
+            sub_counter: 0.into(),
+            sandbox: sandbox.into(),
+        }
+    }
+
+    pub async fn sub_sandbox(&self, amount: NearToken) -> anyhow::Result<Self> {
+        Ok(Self {
+            root: self
+                .root()
+                .create_subaccount(
+                    self.sub_counter.fetch_add(1, Ordering::SeqCst).to_string(),
+                    amount,
+                )
+                .await?,
+            sub_counter: 0.into(),
+            sandbox: self.sandbox.clone(),
+        })
     }
 
     pub const fn root(&self) -> &SigningAccount {
         &self.root
     }
 
-    pub const fn sandbox(&self) -> &near_sandbox::Sandbox {
-        &self.sandbox
+    pub fn sandbox(&self) -> &near_sandbox::Sandbox {
+        self.sandbox.as_ref()
     }
 
     pub async fn create_account(&self, name: &str) -> anyhow::Result<SigningAccount> {

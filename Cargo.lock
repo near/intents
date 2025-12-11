@@ -1056,7 +1056,9 @@ dependencies = [
  "near-openapi-types",
  "near-sandbox",
  "near-sdk",
+ "rstest",
  "thiserror 2.0.17",
+ "tokio",
 ]
 
 [[package]]
