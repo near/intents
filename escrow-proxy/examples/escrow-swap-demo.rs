@@ -42,7 +42,7 @@ use defuse_token_id::nep141::Nep141TokenId;
 use defuse_transfer_auth::TransferAuthContext;
 use near_sdk::json_types::U128;
 use near_sdk::state_init::{StateInit, StateInitV1};
-use near_sdk::{AccountId, GlobalContractId};
+use near_sdk::{AccountId, GlobalContractId, NearToken};
 use rand::{Rng, distr::Alphanumeric};
 
 // Placeholder constants - replace with actual testnet values
@@ -89,6 +89,47 @@ fn create_subaccount_with_derived_key(root: &SigningAccount, prefix: &str) -> Re
 
     let subaccount = root.subaccount(&subaccount_name);
     Ok(SigningAccount::new(subaccount, derived_signer))
+}
+
+/// Fund a subaccount on-chain, register its public key in the verifier contract,
+/// and verify the registration succeeded.
+///
+/// This function:
+/// 1. Creates the account on-chain with 0.1 NEAR and the derived public key
+/// 2. Registers the derived public key in the verifier (defuse) contract
+/// 3. Queries the verifier to confirm the public key was registered correctly
+async fn fund_and_register_subaccount(
+    root: &SigningAccount,
+    subaccount: &SigningAccount,
+    defuse: &Account,
+) -> Result<()> {
+    let pubkey = subaccount.signer().get_public_key().await?;
+
+    // 1. Create the account on-chain with 0.1 NEAR and the derived public key
+    root.tx(subaccount.id().clone())
+        .create_account()
+        .transfer(NearToken::from_millinear(100)) // 0.1 NEAR
+        .add_full_access_key(pubkey.clone())
+        .await?;
+
+    // 2. Register the public key in the verifier contract
+    let defuse_pubkey: defuse_crypto::PublicKey = pubkey.clone().into();
+    subaccount.defuse_add_public_key(defuse, defuse_pubkey.clone()).await?;
+
+    // 3. Verify registration by querying has_public_key
+    let has_key: bool = defuse
+        .call_function_json(
+            "has_public_key",
+            serde_json::json!({
+                "account_id": subaccount.id(),
+                "public_key": defuse_pubkey,
+            }),
+        )
+        .await?;
+    assert!(has_key, "Public key registration failed for {}", subaccount.id());
+    println!("  Verified: {} public key registered in verifier", subaccount.id());
+
+    Ok(())
 }
 
 /// Sign a transfer intent and return the signed NEP-413 payload
@@ -147,8 +188,12 @@ async fn main() -> Result<()> {
     let root = SigningAccount::new(Account::new(user.parse()?, network_config.clone()), signer);
     let proxy: AccountId = PROXY.parse().unwrap();
 
-    // 4. Create subaccounts with derived keys
-    println!("\n--- Creating Subaccounts with Derived Keys ---");
+    let src_token: TokenId = Nep141TokenId::from_str(SRC_NEP245_TOKEN_ID).unwrap().into();
+    let dst_token: TokenId = Nep141TokenId::from_str(DST_NEP245_TOKEN_ID).unwrap().into();
+    let defuse = Account::new(DEFUSE_INSTANCE.parse()?, network_config.clone());
+
+    // 4. Derive subaccount keys (deterministic, no network calls)
+    println!("\n--- Deriving Subaccount Keys ---");
     let maker_signing = create_subaccount_with_derived_key(&root, "maker")?;
     let maker_pubkey = maker_signing.signer().get_public_key().await?;
     println!("Maker: {} (pubkey: {})", maker_signing.id(), maker_pubkey);
@@ -156,10 +201,7 @@ async fn main() -> Result<()> {
     let taker_pubkey = taker_signing.signer().get_public_key().await?;
     println!("Taker: {} (pubkey: {})", taker_signing.id(), taker_pubkey);
 
-    let src_token: TokenId = Nep141TokenId::from_str(SRC_NEP245_TOKEN_ID).unwrap().into();
-    let dst_token: TokenId = Nep141TokenId::from_str(DST_NEP245_TOKEN_ID).unwrap().into();
-    let defuse = Account::new(DEFUSE_INSTANCE.parse()?, network_config.clone());
-
+    // 5. Create accounts on-chain, fund them, and register public keys in verifier
     let (src_token_balance, dst_token_balance) = futures::try_join!(
         SigningAccount::mt_balance_of(&defuse, &root.id(), &src_token),
         SigningAccount::mt_balance_of(&defuse, &root.id(), &dst_token)
@@ -340,6 +382,11 @@ async fn main() -> Result<()> {
                 .with_state_init(escrow_state_init)
         ),
     };
+
+
+    // println!("\n--- Funding and Registering Subaccounts ---");
+    // fund_and_register_subaccount(&root, &maker_signing, &defuse).await?;
+    // fund_and_register_subaccount(&root, &taker_signing, &defuse).await?;
 
 
     // NOTE: required
