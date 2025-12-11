@@ -40,7 +40,7 @@ pub struct Sandbox {
 }
 
 impl Sandbox {
-    pub async fn get_or_init(amount: NearToken) -> anyhow::Result<Sandbox> {
+    pub async fn get_or_init(amount: NearToken) -> anyhow::Result<Self> {
         SHARED_SANDBOX
             .get_or_init(|| Self::new("test".parse().unwrap()))
             .await
