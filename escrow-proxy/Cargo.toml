@@ -37,16 +37,24 @@ serde_with.workspace = true
 defuse-escrow-proxy = { path = ".", features = ["test-utils"] }
 defuse-sandbox.workspace = true
 defuse-transfer-auth = { workspace = true, features = ["test-utils", "auth-call"] }
+defuse-escrow-swap = { workspace = true, features = ["test-utils"] }
 multi-token-receiver-stub = { path = "../tests/contracts/multi-token-receiver-stub", features = ["test-utils"] }
 impl-tools.workspace = true
 near-sdk = { workspace = true, features = ["unstable", "unit-testing"] }
 near-workspaces.workspace = true
-tokio.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
 serde_json.workspace = true
 futures.workspace = true
 anyhow.workspace = true
+defuse-core.workspace = true
+defuse-price.workspace = true
+defuse-nep413.workspace = true
 
 [features]
 contract = []
 test-utils = ["dep:defuse-sandbox", "dep:anyhow"]
 abi = ["defuse-crypto/abi", "defuse-token-id/abi", "defuse-deadline/abi", "defuse-transfer-auth/abi", "defuse-escrow-swap/abi"]
+
+[[example]]
+name = "escrow-swap-demo"
+required-features = ["test-utils"]
