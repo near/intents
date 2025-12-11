@@ -24,10 +24,9 @@ use rstest::fixture;
 use tokio::sync::OnceCell;
 
 static SHARED_SANDBOX: OnceCell<Sandbox> = OnceCell::const_new();
-pub const DEFAULT_ROOT_BALANCE: NearToken = NearToken::from_near(1000);
 
 #[fixture]
-pub async fn sandbox(#[default(DEFAULT_ROOT_BALANCE)] amount: NearToken) -> Sandbox {
+pub async fn sandbox(#[default(NearToken::from_near(100_000))] amount: NearToken) -> Sandbox {
     SHARED_SANDBOX
         .get_or_init(|| Sandbox::new("test".parse().unwrap()))
         .await
