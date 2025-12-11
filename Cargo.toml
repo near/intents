@@ -124,7 +124,7 @@ thiserror = "2"
 tlb-ton = { version = "0.5.6", default-features = false }
 tokio = { version = "1.45", default-features = false }
 [patch.crates-io]
-near-sdk = { path = "../near-sdk-rs/near-sdk" }
+near-sdk = { git = "https://github.com/pityjllk/near-sdk-rs", rev = "75d2ba2926ff71036b9500ae28d5319b1757a7be" }
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }

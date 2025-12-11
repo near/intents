@@ -44,7 +44,7 @@ use near_sdk::json_types::U128;
 use near_sdk::{AccountId, GlobalContractId, NearToken};
 
 // Placeholder constants - replace with actual testnet values
-const VERIFIER_CONTRACT: &str = "defuse.testnet";
+const VERIFIER_CONTRACT: &str = "intents.nearseny.testnet";
 const TOKEN_A: &str = "nep245:defuse.testnet:nep141:token-a.testnet";
 const TOKEN_B: &str = "nep245:defuse.testnet:nep141:token-b.testnet";
 const SWAP_AMOUNT: u128 = 1_000_000_000_000_000_000_000_000; // 1 token with 24 decimals
