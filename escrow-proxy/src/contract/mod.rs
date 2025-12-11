@@ -98,7 +98,7 @@ impl EscrowProxy for Contract {
     }
 
     fn context_hash(&self, context: TransferAuthContext<'static>) -> CryptoHash {
-        CryptoHash(context.hash())
+        context.hash()
     }
 }
 
