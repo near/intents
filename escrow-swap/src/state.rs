@@ -12,7 +12,10 @@ use crate::{Deadline, Error, Result, decimal::UD128};
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ContractStorage(pub(crate) Option<Storage>);
+pub struct ContractStorage(
+    /// If `None`, the escrow was closed and is being deteled now
+    pub(crate) Option<Storage>,
+);
 
 impl ContractStorage {
     pub(crate) const STATE_KEY: &[u8] = b"";
