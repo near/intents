@@ -23,7 +23,6 @@ use near_sdk::{AccountId, NearToken};
 use rstest::fixture;
 use tokio::sync::OnceCell;
 
-const INITIAL_ACCOUNT_BALANCE: NearToken = NearToken::from_near(10);
 pub static SHARED_SANDBOX: OnceCell<Sandbox> = OnceCell::const_new();
 
 // TODO: use it in tests
@@ -95,11 +94,5 @@ impl Sandbox {
 
     pub fn sandbox(&self) -> &near_sandbox::Sandbox {
         self.sandbox.as_ref()
-    }
-
-    pub async fn create_account(&self, name: &str) -> anyhow::Result<SigningAccount> {
-        self.root
-            .create_subaccount(name, INITIAL_ACCOUNT_BALANCE)
-            .await
     }
 }

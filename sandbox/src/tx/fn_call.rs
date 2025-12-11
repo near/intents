@@ -16,13 +16,10 @@ pub struct FnCallBuilder {
 }
 
 impl FnCallBuilder {
-    pub fn new(name: &'static str) -> Self {
+    pub const fn new(name: &'static str) -> Self {
         Self {
-            name: name,
+            name,
             args: Vec::new(),
-            //  serde_json::to_string(&serde_json::json!({}))
-            //     .unwrap()
-            //     .into_bytes(),
             gas: DEFAULT_GAS,
             deposit: NO_DEPOSIT,
         }

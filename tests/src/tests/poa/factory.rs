@@ -15,8 +15,8 @@ use rstest::rstest;
 async fn deploy_mint() {
     let sandbox = Sandbox::new("test".parse().unwrap()).await;
     let root = sandbox.root();
-    let user = sandbox
-        .create_account("user1")
+    let user = root
+        .create_subaccount("user1", NearToken::from_near(10))
         .await
         .expect("Failed to create user");
 

@@ -40,7 +40,7 @@ impl DefuseMtDepositer for SigningAccount {
     ) -> anyhow::Result<Vec<u128>> {
         self.mt_on_transfer(
             sender_id,
-            defuse_id.into(),
+            defuse_id,
             token_ids,
             &msg.into()
                 .as_ref()
