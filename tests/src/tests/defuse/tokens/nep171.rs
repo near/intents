@@ -3,7 +3,7 @@ use crate::tests::defuse::env::Env;
 use defuse::core::intents::tokens::NftWithdraw;
 use defuse::core::token_id::TokenId as DefuseTokenId;
 use defuse::core::token_id::nep171::Nep171TokenId;
-use defuse::extensions::intents::ExecuteIntentsExt;
+use defuse::sandbox_ext::intents::ExecuteIntentsExt;
 use defuse::tokens::{DepositAction, DepositMessage, ExecuteIntents};
 use defuse_sandbox::api::types::json::Base64VecU8;
 use defuse_sandbox::api::types::nft::NFTContractMetadata;
@@ -329,10 +329,7 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
     #[case] expectation: NftTransferCallExpectation,
 ) {
     use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
-    use defuse_sandbox::{
-        SigningAccount, api::types::json::Base64VecU8, extensions::account::AccountDeployerExt,
-        tx::FnCallBuilder,
-    };
+    use defuse_sandbox::{SigningAccount, api::types::json::Base64VecU8, tx::FnCallBuilder};
 
     use crate::tests::defuse::env::MT_RECEIVER_STUB_WASM;
 

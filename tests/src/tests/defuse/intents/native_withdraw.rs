@@ -1,7 +1,7 @@
 use crate::tests::defuse::DefuseSignerExt;
 use crate::tests::defuse::{env::Env, intents::ExecuteIntentsExt};
 use crate::utils::fixtures::{ed25519_pk, secp256k1_pk};
-use defuse::extensions::tokens::nep141::DefuseFtReceiver;
+use defuse::sandbox_ext::tokens::nep141::DefuseFtReceiver;
 use defuse::{
     core::{
         crypto::PublicKey,

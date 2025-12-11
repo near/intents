@@ -14,8 +14,8 @@ use defuse::core::{
     },
     payload::{DefusePayload, ExtractDefusePayload},
 };
-use defuse::extensions::intents::ExecuteIntentsExt;
-use defuse::extensions::signer::Signer;
+use defuse::sandbox_ext::intents::ExecuteIntentsExt;
+use defuse::sandbox_ext::signer::Signer;
 use defuse_randomness::Rng;
 use defuse_sandbox::extensions::mt::MtViewExt;
 use defuse_test_utils::random::rng;

@@ -1,7 +1,7 @@
 use defuse::{
     contract::Role,
     core::fees::Pips,
-    extensions::state::{FeesManagerExt, FeesManagerViewExt},
+    sandbox_ext::state::{FeesManagerExt, FeesManagerViewExt},
 };
 
 use defuse_sandbox::extensions::acl::AclExt;

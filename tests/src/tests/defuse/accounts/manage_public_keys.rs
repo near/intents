@@ -6,7 +6,7 @@ use defuse::{
         crypto::PublicKey,
         events::DefuseEvent,
     },
-    extensions::account_manager::{AccountManagerExt, AccountViewExt},
+    sandbox_ext::account_manager::{AccountManagerExt, AccountViewExt},
 };
 use defuse_sandbox::{assert_eq_event_logs, tx::FnCallBuilder};
 use near_sdk::{AsNep297Event, NearToken};

@@ -10,14 +10,13 @@ use defuse::core::intents::tokens::{NotifyOnTransfer, Transfer};
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
 use defuse::core::token_id::nep245::Nep245TokenId;
-use defuse::extensions::account_manager::AccountManagerExt;
-use defuse::extensions::deployer::DefuseExt;
-use defuse::extensions::tokens::{nep141::DefuseFtWithdrawer, nep245::DefuseMtWithdrawer};
 use defuse::nep245::Token;
 use defuse::nep245::{MtBurnEvent, MtEvent, MtTransferEvent};
+use defuse::sandbox_ext::account_manager::AccountManagerExt;
+use defuse::sandbox_ext::deployer::DefuseExt;
+use defuse::sandbox_ext::tokens::{nep141::DefuseFtWithdrawer, nep245::DefuseMtWithdrawer};
 use defuse::tokens::DepositMessage;
 use defuse::tokens::{DepositAction, ExecuteIntents};
-use defuse_sandbox::extensions::account::AccountDeployerExt;
 use defuse_sandbox::extensions::mt::{MtExt, MtViewExt};
 use defuse_sandbox::tx::FnCallBuilder;
 use defuse_sandbox::{SigningAccount, assert_a_contains_b};
@@ -933,7 +932,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     use crate::tests::defuse::DefuseSignerExt;
     use defuse::{
         core::{amounts::Amounts, intents::tokens::Transfer},
-        extensions::account_manager::AccountManagerExt,
+        sandbox_ext::account_manager::AccountManagerExt,
     };
 
     let env = Env::builder().deployer_as_super_admin().build().await;

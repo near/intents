@@ -4,9 +4,7 @@ use near_api::types::nft::NFTContractMetadata;
 use near_contract_standards::non_fungible_token::{Token, TokenId, metadata::TokenMetadata};
 use near_sdk::{AccountIdRef, NearToken, serde_json::json};
 
-use crate::{
-    Account, SigningAccount, extensions::account::AccountDeployerExt, read_wasm, tx::FnCallBuilder,
-};
+use crate::{Account, SigningAccount, read_wasm, tx::FnCallBuilder};
 
 static NON_FUNGIBLE_TOKEN_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("releases/non-fungible-token.wasm"));

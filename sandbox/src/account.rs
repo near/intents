@@ -3,7 +3,7 @@ use std::sync::Arc;
 use impl_tools::autoimpl;
 use near_api::{
     Account as NearApiAccount, Contract, NetworkConfig, SecretKey, Signer,
-    signer::generate_secret_key,
+    signer::generate_secret_key, types::transaction::actions::FunctionCallAction,
 };
 use near_sdk::{
     AccountId, AccountIdRef, NearToken,
@@ -11,6 +11,8 @@ use near_sdk::{
 };
 
 use crate::tx::TxBuilder;
+
+const CONTRACT_DEPOSIT: NearToken = NearToken::from_near(100);
 
 #[derive(Clone, Debug)]
 pub struct Account {
@@ -34,7 +36,19 @@ impl Account {
         &self.network_config
     }
 
-    // TODO maybe separate it to another trait?
+    pub fn subaccount_id(&self, name: impl AsRef<str>) -> AccountId {
+        format!("{}.{}", name.as_ref(), self.id())
+            .parse()
+            .expect("invalid subaccount name: must be a valid NEAR account ID")
+    }
+
+    pub fn subaccount_name(&self, account_id: &AccountIdRef) -> Option<String> {
+        account_id
+            .as_str()
+            .strip_suffix(&format!(".{}", self.id()))
+            .map(ToString::to_string)
+    }
+
     pub async fn call_view_function_json<T>(
         &self,
         name: &str,
@@ -130,5 +144,61 @@ impl SigningAccount {
     ) -> anyhow::Result<()> {
         self.tx(receiver_id.into()).transfer(deposit).await?;
         Ok(())
+    }
+
+    pub async fn create_subaccount(
+        &self,
+        name: impl AsRef<str>,
+        balance: impl Into<Option<NearToken>>,
+    ) -> anyhow::Result<Self> {
+        let secret_key = generate_secret_key()?;
+        let public_key = secret_key.public_key();
+        let subaccount = self.subaccount_id(name);
+
+        let account = Self::new(
+            Account::new(subaccount.clone(), self.network_config().clone()),
+            secret_key,
+        );
+
+        let exist = account.view().await.is_ok_and(|v| v.storage_usage > 0);
+
+        if !exist {
+            let mut tx = self
+                .tx(subaccount)
+                .create_account()
+                .add_full_access_key(public_key);
+
+            if let Some(balance) = balance.into() {
+                tx = tx.transfer(balance);
+            }
+
+            tx.await?;
+        }
+
+        Ok(account)
+    }
+
+    pub async fn deploy_contract(
+        &self,
+        name: impl AsRef<str>,
+        wasm: impl Into<Vec<u8>>,
+        init_args: Option<impl Into<FunctionCallAction>>,
+    ) -> anyhow::Result<Account> {
+        let subaccount = self.subaccount_id(name);
+
+        let mut tx = self
+            .tx(subaccount.clone())
+            .create_account()
+            .add_full_access_key(self.private_key().public_key())
+            .transfer(CONTRACT_DEPOSIT)
+            .deploy(wasm.into());
+
+        if let Some(args) = init_args {
+            tx = tx.function_call(args);
+        }
+
+        tx.await?;
+
+        Ok(Account::new(subaccount, self.network_config().clone()))
     }
 }

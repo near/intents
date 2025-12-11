@@ -1,8 +1,8 @@
 use anyhow::Result;
-use defuse_poa_factory::extensions::PoAFactoryExt;
+use defuse_poa_factory::sandbox_ext::PoAFactoryExt;
 use defuse_sandbox::{
     Account, SigningAccount,
-    extensions::{account::ParentAccountViewExt, acl::AclExt, mt::MtViewExt},
+    extensions::{acl::AclExt, mt::MtViewExt},
 };
 use near_sdk::AccountId;
 use std::{collections::HashSet, convert::Infallible, sync::atomic::Ordering};
@@ -15,10 +15,10 @@ use defuse::{
         intents::{DefuseIntents, Intent, account::AddPublicKey},
         token_id::{TokenId, nep141::Nep141TokenId},
     },
-    extensions::{
+    nep245::Token,
+    sandbox_ext::{
         account_manager::AccountViewExt, deployer::DefuseExt, intents::ExecuteIntentsExt,
     },
-    nep245::Token,
 };
 use defuse_randomness::{Rng, make_true_rng};
 use futures::{StreamExt, TryStreamExt, future::try_join_all};

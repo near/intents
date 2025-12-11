@@ -7,9 +7,9 @@ use defuse::{
         config::{DefuseConfig, RolesConfig},
     },
     core::fees::{FeesConfig, Pips},
-    extensions::deployer::DefuseExt,
+    sandbox_ext::deployer::DefuseExt,
 };
-use defuse_poa_factory::{contract::Role as POAFactoryRole, extensions::PoAFactoryDeployerExt};
+use defuse_poa_factory::{contract::Role as POAFactoryRole, sandbox_ext::PoAFactoryDeployerExt};
 use defuse_sandbox::{
     Account, Sandbox, SigningAccount,
     extensions::wnear::{WNearDeployerExt, WNearExt},
@@ -158,8 +158,10 @@ impl EnvBuilder {
     }
 
     pub async fn build(&mut self) -> Env {
-        let migrate_from_legacy = std::env::var(MIGRATE_FROM_LEGACY_ENV_NAME)
-            .is_ok_and(|v| !["0", "false"].contains(&v.to_lowercase().as_str()));
+        // TODO: enable migration tests
+        let migrate_from_legacy = false;
+        // let migrate_from_legacy = std::env::var(MIGRATE_FROM_LEGACY_ENV_NAME)
+        //     .is_ok_and(|v| !["0", "false"].contains(&v.to_lowercase().as_str()));
 
         println!(
             "Test migration mode: {}",

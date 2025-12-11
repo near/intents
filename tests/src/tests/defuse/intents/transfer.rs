@@ -3,7 +3,7 @@ use crate::tests::defuse::env::{Env, TransferCallExpectation};
 use defuse::core::intents::tokens::{NotifyOnTransfer, Transfer};
 use defuse::core::token_id::nep245::Nep245TokenId;
 use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
-use defuse::extensions::deployer::DefuseExt;
+use defuse::sandbox_ext::deployer::DefuseExt;
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
     core::fees::{FeesConfig, Pips},

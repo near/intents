@@ -1,8 +1,8 @@
 use defuse::core::intents::tokens::FtWithdraw;
 use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
-use defuse::extensions::deployer::DefuseExt;
-use defuse::extensions::intents::ExecuteIntentsExt;
-use defuse::extensions::tokens::nep141::DefuseFtReceiver;
+use defuse::sandbox_ext::{
+    deployer::DefuseExt, intents::ExecuteIntentsExt, tokens::nep141::DefuseFtReceiver,
+};
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
     core::fees::{FeesConfig, Pips},

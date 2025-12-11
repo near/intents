@@ -3,7 +3,7 @@
 pub mod contract;
 
 #[cfg(feature = "sandbox")]
-pub mod extensions;
+pub mod sandbox_ext;
 
 pub mod accounts;
 pub mod fees;

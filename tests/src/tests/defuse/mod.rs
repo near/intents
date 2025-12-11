@@ -9,13 +9,13 @@ use defuse::core::ExpirableNonce;
 use defuse::core::SaltedNonce;
 use defuse::core::VersionedNonce;
 use defuse::core::intents::DefuseIntents;
-use defuse::extensions::signer::SigningStandard;
-use defuse::extensions::state::SaltViewExt;
+use defuse::sandbox_ext::signer::SigningStandard;
+use defuse::sandbox_ext::state::SaltViewExt;
 use defuse_randomness::RngCore;
 
 use defuse::core::intents::Intent;
 use defuse::core::{Deadline, Nonce, payload::multi::MultiPayload};
-use defuse::extensions::signer::DefuseSigner;
+use defuse::sandbox_ext::signer::DefuseSigner;
 use defuse_sandbox::Account;
 use defuse_test_utils::random::TestRng;
 

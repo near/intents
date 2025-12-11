@@ -10,7 +10,7 @@ use defuse::{
         intents::Intent,
         token_id::{TokenId, nep141::Nep141TokenId},
     },
-    extensions::{
+    sandbox_ext::{
         account_manager::{AccountManagerExt, AccountViewExt},
         force_manager::{ForceAccountManagerExt, ForceAccountViewExt},
         intents::ExecuteIntentsExt,

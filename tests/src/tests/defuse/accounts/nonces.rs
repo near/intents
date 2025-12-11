@@ -3,7 +3,7 @@ use chrono::{TimeDelta, Utc};
 use defuse::{
     contract::Role,
     core::{Deadline, Nonce, Salt, intents::DefuseIntents},
-    extensions::{
+    sandbox_ext::{
         account_manager::AccountViewExt,
         intents::ExecuteIntentsExt,
         state::{GarbageCollectorExt, SaltManagerExt, SaltViewExt},

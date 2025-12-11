@@ -3,9 +3,9 @@ use std::sync::LazyLock;
 use crate::tests::defuse::DefuseSignerExt;
 use crate::tests::defuse::env::Env;
 use crate::utils::fixtures::{ed25519_pk, p256_pk, secp256k1_pk};
-use defuse::extensions::account_manager::{AccountManagerExt, AccountViewExt};
-use defuse::extensions::intents::ExecuteIntentsExt;
-use defuse::extensions::state::{FeesManagerExt, FeesManagerViewExt, SaltManagerExt, SaltViewExt};
+use defuse::sandbox_ext::account_manager::{AccountManagerExt, AccountViewExt};
+use defuse::sandbox_ext::intents::ExecuteIntentsExt;
+use defuse::sandbox_ext::state::{FeesManagerExt, FeesManagerViewExt, SaltManagerExt, SaltViewExt};
 use defuse::{
     contract::Role,
     core::{

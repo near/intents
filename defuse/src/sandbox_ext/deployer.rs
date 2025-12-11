@@ -1,9 +1,6 @@
 use std::sync::LazyLock;
 
-use defuse_sandbox::{
-    Account, SigningAccount, anyhow, extensions::account::AccountDeployerExt, read_wasm,
-    tx::FnCallBuilder,
-};
+use defuse_sandbox::{Account, SigningAccount, anyhow, read_wasm, tx::FnCallBuilder};
 use near_sdk::{AccountIdRef, Gas, NearToken, serde_json::json};
 
 use crate::contract::config::DefuseConfig;
@@ -13,7 +10,7 @@ static DEFUSE_LEGACY_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("releases/defuse-0.2.10.wasm"));
 
 #[allow(async_fn_in_trait)]
-pub trait DefuseExt: AccountDeployerExt {
+pub trait DefuseExt {
     async fn deploy_defuse(
         &self,
         id: impl AsRef<str>,

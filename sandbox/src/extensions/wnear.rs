@@ -3,9 +3,7 @@ use std::sync::LazyLock;
 use near_sdk::{AccountIdRef, NearToken, serde_json::json};
 
 use super::ft::FtExt;
-use crate::{
-    Account, SigningAccount, extensions::account::AccountDeployerExt, read_wasm, tx::FnCallBuilder,
-};
+use crate::{Account, SigningAccount, read_wasm, tx::FnCallBuilder};
 
 static WNEAR_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("releases/wnear.wasm"));
 

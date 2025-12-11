@@ -16,8 +16,6 @@ use near_api::{NetworkConfig, RPCEndpoint};
 use near_sandbox::GenesisAccount;
 use near_sdk::{AccountId, NearToken};
 
-use crate::extensions::account::ParentAccountExt;
-
 const INITIAL_ACCOUNT_BALANCE: NearToken = NearToken::from_near(10);
 pub struct Sandbox {
     root: SigningAccount,

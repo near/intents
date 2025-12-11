@@ -26,9 +26,9 @@ use defuse::core::{
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
     },
 };
-use defuse::extensions::account_manager::{AccountManagerExt, AccountViewExt};
-use defuse::extensions::deployer::DefuseExt;
-use defuse::extensions::signer::Signer;
+use defuse::sandbox_ext::account_manager::{AccountManagerExt, AccountViewExt};
+use defuse::sandbox_ext::deployer::DefuseExt;
+use defuse::sandbox_ext::signer::Signer;
 use defuse_sandbox::api::types::json::Base64VecU8;
 use defuse_sandbox::api::types::nft::NFTContractMetadata;
 use defuse_sandbox::extensions::ft::FtExt;

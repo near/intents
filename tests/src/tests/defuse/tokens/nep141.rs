@@ -2,14 +2,13 @@ use crate::tests::defuse::env::Env;
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
 
-use defuse::extensions::tokens::nep141::{DefuseFtReceiver, DefuseFtWithdrawer};
+use defuse::sandbox_ext::tokens::nep141::{DefuseFtReceiver, DefuseFtWithdrawer};
 use defuse::{
     contract::Role,
     core::intents::tokens::{FtWithdraw, NotifyOnTransfer},
     tokens::{DepositAction, DepositMessage, ExecuteIntents},
 };
-use defuse_poa_factory::extensions::PoAFactoryExt;
-use defuse_sandbox::extensions::account::AccountDeployerExt;
+use defuse_poa_factory::sandbox_ext::PoAFactoryExt;
 use defuse_sandbox::extensions::acl::AclExt;
 use defuse_sandbox::extensions::ft::FtViewExt;
 use defuse_sandbox::extensions::mt::MtViewExt;

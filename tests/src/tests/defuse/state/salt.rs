@@ -1,6 +1,6 @@
 use defuse::{
     contract::Role,
-    extensions::state::{SaltManagerExt, SaltViewExt},
+    sandbox_ext::state::{SaltManagerExt, SaltViewExt},
 };
 
 use defuse_sandbox::extensions::acl::AclExt;

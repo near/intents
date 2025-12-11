@@ -8,16 +8,17 @@ use super::DefuseSignerExt;
 use crate::tests::defuse::env::builder::EnvBuilder;
 use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;
-use defuse::extensions::account_manager::{AccountManagerExt, AccountViewExt};
-use defuse::extensions::signer::Signer;
-use defuse::extensions::tokens::nep141::DefuseFtReceiver;
+use defuse::sandbox_ext::{
+    account_manager::{AccountManagerExt, AccountViewExt},
+    signer::Signer,
+    tokens::nep141::DefuseFtReceiver,
+};
 use defuse::{
     core::{Deadline, ExpirableNonce, Nonce, Salt, SaltedNonce, VersionedNonce},
     tokens::{DepositAction, DepositMessage},
 };
-use defuse_poa_factory::extensions::PoAFactoryExt;
+use defuse_poa_factory::sandbox_ext::PoAFactoryExt;
 use defuse_randomness::{Rng, make_true_rng};
-use defuse_sandbox::extensions::account::{AccountDeployerExt, ParentAccountViewExt};
 use defuse_sandbox::extensions::storage_management::StorageManagementExt;
 use defuse_sandbox::tx::FnCallBuilder;
 use defuse_sandbox::{Account, Sandbox, SigningAccount, read_wasm};

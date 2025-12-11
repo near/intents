@@ -1,6 +1,6 @@
 use defuse_poa_factory::{
     contract::Role,
-    extensions::{PoAFactoryDeployerExt, PoAFactoryExt},
+    sandbox_ext::{PoAFactoryDeployerExt, PoAFactoryExt},
 };
 use defuse_sandbox::{
     Sandbox,
