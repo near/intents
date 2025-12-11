@@ -51,6 +51,9 @@ const DEFUSE_INSTANCE: &str = "intents.nearseny.testnet";
 
 const TRANSFER_AUTH_GLOBAL_REF_ID: &str = "test2.pityjllk.testnet";
 const ESCROW_GLOBAL_REF_ID: &str = "escrowswap.pityjllk.testnet";
+
+// NOTE: 
+// near contract deploy escrowproxy.pityjllk.testnet use-file /Users/mat/intents/res/defuse_escrow_proxy.wasm with-init-call new json-args '{"roles":{"super_admins":["pityjllk.testnet"],"admins":{},"grantees":{}},"config":{"per_fill_contract_id":"test2.pityjllk.testnet","escrow_swap_contract_id":"escrowswap.pityjllk.testnet","auth_contract":"intents.nearseny.testnet","auth_collee":"pityjllk.testnet"}}' prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' network-config testnet sign-with-keychain send
 const PROXY: &str = "escrowproxy.pityjllk.testnet";
 
 /// Extract raw 32-byte secret from a SecretKey
