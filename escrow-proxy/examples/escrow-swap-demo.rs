@@ -32,7 +32,6 @@ use defuse_escrow_swap::Params;
 use defuse_escrow_swap::action::{
     FillAction, TransferAction, TransferMessage as EscrowTransferMessage,
 };
-use defuse_escrow_swap::ext::derive_escrow_swap_account_id;
 use defuse_escrow_swap::ContractStorage as EscrowContractStorage;
 use defuse_price::Price;
 use defuse_sandbox::api::{NetworkConfig, SecretKey, Signer};
@@ -231,14 +230,13 @@ async fn main() -> Result<()> {
         auth_caller: None,
         salt: rand::rng().random(),
     };
-    let escrow_instance_id =
-        derive_escrow_swap_account_id(&ESCROW_GLOBAL_REF_ID.parse().unwrap(), &escrow_params);
-
-    // MAKER TRANSFER INTENT
+    // Build state_init for deploying escrow-swap instance
     let escrow_state_init = StateInit::V1(StateInitV1 {
         code: GlobalContractId::AccountId(ESCROW_GLOBAL_REF_ID.parse().unwrap()),
         data: EscrowContractStorage::init_state(&escrow_params).unwrap(),
     });
+    let escrow_instance_id = escrow_state_init.derive_account_id();
+    println!("Escrow-swap instance ID: {escrow_instance_id}");
     let escrow_fund_msg = EscrowTransferMessage {
         params: escrow_params.clone(),
         action: TransferAction::Fund,
@@ -278,22 +276,47 @@ async fn main() -> Result<()> {
         ),
     };
 
-    // RELAY ON AUTH CALL
+    // RELAY AUTH CALL INTENT
+    // The relay authorizes the taker's transfer by signing an AuthCall intent
+    // that deploys the transfer-auth instance with state matching the transfer context
     let transfer_auth_context = TransferAuthContext {
         sender_id: Cow::Borrowed(taker_signing.id().as_ref()),
         token_ids: Cow::Owned(vec![dst_token.to_string()]),
         amounts: Cow::Owned(vec![U128(1)]),
         salt: proxy_msg.salt,
-        //NOTE: authorizes particular notification from taker(solver)
+        // NOTE: authorizes particular notification from taker(solver)
         msg: Cow::Borrowed(&proxy_msg_json),
     };
-    let transfer_auth_state_init = TransferAuthStateInit {
+
+    // TransferAuthStateInit defines the state for the transfer-auth instance
+    let transfer_auth_state = TransferAuthStateInit {
         escrow_contract_id: GlobalContractId::AccountId(ESCROW_GLOBAL_REF_ID.parse().unwrap()),
         auth_contract: VERIFIER_CONTRACT.parse().unwrap(),
-        on_auth_signer: root.id().clone(),
+        on_auth_signer: root.id().clone(), // relay account that signs the auth
         authorizee: PROXY.parse().unwrap(),
         msg_hash: transfer_auth_context.hash(),
     };
+
+    // Build state_init for deploying transfer-auth instance
+    let transfer_auth_raw_state =
+        defuse_transfer_auth::storage::ContractStorage::init_state(transfer_auth_state.clone())
+            .unwrap();
+    let transfer_auth_state_init = StateInit::V1(StateInitV1 {
+        code: GlobalContractId::AccountId(TRANSFER_AUTH_GLOBAL_REF_ID.parse().unwrap()),
+        data: transfer_auth_raw_state,
+    });
+    let transfer_auth_instance_id = transfer_auth_state_init.derive_account_id();
+    println!("Transfer-auth instance ID: {transfer_auth_instance_id}");
+
+    // Create AuthCall intent that deploys transfer-auth and authorizes the transfer
+    let relay_auth_call = defuse_core::intents::auth::AuthCall {
+        contract_id: transfer_auth_instance_id.clone(),
+        state_init: Some(transfer_auth_state_init),
+        msg: String::new(),
+        attached_deposit: NearToken::from_yoctonear(0),
+        min_gas: None,
+    };
+
 
 
 
