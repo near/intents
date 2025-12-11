@@ -10,6 +10,7 @@ members = [
     "crypto",
     "deadline",
     "decimal",
+    "decimal/fuzz",
     "defuse",
     "erc191",
     "escrow-swap",

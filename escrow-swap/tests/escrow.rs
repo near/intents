@@ -294,49 +294,6 @@ impl EscrowEnv {
         })
     }
 
-    // pub async fn src_deposit_to_verifier(
-    //     &self,
-    //     receiver_id: &AccountIdRef,
-    //     token_id: &str,
-    //     amount: u128,
-    // ) -> TxResult<u128> {
-    //     self.deposit_to_verifier(&self.src_ft, receiver_id, token_id, amount)
-    //         .await
-    // }
-
-    // pub async fn dst_deposit_to_verifier(
-    //     &self,
-    //     receiver_id: &AccountIdRef,
-    //     token_id: &str,
-    //     amount: u128,
-    // ) -> TxResult<u128> {
-    //     self.deposit_to_verifier(&self.mt_dst, receiver_id, token_id, amount)
-    //         .await
-    // }
-
-    // async fn deposit_to_verifier(
-    //     &self,
-    //     mt: &SigningAccount,
-    //     receiver_id: &AccountIdRef,
-    //     token_id: &str,
-    //     amount: u128,
-    // ) -> TxResult<u128> {
-    //     mt.mt_on_transfer(
-    //         mt.id(),
-    //         self.verifier.id().clone(),
-    //         [(token_id.to_string(), amount)],
-    //         receiver_id.to_string(),
-    //     )
-    //     .await
-    //     .and_then(|refunds| {
-    //         let [refund] = refunds
-    //             .try_into()
-    //             .map_err(|refunds: Vec<_>| DataConversionError::IncorrectLength(refunds.len()))
-    //             .map_err(Into::<ExecutionError>::into)?;
-    //         Ok(refund)
-    //     })
-    // }
-
     pub async fn show_verifier_balances(
         &self,
         accounts: impl IntoIterator<Item = &AccountIdRef>,

@@ -1,3 +1,5 @@
+#[cfg(feature = "arbitrary")]
+mod arbitrary;
 mod ops;
 mod str;
 
@@ -19,7 +21,7 @@ pub struct UD128(u8, u128);
 
 impl UD128 {
     #[allow(clippy::as_conversions, clippy::cast_possible_truncation)]
-    const MAX_DECIMALS: u8 = u128::MAX.ilog10() as u8;
+    pub(crate) const MAX_DECIMALS: u8 = u128::MAX.ilog10() as u8;
 
     pub const MIN: Self = Self(Self::MAX_DECIMALS, 1);
     pub const MAX: Self = Self(0, u128::MAX);
@@ -33,9 +35,22 @@ impl UD128 {
             return Some(Self::ZERO);
         }
 
-        while decimals > 0 && digits % 10 == 0 {
-            digits /= 10;
-            decimals -= 1;
+        // normalize
+        {
+            macro_rules! strip {
+                ($shift:expr) => {{
+                    const FACTOR: u128 = 10u128.pow($shift);
+                    while decimals >= $shift && digits % FACTOR == 0 {
+                        digits /= FACTOR;
+                        decimals -= $shift;
+                    }
+                }};
+            }
+            strip!(16);
+            strip!(8);
+            strip!(4);
+            strip!(2);
+            strip!(1);
         }
 
         if decimals > Self::MAX_DECIMALS {
