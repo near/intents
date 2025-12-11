@@ -118,9 +118,7 @@ impl EnvBuilder {
     }
 
     pub async fn build_env(&mut self, deploy_legacy: bool) -> Env {
-        let sandbox = Sandbox::get_or_init(NearToken::from_near(1000))
-            .await
-            .unwrap();
+        let sandbox = sandbox(NearToken::from_near(1000)).await.unwrap();
         let root = sandbox.root();
 
         let poa_factory = deploy_poa_factory(root).await;
