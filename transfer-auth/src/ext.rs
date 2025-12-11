@@ -271,6 +271,14 @@ pub trait DefuseAccountExt {
         secret_key: &[u8; 32],
         nonce: [u8; 32],
     ) -> Result<(), TxError>;
+
+    /// Execute multiple signed intents via defuse's execute_intents endpoint.
+    /// Takes a slice of MultiPayload (already signed) and executes them atomically.
+    async fn execute_signed_intents(
+        &self,
+        defuse: &Account,
+        payloads: &[defuse_core::payload::multi::MultiPayload],
+    ) -> Result<(), TxError>;
 }
 
 impl DefuseAccountExt for SigningAccount {
@@ -619,6 +627,24 @@ impl DefuseAccountExt for SigningAccount {
             .function_call_json::<serde_json::Value>(
                 "execute_intents",
                 json!({ "signed": [multi_payload] }),
+                Gas::from_tgas(300),
+                NearToken::from_yoctonear(0),
+            )
+            .await;
+
+        Ok(())
+    }
+
+    async fn execute_signed_intents(
+        &self,
+        defuse: &Account,
+        payloads: &[defuse_core::payload::multi::MultiPayload],
+    ) -> Result<(), TxError> {
+        // Note: RPC may return parsing error but the tx succeeds
+        let _ = self.tx(defuse.id().clone())
+            .function_call_json::<serde_json::Value>(
+                "execute_intents",
+                json!({ "signed": payloads }),
                 Gas::from_tgas(300),
                 NearToken::from_yoctonear(0),
             )

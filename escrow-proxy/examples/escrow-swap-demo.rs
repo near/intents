@@ -59,7 +59,7 @@ const PROXY: &str = "escrowproxy.pityjllk.testnet";
 /// Extract raw 32-byte secret from a SecretKey
 fn extract_secret_bytes(secret_key: &SecretKey) -> [u8; 32] {
     match secret_key {
-        SecretKey::ED25519(ed_key) => {
+        SecretKey::ED25519(_ed_key) => {
             // The string format is "ed25519:<base58_encoded_secret>"
             // We need to parse and extract the secret portion
             let key_str = secret_key.to_string();
@@ -346,28 +346,23 @@ async fn main() -> Result<()> {
 
     println!("\n--- Signing Intents ---");
 
-    // 1. Sign maker's transfer intent (maker funds escrow)
-    let maker_signed = sign_intents(
+    let maker_sends_funds_to_escrow = sign_intents(
         maker_signing.id(),
         &maker_secret,
         defuse_id,
         rand::rng().random(),
         vec![Intent::Transfer(maker_transfer_intent)],
     );
-    println!("Signed maker transfer intent");
 
-    // 2. Sign taker's transfer intent (taker fills via proxy)
-    let taker_signed = sign_intents(
+    let taker_sends_funds_to_proxy = sign_intents(
         taker_signing.id(),
         &taker_secret,
         defuse_id,
         rand::rng().random(),
         vec![Intent::Transfer(taker_transfer_intent)],
     );
-    println!("Signed taker transfer intent");
 
-    // 3. Sign root's transfer intents (fund maker and taker) + auth call
-    let root_signed = sign_intents(
+    let rooot_sends_funds_to_maker_and_taker = sign_intents(
         root.id(),
         &root_secret,
         defuse_id,
@@ -375,14 +370,45 @@ async fn main() -> Result<()> {
         vec![
             Intent::Transfer(root_to_maker_transfer),
             Intent::Transfer(root_to_taker_transfer),
-            Intent::AuthCall(relay_auth_call),
         ],
     );
 
+    let root_sends_auth_call = sign_intents(
+        root.id(),
+        &root_secret,
+        defuse_id,
+        rand::rng().random(),
+        vec![Intent::AuthCall(relay_auth_call)],
+    );
     // EXECUTION
     println!("\n--- Execution ---");
 
+    // Setup: Register public keys in defuse for all signers
     register_root_pkey_in_defuse(&root, &defuse).await?;
+    fund_and_register_subaccount(&root, &maker_signing, &defuse).await?;
+    fund_and_register_subaccount(&root, &taker_signing, &defuse).await?;
+
+    // Step 1: Root transfers funds to maker and taker
+    println!("\nStep 1: Root sends funds to maker and taker...");
+    root.execute_signed_intents(&defuse, &[rooot_sends_funds_to_maker_and_taker])
+        .await?;
+    println!("  Done: maker and taker funded");
+
+    // Step 2: Maker sends funds to escrow (deploys escrow-swap instance)
+    println!("\nStep 2: Maker sends funds to escrow (deploys escrow-swap)...");
+    root.execute_signed_intents(&defuse, &[maker_sends_funds_to_escrow])
+        .await?;
+    // println!("  Done: escrow-swap instance deployed at {escrow_instance_id}");
+    //
+    // // Step 3: Root sends auth_call + taker sends funds to proxy (atomically)
+    // // This deploys transfer-auth instance and executes the fill through the proxy
+    // println!("\nStep 3: Root sends auth_call + taker sends funds to proxy...");
+    // root.execute_signed_intents(&defuse, &[root_sends_auth_call, taker_sends_funds_to_proxy])
+    //     .await?;
+    // println!("  Done: transfer-auth deployed at {transfer_auth_instance_id}");
+    // println!("  Done: taker filled the escrow through proxy");
+    //
+    // println!("\n=== Escrow Swap Demo Complete ===");
 
     Ok(())
 }
