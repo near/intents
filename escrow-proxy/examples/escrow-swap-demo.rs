@@ -214,151 +214,79 @@ async fn main() -> Result<()> {
     println!("source token       ( {src_token} ) : {src_token_balance}");
     println!("destination token  ( {dst_token} ) : {dst_token_balance}");
 
-    // // NOTE: requires 20 NEAR deposit
-    // let global = root.deploy_transfer_auth("NEW_UNIQUE_ID").await;
-    // println!("Transfer-auth global deployed: {global}");
-
-    // // NOTE: requires 50 NEAR deposit
-    // let global = root.deploy_escrow_swap_global("escrowswap").await;
-    // println!("escrow-swap global deployed: {global}");
-
-    // // 5. Create proxy subaccount and deploy escrow-proxy
-    // println!("\n--- Deploying Proxy ---");
-    // let proxy = root
-    //     .create_subaccount("proxy", NearToken::from_yoctonear(1))
-    //     .await?;
-    // println!("Proxy account created: {}", proxy.id());
-
-    // root.deploy_escrow_swap_global("escrow").await;
-
-    // let initial_solver_balance =
-    //     SigningAccount::mt_balance_of(&defuse, &solver.id(), &token_id)
-    //         .await
-    //         .unwrap();
-    //
-    // println!("Root account: {}", root.id());
-    //
-    // // 4. Deploy global contracts as subaccounts
-    // println!("\n--- Deploying Global Contracts ---");
-    // let escrow_global = root.deploy_escrow_swap_global("escrow").await;
-    // println!("Escrow-swap global deployed: {escrow_global}");
-    //
-    // let auth_global = root.deploy_transfer_auth("auth").await;
-    // println!("Transfer-auth global deployed: {auth_global}");
-    //
-    // // 5. Create proxy subaccount and deploy escrow-proxy
-    // println!("\n--- Deploying Proxy ---");
-    // let proxy = root
-    //     .create_subaccount("proxy", NearToken::from_near(20))
-    //     .await?;
-    // println!("Proxy account created: {}", proxy.id());
-    //
-    // let defuse_id: AccountId = VERIFIER_CONTRACT.parse()?;
-    // // Construct solverbus account ID as subaccount of root
-    // let solverbus_id: AccountId = format!("solverbus.{}", root.id()).parse()?;
-
-    // let roles = RolesConfig {
-    //     super_admins: HashSet::from([root.id().clone()]),
-    //     admins: std::collections::HashMap::new(),
-    //     grantees: std::collections::HashMap::new(),
-    // };
-    //
-    // let config = ProxyConfig {
-    //     per_fill_contract_id: GlobalContractId::AccountId(TRANSFER_AUTH_GLOBAL_REF_ID.parse().unwrap()),
-    //     escrow_swap_contract_id: GlobalContractId::AccountId(ESCROW_GLOBAL_REF_ID.parse().unwrap()),
-    //     auth_contract: VERIFIER_CONTRACT.parse().unwrap(),
-    //     auth_collee: root.id().clone(),
-    // };
-
-    // println!("{}", serde_json::to_string_pretty(&roles).unwrap());
-    // println!("{}", serde_json::to_string_pretty(&config).unwrap());
-
-    // proxy.deploy_escrow_proxy(roles, config.clone()).await?;
-    // println!("Escrow-proxy deployed to: {}", proxy.id());
-    //
-    // // 6. Create solverbus and solver accounts
-    // println!("\n--- Creating Solver Accounts ---");
-    // let solverbus = root
-    //     .create_subaccount("solverbus", NearToken::from_near(10))
-    //     .await?;
-    // println!("Solverbus account created: {}", solverbus.id());
-    //
-    // let solver = root
-    //     .create_subaccount("solver", NearToken::from_near(10))
-    //     .await?;
-    // println!("Solver account created: {}", solver.id());
-    //
-    // // 7. Generate and register public keys in defuse
-    // println!("\n--- Registering Public Keys ---");
-    // let defuse = Account::new(defuse_id.clone(), network_config.clone());
-    //
-    // let solver_pubkey = public_key_from_secret(&SOLVER_SECRET);
-    // solver
-    //     .defuse_add_public_key(&defuse, solver_pubkey.clone())
-    //     .await?;
-    // println!("Solver public key registered: {solver_pubkey:?}");
-    //
-    // let solverbus_pubkey = public_key_from_secret(&SOLVERBUS_SECRET);
-    // solverbus
-    //     .defuse_add_public_key(&defuse, solverbus_pubkey.clone())
-    //     .await?;
-    // println!("Solverbus public key registered: {solverbus_pubkey:?}");
-    //
-    // 8. Create escrow params
-    println!("\n--- Building Escrow Parameters ---");
-
-    // For this demo, we'll use solver as both maker and taker to simplify
-    // In real usage, maker would be a different account
-    //TODO: genreate accounts on the fly
-    // let maker_id = root.subaccount("maker");
-    // let taker_id = root.subaccount("taker");
-
+    let deadline =  Deadline::timeout(Duration::from_secs(300));
+    // ESCROW SWAP PARAMS
     let escrow_params = Params {
         maker: root.id().clone(),
         src_token: src_token.clone(),
         dst_token: dst_token.clone(),
         price: Price::ONE,
-        deadline: Deadline::timeout(Duration::from_secs(300)), // 5 min
+        deadline: deadline, // 5 min
         partial_fills_allowed: false,
         refund_src_to: Default::default(),
         receive_dst_to: Default::default(),
-        taker_whitelist: [PROXY.parse().unwrap()].into(),
+        taker_whitelist: [proxy.clone()].into(),
         protocol_fees: None,
         integrator_fees: BTreeMap::new(),
         auth_caller: None,
         salt: rand::rng().random(),
     };
-
     let escrow_instance_id =
         derive_escrow_swap_account_id(&ESCROW_GLOBAL_REF_ID.parse().unwrap(), &escrow_params);
-    println!("Derived escrow-swap instance ID: {escrow_instance_id}");
 
-    let escrow_swap_msg = EscrowTransferMessage {
+    // MAKER TRANSFER INTENT
+    let escrow_state_init = StateInit::V1(StateInitV1 {
+        code: GlobalContractId::AccountId(ESCROW_GLOBAL_REF_ID.parse().unwrap()),
+        data: EscrowContractStorage::init_state(&escrow_params).unwrap(),
+    });
+    let escrow_fund_msg = EscrowTransferMessage {
+        params: escrow_params.clone(),
+        action: TransferAction::Fund,
+    };
+    let maker_transfer_intent = Transfer {
+        receiver_id: escrow_instance_id.clone(),
+        tokens: Amounts::new([(src_token.clone(), 1)].into()),
+        memo: None,
+        notification: Some(
+            NotifyOnTransfer::new(serde_json::to_string(&escrow_fund_msg).unwrap())
+                .with_state_init(escrow_state_init.clone())
+        ),
+    };
+
+    // TAKER TRANSFER INETNT
+    let escrow_fill_msg = EscrowTransferMessage {
         params: escrow_params.clone(),
         action: TransferAction::Fill(FillAction {
             price: Price::ONE,
-            deadline: Deadline::timeout(Duration::from_secs(360)),
+            deadline: deadline,
             receive_src_to: defuse_escrow_swap::OverrideSend::default()
                 .receiver_id(taker_signing.id().clone()),
         }),
     };
-
     let proxy_msg = ProxyTransferMessage {
-        receiver_id: escrow_instance_id.clone(),
+        receiver_id: escrow_instance_id.clone(), // escrow instance id
         salt: rand::rng().random(),
-        msg: serde_json::to_string(&escrow_swap_msg).unwrap(),
+        msg: serde_json::to_string(&escrow_fill_msg).unwrap(),
     };
     let proxy_msg_json = serde_json::to_string(&proxy_msg)?;
+    let taker_transfer_intent = Transfer {
+        receiver_id: proxy,
+        tokens: Amounts::new([(dst_token.clone(), 1)].into()),
+        memo: None,
+        notification: Some(
+            NotifyOnTransfer::new(proxy_msg_json.clone())
+        ),
+    };
 
-
+    // RELAY ON AUTH CALL
     let transfer_auth_context = TransferAuthContext {
-        sender_id: Cow::Borrowed(root.id().as_ref()),
+        sender_id: Cow::Borrowed(taker_signing.id().as_ref()),
         token_ids: Cow::Owned(vec![dst_token.to_string()]),
         amounts: Cow::Owned(vec![U128(1)]),
         salt: proxy_msg.salt,
+        //NOTE: authorizes particular notification from taker(solver)
         msg: Cow::Borrowed(&proxy_msg_json),
     };
-
     let transfer_auth_state_init = TransferAuthStateInit {
         escrow_contract_id: GlobalContractId::AccountId(ESCROW_GLOBAL_REF_ID.parse().unwrap()),
         auth_contract: VERIFIER_CONTRACT.parse().unwrap(),
@@ -367,109 +295,7 @@ async fn main() -> Result<()> {
         msg_hash: transfer_auth_context.hash(),
     };
 
-    // Create escrow state_init for deploying the escrow-swap instance
-    let escrow_state_init = StateInit::V1(StateInitV1 {
-        code: GlobalContractId::AccountId(ESCROW_GLOBAL_REF_ID.parse().unwrap()),
-        data: EscrowContractStorage::init_state(&escrow_params).unwrap(),
-    });
-
-    let transfer_intent = Transfer {
-        receiver_id: proxy,
-        tokens: Amounts::new([(dst_token.clone(), 1)].into()),
-        memo: None,
-        notification: Some(
-            NotifyOnTransfer::new(proxy_msg_json.clone())
-                .with_state_init(escrow_state_init)
-        ),
-    };
 
 
-    // println!("\n--- Funding and Registering Subaccounts ---");
-    // fund_and_register_subaccount(&root, &maker_signing, &defuse).await?;
-    // fund_and_register_subaccount(&root, &taker_signing, &defuse).await?;
-
-
-    // NOTE: required
-    // root.tx(taker_account.id().clone())
-    //     .create_account()
-    //     .transfer(NearToken::from_near(5))
-    //     .add_full_access_key(derived_pubkey.clone())
-    //     .await?;
-    //
-
-    // let transfer_auth_instance_id =
-    //     derive_transfer_auth_account_id(&ESCROW_GLOBAL_REF_ID.parse().unwrap());
-    //
-    // let transfer_payload = sign_transfer_intent(
-    //     solver.id(),
-    //     &SOLVER_SECRET,
-    //     &defuse_id,
-    //     transfer_intent,
-    //     [10u8; 32], // nonce
-    // );
-    // println!("Transfer intent signed by solver");
-    //
-    // // 11. Build auth_call intent (solverbus authorizes)
-    // println!("\n--- Building AuthCall Intent ---");
-    //
-    // // Compute context hash for transfer-auth
-    // let context_hash = TransferAuthContext {
-    //     sender_id: Cow::Borrowed(solver.id().as_ref()),
-    //     token_ids: Cow::Owned(vec![token_b_defuse.to_string()]),
-    //     amounts: Cow::Owned(vec![U128(SWAP_AMOUNT)]),
-    //     msg: Cow::Borrowed(&proxy_msg_json),
-    // }
-    // .hash();
-    //
-    // let auth_state = TransferAuthState {
-    //     escrow_contract_id: config.escrow_swap_contract_id.clone(),
-    //     auth_contract: defuse_id.clone(),
-    //     on_auth_signer: solverbus.id().clone(),
-    //     authorizee: proxy.id().clone(),
-    //     msg_hash: context_hash,
-    // };
-    //
-
-    // let auth_payload = SigningAccount::sign_auth_call_intent(
-    //     root.id(),
-    //     &SOLVERBUS_SECRET,
-    //     &defuse_id,
-    //     &auth_global,
-    //     &auth_state,
-    //     [20u8; 32], // nonce
-    // );
-
-    // let transfer_auth_instance_id = derive_transfer_auth_account_id(
-    //     &GlobalContractId::AccountId(auth_global.clone()),
-    //     &auth_state,
-    // );
-    // println!("Transfer-auth instance ID: {transfer_auth_instance_id}");
-    // println!("AuthCall intent signed by solverbus");
-    //
-    // // 12. Create combined execute_intents payloads
-    // println!("\n--- Combined Intents for execute_intents ---");
-    // let multi_payloads = vec![
-    //     MultiPayload::Nep413(transfer_payload),
-    //     MultiPayload::Nep413(auth_payload),
-    // ];
-    //
-    // println!("Number of intents: {}", multi_payloads.len());
-    // println!("Intent 0: Transfer (solver sends tokens to proxy)");
-    // println!("Intent 1: AuthCall (solverbus authorizes the fill)");
-    //
-    // // 13. Print summary (don't execute)
-    // println!("\n=== Summary ===");
-    // println!("This demo prepared the following for testnet execution:");
-    // println!("  - Global escrow-swap contract: {escrow_global}");
-    // println!("  - Global transfer-auth contract: {auth_global}");
-    // println!("  - Proxy contract: {}", proxy.id());
-    // println!("  - Solver account: {}", solver.id());
-    // println!("  - Solverbus account: {}", solverbus.id());
-    // println!("  - Escrow instance (to be deployed): {escrow_instance_id}");
-    // println!("  - Transfer-auth instance (to be deployed): {transfer_auth_instance_id}");
-    // println!();
-    // println!("To execute, call defuse.execute_intents with the signed payloads.");
-    // println!("Note: In production, maker would first fund the escrow with src_token.");
-    //
     Ok(())
 }
