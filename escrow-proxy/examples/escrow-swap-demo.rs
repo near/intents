@@ -12,27 +12,25 @@
 //!
 //! Note: This example only builds the intents without executing them on testnet.
 
+use defuse_core::intents::Intent;
+use defuse_transfer_auth::ext::DefuseAccountExt;
+use defuse_transfer_auth::ext::sign_intents;
+use defuse_transfer_auth::storage::StateInit as TransferAuthStateInit;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::str::FromStr;
 use std::time::Duration;
-use defuse_transfer_auth::ext::DefuseAccountExt;
-use defuse_nep413::SignedNep413Payload;
-
-
-
-use defuse_transfer_auth::storage::StateInit as TransferAuthStateInit;
 
 use anyhow::Result;
 use defuse_core::amounts::Amounts;
 use defuse_core::intents::tokens::{NotifyOnTransfer, Transfer};
 use defuse_deadline::Deadline;
 use defuse_escrow_proxy::TransferMessage as ProxyTransferMessage;
+use defuse_escrow_swap::ContractStorage as EscrowContractStorage;
 use defuse_escrow_swap::Params;
 use defuse_escrow_swap::action::{
     FillAction, TransferAction, TransferMessage as EscrowTransferMessage,
 };
-use defuse_escrow_swap::ContractStorage as EscrowContractStorage;
 use defuse_price::Price;
 use defuse_sandbox::api::{NetworkConfig, SecretKey, Signer};
 use defuse_sandbox::{Account, SigningAccount};
@@ -55,9 +53,27 @@ const TRANSFER_AUTH_GLOBAL_REF_ID: &str = "test2.pityjllk.testnet";
 const ESCROW_GLOBAL_REF_ID: &str = "escrowswap.pityjllk.testnet";
 const PROXY: &str = "escrowproxy.pityjllk.testnet";
 
+/// Extract raw 32-byte secret from a SecretKey
+fn extract_secret_bytes(secret_key: &SecretKey) -> [u8; 32] {
+    match secret_key {
+        SecretKey::ED25519(ed_key) => {
+            // The string format is "ed25519:<base58_encoded_secret>"
+            // We need to parse and extract the secret portion
+            let key_str = secret_key.to_string();
+            let encoded = key_str.strip_prefix("ed25519:").unwrap();
+            // Use near_sdk's bs58 re-export
+            let decoded = near_sdk::bs58::decode(encoded).into_vec().unwrap();
+            // First 32 bytes are the secret key
+            decoded[..32].try_into().unwrap()
+        }
+        _ => panic!("Only ED25519 keys supported"),
+    }
+}
+
 /// Derive a new ED25519 secret key from an account ID and derivation path
-/// using a deterministic derivation based on the account ID and derivation info
-fn derive_secret_key(account_id: &AccountId, derivation_info: &str) -> SecretKey {
+/// using a deterministic derivation based on the account ID and derivation info.
+/// Returns (SecretKey for near-api, raw 32-byte secret for signing intents)
+fn derive_secret_key(account_id: &AccountId, derivation_info: &str) -> (SecretKey, [u8; 32]) {
     use defuse_sandbox::api::{CryptoHash, types::crypto::secret_key::ED25519SecretKey};
 
     // Hash account ID with derivation info to create deterministic seed
@@ -71,23 +87,32 @@ fn derive_secret_key(account_id: &AccountId, derivation_info: &str) -> SecretKey
     let derived_bytes: [u8; 32] = hash.0;
 
     // Create new ED25519 secret key from the derived 32 bytes
-    SecretKey::ED25519(ED25519SecretKey::from_secret_key(derived_bytes))
+    (
+        SecretKey::ED25519(ED25519SecretKey::from_secret_key(derived_bytes)),
+        derived_bytes,
+    )
 }
 
 /// Create a subaccount with a deterministically derived key from the parent account ID.
-/// Returns the `SigningAccount` for the new subaccount.
-fn create_subaccount_with_derived_key(root: &SigningAccount, prefix: &str) -> Result<SigningAccount> {
+/// Returns the `SigningAccount` for the new subaccount and the raw 32-byte secret key for signing.
+fn create_subaccount_with_derived_key(
+    root: &SigningAccount,
+    prefix: &str,
+) -> Result<(SigningAccount, [u8; 32])> {
     let random_suffix: String = rand::rng()
         .sample_iter(Alphanumeric)
         .take(6)
         .map(char::from)
         .collect();
     let subaccount_name = format!("{}-{}", prefix, random_suffix.to_lowercase());
-    let derived_secret = derive_secret_key(root.id(), &subaccount_name);
+    let (derived_secret, secret_bytes) = derive_secret_key(root.id(), &subaccount_name);
     let derived_signer = Signer::from_secret_key(derived_secret)?;
 
     let subaccount = root.subaccount(&subaccount_name);
-    Ok(SigningAccount::new(subaccount, derived_signer))
+    Ok((
+        SigningAccount::new(subaccount, derived_signer),
+        secret_bytes,
+    ))
 }
 
 /// Fund a subaccount on-chain, register its public key in the verifier contract,
@@ -113,52 +138,39 @@ async fn fund_and_register_subaccount(
 
     // 2. Register the public key in the verifier contract
     let defuse_pubkey: defuse_crypto::PublicKey = pubkey.clone().into();
-    subaccount.defuse_add_public_key(defuse, defuse_pubkey.clone()).await?;
+    subaccount
+        .defuse_add_public_key(defuse, defuse_pubkey.clone())
+        .await?;
 
     // 3. Verify registration by querying has_public_key
-    let has_key = SigningAccount::defuse_has_public_key(defuse, subaccount.id(), &defuse_pubkey).await?;
-    assert!(has_key, "Public key registration failed for {}", subaccount.id());
-    println!("  Verified: {} public key registered in verifier", subaccount.id());
+    let has_key =
+        SigningAccount::defuse_has_public_key(defuse, subaccount.id(), &defuse_pubkey).await?;
+    assert!(
+        has_key,
+        "Public key registration failed for {}",
+        subaccount.id()
+    );
+    println!(
+        "  Verified: {} public key registered in verifier",
+        subaccount.id()
+    );
 
     Ok(())
 }
 
-/// Sign a transfer intent and return the signed NEP-413 payload
-fn sign_transfer_intent(
-    signer_id: &AccountId,
-    secret_key: &[u8; 32],
-    defuse_contract_id: &AccountId,
-    transfer: Transfer,
-    nonce: [u8; 32],
-) -> SignedNep413Payload {
-    use defuse_core::intents::{DefuseIntents, Intent};
-    use defuse_core::payload::nep413::Nep413DefuseMessage;
-    use defuse_crypto::Payload;
-    use defuse_nep413::{Nep413Payload, SignedNep413Payload};
-    use defuse_transfer_auth::ext::sign_ed25519;
-
-    let deadline = Deadline::timeout(Duration::from_secs(300)); // 5 min
-
-    let nep413_message = Nep413DefuseMessage {
-        signer_id: signer_id.clone(),
-        deadline,
-        message: DefuseIntents {
-            intents: vec![Intent::Transfer(transfer)],
-        },
-    };
-
-    let nep413_payload = Nep413Payload::new(serde_json::to_string(&nep413_message).unwrap())
-        .with_recipient(defuse_contract_id)
-        .with_nonce(nonce);
-
-    let hash = nep413_payload.hash();
-    let (public_key, signature) = sign_ed25519(secret_key, &hash);
-
-    SignedNep413Payload {
-        payload: nep413_payload,
-        public_key,
-        signature,
+/// Register account's public key in defuse if not already registered.
+async fn register_root_pkey_in_defuse(account: &SigningAccount, defuse: &Account) -> Result<()> {
+    let pubkey = account.signer().get_public_key().await?;
+    let defuse_pubkey: defuse_crypto::PublicKey = pubkey.clone().into();
+    let has_key = SigningAccount::defuse_has_public_key(defuse, account.id(), &defuse_pubkey).await?;
+    if has_key {
+        println!("{} public key already registered in defuse", account.id());
+    } else {
+        println!("{} public key NOT registered - registering...", account.id());
+        account.defuse_add_public_key(defuse, defuse_pubkey).await?;
+        println!("{} public key registered", account.id());
     }
+    Ok(())
 }
 
 #[tokio::main]
@@ -185,10 +197,10 @@ async fn main() -> Result<()> {
 
     // 4. Derive subaccount keys (deterministic, no network calls)
     println!("\n--- Deriving Subaccount Keys ---");
-    let maker_signing = create_subaccount_with_derived_key(&root, "maker")?;
+    let (maker_signing, maker_secret) = create_subaccount_with_derived_key(&root, "maker")?;
     let maker_pubkey = maker_signing.signer().get_public_key().await?;
     println!("Maker: {} (pubkey: {})", maker_signing.id(), maker_pubkey);
-    let taker_signing = create_subaccount_with_derived_key(&root, "taker")?;
+    let (taker_signing, taker_secret) = create_subaccount_with_derived_key(&root, "taker")?;
     let taker_pubkey = taker_signing.signer().get_public_key().await?;
     println!("Taker: {} (pubkey: {})", taker_signing.id(), taker_pubkey);
 
@@ -205,7 +217,7 @@ async fn main() -> Result<()> {
     println!("source token       ( {src_token} ) : {src_token_balance}");
     println!("destination token  ( {dst_token} ) : {dst_token_balance}");
 
-    let deadline =  Deadline::timeout(Duration::from_secs(300));
+    let deadline = Deadline::timeout(Duration::from_secs(300));
     // ESCROW SWAP PARAMS
     let escrow_params = Params {
         maker: root.id().clone(),
@@ -239,7 +251,7 @@ async fn main() -> Result<()> {
         memo: None,
         notification: Some(
             NotifyOnTransfer::new(serde_json::to_string(&escrow_fund_msg).unwrap())
-                .with_state_init(escrow_state_init.clone())
+                .with_state_init(escrow_state_init.clone()),
         ),
     };
 
@@ -263,9 +275,7 @@ async fn main() -> Result<()> {
         receiver_id: proxy,
         tokens: Amounts::new([(dst_token.clone(), 1)].into()),
         memo: None,
-        notification: Some(
-            NotifyOnTransfer::new(proxy_msg_json.clone())
-        ),
+        notification: Some(NotifyOnTransfer::new(proxy_msg_json.clone())),
     };
 
     // RELAY AUTH CALL INTENT
@@ -309,8 +319,67 @@ async fn main() -> Result<()> {
         min_gas: None,
     };
 
+    // ROOT TRANSFER INTENTS
+    // Transfer src tokens from root to maker
+    let root_to_maker_transfer = Transfer {
+        receiver_id: maker_signing.id().clone(),
+        tokens: Amounts::new([(src_token.clone(), 1)].into()),
+        memo: None,
+        notification: None,
+    };
 
+    // Transfer dst tokens from root to taker
+    let root_to_taker_transfer = Transfer {
+        receiver_id: taker_signing.id().clone(),
+        tokens: Amounts::new([(dst_token.clone(), 1)].into()),
+        memo: None,
+        notification: None,
+    };
 
+    // === SIGN ALL INTENTS ===
+
+    let defuse_id: &AccountId = defuse.id();
+    let root_secret = extract_secret_bytes(&secret_key);
+
+    println!("\n--- Signing Intents ---");
+
+    // 1. Sign maker's transfer intent (maker funds escrow)
+    let maker_signed = sign_intents(
+        maker_signing.id(),
+        &maker_secret,
+        defuse_id,
+        rand::rng().random(),
+        vec![Intent::Transfer(maker_transfer_intent)],
+    );
+    println!("Signed maker transfer intent");
+
+    // 2. Sign taker's transfer intent (taker fills via proxy)
+    let taker_signed = sign_intents(
+        taker_signing.id(),
+        &taker_secret,
+        defuse_id,
+        rand::rng().random(),
+        vec![Intent::Transfer(taker_transfer_intent)],
+    );
+    println!("Signed taker transfer intent");
+
+    // 3. Sign root's transfer intents (fund maker and taker) + auth call
+    let root_signed = sign_intents(
+        root.id(),
+        &root_secret,
+        defuse_id,
+        rand::rng().random(),
+        vec![
+            Intent::Transfer(root_to_maker_transfer),
+            Intent::Transfer(root_to_taker_transfer),
+            Intent::AuthCall(relay_auth_call),
+        ],
+    );
+
+    // EXECUTION
+    println!("\n--- Execution ---");
+
+    register_root_pkey_in_defuse(&root, &defuse).await?;
 
     Ok(())
 }

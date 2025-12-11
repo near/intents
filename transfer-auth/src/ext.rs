@@ -32,6 +32,41 @@ pub fn public_key_from_secret(secret_key: &[u8; 32]) -> defuse_crypto::PublicKey
     defuse_crypto::PublicKey::Ed25519(pk)
 }
 
+/// Sign intents using NEP-413 standard.
+/// Returns a MultiPayload ready to be passed to execute_intents.
+pub fn sign_intents(
+    signer_id: &AccountId,
+    secret_key: &[u8; 32],
+    defuse_contract_id: &AccountId,
+    nonce: [u8; 32],
+    intents: Vec<defuse_core::intents::Intent>,
+) -> defuse_core::payload::multi::MultiPayload {
+    use defuse_core::intents::DefuseIntents;
+    use defuse_core::payload::nep413::Nep413DefuseMessage;
+    use defuse_core::payload::multi::MultiPayload;
+
+    let deadline = Deadline::timeout(std::time::Duration::from_secs(120));
+
+    let nep413_message = Nep413DefuseMessage {
+        signer_id: signer_id.clone(),
+        deadline,
+        message: DefuseIntents { intents },
+    };
+
+    let nep413_payload = Nep413Payload::new(serde_json::to_string(&nep413_message).unwrap())
+        .with_recipient(defuse_contract_id)
+        .with_nonce(nonce);
+
+    let hash = nep413_payload.hash();
+    let (public_key, signature) = sign_ed25519(secret_key, &hash);
+
+    MultiPayload::Nep413(SignedNep413Payload {
+        payload: nep413_payload,
+        public_key,
+        signature,
+    })
+}
+
 #[track_caller]
 fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
     let filename = Path::new(env!("CARGO_MANIFEST_DIR"))
