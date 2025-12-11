@@ -28,12 +28,7 @@ pub const DEFAULT_ROOT_BALANCE: NearToken = NearToken::from_near(1000);
 
 #[fixture]
 pub async fn sandbox(#[default(DEFAULT_ROOT_BALANCE)] amount: NearToken) -> Sandbox {
-    SHARED_SANDBOX
-        .get_or_init(|| Sandbox::new("test".parse().unwrap()))
-        .await
-        .sub_sandbox(amount)
-        .await
-        .unwrap()
+    Sandbox::get_or_init(amount).await.unwrap()
 }
 
 pub struct Sandbox {
@@ -45,6 +40,14 @@ pub struct Sandbox {
 }
 
 impl Sandbox {
+    pub async fn get_or_init(amount: NearToken) -> anyhow::Result<Sandbox> {
+        SHARED_SANDBOX
+            .get_or_init(|| Self::new("test".parse().unwrap()))
+            .await
+            .sub_sandbox(amount)
+            .await
+    }
+
     pub async fn new(root: AccountId) -> Self {
         // FIX: why does test.ner exist in genesis cfg????
         let root = GenesisAccount::default_with_name(root);
