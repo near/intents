@@ -13,50 +13,40 @@
 //! Note: This example only builds the intents without executing them on testnet.
 
 use std::borrow::Cow;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
 use std::str::FromStr;
 use std::time::Duration;
+use defuse_transfer_auth::ext::DefuseAccountExt;
+use defuse_nep413::SignedNep413Payload;
+
+
 
 use defuse_transfer_auth::storage::StateInit as TransferAuthStateInit;
 
 use anyhow::Result;
 use defuse_core::amounts::Amounts;
 use defuse_core::intents::tokens::{NotifyOnTransfer, Transfer};
-use defuse_core::intents::{DefuseIntents, Intent};
-use defuse_core::payload::multi::MultiPayload;
-use defuse_core::payload::nep413::Nep413DefuseMessage;
-use defuse_crypto::Payload;
 use defuse_deadline::Deadline;
-use defuse_escrow_proxy::ext::EscrowProxyAccountExt;
-use defuse_escrow_proxy::{ProxyConfig, RolesConfig, TransferMessage as ProxyTransferMessage};
+use defuse_escrow_proxy::TransferMessage as ProxyTransferMessage;
 use defuse_escrow_swap::Params;
 use defuse_escrow_swap::action::{
     FillAction, TransferAction, TransferMessage as EscrowTransferMessage,
 };
-use defuse_escrow_swap::ext::{EscrowSwapAccountExt, derive_escrow_swap_account_id};
+use defuse_escrow_swap::ext::derive_escrow_swap_account_id;
 use defuse_escrow_swap::ContractStorage as EscrowContractStorage;
-use defuse_nep413::{Nep413Payload, SignedNep413Payload};
 use defuse_price::Price;
 use defuse_sandbox::api::{NetworkConfig, SecretKey, Signer};
 use defuse_sandbox::{Account, SigningAccount};
 use defuse_token_id::TokenId;
 use defuse_token_id::nep141::Nep141TokenId;
-use defuse_token_id::nep245::Nep245TokenId;
 use defuse_transfer_auth::TransferAuthContext;
-use defuse_transfer_auth::ext::{
-    DefuseAccountExt, TransferAuthAccountExt, derive_transfer_auth_account_id,
-    public_key_from_secret, sign_ed25519,
-};
-use defuse_transfer_auth::storage::StateInit as TransferAuthState;
 use near_sdk::json_types::U128;
 use near_sdk::state_init::{StateInit, StateInitV1};
-use near_sdk::{AccountId, GlobalContractId, NearToken};
-use rand::Rng;
-use serde_json::json;
+use near_sdk::{AccountId, GlobalContractId};
+use rand::{Rng, distr::Alphanumeric};
 
 // Placeholder constants - replace with actual testnet values
 const VERIFIER_CONTRACT: &str = "intents.nearseny.testnet";
-const SWAP_AMOUNT: u128 = 1_000_000_000_000_000_000_000_000; // 1 token with 24 decimals
 
 const SRC_NEP245_TOKEN_ID: &str = "src-token.omft.nearseny.testnet";
 const DST_NEP245_TOKEN_ID: &str = "dst-token.omft.nearseny.testnet";
@@ -66,12 +56,40 @@ const TRANSFER_AUTH_GLOBAL_REF_ID: &str = "test2.pityjllk.testnet";
 const ESCROW_GLOBAL_REF_ID: &str = "escrowswap.pityjllk.testnet";
 const PROXY: &str = "escrowproxy.pityjllk.testnet";
 
-// ed25519:2az4Xxurqod7g6yk8xnFJh8M6ofiBN4zp5uYgU945N6HuUgZ63mwUyJRKVFtA7oc3nAPf4Qz6nn3pPeHNy6yT7do
-// pityjllk.testnet
+/// Derive a new ED25519 secret key from an account ID and derivation path
+/// using a deterministic derivation based on the account ID and derivation info
+fn derive_secret_key(account_id: &AccountId, derivation_info: &str) -> SecretKey {
+    use defuse_sandbox::api::{CryptoHash, types::crypto::secret_key::ED25519SecretKey};
 
-// Hardcoded test private keys (32 bytes) - FOR TESTING ONLY
-const SOLVER_SECRET: [u8; 32] = [1u8; 32];
-const SOLVERBUS_SECRET: [u8; 32] = [2u8; 32];
+    // Hash account ID with derivation info to create deterministic seed
+    let mut seed_data = Vec::new();
+    seed_data.extend_from_slice(account_id.as_str().as_bytes());
+    seed_data.extend_from_slice(b":");
+    seed_data.extend_from_slice(derivation_info.as_bytes());
+
+    // Use CryptoHash to create a deterministic 32-byte seed
+    let hash = CryptoHash::hash(&seed_data);
+    let derived_bytes: [u8; 32] = hash.0;
+
+    // Create new ED25519 secret key from the derived 32 bytes
+    SecretKey::ED25519(ED25519SecretKey::from_secret_key(derived_bytes))
+}
+
+/// Create a subaccount with a deterministically derived key from the parent account ID.
+/// Returns the `SigningAccount` for the new subaccount.
+fn create_subaccount_with_derived_key(root: &SigningAccount, prefix: &str) -> Result<SigningAccount> {
+    let random_suffix: String = rand::rng()
+        .sample_iter(Alphanumeric)
+        .take(6)
+        .map(char::from)
+        .collect();
+    let subaccount_name = format!("{}-{}", prefix, random_suffix.to_lowercase());
+    let derived_secret = derive_secret_key(root.id(), &subaccount_name);
+    let derived_signer = Signer::from_secret_key(derived_secret)?;
+
+    let subaccount = root.subaccount(&subaccount_name);
+    Ok(SigningAccount::new(subaccount, derived_signer))
+}
 
 /// Sign a transfer intent and return the signed NEP-413 payload
 fn sign_transfer_intent(
@@ -81,6 +99,12 @@ fn sign_transfer_intent(
     transfer: Transfer,
     nonce: [u8; 32],
 ) -> SignedNep413Payload {
+    use defuse_core::intents::{DefuseIntents, Intent};
+    use defuse_core::payload::nep413::Nep413DefuseMessage;
+    use defuse_crypto::Payload;
+    use defuse_nep413::{Nep413Payload, SignedNep413Payload};
+    use defuse_transfer_auth::ext::sign_ed25519;
+
     let deadline = Deadline::timeout(Duration::from_secs(300)); // 5 min
 
     let nep413_message = Nep413DefuseMessage {
@@ -119,9 +143,18 @@ async fn main() -> Result<()> {
 
     // 3. Create SigningAccount from credentials
     let secret_key: SecretKey = pkey.parse()?;
-    let signer = Signer::from_secret_key(secret_key)?;
+    let signer = Signer::from_secret_key(secret_key.clone())?;
     let root = SigningAccount::new(Account::new(user.parse()?, network_config.clone()), signer);
     let proxy: AccountId = PROXY.parse().unwrap();
+
+    // 4. Create subaccounts with derived keys
+    println!("\n--- Creating Subaccounts with Derived Keys ---");
+    let maker_signing = create_subaccount_with_derived_key(&root, "maker")?;
+    let maker_pubkey = maker_signing.signer().get_public_key().await?;
+    println!("Maker: {} (pubkey: {})", maker_signing.id(), maker_pubkey);
+    let taker_signing = create_subaccount_with_derived_key(&root, "taker")?;
+    let taker_pubkey = taker_signing.signer().get_public_key().await?;
+    println!("Taker: {} (pubkey: {})", taker_signing.id(), taker_pubkey);
 
     let src_token: TokenId = Nep141TokenId::from_str(SRC_NEP245_TOKEN_ID).unwrap().into();
     let dst_token: TokenId = Nep141TokenId::from_str(DST_NEP245_TOKEN_ID).unwrap().into();
@@ -264,7 +297,7 @@ async fn main() -> Result<()> {
             price: Price::ONE,
             deadline: Deadline::timeout(Duration::from_secs(360)),
             receive_src_to: defuse_escrow_swap::OverrideSend::default()
-                .receiver_id(root.subaccount("taker").id().clone()),
+                .receiver_id(taker_signing.id().clone()),
         }),
     };
 
@@ -309,6 +342,13 @@ async fn main() -> Result<()> {
     };
 
 
+    // NOTE: required
+    // root.tx(taker_account.id().clone())
+    //     .create_account()
+    //     .transfer(NearToken::from_near(5))
+    //     .add_full_access_key(derived_pubkey.clone())
+    //     .await?;
+    //
 
     // let transfer_auth_instance_id =
     //     derive_transfer_auth_account_id(&ESCROW_GLOBAL_REF_ID.parse().unwrap());
