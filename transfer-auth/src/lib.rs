@@ -19,6 +19,7 @@ pub struct TransferAuthContext<'a> {
     pub sender_id: Cow<'a, AccountIdRef>,
     pub token_ids: Cow<'a, [defuse_nep245::TokenId]>,
     pub amounts: Cow<'a, [U128]>,
+    pub salt: [u8; 32],
     pub msg: Cow<'a, str>,
 }
 

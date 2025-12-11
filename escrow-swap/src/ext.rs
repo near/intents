@@ -49,7 +49,7 @@ impl EscrowSwapAccountExt for SigningAccount {
 
         self.tx(account.id().clone())
             .create_account()
-            .transfer(NearToken::from_near(100))
+            .transfer(NearToken::from_near(50))
             .deploy_global(
                 ESCROW_SWAP_WASM.clone(),
                 GlobalContractDeployMode::AccountId,

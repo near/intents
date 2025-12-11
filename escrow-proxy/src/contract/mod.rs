@@ -15,8 +15,8 @@ use defuse_escrow_swap::ContractStorage as EscrowContractStorage;
 use defuse_escrow_swap::ext_escrow;
 use near_plugins::{access_control, access_control_any, AccessControllable, AccessControlRole};
 use near_sdk::{
-    env, ext_contract, json_types::U128, near, require, serde_json, AccountId, Gas, NearToken,
-    PanicOnDefault, Promise, PromiseOrValue, PromiseResult,
+    env, ext_contract, json_types::U128, near, require, serde_json, AccountId, CryptoHash, Gas,
+    NearToken, PanicOnDefault, Promise, PromiseOrValue, PromiseResult,
     state_init::{StateInit, StateInitV1},
 };
 
@@ -96,6 +96,10 @@ impl EscrowProxy for Contract {
     fn config(&self) -> &ProxyConfig {
         &self.config
     }
+
+    fn context_hash(&self, context: TransferAuthContext<'static>) -> CryptoHash {
+        CryptoHash(context.hash())
+    }
 }
 
 #[near]
@@ -109,12 +113,13 @@ impl MultiTokenReceiver for Contract {
         amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
-        //TODO: add helper method
-        //TODO: use borsh here
+
+        let transfer_message: TransferMessage = msg.parse().unwrap_or_panic_display();
         let context_hash = TransferAuthContext {
             sender_id: Cow::Borrowed(&sender_id),
             token_ids: Cow::Borrowed(&token_ids),
             amounts: Cow::Borrowed(&amounts),
+            salt: transfer_message.salt,
             msg: Cow::Borrowed(&msg),
         }
         .hash();
@@ -127,7 +132,6 @@ impl MultiTokenReceiver for Contract {
         let _ = previous_owner_ids;
 
         let token_contract = env::predecessor_account_id();
-        let transfer_message: TransferMessage = msg.parse().unwrap_or_panic_display();
 
         PromiseOrValue::Promise(
             ext_transfer_auth::ext_on(auth_call)

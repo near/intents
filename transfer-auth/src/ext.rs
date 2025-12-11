@@ -76,7 +76,7 @@ impl TransferAuthAccountExt for SigningAccount {
 
         self.tx(account.id().clone())
             .create_account()
-            .transfer(NearToken::from_near(100))
+            .transfer(NearToken::from_near(20))
             .deploy_global(
                 TRANSFER_AUTH_WASM.clone(),
                 GlobalContractDeployMode::AccountId,

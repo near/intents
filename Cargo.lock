@@ -969,6 +969,7 @@ dependencies = [
  "near-plugins",
  "near-sdk",
  "near-workspaces",
+ "rand 0.9.2",
  "serde_json",
  "serde_with",
  "tokio",

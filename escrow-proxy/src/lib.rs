@@ -24,9 +24,13 @@ pub enum Role {
     Canceller,
 }
 
+use defuse_transfer_auth::TransferAuthContext;
+use near_sdk::CryptoHash;
+
 #[ext_contract(ext_escrow_proxy)]
 pub trait EscrowProxy {
     fn config(&self) -> &ProxyConfig;
+    fn context_hash(&self, context: TransferAuthContext<'static>) -> CryptoHash;
 }
 
 // fix JsonSchema macro bug
