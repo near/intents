@@ -28,6 +28,15 @@ pub trait NftExt {
         msg: String,
     ) -> anyhow::Result<bool>;
 
+    async fn nft_on_transfer(
+        &self,
+        sender_id: &AccountIdRef,
+        receiver_id: &AccountIdRef,
+        previous_owner_id: impl AsRef<str>,
+        token_id: &TokenId,
+        msg: impl AsRef<str>,
+    ) -> anyhow::Result<()>;
+
     async fn nft_mint(
         &self,
         collection: &AccountIdRef,
@@ -97,6 +106,31 @@ impl NftExt for SigningAccount {
             .await?
             .json()
             .map_err(Into::into)
+    }
+
+    async fn nft_on_transfer(
+        &self,
+        sender_id: &AccountIdRef,
+        receiver_id: &AccountIdRef,
+        previous_owner_id: impl AsRef<str>,
+        token_id: &TokenId,
+        msg: impl AsRef<str>,
+    ) -> anyhow::Result<()> {
+        self.tx(receiver_id.into())
+            .function_call(
+                FnCallBuilder::new("nft_on_transfer")
+                    .json_args(json!({
+                            "sender_id": sender_id,
+                            "previous_owner_id": previous_owner_id.as_ref(),
+                            "token_id": token_id,
+                            "msg": msg.as_ref(),
+
+                    }))
+                    .with_deposit(NearToken::from_yoctonear(1)),
+            )
+            .await?;
+
+        Ok(())
     }
 
     async fn nft_mint(

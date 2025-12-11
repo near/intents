@@ -9,19 +9,20 @@ const DEFAULT_GAS: Gas = Gas::from_tgas(300);
 const NO_DEPOSIT: NearToken = NearToken::from_yoctonear(0);
 
 pub struct FnCallBuilder {
-    name: String,
+    name: &'static str,
     args: Vec<u8>,
     gas: Gas,
     deposit: NearToken,
 }
 
 impl FnCallBuilder {
-    pub fn new(name: impl Into<String>) -> Self {
+    pub fn new(name: &'static str) -> Self {
         Self {
-            name: name.into(),
-            args: serde_json::to_string(&serde_json::json!({}))
-                .unwrap()
-                .into_bytes(),
+            name: name,
+            args: Vec::new(),
+            //  serde_json::to_string(&serde_json::json!({}))
+            //     .unwrap()
+            //     .into_bytes(),
             gas: DEFAULT_GAS,
             deposit: NO_DEPOSIT,
         }
@@ -40,8 +41,8 @@ impl FnCallBuilder {
     }
 
     #[must_use]
-    pub fn raw_args(mut self, args: impl AsRef<[u8]>) -> Self {
-        self.args = args.as_ref().to_vec();
+    pub fn raw_args(mut self, args: impl Into<Vec<u8>>) -> Self {
+        self.args = args.into();
         self
     }
 
@@ -61,7 +62,7 @@ impl FnCallBuilder {
 impl From<FnCallBuilder> for FunctionCallAction {
     fn from(value: FnCallBuilder) -> Self {
         Self {
-            method_name: value.name,
+            method_name: value.name.to_string(),
             args: value.args,
             gas: value.gas,
             deposit: value.deposit,

@@ -1347,7 +1347,7 @@ async fn mt_transfer_call_circullar_callback() {
         ft_id.to_string(),
     ));
 
-    let refund_amounts = user
+    let refund_amount = user
         .mt_transfer_call(
             env.defuse.id(),
             defuse2.id(),
@@ -1361,8 +1361,7 @@ async fn mt_transfer_call_circullar_callback() {
 
     // The inner callback to defuse1 should succeed and keep all tokens
     assert_eq!(
-        refund_amounts,
-        vec![600],
+        refund_amount, 600,
         "Should return 600 (amount used) since tokens were successfully deposited in circular callback"
     );
 

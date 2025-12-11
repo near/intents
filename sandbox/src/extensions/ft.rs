@@ -20,6 +20,14 @@ pub trait FtExt {
         memo: Option<String>,
         msg: &str,
     ) -> anyhow::Result<u128>;
+
+    async fn ft_on_transfer(
+        &self,
+        sender_id: &AccountIdRef,
+        receiver_id: &AccountIdRef,
+        amount: u128,
+        msg: impl AsRef<str>,
+    ) -> anyhow::Result<()>;
 }
 
 #[allow(async_fn_in_trait)]
@@ -74,6 +82,28 @@ impl FtExt for SigningAccount {
             .json::<U128>()
             .map(|v| v.0)
             .map_err(Into::into)
+    }
+
+    async fn ft_on_transfer(
+        &self,
+        sender_id: &AccountIdRef,
+        receiver_id: &AccountIdRef,
+        amount: u128,
+        msg: impl AsRef<str>,
+    ) -> anyhow::Result<()> {
+        self.tx(receiver_id.into())
+            .function_call(
+                FnCallBuilder::new("ft_on_transfer")
+                    .json_args(json!({
+                        "sender_id": sender_id,
+                        "amount": U128(amount),
+                        "msg": msg.as_ref(),
+                    }))
+                    .with_deposit(NearToken::from_yoctonear(1)),
+            )
+            .await?;
+
+        Ok(())
     }
 }
 

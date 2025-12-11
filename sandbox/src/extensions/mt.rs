@@ -25,7 +25,7 @@ pub trait MtExt {
         amount: u128,
         memo: impl Into<Option<String>>,
         msg: impl Into<String>,
-    ) -> anyhow::Result<Vec<u128>>;
+    ) -> anyhow::Result<u128>;
 
     async fn mt_batch_transfer_call(
         &self,
@@ -40,7 +40,7 @@ pub trait MtExt {
     async fn mt_on_transfer(
         &self,
         sender_id: &AccountIdRef,
-        receiver_id: AccountId,
+        receiver_id: &AccountIdRef,
         token_ids: impl IntoIterator<Item = (impl Into<String>, u128)>,
         msg: impl AsRef<str>,
     ) -> anyhow::Result<Vec<u128>>;
@@ -103,8 +103,9 @@ impl MtExt for SigningAccount {
         amount: u128,
         memo: impl Into<Option<String>>,
         msg: impl Into<String>,
-    ) -> anyhow::Result<Vec<u128>> {
-        self.tx(contract.into())
+    ) -> anyhow::Result<u128> {
+        let res = self
+            .tx(contract.into())
             .function_call(
                 FnCallBuilder::new("mt_transfer_call")
                     .json_args(json!({
@@ -117,9 +118,13 @@ impl MtExt for SigningAccount {
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
             .await?
-            .json::<Vec<U128>>()
-            .map(|amounts| amounts.into_iter().map(|a| a.0).collect())
-            .map_err(Into::into)
+            .json::<Vec<U128>>()?;
+
+        let [amount] = res
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("Expected exactly one amount in response"))?;
+
+        Ok(amount.0)
     }
 
     async fn mt_batch_transfer_call(
@@ -151,7 +156,7 @@ impl MtExt for SigningAccount {
     async fn mt_on_transfer(
         &self,
         sender_id: &AccountIdRef,
-        receiver_id: AccountId,
+        receiver_id: &AccountIdRef,
         token_ids: impl IntoIterator<Item = (impl Into<String>, u128)>,
         msg: impl AsRef<str>,
     ) -> anyhow::Result<Vec<u128>> {
@@ -160,7 +165,7 @@ impl MtExt for SigningAccount {
             .map(|(token_id, amount)| (token_id.into(), U128(amount)))
             .unzip();
 
-        self.tx(receiver_id)
+        self.tx(receiver_id.into())
             .function_call(FnCallBuilder::new("mt_on_transfer").json_args(json!({
                 "sender_id": sender_id,
                 "previous_owner_ids": vec![sender_id; token_ids.len()],

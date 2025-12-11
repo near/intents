@@ -270,7 +270,7 @@ async fn test_lock_account(public_key: PublicKey) {
                 )
                 .await
                 .expect("incoming transfers to locked account should be allowed"),
-            vec![0],
+            0,
         );
 
         assert_eq!(

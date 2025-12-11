@@ -159,7 +159,7 @@ async fn run_resolve_gas_test(
     author_account
         .mt_on_transfer(
             user_account.id(),
-            env.defuse.id().clone(),
+            env.defuse.id(),
             token_ids.iter().zip(amounts.clone()),
             "",
         )
