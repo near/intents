@@ -409,7 +409,25 @@ async fn main() -> Result<()> {
     println!("  Done: transfer-auth deployed at {transfer_auth_instance_id}");
     println!("  Done: taker filled the escrow through proxy");
 
+
     println!("\n=== Escrow Swap Demo Complete ===");
+
+    // Query escrow-swap instance state
+    let escrow_account = Account::new(escrow_instance_id.clone(), network_config.clone());
+    let escrow_state: defuse_escrow_swap::Storage = escrow_account
+        .call_function_json("escrow_view", serde_json::json!({}))
+        .await?;
+    println!("  Escrow state: {}", serde_json::to_string_pretty(&escrow_state).unwrap());
+
+
+    // Query transfer-auth instance state
+    let transfer_auth_account =
+        Account::new(transfer_auth_instance_id.clone(), network_config.clone());
+    let transfer_auth_state: defuse_transfer_auth::storage::ContractStorage = transfer_auth_account
+        .call_function_json("view", serde_json::json!({}))
+        .await?;
+    println!("  Transfer-auth state: {}", serde_json::to_string_pretty(&transfer_auth_state).unwrap());
+
 
     Ok(())
 }
