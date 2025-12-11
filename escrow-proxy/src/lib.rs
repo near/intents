@@ -3,7 +3,6 @@ mod contract;
 mod message;
 pub mod state;
 
-use defuse_nep245::ext_mt_core;
 use near_plugins::AccessControlRole;
 use near_sdk::{ext_contract, near};
 

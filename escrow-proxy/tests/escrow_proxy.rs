@@ -2,8 +2,7 @@ mod env;
 
 use defuse_escrow_proxy::{ProxyConfig, RolesConfig};
 use env::{AccountExt, BaseEnv};
-use near_sdk::{Gas, GlobalContractId, NearToken};
-use serde_json::json;
+use near_sdk::{GlobalContractId, NearToken};
 use std::collections::{HashMap, HashSet};
 
 const INIT_BALANCE: NearToken = NearToken::from_near(100);
@@ -46,10 +45,9 @@ async fn dao_can_upgrade_contract() {
     let env = BaseEnv::new().await.unwrap();
     let root = env.root();
 
-    let (dao, proxy_account, alice) = futures::try_join!(
+    let (dao, proxy_account) = futures::try_join!(
         root.create_subaccount("dao", INIT_BALANCE),
         root.create_subaccount("proxy", INIT_BALANCE),
-        root.create_subaccount("alice", INIT_BALANCE)
     )
     .unwrap();
 

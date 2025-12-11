@@ -31,11 +31,9 @@ use near_sdk::{AccountId, Gas, GlobalContractId, NearToken};
 use serde_json::json;
 
 const INIT_BALANCE: NearToken = NearToken::from_near(100);
-const SWAP_AMOUNT:u128 = 1_000_000_000_000_000_000_000_000;
 
 /// Hardcoded test private key for relay (32 bytes) - FOR TESTING ONLY
 const PRIVATE_KEY_RELAY: [u8; 32] = [1u8; 32];
-const PRIVATE_KEY_SOLVER: [u8; 32] = [2u8; 32];
 
 // ============================================================================
 // Helper functions for deploying tokens via poa_factory using near-sandbox

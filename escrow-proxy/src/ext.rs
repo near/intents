@@ -16,6 +16,7 @@ fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
 pub static ESCROW_PROXY_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("defuse_escrow_proxy"));
 
+#[allow(async_fn_in_trait)]
 pub trait EscrowProxyAccountExt {
     async fn deploy_escrow_proxy(&self, roles: RolesConfig, config: ProxyConfig) -> TxResult<()>;
     async fn get_escrow_proxy_config(&self) -> anyhow::Result<ProxyConfig>;

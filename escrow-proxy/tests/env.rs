@@ -1,10 +1,9 @@
 use std::{fs, path::Path, sync::LazyLock};
 
 use defuse_escrow_proxy::{ProxyConfig, RolesConfig};
-use defuse_sandbox::{Account, Sandbox, SigningAccount, TxResult};
-use defuse_transfer_auth::ext::TransferAuthAccountExt;
+use defuse_sandbox::{Sandbox, SigningAccount, TxResult};
 use impl_tools::autoimpl;
-use near_sdk::{AccountId, Gas, NearToken, serde_json::json};
+use near_sdk::{Gas, NearToken, serde_json::json};
 
 #[track_caller]
 fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
@@ -20,38 +19,27 @@ pub static ESCROW_PROXY_WASM: LazyLock<Vec<u8>> =
 
 #[autoimpl(Deref using self.sandbox)]
 pub struct BaseEnv {
-    // pub verifier: Account,
-    // pub transfer_auth_global: AccountId,
-    //
     sandbox: Sandbox,
 }
 
 impl BaseEnv {
+    #[allow(dead_code)]
     pub async fn new() -> TxResult<Self> {
         let sandbox = Sandbox::new().await;
-
-        // let (verifier, transfer_auth_global) = futures::join!(
-        //     // match len of intents.near
-        //     sandbox.root().deploy_verifier("vrfr", wnear.id().clone()),
-        //     sandbox.root().deploy_transfer_auth("auth"),
-        // );
-        //
-
-        Ok(Self {
-            sandbox,
-        })
+        Ok(Self { sandbox })
     }
 
+    #[allow(dead_code)]
     pub fn root(&self) -> &SigningAccount {
         self.sandbox.root()
     }
 }
 
+#[allow(async_fn_in_trait)]
 pub trait AccountExt {
     async fn deploy_escrow_proxy(&self, roles: RolesConfig, config: ProxyConfig) -> TxResult<()>;
-    async fn get_escrow_proxy_config(
-        &self,
-    ) -> anyhow::Result<ProxyConfig>;
+    #[allow(dead_code)]
+    async fn get_escrow_proxy_config(&self) -> anyhow::Result<ProxyConfig>;
 }
 
 impl AccountExt for SigningAccount {
@@ -74,9 +62,7 @@ impl AccountExt for SigningAccount {
         Ok(())
     }
 
-    async fn get_escrow_proxy_config(
-        &self,
-    ) -> anyhow::Result<ProxyConfig> {
+    async fn get_escrow_proxy_config(&self) -> anyhow::Result<ProxyConfig> {
         Ok(self
             .tx(self.id().clone())
             .function_call_json::<ProxyConfig>(

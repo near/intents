@@ -306,7 +306,7 @@ async fn test_transfer_authorized_by_relay() {
     // Run transfer and on_auth call concurrently
     // Transfer starts the yield promise, on_auth authorizes it
     // TODO: Replace direct on_auth call with AuthCall intent through defuse
-    let (transfer_result, _auth_result) = futures::join!(
+    let (_transfer_result, _auth_result) = futures::join!(
         solver.mt_transfer_call(
             &defuse,
             &proxy_id,

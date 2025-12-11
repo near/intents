@@ -1,6 +1,5 @@
 use std::str::FromStr;
 
-use near_sdk::json_types::U128;
 use near_sdk::{near, AccountId};
 
 pub use defuse_escrow_swap::{OverrideSend, Params as EscrowParams};

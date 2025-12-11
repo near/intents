@@ -92,6 +92,7 @@ pub fn derive_transfer_auth_account_id(global_contract_id: &GlobalContractId, st
     state_init.derive_account_id()
 }
 
+#[allow(async_fn_in_trait)]
 pub trait TransferAuthAccountExt {
     async fn deploy_transfer_auth(&self, name: impl AsRef<str>) -> AccountId;
     async fn deploy_transfer_auth_instance(
@@ -163,6 +164,7 @@ impl TransferAuthAccountExt for SigningAccount {
 
 
 // TODO: move to defuse
+#[allow(async_fn_in_trait)]
 pub trait DefuseAccountExt {
     async fn deploy_wnear(&self, name: impl AsRef<str>) -> Account;
     async fn deploy_verifier(&self, name: impl AsRef<str>, wnear_id: AccountId) -> SigningAccount;

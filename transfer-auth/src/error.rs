@@ -1,4 +1,4 @@
-use near_sdk::{FunctionError, PromiseError};
+use near_sdk::FunctionError;
 
 use thiserror::Error as ThisError;
 

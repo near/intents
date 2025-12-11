@@ -31,6 +31,7 @@ pub fn derive_escrow_swap_account_id(global_contract_id: &AccountId, params: &Pa
     state_init.derive_account_id()
 }
 
+#[allow(async_fn_in_trait)]
 pub trait EscrowSwapAccountExt {
     /// Deploy global escrow-swap contract (shared code)
     async fn deploy_escrow_swap_global(&self, name: impl AsRef<str>) -> AccountId;

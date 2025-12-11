@@ -20,6 +20,7 @@ fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
 pub static MT_RECEIVER_STUB_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("multi-token-receiver-stub/multi_token_receiver_stub"));
 
+#[allow(async_fn_in_trait)]
 pub trait MtReceiverStubAccountExt {
     /// Deploy as regular contract
     async fn deploy_mt_receiver_stub(&self, name: impl AsRef<str>) -> Account;

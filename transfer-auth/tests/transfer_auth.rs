@@ -8,8 +8,6 @@ use near_sdk::{
     state_init::{StateInit, StateInitV1},
 };
 use serde_json::json;
-
-const TIMEOUT: Duration = Duration::from_secs(60);
 const INIT_BALANCE: NearToken = NearToken::from_near(100);
 
 #[tokio::test]
@@ -19,9 +17,7 @@ async fn transfer_auth_global_deployment() {
 
     let transfer_auth_global = sandbox.root().deploy_transfer_auth("auth").await;
 
-    let (solver1, solver2, escrow, auth_contract, relay, proxy) = futures::try_join!(
-        root.create_subaccount("solver1", INIT_BALANCE),
-        root.create_subaccount("solver2", INIT_BALANCE),
+    let (escrow, auth_contract, relay, proxy) = futures::try_join!(
         root.create_subaccount("escrow", INIT_BALANCE),
         root.create_subaccount("auth-contract", INIT_BALANCE),
         root.create_subaccount("auth-callee", INIT_BALANCE),
@@ -63,14 +59,12 @@ async fn transfer_auth_global_deployment() {
 
     //NOTE: there is rpc error on state_init action but the contract itself is successfully
     //deployed, so lets ignore error for now
-    root.tx(auth_transfer_for_solver1.clone())
+    let _ = root.tx(auth_transfer_for_solver1.clone())
         .state_init(transfer_auth_global.clone(), solver1_raw_state)
         .transfer(NearToken::from_yoctonear(1))
         .await;
 
-    // .unwrap();
-
-    let cotnract_instance1_state = proxy
+    let _ = proxy
         .tx(auth_transfer_for_solver1)
         .function_call_json::<ContractStorage>(
             "view",
@@ -89,8 +83,7 @@ async fn on_auth_call() {
 
     let transfer_auth_global = root.deploy_transfer_auth("auth").await;
 
-    let (solver, escrow, auth_contract, relay, proxy) = futures::try_join!(
-        root.create_subaccount("solver", INIT_BALANCE),
+    let (escrow, auth_contract, relay, proxy) = futures::try_join!(
         root.create_subaccount("escrow", INIT_BALANCE),
         root.create_subaccount("auth-contract", INIT_BALANCE),
         root.create_subaccount("auth-callee", INIT_BALANCE),
@@ -153,8 +146,7 @@ async fn transfer_auth_early_authorization() {
 
     let transfer_auth_global = root.deploy_transfer_auth("auth").await;
 
-    let (solver, escrow, auth_contract, relay, proxy) = futures::try_join!(
-        root.create_subaccount("solver", INIT_BALANCE),
+    let (escrow, auth_contract, relay, proxy) = futures::try_join!(
         root.create_subaccount("escrow", INIT_BALANCE),
         root.create_subaccount("auth-contract", INIT_BALANCE),
         root.create_subaccount("auth-callee", INIT_BALANCE),
@@ -208,14 +200,15 @@ async fn transfer_auth_async_authorization() {
 
     let transfer_auth_global = root.deploy_transfer_auth("auth").await;
 
-    let (solver, escrow, auth_contract, relay, proxy) = futures::try_join!(
-        root.create_subaccount("solver", INIT_BALANCE),
+    let (escrow, auth_contract, relay, proxy) = futures::try_join!(
         root.create_subaccount("escrow", INIT_BALANCE),
         root.create_subaccount("auth-contract", INIT_BALANCE),
         root.create_subaccount("auth-callee", INIT_BALANCE),
         root.create_subaccount("proxy", INIT_BALANCE),
     )
     .unwrap();
+
+    let network_config = root.network_config().clone();
 
     let state = TransferAuthStateInit {
         escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
@@ -229,7 +222,6 @@ async fn transfer_auth_async_authorization() {
         .deploy_transfer_auth_instance(transfer_auth_global.clone(), state)
         .await;
 
-    let network_config = root.network_config().clone();
     let authorized = tokio::spawn({
         let transfer_auth_instance = transfer_auth_instance.clone();
         async move {
@@ -275,8 +267,7 @@ async fn transfer_auth_async_authorization_timeout() {
 
     let transfer_auth_global = root.deploy_transfer_auth("auth").await;
 
-    let (solver, escrow, auth_contract, relay, proxy) = futures::try_join!(
-        root.create_subaccount("solver", INIT_BALANCE),
+    let (escrow, auth_contract, relay, proxy) = futures::try_join!(
         root.create_subaccount("escrow", INIT_BALANCE),
         root.create_subaccount("auth-contract", INIT_BALANCE),
         root.create_subaccount("auth-callee", INIT_BALANCE),
@@ -296,7 +287,6 @@ async fn transfer_auth_async_authorization_timeout() {
         .deploy_transfer_auth_instance(transfer_auth_global.clone(), state)
         .await;
 
-    let network_config = root.network_config().clone();
     let wait_for_authorization = proxy
         .tx(transfer_auth_instance.clone())
         .function_call_json::<bool>(
@@ -325,8 +315,7 @@ async fn transfer_auth_retry_after_timeout_with_on_auth() {
 
     let transfer_auth_global = root.deploy_transfer_auth("auth").await;
 
-    let (solver, escrow, auth_contract, relay, proxy) = futures::try_join!(
-        root.create_subaccount("solver", INIT_BALANCE),
+    let (escrow, auth_contract, relay, proxy) = futures::try_join!(
         root.create_subaccount("escrow", INIT_BALANCE),
         root.create_subaccount("auth-contract", INIT_BALANCE),
         root.create_subaccount("auth-callee", INIT_BALANCE),
@@ -346,7 +335,6 @@ async fn transfer_auth_retry_after_timeout_with_on_auth() {
         .deploy_transfer_auth_instance(transfer_auth_global.clone(), state)
         .await;
 
-    let network_config = root.network_config().clone();
 
     // First wait_for_authorization - will timeout
     let wait_for_authorization = proxy
@@ -378,7 +366,7 @@ async fn transfer_auth_retry_after_timeout_with_on_auth() {
         .unwrap();
 
     // Second wait_for_authorization should succeed immediately (early authorization path)
-    let authorized = proxy
+    let _ = proxy
         .tx(transfer_auth_instance.clone())
         .function_call_json::<bool>(
             "wait_for_authorization",
@@ -397,8 +385,7 @@ async fn transfer_auth_retry_after_timeout_with_on_auth2() {
 
     let transfer_auth_global = root.deploy_transfer_auth("auth").await;
 
-    let (solver, escrow, auth_contract, relay, proxy) = futures::try_join!(
-        root.create_subaccount("solver", INIT_BALANCE),
+    let (escrow, auth_contract, relay, proxy) = futures::try_join!(
         root.create_subaccount("escrow", INIT_BALANCE),
         root.create_subaccount("auth-contract", INIT_BALANCE),
         root.create_subaccount("auth-callee", INIT_BALANCE),
@@ -418,7 +405,6 @@ async fn transfer_auth_retry_after_timeout_with_on_auth2() {
         .deploy_transfer_auth_instance(transfer_auth_global.clone(), state)
         .await;
 
-    let network_config = root.network_config().clone();
 
     // First wait_for_authorization - will timeout
     let wait_for_authorization = proxy
@@ -443,7 +429,7 @@ async fn transfer_auth_retry_after_timeout_with_on_auth2() {
             NearToken::from_near(0),
         );
 
-    let (authorized, on_auth) = futures::join!(async { wait_for_authorization.await }, async {
+    let (authorized, _) = futures::join!(async { wait_for_authorization.await }, async {
         tokio::time::sleep(Duration::from_secs(3)).await;
         auth_contract
             .tx(transfer_auth_instance.clone())

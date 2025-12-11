@@ -12,7 +12,7 @@ use near_api::{
     }, PublicKey, Transaction
 };
 use near_sdk::{
-    borsh::{self, BorshDeserialize, BorshSerialize}, env::keccak256_array, serde::{de::DeserializeOwned, Serialize}, serde_json, state_init::{StateInit, StateInitV1}, AccountId, Gas, NearToken
+    borsh::{self, BorshDeserialize, BorshSerialize}, serde::{de::DeserializeOwned, Serialize}, serde_json, AccountId, Gas, NearToken
 };
 use thiserror::Error as ThisError;
 

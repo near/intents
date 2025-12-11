@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::error::Error;
 use near_sdk::{AccountId, GlobalContractId, YieldId, borsh, near};
-use serde_with::{DisplayFromStr, hex::Hex, serde_as};
+use serde_with::{hex::Hex, serde_as};
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
