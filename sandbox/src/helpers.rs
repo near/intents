@@ -3,8 +3,8 @@ use std::fmt::Debug;
 
 use std::{fs, path::Path};
 
-pub fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
-    let base = Path::new(env!("CARGO_MANIFEST_DIR")).join("../");
+pub fn read_wasm(dir: impl AsRef<Path>, name: impl AsRef<Path>) -> Vec<u8> {
+    let base = Path::new(env!("CARGO_MANIFEST_DIR")).join("../").join(dir);
     let mut filename = base.join(name).with_extension("wasm");
 
     if filename.is_symlink() {

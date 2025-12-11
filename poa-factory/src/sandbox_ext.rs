@@ -9,7 +9,7 @@ use std::{
 use crate::contract::{POA_TOKEN_INIT_BALANCE, Role};
 
 static POA_FACTORY_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm("releases/defuse_poa_factory.wasm"));
+    LazyLock::new(|| read_wasm("releases", "defuse_poa_factory"));
 
 #[allow(async_fn_in_trait)]
 pub trait PoAFactoryDeployerExt {

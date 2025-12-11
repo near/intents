@@ -7,7 +7,7 @@ use near_sdk::{AccountIdRef, NearToken, serde_json::json};
 use crate::{Account, SigningAccount, read_wasm, tx::FnCallBuilder};
 
 static NON_FUNGIBLE_TOKEN_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm("releases/non-fungible-token.wasm"));
+    LazyLock::new(|| read_wasm("releases", "non-fungible-token"));
 
 #[allow(async_fn_in_trait)]
 pub trait NftExt {

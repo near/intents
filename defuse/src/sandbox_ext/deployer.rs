@@ -5,9 +5,8 @@ use near_sdk::{AccountIdRef, Gas, NearToken, serde_json::json};
 
 use crate::contract::config::DefuseConfig;
 
-static DEFUSE_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("releases/latest.wasm"));
-static DEFUSE_LEGACY_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm("releases/previous.wasm"));
+static DEFUSE_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("releases", "latest"));
+static DEFUSE_LEGACY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("releases", "previous"));
 
 #[allow(async_fn_in_trait)]
 pub trait DefuseExt {
