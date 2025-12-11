@@ -5,6 +5,7 @@ use defuse_poa_factory::{
 use defuse_sandbox::{
     Sandbox,
     extensions::{ft::FtViewExt, storage_management::StorageManagementExt},
+    sandbox,
 };
 use futures::try_join;
 use near_sdk::NearToken;
@@ -12,9 +13,10 @@ use rstest::rstest;
 
 #[tokio::test]
 #[rstest]
-async fn deploy_mint() {
-    let sandbox = Sandbox::new("test".parse().unwrap()).await;
+async fn deploy_mint(#[future] sandbox: Sandbox) {
+    let sandbox = sandbox.await;
     let root = sandbox.root();
+
     let user = root
         .create_subaccount("user1", NearToken::from_near(10))
         .await
