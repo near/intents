@@ -225,7 +225,7 @@ where
                 .inspect_err(|_| {
                     // Print logs from all outcomes on error
                     for (executor_id, outcome_logs) in &logs {
-                        eprintln!("Logs from {}: {:?}", executor_id, outcome_logs);
+                        eprintln!("Logs from {executor_id}: {outcome_logs:?}");
                     }
                 })
                 .map_err(Box::new)
@@ -254,6 +254,7 @@ pub enum TxError {
 struct TxOutcome<'a>(&'a ExecutionFinalResult);
 
 impl Debug for TxOutcome<'_> {
+    #[allow(clippy::as_conversions, clippy::cast_precision_loss)]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Header: signer -> receiver
         writeln!(

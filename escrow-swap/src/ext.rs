@@ -36,7 +36,7 @@ pub trait EscrowSwapAccountExt {
     /// Deploy global escrow-swap contract (shared code)
     async fn deploy_escrow_swap_global(&self, name: impl AsRef<str>) -> AccountId;
 
-    /// Deploy an escrow-swap instance with specific params using state_init
+    /// Deploy an escrow-swap instance with specific params using `state_init`
     async fn deploy_escrow_swap_instance(
         &self,
         global_contract_id: AccountId,

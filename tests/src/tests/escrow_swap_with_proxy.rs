@@ -35,6 +35,9 @@ const INIT_BALANCE: NearToken = NearToken::from_near(100);
 /// Hardcoded test private key for relay (32 bytes) - FOR TESTING ONLY
 const PRIVATE_KEY_RELAY: [u8; 32] = [1u8; 32];
 
+/// Hardcoded test private key for maker (32 bytes) - FOR TESTING ONLY
+const PRIVATE_KEY_MAKER: [u8; 32] = [3u8; 32];
+
 // ============================================================================
 // Helper functions for deploying tokens via poa_factory using near-sandbox
 // ============================================================================
@@ -51,14 +54,14 @@ fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
 static POA_FACTORY_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("res/defuse_poa_factory"));
 
-/// Deploy a new FT token via poa_factory with initial balances for specified accounts.
+/// Deploy a new FT token via `poa_factory` with initial balances for specified accounts.
 ///
 /// This high-level function:
-/// 1. Deploys the token contract via poa_factory
+/// 1. Deploys the token contract via `poa_factory`
 /// 2. Registers storage for all specified accounts
 /// 3. Mints the specified amounts to each account
 ///
-/// Returns the token's AccountId (e.g., "token-a.factory.near")
+/// Returns the token's `AccountId` (e.g., "token-a.factory.near")
 async fn deploy_ft_token(
     deployer: &SigningAccount,
     factory: &Account,
@@ -122,7 +125,7 @@ async fn deploy_ft_token(
     token_id
 }
 
-/// Deploy poa_factory contract
+/// Deploy `poa_factory` contract
 async fn deploy_poa_factory(deployer: &SigningAccount, name: impl AsRef<str>) -> Account {
     let account = deployer.subaccount(name);
 
@@ -175,15 +178,15 @@ async fn ft_storage_deposit(
 /// Deploy a new FT token and wrap it into defuse MT with initial balances.
 ///
 /// This high-level function:
-/// 1. Deploys the FT token contract via poa_factory
+/// 1. Deploys the FT token contract via `poa_factory`
 /// 2. Registers storage for defuse and all specified owners
 /// 3. Mints FT tokens to each owner
 /// 4. Wraps (deposits) the FT tokens into defuse MT for each owner
 ///
 /// Returns:
-/// - FT AccountId (for storage deposits on the underlying FT contract)
-/// - Defuse MT TokenId (Nep141 format: "nep141:token.factory" - for defuse balance queries)
-/// - Escrow MT TokenId (Nep245 format: "nep245:defuse:nep141:token.factory" - for escrow params)
+/// - FT `AccountId` (for storage deposits on the underlying FT contract)
+/// - Defuse MT `TokenId` (Nep141 format: "nep141:token.factory" - for defuse balance queries)
+/// - Escrow MT `TokenId` (Nep245 format: "nep245:defuse:nep141:token.factory" - for escrow params)
 async fn deploy_mt_token(
     deployer: &SigningAccount,
     factory: &Account,
@@ -332,8 +335,8 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         price: Price::ONE,                 // 1:1 exchange
         deadline: Deadline::timeout(Duration::from_secs(360)),
         partial_fills_allowed: false,
-        refund_src_to: Default::default(),
-        receive_dst_to: Default::default(),
+        refund_src_to: defuse_escrow_swap::OverrideSend::default(),
+        receive_dst_to: defuse_escrow_swap::OverrideSend::default(),
         taker_whitelist: [proxy.id().clone()].into(),  // Anyone can fill
         protocol_fees: None,
         integrator_fees: BTreeMap::new(),
@@ -376,8 +379,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     };
 
     // Maker registers public key and executes transfer intent
-    const PRIVATE_KEY_MAKER: [u8; 32] = [3u8; 32];
-    maker.defuse_add_public_key(&*defuse, public_key_from_secret(&PRIVATE_KEY_MAKER)).await.unwrap();
+    maker.defuse_add_public_key(&defuse, public_key_from_secret(&PRIVATE_KEY_MAKER)).await.unwrap();
     maker.execute_transfer_intent(&defuse, transfer, &PRIVATE_KEY_MAKER, [0u8; 32]).await.unwrap();
 
     // Verify escrow-swap instance EXISTS after maker's fund (state_init deployed it)
@@ -387,7 +389,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     );
 
     // Verify escrow received maker's tokens
-    let escrow_token_a_balance = SigningAccount::mt_balance_of(&*defuse, &escrow_instance_id, &token_a_defuse_id)
+    let escrow_token_a_balance = SigningAccount::mt_balance_of(&defuse, &escrow_instance_id, &token_a_defuse_id)
         .await
         .unwrap();
     assert_eq!(escrow_token_a_balance, swap_amount, "Escrow should have token-a");
@@ -454,7 +456,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     // Step 1: Execute AuthCall intent signed by relay to deploy and authorize transfer-auth
     // The relay signs an AuthCall intent with state_init, defuse executes it and calls on_auth
     // Note: Relay must be registered in defuse with their public key first
-    relay.defuse_add_public_key(&*defuse, public_key_from_secret(&PRIVATE_KEY_RELAY)).await.unwrap();
+    relay.defuse_add_public_key(&defuse, public_key_from_secret(&PRIVATE_KEY_RELAY)).await.unwrap();
     relay.execute_auth_call_intent(&defuse, &transfer_auth_global, &auth_state, &PRIVATE_KEY_RELAY, [0u8; 32]).await;
 
     // Verify transfer-auth instance EXISTS after on_auth call (state_init deployed it)
@@ -465,7 +467,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
 
     // Step 2: Solver sends tokens to proxy - proxy will query transfer-auth for authorization
     let transfer_result = solver.mt_transfer_call(
-        &*defuse,
+        &defuse,
         proxy.id(),
         &token_b_defuse_id,
         swap_amount,
@@ -483,7 +485,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     );
 
     // Maker should have received token-b
-    let maker_token_b_balance = SigningAccount::mt_balance_of(&*defuse, maker.id(), &token_b_defuse_id)
+    let maker_token_b_balance = SigningAccount::mt_balance_of(&defuse, maker.id(), &token_b_defuse_id)
         .await
         .unwrap();
     assert_eq!(
@@ -492,7 +494,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     );
 
     // Solver should have received token-a
-    let solver_token_a_balance = SigningAccount::mt_balance_of(&*defuse, solver.id(), &token_a_defuse_id)
+    let solver_token_a_balance = SigningAccount::mt_balance_of(&defuse, solver.id(), &token_a_defuse_id)
         .await
         .unwrap();
     assert_eq!(
@@ -501,7 +503,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     );
 
     // Escrow should be empty
-    let escrow_token_a_final = SigningAccount::mt_balance_of(&*defuse, &escrow_instance_id, &token_a_defuse_id)
+    let escrow_token_a_final = SigningAccount::mt_balance_of(&defuse, &escrow_instance_id, &token_a_defuse_id)
         .await
         .unwrap();
     assert_eq!(
@@ -509,7 +511,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         "Escrow should have no token-a remaining"
     );
 
-    let escrow_token_b_final = SigningAccount::mt_balance_of(&*defuse, &escrow_instance_id, &token_b_defuse_id)
+    let escrow_token_b_final = SigningAccount::mt_balance_of(&defuse, &escrow_instance_id, &token_b_defuse_id)
         .await
         .unwrap();
     assert_eq!(

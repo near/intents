@@ -5,7 +5,7 @@
 //! 2. Deploy global escrow-swap and transfer-auth contracts
 //! 3. Deploy escrow-proxy contract
 //! 4. Create solver and solverbus accounts
-//! 5. Build and sign transfer + auth_call intents for execute_intents
+//! 5. Build and sign transfer + `auth_call` intents for `execute_intents`
 //!
 //! Usage:
 //!   USER=your-account.testnet PKEY=ed25519:... cargo run --example escrow-swap-demo --features test-utils
@@ -57,7 +57,7 @@ const ESCROW_GLOBAL_REF_ID: &str = "escrowswap.pityjllk.testnet";
 // near contract deploy escrowproxy.pityjllk.testnet use-file /Users/mat/intents/res/defuse_escrow_proxy.wasm with-init-call new json-args '{"roles":{"super_admins":["pityjllk.testnet"],"admins":{},"grantees":{}},"config":{"per_fill_contract_id":"test2.pityjllk.testnet","escrow_swap_contract_id":"escrowswap.pityjllk.testnet","auth_contract":"intents.nearseny.testnet","auth_collee":"pityjllk.testnet"}}' prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' network-config testnet sign-with-keychain send
 const PROXY: &str = "escrowproxy.pityjllk.testnet";
 
-/// Extract raw 32-byte secret from a SecretKey
+/// Extract raw 32-byte secret from a `SecretKey`
 fn extract_secret_bytes(secret_key: &SecretKey) -> [u8; 32] {
     match secret_key {
         SecretKey::ED25519(_ed_key) => {
@@ -70,13 +70,13 @@ fn extract_secret_bytes(secret_key: &SecretKey) -> [u8; 32] {
             // First 32 bytes are the secret key
             decoded[..32].try_into().unwrap()
         }
-        _ => panic!("Only ED25519 keys supported"),
+        SecretKey::SECP256K1(_) => panic!("Only ED25519 keys supported"),
     }
 }
 
 /// Derive a new ED25519 secret key from an account ID and derivation path
 /// using a deterministic derivation based on the account ID and derivation info.
-/// Returns (SecretKey for near-api, raw 32-byte secret for signing intents)
+/// Returns (`SecretKey` for near-api, raw 32-byte secret for signing intents)
 fn derive_secret_key(account_id: &AccountId, derivation_info: &str) -> (SecretKey, [u8; 32]) {
     use defuse_sandbox::api::{CryptoHash, types::crypto::secret_key::ED25519SecretKey};
 
@@ -137,13 +137,13 @@ async fn fund_and_register_subaccount(
     root.tx(subaccount.id().clone())
         .create_account()
         .transfer(NearToken::from_millinear(100)) // 0.1 NEAR
-        .add_full_access_key(pubkey.clone())
+        .add_full_access_key(pubkey)
         .await?;
 
     // 2. Register the public key in the verifier contract
-    let defuse_pubkey: defuse_crypto::PublicKey = pubkey.clone().into();
+    let defuse_pubkey: defuse_crypto::PublicKey = pubkey.into();
     subaccount
-        .defuse_add_public_key(defuse, defuse_pubkey.clone())
+        .defuse_add_public_key(defuse, defuse_pubkey)
         .await?;
 
     // 3. Verify registration by querying has_public_key
@@ -165,7 +165,7 @@ async fn fund_and_register_subaccount(
 /// Register account's public key in defuse if not already registered.
 async fn register_root_pkey_in_defuse(account: &SigningAccount, defuse: &Account) -> Result<()> {
     let pubkey = account.signer().get_public_key().await?;
-    let defuse_pubkey: defuse_crypto::PublicKey = pubkey.clone().into();
+    let defuse_pubkey: defuse_crypto::PublicKey = pubkey.into();
     let has_key = SigningAccount::defuse_has_public_key(defuse, account.id(), &defuse_pubkey).await?;
     if has_key {
         println!("{} public key already registered in defuse", account.id());
@@ -178,6 +178,7 @@ async fn register_root_pkey_in_defuse(account: &SigningAccount, defuse: &Account
 }
 
 #[tokio::main]
+#[allow(clippy::too_many_lines)]
 async fn main() -> Result<()> {
     println!("=== Escrow Swap Demo (Testnet) ===\n");
 
@@ -210,8 +211,8 @@ async fn main() -> Result<()> {
 
     // 5. Create accounts on-chain, fund them, and register public keys in verifier
     let (src_token_balance, dst_token_balance) = futures::try_join!(
-        SigningAccount::mt_balance_of(&defuse, &root.id(), &src_token),
-        SigningAccount::mt_balance_of(&defuse, &root.id(), &dst_token)
+        SigningAccount::mt_balance_of(&defuse, root.id(), &src_token),
+        SigningAccount::mt_balance_of(&defuse, root.id(), &dst_token)
     )
     .unwrap();
 
@@ -228,10 +229,10 @@ async fn main() -> Result<()> {
         src_token: Nep245TokenId::new(VERIFIER_CONTRACT.parse().unwrap(), src_token.to_string() ).into(),
         dst_token: Nep245TokenId::new(VERIFIER_CONTRACT.parse().unwrap(), dst_token.to_string() ).into(),
         price: Price::ONE,
-        deadline: deadline, // 5 min
+        deadline, // 5 min
         partial_fills_allowed: false,
-        refund_src_to: Default::default(),
-        receive_dst_to: Default::default(),
+        refund_src_to: defuse_escrow_swap::OverrideSend::default(),
+        receive_dst_to: defuse_escrow_swap::OverrideSend::default(),
         taker_whitelist: [proxy.clone()].into(),
         protocol_fees: None,
         integrator_fees: BTreeMap::new(),
@@ -264,7 +265,7 @@ async fn main() -> Result<()> {
         params: escrow_params.clone(),
         action: TransferAction::Fill(FillAction {
             price: Price::ONE,
-            deadline: deadline,
+            deadline,
             receive_src_to: defuse_escrow_swap::OverrideSend::default()
                 .receiver_id(taker_signing.id().clone()),
         }),

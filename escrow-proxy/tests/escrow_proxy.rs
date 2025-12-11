@@ -61,9 +61,6 @@ async fn dao_can_upgrade_contract() {
         auth_collee: root.subaccount("auth_collee").id().clone(),
     };
 
-    let mut grantees = HashMap::new();
-    grantees.insert(defuse_escrow_proxy::Role::DAO, HashSet::from([dao.id().clone()]));
-
     let roles = RolesConfig {
         super_admins: HashSet::from([root.id().clone()]),
         admins: HashMap::new(),

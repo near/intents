@@ -21,6 +21,7 @@ use near_sdk::NearToken;
 const INIT_BALANCE: NearToken = NearToken::from_near(100);
 
 #[tokio::test]
+#[allow(clippy::too_many_lines)]
 async fn test_deploy_transfer_auth_global_contract() {
     let sandbox = Sandbox::new().await;
     let root = sandbox.root();
@@ -68,20 +69,20 @@ async fn test_deploy_transfer_auth_global_contract() {
     root.near_deposit(&wnear, deposit_amount).await.unwrap();
 
     // 2. Storage deposit for defuse contract on wnear (so defuse can receive tokens)
-    root.ft_storage_deposit(&wnear, Some(&defuse.id()))
+    root.ft_storage_deposit(&wnear, Some(defuse.id()))
         .await
         .unwrap();
 
     // 3. ft_transfer_call WNEAR to defuse with solver as msg (receiver)
     let transfer_amount: u128 = NearToken::from_near(5).as_yoctonear();
-    root.ft_transfer_call(&wnear, &defuse.id(), transfer_amount, solver.id().as_str())
+    root.ft_transfer_call(&wnear, defuse.id(), transfer_amount, solver.id().as_str())
         .await
         .unwrap();
 
     // 4. Query mt_balance_of for solver on defuse
     // Token ID for NEP-141 is "nep141:<contract_id>"
     let token_id = TokenId::from(Nep141TokenId::new(wnear.id().clone()));
-    let balance = SigningAccount::mt_balance_of(&defuse, &solver.id(), &token_id)
+    let balance = SigningAccount::mt_balance_of(&defuse, solver.id(), &token_id)
         .await
         .unwrap();
 
@@ -96,7 +97,7 @@ async fn test_deploy_transfer_auth_global_contract() {
 
     // Record initial solver balance
     let initial_solver_balance =
-        SigningAccount::mt_balance_of(&defuse, &solver.id(), &token_id)
+        SigningAccount::mt_balance_of(&defuse, solver.id(), &token_id)
             .await
             .unwrap();
 
@@ -109,8 +110,8 @@ async fn test_deploy_transfer_auth_global_contract() {
             price: Price::ONE,
             deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
             partial_fills_allowed: false,
-            refund_src_to: Default::default(),
-            receive_dst_to: Default::default(),
+            refund_src_to: defuse_escrow_swap::OverrideSend::default(),
+            receive_dst_to: defuse_escrow_swap::OverrideSend::default(),
             taker_whitelist: BTreeSet::new(),
             protocol_fees: None,
             integrator_fees: BTreeMap::new(),
@@ -120,7 +121,7 @@ async fn test_deploy_transfer_auth_global_contract() {
         action: TransferAction::Fill(FillAction {
             price: Price::ONE,
             deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
-            receive_src_to: Default::default(),
+            receive_src_to: defuse_escrow_swap::OverrideSend::default(),
         }),
     };
     let inner_msg_json = serde_json::to_string(&inner_msg).unwrap();
@@ -139,7 +140,7 @@ async fn test_deploy_transfer_auth_global_contract() {
     let solver_id = solver.id().clone();
     let proxy_id = proxy.id().clone();
 
-    let (transfer_result, _) = futures::join!(
+    let (transfer_result, ()) = futures::join!(
         solver.mt_transfer_call(
             &defuse,
             &proxy_id,
@@ -174,6 +175,7 @@ async fn test_deploy_transfer_auth_global_contract() {
 
 /// Test that transfer succeeds when relay authorizes via on_auth call
 #[tokio::test]
+#[allow(clippy::too_many_lines)]
 async fn test_transfer_authorized_by_relay() {
     let sandbox = Sandbox::new().await;
     let root = sandbox.root();
@@ -228,10 +230,10 @@ async fn test_transfer_authorized_by_relay() {
     // Setup: deposit WNEAR to defuse for solver
     let deposit_amount = NearToken::from_near(10);
     root.near_deposit(&wnear, deposit_amount).await.unwrap();
-    root.ft_storage_deposit(&wnear, Some(&defuse.id())).await.unwrap();
+    root.ft_storage_deposit(&wnear, Some(defuse.id())).await.unwrap();
 
     let transfer_amount: u128 = NearToken::from_near(5).as_yoctonear();
-    root.ft_transfer_call(&wnear, &defuse.id(), transfer_amount, solver.id().as_str())
+    root.ft_transfer_call(&wnear, defuse.id(), transfer_amount, solver.id().as_str())
         .await
         .unwrap();
 
@@ -239,7 +241,7 @@ async fn test_transfer_authorized_by_relay() {
 
     // Record initial solver balance
     let initial_solver_balance =
-        SigningAccount::mt_balance_of(&defuse, &solver.id(), &token_id)
+        SigningAccount::mt_balance_of(&defuse, solver.id(), &token_id)
             .await
             .unwrap();
 
@@ -252,8 +254,8 @@ async fn test_transfer_authorized_by_relay() {
             price: Price::ONE,
             deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
             partial_fills_allowed: false,
-            refund_src_to: Default::default(),
-            receive_dst_to: Default::default(),
+            refund_src_to: defuse_escrow_swap::OverrideSend::default(),
+            receive_dst_to: defuse_escrow_swap::OverrideSend::default(),
             taker_whitelist: BTreeSet::new(),
             protocol_fees: None,
             integrator_fees: BTreeMap::new(),
@@ -263,7 +265,7 @@ async fn test_transfer_authorized_by_relay() {
         action: TransferAction::Fill(FillAction {
             price: Price::ONE,
             deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
-            receive_src_to: Default::default(),
+            receive_src_to: defuse_escrow_swap::OverrideSend::default(),
         }),
     };
     let inner_msg_json = serde_json::to_string(&inner_msg).unwrap();
@@ -281,7 +283,7 @@ async fn test_transfer_authorized_by_relay() {
     // Derive the transfer-auth instance address (same logic as proxy uses)
     // The hash is computed from TransferAuthContext, not the message itself
     let context_hash = TransferAuthContext {
-        sender_id: Cow::Borrowed(&solver.id()),
+        sender_id: Cow::Borrowed(solver.id()),
         token_ids: Cow::Owned(vec![token_id.to_string()]),
         amounts: Cow::Owned(vec![U128(proxy_transfer_amount)]),
         salt: transfer_msg.salt,
@@ -336,7 +338,7 @@ async fn test_transfer_authorized_by_relay() {
 
     // Verify solver balance decreased
     let final_solver_balance =
-        SigningAccount::mt_balance_of(&defuse, &solver.id(), &token_id)
+        SigningAccount::mt_balance_of(&defuse, solver.id(), &token_id)
             .await
             .unwrap();
 

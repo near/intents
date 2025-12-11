@@ -10,7 +10,7 @@ fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
         .join("../res/")
         .join(name)
         .with_extension("wasm");
-    fs::read(filename.clone()).expect(&format!("file {filename:?} should exists"))
+    fs::read(filename.clone()).unwrap_or_else(|_| panic!("file {filename:?} should exists"))
 }
 
 pub static ESCROW_PROXY_WASM: LazyLock<Vec<u8>> =

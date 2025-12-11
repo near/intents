@@ -54,8 +54,8 @@ async fn transfer_auth_global_deployment() {
     let auth_transfer_for_solver1 = solver1_state_init.derive_account_id();
     let auth_transfer_for_solver2 = solver2_state_init.derive_account_id();
 
-    println!("auth_transfer_for_solver1: {}", auth_transfer_for_solver1);
-    println!("auth_transfer_for_solver2: {}", auth_transfer_for_solver2);
+    println!("auth_transfer_for_solver1: {auth_transfer_for_solver1}");
+    println!("auth_transfer_for_solver2: {auth_transfer_for_solver2}");
 
     //NOTE: there is rpc error on state_init action but the contract itself is successfully
     //deployed, so lets ignore error for now
@@ -299,10 +299,10 @@ async fn transfer_auth_async_authorization_timeout() {
     let forward_time = sandbox.fast_forward(200);
 
     // assert!(Account::new(transfer_auth_instance.clone(), network_config.clone()).exists().await);
-    let (authorized, _) = futures::join!(async { wait_for_authorization.await }, forward_time);
+    let (authorized, ()) = futures::join!(async { wait_for_authorization.await }, forward_time);
 
     // Timeout returns false (not authorized)
-    assert_eq!(authorized.unwrap(), false);
+    assert!(!authorized.unwrap());
 
     // Contract should still exist after timeout (state reset to Idle for retry)
     // assert!(Account::new(transfer_auth_instance.clone(), network_config.clone()).exists().await);
@@ -348,10 +348,10 @@ async fn transfer_auth_retry_after_timeout_with_on_auth() {
 
     let forward_time = sandbox.fast_forward(200);
 
-    let (authorized, _) = futures::join!(async { wait_for_authorization.await }, forward_time);
+    let (authorized, ()) = futures::join!(async { wait_for_authorization.await }, forward_time);
 
     // First attempt should timeout and return false
-    assert_eq!(authorized.unwrap(), false);
+    assert!(!authorized.unwrap());
 
     // Now call on_auth before second wait_for_authorization
     auth_contract
@@ -416,9 +416,9 @@ async fn transfer_auth_retry_after_timeout_with_on_auth2() {
             NearToken::from_near(0),
         );
     let forward_time = sandbox.fast_forward(200);
-    let (authorized, _) = futures::join!(async { wait_for_authorization.await }, forward_time);
+    let (authorized, ()) = futures::join!(async { wait_for_authorization.await }, forward_time);
     // First attempt should timeout and return false
-    assert_eq!(authorized.unwrap(), false);
+    assert!(!authorized.unwrap());
 
     let wait_for_authorization = proxy
         .tx(transfer_auth_instance.clone())
@@ -429,7 +429,7 @@ async fn transfer_auth_retry_after_timeout_with_on_auth2() {
             NearToken::from_near(0),
         );
 
-    let (authorized, _) = futures::join!(async { wait_for_authorization.await }, async {
+    let (authorized, ()) = futures::join!(async { wait_for_authorization.await }, async {
         tokio::time::sleep(Duration::from_secs(3)).await;
         auth_contract
             .tx(transfer_auth_instance.clone())

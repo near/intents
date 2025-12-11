@@ -26,6 +26,6 @@ impl FromStr for TransferMessage {
 
     #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        serde_json::from_str(s).map_err(Into::into)
+        serde_json::from_str(s)
     }
 }

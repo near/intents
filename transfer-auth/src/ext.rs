@@ -17,7 +17,7 @@ use defuse_nep413::{Nep413Payload, SignedNep413Payload};
 use defuse_crypto::Payload;
 
 /// Sign a message with Ed25519 using a raw 32-byte secret key.
-/// Returns (public_key, signature) as raw byte arrays.
+/// Returns (`public_key`, `signature`) as raw byte arrays.
 pub fn sign_ed25519(secret_key: &[u8; 32], message: &[u8]) -> ([u8; 32], [u8; 64]) {
     use ed25519_dalek::{Signer, SigningKey};
     let signing_key = SigningKey::from_bytes(secret_key);
@@ -33,7 +33,7 @@ pub fn public_key_from_secret(secret_key: &[u8; 32]) -> defuse_crypto::PublicKey
 }
 
 /// Sign intents using NEP-413 standard.
-/// Returns a MultiPayload ready to be passed to execute_intents.
+/// Returns a `MultiPayload` ready to be passed to `execute_intents`.
 pub fn sign_intents(
     signer_id: &AccountId,
     secret_key: &[u8; 32],
@@ -73,7 +73,7 @@ fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
         .join("../res/")
         .join(name)
         .with_extension("wasm");
-    fs::read(filename.clone()).expect(&format!("file {filename:?} should exists"))
+    fs::read(filename.clone()).unwrap_or_else(|_| panic!("file {filename:?} should exists"))
 }
 
 pub static WNEAR_WASM: LazyLock<Vec<u8>> =
@@ -167,7 +167,7 @@ impl TransferAuthAccountExt for SigningAccount {
 #[allow(async_fn_in_trait)]
 pub trait DefuseAccountExt {
     async fn deploy_wnear(&self, name: impl AsRef<str>) -> Account;
-    async fn deploy_verifier(&self, name: impl AsRef<str>, wnear_id: AccountId) -> SigningAccount;
+    async fn deploy_verifier(&self, name: impl AsRef<str>, wnear_id: AccountId) -> Self;
 
     // WNEAR operations
     async fn near_deposit(&self, wnear: &Account, amount: NearToken) -> Result<(), TxError>;
@@ -201,8 +201,8 @@ pub trait DefuseAccountExt {
         msg: &str,
     ) -> Result<Vec<u128>, TxError>;
 
-    /// Call on_auth on a transfer-auth contract instance.
-    /// NOTE: In production, this should be done via AuthCall intent through defuse.
+    /// Call `on_auth` on a `transfer-auth` contract instance.
+    /// NOTE: In production, this should be done via `AuthCall` intent through defuse.
     /// This direct call is for testing purposes only.
     async fn call_on_auth(
         &self,
@@ -229,8 +229,8 @@ pub trait DefuseAccountExt {
     /// Get current salt from defuse for nonce generation
     async fn defuse_current_salt(defuse: &Account) -> anyhow::Result<[u8; 32]>;
 
-    /// Sign an AuthCall intent with state_init using NEP-413 standard.
-    /// Returns a typed SignedNep413Payload ready to be passed to execute_intents.
+    /// Sign an `AuthCall` intent with `state_init` using NEP-413 standard.
+    /// Returns a typed `SignedNep413Payload` ready to be passed to `execute_intents`.
     fn sign_auth_call_intent(
         signer_id: &AccountId,
         secret_key: &[u8; 32],
@@ -240,11 +240,11 @@ pub trait DefuseAccountExt {
         nonce: [u8; 32],
     ) -> SignedNep413Payload;
 
-    /// Execute an AuthCall intent with state_init to deploy transfer-auth and authorize.
+    /// Execute an `AuthCall` intent with `state_init` to deploy transfer-auth and authorize.
     ///
     /// This method:
     /// 1. Signs the intent with the provided keypair
-    /// 2. Executes the intent via defuse's execute_intents
+    /// 2. Executes the intent via defuse's `execute_intents`
     ///
     /// NOTE: The caller must first register the public key in defuse via `defuse_add_public_key`.
     async fn execute_auth_call_intent(
@@ -260,9 +260,9 @@ pub trait DefuseAccountExt {
     ///
     /// This method:
     /// 1. Signs the intent with the provided keypair
-    /// 2. Executes the intent via defuse's execute_intents
+    /// 2. Executes the intent via defuse's `execute_intents`
     ///
-    /// The Transfer struct can include a notification with state_init to deploy
+    /// The Transfer struct can include a notification with `state_init` to deploy
     /// a contract instance while transferring tokens.
     ///
     /// NOTE: The caller must first register the public key in defuse via `defuse_add_public_key`.
@@ -274,8 +274,8 @@ pub trait DefuseAccountExt {
         nonce: [u8; 32],
     ) -> Result<(), TxError>;
 
-    /// Execute multiple signed intents via defuse's execute_intents endpoint.
-    /// Takes a slice of MultiPayload (already signed) and executes them atomically.
+    /// Execute multiple signed intents via defuse's `execute_intents` endpoint.
+    /// Takes a slice of `MultiPayload` (already signed) and executes them atomically.
     async fn execute_signed_intents(
         &self,
         defuse: &Account,
@@ -299,7 +299,7 @@ impl DefuseAccountExt for SigningAccount {
         account
     }
 
-    async fn deploy_verifier(&self, name: impl AsRef<str>, wnear_id: AccountId) -> SigningAccount {
+    async fn deploy_verifier(&self, name: impl AsRef<str>, wnear_id: AccountId) -> Self {
         let defuse = self.create_subaccount(name, NearToken::from_near(20)).await.unwrap();
 
         defuse.tx(defuse.id().clone())
@@ -528,11 +528,11 @@ impl DefuseAccountExt for SigningAccount {
         }
     }
 
-    /// Execute an AuthCall intent with state_init to deploy transfer-auth and authorize.
+    /// Execute an `AuthCall` intent with `state_init` to deploy transfer-auth and authorize.
     ///
     /// This method:
     /// 1. Signs the intent with the provided keypair
-    /// 2. Executes the intent via defuse's execute_intents
+    /// 2. Executes the intent via defuse's `execute_intents`
     ///
     /// NOTE: The caller must first register the public key in defuse via `defuse_add_public_key`.
     async fn execute_auth_call_intent(
