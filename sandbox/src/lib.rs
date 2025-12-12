@@ -85,7 +85,7 @@ impl Sandbox {
             root: self
                 .root()
                 .create_subaccount(
-                    self.sub_counter.fetch_add(1, Ordering::SeqCst).to_string(),
+                    self.sub_counter.fetch_add(1, Ordering::Relaxed).to_string(),
                     amount,
                 )
                 .await?,
