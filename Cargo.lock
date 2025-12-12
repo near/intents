@@ -2474,9 +2474,9 @@ dependencies = [
 
 [[package]]
 name = "near-account-id"
-version = "2.3.0"
+version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "359c8ca02a3d0ef676a5baf9474b16a50b4137360664b15031977708989342ef"
+checksum = "9179b8aa862592cc9d76153f6486384a8f2ec340d9c5a701e67cd22cb9b9dd1e"
 dependencies = [
  "arbitrary",
  "arbitrary_with",

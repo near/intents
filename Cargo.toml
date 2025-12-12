@@ -101,6 +101,8 @@ near-crypto = "0.34.1"
 near-plugins = { git = "https://github.com/Near-One/near-plugins", tag = "v0.5.0" }
 near-sdk = "5.22"
 near-workspaces = "0.22"
+near-account-id = "2.4.0"
+
 futures = "0.3"
 p256 = { version = "0.13.2", default-features = false, features = ["ecdsa"] }
 

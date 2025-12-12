@@ -117,17 +117,13 @@ impl NftExt for SigningAccount {
         msg: impl AsRef<str>,
     ) -> anyhow::Result<()> {
         self.tx(receiver_id.into())
-            .function_call(
-                FnCallBuilder::new("nft_on_transfer")
-                    .json_args(json!({
-                            "sender_id": sender_id,
-                            "previous_owner_id": previous_owner_id.as_ref(),
-                            "token_id": token_id,
-                            "msg": msg.as_ref(),
+            .function_call(FnCallBuilder::new("nft_on_transfer").json_args(json!({
+                    "sender_id": sender_id,
+                    "previous_owner_id": previous_owner_id.as_ref(),
+                    "token_id": token_id,
+                    "msg": msg.as_ref(),
 
-                    }))
-                    .with_deposit(NearToken::from_yoctonear(1)),
-            )
+            })))
             .await?;
 
         Ok(())

@@ -4,15 +4,14 @@ use std::fmt::Debug;
 use std::{fs, path::Path};
 
 pub fn read_wasm(dir: impl AsRef<Path>, name: impl AsRef<Path>) -> Vec<u8> {
-    let base = Path::new(env!("CARGO_MANIFEST_DIR")).join("../").join(dir);
-    let mut filename = base.join(name).with_extension("wasm");
-
-    if filename.is_symlink() {
-        let target = fs::read_link(&filename)
-            .unwrap_or_else(|e| panic!("Failed to read symlink at {filename:?}: {e}"));
-
-        filename = base.join(&target).with_extension("wasm");
-    }
+    let filename = fs::canonicalize(
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../")
+            .join(dir)
+            .join(name)
+            .with_extension("wasm"),
+    )
+    .unwrap_or_else(|e| panic!("Failed to canonicalize path: {e}"));
 
     println!("Reading WASM file at {filename:?}");
 

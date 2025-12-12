@@ -104,8 +104,7 @@ impl MtExt for SigningAccount {
         memo: impl Into<Option<String>>,
         msg: impl Into<String>,
     ) -> anyhow::Result<u128> {
-        let res = self
-            .tx(contract.into())
+        self.tx(contract.into())
             .function_call(
                 FnCallBuilder::new("mt_transfer_call")
                     .json_args(json!({
@@ -118,13 +117,9 @@ impl MtExt for SigningAccount {
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
             .await?
-            .json::<Vec<U128>>()?;
-
-        let [amount] = res
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("Expected exactly one amount in response"))?;
-
-        Ok(amount.0)
+            .json::<[U128; 1]>()
+            .map(|v| v[0].0)
+            .map_err(Into::into)
     }
 
     async fn mt_batch_transfer_call(
