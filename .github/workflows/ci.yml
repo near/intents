@@ -148,7 +148,7 @@ jobs:
         env:
           DEFUSE_MIGRATE_FROM_LEGACY: "true"
         # TODO: Remove --test-threads 1 when concurrency issues are resolved 
-        run: cargo make run-tests -- --show-output --test-threads 1
+        run: cargo make run-tests -- --show-output
 
   security_audit_report:
     name: Security Audit - report

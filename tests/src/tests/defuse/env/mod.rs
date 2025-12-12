@@ -37,7 +37,7 @@ use std::{
 pub static MT_RECEIVER_STUB_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("res", "multi-token-receiver-stub/multi_token_receiver_stub"));
 
-const TOKEN_STORAGE_DEPOSIT: NearToken = NearToken::from_yoctonear(2_350_000_000_000_000_000_000);
+const TOKEN_STORAGE_DEPOSIT: NearToken = NearToken::from_near(1);
 const INITIAL_USER_BALANCE: NearToken = NearToken::from_near(10);
 
 pub struct Env {
