@@ -1,18 +1,19 @@
-use defuse::contract::Role;
+use defuse::{
+    contract::Role,
+    sandbox_ext::state::{SaltManagerExt, SaltViewExt},
+};
 
+use defuse_sandbox::extensions::acl::AclExt;
 use defuse_test_utils::asserts::ResultAssertsExt;
 use rstest::rstest;
 
-use crate::{
-    tests::defuse::{env::Env, state::SaltManagerExt},
-    utils::acl::AclExt,
-};
+use crate::tests::defuse::env::Env;
 
 #[tokio::test]
 #[rstest]
 async fn update_current_salt() {
     let env = Env::builder().deployer_as_super_admin().build().await;
-    let prev_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
+    let prev_salt = env.defuse.current_salt().await.unwrap();
 
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
 
@@ -35,16 +36,11 @@ async fn update_current_salt() {
             .await
             .expect("unable to rotate salt");
 
-        let current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
+        let current_salt = env.defuse.current_salt().await.unwrap();
 
         assert_ne!(prev_salt, current_salt);
         assert_eq!(new_salt, current_salt);
-        assert!(
-            env.defuse
-                .is_valid_salt(env.defuse.id(), &prev_salt)
-                .await
-                .unwrap()
-        );
+        assert!(env.defuse.is_valid_salt(&prev_salt).await.unwrap());
     }
 }
 
@@ -52,7 +48,7 @@ async fn update_current_salt() {
 #[rstest]
 async fn invalidate_salts() {
     let env = Env::builder().deployer_as_super_admin().build().await;
-    let mut current_salt = env.defuse.current_salt(env.defuse.id()).await.unwrap();
+    let mut current_salt = env.defuse.current_salt().await.unwrap();
     let mut prev_salt = current_salt;
 
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
@@ -60,7 +56,7 @@ async fn invalidate_salts() {
     // only DAO or salt manager can invalidate salt
     {
         user2
-            .invalidate_salts(env.defuse.id(), &[prev_salt])
+            .invalidate_salts(env.defuse.id(), [prev_salt])
             .await
             .assert_err_contains("Insufficient permissions for method");
     }
@@ -77,32 +73,22 @@ async fn invalidate_salts() {
             .expect("unable to rotate salt");
 
         user1
-            .invalidate_salts(env.defuse.id(), &[prev_salt])
+            .invalidate_salts(env.defuse.id(), [prev_salt])
             .await
             .expect("unable to rotate salt");
 
-        assert!(
-            !env.defuse
-                .is_valid_salt(env.defuse.id(), &prev_salt)
-                .await
-                .unwrap()
-        );
+        assert!(!env.defuse.is_valid_salt(&prev_salt).await.unwrap());
     }
 
     // invalidate current salt by salt manager
     {
         prev_salt = current_salt;
         current_salt = user1
-            .invalidate_salts(env.defuse.id(), &[current_salt])
+            .invalidate_salts(env.defuse.id(), [current_salt])
             .await
             .expect("unable to rotate salt");
 
-        assert!(
-            !env.defuse
-                .is_valid_salt(env.defuse.id(), &prev_salt)
-                .await
-                .unwrap()
-        );
+        assert!(!env.defuse.is_valid_salt(&prev_salt).await.unwrap());
         assert_ne!(prev_salt, current_salt);
     }
 }

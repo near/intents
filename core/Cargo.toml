@@ -53,6 +53,7 @@ arbitrary = [
     "defuse-bitmap/arbitrary",
     "defuse-crypto/arbitrary",
     "defuse-token-id/arbitrary",
+    "defuse-ton-connect/arbitrary",
 ]
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

@@ -1,11 +1,7 @@
 use crate::tests::defuse::DefuseSignerExt;
+use crate::tests::defuse::{env::Env, intents::ExecuteIntentsExt};
 use crate::utils::fixtures::{ed25519_pk, secp256k1_pk};
-use crate::{
-    tests::defuse::{
-        env::Env, intents::ExecuteIntentsExt, tokens::nep141::traits::DefuseFtReceiver,
-    },
-    utils::{mt::MtExt, wnear::WNearExt},
-};
+use defuse::sandbox_ext::tokens::nep141::DefuseFtReceiver;
 use defuse::{
     core::{
         crypto::PublicKey,
@@ -14,6 +10,8 @@ use defuse::{
     },
     tokens::DepositMessage,
 };
+use defuse_sandbox::extensions::mt::MtViewExt;
+use defuse_sandbox::extensions::wnear::WNearExt;
 use near_sdk::NearToken;
 use rstest::rstest;
 
@@ -45,11 +43,9 @@ async fn native_withdraw_intent(ed25519_pk: PublicKey, secp256k1_pk: PublicKey) 
         let mut result = vec![];
         for (account, _) in &amounts_to_withdraw {
             let balance = env
-                .sandbox()
-                .worker()
                 .view_account(account)
                 .await
-                .map(|a| a.balance)
+                .map(|a| a.amount)
                 .unwrap_or(NearToken::from_near(0));
 
             result.push(balance);
@@ -81,7 +77,7 @@ async fn native_withdraw_intent(ed25519_pk: PublicKey, secp256k1_pk: PublicKey) 
     // withdraw native NEAR to corresponding receivers
     let withdraw_payload = other_user
         .sign_defuse_payload_default(
-            env.defuse.id(),
+            &env.defuse,
             amounts_to_withdraw
                 .iter()
                 .cloned()
@@ -93,7 +89,7 @@ async fn native_withdraw_intent(ed25519_pk: PublicKey, secp256k1_pk: PublicKey) 
         .await
         .unwrap();
 
-    env.defuse_execute_intents(env.defuse.id(), [withdraw_payload])
+    env.simulate_and_execute_intents(env.defuse.id(), [withdraw_payload])
         .await
         .expect("execute_intents: failed to withdraw native NEAR to receivers");
 
@@ -112,13 +108,7 @@ async fn native_withdraw_intent(ed25519_pk: PublicKey, secp256k1_pk: PublicKey) 
     // Check balances of NEAR on the blockchain
     for ((receiver_id, amount), initial_balance) in amounts_to_withdraw.iter().zip(initial_balances)
     {
-        let balance = env
-            .sandbox()
-            .worker()
-            .view_account(receiver_id)
-            .await
-            .unwrap()
-            .balance;
+        let balance = env.view_account(receiver_id).await.unwrap().amount;
 
         assert!(
             balance == initial_balance.checked_add(*amount).unwrap(),
