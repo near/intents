@@ -941,15 +941,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-decimal-fuzz"
-version = "0.0.0"
-dependencies = [
- "defuse-decimal",
- "libfuzzer-sys",
- "near-sdk",
-]
-
-[[package]]
 name = "defuse-erc191"
 version = "0.1.0"
 dependencies = [
@@ -2326,16 +2317,6 @@ name = "libc"
 version = "0.2.178"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37c93d8daa9d8a012fd8ab92f088405fb202ea0b6ab73ee2482ae66af4f42091"
-
-[[package]]
-name = "libfuzzer-sys"
-version = "0.4.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5037190e1f70cbeef565bd267599242926f724d3b8a9f510fd7e0b540cfa4404"
-dependencies = [
- "arbitrary",
- "cc",
-]
 
 [[package]]
 name = "libredox"
