@@ -21,7 +21,7 @@ use crate::tests::defuse::DefuseSignerExt;
 #[tokio::test]
 #[rstest]
 #[trace]
-async fn transfer_intent123() {
+async fn transfer_intent() {
     let env = Env::builder().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
