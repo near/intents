@@ -14,6 +14,13 @@ use crate::tx::TxBuilder;
 
 const CONTRACT_DEPOSIT: NearToken = NearToken::from_near(100);
 
+impl AsRef<AccountIdRef> for Account {
+    #[inline]
+    fn as_ref(&self) -> &AccountIdRef {
+        &self.account_id
+    }
+}
+
 #[autoimpl(AsRef using self.account_id)]
 #[autoimpl(Deref using self.account_id)]
 #[derive(Clone, Debug)]
@@ -44,8 +51,9 @@ impl Account {
             .expect("invalid subaccount name: must be a valid NEAR account ID")
     }
 
-    pub fn subaccount_name(&self, account_id: &AccountIdRef) -> Option<String> {
+    pub fn subaccount_name(&self, account_id: impl AsRef<AccountIdRef>) -> Option<String> {
         account_id
+            .as_ref()
             .as_str()
             .strip_suffix(&format!(".{}", self.id()))
             .map(ToString::to_string)
@@ -74,9 +82,9 @@ impl Account {
 
     pub async fn view_account(
         &self,
-        account_id: &AccountIdRef,
+        account_id: impl AsRef<AccountIdRef>,
     ) -> anyhow::Result<near_api::types::Account> {
-        NearApiAccount(account_id.into())
+        NearApiAccount(account_id.as_ref().into())
             .view()
             .fetch_from(&self.network_config)
             .await
@@ -141,10 +149,12 @@ impl SigningAccount {
 
     pub async fn transfer_near(
         &self,
-        receiver_id: &AccountIdRef,
+        receiver_id: impl AsRef<AccountIdRef>,
         deposit: NearToken,
     ) -> anyhow::Result<()> {
-        self.tx(receiver_id.into()).transfer(deposit).await?;
+        self.tx(receiver_id.as_ref().into())
+            .transfer(deposit)
+            .await?;
         Ok(())
     }
 

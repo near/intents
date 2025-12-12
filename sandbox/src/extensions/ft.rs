@@ -6,16 +6,16 @@ use crate::{Account, SigningAccount, tx::FnCallBuilder};
 pub trait FtExt {
     async fn ft_transfer(
         &self,
-        token_id: &AccountIdRef,
-        receiver_id: &AccountIdRef,
+        token_id: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         amount: u128,
         memo: Option<String>,
     ) -> anyhow::Result<()>;
 
     async fn ft_transfer_call(
         &self,
-        token_id: &AccountIdRef,
-        receiver_id: &AccountIdRef,
+        token_id: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         amount: u128,
         memo: Option<String>,
         msg: &str,
@@ -23,31 +23,31 @@ pub trait FtExt {
 
     async fn ft_on_transfer(
         &self,
-        sender_id: &AccountIdRef,
-        receiver_id: &AccountIdRef,
+        sender_id: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         amount: u128,
         msg: impl AsRef<str>,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<u128>;
 }
 
 #[allow(async_fn_in_trait)]
 pub trait FtViewExt {
-    async fn ft_balance_of(&self, account_id: &AccountIdRef) -> anyhow::Result<u128>;
+    async fn ft_balance_of(&self, account_id: impl AsRef<AccountIdRef>) -> anyhow::Result<u128>;
 }
 
 impl FtExt for SigningAccount {
     async fn ft_transfer(
         &self,
-        token_id: &AccountIdRef,
-        receiver_id: &AccountIdRef,
+        token_id: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         amount: u128,
         memo: Option<String>,
     ) -> anyhow::Result<()> {
-        self.tx(token_id.into())
+        self.tx(token_id.as_ref().into())
             .function_call(
                 FnCallBuilder::new("ft_transfer")
                     .json_args(json!({
-                        "receiver_id": receiver_id,
+                        "receiver_id": receiver_id.as_ref(),
                         "amount": U128(amount),
                         "memo": memo,
                     }))
@@ -60,17 +60,17 @@ impl FtExt for SigningAccount {
 
     async fn ft_transfer_call(
         &self,
-        token_id: &AccountIdRef,
-        receiver_id: &AccountIdRef,
+        token_id: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         amount: u128,
         memo: Option<String>,
         msg: &str,
     ) -> anyhow::Result<u128> {
-        self.tx(token_id.into())
+        self.tx(token_id.as_ref().into())
             .function_call(
                 FnCallBuilder::new("ft_transfer_call")
                     .json_args(json!({
-                        "receiver_id": receiver_id,
+                        "receiver_id": receiver_id.as_ref(),
                         "amount": U128(amount),
                         "memo": memo,
                         "msg": msg,
@@ -86,33 +86,30 @@ impl FtExt for SigningAccount {
 
     async fn ft_on_transfer(
         &self,
-        sender_id: &AccountIdRef,
-        receiver_id: &AccountIdRef,
+        sender_id: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         amount: u128,
         msg: impl AsRef<str>,
-    ) -> anyhow::Result<()> {
-        self.tx(receiver_id.into())
-            .function_call(
-                FnCallBuilder::new("ft_on_transfer")
-                    .json_args(json!({
-                        "sender_id": sender_id,
-                        "amount": U128(amount),
-                        "msg": msg.as_ref(),
-                    }))
-                    .with_deposit(NearToken::from_yoctonear(1)),
-            )
-            .await?;
-
-        Ok(())
+    ) -> anyhow::Result<u128> {
+        self.tx(receiver_id.as_ref().into())
+            .function_call(FnCallBuilder::new("ft_on_transfer").json_args(json!({
+                "sender_id": sender_id.as_ref(),
+                "amount": U128(amount),
+                "msg": msg.as_ref(),
+            })))
+            .await?
+            .json::<U128>()
+            .map(|v| v.0)
+            .map_err(Into::into)
     }
 }
 
 impl FtViewExt for Account {
-    async fn ft_balance_of(&self, account_id: &AccountIdRef) -> anyhow::Result<u128> {
+    async fn ft_balance_of(&self, account_id: impl AsRef<AccountIdRef>) -> anyhow::Result<u128> {
         self.call_view_function_json::<U128>(
             "ft_balance_of",
             json!({
-                "account_id": account_id,
+                "account_id": account_id.as_ref(),
             }),
         )
         .await

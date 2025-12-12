@@ -13,35 +13,35 @@ static NON_FUNGIBLE_TOKEN_WASM: LazyLock<Vec<u8>> =
 pub trait NftExt {
     async fn nft_transfer(
         &self,
-        collection: &AccountIdRef,
-        receiver_id: &AccountIdRef,
-        token_id: TokenId,
+        collection: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
+        token_id: impl AsRef<str>,
         memo: Option<String>,
     ) -> anyhow::Result<()>;
 
     async fn nft_transfer_call(
         &self,
-        collection: &AccountIdRef,
-        receiver_id: &AccountIdRef,
-        token_id: TokenId,
+        collection: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
+        token_id: impl AsRef<str>,
         memo: Option<String>,
         msg: String,
     ) -> anyhow::Result<bool>;
 
     async fn nft_on_transfer(
         &self,
-        sender_id: &AccountIdRef,
-        receiver_id: &AccountIdRef,
+        sender_id: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         previous_owner_id: impl AsRef<str>,
-        token_id: &TokenId,
+        token_id: impl AsRef<str>,
         msg: impl AsRef<str>,
     ) -> anyhow::Result<()>;
 
     async fn nft_mint(
         &self,
-        collection: &AccountIdRef,
-        token_id: &TokenId,
-        token_owner_id: &AccountIdRef,
+        collection: impl AsRef<AccountIdRef>,
+        token_id: impl AsRef<str>,
+        token_owner_id: impl AsRef<AccountIdRef>,
         token_metadata: &TokenMetadata,
     ) -> anyhow::Result<Token>;
 }
@@ -63,17 +63,17 @@ pub trait NftViewExt {
 impl NftExt for SigningAccount {
     async fn nft_transfer(
         &self,
-        collection: &AccountIdRef,
-        receiver_id: &AccountIdRef,
-        token_id: TokenId,
+        collection: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
+        token_id: impl AsRef<str>,
         memo: Option<String>,
     ) -> anyhow::Result<()> {
-        self.tx(collection.into())
+        self.tx(collection.as_ref().into())
             .function_call(
                 FnCallBuilder::new("nft_transfer")
                     .json_args(json!({
-                        "receiver_id": receiver_id,
-                        "token_id": token_id,
+                        "receiver_id": receiver_id.as_ref(),
+                        "token_id": token_id.as_ref(),
                         "memo": memo,
                     }))
                     .with_deposit(NearToken::from_yoctonear(1)),
@@ -85,18 +85,18 @@ impl NftExt for SigningAccount {
 
     async fn nft_transfer_call(
         &self,
-        collection: &AccountIdRef,
-        receiver_id: &AccountIdRef,
-        token_id: TokenId,
+        collection: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
+        token_id: impl AsRef<str>,
         memo: Option<String>,
         msg: String,
     ) -> anyhow::Result<bool> {
-        self.tx(collection.into())
+        self.tx(collection.as_ref().into())
             .function_call(
                 FnCallBuilder::new("nft_transfer_call")
                     .json_args(json!({
-                            "receiver_id": receiver_id,
-                            "token_id": token_id,
+                            "receiver_id": receiver_id.as_ref(),
+                            "token_id": token_id.as_ref(),
                             "memo": memo,
                         "msg": msg,
 
@@ -110,17 +110,17 @@ impl NftExt for SigningAccount {
 
     async fn nft_on_transfer(
         &self,
-        sender_id: &AccountIdRef,
-        receiver_id: &AccountIdRef,
+        sender_id: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         previous_owner_id: impl AsRef<str>,
-        token_id: &TokenId,
+        token_id: impl AsRef<str>,
         msg: impl AsRef<str>,
     ) -> anyhow::Result<()> {
-        self.tx(receiver_id.into())
+        self.tx(receiver_id.as_ref().into())
             .function_call(FnCallBuilder::new("nft_on_transfer").json_args(json!({
-                    "sender_id": sender_id,
+                    "sender_id": sender_id.as_ref(),
                     "previous_owner_id": previous_owner_id.as_ref(),
-                    "token_id": token_id,
+                    "token_id": token_id.as_ref(),
                     "msg": msg.as_ref(),
 
             })))
@@ -131,17 +131,17 @@ impl NftExt for SigningAccount {
 
     async fn nft_mint(
         &self,
-        collection: &AccountIdRef,
-        token_id: &TokenId,
-        token_owner_id: &AccountIdRef,
+        collection: impl AsRef<AccountIdRef>,
+        token_id: impl AsRef<str>,
+        token_owner_id: impl AsRef<AccountIdRef>,
         token_metadata: &TokenMetadata,
     ) -> anyhow::Result<Token> {
-        self.tx(collection.into())
+        self.tx(collection.as_ref().into())
             .function_call(
                 FnCallBuilder::new("nft_mint")
                     .json_args(json!({
-                            "token_id": token_id,
-                            "token_owner_id": token_owner_id,
+                            "token_id": token_id.as_ref(),
+                            "token_owner_id": token_owner_id.as_ref(),
                             "token_metadata": token_metadata,
 
                     }))

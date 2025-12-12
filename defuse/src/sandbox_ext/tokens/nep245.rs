@@ -9,8 +9,8 @@ use near_sdk::{AccountIdRef, NearToken, json_types::U128, serde_json::json};
 pub trait DefuseMtDepositer {
     async fn defuse_mt_deposit(
         &self,
-        sender_id: &AccountIdRef,
-        defuse_id: &AccountIdRef,
+        sender_id: impl AsRef<AccountIdRef>,
+        defuse_id: impl AsRef<AccountIdRef>,
         token_ids: impl IntoIterator<Item = (impl Into<String>, u128)>,
         msg: impl Into<Option<String>>,
     ) -> anyhow::Result<Vec<u128>>;
@@ -20,9 +20,9 @@ pub trait DefuseMtDepositer {
 pub trait DefuseMtWithdrawer {
     async fn defuse_mt_withdraw(
         &self,
-        defuse_id: &AccountIdRef,
-        token: &AccountIdRef,
-        receiver_id: &AccountIdRef,
+        defuse_id: impl AsRef<AccountIdRef>,
+        token: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         token_ids: Vec<TokenId>,
         amounts: Vec<u128>,
         msg: Option<String>,
@@ -33,8 +33,8 @@ pub trait DefuseMtWithdrawer {
 impl DefuseMtDepositer for SigningAccount {
     async fn defuse_mt_deposit(
         &self,
-        sender_id: &AccountIdRef,
-        defuse_id: &AccountIdRef,
+        sender_id: impl AsRef<AccountIdRef>,
+        defuse_id: impl AsRef<AccountIdRef>,
         token_ids: impl IntoIterator<Item = (impl Into<String>, u128)>,
         msg: impl Into<Option<String>>,
     ) -> anyhow::Result<Vec<u128>> {
@@ -54,21 +54,21 @@ impl DefuseMtDepositer for SigningAccount {
 impl DefuseMtWithdrawer for SigningAccount {
     async fn defuse_mt_withdraw(
         &self,
-        defuse_id: &AccountIdRef,
-        token: &AccountIdRef,
-        receiver_id: &AccountIdRef,
+        defuse_id: impl AsRef<AccountIdRef>,
+        token: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         token_ids: Vec<TokenId>,
         amounts: Vec<u128>,
         msg: Option<String>,
     ) -> anyhow::Result<(Vec<u128>, ExecutionSuccess)> {
         let res = self
-            .tx(defuse_id.into())
+            .tx(defuse_id.as_ref().into())
             .function_call(
                 FnCallBuilder::new("mt_withdraw")
                     .with_deposit(NearToken::from_yoctonear(1))
                     .json_args(json!({
-                        "token": token,
-                        "receiver_id": receiver_id,
+                        "token": token.as_ref(),
+                        "receiver_id": receiver_id.as_ref(),
                         "token_ids": token_ids,
                         "amounts": amounts.into_iter().map(U128).collect::<Vec<_>>(),
                         "msg": msg

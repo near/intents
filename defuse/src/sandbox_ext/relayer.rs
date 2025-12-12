@@ -5,13 +5,13 @@ use near_sdk::{AccountIdRef, NearToken, PublicKey, serde_json::json};
 pub trait RelayerKeysExt {
     async fn add_relayer_key(
         &self,
-        defuse_contract_id: &AccountIdRef,
+        defuse_contract_id: impl AsRef<AccountIdRef>,
         public_key: &PublicKey,
     ) -> anyhow::Result<()>;
 
     async fn delete_relayer_key(
         &self,
-        defuse_contract_id: &AccountIdRef,
+        defuse_contract_id: impl AsRef<AccountIdRef>,
         public_key: &PublicKey,
     ) -> anyhow::Result<()>;
 }
@@ -19,10 +19,10 @@ pub trait RelayerKeysExt {
 impl RelayerKeysExt for SigningAccount {
     async fn add_relayer_key(
         &self,
-        defuse_contract_id: &AccountIdRef,
+        defuse_contract_id: impl AsRef<AccountIdRef>,
         public_key: &PublicKey,
     ) -> anyhow::Result<()> {
-        self.tx(defuse_contract_id.into())
+        self.tx(defuse_contract_id.as_ref().into())
             .function_call(
                 FnCallBuilder::new("add_relayer_key")
                     .with_deposit(NearToken::from_yoctonear(1))
@@ -37,10 +37,10 @@ impl RelayerKeysExt for SigningAccount {
 
     async fn delete_relayer_key(
         &self,
-        defuse_contract_id: &AccountIdRef,
+        defuse_contract_id: impl AsRef<AccountIdRef>,
         public_key: &PublicKey,
     ) -> anyhow::Result<()> {
-        self.tx(defuse_contract_id.into())
+        self.tx(defuse_contract_id.as_ref().into())
             .function_call(
                 FnCallBuilder::new("delete_relayer_key")
                     .with_deposit(NearToken::from_yoctonear(1))

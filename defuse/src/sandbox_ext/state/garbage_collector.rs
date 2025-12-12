@@ -7,7 +7,7 @@ use near_sdk::{AccountId, AccountIdRef, NearToken, serde_json::json};
 pub trait GarbageCollectorExt {
     async fn cleanup_nonces(
         &self,
-        defuse_contract_id: &AccountIdRef,
+        defuse_contract_id: impl AsRef<AccountIdRef>,
         data: impl IntoIterator<Item = (AccountId, impl IntoIterator<Item = Nonce>)>,
     ) -> anyhow::Result<()>;
 }
@@ -15,7 +15,7 @@ pub trait GarbageCollectorExt {
 impl GarbageCollectorExt for SigningAccount {
     async fn cleanup_nonces(
         &self,
-        defuse_contract_id: &AccountIdRef,
+        defuse_contract_id: impl AsRef<AccountIdRef>,
         data: impl IntoIterator<Item = (AccountId, impl IntoIterator<Item = Nonce>)>,
     ) -> anyhow::Result<()> {
         let nonces = data
@@ -27,7 +27,7 @@ impl GarbageCollectorExt for SigningAccount {
             })
             .collect::<Vec<_>>();
 
-        self.tx(defuse_contract_id.into())
+        self.tx(defuse_contract_id.as_ref().into())
             .function_call(
                 FnCallBuilder::new("cleanup_nonces")
                     .with_deposit(NearToken::from_yoctonear(1))

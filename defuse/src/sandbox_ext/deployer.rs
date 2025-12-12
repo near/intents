@@ -17,7 +17,10 @@ pub trait DefuseExt {
         legacy: bool,
     ) -> anyhow::Result<Account>;
 
-    async fn upgrade_defuse(&self, defuse_contract_id: &AccountIdRef) -> anyhow::Result<()>;
+    async fn upgrade_defuse(
+        &self,
+        defuse_contract_id: impl AsRef<AccountIdRef>,
+    ) -> anyhow::Result<()>;
 }
 
 impl DefuseExt for SigningAccount {
@@ -43,8 +46,11 @@ impl DefuseExt for SigningAccount {
         .await
     }
 
-    async fn upgrade_defuse(&self, defuse_contract_id: &AccountIdRef) -> anyhow::Result<()> {
-        self.tx(defuse_contract_id.into())
+    async fn upgrade_defuse(
+        &self,
+        defuse_contract_id: impl AsRef<AccountIdRef>,
+    ) -> anyhow::Result<()> {
+        self.tx(defuse_contract_id.as_ref().into())
             .function_call(
                 FnCallBuilder::new("upgrade")
                     .with_deposit(NearToken::from_yoctonear(1))

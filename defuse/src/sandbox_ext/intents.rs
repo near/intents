@@ -14,23 +14,25 @@ use crate::intents::SimulationOutput;
 pub trait ExecuteIntentsExt {
     async fn execute_intents(
         &self,
-        defuse_id: &AccountIdRef,
+        defuse_id: impl AsRef<AccountIdRef>,
         intents: impl IntoIterator<Item = MultiPayload>,
     ) -> anyhow::Result<ExecutionSuccess>;
 
     async fn simulate_intents(
         &self,
-        defuse_id: &AccountIdRef,
+        defuse_id: impl AsRef<AccountIdRef>,
         intents: impl IntoIterator<Item = MultiPayload>,
     ) -> anyhow::Result<SimulationOutput>;
 
     async fn simulate_and_execute_intents(
         &self,
-        defuse_id: &AccountIdRef,
+        defuse_id: impl AsRef<AccountIdRef>,
         intents: impl IntoIterator<Item = MultiPayload>,
     ) -> anyhow::Result<ExecutionSuccess> {
         let intents = intents.into_iter().collect::<Vec<_>>();
-        let simulation_result = self.simulate_intents(defuse_id, intents.clone()).await;
+        let simulation_result = self
+            .simulate_intents(defuse_id.as_ref(), intents.clone())
+            .await;
 
         self.execute_intents(defuse_id, intents)
             .await
@@ -41,7 +43,7 @@ pub trait ExecuteIntentsExt {
 impl ExecuteIntentsExt for SigningAccount {
     async fn execute_intents(
         &self,
-        defuse_id: &AccountIdRef,
+        defuse_id: impl AsRef<AccountIdRef>,
         intents: impl IntoIterator<Item = MultiPayload>,
     ) -> anyhow::Result<ExecutionSuccess> {
         let args = json!({
@@ -53,14 +55,14 @@ impl ExecuteIntentsExt for SigningAccount {
             serde_json::to_string_pretty(&args).unwrap()
         );
 
-        self.tx(defuse_id.into())
+        self.tx(defuse_id.as_ref().into())
             .function_call(FnCallBuilder::new("execute_intents").json_args(&args))
             .await
     }
 
     async fn simulate_intents(
         &self,
-        defuse_id: &AccountIdRef,
+        defuse_id: impl AsRef<AccountIdRef>,
         intents: impl IntoIterator<Item = MultiPayload>,
     ) -> anyhow::Result<SimulationOutput> {
         let args = json!({
@@ -72,7 +74,7 @@ impl ExecuteIntentsExt for SigningAccount {
             serde_json::to_string_pretty(&args).unwrap()
         );
 
-        let defuse = Account::new(defuse_id.into(), self.network_config().clone());
+        let defuse = Account::new(defuse_id.as_ref().into(), self.network_config().clone());
 
         defuse
             .call_view_function_json("simulate_intents", args)

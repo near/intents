@@ -4,11 +4,14 @@ use near_sdk::{AccountIdRef, NearToken, serde_json::json};
 
 #[allow(async_fn_in_trait)]
 pub trait SaltManagerExt {
-    async fn update_current_salt(&self, defuse_contract_id: &AccountIdRef) -> anyhow::Result<Salt>;
+    async fn update_current_salt(
+        &self,
+        defuse_contract_id: impl AsRef<AccountIdRef>,
+    ) -> anyhow::Result<Salt>;
 
     async fn invalidate_salts(
         &self,
-        defuse_contract_id: &AccountIdRef,
+        defuse_contract_id: impl AsRef<AccountIdRef>,
         salts: impl IntoIterator<Item = Salt>,
     ) -> anyhow::Result<Salt>;
 }
@@ -21,8 +24,11 @@ pub trait SaltViewExt {
 }
 
 impl SaltManagerExt for SigningAccount {
-    async fn update_current_salt(&self, defuse_contract_id: &AccountIdRef) -> anyhow::Result<Salt> {
-        self.tx(defuse_contract_id.into())
+    async fn update_current_salt(
+        &self,
+        defuse_contract_id: impl AsRef<AccountIdRef>,
+    ) -> anyhow::Result<Salt> {
+        self.tx(defuse_contract_id.as_ref().into())
             .function_call(
                 FnCallBuilder::new("update_current_salt")
                     .with_deposit(NearToken::from_yoctonear(1)),
@@ -34,10 +40,10 @@ impl SaltManagerExt for SigningAccount {
 
     async fn invalidate_salts(
         &self,
-        defuse_contract_id: &AccountIdRef,
+        defuse_contract_id: impl AsRef<AccountIdRef>,
         salts: impl IntoIterator<Item = Salt>,
     ) -> anyhow::Result<Salt> {
-        self.tx(defuse_contract_id.into())
+        self.tx(defuse_contract_id.as_ref().into())
             .function_call(
                 FnCallBuilder::new("invalidate_salts")
                     .json_args(json!({ "salts": salts.into_iter().collect::<Vec<_>>() }))

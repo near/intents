@@ -10,8 +10,8 @@ use crate::{Account, SigningAccount, tx::FnCallBuilder};
 pub trait MtExt {
     async fn mt_transfer(
         &self,
-        contract: &AccountIdRef,
-        receiver_id: &AccountIdRef,
+        contract: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         token_id: impl AsRef<str>,
         amount: u128,
         memo: impl Into<Option<String>>,
@@ -19,8 +19,8 @@ pub trait MtExt {
 
     async fn mt_transfer_call(
         &self,
-        contract: &AccountIdRef,
-        receiver_id: &AccountIdRef,
+        contract: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         token_id: impl AsRef<str>,
         amount: u128,
         memo: impl Into<Option<String>>,
@@ -29,8 +29,8 @@ pub trait MtExt {
 
     async fn mt_batch_transfer_call(
         &self,
-        contract: &AccountIdRef,
-        receiver_id: &AccountIdRef,
+        contract: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         token_ids: impl IntoIterator<Item = String>,
         amounts: impl IntoIterator<Item = u128>,
         memo: impl Into<Option<String>>,
@@ -39,8 +39,8 @@ pub trait MtExt {
 
     async fn mt_on_transfer(
         &self,
-        sender_id: &AccountIdRef,
-        receiver_id: &AccountIdRef,
+        sender_id: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         token_ids: impl IntoIterator<Item = (impl Into<String>, u128)>,
         msg: impl AsRef<str>,
     ) -> anyhow::Result<Vec<u128>>;
@@ -50,7 +50,7 @@ pub trait MtExt {
 pub trait MtViewExt {
     async fn mt_batch_balance_of(
         &self,
-        account_id: &AccountIdRef,
+        account_id: impl AsRef<AccountIdRef>,
         token_ids: impl IntoIterator<Item = String>,
     ) -> anyhow::Result<Vec<u128>>;
 
@@ -64,7 +64,7 @@ pub trait MtViewExt {
 
     async fn mt_tokens_for_owner(
         &self,
-        account_id: &AccountIdRef,
+        account_id: impl AsRef<AccountIdRef>,
         range: impl RangeBounds<usize>,
     ) -> anyhow::Result<Vec<Token>>;
 }
@@ -72,17 +72,17 @@ pub trait MtViewExt {
 impl MtExt for SigningAccount {
     async fn mt_transfer(
         &self,
-        contract: &AccountIdRef,
-        receiver_id: &AccountIdRef,
+        contract: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         token_id: impl AsRef<str>,
         amount: u128,
         memo: impl Into<Option<String>>,
     ) -> anyhow::Result<()> {
-        self.tx(contract.into())
+        self.tx(contract.as_ref().into())
             .function_call(
                 FnCallBuilder::new("mt_transfer")
                     .json_args(json!({
-                        "receiver_id": receiver_id,
+                        "receiver_id": receiver_id.as_ref(),
                         "token_id": token_id.as_ref(),
                         "amount": U128(amount),
                         "memo": memo.into(),
@@ -97,18 +97,18 @@ impl MtExt for SigningAccount {
 
     async fn mt_transfer_call(
         &self,
-        contract: &AccountIdRef,
-        receiver_id: &AccountIdRef,
+        contract: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         token_id: impl AsRef<str>,
         amount: u128,
         memo: impl Into<Option<String>>,
         msg: impl Into<String>,
     ) -> anyhow::Result<u128> {
-        self.tx(contract.into())
+        self.tx(contract.as_ref().into())
             .function_call(
                 FnCallBuilder::new("mt_transfer_call")
                     .json_args(json!({
-                        "receiver_id": receiver_id,
+                        "receiver_id": receiver_id.as_ref(),
                         "token_id": token_id.as_ref(),
                         "amount": U128(amount),
                         "memo": memo.into(),
@@ -124,18 +124,18 @@ impl MtExt for SigningAccount {
 
     async fn mt_batch_transfer_call(
         &self,
-        contract: &AccountIdRef,
-        receiver_id: &AccountIdRef,
+        contract: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         token_ids: impl IntoIterator<Item = String>,
         amounts: impl IntoIterator<Item = u128>,
         memo: impl Into<Option<String>>,
         msg: impl Into<String>,
     ) -> anyhow::Result<ExecutionFinalResult> {
-        self.tx(contract.into())
+        self.tx(contract.as_ref().into())
             .function_call(
                 FnCallBuilder::new("mt_batch_transfer_call")
                     .json_args(json!({
-                        "receiver_id": receiver_id,
+                        "receiver_id": receiver_id.as_ref(),
                         "token_ids": token_ids.into_iter().collect::<Vec<_>>(),
                         "amounts": amounts.into_iter().map(U128::from).collect::<Vec<_>>(),
                         "approvals": Option::<Vec<Option<(near_sdk::AccountId, u64)>>>::None,
@@ -150,8 +150,8 @@ impl MtExt for SigningAccount {
 
     async fn mt_on_transfer(
         &self,
-        sender_id: &AccountIdRef,
-        receiver_id: &AccountIdRef,
+        sender_id: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         token_ids: impl IntoIterator<Item = (impl Into<String>, u128)>,
         msg: impl AsRef<str>,
     ) -> anyhow::Result<Vec<u128>> {
@@ -160,10 +160,10 @@ impl MtExt for SigningAccount {
             .map(|(token_id, amount)| (token_id.into(), U128(amount)))
             .unzip();
 
-        self.tx(receiver_id.into())
+        self.tx(receiver_id.as_ref().into())
             .function_call(FnCallBuilder::new("mt_on_transfer").json_args(json!({
-                "sender_id": sender_id,
-                "previous_owner_ids": vec![sender_id; token_ids.len()],
+                "sender_id": sender_id.as_ref(),
+                "previous_owner_ids": vec![sender_id.as_ref(); token_ids.len()],
                 "token_ids": token_ids,
                 "amounts": amounts,
                 "msg": msg.as_ref(),
@@ -178,13 +178,13 @@ impl MtExt for SigningAccount {
 impl MtViewExt for Account {
     async fn mt_batch_balance_of(
         &self,
-        account_id: &AccountIdRef,
+        account_id: impl AsRef<AccountIdRef>,
         token_ids: impl IntoIterator<Item = String>,
     ) -> anyhow::Result<Vec<u128>> {
         self.call_view_function_json::<Vec<U128>>(
             "mt_batch_balance_of",
             json!({
-                "account_id": account_id,
+                "account_id": account_id.as_ref(),
                 "token_ids": token_ids.into_iter().collect::<Vec<_>>()
             }),
         )
@@ -239,7 +239,7 @@ impl MtViewExt for Account {
 
     async fn mt_tokens_for_owner(
         &self,
-        account_id: &AccountIdRef,
+        account_id: impl AsRef<AccountIdRef>,
         range: impl RangeBounds<usize>,
     ) -> anyhow::Result<Vec<Token>> {
         let from = match range.start_bound() {
@@ -263,7 +263,7 @@ impl MtViewExt for Account {
         self.call_view_function_json(
             "mt_tokens_for_owner",
             json!({
-                "account_id": account_id,
+                "account_id": account_id.as_ref(),
                 "from_index": from.map(|v| U128(v.try_into().unwrap())),
                 "limit": limit,
             }),

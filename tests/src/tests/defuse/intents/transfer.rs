@@ -26,6 +26,9 @@ async fn transfer_intent() {
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
+    // let val = ft1.ft_on_transfer().await.unwrap();
+    // println!("VAL: {}", val);
+
     let other_user_id: AccountId = "other-user.near".parse().unwrap();
     let token_id = TokenId::from(Nep141TokenId::new(ft.id().clone()));
 
