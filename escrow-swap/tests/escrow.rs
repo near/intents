@@ -2,10 +2,11 @@
     clippy::as_conversions,
     clippy::cast_possible_truncation,
     clippy::too_many_lines,
+    clippy::large_futures,
     dead_code
 )]
 
-mod env;
+mod base_env;
 
 use std::time::Duration;
 
@@ -18,27 +19,28 @@ use defuse_escrow_swap::{
     action::{FillAction, TransferAction, TransferMessage},
 };
 use defuse_fees::Pips;
-use defuse_sandbox::{Account, MtViewExt, SigningAccount, TxResult};
+use defuse_sandbox::{
+    Account, SigningAccount,
+    extensions::{ft::FtExt, mt::MtViewExt},
+};
 use defuse_token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId};
 use futures::{TryStreamExt, stream::FuturesOrdered, try_join};
 use impl_tools::autoimpl;
 use itertools::Itertools;
 use near_sdk::{
-    AccountIdRef, Gas, NearToken,
-    json_types::U128,
-    serde_json::{self, json},
+    AccountIdRef, NearToken, serde_json,
     state_init::{StateInit, StateInitV1},
 };
+use rstest::{fixture, rstest};
 
-use crate::env::{BaseEnv, EscrowExt, EscrowViewExt};
+use crate::base_env::{BaseEnv, EscrowExt, EscrowViewExt};
 
+#[rstest]
 #[tokio::test]
-async fn partial_fills() {
+async fn partial_fills(#[future(awt)] env: EscrowEnv) {
     const MAKER_AMOUNT: u128 = 10000;
     const TAKER_AMOUNT: u128 = 20000;
     const TIMEOUT: Duration = Duration::from_secs(60);
-
-    let env = EscrowEnv::new().await.unwrap();
 
     // try_join!(
     //     env.src_deposit_to_verifier(env.maker.id(), SRC_TOKEN_ID, MAKER_AMOUNT),
@@ -116,32 +118,28 @@ async fn partial_fills() {
         for amount in [MAKER_AMOUNT - 100, 100] {
             let refund = env
                 .src_ft
-                .tx(env.verifier.id().clone())
-                .function_call_json::<U128>(
-                    "ft_on_transfer",
-                    json!({
-                        "sender_id": env.maker.id(),
-                        "amount": U128(amount),
-                        "msg": serde_json::to_string(
-                            &DepositMessage::new(escrow.id().clone())
-                                .with_action(DepositAction::Notify(
-                                    NotifyOnTransfer::new(
-                                        serde_json::to_string(&TransferMessage {
-                                            params: params.clone(),
-                                            action: TransferAction::Fund,
-                                        }).unwrap(),
-                                    )
-                                        .with_state_init(state_init.clone())
+                .ft_on_transfer(
+                    env.maker.id(),
+                    env.verifier.id(),
+                    amount,
+                    serde_json::to_string(
+                        &DepositMessage::new(escrow.id().clone()).with_action(
+                            DepositAction::Notify(
+                                NotifyOnTransfer::new(
+                                    serde_json::to_string(&TransferMessage {
+                                        params: params.clone(),
+                                        action: TransferAction::Fund,
+                                    })
+                                    .unwrap(),
                                 )
-                            )
-                        ).unwrap()
-                    }),
-                    Gas::from_tgas(300),
-                    NearToken::from_yoctonear(0),
+                                .with_state_init(state_init.clone()),
+                            ),
+                        ),
+                    )
+                    .unwrap(),
                 )
                 .await
-                .unwrap()
-                .0;
+                .unwrap();
 
             println!("maker sent: {amount}, refund: {refund}");
 
@@ -165,39 +163,34 @@ async fn partial_fills() {
         for (taker, amount) in env.takers.iter().zip([10000, 5000, 20000]) {
             let refund = env
                 .dst_ft
-                .tx(env.verifier.id().clone())
-                .function_call_json::<U128>(
-                    "ft_on_transfer",
-                    json!({
-                        "sender_id": taker.id(),
-                        "amount": U128(amount),
-                        "msg": serde_json::to_string(&DepositMessage::new(escrow.id().clone())
-                            .with_action(
-                                DepositAction::Notify(NotifyOnTransfer::new(
-                                    serde_json::to_string(&TransferMessage {
-                                        params: params.clone(),
-                                        action: FillAction {
-                                            price: "2.1".parse().unwrap(),
-                                            deadline: Deadline::timeout(Duration::from_secs(10)),
-                                            receive_src_to: OverrideSend {
-                                                memo: Some("taker memo".to_string()),
-                                                // msg: Some("taker msg".to_string()),
-                                                ..Default::default()
-                                            },
-                                        }
-                                        .into()
-                                    })
-                                    .unwrap()
-                                ))
-                            ))
-                        .unwrap()
-                    }),
-                    Gas::from_tgas(300),
-                    NearToken::from_yoctonear(0),
+                .ft_on_transfer(
+                    taker.id(),
+                    env.verifier.id(),
+                    amount,
+                    serde_json::to_string(
+                        &DepositMessage::new(escrow.id().clone()).with_action(
+                            DepositAction::Notify(NotifyOnTransfer::new(
+                                serde_json::to_string(&TransferMessage {
+                                    params: params.clone(),
+                                    action: FillAction {
+                                        price: "2.1".parse().unwrap(),
+                                        deadline: Deadline::timeout(Duration::from_secs(10)),
+                                        receive_src_to: OverrideSend {
+                                            memo: Some("taker memo".to_string()),
+                                            // msg: Some("taker msg".to_string()),
+                                            ..Default::default()
+                                        },
+                                    }
+                                    .into(),
+                                })
+                                .unwrap(),
+                            )),
+                        ),
+                    )
+                    .unwrap(),
                 )
                 .await
-                .unwrap()
-                .0;
+                .unwrap();
 
             println!("taker sent: {amount}, refund: {refund}");
 
@@ -243,6 +236,10 @@ async fn partial_fills() {
         //     .expect_err("cleanup should have been performed");
     }
 }
+#[fixture]
+async fn env() -> EscrowEnv {
+    EscrowEnv::new().await.unwrap()
+}
 
 #[autoimpl(Deref using self.env)]
 struct EscrowEnv {
@@ -258,7 +255,7 @@ struct EscrowEnv {
 }
 
 impl EscrowEnv {
-    pub async fn new() -> TxResult<Self> {
+    pub async fn new() -> anyhow::Result<Self> {
         let env = BaseEnv::new().await?;
         let root = env.root();
 

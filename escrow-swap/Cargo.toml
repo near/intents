@@ -33,7 +33,7 @@ defuse-auth-call = { workspace = true, optional = true }
 defuse-near-utils = { workspace = true, optional = true }
 
 [dev-dependencies]
-defuse.workspace = true
+defuse = { workspace = true, features = ["contract", "sandbox"] }
 defuse-sandbox.workspace = true
 
 anyhow.workspace = true

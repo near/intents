@@ -30,6 +30,7 @@ container_build_command = [
 defuse-admin-utils.workspace = true
 defuse-near-utils.workspace = true
 defuse-poa-token.workspace = true
+defuse-sandbox = {workspace = true, optional = true}
 
 near-contract-standards.workspace = true
 near-plugins.workspace = true
@@ -37,6 +38,7 @@ near-sdk.workspace = true
 
 [features]
 contract = []
+sandbox = ["dep:defuse-sandbox"]
 
 [build-dependencies]
 cargo-near-build = { workspace = true, features = ["build_external"] }

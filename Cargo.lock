@@ -802,6 +802,7 @@ dependencies = [
  "defuse-map-utils",
  "defuse-near-utils",
  "defuse-nep245",
+ "defuse-sandbox",
  "defuse-serde-utils",
  "defuse-test-utils",
  "defuse-wnear",
@@ -1066,6 +1067,7 @@ dependencies = [
  "defuse-admin-utils",
  "defuse-near-utils",
  "defuse-poa-token",
+ "defuse-sandbox",
  "near-contract-standards",
  "near-plugins",
  "near-sdk",
@@ -1095,13 +1097,18 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "defuse-crypto",
+ "defuse-nep245",
  "defuse-randomness",
  "futures",
  "impl-tools",
  "near-api",
+ "near-contract-standards",
+ "near-openapi-types",
  "near-sandbox",
  "near-sdk",
+ "rstest",
  "thiserror 2.0.17",
+ "tokio",
 ]
 
 [[package]]
@@ -1154,6 +1161,7 @@ dependencies = [
  "defuse-near-utils",
  "defuse-poa-factory",
  "defuse-randomness",
+ "defuse-sandbox",
  "defuse-serde-utils",
  "defuse-test-utils",
  "derive_more",
@@ -1166,7 +1174,6 @@ dependencies = [
  "near-contract-standards",
  "near-crypto",
  "near-sdk",
- "near-workspaces",
  "rstest",
  "serde_json",
  "strum 0.27.2",
@@ -2527,9 +2534,9 @@ dependencies = [
 
 [[package]]
 name = "near-account-id"
-version = "2.3.0"
+version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "359c8ca02a3d0ef676a5baf9474b16a50b4137360664b15031977708989342ef"
+checksum = "9179b8aa862592cc9d76153f6486384a8f2ec340d9c5a701e67cd22cb9b9dd1e"
 dependencies = [
  "arbitrary",
  "arbitrary_with",
@@ -3657,9 +3664,9 @@ checksum = "ba39f3699c378cd8970968dcbff9c43159ea4cfbd88d43c00b22f2ef10a435d2"
 
 [[package]]
 name = "reqwest"
-version = "0.12.24"
+version = "0.12.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d0946410b9f7b082a427e4ef5c8ff541a88b357bc6c637c40db3a68ac70a36f"
+checksum = "b6eff9328d40131d43bd911d42d79eb6a47312002a4daefc9e37f17e74a7701a"
 dependencies = [
  "base64 0.22.1",
  "bytes",
@@ -4196,9 +4203,9 @@ dependencies = [
 
 [[package]]
 name = "simd-adler32"
-version = "0.3.7"
+version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d66dc143e6b11c1eddc06d5c423cfc97062865baf299914ab64caa38182078fe"
+checksum = "e320a6c5ad31d271ad523dcf3ad13e2767ad8b1cb8f047f75a8aeaf8da139da2"
 
 [[package]]
 name = "siphasher"
@@ -4762,9 +4769,9 @@ dependencies = [
 
 [[package]]
 name = "tower-http"
-version = "0.6.7"
+version = "0.6.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9cf146f99d442e8e68e585f5d798ccd3cad9a7835b917e09728880a862706456"
+checksum = "d4e6559d53cc268e5031cd8429d05415bc4cb4aefc4aa5d6cc35fbf5b924a1f8"
 dependencies = [
  "bitflags 2.10.0",
  "bytes",
