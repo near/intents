@@ -11,10 +11,10 @@ use futures::try_join;
 use near_sdk::NearToken;
 use rstest::rstest;
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
+#[awt]
 async fn deploy_mint(#[future] sandbox: Sandbox) {
-    let sandbox = sandbox.await;
     let root = sandbox.root();
 
     let user = root
