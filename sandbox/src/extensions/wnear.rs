@@ -5,7 +5,7 @@ use near_sdk::{AccountIdRef, NearToken, serde_json::json};
 use super::ft::FtExt;
 use crate::{Account, SigningAccount, read_wasm, tx::FnCallBuilder};
 
-static WNEAR_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("releases", "wnear"));
+static WNEAR_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("releases/wnear"));
 
 #[allow(async_fn_in_trait)]
 pub trait WNearDeployerExt {

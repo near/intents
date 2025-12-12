@@ -7,7 +7,7 @@ use near_sdk::{AccountIdRef, NearToken, serde_json::json};
 use crate::{Account, SigningAccount, read_wasm, tx::FnCallBuilder};
 
 static NON_FUNGIBLE_TOKEN_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm("releases", "non-fungible-token"));
+    LazyLock::new(|| read_wasm("releases/non-fungible-token"));
 
 #[allow(async_fn_in_trait)]
 pub trait NftExt {
@@ -32,10 +32,10 @@ pub trait NftExt {
         &self,
         sender_id: impl AsRef<AccountIdRef>,
         receiver_id: impl AsRef<AccountIdRef>,
-        previous_owner_id: impl AsRef<str>,
+        previous_owner_id: impl AsRef<AccountIdRef>,
         token_id: impl AsRef<str>,
         msg: impl AsRef<str>,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<bool>;
 
     async fn nft_mint(
         &self,
@@ -112,10 +112,10 @@ impl NftExt for SigningAccount {
         &self,
         sender_id: impl AsRef<AccountIdRef>,
         receiver_id: impl AsRef<AccountIdRef>,
-        previous_owner_id: impl AsRef<str>,
+        previous_owner_id: impl AsRef<AccountIdRef>,
         token_id: impl AsRef<str>,
         msg: impl AsRef<str>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<bool> {
         self.tx(receiver_id.as_ref().into())
             .function_call(FnCallBuilder::new("nft_on_transfer").json_args(json!({
                     "sender_id": sender_id.as_ref(),
@@ -124,9 +124,9 @@ impl NftExt for SigningAccount {
                     "msg": msg.as_ref(),
 
             })))
-            .await?;
-
-        Ok(())
+            .await?
+            .json()
+            .map_err(Into::into)
     }
 
     async fn nft_mint(

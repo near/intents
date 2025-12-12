@@ -26,7 +26,7 @@ use rstest::rstest;
 
 use futures::future::try_join_all;
 
-static DEFUSE_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("res", "defuse"));
+static DEFUSE_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("res/defuse"));
 
 #[ignore = "only for simple upgrades"]
 #[tokio::test]
