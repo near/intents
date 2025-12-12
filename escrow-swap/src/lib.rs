@@ -28,7 +28,7 @@ use near_sdk::{PromiseOrValue, ext_contract};
 
 #[ext_contract(ext_escrow)]
 pub trait Escrow {
-    fn escrow_view(&self) -> &Storage;
+    fn es_view(&self) -> &Storage;
 
     /// Closes the escrow + performs escrow_lost_found().
     ///
@@ -36,7 +36,7 @@ pub trait Escrow {
     /// * Deadline has expired (permissionless)
     /// * maker_src_remaining == 0 && predecessor == maker
     /// * taker_whitelist == [predecessor]
-    fn escrow_close(&mut self, params: Params) -> PromiseOrValue<bool>;
+    fn es_close(&mut self, params: Params) -> PromiseOrValue<bool>;
 
     /// Retries sending:
     /// * `maker_src_remaining` if the escrow was closed
@@ -47,7 +47,7 @@ pub trait Escrow {
     /// Otherwise, there MIGHT be lost assets there
     /// or they might come in the future.
     // TODO: maker custom params for withdrawal
-    fn escrow_lost_found(&mut self, params: Params) -> PromiseOrValue<bool>;
+    fn es_lost_found(&mut self, params: Params) -> PromiseOrValue<bool>;
 }
 
 // TODO: add support for NFTs
@@ -56,8 +56,8 @@ pub trait Escrow {
 // TODO: effective_price(&self)
 // TODO: solver: create_subescrow and lock NEAR on it
 // TODO: refund locked NEAR back to taker if closed Ok, otherwise...?
-// TODO: add support for custom ".on_settled()" hooks?
-
+// TODO: add support for custom ".on_closed()" hooks?
+// TODO: cross-escrow fills without the need for liquidity from solvers
 // TODO: coinsidence of wants?
 // user1: locked 1 BTC in escrow for swap to 100k USDC
 // user2: sends RFQ to SolverBus to swap 10k USDC to BTC

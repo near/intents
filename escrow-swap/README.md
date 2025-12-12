@@ -294,7 +294,7 @@ sequenceDiagram
         end
       end
     end
-    escrow->>+escrow: escrow_resolve_transfers()
+    escrow->>+escrow: es_resolve_transfers()
     opt
       Note over escrow: MakerLost {dst: amount}
     end
@@ -313,7 +313,7 @@ sequenceDiagram
 
 ### Close and Refund
 
-The escrow contract can be closed by calling `escrow_close({"params": {...}})`
+The escrow contract can be closed by calling `es_close({"params": {...}})`
 method if at least one of the following conditions is met:
 * `deadline` has already expired (permissionless)
 * by single-whitelisted taker, i.e. to refund the maker before the `deadline`
@@ -324,7 +324,7 @@ Instead, the contract automatically refunds `maker_src_remaining` (if any)
 and retries sending `maker_dst_lost` (if any) and deletes itself if no more
 tokens were lost.
 
-Alternatively, a fully permissionless `escrow_lost_found({"params": {...}})` method can be called
+Alternatively, a fully permissionless `es_lost_found({"params": {...}})` method can be called
 to retry sending `maker_dst_lost` (if any) even before the `deadline`.
 
 Both methods return a boolean indicating whether the contract was deleted, so
@@ -342,16 +342,16 @@ sequenceDiagram
   alt Close
     rect rgba(208, 135, 112, 0.5)
       alt closed || deadline expired (permissionless)
-        maker->>+escrow: escrow_close(params)
+        maker->>+escrow: es_close(params)
       else single-whitelisted taker
-        taker->>escrow: escrow_close(params)
+        taker->>escrow: es_close(params)
       else maker_src_remaining == 0
-        maker->>escrow: escrow_close(params)
+        maker->>escrow: es_close(params)
       end
     end
     Note over escrow: Close
   else Lost/Found (permissionless)
-    maker->>escrow: escrow_lost_found(params)
+    maker->>escrow: es_lost_found(params)
   end
   
   rect rgba(143, 188, 187, 0.1)
@@ -383,7 +383,7 @@ sequenceDiagram
         end
       end
       
-      escrow->>+escrow: escrow_resolve_transfers()
+      escrow->>+escrow: es_resolve_transfers()
       opt
         Note over escrow: MakerLost { ?src, ?dst }
       end
@@ -399,7 +399,7 @@ sequenceDiagram
 
 ## View Methods
 
-Once deployed, `escrow_view()` view-method can be used to retrieve the current
+Once deployed, `es_view()` view-method can be used to retrieve the current
 state:
 
 ```jsonc

@@ -22,19 +22,19 @@ pub struct Contract(ContractStorage);
 
 #[near]
 impl Escrow for Contract {
-    fn escrow_view(&self) -> &Storage {
+    fn es_view(&self) -> &Storage {
         self.try_as_alive()
             // if cleanup is in progress, the contract will be
             // soon deleted anyway, so it's ok to panic here
             .unwrap_or_panic()
     }
 
-    fn escrow_close(&mut self, params: Params) -> PromiseOrValue<bool> {
+    fn es_close(&mut self, params: Params) -> PromiseOrValue<bool> {
         self.close(&env::predecessor_account_id(), params)
             .unwrap_or_panic()
     }
 
-    fn escrow_lost_found(&mut self, params: Params) -> PromiseOrValue<bool> {
+    fn es_lost_found(&mut self, params: Params) -> PromiseOrValue<bool> {
         self.lost_found(params).unwrap_or_panic()
     }
 }

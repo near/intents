@@ -13,7 +13,7 @@ impl Contract {
     const ESCROW_RESOLVE_TRANSFERS_GAS: Gas = Gas::from_tgas(10);
 
     #[private]
-    pub fn escrow_resolve_transfers(
+    pub fn es_resolve_transfers(
         &mut self,
         maker_src: Option<Sent>,
         maker_dst: Option<Sent>,
@@ -48,7 +48,7 @@ impl State {
         self.callback()
             .with_static_gas(Contract::ESCROW_RESOLVE_TRANSFERS_GAS)
             .with_unused_gas_weight(0)
-            .escrow_resolve_transfers(maker_src, maker_dst)
+            .es_resolve_transfers(maker_src, maker_dst)
     }
 
     fn resolve_transfers(
