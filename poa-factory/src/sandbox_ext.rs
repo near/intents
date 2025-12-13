@@ -9,12 +9,12 @@ use std::{
 use crate::contract::{POA_TOKEN_INIT_BALANCE, Role};
 
 static POA_FACTORY_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm("releases", "defuse_poa_factory"));
+    LazyLock::new(|| read_wasm("releases/defuse_poa_factory"));
 
 #[allow(async_fn_in_trait)]
 pub trait PoAFactoryDeployerExt {
-    fn token_id(token: &str, factory: &AccountIdRef) -> AccountId {
-        format!("{token}.{factory}").parse().unwrap()
+    fn token_id(token: &str, factory: impl AsRef<AccountIdRef>) -> AccountId {
+        format!("{token}.{}", factory.as_ref()).parse().unwrap()
     }
 
     async fn deploy_poa_factory(
@@ -30,16 +30,16 @@ pub trait PoAFactoryDeployerExt {
 pub trait PoAFactoryExt {
     async fn poa_factory_deploy_token(
         &self,
-        factory: &AccountIdRef,
+        factory: impl AsRef<AccountIdRef>,
         token: &str,
         metadata: impl Into<Option<FungibleTokenMetadata>>,
     ) -> anyhow::Result<Account>;
 
     async fn poa_factory_ft_deposit(
         &self,
-        factory: &AccountIdRef,
-        token: &str,
-        owner_id: &AccountIdRef,
+        factory: impl AsRef<AccountIdRef>,
+        token: impl AsRef<str>,
+        owner_id: impl AsRef<AccountIdRef>,
         amount: u128,
         msg: Option<String>,
         memo: Option<String>,
@@ -50,7 +50,7 @@ pub trait PoAFactoryExt {
 pub trait PoAFactoryViewExt {
     async fn poa_tokens(
         &self,
-        poa_factory: &AccountIdRef,
+        poa_factory: impl AsRef<AccountIdRef>,
     ) -> anyhow::Result<HashMap<String, AccountId>>;
 }
 
@@ -86,11 +86,11 @@ impl PoAFactoryDeployerExt for SigningAccount {
 impl PoAFactoryExt for SigningAccount {
     async fn poa_factory_deploy_token(
         &self,
-        factory: &AccountIdRef,
+        factory: impl AsRef<AccountIdRef>,
         token: &str,
         metadata: impl Into<Option<FungibleTokenMetadata>>,
     ) -> anyhow::Result<Account> {
-        self.tx(factory.into())
+        self.tx(factory.as_ref().into())
             .function_call(
                 FnCallBuilder::new("deploy_token")
                     .json_args(json!({
@@ -109,19 +109,19 @@ impl PoAFactoryExt for SigningAccount {
 
     async fn poa_factory_ft_deposit(
         &self,
-        factory: &AccountIdRef,
-        token: &str,
-        owner_id: &AccountIdRef,
+        factory: impl AsRef<AccountIdRef>,
+        token: impl AsRef<str>,
+        owner_id: impl AsRef<AccountIdRef>,
         amount: u128,
         msg: Option<String>,
         memo: Option<String>,
     ) -> anyhow::Result<()> {
-        self.tx(factory.into())
+        self.tx(factory.as_ref().into())
             .function_call(
                 FnCallBuilder::new("ft_deposit")
                     .json_args(json!({
-                            "token": token,
-                            "owner_id": owner_id,
+                            "token": token.as_ref(),
+                            "owner_id": owner_id.as_ref(),
                             "amount": U128(amount),
                         "msg": msg,
                         "memo": memo,

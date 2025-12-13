@@ -5,7 +5,7 @@ use near_sdk::{AccountIdRef, NearToken, serde_json::json};
 use super::ft::FtExt;
 use crate::{Account, SigningAccount, read_wasm, tx::FnCallBuilder};
 
-static WNEAR_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("releases", "wnear"));
+static WNEAR_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("releases/wnear"));
 
 #[allow(async_fn_in_trait)]
 pub trait WNearDeployerExt {
@@ -14,9 +14,16 @@ pub trait WNearDeployerExt {
 
 #[allow(async_fn_in_trait)]
 pub trait WNearExt: FtExt {
-    async fn near_deposit(&self, wnear_id: &AccountIdRef, amount: NearToken) -> anyhow::Result<()>;
-    async fn near_withdraw(&self, wnear_id: &AccountIdRef, amount: NearToken)
-    -> anyhow::Result<()>;
+    async fn near_deposit(
+        &self,
+        wnear_id: impl AsRef<AccountIdRef>,
+        amount: NearToken,
+    ) -> anyhow::Result<()>;
+    async fn near_withdraw(
+        &self,
+        wnear_id: impl AsRef<AccountIdRef>,
+        amount: NearToken,
+    ) -> anyhow::Result<()>;
 }
 
 impl WNearDeployerExt for SigningAccount {
@@ -30,8 +37,12 @@ impl WNearDeployerExt for SigningAccount {
 }
 
 impl WNearExt for SigningAccount {
-    async fn near_deposit(&self, wnear_id: &AccountIdRef, amount: NearToken) -> anyhow::Result<()> {
-        self.tx(wnear_id.into())
+    async fn near_deposit(
+        &self,
+        wnear_id: impl AsRef<AccountIdRef>,
+        amount: NearToken,
+    ) -> anyhow::Result<()> {
+        self.tx(wnear_id.as_ref().into())
             .function_call(
                 FnCallBuilder::new("near_deposit")
                     .with_deposit(NearToken::from_yoctonear(amount.as_yoctonear())),
@@ -43,10 +54,10 @@ impl WNearExt for SigningAccount {
 
     async fn near_withdraw(
         &self,
-        wnear_id: &AccountIdRef,
+        wnear_id: impl AsRef<AccountIdRef>,
         amount: NearToken,
     ) -> anyhow::Result<()> {
-        self.tx(wnear_id.into())
+        self.tx(wnear_id.as_ref().into())
             .function_call(FnCallBuilder::new("near_withdraw").json_args(json!({
                 "amount": amount,
             })))

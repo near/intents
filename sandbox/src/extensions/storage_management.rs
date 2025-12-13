@@ -8,20 +8,20 @@ use crate::{Account, SigningAccount, tx::FnCallBuilder};
 pub trait StorageManagementExt {
     async fn storage_deposit(
         &self,
-        contract_id: &AccountIdRef,
+        contract_id: impl AsRef<AccountIdRef>,
         account_id: Option<&AccountIdRef>,
         deposit: NearToken,
     ) -> anyhow::Result<StorageBalance>;
 
     async fn storage_withdraw(
         &self,
-        contract_id: &AccountIdRef,
+        contract_id: impl AsRef<AccountIdRef>,
         amount: NearToken,
     ) -> anyhow::Result<StorageBalance>;
 
     async fn storage_unregister(
         &self,
-        contract_id: &AccountIdRef,
+        contract_id: impl AsRef<AccountIdRef>,
         force: Option<bool>,
     ) -> anyhow::Result<bool>;
 }
@@ -30,18 +30,18 @@ pub trait StorageManagementExt {
 pub trait StorageViewExt {
     async fn storage_balance_of(
         &self,
-        account_id: &AccountIdRef,
+        account_id: impl AsRef<AccountIdRef>,
     ) -> anyhow::Result<Option<StorageBalance>>;
 }
 
 impl StorageManagementExt for SigningAccount {
     async fn storage_deposit(
         &self,
-        contract_id: &AccountIdRef,
+        contract_id: impl AsRef<AccountIdRef>,
         account_id: Option<&AccountIdRef>,
         deposit: NearToken,
     ) -> anyhow::Result<StorageBalance> {
-        self.tx(contract_id.into())
+        self.tx(contract_id.as_ref().into())
             .function_call(
                 FnCallBuilder::new("storage_deposit")
                     .json_args(json!({
@@ -56,10 +56,10 @@ impl StorageManagementExt for SigningAccount {
 
     async fn storage_withdraw(
         &self,
-        contract_id: &AccountIdRef,
+        contract_id: impl AsRef<AccountIdRef>,
         amount: NearToken,
     ) -> anyhow::Result<StorageBalance> {
-        self.tx(contract_id.into())
+        self.tx(contract_id.as_ref().into())
             .function_call(
                 FnCallBuilder::new("storage_withdraw")
                     .json_args(json!({
@@ -74,10 +74,10 @@ impl StorageManagementExt for SigningAccount {
 
     async fn storage_unregister(
         &self,
-        contract_id: &AccountIdRef,
+        contract_id: impl AsRef<AccountIdRef>,
         force: Option<bool>,
     ) -> anyhow::Result<bool> {
-        self.tx(contract_id.into())
+        self.tx(contract_id.as_ref().into())
             .function_call(
                 FnCallBuilder::new("storage_unregister")
                     .json_args(json!({
@@ -94,12 +94,12 @@ impl StorageManagementExt for SigningAccount {
 impl StorageViewExt for Account {
     async fn storage_balance_of(
         &self,
-        account_id: &AccountIdRef,
+        account_id: impl AsRef<AccountIdRef>,
     ) -> anyhow::Result<Option<StorageBalance>> {
         self.call_view_function_json(
             "storage_balance_of",
             json!({
-                "account_id": account_id
+                "account_id": account_id.as_ref()
             }),
         )
         .await

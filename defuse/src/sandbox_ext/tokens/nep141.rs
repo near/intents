@@ -9,8 +9,8 @@ use crate::tokens::DepositMessage;
 pub trait DefuseFtReceiver {
     async fn defuse_ft_deposit(
         &self,
-        defuse_id: &AccountIdRef,
-        token_id: &AccountIdRef,
+        defuse_id: impl AsRef<AccountIdRef>,
+        token_id: impl AsRef<AccountIdRef>,
         amount: u128,
         msg: impl Into<Option<DepositMessage>>,
     ) -> anyhow::Result<u128>;
@@ -20,9 +20,9 @@ pub trait DefuseFtReceiver {
 pub trait DefuseFtWithdrawer {
     async fn defuse_ft_withdraw(
         &self,
-        defuse_id: &AccountIdRef,
-        token_id: &AccountIdRef,
-        receiver_id: &AccountIdRef,
+        defuse_id: impl AsRef<AccountIdRef>,
+        token_id: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         amount: u128,
         memo: Option<String>,
         msg: Option<String>,
@@ -30,10 +30,10 @@ pub trait DefuseFtWithdrawer {
 
     async fn defuse_ft_force_withdraw(
         &self,
-        defuse_id: &AccountIdRef,
-        owner_id: &AccountIdRef,
-        token_id: &AccountIdRef,
-        receiver_id: &AccountIdRef,
+        defuse_id: impl AsRef<AccountIdRef>,
+        owner_id: impl AsRef<AccountIdRef>,
+        token_id: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         amount: u128,
         memo: Option<String>,
         msg: Option<String>,
@@ -44,8 +44,8 @@ pub trait DefuseFtWithdrawer {
 impl DefuseFtReceiver for SigningAccount {
     async fn defuse_ft_deposit(
         &self,
-        defuse_id: &AccountIdRef,
-        token_id: &AccountIdRef,
+        defuse_id: impl AsRef<AccountIdRef>,
+        token_id: impl AsRef<AccountIdRef>,
         amount: u128,
         msg: impl Into<Option<DepositMessage>>,
     ) -> anyhow::Result<u128> {
@@ -66,19 +66,19 @@ impl DefuseFtReceiver for SigningAccount {
 impl DefuseFtWithdrawer for SigningAccount {
     async fn defuse_ft_withdraw(
         &self,
-        defuse_id: &AccountIdRef,
-        token: &AccountIdRef,
-        receiver_id: &AccountIdRef,
+        defuse_id: impl AsRef<AccountIdRef>,
+        token: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         amount: u128,
         memo: Option<String>,
         msg: Option<String>,
     ) -> anyhow::Result<u128> {
-        self.tx(defuse_id.into())
+        self.tx(defuse_id.as_ref().into())
             .function_call(
                 FnCallBuilder::new("ft_withdraw")
                     .json_args(json!({
-                        "token": token,
-                        "receiver_id": receiver_id,
+                        "token": token.as_ref(),
+                        "receiver_id": receiver_id.as_ref(),
                         "amount": U128(amount),
                         "memo": memo,
                         "msg": msg,
@@ -93,21 +93,21 @@ impl DefuseFtWithdrawer for SigningAccount {
 
     async fn defuse_ft_force_withdraw(
         &self,
-        defuse_id: &AccountIdRef,
-        owner_id: &AccountIdRef,
-        token: &AccountIdRef,
-        receiver_id: &AccountIdRef,
+        defuse_id: impl AsRef<AccountIdRef>,
+        owner_id: impl AsRef<AccountIdRef>,
+        token: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
         amount: u128,
         memo: Option<String>,
         msg: Option<String>,
     ) -> anyhow::Result<u128> {
-        self.tx(defuse_id.into())
+        self.tx(defuse_id.as_ref().into())
             .function_call(
                 FnCallBuilder::new("ft_force_withdraw")
                     .json_args(json!({
-                        "owner_id": owner_id,
-                        "token": token,
-                        "receiver_id": receiver_id,
+                        "owner_id": owner_id.as_ref(),
+                        "token": token.as_ref(),
+                        "receiver_id": receiver_id.as_ref(),
                         "amount": U128(amount),
                         "memo": memo,
                         "msg": msg,
