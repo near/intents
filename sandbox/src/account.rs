@@ -169,7 +169,7 @@ impl SigningAccount {
         balance: NearToken,
         code: impl Into<Vec<u8>>,
         init_call: impl Into<Option<FnCallBuilder>>,
-    ) -> anyhow::Result<SigningAccount> {
+    ) -> anyhow::Result<Self> {
         let secret_key = generate_secret_key().unwrap();
         let subaccount = self.sub_account(name)?;
 
@@ -195,7 +195,7 @@ impl SigningAccount {
         name: impl AsRef<str>,
         balance: NearToken,
         code: impl Into<Vec<u8>>,
-    ) -> anyhow::Result<SigningAccount> {
+    ) -> anyhow::Result<Self> {
         let secret_key = generate_secret_key().unwrap();
         let subaccount = self.sub_account(name)?;
 
@@ -218,7 +218,7 @@ impl SigningAccount {
         balance: NearToken,
         global_id: GlobalContractIdentifier,
         init_call: impl Into<Option<FnCallBuilder>>,
-    ) -> anyhow::Result<SigningAccount> {
+    ) -> anyhow::Result<Self> {
         let secret_key = generate_secret_key().unwrap();
         let subaccount = self.sub_account(name)?;
 

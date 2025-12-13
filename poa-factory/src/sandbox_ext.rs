@@ -109,7 +109,7 @@ impl PoAFactoryDeployerExt for SigningAccount {
         super_admins: impl IntoIterator<Item = AccountId>,
         admins: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
         grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
-    ) -> anyhow::Result<SigningAccount> {
+    ) -> anyhow::Result<Self> {
         self.deploy_sub_contract(
             name,
             NearToken::from_near(100),

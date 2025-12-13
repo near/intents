@@ -57,7 +57,7 @@ pub trait WNearDeployerExt {
 }
 
 impl WNearDeployerExt for SigningAccount {
-    async fn deploy_wrap_near(&self, name: impl AsRef<str>) -> anyhow::Result<SigningAccount> {
+    async fn deploy_wrap_near(&self, name: impl AsRef<str>) -> anyhow::Result<Self> {
         self.deploy_sub_contract(
             name,
             NearToken::from_near(100),

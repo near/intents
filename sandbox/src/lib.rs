@@ -90,7 +90,7 @@ pub async fn sandbox(#[default(NearToken::from_near(100_000))] amount: NearToken
     static SUB_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
     let shared = SHARED_SANDBOX
-        .get_or_init(|| Sandbox::new(SHARED_ROOT))
+        .get_or_init(|| async { Sandbox::new(SHARED_ROOT).await })
         .await;
 
     Sandbox {

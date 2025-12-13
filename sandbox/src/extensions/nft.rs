@@ -153,7 +153,7 @@ impl NftDeployerExt for SigningAccount {
         token_name: impl AsRef<str>,
         owner_id: impl AsRef<AccountIdRef>,
         metadata: NFTContractMetadata,
-    ) -> anyhow::Result<SigningAccount> {
+    ) -> anyhow::Result<Self> {
         self.deploy_sub_contract(
             token_name,
             NearToken::from_near(100),

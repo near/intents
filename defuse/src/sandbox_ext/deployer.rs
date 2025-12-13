@@ -25,7 +25,7 @@ impl DefuseExt for SigningAccount {
         name: impl AsRef<str>,
         config: DefuseConfig,
         legacy: bool,
-    ) -> anyhow::Result<SigningAccount> {
+    ) -> anyhow::Result<Self> {
         self.deploy_sub_contract(
             name,
             NearToken::from_near(100),

@@ -2576,9 +2576,9 @@ dependencies = [
 
 [[package]]
 name = "near-contract-standards"
-version = "5.22.0"
+version = "5.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "885e2c40ee7b0dbd4fa78855ba3601ac5a681f256e94cac4b6c9e8e2e7b05b08"
+checksum = "b637fd2a9e8f30deb4fdb221a709c2794cfe120c4a1f1a6707d53ad07c674b23"
 dependencies = [
  "near-sdk",
 ]
@@ -2809,9 +2809,9 @@ dependencies = [
 
 [[package]]
 name = "near-sandbox"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2da726a5ef6df27cc804719a5a011fe49560596520ec22f12916b2f31c597d5b"
+checksum = "eea220bed25942ca3903a413684c618d305e94968f630da60cd6118a3dd09785"
 dependencies = [
  "binary-install",
  "fs4",
@@ -2851,9 +2851,9 @@ checksum = "79d63d022e686c6b92426c98f011908037730d557e815d6c813d5686030a6b53"
 
 [[package]]
 name = "near-sdk"
-version = "5.22.0"
+version = "5.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1895ec5b53085800ba9559aee09bd629eb40ee1c52bb9aa96e452f49551c1623"
+checksum = "351a4bf9c9811c2ff46315509c19a53a7892d5767b9a58c3eda9e1caac350adc"
 dependencies = [
  "arbitrary",
  "base64 0.22.1",
@@ -2879,9 +2879,9 @@ dependencies = [
 
 [[package]]
 name = "near-sdk-macros"
-version = "5.22.0"
+version = "5.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d7b3c8d79e612150c0efb4d61a286b28995ef9bfa6090d338589b0422506af4"
+checksum = "c9ac3c723876f6c8413d253ffc10c5b759809ac0a3390861fa3353de58997e95"
 dependencies = [
  "Inflector",
  "darling 0.20.11",
