@@ -994,6 +994,7 @@ dependencies = [
  "defuse-nep461",
  "defuse-serde-utils",
  "impl-tools",
+ "near-api",
  "near-sdk",
  "serde_with",
 ]
@@ -1048,6 +1049,7 @@ dependencies = [
  "anyhow",
  "defuse-crypto",
  "defuse-nep245",
+ "defuse-nep413",
  "defuse-randomness",
  "futures",
  "impl-tools",

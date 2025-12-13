@@ -10,6 +10,7 @@ workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, features = ["near-api-types"] }
+defuse-nep413 = { workspace = true, features = ["near-api-types"] }
 defuse-randomness.workspace = true
 defuse-nep245.workspace = true
 tokio.workspace = true

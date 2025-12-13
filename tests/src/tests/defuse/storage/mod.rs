@@ -53,13 +53,13 @@ async fn storage_deposit_success(
     // For intents contract to have a balance in wnear, we make a storage deposit for it
     env.storage_deposit(
         env.wnear.id(),
-        Some(env.defuse.id()),
+        env.defuse.id().as_ref(),
         NearToken::from_near(1),
     )
     .await
     .unwrap();
 
-    env.storage_deposit(ft.id(), Some(user.id()), NearToken::from_near(1))
+    env.storage_deposit(ft.id(), user.id().as_ref(), NearToken::from_near(1))
         .await
         .unwrap();
 
@@ -143,13 +143,13 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents() {
     // For intents contract to have a balance in wnear, we make a storage deposit for it
     env.storage_deposit(
         env.wnear.id(),
-        Some(env.defuse.id()),
+        Some(env.defuse.id().as_ref()),
         NearToken::from_near(1),
     )
     .await
     .unwrap();
 
-    env.storage_deposit(ft.id(), Some(user.id()), NearToken::from_near(1))
+    env.storage_deposit(ft.id(), user.id().as_ref(), NearToken::from_near(1))
         .await
         .unwrap();
 

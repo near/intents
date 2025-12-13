@@ -103,3 +103,17 @@ impl SignedPayload for SignedNep413Payload {
         Ed25519::verify(&self.signature, &self.hash(), &self.public_key)
     }
 }
+
+#[cfg(feature = "near-api-types")]
+const _: () = {
+    impl From<Nep413Payload> for near_api::signer::NEP413Payload {
+        fn from(payload: Nep413Payload) -> Self {
+            Self {
+                message: payload.message,
+                nonce: payload.nonce,
+                recipient: payload.recipient,
+                callback_url: payload.callback_url,
+            }
+        }
+    }
+};

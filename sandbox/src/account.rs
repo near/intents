@@ -1,25 +1,23 @@
 use std::sync::Arc;
 
+use anyhow::anyhow;
+use defuse_nep413::{Nep413Payload, SignedNep413Payload};
 use impl_tools::autoimpl;
 use near_api::{
-    Account as NearApiAccount, Contract, NetworkConfig, SecretKey, Signer,
-    signer::generate_secret_key, types::transaction::actions::FunctionCallAction,
+    Account as NearApiAccount, Contract, NetworkConfig, PublicKey, Signer,
+    signer::generate_secret_key,
+    types::{
+        Signature,
+        transaction::actions::{GlobalContractDeployMode, GlobalContractIdentifier},
+    },
 };
 use near_sdk::{
     AccountId, AccountIdRef, NearToken,
+    account_id::ParseAccountError,
     serde::{Serialize, de::DeserializeOwned},
 };
 
-use crate::tx::TxBuilder;
-
-const CONTRACT_DEPOSIT: NearToken = NearToken::from_near(100);
-
-impl AsRef<AccountIdRef> for Account {
-    #[inline]
-    fn as_ref(&self) -> &AccountIdRef {
-        &self.account_id
-    }
-}
+use crate::tx::{FnCallBuilder, TxBuilder};
 
 #[autoimpl(AsRef using self.account_id)]
 #[autoimpl(Deref using self.account_id)]
@@ -30,66 +28,70 @@ pub struct Account {
 }
 
 impl Account {
-    pub const fn new(account_id: AccountId, network_config: NetworkConfig) -> Self {
+    #[inline]
+    pub fn new(account_id: impl Into<AccountId>, network_config: NetworkConfig) -> Self {
         Self {
-            account_id,
+            account_id: account_id.into(),
             network_config,
         }
     }
 
+    #[inline]
     pub const fn id(&self) -> &AccountId {
         &self.account_id
     }
 
+    #[inline]
     pub const fn network_config(&self) -> &NetworkConfig {
         &self.network_config
     }
 
-    pub fn subaccount_id(&self, name: impl AsRef<str>) -> AccountId {
-        format!("{}.{}", name.as_ref(), self.id())
-            .parse()
-            .expect("invalid subaccount name: must be a valid NEAR account ID")
+    #[inline]
+    pub fn sub_account(&self, name: impl AsRef<str>) -> Result<Self, ParseAccountError> {
+        Ok(Self {
+            account_id: self.id().sub_account(name)?,
+            network_config: self.network_config().clone(),
+        })
     }
 
-    pub fn subaccount_name(&self, account_id: impl AsRef<AccountIdRef>) -> Option<String> {
-        account_id
-            .as_ref()
-            .as_str()
-            .strip_suffix(&format!(".{}", self.id()))
-            .map(ToString::to_string)
+    pub async fn view(&self) -> anyhow::Result<near_api::types::Account> {
+        NearApiAccount(self.id().clone())
+            .view()
+            .fetch_from(&self.network_config)
+            .await
+            .map(|d| d.data)
+            .map_err(Into::into)
     }
 
     pub async fn call_view_function_json<T>(
         &self,
-        name: &str,
+        name: impl AsRef<str>,
         args: impl Serialize,
     ) -> anyhow::Result<T>
     where
         T: DeserializeOwned + Send + Sync,
     {
         Contract(self.id().clone())
-            .call_function(name, args)
+            .call_function(name.as_ref(), args)
             .read_only()
             .fetch_from(&self.network_config)
             .await
             .map(|d| d.data)
             .map_err(Into::into)
     }
+}
 
-    pub async fn view(&self) -> anyhow::Result<near_api::types::Account> {
-        self.view_account(self.id()).await
+impl AsRef<AccountIdRef> for Account {
+    #[inline]
+    fn as_ref(&self) -> &AccountIdRef {
+        self.id()
     }
+}
 
-    pub async fn view_account(
-        &self,
-        account_id: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<near_api::types::Account> {
-        NearApiAccount(account_id.as_ref().into())
-            .view()
-            .fetch_from(&self.network_config)
-            .await
-            .map(|d| d.data)
-            .map_err(Into::into)
+impl From<Account> for AccountId {
+    #[inline]
+    fn from(account: Account) -> Self {
+        account.account_id
     }
 }
 
@@ -98,45 +100,39 @@ impl Account {
 pub struct SigningAccount {
     account: Account,
     signer: Arc<Signer>,
-    private_key: SecretKey,
 }
 
 impl SigningAccount {
-    pub fn new(account: Account, secret_key: SecretKey) -> Self {
-        Self {
-            account,
-            signer: Signer::from_secret_key(secret_key.clone()).unwrap(),
-            private_key: secret_key,
-        }
-    }
-
-    pub fn implicit(secret_key: SecretKey, network_config: NetworkConfig) -> Self {
-        let public_key: defuse_crypto::PublicKey = secret_key.public_key().into();
-
-        Self::new(
-            Account::new(public_key.to_implicit_account_id(), network_config),
-            secret_key,
-        )
+    #[inline]
+    pub const fn new(account: Account, signer: Arc<Signer>) -> Self {
+        Self { account, signer }
     }
 
     pub fn generate_implicit(network_config: NetworkConfig) -> Self {
-        Self::implicit(generate_secret_key().unwrap(), network_config)
+        let secret_key = generate_secret_key().unwrap();
+
+        Self::new(
+            Account::new(
+                defuse_crypto::PublicKey::from(secret_key.public_key()).to_implicit_account_id(),
+                network_config,
+            ),
+            Signer::from_secret_key(secret_key).unwrap(),
+        )
     }
 
+    #[inline]
     pub const fn account(&self) -> &Account {
         &self.account
     }
 
-    pub fn signer(&self) -> Arc<Signer> {
-        self.signer.clone()
+    #[inline]
+    pub const fn signer(&self) -> &Arc<Signer> {
+        &self.signer
     }
 
-    pub const fn private_key(&self) -> &SecretKey {
-        &self.private_key
-    }
-
-    pub fn tx(&self, receiver_id: AccountId) -> TxBuilder {
-        TxBuilder::new(self.clone(), receiver_id)
+    #[inline]
+    pub fn tx(&self, receiver_id: impl Into<AccountId>) -> TxBuilder {
+        TxBuilder::new(self.clone(), receiver_id.into())
     }
 
     pub async fn fund_implicit(&self, deposit: NearToken) -> anyhow::Result<Self> {
@@ -147,70 +143,125 @@ impl SigningAccount {
         Ok(account)
     }
 
-    pub async fn transfer_near(
-        &self,
-        receiver_id: impl AsRef<AccountIdRef>,
-        deposit: NearToken,
-    ) -> anyhow::Result<()> {
-        self.tx(receiver_id.as_ref().into())
-            .transfer(deposit)
-            .await?;
-        Ok(())
-    }
-
-    pub async fn create_subaccount(
+    pub async fn generate_subaccount(
         &self,
         name: impl AsRef<str>,
         balance: impl Into<Option<NearToken>>,
     ) -> anyhow::Result<Self> {
-        let secret_key = generate_secret_key()?;
-        let public_key = secret_key.public_key();
-        let subaccount = self.subaccount_id(name);
+        let secret_key = generate_secret_key().unwrap();
+        let subaccount = self.sub_account(name)?;
 
-        let account = Self::new(
-            Account::new(subaccount.clone(), self.network_config().clone()),
-            secret_key,
-        );
-
-        let exist = account.view().await.is_ok_and(|v| v.storage_usage > 0);
-
-        if !exist {
-            let mut tx = self
-                .tx(subaccount)
-                .create_account()
-                .add_full_access_key(public_key);
-
-            if let Some(balance) = balance.into() {
-                tx = tx.transfer(balance);
-            }
-
-            tx.await?;
+        let mut tx = self.tx(subaccount.id()).create_account();
+        if let Some(balance) = balance.into() {
+            tx = tx.transfer(balance);
         }
+        tx.add_full_access_key(secret_key.public_key()).await?;
 
-        Ok(account)
+        Ok(Self::new(
+            subaccount,
+            Signer::from_secret_key(secret_key).unwrap(),
+        ))
     }
 
-    pub async fn deploy_contract(
+    pub async fn deploy_sub_contract(
         &self,
         name: impl AsRef<str>,
-        wasm: impl Into<Vec<u8>>,
-        init_args: Option<impl Into<FunctionCallAction>>,
-    ) -> anyhow::Result<Account> {
-        let subaccount = self.subaccount_id(name);
+        balance: NearToken,
+        code: impl Into<Vec<u8>>,
+        init_call: impl Into<Option<FnCallBuilder>>,
+    ) -> anyhow::Result<SigningAccount> {
+        let secret_key = generate_secret_key().unwrap();
+        let subaccount = self.sub_account(name)?;
 
         let mut tx = self
-            .tx(subaccount.clone())
+            .tx(subaccount.id())
             .create_account()
-            .add_full_access_key(self.private_key().public_key())
-            .transfer(CONTRACT_DEPOSIT)
-            .deploy(wasm.into());
-
-        if let Some(args) = init_args {
-            tx = tx.function_call(args);
+            .transfer(balance)
+            .add_full_access_key(secret_key.public_key())
+            .deploy(code);
+        if let Some(init_call) = init_call.into() {
+            tx = tx.function_call(init_call);
         }
-
         tx.await?;
 
-        Ok(Account::new(subaccount, self.network_config().clone()))
+        Ok(Self::new(
+            subaccount,
+            Signer::from_secret_key(secret_key).unwrap(),
+        ))
+    }
+
+    pub async fn deploy_global_sub_contract(
+        &self,
+        name: impl AsRef<str>,
+        balance: NearToken,
+        code: impl Into<Vec<u8>>,
+    ) -> anyhow::Result<SigningAccount> {
+        let secret_key = generate_secret_key().unwrap();
+        let subaccount = self.sub_account(name)?;
+
+        self.tx(subaccount.id())
+            .create_account()
+            .transfer(balance)
+            .add_full_access_key(secret_key.public_key())
+            .deploy_global(code, GlobalContractDeployMode::AccountId)
+            .await?;
+
+        Ok(Self::new(
+            subaccount,
+            Signer::from_secret_key(secret_key).unwrap(),
+        ))
+    }
+
+    pub async fn deploy_sub_contract_use_global(
+        &self,
+        name: impl AsRef<str>,
+        balance: NearToken,
+        global_id: GlobalContractIdentifier,
+        init_call: impl Into<Option<FnCallBuilder>>,
+    ) -> anyhow::Result<SigningAccount> {
+        let secret_key = generate_secret_key().unwrap();
+        let subaccount = self.sub_account(name)?;
+
+        let mut tx = self
+            .tx(subaccount.id())
+            .create_account()
+            .transfer(balance)
+            .add_full_access_key(secret_key.public_key())
+            .use_global(global_id);
+        if let Some(init_call) = init_call.into() {
+            tx = tx.function_call(init_call);
+        }
+        tx.await?;
+
+        Ok(Self::new(
+            subaccount,
+            Signer::from_secret_key(secret_key).unwrap(),
+        ))
+    }
+
+    pub async fn sign_nep413(&self, payload: Nep413Payload) -> anyhow::Result<SignedNep413Payload> {
+        let pk = self.signer.get_public_key().await?;
+
+        let (PublicKey::ED25519(pk), Signature::ED25519(sig)) = (
+            pk,
+            self.signer
+                .sign_message_nep413(self.id().clone(), pk, &payload.clone().into())
+                .await?,
+        ) else {
+            return Err(anyhow!("only ed25519 public keys are supported"));
+        };
+
+        Ok(SignedNep413Payload {
+            payload,
+            public_key: pk.0,
+            signature: sig.to_bytes(),
+        })
+    }
+}
+
+impl From<SigningAccount> for Account {
+    #[inline]
+    fn from(account: SigningAccount) -> Self {
+        account.account
     }
 }

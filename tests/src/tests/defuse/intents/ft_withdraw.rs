@@ -1,7 +1,7 @@
 use defuse::core::intents::tokens::FtWithdraw;
 use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
 use defuse::sandbox_ext::{
-    deployer::DefuseExt, intents::ExecuteIntentsExt, tokens::nep141::DefuseFtReceiver,
+    deployer::DefuseExt, intents::ExecuteIntentsExt, tokens::nep141::DefuseFtDepositor,
 };
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
@@ -101,7 +101,7 @@ async fn ft_withdraw_intent() {
         .unwrap_err();
 
     // send user some near
-    env.transfer_near(user.id(), STORAGE_DEPOSIT).await.unwrap();
+    env.tx(user.id()).transfer(STORAGE_DEPOSIT).await.unwrap();
 
     // wrap NEAR
     user.near_deposit(env.wnear.id(), STORAGE_DEPOSIT)

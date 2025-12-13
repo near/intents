@@ -1,4 +1,4 @@
-use crate::tests::defuse::{DefuseSigner, SigningStandard, env::Env, intents::ExecuteIntentsExt};
+use crate::tests::defuse::{DefuseSigner, env::Env, intents::ExecuteIntentsExt};
 use defuse::core::{
     Deadline, Nonce,
     amounts::Amounts,
@@ -49,15 +49,16 @@ async fn execute_intent_with_legacy_nonce(#[from(make_arbitrary)] legacy_nonce: 
         notification: None,
     };
 
-    let transfer_intent_payload = user1.sign_defuse_message(
-        SigningStandard::default(),
-        env.defuse.id(),
-        legacy_nonce,
-        Deadline::MAX,
-        DefuseIntents {
-            intents: vec![transfer_intent.into()],
-        },
-    );
+    let transfer_intent_payload = user1
+        .sign_defuse_message(
+            env.defuse.id(),
+            legacy_nonce,
+            Deadline::MAX,
+            DefuseIntents {
+                intents: vec![transfer_intent.into()],
+            },
+        )
+        .await;
 
     let _ = env
         .simulate_and_execute_intents(env.defuse.id(), [transfer_intent_payload])

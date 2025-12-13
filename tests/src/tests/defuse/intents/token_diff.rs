@@ -4,6 +4,7 @@ use defuse::core::{
     fees::Pips,
     intents::token_diff::{TokenDeltas, TokenDiff},
 };
+use defuse::sandbox_ext::intents::SimulateIntents;
 use defuse_sandbox::SigningAccount;
 use defuse_sandbox::extensions::mt::MtViewExt;
 use near_sdk::AccountId;
@@ -222,7 +223,8 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
     .unwrap();
 
     // simulate
-    env.simulate_intents(env.defuse.id(), signed.clone())
+    env.defuse
+        .simulate_intents(signed.clone())
         .await
         .unwrap()
         .into_result()
@@ -311,7 +313,8 @@ async fn invariant_violated() {
     .unwrap();
 
     assert_eq!(
-        env.simulate_intents(env.defuse.id(), signed.clone())
+        env.defuse
+            .simulate_intents(signed.clone())
             .await
             .unwrap()
             .invariant_violated
@@ -411,7 +414,8 @@ async fn solver_user_closure(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCE
 
     // simulate before returning quote
     let simulation_before_return_quote = env
-        .simulate_intents(env.defuse.id(), [solver_commitment.clone()])
+        .defuse
+        .simulate_intents([solver_commitment.clone()])
         .await
         .unwrap();
     println!(
@@ -464,14 +468,12 @@ async fn solver_user_closure(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCE
         .unwrap();
 
     // simulating both solver's and user's intents now should succeed
-    env.simulate_intents(
-        env.defuse.id(),
-        [solver_commitment.clone(), user_commitment.clone()],
-    )
-    .await
-    .unwrap()
-    .into_result()
-    .unwrap();
+    env.defuse
+        .simulate_intents([solver_commitment.clone(), user_commitment.clone()])
+        .await
+        .unwrap()
+        .into_result()
+        .unwrap();
 
     // execute intents
     env.simulate_and_execute_intents(env.defuse.id(), [solver_commitment, user_commitment])

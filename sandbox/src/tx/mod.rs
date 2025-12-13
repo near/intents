@@ -32,10 +32,10 @@ pub struct TxBuilder {
 }
 
 impl TxBuilder {
-    pub const fn new(signer: SigningAccount, receiver_id: AccountId) -> Self {
+    pub(crate) fn new(signer: SigningAccount, receiver_id: impl Into<AccountId>) -> Self {
         Self {
             signer,
-            receiver_id,
+            receiver_id: receiver_id.into(),
             actions: Vec::new(),
         }
     }
@@ -53,14 +53,20 @@ impl TxBuilder {
     }
 
     #[must_use]
-    pub fn deploy(self, code: Vec<u8>) -> Self {
-        self.add_action(Action::DeployContract(DeployContractAction { code }))
+    pub fn deploy(self, code: impl Into<Vec<u8>>) -> Self {
+        self.add_action(Action::DeployContract(DeployContractAction {
+            code: code.into(),
+        }))
     }
 
     #[must_use]
-    pub fn deploy_global(self, code: Vec<u8>, deploy_mode: GlobalContractDeployMode) -> Self {
+    pub fn deploy_global(
+        self,
+        code: impl Into<Vec<u8>>,
+        deploy_mode: GlobalContractDeployMode,
+    ) -> Self {
         self.add_action(Action::DeployGlobalContract(DeployGlobalContractAction {
-            code,
+            code: code.into(),
             deploy_mode,
         }))
     }
@@ -112,7 +118,7 @@ impl TxBuilder {
     pub async fn exec_transaction(self) -> anyhow::Result<ExecutionFinalResult> {
         Transaction::construct(self.signer.id().clone(), self.receiver_id)
             .add_actions(self.actions)
-            .with_signer(self.signer.signer())
+            .with_signer(self.signer.signer().clone())
             .send_to(self.signer.network_config())
             .await
             .inspect(|r| eprintln!("{:#?}", TxOutcome::from(r)))

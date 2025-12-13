@@ -1,13 +1,12 @@
 use defuse_core::Nonce;
 use defuse_sandbox::{SigningAccount, anyhow, tx::FnCallBuilder};
 use defuse_serde_utils::base64::AsBase64;
-use near_sdk::{AccountId, AccountIdRef, NearToken, serde_json::json};
+use near_sdk::{AccountId, NearToken, serde_json::json};
 
-#[allow(async_fn_in_trait)]
 pub trait GarbageCollectorExt {
     async fn cleanup_nonces(
         &self,
-        defuse_contract_id: impl AsRef<AccountIdRef>,
+        defuse_contract_id: impl Into<AccountId>,
         data: impl IntoIterator<Item = (AccountId, impl IntoIterator<Item = Nonce>)>,
     ) -> anyhow::Result<()>;
 }
@@ -15,7 +14,7 @@ pub trait GarbageCollectorExt {
 impl GarbageCollectorExt for SigningAccount {
     async fn cleanup_nonces(
         &self,
-        defuse_contract_id: impl AsRef<AccountIdRef>,
+        defuse_contract_id: impl Into<AccountId>,
         data: impl IntoIterator<Item = (AccountId, impl IntoIterator<Item = Nonce>)>,
     ) -> anyhow::Result<()> {
         let nonces = data
@@ -27,7 +26,7 @@ impl GarbageCollectorExt for SigningAccount {
             })
             .collect::<Vec<_>>();
 
-        self.tx(defuse_contract_id.as_ref().into())
+        self.tx(defuse_contract_id)
             .function_call(
                 FnCallBuilder::new("cleanup_nonces")
                     .with_deposit(NearToken::from_yoctonear(1))

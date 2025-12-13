@@ -2,15 +2,12 @@ use crate::tests::defuse::{env::Env, tokens::nep245::letter_gen::LetterCombinati
 use anyhow::Context;
 use arbitrary::Arbitrary;
 use defuse::{
-    core::{
-        crypto,
-        token_id::{TokenId, nep245::Nep245TokenId},
-    },
+    core::token_id::{TokenId, nep245::Nep245TokenId},
     nep245::{MtEvent, MtTransferEvent},
 };
 use defuse_randomness::Rng;
 use defuse_sandbox::{
-    Account, SigningAccount,
+    SigningAccount,
     extensions::mt::{MtExt, MtViewExt},
 };
 use defuse_test_utils::random::{gen_random_string, random_bytes, rng};
@@ -34,35 +31,19 @@ enum GenerationMode {
 async fn make_account(mode: GenerationMode, env: &Env, user: &SigningAccount) -> SigningAccount {
     match mode {
         GenerationMode::ShortestPossible => {
-            env.transfer_near(user.id(), NearToken::from_near(1000))
+            env.tx(user.id())
+                .transfer(NearToken::from_near(1000))
                 .await
                 .unwrap();
             user.clone()
         }
         GenerationMode::LongestPossible => {
-            env.transfer_near(env.defuse.id(), NearToken::from_near(1000))
+            env.tx(env.defuse.id())
+                .transfer(NearToken::from_near(1000))
                 .await
                 .unwrap();
 
-            let implicit_account_id = crypto::PublicKey::Ed25519(
-                user.private_key()
-                    .public_key()
-                    .key_data()
-                    .try_into()
-                    .unwrap(),
-            )
-            .to_implicit_account_id();
-
-            env.transfer_near(&implicit_account_id, NearToken::from_near(1000))
-                .await
-                .unwrap();
-
-            let implicit_account = SigningAccount::new(
-                Account::new(implicit_account_id, user.network_config().clone()),
-                user.private_key().clone(),
-            );
-
-            implicit_account
+            env.fund_implicit(NearToken::from_near(1000)).await.unwrap()
         }
     }
 }
@@ -279,7 +260,8 @@ async fn mt_transfer_resolve_gas(rng: impl Rng) {
 
         let user = env.create_user().await;
 
-        env.transfer_near(env.defuse.id(), NearToken::from_near(1000))
+        env.tx(env.defuse.id())
+            .transfer(NearToken::from_near(1000))
             .await
             .unwrap();
 
