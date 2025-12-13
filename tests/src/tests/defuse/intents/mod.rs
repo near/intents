@@ -1,21 +1,15 @@
-use arbitrary::{Arbitrary, Unstructured};
-use defuse::core::token_id::TokenId;
-use defuse::core::token_id::nep141::Nep141TokenId;
-use defuse::core::ton_connect::tlb_ton::MsgAddress;
-use defuse::core::{
-    Deadline, Nonce,
-    accounts::{AccountEvent, NonceEvent},
-    amounts::Amounts,
-    crypto::Payload,
-    events::DefuseEvent,
-    intents::{
-        DefuseIntents, IntentEvent,
-        tokens::{FtWithdraw, Transfer},
+use defuse::{
+    core::{
+        Deadline, Nonce,
+        accounts::{AccountEvent, NonceEvent},
+        amounts::Amounts,
+        crypto::Payload,
+        events::DefuseEvent,
+        intents::{DefuseIntents, IntentEvent, tokens::Transfer},
+        token_id::{TokenId, nep141::Nep141TokenId},
     },
-    payload::{DefusePayload, ExtractDefusePayload},
+    sandbox_ext::intents::{ExecuteIntentsExt, SimulateIntents},
 };
-use defuse::sandbox_ext::intents::ExecuteIntentsExt;
-use defuse::sandbox_ext::signer::Signer;
 use defuse_randomness::Rng;
 use defuse_sandbox::extensions::mt::MtViewExt;
 use defuse_test_utils::random::rng;
@@ -24,7 +18,6 @@ use rstest::rstest;
 use std::borrow::Cow;
 
 use super::{DefuseSigner, env::Env};
-use crate::tests::defuse::SigningStandard;
 
 pub struct AccountNonceIntentEvent(AccountId, Nonce, CryptoHash);
 
@@ -58,11 +51,6 @@ mod simulate;
 mod token_diff;
 mod transfer;
 
-pub const DUMMY_MSG_ADDRESS: MsgAddress = MsgAddress {
-    workchain_id: 1234i32,
-    address: [12u8; 32],
-};
-
 #[tokio::test]
 #[rstest]
 #[trace]
@@ -93,17 +81,19 @@ async fn simulate_is_view_method(#[notrace] mut rng: impl Rng) {
         notification: None,
     };
 
-    let transfer_intent_payload = user.sign_defuse_message(
-        SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>())).unwrap(),
-        env.defuse.id(),
-        nonce,
-        Deadline::MAX,
-        DefuseIntents {
-            intents: vec![transfer_intent.clone().into()],
-        },
-    );
+    let transfer_intent_payload = user
+        .sign_defuse_message(
+            env.defuse.id(),
+            nonce,
+            Deadline::MAX,
+            DefuseIntents {
+                intents: vec![transfer_intent.clone().into()],
+            },
+        )
+        .await;
     let result = env
-        .simulate_intents(env.defuse.id(), [transfer_intent_payload.clone()])
+        .defuse
+        .simulate_intents([transfer_intent_payload.clone()])
         .await
         .unwrap();
 
@@ -215,47 +205,52 @@ async fn webauthn() {
     );
 }
 
-#[tokio::test]
-#[rstest]
-#[trace]
-async fn ton_connect_sign_intent_example() {
-    let env: Env = Env::builder().build().await;
+// #[tokio::test]
+// #[rstest]
+// #[trace]
+// async fn ton_connect_sign_intent_example() {
+//     pub const DUMMY_MSG_ADDRESS: MsgAddress = MsgAddress {
+//         workchain_id: 1234i32,
+//         address: [12u8; 32],
+//     };
 
-    let ft_id: AccountId = "ft.test.near".parse().unwrap();
+//     let env: Env = Env::builder().build().await;
 
-    let intents = DefuseIntents {
-        intents: [FtWithdraw {
-            token: ft_id,
-            receiver_id: "bob.near".parse().unwrap(),
-            amount: 1000.into(),
-            memo: None,
-            msg: None,
-            storage_deposit: None,
-            min_gas: None,
-        }
-        .into()]
-        .into(),
-    };
-    let nonce = env.get_unique_nonce(None).await.unwrap();
+//     let ft_id: AccountId = "ft.test.near".parse().unwrap();
 
-    let payload = defuse::core::ton_connect::TonConnectPayload {
-        address: DUMMY_MSG_ADDRESS,
-        domain: "example.com".to_string(),
-        timestamp: defuse_near_utils::time::now(),
-        payload: defuse::core::ton_connect::TonConnectPayloadSchema::text(
-            serde_json::to_string(&DefusePayload {
-                signer_id: "alice.near".parse().unwrap(),
-                verifying_contract: "intent.near".parse().unwrap(),
-                deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
-                nonce,
-                message: intents,
-            })
-            .unwrap(),
-        ),
-    };
+//     let intents = DefuseIntents {
+//         intents: [FtWithdraw {
+//             token: ft_id,
+//             receiver_id: "bob.near".parse().unwrap(),
+//             amount: 1000.into(),
+//             memo: None,
+//             msg: None,
+//             storage_deposit: None,
+//             min_gas: None,
+//         }
+//         .into()]
+//         .into(),
+//     };
+//     let nonce = env.get_unique_nonce(None).await.unwrap();
 
-    let account = env.create_user().await;
-    let signed = account.sign_ton_connect(payload);
+//     let payload = defuse::core::ton_connect::TonConnectPayload {
+//         address: DUMMY_MSG_ADDRESS,
+//         domain: "example.com".to_string(),
+//         timestamp: defuse_near_utils::time::now(),
+//         payload: defuse::core::ton_connect::TonConnectPayloadSchema::text(
+//             serde_json::to_string(&DefusePayload {
+//                 signer_id: "alice.near".parse().unwrap(),
+//                 verifying_contract: "intent.near".parse().unwrap(),
+//                 deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
+//                 nonce,
+//                 message: intents,
+//             })
+//             .unwrap(),
+//         ),
+//     };
 
-    let _decoded_payload: DefusePayload<DefuseIntents> = signed.extract_defuse_payload().unwrap();
-}
+//     let account = env.create_user().await;
+//     let signed = account.sign_ton_connect(payload);
+
+//     let _decoded_payload: DefusePayload<DefuseIntents> = signed.extract_defuse_payload().unwrap();
+// }

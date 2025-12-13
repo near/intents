@@ -20,8 +20,9 @@ use defuse::{
 use defuse_sandbox::extensions::acl::AclExt;
 use defuse_sandbox::extensions::mt::MtViewExt;
 use defuse_sandbox::near_sandbox::FetchData;
-use defuse_sandbox::{Account, Sandbox, SigningAccount, read_wasm};
+use defuse_sandbox::{Sandbox, SigningAccount, read_wasm};
 use itertools::Itertools;
+use near_sdk::AccountId;
 use rstest::rstest;
 
 use futures::future::try_join_all;
@@ -32,15 +33,10 @@ static DEFUSE_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("res/defuse")
 #[tokio::test]
 #[rstest]
 async fn upgrade(ed25519_pk: PublicKey, secp256k1_pk: PublicKey, p256_pk: PublicKey) {
-    let sandbox = Sandbox::new("test".parse().unwrap()).await;
+    let sandbox = Sandbox::new("near".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
-    let contract = SigningAccount::new(
-        Account::new(
-            "intents.near".parse().unwrap(),
-            root.network_config().clone(),
-        ),
-        root.private_key().clone(),
-    );
+
+    let contract = SigningAccount::new(root.sub_account("intents").unwrap(), root.signer().clone());
 
     sandbox
         .sandbox()
@@ -58,8 +54,8 @@ async fn upgrade(ed25519_pk: PublicKey, secp256k1_pk: PublicKey, p256_pk: Public
     assert_eq!(
         contract
             .mt_balance_of(
-                &"user.near".parse().unwrap(),
-                &"non-existent-token".to_string(),
+                "user.near".parse::<AccountId>().unwrap(),
+                "non-existent-token",
             )
             .await
             .unwrap(),

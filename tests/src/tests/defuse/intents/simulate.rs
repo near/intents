@@ -1,42 +1,46 @@
-use crate::tests::defuse::DefuseSignerExt;
-use crate::tests::defuse::env::Env;
-use crate::tests::defuse::intents::{AccountNonceIntentEvent, ExecuteIntentsExt, NonceEvent};
-use crate::utils::fixtures::public_key;
-use crate::utils::payload::ExtractNonceExt;
-use defuse::contract::config::{DefuseConfig, RolesConfig};
-use defuse::core::accounts::TransferEvent;
-use defuse::core::crypto::Payload;
-
-use defuse::core::crypto::PublicKey;
-use defuse::core::fees::{FeesConfig, Pips};
-use defuse::core::intents::Intent;
-use defuse::core::token_id::TokenId;
-use defuse::core::token_id::nep141::Nep141TokenId;
-use defuse::core::token_id::nep171::Nep171TokenId;
-use defuse::core::token_id::nep245::Nep245TokenId;
-use defuse::core::{
-    accounts::{AccountEvent, PublicKeyEvent},
-    amounts::Amounts,
-    events::DefuseEvent,
-    intents::{
-        IntentEvent,
-        account::{AddPublicKey, RemovePublicKey, SetAuthByPredecessorId},
-        auth::AuthCall,
-        token_diff::{TokenDeltas, TokenDiff, TokenDiffEvent},
-        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer},
+use crate::{
+    tests::defuse::{
+        DefuseSignerExt,
+        env::Env,
+        intents::{AccountNonceIntentEvent, ExecuteIntentsExt, NonceEvent},
+    },
+    utils::{fixtures::public_key, payload::ExtractNonceExt},
+};
+use defuse::{
+    contract::config::{DefuseConfig, RolesConfig},
+    core::{
+        accounts::{AccountEvent, PublicKeyEvent, TransferEvent},
+        amounts::Amounts,
+        crypto::{Payload, PublicKey},
+        events::DefuseEvent,
+        fees::{FeesConfig, Pips},
+        intents::{
+            Intent, IntentEvent,
+            account::{AddPublicKey, RemovePublicKey, SetAuthByPredecessorId},
+            auth::AuthCall,
+            token_diff::{TokenDeltas, TokenDiff, TokenDiffEvent},
+            tokens::{
+                FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer,
+            },
+        },
+        token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
+    },
+    sandbox_ext::{
+        account_manager::{AccountManagerExt, AccountViewExt},
+        deployer::DefuseExt,
+        intents::SimulateIntents,
     },
 };
-use defuse::sandbox_ext::account_manager::{AccountManagerExt, AccountViewExt};
-use defuse::sandbox_ext::deployer::DefuseExt;
-use defuse::sandbox_ext::signer::Signer;
-use defuse_sandbox::api::types::json::Base64VecU8;
-use defuse_sandbox::api::types::nft::NFTContractMetadata;
-use defuse_sandbox::extensions::ft::FtExt;
-use defuse_sandbox::extensions::mt::{MtExt, MtViewExt};
-use defuse_sandbox::extensions::nft::{NftDeployerExt, NftExt};
-use defuse_sandbox::extensions::wnear::WNearExt;
+use defuse_sandbox::{
+    api::types::{json::Base64VecU8, nft::NFTContractMetadata},
+    extensions::{
+        ft::FtExt,
+        mt::{MtExt, MtViewExt},
+        nft::{NftDeployerExt, NftExt},
+        wnear::WNearExt,
+    },
+};
 use near_contract_standards::non_fungible_token::metadata::{NFT_METADATA_SPEC, TokenMetadata};
-use near_crypto::SecretKey;
 use near_sdk::{AsNep297Event, NearToken};
 use rstest::rstest;
 use std::borrow::Cow;
@@ -73,7 +77,8 @@ async fn simulate_transfer_intent() {
     let nonce = transfer_intent_payload.extract_nonce().unwrap();
 
     let result = env
-        .simulate_intents(env.defuse.id(), [transfer_intent_payload.clone()])
+        .defuse
+        .simulate_intents([transfer_intent_payload.clone()])
         .await
         .unwrap();
 
@@ -147,7 +152,8 @@ async fn simulate_ft_withdraw_intent() {
     let nonce = ft_withdraw_payload.extract_nonce().unwrap();
 
     let result = env
-        .simulate_intents(env.defuse.id(), [ft_withdraw_payload.clone()])
+        .defuse
+        .simulate_intents([ft_withdraw_payload.clone()])
         .await
         .unwrap();
 
@@ -197,7 +203,7 @@ async fn simulate_native_withdraw_intent() {
             env.defuse.id(),
             wnear_amount.as_yoctonear(),
             None,
-            user1.id().as_ref(),
+            user1.id(),
         )
         .await
         .unwrap();
@@ -224,7 +230,8 @@ async fn simulate_native_withdraw_intent() {
     let nonce = native_withdraw_payload.extract_nonce().unwrap();
 
     let result = env
-        .simulate_intents(env.defuse.id(), [native_withdraw_payload.clone()])
+        .defuse
+        .simulate_intents([native_withdraw_payload.clone()])
         .await
         .unwrap();
 
@@ -261,13 +268,15 @@ async fn simulate_nft_withdraw_intent() {
     let (user1, user2) =
         futures::join!(env.create_named_user("nft_issuer_admin"), env.create_user());
 
-    env.transfer_near(user1.id(), NearToken::from_near(100))
+    env.tx(user1.id())
+        .transfer(NearToken::from_near(100))
         .await
         .unwrap();
 
     let nft_contract = user1
         .deploy_vanilla_nft_issuer(
             "nft1",
+            user1.id(),
             NFTContractMetadata {
                 reference: Some(DUMMY_NFT_URL.to_string()),
                 reference_hash: Some(Base64VecU8(DUMMY_NFT_REFERENCE_HASH.to_vec())),
@@ -330,7 +339,8 @@ async fn simulate_nft_withdraw_intent() {
     let nonce = nft_withdraw_payload.extract_nonce().unwrap();
 
     let result = env
-        .simulate_intents(env.defuse.id(), [nft_withdraw_payload.clone()])
+        .defuse
+        .simulate_intents([nft_withdraw_payload.clone()])
         .await
         .unwrap();
 
@@ -384,13 +394,13 @@ async fn simulate_mt_withdraw_intent() {
         .await;
 
     // Register user1's public key on defuse2
-    let user1_secret_key: SecretKey = user1.secret_key().to_string().parse().unwrap();
-    if let near_crypto::PublicKey::ED25519(pk) = user1_secret_key.public_key() {
-        user1
-            .add_public_key(defuse2.id(), &PublicKey::Ed25519(pk.0))
-            .await
-            .unwrap();
-    }
+    user1
+        .add_public_key(
+            defuse2.id(),
+            &user1.signer().get_public_key().await.unwrap().into(),
+        )
+        .await
+        .unwrap();
 
     let ft1_id = TokenId::from(Nep141TokenId::new(ft1.id().clone()));
 
@@ -454,8 +464,8 @@ async fn simulate_mt_withdraw_intent() {
     let nonce = mt_withdraw_payload.extract_nonce().unwrap();
 
     // Simulate the intent on defuse2 (which has the tokens)
-    let result = env
-        .simulate_intents(defuse2.id(), [mt_withdraw_payload.clone()])
+    let result = defuse2
+        .simulate_intents([mt_withdraw_payload.clone()])
         .await
         .unwrap();
 
@@ -505,7 +515,7 @@ async fn simulate_storage_deposit_intent() {
             env.defuse.id(),
             wnear_amount.as_yoctonear(),
             None,
-            user1.id().as_ref(), // Recipient in Defuse
+            user1.id(), // Recipient in Defuse
         )
         .await
         .unwrap();
@@ -533,7 +543,8 @@ async fn simulate_storage_deposit_intent() {
     let nonce = storage_deposit_payload.extract_nonce().unwrap();
 
     let result = env
-        .simulate_intents(env.defuse.id(), [storage_deposit_payload.clone()])
+        .defuse
+        .simulate_intents([storage_deposit_payload.clone()])
         .await
         .unwrap();
 
@@ -633,10 +644,8 @@ async fn simulate_token_diff_intent() {
     let nonce2 = user2_payload.extract_nonce().unwrap();
 
     let result = env
-        .simulate_intents(
-            env.defuse.id(),
-            [user1_payload.clone(), user2_payload.clone()],
-        )
+        .defuse
+        .simulate_intents([user1_payload.clone(), user2_payload.clone()])
         .await
         .unwrap();
 
@@ -707,7 +716,8 @@ async fn simulate_add_public_key_intent(public_key: PublicKey) {
     let nonce = add_public_key_payload.extract_nonce().unwrap();
 
     let result = env
-        .simulate_intents(env.defuse.id(), [add_public_key_payload.clone()])
+        .defuse
+        .simulate_intents([add_public_key_payload.clone()])
         .await
         .unwrap();
 
@@ -764,7 +774,8 @@ async fn simulate_remove_public_key_intent(public_key: PublicKey) {
     let remove_nonce = remove_public_key_payload.extract_nonce().unwrap();
 
     let result = env
-        .simulate_intents(env.defuse.id(), [remove_public_key_payload.clone()])
+        .defuse
+        .simulate_intents([remove_public_key_payload.clone()])
         .await
         .unwrap();
 
@@ -804,7 +815,8 @@ async fn simulate_set_auth_by_predecessor_id_intent() {
     let nonce = set_auth_payload.extract_nonce().unwrap();
 
     let result = env
-        .simulate_intents(env.defuse.id(), [set_auth_payload.clone()])
+        .defuse
+        .simulate_intents([set_auth_payload.clone()])
         .await
         .unwrap();
 
@@ -847,7 +859,7 @@ async fn simulate_auth_call_intent() {
             env.defuse.id(),
             wnear_amount.as_yoctonear(),
             None,
-            user1.id().as_ref(),
+            user1.id(),
         )
         .await
         .unwrap();
@@ -877,7 +889,8 @@ async fn simulate_auth_call_intent() {
     let nonce = auth_call_payload.extract_nonce().unwrap();
 
     let result = env
-        .simulate_intents(env.defuse.id(), [auth_call_payload.clone()])
+        .defuse
+        .simulate_intents([auth_call_payload.clone()])
         .await
         .unwrap();
 
@@ -916,7 +929,7 @@ async fn simulation_fails_on_used_nonce() {
             .unwrap(),
     );
 
-    let result = env.simulate_intents(env.defuse.id(), [payload]).await;
+    let result = env.defuse.simulate_intents([payload]).await;
 
     assert!(result.is_err());
 }

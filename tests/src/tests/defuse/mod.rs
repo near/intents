@@ -9,13 +9,12 @@ use defuse::core::ExpirableNonce;
 use defuse::core::SaltedNonce;
 use defuse::core::VersionedNonce;
 use defuse::core::intents::DefuseIntents;
-use defuse::sandbox_ext::signer::SigningStandard;
+use defuse::sandbox_ext::signer::DefuseSigner;
 use defuse::sandbox_ext::state::SaltViewExt;
 use defuse_randomness::RngCore;
 
 use defuse::core::intents::Intent;
 use defuse::core::{Deadline, Nonce, payload::multi::MultiPayload};
-use defuse::sandbox_ext::signer::DefuseSigner;
 use defuse_sandbox::Account;
 use defuse_test_utils::random::TestRng;
 
@@ -54,13 +53,9 @@ pub trait DefuseSignerExt: DefuseSigner {
         let defuse_intents = DefuseIntents {
             intents: intents.into_iter().map(Into::into).collect(),
         };
-        Ok(self.sign_defuse_message(
-            SigningStandard::default(),
-            defuse_contract.id(),
-            nonce,
-            deadline,
-            defuse_intents,
-        ))
+        Ok(self
+            .sign_defuse_message(defuse_contract.id(), nonce, deadline, defuse_intents)
+            .await)
     }
 }
 impl<T> DefuseSignerExt for T where T: DefuseSigner {}

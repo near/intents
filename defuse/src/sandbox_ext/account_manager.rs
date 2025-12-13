@@ -1,29 +1,80 @@
 use defuse_core::{Nonce, crypto::PublicKey};
 use defuse_sandbox::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use defuse_serde_utils::base64::AsBase64;
-use near_sdk::{AccountIdRef, Gas, NearToken, serde_json::json};
+use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, serde_json::json};
 
-#[allow(async_fn_in_trait)]
 pub trait AccountManagerExt {
     async fn add_public_key(
         &self,
-        defuse_contract_id: impl AsRef<AccountIdRef>,
+        defuse_contract_id: impl Into<AccountId>,
         public_key: &PublicKey,
     ) -> anyhow::Result<()>;
 
     async fn remove_public_key(
         &self,
-        defuse_contract_id: impl AsRef<AccountIdRef>,
+        defuse_contract_id: impl Into<AccountId>,
         public_key: &PublicKey,
     ) -> anyhow::Result<()>;
 
     async fn disable_auth_by_predecessor_id(
         &self,
-        defuse_contract_id: impl AsRef<AccountIdRef>,
+        defuse_contract_id: impl Into<AccountId>,
     ) -> anyhow::Result<()>;
 }
 
-#[allow(async_fn_in_trait)]
+impl AccountManagerExt for SigningAccount {
+    async fn add_public_key(
+        &self,
+        defuse_contract_id: impl Into<AccountId>,
+        public_key: &PublicKey,
+    ) -> anyhow::Result<()> {
+        self.tx(defuse_contract_id)
+            .function_call(
+                FnCallBuilder::new("add_public_key")
+                    .with_deposit(NearToken::from_yoctonear(1))
+                    .json_args(json!({
+                        "public_key": public_key,
+                    })),
+            )
+            .await?;
+
+        Ok(())
+    }
+
+    async fn remove_public_key(
+        &self,
+        defuse_contract_id: impl Into<AccountId>,
+        public_key: &PublicKey,
+    ) -> anyhow::Result<()> {
+        self.tx(defuse_contract_id)
+            .function_call(
+                FnCallBuilder::new("remove_public_key")
+                    .with_deposit(NearToken::from_yoctonear(1))
+                    .json_args(json!({
+                        "public_key": public_key,
+                    })),
+            )
+            .await?;
+
+        Ok(())
+    }
+
+    async fn disable_auth_by_predecessor_id(
+        &self,
+        defuse_contract_id: impl Into<AccountId>,
+    ) -> anyhow::Result<()> {
+        self.tx(defuse_contract_id)
+            .function_call(
+                FnCallBuilder::new("disable_auth_by_predecessor_id")
+                    .with_deposit(NearToken::from_yoctonear(1))
+                    .with_gas(Gas::from_tgas(10)),
+            )
+            .await?;
+
+        Ok(())
+    }
+}
+
 pub trait AccountViewExt {
     async fn has_public_key(
         &self,
@@ -41,59 +92,6 @@ pub trait AccountViewExt {
         &self,
         account_id: impl AsRef<AccountIdRef>,
     ) -> anyhow::Result<bool>;
-}
-
-impl AccountManagerExt for SigningAccount {
-    async fn add_public_key(
-        &self,
-        defuse_contract_id: impl AsRef<AccountIdRef>,
-        public_key: &PublicKey,
-    ) -> anyhow::Result<()> {
-        self.tx(defuse_contract_id.as_ref().into())
-            .function_call(
-                FnCallBuilder::new("add_public_key")
-                    .with_deposit(NearToken::from_yoctonear(1))
-                    .json_args(json!({
-                        "public_key": public_key,
-                    })),
-            )
-            .await?;
-
-        Ok(())
-    }
-
-    async fn remove_public_key(
-        &self,
-        defuse_contract_id: impl AsRef<AccountIdRef>,
-        public_key: &PublicKey,
-    ) -> anyhow::Result<()> {
-        self.tx(defuse_contract_id.as_ref().into())
-            .function_call(
-                FnCallBuilder::new("remove_public_key")
-                    .with_deposit(NearToken::from_yoctonear(1))
-                    .json_args(json!({
-                        "public_key": public_key,
-                    })),
-            )
-            .await?;
-
-        Ok(())
-    }
-
-    async fn disable_auth_by_predecessor_id(
-        &self,
-        defuse_contract_id: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<()> {
-        self.tx(defuse_contract_id.as_ref().into())
-            .function_call(
-                FnCallBuilder::new("disable_auth_by_predecessor_id")
-                    .with_deposit(NearToken::from_yoctonear(1))
-                    .with_gas(Gas::from_tgas(10)),
-            )
-            .await?;
-
-        Ok(())
-    }
 }
 
 impl AccountViewExt for Account {

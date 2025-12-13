@@ -18,7 +18,7 @@ async fn deploy_mint(#[future] sandbox: Sandbox) {
     let root = sandbox.root();
 
     let user = root
-        .create_subaccount("user1", NearToken::from_near(10))
+        .generate_subaccount("user1", NearToken::from_near(10))
         .await
         .expect("Failed to create user");
 
@@ -58,8 +58,8 @@ async fn deploy_mint(#[future] sandbox: Sandbox) {
     assert_eq!(ft1.ft_balance_of(user.id()).await.unwrap(), 0);
 
     try_join!(
-        root.storage_deposit(ft1.id(), Some(root.id()), NearToken::from_near(1)),
-        root.storage_deposit(ft1.id(), Some(user.id()), NearToken::from_near(1))
+        root.storage_deposit(ft1.id(), Some(root.id().as_ref()), NearToken::from_near(1)),
+        root.storage_deposit(ft1.id(), Some(user.id().as_ref()), NearToken::from_near(1))
     )
     .unwrap();
 

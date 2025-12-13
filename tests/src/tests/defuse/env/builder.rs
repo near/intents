@@ -88,7 +88,12 @@ impl EnvBuilder {
         self
     }
 
-    async fn deploy_defuse(&self, root: &SigningAccount, wnear: &Account, legacy: bool) -> Account {
+    async fn deploy_defuse(
+        &self,
+        root: &SigningAccount,
+        wnear: &Account,
+        legacy: bool,
+    ) -> SigningAccount {
         let id = "defuse";
         let cfg = DefuseConfig {
             wnear_id: wnear.id().clone(),
@@ -130,9 +135,9 @@ impl EnvBuilder {
         let defuse = self.deploy_defuse(root, &wnear, deploy_legacy).await;
 
         let env = Env {
-            defuse,
-            wnear,
-            poa_factory: poa_factory.clone(),
+            defuse: defuse.into(),
+            wnear: wnear.into(),
+            poa_factory: poa_factory.into(),
             sandbox,
             disable_ft_storage_deposit: self.disable_ft_storage_deposit,
             disable_registration: self.disable_registration,
@@ -147,7 +152,7 @@ impl EnvBuilder {
             env.upgrade_legacy(!self.create_unique_users).await;
         }
 
-        env.near_deposit(&env.wnear, NearToken::from_near(100))
+        env.near_deposit(env.wnear.id(), NearToken::from_near(100))
             .await
             .unwrap();
 
@@ -177,7 +182,7 @@ impl EnvBuilder {
     }
 }
 
-async fn deploy_poa_factory(root: &SigningAccount) -> Account {
+async fn deploy_poa_factory(root: &SigningAccount) -> SigningAccount {
     root.deploy_poa_factory(
         "poa-factory",
         [root.id().clone()],

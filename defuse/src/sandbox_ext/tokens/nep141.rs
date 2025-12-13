@@ -1,26 +1,38 @@
 #![allow(clippy::too_many_arguments)]
 
 use defuse_sandbox::{SigningAccount, anyhow, extensions::ft::FtExt, tx::FnCallBuilder};
-use near_sdk::{AccountIdRef, NearToken, json_types::U128, serde_json::json};
+use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128, serde_json::json};
 
 use crate::tokens::DepositMessage;
 
-#[allow(async_fn_in_trait)]
-pub trait DefuseFtReceiver {
+pub trait DefuseFtDepositor: FtExt {
     async fn defuse_ft_deposit(
         &self,
         defuse_id: impl AsRef<AccountIdRef>,
-        token_id: impl AsRef<AccountIdRef>,
+        token_id: impl Into<AccountId>,
         amount: u128,
         msg: impl Into<Option<DepositMessage>>,
-    ) -> anyhow::Result<u128>;
+    ) -> anyhow::Result<u128> {
+        self.ft_transfer_call(
+            token_id,
+            defuse_id,
+            amount,
+            "deposit".to_string(),
+            msg.into()
+                .as_ref()
+                .map(ToString::to_string)
+                .unwrap_or_default(),
+        )
+        .await
+    }
 }
 
-#[allow(async_fn_in_trait)]
+impl<T> DefuseFtDepositor for T where T: FtExt {}
+
 pub trait DefuseFtWithdrawer {
     async fn defuse_ft_withdraw(
         &self,
-        defuse_id: impl AsRef<AccountIdRef>,
+        defuse_id: impl Into<AccountId>,
         token_id: impl AsRef<AccountIdRef>,
         receiver_id: impl AsRef<AccountIdRef>,
         amount: u128,
@@ -30,7 +42,7 @@ pub trait DefuseFtWithdrawer {
 
     async fn defuse_ft_force_withdraw(
         &self,
-        defuse_id: impl AsRef<AccountIdRef>,
+        defuse_id: impl Into<AccountId>,
         owner_id: impl AsRef<AccountIdRef>,
         token_id: impl AsRef<AccountIdRef>,
         receiver_id: impl AsRef<AccountIdRef>,
@@ -40,40 +52,17 @@ pub trait DefuseFtWithdrawer {
     ) -> anyhow::Result<u128>;
 }
 
-// TODO: may be replace it with ft_on_transfer?
-impl DefuseFtReceiver for SigningAccount {
-    async fn defuse_ft_deposit(
-        &self,
-        defuse_id: impl AsRef<AccountIdRef>,
-        token_id: impl AsRef<AccountIdRef>,
-        amount: u128,
-        msg: impl Into<Option<DepositMessage>>,
-    ) -> anyhow::Result<u128> {
-        self.ft_transfer_call(
-            token_id,
-            defuse_id,
-            amount,
-            None,
-            &msg.into()
-                .as_ref()
-                .map(ToString::to_string)
-                .unwrap_or_default(),
-        )
-        .await
-    }
-}
-
 impl DefuseFtWithdrawer for SigningAccount {
     async fn defuse_ft_withdraw(
         &self,
-        defuse_id: impl AsRef<AccountIdRef>,
+        defuse_id: impl Into<AccountId>,
         token: impl AsRef<AccountIdRef>,
         receiver_id: impl AsRef<AccountIdRef>,
         amount: u128,
         memo: Option<String>,
         msg: Option<String>,
     ) -> anyhow::Result<u128> {
-        self.tx(defuse_id.as_ref().into())
+        self.tx(defuse_id)
             .function_call(
                 FnCallBuilder::new("ft_withdraw")
                     .json_args(json!({
@@ -93,7 +82,7 @@ impl DefuseFtWithdrawer for SigningAccount {
 
     async fn defuse_ft_force_withdraw(
         &self,
-        defuse_id: impl AsRef<AccountIdRef>,
+        defuse_id: impl Into<AccountId>,
         owner_id: impl AsRef<AccountIdRef>,
         token: impl AsRef<AccountIdRef>,
         receiver_id: impl AsRef<AccountIdRef>,
@@ -101,7 +90,7 @@ impl DefuseFtWithdrawer for SigningAccount {
         memo: Option<String>,
         msg: Option<String>,
     ) -> anyhow::Result<u128> {
-        self.tx(defuse_id.as_ref().into())
+        self.tx(defuse_id)
             .function_call(
                 FnCallBuilder::new("ft_force_withdraw")
                     .json_args(json!({

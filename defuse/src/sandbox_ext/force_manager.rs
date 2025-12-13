@@ -1,34 +1,32 @@
 use defuse_sandbox::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use near_sdk::{AccountId, AccountIdRef, NearToken, serde_json::json};
 
-#[allow(async_fn_in_trait)]
 pub trait ForceAccountManagerExt {
     async fn force_lock_account(
         &self,
-        contract_id: impl AsRef<AccountIdRef>,
+        contract_id: impl Into<AccountId>,
         account_id: impl AsRef<AccountIdRef>,
     ) -> anyhow::Result<bool>;
 
     async fn force_unlock_account(
         &self,
-        contract_id: impl AsRef<AccountIdRef>,
+        contract_id: impl Into<AccountId>,
         account_id: impl AsRef<AccountIdRef>,
     ) -> anyhow::Result<bool>;
 
     async fn force_disable_auth_by_predecessor_ids(
         &self,
-        contract_id: impl AsRef<AccountIdRef>,
+        contract_id: impl Into<AccountId>,
         account_ids: impl IntoIterator<Item = AccountId>,
     ) -> anyhow::Result<()>;
 
     async fn force_enable_auth_by_predecessor_ids(
         &self,
-        contract_id: impl AsRef<AccountIdRef>,
+        contract_id: impl Into<AccountId>,
         account_ids: impl IntoIterator<Item = AccountId>,
     ) -> anyhow::Result<()>;
 }
 
-#[allow(async_fn_in_trait)]
 pub trait ForceAccountViewExt {
     async fn is_account_locked(&self, account_id: impl AsRef<AccountIdRef>)
     -> anyhow::Result<bool>;
@@ -37,10 +35,10 @@ pub trait ForceAccountViewExt {
 impl ForceAccountManagerExt for SigningAccount {
     async fn force_lock_account(
         &self,
-        contract_id: impl AsRef<AccountIdRef>,
+        contract_id: impl Into<AccountId>,
         account_id: impl AsRef<AccountIdRef>,
     ) -> anyhow::Result<bool> {
-        self.tx(contract_id.as_ref().into())
+        self.tx(contract_id)
             .function_call(
                 FnCallBuilder::new("force_lock_account")
                     .json_args(json!({
@@ -55,10 +53,10 @@ impl ForceAccountManagerExt for SigningAccount {
 
     async fn force_unlock_account(
         &self,
-        contract_id: impl AsRef<AccountIdRef>,
+        contract_id: impl Into<AccountId>,
         account_id: impl AsRef<AccountIdRef>,
     ) -> anyhow::Result<bool> {
-        self.tx(contract_id.as_ref().into())
+        self.tx(contract_id)
             .function_call(
                 FnCallBuilder::new("force_unlock_account")
                     .json_args(json!({
@@ -73,10 +71,10 @@ impl ForceAccountManagerExt for SigningAccount {
 
     async fn force_disable_auth_by_predecessor_ids(
         &self,
-        contract_id: impl AsRef<AccountIdRef>,
+        contract_id: impl Into<AccountId>,
         account_ids: impl IntoIterator<Item = AccountId>,
     ) -> anyhow::Result<()> {
-        self.tx(contract_id.as_ref().into())
+        self.tx(contract_id)
             .function_call(
                 FnCallBuilder::new("force_disable_auth_by_predecessor_ids")
                     .json_args(json!({
@@ -91,10 +89,10 @@ impl ForceAccountManagerExt for SigningAccount {
 
     async fn force_enable_auth_by_predecessor_ids(
         &self,
-        contract_id: impl AsRef<AccountIdRef>,
+        contract_id: impl Into<AccountId>,
         account_ids: impl IntoIterator<Item = AccountId>,
     ) -> anyhow::Result<()> {
-        self.tx(contract_id.as_ref().into())
+        self.tx(contract_id)
             .function_call(
                 FnCallBuilder::new("force_enable_auth_by_predecessor_ids")
                     .json_args(json!({

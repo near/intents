@@ -21,10 +21,13 @@ use defuse::{
     },
 };
 use defuse_randomness::{Rng, make_true_rng};
-use futures::{StreamExt, TryStreamExt, future::try_join_all};
+use futures::{
+    StreamExt, TryStreamExt,
+    future::{join_all, try_join_all},
+};
 
 use crate::tests::defuse::{
-    DefuseSigner, SigningStandard,
+    DefuseSigner,
     env::{
         Env,
         state::{AccountWithTokens, PersistentState},
@@ -89,10 +92,10 @@ impl Env {
 
     async fn apply_token(&self, token_id: &Nep141TokenId) -> Result<()> {
         let root = self.root();
-        let token_name = self
-            .poa_factory
-            .subaccount_name(&token_id.contract_id)
-            .unwrap();
+        let token_name = token_id
+            .contract_id
+            .as_str()
+            .trim_end_matches(&format!(".{}", self.poa_factory.id()));
 
         let token = root
             .poa_factory_deploy_token(self.poa_factory.id(), &token_name, None)
@@ -126,12 +129,12 @@ impl Env {
             .execute_intents(
                 self.defuse.id(),
                 [acc.sign_defuse_message(
-                    SigningStandard::default(),
                     self.defuse.id(),
                     make_true_rng().random(),
                     Deadline::MAX,
                     DefuseIntents { intents },
-                )],
+                )
+                .await],
             )
             .await?;
 
@@ -139,20 +142,15 @@ impl Env {
     }
 
     async fn apply_nonces(&self, acc: &SigningAccount, data: &AccountWithTokens) -> Result<()> {
-        let payload = data
-            .data
-            .nonces
-            .iter()
-            .map(|nonce| {
-                acc.sign_defuse_message(
-                    SigningStandard::default(),
-                    self.defuse.id(),
-                    *nonce,
-                    Deadline::MAX,
-                    DefuseIntents { intents: vec![] },
-                )
-            })
-            .collect::<Vec<_>>();
+        let payload = join_all(data.data.nonces.iter().map(|nonce| {
+            acc.sign_defuse_message(
+                self.defuse.id(),
+                *nonce,
+                Deadline::MAX,
+                DefuseIntents { intents: vec![] },
+            )
+        }))
+        .await;
 
         self.root()
             .execute_intents(self.defuse.id(), payload)
@@ -177,7 +175,11 @@ impl Env {
     ) -> Result<SigningAccount> {
         let (account_id, account) = data;
         let acc = self
-            .create_named_user(&self.root().subaccount_name(account_id).unwrap())
+            .create_named_user(
+                account_id
+                    .as_str()
+                    .trim_end_matches(&format!(".{}", self.root().id())),
+            )
             .await;
 
         futures::try_join!(

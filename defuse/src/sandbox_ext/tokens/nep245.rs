@@ -3,38 +3,13 @@ use defuse_sandbox::{
     SigningAccount, anyhow, api::types::transaction::result::ExecutionSuccess,
     extensions::mt::MtExt, tx::FnCallBuilder,
 };
-use near_sdk::{AccountIdRef, NearToken, json_types::U128, serde_json::json};
+use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128, serde_json::json};
 
-#[allow(async_fn_in_trait)]
-pub trait DefuseMtDepositer {
+pub trait DefuseMtDepositor: MtExt {
     async fn defuse_mt_deposit(
         &self,
         sender_id: impl AsRef<AccountIdRef>,
-        defuse_id: impl AsRef<AccountIdRef>,
-        token_ids: impl IntoIterator<Item = (impl Into<String>, u128)>,
-        msg: impl Into<Option<String>>,
-    ) -> anyhow::Result<Vec<u128>>;
-}
-
-#[allow(async_fn_in_trait)]
-pub trait DefuseMtWithdrawer {
-    async fn defuse_mt_withdraw(
-        &self,
-        defuse_id: impl AsRef<AccountIdRef>,
-        token: impl AsRef<AccountIdRef>,
-        receiver_id: impl AsRef<AccountIdRef>,
-        token_ids: Vec<TokenId>,
-        amounts: Vec<u128>,
-        msg: Option<String>,
-    ) -> anyhow::Result<(Vec<u128>, ExecutionSuccess)>;
-}
-
-// TODO: may be replace it with mt_on_transfer?
-impl DefuseMtDepositer for SigningAccount {
-    async fn defuse_mt_deposit(
-        &self,
-        sender_id: impl AsRef<AccountIdRef>,
-        defuse_id: impl AsRef<AccountIdRef>,
+        defuse_id: impl Into<AccountId>,
         token_ids: impl IntoIterator<Item = (impl Into<String>, u128)>,
         msg: impl Into<Option<String>>,
     ) -> anyhow::Result<Vec<u128>> {
@@ -51,10 +26,24 @@ impl DefuseMtDepositer for SigningAccount {
     }
 }
 
+impl<T> DefuseMtDepositor for T where T: MtExt {}
+
+pub trait DefuseMtWithdrawer {
+    async fn defuse_mt_withdraw(
+        &self,
+        defuse_id: impl Into<AccountId>,
+        token: impl AsRef<AccountIdRef>,
+        receiver_id: impl AsRef<AccountIdRef>,
+        token_ids: Vec<TokenId>,
+        amounts: Vec<u128>,
+        msg: Option<String>,
+    ) -> anyhow::Result<(Vec<u128>, ExecutionSuccess)>;
+}
+
 impl DefuseMtWithdrawer for SigningAccount {
     async fn defuse_mt_withdraw(
         &self,
-        defuse_id: impl AsRef<AccountIdRef>,
+        defuse_id: impl Into<AccountId>,
         token: impl AsRef<AccountIdRef>,
         receiver_id: impl AsRef<AccountIdRef>,
         token_ids: Vec<TokenId>,
@@ -62,7 +51,7 @@ impl DefuseMtWithdrawer for SigningAccount {
         msg: Option<String>,
     ) -> anyhow::Result<(Vec<u128>, ExecutionSuccess)> {
         let res = self
-            .tx(defuse_id.as_ref().into())
+            .tx(defuse_id)
             .function_call(
                 FnCallBuilder::new("mt_withdraw")
                     .with_deposit(NearToken::from_yoctonear(1))

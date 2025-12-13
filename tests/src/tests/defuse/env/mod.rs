@@ -10,8 +10,7 @@ use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;
 use defuse::sandbox_ext::{
     account_manager::{AccountManagerExt, AccountViewExt},
-    signer::Signer,
-    tokens::nep141::DefuseFtReceiver,
+    tokens::nep141::DefuseFtDepositor,
 };
 use defuse::{
     core::{Deadline, ExpirableNonce, Nonce, Salt, SaltedNonce, VersionedNonce},
@@ -24,15 +23,13 @@ use defuse_sandbox::tx::FnCallBuilder;
 use defuse_sandbox::{Account, Sandbox, SigningAccount, read_wasm};
 use defuse_test_utils::random::{Seed, rng};
 use futures::future::try_join_all;
+use impl_tools::autoimpl;
 use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::AccountIdRef;
 use near_sdk::{AccountId, NearToken, account_id::arbitrary::ArbitraryNamedAccountId, env::sha256};
 
 use std::sync::LazyLock;
-use std::{
-    ops::Deref,
-    sync::atomic::{AtomicUsize, Ordering},
-};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 pub static MT_RECEIVER_STUB_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("res/multi-token-receiver-stub/multi_token_receiver_stub"));
@@ -40,6 +37,7 @@ pub static MT_RECEIVER_STUB_WASM: LazyLock<Vec<u8>> =
 const TOKEN_STORAGE_DEPOSIT: NearToken = NearToken::from_near(1);
 const INITIAL_USER_BALANCE: NearToken = NearToken::from_near(10);
 
+#[autoimpl(Deref using self.sandbox)]
 pub struct Env {
     sandbox: Sandbox,
 
@@ -98,7 +96,7 @@ impl Env {
         Ok(())
     }
 
-    pub async fn create_named_token(&self, name: &str) -> Account {
+    pub async fn create_named_token(&self, name: impl AsRef<str>) -> Account {
         let root = self.root();
 
         root.poa_factory_deploy_token(self.poa_factory.id(), name, None)
@@ -109,18 +107,20 @@ impl Env {
     pub async fn create_token(&self) -> Account {
         let account_id = generate_random_account_id(self.poa_factory.id())
             .expect("Failed to generate random account ID");
+        let name = account_id
+            .as_str()
+            .trim_end_matches(&format!(".{}", self.poa_factory.id()));
 
-        self.create_named_token(&self.poa_factory.subaccount_name(&account_id).unwrap())
-            .await
+        self.create_named_token(name).await
     }
 
     pub async fn create_named_user(&self, name: &str) -> SigningAccount {
         let account = self
-            .create_subaccount(name, INITIAL_USER_BALANCE)
+            .generate_subaccount(name, INITIAL_USER_BALANCE)
             .await
             .expect("Failed to create user");
 
-        let pubkey = get_account_public_key(&account);
+        let pubkey = account.signer().get_public_key().await.unwrap().into();
 
         if !self
             .defuse
@@ -141,12 +141,13 @@ impl Env {
         let account_id = self
             .get_next_account_id()
             .expect("Failed to generate next account id");
-        let root = self.root();
 
         println!("Creating user account: {}", &account_id);
+        let name = account_id
+            .as_str()
+            .trim_end_matches(&format!(".{}", self.root().id()));
 
-        self.create_named_user(&root.subaccount_name(&account_id).unwrap())
-            .await
+        self.create_named_user(name).await
     }
 
     // Randomly derives account ID from seed and unique index
@@ -208,7 +209,7 @@ impl Env {
         try_join_all(accounts.into_iter().map(|acc| {
             self.sandbox
                 .root()
-                .storage_deposit(token, Some(acc), TOKEN_STORAGE_DEPOSIT)
+                .storage_deposit(token, acc.as_ref(), TOKEN_STORAGE_DEPOSIT)
         }))
         .await?;
 
@@ -229,8 +230,7 @@ impl Env {
 
     pub fn poa_ft_name(&self, ft: &AccountIdRef) -> String {
         ft.as_str()
-            .strip_suffix(&format!(".{}", self.poa_factory.id()))
-            .unwrap()
+            .trim_end_matches(&format!(".{}", self.poa_factory.id()))
             .to_string()
     }
 
@@ -239,14 +239,20 @@ impl Env {
         account_id: &AccountIdRef,
         amount: NearToken,
     ) -> Result<()> {
-        self.sandbox.root().transfer_near(account_id, amount).await
+        self.sandbox
+            .root()
+            .tx(account_id)
+            .transfer(amount)
+            .await
+            .map(|_| ())
     }
 
-    pub async fn deploy_mt_receiver_stub(&self) -> Account {
+    pub async fn deploy_mt_receiver_stub(&self) -> SigningAccount {
         self.sandbox()
             .root()
-            .deploy_contract(
+            .deploy_sub_contract(
                 "mt_receiver_stub",
+                NearToken::from_near(100),
                 MT_RECEIVER_STUB_WASM.to_vec(),
                 None::<FnCallBuilder>,
             )
@@ -267,29 +273,12 @@ impl Env {
     }
 }
 
-impl Deref for Env {
-    type Target = SigningAccount;
-
-    fn deref(&self) -> &Self::Target {
-        self.root()
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct TransferCallExpectation {
     pub mode: MTReceiverMode,
     pub intent_transfer_amount: Option<u128>,
     pub expected_sender_balance: u128,
     pub expected_receiver_balance: u128,
-}
-
-pub fn get_account_public_key(account: &SigningAccount) -> defuse::core::crypto::PublicKey {
-    account
-        .secret_key()
-        .public_key()
-        .to_string()
-        .parse()
-        .unwrap()
 }
 
 pub fn create_random_salted_nonce(salt: Salt, deadline: Deadline, mut rng: impl Rng) -> Nonce {

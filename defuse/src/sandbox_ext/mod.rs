@@ -1,3 +1,5 @@
+#![allow(async_fn_in_trait)]
+
 pub mod account_manager;
 pub mod deployer;
 pub mod force_manager;

@@ -43,7 +43,12 @@ impl PersistentState {
     pub fn generate(root: &SigningAccount, factory: &Account, seed: Seed) -> Self {
         let tokens = (0..MAX_TOKENS)
             .map(|token_id| {
-                Nep141TokenId::new(factory.subaccount_id(format!("test-token-{token_id}")))
+                Nep141TokenId::new(
+                    factory
+                        .id()
+                        .sub_account(format!("test-token-{token_id}"))
+                        .unwrap(),
+                )
             })
             .collect::<Vec<_>>();
 
