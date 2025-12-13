@@ -16,6 +16,7 @@ use near_sdk::{
     account_id::ParseAccountError,
     serde::{Serialize, de::DeserializeOwned},
 };
+use tracing::instrument;
 
 use crate::tx::{FnCallBuilder, TxBuilder};
 
@@ -95,6 +96,7 @@ impl From<Account> for AccountId {
     }
 }
 
+#[autoimpl(Debug ignore self.signer)]
 #[autoimpl(Deref using self.account)]
 #[derive(Clone)]
 pub struct SigningAccount {
@@ -143,6 +145,7 @@ impl SigningAccount {
         Ok(account)
     }
 
+    #[instrument(skip_all, fields(name = name.as_ref()))]
     pub async fn generate_subaccount(
         &self,
         name: impl AsRef<str>,

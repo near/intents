@@ -24,5 +24,6 @@ near-openapi-types.workspace = true
 near-sandbox.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 thiserror.workspace = true
+tracing.workspace = true
 
 near-contract-standards.workspace = true

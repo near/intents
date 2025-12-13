@@ -31,7 +31,7 @@ members = [
     "token-id",
     "ton-connect",
     "wnear",
-    "sandbox"
+    "sandbox",
 ]
 default-members = ["defuse"]
 
@@ -92,8 +92,8 @@ hex-literal = "1.0"
 impl-tools = "0.11"
 itertools = "0.14"
 
-near-api = "0.8.0"
-near-api-types = "0.8.0"
+near-api = "0.8.1"
+near-api-types = "0.8.1"
 near-openapi-types = "0.6.0"
 near-sandbox = "0.3.3"
 near-contract-standards = "5.22"
@@ -118,6 +118,7 @@ strum = { version = "0.27", features = ["derive"] }
 thiserror = "2"
 tlb-ton = { version = "0.5.6", default-features = false }
 tokio = { version = "1.45", default-features = false }
+tracing = "0.1"
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }

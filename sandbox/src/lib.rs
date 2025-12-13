@@ -23,6 +23,7 @@ use near_sandbox::{GenesisAccount, SandboxConfig};
 use near_sdk::{AccountId, AccountIdRef, NearToken};
 use rstest::fixture;
 use tokio::sync::OnceCell;
+use tracing::instrument;
 
 #[autoimpl(Deref using self.root)]
 pub struct Sandbox {
@@ -83,6 +84,7 @@ impl Sandbox {
 }
 
 #[fixture]
+#[instrument]
 pub async fn sandbox(#[default(NearToken::from_near(100_000))] amount: NearToken) -> Sandbox {
     const SHARED_ROOT: &AccountIdRef = AccountIdRef::new_or_panic("test");
 
@@ -90,7 +92,7 @@ pub async fn sandbox(#[default(NearToken::from_near(100_000))] amount: NearToken
     static SUB_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
     let shared = SHARED_SANDBOX
-        .get_or_init(|| async { Sandbox::new(SHARED_ROOT).await })
+        .get_or_init(|| Sandbox::new(SHARED_ROOT))
         .await;
 
     Sandbox {

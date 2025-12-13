@@ -1061,6 +1061,7 @@ dependencies = [
  "rstest",
  "thiserror 2.0.17",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -2489,9 +2490,9 @@ dependencies = [
 
 [[package]]
 name = "near-api"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4db0fc73b5d3312219b251b9b777da274867c48e9793f6916f5c17d3914384a7"
+checksum = "8f188c0239b54a916a9221abd3c47ec0ada81159e72f5d3838fa350386b4996d"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -2515,9 +2516,9 @@ dependencies = [
 
 [[package]]
 name = "near-api-types"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82ad7dfc45b9bd7755d7a036d406aada171eb5d95428cbc324dc916018ec3ffb"
+checksum = "eee57e9b973b7758c4b1ae64a7a89888a23a5cee7409b17a2b3e8a43f6818bfa"
 dependencies = [
  "base64 0.22.1",
  "borsh",
