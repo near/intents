@@ -2490,9 +2490,9 @@ dependencies = [
 
 [[package]]
 name = "near-api"
-version = "0.8.1"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f188c0239b54a916a9221abd3c47ec0ada81159e72f5d3838fa350386b4996d"
+checksum = "17a87920038b8a0eb5b4c91691651ce235810beb1f3a8626596b303b82750b75"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -2516,9 +2516,9 @@ dependencies = [
 
 [[package]]
 name = "near-api-types"
-version = "0.8.1"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eee57e9b973b7758c4b1ae64a7a89888a23a5cee7409b17a2b3e8a43f6818bfa"
+checksum = "42a5ca7d481bf75b61afb8552c8504df5d76f0a6c3e47482f498f2d65c349f8b"
 dependencies = [
  "base64 0.22.1",
  "borsh",
@@ -2810,9 +2810,9 @@ dependencies = [
 
 [[package]]
 name = "near-sandbox"
-version = "0.3.3"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eea220bed25942ca3903a413684c618d305e94968f630da60cd6118a3dd09785"
+checksum = "478a37f1c52dae2c8ac63a92ab4258401b79d99a881efd243cacd08b748ea7cf"
 dependencies = [
  "binary-install",
  "fs4",

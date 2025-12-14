@@ -39,9 +39,7 @@ impl TxBuilder {
             actions: Vec::new(),
         }
     }
-}
 
-impl TxBuilder {
     #[must_use]
     pub fn create_account(self) -> Self {
         self.add_action(Action::CreateAccount(CreateAccountAction {}))
