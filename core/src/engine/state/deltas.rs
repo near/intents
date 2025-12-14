@@ -482,8 +482,11 @@ mod tests {
         let mut transfers = TransferMatcher::default();
         let [a, b, c, d, e, f, g]: [AccountId; 7] =
             ["a", "b", "c", "d", "e", "f", "g"].map(|s| format!("{s}.near").parse().unwrap());
-        let [ft1, ft2] = ["ft1", "ft2"]
-            .map(|a| TokenId::from(Nep141TokenId::new(format!("{a}.near").parse().unwrap())));
+        let [ft1, ft2] = ["ft1", "ft2"].map(|a| {
+            TokenId::from(Nep141TokenId::new(
+                format!("{a}.near").parse::<AccountId>().unwrap(),
+            ))
+        });
 
         let deltas: HashMap<AccountId, TokenDeltas> = [
             (&a, [(&ft1, -5), (&ft2, 1)].as_slice()),
@@ -543,8 +546,11 @@ mod tests {
         let mut deltas = TransferMatcher::default();
         let [a, b, _c, d, e, f, g]: [AccountId; 7] =
             ["a", "b", "c", "d", "e", "f", "g"].map(|s| format!("{s}.near").parse().unwrap());
-        let [ft1, ft2] = ["ft1", "ft2"]
-            .map(|a| TokenId::from(Nep141TokenId::new(format!("{a}.near").parse().unwrap())));
+        let [ft1, ft2] = ["ft1", "ft2"].map(|a| {
+            TokenId::from(Nep141TokenId::new(
+                format!("{a}.near").parse::<AccountId>().unwrap(),
+            ))
+        });
 
         for (owner, token_id, delta) in [
             (&a, &ft1, -5),
