@@ -1,17 +1,16 @@
 use defuse_sandbox::{SigningAccount, anyhow, tx::FnCallBuilder};
-use near_sdk::{AccountIdRef, NearToken, PublicKey, serde_json::json};
+use near_sdk::{AccountId, NearToken, PublicKey, serde_json::json};
 
-#[allow(async_fn_in_trait)]
 pub trait RelayerKeysExt {
     async fn add_relayer_key(
         &self,
-        defuse_contract_id: &AccountIdRef,
+        contract_id: impl Into<AccountId>,
         public_key: &PublicKey,
     ) -> anyhow::Result<()>;
 
     async fn delete_relayer_key(
         &self,
-        defuse_contract_id: &AccountIdRef,
+        contract_id: impl Into<AccountId>,
         public_key: &PublicKey,
     ) -> anyhow::Result<()>;
 }
@@ -19,10 +18,10 @@ pub trait RelayerKeysExt {
 impl RelayerKeysExt for SigningAccount {
     async fn add_relayer_key(
         &self,
-        defuse_contract_id: &AccountIdRef,
+        contract_id: impl Into<AccountId>,
         public_key: &PublicKey,
     ) -> anyhow::Result<()> {
-        self.tx(defuse_contract_id.into())
+        self.tx(contract_id)
             .function_call(
                 FnCallBuilder::new("add_relayer_key")
                     .with_deposit(NearToken::from_yoctonear(1))
@@ -37,10 +36,10 @@ impl RelayerKeysExt for SigningAccount {
 
     async fn delete_relayer_key(
         &self,
-        defuse_contract_id: &AccountIdRef,
+        contract_id: impl Into<AccountId>,
         public_key: &PublicKey,
     ) -> anyhow::Result<()> {
-        self.tx(defuse_contract_id.into())
+        self.tx(contract_id)
             .function_call(
                 FnCallBuilder::new("delete_relayer_key")
                     .with_deposit(NearToken::from_yoctonear(1))

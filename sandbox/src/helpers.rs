@@ -3,11 +3,10 @@ use std::fmt::Debug;
 
 use std::{fs, path::Path};
 
-pub fn read_wasm(dir: impl AsRef<Path>, name: impl AsRef<Path>) -> Vec<u8> {
+pub fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
     let filename = fs::canonicalize(
         Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../")
-            .join(dir)
             .join(name)
             .with_extension("wasm"),
     )

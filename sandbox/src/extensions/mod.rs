@@ -1,3 +1,5 @@
+#![allow(async_fn_in_trait)]
+
 pub mod acl;
 pub mod ft;
 pub mod mt;

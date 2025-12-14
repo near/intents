@@ -1,7 +1,7 @@
 use crate::tests::defuse::DefuseSignerExt;
 use crate::tests::defuse::{env::Env, intents::ExecuteIntentsExt};
 use crate::utils::fixtures::{ed25519_pk, secp256k1_pk};
-use defuse::sandbox_ext::tokens::nep141::DefuseFtReceiver;
+use defuse::sandbox_ext::tokens::nep141::DefuseFtDepositor;
 use defuse::{
     core::{
         crypto::PublicKey,
@@ -15,8 +15,8 @@ use defuse_sandbox::extensions::wnear::WNearExt;
 use near_sdk::NearToken;
 use rstest::rstest;
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn native_withdraw_intent(ed25519_pk: PublicKey, secp256k1_pk: PublicKey) {
     let env = Env::new().await;
 
@@ -43,7 +43,8 @@ async fn native_withdraw_intent(ed25519_pk: PublicKey, secp256k1_pk: PublicKey) 
         let mut result = vec![];
         for (account, _) in &amounts_to_withdraw {
             let balance = env
-                .view_account(account)
+                .account(account)
+                .view()
                 .await
                 .map(|a| a.amount)
                 .unwrap_or(NearToken::from_near(0));
@@ -108,7 +109,7 @@ async fn native_withdraw_intent(ed25519_pk: PublicKey, secp256k1_pk: PublicKey) 
     // Check balances of NEAR on the blockchain
     for ((receiver_id, amount), initial_balance) in amounts_to_withdraw.iter().zip(initial_balances)
     {
-        let balance = env.view_account(receiver_id).await.unwrap().amount;
+        let balance = env.account(receiver_id).view().await.unwrap().amount;
 
         assert!(
             balance == initial_balance.checked_add(*amount).unwrap(),

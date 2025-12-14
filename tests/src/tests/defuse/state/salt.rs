@@ -9,8 +9,8 @@ use rstest::rstest;
 
 use crate::tests::defuse::env::Env;
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn update_current_salt() {
     let env = Env::builder().deployer_as_super_admin().build().await;
     let prev_salt = env.defuse.current_salt().await.unwrap();
@@ -44,8 +44,8 @@ async fn update_current_salt() {
     }
 }
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn invalidate_salts() {
     let env = Env::builder().deployer_as_super_admin().build().await;
     let mut current_salt = env.defuse.current_salt().await.unwrap();

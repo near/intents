@@ -12,7 +12,6 @@ const MIN_FT_STORAGE_DEPOSIT_VALUE: NearToken =
 
 const ONE_YOCTO_NEAR: NearToken = NearToken::from_yoctonear(1);
 
-#[tokio::test]
 #[rstest]
 #[trace]
 #[case(MIN_FT_STORAGE_DEPOSIT_VALUE, Some(MIN_FT_STORAGE_DEPOSIT_VALUE))]
@@ -26,6 +25,7 @@ const ONE_YOCTO_NEAR: NearToken = NearToken::from_yoctonear(1);
     MIN_FT_STORAGE_DEPOSIT_VALUE.checked_add(ONE_YOCTO_NEAR).unwrap(),
     Some(MIN_FT_STORAGE_DEPOSIT_VALUE)
 )]
+#[tokio::test]
 async fn storage_deposit_success(
     #[case] amount_to_deposit: NearToken,
     #[case] expected_deposited: Option<NearToken>,
@@ -53,13 +53,13 @@ async fn storage_deposit_success(
     // For intents contract to have a balance in wnear, we make a storage deposit for it
     env.storage_deposit(
         env.wnear.id(),
-        Some(env.defuse.id()),
+        env.defuse.id().as_ref(),
         NearToken::from_near(1),
     )
     .await
     .unwrap();
 
-    env.storage_deposit(ft.id(), Some(user.id()), NearToken::from_near(1))
+    env.storage_deposit(ft.id(), user.id().as_ref(), NearToken::from_near(1))
         .await
         .unwrap();
 
@@ -117,8 +117,8 @@ async fn storage_deposit_success(
     }
 }
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn storage_deposit_fails_user_has_no_balance_in_intents() {
     let env = Env::builder().disable_ft_storage_deposit().build().await;
 
@@ -143,13 +143,13 @@ async fn storage_deposit_fails_user_has_no_balance_in_intents() {
     // For intents contract to have a balance in wnear, we make a storage deposit for it
     env.storage_deposit(
         env.wnear.id(),
-        Some(env.defuse.id()),
+        Some(env.defuse.id().as_ref()),
         NearToken::from_near(1),
     )
     .await
     .unwrap();
 
-    env.storage_deposit(ft.id(), Some(user.id()), NearToken::from_near(1))
+    env.storage_deposit(ft.id(), user.id().as_ref(), NearToken::from_near(1))
         .await
         .unwrap();
 

@@ -20,8 +20,8 @@ const DUMMY_REFERENCE_HASH: [u8; 32] = [33; 32];
 const DUMMY_NFT1_ID: &str = "thisisdummynftid1";
 const DUMMY_NFT2_ID: &str = "thisisdummythisisdummynnthisisdummynftid2";
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn transfer_nft_to_verifier() {
     let env = Env::builder().create_unique_users().build().await;
 
@@ -31,7 +31,8 @@ async fn transfer_nft_to_verifier() {
         env.create_user()
     );
 
-    env.transfer_near(user1.id(), NearToken::from_near(100))
+    env.tx(user1.id())
+        .transfer(NearToken::from_near(100))
         .await
         .unwrap();
 
@@ -40,6 +41,7 @@ async fn transfer_nft_to_verifier() {
     let nft_issuer_contract = user1
         .deploy_vanilla_nft_issuer(
             "nft1",
+            user1.id(),
             NFTContractMetadata {
                 reference: Some("http://abc.com/xyz/".to_string()),
                 reference_hash: Some(Base64VecU8(DUMMY_REFERENCE_HASH.to_vec())),
@@ -295,7 +297,6 @@ struct NftTransferCallExpectation {
     expected_receiver_owns_nft: bool,
 }
 
-#[tokio::test]
 #[rstest]
 #[case::nothing_to_refund(NftTransferCallExpectation {
     action: StubAction::ReturnValue(0.into()),
@@ -325,11 +326,12 @@ struct NftTransferCallExpectation {
     expected_sender_owns_nft: true,
     expected_receiver_owns_nft: false,
 })]
+#[tokio::test]
 async fn nft_transfer_call_calls_mt_on_transfer_variants(
     #[case] expectation: NftTransferCallExpectation,
 ) {
     use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
-    use defuse_sandbox::{SigningAccount, api::types::json::Base64VecU8, tx::FnCallBuilder};
+    use defuse_sandbox::{api::types::json::Base64VecU8, tx::FnCallBuilder};
 
     use crate::tests::defuse::env::MT_RECEIVER_STUB_WASM;
 
@@ -342,24 +344,25 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
         env.create_user()
     );
 
-    let receiver = SigningAccount::new(
-        env.deploy_contract(
+    let receiver = env
+        .deploy_sub_contract(
             "receiver_stub",
+            NearToken::from_near(100),
             MT_RECEIVER_STUB_WASM.to_vec(),
             None::<FnCallBuilder>,
         )
         .await
-        .unwrap(),
-        env.private_key().clone(),
-    );
+        .unwrap();
 
-    env.transfer_near(user.id(), NearToken::from_near(100))
+    env.tx(user.id())
+        .transfer(NearToken::from_near(100))
         .await
         .unwrap();
 
     let nft_issuer_contract = user
         .deploy_vanilla_nft_issuer(
             "nft_test",
+            user.id(),
             NFTContractMetadata {
                 reference: Some("http://test.com/".to_string()),
                 reference_hash: Some(Base64VecU8(DUMMY_REFERENCE_HASH.to_vec())),
