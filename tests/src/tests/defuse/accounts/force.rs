@@ -25,8 +25,8 @@ use defuse_sandbox::extensions::{
 use defuse_test_utils::asserts::ResultAssertsExt;
 use rstest::rstest;
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn test_lock_account(public_key: PublicKey) {
     let env = Env::builder().deployer_as_super_admin().build().await;
 
@@ -386,8 +386,8 @@ async fn test_lock_account(public_key: PublicKey) {
     }
 }
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn test_force_set_auth_by_predecessor_id(public_key: PublicKey) {
     let env = Env::builder().deployer_as_super_admin().build().await;
 

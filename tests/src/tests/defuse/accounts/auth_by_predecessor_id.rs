@@ -17,8 +17,8 @@ use rstest::rstest;
 
 use crate::tests::defuse::{DefuseSignerExt, env::Env};
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn auth_by_predecessor_id() {
     let env = Env::new().await;
 

@@ -15,9 +15,9 @@ use serde_json::json;
 
 use crate::{tests::defuse::env::Env, utils::fixtures::public_key};
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn test_add_public_key(public_key: PublicKey) {
     let env = Env::builder().build().await;
 
@@ -63,9 +63,9 @@ async fn test_add_public_key(public_key: PublicKey) {
     );
 }
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn test_add_and_remove_public_key(public_key: PublicKey) {
     let env = Env::builder().build().await;
 

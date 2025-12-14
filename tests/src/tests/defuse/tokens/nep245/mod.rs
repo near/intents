@@ -26,8 +26,8 @@ use near_sdk::{AsNep297Event, json_types::U128};
 use rstest::rstest;
 use std::borrow::Cow;
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn multitoken_enumeration() {
     use defuse::core::token_id::nep141::Nep141TokenId;
 
@@ -294,8 +294,8 @@ async fn multitoken_enumeration() {
     }
 }
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn multitoken_enumeration_with_ranges() {
     use defuse::core::token_id::nep141::Nep141TokenId;
 
@@ -471,8 +471,8 @@ async fn multitoken_enumeration_with_ranges() {
     }
 }
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn multitoken_withdrawals() {
     let env = Env::builder().create_unique_users().build().await;
 
@@ -890,7 +890,6 @@ struct MtTransferCallExpectation {
     expected_receiver_mt_balances: Vec<u128>,
 }
 
-#[tokio::test]
 #[rstest]
 #[case::receiver_accepts_all_tokens_no_refund(MtTransferCallExpectation {
     action: StubAction::ReturnValue(0.into()),
@@ -927,6 +926,7 @@ struct MtTransferCallExpectation {
     expected_sender_mt_balances: vec![1000],
     expected_receiver_mt_balances: vec![0],
 })]
+#[tokio::test]
 async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     #[case] expectation: MtTransferCallExpectation,
 ) {
@@ -1069,7 +1069,6 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     );
 }
 
-#[tokio::test]
 #[rstest]
 #[case::nothing_to_refund_multi_token(MtTransferCallExpectation {
     action: StubAction::ReturnValues(vec![0.into(), 0.into()]),
@@ -1120,6 +1119,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     expected_sender_mt_balances: vec![1000, 2000],
     expected_receiver_mt_balances: vec![0, 0],
 })]
+#[tokio::test]
 async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     #[case] expectation: MtTransferCallExpectation,
 ) {

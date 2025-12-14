@@ -14,8 +14,8 @@ use std::collections::BTreeMap;
 use super::ExecuteIntentsExt;
 
 #[rstest]
-#[tokio::test]
 #[trace]
+#[tokio::test]
 async fn swap_p2p(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips) {
     use defuse::core::token_id::nep141::Nep141TokenId;
 
@@ -82,8 +82,8 @@ async fn swap_p2p(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: P
 }
 
 #[rstest]
-#[tokio::test]
 #[trace]
+#[tokio::test]
 async fn swap_many(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips) {
     let env = Env::builder().fee(fee).build().await;
 
@@ -255,9 +255,9 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
     }
 }
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn invariant_violated() {
     let env = Env::builder().build().await;
 
@@ -353,8 +353,8 @@ async fn invariant_violated() {
 }
 
 #[rstest]
-#[tokio::test]
 #[trace]
+#[tokio::test]
 async fn solver_user_closure(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips) {
     const USER_BALANCE: u128 = 1100;
     const SOLVER_BALANCE: u128 = 2100;

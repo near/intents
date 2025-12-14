@@ -9,8 +9,8 @@ use rstest::rstest;
 
 use crate::tests::defuse::{env::Env, intents::ExecuteIntentsExt};
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn relayer_keys() {
     let env = Env::builder().deployer_as_super_admin().build().await;
     let (user, other_user) = futures::join!(env.create_user(), env.create_user());

@@ -13,8 +13,7 @@ use rstest::rstest;
 
 #[rstest]
 #[tokio::test]
-#[awt]
-async fn deploy_mint(#[future] sandbox: Sandbox) {
+async fn deploy_mint(#[future(awt)] sandbox: Sandbox) {
     let root = sandbox.root();
 
     let user = root

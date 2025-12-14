@@ -27,9 +27,9 @@ struct TransferCallExpectation {
     expected_receiver_mt_balance: u128,
 }
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn deposit_withdraw() {
     let env = Env::builder().build().await;
 
@@ -70,8 +70,8 @@ async fn deposit_withdraw() {
     assert_eq!(ft.ft_balance_of(user.id()).await.unwrap(), 1000);
 }
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn poa_deposit() {
     let env = Env::builder().build().await;
 
@@ -103,9 +103,9 @@ async fn poa_deposit() {
     );
 }
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn deposit_withdraw_intent() {
     use crate::tests::defuse::DefuseSignerExt;
 
@@ -184,9 +184,9 @@ async fn deposit_withdraw_intent() {
     assert_eq!(ft.ft_balance_of(other_user.id()).await.unwrap(), 600);
 }
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn deposit_withdraw_intent_refund() {
     use crate::tests::defuse::DefuseSignerExt;
 
@@ -253,8 +253,8 @@ async fn deposit_withdraw_intent_refund() {
     assert_eq!(ft.ft_balance_of(user.id()).await.unwrap(), 1000);
 }
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn ft_force_withdraw() {
     use defuse::core::token_id::nep141::Nep141TokenId;
 
@@ -328,7 +328,6 @@ async fn ft_force_withdraw() {
     assert_eq!(ft.ft_balance_of(other_user.id()).await.unwrap(), 1000);
 }
 
-#[tokio::test]
 #[rstest]
 #[case::nothing_to_refund(TransferCallExpectation {
     action: StubAction::ReturnValue(0.into()),
@@ -365,6 +364,7 @@ async fn ft_force_withdraw() {
     expected_sender_ft_balance: 1000,
     expected_receiver_mt_balance: 0,
 })]
+#[tokio::test]
 async fn ft_transfer_call_calls_mt_on_transfer_variants(
     #[case] expectation: TransferCallExpectation,
 ) {

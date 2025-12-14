@@ -16,9 +16,9 @@ use rstest::rstest;
 
 use crate::tests::defuse::env::Env;
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn ft_withdraw_intent() {
     use crate::tests::defuse::DefuseSignerExt;
 
@@ -190,9 +190,9 @@ async fn ft_withdraw_intent() {
     assert_eq!(ft.ft_balance_of(&other_user_id).await.unwrap(), 1000);
 }
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn ft_withdraw_intent_msg() {
     use crate::tests::defuse::DefuseSignerExt;
 

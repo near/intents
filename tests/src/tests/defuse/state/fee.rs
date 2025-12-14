@@ -11,8 +11,8 @@ use rstest::rstest;
 
 use crate::tests::defuse::env::Env;
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn set_fee() {
     let env = Env::builder().deployer_as_super_admin().build().await;
     let prev_fee = env.defuse.fee().await.unwrap();
@@ -46,8 +46,8 @@ async fn set_fee() {
     }
 }
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn set_fee_collector() {
     let env = Env::builder().deployer_as_super_admin().build().await;
     let fee_collector: AccountId = "fee-collector.near".to_string().parse().unwrap();

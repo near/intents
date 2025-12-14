@@ -20,8 +20,8 @@ const DUMMY_REFERENCE_HASH: [u8; 32] = [33; 32];
 const DUMMY_NFT1_ID: &str = "thisisdummynftid1";
 const DUMMY_NFT2_ID: &str = "thisisdummythisisdummynnthisisdummynftid2";
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn transfer_nft_to_verifier() {
     let env = Env::builder().create_unique_users().build().await;
 
@@ -297,7 +297,6 @@ struct NftTransferCallExpectation {
     expected_receiver_owns_nft: bool,
 }
 
-#[tokio::test]
 #[rstest]
 #[case::nothing_to_refund(NftTransferCallExpectation {
     action: StubAction::ReturnValue(0.into()),
@@ -327,6 +326,7 @@ struct NftTransferCallExpectation {
     expected_sender_owns_nft: true,
     expected_receiver_owns_nft: false,
 })]
+#[tokio::test]
 async fn nft_transfer_call_calls_mt_on_transfer_variants(
     #[case] expectation: NftTransferCallExpectation,
 ) {

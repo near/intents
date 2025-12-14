@@ -45,9 +45,9 @@ use near_sdk::{AsNep297Event, NearToken};
 use rstest::rstest;
 use std::borrow::Cow;
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn simulate_transfer_intent() {
     let env = Env::builder().build().await;
 
@@ -109,9 +109,9 @@ async fn simulate_transfer_intent() {
     );
 }
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn simulate_ft_withdraw_intent() {
     let env = Env::builder().build().await;
 
@@ -177,9 +177,9 @@ async fn simulate_ft_withdraw_intent() {
     );
 }
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn simulate_native_withdraw_intent() {
     let env = Env::builder().build().await;
 
@@ -259,9 +259,9 @@ pub const DUMMY_NFT_URL: &str = "http://example.com/nft/";
 pub const DUMMY_NFT_REFERENCE_HASH: [u8; 32] = [13; 32];
 pub const DUMMY_NFT_ID: &str = "thisisdummynftid";
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn simulate_nft_withdraw_intent() {
     let env = Env::builder().build().await;
 
@@ -364,9 +364,9 @@ async fn simulate_nft_withdraw_intent() {
     );
 }
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn simulate_mt_withdraw_intent() {
     let env = Env::builder().build().await;
 
@@ -489,9 +489,9 @@ async fn simulate_mt_withdraw_intent() {
     );
 }
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn simulate_storage_deposit_intent() {
     let env = Env::builder().build().await;
 
@@ -568,9 +568,9 @@ async fn simulate_storage_deposit_intent() {
     );
 }
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn simulate_token_diff_intent() {
     let env = Env::builder().fee(Pips::ZERO).build().await;
 
@@ -695,9 +695,9 @@ async fn simulate_token_diff_intent() {
     );
 }
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn simulate_add_public_key_intent(public_key: PublicKey) {
     let env = Env::builder().build().await;
 
@@ -740,9 +740,9 @@ async fn simulate_add_public_key_intent(public_key: PublicKey) {
     );
 }
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn simulate_remove_public_key_intent(public_key: PublicKey) {
     let env = Env::builder().build().await;
 
@@ -798,9 +798,9 @@ async fn simulate_remove_public_key_intent(public_key: PublicKey) {
     );
 }
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn simulate_set_auth_by_predecessor_id_intent() {
     let env = Env::builder().build().await;
 
@@ -834,9 +834,9 @@ async fn simulate_set_auth_by_predecessor_id_intent() {
     );
 }
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn simulate_auth_call_intent() {
     let env = Env::builder().build().await;
 
@@ -905,9 +905,9 @@ async fn simulate_auth_call_intent() {
     );
 }
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn simulation_fails_on_used_nonce() {
     let env = Env::builder().build().await;
 

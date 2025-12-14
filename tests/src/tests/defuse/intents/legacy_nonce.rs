@@ -9,9 +9,9 @@ use defuse_sandbox::extensions::mt::MtViewExt;
 use defuse_test_utils::random::make_arbitrary;
 use rstest::rstest;
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn execute_intent_with_legacy_nonce(#[from(make_arbitrary)] legacy_nonce: Nonce) {
     let env = Env::builder().build().await;
 

@@ -51,9 +51,9 @@ mod simulate;
 mod token_diff;
 mod transfer;
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn simulate_is_view_method(#[notrace] mut rng: impl Rng) {
     use defuse::core::accounts::TransferEvent;
 
@@ -147,8 +147,8 @@ async fn simulate_is_view_method(#[notrace] mut rng: impl Rng) {
 
 // TODO: fix this - update genesis account to test.near or update hardcoded payload
 #[ignore]
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn webauthn() {
     const SIGNER_ID: &AccountIdRef =
         AccountIdRef::new_or_panic("0x3602b546589a8fcafdce7fad64a46f91db0e4d50");

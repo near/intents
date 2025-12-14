@@ -1,3 +1,5 @@
+#![allow(clippy::future_not_send)]
+
 use arbitrary::{Arbitrary, Unstructured};
 use chrono::{TimeDelta, Utc};
 use defuse::{
@@ -28,8 +30,8 @@ use crate::tests::defuse::{
     env::{Env, create_random_salted_nonce},
 };
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng) {
     let env = Env::builder().deployer_as_super_admin().build().await;
     let current_timestamp = Utc::now();
@@ -215,8 +217,8 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
     }
 }
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
     const WAITING_TIME: TimeDelta = TimeDelta::seconds(3);
 
@@ -363,8 +365,8 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
     }
 }
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn cleanup_multiple_nonces(
     #[notrace] mut rng: impl Rng,
     #[values(1, 10, 100)] nonce_count: usize,

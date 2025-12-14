@@ -15,8 +15,8 @@ use defuse_sandbox::extensions::wnear::WNearExt;
 use near_sdk::NearToken;
 use rstest::rstest;
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn native_withdraw_intent(ed25519_pk: PublicKey, secp256k1_pk: PublicKey) {
     let env = Env::new().await;
 
