@@ -112,7 +112,13 @@ impl State {
             .and_maybe(send_fees)
             .then(
                 self.callback_resolve_transfers(None, Some(maker_dst))
-                    .es_return_value(maker_dst.refund_value(taker_dst_in - taker_dst_used)?),
+                    .es_return_value(
+                        maker_dst.refund_value(
+                            taker_dst_in
+                                .checked_sub(taker_dst_used)
+                                .ok_or(Error::IntegerOverflow)?,
+                        )?,
+                    ),
             )
             .into())
     }
