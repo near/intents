@@ -9,8 +9,10 @@ members = [
     "core",
     "crypto",
     "deadline",
+    "decimal",
     "defuse",
     "erc191",
+    "escrow-swap",
     "fees",
     "io-utils",
     "map-utils",
@@ -23,6 +25,7 @@ members = [
     "poa-factory",
     "poa-token",
     "randomness",
+    "sandbox",
     "sep53",
     "serde-utils",
     "tests",
@@ -31,7 +34,6 @@ members = [
     "token-id",
     "ton-connect",
     "wnear",
-    "sandbox",
 ]
 default-members = ["defuse"]
 
@@ -51,7 +53,9 @@ defuse-core.path = "core"
 defuse-crypto.path = "crypto"
 defuse.path = "defuse"
 defuse-deadline.path = "deadline"
+defuse-decimal.path = "decimal"
 defuse-erc191.path = "erc191"
+defuse-escrow-swap.path = "escrow-swap"
 defuse-fees.path = "fees"
 defuse-io-utils.path = "io-utils"
 defuse-map-utils.path = "map-utils"
@@ -63,6 +67,7 @@ defuse-num-utils.path = "num-utils"
 defuse-webauthn.path = "webauthn"
 defuse-poa-factory.path = "poa-factory"
 defuse-poa-token.path = "poa-token"
+defuse-sandbox.path = "sandbox"
 defuse-sep53.path = "sep53"
 defuse-serde-utils.path = "serde-utils"
 defuse-tip191.path = "tip191"
@@ -71,7 +76,6 @@ defuse-ton-connect = { path = "ton-connect", default-features = false, features 
     "text",
 ] }
 defuse-wnear.path = "wnear"
-defuse-sandbox.path = "sandbox"
 
 defuse-randomness.path = "randomness"
 defuse-test-utils.path = "test-utils"

@@ -17,10 +17,10 @@ pub struct Nep171TokenId {
 }
 
 impl Nep171TokenId {
-    pub const fn new(contract_id: AccountId, nft_token_id: TokenId) -> Self {
+    pub fn new(contract_id: impl Into<AccountId>, nft_token_id: impl Into<TokenId>) -> Self {
         Self {
-            contract_id,
-            nft_token_id,
+            contract_id: contract_id.into(),
+            nft_token_id: nft_token_id.into(),
         }
     }
 }
@@ -46,7 +46,7 @@ impl FromStr for Nep171TokenId {
         let (contract_id, token_id) = data
             .split_once(':')
             .ok_or(strum::ParseError::VariantNotFound)?;
-        Ok(Self::new(contract_id.parse()?, token_id.to_string()))
+        Ok(Self::new(contract_id.parse::<AccountId>()?, token_id))
     }
 }
 

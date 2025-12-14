@@ -13,8 +13,10 @@ pub struct Nep141TokenId {
 }
 
 impl Nep141TokenId {
-    pub const fn new(contract_id: AccountId) -> Self {
-        Self { contract_id }
+    pub fn new(contract_id: impl Into<AccountId>) -> Self {
+        Self {
+            contract_id: contract_id.into(),
+        }
     }
 }
 

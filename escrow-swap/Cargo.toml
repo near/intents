@@ -1,0 +1,43 @@
+[package]
+name = "defuse-escrow-swap"
+edition.workspace = true
+version = "0.1.0"
+rust-version.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+defuse-borsh-utils = { workspace = true, features = ["chrono"] }
+defuse-deadline.workspace = true
+defuse-decimal.workspace = true
+defuse-fees.workspace = true
+defuse-nep245.workspace = true
+defuse-num-utils.workspace = true
+defuse-token-id.workspace = true
+
+near-contract-standards.workspace = true
+near-sdk.workspace = true
+
+derive_more = { workspace = true, features = ["from"] }
+hex.workspace = true
+impl-tools.workspace = true
+serde_with = { workspace = true, features = ["chrono_0_4", "hex"] }
+thiserror.workspace = true
+
+defuse-auth-call = { workspace = true, optional = true }
+defuse-near-utils = { workspace = true, optional = true }
+
+[features]
+default = ["auth_call", "nep141", "nep245"]
+
+auth_call = ["dep:defuse-auth-call"]
+nep141 = ["defuse-token-id/nep141"]
+nep245 = ["defuse-token-id/nep245"]
+
+abi = ["defuse-deadline/abi", "defuse-token-id/abi", "serde_with/schemars_0_8"]
+contract = ["dep:defuse-near-utils"]
