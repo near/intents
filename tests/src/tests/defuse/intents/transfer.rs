@@ -18,9 +18,9 @@ use defuse::core::amounts::Amounts;
 
 use crate::tests::defuse::DefuseSignerExt;
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn transfer_intent() {
     let env = Env::builder().build().await;
 
@@ -71,9 +71,9 @@ async fn transfer_intent() {
     );
 }
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn transfer_intent_to_defuse() {
     let env = Env::builder().build().await;
 
@@ -198,7 +198,6 @@ async fn transfer_intent_to_defuse() {
     }
 }
 
-#[tokio::test]
 #[rstest]
 #[trace]
 #[case::nothing_to_refund(TransferCallExpectation {
@@ -231,6 +230,7 @@ async fn transfer_intent_to_defuse() {
     expected_sender_balance: 1000,
     expected_receiver_balance: 0,
 })]
+#[tokio::test]
 async fn transfer_intent_with_msg_to_receiver_smc(#[case] expectation: TransferCallExpectation) {
     let initial_amount = expectation
         .intent_transfer_amount

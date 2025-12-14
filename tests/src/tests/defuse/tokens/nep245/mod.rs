@@ -2,7 +2,7 @@ mod letter_gen;
 mod mt_transfer_resolve_gas;
 
 use crate::tests::defuse::DefuseSignerExt;
-use crate::tests::defuse::env::{Env, MT_RECEIVER_STUB_WASM, get_account_public_key};
+use crate::tests::defuse::env::{Env, MT_RECEIVER_STUB_WASM};
 use defuse::contract::config::{DefuseConfig, RolesConfig};
 use defuse::core::amounts::Amounts;
 use defuse::core::fees::{FeesConfig, Pips};
@@ -17,16 +17,17 @@ use defuse::sandbox_ext::deployer::DefuseExt;
 use defuse::sandbox_ext::tokens::{nep141::DefuseFtWithdrawer, nep245::DefuseMtWithdrawer};
 use defuse::tokens::DepositMessage;
 use defuse::tokens::{DepositAction, ExecuteIntents};
+use defuse_sandbox::assert_a_contains_b;
 use defuse_sandbox::extensions::mt::{MtExt, MtViewExt};
 use defuse_sandbox::tx::FnCallBuilder;
-use defuse_sandbox::{SigningAccount, assert_a_contains_b};
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
+use near_sdk::NearToken;
 use near_sdk::{AsNep297Event, json_types::U128};
 use rstest::rstest;
 use std::borrow::Cow;
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn multitoken_enumeration() {
     use defuse::core::token_id::nep141::Nep141TokenId;
 
@@ -293,8 +294,8 @@ async fn multitoken_enumeration() {
     }
 }
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn multitoken_enumeration_with_ranges() {
     use defuse::core::token_id::nep141::Nep141TokenId;
 
@@ -470,8 +471,8 @@ async fn multitoken_enumeration_with_ranges() {
     }
 }
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn multitoken_withdrawals() {
     let env = Env::builder().create_unique_users().build().await;
 
@@ -889,7 +890,6 @@ struct MtTransferCallExpectation {
     expected_receiver_mt_balances: Vec<u128>,
 }
 
-#[tokio::test]
 #[rstest]
 #[case::receiver_accepts_all_tokens_no_refund(MtTransferCallExpectation {
     action: StubAction::ReturnValue(0.into()),
@@ -926,6 +926,7 @@ struct MtTransferCallExpectation {
     expected_sender_mt_balances: vec![1000],
     expected_receiver_mt_balances: vec![0],
 })]
+#[tokio::test]
 async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     #[case] expectation: MtTransferCallExpectation,
 ) {
@@ -958,20 +959,22 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
         .unwrap();
 
     // Deploy stub receiver for testing mt_on_transfer behavior
-    let receiver = SigningAccount::new(
-        env.deploy_contract(
+    let receiver = env
+        .deploy_sub_contract(
             "receiver_stub",
+            NearToken::from_near(100),
             MT_RECEIVER_STUB_WASM.to_vec(),
             None::<FnCallBuilder>,
         )
         .await
-        .unwrap(),
-        env.private_key().clone(),
-    );
+        .unwrap();
 
     // Register receiver's public key in defuse2 so it can execute intents
     receiver
-        .add_public_key(defuse2.id(), &get_account_public_key(&receiver))
+        .add_public_key(
+            defuse2.id(),
+            &receiver.signer().get_public_key().await.unwrap().into(),
+        )
         .await
         .unwrap();
 
@@ -1066,7 +1069,6 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     );
 }
 
-#[tokio::test]
 #[rstest]
 #[case::nothing_to_refund_multi_token(MtTransferCallExpectation {
     action: StubAction::ReturnValues(vec![0.into(), 0.into()]),
@@ -1117,6 +1119,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     expected_sender_mt_balances: vec![1000, 2000],
     expected_receiver_mt_balances: vec![0, 0],
 })]
+#[tokio::test]
 async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
     #[case] expectation: MtTransferCallExpectation,
 ) {
@@ -1147,20 +1150,22 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
         .unwrap();
 
     // Deploy stub receiver for testing mt_on_transfer behavior
-    let receiver = SigningAccount::new(
-        env.deploy_contract(
+    let receiver = env
+        .deploy_sub_contract(
             "receiver_stub",
+            NearToken::from_near(100),
             MT_RECEIVER_STUB_WASM.to_vec(),
             None::<FnCallBuilder>,
         )
         .await
-        .unwrap(),
-        env.private_key().clone(),
-    );
+        .unwrap();
 
     // Register receiver's public key in defuse2 so it can execute intents
     receiver
-        .add_public_key(defuse2.id(), &get_account_public_key(&receiver))
+        .add_public_key(
+            defuse2.id(),
+            &receiver.signer().get_public_key().await.unwrap().into(),
+        )
         .await
         .unwrap();
 
@@ -1516,20 +1521,27 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
         .await
         .unwrap();
 
-    let stub_receiver = SigningAccount::new(
-        env.deploy_contract(
+    let stub_receiver = env
+        .deploy_sub_contract(
             "receiver_stub",
+            NearToken::from_near(100),
             MT_RECEIVER_STUB_WASM.to_vec(),
             None::<FnCallBuilder>,
         )
         .await
-        .unwrap(),
-        env.private_key().clone(),
-    );
+        .unwrap();
 
     // Register stub's public key in defuse2 so it can execute intents
     stub_receiver
-        .add_public_key(defuse2.id(), &get_account_public_key(&stub_receiver))
+        .add_public_key(
+            defuse2.id(),
+            &stub_receiver
+                .signer()
+                .get_public_key()
+                .await
+                .unwrap()
+                .into(),
+        )
         .await
         .unwrap();
 

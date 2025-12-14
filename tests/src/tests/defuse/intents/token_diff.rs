@@ -4,6 +4,7 @@ use defuse::core::{
     fees::Pips,
     intents::token_diff::{TokenDeltas, TokenDiff},
 };
+use defuse::sandbox_ext::intents::SimulateIntents;
 use defuse_sandbox::SigningAccount;
 use defuse_sandbox::extensions::mt::MtViewExt;
 use near_sdk::AccountId;
@@ -13,8 +14,8 @@ use std::collections::BTreeMap;
 use super::ExecuteIntentsExt;
 
 #[rstest]
-#[tokio::test]
 #[trace]
+#[tokio::test]
 async fn swap_p2p(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips) {
     use defuse::core::token_id::nep141::Nep141TokenId;
 
@@ -81,8 +82,8 @@ async fn swap_p2p(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: P
 }
 
 #[rstest]
-#[tokio::test]
 #[trace]
+#[tokio::test]
 async fn swap_many(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips) {
     let env = Env::builder().fee(fee).build().await;
 
@@ -222,7 +223,8 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
     .unwrap();
 
     // simulate
-    env.simulate_intents(env.defuse.id(), signed.clone())
+    env.defuse
+        .simulate_intents(signed.clone())
         .await
         .unwrap()
         .into_result()
@@ -253,9 +255,9 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
     }
 }
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn invariant_violated() {
     let env = Env::builder().build().await;
 
@@ -311,7 +313,8 @@ async fn invariant_violated() {
     .unwrap();
 
     assert_eq!(
-        env.simulate_intents(env.defuse.id(), signed.clone())
+        env.defuse
+            .simulate_intents(signed.clone())
             .await
             .unwrap()
             .invariant_violated
@@ -350,8 +353,8 @@ async fn invariant_violated() {
 }
 
 #[rstest]
-#[tokio::test]
 #[trace]
+#[tokio::test]
 async fn solver_user_closure(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips) {
     const USER_BALANCE: u128 = 1100;
     const SOLVER_BALANCE: u128 = 2100;
@@ -411,7 +414,8 @@ async fn solver_user_closure(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCE
 
     // simulate before returning quote
     let simulation_before_return_quote = env
-        .simulate_intents(env.defuse.id(), [solver_commitment.clone()])
+        .defuse
+        .simulate_intents([solver_commitment.clone()])
         .await
         .unwrap();
     println!(
@@ -464,14 +468,12 @@ async fn solver_user_closure(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCE
         .unwrap();
 
     // simulating both solver's and user's intents now should succeed
-    env.simulate_intents(
-        env.defuse.id(),
-        [solver_commitment.clone(), user_commitment.clone()],
-    )
-    .await
-    .unwrap()
-    .into_result()
-    .unwrap();
+    env.defuse
+        .simulate_intents([solver_commitment.clone(), user_commitment.clone()])
+        .await
+        .unwrap()
+        .into_result()
+        .unwrap();
 
     // execute intents
     env.simulate_and_execute_intents(env.defuse.id(), [solver_commitment, user_commitment])

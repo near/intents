@@ -13,9 +13,9 @@ use near_sdk::AsNep297Event;
 use rstest::rstest;
 use std::borrow::Cow;
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn execute_add_public_key_intent(public_key: PublicKey) {
     let env = Env::builder().build().await;
 
@@ -58,9 +58,9 @@ async fn execute_add_public_key_intent(public_key: PublicKey) {
     );
 }
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn execute_remove_public_key_intent(public_key: PublicKey) {
     let env = Env::builder().build().await;
 

@@ -1,3 +1,5 @@
+#![allow(clippy::future_not_send)]
+
 use arbitrary::{Arbitrary, Unstructured};
 use chrono::{TimeDelta, Utc};
 use defuse::{
@@ -10,6 +12,7 @@ use defuse::{
     },
 };
 use defuse_sandbox::extensions::acl::AclExt;
+use futures::future::join_all;
 use itertools::Itertools;
 
 use std::time::Duration;
@@ -23,12 +26,12 @@ use near_sdk::AccountId;
 use rstest::rstest;
 
 use crate::tests::defuse::{
-    DefuseSigner, SigningStandard,
+    DefuseSigner,
     env::{Env, create_random_salted_nonce},
 };
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng) {
     let env = Env::builder().deployer_as_super_admin().build().await;
     let current_timestamp = Utc::now();
@@ -45,13 +48,14 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
 
         env.simulate_and_execute_intents(
             env.defuse.id(),
-            [user.sign_defuse_message(
-                SigningStandard::arbitrary(u).unwrap(),
-                env.defuse.id(),
-                legacy_nonce,
-                deadline,
-                DefuseIntents { intents: [].into() },
-            )],
+            [user
+                .sign_defuse_message(
+                    env.defuse.id(),
+                    legacy_nonce,
+                    deadline,
+                    DefuseIntents { intents: [].into() },
+                )
+                .await],
         )
         .await
         .unwrap();
@@ -72,13 +76,14 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
 
         env.simulate_and_execute_intents(
             env.defuse.id(),
-            [user.sign_defuse_message(
-                SigningStandard::arbitrary(u).unwrap(),
-                env.defuse.id(),
-                salted,
-                deadline,
-                DefuseIntents { intents: [].into() },
-            )],
+            [user
+                .sign_defuse_message(
+                    env.defuse.id(),
+                    salted,
+                    deadline,
+                    DefuseIntents { intents: [].into() },
+                )
+                .await],
         )
         .await
         .assert_err_contains("invalid salt");
@@ -91,13 +96,14 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
 
         env.simulate_and_execute_intents(
             env.defuse.id(),
-            [user.sign_defuse_message(
-                SigningStandard::arbitrary(u).unwrap(),
-                env.defuse.id(),
-                expired_nonce,
-                Deadline::MAX,
-                DefuseIntents { intents: [].into() },
-            )],
+            [user
+                .sign_defuse_message(
+                    env.defuse.id(),
+                    expired_nonce,
+                    Deadline::MAX,
+                    DefuseIntents { intents: [].into() },
+                )
+                .await],
         )
         .await
         .assert_err_contains("deadline is greater than nonce");
@@ -110,13 +116,14 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
 
         env.simulate_and_execute_intents(
             env.defuse.id(),
-            [user.sign_defuse_message(
-                SigningStandard::arbitrary(u).unwrap(),
-                env.defuse.id(),
-                expired_nonce,
-                deadline,
-                DefuseIntents { intents: [].into() },
-            )],
+            [user
+                .sign_defuse_message(
+                    env.defuse.id(),
+                    expired_nonce,
+                    deadline,
+                    DefuseIntents { intents: [].into() },
+                )
+                .await],
         )
         .await
         .assert_err_contains("deadline has expired");
@@ -129,13 +136,14 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
 
         env.simulate_and_execute_intents(
             env.defuse.id(),
-            [user.sign_defuse_message(
-                SigningStandard::arbitrary(u).unwrap(),
-                env.defuse.id(),
-                expirable_nonce,
-                deadline,
-                DefuseIntents { intents: [].into() },
-            )],
+            [user
+                .sign_defuse_message(
+                    env.defuse.id(),
+                    expirable_nonce,
+                    deadline,
+                    DefuseIntents { intents: [].into() },
+                )
+                .await],
         )
         .await
         .unwrap();
@@ -163,13 +171,14 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
 
         env.simulate_and_execute_intents(
             env.defuse.id(),
-            [user.sign_defuse_message(
-                SigningStandard::arbitrary(u).unwrap(),
-                env.defuse.id(),
-                old_salt_nonce,
-                deadline,
-                DefuseIntents { intents: [].into() },
-            )],
+            [user
+                .sign_defuse_message(
+                    env.defuse.id(),
+                    old_salt_nonce,
+                    deadline,
+                    DefuseIntents { intents: [].into() },
+                )
+                .await],
         )
         .await
         .unwrap();
@@ -194,21 +203,22 @@ async fn test_commit_nonces(random_bytes: Vec<u8>, #[notrace] mut rng: impl Rng)
 
         env.simulate_and_execute_intents(
             env.defuse.id(),
-            [user.sign_defuse_message(
-                SigningStandard::arbitrary(u).unwrap(),
-                env.defuse.id(),
-                invalid_salt_nonce,
-                deadline,
-                DefuseIntents { intents: [].into() },
-            )],
+            [user
+                .sign_defuse_message(
+                    env.defuse.id(),
+                    invalid_salt_nonce,
+                    deadline,
+                    DefuseIntents { intents: [].into() },
+                )
+                .await],
         )
         .await
         .assert_err_contains("invalid salt");
     }
 }
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
     const WAITING_TIME: TimeDelta = TimeDelta::seconds(3);
 
@@ -239,32 +249,27 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
     {
         env.simulate_and_execute_intents(
             env.defuse.id(),
-            [
+            join_all([
                 user.sign_defuse_message(
-                    SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
-                        .unwrap(),
                     env.defuse.id(),
                     legacy_nonce,
                     deadline,
                     DefuseIntents { intents: [].into() },
                 ),
                 user.sign_defuse_message(
-                    SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
-                        .unwrap(),
                     env.defuse.id(),
                     expirable_nonce,
                     deadline,
                     DefuseIntents { intents: [].into() },
                 ),
                 user.sign_defuse_message(
-                    SigningStandard::arbitrary(&mut Unstructured::new(&rng.random::<[u8; 1]>()))
-                        .unwrap(),
                     env.defuse.id(),
                     long_term_expirable_nonce,
                     long_term_deadline,
                     DefuseIntents { intents: [].into() },
                 ),
-            ],
+            ])
+            .await,
         )
         .await
         .unwrap();
@@ -360,8 +365,8 @@ async fn test_cleanup_nonces(#[notrace] mut rng: impl Rng) {
     }
 }
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn cleanup_multiple_nonces(
     #[notrace] mut rng: impl Rng,
     #[values(1, 10, 100)] nonce_count: usize,
@@ -384,24 +389,22 @@ async fn cleanup_multiple_nonces(
     for chunk in &(0..nonce_count).chunks(CHUNK_SIZE) {
         let current_timestamp = Utc::now();
 
-        let intents = chunk
-            .map(|_| {
-                // commit expirable nonce
-                let deadline =
-                    Deadline::new(current_timestamp.checked_add_signed(WAITING_TIME).unwrap());
-                let expirable_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
+        let intents = join_all(chunk.map(|_| {
+            // commit expirable nonce
+            let deadline =
+                Deadline::new(current_timestamp.checked_add_signed(WAITING_TIME).unwrap());
+            let expirable_nonce = create_random_salted_nonce(current_salt, deadline, &mut rng);
 
-                nonces.push(expirable_nonce);
+            nonces.push(expirable_nonce);
 
-                user.sign_defuse_message(
-                    SigningStandard::Nep413,
-                    env.defuse.id(),
-                    expirable_nonce,
-                    deadline,
-                    DefuseIntents { intents: [].into() },
-                )
-            })
-            .collect::<Vec<_>>();
+            user.sign_defuse_message(
+                env.defuse.id(),
+                expirable_nonce,
+                deadline,
+                DefuseIntents { intents: [].into() },
+            )
+        }))
+        .await;
 
         env.simulate_and_execute_intents(env.defuse.id(), intents)
             .await

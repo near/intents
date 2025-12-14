@@ -14,7 +14,6 @@ use defuse::{
         account_manager::{AccountManagerExt, AccountViewExt},
         force_manager::{ForceAccountManagerExt, ForceAccountViewExt},
         intents::ExecuteIntentsExt,
-        signer::Signer,
         tokens::nep141::DefuseFtWithdrawer,
     },
 };
@@ -26,8 +25,8 @@ use defuse_sandbox::extensions::{
 use defuse_test_utils::asserts::ResultAssertsExt;
 use rstest::rstest;
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn test_lock_account(public_key: PublicKey) {
     let env = Env::builder().deployer_as_super_admin().build().await;
 
@@ -146,11 +145,11 @@ async fn test_lock_account(public_key: PublicKey) {
     // try to remove existing public key from locked account
     {
         let locked_pk: PublicKey = locked_account
-            .secret_key()
-            .public_key()
-            .to_string()
-            .parse()
-            .unwrap();
+            .signer()
+            .get_public_key()
+            .await
+            .unwrap()
+            .into();
 
         locked_account
             .remove_public_key(env.defuse.id(), &locked_pk)
@@ -387,8 +386,8 @@ async fn test_lock_account(public_key: PublicKey) {
     }
 }
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn test_force_set_auth_by_predecessor_id(public_key: PublicKey) {
     let env = Env::builder().deployer_as_super_admin().build().await;
 
