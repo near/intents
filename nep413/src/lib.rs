@@ -104,7 +104,7 @@ impl SignedPayload for SignedNep413Payload {
     }
 }
 
-#[cfg(feature = "near-api-types")]
+#[cfg(feature = "near-api")]
 const _: () = {
     impl From<Nep413Payload> for near_api::signer::NEP413Payload {
         fn from(payload: Nep413Payload) -> Self {
