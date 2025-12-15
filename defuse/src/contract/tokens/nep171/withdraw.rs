@@ -11,7 +11,7 @@ use defuse_core::{
     intents::tokens::NftWithdraw,
     token_id::{nep141::Nep141TokenId, nep171::Nep171TokenId},
 };
-use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError};
+use defuse_near_utils::UnwrapOrPanic;
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::{
     non_fungible_token::{self, core::ext_nft_core},
@@ -38,7 +38,7 @@ impl NonFungibleTokenWithdrawer for Contract {
     ) -> PromiseOrValue<bool> {
         assert_one_yocto();
         self.internal_nft_withdraw(
-            self.ensure_auth_predecessor_id().clone(),
+            self.ensure_auth_predecessor_id(),
             NftWithdraw {
                 token,
                 receiver_id,
@@ -64,7 +64,7 @@ impl Contract {
         self.withdraw(
             &owner_id,
             iter::once((
-                Nep171TokenId::new(withdraw.token.clone(), withdraw.token_id.clone())?.into(),
+                Nep171TokenId::new(withdraw.token.clone(), withdraw.token_id.clone()).into(),
                 1,
             ))
             .chain(withdraw.storage_deposit.map(|amount| {
@@ -87,7 +87,7 @@ impl Contract {
                 .near_withdraw(U128(storage_deposit.as_yoctonear()))
                 .then(
                     // schedule storage_deposit() only after near_withdraw() returns
-                    Self::ext(CURRENT_ACCOUNT_ID.clone())
+                    Self::ext(env::current_account_id())
                         .with_static_gas(
                             Self::DO_NFT_WITHDRAW_GAS
                                 .checked_add(withdraw.min_gas())
@@ -100,7 +100,7 @@ impl Contract {
             Self::do_nft_withdraw(withdraw.clone())
         }
         .then(
-            Self::ext(CURRENT_ACCOUNT_ID.clone())
+            Self::ext(env::current_account_id())
                 .with_static_gas(Self::NFT_RESOLVE_WITHDRAW_GAS)
                 // do not distribute remaining gas here
                 .with_unused_gas_weight(0)
@@ -182,13 +182,13 @@ impl NonFungibleTokenWithdrawResolver for Contract {
             PromiseResult::Failed => is_call,
         };
 
-        let token_id = Nep171TokenId::new(token, token_id)
-            .unwrap_or_panic_display()
-            .into();
-
         if !used {
-            self.deposit(sender_id, [(token_id, 1)], Some("refund"))
-                .unwrap_or_panic();
+            self.deposit(
+                sender_id,
+                [(Nep171TokenId::new(token, token_id).into(), 1)],
+                Some("refund"),
+            )
+            .unwrap_or_panic();
         }
 
         used

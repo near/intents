@@ -6,8 +6,8 @@ use super::{Curve, CurveType, TypedCurve};
 pub struct Ed25519;
 
 impl Curve for Ed25519 {
-    type PublicKey = [u8; 32];
-    type Signature = [u8; 64];
+    type PublicKey = [u8; ed25519_dalek::PUBLIC_KEY_LENGTH];
+    type Signature = [u8; ed25519_dalek::SIGNATURE_LENGTH];
 
     type Message = [u8];
     type VerifyingKey = Self::PublicKey;

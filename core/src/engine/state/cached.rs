@@ -276,7 +276,7 @@ where
         self.internal_sub_balance(
             owner_id,
             std::iter::once((
-                Nep171TokenId::new(withdraw.token.clone(), withdraw.token_id.clone())?.into(),
+                Nep171TokenId::new(withdraw.token.clone(), withdraw.token_id.clone()).into(),
                 1,
             ))
             .chain(withdraw.storage_deposit.map(|amount| {
@@ -293,15 +293,13 @@ where
             return Err(DefuseError::InvalidIntent);
         }
 
-        let token_ids = std::iter::repeat(withdraw.token.clone())
-            .zip(withdraw.token_ids.iter().cloned())
-            .map(|(token, token_id)| Nep245TokenId::new(token, token_id))
-            .collect::<Result<Vec<_>, _>>()?;
-
         self.internal_sub_balance(
             owner_id,
-            token_ids
-                .into_iter()
+            withdraw
+                .token_ids
+                .iter()
+                .cloned()
+                .map(|token_id| Nep245TokenId::new(withdraw.token.clone(), token_id))
                 .map(Into::into)
                 .zip(withdraw.amounts.iter().map(|a| a.0))
                 .chain(

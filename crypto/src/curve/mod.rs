@@ -29,11 +29,12 @@ pub trait Curve {
 
 #[derive(Display, IntoStaticStr, EnumString)]
 #[strum(serialize_all = "snake_case", ascii_case_insensitive)]
+#[repr(u8)]
 pub enum CurveType {
-    Ed25519,
-    Secp256k1,
-    P256,
-    Sr25519,
+    Ed25519 = 0,
+    Secp256k1 = 1,
+    P256 = 2,
+    Sr25519 = 3,
 }
 
 pub trait TypedCurve: Curve {

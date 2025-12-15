@@ -11,17 +11,18 @@ use crate::{
 };
 
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh])]
+#[near(serializers = [borsh(use_discriminant = true)])]
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(
     feature = "serde",
     derive(serde_with::SerializeDisplay, serde_with::DeserializeFromStr)
 )]
+#[repr(u8)]
 pub enum PublicKey {
-    Ed25519(<Ed25519 as Curve>::PublicKey),
-    Secp256k1(<Secp256k1 as Curve>::PublicKey),
-    P256(<P256 as Curve>::PublicKey),
-    Sr25519(<Sr25519 as Curve>::PublicKey),
+    Ed25519(<Ed25519 as Curve>::PublicKey) = 0,
+    Secp256k1(<Secp256k1 as Curve>::PublicKey) = 1,
+    P256(<P256 as Curve>::PublicKey) = 2,
+    Sr25519(<Sr25519 as Curve>::PublicKey) = 3,
 }
 
 impl PublicKey {
@@ -195,6 +196,34 @@ const _: () = {
             "secp256k1:3aMVMxsoAnHUbweXMtdKaN1uJaNwsfKv7wnc97SDGjXhyK62VyJwhPUPLZefKVthcoUcuWK6cqkSU4M542ipNxS3"
                 .parse()
                 .unwrap()
+        }
+    }
+};
+
+#[cfg(feature = "near-api-types")]
+const _: () = {
+    use near_api_types::crypto::public_key::{
+        ED25519PublicKey, PublicKey as NearPublicKey, Secp256K1PublicKey,
+    };
+
+    impl From<NearPublicKey> for PublicKey {
+        fn from(pk: NearPublicKey) -> Self {
+            match pk {
+                NearPublicKey::ED25519(pk) => pk.into(),
+                NearPublicKey::SECP256K1(pk) => pk.into(),
+            }
+        }
+    }
+
+    impl From<ED25519PublicKey> for PublicKey {
+        fn from(pk: ED25519PublicKey) -> Self {
+            Self::Ed25519(pk.0)
+        }
+    }
+
+    impl From<Secp256K1PublicKey> for PublicKey {
+        fn from(pk: Secp256K1PublicKey) -> Self {
+            Self::Secp256k1(pk.0)
         }
     }
 };

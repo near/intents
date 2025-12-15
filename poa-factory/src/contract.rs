@@ -2,7 +2,7 @@ use core::iter;
 use std::collections::{HashMap, HashSet};
 
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
-use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanicError, gas_left};
+use defuse_near_utils::{UnwrapOrPanicError, gas_left};
 use defuse_poa_token::ext_poa_fungible_token;
 use near_contract_standards::fungible_token::{core::ext_ft_core, metadata::FungibleTokenMetadata};
 use near_plugins::{
@@ -23,7 +23,7 @@ use crate::PoaFactory;
 
 const POA_TOKEN_WASM: &[u8] = include_bytes!(std::env!("POA_TOKEN_WASM"));
 
-const POA_TOKEN_INIT_BALANCE: NearToken = NearToken::from_near(3);
+pub const POA_TOKEN_INIT_BALANCE: NearToken = NearToken::from_near(3);
 const POA_TOKEN_NEW_GAS: Gas = Gas::from_tgas(10);
 const POA_TOKEN_FT_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
 /// Copied from `near_contract_standards::fungible_token::core_impl::GAS_FOR_FT_TRANSFER_CALL`
@@ -166,7 +166,7 @@ impl PoaFactory for Contract {
             ext_poa_fungible_token::ext(token_id.clone())
                 .with_attached_deposit(env::attached_deposit())
                 .with_static_gas(POA_TOKEN_FT_DEPOSIT_GAS)
-                .ft_deposit(CURRENT_ACCOUNT_ID.clone(), amount, None)
+                .ft_deposit(env::current_account_id(), amount, None)
                 .then(
                     ext_ft_core::ext(token_id)
                         .with_attached_deposit(NearToken::from_yoctonear(1))
@@ -197,7 +197,7 @@ impl Contract {
     fn token_id(token: impl AsRef<str>) -> AccountId {
         let token = token.as_ref();
         require!(!token.contains('.'), "invalid token name");
-        format!("{token}.{}", *CURRENT_ACCOUNT_ID)
+        format!("{token}.{}", env::current_account_id())
             .parse()
             .unwrap_or_panic_display()
     }
@@ -209,14 +209,14 @@ impl FullAccessKeys for Contract {
     #[payable]
     fn add_full_access_key(&mut self, public_key: PublicKey) -> Promise {
         assert_one_yocto();
-        Promise::new(CURRENT_ACCOUNT_ID.clone()).add_full_access_key(public_key)
+        Promise::new(env::current_account_id()).add_full_access_key(public_key)
     }
 
     #[access_control_any(roles(Role::DAO))]
     #[payable]
     fn delete_key(&mut self, public_key: PublicKey) -> Promise {
         assert_one_yocto();
-        Promise::new(CURRENT_ACCOUNT_ID.clone()).delete_key(public_key)
+        Promise::new(env::current_account_id()).delete_key(public_key)
     }
 }
 

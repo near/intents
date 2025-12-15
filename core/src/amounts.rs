@@ -229,11 +229,7 @@ where
 
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
 const _: () = {
-    use near_sdk::schemars::{
-        JsonSchema,
-        r#gen::SchemaGenerator,
-        schema::{InstanceType, Schema, SchemaObject},
-    };
+    use near_sdk::schemars::{r#gen::SchemaGenerator, schema::Schema};
     use serde_with::schemars_0_8::JsonSchemaAs;
 
     impl<T, As> JsonSchemaAs<Amounts<T>> for Amounts<As>
@@ -257,14 +253,16 @@ const _: () = {
 #[cfg(test)]
 mod tests {
 
+    use near_sdk::AccountId;
+
     use crate::token_id::nep141::Nep141TokenId;
 
     use super::*;
 
     #[test]
     fn invariant() {
-        let [t1, t2] =
-            ["t1.near", "t2.near"].map(|t| TokenId::Nep141(Nep141TokenId::new(t.parse().unwrap())));
+        let [t1, t2] = ["t1.near", "t2.near"]
+            .map(|t| TokenId::Nep141(Nep141TokenId::new(t.parse::<AccountId>().unwrap())));
 
         assert!(Amounts::<BTreeMap<TokenId, i128>>::default().is_empty());
         assert!(

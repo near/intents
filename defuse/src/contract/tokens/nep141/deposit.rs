@@ -1,10 +1,8 @@
 use defuse_core::token_id::{TokenId, nep141::Nep141TokenId};
-use defuse_near_utils::{
-    CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
-};
+use defuse_near_utils::{UnwrapOrPanic, UnwrapOrPanicError};
 use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 use near_plugins::{Pausable, pause};
-use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near, require};
+use near_sdk::{AccountId, PromiseOrValue, env, json_types::U128, near, require};
 
 use crate::{
     contract::{Contract, ContractExt},
@@ -27,7 +25,7 @@ impl FungibleTokenReceiver for Contract {
     ) -> PromiseOrValue<U128> {
         require!(amount.0 > 0, "zero amount");
 
-        let token_id = TokenId::Nep141(Nep141TokenId::new(PREDECESSOR_ACCOUNT_ID.clone()));
+        let token_id = TokenId::Nep141(Nep141TokenId::new(env::predecessor_account_id()));
 
         let DepositMessage {
             receiver_id,
@@ -59,10 +57,10 @@ impl FungibleTokenReceiver for Contract {
                 notify,
             )
             .then(
-                Self::ext(CURRENT_ACCOUNT_ID.clone())
+                Self::ext(env::current_account_id())
                     .with_static_gas(Self::mt_resolve_deposit_gas(1))
                     .with_unused_gas_weight(0)
-                    .ft_resolve_deposit(receiver_id, PREDECESSOR_ACCOUNT_ID.clone(), amount),
+                    .ft_resolve_deposit(receiver_id, env::predecessor_account_id(), amount),
             )
             .into(),
             DepositAction::Execute(execute) => {
@@ -70,9 +68,9 @@ impl FungibleTokenReceiver for Contract {
                     if execute.refund_if_fails {
                         self.execute_intents(execute.execute_intents);
                     } else {
-                        // detach promise
-                        let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
-                            .execute_intents(execute.execute_intents);
+                        ext_intents::ext(env::current_account_id())
+                            .execute_intents(execute.execute_intents)
+                            .detach();
                     }
                 }
                 PromiseOrValue::Value(0.into())

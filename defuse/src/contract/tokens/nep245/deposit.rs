@@ -1,13 +1,14 @@
 use defuse_core::token_id::nep245::Nep245TokenId;
-use defuse_near_utils::{
-    CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
-};
+use defuse_near_utils::{PanicError, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::receiver::MultiTokenReceiver;
 use near_plugins::{Pausable, pause};
-use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near, require};
+use near_sdk::{AccountId, PromiseOrValue, env, json_types::U128, near, require};
 
 use crate::{
-    contract::{Contract, ContractExt},
+    contract::{
+        Contract, ContractExt,
+        tokens::{MAX_TOKEN_ID_LEN, TokenIdTooLarge},
+    },
     intents::{Intents, ext_intents},
     tokens::{DepositAction, DepositMessage},
 };
@@ -27,7 +28,7 @@ impl MultiTokenReceiver for Contract {
         amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
-        let token = &*PREDECESSOR_ACCOUNT_ID;
+        let token = env::predecessor_account_id();
 
         require!(!amounts.is_empty(), "invalid args");
 
@@ -42,9 +43,20 @@ impl MultiTokenReceiver for Contract {
         );
 
         require!(
-            token != &*CURRENT_ACCOUNT_ID,
+            token != env::current_account_id(),
             "self-wrapping is not allowed"
         );
+
+        let core_token_ids = token_ids
+            .iter()
+            .inspect(|token_id| {
+                if token_id.len() > MAX_TOKEN_ID_LEN {
+                    TokenIdTooLarge(token_id.len()).panic_display();
+                }
+            })
+            .cloned()
+            .map(|token_id| Nep245TokenId::new(token.clone(), token_id))
+            .map(Into::into);
 
         let DepositMessage {
             receiver_id,
@@ -54,13 +66,6 @@ impl MultiTokenReceiver for Contract {
         } else {
             msg.parse().unwrap_or_panic_display()
         };
-
-        let core_token_ids = token_ids
-            .iter()
-            .cloned()
-            .map(|token_id| Nep245TokenId::new(token.clone(), token_id))
-            .map(UnwrapOrPanicError::unwrap_or_panic_display)
-            .map(Into::into);
 
         self.deposit(
             receiver_id.clone(),
@@ -85,7 +90,7 @@ impl MultiTokenReceiver for Contract {
                 notify,
             )
             .then(
-                Self::ext(CURRENT_ACCOUNT_ID.clone())
+                Self::ext(env::current_account_id())
                     .with_static_gas(Self::mt_resolve_deposit_gas(amounts.len()))
                     .with_unused_gas_weight(0)
                     .mt_resolve_deposit(receiver_id, token.clone(), token_ids, amounts),
@@ -96,8 +101,9 @@ impl MultiTokenReceiver for Contract {
                     if execute.refund_if_fails {
                         self.execute_intents(execute.execute_intents);
                     } else {
-                        let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
-                            .execute_intents(execute.execute_intents);
+                        ext_intents::ext(env::current_account_id())
+                            .execute_intents(execute.execute_intents)
+                            .detach();
                     }
                 }
                 PromiseOrValue::Value(vec![U128(0); token_ids.len()])
@@ -122,7 +128,6 @@ impl Contract {
             tokens
                 .into_iter()
                 .map(|token_id| Nep245TokenId::new(contract_id.clone(), token_id))
-                .map(UnwrapOrPanicError::unwrap_or_panic_display)
                 .map(Into::into)
                 .zip(amounts.iter_mut().map(|amount| &mut amount.0)),
         );

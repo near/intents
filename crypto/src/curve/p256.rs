@@ -1,9 +1,10 @@
 use super::{Curve, CurveType, TypedCurve};
+use generic_array::GenericArray;
 use near_sdk::CryptoHash;
 use p256::{
     EncodedPoint,
     ecdsa::{Signature, VerifyingKey, signature::hazmat::PrehashVerifier},
-    elliptic_curve::{generic_array::GenericArray, scalar::IsHigh},
+    elliptic_curve::scalar::IsHigh,
 };
 
 pub struct P256;
@@ -26,7 +27,8 @@ impl Curve for P256 {
         public_key: &Self::VerifyingKey,
     ) -> Option<Self::PublicKey> {
         // convert signature
-        let signature = Signature::from_bytes(GenericArray::from_slice(signature)).ok()?;
+        let signature =
+            Signature::from_bytes(GenericArray::from_slice(signature).as_0_14()).ok()?;
 
         if signature.s().is_high().into() {
             // guard against signature malleability
@@ -35,7 +37,7 @@ impl Curve for P256 {
 
         // convert verifying key
         let verifying_key = VerifyingKey::from_encoded_point(&EncodedPoint::from_untagged_bytes(
-            GenericArray::from_slice(public_key),
+            GenericArray::from_slice(public_key).as_0_14(),
         ))
         .ok()?;
 

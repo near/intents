@@ -1,44 +1,29 @@
 use std::{fmt, str::FromStr};
 
-use near_sdk::{AccountId, AccountIdRef, near};
+use near_sdk::{AccountId, near};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 use crate::{TokenIdType, error::TokenIdError};
 
-#[cfg(any(feature = "arbitrary", test))]
-use arbitrary_with::{Arbitrary, As};
-#[cfg(any(feature = "arbitrary", test))]
-use defuse_near_utils::arbitrary::ArbitraryAccountId;
-
-#[cfg_attr(any(feature = "arbitrary", test), derive(Arbitrary))]
+#[cfg_attr(any(feature = "arbitrary", test), derive(::arbitrary::Arbitrary))]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr)]
 #[near(serializers = [borsh])]
 pub struct Nep141TokenId {
-    #[cfg_attr(
-        any(feature = "arbitrary", test),
-        arbitrary(with = As::<ArbitraryAccountId>::arbitrary),
-    )]
-    contract_id: AccountId,
+    pub contract_id: AccountId,
 }
 
 impl Nep141TokenId {
-    pub const fn new(contract_id: AccountId) -> Self {
-        Self { contract_id }
-    }
-
-    pub fn contract_id(&self) -> &AccountIdRef {
-        self.contract_id.as_ref()
-    }
-
-    pub fn into_contract_id(self) -> AccountId {
-        self.contract_id
+    pub fn new(contract_id: impl Into<AccountId>) -> Self {
+        Self {
+            contract_id: contract_id.into(),
+        }
     }
 }
 
 impl std::fmt::Debug for Nep141TokenId {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.contract_id())
+        write!(f, "{}", &self.contract_id)
     }
 }
 

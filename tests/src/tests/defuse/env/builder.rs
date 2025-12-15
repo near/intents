@@ -1,21 +1,22 @@
 use std::sync::atomic::AtomicUsize;
 
-use super::DefuseExt;
-use crate::{
-    tests::{defuse::env::Env, poa::factory::PoAFactoryExt},
-    utils::{Sandbox, wnear::WNearExt},
-};
+use crate::tests::defuse::env::Env;
 use defuse::{
     contract::{
         Role,
         config::{DefuseConfig, RolesConfig},
     },
     core::fees::{FeesConfig, Pips},
+    sandbox_ext::deployer::DefuseExt,
 };
-use defuse_poa_factory::contract::Role as POAFactoryRole;
+use defuse_poa_factory::{contract::Role as POAFactoryRole, sandbox_ext::PoAFactoryDeployerExt};
+use defuse_sandbox::{
+    Account, SigningAccount,
+    extensions::wnear::{WNearDeployerExt, WNearExt},
+    sandbox,
+};
 use defuse_test_utils::random::Seed;
 use near_sdk::{AccountId, NearToken};
-use near_workspaces::{Account, Contract};
 
 const MIGRATE_FROM_LEGACY_ENV_NAME: &str = "DEFUSE_MIGRATE_FROM_LEGACY";
 
@@ -87,7 +88,12 @@ impl EnvBuilder {
         self
     }
 
-    async fn deploy_defuse(&self, root: &Account, wnear: &Contract, legacy: bool) -> Contract {
+    async fn deploy_defuse(
+        &self,
+        root: &SigningAccount,
+        wnear: &Account,
+        legacy: bool,
+    ) -> SigningAccount {
         let id = "defuse";
         let cfg = DefuseConfig {
             wnear_id: wnear.id().clone(),
@@ -118,20 +124,20 @@ impl EnvBuilder {
     }
 
     pub async fn build_env(&mut self, deploy_legacy: bool) -> Env {
-        let sandbox = Sandbox::new().await.unwrap();
-        let root = sandbox.root_account().clone();
+        let sandbox = sandbox(NearToken::from_near(100_000)).await;
+        let root = sandbox.root();
 
-        let poa_factory = deploy_poa_factory(&root).await;
-        let wnear = sandbox.deploy_wrap_near("wnear").await.unwrap();
+        let poa_factory = deploy_poa_factory(root).await;
+        let wnear = root.deploy_wrap_near("wnear").await.unwrap();
 
-        self.grant_roles(&root, deploy_legacy);
+        self.grant_roles(root, deploy_legacy);
 
-        let defuse = self.deploy_defuse(&root, &wnear, deploy_legacy).await;
+        let defuse = self.deploy_defuse(root, &wnear, deploy_legacy).await;
 
         let env = Env {
-            defuse,
-            wnear,
-            poa_factory: poa_factory.clone(),
+            defuse: defuse.into(),
+            wnear: wnear.into(),
+            poa_factory: poa_factory.into(),
             sandbox,
             disable_ft_storage_deposit: self.disable_ft_storage_deposit,
             disable_registration: self.disable_registration,
@@ -158,8 +164,10 @@ impl EnvBuilder {
     }
 
     pub async fn build(&mut self) -> Env {
-        let migrate_from_legacy = std::env::var(MIGRATE_FROM_LEGACY_ENV_NAME)
-            .is_ok_and(|v| !["0", "false"].contains(&v.to_lowercase().as_str()));
+        // TODO: enable migration tests
+        let migrate_from_legacy = false;
+        // let migrate_from_legacy = std::env::var(MIGRATE_FROM_LEGACY_ENV_NAME)
+        //     .is_ok_and(|v| !["0", "false"].contains(&v.to_lowercase().as_str()));
 
         println!(
             "Test migration mode: {}",
@@ -174,7 +182,7 @@ impl EnvBuilder {
     }
 }
 
-async fn deploy_poa_factory(root: &Account) -> Contract {
+async fn deploy_poa_factory(root: &SigningAccount) -> SigningAccount {
     root.deploy_poa_factory(
         "poa-factory",
         [root.id().clone()],

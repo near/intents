@@ -13,18 +13,12 @@ defuse-nep245.workspace = true
 
 near-contract-standards.workspace = true
 near-sdk.workspace = true
-
-derive_more.workspace = true
+derive_more = { workspace = true, features = ["from"] }
 serde_with.workspace = true
 strum.workspace = true
 thiserror.workspace = true
 
-defuse-near-utils = { workspace = true, features = [
-    "arbitrary",
-], optional = true }
-
 arbitrary = { workspace = true, optional = true }
-arbitrary_with = { workspace = true, optional = true }
 
 [features]
 default = ["nep141", "nep171", "nep245"]
@@ -33,16 +27,12 @@ nep141 = []
 nep171 = []
 nep245 = []
 
-unbounded = []
-
 abi = []
-arbitrary = ["dep:arbitrary", "dep:arbitrary_with", "dep:defuse-near-utils"]
+arbitrary = ["dep:arbitrary", "near-sdk/arbitrary"]
 
 [dev-dependencies]
-defuse-near-utils = { workspace = true, features = ["arbitrary"] }
 defuse-test-utils.workspace = true
 
 arbitrary.workspace = true
-arbitrary_with.workspace = true
 hex.workspace = true
 rstest.workspace = true

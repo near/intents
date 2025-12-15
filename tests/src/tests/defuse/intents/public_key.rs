@@ -13,9 +13,9 @@ use near_sdk::AsNep297Event;
 use rstest::rstest;
 use std::borrow::Cow;
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn execute_add_public_key_intent(public_key: PublicKey) {
     let env = Env::builder().build().await;
 
@@ -25,7 +25,7 @@ async fn execute_add_public_key_intent(public_key: PublicKey) {
 
     let add_public_key_payload = user
         .sign_defuse_payload_default(
-            env.defuse.id(),
+            &env.defuse,
             [AddPublicKey {
                 public_key: new_public_key,
             }],
@@ -35,13 +35,12 @@ async fn execute_add_public_key_intent(public_key: PublicKey) {
     let nonce = add_public_key_payload.extract_nonce().unwrap();
 
     let result = env
-        .defuse
-        .execute_intents(env.defuse.id(), [add_public_key_payload.clone()])
+        .simulate_and_execute_intents(env.defuse.id(), [add_public_key_payload.clone()])
         .await
         .unwrap();
 
     assert_eq!(
-        result.logs().to_vec(),
+        result.logs().clone(),
         vec![
             DefuseEvent::PublicKeyAdded(AccountEvent::new(
                 user.id(),
@@ -59,9 +58,9 @@ async fn execute_add_public_key_intent(public_key: PublicKey) {
     );
 }
 
-#[tokio::test]
 #[rstest]
 #[trace]
+#[tokio::test]
 async fn execute_remove_public_key_intent(public_key: PublicKey) {
     let env = Env::builder().build().await;
 
@@ -70,7 +69,7 @@ async fn execute_remove_public_key_intent(public_key: PublicKey) {
     let new_public_key = public_key;
     let add_public_key_payload = user
         .sign_defuse_payload_default(
-            env.defuse.id(),
+            &env.defuse,
             [AddPublicKey {
                 public_key: new_public_key,
             }],
@@ -79,14 +78,13 @@ async fn execute_remove_public_key_intent(public_key: PublicKey) {
         .unwrap();
     let _add_nonce = add_public_key_payload.extract_nonce().unwrap();
 
-    env.defuse
-        .execute_intents(env.defuse.id(), [add_public_key_payload])
+    env.simulate_and_execute_intents(env.defuse.id(), [add_public_key_payload])
         .await
         .unwrap();
 
     let remove_public_key_payload = user
         .sign_defuse_payload_default(
-            env.defuse.id(),
+            &env.defuse,
             [RemovePublicKey {
                 public_key: new_public_key,
             }],
@@ -96,13 +94,12 @@ async fn execute_remove_public_key_intent(public_key: PublicKey) {
     let remove_nonce = remove_public_key_payload.extract_nonce().unwrap();
 
     let result = env
-        .defuse
-        .execute_intents(env.defuse.id(), [remove_public_key_payload.clone()])
+        .simulate_and_execute_intents(env.defuse.id(), [remove_public_key_payload.clone()])
         .await
         .unwrap();
 
     assert_eq!(
-        result.logs().to_vec(),
+        result.logs().clone(),
         vec![
             DefuseEvent::PublicKeyRemoved(AccountEvent::new(
                 user.id(),

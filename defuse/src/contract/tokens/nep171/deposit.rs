@@ -1,13 +1,14 @@
 use defuse_core::token_id::{TokenId, nep171::Nep171TokenId};
-use defuse_near_utils::{
-    CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError,
-};
+use defuse_near_utils::{PanicError, UnwrapOrPanic, UnwrapOrPanicError};
 use near_contract_standards::non_fungible_token::core::NonFungibleTokenReceiver;
 use near_plugins::{Pausable, pause};
-use near_sdk::{AccountId, PromiseOrValue, json_types::U128, near};
+use near_sdk::{AccountId, PromiseOrValue, env, json_types::U128, near};
 
 use crate::{
-    contract::{Contract, ContractExt},
+    contract::{
+        Contract, ContractExt,
+        tokens::{MAX_TOKEN_ID_LEN, TokenIdTooLarge},
+    },
     intents::{Intents, ext_intents},
     tokens::{DepositAction, DepositMessage},
 };
@@ -26,6 +27,10 @@ impl NonFungibleTokenReceiver for Contract {
         token_id: near_contract_standards::non_fungible_token::TokenId,
         msg: String,
     ) -> PromiseOrValue<bool> {
+        if token_id.len() > MAX_TOKEN_ID_LEN {
+            TokenIdTooLarge(token_id.len()).panic_display();
+        }
+
         let DepositMessage {
             receiver_id,
             action,
@@ -35,10 +40,8 @@ impl NonFungibleTokenReceiver for Contract {
             msg.parse().unwrap_or_panic_display()
         };
 
-        let core_token_id = TokenId::from(
-            Nep171TokenId::new(PREDECESSOR_ACCOUNT_ID.clone(), token_id.clone())
-                .unwrap_or_panic_display(),
-        );
+        let core_token_id: TokenId =
+            Nep171TokenId::new(env::predecessor_account_id(), token_id.clone()).into();
 
         self.deposit(
             receiver_id.clone(),
@@ -61,10 +64,10 @@ impl NonFungibleTokenReceiver for Contract {
                 notify,
             )
             .then(
-                Self::ext(CURRENT_ACCOUNT_ID.clone())
+                Self::ext(env::current_account_id())
                     .with_static_gas(Self::mt_resolve_deposit_gas(1))
                     .with_unused_gas_weight(0)
-                    .nft_resolve_deposit(receiver_id, PREDECESSOR_ACCOUNT_ID.clone(), token_id),
+                    .nft_resolve_deposit(receiver_id, env::predecessor_account_id(), token_id),
             )
             .into(),
             DepositAction::Execute(execute) => {
@@ -72,8 +75,9 @@ impl NonFungibleTokenReceiver for Contract {
                     if execute.refund_if_fails {
                         self.execute_intents(execute.execute_intents);
                     } else {
-                        let _ = ext_intents::ext(CURRENT_ACCOUNT_ID.clone())
-                            .execute_intents(execute.execute_intents);
+                        ext_intents::ext(env::current_account_id())
+                            .execute_intents(execute.execute_intents)
+                            .detach();
                     }
                 }
 
@@ -98,9 +102,7 @@ impl Contract {
         self.resolve_deposit_internal(
             &receiver_id,
             [(
-                Nep171TokenId::new(contract_id, nft_token_id)
-                    .unwrap_or_panic_display()
-                    .into(),
+                Nep171TokenId::new(contract_id, nft_token_id).into(),
                 &mut amount,
             )],
         );

@@ -14,12 +14,12 @@ use defuse_core::{
     events::DefuseEvent,
 };
 
-use defuse_near_utils::{Lock, NestPrefix, PREDECESSOR_ACCOUNT_ID, UnwrapOrPanic};
+use defuse_near_utils::{Lock, NestPrefix, UnwrapOrPanic};
 use defuse_serde_utils::base64::AsBase64;
 
 use near_sdk::{
     AccountId, AccountIdRef, BorshStorageKey, FunctionError, IntoStorageKey, assert_one_yocto,
-    borsh::BorshSerialize, near, store::IterableMap,
+    borsh::BorshSerialize, env, near, store::IterableMap,
 };
 
 use crate::{
@@ -78,18 +78,19 @@ impl AccountManager for Contract {
     #[payable]
     fn disable_auth_by_predecessor_id(&mut self) {
         assert_one_yocto();
-        State::set_auth_by_predecessor_id(self, self.ensure_auth_predecessor_id().clone(), false)
+        State::set_auth_by_predecessor_id(self, self.ensure_auth_predecessor_id(), false)
             .unwrap_or_panic();
     }
 }
 
 impl Contract {
     #[inline]
-    pub fn ensure_auth_predecessor_id(&self) -> &'static AccountId {
-        if !StateView::is_auth_by_predecessor_id_enabled(self, &PREDECESSOR_ACCOUNT_ID) {
-            DefuseError::AuthByPredecessorIdDisabled(PREDECESSOR_ACCOUNT_ID.clone()).panic();
+    pub fn ensure_auth_predecessor_id(&self) -> AccountId {
+        let predecessor_account_id = env::predecessor_account_id();
+        if !StateView::is_auth_by_predecessor_id_enabled(self, &predecessor_account_id) {
+            DefuseError::AuthByPredecessorIdDisabled(predecessor_account_id).panic();
         }
-        &PREDECESSOR_ACCOUNT_ID
+        predecessor_account_id
     }
 }
 

@@ -12,7 +12,7 @@ use defuse_core::{
     intents::tokens::MtWithdraw,
     token_id::{nep141::Nep141TokenId, nep245::Nep245TokenId},
 };
-use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError};
+use defuse_near_utils::{UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::ext_mt_core;
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::storage_management::ext_storage_management;
@@ -37,7 +37,7 @@ impl MultiTokenWithdrawer for Contract {
     ) -> PromiseOrValue<Vec<U128>> {
         assert_one_yocto();
         self.internal_mt_withdraw(
-            self.ensure_auth_predecessor_id().clone(),
+            self.ensure_auth_predecessor_id(),
             MtWithdraw {
                 token,
                 receiver_id,
@@ -65,15 +65,13 @@ impl Contract {
             return Err(DefuseError::InvalidIntent);
         }
 
-        let token_ids = std::iter::repeat(withdraw.token.clone())
-            .zip(withdraw.token_ids.iter().cloned())
-            .map(|(token, token_id)| Nep245TokenId::new(token, token_id))
-            .collect::<Result<Vec<_>, _>>()?;
-
         self.withdraw(
             &owner_id,
-            token_ids
-                .into_iter()
+            withdraw
+                .token_ids
+                .iter()
+                .cloned()
+                .map(|token_id| Nep245TokenId::new(withdraw.token.clone(), token_id))
                 .map(Into::into)
                 .zip(withdraw.amounts.iter().map(|a| a.0))
                 .chain(withdraw.storage_deposit.map(|amount| {
@@ -96,7 +94,7 @@ impl Contract {
                 .near_withdraw(U128(storage_deposit.as_yoctonear()))
                 .then(
                     // schedule storage_deposit() only after near_withdraw() returns
-                    Self::ext(CURRENT_ACCOUNT_ID.clone())
+                    Self::ext(env::current_account_id())
                         .with_static_gas(
                             Self::DO_MT_WITHDRAW_GAS
                                 .checked_add(withdraw.min_gas())
@@ -109,7 +107,7 @@ impl Contract {
             Self::do_mt_withdraw(withdraw.clone())
         }
         .then(
-            Self::ext(CURRENT_ACCOUNT_ID.clone())
+            Self::ext(env::current_account_id())
                 .with_static_gas(Self::mt_resolve_withdraw_gas(withdraw.token_ids.len()))
                 // do not distribute remaining gas here
                 .with_unused_gas_weight(0)
@@ -248,10 +246,7 @@ impl MultiTokenWithdrawResolver for Contract {
                     used.0 = used.0.min(amount.0);
                     let refund = amount.0.saturating_sub(used.0);
                     if refund > 0 {
-                        let token_id = Nep245TokenId::new(token.clone(), token_id)
-                            .unwrap_or_panic_display()
-                            .into();
-                        Some((token_id, refund))
+                        Some((Nep245TokenId::new(token.clone(), token_id).into(), refund))
                     } else {
                         None
                     }

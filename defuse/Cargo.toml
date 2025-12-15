@@ -1,6 +1,6 @@
 [package]
 name = "defuse"
-version = "0.4.0"
+version = "0.4.1"
 edition.workspace = true
 rust-version.workspace = true
 repository.workspace = true
@@ -37,6 +37,10 @@ serde_with.workspace = true
 strum.workspace = true
 thiserror.workspace = true
 
+defuse-sandbox = {workspace = true, optional = true}
+arbitrary = {workspace = true, optional = true}
+defuse-test-utils = {workspace = true, optional = true}
+
 [package.metadata.near.reproducible_build]
 image = "sourcescan/cargo-near:0.16.2-rust-1.86.0"
 image_digest = "sha256:74c24d4d912f893198b8b13e01d43e0f78f3b00b3df45bf555a707eb4918a54e"
@@ -48,12 +52,12 @@ container_build_command = [
     "non-reproducible-wasm",
     "--locked",
     "--features=abi,contract",
-    "--no-embed-abi"
+    "--no-embed-abi",
 ]
 
 [features]
 abi = ["defuse-core/abi"]
-arbitrary = ["defuse-core/arbitrary"]
+arbitrary = ["defuse-core/arbitrary", "dep:arbitrary",]
 contract = [
     "dep:defuse-bitmap",
     "dep:defuse-borsh-utils",
@@ -63,13 +67,19 @@ contract = [
     "dep:bitflags",
 ]
 
+sandbox = [
+    "arbitrary",
+    "dep:defuse-sandbox",
+    "dep:defuse-test-utils",
+]
+
 [dev-dependencies]
 defuse-core = { workspace = true, features = ["arbitrary"] }
 defuse-test-utils.workspace = true
 chrono.workspace = true
 
-arbitrary_with.workspace = true
+arbitrary.workspace = true
 itertools.workspace = true
 proptest = { workspace = true }
 rstest.workspace = true
-near-sdk = { workspace = true, features = ["unit-testing"] }
+near-sdk = { workspace = true, features = ["non-contract-usage"] }

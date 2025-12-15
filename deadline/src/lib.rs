@@ -10,7 +10,14 @@ use near_sdk::near;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[near(serializers=[json])]
-pub struct Deadline(DateTime<Utc>);
+#[repr(transparent)]
+pub struct Deadline(
+    #[cfg_attr(
+        all(feature = "abi", not(target_arch = "wasm32")),
+        schemars(with = "String")
+    )]
+    DateTime<Utc>,
+);
 
 impl Deadline {
     pub const MAX: Self = Self(DateTime::<Utc>::MAX_UTC);
@@ -22,7 +29,7 @@ impl Deadline {
     #[cfg(target_arch = "wasm32")]
     #[must_use]
     pub fn now() -> Self {
-        Self(*defuse_near_utils::BLOCK_TIMESTAMP)
+        Self(defuse_near_utils::time::now())
     }
 
     #[cfg(not(target_arch = "wasm32"))]

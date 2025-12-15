@@ -1,7 +1,6 @@
 use defuse_controller::ControllerUpgradable;
-use defuse_near_utils::CURRENT_ACCOUNT_ID;
 use near_plugins::{AccessControllable, access_control_any};
-use near_sdk::{Gas, Promise, assert_one_yocto, near};
+use near_sdk::{Gas, Promise, assert_one_yocto, env, near};
 
 use super::{Contract, ContractExt, Role};
 
@@ -18,7 +17,7 @@ impl ControllerUpgradable for Contract {
     ) -> Promise {
         assert_one_yocto();
 
-        let p = Promise::new(CURRENT_ACCOUNT_ID.clone()).deploy_contract(code);
+        let p = Promise::new(env::current_account_id()).deploy_contract(code);
 
         Self::ext_on(p)
             .with_static_gas(state_migration_gas.unwrap_or(STATE_MIGRATE_DEFAULT_GAS))

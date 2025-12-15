@@ -59,13 +59,10 @@ impl FromStr for Salt {
 
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
 const _: () = {
-    use near_sdk::{
-        schemars::{
-            JsonSchema,
-            r#gen::SchemaGenerator,
-            schema::{InstanceType, Metadata, Schema, SchemaObject},
-        },
-        serde_json,
+    use near_sdk::schemars::{
+        JsonSchema,
+        r#gen::SchemaGenerator,
+        schema::{InstanceType, Schema, SchemaObject},
     };
 
     impl JsonSchema for Salt {
