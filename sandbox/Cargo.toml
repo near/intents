@@ -17,6 +17,8 @@ anyhow.workspace = true
 futures.workspace = true
 impl-tools.workspace = true
 near-api.workspace = true
+near-openapi-client = "0.6"
 near-sandbox.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
+serde_json.workspace = true
 thiserror.workspace = true

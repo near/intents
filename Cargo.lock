@@ -1124,8 +1124,10 @@ dependencies = [
  "futures",
  "impl-tools",
  "near-api",
+ "near-openapi-client",
  "near-sandbox",
  "near-sdk",
+ "serde_json",
  "thiserror 2.0.17",
 ]
 

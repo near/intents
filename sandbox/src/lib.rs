@@ -1,9 +1,10 @@
 #![allow(async_fn_in_trait)]
 
 mod account;
+mod global_contract_workaround;
 mod tx;
 
-pub use self::{account::*, tx::*};
+pub use self::{account::*, global_contract_workaround::*, tx::*};
 pub use near_api as api;
 
 use near_api::{NetworkConfig, RPCEndpoint, Signer};

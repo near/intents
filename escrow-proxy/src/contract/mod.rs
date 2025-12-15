@@ -23,7 +23,8 @@ use near_sdk::{
 
 use crate::message::{EscrowParams, TransferMessage};
 use crate::state::{ProxyConfig, RolesConfig};
-use crate::{EscrowProxy, Role, RoleFlags, ext_mt_core};
+use crate::{EscrowProxy, Role, RoleFlags};
+use defuse_nep245::ext_mt_core;
 
 #[access_control(role_type(Role))]
 #[near(contract_state)]

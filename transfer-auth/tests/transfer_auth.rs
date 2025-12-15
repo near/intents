@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use defuse_sandbox::{Account, Sandbox};
+use defuse_sandbox::{Account, Sandbox, UnwrapGlobalContractDeployment};
 use defuse_transfer_auth::ext::TransferAuthAccountExt;
 use defuse_transfer_auth::storage::{ContractStorage, StateInit as TransferAuthStateInit};
 use near_sdk::{
@@ -57,13 +57,13 @@ async fn transfer_auth_global_deployment() {
     println!("auth_transfer_for_solver1: {auth_transfer_for_solver1}");
     println!("auth_transfer_for_solver2: {auth_transfer_for_solver2}");
 
-    //NOTE: there is rpc error on state_init action but the contract itself is successfully
-    //deployed, so lets ignore error for now
-    let _ = root
+    let result = root
         .tx(auth_transfer_for_solver1.clone())
         .state_init(transfer_auth_global.clone(), solver1_raw_state)
         .transfer(NearToken::from_yoctonear(1))
-        .await;
+        .await
+        .unwrap_global_contract_deployment();
+    assert!(result, "state_init should succeed");
 
     let _ = proxy
         .tx(auth_transfer_for_solver1)

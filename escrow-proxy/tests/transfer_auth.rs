@@ -9,7 +9,7 @@ use defuse_escrow_proxy::{
 };
 use defuse_escrow_swap::action::TransferMessage as EscrowTransferMessage;
 use defuse_escrow_swap::price::Price;
-use defuse_sandbox::{Sandbox, SigningAccount};
+use defuse_sandbox::{Sandbox, SigningAccount, UnwrapGlobalContractDeployment};
 use defuse_token_id::{TokenId, nep141::Nep141TokenId};
 use defuse_transfer_auth::TransferAuthContext;
 use defuse_transfer_auth::ext::{
@@ -233,14 +233,13 @@ async fn test_transfer_authorized_by_relay() {
     let escrow_instance_id = escrow_state_init.derive_account_id();
 
     // Deploy the escrow instance via state_init
-    // NOTE: Ignore RPC parsing errors - the tx succeeds but RPC response parsing may fail
-    println!("STATE INIT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-    let _result = root
+    let result = root
         .tx(escrow_instance_id.clone())
         .state_init(mt_receiver_global.clone(), BTreeMap::new())
         .transfer(NearToken::from_yoctonear(1))
-        .await;
-    println!("INITIALIZED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        .await
+        .unwrap_global_contract_deployment();
+    assert!(result, "state_init should succeed");
 
     // Setup: deposit WNEAR to defuse for solver
     let deposit_amount = NearToken::from_near(10);
@@ -338,9 +337,8 @@ async fn test_transfer_authorized_by_relay() {
         ),
         // Call on_auth from defuse (auth_contract) with relay as signer_id
         // Include state_init to deploy the transfer-auth instance if not already deployed
-        // NOTE: Ignore errors from state_init - RPC may return 408 timeout even when tx succeeds
         async {
-            let _ = defuse
+            let result = defuse
                 .tx(transfer_auth_instance_id.clone())
                 .state_init(transfer_auth_global.clone(), raw_state)
                 .function_call_json::<()>(
@@ -353,7 +351,9 @@ async fn test_transfer_authorized_by_relay() {
                     NearToken::from_yoctonear(1),
                 )
                 .no_result()
-                .await;
+                .await
+                .unwrap_global_contract_deployment();
+            assert!(result, "state_init with on_auth should succeed");
         }
     );
 
@@ -442,8 +442,9 @@ async fn test_proxy_authorize_function() {
         .tx(transfer_auth_instance_id.clone())
         .state_init(transfer_auth_global.clone(), raw_state)
         .transfer(NearToken::from_yoctonear(1))
-        .await;
-    println!("Deploy transfer-auth instance result: {deploy_result:?}");
+        .await
+        .unwrap_global_contract_deployment();
+    assert!(deploy_result, "state_init should succeed");
     println!("Transfer-auth instance ID: {transfer_auth_instance_id}");
 
     // Call authorize from relay (has Canceller role) through the proxy
