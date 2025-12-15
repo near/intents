@@ -1,5 +1,5 @@
 use defuse_sr25519::SignedSr25519Payload;
-use near_sdk::serde::{Deserialize, Serialize, de::DeserializeOwned};
+use near_sdk::serde::de::DeserializeOwned;
 
 use super::{DefusePayload, ExtractDefusePayload};
 

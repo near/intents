@@ -27,8 +27,10 @@ impl Sr25519Payload {
     /// Note: This will use the standard "substrate" signing context
     /// which is the default for Polkadot/Substrate chains.
     #[inline]
-    pub fn new(message: String) -> Self {
-        Self { message }
+    pub fn new(message: impl Into<String>) -> Self {
+        Self {
+            message: message.into(),
+        }
     }
 
     /// Get the signing context (always "substrate")
