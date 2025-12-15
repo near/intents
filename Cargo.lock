@@ -788,10 +788,12 @@ checksum = "26bf8fc351c5ed29b5c2f0cbbac1b209b74f60ecd62e675a998df72c49af5204"
 name = "defuse"
 version = "0.4.1"
 dependencies = [
+ "anyhow",
  "arbitrary",
  "bitflags 2.10.0",
  "bnum",
  "chrono",
+ "defuse",
  "defuse-admin-utils",
  "defuse-auth-call",
  "defuse-bitmap",
@@ -802,12 +804,16 @@ dependencies = [
  "defuse-map-utils",
  "defuse-near-utils",
  "defuse-nep245",
+ "defuse-poa-factory",
+ "defuse-randomness",
  "defuse-sandbox",
  "defuse-serde-utils",
  "defuse-test-utils",
  "defuse-wnear",
+ "futures",
  "impl-tools",
  "itertools",
+ "multi-token-receiver-stub",
  "near-contract-standards",
  "near-plugins",
  "near-sdk",
@@ -816,6 +822,7 @@ dependencies = [
  "serde_with",
  "strum 0.27.2",
  "thiserror 2.0.17",
+ "tokio",
 ]
 
 [[package]]
@@ -1128,6 +1135,7 @@ name = "defuse-test-utils"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "defuse-crypto",
  "defuse-randomness",
  "derive_more",
  "hex",

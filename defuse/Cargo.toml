@@ -74,10 +74,19 @@ sandbox = [
 ]
 
 [dev-dependencies]
+defuse = {path = ".", features = ["sandbox", "contract"] }
 defuse-core = { workspace = true, features = ["arbitrary"] }
 defuse-test-utils.workspace = true
-chrono.workspace = true
+defuse-sandbox.workspace = true
+defuse-randomness.workspace = true
+defuse-poa-factory = {workspace = true, features = ["sandbox", "contract"]}
+multi-token-receiver-stub = { path = "../tests/contracts/multi-token-receiver-stub" }
 
+chrono.workspace = true
+anyhow.workspace = true
+tokio = { workspace = true, features = ["macros"] }
+
+futures.workspace = true
 arbitrary.workspace = true
 itertools.workspace = true
 proptest = { workspace = true }

@@ -10,6 +10,7 @@ workspace = true
 
 [dependencies]
 defuse-randomness.workspace = true
+defuse-crypto.workspace = true
 
 arbitrary.workspace = true
 derive_more = { workspace = true, features = ["full"] }
