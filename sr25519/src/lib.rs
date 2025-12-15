@@ -22,9 +22,9 @@ pub struct Sr25519Payload {
 }
 
 impl Sr25519Payload {
-    /// Create a new payload with a message
+    /// Create a new payload with a message.
     ///
-    /// Note: This will use the standard "substrate" signing context
+    /// NOTE: This will use the standard "substrate" signing context
     /// which is the default for Polkadot/Substrate chains.
     #[inline]
     pub fn new(message: impl Into<String>) -> Self {
@@ -32,20 +32,18 @@ impl Sr25519Payload {
             message: message.into(),
         }
     }
-
-    /// Get the signing context (always "substrate")
-    #[inline]
-    pub const fn get_context(&self) -> &'static [u8] {
-        b"substrate"
-    }
 }
 
 impl Payload for Sr25519Payload {
     #[inline]
     fn hash(&self) -> near_sdk::CryptoHash {
-        // Hash just the message content
-        // The signing context is handled by schnorrkel during signature verification
-        env::sha256_array(self.message.as_bytes())
+        // Hash just the message content. The signing context is handled
+        // by schnorrkel during signature verification.
+        //
+        // SHA-256 is chosen because it's one of two cryptographic hash
+        // functions commonly used in Polkadot/Substrate ecosystem. The
+        // second one is Blake2, which is not natively supported on Near
+        env::sha256_array(&self.message)
     }
 }
 
@@ -57,11 +55,12 @@ pub struct SignedSr25519Payload {
     #[serde(flatten)]
     pub payload: Sr25519Payload,
 
-    /// Sr25519 public key (32 bytes)
+    /// sr25519 public key: Ristretto Schnorr public key
+    /// represented as a 32-byte Ristretto compressed point
     #[serde_as(as = "AsCurve<Sr25519>")]
     pub public_key: <Sr25519 as Curve>::PublicKey,
 
-    /// Sr25519 signature (64 bytes)
+    /// sr25519 signature: 64-byte Ristretto Schnorr signature
     #[serde_as(as = "AsCurve<Sr25519>")]
     pub signature: <Sr25519 as Curve>::Signature,
 }
@@ -98,7 +97,6 @@ mod tests {
     fn test_payload_creation() {
         let payload = Sr25519Payload::new("Hello, Sr25519!".to_string());
         assert_eq!(payload.message, "Hello, Sr25519!");
-        assert_eq!(payload.get_context(), b"substrate");
     }
 
     #[test]
