@@ -1,6 +1,6 @@
 //! Integration tests for Sr25519 signature verification
 
-use defuse_crypto::{Payload, SignedPayload};
+use defuse_crypto::{Payload, SignedPayload, Sr25519};
 use defuse_sr25519::{SignedSr25519Payload, Sr25519Payload};
 use rand::thread_rng;
 use schnorrkel::Keypair;
@@ -13,10 +13,9 @@ fn test_sr25519_signature_verification() {
 
     // Create a message
     let message = "Hello, Sr25519!";
-    let context = b"substrate";
 
     // Sign the message
-    let signature = keypair.sign_simple(context, message.as_bytes());
+    let signature = keypair.sign_simple(Sr25519::SIGNING_CTX, message.as_bytes());
 
     // Create the signed payload
     let signed_payload = SignedSr25519Payload {
@@ -71,10 +70,9 @@ fn test_sr25519_different_messages() {
     // Sign two different messages with the standard "substrate" context
     let message1 = "First message";
     let message2 = "Second message";
-    let context = b"substrate";
 
-    let signature1 = keypair.sign_simple(context, message1.as_bytes());
-    let signature2 = keypair.sign_simple(context, message2.as_bytes());
+    let signature1 = keypair.sign_simple(Sr25519::SIGNING_CTX, message1.as_bytes());
+    let signature2 = keypair.sign_simple(Sr25519::SIGNING_CTX, message2.as_bytes());
 
     // Verify first signature
     let signed_payload1 = SignedSr25519Payload {

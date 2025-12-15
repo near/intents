@@ -18,7 +18,7 @@ use serde_with::serde_as;
 #[derive(Debug, Clone)]
 pub struct Sr25519Payload {
     /// The message to be signed
-    pub message: String,
+    pub payload: String,
 }
 
 impl Sr25519Payload {
@@ -29,7 +29,7 @@ impl Sr25519Payload {
     #[inline]
     pub fn new(message: impl Into<String>) -> Self {
         Self {
-            message: message.into(),
+            payload: message.into(),
         }
     }
 }
@@ -43,7 +43,7 @@ impl Payload for Sr25519Payload {
         // SHA-256 is chosen because it's one of two cryptographic hash
         // functions commonly used in Polkadot/Substrate ecosystem. The
         // second one is Blake2, which is not natively supported on Near
-        env::sha256_array(&self.message)
+        env::sha256_array(&self.payload)
     }
 }
 
@@ -83,7 +83,7 @@ impl SignedPayload for SignedSr25519Payload {
         // the same context parameter, we just pass the message directly
         Sr25519::verify(
             &self.signature,
-            self.payload.message.as_bytes(),
+            self.payload.payload.as_bytes(),
             &self.public_key,
         )
     }
@@ -96,7 +96,7 @@ mod tests {
     #[test]
     fn test_payload_creation() {
         let payload = Sr25519Payload::new("Hello, Sr25519!".to_string());
-        assert_eq!(payload.message, "Hello, Sr25519!");
+        assert_eq!(payload.payload, "Hello, Sr25519!");
     }
 
     #[test]

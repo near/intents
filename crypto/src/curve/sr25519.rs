@@ -6,7 +6,7 @@ pub struct Sr25519;
 
 impl Sr25519 {
     // using "substrate" as the default context following Substrate/Polkadot convention
-    const SIGNING_CTX: &[u8] = b"substrate";
+    pub const SIGNING_CTX: &[u8] = b"substrate";
 }
 
 impl Curve for Sr25519 {
