@@ -9,6 +9,7 @@ members = [
     "core",
     "crypto",
     "deadline",
+    "decimal",
     "defuse",
     "erc191",
     "escrow-swap",
@@ -55,6 +56,7 @@ defuse-core.path = "core"
 defuse-crypto.path = "crypto"
 defuse.path = "defuse"
 defuse-deadline.path = "deadline"
+defuse-decimal.path = "decimal"
 defuse-erc191.path = "erc191"
 defuse-escrow-swap.path = "escrow-swap"
 defuse-escrow-proxy.path = "escrow-proxy"
@@ -84,13 +86,23 @@ defuse-wnear.path = "wnear"
 defuse-randomness.path = "randomness"
 defuse-test-utils.path = "test-utils"
 
+cargo-near-build = "0.9.0"
+near-account-id = "2.4.0"
+near-api = "0.8.2"
+near-api-types = "0.8.2"
+near-openapi-types = "0.6.0"
+near-contract-standards = "5.23"
+near-crypto = "0.34.1"
+near-plugins = { git = "https://github.com/Near-One/near-plugins", tag = "v0.5.0" }
+near-sandbox = "0.3.4"
+near-sdk = {version = "5.23", features = ["deterministic-account-ids"] }
+near-workspaces = "0.22"
+
 anyhow = "1"
 arbitrary = "1"
-arbitrary_with = "0.3.2"
 array-util = "1"
 bitflags = "2.9.1"
 bnum = { version = "0.13", features = ["borsh"] }
-cargo-near-build = "0.9.0"
 chrono = { version = "0.4", default-features = false }
 derive_more = "2.0"
 digest = { version = "0.10", default-features = false }
@@ -101,20 +113,11 @@ hex = "0.4"
 hex-literal = "1.0"
 impl-tools = "0.11"
 itertools = "0.14"
-near-api = "0.8"
-near-api-types = "0.8"
-near-contract-standards = "5.20"
-near-crypto = "0.34"
-near-plugins = { git = "https://github.com/Near-One/near-plugins", tag = "v0.5.0" }
-near-sandbox = "0.3.2"
-near-sdk = { version = "5.20", features = ["deterministic-account-ids"] }
-near-workspaces = "0.22"
 p256 = { version = "0.13.2", default-features = false, features = ["ecdsa"] }
+proptest = "1.5"
 rand = "0.9"
 rand_chacha = "0.9"
-proptest = "1.5"
 rstest = "0.25"
-fastnum = "0.2.10"
 schemars = "0.8"
 serde_json = "1"
 serde_with = "3.9"
@@ -123,8 +126,7 @@ strum = { version = "0.27", features = ["derive"] }
 thiserror = "2"
 tlb-ton = { version = "0.5.6", default-features = false }
 tokio = { version = "1.45", default-features = false }
-[patch.crates-io]
-near-sdk = { git = "https://github.com/pityjllk/near-sdk-rs", rev = "75d2ba2926ff71036b9500ae28d5319b1757a7be" }
+tracing = "0.1"
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }

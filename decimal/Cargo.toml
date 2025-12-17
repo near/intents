@@ -1,0 +1,25 @@
+[package]
+name = "defuse-decimal"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+arbitrary = ["dep:arbitrary"]
+
+[dependencies]
+defuse-num-utils.workspace = true
+
+near-sdk.workspace = true
+serde_with.workspace = true
+thiserror.workspace = true
+
+arbitrary = { workspace = true, optional = true }
+
+[dev-dependencies]
+rstest.workspace = true
+near-sdk = { workspace = true, features = ["non-contract-usage"] }

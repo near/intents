@@ -488,7 +488,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "117725a109d387c937a1533ce01b450cbde6b88abceea8473c4d7a85853cda3c"
 dependencies = [
  "lazy_static",
- "windows-sys 0.48.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -788,7 +788,7 @@ checksum = "26bf8fc351c5ed29b5c2f0cbbac1b209b74f60ecd62e675a998df72c49af5204"
 name = "defuse"
 version = "0.4.1"
 dependencies = [
- "arbitrary_with",
+ "arbitrary",
  "bitflags 2.10.0",
  "bnum",
  "chrono",
@@ -802,6 +802,7 @@ dependencies = [
  "defuse-map-utils",
  "defuse-near-utils",
  "defuse-nep245",
+ "defuse-sandbox",
  "defuse-serde-utils",
  "defuse-test-utils",
  "defuse-wnear",
@@ -866,7 +867,6 @@ name = "defuse-core"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
- "arbitrary_with",
  "chrono",
  "defuse-auth-call",
  "defuse-bitmap",
@@ -929,6 +929,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-decimal"
+version = "0.1.0"
+dependencies = [
+ "arbitrary",
+ "defuse-num-utils",
+ "near-sdk",
+ "rstest",
+ "serde_with",
+ "thiserror 2.0.17",
+]
+
+[[package]]
 name = "defuse-erc191"
 version = "0.1.0"
 dependencies = [
@@ -984,10 +996,11 @@ dependencies = [
  "defuse-auth-call",
  "defuse-borsh-utils",
  "defuse-deadline",
+ "defuse-decimal",
  "defuse-fees",
  "defuse-near-utils",
  "defuse-nep245",
- "defuse-price",
+ "defuse-num-utils",
  "defuse-sandbox",
  "defuse-token-id",
  "derive_more",
@@ -1028,7 +1041,6 @@ dependencies = [
 name = "defuse-near-utils"
 version = "0.1.0"
 dependencies = [
- "arbitrary_with",
  "chrono",
  "defuse-borsh-utils",
  "defuse-test-utils",
@@ -1057,6 +1069,7 @@ dependencies = [
  "defuse-nep461",
  "defuse-serde-utils",
  "impl-tools",
+ "near-api",
  "near-sdk",
  "serde_with",
 ]
@@ -1080,6 +1093,7 @@ dependencies = [
  "defuse-admin-utils",
  "defuse-near-utils",
  "defuse-poa-token",
+ "defuse-sandbox",
  "near-contract-standards",
  "near-plugins",
  "near-sdk",
@@ -1120,15 +1134,21 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "defuse-crypto",
+ "defuse-nep245",
+ "defuse-nep413",
  "defuse-randomness",
  "futures",
  "impl-tools",
  "near-api",
+ "near-contract-standards",
  "near-openapi-client",
+ "near-openapi-types",
  "near-sandbox",
  "near-sdk",
- "serde_json",
+ "rstest",
  "thiserror 2.0.17",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -1160,7 +1180,7 @@ dependencies = [
 name = "defuse-test-utils"
 version = "0.1.0"
 dependencies = [
- "arbitrary_with",
+ "arbitrary",
  "defuse-randomness",
  "derive_more",
  "hex",
@@ -1175,7 +1195,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "arbitrary",
- "arbitrary_with",
  "bnum",
  "chrono",
  "defuse",
@@ -1186,7 +1205,6 @@ dependencies = [
  "defuse-escrow-swap",
  "defuse-near-utils",
  "defuse-poa-factory",
- "defuse-price",
  "defuse-randomness",
  "defuse-sandbox",
  "defuse-serde-utils",
@@ -1203,7 +1221,6 @@ dependencies = [
  "near-contract-standards",
  "near-crypto",
  "near-sdk",
- "near-workspaces",
  "rstest",
  "serde_json",
  "strum 0.27.2",
@@ -1229,8 +1246,6 @@ name = "defuse-token-id"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
- "arbitrary_with",
- "defuse-near-utils",
  "defuse-nep245",
  "defuse-test-utils",
  "derive_more",
@@ -1533,7 +1548,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2587,19 +2602,22 @@ dependencies = [
 
 [[package]]
 name = "near-account-id"
-version = "2.2.0"
+version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d895dcfceb6eeec6c76c0ed861b9422cb918ad857fa321c78eaa577a90514707"
+checksum = "9179b8aa862592cc9d76153f6486384a8f2ec340d9c5a701e67cd22cb9b9dd1e"
 dependencies = [
+ "arbitrary",
+ "arbitrary_with",
  "borsh",
+ "hex",
  "serde",
 ]
 
 [[package]]
 name = "near-api"
-version = "0.8.0"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4db0fc73b5d3312219b251b9b777da274867c48e9793f6916f5c17d3914384a7"
+checksum = "17a87920038b8a0eb5b4c91691651ce235810beb1f3a8626596b303b82750b75"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -2623,9 +2641,9 @@ dependencies = [
 
 [[package]]
 name = "near-api-types"
-version = "0.8.0"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82ad7dfc45b9bd7755d7a036d406aada171eb5d95428cbc324dc916018ec3ffb"
+checksum = "42a5ca7d481bf75b61afb8552c8504df5d76f0a6c3e47482f498f2d65c349f8b"
 dependencies = [
  "base64 0.22.1",
  "borsh",
@@ -2684,9 +2702,9 @@ dependencies = [
 
 [[package]]
 name = "near-contract-standards"
-version = "5.20.1"
+version = "5.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2587e2eaa4c552bb6e7b730ebc9425b8b9b844110ed7392b916921a52c85cdc6"
+checksum = "b637fd2a9e8f30deb4fdb221a709c2794cfe120c4a1f1a6707d53ad07c674b23"
 dependencies = [
  "near-sdk",
 ]
@@ -2917,9 +2935,9 @@ dependencies = [
 
 [[package]]
 name = "near-sandbox"
-version = "0.3.2"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2da726a5ef6df27cc804719a5a011fe49560596520ec22f12916b2f31c597d5b"
+checksum = "478a37f1c52dae2c8ac63a92ab4258401b79d99a881efd243cacd08b748ea7cf"
 dependencies = [
  "binary-install",
  "fs4",
@@ -2959,9 +2977,11 @@ checksum = "79d63d022e686c6b92426c98f011908037730d557e815d6c813d5686030a6b53"
 
 [[package]]
 name = "near-sdk"
-version = "5.20.1"
-source = "git+https://github.com/pityjllk/near-sdk-rs?rev=75d2ba2926ff71036b9500ae28d5319b1757a7be#75d2ba2926ff71036b9500ae28d5319b1757a7be"
+version = "5.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "351a4bf9c9811c2ff46315509c19a53a7892d5767b9a58c3eda9e1caac350adc"
 dependencies = [
+ "arbitrary",
  "base64 0.22.1",
  "borsh",
  "bs58 0.5.1",
@@ -2985,8 +3005,9 @@ dependencies = [
 
 [[package]]
 name = "near-sdk-macros"
-version = "5.20.1"
-source = "git+https://github.com/pityjllk/near-sdk-rs?rev=75d2ba2926ff71036b9500ae28d5319b1757a7be#75d2ba2926ff71036b9500ae28d5319b1757a7be"
+version = "5.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c9ac3c723876f6c8413d253ffc10c5b759809ac0a3390861fa3353de58997e95"
 dependencies = [
  "Inflector",
  "darling 0.20.11",
@@ -3008,7 +3029,8 @@ checksum = "a501d5074c5c341725fe801ed191f45ef97e0a4d54d6ef5c3e87363930d4d0b1"
 [[package]]
 name = "near-sys"
 version = "0.2.6"
-source = "git+https://github.com/pityjllk/near-sdk-rs?rev=75d2ba2926ff71036b9500ae28d5319b1757a7be#75d2ba2926ff71036b9500ae28d5319b1757a7be"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b99e9ce0020190ea152f70d1849e54fc8fc123738e7447800ad818c78f5167cc"
 
 [[package]]
 name = "near-time"
@@ -3710,9 +3732,9 @@ checksum = "ba39f3699c378cd8970968dcbff9c43159ea4cfbd88d43c00b22f2ef10a435d2"
 
 [[package]]
 name = "reqwest"
-version = "0.12.24"
+version = "0.12.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d0946410b9f7b082a427e4ef5c8ff541a88b357bc6c637c40db3a68ac70a36f"
+checksum = "b6eff9328d40131d43bd911d42d79eb6a47312002a4daefc9e37f17e74a7701a"
 dependencies = [
  "base64 0.22.1",
  "bytes",
@@ -3840,7 +3862,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.4.15",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -3853,7 +3875,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.11.0",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -4249,9 +4271,9 @@ dependencies = [
 
 [[package]]
 name = "simd-adler32"
-version = "0.3.7"
+version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d66dc143e6b11c1eddc06d5c423cfc97062865baf299914ab64caa38182078fe"
+checksum = "e320a6c5ad31d271ad523dcf3ad13e2767ad8b1cb8f047f75a8aeaf8da139da2"
 
 [[package]]
 name = "siphasher"
@@ -4523,7 +4545,7 @@ dependencies = [
  "getrandom 0.3.4",
  "once_cell",
  "rustix 1.1.2",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -4815,9 +4837,9 @@ dependencies = [
 
 [[package]]
 name = "tower-http"
-version = "0.6.7"
+version = "0.6.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9cf146f99d442e8e68e585f5d798ccd3cad9a7835b917e09728880a862706456"
+checksum = "d4e6559d53cc268e5031cd8429d05415bc4cb4aefc4aa5d6cc35fbf5b924a1f8"
 dependencies = [
  "bitflags 2.10.0",
  "bytes",
@@ -5251,6 +5273,15 @@ name = "windows-sys"
 version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "282be5f36a8ce781fad8c8ae18fa3f9beff57ec1b52cb3de0789201425d9a33d"
+dependencies = [
+ "windows-targets 0.52.6",
+]
+
+[[package]]
+name = "windows-sys"
+version = "0.59.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e38bc4d79ed67fd075bcc251a1c39b32a1776bbe92e5bef1f0bf1f8c531853b"
 dependencies = [
  "windows-targets 0.52.6",
 ]

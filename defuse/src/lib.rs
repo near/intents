@@ -2,6 +2,9 @@
 #[cfg(feature = "contract")]
 pub mod contract;
 
+#[cfg(feature = "sandbox")]
+pub mod sandbox_ext;
+
 pub mod accounts;
 pub mod fees;
 pub mod garbage_collector;

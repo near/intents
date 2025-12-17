@@ -6,7 +6,9 @@ use defuse_crypto::Payload;
 use defuse_deadline::Deadline;
 use defuse_nep413::{Nep413Payload, SignedNep413Payload};
 use defuse_sandbox::{
-    Account, SigningAccount, TxError, api::types::transaction::actions::GlobalContractDeployMode,
+    Account, SigningAccount, TxError,
+    api::types::transaction::actions::GlobalContractDeployMode,
+    tx::FnCallBuilder,
 };
 use defuse_token_id::TokenId;
 use near_sdk::{
@@ -111,7 +113,7 @@ pub trait TransferAuthAccountExt {
 
 impl TransferAuthAccountExt for SigningAccount {
     async fn deploy_transfer_auth(&self, name: impl AsRef<str>) -> AccountId {
-        let account = self.subaccount(name);
+        let account = self.sub_account(name).unwrap();
 
         self.tx(account.id().clone())
             .create_account()
@@ -153,15 +155,8 @@ impl TransferAuthAccountExt for SigningAccount {
         &self,
         global_contract_id: AccountId,
     ) -> anyhow::Result<ContractStorage> {
-        Ok(self
-            .tx(global_contract_id)
-            .function_call_json::<ContractStorage>(
-                "state",
-                "{}",
-                Gas::from_tgas(300),
-                NearToken::from_near(0),
-            )
-            .await?)
+        let account = Account::new(global_contract_id, self.network_config().clone());
+        account.call_view_function_json("state", json!({})).await
     }
 }
 
@@ -293,8 +288,7 @@ impl DefuseAccountExt for SigningAccount {
             .create_account()
             .transfer(NearToken::from_near(20))
             .deploy(WNEAR_WASM.clone())
-            .function_call_json::<()>("new", (), Gas::from_tgas(50), NearToken::from_yoctonear(0))
-            .no_result()
+            .function_call(FnCallBuilder::new("new").with_gas(Gas::from_tgas(50)))
             .await
             .unwrap();
 
@@ -310,21 +304,19 @@ impl DefuseAccountExt for SigningAccount {
         defuse
             .tx(defuse.id().clone())
             .deploy(VERIFIER_WASM.clone())
-            .function_call_json::<()>(
-                "new",
-                json!({
-                    "config": json!({
-                        "wnear_id": wnear_id,
-                        "fees": {
-                            "fee": defuse_fees::Pips::from_percent(1).unwrap(),
-                            "fee_collector": self.id().clone(),
-                        },
-                    }),
-                }),
-                Gas::from_tgas(50),
-                NearToken::from_yoctonear(0),
+            .function_call(
+                FnCallBuilder::new("new")
+                    .json_args(json!({
+                        "config": json!({
+                            "wnear_id": wnear_id,
+                            "fees": {
+                                "fee": defuse_fees::Pips::from_percent(1).unwrap(),
+                                "fee_collector": self.id().clone(),
+                            },
+                        }),
+                    }))
+                    .with_gas(Gas::from_tgas(50)),
             )
-            .no_result()
             .await
             .unwrap();
 
@@ -333,9 +325,14 @@ impl DefuseAccountExt for SigningAccount {
 
     async fn near_deposit(&self, wnear: &Account, amount: NearToken) -> Result<(), TxError> {
         self.tx(wnear.id().clone())
-            .function_call_json::<()>("near_deposit", json!({}), Gas::from_tgas(50), amount)
-            .no_result()
+            .function_call(
+                FnCallBuilder::new("near_deposit")
+                    .json_args(json!({}))
+                    .with_gas(Gas::from_tgas(50))
+                    .with_deposit(amount),
+            )
             .await
+            .map(|_| ())
     }
 
     async fn ft_storage_deposit(
@@ -344,11 +341,11 @@ impl DefuseAccountExt for SigningAccount {
         account_id: Option<&AccountId>,
     ) -> Result<(), TxError> {
         self.tx(token.id().clone())
-            .function_call_json::<serde_json::Value>(
-                "storage_deposit",
-                json!({ "account_id": account_id }),
-                Gas::from_tgas(50),
-                NearToken::from_millinear(50), // 0.05 NEAR for storage
+            .function_call(
+                FnCallBuilder::new("storage_deposit")
+                    .json_args(json!({ "account_id": account_id }))
+                    .with_gas(Gas::from_tgas(50))
+                    .with_deposit(NearToken::from_millinear(50)), // 0.05 NEAR for storage
             )
             .await
             .map(|_| ())
@@ -362,18 +359,20 @@ impl DefuseAccountExt for SigningAccount {
         msg: &str,
     ) -> Result<u128, TxError> {
         self.tx(token.id().clone())
-            .function_call_json::<U128>(
-                "ft_transfer_call",
-                json!({
-                    "receiver_id": receiver_id,
-                    "amount": U128(amount),
-                    "msg": msg,
-                }),
-                Gas::from_tgas(100),
-                NearToken::from_yoctonear(1),
+            .function_call(
+                FnCallBuilder::new("ft_transfer_call")
+                    .json_args(json!({
+                        "receiver_id": receiver_id,
+                        "amount": U128(amount),
+                        "msg": msg,
+                    }))
+                    .with_gas(Gas::from_tgas(100))
+                    .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await
+            .await?
+            .json::<U128>()
             .map(|u| u.0)
+            .map_err(Into::into)
     }
 
     async fn mt_balance_of(
@@ -382,7 +381,7 @@ impl DefuseAccountExt for SigningAccount {
         token_id: &TokenId,
     ) -> anyhow::Result<u128> {
         defuse
-            .call_function_json::<U128>(
+            .call_view_function_json::<U128>(
                 "mt_balance_of",
                 json!({
                     "account_id": account_id,
@@ -402,19 +401,21 @@ impl DefuseAccountExt for SigningAccount {
         msg: &str,
     ) -> Result<Vec<u128>, TxError> {
         self.tx(defuse.id().clone())
-            .function_call_json::<Vec<U128>>(
-                "mt_transfer_call",
-                json!({
-                    "receiver_id": receiver_id,
-                    "token_id": token_id.to_string(),
-                    "amount": U128(amount),
-                    "msg": msg,
-                }),
-                Gas::from_tgas(300),
-                NearToken::from_yoctonear(1),
+            .function_call(
+                FnCallBuilder::new("mt_transfer_call")
+                    .json_args(json!({
+                        "receiver_id": receiver_id,
+                        "token_id": token_id.to_string(),
+                        "amount": U128(amount),
+                        "msg": msg,
+                    }))
+                    .with_gas(Gas::from_tgas(300))
+                    .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await
+            .await?
+            .json::<Vec<U128>>()
             .map(|v| v.into_iter().map(|u| u.0).collect())
+            .map_err(Into::into)
     }
 
     async fn call_on_auth(
@@ -424,17 +425,17 @@ impl DefuseAccountExt for SigningAccount {
         msg: &str,
     ) -> Result<(), TxError> {
         self.tx(transfer_auth_instance.clone())
-            .function_call_json::<()>(
-                "on_auth",
-                json!({
-                    "signer_id": signer_id,
-                    "msg": msg,
-                }),
-                Gas::from_tgas(50),
-                NearToken::from_yoctonear(1),
+            .function_call(
+                FnCallBuilder::new("on_auth")
+                    .json_args(json!({
+                        "signer_id": signer_id,
+                        "msg": msg,
+                    }))
+                    .with_gas(Gas::from_tgas(50))
+                    .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .no_result()
             .await
+            .map(|_| ())
     }
 
     async fn defuse_add_public_key(
@@ -443,16 +444,16 @@ impl DefuseAccountExt for SigningAccount {
         public_key: defuse_crypto::PublicKey,
     ) -> Result<(), TxError> {
         self.tx(defuse.id().clone())
-            .function_call_json::<()>(
-                "add_public_key",
-                json!({
-                    "public_key": public_key,
-                }),
-                Gas::from_tgas(50),
-                NearToken::from_yoctonear(1),
+            .function_call(
+                FnCallBuilder::new("add_public_key")
+                    .json_args(json!({
+                        "public_key": public_key,
+                    }))
+                    .with_gas(Gas::from_tgas(50))
+                    .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .no_result()
             .await
+            .map(|_| ())
     }
 
     async fn defuse_has_public_key(
@@ -461,7 +462,7 @@ impl DefuseAccountExt for SigningAccount {
         public_key: &defuse_crypto::PublicKey,
     ) -> anyhow::Result<bool> {
         defuse
-            .call_function_json(
+            .call_view_function_json(
                 "has_public_key",
                 json!({
                     "account_id": account_id,
@@ -473,7 +474,7 @@ impl DefuseAccountExt for SigningAccount {
 
     async fn defuse_current_salt(defuse: &Account) -> anyhow::Result<[u8; 32]> {
         defuse
-            .call_function_json::<[u8; 32]>("current_salt", json!({}))
+            .call_view_function_json::<[u8; 32]>("current_salt", json!({}))
             .await
     }
 
@@ -576,11 +577,10 @@ impl DefuseAccountExt for SigningAccount {
         // Note: RPC may return parsing error but the tx succeeds
         let _ = self
             .tx(defuse.id().clone())
-            .function_call_json::<serde_json::Value>(
-                "execute_intents",
-                json!({ "signed": [multi_payload] }),
-                Gas::from_tgas(300),
-                NearToken::from_yoctonear(0),
+            .function_call(
+                FnCallBuilder::new("execute_intents")
+                    .json_args(json!({ "signed": [multi_payload] }))
+                    .with_gas(Gas::from_tgas(300)),
             )
             .await;
 
@@ -631,14 +631,13 @@ impl DefuseAccountExt for SigningAccount {
         let multi_payload = MultiPayload::Nep413(signed_payload);
 
         // Execute the intent via defuse
-        // repotrts erro but goes through
+        // reports error but goes through
         let _ = self
             .tx(defuse.id().clone())
-            .function_call_json::<serde_json::Value>(
-                "execute_intents",
-                json!({ "signed": [multi_payload] }),
-                Gas::from_tgas(300),
-                NearToken::from_yoctonear(0),
+            .function_call(
+                FnCallBuilder::new("execute_intents")
+                    .json_args(json!({ "signed": [multi_payload] }))
+                    .with_gas(Gas::from_tgas(300)),
             )
             .await;
 
@@ -653,11 +652,10 @@ impl DefuseAccountExt for SigningAccount {
         // Note: RPC may return parsing error but the tx succeeds
         let _ = self
             .tx(defuse.id().clone())
-            .function_call_json::<serde_json::Value>(
-                "execute_intents",
-                json!({ "signed": payloads }),
-                Gas::from_tgas(300),
-                NearToken::from_yoctonear(0),
+            .function_call(
+                FnCallBuilder::new("execute_intents")
+                    .json_args(json!({ "signed": payloads }))
+                    .with_gas(Gas::from_tgas(300)),
             )
             .await;
 

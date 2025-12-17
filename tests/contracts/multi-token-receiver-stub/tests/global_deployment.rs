@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use defuse_sandbox::{Account, Sandbox};
 use multi_token_receiver_stub::ext::MtReceiverStubAccountExt;
-use near_sdk::borsh::{self, BorshSerialize};
+use near_sdk::{AccountId, borsh::{self, BorshSerialize}};
 
 /// Helper to serialize a struct into raw state format (BTreeMap<Vec<u8>, Vec<u8>>)
 fn serialize_to_raw_state<T: BorshSerialize>(value: &T) -> BTreeMap<Vec<u8>, Vec<u8>> {
@@ -12,7 +12,7 @@ fn serialize_to_raw_state<T: BorshSerialize>(value: &T) -> BTreeMap<Vec<u8>, Vec
 
 #[tokio::test]
 async fn different_states_produce_different_addresses() {
-    let sandbox = Sandbox::new().await;
+    let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
 
     // Deploy global contract
@@ -43,6 +43,6 @@ async fn different_states_produce_different_addresses() {
     let acc_a = Account::new(account_a.clone(), root.network_config().clone());
     let acc_b = Account::new(account_b.clone(), root.network_config().clone());
 
-    assert!(acc_a.exists().await, "Account A should exist");
-    assert!(acc_b.exists().await, "Account B should exist");
+    assert!(acc_a.view().await.is_ok(), "Account A should exist");
+    assert!(acc_b.view().await.is_ok(), "Account B should exist");
 }

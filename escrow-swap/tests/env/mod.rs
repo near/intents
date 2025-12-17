@@ -7,12 +7,12 @@ use std::sync::LazyLock;
 
 use defuse_fees::Pips;
 use defuse_sandbox::{
-    Account, Sandbox, SigningAccount, TxResult,
+    Account, FnCallBuilder, Sandbox, SigningAccount, TxResult,
     api::types::transaction::actions::GlobalContractDeployMode,
 };
 use futures::join;
 use impl_tools::autoimpl;
-use near_sdk::{AccountId, Gas, GlobalContractId, NearToken, serde_json::json};
+use near_sdk::{AccountId, GlobalContractId, NearToken, serde_json::json};
 
 use crate::env::utils::read_wasm;
 
@@ -32,7 +32,7 @@ pub struct BaseEnv {
 
 impl BaseEnv {
     pub async fn new() -> TxResult<Self> {
-        let sandbox = Sandbox::new().await;
+        let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
 
         let wnear = sandbox.root().deploy_wnear("wnear").await;
         let (verifier, escrow_global) = join!(
@@ -70,8 +70,7 @@ impl AccountExt for SigningAccount {
             .create_account()
             .transfer(NearToken::from_near(20))
             .deploy(WNEAR_WASM.clone())
-            .function_call_json::<()>("new", (), Gas::from_tgas(50), NearToken::from_yoctonear(0))
-            .no_result()
+            .function_call(FnCallBuilder::new("new"))
             .await
             .unwrap();
 
@@ -85,9 +84,8 @@ impl AccountExt for SigningAccount {
             .create_account()
             .transfer(NearToken::from_near(20))
             .deploy(VERIFIER_WASM.clone())
-            .function_call_json::<()>(
-                "new",
-                json!({
+            .function_call(
+                FnCallBuilder::new("new").json_args(json!({
                     "config": json!({
                         "wnear_id": wnear_id,
                         "fees": {
@@ -95,11 +93,8 @@ impl AccountExt for SigningAccount {
                             "fee_collector": self.id().clone(),
                         },
                     }),
-                }),
-                Gas::from_tgas(50),
-                NearToken::from_yoctonear(0),
+                })),
             )
-            .no_result()
             .await
             .unwrap();
 

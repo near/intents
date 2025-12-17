@@ -5,25 +5,18 @@ use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 use crate::{TokenIdType, error::TokenIdError};
 
-#[cfg(any(feature = "arbitrary", test))]
-use arbitrary_with::{Arbitrary, As};
-#[cfg(any(feature = "arbitrary", test))]
-use defuse_near_utils::arbitrary::ArbitraryAccountId;
-
-#[cfg_attr(any(feature = "arbitrary", test), derive(Arbitrary))]
+#[cfg_attr(any(feature = "arbitrary", test), derive(::arbitrary::Arbitrary))]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr)]
 #[near(serializers = [borsh])]
 pub struct Nep141TokenId {
-    #[cfg_attr(
-        any(feature = "arbitrary", test),
-        arbitrary(with = As::<ArbitraryAccountId>::arbitrary),
-    )]
     pub contract_id: AccountId,
 }
 
 impl Nep141TokenId {
-    pub const fn new(contract_id: AccountId) -> Self {
-        Self { contract_id }
+    pub fn new(contract_id: impl Into<AccountId>) -> Self {
+        Self {
+            contract_id: contract_id.into(),
+        }
     }
 }
 

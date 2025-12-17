@@ -38,7 +38,7 @@ All params of the escrow are fixed at the time of initialization and immutable:
   // * `nep245:<CONTRACT_ID>:<TOKEN_ID>`
   "dst_token": "nep245:intents.near:nep141:wrap.near",
 
-  // The mininum price, expressed as decimal floating-point number
+  // The minimum price, expressed as decimal floating-point number
   // representing the amount of raw units of `dst_token` per 1 raw unit
   // of `src_token`, i.e. dst per 1 src.
   "price": "0.0000001667",
@@ -102,7 +102,7 @@ All params of the escrow are fixed at the time of initialization and immutable:
     // 1 pip == 1/100th of bip == 0.0001%.
     "surplus": 50000, // 5%
 
-    // Recepient of protocol fees.
+    // Recipient of protocol fees.
     "collector": "protocol.near"
   },
 
@@ -136,7 +136,7 @@ defined in [NEP-616][1].
 ### Deploy and Fund
 
 In order to fund the contract with `src_token`, the maker sends it to the escrow contract
-by calling `src_token::ft/mt_ransfer_call()` with following `msg` param:
+by calling `src_token::ft/mt_transfer_call()` with following `msg` param:
 
 ```jsonc
 {
@@ -148,7 +148,7 @@ by calling `src_token::ft/mt_ransfer_call()` with following `msg` param:
 ```
 
 The contract also needs to be initialized via [`state_init()`][2] first.
-This can be done either by maker or any other account permissionlessly before trigerring the
+This can be done either by maker or any other account permissionlessly before triggering the
 transfer, or there can be a custom support for calling [`state_init()`][2] before
 `ft/mt_on_transfer()` implemented on `src_token` level (e.g. `intents.near`):
 
@@ -157,7 +157,6 @@ transfer, or there can be a custom support for calling [`state_init()`][2] befor
 
 ```mermaid
 sequenceDiagram
-  participant maker as maker.near
   participant maker as maker.near
   participant src_token as src_token FT/MT
 
@@ -295,7 +294,7 @@ sequenceDiagram
         end
       end
     end
-    escrow->>+escrow: escrow_resolve_transfers()
+    escrow->>+escrow: es_resolve_transfers()
     opt
       Note over escrow: MakerLost {dst: amount}
     end
@@ -314,18 +313,18 @@ sequenceDiagram
 
 ### Close and Refund
 
-The escrow contract can be closed by calling `escrow_close({"params": {...}})`
+The escrow contract can be closed by calling `es_close({"params": {...}})`
 method if at least one of the following conditions is met:
 * `deadline` has already expired (permissionless)
 * by single-whitelisted taker, i.e. to refund the maker before the `deadline`
 * by `maker` when `maker_src_remaining` is zero
 
-After being closed, the contract does not allow funding and anymore.
+After being closed, the contract does not allow funding anymore.
 Instead, the contract automatically refunds `maker_src_remaining` (if any)
 and retries sending `maker_dst_lost` (if any) and deletes itself if no more
 tokens were lost.
 
-Alternatively, a fully permissionless `lost_found({"params": {...}})` method can be called
+Alternatively, a fully permissionless `es_lost_found({"params": {...}})` method can be called
 to retry sending `maker_dst_lost` (if any) even before the `deadline`.
 
 Both methods return a boolean indicating whether the contract was deleted, so
@@ -343,16 +342,16 @@ sequenceDiagram
   alt Close
     rect rgba(208, 135, 112, 0.5)
       alt closed || deadline expired (permissionless)
-        maker->>+escrow: escrow_close(params)
+        maker->>+escrow: es_close(params)
       else single-whitelisted taker
-        taker->>escrow: escrow_close(params)
+        taker->>escrow: es_close(params)
       else maker_src_remaining == 0
-        maker->>escrow: escrow_close(params)
+        maker->>escrow: es_close(params)
       end
     end
     Note over escrow: Close
   else Lost/Found (permissionless)
-    maker->>escrow: escrow_lost_found(params)
+    maker->>escrow: es_lost_found(params)
   end
   
   rect rgba(143, 188, 187, 0.1)
@@ -384,7 +383,7 @@ sequenceDiagram
         end
       end
       
-      escrow->>+escrow: escrow_resolve_transfers()
+      escrow->>+escrow: es_resolve_transfers()
       opt
         Note over escrow: MakerLost { ?src, ?dst }
       end
@@ -400,7 +399,7 @@ sequenceDiagram
 
 ## View Methods
 
-Once deployed, `escrow_view()` view-method can be used to retrieve the current
+Once deployed, `es_view()` view-method can be used to retrieve the current
 state:
 
 ```jsonc

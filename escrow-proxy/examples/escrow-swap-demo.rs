@@ -32,7 +32,7 @@ use defuse_escrow_swap::Params;
 use defuse_escrow_swap::action::{
     FillAction, TransferAction, TransferMessage as EscrowTransferMessage,
 };
-use defuse_price::Price;
+use defuse_escrow_swap::decimal::UD128;
 use defuse_sandbox::api::{NetworkConfig, SecretKey, Signer};
 use defuse_sandbox::{Account, SigningAccount};
 use defuse_token_id::TokenId;
@@ -197,12 +197,12 @@ async fn main() -> Result<()> {
     // 3. Create SigningAccount from credentials
     let secret_key: SecretKey = pkey.parse()?;
     let signer = Signer::from_secret_key(secret_key.clone())?;
-    let root = SigningAccount::new(Account::new(user.parse()?, network_config.clone()), signer);
+    let root = SigningAccount::new(Account::new(user.parse::<AccountId>()?, network_config.clone()), signer);
     let proxy: AccountId = PROXY.parse().unwrap();
 
     let src_token: TokenId = Nep141TokenId::from_str(SRC_NEP245_TOKEN_ID).unwrap().into();
     let dst_token: TokenId = Nep141TokenId::from_str(DST_NEP245_TOKEN_ID).unwrap().into();
-    let defuse = Account::new(DEFUSE_INSTANCE.parse()?, network_config.clone());
+    let defuse = Account::new(DEFUSE_INSTANCE.parse::<AccountId>()?, network_config.clone());
 
     // 4. Derive subaccount keys (deterministic, no network calls)
     println!("\n--- Deriving Subaccount Keys ---");
@@ -230,11 +230,11 @@ async fn main() -> Result<()> {
     // ESCROW SWAP PARAMS
     let escrow_params = Params {
         maker: maker_signing.id().clone(),
-        src_token: Nep245TokenId::new(VERIFIER_CONTRACT.parse().unwrap(), src_token.to_string())
+        src_token: Nep245TokenId::new(VERIFIER_CONTRACT.parse::<AccountId>().unwrap(), src_token.to_string())
             .into(),
-        dst_token: Nep245TokenId::new(VERIFIER_CONTRACT.parse().unwrap(), dst_token.to_string())
+        dst_token: Nep245TokenId::new(VERIFIER_CONTRACT.parse::<AccountId>().unwrap(), dst_token.to_string())
             .into(),
-        price: Price::ONE,
+        price: UD128::ONE,
         deadline, // 5 min
         partial_fills_allowed: false,
         refund_src_to: defuse_escrow_swap::OverrideSend::default(),
@@ -270,7 +270,7 @@ async fn main() -> Result<()> {
     let escrow_fill_msg = EscrowTransferMessage {
         params: escrow_params.clone(),
         action: TransferAction::Fill(FillAction {
-            price: Price::ONE,
+            price: UD128::ONE,
             deadline,
             receive_src_to: defuse_escrow_swap::OverrideSend::default()
                 .receiver_id(taker_signing.id().clone()),
@@ -421,7 +421,7 @@ async fn main() -> Result<()> {
     // Query escrow-swap instance state
     let escrow_account = Account::new(escrow_instance_id.clone(), network_config.clone());
     let escrow_state: defuse_escrow_swap::Storage = escrow_account
-        .call_function_json("escrow_view", serde_json::json!({}))
+        .call_view_function_json("escrow_view", serde_json::json!({}))
         .await?;
     println!(
         "  Escrow state: {}",
@@ -432,7 +432,7 @@ async fn main() -> Result<()> {
     let transfer_auth_account =
         Account::new(transfer_auth_instance_id.clone(), network_config.clone());
     let transfer_auth_state: defuse_transfer_auth::storage::ContractStorage = transfer_auth_account
-        .call_function_json("view", serde_json::json!({}))
+        .call_view_function_json("view", serde_json::json!({}))
         .await?;
     println!(
         "  Transfer-auth state: {}",

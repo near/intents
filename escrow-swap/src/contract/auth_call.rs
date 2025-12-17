@@ -11,7 +11,6 @@ use super::{Contract, ContractExt};
 
 #[near]
 impl AuthCallee for Contract {
-    // TODO: payable?
     fn on_auth(&mut self, signer_id: AccountId, msg: String) -> PromiseOrValue<()> {
         self.internal_on_auth(&signer_id, msg).unwrap_or_panic()
     }

@@ -227,14 +227,14 @@ mod tests {
     #[test]
     fn closure_delta(
         #[values(
-            (Nep141TokenId::new("ft.near".parse().unwrap()).into(), 1_000_000),
-            (Nep141TokenId::new("ft.near".parse().unwrap()).into(), -1_000_000),
-            (Nep171TokenId::new("nft.near".parse().unwrap(), "1".to_string()).into(), 1),
-            (Nep171TokenId::new("nft.near".parse().unwrap(), "1".to_string()).into(), -1),
-            (Nep245TokenId::new("mt.near".parse().unwrap(), "ft1".to_string()).into(), 1_000_000),
-            (Nep245TokenId::new("mt.near".parse().unwrap(), "ft1".to_string()).into(), -1_000_000),
-            (Nep245TokenId::new("mt.near".parse().unwrap(), "nft1".to_string()).into(), 1),
-            (Nep245TokenId::new("mt.near".parse().unwrap(), "nft1".to_string()).into(), -1),
+            (Nep141TokenId::new("ft.near".parse::<AccountId>().unwrap()).into(), 1_000_000),
+            (Nep141TokenId::new("ft.near".parse::<AccountId>().unwrap()).into(), -1_000_000),
+            (Nep171TokenId::new("nft.near".parse::<AccountId>().unwrap(), "1".to_string()).into(), 1),
+            (Nep171TokenId::new("nft.near".parse::<AccountId>().unwrap(), "1".to_string()).into(), -1),
+            (Nep245TokenId::new("mt.near".parse::<AccountId>().unwrap(), "ft1".to_string()).into(), 1_000_000),
+            (Nep245TokenId::new("mt.near".parse::<AccountId>().unwrap(), "ft1".to_string()).into(), -1_000_000),
+            (Nep245TokenId::new("mt.near".parse::<AccountId>().unwrap(), "nft1".to_string()).into(), 1),
+            (Nep245TokenId::new("mt.near".parse::<AccountId>().unwrap(), "nft1".to_string()).into(), -1),
         )]
         token_delta: (TokenId, i128),
         #[values(
@@ -279,8 +279,8 @@ mod tests {
         )]
         fee: Pips,
     ) {
-        let [t1, t2, t3] =
-            ["ft1", "ft2", "ft3"].map(|t| TokenId::from(Nep141TokenId::new(t.parse().unwrap())));
+        let [t1, t2, t3] = ["ft1", "ft2", "ft3"]
+            .map(|t| TokenId::from(Nep141TokenId::new(t.parse::<AccountId>().unwrap())));
 
         for (d1, d2, d3) in [0, 1, -1, 50, -50, 100, -100, 300, -300, 10_000, -10_000]
             .into_iter()
@@ -316,8 +316,8 @@ mod tests {
     #[rstest]
     #[test]
     fn arbitrage_means_somebody_looses(#[values(Pips::ZERO, Pips::ONE_BIP)] fee: Pips) {
-        let [t1, t2, t3] =
-            ["ft1", "ft2", "ft3"].map(|t| TokenId::from(Nep141TokenId::new(t.parse().unwrap())));
+        let [t1, t2, t3] = ["ft1", "ft2", "ft3"]
+            .map(|t| TokenId::from(Nep141TokenId::new(t.parse::<AccountId>().unwrap())));
 
         let closure = TokenDiff::closure_deltas(
             [

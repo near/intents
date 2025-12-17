@@ -1,18 +1,18 @@
 use std::time::Duration;
 
-use defuse_sandbox::{Account, Sandbox, UnwrapGlobalContractDeployment};
+use defuse_sandbox::{Account, FnCallBuilder, Sandbox, UnwrapGlobalContractDeployment};
 use defuse_transfer_auth::ext::TransferAuthAccountExt;
 use defuse_transfer_auth::storage::{ContractStorage, StateInit as TransferAuthStateInit};
 use near_sdk::{
-    Gas, GlobalContractId, NearToken,
+    AccountId, Gas, GlobalContractId, NearToken,
+    serde_json::json,
     state_init::{StateInit, StateInitV1},
 };
-use serde_json::json;
 const INIT_BALANCE: NearToken = NearToken::from_near(100);
 
 #[tokio::test]
 async fn transfer_auth_global_deployment() {
-    let sandbox = Sandbox::new().await;
+    let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
 
     let transfer_auth_global = sandbox.root().deploy_transfer_auth("auth").await;
@@ -65,21 +65,13 @@ async fn transfer_auth_global_deployment() {
         .unwrap_global_contract_deployment();
     assert!(result, "state_init should succeed");
 
-    let _ = proxy
-        .tx(auth_transfer_for_solver1)
-        .function_call_json::<ContractStorage>(
-            "view",
-            "{}",
-            Gas::from_tgas(300),
-            NearToken::from_near(0),
-        )
-        .await
-        .unwrap();
+    let account = Account::new(auth_transfer_for_solver1, proxy.network_config().clone());
+    let _: ContractStorage = account.call_view_function_json("view", json!({})).await.unwrap();
 }
 
 #[tokio::test]
 async fn on_auth_call() {
-    let sandbox = Sandbox::new().await;
+    let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
 
     let transfer_auth_global = root.deploy_transfer_auth("auth").await;
@@ -107,11 +99,10 @@ async fn on_auth_call() {
     // unauthorized contract (relay vs auth_contract)
     relay
         .tx(transfer_auth_instance.clone())
-        .function_call_json::<()>(
-            "on_auth",
-            json!({ "signer_id": relay.id(), "msg": "" }),
-            Gas::from_tgas(300),
-            NearToken::from_near(0),
+        .function_call(
+            FnCallBuilder::new("on_auth")
+                .json_args(json!({ "signer_id": relay.id(), "msg": "" }))
+                .with_gas(Gas::from_tgas(300)),
         )
         .await
         .unwrap_err();
@@ -119,22 +110,20 @@ async fn on_auth_call() {
     // unauthorized callee (auth_contract vs relay)
     auth_contract
         .tx(transfer_auth_instance.clone())
-        .function_call_json::<()>(
-            "on_auth",
-            json!({ "signer_id": auth_contract.id(), "msg": "" }),
-            Gas::from_tgas(300),
-            NearToken::from_near(0),
+        .function_call(
+            FnCallBuilder::new("on_auth")
+                .json_args(json!({ "signer_id": auth_contract.id(), "msg": "" }))
+                .with_gas(Gas::from_tgas(300)),
         )
         .await
         .unwrap_err();
 
     auth_contract
         .tx(transfer_auth_instance.clone())
-        .function_call_json::<()>(
-            "on_auth",
-            json!({ "signer_id": relay.id(), "msg": "" }),
-            Gas::from_tgas(300),
-            NearToken::from_near(0),
+        .function_call(
+            FnCallBuilder::new("on_auth")
+                .json_args(json!({ "signer_id": relay.id(), "msg": "" }))
+                .with_gas(Gas::from_tgas(300)),
         )
         .await
         .unwrap();
@@ -142,7 +131,7 @@ async fn on_auth_call() {
 
 #[tokio::test]
 async fn transfer_auth_early_authorization() {
-    let sandbox = Sandbox::new().await;
+    let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
 
     let transfer_auth_global = root.deploy_transfer_auth("auth").await;
@@ -167,36 +156,34 @@ async fn transfer_auth_early_authorization() {
         .deploy_transfer_auth_instance(transfer_auth_global.clone(), state)
         .await;
 
-    // assert!(Account::new(transfer_auth_instance.clone(), root.network_config().clone()).exists().await);
+    // assert!(Account::new(transfer_auth_instance.clone(), root.network_config().clone()).view().await.is_ok());
 
     auth_contract
         .tx(transfer_auth_instance.clone())
-        .function_call_json::<()>(
-            "on_auth",
-            json!({ "signer_id": relay.id(), "msg": "" }),
-            Gas::from_tgas(300),
-            NearToken::from_near(0),
+        .function_call(
+            FnCallBuilder::new("on_auth")
+                .json_args(json!({ "signer_id": relay.id(), "msg": "" }))
+                .with_gas(Gas::from_tgas(300)),
         )
         .await
         .unwrap();
 
     proxy
         .tx(transfer_auth_instance.clone())
-        .function_call_json::<bool>(
-            "wait_for_authorization",
-            json!({}),
-            Gas::from_tgas(300),
-            NearToken::from_near(0),
+        .function_call(
+            FnCallBuilder::new("wait_for_authorization")
+                .json_args(json!({}))
+                .with_gas(Gas::from_tgas(300)),
         )
         .await
         .unwrap();
 
-    // assert!(!Account::new(transfer_auth_instance.clone(), root.network_config().clone()).exists().await);
+    // assert!(!Account::new(transfer_auth_instance.clone(), root.network_config().clone()).view().await.is_ok());
 }
 
 #[tokio::test]
 async fn transfer_auth_async_authorization() {
-    let sandbox = Sandbox::new().await;
+    let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
 
     let transfer_auth_global = root.deploy_transfer_auth("auth").await;
@@ -228,11 +215,10 @@ async fn transfer_auth_async_authorization() {
         async move {
             proxy
                 .tx(transfer_auth_instance.clone())
-                .function_call_json::<bool>(
-                    "wait_for_authorization",
-                    json!({}),
-                    Gas::from_tgas(300),
-                    NearToken::from_near(0),
+                .function_call(
+                    FnCallBuilder::new("wait_for_authorization")
+                        .json_args(json!({}))
+                        .with_gas(Gas::from_tgas(300)),
                 )
                 .await
                 .unwrap()
@@ -244,16 +230,16 @@ async fn transfer_auth_async_authorization() {
 
     assert!(
         Account::new(transfer_auth_instance.clone(), network_config.clone())
-            .exists()
+            .view()
             .await
+            .is_ok()
     );
     auth_contract
         .tx(transfer_auth_instance.clone())
-        .function_call_json::<()>(
-            "on_auth",
-            json!({ "signer_id": relay.id(), "msg": "" }),
-            Gas::from_tgas(300),
-            NearToken::from_near(0),
+        .function_call(
+            FnCallBuilder::new("on_auth")
+                .json_args(json!({ "signer_id": relay.id(), "msg": "" }))
+                .with_gas(Gas::from_tgas(300)),
         )
         .await
         .unwrap();
@@ -263,7 +249,7 @@ async fn transfer_auth_async_authorization() {
 
 #[tokio::test]
 async fn transfer_auth_async_authorization_timeout() {
-    let sandbox = Sandbox::new().await;
+    let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
 
     let transfer_auth_global = root.deploy_transfer_auth("auth").await;
@@ -290,28 +276,27 @@ async fn transfer_auth_async_authorization_timeout() {
 
     let wait_for_authorization = proxy
         .tx(transfer_auth_instance.clone())
-        .function_call_json::<bool>(
-            "wait_for_authorization",
-            json!({}),
-            Gas::from_tgas(300),
-            NearToken::from_near(0),
+        .function_call(
+            FnCallBuilder::new("wait_for_authorization")
+                .json_args(json!({}))
+                .with_gas(Gas::from_tgas(300)),
         );
 
     let forward_time = sandbox.fast_forward(200);
 
-    // assert!(Account::new(transfer_auth_instance.clone(), network_config.clone()).exists().await);
+    // assert!(Account::new(transfer_auth_instance.clone(), network_config.clone()).view().await.is_ok());
     let (authorized, ()) = futures::join!(async { wait_for_authorization.await }, forward_time);
 
     // Timeout returns false (not authorized)
-    assert!(!authorized.unwrap());
+    assert!(authorized.unwrap().json::<bool>().is_ok());
 
     // Contract should still exist after timeout (state reset to Idle for retry)
-    // assert!(Account::new(transfer_auth_instance.clone(), network_config.clone()).exists().await);
+    // assert!(Account::new(transfer_auth_instance.clone(), network_config.clone()).view().await.is_ok());
 }
 
 #[tokio::test]
 async fn transfer_auth_retry_after_timeout_with_on_auth() {
-    let sandbox = Sandbox::new().await;
+    let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
 
     let transfer_auth_global = root.deploy_transfer_auth("auth").await;
@@ -339,11 +324,10 @@ async fn transfer_auth_retry_after_timeout_with_on_auth() {
     // First wait_for_authorization - will timeout
     let wait_for_authorization = proxy
         .tx(transfer_auth_instance.clone())
-        .function_call_json::<bool>(
-            "wait_for_authorization",
-            json!({}),
-            Gas::from_tgas(300),
-            NearToken::from_near(0),
+        .function_call(
+            FnCallBuilder::new("wait_for_authorization")
+                .json_args(json!({}))
+                .with_gas(Gas::from_tgas(300)),
         );
 
     let forward_time = sandbox.fast_forward(200);
@@ -351,16 +335,15 @@ async fn transfer_auth_retry_after_timeout_with_on_auth() {
     let (authorized, ()) = futures::join!(async { wait_for_authorization.await }, forward_time);
 
     // First attempt should timeout and return false
-    assert!(!authorized.unwrap());
+    assert!(authorized.unwrap().json::<bool>().is_ok());
 
     // Now call on_auth before second wait_for_authorization
     auth_contract
         .tx(transfer_auth_instance.clone())
-        .function_call_json::<()>(
-            "on_auth",
-            json!({ "signer_id": relay.id(), "msg": "" }),
-            Gas::from_tgas(300),
-            NearToken::from_near(0),
+        .function_call(
+            FnCallBuilder::new("on_auth")
+                .json_args(json!({ "signer_id": relay.id(), "msg": "" }))
+                .with_gas(Gas::from_tgas(300)),
         )
         .await
         .unwrap();
@@ -368,11 +351,10 @@ async fn transfer_auth_retry_after_timeout_with_on_auth() {
     // Second wait_for_authorization should succeed immediately (early authorization path)
     let _ = proxy
         .tx(transfer_auth_instance.clone())
-        .function_call_json::<bool>(
-            "wait_for_authorization",
-            json!({}),
-            Gas::from_tgas(300),
-            NearToken::from_near(0),
+        .function_call(
+            FnCallBuilder::new("wait_for_authorization")
+                .json_args(json!({}))
+                .with_gas(Gas::from_tgas(300)),
         )
         .await
         .unwrap();
@@ -380,7 +362,7 @@ async fn transfer_auth_retry_after_timeout_with_on_auth() {
 
 #[tokio::test]
 async fn transfer_auth_retry_after_timeout_with_on_auth2() {
-    let sandbox = Sandbox::new().await;
+    let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
 
     let transfer_auth_global = root.deploy_transfer_auth("auth").await;
@@ -408,35 +390,32 @@ async fn transfer_auth_retry_after_timeout_with_on_auth2() {
     // First wait_for_authorization - will timeout
     let wait_for_authorization = proxy
         .tx(transfer_auth_instance.clone())
-        .function_call_json::<bool>(
-            "wait_for_authorization",
-            json!({}),
-            Gas::from_tgas(300),
-            NearToken::from_near(0),
+        .function_call(
+            FnCallBuilder::new("wait_for_authorization")
+                .json_args(json!({}))
+                .with_gas(Gas::from_tgas(300)),
         );
     let forward_time = sandbox.fast_forward(200);
     let (authorized, ()) = futures::join!(async { wait_for_authorization.await }, forward_time);
     // First attempt should timeout and return false
-    assert!(!authorized.unwrap());
+    assert!(authorized.unwrap().json::<bool>().is_ok());
 
     let wait_for_authorization = proxy
         .tx(transfer_auth_instance.clone())
-        .function_call_json::<bool>(
-            "wait_for_authorization",
-            json!({}),
-            Gas::from_tgas(300),
-            NearToken::from_near(0),
+        .function_call(
+            FnCallBuilder::new("wait_for_authorization")
+                .json_args(json!({}))
+                .with_gas(Gas::from_tgas(300)),
         );
 
     let (authorized, ()) = futures::join!(async { wait_for_authorization.await }, async {
         tokio::time::sleep(Duration::from_secs(3)).await;
         auth_contract
             .tx(transfer_auth_instance.clone())
-            .function_call_json::<()>(
-                "on_auth",
-                json!({ "signer_id": relay.id(), "msg": "" }),
-                Gas::from_tgas(300),
-                NearToken::from_near(0),
+            .function_call(
+                FnCallBuilder::new("on_auth")
+                    .json_args(json!({ "signer_id": relay.id(), "msg": "" }))
+                    .with_gas(Gas::from_tgas(300)),
             )
             .await
             .unwrap();

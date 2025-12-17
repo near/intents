@@ -1,7 +1,7 @@
 use derive_more::From;
 use near_sdk::near;
 
-use crate::{Deadline, OverrideSend, Params, price::Price};
+use crate::{Deadline, OverrideSend, Params, decimal::UD128};
 
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
@@ -24,7 +24,7 @@ pub enum TransferAction {
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct FillAction {
-    pub price: Price,
+    pub price: UD128,
 
     pub deadline: Deadline,
 

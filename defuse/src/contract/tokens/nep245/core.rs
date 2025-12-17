@@ -2,11 +2,11 @@ use crate::contract::{Contract, ContractExt};
 use defuse_core::{
     DefuseError, Result, engine::StateView, intents::tokens::NotifyOnTransfer, token_id::TokenId,
 };
-use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError};
+use defuse_near_utils::{UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::{MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver};
 use near_plugins::{Pausable, pause};
 use near_sdk::{
-    AccountId, AccountIdRef, Gas, NearToken, Promise, PromiseOrValue, assert_one_yocto,
+    AccountId, AccountIdRef, Gas, NearToken, Promise, PromiseOrValue, assert_one_yocto, env,
     json_types::U128, near, require,
 };
 use std::borrow::Cow;
@@ -45,7 +45,7 @@ impl MultiTokenCore for Contract {
         require!(approvals.is_none(), "approvals are not supported");
 
         self.internal_mt_batch_transfer(
-            self.ensure_auth_predecessor_id(),
+            &self.ensure_auth_predecessor_id(),
             &receiver_id,
             &token_ids,
             &amounts,
@@ -91,7 +91,7 @@ impl MultiTokenCore for Contract {
         require!(approvals.is_none(), "approvals are not supported");
 
         self.internal_mt_batch_transfer_call(
-            self.ensure_auth_predecessor_id().clone(),
+            self.ensure_auth_predecessor_id(),
             receiver_id,
             token_ids,
             amounts,
@@ -261,7 +261,7 @@ impl Contract {
             notify,
         )
         .then(
-            Self::ext(CURRENT_ACCOUNT_ID.clone())
+            Self::ext(env::current_account_id())
                 .with_static_gas(Self::mt_resolve_gas(token_ids.len()))
                 // do not distribute remaining gas here (so that all that's left goes to `mt_on_transfer`)
                 .with_unused_gas_weight(0)

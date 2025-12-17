@@ -34,15 +34,6 @@ const FT_TRANSFER_CALL_GAS_MIN: Gas = Gas::from_tgas(30);
 const FT_TRANSFER_CALL_GAS_DEFAULT: Gas = Gas::from_tgas(50);
 
 impl Sendable for Nep141TokenId {
-    #[inline]
-    fn transfer_gas_min_default(&self, is_call: bool) -> (Gas, Gas) {
-        if is_call {
-            (FT_TRANSFER_CALL_GAS_MIN, FT_TRANSFER_CALL_GAS_DEFAULT)
-        } else {
-            (FT_TRANSFER_GAS_MIN, FT_TRANSFER_GAS_DEFAULT)
-        }
-    }
-
     fn send(
         self,
         receiver_id: AccountId,
@@ -52,11 +43,16 @@ impl Sendable for Nep141TokenId {
         min_gas: Option<Gas>,
         unused_gas: bool,
     ) -> Promise {
-        let gas = self.transfer_gas(min_gas, msg.is_some());
-
         let p = ext_ft_core::ext(self.contract_id)
             .with_attached_deposit(NearToken::from_yoctonear(1))
-            .with_static_gas(gas)
+            .with_static_gas({
+                let (min, default) = if msg.is_some() {
+                    (FT_TRANSFER_CALL_GAS_MIN, FT_TRANSFER_CALL_GAS_DEFAULT)
+                } else {
+                    (FT_TRANSFER_GAS_MIN, FT_TRANSFER_GAS_DEFAULT)
+                };
+                min_gas.unwrap_or(default).max(min)
+            })
             .with_unused_gas_weight(unused_gas.into());
         if let Some(msg) = msg {
             p.ft_transfer_call(receiver_id, U128(amount), memo, msg)

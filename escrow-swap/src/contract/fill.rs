@@ -1,13 +1,14 @@
 use std::{borrow::Cow, collections::BTreeMap};
 
 use defuse_near_utils::{PromiseExt, UnwrapOrPanic};
+use defuse_num_utils::{CheckedDiv, CheckedMul};
 use near_sdk::{AccountId, AccountIdRef, Promise, PromiseOrValue};
 
 use crate::{
     Error, Params, ProtocolFees, Result, State,
     action::FillAction,
+    decimal::UD128,
     event::{EscrowIntentEmit, FillEvent, ProtocolFeesCollected},
-    price::Price,
     token_id::TokenId,
 };
 
@@ -98,9 +99,7 @@ impl State {
 
         // send to taker (no resolve)
         let taker_src_p = params.src_token.send(
-            msg.receive_src_to
-                .receiver_id
-                .unwrap_or_else(|| sender_id.clone()),
+            msg.receive_src_to.receiver_id.unwrap_or(sender_id),
             taker_src_out,
             msg.receive_src_to.memo,
             msg.receive_src_to.msg,
@@ -113,7 +112,13 @@ impl State {
             .and_maybe(send_fees)
             .then(
                 self.callback_resolve_transfers(None, Some(maker_dst))
-                    .return_value(maker_dst.refund_value(taker_dst_in - taker_dst_used)?),
+                    .es_return_value(
+                        maker_dst.refund_value(
+                            taker_dst_in
+                                .checked_sub(taker_dst_used)
+                                .ok_or(Error::IntegerOverflow)?,
+                        )?,
+                    ),
             )
             .into())
     }
@@ -121,12 +126,10 @@ impl State {
     fn taker_swap(
         &self,
         taker_dst_in: u128,
-        taker_price: Price,
+        taker_price: UD128,
         partial_fills_allowed: bool,
     ) -> Result<(u128, u128)> {
-        // TODO: rounding everywhere?
-        let taker_want_src = taker_price
-            .src_floor_checked(taker_dst_in)
+        let taker_want_src = <u128 as CheckedDiv<UD128>>::checked_div(taker_dst_in, taker_price)
             .ok_or(Error::IntegerOverflow)?;
         if taker_want_src < self.maker_src_remaining {
             if !partial_fills_allowed {
@@ -136,8 +139,8 @@ impl State {
         } else {
             Ok((
                 self.maker_src_remaining,
-                taker_price
-                    .dst_ceil_checked(self.maker_src_remaining)
+                self.maker_src_remaining
+                    .checked_mul_ceil(taker_price)
                     .ok_or(Error::IntegerOverflow)?,
             ))
         }
@@ -184,13 +187,12 @@ impl ProtocolFees {
         self,
         src_out: u128,
         taker_dst_used: u128,
-        maker_price: Price,
+        maker_price: UD128,
     ) -> Result<ProtocolFeesCollected<'static>> {
         Ok(ProtocolFeesCollected {
             fee: self.fee.fee_ceil(taker_dst_used),
             surplus: if !self.surplus.is_zero() {
-                let maker_want_dst = maker_price
-                    .dst_ceil_checked(src_out)
+                let maker_want_dst = <u128 as CheckedMul<UD128>>::checked_mul(src_out, maker_price)
                     .ok_or(Error::IntegerOverflow)?;
                 let surplus = taker_dst_used.saturating_sub(maker_want_dst);
                 self.surplus.fee_ceil(surplus)

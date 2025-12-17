@@ -1,6 +1,10 @@
 use anyhow::Result;
+use defuse_poa_factory::sandbox_ext::PoAFactoryExt;
+use defuse_sandbox::{
+    Account, SigningAccount,
+    extensions::{acl::AclExt, mt::MtViewExt},
+};
 use near_sdk::AccountId;
-use near_workspaces::Account;
 use std::{collections::HashSet, convert::Infallible, sync::atomic::Ordering};
 
 use defuse::{
@@ -12,24 +16,22 @@ use defuse::{
         token_id::{TokenId, nep141::Nep141TokenId},
     },
     nep245::Token,
+    sandbox_ext::{
+        account_manager::AccountViewExt, deployer::DefuseExt, intents::ExecuteIntentsExt,
+    },
 };
 use defuse_randomness::{Rng, make_true_rng};
-use futures::{StreamExt, TryStreamExt, future::try_join_all};
+use futures::{
+    StreamExt, TryStreamExt,
+    future::{join_all, try_join_all},
+};
 
-use crate::{
-    tests::{
-        defuse::{
-            DefuseExt, DefuseSigner, SigningStandard,
-            accounts::AccountManagerExt,
-            env::{
-                Env,
-                state::{AccountWithTokens, PersistentState},
-            },
-            intents::ExecuteIntentsExt,
-        },
-        poa::factory::PoAFactoryExt,
+use crate::tests::defuse::{
+    DefuseSigner,
+    env::{
+        Env,
+        state::{AccountWithTokens, PersistentState},
     },
-    utils::{ParentAccount, acl::AclExt, mt::MtExt},
 };
 
 impl Env {
@@ -39,13 +41,9 @@ impl Env {
             .await
             .expect("Failed to generate state");
 
-        self.acl_grant_role(
-            self.defuse.id(),
-            Role::Upgrader,
-            self.sandbox.root_account().id(),
-        )
-        .await
-        .expect("Failed to grant upgrader role");
+        self.acl_grant_role(self.defuse.id(), Role::Upgrader, self.root().id())
+            .await
+            .expect("Failed to grant upgrader role");
 
         self.upgrade_defuse(self.defuse.id())
             .await
@@ -60,11 +58,7 @@ impl Env {
     }
 
     async fn generate_storage_data(&self) -> Result<PersistentState> {
-        let state = PersistentState::generate(
-            self.sandbox.root_account(),
-            self.poa_factory.as_account(),
-            self.seed,
-        );
+        let state = PersistentState::generate(self.root(), &self.poa_factory, self.seed);
 
         self.apply_tokens(&state).await?;
         self.apply_accounts(&state).await?;
@@ -97,22 +91,29 @@ impl Env {
     }
 
     async fn apply_token(&self, token_id: &Nep141TokenId) -> Result<()> {
-        let root = self.sandbox.root_account();
-        let token_name = self.poa_factory.subaccount_name(&token_id.contract_id);
+        let root = self.root();
+        let token_name = token_id
+            .contract_id
+            .as_str()
+            .trim_end_matches(&format!(".{}", self.poa_factory.id()));
 
         let token = root
             .poa_factory_deploy_token(self.poa_factory.id(), &token_name, None)
             .await?;
 
-        self.ft_storage_deposit_for_accounts(&token, vec![root.id(), self.defuse.id()])
+        self.ft_storage_deposit_for_accounts(token.id(), vec![root.id(), self.defuse.id()])
             .await?;
 
-        self.ft_deposit_to_root(&token).await?;
+        self.ft_deposit_to_root(token.id()).await?;
 
         Ok(())
     }
 
-    async fn apply_public_keys(&self, acc: &Account, data: &AccountWithTokens) -> Result<()> {
+    async fn apply_public_keys(
+        &self,
+        acc: &SigningAccount,
+        data: &AccountWithTokens,
+    ) -> Result<()> {
         let intents = data
             .data
             .public_keys
@@ -124,37 +125,35 @@ impl Env {
             })
             .collect();
 
-        self.defuse
-            .execute_intents_without_simulation([acc.sign_defuse_message(
-                SigningStandard::default(),
+        self.root()
+            .execute_intents(
                 self.defuse.id(),
-                make_true_rng().random(),
-                Deadline::MAX,
-                DefuseIntents { intents },
-            )])
+                [acc.sign_defuse_message(
+                    self.defuse.id(),
+                    make_true_rng().random(),
+                    Deadline::MAX,
+                    DefuseIntents { intents },
+                )
+                .await],
+            )
             .await?;
 
         Ok(())
     }
 
-    async fn apply_nonces(&self, acc: &Account, data: &AccountWithTokens) -> Result<()> {
-        let payload = data
-            .data
-            .nonces
-            .iter()
-            .map(|nonce| {
-                acc.sign_defuse_message(
-                    SigningStandard::default(),
-                    self.defuse.id(),
-                    *nonce,
-                    Deadline::MAX,
-                    DefuseIntents { intents: vec![] },
-                )
-            })
-            .collect::<Vec<_>>();
+    async fn apply_nonces(&self, acc: &SigningAccount, data: &AccountWithTokens) -> Result<()> {
+        let payload = join_all(data.data.nonces.iter().map(|nonce| {
+            acc.sign_defuse_message(
+                self.defuse.id(),
+                *nonce,
+                Deadline::MAX,
+                DefuseIntents { intents: vec![] },
+            )
+        }))
+        .await;
 
-        self.defuse
-            .execute_intents_without_simulation(payload)
+        self.root()
+            .execute_intents(self.defuse.id(), payload)
             .await?;
 
         Ok(())
@@ -170,10 +169,17 @@ impl Env {
         Ok(())
     }
 
-    async fn apply_account(&self, data: (&AccountId, &AccountWithTokens)) -> Result<Account> {
+    async fn apply_account(
+        &self,
+        data: (&AccountId, &AccountWithTokens),
+    ) -> Result<SigningAccount> {
         let (account_id, account) = data;
         let acc = self
-            .create_named_user(&self.sandbox.subaccount_name(account_id))
+            .create_named_user(
+                account_id
+                    .as_str()
+                    .trim_end_matches(&format!(".{}", self.root().id())),
+            )
             .await;
 
         futures::try_join!(
@@ -228,7 +234,7 @@ impl Env {
 
         let result = self
             .defuse
-            .mt_batch_balance_of(account_id, &tokens)
+            .mt_batch_balance_of(account_id, tokens)
             .await
             .expect("Failed to fetch balance");
 
@@ -246,7 +252,8 @@ impl Env {
             .collect::<Vec<_>>();
 
         let mut tokens = self
-            .mt_tokens(self.defuse.id(), ..)
+            .defuse
+            .mt_tokens(..)
             .await
             .expect("Failed to fetch tokens");
 

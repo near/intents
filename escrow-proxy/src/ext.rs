@@ -1,7 +1,7 @@
 use std::{fs, path::Path, sync::LazyLock};
 
 use crate::{ProxyConfig, RolesConfig};
-use defuse_sandbox::{SigningAccount, TxResult};
+use defuse_sandbox::{FnCallBuilder, SigningAccount, TxResult};
 use near_sdk::{Gas, NearToken, serde_json::json};
 
 #[track_caller]
@@ -27,30 +27,20 @@ impl EscrowProxyAccountExt for SigningAccount {
         self.tx(self.id().clone())
             .transfer(NearToken::from_near(20))
             .deploy(ESCROW_PROXY_WASM.clone())
-            .function_call_json::<()>(
-                "new",
-                json!({
-                    "roles": roles,
-                    "config": config,
-                }),
-                Gas::from_tgas(50),
-                NearToken::from_yoctonear(0),
+            .function_call(
+                FnCallBuilder::new("new")
+                    .json_args(json!({
+                        "roles": roles,
+                        "config": config,
+                    }))
+                    .with_gas(Gas::from_tgas(50)),
             )
-            .no_result()
             .await?;
 
         Ok(())
     }
 
     async fn get_escrow_proxy_config(&self) -> anyhow::Result<ProxyConfig> {
-        Ok(self
-            .tx(self.id().clone())
-            .function_call_json::<ProxyConfig>(
-                "config",
-                "{}",
-                Gas::from_tgas(300),
-                NearToken::from_near(0),
-            )
-            .await?)
+        self.call_view_function_json("config", json!({})).await
     }
 }

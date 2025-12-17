@@ -253,14 +253,16 @@ const _: () = {
 #[cfg(test)]
 mod tests {
 
+    use near_sdk::AccountId;
+
     use crate::token_id::nep141::Nep141TokenId;
 
     use super::*;
 
     #[test]
     fn invariant() {
-        let [t1, t2] =
-            ["t1.near", "t2.near"].map(|t| TokenId::Nep141(Nep141TokenId::new(t.parse().unwrap())));
+        let [t1, t2] = ["t1.near", "t2.near"]
+            .map(|t| TokenId::Nep141(Nep141TokenId::new(t.parse::<AccountId>().unwrap())));
 
         assert!(Amounts::<BTreeMap<TokenId, i128>>::default().is_empty());
         assert!(

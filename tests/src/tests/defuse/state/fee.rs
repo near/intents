@@ -1,19 +1,21 @@
-use defuse::{contract::Role, core::fees::Pips};
+use defuse::{
+    contract::Role,
+    core::fees::Pips,
+    sandbox_ext::state::{FeesManagerExt, FeesManagerViewExt},
+};
 
+use defuse_sandbox::extensions::acl::AclExt;
 use defuse_test_utils::asserts::ResultAssertsExt;
 use near_sdk::AccountId;
 use rstest::rstest;
 
-use crate::{
-    tests::defuse::{env::Env, state::FeesManagerExt},
-    utils::acl::AclExt,
-};
+use crate::tests::defuse::env::Env;
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn set_fee() {
     let env = Env::builder().deployer_as_super_admin().build().await;
-    let prev_fee = env.defuse.fee(env.defuse.id()).await.unwrap();
+    let prev_fee = env.defuse.fee().await.unwrap();
     let fee = Pips::from_pips(100).unwrap();
 
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
@@ -37,15 +39,15 @@ async fn set_fee() {
             .await
             .expect("unable to set fee");
 
-        let current_fee = env.defuse.fee(env.defuse.id()).await.unwrap();
+        let current_fee = env.defuse.fee().await.unwrap();
 
         assert_ne!(prev_fee, current_fee);
         assert_eq!(current_fee, fee);
     }
 }
 
-#[tokio::test]
 #[rstest]
+#[tokio::test]
 async fn set_fee_collector() {
     let env = Env::builder().deployer_as_super_admin().build().await;
     let fee_collector: AccountId = "fee-collector.near".to_string().parse().unwrap();
@@ -71,7 +73,7 @@ async fn set_fee_collector() {
             .await
             .expect("unable to set fee");
 
-        let current_collector = env.defuse.fee_collector(env.defuse.id()).await.unwrap();
+        let current_collector = env.defuse.fee_collector().await.unwrap();
 
         assert_eq!(current_collector, fee_collector);
     }

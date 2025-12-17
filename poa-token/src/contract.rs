@@ -1,5 +1,4 @@
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
-use defuse_near_utils::{CURRENT_ACCOUNT_ID, PREDECESSOR_ACCOUNT_ID};
 use near_contract_standards::{
     fungible_token::{
         FungibleToken, FungibleTokenCore, FungibleTokenResolver,
@@ -51,7 +50,7 @@ impl Contract {
             metadata: Lazy::new(Prefix::Metadata, metadata),
         };
 
-        let owner = owner_id.unwrap_or_else(|| PREDECESSOR_ACCOUNT_ID.clone());
+        let owner = owner_id.unwrap_or_else(|| env::predecessor_account_id());
         // Ownable::owner_set requires it to be a promise
         require!(!env::storage_write(
             contract.owner_storage_key(),
@@ -97,12 +96,12 @@ impl FungibleTokenCore for Contract {
         // A special case we created to handle withdrawals:
         // If the receiver id is the token contract id, we burn these tokens by calling ft_withdraw,
         // which will reduce the balance and emit an FtBurn event.
-        if receiver_id == *CURRENT_ACCOUNT_ID
+        if receiver_id == env::current_account_id()
             && memo
                 .as_deref()
                 .map_or(false, |memo| memo.starts_with(WITHDRAW_MEMO_PREFIX))
         {
-            self.ft_withdraw(&PREDECESSOR_ACCOUNT_ID, amount, memo);
+            self.ft_withdraw(&env::predecessor_account_id(), amount, memo);
         } else {
             self.token.ft_transfer(receiver_id, amount, memo)
         }
@@ -200,14 +199,14 @@ impl FullAccessKeys for Contract {
     #[payable]
     fn add_full_access_key(&mut self, public_key: PublicKey) -> Promise {
         assert_one_yocto();
-        Promise::new(CURRENT_ACCOUNT_ID.clone()).add_full_access_key(public_key)
+        Promise::new(env::current_account_id()).add_full_access_key(public_key)
     }
 
     #[only(self, owner)]
     #[payable]
     fn delete_key(&mut self, public_key: PublicKey) -> Promise {
         assert_one_yocto();
-        Promise::new(CURRENT_ACCOUNT_ID.clone()).delete_key(public_key)
+        Promise::new(env::current_account_id()).delete_key(public_key)
     }
 }
 

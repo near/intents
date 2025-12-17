@@ -42,7 +42,6 @@ impl MtReceiverStubAccountExt for SigningAccount {
             .create_account()
             .transfer(NearToken::from_near(20))
             .deploy(MT_RECEIVER_STUB_WASM.clone())
-            .no_result()
             .await
             .unwrap();
 

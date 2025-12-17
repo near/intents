@@ -9,7 +9,7 @@ use defuse_core::{
     DefuseError, Result, engine::StateView, intents::tokens::FtWithdraw,
     token_id::nep141::Nep141TokenId,
 };
-use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic};
+use defuse_near_utils::UnwrapOrPanic;
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::{
     fungible_token::core::ext_ft_core, storage_management::ext_storage_management,
@@ -34,7 +34,7 @@ impl FungibleTokenWithdrawer for Contract {
     ) -> PromiseOrValue<U128> {
         assert_one_yocto();
         self.internal_ft_withdraw(
-            self.ensure_auth_predecessor_id().clone(),
+            self.ensure_auth_predecessor_id(),
             FtWithdraw {
                 token,
                 receiver_id,
@@ -83,7 +83,7 @@ impl Contract {
                 .near_withdraw(U128(storage_deposit.as_yoctonear()))
                 .then(
                     // schedule storage_deposit() only after near_withdraw() returns
-                    Self::ext(CURRENT_ACCOUNT_ID.clone())
+                    Self::ext(env::current_account_id())
                         .with_static_gas(
                             Self::DO_FT_WITHDRAW_GAS
                                 .checked_add(withdraw.min_gas())
@@ -96,7 +96,7 @@ impl Contract {
             Self::do_ft_withdraw(withdraw.clone())
         }
         .then(
-            Self::ext(CURRENT_ACCOUNT_ID.clone())
+            Self::ext(env::current_account_id())
                 .with_static_gas(Self::FT_RESOLVE_WITHDRAW_GAS)
                 // do not distribute remaining gas here
                 .with_unused_gas_weight(0)

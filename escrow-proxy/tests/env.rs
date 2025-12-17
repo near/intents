@@ -1,9 +1,9 @@
 use std::{fs, path::Path, sync::LazyLock};
 
 use defuse_escrow_proxy::{ProxyConfig, RolesConfig};
-use defuse_sandbox::{Sandbox, SigningAccount, TxResult};
+use defuse_sandbox::{FnCallBuilder, Sandbox, SigningAccount, TxResult};
 use impl_tools::autoimpl;
-use near_sdk::{Gas, NearToken, serde_json::json};
+use near_sdk::{AccountId, Gas, NearToken, serde_json::json};
 
 #[track_caller]
 fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
@@ -25,7 +25,7 @@ pub struct BaseEnv {
 impl BaseEnv {
     #[allow(dead_code)]
     pub async fn new() -> TxResult<Self> {
-        let sandbox = Sandbox::new().await;
+        let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
         Ok(Self { sandbox })
     }
 
@@ -47,30 +47,20 @@ impl AccountExt for SigningAccount {
         self.tx(self.id().clone())
             .transfer(NearToken::from_near(20))
             .deploy(ESCROW_PROXY_WASM.clone())
-            .function_call_json::<()>(
-                "new",
-                json!({
-                    "roles": roles,
-                    "config": config,
-                }),
-                Gas::from_tgas(50),
-                NearToken::from_yoctonear(0),
+            .function_call(
+                FnCallBuilder::new("new")
+                    .json_args(json!({
+                        "roles": roles,
+                        "config": config,
+                    }))
+                    .with_gas(Gas::from_tgas(50)),
             )
-            .no_result()
             .await?;
 
         Ok(())
     }
 
     async fn get_escrow_proxy_config(&self) -> anyhow::Result<ProxyConfig> {
-        Ok(self
-            .tx(self.id().clone())
-            .function_call_json::<ProxyConfig>(
-                "config",
-                "{}",
-                Gas::from_tgas(300),
-                NearToken::from_near(0),
-            )
-            .await?)
+        self.call_view_function_json("config", json!({})).await
     }
 }

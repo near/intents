@@ -5,18 +5,17 @@ use defuse_borsh_utils::adapters::{
 };
 use defuse_fees::Pips;
 use defuse_token_id::TokenId;
-use near_sdk::{AccountId, AccountIdRef, CryptoHash, Gas, borsh, env, near};
+use near_sdk::{AccountId, CryptoHash, Gas, borsh, env, near};
 use serde_with::{DisplayFromStr, hex::Hex, serde_as};
 
-use crate::{Deadline, Error, Result, price::Price};
-
-// fix JsonSchema macro bug
-#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
-use near_sdk::serde;
+use crate::{Deadline, Error, Result, decimal::UD128};
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ContractStorage(pub(crate) Option<Storage>);
+pub struct ContractStorage(
+    /// If `None`, the escrow was closed and is being deteled now
+    pub(crate) Option<Storage>,
+);
 
 impl ContractStorage {
     pub(crate) const STATE_KEY: &[u8] = b"";
@@ -63,22 +62,6 @@ impl Storage {
         })
     }
 
-    // TODO: nep616 feature
-    pub fn derive_account_id(&self, factory: impl AsRef<AccountIdRef>) -> AccountId {
-        // TODO: remove
-        const PREFIX: &str = "escrow-";
-
-        let factory = factory.as_ref();
-
-        let serialized = borsh::to_vec(self).unwrap_or_else(|_| unreachable!());
-        let hash = env::keccak256_array(&serialized);
-
-        let len = AccountId::MAX_LEN - 1 - factory.len() - PREFIX.len();
-        format!("{PREFIX}{}.{factory}", hex::encode(&hash[32 - len / 2..32]))
-            .parse()
-            .unwrap_or_else(|_| unreachable!())
-    }
-
     #[inline]
     pub const fn no_verify(&self) -> &State {
         &self.state
@@ -112,7 +95,8 @@ pub struct Params {
     pub src_token: TokenId,
     pub dst_token: TokenId, // TODO: one_of
 
-    pub price: Price, // TODO: dutch auction
+    // TODO: direction? src per 1 dst vs dst per 1 src?
+    pub price: UD128, // TODO: dutch auction
 
     #[borsh(
         serialize_with = "BorshAs::<BorshTimestampNanoSeconds>::serialize",
@@ -154,7 +138,7 @@ pub struct Params {
 
     #[cfg(feature = "auth_call")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub auth_caller: Option<AccountId>, // TODO: or parent account id?
+    pub auth_caller: Option<AccountId>,
 
     #[serde_as(as = "Hex")]
     pub salt: [u8; 32],
@@ -163,7 +147,6 @@ pub struct Params {
 impl Params {
     #[inline]
     pub fn hash(&self) -> CryptoHash {
-        // TODO: prefix?
         env::keccak256_array(borsh::to_vec(self).unwrap_or_else(|_| unreachable!()))
     }
 
@@ -214,7 +197,7 @@ pub struct ProtocolFees {
     #[serde(default, skip_serializing_if = "Pips::is_zero")]
     pub surplus: Pips,
 
-    /// NOTE: make sure to have `storage_deposit` for this recepient
+    /// NOTE: make sure to have `storage_deposit` for this recipient
     /// on `dst_token`
     pub collector: AccountId,
 }
@@ -230,7 +213,7 @@ pub struct OverrideSend {
 
     /// NOTE: No refund will be made in case of
     /// `*_transfer_call()` failed. Reasons for it to fail:
-    /// * no `storage_deposit` for receipent
+    /// * no `storage_deposit` for reciipent
     /// * insufficient gas (see `min_gas` below)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub msg: Option<String>,
@@ -294,3 +277,7 @@ pub struct State {
     #[serde(default, skip_serializing_if = "crate::utils::is_default")]
     pub in_flight: u32,
 }
+
+// fix JsonSchema macro bug
+#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+use near_sdk::serde;

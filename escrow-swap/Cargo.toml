@@ -14,10 +14,10 @@ workspace = true
 [dependencies]
 defuse-borsh-utils = { workspace = true, features = ["chrono"] }
 defuse-deadline.workspace = true
+defuse-decimal.workspace = true
 defuse-fees.workspace = true
 defuse-nep245.workspace = true
-defuse-price.workspace = true
-defuse-sandbox = { workspace = true, optional = true }
+defuse-num-utils.workspace = true
 defuse-token-id.workspace = true
 
 near-contract-standards.workspace = true
@@ -31,6 +31,7 @@ thiserror.workspace = true
 
 defuse-auth-call = { workspace = true, optional = true }
 defuse-near-utils = { workspace = true, optional = true }
+defuse-sandbox = { workspace = true, optional = true }
 
 [dev-dependencies]
 defuse.workspace = true
@@ -38,11 +39,9 @@ defuse-sandbox.workspace = true
 
 anyhow.workspace = true
 futures.workspace = true
-hex.workspace = true
 itertools.workspace = true
-near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
-tokio = { workspace = true, features = ["macros"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 
 [features]
 default = ["auth_call", "nep141", "nep245"]

@@ -18,10 +18,10 @@ use defuse_escrow_swap::Params;
 use defuse_escrow_swap::action::{
     FillAction, TransferAction, TransferMessage as EscrowTransferMessage,
 };
+use defuse_escrow_swap::decimal::UD128;
 use defuse_escrow_swap::ext::{EscrowSwapAccountExt, derive_escrow_swap_account_id};
 use defuse_poa_factory::contract::Role;
-use defuse_price::Price;
-use defuse_sandbox::{Account, Sandbox, SigningAccount};
+use defuse_sandbox::{Account, FnCallBuilder, Sandbox, SigningAccount};
 use defuse_token_id::TokenId;
 use defuse_token_id::nep141::Nep141TokenId;
 use defuse_token_id::nep245::Nep245TokenId;
@@ -32,8 +32,7 @@ use defuse_transfer_auth::ext::{
 };
 use defuse_transfer_auth::storage::StateInit as TransferAuthState;
 use near_sdk::json_types::U128;
-use near_sdk::{AccountId, Gas, GlobalContractId, NearToken};
-use serde_json::json;
+use near_sdk::{AccountId, Gas, GlobalContractId, NearToken, serde_json::json};
 
 const INIT_BALANCE: NearToken = NearToken::from_near(100);
 
@@ -75,16 +74,15 @@ async fn deploy_ft_token(
     // 1. Deploy token
     deployer
         .tx(factory.id().clone())
-        .function_call_json::<()>(
-            "deploy_token",
-            json!({
-                "token": token_name,
-                "metadata": serde_json::Value::Null,
-            }),
-            Gas::from_tgas(100),
-            NearToken::from_near(4),
+        .function_call(
+            FnCallBuilder::new("deploy_token")
+                .json_args(json!({
+                    "token": token_name,
+                    "metadata": serde_json::Value::Null,
+                }))
+                .with_gas(Gas::from_tgas(100))
+                .with_deposit(NearToken::from_near(4)),
         )
-        .no_result()
         .await
         .unwrap();
 
@@ -95,11 +93,11 @@ async fn deploy_ft_token(
         // Storage deposit
         deployer
             .tx(token_id.clone())
-            .function_call_json::<serde_json::Value>(
-                "storage_deposit",
-                json!({ "account_id": account_id }),
-                Gas::from_tgas(50),
-                NearToken::from_millinear(50),
+            .function_call(
+                FnCallBuilder::new("storage_deposit")
+                    .json_args(json!({ "account_id": account_id }))
+                    .with_gas(Gas::from_tgas(50))
+                    .with_deposit(NearToken::from_millinear(50)),
             )
             .await
             .ok();
@@ -108,19 +106,18 @@ async fn deploy_ft_token(
         if *amount > 0 {
             deployer
                 .tx(factory.id().clone())
-                .function_call_json::<()>(
-                    "ft_deposit",
-                    json!({
-                        "token": token_name,
-                        "owner_id": account_id,
-                        "amount": U128(*amount),
-                        "msg": serde_json::Value::Null,
-                        "memo": serde_json::Value::Null,
-                    }),
-                    Gas::from_tgas(50),
-                    NearToken::from_millinear(4),
+                .function_call(
+                    FnCallBuilder::new("ft_deposit")
+                        .json_args(json!({
+                            "token": token_name,
+                            "owner_id": account_id,
+                            "amount": U128(*amount),
+                            "msg": serde_json::Value::Null,
+                            "memo": serde_json::Value::Null,
+                        }))
+                        .with_gas(Gas::from_tgas(50))
+                        .with_deposit(NearToken::from_millinear(4)),
                 )
-                .no_result()
                 .await
                 .unwrap();
         }
@@ -138,23 +135,21 @@ async fn deploy_poa_factory(deployer: &SigningAccount, name: impl AsRef<str>) ->
         .create_account()
         .transfer(NearToken::from_near(100))
         .deploy(POA_FACTORY_WASM.clone())
-        .function_call_json::<()>(
-            "new",
-            json!({
-                "super_admins": HashSet::from([deployer.id().clone()]),
-                "admins": HashMap::from([
-                    (Role::TokenDeployer, HashSet::from([deployer.id().clone()])),
-                    (Role::TokenDepositer, HashSet::from([deployer.id().clone()])),
-                ]),
-                "grantees": HashMap::from([
-                    (Role::TokenDeployer, HashSet::from([deployer.id().clone()])),
-                    (Role::TokenDepositer, HashSet::from([deployer.id().clone()])),
-                ]),
-            }),
-            Gas::from_tgas(50),
-            NearToken::from_yoctonear(0),
+        .function_call(
+            FnCallBuilder::new("new")
+                .json_args(json!({
+                    "super_admins": HashSet::from([deployer.id().clone()]),
+                    "admins": HashMap::from([
+                        (Role::TokenDeployer, HashSet::from([deployer.id().clone()])),
+                        (Role::TokenDepositer, HashSet::from([deployer.id().clone()])),
+                    ]),
+                    "grantees": HashMap::from([
+                        (Role::TokenDeployer, HashSet::from([deployer.id().clone()])),
+                        (Role::TokenDepositer, HashSet::from([deployer.id().clone()])),
+                    ]),
+                }))
+                .with_gas(Gas::from_tgas(50)),
         )
-        .no_result()
         .await
         .unwrap();
 
@@ -165,11 +160,11 @@ async fn deploy_poa_factory(deployer: &SigningAccount, name: impl AsRef<str>) ->
 async fn ft_storage_deposit(payer: &SigningAccount, token: &AccountId, account: &AccountId) {
     payer
         .tx(token.clone())
-        .function_call_json::<serde_json::Value>(
-            "storage_deposit",
-            json!({ "account_id": account }),
-            Gas::from_tgas(50),
-            NearToken::from_millinear(50),
+        .function_call(
+            FnCallBuilder::new("storage_deposit")
+                .json_args(json!({ "account_id": account }))
+                .with_gas(Gas::from_tgas(50))
+                .with_deposit(NearToken::from_millinear(50)),
         )
         .await
         .ok();
@@ -215,34 +210,33 @@ async fn deploy_mt_token(
         // Mint FT tokens to owner
         deployer
             .tx(factory.id().clone())
-            .function_call_json::<()>(
-                "ft_deposit",
-                json!({
-                    "token": token_name,
-                    "owner_id": owner.id(),
-                    "amount": U128(*amount),
-                    "msg": serde_json::Value::Null,
-                    "memo": serde_json::Value::Null,
-                }),
-                Gas::from_tgas(50),
-                NearToken::from_millinear(4),
+            .function_call(
+                FnCallBuilder::new("ft_deposit")
+                    .json_args(json!({
+                        "token": token_name,
+                        "owner_id": owner.id(),
+                        "amount": U128(*amount),
+                        "msg": serde_json::Value::Null,
+                        "memo": serde_json::Value::Null,
+                    }))
+                    .with_gas(Gas::from_tgas(50))
+                    .with_deposit(NearToken::from_millinear(4)),
             )
-            .no_result()
             .await
             .unwrap();
 
         // Wrap FT into MT by depositing to defuse
         owner
             .tx(ft_token_id.clone())
-            .function_call_json::<U128>(
-                "ft_transfer_call",
-                json!({
-                    "receiver_id": defuse.id(),
-                    "amount": U128(*amount),
-                    "msg": owner.id().to_string(),
-                }),
-                Gas::from_tgas(100),
-                NearToken::from_yoctonear(1),
+            .function_call(
+                FnCallBuilder::new("ft_transfer_call")
+                    .json_args(json!({
+                        "receiver_id": defuse.id(),
+                        "amount": U128(*amount),
+                        "msg": owner.id().to_string(),
+                    }))
+                    .with_gas(Gas::from_tgas(100))
+                    .with_deposit(NearToken::from_yoctonear(1)),
             )
             .await
             .unwrap();
@@ -262,7 +256,7 @@ async fn deploy_mt_token(
 /// Test full escrow swap flow with proxy authorization
 #[tokio::test]
 async fn test_escrow_swap_with_proxy_full_flow() {
-    let sandbox = Sandbox::new().await;
+    let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
 
     // 1. Deploy core infrastructure
@@ -336,7 +330,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         maker: maker.id().clone(),
         src_token: token_a_escrow_id.clone(), // What maker offers (Nep245 format)
         dst_token: token_b_escrow_id.clone(), // What maker wants (Nep245 format)
-        price: Price::ONE,                    // 1:1 exchange
+        price: UD128::ONE,                    // 1:1 exchange
         deadline: Deadline::timeout(Duration::from_secs(360)),
         partial_fills_allowed: false,
         refund_src_to: defuse_escrow_swap::OverrideSend::default(),
@@ -355,7 +349,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
 
     // Verify escrow-swap instance does NOT exist before maker's fund
     assert!(
-        !escrow_instance_account.exists().await,
+        !escrow_instance_account.view().await.is_ok(),
         "Escrow-swap instance should NOT exist before maker's fund"
     );
 
@@ -400,7 +394,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
 
     // Verify escrow-swap instance EXISTS after maker's fund (state_init deployed it)
     assert!(
-        escrow_instance_account.exists().await,
+        escrow_instance_account.view().await.is_ok(),
         "Escrow-swap instance should exist after maker's fund"
     );
 
@@ -422,7 +416,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     let inner_msg = EscrowTransferMessage {
         params: escrow_params.clone(),
         action: TransferAction::Fill(FillAction {
-            price: Price::ONE,
+            price: UD128::ONE,
             deadline: Deadline::timeout(Duration::from_secs(120)),
             receive_src_to: defuse_escrow_swap::OverrideSend::default()
                 .receiver_id(solver.id().clone()),
@@ -469,7 +463,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
 
     // Verify transfer-auth instance does NOT exist before on_auth call
     assert!(
-        !transfer_auth_instance_account.exists().await,
+        !transfer_auth_instance_account.view().await.is_ok(),
         "Transfer-auth instance should NOT exist before on_auth call"
     );
 
@@ -496,7 +490,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
 
     // Verify transfer-auth instance EXISTS after on_auth call (state_init deployed it)
     assert!(
-        transfer_auth_instance_account.exists().await,
+        transfer_auth_instance_account.view().await.is_ok(),
         "Transfer-auth instance should exist after on_auth call"
     );
 

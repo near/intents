@@ -16,10 +16,10 @@ use defuse::{
 use defuse_escrow_swap::{
     ContractStorage, Deadline, OverrideSend, Params, ProtocolFees,
     action::{FillAction, TransferAction, TransferMessage},
-    price::Price,
+    decimal::UD128,
 };
 use defuse_fees::Pips;
-use defuse_sandbox::{Account, MtViewExt, SigningAccount, TxResult};
+use defuse_sandbox::{Account, FnCallBuilder, MtViewExt, SigningAccount, TxResult};
 use defuse_token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId};
 use futures::{TryStreamExt, stream::FuturesOrdered, try_join};
 use impl_tools::autoimpl;
@@ -58,7 +58,7 @@ async fn partial_fills() {
         .map(|token_id| Nep245TokenId::new(env.verifier.id().clone(), token_id.to_string()))
         .map(Into::<TokenId>::into);
 
-    let price: Price = "2".parse().unwrap();
+    let price: UD128 = "2".parse().unwrap();
 
     let params = Params {
         maker: env.maker.id().clone(),
@@ -121,29 +121,30 @@ async fn partial_fills() {
             let refund = env
                 .src_ft
                 .tx(env.verifier.id().clone())
-                .function_call_json::<U128>(
-                    "ft_on_transfer",
-                    json!({
-                        "sender_id": env.maker.id(),
-                        "amount": U128(amount),
-                        "msg": serde_json::to_string(
-                            &DepositMessage::new(escrow.id().clone())
-                                .with_action(DepositAction::Notify(
-                                    NotifyOnTransfer::new(
-                                        serde_json::to_string(&TransferMessage {
-                                            params: params.clone(),
-                                            action: TransferAction::Fund,
-                                        }).unwrap(),
+                .function_call(
+                    FnCallBuilder::new("ft_on_transfer")
+                        .json_args(json!({
+                            "sender_id": env.maker.id(),
+                            "amount": U128(amount),
+                            "msg": serde_json::to_string(
+                                &DepositMessage::new(escrow.id().clone())
+                                    .with_action(DepositAction::Notify(
+                                        NotifyOnTransfer::new(
+                                            serde_json::to_string(&TransferMessage {
+                                                params: params.clone(),
+                                                action: TransferAction::Fund,
+                                            }).unwrap(),
+                                        )
+                                            .with_state_init(state_init.clone())
                                     )
-                                        .with_state_init(state_init.clone())
                                 )
-                            )
-                        ).unwrap()
-                    }),
-                    Gas::from_tgas(300),
-                    NearToken::from_yoctonear(0),
+                            ).unwrap()
+                        }))
+                        .with_gas(Gas::from_tgas(300)),
                 )
                 .await
+                .unwrap()
+                .json::<U128>()
                 .unwrap()
                 .0;
 
@@ -170,36 +171,37 @@ async fn partial_fills() {
             let refund = env
                 .dst_ft
                 .tx(env.verifier.id().clone())
-                .function_call_json::<U128>(
-                    "ft_on_transfer",
-                    json!({
-                        "sender_id": taker.id(),
-                        "amount": U128(amount),
-                        "msg": serde_json::to_string(&DepositMessage::new(escrow.id().clone())
-                            .with_action(
-                                DepositAction::Notify(NotifyOnTransfer::new(
-                                    serde_json::to_string(&TransferMessage {
-                                        params: params.clone(),
-                                        action: FillAction {
-                                            price: "2".parse().unwrap(),
-                                            deadline: Deadline::timeout(Duration::from_secs(10)),
-                                            receive_src_to: OverrideSend {
-                                                memo: Some("taker memo".to_string()),
-                                                // msg: Some("taker msg".to_string()),
-                                                ..Default::default()
-                                            },
-                                        }
-                                        .into()
-                                    })
-                                    .unwrap()
+                .function_call(
+                    FnCallBuilder::new("ft_on_transfer")
+                        .json_args(json!({
+                            "sender_id": taker.id(),
+                            "amount": U128(amount),
+                            "msg": serde_json::to_string(&DepositMessage::new(escrow.id().clone())
+                                .with_action(
+                                    DepositAction::Notify(NotifyOnTransfer::new(
+                                        serde_json::to_string(&TransferMessage {
+                                            params: params.clone(),
+                                            action: FillAction {
+                                                price: "2".parse().unwrap(),
+                                                deadline: Deadline::timeout(Duration::from_secs(10)),
+                                                receive_src_to: OverrideSend {
+                                                    memo: Some("taker memo".to_string()),
+                                                    // msg: Some("taker msg".to_string()),
+                                                    ..Default::default()
+                                                },
+                                            }
+                                            .into()
+                                        })
+                                        .unwrap()
+                                    ))
                                 ))
-                            ))
-                        .unwrap()
-                    }),
-                    Gas::from_tgas(300),
-                    NearToken::from_yoctonear(0),
+                            .unwrap()
+                        }))
+                        .with_gas(Gas::from_tgas(300)),
                 )
                 .await
+                .unwrap()
+                .json::<U128>()
                 .unwrap()
                 .0;
 

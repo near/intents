@@ -4,19 +4,11 @@ use derive_more::From;
 use near_sdk::{AccountIdRef, near};
 use serde_with::{DisplayFromStr, serde_as};
 
-use crate::{Params, price::Price, token_id::TokenId};
-
-// fix JsonSchema macro bug
-#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
-use near_sdk::serde;
+use crate::{Params, decimal::UD128, token_id::TokenId};
 
 #[near(event_json(standard = "escrow-swap"))]
 #[derive(Debug, Clone, From)]
 pub enum Event<'a> {
-    // TODO: remove due to state_init()
-    #[event_version("0.1.0")]
-    Init(Cow<'a, Params>),
-
     #[event_version("0.1.0")]
     Funded(FundedEvent<'a>),
 
@@ -60,8 +52,8 @@ pub struct FillEvent<'a> {
     pub src_token: Cow<'a, TokenId>,
     pub dst_token: Cow<'a, TokenId>,
 
-    pub taker_price: Price,
-    pub maker_price: Price,
+    pub taker_price: UD128,
+    pub maker_price: UD128,
 
     #[serde_as(as = "DisplayFromStr")]
     pub taker_dst_in: u128,
@@ -139,3 +131,7 @@ pub trait EscrowIntentEmit<'a>: Into<Event<'a>> {
     }
 }
 impl<'a, T> EscrowIntentEmit<'a> for T where T: Into<Event<'a>> {}
+
+// fix JsonSchema macro bug
+#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+use near_sdk::serde;

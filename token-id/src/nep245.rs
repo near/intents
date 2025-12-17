@@ -5,31 +5,22 @@ use std::{fmt, str::FromStr};
 use near_sdk::{AccountId, near};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
-#[cfg(any(feature = "arbitrary", test))]
-use arbitrary_with::{Arbitrary, As};
-#[cfg(any(feature = "arbitrary", test))]
-use defuse_near_utils::arbitrary::ArbitraryAccountId;
-
 use crate::{TokenIdType, error::TokenIdError};
 
-#[cfg_attr(any(feature = "arbitrary", test), derive(Arbitrary))]
+#[cfg_attr(any(feature = "arbitrary", test), derive(::arbitrary::Arbitrary))]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr)]
 #[near(serializers = [borsh])]
 pub struct Nep245TokenId {
-    #[cfg_attr(
-        any(feature = "arbitrary", test),
-        arbitrary(with = As::<ArbitraryAccountId>::arbitrary),
-    )]
     pub contract_id: AccountId,
 
     pub mt_token_id: TokenId,
 }
 
 impl Nep245TokenId {
-    pub const fn new(contract_id: AccountId, mt_token_id: TokenId) -> Self {
+    pub fn new(contract_id: impl Into<AccountId>, mt_token_id: impl Into<TokenId>) -> Self {
         Self {
-            contract_id,
-            mt_token_id,
+            contract_id: contract_id.into(),
+            mt_token_id: mt_token_id.into(),
         }
     }
 }
@@ -55,7 +46,7 @@ impl FromStr for Nep245TokenId {
         let (contract_id, token_id) = data
             .split_once(':')
             .ok_or(strum::ParseError::VariantNotFound)?;
-        Ok(Self::new(contract_id.parse()?, token_id.to_string()))
+        Ok(Self::new(contract_id.parse::<AccountId>()?, token_id))
     }
 }
 

@@ -9,26 +9,25 @@ repository.workspace = true
 workspace = true
 
 [dev-dependencies]
-defuse = { workspace = true, features = ["contract", "arbitrary"] }
+defuse = { workspace = true, features = ["contract", "sandbox"] }
+defuse-escrow-swap = { workspace = true, features = ["auth_call", "test-utils"] }
+defuse-near-utils = { workspace = true }
+defuse-poa-factory = { workspace = true, features = ["contract", "sandbox"] }
 defuse-core.workspace = true
 defuse-crypto.workspace = true
 defuse-deadline.workspace = true
 defuse-escrow-proxy = { workspace = true, features = ["test-utils"] }
-defuse-escrow-swap = { workspace = true, features = ["test-utils"] }
-defuse-near-utils = { workspace = true, features = ["arbitrary"] }
-defuse-poa-factory = { workspace = true, features = ["contract"] }
-defuse-price.workspace = true
-defuse-sandbox.workspace = true
-defuse-serde-utils = { workspace = true }
-defuse-token-id.workspace = true
-defuse-randomness.workspace = true
-defuse-test-utils.workspace = true
 defuse-transfer-auth = { workspace = true, features = ["test-utils"] }
 
+
+defuse-serde-utils = { workspace = true }
+defuse-randomness.workspace = true
+defuse-test-utils.workspace = true
+defuse-sandbox.workspace = true
+defuse-token-id.workspace = true
 futures = "0.3"
 anyhow.workspace = true
 arbitrary.workspace = true
-arbitrary_with = { workspace = true }
 bnum = { workspace = true, features = ["rand"] }
 chrono.workspace = true
 derive_more.workspace = true
@@ -36,13 +35,12 @@ hex-literal.workspace = true
 hex.workspace = true
 impl-tools.workspace = true
 itertools.workspace = true
+multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
 near-crypto.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
-near-workspaces.workspace = true
 near-contract-standards.workspace = true
 rstest.workspace = true
 serde_json.workspace = true
 strum.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 tlb-ton = { workspace = true, features = ["arbitrary"] }
-multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }

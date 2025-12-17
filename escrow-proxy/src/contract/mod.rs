@@ -225,7 +225,7 @@ impl Contract {
         ext_escrow::ext(escrow_address)
             .with_attached_deposit(NearToken::from_yoctonear(1))
             .with_static_gas(Gas::from_tgas(50))
-            .escrow_close(params)
+            .es_close(params)
     }
 
     #[access_control_any(roles(Role::DAO, Role::Canceller))]

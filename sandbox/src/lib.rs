@@ -1,27 +1,66 @@
-#![allow(async_fn_in_trait)]
-
 mod account;
+pub mod extensions;
 mod global_contract_workaround;
-mod tx;
+pub mod helpers;
+pub mod tx;
 
-pub use self::{account::*, global_contract_workaround::*, tx::*};
+use std::sync::{
+    Arc,
+    atomic::{AtomicUsize, Ordering},
+};
+
+pub use account::{Account, SigningAccount};
+pub use extensions::{
+    ft::{FtExt, FtViewExt},
+    mt::{MtExt, MtViewExt},
+    storage_management::{StorageManagementExt, StorageViewExt},
+    wnear::{WNearDeployerExt, WNearExt},
+};
+pub use global_contract_workaround::UnwrapGlobalContractDeployment;
+pub use helpers::*;
+pub use tx::{FnCallBuilder, TxBuilder, TxError, TxResult};
+
+pub use anyhow;
+use impl_tools::autoimpl;
 pub use near_api as api;
+// NOTE: that is not ok - errors should be separated to another mod
+pub use near_openapi_types as openapi_types;
+pub use near_sandbox;
 
-use near_api::{NetworkConfig, RPCEndpoint, Signer};
-use near_sandbox::GenesisAccount;
+use near_api::{NetworkConfig, RPCEndpoint, Signer, signer::generate_secret_key};
+use near_sandbox::{GenesisAccount, SandboxConfig};
+use near_sdk::{AccountId, AccountIdRef, NearToken};
+use rstest::fixture;
+use tokio::sync::OnceCell;
+use tracing::instrument;
 
+#[autoimpl(Deref using self.root)]
 pub struct Sandbox {
     root: SigningAccount,
-
-    #[allow(dead_code)] // keep ownership
-    sandbox: near_sandbox::Sandbox,
+    sandbox: Arc<near_sandbox::Sandbox>,
 }
 
 impl Sandbox {
-    pub async fn new() -> Self {
-        let sandbox = near_sandbox::Sandbox::start_sandbox_with_version("2.10-release")
-            .await
-            .unwrap();
+    pub async fn new(root_id: impl Into<AccountId>) -> Self {
+        let root_id = root_id.into();
+
+        // FIXME: why does test.ner exist in genesis cfg????
+        let root_secret_key = generate_secret_key().unwrap();
+
+        let root_genesis = GenesisAccount {
+            account_id: root_id.clone(),
+            public_key: root_secret_key.public_key().to_string(),
+            private_key: root_secret_key.to_string(),
+            // half of total supply
+            balance: NearToken::MAX.saturating_div(2),
+        };
+
+        let sandbox = near_sandbox::Sandbox::start_sandbox_with_config(SandboxConfig {
+            additional_accounts: vec![root_genesis],
+            ..SandboxConfig::default()
+        })
+        .await
+        .unwrap();
 
         let network_config = NetworkConfig {
             network_name: "sandbox".to_string(),
@@ -29,11 +68,14 @@ impl Sandbox {
             ..NetworkConfig::testnet()
         };
 
-        let root = GenesisAccount::default();
-        let signer = Signer::from_secret_key(root.private_key.parse().unwrap()).unwrap();
+        let root = SigningAccount::new(
+            Account::new(root_id, network_config),
+            Signer::from_secret_key(root_secret_key).unwrap(),
+        );
+
         Self {
-            root: SigningAccount::new(Account::new(root.account_id, network_config), signer),
-            sandbox,
+            root,
+            sandbox: sandbox.into(),
         }
     }
 
@@ -41,7 +83,39 @@ impl Sandbox {
         &self.root
     }
 
+    pub fn account(&self, account_id: impl Into<AccountId>) -> Account {
+        Account::new(account_id, self.root().network_config().clone())
+    }
+
+    pub fn sandbox(&self) -> &near_sandbox::Sandbox {
+        self.sandbox.as_ref()
+    }
+
     pub async fn fast_forward(&self, blocks: u64) {
         self.sandbox.fast_forward(blocks).await.unwrap();
+    }
+}
+
+#[fixture]
+#[instrument]
+pub async fn sandbox(#[default(NearToken::from_near(100_000))] amount: NearToken) -> Sandbox {
+    const SHARED_ROOT: &AccountIdRef = AccountIdRef::new_or_panic("test");
+
+    static SHARED_SANDBOX: OnceCell<Sandbox> = OnceCell::const_new();
+    static SUB_COUNTER: AtomicUsize = AtomicUsize::new(0);
+
+    let shared = SHARED_SANDBOX
+        .get_or_init(|| Sandbox::new(SHARED_ROOT))
+        .await;
+
+    Sandbox {
+        root: shared
+            .generate_subaccount(
+                SUB_COUNTER.fetch_add(1, Ordering::Relaxed).to_string(),
+                amount,
+            )
+            .await
+            .unwrap(),
+        sandbox: shared.sandbox.clone(),
     }
 }

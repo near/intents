@@ -3,12 +3,10 @@
 //!
 //! This module should be deleted when the upstream fix is merged:
 //! <https://github.com/PolyProgrammist/near-openapi-client/pull/32>
-//!
-//! Dependencies introduced for this workaround (remove from Cargo.toml when deleting):
-//! - `near-openapi-client = "0.6"`
-//! - `serde_json` (workspace)
 
 use near_api::errors::{ExecuteTransactionError, RetryError, SendRequestError};
+use near_openapi_client::Error as OpenApiError;
+use near_sdk::serde_json;
 
 use crate::TxError;
 
@@ -35,12 +33,17 @@ impl<T> UnwrapGlobalContractDeployment<T> for Result<T, ExecuteTransactionError>
 
 impl<T> UnwrapGlobalContractDeployment<T> for Result<T, TxError> {
     fn unwrap_global_contract_deployment(self) -> bool {
+        // TxError is anyhow::Error, so we try to downcast
         match self {
             Ok(_) => true,
-            Err(TxError::ExecuteTransactionError(ExecuteTransactionError::TransactionError(
-                ref retry_error,
-            ))) => is_success_in_transport_error(retry_error),
-            Err(_) => false,
+            Err(err) => {
+                if let Some(exec_err) = err.downcast_ref::<ExecuteTransactionError>() {
+                    if let ExecuteTransactionError::TransactionError(retry_error) = exec_err {
+                        return is_success_in_transport_error(retry_error);
+                    }
+                }
+                false
+            }
         }
     }
 }
@@ -49,10 +52,10 @@ fn is_success_in_transport_error<RpcError: std::fmt::Debug + Send + Sync>(
     retry_error: &RetryError<SendRequestError<RpcError>>,
 ) -> bool {
     let (RetryError::Critical(SendRequestError::TransportError(
-        near_openapi_client::Error::InvalidResponsePayload(bytes, _),
+        OpenApiError::InvalidResponsePayload(bytes, _),
     ))
     | RetryError::RetriesExhausted(SendRequestError::TransportError(
-        near_openapi_client::Error::InvalidResponsePayload(bytes, _),
+        OpenApiError::InvalidResponsePayload(bytes, _),
     ))) = retry_error
     else {
         return false;

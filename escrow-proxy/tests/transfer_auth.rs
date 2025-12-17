@@ -8,8 +8,8 @@ use defuse_escrow_proxy::{
     EscrowParams, FillAction, ProxyConfig, RolesConfig, TransferAction, TransferMessage,
 };
 use defuse_escrow_swap::action::TransferMessage as EscrowTransferMessage;
-use defuse_escrow_swap::price::Price;
-use defuse_sandbox::{Sandbox, SigningAccount, UnwrapGlobalContractDeployment};
+use defuse_escrow_swap::decimal::UD128;
+use defuse_sandbox::{FnCallBuilder, Sandbox, SigningAccount, UnwrapGlobalContractDeployment};
 use defuse_token_id::{TokenId, nep141::Nep141TokenId};
 use defuse_transfer_auth::TransferAuthContext;
 use defuse_transfer_auth::ext::{
@@ -18,10 +18,9 @@ use defuse_transfer_auth::ext::{
 use defuse_transfer_auth::storage::{ContractStorage, StateInit as TransferAuthStateInit};
 use env::AccountExt;
 use multi_token_receiver_stub::ext::MtReceiverStubAccountExt;
-use near_sdk::NearToken;
-use near_sdk::json_types::U128;
 use near_sdk::{
-    Gas, GlobalContractId,
+    AccountId, Gas, GlobalContractId, NearToken,
+    json_types::U128,
     state_init::{StateInit, StateInitV1},
 };
 
@@ -30,7 +29,7 @@ const INIT_BALANCE: NearToken = NearToken::from_near(100);
 #[tokio::test]
 #[allow(clippy::too_many_lines)]
 async fn test_deploy_transfer_auth_global_contract() {
-    let sandbox = Sandbox::new().await;
+    let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
 
     let wnear = root.deploy_wnear("wnear").await;
@@ -116,7 +115,7 @@ async fn test_deploy_transfer_auth_global_contract() {
             maker: solver.id().clone(),
             src_token: token_id.clone(),
             dst_token: token_id.clone(),
-            price: Price::ONE,
+            price: UD128::ONE,
             deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
             partial_fills_allowed: false,
             refund_src_to: defuse_escrow_swap::OverrideSend::default(),
@@ -128,7 +127,7 @@ async fn test_deploy_transfer_auth_global_contract() {
             salt: [0u8; 32],
         },
         action: TransferAction::Fill(FillAction {
-            price: Price::ONE,
+            price: UD128::ONE,
             deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
             receive_src_to: defuse_escrow_swap::OverrideSend::default(),
         }),
@@ -185,7 +184,7 @@ async fn test_deploy_transfer_auth_global_contract() {
 #[tokio::test]
 #[allow(clippy::too_many_lines)]
 async fn test_transfer_authorized_by_relay() {
-    let sandbox = Sandbox::new().await;
+    let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
 
     let wnear = root.deploy_wnear("wnear").await;
@@ -266,7 +265,7 @@ async fn test_transfer_authorized_by_relay() {
             maker: solver.id().clone(),
             src_token: token_id.clone(),
             dst_token: token_id.clone(),
-            price: Price::ONE,
+            price: UD128::ONE,
             deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
             partial_fills_allowed: false,
             refund_src_to: defuse_escrow_swap::OverrideSend::default(),
@@ -278,7 +277,7 @@ async fn test_transfer_authorized_by_relay() {
             salt: [0u8; 32],
         },
         action: TransferAction::Fill(FillAction {
-            price: Price::ONE,
+            price: UD128::ONE,
             deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
             receive_src_to: defuse_escrow_swap::OverrideSend::default(),
         }),
@@ -341,16 +340,15 @@ async fn test_transfer_authorized_by_relay() {
             let result = defuse
                 .tx(transfer_auth_instance_id.clone())
                 .state_init(transfer_auth_global.clone(), raw_state)
-                .function_call_json::<()>(
-                    "on_auth",
-                    serde_json::json!({
-                        "signer_id": relay_id,
-                        "msg": "",
-                    }),
-                    Gas::from_tgas(50),
-                    NearToken::from_yoctonear(1),
+                .function_call(
+                    FnCallBuilder::new("on_auth")
+                        .json_args(serde_json::json!({
+                            "signer_id": relay_id,
+                            "msg": "",
+                        }))
+                        .with_gas(Gas::from_tgas(50))
+                        .with_deposit(NearToken::from_yoctonear(1)),
                 )
-                .no_result()
                 .await
                 .unwrap_global_contract_deployment();
             assert!(result, "state_init with on_auth should succeed");
@@ -382,7 +380,7 @@ async fn test_transfer_authorized_by_relay() {
 /// Test that proxy's authorize function can authorize a transfer-auth instance
 #[tokio::test]
 async fn test_proxy_authorize_function() {
-    let sandbox = Sandbox::new().await;
+    let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
 
     let wnear = root.deploy_wnear("wnear").await;
@@ -450,15 +448,14 @@ async fn test_proxy_authorize_function() {
     // Call authorize from relay (has Canceller role) through the proxy
     let authorize_result = relay
         .tx(proxy.id().clone())
-        .function_call_json::<()>(
-            "authorize",
-            serde_json::json!({
-                "transfer_auth_id": transfer_auth_instance_id,
-            }),
-            Gas::from_tgas(100),
-            NearToken::from_yoctonear(1),
+        .function_call(
+            FnCallBuilder::new("authorize")
+                .json_args(serde_json::json!({
+                    "transfer_auth_id": transfer_auth_instance_id,
+                }))
+                .with_gas(Gas::from_tgas(100))
+                .with_deposit(NearToken::from_yoctonear(1)),
         )
-        .no_result()
         .await;
 
     assert!(
@@ -467,14 +464,10 @@ async fn test_proxy_authorize_function() {
     );
 
     // Verify the transfer-auth instance is now authorized
-    let is_authorized: bool = root
-        .tx(transfer_auth_instance_id.clone())
-        .function_call_json(
-            "is_authorized",
-            serde_json::json!({}),
-            Gas::from_tgas(10),
-            NearToken::from_yoctonear(0),
-        )
+    let transfer_auth_account =
+        defuse_sandbox::Account::new(transfer_auth_instance_id, root.network_config().clone());
+    let is_authorized: bool = transfer_auth_account
+        .call_view_function_json("is_authorized", serde_json::json!({}))
         .await
         .unwrap();
 

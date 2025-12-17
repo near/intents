@@ -128,6 +128,8 @@ const _: () = {
         }
 
         fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
+            use near_sdk::AccountId;
+
             SchemaObject {
                 instance_type: Some(InstanceType::String.into()),
                 extensions: [(
@@ -135,17 +137,17 @@ const _: () = {
                     [
                         #[cfg(feature = "nep141")]
                         TokenId::Nep141(crate::nep141::Nep141TokenId::new(
-                            "ft.near".parse().unwrap(),
+                            "ft.near".parse::<AccountId>().unwrap(),
                         )),
                         #[cfg(feature = "nep171")]
                         TokenId::Nep171(crate::nep171::Nep171TokenId::new(
-                            "nft.near".parse().unwrap(),
-                            "token_id1".to_string(),
+                            "nft.near".parse::<AccountId>().unwrap(),
+                            "token_id1",
                         )),
                         #[cfg(feature = "nep245")]
                         TokenId::Nep245(crate::nep245::Nep245TokenId::new(
-                            "mt.near".parse().unwrap(),
-                            "token_id1".to_string(),
+                            "mt.near".parse::<AccountId>().unwrap(),
+                            "token_id1",
                         )),
                     ]
                     .map(|s| s.to_string())
