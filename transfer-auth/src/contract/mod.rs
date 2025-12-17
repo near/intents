@@ -55,10 +55,10 @@ impl Contract {
         match self.state {
             StateMachine::Idle => self.state = StateMachine::Authorized,
             StateMachine::WaitingForAuthorization(yield_id) => {
-                if yield_id.resume(&[]) {
+                if yield_id.resume(&[]).is_ok() {
                     self.state = StateMachine::Done;
                 } else {
-                    //NOTE: if resume returns false that means that it the yielded promise
+                    //NOTE: if resume returns Err that means that the yielded promise
                     //no longer exists although maybe it will be resumed because of timeout
                     //from the perspective of the contract it is already authorized
                     self.state = StateMachine::Authorized;
@@ -94,9 +94,9 @@ impl TransferAuth for Contract {
 
         match self.state {
             StateMachine::Idle => {
-                let (promise, yield_id) = Promise::yield_create(
+                let (promise, yield_id) = Promise::new_yield(
                     "is_authorized_resume",
-                    serde_json::json!({}).to_string(),
+                    serde_json::json!({}).to_string().as_bytes(),
                     Gas::from_tgas(0),
                     GasWeight(1),
                 );
