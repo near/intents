@@ -971,7 +971,6 @@ dependencies = [
  "defuse-near-utils",
  "defuse-nep245",
  "defuse-nep413",
- "defuse-price",
  "defuse-sandbox",
  "defuse-token-id",
  "defuse-transfer-auth",
@@ -1108,17 +1107,6 @@ dependencies = [
  "near-contract-standards",
  "near-plugins",
  "near-sdk",
-]
-
-[[package]]
-name = "defuse-price"
-version = "0.1.0"
-dependencies = [
- "defuse-num-utils",
- "near-sdk",
- "rstest",
- "serde_with",
- "thiserror 2.0.17",
 ]
 
 [[package]]

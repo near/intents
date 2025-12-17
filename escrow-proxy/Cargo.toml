@@ -47,7 +47,6 @@ serde_json.workspace = true
 futures.workspace = true
 anyhow.workspace = true
 defuse-core.workspace = true
-defuse-price.workspace = true
 defuse-nep413.workspace = true
 rand.workspace = true
 
