@@ -19,7 +19,7 @@ use defuse_escrow_swap::{
     decimal::UD128,
 };
 use defuse_fees::Pips;
-use defuse_sandbox::{Account, FnCallBuilder, MtViewExt, SigningAccount, TxResult};
+use defuse_sandbox::{Account, FnCallBuilder, MtViewExt, SigningAccount};
 use defuse_token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId};
 use futures::{TryStreamExt, stream::FuturesOrdered, try_join};
 use impl_tools::autoimpl;
@@ -264,7 +264,7 @@ struct EscrowEnv {
 }
 
 impl EscrowEnv {
-    pub async fn new() -> TxResult<Self> {
+    pub async fn new() -> anyhow::Result<Self> {
         let env = BaseEnv::new().await?;
         let root = env.root();
 

@@ -1,7 +1,7 @@
 use std::{fs, path::Path, sync::LazyLock};
 
 use defuse_escrow_proxy::{ProxyConfig, RolesConfig};
-use defuse_sandbox::{FnCallBuilder, Sandbox, SigningAccount, TxResult};
+use defuse_sandbox::{FnCallBuilder, Sandbox, SigningAccount};
 use impl_tools::autoimpl;
 use near_sdk::{AccountId, Gas, NearToken, serde_json::json};
 
@@ -24,7 +24,7 @@ pub struct BaseEnv {
 
 impl BaseEnv {
     #[allow(dead_code)]
-    pub async fn new() -> TxResult<Self> {
+    pub async fn new() -> anyhow::Result<Self> {
         let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
         Ok(Self { sandbox })
     }
@@ -37,13 +37,13 @@ impl BaseEnv {
 
 #[allow(async_fn_in_trait)]
 pub trait AccountExt {
-    async fn deploy_escrow_proxy(&self, roles: RolesConfig, config: ProxyConfig) -> TxResult<()>;
+    async fn deploy_escrow_proxy(&self, roles: RolesConfig, config: ProxyConfig) -> anyhow::Result<()>;
     #[allow(dead_code)]
     async fn get_escrow_proxy_config(&self) -> anyhow::Result<ProxyConfig>;
 }
 
 impl AccountExt for SigningAccount {
-    async fn deploy_escrow_proxy(&self, roles: RolesConfig, config: ProxyConfig) -> TxResult<()> {
+    async fn deploy_escrow_proxy(&self, roles: RolesConfig, config: ProxyConfig) -> anyhow::Result<()> {
         self.tx(self.id().clone())
             .transfer(NearToken::from_near(20))
             .deploy(ESCROW_PROXY_WASM.clone())

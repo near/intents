@@ -8,8 +8,6 @@ use near_api::errors::{ExecuteTransactionError, RetryError, SendRequestError};
 use near_openapi_client::Error as OpenApiError;
 use near_sdk::serde_json;
 
-use crate::TxError;
-
 /// Extension trait for `Result<T, ExecuteTransactionError>` that handles
 /// a bug in near-api where `DeterministicStateInit` transactions report
 /// `TransportError` even when the transaction succeeded.
@@ -31,9 +29,8 @@ impl<T> UnwrapGlobalContractDeployment<T> for Result<T, ExecuteTransactionError>
     }
 }
 
-impl<T> UnwrapGlobalContractDeployment<T> for Result<T, TxError> {
+impl<T> UnwrapGlobalContractDeployment<T> for Result<T, anyhow::Error> {
     fn unwrap_global_contract_deployment(self) -> bool {
-        // TxError is anyhow::Error, so we try to downcast
         match self {
             Ok(_) => true,
             Err(err) => {

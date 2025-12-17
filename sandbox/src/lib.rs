@@ -18,7 +18,7 @@ pub use extensions::{
 };
 pub use global_contract_workaround::UnwrapGlobalContractDeployment;
 pub use helpers::*;
-pub use tx::{FnCallBuilder, TxBuilder, TxError, TxResult};
+pub use tx::{FnCallBuilder, TxBuilder};
 
 pub use anyhow;
 use impl_tools::autoimpl;

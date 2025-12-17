@@ -6,7 +6,7 @@ use defuse_crypto::Payload;
 use defuse_deadline::Deadline;
 use defuse_nep413::{Nep413Payload, SignedNep413Payload};
 use defuse_sandbox::{
-    Account, SigningAccount, TxError,
+    Account, SigningAccount,
     api::types::transaction::actions::GlobalContractDeployMode,
     tx::FnCallBuilder,
 };
@@ -167,19 +167,19 @@ pub trait DefuseAccountExt {
     async fn deploy_verifier(&self, name: impl AsRef<str>, wnear_id: AccountId) -> Self;
 
     // WNEAR operations
-    async fn near_deposit(&self, wnear: &Account, amount: NearToken) -> Result<(), TxError>;
+    async fn near_deposit(&self, wnear: &Account, amount: NearToken) -> anyhow::Result<()>;
     async fn ft_storage_deposit(
         &self,
         token: &Account,
         account_id: Option<&AccountId>,
-    ) -> Result<(), TxError>;
+    ) -> anyhow::Result<()>;
     async fn ft_transfer_call(
         &self,
         token: &Account,
         receiver_id: &AccountId,
         amount: u128,
         msg: &str,
-    ) -> Result<u128, TxError>;
+    ) -> anyhow::Result<u128>;
 
     // Query MT balance
     async fn mt_balance_of(
@@ -196,7 +196,7 @@ pub trait DefuseAccountExt {
         token_id: &TokenId,
         amount: u128,
         msg: &str,
-    ) -> Result<Vec<u128>, TxError>;
+    ) -> anyhow::Result<Vec<u128>>;
 
     /// Call `on_auth` on a `transfer-auth` contract instance.
     /// NOTE: In production, this should be done via `AuthCall` intent through defuse.
@@ -206,7 +206,7 @@ pub trait DefuseAccountExt {
         transfer_auth_instance: &AccountId,
         signer_id: &AccountId,
         msg: &str,
-    ) -> Result<(), TxError>;
+    ) -> anyhow::Result<()>;
 
     /// Register a public key for the caller's account in the defuse contract.
     /// This allows intents signed with the corresponding private key to be verified.
@@ -214,7 +214,7 @@ pub trait DefuseAccountExt {
         &self,
         defuse: &Account,
         public_key: defuse_crypto::PublicKey,
-    ) -> Result<(), TxError>;
+    ) -> anyhow::Result<()>;
 
     /// Check if a public key is registered for an account in the defuse contract.
     async fn defuse_has_public_key(
@@ -269,7 +269,7 @@ pub trait DefuseAccountExt {
         transfer: defuse_core::intents::tokens::Transfer,
         secret_key: &[u8; 32],
         nonce: [u8; 32],
-    ) -> Result<(), TxError>;
+    ) -> anyhow::Result<()>;
 
     /// Execute multiple signed intents via defuse's `execute_intents` endpoint.
     /// Takes a slice of `MultiPayload` (already signed) and executes them atomically.
@@ -277,7 +277,7 @@ pub trait DefuseAccountExt {
         &self,
         defuse: &Account,
         payloads: &[defuse_core::payload::multi::MultiPayload],
-    ) -> Result<(), TxError>;
+    ) -> anyhow::Result<()>;
 }
 
 impl DefuseAccountExt for SigningAccount {
@@ -323,7 +323,7 @@ impl DefuseAccountExt for SigningAccount {
         defuse
     }
 
-    async fn near_deposit(&self, wnear: &Account, amount: NearToken) -> Result<(), TxError> {
+    async fn near_deposit(&self, wnear: &Account, amount: NearToken) -> anyhow::Result<()> {
         self.tx(wnear.id().clone())
             .function_call(
                 FnCallBuilder::new("near_deposit")
@@ -339,7 +339,7 @@ impl DefuseAccountExt for SigningAccount {
         &self,
         token: &Account,
         account_id: Option<&AccountId>,
-    ) -> Result<(), TxError> {
+    ) -> anyhow::Result<()> {
         self.tx(token.id().clone())
             .function_call(
                 FnCallBuilder::new("storage_deposit")
@@ -357,7 +357,7 @@ impl DefuseAccountExt for SigningAccount {
         receiver_id: &AccountId,
         amount: u128,
         msg: &str,
-    ) -> Result<u128, TxError> {
+    ) -> anyhow::Result<u128> {
         self.tx(token.id().clone())
             .function_call(
                 FnCallBuilder::new("ft_transfer_call")
@@ -399,7 +399,7 @@ impl DefuseAccountExt for SigningAccount {
         token_id: &TokenId,
         amount: u128,
         msg: &str,
-    ) -> Result<Vec<u128>, TxError> {
+    ) -> anyhow::Result<Vec<u128>> {
         self.tx(defuse.id().clone())
             .function_call(
                 FnCallBuilder::new("mt_transfer_call")
@@ -423,7 +423,7 @@ impl DefuseAccountExt for SigningAccount {
         transfer_auth_instance: &AccountId,
         signer_id: &AccountId,
         msg: &str,
-    ) -> Result<(), TxError> {
+    ) -> anyhow::Result<()> {
         self.tx(transfer_auth_instance.clone())
             .function_call(
                 FnCallBuilder::new("on_auth")
@@ -442,7 +442,7 @@ impl DefuseAccountExt for SigningAccount {
         &self,
         defuse: &Account,
         public_key: defuse_crypto::PublicKey,
-    ) -> Result<(), TxError> {
+    ) -> anyhow::Result<()> {
         self.tx(defuse.id().clone())
             .function_call(
                 FnCallBuilder::new("add_public_key")
@@ -593,7 +593,7 @@ impl DefuseAccountExt for SigningAccount {
         transfer: defuse_core::intents::tokens::Transfer,
         secret_key: &[u8; 32],
         nonce: [u8; 32],
-    ) -> Result<(), TxError> {
+    ) -> anyhow::Result<()> {
         use defuse_core::intents::{DefuseIntents, Intent};
         use defuse_core::payload::multi::MultiPayload;
         use defuse_core::payload::nep413::Nep413DefuseMessage;
@@ -648,7 +648,7 @@ impl DefuseAccountExt for SigningAccount {
         &self,
         defuse: &Account,
         payloads: &[defuse_core::payload::multi::MultiPayload],
-    ) -> Result<(), TxError> {
+    ) -> anyhow::Result<()> {
         // Note: RPC may return parsing error but the tx succeeds
         let _ = self
             .tx(defuse.id().clone())

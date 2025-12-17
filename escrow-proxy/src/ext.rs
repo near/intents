@@ -1,7 +1,7 @@
 use std::{fs, path::Path, sync::LazyLock};
 
 use crate::{ProxyConfig, RolesConfig};
-use defuse_sandbox::{FnCallBuilder, SigningAccount, TxResult};
+use defuse_sandbox::{FnCallBuilder, SigningAccount};
 use near_sdk::{Gas, NearToken, serde_json::json};
 
 #[track_caller]
@@ -18,12 +18,12 @@ pub static ESCROW_PROXY_WASM: LazyLock<Vec<u8>> =
 
 #[allow(async_fn_in_trait)]
 pub trait EscrowProxyAccountExt {
-    async fn deploy_escrow_proxy(&self, roles: RolesConfig, config: ProxyConfig) -> TxResult<()>;
+    async fn deploy_escrow_proxy(&self, roles: RolesConfig, config: ProxyConfig) -> anyhow::Result<()>;
     async fn get_escrow_proxy_config(&self) -> anyhow::Result<ProxyConfig>;
 }
 
 impl EscrowProxyAccountExt for SigningAccount {
-    async fn deploy_escrow_proxy(&self, roles: RolesConfig, config: ProxyConfig) -> TxResult<()> {
+    async fn deploy_escrow_proxy(&self, roles: RolesConfig, config: ProxyConfig) -> anyhow::Result<()> {
         self.tx(self.id().clone())
             .transfer(NearToken::from_near(20))
             .deploy(ESCROW_PROXY_WASM.clone())

@@ -19,12 +19,6 @@ use near_api::{
 };
 use near_sdk::{AccountId, NearToken};
 
-/// Type alias for backwards compatibility with old sandbox API
-pub type TxError = anyhow::Error;
-
-/// Type alias for backwards compatibility with old sandbox API
-pub type TxResult<T, E = TxError> = Result<T, E>;
-
 mod fn_call;
 mod wrappers;
 

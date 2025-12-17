@@ -7,7 +7,7 @@ use std::sync::LazyLock;
 
 use defuse_fees::Pips;
 use defuse_sandbox::{
-    Account, FnCallBuilder, Sandbox, SigningAccount, TxResult,
+    Account, FnCallBuilder, Sandbox, SigningAccount,
     api::types::transaction::actions::GlobalContractDeployMode,
 };
 use futures::join;
@@ -31,7 +31,7 @@ pub struct BaseEnv {
 }
 
 impl BaseEnv {
-    pub async fn new() -> TxResult<Self> {
+    pub async fn new() -> anyhow::Result<Self> {
         let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
 
         let wnear = sandbox.root().deploy_wnear("wnear").await;
