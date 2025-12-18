@@ -120,3 +120,47 @@ fn test_payload_hash_consistency() {
     // Different payload should produce different hash
     assert_ne!(payload1.hash(), payload3.hash());
 }
+
+#[test]
+fn test_real_wallet_signature() {
+    // Real signature from Polkadot.js Extension
+    // Wallet: Polkadot.js Extension (https://polkadot.js.org/extension/)
+    // Test dApp: https://polkadot.js.org/apps/#/signing
+    // Date: 2025-12-18
+    // Address: 167y8dsUr7kaM1FNoCtXWy2unEnjGHiN7ML3vawR6Nwywbci
+    // Original message: "Hello from Intents!"
+    // Note: Polkadot.js wraps messages in <Bytes></Bytes> tags when signing
+    
+    let original_message = "Hello from Intents!";
+    let message = format!("<Bytes>{}</Bytes>", original_message);
+    
+    // Public key (32 bytes)
+    let public_key = hex_literal::hex!(
+        "e27d987db9ed2a7a48f4137c997d610226dc93bf256c9026268b0b8489bb9862"
+    );
+    
+    // Signature (64 bytes) signed via Polkadot.js
+    let signature = hex_literal::hex!(
+        "e2c01abbd53c89d6302475827b62c7e2168a93a407ebafd94fee3fb2e286e539
+         ee1877c15df48c55c59f9d5e032f1f9a1b63a2dc4085517d705ec174e6c9cf8c"
+    );
+    
+    // Create the signed payload
+    let signed_payload = SignedSr25519Payload {
+        payload: Sr25519Payload::new(message),
+        public_key,
+        signature,
+    };
+    
+    // Verify the signature
+    let verified_key = signed_payload.verify();
+    assert!(
+        verified_key.is_some(),
+        "Real wallet signature verification failed"
+    );
+    assert_eq!(
+        verified_key.unwrap(),
+        public_key,
+        "Recovered public key doesn't match"
+    );
+}
