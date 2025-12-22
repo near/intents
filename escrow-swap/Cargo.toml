@@ -19,6 +19,7 @@ defuse-fees.workspace = true
 defuse-nep245.workspace = true
 defuse-num-utils.workspace = true
 defuse-token-id.workspace = true
+defuse-sandbox = {workspace = true, optional = true}
 
 near-contract-standards.workspace = true
 near-sdk.workspace = true
@@ -32,8 +33,21 @@ thiserror.workspace = true
 defuse-auth-call = { workspace = true, optional = true }
 defuse-near-utils = { workspace = true, optional = true }
 
+[dev-dependencies]
+defuse-escrow-swap = {path = ".", features = ["sandbox", "contract"] }
+defuse.workspace = true
+defuse-poa-factory.workspace = true
+defuse-sandbox.workspace = true
+
+futures.workspace = true
+rstest.workspace = true
+itertools.workspace = true
+tokio.workspace = true
+
+
 [features]
 default = ["auth_call", "nep141", "nep245"]
+sandbox = ["dep:defuse-sandbox"]
 
 auth_call = ["dep:defuse-auth-call"]
 nep141 = ["defuse-token-id/nep141"]

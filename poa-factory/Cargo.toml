@@ -36,6 +36,11 @@ near-contract-standards.workspace = true
 near-plugins.workspace = true
 near-sdk.workspace = true
 
+[dev-dependencies]
+rstest.workspace = true
+futures.workspace = true
+tokio.workspace = true
+
 [features]
 contract = []
 sandbox = ["dep:defuse-sandbox"]

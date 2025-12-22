@@ -964,22 +964,30 @@ dependencies = [
 name = "defuse-escrow-swap"
 version = "0.1.0"
 dependencies = [
+ "defuse",
  "defuse-auth-call",
  "defuse-borsh-utils",
  "defuse-deadline",
  "defuse-decimal",
+ "defuse-escrow-swap",
  "defuse-fees",
  "defuse-near-utils",
  "defuse-nep245",
  "defuse-num-utils",
+ "defuse-poa-factory",
+ "defuse-sandbox",
  "defuse-token-id",
  "derive_more",
+ "futures",
  "hex",
  "impl-tools",
+ "itertools",
  "near-contract-standards",
  "near-sdk",
+ "rstest",
  "serde_with",
  "thiserror 2.0.17",
+ "tokio",
 ]
 
 [[package]]
@@ -1060,9 +1068,12 @@ dependencies = [
  "defuse-near-utils",
  "defuse-poa-token",
  "defuse-sandbox",
+ "futures",
  "near-contract-standards",
  "near-plugins",
  "near-sdk",
+ "rstest",
+ "tokio",
 ]
 
 [[package]]
