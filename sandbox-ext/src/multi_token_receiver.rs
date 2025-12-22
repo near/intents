@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, fs, path::Path, sync::LazyLock};
+use std::{collections::BTreeMap, sync::LazyLock};
 
 use defuse_sandbox::{
     Account, SigningAccount, api::types::transaction::actions::GlobalContractDeployMode,
@@ -8,14 +8,7 @@ use near_sdk::{
     state_init::{StateInit, StateInitV1},
 };
 
-#[track_caller]
-fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
-    let filename = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../../res/")
-        .join(name)
-        .with_extension("wasm");
-    fs::read(filename.clone()).unwrap_or_else(|_| panic!("file {filename:?} should exists"))
-}
+use crate::read_wasm;
 
 pub static MT_RECEIVER_STUB_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("multi-token-receiver-stub/multi_token_receiver_stub"));

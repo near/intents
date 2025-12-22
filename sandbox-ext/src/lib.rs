@@ -1,3 +1,7 @@
+mod multi_token_receiver;
+
+pub use multi_token_receiver::{MT_RECEIVER_STUB_WASM, MtReceiverStubAccountExt};
+
 use std::{fs, path::Path, sync::LazyLock};
 
 use defuse_crypto::Payload;

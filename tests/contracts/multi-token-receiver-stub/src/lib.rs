@@ -3,9 +3,6 @@ use defuse::intents::ext_intents;
 use defuse_nep245::{TokenId, receiver::MultiTokenReceiver};
 use near_sdk::{AccountId, PromiseOrValue, env, json_types::U128, near, serde_json};
 
-#[cfg(feature = "test-utils")]
-pub mod ext;
-
 /// Minimal stub contract used for integration tests.
 #[derive(Default)]
 #[near(contract_state)]

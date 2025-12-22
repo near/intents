@@ -17,7 +17,7 @@ use defuse_sandbox_ext::{
 };
 use defuse_transfer_auth::storage::{ContractStorage, StateInit as TransferAuthStateInit};
 use defuse_sandbox_ext::EscrowProxyExt;
-use multi_token_receiver_stub::ext::MtReceiverStubAccountExt;
+use defuse_sandbox_ext::MtReceiverStubAccountExt;
 use near_sdk::{
     AccountId, Gas, GlobalContractId, NearToken,
     json_types::U128,
