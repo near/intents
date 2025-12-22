@@ -1,6 +1,5 @@
 mod account;
 pub mod extensions;
-mod global_contract_workaround;
 pub mod helpers;
 pub mod tx;
 
@@ -16,7 +15,6 @@ pub use extensions::{
     storage_management::{StorageManagementExt, StorageViewExt},
     wnear::{WNearDeployerExt, WNearExt},
 };
-pub use global_contract_workaround::UnwrapGlobalContractDeployment;
 pub use helpers::*;
 pub use tx::{FnCallBuilder, TxBuilder};
 

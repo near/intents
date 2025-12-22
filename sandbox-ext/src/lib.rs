@@ -31,7 +31,7 @@ fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
 pub static ESCROW_PROXY_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("defuse_escrow_proxy"));
 pub static WNEAR_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm("../tests/contracts/target/wnear"));
+    LazyLock::new(|| read_wasm("../releases/wnear"));
 pub static VERIFIER_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("defuse"));
 pub static TRANSFER_AUTH_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("defuse_transfer_auth"));

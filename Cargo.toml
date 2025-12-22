@@ -88,7 +88,7 @@ defuse-test-utils.path = "test-utils"
 
 cargo-near-build = "0.9.0"
 near-account-id = "2.4.0"
-near-api = "0.8.2"
+near-api = "0.8.0"
 near-api-types = "0.8.2"
 near-openapi-types = "0.6.0"
 near-contract-standards = "5.23"
@@ -141,6 +141,10 @@ must_use_candidate = "allow"
 unreadable_literal = "allow"
 similar_names = "allow"
 too_long_first_doc_paragraph = "allow"
+
+[patch.crates-io]
+near-api = { git = "https://github.com/pityjllk/near-api-rs", rev = "a1e37cfc7a83996b102d7610b1365dcf9d74d601" }
+near-api-types = { git = "https://github.com/pityjllk/near-api-rs", rev = "a1e37cfc7a83996b102d7610b1365dcf9d74d601" }
 
 [profile.release]
 codegen-units = 1
