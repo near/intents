@@ -241,7 +241,7 @@ mod tests {
         // Note: Polkadot.js wraps messages in <Bytes></Bytes> tags when signing
 
         let original_message = "Hello from Intents!";
-        let message = format!("<Bytes>{}</Bytes>", original_message);
+        let message = format!("<Bytes>{original_message}</Bytes>");
 
         // Public key (32 bytes)
         let public_key = hex!("e27d987db9ed2a7a48f4137c997d610226dc93bf256c9026268b0b8489bb9862");
