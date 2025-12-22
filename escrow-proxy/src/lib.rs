@@ -9,9 +9,6 @@ use near_sdk::{ext_contract, near};
 pub use message::*;
 pub use state::{ProxyConfig, RolesConfig};
 
-#[cfg(feature = "test-utils")]
-pub mod ext;
-
 #[near(serializers = [json])]
 #[derive(AccessControlRole, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Role {

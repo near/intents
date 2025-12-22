@@ -965,13 +965,13 @@ dependencies = [
  "defuse-core",
  "defuse-crypto",
  "defuse-deadline",
- "defuse-escrow-proxy",
  "defuse-escrow-swap",
  "defuse-fees",
  "defuse-near-utils",
  "defuse-nep245",
  "defuse-nep413",
  "defuse-sandbox",
+ "defuse-sandbox-ext",
  "defuse-token-id",
  "defuse-transfer-auth",
  "futures",
@@ -1140,6 +1140,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-sandbox-ext"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "defuse-escrow-proxy",
+ "defuse-sandbox",
+ "near-sdk",
+]
+
+[[package]]
 name = "defuse-sep53"
 version = "0.1.0"
 dependencies = [
@@ -1195,6 +1205,7 @@ dependencies = [
  "defuse-poa-factory",
  "defuse-randomness",
  "defuse-sandbox",
+ "defuse-sandbox-ext",
  "defuse-serde-utils",
  "defuse-test-utils",
  "defuse-token-id",

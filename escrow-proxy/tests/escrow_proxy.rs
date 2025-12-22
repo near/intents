@@ -1,16 +1,15 @@
-mod env;
-
 use defuse_escrow_proxy::{ProxyConfig, RolesConfig};
-use env::{AccountExt, BaseEnv};
-use near_sdk::{GlobalContractId, NearToken};
+use defuse_sandbox::Sandbox;
+use defuse_sandbox_ext::EscrowProxyExt;
+use near_sdk::{AccountId, GlobalContractId, NearToken};
 use std::collections::{HashMap, HashSet};
 
 const INIT_BALANCE: NearToken = NearToken::from_near(100);
 
 #[tokio::test]
 async fn escrow_proxy_deployment_and_config() {
-    let env = BaseEnv::new().await.unwrap();
-    let root = env.root();
+    let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
+    let root = sandbox.root();
 
     // Get the proxy account ID (will be created during deployment)
     let proxy = root.create_subaccount("proxy", INIT_BALANCE).await.unwrap();
@@ -43,8 +42,8 @@ async fn escrow_proxy_deployment_and_config() {
 
 #[tokio::test]
 async fn dao_can_upgrade_contract() {
-    let env = BaseEnv::new().await.unwrap();
-    let root = env.root();
+    let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
+    let root = sandbox.root();
 
     let (dao, proxy_account) = futures::try_join!(
         root.create_subaccount("dao", INIT_BALANCE),

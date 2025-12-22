@@ -16,7 +16,8 @@ defuse-poa-factory = { workspace = true, features = ["contract", "sandbox"] }
 defuse-core.workspace = true
 defuse-crypto.workspace = true
 defuse-deadline.workspace = true
-defuse-escrow-proxy = { workspace = true, features = ["test-utils"] }
+defuse-escrow-proxy.workspace = true
+defuse-sandbox-ext.workspace = true
 defuse-transfer-auth = { workspace = true, features = ["test-utils"] }
 
 

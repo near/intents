@@ -1,0 +1,15 @@
+[package]
+name = "defuse-sandbox-ext"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+defuse-escrow-proxy.workspace = true
+defuse-sandbox.workspace = true
+anyhow.workspace = true
+near-sdk.workspace = true

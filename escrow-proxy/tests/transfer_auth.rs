@@ -1,5 +1,3 @@
-mod env;
-
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
@@ -16,7 +14,7 @@ use defuse_transfer_auth::ext::{
     DefuseAccountExt, TransferAuthAccountExt, derive_transfer_auth_account_id,
 };
 use defuse_transfer_auth::storage::{ContractStorage, StateInit as TransferAuthStateInit};
-use env::AccountExt;
+use defuse_sandbox_ext::EscrowProxyExt;
 use multi_token_receiver_stub::ext::MtReceiverStubAccountExt;
 use near_sdk::{
     AccountId, Gas, GlobalContractId, NearToken,

@@ -1,9 +1,8 @@
 use std::{fs, path::Path, sync::LazyLock};
 
 use defuse_escrow_proxy::{ProxyConfig, RolesConfig};
-use defuse_sandbox::{FnCallBuilder, Sandbox, SigningAccount};
-use impl_tools::autoimpl;
-use near_sdk::{AccountId, Gas, NearToken, serde_json::json};
+use defuse_sandbox::{FnCallBuilder, SigningAccount};
+use near_sdk::{Gas, NearToken, serde_json::json};
 
 #[track_caller]
 fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
@@ -17,32 +16,13 @@ fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
 pub static ESCROW_PROXY_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("defuse_escrow_proxy"));
 
-#[autoimpl(Deref using self.sandbox)]
-pub struct BaseEnv {
-    sandbox: Sandbox,
-}
-
-impl BaseEnv {
-    #[allow(dead_code)]
-    pub async fn new() -> anyhow::Result<Self> {
-        let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
-        Ok(Self { sandbox })
-    }
-
-    #[allow(dead_code)]
-    pub const fn root(&self) -> &SigningAccount {
-        self.sandbox.root()
-    }
-}
-
 #[allow(async_fn_in_trait)]
-pub trait AccountExt {
+pub trait EscrowProxyExt {
     async fn deploy_escrow_proxy(&self, roles: RolesConfig, config: ProxyConfig) -> anyhow::Result<()>;
-    #[allow(dead_code)]
     async fn get_escrow_proxy_config(&self) -> anyhow::Result<ProxyConfig>;
 }
 
-impl AccountExt for SigningAccount {
+impl EscrowProxyExt for SigningAccount {
     async fn deploy_escrow_proxy(&self, roles: RolesConfig, config: ProxyConfig) -> anyhow::Result<()> {
         self.tx(self.id().clone())
             .transfer(NearToken::from_near(20))

@@ -34,10 +34,10 @@ impl<T> UnwrapGlobalContractDeployment<T> for Result<T, anyhow::Error> {
         match self {
             Ok(_) => true,
             Err(err) => {
-                if let Some(exec_err) = err.downcast_ref::<ExecuteTransactionError>() {
-                    if let ExecuteTransactionError::TransactionError(retry_error) = exec_err {
-                        return is_success_in_transport_error(retry_error);
-                    }
+                if let Some(ExecuteTransactionError::TransactionError(retry_error)) =
+                    err.downcast_ref::<ExecuteTransactionError>()
+                {
+                    return is_success_in_transport_error(retry_error);
                 }
                 false
             }

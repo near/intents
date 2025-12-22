@@ -12,7 +12,7 @@ use std::time::Duration;
 use std::{fs, path::Path};
 
 use defuse_deadline::Deadline;
-use defuse_escrow_proxy::ext::EscrowProxyAccountExt;
+use defuse_sandbox_ext::EscrowProxyExt;
 use defuse_escrow_proxy::{ProxyConfig, RolesConfig, TransferMessage as ProxyTransferMessage};
 use defuse_escrow_swap::Params;
 use defuse_escrow_swap::action::{
@@ -349,7 +349,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
 
     // Verify escrow-swap instance does NOT exist before maker's fund
     assert!(
-        !escrow_instance_account.view().await.is_ok(),
+        escrow_instance_account.view().await.is_err(),
         "Escrow-swap instance should NOT exist before maker's fund"
     );
 
@@ -463,7 +463,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
 
     // Verify transfer-auth instance does NOT exist before on_auth call
     assert!(
-        !transfer_auth_instance_account.view().await.is_ok(),
+        transfer_auth_instance_account.view().await.is_err(),
         "Transfer-auth instance should NOT exist before on_auth call"
     );
 
