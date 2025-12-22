@@ -13,10 +13,14 @@ use near_sdk::{env, near};
 ///
 /// Uses the "substrate" signing context following Substrate/Polkadot conventions.
 /// This matches how Polkadot.js and other Substrate wallets sign messages.
+///
+/// Note: Substrate wallets (Polkadot.js, Talisman, Subwallet, etc.) wrap messages
+/// in `<Bytes>...</Bytes>` tags when signing. This wrapping is handled automatically
+/// during verification, so the payload should contain only the inner message content.
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct Sr25519Payload {
-    /// The message to be signed
+    /// The message to be signed (without `<Bytes>` wrapper)
     pub payload: String,
 }
 
@@ -76,13 +80,14 @@ impl SignedPayload for SignedSr25519Payload {
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {
-        // For Sr25519, we need to pass the raw message bytes (not formatted)
-        // The Sr25519::verify implementation will apply the "substrate" context
-        // However, since schnorrkel's sign_simple and verify_simple both use
-        // the same context parameter, we just pass the message directly
+        // Substrate wallets (Polkadot.js, Talisman, Subwallet, etc.) wrap messages
+        // in <Bytes>...</Bytes> tags when signing. We need to apply the same wrapping
+        // during verification to match what was actually signed by the wallet.
+        let wrapped_message = format!("<Bytes>{}</Bytes>", self.payload.payload);
+
         Sr25519::verify(
             &self.signature,
-            self.payload.payload.as_bytes(),
+            wrapped_message.as_bytes(),
             &self.public_key,
         )
     }
@@ -123,10 +128,11 @@ mod tests {
         // Create a message
         let message = "Hello, Sr25519!";
 
-        // Sign the message
-        let signature = keypair.sign_simple(Sr25519::SIGNING_CTX, message.as_bytes());
+        // Sign the message with <Bytes> wrapper (matching wallet behavior)
+        let wrapped_message = format!("<Bytes>{}</Bytes>", message);
+        let signature = keypair.sign_simple(Sr25519::SIGNING_CTX, wrapped_message.as_bytes());
 
-        // Create the signed payload
+        // Create the signed payload with unwrapped message
         let signed_payload = SignedSr25519Payload {
             payload: Sr25519Payload::new(message.to_string()),
             public_key: keypair.public.to_bytes(),
@@ -176,12 +182,15 @@ mod tests {
         let mut rng = thread_rng();
         let keypair = Keypair::generate_with(&mut rng);
 
-        // Sign two different messages with the standard "substrate" context
+        // Sign two different messages with <Bytes> wrapper (matching wallet behavior)
         let message1 = "First message";
         let message2 = "Second message";
 
-        let signature1 = keypair.sign_simple(Sr25519::SIGNING_CTX, message1.as_bytes());
-        let signature2 = keypair.sign_simple(Sr25519::SIGNING_CTX, message2.as_bytes());
+        let wrapped1 = format!("<Bytes>{}</Bytes>", message1);
+        let wrapped2 = format!("<Bytes>{}</Bytes>", message2);
+
+        let signature1 = keypair.sign_simple(Sr25519::SIGNING_CTX, wrapped1.as_bytes());
+        let signature2 = keypair.sign_simple(Sr25519::SIGNING_CTX, wrapped2.as_bytes());
 
         // Verify first signature
         let signed_payload1 = SignedSr25519Payload {
@@ -238,10 +247,10 @@ mod tests {
         // Date: 2025-12-18
         // Address: 167y8dsUr7kaM1FNoCtXWy2unEnjGHiN7ML3vawR6Nwywbci
         // Original message: "Hello from Intents!"
-        // Note: Polkadot.js wraps messages in <Bytes></Bytes> tags when signing
+        // Note: Polkadot.js wraps messages in <Bytes></Bytes> tags when signing.
+        // The wrapping is handled automatically during verification.
 
-        let original_message = "Hello from Intents!";
-        let message = format!("<Bytes>{original_message}</Bytes>");
+        let message = "Hello from Intents!";
 
         // Public key (32 bytes)
         let public_key = hex!("e27d987db9ed2a7a48f4137c997d610226dc93bf256c9026268b0b8489bb9862");
@@ -252,9 +261,9 @@ mod tests {
          ee1877c15df48c55c59f9d5e032f1f9a1b63a2dc4085517d705ec174e6c9cf8c"
         );
 
-        // Create the signed payload
+        // Create the signed payload with the message
         let signed_payload = SignedSr25519Payload {
-            payload: Sr25519Payload::new(message),
+            payload: Sr25519Payload::new(message.to_string()),
             public_key,
             signature,
         };
