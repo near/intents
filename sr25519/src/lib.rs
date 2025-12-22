@@ -8,7 +8,6 @@
 use defuse_crypto::{Curve, Payload, SignedPayload, Sr25519, serde::AsCurve};
 use impl_tools::autoimpl;
 use near_sdk::{env, near};
-use serde_with::serde_as;
 
 /// Raw message payload for Sr25519 signing
 ///
@@ -91,6 +90,11 @@ impl SignedPayload for SignedSr25519Payload {
 
 #[cfg(test)]
 mod tests {
+    use defuse_crypto::{Payload, SignedPayload, Sr25519};
+    use hex_literal::hex;
+    use rand::thread_rng;
+    use schnorrkel::Keypair;
+
     use super::*;
 
     #[test]
@@ -109,5 +113,159 @@ mod tests {
         // Same message should produce same hash
         let payload2 = Sr25519Payload::new("test message".to_string());
         assert_eq!(payload.hash(), payload2.hash());
+    }
+
+    #[test]
+    fn test_sr25519_signature_verification() {
+        // Generate a keypair
+        let mut rng = thread_rng();
+        let keypair = Keypair::generate_with(&mut rng);
+
+        // Create a message
+        let message = "Hello, Sr25519!";
+
+        // Sign the message
+        let signature = keypair.sign_simple(Sr25519::SIGNING_CTX, message.as_bytes());
+
+        // Create the signed payload
+        let signed_payload = SignedSr25519Payload {
+            payload: Sr25519Payload::new(message.to_string()),
+            public_key: keypair.public.to_bytes(),
+            signature: signature.to_bytes(),
+        };
+
+        // Verify the signature
+        let verified_key = signed_payload.verify();
+        assert!(verified_key.is_some(), "Signature verification failed");
+        assert_eq!(
+            verified_key.unwrap(),
+            keypair.public.to_bytes(),
+            "Recovered public key doesn't match"
+        );
+    }
+
+    #[test]
+    fn test_sr25519_invalid_signature() {
+        // Generate a keypair
+        let mut rng = thread_rng();
+        let keypair = Keypair::generate_with(&mut rng);
+
+        // Create a message
+        let message = "Hello, Sr25519!";
+
+        // Create an invalid signature (all zeros)
+        let invalid_signature = [0u8; 64];
+
+        // Create the signed payload with invalid signature
+        let signed_payload = SignedSr25519Payload {
+            payload: Sr25519Payload::new(message.to_string()),
+            public_key: keypair.public.to_bytes(),
+            signature: invalid_signature,
+        };
+
+        // Verify should fail
+        let verified_key = signed_payload.verify();
+        assert!(
+            verified_key.is_none(),
+            "Invalid signature was incorrectly verified"
+        );
+    }
+
+    #[test]
+    fn test_sr25519_different_messages() {
+        // Generate a keypair
+        let mut rng = thread_rng();
+        let keypair = Keypair::generate_with(&mut rng);
+
+        // Sign two different messages with the standard "substrate" context
+        let message1 = "First message";
+        let message2 = "Second message";
+
+        let signature1 = keypair.sign_simple(Sr25519::SIGNING_CTX, message1.as_bytes());
+        let signature2 = keypair.sign_simple(Sr25519::SIGNING_CTX, message2.as_bytes());
+
+        // Verify first signature
+        let signed_payload1 = SignedSr25519Payload {
+            payload: Sr25519Payload::new(message1.to_string()),
+            public_key: keypair.public.to_bytes(),
+            signature: signature1.to_bytes(),
+        };
+        assert!(
+            signed_payload1.verify().is_some(),
+            "First signature verification failed"
+        );
+
+        // Verify second signature
+        let signed_payload2 = SignedSr25519Payload {
+            payload: Sr25519Payload::new(message2.to_string()),
+            public_key: keypair.public.to_bytes(),
+            signature: signature2.to_bytes(),
+        };
+        assert!(
+            signed_payload2.verify().is_some(),
+            "Second signature verification failed"
+        );
+
+        // Cross-verification should fail (signature1 with message2)
+        let cross_payload = SignedSr25519Payload {
+            payload: Sr25519Payload::new(message2.to_string()),
+            public_key: keypair.public.to_bytes(),
+            signature: signature1.to_bytes(),
+        };
+        assert!(
+            cross_payload.verify().is_none(),
+            "Cross-verification should fail"
+        );
+    }
+
+    #[test]
+    fn test_payload_hash_consistency() {
+        let payload1 = Sr25519Payload::new("test".to_string());
+        let payload2 = Sr25519Payload::new("test".to_string());
+
+        // Same payload should produce same hash
+        assert_eq!(payload1.hash(), payload2.hash());
+
+        let payload3 = Sr25519Payload::new("different".to_string());
+        // Different payload should produce different hash
+        assert_ne!(payload1.hash(), payload3.hash());
+    }
+
+    #[test]
+    fn test_real_wallet_signature() {
+        // Real signature from Polkadot.js Extension
+        // Wallet: Polkadot.js Extension (https://polkadot.js.org/extension/)
+        // Test dApp: https://polkadot.js.org/apps/#/signing
+        // Date: 2025-12-18
+        // Address: 167y8dsUr7kaM1FNoCtXWy2unEnjGHiN7ML3vawR6Nwywbci
+        // Original message: "Hello from Intents!"
+        // Note: Polkadot.js wraps messages in <Bytes></Bytes> tags when signing
+
+        let original_message = "Hello from Intents!";
+        let message = format!("<Bytes>{}</Bytes>", original_message);
+
+        // Public key (32 bytes)
+        let public_key = hex!("e27d987db9ed2a7a48f4137c997d610226dc93bf256c9026268b0b8489bb9862");
+
+        // Signature (64 bytes) signed via Polkadot.js
+        let signature = hex!(
+            "e2c01abbd53c89d6302475827b62c7e2168a93a407ebafd94fee3fb2e286e539
+         ee1877c15df48c55c59f9d5e032f1f9a1b63a2dc4085517d705ec174e6c9cf8c"
+        );
+
+        // Create the signed payload
+        let signed_payload = SignedSr25519Payload {
+            payload: Sr25519Payload::new(message),
+            public_key,
+            signature,
+        };
+
+        // Verify the signature
+        let verified_key = signed_payload.verify();
+        assert_eq!(
+            verified_key,
+            Some(public_key),
+            "Signature verification failed or Recovered public key doesn't match"
+        );
     }
 }
