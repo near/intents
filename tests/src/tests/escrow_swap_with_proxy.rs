@@ -21,12 +21,12 @@ use defuse_escrow_swap::action::{
 use defuse_escrow_swap::decimal::UD128;
 use defuse_escrow_swap::ext::{EscrowSwapAccountExt, derive_escrow_swap_account_id};
 use defuse_poa_factory::contract::Role;
-use defuse_sandbox::{Account, FnCallBuilder, Sandbox, SigningAccount};
+use defuse_sandbox::{Account, FnCallBuilder, MtExt, MtViewExt, Sandbox, SigningAccount};
 use defuse_token_id::TokenId;
 use defuse_token_id::nep141::Nep141TokenId;
 use defuse_token_id::nep245::Nep245TokenId;
 use defuse_transfer_auth::TransferAuthContext;
-use defuse_transfer_auth::ext::{
+use defuse_sandbox_ext::{
     DefuseAccountExt, TransferAuthAccountExt, derive_transfer_auth_account_id,
     public_key_from_secret,
 };
@@ -399,8 +399,9 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     );
 
     // Verify escrow received maker's tokens
+    let defuse_account = Account::new(defuse.id().clone(), root.network_config().clone());
     let escrow_token_a_balance =
-        SigningAccount::mt_balance_of(&defuse, &escrow_instance_id, &token_a_defuse_id)
+        defuse_account.mt_balance_of(&escrow_instance_id, &token_a_defuse_id.to_string())
             .await
             .unwrap();
     assert_eq!(
@@ -497,10 +498,11 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     // Step 2: Solver sends tokens to proxy - proxy will query transfer-auth for authorization
     let transfer_result = solver
         .mt_transfer_call(
-            &defuse,
+            defuse.id(),
             proxy.id(),
-            &token_b_defuse_id,
+            &token_b_defuse_id.to_string(),
             swap_amount,
+            None,
             &proxy_msg_json,
         )
         .await;
@@ -511,13 +513,13 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     // When authorized, tokens should be forwarded and swap completed
     assert_eq!(
         used_amounts,
-        vec![swap_amount],
+        swap_amount,
         "Used amount should equal transferred amount when authorized"
     );
 
     // Maker should have received token-b
     let maker_token_b_balance =
-        SigningAccount::mt_balance_of(&defuse, maker.id(), &token_b_defuse_id)
+        defuse_account.mt_balance_of(maker.id(), &token_b_defuse_id.to_string())
             .await
             .unwrap();
     assert_eq!(
@@ -527,7 +529,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
 
     // Solver should have received token-a
     let solver_token_a_balance =
-        SigningAccount::mt_balance_of(&defuse, solver.id(), &token_a_defuse_id)
+        defuse_account.mt_balance_of(solver.id(), &token_a_defuse_id.to_string())
             .await
             .unwrap();
     assert_eq!(
@@ -537,7 +539,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
 
     // Escrow should be empty
     let escrow_token_a_final =
-        SigningAccount::mt_balance_of(&defuse, &escrow_instance_id, &token_a_defuse_id)
+        defuse_account.mt_balance_of(&escrow_instance_id, &token_a_defuse_id.to_string())
             .await
             .unwrap();
     assert_eq!(
@@ -546,7 +548,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     );
 
     let escrow_token_b_final =
-        SigningAccount::mt_balance_of(&defuse, &escrow_instance_id, &token_b_defuse_id)
+        defuse_account.mt_balance_of(&escrow_instance_id, &token_b_defuse_id.to_string())
             .await
             .unwrap();
     assert_eq!(

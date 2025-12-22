@@ -7,10 +7,13 @@ use defuse_escrow_proxy::{
 };
 use defuse_escrow_swap::action::TransferMessage as EscrowTransferMessage;
 use defuse_escrow_swap::decimal::UD128;
-use defuse_sandbox::{FnCallBuilder, Sandbox, SigningAccount, UnwrapGlobalContractDeployment};
+use defuse_sandbox::{
+    Account, FnCallBuilder, FtExt, MtExt, MtViewExt, Sandbox, StorageManagementExt,
+    UnwrapGlobalContractDeployment, WNearExt,
+};
 use defuse_token_id::{TokenId, nep141::Nep141TokenId};
 use defuse_transfer_auth::TransferAuthContext;
-use defuse_transfer_auth::ext::{
+use defuse_sandbox_ext::{
     DefuseAccountExt, TransferAuthAccountExt, derive_transfer_auth_account_id,
 };
 use defuse_transfer_auth::storage::{ContractStorage, StateInit as TransferAuthStateInit};
@@ -73,23 +76,24 @@ async fn test_deploy_transfer_auth_global_contract() {
 
     // 1. Root deposits NEAR to get WNEAR
     let deposit_amount = NearToken::from_near(10);
-    root.near_deposit(&wnear, deposit_amount).await.unwrap();
+    root.near_deposit(wnear.id(), deposit_amount).await.unwrap();
 
     // 2. Storage deposit for defuse contract on wnear (so defuse can receive tokens)
-    root.ft_storage_deposit(&wnear, Some(defuse.id()))
+    root.storage_deposit(wnear.id(), Some(defuse.id().as_ref()), NearToken::from_millinear(50))
         .await
         .unwrap();
 
     // 3. ft_transfer_call WNEAR to defuse with solver as msg (receiver)
     let transfer_amount: u128 = NearToken::from_near(5).as_yoctonear();
-    root.ft_transfer_call(&wnear, defuse.id(), transfer_amount, solver.id().as_str())
+    root.ft_transfer_call(wnear.id(), defuse.id(), transfer_amount, None, solver.id().as_str())
         .await
         .unwrap();
 
     // 4. Query mt_balance_of for solver on defuse
     // Token ID for NEP-141 is "nep141:<contract_id>"
     let token_id = TokenId::from(Nep141TokenId::new(wnear.id().clone()));
-    let balance = SigningAccount::mt_balance_of(&defuse, solver.id(), &token_id)
+    let defuse_account = Account::new(defuse.id().clone(), root.network_config().clone());
+    let balance = defuse_account.mt_balance_of(solver.id(), &token_id.to_string())
         .await
         .unwrap();
 
@@ -103,7 +107,7 @@ async fn test_deploy_transfer_auth_global_contract() {
     // === Test MT transfer to proxy with timeout/refund ===
 
     // Record initial solver balance
-    let initial_solver_balance = SigningAccount::mt_balance_of(&defuse, solver.id(), &token_id)
+    let initial_solver_balance = defuse_account.mt_balance_of(solver.id(), &token_id.to_string())
         .await
         .unwrap();
 
@@ -145,30 +149,33 @@ async fn test_deploy_transfer_auth_global_contract() {
     let proxy_transfer_amount = NearToken::from_near(1).as_yoctonear();
     let solver_id = solver.id().clone();
     let proxy_id = proxy.id().clone();
+    let defuse_id = defuse.id().clone();
+    let token_id_str = token_id.to_string();
 
     let (transfer_result, ()) = futures::join!(
         solver.mt_transfer_call(
-            &defuse,
+            &defuse_id,
             &proxy_id,
-            &token_id,
+            &token_id_str,
             proxy_transfer_amount,
+            None,
             &msg_json,
         ),
         sandbox.fast_forward(250)
     );
 
-    let used_amounts = transfer_result.unwrap();
+    let used_amount = transfer_result.unwrap();
 
     // mt_transfer_call returns amounts that were "used" (not refunded)
     // When receiver times out/refunds, the used amount should be 0
     assert_eq!(
-        used_amounts,
-        vec![0],
+        used_amount,
+        0,
         "Used amount should be 0 when transfer times out and refunds"
     );
 
     // Verify solver balance is unchanged after refund
-    let final_solver_balance = SigningAccount::mt_balance_of(&defuse, &solver_id, &token_id)
+    let final_solver_balance = defuse_account.mt_balance_of(&solver_id, &token_id.to_string())
         .await
         .unwrap();
 
@@ -240,20 +247,21 @@ async fn test_transfer_authorized_by_relay() {
 
     // Setup: deposit WNEAR to defuse for solver
     let deposit_amount = NearToken::from_near(10);
-    root.near_deposit(&wnear, deposit_amount).await.unwrap();
-    root.ft_storage_deposit(&wnear, Some(defuse.id()))
+    root.near_deposit(wnear.id(), deposit_amount).await.unwrap();
+    root.storage_deposit(wnear.id(), Some(defuse.id().as_ref()), NearToken::from_millinear(50))
         .await
         .unwrap();
 
     let transfer_amount: u128 = NearToken::from_near(5).as_yoctonear();
-    root.ft_transfer_call(&wnear, defuse.id(), transfer_amount, solver.id().as_str())
+    root.ft_transfer_call(wnear.id(), defuse.id(), transfer_amount, None, solver.id().as_str())
         .await
         .unwrap();
 
     let token_id = TokenId::from(Nep141TokenId::new(wnear.id().clone()));
+    let defuse_account = Account::new(defuse.id().clone(), root.network_config().clone());
 
     // Record initial solver balance
-    let initial_solver_balance = SigningAccount::mt_balance_of(&defuse, solver.id(), &token_id)
+    let initial_solver_balance = defuse_account.mt_balance_of(solver.id(), &token_id.to_string())
         .await
         .unwrap();
 
@@ -317,6 +325,8 @@ async fn test_transfer_authorized_by_relay() {
 
     let proxy_id = proxy.id().clone();
     let relay_id = relay.id().clone();
+    let defuse_id = defuse.id().clone();
+    let token_id_str = token_id.to_string();
 
     // Build raw state for state_init (same as proxy does)
     let raw_state = ContractStorage::init_state(auth_state).unwrap();
@@ -326,10 +336,11 @@ async fn test_transfer_authorized_by_relay() {
     // TODO: Replace direct on_auth call with AuthCall intent through defuse
     let (_transfer_result, _auth_result) = futures::join!(
         solver.mt_transfer_call(
-            &defuse,
+            &defuse_id,
             &proxy_id,
-            &token_id,
+            &token_id_str,
             proxy_transfer_amount,
+            None,
             &msg_json,
         ),
         // Call on_auth from defuse (auth_contract) with relay as signer_id
@@ -354,7 +365,7 @@ async fn test_transfer_authorized_by_relay() {
     );
 
     // Verify solver balance decreased
-    let final_solver_balance = SigningAccount::mt_balance_of(&defuse, solver.id(), &token_id)
+    let final_solver_balance = defuse_account.mt_balance_of(solver.id(), &token_id.to_string())
         .await
         .unwrap();
 
@@ -365,7 +376,7 @@ async fn test_transfer_authorized_by_relay() {
     );
 
     // Verify escrow instance received the tokens
-    let escrow_balance = SigningAccount::mt_balance_of(&defuse, &escrow_instance_id, &token_id)
+    let escrow_balance = defuse_account.mt_balance_of(&escrow_instance_id, &token_id.to_string())
         .await
         .unwrap();
 

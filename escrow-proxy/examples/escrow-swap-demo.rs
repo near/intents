@@ -14,8 +14,7 @@
 
 use defuse_core::intents::Intent;
 use defuse_token_id::nep245::Nep245TokenId;
-use defuse_transfer_auth::ext::DefuseAccountExt;
-use defuse_transfer_auth::ext::sign_intents;
+use defuse_sandbox_ext::{DefuseAccountExt, sign_intents};
 use defuse_transfer_auth::storage::StateInit as TransferAuthStateInit;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -34,7 +33,7 @@ use defuse_escrow_swap::action::{
 };
 use defuse_escrow_swap::decimal::UD128;
 use defuse_sandbox::api::{NetworkConfig, SecretKey, Signer};
-use defuse_sandbox::{Account, SigningAccount};
+use defuse_sandbox::{Account, MtViewExt, SigningAccount};
 use defuse_token_id::TokenId;
 use defuse_token_id::nep141::Nep141TokenId;
 use defuse_transfer_auth::TransferAuthContext;
@@ -214,9 +213,11 @@ async fn main() -> Result<()> {
     println!("Taker: {} (pubkey: {})", taker_signing.id(), taker_pubkey);
 
     // 5. Create accounts on-chain, fund them, and register public keys in verifier
+    let src_token_str = src_token.to_string();
+    let dst_token_str = dst_token.to_string();
     let (src_token_balance, dst_token_balance) = futures::try_join!(
-        SigningAccount::mt_balance_of(&defuse, root.id(), &src_token),
-        SigningAccount::mt_balance_of(&defuse, root.id(), &dst_token)
+        defuse.mt_balance_of(root.id(), &src_token_str),
+        defuse.mt_balance_of(root.id(), &dst_token_str)
     )
     .unwrap();
 

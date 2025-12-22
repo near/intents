@@ -18,7 +18,7 @@ defuse-crypto.workspace = true
 defuse-deadline.workspace = true
 defuse-escrow-proxy.workspace = true
 defuse-sandbox-ext.workspace = true
-defuse-transfer-auth = { workspace = true, features = ["test-utils"] }
+defuse-transfer-auth.workspace = true
 
 
 defuse-serde-utils = { workspace = true }

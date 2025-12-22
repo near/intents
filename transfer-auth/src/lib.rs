@@ -11,9 +11,6 @@ mod error;
 pub mod event;
 pub mod storage;
 
-#[cfg(feature = "test-utils")]
-pub mod ext;
-
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
 pub struct TransferAuthContext<'a> {

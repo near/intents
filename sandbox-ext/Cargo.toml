@@ -11,5 +11,14 @@ workspace = true
 [dependencies]
 defuse-escrow-proxy.workspace = true
 defuse-sandbox.workspace = true
+defuse-transfer-auth.workspace = true
+defuse-crypto = { workspace = true, features = ["serde"] }
+defuse-deadline.workspace = true
+defuse-nep413.workspace = true
+defuse-token-id.workspace = true
+defuse-core.workspace = true
+defuse-fees.workspace = true
+ed25519-dalek.workspace = true
 anyhow.workspace = true
 near-sdk.workspace = true
+serde_json.workspace = true

@@ -1144,9 +1144,18 @@ name = "defuse-sandbox-ext"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "defuse-core",
+ "defuse-crypto",
+ "defuse-deadline",
  "defuse-escrow-proxy",
+ "defuse-fees",
+ "defuse-nep413",
  "defuse-sandbox",
+ "defuse-token-id",
+ "defuse-transfer-auth",
+ "ed25519-dalek",
  "near-sdk",
+ "serde_json",
 ]
 
 [[package]]
@@ -1282,17 +1291,11 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "defuse-auth-call",
- "defuse-core",
- "defuse-crypto",
- "defuse-deadline",
- "defuse-fees",
  "defuse-near-utils",
  "defuse-nep245",
- "defuse-nep413",
  "defuse-sandbox",
- "defuse-token-id",
+ "defuse-sandbox-ext",
  "defuse-transfer-auth",
- "ed25519-dalek",
  "futures",
  "impl-tools",
  "near-sdk",

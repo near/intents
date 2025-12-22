@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use defuse_sandbox::{Account, FnCallBuilder, Sandbox, UnwrapGlobalContractDeployment};
-use defuse_transfer_auth::ext::TransferAuthAccountExt;
+use defuse_sandbox_ext::TransferAuthAccountExt;
 use defuse_transfer_auth::storage::{ContractStorage, StateInit as TransferAuthStateInit};
 use near_sdk::{
     AccountId, Gas, GlobalContractId, NearToken,
