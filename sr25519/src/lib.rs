@@ -90,7 +90,6 @@ impl SignedPayload for SignedSr25519Payload {
 
 #[cfg(test)]
 mod tests {
-    use defuse_crypto::{Payload, SignedPayload, Sr25519};
     use hex_literal::hex;
     use rand::thread_rng;
     use schnorrkel::Keypair;
