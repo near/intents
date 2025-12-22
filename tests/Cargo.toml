@@ -10,7 +10,7 @@ workspace = true
 
 [dev-dependencies]
 defuse = { workspace = true, features = ["contract", "sandbox"] }
-defuse-escrow-swap = { workspace = true, features = ["auth_call", "test-utils"] }
+defuse-escrow-swap = { workspace = true, features = ["auth_call"] }
 defuse-near-utils = { workspace = true }
 defuse-poa-factory = { workspace = true, features = ["contract", "sandbox"] }
 defuse-core.workspace = true

@@ -19,7 +19,6 @@ use defuse_escrow_swap::action::{
     FillAction, TransferAction, TransferMessage as EscrowTransferMessage,
 };
 use defuse_escrow_swap::decimal::UD128;
-use defuse_escrow_swap::ext::{EscrowSwapAccountExt, derive_escrow_swap_account_id};
 use defuse_poa_factory::contract::Role;
 use defuse_sandbox::{Account, FnCallBuilder, MtExt, MtViewExt, Sandbox, SigningAccount};
 use defuse_token_id::TokenId;
@@ -27,8 +26,8 @@ use defuse_token_id::nep141::Nep141TokenId;
 use defuse_token_id::nep245::Nep245TokenId;
 use defuse_transfer_auth::TransferAuthContext;
 use defuse_sandbox_ext::{
-    DefuseAccountExt, TransferAuthAccountExt, derive_transfer_auth_account_id,
-    public_key_from_secret,
+    DefuseAccountExt, EscrowSwapAccountExt, TransferAuthAccountExt,
+    derive_escrow_swap_account_id, derive_transfer_auth_account_id, public_key_from_secret,
 };
 use defuse_transfer_auth::storage::StateInit as TransferAuthState;
 use near_sdk::json_types::U128;

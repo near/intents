@@ -10,6 +10,7 @@ workspace = true
 
 [dependencies]
 defuse-escrow-proxy.workspace = true
+defuse-escrow-swap.workspace = true
 defuse-sandbox.workspace = true
 defuse-transfer-auth.workspace = true
 defuse-crypto = { workspace = true, features = ["serde"] }

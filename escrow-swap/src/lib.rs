@@ -9,9 +9,6 @@ compile_error!(
 #[cfg(feature = "contract")]
 mod contract;
 
-#[cfg(feature = "test-utils")]
-pub mod ext;
-
 pub mod action;
 #[cfg(feature = "auth_call")]
 pub mod auth_call;

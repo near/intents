@@ -1148,6 +1148,7 @@ dependencies = [
  "defuse-crypto",
  "defuse-deadline",
  "defuse-escrow-proxy",
+ "defuse-escrow-swap",
  "defuse-fees",
  "defuse-nep413",
  "defuse-sandbox",

@@ -31,7 +31,6 @@ thiserror.workspace = true
 
 defuse-auth-call = { workspace = true, optional = true }
 defuse-near-utils = { workspace = true, optional = true }
-defuse-sandbox = { workspace = true, optional = true }
 
 [dev-dependencies]
 defuse.workspace = true
@@ -52,4 +51,3 @@ nep245 = ["defuse-token-id/nep245"]
 
 abi = ["defuse-deadline/abi", "defuse-token-id/abi", "serde_with/schemars_0_8"]
 contract = ["dep:defuse-near-utils"]
-test-utils = ["dep:defuse-sandbox"]
