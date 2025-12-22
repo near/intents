@@ -32,16 +32,6 @@ thiserror.workspace = true
 defuse-auth-call = { workspace = true, optional = true }
 defuse-near-utils = { workspace = true, optional = true }
 
-[dev-dependencies]
-defuse.workspace = true
-defuse-sandbox.workspace = true
-
-anyhow.workspace = true
-futures.workspace = true
-itertools.workspace = true
-rstest.workspace = true
-tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
-
 [features]
 default = ["auth_call", "nep141", "nep245"]
 
