@@ -35,17 +35,6 @@ serde_with.workspace = true
 defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
 
-[dev-dependencies]
-defuse-transfer-auth = { path = ".", features = ["auth-call"] }
-defuse-sandbox.workspace = true
-defuse-sandbox-ext.workspace = true
-near-sdk = { workspace = true, features = ["unstable", "unit-testing", "deterministic-account-ids"] }
-near-workspaces.workspace = true
-tokio.workspace = true
-serde_json.workspace = true
-futures.workspace = true
-anyhow.workspace = true
-
 [features]
 contract = []
 abi = []

@@ -31,21 +31,15 @@ near-sdk = { workspace = true, features = ["unstable"] }
 serde_with.workspace = true
 
 [dev-dependencies]
+# Dependencies needed for examples only
+defuse-core.workspace = true
+defuse-crypto.workspace = true
 defuse-sandbox.workspace = true
 defuse-sandbox-ext.workspace = true
-defuse-transfer-auth = { workspace = true, features = ["auth-call"] }
-defuse-escrow-swap.workspace = true
-impl-tools.workspace = true
-near-sdk = { workspace = true, features = ["unstable", "unit-testing"] }
-near-workspaces.workspace = true
-tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
-serde_json.workspace = true
-futures.workspace = true
 anyhow.workspace = true
-defuse-core.workspace = true
-defuse-nep413.workspace = true
+futures.workspace = true
 rand.workspace = true
-multi-token-receiver-stub = { path = "../tests/contracts/multi-token-receiver-stub" }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
 
 [features]
 contract = []

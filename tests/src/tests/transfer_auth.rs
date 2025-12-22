@@ -57,7 +57,7 @@ async fn transfer_auth_global_deployment() {
     println!("auth_transfer_for_solver1: {auth_transfer_for_solver1}");
     println!("auth_transfer_for_solver2: {auth_transfer_for_solver2}");
 
-    let result = root
+    let _result = root
         .tx(auth_transfer_for_solver1.clone())
         .state_init(transfer_auth_global.clone(), solver1_raw_state)
         .transfer(NearToken::from_yoctonear(1))

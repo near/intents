@@ -969,17 +969,13 @@ dependencies = [
  "defuse-fees",
  "defuse-near-utils",
  "defuse-nep245",
- "defuse-nep413",
  "defuse-sandbox",
  "defuse-sandbox-ext",
  "defuse-token-id",
  "defuse-transfer-auth",
  "futures",
- "impl-tools",
- "multi-token-receiver-stub",
  "near-plugins",
  "near-sdk",
- "near-workspaces",
  "rand 0.9.2",
  "serde_json",
  "serde_with",
@@ -1283,21 +1279,14 @@ dependencies = [
 name = "defuse-transfer-auth"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "defuse-auth-call",
  "defuse-near-utils",
  "defuse-nep245",
- "defuse-sandbox",
- "defuse-sandbox-ext",
- "defuse-transfer-auth",
- "futures",
  "impl-tools",
  "near-sdk",
- "near-workspaces",
  "serde_json",
  "serde_with",
  "thiserror 2.0.17",
- "tokio",
 ]
 
 [[package]]

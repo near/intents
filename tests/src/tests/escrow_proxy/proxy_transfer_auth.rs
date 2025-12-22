@@ -10,14 +10,13 @@ use defuse_escrow_swap::decimal::UD128;
 use defuse_sandbox::{
     Account, FnCallBuilder, FtExt, MtExt, MtViewExt, Sandbox, StorageManagementExt, WNearExt,
 };
+use defuse_sandbox_ext::{
+    DefuseAccountExt, EscrowProxyExt, MtReceiverStubAccountExt, TransferAuthAccountExt,
+    derive_transfer_auth_account_id,
+};
 use defuse_token_id::{TokenId, nep141::Nep141TokenId};
 use defuse_transfer_auth::TransferAuthContext;
-use defuse_sandbox_ext::{
-    DefuseAccountExt, TransferAuthAccountExt, derive_transfer_auth_account_id,
-};
 use defuse_transfer_auth::storage::{ContractStorage, StateInit as TransferAuthStateInit};
-use defuse_sandbox_ext::EscrowProxyExt;
-use defuse_sandbox_ext::MtReceiverStubAccountExt;
 use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::{
     AccountId, Gas, GlobalContractId, NearToken,
@@ -93,7 +92,8 @@ async fn test_deploy_transfer_auth_global_contract() {
     // Token ID for NEP-141 is "nep141:<contract_id>"
     let token_id = TokenId::from(Nep141TokenId::new(wnear.id().clone()));
     let defuse_account = Account::new(defuse.id().clone(), root.network_config().clone());
-    let balance = defuse_account.mt_balance_of(solver.id(), &token_id.to_string())
+    let balance = defuse_account
+        .mt_balance_of(solver.id(), &token_id.to_string())
         .await
         .unwrap();
 
@@ -107,7 +107,8 @@ async fn test_deploy_transfer_auth_global_contract() {
     // === Test MT transfer to proxy with timeout/refund ===
 
     // Record initial solver balance
-    let initial_solver_balance = defuse_account.mt_balance_of(solver.id(), &token_id.to_string())
+    let initial_solver_balance = defuse_account
+        .mt_balance_of(solver.id(), &token_id.to_string())
         .await
         .unwrap();
 
@@ -169,13 +170,13 @@ async fn test_deploy_transfer_auth_global_contract() {
     // mt_transfer_call returns amounts that were "used" (not refunded)
     // When receiver times out/refunds, the used amount should be 0
     assert_eq!(
-        used_amount,
-        0,
+        used_amount, 0,
         "Used amount should be 0 when transfer times out and refunds"
     );
 
     // Verify solver balance is unchanged after refund
-    let final_solver_balance = defuse_account.mt_balance_of(&solver_id, &token_id.to_string())
+    let final_solver_balance = defuse_account
+        .mt_balance_of(&solver_id, &token_id.to_string())
         .await
         .unwrap();
 
@@ -259,12 +260,13 @@ async fn test_transfer_authorized_by_relay() {
     let defuse_account = Account::new(defuse.id().clone(), root.network_config().clone());
 
     // Record initial solver balance
-    let initial_solver_balance = defuse_account.mt_balance_of(solver.id(), &token_id.to_string())
+    let initial_solver_balance = defuse_account
+        .mt_balance_of(solver.id(), &token_id.to_string())
         .await
         .unwrap();
 
     // Build the inner escrow-swap TransferMessage
-    let inner_msg = EscrowTransferMessage {
+    let _inner_msg = EscrowTransferMessage {
         params: EscrowParams {
             maker: solver.id().clone(),
             src_token: token_id.clone(),
@@ -362,7 +364,8 @@ async fn test_transfer_authorized_by_relay() {
     );
 
     // Verify solver balance decreased
-    let final_solver_balance = defuse_account.mt_balance_of(solver.id(), &token_id.to_string())
+    let final_solver_balance = defuse_account
+        .mt_balance_of(solver.id(), &token_id.to_string())
         .await
         .unwrap();
 
@@ -373,7 +376,8 @@ async fn test_transfer_authorized_by_relay() {
     );
 
     // Verify escrow instance received the tokens
-    let escrow_balance = defuse_account.mt_balance_of(&escrow_instance_id, &token_id.to_string())
+    let escrow_balance = defuse_account
+        .mt_balance_of(&escrow_instance_id, &token_id.to_string())
         .await
         .unwrap();
 
