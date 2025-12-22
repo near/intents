@@ -1,10 +1,11 @@
 mod ed25519;
 mod p256;
 mod secp256k1;
+mod sr25519;
 
 use crate::{ParseCurveError, parse::checked_base58_decode_array};
 
-pub use self::{ed25519::*, p256::*, secp256k1::*};
+pub use self::{ed25519::*, p256::*, secp256k1::*, sr25519::*};
 
 use near_sdk::bs58;
 use strum::{Display, EnumString, IntoStaticStr};
@@ -33,6 +34,7 @@ pub enum CurveType {
     Ed25519 = 0,
     Secp256k1 = 1,
     P256 = 2,
+    Sr25519 = 3,
 }
 
 pub trait TypedCurve: Curve {
