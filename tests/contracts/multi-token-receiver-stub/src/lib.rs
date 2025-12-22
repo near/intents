@@ -38,12 +38,7 @@ impl MultiTokenReceiver for Contract {
             "STUB::mt_on_transfer: sender_id={sender_id}, previous_owner_ids={previous_owner_ids:?}, token_ids={token_ids:?}, amounts={amounts:?}, msg={msg}"
         ));
 
-        //TODO: probably remove
-        let Ok(mode) = serde_json::from_str(&msg) else {
-            return PromiseOrValue::Value(vec![U128(0); amounts.len()]);
-        };
-
-        match mode {
+        match serde_json::from_str(&msg).unwrap() {
             MTReceiverMode::ReturnValue(value) => PromiseOrValue::Value(vec![value; amounts.len()]),
             MTReceiverMode::ReturnValues(values) => PromiseOrValue::Value(values),
             MTReceiverMode::AcceptAll => PromiseOrValue::Value(vec![U128(0); amounts.len()]),

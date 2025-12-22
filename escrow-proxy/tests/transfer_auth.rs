@@ -18,6 +18,7 @@ use defuse_sandbox_ext::{
 use defuse_transfer_auth::storage::{ContractStorage, StateInit as TransferAuthStateInit};
 use defuse_sandbox_ext::EscrowProxyExt;
 use defuse_sandbox_ext::MtReceiverStubAccountExt;
+use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::{
     AccountId, Gas, GlobalContractId, NearToken,
     json_types::U128,
@@ -285,7 +286,7 @@ async fn test_transfer_authorized_by_relay() {
             receive_src_to: defuse_escrow_swap::OverrideSend::default(),
         }),
     };
-    let inner_msg_json = serde_json::to_string(&inner_msg).unwrap();
+    let inner_msg_json = serde_json::to_string(&MTReceiverMode::AcceptAll).unwrap();
 
     // Build TransferMessage for the proxy (wraps inner message)
     let transfer_msg = TransferMessage {

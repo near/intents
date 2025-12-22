@@ -45,6 +45,7 @@ anyhow.workspace = true
 defuse-core.workspace = true
 defuse-nep413.workspace = true
 rand.workspace = true
+multi-token-receiver-stub = { path = "../tests/contracts/multi-token-receiver-stub" }
 
 [features]
 contract = []

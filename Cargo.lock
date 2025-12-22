@@ -976,6 +976,7 @@ dependencies = [
  "defuse-transfer-auth",
  "futures",
  "impl-tools",
+ "multi-token-receiver-stub",
  "near-plugins",
  "near-sdk",
  "near-workspaces",
