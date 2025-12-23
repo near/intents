@@ -15,7 +15,7 @@ async fn transfer_auth_global_deployment() {
     let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
 
-    let transfer_auth_global = sandbox.root().deploy_transfer_auth("auth").await;
+    let transfer_auth_global = root.deploy_transfer_auth("auth").await;
 
     let (escrow, auth_contract, relay, proxy) = futures::try_join!(
         root.create_subaccount("escrow", INIT_BALANCE),
