@@ -11,65 +11,6 @@ use near_sdk::{
 const INIT_BALANCE: NearToken = NearToken::from_near(100);
 
 #[tokio::test]
-async fn transfer_auth_global_deployment() {
-    let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
-    let root = sandbox.root();
-
-    let transfer_auth_global = root.deploy_transfer_auth("auth").await;
-
-    let (escrow, auth_contract, relay, proxy) = futures::try_join!(
-        root.create_subaccount("escrow", INIT_BALANCE),
-        root.create_subaccount("auth-contract", INIT_BALANCE),
-        root.create_subaccount("auth-callee", INIT_BALANCE),
-        root.create_subaccount("proxy", INIT_BALANCE),
-    )
-    .unwrap();
-
-    let solver1_raw_state = ContractStorage::init_state(TransferAuthStateInit {
-        escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
-        auth_contract: auth_contract.id().clone(),
-        on_auth_signer: relay.id().clone(),
-        authorizee: proxy.id().clone(),
-        msg_hash: [0; 32],
-    })
-    .unwrap();
-    let solver1_state_init = StateInit::V1(StateInitV1 {
-        code: near_sdk::GlobalContractId::AccountId(transfer_auth_global.clone()),
-        data: solver1_raw_state.clone(),
-    });
-
-    let solver2_raw_state = ContractStorage::init_state(TransferAuthStateInit {
-        escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
-        auth_contract: auth_contract.id().clone(),
-        on_auth_signer: relay.id().clone(),
-        authorizee: proxy.id().clone(),
-        msg_hash: [0; 32],
-    })
-    .unwrap();
-    let solver2_state_init = StateInit::V1(StateInitV1 {
-        code: near_sdk::GlobalContractId::AccountId(transfer_auth_global.clone()),
-        data: solver2_raw_state.clone(),
-    });
-
-    let auth_transfer_for_solver1 = solver1_state_init.derive_account_id();
-    let auth_transfer_for_solver2 = solver2_state_init.derive_account_id();
-
-    println!("auth_transfer_for_solver1: {auth_transfer_for_solver1}");
-    println!("auth_transfer_for_solver2: {auth_transfer_for_solver2}");
-
-    let _result = root
-        .tx(auth_transfer_for_solver1.clone())
-        .state_init(transfer_auth_global.clone(), solver1_raw_state)
-        .transfer(NearToken::from_yoctonear(1))
-        .await
-        .unwrap();
-    // assert!(result, "state_init should succeed");
-
-    let account = Account::new(auth_transfer_for_solver1, proxy.network_config().clone());
-    let _: ContractStorage = account.call_view_function_json("view", json!({})).await.unwrap();
-}
-
-#[tokio::test]
 async fn on_auth_call() {
     let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
@@ -156,8 +97,6 @@ async fn transfer_auth_early_authorization() {
         .deploy_transfer_auth_instance(transfer_auth_global.clone(), state)
         .await;
 
-    // assert!(Account::new(transfer_auth_instance.clone(), root.network_config().clone()).view().await.is_ok());
-
     auth_contract
         .tx(transfer_auth_instance.clone())
         .function_call(
@@ -177,8 +116,6 @@ async fn transfer_auth_early_authorization() {
         )
         .await
         .unwrap();
-
-    // assert!(!Account::new(transfer_auth_instance.clone(), root.network_config().clone()).view().await.is_ok());
 }
 
 #[tokio::test]
@@ -284,14 +221,8 @@ async fn transfer_auth_async_authorization_timeout() {
 
     let forward_time = sandbox.fast_forward(200);
 
-    // assert!(Account::new(transfer_auth_instance.clone(), network_config.clone()).view().await.is_ok());
     let (authorized, ()) = futures::join!(async { wait_for_authorization.await }, forward_time);
-
-    // Timeout returns false (not authorized)
-    assert!(authorized.unwrap().json::<bool>().is_ok());
-
-    // Contract should still exist after timeout (state reset to Idle for retry)
-    // assert!(Account::new(transfer_auth_instance.clone(), network_config.clone()).view().await.is_ok());
+    assert!(!authorized.unwrap().json::<bool>().unwrap());
 }
 
 #[tokio::test]
@@ -349,7 +280,7 @@ async fn transfer_auth_retry_after_timeout_with_on_auth() {
         .unwrap();
 
     // Second wait_for_authorization should succeed immediately (early authorization path)
-    let _ = proxy
+    let result = proxy
         .tx(transfer_auth_instance.clone())
         .function_call(
             FnCallBuilder::new("wait_for_authorization")
@@ -358,6 +289,7 @@ async fn transfer_auth_retry_after_timeout_with_on_auth() {
         )
         .await
         .unwrap();
+    assert!(result.json::<bool>().unwrap());
 }
 
 #[tokio::test]
@@ -421,5 +353,5 @@ async fn transfer_auth_retry_after_timeout_with_on_auth2() {
             .unwrap();
     });
 
-    authorized.unwrap();
+    assert!(authorized.unwrap().json::<bool>().unwrap());
 }

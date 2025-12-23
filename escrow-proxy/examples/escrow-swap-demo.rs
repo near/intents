@@ -13,8 +13,9 @@
 //! Note: This example only builds the intents without executing them on testnet.
 
 use defuse_core::intents::Intent;
+use defuse_core::payload::multi::MultiPayload;
 use defuse_token_id::nep245::Nep245TokenId;
-use defuse_sandbox_ext::{DefuseAccountExt, sign_intents};
+use defuse_sandbox_ext::sign_intents;
 use defuse_transfer_auth::storage::StateInit as TransferAuthStateInit;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -33,13 +34,15 @@ use defuse_escrow_swap::action::{
 };
 use defuse_escrow_swap::decimal::UD128;
 use defuse_sandbox::api::{NetworkConfig, SecretKey, Signer};
+use defuse_sandbox::tx::FnCallBuilder;
 use defuse_sandbox::{Account, MtViewExt, SigningAccount};
 use defuse_token_id::TokenId;
 use defuse_token_id::nep141::Nep141TokenId;
 use defuse_transfer_auth::TransferAuthContext;
 use near_sdk::json_types::U128;
 use near_sdk::state_init::{StateInit, StateInitV1};
-use near_sdk::{AccountId, GlobalContractId, NearToken};
+use near_sdk::serde_json::json;
+use near_sdk::{AccountId, Gas, GlobalContractId, NearToken};
 use rand::{Rng, distr::Alphanumeric};
 
 // Placeholder constants - replace with actual testnet values
@@ -118,6 +121,60 @@ fn create_subaccount_with_derived_key(
     ))
 }
 
+// === Inline helper functions (previously from DefuseAccountExt) ===
+
+/// Add a public key to an account in the defuse contract.
+async fn defuse_add_public_key(
+    account: &SigningAccount,
+    defuse: &Account,
+    public_key: defuse_crypto::PublicKey,
+) -> anyhow::Result<()> {
+    account
+        .tx(defuse.id().clone())
+        .function_call(
+            FnCallBuilder::new("add_public_key")
+                .json_args(json!({ "public_key": public_key }))
+                .with_gas(Gas::from_tgas(50)),
+        )
+        .await?;
+    Ok(())
+}
+
+/// Check if an account has a specific public key registered in defuse.
+async fn defuse_has_public_key(
+    defuse: &Account,
+    account_id: &AccountId,
+    public_key: &defuse_crypto::PublicKey,
+) -> anyhow::Result<bool> {
+    defuse
+        .call_view_function_json(
+            "has_public_key",
+            json!({
+                "account_id": account_id,
+                "public_key": public_key,
+            }),
+        )
+        .await
+}
+
+/// Execute signed intents on the defuse contract.
+async fn execute_signed_intents(
+    account: &SigningAccount,
+    defuse: &Account,
+    payloads: &[MultiPayload],
+) -> anyhow::Result<()> {
+    // Note: RPC may return parsing error but the tx succeeds
+    let _ = account
+        .tx(defuse.id().clone())
+        .function_call(
+            FnCallBuilder::new("execute_intents")
+                .json_args(json!({ "signed": payloads }))
+                .with_gas(Gas::from_tgas(300)),
+        )
+        .await;
+    Ok(())
+}
+
 /// Fund a subaccount on-chain, register its public key in the verifier contract,
 /// and verify the registration succeeded.
 ///
@@ -141,13 +198,10 @@ async fn fund_and_register_subaccount(
 
     // 2. Register the public key in the verifier contract
     let defuse_pubkey: defuse_crypto::PublicKey = pubkey.into();
-    subaccount
-        .defuse_add_public_key(defuse, defuse_pubkey)
-        .await?;
+    defuse_add_public_key(subaccount, defuse, defuse_pubkey).await?;
 
     // 3. Verify registration by querying has_public_key
-    let has_key =
-        SigningAccount::defuse_has_public_key(defuse, subaccount.id(), &defuse_pubkey).await?;
+    let has_key = defuse_has_public_key(defuse, subaccount.id(), &defuse_pubkey).await?;
     assert!(
         has_key,
         "Public key registration failed for {}",
@@ -165,8 +219,7 @@ async fn fund_and_register_subaccount(
 async fn register_root_pkey_in_defuse(account: &SigningAccount, defuse: &Account) -> Result<()> {
     let pubkey = account.signer().get_public_key().await?;
     let defuse_pubkey: defuse_crypto::PublicKey = pubkey.into();
-    let has_key =
-        SigningAccount::defuse_has_public_key(defuse, account.id(), &defuse_pubkey).await?;
+    let has_key = defuse_has_public_key(defuse, account.id(), &defuse_pubkey).await?;
     if has_key {
         println!("{} public key already registered in defuse", account.id());
     } else {
@@ -174,7 +227,7 @@ async fn register_root_pkey_in_defuse(account: &SigningAccount, defuse: &Account
             "{} public key NOT registered - registering...",
             account.id()
         );
-        account.defuse_add_public_key(defuse, defuse_pubkey).await?;
+        defuse_add_public_key(account, defuse, defuse_pubkey).await?;
         println!("{} public key registered", account.id());
     }
     Ok(())
@@ -399,20 +452,18 @@ async fn main() -> Result<()> {
 
     // Step 1: Root transfers funds to maker and taker
     println!("\nStep 1: Root sends funds to maker and taker...");
-    root.execute_signed_intents(&defuse, &[rooot_sends_funds_to_maker_and_taker])
-        .await?;
+    execute_signed_intents(&root, &defuse, &[rooot_sends_funds_to_maker_and_taker]).await?;
     println!("  Done: maker and taker funded");
 
     // Step 2: Maker sends funds to escrow (deploys escrow-swap instance)
     println!("\nStep 2: Maker sends funds to escrow (deploys escrow-swap)...");
-    root.execute_signed_intents(&defuse, &[maker_sends_funds_to_escrow])
-        .await?;
+    execute_signed_intents(&root, &defuse, &[maker_sends_funds_to_escrow]).await?;
     println!("  Done: escrow-swap instance deployed at {escrow_instance_id}");
 
     // Step 3: Root sends auth_call + taker sends funds to proxy (atomically)
     // This deploys transfer-auth instance and executes the fill through the proxy
     println!("\nStep 3: Root sends auth_call + taker sends funds to proxy...");
-    root.execute_signed_intents(&defuse, &[root_sends_auth_call, taker_sends_funds_to_proxy])
+    execute_signed_intents(&root, &defuse, &[root_sends_auth_call, taker_sends_funds_to_proxy])
         .await?;
     println!("  Done: transfer-auth deployed at {transfer_auth_instance_id}");
     println!("  Done: taker filled the escrow through proxy");

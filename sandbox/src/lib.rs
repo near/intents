@@ -119,17 +119,21 @@ pub async fn sandbox(#[default(NearToken::from_near(100_000))] amount: NearToken
         })
         .await;
 
-    let guard = mutex.lock().unwrap();
-    let shared = guard.as_ref().unwrap();
+    let (sandbox_arc, root_account) = mutex
+        .lock()
+        .unwrap()
+        .as_ref()
+        .map(|shared| (shared.sandbox.clone(), shared.root.clone()))
+        .unwrap();
 
     Sandbox {
-        root: shared
+        root: root_account
             .generate_subaccount(
                 SUB_COUNTER.fetch_add(1, Ordering::Relaxed).to_string(),
                 amount,
             )
             .await
             .unwrap(),
-        sandbox: shared.sandbox.clone(),
+        sandbox: sandbox_arc,
     }
 }
