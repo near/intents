@@ -114,6 +114,65 @@ impl Env {
         self.create_named_token(name).await
     }
 
+    pub async fn create_ft_token_with_initial_balances(
+        &self,
+        balances: impl IntoIterator<Item = (AccountId, u128)>,
+    ) -> anyhow::Result<Account> {
+        let account_id = generate_random_account_id(self.poa_factory.id())
+            .expect("Failed to generate random account ID");
+        let name = account_id
+            .as_str()
+            .trim_end_matches(&format!(".{}", self.poa_factory.id()));
+
+        let token = self.create_named_token(name).await;
+        let balances = balances.into_iter().collect::<Vec<_>>();
+
+        // First: storage deposits concurrently
+        self.ft_storage_deposit_for_accounts(token.id(), balances.iter().map(|(user, _)| user))
+            .await?;
+
+        // Then: token minting concurrently
+        let token_name = self.poa_ft_name(token.id());
+        try_join_all(balances.iter().filter_map(|(user, amount)| {
+            (*amount > 0).then(|| {
+                self.root().poa_factory_ft_deposit(
+                    self.poa_factory.id(),
+                    &token_name,
+                    user,
+                    *amount,
+                    None,
+                    None,
+                )
+            })
+        }))
+        .await?;
+
+        Ok(token)
+    }
+
+    pub async fn create_mt_token_with_initial_balances(
+        &self,
+        balances: impl IntoIterator<Item = (AccountId, u128)>,
+    ) -> anyhow::Result<Account> {
+        let token = self.create_token().await;
+        let balances = balances.into_iter().collect::<Vec<_>>();
+
+        // Storage deposit only for defuse and root
+        self.ft_storage_deposit_for_accounts(token.id(), [self.defuse.id(), self.root().id()])
+            .await?;
+
+        // Mint tokens to root (so root can transfer to defuse)
+        self.ft_deposit_to_root(token.id()).await?;
+
+        // Deposit to defuse for each user concurrently
+        try_join_all(balances.iter().filter_map(|(user, amount)| {
+            (*amount > 0).then(|| self.defuse_ft_deposit_to(token.id(), *amount, user, None))
+        }))
+        .await?;
+
+        Ok(token)
+    }
+
     pub async fn create_named_user(&self, name: &str) -> SigningAccount {
         let account = self
             .generate_subaccount(name, INITIAL_USER_BALANCE)
