@@ -22,6 +22,7 @@ use defuse_sandbox::extensions::storage_management::StorageManagementExt;
 use defuse_sandbox::tx::FnCallBuilder;
 use defuse_sandbox::{Account, Sandbox, SigningAccount, read_wasm};
 use defuse_test_utils::random::{Seed, rng};
+use defuse_token_id::{TokenId, nep141::Nep141TokenId};
 use futures::future::try_join_all;
 use impl_tools::autoimpl;
 use multi_token_receiver_stub::MTReceiverMode;
@@ -117,7 +118,7 @@ impl Env {
     pub async fn create_ft_token_with_initial_balances(
         &self,
         balances: impl IntoIterator<Item = (AccountId, u128)>,
-    ) -> anyhow::Result<Account> {
+    ) -> anyhow::Result<(Account, TokenId)> {
         let account_id = generate_random_account_id(self.poa_factory.id())
             .expect("Failed to generate random account ID");
         let name = account_id
@@ -147,13 +148,14 @@ impl Env {
         }))
         .await?;
 
-        Ok(token)
+        let token_id = TokenId::from(Nep141TokenId::new(token.id().clone()));
+        Ok((token, token_id))
     }
 
     pub async fn create_mt_token_with_initial_balances(
         &self,
         balances: impl IntoIterator<Item = (AccountId, u128)>,
-    ) -> anyhow::Result<Account> {
+    ) -> anyhow::Result<(Account, TokenId)> {
         let token = self.create_token().await;
         let balances = balances.into_iter().collect::<Vec<_>>();
 
@@ -170,7 +172,8 @@ impl Env {
         }))
         .await?;
 
-        Ok(token)
+        let token_id = TokenId::from(Nep141TokenId::new(token.id().clone()));
+        Ok((token, token_id))
     }
 
     pub async fn create_named_user(&self, name: &str) -> SigningAccount {

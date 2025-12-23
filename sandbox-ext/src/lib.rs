@@ -136,7 +136,7 @@ pub trait EscrowProxyExt {
 impl EscrowProxyExt for SigningAccount {
     async fn deploy_escrow_proxy(&self, roles: RolesConfig, config: ProxyConfig) -> anyhow::Result<()> {
         self.tx(self.id().clone())
-            .transfer(NearToken::from_near(20))
+            .transfer(NearToken::from_near(5))
             .deploy(ESCROW_PROXY_WASM.clone())
             .function_call(
                 FnCallBuilder::new("new")
