@@ -4,7 +4,6 @@ mod intents;
 mod state;
 mod storage;
 mod tokens;
-// mod upgrade;
 use defuse::core::ExpirableNonce;
 use defuse::core::SaltedNonce;
 use defuse::core::VersionedNonce;

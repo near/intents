@@ -34,16 +34,15 @@ defuse-auth-call = { workspace = true, optional = true }
 defuse-near-utils = { workspace = true, optional = true }
 
 [dev-dependencies]
-defuse-escrow-swap = {path = ".", features = ["sandbox", "contract"] }
-defuse.workspace = true
-defuse-poa-factory.workspace = true
+defuse-escrow-swap = {path = ".", features = ["sandbox", "default"] }
+defuse = { workspace = true,  features = ["sandbox", "contract"] }
+defuse-poa-factory = { workspace = true,  features = ["sandbox", "contract"] }
 defuse-sandbox.workspace = true
 
 futures.workspace = true
 rstest.workspace = true
 itertools.workspace = true
-tokio.workspace = true
-
+tokio = { workspace = true, features = ["macros"] }
 
 [features]
 default = ["auth_call", "nep141", "nep245"]

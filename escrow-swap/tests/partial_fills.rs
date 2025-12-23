@@ -1,4 +1,4 @@
-use std::time::Duration;
+mod helpers;
 
 use defuse::{
     core::intents::tokens::NotifyOnTransfer,
@@ -10,7 +10,7 @@ use defuse_escrow_swap::{
     token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId},
 };
 use defuse_sandbox::{
-    Account,
+    Account, anyhow,
     extensions::{ft::FtExt, mt::MtViewExt},
 };
 use futures::{TryStreamExt, stream::FuturesOrdered};
@@ -19,12 +19,12 @@ use near_sdk::{
     AccountIdRef, serde_json,
     state_init::{StateInit, StateInitV1},
 };
+use std::time::Duration;
+
 use rstest::rstest;
 
-use super::{
-    EscrowExt, EscrowExtView,
-    env::{Env, env},
-};
+use defuse_escrow_swap::sandbox_ext::{EscrowExt, EscrowExtView};
+use helpers::{Env, env};
 
 #[rstest]
 #[tokio::test]

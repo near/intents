@@ -9,7 +9,7 @@ use defuse_poa_factory::{
     sandbox_ext::{PoAFactoryDeployerExt, PoAFactoryExt},
 };
 use defuse_sandbox::{
-    Account, Sandbox, SigningAccount,
+    Account, Sandbox, SigningAccount, anyhow,
     api::types::transaction::actions::GlobalContractDeployMode,
     extensions::{storage_management::StorageManagementExt, wnear::WNearDeployerExt},
     sandbox,
@@ -19,7 +19,7 @@ use impl_tools::autoimpl;
 use near_sdk::{GlobalContractId, NearToken};
 use rstest::fixture;
 
-use crate::tests::escrow::ESCROW_SWAP_WASM;
+use defuse_escrow_swap::sandbox_ext::ESCROW_SWAP_WASM;
 
 #[fixture]
 pub async fn env() -> Env {

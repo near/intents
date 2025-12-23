@@ -37,9 +37,10 @@ near-plugins.workspace = true
 near-sdk.workspace = true
 
 [dev-dependencies]
+defuse-poa-factory = {path = ".", features = ["sandbox", "contract"] }
 rstest.workspace = true
 futures.workspace = true
-tokio.workspace = true
+tokio = { workspace = true, features = ["macros"] }
 
 [features]
 contract = []

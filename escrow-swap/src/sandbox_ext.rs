@@ -52,6 +52,7 @@ impl EscrowExt for SigningAccount {
     }
 }
 
+#[allow(async_fn_in_trait)]
 pub trait EscrowExtView {
     async fn es_view(&self) -> anyhow::Result<Storage>;
 }
