@@ -134,18 +134,21 @@ impl Env {
 
         // Then: token minting concurrently
         let token_name = self.poa_ft_name(token.id());
-        try_join_all(balances.iter().filter_map(|(user, amount)| {
-            (*amount > 0).then(|| {
-                self.root().poa_factory_ft_deposit(
-                    self.poa_factory.id(),
-                    &token_name,
-                    user,
-                    *amount,
-                    None,
-                    None,
-                )
-            })
-        }))
+        try_join_all(
+            balances
+                .iter()
+                .filter(|(_, amount)| *amount > 0)
+                .map(|(user, amount)| {
+                    self.root().poa_factory_ft_deposit(
+                        self.poa_factory.id(),
+                        &token_name,
+                        user,
+                        *amount,
+                        None,
+                        None,
+                    )
+                }),
+        )
         .await?;
 
         let token_id = TokenId::from(Nep141TokenId::new(token.id().clone()));
@@ -167,9 +170,12 @@ impl Env {
         self.ft_deposit_to_root(token.id()).await?;
 
         // Deposit to defuse for each user concurrently
-        try_join_all(balances.iter().filter_map(|(user, amount)| {
-            (*amount > 0).then(|| self.defuse_ft_deposit_to(token.id(), *amount, user, None))
-        }))
+        try_join_all(
+            balances
+                .iter()
+                .filter(|(_, amount)| *amount > 0)
+                .map(|(user, amount)| self.defuse_ft_deposit_to(token.id(), *amount, user, None)),
+        )
         .await?;
 
         let token_id = TokenId::from(Nep141TokenId::new(token.id().clone()));

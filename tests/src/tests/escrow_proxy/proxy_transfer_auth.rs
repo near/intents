@@ -8,24 +8,18 @@ use defuse_escrow_proxy::{
 };
 use defuse_escrow_swap::action::TransferMessage as EscrowTransferMessage;
 use defuse_escrow_swap::decimal::UD128;
-use defuse_sandbox::{
-    Account, FnCallBuilder, FtExt, MtExt, MtViewExt, Sandbox, StorageManagementExt, WNearExt,
-};
+use defuse_sandbox::{Account, FnCallBuilder, MtExt, MtViewExt};
 use defuse_sandbox_ext::{
-    DefuseAccountExt, EscrowProxyExt, MtReceiverStubAccountExt, TransferAuthAccountExt,
-    derive_transfer_auth_account_id,
+    EscrowProxyExt, MtReceiverStubAccountExt, TransferAuthAccountExt, derive_transfer_auth_account_id,
 };
-use defuse_token_id::{TokenId, nep141::Nep141TokenId};
 use defuse_transfer_auth::TransferAuthContext;
 use defuse_transfer_auth::storage::{ContractStorage, StateInit as TransferAuthStateInit};
 use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::{
-    AccountId, Gas, GlobalContractId, NearToken,
+    Gas, GlobalContractId, NearToken,
     json_types::U128,
     state_init::{StateInit, StateInitV1},
 };
-
-const INIT_BALANCE: NearToken = NearToken::from_near(100);
 
 #[tokio::test]
 #[allow(clippy::too_many_lines)]
@@ -38,7 +32,7 @@ async fn test_proxy_returns_funds_on_timeout_of_authorization() {
     );
     let mt_receiver_instance = env
         .root()
-        .deploy_mt_receiver_stub_instance(mt_receiver_global.clone(), Default::default())
+        .deploy_mt_receiver_stub_instance(mt_receiver_global.clone(), BTreeMap::default())
         .await;
 
     let (solver, relay, proxy) = futures::join!(
@@ -73,7 +67,7 @@ async fn test_proxy_returns_funds_on_timeout_of_authorization() {
     let transfer_msg = TransferMessage {
         receiver_id: mt_receiver_instance.clone(),
         salt: [1u8; 32],
-        msg: "".to_string(),
+        msg: String::new(),
     };
     let msg_json = serde_json::to_string(&transfer_msg).unwrap();
     let token_id_str = token_id.to_string();
@@ -109,114 +103,66 @@ async fn test_proxy_returns_funds_on_timeout_of_authorization() {
 #[tokio::test]
 #[allow(clippy::too_many_lines)]
 async fn test_transfer_authorized_by_relay() {
-    let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
-    let root = sandbox.root();
+    let env = Env::builder().build().await;
 
-    let wnear = root.deploy_wnear("wnear").await;
-    let (transfer_auth_global, defuse, mt_receiver_global) = futures::join!(
-        root.deploy_transfer_auth("global_transfer_auth"),
-        root.deploy_verifier("defuse", wnear.id().clone()),
-        root.deploy_mt_receiver_stub_global("mt_receiver_global"),
+    // Deploy global contracts in parallel
+    let (transfer_auth_global, mt_receiver_global) = futures::join!(
+        env.root().deploy_transfer_auth("global_transfer_auth"),
+        env.root().deploy_mt_receiver_stub_global("mt_receiver_global"),
     );
 
-    let relay = root.create_subaccount("relay", INIT_BALANCE).await.unwrap();
-    let solver = root
-        .create_subaccount("solver", INIT_BALANCE)
-        .await
-        .unwrap();
+    // Create accounts in parallel
+    let (solver, relay, proxy) = futures::join!(
+        env.create_named_user("solver"),
+        env.create_named_user("relay"),
+        env.create_named_user("proxy"),
+    );
 
     let roles = RolesConfig {
-        super_admins: HashSet::from([root.id().clone()]),
+        super_admins: HashSet::from([env.root().id().clone()]),
         admins: HashMap::new(),
         grantees: HashMap::new(),
     };
 
+    // Use root as auth_contract since we need signing capability for on_auth call
     let config = ProxyConfig {
         per_fill_contract_id: GlobalContractId::AccountId(transfer_auth_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(mt_receiver_global.clone()),
-        auth_contract: defuse.id().clone(),
+        auth_contract: env.root().id().clone(),
         auth_collee: relay.id().clone(),
     };
 
-    let proxy = sandbox
-        .root()
-        .create_subaccount("proxy", INIT_BALANCE)
-        .await
-        .unwrap();
-    proxy
-        .deploy_escrow_proxy(roles, config.clone())
-        .await
-        .unwrap();
+    proxy.deploy_escrow_proxy(roles, config.clone()).await.unwrap();
 
     // Derive and pre-deploy the escrow instance (mt-receiver-stub)
-    // NOTE: In production, proxy should deploy this via state_init in mt_transfer_call
     let escrow_state_init = StateInit::V1(StateInitV1 {
         code: GlobalContractId::AccountId(mt_receiver_global.clone()),
         data: BTreeMap::new(),
     });
     let escrow_instance_id = escrow_state_init.derive_account_id();
 
-    // Deploy the escrow instance via state_init
-    root.tx(escrow_instance_id.clone())
+    // Deploy escrow instance via state_init
+    env.root()
+        .tx(escrow_instance_id.clone())
         .state_init(mt_receiver_global.clone(), BTreeMap::new())
         .transfer(NearToken::from_yoctonear(1))
         .await
         .unwrap();
 
-    // Setup: deposit WNEAR to defuse for solver
-    let deposit_amount = NearToken::from_near(10);
-    root.near_deposit(wnear.id(), deposit_amount).await.unwrap();
-    root.storage_deposit(
-        wnear.id(),
-        Some(defuse.id().as_ref()),
-        NearToken::from_millinear(50),
-    )
-    .await
-    .unwrap();
-
-    let transfer_amount: u128 = NearToken::from_near(5).as_yoctonear();
-    root.ft_transfer_call(
-        wnear.id(),
-        defuse.id(),
-        transfer_amount,
-        None,
-        solver.id().as_str(),
-    )
-    .await
-    .unwrap();
-
-    let token_id = TokenId::from(Nep141TokenId::new(wnear.id().clone()));
-    let defuse_account = Account::new(defuse.id().clone(), root.network_config().clone());
+    // Create token with initial balance for solver
+    let initial_balance: u128 = 1_000_000;
+    let (_, token_id) = env
+        .create_mt_token_with_initial_balances([(solver.id().clone(), initial_balance)])
+        .await
+        .unwrap();
 
     // Record initial solver balance
-    let initial_solver_balance = defuse_account
+    let initial_solver_balance = env
+        .defuse
         .mt_balance_of(solver.id(), &token_id.to_string())
         .await
         .unwrap();
 
-    // Build the inner escrow-swap TransferMessage
-    let _inner_msg = EscrowTransferMessage {
-        params: EscrowParams {
-            maker: solver.id().clone(),
-            src_token: token_id.clone(),
-            dst_token: token_id.clone(),
-            price: UD128::ONE,
-            deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
-            partial_fills_allowed: false,
-            refund_src_to: defuse_escrow_swap::OverrideSend::default(),
-            receive_dst_to: defuse_escrow_swap::OverrideSend::default(),
-            taker_whitelist: BTreeSet::new(),
-            protocol_fees: None,
-            integrator_fees: BTreeMap::new(),
-            auth_caller: None,
-            salt: [0u8; 32],
-        },
-        action: TransferAction::Fill(FillAction {
-            price: UD128::ONE,
-            deadline: Deadline::timeout(std::time::Duration::from_secs(120)),
-            receive_src_to: defuse_escrow_swap::OverrideSend::default(),
-        }),
-    };
     let inner_msg_json = serde_json::to_string(&MTReceiverMode::AcceptAll).unwrap();
 
     // Build TransferMessage for the proxy (wraps inner message)
@@ -227,7 +173,7 @@ async fn test_transfer_authorized_by_relay() {
     };
     let msg_json = serde_json::to_string(&transfer_msg).unwrap();
 
-    let proxy_transfer_amount = NearToken::from_near(1).as_yoctonear();
+    let proxy_transfer_amount: u128 = 100_000;
 
     // Derive the transfer-auth instance address (same logic as proxy uses)
     // The hash is computed from TransferAuthContext, not the message itself
@@ -252,9 +198,6 @@ async fn test_transfer_authorized_by_relay() {
         &auth_state,
     );
 
-    let proxy_id = proxy.id().clone();
-    let relay_id = relay.id().clone();
-    let defuse_id = defuse.id().clone();
     let token_id_str = token_id.to_string();
 
     // Build raw state for state_init (same as proxy does)
@@ -262,26 +205,25 @@ async fn test_transfer_authorized_by_relay() {
 
     // Run transfer and on_auth call concurrently
     // Transfer starts the yield promise, on_auth authorizes it
-    // TODO: Replace direct on_auth call with AuthCall intent through defuse
     let (_transfer_result, _auth_result) = futures::join!(
         solver.mt_transfer_call(
-            &defuse_id,
-            &proxy_id,
+            env.defuse.id(),
+            proxy.id(),
             &token_id_str,
             proxy_transfer_amount,
             None,
             &msg_json,
         ),
-        // Call on_auth from defuse (auth_contract) with relay as signer_id
+        // Call on_auth from root (auth_contract) with relay as signer_id
         // Include state_init to deploy the transfer-auth instance if not already deployed
         async {
-            defuse
+            env.root()
                 .tx(transfer_auth_instance_id.clone())
                 .state_init(transfer_auth_global.clone(), raw_state)
                 .function_call(
                     FnCallBuilder::new("on_auth")
                         .json_args(serde_json::json!({
-                            "signer_id": relay_id,
+                            "signer_id": relay.id(),
                             "msg": "",
                         }))
                         .with_gas(Gas::from_tgas(50))
@@ -293,8 +235,9 @@ async fn test_transfer_authorized_by_relay() {
     );
 
     // Verify solver balance decreased
-    let final_solver_balance = defuse_account
-        .mt_balance_of(solver.id(), &token_id.to_string())
+    let final_solver_balance = env
+        .defuse
+        .mt_balance_of(solver.id(), &token_id_str)
         .await
         .unwrap();
 
@@ -305,8 +248,9 @@ async fn test_transfer_authorized_by_relay() {
     );
 
     // Verify escrow instance received the tokens
-    let escrow_balance = defuse_account
-        .mt_balance_of(&escrow_instance_id, &token_id.to_string())
+    let escrow_balance = env
+        .defuse
+        .mt_balance_of(&escrow_instance_id, &token_id_str)
         .await
         .unwrap();
 
@@ -319,21 +263,21 @@ async fn test_transfer_authorized_by_relay() {
 /// Test that proxy's authorize function can authorize a transfer-auth instance
 #[tokio::test]
 async fn test_proxy_authorize_function() {
-    let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
-    let root = sandbox.root();
+    let env = Env::builder().build().await;
 
-    let wnear = root.deploy_wnear("wnear").await;
-    let (transfer_auth_global, defuse, mt_receiver_global) = futures::join!(
-        root.deploy_transfer_auth("global_transfer_auth"),
-        root.deploy_verifier("defuse", wnear.id().clone()),
-        root.deploy_mt_receiver_stub_global("mt_receiver_global"),
+    // Deploy global contracts in parallel
+    let (transfer_auth_global, mt_receiver_global) = futures::join!(
+        env.root().deploy_transfer_auth("global_transfer_auth"),
+        env.root().deploy_mt_receiver_stub_global("mt_receiver_global"),
     );
 
-    let relay = root.create_subaccount("relay", INIT_BALANCE).await.unwrap();
+    let (relay, proxy) = futures::join!(
+        env.create_named_user("relay"),
+        env.create_named_user("proxy"),
+    );
 
-    // Setup roles - relay has Canceller role which allows calling authorize
     let roles = RolesConfig {
-        super_admins: HashSet::from([root.id().clone()]),
+        super_admins: HashSet::from([env.root().id().clone()]),
         admins: HashMap::new(),
         grantees: HashMap::from([(
             defuse_escrow_proxy::Role::Canceller,
@@ -344,27 +288,17 @@ async fn test_proxy_authorize_function() {
     let config = ProxyConfig {
         per_fill_contract_id: GlobalContractId::AccountId(transfer_auth_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(mt_receiver_global.clone()),
-        auth_contract: defuse.id().clone(),
+        auth_contract: env.defuse.id().clone(),
         auth_collee: relay.id().clone(),
     };
 
-    let proxy = sandbox
-        .root()
-        .create_subaccount("proxy", INIT_BALANCE)
-        .await
-        .unwrap();
-    proxy
-        .deploy_escrow_proxy(roles, config.clone())
-        .await
-        .unwrap();
+    proxy.deploy_escrow_proxy(roles, config.clone()).await.unwrap();
 
-    // Create a transfer-auth instance state for testing
-    // on_auth_signer must be proxy since proxy.authorize() calls transfer-auth.authorized()
     let test_msg_hash = [42u8; 32];
     let auth_state = TransferAuthStateInit {
         escrow_contract_id: config.escrow_swap_contract_id.clone(),
         auth_contract: config.auth_contract.clone(),
-        on_auth_signer: proxy.id().clone(), // proxy is the one calling authorized()
+        on_auth_signer: proxy.id().clone(),
         authorizee: proxy.id().clone(),
         msg_hash: test_msg_hash,
     };
@@ -373,16 +307,14 @@ async fn test_proxy_authorize_function() {
         &auth_state,
     );
 
-    // Deploy transfer-auth instance
     let raw_state = ContractStorage::init_state(auth_state).unwrap();
-    root.tx(transfer_auth_instance_id.clone())
+    env.root()
+        .tx(transfer_auth_instance_id.clone())
         .state_init(transfer_auth_global.clone(), raw_state)
         .transfer(NearToken::from_yoctonear(1))
         .await
         .unwrap();
-    println!("Transfer-auth instance ID: {transfer_auth_instance_id}");
 
-    // Call authorize from relay (has Canceller role) through the proxy
     let authorize_result = relay
         .tx(proxy.id().clone())
         .function_call(
@@ -400,9 +332,8 @@ async fn test_proxy_authorize_function() {
         "authorize should succeed when called by account with Canceller role"
     );
 
-    // Verify the transfer-auth instance is now authorized
     let transfer_auth_account =
-        defuse_sandbox::Account::new(transfer_auth_instance_id, root.network_config().clone());
+        Account::new(transfer_auth_instance_id, env.root().network_config().clone());
     let is_authorized: bool = transfer_auth_account
         .call_view_function_json("is_authorized", serde_json::json!({}))
         .await
