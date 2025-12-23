@@ -27,7 +27,7 @@ async fn relayer_keys() {
         .parse()
         .unwrap();
     let new_relayer_signer = SigningAccount::new(
-        env.defuse.clone(),
+        env.defuse.clone().into(),
         Signer::from_secret_key(new_relayer_signer_secret_key).unwrap(),
     );
 

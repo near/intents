@@ -7,33 +7,27 @@
 
 use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::sync::LazyLock;
 use std::time::Duration;
-use std::{fs, path::Path};
 
+use crate::tests::defuse::env::Env;
 use defuse_deadline::Deadline;
-use defuse_sandbox_ext::EscrowProxyExt;
 use defuse_escrow_proxy::{ProxyConfig, RolesConfig, TransferMessage as ProxyTransferMessage};
 use defuse_escrow_swap::Params;
 use defuse_escrow_swap::action::{
     FillAction, TransferAction, TransferMessage as EscrowTransferMessage,
 };
 use defuse_escrow_swap::decimal::UD128;
-use defuse_poa_factory::contract::Role;
-use defuse_sandbox::{Account, FnCallBuilder, MtExt, MtViewExt, Sandbox, SigningAccount};
-use defuse_token_id::TokenId;
-use defuse_token_id::nep141::Nep141TokenId;
-use defuse_token_id::nep245::Nep245TokenId;
-use defuse_transfer_auth::TransferAuthContext;
+use defuse_sandbox::{Account, FnCallBuilder, MtExt, MtViewExt};
 use defuse_sandbox_ext::{
-    DefuseAccountExt, EscrowSwapAccountExt, TransferAuthAccountExt,
+    DefuseAccountExt, EscrowProxyExt, EscrowSwapAccountExt, TransferAuthAccountExt,
     derive_escrow_swap_account_id, derive_transfer_auth_account_id, public_key_from_secret,
 };
+use defuse_token_id::TokenId;
+use defuse_token_id::nep245::Nep245TokenId;
+use defuse_transfer_auth::TransferAuthContext;
 use defuse_transfer_auth::storage::StateInit as TransferAuthState;
 use near_sdk::json_types::U128;
 use near_sdk::{AccountId, Gas, GlobalContractId, NearToken, serde_json::json};
-
-const INIT_BALANCE: NearToken = NearToken::from_near(100);
 
 /// Hardcoded test private key for relay (32 bytes) - FOR TESTING ONLY
 const PRIVATE_KEY_RELAY: [u8; 32] = [1u8; 32];
@@ -41,122 +35,8 @@ const PRIVATE_KEY_RELAY: [u8; 32] = [1u8; 32];
 /// Hardcoded test private key for maker (32 bytes) - FOR TESTING ONLY
 const PRIVATE_KEY_MAKER: [u8; 32] = [3u8; 32];
 
-// ============================================================================
-// Helper functions for deploying tokens via poa_factory using near-sandbox
-// ============================================================================
-
-#[track_caller]
-fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
-    let filename = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../")
-        .join(name)
-        .with_extension("wasm");
-    fs::read(filename.clone()).unwrap_or_else(|_| panic!("file {filename:?} should exist"))
-}
-
-static POA_FACTORY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("res/defuse_poa_factory"));
-
-/// Deploy a new FT token via `poa_factory` with initial balances for specified accounts.
-///
-/// This high-level function:
-/// 1. Deploys the token contract via `poa_factory`
-/// 2. Registers storage for all specified accounts
-/// 3. Mints the specified amounts to each account
-///
-/// Returns the token's `AccountId` (e.g., "token-a.factory.near")
-async fn deploy_ft_token(
-    deployer: &SigningAccount,
-    factory: &Account,
-    token_name: &str,
-    initial_balances: &[(&AccountId, u128)],
-) -> AccountId {
-    // 1. Deploy token
-    deployer
-        .tx(factory.id().clone())
-        .function_call(
-            FnCallBuilder::new("deploy_token")
-                .json_args(json!({
-                    "token": token_name,
-                    "metadata": serde_json::Value::Null,
-                }))
-                .with_gas(Gas::from_tgas(100))
-                .with_deposit(NearToken::from_near(4)),
-        )
-        .await
-        .unwrap();
-
-    let token_id: AccountId = format!("{token_name}.{}", factory.id()).parse().unwrap();
-
-    // 2. Storage deposit and mint for each account
-    for (account_id, amount) in initial_balances {
-        // Storage deposit
-        deployer
-            .tx(token_id.clone())
-            .function_call(
-                FnCallBuilder::new("storage_deposit")
-                    .json_args(json!({ "account_id": account_id }))
-                    .with_gas(Gas::from_tgas(50))
-                    .with_deposit(NearToken::from_millinear(50)),
-            )
-            .await
-            .ok();
-
-        // Mint tokens
-        if *amount > 0 {
-            deployer
-                .tx(factory.id().clone())
-                .function_call(
-                    FnCallBuilder::new("ft_deposit")
-                        .json_args(json!({
-                            "token": token_name,
-                            "owner_id": account_id,
-                            "amount": U128(*amount),
-                            "msg": serde_json::Value::Null,
-                            "memo": serde_json::Value::Null,
-                        }))
-                        .with_gas(Gas::from_tgas(50))
-                        .with_deposit(NearToken::from_millinear(4)),
-                )
-                .await
-                .unwrap();
-        }
-    }
-
-    token_id
-}
-
-/// Deploy `poa_factory` contract
-async fn deploy_poa_factory(deployer: &SigningAccount, name: impl AsRef<str>) -> Account {
-    let account = deployer.subaccount(name);
-
-    deployer
-        .tx(account.id().clone())
-        .create_account()
-        .transfer(NearToken::from_near(100))
-        .deploy(POA_FACTORY_WASM.clone())
-        .function_call(
-            FnCallBuilder::new("new")
-                .json_args(json!({
-                    "super_admins": HashSet::from([deployer.id().clone()]),
-                    "admins": HashMap::from([
-                        (Role::TokenDeployer, HashSet::from([deployer.id().clone()])),
-                        (Role::TokenDepositer, HashSet::from([deployer.id().clone()])),
-                    ]),
-                    "grantees": HashMap::from([
-                        (Role::TokenDeployer, HashSet::from([deployer.id().clone()])),
-                        (Role::TokenDepositer, HashSet::from([deployer.id().clone()])),
-                    ]),
-                }))
-                .with_gas(Gas::from_tgas(50)),
-        )
-        .await
-        .unwrap();
-
-    account
-}
-
 /// Storage deposit for FT token
-async fn ft_storage_deposit(payer: &SigningAccount, token: &AccountId, account: &AccountId) {
+async fn ft_storage_deposit(payer: &defuse_sandbox::SigningAccount, token: &AccountId, account: &AccountId) {
     payer
         .tx(token.clone())
         .function_call(
@@ -169,160 +49,58 @@ async fn ft_storage_deposit(payer: &SigningAccount, token: &AccountId, account: 
         .ok();
 }
 
-/// Deploy a new FT token and wrap it into defuse MT with initial balances.
-///
-/// This high-level function:
-/// 1. Deploys the FT token contract via `poa_factory`
-/// 2. Registers storage for defuse and all specified owners
-/// 3. Mints FT tokens to each owner
-/// 4. Wraps (deposits) the FT tokens into defuse MT for each owner
-///
-/// Returns:
-/// - FT `AccountId` (for storage deposits on the underlying FT contract)
-/// - Defuse MT `TokenId` (Nep141 format: "nep141:token.factory" - for defuse balance queries)
-/// - Escrow MT `TokenId` (Nep245 format: "nep245:defuse:nep141:token.factory" - for escrow params)
-async fn deploy_mt_token(
-    deployer: &SigningAccount,
-    factory: &Account,
-    defuse: &SigningAccount,
-    token_name: &str,
-    initial_balances: &[(&SigningAccount, u128)],
-) -> (AccountId, TokenId, TokenId) {
-    // 1. Deploy FT token with storage for defuse
-    let ft_token_id = deploy_ft_token(
-        deployer,
-        factory,
-        token_name,
-        &[(defuse.id(), 0)], // defuse needs storage to receive FT deposits
-    )
-    .await;
-
-    // 2. For each owner: storage deposit, mint, and wrap into MT
-    for (owner, amount) in initial_balances {
-        if *amount == 0 {
-            continue;
-        }
-
-        // Storage deposit for owner on FT
-        ft_storage_deposit(deployer, &ft_token_id, owner.id()).await;
-
-        // Mint FT tokens to owner
-        deployer
-            .tx(factory.id().clone())
-            .function_call(
-                FnCallBuilder::new("ft_deposit")
-                    .json_args(json!({
-                        "token": token_name,
-                        "owner_id": owner.id(),
-                        "amount": U128(*amount),
-                        "msg": serde_json::Value::Null,
-                        "memo": serde_json::Value::Null,
-                    }))
-                    .with_gas(Gas::from_tgas(50))
-                    .with_deposit(NearToken::from_millinear(4)),
-            )
-            .await
-            .unwrap();
-
-        // Wrap FT into MT by depositing to defuse
-        owner
-            .tx(ft_token_id.clone())
-            .function_call(
-                FnCallBuilder::new("ft_transfer_call")
-                    .json_args(json!({
-                        "receiver_id": defuse.id(),
-                        "amount": U128(*amount),
-                        "msg": owner.id().to_string(),
-                    }))
-                    .with_gas(Gas::from_tgas(100))
-                    .with_deposit(NearToken::from_yoctonear(1)),
-            )
-            .await
-            .unwrap();
-    }
-
-    // Defuse uses Nep141 format internally for token IDs
-    let defuse_mt_token_id = TokenId::from(Nep141TokenId::new(ft_token_id.clone()));
-
-    // Escrow-swap receives tokens via mt_on_transfer which constructs Nep245TokenId
-    // format: nep245:<defuse_contract>:<inner_token_id>
-    let inner_token_id = defuse_mt_token_id.to_string();
-    let escrow_mt_token_id = TokenId::from(Nep245TokenId::new(defuse.id().clone(), inner_token_id));
-
-    (ft_token_id, defuse_mt_token_id, escrow_mt_token_id)
-}
-
 /// Test full escrow swap flow with proxy authorization
 #[tokio::test]
 async fn test_escrow_swap_with_proxy_full_flow() {
-    let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
-    let root = sandbox.root();
+    let env = Env::builder().build().await;
 
-    // 1. Deploy core infrastructure
-    let wnear = root.deploy_wnear("wnear").await;
-    let (transfer_auth_global, defuse, poa_factory) = futures::join!(
-        root.deploy_transfer_auth("transfer_auth"),
-        root.deploy_verifier("defuse", wnear.id().clone()),
-        deploy_poa_factory(root, "factory"),
+    // Deploy global contracts in parallel
+    let (transfer_auth_global, escrow_swap_global) = futures::join!(
+        env.root().deploy_transfer_auth("transfer_auth"),
+        env.root().deploy_escrow_swap_global("escrow_swap"),
     );
 
-    // Deploy escrow-swap global contract
-    let escrow_swap_global = root.deploy_escrow_swap_global("escrow_swap").await;
-
-    // Create accounts
-    let (maker, solver, relay) = futures::join!(
-        root.create_subaccount("maker", INIT_BALANCE),
-        root.create_subaccount("solver", INIT_BALANCE),
-        root.create_subaccount("relay", INIT_BALANCE),
+    // Create accounts in parallel
+    let (maker, solver, relay, proxy) = futures::join!(
+        env.create_named_user("maker"),
+        env.create_named_user("solver"),
+        env.create_named_user("relay"),
+        env.create_named_user("proxy"),
     );
-    let maker = maker.unwrap();
-    let solver = solver.unwrap();
-    let relay = relay.unwrap();
 
     // Deploy escrow-proxy
     let roles = RolesConfig {
-        super_admins: HashSet::from([root.id().clone()]),
+        super_admins: HashSet::from([env.root().id().clone()]),
         admins: HashMap::new(),
         grantees: HashMap::new(),
     };
-    let proxy = root.create_subaccount("proxy", INIT_BALANCE).await.unwrap();
-
-    // 2. Deploy and setup tokens
-    let swap_amount: u128 = 1_000_000_000_000_000_000_000_000; // 1 token with 24 decimals
-
-    // Deploy token-a: maker gets initial balance wrapped into defuse MT
-    // Returns: (ft_id, defuse_mt_id for queries, escrow_mt_id for escrow params)
-    let (token_a_id, token_a_defuse_id, token_a_escrow_id) = deploy_mt_token(
-        root,
-        &poa_factory,
-        &defuse,
-        "token-a",
-        &[(&maker, swap_amount)],
-    )
-    .await;
-
-    // Deploy token-b: solver gets initial balance wrapped into defuse MT
-    let (token_b_id, token_b_defuse_id, token_b_escrow_id) = deploy_mt_token(
-        root,
-        &poa_factory,
-        &defuse,
-        "token-b",
-        &[(&solver, swap_amount)],
-    )
-    .await;
-
-    /////TEST
 
     let config = ProxyConfig {
         per_fill_contract_id: GlobalContractId::AccountId(transfer_auth_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(escrow_swap_global.clone()),
-        auth_contract: defuse.id().clone(),
+        auth_contract: env.defuse.id().clone(),
         auth_collee: relay.id().clone(),
     };
-    proxy
-        .deploy_escrow_proxy(roles, config.clone())
-        .await
-        .unwrap();
+    proxy.deploy_escrow_proxy(roles, config.clone()).await.unwrap();
+
+    // 2. Deploy and setup tokens
+    let swap_amount: u128 = 100_000_000; // Fits within ft_deposit_to_root mint limit (1e9)
+
+    // Deploy tokens with initial balances using Env helper (deposits to env.defuse)
+    let (token_a_result, token_b_result) = futures::join!(
+        env.create_mt_token_with_initial_balances([(maker.id().clone(), swap_amount)]),
+        env.create_mt_token_with_initial_balances([(solver.id().clone(), swap_amount)]),
+    );
+    let (token_a, token_a_defuse_id) = token_a_result.unwrap();
+    let (token_b, token_b_defuse_id) = token_b_result.unwrap();
+    let token_a_id = token_a.id().clone();
+    let token_b_id = token_b.id().clone();
+
+    // Escrow-swap uses Nep245 format token IDs (nep245:<defuse>:<inner_token>)
+    let token_a_escrow_id =
+        TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), token_a_defuse_id.to_string()));
+    let token_b_escrow_id =
+        TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), token_b_defuse_id.to_string()));
 
     // 3. Create escrow parameters (use escrow token IDs - Nep245 format)
     let escrow_params = Params {
@@ -344,7 +122,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     // Derive escrow instance ID (without deploying) to check existence
     let escrow_instance_id = derive_escrow_swap_account_id(&escrow_swap_global, &escrow_params);
     let escrow_instance_account =
-        Account::new(escrow_instance_id.clone(), root.network_config().clone());
+        Account::new(escrow_instance_id.clone(), env.root().network_config().clone());
 
     // Verify escrow-swap instance does NOT exist before maker's fund
     assert!(
@@ -383,11 +161,11 @@ async fn test_escrow_swap_with_proxy_full_flow() {
 
     // Maker registers public key and executes transfer intent
     maker
-        .defuse_add_public_key(&defuse, public_key_from_secret(&PRIVATE_KEY_MAKER))
+        .defuse_add_public_key(&env.defuse, public_key_from_secret(&PRIVATE_KEY_MAKER))
         .await
         .unwrap();
     maker
-        .execute_transfer_intent(&defuse, transfer, &PRIVATE_KEY_MAKER, [0u8; 32])
+        .execute_transfer_intent(&env.defuse, transfer, &PRIVATE_KEY_MAKER, [0u8; 32])
         .await
         .unwrap();
 
@@ -398,11 +176,11 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     );
 
     // Verify escrow received maker's tokens
-    let defuse_account = Account::new(defuse.id().clone(), root.network_config().clone());
-    let escrow_token_a_balance =
-        defuse_account.mt_balance_of(&escrow_instance_id, &token_a_defuse_id.to_string())
-            .await
-            .unwrap();
+    let escrow_token_a_balance = env
+        .defuse
+        .mt_balance_of(&escrow_instance_id, &token_a_defuse_id.to_string())
+        .await
+        .unwrap();
     assert_eq!(
         escrow_token_a_balance, swap_amount,
         "Escrow should have token-a"
@@ -445,7 +223,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
 
     let auth_state = TransferAuthState {
         escrow_contract_id: config.escrow_swap_contract_id.clone(),
-        auth_contract: defuse.id().clone(),
+        auth_contract: env.defuse.id().clone(),
         on_auth_signer: relay.id().clone(),
         authorizee: proxy.id().clone(),
         msg_hash: context_hash,
@@ -458,7 +236,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     // Create Account wrapper for transfer-auth instance to check existence
     let transfer_auth_instance_account = Account::new(
         transfer_auth_instance_id.clone(),
-        root.network_config().clone(),
+        env.root().network_config().clone(),
     );
 
     // Verify transfer-auth instance does NOT exist before on_auth call
@@ -468,19 +246,19 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     );
 
     // Storage deposits for proxy to forward tokens
-    ft_storage_deposit(root, &token_a_id, solver.id()).await;
-    ft_storage_deposit(root, &token_b_id, maker.id()).await;
+    ft_storage_deposit(env.root(), &token_a_id, solver.id()).await;
+    ft_storage_deposit(env.root(), &token_b_id, maker.id()).await;
 
     // Step 1: Execute AuthCall intent signed by relay to deploy and authorize transfer-auth
     // The relay signs an AuthCall intent with state_init, defuse executes it and calls on_auth
     // Note: Relay must be registered in defuse with their public key first
     relay
-        .defuse_add_public_key(&defuse, public_key_from_secret(&PRIVATE_KEY_RELAY))
+        .defuse_add_public_key(&env.defuse, public_key_from_secret(&PRIVATE_KEY_RELAY))
         .await
         .unwrap();
     relay
         .execute_auth_call_intent(
-            &defuse,
+            &env.defuse,
             &transfer_auth_global,
             &auth_state,
             &PRIVATE_KEY_RELAY,
@@ -497,7 +275,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     // Step 2: Solver sends tokens to proxy - proxy will query transfer-auth for authorization
     let transfer_result = solver
         .mt_transfer_call(
-            defuse.id(),
+            env.defuse.id(),
             proxy.id(),
             &token_b_defuse_id.to_string(),
             swap_amount,
@@ -517,39 +295,43 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     );
 
     // Maker should have received token-b
-    let maker_token_b_balance =
-        defuse_account.mt_balance_of(maker.id(), &token_b_defuse_id.to_string())
-            .await
-            .unwrap();
+    let maker_token_b_balance = env
+        .defuse
+        .mt_balance_of(maker.id(), &token_b_defuse_id.to_string())
+        .await
+        .unwrap();
     assert_eq!(
         maker_token_b_balance, swap_amount,
         "Maker should have received token-b"
     );
 
     // Solver should have received token-a
-    let solver_token_a_balance =
-        defuse_account.mt_balance_of(solver.id(), &token_a_defuse_id.to_string())
-            .await
-            .unwrap();
+    let solver_token_a_balance = env
+        .defuse
+        .mt_balance_of(solver.id(), &token_a_defuse_id.to_string())
+        .await
+        .unwrap();
     assert_eq!(
         solver_token_a_balance, swap_amount,
         "Solver should have received token-a"
     );
 
     // Escrow should be empty
-    let escrow_token_a_final =
-        defuse_account.mt_balance_of(&escrow_instance_id, &token_a_defuse_id.to_string())
-            .await
-            .unwrap();
+    let escrow_token_a_final = env
+        .defuse
+        .mt_balance_of(&escrow_instance_id, &token_a_defuse_id.to_string())
+        .await
+        .unwrap();
     assert_eq!(
         escrow_token_a_final, 0,
         "Escrow should have no token-a remaining"
     );
 
-    let escrow_token_b_final =
-        defuse_account.mt_balance_of(&escrow_instance_id, &token_b_defuse_id.to_string())
-            .await
-            .unwrap();
+    let escrow_token_b_final = env
+        .defuse
+        .mt_balance_of(&escrow_instance_id, &token_b_defuse_id.to_string())
+        .await
+        .unwrap();
     assert_eq!(
         escrow_token_b_final, 0,
         "Escrow should have no token-b remaining"

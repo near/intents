@@ -44,7 +44,7 @@ pub struct Env {
 
     pub wnear: Account,
 
-    pub defuse: Account,
+    pub defuse: SigningAccount,
 
     pub poa_factory: Account,
 
