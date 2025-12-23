@@ -2,12 +2,8 @@ use std::time::Duration;
 
 use defuse_sandbox::{Account, FnCallBuilder, Sandbox};
 use defuse_sandbox_ext::TransferAuthAccountExt;
-use defuse_transfer_auth::storage::{ContractStorage, StateInit as TransferAuthStateInit};
-use near_sdk::{
-    AccountId, Gas, GlobalContractId, NearToken,
-    serde_json::json,
-    state_init::{StateInit, StateInitV1},
-};
+use defuse_transfer_auth::storage::StateInit as TransferAuthStateInit;
+use near_sdk::{AccountId, Gas, GlobalContractId, NearToken, serde_json::json};
 const INIT_BALANCE: NearToken = NearToken::from_near(100);
 
 #[tokio::test]
