@@ -1,6 +1,7 @@
 #![allow(async_fn_in_trait, dead_code)]
 
 mod env;
+mod escrow_swap_with_proxy;
 mod partial_fills;
 
 use std::sync::LazyLock;

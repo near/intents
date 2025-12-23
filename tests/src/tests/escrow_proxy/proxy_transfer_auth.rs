@@ -1,13 +1,8 @@
 use std::borrow::Cow;
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use crate::tests::defuse::env::Env;
-use defuse_deadline::Deadline;
-use defuse_escrow_proxy::{
-    EscrowParams, FillAction, ProxyConfig, RolesConfig, TransferAction, TransferMessage,
-};
-use defuse_escrow_swap::action::TransferMessage as EscrowTransferMessage;
-use defuse_escrow_swap::decimal::UD128;
+use defuse_escrow_proxy::{ProxyConfig, RolesConfig, TransferMessage};
 use defuse_sandbox::{Account, FnCallBuilder, MtExt, MtViewExt};
 use defuse_sandbox_ext::{
     EscrowProxyExt, MtReceiverStubAccountExt, TransferAuthAccountExt, derive_transfer_auth_account_id,
