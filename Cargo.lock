@@ -1116,6 +1116,7 @@ dependencies = [
  "defuse-randomness",
  "futures",
  "impl-tools",
+ "libc",
  "near-api",
  "near-contract-standards",
  "near-openapi-client 0.6.0",

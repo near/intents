@@ -9,6 +9,7 @@ use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::time::Duration;
 
+use crate::tests::defuse::DefuseSignerExt;
 use crate::tests::defuse::env::Env;
 use defuse_deadline::Deadline;
 use defuse_escrow_proxy::{ProxyConfig, RolesConfig, TransferMessage as ProxyTransferMessage};
@@ -22,6 +23,7 @@ use defuse_sandbox_ext::{
     DefuseAccountExt, EscrowProxyExt, EscrowSwapAccountExt, TransferAuthAccountExt,
     derive_escrow_swap_account_id, derive_transfer_auth_account_id, public_key_from_secret,
 };
+use defuse::sandbox_ext::intents::ExecuteIntentsExt;
 use defuse_token_id::TokenId;
 use defuse_token_id::nep245::Nep245TokenId;
 use defuse_transfer_auth::TransferAuthContext;
@@ -31,9 +33,6 @@ use near_sdk::{AccountId, Gas, GlobalContractId, NearToken, serde_json::json};
 
 /// Hardcoded test private key for relay (32 bytes) - FOR TESTING ONLY
 const PRIVATE_KEY_RELAY: [u8; 32] = [1u8; 32];
-
-/// Hardcoded test private key for maker (32 bytes) - FOR TESTING ONLY
-const PRIVATE_KEY_MAKER: [u8; 32] = [3u8; 32];
 
 /// Storage deposit for FT token
 async fn ft_storage_deposit(payer: &defuse_sandbox::SigningAccount, token: &AccountId, account: &AccountId) {
@@ -159,13 +158,13 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         ),
     };
 
-    // Maker registers public key and executes transfer intent
-    maker
-        .defuse_add_public_key(&env.defuse, public_key_from_secret(&PRIVATE_KEY_MAKER))
+    // Maker signs and executes transfer intent
+    let transfer_payload = maker
+        .sign_defuse_payload_default(&env.defuse, [transfer])
         .await
         .unwrap();
     maker
-        .execute_transfer_intent(&env.defuse, transfer, &PRIVATE_KEY_MAKER, [0u8; 32])
+        .simulate_and_execute_intents(env.defuse.id(), [transfer_payload])
         .await
         .unwrap();
 
@@ -245,13 +244,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         "Transfer-auth instance should NOT exist before on_auth call"
     );
 
-    // Storage deposits for proxy to forward tokens
-    ft_storage_deposit(env.root(), &token_a_id, solver.id()).await;
-    ft_storage_deposit(env.root(), &token_b_id, maker.id()).await;
 
-    // Step 1: Execute AuthCall intent signed by relay to deploy and authorize transfer-auth
-    // The relay signs an AuthCall intent with state_init, defuse executes it and calls on_auth
-    // Note: Relay must be registered in defuse with their public key first
     relay
         .defuse_add_public_key(&env.defuse, public_key_from_secret(&PRIVATE_KEY_RELAY))
         .await

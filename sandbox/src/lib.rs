@@ -4,9 +4,10 @@ pub mod helpers;
 pub mod tx;
 
 use std::sync::{
-    Arc,
+    Arc, Mutex,
     atomic::{AtomicUsize, Ordering},
 };
+use tokio::sync::OnceCell;
 
 pub use account::{Account, SigningAccount};
 pub use extensions::{
@@ -29,7 +30,6 @@ use near_api::{NetworkConfig, RPCEndpoint, Signer, signer::generate_secret_key};
 use near_sandbox::{GenesisAccount, SandboxConfig};
 use near_sdk::{AccountId, AccountIdRef, NearToken};
 use rstest::fixture;
-use tokio::sync::OnceCell;
 use tracing::instrument;
 
 #[autoimpl(Deref using self.root)]
@@ -94,17 +94,33 @@ impl Sandbox {
     }
 }
 
+/// Shared sandbox instance for test fixtures.
+/// Using `OnceCell<Mutex<Option<...>>>` allows async init and taking ownership in atexit.
+static SHARED_SANDBOX: OnceCell<Mutex<Option<Sandbox>>> = OnceCell::const_new();
+
+extern "C" fn cleanup_sandbox() {
+    if let Some(mutex) = SHARED_SANDBOX.get() {
+        if let Ok(mut guard) = mutex.lock() {
+            drop(guard.take());
+        }
+    }
+}
+
 #[fixture]
 #[instrument]
 pub async fn sandbox(#[default(NearToken::from_near(100_000))] amount: NearToken) -> Sandbox {
     const SHARED_ROOT: &AccountIdRef = AccountIdRef::new_or_panic("test");
-
-    static SHARED_SANDBOX: OnceCell<Sandbox> = OnceCell::const_new();
     static SUB_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
-    let shared = SHARED_SANDBOX
-        .get_or_init(|| Sandbox::new(SHARED_ROOT))
+    let mutex = SHARED_SANDBOX
+        .get_or_init(|| async {
+            unsafe { libc::atexit(cleanup_sandbox); }
+            Mutex::new(Some(Sandbox::new(SHARED_ROOT).await))
+        })
         .await;
+
+    let guard = mutex.lock().unwrap();
+    let shared = guard.as_ref().unwrap();
 
     Sandbox {
         root: shared
