@@ -8,6 +8,7 @@ use defuse_token_id::TokenId;
 use near_sdk::{AccountId, CryptoHash, Gas, borsh, env, near};
 use serde_with::{DisplayFromStr, hex::Hex, serde_as};
 
+use crate::action::{FillAction, TransferAction, TransferMessage};
 use crate::{Deadline, Error, Result, decimal::UD128};
 
 #[near(serializers = [borsh, json])]
@@ -201,6 +202,7 @@ pub struct ParamsBuilder {
     price: Option<crate::decimal::UD128>,
     partial_fills_allowed: Option<bool>,
     deadline: Option<crate::Deadline>,
+    fill_deadline: Option<crate::Deadline>,
     refund_src_to: Option<OverrideSend>,
     receive_dst_to: Option<OverrideSend>,
     #[cfg(feature = "auth_call")]
@@ -223,6 +225,7 @@ impl ParamsBuilder {
             price: None,
             partial_fills_allowed: None,
             deadline: None,
+            fill_deadline: None,
             refund_src_to: None,
             receive_dst_to: None,
             #[cfg(feature = "auth_call")]
@@ -253,6 +256,12 @@ impl ParamsBuilder {
     #[must_use]
     pub const fn with_deadline(mut self, deadline: crate::Deadline) -> Self {
         self.deadline = Some(deadline);
+        self
+    }
+
+    #[must_use]
+    pub const fn with_fill_deadline(mut self, fill_deadline: crate::Deadline) -> Self {
+        self.fill_deadline = Some(fill_deadline);
         self
     }
 
@@ -292,23 +301,47 @@ impl ParamsBuilder {
         &self.taker
     }
 
-    pub fn build(self, default_deadline: crate::Deadline) -> Params {
+    pub fn build(self, default_deadline: Deadline) -> Params {
+        let taker = self.taker.clone();
         Params {
             maker: self.maker,
             src_token: self.src_token,
             dst_token: self.dst_token,
-            price: self.price.unwrap_or(crate::decimal::UD128::ONE),
+            price: self.price.unwrap_or(UD128::ONE),
             deadline: self.deadline.unwrap_or(default_deadline),
             partial_fills_allowed: self.partial_fills_allowed.unwrap_or(false),
             refund_src_to: self.refund_src_to.unwrap_or_default(),
             receive_dst_to: self.receive_dst_to.unwrap_or_default(),
-            taker_whitelist: [self.taker].into(),
+            taker_whitelist: [taker].into(),
             protocol_fees: self.protocol_fees,
             integrator_fees: self.integrator_fees,
             #[cfg(feature = "auth_call")]
             auth_caller: self.auth_caller,
             salt: self.salt.unwrap_or([7u8; 32]),
         }
+    }
+
+    pub fn build_with_messages(
+        self,
+        default_deadline: Deadline,
+        default_fill_deadline: Deadline,
+    ) -> (Params, TransferMessage, TransferMessage) {
+        let taker = self.taker.clone();
+        let fill_deadline = self.fill_deadline.unwrap_or(default_fill_deadline);
+        let params = self.build(default_deadline);
+        let fund_msg = TransferMessage {
+            params: params.clone(),
+            action: TransferAction::Fund,
+        };
+        let fill_msg = TransferMessage {
+            params: params.clone(),
+            action: TransferAction::Fill(FillAction {
+                price: params.price,
+                deadline: fill_deadline,
+                receive_src_to: OverrideSend::default().receiver_id(taker),
+            }),
+        };
+        (params, fund_msg, fill_msg)
     }
 }
 

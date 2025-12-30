@@ -17,10 +17,7 @@ use defuse_core::intents::auth::AuthCall;
 use defuse_core::intents::tokens::{NotifyOnTransfer, Transfer};
 use defuse_deadline::Deadline;
 use defuse_escrow_proxy::{ProxyConfig, RolesConfig, TransferMessage as ProxyTransferMessage};
-use defuse_escrow_swap::action::{
-    FillAction, TransferAction, TransferMessage as EscrowTransferMessage,
-};
-use defuse_escrow_swap::{Params, ParamsBuilder};
+use defuse_escrow_swap::ParamsBuilder;
 use defuse_sandbox::{MtExt, MtViewExt};
 use defuse_sandbox_ext::{EscrowProxyExt, EscrowSwapAccountExt, TransferAuthAccountExt};
 use defuse_token_id::TokenId;
@@ -32,26 +29,6 @@ use defuse_transfer_auth::storage::{
 use near_sdk::json_types::U128;
 use near_sdk::state_init::{StateInit, StateInitV1};
 use near_sdk::{GlobalContractId, NearToken};
-
-fn build_messages(
-    builder: ParamsBuilder,
-) -> (Params, EscrowTransferMessage, EscrowTransferMessage) {
-    let taker = builder.taker().clone();
-    let params = builder.build(Deadline::timeout(Duration::from_secs(360)));
-    let fund_msg = EscrowTransferMessage {
-        params: params.clone(),
-        action: TransferAction::Fund,
-    };
-    let fill_msg = EscrowTransferMessage {
-        params: params.clone(),
-        action: TransferAction::Fill(FillAction {
-            price: params.price,
-            deadline: Deadline::timeout(Duration::from_secs(120)),
-            receive_src_to: defuse_escrow_swap::OverrideSend::default().receiver_id(taker),
-        }),
-    };
-    (params, fund_msg, fill_msg)
-}
 
 /// Test full escrow swap flow with proxy authorization
 #[tokio::test]
@@ -100,10 +77,14 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         env.defuse.id().clone(),
         token_b_defuse_id.to_string(),
     ));
-    let (escrow_params, fund_escrow_msg, fill_escrow_msg) = build_messages(ParamsBuilder::new(
+    let (escrow_params, fund_escrow_msg, fill_escrow_msg) = ParamsBuilder::new(
         (maker.id().clone(), src_token),
         (proxy.id().clone(), dst_token),
-    ));
+    )
+    .build_with_messages(
+        Deadline::timeout(Duration::from_secs(360)),
+        Deadline::timeout(Duration::from_secs(120)),
+    );
 
     let fund_msg_json = serde_json::to_string(&fund_escrow_msg).unwrap();
 
@@ -202,11 +183,11 @@ async fn test_escrow_swap_with_proxy_full_flow() {
 
     assert_eq!(
         env.defuse
-            .mt_balance_of(solver.id(), &token_a_defuse_id.to_string())
+            .mt_balance_of(proxy.id(), &token_a_defuse_id.to_string())
             .await
             .unwrap(),
         swap_amount,
-        "Solver should have received token-a"
+        "Proxy (taker) should have received token-a"
     );
 }
 
@@ -219,17 +200,15 @@ async fn test_escrow_swap_direct_fill() {
 
     let escrow_swap_global = env.root().deploy_escrow_swap_global("escrow_swap").await;
 
-    let (maker, solver) = futures::join!(
+    let (maker, taker) = futures::join!(
         env.create_named_user("maker"),
         env.create_named_user("solver"),
     );
 
-    let (token_a_result, token_b_result) = futures::join!(
+    let ((_, token_a_defuse_id), (_, token_b_defuse_id)) = futures::try_join!(
         env.create_mt_token_with_initial_balances([(maker.id().clone(), swap_amount)]),
-        env.create_mt_token_with_initial_balances([(solver.id().clone(), swap_amount)]),
-    );
-    let (_, token_a_defuse_id) = token_a_result.unwrap();
-    let (_, token_b_defuse_id) = token_b_result.unwrap();
+        env.create_mt_token_with_initial_balances([(taker.id().clone(), swap_amount)]),
+    ).unwrap();
 
     let src_token = TokenId::from(Nep245TokenId::new(
         env.defuse.id().clone(),
@@ -239,52 +218,46 @@ async fn test_escrow_swap_direct_fill() {
         env.defuse.id().clone(),
         token_b_defuse_id.to_string(),
     ));
-    let (escrow_params, fund_escrow_msg, fill_escrow_msg) = build_messages(ParamsBuilder::new(
+
+    let (escrow_params, fund_escrow_msg, fill_escrow_msg) = ParamsBuilder::new(
         (maker.id().clone(), src_token),
-        (solver.id().clone(), dst_token),
-    ));
+        (taker.id().clone(), dst_token),
+    )
+    .build_with_messages(
+        Deadline::timeout(Duration::from_secs(360)),
+        Deadline::timeout(Duration::from_secs(120)),
+    );
 
-    let fund_msg_json = serde_json::to_string(&fund_escrow_msg).unwrap();
+    // Pre-deploy escrow instance
+    let escrow_instance_id = env
+        .root()
+        .deploy_escrow_swap_instance(escrow_swap_global.clone(), &escrow_params)
+        .await;
 
-    let escrow_raw_state = defuse_escrow_swap::ContractStorage::init_state(&escrow_params).unwrap();
-    let escrow_state_init = StateInit::V1(StateInitV1 {
-        code: GlobalContractId::AccountId(escrow_swap_global.clone()),
-        data: escrow_raw_state,
-    });
-    let escrow_instance_id = escrow_state_init.derive_account_id();
-
-    let transfer = Transfer {
-        receiver_id: escrow_instance_id.clone(),
-        tokens: Amounts::new([(token_a_defuse_id.clone(), swap_amount)].into()),
-        memo: None,
-        notification: Some(NotifyOnTransfer::new(fund_msg_json).with_state_init(escrow_state_init)),
-    };
-
-    // Maker signs and executes transfer intent to fund the escrow
-    let transfer_payload = maker
-        .sign_defuse_payload_default(&env.defuse, [transfer])
-        .await
-        .unwrap();
     maker
-        .simulate_and_execute_intents(env.defuse.id(), [transfer_payload])
+        .mt_transfer_call(
+            env.defuse.id(),
+            &escrow_instance_id,
+            &token_a_defuse_id.to_string(),
+            swap_amount,
+            None,
+            &serde_json::to_string(&fund_escrow_msg).unwrap(),
+        )
         .await
         .unwrap();
 
-    // Solver fills the escrow directly via mt_transfer_call
-    let fill_msg_json = serde_json::to_string(&fill_escrow_msg).unwrap();
-    solver
+    taker
         .mt_transfer_call(
             env.defuse.id(),
             &escrow_instance_id,
             &token_b_defuse_id.to_string(),
             swap_amount,
             None,
-            &fill_msg_json,
+            &serde_json::to_string(&fill_escrow_msg).unwrap(),
         )
         .await
         .unwrap();
 
-    // Verify maker received token_b
     assert_eq!(
         env.defuse
             .mt_balance_of(maker.id(), &token_b_defuse_id.to_string())
@@ -294,10 +267,9 @@ async fn test_escrow_swap_direct_fill() {
         "Maker should have received token-b"
     );
 
-    // Verify solver received token_a
     assert_eq!(
         env.defuse
-            .mt_balance_of(solver.id(), &token_a_defuse_id.to_string())
+            .mt_balance_of(taker.id(), &token_a_defuse_id.to_string())
             .await
             .unwrap(),
         swap_amount,
