@@ -6,10 +6,8 @@
 //! 3. Atomic token exchange between maker and solver
 
 use std::borrow::Cow;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 use std::time::Duration;
-
-use near_sdk::AccountId;
 
 use crate::tests::defuse::DefuseSignerExt;
 use crate::tests::defuse::env::Env;
@@ -19,11 +17,10 @@ use defuse_core::intents::auth::AuthCall;
 use defuse_core::intents::tokens::{NotifyOnTransfer, Transfer};
 use defuse_deadline::Deadline;
 use defuse_escrow_proxy::{ProxyConfig, RolesConfig, TransferMessage as ProxyTransferMessage};
-use defuse_escrow_swap::Params;
 use defuse_escrow_swap::action::{
     FillAction, TransferAction, TransferMessage as EscrowTransferMessage,
 };
-use defuse_escrow_swap::decimal::UD128;
+use defuse_escrow_swap::{Params, ParamsBuilder};
 use defuse_sandbox::{MtExt, MtViewExt};
 use defuse_sandbox_ext::{EscrowProxyExt, EscrowSwapAccountExt, TransferAuthAccountExt};
 use defuse_token_id::TokenId;
@@ -36,128 +33,24 @@ use near_sdk::json_types::U128;
 use near_sdk::state_init::{StateInit, StateInitV1};
 use near_sdk::{GlobalContractId, NearToken};
 
-/// Builder for creating escrow swap parameters.
-/// Takes (maker, `src_token`) and (taker, `dst_token`) tuples associating actors with their tokens.
-struct ParamsBuilder {
-    maker: AccountId,
-    src_token: TokenId,
-    taker: AccountId,
-    dst_token: TokenId,
-    salt: Option<[u8; 32]>,
-    price: Option<UD128>,
-    partial_fills_allowed: Option<bool>,
-    deadline: Option<Deadline>,
-    refund_src_to: Option<defuse_escrow_swap::OverrideSend>,
-    receive_dst_to: Option<defuse_escrow_swap::OverrideSend>,
-    auth_caller: Option<AccountId>,
-    protocol_fees: Option<defuse_escrow_swap::ProtocolFees>,
-    integrator_fees: Option<BTreeMap<AccountId, defuse_escrow_swap::Pips>>,
-}
-
-impl ParamsBuilder {
-    fn new(
-        (maker, src_token): (AccountId, TokenId),
-        (taker, dst_token): (AccountId, TokenId),
-    ) -> Self {
-        Self {
-            maker,
-            src_token,
-            taker,
-            dst_token,
-            salt: None,
-            price: None,
-            partial_fills_allowed: None,
-            deadline: None,
-            refund_src_to: None,
-            receive_dst_to: None,
-            auth_caller: None,
-            protocol_fees: None,
-            integrator_fees: None,
-        }
-    }
-
-    fn with_salt(mut self, salt: [u8; 32]) -> Self {
-        self.salt = Some(salt);
-        self
-    }
-
-    fn with_price(mut self, price: UD128) -> Self {
-        self.price = Some(price);
-        self
-    }
-
-    fn with_partial_fills_allowed(mut self, allowed: bool) -> Self {
-        self.partial_fills_allowed = Some(allowed);
-        self
-    }
-
-    fn with_deadline(mut self, deadline: Deadline) -> Self {
-        self.deadline = Some(deadline);
-        self
-    }
-
-    fn with_refund_src_to(mut self, refund_src_to: defuse_escrow_swap::OverrideSend) -> Self {
-        self.refund_src_to = Some(refund_src_to);
-        self
-    }
-
-    fn with_receive_dst_to(mut self, receive_dst_to: defuse_escrow_swap::OverrideSend) -> Self {
-        self.receive_dst_to = Some(receive_dst_to);
-        self
-    }
-
-    fn with_auth_caller(mut self, auth_caller: AccountId) -> Self {
-        self.auth_caller = Some(auth_caller);
-        self
-    }
-
-    fn with_protocol_fees(mut self, protocol_fees: defuse_escrow_swap::ProtocolFees) -> Self {
-        self.protocol_fees = Some(protocol_fees);
-        self
-    }
-
-    fn with_integrator_fees(
-        mut self,
-        integrator_fees: BTreeMap<AccountId, defuse_escrow_swap::Pips>,
-    ) -> Self {
-        self.integrator_fees = Some(integrator_fees);
-        self
-    }
-
-    fn build(self) -> (Params, EscrowTransferMessage, EscrowTransferMessage) {
-        let price = self.price.unwrap_or(UD128::ONE);
-        let params = Params {
-            maker: self.maker,
-            src_token: self.src_token,
-            dst_token: self.dst_token,
-            price,
-            deadline: self
-                .deadline
-                .unwrap_or_else(|| Deadline::timeout(Duration::from_secs(360))),
-            partial_fills_allowed: self.partial_fills_allowed.unwrap_or(false),
-            refund_src_to: self.refund_src_to.unwrap_or_default(),
-            receive_dst_to: self.receive_dst_to.unwrap_or_default(),
-            taker_whitelist: [self.taker.clone()].into(),
-            protocol_fees: self.protocol_fees,
-            integrator_fees: self.integrator_fees.unwrap_or_default(),
-            auth_caller: self.auth_caller,
-            salt: self.salt.unwrap_or([7u8; 32]),
-        };
-        let fund_msg = EscrowTransferMessage {
-            params: params.clone(),
-            action: TransferAction::Fund,
-        };
-        let fill_msg = EscrowTransferMessage {
-            params: params.clone(),
-            action: TransferAction::Fill(FillAction {
-                price,
-                deadline: Deadline::timeout(Duration::from_secs(120)),
-                receive_src_to: defuse_escrow_swap::OverrideSend::default()
-                    .receiver_id(self.taker),
-            }),
-        };
-        (params, fund_msg, fill_msg)
-    }
+fn build_messages(
+    builder: ParamsBuilder,
+) -> (Params, EscrowTransferMessage, EscrowTransferMessage) {
+    let taker = builder.taker().clone();
+    let params = builder.build(Deadline::timeout(Duration::from_secs(360)));
+    let fund_msg = EscrowTransferMessage {
+        params: params.clone(),
+        action: TransferAction::Fund,
+    };
+    let fill_msg = EscrowTransferMessage {
+        params: params.clone(),
+        action: TransferAction::Fill(FillAction {
+            price: params.price,
+            deadline: Deadline::timeout(Duration::from_secs(120)),
+            receive_src_to: defuse_escrow_swap::OverrideSend::default().receiver_id(taker),
+        }),
+    };
+    (params, fund_msg, fill_msg)
 }
 
 /// Test full escrow swap flow with proxy authorization
@@ -207,11 +100,10 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         env.defuse.id().clone(),
         token_b_defuse_id.to_string(),
     ));
-    let (escrow_params, fund_escrow_msg, fill_escrow_msg) = ParamsBuilder::new(
+    let (escrow_params, fund_escrow_msg, fill_escrow_msg) = build_messages(ParamsBuilder::new(
         (maker.id().clone(), src_token),
         (proxy.id().clone(), dst_token),
-    )
-    .build();
+    ));
 
     let fund_msg_json = serde_json::to_string(&fund_escrow_msg).unwrap();
 
@@ -347,11 +239,10 @@ async fn test_escrow_swap_direct_fill() {
         env.defuse.id().clone(),
         token_b_defuse_id.to_string(),
     ));
-    let (escrow_params, fund_escrow_msg, fill_escrow_msg) = ParamsBuilder::new(
+    let (escrow_params, fund_escrow_msg, fill_escrow_msg) = build_messages(ParamsBuilder::new(
         (maker.id().clone(), src_token),
         (solver.id().clone(), dst_token),
-    )
-    .build();
+    ));
 
     let fund_msg_json = serde_json::to_string(&fund_escrow_msg).unwrap();
 

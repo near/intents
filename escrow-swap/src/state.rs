@@ -189,6 +189,129 @@ impl Params {
     }
 }
 
+/// Builder for creating escrow swap parameters.
+/// Takes (maker, `src_token`) and (taker, `dst_token`) tuples associating actors with their tokens.
+#[derive(Debug, Clone)]
+pub struct ParamsBuilder {
+    maker: AccountId,
+    src_token: TokenId,
+    taker: AccountId,
+    dst_token: TokenId,
+    salt: Option<[u8; 32]>,
+    price: Option<crate::decimal::UD128>,
+    partial_fills_allowed: Option<bool>,
+    deadline: Option<crate::Deadline>,
+    refund_src_to: Option<OverrideSend>,
+    receive_dst_to: Option<OverrideSend>,
+    #[cfg(feature = "auth_call")]
+    auth_caller: Option<AccountId>,
+    protocol_fees: Option<ProtocolFees>,
+    integrator_fees: BTreeMap<AccountId, Pips>,
+}
+
+impl ParamsBuilder {
+    pub fn new(
+        (maker, src_token): (AccountId, TokenId),
+        (taker, dst_token): (AccountId, TokenId),
+    ) -> Self {
+        Self {
+            maker,
+            src_token,
+            taker,
+            dst_token,
+            salt: None,
+            price: None,
+            partial_fills_allowed: None,
+            deadline: None,
+            refund_src_to: None,
+            receive_dst_to: None,
+            #[cfg(feature = "auth_call")]
+            auth_caller: None,
+            protocol_fees: None,
+            integrator_fees: BTreeMap::new(),
+        }
+    }
+
+    #[must_use]
+    pub const fn with_salt(mut self, salt: [u8; 32]) -> Self {
+        self.salt = Some(salt);
+        self
+    }
+
+    #[must_use]
+    pub const fn with_price(mut self, price: crate::decimal::UD128) -> Self {
+        self.price = Some(price);
+        self
+    }
+
+    #[must_use]
+    pub const fn with_partial_fills_allowed(mut self, allowed: bool) -> Self {
+        self.partial_fills_allowed = Some(allowed);
+        self
+    }
+
+    #[must_use]
+    pub const fn with_deadline(mut self, deadline: crate::Deadline) -> Self {
+        self.deadline = Some(deadline);
+        self
+    }
+
+    #[must_use]
+    pub fn with_refund_src_to(mut self, refund_src_to: OverrideSend) -> Self {
+        self.refund_src_to = Some(refund_src_to);
+        self
+    }
+
+    #[must_use]
+    pub fn with_receive_dst_to(mut self, receive_dst_to: OverrideSend) -> Self {
+        self.receive_dst_to = Some(receive_dst_to);
+        self
+    }
+
+    #[cfg(feature = "auth_call")]
+    #[must_use]
+    pub fn with_auth_caller(mut self, auth_caller: AccountId) -> Self {
+        self.auth_caller = Some(auth_caller);
+        self
+    }
+
+    #[must_use]
+    pub fn with_protocol_fees(mut self, protocol_fees: ProtocolFees) -> Self {
+        self.protocol_fees = Some(protocol_fees);
+        self
+    }
+
+    #[must_use]
+    pub fn with_integrator_fee(mut self, account_id: AccountId, fee: Pips) -> Self {
+        self.integrator_fees.insert(account_id, fee);
+        self
+    }
+
+    /// Returns the taker account ID.
+    pub const fn taker(&self) -> &AccountId {
+        &self.taker
+    }
+
+    pub fn build(self, default_deadline: crate::Deadline) -> Params {
+        Params {
+            maker: self.maker,
+            src_token: self.src_token,
+            dst_token: self.dst_token,
+            price: self.price.unwrap_or(crate::decimal::UD128::ONE),
+            deadline: self.deadline.unwrap_or(default_deadline),
+            partial_fills_allowed: self.partial_fills_allowed.unwrap_or(false),
+            refund_src_to: self.refund_src_to.unwrap_or_default(),
+            receive_dst_to: self.receive_dst_to.unwrap_or_default(),
+            taker_whitelist: [self.taker].into(),
+            protocol_fees: self.protocol_fees,
+            integrator_fees: self.integrator_fees,
+            #[cfg(feature = "auth_call")]
+            auth_caller: self.auth_caller,
+            salt: self.salt.unwrap_or([7u8; 32]),
+        }
+    }
+}
+
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProtocolFees {
