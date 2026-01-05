@@ -2,7 +2,9 @@
 
 mod env;
 mod escrow_swap_with_proxy;
+mod fees;
 mod partial_fills;
+mod swaps;
 
 use std::sync::LazyLock;
 

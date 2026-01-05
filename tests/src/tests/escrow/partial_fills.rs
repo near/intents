@@ -268,3 +268,99 @@ async fn maybe_view_escrow(escrow: &Account) {
         serde_json::to_value(&s).unwrap()
     );
 }
+
+/// Test partial fill with dust: verifies remaining funds returned to maker after timeout
+#[tokio::test]
+async fn test_partial_fill_funds_returned_after_timeout() {
+    use crate::tests::defuse::env::Env as DefuseEnv;
+    use defuse_escrow_swap::ParamsBuilder;
+    use defuse_escrow_swap::decimal::UD128;
+    use defuse_sandbox::{MtExt, MtViewExt};
+    use defuse_sandbox_ext::EscrowSwapAccountExt;
+    use super::EscrowExt;
+
+    let env = DefuseEnv::builder().build().await;
+    let escrow_swap_global = env.root().deploy_escrow_swap_global("escrow_swap").await;
+
+    let maker = env.create_named_user("maker").await;
+    let taker = env.create_named_user("taker").await;
+
+    // Price 0.333333: taker pays 0.333333 dst per 1 src (gets ~3 src per 1 dst)
+    // Maker deposits 1000 src, taker fills with 166 dst (~50%)
+    // floor(166 / 0.333333) = 498 src to taker
+    // 1000 - 498 = 502 src remaining (partial + rounding dust)
+    let maker_balance = 1_000_u128;
+    let fill_amount = 166_u128;
+    let price: UD128 = "0.333333".parse().unwrap();
+    let expected_taker_src = 498_u128;  // floor(166 / 0.333333)
+    let expected_maker_refund = maker_balance - expected_taker_src;  // 502
+
+    let ((_, src_token_id), (_, dst_token_id)) = futures::try_join!(
+        env.create_mt_token_with_initial_balances([(maker.id().clone(), maker_balance)]),
+        env.create_mt_token_with_initial_balances([(taker.id().clone(), fill_amount)]),
+    )
+    .unwrap();
+
+    let src_token = TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), src_token_id.to_string()));
+    let dst_token = TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), dst_token_id.to_string()));
+
+    let (escrow_params, fund_msg, fill_msg) = ParamsBuilder::new(
+        (maker.id().clone(), src_token),
+        ([taker.id().clone()], dst_token),
+    )
+    .with_price(price)
+    .with_partial_fills_allowed(true)
+    .build_with_messages(
+        Deadline::timeout(Duration::from_secs(6)),
+        Deadline::timeout(Duration::from_secs(5)),
+    );
+
+    let escrow_id = env
+        .root()
+        .deploy_escrow_swap_instance(escrow_swap_global, &escrow_params)
+        .await;
+
+    // Fund escrow
+    maker
+        .mt_transfer_call(
+            env.defuse.id(),
+            &escrow_id,
+            &src_token_id.to_string(),
+            maker_balance,
+            None,
+            &serde_json::to_string(&fund_msg).unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Partial fill (~50%)
+    taker
+        .mt_transfer_call(
+            env.defuse.id(),
+            &escrow_id,
+            &dst_token_id.to_string(),
+            fill_amount,
+            None,
+            &serde_json::to_string(&fill_msg).unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Verify taker received expected src
+    let taker_src = env.defuse.mt_balance_of(taker.id(), &src_token_id.to_string()).await.unwrap();
+    assert_eq!(taker_src, expected_taker_src, "taker should have floor(166/0.333333) = 498");
+
+    // Maker has 0 before close (remaining in escrow)
+    let maker_src_before = env.defuse.mt_balance_of(maker.id(), &src_token_id.to_string()).await.unwrap();
+    assert_eq!(maker_src_before, 0, "maker src should be 0 before close");
+
+    // Wait for deadline to expire
+    tokio::time::sleep(Duration::from_secs(7)).await;
+
+    // Close escrow - remaining funds return to maker
+    maker.es_close(&escrow_id, &escrow_params).await.unwrap();
+
+    // Verify maker received remaining src (partial fill remainder + rounding dust)
+    let maker_src_after = env.defuse.mt_balance_of(maker.id(), &src_token_id.to_string()).await.unwrap();
+    assert_eq!(maker_src_after, expected_maker_refund, "maker should receive 502 src after close");
+}
