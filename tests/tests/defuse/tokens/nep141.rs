@@ -1,5 +1,6 @@
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
+use defuse_contract_extensions::defuse::signer::DefaultDefuseSignerExt;
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 
 use defuse::{
@@ -9,7 +10,7 @@ use defuse::{
 use defuse_sandbox::extensions::ft::FtViewExt;
 use defuse_sandbox::extensions::mt::MtViewExt;
 use defuse_sandbox::tx::FnCallBuilder;
-use defuse_tests::{defuse_signer::DefuseSignerExt, env::Env};
+use defuse_tests::env::Env;
 use near_sdk::NearToken;
 use near_sdk::serde_json;
 use rstest::rstest;

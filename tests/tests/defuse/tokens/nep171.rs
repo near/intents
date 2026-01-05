@@ -2,6 +2,7 @@ use defuse::core::token_id::TokenId as DefuseTokenId;
 use defuse::core::token_id::nep171::Nep171TokenId;
 use defuse::tokens::{DepositAction, DepositMessage, ExecuteIntents};
 
+use defuse_contract_extensions::defuse::signer::DefaultDefuseSignerExt;
 use defuse_sandbox::api::types::nft::NFTContractMetadata;
 use defuse_sandbox::extensions::mt::MtViewExt;
 use defuse_sandbox::extensions::nft::{NftDeployerExt, NftExt, NftViewExt};
@@ -12,7 +13,7 @@ use near_sdk::NearToken;
 use rstest::rstest;
 
 use crate::MT_RECEIVER_STUB_WASM;
-use defuse_tests::{defuse_signer::DefuseSignerExt, env::Env};
+use defuse_tests::env::Env;
 
 const DUMMY_REFERENCE_HASH: [u8; 32] = [33; 32];
 const DUMMY_NFT1_ID: &str = "thisisdummynftid1";

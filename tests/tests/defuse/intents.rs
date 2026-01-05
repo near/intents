@@ -8,13 +8,14 @@ use defuse::{
 };
 use defuse_contract_extensions::defuse::deployer::DefuseExt;
 use defuse_contract_extensions::defuse::intents::ExecuteIntentsExt;
+use defuse_contract_extensions::defuse::signer::DefaultDefuseSignerExt;
 use defuse_sandbox::extensions::ft::FtViewExt;
 use defuse_sandbox::extensions::mt::MtViewExt;
 use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::{AccountId, Gas, serde_json};
 use rstest::rstest;
 
-use defuse_tests::{defuse_signer::DefuseSignerExt, env::Env};
+use defuse_tests::env::Env;
 
 use defuse::core::amounts::Amounts;
 

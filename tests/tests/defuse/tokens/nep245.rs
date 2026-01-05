@@ -8,6 +8,7 @@ use defuse::core::token_id::nep245::Nep245TokenId;
 use defuse::nep245::{MtBurnEvent, MtEvent, MtTransferEvent};
 use defuse::tokens::DepositMessage;
 use defuse::tokens::{DepositAction, ExecuteIntents};
+use defuse_contract_extensions::defuse::signer::DefaultDefuseSignerExt;
 use defuse_contract_extensions::defuse::{account_manager::AccountManagerExt, deployer::DefuseExt};
 use defuse_sandbox::assert_a_contains_b;
 use defuse_sandbox::extensions::mt::{MtExt, MtViewExt};
@@ -19,7 +20,7 @@ use rstest::rstest;
 use std::borrow::Cow;
 
 use crate::MT_RECEIVER_STUB_WASM;
-use defuse_tests::{defuse_signer::DefuseSignerExt, env::Env};
+use defuse_tests::env::Env;
 
 #[derive(Debug, Clone)]
 struct MtTransferCallExpectation {
