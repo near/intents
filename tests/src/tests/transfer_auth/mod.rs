@@ -10,6 +10,7 @@ const INIT_BALANCE: NearToken = NearToken::from_near(100);
 async fn on_auth_call() {
     let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
+    let network_config = root.network_config().clone();
 
     let transfer_auth_global = root.deploy_transfer_auth("auth").await;
 
@@ -64,12 +65,21 @@ async fn on_auth_call() {
         )
         .await
         .unwrap();
+
+    sandbox.fast_forward(5).await;
+    assert!(
+        Account::new(transfer_auth_instance.clone(), network_config.clone())
+            .view()
+            .await
+            .is_ok()
+    );
 }
 
 #[tokio::test]
 async fn transfer_auth_early_authorization() {
     let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
+    let network_config = root.network_config().clone();
 
     let transfer_auth_global = root.deploy_transfer_auth("auth").await;
 
@@ -112,6 +122,14 @@ async fn transfer_auth_early_authorization() {
         )
         .await
         .unwrap();
+
+    sandbox.fast_forward(5).await;
+    assert!(
+        Account::new(transfer_auth_instance.clone(), network_config.clone())
+            .view()
+            .await
+            .is_err()
+    );
 }
 
 #[tokio::test]
@@ -178,12 +196,21 @@ async fn transfer_auth_async_authorization() {
         .unwrap();
 
     authorized.await.unwrap();
+
+    sandbox.fast_forward(5).await;
+    assert!(
+        Account::new(transfer_auth_instance.clone(), network_config.clone())
+            .view()
+            .await
+            .is_err()
+    );
 }
 
 #[tokio::test]
 async fn transfer_auth_async_authorization_timeout() {
     let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
+    let network_config = root.network_config().clone();
 
     let transfer_auth_global = root.deploy_transfer_auth("auth").await;
 
@@ -219,12 +246,21 @@ async fn transfer_auth_async_authorization_timeout() {
 
     let (authorized, ()) = futures::join!(async { wait_for_authorization.await }, forward_time);
     assert!(!authorized.unwrap().json::<bool>().unwrap());
+
+    sandbox.fast_forward(5).await;
+    assert!(
+        Account::new(transfer_auth_instance.clone(), network_config.clone())
+            .view()
+            .await
+            .is_ok()
+    );
 }
 
 #[tokio::test]
 async fn transfer_auth_retry_after_timeout_with_on_auth() {
     let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
+    let network_config = root.network_config().clone();
 
     let transfer_auth_global = root.deploy_transfer_auth("auth").await;
 
@@ -286,12 +322,21 @@ async fn transfer_auth_retry_after_timeout_with_on_auth() {
         .await
         .unwrap();
     assert!(result.json::<bool>().unwrap());
+
+    sandbox.fast_forward(5).await;
+    assert!(
+        Account::new(transfer_auth_instance.clone(), network_config.clone())
+            .view()
+            .await
+            .is_err()
+    );
 }
 
 #[tokio::test]
 async fn transfer_auth_retry_after_timeout_with_on_auth2() {
     let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
+    let network_config = root.network_config().clone();
 
     let transfer_auth_global = root.deploy_transfer_auth("auth").await;
 
@@ -350,4 +395,12 @@ async fn transfer_auth_retry_after_timeout_with_on_auth2() {
     });
 
     assert!(authorized.unwrap().json::<bool>().unwrap());
+
+    sandbox.fast_forward(5).await;
+    assert!(
+        Account::new(transfer_auth_instance.clone(), network_config.clone())
+            .view()
+            .await
+            .is_err()
+    );
 }
