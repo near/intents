@@ -1,6 +1,5 @@
 use defuse_contract_extensions::{
     defuse::{
-        // TODO: reorganize imports
         contract::{
             contract::config::{DefuseConfig, RolesConfig},
             core::fees::FeesConfig,
