@@ -69,7 +69,6 @@ contract = [
 [dev-dependencies]
 defuse-core = { workspace = true, features = ["arbitrary"] }
 defuse-randomness.workspace = true
-
 defuse-tests.workspace = true
 
 chrono.workspace = true

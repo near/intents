@@ -12,7 +12,7 @@ workspace = true
 defuse = { workspace = true, features = ["contract"] }
 defuse-escrow-swap = { workspace = true, features = ["auth_call"] }
 defuse-poa-factory = { workspace = true, features = ["contract"] }
-defuse-contract-extensions = { workspace = true, features = ["poa"] }
+defuse-contract-extensions = { workspace = true, features = ["poa", "defuse"] }
 defuse-near-utils = { workspace = true }
 defuse-serde-utils = { workspace = true }
 defuse-randomness.workspace = true

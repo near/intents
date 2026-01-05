@@ -11,37 +11,18 @@ crate-type = ["cdylib", "rlib"]
 [lints]
 workspace = true
 
-[features]
-poa = []
-defuse = []
-escrow = []
-
 [dependencies]
-# TODO: add optional
 defuse-sandbox = {workspace = true}
-defuse = {workspace = true, features = ["contract"]}
-defuse-poa-factory = {workspace = true, features = ["contract"]}
-defuse-escrow-swap = {workspace = true, features = ["default"]}
+defuse = {workspace = true, features = ["contract"], optional = true}
+defuse-poa-factory = {workspace = true, features = ["contract"], optional = true}
+defuse-escrow-swap = {workspace = true, features = ["default"], optional = true}
 defuse-core = { workspace = true }
 defuse-serde-utils = { workspace = true }
 defuse-nep245 = { workspace = true }
-
-# defuse-crypto = { workspace = true, features = ["near-api-types"] }
-# defuse-nep413 = { workspace = true, features = ["near-api"] }
-# defuse-randomness.workspace = true
-# defuse-nep245.workspace = true
-# tokio.workspace = true
-# rstest.workspace = true
-
-# anyhow.workspace = true
-# futures.workspace = true
-# impl-tools.workspace = true
-# near-api.workspace = true
-# near-openapi-types.workspace = true
-# near-sandbox.workspace = true
-# thiserror.workspace = true
-# tracing.workspace = true
-
 near-contract-standards.workspace = true
 near-sdk = { workspace = true }
 
+[features]
+poa = ["dep:defuse-poa-factory"]
+defuse = ["dep:defuse"]
+escrow = ["dep:defuse-escrow-swap"]
