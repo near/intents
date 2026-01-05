@@ -868,8 +868,10 @@ dependencies = [
  "defuse-escrow-swap",
  "defuse-nep245",
  "defuse-poa-factory",
+ "defuse-randomness",
  "defuse-sandbox",
  "defuse-serde-utils",
+ "defuse-test-utils",
  "near-contract-standards",
  "near-sdk",
 ]

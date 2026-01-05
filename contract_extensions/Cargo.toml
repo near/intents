@@ -21,6 +21,8 @@ defuse-serde-utils = { workspace = true }
 defuse-nep245 = { workspace = true }
 near-contract-standards.workspace = true
 near-sdk = { workspace = true }
+defuse-test-utils.workspace = true
+defuse-randomness.workspace = true
 
 [features]
 poa = ["dep:defuse-poa-factory"]

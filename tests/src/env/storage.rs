@@ -19,7 +19,7 @@ use defuse::{
 use defuse_contract_extensions::{
     defuse::{
         account_manager::AccountViewExt, deployer::DefuseExt, intents::ExecuteIntentsExt,
-        signer::DefuseSigner,
+        signer::DefuseSignerExt,
     },
     poa::PoAFactoryExt,
 };

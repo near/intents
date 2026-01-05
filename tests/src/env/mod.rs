@@ -4,7 +4,7 @@ mod builder;
 mod state;
 mod storage;
 
-use crate::{defuse_signer::DefuseSignerExt, env::builder::EnvBuilder};
+use crate::env::builder::EnvBuilder;
 
 use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;
@@ -15,6 +15,7 @@ use defuse::{
 use defuse_contract_extensions::{
     defuse::{
         account_manager::{AccountManagerExt, AccountViewExt},
+        nonce::GenerateNonceExt,
         tokens::nep141::DefuseFtDepositor,
     },
     poa::PoAFactoryExt,
@@ -67,7 +68,7 @@ impl Env {
 
     pub async fn get_unique_nonce(&self, deadline: Option<Deadline>) -> anyhow::Result<Nonce> {
         let root = self.root();
-        root.unique_nonce(&self.defuse, deadline).await
+        root.generate_unique_nonce(&self.defuse, deadline).await
     }
 
     pub async fn defuse_ft_deposit_to(
