@@ -18,7 +18,7 @@ defuse-serde-utils = { workspace = true }
 defuse-randomness.workspace = true
 defuse-test-utils.workspace = true
 defuse-sandbox.workspace = true
-near-sdk = { workspace = true, features = ["unit-testing"] }
+near-sdk = { workspace = true, features = ["arbitrary"] }
 
 futures = "0.3"
 anyhow.workspace = true
