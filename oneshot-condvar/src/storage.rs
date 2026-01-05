@@ -8,7 +8,7 @@ use serde_with::{hex::Hex, serde_as};
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum StateMachine {
     Idle,
-    WaitingForAuthorization(YieldId),
+    WaitingForNotification(YieldId),
     Authorized,
     Done,
 }
@@ -48,7 +48,7 @@ impl State {
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ContractStorage(
-    /// If `None`, authorization completed and contract is being deleted
+    /// If `None`, notification completed and contract is being deleted
     pub(crate) Option<State>,
 );
 

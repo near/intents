@@ -1,5 +1,5 @@
 [package]
-name = "defuse-transfer-auth"
+name = "defuse-oneshot-condvar"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

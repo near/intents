@@ -969,10 +969,10 @@ dependencies = [
  "defuse-fees",
  "defuse-near-utils",
  "defuse-nep245",
+ "defuse-oneshot-condvar",
  "defuse-sandbox",
  "defuse-sandbox-ext",
  "defuse-token-id",
- "defuse-transfer-auth",
  "futures",
  "near-plugins",
  "near-sdk",
@@ -1074,6 +1074,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-oneshot-condvar"
+version = "0.1.0"
+dependencies = [
+ "defuse-auth-call",
+ "defuse-near-utils",
+ "defuse-nep245",
+ "impl-tools",
+ "near-sdk",
+ "serde_json",
+ "serde_with",
+ "thiserror 2.0.17",
+]
+
+[[package]]
 name = "defuse-poa-factory"
 version = "0.1.0"
 dependencies = [
@@ -1141,9 +1155,9 @@ dependencies = [
  "defuse-escrow-swap",
  "defuse-fees",
  "defuse-nep413",
+ "defuse-oneshot-condvar",
  "defuse-sandbox",
  "defuse-token-id",
- "defuse-transfer-auth",
  "ed25519-dalek",
  "near-sdk",
  "serde_json",
@@ -1202,6 +1216,7 @@ dependencies = [
  "defuse-escrow-proxy",
  "defuse-escrow-swap",
  "defuse-near-utils",
+ "defuse-oneshot-condvar",
  "defuse-poa-factory",
  "defuse-randomness",
  "defuse-sandbox",
@@ -1209,7 +1224,6 @@ dependencies = [
  "defuse-serde-utils",
  "defuse-test-utils",
  "defuse-token-id",
- "defuse-transfer-auth",
  "derive_more",
  "futures",
  "hex",
@@ -1274,20 +1288,6 @@ dependencies = [
  "schemars 0.8.22",
  "serde_with",
  "tlb-ton",
-]
-
-[[package]]
-name = "defuse-transfer-auth"
-version = "0.1.0"
-dependencies = [
- "defuse-auth-call",
- "defuse-near-utils",
- "defuse-nep245",
- "impl-tools",
- "near-sdk",
- "serde_json",
- "serde_with",
- "thiserror 2.0.17",
 ]
 
 [[package]]

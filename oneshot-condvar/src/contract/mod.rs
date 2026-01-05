@@ -5,7 +5,7 @@ mod cleanup;
 use near_sdk::PromiseError;
 use near_sdk::{Gas, GasWeight, PanicOnDefault, Promise, PromiseOrValue, env, near, require};
 
-use crate::TransferAuth;
+use crate::OneshotCondVar;
 use crate::event::Event;
 use crate::storage::{ContractStorage, State, StateInit, StateMachine};
 
@@ -35,7 +35,7 @@ impl Contract {
 
     #[private]
     #[allow(clippy::needless_pass_by_value)]
-    pub fn is_authorized_resume(
+    pub fn cv_wait_resume(
         &mut self,
         #[callback_result] _resume_data: Result<(), PromiseError>,
     ) -> PromiseOrValue<bool> {
@@ -43,7 +43,7 @@ impl Contract {
         let state = guard.try_as_alive_mut();
 
         match state.state {
-            StateMachine::WaitingForAuthorization(_yield_id) => {
+            StateMachine::WaitingForNotification(_yield_id) => {
                 state.state = StateMachine::Idle;
                 Event::Timeout.emit();
             }
@@ -64,27 +64,27 @@ impl Contract {
 
 #[near]
 impl Contract {
-    pub(crate) fn do_authorize(&mut self) {
+    pub(crate) fn do_notify(&mut self) {
         let mut guard = self.cleanup_guard();
         let state = guard.try_as_alive_mut();
 
         match state.state {
             StateMachine::Idle => state.state = StateMachine::Authorized,
-            StateMachine::WaitingForAuthorization(yield_id) => {
+            StateMachine::WaitingForNotification(yield_id) => {
                 if yield_id.resume(&[]).is_ok() {
                     // NOTE: Set to Authorized, not Done.
-                    // is_authorized_resume callback will transition to Done.
+                    // cv_wait_resume callback will transition to Done.
                     // This prevents cleanup from deleting the contract before the callback runs.
                     state.state = StateMachine::Authorized;
                 } else {
                     // NOTE: if resume returns Err that means that the yielded promise
                     // no longer exists although maybe it will be resumed because of timeout
-                    // from the perspective of the contract it is already authorized
+                    // from the perspective of the contract it is already notified
                     state.state = StateMachine::Authorized;
                 };
             }
             StateMachine::Authorized | StateMachine::Done => {
-                env::panic_str("already authorized");
+                env::panic_str("already notified");
             }
         };
 
@@ -93,7 +93,7 @@ impl Contract {
 }
 
 #[near]
-impl TransferAuth for Contract {
+impl OneshotCondVar for Contract {
     fn view(&self) -> &State {
         self.0.try_as_alive()
     }
@@ -102,13 +102,13 @@ impl TransferAuth for Contract {
         &self.0.try_as_alive().state
     }
 
-    fn is_authorized(&self) -> bool {
+    fn cv_is_notified(&self) -> bool {
         self.0
             .as_alive()
             .is_some_and(|s| matches!(s.state, StateMachine::Authorized | StateMachine::Done))
     }
 
-    fn wait_for_authorization(&mut self) -> PromiseOrValue<bool> {
+    fn cv_wait(&mut self) -> PromiseOrValue<bool> {
         let mut guard = self.cleanup_guard();
         let state = guard.try_as_alive_mut();
 
@@ -119,19 +119,19 @@ impl TransferAuth for Contract {
         match state.state {
             StateMachine::Idle => {
                 let (promise, yield_id) = Promise::new_yield(
-                    "is_authorized_resume",
+                    "cv_wait_resume",
                     serde_json::json!({}).to_string().as_bytes(),
                     Gas::from_tgas(0),
                     GasWeight(1),
                 );
-                state.state = StateMachine::WaitingForAuthorization(yield_id);
+                state.state = StateMachine::WaitingForNotification(yield_id);
                 return promise.into();
             }
             StateMachine::Authorized => {
                 state.state = StateMachine::Done;
             }
-            StateMachine::WaitingForAuthorization(_) => {
-                env::panic_str("already waiting for authorization");
+            StateMachine::WaitingForNotification(_) => {
+                env::panic_str("already waiting for notification");
             }
             StateMachine::Done => {
                 env::panic_str("already done");
@@ -142,13 +142,13 @@ impl TransferAuth for Contract {
     }
 
     #[payable]
-    fn authorize(&mut self) {
+    fn cv_notify_one(&mut self) {
         let state = self.0.try_as_alive();
         require!(
             env::predecessor_account_id() == state.state_init.on_auth_signer,
             "Unauthorized signer"
         );
 
-        self.do_authorize();
+        self.do_notify();
     }
 }

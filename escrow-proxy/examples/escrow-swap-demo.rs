@@ -2,7 +2,7 @@
 //!
 //! This example shows how to:
 //! 1. Connect to NEAR testnet using environment credentials
-//! 2. Deploy global escrow-swap and transfer-auth contracts
+//! 2. Deploy global escrow-swap and oneshot-condvar contracts
 //! 3. Deploy escrow-proxy contract
 //! 4. Create solver and solverbus accounts
 //! 5. Build and sign transfer + `auth_call` intents for `execute_intents`
@@ -16,7 +16,7 @@ use defuse_core::intents::Intent;
 use defuse_core::payload::multi::MultiPayload;
 use defuse_token_id::nep245::Nep245TokenId;
 use defuse_sandbox_ext::sign_intents;
-use defuse_transfer_auth::storage::StateInit as TransferAuthStateInit;
+use defuse_oneshot_condvar::storage::StateInit as CondVarStateInit;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::str::FromStr;
@@ -38,7 +38,7 @@ use defuse_sandbox::tx::FnCallBuilder;
 use defuse_sandbox::{Account, MtViewExt, SigningAccount};
 use defuse_token_id::TokenId;
 use defuse_token_id::nep141::Nep141TokenId;
-use defuse_transfer_auth::TransferAuthContext;
+use defuse_oneshot_condvar::CondVarContext;
 use near_sdk::json_types::U128;
 use near_sdk::state_init::{StateInit, StateInitV1};
 use near_sdk::serde_json::json;
@@ -52,7 +52,7 @@ const SRC_NEP245_TOKEN_ID: &str = "src-token.omft.nearseny.testnet";
 const DST_NEP245_TOKEN_ID: &str = "dst-token.omft.nearseny.testnet";
 const DEFUSE_INSTANCE: &str = "intents.nearseny.testnet";
 
-const TRANSFER_AUTH_GLOBAL_REF_ID: &str = "test2.pityjllk.testnet";
+const ONESHOT_CONDVAR_GLOBAL_REF_ID: &str = "test2.pityjllk.testnet";
 const ESCROW_GLOBAL_REF_ID: &str = "escrowswap.pityjllk.testnet";
 
 // NOTE:
@@ -345,8 +345,8 @@ async fn main() -> Result<()> {
 
     // RELAY AUTH CALL INTENT
     // The relay authorizes the taker's transfer by signing an AuthCall intent
-    // that deploys the transfer-auth instance with state matching the transfer context
-    let transfer_auth_context = TransferAuthContext {
+    // that deploys the oneshot-condvar instance with state matching the transfer context
+    let condvar_context = CondVarContext {
         sender_id: Cow::Borrowed(taker_signing.id().as_ref()),
         token_ids: Cow::Owned(vec![dst_token.to_string()]),
         amounts: Cow::Owned(vec![U128(1)]),
@@ -355,30 +355,30 @@ async fn main() -> Result<()> {
         msg: Cow::Borrowed(&proxy_msg_json),
     };
 
-    // TransferAuthStateInit defines the state for the transfer-auth instance
-    let transfer_auth_state = TransferAuthStateInit {
+    // CondVarStateInit defines the state for the oneshot-condvar instance
+    let condvar_state = CondVarStateInit {
         escrow_contract_id: GlobalContractId::AccountId(ESCROW_GLOBAL_REF_ID.parse().unwrap()),
         auth_contract: VERIFIER_CONTRACT.parse().unwrap(),
         on_auth_signer: root.id().clone(), // relay account that signs the auth
         authorizee: PROXY.parse().unwrap(),
-        msg_hash: transfer_auth_context.hash(),
+        msg_hash: condvar_context.hash(),
     };
 
-    // Build state_init for deploying transfer-auth instance
-    let transfer_auth_raw_state =
-        defuse_transfer_auth::storage::ContractStorage::init_state(transfer_auth_state.clone())
+    // Build state_init for deploying oneshot-condvar instance
+    let condvar_raw_state =
+        defuse_oneshot_condvar::storage::ContractStorage::init_state(condvar_state.clone())
             .unwrap();
-    let transfer_auth_state_init = StateInit::V1(StateInitV1 {
-        code: GlobalContractId::AccountId(TRANSFER_AUTH_GLOBAL_REF_ID.parse().unwrap()),
-        data: transfer_auth_raw_state,
+    let condvar_state_init = StateInit::V1(StateInitV1 {
+        code: GlobalContractId::AccountId(ONESHOT_CONDVAR_GLOBAL_REF_ID.parse().unwrap()),
+        data: condvar_raw_state,
     });
-    let transfer_auth_instance_id = transfer_auth_state_init.derive_account_id();
-    println!("Transfer-auth instance ID: {transfer_auth_instance_id}");
+    let condvar_instance_id = condvar_state_init.derive_account_id();
+    println!("OneshotCondVar instance ID: {condvar_instance_id}");
 
-    // Create AuthCall intent that deploys transfer-auth and authorizes the transfer
+    // Create AuthCall intent that deploys oneshot-condvar and authorizes the transfer
     let relay_auth_call = defuse_core::intents::auth::AuthCall {
-        contract_id: transfer_auth_instance_id.clone(),
-        state_init: Some(transfer_auth_state_init),
+        contract_id: condvar_instance_id.clone(),
+        state_init: Some(condvar_state_init),
         msg: String::new(),
         attached_deposit: NearToken::from_yoctonear(0),
         min_gas: None,
@@ -465,7 +465,7 @@ async fn main() -> Result<()> {
     println!("\nStep 3: Root sends auth_call + taker sends funds to proxy...");
     execute_signed_intents(&root, &defuse, &[root_sends_auth_call, taker_sends_funds_to_proxy])
         .await?;
-    println!("  Done: transfer-auth deployed at {transfer_auth_instance_id}");
+    println!("  Done: oneshot-condvar deployed at {condvar_instance_id}");
     println!("  Done: taker filled the escrow through proxy");
 
     println!("\n=== Escrow Swap Demo Complete ===");
@@ -480,15 +480,15 @@ async fn main() -> Result<()> {
         serde_json::to_string_pretty(&escrow_state).unwrap()
     );
 
-    // Query transfer-auth instance state
-    let transfer_auth_account =
-        Account::new(transfer_auth_instance_id.clone(), network_config.clone());
-    let transfer_auth_state: defuse_transfer_auth::storage::ContractStorage = transfer_auth_account
+    // Query oneshot-condvar instance state
+    let condvar_account =
+        Account::new(condvar_instance_id.clone(), network_config.clone());
+    let condvar_state: defuse_oneshot_condvar::storage::ContractStorage = condvar_account
         .call_view_function_json("view", serde_json::json!({}))
         .await?;
     println!(
-        "  Transfer-auth state: {}",
-        serde_json::to_string_pretty(&transfer_auth_state).unwrap()
+        "  OneshotCondVar state: {}",
+        serde_json::to_string_pretty(&condvar_state).unwrap()
     );
 
     Ok(())

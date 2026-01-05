@@ -5,10 +5,10 @@ use crate::tests::defuse::env::Env;
 use defuse_escrow_proxy::{ProxyConfig, RolesConfig, TransferMessage};
 use defuse_sandbox::{Account, FnCallBuilder, MtExt, MtViewExt};
 use defuse_sandbox_ext::{
-    EscrowProxyExt, MtReceiverStubAccountExt, TransferAuthAccountExt, derive_transfer_auth_account_id,
+    EscrowProxyExt, MtReceiverStubAccountExt, OneshotCondVarAccountExt, derive_oneshot_condvar_account_id,
 };
-use defuse_transfer_auth::TransferAuthContext;
-use defuse_transfer_auth::storage::{ContractStorage, StateInit as TransferAuthStateInit};
+use defuse_oneshot_condvar::CondVarContext;
+use defuse_oneshot_condvar::storage::{ContractStorage, StateInit as CondVarStateInit};
 use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::{
     Gas, GlobalContractId, NearToken,
@@ -20,8 +20,8 @@ use near_sdk::{
 #[allow(clippy::too_many_lines)]
 async fn test_proxy_returns_funds_on_timeout_of_authorization() {
     let env = Env::builder().build().await;
-    let (transfer_auth_global, mt_receiver_global) = futures::join!(
-        env.root().deploy_transfer_auth("global_transfer_auth"),
+    let (condvar_global, mt_receiver_global) = futures::join!(
+        env.root().deploy_oneshot_condvar("global_transfer_auth"),
         env.root()
             .deploy_mt_receiver_stub_global("mt_receiver_global"),
     );
@@ -43,7 +43,7 @@ async fn test_proxy_returns_funds_on_timeout_of_authorization() {
         grantees: HashMap::new(),
     };
     let config = ProxyConfig {
-        per_fill_contract_id: GlobalContractId::AccountId(transfer_auth_global.clone()),
+        per_fill_contract_id: GlobalContractId::AccountId(condvar_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(mt_receiver_global.clone()),
         auth_contract: env.defuse.id().clone(),
         auth_collee: relay.id().clone(),
@@ -101,8 +101,8 @@ async fn test_transfer_authorized_by_relay() {
     let env = Env::builder().build().await;
 
     // Deploy global contracts in parallel
-    let (transfer_auth_global, mt_receiver_global) = futures::join!(
-        env.root().deploy_transfer_auth("global_transfer_auth"),
+    let (condvar_global, mt_receiver_global) = futures::join!(
+        env.root().deploy_oneshot_condvar("global_transfer_auth"),
         env.root().deploy_mt_receiver_stub_global("mt_receiver_global"),
     );
 
@@ -121,7 +121,7 @@ async fn test_transfer_authorized_by_relay() {
 
     // Use root as auth_contract since we need signing capability for on_auth call
     let config = ProxyConfig {
-        per_fill_contract_id: GlobalContractId::AccountId(transfer_auth_global.clone()),
+        per_fill_contract_id: GlobalContractId::AccountId(condvar_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(mt_receiver_global.clone()),
         auth_contract: env.root().id().clone(),
         auth_collee: relay.id().clone(),
@@ -171,8 +171,8 @@ async fn test_transfer_authorized_by_relay() {
     let proxy_transfer_amount: u128 = 100_000;
 
     // Derive the transfer-auth instance address (same logic as proxy uses)
-    // The hash is computed from TransferAuthContext, not the message itself
-    let context_hash = TransferAuthContext {
+    // The hash is computed from CondVarContext, not the message itself
+    let context_hash = CondVarContext {
         sender_id: Cow::Borrowed(solver.id()),
         token_ids: Cow::Owned(vec![token_id.to_string()]),
         amounts: Cow::Owned(vec![U128(proxy_transfer_amount)]),
@@ -181,15 +181,15 @@ async fn test_transfer_authorized_by_relay() {
     }
     .hash();
 
-    let auth_state = TransferAuthStateInit {
+    let auth_state = CondVarStateInit {
         escrow_contract_id: config.escrow_swap_contract_id.clone(),
         auth_contract: config.auth_contract.clone(),
         on_auth_signer: config.auth_collee.clone(),
         authorizee: proxy.id().clone(),
         msg_hash: context_hash,
     };
-    let transfer_auth_instance_id = derive_transfer_auth_account_id(
-        &GlobalContractId::AccountId(transfer_auth_global.clone()),
+    let condvar_instance_id = derive_oneshot_condvar_account_id(
+        &GlobalContractId::AccountId(condvar_global.clone()),
         &auth_state,
     );
 
@@ -213,8 +213,8 @@ async fn test_transfer_authorized_by_relay() {
         // Include state_init to deploy the transfer-auth instance if not already deployed
         async {
             env.root()
-                .tx(transfer_auth_instance_id.clone())
-                .state_init(transfer_auth_global.clone(), raw_state)
+                .tx(condvar_instance_id.clone())
+                .state_init(condvar_global.clone(), raw_state)
                 .function_call(
                     FnCallBuilder::new("on_auth")
                         .json_args(serde_json::json!({
@@ -261,8 +261,8 @@ async fn test_proxy_authorize_function() {
     let env = Env::builder().build().await;
 
     // Deploy global contracts in parallel
-    let (transfer_auth_global, mt_receiver_global) = futures::join!(
-        env.root().deploy_transfer_auth("global_transfer_auth"),
+    let (condvar_global, mt_receiver_global) = futures::join!(
+        env.root().deploy_oneshot_condvar("global_transfer_auth"),
         env.root().deploy_mt_receiver_stub_global("mt_receiver_global"),
     );
 
@@ -281,7 +281,7 @@ async fn test_proxy_authorize_function() {
     };
 
     let config = ProxyConfig {
-        per_fill_contract_id: GlobalContractId::AccountId(transfer_auth_global.clone()),
+        per_fill_contract_id: GlobalContractId::AccountId(condvar_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(mt_receiver_global.clone()),
         auth_contract: env.defuse.id().clone(),
         auth_collee: relay.id().clone(),
@@ -290,22 +290,22 @@ async fn test_proxy_authorize_function() {
     proxy.deploy_escrow_proxy(roles, config.clone()).await.unwrap();
 
     let test_msg_hash = [42u8; 32];
-    let auth_state = TransferAuthStateInit {
+    let auth_state = CondVarStateInit {
         escrow_contract_id: config.escrow_swap_contract_id.clone(),
         auth_contract: config.auth_contract.clone(),
         on_auth_signer: proxy.id().clone(),
         authorizee: proxy.id().clone(),
         msg_hash: test_msg_hash,
     };
-    let transfer_auth_instance_id = derive_transfer_auth_account_id(
-        &GlobalContractId::AccountId(transfer_auth_global.clone()),
+    let condvar_instance_id = derive_oneshot_condvar_account_id(
+        &GlobalContractId::AccountId(condvar_global.clone()),
         &auth_state,
     );
 
     let raw_state = ContractStorage::init_state(auth_state).unwrap();
     env.root()
-        .tx(transfer_auth_instance_id.clone())
-        .state_init(transfer_auth_global.clone(), raw_state)
+        .tx(condvar_instance_id.clone())
+        .state_init(condvar_global.clone(), raw_state)
         .transfer(NearToken::from_yoctonear(1))
         .await
         .unwrap();
@@ -315,7 +315,7 @@ async fn test_proxy_authorize_function() {
         .function_call(
             FnCallBuilder::new("authorize")
                 .json_args(serde_json::json!({
-                    "transfer_auth_id": transfer_auth_instance_id,
+                    "condvar_id": condvar_instance_id,
                 }))
                 .with_gas(Gas::from_tgas(100))
                 .with_deposit(NearToken::from_yoctonear(1)),
@@ -327,15 +327,15 @@ async fn test_proxy_authorize_function() {
         "authorize should succeed when called by account with Canceller role"
     );
 
-    let transfer_auth_account =
-        Account::new(transfer_auth_instance_id, env.root().network_config().clone());
-    let is_authorized: bool = transfer_auth_account
-        .call_view_function_json("is_authorized", serde_json::json!({}))
+    let condvar_account =
+        Account::new(condvar_instance_id, env.root().network_config().clone());
+    let cv_is_notified: bool = condvar_account
+        .call_view_function_json("cv_is_notified", serde_json::json!({}))
         .await
         .unwrap();
 
     assert!(
-        is_authorized,
-        "Transfer-auth instance should be authorized after proxy.authorize() call"
+        cv_is_notified,
+        "OneshotCondVar instance should be authorized after proxy.authorize() call"
     );
 }

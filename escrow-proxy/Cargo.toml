@@ -23,7 +23,7 @@ defuse-fees.workspace = true
 defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-token-id = { workspace = true, default-features = false, features = ["nep141", "nep245"] }
-defuse-transfer-auth = { workspace = true, features = ["auth-call"] }
+defuse-oneshot-condvar = { workspace = true, features = ["auth-call"] }
 serde_json.workspace = true
 
 near-plugins.workspace = true
@@ -43,7 +43,7 @@ tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
 
 [features]
 contract = []
-abi = ["defuse-crypto/abi", "defuse-token-id/abi", "defuse-deadline/abi", "defuse-transfer-auth/abi", "defuse-escrow-swap/abi"]
+abi = ["defuse-crypto/abi", "defuse-token-id/abi", "defuse-deadline/abi", "defuse-oneshot-condvar/abi", "defuse-escrow-swap/abi"]
 
 [[example]]
 name = "escrow-swap-demo"

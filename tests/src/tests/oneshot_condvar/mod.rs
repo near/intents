@@ -1,8 +1,8 @@
 use std::time::Duration;
 
 use defuse_sandbox::{Account, FnCallBuilder, Sandbox};
-use defuse_sandbox_ext::TransferAuthAccountExt;
-use defuse_transfer_auth::storage::StateInit as TransferAuthStateInit;
+use defuse_sandbox_ext::OneshotCondVarAccountExt;
+use defuse_oneshot_condvar::storage::StateInit as CondVarStateInit;
 use near_sdk::{AccountId, Gas, GlobalContractId, NearToken, serde_json::json};
 const INIT_BALANCE: NearToken = NearToken::from_near(100);
 
@@ -12,7 +12,7 @@ async fn on_auth_call() {
     let root = sandbox.root();
     let network_config = root.network_config().clone();
 
-    let transfer_auth_global = root.deploy_transfer_auth("auth").await;
+    let condvar_global = root.deploy_oneshot_condvar("auth").await;
 
     let (escrow, auth_contract, relay, proxy) = futures::try_join!(
         root.create_subaccount("escrow", INIT_BALANCE),
@@ -22,7 +22,7 @@ async fn on_auth_call() {
     )
     .unwrap();
 
-    let state = TransferAuthStateInit {
+    let state = CondVarStateInit {
         escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
         on_auth_signer: relay.id().clone(),
@@ -30,13 +30,13 @@ async fn on_auth_call() {
         msg_hash: [0; 32],
     };
 
-    let transfer_auth_instance = root
-        .deploy_transfer_auth_instance(transfer_auth_global.clone(), state)
+    let condvar_instance = root
+        .deploy_oneshot_condvar_instance(condvar_global.clone(), state)
         .await;
 
     // unauthorized contract (relay vs auth_contract)
     relay
-        .tx(transfer_auth_instance.clone())
+        .tx(condvar_instance.clone())
         .function_call(
             FnCallBuilder::new("on_auth")
                 .json_args(json!({ "signer_id": relay.id(), "msg": "" }))
@@ -47,7 +47,7 @@ async fn on_auth_call() {
 
     // unauthorized callee (auth_contract vs relay)
     auth_contract
-        .tx(transfer_auth_instance.clone())
+        .tx(condvar_instance.clone())
         .function_call(
             FnCallBuilder::new("on_auth")
                 .json_args(json!({ "signer_id": auth_contract.id(), "msg": "" }))
@@ -57,7 +57,7 @@ async fn on_auth_call() {
         .unwrap_err();
 
     auth_contract
-        .tx(transfer_auth_instance.clone())
+        .tx(condvar_instance.clone())
         .function_call(
             FnCallBuilder::new("on_auth")
                 .json_args(json!({ "signer_id": relay.id(), "msg": "" }))
@@ -68,7 +68,7 @@ async fn on_auth_call() {
 
     sandbox.fast_forward(5).await;
     assert!(
-        Account::new(transfer_auth_instance.clone(), network_config.clone())
+        Account::new(condvar_instance.clone(), network_config.clone())
             .view()
             .await
             .is_ok()
@@ -76,12 +76,12 @@ async fn on_auth_call() {
 }
 
 #[tokio::test]
-async fn transfer_auth_early_authorization() {
+async fn oneshot_condvar_early_notification() {
     let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
     let network_config = root.network_config().clone();
 
-    let transfer_auth_global = root.deploy_transfer_auth("auth").await;
+    let condvar_global = root.deploy_oneshot_condvar("auth").await;
 
     let (escrow, auth_contract, relay, proxy) = futures::try_join!(
         root.create_subaccount("escrow", INIT_BALANCE),
@@ -91,7 +91,7 @@ async fn transfer_auth_early_authorization() {
     )
     .unwrap();
 
-    let state = TransferAuthStateInit {
+    let state = CondVarStateInit {
         escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
         on_auth_signer: relay.id().clone(),
@@ -99,12 +99,12 @@ async fn transfer_auth_early_authorization() {
         msg_hash: [0; 32],
     };
 
-    let transfer_auth_instance = root
-        .deploy_transfer_auth_instance(transfer_auth_global.clone(), state)
+    let condvar_instance = root
+        .deploy_oneshot_condvar_instance(condvar_global.clone(), state)
         .await;
 
     auth_contract
-        .tx(transfer_auth_instance.clone())
+        .tx(condvar_instance.clone())
         .function_call(
             FnCallBuilder::new("on_auth")
                 .json_args(json!({ "signer_id": relay.id(), "msg": "" }))
@@ -114,9 +114,9 @@ async fn transfer_auth_early_authorization() {
         .unwrap();
 
     proxy
-        .tx(transfer_auth_instance.clone())
+        .tx(condvar_instance.clone())
         .function_call(
-            FnCallBuilder::new("wait_for_authorization")
+            FnCallBuilder::new("cv_wait")
                 .json_args(json!({}))
                 .with_gas(Gas::from_tgas(300)),
         )
@@ -125,7 +125,7 @@ async fn transfer_auth_early_authorization() {
 
     sandbox.fast_forward(5).await;
     assert!(
-        Account::new(transfer_auth_instance.clone(), network_config.clone())
+        Account::new(condvar_instance.clone(), network_config.clone())
             .view()
             .await
             .is_err()
@@ -133,11 +133,11 @@ async fn transfer_auth_early_authorization() {
 }
 
 #[tokio::test]
-async fn transfer_auth_async_authorization() {
+async fn oneshot_condvar_async_notification() {
     let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
 
-    let transfer_auth_global = root.deploy_transfer_auth("auth").await;
+    let condvar_global = root.deploy_oneshot_condvar("auth").await;
 
     let (escrow, auth_contract, relay, proxy) = futures::try_join!(
         root.create_subaccount("escrow", INIT_BALANCE),
@@ -149,7 +149,7 @@ async fn transfer_auth_async_authorization() {
 
     let network_config = root.network_config().clone();
 
-    let state = TransferAuthStateInit {
+    let state = CondVarStateInit {
         escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
         on_auth_signer: relay.id().clone(),
@@ -157,17 +157,17 @@ async fn transfer_auth_async_authorization() {
         msg_hash: [0; 32],
     };
 
-    let transfer_auth_instance = root
-        .deploy_transfer_auth_instance(transfer_auth_global.clone(), state)
+    let condvar_instance = root
+        .deploy_oneshot_condvar_instance(condvar_global.clone(), state)
         .await;
 
     let authorized = tokio::spawn({
-        let transfer_auth_instance = transfer_auth_instance.clone();
+        let condvar_instance = condvar_instance.clone();
         async move {
             proxy
-                .tx(transfer_auth_instance.clone())
+                .tx(condvar_instance.clone())
                 .function_call(
-                    FnCallBuilder::new("wait_for_authorization")
+                    FnCallBuilder::new("cv_wait")
                         .json_args(json!({}))
                         .with_gas(Gas::from_tgas(300)),
                 )
@@ -180,13 +180,13 @@ async fn transfer_auth_async_authorization() {
     tokio::time::sleep(Duration::from_secs(3)).await;
 
     assert!(
-        Account::new(transfer_auth_instance.clone(), network_config.clone())
+        Account::new(condvar_instance.clone(), network_config.clone())
             .view()
             .await
             .is_ok()
     );
     auth_contract
-        .tx(transfer_auth_instance.clone())
+        .tx(condvar_instance.clone())
         .function_call(
             FnCallBuilder::new("on_auth")
                 .json_args(json!({ "signer_id": relay.id(), "msg": "" }))
@@ -199,7 +199,7 @@ async fn transfer_auth_async_authorization() {
 
     sandbox.fast_forward(5).await;
     assert!(
-        Account::new(transfer_auth_instance.clone(), network_config.clone())
+        Account::new(condvar_instance.clone(), network_config.clone())
             .view()
             .await
             .is_err()
@@ -207,12 +207,12 @@ async fn transfer_auth_async_authorization() {
 }
 
 #[tokio::test]
-async fn transfer_auth_async_authorization_timeout() {
+async fn oneshot_condvar_async_notification_timeout() {
     let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
     let network_config = root.network_config().clone();
 
-    let transfer_auth_global = root.deploy_transfer_auth("auth").await;
+    let condvar_global = root.deploy_oneshot_condvar("auth").await;
 
     let (escrow, auth_contract, relay, proxy) = futures::try_join!(
         root.create_subaccount("escrow", INIT_BALANCE),
@@ -222,7 +222,7 @@ async fn transfer_auth_async_authorization_timeout() {
     )
     .unwrap();
 
-    let state = TransferAuthStateInit {
+    let state = CondVarStateInit {
         escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
         on_auth_signer: relay.id().clone(),
@@ -230,26 +230,26 @@ async fn transfer_auth_async_authorization_timeout() {
         msg_hash: [0; 32],
     };
 
-    let transfer_auth_instance = root
-        .deploy_transfer_auth_instance(transfer_auth_global.clone(), state)
+    let condvar_instance = root
+        .deploy_oneshot_condvar_instance(condvar_global.clone(), state)
         .await;
 
-    let wait_for_authorization = proxy
-        .tx(transfer_auth_instance.clone())
+    let cv_wait = proxy
+        .tx(condvar_instance.clone())
         .function_call(
-            FnCallBuilder::new("wait_for_authorization")
+            FnCallBuilder::new("cv_wait")
                 .json_args(json!({}))
                 .with_gas(Gas::from_tgas(300)),
         );
 
     let forward_time = sandbox.fast_forward(200);
 
-    let (authorized, ()) = futures::join!(async { wait_for_authorization.await }, forward_time);
+    let (authorized, ()) = futures::join!(async { cv_wait.await }, forward_time);
     assert!(!authorized.unwrap().json::<bool>().unwrap());
 
     sandbox.fast_forward(5).await;
     assert!(
-        Account::new(transfer_auth_instance.clone(), network_config.clone())
+        Account::new(condvar_instance.clone(), network_config.clone())
             .view()
             .await
             .is_ok()
@@ -257,12 +257,12 @@ async fn transfer_auth_async_authorization_timeout() {
 }
 
 #[tokio::test]
-async fn transfer_auth_retry_after_timeout_with_on_auth() {
+async fn oneshot_condvar_retry_after_timeout_with_on_auth() {
     let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
     let network_config = root.network_config().clone();
 
-    let transfer_auth_global = root.deploy_transfer_auth("auth").await;
+    let condvar_global = root.deploy_oneshot_condvar("auth").await;
 
     let (escrow, auth_contract, relay, proxy) = futures::try_join!(
         root.create_subaccount("escrow", INIT_BALANCE),
@@ -272,7 +272,7 @@ async fn transfer_auth_retry_after_timeout_with_on_auth() {
     )
     .unwrap();
 
-    let state = TransferAuthStateInit {
+    let state = CondVarStateInit {
         escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
         on_auth_signer: relay.id().clone(),
@@ -280,29 +280,29 @@ async fn transfer_auth_retry_after_timeout_with_on_auth() {
         msg_hash: [0; 32],
     };
 
-    let transfer_auth_instance = root
-        .deploy_transfer_auth_instance(transfer_auth_global.clone(), state)
+    let condvar_instance = root
+        .deploy_oneshot_condvar_instance(condvar_global.clone(), state)
         .await;
 
-    // First wait_for_authorization - will timeout
-    let wait_for_authorization = proxy
-        .tx(transfer_auth_instance.clone())
+    // First cv_wait - will timeout
+    let cv_wait = proxy
+        .tx(condvar_instance.clone())
         .function_call(
-            FnCallBuilder::new("wait_for_authorization")
+            FnCallBuilder::new("cv_wait")
                 .json_args(json!({}))
                 .with_gas(Gas::from_tgas(300)),
         );
 
     let forward_time = sandbox.fast_forward(200);
 
-    let (authorized, ()) = futures::join!(async { wait_for_authorization.await }, forward_time);
+    let (authorized, ()) = futures::join!(async { cv_wait.await }, forward_time);
 
     // First attempt should timeout and return false
     assert!(authorized.unwrap().json::<bool>().is_ok());
 
-    // Now call on_auth before second wait_for_authorization
+    // Now call on_auth before second cv_wait
     auth_contract
-        .tx(transfer_auth_instance.clone())
+        .tx(condvar_instance.clone())
         .function_call(
             FnCallBuilder::new("on_auth")
                 .json_args(json!({ "signer_id": relay.id(), "msg": "" }))
@@ -311,11 +311,11 @@ async fn transfer_auth_retry_after_timeout_with_on_auth() {
         .await
         .unwrap();
 
-    // Second wait_for_authorization should succeed immediately (early authorization path)
+    // Second cv_wait should succeed immediately (early authorization path)
     let result = proxy
-        .tx(transfer_auth_instance.clone())
+        .tx(condvar_instance.clone())
         .function_call(
-            FnCallBuilder::new("wait_for_authorization")
+            FnCallBuilder::new("cv_wait")
                 .json_args(json!({}))
                 .with_gas(Gas::from_tgas(300)),
         )
@@ -325,7 +325,7 @@ async fn transfer_auth_retry_after_timeout_with_on_auth() {
 
     sandbox.fast_forward(5).await;
     assert!(
-        Account::new(transfer_auth_instance.clone(), network_config.clone())
+        Account::new(condvar_instance.clone(), network_config.clone())
             .view()
             .await
             .is_err()
@@ -333,12 +333,12 @@ async fn transfer_auth_retry_after_timeout_with_on_auth() {
 }
 
 #[tokio::test]
-async fn transfer_auth_retry_after_timeout_with_on_auth2() {
+async fn oneshot_condvar_retry_after_timeout_with_on_auth2() {
     let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
     let network_config = root.network_config().clone();
 
-    let transfer_auth_global = root.deploy_transfer_auth("auth").await;
+    let condvar_global = root.deploy_oneshot_condvar("auth").await;
 
     let (escrow, auth_contract, relay, proxy) = futures::try_join!(
         root.create_subaccount("escrow", INIT_BALANCE),
@@ -348,7 +348,7 @@ async fn transfer_auth_retry_after_timeout_with_on_auth2() {
     )
     .unwrap();
 
-    let state = TransferAuthStateInit {
+    let state = CondVarStateInit {
         escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
         on_auth_signer: relay.id().clone(),
@@ -356,35 +356,35 @@ async fn transfer_auth_retry_after_timeout_with_on_auth2() {
         msg_hash: [0; 32],
     };
 
-    let transfer_auth_instance = root
-        .deploy_transfer_auth_instance(transfer_auth_global.clone(), state)
+    let condvar_instance = root
+        .deploy_oneshot_condvar_instance(condvar_global.clone(), state)
         .await;
 
-    // First wait_for_authorization - will timeout
-    let wait_for_authorization = proxy
-        .tx(transfer_auth_instance.clone())
+    // First cv_wait - will timeout
+    let cv_wait = proxy
+        .tx(condvar_instance.clone())
         .function_call(
-            FnCallBuilder::new("wait_for_authorization")
+            FnCallBuilder::new("cv_wait")
                 .json_args(json!({}))
                 .with_gas(Gas::from_tgas(300)),
         );
     let forward_time = sandbox.fast_forward(200);
-    let (authorized, ()) = futures::join!(async { wait_for_authorization.await }, forward_time);
+    let (authorized, ()) = futures::join!(async { cv_wait.await }, forward_time);
     // First attempt should timeout and return false
     assert!(authorized.unwrap().json::<bool>().is_ok());
 
-    let wait_for_authorization = proxy
-        .tx(transfer_auth_instance.clone())
+    let cv_wait = proxy
+        .tx(condvar_instance.clone())
         .function_call(
-            FnCallBuilder::new("wait_for_authorization")
+            FnCallBuilder::new("cv_wait")
                 .json_args(json!({}))
                 .with_gas(Gas::from_tgas(300)),
         );
 
-    let (authorized, ()) = futures::join!(async { wait_for_authorization.await }, async {
+    let (authorized, ()) = futures::join!(async { cv_wait.await }, async {
         tokio::time::sleep(Duration::from_secs(3)).await;
         auth_contract
-            .tx(transfer_auth_instance.clone())
+            .tx(condvar_instance.clone())
             .function_call(
                 FnCallBuilder::new("on_auth")
                     .json_args(json!({ "signer_id": relay.id(), "msg": "" }))
@@ -398,7 +398,7 @@ async fn transfer_auth_retry_after_timeout_with_on_auth2() {
 
     sandbox.fast_forward(5).await;
     assert!(
-        Account::new(transfer_auth_instance.clone(), network_config.clone())
+        Account::new(condvar_instance.clone(), network_config.clone())
             .view()
             .await
             .is_err()

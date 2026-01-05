@@ -8,9 +8,9 @@ use defuse_escrow_swap::ContractStorage as EscrowContractStorage;
 use defuse_escrow_swap::ext_escrow;
 use defuse_near_utils::UnwrapOrPanicError;
 use defuse_nep245::receiver::MultiTokenReceiver;
-use defuse_transfer_auth::{
-    TransferAuthContext, ext_transfer_auth,
-    storage::{ContractStorage, StateInit as TransferAuthStateInit},
+use defuse_oneshot_condvar::{
+    CondVarContext, ext_oneshot_condvar,
+    storage::{ContractStorage, StateInit as CondVarStateInit},
 };
 use near_plugins::{AccessControlRole, AccessControllable, access_control, access_control_any};
 use near_sdk::{
@@ -35,7 +35,7 @@ pub struct Contract {
 
 impl Contract {
     fn derive_deteministic_escrow_per_fill_id(&self, msg_hash: [u8; 32]) -> StateInit {
-        let state = TransferAuthStateInit {
+        let state = CondVarStateInit {
             escrow_contract_id: self.config.escrow_swap_contract_id.clone(),
             auth_contract: self.config.auth_contract.clone(),
             on_auth_signer: self.config.auth_collee.clone(),
@@ -99,7 +99,7 @@ impl EscrowProxy for Contract {
         &self.config
     }
 
-    fn context_hash(&self, context: TransferAuthContext<'static>) -> CryptoHash {
+    fn context_hash(&self, context: CondVarContext<'static>) -> CryptoHash {
         context.hash()
     }
 }
@@ -116,7 +116,7 @@ impl MultiTokenReceiver for Contract {
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
         let transfer_message: TransferMessage = msg.parse().unwrap_or_panic_display();
-        let context_hash = TransferAuthContext {
+        let context_hash = CondVarContext {
             sender_id: Cow::Borrowed(&sender_id),
             token_ids: Cow::Borrowed(&token_ids),
             amounts: Cow::Borrowed(&amounts),
@@ -135,8 +135,8 @@ impl MultiTokenReceiver for Contract {
         let token_contract = env::predecessor_account_id();
 
         PromiseOrValue::Promise(
-            ext_transfer_auth::ext_on(auth_call)
-                .wait_for_authorization()
+            ext_oneshot_condvar::ext_on(auth_call)
+                .cv_wait()
                 .then(
                     Self::ext(env::current_account_id())
                         .with_static_gas(Gas::from_tgas(100))
@@ -229,10 +229,10 @@ impl Contract {
     }
 
     #[access_control_any(roles(Role::DAO, Role::Canceller))]
-    pub fn authorize(&self, transfer_auth_id: AccountId) -> Promise {
-        ext_transfer_auth::ext(transfer_auth_id)
+    pub fn authorize(&self, condvar_id: AccountId) -> Promise {
+        ext_oneshot_condvar::ext(condvar_id)
             .with_attached_deposit(NearToken::from_yoctonear(1))
             .with_static_gas(Gas::from_tgas(50))
-            .authorize()
+            .cv_notify_one()
     }
 }

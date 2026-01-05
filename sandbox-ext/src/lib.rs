@@ -12,8 +12,8 @@ use defuse_sandbox::{
     Account, FnCallBuilder, SigningAccount,
     api::types::transaction::actions::GlobalContractDeployMode,
 };
-use defuse_transfer_auth::storage::{
-    ContractStorage, State as TransferAuthState, StateInit as TransferAuthStateInit,
+use defuse_oneshot_condvar::storage::{
+    ContractStorage, State as OneshotCondVarState, StateInit as CondVarStateInit,
 };
 use near_sdk::{
     AccountId, Gas, GlobalContractId, NearToken,
@@ -21,8 +21,8 @@ use near_sdk::{
 };
 use serde_json::json;
 
-// Re-export StateInit type for convenience (used to deploy transfer-auth instances)
-pub use defuse_transfer_auth::storage::StateInit as State;
+// Re-export StateInit type for convenience (used to deploy oneshot-condvar instances)
+pub use defuse_oneshot_condvar::storage::StateInit as State;
 
 #[track_caller]
 fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
@@ -36,8 +36,8 @@ fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
 // WASM statics
 pub static ESCROW_PROXY_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("defuse_escrow_proxy"));
-pub static TRANSFER_AUTH_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm("defuse_transfer_auth"));
+pub static ONESHOT_CONDVAR_WASM: LazyLock<Vec<u8>> =
+    LazyLock::new(|| read_wasm("defuse_oneshot_condvar"));
 pub static ESCROW_SWAP_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("defuse_escrow_swap"));
 
@@ -96,10 +96,10 @@ pub fn sign_intents(
     })
 }
 
-/// Derive the transfer-auth instance account ID from its state
-pub fn derive_transfer_auth_account_id(
+/// Derive the oneshot-condvar instance account ID from its state
+pub fn derive_oneshot_condvar_account_id(
     global_contract_id: &GlobalContractId,
-    state: &TransferAuthStateInit,
+    state: &CondVarStateInit,
 ) -> AccountId {
     let raw_state = ContractStorage::init_state(state.clone()).unwrap();
     let state_init = StateInit::V1(StateInitV1 {
@@ -212,32 +212,32 @@ impl EscrowSwapAccountExt for SigningAccount {
 }
 
 // ============================================================================
-// TransferAuthAccountExt
+// OneshotCondVarAccountExt
 // ============================================================================
 
 #[allow(async_fn_in_trait)]
-pub trait TransferAuthAccountExt {
-    async fn deploy_transfer_auth(&self, name: impl AsRef<str>) -> AccountId;
-    async fn deploy_transfer_auth_instance(
+pub trait OneshotCondVarAccountExt {
+    async fn deploy_oneshot_condvar(&self, name: impl AsRef<str>) -> AccountId;
+    async fn deploy_oneshot_condvar_instance(
         &self,
         global_contract_id: AccountId,
         state: State,
     ) -> AccountId;
-    async fn get_transfer_auth_instance_state(
+    async fn get_oneshot_condvar_instance_state(
         &self,
         global_contract_id: AccountId,
-    ) -> anyhow::Result<TransferAuthState>;
+    ) -> anyhow::Result<OneshotCondVarState>;
 }
 
-impl TransferAuthAccountExt for SigningAccount {
-    async fn deploy_transfer_auth(&self, name: impl AsRef<str>) -> AccountId {
+impl OneshotCondVarAccountExt for SigningAccount {
+    async fn deploy_oneshot_condvar(&self, name: impl AsRef<str>) -> AccountId {
         let account = self.sub_account(name).unwrap();
 
         self.tx(account.id().clone())
             .create_account()
             .transfer(NearToken::from_near(20))
             .deploy_global(
-                TRANSFER_AUTH_WASM.clone(),
+                ONESHOT_CONDVAR_WASM.clone(),
                 GlobalContractDeployMode::AccountId,
             )
             .await
@@ -246,7 +246,7 @@ impl TransferAuthAccountExt for SigningAccount {
         account.id().clone()
     }
 
-    async fn deploy_transfer_auth_instance(
+    async fn deploy_oneshot_condvar_instance(
         &self,
         global_contract_id: AccountId,
         state: State,
@@ -269,10 +269,10 @@ impl TransferAuthAccountExt for SigningAccount {
         account
     }
 
-    async fn get_transfer_auth_instance_state(
+    async fn get_oneshot_condvar_instance_state(
         &self,
         global_contract_id: AccountId,
-    ) -> anyhow::Result<TransferAuthState> {
+    ) -> anyhow::Result<OneshotCondVarState> {
         let account = Account::new(global_contract_id, self.network_config().clone());
         account.call_view_function_json("view", json!({})).await
     }

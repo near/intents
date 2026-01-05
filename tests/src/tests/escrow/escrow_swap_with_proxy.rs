@@ -19,12 +19,12 @@ use defuse_deadline::Deadline;
 use defuse_escrow_proxy::{ProxyConfig, RolesConfig, TransferMessage as ProxyTransferMessage};
 use defuse_escrow_swap::ParamsBuilder;
 use defuse_sandbox::{MtExt, MtViewExt};
-use defuse_sandbox_ext::{EscrowProxyExt, EscrowSwapAccountExt, TransferAuthAccountExt};
+use defuse_sandbox_ext::{EscrowProxyExt, EscrowSwapAccountExt, OneshotCondVarAccountExt};
 use defuse_token_id::TokenId;
 use defuse_token_id::nep245::Nep245TokenId;
-use defuse_transfer_auth::TransferAuthContext;
-use defuse_transfer_auth::storage::{
-    ContractStorage as TransferAuthStorage, StateInit as TransferAuthState,
+use defuse_oneshot_condvar::CondVarContext;
+use defuse_oneshot_condvar::storage::{
+    ContractStorage as CondVarStorage, StateInit as CondVarState,
 };
 
 use near_sdk::json_types::U128;
@@ -36,8 +36,8 @@ use near_sdk::{GlobalContractId, NearToken};
 async fn test_escrow_swap_with_proxy_full_flow() {
     let swap_amount: u128 = 100_000_000; // Fits within ft_deposit_to_root mint limit (1e9)
     let env = Env::builder().build().await;
-    let (transfer_auth_global, escrow_swap_global) = futures::join!(
-        env.root().deploy_transfer_auth("transfer_auth"),
+    let (condvar_global, escrow_swap_global) = futures::join!(
+        env.root().deploy_oneshot_condvar("oneshot_condvar"),
         env.root().deploy_escrow_swap_global("escrow_swap"),
     );
     let (maker, solver, relay, proxy) = futures::join!(
@@ -60,7 +60,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         grantees: HashMap::new(),
     };
     let config = ProxyConfig {
-        per_fill_contract_id: GlobalContractId::AccountId(transfer_auth_global.clone()),
+        per_fill_contract_id: GlobalContractId::AccountId(condvar_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(escrow_swap_global.clone()),
         auth_contract: env.defuse.id().clone(),
         auth_collee: relay.id().clone(),
@@ -120,7 +120,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     };
     let proxy_msg_json = serde_json::to_string(&proxy_msg).unwrap();
 
-    let context_hash = TransferAuthContext {
+    let context_hash = CondVarContext {
         sender_id: Cow::Borrowed(solver.id().as_ref()),
         token_ids: Cow::Owned(vec![token_b_defuse_id.to_string()]),
         amounts: Cow::Owned(vec![U128(swap_amount)]),
@@ -129,25 +129,25 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     }
     .hash();
 
-    let auth_state = TransferAuthState {
+    let auth_state = CondVarState {
         escrow_contract_id: config.escrow_swap_contract_id.clone(),
         auth_contract: env.defuse.id().clone(),
         on_auth_signer: relay.id().clone(),
         authorizee: proxy.id().clone(),
         msg_hash: context_hash,
     };
-    let transfer_auth_raw_state = TransferAuthStorage::init_state(auth_state.clone()).unwrap();
-    let transfer_auth_state_init = StateInit::V1(StateInitV1 {
-        code: GlobalContractId::AccountId(transfer_auth_global.clone()),
-        data: transfer_auth_raw_state,
+    let condvar_raw_state = CondVarStorage::init_state(auth_state.clone()).unwrap();
+    let condvar_state_init = StateInit::V1(StateInitV1 {
+        code: GlobalContractId::AccountId(condvar_global.clone()),
+        data: condvar_raw_state,
     });
 
     let auth_payload = relay
         .sign_defuse_payload_default(
             &env.defuse,
             [AuthCall {
-                contract_id: transfer_auth_state_init.derive_account_id(),
-                state_init: Some(transfer_auth_state_init),
+                contract_id: condvar_state_init.derive_account_id(),
+                state_init: Some(condvar_state_init),
                 msg: String::new(),
                 attached_deposit: NearToken::from_yoctonear(0),
                 min_gas: None,

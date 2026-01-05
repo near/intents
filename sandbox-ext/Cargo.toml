@@ -12,7 +12,7 @@ workspace = true
 defuse-escrow-proxy.workspace = true
 defuse-escrow-swap.workspace = true
 defuse-sandbox.workspace = true
-defuse-transfer-auth.workspace = true
+defuse-oneshot-condvar.workspace = true
 defuse-crypto = { workspace = true, features = ["serde"] }
 defuse-deadline.workspace = true
 defuse-nep413.workspace = true

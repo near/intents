@@ -19,7 +19,7 @@ impl AuthCallee for Contract {
             "Unauthorized on_auth signer"
         );
 
-        self.do_authorize();
+        self.do_notify();
         PromiseOrValue::Value(())
     }
 }

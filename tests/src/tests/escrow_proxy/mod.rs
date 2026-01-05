@@ -1,2 +1,2 @@
 pub mod config;
-pub mod proxy_transfer_auth;
+pub mod proxy_oneshot_condvar;

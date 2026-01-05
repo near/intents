@@ -15,7 +15,7 @@ pub use storage::{ContractStorage, State, StateInit, StateMachine};
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
-pub struct TransferAuthContext<'a> {
+pub struct CondVarContext<'a> {
     pub sender_id: Cow<'a, AccountIdRef>,
     pub token_ids: Cow<'a, [defuse_nep245::TokenId]>,
     pub amounts: Cow<'a, [U128]>,
@@ -23,21 +23,21 @@ pub struct TransferAuthContext<'a> {
     pub msg: Cow<'a, str>,
 }
 
-impl TransferAuthContext<'_> {
+impl CondVarContext<'_> {
     pub fn hash(&self) -> [u8; 32] {
         let serialized = borsh::to_vec(&self)
-            .unwrap_or_else(|_| unreachable!("TransferAuthContext is always serializable"));
+            .unwrap_or_else(|_| unreachable!("CondVarContext is always serializable"));
         keccak256(&serialized)
             .try_into()
             .unwrap_or_else(|_| unreachable!())
     }
 }
 
-#[ext_contract(ext_transfer_auth)]
-pub trait TransferAuth {
+#[ext_contract(ext_oneshot_condvar)]
+pub trait OneshotCondVar {
     fn state(&self) -> &StateMachine;
     fn view(&self) -> &State;
-    fn is_authorized(&self) -> bool;
-    fn wait_for_authorization(&mut self) -> PromiseOrValue<bool>;
-    fn authorize(&mut self);
+    fn cv_is_notified(&self) -> bool;
+    fn cv_wait(&mut self) -> PromiseOrValue<bool>;
+    fn cv_notify_one(&mut self);
 }
