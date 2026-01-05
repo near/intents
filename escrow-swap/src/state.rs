@@ -191,12 +191,12 @@ impl Params {
 }
 
 /// Builder for creating escrow swap parameters.
-/// Takes (maker, `src_token`) and (taker, `dst_token`) tuples associating actors with their tokens.
+/// Takes (maker, `src_token`) and (takers, `dst_token`) tuples associating actors with their tokens.
 #[derive(Debug, Clone)]
 pub struct ParamsBuilder {
     maker: AccountId,
     src_token: TokenId,
-    taker: AccountId,
+    takers: BTreeSet<AccountId>,
     dst_token: TokenId,
     salt: Option<[u8; 32]>,
     price: Option<crate::decimal::UD128>,
@@ -214,12 +214,12 @@ pub struct ParamsBuilder {
 impl ParamsBuilder {
     pub fn new(
         (maker, src_token): (AccountId, TokenId),
-        (taker, dst_token): (AccountId, TokenId),
+        (takers, dst_token): (impl IntoIterator<Item = AccountId>, TokenId),
     ) -> Self {
         Self {
             maker,
             src_token,
-            taker,
+            takers: takers.into_iter().collect(),
             dst_token,
             salt: None,
             price: None,
@@ -296,13 +296,12 @@ impl ParamsBuilder {
         self
     }
 
-    /// Returns the taker account ID.
-    pub const fn taker(&self) -> &AccountId {
-        &self.taker
+    /// Returns the takers whitelist.
+    pub const fn takers(&self) -> &BTreeSet<AccountId> {
+        &self.takers
     }
 
     pub fn build(self, default_deadline: Deadline) -> Params {
-        let taker = self.taker.clone();
         Params {
             maker: self.maker,
             src_token: self.src_token,
@@ -312,7 +311,7 @@ impl ParamsBuilder {
             partial_fills_allowed: self.partial_fills_allowed.unwrap_or(false),
             refund_src_to: self.refund_src_to.unwrap_or_default(),
             receive_dst_to: self.receive_dst_to.unwrap_or_default(),
-            taker_whitelist: [taker].into(),
+            taker_whitelist: self.takers,
             protocol_fees: self.protocol_fees,
             integrator_fees: self.integrator_fees,
             #[cfg(feature = "auth_call")]
@@ -326,7 +325,7 @@ impl ParamsBuilder {
         default_deadline: Deadline,
         default_fill_deadline: Deadline,
     ) -> (Params, TransferMessage, TransferMessage) {
-        let taker = self.taker.clone();
+        let first_taker = self.takers.first().cloned();
         let fill_deadline = self.fill_deadline.unwrap_or(default_fill_deadline);
         let params = self.build(default_deadline);
         let fund_msg = TransferMessage {
@@ -338,7 +337,9 @@ impl ParamsBuilder {
             action: TransferAction::Fill(FillAction {
                 price: params.price,
                 deadline: fill_deadline,
-                receive_src_to: OverrideSend::default().receiver_id(taker),
+                receive_src_to: first_taker
+                    .map(|t| OverrideSend::default().receiver_id(t))
+                    .unwrap_or_default(),
             }),
         };
         (params, fund_msg, fill_msg)
