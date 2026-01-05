@@ -9,10 +9,10 @@ repository.workspace = true
 workspace = true
 
 [dev-dependencies]
-defuse = { workspace = true, features = ["contract", "sandbox"] }
+defuse = { workspace = true, features = ["contract"] }
 defuse-escrow-swap = { workspace = true, features = ["auth_call"] }
 defuse-near-utils = { workspace = true }
-defuse-poa-factory = { workspace = true, features = ["contract", "sandbox"] }
+defuse-poa-factory = { workspace = true, features = ["contract"] }
 defuse-serde-utils = { workspace = true }
 defuse-randomness.workspace = true
 defuse-test-utils.workspace = true

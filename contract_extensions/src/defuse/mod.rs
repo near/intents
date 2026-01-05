@@ -8,3 +8,5 @@ pub mod relayer;
 pub mod signer;
 pub mod state;
 pub mod tokens;
+
+pub use defuse as contract;

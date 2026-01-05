@@ -1,9 +1,11 @@
+pub use defuse_escrow_swap;
+
 use std::sync::LazyLock;
 
 use defuse_sandbox::{Account, SigningAccount, anyhow, read_wasm, tx::FnCallBuilder};
 use near_sdk::{AccountId, serde_json::json};
 
-use crate::{Params, Storage};
+use defuse_escrow_swap::{Params, Storage};
 
 pub static ESCROW_SWAP_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("res/defuse_escrow_swap"));

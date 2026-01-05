@@ -1,8 +1,5 @@
 use std::sync::LazyLock;
 
-use defuse::sandbox_ext::account_manager::{AccountManagerExt, AccountViewExt};
-use defuse::sandbox_ext::intents::ExecuteIntentsExt;
-use defuse::sandbox_ext::state::{FeesManagerExt, FeesManagerViewExt, SaltManagerExt, SaltViewExt};
 use defuse::{
     contract::Role,
     core::{
@@ -13,6 +10,11 @@ use defuse::{
         token_id::{TokenId, nep141::Nep141TokenId},
     },
     nep245::Token,
+};
+use defuse_contract_extensions::defuse::{
+    account_manager::{AccountManagerExt, AccountViewExt},
+    intents::ExecuteIntentsExt,
+    state::{FeesManagerExt, FeesManagerViewExt, SaltManagerExt, SaltViewExt},
 };
 use defuse_sandbox::extensions::acl::AclExt;
 use defuse_sandbox::extensions::mt::MtViewExt;

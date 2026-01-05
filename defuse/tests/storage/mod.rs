@@ -1,5 +1,6 @@
 use crate::{DefuseSignerExt, env::Env};
-use defuse::{core::intents::tokens::StorageDeposit, sandbox_ext::intents::ExecuteIntentsExt};
+use defuse::core::intents::tokens::StorageDeposit;
+use defuse_contract_extensions::defuse::intents::ExecuteIntentsExt;
 use defuse_sandbox::extensions::{
     storage_management::{StorageManagementExt, StorageViewExt},
     wnear::WNearExt,

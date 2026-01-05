@@ -5,8 +5,8 @@ use crate::{
 use defuse::core::intents::tokens::NftWithdraw;
 use defuse::core::token_id::TokenId as DefuseTokenId;
 use defuse::core::token_id::nep171::Nep171TokenId;
-use defuse::sandbox_ext::intents::ExecuteIntentsExt;
 use defuse::tokens::{DepositAction, DepositMessage, ExecuteIntents};
+use defuse_contract_extensions::defuse::intents::ExecuteIntentsExt;
 use defuse_sandbox::api::types::json::Base64VecU8;
 use defuse_sandbox::api::types::nft::NFTContractMetadata;
 use defuse_sandbox::extensions::mt::MtViewExt;

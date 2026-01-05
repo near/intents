@@ -6,9 +6,11 @@ use defuse::{
         config::{DefuseConfig, RolesConfig},
     },
     core::fees::{FeesConfig, Pips},
-    sandbox_ext::deployer::DefuseExt,
 };
-use defuse_poa_factory::{contract::Role as POAFactoryRole, sandbox_ext::PoAFactoryDeployerExt};
+use defuse_contract_extensions::{
+    defuse::deployer::DefuseExt,
+    poa::{PoAFactoryDeployerExt, contract::contract::Role as POAFactoryRole},
+};
 use defuse_sandbox::{
     Account, SigningAccount,
     extensions::wnear::{WNearDeployerExt, WNearExt},

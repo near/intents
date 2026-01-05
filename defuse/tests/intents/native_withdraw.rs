@@ -1,5 +1,3 @@
-use defuse::sandbox_ext::intents::ExecuteIntentsExt;
-use defuse::sandbox_ext::tokens::nep141::DefuseFtDepositor;
 use defuse::{
     core::{
         crypto::PublicKey,
@@ -7,6 +5,9 @@ use defuse::{
         token_id::{TokenId, nep141::Nep141TokenId},
     },
     tokens::DepositMessage,
+};
+use defuse_contract_extensions::defuse::{
+    intents::ExecuteIntentsExt, tokens::nep141::DefuseFtDepositor,
 };
 use defuse_sandbox::extensions::mt::MtViewExt;
 use defuse_sandbox::extensions::wnear::WNearExt;

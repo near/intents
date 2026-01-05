@@ -1,13 +1,15 @@
-use crate::{DefuseSigner, env::Env, intents::ExecuteIntentsExt};
 use defuse::core::{
     Deadline, Nonce,
     amounts::Amounts,
     intents::{DefuseIntents, tokens::Transfer},
     token_id::{TokenId, nep141::Nep141TokenId},
 };
+use defuse_contract_extensions::defuse::{intents::ExecuteIntentsExt, signer::DefuseSigner};
 use defuse_sandbox::extensions::mt::MtViewExt;
 use defuse_test_utils::random::make_arbitrary;
 use rstest::rstest;
+
+use crate::env::Env;
 
 #[rstest]
 #[trace]

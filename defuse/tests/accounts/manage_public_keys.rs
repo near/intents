@@ -1,13 +1,11 @@
 use std::borrow::Cow;
 
-use defuse::{
-    core::{
-        accounts::{AccountEvent, PublicKeyEvent},
-        crypto::PublicKey,
-        events::DefuseEvent,
-    },
-    sandbox_ext::account_manager::{AccountManagerExt, AccountViewExt},
+use defuse::core::{
+    accounts::{AccountEvent, PublicKeyEvent},
+    crypto::PublicKey,
+    events::DefuseEvent,
 };
+use defuse_contract_extensions::defuse::account_manager::{AccountManagerExt, AccountViewExt};
 use defuse_sandbox::{assert_eq_event_logs, tx::FnCallBuilder};
 use defuse_test_utils::fixtures::public_key;
 use near_sdk::{AsNep297Event, NearToken, serde_json::json};

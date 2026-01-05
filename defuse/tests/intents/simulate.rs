@@ -22,11 +22,11 @@ use defuse::{
         },
         token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
     },
-    sandbox_ext::{
-        account_manager::{AccountManagerExt, AccountViewExt},
-        deployer::DefuseExt,
-        intents::SimulateIntents,
-    },
+};
+use defuse_contract_extensions::defuse::{
+    account_manager::{AccountManagerExt, AccountViewExt},
+    deployer::DefuseExt,
+    intents::SimulateIntents,
 };
 use defuse_sandbox::{
     api::types::{json::Base64VecU8, nft::NFTContractMetadata},

@@ -30,21 +30,20 @@ container_build_command = [
 defuse-admin-utils.workspace = true
 defuse-near-utils.workspace = true
 defuse-poa-token.workspace = true
-defuse-sandbox = {workspace = true, optional = true}
 
 near-contract-standards.workspace = true
 near-plugins.workspace = true
 near-sdk.workspace = true
 
 [dev-dependencies]
-defuse-poa-factory = {path = ".", features = ["sandbox", "contract"] }
+defuse-sandbox.workspace = true
+defuse-contract-extensions = { workspace = true, features = ["poa"] }
 rstest.workspace = true
 futures.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 
 [features]
 contract = []
-sandbox = ["dep:defuse-sandbox"]
 
 [build-dependencies]
 cargo-near-build = { workspace = true, features = ["build_external"] }

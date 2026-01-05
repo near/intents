@@ -6,11 +6,11 @@ use crate::{
 use defuse::core::intents::tokens::{NotifyOnTransfer, Transfer};
 use defuse::core::token_id::nep245::Nep245TokenId;
 use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
-use defuse::sandbox_ext::deployer::DefuseExt;
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
     core::fees::{FeesConfig, Pips},
 };
+use defuse_contract_extensions::defuse::deployer::DefuseExt;
 use defuse_sandbox::extensions::ft::FtViewExt;
 use defuse_sandbox::extensions::mt::MtViewExt;
 use multi_token_receiver_stub::MTReceiverMode;

@@ -19,7 +19,6 @@ const MAX_NONCES: usize = 5;
 const MAX_TOKENS: usize = 3;
 
 const MIN_BALANCE_AMOUNT: u128 = 1_000;
-const MAX_BALANCE_AMOUNT: u128 = 10_000;
 
 #[derive(Arbitrary, Debug, Clone, PartialEq, Eq)]
 pub struct AccountData {

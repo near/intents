@@ -1,11 +1,11 @@
 use defuse::core::intents::tokens::FtWithdraw;
 use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
-use defuse::sandbox_ext::{
-    deployer::DefuseExt, intents::ExecuteIntentsExt, tokens::nep141::DefuseFtDepositor,
-};
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
     core::fees::{FeesConfig, Pips},
+};
+use defuse_contract_extensions::defuse::{
+    deployer::DefuseExt, intents::ExecuteIntentsExt, tokens::nep141::DefuseFtDepositor,
 };
 use defuse_sandbox::extensions::ft::FtViewExt;
 use defuse_sandbox::extensions::mt::MtViewExt;

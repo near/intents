@@ -1,4 +1,5 @@
-use defuse::{contract::Role, sandbox_ext::relayer::RelayerKeysExt};
+use defuse::contract::Role;
+use defuse_contract_extensions::defuse::relayer::RelayerKeysExt;
 use defuse_sandbox::{
     SigningAccount,
     api::{Signer, signer::generate_secret_key},

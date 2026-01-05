@@ -1,8 +1,5 @@
-use defuse::{
-    contract::Role,
-    core::fees::Pips,
-    sandbox_ext::state::{FeesManagerExt, FeesManagerViewExt},
-};
+use defuse::{contract::Role, core::fees::Pips};
+use defuse_contract_extensions::defuse::state::{FeesManagerExt, FeesManagerViewExt};
 
 use defuse_sandbox::extensions::acl::AclExt;
 use defuse_test_utils::asserts::ResultAssertsExt;

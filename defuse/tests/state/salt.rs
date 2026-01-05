@@ -1,7 +1,5 @@
-use defuse::{
-    contract::Role,
-    sandbox_ext::state::{SaltManagerExt, SaltViewExt},
-};
+use defuse::contract::Role;
+use defuse_contract_extensions::defuse::state::{SaltManagerExt, SaltViewExt};
 
 use defuse_sandbox::extensions::acl::AclExt;
 use defuse_test_utils::asserts::ResultAssertsExt;

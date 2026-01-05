@@ -3,13 +3,15 @@ use crate::env::{Env, MT_RECEIVER_STUB_WASM};
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
 
-use defuse::sandbox_ext::tokens::nep141::{DefuseFtDepositor, DefuseFtWithdrawer};
 use defuse::{
     contract::Role,
     core::intents::tokens::{FtWithdraw, NotifyOnTransfer},
     tokens::{DepositAction, DepositMessage, ExecuteIntents},
 };
-use defuse_poa_factory::sandbox_ext::PoAFactoryExt;
+use defuse_contract_extensions::{
+    defuse::tokens::nep141::{DefuseFtDepositor, DefuseFtWithdrawer},
+    poa::PoAFactoryExt,
+};
 use defuse_sandbox::extensions::acl::AclExt;
 use defuse_sandbox::extensions::ft::FtViewExt;
 use defuse_sandbox::extensions::mt::MtViewExt;

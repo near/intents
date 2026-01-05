@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 mod accounts;
 mod env;
 mod intents;
@@ -8,8 +10,7 @@ use defuse::core::ExpirableNonce;
 use defuse::core::SaltedNonce;
 use defuse::core::VersionedNonce;
 use defuse::core::intents::DefuseIntents;
-use defuse::sandbox_ext::signer::DefuseSigner;
-use defuse::sandbox_ext::state::SaltViewExt;
+use defuse_contract_extensions::defuse::{signer::DefuseSigner, state::SaltViewExt};
 use defuse_randomness::RngCore;
 
 use defuse::core::intents::Intent;

@@ -3,7 +3,7 @@ use std::sync::LazyLock;
 use defuse_sandbox::{SigningAccount, anyhow, read_wasm, tx::FnCallBuilder};
 use near_sdk::{AccountId, Gas, NearToken, serde_json::json};
 
-use crate::contract::config::DefuseConfig;
+use defuse::contract::config::DefuseConfig;
 
 static DEFUSE_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("res/defuse"));
 static DEFUSE_LEGACY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("releases/previous"));

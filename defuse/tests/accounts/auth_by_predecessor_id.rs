@@ -1,14 +1,12 @@
-use defuse::{
-    core::{
-        DefuseError,
-        amounts::Amounts,
-        intents::{account::SetAuthByPredecessorId, tokens::Transfer},
-        token_id::{TokenId, nep141::Nep141TokenId},
-    },
-    sandbox_ext::{
-        account_manager::{AccountManagerExt, AccountViewExt},
-        intents::ExecuteIntentsExt,
-    },
+use defuse::core::{
+    DefuseError,
+    amounts::Amounts,
+    intents::{account::SetAuthByPredecessorId, tokens::Transfer},
+    token_id::{TokenId, nep141::Nep141TokenId},
+};
+use defuse_contract_extensions::defuse::{
+    account_manager::{AccountManagerExt, AccountViewExt},
+    intents::ExecuteIntentsExt,
 };
 use defuse_sandbox::extensions::mt::{MtExt, MtViewExt};
 use defuse_test_utils::asserts::ResultAssertsExt;

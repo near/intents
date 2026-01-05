@@ -10,15 +10,17 @@ pub use nonce::ExtractNonceExt;
 use super::DefuseSignerExt;
 use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;
-use defuse::sandbox_ext::{
-    account_manager::{AccountManagerExt, AccountViewExt},
-    tokens::nep141::DefuseFtDepositor,
-};
 use defuse::{
     core::{Deadline, ExpirableNonce, Nonce, Salt, SaltedNonce, VersionedNonce},
     tokens::{DepositAction, DepositMessage},
 };
-use defuse_poa_factory::sandbox_ext::PoAFactoryExt;
+use defuse_contract_extensions::{
+    defuse::{
+        account_manager::{AccountManagerExt, AccountViewExt},
+        tokens::nep141::DefuseFtDepositor,
+    },
+    poa::PoAFactoryExt,
+};
 use defuse_randomness::{Rng, make_true_rng};
 use defuse_sandbox::extensions::storage_management::StorageManagementExt;
 use defuse_sandbox::tx::FnCallBuilder;
@@ -67,7 +69,7 @@ impl Env {
         Self::builder().build().await
     }
 
-    pub fn root(&self) -> &SigningAccount {
+    pub const fn root(&self) -> &SigningAccount {
         self.sandbox.root()
     }
 
@@ -270,7 +272,7 @@ impl Env {
         &self.sandbox
     }
 
-    pub fn sandbox_mut(&mut self) -> &mut Sandbox {
+    pub const fn sandbox_mut(&mut self) -> &mut Sandbox {
         &mut self.sandbox
     }
 }

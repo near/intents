@@ -1,7 +1,5 @@
-use defuse_poa_factory::{
-    contract::Role,
-    sandbox_ext::{PoAFactoryDeployerExt, PoAFactoryExt},
-};
+use defuse_contract_extensions::poa::{PoAFactoryDeployerExt, PoAFactoryExt};
+use defuse_poa_factory::contract::Role;
 use defuse_sandbox::{
     Sandbox,
     extensions::{ft::FtViewExt, storage_management::StorageManagementExt},

@@ -37,7 +37,6 @@ serde_with.workspace = true
 strum.workspace = true
 thiserror.workspace = true
 
-defuse-sandbox = {workspace = true, optional = true}
 arbitrary = {workspace = true, optional = true}
 defuse-test-utils = {workspace = true, optional = true}
 
@@ -67,19 +66,12 @@ contract = [
     "dep:bitflags",
 ]
 
-sandbox = [
-    "arbitrary",
-    "dep:defuse-sandbox",
-    "dep:defuse-test-utils",
-]
-
 [dev-dependencies]
-defuse = {path = ".", features = ["sandbox", "contract"] }
 defuse-core = { workspace = true, features = ["arbitrary"] }
 defuse-test-utils.workspace = true
 defuse-sandbox.workspace = true
 defuse-randomness.workspace = true
-defuse-poa-factory = {workspace = true, features = ["sandbox", "contract"]}
+defuse-contract-extensions = { workspace = true, features = ["poa"] }
 multi-token-receiver-stub = { path = "../tests/contracts/multi-token-receiver-stub" }
 
 chrono.workspace = true

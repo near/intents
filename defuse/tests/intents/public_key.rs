@@ -1,12 +1,10 @@
-use defuse::{
-    core::{
-        accounts::{AccountEvent, PublicKeyEvent},
-        crypto::PublicKey,
-        events::DefuseEvent,
-        intents::account::{AddPublicKey, RemovePublicKey},
-    },
-    sandbox_ext::intents::ExecuteIntentsExt,
+use defuse::core::{
+    accounts::{AccountEvent, PublicKeyEvent},
+    crypto::PublicKey,
+    events::DefuseEvent,
+    intents::account::{AddPublicKey, RemovePublicKey},
 };
+use defuse_contract_extensions::defuse::intents::ExecuteIntentsExt;
 use defuse_test_utils::fixtures::public_key;
 use near_sdk::AsNep297Event;
 use rstest::rstest;

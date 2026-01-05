@@ -1,5 +1,6 @@
 #![allow(async_fn_in_trait)]
 
+pub use defuse_poa_factory as contract;
 use defuse_sandbox::{Account, SigningAccount, anyhow, read_wasm, tx::FnCallBuilder};
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128, serde_json::json};
@@ -8,7 +9,7 @@ use std::{
     sync::LazyLock,
 };
 
-use crate::contract::{POA_TOKEN_INIT_BALANCE, Role};
+use defuse_poa_factory::contract::{POA_TOKEN_INIT_BALANCE, Role};
 
 static POA_FACTORY_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("releases/defuse_poa_factory"));

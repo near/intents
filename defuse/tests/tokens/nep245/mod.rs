@@ -14,11 +14,13 @@ use defuse::core::token_id::nep141::Nep141TokenId;
 use defuse::core::token_id::nep245::Nep245TokenId;
 use defuse::nep245::Token;
 use defuse::nep245::{MtBurnEvent, MtEvent, MtTransferEvent};
-use defuse::sandbox_ext::account_manager::AccountManagerExt;
-use defuse::sandbox_ext::deployer::DefuseExt;
-use defuse::sandbox_ext::tokens::{nep141::DefuseFtWithdrawer, nep245::DefuseMtWithdrawer};
 use defuse::tokens::DepositMessage;
 use defuse::tokens::{DepositAction, ExecuteIntents};
+use defuse_contract_extensions::defuse::{
+    account_manager::AccountManagerExt,
+    deployer::DefuseExt,
+    tokens::{nep141::DefuseFtWithdrawer, nep245::DefuseMtWithdrawer},
+};
 use defuse_sandbox::assert_a_contains_b;
 use defuse_sandbox::extensions::mt::{MtExt, MtViewExt};
 use defuse_sandbox::tx::FnCallBuilder;
@@ -932,10 +934,7 @@ struct MtTransferCallExpectation {
 async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     #[case] expectation: MtTransferCallExpectation,
 ) {
-    use defuse::{
-        core::{amounts::Amounts, intents::tokens::Transfer},
-        sandbox_ext::account_manager::AccountManagerExt,
-    };
+    use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
 
     let env = Env::builder().deployer_as_super_admin().build().await;
 
@@ -1495,6 +1494,7 @@ async fn mt_transfer_call_circullar_deposit() {
     );
 }
 
+#[allow(clippy::too_many_lines)]
 #[tokio::test]
 async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
     let env = Env::builder().deployer_as_super_admin().build().await;

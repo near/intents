@@ -1,8 +1,11 @@
 mod helpers;
 
-use defuse::{
-    core::intents::tokens::NotifyOnTransfer,
-    tokens::{DepositAction, DepositMessage},
+use defuse_contract_extensions::{
+    defuse::contract::{
+        core::intents::tokens::NotifyOnTransfer,
+        tokens::{DepositAction, DepositMessage},
+    },
+    escrow::{EscrowExt, EscrowExtView},
 };
 use defuse_escrow_swap::{
     ContractStorage, Deadline, OverrideSend, Params, Pips, ProtocolFees,
@@ -23,7 +26,6 @@ use std::time::Duration;
 
 use rstest::rstest;
 
-use defuse_escrow_swap::sandbox_ext::{EscrowExt, EscrowExtView};
 use helpers::{Env, env};
 
 #[rstest]

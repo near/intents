@@ -4,7 +4,7 @@ use defuse::core::{
     fees::Pips,
     intents::token_diff::{TokenDeltas, TokenDiff},
 };
-use defuse::sandbox_ext::intents::SimulateIntents;
+use defuse_contract_extensions::defuse::intents::SimulateIntents;
 use defuse_sandbox::SigningAccount;
 use defuse_sandbox::extensions::mt::MtViewExt;
 use near_sdk::{AccountId, serde_json};

@@ -5,12 +5,14 @@ use chrono::{TimeDelta, Utc};
 use defuse::{
     contract::Role,
     core::{Deadline, Nonce, Salt, intents::DefuseIntents},
-    sandbox_ext::{
-        account_manager::AccountViewExt,
-        intents::ExecuteIntentsExt,
-        state::{GarbageCollectorExt, SaltManagerExt, SaltViewExt},
-    },
 };
+use defuse_contract_extensions::defuse::{
+    account_manager::AccountViewExt,
+    intents::ExecuteIntentsExt,
+    signer::DefuseSigner,
+    state::{GarbageCollectorExt, SaltManagerExt, SaltViewExt},
+};
+
 use defuse_sandbox::extensions::acl::AclExt;
 use futures::future::join_all;
 use itertools::Itertools;
@@ -25,10 +27,7 @@ use defuse_test_utils::{
 use near_sdk::AccountId;
 use rstest::rstest;
 
-use crate::{
-    DefuseSigner,
-    env::{Env, create_random_salted_nonce},
-};
+use crate::env::{Env, create_random_salted_nonce};
 
 #[rstest]
 #[tokio::test]

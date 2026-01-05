@@ -8,7 +8,7 @@ use near_sdk::{
     serde_json::{self, json},
 };
 
-use crate::intents::SimulationOutput;
+use defuse::simulation_output::SimulationOutput;
 
 pub trait ExecuteIntentsExt {
     async fn execute_intents(

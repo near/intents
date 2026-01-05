@@ -34,10 +34,8 @@ defuse-auth-call = { workspace = true, optional = true }
 defuse-near-utils = { workspace = true, optional = true }
 
 [dev-dependencies]
-defuse-escrow-swap = {path = ".", features = ["sandbox", "default"] }
-defuse = { workspace = true,  features = ["sandbox", "contract"] }
-defuse-poa-factory = { workspace = true,  features = ["sandbox", "contract"] }
 defuse-sandbox.workspace = true
+defuse-contract-extensions = { workspace = true, features = ["escrow", "poa"] }
 
 futures.workspace = true
 rstest.workspace = true
@@ -46,7 +44,6 @@ tokio = { workspace = true, features = ["macros"] }
 
 [features]
 default = ["auth_call", "nep141", "nep245"]
-sandbox = ["dep:defuse-sandbox"]
 
 auth_call = ["dep:defuse-auth-call"]
 nep141 = ["defuse-token-id/nep141"]

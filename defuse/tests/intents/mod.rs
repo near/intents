@@ -1,14 +1,15 @@
-use defuse::{
-    core::{
-        Deadline, Nonce,
-        accounts::{AccountEvent, NonceEvent},
-        amounts::Amounts,
-        crypto::Payload,
-        events::DefuseEvent,
-        intents::{DefuseIntents, IntentEvent, tokens::Transfer},
-        token_id::{TokenId, nep141::Nep141TokenId},
-    },
-    sandbox_ext::intents::{ExecuteIntentsExt, SimulateIntents},
+use defuse::core::{
+    Deadline, Nonce,
+    accounts::{AccountEvent, NonceEvent},
+    amounts::Amounts,
+    crypto::Payload,
+    events::DefuseEvent,
+    intents::{DefuseIntents, IntentEvent, tokens::Transfer},
+    token_id::{TokenId, nep141::Nep141TokenId},
+};
+use defuse_contract_extensions::defuse::{
+    intents::{ExecuteIntentsExt, SimulateIntents},
+    signer::DefuseSigner,
 };
 use defuse_randomness::Rng;
 use defuse_sandbox::extensions::mt::MtViewExt;
@@ -17,7 +18,7 @@ use near_sdk::{AccountId, AccountIdRef, AsNep297Event, CryptoHash, serde_json};
 use rstest::rstest;
 use std::borrow::Cow;
 
-use super::{DefuseSigner, env::Env};
+use super::env::Env;
 
 pub struct AccountNonceIntentEvent(AccountId, Nonce, CryptoHash);
 

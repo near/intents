@@ -793,18 +793,17 @@ dependencies = [
  "bitflags 2.10.0",
  "bnum",
  "chrono",
- "defuse",
  "defuse-admin-utils",
  "defuse-auth-call",
  "defuse-bitmap",
  "defuse-borsh-utils",
+ "defuse-contract-extensions",
  "defuse-controller",
  "defuse-core",
  "defuse-io-utils",
  "defuse-map-utils",
  "defuse-near-utils",
  "defuse-nep245",
- "defuse-poa-factory",
  "defuse-randomness",
  "defuse-sandbox",
  "defuse-serde-utils",
@@ -859,6 +858,21 @@ dependencies = [
  "chrono",
  "defuse-io-utils",
  "impl-tools",
+ "near-sdk",
+]
+
+[[package]]
+name = "defuse-contract-extensions"
+version = "0.1.0"
+dependencies = [
+ "defuse",
+ "defuse-core",
+ "defuse-escrow-swap",
+ "defuse-nep245",
+ "defuse-poa-factory",
+ "defuse-sandbox",
+ "defuse-serde-utils",
+ "near-contract-standards",
  "near-sdk",
 ]
 
@@ -964,17 +978,15 @@ dependencies = [
 name = "defuse-escrow-swap"
 version = "0.1.0"
 dependencies = [
- "defuse",
  "defuse-auth-call",
  "defuse-borsh-utils",
+ "defuse-contract-extensions",
  "defuse-deadline",
  "defuse-decimal",
- "defuse-escrow-swap",
  "defuse-fees",
  "defuse-near-utils",
  "defuse-nep245",
  "defuse-num-utils",
- "defuse-poa-factory",
  "defuse-sandbox",
  "defuse-token-id",
  "derive_more",
@@ -1065,8 +1077,8 @@ version = "0.1.0"
 dependencies = [
  "cargo-near-build",
  "defuse-admin-utils",
+ "defuse-contract-extensions",
  "defuse-near-utils",
- "defuse-poa-factory",
  "defuse-poa-token",
  "defuse-sandbox",
  "futures",
