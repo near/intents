@@ -10,16 +10,17 @@ use crate::{
 };
 
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh])]
+#[near(serializers = [borsh(use_discriminant = true)])]
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(
     feature = "serde",
     derive(serde_with::SerializeDisplay, serde_with::DeserializeFromStr)
 )]
+#[repr(u8)]
 pub enum PublicKey {
-    Ed25519(<Ed25519 as Curve>::PublicKey),
-    Secp256k1(<Secp256k1 as Curve>::PublicKey),
-    P256(<P256 as Curve>::PublicKey),
+    Ed25519(<Ed25519 as Curve>::PublicKey) = 0,
+    Secp256k1(<Secp256k1 as Curve>::PublicKey) = 1,
+    P256(<P256 as Curve>::PublicKey) = 2,
 }
 
 impl PublicKey {

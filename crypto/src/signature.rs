@@ -9,16 +9,17 @@ use crate::{
     Curve, CurveType, Ed25519, P256, ParseCurveError, Secp256k1, parse::checked_base58_decode_array,
 };
 
-#[near(serializers = [borsh])]
+#[near(serializers = [borsh(use_discriminant = true)])]
 #[cfg_attr(
     feature = "serde",
     derive(serde_with::SerializeDisplay, serde_with::DeserializeFromStr)
 )]
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(u8)]
 pub enum Signature {
-    Ed25519(<Ed25519 as Curve>::Signature),
-    Secp256k1(<Secp256k1 as Curve>::Signature),
-    P256(<P256 as Curve>::Signature),
+    Ed25519(<Ed25519 as Curve>::Signature) = 0,
+    Secp256k1(<Secp256k1 as Curve>::Signature) = 1,
+    P256(<P256 as Curve>::Signature) = 2,
 }
 
 impl Signature {
