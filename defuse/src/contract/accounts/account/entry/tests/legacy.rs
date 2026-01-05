@@ -9,7 +9,7 @@ use defuse_bitmap::U256;
 use defuse_borsh_utils::adapters::to_vec_as;
 use defuse_core::{Result, crypto::PublicKey, token_id::TokenId};
 use defuse_near_utils::{Lock, PanicOnClone};
-use defuse_test_utils::random::make_arbitrary;
+use defuse_tests::utils::random::make_arbitrary;
 use near_sdk::{
     AccountId,
     borsh::{self, BorshDeserialize, BorshSerialize},

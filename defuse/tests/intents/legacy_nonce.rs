@@ -4,12 +4,15 @@ use defuse::core::{
     intents::{DefuseIntents, tokens::Transfer},
     token_id::{TokenId, nep141::Nep141TokenId},
 };
-use defuse_contract_extensions::defuse::{intents::ExecuteIntentsExt, signer::DefuseSigner};
-use defuse_sandbox::extensions::mt::MtViewExt;
-use defuse_test_utils::random::make_arbitrary;
+
 use rstest::rstest;
 
-use crate::env::Env;
+use defuse_tests::{
+    contract_extensions::defuse::{intents::ExecuteIntentsExt, signer::DefuseSigner},
+    env::Env,
+    sandbox::extensions::mt::MtViewExt,
+    utils::random::make_arbitrary,
+};
 
 #[rstest]
 #[trace]

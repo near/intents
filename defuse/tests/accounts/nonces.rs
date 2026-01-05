@@ -6,28 +6,31 @@ use defuse::{
     contract::Role,
     core::{Deadline, Nonce, Salt, intents::DefuseIntents},
 };
-use defuse_contract_extensions::defuse::{
-    account_manager::AccountViewExt,
-    intents::ExecuteIntentsExt,
-    signer::DefuseSigner,
-    state::{GarbageCollectorExt, SaltManagerExt, SaltViewExt},
-};
 
-use defuse_sandbox::extensions::acl::AclExt;
 use futures::future::join_all;
 use itertools::Itertools;
 
 use std::time::Duration;
 use tokio::time::sleep;
 
-use defuse_test_utils::{
-    asserts::ResultAssertsExt,
-    random::{Rng, random_bytes, rng},
-};
 use near_sdk::AccountId;
 use rstest::rstest;
 
-use crate::env::{Env, create_random_salted_nonce};
+use defuse_tests::{
+    contract_extensions::defuse::{
+        account_manager::AccountViewExt,
+        intents::ExecuteIntentsExt,
+        signer::DefuseSigner,
+        state::{GarbageCollectorExt, SaltManagerExt, SaltViewExt},
+    },
+    env::Env,
+    nonce::create_random_salted_nonce,
+    sandbox::extensions::acl::AclExt,
+    utils::{
+        asserts::ResultAssertsExt,
+        random::{Rng, random_bytes, rng},
+    },
+};
 
 #[rstest]
 #[tokio::test]

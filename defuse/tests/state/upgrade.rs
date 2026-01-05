@@ -11,24 +11,28 @@ use defuse::{
     },
     nep245::Token,
 };
-use defuse_contract_extensions::defuse::{
-    account_manager::{AccountManagerExt, AccountViewExt},
-    intents::ExecuteIntentsExt,
-    state::{FeesManagerExt, FeesManagerViewExt, SaltManagerExt, SaltViewExt},
+
+use defuse_tests::{
+    contract_extensions::defuse::{
+        account_manager::{AccountManagerExt, AccountViewExt},
+        intents::ExecuteIntentsExt,
+        state::{FeesManagerExt, FeesManagerViewExt, SaltManagerExt, SaltViewExt},
+    },
+    sandbox::{
+        Sandbox, SigningAccount,
+        extensions::{acl::AclExt, mt::MtViewExt},
+        near_sandbox::FetchData,
+        read_wasm,
+    },
+    utils::fixtures::{ed25519_pk, p256_pk, secp256k1_pk},
 };
-use defuse_sandbox::extensions::acl::AclExt;
-use defuse_sandbox::extensions::mt::MtViewExt;
-use defuse_sandbox::near_sandbox::FetchData;
-use defuse_sandbox::{Sandbox, SigningAccount, read_wasm};
-use defuse_test_utils::fixtures::{ed25519_pk, p256_pk, secp256k1_pk};
 use itertools::Itertools;
 use near_sdk::AccountId;
 use rstest::rstest;
 
 use futures::future::try_join_all;
 
-use crate::DefuseSignerExt;
-use crate::env::Env;
+use defuse_tests::{defuse_signer::DefuseSignerExt, env::Env};
 
 static DEFUSE_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("res/defuse"));
 

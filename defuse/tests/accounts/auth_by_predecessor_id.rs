@@ -4,16 +4,19 @@ use defuse::core::{
     intents::{account::SetAuthByPredecessorId, tokens::Transfer},
     token_id::{TokenId, nep141::Nep141TokenId},
 };
-use defuse_contract_extensions::defuse::{
-    account_manager::{AccountManagerExt, AccountViewExt},
-    intents::ExecuteIntentsExt,
-};
-use defuse_sandbox::extensions::mt::{MtExt, MtViewExt};
-use defuse_test_utils::asserts::ResultAssertsExt;
 use near_sdk::AccountId;
 use rstest::rstest;
 
-use crate::{DefuseSignerExt, env::Env};
+use defuse_tests::{
+    contract_extensions::defuse::{
+        account_manager::{AccountManagerExt, AccountViewExt},
+        intents::ExecuteIntentsExt,
+    },
+    defuse_signer::DefuseSignerExt,
+    env::Env,
+    sandbox::extensions::mt::{MtExt, MtViewExt},
+    utils::asserts::ResultAssertsExt,
+};
 
 #[rstest]
 #[tokio::test]

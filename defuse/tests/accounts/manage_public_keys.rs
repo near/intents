@@ -5,13 +5,15 @@ use defuse::core::{
     crypto::PublicKey,
     events::DefuseEvent,
 };
-use defuse_contract_extensions::defuse::account_manager::{AccountManagerExt, AccountViewExt};
-use defuse_sandbox::{assert_eq_event_logs, tx::FnCallBuilder};
-use defuse_test_utils::fixtures::public_key;
 use near_sdk::{AsNep297Event, NearToken, serde_json::json};
 use rstest::rstest;
 
-use crate::env::Env;
+use defuse_tests::{
+    contract_extensions::defuse::account_manager::{AccountManagerExt, AccountViewExt},
+    env::Env,
+    sandbox::{assert_eq_event_logs, tx::FnCallBuilder},
+    utils::fixtures::public_key,
+};
 
 #[rstest]
 #[trace]

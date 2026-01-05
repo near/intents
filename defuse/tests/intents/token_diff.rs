@@ -1,17 +1,19 @@
-use crate::{DefuseSignerExt, env::Env};
 use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
 use defuse::core::{
     fees::Pips,
     intents::token_diff::{TokenDeltas, TokenDiff},
 };
-use defuse_contract_extensions::defuse::intents::SimulateIntents;
-use defuse_sandbox::SigningAccount;
-use defuse_sandbox::extensions::mt::MtViewExt;
+
+use defuse_tests::sandbox::extensions::mt::MtViewExt;
+use defuse_tests::{
+    contract_extensions::defuse::intents::{ExecuteIntentsExt, SimulateIntents},
+    defuse_signer::DefuseSignerExt,
+    env::Env,
+    sandbox::SigningAccount,
+};
 use near_sdk::{AccountId, serde_json};
 use rstest::rstest;
 use std::collections::BTreeMap;
-
-use super::ExecuteIntentsExt;
 
 #[rstest]
 #[trace]

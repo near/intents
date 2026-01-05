@@ -4,17 +4,19 @@ use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
     core::fees::{FeesConfig, Pips},
 };
-use defuse_contract_extensions::defuse::{
-    deployer::DefuseExt, intents::ExecuteIntentsExt, tokens::nep141::DefuseFtDepositor,
-};
-use defuse_sandbox::extensions::ft::FtViewExt;
-use defuse_sandbox::extensions::mt::MtViewExt;
-use defuse_sandbox::extensions::wnear::WNearExt;
-use defuse_test_utils::asserts::ResultAssertsExt;
+
 use near_sdk::{AccountId, Gas, NearToken};
 use rstest::rstest;
 
-use crate::{DefuseSignerExt, env::Env};
+use defuse_tests::{
+    contract_extensions::defuse::{
+        deployer::DefuseExt, intents::ExecuteIntentsExt, tokens::nep141::DefuseFtDepositor,
+    },
+    defuse_signer::DefuseSignerExt,
+    env::Env,
+    sandbox::extensions::{ft::FtViewExt, mt::MtViewExt, wnear::WNearExt},
+    utils::asserts::ResultAssertsExt,
+};
 
 #[rstest]
 #[trace]

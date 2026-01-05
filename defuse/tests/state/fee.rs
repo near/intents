@@ -1,12 +1,14 @@
 use defuse::{contract::Role, core::fees::Pips};
-use defuse_contract_extensions::defuse::state::{FeesManagerExt, FeesManagerViewExt};
 
-use defuse_sandbox::extensions::acl::AclExt;
-use defuse_test_utils::asserts::ResultAssertsExt;
+use defuse_tests::{
+    contract_extensions::defuse::state::{FeesManagerExt, FeesManagerViewExt},
+    sandbox::extensions::acl::AclExt,
+    utils::asserts::ResultAssertsExt,
+};
 use near_sdk::AccountId;
 use rstest::rstest;
 
-use crate::env::Env;
+use defuse_tests::env::Env;
 
 #[rstest]
 #[tokio::test]

@@ -4,16 +4,14 @@ use defuse::core::{
     events::DefuseEvent,
     intents::account::{AddPublicKey, RemovePublicKey},
 };
-use defuse_contract_extensions::defuse::intents::ExecuteIntentsExt;
-use defuse_test_utils::fixtures::public_key;
 use near_sdk::AsNep297Event;
 use rstest::rstest;
 use std::borrow::Cow;
 
-use crate::{
-    DefuseSignerExt,
-    env::{Env, ExtractNonceExt},
-    intents::AccountNonceIntentEvent,
+use crate::intents::AccountNonceIntentEvent;
+use defuse_tests::{
+    contract_extensions::defuse::intents::ExecuteIntentsExt, defuse_signer::DefuseSignerExt,
+    env::Env, nonce::ExtractNonceExt, utils::fixtures::public_key,
 };
 
 #[rstest]

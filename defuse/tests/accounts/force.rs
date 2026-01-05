@@ -1,7 +1,5 @@
-use crate::{
-    DefuseSignerExt,
-    env::{Env, ExtractNonceExt},
-};
+use defuse_tests::{defuse_signer::DefuseSignerExt, env::Env, nonce::ExtractNonceExt};
+
 use defuse::{
     contract::Role,
     core::{
@@ -12,18 +10,19 @@ use defuse::{
     },
 };
 
-use defuse_contract_extensions::defuse::{
-    account_manager::{AccountManagerExt, AccountViewExt},
-    force_manager::{ForceAccountManagerExt, ForceAccountViewExt},
-    intents::ExecuteIntentsExt,
-    tokens::nep141::DefuseFtWithdrawer,
+use defuse_tests::{
+    contract_extensions::defuse::{
+        account_manager::{AccountManagerExt, AccountViewExt},
+        force_manager::{ForceAccountManagerExt, ForceAccountViewExt},
+        intents::ExecuteIntentsExt,
+        tokens::nep141::DefuseFtWithdrawer,
+    },
+    sandbox::extensions::{
+        acl::AclExt,
+        mt::{MtExt, MtViewExt},
+    },
+    utils::{asserts::ResultAssertsExt, fixtures::public_key},
 };
-
-use defuse_sandbox::extensions::{
-    acl::AclExt,
-    mt::{MtExt, MtViewExt},
-};
-use defuse_test_utils::{asserts::ResultAssertsExt, fixtures::public_key};
 use rstest::rstest;
 
 #[rstest]

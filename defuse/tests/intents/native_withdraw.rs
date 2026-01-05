@@ -6,17 +6,17 @@ use defuse::{
     },
     tokens::DepositMessage,
 };
-use defuse_contract_extensions::defuse::{
-    intents::ExecuteIntentsExt, tokens::nep141::DefuseFtDepositor,
-};
-use defuse_sandbox::extensions::mt::MtViewExt;
-use defuse_sandbox::extensions::wnear::WNearExt;
-use defuse_test_utils::fixtures::{ed25519_pk, secp256k1_pk};
+
 use near_sdk::NearToken;
 use rstest::rstest;
 
-use crate::DefuseSignerExt;
-use crate::env::Env;
+use defuse_tests::{
+    contract_extensions::defuse::{intents::ExecuteIntentsExt, tokens::nep141::DefuseFtDepositor},
+    defuse_signer::DefuseSignerExt,
+    env::Env,
+    sandbox::extensions::{mt::MtViewExt, wnear::WNearExt},
+    utils::fixtures::{ed25519_pk, secp256k1_pk},
+};
 
 #[rstest]
 #[tokio::test]

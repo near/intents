@@ -1,4 +1,4 @@
-use crate::{env::Env, tokens::nep245::letter_gen::LetterCombinations};
+use crate::tokens::nep245::letter_gen::LetterCombinations;
 use anyhow::Context;
 use arbitrary::Arbitrary;
 use defuse::{
@@ -6,11 +6,15 @@ use defuse::{
     nep245::{MtEvent, MtTransferEvent},
 };
 use defuse_randomness::Rng;
-use defuse_sandbox::{
-    SigningAccount,
-    extensions::mt::{MtExt, MtViewExt},
+
+use defuse_tests::{
+    env::Env,
+    sandbox::{
+        SigningAccount,
+        extensions::mt::{MtExt, MtViewExt},
+    },
+    utils::random::{gen_random_string, random_bytes, rng},
 };
-use defuse_test_utils::random::{gen_random_string, random_bytes, rng};
 use near_sdk::{AccountId, AsNep297Event};
 use near_sdk::{NearToken, json_types::U128};
 use rstest::rstest;

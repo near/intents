@@ -7,18 +7,20 @@ use defuse::core::{
     intents::{DefuseIntents, IntentEvent, tokens::Transfer},
     token_id::{TokenId, nep141::Nep141TokenId},
 };
-use defuse_contract_extensions::defuse::{
-    intents::{ExecuteIntentsExt, SimulateIntents},
-    signer::DefuseSigner,
-};
 use defuse_randomness::Rng;
-use defuse_sandbox::extensions::mt::MtViewExt;
-use defuse_test_utils::random::rng;
 use near_sdk::{AccountId, AccountIdRef, AsNep297Event, CryptoHash, serde_json};
 use rstest::rstest;
 use std::borrow::Cow;
 
-use super::env::Env;
+use defuse_tests::{
+    contract_extensions::defuse::{
+        intents::{ExecuteIntentsExt, SimulateIntents},
+        signer::DefuseSigner,
+    },
+    env::Env,
+    sandbox::extensions::mt::MtViewExt,
+    utils::random::rng,
+};
 
 pub struct AccountNonceIntentEvent(AccountId, Nonce, CryptoHash);
 

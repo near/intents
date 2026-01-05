@@ -1,8 +1,4 @@
-use crate::{
-    DefuseSignerExt,
-    env::{Env, ExtractNonceExt},
-    intents::{AccountNonceIntentEvent, ExecuteIntentsExt, NonceEvent},
-};
+use crate::intents::{AccountNonceIntentEvent, NonceEvent};
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
     core::{
@@ -23,21 +19,27 @@ use defuse::{
         token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
     },
 };
-use defuse_contract_extensions::defuse::{
-    account_manager::{AccountManagerExt, AccountViewExt},
-    deployer::DefuseExt,
-    intents::SimulateIntents,
-};
-use defuse_sandbox::{
-    api::types::{json::Base64VecU8, nft::NFTContractMetadata},
-    extensions::{
-        ft::FtExt,
-        mt::{MtExt, MtViewExt},
-        nft::{NftDeployerExt, NftExt},
-        wnear::WNearExt,
+
+use defuse_tests::{
+    contract_extensions::defuse::{
+        account_manager::{AccountManagerExt, AccountViewExt},
+        deployer::DefuseExt,
+        intents::{ExecuteIntentsExt, SimulateIntents},
     },
+    defuse_signer::DefuseSignerExt,
+    env::Env,
+    nonce::ExtractNonceExt,
+    sandbox::{
+        api::types::{json::Base64VecU8, nft::NFTContractMetadata},
+        extensions::{
+            ft::FtExt,
+            mt::{MtExt, MtViewExt},
+            nft::{NftDeployerExt, NftExt},
+            wnear::WNearExt,
+        },
+    },
+    utils::fixtures::public_key,
 };
-use defuse_test_utils::fixtures::public_key;
 use near_contract_standards::non_fungible_token::metadata::{NFT_METADATA_SPEC, TokenMetadata};
 use near_sdk::{AsNep297Event, NearToken};
 use rstest::rstest;

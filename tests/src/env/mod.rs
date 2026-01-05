@@ -1,17 +1,15 @@
+#![allow(dead_code)]
+
 mod builder;
-mod nonce;
 mod state;
 mod storage;
 
-use crate::env::builder::EnvBuilder;
+use crate::{defuse_signer::DefuseSignerExt, env::builder::EnvBuilder};
 
-pub use nonce::ExtractNonceExt;
-
-use super::DefuseSignerExt;
 use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;
 use defuse::{
-    core::{Deadline, ExpirableNonce, Nonce, Salt, SaltedNonce, VersionedNonce},
+    core::{Deadline, Nonce},
     tokens::{DepositAction, DepositMessage},
 };
 use defuse_contract_extensions::{
@@ -23,20 +21,14 @@ use defuse_contract_extensions::{
 };
 use defuse_randomness::{Rng, make_true_rng};
 use defuse_sandbox::extensions::storage_management::StorageManagementExt;
-use defuse_sandbox::tx::FnCallBuilder;
-use defuse_sandbox::{Account, Sandbox, SigningAccount, read_wasm};
+use defuse_sandbox::{Account, Sandbox, SigningAccount};
 use defuse_test_utils::random::{Seed, rng};
 use futures::future::try_join_all;
 use impl_tools::autoimpl;
-use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::AccountIdRef;
 use near_sdk::{AccountId, NearToken, account_id::arbitrary::ArbitraryNamedAccountId, env::sha256};
 
-use std::sync::LazyLock;
 use std::sync::atomic::{AtomicUsize, Ordering};
-
-pub static MT_RECEIVER_STUB_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm("res/multi-token-receiver-stub/multi_token_receiver_stub"));
 
 const TOKEN_STORAGE_DEPOSIT: NearToken = NearToken::from_near(1);
 const INITIAL_USER_BALANCE: NearToken = NearToken::from_near(10);
@@ -251,19 +243,6 @@ impl Env {
             .map(|_| ())
     }
 
-    pub async fn deploy_mt_receiver_stub(&self) -> SigningAccount {
-        self.sandbox()
-            .root()
-            .deploy_sub_contract(
-                "mt_receiver_stub",
-                NearToken::from_near(100),
-                MT_RECEIVER_STUB_WASM.to_vec(),
-                None::<FnCallBuilder>,
-            )
-            .await
-            .unwrap()
-    }
-
     pub async fn near_balance(&self, account: &Account) -> NearToken {
         account.view().await.unwrap().amount
     }
@@ -275,25 +254,6 @@ impl Env {
     pub const fn sandbox_mut(&mut self) -> &mut Sandbox {
         &mut self.sandbox
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct TransferCallExpectation {
-    pub mode: MTReceiverMode,
-    pub intent_transfer_amount: Option<u128>,
-    pub expected_sender_balance: u128,
-    pub expected_receiver_balance: u128,
-}
-
-pub fn create_random_salted_nonce(salt: Salt, deadline: Deadline, mut rng: impl Rng) -> Nonce {
-    VersionedNonce::V1(SaltedNonce::new(
-        salt,
-        ExpirableNonce {
-            deadline,
-            nonce: rng.random::<[u8; 15]>(),
-        },
-    ))
-    .into()
 }
 
 fn generate_random_account_id(parent_id: &AccountId) -> Result<AccountId> {
