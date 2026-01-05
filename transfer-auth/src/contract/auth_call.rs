@@ -8,12 +8,14 @@ impl AuthCallee for Contract {
     #[payable]
     fn on_auth(&mut self, signer_id: AccountId, msg: String) -> PromiseOrValue<()> {
         let _ = msg;
+
+        let state = self.0.try_as_alive();
         require!(
-            env::predecessor_account_id() == self.state_init.auth_contract,
+            env::predecessor_account_id() == state.state_init.auth_contract,
             "Unauthorized auth contract"
         );
         require!(
-            signer_id == self.state_init.on_auth_signer,
+            signer_id == state.state_init.on_auth_signer,
             "Unauthorized on_auth signer"
         );
 

@@ -12,14 +12,16 @@ use defuse_sandbox::{
     Account, FnCallBuilder, SigningAccount,
     api::types::transaction::actions::GlobalContractDeployMode,
 };
-use defuse_transfer_auth::storage::{ContractStorage, StateInit as TransferAuthStateInit};
+use defuse_transfer_auth::storage::{
+    ContractStorage, State as TransferAuthState, StateInit as TransferAuthStateInit,
+};
 use near_sdk::{
     AccountId, Gas, GlobalContractId, NearToken,
     state_init::{StateInit, StateInitV1},
 };
 use serde_json::json;
 
-// Re-export State type for convenience
+// Re-export StateInit type for convenience (used to deploy transfer-auth instances)
 pub use defuse_transfer_auth::storage::StateInit as State;
 
 #[track_caller]
@@ -224,7 +226,7 @@ pub trait TransferAuthAccountExt {
     async fn get_transfer_auth_instance_state(
         &self,
         global_contract_id: AccountId,
-    ) -> anyhow::Result<ContractStorage>;
+    ) -> anyhow::Result<TransferAuthState>;
 }
 
 impl TransferAuthAccountExt for SigningAccount {
@@ -270,9 +272,9 @@ impl TransferAuthAccountExt for SigningAccount {
     async fn get_transfer_auth_instance_state(
         &self,
         global_contract_id: AccountId,
-    ) -> anyhow::Result<ContractStorage> {
+    ) -> anyhow::Result<TransferAuthState> {
         let account = Account::new(global_contract_id, self.network_config().clone());
-        account.call_view_function_json("state", json!({})).await
+        account.call_view_function_json("view", json!({})).await
     }
 }
 

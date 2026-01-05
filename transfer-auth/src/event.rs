@@ -8,4 +8,6 @@ pub enum Event {
     Authorized,
     #[event_version("1.0.0")]
     Timeout,
+    #[event_version("1.0.0")]
+    Cleanup,
 }

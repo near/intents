@@ -25,17 +25,16 @@ pub struct StateInit {
     pub msg_hash: [u8; 32],
 }
 
+/// The actual state data containing initialization params and state machine
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ContractStorage {
+pub struct State {
     #[serde(flatten)]
     pub state_init: StateInit,
     pub state: StateMachine,
 }
 
-impl ContractStorage {
-    pub(crate) const STATE_KEY: &[u8] = b"";
-
+impl State {
     #[inline]
     pub const fn new(state_init: StateInit) -> Self {
         Self {
@@ -43,9 +42,26 @@ impl ContractStorage {
             state: StateMachine::Idle,
         }
     }
+}
+
+/// Contract storage wrapper - None means cleanup is in progress
+#[near(serializers = [borsh, json])]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ContractStorage(
+    /// If `None`, authorization completed and contract is being deleted
+    pub(crate) Option<State>,
+);
+
+impl ContractStorage {
+    pub(crate) const STATE_KEY: &[u8] = b"";
+
+    #[inline]
+    pub fn init(state_init: StateInit) -> Self {
+        Self(Some(State::new(state_init)))
+    }
 
     pub fn init_state(state_init: StateInit) -> Result<BTreeMap<Vec<u8>, Vec<u8>>, Error> {
-        let storage = Self::new(state_init);
+        let storage = Self::init(state_init);
         Ok([(
             Self::STATE_KEY.to_vec(),
             borsh::to_vec(&storage).map_err(Error::Borsh)?,
