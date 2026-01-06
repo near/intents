@@ -34,7 +34,7 @@ pub struct Contract {
 }
 
 impl Contract {
-    fn get_transfer_auth_state_init(&self, msg_hash: [u8; 32]) -> StateInit {
+    fn get_deterministic_transfer_auth_state_init(&self, msg_hash: [u8; 32]) -> StateInit {
         let state = CondVarStateInit {
             escrow_contract_id: self.config.escrow_swap_contract_id.clone(),
             auth_contract: self.config.auth_contract.clone(),
@@ -48,15 +48,6 @@ impl Contract {
             //TODO: get rid of unwrap
             data: ContractStorage::init_state(state).unwrap(),
         })
-    }
-
-    fn derive_deteministic_escrow_swap_id(&self, params: &EscrowParams) -> AccountId {
-        let raw_state = EscrowContractStorage::init_state(params).unwrap();
-        let state_init = StateInit::V1(StateInitV1 {
-            code: self.config.escrow_swap_contract_id.clone(),
-            data: raw_state,
-        });
-        state_init.derive_account_id()
     }
 }
 
@@ -125,7 +116,7 @@ impl MultiTokenReceiver for Contract {
         }
         .hash();
 
-        let auth_contract_state_init = self.get_transfer_auth_state_init(context_hash);
+        let auth_contract_state_init = self.get_deterministic_transfer_auth_state_init(context_hash);
         let auth_contract_id = auth_contract_state_init.derive_account_id();
         let auth_call = Promise::new(auth_contract_id)
             .state_init(auth_contract_state_init, NearToken::from_near(0));
@@ -154,7 +145,6 @@ impl MultiTokenReceiver for Contract {
 
 #[near]
 impl Contract {
-    /// Callback after wait_for_authorization - checks result and forwards if authorized
     #[private]
     pub fn check_authorization_and_forward(
         &self,
@@ -164,7 +154,7 @@ impl Contract {
         amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
-        // Check the result of wait_for_authorization
+        // Check the result of OneshotCondVar::cv_wait
         let is_authorized = match env::promise_result(0) {
             PromiseResult::Successful(value) => {
                 serde_json::from_slice::<bool>(&value).unwrap_or(false)
@@ -200,8 +190,8 @@ impl Contract {
     #[private]
     pub fn resolve_transfer(&self, original_amounts: Vec<U128>) -> Vec<U128> {
         match env::promise_result(0) {
-            PromiseResult::Successful(value) => {
-                let transferred: Vec<U128> = serde_json::from_slice(&value).unwrap_or_else(|_| {
+            PromiseResult::Successful(transferred) => {
+                let transferred: Vec<U128> = serde_json::from_slice(&transferred).unwrap_or_else(|_| {
                     near_sdk::log!("Failed to parse escrow response, refunding all");
                     vec![U128(0); original_amounts.len()]
                 });
@@ -219,9 +209,8 @@ impl Contract {
         }
     }
 
-    #[access_control_any(roles(Role::DAO))]
+    #[access_control_any(roles(Role::DAO, Role::Canceller))]
     pub fn cancel_escrow(&self, escrow_address: AccountId, params: EscrowParams) -> Promise {
-        //TODO: adjust gas
         ext_escrow::ext(escrow_address)
             .with_attached_deposit(NearToken::from_yoctonear(1))
             .with_static_gas(Gas::from_tgas(50))

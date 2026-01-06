@@ -114,7 +114,7 @@ fn create_subaccount_with_derived_key(
     let (derived_secret, secret_bytes) = derive_secret_key(root.id(), &subaccount_name);
     let derived_signer = Signer::from_secret_key(derived_secret)?;
 
-    let subaccount = root.subaccount(&subaccount_name);
+    let subaccount = root.sub_account(&subaccount_name).unwrap();
     Ok((
         SigningAccount::new(subaccount, derived_signer),
         secret_bytes,

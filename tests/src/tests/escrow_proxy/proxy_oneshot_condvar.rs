@@ -5,16 +5,31 @@ use crate::tests::defuse::env::Env;
 use defuse_escrow_proxy::{ProxyConfig, RolesConfig, TransferMessage};
 use defuse_sandbox::{Account, FnCallBuilder, MtExt, MtViewExt};
 use defuse_sandbox_ext::{
-    EscrowProxyExt, MtReceiverStubAccountExt, OneshotCondVarAccountExt, derive_oneshot_condvar_account_id,
+    EscrowProxyExt, MtReceiverStubAccountExt, OneshotCondVarAccountExt
 };
 use defuse_oneshot_condvar::CondVarContext;
 use defuse_oneshot_condvar::storage::{ContractStorage, StateInit as CondVarStateInit};
 use multi_token_receiver_stub::MTReceiverMode;
+use near_sdk::AccountId;
 use near_sdk::{
     Gas, GlobalContractId, NearToken,
     json_types::U128,
     state_init::{StateInit, StateInitV1},
 };
+
+/// Derive the oneshot-condvar instance account ID from its state
+pub fn derive_oneshot_condvar_account_id(
+    global_contract_id: &GlobalContractId,
+    state: &CondVarStateInit,
+) -> AccountId {
+    let raw_state = ContractStorage::init_state(state.clone()).unwrap();
+    let state_init = StateInit::V1(StateInitV1 {
+        code: global_contract_id.clone(),
+        data: raw_state,
+    });
+    state_init.derive_account_id()
+}
+
 
 #[tokio::test]
 #[allow(clippy::too_many_lines)]

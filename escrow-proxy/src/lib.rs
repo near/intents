@@ -9,6 +9,9 @@ use near_sdk::{ext_contract, near};
 pub use message::*;
 pub use state::{ProxyConfig, RolesConfig};
 
+use defuse_oneshot_condvar::CondVarContext;
+use near_sdk::CryptoHash;
+
 #[near(serializers = [json])]
 #[derive(AccessControlRole, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Role {
@@ -20,15 +23,9 @@ pub enum Role {
     Canceller,
 }
 
-use defuse_oneshot_condvar::CondVarContext;
-use near_sdk::CryptoHash;
 
 #[ext_contract(ext_escrow_proxy)]
 pub trait EscrowProxy {
     fn config(&self) -> &ProxyConfig;
     fn context_hash(&self, context: CondVarContext<'static>) -> CryptoHash;
 }
-
-// fix JsonSchema macro bug
-#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
-use near_sdk::serde;

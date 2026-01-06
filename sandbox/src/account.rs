@@ -55,12 +55,6 @@ impl Account {
         })
     }
 
-    /// Alias for `sub_account().unwrap()` - backwards compatibility
-    #[must_use]
-    pub fn subaccount(&self, name: impl AsRef<str>) -> Self {
-        self.sub_account(name).unwrap()
-    }
-
     pub async fn view(&self) -> anyhow::Result<near_api::types::Account> {
         NearApiAccount(self.id().clone())
             .view()
@@ -170,15 +164,6 @@ impl SigningAccount {
             subaccount,
             Signer::from_secret_key(secret_key).unwrap(),
         ))
-    }
-
-    /// Alias for `generate_subaccount` - backwards compatibility
-    pub async fn create_subaccount(
-        &self,
-        name: impl AsRef<str>,
-        balance: impl Into<Option<NearToken>>,
-    ) -> anyhow::Result<Self> {
-        self.generate_subaccount(name, balance).await
     }
 
     pub async fn deploy_sub_contract(

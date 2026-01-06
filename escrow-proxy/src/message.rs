@@ -5,14 +5,6 @@ use near_sdk::{AccountId, near};
 pub use defuse_escrow_swap::action::{FillAction, TransferAction};
 pub use defuse_escrow_swap::{OverrideSend, Params as EscrowParams};
 
-/// Nonce for replay protection (base64-encoded 32-byte salt)
-pub type Nonce = u64;
-
-/// Transfer message sent via mt_transfer_call msg parameter to the proxy.
-///
-/// This message is a superset of escrow-swap's `TransferMessage` with an additional
-/// `salt` field for transfer-auth derivation. The field names match escrow-swap's
-/// format so the message can be forwarded directly.
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct TransferMessage {

@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, sync::LazyLock};
+use std::{collections::BTreeMap, fs, path::Path, sync::LazyLock};
 
 use defuse_sandbox::{
     Account, SigningAccount, api::types::transaction::actions::GlobalContractDeployMode,
@@ -8,10 +8,11 @@ use near_sdk::{
     state_init::{StateInit, StateInitV1},
 };
 
-use crate::read_wasm;
-
-pub static MT_RECEIVER_STUB_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm("multi-token-receiver-stub/multi_token_receiver_stub"));
+pub static MT_RECEIVER_STUB_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
+    let filename = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../res/multi-token-receiver-stub/multi_token_receiver_stub.wasm");
+    fs::read(filename.clone()).unwrap_or_else(|_| panic!("file {filename:?} should exists"))
+});
 
 #[allow(async_fn_in_trait)]
 pub trait MtReceiverStubAccountExt {
@@ -29,7 +30,7 @@ pub trait MtReceiverStubAccountExt {
 
 impl MtReceiverStubAccountExt for SigningAccount {
     async fn deploy_mt_receiver_stub(&self, name: impl AsRef<str>) -> Account {
-        let account = self.subaccount(name);
+        let account = self.sub_account(name).unwrap();
 
         self.tx(account.id().clone())
             .create_account()
@@ -42,7 +43,7 @@ impl MtReceiverStubAccountExt for SigningAccount {
     }
 
     async fn deploy_mt_receiver_stub_global(&self, name: impl AsRef<str>) -> AccountId {
-        let account = self.subaccount(name);
+        let account = self.sub_account(name).unwrap();
 
         self.tx(account.id().clone())
             .create_account()

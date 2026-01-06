@@ -15,10 +15,10 @@ async fn on_auth_call() {
     let condvar_global = root.deploy_oneshot_condvar("auth").await;
 
     let (escrow, auth_contract, relay, proxy) = futures::try_join!(
-        root.create_subaccount("escrow", INIT_BALANCE),
-        root.create_subaccount("auth-contract", INIT_BALANCE),
-        root.create_subaccount("auth-callee", INIT_BALANCE),
-        root.create_subaccount("proxy", INIT_BALANCE),
+        root.generate_subaccount("escrow", INIT_BALANCE),
+        root.generate_subaccount("auth-contract", INIT_BALANCE),
+        root.generate_subaccount("auth-callee", INIT_BALANCE),
+        root.generate_subaccount("proxy", INIT_BALANCE),
     )
     .unwrap();
 
@@ -84,10 +84,10 @@ async fn oneshot_condvar_early_notification() {
     let condvar_global = root.deploy_oneshot_condvar("auth").await;
 
     let (escrow, auth_contract, relay, proxy) = futures::try_join!(
-        root.create_subaccount("escrow", INIT_BALANCE),
-        root.create_subaccount("auth-contract", INIT_BALANCE),
-        root.create_subaccount("auth-callee", INIT_BALANCE),
-        root.create_subaccount("proxy", INIT_BALANCE),
+        root.generate_subaccount("escrow", INIT_BALANCE),
+        root.generate_subaccount("auth-contract", INIT_BALANCE),
+        root.generate_subaccount("auth-callee", INIT_BALANCE),
+        root.generate_subaccount("proxy", INIT_BALANCE),
     )
     .unwrap();
 
@@ -140,10 +140,10 @@ async fn oneshot_condvar_async_notification() {
     let condvar_global = root.deploy_oneshot_condvar("auth").await;
 
     let (escrow, auth_contract, relay, proxy) = futures::try_join!(
-        root.create_subaccount("escrow", INIT_BALANCE),
-        root.create_subaccount("auth-contract", INIT_BALANCE),
-        root.create_subaccount("auth-callee", INIT_BALANCE),
-        root.create_subaccount("proxy", INIT_BALANCE),
+        root.generate_subaccount("escrow", INIT_BALANCE),
+        root.generate_subaccount("auth-contract", INIT_BALANCE),
+        root.generate_subaccount("auth-callee", INIT_BALANCE),
+        root.generate_subaccount("proxy", INIT_BALANCE),
     )
     .unwrap();
 
@@ -215,10 +215,10 @@ async fn oneshot_condvar_async_notification_timeout() {
     let condvar_global = root.deploy_oneshot_condvar("auth").await;
 
     let (escrow, auth_contract, relay, proxy) = futures::try_join!(
-        root.create_subaccount("escrow", INIT_BALANCE),
-        root.create_subaccount("auth-contract", INIT_BALANCE),
-        root.create_subaccount("auth-callee", INIT_BALANCE),
-        root.create_subaccount("proxy", INIT_BALANCE),
+        root.generate_subaccount("escrow", INIT_BALANCE),
+        root.generate_subaccount("auth-contract", INIT_BALANCE),
+        root.generate_subaccount("auth-callee", INIT_BALANCE),
+        root.generate_subaccount("proxy", INIT_BALANCE),
     )
     .unwrap();
 
@@ -265,10 +265,10 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth() {
     let condvar_global = root.deploy_oneshot_condvar("auth").await;
 
     let (escrow, auth_contract, relay, proxy) = futures::try_join!(
-        root.create_subaccount("escrow", INIT_BALANCE),
-        root.create_subaccount("auth-contract", INIT_BALANCE),
-        root.create_subaccount("auth-callee", INIT_BALANCE),
-        root.create_subaccount("proxy", INIT_BALANCE),
+        root.generate_subaccount("escrow", INIT_BALANCE),
+        root.generate_subaccount("auth-contract", INIT_BALANCE),
+        root.generate_subaccount("auth-callee", INIT_BALANCE),
+        root.generate_subaccount("proxy", INIT_BALANCE),
     )
     .unwrap();
 
@@ -341,10 +341,10 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth2() {
     let condvar_global = root.deploy_oneshot_condvar("auth").await;
 
     let (escrow, auth_contract, relay, proxy) = futures::try_join!(
-        root.create_subaccount("escrow", INIT_BALANCE),
-        root.create_subaccount("auth-contract", INIT_BALANCE),
-        root.create_subaccount("auth-callee", INIT_BALANCE),
-        root.create_subaccount("proxy", INIT_BALANCE),
+        root.generate_subaccount("escrow", INIT_BALANCE),
+        root.generate_subaccount("auth-contract", INIT_BALANCE),
+        root.generate_subaccount("auth-callee", INIT_BALANCE),
+        root.generate_subaccount("proxy", INIT_BALANCE),
     )
     .unwrap();
 
