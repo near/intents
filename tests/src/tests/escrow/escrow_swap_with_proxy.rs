@@ -18,6 +18,7 @@ use defuse_core::intents::tokens::{NotifyOnTransfer, Transfer};
 use defuse_deadline::Deadline;
 use defuse_escrow_proxy::{ProxyConfig, RolesConfig, TransferMessage as ProxyTransferMessage};
 use defuse_escrow_swap::ParamsBuilder;
+use defuse_escrow_swap::action::{FillMessageBuilder, FundMessageBuilder};
 use defuse_sandbox::{MtExt, MtViewExt};
 use defuse_sandbox_ext::{EscrowProxyExt, EscrowSwapAccountExt, OneshotCondVarAccountExt};
 use defuse_token_id::TokenId;
@@ -78,14 +79,15 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         env.defuse.id().clone(),
         token_b_defuse_id.to_string(),
     ));
-    let (escrow_params, fund_escrow_msg, fill_escrow_msg) = ParamsBuilder::new(
+    let escrow_params = ParamsBuilder::new(
         (maker.id().clone(), src_token),
         ([proxy.id().clone()], dst_token),
     )
-    .build_with_messages(
-        Deadline::timeout(Duration::from_secs(360)),
-        Deadline::timeout(Duration::from_secs(120)),
-    );
+    .build();
+    let fund_escrow_msg = FundMessageBuilder::new(escrow_params.clone()).build();
+    let fill_escrow_msg = FillMessageBuilder::new(escrow_params.clone())
+        .with_deadline(Deadline::timeout(Duration::from_secs(120)))
+        .build();
 
     let fund_msg_json = serde_json::to_string(&fund_escrow_msg).unwrap();
 

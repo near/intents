@@ -12,10 +12,11 @@
 //!
 //! Note: This example only builds the intents without executing them on testnet.
 
-use defuse_core::intents::Intent;
+use defuse::sandbox_ext::signer::DefuseSigner;
+use defuse_core::intents::{DefuseIntents, Intent};
 use defuse_core::payload::multi::MultiPayload;
+use defuse_core::Nonce;
 use defuse_token_id::nep245::Nep245TokenId;
-use defuse_sandbox_ext::sign_intents;
 use defuse_oneshot_condvar::storage::StateInit as CondVarStateInit;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -59,27 +60,9 @@ const ESCROW_GLOBAL_REF_ID: &str = "escrowswap.pityjllk.testnet";
 // near contract deploy escrowproxy.pityjllk.testnet use-file /Users/mat/intents/res/defuse_escrow_proxy.wasm with-init-call new json-args '{"roles":{"super_admins":["pityjllk.testnet"],"admins":{},"grantees":{}},"config":{"per_fill_contract_id":"test2.pityjllk.testnet","escrow_swap_contract_id":"escrowswap.pityjllk.testnet","auth_contract":"intents.nearseny.testnet","auth_collee":"pityjllk.testnet"}}' prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' network-config testnet sign-with-keychain send
 const PROXY: &str = "escrowproxy.pityjllk.testnet";
 
-/// Extract raw 32-byte secret from a `SecretKey`
-fn extract_secret_bytes(secret_key: &SecretKey) -> [u8; 32] {
-    match secret_key {
-        SecretKey::ED25519(_ed_key) => {
-            // The string format is "ed25519:<base58_encoded_secret>"
-            // We need to parse and extract the secret portion
-            let key_str = secret_key.to_string();
-            let encoded = key_str.strip_prefix("ed25519:").unwrap();
-            // Use near_sdk's bs58 re-export
-            let decoded = near_sdk::bs58::decode(encoded).into_vec().unwrap();
-            // First 32 bytes are the secret key
-            decoded[..32].try_into().unwrap()
-        }
-        SecretKey::SECP256K1(_) => panic!("Only ED25519 keys supported"),
-    }
-}
-
 /// Derive a new ED25519 secret key from an account ID and derivation path
 /// using a deterministic derivation based on the account ID and derivation info.
-/// Returns (`SecretKey` for near-api, raw 32-byte secret for signing intents)
-fn derive_secret_key(account_id: &AccountId, derivation_info: &str) -> (SecretKey, [u8; 32]) {
+fn derive_secret_key(account_id: &AccountId, derivation_info: &str) -> SecretKey {
     use defuse_sandbox::api::{CryptoHash, types::crypto::secret_key::ED25519SecretKey};
 
     // Hash account ID with derivation info to create deterministic seed
@@ -92,33 +75,25 @@ fn derive_secret_key(account_id: &AccountId, derivation_info: &str) -> (SecretKe
     let hash = CryptoHash::hash(&seed_data);
     let derived_bytes: [u8; 32] = hash.0;
 
-    // Create new ED25519 secret key from the derived 32 bytes
-    (
-        SecretKey::ED25519(ED25519SecretKey::from_secret_key(derived_bytes)),
-        derived_bytes,
-    )
+    SecretKey::ED25519(ED25519SecretKey::from_secret_key(derived_bytes))
 }
 
 /// Create a subaccount with a deterministically derived key from the parent account ID.
-/// Returns the `SigningAccount` for the new subaccount and the raw 32-byte secret key for signing.
 fn create_subaccount_with_derived_key(
     root: &SigningAccount,
     prefix: &str,
-) -> Result<(SigningAccount, [u8; 32])> {
+) -> Result<SigningAccount> {
     let random_suffix: String = rand::rng()
         .sample_iter(Alphanumeric)
         .take(6)
         .map(char::from)
         .collect();
     let subaccount_name = format!("{}-{}", prefix, random_suffix.to_lowercase());
-    let (derived_secret, secret_bytes) = derive_secret_key(root.id(), &subaccount_name);
+    let derived_secret = derive_secret_key(root.id(), &subaccount_name);
     let derived_signer = Signer::from_secret_key(derived_secret)?;
 
     let subaccount = root.sub_account(&subaccount_name).unwrap();
-    Ok((
-        SigningAccount::new(subaccount, derived_signer),
-        secret_bytes,
-    ))
+    Ok(SigningAccount::new(subaccount, derived_signer))
 }
 
 // === Inline helper functions (previously from DefuseAccountExt) ===
@@ -258,10 +233,10 @@ async fn main() -> Result<()> {
 
     // 4. Derive subaccount keys (deterministic, no network calls)
     println!("\n--- Deriving Subaccount Keys ---");
-    let (maker_signing, maker_secret) = create_subaccount_with_derived_key(&root, "maker")?;
+    let maker_signing = create_subaccount_with_derived_key(&root, "maker")?;
     let maker_pubkey = maker_signing.signer().get_public_key().await?;
     println!("Maker: {} (pubkey: {})", maker_signing.id(), maker_pubkey);
-    let (taker_signing, taker_secret) = create_subaccount_with_derived_key(&root, "taker")?;
+    let taker_signing = create_subaccount_with_derived_key(&root, "taker")?;
     let taker_pubkey = taker_signing.signer().get_public_key().await?;
     println!("Taker: {} (pubkey: {})", taker_signing.id(), taker_pubkey);
 
@@ -403,45 +378,54 @@ async fn main() -> Result<()> {
 
     // === SIGN ALL INTENTS ===
 
-    let defuse_id: &AccountId = defuse.id();
-    let root_secret = extract_secret_bytes(&secret_key);
-
     println!("\n--- Signing Intents ---");
 
-    let maker_sends_funds_to_escrow = sign_intents(
-        maker_signing.id(),
-        &maker_secret,
-        defuse_id,
-        rand::rng().random(),
-        vec![Intent::Transfer(maker_transfer_intent)],
-    );
+    let maker_sends_funds_to_escrow = maker_signing
+        .sign_defuse_message(
+            defuse.id(),
+            Nonce::from(rand::rng().random::<[u8; 32]>()),
+            deadline,
+            DefuseIntents {
+                intents: vec![Intent::Transfer(maker_transfer_intent)],
+            },
+        )
+        .await;
 
-    let taker_sends_funds_to_proxy = sign_intents(
-        taker_signing.id(),
-        &taker_secret,
-        defuse_id,
-        rand::rng().random(),
-        vec![Intent::Transfer(taker_transfer_intent)],
-    );
+    let taker_sends_funds_to_proxy = taker_signing
+        .sign_defuse_message(
+            defuse.id(),
+            Nonce::from(rand::rng().random::<[u8; 32]>()),
+            deadline,
+            DefuseIntents {
+                intents: vec![Intent::Transfer(taker_transfer_intent)],
+            },
+        )
+        .await;
 
-    let rooot_sends_funds_to_maker_and_taker = sign_intents(
-        root.id(),
-        &root_secret,
-        defuse_id,
-        rand::rng().random(),
-        vec![
-            Intent::Transfer(root_to_maker_transfer),
-            Intent::Transfer(root_to_taker_transfer),
-        ],
-    );
+    let rooot_sends_funds_to_maker_and_taker = root
+        .sign_defuse_message(
+            defuse.id(),
+            Nonce::from(rand::rng().random::<[u8; 32]>()),
+            deadline,
+            DefuseIntents {
+                intents: vec![
+                    Intent::Transfer(root_to_maker_transfer),
+                    Intent::Transfer(root_to_taker_transfer),
+                ],
+            },
+        )
+        .await;
 
-    let root_sends_auth_call = sign_intents(
-        root.id(),
-        &root_secret,
-        defuse_id,
-        rand::rng().random(),
-        vec![Intent::AuthCall(relay_auth_call)],
-    );
+    let root_sends_auth_call = root
+        .sign_defuse_message(
+            defuse.id(),
+            Nonce::from(rand::rng().random::<[u8; 32]>()),
+            deadline,
+            DefuseIntents {
+                intents: vec![Intent::AuthCall(relay_auth_call)],
+            },
+        )
+        .await;
     // EXECUTION
     println!("\n--- Execution ---");
 

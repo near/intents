@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use crate::tests::defuse::env::Env;
 use defuse_deadline::Deadline;
+use defuse_escrow_swap::action::{FillMessageBuilder, FundMessageBuilder};
 use defuse_escrow_swap::decimal::UD128;
 use defuse_escrow_swap::{ParamsBuilder, Pips, ProtocolFees};
 use defuse_sandbox::{MtExt, MtViewExt};
@@ -32,7 +33,7 @@ async fn test_escrow_with_protocol_fee() {
     let src_token = TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), src_token_id.to_string()));
     let dst_token = TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), dst_token_id.to_string()));
 
-    let (escrow_params, fund_msg, fill_msg) = ParamsBuilder::new(
+    let escrow_params = ParamsBuilder::new(
         (maker.id().clone(), src_token),
         ([taker.id().clone()], dst_token),
     )
@@ -41,10 +42,11 @@ async fn test_escrow_with_protocol_fee() {
         surplus: Pips::ZERO,
         collector: fee_collector.id().clone(),
     })
-    .build_with_messages(
-        Deadline::timeout(Duration::from_secs(360)),
-        Deadline::timeout(Duration::from_secs(120)),
-    );
+    .build();
+    let fund_msg = FundMessageBuilder::new(escrow_params.clone()).build();
+    let fill_msg = FillMessageBuilder::new(escrow_params.clone())
+        .with_deadline(Deadline::timeout(Duration::from_secs(120)))
+        .build();
 
     let escrow_id = env
         .root()
@@ -111,15 +113,16 @@ async fn test_escrow_with_integrator_fee() {
     let src_token = TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), src_token_id.to_string()));
     let dst_token = TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), dst_token_id.to_string()));
 
-    let (escrow_params, fund_msg, fill_msg) = ParamsBuilder::new(
+    let escrow_params = ParamsBuilder::new(
         (maker.id().clone(), src_token),
         ([taker.id().clone()], dst_token),
     )
     .with_integrator_fee(integrator.id().clone(), Pips::from_percent(2).unwrap())  // 2% fee
-    .build_with_messages(
-        Deadline::timeout(Duration::from_secs(360)),
-        Deadline::timeout(Duration::from_secs(120)),
-    );
+    .build();
+    let fund_msg = FundMessageBuilder::new(escrow_params.clone()).build();
+    let fill_msg = FillMessageBuilder::new(escrow_params.clone())
+        .with_deadline(Deadline::timeout(Duration::from_secs(120)))
+        .build();
 
     let escrow_id = env
         .root()
@@ -187,7 +190,7 @@ async fn test_escrow_with_combined_fees() {
     let src_token = TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), src_token_id.to_string()));
     let dst_token = TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), dst_token_id.to_string()));
 
-    let (escrow_params, fund_msg, fill_msg) = ParamsBuilder::new(
+    let escrow_params = ParamsBuilder::new(
         (maker.id().clone(), src_token),
         ([taker.id().clone()], dst_token),
     )
@@ -197,10 +200,11 @@ async fn test_escrow_with_combined_fees() {
         collector: protocol_collector.id().clone(),
     })
     .with_integrator_fee(integrator.id().clone(), Pips::from_percent(2).unwrap())  // 2% integrator fee
-    .build_with_messages(
-        Deadline::timeout(Duration::from_secs(360)),
-        Deadline::timeout(Duration::from_secs(120)),
-    );
+    .build();
+    let fund_msg = FundMessageBuilder::new(escrow_params.clone()).build();
+    let fill_msg = FillMessageBuilder::new(escrow_params.clone())
+        .with_deadline(Deadline::timeout(Duration::from_secs(120)))
+        .build();
 
     let escrow_id = env
         .root()
@@ -279,7 +283,7 @@ async fn test_escrow_with_surplus_fee() {
     let dst_token = TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), dst_token_id.to_string()));
 
     // Maker price 1.0, surplus fee 50% (no base fee)
-    let (escrow_params, fund_msg, _) = ParamsBuilder::new(
+    let escrow_params = ParamsBuilder::new(
         (maker.id().clone(), src_token),
         ([taker.id().clone()], dst_token),
     )
@@ -288,10 +292,8 @@ async fn test_escrow_with_surplus_fee() {
         surplus: Pips::from_percent(50).unwrap(), // 50% surplus fee
         collector: fee_collector.id().clone(),
     })
-    .build_with_messages(
-        Deadline::timeout(Duration::from_secs(360)),
-        Deadline::timeout(Duration::from_secs(120)),
-    );
+    .build();
+    let fund_msg = FundMessageBuilder::new(escrow_params.clone()).build();
 
     // Custom fill message with price 2.0 (higher than maker's 1.0)
     let fill_msg = TransferMessage {

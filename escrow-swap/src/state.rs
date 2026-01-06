@@ -8,8 +8,9 @@ use defuse_token_id::TokenId;
 use near_sdk::{AccountId, CryptoHash, Gas, borsh, env, near};
 use serde_with::{DisplayFromStr, hex::Hex, serde_as};
 
-use crate::action::{FillAction, TransferAction, TransferMessage};
 use crate::{Deadline, Error, Result, decimal::UD128};
+
+pub const DEFAULT_DEADLINE_SECS: u64 = 360;
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -202,7 +203,6 @@ pub struct ParamsBuilder {
     price: Option<crate::decimal::UD128>,
     partial_fills_allowed: Option<bool>,
     deadline: Option<crate::Deadline>,
-    fill_deadline: Option<crate::Deadline>,
     refund_src_to: Option<OverrideSend>,
     receive_dst_to: Option<OverrideSend>,
     #[cfg(feature = "auth_call")]
@@ -225,7 +225,6 @@ impl ParamsBuilder {
             price: None,
             partial_fills_allowed: None,
             deadline: None,
-            fill_deadline: None,
             refund_src_to: None,
             receive_dst_to: None,
             #[cfg(feature = "auth_call")]
@@ -256,12 +255,6 @@ impl ParamsBuilder {
     #[must_use]
     pub const fn with_deadline(mut self, deadline: crate::Deadline) -> Self {
         self.deadline = Some(deadline);
-        self
-    }
-
-    #[must_use]
-    pub const fn with_fill_deadline(mut self, fill_deadline: crate::Deadline) -> Self {
-        self.fill_deadline = Some(fill_deadline);
         self
     }
 
@@ -301,13 +294,15 @@ impl ParamsBuilder {
         &self.takers
     }
 
-    pub fn build(self, default_deadline: Deadline) -> Params {
+    pub fn build(self) -> Params {
         Params {
             maker: self.maker,
             src_token: self.src_token,
             dst_token: self.dst_token,
             price: self.price.unwrap_or(UD128::ONE),
-            deadline: self.deadline.unwrap_or(default_deadline),
+            deadline: self
+                .deadline
+                .unwrap_or_else(|| Deadline::timeout(std::time::Duration::from_secs(DEFAULT_DEADLINE_SECS))),
             partial_fills_allowed: self.partial_fills_allowed.unwrap_or(false),
             refund_src_to: self.refund_src_to.unwrap_or_default(),
             receive_dst_to: self.receive_dst_to.unwrap_or_default(),
@@ -318,31 +313,6 @@ impl ParamsBuilder {
             auth_caller: self.auth_caller,
             salt: self.salt.unwrap_or([7u8; 32]),
         }
-    }
-
-    pub fn build_with_messages(
-        self,
-        default_deadline: Deadline,
-        default_fill_deadline: Deadline,
-    ) -> (Params, TransferMessage, TransferMessage) {
-        let first_taker = self.takers.first().cloned();
-        let fill_deadline = self.fill_deadline.unwrap_or(default_fill_deadline);
-        let params = self.build(default_deadline);
-        let fund_msg = TransferMessage {
-            params: params.clone(),
-            action: TransferAction::Fund,
-        };
-        let fill_msg = TransferMessage {
-            params: params.clone(),
-            action: TransferAction::Fill(FillAction {
-                price: params.price,
-                deadline: fill_deadline,
-                receive_src_to: first_taker
-                    .map(|t| OverrideSend::default().receiver_id(t))
-                    .unwrap_or_default(),
-            }),
-        };
-        (params, fund_msg, fill_msg)
     }
 }
 

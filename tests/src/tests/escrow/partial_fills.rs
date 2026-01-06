@@ -274,6 +274,7 @@ async fn maybe_view_escrow(escrow: &Account) {
 async fn test_partial_fill_funds_returned_after_timeout() {
     use crate::tests::defuse::env::Env as DefuseEnv;
     use defuse_escrow_swap::ParamsBuilder;
+    use defuse_escrow_swap::action::{FillMessageBuilder, FundMessageBuilder};
     use defuse_escrow_swap::decimal::UD128;
     use defuse_sandbox::{MtExt, MtViewExt};
     use defuse_sandbox_ext::EscrowSwapAccountExt;
@@ -304,16 +305,18 @@ async fn test_partial_fill_funds_returned_after_timeout() {
     let src_token = TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), src_token_id.to_string()));
     let dst_token = TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), dst_token_id.to_string()));
 
-    let (escrow_params, fund_msg, fill_msg) = ParamsBuilder::new(
+    let escrow_params = ParamsBuilder::new(
         (maker.id().clone(), src_token),
         ([taker.id().clone()], dst_token),
     )
     .with_price(price)
     .with_partial_fills_allowed(true)
-    .build_with_messages(
-        Deadline::timeout(Duration::from_secs(6)),
-        Deadline::timeout(Duration::from_secs(5)),
-    );
+    .with_deadline(Deadline::timeout(Duration::from_secs(6)))
+    .build();
+    let fund_msg = FundMessageBuilder::new(escrow_params.clone()).build();
+    let fill_msg = FillMessageBuilder::new(escrow_params.clone())
+        .with_deadline(Deadline::timeout(Duration::from_secs(5)))
+        .build();
 
     let escrow_id = env
         .root()

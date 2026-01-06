@@ -6,6 +6,7 @@ use std::time::Duration;
 use crate::tests::defuse::env::Env;
 use defuse_deadline::Deadline;
 use defuse_escrow_swap::ParamsBuilder;
+use defuse_escrow_swap::action::{FillMessageBuilder, FundMessageBuilder};
 use defuse_escrow_swap::decimal::UD128;
 use defuse_sandbox::{MtExt, MtViewExt};
 use defuse_sandbox_ext::EscrowSwapAccountExt;
@@ -151,16 +152,17 @@ async fn test_escrow_swap_direct_fill(#[case] test_case: EscrowSwapTestCase) {
         dst_token_defuse_id.to_string(),
     ));
 
-    let (escrow_params, fund_escrow_msg, fill_escrow_msg) = ParamsBuilder::new(
+    let escrow_params = ParamsBuilder::new(
         (maker.id().clone(), src_token),
         (unique_takers.iter().map(|name| takers.get(name).unwrap().id().clone()), dst_token),
     )
     .with_price(test_case.price)
     .with_partial_fills_allowed(test_case.fills.len() > 1)
-    .build_with_messages(
-        Deadline::timeout(Duration::from_secs(360)),
-        Deadline::timeout(Duration::from_secs(120)),
-    );
+    .build();
+    let fund_escrow_msg = FundMessageBuilder::new(escrow_params.clone()).build();
+    let fill_escrow_msg = FillMessageBuilder::new(escrow_params.clone())
+        .with_deadline(Deadline::timeout(Duration::from_secs(120)))
+        .build();
 
     // Act
     let escrow_instance_id = env

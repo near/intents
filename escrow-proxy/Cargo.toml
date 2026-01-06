@@ -32,6 +32,7 @@ serde_with.workspace = true
 
 [dev-dependencies]
 # Dependencies needed for examples only
+defuse.workspace = true
 defuse-core.workspace = true
 defuse-crypto.workspace = true
 defuse-sandbox.workspace = true
