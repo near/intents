@@ -34,7 +34,7 @@ pub struct Contract {
 }
 
 impl Contract {
-    fn derive_deteministic_escrow_per_fill_id(&self, msg_hash: [u8; 32]) -> StateInit {
+    fn get_transfer_auth_state_init(&self, msg_hash: [u8; 32]) -> StateInit {
         let state = CondVarStateInit {
             escrow_contract_id: self.config.escrow_swap_contract_id.clone(),
             auth_contract: self.config.auth_contract.clone(),
@@ -125,7 +125,7 @@ impl MultiTokenReceiver for Contract {
         }
         .hash();
 
-        let auth_contract_state_init = self.derive_deteministic_escrow_per_fill_id(context_hash);
+        let auth_contract_state_init = self.get_transfer_auth_state_init(context_hash);
         let auth_contract_id = auth_contract_state_init.derive_account_id();
         let auth_call = Promise::new(auth_contract_id)
             .state_init(auth_contract_state_init, NearToken::from_near(0));
