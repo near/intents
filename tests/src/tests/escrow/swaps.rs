@@ -110,6 +110,19 @@ struct EscrowSwapTestCase {
         (DAVE, 0),
     ],
 })]
+#[case::overfunding_excess_refunded(EscrowSwapTestCase {
+    price: UD128::ONE,
+    maker_balance: 1_000,
+    fills: vec![(BOB, 1_500)],  // taker sends 1500 but only 1000 needed
+    expected_src_balances: vec![
+        (MAKER, 0),
+        (BOB, 1_000),    // receives all src tokens
+    ],
+    expected_dst_balances: vec![
+        (MAKER, 1_000),  // receives exactly what was needed
+        (BOB, 500),      // excess 500 refunded
+    ],
+})]
 #[tokio::test]
 async fn test_escrow_swap_direct_fill(#[case] test_case: EscrowSwapTestCase) {
     use futures::FutureExt;
