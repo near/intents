@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use crate::tests::defuse::env::Env;
 use defuse_deadline::Deadline;
-use defuse_escrow_swap::ParamsBuilder;
+use defuse_escrow_swap::{OverrideSend, ParamsBuilder};
 use defuse_escrow_swap::action::{FillMessageBuilder, FundMessageBuilder};
 use defuse_escrow_swap::decimal::UD128;
 use defuse_sandbox::{MtExt, MtViewExt};
@@ -32,6 +32,24 @@ struct EscrowSwapTestCase {
     expected_src_balances: Vec<(&'static str, u128)>,
     /// Expected `dst_token` balances after fills
     expected_dst_balances: Vec<(&'static str, u128)>,
+    /// Override where maker receives dst tokens (defaults to maker)
+    maker_receive_dst_to: Option<&'static str>,
+    /// Override where taker receives src tokens (defaults to taker)
+    taker_receive_src_to: Option<&'static str>,
+}
+
+impl Default for EscrowSwapTestCase {
+    fn default() -> Self {
+        Self {
+            price: UD128::ONE,
+            maker_balance: 0,
+            fills: vec![],
+            expected_src_balances: vec![],
+            expected_dst_balances: vec![],
+            maker_receive_dst_to: None,
+            taker_receive_src_to: None,
+        }
+    }
 }
 
 #[rstest]
@@ -47,6 +65,7 @@ struct EscrowSwapTestCase {
         (MAKER, 100_000_000),
         (BOB, 0),
     ],
+    ..Default::default()
 })]
 #[case::price_ratio_1_to_2(EscrowSwapTestCase {
     price: UD128::from(2),
@@ -60,6 +79,7 @@ struct EscrowSwapTestCase {
         (MAKER, 2_000),
         (BOB, 0),
     ],
+    ..Default::default()
 })]
 #[case::price_ratio_1_to_3(EscrowSwapTestCase {
     price: UD128::from(3),
@@ -73,6 +93,7 @@ struct EscrowSwapTestCase {
         (MAKER, 3_000),
         (BOB, 0),
     ],
+    ..Default::default()
 })]
 #[case::fractional_price_1_333333(EscrowSwapTestCase {
     price: "1.333333".parse().unwrap(),  // ≈4/3
@@ -86,6 +107,7 @@ struct EscrowSwapTestCase {
         (MAKER, 1_334),
         (BOB, 0),
     ],
+    ..Default::default()
 })]
 #[case::multiple_takers(EscrowSwapTestCase {
     price: UD128::ONE,
@@ -95,13 +117,12 @@ struct EscrowSwapTestCase {
         (CHARLIE, 350),  // second taker fills 350
         (DAVE, 250),     // third taker fills remaining 250
     ],
-    // Note: fill_msg has receive_src_to pointing to first taker (BOB),
-    // so all src tokens go to BOB regardless of who fills
+    // Each taker receives src tokens proportional to their fill
     expected_src_balances: vec![
         (MAKER, 0),
-        (BOB, 1_000),    // receives all src (400+350+250)
-        (CHARLIE, 0),
-        (DAVE, 0),
+        (BOB, 400),
+        (CHARLIE, 350),
+        (DAVE, 250),
     ],
     expected_dst_balances: vec![
         (MAKER, 1_000),  // 400 + 350 + 250
@@ -109,6 +130,7 @@ struct EscrowSwapTestCase {
         (CHARLIE, 0),
         (DAVE, 0),
     ],
+    ..Default::default()
 })]
 #[case::overfunding_excess_refunded(EscrowSwapTestCase {
     price: UD128::ONE,
@@ -122,6 +144,61 @@ struct EscrowSwapTestCase {
         (MAKER, 1_000),  // receives exactly what was needed
         (BOB, 500),      // excess 500 refunded
     ],
+    ..Default::default()
+})]
+#[case::maker_dst_redirect(EscrowSwapTestCase {
+    price: UD128::ONE,
+    maker_balance: 1_000,
+    fills: vec![(BOB, 1_000)],
+    maker_receive_dst_to: Some(CHARLIE),  // Maker's dst goes to Charlie
+    expected_src_balances: vec![
+        (MAKER, 0),
+        (BOB, 1_000),
+        (CHARLIE, 0),
+    ],
+    expected_dst_balances: vec![
+        (MAKER, 0),       // Maker gets nothing (redirected)
+        (BOB, 0),
+        (CHARLIE, 1_000), // Charlie receives maker's dst
+    ],
+    ..Default::default()
+})]
+#[case::taker_src_redirect(EscrowSwapTestCase {
+    price: UD128::ONE,
+    maker_balance: 1_000,
+    fills: vec![(BOB, 1_000)],
+    taker_receive_src_to: Some(DAVE),  // Bob's src goes to Dave
+    expected_src_balances: vec![
+        (MAKER, 0),
+        (BOB, 0),        // Bob gets nothing (redirected)
+        (DAVE, 1_000),   // Dave receives Bob's src
+    ],
+    expected_dst_balances: vec![
+        (MAKER, 1_000),
+        (BOB, 0),
+        (DAVE, 0),
+    ],
+    ..Default::default()
+})]
+#[case::both_redirects(EscrowSwapTestCase {
+    price: UD128::ONE,
+    maker_balance: 1_000,
+    fills: vec![(BOB, 1_000)],
+    maker_receive_dst_to: Some(CHARLIE),
+    taker_receive_src_to: Some(DAVE),
+    expected_src_balances: vec![
+        (MAKER, 0),
+        (BOB, 0),
+        (CHARLIE, 0),
+        (DAVE, 1_000),    // Dave gets src (redirected from Bob)
+    ],
+    expected_dst_balances: vec![
+        (MAKER, 0),
+        (BOB, 0),
+        (CHARLIE, 1_000), // Charlie gets dst (redirected from Maker)
+        (DAVE, 0),
+    ],
+    ..Default::default()
 })]
 #[tokio::test]
 async fn test_escrow_swap_direct_fill(#[case] test_case: EscrowSwapTestCase) {
@@ -132,20 +209,32 @@ async fn test_escrow_swap_direct_fill(#[case] test_case: EscrowSwapTestCase) {
     let escrow_swap_global = env.root().deploy_escrow_swap_global("escrow_swap").await;
     let maker = env.create_named_user(MAKER).await;
 
-    let unique_takers: HashSet<_> = test_case.fills.iter().map(|(name, _)| name).collect();
-    let takers: HashMap<_, _> = futures::future::join_all(
-        unique_takers
+    // Collect all unique accounts: takers + redirect destinations
+    let mut all_accounts: HashSet<&'static str> =
+        test_case.fills.iter().map(|(name, _)| *name).collect();
+    if let Some(dst_redirect) = test_case.maker_receive_dst_to {
+        all_accounts.insert(dst_redirect);
+    }
+    if let Some(src_redirect) = test_case.taker_receive_src_to {
+        all_accounts.insert(src_redirect);
+    }
+
+    let accounts: HashMap<_, _> = futures::future::join_all(
+        all_accounts
             .iter()
-            .map(|name| env.create_named_user(name).map(|taker| (*name, taker))),
+            .map(|name| env.create_named_user(name).map(|acc| (*name, acc))),
     )
     .await
     .into_iter()
-    .chain(std::iter::once((&MAKER, maker.clone())))
+    .chain(std::iter::once((MAKER, maker.clone())))
     .collect();
+
+    // Takers for whitelist (only accounts that will fill)
+    let unique_takers: HashSet<_> = test_case.fills.iter().map(|(name, _)| *name).collect();
     let dst_token_balances = test_case.fills.iter().fold(
         HashMap::new(),
         |mut acc, (name, amount)| {
-            *acc.entry(takers.get(name).unwrap().id().clone())
+            *acc.entry(accounts.get(name).unwrap().id().clone())
                 .or_default() += amount;
             acc
         },
@@ -165,17 +254,41 @@ async fn test_escrow_swap_direct_fill(#[case] test_case: EscrowSwapTestCase) {
         dst_token_defuse_id.to_string(),
     ));
 
-    let escrow_params = ParamsBuilder::new(
+    let mut params_builder = ParamsBuilder::new(
         (maker.id().clone(), src_token),
-        (unique_takers.iter().map(|name| takers.get(name).unwrap().id().clone()), dst_token),
+        (
+            unique_takers
+                .iter()
+                .map(|name| accounts.get(name).unwrap().id().clone()),
+            dst_token,
+        ),
     )
     .with_price(test_case.price)
-    .with_partial_fills_allowed(test_case.fills.len() > 1)
-    .build();
+    .with_partial_fills_allowed(test_case.fills.len() > 1);
+
+    // Apply maker receive_dst_to override if specified
+    if let Some(dst_redirect) = test_case.maker_receive_dst_to {
+        params_builder = params_builder.with_receive_dst_to(OverrideSend {
+            receiver_id: Some(accounts.get(dst_redirect).unwrap().id().clone()),
+            ..Default::default()
+        });
+    }
+
+    let escrow_params = params_builder.build();
     let fund_escrow_msg = FundMessageBuilder::new(escrow_params.clone()).build();
-    let fill_escrow_msg = FillMessageBuilder::new(escrow_params.clone())
-        .with_deadline(Deadline::timeout(Duration::from_secs(120)))
-        .build();
+
+    let mut fill_builder = FillMessageBuilder::new(escrow_params.clone())
+        .with_deadline(Deadline::timeout(Duration::from_secs(120)));
+
+    // Apply taker receive_src_to override if specified
+    if let Some(src_redirect) = test_case.taker_receive_src_to {
+        fill_builder = fill_builder.with_receive_src_to(OverrideSend {
+            receiver_id: Some(accounts.get(src_redirect).unwrap().id().clone()),
+            ..Default::default()
+        });
+    }
+
+    let fill_escrow_msg = fill_builder.build();
 
     // Act
     let escrow_instance_id = env
@@ -196,7 +309,7 @@ async fn test_escrow_swap_direct_fill(#[case] test_case: EscrowSwapTestCase) {
         .unwrap();
 
     for (taker_name, fill_amount) in &test_case.fills {
-        let taker = takers.get(taker_name).unwrap();
+        let taker = accounts.get(taker_name).unwrap();
         taker
             .mt_transfer_call(
                 env.defuse.id(),
@@ -218,13 +331,13 @@ async fn test_escrow_swap_direct_fill(#[case] test_case: EscrowSwapTestCase) {
     let dst_token_id_str = dst_token_defuse_id.to_string();
 
     let actual_src_balances: BTreeMap<_, _> = futures::future::join_all(test_case.expected_src_balances.iter().map(|(name, _)| {
-                let acc = takers.get(name).unwrap();
+                let acc = accounts.get(name).unwrap();
                 env.defuse
                     .mt_balance_of(acc.id(), &src_token_id_str).map(|balance| (*name, balance.unwrap()))
     })).await.into_iter().collect();
 
     let actual_dst_balances: BTreeMap<_, _> = futures::future::join_all(test_case.expected_dst_balances.iter().map(|(name, _)| {
-                let acc = takers.get(name).unwrap();
+                let acc = accounts.get(name).unwrap();
                 env.defuse
                     .mt_balance_of(acc.id(), &dst_token_id_str).map(|balance| (*name, balance.unwrap()))
     })).await.into_iter().collect();
