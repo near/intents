@@ -16,7 +16,7 @@ use defuse_core::amounts::Amounts;
 use defuse_core::intents::auth::AuthCall;
 use defuse_core::intents::tokens::{NotifyOnTransfer, Transfer};
 use defuse_deadline::Deadline;
-use defuse_escrow_proxy::{ProxyConfig, RolesConfig, TransferMessage as ProxyTransferMessage};
+use defuse_escrow_proxy::{ProxyConfig, Role as ProxyRole, RolesConfig, TransferMessage as ProxyTransferMessage};
 use defuse_escrow_swap::ParamsBuilder;
 use defuse_escrow_swap::action::{FillMessageBuilder, FundMessageBuilder};
 use defuse_sandbox::{MtExt, MtViewExt};
@@ -189,5 +189,111 @@ async fn test_escrow_swap_with_proxy_full_flow() {
             .unwrap(),
         swap_amount,
         "Proxy (taker) should have received token-a"
+    );
+}
+
+/// Test that escrow proxy (as sole taker) can cancel escrow before deadline
+#[tokio::test]
+async fn test_escrow_proxy_can_cancel_before_deadline() {
+    let swap_amount: u128 = 100_000_000;
+    let env = Env::builder().build().await;
+
+    let escrow_swap_global = env.root().deploy_escrow_swap_global("escrow_swap").await;
+    let (maker, proxy) = futures::join!(
+        env.create_named_user("maker"),
+        env.create_named_user("proxy"),
+    );
+
+    // Create two tokens: token_a for maker, token_b as dummy dst (required by escrow)
+    let (token_a_result, token_b_result) = futures::join!(
+        env.create_mt_token_with_initial_balances([(maker.id().clone(), swap_amount)]),
+        env.create_mt_token_with_initial_balances([]), // no initial balance needed
+    );
+    let (_, token_a_defuse_id) = token_a_result.unwrap();
+    let (_, token_b_defuse_id) = token_b_result.unwrap();
+
+    // Deploy proxy with root granted DAO role (can call cancel_escrow)
+    let roles = RolesConfig {
+        super_admins: HashSet::from([env.root().id().clone()]),
+        admins: HashMap::new(),
+        grantees: HashMap::from([(ProxyRole::DAO, HashSet::from([env.root().id().clone()]))]),
+    };
+    let config = ProxyConfig {
+        per_fill_contract_id: GlobalContractId::AccountId(escrow_swap_global.clone()),
+        escrow_swap_contract_id: GlobalContractId::AccountId(escrow_swap_global.clone()),
+        auth_contract: env.defuse.id().clone(),
+        auth_collee: env.root().id().clone(), // not used for cancel
+    };
+    proxy
+        .deploy_escrow_proxy(roles, config)
+        .await
+        .unwrap();
+
+    // Build escrow params with proxy as sole taker
+    let src_token = TokenId::from(Nep245TokenId::new(
+        env.defuse.id().clone(),
+        token_a_defuse_id.to_string(),
+    ));
+    let dst_token = TokenId::from(Nep245TokenId::new(
+        env.defuse.id().clone(),
+        token_b_defuse_id.to_string(),
+    ));
+    let escrow_params = ParamsBuilder::new(
+        (maker.id().clone(), src_token),
+        ([proxy.id().clone()], dst_token),
+    )
+    .build();
+
+    let fund_escrow_msg = FundMessageBuilder::new(escrow_params.clone()).build();
+    let fund_msg_json = serde_json::to_string(&fund_escrow_msg).unwrap();
+
+    let escrow_raw_state = defuse_escrow_swap::ContractStorage::init_state(&escrow_params).unwrap();
+    let escrow_state_init = StateInit::V1(StateInitV1 {
+        code: GlobalContractId::AccountId(escrow_swap_global.clone()),
+        data: escrow_raw_state,
+    });
+    let escrow_instance_id = escrow_state_init.derive_account_id();
+
+    // Fund the escrow
+    let transfer = Transfer {
+        receiver_id: escrow_instance_id.clone(),
+        tokens: Amounts::new([(token_a_defuse_id.clone(), swap_amount)].into()),
+        memo: None,
+        notification: Some(NotifyOnTransfer::new(fund_msg_json).with_state_init(escrow_state_init)),
+    };
+
+    let transfer_payload = maker
+        .sign_defuse_payload_default(&env.defuse, [transfer])
+        .await
+        .unwrap();
+    maker
+        .simulate_and_execute_intents(env.defuse.id(), [transfer_payload])
+        .await
+        .unwrap();
+
+    // Verify maker's tokens are in escrow (balance is 0)
+    assert_eq!(
+        env.defuse
+            .mt_balance_of(maker.id(), &token_a_defuse_id.to_string())
+            .await
+            .unwrap(),
+        0,
+        "Maker should have 0 balance after funding escrow"
+    );
+
+    // Root (super_admin) cancels the escrow via proxy
+    env.root()
+        .cancel_escrow(proxy.id(), &escrow_params)
+        .await
+        .unwrap();
+
+    // Verify maker got their tokens back
+    assert_eq!(
+        env.defuse
+            .mt_balance_of(maker.id(), &token_a_defuse_id.to_string())
+            .await
+            .unwrap(),
+        swap_amount,
+        "Maker should have tokens back after cancel"
     );
 }

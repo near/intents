@@ -4,7 +4,6 @@ mod upgrade;
 use core::iter;
 use std::borrow::Cow;
 
-use defuse_escrow_swap::ContractStorage as EscrowContractStorage;
 use defuse_escrow_swap::ext_escrow;
 use defuse_near_utils::UnwrapOrPanicError;
 use defuse_nep245::receiver::MultiTokenReceiver;
@@ -15,7 +14,7 @@ use defuse_oneshot_condvar::{
 use near_plugins::{AccessControlRole, AccessControllable, access_control, access_control_any};
 use near_sdk::{
     AccountId, CryptoHash, Gas, NearToken, PanicOnDefault, Promise, PromiseOrValue, PromiseResult,
-    env, ext_contract,
+    env,
     json_types::U128,
     near, require, serde_json,
     state_init::{StateInit, StateInitV1},
@@ -116,7 +115,8 @@ impl MultiTokenReceiver for Contract {
         }
         .hash();
 
-        let auth_contract_state_init = self.get_deterministic_transfer_auth_state_init(context_hash);
+        let auth_contract_state_init =
+            self.get_deterministic_transfer_auth_state_init(context_hash);
         let auth_contract_id = auth_contract_state_init.derive_account_id();
         let auth_call = Promise::new(auth_contract_id)
             .state_init(auth_contract_state_init, NearToken::from_near(0));
@@ -126,19 +126,17 @@ impl MultiTokenReceiver for Contract {
         let token_contract = env::predecessor_account_id();
 
         PromiseOrValue::Promise(
-            ext_oneshot_condvar::ext_on(auth_call)
-                .cv_wait()
-                .then(
-                    Self::ext(env::current_account_id())
-                        .with_static_gas(Gas::from_tgas(100))
-                        .check_authorization_and_forward(
-                            token_contract,
-                            transfer_message.receiver_id,
-                            token_ids,
-                            amounts,
-                            transfer_message.msg,
-                        ),
-                ),
+            ext_oneshot_condvar::ext_on(auth_call).cv_wait().then(
+                Self::ext(env::current_account_id())
+                    .with_static_gas(Gas::from_tgas(100))
+                    .check_authorization_and_forward(
+                        token_contract,
+                        transfer_message.receiver_id,
+                        token_ids,
+                        amounts,
+                        transfer_message.msg,
+                    ),
+            ),
         )
     }
 }
@@ -191,10 +189,11 @@ impl Contract {
     pub fn resolve_transfer(&self, original_amounts: Vec<U128>) -> Vec<U128> {
         match env::promise_result(0) {
             PromiseResult::Successful(transferred) => {
-                let transferred: Vec<U128> = serde_json::from_slice(&transferred).unwrap_or_else(|_| {
-                    near_sdk::log!("Failed to parse escrow response, refunding all");
-                    vec![U128(0); original_amounts.len()]
-                });
+                let transferred: Vec<U128> =
+                    serde_json::from_slice(&transferred).unwrap_or_else(|_| {
+                        near_sdk::log!("Failed to parse escrow response, refunding all");
+                        vec![U128(0); original_amounts.len()]
+                    });
 
                 original_amounts
                     .iter()
@@ -210,9 +209,17 @@ impl Contract {
     }
 
     #[access_control_any(roles(Role::DAO, Role::Canceller))]
-    pub fn cancel_escrow(&self, escrow_address: AccountId, params: EscrowParams) -> Promise {
+    pub fn cancel_escrow(&self, params: EscrowParams) -> Promise {
+        let escrow_address = {
+            let raw_state = defuse_escrow_swap::ContractStorage::init_state(&params)
+                .unwrap_or_else(|e| env::panic_str(&format!("Invalid escrow params: {e}")));
+            let state_init = StateInit::V1(StateInitV1 {
+                code: self.config.escrow_swap_contract_id.clone(),
+                data: raw_state,
+            });
+            state_init.derive_account_id()
+        };
         ext_escrow::ext(escrow_address)
-            .with_attached_deposit(NearToken::from_yoctonear(1))
             .with_static_gas(Gas::from_tgas(50))
             .es_close(params)
     }
