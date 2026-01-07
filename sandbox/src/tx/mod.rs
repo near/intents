@@ -20,9 +20,11 @@ use near_api::{
 use near_sdk::{AccountId, NearToken};
 
 mod fn_call;
+pub mod gas;
 mod wrappers;
 
 pub use fn_call::FnCallBuilder;
+pub use gas::{ExecutionResultExt, GasInfo};
 
 use crate::SigningAccount;
 use wrappers::TxOutcome;

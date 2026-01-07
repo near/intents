@@ -198,7 +198,6 @@ impl Default for EscrowSwapTestCase {
         (CHARLIE, 1_000), // Charlie gets dst (redirected from Maker)
         (DAVE, 0),
     ],
-    ..Default::default()
 })]
 #[tokio::test]
 async fn test_escrow_swap_direct_fill(#[case] test_case: EscrowSwapTestCase) {

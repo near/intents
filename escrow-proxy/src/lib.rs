@@ -4,10 +4,13 @@ mod message;
 pub mod state;
 
 use near_plugins::AccessControlRole;
-use near_sdk::{ext_contract, near};
+use near_sdk::{Gas, ext_contract, near};
 
 pub use message::*;
 pub use state::{ProxyConfig, RolesConfig};
+
+/// Minimum gas required for proxy `mt_on_transfer`.
+pub const MT_ON_TRANSFER_GAS: Gas = Gas::from_tgas(70);
 
 use defuse_oneshot_condvar::CondVarContext;
 use near_sdk::CryptoHash;

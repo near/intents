@@ -15,7 +15,7 @@ pub static ESCROW_PROXY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
 pub trait EscrowProxyExt {
     async fn deploy_escrow_proxy(&self, roles: RolesConfig, config: ProxyConfig) -> anyhow::Result<()>;
     async fn get_escrow_proxy_config(&self) -> anyhow::Result<ProxyConfig>;
-    /// Call cancel_escrow on proxy contract. Requires caller to have DAO or Canceller role.
+    /// Call `cancel_escrow` on proxy contract. Requires caller to have DAO or Canceller role.
     async fn cancel_escrow(
         &self,
         proxy_contract: &AccountId,

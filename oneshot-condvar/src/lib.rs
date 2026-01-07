@@ -1,8 +1,11 @@
 use std::borrow::Cow;
 
 use near_sdk::{
-    AccountIdRef, PromiseOrValue, borsh, env::keccak256, ext_contract, json_types::U128, near,
+    AccountIdRef, Gas, PromiseOrValue, borsh, env::keccak256, ext_contract, json_types::U128, near,
 };
+
+/// Gas consumed by `cv_wait` in worst case (wait first, notify later).
+pub const WAIT_GAS: Gas = Gas::from_tgas(7);
 
 #[cfg(feature = "contract")]
 mod contract;

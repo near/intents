@@ -1,5 +1,6 @@
-use near_api::types::transaction::result::{
-    ExecutionFinalResult, ExecutionOutcome, ValueOrReceiptId,
+use near_api::types::transaction::{
+    actions::Action,
+    result::{ExecutionFinalResult, ExecutionOutcome, ValueOrReceiptId},
 };
 use std::fmt::Debug;
 
@@ -10,10 +11,32 @@ impl Debug for TxOutcome<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{} -> {}: ",
+            "{} -> {}",
             self.0.transaction().signer_id(),
             self.0.transaction().receiver_id()
         )?;
+
+        // Extract method names from FunctionCall actions
+        let method_names: Vec<_> = self
+            .0
+            .transaction()
+            .actions()
+            .iter()
+            .filter_map(|action| {
+                if let Action::FunctionCall(fn_call) = action {
+                    Some(fn_call.method_name.as_str())
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        if !method_names.is_empty() {
+            write!(f, "::{}", method_names.join(", "))?;
+        }
+
+        write!(f, ": ")?;
+
         let outcomes: Vec<_> = self
             .0
             .outcomes()

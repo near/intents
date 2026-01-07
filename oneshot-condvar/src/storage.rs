@@ -56,7 +56,7 @@ impl ContractStorage {
     pub(crate) const STATE_KEY: &[u8] = b"";
 
     #[inline]
-    pub fn init(state_init: StateInit) -> Self {
+    pub const fn init(state_init: StateInit) -> Self {
         Self(Some(State::new(state_init)))
     }
 

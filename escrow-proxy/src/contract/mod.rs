@@ -8,9 +8,10 @@ use defuse_escrow_swap::ext_escrow;
 use defuse_near_utils::UnwrapOrPanicError;
 use defuse_nep245::receiver::MultiTokenReceiver;
 use defuse_oneshot_condvar::{
-    CondVarContext, ext_oneshot_condvar,
+    CondVarContext, WAIT_GAS, ext_oneshot_condvar,
     storage::{ContractStorage, StateInit as CondVarStateInit},
 };
+use crate::MT_ON_TRANSFER_GAS;
 use near_plugins::{AccessControlRole, AccessControllable, access_control, access_control_any};
 use near_sdk::{
     AccountId, CryptoHash, Gas, NearToken, PanicOnDefault, Promise, PromiseOrValue, PromiseResult,
@@ -105,6 +106,11 @@ impl MultiTokenReceiver for Contract {
         amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
+        require!(
+            env::prepaid_gas() >= MT_ON_TRANSFER_GAS,
+            "Insufficient gas prepaid"
+        );
+
         let transfer_message: TransferMessage = msg.parse().unwrap_or_panic_display();
         let context_hash = CondVarContext {
             sender_id: Cow::Borrowed(&sender_id),
@@ -126,17 +132,21 @@ impl MultiTokenReceiver for Contract {
         let token_contract = env::predecessor_account_id();
 
         PromiseOrValue::Promise(
-            ext_oneshot_condvar::ext_on(auth_call).cv_wait().then(
-                Self::ext(env::current_account_id())
-                    .with_static_gas(Gas::from_tgas(100))
-                    .check_authorization_and_forward(
-                        token_contract,
-                        transfer_message.receiver_id,
-                        token_ids,
-                        amounts,
-                        transfer_message.msg,
-                    ),
-            ),
+            ext_oneshot_condvar::ext_on(auth_call)
+                .with_static_gas(WAIT_GAS)
+                .with_unused_gas_weight(0)
+                .cv_wait()
+                .then(
+                    Self::ext(env::current_account_id())
+                        .with_unused_gas_weight(1)
+                        .check_authorization_and_forward(
+                            token_contract,
+                            transfer_message.receiver_id,
+                            token_ids,
+                            amounts,
+                            transfer_message.msg,
+                        ),
+                ),
         )
     }
 }
