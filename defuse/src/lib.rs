@@ -13,6 +13,9 @@ pub mod salts;
 pub mod simulation_output;
 pub mod tokens;
 
+// #[cfg(feature = "far")]
+pub mod pk_sync;
+
 pub use defuse_core as core;
 pub use defuse_nep245 as nep245;
 

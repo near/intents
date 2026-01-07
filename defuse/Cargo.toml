@@ -66,6 +66,7 @@ contract = [
     "dep:defuse-wnear",
     "dep:bitflags",
 ]
+far = []
 
 sandbox = [
     "arbitrary",

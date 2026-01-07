@@ -13,6 +13,9 @@ mod tokens;
 mod upgrade;
 mod versioned;
 
+// #[cfg(feature = "far")]
+mod pk_sync;
+
 use core::iter;
 
 use defuse_borsh_utils::adapters::As;
@@ -53,6 +56,11 @@ pub enum Role {
     SaltManager,
 
     GarbageCollector,
+
+    // #[cfg(feature = "far")]
+    PubKeySynchronizer,
+    // #[cfg(feature = "far")]
+    FarMintManager,
 }
 
 #[access_control(role_type(Role))]
