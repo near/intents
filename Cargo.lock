@@ -788,6 +788,7 @@ checksum = "26bf8fc351c5ed29b5c2f0cbbac1b209b74f60ecd62e675a998df72c49af5204"
 name = "defuse"
 version = "0.4.1"
 dependencies = [
+ "anyhow",
  "arbitrary",
  "bitflags 2.10.0",
  "bnum",
@@ -802,10 +803,12 @@ dependencies = [
  "defuse-map-utils",
  "defuse-near-utils",
  "defuse-nep245",
- "defuse-sandbox",
+ "defuse-randomness",
  "defuse-serde-utils",
  "defuse-test-utils",
+ "defuse-tests",
  "defuse-wnear",
+ "futures",
  "impl-tools",
  "itertools",
  "near-contract-standards",
@@ -816,6 +819,7 @@ dependencies = [
  "serde_with",
  "strum 0.27.2",
  "thiserror 2.0.17",
+ "tokio",
 ]
 
 [[package]]
@@ -852,6 +856,23 @@ dependencies = [
  "chrono",
  "defuse-io-utils",
  "impl-tools",
+ "near-sdk",
+]
+
+[[package]]
+name = "defuse-contract-extensions"
+version = "0.1.0"
+dependencies = [
+ "defuse",
+ "defuse-core",
+ "defuse-escrow-swap",
+ "defuse-nep245",
+ "defuse-poa-factory",
+ "defuse-randomness",
+ "defuse-sandbox",
+ "defuse-serde-utils",
+ "defuse-test-utils",
+ "near-contract-standards",
  "near-sdk",
 ]
 
@@ -959,20 +980,26 @@ version = "0.1.0"
 dependencies = [
  "defuse-auth-call",
  "defuse-borsh-utils",
+ "defuse-contract-extensions",
  "defuse-deadline",
  "defuse-decimal",
  "defuse-fees",
  "defuse-near-utils",
  "defuse-nep245",
  "defuse-num-utils",
+ "defuse-sandbox",
  "defuse-token-id",
  "derive_more",
+ "futures",
  "hex",
  "impl-tools",
+ "itertools",
  "near-contract-standards",
  "near-sdk",
+ "rstest",
  "serde_with",
  "thiserror 2.0.17",
+ "tokio",
 ]
 
 [[package]]
@@ -1050,12 +1077,16 @@ version = "0.1.0"
 dependencies = [
  "cargo-near-build",
  "defuse-admin-utils",
+ "defuse-contract-extensions",
  "defuse-near-utils",
  "defuse-poa-token",
  "defuse-sandbox",
+ "futures",
  "near-contract-standards",
  "near-plugins",
  "near-sdk",
+ "rstest",
+ "tokio",
 ]
 
 [[package]]
@@ -1128,6 +1159,7 @@ name = "defuse-test-utils"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "defuse-crypto",
  "defuse-randomness",
  "derive_more",
  "hex",
@@ -1145,6 +1177,7 @@ dependencies = [
  "bnum",
  "chrono",
  "defuse",
+ "defuse-contract-extensions",
  "defuse-escrow-swap",
  "defuse-near-utils",
  "defuse-poa-factory",
