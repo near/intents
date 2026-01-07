@@ -3,13 +3,12 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use crate::tests::defuse::env::Env;
 use defuse_escrow_proxy::{ProxyConfig, RolesConfig, TransferMessage};
-use defuse_sandbox::{Account, FnCallBuilder, MtExt, MtViewExt};
-use defuse_sandbox_ext::{
-    EscrowProxyExt, MtReceiverStubAccountExt, OneshotCondVarAccountExt
-};
+use defuse_sandbox::extensions::storage_management::StorageManagementExt;
+use defuse_sandbox::{Account, FnCallBuilder, FtExt, FtViewExt, MtExt, MtViewExt};
+use defuse_sandbox_ext::{EscrowProxyExt, MtReceiverStubAccountExt, OneshotCondVarAccountExt};
 use defuse_oneshot_condvar::CondVarContext;
 use defuse_oneshot_condvar::storage::{ContractStorage, StateInit as CondVarStateInit};
-use multi_token_receiver_stub::MTReceiverMode;
+use multi_token_receiver_stub::{FTReceiverMode, MTReceiverMode};
 use near_sdk::AccountId;
 use near_sdk::{
     Gas, GlobalContractId, NearToken,
@@ -352,5 +351,167 @@ async fn test_proxy_authorize_function() {
     assert!(
         cv_is_notified,
         "OneshotCondVar instance should be authorized after proxy.authorize() call"
+    );
+}
+
+/// Test that FT transfer succeeds when relay authorizes via on_auth call
+#[tokio::test]
+#[allow(clippy::too_many_lines)]
+async fn test_ft_transfer_authorized_by_relay() {
+    let env = Env::builder().build().await;
+
+    // Deploy global contracts in parallel
+    let (condvar_global, ft_receiver_global) = futures::join!(
+        env.root().deploy_oneshot_condvar("global_transfer_auth"),
+        env.root()
+            .deploy_mt_receiver_stub_global("ft_receiver_global"),
+    );
+
+    // Create accounts in parallel
+    let (solver, relay, proxy) = futures::join!(
+        env.create_named_user("solver"),
+        env.create_named_user("relay"),
+        env.create_named_user("proxy"),
+    );
+
+    let roles = RolesConfig {
+        super_admins: HashSet::from([env.root().id().clone()]),
+        admins: HashMap::new(),
+        grantees: HashMap::new(),
+    };
+
+    // Use root as auth_contract since we need signing capability for on_auth call
+    let config = ProxyConfig {
+        per_fill_contract_id: GlobalContractId::AccountId(condvar_global.clone()),
+        escrow_swap_contract_id: GlobalContractId::AccountId(ft_receiver_global.clone()),
+        auth_contract: env.root().id().clone(),
+        auth_collee: relay.id().clone(),
+    };
+
+    proxy
+        .deploy_escrow_proxy(roles, config.clone())
+        .await
+        .unwrap();
+
+    // Derive and pre-deploy the escrow instance (ft-receiver-stub)
+    let escrow_state_init = StateInit::V1(StateInitV1 {
+        code: GlobalContractId::AccountId(ft_receiver_global.clone()),
+        data: BTreeMap::new(),
+    });
+    let escrow_instance_id = escrow_state_init.derive_account_id();
+
+    // Deploy escrow instance via state_init
+    env.root()
+        .tx(escrow_instance_id.clone())
+        .state_init(ft_receiver_global.clone(), BTreeMap::new())
+        .transfer(NearToken::from_yoctonear(1))
+        .await
+        .unwrap();
+
+    // Create FT token with initial balance for solver
+    let initial_balance: u128 = 1_000_000;
+    let (ft_token, _) = env
+        .create_ft_token_with_initial_balances([(solver.id().clone(), initial_balance)])
+        .await
+        .unwrap();
+
+    // Storage deposit for proxy and escrow on the FT token
+    let (proxy_storage, escrow_storage) = futures::join!(
+        solver.storage_deposit(ft_token.id(), Some(proxy.id().as_ref()), NearToken::from_near(1)),
+        solver.storage_deposit(
+            ft_token.id(),
+            Some(escrow_instance_id.as_ref()),
+            NearToken::from_near(1)
+        ),
+    );
+    proxy_storage.unwrap();
+    escrow_storage.unwrap();
+
+    // Record initial solver balance
+    let initial_solver_balance = ft_token.ft_balance_of(solver.id()).await.unwrap();
+
+    let inner_msg_json = serde_json::to_string(&FTReceiverMode::AcceptAll).unwrap();
+
+    // Build TransferMessage for the proxy (wraps inner message)
+    let transfer_msg = TransferMessage {
+        receiver_id: escrow_instance_id.clone(),
+        salt: [3u8; 32], // Different salt from other tests
+        msg: inner_msg_json,
+    };
+    let msg_json = serde_json::to_string(&transfer_msg).unwrap();
+
+    let proxy_transfer_amount: u128 = 100_000;
+
+    // Derive the transfer-auth instance address (same logic as proxy uses)
+    // For FT, token_ids is a single-element vec with the FT contract account as string
+    let context_hash = CondVarContext {
+        sender_id: Cow::Borrowed(solver.id()),
+        token_ids: Cow::Owned(vec![ft_token.id().to_string()]),
+        amounts: Cow::Owned(vec![U128(proxy_transfer_amount)]),
+        salt: transfer_msg.salt,
+        msg: Cow::Borrowed(&msg_json),
+    }
+    .hash();
+
+    let auth_state = CondVarStateInit {
+        escrow_contract_id: config.escrow_swap_contract_id.clone(),
+        auth_contract: config.auth_contract.clone(),
+        on_auth_signer: config.auth_collee.clone(),
+        authorizee: proxy.id().clone(),
+        msg_hash: context_hash,
+    };
+    let condvar_instance_id = derive_oneshot_condvar_account_id(
+        &GlobalContractId::AccountId(condvar_global.clone()),
+        &auth_state,
+    );
+
+    // Build raw state for state_init (same as proxy does)
+    let raw_state = ContractStorage::init_state(auth_state).unwrap();
+
+    // Run transfer and on_auth call concurrently
+    // Transfer starts the yield promise, on_auth authorizes it
+    let (_transfer_result, _auth_result) = futures::join!(
+        solver.ft_transfer_call(
+            ft_token.id(),
+            proxy.id(),
+            proxy_transfer_amount,
+            None,
+            &msg_json,
+        ),
+        // Call on_auth from root (auth_contract) with relay as signer_id
+        // Include state_init to deploy the transfer-auth instance if not already deployed
+        async {
+            env.root()
+                .tx(condvar_instance_id.clone())
+                .state_init(condvar_global.clone(), raw_state)
+                .function_call(
+                    FnCallBuilder::new("on_auth")
+                        .json_args(serde_json::json!({
+                            "signer_id": relay.id(),
+                            "msg": "",
+                        }))
+                        .with_gas(Gas::from_tgas(50))
+                        .with_deposit(NearToken::from_yoctonear(1)),
+                )
+                .await
+                .unwrap();
+        }
+    );
+
+    // Verify solver balance decreased
+    let final_solver_balance = ft_token.ft_balance_of(solver.id()).await.unwrap();
+
+    assert_eq!(
+        initial_solver_balance - proxy_transfer_amount,
+        final_solver_balance,
+        "Solver balance should decrease by transferred amount"
+    );
+
+    // Verify escrow instance received the tokens
+    let escrow_balance = ft_token.ft_balance_of(&escrow_instance_id).await.unwrap();
+
+    assert_eq!(
+        escrow_balance, proxy_transfer_amount,
+        "Escrow instance should have received the transferred tokens"
     );
 }

@@ -11,6 +11,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 defuse = { workspace = true }
 defuse-nep245.workspace = true
+near-contract-standards.workspace = true
 near-sdk.workspace = true
 
 [dev-dependencies]

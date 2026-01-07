@@ -1,4 +1,5 @@
 mod admin;
+mod tokens;
 mod upgrade;
 
 use core::iter;
@@ -6,16 +7,13 @@ use std::borrow::Cow;
 
 use defuse_escrow_swap::ext_escrow;
 use defuse_near_utils::UnwrapOrPanicError;
-use defuse_nep245::receiver::MultiTokenReceiver;
 use defuse_oneshot_condvar::{
-    CondVarContext, WAIT_GAS, ext_oneshot_condvar,
+    CondVarContext, ext_oneshot_condvar,
     storage::{ContractStorage, StateInit as CondVarStateInit},
 };
-use crate::MT_ON_TRANSFER_GAS;
 use near_plugins::{AccessControlRole, AccessControllable, access_control, access_control_any};
 use near_sdk::{
-    AccountId, CryptoHash, Gas, NearToken, PanicOnDefault, Promise, PromiseOrValue, PromiseResult,
-    env,
+    AccountId, CryptoHash, Gas, NearToken, PanicOnDefault, Promise, PromiseResult, env,
     json_types::U128,
     near, require, serde_json,
     state_init::{StateInit, StateInitV1},
@@ -24,7 +22,6 @@ use near_sdk::{
 use crate::message::{EscrowParams, TransferMessage};
 use crate::state::{ProxyConfig, RolesConfig};
 use crate::{EscrowProxy, Role, RoleFlags};
-use defuse_nep245::ext_mt_core;
 
 #[access_control(role_type(Role))]
 #[near(contract_state)]
@@ -48,6 +45,44 @@ impl Contract {
             //TODO: get rid of unwrap
             data: ContractStorage::init_state(state).unwrap(),
         })
+    }
+
+    /// Creates the authorization promise for token transfers.
+    /// Returns the parsed TransferMessage and the auth call Promise.
+    fn create_auth_call(
+        &self,
+        sender_id: &AccountId,
+        token_ids: &[defuse_nep245::TokenId],
+        amounts: &[U128],
+        msg: &str,
+    ) -> (TransferMessage, Promise) {
+        let transfer_message: TransferMessage = msg.parse().unwrap_or_panic_display();
+
+        let context_hash = CondVarContext {
+            sender_id: Cow::Borrowed(sender_id),
+            token_ids: Cow::Borrowed(token_ids),
+            amounts: Cow::Borrowed(amounts),
+            salt: transfer_message.salt,
+            msg: Cow::Borrowed(msg),
+        }
+        .hash();
+
+        let auth_contract_state_init =
+            self.get_deterministic_transfer_auth_state_init(context_hash);
+        let auth_contract_id = auth_contract_state_init.derive_account_id();
+        let auth_call = Promise::new(auth_contract_id)
+            .state_init(auth_contract_state_init, NearToken::from_near(0));
+
+        (transfer_message, auth_call)
+    }
+
+    fn parse_authorization_result() -> bool {
+        match env::promise_result(0) {
+            PromiseResult::Successful(value) => {
+                serde_json::from_slice::<bool>(&value).unwrap_or(false)
+            }
+            PromiseResult::Failed => false,
+        }
     }
 }
 
@@ -96,128 +131,7 @@ impl EscrowProxy for Contract {
 }
 
 #[near]
-impl MultiTokenReceiver for Contract {
-    #[allow(clippy::used_underscore_binding)]
-    fn mt_on_transfer(
-        &mut self,
-        sender_id: AccountId,
-        previous_owner_ids: Vec<AccountId>,
-        token_ids: Vec<defuse_nep245::TokenId>,
-        amounts: Vec<U128>,
-        msg: String,
-    ) -> PromiseOrValue<Vec<U128>> {
-        require!(
-            env::prepaid_gas() >= MT_ON_TRANSFER_GAS,
-            "Insufficient gas prepaid"
-        );
-
-        let transfer_message: TransferMessage = msg.parse().unwrap_or_panic_display();
-        let context_hash = CondVarContext {
-            sender_id: Cow::Borrowed(&sender_id),
-            token_ids: Cow::Borrowed(&token_ids),
-            amounts: Cow::Borrowed(&amounts),
-            salt: transfer_message.salt,
-            msg: Cow::Borrowed(&msg),
-        }
-        .hash();
-
-        let auth_contract_state_init =
-            self.get_deterministic_transfer_auth_state_init(context_hash);
-        let auth_contract_id = auth_contract_state_init.derive_account_id();
-        let auth_call = Promise::new(auth_contract_id)
-            .state_init(auth_contract_state_init, NearToken::from_near(0));
-
-        let _ = previous_owner_ids;
-
-        let token_contract = env::predecessor_account_id();
-
-        PromiseOrValue::Promise(
-            ext_oneshot_condvar::ext_on(auth_call)
-                .with_static_gas(WAIT_GAS)
-                .with_unused_gas_weight(0)
-                .cv_wait()
-                .then(
-                    Self::ext(env::current_account_id())
-                        .with_unused_gas_weight(1)
-                        .check_authorization_and_forward(
-                            token_contract,
-                            transfer_message.receiver_id,
-                            token_ids,
-                            amounts,
-                            transfer_message.msg,
-                        ),
-                ),
-        )
-    }
-}
-
-#[near]
 impl Contract {
-    #[private]
-    pub fn check_authorization_and_forward(
-        &self,
-        token_contract: AccountId,
-        escrow_address: AccountId,
-        token_ids: Vec<defuse_nep245::TokenId>,
-        amounts: Vec<U128>,
-        msg: String,
-    ) -> PromiseOrValue<Vec<U128>> {
-        // Check the result of OneshotCondVar::cv_wait
-        let is_authorized = match env::promise_result(0) {
-            PromiseResult::Successful(value) => {
-                serde_json::from_slice::<bool>(&value).unwrap_or(false)
-            }
-            PromiseResult::Failed => false,
-        };
-
-        if !is_authorized {
-            near_sdk::env::panic_str("Authorization failed or timed out, refunding");
-        }
-
-        // Forward tokens to escrow
-        PromiseOrValue::Promise(
-            ext_mt_core::ext(token_contract)
-                .with_attached_deposit(NearToken::from_yoctonear(1))
-                .with_static_gas(Gas::from_tgas(50))
-                .mt_batch_transfer_call(
-                    escrow_address,
-                    token_ids,
-                    amounts.clone(),
-                    None,                              // approval
-                    Some("proxy forward".to_string()), // memo
-                    msg,
-                )
-                .then(
-                    Self::ext(env::current_account_id())
-                        .with_static_gas(Gas::from_tgas(10))
-                        .resolve_transfer(amounts),
-                ),
-        )
-    }
-
-    #[private]
-    pub fn resolve_transfer(&self, original_amounts: Vec<U128>) -> Vec<U128> {
-        match env::promise_result(0) {
-            PromiseResult::Successful(transferred) => {
-                let transferred: Vec<U128> =
-                    serde_json::from_slice(&transferred).unwrap_or_else(|_| {
-                        near_sdk::log!("Failed to parse escrow response, refunding all");
-                        vec![U128(0); original_amounts.len()]
-                    });
-
-                original_amounts
-                    .iter()
-                    .zip(transferred.iter())
-                    .map(|(original, transferred)| U128(original.0.saturating_sub(transferred.0)))
-                    .collect()
-            }
-            PromiseResult::Failed => {
-                near_sdk::log!("Escrow transfer failed, refunding all");
-                original_amounts
-            }
-        }
-    }
-
     #[access_control_any(roles(Role::DAO, Role::Canceller))]
     pub fn cancel_escrow(&self, params: EscrowParams) -> Promise {
         let escrow_address = {

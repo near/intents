@@ -1,6 +1,7 @@
 use defuse::core::payload::multi::MultiPayload;
 use defuse::intents::ext_intents;
 use defuse_nep245::{TokenId, receiver::MultiTokenReceiver};
+use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 use near_sdk::{AccountId, PromiseOrValue, env, json_types::U128, near, serde_json};
 
 /// Minimal stub contract used for integration tests.
@@ -52,6 +53,36 @@ impl MultiTokenReceiver for Contract {
                 .execute_intents(vec![multipayload])
                 .then(Self::ext(env::current_account_id()).return_refunds(refund_amounts))
                 .into(),
+        }
+    }
+}
+
+/// FT receiver mode for testing
+#[derive(Debug, Clone, Default)]
+#[near(serializers = [json])]
+pub enum FTReceiverMode {
+    #[default]
+    AcceptAll,
+    ReturnValue(U128),
+    Panic,
+}
+
+#[near]
+impl FungibleTokenReceiver for Contract {
+    fn ft_on_transfer(
+        &mut self,
+        sender_id: AccountId,
+        amount: U128,
+        msg: String,
+    ) -> PromiseOrValue<U128> {
+        near_sdk::env::log_str(&format!(
+            "STUB::ft_on_transfer: sender_id={sender_id}, amount={amount:?}, msg={msg}"
+        ));
+
+        match serde_json::from_str(&msg).unwrap_or_default() {
+            FTReceiverMode::AcceptAll => PromiseOrValue::Value(U128(0)),
+            FTReceiverMode::ReturnValue(value) => PromiseOrValue::Value(value),
+            FTReceiverMode::Panic => env::panic_str("FTReceiverMode::Panic"),
         }
     }
 }
