@@ -139,14 +139,14 @@ async fn execute_signed_intents(
     payloads: &[MultiPayload],
 ) -> anyhow::Result<()> {
     // Note: RPC may return parsing error but the tx succeeds
-    let _ = account
+    account
         .tx(defuse.id().clone())
         .function_call(
             FnCallBuilder::new("execute_intents")
                 .json_args(json!({ "signed": payloads }))
                 .with_gas(Gas::from_tgas(300)),
         )
-        .await;
+        .await.unwrap();
     Ok(())
 }
 
