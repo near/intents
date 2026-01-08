@@ -51,7 +51,7 @@ impl<T> ExtractDefusePayload<T> for DefusePayload<T> {
     }
 }
 
-#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+#[cfg(feature = "abi")]
 mod examples {
     use super::*;
 
