@@ -71,7 +71,9 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
           cache-all-crates: "true" # Yes, it's a string
       - name: Install Cargo Plugins
-        run: cargo install cargo-make cargo-near --locked
+        run: |
+          cargo install cargo-make --locked
+          cargo install cargo-near --git https://github.com/near/cargo-near --rev daa04940cbf834ef3ccf55b595e140475e41a314
       - name: Build
         run: cargo make build
       - name: Upload Artifacts
@@ -104,7 +106,9 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
           cache-all-crates: "true" # Yes, it's a string
       - name: Install Cargo Plugins
-        run: cargo install cargo-make cargo-near --locked
+        run: |
+          cargo install cargo-make --locked
+          cargo install cargo-near --git https://github.com/near/cargo-near --rev daa04940cbf834ef3ccf55b595e140475e41a314
       - name: Build Reproducible WASM and calculate checksum
         run: cargo make build-reproducible
       - name: Upload Reproducible Artifacts
