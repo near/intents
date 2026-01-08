@@ -16,6 +16,9 @@ mod versioned;
 // #[cfg(feature = "far")]
 mod pk_sync;
 
+// #[cfg(feature = "far")]
+mod far_mint;
+
 use core::iter;
 
 use defuse_borsh_utils::adapters::As;

@@ -76,16 +76,14 @@ async fn test_add_user_public_keys(#[notrace] mut rng: impl Rng) {
             .into_result()
             .unwrap();
 
-        for (account_id, keys) in public_keys.iter() {
-            for public_key in keys.iter() {
+        for (account_id, keys) in &public_keys {
+            for public_key in keys {
                 assert!(
                     env.defuse
                         .has_public_key(account_id, public_key)
                         .await
                         .unwrap(),
-                    "Public key {:?} not found for account {}",
-                    public_key,
-                    account_id
+                    "Public key {public_key:?} not found for account {account_id}",
                 );
 
                 assert_a_contains_b!(
@@ -93,7 +91,7 @@ async fn test_add_user_public_keys(#[notrace] mut rng: impl Rng) {
                     b: [DefuseEvent::PublicKeyAdded(AccountEvent::new(
                         *account_id,
                         PublicKeyEvent {
-                            public_key: Cow::Borrowed(&public_key),
+                            public_key: Cow::Borrowed(public_key),
                         },
                     ))
                     .to_nep297_event()
@@ -184,16 +182,14 @@ async fn test_add_and_remove_user_public_keys(#[notrace] mut rng: impl Rng) {
             .into_result()
             .unwrap();
 
-        for (account_id, keys) in public_keys.iter() {
-            for public_key in keys.iter() {
+        for (account_id, keys) in &public_keys {
+            for public_key in keys {
                 assert!(
                     !env.defuse
                         .has_public_key(account_id, public_key)
                         .await
                         .unwrap(),
-                    "Public key {:?} not found for account {}",
-                    public_key,
-                    account_id
+                    "Public key {public_key:?} not found for account {account_id}",
                 );
 
                 assert_a_contains_b!(
@@ -201,7 +197,7 @@ async fn test_add_and_remove_user_public_keys(#[notrace] mut rng: impl Rng) {
                     b: [DefuseEvent::PublicKeyRemoved(AccountEvent::new(
                         *account_id,
                         PublicKeyEvent {
-                            public_key: Cow::Borrowed(&public_key),
+                            public_key: Cow::Borrowed(public_key),
                         },
                     ))
                     .to_nep297_event()
