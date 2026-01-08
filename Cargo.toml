@@ -143,6 +143,8 @@ unreadable_literal = "allow"
 similar_names = "allow"
 too_long_first_doc_paragraph = "allow"
 
+# workaround for near-api-rs not being able to handle state_init for global contracts
+# should be removed once https://github.com/near/near-api-rs/pull/104 is merged
 [patch.crates-io]
 near-api = { git = "https://github.com/pityjllk/near-api-rs", rev = "a1e37cfc7a83996b102d7610b1365dcf9d74d601" }
 near-api-types = { git = "https://github.com/pityjllk/near-api-rs", rev = "a1e37cfc7a83996b102d7610b1365dcf9d74d601" }
