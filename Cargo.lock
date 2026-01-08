@@ -1135,7 +1135,7 @@ dependencies = [
  "libc",
  "near-api",
  "near-contract-standards",
- "near-openapi-client 0.6.0",
+ "near-openapi-client",
  "near-openapi-types 0.6.0",
  "near-sandbox",
  "near-sdk",
@@ -2612,7 +2612,7 @@ dependencies = [
  "borsh",
  "futures",
  "near-api-types",
- "near-openapi-client 0.7.0",
+ "near-openapi-client",
  "openssl",
  "reqwest",
  "serde",
@@ -2776,23 +2776,6 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.17",
  "time",
-]
-
-[[package]]
-name = "near-openapi-client"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8b0e00ba3bdba682deb964ac5db504558aea3c9434b521ad0b803b7f3c06dcf"
-dependencies = [
- "bytes",
- "chrono",
- "futures-core",
- "near-openapi-types 0.6.0",
- "progenitor-client",
- "reqwest",
- "serde",
- "serde_json",
- "serde_urlencoded",
 ]
 
 [[package]]

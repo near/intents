@@ -50,7 +50,7 @@ async fn escrow_proxy_deployment_and_config() {
 }
 
 #[tokio::test]
-async fn dao_can_upgrade_contract() {
+async fn dao_role_configuration() {
     let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
 

@@ -15,7 +15,7 @@ pub use defuse_oneshot_condvar::storage::StateInit as State;
 
 pub static ONESHOT_CONDVAR_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
     let filename = Path::new(env!("CARGO_MANIFEST_DIR")).join("../res/defuse_oneshot_condvar.wasm");
-    fs::read(filename.clone()).unwrap_or_else(|_| panic!("file {filename:?} should exists"))
+    fs::read(filename.clone()).unwrap_or_else(|_| panic!("file {filename:?} should exist"))
 });
 
 #[allow(async_fn_in_trait)]
@@ -62,13 +62,11 @@ impl OneshotCondVarAccountExt for SigningAccount {
 
         let account = solver1_state_init.derive_account_id();
 
-        // NOTE: there is rpc error on state_init action but the contract itself is successfully
-        // deployed, so lets ignore error for now
-        let _ = self
-            .tx(account.clone())
+        self.tx(account.clone())
             .state_init(global_contract_id, raw_state)
             .transfer(NearToken::from_yoctonear(1))
-            .await;
+            .await
+            .unwrap();
         account
     }
 

@@ -10,7 +10,7 @@
 //! Usage:
 //!   USER=your-account.testnet PKEY=ed25519:... cargo run --example escrow-swap-demo --features test-utils
 //!
-//! Note: This example only builds the intents without executing them on testnet.
+//! Note: This example builds and executes intents on testnet.
 
 use defuse::sandbox_ext::signer::DefuseSigner;
 use defuse_core::Nonce;
@@ -414,7 +414,7 @@ async fn main() -> Result<()> {
         )
         .await;
 
-    let rooot_sends_funds_to_maker_and_taker = root
+    let root_sends_funds_to_maker_and_taker = root
         .sign_defuse_message(
             defuse.id(),
             Nonce::from(rand::rng().random::<[u8; 32]>()),
@@ -448,7 +448,7 @@ async fn main() -> Result<()> {
 
     // Step 1: Root transfers funds to maker and taker
     println!("\nStep 1: Root sends funds to maker and taker...");
-    execute_signed_intents(&root, &defuse, &[rooot_sends_funds_to_maker_and_taker]).await?;
+    execute_signed_intents(&root, &defuse, &[root_sends_funds_to_maker_and_taker]).await?;
     println!("  Done: maker and taker funded");
 
     // Step 2: Maker sends funds to escrow (deploys escrow-swap instance)

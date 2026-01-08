@@ -98,10 +98,10 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         code: GlobalContractId::AccountId(escrow_swap_global.clone()),
         data: escrow_raw_state,
     });
-    let escorow_instance_id = escrow_state_init.derive_account_id();
+    let escrow_instance_id = escrow_state_init.derive_account_id();
 
     let transfer = Transfer {
-        receiver_id: escorow_instance_id.clone(),
+        receiver_id: escrow_instance_id.clone(),
         tokens: Amounts::new([(token_a_defuse_id.clone(), swap_amount)].into()),
         memo: None,
         notification: Some(NotifyOnTransfer::new(fund_msg_json).with_state_init(escrow_state_init)),
@@ -118,7 +118,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         .unwrap();
 
     let proxy_msg = ProxyTransferMessage {
-        receiver_id: escorow_instance_id.clone(),
+        receiver_id: escrow_instance_id.clone(),
         salt: [2u8; 32],
         msg: serde_json::to_string(&fill_escrow_msg).unwrap(),
     };
@@ -221,6 +221,8 @@ async fn test_escrow_proxy_can_cancel_before_deadline() {
         grantees: HashMap::from([(ProxyRole::DAO, HashSet::from([env.root().id().clone()]))]),
     };
     let config = ProxyConfig {
+        // NOTE: per_fill_contract_id is only used for fill operations.
+        // This cancel test doesn't exercise fills, so using escrow_swap_global is acceptable.
         per_fill_contract_id: GlobalContractId::AccountId(escrow_swap_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(escrow_swap_global.clone()),
         auth_contract: env.defuse.id().clone(),

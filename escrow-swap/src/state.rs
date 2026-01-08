@@ -11,6 +11,8 @@ use serde_with::{DisplayFromStr, hex::Hex, serde_as};
 use crate::{Deadline, Error, Result, decimal::UD128};
 
 pub const DEFAULT_DEADLINE_SECS: u64 = 360;
+/// Default salt for test/example purposes. Not suitable for production.
+pub const DUMMY_SALT: [u8; 32] = [7u8; 32];
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -311,7 +313,7 @@ impl ParamsBuilder {
             integrator_fees: self.integrator_fees,
             #[cfg(feature = "auth_call")]
             auth_caller: self.auth_caller,
-            salt: self.salt.unwrap_or([7u8; 32]),
+            salt: self.salt.unwrap_or(DUMMY_SALT),
         }
     }
 }

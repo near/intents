@@ -7,7 +7,7 @@ use serde_json::json;
 
 pub static ESCROW_PROXY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
     let filename = Path::new(env!("CARGO_MANIFEST_DIR")).join("../res/defuse_escrow_proxy.wasm");
-    fs::read(filename.clone()).unwrap_or_else(|_| panic!("file {filename:?} should exists"))
+    fs::read(filename.clone()).unwrap_or_else(|_| panic!("file {filename:?} should exist"))
 });
 
 #[allow(async_fn_in_trait)]
