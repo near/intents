@@ -954,6 +954,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-escrow-proxy"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "defuse",
+ "defuse-admin-utils",
+ "defuse-auth-call",
+ "defuse-borsh-utils",
+ "defuse-controller",
+ "defuse-core",
+ "defuse-crypto",
+ "defuse-deadline",
+ "defuse-escrow-swap",
+ "defuse-fees",
+ "defuse-near-utils",
+ "defuse-nep245",
+ "defuse-oneshot-condvar",
+ "defuse-sandbox",
+ "defuse-sandbox-ext",
+ "defuse-token-id",
+ "futures",
+ "near-contract-standards",
+ "near-plugins",
+ "near-sdk",
+ "rand 0.9.2",
+ "serde_json",
+ "serde_with",
+ "tokio",
+]
+
+[[package]]
 name = "defuse-escrow-swap"
 version = "0.1.0"
 dependencies = [
@@ -1045,6 +1076,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-oneshot-condvar"
+version = "0.1.0"
+dependencies = [
+ "defuse-auth-call",
+ "defuse-near-utils",
+ "defuse-nep245",
+ "impl-tools",
+ "near-sdk",
+ "serde_json",
+ "serde_with",
+ "thiserror 2.0.17",
+]
+
+[[package]]
 name = "defuse-poa-factory"
 version = "0.1.0"
 dependencies = [
@@ -1087,15 +1132,37 @@ dependencies = [
  "defuse-randomness",
  "futures",
  "impl-tools",
+ "libc",
  "near-api",
  "near-contract-standards",
- "near-openapi-types",
+ "near-openapi-client",
+ "near-openapi-types 0.6.0",
  "near-sandbox",
  "near-sdk",
  "rstest",
  "thiserror 2.0.17",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "defuse-sandbox-ext"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "defuse-core",
+ "defuse-crypto",
+ "defuse-deadline",
+ "defuse-escrow-proxy",
+ "defuse-escrow-swap",
+ "defuse-fees",
+ "defuse-nep413",
+ "defuse-oneshot-condvar",
+ "defuse-sandbox",
+ "defuse-token-id",
+ "ed25519-dalek",
+ "near-sdk",
+ "serde_json",
 ]
 
 [[package]]
@@ -1145,13 +1212,20 @@ dependencies = [
  "bnum",
  "chrono",
  "defuse",
+ "defuse-core",
+ "defuse-crypto",
+ "defuse-deadline",
+ "defuse-escrow-proxy",
  "defuse-escrow-swap",
  "defuse-near-utils",
+ "defuse-oneshot-condvar",
  "defuse-poa-factory",
  "defuse-randomness",
  "defuse-sandbox",
+ "defuse-sandbox-ext",
  "defuse-serde-utils",
  "defuse-test-utils",
+ "defuse-token-id",
  "derive_more",
  "futures",
  "hex",
@@ -1462,7 +1536,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -2435,6 +2509,10 @@ version = "0.1.0"
 dependencies = [
  "defuse",
  "defuse-nep245",
+ "defuse-sandbox",
+ "defuse-sandbox-ext",
+ "futures",
+ "near-contract-standards",
  "near-sdk",
  "near-workspaces",
  "serde_json",
@@ -2526,8 +2604,7 @@ dependencies = [
 [[package]]
 name = "near-api"
 version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17a87920038b8a0eb5b4c91691651ce235810beb1f3a8626596b303b82750b75"
+source = "git+https://github.com/pityjllk/near-api-rs?rev=a1e37cfc7a83996b102d7610b1365dcf9d74d601#a1e37cfc7a83996b102d7610b1365dcf9d74d601"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -2552,8 +2629,7 @@ dependencies = [
 [[package]]
 name = "near-api-types"
 version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42a5ca7d481bf75b61afb8552c8504df5d76f0a6c3e47482f498f2d65c349f8b"
+source = "git+https://github.com/pityjllk/near-api-rs?rev=a1e37cfc7a83996b102d7610b1365dcf9d74d601#a1e37cfc7a83996b102d7610b1365dcf9d74d601"
 dependencies = [
  "base64 0.22.1",
  "borsh",
@@ -2562,7 +2638,7 @@ dependencies = [
  "near-abi",
  "near-account-id",
  "near-gas",
- "near-openapi-types",
+ "near-openapi-types 0.7.0",
  "near-token",
  "primitive-types",
  "secp256k1",
@@ -2704,14 +2780,14 @@ dependencies = [
 
 [[package]]
 name = "near-openapi-client"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8b0e00ba3bdba682deb964ac5db504558aea3c9434b521ad0b803b7f3c06dcf"
+checksum = "c6d2a3dd4e669e14cdd0748b449d7539d0b0fefba17ed8e2d1404a0826908630"
 dependencies = [
  "bytes",
  "chrono",
  "futures-core",
- "near-openapi-types",
+ "near-openapi-types 0.7.0",
  "progenitor-client",
  "reqwest",
  "serde",
@@ -2725,6 +2801,23 @@ version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a8d5398e4fa9931e9d1639e36f80b3f0a365a93773d5e92b6094c6d6198d24b"
 dependencies = [
+ "chrono",
+ "near-account-id",
+ "near-gas",
+ "near-token",
+ "serde",
+ "serde_json",
+ "strum_macros 0.27.2",
+ "thiserror 2.0.17",
+]
+
+[[package]]
+name = "near-openapi-types"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7e0c9eaf432ddedd9409d6b1477b49e94679c077adbadce173292f759454afc7"
+dependencies = [
+ "bs58 0.5.1",
  "chrono",
  "near-account-id",
  "near-gas",
@@ -3785,7 +3878,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.11.0",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -4455,7 +4548,7 @@ dependencies = [
  "getrandom 0.3.4",
  "once_cell",
  "rustix 1.1.2",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

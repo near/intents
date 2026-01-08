@@ -1,0 +1,51 @@
+[package]
+name = "defuse-escrow-proxy"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+defuse-admin-utils.workspace = true
+defuse-auth-call.workspace = true
+defuse-controller.workspace = true
+defuse-crypto = { workspace = true, features = ["serde"] }
+defuse-deadline.workspace = true
+defuse-borsh-utils.workspace = true
+defuse-escrow-swap.workspace = true
+defuse-fees.workspace = true
+defuse-near-utils.workspace = true
+defuse-nep245.workspace = true
+defuse-token-id = { workspace = true, default-features = false, features = ["nep141", "nep245"] }
+defuse-oneshot-condvar = { workspace = true, features = ["auth-call"] }
+serde_json.workspace = true
+
+near-contract-standards.workspace = true
+near-plugins.workspace = true
+near-sdk = { workspace = true, features = ["unstable"] }
+serde_with.workspace = true
+
+[dev-dependencies]
+# Dependencies needed for examples only
+defuse = { workspace = true, features = ["sandbox"] }
+defuse-core.workspace = true
+defuse-crypto.workspace = true
+defuse-sandbox.workspace = true
+defuse-sandbox-ext.workspace = true
+anyhow.workspace = true
+futures.workspace = true
+rand.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+
+[features]
+contract = []
+abi = ["defuse-crypto/abi", "defuse-token-id/abi", "defuse-deadline/abi", "defuse-oneshot-condvar/abi", "defuse-escrow-swap/abi"]
+
+[[example]]
+name = "escrow-swap-demo"

@@ -1,7 +1,9 @@
 #![allow(async_fn_in_trait, dead_code)]
 
 mod env;
+mod fees;
 mod partial_fills;
+mod swaps;
 
 use std::sync::LazyLock;
 

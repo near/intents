@@ -11,6 +11,12 @@ POA_TOKEN_WASM_NO_REGISTRATION_WASM = "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}/def
 MT_RECEIVER_STUB_DIR = "${TARGET_DIR}/multi-token-receiver-stub"
 MT_RECEIVER_STUB_WASM = "${MT_RECEIVER_STUB_DIR}/multi_token_receiver_stub.wasm"
 
+ESCROW_PROXY_DIR = "${TARGET_DIR}/"
+ESCROW_PROXY_WASM = "${ESCROW_PROXY_DIR}/defuse_escrow_proxy.wasm"
+
+ONESHOT_CONDVAR_DIR = "${TARGET_DIR}/"
+ONESHOT_CONDVAR_WASM = "${ONESHOT_CONDVAR_DIR}/defuse_oneshot_condvar.wasm"
+
 [tasks.default]
 alias = "build"
 
@@ -25,6 +31,8 @@ dependencies = [
     "build-escrow-swap",
     "build-poa-factory",
     "build-poa-token-no-registration",
+    "build-escrow-proxy",
+    "build-oneshot-condvar",
     "contract-stats",
     "build-multi-token-receiver-stub",
 ]
@@ -112,6 +120,40 @@ args = [
     "--out-dir",
     "${POA_TOKEN_WITH_NO_REGISTRATION_DIR}",
     "--no-embed-abi",
+]
+
+[tasks.build-escrow-proxy]
+dependencies = ["add-cache-dir-tag"]
+command = "cargo"
+args = [
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--locked",
+    "--manifest-path",
+    "./escrow-proxy/Cargo.toml",
+    "--features",
+    "abi,contract",
+    "--out-dir",
+    "${ESCROW_PROXY_DIR}",
+    "--no-embed-abi",
+]
+
+[tasks.build-oneshot-condvar]
+dependencies = ["add-cache-dir-tag"]
+command = "cargo"
+args = [
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--locked",
+    "--manifest-path",
+    "./oneshot-condvar/Cargo.toml",
+    "--features",
+    "abi,contract,auth-call",
+    "--out-dir",
+    "${ONESHOT_CONDVAR_DIR}",
+    "--no-abi",
 ]
 
 # ============================================================================

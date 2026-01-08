@@ -1,5 +1,5 @@
 pub mod accounts;
-mod env;
+pub mod env;
 mod intents;
 mod state;
 mod storage;
