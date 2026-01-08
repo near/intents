@@ -69,6 +69,7 @@ contract = [
 
 sandbox = [
     "arbitrary",
+    "contract",
     "dep:defuse-sandbox",
     "dep:defuse-test-utils",
 ]
