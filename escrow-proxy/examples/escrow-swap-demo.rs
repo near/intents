@@ -146,7 +146,8 @@ async fn execute_signed_intents(
                 .json_args(json!({ "signed": payloads }))
                 .with_gas(Gas::from_tgas(300)),
         )
-        .await.unwrap();
+        .await
+        .unwrap();
     Ok(())
 }
 
