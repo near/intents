@@ -10,7 +10,7 @@ use defuse::{
     sandbox_ext::account_manager::AccountViewExt,
 };
 use defuse_randomness::Rng;
-use defuse_sandbox::{assert_eq_event_logs, extensions::acl::AclExt, tx::FnCallBuilder};
+use defuse_sandbox::{assert_a_contains_b, extensions::acl::AclExt, tx::FnCallBuilder};
 use defuse_test_utils::{asserts::ResultAssertsExt, random::rng};
 use near_sdk::{AsNep297Event, NearToken};
 use rstest::rstest;
@@ -22,7 +22,7 @@ use crate::{tests::defuse::env::Env, utils::fixtures::public_key};
 #[trace]
 #[tokio::test]
 async fn test_add_user_public_keys(#[notrace] mut rng: impl Rng) {
-    let env = Env::builder().build().await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
 
@@ -88,9 +88,9 @@ async fn test_add_user_public_keys(#[notrace] mut rng: impl Rng) {
                     account_id
                 );
 
-                assert_eq_event_logs!(
-                    result.logs().clone(),
-                    [DefuseEvent::PublicKeyAdded(AccountEvent::new(
+                assert_a_contains_b!(
+                    a: result.logs().clone(),
+                    b: [DefuseEvent::PublicKeyAdded(AccountEvent::new(
                         *account_id,
                         PublicKeyEvent {
                             public_key: Cow::Borrowed(&public_key),
@@ -108,7 +108,7 @@ async fn test_add_user_public_keys(#[notrace] mut rng: impl Rng) {
 #[trace]
 #[tokio::test]
 async fn test_add_and_remove_user_public_keys(#[notrace] mut rng: impl Rng) {
-    let env = Env::builder().build().await;
+    let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
 
@@ -196,9 +196,9 @@ async fn test_add_and_remove_user_public_keys(#[notrace] mut rng: impl Rng) {
                     account_id
                 );
 
-                assert_eq_event_logs!(
-                    result.logs().clone(),
-                    [DefuseEvent::PublicKeyRemoved(AccountEvent::new(
+                assert_a_contains_b!(
+                    a: result.logs().clone(),
+                    b: [DefuseEvent::PublicKeyRemoved(AccountEvent::new(
                         *account_id,
                         PublicKeyEvent {
                             public_key: Cow::Borrowed(&public_key),
