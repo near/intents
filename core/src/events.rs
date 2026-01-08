@@ -10,7 +10,7 @@ use crate::{
         IntentEvent,
         account::SetAuthByPredecessorId,
         token_diff::TokenDiffEvent,
-        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
+        tokens::{Burn, FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
     },
 };
 
@@ -53,6 +53,10 @@ pub enum DefuseEvent<'a> {
 
     #[event_version("0.3.0")]
     StorageDeposit(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, StorageDeposit>>>]>),
+
+    // #[cfg(feature = "far")]
+    #[event_version("0.3.0")]
+    Burn(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, Burn>>>]>),
 
     #[event_version("0.3.0")]
     #[from(skip)]

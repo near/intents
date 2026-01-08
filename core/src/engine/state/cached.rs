@@ -5,7 +5,8 @@ use crate::{
     intents::{
         auth::AuthCall,
         tokens::{
-            FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, NotifyOnTransfer, StorageDeposit,
+            Burn, FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, NotifyOnTransfer,
+            StorageDeposit,
         },
     },
     token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
@@ -373,6 +374,11 @@ where
         }
 
         Ok(())
+    }
+
+    #[inline]
+    fn burn(&mut self, owner_id: &AccountIdRef, burn: Burn) -> Result<()> {
+        self.internal_sub_balance(owner_id, burn.tokens)
     }
 }
 

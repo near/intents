@@ -516,3 +516,39 @@ impl ExecutableIntent for StorageDeposit {
         engine.state.storage_deposit(owner_id, self)
     }
 }
+
+// TODO: may be add burn fn call too?
+#[near(serializers = [borsh, json])]
+#[derive(Debug, Clone)]
+/// Burn a set of tokens from the signer to a specified account id, within the intents contract.
+pub struct Burn {
+    #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
+    pub tokens: Amounts,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub memo: Option<String>,
+}
+
+impl ExecutableIntent for Burn {
+    #[inline]
+    fn execute_intent<S, I>(
+        self,
+        owner_id: &AccountIdRef,
+        engine: &mut Engine<S, I>,
+        intent_hash: CryptoHash,
+    ) -> Result<()>
+    where
+        S: State,
+        I: Inspector,
+    {
+        engine.inspector.on_event(DefuseEvent::Burn(Cow::Borrowed(
+            [IntentEvent::new(
+                AccountEvent::new(owner_id, Cow::Borrowed(&self)),
+                intent_hash,
+            )]
+            .as_slice(),
+        )));
+
+        engine.state.burn(owner_id, self)
+    }
+}
