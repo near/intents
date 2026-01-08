@@ -20,7 +20,7 @@ jobs:
         run: cargo install --debug cargo-make@0.37.24 --locked
 
       - name: Install cargo-near
-        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/download/cargo-near-v0.17.0/cargo-near-installer.sh | sh
+        run: cargo install cargo-near --git https://github.com/near/cargo-near --rev daa04940cbf834ef3ccf55b595e140475e41a314
         
       - name: Build Reproducible WASM
         run: cargo make build-defuse-reproducible
