@@ -7,7 +7,7 @@ use near_sdk::{
     borsh::{self, BorshSerialize},
 };
 
-/// Helper to serialize a struct into raw state format (BTreeMap<Vec<u8>, Vec<u8>>)
+/// Helper to serialize a struct into raw state format (`BTreeMap<Vec<u8>, Vec<u8>>`)
 fn serialize_to_raw_state<T: BorshSerialize>(value: &T) -> BTreeMap<Vec<u8>, Vec<u8>> {
     let serialized = borsh::to_vec(value).expect("serialization should succeed");
     [(b"".to_vec(), serialized)].into()
