@@ -300,9 +300,9 @@ impl ParamsBuilder {
             src_token: self.src_token,
             dst_token: self.dst_token,
             price: self.price.unwrap_or(UD128::ONE),
-            deadline: self
-                .deadline
-                .unwrap_or_else(|| Deadline::timeout(std::time::Duration::from_secs(DEFAULT_DEADLINE_SECS))),
+            deadline: self.deadline.unwrap_or_else(|| {
+                Deadline::timeout(std::time::Duration::from_secs(DEFAULT_DEADLINE_SECS))
+            }),
             partial_fills_allowed: self.partial_fills_allowed.unwrap_or(false),
             refund_src_to: self.refund_src_to.unwrap_or_default(),
             receive_dst_to: self.receive_dst_to.unwrap_or_default(),

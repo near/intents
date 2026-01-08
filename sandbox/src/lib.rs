@@ -114,7 +114,9 @@ pub async fn sandbox(#[default(NearToken::from_near(100_000))] amount: NearToken
 
     let mutex = SHARED_SANDBOX
         .get_or_init(|| async {
-            unsafe { libc::atexit(cleanup_sandbox); }
+            unsafe {
+                libc::atexit(cleanup_sandbox);
+            }
             Mutex::new(Some(Sandbox::new(SHARED_ROOT).await))
         })
         .await;

@@ -3,11 +3,11 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use crate::tests::defuse::env::Env;
 use defuse_escrow_proxy::{ProxyConfig, RolesConfig, TransferMessage};
+use defuse_oneshot_condvar::CondVarContext;
+use defuse_oneshot_condvar::storage::{ContractStorage, StateInit as CondVarStateInit};
 use defuse_sandbox::extensions::storage_management::StorageManagementExt;
 use defuse_sandbox::{Account, FnCallBuilder, FtExt, FtViewExt, MtExt, MtViewExt};
 use defuse_sandbox_ext::{EscrowProxyExt, MtReceiverStubAccountExt, OneshotCondVarAccountExt};
-use defuse_oneshot_condvar::CondVarContext;
-use defuse_oneshot_condvar::storage::{ContractStorage, StateInit as CondVarStateInit};
 use multi_token_receiver_stub::{FTReceiverMode, MTReceiverMode};
 use near_sdk::AccountId;
 use near_sdk::{
@@ -28,7 +28,6 @@ pub fn derive_oneshot_condvar_account_id(
     });
     state_init.derive_account_id()
 }
-
 
 #[tokio::test]
 #[allow(clippy::too_many_lines)]
@@ -71,7 +70,6 @@ async fn test_proxy_returns_funds_on_timeout_of_authorization() {
         .create_mt_token_with_initial_balances([(solver.id().clone(), initial_amount)])
         .await
         .unwrap();
-
 
     let transfer_msg = TransferMessage {
         receiver_id: mt_receiver_instance.clone(),
@@ -117,7 +115,8 @@ async fn test_transfer_authorized_by_relay() {
     // Deploy global contracts in parallel
     let (condvar_global, mt_receiver_global) = futures::join!(
         env.root().deploy_oneshot_condvar("global_transfer_auth"),
-        env.root().deploy_mt_receiver_stub_global("mt_receiver_global"),
+        env.root()
+            .deploy_mt_receiver_stub_global("mt_receiver_global"),
     );
 
     // Create accounts in parallel
@@ -141,7 +140,10 @@ async fn test_transfer_authorized_by_relay() {
         auth_collee: relay.id().clone(),
     };
 
-    proxy.deploy_escrow_proxy(roles, config.clone()).await.unwrap();
+    proxy
+        .deploy_escrow_proxy(roles, config.clone())
+        .await
+        .unwrap();
 
     // Derive and pre-deploy the escrow instance (mt-receiver-stub)
     let escrow_state_init = StateInit::V1(StateInitV1 {
@@ -277,7 +279,8 @@ async fn test_proxy_authorize_function() {
     // Deploy global contracts in parallel
     let (condvar_global, mt_receiver_global) = futures::join!(
         env.root().deploy_oneshot_condvar("global_transfer_auth"),
-        env.root().deploy_mt_receiver_stub_global("mt_receiver_global"),
+        env.root()
+            .deploy_mt_receiver_stub_global("mt_receiver_global"),
     );
 
     let (relay, proxy) = futures::join!(
@@ -301,7 +304,10 @@ async fn test_proxy_authorize_function() {
         auth_collee: relay.id().clone(),
     };
 
-    proxy.deploy_escrow_proxy(roles, config.clone()).await.unwrap();
+    proxy
+        .deploy_escrow_proxy(roles, config.clone())
+        .await
+        .unwrap();
 
     let test_msg_hash = [42u8; 32];
     let auth_state = CondVarStateInit {
@@ -341,8 +347,7 @@ async fn test_proxy_authorize_function() {
         "authorize should succeed when called by account with Canceller role"
     );
 
-    let condvar_account =
-        Account::new(condvar_instance_id, env.root().network_config().clone());
+    let condvar_account = Account::new(condvar_instance_id, env.root().network_config().clone());
     let cv_is_notified: bool = condvar_account
         .call_view_function_json("cv_is_notified", serde_json::json!({}))
         .await
@@ -417,7 +422,11 @@ async fn test_ft_transfer_authorized_by_relay() {
 
     // Storage deposit for proxy and escrow on the FT token
     let (proxy_storage, escrow_storage) = futures::join!(
-        solver.storage_deposit(ft_token.id(), Some(proxy.id().as_ref()), NearToken::from_near(1)),
+        solver.storage_deposit(
+            ft_token.id(),
+            Some(proxy.id().as_ref()),
+            NearToken::from_near(1)
+        ),
         solver.storage_deposit(
             ft_token.id(),
             Some(escrow_instance_id.as_ref()),

@@ -5,9 +5,9 @@ use std::time::Duration;
 
 use crate::tests::defuse::env::Env;
 use defuse_deadline::Deadline;
-use defuse_escrow_swap::{OverrideSend, ParamsBuilder};
 use defuse_escrow_swap::action::{FillMessageBuilder, FundMessageBuilder};
 use defuse_escrow_swap::decimal::UD128;
+use defuse_escrow_swap::{OverrideSend, ParamsBuilder};
 use defuse_sandbox::{MtExt, MtViewExt};
 use defuse_sandbox_ext::EscrowSwapAccountExt;
 use defuse_token_id::TokenId;
@@ -230,14 +230,15 @@ async fn test_escrow_swap_direct_fill(#[case] test_case: EscrowSwapTestCase) {
 
     // Takers for whitelist (only accounts that will fill)
     let unique_takers: HashSet<_> = test_case.fills.iter().map(|(name, _)| *name).collect();
-    let dst_token_balances = test_case.fills.iter().fold(
-        HashMap::new(),
-        |mut acc, (name, amount)| {
-            *acc.entry(accounts.get(name).unwrap().id().clone())
-                .or_default() += amount;
-            acc
-        },
-    );
+    let dst_token_balances =
+        test_case
+            .fills
+            .iter()
+            .fold(HashMap::new(), |mut acc, (name, amount)| {
+                *acc.entry(accounts.get(name).unwrap().id().clone())
+                    .or_default() += amount;
+                acc
+            });
     let ((_, src_token_defuse_id), (_, dst_token_defuse_id)) = futures::try_join!(
         env.create_mt_token_with_initial_balances([(maker.id().clone(), test_case.maker_balance)]),
         env.create_mt_token_with_initial_balances(dst_token_balances),
@@ -329,18 +330,34 @@ async fn test_escrow_swap_direct_fill(#[case] test_case: EscrowSwapTestCase) {
     let src_token_id_str = src_token_defuse_id.to_string();
     let dst_token_id_str = dst_token_defuse_id.to_string();
 
-    let actual_src_balances: BTreeMap<_, _> = futures::future::join_all(test_case.expected_src_balances.iter().map(|(name, _)| {
-                let acc = accounts.get(name).unwrap();
-                env.defuse
-                    .mt_balance_of(acc.id(), &src_token_id_str).map(|balance| (*name, balance.unwrap()))
-    })).await.into_iter().collect();
+    let actual_src_balances: BTreeMap<_, _> =
+        futures::future::join_all(test_case.expected_src_balances.iter().map(|(name, _)| {
+            let acc = accounts.get(name).unwrap();
+            env.defuse
+                .mt_balance_of(acc.id(), &src_token_id_str)
+                .map(|balance| (*name, balance.unwrap()))
+        }))
+        .await
+        .into_iter()
+        .collect();
 
-    let actual_dst_balances: BTreeMap<_, _> = futures::future::join_all(test_case.expected_dst_balances.iter().map(|(name, _)| {
-                let acc = accounts.get(name).unwrap();
-                env.defuse
-                    .mt_balance_of(acc.id(), &dst_token_id_str).map(|balance| (*name, balance.unwrap()))
-    })).await.into_iter().collect();
+    let actual_dst_balances: BTreeMap<_, _> =
+        futures::future::join_all(test_case.expected_dst_balances.iter().map(|(name, _)| {
+            let acc = accounts.get(name).unwrap();
+            env.defuse
+                .mt_balance_of(acc.id(), &dst_token_id_str)
+                .map(|balance| (*name, balance.unwrap()))
+        }))
+        .await
+        .into_iter()
+        .collect();
 
-    assert_eq!(actual_src_balances, expected_src, "src_token balances mismatch");
-    assert_eq!(actual_dst_balances, expected_dst, "dst_token balances mismatch");
+    assert_eq!(
+        actual_src_balances, expected_src,
+        "src_token balances mismatch"
+    );
+    assert_eq!(
+        actual_dst_balances, expected_dst,
+        "dst_token balances mismatch"
+    );
 }

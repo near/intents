@@ -13,11 +13,11 @@
 //! Note: This example only builds the intents without executing them on testnet.
 
 use defuse::sandbox_ext::signer::DefuseSigner;
+use defuse_core::Nonce;
 use defuse_core::intents::{DefuseIntents, Intent};
 use defuse_core::payload::multi::MultiPayload;
-use defuse_core::Nonce;
-use defuse_token_id::nep245::Nep245TokenId;
 use defuse_oneshot_condvar::storage::StateInit as CondVarStateInit;
+use defuse_token_id::nep245::Nep245TokenId;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::str::FromStr;
@@ -34,15 +34,15 @@ use defuse_escrow_swap::action::{
     FillAction, TransferAction, TransferMessage as EscrowTransferMessage,
 };
 use defuse_escrow_swap::decimal::UD128;
+use defuse_oneshot_condvar::CondVarContext;
 use defuse_sandbox::api::{NetworkConfig, SecretKey, Signer};
 use defuse_sandbox::tx::FnCallBuilder;
 use defuse_sandbox::{Account, MtViewExt, SigningAccount};
 use defuse_token_id::TokenId;
 use defuse_token_id::nep141::Nep141TokenId;
-use defuse_oneshot_condvar::CondVarContext;
 use near_sdk::json_types::U128;
-use near_sdk::state_init::{StateInit, StateInitV1};
 use near_sdk::serde_json::json;
+use near_sdk::state_init::{StateInit, StateInitV1};
 use near_sdk::{AccountId, Gas, GlobalContractId, NearToken};
 use rand::{Rng, distr::Alphanumeric};
 
@@ -224,12 +224,18 @@ async fn main() -> Result<()> {
     // 3. Create SigningAccount from credentials
     let secret_key: SecretKey = pkey.parse()?;
     let signer = Signer::from_secret_key(secret_key.clone())?;
-    let root = SigningAccount::new(Account::new(user.parse::<AccountId>()?, network_config.clone()), signer);
+    let root = SigningAccount::new(
+        Account::new(user.parse::<AccountId>()?, network_config.clone()),
+        signer,
+    );
     let proxy: AccountId = PROXY.parse().unwrap();
 
     let src_token: TokenId = Nep141TokenId::from_str(SRC_NEP245_TOKEN_ID).unwrap().into();
     let dst_token: TokenId = Nep141TokenId::from_str(DST_NEP245_TOKEN_ID).unwrap().into();
-    let defuse = Account::new(DEFUSE_INSTANCE.parse::<AccountId>()?, network_config.clone());
+    let defuse = Account::new(
+        DEFUSE_INSTANCE.parse::<AccountId>()?,
+        network_config.clone(),
+    );
 
     // 4. Derive subaccount keys (deterministic, no network calls)
     println!("\n--- Deriving Subaccount Keys ---");
@@ -259,10 +265,16 @@ async fn main() -> Result<()> {
     // ESCROW SWAP PARAMS
     let escrow_params = Params {
         maker: maker_signing.id().clone(),
-        src_token: Nep245TokenId::new(VERIFIER_CONTRACT.parse::<AccountId>().unwrap(), src_token.to_string())
-            .into(),
-        dst_token: Nep245TokenId::new(VERIFIER_CONTRACT.parse::<AccountId>().unwrap(), dst_token.to_string())
-            .into(),
+        src_token: Nep245TokenId::new(
+            VERIFIER_CONTRACT.parse::<AccountId>().unwrap(),
+            src_token.to_string(),
+        )
+        .into(),
+        dst_token: Nep245TokenId::new(
+            VERIFIER_CONTRACT.parse::<AccountId>().unwrap(),
+            dst_token.to_string(),
+        )
+        .into(),
         price: UD128::ONE,
         deadline, // 5 min
         partial_fills_allowed: false,
@@ -447,8 +459,12 @@ async fn main() -> Result<()> {
     // Step 3: Root sends auth_call + taker sends funds to proxy (atomically)
     // This deploys transfer-auth instance and executes the fill through the proxy
     println!("\nStep 3: Root sends auth_call + taker sends funds to proxy...");
-    execute_signed_intents(&root, &defuse, &[root_sends_auth_call, taker_sends_funds_to_proxy])
-        .await?;
+    execute_signed_intents(
+        &root,
+        &defuse,
+        &[root_sends_auth_call, taker_sends_funds_to_proxy],
+    )
+    .await?;
     println!("  Done: oneshot-condvar deployed at {condvar_instance_id}");
     println!("  Done: taker filled the escrow through proxy");
 
@@ -465,8 +481,7 @@ async fn main() -> Result<()> {
     );
 
     // Query oneshot-condvar instance state
-    let condvar_account =
-        Account::new(condvar_instance_id.clone(), network_config.clone());
+    let condvar_account = Account::new(condvar_instance_id.clone(), network_config.clone());
     let condvar_state: defuse_oneshot_condvar::storage::ContractStorage = condvar_account
         .call_view_function_json("view", serde_json::json!({}))
         .await?;

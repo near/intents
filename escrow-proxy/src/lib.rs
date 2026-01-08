@@ -29,7 +29,6 @@ pub enum Role {
     Canceller,
 }
 
-
 #[ext_contract(ext_escrow_proxy)]
 pub trait EscrowProxy {
     fn config(&self) -> &ProxyConfig;

@@ -2,7 +2,10 @@ use std::collections::BTreeMap;
 
 use defuse_sandbox::{Account, Sandbox};
 use defuse_sandbox_ext::MtReceiverStubAccountExt;
-use near_sdk::{AccountId, borsh::{self, BorshSerialize}};
+use near_sdk::{
+    AccountId,
+    borsh::{self, BorshSerialize},
+};
 
 /// Helper to serialize a struct into raw state format (BTreeMap<Vec<u8>, Vec<u8>>)
 fn serialize_to_raw_state<T: BorshSerialize>(value: &T) -> BTreeMap<Vec<u8>, Vec<u8>> {

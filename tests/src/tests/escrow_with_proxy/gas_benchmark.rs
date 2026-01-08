@@ -14,19 +14,21 @@ use defuse_core::amounts::Amounts;
 use defuse_core::intents::auth::AuthCall;
 use defuse_core::intents::tokens::{NotifyOnTransfer, Transfer};
 use defuse_deadline::Deadline;
-use defuse_escrow_proxy::{MT_ON_TRANSFER_GAS, ProxyConfig, RolesConfig, TransferMessage as ProxyTransferMessage};
+use defuse_escrow_proxy::{
+    MT_ON_TRANSFER_GAS, ProxyConfig, RolesConfig, TransferMessage as ProxyTransferMessage,
+};
 use defuse_escrow_swap::ParamsBuilder;
 use defuse_escrow_swap::action::{FillAction, FundMessageBuilder, TransferAction, TransferMessage};
 use defuse_escrow_swap::decimal::UD128;
 use defuse_escrow_swap::{OverrideSend, Pips, ProtocolFees};
-use defuse_sandbox::{MtExt, MtViewExt};
-use defuse_sandbox_ext::{EscrowProxyExt, EscrowSwapAccountExt, OneshotCondVarAccountExt};
-use defuse_token_id::TokenId;
-use defuse_token_id::nep245::Nep245TokenId;
 use defuse_oneshot_condvar::CondVarContext;
 use defuse_oneshot_condvar::storage::{
     ContractStorage as CondVarStorage, StateInit as CondVarState,
 };
+use defuse_sandbox::{MtExt, MtViewExt};
+use defuse_sandbox_ext::{EscrowProxyExt, EscrowSwapAccountExt, OneshotCondVarAccountExt};
+use defuse_token_id::TokenId;
+use defuse_token_id::nep245::Nep245TokenId;
 
 use near_sdk::json_types::U128;
 use near_sdk::state_init::{StateInit, StateInitV1};
@@ -92,8 +94,8 @@ async fn test_proxy_fill_gas_benchmark() {
         ([proxy.id().clone()], dst_token),
     )
     .with_protocol_fees(ProtocolFees {
-        fee: Pips::from_percent(1).unwrap(),       // 1% protocol fee
-        surplus: Pips::from_percent(50).unwrap(),  // 50% surplus fee
+        fee: Pips::from_percent(1).unwrap(),      // 1% protocol fee
+        surplus: Pips::from_percent(50).unwrap(), // 50% surplus fee
         collector: fee_collector.id().clone(),
     })
     .with_integrator_fee(integrator.id().clone(), Pips::from_percent(2).unwrap())

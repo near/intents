@@ -14,8 +14,7 @@ use serde_json::json;
 pub use defuse_oneshot_condvar::storage::StateInit as State;
 
 pub static ONESHOT_CONDVAR_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
-    let filename =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../res/defuse_oneshot_condvar.wasm");
+    let filename = Path::new(env!("CARGO_MANIFEST_DIR")).join("../res/defuse_oneshot_condvar.wasm");
     fs::read(filename.clone()).unwrap_or_else(|_| panic!("file {filename:?} should exists"))
 });
 
@@ -40,7 +39,10 @@ impl OneshotCondVarAccountExt for SigningAccount {
         self.tx(account.id().clone())
             .create_account()
             .transfer(NearToken::from_near(20))
-            .deploy_global(ONESHOT_CONDVAR_WASM.clone(), GlobalContractDeployMode::AccountId)
+            .deploy_global(
+                ONESHOT_CONDVAR_WASM.clone(),
+                GlobalContractDeployMode::AccountId,
+            )
             .await
             .unwrap();
 

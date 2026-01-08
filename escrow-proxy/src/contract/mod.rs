@@ -1,7 +1,7 @@
 mod admin;
 mod tokens;
-mod utils;
 mod upgrade;
+mod utils;
 
 use core::iter;
 

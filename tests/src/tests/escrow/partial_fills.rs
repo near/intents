@@ -272,13 +272,13 @@ async fn maybe_view_escrow(escrow: &Account) {
 /// Test partial fill with dust: verifies remaining funds returned to maker after timeout
 #[tokio::test]
 async fn test_partial_fill_funds_returned_after_timeout() {
+    use super::EscrowExt;
     use crate::tests::defuse::env::Env as DefuseEnv;
     use defuse_escrow_swap::ParamsBuilder;
     use defuse_escrow_swap::action::{FillMessageBuilder, FundMessageBuilder};
     use defuse_escrow_swap::decimal::UD128;
     use defuse_sandbox::{MtExt, MtViewExt};
     use defuse_sandbox_ext::EscrowSwapAccountExt;
-    use super::EscrowExt;
 
     let env = DefuseEnv::builder().build().await;
     let escrow_swap_global = env.root().deploy_escrow_swap_global("escrow_swap").await;
@@ -293,8 +293,8 @@ async fn test_partial_fill_funds_returned_after_timeout() {
     let maker_balance = 1_000_u128;
     let fill_amount = 166_u128;
     let price: UD128 = "0.333333".parse().unwrap();
-    let expected_taker_src = 498_u128;  // floor(166 / 0.333333)
-    let expected_maker_refund = maker_balance - expected_taker_src;  // 502
+    let expected_taker_src = 498_u128; // floor(166 / 0.333333)
+    let expected_maker_refund = maker_balance - expected_taker_src; // 502
 
     let ((_, src_token_id), (_, dst_token_id)) = futures::try_join!(
         env.create_mt_token_with_initial_balances([(maker.id().clone(), maker_balance)]),
@@ -302,8 +302,14 @@ async fn test_partial_fill_funds_returned_after_timeout() {
     )
     .unwrap();
 
-    let src_token = TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), src_token_id.to_string()));
-    let dst_token = TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), dst_token_id.to_string()));
+    let src_token = TokenId::from(Nep245TokenId::new(
+        env.defuse.id().clone(),
+        src_token_id.to_string(),
+    ));
+    let dst_token = TokenId::from(Nep245TokenId::new(
+        env.defuse.id().clone(),
+        dst_token_id.to_string(),
+    ));
 
     let escrow_params = ParamsBuilder::new(
         (maker.id().clone(), src_token),
@@ -350,11 +356,22 @@ async fn test_partial_fill_funds_returned_after_timeout() {
         .unwrap();
 
     // Verify taker received expected src
-    let taker_src = env.defuse.mt_balance_of(taker.id(), &src_token_id.to_string()).await.unwrap();
-    assert_eq!(taker_src, expected_taker_src, "taker should have floor(166/0.333333) = 498");
+    let taker_src = env
+        .defuse
+        .mt_balance_of(taker.id(), &src_token_id.to_string())
+        .await
+        .unwrap();
+    assert_eq!(
+        taker_src, expected_taker_src,
+        "taker should have floor(166/0.333333) = 498"
+    );
 
     // Maker has 0 before close (remaining in escrow)
-    let maker_src_before = env.defuse.mt_balance_of(maker.id(), &src_token_id.to_string()).await.unwrap();
+    let maker_src_before = env
+        .defuse
+        .mt_balance_of(maker.id(), &src_token_id.to_string())
+        .await
+        .unwrap();
     assert_eq!(maker_src_before, 0, "maker src should be 0 before close");
 
     // Wait for deadline to expire
@@ -364,6 +381,13 @@ async fn test_partial_fill_funds_returned_after_timeout() {
     maker.es_close(&escrow_id, &escrow_params).await.unwrap();
 
     // Verify maker received remaining src (partial fill remainder + rounding dust)
-    let maker_src_after = env.defuse.mt_balance_of(maker.id(), &src_token_id.to_string()).await.unwrap();
-    assert_eq!(maker_src_after, expected_maker_refund, "maker should receive 502 src after close");
+    let maker_src_after = env
+        .defuse
+        .mt_balance_of(maker.id(), &src_token_id.to_string())
+        .await
+        .unwrap();
+    assert_eq!(
+        maker_src_after, expected_maker_refund,
+        "maker should receive 502 src after close"
+    );
 }

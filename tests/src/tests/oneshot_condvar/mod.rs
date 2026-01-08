@@ -1,9 +1,9 @@
 use std::time::Duration;
 
+use defuse_oneshot_condvar::WAIT_GAS;
+use defuse_oneshot_condvar::storage::StateInit as CondVarStateInit;
 use defuse_sandbox::{Account, FnCallBuilder, Sandbox};
 use defuse_sandbox_ext::OneshotCondVarAccountExt;
-use defuse_oneshot_condvar::storage::StateInit as CondVarStateInit;
-use defuse_oneshot_condvar::WAIT_GAS;
 use near_sdk::{AccountId, Gas, GlobalContractId, NearToken, serde_json::json};
 
 const INIT_BALANCE: NearToken = NearToken::from_near(100);
@@ -236,13 +236,11 @@ async fn oneshot_condvar_async_notification_timeout() {
         .deploy_oneshot_condvar_instance(condvar_global.clone(), state)
         .await;
 
-    let cv_wait = proxy
-        .tx(condvar_instance.clone())
-        .function_call(
-            FnCallBuilder::new("cv_wait")
-                .json_args(json!({}))
-                .with_gas(Gas::from_tgas(300)),
-        );
+    let cv_wait = proxy.tx(condvar_instance.clone()).function_call(
+        FnCallBuilder::new("cv_wait")
+            .json_args(json!({}))
+            .with_gas(Gas::from_tgas(300)),
+    );
 
     let forward_time = sandbox.fast_forward(200);
 
@@ -287,13 +285,11 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth() {
         .await;
 
     // First cv_wait - will timeout
-    let cv_wait = proxy
-        .tx(condvar_instance.clone())
-        .function_call(
-            FnCallBuilder::new("cv_wait")
-                .json_args(json!({}))
-                .with_gas(Gas::from_tgas(300)),
-        );
+    let cv_wait = proxy.tx(condvar_instance.clone()).function_call(
+        FnCallBuilder::new("cv_wait")
+            .json_args(json!({}))
+            .with_gas(Gas::from_tgas(300)),
+    );
 
     let forward_time = sandbox.fast_forward(200);
 
@@ -363,25 +359,21 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth2() {
         .await;
 
     // First cv_wait - will timeout
-    let cv_wait = proxy
-        .tx(condvar_instance.clone())
-        .function_call(
-            FnCallBuilder::new("cv_wait")
-                .json_args(json!({}))
-                .with_gas(Gas::from_tgas(300)),
-        );
+    let cv_wait = proxy.tx(condvar_instance.clone()).function_call(
+        FnCallBuilder::new("cv_wait")
+            .json_args(json!({}))
+            .with_gas(Gas::from_tgas(300)),
+    );
     let forward_time = sandbox.fast_forward(200);
     let (authorized, ()) = futures::join!(async { cv_wait.await }, forward_time);
     // First attempt should timeout and return false
     assert!(authorized.unwrap().json::<bool>().is_ok());
 
-    let cv_wait = proxy
-        .tx(condvar_instance.clone())
-        .function_call(
-            FnCallBuilder::new("cv_wait")
-                .json_args(json!({}))
-                .with_gas(Gas::from_tgas(300)),
-        );
+    let cv_wait = proxy.tx(condvar_instance.clone()).function_call(
+        FnCallBuilder::new("cv_wait")
+            .json_args(json!({}))
+            .with_gas(Gas::from_tgas(300)),
+    );
 
     let (authorized, ()) = futures::join!(async { cv_wait.await }, async {
         tokio::time::sleep(Duration::from_secs(3)).await;

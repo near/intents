@@ -30,15 +30,21 @@ async fn test_escrow_with_protocol_fee() {
     )
     .unwrap();
 
-    let src_token = TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), src_token_id.to_string()));
-    let dst_token = TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), dst_token_id.to_string()));
+    let src_token = TokenId::from(Nep245TokenId::new(
+        env.defuse.id().clone(),
+        src_token_id.to_string(),
+    ));
+    let dst_token = TokenId::from(Nep245TokenId::new(
+        env.defuse.id().clone(),
+        dst_token_id.to_string(),
+    ));
 
     let escrow_params = ParamsBuilder::new(
         (maker.id().clone(), src_token),
         ([taker.id().clone()], dst_token),
     )
     .with_protocol_fees(ProtocolFees {
-        fee: Pips::from_percent(1).unwrap(),  // 1% fee
+        fee: Pips::from_percent(1).unwrap(), // 1% fee
         surplus: Pips::ZERO,
         collector: fee_collector.id().clone(),
     })
@@ -80,16 +86,34 @@ async fn test_escrow_with_protocol_fee() {
         .unwrap();
 
     // Assert: taker gets all 1000 src
-    let taker_src = env.defuse.mt_balance_of(taker.id(), &src_token_id.to_string()).await.unwrap();
+    let taker_src = env
+        .defuse
+        .mt_balance_of(taker.id(), &src_token_id.to_string())
+        .await
+        .unwrap();
     assert_eq!(taker_src, 1_000, "taker should receive all src");
 
     // Assert: maker gets 990 dst (1000 - 1% fee)
-    let maker_dst = env.defuse.mt_balance_of(maker.id(), &dst_token_id.to_string()).await.unwrap();
-    assert_eq!(maker_dst, 990, "maker should receive 990 dst (1000 - 1% fee)");
+    let maker_dst = env
+        .defuse
+        .mt_balance_of(maker.id(), &dst_token_id.to_string())
+        .await
+        .unwrap();
+    assert_eq!(
+        maker_dst, 990,
+        "maker should receive 990 dst (1000 - 1% fee)"
+    );
 
     // Assert: fee_collector gets 10 dst (1% of 1000)
-    let collector_dst = env.defuse.mt_balance_of(fee_collector.id(), &dst_token_id.to_string()).await.unwrap();
-    assert_eq!(collector_dst, 10, "fee_collector should receive 10 dst (1% fee)");
+    let collector_dst = env
+        .defuse
+        .mt_balance_of(fee_collector.id(), &dst_token_id.to_string())
+        .await
+        .unwrap();
+    assert_eq!(
+        collector_dst, 10,
+        "fee_collector should receive 10 dst (1% fee)"
+    );
 }
 
 /// Test escrow with 2% integrator fee
@@ -110,14 +134,20 @@ async fn test_escrow_with_integrator_fee() {
     )
     .unwrap();
 
-    let src_token = TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), src_token_id.to_string()));
-    let dst_token = TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), dst_token_id.to_string()));
+    let src_token = TokenId::from(Nep245TokenId::new(
+        env.defuse.id().clone(),
+        src_token_id.to_string(),
+    ));
+    let dst_token = TokenId::from(Nep245TokenId::new(
+        env.defuse.id().clone(),
+        dst_token_id.to_string(),
+    ));
 
     let escrow_params = ParamsBuilder::new(
         (maker.id().clone(), src_token),
         ([taker.id().clone()], dst_token),
     )
-    .with_integrator_fee(integrator.id().clone(), Pips::from_percent(2).unwrap())  // 2% fee
+    .with_integrator_fee(integrator.id().clone(), Pips::from_percent(2).unwrap()) // 2% fee
     .build();
     let fund_msg = FundMessageBuilder::new(escrow_params.clone()).build();
     let fill_msg = FillMessageBuilder::new(escrow_params.clone())
@@ -156,16 +186,34 @@ async fn test_escrow_with_integrator_fee() {
         .unwrap();
 
     // Assert: taker gets all 1000 src
-    let taker_src = env.defuse.mt_balance_of(taker.id(), &src_token_id.to_string()).await.unwrap();
+    let taker_src = env
+        .defuse
+        .mt_balance_of(taker.id(), &src_token_id.to_string())
+        .await
+        .unwrap();
     assert_eq!(taker_src, 1_000, "taker should receive all src");
 
     // Assert: maker gets 980 dst (1000 - 2% fee)
-    let maker_dst = env.defuse.mt_balance_of(maker.id(), &dst_token_id.to_string()).await.unwrap();
-    assert_eq!(maker_dst, 980, "maker should receive 980 dst (1000 - 2% fee)");
+    let maker_dst = env
+        .defuse
+        .mt_balance_of(maker.id(), &dst_token_id.to_string())
+        .await
+        .unwrap();
+    assert_eq!(
+        maker_dst, 980,
+        "maker should receive 980 dst (1000 - 2% fee)"
+    );
 
     // Assert: integrator gets 20 dst (2% of 1000)
-    let integrator_dst = env.defuse.mt_balance_of(integrator.id(), &dst_token_id.to_string()).await.unwrap();
-    assert_eq!(integrator_dst, 20, "integrator should receive 20 dst (2% fee)");
+    let integrator_dst = env
+        .defuse
+        .mt_balance_of(integrator.id(), &dst_token_id.to_string())
+        .await
+        .unwrap();
+    assert_eq!(
+        integrator_dst, 20,
+        "integrator should receive 20 dst (2% fee)"
+    );
 }
 
 /// Test escrow with combined protocol (1%) and integrator (2%) fees
@@ -187,19 +235,25 @@ async fn test_escrow_with_combined_fees() {
     )
     .unwrap();
 
-    let src_token = TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), src_token_id.to_string()));
-    let dst_token = TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), dst_token_id.to_string()));
+    let src_token = TokenId::from(Nep245TokenId::new(
+        env.defuse.id().clone(),
+        src_token_id.to_string(),
+    ));
+    let dst_token = TokenId::from(Nep245TokenId::new(
+        env.defuse.id().clone(),
+        dst_token_id.to_string(),
+    ));
 
     let escrow_params = ParamsBuilder::new(
         (maker.id().clone(), src_token),
         ([taker.id().clone()], dst_token),
     )
     .with_protocol_fees(ProtocolFees {
-        fee: Pips::from_percent(1).unwrap(),  // 1% protocol fee
+        fee: Pips::from_percent(1).unwrap(), // 1% protocol fee
         surplus: Pips::ZERO,
         collector: protocol_collector.id().clone(),
     })
-    .with_integrator_fee(integrator.id().clone(), Pips::from_percent(2).unwrap())  // 2% integrator fee
+    .with_integrator_fee(integrator.id().clone(), Pips::from_percent(2).unwrap()) // 2% integrator fee
     .build();
     let fund_msg = FundMessageBuilder::new(escrow_params.clone()).build();
     let fill_msg = FillMessageBuilder::new(escrow_params.clone())
@@ -238,20 +292,42 @@ async fn test_escrow_with_combined_fees() {
         .unwrap();
 
     // Assert: taker gets all 1000 src
-    let taker_src = env.defuse.mt_balance_of(taker.id(), &src_token_id.to_string()).await.unwrap();
+    let taker_src = env
+        .defuse
+        .mt_balance_of(taker.id(), &src_token_id.to_string())
+        .await
+        .unwrap();
     assert_eq!(taker_src, 1_000, "taker should receive all src");
 
     // Assert: maker gets 970 dst (1000 - 3% total fees)
-    let maker_dst = env.defuse.mt_balance_of(maker.id(), &dst_token_id.to_string()).await.unwrap();
-    assert_eq!(maker_dst, 970, "maker should receive 970 dst (1000 - 3% fees)");
+    let maker_dst = env
+        .defuse
+        .mt_balance_of(maker.id(), &dst_token_id.to_string())
+        .await
+        .unwrap();
+    assert_eq!(
+        maker_dst, 970,
+        "maker should receive 970 dst (1000 - 3% fees)"
+    );
 
     // Assert: protocol_collector gets 10 dst (1% of 1000)
-    let protocol_dst = env.defuse.mt_balance_of(protocol_collector.id(), &dst_token_id.to_string()).await.unwrap();
+    let protocol_dst = env
+        .defuse
+        .mt_balance_of(protocol_collector.id(), &dst_token_id.to_string())
+        .await
+        .unwrap();
     assert_eq!(protocol_dst, 10, "protocol should receive 10 dst (1% fee)");
 
     // Assert: integrator gets 20 dst (2% of 1000)
-    let integrator_dst = env.defuse.mt_balance_of(integrator.id(), &dst_token_id.to_string()).await.unwrap();
-    assert_eq!(integrator_dst, 20, "integrator should receive 20 dst (2% fee)");
+    let integrator_dst = env
+        .defuse
+        .mt_balance_of(integrator.id(), &dst_token_id.to_string())
+        .await
+        .unwrap();
+    assert_eq!(
+        integrator_dst, 20,
+        "integrator should receive 20 dst (2% fee)"
+    );
 }
 
 /// Test escrow with surplus fee (captures value when taker pays above maker's price)
@@ -260,8 +336,8 @@ async fn test_escrow_with_combined_fees() {
 /// Surplus = 2000 - 1000 = 1000 dst, 50% fee = 500 dst
 #[tokio::test]
 async fn test_escrow_with_surplus_fee() {
-    use defuse_escrow_swap::action::{FillAction, TransferAction, TransferMessage};
     use defuse_escrow_swap::OverrideSend;
+    use defuse_escrow_swap::action::{FillAction, TransferAction, TransferMessage};
 
     let env = Env::builder().build().await;
     let escrow_swap_global = env.root().deploy_escrow_swap_global("escrow_swap").await;
@@ -271,7 +347,7 @@ async fn test_escrow_with_surplus_fee() {
     let fee_collector = env.create_named_user("fee_collector").await;
 
     let maker_src = 1_000_u128;
-    let taker_dst = 2_000_u128;  // Taker pays at price 2.0
+    let taker_dst = 2_000_u128; // Taker pays at price 2.0
 
     let ((_, src_token_id), (_, dst_token_id)) = futures::try_join!(
         env.create_mt_token_with_initial_balances([(maker.id().clone(), maker_src)]),
@@ -279,8 +355,14 @@ async fn test_escrow_with_surplus_fee() {
     )
     .unwrap();
 
-    let src_token = TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), src_token_id.to_string()));
-    let dst_token = TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), dst_token_id.to_string()));
+    let src_token = TokenId::from(Nep245TokenId::new(
+        env.defuse.id().clone(),
+        src_token_id.to_string(),
+    ));
+    let dst_token = TokenId::from(Nep245TokenId::new(
+        env.defuse.id().clone(),
+        dst_token_id.to_string(),
+    ));
 
     // Maker price 1.0, surplus fee 50% (no base fee)
     let escrow_params = ParamsBuilder::new(
@@ -299,7 +381,7 @@ async fn test_escrow_with_surplus_fee() {
     let fill_msg = TransferMessage {
         params: escrow_params.clone(),
         action: TransferAction::Fill(FillAction {
-            price: UD128::from(2),  // Taker offers price 2.0
+            price: UD128::from(2), // Taker offers price 2.0
             deadline: Deadline::timeout(Duration::from_secs(120)),
             receive_src_to: OverrideSend::default(),
         }),
@@ -337,14 +419,32 @@ async fn test_escrow_with_surplus_fee() {
         .unwrap();
 
     // Assert: taker gets all 1000 src
-    let taker_src_bal = env.defuse.mt_balance_of(taker.id(), &src_token_id.to_string()).await.unwrap();
+    let taker_src_bal = env
+        .defuse
+        .mt_balance_of(taker.id(), &src_token_id.to_string())
+        .await
+        .unwrap();
     assert_eq!(taker_src_bal, 1_000, "taker should receive 1000 src");
 
     // Assert: maker gets 1500 dst (2000 - 500 surplus fee)
-    let maker_dst_bal = env.defuse.mt_balance_of(maker.id(), &dst_token_id.to_string()).await.unwrap();
-    assert_eq!(maker_dst_bal, 1_500, "maker should receive 1500 dst (2000 - 500 surplus fee)");
+    let maker_dst_bal = env
+        .defuse
+        .mt_balance_of(maker.id(), &dst_token_id.to_string())
+        .await
+        .unwrap();
+    assert_eq!(
+        maker_dst_bal, 1_500,
+        "maker should receive 1500 dst (2000 - 500 surplus fee)"
+    );
 
     // Assert: fee_collector gets 500 dst (50% of 1000 surplus)
-    let collector_dst = env.defuse.mt_balance_of(fee_collector.id(), &dst_token_id.to_string()).await.unwrap();
-    assert_eq!(collector_dst, 500, "fee_collector should receive 500 dst (50% of surplus)");
+    let collector_dst = env
+        .defuse
+        .mt_balance_of(fee_collector.id(), &dst_token_id.to_string())
+        .await
+        .unwrap();
+    assert_eq!(
+        collector_dst, 500,
+        "fee_collector should receive 500 dst (50% of surplus)"
+    );
 }

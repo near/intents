@@ -86,11 +86,7 @@ impl TxBuilder {
     }
 
     #[must_use]
-    pub fn state_init(
-        self,
-        global_contract: AccountId,
-        state: BTreeMap<Vec<u8>, Vec<u8>>,
-    ) -> Self {
+    pub fn state_init(self, global_contract: AccountId, state: BTreeMap<Vec<u8>, Vec<u8>>) -> Self {
         self.add_action(Action::DeterministicStateInit(Box::new(
             DeterministicStateInitAction {
                 state_init: DeterministicAccountStateInit::V1(DeterministicAccountStateInitV1 {

@@ -1,9 +1,6 @@
 use near_sdk::{Promise, env};
 
-use crate::{
-    ContractStorage, State, StateMachine,
-    event::Event,
-};
+use crate::{ContractStorage, State, StateMachine, event::Event};
 
 use super::Contract;
 
@@ -39,8 +36,7 @@ impl<'a> CleanupGuard<'a> {
             .take_if(|s| matches!(s.state, StateMachine::Done))
             .map(|_state| {
                 Event::Cleanup.emit();
-                Promise::new(env::current_account_id())
-                    .delete_account(env::signer_account_id())
+                Promise::new(env::current_account_id()).delete_account(env::signer_account_id())
             })
     }
 }

@@ -6,8 +6,7 @@ use near_sdk::{
 };
 
 use crate::FT_ON_TRANSFER_GAS;
-
-use super::Contract;
+use crate::contract::{Contract, ContractExt};
 
 #[near]
 impl FungibleTokenReceiver for Contract {

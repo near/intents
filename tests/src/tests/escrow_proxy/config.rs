@@ -12,14 +12,23 @@ async fn escrow_proxy_deployment_and_config() {
     let root = sandbox.root();
 
     // Get the proxy account ID (will be created during deployment)
-    let proxy = root.generate_subaccount("proxy", INIT_BALANCE).await.unwrap();
+    let proxy = root
+        .generate_subaccount("proxy", INIT_BALANCE)
+        .await
+        .unwrap();
 
     let config = ProxyConfig {
         per_fill_contract_id: GlobalContractId::AccountId(
-            root.sub_account("per_fill_contract_id").unwrap().id().clone(),
+            root.sub_account("per_fill_contract_id")
+                .unwrap()
+                .id()
+                .clone(),
         ),
         escrow_swap_contract_id: GlobalContractId::AccountId(
-            root.sub_account("escrow_swap_contract_id").unwrap().id().clone(),
+            root.sub_account("escrow_swap_contract_id")
+                .unwrap()
+                .id()
+                .clone(),
         ),
         auth_contract: root.sub_account("auth_contract").unwrap().id().clone(),
         auth_collee: root.sub_account("auth_collee").unwrap().id().clone(),
@@ -53,10 +62,16 @@ async fn dao_can_upgrade_contract() {
 
     let config = ProxyConfig {
         per_fill_contract_id: GlobalContractId::AccountId(
-            root.sub_account("per_fill_contract_id").unwrap().id().clone(),
+            root.sub_account("per_fill_contract_id")
+                .unwrap()
+                .id()
+                .clone(),
         ),
         escrow_swap_contract_id: GlobalContractId::AccountId(
-            root.sub_account("escrow_swap_contract_id").unwrap().id().clone(),
+            root.sub_account("escrow_swap_contract_id")
+                .unwrap()
+                .id()
+                .clone(),
         ),
         auth_contract: root.sub_account("auth_contract").unwrap().id().clone(),
         auth_collee: root.sub_account("auth_collee").unwrap().id().clone(),

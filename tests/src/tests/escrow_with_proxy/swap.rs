@@ -16,17 +16,19 @@ use defuse_core::amounts::Amounts;
 use defuse_core::intents::auth::AuthCall;
 use defuse_core::intents::tokens::{NotifyOnTransfer, Transfer};
 use defuse_deadline::Deadline;
-use defuse_escrow_proxy::{ProxyConfig, Role as ProxyRole, RolesConfig, TransferMessage as ProxyTransferMessage};
+use defuse_escrow_proxy::{
+    ProxyConfig, Role as ProxyRole, RolesConfig, TransferMessage as ProxyTransferMessage,
+};
 use defuse_escrow_swap::ParamsBuilder;
 use defuse_escrow_swap::action::{FillMessageBuilder, FundMessageBuilder};
-use defuse_sandbox::{MtExt, MtViewExt};
-use defuse_sandbox_ext::{EscrowProxyExt, EscrowSwapAccountExt, OneshotCondVarAccountExt};
-use defuse_token_id::TokenId;
-use defuse_token_id::nep245::Nep245TokenId;
 use defuse_oneshot_condvar::CondVarContext;
 use defuse_oneshot_condvar::storage::{
     ContractStorage as CondVarStorage, StateInit as CondVarState,
 };
+use defuse_sandbox::{MtExt, MtViewExt};
+use defuse_sandbox_ext::{EscrowProxyExt, EscrowSwapAccountExt, OneshotCondVarAccountExt};
+use defuse_token_id::TokenId;
+use defuse_token_id::nep245::Nep245TokenId;
 
 use near_sdk::json_types::U128;
 use near_sdk::state_init::{StateInit, StateInitV1};
@@ -224,10 +226,7 @@ async fn test_escrow_proxy_can_cancel_before_deadline() {
         auth_contract: env.defuse.id().clone(),
         auth_collee: env.root().id().clone(), // not used for cancel
     };
-    proxy
-        .deploy_escrow_proxy(roles, config)
-        .await
-        .unwrap();
+    proxy.deploy_escrow_proxy(roles, config).await.unwrap();
 
     // Build escrow params with proxy as sole taker
     let src_token = TokenId::from(Nep245TokenId::new(
