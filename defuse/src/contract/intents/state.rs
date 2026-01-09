@@ -348,6 +348,7 @@ impl State for Contract {
 
     #[inline]
     fn burn(&mut self, owner_id: &AccountIdRef, burn: Burn) -> Result<()> {
-        self.withdraw(owner_id, burn.tokens, Some("burn"), false)
+        // TODO: Some("burn") or burn.memo?
+        self.withdraw(owner_id, burn.tokens, burn.memo, false)
     }
 }

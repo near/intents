@@ -20,7 +20,7 @@ use defuse::{
             auth::AuthCall,
             token_diff::{TokenDeltas, TokenDiff, TokenDiffEvent},
             tokens::{
-                FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer,
+                Burn, FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer,
             },
         },
         token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
@@ -898,6 +898,70 @@ async fn simulate_auth_call_intent() {
         result.report.logs,
         vec![
             AccountNonceIntentEvent::new(&user1.id(), nonce, &auth_call_payload)
+                .into_event()
+                .to_nep297_event()
+                .to_event_log(),
+        ]
+    );
+}
+
+#[rstest]
+#[trace]
+#[tokio::test]
+async fn simulate_burn_intent() {
+    let env = Env::builder().build().await;
+
+    let (user1, ft1) = futures::join!(env.create_user(), env.create_token());
+    let amount = 1000;
+    let memo = "Some memo";
+
+    env.initial_ft_storage_deposit(vec![user1.id()], vec![ft1.id()])
+        .await;
+
+    env.defuse_ft_deposit_to(ft1.id(), 1000, user1.id(), None)
+        .await
+        .unwrap();
+
+    let ft1_token_id = TokenId::from(Nep141TokenId::new(ft1.id().clone()));
+
+    assert_eq!(
+        env.defuse
+            .mt_balance_of(user1.id(), &ft1_token_id.to_string())
+            .await
+            .unwrap(),
+        amount
+    );
+
+    let burn_intent = Burn {
+        tokens: Amounts::new(std::iter::once((ft1_token_id.clone(), amount)).collect()),
+        memo: Some(memo.to_string()),
+    };
+
+    let burn_payload = user1
+        .sign_defuse_payload_default(&env.defuse, [burn_intent.clone()])
+        .await
+        .unwrap();
+    let nonce = burn_payload.extract_nonce().unwrap();
+
+    let result = env
+        .defuse
+        .simulate_intents([burn_payload.clone()])
+        .await
+        .unwrap();
+
+    assert_eq!(
+        result.report.logs,
+        vec![
+            DefuseEvent::Burn(Cow::Owned(vec![IntentEvent {
+                intent_hash: burn_payload.hash(),
+                event: AccountEvent {
+                    account_id: user1.id().clone().into(),
+                    event: Cow::Owned(burn_intent),
+                },
+            }]))
+            .to_nep297_event()
+            .to_event_log(),
+            AccountNonceIntentEvent::new(&user1.id(), nonce, &burn_payload)
                 .into_event()
                 .to_nep297_event()
                 .to_event_log(),

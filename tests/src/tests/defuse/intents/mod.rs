@@ -42,6 +42,7 @@ impl AccountNonceIntentEvent {
     }
 }
 
+mod burn;
 mod ft_withdraw;
 mod legacy_nonce;
 mod native_withdraw;
