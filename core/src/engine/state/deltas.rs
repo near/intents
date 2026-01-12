@@ -6,8 +6,7 @@ use crate::{
         auth::AuthCall,
         token_diff::TokenDeltas,
         tokens::{
-            Burn, FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, NotifyOnTransfer,
-            StorageDeposit,
+            FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, NotifyOnTransfer, StorageDeposit,
         },
     },
     token_id::TokenId,
@@ -216,8 +215,23 @@ where
     }
 
     #[inline]
-    fn burn(&mut self, owner_id: &AccountIdRef, burn: Burn) -> Result<()> {
-        self.state.burn(owner_id, burn)
+    fn mt_mint(
+        &mut self,
+        owner_id: AccountId,
+        tokens: Amounts,
+        memo: Option<String>,
+    ) -> Result<()> {
+        self.state.mt_mint(owner_id, tokens, memo)
+    }
+
+    #[inline]
+    fn mt_burn(
+        &mut self,
+        owner_id: &AccountIdRef,
+        tokens: Amounts,
+        memo: Option<String>,
+    ) -> Result<()> {
+        self.state.mt_burn(owner_id, tokens, memo)
     }
 }
 

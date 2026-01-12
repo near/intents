@@ -8,8 +8,7 @@ use crate::{
     intents::{
         auth::AuthCall,
         tokens::{
-            Burn, FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, NotifyOnTransfer,
-            StorageDeposit,
+            FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, NotifyOnTransfer, StorageDeposit,
         },
     },
     token_id::{TokenId, nep141::Nep141TokenId},
@@ -129,5 +128,13 @@ pub trait State: StateView {
 
     fn auth_call(&mut self, signer_id: &AccountIdRef, auth_call: AuthCall) -> Result<()>;
 
-    fn burn(&mut self, owner_id: &AccountIdRef, burn: Burn) -> Result<()>;
+    fn mt_mint(&mut self, owner_id: AccountId, tokens: Amounts, memo: Option<String>)
+    -> Result<()>;
+
+    fn mt_burn(
+        &mut self,
+        owner_id: &AccountIdRef,
+        tokens: Amounts,
+        memo: Option<String>,
+    ) -> Result<()>;
 }

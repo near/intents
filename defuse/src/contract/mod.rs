@@ -1,5 +1,6 @@
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
 mod abi;
+mod account_sync;
 mod accounts;
 mod admin;
 pub mod config;
@@ -12,12 +13,6 @@ mod state;
 mod tokens;
 mod upgrade;
 mod versioned;
-
-// #[cfg(feature = "far")]
-mod account_sync;
-
-// #[cfg(feature = "far")]
-mod far_mint;
 
 use core::iter;
 
@@ -62,8 +57,6 @@ pub enum Role {
 
     // #[cfg(feature = "far")]
     PubKeySynchronizer,
-    // #[cfg(feature = "far")]
-    FarMintManager,
 }
 
 #[access_control(role_type(Role))]

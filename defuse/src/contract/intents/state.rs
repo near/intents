@@ -7,8 +7,7 @@ use defuse_core::{
     intents::{
         auth::AuthCall,
         tokens::{
-            Burn, FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, NotifyOnTransfer,
-            StorageDeposit,
+            FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, NotifyOnTransfer, StorageDeposit,
         },
     },
     token_id::{TokenId, nep141::Nep141TokenId},
@@ -347,8 +346,22 @@ impl State for Contract {
     }
 
     #[inline]
-    fn burn(&mut self, owner_id: &AccountIdRef, burn: Burn) -> Result<()> {
-        // TODO: Some("burn") or burn.memo?
-        self.withdraw(owner_id, burn.tokens, burn.memo, false)
+    fn mt_mint(
+        &mut self,
+        owner_id: AccountId,
+        tokens: Amounts,
+        memo: Option<String>,
+    ) -> Result<()> {
+        self.deposit(owner_id, tokens, memo.as_deref())
+    }
+
+    #[inline]
+    fn mt_burn(
+        &mut self,
+        owner_id: &AccountIdRef,
+        tokens: Amounts,
+        memo: Option<String>,
+    ) -> Result<()> {
+        self.withdraw(owner_id, tokens, memo, false)
     }
 }

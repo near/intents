@@ -16,9 +16,6 @@ pub mod tokens;
 // #[cfg(feature = "far")]
 pub mod account_sync;
 
-// #[cfg(feature = "far")]
-pub mod far_mint;
-
 pub use defuse_core as core;
 pub use defuse_nep245 as nep245;
 

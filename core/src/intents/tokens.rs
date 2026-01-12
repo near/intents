@@ -1,5 +1,6 @@
 use std::{borrow::Cow, collections::BTreeMap};
 
+use defuse_token_id::nep245::Nep245TokenId;
 use near_contract_standards::non_fungible_token;
 use near_sdk::{
     AccountId, AccountIdRef, CryptoHash, Gas, NearToken, json_types::U128, near,
@@ -517,11 +518,10 @@ impl ExecutableIntent for StorageDeposit {
     }
 }
 
-// TODO: may be add burn fn call too?
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
-/// Burn a set of tokens from the signer to a specified account id, within the intents contract.
-pub struct Burn {
+/// Mint a set of tokens from the signer to a specified account id, within the intents contract.
+pub struct MtMint {
     #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
     pub tokens: Amounts,
 
@@ -529,7 +529,7 @@ pub struct Burn {
     pub memo: Option<String>,
 }
 
-impl ExecutableIntent for Burn {
+impl ExecutableIntent for MtMint {
     #[inline]
     fn execute_intent<S, I>(
         self,
@@ -541,7 +541,7 @@ impl ExecutableIntent for Burn {
         S: State,
         I: Inspector,
     {
-        engine.inspector.on_event(DefuseEvent::Burn(Cow::Borrowed(
+        engine.inspector.on_event(DefuseEvent::MtMint(Cow::Borrowed(
             [IntentEvent::new(
                 AccountEvent::new(owner_id, Cow::Borrowed(&self)),
                 intent_hash,
@@ -549,6 +549,61 @@ impl ExecutableIntent for Burn {
             .as_slice(),
         )));
 
-        engine.state.burn(owner_id, self)
+        let tokens = Amounts::new(
+            self.tokens
+                .iter()
+                .map(|(token_id, amount)| {
+                    let token = Nep245TokenId::new(owner_id, token_id.to_string());
+                    (token.into(), *amount)
+                })
+                .collect::<BTreeMap<_, _>>(),
+        );
+
+        engine.state.mt_mint(owner_id.to_owned(), tokens, self.memo)
+    }
+}
+
+#[near(serializers = [borsh, json])]
+#[derive(Debug, Clone)]
+/// Burn a set of tokens from the signer to a specified account id, within the intents contract.
+pub struct MtBurn {
+    #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
+    pub tokens: Amounts,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub memo: Option<String>,
+}
+
+impl ExecutableIntent for MtBurn {
+    #[inline]
+    fn execute_intent<S, I>(
+        self,
+        owner_id: &AccountIdRef,
+        engine: &mut Engine<S, I>,
+        intent_hash: CryptoHash,
+    ) -> Result<()>
+    where
+        S: State,
+        I: Inspector,
+    {
+        engine.inspector.on_event(DefuseEvent::MtBurn(Cow::Borrowed(
+            [IntentEvent::new(
+                AccountEvent::new(owner_id, Cow::Borrowed(&self)),
+                intent_hash,
+            )]
+            .as_slice(),
+        )));
+
+        let tokens = Amounts::new(
+            self.tokens
+                .iter()
+                .map(|(token_id, amount)| {
+                    let token = Nep245TokenId::new(owner_id, token_id.to_string());
+                    (token.into(), *amount)
+                })
+                .collect::<BTreeMap<_, _>>(),
+        );
+
+        engine.state.mt_burn(owner_id, tokens, self.memo)
     }
 }
