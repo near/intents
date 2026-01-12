@@ -55,7 +55,6 @@ pub enum Role {
 
     GarbageCollector,
 
-    // #[cfg(feature = "far")]
     PubKeySynchronizer,
 }
 

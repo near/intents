@@ -13,7 +13,6 @@ pub mod salts;
 pub mod simulation_output;
 pub mod tokens;
 
-// #[cfg(feature = "far")]
 pub mod account_sync;
 
 pub use defuse_core as core;
