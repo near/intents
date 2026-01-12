@@ -14,7 +14,7 @@ mod upgrade;
 mod versioned;
 
 // #[cfg(feature = "far")]
-mod pk_sync;
+mod account_sync;
 
 // #[cfg(feature = "far")]
 mod far_mint;

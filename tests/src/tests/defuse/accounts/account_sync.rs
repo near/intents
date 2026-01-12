@@ -21,7 +21,7 @@ use crate::{tests::defuse::env::Env, utils::fixtures::public_key};
 #[rstest]
 #[trace]
 #[tokio::test]
-async fn test_add_user_public_keys(#[notrace] mut rng: impl Rng) {
+async fn test_force_add_public_keys(#[notrace] mut rng: impl Rng) {
     let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
@@ -42,10 +42,10 @@ async fn test_add_user_public_keys(#[notrace] mut rng: impl Rng) {
         user1
             .tx(env.defuse.id().clone())
             .function_call(
-                FnCallBuilder::new("add_user_public_keys")
+                FnCallBuilder::new("force_add_public_keys")
                     .with_deposit(NearToken::from_yoctonear(1))
                     .json_args(json!({
-                        "public_keys": public_keys
+                        "entries": public_keys
                     })),
             )
             .exec_transaction()
@@ -64,10 +64,10 @@ async fn test_add_user_public_keys(#[notrace] mut rng: impl Rng) {
         let result = user1
             .tx(env.defuse.id().clone())
             .function_call(
-                FnCallBuilder::new("add_user_public_keys")
+                FnCallBuilder::new("force_add_public_keys")
                     .with_deposit(NearToken::from_yoctonear(1))
                     .json_args(json!({
-                        "public_keys": public_keys
+                        "entries": public_keys
                     })),
             )
             .exec_transaction()
@@ -105,7 +105,7 @@ async fn test_add_user_public_keys(#[notrace] mut rng: impl Rng) {
 #[rstest]
 #[trace]
 #[tokio::test]
-async fn test_add_and_remove_user_public_keys(#[notrace] mut rng: impl Rng) {
+async fn test_force_add_and_remove_public_keys(#[notrace] mut rng: impl Rng) {
     let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
@@ -130,10 +130,10 @@ async fn test_add_and_remove_user_public_keys(#[notrace] mut rng: impl Rng) {
         user1
             .tx(env.defuse.id().clone())
             .function_call(
-                FnCallBuilder::new("add_user_public_keys")
+                FnCallBuilder::new("force_add_public_keys")
                     .with_deposit(NearToken::from_yoctonear(1))
                     .json_args(json!({
-                        "public_keys": public_keys
+                        "entries": public_keys
                     })),
             )
             .exec_transaction()
@@ -148,10 +148,10 @@ async fn test_add_and_remove_user_public_keys(#[notrace] mut rng: impl Rng) {
         user2
             .tx(env.defuse.id().clone())
             .function_call(
-                FnCallBuilder::new("remove_user_public_keys")
+                FnCallBuilder::new("force_remove_public_keys")
                     .with_deposit(NearToken::from_yoctonear(1))
                     .json_args(json!({
-                        "public_keys": public_keys
+                        "entries": public_keys
                     })),
             )
             .exec_transaction()
@@ -170,10 +170,10 @@ async fn test_add_and_remove_user_public_keys(#[notrace] mut rng: impl Rng) {
         let result = user2
             .tx(env.defuse.id().clone())
             .function_call(
-                FnCallBuilder::new("remove_user_public_keys")
+                FnCallBuilder::new("force_remove_public_keys")
                     .with_deposit(NearToken::from_yoctonear(1))
                     .json_args(json!({
-                        "public_keys": public_keys
+                        "entries": public_keys
                     })),
             )
             .exec_transaction()

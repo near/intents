@@ -14,7 +14,7 @@ pub mod simulation_output;
 pub mod tokens;
 
 // #[cfg(feature = "far")]
-pub mod pk_sync;
+pub mod account_sync;
 
 // #[cfg(feature = "far")]
 pub mod far_mint;
