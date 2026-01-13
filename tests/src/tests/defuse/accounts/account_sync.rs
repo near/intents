@@ -1,4 +1,7 @@
-use std::borrow::Cow;
+use std::{
+    borrow::Cow,
+    collections::{HashMap, HashSet},
+};
 
 use defuse::{
     contract::Role,
@@ -31,11 +34,11 @@ async fn test_force_add_public_keys(#[notrace] mut rng: impl Rng) {
         .map(|u| {
             let pubkeys = (0..rng.random_range(0..10))
                 .map(|_| public_key(&mut rng))
-                .collect();
+                .collect::<HashSet<_>>();
 
             (u.account().id(), pubkeys)
         })
-        .collect::<Vec<(_, Vec<PublicKey>)>>();
+        .collect::<HashMap<_, HashSet<PublicKey>>>();
 
     // only DAO or pubkey synchronizer can add public keys to accounts
     {
@@ -57,9 +60,13 @@ async fn test_force_add_public_keys(#[notrace] mut rng: impl Rng) {
 
     // Add public keys
     {
-        env.acl_grant_role(env.defuse.id(), Role::PubKeySynchronizer, user1.id())
-            .await
-            .expect("failed to grant role");
+        env.acl_grant_role(
+            env.defuse.id(),
+            Role::UnrestrictedAccountManager,
+            user1.id(),
+        )
+        .await
+        .expect("failed to grant role");
 
         let result = user1
             .tx(env.defuse.id().clone())
@@ -115,17 +122,21 @@ async fn test_force_add_and_remove_public_keys(#[notrace] mut rng: impl Rng) {
         .map(|u| {
             let pubkeys = (0..rng.random_range(0..10))
                 .map(|_| public_key(&mut rng))
-                .collect();
+                .collect::<HashSet<_>>();
 
             (u.account().id(), pubkeys)
         })
-        .collect::<Vec<(_, Vec<PublicKey>)>>();
+        .collect::<HashMap<_, HashSet<PublicKey>>>();
 
     // Add public keys
     {
-        env.acl_grant_role(env.defuse.id(), Role::PubKeySynchronizer, user1.id())
-            .await
-            .expect("failed to grant role");
+        env.acl_grant_role(
+            env.defuse.id(),
+            Role::UnrestrictedAccountManager,
+            user1.id(),
+        )
+        .await
+        .expect("failed to grant role");
 
         user1
             .tx(env.defuse.id().clone())
@@ -163,9 +174,13 @@ async fn test_force_add_and_remove_public_keys(#[notrace] mut rng: impl Rng) {
 
     // Remove public keys
     {
-        env.acl_grant_role(env.defuse.id(), Role::PubKeySynchronizer, user2.id())
-            .await
-            .expect("failed to grant role");
+        env.acl_grant_role(
+            env.defuse.id(),
+            Role::UnrestrictedAccountManager,
+            user2.id(),
+        )
+        .await
+        .expect("failed to grant role");
 
         let result = user2
             .tx(env.defuse.id().clone())

@@ -90,7 +90,10 @@ async fn mt_burn_intent() {
                 intent_hash: burn_payload.hash(),
                 event: AccountEvent {
                     account_id: user.id().clone().into(),
-                    event: Cow::Owned(intent),
+                    event: Cow::Owned(MtBurn{
+                        tokens: Amounts::new(std::iter::once((mt_id.clone(), amount)).collect()),
+                        ..intent
+                    }),
                 },
             }]))
             .to_nep297_event()

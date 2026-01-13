@@ -1,6 +1,5 @@
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
 mod abi;
-mod account_sync;
 mod accounts;
 mod admin;
 pub mod config;
@@ -55,7 +54,7 @@ pub enum Role {
 
     GarbageCollector,
 
-    PubKeySynchronizer,
+    UnrestrictedAccountManager,
 }
 
 #[access_control(role_type(Role))]

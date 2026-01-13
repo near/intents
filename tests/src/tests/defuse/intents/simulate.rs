@@ -925,6 +925,7 @@ async fn simulate_mint_intent() {
         memo: Some(memo.to_string()),
         receiver_id: user.id().clone(),
     };
+
     let mint_payload = user
         .sign_defuse_payload_default(&env.defuse, [mint_intent.clone()])
         .await
@@ -938,6 +939,8 @@ async fn simulate_mint_intent() {
         .await
         .unwrap();
 
+    let mt_id = TokenId::from(Nep245TokenId::new(user.id().clone(), token_id.to_string()));
+
     assert_eq!(
         result.report.logs,
         vec![
@@ -945,7 +948,10 @@ async fn simulate_mint_intent() {
                 intent_hash: mint_payload.hash(),
                 event: AccountEvent {
                     account_id: user.id().clone().into(),
-                    event: Cow::Owned(mint_intent),
+                    event: Cow::Owned(MtMint {
+                        tokens: Amounts::new(std::iter::once((mt_id, amount)).collect()),
+                        ..mint_intent
+                    })
                 },
             }]))
             .to_nep297_event()
@@ -987,6 +993,7 @@ async fn simulate_burn_intent() {
     env.simulate_and_execute_intents(env.defuse.id(), [mint_payload])
         .await
         .unwrap();
+
     let burn_intent = MtBurn {
         tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
         memo: Some(memo.to_string()),
@@ -1004,6 +1011,8 @@ async fn simulate_burn_intent() {
         .await
         .unwrap();
 
+    let mt_id = TokenId::from(Nep245TokenId::new(user.id().clone(), token_id.to_string()));
+
     assert_eq!(
         result.report.logs,
         vec![
@@ -1011,7 +1020,10 @@ async fn simulate_burn_intent() {
                 intent_hash: burn_payload.hash(),
                 event: AccountEvent {
                     account_id: user.id().clone().into(),
-                    event: Cow::Owned(burn_intent),
+                    event: Cow::Owned(MtBurn {
+                        tokens: Amounts::new(std::iter::once((mt_id, amount)).collect()),
+                        ..burn_intent
+                    })
                 },
             }]))
             .to_nep297_event()

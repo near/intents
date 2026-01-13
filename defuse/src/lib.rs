@@ -13,8 +13,6 @@ pub mod salts;
 pub mod simulation_output;
 pub mod tokens;
 
-pub mod account_sync;
-
 pub use defuse_core as core;
 pub use defuse_nep245 as nep245;
 

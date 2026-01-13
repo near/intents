@@ -543,14 +543,6 @@ impl ExecutableIntent for MtMint {
         S: State,
         I: Inspector,
     {
-        engine.inspector.on_event(DefuseEvent::MtMint(Cow::Borrowed(
-            [IntentEvent::new(
-                AccountEvent::new(owner_id, Cow::Borrowed(&self)),
-                intent_hash,
-            )]
-            .as_slice(),
-        )));
-
         let tokens = Amounts::new(
             self.tokens
                 .iter()
@@ -560,6 +552,20 @@ impl ExecutableIntent for MtMint {
                 })
                 .collect::<BTreeMap<_, _>>(),
         );
+
+        engine.inspector.on_event(DefuseEvent::MtMint(Cow::Borrowed(
+            [IntentEvent::new(
+                AccountEvent::new(
+                    owner_id,
+                    Cow::Owned(Self {
+                        tokens: tokens.clone(),
+                        ..self.clone()
+                    }),
+                ),
+                intent_hash,
+            )]
+            .as_slice(),
+        )));
 
         engine.state.mt_mint(self.receiver_id, tokens, self.memo)
     }
@@ -588,14 +594,6 @@ impl ExecutableIntent for MtBurn {
         S: State,
         I: Inspector,
     {
-        engine.inspector.on_event(DefuseEvent::MtBurn(Cow::Borrowed(
-            [IntentEvent::new(
-                AccountEvent::new(owner_id, Cow::Borrowed(&self)),
-                intent_hash,
-            )]
-            .as_slice(),
-        )));
-
         let tokens = Amounts::new(
             self.tokens
                 .iter()
@@ -605,6 +603,20 @@ impl ExecutableIntent for MtBurn {
                 })
                 .collect::<BTreeMap<_, _>>(),
         );
+
+        engine.inspector.on_event(DefuseEvent::MtBurn(Cow::Borrowed(
+            [IntentEvent::new(
+                AccountEvent::new(
+                    owner_id,
+                    Cow::Owned(Self {
+                        tokens: tokens.clone(),
+                        ..self.clone()
+                    }),
+                ),
+                intent_hash,
+            )]
+            .as_slice(),
+        )));
 
         engine.state.mt_burn(owner_id, tokens, self.memo)
     }
