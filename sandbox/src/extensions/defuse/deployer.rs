@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use defuse_sandbox::{SigningAccount, anyhow, read_wasm, tx::FnCallBuilder};
+use crate::{SigningAccount, anyhow, read_wasm, tx::FnCallBuilder};
 use near_sdk::{AccountId, Gas, NearToken, serde_json::json};
 
 use defuse::contract::config::DefuseConfig;

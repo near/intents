@@ -2,7 +2,7 @@ pub use defuse_escrow_swap;
 
 use std::sync::LazyLock;
 
-use defuse_sandbox::{Account, SigningAccount, anyhow, read_wasm, tx::FnCallBuilder};
+use crate::{Account, SigningAccount, anyhow, read_wasm, tx::FnCallBuilder};
 use near_sdk::{AccountId, serde_json::json};
 
 use defuse_escrow_swap::{Params, Storage};

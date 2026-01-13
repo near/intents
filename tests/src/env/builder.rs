@@ -7,7 +7,7 @@ use defuse::{
     },
     core::fees::{FeesConfig, Pips},
 };
-use defuse_contract_extensions::{
+use defuse_sandbox::extensions::{
     defuse::deployer::DefuseExt,
     poa::{PoAFactoryDeployerExt, contract::contract::Role as POAFactoryRole},
 };

@@ -12,7 +12,9 @@ use defuse::{
     core::{Deadline, Nonce},
     tokens::{DepositAction, DepositMessage},
 };
-use defuse_contract_extensions::{
+use defuse_randomness::{Rng, make_true_rng};
+use defuse_sandbox::extensions::storage_management::StorageManagementExt;
+use defuse_sandbox::extensions::{
     defuse::{
         account_manager::{AccountManagerExt, AccountViewExt},
         nonce::GenerateNonceExt,
@@ -20,8 +22,6 @@ use defuse_contract_extensions::{
     },
     poa::PoAFactoryExt,
 };
-use defuse_randomness::{Rng, make_true_rng};
-use defuse_sandbox::extensions::storage_management::StorageManagementExt;
 use defuse_sandbox::{Account, Sandbox, SigningAccount};
 use defuse_test_utils::random::{Seed, rng};
 use futures::future::try_join_all;

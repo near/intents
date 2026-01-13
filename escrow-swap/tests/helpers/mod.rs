@@ -1,4 +1,5 @@
-use defuse_contract_extensions::{
+use defuse_escrow_swap::Pips;
+use defuse_sandbox::extensions::{
     defuse::{
         contract::{
             contract::config::{DefuseConfig, RolesConfig},
@@ -8,7 +9,6 @@ use defuse_contract_extensions::{
     },
     poa::{PoAFactoryDeployerExt, PoAFactoryExt, contract::contract::Role as PoAFactoryRole},
 };
-use defuse_escrow_swap::Pips;
 use defuse_sandbox::{
     Account, Sandbox, SigningAccount, anyhow,
     api::types::transaction::actions::GlobalContractDeployMode,
@@ -20,7 +20,7 @@ use impl_tools::autoimpl;
 use near_sdk::{GlobalContractId, NearToken};
 use rstest::fixture;
 
-use defuse_contract_extensions::escrow::ESCROW_SWAP_WASM;
+use defuse_sandbox::extensions::escrow::ESCROW_SWAP_WASM;
 
 #[fixture]
 pub async fn env() -> Env {

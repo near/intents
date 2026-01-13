@@ -6,9 +6,9 @@ use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
     core::fees::{FeesConfig, Pips},
 };
-use defuse_contract_extensions::defuse::deployer::DefuseExt;
-use defuse_contract_extensions::defuse::intents::ExecuteIntentsExt;
-use defuse_contract_extensions::defuse::signer::DefaultDefuseSignerExt;
+use defuse_sandbox::extensions::defuse::deployer::DefuseExt;
+use defuse_sandbox::extensions::defuse::intents::ExecuteIntentsExt;
+use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
 use defuse_sandbox::extensions::ft::FtViewExt;
 use defuse_sandbox::extensions::mt::MtViewExt;
 use multi_token_receiver_stub::MTReceiverMode;
@@ -188,7 +188,7 @@ async fn transfer_intent_to_defuse() {
 })]
 #[tokio::test]
 async fn transfer_intent_with_msg_to_receiver_smc(#[case] expectation: TransferCallExpectation) {
-    use defuse_contract_extensions::defuse::intents::ExecuteIntentsExt;
+    use defuse_sandbox::extensions::defuse::intents::ExecuteIntentsExt;
     use defuse_sandbox::tx::FnCallBuilder;
     use near_sdk::NearToken;
 

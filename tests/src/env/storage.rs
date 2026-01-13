@@ -16,14 +16,14 @@ use defuse::{
     },
     nep245::Token,
 };
-use defuse_contract_extensions::{
+use defuse_randomness::{Rng, make_true_rng};
+use defuse_sandbox::extensions::{
     defuse::{
         account_manager::AccountViewExt, deployer::DefuseExt, intents::ExecuteIntentsExt,
         signer::DefuseSignerExt,
     },
     poa::PoAFactoryExt,
 };
-use defuse_randomness::{Rng, make_true_rng};
 use futures::{
     StreamExt, TryStreamExt,
     future::{join_all, try_join_all},

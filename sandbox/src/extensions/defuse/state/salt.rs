@@ -1,5 +1,5 @@
-use defuse_core::Salt;
-use defuse_sandbox::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
+use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
+use defuse::core::Salt;
 use near_sdk::{AccountId, NearToken, serde_json::json};
 
 pub trait SaltManagerExt {

@@ -1,12 +1,11 @@
+use crate::extensions::defuse::state::SaltViewExt;
+use crate::{Account, anyhow};
 use defuse::core::payload::{DefusePayload, ExtractDefusePayload};
 use defuse::core::{Deadline, ExpirableNonce, Salt, SaltedNonce, VersionedNonce};
 use defuse::core::{Nonce, intents::DefuseIntents, payload::multi::MultiPayload};
 use defuse_randomness::{Rng, RngCore};
-use defuse_sandbox::{Account, anyhow};
 use defuse_test_utils::random::TestRng;
 use near_sdk::serde_json;
-
-use crate::defuse::state::SaltViewExt;
 
 pub trait ExtractNonceExt {
     fn extract_nonce(&self) -> Result<Nonce, serde_json::Error>;

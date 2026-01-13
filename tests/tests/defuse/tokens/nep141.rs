@@ -1,6 +1,6 @@
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
-use defuse_contract_extensions::defuse::signer::DefaultDefuseSignerExt;
+use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 
 use defuse::{

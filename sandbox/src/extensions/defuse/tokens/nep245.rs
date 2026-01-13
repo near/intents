@@ -1,5 +1,5 @@
 use defuse_nep245::TokenId;
-use defuse_sandbox::{
+use crate::{
     SigningAccount, anyhow, api::types::transaction::result::ExecutionSuccess,
     extensions::mt::MtExt, tx::FnCallBuilder,
 };

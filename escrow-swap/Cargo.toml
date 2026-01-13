@@ -19,7 +19,6 @@ defuse-fees.workspace = true
 defuse-nep245.workspace = true
 defuse-num-utils.workspace = true
 defuse-token-id.workspace = true
-defuse-sandbox = {workspace = true, optional = true}
 
 near-contract-standards.workspace = true
 near-sdk.workspace = true
@@ -34,8 +33,7 @@ defuse-auth-call = { workspace = true, optional = true }
 defuse-near-utils = { workspace = true, optional = true }
 
 [dev-dependencies]
-defuse-sandbox.workspace = true
-defuse-contract-extensions = { workspace = true, features = ["escrow", "poa"] }
+defuse-sandbox = { workspace = true, features = ["escrow", "poa"] }
 
 futures.workspace = true
 rstest.workspace = true

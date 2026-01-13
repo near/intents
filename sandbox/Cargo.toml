@@ -27,3 +27,14 @@ thiserror.workspace = true
 tracing.workspace = true
 
 near-contract-standards.workspace = true
+
+defuse = {workspace = true, features = ["contract"], optional = true}
+defuse-poa-factory = {workspace = true, features = ["contract"], optional = true}
+defuse-escrow-swap = {workspace = true, features = ["default"], optional = true}
+defuse-test-utils = { workspace = true, optional = true }
+defuse-serde-utils = { workspace = true, optional = true }
+
+[features]
+poa = ["dep:defuse-poa-factory"]
+defuse = ["dep:defuse", "dep:defuse-test-utils", "dep:defuse-serde-utils"]
+escrow = ["dep:defuse-escrow-swap"]

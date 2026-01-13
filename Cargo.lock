@@ -860,23 +860,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-contract-extensions"
-version = "0.1.0"
-dependencies = [
- "defuse",
- "defuse-core",
- "defuse-escrow-swap",
- "defuse-nep245",
- "defuse-poa-factory",
- "defuse-randomness",
- "defuse-sandbox",
- "defuse-serde-utils",
- "defuse-test-utils",
- "near-contract-standards",
- "near-sdk",
-]
-
-[[package]]
 name = "defuse-controller"
 version = "0.1.0"
 dependencies = [
@@ -980,7 +963,6 @@ version = "0.1.0"
 dependencies = [
  "defuse-auth-call",
  "defuse-borsh-utils",
- "defuse-contract-extensions",
  "defuse-deadline",
  "defuse-decimal",
  "defuse-fees",
@@ -1077,7 +1059,6 @@ version = "0.1.0"
 dependencies = [
  "cargo-near-build",
  "defuse-admin-utils",
- "defuse-contract-extensions",
  "defuse-near-utils",
  "defuse-poa-token",
  "defuse-sandbox",
@@ -1112,10 +1093,15 @@ name = "defuse-sandbox"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "defuse",
  "defuse-crypto",
+ "defuse-escrow-swap",
  "defuse-nep245",
  "defuse-nep413",
+ "defuse-poa-factory",
  "defuse-randomness",
+ "defuse-serde-utils",
+ "defuse-test-utils",
  "futures",
  "impl-tools",
  "near-api",
@@ -1177,7 +1163,6 @@ dependencies = [
  "bnum",
  "chrono",
  "defuse",
- "defuse-contract-extensions",
  "defuse-escrow-swap",
  "defuse-near-utils",
  "defuse-poa-factory",

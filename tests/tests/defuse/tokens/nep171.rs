@@ -2,8 +2,8 @@ use defuse::core::token_id::TokenId as DefuseTokenId;
 use defuse::core::token_id::nep171::Nep171TokenId;
 use defuse::tokens::{DepositAction, DepositMessage, ExecuteIntents};
 
-use defuse_contract_extensions::defuse::signer::DefaultDefuseSignerExt;
 use defuse_sandbox::api::types::nft::NFTContractMetadata;
+use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
 use defuse_sandbox::extensions::mt::MtViewExt;
 use defuse_sandbox::extensions::nft::{NftDeployerExt, NftExt, NftViewExt};
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
