@@ -162,7 +162,7 @@ jobs:
         with:
           cache: false
       - name: Install cargo-audit
-        run: cargo install cargo-audit --version "^0.21" --locked
+        run: cargo install cargo-audit --version "^0.22" --locked
       - uses: rustsec/audit-check@v2.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
