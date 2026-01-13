@@ -189,7 +189,7 @@ async fn test_force_add_and_remove_public_keys(#[notrace] mut rng: impl Rng) {
                         .has_public_key(account_id, public_key)
                         .await
                         .unwrap(),
-                    "Public key {public_key:?} not found for account {account_id}",
+                    "Public key {public_key:?} found for account {account_id}",
                 );
 
                 assert_a_contains_b!(
