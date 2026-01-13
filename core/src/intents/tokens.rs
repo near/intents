@@ -522,6 +522,8 @@ impl ExecutableIntent for StorageDeposit {
 #[derive(Debug, Clone)]
 /// Mint a set of tokens from the signer to a specified account id, within the intents contract.
 pub struct MtMint {
+    pub receiver_id: AccountId,
+
     #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
     pub tokens: Amounts,
 
@@ -559,13 +561,13 @@ impl ExecutableIntent for MtMint {
                 .collect::<BTreeMap<_, _>>(),
         );
 
-        engine.state.mt_mint(owner_id.to_owned(), tokens, self.memo)
+        engine.state.mt_mint(self.receiver_id, tokens, self.memo)
     }
 }
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
-/// Burn a set of tokens from the signer to a specified account id, within the intents contract.
+/// Burn a set of tokens minted by signer, within the intents contract.
 pub struct MtBurn {
     #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
     pub tokens: Amounts,

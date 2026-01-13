@@ -4,8 +4,8 @@ use defuse::core::accounts::AccountEvent;
 use defuse::core::amounts::Amounts;
 use defuse::core::crypto::Payload;
 use defuse::core::events::DefuseEvent;
-use defuse::core::intents::tokens::{MtBurn, MtMint, Transfer};
-use defuse::core::intents::{Intent, IntentEvent};
+use defuse::core::intents::IntentEvent;
+use defuse::core::intents::tokens::{MtBurn, MtMint};
 use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
 use defuse::nep245::{MtBurnEvent, MtEvent};
 use defuse::sandbox_ext::intents::ExecuteIntentsExt;
@@ -40,6 +40,7 @@ async fn mt_burn_intent() {
             [MtMint {
                 tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
                 memo: Some(memo.to_string()),
+                receiver_id: user.id().clone(),
             }],
         )
         .await
@@ -152,28 +153,11 @@ async fn failed_to_burn_tokens() {
         let mint_payload = user
             .sign_defuse_payload_default(
                 &env.defuse,
-                [
-                    Intent::from(MtMint {
-                        tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
-                        memo: Some(memo.to_string()),
-                    }),
-                    Transfer {
-                        receiver_id: other_user.id().clone(),
-                        tokens: Amounts::new(
-                            std::iter::once((
-                                TokenId::from(Nep245TokenId::new(
-                                    user.id().clone(),
-                                    token_id.to_string(),
-                                )),
-                                amount,
-                            ))
-                            .collect(),
-                        ),
-                        memo: None,
-                        notification: None,
-                    }
-                    .into(),
-                ],
+                [MtMint {
+                    tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
+                    memo: Some(memo.to_string()),
+                    receiver_id: other_user.id().clone(),
+                }],
             )
             .await
             .unwrap();

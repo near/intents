@@ -37,6 +37,7 @@ async fn mt_mint_intent() {
     let intent = MtMint {
         tokens: Amounts::new(std::iter::once((token.clone(), amount)).collect()),
         memo: Some(memo.to_string()),
+        receiver_id: user.id().clone(),
     };
     let mint_payload = user
         .sign_defuse_payload_default(&env.defuse, [intent.clone()])
