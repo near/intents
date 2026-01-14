@@ -7,9 +7,7 @@ repository.workspace = true
 
 [dependencies]
 defuse-crypto = { workspace = true, features = ["serde"] }
-derive_more = { workspace = true, features = ["from"] }
 near-sdk.workspace = true
-defuse-near-utils.workspace = true
 
 [dev-dependencies]
 near-sdk = { workspace = true, features = ["unit-testing"] }

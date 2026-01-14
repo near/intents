@@ -830,8 +830,6 @@ name = "defuse-adr36"
 version = "0.1.0"
 dependencies = [
  "defuse-crypto",
- "defuse-near-utils",
- "derive_more",
  "hex-literal",
  "near-sdk",
 ]

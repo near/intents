@@ -116,7 +116,7 @@ mod tests {
     );
 
     #[test]
-    fn test_expected_sh256_hash() {
+    fn test_expected_sha256_hash() {
         let payload = Adr36Payload::new(
             REFERENCE_MESSAGE.to_string(),
             REFERENCE_SECP256K1_SIGNER.to_string(),
