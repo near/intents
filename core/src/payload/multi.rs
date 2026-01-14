@@ -1,3 +1,8 @@
+use super::{
+    DefusePayload, ExtractDefusePayload, raw::SignedRawEd25519Payload,
+    webauthn::SignedWebAuthnPayload,
+};
+use defuse_adr36::SignedAdr36Payload;
 use defuse_crypto::{Payload, PublicKey, SignedPayload};
 use defuse_erc191::SignedErc191Payload;
 use defuse_nep413::SignedNep413Payload;
@@ -6,11 +11,6 @@ use defuse_tip191::SignedTip191Payload;
 use defuse_ton_connect::SignedTonConnectPayload;
 use derive_more::derive::From;
 use near_sdk::{CryptoHash, near, serde::de::DeserializeOwned, serde_json};
-
-use super::{
-    DefusePayload, ExtractDefusePayload, raw::SignedRawEd25519Payload,
-    webauthn::SignedWebAuthnPayload,
-};
 
 #[near(serializers = [json])]
 #[serde(tag = "standard", rename_all = "snake_case")]
@@ -51,6 +51,11 @@ pub enum MultiPayload {
     /// SEP-53: The standard for signing data off-chain for Stellar accounts.
     /// See [SEP-53](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md)
     Sep53(SignedSep53Payload),
+
+    /// ADR-36: The standard for signing data off-chain for accounts on Cosmos SDK.
+    /// Standard reference: https://github.com/cosmos/cosmos-sdk/blob/main/docs/architecture/adr-036-arbitrary-signature.md
+    /// Kepler-Wallet docs (implementation reference): https://docs.keplr.app/api/guide/sign-arbitrary#adr-36-signing-with-signamino
+    Adr36(SignedAdr36Payload),
 }
 
 impl Payload for MultiPayload {
@@ -68,6 +73,7 @@ impl Payload for MultiPayload {
             Self::WebAuthn(payload) => payload.hash(),
             Self::TonConnect(payload) => payload.hash(),
             Self::Sep53(payload) => payload.hash(),
+            Self::Adr36(payload) => payload.hash(),
         }
     }
 }
@@ -85,6 +91,7 @@ impl SignedPayload for MultiPayload {
             Self::WebAuthn(payload) => payload.verify(),
             Self::TonConnect(payload) => payload.verify().map(PublicKey::Ed25519),
             Self::Sep53(payload) => payload.verify().map(PublicKey::Ed25519),
+            Self::Adr36(payload) => payload.verify().map(PublicKey::Secp256k1),
         }
     }
 }
@@ -105,6 +112,7 @@ where
             Self::WebAuthn(payload) => payload.extract_defuse_payload(),
             Self::TonConnect(payload) => payload.extract_defuse_payload(),
             Self::Sep53(payload) => payload.extract_defuse_payload(),
+            Self::Adr36(payload) => payload.extract_defuse_payload(),
         }
     }
 }

@@ -1,0 +1,19 @@
+[package]
+name = "defuse-adr36"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+defuse-crypto = { workspace = true, features = ["serde"] }
+derive_more = { workspace = true, features = ["from"] }
+near-sdk.workspace = true
+defuse-near-utils.workspace = true
+
+[dev-dependencies]
+near-sdk = { workspace = true, features = ["unit-testing"] }
+hex-literal.workspace = true
+
+[lints]
+workspace = true
