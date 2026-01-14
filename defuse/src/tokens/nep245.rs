@@ -2,7 +2,7 @@
 
 use defuse_nep245::{MultiTokenCore, TokenId, receiver::MultiTokenReceiver};
 use near_plugins::AccessControllable;
-use near_sdk::{AccountId, PromiseOrValue, ext_contract, json_types::U128};
+use near_sdk::{AccountId, Gas, PromiseOrValue, ext_contract, json_types::U128, near};
 
 #[ext_contract(ext_mt_withdraw)]
 pub trait MultiTokenWithdrawer: MultiTokenReceiver + MultiTokenWithdrawResolver {
@@ -94,4 +94,35 @@ pub trait MultiTokenForcedWithdrawer: MultiTokenWithdrawer + AccessControllable 
         memo: Option<String>,
         msg: Option<String>,
     ) -> PromiseOrValue<Vec<U128>>;
+}
+
+/// Action to perform when self-transferring (receiver_id == current_account_id).
+/// This allows generic contracts (like escrow) to trigger withdrawals using
+/// only standard NEP-245 methods.
+#[must_use]
+#[near(serializers = [json])]
+#[serde(tag = "action", rename_all = "snake_case")]
+#[derive(Debug, Clone)]
+pub enum SelfAction {
+    /// Withdraw tokens to an external contract via mt_batch_transfer
+    Withdraw(WithdrawAction),
+}
+
+#[must_use]
+#[near(serializers = [json])]
+#[derive(Debug, Clone)]
+pub struct WithdrawAction {
+    /// The external token contract to call mt_batch_transfer on
+    pub token: AccountId,
+    /// Final receiver of the tokens on the external contract
+    pub receiver_id: AccountId,
+    /// Optional memo for the external transfer
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub memo: Option<String>,
+    /// Optional message for mt_batch_transfer_call on the external contract
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub msg: Option<String>,
+    /// Optional minimum gas for the withdrawal
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_gas: Option<Gas>,
 }

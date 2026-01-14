@@ -16,6 +16,7 @@ use defuse::sandbox_ext::account_manager::AccountManagerExt;
 use defuse::sandbox_ext::deployer::DefuseExt;
 use defuse::sandbox_ext::tokens::{nep141::DefuseFtWithdrawer, nep245::DefuseMtWithdrawer};
 use defuse::tokens::DepositMessage;
+use defuse::tokens::nep245::{SelfAction, WithdrawAction};
 use defuse::tokens::{DepositAction, ExecuteIntents};
 use defuse_sandbox::assert_a_contains_b;
 use defuse_sandbox::extensions::mt::{MtExt, MtViewExt};
@@ -29,8 +30,6 @@ use std::borrow::Cow;
 #[rstest]
 #[tokio::test]
 async fn multitoken_enumeration() {
-    use defuse::core::token_id::nep141::Nep141TokenId;
-
     let env = Env::builder().create_unique_users().build().await;
 
     let (user1, user2, user3, ft1, ft2) = futures::join!(
@@ -297,8 +296,6 @@ async fn multitoken_enumeration() {
 #[rstest]
 #[tokio::test]
 async fn multitoken_enumeration_with_ranges() {
-    use defuse::core::token_id::nep141::Nep141TokenId;
-
     let env = Env::builder().create_unique_users().build().await;
 
     let (user1, user2, user3, ft1, ft2, ft3) = futures::join!(
@@ -930,12 +927,6 @@ struct MtTransferCallExpectation {
 async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     #[case] expectation: MtTransferCallExpectation,
 ) {
-    use crate::tests::defuse::DefuseSignerExt;
-    use defuse::{
-        core::{amounts::Amounts, intents::tokens::Transfer},
-        sandbox_ext::account_manager::AccountManagerExt,
-    };
-
     let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (user, intent_receiver, ft) =
@@ -1295,8 +1286,6 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
 
 #[tokio::test]
 async fn mt_transfer_call_circullar_callback() {
-    use defuse::tokens::DepositMessage;
-
     let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
@@ -1408,8 +1397,6 @@ async fn mt_transfer_call_circullar_callback() {
 
 #[tokio::test]
 async fn mt_transfer_call_circullar_deposit() {
-    use defuse::tokens::DepositMessage;
-
     let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
@@ -1666,5 +1653,348 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
             .unwrap(),
         2000,
         "User should have: 2000 (second refund) = 2000 of token2 (all refunded)"
+    );
+}
+
+#[tokio::test]
+async fn self_transfer_withdraw_success() {
+    let env = Env::builder().build().await;
+    let (user, ft) = futures::join!(env.create_user(), env.create_token());
+    let defuse2 = env
+        .deploy_defuse(
+            "defuse2",
+            DefuseConfig {
+                wnear_id: env.wnear.id().clone(),
+                fees: FeesConfig {
+                    fee: Pips::ZERO,
+                    fee_collector: env.id().clone(),
+                },
+                roles: RolesConfig::default(),
+            },
+            false,
+        )
+        .await
+        .unwrap();
+    env.initial_ft_storage_deposit(vec![user.id()], vec![ft.id()])
+        .await;
+
+    let wrapped_token_id = TokenId::from(Nep141TokenId::new(ft.id().clone()));
+    env.defuse_ft_deposit_to(ft.id(), 1000, user.id(), None)
+        .await
+        .unwrap();
+    // Transfer tokens from defuse1 to defuse2 - this creates NEP-245 wrapped tokens
+    user.mt_transfer_call(
+        env.defuse.id(),
+        defuse2.id(),
+        &wrapped_token_id.to_string(),
+        1000,
+        None,
+        user.id().to_string(), // Deposit to user in defuse2
+    )
+    .await
+    .unwrap();
+
+    // The token in defuse2 is wrapped as NEP-245
+    let double_wrapped_token_id = TokenId::Nep245(Nep245TokenId::new(
+        env.defuse.id().clone(),
+        wrapped_token_id.to_string(),
+    ));
+
+    // Create self-transfer withdraw action
+    // This will withdraw from defuse2 back to defuse1
+    // Inner token IDs are extracted from the wrapped token IDs passed in mt_transfer_call
+    let action = SelfAction::Withdraw(WithdrawAction {
+        token: env.defuse.id().clone(), // The external token contract (defuse1 as MT contract)
+        receiver_id: user.id().clone(), // Final receiver in defuse1
+        memo: Some("self-transfer withdraw".to_string()),
+        msg: None,
+        min_gas: None,
+    });
+
+    // Perform self-transfer on defuse2 (receiver_id = defuse2 itself)
+    // Use mt_batch_transfer_call to get access to logs
+    let result = user
+        .mt_batch_transfer_call(
+            defuse2.id(),
+            defuse2.id(), // self-transfer
+            vec![double_wrapped_token_id.to_string()],
+            vec![500],
+            None,
+            near_sdk::serde_json::to_string(&action).unwrap(),
+        )
+        .await
+        .expect("self-transfer withdraw should succeed");
+
+    let all_logs: Vec<String> = result
+        .logs()
+        .iter()
+        .map(std::string::ToString::to_string)
+        .collect();
+    let _ = result.into_result().unwrap();
+
+    // Match all emitted logs exactly
+    assert_eq!(
+        all_logs,
+        [
+            // 1. MtBurn on defuse2 - burning wrapped tokens from user
+            MtEvent::MtBurn(Cow::Owned(vec![MtBurnEvent {
+                owner_id: Cow::Borrowed(user.id().as_ref()),
+                authorized_id: None,
+                token_ids: Cow::Owned(vec![double_wrapped_token_id.to_string()]),
+                amounts: Cow::Owned(vec![U128(500)]),
+                memo: Some(Cow::Borrowed("withdraw")),
+            }]))
+            .to_nep297_event()
+            .to_event_log(),
+            // 2. MtTransfer on defuse1 - transferring from defuse2 to user
+            MtEvent::MtTransfer(Cow::Owned(vec![MtTransferEvent {
+                authorized_id: None,
+                old_owner_id: Cow::Borrowed(defuse2.id().as_ref()),
+                new_owner_id: Cow::Borrowed(user.id().as_ref()),
+                token_ids: Cow::Owned(vec![wrapped_token_id.to_string()]),
+                amounts: Cow::Owned(vec![U128(500)]),
+                memo: Some(Cow::Borrowed("self-transfer withdraw")),
+            }]))
+            .to_nep297_event()
+            .to_event_log(),
+        ]
+    );
+
+    // Verify balance decreased in defuse2
+    assert_eq!(
+        defuse2
+            .mt_balance_of(user.id(), &double_wrapped_token_id.to_string())
+            .await
+            .unwrap(),
+        500,
+        "User should have 500 wrapped tokens left in defuse2 after withdrawal"
+    );
+
+    // Verify tokens arrived back in defuse1
+    assert_eq!(
+        env.defuse
+            .mt_balance_of(user.id(), &wrapped_token_id.to_string())
+            .await
+            .unwrap(),
+        500,
+        "User should have 500 tokens back in defuse1"
+    );
+}
+
+#[tokio::test]
+async fn self_transfer_insufficient_balance_fails() {
+    let env = Env::builder().build().await;
+
+    let (user, ft) = futures::join!(env.create_user(), env.create_token());
+
+    // Deploy a second defuse instance (defuse2)
+    let defuse2 = env
+        .deploy_defuse(
+            "defuse2",
+            DefuseConfig {
+                wnear_id: env.wnear.id().clone(),
+                fees: FeesConfig {
+                    fee: Pips::ZERO,
+                    fee_collector: env.id().clone(),
+                },
+                roles: RolesConfig::default(),
+            },
+            false,
+        )
+        .await
+        .unwrap();
+
+    env.initial_ft_storage_deposit(vec![user.id()], vec![ft.id()])
+        .await;
+
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.id().clone()));
+
+    // Deposit tokens to user in defuse1
+    env.defuse_ft_deposit_to(ft.id(), 100, user.id(), None)
+        .await
+        .unwrap();
+
+    // Transfer tokens from defuse1 to defuse2 - this creates NEP-245 wrapped tokens
+    user.mt_transfer_call(
+        env.defuse.id(),
+        defuse2.id(),
+        &ft_id.to_string(),
+        100,
+        None,
+        user.id().to_string(),
+    )
+    .await
+    .unwrap();
+
+    // The token in defuse2 is wrapped as NEP-245
+    let wrapped_token_id = TokenId::Nep245(Nep245TokenId::new(
+        env.defuse.id().clone(),
+        ft_id.to_string(),
+    ));
+
+    // Verify user has 100 wrapped tokens in defuse2
+    assert_eq!(
+        defuse2
+            .mt_balance_of(user.id(), &wrapped_token_id.to_string())
+            .await
+            .unwrap(),
+        100,
+        "User should have 100 wrapped tokens in defuse2"
+    );
+
+    // Create self-transfer withdraw action
+    // Inner token IDs are extracted from the wrapped token IDs passed in mt_transfer_call
+    let action = SelfAction::Withdraw(WithdrawAction {
+        token: env.defuse.id().clone(),
+        receiver_id: user.id().clone(),
+        memo: None,
+        msg: None,
+        min_gas: None,
+    });
+
+    // Attempt self-transfer with amount exceeding balance (500 > 100)
+    let result = user
+        .mt_transfer_call(
+            defuse2.id(),
+            defuse2.id(), // self-transfer
+            &wrapped_token_id.to_string(),
+            500, // More than available (100)
+            None,
+            near_sdk::serde_json::to_string(&action).unwrap(),
+        )
+        .await;
+
+    // Should fail due to insufficient balance
+    assert!(
+        result.is_err(),
+        "Self-transfer withdraw with insufficient balance should fail"
+    );
+
+    // Verify balance unchanged in defuse2
+    assert_eq!(
+        defuse2
+            .mt_balance_of(user.id(), &wrapped_token_id.to_string())
+            .await
+            .unwrap(),
+        100,
+        "User balance should remain unchanged after failed withdrawal"
+    );
+}
+
+#[tokio::test]
+async fn self_transfer_withdraw_with_partial_refund() {
+    let env = Env::builder().build().await;
+    let (user, ft) = futures::join!(env.create_user(), env.create_token());
+
+    // Deploy second defuse instance
+    let defuse2 = env
+        .deploy_defuse(
+            "defuse2",
+            DefuseConfig {
+                wnear_id: env.wnear.id().clone(),
+                fees: FeesConfig {
+                    fee: Pips::ZERO,
+                    fee_collector: env.id().clone(),
+                },
+                roles: RolesConfig::default(),
+            },
+            false,
+        )
+        .await
+        .unwrap();
+
+    // Deploy receiver stub
+    let receiver_stub = env
+        .deploy_sub_contract(
+            "receiver_stub",
+            NearToken::from_near(100),
+            MT_RECEIVER_STUB_WASM.to_vec(),
+            None::<FnCallBuilder>,
+        )
+        .await
+        .unwrap();
+
+    env.initial_ft_storage_deposit(vec![user.id(), receiver_stub.id()], vec![ft.id()])
+        .await;
+
+    let ft_id = TokenId::from(Nep141TokenId::new(ft.id().clone()));
+
+    // Deposit 1000 tokens to user in defuse1
+    env.defuse_ft_deposit_to(ft.id(), 1000, user.id(), None)
+        .await
+        .unwrap();
+
+    // Transfer from defuse1 to defuse2, creating wrapped tokens for user
+    user.mt_transfer_call(
+        env.defuse.id(),
+        defuse2.id(),
+        &ft_id.to_string(),
+        1000,
+        None,
+        user.id().to_string(),
+    )
+    .await
+    .unwrap();
+
+    let wrapped_token_id = TokenId::Nep245(Nep245TokenId::new(
+        env.defuse.id().clone(),
+        ft_id.to_string(),
+    ));
+
+    // Verify user has 1000 wrapped tokens in defuse2
+    assert_eq!(
+        defuse2
+            .mt_balance_of(user.id(), &wrapped_token_id.to_string())
+            .await
+            .unwrap(),
+        1000
+    );
+
+    // Create self-transfer withdraw with msg that tells stub to return 300 refund
+    let stub_action = StubAction::ReturnValue(300.into());
+    let action = SelfAction::Withdraw(WithdrawAction {
+        token: env.defuse.id().clone(),
+        receiver_id: receiver_stub.id().clone(),
+        memo: None,
+        msg: Some(serde_json::to_string(&stub_action).unwrap()),
+        min_gas: None,
+    });
+
+    // Self-transfer withdraw 500 tokens
+    user.mt_transfer_call(
+        defuse2.id(),
+        defuse2.id(), // self-transfer
+        &wrapped_token_id.to_string(),
+        500,
+        None,
+        serde_json::to_string(&action).unwrap(),
+    )
+    .await
+    .unwrap();
+
+    // Verify balances:
+    // Flow:
+    // 1. defuse2 burns 500 wrapped tokens from user (user has 500 left)
+    // 2. defuse2 calls defuse1.mt_batch_transfer_call(receiver_stub, 500, msg)
+    // 3. defuse1 transfers 500 from defuse2 to receiver_stub
+    // 4. receiver_stub returns 300 refund → defuse1.mt_resolve_transfer refunds 300 to defuse2
+    // 5. mt_batch_transfer_call returns [200] (used amounts)
+    // 6. defuse2.mt_resolve_withdraw deposits 300 wrapped tokens back to user
+    // Result: User has 500 + 300 = 800 wrapped tokens
+
+    assert_eq!(
+        defuse2
+            .mt_balance_of(user.id(), &wrapped_token_id.to_string())
+            .await
+            .unwrap(),
+        800,
+    );
+
+    assert_eq!(
+        env.defuse
+            .mt_balance_of(receiver_stub.id(), &ft_id.to_string())
+            .await
+            .unwrap(),
+        200,
     );
 }

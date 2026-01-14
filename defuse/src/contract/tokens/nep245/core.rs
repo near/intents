@@ -1,13 +1,20 @@
-use crate::contract::{Contract, ContractExt};
+use crate::{
+    contract::{Contract, ContractExt},
+    tokens::nep245::SelfAction,
+};
 use defuse_core::{
-    DefuseError, Result, engine::StateView, intents::tokens::NotifyOnTransfer, token_id::TokenId,
+    DefuseError, Result,
+    engine::StateView,
+    intents::tokens::{MtWithdraw, NotifyOnTransfer},
+    token_id::TokenId,
+    token_id::nep245::Nep245TokenId,
 };
 use defuse_near_utils::{UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::{MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver};
 use near_plugins::{Pausable, pause};
 use near_sdk::{
     AccountId, AccountIdRef, Gas, NearToken, Promise, PromiseOrValue, assert_one_yocto, env,
-    json_types::U128, near, require,
+    json_types::U128, near, require, serde_json,
 };
 use std::borrow::Cow;
 
@@ -225,22 +232,77 @@ impl Contract {
         msg: String,
         force: bool,
     ) -> Result<PromiseOrValue<Vec<U128>>> {
-        self.internal_mt_batch_transfer(
-            &sender_id,
-            &receiver_id,
-            &token_ids,
-            &amounts,
-            memo,
-            force,
-        )?;
+        // Check for self-transfer (action mode)
+        if receiver_id == env::current_account_id() {
+            self.handle_self_action(sender_id, token_ids, amounts, &msg, force)
+        } else {
+            self.internal_mt_batch_transfer(
+                &sender_id,
+                &receiver_id,
+                &token_ids,
+                &amounts,
+                memo,
+                force,
+            )?;
 
-        Ok(Self::notify_and_resolve_transfer(
-            sender_id,
-            receiver_id,
-            token_ids,
-            amounts,
-            NotifyOnTransfer::new(msg),
-        ))
+            Ok(Self::notify_and_resolve_transfer(
+                sender_id,
+                receiver_id,
+                token_ids,
+                amounts,
+                NotifyOnTransfer::new(msg),
+            ))
+        }
+    }
+
+    fn handle_self_action(
+        &mut self,
+        sender_id: AccountId,
+        token_ids: Vec<defuse_nep245::TokenId>,
+        amounts: Vec<U128>,
+        msg: &str,
+        force: bool,
+    ) -> Result<PromiseOrValue<Vec<U128>>> {
+        let action: SelfAction =
+            serde_json::from_str(msg).map_err(|_| DefuseError::InvalidIntent)?;
+
+        match action {
+            SelfAction::Withdraw(withdraw_action) => {
+                // Extract inner token IDs from wrapped NEP-245 token IDs
+                let inner_token_ids: Vec<defuse_nep245::TokenId> = token_ids
+                    .into_iter()
+                    .map(|token_id| {
+                        let parsed: TokenId = token_id.parse()?;
+                        match parsed {
+                            TokenId::Nep245(Nep245TokenId {
+                                contract_id,
+                                mt_token_id,
+                            }) => {
+                                // Validate contract matches the withdrawal target
+                                if contract_id != withdraw_action.token {
+                                    return Err(DefuseError::InvalidIntent);
+                                }
+                                Ok(mt_token_id)
+                            }
+                            _ => Err(DefuseError::InvalidIntent),
+                        }
+                    })
+                    .collect::<Result<Vec<_>>>()?;
+
+                let mt_withdraw = MtWithdraw {
+                    token: withdraw_action.token,
+                    receiver_id: withdraw_action.receiver_id,
+                    token_ids: inner_token_ids,
+                    amounts,
+                    memo: withdraw_action.memo,
+                    msg: withdraw_action.msg,
+                    storage_deposit: None,
+                    min_gas: withdraw_action.min_gas,
+                };
+
+                self.internal_mt_withdraw(sender_id, mt_withdraw, force)
+            }
+        }
     }
 
     pub(crate) fn notify_and_resolve_transfer(
