@@ -40,6 +40,9 @@ pub struct NotifyOnTransfer {
 }
 
 impl NotifyOnTransfer {
+    pub const MT_ON_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(5);
+    pub const MT_ON_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(30);
+
     pub const fn new(msg: String) -> Self {
         Self {
             state_init: None,
@@ -55,6 +58,16 @@ impl NotifyOnTransfer {
 
     pub const fn with_min_gas(mut self, min_gas: Gas) -> Self {
         self.min_gas = Some(min_gas);
+        self
+    }
+
+    pub fn set_gas(mut self) -> Self {
+        self.min_gas = Some(
+            self.min_gas
+                .unwrap_or(Self::MT_ON_TRANSFER_GAS_DEFAULT)
+                .max(Self::MT_ON_TRANSFER_GAS_MIN),
+        );
+
         self
     }
 }
@@ -78,11 +91,6 @@ pub struct Transfer {
     /// * minimum: 5TGas
     #[serde(flatten, default, skip_serializing_if = "Option::is_none")]
     pub notification: Option<NotifyOnTransfer>,
-}
-
-impl Transfer {
-    pub const MT_ON_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(5);
-    pub const MT_ON_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(30);
 }
 
 impl ExecutableIntent for Transfer {
@@ -124,16 +132,13 @@ impl ExecutableIntent for Transfer {
             .state
             .internal_add_balance(self.receiver_id.clone(), self.tokens.clone())?;
 
-        if let Some(mut notification) = self.notification {
-            notification.min_gas = Some(
-                notification
-                    .min_gas
-                    .unwrap_or(Self::MT_ON_TRANSFER_GAS_DEFAULT)
-                    .max(Self::MT_ON_TRANSFER_GAS_MIN),
+        if let Some(notification) = self.notification {
+            engine.state.notify_on_transfer(
+                sender_id,
+                self.receiver_id,
+                self.tokens,
+                notification.set_gas(),
             );
-            engine
-                .state
-                .notify_on_transfer(sender_id, self.receiver_id, self.tokens, notification);
         }
 
         Ok(())
@@ -529,6 +534,14 @@ pub struct MtMint {
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<String>,
+
+    /// Optionally notify receiver_id via `mt_on_transfer()`
+    ///
+    /// NOTE: `min_gas` is adjusted with following values:
+    /// * default: 30TGas
+    /// * minimum: 5TGas
+    #[serde(flatten, default, skip_serializing_if = "Option::is_none")]
+    pub notification: Option<NotifyOnTransfer>,
 }
 
 impl ExecutableIntent for MtMint {
@@ -567,6 +580,19 @@ impl ExecutableIntent for MtMint {
             .as_slice(),
         )));
 
-        engine.state.mt_mint(self.receiver_id, tokens, self.memo)
+        engine
+            .state
+            .mt_mint(self.receiver_id.clone(), tokens.clone(), self.memo)?;
+
+        if let Some(notification) = self.notification {
+            engine.state.notify_on_transfer(
+                owner_id,
+                self.receiver_id,
+                tokens,
+                notification.set_gas(),
+            );
+        }
+
+        Ok(())
     }
 }

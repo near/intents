@@ -924,6 +924,7 @@ async fn simulate_mint_intent() {
         tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
         memo: Some(memo.to_string()),
         receiver_id: user.id().clone(),
+        notification: None,
     };
 
     let mint_payload = user
