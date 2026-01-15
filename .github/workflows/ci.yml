@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - develop
+      - defuse-0.4.2-hotfix
   pull_request:
 
 jobs:
