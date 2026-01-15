@@ -223,16 +223,6 @@ where
     ) -> Result<()> {
         self.state.mt_mint(owner_id, tokens, memo)
     }
-
-    #[inline]
-    fn mt_burn(
-        &mut self,
-        owner_id: &AccountIdRef,
-        tokens: Amounts,
-        memo: Option<String>,
-    ) -> Result<()> {
-        self.state.mt_burn(owner_id, tokens, memo)
-    }
 }
 
 /// Accumulates internal deposits and withdrawals on different tokens

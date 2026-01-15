@@ -20,8 +20,8 @@ use defuse::{
             auth::AuthCall,
             token_diff::{TokenDeltas, TokenDiff, TokenDiffEvent},
             tokens::{
-                FtWithdraw, MtBurn, MtMint, MtWithdraw, NativeWithdraw, NftWithdraw,
-                StorageDeposit, Transfer,
+                FtWithdraw, MtMint, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit,
+                Transfer,
             },
         },
         token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
@@ -957,78 +957,6 @@ async fn simulate_mint_intent() {
             .to_nep297_event()
             .to_event_log(),
             AccountNonceIntentEvent::new(&user.id(), nonce, &mint_payload)
-                .into_event()
-                .to_nep297_event()
-                .to_event_log(),
-        ]
-    );
-}
-
-#[rstest]
-#[trace]
-#[tokio::test]
-async fn simulate_burn_intent() {
-    let env = Env::builder().build().await;
-
-    let user = env.create_user().await;
-
-    let token_id = TokenId::from(Nep141TokenId::new(
-        "sometoken.near".parse::<AccountId>().unwrap(),
-    ));
-    let memo = "Some memo";
-    let amount = 1000;
-
-    let mint_payload = user
-        .sign_defuse_payload_default(
-            &env.defuse,
-            [MtMint {
-                tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
-                memo: Some(memo.to_string()),
-                receiver_id: user.id().clone(),
-            }],
-        )
-        .await
-        .unwrap();
-
-    env.simulate_and_execute_intents(env.defuse.id(), [mint_payload])
-        .await
-        .unwrap();
-
-    let burn_intent = MtBurn {
-        tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
-        memo: Some(memo.to_string()),
-    };
-
-    let burn_payload = user
-        .sign_defuse_payload_default(&env.defuse, [burn_intent.clone()])
-        .await
-        .unwrap();
-    let nonce = burn_payload.extract_nonce().unwrap();
-
-    let result = env
-        .defuse
-        .simulate_intents([burn_payload.clone()])
-        .await
-        .unwrap();
-
-    let mt_id = TokenId::from(Nep245TokenId::new(user.id().clone(), token_id.to_string()));
-
-    assert_eq!(
-        result.report.logs,
-        vec![
-            DefuseEvent::MtBurn(Cow::Owned(vec![IntentEvent {
-                intent_hash: burn_payload.hash(),
-                event: AccountEvent {
-                    account_id: user.id().clone().into(),
-                    event: Cow::Owned(MtBurn {
-                        tokens: Amounts::new(std::iter::once((mt_id, amount)).collect()),
-                        ..burn_intent
-                    })
-                },
-            }]))
-            .to_nep297_event()
-            .to_event_log(),
-            AccountNonceIntentEvent::new(&user.id(), nonce, &burn_payload)
                 .into_event()
                 .to_nep297_event()
                 .to_event_log(),

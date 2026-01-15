@@ -12,11 +12,7 @@ use tokens::{NativeWithdraw, StorageDeposit};
 use crate::{
     Result,
     engine::{Engine, Inspector, State},
-    intents::{
-        account::SetAuthByPredecessorId,
-        auth::AuthCall,
-        tokens::{MtBurn, MtMint},
-    },
+    intents::{account::SetAuthByPredecessorId, auth::AuthCall, tokens::MtMint},
 };
 
 use self::{
@@ -75,9 +71,6 @@ pub enum Intent {
 
     // See [`MtMint`]
     MtMint(MtMint),
-
-    // See [`MtBurn`]
-    MtBurn(MtBurn),
 }
 
 pub trait ExecutableIntent {
@@ -136,7 +129,6 @@ impl ExecutableIntent for Intent {
             }
             Self::AuthCall(intent) => intent.execute_intent(signer_id, engine, intent_hash),
             Self::MtMint(intent) => intent.execute_intent(signer_id, engine, intent_hash),
-            Self::MtBurn(intent) => intent.execute_intent(signer_id, engine, intent_hash),
         }
     }
 }
