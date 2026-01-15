@@ -9,6 +9,8 @@ use futures::try_join;
 use near_sdk::NearToken;
 use rstest::rstest;
 
+use crate::env::POA_FACTORY_WASM;
+
 #[rstest]
 #[tokio::test]
 async fn deploy_mint(#[future(awt)] sandbox: Sandbox) {
@@ -31,6 +33,7 @@ async fn deploy_mint(#[future(awt)] sandbox: Sandbox) {
                 (Role::TokenDeployer, [root.id().clone()]),
                 (Role::TokenDepositer, [root.id().clone()]),
             ],
+            POA_FACTORY_WASM.clone(),
         )
         .await
         .unwrap();

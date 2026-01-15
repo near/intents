@@ -10,7 +10,7 @@ use defuse_sandbox::extensions::poa::PoAFactoryExt;
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_sdk::json_types::U128;
 
-use crate::{env::Env, tests::MT_RECEIVER_STUB_WASM};
+use crate::env::{Env, MT_RECEIVER_STUB_WASM};
 use defuse_sandbox::extensions::defuse::contract::{
     core::intents::tokens::NotifyOnTransfer,
     tokens::{DepositAction, DepositMessage, ExecuteIntents},

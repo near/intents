@@ -20,7 +20,7 @@ use impl_tools::autoimpl;
 use near_sdk::{GlobalContractId, NearToken};
 use rstest::fixture;
 
-use defuse_sandbox::extensions::escrow::ESCROW_SWAP_WASM;
+use crate::env::{DEFUSE_WASM, ESCROW_SWAP_WASM, POA_FACTORY_WASM, WNEAR_WASM};
 
 #[fixture]
 pub async fn env() -> Env {
@@ -133,7 +133,7 @@ impl Env {
     }
 
     async fn deploy_verifier(root: &SigningAccount) -> anyhow::Result<Account> {
-        let wnear = root.deploy_wrap_near("wnear").await?;
+        let wnear = root.deploy_wrap_near("wnear", WNEAR_WASM.clone()).await?;
 
         root.deploy_defuse(
             "intents",
@@ -145,7 +145,7 @@ impl Env {
                 },
                 roles: RolesConfig::default(),
             },
-            false,
+            DEFUSE_WASM.clone(),
         )
         .await
         .map(Into::into)
@@ -163,6 +163,7 @@ impl Env {
                 (PoAFactoryRole::TokenDeployer, [root.id().clone()]),
                 (PoAFactoryRole::TokenDepositer, [root.id().clone()]),
             ],
+            POA_FACTORY_WASM.clone(),
         )
         .await
         .map(Into::into)

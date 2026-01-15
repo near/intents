@@ -19,8 +19,7 @@ use near_contract_standards::non_fungible_token::{Token, metadata::TokenMetadata
 use near_sdk::NearToken;
 use rstest::rstest;
 
-use crate::env::Env;
-use crate::tests::MT_RECEIVER_STUB_WASM;
+use crate::env::{Env, MT_RECEIVER_STUB_WASM, NON_FUNGIBLE_TOKEN_WASM};
 
 const DUMMY_REFERENCE_HASH: [u8; 32] = [33; 32];
 const DUMMY_NFT1_ID: &str = "thisisdummynftid1";
@@ -57,6 +56,7 @@ async fn transfer_nft_to_verifier() {
                 icon: None,
                 base_uri: None,
             },
+            NON_FUNGIBLE_TOKEN_WASM.clone(),
         )
         .await
         .unwrap();
@@ -378,6 +378,7 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
                 icon: None,
                 base_uri: None,
             },
+            NON_FUNGIBLE_TOKEN_WASM.clone(),
         )
         .await
         .unwrap();

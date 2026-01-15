@@ -21,7 +21,7 @@ use defuse_sandbox::extensions::defuse::contract::{
 use defuse_sandbox::extensions::defuse::{nonce::ExtractNonceExt, signer::DefaultDefuseSignerExt};
 
 use crate::{
-    env::Env,
+    env::{DEFUSE_WASM, Env, NON_FUNGIBLE_TOKEN_WASM},
     sandbox::{
         api::types::{json::Base64VecU8, nft::NFTContractMetadata},
         extensions::{
@@ -285,6 +285,7 @@ async fn simulate_nft_withdraw_intent() {
                 icon: None,
                 base_uri: None,
             },
+            NON_FUNGIBLE_TOKEN_WASM.clone(),
         )
         .await
         .unwrap();
@@ -384,7 +385,7 @@ async fn simulate_mt_withdraw_intent() {
                 },
                 roles: RolesConfig::default(),
             },
-            false,
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();

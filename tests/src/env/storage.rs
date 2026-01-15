@@ -32,6 +32,7 @@ use futures::{
 use crate::env::{
     Env,
     state::{AccountWithTokens, PersistentState},
+    wasms::DEFUSE_WASM,
 };
 
 impl Env {
@@ -45,7 +46,7 @@ impl Env {
             .await
             .expect("Failed to grant upgrader role");
 
-        self.upgrade_defuse(self.defuse.id())
+        self.upgrade_defuse(self.defuse.id(), DEFUSE_WASM.clone())
             .await
             .expect("Failed to upgrade defuse");
 

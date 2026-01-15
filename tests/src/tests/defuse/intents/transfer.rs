@@ -1,4 +1,4 @@
-use crate::tests::MT_RECEIVER_STUB_WASM;
+use crate::env::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 use crate::{
     env::Env, sandbox::extensions::defuse::intents::ExecuteIntentsExt,
     sandbox::extensions::mt::MtViewExt,
@@ -105,7 +105,7 @@ async fn transfer_intent_to_defuse() {
                 },
                 roles: RolesConfig::default(),
             },
-            false,
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();

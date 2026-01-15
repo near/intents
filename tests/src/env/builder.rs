@@ -19,7 +19,10 @@ use defuse_sandbox::{
 use defuse_test_utils::random::Seed;
 use near_sdk::{AccountId, NearToken};
 
-use crate::env::Env;
+use crate::env::{
+    Env,
+    wasms::{DEFUSE_LEGACY_WASM, DEFUSE_WASM, POA_FACTORY_WASM, WNEAR_WASM},
+};
 
 const MIGRATE_FROM_LEGACY_ENV_NAME: &str = "DEFUSE_MIGRATE_FROM_LEGACY";
 
@@ -111,7 +114,17 @@ impl EnvBuilder {
             roles: self.roles.clone(),
         };
 
-        root.deploy_defuse(id, cfg, legacy).await.unwrap()
+        root.deploy_defuse(
+            id,
+            cfg,
+            if legacy {
+                DEFUSE_LEGACY_WASM.clone()
+            } else {
+                DEFUSE_WASM.clone()
+            },
+        )
+        .await
+        .unwrap()
     }
 
     fn grant_roles(&mut self, root: &Account, deploy_legacy: bool) {
@@ -131,7 +144,10 @@ impl EnvBuilder {
         let root = sandbox.root();
 
         let poa_factory = deploy_poa_factory(root).await;
-        let wnear = root.deploy_wrap_near("wnear").await.unwrap();
+        let wnear = root
+            .deploy_wrap_near("wnear", WNEAR_WASM.clone())
+            .await
+            .unwrap();
 
         self.grant_roles(root, deploy_legacy);
 
@@ -197,6 +213,7 @@ async fn deploy_poa_factory(root: &SigningAccount) -> SigningAccount {
             (POAFactoryRole::TokenDeployer, [root.id().clone()]),
             (POAFactoryRole::TokenDepositer, [root.id().clone()]),
         ],
+        POA_FACTORY_WASM.clone(),
     )
     .await
     .unwrap()

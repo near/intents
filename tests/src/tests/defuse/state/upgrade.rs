@@ -1,5 +1,3 @@
-use std::sync::LazyLock;
-
 use defuse_sandbox::extensions::defuse::contract::{
     contract::Role,
     core::{
@@ -13,11 +11,11 @@ use defuse_sandbox::extensions::defuse::contract::{
 };
 
 use crate::{
+    env::DEFUSE_WASM,
     sandbox::{
         Sandbox, SigningAccount,
         extensions::{acl::AclExt, mt::MtViewExt},
         near_sandbox::FetchData,
-        read_wasm,
     },
     utils::fixtures::{ed25519_pk, p256_pk, secp256k1_pk},
 };
@@ -34,8 +32,6 @@ use rstest::rstest;
 use futures::future::try_join_all;
 
 use crate::env::Env;
-
-static DEFUSE_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("res/defuse"));
 
 #[ignore = "only for simple upgrades"]
 #[rstest]

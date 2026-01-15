@@ -1,14 +1,9 @@
 pub use defuse_escrow_swap as contract;
 
-use std::sync::LazyLock;
-
-use crate::{Account, SigningAccount, anyhow, read_wasm, tx::FnCallBuilder};
+use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use near_sdk::{AccountId, serde_json::json};
 
 use defuse_escrow_swap::{Params, Storage};
-
-pub static ESCROW_SWAP_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm("res/defuse_escrow_swap"));
 
 #[allow(async_fn_in_trait)]
 pub trait EscrowExt {

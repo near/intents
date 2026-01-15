@@ -3,6 +3,7 @@ mod mt_transfer_resolve_gas;
 
 use std::borrow::Cow;
 
+use crate::env::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 use crate::sandbox::assert_a_contains_b;
 use defuse_sandbox::extensions::defuse::account_manager::AccountManagerExt;
 use defuse_sandbox::extensions::defuse::contract::contract::config::{DefuseConfig, RolesConfig};
@@ -26,7 +27,6 @@ use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_sdk::json_types::U128;
 use near_sdk::{AsNep297Event, NearToken};
 
-use crate::tests::MT_RECEIVER_STUB_WASM;
 use crate::{
     env::Env,
     sandbox::extensions::defuse::{
@@ -513,7 +513,7 @@ async fn multitoken_withdrawals() {
                 },
                 roles: RolesConfig::default(),
             },
-            false,
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();
@@ -962,7 +962,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
                 },
                 roles: RolesConfig::default(),
             },
-            false,
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();
@@ -1153,7 +1153,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
                 },
                 roles: RolesConfig::default(),
             },
-            false,
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();
@@ -1321,7 +1321,7 @@ async fn mt_transfer_call_circullar_callback() {
                 },
                 roles: RolesConfig::default(),
             },
-            false,
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();
@@ -1434,7 +1434,7 @@ async fn mt_transfer_call_circullar_deposit() {
                 },
                 roles: RolesConfig::default(),
             },
-            false,
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();
@@ -1526,7 +1526,7 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
                 },
                 roles: RolesConfig::default(),
             },
-            false,
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();

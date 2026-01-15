@@ -11,6 +11,7 @@ use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
 use near_sdk::{AccountId, Gas, NearToken};
 use rstest::rstest;
 
+use crate::env::DEFUSE_WASM;
 use crate::{
     env::Env,
     sandbox::extensions::defuse::{
@@ -212,7 +213,7 @@ async fn ft_withdraw_intent_msg() {
                 },
                 roles: RolesConfig::default(),
             },
-            false,
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();
