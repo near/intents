@@ -1,5 +1,5 @@
 use defuse_core::intents::tokens::NativeWithdraw;
-use near_sdk::{Gas, Promise, PromiseResult, env, near, require};
+use near_sdk::{Gas, Promise, env, near, require};
 
 use crate::contract::{Contract, ContractExt};
 
@@ -10,7 +10,7 @@ impl Contract {
     #[private]
     pub fn do_native_withdraw(withdraw: NativeWithdraw) -> Promise {
         require!(
-            matches!(env::promise_result(0), PromiseResult::Successful(data) if data.is_empty()),
+            matches!(env::promise_result_checked(0, 0), Ok(data) if data.is_empty()),
             "near_withdraw failed",
         );
 
