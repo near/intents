@@ -100,7 +100,7 @@ mod tests {
         sig
     }
 
-    /// goland cosmos-sdk [repro](https://gist.github.com/kuksag/eeb8ef3a77e6751d53db006b206925ab)
+    /// golang cosmos-sdk [repro](https://gist.github.com/kuksag/eeb8ef3a77e6751d53db006b206925ab)
     const REFERENCE_MESSAGE: &str = "Hello, ADR-036!";
     const REFERENCE_SECP256K1_SIGNER: &str = "cosmos1mnyn7x24xj6vraxeeq56dfkxa009tvhgknhm04";
     const REFERENCE_SHA256_HASH_MESSAGE_HEX: CryptoHash =
