@@ -188,7 +188,8 @@ jobs:
       - name: Install Cargo Plugins
         run: cargo install cargo-audit --locked
       - name: Run security audit
-        run: cargo audit --deny unsound --deny yanked
+         # TODO: ignoring lru vulnerability in near-sdk, remove when fixed
+        run: cargo audit --deny unsound --deny yanked --ignore RUSTSEC-2026-0002
         # run: cargo audit --deny warnings  # Warnings include: unmaintained, unsound and yanked
 
   contract_analysis:
