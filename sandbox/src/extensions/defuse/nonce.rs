@@ -26,10 +26,7 @@ pub async fn generate_unique_nonce(
     let deadline =
         deadline.unwrap_or_else(|| Deadline::timeout(std::time::Duration::from_secs(120)));
 
-    let salt = defuse_contract
-        .current_salt()
-        .await
-        .expect("should be able to fetch salt");
+    let salt = defuse_contract.current_salt().await?;
 
     let mut nonce_bytes = [0u8; 15];
     TestRng::from_entropy().fill_bytes(&mut nonce_bytes);

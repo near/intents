@@ -15,7 +15,6 @@ pub fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
     fs::read(&filename).unwrap_or_else(|e| panic!("Failed to read WASM file at {filename:?}: {e}"))
 }
 
-#[allow(dead_code)]
 pub static MT_RECEIVER_STUB_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("res/multi-token-receiver-stub/multi_token_receiver_stub"));
 
