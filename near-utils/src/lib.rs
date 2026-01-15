@@ -5,6 +5,7 @@ mod cache;
 pub mod digest;
 mod event;
 pub use event::NearSdkLog;
+pub mod env;
 mod gas;
 mod lock;
 mod panic;
