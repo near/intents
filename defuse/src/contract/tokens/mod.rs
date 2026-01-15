@@ -219,7 +219,7 @@ impl Contract {
 
         amounts_count
             .saturating_mul(MAX_LEN_PER_AMOUNT)
-            .saturating_add(3) // `[\n` and `]`
+            .saturating_add("[\n]".len())
     }
 }
 
