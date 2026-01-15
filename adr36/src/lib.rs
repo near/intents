@@ -90,7 +90,6 @@ mod tests {
     use hex_literal::hex;
     use near_sdk::CryptoHash;
 
-    /// note: copy-paste from `erc191/lib.rs`
     const fn fix_v_in_signature(mut sig: [u8; 65]) -> [u8; 65] {
         if *sig.last().unwrap() >= 27 {
             // Ethereum only uses uncompressed keys, with corresponding value v=27/28
