@@ -7,7 +7,7 @@ use defuse_core::{DefuseError, Result, token_id::TokenId};
 use defuse_near_utils::{Lock, UnwrapOrPanic};
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
 use itertools::{Either, Itertools};
-use near_sdk::{AccountId, AccountIdRef, Gas, PromiseResult, env, json_types::U128, serde_json};
+use near_sdk::{AccountId, AccountIdRef, Gas, env, json_types::U128, serde_json};
 use std::borrow::Cow;
 
 pub const STORAGE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
@@ -150,12 +150,12 @@ impl Contract {
     {
         let tokens_iter = tokens.into_iter();
         let tokens_count = tokens_iter.len();
-        let requested_refunds = match env::promise_result(0) {
-            PromiseResult::Successful(value) => serde_json::from_slice::<Vec<U128>>(&value)
+
+        let requested_refunds =
+            env::promise_result_checked(0, Self::mt_on_transfer_max_result_len(tokens_count))
                 .ok()
-                .filter(|refunds| refunds.len() == tokens_count),
-            PromiseResult::Failed => None,
-        };
+                .and_then(|value| serde_json::from_slice::<Vec<U128>>(&value).ok())
+                .filter(|refunds| refunds.len() == tokens_count);
 
         let mut burn_event = MtBurnEvent {
             owner_id: Cow::Borrowed(receiver_id),
@@ -210,6 +210,16 @@ impl Contract {
         if !burn_event.amounts.is_empty() {
             MtEvent::MtBurn([burn_event].as_slice().into()).emit();
         }
+    }
+
+    const fn mt_on_transfer_max_result_len(amounts_count: usize) -> usize {
+        // we allow at most one newline char and up to 8 spaces/tabs if the JSON was prettified
+        const MAX_LEN_PER_AMOUNT: usize =
+            "        \"+340282366920938463463374607431768211455\",\n".len(); // u128::MAX
+
+        amounts_count
+            .saturating_mul(MAX_LEN_PER_AMOUNT)
+            .saturating_add(3) // `[\n` and `]`
     }
 }
 
