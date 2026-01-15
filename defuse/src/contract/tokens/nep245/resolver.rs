@@ -29,15 +29,10 @@ impl MultiTokenResolver for Contract {
 
         let mut refunds =
             env::promise_result_checked(0, Self::mt_on_transfer_max_result_len(amounts.len()))
-                .map_or_else(
-                    |_err| amounts.clone(),
-                    |value| {
-                        serde_json::from_slice::<Vec<U128>>(&value)
-                            .ok()
-                            .filter(|refund| refund.len() == amounts.len())
-                            .unwrap_or_else(|| amounts.clone())
-                    },
-                );
+                .ok()
+                .and_then(|value| serde_json::from_slice::<Vec<U128>>(&value).ok())
+                .filter(|refund| refund.len() == amounts.len())
+                .unwrap_or_else(|| amounts.clone());
 
         let sender_id = previous_owner_ids.first().cloned().unwrap_or_panic();
 
