@@ -211,7 +211,7 @@ impl MultiTokenWithdrawResolver for Contract {
         let mut used =
             env::promise_result_checked(0, Self::mt_on_transfer_max_result_len(amounts.len()))
                 .map_or_else(
-                    |_| {
+                    |_err| {
                         if is_call {
                             // do not refund on failed `mt_batch_transfer_call` due to
                             // NEP-141 vulnerability: `mt_resolve_transfer` fails to
