@@ -11,7 +11,9 @@ use defuse_core::{
     intents::tokens::NftWithdraw,
     token_id::{nep141::Nep141TokenId, nep171::Nep171TokenId},
 };
-use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError};
+use defuse_near_utils::{
+    CURRENT_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError, env::promise_result_checked,
+};
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::{
     non_fungible_token::{self, core::ext_nft_core},
@@ -19,8 +21,8 @@ use near_contract_standards::{
 };
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
 use near_sdk::{
-    AccountId, Gas, NearToken, Promise, PromiseOrValue, PromiseResult, assert_one_yocto, env,
-    json_types::U128, near, require, serde_json,
+    AccountId, Gas, NearToken, Promise, PromiseOrValue, assert_one_yocto, json_types::U128, near,
+    require, serde_json,
 };
 use std::iter;
 
@@ -123,7 +125,7 @@ impl Contract {
         let min_gas = withdraw.min_gas();
         let p = if let Some(storage_deposit) = withdraw.storage_deposit {
             require!(
-                matches!(env::promise_result(0), PromiseResult::Successful(data) if data.is_empty()),
+                matches!(promise_result_checked(0, 0), Ok(data) if data.is_empty()),
                 "near_withdraw failed",
             );
 
@@ -166,21 +168,22 @@ impl NonFungibleTokenWithdrawResolver for Contract {
         token_id: non_fungible_token::TokenId,
         is_call: bool,
     ) -> bool {
-        let used = match env::promise_result(0) {
-            PromiseResult::Successful(value) => {
+        const MAX_RESULT_LENGTH: usize = "false".len(); // `true` is shorter
+        let used = promise_result_checked(0, MAX_RESULT_LENGTH).map_or(
+            // do not refund on failed `nft_transfer_call` due to
+            // NEP-141 vulnerability: `nft_resolve_transfer` fails to
+            // read result of `nft_on_transfer` due to insufficient gas
+            is_call,
+            |value| {
                 if is_call {
                     // `nft_transfer_call` returns true if token was successfully transferred
-                    serde_json::from_slice(&value).unwrap_or_default()
+                    serde_json::from_slice::<bool>(&value).unwrap_or_default()
                 } else {
                     // `nft_transfer` returns empty result on success
                     value.is_empty()
                 }
-            }
-            // do not refund on failed `nft_transfer_call` due to
-            // NEP-141 vulnerability: `nft_resolve_transfer` fails to
-            // read result of `nft_on_transfer` due to insufficient gas
-            PromiseResult::Failed => is_call,
-        };
+            },
+        );
 
         let token_id = Nep171TokenId::new(token, token_id)
             .unwrap_or_panic_display()

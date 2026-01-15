@@ -12,14 +12,16 @@ use defuse_core::{
     intents::tokens::MtWithdraw,
     token_id::{nep141::Nep141TokenId, nep245::Nep245TokenId},
 };
-use defuse_near_utils::{CURRENT_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError};
+use defuse_near_utils::{
+    CURRENT_ACCOUNT_ID, UnwrapOrPanic, UnwrapOrPanicError, env::promise_result_checked,
+};
 use defuse_nep245::ext_mt_core;
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::storage_management::ext_storage_management;
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
 use near_sdk::{
-    AccountId, Gas, NearToken, Promise, PromiseOrValue, PromiseResult, assert_one_yocto, env,
-    json_types::U128, near, require, serde_json,
+    AccountId, Gas, NearToken, Promise, PromiseOrValue, assert_one_yocto, json_types::U128, near,
+    require, serde_json,
 };
 
 #[near]
@@ -154,7 +156,7 @@ impl Contract {
         let min_gas = withdraw.min_gas();
         let p = if let Some(storage_deposit) = withdraw.storage_deposit {
             require!(
-                matches!(env::promise_result(0), PromiseResult::Successful(data) if data.is_empty()),
+                matches!(promise_result_checked(0, 0), Ok(data) if data.is_empty()),
                 "near_withdraw failed",
             );
 
@@ -210,32 +212,34 @@ impl MultiTokenWithdrawResolver for Contract {
             "invalid args"
         );
 
-        let mut used = match env::promise_result(0) {
-            PromiseResult::Successful(value) => {
-                if is_call {
-                    // `mt_batch_transfer_call` returns successfully transferred amounts
-                    serde_json::from_slice::<Vec<U128>>(&value)
-                        .ok()
-                        .filter(|used| used.len() == amounts.len())
-                        .unwrap_or_else(|| vec![U128(0); amounts.len()])
-                } else if value.is_empty() {
-                    // `mt_batch_transfer` returns empty result on success
-                    amounts.clone()
-                } else {
-                    vec![U128(0); amounts.len()]
-                }
-            }
-            PromiseResult::Failed => {
-                if is_call {
-                    // do not refund on failed `mt_batch_transfer_call` due to
-                    // NEP-141 vulnerability: `mt_resolve_transfer` fails to
-                    // read result of `mt_on_transfer` due to insufficient gas
-                    amounts.clone()
-                } else {
-                    vec![U128(0); amounts.len()]
-                }
-            }
-        };
+        let mut used =
+            promise_result_checked(0, Self::mt_on_transfer_max_result_len(amounts.len()))
+                .map_or_else(
+                    |_err| {
+                        if is_call {
+                            // do not refund on failed `mt_batch_transfer_call` due to
+                            // NEP-141 vulnerability: `mt_resolve_transfer` fails to
+                            // read result of `mt_on_transfer` due to insufficient gas
+                            amounts.clone()
+                        } else {
+                            vec![U128(0); amounts.len()]
+                        }
+                    },
+                    |value| {
+                        if is_call {
+                            // `mt_batch_transfer_call` returns successfully transferred amounts
+                            serde_json::from_slice::<Vec<U128>>(&value)
+                                .ok()
+                                .filter(|used| used.len() == amounts.len())
+                                .unwrap_or_else(|| vec![U128(0); amounts.len()])
+                        } else if value.is_empty() {
+                            // `mt_batch_transfer` returns empty result on success
+                            amounts.clone()
+                        } else {
+                            vec![U128(0); amounts.len()]
+                        }
+                    },
+                );
 
         self.deposit(
             sender_id,

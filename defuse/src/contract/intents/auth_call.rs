@@ -1,6 +1,7 @@
 use defuse_auth_call::ext_auth_callee;
 use defuse_core::intents::auth::AuthCall;
-use near_sdk::{AccountId, Gas, Promise, PromiseResult, env, near, require};
+use defuse_near_utils::env::promise_result_checked;
+use near_sdk::{AccountId, Gas, Promise, near, require};
 
 use crate::contract::{Contract, ContractExt};
 
@@ -12,7 +13,7 @@ impl Contract {
     pub fn do_auth_call(signer_id: AccountId, auth_call: AuthCall) -> Promise {
         if !auth_call.attached_deposit.is_zero() {
             require!(
-                matches!(env::promise_result(0), PromiseResult::Successful(data) if data.is_empty()),
+                matches!(promise_result_checked(0, 0), Ok(data) if data.is_empty()),
                 "near_withdraw failed",
             );
         }
