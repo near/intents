@@ -19,37 +19,32 @@ impl ExtractNonceExt for MultiPayload {
     }
 }
 
-pub trait GenerateNonceExt {
-    async fn generate_unique_nonce(
-        &self,
-        defuse_contract: &Account,
-        deadline: Option<Deadline>,
-    ) -> anyhow::Result<Nonce> {
-        let deadline =
-            deadline.unwrap_or_else(|| Deadline::timeout(std::time::Duration::from_secs(120)));
+pub async fn generate_unique_nonce(
+    defuse_contract: &Account,
+    deadline: Option<Deadline>,
+) -> anyhow::Result<Nonce> {
+    let deadline =
+        deadline.unwrap_or_else(|| Deadline::timeout(std::time::Duration::from_secs(120)));
 
-        let salt = defuse_contract
-            .current_salt()
-            .await
-            .expect("should be able to fetch salt");
+    let salt = defuse_contract
+        .current_salt()
+        .await
+        .expect("should be able to fetch salt");
 
-        let mut nonce_bytes = [0u8; 15];
-        TestRng::from_entropy().fill_bytes(&mut nonce_bytes);
+    let mut nonce_bytes = [0u8; 15];
+    TestRng::from_entropy().fill_bytes(&mut nonce_bytes);
 
-        let salted = SaltedNonce::new(salt, ExpirableNonce::new(deadline, nonce_bytes));
-        Ok(VersionedNonce::V1(salted).into())
-    }
-
-    fn create_random_salted_nonce(salt: Salt, deadline: Deadline, mut rng: impl Rng) -> Nonce {
-        VersionedNonce::V1(SaltedNonce::new(
-            salt,
-            ExpirableNonce {
-                deadline,
-                nonce: rng.random::<[u8; 15]>(),
-            },
-        ))
-        .into()
-    }
+    let salted = SaltedNonce::new(salt, ExpirableNonce::new(deadline, nonce_bytes));
+    Ok(VersionedNonce::V1(salted).into())
 }
 
-impl<T> GenerateNonceExt for T {}
+pub fn create_random_salted_nonce(salt: Salt, deadline: Deadline, mut rng: impl Rng) -> Nonce {
+    VersionedNonce::V1(SaltedNonce::new(
+        salt,
+        ExpirableNonce {
+            deadline,
+            nonce: rng.random::<[u8; 15]>(),
+        },
+    ))
+    .into()
+}

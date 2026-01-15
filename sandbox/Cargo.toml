@@ -28,7 +28,7 @@ tracing.workspace = true
 
 near-contract-standards.workspace = true
 
-defuse = {workspace = true, features = ["contract"], optional = true}
+defuse = {workspace = true, features = ["contract", "arbitrary"], optional = true}
 defuse-poa-factory = {workspace = true, features = ["contract"], optional = true}
 defuse-escrow-swap = {workspace = true, features = ["default"], optional = true}
 defuse-test-utils = { workspace = true, optional = true }

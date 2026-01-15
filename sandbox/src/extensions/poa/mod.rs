@@ -1,6 +1,7 @@
 #![allow(async_fn_in_trait)]
 
 pub use defuse_poa_factory as contract;
+
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128, serde_json::json};
 use std::{

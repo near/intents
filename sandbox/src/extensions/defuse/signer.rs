@@ -1,4 +1,4 @@
-use crate::{Account, SigningAccount, anyhow, extensions::defuse::nonce::GenerateNonceExt};
+use crate::{Account, SigningAccount, anyhow, extensions::defuse::nonce::generate_unique_nonce};
 use defuse::core::{
     Deadline, Nonce,
     intents::{DefuseIntents, Intent},
@@ -49,7 +49,7 @@ impl DefuseSignerExt for SigningAccount {
 }
 
 #[allow(async_fn_in_trait)]
-pub trait DefaultDefuseSignerExt: DefuseSignerExt + GenerateNonceExt {
+pub trait DefaultDefuseSignerExt: DefuseSignerExt {
     async fn sign_defuse_payload_default<T>(
         &self,
         defuse_contract: &Account,
@@ -59,9 +59,7 @@ pub trait DefaultDefuseSignerExt: DefuseSignerExt + GenerateNonceExt {
         T: Into<Intent>,
     {
         let deadline = Deadline::timeout(std::time::Duration::from_secs(120));
-        let nonce = self
-            .generate_unique_nonce(defuse_contract, Some(deadline))
-            .await?;
+        let nonce = generate_unique_nonce(defuse_contract, Some(deadline)).await?;
 
         let defuse_intents = DefuseIntents {
             intents: intents.into_iter().map(Into::into).collect(),
@@ -71,4 +69,4 @@ pub trait DefaultDefuseSignerExt: DefuseSignerExt + GenerateNonceExt {
             .await)
     }
 }
-impl<T> DefaultDefuseSignerExt for T where T: DefuseSignerExt + GenerateNonceExt {}
+impl<T> DefaultDefuseSignerExt for T where T: DefuseSignerExt {}

@@ -6,7 +6,8 @@ use defuse_sandbox::{
 use near_sdk::AccountId;
 use std::{collections::HashSet, convert::Infallible, sync::atomic::Ordering};
 
-use defuse::{
+use defuse_randomness::{Rng, make_true_rng};
+use defuse_sandbox::extensions::defuse::contract::{
     contract::Role,
     core::{
         Deadline, Nonce,
@@ -16,7 +17,6 @@ use defuse::{
     },
     nep245::Token,
 };
-use defuse_randomness::{Rng, make_true_rng};
 use defuse_sandbox::extensions::{
     defuse::{
         account_manager::AccountViewExt, deployer::DefuseExt, intents::ExecuteIntentsExt,

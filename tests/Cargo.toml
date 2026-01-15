@@ -8,16 +8,21 @@ repository.workspace = true
 [lints]
 workspace = true
 
+[features]
+default = ["defuse", "poa", "escrow"]
+defuse = []
+poa    = ["defuse-sandbox/poa"]
+escrow = ["defuse-sandbox/escrow"]
+
+
 [dependencies]
-defuse = { workspace = true, features = ["contract"] }
-defuse-escrow-swap = { workspace = true, features = ["auth_call"] }
-defuse-poa-factory = { workspace = true, features = ["contract"] }
-defuse-sandbox = { workspace = true, features = ["defuse", "poa"] }
+defuse-sandbox = { workspace = true, features = ["defuse"] }
 
 defuse-near-utils = { workspace = true }
 defuse-serde-utils = { workspace = true }
 defuse-randomness.workspace = true
 defuse-test-utils.workspace = true
+defuse-fees.workspace = true
 near-sdk = { workspace = true, features = ["arbitrary"] }
 
 futures = "0.3"

@@ -8,16 +8,16 @@ use crate::env::builder::EnvBuilder;
 
 use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;
-use defuse::{
+use defuse_randomness::{Rng, make_true_rng};
+use defuse_sandbox::extensions::defuse::contract::{
     core::{Deadline, Nonce},
     tokens::{DepositAction, DepositMessage},
 };
-use defuse_randomness::{Rng, make_true_rng};
 use defuse_sandbox::extensions::storage_management::StorageManagementExt;
 use defuse_sandbox::extensions::{
     defuse::{
         account_manager::{AccountManagerExt, AccountViewExt},
-        nonce::GenerateNonceExt,
+        nonce::generate_unique_nonce,
         tokens::nep141::DefuseFtDepositor,
     },
     poa::PoAFactoryExt,
@@ -67,8 +67,7 @@ impl Env {
     }
 
     pub async fn get_unique_nonce(&self, deadline: Option<Deadline>) -> anyhow::Result<Nonce> {
-        let root = self.root();
-        root.generate_unique_nonce(&self.defuse, deadline).await
+        generate_unique_nonce(&self.defuse, deadline).await
     }
 
     pub async fn defuse_ft_deposit_to(

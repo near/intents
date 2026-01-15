@@ -1,4 +1,4 @@
-pub use defuse_escrow_swap;
+pub use defuse_escrow_swap as contract;
 
 use std::sync::LazyLock;
 

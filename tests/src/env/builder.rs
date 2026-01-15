@@ -1,6 +1,6 @@
 use std::sync::atomic::AtomicUsize;
 
-use defuse::{
+use defuse_sandbox::extensions::defuse::contract::{
     contract::{
         Role,
         config::{DefuseConfig, RolesConfig},
