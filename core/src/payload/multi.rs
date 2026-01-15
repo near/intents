@@ -54,7 +54,7 @@ pub enum MultiPayload {
 
     /// ADR-36: The standard for signing data off-chain for accounts on Cosmos SDK.
     /// Standard reference: https://github.com/cosmos/cosmos-sdk/blob/main/docs/architecture/adr-036-arbitrary-signature.md
-    /// Kepler-Wallet docs (implementation reference): https://docs.keplr.app/api/guide/sign-arbitrary#adr-36-signing-with-signamino
+    /// Keplr-Wallet docs (implementation reference): https://docs.keplr.app/api/guide/sign-arbitrary#adr-36-signing-with-signamino
     Adr36(SignedAdr36Payload),
 }
 
