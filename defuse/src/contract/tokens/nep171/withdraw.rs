@@ -166,7 +166,7 @@ impl NonFungibleTokenWithdrawResolver for Contract {
         token_id: non_fungible_token::TokenId,
         is_call: bool,
     ) -> bool {
-        const MAX_RESULT_LENGTH: usize = "false".len();
+        const MAX_RESULT_LENGTH: usize = "false".len(); // `true` is shorter
         let used = env::promise_result_checked(0, MAX_RESULT_LENGTH).map_or(
             // do not refund on failed `nft_transfer_call` due to
             // NEP-141 vulnerability: `nft_resolve_transfer` fails to
