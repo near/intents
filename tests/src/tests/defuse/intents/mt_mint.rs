@@ -78,11 +78,7 @@ async fn mt_mint_intent() {
             intent_hash: mint_payload.hash(),
             event: AccountEvent {
                 account_id: user.id().clone().into(),
-                event: Cow::Owned(ImtMint{
-                    tokens: Amounts::new(std::iter::once((token.clone(), amount)).collect()),
-                    ..intent
-                }
-            )
+                event: Cow::Owned(intent)
             },
         }]))
         .to_nep297_event()
