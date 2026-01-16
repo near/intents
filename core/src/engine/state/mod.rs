@@ -130,4 +130,11 @@ pub trait State: StateView {
 
     fn mt_mint(&mut self, owner_id: AccountId, tokens: Amounts, memo: Option<String>)
     -> Result<()>;
+
+    fn mt_burn(
+        &mut self,
+        signer_id: &AccountIdRef,
+        tokens: Amounts,
+        memo: Option<String>,
+    ) -> Result<()>;
 }

@@ -42,7 +42,7 @@ use defuse_sandbox::{
     },
 };
 use near_contract_standards::non_fungible_token::metadata::{NFT_METADATA_SPEC, TokenMetadata};
-use near_sdk::{AccountId, AsNep297Event, NearToken};
+use near_sdk::{AsNep297Event, NearToken};
 use rstest::rstest;
 use std::borrow::Cow;
 
@@ -914,9 +914,7 @@ async fn simulate_mint_intent() {
 
     let user = env.create_user().await;
 
-    let token_id = TokenId::from(Nep141TokenId::new(
-        "sometoken.near".parse::<AccountId>().unwrap(),
-    ));
+    let token_id = "sometoken.near".to_string();
     let memo = "Some memo";
     let amount = 1000;
 
@@ -940,8 +938,6 @@ async fn simulate_mint_intent() {
         .await
         .unwrap();
 
-    let mt_id = TokenId::from(Nep245TokenId::new(user.id().clone(), token_id.to_string()));
-
     assert_eq!(
         result.report.logs,
         vec![
@@ -950,7 +946,7 @@ async fn simulate_mint_intent() {
                 event: AccountEvent {
                     account_id: user.id().clone().into(),
                     event: Cow::Owned(MtMint {
-                        tokens: Amounts::new(std::iter::once((mt_id, amount)).collect()),
+                        tokens: Amounts::new(std::iter::once((token_id, amount)).collect()),
                         ..mint_intent
                     })
                 },

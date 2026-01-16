@@ -384,6 +384,16 @@ where
     ) -> Result<()> {
         self.internal_add_balance(owner_id, tokens)
     }
+
+    #[inline]
+    fn mt_burn(
+        &mut self,
+        signer_id: &AccountIdRef,
+        tokens: Amounts,
+        _memo: Option<String>,
+    ) -> Result<()> {
+        self.internal_sub_balance(signer_id, tokens)
+    }
 }
 
 #[derive(Debug, Default)]

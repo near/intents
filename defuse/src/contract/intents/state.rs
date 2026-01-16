@@ -361,4 +361,14 @@ impl State for Contract {
     ) -> Result<()> {
         self.deposit(owner_id, tokens, memo.as_deref())
     }
+
+    #[inline]
+    fn mt_burn(
+        &mut self,
+        signer_id: &AccountIdRef,
+        tokens: Amounts,
+        memo: Option<String>,
+    ) -> Result<()> {
+        self.withdraw(signer_id, tokens, memo, false)
+    }
 }

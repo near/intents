@@ -8,11 +8,12 @@ use defuse::core::events::DefuseEvent;
 use defuse::core::fees::FeesConfig;
 use defuse::core::intents::IntentEvent;
 use defuse::core::intents::tokens::{MtMint, NotifyOnTransfer};
-use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
+use defuse::core::token_id::TokenId;
 use defuse::nep245::{MtEvent, MtMintEvent};
 use defuse::sandbox_ext::deployer::DefuseExt;
 use defuse::sandbox_ext::intents::ExecuteIntentsExt;
 use defuse_escrow_swap::Pips;
+use defuse_escrow_swap::token_id::dip5::Dip5TokenId;
 use defuse_escrow_swap::token_id::nep245::Nep245TokenId;
 use defuse_sandbox::assert_a_contains_b;
 use defuse_sandbox::extensions::mt::MtViewExt;
@@ -33,9 +34,7 @@ async fn mt_mint_intent() {
 
     let user = env.create_user().await;
 
-    let token = TokenId::from(Nep141TokenId::new(
-        "sometoken.near".parse::<AccountId>().unwrap(),
-    ));
+    let token = "sometoken.near".to_string();
     let memo = "Some memo";
     let amount = 1000;
 
@@ -55,7 +54,7 @@ async fn mt_mint_intent() {
         .await
         .unwrap();
 
-    let mt_id = TokenId::from(Nep245TokenId::new(user.id().clone(), token.to_string()));
+    let mt_id = TokenId::from(Dip5TokenId::new(user.id().clone(), token.to_string()));
 
     assert_eq!(
         env.defuse
@@ -80,7 +79,7 @@ async fn mt_mint_intent() {
             event: AccountEvent {
                 account_id: user.id().clone().into(),
                 event: Cow::Owned(MtMint{
-                    tokens: Amounts::new(std::iter::once((mt_id.clone(), amount)).collect()),
+                    tokens: Amounts::new(std::iter::once((token.clone(), amount)).collect()),
                     ..intent
                 }
             )
@@ -117,9 +116,7 @@ async fn mt_mint_intent_to_defuse() {
         .await
         .unwrap();
 
-    let ft = TokenId::from(Nep141TokenId::new(
-        "newtoken.near".parse::<AccountId>().unwrap(),
-    ));
+    let ft = "newtoken.near".to_string();
 
     // large gas limit
     {
@@ -164,7 +161,7 @@ async fn mt_mint_intent_to_defuse() {
             .await
             .unwrap();
 
-        let mt_token = TokenId::from(Nep245TokenId::new(user.id().clone(), ft.to_string()));
+        let mt_token = TokenId::from(Dip5TokenId::new(user.id().clone(), ft.to_string()));
 
         assert_eq!(
             env.defuse
@@ -239,9 +236,7 @@ async fn mt_mint_intent_with_msg_to_receiver_smc(#[case] expectation: TransferCa
 
     let (user, mt_receiver) = futures::join!(env.create_user(), env.deploy_mt_receiver_stub());
 
-    let ft1 = TokenId::from(Nep141TokenId::new(
-        "some-mt-token.near".parse::<AccountId>().unwrap(),
-    ));
+    let ft1 = "some-mt-token.near".to_string();
 
     let msg = serde_json::to_string(&expectation.mode).unwrap();
 
@@ -261,7 +256,7 @@ async fn mt_mint_intent_with_msg_to_receiver_smc(#[case] expectation: TransferCa
         .await
         .unwrap();
 
-    let mt_token = TokenId::from(Nep245TokenId::new(user.id().clone(), ft1.to_string()));
+    let mt_token = TokenId::from(Dip5TokenId::new(user.id().clone(), ft1.to_string()));
 
     assert_eq!(
         env.defuse
