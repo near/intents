@@ -247,8 +247,15 @@ impl State for Contract {
         sender_id: &AccountIdRef,
         receiver_id: AccountId,
         tokens: Amounts,
-        notification: NotifyOnTransfer,
+        mut notification: NotifyOnTransfer,
     ) {
+        notification.min_gas = Some(
+            notification
+                .min_gas
+                .unwrap_or(NotifyOnTransfer::MT_ON_TRANSFER_GAS_DEFAULT)
+                .max(NotifyOnTransfer::MT_ON_TRANSFER_GAS_MIN),
+        );
+
         let (token_ids, amounts) = tokens
             .iter()
             .map(|(token_id, amount)| (token_id.to_string(), U128(*amount)))

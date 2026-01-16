@@ -60,16 +60,6 @@ impl NotifyOnTransfer {
         self.min_gas = Some(min_gas);
         self
     }
-
-    pub fn set_gas(mut self) -> Self {
-        self.min_gas = Some(
-            self.min_gas
-                .unwrap_or(Self::MT_ON_TRANSFER_GAS_DEFAULT)
-                .max(Self::MT_ON_TRANSFER_GAS_MIN),
-        );
-
-        self
-    }
 }
 
 #[near(serializers = [borsh, json])]
@@ -133,12 +123,9 @@ impl ExecutableIntent for Transfer {
             .internal_add_balance(self.receiver_id.clone(), self.tokens.clone())?;
 
         if let Some(notification) = self.notification {
-            engine.state.notify_on_transfer(
-                sender_id,
-                self.receiver_id,
-                self.tokens,
-                notification.set_gas(),
-            );
+            engine
+                .state
+                .notify_on_transfer(sender_id, self.receiver_id, self.tokens, notification);
         }
 
         Ok(())
@@ -547,7 +534,7 @@ pub struct MtMint {
 impl ExecutableIntent for MtMint {
     #[inline]
     fn execute_intent<S, I>(
-        self,
+        mut self,
         owner_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
         intent_hash: CryptoHash,
@@ -556,7 +543,7 @@ impl ExecutableIntent for MtMint {
         S: State,
         I: Inspector,
     {
-        let tokens = Amounts::new(
+        self.tokens = Amounts::new(
             self.tokens
                 .iter()
                 .map(|(token_id, amount)| {
@@ -568,13 +555,7 @@ impl ExecutableIntent for MtMint {
 
         engine.inspector.on_event(DefuseEvent::MtMint(Cow::Borrowed(
             [IntentEvent::new(
-                AccountEvent::new(
-                    owner_id,
-                    Cow::Owned(Self {
-                        tokens: tokens.clone(),
-                        ..self.clone()
-                    }),
-                ),
+                AccountEvent::new(owner_id, Cow::Borrowed(&self)),
                 intent_hash,
             )]
             .as_slice(),
@@ -582,14 +563,14 @@ impl ExecutableIntent for MtMint {
 
         engine
             .state
-            .mt_mint(self.receiver_id.clone(), tokens.clone(), self.memo)?;
+            .mt_mint(self.receiver_id.clone(), self.tokens.clone(), self.memo)?;
 
         if let Some(notification) = self.notification {
             engine.state.notify_on_transfer(
                 owner_id,
                 self.receiver_id,
-                tokens,
-                notification.set_gas(),
+                self.tokens.clone(),
+                notification,
             );
         }
 

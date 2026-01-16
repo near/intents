@@ -52,7 +52,7 @@ impl MultiTokenEnumeration for Contract {
                 token_id: token_id.to_string(),
                 owner_id: match TokenIdType::from(token_id) {
                     TokenIdType::Nep171 => Some(account_id.clone()),
-                    TokenIdType::Nep141 | TokenIdType::Nep245 => None,
+                    TokenIdType::Nep141 | TokenIdType::Nep245 | TokenIdType::Dip5 => None,
                 },
             });
 

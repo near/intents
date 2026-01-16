@@ -53,7 +53,7 @@ impl Contract {
                         return Err(DefuseError::NftAlreadyDeposited(tid.clone()));
                     }
                 }
-                TokenId::Nep141(_) | TokenId::Nep245(_) => {}
+                TokenId::Nep141(_) | TokenId::Nep245(_) | TokenId::Dip5(_) => {}
             }
 
             owner

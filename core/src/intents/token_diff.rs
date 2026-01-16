@@ -207,8 +207,8 @@ impl TokenDiff {
             TokenIdType::Nep141 => {}
             TokenIdType::Nep245 if amount > 1 => {}
 
-            // do not take fees on NFTs and MTs with |delta| <= 1
-            TokenIdType::Nep171 | TokenIdType::Nep245 => return Pips::ZERO,
+            // do not take fees on NFTs, Dip5 tokens and MTs with |delta| <= 1
+            TokenIdType::Nep171 | TokenIdType::Nep245 | TokenIdType::Dip5 => return Pips::ZERO,
         }
         fee
     }

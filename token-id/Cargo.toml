@@ -21,11 +21,12 @@ thiserror.workspace = true
 arbitrary = { workspace = true, optional = true }
 
 [features]
-default = ["nep141", "nep171", "nep245"]
+default = ["nep141", "nep171", "nep245", "dip5"]
 
 nep141 = []
 nep171 = []
 nep245 = []
+dip5 = []
 
 abi = []
 arbitrary = ["dep:arbitrary", "near-sdk/arbitrary"]
