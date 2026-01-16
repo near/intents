@@ -76,7 +76,7 @@ pub enum Intent {
     // See [`MtMint`]
     MtMint(MtMint),
 
-    // See [`MtMint`]
+    // See [`MtBurn`]
     MtBurn(MtBurn),
 }
 
