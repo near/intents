@@ -1,6 +1,6 @@
 use std::{borrow::Cow, collections::BTreeMap};
 
-use defuse_token_id::{TokenId, dip5::Dip5TokenId};
+use defuse_token_id::{TokenId, imt::ImtTokenId};
 use near_contract_standards::non_fungible_token;
 use near_sdk::{
     AccountId, AccountIdRef, CryptoHash, Gas, NearToken, json_types::U128, near,
@@ -513,7 +513,7 @@ impl ExecutableIntent for StorageDeposit {
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
 /// Mint a set of tokens from the signer to a specified account id, within the intents contract.
-pub struct MtMint {
+pub struct ImtMint {
     pub receiver_id: AccountId,
 
     #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
@@ -531,7 +531,7 @@ pub struct MtMint {
     pub notification: Option<NotifyOnTransfer>,
 }
 
-impl ExecutableIntent for MtMint {
+impl ExecutableIntent for ImtMint {
     #[inline]
     fn execute_intent<S, I>(
         self,
@@ -543,15 +543,17 @@ impl ExecutableIntent for MtMint {
         S: State,
         I: Inspector,
     {
-        let tokens = self.tokens.to_dip5_tokens(owner_id);
+        let tokens = self.tokens.to_imt_tokens(owner_id);
 
-        engine.inspector.on_event(DefuseEvent::MtMint(Cow::Borrowed(
-            [IntentEvent::new(
-                AccountEvent::new(owner_id, Cow::Borrowed(&self)),
-                intent_hash,
-            )]
-            .as_slice(),
-        )));
+        engine
+            .inspector
+            .on_event(DefuseEvent::ImtMint(Cow::Borrowed(
+                [IntentEvent::new(
+                    AccountEvent::new(owner_id, Cow::Borrowed(&self)),
+                    intent_hash,
+                )]
+                .as_slice(),
+            )));
 
         engine
             .state
@@ -570,7 +572,7 @@ impl ExecutableIntent for MtMint {
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
 /// Burn a set of tokens minted by signer, within the intents contract.
-pub struct MtBurn {
+pub struct ImtBurn {
     #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
     pub tokens: MintedTokens,
 
@@ -578,7 +580,7 @@ pub struct MtBurn {
     pub memo: Option<String>,
 }
 
-impl ExecutableIntent for MtBurn {
+impl ExecutableIntent for ImtBurn {
     #[inline]
     fn execute_intent<S, I>(
         self,
@@ -590,28 +592,30 @@ impl ExecutableIntent for MtBurn {
         S: State,
         I: Inspector,
     {
-        engine.inspector.on_event(DefuseEvent::MtBurn(Cow::Borrowed(
-            [IntentEvent::new(
-                AccountEvent::new(owner_id, Cow::Borrowed(&self)),
-                intent_hash,
-            )]
-            .as_slice(),
-        )));
+        engine
+            .inspector
+            .on_event(DefuseEvent::ImtBurn(Cow::Borrowed(
+                [IntentEvent::new(
+                    AccountEvent::new(owner_id, Cow::Borrowed(&self)),
+                    intent_hash,
+                )]
+                .as_slice(),
+            )));
 
         engine
             .state
-            .mt_burn(owner_id, self.tokens.to_dip5_tokens(owner_id), self.memo)
+            .mt_burn(owner_id, self.tokens.to_imt_tokens(owner_id), self.memo)
     }
 }
 
 pub type MintedTokens = Amounts<BTreeMap<defuse_nep245::TokenId, u128>>;
 
 impl MintedTokens {
-    fn to_dip5_tokens(&self, minter_id: &AccountIdRef) -> Amounts<BTreeMap<TokenId, u128>> {
+    fn to_imt_tokens(&self, minter_id: &AccountIdRef) -> Amounts<BTreeMap<TokenId, u128>> {
         Amounts::new(
             self.iter()
                 .map(|(token_id, amount)| {
-                    let token = Dip5TokenId::new(minter_id, token_id.to_string()).into();
+                    let token = ImtTokenId::new(minter_id, token_id.to_string()).into();
                     (token, *amount)
                 })
                 .collect(),

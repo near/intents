@@ -7,13 +7,13 @@ use defuse::core::crypto::Payload;
 use defuse::core::events::DefuseEvent;
 use defuse::core::fees::FeesConfig;
 use defuse::core::intents::IntentEvent;
-use defuse::core::intents::tokens::{MtMint, NotifyOnTransfer};
+use defuse::core::intents::tokens::{ImtMint, NotifyOnTransfer};
 use defuse::core::token_id::TokenId;
 use defuse::nep245::{MtEvent, MtMintEvent};
 use defuse::sandbox_ext::deployer::DefuseExt;
 use defuse::sandbox_ext::intents::ExecuteIntentsExt;
 use defuse_escrow_swap::Pips;
-use defuse_escrow_swap::token_id::dip5::Dip5TokenId;
+use defuse_escrow_swap::token_id::imt::ImtTokenId;
 use defuse_escrow_swap::token_id::nep245::Nep245TokenId;
 use defuse_sandbox::assert_a_contains_b;
 use defuse_sandbox::extensions::mt::MtViewExt;
@@ -38,7 +38,7 @@ async fn mt_mint_intent() {
     let memo = "Some memo";
     let amount = 1000;
 
-    let intent = MtMint {
+    let intent = ImtMint {
         tokens: Amounts::new(std::iter::once((token.clone(), amount)).collect()),
         memo: Some(memo.to_string()),
         receiver_id: user.id().clone(),
@@ -54,7 +54,7 @@ async fn mt_mint_intent() {
         .await
         .unwrap();
 
-    let mt_id = TokenId::from(Dip5TokenId::new(user.id().clone(), token.to_string()));
+    let mt_id = TokenId::from(ImtTokenId::new(user.id().clone(), token.to_string()));
 
     assert_eq!(
         env.defuse
@@ -74,11 +74,11 @@ async fn mt_mint_intent() {
         }]))
         .to_nep297_event()
         .to_event_log(),
-            DefuseEvent::MtMint(Cow::Owned(vec![IntentEvent {
+            DefuseEvent::ImtMint(Cow::Owned(vec![IntentEvent {
             intent_hash: mint_payload.hash(),
             event: AccountEvent {
                 account_id: user.id().clone().into(),
-                event: Cow::Owned(MtMint{
+                event: Cow::Owned(ImtMint{
                     tokens: Amounts::new(std::iter::once((token.clone(), amount)).collect()),
                     ..intent
                 }
@@ -120,7 +120,7 @@ async fn mt_mint_intent_to_defuse() {
 
     // large gas limit
     {
-        let mint_intent = MtMint {
+        let mint_intent = ImtMint {
             receiver_id: defuse2.id().clone(),
             tokens: Amounts::new(std::iter::once((ft.clone(), 1000)).collect()),
             memo: None,
@@ -141,7 +141,7 @@ async fn mt_mint_intent_to_defuse() {
 
     // Should pass default gas limit in case of low gas
     {
-        let mint_intent = MtMint {
+        let mint_intent = ImtMint {
             receiver_id: defuse2.id().clone(),
             tokens: Amounts::new(std::iter::once((ft.clone(), 1000)).collect()),
             memo: None,
@@ -161,7 +161,7 @@ async fn mt_mint_intent_to_defuse() {
             .await
             .unwrap();
 
-        let mt_token = TokenId::from(Dip5TokenId::new(user.id().clone(), ft.to_string()));
+        let mt_token = TokenId::from(ImtTokenId::new(user.id().clone(), ft.to_string()));
 
         assert_eq!(
             env.defuse
@@ -240,7 +240,7 @@ async fn mt_mint_intent_with_msg_to_receiver_smc(#[case] expectation: TransferCa
 
     let msg = serde_json::to_string(&expectation.mode).unwrap();
 
-    let mint_intent = MtMint {
+    let mint_intent = ImtMint {
         receiver_id: mt_receiver.id().clone(),
         tokens: Amounts::new(std::iter::once((ft1.clone(), initial_amount)).collect()),
         memo: None,
@@ -256,7 +256,7 @@ async fn mt_mint_intent_with_msg_to_receiver_smc(#[case] expectation: TransferCa
         .await
         .unwrap();
 
-    let mt_token = TokenId::from(Dip5TokenId::new(user.id().clone(), ft1.to_string()));
+    let mt_token = TokenId::from(ImtTokenId::new(user.id().clone(), ft1.to_string()));
 
     assert_eq!(
         env.defuse

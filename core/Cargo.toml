@@ -24,7 +24,7 @@ defuse-token-id = { workspace = true, features = [
     "nep141",
     "nep171",
     "nep245",
-    "dip5"
+    "imt"
 ] }
 defuse-ton-connect.workspace = true
 defuse-webauthn.workspace = true

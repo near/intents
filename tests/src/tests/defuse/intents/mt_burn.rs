@@ -5,11 +5,11 @@ use defuse::core::amounts::Amounts;
 use defuse::core::crypto::Payload;
 use defuse::core::events::DefuseEvent;
 use defuse::core::intents::IntentEvent;
-use defuse::core::intents::tokens::{MtBurn, MtMint};
+use defuse::core::intents::tokens::{ImtBurn, ImtMint};
 use defuse::core::token_id::TokenId;
 use defuse::nep245::{MtBurnEvent, MtEvent};
 use defuse::sandbox_ext::intents::ExecuteIntentsExt;
-use defuse_escrow_swap::token_id::dip5::Dip5TokenId;
+use defuse_escrow_swap::token_id::imt::ImtTokenId;
 use defuse_sandbox::assert_a_contains_b;
 use defuse_sandbox::extensions::mt::MtViewExt;
 use near_sdk::json_types::U128;
@@ -35,7 +35,7 @@ async fn mt_burn_intent() {
     let mint_payload = user
         .sign_defuse_payload_default(
             &env.defuse,
-            [MtMint {
+            [ImtMint {
                 tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
                 memo: Some(memo.to_string()),
                 receiver_id: user.id().clone(),
@@ -49,7 +49,7 @@ async fn mt_burn_intent() {
         .await
         .unwrap();
 
-    let intent = MtBurn {
+    let intent = ImtBurn {
         tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
         memo: Some(memo.to_string()),
     };
@@ -63,7 +63,7 @@ async fn mt_burn_intent() {
         .await
         .unwrap();
 
-    let mt_id = TokenId::from(Dip5TokenId::new(user.id().clone(), token_id.to_string()));
+    let mt_id = TokenId::from(ImtTokenId::new(user.id().clone(), token_id.to_string()));
 
     assert_eq!(
         env.defuse
@@ -85,11 +85,11 @@ async fn mt_burn_intent() {
             }]))
             .to_nep297_event()
             .to_event_log(),
-                DefuseEvent::MtBurn(Cow::Owned(vec![IntentEvent {
+                DefuseEvent::ImtBurn(Cow::Owned(vec![IntentEvent {
                 intent_hash: burn_payload.hash(),
                 event: AccountEvent {
                     account_id: user.id().clone().into(),
-                    event: Cow::Owned(MtBurn{
+                    event: Cow::Owned(ImtBurn{
                         tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
                         ..intent
                     }),
@@ -132,7 +132,7 @@ async fn failed_to_burn_tokens() {
         let withdraw_payload = user
             .sign_defuse_payload_default(
                 &env.defuse,
-                [MtBurn {
+                [ImtBurn {
                     tokens: Amounts::new(
                         std::iter::once((ft.to_string().to_string(), amount)).collect(),
                     ),
@@ -154,7 +154,7 @@ async fn failed_to_burn_tokens() {
         let mint_payload = user
             .sign_defuse_payload_default(
                 &env.defuse,
-                [MtMint {
+                [ImtMint {
                     tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
                     memo: Some(memo.to_string()),
                     receiver_id: other_user.id().clone(),
@@ -171,7 +171,7 @@ async fn failed_to_burn_tokens() {
         let withdraw_payload = other_user
             .sign_defuse_payload_default(
                 &env.defuse,
-                [MtBurn {
+                [ImtBurn {
                     tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
                     memo: Some(memo.to_string()),
                 }],

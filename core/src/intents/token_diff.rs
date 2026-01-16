@@ -204,7 +204,7 @@ impl TokenDiff {
     pub fn token_fee(token_id: impl Into<TokenIdType>, amount: u128, fee: Pips) -> Pips {
         let token_id = token_id.into();
         match token_id {
-            TokenIdType::Nep141 | TokenIdType::Dip5 => {}
+            TokenIdType::Nep141 | TokenIdType::Imt => {}
             TokenIdType::Nep245 if amount > 1 => {}
 
             // do not take fees on NFTs and MTs with |delta| <= 1

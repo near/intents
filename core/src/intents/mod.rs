@@ -15,7 +15,7 @@ use crate::{
     intents::{
         account::SetAuthByPredecessorId,
         auth::AuthCall,
-        tokens::{MtBurn, MtMint},
+        tokens::{ImtBurn, ImtMint},
     },
 };
 
@@ -73,11 +73,11 @@ pub enum Intent {
     /// See [`AuthCall`]
     AuthCall(AuthCall),
 
-    // See [`MtMint`]
-    MtMint(MtMint),
+    // See [`ImtMint`]
+    ImtMint(ImtMint),
 
-    // See [`MtBurn`]
-    MtBurn(MtBurn),
+    // See [`ImtBurn`]
+    ImtBurn(ImtBurn),
 }
 
 pub trait ExecutableIntent {
@@ -135,8 +135,8 @@ impl ExecutableIntent for Intent {
                 intent.execute_intent(signer_id, engine, intent_hash)
             }
             Self::AuthCall(intent) => intent.execute_intent(signer_id, engine, intent_hash),
-            Self::MtMint(intent) => intent.execute_intent(signer_id, engine, intent_hash),
-            Self::MtBurn(intent) => intent.execute_intent(signer_id, engine, intent_hash),
+            Self::ImtMint(intent) => intent.execute_intent(signer_id, engine, intent_hash),
+            Self::ImtBurn(intent) => intent.execute_intent(signer_id, engine, intent_hash),
         }
     }
 }

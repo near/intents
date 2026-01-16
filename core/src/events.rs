@@ -11,7 +11,7 @@ use crate::{
         account::SetAuthByPredecessorId,
         token_diff::TokenDiffEvent,
         tokens::{
-            FtWithdraw, MtBurn, MtMint, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit,
+            FtWithdraw, ImtBurn, ImtMint, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit,
         },
     },
 };
@@ -57,10 +57,10 @@ pub enum DefuseEvent<'a> {
     StorageDeposit(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, StorageDeposit>>>]>),
 
     #[event_version("0.3.0")]
-    MtMint(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, MtMint>>>]>),
+    ImtMint(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, ImtMint>>>]>),
 
     #[event_version("0.3.0")]
-    MtBurn(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, MtBurn>>>]>),
+    ImtBurn(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, ImtBurn>>>]>),
 
     #[event_version("0.3.0")]
     #[from(skip)]

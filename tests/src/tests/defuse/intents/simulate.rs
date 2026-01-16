@@ -20,7 +20,7 @@ use defuse::{
             auth::AuthCall,
             token_diff::{TokenDeltas, TokenDiff, TokenDiffEvent},
             tokens::{
-                FtWithdraw, MtMint, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit,
+                FtWithdraw, ImtMint, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit,
                 Transfer,
             },
         },
@@ -918,7 +918,7 @@ async fn simulate_mint_intent() {
     let memo = "Some memo";
     let amount = 1000;
 
-    let mint_intent = MtMint {
+    let mint_intent = ImtMint {
         tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
         memo: Some(memo.to_string()),
         receiver_id: user.id().clone(),
@@ -941,11 +941,11 @@ async fn simulate_mint_intent() {
     assert_eq!(
         result.report.logs,
         vec![
-            DefuseEvent::MtMint(Cow::Owned(vec![IntentEvent {
+            DefuseEvent::ImtMint(Cow::Owned(vec![IntentEvent {
                 intent_hash: mint_payload.hash(),
                 event: AccountEvent {
                     account_id: user.id().clone().into(),
-                    event: Cow::Owned(MtMint {
+                    event: Cow::Owned(ImtMint {
                         tokens: Amounts::new(std::iter::once((token_id, amount)).collect()),
                         ..mint_intent
                     })
