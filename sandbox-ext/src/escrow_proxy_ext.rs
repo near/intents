@@ -1,6 +1,6 @@
 use std::{fs, path::Path, sync::LazyLock};
 
-use defuse_escrow_proxy::{EscrowParams, ProxyConfig, RolesConfig};
+use defuse_escrow_proxy::{EscrowParams, ProxyConfig};
 use defuse_sandbox::{FnCallBuilder, SigningAccount};
 use near_sdk::{AccountId, Gas, NearToken};
 use serde_json::json;
@@ -12,13 +12,9 @@ pub static ESCROW_PROXY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
 
 #[allow(async_fn_in_trait)]
 pub trait EscrowProxyExt {
-    async fn deploy_escrow_proxy(
-        &self,
-        roles: RolesConfig,
-        config: ProxyConfig,
-    ) -> anyhow::Result<()>;
+    async fn deploy_escrow_proxy(&self, config: ProxyConfig) -> anyhow::Result<()>;
     async fn get_escrow_proxy_config(&self) -> anyhow::Result<ProxyConfig>;
-    /// Call `cancel_escrow` on proxy contract. Requires caller to have DAO or Canceller role.
+    /// Call `cancel_escrow` on proxy contract. Requires caller to be owner.
     async fn cancel_escrow(
         &self,
         proxy_contract: &AccountId,
@@ -27,18 +23,13 @@ pub trait EscrowProxyExt {
 }
 
 impl EscrowProxyExt for SigningAccount {
-    async fn deploy_escrow_proxy(
-        &self,
-        roles: RolesConfig,
-        config: ProxyConfig,
-    ) -> anyhow::Result<()> {
+    async fn deploy_escrow_proxy(&self, config: ProxyConfig) -> anyhow::Result<()> {
         self.tx(self.id().clone())
             .transfer(NearToken::from_near(5))
             .deploy(ESCROW_PROXY_WASM.clone())
             .function_call(
                 FnCallBuilder::new("new")
                     .json_args(json!({
-                        "roles": roles,
                         "config": config,
                     }))
                     .with_gas(Gas::from_tgas(50)),

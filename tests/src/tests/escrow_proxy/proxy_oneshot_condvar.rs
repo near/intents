@@ -1,8 +1,8 @@
 use std::borrow::Cow;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::BTreeMap;
 
 use crate::tests::defuse::env::Env;
-use defuse_escrow_proxy::{ProxyConfig, RolesConfig, TransferMessage};
+use defuse_escrow_proxy::{ProxyConfig, TransferMessage};
 use defuse_oneshot_condvar::CondVarContext;
 use defuse_oneshot_condvar::storage::{ContractStorage, StateInit as CondVarStateInit};
 use defuse_sandbox::extensions::storage_management::StorageManagementExt;
@@ -50,19 +50,15 @@ async fn test_proxy_returns_funds_on_timeout_of_authorization() {
     );
 
     // Setup proxy
-    let roles = RolesConfig {
-        super_admins: HashSet::from([env.root().id().clone()]),
-        admins: HashMap::new(),
-        grantees: HashMap::new(),
-    };
     let config = ProxyConfig {
+        owner: proxy.id().clone(),
         per_fill_contract_id: GlobalContractId::AccountId(condvar_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(mt_receiver_global.clone()),
         auth_contract: env.defuse.id().clone(),
         auth_collee: relay.id().clone(),
     };
 
-    proxy.deploy_escrow_proxy(roles, config).await.unwrap();
+    proxy.deploy_escrow_proxy(config).await.unwrap();
 
     // Create MT token with initial balance for solver
     let initial_amount = 1_000_000u128;
@@ -126,24 +122,16 @@ async fn test_transfer_authorized_by_relay() {
         env.create_named_user("proxy"),
     );
 
-    let roles = RolesConfig {
-        super_admins: HashSet::from([env.root().id().clone()]),
-        admins: HashMap::new(),
-        grantees: HashMap::new(),
-    };
-
     // Use root as auth_contract since we need signing capability for on_auth call
     let config = ProxyConfig {
+        owner: proxy.id().clone(),
         per_fill_contract_id: GlobalContractId::AccountId(condvar_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(mt_receiver_global.clone()),
         auth_contract: env.root().id().clone(),
         auth_collee: relay.id().clone(),
     };
 
-    proxy
-        .deploy_escrow_proxy(roles, config.clone())
-        .await
-        .unwrap();
+    proxy.deploy_escrow_proxy(config.clone()).await.unwrap();
 
     // Derive and pre-deploy the escrow instance (mt-receiver-stub)
     let escrow_state_init = StateInit::V1(StateInitV1 {
@@ -288,26 +276,15 @@ async fn test_proxy_authorize_function() {
         env.create_named_user("proxy"),
     );
 
-    let roles = RolesConfig {
-        super_admins: HashSet::from([env.root().id().clone()]),
-        admins: HashMap::new(),
-        grantees: HashMap::from([(
-            defuse_escrow_proxy::Role::Canceller,
-            HashSet::from([relay.id().clone()]),
-        )]),
-    };
-
     let config = ProxyConfig {
+        owner: relay.id().clone(),
         per_fill_contract_id: GlobalContractId::AccountId(condvar_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(mt_receiver_global.clone()),
         auth_contract: env.defuse.id().clone(),
         auth_collee: relay.id().clone(),
     };
 
-    proxy
-        .deploy_escrow_proxy(roles, config.clone())
-        .await
-        .unwrap();
+    proxy.deploy_escrow_proxy(config.clone()).await.unwrap();
 
     let test_msg_hash = [42u8; 32];
     let auth_state = CondVarStateInit {
@@ -344,7 +321,7 @@ async fn test_proxy_authorize_function() {
 
     assert!(
         authorize_result.is_ok(),
-        "authorize should succeed when called by account with Canceller role"
+        "authorize should succeed when called by owner"
     );
 
     let condvar_account = Account::new(condvar_instance_id, env.root().network_config().clone());
@@ -379,24 +356,16 @@ async fn test_ft_transfer_authorized_by_relay() {
         env.create_named_user("proxy"),
     );
 
-    let roles = RolesConfig {
-        super_admins: HashSet::from([env.root().id().clone()]),
-        admins: HashMap::new(),
-        grantees: HashMap::new(),
-    };
-
     // Use root as auth_contract since we need signing capability for on_auth call
     let config = ProxyConfig {
+        owner: proxy.id().clone(),
         per_fill_contract_id: GlobalContractId::AccountId(condvar_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(ft_receiver_global.clone()),
         auth_contract: env.root().id().clone(),
         auth_collee: relay.id().clone(),
     };
 
-    proxy
-        .deploy_escrow_proxy(roles, config.clone())
-        .await
-        .unwrap();
+    proxy.deploy_escrow_proxy(config.clone()).await.unwrap();
 
     // Derive and pre-deploy the escrow instance (ft-receiver-stub)
     let escrow_state_init = StateInit::V1(StateInitV1 {

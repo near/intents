@@ -27,7 +27,6 @@ defuse-oneshot-condvar = { workspace = true, features = ["auth-call"] }
 serde_json.workspace = true
 
 near-contract-standards.workspace = true
-near-plugins.workspace = true
 near-sdk = { workspace = true, features = ["unstable"] }
 serde_with.workspace = true
 

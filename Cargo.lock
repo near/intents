@@ -976,7 +976,6 @@ dependencies = [
  "defuse-token-id",
  "futures",
  "near-contract-standards",
- "near-plugins",
  "near-sdk",
  "rand 0.9.2",
  "serde_json",

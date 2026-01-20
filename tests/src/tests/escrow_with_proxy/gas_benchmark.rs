@@ -4,7 +4,6 @@
 //! Uses worst-case scenario with protocol fees, integrator fees, and surplus fees.
 
 use std::borrow::Cow;
-use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
 use crate::tests::defuse::DefuseSignerExt;
@@ -15,7 +14,7 @@ use defuse_core::intents::auth::AuthCall;
 use defuse_core::intents::tokens::{NotifyOnTransfer, Transfer};
 use defuse_deadline::Deadline;
 use defuse_escrow_proxy::{
-    MT_ON_TRANSFER_GAS, ProxyConfig, RolesConfig, TransferMessage as ProxyTransferMessage,
+    MT_ON_TRANSFER_GAS, ProxyConfig, TransferMessage as ProxyTransferMessage,
 };
 use defuse_escrow_swap::ParamsBuilder;
 use defuse_escrow_swap::action::{FillAction, FundMessageBuilder, TransferAction, TransferMessage};
@@ -64,21 +63,14 @@ async fn test_proxy_fill_gas_benchmark() {
     let (_, token_a_defuse_id) = token_a_result.unwrap();
     let (_, token_b_defuse_id) = token_b_result.unwrap();
 
-    let roles = RolesConfig {
-        super_admins: HashSet::from([env.root().id().clone()]),
-        admins: HashMap::new(),
-        grantees: HashMap::new(),
-    };
     let config = ProxyConfig {
+        owner: proxy.id().clone(),
         per_fill_contract_id: GlobalContractId::AccountId(condvar_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(escrow_swap_global.clone()),
         auth_contract: env.defuse.id().clone(),
         auth_collee: relay.id().clone(),
     };
-    proxy
-        .deploy_escrow_proxy(roles, config.clone())
-        .await
-        .unwrap();
+    proxy.deploy_escrow_proxy(config.clone()).await.unwrap();
 
     let src_token = TokenId::from(Nep245TokenId::new(
         env.defuse.id().clone(),

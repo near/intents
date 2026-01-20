@@ -1,21 +1,19 @@
 use defuse_controller::ControllerUpgradable;
-use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{Gas, Promise, assert_one_yocto, env, near};
 
-use super::{Contract, ContractExt};
-use crate::Role;
+use super::Contract;
 
 const STATE_MIGRATE_DEFAULT_GAS: Gas = Gas::from_tgas(5);
 
 #[near]
 impl ControllerUpgradable for Contract {
-    #[access_control_any(roles(Role::DAO, Role::Upgrader))]
     #[payable]
     fn upgrade(
         &mut self,
         #[serializer(borsh)] code: Vec<u8>,
         #[serializer(borsh)] state_migration_gas: Option<Gas>,
     ) -> Promise {
+        self.assert_owner();
         assert_one_yocto();
 
         let p = Promise::new(env::current_account_id()).deploy_contract(code);

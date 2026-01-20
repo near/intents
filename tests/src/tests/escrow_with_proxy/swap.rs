@@ -6,7 +6,6 @@
 //! 3. Atomic token exchange between maker and solver
 
 use std::borrow::Cow;
-use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
 use crate::tests::defuse::DefuseSignerExt;
@@ -16,9 +15,7 @@ use defuse_core::amounts::Amounts;
 use defuse_core::intents::auth::AuthCall;
 use defuse_core::intents::tokens::{NotifyOnTransfer, Transfer};
 use defuse_deadline::Deadline;
-use defuse_escrow_proxy::{
-    ProxyConfig, Role as ProxyRole, RolesConfig, TransferMessage as ProxyTransferMessage,
-};
+use defuse_escrow_proxy::{ProxyConfig, TransferMessage as ProxyTransferMessage};
 use defuse_escrow_swap::ParamsBuilder;
 use defuse_escrow_swap::action::{FillMessageBuilder, FundMessageBuilder};
 use defuse_oneshot_condvar::CondVarContext;
@@ -57,21 +54,14 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     let (_, token_a_defuse_id) = token_a_result.unwrap();
     let (_, token_b_defuse_id) = token_b_result.unwrap();
 
-    let roles = RolesConfig {
-        super_admins: HashSet::from([env.root().id().clone()]),
-        admins: HashMap::new(),
-        grantees: HashMap::new(),
-    };
     let config = ProxyConfig {
+        owner: proxy.id().clone(),
         per_fill_contract_id: GlobalContractId::AccountId(condvar_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(escrow_swap_global.clone()),
         auth_contract: env.defuse.id().clone(),
         auth_collee: relay.id().clone(),
     };
-    proxy
-        .deploy_escrow_proxy(roles, config.clone())
-        .await
-        .unwrap();
+    proxy.deploy_escrow_proxy(config.clone()).await.unwrap();
 
     let src_token = TokenId::from(Nep245TokenId::new(
         env.defuse.id().clone(),
@@ -214,13 +204,9 @@ async fn test_escrow_proxy_can_cancel_before_deadline() {
     let (_, token_a_defuse_id) = token_a_result.unwrap();
     let (_, token_b_defuse_id) = token_b_result.unwrap();
 
-    // Deploy proxy with root granted DAO role (can call cancel_escrow)
-    let roles = RolesConfig {
-        super_admins: HashSet::from([env.root().id().clone()]),
-        admins: HashMap::new(),
-        grantees: HashMap::from([(ProxyRole::DAO, HashSet::from([env.root().id().clone()]))]),
-    };
+    // Deploy proxy with root as owner (can call cancel_escrow)
     let config = ProxyConfig {
+        owner: env.root().id().clone(),
         // NOTE: per_fill_contract_id is only used for fill operations.
         // This cancel test doesn't exercise fills, so using escrow_swap_global is acceptable.
         per_fill_contract_id: GlobalContractId::AccountId(escrow_swap_global.clone()),
@@ -228,7 +214,7 @@ async fn test_escrow_proxy_can_cancel_before_deadline() {
         auth_contract: env.defuse.id().clone(),
         auth_collee: env.root().id().clone(), // not used for cancel
     };
-    proxy.deploy_escrow_proxy(roles, config).await.unwrap();
+    proxy.deploy_escrow_proxy(config).await.unwrap();
 
     // Build escrow params with proxy as sole taker
     let src_token = TokenId::from(Nep245TokenId::new(

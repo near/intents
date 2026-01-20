@@ -28,20 +28,27 @@ impl MultiTokenReceiver for Contract {
         let _ = previous_owner_ids;
         let token_contract = env::predecessor_account_id();
         let transfer_message: TransferMessage = msg.parse().unwrap_or_panic_display();
-        let cv_wait =
-            self.create_cv_wait_cross_contract_call(&sender_id, &token_ids, &amounts, transfer_message.salt, &msg);
+        let cv_wait = self.create_cv_wait_cross_contract_call(
+            &sender_id,
+            &token_ids,
+            &amounts,
+            transfer_message.salt,
+            &msg,
+        );
 
-        PromiseOrValue::Promise(cv_wait.then(
-            Self::ext(env::current_account_id())
-                .with_unused_gas_weight(1)
-                .check_authorization_and_forward_mt(
-                    token_contract,
-                    transfer_message.receiver_id,
-                    token_ids,
-                    amounts,
-                    transfer_message.msg,
-                ),
-        ))
+        PromiseOrValue::Promise(
+            cv_wait.then(
+                Self::ext(env::current_account_id())
+                    .with_unused_gas_weight(1)
+                    .check_authorization_and_forward_mt(
+                        token_contract,
+                        transfer_message.receiver_id,
+                        token_ids,
+                        amounts,
+                        transfer_message.msg,
+                    ),
+            ),
+        )
     }
 }
 

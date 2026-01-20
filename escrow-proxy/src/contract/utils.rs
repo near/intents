@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use defuse_oneshot_condvar::{
-    WAIT_GAS, CondVarContext, ext_oneshot_condvar,
+    CondVarContext, WAIT_GAS, ext_oneshot_condvar,
     storage::{ContractStorage, StateInit as CondVarStateInit},
 };
 use near_sdk::{
