@@ -4,7 +4,7 @@ use defuse_near_utils::{Lock, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::{
     ClearedApproval, MtEventEmit, MtTransferEvent, TokenId, resolver::MultiTokenResolver,
 };
-use near_sdk::{AccountId, PromiseResult, env, json_types::U128, near, require, serde_json};
+use near_sdk::{AccountId, env, json_types::U128, near, require, serde_json};
 
 use crate::contract::{Contract, ContractExt};
 
@@ -27,13 +27,12 @@ impl MultiTokenResolver for Contract {
             "invalid args"
         );
 
-        let mut refunds = match env::promise_result(0) {
-            PromiseResult::Successful(value) => serde_json::from_slice::<Vec<U128>>(&value)
+        let mut refunds =
+            env::promise_result_checked(0, Self::mt_on_transfer_max_result_len(amounts.len()))
                 .ok()
+                .and_then(|value| serde_json::from_slice::<Vec<U128>>(&value).ok())
                 .filter(|refund| refund.len() == amounts.len())
-                .unwrap_or_else(|| amounts.clone()),
-            PromiseResult::Failed => amounts.clone(),
-        };
+                .unwrap_or_else(|| amounts.clone());
 
         let sender_id = previous_owner_ids.first().cloned().unwrap_or_panic();
 
