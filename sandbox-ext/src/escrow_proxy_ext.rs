@@ -1,8 +1,12 @@
 use std::{fs, path::Path, sync::LazyLock};
 
-use defuse_escrow_proxy::{EscrowParams, ProxyConfig};
+use defuse_escrow_proxy::ProxyConfig;
+#[cfg(feature = "escrow-swap")]
+use defuse_escrow_swap::Params as EscrowParams;
 use defuse_sandbox::{FnCallBuilder, SigningAccount};
-use near_sdk::{AccountId, Gas, NearToken};
+#[cfg(feature = "escrow-swap")]
+use near_sdk::AccountId;
+use near_sdk::{Gas, NearToken};
 use serde_json::json;
 
 pub static ESCROW_PROXY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
@@ -15,6 +19,7 @@ pub trait EscrowProxyExt {
     async fn deploy_escrow_proxy(&self, config: ProxyConfig) -> anyhow::Result<()>;
     async fn get_escrow_proxy_config(&self) -> anyhow::Result<ProxyConfig>;
     /// Call `cancel_escrow` on proxy contract. Requires caller to be owner.
+    #[cfg(feature = "escrow-swap")]
     async fn cancel_escrow(
         &self,
         proxy_contract: &AccountId,
@@ -43,6 +48,7 @@ impl EscrowProxyExt for SigningAccount {
         self.call_view_function_json("config", json!({})).await
     }
 
+    #[cfg(feature = "escrow-swap")]
     async fn cancel_escrow(
         &self,
         proxy_contract: &AccountId,

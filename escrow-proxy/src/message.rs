@@ -2,9 +2,6 @@ use std::str::FromStr;
 
 use near_sdk::{AccountId, near};
 
-pub use defuse_escrow_swap::action::{FillAction, TransferAction};
-pub use defuse_escrow_swap::{OverrideSend, Params as EscrowParams};
-
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct TransferMessage {

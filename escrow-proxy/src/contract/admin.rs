@@ -1,6 +1,8 @@
 use defuse_admin_utils::full_access_keys::FullAccessKeys;
 use near_sdk::{Promise, PublicKey, assert_one_yocto, env, near};
 
+#[cfg(feature = "abi")]
+use super::ContractExt;
 use super::Contract;
 
 #[near]

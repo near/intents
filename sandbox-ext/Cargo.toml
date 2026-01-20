@@ -8,9 +8,12 @@ repository.workspace = true
 [lints]
 workspace = true
 
+[features]
+escrow-swap = ["defuse-escrow-proxy/escrow-swap", "dep:defuse-escrow-swap"]
+
 [dependencies]
 defuse-escrow-proxy.workspace = true
-defuse-escrow-swap.workspace = true
+defuse-escrow-swap = { workspace = true, optional = true }
 defuse-sandbox.workspace = true
 defuse-oneshot-condvar.workspace = true
 defuse-crypto = { workspace = true, features = ["serde"] }

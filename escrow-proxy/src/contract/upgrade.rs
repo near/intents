@@ -1,6 +1,8 @@
 use defuse_controller::ControllerUpgradable;
 use near_sdk::{Gas, Promise, assert_one_yocto, env, near};
 
+#[cfg(feature = "abi")]
+use super::ContractExt;
 use super::Contract;
 
 const STATE_MIGRATE_DEFAULT_GAS: Gas = Gas::from_tgas(5);

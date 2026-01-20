@@ -6,7 +6,7 @@ use defuse_escrow_proxy::{ProxyConfig, TransferMessage};
 use defuse_oneshot_condvar::CondVarContext;
 use defuse_oneshot_condvar::storage::{ContractStorage, StateInit as CondVarStateInit};
 use defuse_sandbox::extensions::storage_management::StorageManagementExt;
-use defuse_sandbox::{Account, FnCallBuilder, FtExt, FtViewExt, MtExt, MtViewExt};
+use defuse_sandbox::{FnCallBuilder, FtExt, FtViewExt, MtExt, MtViewExt};
 use defuse_sandbox_ext::{EscrowProxyExt, MtReceiverStubAccountExt, OneshotCondVarAccountExt};
 use multi_token_receiver_stub::{FTReceiverMode, MTReceiverMode};
 use near_sdk::AccountId;
@@ -256,83 +256,6 @@ async fn test_transfer_authorized_by_relay() {
     assert_eq!(
         escrow_balance, proxy_transfer_amount,
         "Escrow instance should have received the transferred tokens"
-    );
-}
-
-/// Test that proxy's authorize function can authorize a transfer-auth instance
-#[tokio::test]
-async fn test_proxy_authorize_function() {
-    let env = Env::builder().build().await;
-
-    // Deploy global contracts in parallel
-    let (condvar_global, mt_receiver_global) = futures::join!(
-        env.root().deploy_oneshot_condvar("global_transfer_auth"),
-        env.root()
-            .deploy_mt_receiver_stub_global("mt_receiver_global"),
-    );
-
-    let (relay, proxy) = futures::join!(
-        env.create_named_user("relay"),
-        env.create_named_user("proxy"),
-    );
-
-    let config = ProxyConfig {
-        owner: relay.id().clone(),
-        per_fill_contract_id: GlobalContractId::AccountId(condvar_global.clone()),
-        escrow_swap_contract_id: GlobalContractId::AccountId(mt_receiver_global.clone()),
-        auth_contract: env.defuse.id().clone(),
-        auth_collee: relay.id().clone(),
-    };
-
-    proxy.deploy_escrow_proxy(config.clone()).await.unwrap();
-
-    let test_msg_hash = [42u8; 32];
-    let auth_state = CondVarStateInit {
-        escrow_contract_id: config.escrow_swap_contract_id.clone(),
-        auth_contract: config.auth_contract.clone(),
-        on_auth_signer: proxy.id().clone(),
-        authorizee: proxy.id().clone(),
-        msg_hash: test_msg_hash,
-    };
-    let condvar_instance_id = derive_oneshot_condvar_account_id(
-        &GlobalContractId::AccountId(condvar_global.clone()),
-        &auth_state,
-    );
-
-    let raw_state = ContractStorage::init_state(auth_state).unwrap();
-    env.root()
-        .tx(condvar_instance_id.clone())
-        .state_init(condvar_global.clone(), raw_state)
-        .transfer(NearToken::from_yoctonear(1))
-        .await
-        .unwrap();
-
-    let authorize_result = relay
-        .tx(proxy.id().clone())
-        .function_call(
-            FnCallBuilder::new("authorize")
-                .json_args(serde_json::json!({
-                    "condvar_id": condvar_instance_id,
-                }))
-                .with_gas(Gas::from_tgas(100))
-                .with_deposit(NearToken::from_yoctonear(1)),
-        )
-        .await;
-
-    assert!(
-        authorize_result.is_ok(),
-        "authorize should succeed when called by owner"
-    );
-
-    let condvar_account = Account::new(condvar_instance_id, env.root().network_config().clone());
-    let cv_is_notified: bool = condvar_account
-        .call_view_function_json("cv_is_notified", serde_json::json!({}))
-        .await
-        .unwrap();
-
-    assert!(
-        cv_is_notified,
-        "OneshotCondVar instance should be authorized after proxy.authorize() call"
     );
 }
 

@@ -28,7 +28,6 @@ impl Contract {
 
         StateInit::V1(StateInitV1 {
             code: self.config.per_fill_contract_id.clone(),
-            //TODO: get rid of unwrap
             data: ContractStorage::init_state(state).unwrap(),
         })
     }
