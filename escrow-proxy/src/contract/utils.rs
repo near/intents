@@ -1,8 +1,7 @@
 use std::borrow::Cow;
 
-use defuse_near_utils::UnwrapOrPanicError;
 use defuse_oneshot_condvar::{
-    CondVarContext,
+    WAIT_GAS, CondVarContext, ext_oneshot_condvar,
     storage::{ContractStorage, StateInit as CondVarStateInit},
 };
 use near_sdk::{
@@ -11,8 +10,6 @@ use near_sdk::{
     serde_json,
     state_init::{StateInit, StateInitV1},
 };
-
-use crate::message::TransferMessage;
 
 use super::Contract;
 
@@ -37,21 +34,20 @@ impl Contract {
     }
 
     /// Creates the authorization promise for token transfers.
-    /// Returns the parsed TransferMessage and the auth call Promise.
-    pub(crate) fn create_auth_call(
+    /// Returns the cv_wait Promise.
+    pub(crate) fn create_cv_wait_cross_contract_call(
         &self,
         sender_id: &AccountId,
         token_ids: &[defuse_nep245::TokenId],
         amounts: &[U128],
+        salt: [u8; 32],
         msg: &str,
-    ) -> (TransferMessage, Promise) {
-        let transfer_message: TransferMessage = msg.parse().unwrap_or_panic_display();
-
+    ) -> Promise {
         let context_hash = CondVarContext {
             sender_id: Cow::Borrowed(sender_id),
             token_ids: Cow::Borrowed(token_ids),
             amounts: Cow::Borrowed(amounts),
-            salt: transfer_message.salt,
+            salt,
             msg: Cow::Borrowed(msg),
         }
         .hash();
@@ -62,7 +58,10 @@ impl Contract {
         let auth_call = Promise::new(auth_contract_id)
             .state_init(auth_contract_state_init, NearToken::from_near(0));
 
-        (transfer_message, auth_call)
+        ext_oneshot_condvar::ext_on(auth_call)
+            .with_static_gas(WAIT_GAS)
+            .with_unused_gas_weight(0)
+            .cv_wait()
     }
 
     pub(crate) fn parse_authorization_result() -> bool {

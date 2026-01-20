@@ -1,4 +1,4 @@
-use defuse_oneshot_condvar::{WAIT_GAS, ext_oneshot_condvar};
+use defuse_near_utils::UnwrapOrPanicError;
 use near_contract_standards::fungible_token::{core::ext_ft_core, receiver::FungibleTokenReceiver};
 use near_sdk::{
     AccountId, Gas, NearToken, PromiseOrValue, PromiseResult, env, json_types::U128, near, require,
@@ -7,6 +7,7 @@ use near_sdk::{
 
 use crate::FT_ON_TRANSFER_GAS;
 use crate::contract::{Contract, ContractExt};
+use crate::message::TransferMessage;
 
 #[near]
 impl FungibleTokenReceiver for Contract {
@@ -25,25 +26,20 @@ impl FungibleTokenReceiver for Contract {
         let token_contract = env::predecessor_account_id();
         let token_ids = vec![token_contract.to_string()];
         let amounts = vec![amount];
-        let (transfer_message, auth_call) =
-            self.create_auth_call(&sender_id, &token_ids, &amounts, &msg);
+        let transfer_message: TransferMessage = msg.parse().unwrap_or_panic_display();
+        let cv_wait =
+            self.create_cv_wait_cross_contract_call(&sender_id, &token_ids, &amounts, transfer_message.salt, &msg);
 
-        PromiseOrValue::Promise(
-            ext_oneshot_condvar::ext_on(auth_call)
-                .with_static_gas(WAIT_GAS)
-                .with_unused_gas_weight(0)
-                .cv_wait()
-                .then(
-                    Self::ext(env::current_account_id())
-                        .with_unused_gas_weight(1)
-                        .check_authorization_and_forward_ft(
-                            token_contract,
-                            transfer_message.receiver_id,
-                            amount,
-                            transfer_message.msg,
-                        ),
+        PromiseOrValue::Promise(cv_wait.then(
+            Self::ext(env::current_account_id())
+                .with_unused_gas_weight(1)
+                .check_authorization_and_forward_ft(
+                    token_contract,
+                    transfer_message.receiver_id,
+                    amount,
+                    transfer_message.msg,
                 ),
-        )
+        ))
     }
 }
 
@@ -61,7 +57,6 @@ impl Contract {
             near_sdk::env::panic_str("Authorization failed or timed out, refunding");
         }
 
-        // Forward tokens to escrow via ft_transfer_call
         PromiseOrValue::Promise(
             ext_ft_core::ext(token_contract)
                 .with_attached_deposit(NearToken::from_yoctonear(1))
@@ -88,7 +83,6 @@ impl Contract {
                     near_sdk::log!("Failed to parse escrow response, refunding all");
                     U128(0)
                 });
-                // Return the amount NOT used (refund)
                 U128(original_amount.0.saturating_sub(used.0))
             }
             PromiseResult::Failed => {
