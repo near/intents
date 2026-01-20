@@ -1147,10 +1147,8 @@ name = "defuse-sr25519"
 version = "0.1.0"
 dependencies = [
  "defuse-crypto",
- "defuse-serde-utils",
  "defuse-test-utils",
  "hex-literal",
- "impl-tools",
  "near-sdk",
  "rand 0.8.5",
  "rstest",

@@ -6,7 +6,6 @@
 //! Compatible with Polkadot.js, Talisman, Subwallet, and other Substrate wallets.
 
 use defuse_crypto::{Curve, Payload, SignedPayload, Sr25519, serde::AsCurve};
-use impl_tools::autoimpl;
 use near_sdk::{env, near};
 
 /// Raw message payload for Sr25519 signing
@@ -52,7 +51,6 @@ impl Payload for Sr25519Payload {
 
 /// Signed Sr25519 message with signature
 #[near(serializers = [json])]
-#[autoimpl(Deref using self.payload)]
 #[derive(Debug, Clone)]
 pub struct SignedSr25519Payload {
     #[serde(flatten)]
@@ -129,7 +127,7 @@ mod tests {
         let message = "Hello, Sr25519!";
 
         // Sign the message with <Bytes> wrapper (matching wallet behavior)
-        let wrapped_message = format!("<Bytes>{}</Bytes>", message);
+        let wrapped_message = format!("<Bytes>{message}</Bytes>");
         let signature = keypair.sign_simple(Sr25519::SIGNING_CTX, wrapped_message.as_bytes());
 
         // Create the signed payload with unwrapped message
@@ -186,8 +184,8 @@ mod tests {
         let message1 = "First message";
         let message2 = "Second message";
 
-        let wrapped1 = format!("<Bytes>{}</Bytes>", message1);
-        let wrapped2 = format!("<Bytes>{}</Bytes>", message2);
+        let wrapped1 = format!("<Bytes>{message1}</Bytes>");
+        let wrapped2 = format!("<Bytes>{message2}</Bytes>");
 
         let signature1 = keypair.sign_simple(Sr25519::SIGNING_CTX, wrapped1.as_bytes());
         let signature2 = keypair.sign_simple(Sr25519::SIGNING_CTX, wrapped2.as_bytes());
