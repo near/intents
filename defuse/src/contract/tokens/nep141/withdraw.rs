@@ -16,8 +16,8 @@ use near_contract_standards::{
 };
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
 use near_sdk::{
-    AccountId, Gas, NearToken, Promise, PromiseOrValue, PromiseResult, assert_one_yocto, env,
-    json_types::U128, near, require, serde_json,
+    AccountId, Gas, NearToken, Promise, PromiseOrValue, assert_one_yocto, env, json_types::U128,
+    near, require, serde_json,
 };
 
 #[near]
@@ -119,7 +119,7 @@ impl Contract {
         let min_gas = withdraw.min_gas();
         let p = if let Some(storage_deposit) = withdraw.storage_deposit {
             require!(
-                matches!(env::promise_result(0), PromiseResult::Successful(data) if data.is_empty()),
+                matches!(env::promise_result_checked(0, 0), Ok(data) if data.is_empty()),
                 "near_withdraw failed",
             );
 
@@ -156,8 +156,18 @@ impl FungibleTokenWithdrawResolver for Contract {
         amount: U128,
         is_call: bool,
     ) -> U128 {
-        let used = match env::promise_result(0) {
-            PromiseResult::Successful(value) => {
+        const MAX_RESULT_LENGTH: usize = "\"+340282366920938463463374607431768211455\"".len(); // u128::MAX
+
+        let used = env::promise_result_checked(0, MAX_RESULT_LENGTH).map_or(
+            if is_call {
+                // do not refund on failed `ft_transfer_call` due to
+                // NEP-141 vulnerability: `ft_resolve_transfer` fails to
+                // read result of `ft_on_transfer` due to insufficient gas
+                amount.0
+            } else {
+                0
+            },
+            |value| {
                 if is_call {
                     // `ft_transfer_call` returns successfully transferred amount
                     serde_json::from_slice::<U128>(&value)
@@ -170,18 +180,8 @@ impl FungibleTokenWithdrawResolver for Contract {
                 } else {
                     0
                 }
-            }
-            PromiseResult::Failed => {
-                if is_call {
-                    // do not refund on failed `ft_transfer_call` due to
-                    // NEP-141 vulnerability: `ft_resolve_transfer` fails to
-                    // read result of `ft_on_transfer` due to insufficient gas
-                    amount.0
-                } else {
-                    0
-                }
-            }
-        };
+            },
+        );
 
         let refund = amount.0.saturating_sub(used);
         if refund > 0 {
