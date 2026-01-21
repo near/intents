@@ -5,7 +5,6 @@ use near_sdk::{
     serde_json,
 };
 
-use crate::FT_ON_TRANSFER_GAS;
 use crate::contract::{Contract, ContractExt};
 use crate::message::TransferMessage;
 
@@ -17,11 +16,6 @@ impl FungibleTokenReceiver for Contract {
         amount: U128,
         msg: String,
     ) -> PromiseOrValue<U128> {
-        require!(
-            env::prepaid_gas() >= FT_ON_TRANSFER_GAS,
-            "Insufficient gas prepaid"
-        );
-
         // For FT, the token is identified by the predecessor (FT contract)
         let token_contract = env::predecessor_account_id();
         let token_ids = vec![token_contract.to_string()];

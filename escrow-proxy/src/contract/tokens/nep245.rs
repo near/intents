@@ -5,7 +5,6 @@ use near_sdk::{
     serde_json,
 };
 
-use crate::MT_ON_TRANSFER_GAS;
 use crate::contract::{Contract, ContractExt};
 use crate::message::TransferMessage;
 
@@ -20,11 +19,6 @@ impl MultiTokenReceiver for Contract {
         amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
-        require!(
-            env::prepaid_gas() >= MT_ON_TRANSFER_GAS,
-            "Insufficient gas prepaid"
-        );
-
         let _ = previous_owner_ids;
         let token_contract = env::predecessor_account_id();
         let transfer_message: TransferMessage = msg.parse().unwrap_or_panic_display();
@@ -70,13 +64,12 @@ impl Contract {
         PromiseOrValue::Promise(
             ext_mt_core::ext(token_contract)
                 .with_attached_deposit(NearToken::from_yoctonear(1))
-                .with_static_gas(Gas::from_tgas(50))
                 .mt_batch_transfer_call(
                     escrow_address,
                     token_ids,
                     amounts.clone(),
-                    None,                              // approval
-                    Some("proxy forward".to_string()), // memo
+                    None,
+                    Some("proxy".to_string()),
                     msg,
                 )
                 .then(

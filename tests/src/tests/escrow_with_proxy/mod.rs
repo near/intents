@@ -1,4 +1,4 @@
 #![allow(async_fn_in_trait)]
 
-mod gas_benchmark;
 mod swap;
+mod swap_with_fees;
