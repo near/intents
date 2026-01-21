@@ -1,14 +1,13 @@
 use std::{fs, path::Path, sync::LazyLock};
 
 use defuse_oneshot_condvar::storage::{ContractStorage, State as OneshotCondVarState};
-use defuse_sandbox::{
-    Account, SigningAccount, api::types::transaction::actions::GlobalContractDeployMode,
-};
 use near_sdk::{
     AccountId, GlobalContractId, NearToken,
     state_init::{StateInit, StateInitV1},
 };
 use serde_json::json;
+
+use crate::{Account, SigningAccount, api::types::transaction::actions::GlobalContractDeployMode};
 
 // Re-export StateInit type for convenience (used to deploy oneshot-condvar instances)
 pub use defuse_oneshot_condvar::storage::StateInit as State;
@@ -18,8 +17,7 @@ pub static ONESHOT_CONDVAR_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
     fs::read(filename.clone()).unwrap_or_else(|_| panic!("file {filename:?} should exist"))
 });
 
-#[allow(async_fn_in_trait)]
-pub trait OneshotCondVarAccountExt {
+pub trait OneshotCondVarExt {
     async fn deploy_oneshot_condvar(&self, name: impl AsRef<str>) -> AccountId;
     async fn deploy_oneshot_condvar_instance(
         &self,
@@ -32,7 +30,7 @@ pub trait OneshotCondVarAccountExt {
     ) -> anyhow::Result<OneshotCondVarState>;
 }
 
-impl OneshotCondVarAccountExt for SigningAccount {
+impl OneshotCondVarExt for SigningAccount {
     async fn deploy_oneshot_condvar(&self, name: impl AsRef<str>) -> AccountId {
         let account = self.sub_account(name).unwrap();
 

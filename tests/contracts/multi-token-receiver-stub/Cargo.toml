@@ -16,7 +16,6 @@ near-sdk.workspace = true
 
 [dev-dependencies]
 defuse-sandbox.workspace = true
-defuse-sandbox-ext.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
 near-workspaces.workspace = true
 tokio.workspace = true

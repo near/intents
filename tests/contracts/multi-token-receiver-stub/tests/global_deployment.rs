@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 
-use defuse_sandbox::{Account, Sandbox};
-use defuse_sandbox_ext::MtReceiverStubAccountExt;
+use defuse_sandbox::{Account, MtReceiverStubExt, Sandbox};
 use near_sdk::{
     AccountId,
     borsh::{self, BorshSerialize},

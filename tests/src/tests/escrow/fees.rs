@@ -7,8 +7,7 @@ use defuse_deadline::Deadline;
 use defuse_escrow_swap::action::{FillMessageBuilder, FundMessageBuilder};
 use defuse_escrow_swap::decimal::UD128;
 use defuse_escrow_swap::{ParamsBuilder, Pips, ProtocolFees};
-use defuse_sandbox::{MtExt, MtViewExt};
-use defuse_sandbox_ext::EscrowSwapAccountExt;
+use defuse_sandbox::{EscrowSwapExt, MtExt, MtViewExt};
 use defuse_token_id::TokenId;
 use defuse_token_id::nep245::Nep245TokenId;
 

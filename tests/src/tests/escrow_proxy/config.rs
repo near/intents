@@ -1,6 +1,5 @@
 use defuse_escrow_proxy::ProxyConfig;
-use defuse_sandbox::Sandbox;
-use defuse_sandbox_ext::EscrowProxyExt;
+use defuse_sandbox::{EscrowProxyExt, Sandbox};
 use near_sdk::{AccountId, GlobalContractId, NearToken};
 
 const INIT_BALANCE: NearToken = NearToken::from_near(100);

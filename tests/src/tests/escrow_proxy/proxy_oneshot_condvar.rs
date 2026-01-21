@@ -6,8 +6,10 @@ use defuse_escrow_proxy::{ProxyConfig, TransferMessage};
 use defuse_oneshot_condvar::CondVarContext;
 use defuse_oneshot_condvar::storage::{ContractStorage, StateInit as CondVarStateInit};
 use defuse_sandbox::extensions::storage_management::StorageManagementExt;
-use defuse_sandbox::{FnCallBuilder, FtExt, FtViewExt, MtExt, MtViewExt};
-use defuse_sandbox_ext::{EscrowProxyExt, MtReceiverStubAccountExt, OneshotCondVarAccountExt};
+use defuse_sandbox::{
+    EscrowProxyExt, FnCallBuilder, FtExt, FtViewExt, MtExt, MtReceiverStubExt, MtViewExt,
+    OneshotCondVarExt,
+};
 use multi_token_receiver_stub::{FTReceiverMode, MTReceiverMode};
 use near_sdk::AccountId;
 use near_sdk::{

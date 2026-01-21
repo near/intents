@@ -22,8 +22,7 @@ use defuse_oneshot_condvar::CondVarContext;
 use defuse_oneshot_condvar::storage::{
     ContractStorage as CondVarStorage, StateInit as CondVarState,
 };
-use defuse_sandbox::{MtExt, MtViewExt};
-use defuse_sandbox_ext::{EscrowProxyExt, EscrowSwapAccountExt, OneshotCondVarAccountExt};
+use defuse_sandbox::{EscrowProxyExt, EscrowSwapExt, MtExt, MtViewExt, OneshotCondVarExt};
 use defuse_token_id::TokenId;
 use defuse_token_id::nep245::Nep245TokenId;
 

@@ -1,18 +1,18 @@
 use std::{fs, path::Path, sync::LazyLock};
 
-use defuse_sandbox::{SigningAccount, api::types::transaction::actions::GlobalContractDeployMode};
 use near_sdk::{
     AccountId, GlobalContractId, NearToken,
     state_init::{StateInit, StateInitV1},
 };
+
+use crate::{SigningAccount, api::types::transaction::actions::GlobalContractDeployMode};
 
 pub static ESCROW_SWAP_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
     let filename = Path::new(env!("CARGO_MANIFEST_DIR")).join("../res/defuse_escrow_swap.wasm");
     fs::read(filename.clone()).unwrap_or_else(|_| panic!("file {filename:?} should exists"))
 });
 
-#[allow(async_fn_in_trait)]
-pub trait EscrowSwapAccountExt {
+pub trait EscrowSwapExt {
     /// Deploy global escrow-swap contract (shared code)
     async fn deploy_escrow_swap_global(&self, name: impl AsRef<str>) -> AccountId;
 
@@ -24,7 +24,7 @@ pub trait EscrowSwapAccountExt {
     ) -> AccountId;
 }
 
-impl EscrowSwapAccountExt for SigningAccount {
+impl EscrowSwapExt for SigningAccount {
     async fn deploy_escrow_swap_global(&self, name: impl AsRef<str>) -> AccountId {
         let account = self.sub_account(name).unwrap();
 

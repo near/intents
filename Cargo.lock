@@ -972,7 +972,6 @@ dependencies = [
  "defuse-nep245",
  "defuse-oneshot-condvar",
  "defuse-sandbox",
- "defuse-sandbox-ext",
  "defuse-token-id",
  "futures",
  "near-contract-standards",
@@ -1126,8 +1125,11 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "defuse-crypto",
+ "defuse-escrow-proxy",
+ "defuse-escrow-swap",
  "defuse-nep245",
  "defuse-nep413",
+ "defuse-oneshot-condvar",
  "defuse-randomness",
  "futures",
  "impl-tools",
@@ -1139,29 +1141,10 @@ dependencies = [
  "near-sandbox",
  "near-sdk",
  "rstest",
+ "serde_json",
  "thiserror 2.0.17",
  "tokio",
  "tracing",
-]
-
-[[package]]
-name = "defuse-sandbox-ext"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "defuse-core",
- "defuse-crypto",
- "defuse-deadline",
- "defuse-escrow-proxy",
- "defuse-escrow-swap",
- "defuse-fees",
- "defuse-nep413",
- "defuse-oneshot-condvar",
- "defuse-sandbox",
- "defuse-token-id",
- "ed25519-dalek",
- "near-sdk",
- "serde_json",
 ]
 
 [[package]]
@@ -1221,7 +1204,6 @@ dependencies = [
  "defuse-poa-factory",
  "defuse-randomness",
  "defuse-sandbox",
- "defuse-sandbox-ext",
  "defuse-serde-utils",
  "defuse-test-utils",
  "defuse-token-id",
@@ -2509,7 +2491,6 @@ dependencies = [
  "defuse",
  "defuse-nep245",
  "defuse-sandbox",
- "defuse-sandbox-ext",
  "futures",
  "near-contract-standards",
  "near-sdk",

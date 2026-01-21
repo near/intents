@@ -1,12 +1,11 @@
 use std::{collections::BTreeMap, fs, path::Path, sync::LazyLock};
 
-use defuse_sandbox::{
-    Account, SigningAccount, api::types::transaction::actions::GlobalContractDeployMode,
-};
 use near_sdk::{
     AccountId, NearToken,
     state_init::{StateInit, StateInitV1},
 };
+
+use crate::{Account, SigningAccount, api::types::transaction::actions::GlobalContractDeployMode};
 
 pub static MT_RECEIVER_STUB_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
     let filename = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -14,8 +13,7 @@ pub static MT_RECEIVER_STUB_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
     fs::read(filename.clone()).unwrap_or_else(|_| panic!("file {filename:?} should exists"))
 });
 
-#[allow(async_fn_in_trait)]
-pub trait MtReceiverStubAccountExt {
+pub trait MtReceiverStubExt {
     /// Deploy as regular contract
     async fn deploy_mt_receiver_stub(&self, name: impl AsRef<str>) -> Account;
     /// Deploy as global contract (code only)
@@ -28,7 +26,7 @@ pub trait MtReceiverStubAccountExt {
     ) -> AccountId;
 }
 
-impl MtReceiverStubAccountExt for SigningAccount {
+impl MtReceiverStubExt for SigningAccount {
     async fn deploy_mt_receiver_stub(&self, name: impl AsRef<str>) -> Account {
         let account = self.sub_account(name).unwrap();
 

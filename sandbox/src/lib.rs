@@ -10,9 +10,16 @@ use std::sync::{
 use tokio::sync::OnceCell;
 
 pub use account::{Account, SigningAccount};
+#[cfg(feature = "condvar")]
+pub use extensions::condvar::{OneshotCondVarExt, ONESHOT_CONDVAR_WASM, State as CondVarState};
+#[cfg(feature = "escrow-proxy")]
+pub use extensions::escrow_proxy::{ESCROW_PROXY_WASM, EscrowProxyExt};
+#[cfg(feature = "escrow-swap")]
+pub use extensions::escrow_swap::{ESCROW_SWAP_WASM, EscrowSwapExt};
 pub use extensions::{
     ft::{FtExt, FtViewExt},
     mt::{MtExt, MtViewExt},
+    mt_receiver::{MT_RECEIVER_STUB_WASM, MtReceiverStubExt},
     storage_management::{StorageManagementExt, StorageViewExt},
     wnear::{WNearDeployerExt, WNearExt},
 };

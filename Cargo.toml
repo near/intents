@@ -27,7 +27,6 @@ members = [
     "poa-token",
     "randomness",
     "sandbox",
-    "sandbox-ext",
     "sep53",
     "serde-utils",
     "tests",
@@ -72,7 +71,6 @@ defuse-webauthn.path = "webauthn"
 defuse-poa-factory.path = "poa-factory"
 defuse-poa-token.path = "poa-token"
 defuse-sandbox.path = "sandbox"
-defuse-sandbox-ext.path = "sandbox-ext"
 defuse-sep53.path = "sep53"
 defuse-serde-utils.path = "serde-utils"
 defuse-oneshot-condvar.path = "oneshot-condvar"

@@ -17,14 +17,13 @@ defuse-core.workspace = true
 defuse-crypto.workspace = true
 defuse-deadline.workspace = true
 defuse-escrow-proxy = { workspace = true, features = ["escrow-swap"] }
-defuse-sandbox-ext = { workspace = true, features = ["escrow-swap"] }
 defuse-oneshot-condvar.workspace = true
 
 
 defuse-serde-utils = { workspace = true }
 defuse-randomness.workspace = true
 defuse-test-utils.workspace = true
-defuse-sandbox.workspace = true
+defuse-sandbox = { workspace = true, features = ["escrow-swap"] }
 defuse-token-id.workspace = true
 futures = "0.3"
 anyhow.workspace = true

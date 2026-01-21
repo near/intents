@@ -35,8 +35,7 @@ serde_with.workspace = true
 defuse = { workspace = true, features = ["sandbox"] }
 defuse-core.workspace = true
 defuse-crypto.workspace = true
-defuse-sandbox.workspace = true
-defuse-sandbox-ext.workspace = true
+defuse-sandbox = { workspace = true, features = ["escrow-swap"] }
 anyhow.workspace = true
 futures.workspace = true
 rand.workspace = true

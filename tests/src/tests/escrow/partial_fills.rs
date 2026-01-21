@@ -277,8 +277,7 @@ async fn test_partial_fill_funds_returned_after_timeout() {
     use defuse_escrow_swap::ParamsBuilder;
     use defuse_escrow_swap::action::{FillMessageBuilder, FundMessageBuilder};
     use defuse_escrow_swap::decimal::UD128;
-    use defuse_sandbox::{MtExt, MtViewExt};
-    use defuse_sandbox_ext::EscrowSwapAccountExt;
+    use defuse_sandbox::{EscrowSwapExt, MtExt, MtViewExt};
 
     let env = DefuseEnv::builder().build().await;
     let escrow_swap_global = env.root().deploy_escrow_swap_global("escrow_swap").await;
