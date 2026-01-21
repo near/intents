@@ -1,13 +1,13 @@
 use std::borrow::Cow;
 
+use defuse_near_utils::promise_result_bool;
 use defuse_oneshot_condvar::{
     CondVarContext, WAIT_GAS, ext_oneshot_condvar,
     storage::{ContractStorage, StateInit as CondVarStateInit},
 };
 use near_sdk::{
-    AccountId, NearToken, Promise, PromiseResult, env,
+    AccountId, NearToken, Promise, env,
     json_types::U128,
-    serde_json,
     state_init::{StateInit, StateInitV1},
 };
 
@@ -61,14 +61,5 @@ impl Contract {
             .with_static_gas(WAIT_GAS)
             .with_unused_gas_weight(0)
             .cv_wait()
-    }
-
-    pub(crate) fn parse_authorization_result() -> bool {
-        match env::promise_result(0) {
-            PromiseResult::Successful(value) => {
-                serde_json::from_slice::<bool>(&value).unwrap_or(false)
-            }
-            PromiseResult::Failed => false,
-        }
     }
 }

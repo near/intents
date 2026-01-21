@@ -1,9 +1,6 @@
-use defuse_near_utils::UnwrapOrPanicError;
+use defuse_near_utils::{UnwrapOrPanicError, promise_result_bool, promise_result_vec_U128};
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
-use near_sdk::{
-    AccountId, Gas, NearToken, PromiseOrValue, PromiseResult, env, json_types::U128, near, require,
-    serde_json,
-};
+use near_sdk::{AccountId, Gas, NearToken, PromiseOrValue, env, json_types::U128, near};
 
 use crate::contract::{Contract, ContractExt};
 use crate::message::TransferMessage;
@@ -57,7 +54,7 @@ impl Contract {
         amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
-        if !Self::parse_authorization_result() {
+        if !promise_result_bool(0).unwrap_or(false) {
             near_sdk::env::panic_str("Authorization failed or timed out, refunding");
         }
 
@@ -82,24 +79,12 @@ impl Contract {
 
     #[private]
     pub fn resolve_mt_transfer(&self, original_amounts: Vec<U128>) -> Vec<U128> {
-        match env::promise_result(0) {
-            PromiseResult::Successful(transferred) => {
-                let transferred: Vec<U128> =
-                    serde_json::from_slice(&transferred).unwrap_or_else(|_| {
-                        near_sdk::log!("Failed to parse escrow response, refunding all");
-                        vec![U128(0); original_amounts.len()]
-                    });
+        let used = promise_result_vec_U128(0, original_amounts.len()).unwrap_or_default();
 
-                original_amounts
-                    .iter()
-                    .zip(transferred.iter())
-                    .map(|(original, transferred)| U128(original.0.saturating_sub(transferred.0)))
-                    .collect()
-            }
-            PromiseResult::Failed => {
-                near_sdk::log!("Escrow transfer failed, refunding all");
-                original_amounts
-            }
-        }
+        original_amounts
+            .iter()
+            .zip(used.iter())
+            .map(|(original, transferred)| U128(original.0.saturating_sub(transferred.0)))
+            .collect()
     }
 }

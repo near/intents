@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use defuse_near_utils::{Lock, UnwrapOrPanic, UnwrapOrPanicError};
+use defuse_near_utils::{Lock, UnwrapOrPanic, UnwrapOrPanicError, max_vec_u128_json_len};
 use defuse_nep245::{
     ClearedApproval, MtEventEmit, MtTransferEvent, TokenId, resolver::MultiTokenResolver,
 };
@@ -27,12 +27,11 @@ impl MultiTokenResolver for Contract {
             "invalid args"
         );
 
-        let mut refunds =
-            env::promise_result_checked(0, Self::mt_on_transfer_max_result_len(amounts.len()))
-                .ok()
-                .and_then(|value| serde_json::from_slice::<Vec<U128>>(&value).ok())
-                .filter(|refund| refund.len() == amounts.len())
-                .unwrap_or_else(|| amounts.clone());
+        let mut refunds = env::promise_result_checked(0, max_vec_u128_json_len(amounts.len()))
+            .ok()
+            .and_then(|value| serde_json::from_slice::<Vec<U128>>(&value).ok())
+            .filter(|refund| refund.len() == amounts.len())
+            .unwrap_or_else(|| amounts.clone());
 
         let sender_id = previous_owner_ids.first().cloned().unwrap_or_panic();
 

@@ -1037,6 +1037,7 @@ dependencies = [
  "impl-tools",
  "near-sdk",
  "rstest",
+ "serde_json",
 ]
 
 [[package]]
@@ -2584,7 +2585,7 @@ dependencies = [
 [[package]]
 name = "near-api"
 version = "0.8.2"
-source = "git+https://github.com/pityjllk/near-api-rs?rev=a1e37cfc7a83996b102d7610b1365dcf9d74d601#a1e37cfc7a83996b102d7610b1365dcf9d74d601"
+source = "git+https://github.com/near/near-api-rs?rev=091bc53bb01167f8d1332520065ce92f492531a5#091bc53bb01167f8d1332520065ce92f492531a5"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -2609,7 +2610,7 @@ dependencies = [
 [[package]]
 name = "near-api-types"
 version = "0.8.2"
-source = "git+https://github.com/pityjllk/near-api-rs?rev=a1e37cfc7a83996b102d7610b1365dcf9d74d601#a1e37cfc7a83996b102d7610b1365dcf9d74d601"
+source = "git+https://github.com/near/near-api-rs?rev=091bc53bb01167f8d1332520065ce92f492531a5#091bc53bb01167f8d1332520065ce92f492531a5"
 dependencies = [
  "base64 0.22.1",
  "borsh",
