@@ -48,6 +48,7 @@ mod native_withdraw;
 mod public_key;
 mod relayers;
 mod simulate;
+mod sr25519;
 mod token_diff;
 mod transfer;
 

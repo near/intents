@@ -10,13 +10,21 @@ workspace = true
 
 [dev-dependencies]
 defuse = { workspace = true, features = ["contract", "sandbox"] }
+defuse-crypto.workspace = true
 defuse-escrow-swap = { workspace = true, features = ["auth_call"] }
 defuse-near-utils = { workspace = true }
 defuse-poa-factory = { workspace = true, features = ["contract", "sandbox"] }
 defuse-serde-utils = { workspace = true }
+defuse-sr25519.workspace = true
 defuse-randomness.workspace = true
 defuse-test-utils.workspace = true
 defuse-sandbox.workspace = true
+
+# Use rand 0.8 and rand_chacha 0.3 to match schnorrkel's rand_core 0.6 dependency
+rand = "0.8"
+rand_chacha = "0.3"
+rand_core = "0.6"
+schnorrkel.workspace = true
 
 futures = "0.3"
 anyhow.workspace = true
