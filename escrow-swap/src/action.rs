@@ -32,7 +32,6 @@ pub struct FillAction {
     pub receive_src_to: OverrideSend,
 }
 
-/// Builder for creating Fund transfer messages.
 pub struct FundMessageBuilder {
     params: Params,
 }

@@ -14,10 +14,10 @@ use near_sdk::{
 };
 
 use crate::EscrowProxy;
-#[cfg(feature = "escrow-swap")]
-use defuse_escrow_swap::Params as EscrowParams;
 use crate::message::TransferMessage;
 use crate::state::ProxyConfig;
+#[cfg(feature = "escrow-swap")]
+use defuse_escrow_swap::Params as EscrowParams;
 
 #[near(contract_state)]
 #[derive(PanicOnDefault)]
