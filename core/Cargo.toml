@@ -24,7 +24,6 @@ defuse-token-id = { workspace = true, features = [
     "nep141",
     "nep171",
     "nep245",
-    "imt"
 ] }
 defuse-ton-connect.workspace = true
 defuse-webauthn.workspace = true
@@ -56,6 +55,7 @@ arbitrary = [
     "defuse-token-id/arbitrary",
     "defuse-ton-connect/arbitrary",
 ]
+imt = ["defuse-token-id/imt"]
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 chrono = { workspace = true, features = ["now"] }

@@ -7,7 +7,7 @@ use defuse::core::crypto::Payload;
 use defuse::core::events::DefuseEvent;
 use defuse::core::fees::FeesConfig;
 use defuse::core::intents::IntentEvent;
-use defuse::core::intents::tokens::{ImtMint, NotifyOnTransfer};
+use defuse::core::intents::{imt::ImtMint, tokens::NotifyOnTransfer};
 use defuse::core::token_id::TokenId;
 use defuse::nep245::{MtEvent, MtMintEvent};
 use defuse::sandbox_ext::deployer::DefuseExt;

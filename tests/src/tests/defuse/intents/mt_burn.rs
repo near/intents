@@ -5,7 +5,7 @@ use defuse::core::amounts::Amounts;
 use defuse::core::crypto::Payload;
 use defuse::core::events::DefuseEvent;
 use defuse::core::intents::IntentEvent;
-use defuse::core::intents::tokens::{ImtBurn, ImtMint};
+use defuse::core::intents::imt::{ImtBurn, ImtMint};
 use defuse::core::token_id::TokenId;
 use defuse::nep245::{MtBurnEvent, MtEvent};
 use defuse::sandbox_ext::intents::ExecuteIntentsExt;

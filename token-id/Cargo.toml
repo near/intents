@@ -21,7 +21,7 @@ thiserror.workspace = true
 arbitrary = { workspace = true, optional = true }
 
 [features]
-default = ["nep141", "nep171", "nep245", "imt"]
+default = ["nep141", "nep171", "nep245"]
 
 nep141 = []
 nep171 = []

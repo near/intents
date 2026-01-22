@@ -1,5 +1,7 @@
 pub mod account;
 pub mod auth;
+#[cfg(feature = "imt")]
+pub mod imt;
 pub mod token_diff;
 pub mod tokens;
 
@@ -12,11 +14,7 @@ use tokens::{NativeWithdraw, StorageDeposit};
 use crate::{
     Result,
     engine::{Engine, Inspector, State},
-    intents::{
-        account::SetAuthByPredecessorId,
-        auth::AuthCall,
-        tokens::{ImtBurn, ImtMint},
-    },
+    intents::{account::SetAuthByPredecessorId, auth::AuthCall},
 };
 
 use self::{
@@ -74,10 +72,12 @@ pub enum Intent {
     AuthCall(AuthCall),
 
     // See [`ImtMint`]
-    ImtMint(ImtMint),
+    #[cfg(feature = "imt")]
+    ImtMint(crate::intents::imt::ImtMint),
 
     // See [`ImtBurn`]
-    ImtBurn(ImtBurn),
+    #[cfg(feature = "imt")]
+    ImtBurn(crate::intents::imt::ImtBurn),
 }
 
 pub trait ExecutableIntent {
@@ -135,7 +135,9 @@ impl ExecutableIntent for Intent {
                 intent.execute_intent(signer_id, engine, intent_hash)
             }
             Self::AuthCall(intent) => intent.execute_intent(signer_id, engine, intent_hash),
+            #[cfg(feature = "imt")]
             Self::ImtMint(intent) => intent.execute_intent(signer_id, engine, intent_hash),
+            #[cfg(feature = "imt")]
             Self::ImtBurn(intent) => intent.execute_intent(signer_id, engine, intent_hash),
         }
     }

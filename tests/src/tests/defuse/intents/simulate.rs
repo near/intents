@@ -18,10 +18,10 @@ use defuse::{
             Intent, IntentEvent,
             account::{AddPublicKey, RemovePublicKey, SetAuthByPredecessorId},
             auth::AuthCall,
+            imt::{ImtBurn, ImtMint},
             token_diff::{TokenDeltas, TokenDiff, TokenDiffEvent},
             tokens::{
-                FtWithdraw, ImtBurn, ImtMint, MtWithdraw, NativeWithdraw, NftWithdraw,
-                StorageDeposit, Transfer,
+                FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer,
             },
         },
         token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
