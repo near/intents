@@ -516,6 +516,10 @@ impl ExecutableIntent for StorageDeposit {
 pub struct ImtMint {
     pub receiver_id: AccountId,
 
+    // The tokens transferred in this call will be wrapped
+    // in such a way as to bind the token ID to the minter authority.
+    // The final string representation of the token
+    // will be as follows: imt:<minter_id>:<token_id>
     #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
     pub tokens: MintedTokens,
 
@@ -535,7 +539,7 @@ impl ExecutableIntent for ImtMint {
     #[inline]
     fn execute_intent<S, I>(
         self,
-        owner_id: &AccountIdRef,
+        signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
         intent_hash: CryptoHash,
     ) -> Result<()>
@@ -543,17 +547,17 @@ impl ExecutableIntent for ImtMint {
         S: State,
         I: Inspector,
     {
-        let tokens = self.tokens.to_imt_tokens(owner_id);
-
         engine
             .inspector
             .on_event(DefuseEvent::ImtMint(Cow::Borrowed(
                 [IntentEvent::new(
-                    AccountEvent::new(owner_id, Cow::Borrowed(&self)),
+                    AccountEvent::new(signer_id, Cow::Borrowed(&self)),
                     intent_hash,
                 )]
                 .as_slice(),
             )));
+
+        let tokens = self.tokens.into_imt_tokens(signer_id);
 
         engine
             .state
@@ -562,7 +566,7 @@ impl ExecutableIntent for ImtMint {
         if let Some(notification) = self.notification {
             engine
                 .state
-                .notify_on_transfer(owner_id, self.receiver_id, tokens, notification);
+                .notify_on_transfer(signer_id, self.receiver_id, tokens, notification);
         }
 
         Ok(())
@@ -573,6 +577,10 @@ impl ExecutableIntent for ImtMint {
 #[derive(Debug, Clone)]
 /// Burn a set of tokens minted by signer, within the intents contract.
 pub struct ImtBurn {
+    // The tokens transferred in this call will be wrapped
+    // in such a way as to bind the token ID to the minter authority.
+    // The final string representation of the token
+    // will be as follows: imt:<minter_id>:<token_id>
     #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
     pub tokens: MintedTokens,
 
@@ -584,7 +592,7 @@ impl ExecutableIntent for ImtBurn {
     #[inline]
     fn execute_intent<S, I>(
         self,
-        owner_id: &AccountIdRef,
+        signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
         intent_hash: CryptoHash,
     ) -> Result<()>
@@ -596,7 +604,7 @@ impl ExecutableIntent for ImtBurn {
             .inspector
             .on_event(DefuseEvent::ImtBurn(Cow::Borrowed(
                 [IntentEvent::new(
-                    AccountEvent::new(owner_id, Cow::Borrowed(&self)),
+                    AccountEvent::new(signer_id, Cow::Borrowed(&self)),
                     intent_hash,
                 )]
                 .as_slice(),
@@ -604,14 +612,14 @@ impl ExecutableIntent for ImtBurn {
 
         engine
             .state
-            .mt_burn(owner_id, self.tokens.to_imt_tokens(owner_id), self.memo)
+            .mt_burn(signer_id, self.tokens.into_imt_tokens(signer_id), self.memo)
     }
 }
 
 pub type MintedTokens = Amounts<BTreeMap<defuse_nep245::TokenId, u128>>;
 
 impl MintedTokens {
-    fn to_imt_tokens(&self, minter_id: &AccountIdRef) -> Amounts<BTreeMap<TokenId, u128>> {
+    fn into_imt_tokens(self, minter_id: &AccountIdRef) -> Amounts<BTreeMap<TokenId, u128>> {
         Amounts::new(
             self.iter()
                 .map(|(token_id, amount)| {

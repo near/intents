@@ -44,10 +44,10 @@ impl FromStr for ImtTokenId {
     type Err = TokenIdError;
 
     fn from_str(data: &str) -> Result<Self, Self::Err> {
-        let (contract_id, token_id) = data
+        let (minter_id, token_id) = data
             .split_once(':')
             .ok_or(strum::ParseError::VariantNotFound)?;
-        Ok(Self::new(contract_id.parse::<AccountId>()?, token_id))
+        Ok(Self::new(minter_id.parse::<AccountId>()?, token_id))
     }
 }
 
