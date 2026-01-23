@@ -1017,6 +1017,7 @@ dependencies = [
  "defuse-near-utils",
  "derive_more",
  "near-sdk",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -1087,6 +1088,7 @@ dependencies = [
  "defuse-randomness",
  "futures",
  "impl-tools",
+ "libc",
  "near-api",
  "near-contract-standards",
  "near-openapi-types",

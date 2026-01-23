@@ -1,5 +1,34 @@
 mod letter_gen;
+mod mt_deposit_resolve_gas;
 mod mt_transfer_resolve_gas;
+
+use std::future::Future;
+
+/// Binary search to find the maximum value for which `test` succeeds.
+pub(super) async fn binary_search_max<F, Fut>(low: usize, high: usize, test: F) -> Option<usize>
+where
+    F: Fn(usize) -> Fut,
+    Fut: Future<Output = anyhow::Result<()>>,
+{
+    let mut lo = low;
+    let mut hi = high;
+    let mut best = None;
+
+    while lo <= hi {
+        let mid = lo + (hi - lo) / 2;
+        match test(mid).await {
+            Ok(()) => {
+                best = Some(mid);
+                lo = mid + 1; // success -> try higher
+            }
+            Err(_) => {
+                hi = mid - 1; // failure -> try lower
+            }
+        }
+    }
+
+    best
+}
 
 use crate::tests::defuse::DefuseSignerExt;
 use crate::tests::defuse::env::{Env, MT_RECEIVER_STUB_WASM};
