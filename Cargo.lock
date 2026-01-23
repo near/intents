@@ -1162,7 +1162,6 @@ dependencies = [
  "arbitrary",
  "bnum",
  "chrono",
- "defuse-fees",
  "defuse-near-utils",
  "defuse-randomness",
  "defuse-sandbox",

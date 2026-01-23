@@ -3,9 +3,9 @@ use crate::{
     env::Env, sandbox::extensions::defuse::intents::ExecuteIntentsExt,
     sandbox::extensions::mt::MtViewExt,
 };
-use defuse_fees::Pips;
 use defuse_sandbox::extensions::defuse::contract::contract::config::{DefuseConfig, RolesConfig};
 use defuse_sandbox::extensions::defuse::contract::core::fees::FeesConfig;
+use defuse_sandbox::extensions::defuse::contract::core::fees::Pips;
 use defuse_sandbox::extensions::defuse::contract::core::intents::tokens::{
     NotifyOnTransfer, Transfer,
 };

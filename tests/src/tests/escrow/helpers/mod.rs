@@ -1,4 +1,3 @@
-use defuse_fees::Pips;
 use defuse_sandbox::extensions::{
     defuse::{
         contract::{
@@ -7,6 +6,7 @@ use defuse_sandbox::extensions::{
         },
         deployer::DefuseExt,
     },
+    escrow::contract::Pips,
     poa::{PoAFactoryDeployerExt, PoAFactoryExt, contract::contract::Role as PoAFactoryRole},
 };
 use defuse_sandbox::{

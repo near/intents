@@ -22,7 +22,6 @@ defuse-near-utils = { workspace = true }
 defuse-serde-utils = { workspace = true }
 defuse-randomness.workspace = true
 defuse-test-utils.workspace = true
-defuse-fees.workspace = true
 near-sdk = { workspace = true, features = ["arbitrary"] }
 
 futures = "0.3"
