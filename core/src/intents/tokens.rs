@@ -75,7 +75,6 @@ pub struct Transfer {
     /// Optionally notify receiver_id via `mt_on_transfer()`
     ///
     /// NOTE: `min_gas` is adjusted with following values:
-    /// * default: 30TGas
     /// * minimum: 5TGas
     #[serde(flatten, default, skip_serializing_if = "Option::is_none")]
     pub notification: Option<NotifyOnTransfer>,
