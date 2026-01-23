@@ -1,4 +1,5 @@
 use super::TokenId;
+use defuse_near_utils::REFUND_MEMO;
 use derive_more::derive::From;
 use near_sdk::{
     AccountIdRef, AsNep297Event, FunctionError, json_types::U128, near, serde::Deserialize,
@@ -13,8 +14,8 @@ pub struct ErrorRefundLogTooLong {
     pub limit: usize,
 }
 
-/// NEAR protocol limit for log messages (16 KiB)
-pub const TOTAL_LOG_LENGTH_LIMIT: usize = 16384;
+/// Re-export for backwards compatibility
+pub use defuse_near_utils::TOTAL_LOG_LENGTH_LIMIT;
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(event_json(standard = "nep245"))]
@@ -32,8 +33,8 @@ pub trait EmitChecked {
     fn emit_with_refund_log_checked(self) -> Result<(), ErrorRefundLogTooLong>;
 }
 
-const REFUND_EXTRA_BYTES: usize = r#","memo":"refund""#.len();
-const REFUND_STR_LEN: usize = "refund".len();
+const REFUND_EXTRA_BYTES: usize = r#","memo":""#.len() + REFUND_MEMO.len();
+const REFUND_STR_LEN: usize = REFUND_MEMO.len();
 
 fn refund_log_extra_bytes_count(memo: Option<&str>) -> usize {
     memo.map_or(REFUND_EXTRA_BYTES, |m| {
@@ -138,7 +139,7 @@ impl MtTransferEvent<'_> {
                 new_owner_id: self.old_owner_id.clone(),
                 token_ids: self.token_ids.clone(),
                 amounts: self.amounts.clone(),
-                memo: Some("refund".into()),
+                memo: Some(REFUND_MEMO.into()),
             }]
             .as_slice()
             .into(),

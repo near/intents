@@ -4,7 +4,7 @@ mod nep245;
 
 use super::Contract;
 use defuse_core::{DefuseError, Result, token_id::TokenId};
-use defuse_near_utils::{Lock, UnwrapOrPanic};
+use defuse_near_utils::{Lock, REFUND_MEMO, UnwrapOrPanic};
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
 use itertools::{Either, Itertools};
 use near_sdk::{AccountId, AccountIdRef, Gas, env, json_types::U128, serde_json};
@@ -162,7 +162,7 @@ impl Contract {
             authorized_id: None,
             token_ids: Vec::with_capacity(tokens_count).into(),
             amounts: Vec::with_capacity(tokens_count).into(),
-            memo: Some("refund".into()),
+            memo: Some(REFUND_MEMO.into()),
         };
 
         let Some(receiver) = self

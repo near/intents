@@ -9,6 +9,7 @@ use defuse::{
     core::token_id::{TokenId, nep245::Nep245TokenId},
     nep245::{MtEvent, MtTransferEvent},
 };
+use defuse_near_utils::REFUND_MEMO;
 use defuse_randomness::Rng;
 use defuse_sandbox::{
     SigningAccount,
@@ -92,7 +93,7 @@ fn validate_mt_batch_transfer_log_size(
         new_owner_id: Cow::Borrowed(sender_id),
         token_ids: Cow::Owned(token_ids.to_vec()),
         amounts: Cow::Owned(amounts.iter().copied().map(U128).collect()),
-        memo: Some(Cow::Borrowed("refund")),
+        memo: Some(Cow::Borrowed(REFUND_MEMO)),
     }]));
 
     let longest_transfer_log = mt_transfer_event.to_nep297_event().to_event_log();
@@ -414,7 +415,7 @@ fn calculate_log_sizes(
         new_owner_id: Cow::Borrowed(sender_id),
         token_ids: Cow::Owned(token_ids.to_vec()),
         amounts: Cow::Owned(amounts.iter().copied().map(U128).collect()),
-        memo: Some(Cow::Borrowed("refund")), // Refund has "refund" memo
+        memo: Some(Cow::Borrowed(REFUND_MEMO)), // Refund has "refund" memo
     }]));
 
     let transfer_log_size = transfer_event.to_nep297_event().to_event_log().len();

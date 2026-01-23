@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use defuse_near_utils::{Lock, UnwrapOrPanic, UnwrapOrPanicError};
+use defuse_near_utils::{Lock, REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::{
     ClearedApproval, MtEventEmit, MtTransferEvent, TokenId, resolver::MultiTokenResolver,
 };
@@ -109,7 +109,7 @@ impl MultiTokenResolver for Contract {
                     new_owner_id: Cow::Borrowed(&sender_id),
                     token_ids: refunded_token_ids.into(),
                     amounts: refunded_amounts.into(),
-                    memo: Some("refund".into()),
+                    memo: Some(REFUND_MEMO.into()),
                 }]
                 .as_slice(),
             )

@@ -10,6 +10,7 @@ use defuse::{
     nep245::{MtBurnEvent, MtEvent, MtMintEvent},
     tokens::{DepositAction, DepositMessage},
 };
+use defuse_near_utils::REFUND_MEMO;
 use defuse_randomness::Rng;
 use defuse_sandbox::{SigningAccount, extensions::mt::MtExt};
 use defuse_test_utils::random::{gen_random_string, rng};
@@ -146,7 +147,7 @@ fn validate_mt_event_log_size(
         authorized_id: None,
         token_ids: Cow::Owned(token_ids.to_vec()),
         amounts: Cow::Owned(amounts.iter().copied().map(U128).collect()),
-        memo: Some(Cow::Borrowed("refund")),
+        memo: Some(Cow::Borrowed(REFUND_MEMO)),
     }]));
 
     let mint_log = mt_mint_event.to_nep297_event().to_event_log();

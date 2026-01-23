@@ -46,6 +46,7 @@ use defuse::sandbox_ext::deployer::DefuseExt;
 use defuse::sandbox_ext::tokens::{nep141::DefuseFtWithdrawer, nep245::DefuseMtWithdrawer};
 use defuse::tokens::DepositMessage;
 use defuse::tokens::{DepositAction, ExecuteIntents};
+use defuse_near_utils::REFUND_MEMO;
 use defuse_sandbox::assert_a_contains_b;
 use defuse_sandbox::extensions::mt::{MtExt, MtViewExt};
 use defuse_sandbox::tx::FnCallBuilder;
@@ -1657,7 +1658,7 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
         authorized_id: None,
         token_ids: Cow::Borrowed(&mt_token_ids),
         amounts: Cow::Borrowed(&refund_amounts),
-        memo: Some(Cow::Borrowed("refund")),
+        memo: Some(Cow::Borrowed(REFUND_MEMO)),
     }];
     let expected_mt_burn = MtEvent::MtBurn(Cow::Borrowed(&burn_events));
 
@@ -1667,7 +1668,7 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
         new_owner_id: Cow::Borrowed(user.id().as_ref()),
         token_ids: Cow::Borrowed(&ft_token_ids),
         amounts: Cow::Borrowed(&refund_amounts), // Use capped refund amounts
-        memo: Some(Cow::Borrowed("refund")),
+        memo: Some(Cow::Borrowed(REFUND_MEMO)),
     }];
     let expected_mt_transfer = MtEvent::MtTransfer(Cow::Borrowed(&transfer_events));
 
