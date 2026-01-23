@@ -5,7 +5,7 @@ use near_sdk::{AccountId, AccountIdRef, CryptoHash, near};
 use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
-    Result,
+    DefuseError, Result,
     accounts::AccountEvent,
     amounts::Amounts,
     engine::{Engine, Inspector, State},
@@ -82,12 +82,11 @@ impl ExecutableIntent for ImtMint {
 #[derive(Debug, Clone)]
 /// Burn a set of tokens minted by signer, within the intents contract.
 pub struct ImtBurn {
-    // The tokens transferred in this call will be wrapped
-    // in such a way as to bind the token ID to the minter authority.
-    // The final string representation of the token
-    // will be as follows: `imt:<minter_id>:<token_id>`
+    // The tokens burned in this call should be wrapped
+    // as Imt tokens bounded to the minter authority
+    // as follows: `imt:<minter_id>:<token_id>`
     #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
-    pub tokens: ImtTokens,
+    pub tokens: Amounts,
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub memo: Option<String>,
@@ -115,11 +114,13 @@ impl ExecutableIntent for ImtBurn {
                 .as_slice(),
             )));
 
-        engine.state.mt_burn(
-            signer_id,
-            self.tokens.into_generic_tokens(signer_id),
-            self.memo,
-        )
+        self.tokens
+            .iter()
+            .all(|(token, _)| matches!(token, TokenId::Imt(_)))
+            .then_some(())
+            .ok_or(DefuseError::OnlyImtTokensCanBeBurned)?;
+
+        engine.state.mt_burn(signer_id, self.tokens, self.memo)
     }
 }
 

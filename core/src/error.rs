@@ -75,4 +75,7 @@ pub enum DefuseError {
 
     #[error("maximum attempts to generate a new salt reached")]
     SaltGenerationFailed,
+
+    #[error("only IMT tokens can be burned")]
+    OnlyImtTokensCanBeBurned,
 }

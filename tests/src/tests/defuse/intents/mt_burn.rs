@@ -10,8 +10,10 @@ use defuse::core::token_id::TokenId;
 use defuse::nep245::{MtBurnEvent, MtEvent};
 use defuse::sandbox_ext::intents::ExecuteIntentsExt;
 use defuse_escrow_swap::token_id::imt::ImtTokenId;
+use defuse_escrow_swap::token_id::nep141::Nep141TokenId;
 use defuse_sandbox::assert_a_contains_b;
 use defuse_sandbox::extensions::mt::MtViewExt;
+use defuse_test_utils::asserts::ResultAssertsExt;
 use near_sdk::json_types::U128;
 use rstest::rstest;
 
@@ -49,8 +51,10 @@ async fn mt_burn_intent() {
         .await
         .unwrap();
 
+    let mt_id = TokenId::from(ImtTokenId::new(user.id().clone(), token_id.to_string()));
+
     let intent = ImtBurn {
-        tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
+        tokens: Amounts::new(std::iter::once((mt_id.clone(), amount)).collect()),
         memo: Some(memo.to_string()),
     };
     let burn_payload = user
@@ -62,8 +66,6 @@ async fn mt_burn_intent() {
         .simulate_and_execute_intents(env.defuse.id(), [burn_payload.clone()])
         .await
         .unwrap();
-
-    let mt_id = TokenId::from(ImtTokenId::new(user.id().clone(), token_id.to_string()));
 
     assert_eq!(
         env.defuse
@@ -118,20 +120,24 @@ async fn mt_burn_intent() {
 async fn failed_to_burn_tokens() {
     let env = Env::builder().build().await;
 
-    let (user, other_user, ft) =
-        futures::join!(env.create_user(), env.create_user(), env.create_token());
+    let (user, ft) = futures::join!(env.create_user(), env.create_token());
 
     let memo = "Some memo";
     let amount = 1000;
+    let mt_id = TokenId::from(ImtTokenId::new(user.id().clone(), ft.to_string()));
 
-    // Tokens can be burned only by minter
+    // Only imt tokens can be burned
     {
+        let ft_id = TokenId::from(Nep141TokenId::new(ft));
+
         let withdraw_payload = user
             .sign_defuse_payload_default(
                 &env.defuse,
                 [ImtBurn {
                     tokens: Amounts::new(
-                        std::iter::once((ft.to_string().to_string(), amount)).collect(),
+                        vec![(mt_id.clone(), amount), (ft_id, amount)]
+                            .into_iter()
+                            .collect(),
                     ),
                     memo: Some(memo.to_string()),
                 }],
@@ -141,43 +147,6 @@ async fn failed_to_burn_tokens() {
 
         env.simulate_and_execute_intents(env.defuse.id(), [withdraw_payload])
             .await
-            .unwrap_err();
-    }
-
-    // Tokens can be burned only by minter
-    {
-        let token_id = "sometoken.near".to_string();
-
-        let mint_payload = user
-            .sign_defuse_payload_default(
-                &env.defuse,
-                [ImtMint {
-                    tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
-                    memo: Some(memo.to_string()),
-                    receiver_id: other_user.id().clone(),
-                    notification: None,
-                }],
-            )
-            .await
-            .unwrap();
-
-        env.simulate_and_execute_intents(env.defuse.id(), [mint_payload])
-            .await
-            .unwrap();
-
-        let withdraw_payload = other_user
-            .sign_defuse_payload_default(
-                &env.defuse,
-                [ImtBurn {
-                    tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
-                    memo: Some(memo.to_string()),
-                }],
-            )
-            .await
-            .unwrap();
-
-        env.simulate_and_execute_intents(env.defuse.id(), [withdraw_payload])
-            .await
-            .unwrap_err();
+            .assert_err_contains("only IMT tokens can be burned");
     }
 }
