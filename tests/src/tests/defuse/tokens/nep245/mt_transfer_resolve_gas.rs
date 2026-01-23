@@ -5,6 +5,7 @@ use defuse::{
     core::token_id::{TokenId, nep245::Nep245TokenId},
     nep245::{MtEvent, MtTransferEvent},
 };
+use defuse_escrow_swap::token_id::MAX_TOKEN_ID_LEN;
 use defuse_randomness::Rng;
 use defuse_sandbox::{
     SigningAccount,
@@ -51,20 +52,16 @@ async fn make_account(mode: GenerationMode, env: &Env, user: &SigningAccount) ->
 fn make_token_ids(mode: GenerationMode, rng: &mut impl Rng, token_count: usize) -> Vec<String> {
     match mode {
         GenerationMode::ShortestPossible => LetterCombinations::generate_combos(token_count),
-        GenerationMode::LongestPossible => {
-            const MAX_TOKEN_ID_LEN: usize = 127;
-
-            (1..=token_count)
-                .map(|i| {
-                    format!(
-                        "{}_{}",
-                        i,
-                        gen_random_string(rng, MAX_TOKEN_ID_LEN..=MAX_TOKEN_ID_LEN)
-                    )[0..MAX_TOKEN_ID_LEN]
-                        .to_string()
-                })
-                .collect::<Vec<_>>()
-        }
+        GenerationMode::LongestPossible => (1..=token_count)
+            .map(|i| {
+                format!(
+                    "{}_{}",
+                    i,
+                    gen_random_string(rng, MAX_TOKEN_ID_LEN..=MAX_TOKEN_ID_LEN)
+                )[0..MAX_TOKEN_ID_LEN]
+                    .to_string()
+            })
+            .collect::<Vec<_>>(),
     }
 }
 

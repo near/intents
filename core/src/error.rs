@@ -3,6 +3,7 @@ use crate::{
     token_id::{TokenId, TokenIdError, nep171::Nep171TokenId},
 };
 use defuse_crypto::PublicKey;
+use defuse_token_id::MAX_TOKEN_ID_LEN;
 use near_sdk::{AccountId, FunctionError, serde_json};
 use thiserror::Error as ThisError;
 
@@ -78,4 +79,7 @@ pub enum DefuseError {
 
     #[error("only IMT tokens can be burned")]
     OnlyImtTokensCanBeBurned,
+
+    #[error("token ID is too large: {0} bytes (maximum is {MAX_TOKEN_ID_LEN} bytes)")]
+    TokenIdTooLarge(usize),
 }

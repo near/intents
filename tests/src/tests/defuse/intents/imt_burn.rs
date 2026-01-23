@@ -5,7 +5,7 @@ use defuse::core::amounts::Amounts;
 use defuse::core::crypto::Payload;
 use defuse::core::events::DefuseEvent;
 use defuse::core::intents::IntentEvent;
-use defuse::core::intents::imt::{ImtBurn, ImtMint};
+use defuse::core::intents::tokens::imt::{ImtBurn, ImtMint};
 use defuse::core::token_id::TokenId;
 use defuse::nep245::{MtBurnEvent, MtEvent};
 use defuse::sandbox_ext::intents::ExecuteIntentsExt;
@@ -25,7 +25,7 @@ use crate::tests::defuse::env::Env;
 #[rstest]
 #[trace]
 #[tokio::test]
-async fn mt_burn_intent() {
+async fn imt_burn_intent() {
     let env = Env::builder().build().await;
 
     let user = env.create_user().await;

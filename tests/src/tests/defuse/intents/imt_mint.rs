@@ -7,16 +7,18 @@ use defuse::core::crypto::Payload;
 use defuse::core::events::DefuseEvent;
 use defuse::core::fees::FeesConfig;
 use defuse::core::intents::IntentEvent;
-use defuse::core::intents::{imt::ImtMint, tokens::NotifyOnTransfer};
+use defuse::core::intents::tokens::{NotifyOnTransfer, imt::ImtMint};
 use defuse::core::token_id::TokenId;
 use defuse::nep245::{MtEvent, MtMintEvent};
 use defuse::sandbox_ext::deployer::DefuseExt;
 use defuse::sandbox_ext::intents::ExecuteIntentsExt;
 use defuse_escrow_swap::Pips;
+use defuse_escrow_swap::token_id::MAX_TOKEN_ID_LEN;
 use defuse_escrow_swap::token_id::imt::ImtTokenId;
 use defuse_escrow_swap::token_id::nep245::Nep245TokenId;
 use defuse_sandbox::assert_a_contains_b;
 use defuse_sandbox::extensions::mt::MtViewExt;
+use defuse_test_utils::asserts::ResultAssertsExt;
 use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::json_types::U128;
 use rstest::rstest;
@@ -85,6 +87,35 @@ async fn mt_mint_intent() {
         .to_event_log(),
             ]
     );
+}
+
+#[rstest]
+#[trace]
+#[tokio::test]
+async fn failed_imt_mint_intent() {
+    let env = Env::builder().build().await;
+
+    let user = env.create_user().await;
+
+    let token = (0..u32::try_from(MAX_TOKEN_ID_LEN).unwrap())
+        .map(|b| char::from_u32(b).unwrap())
+        .collect::<String>();
+    let amount = 1000;
+
+    let intent = ImtMint {
+        tokens: Amounts::new(std::iter::once((token.clone(), amount)).collect()),
+        memo: None,
+        receiver_id: user.id().clone(),
+        notification: None,
+    };
+    let mint_payload = user
+        .sign_defuse_payload_default(&env.defuse, [intent.clone()])
+        .await
+        .unwrap();
+
+    env.simulate_and_execute_intents(env.defuse.id(), [mint_payload.clone()])
+        .await
+        .assert_err_contains("token ID is too large");
 }
 
 #[rstest]

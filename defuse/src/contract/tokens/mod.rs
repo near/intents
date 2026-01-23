@@ -224,9 +224,3 @@ impl Contract {
             .saturating_add("[\n]".len())
     }
 }
-
-const MAX_TOKEN_ID_LEN: usize = 127;
-
-#[derive(thiserror::Error, Debug)]
-#[error("token_id is too long: max length is {MAX_TOKEN_ID_LEN}, got {0}")]
-pub struct TokenIdTooLarge(usize);

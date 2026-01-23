@@ -34,6 +34,12 @@ use strum::{EnumDiscriminants, EnumIter, EnumString};
 
 pub use self::error::TokenIdError;
 
+pub const MAX_TOKEN_ID_LEN: usize = 127;
+
+#[derive(thiserror::Error, Debug)]
+#[error("token_id is too long: max length is {MAX_TOKEN_ID_LEN}, got {0}")]
+pub struct TokenIdTooLarge(pub usize);
+
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[derive(
     Clone,

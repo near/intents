@@ -1,7 +1,5 @@
 pub mod account;
 pub mod auth;
-#[cfg(feature = "imt")]
-pub mod imt;
 pub mod token_diff;
 pub mod tokens;
 
@@ -73,11 +71,11 @@ pub enum Intent {
 
     // See [`ImtMint`]
     #[cfg(feature = "imt")]
-    ImtMint(crate::intents::imt::ImtMint),
+    ImtMint(crate::intents::tokens::imt::ImtMint),
 
     // See [`ImtBurn`]
     #[cfg(feature = "imt")]
-    ImtBurn(crate::intents::imt::ImtBurn),
+    ImtBurn(crate::intents::tokens::imt::ImtBurn),
 }
 
 pub trait ExecutableIntent {

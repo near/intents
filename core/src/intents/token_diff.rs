@@ -209,9 +209,11 @@ impl TokenDiff {
             // do not take fees on NFTs and MTs with |delta| <= 1
             TokenIdType::Nep171 | TokenIdType::Nep245 => return Pips::ZERO,
             #[cfg(feature = "imt")]
-            TokenIdType::Imt if amount > 1 => {}
-            #[cfg(feature = "imt")]
-            TokenIdType::Imt => return Pips::ZERO,
+            TokenIdType::Imt => {
+                if amount <= 1 {
+                    return Pips::ZERO;
+                }
+            }
         }
         fee
     }

@@ -346,7 +346,7 @@ impl State for Contract {
     }
 
     #[inline]
-    fn mt_mint(
+    fn imt_mint(
         &mut self,
         owner_id: AccountId,
         tokens: Amounts,
@@ -356,7 +356,7 @@ impl State for Contract {
     }
 
     #[inline]
-    fn mt_burn(
+    fn imt_burn(
         &mut self,
         signer_id: &AccountIdRef,
         tokens: Amounts,

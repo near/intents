@@ -128,10 +128,14 @@ pub trait State: StateView {
 
     fn auth_call(&mut self, signer_id: &AccountIdRef, auth_call: AuthCall) -> Result<()>;
 
-    fn mt_mint(&mut self, owner_id: AccountId, tokens: Amounts, memo: Option<String>)
-    -> Result<()>;
+    fn imt_mint(
+        &mut self,
+        owner_id: AccountId,
+        tokens: Amounts,
+        memo: Option<String>,
+    ) -> Result<()>;
 
-    fn mt_burn(
+    fn imt_burn(
         &mut self,
         signer_id: &AccountIdRef,
         tokens: Amounts,
