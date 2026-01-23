@@ -4,6 +4,33 @@ use near_sdk::base64::engine::{Engine, general_purpose::STANDARD};
 use near_sdk::serde_json::json;
 use near_sdk::{CryptoHash, env, near};
 
+/// The signing algorithm to use. It determines the hash function to be used before signing.
+/// If the chain you are using is Ethermint-like, usually your wallet sdk goes with the "ethsecp256k1",
+/// otherwise "secp256k1".
+/// [reference](https://github.com/chainapsis/keplr-wallet/blob/71552ca8443a3d40263cdfa1df4a7390e9c58692/packages/background/src/keyring-cosmos/service.ts#L1151)
+#[near(serializers = [json])]
+#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone)]
+pub enum Algorithm {
+    Secp256k1,
+    Ethsecp256k1,
+}
+
+impl Algorithm {
+    pub fn hash(&self, data: &[u8]) -> CryptoHash {
+        match self {
+            Self::Secp256k1 => env::sha256_array(data),
+            Self::Ethsecp256k1 => env::keccak256_array(data),
+        }
+    }
+}
+
+impl Default for Algorithm {
+    fn default() -> Self {
+        Self::Secp256k1
+    }
+}
+
 /// [ADR-36 Standard reference](https://github.com/cosmos/cosmos-sdk/blob/main/docs/architecture/adr-036-arbitrary-signature.md)
 /// [Usage docs](https://docs.keplr.app/api/guide/sign-arbitrary#adr-36-signing-with-signamino)
 #[near(serializers = [json])]
@@ -17,12 +44,18 @@ pub struct Adr36Payload {
     ///     * `1`: separator
     ///     * remainder: data + checksum
     pub signer: String,
+    #[serde(default)]
+    pub algo: Algorithm,
 }
 
 impl Adr36Payload {
     #[inline]
-    pub const fn new(message: String, signer: String) -> Self {
-        Self { message, signer }
+    pub const fn new(message: String, signer: String, algo: Algorithm) -> Self {
+        Self {
+            message,
+            signer,
+            algo,
+        }
     }
 
     /// [Implementation reference](https://github.com/chainapsis/keplr-wallet/blob/59b2e18122dc2ec3b12d3005fec709e4bcc885f8/packages/cosmos/src/adr-36/amino.ts#L88)
@@ -54,7 +87,7 @@ impl Adr36Payload {
 impl Payload for Adr36Payload {
     #[inline]
     fn hash(&self) -> CryptoHash {
-        env::sha256_array(self.prehash())
+        self.algo.hash(&self.prehash())
     }
 }
 
@@ -85,7 +118,7 @@ impl SignedPayload for SignedAdr36Payload {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Adr36Payload, SignedAdr36Payload};
+    use crate::{Adr36Payload, Algorithm, SignedAdr36Payload};
     use defuse_crypto::{Payload, SignedPayload};
     use hex_literal::hex;
     use near_sdk::CryptoHash;
@@ -119,6 +152,7 @@ mod tests {
         let payload = Adr36Payload::new(
             REFERENCE_MESSAGE.to_string(),
             REFERENCE_SECP256K1_SIGNER.to_string(),
+            Algorithm::Secp256k1,
         );
         assert_eq!(payload.hash(), REFERENCE_SHA256_HASH_MESSAGE_HEX);
     }
@@ -128,6 +162,7 @@ mod tests {
         let payload = Adr36Payload::new(
             REFERENCE_MESSAGE.to_string(),
             REFERENCE_SECP256K1_SIGNER.to_string(),
+            Algorithm::Secp256k1,
         );
         let signature = fix_v_in_signature(REFERENCE_SIGNATURE);
 
@@ -142,6 +177,7 @@ mod tests {
         let payload = Adr36Payload::new(
             REFERENCE_MESSAGE.to_string(),
             REFERENCE_SECP256K1_SIGNER.to_string(),
+            Algorithm::Secp256k1,
         );
         let signature = fix_v_in_signature(WRONG_REFERENCE_SIGNATURE);
 
