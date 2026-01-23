@@ -280,6 +280,11 @@ impl Contract {
     ) -> Promise {
         let mut p = Promise::new(receiver_id);
 
+        let gas = notify
+            .min_gas
+            .unwrap_or_default()
+            .max(NotifyOnTransfer::MT_ON_TRANSFER_GAS_MIN);
+
         if let Some(state_init) = notify.state_init {
             // No need to require `receiver_id == state_init.derive_account_id()` here,
             // since Near runtime does this validation for us and current receipt will
@@ -294,7 +299,7 @@ impl Contract {
         }
 
         ext_mt_receiver::ext_on(p)
-            .with_static_gas(notify.min_gas.unwrap_or_default())
+            .with_static_gas(gas)
             // distribute remaining gas here
             .with_unused_gas_weight(1)
             .mt_on_transfer(
