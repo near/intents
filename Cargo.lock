@@ -1096,7 +1096,6 @@ dependencies = [
  "defuse-crypto",
  "defuse-nep245",
  "defuse-nep413",
- "defuse-randomness",
  "futures",
  "impl-tools",
  "near-api",
@@ -1105,7 +1104,6 @@ dependencies = [
  "near-sandbox",
  "near-sdk",
  "rstest",
- "thiserror 2.0.17",
  "tokio",
  "tracing",
 ]
