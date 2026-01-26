@@ -2,10 +2,12 @@ use crate::tests::defuse::{env::Env, tokens::nep245::letter_gen::LetterCombinati
 use anyhow::Context;
 use arbitrary::Arbitrary;
 use defuse::{
-    core::token_id::{TokenId, nep245::Nep245TokenId},
+    core::{
+        intents::tokens::MAX_TOKEN_ID_LEN,
+        token_id::{TokenId, nep245::Nep245TokenId},
+    },
     nep245::{MtEvent, MtTransferEvent},
 };
-use defuse_escrow_swap::token_id::MAX_TOKEN_ID_LEN;
 use defuse_randomness::Rng;
 use defuse_sandbox::{
     SigningAccount,

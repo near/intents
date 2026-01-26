@@ -376,17 +376,12 @@ where
     }
 
     #[inline]
-    fn imt_mint(
-        &mut self,
-        owner_id: AccountId,
-        tokens: Amounts,
-        _memo: Option<String>,
-    ) -> Result<()> {
+    fn mint(&mut self, owner_id: AccountId, tokens: Amounts, _memo: Option<String>) -> Result<()> {
         self.internal_add_balance(owner_id, tokens)
     }
 
     #[inline]
-    fn imt_burn(
+    fn burn(
         &mut self,
         signer_id: &AccountIdRef,
         tokens: Amounts,

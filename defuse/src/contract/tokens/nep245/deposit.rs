@@ -1,4 +1,7 @@
-use defuse_core::token_id::{MAX_TOKEN_ID_LEN, TokenIdTooLarge, nep245::Nep245TokenId};
+use defuse_core::{
+    intents::tokens::{MAX_TOKEN_ID_LEN, TokenIdTooLarge},
+    token_id::nep245::Nep245TokenId,
+};
 use defuse_near_utils::{PanicError, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::receiver::MultiTokenReceiver;
 use near_plugins::{Pausable, pause};

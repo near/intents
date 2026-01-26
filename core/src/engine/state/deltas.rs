@@ -215,23 +215,18 @@ where
     }
 
     #[inline]
-    fn imt_mint(
-        &mut self,
-        owner_id: AccountId,
-        tokens: Amounts,
-        memo: Option<String>,
-    ) -> Result<()> {
-        self.state.imt_mint(owner_id, tokens, memo)
+    fn mint(&mut self, owner_id: AccountId, tokens: Amounts, memo: Option<String>) -> Result<()> {
+        self.state.mint(owner_id, tokens, memo)
     }
 
     #[inline]
-    fn imt_burn(
+    fn burn(
         &mut self,
         signer_id: &AccountIdRef,
         tokens: Amounts,
         memo: Option<String>,
     ) -> Result<()> {
-        self.state.imt_burn(signer_id, tokens, memo)
+        self.state.burn(signer_id, tokens, memo)
     }
 }
 

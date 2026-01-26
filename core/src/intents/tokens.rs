@@ -17,6 +17,12 @@ use crate::{
 
 use super::{ExecutableIntent, IntentEvent};
 
+pub const MAX_TOKEN_ID_LEN: usize = 127;
+
+#[derive(thiserror::Error, Debug)]
+#[error("token_id is too long: max length is {MAX_TOKEN_ID_LEN}, got {0}")]
+pub struct TokenIdTooLarge(pub usize);
+
 const MT_ON_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(5);
 const MT_ON_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(30);
 
@@ -519,8 +525,8 @@ impl ExecutableIntent for StorageDeposit {
 #[cfg(feature = "imt")]
 pub mod imt {
     use super::{MT_ON_TRANSFER_GAS_DEFAULT, MT_ON_TRANSFER_GAS_MIN};
-    use crate::Result;
-    use defuse_token_id::{MAX_TOKEN_ID_LEN, TokenId};
+    use crate::{Result, intents::tokens::MAX_TOKEN_ID_LEN};
+    use defuse_token_id::TokenId;
     use near_sdk::{AccountId, AccountIdRef, CryptoHash, near};
     use serde_with::{DisplayFromStr, serde_as};
 
@@ -597,6 +603,10 @@ pub mod imt {
             S: State,
             I: Inspector,
         {
+            if self.tokens.is_empty() {
+                return Err(DefuseError::InvalidIntent);
+            };
+
             engine
                 .inspector
                 .on_event(DefuseEvent::ImtMint(Cow::Borrowed(
@@ -608,10 +618,9 @@ pub mod imt {
                 )));
 
             let tokens = self.tokens.into_generic_tokens(signer_id)?;
-
             engine
                 .state
-                .imt_mint(self.receiver_id.clone(), tokens.clone(), self.memo)?;
+                .mint(self.receiver_id.clone(), tokens.clone(), self.memo)?;
 
             if let Some(mut notification) = self.notification {
                 notification.min_gas = Some(
@@ -660,6 +669,10 @@ pub mod imt {
             S: State,
             I: Inspector,
         {
+            if self.tokens.is_empty() {
+                return Err(DefuseError::InvalidIntent);
+            };
+
             engine
                 .inspector
                 .on_event(DefuseEvent::ImtBurn(Cow::Borrowed(
@@ -672,7 +685,7 @@ pub mod imt {
 
             let tokens = self.tokens.into_generic_tokens(&self.minter_id)?;
 
-            engine.state.imt_burn(signer_id, tokens, self.memo)
+            engine.state.burn(signer_id, tokens, self.memo)
         }
     }
 }

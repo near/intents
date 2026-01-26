@@ -346,17 +346,12 @@ impl State for Contract {
     }
 
     #[inline]
-    fn imt_mint(
-        &mut self,
-        owner_id: AccountId,
-        tokens: Amounts,
-        memo: Option<String>,
-    ) -> Result<()> {
+    fn mint(&mut self, owner_id: AccountId, tokens: Amounts, memo: Option<String>) -> Result<()> {
         self.deposit(owner_id, tokens, memo.as_deref())
     }
 
     #[inline]
-    fn imt_burn(
+    fn burn(
         &mut self,
         signer_id: &AccountIdRef,
         tokens: Amounts,

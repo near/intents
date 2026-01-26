@@ -7,13 +7,13 @@ use defuse::core::crypto::Payload;
 use defuse::core::events::DefuseEvent;
 use defuse::core::fees::FeesConfig;
 use defuse::core::intents::IntentEvent;
+use defuse::core::intents::tokens::MAX_TOKEN_ID_LEN;
 use defuse::core::intents::tokens::{NotifyOnTransfer, imt::ImtMint};
 use defuse::core::token_id::TokenId;
 use defuse::nep245::{MtEvent, MtMintEvent};
 use defuse::sandbox_ext::deployer::DefuseExt;
 use defuse::sandbox_ext::intents::ExecuteIntentsExt;
 use defuse_escrow_swap::Pips;
-use defuse_escrow_swap::token_id::MAX_TOKEN_ID_LEN;
 use defuse_escrow_swap::token_id::imt::ImtTokenId;
 use defuse_escrow_swap::token_id::nep245::Nep245TokenId;
 use defuse_sandbox::assert_a_contains_b;
@@ -97,9 +97,7 @@ async fn failed_imt_mint_intent() {
 
     let user = env.create_user().await;
 
-    let token = (0..u32::try_from(MAX_TOKEN_ID_LEN).unwrap())
-        .map(|b| char::from_u32(b).unwrap())
-        .collect::<String>();
+    let token = ["a"; MAX_TOKEN_ID_LEN].join("");
     let amount = 1000;
 
     let intent = ImtMint {

@@ -1,4 +1,7 @@
-use defuse_core::token_id::{MAX_TOKEN_ID_LEN, TokenId, TokenIdTooLarge, nep171::Nep171TokenId};
+use defuse_core::{
+    intents::tokens::{MAX_TOKEN_ID_LEN, TokenIdTooLarge},
+    token_id::{TokenId, nep171::Nep171TokenId},
+};
 use defuse_near_utils::{PanicError, UnwrapOrPanic, UnwrapOrPanicError};
 use near_contract_standards::non_fungible_token::core::NonFungibleTokenReceiver;
 use near_plugins::{Pausable, pause};
