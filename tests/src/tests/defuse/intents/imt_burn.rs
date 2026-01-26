@@ -69,7 +69,7 @@ async fn imt_burn_intent() {
 
     assert_eq!(
         env.defuse
-            .mt_balance_of(user.id(), &mt_id.to_string())
+            .mt_balance_of(other_user.id(), &mt_id.to_string())
             .await
             .unwrap(),
         0
