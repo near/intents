@@ -113,7 +113,7 @@ async fn failed_imt_mint_intent() {
 
     env.simulate_and_execute_intents(env.defuse.id(), [mint_payload.clone()])
         .await
-        .assert_err_contains("token ID is too large");
+        .assert_err_contains("token_id is too long");
 }
 
 #[rstest]
