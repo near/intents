@@ -29,10 +29,6 @@ pub enum MtEvent<'a> {
     MtTransfer(Cow<'a, [MtTransferEvent<'a>]>),
 }
 
-pub trait EmitChecked {
-    fn emit_with_refund_log_checked(self) -> Result<(), ErrorRefundLogTooLong>;
-}
-
 const REFUND_EXTRA_BYTES: usize = r#","memo":""#.len() + REFUND_MEMO.len();
 const REFUND_STR_LEN: usize = REFUND_MEMO.len();
 
@@ -59,12 +55,24 @@ fn compute_refund_overhead(event: &MtEvent<'_>) -> usize {
     }
 }
 
+/// A validated event log that has been checked for refund overhead.
+/// Use [`RefundCheckedMtEvent::emit`] to emit the event.
+#[derive(Debug)]
+#[must_use = "call `.emit()` to emit the event"]
+pub struct RefundCheckedMtEvent(String);
+
+impl RefundCheckedMtEvent {
+    pub fn emit(self) {
+        near_sdk::env::log_str(&self.0);
+    }
+}
+
 impl MtEvent<'_> {
     /// Validates that the event log (including potential refund overhead) fits within limits.
-    /// Returns the log string to emit on success.
-    fn validate_with_refund_overhead(&self) -> Result<String, ErrorRefundLogTooLong> {
+    /// Returns a [`RefundCheckedMtEvent`] that can be emitted.
+    pub fn check_refund(self) -> Result<RefundCheckedMtEvent, ErrorRefundLogTooLong> {
         let log = self.to_nep297_event().to_event_log();
-        let overhead = compute_refund_overhead(self);
+        let overhead = compute_refund_overhead(&self);
         let total = log.len() + overhead;
 
         if total > TOTAL_LOG_LENGTH_LIMIT {
@@ -73,19 +81,7 @@ impl MtEvent<'_> {
                 limit: TOTAL_LOG_LENGTH_LIMIT,
             });
         }
-        Ok(log)
-    }
-}
-
-impl<'a, T> EmitChecked for T
-where
-    T: Into<MtEvent<'a>>,
-{
-    fn emit_with_refund_log_checked(self) -> Result<(), ErrorRefundLogTooLong> {
-        let event = self.into();
-        let log = event.validate_with_refund_overhead()?;
-        near_sdk::env::log_str(&log);
-        Ok(())
+        Ok(RefundCheckedMtEvent(log))
     }
 }
 
@@ -264,13 +260,13 @@ mod tests {
     #[test]
     fn single_event_no_memo_at_limit_minus_overhead_passes() {
         let mt = create_single_event_mt(TOTAL_LOG_LENGTH_LIMIT - REFUND_EXTRA_BYTES, None);
-        assert!(mt.validate_with_refund_overhead().is_ok());
+        assert!(mt.check_refund().is_ok());
     }
 
     #[test]
     fn single_event_short_memo_at_limit_fails() {
         let mt = create_single_event_mt(TOTAL_LOG_LENGTH_LIMIT, Some("refu"));
-        let err = mt.validate_with_refund_overhead().unwrap_err();
+        let err = mt.check_refund().unwrap_err();
         // With memo "refu" (4 chars), overhead is REFUND_STR_LEN - 4 = 2
         assert_eq!(
             err.log_length,
@@ -281,19 +277,19 @@ mod tests {
     #[test]
     fn single_event_over_limit_fails() {
         let mt = create_single_event_mt(TOTAL_LOG_LENGTH_LIMIT + 1, Some("refund1"));
-        assert!(mt.validate_with_refund_overhead().is_err());
+        assert!(mt.check_refund().is_err());
     }
 
     #[test]
     fn triple_event_no_memo_at_limit_minus_overhead_passes() {
         let mt = create_triple_event_mt(TOTAL_LOG_LENGTH_LIMIT - 3 * REFUND_EXTRA_BYTES, None);
-        assert!(mt.validate_with_refund_overhead().is_ok());
+        assert!(mt.check_refund().is_ok());
     }
 
     #[test]
     fn triple_event_short_memo_at_limit_fails() {
         let mt = create_triple_event_mt(TOTAL_LOG_LENGTH_LIMIT, Some("refu"));
-        let err = mt.validate_with_refund_overhead().unwrap_err();
+        let err = mt.check_refund().unwrap_err();
         // With memo "refu" (4 chars), overhead per event is REFUND_STR_LEN - 4 = 2
         assert_eq!(
             err.log_length,
@@ -304,6 +300,6 @@ mod tests {
     #[test]
     fn triple_event_over_limit_fails() {
         let mt = create_triple_event_mt(TOTAL_LOG_LENGTH_LIMIT + 1, Some("refund1"));
-        assert!(mt.validate_with_refund_overhead().is_err());
+        assert!(mt.check_refund().is_err());
     }
 }

@@ -3,9 +3,7 @@ use defuse_core::{
     DefuseError, Result, engine::StateView, intents::tokens::NotifyOnTransfer, token_id::TokenId,
 };
 use defuse_near_utils::{UnwrapOrPanic, UnwrapOrPanicError};
-use defuse_nep245::{
-    EmitChecked, MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver,
-};
+use defuse_nep245::{MtEvent, MtTransferEvent, MultiTokenCore, receiver::ext_mt_receiver};
 use near_plugins::{Pausable, pause};
 use near_sdk::{
     AccountId, AccountIdRef, Gas, NearToken, Promise, PromiseOrValue, assert_one_yocto, env,
@@ -211,8 +209,9 @@ impl Contract {
             .as_slice()
             .into(),
         )
-        .emit_with_refund_log_checked()
-        .unwrap_or_panic();
+        .check_refund()
+        .unwrap_or_panic()
+        .emit();
 
         Ok(())
     }
