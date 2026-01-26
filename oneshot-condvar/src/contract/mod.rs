@@ -13,6 +13,8 @@ use crate::{
     storage::{ContractStorage, State, StateInit, StateMachine},
 };
 
+const EMPTY_JSON: &[u8] = b"{}";
+
 #[near(contract_state(key = ContractStorage::STATE_KEY))]
 #[derive(Debug, PanicOnDefault)]
 pub struct Contract(ContractStorage);
@@ -117,7 +119,7 @@ impl OneshotCondVar for Contract {
             StateMachine::Idle => {
                 let (promise, yield_id) = Promise::new_yield(
                     "cv_wait_resume",
-                    near_sdk::serde_json::json!({}).to_string().as_bytes(),
+                    EMPTY_JSON,
                     Gas::from_tgas(0),
                     GasWeight(1),
                 );
