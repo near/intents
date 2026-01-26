@@ -6,4 +6,7 @@ use thiserror::Error as ThisError;
 pub enum Error {
     #[error("borsh: {0}")]
     Borsh(near_sdk::borsh::io::Error),
+
+    #[error("cleanup in progress")]
+    CleanupInProgress,
 }

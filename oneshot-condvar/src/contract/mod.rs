@@ -2,12 +2,13 @@
 mod auth_call;
 mod cleanup;
 
+use defuse_near_utils::UnwrapOrPanicError;
 use near_sdk::{
     Gas, GasWeight, PanicOnDefault, Promise, PromiseError, PromiseOrValue, env, near, require,
 };
 
 use crate::{
-    OneshotCondVar,
+    Error, OneshotCondVar,
     event::Event,
     storage::{ContractStorage, State, StateInit, StateMachine},
 };
@@ -23,8 +24,8 @@ impl ContractStorage {
     }
 
     #[inline]
-    fn try_as_alive(&self) -> &State {
-        self.as_alive().expect("cleanup in progress")
+    fn try_as_alive(&self) -> Result<&State, Error> {
+        self.as_alive().ok_or(Error::CleanupInProgress)
     }
 }
 
@@ -38,7 +39,7 @@ impl Contract {
         // #[callback_result] _resume_data: Result<(), PromiseError>,
     ) -> PromiseOrValue<bool> {
         let mut guard = self.cleanup_guard();
-        let state = guard.try_as_alive_mut();
+        let state = guard.try_as_alive_mut().unwrap_or_panic_display();
 
         match state.state {
             StateMachine::WaitingForNotification(_yield_id) => {
@@ -64,7 +65,7 @@ impl Contract {
 impl Contract {
     pub(crate) fn do_notify(&mut self) {
         let mut guard = self.cleanup_guard();
-        let state = guard.try_as_alive_mut();
+        let state = guard.try_as_alive_mut().unwrap_or_panic_display();
 
         match state.state {
             StateMachine::Idle => state.state = StateMachine::Authorized,
@@ -93,11 +94,11 @@ impl Contract {
 #[near]
 impl OneshotCondVar for Contract {
     fn view(&self) -> &State {
-        self.0.try_as_alive()
+        self.0.try_as_alive().unwrap_or_panic_display()
     }
 
     fn state(&self) -> &StateMachine {
-        &self.0.try_as_alive().state
+        &self.0.try_as_alive().unwrap_or_panic_display().state
     }
 
     fn cv_is_notified(&self) -> bool {
@@ -108,7 +109,7 @@ impl OneshotCondVar for Contract {
 
     fn cv_wait(&mut self) -> PromiseOrValue<bool> {
         let mut guard = self.cleanup_guard();
-        let state = guard.try_as_alive_mut();
+        let state = guard.try_as_alive_mut().unwrap_or_panic_display();
 
         if env::predecessor_account_id() != state.state_init.authorizee {
             env::panic_str("Unauthorized authorizee");
@@ -141,7 +142,7 @@ impl OneshotCondVar for Contract {
 
     #[payable]
     fn cv_notify_one(&mut self) {
-        let state = self.0.try_as_alive();
+        let state = self.0.try_as_alive().unwrap_or_panic_display();
         require!(
             env::predecessor_account_id() == state.state_init.on_auth_signer,
             "Unauthorized signer"

@@ -1,6 +1,6 @@
 use near_sdk::{Promise, env};
 
-use crate::{ContractStorage, State, StateMachine, event::Event};
+use crate::{ContractStorage, Error, State, StateMachine, event::Event};
 
 use super::Contract;
 
@@ -25,8 +25,8 @@ impl<'a> CleanupGuard<'a> {
     }
 
     #[inline]
-    pub fn try_as_alive_mut(&mut self) -> &mut State {
-        self.as_alive_mut().expect("cleanup in progress")
+    pub fn try_as_alive_mut(&mut self) -> Result<&mut State, Error> {
+        self.as_alive_mut().ok_or(Error::CleanupInProgress)
     }
 
     #[must_use]
