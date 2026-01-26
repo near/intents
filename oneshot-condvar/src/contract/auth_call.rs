@@ -7,7 +7,7 @@ use super::{Contract, ContractExt};
 impl AuthCallee for Contract {
     #[payable]
     fn on_auth(&mut self, signer_id: AccountId, msg: String) -> PromiseOrValue<()> {
-        let _ = msg;
+        require!(msg.is_empty(), "message must be empty");
 
         let state = self.0.try_as_alive();
         require!(
