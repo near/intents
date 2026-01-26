@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use defuse_near_utils::{Lock, UnwrapOrPanic, UnwrapOrPanicError, max_vec_u128_json_len};
+use defuse_near_utils::{Lock, UnwrapOrPanic, UnwrapOrPanicError, max_list_u128_json_len};
 use defuse_nep245::{
     ClearedApproval, MtEventEmit, MtTransferEvent, TokenId, resolver::MultiTokenResolver,
 };
@@ -27,7 +27,7 @@ impl MultiTokenResolver for Contract {
             "invalid args"
         );
 
-        let mut refunds = env::promise_result_checked(0, max_vec_u128_json_len(amounts.len()))
+        let mut refunds = env::promise_result_checked(0, max_list_u128_json_len(amounts.len()))
             .ok()
             .and_then(|value| serde_json::from_slice::<Vec<U128>>(&value).ok())
             .filter(|refund| refund.len() == amounts.len())

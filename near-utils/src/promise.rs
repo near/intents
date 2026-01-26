@@ -11,11 +11,11 @@ impl PromiseExt for Promise {
     }
 }
 
-pub const MAX_BOOL_JSON_LEN: usize = " [  false  ] ".len();
-pub const MAX_U128_JSON_LEN: usize = " [ \"340282366920938463463374607431768211455\" ]  ".len();
+pub const MAX_BOOL_JSON_LEN: usize = " false ".len();
+pub const MAX_U128_JSON_LEN: usize = " \"340282366920938463463374607431768211455\" ".len();
 
 #[must_use]
-pub const fn max_vec_u128_json_len(count: usize) -> usize {
+pub const fn max_list_u128_json_len(count: usize) -> usize {
     const MAX_LEN_PER_AMOUNT: usize =
         "        \"340282366920938463463374607431768211455\",\n".len();
 
@@ -45,7 +45,7 @@ pub fn promise_result_U128(result_idx: u64) -> Option<U128> {
 #[inline]
 #[must_use]
 pub fn promise_result_vec_U128(result_idx: u64, expected_len: usize) -> Option<Vec<U128>> {
-    env::promise_result_checked(result_idx, max_vec_u128_json_len(expected_len))
+    env::promise_result_checked(result_idx, max_list_u128_json_len(expected_len))
         .ok()
         .and_then(|value| serde_json::from_slice::<Vec<U128>>(&value).ok())
         .filter(|v| v.len() == expected_len)
@@ -88,10 +88,10 @@ mod tests {
     #[case::len_5(5)]
     #[case::len_10(10)]
     #[case::len_100(100)]
-    fn test_max_vec_u128_json_len(#[case] count: usize) {
+    fn test_max_list_u128_json_len(#[case] count: usize) {
         let vec: Vec<U128> = vec![U128(u128::MAX); count];
         let prettified = serde_json::to_string_pretty(&vec).unwrap();
-        let max_len = max_vec_u128_json_len(count);
+        let max_len = max_list_u128_json_len(count);
         assert!(prettified.len() <= max_len);
 
         let compact = serde_json::to_string(&vec).unwrap();
