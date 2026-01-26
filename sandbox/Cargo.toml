@@ -33,7 +33,7 @@ near-api.workspace = true
 near-openapi-client.workspace = true
 near-openapi-types.workspace = true
 near-sandbox.workspace = true
-near-sdk = { workspace = true, features = ["unit-testing"] }
+near-sdk = { workspace = true, features = ["unit-testing", "deterministic-account-ids"] }
 serde_json.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
