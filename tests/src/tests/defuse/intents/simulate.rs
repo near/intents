@@ -32,7 +32,6 @@ use defuse::{
         intents::SimulateIntents,
     },
 };
-use defuse_escrow_swap::token_id::imt::ImtTokenId;
 use defuse_sandbox::{
     api::types::{json::Base64VecU8, nft::NFTContractMetadata},
     extensions::{
@@ -988,10 +987,9 @@ async fn simulate_burn_intent() {
         .await
         .unwrap();
 
-    let mt_id = TokenId::from(ImtTokenId::new(user.id().clone(), token_id.to_string()));
-
     let burn_intent = ImtBurn {
-        tokens: Amounts::new(std::iter::once((mt_id.clone(), amount)).collect()),
+        minter_id: user.id().clone(),
+        tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
         memo: Some(memo.to_string()),
     };
 

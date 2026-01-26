@@ -17,6 +17,9 @@ use crate::{
 
 use super::{ExecutableIntent, IntentEvent};
 
+const MT_ON_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(5);
+const MT_ON_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(30);
+
 #[must_use]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
@@ -39,8 +42,6 @@ pub struct NotifyOnTransfer {
 }
 
 impl NotifyOnTransfer {
-    pub const MT_ON_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(5);
-
     pub const fn new(msg: String) -> Self {
         Self {
             state_init: None,
@@ -119,7 +120,14 @@ impl ExecutableIntent for Transfer {
             .state
             .internal_add_balance(self.receiver_id.clone(), self.tokens.clone())?;
 
-        if let Some(notification) = self.notification {
+        if let Some(mut notification) = self.notification {
+            notification.min_gas = Some(
+                notification
+                    .min_gas
+                    .unwrap_or(MT_ON_TRANSFER_GAS_DEFAULT)
+                    .max(MT_ON_TRANSFER_GAS_MIN),
+            );
+
             engine
                 .state
                 .notify_on_transfer(sender_id, self.receiver_id, self.tokens, notification);
@@ -509,6 +517,7 @@ impl ExecutableIntent for StorageDeposit {
 
 #[cfg(feature = "imt")]
 pub mod imt {
+    use super::{MT_ON_TRANSFER_GAS_DEFAULT, MT_ON_TRANSFER_GAS_MIN};
     use crate::Result;
     use defuse_token_id::{MAX_TOKEN_ID_LEN, TokenId};
     use near_sdk::{AccountId, AccountIdRef, CryptoHash, near};
@@ -602,7 +611,14 @@ pub mod imt {
                 .state
                 .imt_mint(self.receiver_id.clone(), tokens.clone(), self.memo)?;
 
-            if let Some(notification) = self.notification {
+            if let Some(mut notification) = self.notification {
+                notification.min_gas = Some(
+                    notification
+                        .min_gas
+                        .unwrap_or(MT_ON_TRANSFER_GAS_DEFAULT)
+                        .max(MT_ON_TRANSFER_GAS_MIN),
+                );
+
                 engine
                     .state
                     .notify_on_transfer(signer_id, self.receiver_id, tokens, notification);
@@ -616,11 +632,15 @@ pub mod imt {
     #[derive(Debug, Clone)]
     /// Burn a set of imt tokens, within the intents contract.
     pub struct ImtBurn {
-        // The tokens burned in this call should be wrapped
-        // as Imt tokens bounded to the minter authority
-        // as follows: `imt:<minter_id>:<token_id>`
+        // The minter authority of the imt tokens
+        pub minter_id: AccountId,
+
+        // The tokens transferred in this call will be wrapped
+        // in such a way as to bind the token ID to the minter authority.
+        // The final string representation of the token
+        // will be as follows: `imt:<minter_id>:<token_id>`
         #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
-        pub tokens: Amounts,
+        pub tokens: ImtTokens,
 
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub memo: Option<String>,
@@ -648,13 +668,9 @@ pub mod imt {
                     .as_slice(),
                 )));
 
-            self.tokens
-                .iter()
-                .all(|(token, _)| matches!(token, TokenId::Imt(_)))
-                .then_some(())
-                .ok_or(DefuseError::OnlyImtTokensCanBeBurned)?;
+            let tokens = self.tokens.into_generic_tokens(signer_id)?;
 
-            engine.state.imt_burn(signer_id, self.tokens, self.memo)
+            engine.state.imt_burn(signer_id, tokens, self.memo)
         }
     }
 }

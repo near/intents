@@ -77,9 +77,6 @@ pub enum DefuseError {
     #[error("maximum attempts to generate a new salt reached")]
     SaltGenerationFailed,
 
-    #[error("only IMT tokens can be burned")]
-    OnlyImtTokensCanBeBurned,
-
     #[error("token ID is too large: {0} bytes (maximum is {MAX_TOKEN_ID_LEN} bytes)")]
     TokenIdTooLarge(usize),
 }
