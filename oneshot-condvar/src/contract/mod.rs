@@ -41,22 +41,23 @@ impl Contract {
         let mut guard = self.cleanup_guard();
         let state = guard.try_as_alive_mut().unwrap_or_panic_display();
 
-        match state.state {
+        state.state = match state.state {
+            // The yield promise timed out while we were waiting for a notification.
+            // Reset to Idle state so the caller can retry cv_wait() if desired.
+            // This is the normal timeout path when no authorization arrives in time.
             StateMachine::WaitingForNotification(_yield_id) => {
-                state.state = StateMachine::Idle;
                 Event::Timeout.emit();
+                StateMachine::Idle
             }
-            StateMachine::Done | StateMachine::Authorized => {
-                state.state = StateMachine::Done;
-            }
-            StateMachine::Idle => {
-                unreachable!()
-            }
-        }
+            // Authorization arrived before or (in corner case) after timeout 
+            // in either case we want to transition from Authorized to Done
+            StateMachine::Authorized => StateMachine::Done,
+            // This callback is only scheduled by Promise::new_yield in cv_wait(),
+            // which transitions state to WaitingForNotification. We should never
+            // reach this callback while in Idle state.
+            StateMachine::Done | StateMachine::Idle => unreachable!(),
+        };
 
-        // NOTE: in some corner case when the promise can not be resumed (because of timeout) but
-        // the timeout was already scheduled, the contract is in StateMachine::Authorized state so
-        // we need to set it to StateMachine::Done
         PromiseOrValue::Value(matches!(state.state, StateMachine::Done))
     }
 }
@@ -67,22 +68,18 @@ impl Contract {
         let mut guard = self.cleanup_guard();
         let state = guard.try_as_alive_mut().unwrap_or_panic_display();
 
-        match state.state {
-            StateMachine::Idle => state.state = StateMachine::Authorized,
+        state.state = match state.state {
+            StateMachine::Idle =>  StateMachine::Authorized,
             StateMachine::WaitingForNotification(yield_id) => {
-                if yield_id.resume(&[]).is_ok() {
-                    // NOTE: Set to Authorized, not Done.
-                    // cv_wait_resume callback will transition to Done.
-                    // This prevents cleanup from deleting the contract before the callback runs.
-                    state.state = StateMachine::Authorized;
-                } else {
-                    // NOTE: if resume returns Err that means that the yielded promise
-                    // no longer exists although maybe it will be resumed because of timeout
-                    // from the perspective of the contract it is already notified
-                    state.state = StateMachine::Authorized;
-                };
+                let _ = yield_id.resume(&[]);
+                // set state to authorized despite the status of yield resume.
+                // in both cases we want to keep the state machine in Authorized state
+                // - if yield succeeded - state will be changed to Done in callback
+                // - if yield failed (timeout) - state will be changed to done on next `cv_wait`
+                // call
+                StateMachine::Authorized
             }
-            StateMachine::Authorized | StateMachine::Done => {
+            StateMachine::Done | StateMachine::Authorized => {
                 env::panic_str("already notified");
             }
         };
