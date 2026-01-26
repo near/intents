@@ -605,7 +605,7 @@ pub mod imt {
         {
             if self.tokens.is_empty() {
                 return Err(DefuseError::InvalidIntent);
-            };
+            }
 
             engine
                 .inspector
@@ -671,7 +671,7 @@ pub mod imt {
         {
             if self.tokens.is_empty() {
                 return Err(DefuseError::InvalidIntent);
-            };
+            }
 
             engine
                 .inspector
