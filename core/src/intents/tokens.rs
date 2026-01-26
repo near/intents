@@ -19,10 +19,6 @@ use super::{ExecutableIntent, IntentEvent};
 
 pub const MAX_TOKEN_ID_LEN: usize = 127;
 
-#[derive(thiserror::Error, Debug)]
-#[error("token_id is too long: max length is {MAX_TOKEN_ID_LEN}, got {0}")]
-pub struct TokenIdTooLarge(pub usize);
-
 const MT_ON_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(5);
 const MT_ON_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(30);
 
@@ -570,12 +566,13 @@ pub mod imt {
     #[derive(Debug, Clone)]
     /// Mint a set of tokens from the signer to a specified account id, within the intents contract.
     pub struct ImtMint {
+        /// Receiver of the minted tokens
         pub receiver_id: AccountId,
 
-        // The tokens transferred in this call will be wrapped
-        // in such a way as to bind the token ID to the minter authority.
-        // The final string representation of the token
-        // will be as follows: `imt:<minter_id>:<token_id>`
+        /// The token_ids will be wrapped to bind the token ID to the
+        /// minter authority (i.e. signer of this intent).
+        /// The final string representation of the token will be as follows:
+        /// `imt:<minter_id>:<token_id>`
         #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
         pub tokens: ImtTokens,
 
@@ -646,10 +643,10 @@ pub mod imt {
         // The minter authority of the imt tokens
         pub minter_id: AccountId,
 
-        // The tokens transferred in this call will be wrapped
-        // in such a way as to bind the token ID to the minter authority.
-        // The final string representation of the token
-        // will be as follows: `imt:<minter_id>:<token_id>`
+        /// The token_ids will be wrapped to bind the token ID to the
+        /// minter authority. The final string representation of the
+        /// token will be as follows:
+        /// `imt:<minter_id>:<token_id>`
         #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
         pub tokens: ImtTokens,
 

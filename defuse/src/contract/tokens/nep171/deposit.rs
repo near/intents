@@ -1,5 +1,6 @@
 use defuse_core::{
-    intents::tokens::{MAX_TOKEN_ID_LEN, TokenIdTooLarge},
+    DefuseError,
+    intents::tokens::MAX_TOKEN_ID_LEN,
     token_id::{TokenId, nep171::Nep171TokenId},
 };
 use defuse_near_utils::{PanicError, UnwrapOrPanic, UnwrapOrPanicError};
@@ -28,7 +29,7 @@ impl NonFungibleTokenReceiver for Contract {
         msg: String,
     ) -> PromiseOrValue<bool> {
         if token_id.len() > MAX_TOKEN_ID_LEN {
-            TokenIdTooLarge(token_id.len()).panic_display();
+            DefuseError::TokenIdTooLarge(token_id.len()).panic_display();
         }
 
         let DepositMessage {

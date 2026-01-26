@@ -77,6 +77,6 @@ pub enum DefuseError {
     #[error("maximum attempts to generate a new salt reached")]
     SaltGenerationFailed,
 
-    #[error("token ID is too large: {0} bytes (maximum is {MAX_TOKEN_ID_LEN} bytes)")]
+    #[error("token_id is too long: max length is {MAX_TOKEN_ID_LEN}, got {0}")]
     TokenIdTooLarge(usize),
 }

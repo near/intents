@@ -222,11 +222,11 @@ where
     #[inline]
     fn burn(
         &mut self,
-        signer_id: &AccountIdRef,
+        owner_id: &AccountIdRef,
         tokens: Amounts,
         memo: Option<String>,
     ) -> Result<()> {
-        self.state.burn(signer_id, tokens, memo)
+        self.state.burn(owner_id, tokens, memo)
     }
 }
 

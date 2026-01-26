@@ -48,7 +48,7 @@ async fn test_force_add_public_keys(#[notrace] mut rng: impl Rng) {
                 FnCallBuilder::new("force_add_public_keys")
                     .with_deposit(NearToken::from_yoctonear(1))
                     .json_args(json!({
-                        "entries": public_keys
+                        "public_keys": public_keys
                     })),
             )
             .exec_transaction()
@@ -74,7 +74,7 @@ async fn test_force_add_public_keys(#[notrace] mut rng: impl Rng) {
                 FnCallBuilder::new("force_add_public_keys")
                     .with_deposit(NearToken::from_yoctonear(1))
                     .json_args(json!({
-                        "entries": public_keys
+                        "public_keys": public_keys
                     })),
             )
             .exec_transaction()
@@ -144,7 +144,7 @@ async fn test_force_add_and_remove_public_keys(#[notrace] mut rng: impl Rng) {
                 FnCallBuilder::new("force_add_public_keys")
                     .with_deposit(NearToken::from_yoctonear(1))
                     .json_args(json!({
-                        "entries": public_keys
+                        "public_keys": public_keys
                     })),
             )
             .exec_transaction()
@@ -162,7 +162,7 @@ async fn test_force_add_and_remove_public_keys(#[notrace] mut rng: impl Rng) {
                 FnCallBuilder::new("force_remove_public_keys")
                     .with_deposit(NearToken::from_yoctonear(1))
                     .json_args(json!({
-                        "entries": public_keys
+                        "public_keys": public_keys
                     })),
             )
             .exec_transaction()
@@ -188,7 +188,7 @@ async fn test_force_add_and_remove_public_keys(#[notrace] mut rng: impl Rng) {
                 FnCallBuilder::new("force_remove_public_keys")
                     .with_deposit(NearToken::from_yoctonear(1))
                     .json_args(json!({
-                        "entries": public_keys
+                        "public_keys": public_keys
                     })),
             )
             .exec_transaction()

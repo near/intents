@@ -353,10 +353,10 @@ impl State for Contract {
     #[inline]
     fn burn(
         &mut self,
-        signer_id: &AccountIdRef,
+        owner_id: &AccountIdRef,
         tokens: Amounts,
         memo: Option<String>,
     ) -> Result<()> {
-        self.withdraw(signer_id, tokens, memo, false)
+        self.withdraw(owner_id, tokens, memo, false)
     }
 }

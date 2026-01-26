@@ -132,7 +132,7 @@ pub trait State: StateView {
 
     fn burn(
         &mut self,
-        signer_id: &AccountIdRef,
+        owner_id: &AccountIdRef,
         tokens: Amounts,
         memo: Option<String>,
     ) -> Result<()>;

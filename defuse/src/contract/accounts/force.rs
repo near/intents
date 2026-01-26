@@ -89,24 +89,24 @@ impl ForceAccountManager for Contract {
 
     #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountManager))]
     #[payable]
-    fn force_add_public_keys(&mut self, entries: HashMap<AccountId, HashSet<PublicKey>>) {
+    fn force_add_public_keys(&mut self, public_keys: HashMap<AccountId, HashSet<PublicKey>>) {
         assert_one_yocto();
 
-        for (account_id, keys) in entries {
-            for public_key in keys {
-                self.add_public_key(account_id.as_ref(), public_key);
+        for (account_id, pks) in public_keys {
+            for pk in pks {
+                self.add_public_key(account_id.as_ref(), pk);
             }
         }
     }
 
     #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountManager))]
     #[payable]
-    fn force_remove_public_keys(&mut self, entries: HashMap<AccountId, HashSet<PublicKey>>) {
+    fn force_remove_public_keys(&mut self, public_keys: HashMap<AccountId, HashSet<PublicKey>>) {
         assert_one_yocto();
 
-        for (account_id, keys) in entries {
-            for public_key in keys {
-                self.remove_public_key(account_id.as_ref(), public_key);
+        for (account_id, pks) in public_keys {
+            for pk in pks {
+                self.remove_public_key(account_id.as_ref(), pk);
             }
         }
     }

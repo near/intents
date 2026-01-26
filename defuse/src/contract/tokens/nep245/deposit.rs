@@ -1,6 +1,5 @@
 use defuse_core::{
-    intents::tokens::{MAX_TOKEN_ID_LEN, TokenIdTooLarge},
-    token_id::nep245::Nep245TokenId,
+    DefuseError, intents::tokens::MAX_TOKEN_ID_LEN, token_id::nep245::Nep245TokenId,
 };
 use defuse_near_utils::{PanicError, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::receiver::MultiTokenReceiver;
@@ -51,7 +50,7 @@ impl MultiTokenReceiver for Contract {
             .iter()
             .inspect(|token_id| {
                 if token_id.len() > MAX_TOKEN_ID_LEN {
-                    TokenIdTooLarge(token_id.len()).panic_display();
+                    DefuseError::TokenIdTooLarge(token_id.len()).panic_display();
                 }
             })
             .cloned()

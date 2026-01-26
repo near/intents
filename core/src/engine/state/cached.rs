@@ -383,11 +383,11 @@ where
     #[inline]
     fn burn(
         &mut self,
-        signer_id: &AccountIdRef,
+        owner_id: &AccountIdRef,
         tokens: Amounts,
         _memo: Option<String>,
     ) -> Result<()> {
-        self.internal_sub_balance(signer_id, tokens)
+        self.internal_sub_balance(owner_id, tokens)
     }
 }
 
