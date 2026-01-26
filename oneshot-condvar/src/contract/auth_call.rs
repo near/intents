@@ -19,10 +19,7 @@ impl AuthCallee for Contract {
             env::predecessor_account_id() == state.state_init.auth_contract,
             ERR_WRONG_AUTH_CALLER
         );
-        require!(
-            signer_id == state.state_init.notifier_id,
-            ERR_WRONG_SIGNER
-        );
+        require!(signer_id == state.state_init.notifier_id, ERR_WRONG_SIGNER);
 
         self.do_notify();
         PromiseOrValue::Value(())

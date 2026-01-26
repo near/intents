@@ -33,7 +33,6 @@ impl ContractStorage {
 
 #[near]
 impl Contract {
-
     #[private]
     #[allow(clippy::needless_pass_by_value)]
     pub fn cv_wait_resume(
@@ -51,7 +50,7 @@ impl Contract {
                 Event::Timeout.emit();
                 StateMachine::Idle
             }
-            // Authorization arrived before or (in corner case) after timeout 
+            // Authorization arrived before or (in corner case) after timeout
             // in either case we want to transition from Authorized to Done
             StateMachine::Authorized => StateMachine::Done,
             // This callback is only scheduled by Promise::new_yield in cv_wait(),
@@ -71,7 +70,7 @@ impl Contract {
         let state = guard.try_as_alive_mut().unwrap_or_panic_display();
 
         state.state = match state.state {
-            StateMachine::Idle =>  StateMachine::Authorized,
+            StateMachine::Idle => StateMachine::Authorized,
             StateMachine::WaitingForNotification(yield_id) => {
                 let _ = yield_id.resume(&[]);
                 // set state to authorized despite the status of yield resume.
