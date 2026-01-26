@@ -35,7 +35,7 @@ impl Contract {
     #[allow(clippy::needless_pass_by_value)]
     pub fn cv_wait_resume(
         &mut self,
-        #[callback_result] _resume_data: Result<(), PromiseError>,
+        // #[callback_result] _resume_data: Result<(), PromiseError>,
     ) -> PromiseOrValue<bool> {
         let mut guard = self.cleanup_guard();
         let state = guard.try_as_alive_mut();
