@@ -26,7 +26,7 @@ async fn on_auth_call() {
     let state = CondVarStateInit {
         escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
-        on_auth_signer: relay.id().clone(),
+        notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
         msg_hash: [0; 32],
     };
@@ -95,7 +95,7 @@ async fn oneshot_condvar_early_notification() {
     let state = CondVarStateInit {
         escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
-        on_auth_signer: relay.id().clone(),
+        notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
         msg_hash: [0; 32],
     };
@@ -153,7 +153,7 @@ async fn oneshot_condvar_async_notification() {
     let state = CondVarStateInit {
         escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
-        on_auth_signer: relay.id().clone(),
+        notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
         msg_hash: [0; 32],
     };
@@ -226,7 +226,7 @@ async fn oneshot_condvar_async_notification_timeout() {
     let state = CondVarStateInit {
         escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
-        on_auth_signer: relay.id().clone(),
+        notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
         msg_hash: [0; 32],
     };
@@ -274,7 +274,7 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth() {
     let state = CondVarStateInit {
         escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
-        on_auth_signer: relay.id().clone(),
+        notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
         msg_hash: [0; 32],
     };
@@ -348,7 +348,7 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth2() {
     let state = CondVarStateInit {
         escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
-        on_auth_signer: relay.id().clone(),
+        notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
         msg_hash: [0; 32],
     };
@@ -420,7 +420,7 @@ async fn test_cv_wait_gas_benchmark() {
     let state = CondVarStateInit {
         escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
-        on_auth_signer: relay.id().clone(),
+        notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
         msg_hash: [0; 32],
     };

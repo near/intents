@@ -125,7 +125,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     let auth_state = CondVarState {
         escrow_contract_id: config.escrow_swap_contract_id.clone(),
         auth_contract: env.defuse.id().clone(),
-        on_auth_signer: relay.id().clone(),
+        notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
         msg_hash: context_hash,
     };

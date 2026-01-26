@@ -347,7 +347,7 @@ async fn main() -> Result<()> {
     let condvar_state = CondVarStateInit {
         escrow_contract_id: GlobalContractId::AccountId(ESCROW_GLOBAL_REF_ID.parse().unwrap()),
         auth_contract: VERIFIER_CONTRACT.parse().unwrap(),
-        on_auth_signer: root.id().clone(), // relay account that signs the auth
+        notifier_id: root.id().clone(), // relay account that signs the auth
         authorizee: PROXY.parse().unwrap(),
         msg_hash: condvar_context.hash(),
     };

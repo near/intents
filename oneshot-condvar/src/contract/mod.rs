@@ -144,7 +144,7 @@ impl OneshotCondVar for Contract {
     fn cv_notify_one(&mut self) {
         let state = self.0.try_as_alive().unwrap_or_panic_display();
         require!(
-            env::predecessor_account_id() == state.state_init.on_auth_signer,
+            env::predecessor_account_id() == state.state_init.notifier_id,
             "Unauthorized signer"
         );
 

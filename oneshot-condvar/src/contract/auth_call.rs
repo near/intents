@@ -20,7 +20,7 @@ impl AuthCallee for Contract {
             ERR_WRONG_AUTH_CALLER
         );
         require!(
-            signer_id == state.state_init.on_auth_signer,
+            signer_id == state.state_init.notifier_id,
             ERR_WRONG_SIGNER
         );
 

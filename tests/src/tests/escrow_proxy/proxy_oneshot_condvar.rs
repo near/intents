@@ -190,7 +190,7 @@ async fn test_transfer_authorized_by_relay() {
     let auth_state = CondVarStateInit {
         escrow_contract_id: config.escrow_swap_contract_id.clone(),
         auth_contract: config.auth_contract.clone(),
-        on_auth_signer: config.auth_collee.clone(),
+        notifier_id: config.auth_collee.clone(),
         authorizee: proxy.id().clone(),
         msg_hash: context_hash,
     };
@@ -359,7 +359,7 @@ async fn test_ft_transfer_authorized_by_relay() {
     let auth_state = CondVarStateInit {
         escrow_contract_id: config.escrow_swap_contract_id.clone(),
         auth_contract: config.auth_contract.clone(),
-        on_auth_signer: config.auth_collee.clone(),
+        notifier_id: config.auth_collee.clone(),
         authorizee: proxy.id().clone(),
         msg_hash: context_hash,
     };

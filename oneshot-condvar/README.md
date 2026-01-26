@@ -110,7 +110,7 @@ Called by the `authorizee` to wait for notification. Returns:
 - `false` if timeout occurred (state resets to `Idle`, can retry)
 
 ### `cv_notify_one()`
-Called by the `on_auth_signer` to signal notification. Wakes up any waiting `cv_wait()`.
+Called by the `notifier_id` to signal notification. Wakes up any waiting `cv_wait()`.
 
 ### `cv_is_notified() -> bool`
 Returns `true` if state is `Authorized` or `Done`.
@@ -118,7 +118,7 @@ Returns `true` if state is `Authorized` or `Done`.
 ## Usage Pattern
 
 ```
-Party A (authorizee)          Contract              Party B (on_auth_signer)
+Party A (authorizee)          Contract              Party B (notifier_id)
        |                         |                         |
        |------- cv_wait() ------>|                         |
        |                    [WaitingForNotification]       |

@@ -19,7 +19,7 @@ pub struct StateInit {
     pub escrow_contract_id: GlobalContractId,
     #[cfg(feature = "auth-call")]
     pub auth_contract: AccountId,
-    pub on_auth_signer: AccountId,
+    pub notifier_id: AccountId,
     pub authorizee: AccountId,
     #[serde_as(as = "Hex")]
     pub msg_hash: [u8; 32],

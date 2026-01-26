@@ -21,7 +21,7 @@ impl Contract {
         let state = CondVarStateInit {
             escrow_contract_id: self.config.escrow_swap_contract_id.clone(),
             auth_contract: self.config.auth_contract.clone(),
-            on_auth_signer: self.config.auth_collee.clone(),
+            notifier_id: self.config.auth_collee.clone(),
             authorizee: env::current_account_id(),
             msg_hash,
         };
