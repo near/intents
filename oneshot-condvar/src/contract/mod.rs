@@ -30,7 +30,6 @@ impl ContractStorage {
 
 #[near]
 impl Contract {
-    #[init]
     #[allow(clippy::missing_const_for_fn, clippy::use_self)]
     pub fn new(state_init: StateInit) -> Self {
         Self(ContractStorage::init(state_init))
