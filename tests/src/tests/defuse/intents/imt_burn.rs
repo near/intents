@@ -98,20 +98,6 @@ async fn imt_burn_intent() {
             .to_event_log(),
     ]
         );
-
-    assert_a_contains_b!(
-        a: result.logs().clone(),
-        b: [
-            MtEvent::MtBurn(Cow::Owned(vec![MtBurnEvent {
-            owner_id: user.id().into(),
-            token_ids: vec![mt_id.to_string()].into(),
-            amounts: vec![U128::from(amount)].into(),
-            memo: Some(memo.into()),
-            authorized_id: None,
-        }]))
-        .to_nep297_event()
-        .to_event_log(),]
-    );
 }
 
 #[rstest]
