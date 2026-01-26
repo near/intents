@@ -97,7 +97,7 @@ async fn failed_imt_mint_intent() {
 
     let user = env.create_user().await;
 
-    let token = ["a"; MAX_TOKEN_ID_LEN].join("");
+    let token = ["a"; MAX_TOKEN_ID_LEN + 1].join("");
     let amount = 1000;
 
     let intent = ImtMint {
