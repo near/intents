@@ -120,7 +120,7 @@ impl OneshotCondVar for Contract {
             StateMachine::Idle => {
                 let (promise, yield_id) = Promise::new_yield(
                     "cv_wait_resume",
-                    serde_json::json!({}).to_string().as_bytes(),
+                    near_sdk::serde_json::json!({}).to_string().as_bytes(),
                     Gas::from_tgas(0),
                     GasWeight(1),
                 );

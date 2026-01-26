@@ -1083,7 +1083,6 @@ dependencies = [
  "defuse-nep245",
  "impl-tools",
  "near-sdk",
- "serde_json",
  "serde_with",
  "thiserror 2.0.17",
 ]
