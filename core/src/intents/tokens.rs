@@ -77,6 +77,7 @@ pub struct Transfer {
     ///
     /// NOTE: `min_gas` is adjusted with following values:
     /// * minimum: 5TGas
+    /// * default: 30TGas
     #[serde(flatten, default, skip_serializing_if = "Option::is_none")]
     pub notification: Option<NotifyOnTransfer>,
 }
@@ -579,6 +580,7 @@ pub mod imt {
         ///
         /// NOTE: `min_gas` is adjusted with following values:
         /// * minimum: 5TGas
+        /// * default: 30TGas
         #[serde(flatten, default, skip_serializing_if = "Option::is_none")]
         pub notification: Option<NotifyOnTransfer>,
     }
