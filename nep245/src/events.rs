@@ -6,15 +6,28 @@ use near_sdk::{
 };
 use std::borrow::Cow;
 
-/// Error returned when a refund log would exceed the maximum allowed length.
 #[derive(Debug, Clone, PartialEq, Eq, FunctionError, thiserror::Error)]
 #[error("Event log is too long: {log_length} bytes exceeds limit of {limit} bytes")]
+pub struct ErrorLogTooLong {
+    pub log_length: usize,
+    pub limit: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, FunctionError, thiserror::Error)]
+#[error("Refund event log would be too long: {log_length} bytes exceeds limit of {limit} bytes")]
 pub struct ErrorRefundLogTooLong {
     pub log_length: usize,
     pub limit: usize,
 }
 
-/// Re-export for backwards compatibility
+#[derive(Debug, Clone, PartialEq, Eq, FunctionError, thiserror::Error)]
+pub enum CheckRefundError {
+    #[error(transparent)]
+    LogTooLong(#[from] ErrorLogTooLong),
+    #[error(transparent)]
+    RefundLogTooLong(#[from] ErrorRefundLogTooLong),
+}
+
 pub use defuse_near_utils::TOTAL_LOG_LENGTH_LIMIT;
 
 #[must_use = "make sure to `.emit()` this event"]
@@ -32,26 +45,48 @@ pub enum MtEvent<'a> {
 const REFUND_EXTRA_BYTES: usize = r#","memo":""#.len() + REFUND_MEMO.len();
 const REFUND_STR_LEN: usize = REFUND_MEMO.len();
 
-fn refund_log_extra_bytes_count(memo: Option<&str>) -> usize {
-    memo.map_or(REFUND_EXTRA_BYTES, |m| {
-        REFUND_STR_LEN.saturating_sub(m.len())
-    })
+#[derive(Default, Clone, Copy)]
+struct RefundLogDelta {
+    overhead: usize,
+    savings: usize,
 }
 
-fn compute_refund_overhead(event: &MtEvent<'_>) -> usize {
+impl RefundLogDelta {
+    const fn saturating_add(self, other: Self) -> Self {
+        Self {
+            overhead: self.overhead.saturating_add(other.overhead),
+            savings: self.savings.saturating_add(other.savings),
+        }
+    }
+}
+
+const fn refund_log_delta(memo: Option<&str>) -> RefundLogDelta {
+    let Some(m) = memo else {
+        return RefundLogDelta {
+            overhead: REFUND_EXTRA_BYTES,
+            savings: 0,
+        };
+    };
+    RefundLogDelta {
+        overhead: REFUND_STR_LEN.saturating_sub(m.len()),
+        savings: m.len().saturating_sub(REFUND_STR_LEN),
+    }
+}
+
+fn compute_refund_delta(event: &MtEvent<'_>) -> RefundLogDelta {
     match event {
         MtEvent::MtMint(events) => events
             .iter()
-            .map(|e| refund_log_extra_bytes_count(e.memo.as_deref()))
-            .fold(0, usize::saturating_add),
+            .map(|e| refund_log_delta(e.memo.as_deref()))
+            .fold(RefundLogDelta::default(), RefundLogDelta::saturating_add),
         MtEvent::MtBurn(events) => events
             .iter()
-            .map(|e| refund_log_extra_bytes_count(e.memo.as_deref()))
-            .fold(0, usize::saturating_add),
+            .map(|e| refund_log_delta(e.memo.as_deref()))
+            .fold(RefundLogDelta::default(), RefundLogDelta::saturating_add),
         MtEvent::MtTransfer(events) => events
             .iter()
-            .map(|e| refund_log_extra_bytes_count(e.memo.as_deref()))
-            .fold(0, usize::saturating_add),
+            .map(|e| refund_log_delta(e.memo.as_deref()))
+            .fold(RefundLogDelta::default(), RefundLogDelta::saturating_add),
     }
 }
 
@@ -59,7 +94,7 @@ fn compute_refund_overhead(event: &MtEvent<'_>) -> usize {
 /// Use [`RefundCheckedMtEvent::emit`] to emit the event.
 #[derive(Debug)]
 #[must_use = "call `.emit()` to emit the event"]
-pub struct RefundCheckedMtEvent(String);
+pub struct RefundCheckedMtEvent(pub String);
 
 impl RefundCheckedMtEvent {
     pub fn emit(self) {
@@ -70,16 +105,29 @@ impl RefundCheckedMtEvent {
 impl MtEvent<'_> {
     /// Validates that the event log (including potential refund overhead) fits within limits.
     /// Returns a [`RefundCheckedMtEvent`] that can be emitted.
-    pub fn check_refund(self) -> Result<RefundCheckedMtEvent, ErrorRefundLogTooLong> {
+    pub fn check_refund(self) -> Result<RefundCheckedMtEvent, CheckRefundError> {
         let log = self.to_nep297_event().to_event_log();
-        let overhead = compute_refund_overhead(&self);
-        let total = log.len() + overhead;
 
-        if total > TOTAL_LOG_LENGTH_LIMIT {
-            return Err(ErrorRefundLogTooLong {
-                log_length: total,
+        if log.len() > TOTAL_LOG_LENGTH_LIMIT {
+            return Err(ErrorLogTooLong {
+                log_length: log.len(),
                 limit: TOTAL_LOG_LENGTH_LIMIT,
-            });
+            }
+            .into());
+        }
+
+        let delta = compute_refund_delta(&self);
+        let refund_len = log
+            .len()
+            .saturating_add(delta.overhead)
+            .saturating_sub(delta.savings);
+
+        if refund_len > TOTAL_LOG_LENGTH_LIMIT {
+            return Err(ErrorRefundLogTooLong {
+                log_length: refund_len,
+                limit: TOTAL_LOG_LENGTH_LIMIT,
+            }
+            .into());
         }
         Ok(RefundCheckedMtEvent(log))
     }
@@ -204,15 +252,17 @@ mod tests {
     }
 
     /// Create a triple-event `MtTransfer` with exact log length.
-    /// Each event has the same memo. Pads first event's `token_id` to achieve the desired length.
-    fn create_triple_event_mt(length: usize, memo: Option<&str>) -> MtEvent<'static> {
+    /// Each event has its own memo. Pads first event's `token_id` to achieve the desired length.
+    fn create_triple_event_mt(length: usize, memos: [Option<&str>; 3]) -> MtEvent<'static> {
         let old_owner: near_sdk::AccountId = "aa".parse().unwrap();
         let new_owner: near_sdk::AccountId = "bb".parse().unwrap();
         let base_token_id = "t";
 
         // Measure base log length with 3 events
-        let base_events: Vec<MtTransferEvent<'static>> = (0..3)
-            .map(|i| MtTransferEvent {
+        let base_events: Vec<MtTransferEvent<'static>> = memos
+            .iter()
+            .enumerate()
+            .map(|(i, memo)| MtTransferEvent {
                 authorized_id: None,
                 old_owner_id: Cow::Owned(old_owner.clone()),
                 new_owner_id: Cow::Owned(new_owner.clone()),
@@ -229,8 +279,10 @@ mod tests {
         let padded_token_id = format!("{base_token_id}0{}", "x".repeat(padding_needed));
 
         // Create final events: first one with padded token_id, rest with base token_ids
-        let events: Vec<MtTransferEvent<'static>> = (0..3)
-            .map(|i| {
+        let events: Vec<MtTransferEvent<'static>> = memos
+            .iter()
+            .enumerate()
+            .map(|(i, memo)| {
                 let token_id = if i == 0 {
                     padded_token_id.clone()
                 } else {
@@ -265,41 +317,65 @@ mod tests {
 
     #[test]
     fn single_event_short_memo_at_limit_fails() {
-        let mt = create_single_event_mt(TOTAL_LOG_LENGTH_LIMIT, Some("refu"));
-        let err = mt.check_refund().unwrap_err();
-        // With memo "refu" (4 chars), overhead is REFUND_STR_LEN - 4 = 2
-        assert_eq!(
-            err.log_length,
-            TOTAL_LOG_LENGTH_LIMIT + REFUND_STR_LEN - "refu".len()
-        );
+        let memo = "refu";
+        let mt = create_single_event_mt(TOTAL_LOG_LENGTH_LIMIT, Some(memo));
+        let expected_len = TOTAL_LOG_LENGTH_LIMIT + REFUND_STR_LEN - memo.len();
+        assert!(matches!(
+            mt.check_refund().unwrap_err(),
+            CheckRefundError::RefundLogTooLong(ErrorRefundLogTooLong { log_length, .. }) if log_length == expected_len
+        ));
     }
 
     #[test]
     fn single_event_over_limit_fails() {
         let mt = create_single_event_mt(TOTAL_LOG_LENGTH_LIMIT + 1, Some("refund1"));
-        assert!(mt.check_refund().is_err());
+        assert!(matches!(
+            mt.check_refund().unwrap_err(),
+            CheckRefundError::LogTooLong(ErrorLogTooLong { log_length, .. }) if log_length == TOTAL_LOG_LENGTH_LIMIT + 1
+        ));
     }
 
     #[test]
     fn triple_event_no_memo_at_limit_minus_overhead_passes() {
-        let mt = create_triple_event_mt(TOTAL_LOG_LENGTH_LIMIT - 3 * REFUND_EXTRA_BYTES, None);
+        let mt = create_triple_event_mt(TOTAL_LOG_LENGTH_LIMIT - 3 * REFUND_EXTRA_BYTES, [None; 3]);
         assert!(mt.check_refund().is_ok());
     }
 
     #[test]
     fn triple_event_short_memo_at_limit_fails() {
-        let mt = create_triple_event_mt(TOTAL_LOG_LENGTH_LIMIT, Some("refu"));
-        let err = mt.check_refund().unwrap_err();
-        // With memo "refu" (4 chars), overhead per event is REFUND_STR_LEN - 4 = 2
-        assert_eq!(
-            err.log_length,
-            TOTAL_LOG_LENGTH_LIMIT + 3 * (REFUND_STR_LEN - "refu".len())
-        );
+        let mt = create_triple_event_mt(TOTAL_LOG_LENGTH_LIMIT, [Some("refu"); 3]);
+        let expected_len = TOTAL_LOG_LENGTH_LIMIT + 3 * (REFUND_STR_LEN - "refu".len());
+        assert!(matches!(
+            mt.check_refund().unwrap_err(),
+            CheckRefundError::RefundLogTooLong(ErrorRefundLogTooLong { log_length, .. }) if log_length == expected_len
+        ));
     }
 
     #[test]
     fn triple_event_over_limit_fails() {
-        let mt = create_triple_event_mt(TOTAL_LOG_LENGTH_LIMIT + 1, Some("refund1"));
-        assert!(mt.check_refund().is_err());
+        let mt = create_triple_event_mt(TOTAL_LOG_LENGTH_LIMIT + 1, [Some("refund1"); 3]);
+        assert!(matches!(
+            mt.check_refund().unwrap_err(),
+            CheckRefundError::LogTooLong(ErrorLogTooLong { log_length, .. }) if log_length == TOTAL_LOG_LENGTH_LIMIT + 1
+        ));
+    }
+
+    #[test]
+    fn triple_event_mixed_memos_overhead_equals_savings_at_limit_passes() {
+        // there are 3 events
+        // 1 without memo
+        // 2 with "refund" memo
+        // 3 with really long memo
+        // total log length is exactly TOTAL_LOG_LENGTH_LIMIT, but since really long memo will be
+        // replaced with just refund there will be enough buffer to set memo "refund" also for
+        // first event and still fit into TOTAL_LOG_LENGTH_LIMIT on refund
+        let long_memo = "x".repeat(REFUND_EXTRA_BYTES + REFUND_STR_LEN);
+        assert_eq!(long_memo.len() - REFUND_STR_LEN, REFUND_EXTRA_BYTES);
+
+        let mt = create_triple_event_mt(
+            TOTAL_LOG_LENGTH_LIMIT,
+            [None, Some("refund"), Some(&long_memo)],
+        );
+        assert!(mt.check_refund().is_ok());
     }
 }
