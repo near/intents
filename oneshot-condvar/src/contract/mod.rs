@@ -2,12 +2,15 @@
 mod auth_call;
 mod cleanup;
 
-use near_sdk::PromiseError;
-use near_sdk::{Gas, GasWeight, PanicOnDefault, Promise, PromiseOrValue, env, near, require};
+use near_sdk::{
+    Gas, GasWeight, PanicOnDefault, Promise, PromiseError, PromiseOrValue, env, near, require,
+};
 
-use crate::OneshotCondVar;
-use crate::event::Event;
-use crate::storage::{ContractStorage, State, StateInit, StateMachine};
+use crate::{
+    OneshotCondVar,
+    event::Event,
+    storage::{ContractStorage, State, StateInit, StateMachine},
+};
 
 #[near(contract_state(key = ContractStorage::STATE_KEY))]
 #[derive(Debug, PanicOnDefault)]
