@@ -14,8 +14,6 @@ defuse-escrow-swap = { workspace = true, features = ["auth_call"] }
 defuse-near-utils = { workspace = true }
 defuse-poa-factory = { workspace = true, features = ["contract", "sandbox"] }
 defuse-core.workspace = true
-defuse-crypto.workspace = true
-defuse-deadline.workspace = true
 defuse-escrow-proxy = { workspace = true, features = ["escrow-swap"] }
 defuse-oneshot-condvar.workspace = true
 

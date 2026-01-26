@@ -1196,8 +1196,6 @@ dependencies = [
  "chrono",
  "defuse",
  "defuse-core",
- "defuse-crypto",
- "defuse-deadline",
  "defuse-escrow-proxy",
  "defuse-escrow-swap",
  "defuse-near-utils",

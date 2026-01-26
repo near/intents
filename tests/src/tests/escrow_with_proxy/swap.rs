@@ -14,7 +14,7 @@ use defuse::sandbox_ext::intents::ExecuteIntentsExt;
 use defuse_core::amounts::Amounts;
 use defuse_core::intents::auth::AuthCall;
 use defuse_core::intents::tokens::{NotifyOnTransfer, Transfer};
-use defuse_deadline::Deadline;
+use defuse_core::Deadline;
 use defuse_escrow_proxy::{ProxyConfig, TransferMessage as ProxyTransferMessage};
 use defuse_escrow_swap::ParamsBuilder;
 use defuse_escrow_swap::action::{FillMessageBuilder, FundMessageBuilder};

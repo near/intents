@@ -3,7 +3,7 @@
 use std::time::Duration;
 
 use crate::tests::defuse::env::Env;
-use defuse_deadline::Deadline;
+use defuse_core::Deadline;
 use defuse_escrow_swap::action::{FillMessageBuilder, FundMessageBuilder};
 use defuse_escrow_swap::decimal::UD128;
 use defuse_escrow_swap::{ParamsBuilder, Pips, ProtocolFees};
