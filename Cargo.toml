@@ -86,8 +86,8 @@ defuse-test-utils.path = "test-utils"
 
 cargo-near-build = "0.9.0"
 near-account-id = "2.4.0"
-near-api = "0.8.2"
-near-api-types = "0.8.2"
+near-api = "0.8.3"
+near-api-types = "0.8.3"
 near-openapi-client = "0.7"
 near-openapi-types = "0.6.0"
 near-contract-standards = "5.24"
@@ -140,12 +140,6 @@ must_use_candidate = "allow"
 unreadable_literal = "allow"
 similar_names = "allow"
 too_long_first_doc_paragraph = "allow"
-
-# workaround for near-api-rs not being able to handle state_init for global contracts
-# should be removed once near-api 0.8.3 is released
-[patch.crates-io]
-near-api = { git = "https://github.com/near/near-api-rs", rev = "091bc53bb01167f8d1332520065ce92f492531a5" }
-near-api-types = { git = "https://github.com/near/near-api-rs", rev = "091bc53bb01167f8d1332520065ce92f492531a5" }
 
 [profile.release]
 codegen-units = 1
