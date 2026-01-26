@@ -1,4 +1,4 @@
-use crate::{SigningAccount, anyhow, tx::FnCallBuilder};
+use defuse_sandbox::{SigningAccount, anyhow, tx::FnCallBuilder};
 use near_sdk::{AccountId, Gas, NearToken, serde_json::json};
 
 use defuse::contract::config::DefuseConfig;

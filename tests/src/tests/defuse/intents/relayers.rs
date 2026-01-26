@@ -1,9 +1,10 @@
-use defuse_sandbox::extensions::defuse::contract::contract::Role;
+use crate::extensions::defuse::{
+    contract::contract::Role, intents::ExecuteIntentsExt, relayer::RelayerKeysExt,
+};
 use rstest::rstest;
 
 use crate::{
     env::Env,
-    sandbox::extensions::defuse::{intents::ExecuteIntentsExt, relayer::RelayerKeysExt},
     sandbox::{
         SigningAccount,
         api::{Signer, signer::generate_secret_key},

@@ -1,8 +1,8 @@
-use crate::{
+use defuse_nep245::TokenId;
+use defuse_sandbox::{
     SigningAccount, anyhow, api::types::transaction::result::ExecutionSuccess,
     extensions::mt::MtExt, tx::FnCallBuilder,
 };
-use defuse_nep245::TokenId;
 use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128, serde_json::json};
 
 pub trait DefuseMtDepositor: MtExt {

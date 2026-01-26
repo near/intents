@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use defuse_sandbox::extensions::defuse::contract::core::{
+use crate::extensions::defuse::contract::core::{
     accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
     events::DefuseEvent,
@@ -8,12 +8,12 @@ use defuse_sandbox::extensions::defuse::contract::core::{
 use near_sdk::{AsNep297Event, NearToken, serde_json::json};
 use rstest::rstest;
 
+use crate::extensions::defuse::account_manager::{AccountManagerExt, AccountViewExt};
 use crate::{
     env::Env,
     sandbox::{assert_eq_event_logs, tx::FnCallBuilder},
     utils::fixtures::public_key,
 };
-use defuse_sandbox::extensions::defuse::account_manager::{AccountManagerExt, AccountViewExt};
 
 #[rstest]
 #[trace]

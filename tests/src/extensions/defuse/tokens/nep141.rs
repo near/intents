@@ -1,6 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 
-use crate::{SigningAccount, anyhow, extensions::ft::FtExt, tx::FnCallBuilder};
+use defuse_sandbox::{SigningAccount, anyhow, extensions::ft::FtExt, tx::FnCallBuilder};
 use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128, serde_json::json};
 
 use defuse::tokens::DepositMessage;

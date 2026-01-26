@@ -1,18 +1,22 @@
 use std::collections::HashMap;
 
-use defuse_sandbox::extensions::defuse::contract::core::intents::tokens::NftWithdraw;
-use defuse_sandbox::extensions::defuse::contract::core::token_id::TokenId as DefuseTokenId;
-use defuse_sandbox::extensions::defuse::contract::core::token_id::nep171::Nep171TokenId;
-use defuse_sandbox::extensions::defuse::contract::tokens::{
-    DepositAction, DepositMessage, ExecuteIntents,
+use crate::extensions::defuse::{
+    contract::core::{
+        intents::tokens::NftWithdraw, token_id::TokenId as DefuseTokenId,
+        token_id::nep171::Nep171TokenId,
+    },
+    contract::tokens::{DepositAction, DepositMessage, ExecuteIntents},
+    intents::ExecuteIntentsExt,
+    signer::DefaultDefuseSignerExt,
+};
+use defuse_sandbox::{
+    api::types::{json::Base64VecU8, nft::NFTContractMetadata},
+    extensions::{
+        mt::MtViewExt,
+        nft::{NftDeployerExt, NftExt, NftViewExt},
+    },
 };
 
-use defuse_sandbox::api::types::json::Base64VecU8;
-use defuse_sandbox::api::types::nft::NFTContractMetadata;
-use defuse_sandbox::extensions::defuse::intents::ExecuteIntentsExt;
-use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
-use defuse_sandbox::extensions::mt::MtViewExt;
-use defuse_sandbox::extensions::nft::{NftDeployerExt, NftExt, NftViewExt};
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_contract_standards::non_fungible_token::metadata::NFT_METADATA_SPEC;
 use near_contract_standards::non_fungible_token::{Token, metadata::TokenMetadata};
@@ -336,9 +340,7 @@ struct NftTransferCallExpectation {
 async fn nft_transfer_call_calls_mt_on_transfer_variants(
     #[case] expectation: NftTransferCallExpectation,
 ) {
-    use defuse_sandbox::extensions::defuse::contract::core::{
-        amounts::Amounts, intents::tokens::Transfer,
-    };
+    use crate::extensions::defuse::contract::core::{amounts::Amounts, intents::tokens::Transfer};
     use defuse_sandbox::{api::types::json::Base64VecU8, tx::FnCallBuilder};
 
     let env = Env::builder().deployer_as_super_admin().build().await;
@@ -420,7 +422,7 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
     };
 
     let deposit_message = if intents.is_empty() {
-        use defuse_sandbox::extensions::defuse::contract::core::intents::tokens::NotifyOnTransfer;
+        use crate::extensions::defuse::contract::core::intents::tokens::NotifyOnTransfer;
 
         DepositMessage {
             receiver_id: receiver.id().clone(),

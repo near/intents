@@ -1,10 +1,10 @@
-use anyhow::Context;
-use arbitrary::Arbitrary;
-use defuse_randomness::Rng;
-use defuse_sandbox::extensions::defuse::contract::{
+use crate::extensions::defuse::contract::{
     core::token_id::{TokenId, nep245::Nep245TokenId},
     nep245::{MtEvent, MtTransferEvent},
 };
+use anyhow::Context;
+use arbitrary::Arbitrary;
+use defuse_randomness::Rng;
 
 use crate::{
     env::Env,

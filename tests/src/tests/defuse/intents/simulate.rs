@@ -1,6 +1,6 @@
-use defuse_sandbox::extensions::defuse::contract::{
-    contract::config::{DefuseConfig, RolesConfig},
-    core::{
+use crate::extensions::defuse::{
+    account_manager::{AccountManagerExt, AccountViewExt},
+    contract::core::{
         accounts::{AccountEvent, NonceEvent, PublicKeyEvent, TransferEvent},
         amounts::Amounts,
         crypto::{Payload, PublicKey},
@@ -17,25 +17,22 @@ use defuse_sandbox::extensions::defuse::contract::{
         },
         token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
     },
+    deployer::DefuseExt,
+    intents::{ExecuteIntentsExt, SimulateIntents},
+    nonce::ExtractNonceExt,
+    signer::DefaultDefuseSignerExt,
 };
-use defuse_sandbox::extensions::defuse::{nonce::ExtractNonceExt, signer::DefaultDefuseSignerExt};
+use defuse::contract::config::{DefuseConfig, RolesConfig};
+use defuse_sandbox::extensions::{
+    ft::FtExt,
+    mt::{MtExt, MtViewExt},
+    nft::{NftDeployerExt, NftExt},
+    wnear::WNearExt,
+};
 
 use crate::{
     env::{DEFUSE_WASM, Env, NON_FUNGIBLE_TOKEN_WASM},
-    sandbox::{
-        api::types::{json::Base64VecU8, nft::NFTContractMetadata},
-        extensions::{
-            defuse::{
-                account_manager::{AccountManagerExt, AccountViewExt},
-                deployer::DefuseExt,
-                intents::{ExecuteIntentsExt, SimulateIntents},
-            },
-            ft::FtExt,
-            mt::{MtExt, MtViewExt},
-            nft::{NftDeployerExt, NftExt},
-            wnear::WNearExt,
-        },
-    },
+    sandbox::api::types::{json::Base64VecU8, nft::NFTContractMetadata},
     tests::defuse::intents::AccountNonceIntentEvent,
     utils::fixtures::public_key,
 };

@@ -4,24 +4,26 @@ mod mt_transfer_resolve_gas;
 use std::borrow::Cow;
 
 use crate::env::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
+use crate::extensions::defuse::account_manager::AccountManagerExt;
+use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
+use crate::extensions::defuse::{
+    contract::{
+        contract::config::{DefuseConfig, RolesConfig},
+        core::{
+            amounts::Amounts,
+            fees::{FeesConfig, Pips},
+            intents::tokens::{NotifyOnTransfer, Transfer},
+            token_id::TokenId,
+            token_id::nep141::Nep141TokenId,
+            token_id::nep245::Nep245TokenId,
+        },
+        nep245::{MtBurnEvent, MtEvent, MtTransferEvent, Token},
+        tokens::{DepositAction, DepositMessage, ExecuteIntents},
+    },
+    deployer::DefuseExt,
+    tokens::{nep141::DefuseFtWithdrawer, nep245::DefuseMtWithdrawer},
+};
 use crate::sandbox::assert_a_contains_b;
-use defuse_sandbox::extensions::defuse::account_manager::AccountManagerExt;
-use defuse_sandbox::extensions::defuse::contract::contract::config::{DefuseConfig, RolesConfig};
-use defuse_sandbox::extensions::defuse::contract::core::amounts::Amounts;
-use defuse_sandbox::extensions::defuse::contract::core::fees::{FeesConfig, Pips};
-use defuse_sandbox::extensions::defuse::contract::core::intents::tokens::{
-    NotifyOnTransfer, Transfer,
-};
-use defuse_sandbox::extensions::defuse::contract::core::token_id::TokenId;
-use defuse_sandbox::extensions::defuse::contract::core::token_id::nep141::Nep141TokenId;
-use defuse_sandbox::extensions::defuse::contract::core::token_id::nep245::Nep245TokenId;
-use defuse_sandbox::extensions::defuse::contract::nep245::{
-    MtBurnEvent, MtEvent, MtTransferEvent, Token,
-};
-use defuse_sandbox::extensions::defuse::contract::tokens::{
-    DepositAction, DepositMessage, ExecuteIntents,
-};
-use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
 use defuse_sandbox::tx::FnCallBuilder;
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_sdk::json_types::U128;
@@ -29,10 +31,6 @@ use near_sdk::{AsNep297Event, NearToken};
 
 use crate::{
     env::Env,
-    sandbox::extensions::defuse::{
-        deployer::DefuseExt,
-        tokens::{nep141::DefuseFtWithdrawer, nep245::DefuseMtWithdrawer},
-    },
     sandbox::extensions::mt::{MtExt, MtViewExt},
 };
 use rstest::rstest;
@@ -40,7 +38,7 @@ use rstest::rstest;
 #[rstest]
 #[tokio::test]
 async fn multitoken_enumeration() {
-    use defuse_sandbox::extensions::defuse::contract::core::token_id::nep141::Nep141TokenId;
+    use crate::extensions::defuse::contract::core::token_id::nep141::Nep141TokenId;
 
     let env = Env::builder().create_unique_users().build().await;
 
@@ -308,7 +306,7 @@ async fn multitoken_enumeration() {
 #[rstest]
 #[tokio::test]
 async fn multitoken_enumeration_with_ranges() {
-    use defuse_sandbox::extensions::defuse::contract::core::token_id::nep141::Nep141TokenId;
+    use crate::extensions::defuse::contract::core::token_id::nep141::Nep141TokenId;
 
     let env = Env::builder().create_unique_users().build().await;
 
@@ -941,9 +939,7 @@ struct MtTransferCallExpectation {
 async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     #[case] expectation: MtTransferCallExpectation,
 ) {
-    use defuse_sandbox::extensions::defuse::contract::core::{
-        amounts::Amounts, intents::tokens::Transfer,
-    };
+    use crate::extensions::defuse::contract::core::{amounts::Amounts, intents::tokens::Transfer};
 
     let env = Env::builder().deployer_as_super_admin().build().await;
 
@@ -1304,7 +1300,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
 
 #[tokio::test]
 async fn mt_transfer_call_circullar_callback() {
-    use defuse_sandbox::extensions::defuse::contract::tokens::DepositMessage;
+    use crate::extensions::defuse::contract::tokens::DepositMessage;
 
     let env = Env::builder().deployer_as_super_admin().build().await;
 
@@ -1417,7 +1413,7 @@ async fn mt_transfer_call_circullar_callback() {
 
 #[tokio::test]
 async fn mt_transfer_call_circullar_deposit() {
-    use defuse_sandbox::extensions::defuse::contract::tokens::DepositMessage;
+    use crate::extensions::defuse::contract::tokens::DepositMessage;
 
     let env = Env::builder().deployer_as_super_admin().build().await;
 

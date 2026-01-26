@@ -1,5 +1,5 @@
-use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use defuse::core::{Nonce, crypto::PublicKey};
+use defuse_sandbox::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use defuse_serde_utils::base64::AsBase64;
 use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, serde_json::json};
 

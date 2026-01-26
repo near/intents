@@ -9,15 +9,11 @@ pub use wasms::*;
 
 use crate::env::builder::EnvBuilder;
 
-use anyhow::{Ok, Result, anyhow};
-use arbitrary::Unstructured;
-use defuse_randomness::{Rng, make_true_rng};
-use defuse_sandbox::extensions::defuse::contract::{
+use crate::extensions::defuse::contract::{
     core::{Deadline, Nonce},
     tokens::{DepositAction, DepositMessage},
 };
-use defuse_sandbox::extensions::storage_management::StorageManagementExt;
-use defuse_sandbox::extensions::{
+use crate::extensions::{
     defuse::{
         account_manager::{AccountManagerExt, AccountViewExt},
         nonce::generate_unique_nonce,
@@ -25,6 +21,10 @@ use defuse_sandbox::extensions::{
     },
     poa::PoAFactoryExt,
 };
+use anyhow::{Ok, Result, anyhow};
+use arbitrary::Unstructured;
+use defuse_randomness::{Rng, make_true_rng};
+use defuse_sandbox::extensions::storage_management::StorageManagementExt;
 use defuse_sandbox::{Account, Sandbox, SigningAccount};
 use defuse_test_utils::random::{Seed, rng};
 use futures::future::try_join_all;

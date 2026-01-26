@@ -6,8 +6,7 @@ use defuse_sandbox::{
 use near_sdk::AccountId;
 use std::{collections::HashSet, convert::Infallible, sync::atomic::Ordering};
 
-use defuse_randomness::{Rng, make_true_rng};
-use defuse_sandbox::extensions::defuse::contract::{
+use crate::extensions::defuse::contract::{
     contract::Role,
     core::{
         Deadline, Nonce,
@@ -17,13 +16,14 @@ use defuse_sandbox::extensions::defuse::contract::{
     },
     nep245::Token,
 };
-use defuse_sandbox::extensions::{
+use crate::extensions::{
     defuse::{
         account_manager::AccountViewExt, deployer::DefuseExt, intents::ExecuteIntentsExt,
         signer::DefuseSignerExt,
     },
     poa::PoAFactoryExt,
 };
+use defuse_randomness::{Rng, make_true_rng};
 use futures::{
     StreamExt, TryStreamExt,
     future::{join_all, try_join_all},

@@ -1,6 +1,6 @@
 pub use defuse_escrow_swap as contract;
 
-use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
+use defuse_sandbox::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use near_sdk::{AccountId, serde_json::json};
 
 use defuse_escrow_swap::{Params, Storage};

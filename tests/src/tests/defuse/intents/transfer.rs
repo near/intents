@@ -1,28 +1,22 @@
-use crate::env::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
-use crate::{
-    env::Env, sandbox::extensions::defuse::intents::ExecuteIntentsExt,
-    sandbox::extensions::mt::MtViewExt,
-};
-use defuse_sandbox::extensions::defuse::contract::contract::config::{DefuseConfig, RolesConfig};
-use defuse_sandbox::extensions::defuse::contract::core::fees::FeesConfig;
-use defuse_sandbox::extensions::defuse::contract::core::fees::Pips;
-use defuse_sandbox::extensions::defuse::contract::core::intents::tokens::{
-    NotifyOnTransfer, Transfer,
-};
+use crate::env::{DEFUSE_WASM, Env, MT_RECEIVER_STUB_WASM};
+use crate::extensions::defuse::contract::contract::config::{DefuseConfig, RolesConfig};
+use crate::extensions::defuse::contract::core::fees::FeesConfig;
+use crate::extensions::defuse::contract::core::fees::Pips;
+use crate::extensions::defuse::contract::core::intents::tokens::{NotifyOnTransfer, Transfer};
+use crate::extensions::defuse::intents::ExecuteIntentsExt;
+use crate::sandbox::extensions::mt::MtViewExt;
 
-use defuse_sandbox::extensions::defuse::contract::core::token_id::{
-    TokenId, nep141::Nep141TokenId,
-};
+use crate::extensions::defuse::contract::core::token_id::{TokenId, nep141::Nep141TokenId};
 
-use defuse_sandbox::extensions::defuse::deployer::DefuseExt;
-use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
-use defuse_sandbox::extensions::escrow::contract::token_id::nep245::Nep245TokenId;
+use crate::extensions::defuse::deployer::DefuseExt;
+use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
+use crate::extensions::escrow::contract::token_id::nep245::Nep245TokenId;
 use defuse_sandbox::extensions::ft::FtViewExt;
 use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::{AccountId, Gas};
 use rstest::rstest;
 
-use defuse_sandbox::extensions::defuse::contract::core::amounts::Amounts;
+use crate::extensions::defuse::contract::core::amounts::Amounts;
 
 #[rstest]
 #[trace]
@@ -246,7 +240,7 @@ async fn transfer_intent_to_defuse() {
 })]
 #[tokio::test]
 async fn transfer_intent_with_msg_to_receiver_smc(#[case] expectation: TransferCallExpectation) {
-    use defuse_sandbox::extensions::defuse::intents::ExecuteIntentsExt;
+    use crate::extensions::defuse::intents::ExecuteIntentsExt;
     use defuse_sandbox::tx::FnCallBuilder;
     use near_sdk::NearToken;
 

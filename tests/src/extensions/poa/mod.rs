@@ -8,7 +8,7 @@ use std::collections::{HashMap, HashSet};
 
 use defuse_poa_factory::contract::{POA_TOKEN_INIT_BALANCE, Role};
 
-use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
+use defuse_sandbox::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 
 pub trait PoAFactoryExt {
     async fn poa_factory_deploy_token(

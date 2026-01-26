@@ -1,13 +1,12 @@
+use crate::extensions::defuse::contract::core::intents::tokens::StorageDeposit;
+use crate::extensions::defuse::{intents::ExecuteIntentsExt, signer::DefaultDefuseSignerExt};
 use crate::{
     env::Env,
-    sandbox::extensions::defuse::intents::ExecuteIntentsExt,
     sandbox::extensions::{
         storage_management::{StorageManagementExt, StorageViewExt},
         wnear::WNearExt,
     },
 };
-use defuse_sandbox::extensions::defuse::contract::core::intents::tokens::StorageDeposit;
-use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
 use near_sdk::NearToken;
 use rstest::rstest;
 

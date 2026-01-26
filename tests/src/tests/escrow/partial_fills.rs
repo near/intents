@@ -1,9 +1,9 @@
-use defuse_sandbox::extensions::escrow::contract::{
+use crate::extensions::escrow::contract::{
     ContractStorage, Deadline, OverrideSend, Params, Pips, ProtocolFees,
     action::{FillAction, TransferAction, TransferMessage},
     token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId},
 };
-use defuse_sandbox::extensions::{
+use crate::extensions::{
     defuse::contract::{
         core::intents::tokens::NotifyOnTransfer,
         tokens::{DepositAction, DepositMessage},
