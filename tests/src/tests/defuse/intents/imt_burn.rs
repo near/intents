@@ -27,11 +27,13 @@ use crate::tests::defuse::env::Env;
 async fn imt_burn_intent() {
     let env = Env::builder().build().await;
 
-    let user = env.create_user().await;
+    let (user, other_user) = futures::join!(env.create_user(), env.create_user());
 
     let token_id = "sometoken.near".to_string();
     let memo = "Some memo";
     let amount = 1000;
+
+    let mt_id = TokenId::from(ImtTokenId::new(user.id().clone(), token_id.to_string()));
 
     let mint_payload = user
         .sign_defuse_payload_default(
@@ -39,7 +41,7 @@ async fn imt_burn_intent() {
             [ImtMint {
                 tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
                 memo: Some(memo.to_string()),
-                receiver_id: user.id().clone(),
+                receiver_id: other_user.id().clone(),
                 notification: None,
             }],
         )
@@ -55,7 +57,7 @@ async fn imt_burn_intent() {
         tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
         memo: Some(memo.to_string()),
     };
-    let burn_payload = user
+    let burn_payload = other_user
         .sign_defuse_payload_default(&env.defuse, [intent.clone()])
         .await
         .unwrap();
@@ -64,8 +66,6 @@ async fn imt_burn_intent() {
         .simulate_and_execute_intents(env.defuse.id(), [burn_payload.clone()])
         .await
         .unwrap();
-
-    let mt_id = TokenId::from(ImtTokenId::new(user.id().clone(), token_id.to_string()));
 
     assert_eq!(
         env.defuse
@@ -79,7 +79,7 @@ async fn imt_burn_intent() {
             a: result.logs().clone(),
             b: [
                 MtEvent::MtBurn(Cow::Owned(vec![MtBurnEvent {
-                owner_id: user.id().into(),
+                owner_id: other_user.id().into(),
                 token_ids: vec![mt_id.to_string()].into(),
                 amounts: vec![U128::from(amount)].into(),
                 memo: Some(memo.into()),
@@ -90,7 +90,7 @@ async fn imt_burn_intent() {
                 DefuseEvent::ImtBurn(Cow::Owned(vec![IntentEvent {
                 intent_hash: burn_payload.hash(),
                 event: AccountEvent {
-                    account_id: user.id().clone().into(),
+                    account_id: other_user.id().clone().into(),
                     event: Cow::Owned(intent),
                 },
             }]))

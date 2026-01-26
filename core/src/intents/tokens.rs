@@ -670,7 +670,7 @@ pub mod imt {
                     .as_slice(),
                 )));
 
-            let tokens = self.tokens.into_generic_tokens(signer_id)?;
+            let tokens = self.tokens.into_generic_tokens(&self.minter_id)?;
 
             engine.state.imt_burn(signer_id, tokens, self.memo)
         }
