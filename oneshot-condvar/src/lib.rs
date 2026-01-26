@@ -38,8 +38,8 @@ impl CondVarContext<'_> {
 
 #[ext_contract(ext_oneshot_condvar)]
 pub trait OneshotCondVar {
-    fn state(&self) -> &StateMachine;
-    fn view(&self) -> &State;
+    fn cv_state(&self) -> &StateMachine;
+    fn cv_view(&self) -> &State;
     fn cv_is_notified(&self) -> bool;
     fn cv_wait(&mut self) -> PromiseOrValue<bool>;
     fn cv_notify_one(&mut self);

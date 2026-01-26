@@ -90,11 +90,11 @@ impl Contract {
 
 #[near]
 impl OneshotCondVar for Contract {
-    fn view(&self) -> &State {
+    fn cv_view(&self) -> &State {
         self.0.try_as_alive().unwrap_or_panic_display()
     }
 
-    fn state(&self) -> &StateMachine {
+    fn cv_state(&self) -> &StateMachine {
         &self.0.try_as_alive().unwrap_or_panic_display().state
     }
 
