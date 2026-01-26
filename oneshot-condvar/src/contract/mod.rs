@@ -108,9 +108,10 @@ impl OneshotCondVar for Contract {
         let mut guard = self.cleanup_guard();
         let state = guard.try_as_alive_mut().unwrap_or_panic_display();
 
-        if env::predecessor_account_id() != state.state_init.authorizee {
-            env::panic_str("Unauthorized authorizee");
-        }
+        require!(
+            env::predecessor_account_id() == state.state_init.authorizee,
+            "Unauthorized authorizee"
+        );
 
         match state.state {
             StateMachine::Idle => {
