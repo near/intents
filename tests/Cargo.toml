@@ -15,9 +15,12 @@ poa = ["dep:defuse-poa-factory"]
 defuse = ["dep:defuse"]
 escrow = ["dep:defuse-escrow-swap"]
 
-
 [dependencies]
 defuse-sandbox = { workspace = true }
+
+defuse = { workspace = true, features = ["contract", "arbitrary", "imt"],  optional = true}
+defuse-escrow-swap = { workspace = true, features = ["auth_call"],  optional = true }
+defuse-poa-factory = {workspace = true, features = ["contract"], optional = true }
 
 defuse-near-utils = { workspace = true }
 defuse-serde-utils = { workspace = true }
@@ -44,7 +47,3 @@ strum.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 tlb-ton = { workspace = true, features = ["arbitrary"] }
 defuse-nep245.workspace = true
-
-defuse = {workspace = true, features = ["contract", "arbitrary"], optional = true}
-defuse-poa-factory = {workspace = true, features = ["contract"], optional = true}
-defuse-escrow-swap = {workspace = true, optional = true}

@@ -41,30 +41,16 @@ impl AccountManager for Contract {
     fn add_public_key(&mut self, public_key: PublicKey) {
         assert_one_yocto();
         let account_id = self.ensure_auth_predecessor_id();
-        State::add_public_key(self, account_id.clone(), public_key).unwrap_or_panic();
 
-        DefuseEvent::PublicKeyAdded(AccountEvent::new(
-            Cow::Borrowed(account_id.as_ref()),
-            PublicKeyEvent {
-                public_key: Cow::Borrowed(&public_key),
-            },
-        ))
-        .emit();
+        self.add_public_key(account_id.as_ref(), public_key);
     }
 
     #[payable]
     fn remove_public_key(&mut self, public_key: PublicKey) {
         assert_one_yocto();
         let account_id = self.ensure_auth_predecessor_id();
-        State::remove_public_key(self, account_id.clone(), public_key).unwrap_or_panic();
 
-        DefuseEvent::PublicKeyRemoved(AccountEvent::new(
-            Cow::Borrowed(account_id.as_ref()),
-            PublicKeyEvent {
-                public_key: Cow::Borrowed(&public_key),
-            },
-        ))
-        .emit();
+        self.remove_public_key(account_id.as_ref(), public_key);
     }
 
     fn is_nonce_used(&self, account_id: &AccountId, nonce: AsBase64<Nonce>) -> bool {
@@ -91,6 +77,30 @@ impl Contract {
             DefuseError::AuthByPredecessorIdDisabled(predecessor_account_id).panic();
         }
         predecessor_account_id
+    }
+
+    pub fn add_public_key(&mut self, account_id: &AccountIdRef, public_key: PublicKey) {
+        State::add_public_key(self, account_id.into(), public_key).unwrap_or_panic();
+
+        DefuseEvent::PublicKeyAdded(AccountEvent::new(
+            Cow::Borrowed(account_id),
+            PublicKeyEvent {
+                public_key: Cow::Borrowed(&public_key),
+            },
+        ))
+        .emit();
+    }
+
+    pub fn remove_public_key(&mut self, account_id: &AccountIdRef, public_key: PublicKey) {
+        State::remove_public_key(self, account_id.into(), public_key).unwrap_or_panic();
+
+        DefuseEvent::PublicKeyRemoved(AccountEvent::new(
+            Cow::Borrowed(account_id),
+            PublicKeyEvent {
+                public_key: Cow::Borrowed(&public_key),
+            },
+        ))
+        .emit();
     }
 }
 

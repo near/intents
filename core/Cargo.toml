@@ -55,6 +55,7 @@ arbitrary = [
     "defuse-token-id/arbitrary",
     "defuse-ton-connect/arbitrary",
 ]
+imt = ["defuse-token-id/imt"]
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 chrono = { workspace = true, features = ["now"] }

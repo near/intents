@@ -50,7 +50,7 @@ container_build_command = [
     "build",
     "non-reproducible-wasm",
     "--locked",
-    "--features=abi,contract",
+    "--features=abi,contract,imt",
     "--no-embed-abi",
 ]
 
@@ -65,6 +65,7 @@ contract = [
     "dep:defuse-wnear",
     "dep:bitflags",
 ]
+imt = ["defuse-core/imt"]
 
 [dev-dependencies]
 defuse-core = { workspace = true, features = ["arbitrary"] }

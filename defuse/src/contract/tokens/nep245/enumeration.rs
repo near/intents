@@ -53,6 +53,8 @@ impl MultiTokenEnumeration for Contract {
                 owner_id: match TokenIdType::from(token_id) {
                     TokenIdType::Nep171 => Some(account_id.clone()),
                     TokenIdType::Nep141 | TokenIdType::Nep245 => None,
+                    #[cfg(feature = "imt")]
+                    TokenIdType::Imt => None,
                 },
             });
 

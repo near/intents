@@ -1,14 +1,13 @@
-use defuse_core::token_id::nep245::Nep245TokenId;
+use defuse_core::{
+    DefuseError, intents::tokens::MAX_TOKEN_ID_LEN, token_id::nep245::Nep245TokenId,
+};
 use defuse_near_utils::{PanicError, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::receiver::MultiTokenReceiver;
 use near_plugins::{Pausable, pause};
 use near_sdk::{AccountId, PromiseOrValue, env, json_types::U128, near, require};
 
 use crate::{
-    contract::{
-        Contract, ContractExt,
-        tokens::{MAX_TOKEN_ID_LEN, TokenIdTooLarge},
-    },
+    contract::{Contract, ContractExt},
     intents::{Intents, ext_intents},
     tokens::{DepositAction, DepositMessage},
 };
@@ -51,7 +50,7 @@ impl MultiTokenReceiver for Contract {
             .iter()
             .inspect(|token_id| {
                 if token_id.len() > MAX_TOKEN_ID_LEN {
-                    TokenIdTooLarge(token_id.len()).panic_display();
+                    DefuseError::TokenIdTooLarge(token_id.len()).panic_display();
                 }
             })
             .cloned()
