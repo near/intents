@@ -1,3 +1,4 @@
+mod checked;
 mod core;
 pub mod enumeration;
 mod events;
@@ -7,6 +8,6 @@ mod token;
 
 use near_sdk::{AccountId, json_types::U128};
 
-pub use self::{core::*, events::*, token::*};
+pub use self::{checked::*, core::*, events::*, token::*};
 
 pub type ClearedApproval = (AccountId, u64, U128);

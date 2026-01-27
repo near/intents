@@ -1,34 +1,11 @@
 use super::TokenId;
-use defuse_near_utils::REFUND_MEMO;
-use derive_more::derive::From;
-use near_sdk::{
-    AccountIdRef, AsNep297Event, FunctionError, json_types::U128, near, serde::Deserialize,
+use crate::checked::{
+    CheckRefundError, ErrorLogTooLong, ErrorRefundLogTooLong, RefundCheckedMtEvent, RefundLogDelta,
+    TOTAL_LOG_LENGTH_LIMIT, refund_log_delta,
 };
+use derive_more::derive::From;
+use near_sdk::{AccountIdRef, AsNep297Event, json_types::U128, near, serde::Deserialize};
 use std::borrow::Cow;
-
-#[derive(Debug, Clone, PartialEq, Eq, FunctionError, thiserror::Error)]
-#[error("Event log is too long: {log_length} bytes exceeds limit of {limit} bytes")]
-pub struct ErrorLogTooLong {
-    pub log_length: usize,
-    pub limit: usize,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, FunctionError, thiserror::Error)]
-#[error("Refund event log would be too long: {log_length} bytes exceeds limit of {limit} bytes")]
-pub struct ErrorRefundLogTooLong {
-    pub log_length: usize,
-    pub limit: usize,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, FunctionError, thiserror::Error)]
-pub enum CheckRefundError {
-    #[error(transparent)]
-    LogTooLong(#[from] ErrorLogTooLong),
-    #[error(transparent)]
-    RefundLogTooLong(#[from] ErrorRefundLogTooLong),
-}
-
-pub use defuse_near_utils::TOTAL_LOG_LENGTH_LIMIT;
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(event_json(standard = "nep245"))]
@@ -40,37 +17,6 @@ pub enum MtEvent<'a> {
     MtBurn(Cow<'a, [MtBurnEvent<'a>]>),
     #[event_version("1.0.0")]
     MtTransfer(Cow<'a, [MtTransferEvent<'a>]>),
-}
-
-const REFUND_EXTRA_BYTES: usize = r#","memo":""#.len() + REFUND_MEMO.len();
-const REFUND_STR_LEN: usize = REFUND_MEMO.len();
-
-#[derive(Default, Clone, Copy)]
-struct RefundLogDelta {
-    overhead: usize,
-    savings: usize,
-}
-
-impl RefundLogDelta {
-    const fn saturating_add(self, other: Self) -> Self {
-        Self {
-            overhead: self.overhead.saturating_add(other.overhead),
-            savings: self.savings.saturating_add(other.savings),
-        }
-    }
-}
-
-const fn refund_log_delta(memo: Option<&str>) -> RefundLogDelta {
-    let Some(m) = memo else {
-        return RefundLogDelta {
-            overhead: REFUND_EXTRA_BYTES,
-            savings: 0,
-        };
-    };
-    RefundLogDelta {
-        overhead: REFUND_STR_LEN.saturating_sub(m.len()),
-        savings: m.len().saturating_sub(REFUND_STR_LEN),
-    }
 }
 
 fn compute_refund_delta(event: &MtEvent<'_>) -> RefundLogDelta {
@@ -87,18 +33,6 @@ fn compute_refund_delta(event: &MtEvent<'_>) -> RefundLogDelta {
             .iter()
             .map(|e| refund_log_delta(e.memo.as_deref()))
             .fold(RefundLogDelta::default(), RefundLogDelta::saturating_add),
-    }
-}
-
-/// A validated event log that has been checked for refund overhead.
-/// Use [`RefundCheckedMtEvent::emit`] to emit the event.
-#[derive(Debug)]
-#[must_use = "call `.emit()` to emit the event"]
-pub struct RefundCheckedMtEvent(pub String);
-
-impl RefundCheckedMtEvent {
-    pub fn emit(self) {
-        near_sdk::env::log_str(&self.0);
     }
 }
 
@@ -171,29 +105,6 @@ pub struct MtTransferEvent<'a> {
     pub memo: Option<Cow<'a, str>>,
 }
 
-impl MtTransferEvent<'_> {
-    /// Calculate the size of a refund event log for this transfer.
-    /// Creates a new event with swapped owner IDs and "refund" memo.
-    #[must_use]
-    pub fn refund_log_size(&self) -> usize {
-        MtEvent::MtTransfer(
-            [MtTransferEvent {
-                authorized_id: None,
-                old_owner_id: self.new_owner_id.clone(),
-                new_owner_id: self.old_owner_id.clone(),
-                token_ids: self.token_ids.clone(),
-                amounts: self.amounts.clone(),
-                memo: Some(REFUND_MEMO.into()),
-            }]
-            .as_slice()
-            .into(),
-        )
-        .to_nep297_event()
-        .to_event_log()
-        .len()
-    }
-}
-
 /// A trait that's used to make it possible to call `emit()` on the enum
 /// arms' contents without having to explicitly construct the enum `MtEvent` itself
 pub trait MtEventEmit<'a>: Into<MtEvent<'a>> {
@@ -206,8 +117,13 @@ impl<'a, T> MtEventEmit<'a> for T where T: Into<MtEvent<'a>> {}
 
 #[cfg(test)]
 mod tests {
+    use crate::checked::REFUND_EXTRA_BYTES;
+    use defuse_near_utils::REFUND_MEMO;
+
     use super::*;
     use near_sdk::json_types::U128;
+
+    const REFUND_STR_LEN: usize = REFUND_MEMO.len();
 
     /// Create a single-event `MtTransfer` with exact log length.
     /// Pads `token_id` to achieve the desired length.
