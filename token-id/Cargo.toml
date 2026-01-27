@@ -26,6 +26,7 @@ default = ["nep141", "nep171", "nep245"]
 nep141 = []
 nep171 = []
 nep245 = []
+imt = []
 
 abi = []
 arbitrary = ["dep:arbitrary", "near-sdk/arbitrary"]
