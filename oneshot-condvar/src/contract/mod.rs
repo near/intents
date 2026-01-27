@@ -51,7 +51,7 @@ impl Contract {
             }
             // Authorization arrived before or (in corner case) after timeout
             // in either case we want to transition from Authorized to Done
-            StateMachine::Authorized => StateMachine::Done,
+            StateMachine::Notified => StateMachine::Done,
             // This callback is only scheduled by Promise::new_yield in cv_wait(),
             // which transitions state to WaitingForNotification. We should never
             // reach this callback while in Idle state.
@@ -73,7 +73,7 @@ impl Contract {
         );
 
         state.state = match state.state {
-            StateMachine::Idle => StateMachine::Authorized,
+            StateMachine::Idle => StateMachine::Notified,
             StateMachine::WaitingForNotification(yield_id) => {
                 let _ = yield_id.resume(&[]);
                 // set state to authorized despite the status of yield resume.
@@ -81,9 +81,9 @@ impl Contract {
                 // - if yield succeeded - state will be changed to Done in callback
                 // - if yield failed (timeout) - state will be changed to done on next `cv_wait`
                 // call
-                StateMachine::Authorized
+                StateMachine::Notified
             }
-            StateMachine::Done | StateMachine::Authorized => {
+            StateMachine::Done | StateMachine::Notified => {
                 env::panic_str("already notified");
             }
         };
@@ -105,7 +105,7 @@ impl OneshotCondVar for Contract {
     fn cv_is_notified(&self) -> bool {
         self.0
             .as_alive()
-            .is_some_and(|s| matches!(s.state, StateMachine::Authorized | StateMachine::Done))
+            .is_some_and(|s| matches!(s.state, StateMachine::Notified | StateMachine::Done))
     }
 
     fn cv_wait(&mut self) -> PromiseOrValue<bool> {
@@ -128,7 +128,7 @@ impl OneshotCondVar for Contract {
                 state.state = StateMachine::WaitingForNotification(yield_id);
                 return promise.into();
             }
-            StateMachine::Authorized => {
+            StateMachine::Notified => {
                 state.state = StateMachine::Done;
             }
             StateMachine::WaitingForNotification(_) => {

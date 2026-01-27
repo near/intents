@@ -9,7 +9,7 @@ use serde_with::{hex::Hex, serde_as};
 pub enum StateMachine {
     Idle,
     WaitingForNotification(YieldId),
-    Authorized,
+    Notified,
     Done,
 }
 
