@@ -6,7 +6,7 @@ use serde_with::{hex::Hex, serde_as};
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
-pub enum StateMachine {
+pub enum Status {
     Idle,
     WaitingForNotification(YieldId),
     Notified,
@@ -31,7 +31,7 @@ pub struct Config {
 pub struct State {
     #[serde(flatten)]
     pub config: Config,
-    pub state: StateMachine,
+    pub state: Status,
 }
 
 impl State {
@@ -39,7 +39,7 @@ impl State {
     pub const fn new(config: Config) -> Self {
         Self {
             config,
-            state: StateMachine::Idle,
+            state: Status::Idle,
         }
     }
 }

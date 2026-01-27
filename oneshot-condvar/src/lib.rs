@@ -10,11 +10,11 @@ pub mod event;
 pub mod storage;
 
 pub use error::Error;
-pub use storage::{Config, ContractStorage, State, StateMachine};
+pub use storage::{Status, Config, ContractStorage, State};
 
 #[ext_contract(ext_oneshot_condvar)]
 pub trait OneshotCondVar {
-    fn cv_state(&self) -> &StateMachine;
+    fn cv_state(&self) -> &Status;
     fn cv_view(&self) -> &State;
     fn cv_is_notified(&self) -> bool;
     fn cv_wait(&mut self) -> PromiseOrValue<bool>;

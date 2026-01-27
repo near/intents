@@ -8,7 +8,7 @@ use near_sdk::{Gas, GasWeight, PanicOnDefault, Promise, PromiseOrValue, env, nea
 use crate::{
     Error, OneshotCondVar,
     event::Event,
-    storage::{ContractStorage, State, StateMachine},
+    storage::{Status, ContractStorage, State},
 };
 
 const EMPTY_JSON: &[u8] = b"{}";
@@ -45,20 +45,20 @@ impl Contract {
             // The yield promise timed out while we were waiting for a notification.
             // Reset to Idle state so the caller can retry cv_wait() if desired.
             // This is the normal timeout path when no authorization arrives in time.
-            StateMachine::WaitingForNotification(_yield_id) => {
+            Status::WaitingForNotification(_yield_id) => {
                 Event::Timeout.emit();
-                StateMachine::Idle
+                Status::Idle
             }
             // Authorization arrived before or (in corner case) after timeout
             // in either case we want to transition from Authorized to Done
-            StateMachine::Notified => StateMachine::Done,
+            Status::Notified => Status::Done,
             // This callback is only scheduled by Promise::new_yield in cv_wait(),
             // which transitions state to WaitingForNotification. We should never
             // reach this callback while in Idle state.
-            StateMachine::Done | StateMachine::Idle => unreachable!(),
+            Status::Done | Status::Idle => unreachable!(),
         };
 
-        PromiseOrValue::Value(matches!(state.state, StateMachine::Done))
+        PromiseOrValue::Value(matches!(state.state, Status::Done))
     }
 }
 
@@ -70,17 +70,17 @@ impl Contract {
         require!(*caller == state.config.notifier_id, ERR_UNAUTHORIZED_CALLER);
 
         state.state = match state.state {
-            StateMachine::Idle => StateMachine::Notified,
-            StateMachine::WaitingForNotification(yield_id) => {
+            Status::Idle => Status::Notified,
+            Status::WaitingForNotification(yield_id) => {
                 let _ = yield_id.resume(&[]);
                 // set state to authorized despite the status of yield resume.
                 // in both cases we want to keep the state machine in Authorized state
                 // - if yield succeeded - state will be changed to Done in callback
                 // - if yield failed (timeout) - state will be changed to done on next `cv_wait`
                 // call
-                StateMachine::Notified
+                Status::Notified
             }
-            StateMachine::Done | StateMachine::Notified => {
+            Status::Done | Status::Notified => {
                 env::panic_str("already notified");
             }
         };
@@ -95,14 +95,14 @@ impl OneshotCondVar for Contract {
         self.0.try_as_alive().unwrap_or_panic_display()
     }
 
-    fn cv_state(&self) -> &StateMachine {
+    fn cv_state(&self) -> &Status {
         &self.0.try_as_alive().unwrap_or_panic_display().state
     }
 
     fn cv_is_notified(&self) -> bool {
         self.0
             .as_alive()
-            .is_some_and(|s| matches!(s.state, StateMachine::Notified | StateMachine::Done))
+            .is_some_and(|s| matches!(s.state, Status::Notified | Status::Done))
     }
 
     fn cv_wait(&mut self) -> PromiseOrValue<bool> {
@@ -115,28 +115,28 @@ impl OneshotCondVar for Contract {
         );
 
         match state.state {
-            StateMachine::Idle => {
+            Status::Idle => {
                 let (promise, yield_id) = Promise::new_yield(
                     "cv_wait_resume",
                     EMPTY_JSON,
                     Gas::from_tgas(0),
                     GasWeight(1),
                 );
-                state.state = StateMachine::WaitingForNotification(yield_id);
+                state.state = Status::WaitingForNotification(yield_id);
                 return promise.into();
             }
-            StateMachine::Notified => {
-                state.state = StateMachine::Done;
+            Status::Notified => {
+                state.state = Status::Done;
             }
-            StateMachine::WaitingForNotification(_) => {
+            Status::WaitingForNotification(_) => {
                 env::panic_str("already waiting for notification");
             }
-            StateMachine::Done => {
+            Status::Done => {
                 env::panic_str("already done");
             }
         }
 
-        PromiseOrValue::Value(matches!(state.state, StateMachine::Done))
+        PromiseOrValue::Value(matches!(state.state, Status::Done))
     }
 
     #[payable]
