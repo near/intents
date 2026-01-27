@@ -35,10 +35,10 @@ impl RefundLogDelta {
     }
 
     pub const fn saturating_add(self, other: Self) -> Self {
-        Self {
-            overhead: self.overhead.saturating_add(other.overhead),
-            savings: self.savings.saturating_add(other.savings),
-        }
+        Self::new(
+            self.overhead.saturating_add(other.overhead),
+            self.savings.saturating_add(other.savings),
+        )
     }
 }
 
