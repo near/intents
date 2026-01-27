@@ -54,7 +54,7 @@ const fn refund_log_delta(memo: Option<&str>) -> RefundLogDelta {
 }
 
 impl MtEvent<'_> {
-    pub fn compute_refund_delta(&self) -> RefundLogDelta {
+    pub (crate) fn compute_refund_delta(&self) -> RefundLogDelta {
         match self {
             MtEvent::MtMint(events) => events
                 .iter()
