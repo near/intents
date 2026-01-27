@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+use defuse_near_utils::UnwrapOrPanicError;
 use near_sdk::{
     AccountIdRef, Gas, PromiseOrValue, borsh, env, ext_contract, json_types::U128, near,
 };
@@ -29,7 +30,8 @@ pub struct CondVarContext<'a> {
 impl CondVarContext<'_> {
     pub fn hash(&self) -> [u8; 32] {
         let serialized = borsh::to_vec(&self)
-            .unwrap_or_else(|_| unreachable!("CondVarContext is always serializable"));
+            .map_err(Error::Borsh)
+            .unwrap_or_panic_display();
         env::keccak256(&serialized)
             .try_into()
             .unwrap_or_else(|_| unreachable!())
