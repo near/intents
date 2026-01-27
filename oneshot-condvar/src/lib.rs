@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use near_sdk::{
-    AccountIdRef, Gas, PromiseOrValue, borsh, env::keccak256, ext_contract, json_types::U128, near,
+    AccountIdRef, Gas, PromiseOrValue, borsh, env, ext_contract, json_types::U128, near,
 };
 
 /// Gas consumed by `cv_wait` in worst case (wait first, notify later).
@@ -30,7 +30,7 @@ impl CondVarContext<'_> {
     pub fn hash(&self) -> [u8; 32] {
         let serialized = borsh::to_vec(&self)
             .unwrap_or_else(|_| unreachable!("CondVarContext is always serializable"));
-        keccak256(&serialized)
+        env::keccak256(&serialized)
             .try_into()
             .unwrap_or_else(|_| unreachable!())
     }
