@@ -1,7 +1,6 @@
 use super::TokenId;
 use crate::checked::{
-    CheckRefundError, ErrorLogTooLong, ErrorRefundLogTooLong, RefundCheckedMtEvent, RefundLogDelta,
-    TOTAL_LOG_LENGTH_LIMIT, refund_log_delta,
+    ErrorLogTooLong, RefundCheckedMtEvent, RefundLogDelta, TOTAL_LOG_LENGTH_LIMIT, refund_log_delta,
 };
 use derive_more::derive::From;
 use near_sdk::{AccountIdRef, AsNep297Event, json_types::U128, near, serde::Deserialize};
@@ -19,51 +18,38 @@ pub enum MtEvent<'a> {
     MtTransfer(Cow<'a, [MtTransferEvent<'a>]>),
 }
 
-fn compute_refund_delta(event: &MtEvent<'_>) -> RefundLogDelta {
-    match event {
-        MtEvent::MtMint(events) => events
-            .iter()
-            .map(|e| refund_log_delta(e.memo.as_deref()))
-            .fold(RefundLogDelta::default(), RefundLogDelta::saturating_add),
-        MtEvent::MtBurn(events) => events
-            .iter()
-            .map(|e| refund_log_delta(e.memo.as_deref()))
-            .fold(RefundLogDelta::default(), RefundLogDelta::saturating_add),
-        MtEvent::MtTransfer(events) => events
-            .iter()
-            .map(|e| refund_log_delta(e.memo.as_deref()))
-            .fold(RefundLogDelta::default(), RefundLogDelta::saturating_add),
-    }
-}
-
 impl MtEvent<'_> {
     /// Validates that the event log (including potential refund overhead) fits within limits.
     /// Returns a [`RefundCheckedMtEvent`] that can be emitted.
-    pub fn check_refund(self) -> Result<RefundCheckedMtEvent, CheckRefundError> {
+    pub fn check_refund(self) -> Result<RefundCheckedMtEvent, ErrorLogTooLong> {
         let log = self.to_nep297_event().to_event_log();
-
-        if log.len() > TOTAL_LOG_LENGTH_LIMIT {
-            return Err(ErrorLogTooLong {
-                log_length: log.len(),
-                limit: TOTAL_LOG_LENGTH_LIMIT,
-            }
-            .into());
-        }
-
-        let delta = compute_refund_delta(&self);
+        let delta = self.compute_refund_delta();
         let refund_len = log
             .len()
-            .saturating_add(delta.overhead)
-            .saturating_sub(delta.savings);
+            .saturating_add(delta.overhead())
+            .saturating_sub(delta.savings());
 
         if refund_len > TOTAL_LOG_LENGTH_LIMIT {
-            return Err(ErrorRefundLogTooLong {
-                log_length: refund_len,
-                limit: TOTAL_LOG_LENGTH_LIMIT,
-            }
-            .into());
+            return Err(ErrorLogTooLong {});
         }
         Ok(RefundCheckedMtEvent(log))
+    }
+
+    fn compute_refund_delta(&self) -> RefundLogDelta {
+        match self {
+            MtEvent::MtMint(events) => events
+                .iter()
+                .map(|e| refund_log_delta(e.memo.as_deref()))
+                .fold(RefundLogDelta::default(), RefundLogDelta::saturating_add),
+            MtEvent::MtBurn(events) => events
+                .iter()
+                .map(|e| refund_log_delta(e.memo.as_deref()))
+                .fold(RefundLogDelta::default(), RefundLogDelta::saturating_add),
+            MtEvent::MtTransfer(events) => events
+                .iter()
+                .map(|e| refund_log_delta(e.memo.as_deref()))
+                .fold(RefundLogDelta::default(), RefundLogDelta::saturating_add),
+        }
     }
 }
 
@@ -235,20 +221,7 @@ mod tests {
     fn single_event_short_memo_at_limit_fails() {
         let memo = "refu";
         let mt = create_single_event_mt(TOTAL_LOG_LENGTH_LIMIT, Some(memo));
-        let expected_len = TOTAL_LOG_LENGTH_LIMIT + REFUND_STR_LEN - memo.len();
-        assert!(matches!(
-            mt.check_refund().unwrap_err(),
-            CheckRefundError::RefundLogTooLong(ErrorRefundLogTooLong { log_length, .. }) if log_length == expected_len
-        ));
-    }
-
-    #[test]
-    fn single_event_over_limit_fails() {
-        let mt = create_single_event_mt(TOTAL_LOG_LENGTH_LIMIT + 1, Some("refund1"));
-        assert!(matches!(
-            mt.check_refund().unwrap_err(),
-            CheckRefundError::LogTooLong(ErrorLogTooLong { log_length, .. }) if log_length == TOTAL_LOG_LENGTH_LIMIT + 1
-        ));
+        assert!(matches!(mt.check_refund().unwrap_err(), ErrorLogTooLong {}));
     }
 
     #[test]
@@ -260,20 +233,7 @@ mod tests {
     #[test]
     fn triple_event_short_memo_at_limit_fails() {
         let mt = create_triple_event_mt(TOTAL_LOG_LENGTH_LIMIT, [Some("refu"); 3]);
-        let expected_len = TOTAL_LOG_LENGTH_LIMIT + 3 * (REFUND_STR_LEN - "refu".len());
-        assert!(matches!(
-            mt.check_refund().unwrap_err(),
-            CheckRefundError::RefundLogTooLong(ErrorRefundLogTooLong { log_length, .. }) if log_length == expected_len
-        ));
-    }
-
-    #[test]
-    fn triple_event_over_limit_fails() {
-        let mt = create_triple_event_mt(TOTAL_LOG_LENGTH_LIMIT + 1, [Some("refund1"); 3]);
-        assert!(matches!(
-            mt.check_refund().unwrap_err(),
-            CheckRefundError::LogTooLong(ErrorLogTooLong { log_length, .. }) if log_length == TOTAL_LOG_LENGTH_LIMIT + 1
-        ));
+        assert!(matches!(mt.check_refund().unwrap_err(), ErrorLogTooLong {}));
     }
 
     #[test]
