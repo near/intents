@@ -67,10 +67,7 @@ impl Contract {
         caller: &near_sdk::AccountId,
         state: &mut State,
     ) {
-        require!(
-            *caller == state.state_init.notifier_id,
-            ERR_UNAUTHORIZED_CALLER
-        );
+        require!(*caller == state.config.notifier_id, ERR_UNAUTHORIZED_CALLER);
 
         state.state = match state.state {
             StateMachine::Idle => StateMachine::Notified,
@@ -113,7 +110,7 @@ impl OneshotCondVar for Contract {
         let state = guard.try_as_alive_mut().unwrap_or_panic_display();
 
         require!(
-            env::predecessor_account_id() == state.state_init.authorizee,
+            env::predecessor_account_id() == state.config.authorizee,
             "Unauthorized authorizee"
         );
 

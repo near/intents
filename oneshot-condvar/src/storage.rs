@@ -15,7 +15,7 @@ pub enum StateMachine {
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct StateInit {
+pub struct Config {
     pub escrow_contract_id: GlobalContractId,
     #[cfg(feature = "auth-call")]
     pub auth_contract: AccountId,
@@ -30,15 +30,15 @@ pub struct StateInit {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct State {
     #[serde(flatten)]
-    pub state_init: StateInit,
+    pub config: Config,
     pub state: StateMachine,
 }
 
 impl State {
     #[inline]
-    pub const fn new(state_init: StateInit) -> Self {
+    pub const fn new(config: Config) -> Self {
         Self {
-            state_init,
+            config,
             state: StateMachine::Idle,
         }
     }
@@ -56,12 +56,12 @@ impl ContractStorage {
     pub(crate) const STATE_KEY: &[u8] = b"";
 
     #[inline]
-    pub const fn init(state_init: StateInit) -> Self {
-        Self(Some(State::new(state_init)))
+    pub const fn init(config: Config) -> Self {
+        Self(Some(State::new(config)))
     }
 
-    pub fn init_state(state_init: StateInit) -> Result<BTreeMap<Vec<u8>, Vec<u8>>, Error> {
-        let storage = Self::init(state_init);
+    pub fn init_state(config: Config) -> Result<BTreeMap<Vec<u8>, Vec<u8>>, Error> {
+        let storage = Self::init(config);
         Ok([(
             Self::STATE_KEY.to_vec(),
             borsh::to_vec(&storage).map_err(Error::Borsh)?,

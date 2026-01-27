@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use crate::tests::defuse::env::Env;
 use defuse_escrow_proxy::CondVarContext;
 use defuse_escrow_proxy::{ProxyConfig, TransferMessage};
-use defuse_oneshot_condvar::storage::{ContractStorage, StateInit as CondVarStateInit};
+use defuse_oneshot_condvar::storage::{Config as CondVarConfig, ContractStorage};
 use defuse_sandbox::extensions::storage_management::StorageManagementExt;
 use defuse_sandbox::{
     EscrowProxyExt, FnCallBuilder, FtExt, FtViewExt, MtExt, MtReceiverStubExt, MtViewExt,
@@ -21,7 +21,7 @@ use near_sdk::{
 /// Derive the oneshot-condvar instance account ID from its state
 pub fn derive_oneshot_condvar_account_id(
     global_contract_id: &GlobalContractId,
-    state: &CondVarStateInit,
+    state: &CondVarConfig,
 ) -> AccountId {
     let raw_state = ContractStorage::init_state(state.clone()).unwrap();
     let state_init = StateInit::V1(StateInitV1 {
@@ -187,7 +187,7 @@ async fn test_transfer_authorized_by_relay() {
     }
     .hash();
 
-    let auth_state = CondVarStateInit {
+    let auth_state = CondVarConfig {
         escrow_contract_id: config.escrow_swap_contract_id.clone(),
         auth_contract: config.auth_contract.clone(),
         notifier_id: config.auth_collee.clone(),
@@ -356,7 +356,7 @@ async fn test_ft_transfer_authorized_by_relay() {
     }
     .hash();
 
-    let auth_state = CondVarStateInit {
+    let auth_state = CondVarConfig {
         escrow_contract_id: config.escrow_swap_contract_id.clone(),
         auth_contract: config.auth_contract.clone(),
         notifier_id: config.auth_collee.clone(),

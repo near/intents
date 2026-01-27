@@ -16,7 +16,7 @@ use defuse::sandbox_ext::signer::DefuseSigner;
 use defuse_core::Nonce;
 use defuse_core::intents::{DefuseIntents, Intent};
 use defuse_core::payload::multi::MultiPayload;
-use defuse_oneshot_condvar::storage::StateInit as CondVarStateInit;
+use defuse_oneshot_condvar::storage::Config as CondVarConfig;
 use defuse_token_id::nep245::Nep245TokenId;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -343,8 +343,8 @@ async fn main() -> Result<()> {
         msg: Cow::Borrowed(&proxy_msg_json),
     };
 
-    // CondVarStateInit defines the state for the oneshot-condvar instance
-    let condvar_state = CondVarStateInit {
+    // CondVarConfig defines the state for the oneshot-condvar instance
+    let condvar_state = CondVarConfig {
         escrow_contract_id: GlobalContractId::AccountId(ESCROW_GLOBAL_REF_ID.parse().unwrap()),
         auth_contract: VERIFIER_CONTRACT.parse().unwrap(),
         notifier_id: root.id().clone(), // relay account that signs the auth

@@ -10,7 +10,7 @@ pub mod event;
 pub mod storage;
 
 pub use error::Error;
-pub use storage::{ContractStorage, State, StateInit, StateMachine};
+pub use storage::{Config, ContractStorage, State, StateMachine};
 
 #[ext_contract(ext_oneshot_condvar)]
 pub trait OneshotCondVar {

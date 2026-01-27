@@ -9,8 +9,8 @@ use serde_json::json;
 
 use crate::{Account, SigningAccount, api::types::transaction::actions::GlobalContractDeployMode};
 
-// Re-export StateInit type for convenience (used to deploy oneshot-condvar instances)
-pub use defuse_oneshot_condvar::storage::StateInit as State;
+// Re-export Config type for convenience (used to deploy oneshot-condvar instances)
+pub use defuse_oneshot_condvar::storage::Config;
 
 pub static ONESHOT_CONDVAR_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
     let filename = Path::new(env!("CARGO_MANIFEST_DIR")).join("../res/defuse_oneshot_condvar.wasm");
@@ -22,7 +22,7 @@ pub trait OneshotCondVarExt {
     async fn deploy_oneshot_condvar_instance(
         &self,
         global_contract_id: AccountId,
-        state: State,
+        config: Config,
     ) -> AccountId;
     async fn get_oneshot_condvar_instance_state(
         &self,
@@ -50,9 +50,9 @@ impl OneshotCondVarExt for SigningAccount {
     async fn deploy_oneshot_condvar_instance(
         &self,
         global_contract_id: AccountId,
-        state: State,
+        config: Config,
     ) -> AccountId {
-        let raw_state = ContractStorage::init_state(state.clone()).unwrap();
+        let raw_state = ContractStorage::init_state(config.clone()).unwrap();
         let solver1_state_init = StateInit::V1(StateInitV1 {
             code: GlobalContractId::AccountId(global_contract_id.clone()),
             data: raw_state.clone(),

@@ -4,7 +4,7 @@ use crate::CondVarContext;
 use defuse_near_utils::promise_result_bool;
 use defuse_oneshot_condvar::{
     CV_WAIT_GAS, ext_oneshot_condvar,
-    storage::{ContractStorage, StateInit as CondVarStateInit},
+    storage::{Config as CondVarConfig, ContractStorage},
 };
 use near_sdk::{
     AccountId, NearToken, Promise, env,
@@ -19,7 +19,7 @@ impl Contract {
         &self,
         msg_hash: [u8; 32],
     ) -> StateInit {
-        let state = CondVarStateInit {
+        let state = CondVarConfig {
             escrow_contract_id: self.config.escrow_swap_contract_id.clone(),
             auth_contract: self.config.auth_contract.clone(),
             notifier_id: self.config.auth_collee.clone(),

@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use defuse_oneshot_condvar::CV_WAIT_GAS;
-use defuse_oneshot_condvar::storage::StateInit as CondVarStateInit;
+use defuse_oneshot_condvar::storage::Config as CondVarConfig;
 use defuse_sandbox::{Account, FnCallBuilder, OneshotCondVarExt, Sandbox};
 use near_sdk::{AccountId, Gas, GlobalContractId, NearToken, serde_json::json};
 
@@ -23,7 +23,7 @@ async fn on_auth_call() {
     )
     .unwrap();
 
-    let state = CondVarStateInit {
+    let state = CondVarConfig {
         escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
@@ -92,7 +92,7 @@ async fn oneshot_condvar_early_notification() {
     )
     .unwrap();
 
-    let state = CondVarStateInit {
+    let state = CondVarConfig {
         escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
@@ -150,7 +150,7 @@ async fn oneshot_condvar_async_notification() {
 
     let network_config = root.network_config().clone();
 
-    let state = CondVarStateInit {
+    let state = CondVarConfig {
         escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
@@ -223,7 +223,7 @@ async fn oneshot_condvar_async_notification_timeout() {
     )
     .unwrap();
 
-    let state = CondVarStateInit {
+    let state = CondVarConfig {
         escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
@@ -271,7 +271,7 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth() {
     )
     .unwrap();
 
-    let state = CondVarStateInit {
+    let state = CondVarConfig {
         escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
@@ -345,7 +345,7 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth2() {
     )
     .unwrap();
 
-    let state = CondVarStateInit {
+    let state = CondVarConfig {
         escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
@@ -417,7 +417,7 @@ async fn test_cv_wait_gas_benchmark() {
 
     let network_config = root.network_config().clone();
 
-    let state = CondVarStateInit {
+    let state = CondVarConfig {
         escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),

@@ -19,9 +19,7 @@ use defuse_escrow_swap::ParamsBuilder;
 use defuse_escrow_swap::action::{FillAction, FundMessageBuilder, TransferAction, TransferMessage};
 use defuse_escrow_swap::decimal::UD128;
 use defuse_escrow_swap::{OverrideSend, Pips, ProtocolFees};
-use defuse_oneshot_condvar::storage::{
-    ContractStorage as CondVarStorage, StateInit as CondVarState,
-};
+use defuse_oneshot_condvar::storage::{Config as CondVarConfig, ContractStorage as CondVarStorage};
 use defuse_sandbox::{EscrowProxyExt, EscrowSwapExt, MtExt, MtViewExt, OneshotCondVarExt};
 use defuse_token_id::TokenId;
 use defuse_token_id::nep245::Nep245TokenId;
@@ -142,7 +140,7 @@ async fn test_proxy_fill_gas_benchmark() {
     }
     .hash();
 
-    let auth_state = CondVarState {
+    let auth_state = CondVarConfig {
         escrow_contract_id: config.escrow_swap_contract_id.clone(),
         auth_contract: env.defuse.id().clone(),
         notifier_id: relay.id().clone(),

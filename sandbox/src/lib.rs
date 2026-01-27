@@ -11,7 +11,7 @@ use tokio::sync::OnceCell;
 
 pub use account::{Account, SigningAccount};
 #[cfg(feature = "condvar")]
-pub use extensions::condvar::{ONESHOT_CONDVAR_WASM, OneshotCondVarExt, State as CondVarState};
+pub use extensions::condvar::{Config as CondVarConfig, ONESHOT_CONDVAR_WASM, OneshotCondVarExt};
 #[cfg(feature = "escrow-proxy")]
 pub use extensions::escrow_proxy::{ESCROW_PROXY_WASM, EscrowProxyExt};
 #[cfg(feature = "escrow-swap")]
