@@ -1,5 +1,7 @@
 mod error;
 
+#[cfg(feature = "imt")]
+pub mod imt;
 #[cfg(feature = "nep141")]
 pub mod nep141;
 #[cfg(feature = "nep171")]
@@ -7,12 +9,18 @@ pub mod nep171;
 #[cfg(feature = "nep245")]
 pub mod nep245;
 
-#[cfg(not(any(feature = "nep141", feature = "nep171", feature = "nep245")))]
+#[cfg(not(any(
+    feature = "nep141",
+    feature = "nep171",
+    feature = "nep245",
+    feature = "imt"
+)))]
 compile_error!(
     r#"At least one of these features should be enabled:
 - "nep141"
 - "nep171"
 - "nep245"
+- "imt"
 "#
 );
 
@@ -66,6 +74,8 @@ pub enum TokenId {
     Nep171(crate::nep171::Nep171TokenId) = 1,
     #[cfg(feature = "nep245")]
     Nep245(crate::nep245::Nep245TokenId) = 2,
+    #[cfg(feature = "imt")]
+    Imt(crate::imt::ImtTokenId) = 3,
 }
 
 impl Debug for TokenId {
@@ -83,6 +93,10 @@ impl Debug for TokenId {
             #[cfg(feature = "nep245")]
             Self::Nep245(token_id) => {
                 write!(f, "{}:{}", TokenIdType::Nep245, token_id)
+            }
+            #[cfg(feature = "imt")]
+            Self::Imt(token_id) => {
+                write!(f, "{}:{}", TokenIdType::Imt, token_id)
             }
         }
     }
@@ -110,6 +124,8 @@ impl FromStr for TokenId {
             TokenIdType::Nep171 => data.parse().map(Self::Nep171),
             #[cfg(feature = "nep245")]
             TokenIdType::Nep245 => data.parse().map(Self::Nep245),
+            #[cfg(feature = "imt")]
+            TokenIdType::Imt => data.parse().map(Self::Imt),
         }
     }
 }
@@ -149,6 +165,11 @@ const _: () = {
                             "mt.near".parse::<AccountId>().unwrap(),
                             "token_id1",
                         )),
+                        #[cfg(feature = "imt")]
+                        TokenId::Imt(crate::imt::ImtTokenId::new(
+                            "imt.near".parse::<AccountId>().unwrap(),
+                            "token_id1",
+                        )),
                     ]
                     .map(|s| s.to_string())
                     .to_vec()
@@ -182,7 +203,7 @@ mod tests {
         feature = "nep245",
         case("nep245:abc:xyz", "02030000006162630300000078797a")
     )]
-
+    #[cfg_attr(feature = "imt", case("imt:abc:xyz", "03030000006162630300000078797a"))]
     fn roundtrip_fixed(#[case] token_id_str: &str, #[case] borsh_expected_hex: &str) {
         let token_id: TokenId = token_id_str.parse().unwrap();
         let borsh_expected = hex::decode(borsh_expected_hex).unwrap();

@@ -51,7 +51,7 @@ container_build_command = [
     "build",
     "non-reproducible-wasm",
     "--locked",
-    "--features=abi,contract",
+    "--features=abi,contract,imt",
     "--no-embed-abi",
 ]
 
@@ -72,6 +72,7 @@ sandbox = [
     "dep:defuse-sandbox",
     "dep:defuse-test-utils",
 ]
+imt = ["defuse-core/imt"]
 
 [dev-dependencies]
 defuse-core = { workspace = true, features = ["arbitrary"] }

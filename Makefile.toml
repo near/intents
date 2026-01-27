@@ -40,7 +40,7 @@ args = [
     "--manifest-path",
     "./defuse/Cargo.toml",
     "--features",
-    "abi,contract",
+    "abi,contract,imt",
     "--out-dir",
     "${TARGET_DIR}",
     "--no-embed-abi",

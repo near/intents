@@ -344,4 +344,19 @@ impl State for Contract {
 
         Ok(())
     }
+
+    #[inline]
+    fn mint(&mut self, owner_id: AccountId, tokens: Amounts, memo: Option<String>) -> Result<()> {
+        self.deposit(owner_id, tokens, memo.as_deref())
+    }
+
+    #[inline]
+    fn burn(
+        &mut self,
+        owner_id: &AccountIdRef,
+        tokens: Amounts,
+        memo: Option<String>,
+    ) -> Result<()> {
+        self.withdraw(owner_id, tokens, memo, false)
+    }
 }

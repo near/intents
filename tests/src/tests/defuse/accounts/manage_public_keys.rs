@@ -41,6 +41,8 @@ async fn test_add_public_key(public_key: PublicKey) {
         )
         .exec_transaction()
         .await
+        .unwrap()
+        .into_result()
         .unwrap();
 
     assert_eq_event_logs!(
@@ -93,6 +95,8 @@ async fn test_add_and_remove_public_key(public_key: PublicKey) {
         )
         .exec_transaction()
         .await
+        .unwrap()
+        .into_result()
         .unwrap();
 
     assert_eq_event_logs!(
