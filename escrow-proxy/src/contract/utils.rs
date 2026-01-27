@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use crate::CondVarContext;
 use defuse_near_utils::promise_result_bool;
 use defuse_oneshot_condvar::{
-    WAIT_GAS, ext_oneshot_condvar,
+    CV_WAIT_GAS, ext_oneshot_condvar,
     storage::{ContractStorage, StateInit as CondVarStateInit},
 };
 use near_sdk::{
@@ -59,7 +59,7 @@ impl Contract {
             .state_init(auth_contract_state_init, NearToken::from_near(0));
 
         ext_oneshot_condvar::ext_on(auth_call)
-            .with_static_gas(WAIT_GAS)
+            .with_static_gas(CV_WAIT_GAS)
             .with_unused_gas_weight(0)
             .cv_wait()
     }

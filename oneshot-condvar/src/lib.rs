@@ -1,7 +1,7 @@
 use near_sdk::{Gas, PromiseOrValue, ext_contract};
 
 /// Gas consumed by `cv_wait` in worst case (wait first, notify later).
-pub const WAIT_GAS: Gas = Gas::from_tgas(7);
+pub const CV_WAIT_GAS: Gas = Gas::from_tgas(7);
 
 #[cfg(feature = "contract")]
 mod contract;

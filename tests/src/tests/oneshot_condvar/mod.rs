@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use defuse_oneshot_condvar::WAIT_GAS;
+use defuse_oneshot_condvar::CV_WAIT_GAS;
 use defuse_oneshot_condvar::storage::StateInit as CondVarStateInit;
 use defuse_sandbox::{Account, FnCallBuilder, OneshotCondVarExt, Sandbox};
 use near_sdk::{AccountId, Gas, GlobalContractId, NearToken, serde_json::json};
@@ -472,7 +472,7 @@ async fn test_cv_wait_gas_benchmark() {
     );
 
     assert!(
-        WAIT_GAS >= total_gas,
-        "WAIT_GAS ({WAIT_GAS:?}) should be >= actual ({total_gas:?})",
+        CV_WAIT_GAS >= total_gas,
+        "CV_WAIT_GAS ({CV_WAIT_GAS:?}) should be >= actual ({total_gas:?})",
     );
 }
