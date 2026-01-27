@@ -3,17 +3,16 @@ mod auth_call;
 mod cleanup;
 
 use defuse_near_utils::UnwrapOrPanicError;
-use near_sdk::{
-    Gas, GasWeight, PanicOnDefault, Promise, PromiseError, PromiseOrValue, env, near, require,
-};
+use near_sdk::{Gas, GasWeight, PanicOnDefault, Promise, PromiseOrValue, env, near, require};
 
 use crate::{
     Error, OneshotCondVar,
     event::Event,
-    storage::{ContractStorage, State, StateInit, StateMachine},
+    storage::{ContractStorage, State, StateMachine},
 };
 
 const EMPTY_JSON: &[u8] = b"{}";
+const ERR_UNAUTHORIZED_CALLER: &str = "Unauthorized caller";
 
 #[near(contract_state(key = ContractStorage::STATE_KEY))]
 #[derive(Debug, PanicOnDefault)]
@@ -63,11 +62,15 @@ impl Contract {
     }
 }
 
-#[near]
 impl Contract {
-    pub(crate) fn do_notify(&mut self) {
-        let mut guard = self.cleanup_guard();
-        let state = guard.try_as_alive_mut().unwrap_or_panic_display();
+    pub(crate) fn verify_caller_and_authorize_contract(
+        caller: &near_sdk::AccountId,
+        state: &mut State,
+    ) {
+        require!(
+            *caller == state.state_init.notifier_id,
+            ERR_UNAUTHORIZED_CALLER
+        );
 
         state.state = match state.state {
             StateMachine::Idle => StateMachine::Authorized,
@@ -141,12 +144,8 @@ impl OneshotCondVar for Contract {
 
     #[payable]
     fn cv_notify_one(&mut self) {
-        let state = self.0.try_as_alive().unwrap_or_panic_display();
-        require!(
-            env::predecessor_account_id() == state.state_init.notifier_id,
-            "Unauthorized signer"
-        );
-
-        self.do_notify();
+        let mut guard = self.cleanup_guard();
+        let state = guard.try_as_alive_mut().unwrap_or_panic_display();
+        Self::verify_caller_and_authorize_contract(&env::predecessor_account_id(), state);
     }
 }
