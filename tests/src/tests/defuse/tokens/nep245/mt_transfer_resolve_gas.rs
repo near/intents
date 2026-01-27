@@ -379,7 +379,7 @@ async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit()
 
     let result_str = format!("{result:?}");
     assert!(
-        result_str.contains("Refund event log would be too long"),
+        result_str.contains("refund event log would be too long"),
         "expected error about refund log limit, got: {result_str}"
     );
 
