@@ -1,5 +1,6 @@
 use crate::{
     engine::deltas::InvariantViolated,
+    intents::tokens::MAX_TOKEN_ID_LEN,
     token_id::{TokenId, TokenIdError, nep171::Nep171TokenId},
 };
 use defuse_crypto::PublicKey;
@@ -75,4 +76,7 @@ pub enum DefuseError {
 
     #[error("maximum attempts to generate a new salt reached")]
     SaltGenerationFailed,
+
+    #[error("token_id is too long: max length is {MAX_TOKEN_ID_LEN}, got {0}")]
+    TokenIdTooLarge(usize),
 }

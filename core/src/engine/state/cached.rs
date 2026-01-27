@@ -374,6 +374,21 @@ where
 
         Ok(())
     }
+
+    #[inline]
+    fn mint(&mut self, owner_id: AccountId, tokens: Amounts, _memo: Option<String>) -> Result<()> {
+        self.internal_add_balance(owner_id, tokens)
+    }
+
+    #[inline]
+    fn burn(
+        &mut self,
+        owner_id: &AccountIdRef,
+        tokens: Amounts,
+        _memo: Option<String>,
+    ) -> Result<()> {
+        self.internal_sub_balance(owner_id, tokens)
+    }
 }
 
 #[derive(Debug, Default)]

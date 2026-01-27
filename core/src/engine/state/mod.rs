@@ -127,4 +127,13 @@ pub trait State: StateView {
     fn set_auth_by_predecessor_id(&mut self, account_id: AccountId, enable: bool) -> Result<bool>;
 
     fn auth_call(&mut self, signer_id: &AccountIdRef, auth_call: AuthCall) -> Result<()>;
+
+    fn mint(&mut self, owner_id: AccountId, tokens: Amounts, memo: Option<String>) -> Result<()>;
+
+    fn burn(
+        &mut self,
+        owner_id: &AccountIdRef,
+        tokens: Amounts,
+        memo: Option<String>,
+    ) -> Result<()>;
 }
