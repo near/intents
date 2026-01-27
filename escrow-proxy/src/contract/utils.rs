@@ -1,8 +1,9 @@
 use std::borrow::Cow;
 
+use crate::CondVarContext;
 use defuse_near_utils::promise_result_bool;
 use defuse_oneshot_condvar::{
-    CondVarContext, WAIT_GAS, ext_oneshot_condvar,
+    WAIT_GAS, ext_oneshot_condvar,
     storage::{ContractStorage, StateInit as CondVarStateInit},
 };
 use near_sdk::{

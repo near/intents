@@ -27,6 +27,7 @@ use anyhow::Result;
 use defuse_core::amounts::Amounts;
 use defuse_core::intents::tokens::{NotifyOnTransfer, Transfer};
 use defuse_deadline::Deadline;
+use defuse_escrow_proxy::CondVarContext;
 use defuse_escrow_proxy::TransferMessage as ProxyTransferMessage;
 use defuse_escrow_swap::ContractStorage as EscrowContractStorage;
 use defuse_escrow_swap::Params;
@@ -34,7 +35,6 @@ use defuse_escrow_swap::action::{
     FillAction, TransferAction, TransferMessage as EscrowTransferMessage,
 };
 use defuse_escrow_swap::decimal::UD128;
-use defuse_oneshot_condvar::CondVarContext;
 use defuse_sandbox::api::{NetworkConfig, SecretKey, Signer};
 use defuse_sandbox::tx::FnCallBuilder;
 use defuse_sandbox::{Account, MtViewExt, SigningAccount};

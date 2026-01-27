@@ -1,9 +1,4 @@
-use std::borrow::Cow;
-
-use defuse_near_utils::UnwrapOrPanicError;
-use near_sdk::{
-    AccountIdRef, Gas, PromiseOrValue, borsh, env, ext_contract, json_types::U128, near,
-};
+use near_sdk::{Gas, PromiseOrValue, ext_contract};
 
 /// Gas consumed by `cv_wait` in worst case (wait first, notify later).
 pub const WAIT_GAS: Gas = Gas::from_tgas(7);
@@ -16,27 +11,6 @@ pub mod storage;
 
 pub use error::Error;
 pub use storage::{ContractStorage, State, StateInit, StateMachine};
-
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone)]
-pub struct CondVarContext<'a> {
-    pub sender_id: Cow<'a, AccountIdRef>,
-    pub token_ids: Cow<'a, [defuse_nep245::TokenId]>,
-    pub amounts: Cow<'a, [U128]>,
-    pub salt: [u8; 32],
-    pub msg: Cow<'a, str>,
-}
-
-impl CondVarContext<'_> {
-    pub fn hash(&self) -> [u8; 32] {
-        let serialized = borsh::to_vec(&self)
-            .map_err(Error::Borsh)
-            .unwrap_or_panic_display();
-        env::keccak256(&serialized)
-            .try_into()
-            .unwrap_or_else(|_| unreachable!())
-    }
-}
 
 #[ext_contract(ext_oneshot_condvar)]
 pub trait OneshotCondVar {

@@ -3,10 +3,10 @@ mod tokens;
 mod upgrade;
 mod utils;
 
+use crate::CondVarContext;
 #[cfg(feature = "escrow-swap")]
 use defuse_escrow_swap::ext_escrow;
 use defuse_near_utils::UnwrapOrPanicError;
-use defuse_oneshot_condvar::CondVarContext;
 #[cfg(feature = "escrow-swap")]
 use near_sdk::state_init::{StateInit, StateInitV1};
 use near_sdk::{

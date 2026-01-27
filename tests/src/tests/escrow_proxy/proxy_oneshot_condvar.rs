@@ -2,8 +2,8 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use crate::tests::defuse::env::Env;
+use defuse_escrow_proxy::CondVarContext;
 use defuse_escrow_proxy::{ProxyConfig, TransferMessage};
-use defuse_oneshot_condvar::CondVarContext;
 use defuse_oneshot_condvar::storage::{ContractStorage, StateInit as CondVarStateInit};
 use defuse_sandbox::extensions::storage_management::StorageManagementExt;
 use defuse_sandbox::{

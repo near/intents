@@ -13,12 +13,12 @@ use defuse_core::Deadline;
 use defuse_core::amounts::Amounts;
 use defuse_core::intents::auth::AuthCall;
 use defuse_core::intents::tokens::{NotifyOnTransfer, Transfer};
+use defuse_escrow_proxy::CondVarContext;
 use defuse_escrow_proxy::{ProxyConfig, TransferMessage as ProxyTransferMessage};
 use defuse_escrow_swap::ParamsBuilder;
 use defuse_escrow_swap::action::{FillAction, FundMessageBuilder, TransferAction, TransferMessage};
 use defuse_escrow_swap::decimal::UD128;
 use defuse_escrow_swap::{OverrideSend, Pips, ProtocolFees};
-use defuse_oneshot_condvar::CondVarContext;
 use defuse_oneshot_condvar::storage::{
     ContractStorage as CondVarStorage, StateInit as CondVarState,
 };

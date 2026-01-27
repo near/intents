@@ -1,15 +1,35 @@
+use std::borrow::Cow;
+
 #[cfg(feature = "contract")]
 mod contract;
 mod message;
 pub mod state;
 
-use near_sdk::ext_contract;
+use near_sdk::{
+    AccountId, AccountIdRef, CryptoHash, borsh, env, ext_contract, json_types::U128, near,
+};
 
 pub use message::*;
 pub use state::ProxyConfig;
 
-use defuse_oneshot_condvar::CondVarContext;
-use near_sdk::{AccountId, CryptoHash, json_types::U128};
+#[near(serializers = [borsh, json])]
+#[derive(Debug, Clone)]
+pub struct CondVarContext<'a> {
+    pub sender_id: Cow<'a, AccountIdRef>,
+    pub token_ids: Cow<'a, [defuse_nep245::TokenId]>,
+    pub amounts: Cow<'a, [U128]>,
+    pub salt: [u8; 32],
+    pub msg: Cow<'a, str>,
+}
+
+impl CondVarContext<'_> {
+    pub fn hash(&self) -> [u8; 32] {
+        let serialized = borsh::to_vec(&self).expect("CondVarContext is always serializable");
+        env::keccak256(&serialized)
+            .try_into()
+            .unwrap_or_else(|_| unreachable!())
+    }
+}
 
 #[ext_contract(ext_escrow_proxy)]
 pub trait EscrowProxy {
