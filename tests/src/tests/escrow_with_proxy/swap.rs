@@ -10,6 +10,8 @@ use std::time::Duration;
 
 use crate::tests::defuse::DefuseSignerExt;
 use crate::tests::defuse::env::Env;
+use crate::utils::escrow_builders::ParamsBuilder;
+use crate::utils::escrow_builders::{FillMessageBuilder, FundMessageBuilder};
 use defuse::sandbox_ext::intents::ExecuteIntentsExt;
 use defuse_core::Deadline;
 use defuse_core::amounts::Amounts;
@@ -17,8 +19,6 @@ use defuse_core::intents::auth::AuthCall;
 use defuse_core::intents::tokens::{NotifyOnTransfer, Transfer};
 use defuse_escrow_proxy::CondVarContext;
 use defuse_escrow_proxy::{ProxyConfig, TransferMessage as ProxyTransferMessage};
-use defuse_escrow_swap::ParamsBuilder;
-use defuse_escrow_swap::action::{FillMessageBuilder, FundMessageBuilder};
 use defuse_oneshot_condvar::storage::{Config as CondVarConfig, ContractStorage as CondVarStorage};
 use defuse_sandbox::{EscrowProxyExt, EscrowSwapExt, MtExt, MtViewExt, OneshotCondVarExt};
 use defuse_token_id::TokenId;

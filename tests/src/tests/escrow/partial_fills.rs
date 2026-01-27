@@ -274,8 +274,8 @@ async fn maybe_view_escrow(escrow: &Account) {
 async fn test_partial_fill_funds_returned_after_timeout() {
     use super::EscrowExt;
     use crate::tests::defuse::env::Env as DefuseEnv;
-    use defuse_escrow_swap::ParamsBuilder;
-    use defuse_escrow_swap::action::{FillMessageBuilder, FundMessageBuilder};
+    use crate::utils::escrow_builders::ParamsBuilder;
+    use crate::utils::escrow_builders::{FillMessageBuilder, FundMessageBuilder};
     use defuse_escrow_swap::decimal::UD128;
     use defuse_sandbox::{EscrowSwapExt, MtExt, MtViewExt};
 
