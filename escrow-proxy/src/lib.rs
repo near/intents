@@ -6,7 +6,8 @@ mod message;
 pub mod state;
 
 use near_sdk::{
-    AccountId, AccountIdRef, CryptoHash, borsh, env, ext_contract, json_types::U128, near,
+    AccountId, AccountIdRef, CryptoHash, GlobalContractId, borsh, env, ext_contract,
+    json_types::U128, near,
 };
 
 pub use message::*;
@@ -15,6 +16,7 @@ pub use state::ProxyConfig;
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
 pub struct CondVarContext<'a> {
+    pub escrow_contract_id: Cow<'a, GlobalContractId>,
     pub sender_id: Cow<'a, AccountIdRef>,
     pub token_ids: Cow<'a, [defuse_nep245::TokenId]>,
     pub amounts: Cow<'a, [U128]>,

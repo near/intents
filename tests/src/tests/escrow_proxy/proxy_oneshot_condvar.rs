@@ -179,6 +179,7 @@ async fn test_transfer_authorized_by_relay() {
     // Derive the transfer-auth instance address (same logic as proxy uses)
     // The hash is computed from CondVarContext, not the message itself
     let context_hash = CondVarContext {
+        escrow_contract_id: Cow::Borrowed(&config.escrow_swap_contract_id),
         sender_id: Cow::Borrowed(solver.id()),
         token_ids: Cow::Owned(vec![token_id.to_string()]),
         amounts: Cow::Owned(vec![U128(proxy_transfer_amount)]),
@@ -188,7 +189,6 @@ async fn test_transfer_authorized_by_relay() {
     .hash();
 
     let auth_state = CondVarConfig {
-        escrow_contract_id: config.escrow_swap_contract_id.clone(),
         auth_contract: config.auth_contract.clone(),
         notifier_id: config.auth_collee.clone(),
         authorizee: proxy.id().clone(),
@@ -348,6 +348,7 @@ async fn test_ft_transfer_authorized_by_relay() {
     // Derive the transfer-auth instance address (same logic as proxy uses)
     // For FT, token_ids is a single-element vec with the FT contract account as string
     let context_hash = CondVarContext {
+        escrow_contract_id: Cow::Borrowed(&config.escrow_swap_contract_id),
         sender_id: Cow::Borrowed(solver.id()),
         token_ids: Cow::Owned(vec![ft_token.id().to_string()]),
         amounts: Cow::Owned(vec![U128(proxy_transfer_amount)]),
@@ -357,7 +358,6 @@ async fn test_ft_transfer_authorized_by_relay() {
     .hash();
 
     let auth_state = CondVarConfig {
-        escrow_contract_id: config.escrow_swap_contract_id.clone(),
         auth_contract: config.auth_contract.clone(),
         notifier_id: config.auth_collee.clone(),
         authorizee: proxy.id().clone(),

@@ -15,12 +15,8 @@ use near_sdk::{
 use super::Contract;
 
 impl Contract {
-    pub(crate) fn get_deterministic_transfer_auth_state_init(
-        &self,
-        salt: [u8; 32],
-    ) -> StateInit {
+    pub(crate) fn get_deterministic_transfer_auth_state_init(&self, salt: [u8; 32]) -> StateInit {
         let state = CondVarConfig {
-            escrow_contract_id: self.config.escrow_swap_contract_id.clone(),
             auth_contract: self.config.auth_contract.clone(),
             notifier_id: self.config.auth_collee.clone(),
             authorizee: env::current_account_id(),
@@ -44,6 +40,7 @@ impl Contract {
         msg: &str,
     ) -> Promise {
         let context_hash = CondVarContext {
+            escrow_contract_id: Cow::Borrowed(&self.config.escrow_swap_contract_id),
             sender_id: Cow::Borrowed(sender_id),
             token_ids: Cow::Borrowed(token_ids),
             amounts: Cow::Borrowed(amounts),

@@ -3,7 +3,7 @@ use std::time::Duration;
 use defuse_oneshot_condvar::CV_WAIT_GAS;
 use defuse_oneshot_condvar::storage::Config as CondVarConfig;
 use defuse_sandbox::{Account, FnCallBuilder, OneshotCondVarExt, Sandbox};
-use near_sdk::{AccountId, Gas, GlobalContractId, NearToken, serde_json::json};
+use near_sdk::{AccountId, Gas, NearToken, serde_json::json};
 
 const INIT_BALANCE: NearToken = NearToken::from_near(100);
 
@@ -15,8 +15,7 @@ async fn on_auth_call() {
 
     let condvar_global = root.deploy_oneshot_condvar("auth").await;
 
-    let (escrow, auth_contract, relay, proxy) = futures::try_join!(
-        root.generate_subaccount("escrow", INIT_BALANCE),
+    let (auth_contract, relay, proxy) = futures::try_join!(
         root.generate_subaccount("auth-contract", INIT_BALANCE),
         root.generate_subaccount("auth-callee", INIT_BALANCE),
         root.generate_subaccount("proxy", INIT_BALANCE),
@@ -24,7 +23,6 @@ async fn on_auth_call() {
     .unwrap();
 
     let state = CondVarConfig {
-        escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
@@ -84,8 +82,7 @@ async fn oneshot_condvar_early_notification() {
 
     let condvar_global = root.deploy_oneshot_condvar("auth").await;
 
-    let (escrow, auth_contract, relay, proxy) = futures::try_join!(
-        root.generate_subaccount("escrow", INIT_BALANCE),
+    let (auth_contract, relay, proxy) = futures::try_join!(
         root.generate_subaccount("auth-contract", INIT_BALANCE),
         root.generate_subaccount("auth-callee", INIT_BALANCE),
         root.generate_subaccount("proxy", INIT_BALANCE),
@@ -93,7 +90,6 @@ async fn oneshot_condvar_early_notification() {
     .unwrap();
 
     let state = CondVarConfig {
-        escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
@@ -140,8 +136,7 @@ async fn oneshot_condvar_async_notification() {
 
     let condvar_global = root.deploy_oneshot_condvar("auth").await;
 
-    let (escrow, auth_contract, relay, proxy) = futures::try_join!(
-        root.generate_subaccount("escrow", INIT_BALANCE),
+    let (auth_contract, relay, proxy) = futures::try_join!(
         root.generate_subaccount("auth-contract", INIT_BALANCE),
         root.generate_subaccount("auth-callee", INIT_BALANCE),
         root.generate_subaccount("proxy", INIT_BALANCE),
@@ -151,7 +146,6 @@ async fn oneshot_condvar_async_notification() {
     let network_config = root.network_config().clone();
 
     let state = CondVarConfig {
-        escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
@@ -215,8 +209,7 @@ async fn oneshot_condvar_async_notification_timeout() {
 
     let condvar_global = root.deploy_oneshot_condvar("auth").await;
 
-    let (escrow, auth_contract, relay, proxy) = futures::try_join!(
-        root.generate_subaccount("escrow", INIT_BALANCE),
+    let (auth_contract, relay, proxy) = futures::try_join!(
         root.generate_subaccount("auth-contract", INIT_BALANCE),
         root.generate_subaccount("auth-callee", INIT_BALANCE),
         root.generate_subaccount("proxy", INIT_BALANCE),
@@ -224,7 +217,6 @@ async fn oneshot_condvar_async_notification_timeout() {
     .unwrap();
 
     let state = CondVarConfig {
-        escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
@@ -263,8 +255,7 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth() {
 
     let condvar_global = root.deploy_oneshot_condvar("auth").await;
 
-    let (escrow, auth_contract, relay, proxy) = futures::try_join!(
-        root.generate_subaccount("escrow", INIT_BALANCE),
+    let (auth_contract, relay, proxy) = futures::try_join!(
         root.generate_subaccount("auth-contract", INIT_BALANCE),
         root.generate_subaccount("auth-callee", INIT_BALANCE),
         root.generate_subaccount("proxy", INIT_BALANCE),
@@ -272,7 +263,6 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth() {
     .unwrap();
 
     let state = CondVarConfig {
-        escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
@@ -337,8 +327,7 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth2() {
 
     let condvar_global = root.deploy_oneshot_condvar("auth").await;
 
-    let (escrow, auth_contract, relay, proxy) = futures::try_join!(
-        root.generate_subaccount("escrow", INIT_BALANCE),
+    let (auth_contract, relay, proxy) = futures::try_join!(
         root.generate_subaccount("auth-contract", INIT_BALANCE),
         root.generate_subaccount("auth-callee", INIT_BALANCE),
         root.generate_subaccount("proxy", INIT_BALANCE),
@@ -346,7 +335,6 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth2() {
     .unwrap();
 
     let state = CondVarConfig {
-        escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
@@ -407,8 +395,7 @@ async fn test_cv_wait_gas_benchmark() {
 
     let condvar_global = root.deploy_oneshot_condvar("auth").await;
 
-    let (escrow, auth_contract, relay, proxy) = futures::try_join!(
-        root.generate_subaccount("escrow", INIT_BALANCE),
+    let (auth_contract, relay, proxy) = futures::try_join!(
         root.generate_subaccount("auth-contract", INIT_BALANCE),
         root.generate_subaccount("auth-callee", INIT_BALANCE),
         root.generate_subaccount("proxy", INIT_BALANCE),
@@ -418,7 +405,6 @@ async fn test_cv_wait_gas_benchmark() {
     let network_config = root.network_config().clone();
 
     let state = CondVarConfig {
-        escrow_contract_id: GlobalContractId::AccountId(escrow.id().clone()),
         auth_contract: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),

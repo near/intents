@@ -1,6 +1,6 @@
 use near_sdk::{Promise, env};
 
-use crate::{Status, ContractStorage, Error, State, event::Event};
+use crate::{ContractStorage, Error, State, Status, event::Event};
 
 use super::Contract;
 

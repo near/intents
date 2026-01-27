@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::error::Error;
-use near_sdk::{AccountId, GlobalContractId, YieldId, borsh, near};
+use near_sdk::{AccountId, YieldId, borsh, near};
 use serde_with::{hex::Hex, serde_as};
 
 #[near(serializers = [borsh, json])]
@@ -16,7 +16,6 @@ pub enum Status {
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Config {
-    pub escrow_contract_id: GlobalContractId,
     #[cfg(feature = "auth-call")]
     pub auth_contract: AccountId,
     pub notifier_id: AccountId,

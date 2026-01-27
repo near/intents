@@ -8,7 +8,7 @@ use near_sdk::{Gas, GasWeight, PanicOnDefault, Promise, PromiseOrValue, env, nea
 use crate::{
     Error, OneshotCondVar,
     event::Event,
-    storage::{Status, ContractStorage, State},
+    storage::{ContractStorage, State, Status},
 };
 
 const EMPTY_JSON: &[u8] = b"{}";
