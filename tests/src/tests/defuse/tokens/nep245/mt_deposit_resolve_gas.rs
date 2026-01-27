@@ -4,13 +4,13 @@ use crate::tests::defuse::{
     tokens::nep245::letter_gen::LetterCombinations,
 };
 use anyhow::Context;
-use defuse::nep245::TOTAL_LOG_LENGTH_LIMIT;
 use defuse::{
     core::intents::tokens::NotifyOnTransfer,
     nep245::{MtBurnEvent, MtEvent, MtMintEvent},
     tokens::{DepositAction, DepositMessage},
 };
 use defuse_near_utils::REFUND_MEMO;
+use defuse_near_utils::TOTAL_LOG_LENGTH_LIMIT;
 use defuse_randomness::Rng;
 use defuse_sandbox::{SigningAccount, extensions::mt::MtExt};
 use defuse_test_utils::random::{gen_random_string, rng};

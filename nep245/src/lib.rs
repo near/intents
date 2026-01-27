@@ -8,6 +8,11 @@ mod token;
 
 use near_sdk::{AccountId, json_types::U128};
 
-pub use self::{checked::*, core::*, events::*, token::*};
+pub use self::{
+    checked::{ErrorLogTooLong, RefundCheckedMtEvent},
+    core::*,
+    events::*,
+    token::*,
+};
 
 pub type ClearedApproval = (AccountId, u64, U128);

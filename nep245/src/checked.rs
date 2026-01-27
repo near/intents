@@ -1,15 +1,13 @@
+use crate::MtEvent;
 use defuse_near_utils::REFUND_MEMO;
 use near_sdk::FunctionError;
 
-pub use defuse_near_utils::TOTAL_LOG_LENGTH_LIMIT;
-
 #[derive(Debug, Clone, PartialEq, Eq, FunctionError, thiserror::Error)]
 #[error("refund event log would be too long")]
-pub struct ErrorLogTooLong {}
+pub struct ErrorLogTooLong;
 
 const REFUND_STR_LEN: usize = REFUND_MEMO.len();
-#[allow(clippy::redundant_pub_crate)]
-pub(crate) const REFUND_EXTRA_BYTES: usize = r#","memo":""#.len() + REFUND_STR_LEN;
+pub const REFUND_EXTRA_BYTES: usize = r#","memo":""#.len() + REFUND_STR_LEN;
 
 #[derive(Default, Clone, Copy)]
 #[must_use]
@@ -42,7 +40,7 @@ impl RefundLogDelta {
     }
 }
 
-pub const fn refund_log_delta(memo: Option<&str>) -> RefundLogDelta {
+const fn refund_log_delta(memo: Option<&str>) -> RefundLogDelta {
     let Some(m) = memo else {
         return RefundLogDelta {
             overhead: REFUND_EXTRA_BYTES,
@@ -53,6 +51,25 @@ pub const fn refund_log_delta(memo: Option<&str>) -> RefundLogDelta {
         REFUND_STR_LEN.saturating_sub(m.len()),
         m.len().saturating_sub(REFUND_STR_LEN),
     )
+}
+
+impl MtEvent<'_> {
+    pub fn compute_refund_delta(&self) -> RefundLogDelta {
+        match self {
+            MtEvent::MtMint(events) => events
+                .iter()
+                .map(|e| refund_log_delta(e.memo.as_deref()))
+                .fold(RefundLogDelta::default(), RefundLogDelta::saturating_add),
+            MtEvent::MtBurn(events) => events
+                .iter()
+                .map(|e| refund_log_delta(e.memo.as_deref()))
+                .fold(RefundLogDelta::default(), RefundLogDelta::saturating_add),
+            MtEvent::MtTransfer(events) => events
+                .iter()
+                .map(|e| refund_log_delta(e.memo.as_deref()))
+                .fold(RefundLogDelta::default(), RefundLogDelta::saturating_add),
+        }
+    }
 }
 
 /// A validated event log that has been checked for refund overhead.
