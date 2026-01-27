@@ -19,6 +19,13 @@ pub struct RefundLogDelta {
 }
 
 impl RefundLogDelta {
+    pub const fn new(overhead: usize, savings: usize) -> Self {
+        Self {
+            overhead: overhead.saturating_sub(savings),
+            savings: savings.saturating_sub(overhead),
+        }
+    }
+
     pub const fn overhead(&self) -> usize {
         self.overhead
     }
@@ -27,12 +34,6 @@ impl RefundLogDelta {
         self.savings
     }
 
-    pub const fn new(overhead: usize, savings: usize) -> Self {
-        Self {
-            overhead: overhead.saturating_sub(savings),
-            savings: savings.saturating_sub(overhead),
-        }
-    }
 
     pub const fn saturating_add(self, other: Self) -> Self {
         Self::new(
