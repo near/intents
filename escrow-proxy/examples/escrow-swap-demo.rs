@@ -349,7 +349,7 @@ async fn main() -> Result<()> {
         auth_contract: VERIFIER_CONTRACT.parse().unwrap(),
         notifier_id: root.id().clone(), // relay account that signs the auth
         authorizee: PROXY.parse().unwrap(),
-        msg_hash: condvar_context.hash(),
+        salt: condvar_context.hash(),
     };
 
     // Build state_init for deploying oneshot-condvar instance

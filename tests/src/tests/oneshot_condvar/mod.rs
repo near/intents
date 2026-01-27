@@ -28,7 +28,7 @@ async fn on_auth_call() {
         auth_contract: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
-        msg_hash: [0; 32],
+        salt: [0; 32],
     };
 
     let condvar_instance = root
@@ -97,7 +97,7 @@ async fn oneshot_condvar_early_notification() {
         auth_contract: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
-        msg_hash: [0; 32],
+        salt: [0; 32],
     };
 
     let condvar_instance = root
@@ -155,7 +155,7 @@ async fn oneshot_condvar_async_notification() {
         auth_contract: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
-        msg_hash: [0; 32],
+        salt: [0; 32],
     };
 
     let condvar_instance = root
@@ -228,7 +228,7 @@ async fn oneshot_condvar_async_notification_timeout() {
         auth_contract: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
-        msg_hash: [0; 32],
+        salt: [0; 32],
     };
 
     let condvar_instance = root
@@ -276,7 +276,7 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth() {
         auth_contract: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
-        msg_hash: [0; 32],
+        salt: [0; 32],
     };
 
     let condvar_instance = root
@@ -350,7 +350,7 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth2() {
         auth_contract: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
-        msg_hash: [0; 32],
+        salt: [0; 32],
     };
 
     let condvar_instance = root
@@ -422,7 +422,7 @@ async fn test_cv_wait_gas_benchmark() {
         auth_contract: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
-        msg_hash: [0; 32],
+        salt: [0; 32],
     };
 
     let condvar_instance = root

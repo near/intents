@@ -17,14 +17,14 @@ use super::Contract;
 impl Contract {
     pub(crate) fn get_deterministic_transfer_auth_state_init(
         &self,
-        msg_hash: [u8; 32],
+        salt: [u8; 32],
     ) -> StateInit {
         let state = CondVarConfig {
             escrow_contract_id: self.config.escrow_swap_contract_id.clone(),
             auth_contract: self.config.auth_contract.clone(),
             notifier_id: self.config.auth_collee.clone(),
             authorizee: env::current_account_id(),
-            msg_hash,
+            salt,
         };
 
         StateInit::V1(StateInitV1 {

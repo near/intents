@@ -22,7 +22,7 @@ pub struct Config {
     pub notifier_id: AccountId,
     pub authorizee: AccountId,
     #[serde_as(as = "Hex")]
-    pub msg_hash: [u8; 32],
+    pub salt: [u8; 32],
 }
 
 /// The actual state data containing initialization params and state machine

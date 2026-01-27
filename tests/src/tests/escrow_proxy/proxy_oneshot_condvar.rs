@@ -192,7 +192,7 @@ async fn test_transfer_authorized_by_relay() {
         auth_contract: config.auth_contract.clone(),
         notifier_id: config.auth_collee.clone(),
         authorizee: proxy.id().clone(),
-        msg_hash: context_hash,
+        salt: context_hash,
     };
     let condvar_instance_id = derive_oneshot_condvar_account_id(
         &GlobalContractId::AccountId(condvar_global.clone()),
@@ -361,7 +361,7 @@ async fn test_ft_transfer_authorized_by_relay() {
         auth_contract: config.auth_contract.clone(),
         notifier_id: config.auth_collee.clone(),
         authorizee: proxy.id().clone(),
-        msg_hash: context_hash,
+        salt: context_hash,
     };
     let condvar_instance_id = derive_oneshot_condvar_account_id(
         &GlobalContractId::AccountId(condvar_global.clone()),

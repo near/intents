@@ -125,7 +125,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         auth_contract: env.defuse.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
-        msg_hash: context_hash,
+        salt: context_hash,
     };
     let condvar_raw_state = CondVarStorage::init_state(auth_state.clone()).unwrap();
     let condvar_state_init = StateInit::V1(StateInitV1 {

@@ -145,7 +145,7 @@ async fn test_proxy_fill_gas_benchmark() {
         auth_contract: env.defuse.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
-        msg_hash: context_hash,
+        salt: context_hash,
     };
     let condvar_raw_state = CondVarStorage::init_state(auth_state.clone()).unwrap();
     let condvar_state_init = StateInit::V1(StateInitV1 {
