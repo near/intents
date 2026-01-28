@@ -54,10 +54,10 @@ async fn test_proxy_returns_funds_on_timeout_of_authorization() {
     // Setup proxy
     let config = ProxyConfig {
         owner: proxy.id().clone(),
-        per_fill_contract_id: GlobalContractId::AccountId(condvar_global.clone()),
+        oneshot_condvar_global_id: GlobalContractId::AccountId(condvar_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(mt_receiver_global.clone()),
         auth_contract: env.defuse.id().clone(),
-        auth_collee: relay.id().clone(),
+        notifier: relay.id().clone(),
     };
 
     proxy.deploy_escrow_proxy(config).await.unwrap();
@@ -127,10 +127,10 @@ async fn test_transfer_authorized_by_relay() {
     // Use root as auth_contract since we need signing capability for on_auth call
     let config = ProxyConfig {
         owner: proxy.id().clone(),
-        per_fill_contract_id: GlobalContractId::AccountId(condvar_global.clone()),
+        oneshot_condvar_global_id: GlobalContractId::AccountId(condvar_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(mt_receiver_global.clone()),
         auth_contract: env.root().id().clone(),
-        auth_collee: relay.id().clone(),
+        notifier: relay.id().clone(),
     };
 
     proxy.deploy_escrow_proxy(config.clone()).await.unwrap();
@@ -190,7 +190,7 @@ async fn test_transfer_authorized_by_relay() {
 
     let auth_state = CondVarConfig {
         auth_contract: config.auth_contract.clone(),
-        notifier_id: config.auth_collee.clone(),
+        notifier_id: config.notifier.clone(),
         authorizee: proxy.id().clone(),
         salt: context_hash,
     };
@@ -284,10 +284,10 @@ async fn test_ft_transfer_authorized_by_relay() {
     // Use root as auth_contract since we need signing capability for on_auth call
     let config = ProxyConfig {
         owner: proxy.id().clone(),
-        per_fill_contract_id: GlobalContractId::AccountId(condvar_global.clone()),
+        oneshot_condvar_global_id: GlobalContractId::AccountId(condvar_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(ft_receiver_global.clone()),
         auth_contract: env.root().id().clone(),
-        auth_collee: relay.id().clone(),
+        notifier: relay.id().clone(),
     };
 
     proxy.deploy_escrow_proxy(config.clone()).await.unwrap();
@@ -359,7 +359,7 @@ async fn test_ft_transfer_authorized_by_relay() {
 
     let auth_state = CondVarConfig {
         auth_contract: config.auth_contract.clone(),
-        notifier_id: config.auth_collee.clone(),
+        notifier_id: config.notifier.clone(),
         authorizee: proxy.id().clone(),
         salt: context_hash,
     };

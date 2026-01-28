@@ -61,10 +61,10 @@ async fn test_proxy_fill_gas_benchmark() {
 
     let config = ProxyConfig {
         owner: proxy.id().clone(),
-        per_fill_contract_id: GlobalContractId::AccountId(condvar_global.clone()),
+        oneshot_condvar_global_id: GlobalContractId::AccountId(condvar_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(escrow_swap_global.clone()),
         auth_contract: env.defuse.id().clone(),
-        auth_collee: relay.id().clone(),
+        notifier: relay.id().clone(),
     };
     proxy.deploy_escrow_proxy(config.clone()).await.unwrap();
 

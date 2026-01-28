@@ -53,10 +53,10 @@ async fn test_escrow_swap_with_proxy_full_flow() {
 
     let config = ProxyConfig {
         owner: proxy.id().clone(),
-        per_fill_contract_id: GlobalContractId::AccountId(condvar_global.clone()),
+        oneshot_condvar_global_id: GlobalContractId::AccountId(condvar_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(escrow_swap_global.clone()),
         auth_contract: env.defuse.id().clone(),
-        auth_collee: relay.id().clone(),
+        notifier: relay.id().clone(),
     };
     proxy.deploy_escrow_proxy(config.clone()).await.unwrap();
 
@@ -204,12 +204,12 @@ async fn test_escrow_proxy_can_cancel_before_deadline() {
     // Deploy proxy with root as owner (can call cancel_escrow)
     let config = ProxyConfig {
         owner: env.root().id().clone(),
-        // NOTE: per_fill_contract_id is only used for fill operations.
+        // NOTE: oneshot_condvar_global_id is only used for fill operations.
         // This cancel test doesn't exercise fills, so using escrow_swap_global is acceptable.
-        per_fill_contract_id: GlobalContractId::AccountId(escrow_swap_global.clone()),
+        oneshot_condvar_global_id: GlobalContractId::AccountId(escrow_swap_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(escrow_swap_global.clone()),
         auth_contract: env.defuse.id().clone(),
-        auth_collee: env.root().id().clone(), // not used for cancel
+        notifier: env.root().id().clone(), // not used for cancel
     };
     proxy.deploy_escrow_proxy(config).await.unwrap();
 

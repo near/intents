@@ -17,8 +17,8 @@ async fn escrow_proxy_deployment_and_config() {
 
     let config = ProxyConfig {
         owner: proxy.id().clone(),
-        per_fill_contract_id: GlobalContractId::AccountId(
-            root.sub_account("per_fill_contract_id")
+        oneshot_condvar_global_id: GlobalContractId::AccountId(
+            root.sub_account("oneshot_condvar_global_id")
                 .unwrap()
                 .id()
                 .clone(),
@@ -30,7 +30,7 @@ async fn escrow_proxy_deployment_and_config() {
                 .clone(),
         ),
         auth_contract: root.sub_account("auth_contract").unwrap().id().clone(),
-        auth_collee: root.sub_account("auth_collee").unwrap().id().clone(),
+        notifier: root.sub_account("notifier").unwrap().id().clone(),
     };
 
     proxy.deploy_escrow_proxy(config.clone()).await.unwrap();
@@ -52,8 +52,8 @@ async fn owner_configuration() {
 
     let config = ProxyConfig {
         owner: owner.id().clone(),
-        per_fill_contract_id: GlobalContractId::AccountId(
-            root.sub_account("per_fill_contract_id")
+        oneshot_condvar_global_id: GlobalContractId::AccountId(
+            root.sub_account("oneshot_condvar_global_id")
                 .unwrap()
                 .id()
                 .clone(),
@@ -65,7 +65,7 @@ async fn owner_configuration() {
                 .clone(),
         ),
         auth_contract: root.sub_account("auth_contract").unwrap().id().clone(),
-        auth_collee: root.sub_account("auth_collee").unwrap().id().clone(),
+        notifier: root.sub_account("notifier").unwrap().id().clone(),
     };
 
     proxy_account.deploy_escrow_proxy(config).await.unwrap();

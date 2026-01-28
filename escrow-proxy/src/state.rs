@@ -4,8 +4,8 @@ use near_sdk::{AccountId, GlobalContractId, near};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProxyConfig {
     pub owner: AccountId,
-    pub per_fill_contract_id: GlobalContractId,
+    pub oneshot_condvar_global_id: GlobalContractId,
     pub escrow_swap_contract_id: GlobalContractId,
     pub auth_contract: AccountId,
-    pub auth_collee: AccountId,
+    pub notifier: AccountId,
 }

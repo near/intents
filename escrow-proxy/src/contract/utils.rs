@@ -17,13 +17,13 @@ impl Contract {
     pub(crate) fn get_deterministic_transfer_auth_state_init(&self, salt: [u8; 32]) -> StateInit {
         let state = CondVarConfig {
             auth_contract: self.config.auth_contract.clone(),
-            notifier_id: self.config.auth_collee.clone(),
+            notifier_id: self.config.notifier.clone(),
             authorizee: env::current_account_id(),
             salt,
         };
 
         StateInit::V1(StateInitV1 {
-            code: self.config.per_fill_contract_id.clone(),
+            code: self.config.oneshot_condvar_global_id.clone(),
             data: ContractStorage::init_state(state).unwrap(),
         })
     }
