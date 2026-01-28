@@ -47,3 +47,8 @@ strum.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 tlb-ton = { workspace = true, features = ["arbitrary"] }
 defuse-nep245.workspace = true
+
+[build-dependencies]
+xtask.workspace = true
+# cargo-near-build = { workspace = true, features = ["build_external", "docker"] }
+# cargo-near-build.workspace = true
