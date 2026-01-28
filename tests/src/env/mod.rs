@@ -3,36 +3,36 @@
 mod builder;
 mod state;
 mod storage;
+mod wasms;
 
-use super::DefuseSignerExt;
-use crate::tests::defuse::env::builder::EnvBuilder;
-use anyhow::{Ok, Result, anyhow};
-use arbitrary::Unstructured;
-use defuse::sandbox_ext::{
-    account_manager::{AccountManagerExt, AccountViewExt},
-    tokens::nep141::DefuseFtDepositor,
-};
-use defuse::{
-    core::{Deadline, ExpirableNonce, Nonce, Salt, SaltedNonce, VersionedNonce},
+pub use wasms::*;
+
+use crate::env::builder::EnvBuilder;
+
+use crate::extensions::defuse::contract::{
+    core::{Deadline, Nonce},
     tokens::{DepositAction, DepositMessage},
 };
-use defuse_poa_factory::sandbox_ext::PoAFactoryExt;
+use crate::extensions::{
+    defuse::{
+        account_manager::{AccountManagerExt, AccountViewExt},
+        nonce::generate_unique_nonce,
+        tokens::nep141::DefuseFtDepositor,
+    },
+    poa::PoAFactoryExt,
+};
+use anyhow::{Ok, Result, anyhow};
+use arbitrary::Unstructured;
 use defuse_randomness::{Rng, make_true_rng};
 use defuse_sandbox::extensions::storage_management::StorageManagementExt;
-use defuse_sandbox::tx::FnCallBuilder;
-use defuse_sandbox::{Account, Sandbox, SigningAccount, read_wasm};
+use defuse_sandbox::{Account, Sandbox, SigningAccount};
 use defuse_test_utils::random::{Seed, rng};
 use futures::future::try_join_all;
 use impl_tools::autoimpl;
-use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::AccountIdRef;
 use near_sdk::{AccountId, NearToken, account_id::arbitrary::ArbitraryNamedAccountId, env::sha256};
 
-use std::sync::LazyLock;
 use std::sync::atomic::{AtomicUsize, Ordering};
-
-pub static MT_RECEIVER_STUB_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm("res/multi-token-receiver-stub/multi_token_receiver_stub"));
 
 const TOKEN_STORAGE_DEPOSIT: NearToken = NearToken::from_near(1);
 const INITIAL_USER_BALANCE: NearToken = NearToken::from_near(10);
@@ -65,13 +65,12 @@ impl Env {
         Self::builder().build().await
     }
 
-    pub fn root(&self) -> &SigningAccount {
+    pub const fn root(&self) -> &SigningAccount {
         self.sandbox.root()
     }
 
     pub async fn get_unique_nonce(&self, deadline: Option<Deadline>) -> anyhow::Result<Nonce> {
-        let root = self.root();
-        root.unique_nonce(&self.defuse, deadline).await
+        generate_unique_nonce(&self.defuse, deadline).await
     }
 
     pub async fn defuse_ft_deposit_to(
@@ -247,19 +246,6 @@ impl Env {
             .map(|_| ())
     }
 
-    pub async fn deploy_mt_receiver_stub(&self) -> SigningAccount {
-        self.sandbox()
-            .root()
-            .deploy_sub_contract(
-                "mt_receiver_stub",
-                NearToken::from_near(100),
-                MT_RECEIVER_STUB_WASM.to_vec(),
-                None::<FnCallBuilder>,
-            )
-            .await
-            .unwrap()
-    }
-
     pub async fn near_balance(&self, account: &Account) -> NearToken {
         account.view().await.unwrap().amount
     }
@@ -268,28 +254,9 @@ impl Env {
         &self.sandbox
     }
 
-    pub fn sandbox_mut(&mut self) -> &mut Sandbox {
+    pub const fn sandbox_mut(&mut self) -> &mut Sandbox {
         &mut self.sandbox
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct TransferCallExpectation {
-    pub mode: MTReceiverMode,
-    pub intent_transfer_amount: Option<u128>,
-    pub expected_sender_balance: u128,
-    pub expected_receiver_balance: u128,
-}
-
-pub fn create_random_salted_nonce(salt: Salt, deadline: Deadline, mut rng: impl Rng) -> Nonce {
-    VersionedNonce::V1(SaltedNonce::new(
-        salt,
-        ExpirableNonce {
-            deadline,
-            nonce: rng.random::<[u8; 15]>(),
-        },
-    ))
-    .into()
 }
 
 fn generate_random_account_id(parent_id: &AccountId) -> Result<AccountId> {

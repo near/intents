@@ -1,4 +1,4 @@
-use defuse::core::fees::Pips;
+use crate::extensions::defuse::contract::core::fees::Pips;
 use defuse_randomness::Rng;
 use defuse_test_utils::random::rng;
 use near_sdk::borsh;

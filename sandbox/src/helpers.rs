@@ -1,22 +1,6 @@
 use near_api::types::transaction::result::{ExecutionOutcome, ValueOrReceiptId};
 use std::fmt::Debug;
 
-use std::{fs, path::Path};
-
-pub fn read_wasm(name: impl AsRef<Path>) -> Vec<u8> {
-    let filename = fs::canonicalize(
-        Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../")
-            .join(name)
-            .with_extension("wasm"),
-    )
-    .unwrap_or_else(|e| panic!("Failed to canonicalize path: {e}"));
-
-    println!("Reading WASM file at {filename:?}");
-
-    fs::read(&filename).unwrap_or_else(|e| panic!("Failed to read WASM file at {filename:?}: {e}"))
-}
-
 pub struct TestExecutionOutcome<'a>(&'a ExecutionOutcome);
 
 impl Debug for TestExecutionOutcome<'_> {

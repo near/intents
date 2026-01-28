@@ -1,4 +1,4 @@
-use crate::tests::defuse::{env::Env, tokens::nep245::letter_gen::LetterCombinations};
+use crate::tests::defuse::tokens::nep245::letter_gen::LetterCombinations;
 use anyhow::Context;
 use arbitrary::Arbitrary;
 use defuse::{
@@ -9,11 +9,15 @@ use defuse::{
     nep245::{MtEvent, MtTransferEvent},
 };
 use defuse_randomness::Rng;
-use defuse_sandbox::{
-    SigningAccount,
-    extensions::mt::{MtExt, MtViewExt},
+
+use crate::{
+    env::Env,
+    sandbox::{
+        SigningAccount,
+        extensions::mt::{MtExt, MtViewExt},
+    },
+    utils::random::{gen_random_string, random_bytes, rng},
 };
-use defuse_test_utils::random::{gen_random_string, random_bytes, rng};
 use near_sdk::{AccountId, AsNep297Event};
 use near_sdk::{NearToken, json_types::U128};
 use rstest::rstest;
@@ -25,7 +29,7 @@ const TOTAL_LOG_LENGTH_LIMIT: usize = 16384;
 
 /// We generate things based on whether we want everything to be "as long as possible"
 /// or "as short as possible", because these affect how much gas is spent.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::Display, strum::EnumIter)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, strum::EnumIter)]
 enum GenerationMode {
     ShortestPossible,
     LongestPossible,
@@ -289,7 +293,7 @@ async fn mt_transfer_resolve_gas(rng: impl Rng) {
         let max_transferred_count = max_transferred_count.unwrap();
 
         println!(
-            "Max token transfer per call for generation mode {gen_mode} is: {max_transferred_count:?}"
+            "Max token transfer per call for generation mode {gen_mode:?} is: {max_transferred_count:?}"
         );
 
         // If the max number of transferred tokens is less than this value, panic.

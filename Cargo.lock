@@ -788,6 +788,7 @@ checksum = "26bf8fc351c5ed29b5c2f0cbbac1b209b74f60ecd62e675a998df72c49af5204"
 name = "defuse"
 version = "0.4.1"
 dependencies = [
+ "anyhow",
  "arbitrary",
  "bitflags 2.10.0",
  "bnum",
@@ -802,10 +803,12 @@ dependencies = [
  "defuse-map-utils",
  "defuse-near-utils",
  "defuse-nep245",
- "defuse-sandbox",
+ "defuse-randomness",
  "defuse-serde-utils",
  "defuse-test-utils",
+ "defuse-tests",
  "defuse-wnear",
+ "futures",
  "impl-tools",
  "itertools",
  "near-contract-standards",
@@ -816,6 +819,7 @@ dependencies = [
  "serde_with",
  "strum 0.27.2",
  "thiserror 2.0.17",
+ "tokio",
 ]
 
 [[package]]
@@ -965,14 +969,19 @@ dependencies = [
  "defuse-near-utils",
  "defuse-nep245",
  "defuse-num-utils",
+ "defuse-sandbox",
  "defuse-token-id",
  "derive_more",
+ "futures",
  "hex",
  "impl-tools",
+ "itertools",
  "near-contract-standards",
  "near-sdk",
+ "rstest",
  "serde_with",
  "thiserror 2.0.17",
+ "tokio",
 ]
 
 [[package]]
@@ -1053,9 +1062,12 @@ dependencies = [
  "defuse-near-utils",
  "defuse-poa-token",
  "defuse-sandbox",
+ "futures",
  "near-contract-standards",
  "near-plugins",
  "near-sdk",
+ "rstest",
+ "tokio",
 ]
 
 [[package]]
@@ -1084,7 +1096,6 @@ dependencies = [
  "defuse-crypto",
  "defuse-nep245",
  "defuse-nep413",
- "defuse-randomness",
  "futures",
  "impl-tools",
  "near-api",
@@ -1093,7 +1104,6 @@ dependencies = [
  "near-sandbox",
  "near-sdk",
  "rstest",
- "thiserror 2.0.17",
  "tokio",
  "tracing",
 ]
@@ -1128,6 +1138,7 @@ name = "defuse-test-utils"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "defuse-crypto",
  "defuse-randomness",
  "derive_more",
  "hex",
@@ -1147,6 +1158,7 @@ dependencies = [
  "defuse",
  "defuse-escrow-swap",
  "defuse-near-utils",
+ "defuse-nep245",
  "defuse-poa-factory",
  "defuse-randomness",
  "defuse-sandbox",

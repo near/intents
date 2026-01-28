@@ -1,13 +1,7 @@
-use defuse::{
-    contract::Role,
-    sandbox_ext::state::{SaltManagerExt, SaltViewExt},
-};
-
-use defuse_sandbox::extensions::acl::AclExt;
-use defuse_test_utils::asserts::ResultAssertsExt;
+use crate::extensions::defuse::contract::contract::Role;
+use crate::extensions::defuse::state::{SaltManagerExt, SaltViewExt};
+use crate::{env::Env, sandbox::extensions::acl::AclExt, utils::asserts::ResultAssertsExt};
 use rstest::rstest;
-
-use crate::tests::defuse::env::Env;
 
 #[rstest]
 #[tokio::test]

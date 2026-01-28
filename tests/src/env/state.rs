@@ -1,7 +1,9 @@
 use std::collections::{HashMap, HashSet};
 
+use crate::extensions::defuse::contract::core::{
+    Nonce, crypto::PublicKey, token_id::nep141::Nep141TokenId,
+};
 use arbitrary::{Arbitrary, Unstructured};
-use defuse::core::{Nonce, crypto::PublicKey, token_id::nep141::Nep141TokenId};
 use defuse_randomness::Rng;
 use defuse_sandbox::{Account, SigningAccount};
 use defuse_test_utils::random::{Seed, TestRng};
@@ -11,7 +13,7 @@ use near_sdk::{
     env::{keccak512, sha256},
 };
 
-use crate::tests::defuse::env::generate_legacy_user_account_id;
+use crate::env::generate_legacy_user_account_id;
 
 const MAX_PUBLIC_KEYS: usize = 10;
 const MAX_ACCOUNTS: usize = 5;
@@ -19,7 +21,6 @@ const MAX_NONCES: usize = 5;
 const MAX_TOKENS: usize = 3;
 
 const MIN_BALANCE_AMOUNT: u128 = 1_000;
-const MAX_BALANCE_AMOUNT: u128 = 10_000;
 
 #[derive(Arbitrary, Debug, Clone, PartialEq, Eq)]
 pub struct AccountData {

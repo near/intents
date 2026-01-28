@@ -11,7 +11,6 @@ workspace = true
 [dependencies]
 defuse-crypto = { workspace = true, features = ["near-api-types"] }
 defuse-nep413 = { workspace = true, features = ["near-api"] }
-defuse-randomness.workspace = true
 defuse-nep245.workspace = true
 tokio.workspace = true
 rstest.workspace = true
@@ -23,7 +22,6 @@ near-api.workspace = true
 near-openapi-types.workspace = true
 near-sandbox.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
-thiserror.workspace = true
 tracing.workspace = true
 
 near-contract-standards.workspace = true

@@ -1,17 +1,14 @@
 #![allow(async_fn_in_trait)]
 
-use defuse_sandbox::{Account, SigningAccount, anyhow, read_wasm, tx::FnCallBuilder};
+pub use defuse_poa_factory as contract;
+
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
 use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128, serde_json::json};
-use std::{
-    collections::{HashMap, HashSet},
-    sync::LazyLock,
-};
+use std::collections::{HashMap, HashSet};
 
-use crate::contract::{POA_TOKEN_INIT_BALANCE, Role};
+use defuse_poa_factory::contract::{POA_TOKEN_INIT_BALANCE, Role};
 
-static POA_FACTORY_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm("releases/defuse_poa_factory"));
+use defuse_sandbox::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 
 pub trait PoAFactoryExt {
     async fn poa_factory_deploy_token(
@@ -99,6 +96,7 @@ pub trait PoAFactoryDeployerExt {
         super_admins: impl IntoIterator<Item = AccountId>,
         admins: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
         grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
+        wasm: impl Into<Vec<u8>>,
     ) -> anyhow::Result<SigningAccount>;
 }
 
@@ -109,11 +107,12 @@ impl PoAFactoryDeployerExt for SigningAccount {
         super_admins: impl IntoIterator<Item = AccountId>,
         admins: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
         grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
+        wasm: impl Into<Vec<u8>>,
     ) -> anyhow::Result<Self> {
         self.deploy_sub_contract(
             name,
             NearToken::from_near(100),
-            POA_FACTORY_WASM.to_vec(),
+            wasm.into(),
             Some(FnCallBuilder::new("new").json_args(json!({
                 "super_admins": super_admins.into_iter().collect::<HashSet<_>>(),
                 "admins": admins

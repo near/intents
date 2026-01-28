@@ -1,8 +1,4 @@
-use crate::{
-    tests::defuse::{DefuseSignerExt, env::Env},
-    utils::{fixtures::public_key, payload::ExtractNonceExt},
-};
-use defuse::{
+use crate::extensions::defuse::contract::{
     contract::Role,
     core::{
         DefuseError,
@@ -10,19 +6,25 @@ use defuse::{
         intents::Intent,
         token_id::{TokenId, nep141::Nep141TokenId},
     },
-    sandbox_ext::{
-        account_manager::{AccountManagerExt, AccountViewExt},
-        force_manager::{ForceAccountManagerExt, ForceAccountViewExt},
-        intents::ExecuteIntentsExt,
-        tokens::nep141::DefuseFtWithdrawer,
-    },
 };
+use defuse_test_utils::fixtures::public_key;
 
-use defuse_sandbox::extensions::{
-    acl::AclExt,
-    mt::{MtExt, MtViewExt},
+use crate::extensions::defuse::{
+    account_manager::{AccountManagerExt, AccountViewExt},
+    force_manager::{ForceAccountManagerExt, ForceAccountViewExt},
+    intents::ExecuteIntentsExt,
+    nonce::ExtractNonceExt,
+    signer::DefaultDefuseSignerExt,
+    tokens::nep141::DefuseFtWithdrawer,
 };
-use defuse_test_utils::asserts::ResultAssertsExt;
+use crate::{
+    env::Env,
+    sandbox::extensions::{
+        acl::AclExt,
+        mt::{MtExt, MtViewExt},
+    },
+    utils::asserts::ResultAssertsExt,
+};
 use rstest::rstest;
 
 #[rstest]

@@ -1,19 +1,19 @@
 use std::borrow::Cow;
 
-use defuse::{
-    core::{
-        accounts::{AccountEvent, PublicKeyEvent},
-        crypto::PublicKey,
-        events::DefuseEvent,
-    },
-    sandbox_ext::account_manager::{AccountManagerExt, AccountViewExt},
+use crate::extensions::defuse::contract::core::{
+    accounts::{AccountEvent, PublicKeyEvent},
+    crypto::PublicKey,
+    events::DefuseEvent,
 };
-use defuse_sandbox::{assert_eq_event_logs, tx::FnCallBuilder};
-use near_sdk::{AsNep297Event, NearToken};
+use near_sdk::{AsNep297Event, NearToken, serde_json::json};
 use rstest::rstest;
-use serde_json::json;
 
-use crate::{tests::defuse::env::Env, utils::fixtures::public_key};
+use crate::extensions::defuse::account_manager::{AccountManagerExt, AccountViewExt};
+use crate::{
+    env::Env,
+    sandbox::{assert_eq_event_logs, tx::FnCallBuilder},
+    utils::fixtures::public_key,
+};
 
 #[rstest]
 #[trace]

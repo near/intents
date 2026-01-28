@@ -1,12 +1,4 @@
-use std::sync::LazyLock;
-
-use crate::tests::defuse::DefuseSignerExt;
-use crate::tests::defuse::env::Env;
-use crate::utils::fixtures::{ed25519_pk, p256_pk, secp256k1_pk};
-use defuse::sandbox_ext::account_manager::{AccountManagerExt, AccountViewExt};
-use defuse::sandbox_ext::intents::ExecuteIntentsExt;
-use defuse::sandbox_ext::state::{FeesManagerExt, FeesManagerViewExt, SaltManagerExt, SaltViewExt};
-use defuse::{
+use crate::extensions::defuse::contract::{
     contract::Role,
     core::{
         amounts::Amounts,
@@ -17,17 +9,29 @@ use defuse::{
     },
     nep245::Token,
 };
-use defuse_sandbox::extensions::acl::AclExt;
-use defuse_sandbox::extensions::mt::MtViewExt;
-use defuse_sandbox::near_sandbox::FetchData;
-use defuse_sandbox::{Sandbox, SigningAccount, read_wasm};
+
+use crate::extensions::defuse::{
+    account_manager::{AccountManagerExt, AccountViewExt},
+    intents::ExecuteIntentsExt,
+    signer::DefaultDefuseSignerExt,
+    state::{FeesManagerExt, FeesManagerViewExt, SaltManagerExt, SaltViewExt},
+};
+use crate::{
+    env::DEFUSE_WASM,
+    sandbox::{
+        Sandbox, SigningAccount,
+        extensions::{acl::AclExt, mt::MtViewExt},
+        near_sandbox::FetchData,
+    },
+    utils::fixtures::{ed25519_pk, p256_pk, secp256k1_pk},
+};
 use itertools::Itertools;
 use near_sdk::AccountId;
 use rstest::rstest;
 
 use futures::future::try_join_all;
 
-static DEFUSE_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("res/defuse"));
+use crate::env::Env;
 
 #[ignore = "only for simple upgrades"]
 #[rstest]

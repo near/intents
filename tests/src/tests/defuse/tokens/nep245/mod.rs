@@ -1,35 +1,44 @@
 mod letter_gen;
 mod mt_transfer_resolve_gas;
 
-use crate::tests::defuse::DefuseSignerExt;
-use crate::tests::defuse::env::{Env, MT_RECEIVER_STUB_WASM};
-use defuse::contract::config::{DefuseConfig, RolesConfig};
-use defuse::core::amounts::Amounts;
-use defuse::core::fees::{FeesConfig, Pips};
-use defuse::core::intents::tokens::{NotifyOnTransfer, Transfer};
-use defuse::core::token_id::TokenId;
-use defuse::core::token_id::nep141::Nep141TokenId;
-use defuse::core::token_id::nep245::Nep245TokenId;
-use defuse::nep245::Token;
-use defuse::nep245::{MtBurnEvent, MtEvent, MtTransferEvent};
-use defuse::sandbox_ext::account_manager::AccountManagerExt;
-use defuse::sandbox_ext::deployer::DefuseExt;
-use defuse::sandbox_ext::tokens::{nep141::DefuseFtWithdrawer, nep245::DefuseMtWithdrawer};
-use defuse::tokens::DepositMessage;
-use defuse::tokens::{DepositAction, ExecuteIntents};
-use defuse_sandbox::assert_a_contains_b;
-use defuse_sandbox::extensions::mt::{MtExt, MtViewExt};
+use std::borrow::Cow;
+
+use crate::env::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
+use crate::extensions::defuse::account_manager::AccountManagerExt;
+use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
+use crate::extensions::defuse::{
+    contract::{
+        contract::config::{DefuseConfig, RolesConfig},
+        core::{
+            amounts::Amounts,
+            fees::{FeesConfig, Pips},
+            intents::tokens::{NotifyOnTransfer, Transfer},
+            token_id::TokenId,
+            token_id::nep141::Nep141TokenId,
+            token_id::nep245::Nep245TokenId,
+        },
+        nep245::{MtBurnEvent, MtEvent, MtTransferEvent, Token},
+        tokens::{DepositAction, DepositMessage, ExecuteIntents},
+    },
+    deployer::DefuseExt,
+    tokens::{nep141::DefuseFtWithdrawer, nep245::DefuseMtWithdrawer},
+};
+use crate::sandbox::assert_a_contains_b;
 use defuse_sandbox::tx::FnCallBuilder;
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
-use near_sdk::NearToken;
-use near_sdk::{AsNep297Event, json_types::U128};
+use near_sdk::json_types::U128;
+use near_sdk::{AsNep297Event, NearToken};
+
+use crate::{
+    env::Env,
+    sandbox::extensions::mt::{MtExt, MtViewExt},
+};
 use rstest::rstest;
-use std::borrow::Cow;
 
 #[rstest]
 #[tokio::test]
 async fn multitoken_enumeration() {
-    use defuse::core::token_id::nep141::Nep141TokenId;
+    use crate::extensions::defuse::contract::core::token_id::nep141::Nep141TokenId;
 
     let env = Env::builder().create_unique_users().build().await;
 
@@ -297,7 +306,7 @@ async fn multitoken_enumeration() {
 #[rstest]
 #[tokio::test]
 async fn multitoken_enumeration_with_ranges() {
-    use defuse::core::token_id::nep141::Nep141TokenId;
+    use crate::extensions::defuse::contract::core::token_id::nep141::Nep141TokenId;
 
     let env = Env::builder().create_unique_users().build().await;
 
@@ -502,7 +511,7 @@ async fn multitoken_withdrawals() {
                 },
                 roles: RolesConfig::default(),
             },
-            false,
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();
@@ -930,11 +939,7 @@ struct MtTransferCallExpectation {
 async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     #[case] expectation: MtTransferCallExpectation,
 ) {
-    use crate::tests::defuse::DefuseSignerExt;
-    use defuse::{
-        core::{amounts::Amounts, intents::tokens::Transfer},
-        sandbox_ext::account_manager::AccountManagerExt,
-    };
+    use crate::extensions::defuse::contract::core::{amounts::Amounts, intents::tokens::Transfer};
 
     let env = Env::builder().deployer_as_super_admin().build().await;
 
@@ -953,7 +958,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_single_token(
                 },
                 roles: RolesConfig::default(),
             },
-            false,
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();
@@ -1144,7 +1149,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
                 },
                 roles: RolesConfig::default(),
             },
-            false,
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();
@@ -1295,7 +1300,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
 
 #[tokio::test]
 async fn mt_transfer_call_circullar_callback() {
-    use defuse::tokens::DepositMessage;
+    use crate::extensions::defuse::contract::tokens::DepositMessage;
 
     let env = Env::builder().deployer_as_super_admin().build().await;
 
@@ -1312,7 +1317,7 @@ async fn mt_transfer_call_circullar_callback() {
                 },
                 roles: RolesConfig::default(),
             },
-            false,
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();
@@ -1408,7 +1413,7 @@ async fn mt_transfer_call_circullar_callback() {
 
 #[tokio::test]
 async fn mt_transfer_call_circullar_deposit() {
-    use defuse::tokens::DepositMessage;
+    use crate::extensions::defuse::contract::tokens::DepositMessage;
 
     let env = Env::builder().deployer_as_super_admin().build().await;
 
@@ -1425,7 +1430,7 @@ async fn mt_transfer_call_circullar_deposit() {
                 },
                 roles: RolesConfig::default(),
             },
-            false,
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();
@@ -1494,6 +1499,7 @@ async fn mt_transfer_call_circullar_deposit() {
     );
 }
 
+#[allow(clippy::too_many_lines)]
 #[tokio::test]
 async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
     let env = Env::builder().deployer_as_super_admin().build().await;
@@ -1516,7 +1522,7 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
                 },
                 roles: RolesConfig::default(),
             },
-            false,
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();

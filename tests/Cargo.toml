@@ -8,15 +8,25 @@ repository.workspace = true
 [lints]
 workspace = true
 
-[dev-dependencies]
-defuse = { workspace = true, features = ["contract", "sandbox", "imt"] }
-defuse-escrow-swap = { workspace = true, features = ["auth_call"] }
+[features]
+default = ["defuse", "poa", "escrow"]
+
+poa = ["dep:defuse-poa-factory"]
+defuse = ["dep:defuse"]
+escrow = ["dep:defuse-escrow-swap"]
+
+[dependencies]
+defuse-sandbox = { workspace = true }
+
+defuse = { workspace = true, features = ["contract", "arbitrary", "imt"],  optional = true}
+defuse-escrow-swap = { workspace = true, features = ["auth_call"],  optional = true }
+defuse-poa-factory = {workspace = true, features = ["contract"], optional = true }
+
 defuse-near-utils = { workspace = true }
-defuse-poa-factory = { workspace = true, features = ["contract", "sandbox"] }
 defuse-serde-utils = { workspace = true }
 defuse-randomness.workspace = true
 defuse-test-utils.workspace = true
-defuse-sandbox.workspace = true
+near-sdk.workspace = true
 
 futures = "0.3"
 anyhow.workspace = true
@@ -30,10 +40,10 @@ impl-tools.workspace = true
 itertools.workspace = true
 multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
 near-crypto.workspace = true
-near-sdk = { workspace = true, features = ["unit-testing"] }
 near-contract-standards.workspace = true
 rstest.workspace = true
 serde_json.workspace = true
 strum.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 tlb-ton = { workspace = true, features = ["arbitrary"] }
+defuse-nep245.workspace = true

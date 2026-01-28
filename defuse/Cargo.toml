@@ -37,13 +37,12 @@ serde_with.workspace = true
 strum.workspace = true
 thiserror.workspace = true
 
-defuse-sandbox = {workspace = true, optional = true}
 arbitrary = {workspace = true, optional = true}
 defuse-test-utils = {workspace = true, optional = true}
 
 [package.metadata.near.reproducible_build]
-image = "sourcescan/cargo-near:0.16.2-rust-1.86.0"
-image_digest = "sha256:74c24d4d912f893198b8b13e01d43e0f78f3b00b3df45bf555a707eb4918a54e"
+image = "sourcescan/cargo-near:0.18.0-rust-1.86.0"
+image_digest = "sha256:2d0d458d2357277df669eac6fa23a1ac922e5ed16646e1d3315336e4dff18043"
 passed_env = []
 container_build_command = [
     "cargo",
@@ -66,19 +65,18 @@ contract = [
     "dep:defuse-wnear",
     "dep:bitflags",
 ]
-
-sandbox = [
-    "arbitrary",
-    "dep:defuse-sandbox",
-    "dep:defuse-test-utils",
-]
 imt = ["defuse-core/imt"]
 
 [dev-dependencies]
 defuse-core = { workspace = true, features = ["arbitrary"] }
-defuse-test-utils.workspace = true
-chrono.workspace = true
+defuse-randomness.workspace = true
+defuse-tests.workspace = true
 
+chrono.workspace = true
+anyhow.workspace = true
+tokio = { workspace = true, features = ["macros"] }
+
+futures.workspace = true
 arbitrary.workspace = true
 itertools.workspace = true
 proptest = { workspace = true }

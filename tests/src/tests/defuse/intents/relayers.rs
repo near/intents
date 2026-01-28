@@ -1,13 +1,17 @@
-use defuse::{contract::Role, sandbox_ext::relayer::RelayerKeysExt};
-use defuse_sandbox::{
-    SigningAccount,
-    api::{Signer, signer::generate_secret_key},
-    extensions::acl::{AclExt, AclViewExt},
+use crate::extensions::defuse::{
+    contract::contract::Role, intents::ExecuteIntentsExt, relayer::RelayerKeysExt,
 };
-use defuse_test_utils::asserts::ResultAssertsExt;
 use rstest::rstest;
 
-use crate::tests::defuse::{env::Env, intents::ExecuteIntentsExt};
+use crate::{
+    env::Env,
+    sandbox::{
+        SigningAccount,
+        api::{Signer, signer::generate_secret_key},
+        extensions::acl::{AclExt, AclViewExt},
+    },
+    utils::asserts::ResultAssertsExt,
+};
 
 #[rstest]
 #[tokio::test]
