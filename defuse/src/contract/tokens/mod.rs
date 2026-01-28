@@ -66,8 +66,7 @@ impl Contract {
 
         if !mint_event.amounts.is_empty() {
             MtEvent::MtMint([mint_event].as_slice().into())
-                .check_refund()
-                .unwrap_or_panic_display()
+                .check_refund()?
                 .emit();
         }
 
