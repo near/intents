@@ -47,10 +47,7 @@ const fn refund_log_delta(memo: Option<&str>) -> RefundLogDelta {
             savings: 0,
         };
     };
-    RefundLogDelta::new(
-        REFUND_STR_LEN.saturating_sub(m.len()),
-        m.len().saturating_sub(REFUND_STR_LEN),
-    )
+    RefundLogDelta::new(REFUND_STR_LEN, m.len())
 }
 
 impl MtEvent<'_> {
@@ -81,5 +78,40 @@ pub struct RefundCheckedMtEvent(pub(crate) String);
 impl RefundCheckedMtEvent {
     pub fn emit(self) {
         near_sdk::env::log_str(&self.0);
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::checked::REFUND_EXTRA_BYTES;
+
+    use super::refund_log_delta;
+
+    #[test]
+    fn test_refund_log_delta_shorter_memo() {
+        let delta = refund_log_delta(Some("r"));
+        assert_eq!(delta.savings(), 0);
+        assert_eq!(delta.overhead(), 5);
+    }
+
+    #[test]
+    fn test_refund_log_delta_longer_memo() {
+        let delta = refund_log_delta(Some("refund123"));
+        assert_eq!(delta.savings(), 3);
+        assert_eq!(delta.overhead(), 0);
+    }
+
+    #[test]
+    fn test_refund_log_delta_equal_memo() {
+        let delta = refund_log_delta(Some("123456"));
+        assert_eq!(delta.savings(), 0);
+        assert_eq!(delta.overhead(), 0);
+    }
+
+    #[test]
+    fn test_refund_log_delta_empty_memo() {
+        let delta = refund_log_delta(None);
+        assert_eq!(delta.savings(), 0);
+        assert_eq!(delta.overhead(), REFUND_EXTRA_BYTES);
     }
 }
