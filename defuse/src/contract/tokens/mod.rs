@@ -75,10 +75,7 @@ impl Contract {
             let mint_events = [mint_event];
             let event = MtEvent::MtMint(mint_events.as_slice().into());
             if check == RefundLogCheck::CheckRefundLogLength {
-                event
-                    .check_refund()
-                    .map_err(|_| DefuseError::RefundLogTooLong)?
-                    .emit();
+                event.check_refund()?.emit();
             } else {
                 event.emit();
             }
@@ -138,11 +135,7 @@ impl Contract {
         if !burn_event.amounts.is_empty() {
             if check == RefundLogCheck::CheckRefundLogLength {
                 let burn_events = [burn_event];
-                drop(
-                    MtEvent::MtBurn(burn_events.as_slice().into())
-                        .check_refund()
-                        .map_err(|_| DefuseError::RefundLogTooLong)?,
-                );
+                drop(MtEvent::MtBurn(burn_events.as_slice().into()).check_refund()?);
                 self.runtime
                     .postponed_burns
                     .mt_burn(burn_events.into_iter().next().unwrap());
