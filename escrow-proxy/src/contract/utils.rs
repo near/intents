@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 
 use crate::CondVarContext;
-use defuse_near_utils::promise_result_bool;
 use defuse_oneshot_condvar::{
     CV_WAIT_GAS, ext_oneshot_condvar,
     storage::{Config as CondVarConfig, ContractStorage},

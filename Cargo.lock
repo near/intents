@@ -959,9 +959,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "defuse",
- "defuse-admin-utils",
- "defuse-auth-call",
- "defuse-borsh-utils",
  "defuse-controller",
  "defuse-core",
  "defuse-crypto",
@@ -975,7 +972,6 @@ dependencies = [
  "near-contract-standards",
  "near-sdk",
  "rand 0.9.2",
- "serde_json",
  "serde_with",
  "tokio",
 ]
