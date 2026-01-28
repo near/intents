@@ -16,7 +16,7 @@ async fn escrow_proxy_deployment_and_config() {
         .unwrap();
 
     let config = ProxyConfig {
-        owner: proxy.id().clone(),
+        owner_id: proxy.id().clone(),
         oneshot_condvar_global_id: GlobalContractId::AccountId(
             root.sub_account("oneshot_condvar_global_id")
                 .unwrap()
@@ -51,7 +51,7 @@ async fn owner_configuration() {
     .unwrap();
 
     let config = ProxyConfig {
-        owner: owner.id().clone(),
+        owner_id: owner.id().clone(),
         oneshot_condvar_global_id: GlobalContractId::AccountId(
             root.sub_account("oneshot_condvar_global_id")
                 .unwrap()

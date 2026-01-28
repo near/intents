@@ -60,7 +60,7 @@ async fn test_proxy_fill_gas_benchmark() {
     let (_, token_b_defuse_id) = token_b_result.unwrap();
 
     let config = ProxyConfig {
-        owner: proxy.id().clone(),
+        owner_id: proxy.id().clone(),
         oneshot_condvar_global_id: GlobalContractId::AccountId(condvar_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(escrow_swap_global.clone()),
         auth_contract: env.defuse.id().clone(),

@@ -53,7 +53,7 @@ async fn test_proxy_returns_funds_on_timeout_of_authorization() {
 
     // Setup proxy
     let config = ProxyConfig {
-        owner: proxy.id().clone(),
+        owner_id: proxy.id().clone(),
         oneshot_condvar_global_id: GlobalContractId::AccountId(condvar_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(mt_receiver_global.clone()),
         auth_contract: env.defuse.id().clone(),
@@ -126,7 +126,7 @@ async fn test_transfer_authorized_by_relay() {
 
     // Use root as auth_contract since we need signing capability for on_auth call
     let config = ProxyConfig {
-        owner: proxy.id().clone(),
+        owner_id: proxy.id().clone(),
         oneshot_condvar_global_id: GlobalContractId::AccountId(condvar_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(mt_receiver_global.clone()),
         auth_contract: env.root().id().clone(),
@@ -283,7 +283,7 @@ async fn test_ft_transfer_authorized_by_relay() {
 
     // Use root as auth_contract since we need signing capability for on_auth call
     let config = ProxyConfig {
-        owner: proxy.id().clone(),
+        owner_id: proxy.id().clone(),
         oneshot_condvar_global_id: GlobalContractId::AccountId(condvar_global.clone()),
         escrow_swap_contract_id: GlobalContractId::AccountId(ft_receiver_global.clone()),
         auth_contract: env.root().id().clone(),
