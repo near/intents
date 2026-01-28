@@ -32,9 +32,10 @@ impl Intents for Contract {
             .unwrap_or_panic()
             .as_mt_event()
         {
-            /// NOTE: Despite not all `mt_transfer` events can be refunded here, it's still safe if
-            /// to check them all at once, since additional transfers only increase the potential
-            /// refund log size
+            // NOTE: Not all `mt_transfer` events are refundable, but it's safe to check them
+            // all at once since non-refundable transfers only increase the potential refund
+            // log size without affecting correctness. This can actually prevent resolve transfer
+            // to faile due to too long event log !!!
             event.check_refund().unwrap_or_panic_display().emit();
         }
     }

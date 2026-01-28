@@ -112,9 +112,8 @@ impl MultiTokenResolver for Contract {
                 }]
                 .as_slice(),
             ))
-            //NOTE: : we dont need to use [`MtEvent::check_refund`] here
-            // since we are refunding now, so its too late and the "refund"
-            // memo should be accounted for before
+            // NOTE: No need for `check_refund()` here since this IS the refund.
+            // The refund memo size was already accounted for in the original transfer.
             .emit();
         }
 

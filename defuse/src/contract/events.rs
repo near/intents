@@ -24,8 +24,8 @@ impl PostponedMtBurnEvents {
 
 impl Drop for PostponedMtBurnEvents {
     fn drop(&mut self) {
-        /// NOTE: it will only fail when the refund event for withrawal would exceed
-        /// maximum event log size, this is to prevent panic in withdrawal resolution
+        // NOTE: `check_refund()` fails only when the refund event would exceed
+        // maximum log size. Checking here prevents panics during withdrawal resolution.
         self.flush().unwrap_or_panic_display();
     }
 }
