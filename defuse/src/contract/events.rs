@@ -1,7 +1,7 @@
 use std::mem;
 
 use defuse_near_utils::UnwrapOrPanicError;
-use defuse_nep245::{MtBurnEvent, MtEvent, ErrorLogTooLong};
+use defuse_nep245::{ErrorLogTooLong, MtBurnEvent, MtEvent};
 
 #[derive(Debug, Default)]
 pub struct PostponedMtBurnEvents(Vec<MtBurnEvent<'static>>);
