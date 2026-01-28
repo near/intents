@@ -79,7 +79,4 @@ pub enum DefuseError {
 
     #[error("token_id is too long: max length is {MAX_TOKEN_ID_LEN}, got {0}")]
     TokenIdTooLarge(usize),
-
-    #[error("refund event log would be too long")]
-    RefundLogTooLong,
 }

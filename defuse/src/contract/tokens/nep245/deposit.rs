@@ -7,7 +7,7 @@ use near_plugins::{Pausable, pause};
 use near_sdk::{AccountId, PromiseOrValue, env, json_types::U128, near, require};
 
 use crate::{
-    contract::{Contract, ContractExt, tokens::RefundLogCheck},
+    contract::{Contract, ContractExt},
     intents::{Intents, ext_intents},
     tokens::{DepositAction, DepositMessage},
 };
@@ -72,7 +72,6 @@ impl MultiTokenReceiver for Contract {
                 .clone()
                 .zip(amounts.iter().map(|amount| amount.0)),
             Some("deposit"),
-            RefundLogCheck::CheckRefundLogLength,
         )
         .unwrap_or_panic();
 

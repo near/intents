@@ -9,7 +9,7 @@ use near_plugins::{Pausable, pause};
 use near_sdk::{AccountId, PromiseOrValue, env, json_types::U128, near};
 
 use crate::{
-    contract::{Contract, ContractExt, tokens::RefundLogCheck},
+    contract::{Contract, ContractExt},
     intents::{Intents, ext_intents},
     tokens::{DepositAction, DepositMessage},
 };
@@ -48,7 +48,6 @@ impl NonFungibleTokenReceiver for Contract {
             receiver_id.clone(),
             [(core_token_id.clone(), 1)],
             Some("deposit"),
-            RefundLogCheck::CheckRefundLogLength,
         )
         .unwrap_or_panic();
 

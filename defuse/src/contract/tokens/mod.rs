@@ -12,19 +12,12 @@ use std::borrow::Cow;
 
 pub const STORAGE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RefundLogCheck {
-    Unchecked,
-    CheckRefundLogLength,
-}
-
 impl Contract {
     pub(crate) fn deposit(
         &mut self,
         owner_id: AccountId,
         tokens: impl IntoIterator<Item = (TokenId, u128)>,
         memo: Option<&str>,
-        check: RefundLogCheck,
     ) -> Result<()> {
         let owner = self
             .storage
@@ -72,16 +65,7 @@ impl Contract {
         }
 
         if !mint_event.amounts.is_empty() {
-            let mint_events = [mint_event];
-            let event = MtEvent::MtMint(mint_events.as_slice().into());
-            if check == RefundLogCheck::CheckRefundLogLength {
-                event
-                    .check_refund()
-                    .map_err(|_| DefuseError::RefundLogTooLong)?
-                    .emit();
-            } else {
-                event.emit();
-            }
+            MtEvent::MtMint([mint_event].as_slice().into()).emit();
         }
 
         Ok(())
@@ -93,7 +77,6 @@ impl Contract {
         token_amounts: impl IntoIterator<Item = (TokenId, u128)>,
         memo: Option<impl Into<String>>,
         force: bool,
-        check: RefundLogCheck,
     ) -> Result<()> {
         let owner = self
             .storage
@@ -136,19 +119,7 @@ impl Contract {
         // `mt_transfer` arrives. This can happen due to postponed
         // delta-matching during intents execution.
         if !burn_event.amounts.is_empty() {
-            if check == RefundLogCheck::CheckRefundLogLength {
-                let burn_events = [burn_event];
-                drop(
-                    MtEvent::MtBurn(burn_events.as_slice().into())
-                        .check_refund()
-                        .map_err(|_| DefuseError::RefundLogTooLong)?,
-                );
-                self.runtime
-                    .postponed_burns
-                    .mt_burn(burn_events.into_iter().next().unwrap());
-            } else {
-                self.runtime.postponed_burns.mt_burn(burn_event);
-            }
+            self.runtime.postponed_burns.mt_burn(burn_event);
         }
 
         Ok(())

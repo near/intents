@@ -1,8 +1,5 @@
 use crate::{
-    contract::{
-        Contract, ContractExt, Role,
-        tokens::{RefundLogCheck, STORAGE_DEPOSIT_GAS},
-    },
+    contract::{Contract, ContractExt, Role, tokens::STORAGE_DEPOSIT_GAS},
     tokens::nep171::{
         NonFungibleTokenForceWithdrawer, NonFungibleTokenWithdrawResolver,
         NonFungibleTokenWithdrawer,
@@ -78,7 +75,6 @@ impl Contract {
             })),
             Some("withdraw"),
             force,
-            RefundLogCheck::CheckRefundLogLength,
         )?;
 
         let is_call = withdraw.is_call();
@@ -192,7 +188,6 @@ impl NonFungibleTokenWithdrawResolver for Contract {
                 sender_id,
                 [(Nep171TokenId::new(token, token_id).into(), 1)],
                 Some(REFUND_MEMO),
-                RefundLogCheck::Unchecked,
             )
             .unwrap_or_panic();
         }
