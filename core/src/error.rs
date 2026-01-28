@@ -80,6 +80,6 @@ pub enum DefuseError {
     #[error("token_id is too long: max length is {MAX_TOKEN_ID_LEN}, got {0}")]
     TokenIdTooLarge(usize),
 
-    #[error("checked mt event: {0}")]
-    CheckedMtEvent(#[from] defuse_nep245::ErrorLogTooLong),
+    #[error("refund event log would be too long")]
+    RefundLogTooLong,
 }

@@ -210,7 +210,10 @@ impl Contract {
         }];
         let event = MtEvent::MtTransfer(transfer_events.as_slice().into());
         if check == RefundLogCheck::CheckRefundLogLength {
-            event.check_refund()?.emit();
+            event
+                .check_refund()
+                .map_err(|_| DefuseError::RefundLogTooLong)?
+                .emit();
         } else {
             event.emit();
         }
