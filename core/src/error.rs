@@ -81,6 +81,6 @@ pub enum DefuseError {
     #[error("token_id is too long: max length is {MAX_TOKEN_ID_LEN}, got {0}")]
     TokenIdTooLarge(usize),
 
-    #[error("{0}")]
+    #[error(transparent)]
     LogTooLong(#[from] ErrorLogTooLong),
 }

@@ -1,8 +1,7 @@
 use std::mem;
 
-use defuse_core::Result;
 use defuse_near_utils::UnwrapOrPanicError;
-use defuse_nep245::{MtBurnEvent, MtEvent};
+use defuse_nep245::{MtBurnEvent, MtEvent, ErrorLogTooLong};
 
 #[derive(Debug, Default)]
 pub struct PostponedMtBurnEvents(Vec<MtBurnEvent<'static>>);
@@ -12,7 +11,7 @@ impl PostponedMtBurnEvents {
         self.0.push(event);
     }
 
-    pub fn flush(&mut self) -> Result<()> {
+    pub fn flush(&mut self) -> Result<(), ErrorLogTooLong> {
         let events = mem::take(&mut self.0);
         if events.is_empty() {
             return Ok(());
