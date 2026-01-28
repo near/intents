@@ -972,7 +972,6 @@ dependencies = [
  "near-contract-standards",
  "near-sdk",
  "rand 0.9.2",
- "serde_with",
  "tokio",
 ]
 
