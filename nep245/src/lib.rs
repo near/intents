@@ -9,7 +9,7 @@ mod token;
 use near_sdk::{AccountId, json_types::U128};
 
 pub use self::{
-    checked::{ErrorLogTooLong, RefundCheckedMtEvent},
+    checked::{CheckedMtEvent, ErrorLogTooLong},
     core::*,
     events::*,
     token::*,

@@ -70,12 +70,12 @@ impl MtEvent<'_> {
 }
 
 /// A validated event log that has been checked for refund overhead.
-/// Use [`RefundCheckedMtEvent::emit`] to emit the event.
+/// Use [`CheckedMtEvent::emit`] to emit the event.
 #[derive(Debug)]
 #[must_use = "call `.emit()` to emit the event"]
-pub struct RefundCheckedMtEvent(pub(crate) String);
+pub struct CheckedMtEvent(pub(crate) String);
 
-impl RefundCheckedMtEvent {
+impl CheckedMtEvent {
     pub fn emit(self) {
         near_sdk::env::log_str(&self.0);
     }

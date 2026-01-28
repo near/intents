@@ -1,5 +1,5 @@
 use super::TokenId;
-use crate::checked::{ErrorLogTooLong, RefundCheckedMtEvent};
+use crate::checked::{CheckedMtEvent, ErrorLogTooLong};
 use defuse_near_utils::TOTAL_LOG_LENGTH_LIMIT;
 use derive_more::derive::From;
 use near_sdk::{AccountIdRef, AsNep297Event, json_types::U128, near, serde::Deserialize};
@@ -20,7 +20,7 @@ pub enum MtEvent<'a> {
 impl MtEvent<'_> {
     /// Validates that the event log (including potential refund overhead) fits within limits.
     /// Returns a [`RefundCheckedMtEvent`] that can be emitted.
-    pub fn check_refund(self) -> Result<RefundCheckedMtEvent, ErrorLogTooLong> {
+    pub fn check_refund(self) -> Result<CheckedMtEvent, ErrorLogTooLong> {
         let log = self.to_nep297_event().to_event_log();
         let delta = self.compute_refund_delta();
         let refund_len = log
@@ -31,7 +31,7 @@ impl MtEvent<'_> {
         if refund_len > TOTAL_LOG_LENGTH_LIMIT {
             return Err(ErrorLogTooLong);
         }
-        Ok(RefundCheckedMtEvent(log))
+        Ok(CheckedMtEvent(log))
     }
 }
 
