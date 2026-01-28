@@ -19,7 +19,7 @@ pub enum MtEvent<'a> {
 
 impl MtEvent<'_> {
     /// Validates that the event log (including potential refund overhead) fits within limits.
-    /// Returns a [`RefundCheckedMtEvent`] that can be emitted.
+    /// Returns a [`CheckedMtEvent`] that can be emitted.
     pub fn check_refund(self) -> Result<CheckedMtEvent, ErrorLogTooLong> {
         let log = self.to_nep297_event().to_event_log();
         let delta = self.compute_refund_delta();
