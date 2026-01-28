@@ -1,3 +1,4 @@
+use crate::contract::tokens::RefundLogCheck;
 use defuse_core::{
     DefuseError, Nonce, NoncePrefix, Result, Salt,
     amounts::Amounts,
@@ -220,6 +221,7 @@ impl State for Contract {
             )],
             Some("withdraw"),
             false,
+            RefundLogCheck::Unchecked,
         )?;
 
         ext_wnear::ext(self.wnear_id.clone())
@@ -277,6 +279,7 @@ impl State for Contract {
             )],
             Some("withdraw"),
             false,
+            RefundLogCheck::Unchecked,
         )?;
 
         ext_wnear::ext(self.wnear_id.clone())
@@ -315,6 +318,7 @@ impl State for Contract {
                 )],
                 Some("withdraw"),
                 false,
+                RefundLogCheck::Unchecked,
             )?;
 
             ext_wnear::ext(self.wnear_id.clone())
@@ -347,7 +351,7 @@ impl State for Contract {
 
     #[inline]
     fn mint(&mut self, owner_id: AccountId, tokens: Amounts, memo: Option<String>) -> Result<()> {
-        self.deposit(owner_id, tokens, memo.as_deref())
+        self.deposit(owner_id, tokens, memo.as_deref(), RefundLogCheck::Unchecked)
     }
 
     #[inline]
@@ -357,6 +361,6 @@ impl State for Contract {
         tokens: Amounts,
         memo: Option<String>,
     ) -> Result<()> {
-        self.withdraw(owner_id, tokens, memo, false)
+        self.withdraw(owner_id, tokens, memo, false, RefundLogCheck::Unchecked)
     }
 }

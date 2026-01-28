@@ -1,7 +1,10 @@
 #![allow(clippy::too_many_arguments)]
 
 use crate::{
-    contract::{Contract, ContractExt, Role, tokens::STORAGE_DEPOSIT_GAS},
+    contract::{
+        Contract, ContractExt, Role,
+        tokens::{RefundLogCheck, STORAGE_DEPOSIT_GAS},
+    },
     tokens::nep245::{
         MultiTokenForcedWithdrawer, MultiTokenWithdrawResolver, MultiTokenWithdrawer,
     },
@@ -82,6 +85,7 @@ impl Contract {
                 })),
             Some("withdraw"),
             force,
+            RefundLogCheck::CheckRefundLogLength,
         )?;
 
         let is_call = withdraw.msg.is_some();
@@ -254,6 +258,7 @@ impl MultiTokenWithdrawResolver for Contract {
                     }
                 }),
             Some(REFUND_MEMO),
+            RefundLogCheck::Unchecked,
         )
         .unwrap_or_panic();
 

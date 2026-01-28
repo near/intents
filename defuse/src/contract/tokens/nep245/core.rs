@@ -1,4 +1,4 @@
-use crate::contract::{Contract, ContractExt};
+use crate::contract::{Contract, ContractExt, tokens::RefundLogCheck};
 use defuse_core::{
     DefuseError, Result, engine::StateView, intents::tokens::NotifyOnTransfer, token_id::TokenId,
 };
@@ -51,6 +51,7 @@ impl MultiTokenCore for Contract {
             &amounts,
             memo.as_deref(),
             false,
+            RefundLogCheck::Unchecked,
         )
         .unwrap_or_panic()
     }
@@ -161,6 +162,7 @@ impl Contract {
         self.balance_of(account_id, &token_id)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn internal_mt_batch_transfer(
         &mut self,
         sender_id: &AccountIdRef,
@@ -169,6 +171,7 @@ impl Contract {
         amounts: &[U128],
         memo: Option<&str>,
         force: bool,
+        check: RefundLogCheck,
     ) -> Result<()> {
         if sender_id == receiver_id || token_ids.len() != amounts.len() || amounts.is_empty() {
             return Err(DefuseError::InvalidIntent);
@@ -197,21 +200,23 @@ impl Contract {
                 .ok_or(DefuseError::BalanceOverflow)?;
         }
 
-        MtEvent::MtTransfer(
-            [MtTransferEvent {
-                authorized_id: None,
-                old_owner_id: sender_id.into(),
-                new_owner_id: Cow::Borrowed(receiver_id),
-                token_ids: token_ids.into(),
-                amounts: amounts.into(),
-                memo: memo.map(Into::into),
-            }]
-            .as_slice()
-            .into(),
-        )
-        .check_refund()
-        .unwrap_or_panic()
-        .emit();
+        let transfer_events = [MtTransferEvent {
+            authorized_id: None,
+            old_owner_id: sender_id.into(),
+            new_owner_id: Cow::Borrowed(receiver_id),
+            token_ids: token_ids.into(),
+            amounts: amounts.into(),
+            memo: memo.map(Into::into),
+        }];
+        let event = MtEvent::MtTransfer(transfer_events.as_slice().into());
+        if check == RefundLogCheck::CheckRefundLogLength {
+            event
+                .check_refund()
+                .map_err(|_| DefuseError::RefundLogTooLong)?
+                .emit();
+        } else {
+            event.emit();
+        }
 
         Ok(())
     }
@@ -234,6 +239,7 @@ impl Contract {
             &amounts,
             memo,
             force,
+            RefundLogCheck::CheckRefundLogLength,
         )?;
 
         Ok(Self::notify_and_resolve_transfer(

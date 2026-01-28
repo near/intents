@@ -6,7 +6,7 @@ use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{AccountId, PromiseOrValue, assert_one_yocto, json_types::U128, near, require};
 
 use crate::{
-    contract::{Contract, ContractExt, Role},
+    contract::{Contract, ContractExt, Role, tokens::RefundLogCheck},
     tokens::nep245::MultiTokenForcedCore,
 };
 
@@ -54,6 +54,7 @@ impl MultiTokenForcedCore for Contract {
             &amounts,
             memo.as_deref(),
             true,
+            RefundLogCheck::Unchecked,
         )
         .unwrap_or_panic()
     }
