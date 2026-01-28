@@ -76,7 +76,7 @@ impl MtEvent<'_> {
 /// Use [`RefundCheckedMtEvent::emit`] to emit the event.
 #[derive(Debug)]
 #[must_use = "call `.emit()` to emit the event"]
-pub struct RefundCheckedMtEvent(pub String);
+pub struct RefundCheckedMtEvent(pub(crate) String);
 
 impl RefundCheckedMtEvent {
     pub fn emit(self) {
