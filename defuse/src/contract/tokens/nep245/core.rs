@@ -210,7 +210,7 @@ impl Contract {
             .into(),
         )
         .check_refund()
-        .unwrap_or_panic()
+        .unwrap_or_panic_display()
         .emit();
 
         Ok(())

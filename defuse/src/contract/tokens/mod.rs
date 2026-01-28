@@ -4,7 +4,7 @@ mod nep245;
 
 use super::Contract;
 use defuse_core::{DefuseError, Result, token_id::TokenId};
-use defuse_near_utils::{Lock, REFUND_MEMO, UnwrapOrPanic};
+use defuse_near_utils::{Lock, REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
 use itertools::{Either, Itertools};
 use near_sdk::{AccountId, AccountIdRef, Gas, env, json_types::U128, serde_json};
@@ -65,7 +65,10 @@ impl Contract {
         }
 
         if !mint_event.amounts.is_empty() {
-            MtEvent::MtMint([mint_event].as_slice().into()).emit();
+            MtEvent::MtMint([mint_event].as_slice().into())
+                .check_refund()
+                .unwrap_or_panic_display()
+                .emit();
         }
 
         Ok(())
@@ -210,7 +213,10 @@ impl Contract {
         }
 
         if !burn_event.amounts.is_empty() {
-            MtEvent::MtBurn([burn_event].as_slice().into()).emit();
+            MtEvent::MtBurn([burn_event].as_slice().into())
+                .check_refund()
+                .unwrap_or_panic_display()
+                .emit();
         }
     }
 

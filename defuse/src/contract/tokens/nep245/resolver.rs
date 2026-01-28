@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use defuse_near_utils::{Lock, REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::{
-    ClearedApproval, MtEventEmit, MtTransferEvent, TokenId, resolver::MultiTokenResolver,
+    ClearedApproval, MtEvent, MtTransferEvent, TokenId, resolver::MultiTokenResolver,
 };
 use near_sdk::{AccountId, env, json_types::U128, near, require, serde_json};
 
@@ -101,8 +101,7 @@ impl MultiTokenResolver for Contract {
             .unzip();
 
         if !refunded_amounts.is_empty() {
-            // deposit refunds
-            Cow::Borrowed(
+            MtEvent::MtTransfer(Cow::Borrowed(
                 [MtTransferEvent {
                     authorized_id: None,
                     old_owner_id: Cow::Borrowed(&receiver_id),
@@ -112,7 +111,9 @@ impl MultiTokenResolver for Contract {
                     memo: Some(REFUND_MEMO.into()),
                 }]
                 .as_slice(),
-            )
+            ))
+            .check_refund()
+            .unwrap_or_panic_display()
             .emit();
         }
 

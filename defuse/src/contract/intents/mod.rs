@@ -9,8 +9,7 @@ use defuse_core::{
     engine::{Engine, StateView},
     payload::multi::MultiPayload,
 };
-use defuse_near_utils::UnwrapOrPanic;
-use defuse_nep245::MtEvent;
+use defuse_near_utils::{UnwrapOrPanic, UnwrapOrPanicError};
 use execute::ExecuteInspector;
 use near_plugins::{Pausable, pause};
 use near_sdk::{FunctionError, near};
@@ -28,12 +27,13 @@ impl Intents for Contract {
     #[pause(name = "intents")]
     #[inline]
     fn execute_intents(&mut self, signed: Vec<MultiPayload>) {
-        Engine::new(self, ExecuteInspector::default())
+        if let Some(event) = Engine::new(self, ExecuteInspector::default())
             .execute_signed_intents(signed)
             .unwrap_or_panic()
             .as_mt_event()
-            .as_ref()
-            .map(MtEvent::emit);
+        {
+            event.check_refund().unwrap_or_panic_display().emit();
+        }
     }
 
     #[pause(name = "intents")]

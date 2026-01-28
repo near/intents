@@ -1,5 +1,6 @@
 use std::mem;
 
+use defuse_near_utils::UnwrapOrPanicError;
 use defuse_nep245::{MtBurnEvent, MtEvent};
 
 #[derive(Debug, Default)]
@@ -15,7 +16,10 @@ impl PostponedMtBurnEvents {
         if events.is_empty() {
             return;
         }
-        MtEvent::MtBurn(events.into()).emit();
+        MtEvent::MtBurn(events.into())
+            .check_refund()
+            .unwrap_or_panic_display()
+            .emit();
     }
 }
 
