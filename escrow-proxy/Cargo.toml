@@ -38,10 +38,10 @@ default = ["nep141", "nep245", "escrow-swap"]
 
 contract = []
 escrow-swap = ["dep:defuse-escrow-swap"]
-nep141 = ["defuse-token-id/nep141"]
-nep245 = ["defuse-token-id/nep245"]
+nep141 = []
+nep245 = []
 
-abi = ["defuse-token-id/abi", "defuse-oneshot-condvar/abi", "defuse-escrow-swap?/abi"]
+abi = ["defuse-oneshot-condvar/abi", "defuse-escrow-swap?/abi"]
 
 [[example]]
 name = "escrow-swap-demo"
