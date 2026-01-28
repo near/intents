@@ -12,7 +12,7 @@ impl PromiseExt for Promise {
 }
 
 pub const MAX_BOOL_JSON_LEN: usize = " false ".len();
-pub const MAX_U128_LEN: usize = "340282366920938463463374607431768211455".len();
+pub const MAX_U128_LEN: usize = "+340282366920938463463374607431768211455".len();
 pub const MAX_U128_JSON_LEN: usize = " \"\" ".len() + MAX_U128_LEN;
 
 #[must_use]
