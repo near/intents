@@ -112,8 +112,9 @@ impl MultiTokenResolver for Contract {
                 }]
                 .as_slice(),
             ))
-            .check_refund()
-            .unwrap_or_panic_display()
+            //NOTE: : we dont need to use [`MtEvent::check_refund`] here
+            // since we are refunding now, so its too late and the "refund"
+            // memo should be accounted for before
             .emit();
         }
 

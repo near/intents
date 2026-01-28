@@ -73,16 +73,6 @@ pub struct MtTransferEvent<'a> {
     pub memo: Option<Cow<'a, str>>,
 }
 
-/// A trait that's used to make it possible to call `emit()` on the enum
-/// arms' contents without having to explicitly construct the enum `MtEvent` itself
-pub trait MtEventEmit<'a>: Into<MtEvent<'a>> {
-    #[inline]
-    fn emit(self) {
-        MtEvent::emit(&self.into());
-    }
-}
-impl<'a, T> MtEventEmit<'a> for T where T: Into<MtEvent<'a>> {}
-
 #[cfg(test)]
 mod tests {
     use crate::checked::REFUND_EXTRA_BYTES;
