@@ -17,16 +17,14 @@ impl PostponedMtBurnEvents {
         if events.is_empty() {
             return Ok(());
         }
-        MtEvent::MtBurn(events.into())
-            .check_refund()?
-            .emit();
+        MtEvent::MtBurn(events.into()).check_refund()?.emit();
         Ok(())
     }
 }
 
 impl Drop for PostponedMtBurnEvents {
     fn drop(&mut self) {
-        /// NOTE: it will only fail when the refund event for withrawal would exceed 
+        /// NOTE: it will only fail when the refund event for withrawal would exceed
         /// maximum event log size, this is to prevent panic in withdrawal resolution
         self.flush().unwrap_or_panic_display();
     }
