@@ -1,5 +1,6 @@
 use std::mem;
 
+use defuse_core::Result;
 use defuse_near_utils::UnwrapOrPanicError;
 use defuse_nep245::{MtBurnEvent, MtEvent};
 
@@ -11,20 +12,22 @@ impl PostponedMtBurnEvents {
         self.0.push(event);
     }
 
-    pub fn flush(&mut self) {
+    pub fn flush(&mut self) -> Result<()> {
         let events = mem::take(&mut self.0);
         if events.is_empty() {
-            return;
+            return Ok(());
         }
         MtEvent::MtBurn(events.into())
-            .check_refund()
-            .unwrap_or_panic_display()
+            .check_refund()?
             .emit();
+        Ok(())
     }
 }
 
 impl Drop for PostponedMtBurnEvents {
     fn drop(&mut self) {
-        self.flush();
+        /// NOTE: it will only fail when the refund event for withrawal would exceed 
+        /// maximum event log size, this is to prevent panic in withdrawal resolution
+        self.flush().unwrap_or_panic_display();
     }
 }
