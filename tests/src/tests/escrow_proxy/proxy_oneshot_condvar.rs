@@ -287,26 +287,13 @@ async fn test_ft_transfer_authorized_by_relay() {
 
     let initial_balance: u128 = 1_000_000;
     let (ft_token, _) = env
-        .create_ft_token_with_initial_balances([(solver.id().clone(), initial_balance)])
+        .create_ft_token_with_initial_balances([
+            (solver.id().clone(), initial_balance),
+            (proxy.id().clone(), 0),
+            (escrow_instance_id.clone(), 0),
+        ])
         .await
         .unwrap();
-
-    let (proxy_storage, escrow_storage) = futures::join!(
-        solver.storage_deposit(
-            ft_token.id(),
-            Some(proxy.id().as_ref()),
-            NearToken::from_near(1)
-        ),
-        solver.storage_deposit(
-            ft_token.id(),
-            Some(escrow_instance_id.as_ref()),
-            NearToken::from_near(1)
-        ),
-    );
-    proxy_storage.unwrap();
-    escrow_storage.unwrap();
-
-    let initial_solver_balance = ft_token.ft_balance_of(solver.id()).await.unwrap();
 
     let inner_msg_json = serde_json::to_string(&FTReceiverMode::AcceptAll).unwrap();
 
@@ -319,9 +306,11 @@ async fn test_ft_transfer_authorized_by_relay() {
 
     let proxy_transfer_amount: u128 = 100_000;
 
+    // Use canonical TokenId::Nep141 format to match what the proxy computes
+    let token_id = TokenId::from(Nep141TokenId::new(ft_token.id().clone()));
     let context_hash = CondVarContext {
         sender_id: Cow::Borrowed(solver.id()),
-        token_ids: Cow::Owned(vec![ft_token.id().to_string()]),
+        token_ids: Cow::Owned(vec![token_id.to_string()]),
         amounts: Cow::Owned(vec![U128(proxy_transfer_amount)]),
         salt: transfer_msg.salt,
         msg: Cow::Borrowed(&msg_json),
@@ -370,7 +359,7 @@ async fn test_ft_transfer_authorized_by_relay() {
     let final_solver_balance = ft_token.ft_balance_of(solver.id()).await.unwrap();
 
     assert_eq!(
-        initial_solver_balance - proxy_transfer_amount,
+        initial_balance - proxy_transfer_amount,
         final_solver_balance,
         "Solver balance should decrease by transferred amount"
     );
