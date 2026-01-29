@@ -11,12 +11,13 @@ use crate::Contract;
 
 const DEFAULT_OUT_DIR: &str = "res";
 const BUILD_REPRODUCIBLE_ENV_VAR: &str = "DEFUSE_BUILD_REPRODUCIBLE";
+const OUT_DIR_ENV_VAR: &str = "DEFUSE_OUT_DIR";
 
 #[derive(Args, Clone, Default)]
 pub struct BuildOptions {
-    #[arg(short, long, default_value_t = true)]
+    #[arg(short, long)]
     reproducible: bool,
-    #[arg(short, long, default_value_t = false)]
+    #[arg(short, long)]
     checksum: bool,
     #[arg(short, long)]
     features: Option<String>,
@@ -43,14 +44,15 @@ impl ContractBuilder {
 
         let reproducible = env::var(BUILD_REPRODUCIBLE_ENV_VAR)
             .is_ok_and(|v| !["0", "false"].contains(&v.to_lowercase().as_str()));
+        let outdir = env::var(OUT_DIR_ENV_VAR).unwrap_or_else(|_| DEFAULT_OUT_DIR.to_string());
 
         Self {
             name: spec.name.to_string(),
             features: spec.features.to_string(),
             env_var_key: spec.env_var_key.to_string(),
             path: spec.path.to_string(),
-            outdir: DEFAULT_OUT_DIR.to_string(),
-            reproducible: reproducible,
+            outdir,
+            reproducible,
             checksum: false,
         }
     }
@@ -107,6 +109,16 @@ impl ContractBuilder {
         let manifest = format!("{}/../{}/Cargo.toml", workdir, self.path);
         let outdir = format!("{}/../{}/", workdir, self.outdir);
 
+        println!(
+            "Building contract: {} in {} mode",
+            self.name,
+            if self.reproducible {
+                "reproducible"
+            } else {
+                "non-reproducible"
+            }
+        );
+
         let path = if self.reproducible {
             let build_opts = DockerBuildOpts::builder()
                 .manifest_path(manifest.into())
@@ -142,15 +154,7 @@ pub fn build_contract(contract: Contract, options: &BuildOptions) -> Result<()> 
 }
 
 pub fn build_workspace_contracts(options: &BuildOptions) -> Result<()> {
-    let contracts = [
-        Contract::Defuse,
-        Contract::PoaFactory,
-        Contract::PoaToken,
-        Contract::EscrowSwap,
-        Contract::MultiTokenReceiverStub,
-    ];
-
-    contracts
+    Contract::all()
         .into_iter()
         .map(|contract| build_contract(contract, options))
         .collect::<Result<()>>()

@@ -11,7 +11,6 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     Build {
-        #[arg(short, long)]
         contract: Contract,
         #[command(flatten)]
         options: BuildOptions,

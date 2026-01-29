@@ -11,8 +11,8 @@ pub struct ContractSpec {
 pub enum Contract {
     #[default]
     Defuse,
-    PoaFactory,
     PoaToken,
+    PoaFactory,
     EscrowSwap,
     MultiTokenReceiverStub,
 }
@@ -47,17 +47,17 @@ impl Contract {
             Self::MultiTokenReceiverStub => ContractSpec {
                 name: "multi-token-receiver-stub",
                 path: "tests/contracts/multi-token-receiver-stub",
-                features: "contract",
+                features: "",
                 env_var_key: "MULTI_TOKEN_RECEIVER_STUB_WASM",
             },
         }
     }
 
-    pub const fn all() -> &'static [Contract] {
-        &[
+    pub const fn all() -> [Contract; 5] {
+        [
             Self::Defuse,
-            Self::PoaFactory,
             Self::PoaToken,
+            Self::PoaFactory,
             Self::EscrowSwap,
             Self::MultiTokenReceiverStub,
         ]
