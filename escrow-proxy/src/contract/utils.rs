@@ -30,7 +30,7 @@ impl Contract {
 
     /// Creates the authorization promise for token transfers.
     /// Returns the cv_wait Promise.
-    pub(crate) fn create_cv_wait_cross_contract_call(
+    pub(crate) fn wait_for_authorization(
         &self,
         sender_id: &AccountId,
         token_ids: &[defuse_nep245::TokenId],

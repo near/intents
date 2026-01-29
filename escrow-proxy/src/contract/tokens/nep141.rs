@@ -18,7 +18,7 @@ impl FungibleTokenReceiver for Contract {
         let token_ids = vec![token_contract.to_string()];
         let amounts = vec![amount];
         let transfer_message: TransferMessage = msg.parse().unwrap_or_panic_display();
-        let cv_wait = self.create_cv_wait_cross_contract_call(
+        let cv_wait = self.wait_for_authorization(
             &sender_id,
             &token_ids,
             &amounts,

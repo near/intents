@@ -19,7 +19,7 @@ impl MultiTokenReceiver for Contract {
         let _ = previous_owner_ids;
         let token_contract = env::predecessor_account_id();
         let transfer_message: TransferMessage = msg.parse().unwrap_or_panic_display();
-        let cv_wait = self.create_cv_wait_cross_contract_call(
+        let cv_wait = self.wait_for_authorization(
             &sender_id,
             &token_ids,
             &amounts,
