@@ -21,16 +21,15 @@ impl FungibleTokenReceiver for Contract {
         let token_ids = vec![token_id.to_string()];
         let amounts = vec![amount];
         let transfer_message: TransferMessage = msg.parse().unwrap_or_panic_display();
-        let cv_wait = self.wait_for_authorization(
-            &sender_id,
-            &token_ids,
-            &amounts,
-            transfer_message.salt,
-            &msg,
-        );
-
         PromiseOrValue::Promise(
-            cv_wait.then(
+            self.wait_for_authorization(
+                &sender_id,
+                &token_ids,
+                &amounts,
+                transfer_message.salt,
+                &msg,
+            )
+            .then(
                 Self::ext(env::current_account_id())
                     .with_unused_gas_weight(1)
                     .check_authorization_and_forward_ft(
