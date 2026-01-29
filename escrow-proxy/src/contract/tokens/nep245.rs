@@ -89,7 +89,7 @@ impl Contract {
     pub fn resolve_mt_transfer(&self, original_amounts: Vec<U128>) -> Vec<U128> {
         let used = bounded_promise_result_with_args::<Vec<U128>>(0, original_amounts.len())
             .filter(|v| v.len() == original_amounts.len())
-            .unwrap_or_default();
+            .unwrap_or(vec![U128(0); original_amounts.len()]);
 
         original_amounts
             .iter()
