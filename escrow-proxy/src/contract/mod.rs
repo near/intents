@@ -87,20 +87,15 @@ impl EscrowProxy for Contract {
 #[cfg(feature = "escrow-swap")]
 #[near]
 impl Contract {
-    /// Calculates escrow contract instance address
-    pub fn escrow_address(&self, params: &EscrowParams) -> AccountId {
-        let raw_state = defuse_escrow_swap::ContractStorage::init_state(params)
+    pub fn cancel_escrow(&self, params: EscrowParams) -> Promise {
+        self.assert_owner();
+        let raw_state = defuse_escrow_swap::ContractStorage::init_state(&params)
             .unwrap_or_else(|e| env::panic_str(&format!("Invalid escrow params: {e}")));
         let state_init = StateInit::V1(StateInitV1 {
             code: self.config.escrow_swap_contract_id.clone(),
             data: raw_state,
         });
-        state_init.derive_account_id()
-    }
-
-    pub fn cancel_escrow(&self, params: EscrowParams) -> Promise {
-        self.assert_owner();
-        let escrow_address = self.escrow_address(&params);
+        let escrow_address = state_init.derive_account_id();
         ext_escrow::ext(escrow_address)
             .with_static_gas(Gas::from_tgas(50))
             .es_close(params)
