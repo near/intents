@@ -40,8 +40,10 @@
 //     Ok(())
 // }
 
+use xtask::BuildOptions;
+
 fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
-    xtask::build_workspace_contracts()
+    xtask::build_workspace_contracts(&BuildOptions::default())?;
     // // panic!("{}", env::var("PROFILE").unwrap());
     // let build_reproducible = env::var(BUILD_REPRODUCIBLE_ENV_VAR)
     //     .is_ok_and(|v| !["0", "false"].contains(&v.to_lowercase().as_str()));
@@ -66,5 +68,5 @@ fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
     //     build_contract(manifest, features, DEFAULT_OUT_DIR, var, build_reproducible)?;
     // }
 
-    // Ok(())
+    Ok(())
 }
