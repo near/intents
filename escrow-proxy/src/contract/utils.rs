@@ -47,13 +47,13 @@ impl Contract {
         }
         .hash();
 
-        let auth_contract_state_init =
-            self.transfer_auth_state_init(context_hash);
+        let auth_contract_state_init = self.transfer_auth_state_init(context_hash);
         let auth_contract_id = auth_contract_state_init.derive_account_id();
-        let auth_call = Promise::new(auth_contract_id)
-            .state_init(auth_contract_state_init, NearToken::from_near(0));
 
-        ext_oneshot_condvar::ext_on(auth_call)
+        ext_oneshot_condvar::ext_on(
+            Promise::new(auth_contract_id)
+                .state_init(auth_contract_state_init, NearToken::from_near(0)),
+        )
             .with_static_gas(CV_WAIT_GAS)
             .with_unused_gas_weight(0)
             .cv_wait()
