@@ -54,8 +54,8 @@ impl Contract {
             Promise::new(auth_contract_id)
                 .state_init(auth_contract_state_init, NearToken::from_near(0)),
         )
-            .with_static_gas(CV_WAIT_GAS)
-            .with_unused_gas_weight(0)
-            .cv_wait()
+        .with_static_gas(CV_WAIT_GAS)
+        .with_unused_gas_weight(0)
+        .cv_wait()
     }
 }

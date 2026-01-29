@@ -1,4 +1,6 @@
 use defuse_near_utils::{UnwrapOrPanicError, promise_result_U128, promise_result_bool};
+use defuse_token_id::TokenId;
+use defuse_token_id::nep141::Nep141TokenId;
 use near_contract_standards::fungible_token::{core::ext_ft_core, receiver::FungibleTokenReceiver};
 use near_sdk::{AccountId, Gas, NearToken, PromiseOrValue, env, json_types::U128, near};
 
@@ -15,7 +17,8 @@ impl FungibleTokenReceiver for Contract {
     ) -> PromiseOrValue<U128> {
         // For FT, the token is identified by the predecessor (FT contract)
         let token_contract = env::predecessor_account_id();
-        let token_ids = vec![token_contract.to_string()];
+        let token_id = TokenId::from(Nep141TokenId::new(token_contract.clone()));
+        let token_ids = vec![token_id.to_string()];
         let amounts = vec![amount];
         let transfer_message: TransferMessage = msg.parse().unwrap_or_panic_display();
         let cv_wait = self.wait_for_authorization(

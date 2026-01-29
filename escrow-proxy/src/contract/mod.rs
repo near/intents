@@ -75,8 +75,7 @@ impl EscrowProxy for Contract {
             msg: Cow::Borrowed(&msg),
         }
         .hash();
-        let auth_contract_state_init =
-            self.transfer_auth_state_init(context_hash);
+        let auth_contract_state_init = self.transfer_auth_state_init(context_hash);
         auth_contract_state_init.derive_account_id()
     }
 }
