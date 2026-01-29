@@ -2,6 +2,8 @@ use defuse_near_utils::{UnwrapOrPanicError, promise_result_bool, promise_result_
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
 use near_sdk::{AccountId, Gas, NearToken, PromiseOrValue, env, json_types::U128, near};
 
+const MT_RESOLVE_TRANSFER_GAS: Gas = Gas::from_tgas(10);
+
 use crate::contract::{Contract, ContractExt};
 use crate::message::TransferMessage;
 
@@ -19,18 +21,20 @@ impl MultiTokenReceiver for Contract {
         let _ = previous_owner_ids;
         let token_contract = env::predecessor_account_id();
         let transfer_message: TransferMessage = msg.parse().unwrap_or_panic_display();
-        let cv_wait = self.wait_for_authorization(
-            &sender_id,
-            &token_ids,
-            &amounts,
-            transfer_message.salt,
-            &msg,
-        );
 
         PromiseOrValue::Promise(
-            cv_wait.then(
+            self.wait_for_authorization(
+                &sender_id,
+                &token_ids,
+                &amounts,
+                transfer_message.salt,
+                &msg,
+            )
+            .then(
                 Self::ext(env::current_account_id())
                     .with_unused_gas_weight(1)
+                    //NOTE: forward all gas, make sure that there is enough gas to resolve transfer
+                    .with_static_gas(MT_RESOLVE_TRANSFER_GAS)
                     .check_authorization_and_forward_mt(
                         token_contract,
                         transfer_message.receiver_id,
@@ -61,6 +65,7 @@ impl Contract {
         PromiseOrValue::Promise(
             ext_mt_core::ext(token_contract)
                 .with_attached_deposit(NearToken::from_yoctonear(1))
+                .with_unused_gas_weight(1)
                 .mt_batch_transfer_call(
                     escrow_address,
                     token_ids,
@@ -71,7 +76,7 @@ impl Contract {
                 )
                 .then(
                     Self::ext(env::current_account_id())
-                        .with_static_gas(Gas::from_tgas(10))
+                        .with_static_gas(MT_RESOLVE_TRANSFER_GAS)
                         .with_unused_gas_weight(0)
                         .resolve_mt_transfer(amounts),
                 ),

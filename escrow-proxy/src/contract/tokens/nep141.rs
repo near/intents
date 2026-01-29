@@ -4,6 +4,8 @@ use defuse_token_id::nep141::Nep141TokenId;
 use near_contract_standards::fungible_token::{core::ext_ft_core, receiver::FungibleTokenReceiver};
 use near_sdk::{AccountId, Gas, NearToken, PromiseOrValue, env, json_types::U128, near};
 
+const FT_RESOLVE_TRANSFER_GAS: Gas = Gas::from_tgas(10);
+
 use crate::contract::{Contract, ContractExt};
 use crate::message::TransferMessage;
 
@@ -32,6 +34,8 @@ impl FungibleTokenReceiver for Contract {
             .then(
                 Self::ext(env::current_account_id())
                     .with_unused_gas_weight(1)
+                    //NOTE: forward all gas, make sure that there is enough gas to resolve transfer
+                    .with_static_gas(FT_RESOLVE_TRANSFER_GAS)
                     .check_authorization_and_forward_ft(
                         token_contract,
                         transfer_message.receiver_id,
@@ -60,7 +64,7 @@ impl Contract {
         PromiseOrValue::Promise(
             ext_ft_core::ext(token_contract)
                 .with_attached_deposit(NearToken::from_yoctonear(1))
-                .with_static_gas(Gas::from_tgas(50))
+                .with_unused_gas_weight(1)
                 .ft_transfer_call(
                     escrow_address,
                     amount,
@@ -69,7 +73,7 @@ impl Contract {
                 )
                 .then(
                     Self::ext(env::current_account_id())
-                        .with_static_gas(Gas::from_tgas(10))
+                        .with_static_gas(FT_RESOLVE_TRANSFER_GAS)
                         .with_unused_gas_weight(0)
                         .resolve_ft_transfer(amount),
                 ),
