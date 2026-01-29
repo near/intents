@@ -62,7 +62,6 @@ async fn test_proxy_fill_gas_benchmark() {
     let config = ProxyConfig {
         owner_id: proxy.id().clone(),
         oneshot_condvar_global_id: GlobalContractId::AccountId(condvar_global.clone()),
-        escrow_swap_contract_id: GlobalContractId::AccountId(escrow_swap_global.clone()),
         auth_contract: env.defuse.id().clone(),
         notifier: relay.id().clone(),
     };

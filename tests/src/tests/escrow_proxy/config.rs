@@ -23,12 +23,6 @@ async fn escrow_proxy_deployment_and_config() {
                 .id()
                 .clone(),
         ),
-        escrow_swap_contract_id: GlobalContractId::AccountId(
-            root.sub_account("escrow_swap_contract_id")
-                .unwrap()
-                .id()
-                .clone(),
-        ),
         auth_contract: root.sub_account("auth_contract").unwrap().id().clone(),
         notifier: root.sub_account("notifier").unwrap().id().clone(),
     };
@@ -54,12 +48,6 @@ async fn owner_configuration() {
         owner_id: owner.id().clone(),
         oneshot_condvar_global_id: GlobalContractId::AccountId(
             root.sub_account("oneshot_condvar_global_id")
-                .unwrap()
-                .id()
-                .clone(),
-        ),
-        escrow_swap_contract_id: GlobalContractId::AccountId(
-            root.sub_account("escrow_swap_contract_id")
                 .unwrap()
                 .id()
                 .clone(),
