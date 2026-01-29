@@ -71,7 +71,7 @@ impl Contract {
                     token_ids,
                     amounts.clone(),
                     None,
-                    Some("proxy".to_string()),
+                    Some(super::PROXY_MEMO.to_string()),
                     msg,
                 )
                 .then(

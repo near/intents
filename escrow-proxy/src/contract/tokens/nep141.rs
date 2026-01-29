@@ -68,7 +68,7 @@ impl Contract {
                 .ft_transfer_call(
                     escrow_address,
                     amount,
-                    Some("proxy forward".to_string()), // memo
+                    Some(super::PROXY_MEMO.to_string()),
                     msg,
                 )
                 .then(
