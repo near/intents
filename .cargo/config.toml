@@ -4,5 +4,6 @@ rustflags = ["--remap-path-prefix=.=src", "--remap-path-prefix=${HOME}=/"]
 [alias]
 xtask = "run --package xtask --"
 
+build-all = "run --package xtask -- build-all"
 build-contract = "run --package xtask -- build"
-integration-tests = "cargo test -p defuse-tests --features poa"
+integration-tests = "test -p defuse-tests --no-default-features --features"

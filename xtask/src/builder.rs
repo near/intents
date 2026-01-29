@@ -3,14 +3,15 @@ use clap::Args;
 use anyhow::{Result, anyhow};
 use cargo_near_build::{
     BuildOpts, build_with_cli,
+    camino::Utf8PathBuf,
     docker::{DockerBuildOpts, build as build_reproducible_with_cli},
 };
 use std::env;
 
 use crate::Contract;
 
-const DEFAULT_OUT_DIR: &str = "res";
 const BUILD_REPRODUCIBLE_ENV_VAR: &str = "DEFUSE_BUILD_REPRODUCIBLE";
+const DEFAULT_OUT_DIR: &str = "res";
 const OUT_DIR_ENV_VAR: &str = "DEFUSE_OUT_DIR";
 
 #[derive(Args, Clone, Default)]
@@ -31,7 +32,6 @@ pub struct BuildOptions {
 pub struct ContractBuilder {
     name: String,
     features: String,
-    env_var_key: String,
     path: String,
     reproducible: bool,
     checksum: bool,
@@ -39,7 +39,7 @@ pub struct ContractBuilder {
 }
 
 impl ContractBuilder {
-    fn new(contract: Contract) -> Self {
+    fn new(contract: &Contract) -> Self {
         let spec = contract.spec();
 
         let reproducible = env::var(BUILD_REPRODUCIBLE_ENV_VAR)
@@ -49,7 +49,6 @@ impl ContractBuilder {
         Self {
             name: spec.name.to_string(),
             features: spec.features.to_string(),
-            env_var_key: spec.env_var_key.to_string(),
             path: spec.path.to_string(),
             outdir,
             reproducible,
@@ -65,9 +64,7 @@ impl ContractBuilder {
         if let Some(features) = &options.features {
             self = self.set_features(features);
         }
-        if let Some(env_var_key) = &options.env_var {
-            self = self.env_var_key(env_var_key);
-        }
+
         if let Some(outdir) = &options.outdir {
             self = self.set_outdir(outdir);
         }
@@ -75,23 +72,18 @@ impl ContractBuilder {
         self
     }
 
-    fn set_reproducible(mut self, reproducible: bool) -> Self {
+    const fn set_reproducible(mut self, reproducible: bool) -> Self {
         self.reproducible = reproducible;
         self
     }
 
-    fn set_checksum(mut self, checksum: bool) -> Self {
+    const fn set_checksum(mut self, checksum: bool) -> Self {
         self.checksum = checksum;
         self
     }
 
     fn set_features(mut self, features: impl Into<String>) -> Self {
         self.features = features.into();
-        self
-    }
-
-    fn env_var_key(mut self, env_var_key: impl Into<String>) -> Self {
-        self.env_var_key = env_var_key.into();
         self
     }
 
@@ -104,7 +96,7 @@ impl ContractBuilder {
         self
     }
 
-    fn build_contract(self) -> Result<()> {
+    fn build_contract(self) -> Result<Utf8PathBuf> {
         let workdir = env::var("CARGO_MANIFEST_DIR")?;
         let manifest = format!("{}/../{}/Cargo.toml", workdir, self.path);
         let outdir = format!("{}/../{}/", workdir, self.outdir);
@@ -126,7 +118,7 @@ impl ContractBuilder {
                 .build();
 
             build_reproducible_with_cli(build_opts, false)
-                .map_err(|e| anyhow!("Failed to build reproducible wasm: {}", e))?
+                .map_err(|e| anyhow!("Failed to build reproducible wasm: {e}"))?
                 .path
         } else {
             let build_opts = BuildOpts::builder()
@@ -136,26 +128,31 @@ impl ContractBuilder {
                 .no_abi(true)
                 .build();
 
-            build_with_cli(build_opts).map_err(|e| anyhow!("Failed to build wasm: {}", e))?
+            build_with_cli(build_opts).map_err(|e| anyhow!("Failed to build wasm: {e}"))?
         };
 
+        // println!("cargo::rerun-if-changed=src/hello.c");
+
+        // // For build scripts
+        // println!("cargo:rustc-env={}={}", self.env_var_key, path);
+        // // For regular run
         // unsafe {
-        //     std::env::set_var(var, path);
+        //     std::env::set_var(self.env_var_key, path);
         // }
 
-        Ok(())
+        Ok(path)
     }
 }
 
-pub fn build_contract(contract: Contract, options: &BuildOptions) -> Result<()> {
+pub fn build_contract(contract: &Contract, options: &BuildOptions) -> Result<Utf8PathBuf> {
     ContractBuilder::new(contract)
-        .apply_options(&options)
+        .apply_options(options)
         .build_contract()
 }
 
-pub fn build_workspace_contracts(options: &BuildOptions) -> Result<()> {
+pub fn build_workspace_contracts(options: &BuildOptions) -> Result<Vec<(Contract, Utf8PathBuf)>> {
     Contract::all()
         .into_iter()
-        .map(|contract| build_contract(contract, options))
-        .collect::<Result<()>>()
+        .map(|contract| build_contract(&contract, options).map(|path| (contract, path)))
+        .collect::<Result<Vec<(Contract, Utf8PathBuf)>>>()
 }

@@ -4,7 +4,7 @@ mod defuse;
 #[cfg(feature = "poa")]
 mod poa;
 
-#[cfg(feature = "escrow")]
+#[cfg(feature = "escrow-swap")]
 mod escrow;
 
 mod utils;

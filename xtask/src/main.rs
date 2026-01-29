@@ -22,7 +22,15 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::BuildAll(options) => build_workspace_contracts(&options),
-        Commands::Build { contract, options } => build_contract(contract, &options),
+        Commands::BuildAll(options) => {
+            let path = build_workspace_contracts(&options)?;
+            println!("Built all contracts at: {:?}", path);
+        }
+        Commands::Build { contract, options } => {
+            let path = build_contract(&contract, &options)?;
+            println!("Built {:?} contract at: {:?}", contract, path);
+        }
     }
+
+    Ok(())
 }

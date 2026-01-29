@@ -9,19 +9,22 @@ repository.workspace = true
 workspace = true
 
 [features]
-default = ["defuse", "poa", "escrow", "long"]
+default = ["defuse", "poa", "escrow-swap", "long"]
 
+# NOTE: features used in integration tests
+poa = []
+defuse = []
+escrow-swap = []
 long = []
-poa = ["dep:defuse-poa-factory"]
-defuse = ["dep:defuse"]
-escrow = ["dep:defuse-escrow-swap"]
+
 
 [dependencies]
 defuse-sandbox = { workspace = true }
 
-defuse = { workspace = true, features = ["contract", "arbitrary", "imt"],  optional = true}
-defuse-escrow-swap = { workspace = true, features = ["auth_call"],  optional = true }
-defuse-poa-factory = {workspace = true, features = ["contract"], optional = true }
+# TODO: make dependencies optional after splitting env for each contract
+defuse = { workspace = true, features = ["contract", "arbitrary", "imt"]}
+defuse-escrow-swap = { workspace = true, features = ["auth_call"] }
+defuse-poa-factory = {workspace = true, features = ["contract"] }
 
 defuse-near-utils = { workspace = true }
 defuse-serde-utils = { workspace = true }
@@ -51,5 +54,3 @@ defuse-nep245.workspace = true
 
 [build-dependencies]
 xtask.workspace = true
-# cargo-near-build = { workspace = true, features = ["build_external", "docker"] }
-# cargo-near-build.workspace = true

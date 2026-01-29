@@ -4,7 +4,6 @@ pub struct ContractSpec {
     pub name: &'static str,
     pub path: &'static str,
     pub features: &'static str,
-    pub env_var_key: &'static str,
 }
 
 #[derive(Clone, ValueEnum, Default, Debug)]
@@ -24,36 +23,31 @@ impl Contract {
                 name: "defuse",
                 path: "defuse",
                 features: "contract,imt",
-                env_var_key: "DEFUSE_WASM",
             },
             Self::PoaFactory => ContractSpec {
                 name: "poa-factory",
                 path: "poa-factory",
                 features: "contract",
-                env_var_key: "DEFUSE_POA_FACTORY_WASM",
             },
             Self::PoaToken => ContractSpec {
                 name: "poa-token",
                 path: "poa-token",
                 features: "contract",
-                env_var_key: "DEFUSE_POA_TOKEN_WASM",
             },
             Self::EscrowSwap => ContractSpec {
                 name: "escrow-swap",
                 path: "escrow-swap",
                 features: "contract",
-                env_var_key: "DEFUSE_ESCROW_SWAP_WASM",
             },
             Self::MultiTokenReceiverStub => ContractSpec {
                 name: "multi-token-receiver-stub",
                 path: "tests/contracts/multi-token-receiver-stub",
                 features: "",
-                env_var_key: "MULTI_TOKEN_RECEIVER_STUB_WASM",
             },
         }
     }
 
-    pub const fn all() -> [Contract; 5] {
+    pub const fn all() -> [Self; 5] {
         [
             Self::Defuse,
             Self::PoaToken,
