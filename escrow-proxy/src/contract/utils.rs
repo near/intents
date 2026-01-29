@@ -39,7 +39,6 @@ impl Contract {
         msg: &str,
     ) -> Promise {
         let context_hash = CondVarContext {
-            escrow_contract_id: Cow::Borrowed(&self.config.escrow_swap_contract_id),
             sender_id: Cow::Borrowed(sender_id),
             token_ids: Cow::Borrowed(token_ids),
             amounts: Cow::Borrowed(amounts),

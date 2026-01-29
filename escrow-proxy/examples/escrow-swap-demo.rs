@@ -336,9 +336,6 @@ async fn main() -> Result<()> {
     // The relay authorizes the taker's transfer by signing an AuthCall intent
     // that deploys the oneshot-condvar instance with state matching the transfer context
     let condvar_context = CondVarContext {
-        escrow_contract_id: Cow::Owned(GlobalContractId::AccountId(
-            ESCROW_GLOBAL_REF_ID.parse().unwrap(),
-        )),
         sender_id: Cow::Borrowed(taker_signing.id().as_ref()),
         token_ids: Cow::Owned(vec![dst_token.to_string()]),
         amounts: Cow::Owned(vec![U128(1)]),

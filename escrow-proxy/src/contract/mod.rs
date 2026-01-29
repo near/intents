@@ -71,7 +71,6 @@ impl EscrowProxy for Contract {
         use std::borrow::Cow;
         let transfer_message: TransferMessage = msg.parse().unwrap_or_panic_display();
         let context_hash = CondVarContext {
-            escrow_contract_id: Cow::Borrowed(&self.config.escrow_swap_contract_id),
             sender_id: Cow::Owned(taker_id),
             token_ids: Cow::Owned(token_ids),
             amounts: Cow::Owned(amounts),

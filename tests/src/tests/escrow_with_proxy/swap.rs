@@ -112,7 +112,6 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     let proxy_msg_json = serde_json::to_string(&proxy_msg).unwrap();
 
     let context_hash = CondVarContext {
-        escrow_contract_id: Cow::Borrowed(&config.escrow_swap_contract_id),
         sender_id: Cow::Borrowed(solver.id().as_ref()),
         token_ids: Cow::Owned(vec![token_b_defuse_id.to_string()]),
         amounts: Cow::Owned(vec![U128(swap_amount)]),
