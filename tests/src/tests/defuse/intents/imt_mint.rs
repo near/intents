@@ -11,22 +11,24 @@ use defuse::core::intents::tokens::MAX_TOKEN_ID_LEN;
 use defuse::core::intents::tokens::{NotifyOnTransfer, imt::ImtMint};
 use defuse::core::token_id::TokenId;
 use defuse::nep245::{MtEvent, MtMintEvent};
-use defuse::sandbox_ext::deployer::DefuseExt;
-use defuse::sandbox_ext::intents::ExecuteIntentsExt;
 use defuse_escrow_swap::Pips;
 use defuse_escrow_swap::token_id::imt::ImtTokenId;
 use defuse_escrow_swap::token_id::nep245::Nep245TokenId;
 use defuse_sandbox::assert_a_contains_b;
 use defuse_sandbox::extensions::mt::MtViewExt;
+use defuse_sandbox::tx::FnCallBuilder;
 use defuse_test_utils::asserts::ResultAssertsExt;
 use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::json_types::U128;
 use rstest::rstest;
 
-use near_sdk::{AccountId, AsNep297Event, Gas};
+use near_sdk::{AccountId, AsNep297Event, Gas, NearToken};
 
-use crate::tests::defuse::DefuseSignerExt;
-use crate::tests::defuse::env::{Env, TransferCallExpectation};
+use crate::env::{DEFUSE_WASM, Env, MT_RECEIVER_STUB_WASM};
+use crate::extensions::defuse::deployer::DefuseExt;
+use crate::extensions::defuse::intents::ExecuteIntentsExt;
+use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
+use crate::tests::defuse::intents::transfer::TransferCallExpectation;
 
 #[rstest]
 #[trace]
@@ -136,7 +138,7 @@ async fn mt_mint_intent_to_defuse() {
                 },
                 roles: RolesConfig::default(),
             },
-            false,
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();
@@ -259,7 +261,16 @@ async fn mt_mint_intent_with_msg_to_receiver_smc(#[case] expectation: TransferCa
 
     let env = Env::builder().build().await;
 
-    let (user, mt_receiver) = futures::join!(env.create_user(), env.deploy_mt_receiver_stub());
+    let user = env.create_user().await;
+    let mt_receiver = env
+        .deploy_sub_contract(
+            "receiver_stub",
+            NearToken::from_near(100),
+            MT_RECEIVER_STUB_WASM.to_vec(),
+            None::<FnCallBuilder>,
+        )
+        .await
+        .unwrap();
 
     let ft1 = "some-mt-token.near".to_string();
 

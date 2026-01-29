@@ -3,7 +3,7 @@
 use defuse_sandbox::{SigningAccount, anyhow, extensions::ft::FtExt, tx::FnCallBuilder};
 use near_sdk::{AccountId, AccountIdRef, NearToken, json_types::U128, serde_json::json};
 
-use crate::tokens::DepositMessage;
+use defuse::tokens::DepositMessage;
 
 pub trait DefuseFtDepositor: FtExt {
     async fn defuse_ft_deposit(

@@ -1,8 +1,6 @@
 use super::binary_search_max;
-use crate::tests::defuse::{
-    env::{Env, MT_RECEIVER_STUB_WASM},
-    tokens::nep245::letter_gen::LetterCombinations,
-};
+use crate::env::{Env, MT_RECEIVER_STUB_WASM};
+use crate::tests::defuse::tokens::nep245::letter_gen::LetterCombinations;
 use anyhow::Context;
 use defuse::{
     core::intents::tokens::NotifyOnTransfer,

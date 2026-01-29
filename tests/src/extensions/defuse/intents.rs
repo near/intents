@@ -1,4 +1,4 @@
-use defuse_core::payload::multi::MultiPayload;
+use defuse::core::payload::multi::MultiPayload;
 use defuse_sandbox::{
     Account, SigningAccount, anyhow, api::types::transaction::result::ExecutionSuccess,
     tx::FnCallBuilder,
@@ -8,7 +8,7 @@ use near_sdk::{
     serde_json::{self, json},
 };
 
-use crate::intents::SimulationOutput;
+use defuse::simulation_output::SimulationOutput;
 
 pub trait ExecuteIntentsExt {
     async fn execute_intents(

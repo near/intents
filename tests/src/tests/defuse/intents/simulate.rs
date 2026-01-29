@@ -1,15 +1,7 @@
-use crate::{
-    tests::defuse::{
-        DefuseSignerExt,
-        env::Env,
-        intents::{AccountNonceIntentEvent, ExecuteIntentsExt, NonceEvent},
-    },
-    utils::{fixtures::public_key, payload::ExtractNonceExt},
-};
-use defuse::{
-    contract::config::{DefuseConfig, RolesConfig},
-    core::{
-        accounts::{AccountEvent, PublicKeyEvent, TransferEvent},
+use crate::extensions::defuse::{
+    account_manager::{AccountManagerExt, AccountViewExt},
+    contract::core::{
+        accounts::{AccountEvent, NonceEvent, PublicKeyEvent, TransferEvent},
         amounts::Amounts,
         crypto::{Payload, PublicKey},
         events::DefuseEvent,
@@ -26,20 +18,24 @@ use defuse::{
         },
         token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
     },
-    sandbox_ext::{
-        account_manager::{AccountManagerExt, AccountViewExt},
-        deployer::DefuseExt,
-        intents::SimulateIntents,
-    },
+    deployer::DefuseExt,
+    intents::{ExecuteIntentsExt, SimulateIntents},
+    nonce::ExtractNonceExt,
+    signer::DefaultDefuseSignerExt,
 };
-use defuse_sandbox::{
-    api::types::{json::Base64VecU8, nft::NFTContractMetadata},
-    extensions::{
-        ft::FtExt,
-        mt::{MtExt, MtViewExt},
-        nft::{NftDeployerExt, NftExt},
-        wnear::WNearExt,
-    },
+use defuse::contract::config::{DefuseConfig, RolesConfig};
+use defuse_sandbox::extensions::{
+    ft::FtExt,
+    mt::{MtExt, MtViewExt},
+    nft::{NftDeployerExt, NftExt},
+    wnear::WNearExt,
+};
+
+use crate::{
+    env::{DEFUSE_WASM, Env, NON_FUNGIBLE_TOKEN_WASM},
+    sandbox::api::types::{json::Base64VecU8, nft::NFTContractMetadata},
+    tests::defuse::intents::AccountNonceIntentEvent,
+    utils::fixtures::public_key,
 };
 use near_contract_standards::non_fungible_token::metadata::{NFT_METADATA_SPEC, TokenMetadata};
 use near_sdk::{AsNep297Event, NearToken};
@@ -287,6 +283,7 @@ async fn simulate_nft_withdraw_intent() {
                 icon: None,
                 base_uri: None,
             },
+            NON_FUNGIBLE_TOKEN_WASM.clone(),
         )
         .await
         .unwrap();
@@ -386,7 +383,7 @@ async fn simulate_mt_withdraw_intent() {
                 },
                 roles: RolesConfig::default(),
             },
-            false,
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();

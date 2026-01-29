@@ -1,4 +1,4 @@
-use defuse_core::Nonce;
+use defuse::core::Nonce;
 use defuse_sandbox::{SigningAccount, anyhow, tx::FnCallBuilder};
 use defuse_serde_utils::base64::AsBase64;
 use near_sdk::{AccountId, NearToken, serde_json::json};

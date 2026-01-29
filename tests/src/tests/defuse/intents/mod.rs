@@ -1,23 +1,22 @@
-use defuse::{
-    core::{
-        Deadline, Nonce,
-        accounts::{AccountEvent, NonceEvent},
-        amounts::Amounts,
-        crypto::Payload,
-        events::DefuseEvent,
-        intents::{DefuseIntents, IntentEvent, tokens::Transfer},
-        token_id::{TokenId, nep141::Nep141TokenId},
-    },
-    sandbox_ext::intents::{ExecuteIntentsExt, SimulateIntents},
+use crate::extensions::defuse::contract::core::{
+    Deadline, Nonce,
+    accounts::{AccountEvent, NonceEvent, TransferEvent},
+    amounts::Amounts,
+    crypto::Payload,
+    events::DefuseEvent,
+    intents::{DefuseIntents, IntentEvent, tokens::Transfer},
+    token_id::{TokenId, nep141::Nep141TokenId},
+};
+use crate::extensions::defuse::{
+    intents::{ExecuteIntentsExt, SimulateIntents},
+    signer::DefuseSignerExt,
 };
 use defuse_randomness::Rng;
-use defuse_sandbox::extensions::mt::MtViewExt;
-use defuse_test_utils::random::rng;
-use near_sdk::{AccountId, AccountIdRef, AsNep297Event, CryptoHash};
+use near_sdk::{AccountId, AccountIdRef, AsNep297Event, CryptoHash, serde_json};
 use rstest::rstest;
 use std::borrow::Cow;
 
-use super::{DefuseSigner, env::Env};
+use crate::{env::Env, sandbox::extensions::mt::MtViewExt, utils::random::rng};
 
 pub struct AccountNonceIntentEvent(AccountId, Nonce, CryptoHash);
 
@@ -57,8 +56,6 @@ mod transfer;
 #[trace]
 #[tokio::test]
 async fn simulate_is_view_method(#[notrace] mut rng: impl Rng) {
-    use defuse::core::accounts::TransferEvent;
-
     let env = Env::builder().build().await;
 
     let (user, other_user, ft) =

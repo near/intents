@@ -1,33 +1,35 @@
 #![allow(clippy::future_not_send)]
 
-use arbitrary::{Arbitrary, Unstructured};
-use chrono::{TimeDelta, Utc};
-use defuse::{
+use crate::extensions::defuse::contract::{
     contract::Role,
     core::{Deadline, Nonce, Salt, intents::DefuseIntents},
-    sandbox_ext::{
-        account_manager::AccountViewExt,
-        intents::ExecuteIntentsExt,
-        state::{GarbageCollectorExt, SaltManagerExt, SaltViewExt},
-    },
 };
-use defuse_sandbox::extensions::acl::AclExt;
+use arbitrary::{Arbitrary, Unstructured};
+use chrono::{TimeDelta, Utc};
+
 use futures::future::join_all;
 use itertools::Itertools;
 
 use std::time::Duration;
 use tokio::time::sleep;
 
-use defuse_test_utils::{
-    asserts::ResultAssertsExt,
-    random::{Rng, random_bytes, rng},
-};
 use near_sdk::AccountId;
 use rstest::rstest;
 
-use crate::tests::defuse::{
-    DefuseSigner,
-    env::{Env, create_random_salted_nonce},
+use crate::extensions::defuse::{
+    account_manager::AccountViewExt,
+    intents::ExecuteIntentsExt,
+    nonce::create_random_salted_nonce,
+    signer::DefuseSignerExt,
+    state::{GarbageCollectorExt, SaltManagerExt, SaltViewExt},
+};
+use crate::{
+    env::Env,
+    sandbox::extensions::acl::AclExt,
+    utils::{
+        asserts::ResultAssertsExt,
+        random::{Rng, random_bytes, rng},
+    },
 };
 
 #[rstest]
