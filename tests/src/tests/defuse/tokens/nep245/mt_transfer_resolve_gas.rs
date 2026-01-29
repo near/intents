@@ -1,3 +1,5 @@
+use super::binary_search_max;
+use crate::env::{Env, MT_RECEIVER_STUB_WASM};
 use crate::tests::defuse::tokens::nep245::letter_gen::LetterCombinations;
 use anyhow::Context;
 use arbitrary::Arbitrary;
@@ -8,21 +10,19 @@ use defuse::{
     },
     nep245::{MtEvent, MtTransferEvent},
 };
+use defuse_near_utils::REFUND_MEMO;
 use defuse_randomness::Rng;
-
-use crate::{
-    env::Env,
-    sandbox::{
-        SigningAccount,
-        extensions::mt::{MtExt, MtViewExt},
-    },
-    utils::random::{gen_random_string, random_bytes, rng},
+use defuse_sandbox::{
+    SigningAccount,
+    extensions::mt::{MtExt, MtViewExt},
+    tx::FnCallBuilder,
 };
-use near_sdk::{AccountId, AsNep297Event};
-use near_sdk::{NearToken, json_types::U128};
+use defuse_test_utils::random::{gen_random_string, random_bytes, rng};
+use multi_token_receiver_stub::MTReceiverMode;
+use near_sdk::{AccountId, AsNep297Event, NearToken, json_types::U128};
 use rstest::rstest;
+use std::borrow::Cow;
 use std::sync::Arc;
-use std::{borrow::Cow, future::Future};
 use strum::IntoEnumIterator;
 
 const TOTAL_LOG_LENGTH_LIMIT: usize = 16384;
@@ -90,7 +90,7 @@ fn validate_mt_batch_transfer_log_size(
         new_owner_id: Cow::Borrowed(sender_id),
         token_ids: Cow::Owned(token_ids.to_vec()),
         amounts: Cow::Owned(amounts.iter().copied().map(U128).collect()),
-        memo: Some(Cow::Borrowed("refund")),
+        memo: Some(Cow::Borrowed(REFUND_MEMO)),
     }]));
 
     let longest_transfer_log = mt_transfer_event.to_nep297_event().to_event_log();
@@ -229,31 +229,6 @@ async fn run_resolve_gas_test(
     Ok(())
 }
 
-async fn binary_search_max<F, Fut>(low: usize, high: usize, test: F) -> Option<usize>
-where
-    F: Fn(usize) -> Fut,
-    Fut: Future<Output = anyhow::Result<()>>,
-{
-    let mut lo = low;
-    let mut hi = high;
-    let mut best = None;
-
-    while lo <= hi {
-        let mid = lo + (hi - lo) / 2;
-        match test(mid).await {
-            Ok(()) => {
-                best = Some(mid);
-                lo = mid + 1; // success -> try higher
-            }
-            Err(_) => {
-                hi = mid - 1; // failure -> try lower
-            }
-        }
-    }
-
-    best
-}
-
 #[rstest]
 #[tokio::test]
 async fn mt_transfer_resolve_gas(rng: impl Rng) {
@@ -316,4 +291,132 @@ async fn binary_search() {
         };
         assert_eq!(binary_search_max(0, max, test).await, Some(limit));
     }
+}
+
+#[tokio::test]
+async fn mt_batch_transfer_call_rejects_transfer_when_refund_log_exceeds_limit() {
+    let env = Env::new().await;
+    let user = env.create_named_user("user").await;
+
+    env.tx(env.defuse.id())
+        .transfer(NearToken::from_near(1000))
+        .await
+        .unwrap();
+
+    let author_account = env.fund_implicit(NearToken::from_near(1000)).await.unwrap();
+
+    let receiver_stub = env
+        .deploy_sub_contract(
+            "receiver",
+            NearToken::from_near(100),
+            MT_RECEIVER_STUB_WASM.to_vec(),
+            None::<FnCallBuilder>,
+        )
+        .await
+        .unwrap();
+
+    let gen_max_len_token_id = |i: usize| format!("{i}{}", "a".repeat(127 - i.to_string().len()));
+    let token_ids: Vec<String> = (1..=65)
+        .map(gen_max_len_token_id)
+        .chain([
+            "1thiswilltriggertoolonglogerrorthiswilltriggertoolonglo".to_string(),
+            "2thiswilltriggertoolonglogerrorthiswilltriggertoolonglo".to_string(),
+        ])
+        .collect();
+
+    let amounts: Vec<u128> = vec![u128::MAX; token_ids.len()];
+    let defuse_token_ids: Vec<String> = token_ids
+        .iter()
+        .map(|token_id| {
+            TokenId::Nep245(Nep245TokenId::new(
+                author_account.id().clone(),
+                token_id.clone(),
+            ))
+            .to_string()
+        })
+        .collect();
+
+    let (transfer_log_size, refund_log_size) =
+        calculate_log_sizes(user.id(), receiver_stub.id(), &defuse_token_ids, &amounts);
+
+    assert!(transfer_log_size <= TOTAL_LOG_LENGTH_LIMIT,);
+    assert!(refund_log_size > TOTAL_LOG_LENGTH_LIMIT,);
+
+    author_account
+        .mt_on_transfer(
+            user.id(),
+            env.defuse.id(),
+            token_ids.iter().cloned().zip(amounts.clone()),
+            "",
+        )
+        .await
+        .unwrap();
+
+    let balance_before = env
+        .defuse
+        .mt_balance_of(user.id(), &defuse_token_ids[0])
+        .await
+        .unwrap();
+
+    let result = user
+        .mt_batch_transfer_call(
+            env.defuse.id(),
+            receiver_stub.id(),
+            defuse_token_ids.clone(),
+            amounts.clone(),
+            None,
+            serde_json::to_string(&MTReceiverMode::RefundAll).unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert!(
+        result.is_failure(),
+        "transfer should fail early due to refund log size limit"
+    );
+
+    let result_str = format!("{result:?}");
+    assert!(
+        result_str.contains("refund event log would be too long"),
+        "expected error about refund log limit, got: {result_str}"
+    );
+
+    let balance_after = env
+        .defuse
+        .mt_balance_of(user.id(), &defuse_token_ids[0])
+        .await
+        .unwrap();
+
+    assert_eq!(balance_after, balance_before,);
+}
+
+/// Calculate log sizes for transfer (no memo) and refund (with "refund" memo).
+fn calculate_log_sizes(
+    sender_id: &AccountId,
+    receiver_id: &AccountId,
+    token_ids: &[String],
+    amounts: &[u128],
+) -> (usize, usize) {
+    let transfer_event = MtEvent::MtTransfer(Cow::Owned(vec![MtTransferEvent {
+        authorized_id: None,
+        old_owner_id: Cow::Borrowed(sender_id),
+        new_owner_id: Cow::Borrowed(receiver_id),
+        token_ids: Cow::Owned(token_ids.to_vec()),
+        amounts: Cow::Owned(amounts.iter().copied().map(U128).collect()),
+        memo: None, // Transfer has no memo
+    }]));
+
+    let refund_event = MtEvent::MtTransfer(Cow::Owned(vec![MtTransferEvent {
+        authorized_id: None,
+        old_owner_id: Cow::Borrowed(receiver_id),
+        new_owner_id: Cow::Borrowed(sender_id),
+        token_ids: Cow::Owned(token_ids.to_vec()),
+        amounts: Cow::Owned(amounts.iter().copied().map(U128).collect()),
+        memo: Some(Cow::Borrowed(REFUND_MEMO)), // Refund has "refund" memo
+    }]));
+
+    let transfer_log_size = transfer_event.to_nep297_event().to_event_log().len();
+    let refund_log_size = refund_event.to_nep297_event().to_event_log().len();
+
+    (transfer_log_size, refund_log_size)
 }

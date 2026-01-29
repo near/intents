@@ -11,7 +11,7 @@ use defuse_core::{
     intents::tokens::NftWithdraw,
     token_id::{nep141::Nep141TokenId, nep171::Nep171TokenId},
 };
-use defuse_near_utils::UnwrapOrPanic;
+use defuse_near_utils::{REFUND_MEMO, UnwrapOrPanic};
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::{
     non_fungible_token::{self, core::ext_nft_core},
@@ -187,7 +187,7 @@ impl NonFungibleTokenWithdrawResolver for Contract {
             self.deposit(
                 sender_id,
                 [(Nep171TokenId::new(token, token_id).into(), 1)],
-                Some("refund"),
+                Some(REFUND_MEMO),
             )
             .unwrap_or_panic();
         }

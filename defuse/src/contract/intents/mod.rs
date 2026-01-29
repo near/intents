@@ -9,8 +9,7 @@ use defuse_core::{
     engine::{Engine, StateView},
     payload::multi::MultiPayload,
 };
-use defuse_near_utils::UnwrapOrPanic;
-use defuse_nep245::MtEvent;
+use defuse_near_utils::{UnwrapOrPanic, UnwrapOrPanicError};
 use execute::ExecuteInspector;
 use near_plugins::{Pausable, pause};
 use near_sdk::{FunctionError, near};
@@ -28,12 +27,17 @@ impl Intents for Contract {
     #[pause(name = "intents")]
     #[inline]
     fn execute_intents(&mut self, signed: Vec<MultiPayload>) {
-        Engine::new(self, ExecuteInspector::default())
+        if let Some(event) = Engine::new(self, ExecuteInspector::default())
             .execute_signed_intents(signed)
             .unwrap_or_panic()
             .as_mt_event()
-            .as_ref()
-            .map(MtEvent::emit);
+        {
+            // NOTE: Not all `mt_transfer` events are refundable, but it's safe to check them
+            // all at once since non-refundable transfers only increase the potential refund
+            // log size without affecting correctness. This can actually prevent resolve transfer
+            // from failing due to too long event log !!!
+            event.check_refund().unwrap_or_panic_display().emit();
+        }
     }
 
     #[pause(name = "intents")]
