@@ -52,8 +52,8 @@ use crate::extensions::defuse::{
     deployer::DefuseExt,
     tokens::{nep141::DefuseFtWithdrawer, nep245::DefuseMtWithdrawer},
 };
-use defuse_near_utils::REFUND_MEMO;
 use crate::sandbox::assert_a_contains_b;
+use defuse_near_utils::REFUND_MEMO;
 use defuse_sandbox::tx::FnCallBuilder;
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_sdk::json_types::U128;
