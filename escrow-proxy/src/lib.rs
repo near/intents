@@ -9,7 +9,7 @@ use near_sdk::{
     AccountId, AccountIdRef, CryptoHash, borsh, env, ext_contract, json_types::U128, near,
 };
 
-pub use message::*;
+pub use self::message::*;
 pub use state::ProxyConfig;
 
 #[near(serializers = [borsh, json])]
