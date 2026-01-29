@@ -266,7 +266,7 @@ async fn test_escrow_proxy_can_cancel_before_deadline() {
 
     // Root (super_admin) cancels the escrow via proxy
     env.root()
-        .cancel_escrow(proxy.id(), &escrow_params)
+        .cancel_escrow(proxy.id(), &escrow_instance_id, &escrow_params)
         .await
         .unwrap();
 

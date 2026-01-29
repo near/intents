@@ -23,6 +23,7 @@ pub trait EscrowProxyExt {
     async fn cancel_escrow(
         &self,
         proxy_contract: &AccountId,
+        escrow_address: &AccountId,
         params: &EscrowParams,
     ) -> anyhow::Result<()>;
 }
@@ -52,12 +53,14 @@ impl EscrowProxyExt for SigningAccount {
     async fn cancel_escrow(
         &self,
         proxy_contract: &AccountId,
+        escrow_address: &AccountId,
         params: &EscrowParams,
     ) -> anyhow::Result<()> {
         self.tx(proxy_contract.clone())
             .function_call(
                 FnCallBuilder::new("cancel_escrow")
                     .json_args(json!({
+                        "escrow_address": escrow_address,
                         "params": params,
                     }))
                     .with_gas(Gas::from_tgas(100))
