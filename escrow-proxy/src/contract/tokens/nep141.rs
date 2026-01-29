@@ -18,8 +18,8 @@ impl FungibleTokenReceiver for Contract {
         msg: String,
     ) -> PromiseOrValue<U128> {
         // For FT, the token is identified by the predecessor (FT contract)
-        let token_contract = env::predecessor_account_id();
-        let token_id = TokenId::from(Nep141TokenId::new(token_contract.clone()));
+        let token = env::predecessor_account_id();
+        let token_id = TokenId::from(Nep141TokenId::new(token.clone()));
         let token_ids = vec![token_id.to_string()];
         let amounts = vec![amount];
         let transfer_message: TransferMessage = msg.parse().unwrap_or_panic_display();
@@ -37,7 +37,7 @@ impl FungibleTokenReceiver for Contract {
                     //NOTE: forward all gas, make sure that there is enough gas to resolve transfer
                     .with_static_gas(FT_RESOLVE_TRANSFER_GAS)
                     .check_authorization_and_forward_ft(
-                        token_contract,
+                        token,
                         transfer_message.receiver_id,
                         amount,
                         transfer_message.msg,
@@ -52,8 +52,8 @@ impl Contract {
     #[private]
     pub fn check_authorization_and_forward_ft(
         &self,
-        token_contract: AccountId,
-        escrow_address: AccountId,
+        token: AccountId,
+        receiver_id: AccountId,
         amount: U128,
         msg: String,
     ) -> PromiseOrValue<U128> {
@@ -62,11 +62,11 @@ impl Contract {
         }
 
         PromiseOrValue::Promise(
-            ext_ft_core::ext(token_contract)
+            ext_ft_core::ext(token)
                 .with_attached_deposit(NearToken::from_yoctonear(1))
                 .with_unused_gas_weight(1)
                 .ft_transfer_call(
-                    escrow_address,
+                    receiver_id,
                     amount,
                     Some(super::PROXY_MEMO.to_string()),
                     msg,

@@ -21,7 +21,7 @@ impl MultiTokenReceiver for Contract {
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
         let _ = previous_owner_ids;
-        let token_contract = env::predecessor_account_id();
+        let token = env::predecessor_account_id();
         let transfer_message: TransferMessage = msg.parse().unwrap_or_panic_display();
 
         PromiseOrValue::Promise(
@@ -38,7 +38,7 @@ impl MultiTokenReceiver for Contract {
                     //NOTE: forward all gas, make sure that there is enough gas to resolve transfer
                     .with_static_gas(MT_RESOLVE_TRANSFER_GAS)
                     .check_authorization_and_forward_mt(
-                        token_contract,
+                        token,
                         transfer_message.receiver_id,
                         token_ids,
                         amounts,
@@ -54,8 +54,8 @@ impl Contract {
     #[private]
     pub fn check_authorization_and_forward_mt(
         &self,
-        token_contract: AccountId,
-        escrow_address: AccountId,
+        token: AccountId,
+        receiver_id: AccountId,
         token_ids: Vec<defuse_nep245::TokenId>,
         amounts: Vec<U128>,
         msg: String,
@@ -65,11 +65,11 @@ impl Contract {
         }
 
         PromiseOrValue::Promise(
-            ext_mt_core::ext(token_contract)
+            ext_mt_core::ext(token)
                 .with_attached_deposit(NearToken::from_yoctonear(1))
                 .with_unused_gas_weight(1)
                 .mt_batch_transfer_call(
-                    escrow_address,
+                    receiver_id,
                     token_ids,
                     amounts.clone(),
                     None,
