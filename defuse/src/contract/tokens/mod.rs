@@ -4,7 +4,7 @@ mod nep245;
 
 use super::Contract;
 use defuse_core::{DefuseError, Result, token_id::TokenId};
-use defuse_near_utils::{Lock, UnwrapOrPanic, max_list_u128_json_len};
+use defuse_near_utils::{Lock, MaxJsonLength, UnwrapOrPanic};
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
 use itertools::{Either, Itertools};
 use near_sdk::{AccountId, AccountIdRef, Gas, env, json_types::U128, serde_json};
@@ -152,7 +152,7 @@ impl Contract {
         let tokens_count = tokens_iter.len();
 
         let requested_refunds =
-            env::promise_result_checked(0, max_list_u128_json_len(tokens_count))
+            env::promise_result_checked(0, Vec::<U128>::max_json_length(tokens_count))
                 .ok()
                 .and_then(|value| serde_json::from_slice::<Vec<U128>>(&value).ok())
                 .filter(|refunds| refunds.len() == tokens_count);

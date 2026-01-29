@@ -3,7 +3,6 @@ mod nep141;
 #[cfg(feature = "nep245")]
 mod nep245;
 
-use defuse_near_utils::{MAX_U128_JSON_LEN, max_list_u128_json_len};
 use near_sdk::{
     AccountId, Gas, Promise, PromiseOrValue, PromiseResult, env, json_types::U128, near, serde_json,
 };

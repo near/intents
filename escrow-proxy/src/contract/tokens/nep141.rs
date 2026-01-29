@@ -1,4 +1,4 @@
-use defuse_near_utils::{UnwrapOrPanicError, promise_result_U128, promise_result_bool};
+use defuse_near_utils::{UnwrapOrPanicError, bounded_promise_result};
 use defuse_token_id::TokenId;
 use defuse_token_id::nep141::Nep141TokenId;
 use near_contract_standards::fungible_token::{core::ext_ft_core, receiver::FungibleTokenReceiver};
@@ -57,7 +57,7 @@ impl Contract {
         amount: U128,
         msg: String,
     ) -> PromiseOrValue<U128> {
-        if !promise_result_bool(0).unwrap_or(false) {
+        if !bounded_promise_result::<bool>(0).unwrap_or(false) {
             near_sdk::env::panic_str("Authorization failed or timed out, refunding");
         }
 
@@ -82,7 +82,7 @@ impl Contract {
 
     #[private]
     pub fn resolve_ft_transfer(&self, original_amount: U128) -> U128 {
-        let used = promise_result_U128(0).unwrap_or_default();
+        let used = bounded_promise_result::<U128>(0).unwrap_or_default();
         U128(original_amount.0.saturating_sub(used.0))
     }
 }

@@ -1,4 +1,6 @@
-use defuse_near_utils::{UnwrapOrPanicError, promise_result_bool, promise_result_vec_U128};
+use defuse_near_utils::{
+    UnwrapOrPanicError, bounded_promise_result, bounded_promise_result_with_args,
+};
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
 use near_sdk::{AccountId, Gas, NearToken, PromiseOrValue, env, json_types::U128, near};
 
@@ -58,7 +60,7 @@ impl Contract {
         amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
-        if !promise_result_bool(0).unwrap_or(false) {
+        if !bounded_promise_result::<bool>(0).unwrap_or(false) {
             near_sdk::env::panic_str("Authorization failed or timed out, refunding");
         }
 
@@ -85,7 +87,9 @@ impl Contract {
 
     #[private]
     pub fn resolve_mt_transfer(&self, original_amounts: Vec<U128>) -> Vec<U128> {
-        let used = promise_result_vec_U128(0, original_amounts.len()).unwrap_or_default();
+        let used = bounded_promise_result_with_args::<Vec<U128>>(0, original_amounts.len())
+            .filter(|v| v.len() == original_amounts.len())
+            .unwrap_or_default();
 
         original_amounts
             .iter()
