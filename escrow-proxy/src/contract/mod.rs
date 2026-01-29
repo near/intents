@@ -79,7 +79,7 @@ impl EscrowProxy for Contract {
         }
         .hash();
         let auth_contract_state_init =
-            self.get_deterministic_transfer_auth_state_init(context_hash);
+            self.transfer_auth_state_init(context_hash);
         auth_contract_state_init.derive_account_id()
     }
 }

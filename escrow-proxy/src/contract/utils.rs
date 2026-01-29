@@ -14,7 +14,7 @@ use near_sdk::{
 use super::Contract;
 
 impl Contract {
-    pub(crate) fn get_deterministic_transfer_auth_state_init(&self, salt: [u8; 32]) -> StateInit {
+    pub(crate) fn transfer_auth_state_init(&self, salt: [u8; 32]) -> StateInit {
         let state = CondVarConfig {
             auth_contract: self.config.auth_contract.clone(),
             notifier_id: self.config.notifier.clone(),
