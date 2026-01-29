@@ -147,7 +147,7 @@ jobs:
       - name: Run Tests
         env:
           DEFUSE_MIGRATE_FROM_LEGACY: "true"
-        run: cargo make run-tests -- --show-output
+        run: cargo make run-tests-long -- --show-output
 
   security_audit_report:
     name: Security Audit - report
@@ -162,6 +162,7 @@ jobs:
         with:
           cache: false
       - name: Install cargo-audit
+        # Require 0.22+ for CVSS 4.0 support (advisory-db now contains CVSS 4.0 entries)
         run: cargo install cargo-audit --version "^0.22" --locked
       - uses: rustsec/audit-check@v2.0.0
         with:

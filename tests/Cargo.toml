@@ -9,8 +9,9 @@ repository.workspace = true
 workspace = true
 
 [features]
-default = ["defuse", "poa", "escrow"]
+default = ["defuse", "poa", "escrow", "long"]
 
+long = []
 poa = ["dep:defuse-poa-factory"]
 defuse = ["dep:defuse"]
 escrow = ["dep:defuse-escrow-swap"]

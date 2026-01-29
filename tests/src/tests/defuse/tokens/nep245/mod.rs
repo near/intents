@@ -1,5 +1,34 @@
 mod letter_gen;
+mod mt_deposit_resolve_gas;
 mod mt_transfer_resolve_gas;
+
+use std::future::Future;
+
+/// Binary search to find the maximum value for which `test` succeeds.
+pub(super) async fn binary_search_max<F, Fut>(low: usize, high: usize, test: F) -> Option<usize>
+where
+    F: Fn(usize) -> Fut,
+    Fut: Future<Output = anyhow::Result<()>>,
+{
+    let mut lo = low;
+    let mut hi = high;
+    let mut best = None;
+
+    while lo <= hi {
+        let mid = lo + (hi - lo) / 2;
+        match test(mid).await {
+            Ok(()) => {
+                best = Some(mid);
+                lo = mid + 1; // success -> try higher
+            }
+            Err(_) => {
+                hi = mid - 1; // failure -> try lower
+            }
+        }
+    }
+
+    best
+}
 
 use std::borrow::Cow;
 
@@ -24,6 +53,7 @@ use crate::extensions::defuse::{
     tokens::{nep141::DefuseFtWithdrawer, nep245::DefuseMtWithdrawer},
 };
 use crate::sandbox::assert_a_contains_b;
+use defuse_near_utils::REFUND_MEMO;
 use defuse_sandbox::tx::FnCallBuilder;
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_sdk::json_types::U128;
@@ -1634,7 +1664,7 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
         authorized_id: None,
         token_ids: Cow::Borrowed(&mt_token_ids),
         amounts: Cow::Borrowed(&refund_amounts),
-        memo: Some(Cow::Borrowed("refund")),
+        memo: Some(Cow::Borrowed(REFUND_MEMO)),
     }];
     let expected_mt_burn = MtEvent::MtBurn(Cow::Borrowed(&burn_events));
 
@@ -1644,7 +1674,7 @@ async fn mt_transfer_call_duplicate_tokens_with_stub_execute_and_refund() {
         new_owner_id: Cow::Borrowed(user.id().as_ref()),
         token_ids: Cow::Borrowed(&ft_token_ids),
         amounts: Cow::Borrowed(&refund_amounts), // Use capped refund amounts
-        memo: Some(Cow::Borrowed("refund")),
+        memo: Some(Cow::Borrowed(REFUND_MEMO)),
     }];
     let expected_mt_transfer = MtEvent::MtTransfer(Cow::Borrowed(&transfer_events));
 

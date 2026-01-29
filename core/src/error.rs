@@ -4,6 +4,7 @@ use crate::{
     token_id::{TokenId, TokenIdError, nep171::Nep171TokenId},
 };
 use defuse_crypto::PublicKey;
+use defuse_nep245::ErrorLogTooLong;
 use near_sdk::{AccountId, FunctionError, serde_json};
 use thiserror::Error as ThisError;
 
@@ -79,4 +80,7 @@ pub enum DefuseError {
 
     #[error("token_id is too long: max length is {MAX_TOKEN_ID_LEN}, got {0}")]
     TokenIdTooLarge(usize),
+
+    #[error(transparent)]
+    LogTooLong(#[from] ErrorLogTooLong),
 }

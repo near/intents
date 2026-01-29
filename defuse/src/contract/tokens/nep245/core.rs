@@ -209,6 +209,7 @@ impl Contract {
             .as_slice()
             .into(),
         )
+        .check_refund()?
         .emit();
 
         Ok(())

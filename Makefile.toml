@@ -208,6 +208,10 @@ run_task = "run-tests"
 command = "cargo"
 args = ["test", "--workspace", "--all-targets", "${@}"]
 
+[tasks.run-tests-long]
+command = "cargo"
+args = ["test", "--workspace", "--all-targets", "--features=long", "${@}"]
+
 # ============================================================================
 # Cleanup tasks
 # ============================================================================

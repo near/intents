@@ -9,7 +9,7 @@ use defuse_core::{
     DefuseError, Result, engine::StateView, intents::tokens::FtWithdraw,
     token_id::nep141::Nep141TokenId,
 };
-use defuse_near_utils::UnwrapOrPanic;
+use defuse_near_utils::{REFUND_MEMO, UnwrapOrPanic};
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::{
     fungible_token::core::ext_ft_core, storage_management::ext_storage_management,
@@ -188,7 +188,7 @@ impl FungibleTokenWithdrawResolver for Contract {
             self.deposit(
                 sender_id,
                 [(Nep141TokenId::new(token).into(), refund)],
-                Some("refund"),
+                Some(REFUND_MEMO),
             )
             .unwrap_or_panic();
         }
