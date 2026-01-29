@@ -72,6 +72,7 @@ impl Contract {
                 .then(
                     Self::ext(env::current_account_id())
                         .with_static_gas(Gas::from_tgas(10))
+                        .with_unused_gas_weight(0)
                         .resolve_mt_transfer(amounts),
                 ),
         )
