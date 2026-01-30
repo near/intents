@@ -23,8 +23,15 @@ fn main() -> Result<()> {
 
     match cli.command {
         Commands::BuildAll(options) => {
-            let path = build_contracts(ContractOptions::all_without_features(), options)?;
-            println!("Built all contracts at: {:?}", path);
+            let artifacts = build_contracts(ContractOptions::all_without_features(), options)?;
+            println!("Built {} contracts", artifacts.len());
+
+            for a in artifacts {
+                println!("Built {:?} at: {:?}", a.contract, a.wasm_path);
+                if let Some(checksum) = a.checksum_hex {
+                    println!("Checksum: {}", checksum);
+                }
+            }
         }
         Commands::Build { contract, options } => {
             let results = build_contracts(
@@ -32,11 +39,14 @@ fn main() -> Result<()> {
                 options,
             )?;
 
-            let (contract, path) = results
+            let a = results
                 .first()
                 .ok_or(anyhow::anyhow!("No contracts built"))?;
 
-            println!("Built {:?} contract at: {:?}", contract, path);
+            println!("Built {:?} contract at: {:?}", a.contract, a.wasm_path);
+            if let Some(checksum) = &a.checksum_hex {
+                println!("Checksum: {}", checksum);
+            }
         }
     }
 

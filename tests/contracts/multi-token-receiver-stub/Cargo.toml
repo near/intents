@@ -8,6 +8,19 @@ repository.workspace = true
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[package.metadata.near.reproducible_build]
+image = "sourcescan/cargo-near:0.18.0-rust-1.86.0"
+image_digest = "sha256:2d0d458d2357277df669eac6fa23a1ac922e5ed16646e1d3315336e4dff18043"
+passed_env = []
+container_build_command = [
+    "cargo",
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--locked",
+    "--no-embed-abi",
+]
+
 [dependencies]
 defuse = { workspace = true }
 defuse-nep245.workspace = true
