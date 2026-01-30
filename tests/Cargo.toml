@@ -17,6 +17,8 @@ defuse = ["dep:defuse"]
 escrow = ["dep:defuse-escrow-swap"]
 
 [dependencies]
+defuse-sandbox = { workspace = true }
+
 defuse = { workspace = true, features = ["contract", "arbitrary", "imt"],  optional = true}
 defuse-escrow-swap = { workspace = true, features = ["auth_call"],  optional = true }
 defuse-poa-factory = {workspace = true, features = ["contract"], optional = true }
@@ -27,7 +29,6 @@ defuse-near-utils = { workspace = true }
 defuse-nep245.workspace = true
 defuse-oneshot-condvar.workspace = true
 defuse-randomness.workspace = true
-defuse-sandbox = { workspace = true, features = ["escrow-swap"] }
 defuse-serde-utils = { workspace = true }
 defuse-test-utils.workspace = true
 defuse-token-id.workspace = true
