@@ -7,7 +7,6 @@ use std::borrow::Cow;
 use std::time::Duration;
 
 use crate::env::Env;
-use near_sdk::serde_json;
 use crate::extensions::defuse::intents::ExecuteIntentsExt;
 use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
 use crate::utils::escrow_builders::FundMessageBuilder;
@@ -25,6 +24,7 @@ use defuse_oneshot_condvar::storage::{Config as CondVarConfig, ContractStorage a
 use defuse_sandbox::{EscrowProxyExt, EscrowSwapExt, MtExt, MtViewExt, OneshotCondVarExt};
 use defuse_token_id::TokenId;
 use defuse_token_id::nep245::Nep245TokenId;
+use near_sdk::serde_json;
 
 use near_sdk::json_types::U128;
 use near_sdk::state_init::{StateInit, StateInitV1};

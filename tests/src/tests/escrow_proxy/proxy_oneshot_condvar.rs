@@ -13,8 +13,8 @@ use defuse_sandbox::{
 use defuse_token_id::TokenId;
 use defuse_token_id::nep141::Nep141TokenId;
 use multi_token_receiver_stub::{FTReceiverMode, MTReceiverMode};
-use near_sdk::serde_json;
 use near_sdk::AccountId;
+use near_sdk::serde_json;
 use near_sdk::{
     Gas, GlobalContractId, NearToken,
     json_types::U128,
