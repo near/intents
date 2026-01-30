@@ -2,7 +2,7 @@
 
 ## What is NEAR Intents?
 
-NEAR Intents is a smart contract developed for the NEAR blockchain. It facilitates atomic P2P transactions among peers, by allow trustless transactions in the smart contract.
+NEAR Intents is a smart contract developed for the NEAR blockchain. It facilitates atomic P2P transactions among peers, by allowing trustless transactions in the smart contract.
 
 Please note that the main smart contract in the repository, under the directory `defuse`, is referred to as the "Verifier" in the ecosystem. Near Intents contains more components that work in tandem to achieve its purpose. Nevertheless, this smart contract, the Verifier, can be used independently without needing anything else.
 
