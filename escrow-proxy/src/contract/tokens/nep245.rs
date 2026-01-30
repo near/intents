@@ -6,7 +6,8 @@ use near_sdk::{AccountId, Gas, NearToken, PromiseOrValue, env, json_types::U128,
 
 const MT_RESOLVE_TRANSFER_GAS: Gas = Gas::from_tgas(10);
 const MT_TRANSFER_CALL_GAS: Gas = Gas::from_tgas(50);
-const MT_CHECK_AND_FORWARD_GAS: Gas = FT_RESOLVE_TRANSFER_GAS + FT_TRANSFER_CALL_GAS;
+const MT_CHECK_AND_FORWARD_GAS: Gas =
+    Gas::from_tgas(MT_RESOLVE_TRANSFER_GAS.as_tgas() + MT_TRANSFER_CALL_GAS.as_tgas());
 
 use crate::contract::{Contract, ContractExt};
 use crate::message::TransferMessage;
