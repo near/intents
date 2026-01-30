@@ -5,6 +5,9 @@ use near_contract_standards::fungible_token::{core::ext_ft_core, receiver::Fungi
 use near_sdk::{AccountId, Gas, NearToken, PromiseOrValue, env, json_types::U128, near};
 
 const FT_RESOLVE_TRANSFER_GAS: Gas = Gas::from_tgas(10);
+const FT_TRANSFER_CALL_GAS: Gas = Gas::from_tgas(50);
+const FT_CHECK_AND_FORWARD_GAS: Gas = FT_RESOLVE_TRANSFER_GAS + FT_TRANSFER_CALL_GAS;
+
 
 use crate::contract::{Contract, ContractExt};
 use crate::message::TransferMessage;
@@ -35,7 +38,7 @@ impl FungibleTokenReceiver for Contract {
                 Self::ext(env::current_account_id())
                     .with_unused_gas_weight(1)
                     //NOTE: forward all gas, make sure that there is enough gas to resolve transfer
-                    .with_static_gas(FT_RESOLVE_TRANSFER_GAS)
+                    .with_static_gas(FT_CHECK_AND_FORWARD_GAS)
                     .check_authorization_and_forward_ft(
                         token,
                         transfer_message.receiver_id,
@@ -65,6 +68,7 @@ impl Contract {
             ext_ft_core::ext(token)
                 .with_attached_deposit(NearToken::from_yoctonear(1))
                 .with_unused_gas_weight(1)
+                .with_static_gas(FT_TRANSFER_CALL_GAS)
                 .ft_transfer_call(
                     receiver_id,
                     amount,
