@@ -86,7 +86,7 @@ impl Contract {
 
     #[private]
     pub fn resolve_ft_transfer(&self, original_amount: U128) -> U128 {
-        let used = bounded_promise_result::<U128>(0).unwrap_or_default();
+        let used = bounded_promise_result::<U128>(0).unwrap_or(original_amount);
         U128(original_amount.0.saturating_sub(used.0))
     }
 }
