@@ -7,10 +7,13 @@ pub use contracts::*;
 
 use anyhow::Result;
 
-pub fn build_contract(contract: &Contract, options: &BuildOptions) -> Result<Utf8PathBuf> {
-    builder::build_contract(contract, options)
-}
+use crate::builder::ContractBuilder;
 
-pub fn build_workspace_contracts(options: &BuildOptions) -> Result<Vec<(Contract, Utf8PathBuf)>> {
-    builder::build_workspace_contracts(options)
+pub fn build_contracts(
+    contracts: Vec<ContractOptions>,
+    options: BuildOptions,
+) -> Result<Vec<(Contract, Utf8PathBuf)>> {
+    ContractBuilder::new(contracts)
+        .apply_options(options)
+        .build_contracts()
 }

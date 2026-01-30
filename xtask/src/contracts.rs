@@ -1,4 +1,30 @@
-use clap::ValueEnum;
+use clap::{Args, ValueEnum};
+
+#[derive(Args, Clone, Default, Debug)]
+pub struct ContractOptions {
+    #[arg(short, long)]
+    pub contract: Contract,
+    pub features: Option<String>,
+}
+
+impl ContractOptions {
+    pub fn new_without_features(contract: Contract) -> Self {
+        Self {
+            contract,
+            features: None,
+        }
+    }
+
+    pub fn all_without_features() -> Vec<Self> {
+        Contract::all()
+            .into_iter()
+            .map(|c| Self {
+                contract: c,
+                features: None,
+            })
+            .collect()
+    }
+}
 
 pub struct ContractSpec {
     pub name: &'static str,
@@ -47,8 +73,8 @@ impl Contract {
         }
     }
 
-    pub const fn all() -> [Self; 5] {
-        [
+    pub fn all() -> Vec<Self> {
+        vec![
             Self::Defuse,
             Self::PoaToken,
             Self::PoaFactory,

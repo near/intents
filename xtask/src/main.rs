@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use xtask::{BuildOptions, Contract, build_contract, build_workspace_contracts};
+use xtask::{BuildOptions, Contract, ContractOptions, build_contracts};
 
 #[derive(Parser)]
 struct Cli {
@@ -23,11 +23,19 @@ fn main() -> Result<()> {
 
     match cli.command {
         Commands::BuildAll(options) => {
-            let path = build_workspace_contracts(&options)?;
+            let path = build_contracts(ContractOptions::all_without_features(), options)?;
             println!("Built all contracts at: {:?}", path);
         }
         Commands::Build { contract, options } => {
-            let path = build_contract(&contract, &options)?;
+            let results = build_contracts(
+                vec![ContractOptions::new_without_features(contract)],
+                options,
+            )?;
+
+            let (contract, path) = results
+                .first()
+                .ok_or(anyhow::anyhow!("No contracts built"))?;
+
             println!("Built {:?} contract at: {:?}", contract, path);
         }
     }

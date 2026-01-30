@@ -1,4 +1,4 @@
-use xtask::BuildOptions;
+use xtask::{BuildOptions, ContractOptions};
 
 const DEFUSE_WASM_VAR: &str = "DEFUSE_WASM";
 const POA_FACTORY_WASM_VAR: &str = "DEFUSE_POA_FACTORY_WASM";
@@ -13,7 +13,10 @@ fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
     println!("cargo:rerun-if-changed=../escrow-swap");
     println!("cargo:rerun-if-changed=./contracts/multi-token-receiver-stub");
 
-    let paths = xtask::build_workspace_contracts(&BuildOptions::default())?;
+    let paths = xtask::build_contracts(
+        ContractOptions::all_without_features(),
+        BuildOptions::default(),
+    )?;
 
     for (contract, path) in paths {
         let env_var_key = match contract {
