@@ -20,13 +20,19 @@ This contract combines two Rust synchronization primitives:
 stateDiagram-v2
     [*] --> Idle: new()
 
-    Idle --> WaitingForNotification: cv_wait()
-    Idle --> Authorized: cv_notify_one()
+    state "Idle<br/>───<br/>No pending yield" as Idle
+    state "WaitingForNotification<br/>───<br/>⏳ Yield pending" as WaitingForNotification
+    state "Authorized<br/>───<br/>No pending yield" as Authorized
+    state "Done<br/>───<br/>No pending yield" as Done
 
-    WaitingForNotification --> Authorized: cv_notify_one()
-    WaitingForNotification --> Idle: cv_wait_resume() timeout
+    Idle --> WaitingForNotification: cv_wait()<br/>(Creates yield promise)
+    Idle --> Authorized: cv_notify_one()<br/>(No yield to resume)
 
-    Authorized --> Done: cv_wait_resume() or cv_wait()
+    WaitingForNotification --> Authorized: cv_notify_one()<br/>(Resumes yield)
+    WaitingForNotification --> Idle: cv_wait_resume() timeout<br/>(Emits Timeout, can retry)
+
+    Authorized --> Done: cv_wait()<br/>(Immediate success)
+    Authorized --> Done: cv_wait_resume()<br/>(Yield resumed)
 
     Done --> [*]: cleanup
 ```
@@ -50,6 +56,17 @@ stateDiagram-v2
 | `WaitingForNotification` | `cv_wait_resume()` timeout | `Idle` | Emits `Timeout` event, can retry |
 | `Authorized` | `cv_wait()` | `Done` | Immediate success, no yield |
 | `Authorized` | `cv_wait_resume()` | `Done` | Yield resumed or race condition |
+
+## Action Matrix
+
+What happens when each action is performed in each state:
+
+| State | `cv_wait()` | `cv_notify_one()` | Promise resumed (timeout) | Promise resumed (notified) |
+|-------|-------------|-------------------|---------------------------|----------------------------|
+| **Idle** | → `WaitingForNotification`<br/>Creates yield promise | → `Authorized`<br/>No yield to resume | ❌ Impossible<br/>No pending promise | ❌ Impossible<br/>No pending promise |
+| **WaitingForNotification** | ❌ Error<br/>"already waiting" | → `Authorized`<br/>Resumes yield | → `Idle`<br/>Emits Timeout, can retry | → `Done`<br/>Returns `true` |
+| **Authorized** | → `Done`<br/>Immediate success | ❌ Error<br/>"already notified" | → `Done`<br/>Race condition handled | → `Done`<br/>Returns `true` |
+| **Done** | ❌ Error<br/>"already done" | ❌ Error<br/>"already notified" | ❌ Impossible<br/>Already terminal | ❌ Impossible<br/>Already terminal |
 
 ## Execution Paths
 
