@@ -272,7 +272,7 @@ async fn maybe_view_escrow(escrow: &Account) {
 /// Test partial fill with dust: verifies remaining funds returned to maker after timeout
 #[tokio::test]
 async fn test_partial_fill_funds_returned_after_timeout() {
-    use super::EscrowExt;
+    use crate::extensions::escrow::EscrowExt;
     use crate::env::Env as DefuseEnv;
     use crate::utils::escrow_builders::ParamsBuilder;
     use crate::utils::escrow_builders::{FillMessageBuilder, FundMessageBuilder};

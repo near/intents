@@ -24,6 +24,12 @@ pub static DEFUSE_LEGACY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("r
 pub static ESCROW_SWAP_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("res/defuse_escrow_swap"));
 
+pub static ESCROW_PROXY_WASM: LazyLock<Vec<u8>> =
+    LazyLock::new(|| read_wasm("res/defuse_escrow_proxy"));
+
+pub static ONESHOT_CONDVAR_WASM: LazyLock<Vec<u8>> =
+    LazyLock::new(|| read_wasm("res/defuse_oneshot_condvar"));
+
 pub static POA_FACTORY_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm("releases/defuse_poa_factory"));
 

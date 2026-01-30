@@ -1225,7 +1225,6 @@ dependencies = [
  "near-crypto",
  "near-sdk",
  "rstest",
- "serde_json",
  "strum 0.27.2",
  "tlb-ton",
  "tokio",

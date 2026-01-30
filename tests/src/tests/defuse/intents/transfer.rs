@@ -13,7 +13,7 @@ use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
 use crate::extensions::escrow::contract::token_id::nep245::Nep245TokenId;
 use defuse_sandbox::extensions::ft::FtViewExt;
 use multi_token_receiver_stub::MTReceiverMode;
-use near_sdk::{AccountId, Gas};
+use near_sdk::{AccountId, Gas, serde_json};
 use rstest::rstest;
 
 use crate::extensions::defuse::contract::core::amounts::Amounts;

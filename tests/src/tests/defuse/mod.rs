@@ -1,4 +1,4 @@
-pub mod accounts;
+mod accounts;
 mod intents;
 mod state;
 mod storage;
