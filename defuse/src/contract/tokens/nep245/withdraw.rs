@@ -12,7 +12,7 @@ use defuse_core::{
     intents::tokens::MtWithdraw,
     token_id::{nep141::Nep141TokenId, nep245::Nep245TokenId},
 };
-use defuse_near_utils::{MaxJsonLength, UnwrapOrPanic, UnwrapOrPanicError};
+use defuse_near_utils::{MaxJsonLength, REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::ext_mt_core;
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::storage_management::ext_storage_management;
@@ -252,7 +252,7 @@ impl MultiTokenWithdrawResolver for Contract {
                         None
                     }
                 }),
-            Some("refund"),
+            Some(REFUND_MEMO),
         )
         .unwrap_or_panic();
 

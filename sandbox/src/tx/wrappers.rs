@@ -69,7 +69,16 @@ impl Debug for TestExecutionOutcome<'_> {
                 if let ValueOrReceiptId::Value(value) = v {
                     let bytes = value.raw_bytes().unwrap();
                     if !bytes.is_empty() {
-                        write!(f, ", OK: {bytes:?}")?;
+                        if bytes.len() <= 32 {
+                            write!(f, ", OK: {bytes:?}")?;
+                        } else {
+                            write!(
+                                f,
+                                ", OK: {:?}..{:?}",
+                                &bytes[..16],
+                                &bytes[bytes.len() - 16..]
+                            )?;
+                        }
                     }
                 }
                 Ok(())

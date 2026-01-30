@@ -39,8 +39,11 @@ contract = []
 escrow-swap = ["dep:defuse-escrow-swap"]
 nep141 = []
 nep245 = []
+# Feature to enable example that requires test utilities (currently broken due to refactoring)
+test-utils = []
 
 abi = ["defuse-oneshot-condvar/abi", "defuse-escrow-swap?/abi"]
 
 [[example]]
 name = "escrow-swap-demo"
+required-features = ["test-utils"]

@@ -1,4 +1,4 @@
-use defuse_core::Salt;
+use defuse::core::Salt;
 use defuse_sandbox::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use near_sdk::{AccountId, NearToken, serde_json::json};
 

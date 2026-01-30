@@ -1,4 +1,4 @@
-use defuse_core::fees::Pips;
+use defuse::core::fees::Pips;
 use defuse_sandbox::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use near_sdk::{AccountId, AccountIdRef, NearToken, serde_json::json};
 

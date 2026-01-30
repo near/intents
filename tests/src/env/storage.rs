@@ -1,5 +1,4 @@
 use anyhow::Result;
-use defuse_poa_factory::sandbox_ext::PoAFactoryExt;
 use defuse_sandbox::{
     Account, SigningAccount,
     extensions::{acl::AclExt, mt::MtViewExt},
@@ -7,7 +6,7 @@ use defuse_sandbox::{
 use near_sdk::AccountId;
 use std::{collections::HashSet, convert::Infallible, sync::atomic::Ordering};
 
-use defuse::{
+use crate::extensions::defuse::contract::{
     contract::Role,
     core::{
         Deadline, Nonce,
@@ -16,9 +15,13 @@ use defuse::{
         token_id::{TokenId, nep141::Nep141TokenId},
     },
     nep245::Token,
-    sandbox_ext::{
+};
+use crate::extensions::{
+    defuse::{
         account_manager::AccountViewExt, deployer::DefuseExt, intents::ExecuteIntentsExt,
+        signer::DefuseSignerExt,
     },
+    poa::PoAFactoryExt,
 };
 use defuse_randomness::{Rng, make_true_rng};
 use futures::{
@@ -26,12 +29,10 @@ use futures::{
     future::{join_all, try_join_all},
 };
 
-use crate::tests::defuse::{
-    DefuseSigner,
-    env::{
-        Env,
-        state::{AccountWithTokens, PersistentState},
-    },
+use crate::env::{
+    Env,
+    state::{AccountWithTokens, PersistentState},
+    wasms::DEFUSE_WASM,
 };
 
 impl Env {
@@ -45,7 +46,7 @@ impl Env {
             .await
             .expect("Failed to grant upgrader role");
 
-        self.upgrade_defuse(self.defuse.id())
+        self.upgrade_defuse(self.defuse.id(), DEFUSE_WASM.clone())
             .await
             .expect("Failed to upgrade defuse");
 

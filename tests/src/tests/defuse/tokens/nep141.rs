@@ -1,31 +1,34 @@
-use crate::tests::defuse::env::Env;
-use defuse::core::token_id::TokenId;
-use defuse::core::token_id::nep141::Nep141TokenId;
+use crate::extensions::{
+    defuse::{
+        contract::contract::Role,
+        contract::core::token_id::nep141::Nep141TokenId,
+        contract::core::{intents::tokens::FtWithdraw, token_id::TokenId},
+        signer::DefaultDefuseSignerExt,
+        tokens::nep141::{DefuseFtDepositor, DefuseFtWithdrawer},
+    },
+    poa::PoAFactoryExt,
+};
+use multi_token_receiver_stub::MTReceiverMode as StubAction;
+use near_sdk::json_types::U128;
 
-use defuse::sandbox_ext::tokens::nep141::{DefuseFtDepositor, DefuseFtWithdrawer};
-use defuse::{
-    contract::Role,
-    core::intents::tokens::{FtWithdraw, NotifyOnTransfer},
+use crate::env::{Env, MT_RECEIVER_STUB_WASM};
+use crate::extensions::defuse::contract::{
+    core::intents::tokens::NotifyOnTransfer,
     tokens::{DepositAction, DepositMessage, ExecuteIntents},
 };
-use defuse_poa_factory::sandbox_ext::PoAFactoryExt;
-use defuse_sandbox::extensions::acl::AclExt;
-use defuse_sandbox::extensions::ft::FtViewExt;
-use defuse_sandbox::extensions::mt::MtViewExt;
+
+use defuse_sandbox::extensions::{
+    acl::AclExt,
+    ft::{FtExt, FtViewExt},
+    mt::MtViewExt,
+};
+
 use defuse_sandbox::tx::FnCallBuilder;
-use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_sdk::NearToken;
-use near_sdk::{json_types::U128, serde_json};
+use near_sdk::serde_json;
 use rstest::rstest;
 
-#[derive(Debug, Clone)]
-struct TransferCallExpectation {
-    action: StubAction,
-    intent_transfer_amount: Option<u128>,
-    refund_if_fails: bool,
-    expected_sender_ft_balance: u128,
-    expected_receiver_mt_balance: u128,
-}
+use crate::extensions::defuse::contract::core::{amounts::Amounts, intents::tokens::Transfer};
 
 #[rstest]
 #[trace]
@@ -107,8 +110,6 @@ async fn poa_deposit() {
 #[trace]
 #[tokio::test]
 async fn deposit_withdraw_intent() {
-    use crate::tests::defuse::DefuseSignerExt;
-
     let env = Env::builder().build().await;
 
     let (user, other_user, ft) =
@@ -188,8 +189,6 @@ async fn deposit_withdraw_intent() {
 #[trace]
 #[tokio::test]
 async fn deposit_withdraw_intent_refund() {
-    use crate::tests::defuse::DefuseSignerExt;
-
     let env = Env::builder().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
@@ -256,7 +255,7 @@ async fn deposit_withdraw_intent_refund() {
 #[rstest]
 #[tokio::test]
 async fn ft_force_withdraw() {
-    use defuse::core::token_id::nep141::Nep141TokenId;
+    use crate::extensions::defuse::contract::core::token_id::nep141::Nep141TokenId;
 
     let env = Env::builder().deployer_as_super_admin().build().await;
 
@@ -328,6 +327,15 @@ async fn ft_force_withdraw() {
     assert_eq!(ft.ft_balance_of(other_user.id()).await.unwrap(), 1000);
 }
 
+#[derive(Debug, Clone)]
+struct TransferCallExpectation {
+    action: StubAction,
+    intent_transfer_amount: Option<u128>,
+    refund_if_fails: bool,
+    expected_sender_ft_balance: u128,
+    expected_receiver_mt_balance: u128,
+}
+
 #[rstest]
 #[case::nothing_to_refund(TransferCallExpectation {
     action: StubAction::ReturnValue(0.into()),
@@ -368,11 +376,6 @@ async fn ft_force_withdraw() {
 async fn ft_transfer_call_calls_mt_on_transfer_variants(
     #[case] expectation: TransferCallExpectation,
 ) {
-    use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
-    use defuse_sandbox::extensions::ft::FtExt;
-
-    use crate::tests::defuse::{DefuseSignerExt, env::MT_RECEIVER_STUB_WASM};
-
     let env = Env::builder().deployer_as_super_admin().build().await;
 
     let (user, intent_receiver, ft) =

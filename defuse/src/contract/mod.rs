@@ -53,6 +53,8 @@ pub enum Role {
     SaltManager,
 
     GarbageCollector,
+
+    UnrestrictedAccountManager,
 }
 
 #[access_control(role_type(Role))]

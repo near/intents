@@ -54,6 +54,17 @@ pub enum DefuseEvent<'a> {
     #[event_version("0.3.0")]
     StorageDeposit(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, StorageDeposit>>>]>),
 
+    #[cfg(feature = "imt")]
+    #[event_version("0.3.0")]
+    ImtMint(
+        Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, crate::intents::tokens::imt::ImtMint>>>]>,
+    ),
+
+    #[cfg(feature = "imt")]
+    #[event_version("0.3.0")]
+    ImtBurn(
+        Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, crate::intents::tokens::imt::ImtBurn>>>]>,
+    ),
     #[event_version("0.3.0")]
     #[from(skip)]
     AccountLocked(AccountEvent<'a, ()>),

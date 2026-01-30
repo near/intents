@@ -213,6 +213,21 @@ where
     fn auth_call(&mut self, signer_id: &AccountIdRef, auth_call: AuthCall) -> Result<()> {
         self.state.auth_call(signer_id, auth_call)
     }
+
+    #[inline]
+    fn mint(&mut self, owner_id: AccountId, tokens: Amounts, memo: Option<String>) -> Result<()> {
+        self.state.mint(owner_id, tokens, memo)
+    }
+
+    #[inline]
+    fn burn(
+        &mut self,
+        owner_id: &AccountIdRef,
+        tokens: Amounts,
+        memo: Option<String>,
+    ) -> Result<()> {
+        self.state.burn(owner_id, tokens, memo)
+    }
 }
 
 /// Accumulates internal deposits and withdrawals on different tokens

@@ -6,11 +6,11 @@
 use std::borrow::Cow;
 use std::time::Duration;
 
-use crate::tests::defuse::DefuseSignerExt;
-use crate::tests::defuse::env::Env;
+use crate::env::Env;
+use crate::extensions::defuse::intents::ExecuteIntentsExt;
+use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
 use crate::utils::escrow_builders::FundMessageBuilder;
 use crate::utils::escrow_builders::ParamsBuilder;
-use defuse::sandbox_ext::intents::ExecuteIntentsExt;
 use defuse_core::Deadline;
 use defuse_core::amounts::Amounts;
 use defuse_core::intents::auth::AuthCall;

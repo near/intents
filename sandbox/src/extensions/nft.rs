@@ -1,13 +1,8 @@
-use std::sync::LazyLock;
-
 use near_api::types::nft::NFTContractMetadata;
 use near_contract_standards::non_fungible_token::{Token, TokenId, metadata::TokenMetadata};
 use near_sdk::{AccountId, AccountIdRef, NearToken, serde_json::json};
 
-use crate::{Account, SigningAccount, read_wasm, tx::FnCallBuilder};
-
-static NON_FUNGIBLE_TOKEN_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm("releases/non-fungible-token"));
+use crate::{Account, SigningAccount, tx::FnCallBuilder};
 
 pub trait NftExt {
     async fn nft_transfer(
@@ -144,6 +139,7 @@ pub trait NftDeployerExt {
         token_name: impl AsRef<str>,
         owner_id: impl AsRef<AccountIdRef>,
         metadata: NFTContractMetadata,
+        wasm: impl Into<Vec<u8>>,
     ) -> anyhow::Result<SigningAccount>;
 }
 
@@ -153,11 +149,12 @@ impl NftDeployerExt for SigningAccount {
         token_name: impl AsRef<str>,
         owner_id: impl AsRef<AccountIdRef>,
         metadata: NFTContractMetadata,
+        wasm: impl Into<Vec<u8>>,
     ) -> anyhow::Result<Self> {
         self.deploy_sub_contract(
             token_name,
             NearToken::from_near(100),
-            NON_FUNGIBLE_TOKEN_WASM.to_vec(),
+            wasm.into(),
             FnCallBuilder::new("new").json_args(json!({
                 "owner_id": owner_id.as_ref(),
                 "metadata": metadata

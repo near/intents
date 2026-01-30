@@ -83,6 +83,7 @@ defuse-wnear.path = "wnear"
 
 defuse-randomness.path = "randomness"
 defuse-test-utils.path = "test-utils"
+defuse-tests.path = "tests"
 
 cargo-near-build = "0.9.0"
 near-account-id = "2.4.0"

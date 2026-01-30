@@ -68,6 +68,14 @@ pub enum Intent {
 
     /// See [`AuthCall`]
     AuthCall(AuthCall),
+
+    // See [`ImtMint`]
+    #[cfg(feature = "imt")]
+    ImtMint(crate::intents::tokens::imt::ImtMint),
+
+    // See [`ImtBurn`]
+    #[cfg(feature = "imt")]
+    ImtBurn(crate::intents::tokens::imt::ImtBurn),
 }
 
 pub trait ExecutableIntent {
@@ -125,6 +133,10 @@ impl ExecutableIntent for Intent {
                 intent.execute_intent(signer_id, engine, intent_hash)
             }
             Self::AuthCall(intent) => intent.execute_intent(signer_id, engine, intent_hash),
+            #[cfg(feature = "imt")]
+            Self::ImtMint(intent) => intent.execute_intent(signer_id, engine, intent_hash),
+            #[cfg(feature = "imt")]
+            Self::ImtBurn(intent) => intent.execute_intent(signer_id, engine, intent_hash),
         }
     }
 }

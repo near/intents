@@ -1,11 +1,7 @@
-use std::sync::LazyLock;
-
 use near_sdk::{AccountId, NearToken, serde_json::json};
 
 use super::ft::FtExt;
-use crate::{SigningAccount, read_wasm, tx::FnCallBuilder};
-
-static WNEAR_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| read_wasm("releases/wnear"));
+use crate::{SigningAccount, tx::FnCallBuilder};
 
 pub trait WNearExt: FtExt {
     async fn near_deposit(
@@ -53,15 +49,23 @@ impl WNearExt for SigningAccount {
 }
 
 pub trait WNearDeployerExt {
-    async fn deploy_wrap_near(&self, name: impl AsRef<str>) -> anyhow::Result<SigningAccount>;
+    async fn deploy_wrap_near(
+        &self,
+        name: impl AsRef<str>,
+        wasm: impl Into<Vec<u8>>,
+    ) -> anyhow::Result<SigningAccount>;
 }
 
 impl WNearDeployerExt for SigningAccount {
-    async fn deploy_wrap_near(&self, name: impl AsRef<str>) -> anyhow::Result<Self> {
+    async fn deploy_wrap_near(
+        &self,
+        name: impl AsRef<str>,
+        wasm: impl Into<Vec<u8>>,
+    ) -> anyhow::Result<Self> {
         self.deploy_sub_contract(
             name,
             NearToken::from_near(100),
-            WNEAR_WASM.clone(),
+            wasm.into(),
             FnCallBuilder::new("new"),
         )
         .await

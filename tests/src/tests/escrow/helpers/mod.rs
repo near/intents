@@ -1,15 +1,16 @@
-use defuse::{
-    contract::config::{DefuseConfig, RolesConfig},
-    core::fees::FeesConfig,
-    sandbox_ext::deployer::DefuseExt,
-};
-use defuse_escrow_swap::Pips;
-use defuse_poa_factory::{
-    contract::Role as PoAFactoryRole,
-    sandbox_ext::{PoAFactoryDeployerExt, PoAFactoryExt},
+use crate::extensions::{
+    defuse::{
+        contract::{
+            contract::config::{DefuseConfig, RolesConfig},
+            core::fees::FeesConfig,
+        },
+        deployer::DefuseExt,
+    },
+    escrow::contract::Pips,
+    poa::{PoAFactoryDeployerExt, PoAFactoryExt, contract::contract::Role as PoAFactoryRole},
 };
 use defuse_sandbox::{
-    Account, Sandbox, SigningAccount,
+    Account, Sandbox, SigningAccount, anyhow,
     api::types::transaction::actions::GlobalContractDeployMode,
     extensions::{storage_management::StorageManagementExt, wnear::WNearDeployerExt},
     sandbox,
@@ -19,7 +20,7 @@ use impl_tools::autoimpl;
 use near_sdk::{GlobalContractId, NearToken};
 use rstest::fixture;
 
-use crate::tests::escrow::ESCROW_SWAP_WASM;
+use crate::env::{DEFUSE_WASM, ESCROW_SWAP_WASM, POA_FACTORY_WASM, WNEAR_WASM};
 
 #[fixture]
 pub async fn env() -> Env {
@@ -132,7 +133,7 @@ impl Env {
     }
 
     async fn deploy_verifier(root: &SigningAccount) -> anyhow::Result<Account> {
-        let wnear = root.deploy_wrap_near("wnear").await?;
+        let wnear = root.deploy_wrap_near("wnear", WNEAR_WASM.clone()).await?;
 
         root.deploy_defuse(
             "intents",
@@ -144,7 +145,7 @@ impl Env {
                 },
                 roles: RolesConfig::default(),
             },
-            false,
+            DEFUSE_WASM.clone(),
         )
         .await
         .map(Into::into)
@@ -162,6 +163,7 @@ impl Env {
                 (PoAFactoryRole::TokenDeployer, [root.id().clone()]),
                 (PoAFactoryRole::TokenDepositer, [root.id().clone()]),
             ],
+            POA_FACTORY_WASM.clone(),
         )
         .await
         .map(Into::into)

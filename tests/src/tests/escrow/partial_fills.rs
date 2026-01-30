@@ -1,30 +1,30 @@
-use std::time::Duration;
-
-use defuse::{
-    core::intents::tokens::NotifyOnTransfer,
-    tokens::{DepositAction, DepositMessage},
-};
-use defuse_escrow_swap::{
+use crate::extensions::escrow::contract::{
     ContractStorage, Deadline, OverrideSend, Params, Pips, ProtocolFees,
     action::{FillAction, TransferAction, TransferMessage},
     token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId},
 };
+use crate::extensions::{
+    defuse::contract::{
+        core::intents::tokens::NotifyOnTransfer,
+        tokens::{DepositAction, DepositMessage},
+    },
+    escrow::{EscrowExt, EscrowExtView},
+};
 use defuse_sandbox::{
-    Account,
+    Account, anyhow,
     extensions::{ft::FtExt, mt::MtViewExt},
 };
 use futures::{TryStreamExt, stream::FuturesOrdered};
 use itertools::Itertools;
 use near_sdk::{
-    AccountIdRef,
+    AccountIdRef, serde_json,
     state_init::{StateInit, StateInitV1},
 };
+use std::time::Duration;
+
 use rstest::rstest;
 
-use crate::tests::escrow::{
-    EscrowExt, EscrowExtView,
-    env::{Env, env},
-};
+use crate::tests::escrow::helpers::{Env, env};
 
 #[rstest]
 #[tokio::test]
@@ -273,7 +273,7 @@ async fn maybe_view_escrow(escrow: &Account) {
 #[tokio::test]
 async fn test_partial_fill_funds_returned_after_timeout() {
     use super::EscrowExt;
-    use crate::tests::defuse::env::Env as DefuseEnv;
+    use crate::env::Env as DefuseEnv;
     use crate::utils::escrow_builders::ParamsBuilder;
     use crate::utils::escrow_builders::{FillMessageBuilder, FundMessageBuilder};
     use defuse_escrow_swap::decimal::UD128;

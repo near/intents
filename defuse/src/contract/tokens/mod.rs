@@ -4,7 +4,7 @@ mod nep245;
 
 use super::Contract;
 use defuse_core::{DefuseError, Result, token_id::TokenId};
-use defuse_near_utils::{Lock, MaxJsonLength, UnwrapOrPanic};
+use defuse_near_utils::{Lock, MaxJsonLength, REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
 use itertools::{Either, Itertools};
 use near_sdk::{AccountId, AccountIdRef, Gas, env, json_types::U128, serde_json};
@@ -54,6 +54,8 @@ impl Contract {
                     }
                 }
                 TokenId::Nep141(_) | TokenId::Nep245(_) => {}
+                #[cfg(feature = "imt")]
+                TokenId::Imt(_) => {}
             }
 
             owner
@@ -63,7 +65,9 @@ impl Contract {
         }
 
         if !mint_event.amounts.is_empty() {
-            MtEvent::MtMint([mint_event].as_slice().into()).emit();
+            MtEvent::MtMint([mint_event].as_slice().into())
+                .check_refund()?
+                .emit();
         }
 
         Ok(())
@@ -162,7 +166,7 @@ impl Contract {
             authorized_id: None,
             token_ids: Vec::with_capacity(tokens_count).into(),
             amounts: Vec::with_capacity(tokens_count).into(),
-            memo: Some("refund".into()),
+            memo: Some(REFUND_MEMO.into()),
         };
 
         let Some(receiver) = self
@@ -208,13 +212,10 @@ impl Contract {
         }
 
         if !burn_event.amounts.is_empty() {
-            MtEvent::MtBurn([burn_event].as_slice().into()).emit();
+            MtEvent::MtBurn([burn_event].as_slice().into())
+                .check_refund()
+                .unwrap_or_panic_display()
+                .emit();
         }
     }
 }
-
-const MAX_TOKEN_ID_LEN: usize = 127;
-
-#[derive(thiserror::Error, Debug)]
-#[error("token_id is too long: max length is {MAX_TOKEN_ID_LEN}, got {0}")]
-pub struct TokenIdTooLarge(usize);

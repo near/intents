@@ -5,7 +5,7 @@ use crate::contract::{Contract, ContractExt};
 
 #[near]
 impl Contract {
-    pub(crate) const DO_NATIVE_WITHDRAW_GAS: Gas = Gas::from_tgas(10);
+    pub(crate) const DO_NATIVE_WITHDRAW_GAS: Gas = Gas::from_tgas(12);
 
     #[private]
     pub fn do_native_withdraw(withdraw: NativeWithdraw) -> Promise {

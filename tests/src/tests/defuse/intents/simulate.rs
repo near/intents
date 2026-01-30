@@ -1,15 +1,7 @@
-use crate::{
-    tests::defuse::{
-        DefuseSignerExt,
-        env::Env,
-        intents::{AccountNonceIntentEvent, ExecuteIntentsExt, NonceEvent},
-    },
-    utils::{fixtures::public_key, payload::ExtractNonceExt},
-};
-use defuse::{
-    contract::config::{DefuseConfig, RolesConfig},
-    core::{
-        accounts::{AccountEvent, PublicKeyEvent, TransferEvent},
+use crate::extensions::defuse::{
+    account_manager::{AccountManagerExt, AccountViewExt},
+    contract::core::{
+        accounts::{AccountEvent, NonceEvent, PublicKeyEvent, TransferEvent},
         amounts::Amounts,
         crypto::{Payload, PublicKey},
         events::DefuseEvent,
@@ -21,24 +13,29 @@ use defuse::{
             token_diff::{TokenDeltas, TokenDiff, TokenDiffEvent},
             tokens::{
                 FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer,
+                imt::{ImtBurn, ImtMint},
             },
         },
         token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
     },
-    sandbox_ext::{
-        account_manager::{AccountManagerExt, AccountViewExt},
-        deployer::DefuseExt,
-        intents::SimulateIntents,
-    },
+    deployer::DefuseExt,
+    intents::{ExecuteIntentsExt, SimulateIntents},
+    nonce::ExtractNonceExt,
+    signer::DefaultDefuseSignerExt,
 };
-use defuse_sandbox::{
-    api::types::{json::Base64VecU8, nft::NFTContractMetadata},
-    extensions::{
-        ft::FtExt,
-        mt::{MtExt, MtViewExt},
-        nft::{NftDeployerExt, NftExt},
-        wnear::WNearExt,
-    },
+use defuse::contract::config::{DefuseConfig, RolesConfig};
+use defuse_sandbox::extensions::{
+    ft::FtExt,
+    mt::{MtExt, MtViewExt},
+    nft::{NftDeployerExt, NftExt},
+    wnear::WNearExt,
+};
+
+use crate::{
+    env::{DEFUSE_WASM, Env, NON_FUNGIBLE_TOKEN_WASM},
+    sandbox::api::types::{json::Base64VecU8, nft::NFTContractMetadata},
+    tests::defuse::intents::AccountNonceIntentEvent,
+    utils::fixtures::public_key,
 };
 use near_contract_standards::non_fungible_token::metadata::{NFT_METADATA_SPEC, TokenMetadata};
 use near_sdk::{AsNep297Event, NearToken};
@@ -286,6 +283,7 @@ async fn simulate_nft_withdraw_intent() {
                 icon: None,
                 base_uri: None,
             },
+            NON_FUNGIBLE_TOKEN_WASM.clone(),
         )
         .await
         .unwrap();
@@ -385,7 +383,7 @@ async fn simulate_mt_withdraw_intent() {
                 },
                 roles: RolesConfig::default(),
             },
-            false,
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();
@@ -898,6 +896,125 @@ async fn simulate_auth_call_intent() {
         result.report.logs,
         vec![
             AccountNonceIntentEvent::new(&user1.id(), nonce, &auth_call_payload)
+                .into_event()
+                .to_nep297_event()
+                .to_event_log(),
+        ]
+    );
+}
+
+#[rstest]
+#[trace]
+#[tokio::test]
+async fn simulate_mint_intent() {
+    let env = Env::builder().build().await;
+
+    let user = env.create_user().await;
+
+    let token_id = "sometoken.near".to_string();
+    let memo = "Some memo";
+    let amount = 1000;
+
+    let mint_intent = ImtMint {
+        tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
+        memo: Some(memo.to_string()),
+        receiver_id: user.id().clone(),
+        notification: None,
+    };
+
+    let mint_payload = user
+        .sign_defuse_payload_default(&env.defuse, [mint_intent.clone()])
+        .await
+        .unwrap();
+
+    let nonce = mint_payload.extract_nonce().unwrap();
+
+    let result = env
+        .defuse
+        .simulate_intents([mint_payload.clone()])
+        .await
+        .unwrap();
+
+    assert_eq!(
+        result.report.logs,
+        vec![
+            DefuseEvent::ImtMint(Cow::Owned(vec![IntentEvent {
+                intent_hash: mint_payload.hash(),
+                event: AccountEvent {
+                    account_id: user.id().clone().into(),
+                    event: Cow::Owned(mint_intent)
+                },
+            }]))
+            .to_nep297_event()
+            .to_event_log(),
+            AccountNonceIntentEvent::new(&user.id(), nonce, &mint_payload)
+                .into_event()
+                .to_nep297_event()
+                .to_event_log(),
+        ]
+    );
+}
+
+#[rstest]
+#[trace]
+#[tokio::test]
+async fn simulate_burn_intent() {
+    let env = Env::builder().build().await;
+
+    let user = env.create_user().await;
+
+    let token_id = "sometoken.near".to_string();
+    let memo = "Some memo";
+    let amount = 1000;
+
+    let mint_payload = user
+        .sign_defuse_payload_default(
+            &env.defuse,
+            [ImtMint {
+                tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
+                memo: Some(memo.to_string()),
+                receiver_id: user.id().clone(),
+                notification: None,
+            }],
+        )
+        .await
+        .unwrap();
+
+    env.simulate_and_execute_intents(env.defuse.id(), [mint_payload])
+        .await
+        .unwrap();
+
+    let burn_intent = ImtBurn {
+        minter_id: user.id().clone(),
+        tokens: Amounts::new(std::iter::once((token_id.clone(), amount)).collect()),
+        memo: Some(memo.to_string()),
+    };
+
+    let burn_payload = user
+        .sign_defuse_payload_default(&env.defuse, [burn_intent.clone()])
+        .await
+        .unwrap();
+    let nonce = burn_payload.extract_nonce().unwrap();
+
+    let result = env
+        .defuse
+        .simulate_intents([burn_payload.clone()])
+        .await
+        .unwrap();
+
+    assert_eq!(
+        result.report.logs,
+        vec![
+            DefuseEvent::ImtBurn(Cow::Owned(vec![IntentEvent {
+                intent_hash: burn_payload.hash(),
+                event: AccountEvent {
+                    account_id: user.id().clone().into(),
+                    event: Cow::Owned(burn_intent)
+                },
+            }]))
+            .to_nep297_event()
+            .to_event_log(),
+            AccountNonceIntentEvent::new(&user.id(), nonce, &burn_payload)
                 .into_event()
                 .to_nep297_event()
                 .to_event_log(),

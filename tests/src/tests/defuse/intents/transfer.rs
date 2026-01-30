@@ -1,22 +1,22 @@
-use super::ExecuteIntentsExt;
-use crate::tests::defuse::env::{Env, TransferCallExpectation};
-use defuse::core::intents::tokens::{NotifyOnTransfer, Transfer};
-use defuse::core::token_id::nep245::Nep245TokenId;
-use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
-use defuse::sandbox_ext::deployer::DefuseExt;
-use defuse::{
-    contract::config::{DefuseConfig, RolesConfig},
-    core::fees::{FeesConfig, Pips},
-};
+use crate::env::{DEFUSE_WASM, Env, MT_RECEIVER_STUB_WASM};
+use crate::extensions::defuse::contract::contract::config::{DefuseConfig, RolesConfig};
+use crate::extensions::defuse::contract::core::fees::FeesConfig;
+use crate::extensions::defuse::contract::core::fees::Pips;
+use crate::extensions::defuse::contract::core::intents::tokens::{NotifyOnTransfer, Transfer};
+use crate::extensions::defuse::intents::ExecuteIntentsExt;
+use crate::sandbox::extensions::mt::MtViewExt;
+
+use crate::extensions::defuse::contract::core::token_id::{TokenId, nep141::Nep141TokenId};
+
+use crate::extensions::defuse::deployer::DefuseExt;
+use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
+use crate::extensions::escrow::contract::token_id::nep245::Nep245TokenId;
 use defuse_sandbox::extensions::ft::FtViewExt;
-use defuse_sandbox::extensions::mt::MtViewExt;
 use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::{AccountId, Gas};
 use rstest::rstest;
 
-use defuse::core::amounts::Amounts;
-
-use crate::tests::defuse::DefuseSignerExt;
+use crate::extensions::defuse::contract::core::amounts::Amounts;
 
 #[rstest]
 #[trace]
@@ -71,6 +71,14 @@ async fn transfer_intent() {
     );
 }
 
+#[derive(Debug, Clone)]
+pub struct TransferCallExpectation {
+    pub mode: MTReceiverMode,
+    pub intent_transfer_amount: Option<u128>,
+    pub expected_sender_balance: u128,
+    pub expected_receiver_balance: u128,
+}
+
 #[rstest]
 #[trace]
 #[tokio::test]
@@ -91,7 +99,7 @@ async fn transfer_intent_to_defuse() {
                 },
                 roles: RolesConfig::default(),
             },
-            false,
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();
@@ -232,17 +240,26 @@ async fn transfer_intent_to_defuse() {
 })]
 #[tokio::test]
 async fn transfer_intent_with_msg_to_receiver_smc(#[case] expectation: TransferCallExpectation) {
+    use crate::extensions::defuse::intents::ExecuteIntentsExt;
+    use defuse_sandbox::tx::FnCallBuilder;
+    use near_sdk::NearToken;
+
     let initial_amount = expectation
         .intent_transfer_amount
         .expect("Transfer amount should be specified");
 
     let env = Env::builder().build().await;
 
-    let (user, ft, mt_receiver) = futures::join!(
-        env.create_user(),
-        env.create_token(),
-        env.deploy_mt_receiver_stub()
-    );
+    let (user, ft) = futures::join!(env.create_user(), env.create_token());
+    let mt_receiver = env
+        .deploy_sub_contract(
+            "receiver_stub",
+            NearToken::from_near(100),
+            MT_RECEIVER_STUB_WASM.to_vec(),
+            None::<FnCallBuilder>,
+        )
+        .await
+        .unwrap();
 
     env.initial_ft_storage_deposit(vec![user.id()], vec![ft.id()])
         .await;

@@ -1,7 +1,8 @@
 use arbitrary::Unstructured;
-use defuse::core::crypto::PublicKey;
-use defuse_test_utils::random::{Rng, rng};
+use defuse_crypto::PublicKey;
 use rstest::fixture;
+
+use super::random::{Rng, rng};
 
 #[fixture]
 pub fn public_key(mut rng: impl Rng) -> PublicKey {

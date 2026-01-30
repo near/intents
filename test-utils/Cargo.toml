@@ -9,7 +9,10 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
+defuse-crypto ={ workspace = true, features = ["arbitrary"] }
+defuse-escrow-swap.workspace = true
 defuse-randomness.workspace = true
+defuse-token-id.workspace = true
 
 arbitrary.workspace = true
 derive_more = { workspace = true, features = ["full"] }

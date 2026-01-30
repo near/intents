@@ -1,27 +1,30 @@
-use defuse::core::intents::tokens::FtWithdraw;
-use defuse::core::token_id::{TokenId, nep141::Nep141TokenId};
-use defuse::sandbox_ext::{
-    deployer::DefuseExt, intents::ExecuteIntentsExt, tokens::nep141::DefuseFtDepositor,
+use crate::extensions::defuse::contract::core::intents::tokens::FtWithdraw;
+use crate::extensions::defuse::contract::core::token_id::{TokenId, nep141::Nep141TokenId};
+use crate::extensions::defuse::{
+    contract::{
+        contract::config::{DefuseConfig, RolesConfig},
+        core::fees::{FeesConfig, Pips},
+    },
+    deployer::DefuseExt,
+    intents::ExecuteIntentsExt,
+    tokens::nep141::DefuseFtDepositor,
 };
-use defuse::{
-    contract::config::{DefuseConfig, RolesConfig},
-    core::fees::{FeesConfig, Pips},
-};
-use defuse_sandbox::extensions::ft::FtViewExt;
-use defuse_sandbox::extensions::mt::MtViewExt;
-use defuse_sandbox::extensions::wnear::WNearExt;
-use defuse_test_utils::asserts::ResultAssertsExt;
+
+use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
 use near_sdk::{AccountId, Gas, NearToken};
 use rstest::rstest;
 
-use crate::tests::defuse::env::Env;
+use crate::env::DEFUSE_WASM;
+use crate::{
+    env::Env,
+    sandbox::extensions::{ft::FtViewExt, mt::MtViewExt, wnear::WNearExt},
+    utils::asserts::ResultAssertsExt,
+};
 
 #[rstest]
 #[trace]
 #[tokio::test]
 async fn ft_withdraw_intent() {
-    use crate::tests::defuse::DefuseSignerExt;
-
     // intentionally large deposit
     const STORAGE_DEPOSIT: NearToken = NearToken::from_near(1000);
 
@@ -194,8 +197,6 @@ async fn ft_withdraw_intent() {
 #[trace]
 #[tokio::test]
 async fn ft_withdraw_intent_msg() {
-    use crate::tests::defuse::DefuseSignerExt;
-
     let env = Env::builder().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());
@@ -212,7 +213,7 @@ async fn ft_withdraw_intent_msg() {
                 },
                 roles: RolesConfig::default(),
             },
-            false,
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();

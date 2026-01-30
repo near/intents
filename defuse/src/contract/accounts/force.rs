@@ -1,5 +1,8 @@
+use std::collections::{HashMap, HashSet};
+
 use defuse_core::{
-    DefuseError, Result, accounts::AccountEvent, engine::StateView, events::DefuseEvent,
+    DefuseError, Result, accounts::AccountEvent, crypto::PublicKey, engine::StateView,
+    events::DefuseEvent,
 };
 use defuse_near_utils::Lock;
 use near_plugins::{AccessControllable, access_control_any};
@@ -16,7 +19,11 @@ impl ForceAccountManager for Contract {
         StateView::is_account_locked(self, account_id)
     }
 
-    #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountLocker))]
+    #[access_control_any(roles(
+        Role::DAO,
+        Role::UnrestrictedAccountLocker,
+        Role::UnrestrictedAccountManager
+    ))]
     #[payable]
     fn force_lock_account(&mut self, account_id: AccountId) -> bool {
         assert_one_yocto();
@@ -31,7 +38,11 @@ impl ForceAccountManager for Contract {
         locked
     }
 
-    #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountUnlocker))]
+    #[access_control_any(roles(
+        Role::DAO,
+        Role::UnrestrictedAccountUnlocker,
+        Role::UnrestrictedAccountManager
+    ))]
     #[payable]
     fn force_unlock_account(&mut self, account_id: &AccountId) -> bool {
         assert_one_yocto();
@@ -46,7 +57,11 @@ impl ForceAccountManager for Contract {
         unlocked
     }
 
-    #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountLocker))]
+    #[access_control_any(roles(
+        Role::DAO,
+        Role::UnrestrictedAccountLocker,
+        Role::UnrestrictedAccountManager
+    ))]
     #[payable]
     fn force_disable_auth_by_predecessor_ids(&mut self, account_ids: Vec<AccountId>) {
         assert_one_yocto();
@@ -57,7 +72,11 @@ impl ForceAccountManager for Contract {
         }
     }
 
-    #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountUnlocker))]
+    #[access_control_any(roles(
+        Role::DAO,
+        Role::UnrestrictedAccountUnlocker,
+        Role::UnrestrictedAccountManager
+    ))]
     #[payable]
     fn force_enable_auth_by_predecessor_ids(&mut self, account_ids: Vec<AccountId>) {
         assert_one_yocto();
@@ -65,6 +84,30 @@ impl ForceAccountManager for Contract {
         for account_id in account_ids {
             // NOTE: omit errors
             let _ = self.internal_set_auth_by_predecessor_id(&account_id, true, true);
+        }
+    }
+
+    #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountManager))]
+    #[payable]
+    fn force_add_public_keys(&mut self, public_keys: HashMap<AccountId, HashSet<PublicKey>>) {
+        assert_one_yocto();
+
+        for (account_id, pks) in public_keys {
+            for pk in pks {
+                self.add_public_key(account_id.as_ref(), pk);
+            }
+        }
+    }
+
+    #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountManager))]
+    #[payable]
+    fn force_remove_public_keys(&mut self, public_keys: HashMap<AccountId, HashSet<PublicKey>>) {
+        assert_one_yocto();
+
+        for (account_id, pks) in public_keys {
+            for pk in pks {
+                self.remove_public_key(account_id.as_ref(), pk);
+            }
         }
     }
 }

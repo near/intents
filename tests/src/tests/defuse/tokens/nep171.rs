@@ -1,20 +1,29 @@
-use crate::tests::defuse::DefuseSignerExt;
-use crate::tests::defuse::env::Env;
-use defuse::core::intents::tokens::NftWithdraw;
-use defuse::core::token_id::TokenId as DefuseTokenId;
-use defuse::core::token_id::nep171::Nep171TokenId;
-use defuse::sandbox_ext::intents::ExecuteIntentsExt;
-use defuse::tokens::{DepositAction, DepositMessage, ExecuteIntents};
-use defuse_sandbox::api::types::json::Base64VecU8;
-use defuse_sandbox::api::types::nft::NFTContractMetadata;
-use defuse_sandbox::extensions::mt::MtViewExt;
-use defuse_sandbox::extensions::nft::{NftDeployerExt, NftExt, NftViewExt};
+use std::collections::HashMap;
+
+use crate::extensions::defuse::{
+    contract::core::{
+        intents::tokens::NftWithdraw, token_id::TokenId as DefuseTokenId,
+        token_id::nep171::Nep171TokenId,
+    },
+    contract::tokens::{DepositAction, DepositMessage, ExecuteIntents},
+    intents::ExecuteIntentsExt,
+    signer::DefaultDefuseSignerExt,
+};
+use defuse_sandbox::{
+    api::types::{json::Base64VecU8, nft::NFTContractMetadata},
+    extensions::{
+        mt::MtViewExt,
+        nft::{NftDeployerExt, NftExt, NftViewExt},
+    },
+};
+
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_contract_standards::non_fungible_token::metadata::NFT_METADATA_SPEC;
 use near_contract_standards::non_fungible_token::{Token, metadata::TokenMetadata};
 use near_sdk::NearToken;
 use rstest::rstest;
-use std::collections::HashMap;
+
+use crate::env::{Env, MT_RECEIVER_STUB_WASM, NON_FUNGIBLE_TOKEN_WASM};
 
 const DUMMY_REFERENCE_HASH: [u8; 32] = [33; 32];
 const DUMMY_NFT1_ID: &str = "thisisdummynftid1";
@@ -51,6 +60,7 @@ async fn transfer_nft_to_verifier() {
                 icon: None,
                 base_uri: None,
             },
+            NON_FUNGIBLE_TOKEN_WASM.clone(),
         )
         .await
         .unwrap();
@@ -330,10 +340,8 @@ struct NftTransferCallExpectation {
 async fn nft_transfer_call_calls_mt_on_transfer_variants(
     #[case] expectation: NftTransferCallExpectation,
 ) {
-    use defuse::core::{amounts::Amounts, intents::tokens::Transfer};
+    use crate::extensions::defuse::contract::core::{amounts::Amounts, intents::tokens::Transfer};
     use defuse_sandbox::{api::types::json::Base64VecU8, tx::FnCallBuilder};
-
-    use crate::tests::defuse::env::MT_RECEIVER_STUB_WASM;
 
     let env = Env::builder().deployer_as_super_admin().build().await;
 
@@ -372,6 +380,7 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
                 icon: None,
                 base_uri: None,
             },
+            NON_FUNGIBLE_TOKEN_WASM.clone(),
         )
         .await
         .unwrap();
@@ -413,7 +422,7 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
     };
 
     let deposit_message = if intents.is_empty() {
-        use defuse::core::intents::tokens::NotifyOnTransfer;
+        use crate::extensions::defuse::contract::core::intents::tokens::NotifyOnTransfer;
 
         DepositMessage {
             receiver_id: receiver.id().clone(),

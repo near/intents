@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
-use crate::tests::defuse::env::Env;
+use crate::env::Env;
 use defuse_escrow_proxy::CondVarContext;
 use defuse_escrow_proxy::{ProxyConfig, TransferMessage};
 use defuse_oneshot_condvar::storage::{Config as CondVarConfig, ContractStorage};

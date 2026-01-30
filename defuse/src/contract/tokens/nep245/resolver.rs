@@ -1,8 +1,8 @@
 use std::borrow::Cow;
 
-use defuse_near_utils::{Lock, MaxJsonLength, UnwrapOrPanic, UnwrapOrPanicError};
+use defuse_near_utils::{Lock, MaxJsonLength, REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::{
-    ClearedApproval, MtEventEmit, MtTransferEvent, TokenId, resolver::MultiTokenResolver,
+    ClearedApproval, MtEvent, MtTransferEvent, TokenId, resolver::MultiTokenResolver,
 };
 use near_sdk::{AccountId, env, json_types::U128, near, require, serde_json};
 
@@ -101,18 +101,19 @@ impl MultiTokenResolver for Contract {
             .unzip();
 
         if !refunded_amounts.is_empty() {
-            // deposit refunds
-            Cow::Borrowed(
+            MtEvent::MtTransfer(Cow::Borrowed(
                 [MtTransferEvent {
                     authorized_id: None,
                     old_owner_id: Cow::Borrowed(&receiver_id),
                     new_owner_id: Cow::Borrowed(&sender_id),
                     token_ids: refunded_token_ids.into(),
                     amounts: refunded_amounts.into(),
-                    memo: Some("refund".into()),
+                    memo: Some(REFUND_MEMO.into()),
                 }]
                 .as_slice(),
-            )
+            ))
+            // NOTE: No need for `check_refund()` here since this IS the refund.
+            // The refund memo size was already accounted for in the original transfer.
             .emit();
         }
 

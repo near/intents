@@ -53,6 +53,15 @@ pub trait MtExt {
         token_ids: impl IntoIterator<Item = (impl Into<String>, u128)>,
         msg: impl AsRef<str>,
     ) -> anyhow::Result<Vec<u128>>;
+
+    /// Same as `mt_on_transfer` but returns the full execution result for receipt inspection
+    async fn mt_on_transfer_raw(
+        &self,
+        sender_id: impl AsRef<AccountIdRef>,
+        receiver_id: impl Into<AccountId>,
+        token_ids: impl IntoIterator<Item = (impl Into<String>, u128)>,
+        msg: impl AsRef<str>,
+    ) -> anyhow::Result<ExecutionFinalResult>;
 }
 
 pub trait MtViewExt {
@@ -188,6 +197,21 @@ impl MtExt for SigningAccount {
         token_ids: impl IntoIterator<Item = (impl Into<String>, u128)>,
         msg: impl AsRef<str>,
     ) -> anyhow::Result<Vec<u128>> {
+        self.mt_on_transfer_raw(sender_id, receiver_id, token_ids, msg)
+            .await?
+            .into_result()?
+            .json::<Vec<U128>>()
+            .map(|refunds| refunds.into_iter().map(|a| a.0).collect())
+            .map_err(Into::into)
+    }
+
+    async fn mt_on_transfer_raw(
+        &self,
+        sender_id: impl AsRef<AccountIdRef>,
+        receiver_id: impl Into<AccountId>,
+        token_ids: impl IntoIterator<Item = (impl Into<String>, u128)>,
+        msg: impl AsRef<str>,
+    ) -> anyhow::Result<ExecutionFinalResult> {
         let (token_ids, amounts): (Vec<_>, Vec<_>) = token_ids
             .into_iter()
             .map(|(token_id, amount)| (token_id.into(), U128(amount)))
@@ -201,10 +225,8 @@ impl MtExt for SigningAccount {
                 "amounts": amounts,
                 "msg": msg.as_ref(),
             })))
-            .await?
-            .json::<Vec<U128>>()
-            .map(|refunds| refunds.into_iter().map(|a| a.0).collect())
-            .map_err(Into::into)
+            .exec_transaction()
+            .await
     }
 }
 
