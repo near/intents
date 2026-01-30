@@ -142,18 +142,18 @@ dependencies = [
 #     "${TARGET_DIR}",
 # ]
 
-# [tasks.build-poa-factory-reproducible]
-# dependencies = ["add-cache-dir-tag", "build-poa-token-reproducible"]
-# command = "cargo"
-# args = [
-#     "near",
-#     "build",
-#     "reproducible-wasm",
-#     "--manifest-path",
-#     "./poa-factory/Cargo.toml",
-#     "--out-dir",
-#     "${TARGET_DIR}",
-# ]
+[tasks.build-poa-factory-reproducible]
+dependencies = ["add-cache-dir-tag", "build-poa-token-reproducible"]
+command = "cargo"
+args = [
+    "near",
+    "build",
+    "reproducible-wasm",
+    "--manifest-path",
+    "./poa-factory/Cargo.toml",
+    "--out-dir",
+    "${TARGET_DIR}",
+]
 
 [tasks.build-poa-token-reproducible]
 dependencies = ["add-cache-dir-tag"]
