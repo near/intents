@@ -52,7 +52,8 @@ impl ContractBuilder {
             path: spec.path.to_string(),
             outdir,
             reproducible,
-            checksum: false,
+            // Always compute checksum for reproducible builds by default
+            checksum: reproducible,
         }
     }
 
@@ -92,10 +93,6 @@ impl ContractBuilder {
         self
     }
 
-    fn post_build_setup(mut self) -> Self {
-        self
-    }
-
     fn build_contract(self) -> Result<Utf8PathBuf> {
         let workdir = env::var("CARGO_MANIFEST_DIR")?;
         let manifest = format!("{}/../{}/Cargo.toml", workdir, self.path);
@@ -114,12 +111,26 @@ impl ContractBuilder {
         let path = if self.reproducible {
             let build_opts = DockerBuildOpts::builder()
                 .manifest_path(manifest.into())
-                .out_dir(outdir.into())
+                .out_dir(outdir.clone().into())
                 .build();
 
-            build_reproducible_with_cli(build_opts, false)
-                .map_err(|e| anyhow!("Failed to build reproducible wasm: {e}"))?
-                .path
+            let artifacts = build_reproducible_with_cli(build_opts, false)
+                .map_err(|e| anyhow!("Failed to build reproducible wasm: {e}"))?;
+
+            if self.checksum {
+                let checksum = artifacts
+                    .compute_hash()
+                    .map_err(|e| anyhow!("Failed to compute checksum: {e}"))?;
+
+                println!("Computed checksum: {}", checksum.to_hex_string());
+
+                std::fs::write(
+                    format!("{}/{}.sha256", outdir, self.name),
+                    checksum.to_hex_string(),
+                )?;
+            }
+
+            artifacts.path
         } else {
             let build_opts = BuildOpts::builder()
                 .manifest_path(manifest)
@@ -130,15 +141,6 @@ impl ContractBuilder {
 
             build_with_cli(build_opts).map_err(|e| anyhow!("Failed to build wasm: {e}"))?
         };
-
-        // println!("cargo::rerun-if-changed=src/hello.c");
-
-        // // For build scripts
-        // println!("cargo:rustc-env={}={}", self.env_var_key, path);
-        // // For regular run
-        // unsafe {
-        //     std::env::set_var(self.env_var_key, path);
-        // }
 
         Ok(path)
     }
