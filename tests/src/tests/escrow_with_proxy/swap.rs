@@ -34,15 +34,15 @@ use near_sdk::{GlobalContractId, NearToken};
 async fn test_escrow_swap_with_proxy_full_flow() {
     let swap_amount: u128 = 100_000_000; // Fits within ft_deposit_to_root mint limit (1e9)
     let env = Env::builder().build().await;
-    let (condvar_global, escrow_swap_global) = futures::join!(
+    let (condvar_global, escrow_swap_global, escrow_proxy_global) = futures::join!(
         env.root().deploy_oneshot_condvar("oneshot_condvar"),
         env.root().deploy_escrow_swap_global("escrow_swap"),
+        env.root().deploy_escrow_proxy_global("escrow_proxy_global"),
     );
-    let (maker, solver, relay, proxy) = futures::join!(
+    let (maker, solver, relay) = futures::join!(
         env.create_named_user("maker"),
         env.create_named_user("solver"),
         env.create_named_user("relay"),
-        env.create_named_user("proxy"),
     );
 
     let (token_a_result, token_b_result) = futures::join!(
@@ -52,13 +52,17 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     let (_, token_a_defuse_id) = token_a_result.unwrap();
     let (_, token_b_defuse_id) = token_b_result.unwrap();
 
+    let owner_id = env.root().sub_account("proxy_owner").unwrap().id().clone();
     let config = ProxyConfig {
-        owner_id: proxy.id().clone(),
+        owner_id,
         oneshot_condvar_global_id: GlobalContractId::AccountId(condvar_global.clone()),
         auth_contract: env.defuse.id().clone(),
         notifier: relay.id().clone(),
     };
-    proxy.deploy_escrow_proxy(config.clone()).await.unwrap();
+    let proxy_id = env
+        .root()
+        .deploy_escrow_proxy_instance(escrow_proxy_global, config.clone())
+        .await;
 
     let src_token = TokenId::from(Nep245TokenId::new(
         env.defuse.id().clone(),
@@ -70,7 +74,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     ));
     let escrow_params = ParamsBuilder::new(
         (maker.id().clone(), src_token),
-        ([proxy.id().clone()], dst_token),
+        ([proxy_id.clone()], dst_token),
     )
     .build();
     let fund_escrow_msg = FundMessageBuilder::new(escrow_params.clone()).build();
@@ -123,7 +127,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     let auth_state = CondVarConfig {
         auth_contract: env.defuse.id().clone(),
         notifier_id: relay.id().clone(),
-        authorizee: proxy.id().clone(),
+        authorizee: proxy_id.clone(),
         salt: context_hash,
     };
     let condvar_raw_state = CondVarStorage::init_state(auth_state.clone()).unwrap();
@@ -153,7 +157,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     solver
         .mt_transfer_call(
             env.defuse.id(),
-            proxy.id(),
+            &proxy_id,
             &token_b_defuse_id.to_string(),
             swap_amount,
             None,
@@ -172,7 +176,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
 
     assert_eq!(
         env.defuse
-            .mt_balance_of(proxy.id(), &token_a_defuse_id.to_string())
+            .mt_balance_of(&proxy_id, &token_a_defuse_id.to_string())
             .await
             .unwrap(),
         swap_amount,
@@ -186,11 +190,11 @@ async fn test_escrow_proxy_can_cancel_before_deadline() {
     let swap_amount: u128 = 100_000_000;
     let env = Env::builder().build().await;
 
-    let escrow_swap_global = env.root().deploy_escrow_swap_global("escrow_swap").await;
-    let (maker, proxy) = futures::join!(
-        env.create_named_user("maker"),
-        env.create_named_user("proxy"),
+    let (escrow_swap_global, escrow_proxy_global) = futures::join!(
+        env.root().deploy_escrow_swap_global("escrow_swap"),
+        env.root().deploy_escrow_proxy_global("escrow_proxy_global"),
     );
+    let maker = env.create_named_user("maker").await;
 
     // Create two tokens: token_a for maker, token_b as dummy dst (required by escrow)
     let (token_a_result, token_b_result) = futures::join!(
@@ -209,7 +213,10 @@ async fn test_escrow_proxy_can_cancel_before_deadline() {
         auth_contract: env.defuse.id().clone(),
         notifier: env.root().id().clone(), // not used for cancel
     };
-    proxy.deploy_escrow_proxy(config).await.unwrap();
+    let proxy_id = env
+        .root()
+        .deploy_escrow_proxy_instance(escrow_proxy_global, config)
+        .await;
 
     // Build escrow params with proxy as sole taker
     let src_token = TokenId::from(Nep245TokenId::new(
@@ -222,7 +229,7 @@ async fn test_escrow_proxy_can_cancel_before_deadline() {
     ));
     let escrow_params = ParamsBuilder::new(
         (maker.id().clone(), src_token),
-        ([proxy.id().clone()], dst_token),
+        ([proxy_id.clone()], dst_token),
     )
     .build();
 
@@ -265,7 +272,7 @@ async fn test_escrow_proxy_can_cancel_before_deadline() {
 
     // Root (super_admin) cancels the escrow via proxy
     env.root()
-        .cancel_escrow(proxy.id(), &escrow_instance_id, &escrow_params)
+        .cancel_escrow(&proxy_id, &escrow_instance_id, &escrow_params)
         .await
         .unwrap();
 

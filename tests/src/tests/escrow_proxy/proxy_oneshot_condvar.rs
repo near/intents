@@ -38,31 +38,35 @@ pub fn derive_oneshot_condvar_account_id(
 #[allow(clippy::too_many_lines)]
 async fn test_proxy_returns_funds_on_timeout_of_authorization() {
     let env = Env::builder().build().await;
-    let (condvar_global, mt_receiver_global) = futures::join!(
+    let (condvar_global, mt_receiver_global, escrow_proxy_global) = futures::join!(
         env.root().deploy_oneshot_condvar("global_transfer_auth"),
         env.root()
             .deploy_mt_receiver_stub_global("mt_receiver_global"),
+        env.root().deploy_escrow_proxy_global("escrow_proxy_global"),
     );
     let mt_receiver_instance = env
         .root()
         .deploy_mt_receiver_stub_instance(mt_receiver_global.clone(), BTreeMap::default())
         .await;
 
-    let (solver, relay, proxy) = futures::join!(
+    let (solver, relay) = futures::join!(
         env.create_named_user("solver"),
         env.create_named_user("relay"),
-        env.create_named_user("proxy"),
     );
 
+    let owner_id = env.root().sub_account("proxy_owner").unwrap().id().clone();
     // Setup proxy
     let config = ProxyConfig {
-        owner_id: proxy.id().clone(),
+        owner_id,
         oneshot_condvar_global_id: GlobalContractId::AccountId(condvar_global.clone()),
         auth_contract: env.defuse.id().clone(),
         notifier: relay.id().clone(),
     };
 
-    proxy.deploy_escrow_proxy(config).await.unwrap();
+    let proxy_id = env
+        .root()
+        .deploy_escrow_proxy_instance(escrow_proxy_global, config)
+        .await;
 
     // Create MT token with initial balance for solver
     let initial_amount = 1_000_000u128;
@@ -81,7 +85,7 @@ async fn test_proxy_returns_funds_on_timeout_of_authorization() {
     let (transfer_result, ()) = futures::join!(
         solver.mt_transfer_call(
             env.defuse.id(),
-            proxy.id(),
+            &proxy_id,
             &token_id_str,
             initial_amount / 2,
             None,
@@ -112,26 +116,30 @@ async fn test_proxy_returns_funds_on_timeout_of_authorization() {
 async fn test_transfer_authorized_by_relay() {
     let env = Env::builder().build().await;
 
-    let (condvar_global, mt_receiver_global) = futures::join!(
+    let (condvar_global, mt_receiver_global, escrow_proxy_global) = futures::join!(
         env.root().deploy_oneshot_condvar("global_transfer_auth"),
         env.root()
             .deploy_mt_receiver_stub_global("mt_receiver_global"),
+        env.root().deploy_escrow_proxy_global("escrow_proxy_global"),
     );
 
-    let (solver, relay, proxy) = futures::join!(
+    let (solver, relay) = futures::join!(
         env.create_named_user("solver"),
         env.create_named_user("relay"),
-        env.create_named_user("proxy"),
     );
 
+    let owner_id = env.root().sub_account("proxy_owner").unwrap().id().clone();
     let config = ProxyConfig {
-        owner_id: proxy.id().clone(),
+        owner_id,
         oneshot_condvar_global_id: GlobalContractId::AccountId(condvar_global.clone()),
         auth_contract: env.root().id().clone(),
         notifier: relay.id().clone(),
     };
 
-    proxy.deploy_escrow_proxy(config.clone()).await.unwrap();
+    let proxy_id = env
+        .root()
+        .deploy_escrow_proxy_instance(escrow_proxy_global, config.clone())
+        .await;
 
     let escrow_state_init = StateInit::V1(StateInitV1 {
         code: GlobalContractId::AccountId(mt_receiver_global.clone()),
@@ -181,7 +189,7 @@ async fn test_transfer_authorized_by_relay() {
     let auth_state = CondVarConfig {
         auth_contract: config.auth_contract.clone(),
         notifier_id: config.notifier.clone(),
-        authorizee: proxy.id().clone(),
+        authorizee: proxy_id.clone(),
         salt: context_hash,
     };
     let condvar_instance_id = derive_oneshot_condvar_account_id(
@@ -196,7 +204,7 @@ async fn test_transfer_authorized_by_relay() {
     let (_transfer_result, _auth_result) = futures::join!(
         solver.mt_transfer_call(
             env.defuse.id(),
-            proxy.id(),
+            &proxy_id,
             &token_id_str,
             proxy_transfer_amount,
             None,
@@ -252,26 +260,30 @@ async fn test_transfer_authorized_by_relay() {
 async fn test_ft_transfer_authorized_by_relay() {
     let env = Env::builder().build().await;
 
-    let (condvar_global, ft_receiver_global) = futures::join!(
+    let (condvar_global, ft_receiver_global, escrow_proxy_global) = futures::join!(
         env.root().deploy_oneshot_condvar("global_transfer_auth"),
         env.root()
             .deploy_mt_receiver_stub_global("ft_receiver_global"),
+        env.root().deploy_escrow_proxy_global("escrow_proxy_global"),
     );
 
-    let (solver, relay, proxy) = futures::join!(
+    let (solver, relay) = futures::join!(
         env.create_named_user("solver"),
         env.create_named_user("relay"),
-        env.create_named_user("proxy"),
     );
 
+    let owner_id = env.root().sub_account("proxy_owner").unwrap().id().clone();
     let config = ProxyConfig {
-        owner_id: proxy.id().clone(),
+        owner_id,
         oneshot_condvar_global_id: GlobalContractId::AccountId(condvar_global.clone()),
         auth_contract: env.root().id().clone(),
         notifier: relay.id().clone(),
     };
 
-    proxy.deploy_escrow_proxy(config.clone()).await.unwrap();
+    let proxy_id = env
+        .root()
+        .deploy_escrow_proxy_instance(escrow_proxy_global, config.clone())
+        .await;
 
     let escrow_state_init = StateInit::V1(StateInitV1 {
         code: GlobalContractId::AccountId(ft_receiver_global.clone()),
@@ -290,7 +302,7 @@ async fn test_ft_transfer_authorized_by_relay() {
     let (ft_token, _) = env
         .create_ft_token_with_initial_balances([
             (solver.id().clone(), initial_balance),
-            (proxy.id().clone(), 0),
+            (proxy_id.clone(), 0),
             (escrow_instance_id.clone(), 0),
         ])
         .await
@@ -321,7 +333,7 @@ async fn test_ft_transfer_authorized_by_relay() {
     let auth_state = CondVarConfig {
         auth_contract: config.auth_contract.clone(),
         notifier_id: config.notifier.clone(),
-        authorizee: proxy.id().clone(),
+        authorizee: proxy_id.clone(),
         salt: context_hash,
     };
     let condvar_instance_id = derive_oneshot_condvar_account_id(
@@ -333,7 +345,7 @@ async fn test_ft_transfer_authorized_by_relay() {
     let (_transfer_result, _auth_result) = futures::join!(
         solver.ft_transfer_call(
             ft_token.id(),
-            proxy.id(),
+            &proxy_id,
             proxy_transfer_amount,
             None,
             &msg_json,
@@ -384,36 +396,40 @@ async fn test_proxy_with_ft_transfer() {
 
     let env = Env::builder().build().await;
 
-    let (condvar_global, escrow_swap_global) = futures::join!(
+    let (condvar_global, escrow_swap_global, escrow_proxy_global) = futures::join!(
         env.root().deploy_oneshot_condvar("global_transfer_auth"),
         env.root().deploy_escrow_swap_global("escrow_swap"),
+        env.root().deploy_escrow_proxy_global("escrow_proxy_global"),
     );
 
-    let (maker, solver, relay, proxy) = futures::join!(
+    let (maker, solver, relay) = futures::join!(
         env.create_named_user("maker"),
         env.create_named_user("solver"),
         env.create_named_user("relay"),
-        env.create_named_user("proxy"),
     );
 
+    let owner_id = env.root().sub_account("proxy_owner").unwrap().id().clone();
     let config = ProxyConfig {
-        owner_id: proxy.id().clone(),
+        owner_id,
         oneshot_condvar_global_id: GlobalContractId::AccountId(condvar_global.clone()),
         auth_contract: env.root().id().clone(),
         notifier: relay.id().clone(),
     };
 
-    proxy.deploy_escrow_proxy(config.clone()).await.unwrap();
+    let proxy_id = env
+        .root()
+        .deploy_escrow_proxy_instance(escrow_proxy_global, config.clone())
+        .await;
 
     let swap_amount: u128 = 100_000;
     let ((src_ft, _), (dst_ft, _)) = futures::try_join!(
         env.create_ft_token_with_initial_balances([
             (maker.id().clone(), swap_amount),
-            (proxy.id().clone(), 0),
+            (proxy_id.clone(), 0),
         ]),
         env.create_ft_token_with_initial_balances([
             (solver.id().clone(), swap_amount),
-            (proxy.id().clone(), 0),
+            (proxy_id.clone(), 0),
             (maker.id().clone(), 0),
         ]),
     )
@@ -424,7 +440,7 @@ async fn test_proxy_with_ft_transfer() {
 
     let escrow_params = ParamsBuilder::new(
         (maker.id().clone(), src_token.clone()),
-        ([proxy.id().clone()], dst_token.clone()),
+        ([proxy_id.clone()], dst_token.clone()),
     )
     .build();
 
@@ -499,7 +515,7 @@ async fn test_proxy_with_ft_transfer() {
     let auth_state = CondVarConfig {
         auth_contract: config.auth_contract.clone(),
         notifier_id: config.notifier.clone(),
-        authorizee: proxy.id().clone(),
+        authorizee: proxy_id.clone(),
         salt: context_hash,
     };
     let condvar_instance_id = derive_oneshot_condvar_account_id(
@@ -510,7 +526,7 @@ async fn test_proxy_with_ft_transfer() {
     let raw_state = ContractStorage::init_state(auth_state).unwrap();
 
     let (_transfer_result, _auth_result) = futures::join!(
-        solver.ft_transfer_call(dst_ft.id(), proxy.id(), swap_amount, None, &proxy_msg_json,),
+        solver.ft_transfer_call(dst_ft.id(), &proxy_id, swap_amount, None, &proxy_msg_json,),
         async {
             env.root()
                 .tx(condvar_instance_id.clone())
@@ -532,6 +548,6 @@ async fn test_proxy_with_ft_transfer() {
     let maker_dst_balance = dst_ft.ft_balance_of(maker.id()).await.unwrap();
     assert_eq!(maker_dst_balance, swap_amount);
 
-    let proxy_src_balance = src_ft.ft_balance_of(proxy.id()).await.unwrap();
+    let proxy_src_balance = src_ft.ft_balance_of(&proxy_id).await.unwrap();
     assert_eq!(proxy_src_balance, swap_amount);
 }

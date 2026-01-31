@@ -11,15 +11,13 @@ use near_sdk::{
 
 use crate::EscrowProxy;
 use crate::message::TransferMessage;
-use crate::state::ProxyConfig;
+use crate::state::{ContractStorage, ProxyConfig};
 #[cfg(feature = "escrow-swap")]
 use defuse_escrow_swap::Params as EscrowParams;
 
-#[near(contract_state)]
+#[near(contract_state(key = ContractStorage::STATE_KEY))]
 #[derive(PanicOnDefault)]
-pub struct Contract {
-    config: ProxyConfig,
-}
+pub struct Contract(ContractStorage);
 
 #[near]
 impl Contract {
@@ -27,12 +25,12 @@ impl Contract {
     #[must_use]
     #[allow(clippy::use_self)]
     pub fn new(config: ProxyConfig) -> Contract {
-        Self { config }
+        Self(ContractStorage::init(config))
     }
 
     fn assert_owner(&self) {
         require!(
-            env::predecessor_account_id() == self.config.owner_id,
+            env::predecessor_account_id() == self.0.config().owner_id,
             "Only owner can call this method"
         );
     }
@@ -42,7 +40,7 @@ impl Contract {
 impl EscrowProxy for Contract {
     /// Returns proxy configuration
     fn config(&self) -> &ProxyConfig {
-        &self.config
+        self.0.config()
     }
 
     /// Calculates oneshot condvar context hash that is required to derive condvar contract

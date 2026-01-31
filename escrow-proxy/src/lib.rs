@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 #[cfg(feature = "contract")]
 mod contract;
+mod error;
 mod message;
 pub mod state;
 
@@ -10,7 +11,8 @@ use near_sdk::{
 };
 
 pub use self::message::*;
-pub use state::ProxyConfig;
+pub use error::Error;
+pub use state::{ContractStorage, ProxyConfig};
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]

@@ -3,12 +3,15 @@ use std::{fs, path::Path, sync::LazyLock};
 use defuse_escrow_proxy::ProxyConfig;
 #[cfg(feature = "escrow-swap")]
 use defuse_escrow_swap::Params as EscrowParams;
-#[cfg(feature = "escrow-swap")]
-use near_sdk::AccountId;
-use near_sdk::{Gas, NearToken};
+use near_sdk::{
+    AccountId, Gas, GlobalContractId, NearToken,
+    state_init::{StateInit, StateInitV1},
+};
 use serde_json::json;
 
-use crate::{FnCallBuilder, SigningAccount};
+use crate::{
+    FnCallBuilder, SigningAccount, api::types::transaction::actions::GlobalContractDeployMode,
+};
 
 pub static ESCROW_PROXY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
     let filename = Path::new(env!("CARGO_MANIFEST_DIR")).join("../res/defuse_escrow_proxy.wasm");
@@ -26,6 +29,14 @@ pub trait EscrowProxyExt {
         escrow_address: &AccountId,
         params: &EscrowParams,
     ) -> anyhow::Result<()>;
+    /// Deploy global escrow-proxy contract (shared code)
+    async fn deploy_escrow_proxy_global(&self, name: impl AsRef<str>) -> AccountId;
+    /// Deploy an escrow-proxy instance with specific config using `state_init`
+    async fn deploy_escrow_proxy_instance(
+        &self,
+        global_contract_id: AccountId,
+        config: ProxyConfig,
+    ) -> AccountId;
 }
 
 impl EscrowProxyExt for SigningAccount {
@@ -68,5 +79,42 @@ impl EscrowProxyExt for SigningAccount {
             )
             .await?;
         Ok(())
+    }
+
+    async fn deploy_escrow_proxy_global(&self, name: impl AsRef<str>) -> AccountId {
+        let account = self.sub_account(name).unwrap();
+
+        self.tx(account.id().clone())
+            .create_account()
+            .transfer(NearToken::from_near(50))
+            .deploy_global(
+                ESCROW_PROXY_WASM.clone(),
+                GlobalContractDeployMode::AccountId,
+            )
+            .await
+            .unwrap();
+
+        account.id().clone()
+    }
+
+    async fn deploy_escrow_proxy_instance(
+        &self,
+        global_contract_id: AccountId,
+        config: ProxyConfig,
+    ) -> AccountId {
+        let raw_state = defuse_escrow_proxy::ContractStorage::init_state(config).unwrap();
+        let state_init = StateInit::V1(StateInitV1 {
+            code: GlobalContractId::AccountId(global_contract_id.clone()),
+            data: raw_state.clone(),
+        });
+        let account_id = state_init.derive_account_id();
+
+        // Note: RPC may error but contract deploys successfully
+        let _ = self
+            .tx(account_id.clone())
+            .state_init(global_contract_id, raw_state)
+            .transfer(NearToken::from_yoctonear(1))
+            .await;
+        account_id
     }
 }

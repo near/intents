@@ -1,22 +1,18 @@
 use defuse_escrow_proxy::ProxyConfig;
 use defuse_sandbox::{EscrowProxyExt, Sandbox};
-use near_sdk::{AccountId, GlobalContractId, NearToken};
-
-const INIT_BALANCE: NearToken = NearToken::from_near(100);
+use near_sdk::serde_json::json;
+use near_sdk::{AccountId, GlobalContractId};
 
 #[tokio::test]
 async fn escrow_proxy_deployment_and_config() {
     let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
 
-    // Get the proxy account ID (will be created during deployment)
-    let proxy = root
-        .generate_subaccount("proxy", INIT_BALANCE)
-        .await
-        .unwrap();
+    let escrow_proxy_global = root.deploy_escrow_proxy_global("escrow_proxy_global").await;
 
+    let owner_id = root.sub_account("owner").unwrap().id().clone();
     let config = ProxyConfig {
-        owner_id: proxy.id().clone(),
+        owner_id: owner_id.clone(),
         oneshot_condvar_global_id: GlobalContractId::AccountId(
             root.sub_account("oneshot_condvar_global_id")
                 .unwrap()
@@ -27,8 +23,14 @@ async fn escrow_proxy_deployment_and_config() {
         notifier: root.sub_account("notifier").unwrap().id().clone(),
     };
 
-    proxy.deploy_escrow_proxy(config.clone()).await.unwrap();
-    let actual_config = proxy.get_escrow_proxy_config().await.unwrap();
+    let proxy_id = root
+        .deploy_escrow_proxy_instance(escrow_proxy_global, config.clone())
+        .await;
+    let actual_config: ProxyConfig = sandbox
+        .account(&proxy_id)
+        .call_view_function_json("config", json!({}))
+        .await
+        .unwrap();
 
     assert_eq!(actual_config, config, "config should match");
 }
@@ -38,14 +40,11 @@ async fn owner_configuration() {
     let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
 
-    let (owner, proxy_account) = futures::try_join!(
-        root.generate_subaccount("owner", INIT_BALANCE),
-        root.generate_subaccount("proxy", INIT_BALANCE),
-    )
-    .unwrap();
+    let escrow_proxy_global = root.deploy_escrow_proxy_global("escrow_proxy_global").await;
 
+    let owner_id = root.sub_account("owner").unwrap().id().clone();
     let config = ProxyConfig {
-        owner_id: owner.id().clone(),
+        owner_id,
         oneshot_condvar_global_id: GlobalContractId::AccountId(
             root.sub_account("oneshot_condvar_global_id")
                 .unwrap()
@@ -56,5 +55,7 @@ async fn owner_configuration() {
         notifier: root.sub_account("notifier").unwrap().id().clone(),
     };
 
-    proxy_account.deploy_escrow_proxy(config).await.unwrap();
+    let _proxy_id = root
+        .deploy_escrow_proxy_instance(escrow_proxy_global, config)
+        .await;
 }

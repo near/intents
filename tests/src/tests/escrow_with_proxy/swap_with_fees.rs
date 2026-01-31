@@ -40,15 +40,15 @@ async fn test_proxy_fill_gas_benchmark() {
     let swap_amount: u128 = 100_000_000;
     let solver_amount: u128 = swap_amount * 2; // 2x for price 2.0 fill
     let env = Env::builder().build().await;
-    let (condvar_global, escrow_swap_global) = futures::join!(
+    let (condvar_global, escrow_swap_global, escrow_proxy_global) = futures::join!(
         env.root().deploy_oneshot_condvar("oneshot_condvar"),
         env.root().deploy_escrow_swap_global("escrow_swap"),
+        env.root().deploy_escrow_proxy_global("escrow_proxy_global"),
     );
-    let (maker, solver, relay, proxy, fee_collector, integrator) = futures::join!(
+    let (maker, solver, relay, fee_collector, integrator) = futures::join!(
         env.create_named_user("maker"),
         env.create_named_user("solver"),
         env.create_named_user("relay"),
-        env.create_named_user("proxy"),
         env.create_named_user("fee_collector"),
         env.create_named_user("integrator"),
     );
@@ -60,13 +60,17 @@ async fn test_proxy_fill_gas_benchmark() {
     let (_, token_a_defuse_id) = token_a_result.unwrap();
     let (_, token_b_defuse_id) = token_b_result.unwrap();
 
+    let owner_id = env.root().sub_account("proxy_owner").unwrap().id().clone();
     let config = ProxyConfig {
-        owner_id: proxy.id().clone(),
+        owner_id,
         oneshot_condvar_global_id: GlobalContractId::AccountId(condvar_global.clone()),
         auth_contract: env.defuse.id().clone(),
         notifier: relay.id().clone(),
     };
-    proxy.deploy_escrow_proxy(config.clone()).await.unwrap();
+    let proxy_id = env
+        .root()
+        .deploy_escrow_proxy_instance(escrow_proxy_global, config.clone())
+        .await;
 
     let src_token = TokenId::from(Nep245TokenId::new(
         env.defuse.id().clone(),
@@ -79,7 +83,7 @@ async fn test_proxy_fill_gas_benchmark() {
     // Configure escrow with all fee types for worst-case gas scenario
     let escrow_params = ParamsBuilder::new(
         (maker.id().clone(), src_token),
-        ([proxy.id().clone()], dst_token),
+        ([proxy_id.clone()], dst_token),
     )
     .with_protocol_fees(ProtocolFees {
         fee: Pips::from_percent(1).unwrap(),      // 1% protocol fee
@@ -144,7 +148,7 @@ async fn test_proxy_fill_gas_benchmark() {
     let auth_state = CondVarConfig {
         auth_contract: env.defuse.id().clone(),
         notifier_id: relay.id().clone(),
-        authorizee: proxy.id().clone(),
+        authorizee: proxy_id.clone(),
         salt: context_hash,
     };
     let condvar_raw_state = CondVarStorage::init_state(auth_state.clone()).unwrap();
@@ -176,7 +180,7 @@ async fn test_proxy_fill_gas_benchmark() {
     let result = solver
         .mt_transfer_call_exec(
             env.defuse.id(),
-            proxy.id(),
+            &proxy_id,
             &token_b_defuse_id.to_string(),
             solver_amount, // 2x for price 2.0
             None,
@@ -192,7 +196,7 @@ async fn test_proxy_fill_gas_benchmark() {
     // Verify swap completed successfully - proxy received src tokens
     assert!(
         env.defuse
-            .mt_balance_of(proxy.id(), &token_a_defuse_id.to_string())
+            .mt_balance_of(&proxy_id, &token_a_defuse_id.to_string())
             .await
             .unwrap()
             > 0,
