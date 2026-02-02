@@ -22,7 +22,7 @@ impl-tools.workspace = true
 near-api.workspace = true
 near-openapi-types.workspace = true
 near-sandbox.workspace = true
-near-sdk = { workspace = true, features = ["unit-testing"] }
+near-sdk = { workspace = true, features = ["unit-testing", "deterministic-account-ids"] }
 tracing.workspace = true
 
 near-contract-standards.workspace = true
