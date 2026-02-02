@@ -6,6 +6,9 @@ use near_sdk::{
     serde_json,
 };
 
+#[cfg(feature = "auth-call")]
+mod on_auth;
+
 // Raw extern function to generate and return bytes of specified length
 // Input: 8-byte little-endian u64 specifying the length
 #[cfg(target_arch = "wasm32")]

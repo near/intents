@@ -2448,6 +2448,7 @@ name = "multi-token-receiver-stub"
 version = "0.1.0"
 dependencies = [
  "defuse",
+ "defuse-auth-call",
  "defuse-nep245",
  "near-sdk",
  "near-workspaces",
