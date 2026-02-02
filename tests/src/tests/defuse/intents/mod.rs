@@ -41,6 +41,7 @@ impl AccountNonceIntentEvent {
     }
 }
 
+mod auth_call;
 mod ft_withdraw;
 mod imt_burn;
 mod imt_mint;

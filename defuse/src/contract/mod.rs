@@ -3,6 +3,7 @@ mod abi;
 mod accounts;
 mod admin;
 pub mod config;
+pub mod consts;
 mod events;
 mod fees;
 mod garbage_collector;

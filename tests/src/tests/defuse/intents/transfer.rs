@@ -1,5 +1,8 @@
+use std::collections::BTreeMap;
+
 use crate::env::{DEFUSE_WASM, Env, MT_RECEIVER_STUB_WASM};
 use crate::extensions::defuse::contract::contract::config::{DefuseConfig, RolesConfig};
+use crate::extensions::defuse::contract::contract::consts::STATE_INIT_GAS;
 use crate::extensions::defuse::contract::core::fees::FeesConfig;
 use crate::extensions::defuse::contract::core::fees::Pips;
 use crate::extensions::defuse::contract::core::intents::tokens::{NotifyOnTransfer, Transfer};
@@ -11,9 +14,10 @@ use crate::extensions::defuse::contract::core::token_id::{TokenId, nep141::Nep14
 use crate::extensions::defuse::deployer::DefuseExt;
 use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
 use crate::extensions::escrow::contract::token_id::nep245::Nep245TokenId;
+use defuse_sandbox::MtReceiverStubExt;
 use defuse_sandbox::extensions::ft::FtViewExt;
 use multi_token_receiver_stub::MTReceiverMode;
-use near_sdk::{AccountId, Gas};
+use near_sdk::{AccountId, Gas, GlobalContractId, state_init::StateInit, state_init::StateInitV1};
 use rstest::rstest;
 
 use crate::extensions::defuse::contract::core::amounts::Amounts;
@@ -308,5 +312,82 @@ async fn transfer_intent_with_msg_to_receiver_smc(#[case] expectation: TransferC
             .await
             .unwrap(),
         expectation.expected_receiver_balance
+    );
+}
+
+#[rstest]
+#[tokio::test]
+async fn benchmark_transfer_with_notification_state_init() {
+    let env = Env::builder().build().await;
+
+    let (user, ft) = futures::join!(env.create_user(), env.create_token());
+
+    env.initial_ft_storage_deposit(vec![user.id()], vec![ft.id()])
+        .await;
+
+    env.defuse_ft_deposit_to(ft.id(), 1000, user.id(), None)
+        .await
+        .unwrap();
+
+    let global_contract = env
+        .root()
+        .deploy_mt_receiver_stub_global("mt-receiver-global", MT_RECEIVER_STUB_WASM.clone())
+        .await
+        .unwrap();
+
+    let state_init = StateInit::V1(StateInitV1 {
+        code: GlobalContractId::AccountId(global_contract.id().clone()),
+        data: BTreeMap::new(),
+    });
+
+    let derived_account_id = state_init.derive_account_id();
+
+    let ft1 = TokenId::from(Nep141TokenId::new(ft.id().clone()));
+
+    let msg = serde_json::to_string(&MTReceiverMode::AcceptAll).unwrap();
+
+    let transfer_intent = Transfer {
+        receiver_id: derived_account_id.clone(),
+        tokens: Amounts::new(std::iter::once((ft1.clone(), 1000u128)).collect()),
+        memo: None,
+        notification: Some(NotifyOnTransfer::new(msg).with_state_init(state_init)),
+    };
+
+    let payload = user
+        .sign_defuse_payload_default(&env.defuse, [transfer_intent])
+        .await
+        .unwrap();
+
+    let result = env
+        .root()
+        .execute_intents_raw(env.defuse.id(), [payload])
+        .await
+        .unwrap();
+
+    assert!(result.is_success());
+
+    let state_init_gas = result
+        .outcomes()
+        .iter()
+        .find(|outcome| outcome.executor_id == derived_account_id)
+        .expect("receipt for derived account")
+        .gas_burnt;
+
+    assert!(state_init_gas < STATE_INIT_GAS);
+
+    assert_eq!(
+        env.defuse
+            .mt_balance_of(user.id(), &ft1.to_string())
+            .await
+            .unwrap(),
+        0
+    );
+
+    assert_eq!(
+        env.defuse
+            .mt_balance_of(&derived_account_id, &ft1.to_string())
+            .await
+            .unwrap(),
+        1000
     );
 }

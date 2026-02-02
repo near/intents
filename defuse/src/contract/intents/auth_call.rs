@@ -7,8 +7,6 @@ use crate::contract::{Contract, ContractExt};
 #[near]
 impl Contract {
     pub(crate) const DO_AUTH_CALL_MIN_GAS: Gas = Gas::from_tgas(5);
-    // TODO: exact value
-    pub(crate) const STATE_INIT_GAS: Gas = Gas::from_tgas(10);
 
     #[private]
     pub fn do_auth_call(signer_id: AccountId, auth_call: AuthCall) -> Promise {

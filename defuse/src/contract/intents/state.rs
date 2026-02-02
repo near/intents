@@ -17,7 +17,7 @@ use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, PromiseOrValue, env, json_types::U128};
 use std::borrow::Cow;
 
-use crate::contract::{Contract, accounts::Account};
+use crate::contract::{Contract, accounts::Account, consts::STATE_INIT_GAS};
 
 impl StateView for Contract {
     #[inline]
@@ -332,7 +332,7 @@ impl State for Contract {
                                     auth_call
                                         .state_init
                                         .as_ref()
-                                        .map_or(Gas::from_gas(0), |_| Self::STATE_INIT_GAS),
+                                        .map_or(Gas::from_gas(0), |_| STATE_INIT_GAS),
                                 )
                                 .and_then(|g| g.checked_add(auth_call.min_gas()))
                                 .ok_or(DefuseError::GasOverflow)?,
