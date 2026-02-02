@@ -3,7 +3,10 @@ use crate::extensions::escrow::contract::{
     token_id::{TokenId, nep141::Nep141TokenId},
 };
 use rstest::rstest;
-use std::time::Duration;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    time::Duration,
+};
 
 use crate::tests::escrow::helpers::{Env, env};
 
@@ -22,9 +25,9 @@ async fn init_state_has_single_empty_key(#[future(awt)] env: Env) {
         partial_fills_allowed: false,
         refund_src_to: OverrideSend::default(),
         receive_dst_to: OverrideSend::default(),
-        taker_whitelist: Default::default(),
+        taker_whitelist: BTreeSet::default(),
         protocol_fees: None,
-        integrator_fees: Default::default(),
+        integrator_fees: BTreeMap::default(),
         auth_caller: None,
         salt: [0; 32],
     };
