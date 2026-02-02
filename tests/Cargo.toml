@@ -17,7 +17,6 @@ defuse = []
 escrow-swap = []
 long = []
 
-
 [dependencies]
 defuse-sandbox = { workspace = true }
 

@@ -153,6 +153,8 @@ impl ContractBuilder {
                 Self::build_reproducible(ctx, &contract.contract, opts.checksum)
             }
         }
+
+        //du -ah *.wasm
     }
 
     fn build_reproducible(
