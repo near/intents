@@ -1,33 +1,29 @@
-use xtask::{BuildOptions, ContractOptions};
-
-const DEFUSE_WASM_VAR: &str = "DEFUSE_WASM";
-const POA_FACTORY_WASM_VAR: &str = "DEFUSE_POA_FACTORY_WASM";
-const POA_TOKEN_WASM_VAR: &str = "DEFUSE_POA_TOKEN_WASM";
-const ESCROW_SWAP_WASM_VAR: &str = "DEFUSE_ESCROW_SWAP_WASM";
-const MULTI_TOKEN_RECEIVER_STUB_WASM_VAR: &str = "DEFUSE_MULTI_TOKEN_RECEIVER_STUB_WASM";
-
+#[allow(clippy::unnecessary_wraps)]
 fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
-    println!("cargo:rerun-if-changed=../defuse");
-    println!("cargo:rerun-if-changed=../poa-factory");
-    println!("cargo:rerun-if-changed=../poa-token");
-    println!("cargo:rerun-if-changed=../escrow-swap");
-    println!("cargo:rerun-if-changed=./contracts/multi-token-receiver-stub");
+    #[cfg(not(clippy))]
+    {
+        const DEFUSE_BUILD_REPRODUCIBLE_VAR: &str = "DEFUSE_BUILD_REPRODUCIBLE";
 
-    let artifacts = xtask::build_contracts(
-        ContractOptions::all_without_features(),
-        BuildOptions::default(),
-    )?;
+        println!("cargo:rerun-if-changed=../defuse");
+        println!("cargo:rerun-if-changed=../poa-factory");
+        println!("cargo:rerun-if-changed=../poa-token");
+        println!("cargo:rerun-if-changed=../escrow-swap");
+        println!("cargo:rerun-if-changed=./contracts/multi-token-receiver-stub");
 
-    for a in artifacts {
-        let env_var_key = match a.contract {
-            xtask::Contract::Defuse => DEFUSE_WASM_VAR,
-            xtask::Contract::PoaFactory => POA_FACTORY_WASM_VAR,
-            xtask::Contract::PoaToken => POA_TOKEN_WASM_VAR,
-            xtask::Contract::EscrowSwap => ESCROW_SWAP_WASM_VAR,
-            xtask::Contract::MultiTokenReceiverStub => MULTI_TOKEN_RECEIVER_STUB_WASM_VAR,
-        };
+        println!("cargo:rerun-if-env-changed={DEFUSE_BUILD_REPRODUCIBLE_VAR}");
 
-        println!("cargo:rustc-env={env_var_key}={}", a.wasm_path);
+        let artifacts = xtask::build_contracts(
+            xtask::ContractOptions::all_without_features(),
+            xtask::BuildOptions::default(),
+        )?;
+
+        for a in artifacts {
+            println!(
+                "cargo:rustc-env={}={}",
+                a.contract.default_env(),
+                a.wasm_path
+            );
+        }
     }
 
     Ok(())

@@ -91,12 +91,12 @@ impl ContractBuilder {
         self
     }
 
-    const fn set_mode(mut self, mode: BuildMode) -> Self {
+    pub const fn set_mode(mut self, mode: BuildMode) -> Self {
         self.mode = mode;
         self
     }
 
-    fn set_outdir(mut self, outdir: impl Into<String>) -> Self {
+    pub fn set_outdir(mut self, outdir: impl Into<String>) -> Self {
         self.outdir = outdir.into();
         self
     }

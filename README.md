@@ -76,7 +76,7 @@ The tests will use data created prior to migration combined with newly created d
 Run clippy linter:
 
 ```shell
-cargo clippy-fast
+cargo clippy --workspace --all-targets --no-deps
 ```
 
 After building, the artifacts of the build will be in the `res` directory.

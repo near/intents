@@ -32,6 +32,12 @@ pub struct ContractSpec {
     pub features: &'static str,
 }
 
+const DEFUSE_WASM_VAR: &str = "DEFUSE_WASM";
+const POA_FACTORY_WASM_VAR: &str = "DEFUSE_POA_FACTORY_WASM";
+const POA_TOKEN_WASM_VAR: &str = "DEFUSE_POA_TOKEN_WASM";
+const ESCROW_SWAP_WASM_VAR: &str = "DEFUSE_ESCROW_SWAP_WASM";
+const MULTI_TOKEN_RECEIVER_STUB_WASM_VAR: &str = "DEFUSE_MULTI_TOKEN_RECEIVER_STUB_WASM";
+
 #[derive(Clone, ValueEnum, Default, Debug)]
 pub enum Contract {
     #[default]
@@ -43,6 +49,16 @@ pub enum Contract {
 }
 
 impl Contract {
+    pub const fn default_env(&self) -> &'static str {
+        match self {
+            Self::Defuse => DEFUSE_WASM_VAR,
+            Self::PoaFactory => POA_FACTORY_WASM_VAR,
+            Self::PoaToken => POA_TOKEN_WASM_VAR,
+            Self::EscrowSwap => ESCROW_SWAP_WASM_VAR,
+            Self::MultiTokenReceiverStub => MULTI_TOKEN_RECEIVER_STUB_WASM_VAR,
+        }
+    }
+
     pub const fn spec(&self) -> ContractSpec {
         match self {
             Self::Defuse => ContractSpec {
