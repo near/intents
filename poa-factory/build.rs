@@ -1,6 +1,6 @@
 use xtask::{BuildOptions, Contract, ContractOptions};
 
-const POA_TOKEN_WASM_VAR: &str = "DEFUSE_POA_TOKEN_WASM";
+const POA_TOKEN_WASM_VAR: &str = "POA_TOKEN_WASM";
 
 fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
     println!("cargo:rerun-if-changed=../poa-token");
