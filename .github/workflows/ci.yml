@@ -159,7 +159,7 @@ jobs:
       - name: Run Tests
         env:
           DEFUSE_MIGRATE_FROM_LEGACY: "true"
-          DEFUSE_BUILD_REPRODUCIBLE: "true"
+          # DEFUSE_BUILD_REPRODUCIBLE: "true"
         run: cargo test --workspace --all-targets -- --show-output
 
   security_audit_report:
