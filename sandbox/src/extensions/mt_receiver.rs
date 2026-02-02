@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use near_api::types::transaction::result::ExecutionFinalResult;
 use near_sdk::{
     AccountId, GlobalContractId, NearToken, state_init::StateInit, state_init::StateInitV1,
 };
@@ -30,6 +31,14 @@ pub trait MtReceiverStubExt {
         global_contract_id: AccountId,
         raw_state: BTreeMap<Vec<u8>, Vec<u8>>,
     ) -> anyhow::Result<AccountId>;
+
+    /// Deploy an instance and return the full execution result for gas analysis.
+    /// Returns the deterministic account ID and the execution result.
+    async fn deploy_mt_receiver_stub_instance_raw(
+        &self,
+        global_contract_id: AccountId,
+        raw_state: BTreeMap<Vec<u8>, Vec<u8>>,
+    ) -> anyhow::Result<(AccountId, ExecutionFinalResult)>;
 }
 
 impl MtReceiverStubExt for SigningAccount {
@@ -56,6 +65,17 @@ impl MtReceiverStubExt for SigningAccount {
         global_contract_id: AccountId,
         raw_state: BTreeMap<Vec<u8>, Vec<u8>>,
     ) -> anyhow::Result<AccountId> {
+        let (account, _) = self
+            .deploy_mt_receiver_stub_instance_raw(global_contract_id, raw_state)
+            .await?;
+        Ok(account)
+    }
+
+    async fn deploy_mt_receiver_stub_instance_raw(
+        &self,
+        global_contract_id: AccountId,
+        raw_state: BTreeMap<Vec<u8>, Vec<u8>>,
+    ) -> anyhow::Result<(AccountId, ExecutionFinalResult)> {
         let state_init = StateInit::V1(StateInitV1 {
             code: GlobalContractId::AccountId(global_contract_id.clone()),
             data: raw_state.clone(),
@@ -63,11 +83,12 @@ impl MtReceiverStubExt for SigningAccount {
 
         let account = state_init.derive_account_id();
 
-        self.tx(account.clone())
+        let result = self
+            .tx(account.clone())
             .state_init(global_contract_id, raw_state)
-            .transfer(NearToken::from_yoctonear(1))
+            .exec_transaction()
             .await?;
 
-        Ok(account)
+        Ok((account, result))
     }
 }
