@@ -46,3 +46,4 @@ contract = []
 
 [build-dependencies]
 xtask.workspace = true
+cargo-near-build = { workspace = true, features = ["build_external"] }

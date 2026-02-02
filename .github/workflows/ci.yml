@@ -47,9 +47,7 @@ jobs:
           mkdir -p target res
           echo 'Signature: 8a477f597d28d172789f06886806bc55' | tee target/CACHEDIR.TAG res/CACHEDIR.TAG > /dev/null
       - name: Run clippy
-        env:
-          SKIP_CONTRACTS_BUILD: "true"
-        run: cargo clippy --workspace --all-targets --no-deps
+        run: cargo clippy-fast
 
   build:
     name: Build
