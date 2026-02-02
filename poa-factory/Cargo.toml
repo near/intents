@@ -45,4 +45,4 @@ tokio = { workspace = true, features = ["macros"] }
 contract = []
 
 [build-dependencies]
-cargo-near-build = { workspace = true, features = ["build_external"] }
+xtask.workspace = true

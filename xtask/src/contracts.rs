@@ -8,7 +8,7 @@ pub struct ContractOptions {
 }
 
 impl ContractOptions {
-    pub fn new_without_features(contract: Contract) -> Self {
+    pub const fn new_without_features(contract: Contract) -> Self {
         Self {
             contract,
             features: None,

@@ -30,7 +30,6 @@ pub struct BuildArtifact {
 
 #[derive(Debug, Clone)]
 struct BuildContext {
-    workdir: Utf8PathBuf,
     repo_root: Utf8PathBuf,
     outdir: Utf8PathBuf,
 }
@@ -49,8 +48,6 @@ pub struct BuildOptions {
 pub struct ReproducibleBuildOptions {
     #[arg(short, long, default_value_t = true)]
     checksum: bool,
-    #[arg(short, long, default_value_t = true)]
-    parallel: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -80,11 +77,9 @@ impl ContractBuilder {
 
     pub fn apply_options(mut self, options: BuildOptions) -> Self {
         if options.reproducible {
-            let options = if let Some(opts) = options.reproducible_options {
-                opts
-            } else {
-                ReproducibleBuildOptions::default()
-            };
+            let options = options
+                .reproducible_options
+                .map_or_else(ReproducibleBuildOptions::default, |opts| opts);
 
             self = self.set_mode(BuildMode::Reproducible(options));
         }
@@ -111,39 +106,16 @@ impl ContractBuilder {
         let repo_root = workdir.join("..");
         let outdir = repo_root.join(&self.outdir);
 
-        Ok(BuildContext {
-            workdir,
-            repo_root,
-            outdir,
-        })
+        Ok(BuildContext { repo_root, outdir })
     }
 
     pub fn build_contracts(&self) -> Result<Vec<BuildArtifact>> {
         let ctx = self.build_context()?;
 
-        match &self.mode {
-            BuildMode::Reproducible(opts) if opts.parallel => {
-                println!("Building contracts in parallel mode");
-
-                std::thread::scope(|scope| {
-                    let handles = self
-                        .contracts
-                        .iter()
-                        .map(|c| scope.spawn(|| self.build_one(&ctx, c)))
-                        .collect::<Vec<_>>();
-
-                    handles
-                        .into_iter()
-                        .map(|h| h.join().map_err(|_| anyhow!("Build thread panicked"))?)
-                        .collect::<Result<Vec<_>>>()
-                })
-            }
-            _ => self
-                .contracts
-                .iter()
-                .map(|c| self.build_one(&ctx, c))
-                .collect(),
-        }
+        self.contracts
+            .iter()
+            .map(|c| self.build_one(&ctx, c))
+            .collect()
     }
 
     fn build_one(&self, ctx: &BuildContext, contract: &ContractOptions) -> Result<BuildArtifact> {
@@ -153,8 +125,6 @@ impl ContractBuilder {
                 Self::build_reproducible(ctx, &contract.contract, opts.checksum)
             }
         }
-
-        //du -ah *.wasm
     }
 
     fn build_reproducible(
@@ -168,7 +138,7 @@ impl ContractBuilder {
         println!("Building contract: {} in reproducible mode", spec.name,);
 
         let build_opts = DockerBuildOpts::builder()
-            .manifest_path(manifest.into())
+            .manifest_path(manifest)
             .out_dir(ctx.outdir.clone())
             .build();
 
@@ -181,7 +151,7 @@ impl ContractBuilder {
                 .map_err(|e| anyhow!("Failed to compute checksum: {e}"))?;
 
             let checksum_hex = checksum.to_hex_string();
-            println!("Computed checksum: {}", checksum_hex);
+            println!("Computed checksum: {checksum_hex}",);
 
             let checksum_path = ctx.outdir.join(format!("{}.sha256", spec.name));
             std::fs::write(checksum_path.as_str(), &checksum_hex)?;
@@ -205,7 +175,9 @@ impl ContractBuilder {
     ) -> Result<BuildArtifact> {
         let spec = contract.spec();
         let manifest = ctx.repo_root.join(spec.path).join("Cargo.toml");
-        let features = features.clone().unwrap_or(spec.features.to_string());
+        let features = features
+            .clone()
+            .unwrap_or_else(|| spec.features.to_string());
 
         println!("Building contract: {} in non-reproducible mode", spec.name,);
 

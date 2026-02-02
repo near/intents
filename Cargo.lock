@@ -1195,7 +1195,6 @@ dependencies = [
 name = "defuse-poa-factory"
 version = "0.1.0"
 dependencies = [
- "cargo-near-build",
  "defuse-admin-utils",
  "defuse-near-utils",
  "defuse-poa-token",
@@ -1206,6 +1205,7 @@ dependencies = [
  "near-sdk",
  "rstest",
  "tokio",
+ "xtask",
 ]
 
 [[package]]
