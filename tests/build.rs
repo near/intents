@@ -7,6 +7,14 @@ const ESCROW_SWAP_WASM_VAR: &str = "DEFUSE_ESCROW_SWAP_WASM";
 const MULTI_TOKEN_RECEIVER_STUB_WASM_VAR: &str = "DEFUSE_MULTI_TOKEN_RECEIVER_STUB_WASM";
 
 fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
+    let skip_build = std::env::var("SKIP_CONTRACTS_BUILD")
+        .is_ok_and(|v| !["0", "false"].contains(&v.to_lowercase().as_str()));
+
+    if skip_build {
+        println!("Skipping contracts build due to SKIP_CONTRACTS_BUILD being set");
+        return Ok(());
+    }
+
     println!("cargo:rerun-if-changed=../defuse");
     println!("cargo:rerun-if-changed=../poa-factory");
     println!("cargo:rerun-if-changed=../poa-token");

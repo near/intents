@@ -45,16 +45,28 @@ You can obtain a working copy of the smart contract and the ABI from [the releas
 
 Alternatively, you can build this smart contract yourself.
 
-Build the smart contracts:
+Build smart contract separately:
 
 ```shell
-cargo make build
+cargo build-contract <contract name>
+```
+
+Build all contracts at once:
+
+```shell
+cargo build-all
 ```
 
 Run integration tests:
 
 ```shell
-cargo make test
+cargo integration-tests <contract name>
+```
+
+Or run all tests:
+
+```shell
+cargo test --workspace --all-targets
 ```
 
 For state migration testing set environmental var `DEFUSE_MIGRATE_FROM_LEGACY=1`
@@ -64,7 +76,7 @@ The tests will use data created prior to migration combined with newly created d
 Run clippy linter:
 
 ```shell
-cargo make clippy
+cargo clippy --workspace --all-targets --no-deps
 ```
 
 After building, the artifacts of the build will be in the `res` directory.
