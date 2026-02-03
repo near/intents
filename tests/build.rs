@@ -17,6 +17,11 @@ fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
         println!("cargo:rerun-if-changed=../escrow-swap");
         println!("cargo:rerun-if-changed=./contracts/multi-token-receiver-stub");
 
+        println!(
+            "cargo:rustc-env={}={TEST_OUTDIR}",
+            xtask::DEFUSE_OUT_DIR_ENV_VAR
+        );
+
         let skip_build = std::env::var(SKIP_CONTRACTS_BUILD_VAR)
             .is_ok_and(|v| !["0", "false"].contains(&v.to_lowercase().as_str()));
 
@@ -32,11 +37,6 @@ fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
                 ..Default::default()
             },
         )?;
-
-        println!(
-            "cargo:rustc-env={}={TEST_OUTDIR}",
-            xtask::DEFUSE_OUT_DIR_ENV_VAR
-        );
     }
 
     Ok(())
