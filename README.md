@@ -60,7 +60,7 @@ cargo build-all
 Run integration tests:
 
 ```shell
-cargo integration-tests <contract name>
+cargo integration-tests < defuse / poa / escrow-swap >
 ```
 
 Or run all tests:

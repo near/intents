@@ -1293,6 +1293,7 @@ dependencies = [
  "anyhow",
  "arbitrary",
  "bnum",
+ "cargo_metadata 0.23.1",
  "chrono",
  "defuse",
  "defuse-escrow-swap",

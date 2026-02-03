@@ -53,3 +53,5 @@ defuse-nep245.workspace = true
 
 [build-dependencies]
 xtask.workspace = true
+cargo_metadata.workspace = true
+anyhow.workspace = true
