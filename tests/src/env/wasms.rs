@@ -41,7 +41,7 @@ pub static POA_FACTORY_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm(&ReadWasmMode::FromOutdir, "defuse_poa_factory.wasm"));
 
 pub static NON_FUNGIBLE_TOKEN_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm(&ReadWasmMode::FromReleases, "non_fungible_token.wasm"));
+    LazyLock::new(|| read_wasm(&ReadWasmMode::FromReleases, "non-fungible-token.wasm"));
 
 pub static WNEAR_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm(&ReadWasmMode::FromReleases, "wnear.wasm"));
