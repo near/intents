@@ -9,7 +9,7 @@ rust-version.workspace = true
 crate-type = ["rlib"]
 
 [dependencies]
-cargo-near-build = { workspace = true, features = ["docker"] }
+cargo-near-build = { workspace = true, features = ["docker", "build_internal"] }
 clap.workspace = true
 anyhow.workspace = true
 

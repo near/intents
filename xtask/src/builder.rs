@@ -2,9 +2,9 @@ use clap::Args;
 
 use anyhow::{Result, anyhow};
 use cargo_near_build::{
-    BuildArtifact as CompilationArtifact, BuildOpts, build_with_cli,
+    BuildArtifact as CompilationArtifact, BuildOpts, build as build_non_reproducible_wasm,
     camino::Utf8PathBuf,
-    docker::{DockerBuildOpts, build as build_reproducible_with_cli},
+    docker::{DockerBuildOpts, build as build_reproducible_wasm},
 };
 use std::env;
 
@@ -166,7 +166,7 @@ impl ContractBuilder {
             .out_dir(ctx.outdir.clone())
             .build();
 
-        let artifacts = build_reproducible_with_cli(build_opts, false)
+        let artifacts = build_reproducible_wasm(build_opts, false)
             .map_err(|e| anyhow!("Failed to build reproducible wasm: {e}"))?;
 
         let (checksum_hex, checksum_path) =
@@ -199,12 +199,12 @@ impl ContractBuilder {
             .no_abi(true)
             .build();
 
-        let wasm_path =
-            build_with_cli(build_opts).map_err(|e| anyhow!("Failed to build wasm: {e}"))?;
+        let artifact = build_non_reproducible_wasm(build_opts)
+            .map_err(|e| anyhow!("Failed to build wasm: {e}"))?;
 
         Ok(BuildArtifact {
             contract: contract.clone(),
-            wasm_path,
+            wasm_path: artifact.path,
             checksum_hex: None,
             checksum_path: None,
         })
