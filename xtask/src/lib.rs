@@ -1,7 +1,10 @@
 mod builder;
 mod contracts;
 
-pub use builder::{BuildArtifact, BuildMode, BuildOptions};
+pub use builder::{
+    BuildArtifact, BuildMode, BuildOptions, DEFUSE_BUILD_REPRODUCIBLE_ENV_VAR,
+    DEFUSE_OUT_DIR_ENV_VAR,
+};
 pub use contracts::*;
 
 use anyhow::Result;

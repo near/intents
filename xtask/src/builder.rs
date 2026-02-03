@@ -10,9 +10,9 @@ use std::env;
 
 use crate::{Contract, ContractOptions};
 
-const BUILD_REPRODUCIBLE_ENV_VAR: &str = "DEFUSE_BUILD_REPRODUCIBLE";
-const DEFAULT_OUT_DIR: &str = "res";
-const OUT_DIR_ENV_VAR: &str = "DEFUSE_OUT_DIR";
+pub const DEFUSE_BUILD_REPRODUCIBLE_ENV_VAR: &str = "DEFUSE_BUILD_REPRODUCIBLE";
+pub const DEFUSE_OUT_DIR_ENV_VAR: &str = "DEFUSE_OUT_DIR";
+pub const DEFAULT_OUT_DIR: &str = "res";
 
 #[derive(Debug, Clone)]
 pub enum BuildMode {
@@ -37,17 +37,17 @@ struct BuildContext {
 #[derive(Args, Clone, Default)]
 pub struct BuildOptions {
     #[arg(short, long)]
-    reproducible: bool,
+    pub reproducible: bool,
     #[command(flatten)]
-    reproducible_options: Option<ReproducibleBuildOptions>,
+    pub reproducible_options: Option<ReproducibleBuildOptions>,
     #[arg(short, long)]
-    outdir: Option<String>,
+    pub outdir: Option<String>,
 }
 
 #[derive(Args, Clone, Default, Debug)]
 pub struct ReproducibleBuildOptions {
     #[arg(short, long, default_value_t = true)]
-    checksum: bool,
+    pub checksum: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -59,14 +59,15 @@ pub struct ContractBuilder {
 
 impl ContractBuilder {
     pub fn new(contracts: Vec<ContractOptions>) -> Self {
-        let reproducible = env::var(BUILD_REPRODUCIBLE_ENV_VAR)
+        let reproducible = env::var(DEFUSE_BUILD_REPRODUCIBLE_ENV_VAR)
             .is_ok_and(|v| !["0", "false"].contains(&v.to_lowercase().as_str()));
         let mode = if reproducible {
             BuildMode::Reproducible(ReproducibleBuildOptions::default())
         } else {
             BuildMode::NonReproducible
         };
-        let outdir = env::var(OUT_DIR_ENV_VAR).unwrap_or_else(|_| DEFAULT_OUT_DIR.to_string());
+        let outdir =
+            env::var(DEFUSE_OUT_DIR_ENV_VAR).unwrap_or_else(|_| DEFAULT_OUT_DIR.to_string());
 
         Self {
             contracts,

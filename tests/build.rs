@@ -2,11 +2,14 @@
 fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
     #[cfg(not(clippy))]
     {
-        const DEFUSE_BUILD_REPRODUCIBLE_VAR: &str = "DEFUSE_BUILD_REPRODUCIBLE";
         const SKIP_CONTRACTS_BUILD_VAR: &str = "SKIP_CONTRACTS_BUILD";
+        const TEST_OUTDIR: &str = "res";
 
         println!("cargo:rerun-if-env-changed={SKIP_CONTRACTS_BUILD_VAR}");
-        println!("cargo:rerun-if-env-changed={DEFUSE_BUILD_REPRODUCIBLE_VAR}");
+        println!(
+            "cargo:rerun-if-env-changed={}",
+            xtask::DEFUSE_BUILD_REPRODUCIBLE_ENV_VAR
+        );
 
         println!("cargo:rerun-if-changed=../defuse");
         println!("cargo:rerun-if-changed=../poa-factory");
@@ -22,18 +25,18 @@ fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
             return Ok(());
         }
 
-        let artifacts = xtask::build_contracts(
+        xtask::build_contracts(
             xtask::ContractOptions::all_without_features(),
-            xtask::BuildOptions::default(),
+            xtask::BuildOptions {
+                outdir: Some(TEST_OUTDIR.to_string()),
+                ..Default::default()
+            },
         )?;
 
-        for a in artifacts {
-            println!(
-                "cargo:rustc-env={}={}",
-                a.contract.default_env(),
-                a.wasm_path
-            );
-        }
+        println!(
+            "cargo:rustc-env={}={TEST_OUTDIR}",
+            xtask::DEFUSE_OUT_DIR_ENV_VAR
+        );
     }
 
     Ok(())
