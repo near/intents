@@ -12,6 +12,7 @@ use defuse_randomness::Rng;
 use defuse_sandbox::{MtReceiverStubExt, SigningAccount, sandbox};
 use defuse_test_utils::random::rng;
 use multi_token_receiver_stub::MTReceiverMode;
+use near_sdk::borsh;
 use near_sdk::{
     AccountId, GlobalContractId, NearToken, state_init::StateInit, state_init::StateInitV1,
 };
@@ -20,8 +21,11 @@ use rstest::rstest;
 use crate::extensions::defuse::contract::core::amounts::Amounts;
 
 // NOTE: this is the biggest possible state init
-// that does not require storage staking
-const ZERO_BALANCE_ACCOUNT_PAYLOAD_LEN: usize = 560;
+// 770 - ZBA limit
+// 100 - acount metadata
+// 40  - storage entry
+const ZERO_BALANCE_ACCOUNT_PAYLOAD_LEN: usize = 770 - 100 - 40;
+const BORSH_VEC_LEN_PREFIX: usize = 4;
 
 /// Converts gas (in raw units) to Tgas as f64
 #[allow(clippy::cast_precision_loss)]
@@ -100,21 +104,23 @@ async fn benchmark_state_init(
 }
 
 fn create_state_init(rng: &mut impl Rng, global_contract_id: &AccountId) -> StateInit {
-    let mut value = vec![0u8; ZERO_BALANCE_ACCOUNT_PAYLOAD_LEN];
+    let mut value =
+        vec![
+            0u8;
+            ZERO_BALANCE_ACCOUNT_PAYLOAD_LEN - BORSH_VEC_LEN_PREFIX - global_contract_id.len()
+        ];
     rng.fill_bytes(&mut value);
-    let raw_state: BTreeMap<Vec<u8>, Vec<u8>> = [(vec![], value)].into();
+    let raw_state: BTreeMap<Vec<u8>, Vec<u8>> = [(vec![], borsh::to_vec(&value).unwrap())].into();
     StateInit::V1(StateInitV1 {
         code: GlobalContractId::AccountId(global_contract_id.clone()),
         data: raw_state,
     })
 }
 
-async fn create_auth_intent_with_state_init(
+fn create_auth_intent_with_state_init(
     rng: &mut impl Rng,
     global_contract_id: &AccountId,
-    user: &SigningAccount,
-    env: &Env,
-) -> (AccountId, MultiPayload) {
+) -> (AccountId, AuthCall) {
     let state_init = create_state_init(rng, global_contract_id);
     let derived_account = state_init.derive_account_id();
 
@@ -126,12 +132,7 @@ async fn create_auth_intent_with_state_init(
         min_gas: None,
     };
 
-    let payload = user
-        .sign_defuse_payload_default(&env.defuse, [auth_call])
-        .await
-        .unwrap();
-
-    (derived_account, payload)
+    (derived_account, auth_call)
 }
 
 async fn create_transfer_intent_with_state_init(
@@ -166,21 +167,25 @@ async fn create_transfer_intent_with_state_init(
 async fn benchmark_auth_call_with_state_init(mut rng: impl Rng) {
     let env = Env::builder().build().await;
 
-    let user = env.create_user().await;
-
     let global_contract = env
         .root()
         .deploy_mt_receiver_stub_global("mt-receiver-global", MT_RECEIVER_STUB_WASM.clone())
         .await
         .unwrap();
 
-    let (account, intent) =
-        create_auth_intent_with_state_init(&mut rng, global_contract.id(), &user, &env).await;
+    let (account, intent) = create_auth_intent_with_state_init(&mut rng, global_contract.id());
 
     let on_auth_call_gas = {
+        let user = env.create_named_user("user1").await;
+
+        let signed_intent = user
+            .sign_defuse_payload_default(&env.defuse, [intent.clone()])
+            .await
+            .unwrap();
+
         let result = env
             .root()
-            .execute_intents_raw(env.defuse.id(), [intent])
+            .execute_intents_raw(env.defuse.id(), [signed_intent])
             .await
             .unwrap();
         assert!(result.is_success());
@@ -194,6 +199,10 @@ async fn benchmark_auth_call_with_state_init(mut rng: impl Rng) {
         on_auth_result.gas_burnt
     };
 
+    // This is a conservative upper bound: we measure gas for the entire receipt, not just
+    // state init. Since there's no easy way to isolate state init cost, and the combined cost
+    // of receipt creation, state init, and contract callback is below 10 Tgas, it's safe to
+    // assume STATE_INIT_GAS (10 Tgas) covers the state init overhead.
     assert!(on_auth_call_gas <= STATE_INIT_GAS);
 }
 
@@ -245,5 +254,9 @@ async fn benchmark_transfer_with_notification_state_init(mut rng: impl Rng) {
         on_transfer_result.gas_burnt
     };
 
+    // This is a conservative upper bound: we measure gas for the entire receipt, not just
+    // state init. Since there's no easy way to isolate state init cost, and the combined cost
+    // of receipt creation, state init, and contract callback is below 10 Tgas, it's safe to
+    // assume STATE_INIT_GAS (10 Tgas) covers the state init overhead.
     assert!(on_transfer_gas <= STATE_INIT_GAS);
 }

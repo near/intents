@@ -41,8 +41,8 @@ impl ReturnValueExt for Promise {
 
 /// Minimal stub contract used for integration tests.
 #[derive(Default)]
-#[near(contract_state)]
-pub struct Contract;
+#[near(contract_state(key = b""))]
+pub struct Contract(Vec<u8>);
 
 #[derive(Debug, Clone, Default)]
 #[near(serializers = [json])]
@@ -130,7 +130,7 @@ mod tests {
 
     #[test]
     fn mt_on_transfer_returns_requested_value() {
-        let mut contract = Contract;
+        let mut contract = Contract::default();
         let message = serde_json::to_string(&MTReceiverMode::ReturnValue(U128(42))).unwrap();
 
         let PromiseOrValue::Value(result) = contract.mt_on_transfer(
@@ -148,7 +148,7 @@ mod tests {
 
     #[test]
     fn mt_on_transfer_accept_all_funds() {
-        let mut contract = Contract;
+        let mut contract = Contract::default();
         let message = serde_json::to_string(&MTReceiverMode::AcceptAll).unwrap();
 
         let PromiseOrValue::Value(result) = contract.mt_on_transfer(
@@ -166,7 +166,7 @@ mod tests {
 
     #[test]
     fn mt_on_transfer_return_values() {
-        let mut contract = Contract;
+        let mut contract = Contract::default();
         let message =
             serde_json::to_string(&MTReceiverMode::ReturnValues(vec![U128(10), U128(20)])).unwrap();
 
@@ -186,7 +186,7 @@ mod tests {
     #[test]
     fn mt_on_transfer_panic() {
         let result = std::panic::catch_unwind(|| {
-            let mut contract = Contract;
+            let mut contract = Contract::default();
             let message = serde_json::to_string(&MTReceiverMode::Panic).unwrap();
 
             contract.mt_on_transfer(
@@ -203,7 +203,7 @@ mod tests {
 
     #[test]
     fn mt_on_transfer_with_large_return() {
-        let mut contract = Contract;
+        let mut contract = Contract::default();
         let message = serde_json::to_string(&MTReceiverMode::LargeReturn).unwrap();
 
         let PromiseOrValue::Value(result) = contract.mt_on_transfer(
