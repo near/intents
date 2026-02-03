@@ -154,12 +154,12 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
-          name: res
+          name: res_reproducible
           path: ./res
       - name: Run Tests
         env:
           DEFUSE_MIGRATE_FROM_LEGACY: "true"
-          # DEFUSE_BUILD_REPRODUCIBLE: "true"
+          SKIP_CONTRACTS_BUILD: "true"
         run: cargo test --workspace --all-targets -- --show-output
 
   security_audit_report:

@@ -2,7 +2,7 @@ use clap::Args;
 
 use anyhow::{Result, anyhow};
 use cargo_near_build::{
-    BuildOpts, build_with_cli,
+    BuildArtifact as CompilationArtifact, BuildOpts, build_with_cli,
     camino::Utf8PathBuf,
     docker::{DockerBuildOpts, build as build_reproducible_with_cli},
 };
@@ -59,9 +59,9 @@ pub struct ContractBuilder {
 
 impl ContractBuilder {
     pub fn new(contracts: Vec<ContractOptions>) -> Self {
-        let mode = if env::var(BUILD_REPRODUCIBLE_ENV_VAR)
-            .is_ok_and(|v| !["0", "false"].contains(&v.to_lowercase().as_str()))
-        {
+        let reproducible = env::var(BUILD_REPRODUCIBLE_ENV_VAR)
+            .is_ok_and(|v| !["0", "false"].contains(&v.to_lowercase().as_str()));
+        let mode = if reproducible {
             BuildMode::Reproducible(ReproducibleBuildOptions::default())
         } else {
             BuildMode::NonReproducible
@@ -127,6 +127,29 @@ impl ContractBuilder {
         }
     }
 
+    fn maybe_compute_checksum(
+        artifacts: &CompilationArtifact,
+        ctx: &BuildContext,
+        name: &str,
+        enabled: bool,
+    ) -> Result<(Option<String>, Option<Utf8PathBuf>)> {
+        if !enabled {
+            return Ok((None, None));
+        }
+
+        let checksum = artifacts
+            .compute_hash()
+            .map_err(|e| anyhow!("Failed to compute checksum: {e}"))?;
+
+        let checksum_hex = checksum.to_hex_string();
+        println!("Computed checksum: {checksum_hex}",);
+
+        let checksum_path = ctx.outdir.join(format!("{name}.sha256"));
+        std::fs::write(checksum_path.as_str(), &checksum_hex)?;
+
+        Ok((Some(checksum_hex), Some(checksum_path)))
+    }
+
     fn build_reproducible(
         ctx: &BuildContext,
         contract: &Contract,
@@ -145,21 +168,8 @@ impl ContractBuilder {
         let artifacts = build_reproducible_with_cli(build_opts, false)
             .map_err(|e| anyhow!("Failed to build reproducible wasm: {e}"))?;
 
-        let (checksum_hex, checksum_path) = if checksum {
-            let checksum = artifacts
-                .compute_hash()
-                .map_err(|e| anyhow!("Failed to compute checksum: {e}"))?;
-
-            let checksum_hex = checksum.to_hex_string();
-            println!("Computed checksum: {checksum_hex}",);
-
-            let checksum_path = ctx.outdir.join(format!("{}.sha256", spec.name));
-            std::fs::write(checksum_path.as_str(), &checksum_hex)?;
-
-            (Some(checksum_hex), Some(checksum_path))
-        } else {
-            (None, None)
-        };
+        let (checksum_hex, checksum_path) =
+            Self::maybe_compute_checksum(&artifacts, ctx, spec.name, checksum)?;
 
         Ok(BuildArtifact {
             contract: contract.clone(),
