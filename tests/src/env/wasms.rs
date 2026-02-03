@@ -11,14 +11,14 @@ pub enum ReadWasmMode {
 
 pub fn read_wasm(mode: &ReadWasmMode, path: impl AsRef<Path>) -> Vec<u8> {
     let base = Path::new(env!("CARGO_MANIFEST_DIR")).join("../");
-    match mode {
+    let dir = match mode {
         ReadWasmMode::FromOutdir => {
             base.join(option_env!("DEFUSE_OUT_DIR").expect("Out dir should be set"))
         }
         ReadWasmMode::FromReleases => base.join(DEFUSE_RELEASE_DIR),
     };
 
-    let path = fs::canonicalize(base.join(path))
+    let path = fs::canonicalize(dir.join(path))
         .unwrap_or_else(|e| panic!("Failed to canonicalize path: {e}"));
 
     println!("Reading WASM file at {}", path.display());
@@ -27,7 +27,7 @@ pub fn read_wasm(mode: &ReadWasmMode, path: impl AsRef<Path>) -> Vec<u8> {
 }
 
 pub static MT_RECEIVER_STUB_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm(&ReadWasmMode::FromOutdir, "multi-token-receiver-stub.wasm"));
+    LazyLock::new(|| read_wasm(&ReadWasmMode::FromOutdir, "multi_token_receiver_stub.wasm"));
 
 pub static DEFUSE_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm(&ReadWasmMode::FromOutdir, "defuse.wasm"));
@@ -35,13 +35,13 @@ pub static DEFUSE_LEGACY_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm(&ReadWasmMode::FromReleases, "previous.wasm"));
 
 pub static ESCROW_SWAP_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm(&ReadWasmMode::FromOutdir, "defuse-escrow-swap.wasm"));
+    LazyLock::new(|| read_wasm(&ReadWasmMode::FromOutdir, "defuse_escrow_swap.wasm"));
 
 pub static POA_FACTORY_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm(&ReadWasmMode::FromOutdir, "defuse-poa-factory.wasm"));
+    LazyLock::new(|| read_wasm(&ReadWasmMode::FromOutdir, "defuse_poa_factory.wasm"));
 
 pub static NON_FUNGIBLE_TOKEN_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm(&ReadWasmMode::FromReleases, "non-fungible-token.wasm"));
+    LazyLock::new(|| read_wasm(&ReadWasmMode::FromReleases, "non_fungible_token.wasm"));
 
 pub static WNEAR_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm(&ReadWasmMode::FromReleases, "wnear.wasm"));
