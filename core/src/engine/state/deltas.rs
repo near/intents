@@ -241,7 +241,7 @@ where
         tokens: ImtTokens,
         memo: Option<String>,
         notification: Option<NotifyOnTransfer>,
-    ) -> Result<()> {
+    ) -> Result<Amounts> {
         self.state
             .imt_mint_with_notification(owner_id, receiver_id, tokens, memo, notification)
     }

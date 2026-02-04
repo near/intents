@@ -1,4 +1,4 @@
-use crate::env::{DEFUSE_WASM, Env, MT_RECEIVER_STUB_WASM};
+use crate::env::{DEFUSE_WASM, Env, MT_RECEIVER_STUB_WASM, TransferCallExpectation};
 use crate::extensions::defuse::contract::contract::config::{DefuseConfig, RolesConfig};
 use crate::extensions::defuse::contract::core::fees::FeesConfig;
 use crate::extensions::defuse::contract::core::fees::Pips;
@@ -69,14 +69,6 @@ async fn transfer_intent() {
             .unwrap(),
         1000
     );
-}
-
-#[derive(Debug, Clone)]
-pub struct TransferCallExpectation {
-    pub mode: MTReceiverMode,
-    pub intent_transfer_amount: Option<u128>,
-    pub expected_sender_balance: u128,
-    pub expected_receiver_balance: u128,
 }
 
 #[rstest]
@@ -210,31 +202,31 @@ async fn transfer_intent_to_defuse() {
 #[trace]
 #[case::nothing_to_refund(TransferCallExpectation {
     mode: MTReceiverMode::AcceptAll,
-    intent_transfer_amount: Some(1_000),
+    transfer_amount: Some(1_000),
     expected_sender_balance: 0,
     expected_receiver_balance: 1_000,
 })]
 #[case::partial_refund(TransferCallExpectation {
     mode: MTReceiverMode::ReturnValue(300.into()),
-    intent_transfer_amount: Some(1_000),
+    transfer_amount: Some(1_000),
     expected_sender_balance: 300,
     expected_receiver_balance: 700,
 })]
 #[case::malicious_refund(TransferCallExpectation {
     mode: MTReceiverMode::ReturnValue(2_000.into()),
-    intent_transfer_amount: Some(1_000),
+    transfer_amount: Some(1_000),
     expected_sender_balance: 1_000,
     expected_receiver_balance: 0,
 })]
 #[case::receiver_panics(TransferCallExpectation {
     mode: MTReceiverMode::Panic,
-    intent_transfer_amount: Some(1_000),
+    transfer_amount: Some(1_000),
     expected_sender_balance: 1000,
     expected_receiver_balance: 0,
 })]
 #[case::malicious_receiver(TransferCallExpectation {
     mode: MTReceiverMode::LargeReturn,
-    intent_transfer_amount: Some(1_000),
+    transfer_amount: Some(1_000),
     expected_sender_balance: 1000,
     expected_receiver_balance: 0,
 })]
@@ -245,7 +237,7 @@ async fn transfer_intent_with_msg_to_receiver_smc(#[case] expectation: TransferC
     use near_sdk::NearToken;
 
     let initial_amount = expectation
-        .intent_transfer_amount
+        .transfer_amount
         .expect("Transfer amount should be specified");
 
     let env = Env::builder().build().await;

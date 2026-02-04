@@ -148,7 +148,7 @@ pub trait State: StateView {
         tokens: ImtTokens,
         memo: Option<String>,
         notification: Option<NotifyOnTransfer>,
-    ) -> Result<()>;
+    ) -> Result<Amounts>;
 
     #[cfg(feature = "imt")]
     fn imt_burn(

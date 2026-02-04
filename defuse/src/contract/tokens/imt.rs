@@ -24,7 +24,8 @@ impl ImtMinter for Contract {
 
         let owner_id = self.ensure_auth_predecessor_id();
 
-        self.imt_mint_with_notification(&owner_id, receiver_id, tokens, memo, notification)
+        let tokens = self
+            .imt_mint_with_notification(&owner_id, receiver_id, tokens, memo, notification)
             .unwrap_or_panic();
 
         // DefuseEvent::ImtMint(Cow::Borrowed(
@@ -36,6 +37,6 @@ impl ImtMinter for Contract {
         // ))
         // .emit();
 
-        PromiseOrValue::Value(Amounts::default())
+        PromiseOrValue::Value(tokens)
     }
 }

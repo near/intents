@@ -24,16 +24,15 @@ use rstest::rstest;
 
 use near_sdk::{AccountId, AsNep297Event, Gas, NearToken};
 
-use crate::env::{DEFUSE_WASM, Env, MT_RECEIVER_STUB_WASM};
+use crate::env::{DEFUSE_WASM, Env, MT_RECEIVER_STUB_WASM, TransferCallExpectation};
 use crate::extensions::defuse::deployer::DefuseExt;
 use crate::extensions::defuse::intents::ExecuteIntentsExt;
 use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
-use crate::tests::defuse::intents::transfer::TransferCallExpectation;
 
 #[rstest]
 #[trace]
 #[tokio::test]
-async fn mt_mint_intent() {
+async fn imt_mint_intent() {
     let env = Env::builder().build().await;
 
     let user = env.create_user().await;
@@ -121,7 +120,7 @@ async fn failed_imt_mint_intent() {
 #[rstest]
 #[trace]
 #[tokio::test]
-async fn mt_mint_intent_to_defuse() {
+async fn imt_mint_intent_to_defuse() {
     let env = Env::builder().build().await;
 
     let user = env.create_user().await;
@@ -223,40 +222,40 @@ async fn mt_mint_intent_to_defuse() {
 
 #[rstest]
 #[trace]
-#[case::nothing_to_refund(TransferCallExpectation {
+#[case::nothing_to_refund(TransferCallExpectation{
     mode: MTReceiverMode::AcceptAll,
-    intent_transfer_amount: Some(1_000),
+    transfer_amount: Some(1_000),
     expected_sender_balance: 0,
     expected_receiver_balance: 1_000,
 })]
 #[case::partial_refund(TransferCallExpectation {
     mode: MTReceiverMode::ReturnValue(300.into()),
-    intent_transfer_amount: Some(1_000),
+    transfer_amount: Some(1_000),
     expected_sender_balance: 300,
     expected_receiver_balance: 700,
 })]
 #[case::malicious_refund(TransferCallExpectation {
     mode: MTReceiverMode::ReturnValue(2_000.into()),
-    intent_transfer_amount: Some(1_000),
+    transfer_amount: Some(1_000),
     expected_sender_balance: 1_000,
     expected_receiver_balance: 0,
 })]
 #[case::receiver_panics(TransferCallExpectation {
     mode: MTReceiverMode::Panic,
-    intent_transfer_amount: Some(1_000),
+    transfer_amount: Some(1_000),
     expected_sender_balance: 1000,
     expected_receiver_balance: 0,
 })]
 #[case::malicious_receiver(TransferCallExpectation {
     mode: MTReceiverMode::LargeReturn,
-    intent_transfer_amount: Some(1_000),
+    transfer_amount: Some(1_000),
     expected_sender_balance: 1000,
     expected_receiver_balance: 0,
 })]
 #[tokio::test]
-async fn mt_mint_intent_with_msg_to_receiver_smc(#[case] expectation: TransferCallExpectation) {
+async fn imt_mint_intent_with_msg_to_receiver_smc(#[case] expectation: TransferCallExpectation) {
     let initial_amount = expectation
-        .intent_transfer_amount
+        .transfer_amount
         .expect("Transfer amount should be specified");
 
     let env = Env::builder().build().await;

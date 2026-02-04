@@ -66,7 +66,9 @@ impl ExecutableIntent for ImtMint {
             self.tokens,
             self.memo,
             self.notification,
-        )
+        )?;
+
+        Ok(())
     }
 }
 

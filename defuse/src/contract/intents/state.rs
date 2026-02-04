@@ -372,7 +372,7 @@ impl State for Contract {
         tokens: ImtTokens,
         memo: Option<String>,
         notification: Option<NotifyOnTransfer>,
-    ) -> Result<()> {
+    ) -> Result<Amounts> {
         if tokens.is_empty() {
             return Err(DefuseError::InvalidIntent);
         }
@@ -388,9 +388,9 @@ impl State for Contract {
                     .max(MT_ON_TRANSFER_GAS_MIN),
             );
 
-            self.notify_on_transfer(owner_id, receiver_id, tokens, notification);
+            self.notify_on_transfer(owner_id, receiver_id, tokens.clone(), notification);
         }
 
-        Ok(())
+        Ok(tokens)
     }
 }

@@ -1,10 +1,12 @@
 #![allow(dead_code)]
 
 mod builder;
+mod receiver_stub;
 mod state;
 mod storage;
 mod wasms;
 
+pub use receiver_stub::*;
 pub use wasms::*;
 
 use crate::env::builder::EnvBuilder;

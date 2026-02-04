@@ -37,8 +37,7 @@ use self::{
     },
 };
 
-#[ext_contract(ext_defuse)]
-pub trait Defuse:
+pub trait DefaultDefuse:
     Intents
     + RelayerKeys
     + AccountManager
@@ -65,3 +64,14 @@ pub trait Defuse:
     + FullAccessKeys
 {
 }
+
+#[cfg(not(feature = "imt"))]
+#[ext_contract(ext_defuse)]
+pub trait Defuse: DefaultDefuse {}
+
+#[cfg(feature = "imt")]
+use self::tokens::imt::ImtMinter;
+
+#[cfg(feature = "imt")]
+#[ext_contract(ext_defuse)]
+pub trait Defuse: DefaultDefuse + ImtMinter {}

@@ -401,13 +401,15 @@ where
         tokens: ImtTokens,
         memo: Option<String>,
         _notification: Option<NotifyOnTransfer>,
-    ) -> Result<()> {
+    ) -> Result<Amounts> {
         if tokens.is_empty() {
             return Err(DefuseError::InvalidIntent);
         }
 
         let tokens = tokens.into_generic_tokens(owner_id)?;
-        self.mint(receiver_id.into(), tokens.clone(), memo)
+        self.mint(receiver_id, tokens.clone(), memo)?;
+
+        Ok(tokens)
     }
 }
 
