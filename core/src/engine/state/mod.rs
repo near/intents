@@ -2,7 +2,7 @@ pub mod cached;
 pub mod deltas;
 
 use crate::{
-    DefuseError, Nonce, NoncePrefix, Result, Salt,
+    Nonce, NoncePrefix, Result, Salt,
     amounts::Amounts,
     fees::Pips,
     intents::{
@@ -12,13 +12,15 @@ use crate::{
         },
     },
     token_id::{TokenId, nep141::Nep141TokenId},
-    tokens::ImtTokens,
 };
 use cached::CachedState;
 use defuse_crypto::PublicKey;
 use impl_tools::autoimpl;
 use near_sdk::{AccountId, AccountIdRef};
 use std::borrow::Cow;
+
+#[cfg(feature = "imt")]
+use crate::tokens::imt::ImtTokens;
 
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>)]
 pub trait StateView {
@@ -138,7 +140,8 @@ pub trait State: StateView {
         memo: Option<String>,
     ) -> Result<()>;
 
-    fn imt_mint(
+    #[cfg(feature = "imt")]
+    fn imt_mint_with_notification(
         &mut self,
         owner_id: &AccountIdRef,
         receiver_id: AccountId,
@@ -147,6 +150,7 @@ pub trait State: StateView {
         notification: Option<NotifyOnTransfer>,
     ) -> Result<()>;
 
+    #[cfg(feature = "imt")]
     fn imt_burn(
         &mut self,
         minter_id: &AccountIdRef,
@@ -155,7 +159,7 @@ pub trait State: StateView {
         memo: Option<String>,
     ) -> Result<()> {
         if tokens.is_empty() {
-            return Err(DefuseError::InvalidIntent);
+            return Err(crate::DefuseError::InvalidIntent);
         }
 
         let tokens = tokens.into_generic_tokens(minter_id)?;

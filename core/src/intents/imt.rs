@@ -9,7 +9,7 @@ use crate::{
     engine::{Engine, Inspector, State},
     events::DefuseEvent,
     intents::{ExecutableIntent, IntentEvent, tokens::NotifyOnTransfer},
-    tokens::ImtTokens,
+    tokens::imt::ImtTokens,
 };
 
 #[near(serializers = [borsh, json])]
@@ -60,7 +60,7 @@ impl ExecutableIntent for ImtMint {
                 .as_slice(),
             )));
 
-        engine.state.imt_mint(
+        engine.state.imt_mint_with_notification(
             signer_id,
             self.receiver_id,
             self.tokens,
@@ -112,6 +112,6 @@ impl ExecutableIntent for ImtBurn {
 
         engine
             .state
-            .imt_burn(signer_id, &self.minter_id, self.tokens, self.memo)
+            .imt_burn(&self.minter_id, signer_id, self.tokens, self.memo)
     }
 }

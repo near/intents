@@ -9,7 +9,6 @@ use crate::{
         },
     },
     token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
-    tokens::ImtTokens,
 };
 use defuse_bitmap::{U248, U256};
 use defuse_crypto::PublicKey;
@@ -19,6 +18,9 @@ use std::{
     borrow::Cow,
     collections::{HashMap, HashSet},
 };
+
+#[cfg(feature = "imt")]
+use crate::tokens::imt::ImtTokens;
 
 use super::{State, StateView};
 
@@ -391,7 +393,8 @@ where
         self.internal_sub_balance(owner_id, tokens)
     }
 
-    fn imt_mint(
+    #[cfg(feature = "imt")]
+    fn imt_mint_with_notification(
         &mut self,
         owner_id: &AccountIdRef,
         receiver_id: AccountId,

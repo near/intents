@@ -10,7 +10,6 @@ use crate::{
         },
     },
     token_id::TokenId,
-    tokens::ImtTokens,
 };
 use defuse_crypto::PublicKey;
 use defuse_map_utils::cleanup::DefaultMap;
@@ -25,6 +24,9 @@ use std::{
 };
 
 use super::{State, StateView};
+
+#[cfg(feature = "imt")]
+use crate::tokens::imt::ImtTokens;
 
 pub struct Deltas<S> {
     state: S,
@@ -230,8 +232,9 @@ where
         self.state.burn(owner_id, tokens, memo)
     }
 
+    #[cfg(feature = "imt")]
     #[inline]
-    fn imt_mint(
+    fn imt_mint_with_notification(
         &mut self,
         owner_id: &AccountIdRef,
         receiver_id: AccountId,
@@ -240,7 +243,7 @@ where
         notification: Option<NotifyOnTransfer>,
     ) -> Result<()> {
         self.state
-            .imt_mint(owner_id, receiver_id, tokens, memo, notification)
+            .imt_mint_with_notification(owner_id, receiver_id, tokens, memo, notification)
     }
 }
 
