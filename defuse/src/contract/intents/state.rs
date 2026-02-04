@@ -17,7 +17,7 @@ use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, PromiseOrValue, env, json_types::U128};
 use std::borrow::Cow;
 
-use crate::contract::{Contract, accounts::Account, consts::STATE_INIT_GAS};
+use crate::contract::{Contract, accounts::Account};
 
 impl StateView for Contract {
     #[inline]
@@ -327,14 +327,7 @@ impl State for Contract {
                     // do_auth_call only after unwrapping NEAR
                     Self::ext(env::current_account_id())
                         .with_static_gas(
-                            Self::DO_AUTH_CALL_MIN_GAS
-                                .checked_add(
-                                    auth_call
-                                        .state_init
-                                        .as_ref()
-                                        .map_or(Gas::from_gas(0), |_| STATE_INIT_GAS),
-                                )
-                                .and_then(|g| g.checked_add(auth_call.min_gas()))
+                            Self::auth_call_callback_gas(&auth_call)
                                 .ok_or(DefuseError::GasOverflow)?,
                         )
                         .do_auth_call(signer_id.to_owned(), auth_call),
@@ -358,5 +351,19 @@ impl State for Contract {
         memo: Option<String>,
     ) -> Result<()> {
         self.withdraw(owner_id, tokens, memo, false)
+    }
+}
+
+impl Contract {
+    /// Computes the static gas assigned to the `do_auth_call` callback.
+    pub fn auth_call_callback_gas(auth_call: &AuthCall) -> Option<Gas> {
+        Self::DO_AUTH_CALL_MIN_GAS
+            .checked_add(
+                auth_call
+                    .state_init
+                    .as_ref()
+                    .map_or(Gas::from_gas(0), |_| Self::STATE_INIT_GAS),
+            )
+            .and_then(|g| g.checked_add(auth_call.min_gas()))
     }
 }

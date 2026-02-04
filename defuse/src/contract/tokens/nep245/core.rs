@@ -1,4 +1,4 @@
-use crate::contract::{Contract, ContractExt, consts::STATE_INIT_GAS};
+use crate::contract::{Contract, ContractExt};
 use defuse_core::{
     DefuseError, Result, engine::StateView, intents::tokens::NotifyOnTransfer, token_id::TokenId,
 };
@@ -279,21 +279,23 @@ impl Contract {
         amounts: Vec<U128>,
         notify: NotifyOnTransfer,
     ) -> Promise {
-        let (p, extra_gas) = if let Some(state_init) = notify.state_init {
+        let mut p = Promise::new(receiver_id);
+
+        if let Some(state_init) = notify.state_init {
             // No need to require `receiver_id == state_init.derive_account_id()` here,
             // since Near runtime does this validation for us and current receipt will
             // fail in case of mismatch anyway:
             // https://github.com/near/nearcore/blob/523c659ac47ea31205fec830a1427a71352c605a/runtime/runtime/src/verifier.rs#L637-L644
-            (
-                Promise::new(receiver_id).state_init(state_init, NearToken::ZERO),
-                STATE_INIT_GAS,
-            )
-        } else {
-            (Promise::new(receiver_id), Gas::from_gas(0))
-        };
+
+            p = p.state_init(
+                state_init,
+                // we can't spend native NEAR from sender's account during the deposits
+                NearToken::ZERO,
+            );
+        }
 
         ext_mt_receiver::ext_on(p)
-            .with_static_gas(notify.min_gas.unwrap_or_default().saturating_add(extra_gas))
+            .with_static_gas(notify.min_gas.unwrap_or_default())
             // distribute remaining gas here
             .with_unused_gas_weight(1)
             .mt_on_transfer(

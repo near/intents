@@ -1,24 +1,22 @@
-use std::collections::BTreeMap;
-
 use crate::env::{Env, MT_RECEIVER_STUB_WASM};
-use crate::extensions::defuse::contract::contract::consts::STATE_INIT_GAS;
 use crate::extensions::defuse::contract::core::intents::auth::AuthCall;
-use crate::extensions::defuse::contract::core::intents::tokens::{NotifyOnTransfer, Transfer};
-use crate::extensions::defuse::contract::core::payload::multi::MultiPayload;
-use crate::extensions::defuse::contract::core::token_id::{TokenId, nep141::Nep141TokenId};
+use crate::extensions::defuse::deployer::DefuseExt;
 use crate::extensions::defuse::intents::ExecuteIntentsExt;
 use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
+use defuse::contract::Contract as DefuseContract;
+use defuse::contract::config::{DefuseConfig, RolesConfig};
+use defuse::core::fees::FeesConfig;
+use defuse_escrow_swap::Pips;
 use defuse_randomness::Rng;
-use defuse_sandbox::{MtReceiverStubExt, SigningAccount, sandbox};
+use defuse_sandbox::{FnCallBuilder, MtReceiverStubExt, sandbox};
 use defuse_test_utils::random::rng;
-use multi_token_receiver_stub::MTReceiverMode;
-use near_sdk::borsh;
 use near_sdk::{
     AccountId, GlobalContractId, NearToken, state_init::StateInit, state_init::StateInitV1,
 };
+use near_sdk::{Gas, borsh};
 use rstest::rstest;
-
-use crate::extensions::defuse::contract::core::amounts::Amounts;
+use serde_json::json;
+use std::collections::BTreeMap;
 
 // NOTE: this is the biggest possible state init
 // 770 - ZBA limit
@@ -128,38 +126,11 @@ fn create_auth_intent_with_state_init(
         contract_id: derived_account.clone(),
         state_init: Some(state_init),
         msg: String::new(),
-        attached_deposit: NearToken::from_near(0),
+        attached_deposit: NearToken::from_near(1),
         min_gas: None,
     };
 
     (derived_account, auth_call)
-}
-
-async fn create_transfer_intent_with_state_init(
-    rng: &mut impl Rng,
-    global_contract_id: &AccountId,
-    user: &SigningAccount,
-    env: &Env,
-    token_id: TokenId,
-    amount: u128,
-) -> (AccountId, MultiPayload) {
-    let state_init = create_state_init(rng, global_contract_id);
-    let derived_account = state_init.derive_account_id();
-
-    let msg = serde_json::to_string(&MTReceiverMode::AcceptAll).unwrap();
-    let transfer = Transfer {
-        receiver_id: derived_account.clone(),
-        tokens: Amounts::new(std::iter::once((token_id, amount)).collect()),
-        memo: None,
-        notification: Some(NotifyOnTransfer::new(msg).with_state_init(state_init)),
-    };
-
-    let payload = user
-        .sign_defuse_payload_default(&env.defuse, [transfer])
-        .await
-        .unwrap();
-
-    (derived_account, payload)
 }
 
 #[rstest]
@@ -173,52 +144,58 @@ async fn benchmark_auth_call_with_state_init(mut rng: impl Rng) {
         .await
         .unwrap();
 
-    let (account, intent) = create_auth_intent_with_state_init(&mut rng, global_contract.id());
+    let (account, mut intent) = create_auth_intent_with_state_init(&mut rng, global_contract.id());
+    intent.attached_deposit = NearToken::from_near(0);
 
-    let on_auth_call_gas = {
-        let user = env.create_named_user("user1").await;
+    let user = env.create_named_user("user1").await;
 
-        let signed_intent = user
-            .sign_defuse_payload_default(&env.defuse, [intent.clone()])
-            .await
-            .unwrap();
-
-        let result = env
-            .root()
-            .execute_intents_raw(env.defuse.id(), [signed_intent])
-            .await
-            .unwrap();
-        assert!(result.is_success());
-        let on_auth_result = result
-            .outcomes()
-            .iter()
-            .find(|outcome| outcome.executor_id == account)
-            .copied()
-            .unwrap();
-        assert!(on_auth_result.is_success());
-        on_auth_result.gas_burnt
-    };
-
-    // This is a conservative upper bound: we measure gas for the entire receipt, not just
-    // state init. Since there's no easy way to isolate state init cost, and the combined cost
-    // of receipt creation, state init, and contract callback is below 10 Tgas, it's safe to
-    // assume STATE_INIT_GAS (10 Tgas) covers the state init overhead.
-    assert!(on_auth_call_gas <= STATE_INIT_GAS);
-}
-
-#[rstest]
-#[tokio::test]
-async fn benchmark_transfer_with_notification_state_init(mut rng: impl Rng) {
-    let env = Env::builder().build().await;
-
-    let (user, ft) = futures::join!(env.create_user(), env.create_token());
-
-    env.initial_ft_storage_deposit(vec![user.id()], vec![ft.id()])
+    // Register defuse with WNEAR and deposit WNEAR to user's defuse account
+    env.initial_ft_storage_deposit(vec![user.id()], vec![])
         .await;
+    env.defuse_ft_deposit_to(
+        env.wnear.id(),
+        NearToken::from_near(1).as_yoctonear(),
+        user.id(),
+        None,
+    )
+    .await
+    .unwrap();
 
-    env.defuse_ft_deposit_to(ft.id(), 1000, user.id(), None)
+    let signed_intent = user
+        .sign_defuse_payload_default(&env.defuse, [intent.clone()])
         .await
         .unwrap();
+
+    let result = env
+        .root()
+        .execute_intents_raw(env.defuse.id(), [signed_intent])
+        .await
+        .unwrap();
+    assert!(result.is_success());
+    let on_auth_result = result
+        .outcomes()
+        .iter()
+        .find(|outcome| outcome.executor_id == account)
+        .copied()
+        .unwrap();
+    assert!(on_auth_result.is_success());
+}
+
+//NOTE: do_auth_call schedules promise in state init in do_auth_call callcak. When promise in state
+//init is created the cost of state init is charged at the moment of promise cration (it happens in
+//do_auth_call). do_auth_call is  called in callback only if there AuthCall::storage_deposit > 0.
+//We can benchmark if assumed value is correct by directly calling do_auth_call callback with same
+//amount of gas as statically assigned to promise.
+#[rstest]
+#[tokio::test]
+async fn benchmark_gas_used_by_do_auth_call_callback(mut rng: impl Rng) {
+    // NOTE: when do_auth_call is scheduled as callback to withdraw (because of
+    // AuthCall::storage_deposit > 0) it needs to check status of withdrawal. We can't trigger
+    // it in this case so we need to subtract gas for promise read (it's around 0.1Tgas) with
+    // some overhead.
+    const NEAR_WITHDRAW_PROMISE_READ_OVERHEAD: Gas = Gas::from_tgas(1);
+
+    let env = Env::builder().build().await;
 
     let global_contract = env
         .root()
@@ -226,37 +203,44 @@ async fn benchmark_transfer_with_notification_state_init(mut rng: impl Rng) {
         .await
         .unwrap();
 
-    let token_id = TokenId::from(Nep141TokenId::new(ft.id().clone()));
-    let (account, intent) = create_transfer_intent_with_state_init(
-        &mut rng,
-        global_contract.id(),
-        &user,
-        &env,
-        token_id,
-        1000,
-    )
-    .await;
+    // Deploy second defuse instance as the receiver
+    let defuse = env
+        .root()
+        .deploy_defuse(
+            "defuse2",
+            DefuseConfig {
+                wnear_id: env.wnear.id().clone(),
+                fees: FeesConfig {
+                    fee: Pips::ZERO,
+                    fee_collector: env.id().clone(),
+                },
+                roles: RolesConfig::default(),
+            },
+            crate::env::DEFUSE_WASM.clone(),
+        )
+        .await
+        .unwrap();
 
-    let on_transfer_gas = {
-        let result = env
-            .root()
-            .execute_intents_raw(env.defuse.id(), [intent])
-            .await
-            .unwrap();
-        assert!(result.is_success());
-        let on_transfer_result = result
-            .outcomes()
-            .iter()
-            .find(|outcome| outcome.executor_id == account)
-            .copied()
-            .unwrap();
-        assert!(on_transfer_result.is_success());
-        on_transfer_result.gas_burnt
-    };
+    let (account, mut intent) = create_auth_intent_with_state_init(&mut rng, global_contract.id());
+    // required to opt out from promise status check
+    intent.attached_deposit = NearToken::from_near(0);
+    let callback_gas = DefuseContract::auth_call_callback_gas(&intent)
+        .unwrap()
+        .saturating_sub(NEAR_WITHDRAW_PROMISE_READ_OVERHEAD);
 
-    // This is a conservative upper bound: we measure gas for the entire receipt, not just
-    // state init. Since there's no easy way to isolate state init cost, and the combined cost
-    // of receipt creation, state init, and contract callback is below 10 Tgas, it's safe to
-    // assume STATE_INIT_GAS (10 Tgas) covers the state init overhead.
-    assert!(on_transfer_gas <= STATE_INIT_GAS);
+    let result = defuse
+        .tx(defuse.id())
+        .function_call(
+            FnCallBuilder::new("do_auth_call")
+                .with_gas(callback_gas)
+                .json_args(json!({
+                    "signer_id": account,
+                    "auth_call": intent
+                })),
+        )
+        .exec_transaction()
+        .await
+        .unwrap();
+
+    assert!(result.is_success());
 }

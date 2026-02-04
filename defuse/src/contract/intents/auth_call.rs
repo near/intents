@@ -8,6 +8,12 @@ use crate::contract::{Contract, ContractExt};
 impl Contract {
     pub(crate) const DO_AUTH_CALL_MIN_GAS: Gas = Gas::from_tgas(5);
 
+    /// Covers StateInit (NEP-616) cost when deterministic account doesn't exist yet.
+    /// Only accounts for deploying via Global Contract ref (NEP-591) with <770B storage
+    /// which doesn't require storage staking. If you need to attach more GAS, utilize
+    /// `AuthCall::min_gas` or `NotifyOnTransfer::min_gas` and provide storage deposit separately.
+    pub(crate) const STATE_INIT_GAS: Gas = Gas::from_tgas(10);
+
     #[private]
     pub fn do_auth_call(signer_id: AccountId, auth_call: AuthCall) -> Promise {
         if !auth_call.attached_deposit.is_zero() {
