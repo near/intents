@@ -8,7 +8,10 @@ use std::borrow::Cow;
 use bitflags::bitflags;
 use defuse_bitmap::U256;
 use defuse_core::{
-    NoncePrefix, Result, accounts::AccountEvent, crypto::PublicKey, events::DefuseEvent,
+    NoncePrefix, Result,
+    accounts::AccountEvent,
+    crypto::PublicKey,
+    events::{DefuseEvent, MaybeIntentEvent},
     intents::account::SetAuthByPredecessorId,
 };
 
@@ -148,10 +151,10 @@ impl Account {
             self.flags
                 .toggle(AccountFlags::AUTH_BY_PREDECESSOR_ID_DISABLED);
 
-            DefuseEvent::SetAuthByPredecessorId(AccountEvent::new(
+            DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::direct(AccountEvent::new(
                 Cow::Borrowed(me),
-                SetAuthByPredecessorId { enabled: enable },
-            ))
+                Cow::Owned(SetAuthByPredecessorId { enabled: enable }),
+            )))
             .emit();
         }
         was_enabled

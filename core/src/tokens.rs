@@ -7,10 +7,10 @@ pub const MT_ON_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(30);
 
 #[cfg(feature = "imt")]
 pub mod imt {
-    use std::collections::BTreeMap;
-
     use defuse_token_id::{TokenId, imt::ImtTokenId};
-    use near_sdk::AccountIdRef;
+    use near_sdk::{AccountIdRef, near};
+    use serde_with::{DisplayFromStr, serde_as};
+    use std::{borrow::Cow, collections::BTreeMap};
 
     use crate::{DefuseError, Result, amounts::Amounts, tokens::MAX_TOKEN_ID_LEN};
 
@@ -37,5 +37,17 @@ pub mod imt {
 
             Ok(Amounts::new(tokens))
         }
+    }
+
+    #[near(serializers = [json])]
+    #[derive(Debug, Clone)]
+    pub struct ImtMintEvent<'a> {
+        pub receiver_id: Cow<'a, AccountIdRef>,
+
+        #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
+        pub tokens: ImtTokens,
+
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub memo: Cow<'a, Option<String>>,
     }
 }

@@ -12,11 +12,11 @@ use crate::{
     accounts::{AccountEvent, TransferEvent},
     amounts::Amounts,
     engine::{Engine, Inspector, State},
-    events::DefuseEvent,
+    events::{DefuseEvent, MaybeIntentEvent},
     tokens::{MT_ON_TRANSFER_GAS_DEFAULT, MT_ON_TRANSFER_GAS_MIN},
 };
 
-use super::{ExecutableIntent, IntentEvent};
+use super::ExecutableIntent;
 
 #[must_use]
 #[near(serializers = [borsh, json])]
@@ -98,7 +98,7 @@ impl ExecutableIntent for Transfer {
         engine
             .inspector
             .on_event(DefuseEvent::Transfer(Cow::Borrowed(
-                [IntentEvent::new(
+                [MaybeIntentEvent::intent(
                     AccountEvent::new(
                         sender_id,
                         TransferEvent {
@@ -220,7 +220,7 @@ impl ExecutableIntent for FtWithdraw {
         engine
             .inspector
             .on_event(DefuseEvent::FtWithdraw(Cow::Borrowed(
-                [IntentEvent::new(
+                [MaybeIntentEvent::intent(
                     AccountEvent::new(owner_id, Cow::Borrowed(&self)),
                     intent_hash,
                 )]
@@ -315,7 +315,7 @@ impl ExecutableIntent for NftWithdraw {
         engine
             .inspector
             .on_event(DefuseEvent::NftWithdraw(Cow::Borrowed(
-                [IntentEvent::new(
+                [MaybeIntentEvent::intent(
                     AccountEvent::new(owner_id, Cow::Borrowed(&self)),
                     intent_hash,
                 )]
@@ -416,7 +416,7 @@ impl ExecutableIntent for MtWithdraw {
         engine
             .inspector
             .on_event(DefuseEvent::MtWithdraw(Cow::Borrowed(
-                [IntentEvent::new(
+                [MaybeIntentEvent::intent(
                     AccountEvent::new(owner_id, Cow::Borrowed(&self)),
                     intent_hash,
                 )]
@@ -453,7 +453,7 @@ impl ExecutableIntent for NativeWithdraw {
         engine
             .inspector
             .on_event(DefuseEvent::NativeWithdraw(Cow::Borrowed(
-                [IntentEvent::new(
+                [MaybeIntentEvent::intent(
                     AccountEvent::new(owner_id, Cow::Borrowed(&self)),
                     intent_hash,
                 )]
@@ -503,7 +503,7 @@ impl ExecutableIntent for StorageDeposit {
         engine
             .inspector
             .on_event(DefuseEvent::StorageDeposit(Cow::Borrowed(
-                [IntentEvent::new(
+                [MaybeIntentEvent::intent(
                     AccountEvent::new(owner_id, Cow::Borrowed(&self)),
                     intent_hash,
                 )]

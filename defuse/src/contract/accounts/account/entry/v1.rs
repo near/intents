@@ -62,7 +62,7 @@ pub(super) mod tests {
     use defuse_core::{
         Result,
         accounts::{AccountEvent, PublicKeyEvent},
-        events::DefuseEvent,
+        events::{DefuseEvent, MaybeIntentEvent},
         intents::account::SetAuthByPredecessorId,
     };
     use std::borrow::Cow;
@@ -96,12 +96,12 @@ pub(super) mod tests {
                 return false;
             }
 
-            DefuseEvent::PublicKeyAdded(AccountEvent::new(
+            DefuseEvent::PublicKeyAdded(MaybeIntentEvent::direct(AccountEvent::new(
                 Cow::Borrowed(me),
                 PublicKeyEvent {
                     public_key: Cow::Borrowed(&public_key),
                 },
-            ))
+            )))
             .emit();
 
             true
@@ -126,12 +126,12 @@ pub(super) mod tests {
                 return false;
             }
 
-            DefuseEvent::PublicKeyRemoved(AccountEvent::new(
+            DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::direct(AccountEvent::new(
                 Cow::Borrowed(me),
                 PublicKeyEvent {
                     public_key: Cow::Borrowed(public_key),
                 },
-            ))
+            )))
             .emit();
 
             true
@@ -203,10 +203,10 @@ pub(super) mod tests {
                 self.flags
                     .toggle(AccountFlags::AUTH_BY_PREDECESSOR_ID_DISABLED);
 
-                DefuseEvent::SetAuthByPredecessorId(AccountEvent::new(
+                DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::direct(AccountEvent::new(
                     Cow::Borrowed(me),
-                    SetAuthByPredecessorId { enabled: enable },
-                ))
+                    Cow::Owned(SetAuthByPredecessorId { enabled: enable }),
+                )))
                 .emit();
             }
             was_enabled

@@ -11,7 +11,7 @@ use defuse_core::{
     accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
     engine::{State, StateView},
-    events::DefuseEvent,
+    events::{DefuseEvent, MaybeIntentEvent},
 };
 
 use defuse_near_utils::{Lock, NestPrefix, UnwrapOrPanic};
@@ -82,24 +82,24 @@ impl Contract {
     pub fn add_public_key(&mut self, account_id: &AccountIdRef, public_key: PublicKey) {
         State::add_public_key(self, account_id.into(), public_key).unwrap_or_panic();
 
-        DefuseEvent::PublicKeyAdded(AccountEvent::new(
+        DefuseEvent::PublicKeyAdded(MaybeIntentEvent::direct(AccountEvent::new(
             Cow::Borrowed(account_id),
             PublicKeyEvent {
                 public_key: Cow::Borrowed(&public_key),
             },
-        ))
+        )))
         .emit();
     }
 
     pub fn remove_public_key(&mut self, account_id: &AccountIdRef, public_key: PublicKey) {
         State::remove_public_key(self, account_id.into(), public_key).unwrap_or_panic();
 
-        DefuseEvent::PublicKeyRemoved(AccountEvent::new(
+        DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::direct(AccountEvent::new(
             Cow::Borrowed(account_id),
             PublicKeyEvent {
                 public_key: Cow::Borrowed(&public_key),
             },
-        ))
+        )))
         .emit();
     }
 }
