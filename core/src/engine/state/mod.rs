@@ -2,7 +2,7 @@ pub mod cached;
 pub mod deltas;
 
 use crate::{
-    Nonce, NoncePrefix, Result, Salt,
+    DefuseError, Nonce, NoncePrefix, Result, Salt,
     amounts::Amounts,
     fees::Pips,
     intents::{
@@ -12,6 +12,7 @@ use crate::{
         },
     },
     token_id::{TokenId, nep141::Nep141TokenId},
+    tokens::ImtTokens,
 };
 use cached::CachedState;
 use defuse_crypto::PublicKey;
@@ -136,4 +137,28 @@ pub trait State: StateView {
         tokens: Amounts,
         memo: Option<String>,
     ) -> Result<()>;
+
+    fn imt_mint(
+        &mut self,
+        owner_id: &AccountIdRef,
+        receiver_id: AccountId,
+        tokens: ImtTokens,
+        memo: Option<String>,
+        notification: Option<NotifyOnTransfer>,
+    ) -> Result<()>;
+
+    fn imt_burn(
+        &mut self,
+        minter_id: &AccountIdRef,
+        owner_id: &AccountIdRef,
+        tokens: ImtTokens,
+        memo: Option<String>,
+    ) -> Result<()> {
+        if tokens.is_empty() {
+            return Err(DefuseError::InvalidIntent);
+        }
+
+        let tokens = tokens.into_generic_tokens(minter_id)?;
+        self.burn(owner_id, tokens, memo)
+    }
 }

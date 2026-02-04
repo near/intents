@@ -3,6 +3,9 @@ pub mod auth;
 pub mod token_diff;
 pub mod tokens;
 
+#[cfg(feature = "imt")]
+pub mod imt;
+
 use defuse_serde_utils::base58::Base58;
 use derive_more::derive::From;
 use near_sdk::{AccountIdRef, CryptoHash, near};
@@ -71,11 +74,11 @@ pub enum Intent {
 
     // See [`ImtMint`]
     #[cfg(feature = "imt")]
-    ImtMint(crate::intents::tokens::imt::ImtMint),
+    ImtMint(crate::intents::imt::ImtMint),
 
     // See [`ImtBurn`]
     #[cfg(feature = "imt")]
-    ImtBurn(crate::intents::tokens::imt::ImtBurn),
+    ImtBurn(crate::intents::imt::ImtBurn),
 }
 
 pub trait ExecutableIntent {

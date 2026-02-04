@@ -10,6 +10,7 @@ use crate::{
         },
     },
     token_id::TokenId,
+    tokens::ImtTokens,
 };
 use defuse_crypto::PublicKey;
 use defuse_map_utils::cleanup::DefaultMap;
@@ -227,6 +228,19 @@ where
         memo: Option<String>,
     ) -> Result<()> {
         self.state.burn(owner_id, tokens, memo)
+    }
+
+    #[inline]
+    fn imt_mint(
+        &mut self,
+        owner_id: &AccountIdRef,
+        receiver_id: AccountId,
+        tokens: ImtTokens,
+        memo: Option<String>,
+        notification: Option<NotifyOnTransfer>,
+    ) -> Result<()> {
+        self.state
+            .imt_mint(owner_id, receiver_id, tokens, memo, notification)
     }
 }
 

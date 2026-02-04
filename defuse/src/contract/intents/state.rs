@@ -11,6 +11,7 @@ use defuse_core::{
         },
     },
     token_id::{TokenId, nep141::Nep141TokenId},
+    tokens::{ImtTokens, MT_ON_TRANSFER_GAS_DEFAULT, MT_ON_TRANSFER_GAS_MIN},
 };
 use defuse_near_utils::Lock;
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
@@ -358,5 +359,34 @@ impl State for Contract {
         memo: Option<String>,
     ) -> Result<()> {
         self.withdraw(owner_id, tokens, memo, false)
+    }
+
+    fn imt_mint(
+        &mut self,
+        owner_id: &AccountIdRef,
+        receiver_id: AccountId,
+        tokens: ImtTokens,
+        memo: Option<String>,
+        notification: Option<NotifyOnTransfer>,
+    ) -> Result<()> {
+        if tokens.is_empty() {
+            return Err(DefuseError::InvalidIntent);
+        }
+
+        let tokens = tokens.into_generic_tokens(owner_id)?;
+        self.mint(receiver_id.clone(), tokens.clone(), memo)?;
+
+        if let Some(mut notification) = notification {
+            notification.min_gas = Some(
+                notification
+                    .min_gas
+                    .unwrap_or(MT_ON_TRANSFER_GAS_DEFAULT)
+                    .max(MT_ON_TRANSFER_GAS_MIN),
+            );
+
+            self.notify_on_transfer(owner_id, receiver_id, tokens, notification);
+        }
+
+        Ok(())
     }
 }

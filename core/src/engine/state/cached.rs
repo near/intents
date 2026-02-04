@@ -9,6 +9,7 @@ use crate::{
         },
     },
     token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
+    tokens::ImtTokens,
 };
 use defuse_bitmap::{U248, U256};
 use defuse_crypto::PublicKey;
@@ -388,6 +389,22 @@ where
         _memo: Option<String>,
     ) -> Result<()> {
         self.internal_sub_balance(owner_id, tokens)
+    }
+
+    fn imt_mint(
+        &mut self,
+        owner_id: &AccountIdRef,
+        receiver_id: AccountId,
+        tokens: ImtTokens,
+        memo: Option<String>,
+        _notification: Option<NotifyOnTransfer>,
+    ) -> Result<()> {
+        if tokens.is_empty() {
+            return Err(DefuseError::InvalidIntent);
+        }
+
+        let tokens = tokens.into_generic_tokens(owner_id)?;
+        self.mint(receiver_id.into(), tokens.clone(), memo)
     }
 }
 

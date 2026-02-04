@@ -56,15 +56,11 @@ pub enum DefuseEvent<'a> {
 
     #[cfg(feature = "imt")]
     #[event_version("0.3.0")]
-    ImtMint(
-        Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, crate::intents::tokens::imt::ImtMint>>>]>,
-    ),
+    ImtMint(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, crate::intents::imt::ImtMint>>>]>),
 
     #[cfg(feature = "imt")]
     #[event_version("0.3.0")]
-    ImtBurn(
-        Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, crate::intents::tokens::imt::ImtBurn>>>]>,
-    ),
+    ImtBurn(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, crate::intents::imt::ImtBurn>>>]>),
     #[event_version("0.3.0")]
     #[from(skip)]
     AccountLocked(AccountEvent<'a, ()>),
