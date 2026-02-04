@@ -85,7 +85,7 @@ impl MtReceiverStubExt for SigningAccount {
 
         let result = self
             .tx(account.clone())
-            .state_init(global_contract_id, raw_state)
+            .state_init(state_init)
             .exec_transaction()
             .await?;
 

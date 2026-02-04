@@ -48,44 +48,35 @@ async fn benchmark_state_init(
 
     // Pre-generate all states with random values (rng is not thread-safe),
     // then create futures and run in parallel
-    let futures = (0..=800)
-        .step_by(10)
-        .map(|value_size| {
-            let mut value = vec![0u8; value_size];
-            if value_size > 0 {
-                rng.fill_bytes(&mut value);
+    let futures = (0..=800).step_by(10).map(|value_size| {
+        let mut value = vec![0u8; value_size];
+        if value_size > 0 {
+            rng.fill_bytes(&mut value);
+        }
+        let state: BTreeMap<Vec<u8>, Vec<u8>> = [(vec![], value)].into();
+        let root = root.clone();
+        let global_id = global_contract.id().clone();
+        async move {
+            match root
+                .deploy_mt_receiver_stub_instance_raw(global_id, state)
+                .await
+            {
+                Ok((_, exec_result)) if exec_result.is_success() => {
+                    Some((value_size, exec_result.total_gas_burnt.as_gas()))
+                }
+                _ => {
+                    println!("Failed at value_size={value_size}");
+                    None
+                }
             }
-            let state: BTreeMap<Vec<u8>, Vec<u8>> = [(vec![], value)].into();
-            (value_size, state)
-        })
-        .map(|(value_size, state)| {
-            let root = root.clone();
-            let global_id = global_contract.id().clone();
-            async move {
-                let result = root
-                    .deploy_mt_receiver_stub_instance_raw(global_id, state)
-                    .await;
-                (value_size, result)
-            }
-        });
+        }
+    });
 
-    let all_results = futures::future::join_all(futures).await;
-
-    let mut results: Vec<_> = all_results
+    let results: Vec<_> = futures::future::join_all(futures)
+        .await
         .into_iter()
-        .filter_map(|(value_size, result)| match result {
-            Ok((_, exec_result)) if exec_result.is_success() => {
-                Some((value_size, exec_result.total_gas_burnt.as_gas()))
-            }
-            _ => {
-                println!("Failed at value_size={value_size}");
-                None
-            }
-        })
+        .flatten()
         .collect();
-
-    // Sort by value_size since parallel execution may complete out of order
-    results.sort_by_key(|(size, _)| *size);
 
     // Print table
     println!("\n╔═══════════════════════════════════════════════╗");
