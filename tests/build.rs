@@ -39,6 +39,7 @@ mod build {
         }
 
         cargo_rerun_trigger!("../{TEST_OUTDIR}");
+        cargo_rerun_trigger!("../Cargo.lock");
 
         Ok(())
     }
