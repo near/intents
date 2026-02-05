@@ -11,11 +11,11 @@ use defuse_escrow_swap::Pips;
 use defuse_randomness::Rng;
 use defuse_sandbox::FnCallBuilder;
 use defuse_test_utils::random::rng;
+use near_sdk::Gas;
 use near_sdk::{
     AccountId, GlobalContractId, NearToken, serde_json::json, state_init::StateInit,
     state_init::StateInitV1,
 };
-use near_sdk::{Gas, borsh};
 use rstest::rstest;
 use std::collections::BTreeMap;
 
@@ -28,12 +28,11 @@ mod helpers {
     // // 100 - acount metadata
     // // 40  - storage entry
     const ZERO_BALANCE_ACCOUNT_PAYLOAD_LEN: usize = 770 - 100 - 40;
-    const BORSH_VEC_LEN_PREFIX: usize = 4;
 
     /// Calculates the maximum allowed payload size for a single-entry state init
     /// that fits within ZBA storage limits for the given global contract id.
     pub fn max_single_entry_payload(global_contract_id: &AccountId) -> usize {
-        ZERO_BALANCE_ACCOUNT_PAYLOAD_LEN - global_contract_id.len() - BORSH_VEC_LEN_PREFIX
+        ZERO_BALANCE_ACCOUNT_PAYLOAD_LEN - global_contract_id.len()
     }
 
     /// Generates raw state data for state init benchmark
@@ -47,7 +46,7 @@ mod helpers {
                 let mut value = vec![0u8; value_size];
                 if value_size > 0 {
                     rng.fill_bytes(&mut value);
-                    (key.clone(), borsh::to_vec(&value).unwrap())
+                    (key.clone(), value)
                 } else {
                     (key.clone(), vec![])
                 }

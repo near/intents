@@ -11,6 +11,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 defuse = { workspace = true }
 defuse-auth-call = { workspace = true, optional = true }
+defuse-borsh-utils.workspace = true
 defuse-nep245.workspace = true
 near-sdk.workspace = true
 
