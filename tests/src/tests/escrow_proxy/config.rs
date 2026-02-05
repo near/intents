@@ -19,8 +19,8 @@ async fn escrow_proxy_deployment_and_config() {
                 .id()
                 .clone(),
         ),
-        auth_contract: root.sub_account("auth_contract").unwrap().id().clone(),
-        notifier: root.sub_account("notifier").unwrap().id().clone(),
+        on_auth_caller: root.sub_account("auth_contract").unwrap().id().clone(),
+        notifier_id: root.sub_account("notifier").unwrap().id().clone(),
     };
 
     let proxy_id = root
@@ -51,8 +51,8 @@ async fn owner_configuration() {
                 .id()
                 .clone(),
         ),
-        auth_contract: root.sub_account("auth_contract").unwrap().id().clone(),
-        notifier: root.sub_account("notifier").unwrap().id().clone(),
+        on_auth_caller: root.sub_account("auth_contract").unwrap().id().clone(),
+        notifier_id: root.sub_account("notifier").unwrap().id().clone(),
     };
 
     let _proxy_id = root

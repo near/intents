@@ -3,13 +3,18 @@ use std::collections::BTreeMap;
 use crate::Error;
 use near_sdk::{AccountId, GlobalContractId, borsh, near};
 
+/// Configuration for the escrow proxy contract.
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProxyConfig {
+    /// Account that owns this proxy instance.
     pub owner_id: AccountId,
+    /// Global contract ID for oneshot condvar
     pub oneshot_condvar_global_id: GlobalContractId,
-    pub auth_contract: AccountId,
-    pub notifier: AccountId,
+    /// Contract that will call `on_auth` on condvar instances.
+    pub on_auth_caller: AccountId,
+    /// Account to notify on authorization events.
+    pub notifier_id: AccountId,
 }
 
 #[near(serializers = [borsh, json])]

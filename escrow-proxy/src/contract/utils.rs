@@ -17,8 +17,8 @@ impl Contract {
     pub(crate) fn transfer_auth_state_init(&self, salt: [u8; 32]) -> StateInit {
         let config = self.0.config();
         let state = CondVarConfig {
-            auth_contract: config.auth_contract.clone(),
-            notifier_id: config.notifier.clone(),
+            on_auth_caller: config.on_auth_caller.clone(),
+            notifier_id: config.notifier_id.clone(),
             authorizee: env::current_account_id(),
             salt,
         };

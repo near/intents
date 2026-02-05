@@ -59,8 +59,8 @@ async fn test_proxy_returns_funds_on_timeout_of_authorization() {
     let config = ProxyConfig {
         owner_id,
         oneshot_condvar_global_id: GlobalContractId::AccountId(condvar_global.clone()),
-        auth_contract: env.defuse.id().clone(),
-        notifier: relay.id().clone(),
+        on_auth_caller: env.defuse.id().clone(),
+        notifier_id: relay.id().clone(),
     };
 
     let proxy_id = env
@@ -132,8 +132,8 @@ async fn test_transfer_authorized_by_relay() {
     let config = ProxyConfig {
         owner_id,
         oneshot_condvar_global_id: GlobalContractId::AccountId(condvar_global.clone()),
-        auth_contract: env.root().id().clone(),
-        notifier: relay.id().clone(),
+        on_auth_caller: env.root().id().clone(),
+        notifier_id: relay.id().clone(),
     };
 
     let proxy_id = env
@@ -187,8 +187,8 @@ async fn test_transfer_authorized_by_relay() {
     .hash();
 
     let auth_state = CondVarConfig {
-        auth_contract: config.auth_contract.clone(),
-        notifier_id: config.notifier.clone(),
+        on_auth_caller: config.on_auth_caller.clone(),
+        notifier_id: config.notifier_id.clone(),
         authorizee: proxy_id.clone(),
         salt: context_hash,
     };
@@ -276,8 +276,8 @@ async fn test_ft_transfer_authorized_by_relay() {
     let config = ProxyConfig {
         owner_id,
         oneshot_condvar_global_id: GlobalContractId::AccountId(condvar_global.clone()),
-        auth_contract: env.root().id().clone(),
-        notifier: relay.id().clone(),
+        on_auth_caller: env.root().id().clone(),
+        notifier_id: relay.id().clone(),
     };
 
     let proxy_id = env
@@ -331,8 +331,8 @@ async fn test_ft_transfer_authorized_by_relay() {
     .hash();
 
     let auth_state = CondVarConfig {
-        auth_contract: config.auth_contract.clone(),
-        notifier_id: config.notifier.clone(),
+        on_auth_caller: config.on_auth_caller.clone(),
+        notifier_id: config.notifier_id.clone(),
         authorizee: proxy_id.clone(),
         salt: context_hash,
     };
@@ -412,8 +412,8 @@ async fn test_proxy_with_ft_transfer() {
     let config = ProxyConfig {
         owner_id,
         oneshot_condvar_global_id: GlobalContractId::AccountId(condvar_global.clone()),
-        auth_contract: env.root().id().clone(),
-        notifier: relay.id().clone(),
+        on_auth_caller: env.root().id().clone(),
+        notifier_id: relay.id().clone(),
     };
 
     let proxy_id = env
@@ -513,8 +513,8 @@ async fn test_proxy_with_ft_transfer() {
     .hash();
 
     let auth_state = CondVarConfig {
-        auth_contract: config.auth_contract.clone(),
-        notifier_id: config.notifier.clone(),
+        on_auth_caller: config.on_auth_caller.clone(),
+        notifier_id: config.notifier_id.clone(),
         authorizee: proxy_id.clone(),
         salt: context_hash,
     };

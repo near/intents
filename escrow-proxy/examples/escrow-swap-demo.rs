@@ -58,7 +58,7 @@ const ONESHOT_CONDVAR_GLOBAL_REF_ID: &str = "test2.pityjllk.testnet";
 const ESCROW_GLOBAL_REF_ID: &str = "escrowswap.pityjllk.testnet";
 
 // NOTE:
-// near contract deploy escrowproxy.pityjllk.testnet use-file /Users/mat/intents/res/defuse_escrow_proxy.wasm with-init-call new json-args '{"roles":{"super_admins":["pityjllk.testnet"],"admins":{},"grantees":{}},"config":{"oneshot_condvar_global_id":"test2.pityjllk.testnet","auth_contract":"intents.nearseny.testnet","notifier":"pityjllk.testnet"}}' prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' network-config testnet sign-with-keychain send
+// near contract deploy escrowproxy.pityjllk.testnet use-file /Users/mat/intents/res/defuse_escrow_proxy.wasm with-init-call new json-args '{"roles":{"super_admins":["pityjllk.testnet"],"admins":{},"grantees":{}},"config":{"oneshot_condvar_global_id":"test2.pityjllk.testnet","on_auth_caller":"intents.nearseny.testnet","notifier":"pityjllk.testnet"}}' prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' network-config testnet sign-with-keychain send
 const PROXY: &str = "escrowproxy.pityjllk.testnet";
 
 /// Derive a new ED25519 secret key from an account ID and derivation path
@@ -344,9 +344,9 @@ async fn main() -> Result<()> {
         msg: Cow::Borrowed(&proxy_msg_json),
     };
 
-    // CondVarConfig defines the state for the oneshot-condvar instance
+    // CondVarConfig defines the state for the oneshot-condvar instance.
     let condvar_state = CondVarConfig {
-        auth_contract: VERIFIER_CONTRACT.parse().unwrap(),
+        on_auth_caller: VERIFIER_CONTRACT.parse().unwrap(),
         notifier_id: root.id().clone(), // relay account that signs the auth
         authorizee: PROXY.parse().unwrap(),
         salt: condvar_context.hash(),

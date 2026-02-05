@@ -23,7 +23,7 @@ async fn on_auth_call() {
     .unwrap();
 
     let state = CondVarConfig {
-        auth_contract: auth_contract.id().clone(),
+        on_auth_caller: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
         salt: [0; 32],
@@ -90,7 +90,7 @@ async fn oneshot_condvar_early_notification() {
     .unwrap();
 
     let state = CondVarConfig {
-        auth_contract: auth_contract.id().clone(),
+        on_auth_caller: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
         salt: [0; 32],
@@ -146,7 +146,7 @@ async fn oneshot_condvar_async_notification() {
     let network_config = root.network_config().clone();
 
     let state = CondVarConfig {
-        auth_contract: auth_contract.id().clone(),
+        on_auth_caller: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
         salt: [0; 32],
@@ -217,7 +217,7 @@ async fn oneshot_condvar_async_notification_timeout() {
     .unwrap();
 
     let state = CondVarConfig {
-        auth_contract: auth_contract.id().clone(),
+        on_auth_caller: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
         salt: [0; 32],
@@ -263,7 +263,7 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth() {
     .unwrap();
 
     let state = CondVarConfig {
-        auth_contract: auth_contract.id().clone(),
+        on_auth_caller: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
         salt: [0; 32],
@@ -335,7 +335,7 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth2() {
     .unwrap();
 
     let state = CondVarConfig {
-        auth_contract: auth_contract.id().clone(),
+        on_auth_caller: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
         salt: [0; 32],
@@ -405,7 +405,7 @@ async fn test_cv_wait_gas_benchmark() {
     let network_config = root.network_config().clone();
 
     let state = CondVarConfig {
-        auth_contract: auth_contract.id().clone(),
+        on_auth_caller: auth_contract.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy.id().clone(),
         salt: [0; 32],

@@ -13,13 +13,18 @@ pub enum Status {
     Done,
 }
 
+/// Configuration for the oneshot condition variable contract.
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Config {
+    /// Account ID of the contract that is allowed to call `on_auth`.
     #[cfg(feature = "auth-call")]
-    pub auth_contract: AccountId,
+    pub on_auth_caller: AccountId,
+    /// Account ID that is permitted to call [`cv_notify_one`] on oneshot condvar
     pub notifier_id: AccountId,
+    /// Account ID that becomes authorized upon successful notification.
     pub authorizee: AccountId,
+    /// Unique salt used for deterministic account derivation.
     #[serde_as(as = "Hex")]
     pub salt: [u8; 32],
 }

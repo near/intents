@@ -56,8 +56,8 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     let config = ProxyConfig {
         owner_id,
         oneshot_condvar_global_id: GlobalContractId::AccountId(condvar_global.clone()),
-        auth_contract: env.defuse.id().clone(),
-        notifier: relay.id().clone(),
+        on_auth_caller: env.defuse.id().clone(),
+        notifier_id: relay.id().clone(),
     };
     let proxy_id = env
         .root()
@@ -125,7 +125,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
     .hash();
 
     let auth_state = CondVarConfig {
-        auth_contract: env.defuse.id().clone(),
+        on_auth_caller: env.defuse.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy_id.clone(),
         salt: context_hash,
@@ -210,8 +210,8 @@ async fn test_escrow_proxy_can_cancel_before_deadline() {
         // NOTE: oneshot_condvar_global_id is only used for fill operations.
         // This cancel test doesn't exercise fills, so using escrow_swap_global is acceptable.
         oneshot_condvar_global_id: GlobalContractId::AccountId(escrow_swap_global.clone()),
-        auth_contract: env.defuse.id().clone(),
-        notifier: env.root().id().clone(), // not used for cancel
+        on_auth_caller: env.defuse.id().clone(),
+        notifier_id: env.root().id().clone(), // not used for cancel
     };
     let proxy_id = env
         .root()

@@ -16,7 +16,7 @@ impl AuthCallee for Contract {
         let mut guard = self.cleanup_guard();
         let state = guard.try_as_alive_mut().unwrap_or_panic_display();
         require!(
-            env::predecessor_account_id() == state.config.auth_contract,
+            env::predecessor_account_id() == state.config.on_auth_caller,
             ERR_WRONG_AUTH_CALLER
         );
         Self::verify_caller_and_authorize_contract(&signer_id, state);

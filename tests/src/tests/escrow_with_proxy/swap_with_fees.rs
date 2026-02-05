@@ -64,8 +64,8 @@ async fn test_proxy_fill_gas_benchmark() {
     let config = ProxyConfig {
         owner_id,
         oneshot_condvar_global_id: GlobalContractId::AccountId(condvar_global.clone()),
-        auth_contract: env.defuse.id().clone(),
-        notifier: relay.id().clone(),
+        on_auth_caller: env.defuse.id().clone(),
+        notifier_id: relay.id().clone(),
     };
     let proxy_id = env
         .root()
@@ -146,7 +146,7 @@ async fn test_proxy_fill_gas_benchmark() {
     .hash();
 
     let auth_state = CondVarConfig {
-        auth_contract: env.defuse.id().clone(),
+        on_auth_caller: env.defuse.id().clone(),
         notifier_id: relay.id().clone(),
         authorizee: proxy_id.clone(),
         salt: context_hash,
