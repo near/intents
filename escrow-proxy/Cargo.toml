@@ -44,7 +44,7 @@ nep245 = []
 # Feature to enable example that requires test utilities (currently broken due to refactoring)
 test-utils = []
 
-abi = ["defuse-oneshot-condvar/abi", "defuse-escrow-swap?/abi"]
+abi = ["defuse-oneshot-condvar/abi", "defuse-escrow-swap?/abi", "serde_with/schemars_0_8"]
 
 [[example]]
 name = "escrow-swap-demo"

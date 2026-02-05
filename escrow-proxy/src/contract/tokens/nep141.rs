@@ -31,7 +31,7 @@ impl FungibleTokenReceiver for Contract {
                 &sender_id,
                 &token_ids,
                 &amounts,
-                transfer_message.salt,
+                transfer_message.salt.unwrap_or_default(),
                 &msg,
             )
             .then(

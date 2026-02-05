@@ -131,7 +131,7 @@ async fn test_proxy_fill_gas_benchmark() {
 
     let proxy_msg = ProxyTransferMessage {
         receiver_id: escrow_instance_id.clone(),
-        salt: [2u8; 32],
+        salt: Some([2u8; 32]),
         msg: serde_json::to_string(&fill_escrow_msg).unwrap(),
     };
     let proxy_msg_json = serde_json::to_string(&proxy_msg).unwrap();
@@ -140,7 +140,7 @@ async fn test_proxy_fill_gas_benchmark() {
         sender_id: Cow::Borrowed(solver.id().as_ref()),
         token_ids: Cow::Owned(vec![token_b_defuse_id.to_string()]),
         amounts: Cow::Owned(vec![U128(solver_amount)]), // 2x for price 2.0
-        salt: proxy_msg.salt,
+        salt: proxy_msg.salt.unwrap_or_default(),
         msg: Cow::Borrowed(&proxy_msg_json),
     }
     .hash();

@@ -77,7 +77,7 @@ async fn test_proxy_returns_funds_on_timeout_of_authorization() {
 
     let transfer_msg = TransferMessage {
         receiver_id: mt_receiver_instance.clone(),
-        salt: [1u8; 32],
+        salt: Some([1u8; 32]),
         msg: String::new(),
     };
     let msg_json = serde_json::to_string(&transfer_msg).unwrap();
@@ -170,7 +170,7 @@ async fn test_transfer_authorized_by_relay() {
 
     let transfer_msg = TransferMessage {
         receiver_id: escrow_instance_id.clone(),
-        salt: [2u8; 32], // Different salt from timeout test
+        salt: Some([2u8; 32]), // Different salt from timeout test
         msg: inner_msg_json,
     };
     let msg_json = serde_json::to_string(&transfer_msg).unwrap();
@@ -181,7 +181,7 @@ async fn test_transfer_authorized_by_relay() {
         sender_id: Cow::Borrowed(solver.id()),
         token_ids: Cow::Owned(vec![token_id.to_string()]),
         amounts: Cow::Owned(vec![U128(proxy_transfer_amount)]),
-        salt: transfer_msg.salt,
+        salt: transfer_msg.salt.unwrap_or_default(),
         msg: Cow::Borrowed(&msg_json),
     }
     .hash();
@@ -312,7 +312,7 @@ async fn test_ft_transfer_authorized_by_relay() {
 
     let transfer_msg = TransferMessage {
         receiver_id: escrow_instance_id.clone(),
-        salt: [3u8; 32], // Different salt from other tests
+        salt: Some([3u8; 32]), // Different salt from other tests
         msg: inner_msg_json,
     };
     let msg_json = serde_json::to_string(&transfer_msg).unwrap();
@@ -325,7 +325,7 @@ async fn test_ft_transfer_authorized_by_relay() {
         sender_id: Cow::Borrowed(solver.id()),
         token_ids: Cow::Owned(vec![token_id.to_string()]),
         amounts: Cow::Owned(vec![U128(proxy_transfer_amount)]),
-        salt: transfer_msg.salt,
+        salt: transfer_msg.salt.unwrap_or_default(),
         msg: Cow::Borrowed(&msg_json),
     }
     .hash();
@@ -498,7 +498,7 @@ async fn test_proxy_with_ft_transfer() {
 
     let proxy_msg = TransferMessage {
         receiver_id: escrow_instance_id.clone(),
-        salt: [4u8; 32],
+        salt: Some([4u8; 32]),
         msg: serde_json::to_string(&fill_escrow_msg).unwrap(),
     };
     let proxy_msg_json = serde_json::to_string(&proxy_msg).unwrap();
@@ -507,7 +507,7 @@ async fn test_proxy_with_ft_transfer() {
         sender_id: Cow::Borrowed(solver.id()),
         token_ids: Cow::Owned(vec![dst_token.to_string()]), // "nep141:<contract_id>"
         amounts: Cow::Owned(vec![U128(swap_amount)]),
-        salt: proxy_msg.salt,
+        salt: proxy_msg.salt.unwrap_or_default(),
         msg: Cow::Borrowed(&proxy_msg_json),
     }
     .hash();

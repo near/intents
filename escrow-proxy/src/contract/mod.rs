@@ -69,7 +69,7 @@ impl EscrowProxy for Contract {
             sender_id: Cow::Owned(taker_id),
             token_ids: Cow::Owned(token_ids),
             amounts: Cow::Owned(amounts),
-            salt: transfer_message.salt,
+            salt: transfer_message.salt.unwrap_or_default(),
             msg: Cow::Borrowed(&msg),
         }
         .hash();
