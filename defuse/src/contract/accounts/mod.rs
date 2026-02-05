@@ -42,7 +42,7 @@ impl AccountManager for Contract {
         assert_one_yocto();
         let account_id = self.ensure_auth_predecessor_id();
 
-        self.add_public_key(account_id.as_ref(), public_key);
+        self.add_public_key_and_emit_event(account_id.as_ref(), public_key);
     }
 
     #[payable]
@@ -50,7 +50,7 @@ impl AccountManager for Contract {
         assert_one_yocto();
         let account_id = self.ensure_auth_predecessor_id();
 
-        self.remove_public_key(account_id.as_ref(), public_key);
+        self.remove_public_key_and_emit_event(account_id.as_ref(), public_key);
     }
 
     fn is_nonce_used(&self, account_id: &AccountId, nonce: AsBase64<Nonce>) -> bool {
@@ -79,7 +79,11 @@ impl Contract {
         predecessor_account_id
     }
 
-    pub fn add_public_key(&mut self, account_id: &AccountIdRef, public_key: PublicKey) {
+    pub fn add_public_key_and_emit_event(
+        &mut self,
+        account_id: &AccountIdRef,
+        public_key: PublicKey,
+    ) {
         State::add_public_key(self, account_id.into(), public_key).unwrap_or_panic();
 
         DefuseEvent::PublicKeyAdded(AccountEvent::new(
@@ -91,7 +95,11 @@ impl Contract {
         .emit();
     }
 
-    pub fn remove_public_key(&mut self, account_id: &AccountIdRef, public_key: PublicKey) {
+    pub fn remove_public_key_and_emit_event(
+        &mut self,
+        account_id: &AccountIdRef,
+        public_key: PublicKey,
+    ) {
         State::remove_public_key(self, account_id.into(), public_key).unwrap_or_panic();
 
         DefuseEvent::PublicKeyRemoved(AccountEvent::new(

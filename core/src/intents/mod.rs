@@ -9,6 +9,9 @@ use near_sdk::{AccountIdRef, CryptoHash, near};
 use serde_with::serde_as;
 use tokens::{NativeWithdraw, StorageDeposit};
 
+#[cfg(feature = "imt")]
+use crate::intents::tokens::imt::{ImtBurn, ImtMint};
+
 use crate::{
     Result,
     engine::{Engine, Inspector, State},
@@ -71,11 +74,11 @@ pub enum Intent {
 
     // See [`ImtMint`]
     #[cfg(feature = "imt")]
-    ImtMint(crate::intents::tokens::imt::ImtMint),
+    ImtMint(ImtMint),
 
     // See [`ImtBurn`]
     #[cfg(feature = "imt")]
-    ImtBurn(crate::intents::tokens::imt::ImtBurn),
+    ImtBurn(ImtBurn),
 }
 
 pub trait ExecutableIntent {
