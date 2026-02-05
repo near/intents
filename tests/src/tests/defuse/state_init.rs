@@ -109,6 +109,7 @@ fn create_state_init(rng: &mut impl Rng, global_contract_id: &AccountId) -> Stat
 fn create_auth_intent_with_state_init(
     rng: &mut impl Rng,
     global_contract_id: &AccountId,
+    min_gas: Option<Gas>,
 ) -> (AccountId, AuthCall) {
     let state_init = create_state_init(rng, global_contract_id);
     let derived_account = state_init.derive_account_id();
@@ -118,15 +119,19 @@ fn create_auth_intent_with_state_init(
         state_init: Some(state_init),
         msg: String::new(),
         attached_deposit: NearToken::from_near(1),
-        min_gas: None,
+        min_gas,
     };
 
     (derived_account, auth_call)
 }
 
 #[rstest]
+#[case(None)]
+#[case(Some(Gas::from_tgas(5)))]
+#[case(Some(Gas::from_tgas(10)))]
+#[case(Some(Gas::from_tgas(100)))]
 #[tokio::test]
-async fn benchmark_auth_call_with_state_init(mut rng: impl Rng) {
+async fn benchmark_auth_call_with_state_init(mut rng: impl Rng, #[case] gas: Option<Gas>) {
     let env = Env::builder().build().await;
 
     let global_contract = env
@@ -135,7 +140,8 @@ async fn benchmark_auth_call_with_state_init(mut rng: impl Rng) {
         .await
         .unwrap();
 
-    let (account, mut intent) = create_auth_intent_with_state_init(&mut rng, global_contract.id());
+    let (account, mut intent) =
+        create_auth_intent_with_state_init(&mut rng, global_contract.id(), gas);
     intent.attached_deposit = NearToken::from_near(0);
 
     let user = env.create_named_user("user1").await;
@@ -178,8 +184,12 @@ async fn benchmark_auth_call_with_state_init(mut rng: impl Rng) {
 //We can benchmark if assumed value is correct by directly calling do_auth_call callback with same
 //amount of gas as statically assigned to promise.
 #[rstest]
+#[case(None)]
+#[case(Some(Gas::from_tgas(5)))]
+#[case(Some(Gas::from_tgas(10)))]
+#[case(Some(Gas::from_tgas(100)))]
 #[tokio::test]
-async fn benchmark_gas_used_by_do_auth_call_callback(mut rng: impl Rng) {
+async fn benchmark_gas_used_by_do_auth_call_callback(mut rng: impl Rng, #[case] gas: Option<Gas>) {
     // NOTE: when do_auth_call is scheduled as callback to withdraw (because of
     // AuthCall::storage_deposit > 0) it needs to check status of withdrawal. We can't trigger
     // it in this case so we need to subtract gas for promise read (it's around 0.1Tgas) with
@@ -212,9 +222,10 @@ async fn benchmark_gas_used_by_do_auth_call_callback(mut rng: impl Rng) {
         .await
         .unwrap();
 
-    let (account, mut intent) = create_auth_intent_with_state_init(&mut rng, global_contract.id());
+    let (account, mut intent) =
+        create_auth_intent_with_state_init(&mut rng, global_contract.id(), gas);
     // required to opt out from promise status check
-    // intent.attached_deposit = NearToken::from_near(0);
+    intent.attached_deposit = NearToken::from_near(0);
     let callback_gas = DefuseContract::auth_call_callback_gas(&intent)
         .unwrap()
         .saturating_sub(NEAR_WITHDRAW_PROMISE_READ_OVERHEAD);
