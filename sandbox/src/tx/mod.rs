@@ -84,21 +84,26 @@ impl TxBuilder {
 
     #[must_use]
     pub fn state_init(self, state_init: StateInit) -> Self {
-        let StateInit::V1(StateInitV1 { code, data }) = state_init;
-
         self.add_action(Action::DeterministicStateInit(Box::new(
             DeterministicStateInitAction {
-                state_init: DeterministicAccountStateInit::V1(DeterministicAccountStateInitV1 {
-                    code: match code {
-                        GlobalContractId::CodeHash(hash) => {
-                            GlobalContractIdentifier::CodeHash(near_api::CryptoHash(*hash.as_ref()))
-                        }
-                        GlobalContractId::AccountId(account) => {
-                            GlobalContractIdentifier::AccountId(account)
-                        }
-                    },
-                    data,
-                }),
+                state_init: match state_init {
+                    StateInit::V1(StateInitV1 { code, data }) => {
+                        DeterministicAccountStateInit::V1(DeterministicAccountStateInitV1 {
+                            code: match code {
+                                GlobalContractId::CodeHash(hash) => {
+                                    GlobalContractIdentifier::CodeHash(near_api::CryptoHash(
+                                        *hash.as_ref(),
+                                    ))
+                                }
+                                GlobalContractId::AccountId(account) => {
+                                    GlobalContractIdentifier::AccountId(account)
+                                }
+                            },
+                            data,
+                        })
+                    }
+                },
+
                 deposit: NearToken::from_near(0),
             },
         )))
