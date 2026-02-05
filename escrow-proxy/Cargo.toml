@@ -15,7 +15,7 @@ workspace = true
 defuse-escrow-swap = { workspace = true, optional = true }
 defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
-defuse-token-id.workspace = true
+defuse-token-id = { workspace = true, optional=true }
 defuse-oneshot-condvar = { workspace = true, features = ["auth-call"] }
 
 near-contract-standards.workspace = true
@@ -38,7 +38,7 @@ default = ["nep141", "nep245", "escrow-swap"]
 
 contract = []
 escrow-swap = ["dep:defuse-escrow-swap"]
-nep141 = []
+nep141 = ["dep:defuse-token-id"]
 nep245 = []
 # Feature to enable example that requires test utilities (currently broken due to refactoring)
 test-utils = []
