@@ -1,11 +1,13 @@
 use std::str::FromStr;
 
 use near_sdk::{AccountId, near, serde_json};
+use serde_with::hex::Hex;
 
-#[near(serializers = [json])]
+#[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
 pub struct TransferMessage {
     pub receiver_id: AccountId,
+    #[serde_as(as = "Hex")]
     pub salt: [u8; 32],
     pub msg: String,
 }

@@ -20,6 +20,7 @@ defuse-oneshot-condvar = { workspace = true, features = ["auth-call"] }
 
 near-contract-standards.workspace = true
 near-sdk = { workspace = true, features = ["unstable", "deterministic-account-ids"] }
+serde_with = { workspace = true, features = ["hex"] }
 thiserror.workspace = true
 
 [dev-dependencies]
