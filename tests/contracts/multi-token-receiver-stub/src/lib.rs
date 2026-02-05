@@ -75,7 +75,6 @@ impl near_sdk::borsh::BorshSchema for AnyData {
     }
 }
 
-
 /// Minimal stub contract used for integration tests.
 #[derive(Default)]
 #[near(contract_state(key = b""))]
