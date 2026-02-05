@@ -39,8 +39,8 @@ impl<T> MaybeIntentEvent<T> {
     }
 }
 
-// Event that can be emitted either from a
-// function call or after intent execution
+/// Event that can be emitted either from a
+/// function call or after intent execution
 #[must_use = "make sure to `.emit()` this event"]
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
