@@ -3,7 +3,6 @@ use crate::extensions::defuse::contract::core::intents::auth::AuthCall;
 use crate::extensions::defuse::intents::ExecuteIntentsExt;
 use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
 use defuse::contract::Contract as DefuseContract;
-use defuse::core::intents::auth;
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
     core::fees::FeesConfig,
@@ -11,9 +10,7 @@ use defuse::{
 use defuse_escrow_swap::Pips;
 use defuse_randomness::Rng;
 use defuse_sandbox::FnCallBuilder;
-use defuse_sandbox::{MtReceiverStubExt, sandbox};
 use defuse_test_utils::random::rng;
-use multi_token_receiver_stub::AnyData;
 use near_sdk::{
     AccountId, GlobalContractId, NearToken, serde_json::json, state_init::StateInit,
     state_init::StateInitV1,
@@ -24,55 +21,58 @@ use std::collections::BTreeMap;
 
 use crate::extensions::defuse::deployer::DefuseExt;
 
-// // NOTE: this is the biggest possible state init
-// // 770 - ZBA limit
-// // 100 - acount metadata
-// // 40  - storage entry
-const ZERO_BALANCE_ACCOUNT_PAYLOAD_LEN: usize = 770 - 100 - 40;
-const BORSH_VEC_LEN_PREFIX: usize = 4;
+mod helpers {
+    use super::*;
+    // // NOTE: this is the biggest possible state init
+    // // 770 - ZBA limit
+    // // 100 - acount metadata
+    // // 40  - storage entry
+    const ZERO_BALANCE_ACCOUNT_PAYLOAD_LEN: usize = 770 - 100 - 40;
+    const BORSH_VEC_LEN_PREFIX: usize = 4;
 
-/// Calculates the maximum allowed payload size for a single-entry state init
-/// that fits within ZBA storage limits for the given global contract id.
-fn max_single_entry_payload(global_contract_id: &AccountId) -> usize {
-    ZERO_BALANCE_ACCOUNT_PAYLOAD_LEN - global_contract_id.len() - BORSH_VEC_LEN_PREFIX
-}
+    /// Calculates the maximum allowed payload size for a single-entry state init
+    /// that fits within ZBA storage limits for the given global contract id.
+    pub fn max_single_entry_payload(global_contract_id: &AccountId) -> usize {
+        ZERO_BALANCE_ACCOUNT_PAYLOAD_LEN - global_contract_id.len() - BORSH_VEC_LEN_PREFIX
+    }
 
-/// Generates raw state data for state init benchmark
-fn generate_raw_state(
-    keys: &[Vec<u8>],
-    value_size: usize,
-    rng: &mut impl Rng,
-) -> BTreeMap<Vec<u8>, Vec<u8>> {
-    keys.iter()
-        .map(|key| {
-            let mut value = vec![0u8; value_size];
-            if value_size > 0 {
-                rng.fill_bytes(&mut value);
-                (key.clone(), borsh::to_vec(&value).unwrap())
-            } else {
-                (key.clone(), vec![])
-            }
+    /// Generates raw state data for state init benchmark
+    pub fn generate_raw_state(
+        keys: &[Vec<u8>],
+        value_size: usize,
+        rng: &mut impl Rng,
+    ) -> BTreeMap<Vec<u8>, Vec<u8>> {
+        keys.iter()
+            .map(|key| {
+                let mut value = vec![0u8; value_size];
+                if value_size > 0 {
+                    rng.fill_bytes(&mut value);
+                    (key.clone(), borsh::to_vec(&value).unwrap())
+                } else {
+                    (key.clone(), vec![])
+                }
+            })
+            .collect()
+    }
+
+    /// Simple helper to generate a `StateInit` with given parameters
+    pub fn generate_state_init(
+        global_contract_id: &AccountId,
+        keys_count: u8,
+        value_len: usize,
+        rng: &mut impl Rng,
+    ) -> StateInit {
+        let keys: Vec<Vec<_>> = std::iter::once(vec![])
+            .chain((1..).map(|i| vec![i]))
+            .take(keys_count.into())
+            .collect();
+
+        let raw_state = generate_raw_state(&keys, value_len, rng);
+        StateInit::V1(StateInitV1 {
+            code: GlobalContractId::AccountId(global_contract_id.clone()),
+            data: raw_state,
         })
-        .collect()
-}
-
-/// Simple helper to generate a StateInit with given parameters
-fn generate_state_init(
-    global_contract_id: &AccountId,
-    keys_count: u8,
-    value_len: usize,
-    rng: &mut impl Rng,
-) -> StateInit {
-    let keys: Vec<Vec<_>> = std::iter::once(vec![])
-        .chain((1..).map(|i| vec![i]))
-        .take(keys_count.into())
-        .collect();
-
-    let raw_state = generate_raw_state(&keys, value_len, rng);
-    StateInit::V1(StateInitV1 {
-        code: GlobalContractId::AccountId(global_contract_id.clone()),
-        data: raw_state,
-    })
+    }
 }
 
 fn generate_auth_intent(
@@ -82,7 +82,7 @@ fn generate_auth_intent(
     rng: &mut impl Rng,
     min_gas: Option<Gas>,
 ) -> (AccountId, AuthCall) {
-    let state_init = generate_state_init(global_contract_id, keys_count, value_len, rng);
+    let state_init = helpers::generate_state_init(global_contract_id, keys_count, value_len, rng);
     let derived_account = state_init.derive_account_id();
     let auth_call = AuthCall {
         contract_id: derived_account.clone(),
@@ -101,10 +101,9 @@ fn auth_call_with_max_possible_state_init(
     rng: &mut impl Rng,
     min_gas: Option<Gas>,
 ) -> (AccountId, AuthCall) {
-    let max_payload = max_single_entry_payload(global_contract_id);
+    let max_payload = helpers::max_single_entry_payload(global_contract_id);
     generate_auth_intent(global_contract_id, 1, max_payload, rng, min_gas)
 }
-
 
 #[derive(Clone, Copy)]
 enum StateInitExpectation {
@@ -112,7 +111,6 @@ enum StateInitExpectation {
     ExpectStateInitExceedsZeroBalanceAccountStorageLimit(u128),
 }
 use StateInitExpectation::*;
-
 
 #[rstest]
 #[case(None)]
@@ -131,7 +129,7 @@ async fn benchmark_auth_call_with_largest_possible_state_init(
         .unwrap();
     let global_contract_id = env.root().id();
 
-    let (account, mut intent) =
+    let (account, intent) =
         auth_call_with_max_possible_state_init(global_contract_id, &mut rng, gas);
 
     let user = env.create_named_user("user1").await;
@@ -231,6 +229,11 @@ async fn benchmark_gas_used_by_do_auth_call_callback(mut rng: impl Rng, #[case] 
     assert!(result.is_success());
 }
 
+//NOTE: this test make sure that do_auth_call can always
+//create a promise (when triggered by intent execution).
+//that initializes a deterministic account
+//in each case its expected to create receipt for calling
+//`on_auth` on deterministic account id
 #[cfg(feature = "long")]
 #[rstest]
 #[case(ExpectStateInitSucceedsForZeroBalanceAccount(1))]
@@ -283,14 +286,10 @@ async fn test_auth_call_state_init_via_execute_intents(
     .await
     .unwrap();
 
-    let intents_with_accounts: Vec<_> = (0..=800)
+    // Sign all intents in parallel
+    let sign_futures = (0..=800)
         .step_by(10)
         .map(|value_len| generate_auth_intent(global_contract, num_keys, value_len, &mut rng, None))
-        .collect();
-
-    // Sign all intents in parallel
-    let sign_futures = intents_with_accounts
-        .into_iter()
         .map(|(derived_account, intent)| {
             let user = user.clone();
             let defuse = env.defuse.clone();
@@ -333,8 +332,10 @@ async fn test_auth_call_state_init_via_execute_intents(
     assert_eq!(success, expect_success);
 }
 
-//NOTE: this test make sure that on_auth_call can initialize
-//deterministic account id with all possible state init combinations that fits within ZBA limit
+//NOTE: this test make sure that do_auth_call can always
+//create a promise that initializes a deterministic account
+//in each case its expected to create receipt for calling
+//`on_auth` on deterministic account id
 #[cfg(feature = "long")]
 #[rstest]
 #[case(ExpectStateInitSucceedsForZeroBalanceAccount(1))]
@@ -359,18 +360,18 @@ async fn test_auth_call_state_init_via_do_auth_call(
     mut rng: impl Rng,
     #[case] expectation: StateInitExpectation,
 ) {
+    // NOTE: when do_auth_call is scheduled as callback to withdraw (because of
+    // AuthCall::storage_deposit > 0) it needs to check status of withdrawal. We can't trigger
+    // it in this case so we need to subtract gas for promise read (it's around 0.1Tgas) with
+    // some overhead.
+    const NEAR_WITHDRAW_PROMISE_READ_OVERHEAD: Gas = Gas::from_tgas(1);
+
     let (num_keys, expect_success) = match expectation {
         ExpectStateInitSucceedsForZeroBalanceAccount(n) => (n, true),
         ExpectStateInitExceedsZeroBalanceAccountStorageLimit(n) => (n, false),
     };
 
     let num_keys: u8 = num_keys.try_into().unwrap();
-
-    // NOTE: when do_auth_call is scheduled as callback to withdraw (because of
-    // AuthCall::storage_deposit > 0) it needs to check status of withdrawal. We can't trigger
-    // it in this case so we need to subtract gas for promise read (it's around 0.1Tgas) with
-    // some overhead.
-    const NEAR_WITHDRAW_PROMISE_READ_OVERHEAD: Gas = Gas::from_tgas(1);
 
     let env = Env::builder().build().await;
     env.root()
@@ -397,7 +398,8 @@ async fn test_auth_call_state_init_via_do_auth_call(
         .await
         .unwrap();
 
-    let intents_with_accounts: Vec<_> = (0..=800)
+    // Execute all do_auth_call in parallel
+    let futures = (0..=800)
         .step_by(10)
         .map(|value_len| {
             let (account_id, mut auth_intent) =
@@ -409,11 +411,6 @@ async fn test_auth_call_state_init_via_do_auth_call(
                 .saturating_sub(NEAR_WITHDRAW_PROMISE_READ_OVERHEAD);
             (account_id, auth_intent, callback_gas)
         })
-        .collect();
-
-    // Execute all do_auth_call in parallel
-    let futures = intents_with_accounts
-        .into_iter()
         .map(|(account_id, auth_intent, callback_gas)| {
             let defuse = defuse.clone();
             async move {
