@@ -94,7 +94,7 @@ impl ForceAccountManager for Contract {
 
         for (account_id, pks) in public_keys {
             for pk in pks {
-                self.add_public_key(account_id.as_ref(), pk);
+                self.add_public_key_and_emit_event(account_id.as_ref(), pk);
             }
         }
     }
@@ -106,7 +106,7 @@ impl ForceAccountManager for Contract {
 
         for (account_id, pks) in public_keys {
             for pk in pks {
-                self.remove_public_key(account_id.as_ref(), pk);
+                self.remove_public_key_and_emit_event(account_id.as_ref(), pk);
             }
         }
     }
