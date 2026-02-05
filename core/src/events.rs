@@ -1,10 +1,10 @@
 use std::borrow::Cow;
 
 use derive_more::derive::From;
-use near_sdk::{near, serde::Deserialize};
+use near_sdk::{CryptoHash, near, serde::Deserialize};
 
 use crate::{
-    accounts::{AccountEvent, NonceEvent, PublicKeyEvent, SaltRotationEvent, TransferEvent},
+    accounts::{AccountEvent, NonceEvent, PublicKeyEvent, SaltRotationEvent},
     fees::{FeeChangedEvent, FeeCollectorChangedEvent},
     intents::{
         IntentEvent,
@@ -12,10 +12,39 @@ use crate::{
         token_diff::TokenDiffEvent,
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
     },
+    tokens::TransferEvent,
 };
 
 #[cfg(feature = "imt")]
-use crate::intents::tokens::imt::{ImtBurn, ImtMint};
+use crate::{intents::tokens::imt::ImtBurn, tokens::imt::ImtMintEvent};
+
+#[must_use]
+#[near(serializers = [json])]
+#[serde(untagged)]
+#[derive(Debug, Clone)]
+pub enum ContractEvent<T> {
+    Direct(T),
+    Intent(IntentEvent<T>),
+}
+
+impl<T> MaybeIntentEvent<T> {
+    #[inline]
+    pub const fn direct(event: T) -> Self {
+        Self(ContractEvent::Direct(event))
+    }
+
+    #[inline]
+    pub const fn intent(event: T, intent_hash: CryptoHash) -> Self {
+        Self(ContractEvent::Intent(IntentEvent::new(event, intent_hash)))
+    }
+}
+
+// Event that can be emitted either from a
+// function call or after intent execution
+#[must_use = "make sure to `.emit()` this event"]
+#[near(serializers = [json])]
+#[derive(Debug, Clone)]
+pub struct MaybeIntentEvent<T>(pub ContractEvent<T>);
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(event_json(standard = "dip4"))]
@@ -23,10 +52,10 @@ use crate::intents::tokens::imt::{ImtBurn, ImtMint};
 pub enum DefuseEvent<'a> {
     #[event_version("0.3.0")]
     #[from(skip)]
-    PublicKeyAdded(AccountEvent<'a, PublicKeyEvent<'a>>),
+    PublicKeyAdded(MaybeIntentEvent<AccountEvent<'a, PublicKeyEvent<'a>>>),
     #[event_version("0.3.0")]
     #[from(skip)]
-    PublicKeyRemoved(AccountEvent<'a, PublicKeyEvent<'a>>),
+    PublicKeyRemoved(MaybeIntentEvent<AccountEvent<'a, PublicKeyEvent<'a>>>),
 
     #[event_version("0.3.0")]
     FeeChanged(FeeChangedEvent),
@@ -59,7 +88,7 @@ pub enum DefuseEvent<'a> {
 
     #[cfg(feature = "imt")]
     #[event_version("0.3.0")]
-    ImtMint(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, ImtMint>>>]>),
+    ImtMint(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, ImtMintEvent<'a>>>]>),
 
     #[cfg(feature = "imt")]
     #[event_version("0.3.0")]
@@ -72,7 +101,7 @@ pub enum DefuseEvent<'a> {
     AccountUnlocked(AccountEvent<'a, ()>),
 
     #[event_version("0.3.0")]
-    SetAuthByPredecessorId(AccountEvent<'a, SetAuthByPredecessorId>),
+    SetAuthByPredecessorId(MaybeIntentEvent<AccountEvent<'a, Cow<'a, SetAuthByPredecessorId>>>),
 
     #[event_version("0.4.0")]
     SaltRotation(SaltRotationEvent),

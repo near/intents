@@ -9,18 +9,14 @@ use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
     DefuseError, Result,
-    accounts::{AccountEvent, TransferEvent},
+    accounts::AccountEvent,
     amounts::Amounts,
     engine::{Engine, Inspector, State},
     events::DefuseEvent,
+    intents::{ExecutableIntent, IntentEvent},
+    tokens::TransferEvent,
+    tokens::{MT_ON_TRANSFER_GAS_DEFAULT, MT_ON_TRANSFER_GAS_MIN},
 };
-
-use super::{ExecutableIntent, IntentEvent};
-
-pub const MAX_TOKEN_ID_LEN: usize = 127;
-
-const MT_ON_TRANSFER_GAS_MIN: Gas = Gas::from_tgas(5);
-const MT_ON_TRANSFER_GAS_DEFAULT: Gas = Gas::from_tgas(30);
 
 #[must_use]
 #[near(serializers = [borsh, json])]
@@ -103,14 +99,7 @@ impl ExecutableIntent for Transfer {
             .inspector
             .on_event(DefuseEvent::Transfer(Cow::Borrowed(
                 [IntentEvent::new(
-                    AccountEvent::new(
-                        sender_id,
-                        TransferEvent {
-                            receiver_id: Cow::Borrowed(&self.receiver_id),
-                            tokens: self.tokens.clone(),
-                            memo: Cow::Borrowed(&self.memo),
-                        },
-                    ),
+                    AccountEvent::new(sender_id, TransferEvent::from(&self)),
                     intent_hash,
                 )]
                 .as_slice(),
@@ -520,9 +509,14 @@ impl ExecutableIntent for StorageDeposit {
 
 #[cfg(feature = "imt")]
 pub mod imt {
-    use super::{MT_ON_TRANSFER_GAS_DEFAULT, MT_ON_TRANSFER_GAS_MIN};
-    use crate::{Result, intents::tokens::MAX_TOKEN_ID_LEN};
-    use defuse_token_id::TokenId;
+    use crate::{
+        Result,
+        events::MaybeIntentEvent,
+        tokens::{
+            MT_ON_TRANSFER_GAS_DEFAULT, MT_ON_TRANSFER_GAS_MIN,
+            imt::{ImtMintEvent, ImtTokens},
+        },
+    };
     use near_sdk::{AccountId, AccountIdRef, CryptoHash, near};
     use serde_with::{DisplayFromStr, serde_as};
 
@@ -536,31 +530,6 @@ pub mod imt {
         events::DefuseEvent,
         intents::{ExecutableIntent, IntentEvent, tokens::NotifyOnTransfer},
     };
-
-    pub type ImtTokens = Amounts<BTreeMap<defuse_nep245::TokenId, u128>>;
-
-    impl ImtTokens {
-        #[inline]
-        fn into_generic_tokens(
-            self,
-            minter_id: &AccountIdRef,
-        ) -> Result<Amounts<BTreeMap<TokenId, u128>>> {
-            let tokens = self
-                .into_iter()
-                .map(|(token_id, amount)| {
-                    if token_id.len() > MAX_TOKEN_ID_LEN {
-                        return Err(DefuseError::TokenIdTooLarge(token_id.len()));
-                    }
-
-                    let token = defuse_token_id::imt::ImtTokenId::new(minter_id, token_id).into();
-
-                    Ok((token, amount))
-                })
-                .collect::<Result<_, _>>()?;
-
-            Ok(Amounts::new(tokens))
-        }
-    }
 
     #[near(serializers = [borsh, json])]
     #[derive(Debug, Clone)]
@@ -607,8 +576,8 @@ pub mod imt {
             engine
                 .inspector
                 .on_event(DefuseEvent::ImtMint(Cow::Borrowed(
-                    [IntentEvent::new(
-                        AccountEvent::new(signer_id, Cow::Borrowed(&self)),
+                    [MaybeIntentEvent::intent(
+                        AccountEvent::new(signer_id, ImtMintEvent::from(&self)),
                         intent_hash,
                     )]
                     .as_slice(),

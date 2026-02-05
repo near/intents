@@ -7,6 +7,7 @@ use crate::extensions::defuse::contract::core::{
 use crate::extensions::defuse::{
     intents::ExecuteIntentsExt, nonce::ExtractNonceExt, signer::DefaultDefuseSignerExt,
 };
+use defuse::core::{crypto::Payload, events::MaybeIntentEvent};
 use near_sdk::AsNep297Event;
 use rstest::rstest;
 use std::borrow::Cow;
@@ -41,23 +42,25 @@ async fn execute_add_public_key_intent(public_key: PublicKey) {
         .await
         .unwrap();
 
-    assert_eq!(
-        result.logs().clone(),
-        vec![
-            DefuseEvent::PublicKeyAdded(AccountEvent::new(
+    let events = vec![
+        DefuseEvent::PublicKeyAdded(MaybeIntentEvent::intent(
+            AccountEvent::new(
                 user.id(),
                 PublicKeyEvent {
                     public_key: Cow::Borrowed(&new_public_key),
                 },
-            ))
+            ),
+            add_public_key_payload.hash(),
+        ))
+        .to_nep297_event()
+        .to_event_log(),
+        AccountNonceIntentEvent::new(&user.id(), nonce, &add_public_key_payload)
+            .into_event()
             .to_nep297_event()
             .to_event_log(),
-            AccountNonceIntentEvent::new(&user.id(), nonce, &add_public_key_payload)
-                .into_event()
-                .to_nep297_event()
-                .to_event_log(),
-        ]
-    );
+    ];
+
+    assert_eq!(result.logs().clone(), events);
 }
 
 #[rstest]
@@ -100,21 +103,23 @@ async fn execute_remove_public_key_intent(public_key: PublicKey) {
         .await
         .unwrap();
 
-    assert_eq!(
-        result.logs().clone(),
-        vec![
-            DefuseEvent::PublicKeyRemoved(AccountEvent::new(
+    let events = vec![
+        DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::intent(
+            AccountEvent::new(
                 user.id(),
                 PublicKeyEvent {
                     public_key: Cow::Borrowed(&new_public_key),
                 },
-            ))
+            ),
+            remove_public_key_payload.hash(),
+        ))
+        .to_nep297_event()
+        .to_event_log(),
+        AccountNonceIntentEvent::new(&user.id(), remove_nonce, &remove_public_key_payload)
+            .into_event()
             .to_nep297_event()
             .to_event_log(),
-            AccountNonceIntentEvent::new(&user.id(), remove_nonce, &remove_public_key_payload)
-                .into_event()
-                .to_nep297_event()
-                .to_event_log(),
-        ]
-    );
+    ];
+
+    assert_eq!(result.logs().clone(), events);
 }

@@ -4,12 +4,12 @@ use defuse::contract::config::{DefuseConfig, RolesConfig};
 use defuse::core::accounts::AccountEvent;
 use defuse::core::amounts::Amounts;
 use defuse::core::crypto::Payload;
-use defuse::core::events::DefuseEvent;
+use defuse::core::events::{DefuseEvent, MaybeIntentEvent};
 use defuse::core::fees::FeesConfig;
-use defuse::core::intents::IntentEvent;
-use defuse::core::intents::tokens::MAX_TOKEN_ID_LEN;
 use defuse::core::intents::tokens::{NotifyOnTransfer, imt::ImtMint};
 use defuse::core::token_id::TokenId;
+use defuse::core::tokens::MAX_TOKEN_ID_LEN;
+use defuse::core::tokens::imt::ImtMintEvent;
 use defuse::nep245::{MtEvent, MtMintEvent};
 use defuse_escrow_swap::Pips;
 use defuse_escrow_swap::token_id::imt::ImtTokenId;
@@ -68,9 +68,8 @@ async fn mt_mint_intent() {
         amount
     );
 
-    assert_a_contains_b!(
-        a: result.logs().clone(),
-        b: [MtEvent::MtMint(Cow::Owned(vec![MtMintEvent {
+    let events = [
+        MtEvent::MtMint(Cow::Owned(vec![MtMintEvent {
             owner_id: user.id().into(),
             token_ids: vec![mt_id.to_string()].into(),
             amounts: vec![U128::from(amount)].into(),
@@ -78,16 +77,27 @@ async fn mt_mint_intent() {
         }]))
         .to_nep297_event()
         .to_event_log(),
-            DefuseEvent::ImtMint(Cow::Owned(vec![IntentEvent {
-            intent_hash: mint_payload.hash(),
-            event: AccountEvent {
-                account_id: user.id().clone().into(),
-                event: Cow::Owned(intent)
-            },
-        }]))
+        DefuseEvent::ImtMint(
+            vec![MaybeIntentEvent::intent(
+                AccountEvent {
+                    account_id: user.id().clone().into(),
+                    event: ImtMintEvent {
+                        receiver_id: Cow::Borrowed(&intent.receiver_id),
+                        tokens: intent.tokens.clone(),
+                        memo: Cow::Borrowed(&intent.memo),
+                    },
+                },
+                mint_payload.hash(),
+            )]
+            .into(),
+        )
         .to_nep297_event()
         .to_event_log(),
-            ]
+    ];
+
+    assert_a_contains_b!(
+        a: result.logs().clone(),
+        b: events
     );
 }
 

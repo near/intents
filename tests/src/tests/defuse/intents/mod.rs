@@ -1,11 +1,12 @@
 use crate::extensions::defuse::contract::core::{
     Deadline, Nonce,
-    accounts::{AccountEvent, NonceEvent, TransferEvent},
+    accounts::{AccountEvent, NonceEvent},
     amounts::Amounts,
     crypto::Payload,
     events::DefuseEvent,
     intents::{DefuseIntents, IntentEvent, tokens::Transfer},
     token_id::{TokenId, nep141::Nep141TokenId},
+    tokens::TransferEvent,
 };
 use crate::extensions::defuse::{
     intents::{ExecuteIntentsExt, SimulateIntents},

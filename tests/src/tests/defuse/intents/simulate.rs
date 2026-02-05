@@ -1,7 +1,7 @@
 use crate::extensions::defuse::{
     account_manager::{AccountManagerExt, AccountViewExt},
     contract::core::{
-        accounts::{AccountEvent, NonceEvent, PublicKeyEvent, TransferEvent},
+        accounts::{AccountEvent, NonceEvent, PublicKeyEvent},
         amounts::Amounts,
         crypto::{Payload, PublicKey},
         events::DefuseEvent,
@@ -17,13 +17,17 @@ use crate::extensions::defuse::{
             },
         },
         token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
+        tokens::TransferEvent,
     },
     deployer::DefuseExt,
     intents::{ExecuteIntentsExt, SimulateIntents},
     nonce::ExtractNonceExt,
     signer::DefaultDefuseSignerExt,
 };
-use defuse::contract::config::{DefuseConfig, RolesConfig};
+use defuse::{
+    contract::config::{DefuseConfig, RolesConfig},
+    core::{events::MaybeIntentEvent, tokens::imt::ImtMintEvent},
+};
 use defuse_sandbox::extensions::{
     ft::FtExt,
     mt::{MtExt, MtViewExt},
@@ -79,31 +83,29 @@ async fn simulate_transfer_intent() {
         .await
         .unwrap();
 
-    assert_eq!(
-        result.report.logs,
-        vec![
-            DefuseEvent::Transfer(
-                vec![IntentEvent {
-                    intent_hash: transfer_intent_payload.hash(),
-                    event: AccountEvent {
-                        account_id: user1.id().clone().into(),
-                        event: TransferEvent {
-                            receiver_id: Cow::Borrowed(&transfer_intent.receiver_id),
-                            tokens: transfer_intent.tokens,
-                            memo: Cow::Borrowed(&transfer_intent.memo),
-                        },
+    let events = vec![
+        DefuseEvent::Transfer(
+            vec![IntentEvent {
+                intent_hash: transfer_intent_payload.hash(),
+                event: AccountEvent {
+                    account_id: user1.id().clone().into(),
+                    event: TransferEvent {
+                        receiver_id: Cow::Borrowed(&transfer_intent.receiver_id),
+                        tokens: transfer_intent.tokens,
+                        memo: Cow::Borrowed(&transfer_intent.memo),
                     },
-                }]
-                .into()
-            )
+                },
+            }]
+            .into(),
+        )
+        .to_nep297_event()
+        .to_event_log(),
+        AccountNonceIntentEvent::new(&user1.id(), nonce, &transfer_intent_payload)
+            .into_event()
             .to_nep297_event()
             .to_event_log(),
-            AccountNonceIntentEvent::new(&user1.id(), nonce, &transfer_intent_payload)
-                .into_event()
-                .to_nep297_event()
-                .to_event_log(),
-        ]
-    );
+    ];
+    assert_eq!(result.report.logs, events);
 }
 
 #[rstest]
@@ -719,23 +721,25 @@ async fn simulate_add_public_key_intent(public_key: PublicKey) {
         .await
         .unwrap();
 
-    assert_eq!(
-        result.report.logs,
-        vec![
-            DefuseEvent::PublicKeyAdded(AccountEvent::new(
+    let events = vec![
+        DefuseEvent::PublicKeyAdded(MaybeIntentEvent::intent(
+            AccountEvent::new(
                 user1.id(),
                 PublicKeyEvent {
-                    public_key: Cow::Borrowed(&new_public_key)
+                    public_key: Cow::Borrowed(&new_public_key),
                 },
-            ))
+            ),
+            add_public_key_payload.hash(),
+        ))
+        .to_nep297_event()
+        .to_event_log(),
+        AccountNonceIntentEvent::new(&user1.id(), nonce, &add_public_key_payload)
+            .into_event()
             .to_nep297_event()
             .to_event_log(),
-            AccountNonceIntentEvent::new(&user1.id(), nonce, &add_public_key_payload)
-                .into_event()
-                .to_nep297_event()
-                .to_event_log(),
-        ]
-    );
+    ];
+
+    assert_eq!(result.report.logs, events);
 }
 
 #[rstest]
@@ -777,23 +781,25 @@ async fn simulate_remove_public_key_intent(public_key: PublicKey) {
         .await
         .unwrap();
 
-    assert_eq!(
-        result.report.logs,
-        vec![
-            DefuseEvent::PublicKeyRemoved(AccountEvent::new(
+    let events = vec![
+        DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::intent(
+            AccountEvent::new(
                 user1.id(),
                 PublicKeyEvent {
-                    public_key: Cow::Borrowed(&new_public_key)
+                    public_key: Cow::Borrowed(&new_public_key),
                 },
-            ))
+            ),
+            remove_public_key_payload.hash(),
+        ))
+        .to_nep297_event()
+        .to_event_log(),
+        AccountNonceIntentEvent::new(&user1.id(), remove_nonce, &remove_public_key_payload)
+            .into_event()
             .to_nep297_event()
             .to_event_log(),
-            AccountNonceIntentEvent::new(&user1.id(), remove_nonce, &remove_public_key_payload)
-                .into_event()
-                .to_nep297_event()
-                .to_event_log(),
-        ]
-    );
+    ];
+
+    assert_eq!(result.report.logs, events);
 }
 
 #[rstest]
@@ -818,18 +824,20 @@ async fn simulate_set_auth_by_predecessor_id_intent() {
         .await
         .unwrap();
 
-    assert_eq!(
-        result.report.logs,
-        vec![
-            DefuseEvent::SetAuthByPredecessorId(AccountEvent::new(user1.id(), set_auth_intent,))
-                .to_nep297_event()
-                .to_event_log(),
-            AccountNonceIntentEvent::new(&user1.id(), nonce, &set_auth_payload)
-                .into_event()
-                .to_nep297_event()
-                .to_event_log(),
-        ]
-    );
+    let events = vec![
+        DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::intent(
+            AccountEvent::new(user1.id(), Cow::Borrowed(&set_auth_intent)),
+            set_auth_payload.hash(),
+        ))
+        .to_nep297_event()
+        .to_event_log(),
+        AccountNonceIntentEvent::new(&user1.id(), nonce, &set_auth_payload)
+            .into_event()
+            .to_nep297_event()
+            .to_event_log(),
+    ];
+
+    assert_eq!(result.report.logs, events);
 }
 
 #[rstest]
@@ -935,24 +943,27 @@ async fn simulate_mint_intent() {
         .await
         .unwrap();
 
-    assert_eq!(
-        result.report.logs,
-        vec![
-            DefuseEvent::ImtMint(Cow::Owned(vec![IntentEvent {
-                intent_hash: mint_payload.hash(),
-                event: AccountEvent {
-                    account_id: user.id().clone().into(),
-                    event: Cow::Owned(mint_intent)
+    let events = vec![
+        DefuseEvent::ImtMint(Cow::Owned(vec![MaybeIntentEvent::intent(
+            AccountEvent {
+                account_id: user.id().clone().into(),
+                event: ImtMintEvent {
+                    receiver_id: Cow::Borrowed(&mint_intent.receiver_id),
+                    tokens: mint_intent.tokens.clone(),
+                    memo: Cow::Borrowed(&mint_intent.memo),
                 },
-            }]))
+            },
+            mint_payload.hash(),
+        )]))
+        .to_nep297_event()
+        .to_event_log(),
+        AccountNonceIntentEvent::new(&user.id(), nonce, &mint_payload)
+            .into_event()
             .to_nep297_event()
             .to_event_log(),
-            AccountNonceIntentEvent::new(&user.id(), nonce, &mint_payload)
-                .into_event()
-                .to_nep297_event()
-                .to_event_log(),
-        ]
-    );
+    ];
+
+    assert_eq!(result.report.logs, events);
 }
 
 #[rstest]
