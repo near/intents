@@ -28,7 +28,6 @@ container_build_command = [
 [dependencies]
 defuse-auth-call = { workspace = true, optional = true }
 defuse-near-utils.workspace = true
-defuse-nep245.workspace = true
 impl-tools.workspace = true
 near-sdk = { workspace = true, features = ["unstable", "deterministic-account-ids"] }
 serde_with.workspace = true

@@ -1083,7 +1083,6 @@ version = "0.1.0"
 dependencies = [
  "defuse-auth-call",
  "defuse-near-utils",
- "defuse-nep245",
  "impl-tools",
  "near-sdk",
  "serde_with",
