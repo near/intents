@@ -12,7 +12,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 mod build {
 
     use anyhow::{Result, anyhow};
-    use std::path::Path;
+    use std::{env, path::Path};
 
     use cargo_metadata::{
         MetadataCommand, Package,
@@ -25,6 +25,9 @@ mod build {
     };
 
     const SKIP_CONTRACTS_BUILD_VAR: &str = "DEFUSE_SKIP_CONTRACTS_BUILD";
+
+    const CARGO_OUT_DIR_ENV_VAR: &str = "OUT_DIR";
+    const DEFUSE_TEST_OUT_DIR_ENV_VAR: &str = "DEFUSE_TEST_OUT_DIR";
     const TEST_OUTDIR: &str = "res";
 
     fn register_rebuild_triggers() -> Result<()> {
@@ -69,7 +72,12 @@ mod build {
     pub fn run() -> Result<()> {
         register_rebuild_triggers()?;
 
-        cargo_rustc_env!("{DEFUSE_OUT_DIR_ENV_VAR}={TEST_OUTDIR}",);
+        // Use cargo OUT_DIR in case if custom OUT_DIR is not set
+        let out_dir = env::var(DEFUSE_OUT_DIR_ENV_VAR)
+            .or_else(|_| env::var(CARGO_OUT_DIR_ENV_VAR))
+            .unwrap_or_else(|_| TEST_OUTDIR.to_string());
+
+        cargo_rustc_env!("{DEFUSE_TEST_OUT_DIR_ENV_VAR}={out_dir}",);
 
         let skip_build = std::env::var(SKIP_CONTRACTS_BUILD_VAR)
             .is_ok_and(|v| !["0", "false"].contains(&v.to_lowercase().as_str()));
@@ -79,10 +87,12 @@ mod build {
             return Ok(());
         }
 
+        cargo_warning!("Building contracts into: {out_dir}");
+
         xtask::build_contracts(
             xtask::ContractOptions::all_without_features(),
             xtask::BuildOptions {
-                outdir: Some(TEST_OUTDIR.to_string()),
+                outdir: Some(out_dir),
                 ..Default::default()
             },
         )?;

@@ -11,7 +11,7 @@ pub fn read_wasm(mode: &ReadWasmMode, path: impl AsRef<Path>) -> Vec<u8> {
     let mut base = Path::new(env!("CARGO_MANIFEST_DIR")).join("../");
 
     if matches!(mode, ReadWasmMode::Outdir) {
-        base = base.join(option_env!("DEFUSE_OUT_DIR").expect("Out dir should be set"));
+        base = base.join(option_env!("DEFUSE_TEST_OUT_DIR").expect("Out dir should be set"));
     }
 
     let path = fs::canonicalize(base.join(path))
