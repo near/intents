@@ -60,7 +60,7 @@ cargo build-all
 Run integration tests:
 
 ```shell
-cargo integration-tests < defuse / poa / escrow-swap >
+cargo integration-tests <defuse|poa|escrow-swap>
 ```
 
 Or run all tests:
@@ -72,7 +72,7 @@ cargo test --workspace --all-targets
 NOTE:
 1. To specify the destination of wasms, set the `DEFUSE_OUT_DIR` environment variable.
 2. To skip wasm build during testing set `SKIP_CONTRACTS_BUILD_VAR` environment variable.
-3. To build in reproducible mod set `DEFUSE_BUILD_REPRODUCIBLE` environment variable.
+3. To build in reproducible mode set `DEFUSE_BUILD_REPRODUCIBLE` environment variable.
 
 For state migration testing set environmental var `DEFUSE_MIGRATE_FROM_LEGACY=1`
 State migrations will be applied before all tests.
