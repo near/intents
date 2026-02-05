@@ -11,7 +11,6 @@ use crate::{
     storage::{ContractStorage, State, Status},
 };
 
-const EMPTY_JSON: &[u8] = b"{}";
 const ERR_UNAUTHORIZED_CALLER: &str = "Unauthorized caller";
 
 #[near(contract_state(key = ContractStorage::STATE_KEY))]
@@ -115,7 +114,7 @@ impl OneshotCondVar for Contract {
             Status::Idle => {
                 let (promise, yield_id) = Promise::new_yield(
                     "cv_wait_resume",
-                    EMPTY_JSON,
+                    vec![],
                     Gas::from_tgas(0),
                     GasWeight(1),
                 );
