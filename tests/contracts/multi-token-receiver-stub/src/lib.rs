@@ -39,10 +39,47 @@ impl ReturnValueExt for Promise {
     }
 }
 
+/// A type that serializes to empty bytes and can deserialize from any input.
+/// Useful for testing state init with arbitrary data.
+#[derive(Debug, Clone, Default)]
+pub struct AnyData;
+
+impl near_sdk::borsh::BorshSerialize for AnyData {
+    fn serialize<W: std::io::Write>(&self, _writer: &mut W) -> std::io::Result<()> {
+        // Serializes to nothing (empty bytes)
+        Ok(())
+    }
+}
+
+impl near_sdk::borsh::BorshDeserialize for AnyData {
+    fn deserialize_reader<R: std::io::Read>(reader: &mut R) -> std::io::Result<Self> {
+        // Consume and ignore all remaining bytes
+        let mut buf = Vec::new();
+        reader.read_to_end(&mut buf)?;
+        Ok(AnyData)
+    }
+}
+
+impl near_sdk::borsh::BorshSchema for AnyData {
+    fn declaration() -> near_sdk::borsh::schema::Declaration {
+        "AnyData".to_string()
+    }
+
+    fn add_definitions_recursively(
+        definitions: &mut std::collections::BTreeMap<
+            near_sdk::borsh::schema::Declaration,
+            near_sdk::borsh::schema::Definition,
+        >,
+    ) {
+        let _ = definitions;
+    }
+}
+
+
 /// Minimal stub contract used for integration tests.
 #[derive(Default)]
 #[near(contract_state(key = b""))]
-pub struct Contract(Vec<u8>);
+pub struct Contract(AnyData);
 
 #[derive(Debug, Clone, Default)]
 #[near(serializers = [json])]
