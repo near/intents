@@ -27,6 +27,13 @@ pub enum ContractEvent<T> {
     Intent(IntentEvent<T>),
 }
 
+/// Event that can be emitted either from a
+/// function call or after intent execution
+#[must_use = "make sure to `.emit()` this event"]
+#[near(serializers = [json])]
+#[derive(Debug, Clone)]
+pub struct MaybeIntentEvent<T>(pub ContractEvent<T>);
+
 impl<T> MaybeIntentEvent<T> {
     #[inline]
     pub const fn direct(event: T) -> Self {
@@ -39,21 +46,14 @@ impl<T> MaybeIntentEvent<T> {
     }
 }
 
-/// Event that can be emitted either from a
-/// function call or after intent execution
-#[must_use = "make sure to `.emit()` this event"]
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
-pub struct MaybeIntentEvent<T>(pub ContractEvent<T>);
-
 #[must_use = "make sure to `.emit()` this event"]
 #[near(event_json(standard = "dip4"))]
 #[derive(Debug, Clone, Deserialize, From)]
 pub enum DefuseEvent<'a> {
-    #[event_version("0.3.0")]
+    #[event_version("0.3.1")]
     #[from(skip)]
     PublicKeyAdded(MaybeIntentEvent<AccountEvent<'a, PublicKeyEvent<'a>>>),
-    #[event_version("0.3.0")]
+    #[event_version("0.3.1")]
     #[from(skip)]
     PublicKeyRemoved(MaybeIntentEvent<AccountEvent<'a, PublicKeyEvent<'a>>>),
 
@@ -100,7 +100,7 @@ pub enum DefuseEvent<'a> {
     #[from(skip)]
     AccountUnlocked(AccountEvent<'a, ()>),
 
-    #[event_version("0.3.0")]
+    #[event_version("0.3.1")]
     SetAuthByPredecessorId(MaybeIntentEvent<AccountEvent<'a, Cow<'a, SetAuthByPredecessorId>>>),
 
     #[event_version("0.4.0")]
