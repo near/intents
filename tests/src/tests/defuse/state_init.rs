@@ -214,7 +214,7 @@ async fn benchmark_gas_used_by_do_auth_call_callback(mut rng: impl Rng) {
 
     let (account, mut intent) = create_auth_intent_with_state_init(&mut rng, global_contract.id());
     // required to opt out from promise status check
-    intent.attached_deposit = NearToken::from_near(0);
+    // intent.attached_deposit = NearToken::from_near(0);
     let callback_gas = DefuseContract::auth_call_callback_gas(&intent)
         .unwrap()
         .saturating_sub(NEAR_WITHDRAW_PROMISE_READ_OVERHEAD);
