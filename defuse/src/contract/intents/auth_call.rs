@@ -11,7 +11,7 @@ impl Contract {
     /// Covers StateInit (NEP-616) cost when deterministic account doesn't exist yet.
     /// Only accounts for deploying via Global Contract ref (NEP-591) with <770B storage
     /// which doesn't require storage staking.
-    pub(crate) const STATE_INIT_GAS: Gas = Gas::from_tgas(10);
+    pub const STATE_INIT_GAS: Gas = Gas::from_tgas(13);
 
     #[private]
     pub fn do_auth_call(signer_id: AccountId, auth_call: AuthCall) -> Promise {

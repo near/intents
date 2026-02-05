@@ -34,26 +34,73 @@ fn gas_to_tgas(gas: u64) -> f64 {
     }
 }
 
+/// Generates keys for state init benchmark: `[[], [1], [2], ...]`
+fn generate_keys(n: u8) -> Vec<Vec<u8>> {
+    std::iter::once(vec![])
+        .chain((1..).map(|i| vec![i]))
+        .take(n.into())
+        .collect()
+}
+
+#[derive(Clone, Copy)]
+enum StateInitExpectation {
+    ExpectStateInitSucceedsForZeroBalanceAccount(u128),
+    ExpectStateInitExceedsZeroBalanceAccountStorageLimit(u128),
+}
+use StateInitExpectation::*;
+
 #[rstest]
+#[case(ExpectStateInitSucceedsForZeroBalanceAccount(1))]
+#[case(ExpectStateInitSucceedsForZeroBalanceAccount(2))]
+#[case(ExpectStateInitSucceedsForZeroBalanceAccount(3))]
+#[case(ExpectStateInitSucceedsForZeroBalanceAccount(4))]
+#[case(ExpectStateInitSucceedsForZeroBalanceAccount(5))]
+#[case(ExpectStateInitSucceedsForZeroBalanceAccount(6))]
+#[case(ExpectStateInitSucceedsForZeroBalanceAccount(7))]
+#[case(ExpectStateInitSucceedsForZeroBalanceAccount(8))]
+#[case(ExpectStateInitSucceedsForZeroBalanceAccount(9))]
+#[case(ExpectStateInitSucceedsForZeroBalanceAccount(10))]
+#[case(ExpectStateInitSucceedsForZeroBalanceAccount(11))]
+#[case(ExpectStateInitSucceedsForZeroBalanceAccount(12))]
+#[case(ExpectStateInitSucceedsForZeroBalanceAccount(13))]
+#[case(ExpectStateInitSucceedsForZeroBalanceAccount(14))]
+#[case(ExpectStateInitSucceedsForZeroBalanceAccount(15))]
+// NOTE: edge case, with that many keys its not possible to create a valid state init as it exceeds
+// 770 bytes limit already
+#[case(ExpectStateInitExceedsZeroBalanceAccountStorageLimit(16))]
 #[tokio::test]
 async fn benchmark_state_init(
     #[future(awt)] sandbox: defuse_sandbox::Sandbox,
     mut rng: impl Rng,
+    #[case] expectation: StateInitExpectation,
 ) -> anyhow::Result<()> {
+    let (num_keys, expect_results) = match expectation {
+        ExpectStateInitSucceedsForZeroBalanceAccount(n) => (n, true),
+        ExpectStateInitExceedsZeroBalanceAccountStorageLimit(n) => (n, false),
+    };
+    let num_keys: u8 = num_keys.try_into().unwrap();
+
     let root = sandbox.root();
 
     let global_contract = root
         .deploy_mt_receiver_stub_global("mt-receiver-global", MT_RECEIVER_STUB_WASM.clone())
         .await?;
 
+    let keys = generate_keys(num_keys);
+
     // Pre-generate all states with random values (rng is not thread-safe),
     // then create futures and run in parallel
     let futures = (0..=800).step_by(10).map(|value_size| {
-        let mut value = vec![0u8; value_size];
-        if value_size > 0 {
-            rng.fill_bytes(&mut value);
-        }
-        let state: BTreeMap<Vec<u8>, Vec<u8>> = [(vec![], value)].into();
+        let state: BTreeMap<Vec<u8>, Vec<u8>> = keys
+            .iter()
+            .map(|key| {
+                let mut value = vec![0u8; value_size];
+                if value_size > 0 {
+                    rng.fill_bytes(&mut value);
+                }
+                (key.clone(), value)
+            })
+            .collect();
         let root = root.clone();
         let global_id = global_contract.id().clone();
         async move {
@@ -78,16 +125,30 @@ async fn benchmark_state_init(
         .flatten()
         .collect();
 
-    // Print table
-    println!("\n╔═══════════════════════════════════════════════╗");
-    println!("║   STATE INIT BENCHMARK (single empty key)     ║");
-    println!("╠═════════════════╦═════════════════════════════╣");
-    println!("║ Value Size (B)  ║ Gas (Tgas)                  ║");
-    println!("╠═════════════════╬═════════════════════════════╣");
-    for (size, gas) in &results {
-        println!("║ {:>15} ║ {:>27.2} ║", size, gas_to_tgas(*gas));
+    assert_eq!(results.is_empty(), !expect_results);
+
+    if expect_results {
+        let max_gas = results.iter().map(|(_, gas)| *gas).max().unwrap();
+        let limit_with_margin = DefuseContract::STATE_INIT_GAS.as_gas() * 9 / 10;
+        assert!(
+            max_gas <= limit_with_margin,
+            "Max gas {max_gas} exceeds 90% of STATE_INIT_GAS limit ({limit_with_margin})"
+        );
     }
-    println!("╚═════════════════╩═════════════════════════════╝");
+
+    // Print table
+    println!("\n╔═══════════════════════════════════════════════════════╗");
+    println!(
+        "║   STATE INIT BENCHMARK ({num_keys} key{})                       ║",
+        if num_keys == 1 { "" } else { "s" }
+    );
+    println!("╠═════════════════╦═════════════════════════════════════╣");
+    println!("║ Value Size (B)  ║ Gas (Tgas)                          ║");
+    println!("╠═════════════════╬═════════════════════════════════════╣");
+    for (size, gas) in &results {
+        println!("║ {:>15} ║ {:>35.2} ║", size, gas_to_tgas(*gas));
+    }
+    println!("╚═════════════════╩═════════════════════════════════════╝");
 
     Ok(())
 }
