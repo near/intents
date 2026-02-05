@@ -155,7 +155,7 @@ jobs:
       - name: Run Tests
         env:
           DEFUSE_MIGRATE_FROM_LEGACY: "true"
-          SKIP_CONTRACTS_BUILD: "true"
+          DEFUSE_SKIP_CONTRACTS_BUILD: "true"
         run: cargo test --workspace --all-targets -- --show-output
 
   security_audit_report:

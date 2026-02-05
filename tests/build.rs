@@ -19,21 +19,23 @@ mod build {
         camino::{Utf8Path, Utf8PathBuf},
     };
 
-    const SKIP_CONTRACTS_BUILD_VAR: &str = "SKIP_CONTRACTS_BUILD";
+    use xtask::{
+        DEFUSE_BUILD_REPRODUCIBLE_ENV_VAR, DEFUSE_OUT_DIR_ENV_VAR, cargo_rerun_env_trigger,
+        cargo_rerun_trigger, cargo_rustc_env, cargo_warning,
+    };
+
+    const SKIP_CONTRACTS_BUILD_VAR: &str = "DEFUSE_SKIP_CONTRACTS_BUILD";
     const TEST_OUTDIR: &str = "res";
 
     fn register_rebuild_triggers() -> Result<()> {
-        println!("cargo:rerun-if-env-changed={SKIP_CONTRACTS_BUILD_VAR}");
-        println!(
-            "cargo:rerun-if-env-changed={}",
-            xtask::DEFUSE_BUILD_REPRODUCIBLE_ENV_VAR
-        );
+        cargo_rerun_env_trigger!("{SKIP_CONTRACTS_BUILD_VAR}");
+        cargo_rerun_env_trigger!("{DEFUSE_BUILD_REPRODUCIBLE_ENV_VAR}");
 
         for member in get_workspace_members()? {
-            println!("cargo:rerun-if-changed={member}");
+            cargo_rerun_trigger!("{member}");
         }
 
-        println!("cargo:rerun-if-changed=../{TEST_OUTDIR}");
+        cargo_rerun_trigger!("../{TEST_OUTDIR}");
 
         Ok(())
     }
@@ -51,7 +53,7 @@ mod build {
             .manifest_path(root_manifest_path)
             .no_deps()
             .exec()
-            .map_err(|e| anyhow!("Failed to fetch cargo metadata: {e}"))?;
+            .map_err(|e| anyhow!("failed to fetch cargo metadata: {e}"))?;
 
         let members = metadata
             .workspace_packages()
@@ -67,16 +69,13 @@ mod build {
     pub fn run() -> Result<()> {
         register_rebuild_triggers()?;
 
-        println!(
-            "cargo:rustc-env={}={TEST_OUTDIR}",
-            xtask::DEFUSE_OUT_DIR_ENV_VAR
-        );
+        cargo_rustc_env!("{DEFUSE_OUT_DIR_ENV_VAR}={TEST_OUTDIR}",);
 
         let skip_build = std::env::var(SKIP_CONTRACTS_BUILD_VAR)
             .is_ok_and(|v| !["0", "false"].contains(&v.to_lowercase().as_str()));
 
         if skip_build {
-            println!("Skipping contracts build due to {SKIP_CONTRACTS_BUILD_VAR} being set");
+            cargo_warning!("Skipping contracts build due to {SKIP_CONTRACTS_BUILD_VAR} being set");
             return Ok(());
         }
 

@@ -8,7 +8,7 @@ use cargo_near_build::{
 };
 use std::env;
 
-use crate::{Contract, ContractOptions};
+use crate::{Contract, ContractOptions, cargo_warning};
 
 pub const DEFUSE_BUILD_REPRODUCIBLE_ENV_VAR: &str = "DEFUSE_BUILD_REPRODUCIBLE";
 pub const DEFUSE_OUT_DIR_ENV_VAR: &str = "DEFUSE_OUT_DIR";
@@ -140,10 +140,10 @@ impl ContractBuilder {
 
         let checksum = artifacts
             .compute_hash()
-            .map_err(|e| anyhow!("Failed to compute checksum: {e}"))?;
+            .map_err(|e| anyhow!("failed to compute checksum: {e}"))?;
 
         let checksum_hex = checksum.to_hex_string();
-        println!("Computed checksum: {checksum_hex}",);
+        cargo_warning!("Computed checksum: {checksum_hex}",);
 
         let checksum_path = ctx.outdir.join(format!("{name}.sha256"));
         std::fs::write(checksum_path.as_str(), &checksum_hex)?;
@@ -159,7 +159,7 @@ impl ContractBuilder {
         let spec = contract.spec();
         let manifest = ctx.repo_root.join(spec.path).join("Cargo.toml");
 
-        println!("Building contract: {} in reproducible mode", spec.name,);
+        cargo_warning!("Building contract: {} in reproducible mode", spec.name,);
 
         let build_opts = DockerBuildOpts::builder()
             .manifest_path(manifest)
@@ -167,7 +167,7 @@ impl ContractBuilder {
             .build();
 
         let artifacts = build_reproducible_wasm(build_opts, false)
-            .map_err(|e| anyhow!("Failed to build reproducible wasm: {e}"))?;
+            .map_err(|e| anyhow!("failed to build reproducible wasm: {e}"))?;
 
         let (checksum_hex, checksum_path) =
             Self::maybe_compute_checksum(&artifacts, ctx, spec.name, checksum)?;
@@ -190,7 +190,7 @@ impl ContractBuilder {
             .clone()
             .unwrap_or_else(|| spec.features.to_string());
 
-        println!("Building contract: {} in non-reproducible mode", spec.name,);
+        cargo_warning!("Building contract: {} in non-reproducible mode", spec.name,);
 
         let build_opts = BuildOpts::builder()
             .manifest_path(manifest)
@@ -200,7 +200,7 @@ impl ContractBuilder {
             .build();
 
         let artifact = build_non_reproducible_wasm(build_opts)
-            .map_err(|e| anyhow!("Failed to build wasm: {e}"))?;
+            .map_err(|e| anyhow!("failed to build wasm: {e}"))?;
 
         Ok(BuildArtifact {
             contract: contract.clone(),

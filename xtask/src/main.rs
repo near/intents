@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use xtask::{BuildOptions, Contract, ContractOptions, build_contracts};
+use xtask::{BuildOptions, Contract, ContractOptions, build_contracts, cargo_warning};
 
 #[derive(Parser)]
 struct Cli {
@@ -31,10 +31,10 @@ fn main() -> Result<()> {
         )?,
     };
 
-    println!("Built {} contracts", artifacts.len());
+    cargo_warning!("Built {} contracts", artifacts.len());
 
     for a in artifacts {
-        println!("Built {:?} at: {:?}", a.contract, a.wasm_path);
+        cargo_warning!("Built {:?} at: {:?}", a.contract, a.wasm_path);
     }
 
     Ok(())
