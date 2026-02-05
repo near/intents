@@ -65,9 +65,16 @@ use StateInitExpectation::*;
 #[case(ExpectStateInitSucceedsForZeroBalanceAccount(13))]
 #[case(ExpectStateInitSucceedsForZeroBalanceAccount(14))]
 #[case(ExpectStateInitSucceedsForZeroBalanceAccount(15))]
+#[case(ExpectStateInitSucceedsForZeroBalanceAccount(16))]
 // NOTE: edge case, with that many keys its not possible to create a valid state init as it exceeds
-// 770 bytes limit already
-#[case(ExpectStateInitExceedsZeroBalanceAccountStorageLimit(16))]
+// 770 ZBA limit, storage usage formula:
+//  - 100: account_entry
+//  - 40: (storage_entry) empty key with empty value
+//  - N*(40 + 1): N 1-byte keys with empty values
+//  - 2: global_contract_id(`tg`) length
+// the 770 ZBA storage limit is exceeded state init with (N=16) 17 entries
+// 100 + 40 + N*(40 + 1) + 2 > 770
+#[case(ExpectStateInitExceedsZeroBalanceAccountStorageLimit(17))]
 #[tokio::test]
 async fn benchmark_state_init(
     #[future(awt)] sandbox: defuse_sandbox::Sandbox,
@@ -83,7 +90,7 @@ async fn benchmark_state_init(
     let root = sandbox.root();
 
     let global_contract = root
-        .deploy_mt_receiver_stub_global("mt-receiver-global", MT_RECEIVER_STUB_WASM.clone())
+        .deploy_mt_receiver_stub_global("tg", MT_RECEIVER_STUB_WASM.clone())
         .await?;
 
     let keys = generate_keys(num_keys);
