@@ -2,6 +2,8 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use crate::env::Env;
+use defuse_core::token_id::TokenId;
+use defuse_core::token_id::nep141::Nep141TokenId;
 use defuse_escrow_proxy::CondVarContext;
 use defuse_escrow_proxy::{ProxyConfig, TransferMessage};
 use defuse_oneshot_condvar::storage::{Config as CondVarConfig, ContractStorage};
@@ -10,8 +12,6 @@ use defuse_sandbox::{
     EscrowProxyExt, FnCallBuilder, FtExt, FtViewExt, MtExt, MtReceiverStubExt, MtViewExt,
     OneshotCondVarExt,
 };
-use defuse_token_id::TokenId;
-use defuse_token_id::nep141::Nep141TokenId;
 use multi_token_receiver_stub::{FTReceiverMode, MTReceiverMode};
 use near_sdk::AccountId;
 use near_sdk::serde_json;

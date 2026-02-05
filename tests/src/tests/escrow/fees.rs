@@ -6,11 +6,11 @@ use crate::env::Env;
 use crate::utils::escrow_builders::ParamsBuilder;
 use crate::utils::escrow_builders::{FillMessageBuilder, FundMessageBuilder};
 use defuse_core::Deadline;
+use defuse_core::token_id::TokenId;
+use defuse_core::token_id::nep245::Nep245TokenId;
 use defuse_escrow_swap::decimal::UD128;
 use defuse_escrow_swap::{Pips, ProtocolFees};
 use defuse_sandbox::{EscrowSwapExt, MtExt, MtViewExt};
-use defuse_token_id::TokenId;
-use defuse_token_id::nep245::Nep245TokenId;
 use near_sdk::serde_json;
 
 /// Test escrow with 1% protocol fee

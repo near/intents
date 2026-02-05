@@ -1214,7 +1214,6 @@ dependencies = [
  "defuse-sandbox",
  "defuse-serde-utils",
  "defuse-test-utils",
- "defuse-token-id",
  "derive_more",
  "futures",
  "hex",

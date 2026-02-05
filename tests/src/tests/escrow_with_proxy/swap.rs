@@ -17,12 +17,12 @@ use defuse_core::Deadline;
 use defuse_core::amounts::Amounts;
 use defuse_core::intents::auth::AuthCall;
 use defuse_core::intents::tokens::{NotifyOnTransfer, Transfer};
+use defuse_core::token_id::TokenId;
+use defuse_core::token_id::nep245::Nep245TokenId;
 use defuse_escrow_proxy::CondVarContext;
 use defuse_escrow_proxy::{ProxyConfig, TransferMessage as ProxyTransferMessage};
 use defuse_oneshot_condvar::storage::{Config as CondVarConfig, ContractStorage as CondVarStorage};
 use defuse_sandbox::{EscrowProxyExt, EscrowSwapExt, MtExt, MtViewExt, OneshotCondVarExt};
-use defuse_token_id::TokenId;
-use defuse_token_id::nep245::Nep245TokenId;
 use near_sdk::serde_json;
 
 use near_sdk::json_types::U128;

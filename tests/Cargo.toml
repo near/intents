@@ -31,7 +31,6 @@ defuse-oneshot-condvar.workspace = true
 defuse-randomness.workspace = true
 defuse-serde-utils = { workspace = true }
 defuse-test-utils.workspace = true
-defuse-token-id.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing", "deterministic-account-ids"] }
 
 futures = "0.3"
