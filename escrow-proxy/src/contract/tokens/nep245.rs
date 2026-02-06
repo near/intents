@@ -40,7 +40,7 @@ impl MultiTokenReceiver for Contract {
                     //NOTE: forward all gas, make sure that there is enough gas to resolve transfer
                     .with_static_gas(MT_CHECK_AND_FORWARD_MIN_GAS)
                     .with_unused_gas_weight(1)
-                    .check_authorization_and_forward_mt(
+                    .mt_forward_checked(
                         token,
                         forward_request.receiver_id,
                         token_ids,
@@ -55,7 +55,7 @@ impl MultiTokenReceiver for Contract {
 #[near]
 impl Contract {
     #[private]
-    pub fn check_authorization_and_forward_mt(
+    pub fn mt_forward_checked(
         &self,
         token: AccountId,
         receiver_id: AccountId,
