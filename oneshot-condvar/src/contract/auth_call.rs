@@ -5,7 +5,7 @@ use near_sdk::{AccountId, PromiseOrValue, env, near, require};
 use super::{Contract, ContractExt};
 
 const ERR_MSG_NOT_EMPTY: &str = "message must be empty";
-const ERR_WRONG_AUTH_CALLER: &str = "Unauthorized auth contract";
+const ERR_WRONG_AUTH_CALLER: &str = "unauthorized on_auth_caller";
 
 #[near]
 impl AuthCallee for Contract {

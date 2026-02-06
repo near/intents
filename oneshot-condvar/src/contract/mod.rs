@@ -11,7 +11,7 @@ use crate::{
     storage::{ContractStorage, State, Status},
 };
 
-const ERR_UNAUTHORIZED_CALLER: &str = "Unauthorized caller";
+const ERR_UNAUTHORIZED_CALLER: &str = "unauthorized caller";
 
 #[near(contract_state(key = ContractStorage::STATE_KEY))]
 #[derive(Debug, PanicOnDefault)]
