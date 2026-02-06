@@ -11,6 +11,7 @@ use defuse_escrow_swap::Pips;
 use defuse_randomness::Rng;
 use defuse_sandbox::FnCallBuilder;
 use defuse_test_utils::random::rng;
+use futures::stream::{self, StreamExt};
 use near_sdk::Gas;
 use near_sdk::{
     AccountId, GlobalContractId, NearToken, serde_json::json, state_init::StateInit,
@@ -326,7 +327,7 @@ async fn test_auth_call_state_init_via_execute_intents(
                 }
             });
 
-    let results: Vec<bool> = futures::future::join_all(futures).await;
+    let results: Vec<bool> = stream::iter(futures).buffer_unordered(10).collect().await;
     let success = results.contains(&true);
     assert_eq!(success, expect_success);
 }
@@ -437,7 +438,7 @@ async fn test_auth_call_state_init_via_do_auth_call(
             }
         });
 
-    let results: Vec<bool> = futures::future::join_all(futures).await;
+    let results: Vec<bool> = stream::iter(futures).buffer_unordered(10).collect().await;
     let success = results.contains(&true);
     assert_eq!(success, expect_success);
 }
