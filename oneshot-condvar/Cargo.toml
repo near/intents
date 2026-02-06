@@ -29,7 +29,7 @@ container_build_command = [
 defuse-auth-call = { workspace = true, optional = true }
 defuse-near-utils.workspace = true
 impl-tools.workspace = true
-near-sdk = { workspace = true, features = ["unstable", "deterministic-account-ids"] }
+near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 thiserror.workspace = true
 
 [features]
