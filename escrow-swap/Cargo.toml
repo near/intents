@@ -12,8 +12,8 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [package.metadata.near.reproducible_build]
-image = "sourcescan/cargo-near:0.18.0-rust-1.86.0"
-image_digest = "sha256:2d0d458d2357277df669eac6fa23a1ac922e5ed16646e1d3315336e4dff18043"
+image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
+image_digest = "sha256:772638e343baeeea24e49062c7d424274f3441452cc06ce97fc4e5695b19fecc"
 passed_env = []
 container_build_command = [
     "cargo",
