@@ -9,6 +9,7 @@ use defuse::{
 };
 use defuse_escrow_swap::Pips;
 use defuse_randomness::Rng;
+use defuse_sandbox::api::types::transaction::actions::GlobalContractDeployMode;
 use defuse_sandbox::FnCallBuilder;
 use defuse_test_utils::random::rng;
 use futures::stream::{self, StreamExt};
@@ -124,7 +125,7 @@ async fn benchmark_auth_call_with_largest_possible_state_init(
 ) {
     let env = Env::builder().build().await;
     env.root()
-        .deploy_global_contract(MT_RECEIVER_STUB_WASM.clone())
+        .deploy_global_contract(MT_RECEIVER_STUB_WASM.clone(), GlobalContractDeployMode::AccountId)
         .await
         .unwrap();
     let global_contract_id = env.root().id();
@@ -181,7 +182,7 @@ async fn benchmark_gas_used_by_do_auth_call_callback(mut rng: impl Rng, #[case] 
 
     let env = Env::builder().build().await;
     env.root()
-        .deploy_global_contract(MT_RECEIVER_STUB_WASM.clone())
+        .deploy_global_contract(MT_RECEIVER_STUB_WASM.clone(), GlobalContractDeployMode::AccountId)
         .await
         .unwrap();
     let global_contract_id = env.root().id();
@@ -267,7 +268,7 @@ async fn test_auth_call_state_init_via_execute_intents(
 
     let env = Env::builder().build().await;
     env.root()
-        .deploy_global_contract(MT_RECEIVER_STUB_WASM.clone())
+        .deploy_global_contract(MT_RECEIVER_STUB_WASM.clone(), GlobalContractDeployMode::AccountId)
         .await
         .unwrap();
     let global_contract = env.root();
@@ -375,7 +376,7 @@ async fn test_auth_call_state_init_via_do_auth_call(
 
     let env = Env::builder().build().await;
     env.root()
-        .deploy_global_contract(MT_RECEIVER_STUB_WASM.clone())
+        .deploy_global_contract(MT_RECEIVER_STUB_WASM.clone(), GlobalContractDeployMode::AccountId)
         .await
         .unwrap();
     let global_contract_id = env.root().id();

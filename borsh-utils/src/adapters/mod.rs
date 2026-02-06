@@ -494,8 +494,11 @@ pub struct Or<T1: ?Sized, T2: ?Sized>(PhantomData<T1>, PhantomData<T2>);
 /// Useful for fields that should consume the remainder of the input.
 ///
 /// # Example
-/// ```ignore
+/// ```
+/// use defuse_borsh_utils::adapters::{As, Remainder};
+/// use near_sdk::borsh::{BorshSerialize, BorshDeserialize};
 /// #[derive(BorshSerialize, BorshDeserialize)]
+/// #[borsh(crate = "::near_sdk::borsh")]
 /// struct S {
 ///     #[borsh(
 ///         serialize_with = "As::<Remainder>::serialize",
