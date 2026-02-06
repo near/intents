@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use defuse_oneshot_condvar::CV_WAIT_GAS;
 use defuse_oneshot_condvar::storage::Config as CondVarConfig;
+use defuse_oneshot_condvar::{CV_NOTIFY_ONE_GAS, CV_WAIT_GAS};
 use defuse_sandbox::{Account, FnCallBuilder, OneshotCondVarExt, Sandbox};
 use near_sdk::{AccountId, Gas, NearToken, serde_json::json};
 
@@ -459,4 +459,68 @@ async fn test_cv_wait_gas_benchmark() {
         CV_WAIT_GAS >= total_gas,
         "CV_WAIT_GAS ({CV_WAIT_GAS:?}) should be >= actual ({total_gas:?})",
     );
+}
+
+#[tokio::test]
+async fn test_verify_cv_notify_gas_cost() {
+    let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
+    let root = sandbox.root();
+
+    let condvar_global = root.deploy_oneshot_condvar("auth").await;
+
+    let (auth_contract, relay, proxy) = futures::try_join!(
+        root.generate_subaccount("auth-contract", INIT_BALANCE),
+        root.generate_subaccount("auth-callee", INIT_BALANCE),
+        root.generate_subaccount("proxy", INIT_BALANCE),
+    )
+    .unwrap();
+
+    let state = CondVarConfig {
+        on_auth_caller: auth_contract.id().clone(),
+        notifier_id: relay.id().clone(),
+        waiter: proxy.id().clone(),
+        salt: [0; 32],
+    };
+
+    let condvar_instance = root
+        .deploy_oneshot_condvar_instance(condvar_global.clone(), state)
+        .await;
+
+    let authorized = tokio::spawn({
+        let condvar_instance = condvar_instance.clone();
+        async move {
+            proxy
+                .tx(condvar_instance.clone())
+                .function_call(
+                    FnCallBuilder::new("cv_wait").with_gas(defuse_oneshot_condvar::CV_WAIT_GAS),
+                )
+                .await
+                .unwrap()
+        }
+    });
+
+    // replace with waiting for couple blocks
+    tokio::time::sleep(Duration::from_secs(1)).await;
+
+    let state = root
+        .tx(condvar_instance.clone())
+        .function_call(FnCallBuilder::new("cv_state"))
+        .await
+        .unwrap()
+        .json::<defuse_oneshot_condvar::Status>()
+        .unwrap();
+    assert!(matches!(
+        state,
+        defuse_oneshot_condvar::Status::WaitingForNotification(_)
+    ));
+
+    let cv_notify_one = relay
+        .tx(condvar_instance.clone())
+        .function_call(FnCallBuilder::new("cv_notify_one").with_gas(CV_NOTIFY_ONE_GAS))
+        .await
+        .unwrap();
+
+    // NOTE: make sure that promise was actually resumed (timeout did not happen)
+    assert!(!cv_notify_one.logs().contains(&"timeout"));
+    assert!(authorized.await.unwrap().json::<bool>().unwrap());
 }
