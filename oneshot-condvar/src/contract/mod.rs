@@ -32,7 +32,6 @@ impl ContractStorage {
 #[near]
 impl Contract {
     #[private]
-    #[allow(clippy::needless_pass_by_value)]
     pub fn cv_wait_resume(&mut self) -> PromiseOrValue<bool> {
         let mut guard = self.cleanup_guard();
         let state = guard.try_as_alive_mut().unwrap_or_panic_display();
