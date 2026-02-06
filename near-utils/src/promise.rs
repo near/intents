@@ -18,7 +18,7 @@ pub trait MaxJsonLength: DeserializeOwned {
 
 #[inline]
 #[must_use]
-pub fn bounded_promise_result_with_args<T: MaxJsonLength>(
+pub fn promise_result_checked_json_with_args<T: MaxJsonLength>(
     result_idx: u64,
     args: T::Args,
 ) -> Option<T> {
@@ -29,8 +29,8 @@ pub fn bounded_promise_result_with_args<T: MaxJsonLength>(
 
 #[inline]
 #[must_use]
-pub fn bounded_promise_result<T: MaxJsonLength<Args = ()>>(result_idx: u64) -> Option<T> {
-    bounded_promise_result_with_args::<T>(result_idx, ())
+pub fn promise_result_checked_json<T: MaxJsonLength<Args = ()>>(result_idx: u64) -> Option<T> {
+    promise_result_checked_json_with_args::<T>(result_idx, ())
 }
 
 impl MaxJsonLength for bool {
