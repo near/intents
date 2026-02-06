@@ -3,7 +3,7 @@ mod utils;
 
 use crate::CondVarContext;
 #[cfg(feature = "escrow-swap")]
-use defuse_escrow_swap::ext_escrow;
+use defuse_escrow_swap::{Params as EscrowParams, ext_escrow};
 use defuse_near_utils::UnwrapOrPanicError;
 use near_sdk::{
     AccountId, CryptoHash, Gas, PanicOnDefault, Promise, env, json_types::U128, near, require,
@@ -12,8 +12,6 @@ use near_sdk::{
 use crate::EscrowProxy;
 use crate::message::TransferMessage;
 use crate::state::{ContractStorage, ProxyConfig};
-#[cfg(feature = "escrow-swap")]
-use defuse_escrow_swap::Params as EscrowParams;
 
 #[near(contract_state(key = ContractStorage::STATE_KEY))]
 #[derive(PanicOnDefault)]
