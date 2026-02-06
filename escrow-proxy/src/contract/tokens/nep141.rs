@@ -23,15 +23,12 @@ impl FungibleTokenReceiver for Contract {
     ) -> PromiseOrValue<U128> {
         // For FT, the token is identified by the predecessor (FT contract)
         let token = env::predecessor_account_id();
-        let token_id = TokenId::from(Nep141TokenId::new(token.clone()));
-        let token_ids = vec![token_id.to_string()];
-        let amounts = vec![amount];
         let forward_request: ForwardRequest = msg.parse().unwrap_or_panic_display();
         PromiseOrValue::Promise(
             self.wait_for_authorization(
                 &sender_id,
-                &token_ids,
-                &amounts,
+                &vec![Nep141TokenId::new(token.clone()).into().to_string()],
+                &vec![amount],
                 forward_request.salt.unwrap_or_default(),
                 &msg,
             )
