@@ -50,10 +50,10 @@ impl<T> MaybeIntentEvent<T> {
 #[near(event_json(standard = "dip4"))]
 #[derive(Debug, Clone, Deserialize, From)]
 pub enum DefuseEvent<'a> {
-    #[event_version("0.3.1")]
+    #[event_version("0.4.2")]
     #[from(skip)]
     PublicKeyAdded(MaybeIntentEvent<AccountEvent<'a, PublicKeyEvent<'a>>>),
-    #[event_version("0.3.1")]
+    #[event_version("0.4.2")]
     #[from(skip)]
     PublicKeyRemoved(MaybeIntentEvent<AccountEvent<'a, PublicKeyEvent<'a>>>),
 
@@ -87,7 +87,7 @@ pub enum DefuseEvent<'a> {
     StorageDeposit(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, StorageDeposit>>>]>),
 
     #[cfg(feature = "imt")]
-    #[event_version("0.3.0")]
+    #[event_version("0.4.2")]
     ImtMint(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, ImtMintEvent<'a>>>]>),
 
     #[cfg(feature = "imt")]
@@ -100,7 +100,7 @@ pub enum DefuseEvent<'a> {
     #[from(skip)]
     AccountUnlocked(AccountEvent<'a, ()>),
 
-    #[event_version("0.3.1")]
+    #[event_version("0.4.2")]
     SetAuthByPredecessorId(MaybeIntentEvent<AccountEvent<'a, Cow<'a, SetAuthByPredecessorId>>>),
 
     #[event_version("0.4.0")]
@@ -115,3 +115,88 @@ pub trait DefuseIntentEmit<'a>: Into<DefuseEvent<'a>> {
 }
 
 impl<'a, T> DefuseIntentEmit<'a> for T where T: Into<DefuseEvent<'a>> {}
+
+#[cfg(test)]
+mod tests {
+
+    use std::borrow::Cow;
+
+    use derive_more::derive::From;
+    use near_sdk::{near, serde::Deserialize};
+
+    #[cfg(feature = "imt")]
+    use crate::intents::tokens::imt::{ImtBurn, ImtMint};
+    use crate::{
+        accounts::{AccountEvent, NonceEvent, PublicKeyEvent, SaltRotationEvent},
+        fees::{FeeChangedEvent, FeeCollectorChangedEvent},
+        intents::{
+            IntentEvent,
+            account::SetAuthByPredecessorId,
+            token_diff::TokenDiffEvent,
+            tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
+        },
+        tokens::TransferEvent,
+    };
+
+    // Defuse events according to defuse v0.4.1,
+    #[must_use = "make sure to `.emit()` this event"]
+    #[near(event_json(standard = "dip4"))]
+    #[derive(Debug, Clone, Deserialize, From)]
+    pub enum DefuseEvent0_4_1<'a> {
+        #[event_version("0.3.0")]
+        #[from(skip)]
+        PublicKeyAdded(AccountEvent<'a, PublicKeyEvent<'a>>),
+        #[event_version("0.3.0")]
+        #[from(skip)]
+        PublicKeyRemoved(AccountEvent<'a, PublicKeyEvent<'a>>),
+
+        #[event_version("0.3.0")]
+        FeeChanged(FeeChangedEvent),
+        #[event_version("0.3.0")]
+        FeeCollectorChanged(FeeCollectorChangedEvent<'a>),
+
+        #[event_version("0.3.0")]
+        Transfer(Cow<'a, [IntentEvent<AccountEvent<'a, TransferEvent<'a>>>]>),
+
+        #[event_version("0.3.0")]
+        TokenDiff(Cow<'a, [IntentEvent<AccountEvent<'a, TokenDiffEvent<'a>>>]>),
+
+        #[event_version("0.3.1")]
+        IntentsExecuted(Cow<'a, [IntentEvent<AccountEvent<'a, NonceEvent>>]>),
+
+        #[event_version("0.3.0")]
+        FtWithdraw(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, FtWithdraw>>>]>),
+
+        #[event_version("0.3.0")]
+        NftWithdraw(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, NftWithdraw>>>]>),
+
+        #[event_version("0.3.0")]
+        MtWithdraw(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, MtWithdraw>>>]>),
+
+        #[event_version("0.3.0")]
+        NativeWithdraw(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, NativeWithdraw>>>]>),
+
+        #[event_version("0.3.0")]
+        StorageDeposit(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, StorageDeposit>>>]>),
+
+        #[cfg(feature = "imt")]
+        #[event_version("0.3.0")]
+        ImtMint(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, ImtMint>>>]>),
+
+        #[cfg(feature = "imt")]
+        #[event_version("0.3.0")]
+        ImtBurn(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, ImtBurn>>>]>),
+        #[event_version("0.3.0")]
+        #[from(skip)]
+        AccountLocked(AccountEvent<'a, ()>),
+        #[event_version("0.3.0")]
+        #[from(skip)]
+        AccountUnlocked(AccountEvent<'a, ()>),
+
+        #[event_version("0.3.0")]
+        SetAuthByPredecessorId(AccountEvent<'a, SetAuthByPredecessorId>),
+
+        #[event_version("0.4.0")]
+        SaltRotation(SaltRotationEvent),
+    }
+}
