@@ -189,7 +189,7 @@ async fn test_transfer_authorized_by_relay() {
     let auth_state = CondVarConfig {
         on_auth_caller: config.on_auth_caller.clone(),
         notifier_id: config.notifier_id.clone(),
-        authorizee: proxy_id.clone(),
+        waiter: proxy_id.clone(),
         salt: context_hash,
     };
     let condvar_instance_id = derive_oneshot_condvar_account_id(
@@ -332,7 +332,7 @@ async fn test_ft_transfer_authorized_by_relay() {
     let auth_state = CondVarConfig {
         on_auth_caller: config.on_auth_caller.clone(),
         notifier_id: config.notifier_id.clone(),
-        authorizee: proxy_id.clone(),
+        waiter: proxy_id.clone(),
         salt: context_hash,
     };
     let condvar_instance_id = derive_oneshot_condvar_account_id(
@@ -513,7 +513,7 @@ async fn test_proxy_with_ft_transfer() {
     let auth_state = CondVarConfig {
         on_auth_caller: config.on_auth_caller.clone(),
         notifier_id: config.notifier_id.clone(),
-        authorizee: proxy_id.clone(),
+        waiter: proxy_id.clone(),
         salt: context_hash,
     };
     let condvar_instance_id = derive_oneshot_condvar_account_id(

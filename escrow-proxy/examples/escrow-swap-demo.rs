@@ -348,7 +348,7 @@ async fn main() -> Result<()> {
     let condvar_state = CondVarConfig {
         on_auth_caller: VERIFIER_CONTRACT.parse().unwrap(),
         notifier_id: root.id().clone(), // relay account that signs the auth
-        authorizee: PROXY.parse().unwrap(),
+        waiter: PROXY.parse().unwrap(),
         salt: condvar_context.hash(),
     };
 

@@ -20,7 +20,7 @@ impl Contract {
             #[cfg(feature = "auth-call")]
             on_auth_caller: config.on_auth_caller.clone(),
             notifier_id: config.notifier_id.clone(),
-            authorizee: env::current_account_id(),
+            waiter: env::current_account_id(),
             salt,
         };
 

@@ -14,7 +14,7 @@ use crate::{
 };
 
 const ERR_UNAUTHORIZED_NOTIFIER_ID: &str = "unauthorized notifier_id";
-const ERR_UNAUTHORIZED_AUTHORIZEE: &str = "unauthorized authorizee";
+const ERR_UNAUTHORIZED_WAITER: &str = "unauthorized waiter";
 const CV_WAIT_RESUME_GAS: Gas = Gas::from_tgas(4);
 
 #[near(contract_state(key = ContractStorage::STATE_KEY))]
@@ -109,8 +109,8 @@ impl OneshotCondVar for Contract {
         let state = guard.try_as_alive_mut().unwrap_or_panic_display();
 
         require!(
-            env::predecessor_account_id() == state.config.authorizee,
-            ERR_UNAUTHORIZED_AUTHORIZEE
+            env::predecessor_account_id() == state.config.waiter,
+            ERR_UNAUTHORIZED_WAITER
         );
 
         match state.state {

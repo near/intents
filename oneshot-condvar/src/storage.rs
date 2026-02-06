@@ -22,7 +22,7 @@ pub struct Config {
     /// Account ID that is permitted to call [`cv_notify_one`] on oneshot condvar
     pub notifier_id: AccountId,
     /// Account ID that becomes authorized upon successful notification.
-    pub authorizee: AccountId,
+    pub waiter: AccountId,
     /// Unique salt used for deterministic account derivation.
     #[serde_as(as = "Hex")]
     pub salt: [u8; 32],
