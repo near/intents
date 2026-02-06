@@ -15,6 +15,7 @@ use crate::{
 
 const ERR_UNAUTHORIZED_NOTIFIER_ID: &str = "unauthorized notifier_id";
 const ERR_UNAUTHORIZED_AUTHORIZEE: &str = "unauthorized authorizee";
+const CV_WAIT_RESUME_GAS: Gas = Gas::from_tgas(4);
 
 #[near(contract_state(key = ContractStorage::STATE_KEY))]
 #[derive(Debug, PanicOnDefault)]
@@ -115,7 +116,7 @@ impl OneshotCondVar for Contract {
         match state.state {
             Status::Idle => {
                 let (promise, yield_id) =
-                    Promise::new_yield("cv_wait_resume", vec![], Gas::from_tgas(0), GasWeight(1));
+                    Promise::new_yield("cv_wait_resume", vec![], CV_WAIT_RESUME_GAS, GasWeight(1));
                 state.state = Status::WaitingForNotification(yield_id);
                 return promise.into();
             }
