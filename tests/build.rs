@@ -21,16 +21,13 @@ mod build {
 
     use xtask::{
         DEFUSE_BUILD_REPRODUCIBLE_ENV_VAR, DEFUSE_OUT_DIR_ENV_VAR, cargo_rerun_env_trigger,
-        cargo_rerun_trigger, cargo_rustc_env, cargo_warning,
+        cargo_rerun_trigger, cargo_warning,
     };
 
     const SKIP_CONTRACTS_BUILD_VAR: &str = "DEFUSE_SKIP_CONTRACTS_BUILD";
-
     const CARGO_OUT_DIR_ENV_VAR: &str = "OUT_DIR";
-    const DEFUSE_TEST_OUT_DIR_ENV_VAR: &str = "DEFUSE_TEST_OUT_DIR";
-    const TEST_OUTDIR: &str = "res";
 
-    fn register_rebuild_triggers() -> Result<()> {
+    fn register_rebuild_triggers(out_dir: &str) -> Result<()> {
         cargo_rerun_env_trigger!("{SKIP_CONTRACTS_BUILD_VAR}");
         cargo_rerun_env_trigger!("{DEFUSE_BUILD_REPRODUCIBLE_ENV_VAR}");
 
@@ -38,7 +35,7 @@ mod build {
             cargo_rerun_trigger!("{member}");
         }
 
-        cargo_rerun_trigger!("../{TEST_OUTDIR}");
+        cargo_rerun_trigger!("{out_dir}");
         cargo_rerun_trigger!("../Cargo.lock");
 
         Ok(())
@@ -71,14 +68,12 @@ mod build {
     }
 
     pub fn run() -> Result<()> {
-        register_rebuild_triggers()?;
-
-        // Use cargo OUT_DIR in case if custom OUT_DIR is not set
+        // Use cargo OUT_DIR in case if custom DEFUSE_OUT_DIR is not set
         let out_dir = env::var(DEFUSE_OUT_DIR_ENV_VAR)
             .or_else(|_| env::var(CARGO_OUT_DIR_ENV_VAR))
-            .unwrap_or_else(|_| TEST_OUTDIR.to_string());
+            .unwrap_or_else(|_| unreachable!());
 
-        cargo_rustc_env!("{DEFUSE_TEST_OUT_DIR_ENV_VAR}={out_dir}",);
+        register_rebuild_triggers(&out_dir)?;
 
         let skip_build = std::env::var(SKIP_CONTRACTS_BUILD_VAR)
             .is_ok_and(|v| !["0", "false"].contains(&v.to_lowercase().as_str()));

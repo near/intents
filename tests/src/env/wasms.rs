@@ -1,17 +1,39 @@
 #![allow(clippy::option_env_unwrap)]
+use std::path::PathBuf;
 use std::sync::LazyLock;
 use std::{fs, path::Path};
 
 pub enum ReadWasmMode {
-    RepoRoot,
-    Outdir,
+    WorkspaceRoot,
+    BuildArtifact,
+}
+
+fn get_out_dir() -> PathBuf {
+    let (var, value) = std::env::var("DEFUSE_USE_OUT_DIR")
+        .ok()
+        .map(|v| ("DEFUSE_USE_OUT_DIR", v))
+        .or_else(|| option_env!("DEFUSE_OUT_DIR").map(|v| ("DEFUSE_OUT_DIR", v.to_owned())))
+        .unwrap_or_else(|| ("OUT_DIR", env!("OUT_DIR").to_owned()));
+
+    println!("Using {var} env var: {value}");
+
+    PathBuf::from(&value)
+}
+
+pub fn to_absolute_path(path: impl AsRef<Path>) -> PathBuf {
+    let path = path.as_ref();
+
+    path.is_absolute()
+        .then(|| path.to_path_buf())
+        .unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("../").join(path))
 }
 
 pub fn read_wasm(mode: &ReadWasmMode, path: impl AsRef<Path>) -> Vec<u8> {
     let mut base = Path::new(env!("CARGO_MANIFEST_DIR")).join("../");
 
-    if matches!(mode, ReadWasmMode::Outdir) {
-        base = base.join(option_env!("DEFUSE_TEST_OUT_DIR").expect("Out dir should be set"));
+    if matches!(mode, ReadWasmMode::BuildArtifact) {
+        // if out dir path is absolute - base is ignored during join
+        base = base.join(get_out_dir());
     }
 
     let path = fs::canonicalize(base.join(path))
@@ -22,22 +44,30 @@ pub fn read_wasm(mode: &ReadWasmMode, path: impl AsRef<Path>) -> Vec<u8> {
     fs::read(&path).unwrap_or_else(|e| panic!("Failed to read WASM file at {path:?}: {e}"))
 }
 
-pub static MT_RECEIVER_STUB_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm(&ReadWasmMode::Outdir, "multi_token_receiver_stub.wasm"));
+pub static MT_RECEIVER_STUB_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
+    read_wasm(
+        &ReadWasmMode::BuildArtifact,
+        "multi_token_receiver_stub.wasm",
+    )
+});
 
 pub static DEFUSE_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm(&ReadWasmMode::Outdir, "defuse.wasm"));
+    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse.wasm"));
 pub static DEFUSE_LEGACY_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm(&ReadWasmMode::RepoRoot, "releases/previous.wasm"));
+    LazyLock::new(|| read_wasm(&ReadWasmMode::WorkspaceRoot, "releases/previous.wasm"));
 
 pub static ESCROW_SWAP_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm(&ReadWasmMode::Outdir, "defuse_escrow_swap.wasm"));
+    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse_escrow_swap.wasm"));
 
 pub static POA_FACTORY_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm(&ReadWasmMode::Outdir, "defuse_poa_factory.wasm"));
+    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse_poa_factory.wasm"));
 
-pub static NON_FUNGIBLE_TOKEN_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm(&ReadWasmMode::RepoRoot, "releases/non-fungible-token.wasm"));
+pub static NON_FUNGIBLE_TOKEN_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
+    read_wasm(
+        &ReadWasmMode::WorkspaceRoot,
+        "releases/non-fungible-token.wasm",
+    )
+});
 
 pub static WNEAR_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm(&ReadWasmMode::RepoRoot, "releases/wnear.wasm"));
+    LazyLock::new(|| read_wasm(&ReadWasmMode::WorkspaceRoot, "releases/wnear.wasm"));

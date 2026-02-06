@@ -160,7 +160,7 @@ jobs:
         env:
           DEFUSE_MIGRATE_FROM_LEGACY: "true"
           DEFUSE_SKIP_CONTRACTS_BUILD: "true"
-          DEFUSE_OUT_DIR: "res"
+          DEFUSE_USE_OUT_DIR: "res"
         run: cargo test --workspace --all-targets -- --show-output
 
   security_audit_report:
