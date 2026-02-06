@@ -7,4 +7,4 @@
 # The advisory relates to IterMut's Stacked Borrows violation, which does
 # not affect our usage as we don't use IterMut directly.
 # Tracked: https://github.com/near/nearcore/issues/XXXXX (upstream)
-ignore = ["RUSTSEC-2026-0002"]
+ignore = ["RUSTSEC-2026-0002", "RUSTSEC-2026-0009"]
