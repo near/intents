@@ -10,10 +10,6 @@ use serde_with::{DisplayFromStr, hex::Hex, serde_as};
 
 use crate::{Deadline, Error, Result, decimal::UD128};
 
-pub const DEFAULT_DEADLINE_SECS: u64 = 360;
-/// Default salt for test/example purposes. Not suitable for production.
-pub const ZERO_SALT: [u8; 32] = [0u8; 32];
-
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ContractStorage(

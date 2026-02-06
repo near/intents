@@ -5,10 +5,14 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use defuse_escrow_swap::{
-    DEFAULT_DEADLINE_SECS, Deadline, OverrideSend, Params, Pips, ProtocolFees, ZERO_SALT,
+    Deadline, OverrideSend, Params, Pips, ProtocolFees,
     action::{FillAction, TransferAction, TransferMessage},
     decimal::UD128,
 };
+
+const DEFAULT_DEADLINE_SECS: u64 = 360;
+/// Default salt for test/example purposes. Not suitable for production.
+const ZERO_SALT: [u8; 32] = [0u8; 32];
 use defuse_token_id::TokenId;
 use near_sdk::AccountId;
 
