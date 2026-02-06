@@ -2,6 +2,7 @@
 mod auth_call;
 mod cleanup;
 
+use crate::error;
 use defuse_near_utils::UnwrapOrPanicError;
 use near_sdk::{
     AccountIdRef, Gas, GasWeight, PanicOnDefault, Promise, PromiseOrValue, env, near, require,
@@ -13,8 +14,6 @@ use crate::{
     storage::{ContractStorage, State, Status},
 };
 
-const ERR_UNAUTHORIZED_NOTIFIER_ID: &str = "unauthorized notifier_id";
-const ERR_UNAUTHORIZED_WAITER: &str = "unauthorized waiter";
 const CV_WAIT_RESUME_GAS: Gas = Gas::from_tgas(4);
 
 #[near(contract_state(key = ContractStorage::STATE_KEY))]
@@ -65,7 +64,7 @@ impl Contract {
     pub(crate) fn verify_caller_and_notify_contract(caller: &AccountIdRef, state: &mut State) {
         require!(
             *caller == state.config.notifier_id,
-            ERR_UNAUTHORIZED_NOTIFIER_ID
+            error::ERR_UNAUTHORIZED_NOTIFIER_ID
         );
 
         state.state = match state.state {
@@ -80,7 +79,7 @@ impl Contract {
                 Status::Notified
             }
             Status::Done | Status::Notified => {
-                env::panic_str("already notified");
+                env::panic_str(error::ERR_ALREADY_NOTIFIED);
             }
         };
 
@@ -110,7 +109,7 @@ impl OneshotCondVar for Contract {
 
         require!(
             env::predecessor_account_id() == state.config.waiter,
-            ERR_UNAUTHORIZED_WAITER
+            error::ERR_UNAUTHORIZED_WAITER
         );
 
         match state.state {
@@ -124,10 +123,10 @@ impl OneshotCondVar for Contract {
                 state.state = Status::Done;
             }
             Status::WaitingForNotification(_) => {
-                env::panic_str("already waiting for notification");
+                env::panic_str(error::ERR_ALREADY_WAITING);
             }
             Status::Done => {
-                env::panic_str("already done");
+                env::panic_str(error::ERR_ALREADY_DONE);
             }
         }
 
