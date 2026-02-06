@@ -33,7 +33,6 @@ impl MultiTokenReceiver for Contract {
                 &sender_id,
                 &token_ids,
                 &amounts,
-                forward_request.salt.unwrap_or_default(),
                 &msg,
             )
             .then(

@@ -339,7 +339,6 @@ async fn main() -> Result<()> {
         sender_id: Cow::Borrowed(taker_signing.id().as_ref()),
         token_ids: Cow::Owned(vec![dst_token.to_string()]),
         amounts: Cow::Owned(vec![U128(1)]),
-        salt: proxy_msg.salt,
         // NOTE: authorizes particular notification from taker(solver)
         msg: Cow::Borrowed(&proxy_msg_json),
     };

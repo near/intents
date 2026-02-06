@@ -4,13 +4,11 @@ mod utils;
 use crate::CondVarContext;
 #[cfg(feature = "escrow-swap")]
 use defuse_escrow_swap::{Params as EscrowParams, ext_escrow};
-use defuse_near_utils::UnwrapOrPanicError;
 use near_sdk::{
     AccountId, CryptoHash, Gas, PanicOnDefault, Promise, env, json_types::U128, near, require,
 };
 
 use crate::EscrowProxy;
-use crate::message::ForwardRequest;
 use crate::state::{ContractStorage, ProxyConfig};
 
 #[near(contract_state(key = ContractStorage::STATE_KEY))]
@@ -62,12 +60,10 @@ impl EscrowProxy for Contract {
         msg: String,
     ) -> AccountId {
         use std::borrow::Cow;
-        let forward_request: ForwardRequest = msg.parse().unwrap_or_panic_display();
         let context_hash = CondVarContext {
             sender_id: Cow::Owned(taker_id),
             token_ids: Cow::Owned(token_ids),
             amounts: Cow::Owned(amounts),
-            salt: forward_request.salt.unwrap_or_default(),
             msg: Cow::Borrowed(&msg),
         }
         .hash();

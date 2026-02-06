@@ -37,14 +37,12 @@ impl Contract {
         sender_id: &AccountId,
         token_ids: &[defuse_nep245::TokenId],
         amounts: &[U128],
-        salt: [u8; 32],
         msg: &str,
     ) -> Promise {
         let context_hash = CondVarContext {
             sender_id: Cow::Borrowed(sender_id),
             token_ids: Cow::Borrowed(token_ids),
             amounts: Cow::Borrowed(amounts),
-            salt,
             msg: Cow::Borrowed(msg),
         }
         .hash();

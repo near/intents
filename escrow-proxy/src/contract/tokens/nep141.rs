@@ -27,9 +27,8 @@ impl FungibleTokenReceiver for Contract {
         PromiseOrValue::Promise(
             self.wait_for_authorization(
                 &sender_id,
-                &vec![Nep141TokenId::new(token.clone()).into().to_string()],
+                &vec![TokenId::from(Nep141TokenId::new(token.clone())).to_string()],
                 &vec![amount],
-                forward_request.salt.unwrap_or_default(),
                 &msg,
             )
             .then(
