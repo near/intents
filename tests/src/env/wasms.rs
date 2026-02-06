@@ -3,29 +3,20 @@ use std::path::PathBuf;
 use std::sync::LazyLock;
 use std::{fs, path::Path};
 
+pub const USE_OUT_DIR_VAR: &str = "DEFUSE_USE_OUT_DIR";
+
 pub enum ReadWasmMode {
     WorkspaceRoot,
     BuildArtifact,
 }
 
 fn get_out_dir() -> PathBuf {
-    let (var, value) = std::env::var("DEFUSE_USE_OUT_DIR")
+    let out_dir = std::env::var(USE_OUT_DIR_VAR)
         .ok()
-        .map(|v| ("DEFUSE_USE_OUT_DIR", v))
-        .or_else(|| option_env!("DEFUSE_OUT_DIR").map(|v| ("DEFUSE_OUT_DIR", v.to_owned())))
-        .unwrap_or_else(|| ("OUT_DIR", env!("OUT_DIR").to_owned()));
+        .or_else(|| option_env!("DEFUSE_OUT_DIR").map(str::to_owned))
+        .unwrap_or_else(|| env!("OUT_DIR").to_owned());
 
-    println!("Using {var} env var: {value}");
-
-    PathBuf::from(&value)
-}
-
-pub fn to_absolute_path(path: impl AsRef<Path>) -> PathBuf {
-    let path = path.as_ref();
-
-    path.is_absolute()
-        .then(|| path.to_path_buf())
-        .unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("../").join(path))
+    PathBuf::from(&out_dir)
 }
 
 pub fn read_wasm(mode: &ReadWasmMode, path: impl AsRef<Path>) -> Vec<u8> {
