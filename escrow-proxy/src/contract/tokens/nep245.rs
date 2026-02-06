@@ -85,18 +85,25 @@ impl Contract {
                     Self::ext(env::current_account_id())
                         .with_static_gas(MT_RESOLVE_FORWARD_GAS)
                         .with_unused_gas_weight(0)
-                        .resolve_mt_transfer(amounts),
+                        .mt_resolve_forward(amounts),
                 ),
         )
     }
 
     #[private]
-    pub fn resolve_mt_transfer(&self, original_amounts: Vec<U128>) -> Vec<U128> {
-        let used = promise_result_checked_json_with_args::<Vec<U128>>(0, original_amounts.len())
-            .filter(|v| v.len() == original_amounts.len())
-            .unwrap_or(original_amounts.clone());
+    pub fn mt_resolve_forward(&self, amounts: Vec<U128>) -> Vec<U128> {
+        let used = promise_result_checked_json_with_args::<Vec<U128>>(0, amounts.len())
+            // Do not refund on failed `mt_transfer_call`. A known out-of-gas attack
+            // makes it impossible to distinguish whether the failure occurred in
+            // `mt_transfer_call` itself or in `mt_resolve_transfer` — the resolve
+            // function for the `mt_on_transfer` callback. Since `mt_resolve_transfer`
+            // is responsible for managing account balances and vulnerability allows for
+            // opting out from that logic we choose to lock funds on the
+            // proxy account instead of refunding them.
+            .filter(|v| v.len() == amounts.len())
+            .unwrap_or(amounts.clone());
 
-        original_amounts
+        amounts
             .iter()
             .zip(used.iter())
             .map(|(original, transferred)| U128(original.0.saturating_sub(transferred.0)))

@@ -80,14 +80,22 @@ impl Contract {
                     Self::ext(env::current_account_id())
                         .with_static_gas(FT_RESOLVE_FORWARD_GAS)
                         .with_unused_gas_weight(0)
-                        .resolve_ft_transfer(amount),
+                        .ft_resolve_forward(amount),
                 ),
         )
     }
 
     #[private]
-    pub fn resolve_ft_transfer(&self, original_amount: U128) -> U128 {
-        let used = promise_result_checked_json::<U128>(0).unwrap_or(original_amount);
-        U128(original_amount.0.saturating_sub(used.0))
+    pub fn ft_resolve_forward(&self, amount: U128) -> U128 {
+        let used = promise_result_checked_json::<U128>(0)
+            // Do not refund on failed `ft_transfer_call`. A known out-of-gas attack
+            // makes it impossible to distinguish whether the failure occurred in
+            // `ft_transfer_call` itself or in `ft_resolve_transfer` — the resolve
+            // function for the `ft_on_transfer` callback. Since `ft_resolve_transfer`
+            // is responsible for managing account balances and vulnerability allows for
+            // opting out from that logic we choose to lock funds on the
+            // proxy account instead of refunding them.
+            .unwrap_or(amount);
+        U128(amount.0.saturating_sub(used.0))
     }
 }
