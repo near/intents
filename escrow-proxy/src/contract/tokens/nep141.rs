@@ -4,10 +4,11 @@ use defuse_token_id::nep141::Nep141TokenId;
 use near_contract_standards::fungible_token::{core::ext_ft_core, receiver::FungibleTokenReceiver};
 use near_sdk::{AccountId, Gas, NearToken, PromiseOrValue, env, json_types::U128, near};
 
-const FT_RESOLVE_TRANSFER_GAS: Gas = Gas::from_tgas(10);
-const FT_TRANSFER_CALL_GAS: Gas = Gas::from_tgas(50);
-const FT_CHECK_AND_FORWARD_GAS: Gas =
-    Gas::from_tgas(FT_RESOLVE_TRANSFER_GAS.as_tgas() + FT_TRANSFER_CALL_GAS.as_tgas());
+const FT_RESOLVE_FORWARD_GAS: Gas = Gas::from_tgas(5);
+const FT_TRANSFER_CALL_MIN_GAS: Gas = Gas::from_tgas(30);
+const FT_CHECK_AND_FORWARD_MIN_GAS: Gas = Gas::from_tgas(5)
+    .saturating_add(FT_TRANSFER_CALL_MIN_GAS)
+    .saturating_add(FT_RESOLVE_FORWARD_GAS);
 
 use crate::contract::{Contract, ContractExt};
 use crate::message::TransferMessage;
@@ -38,7 +39,7 @@ impl FungibleTokenReceiver for Contract {
                 Self::ext(env::current_account_id())
                     .with_unused_gas_weight(1)
                     //NOTE: forward all gas, make sure that there is enough gas to resolve transfer
-                    .with_static_gas(FT_CHECK_AND_FORWARD_GAS)
+                    .with_static_gas(FT_CHECK_AND_FORWARD_MIN_GAS)
                     .check_authorization_and_forward_ft(
                         token,
                         transfer_message.receiver_id,
@@ -68,7 +69,7 @@ impl Contract {
             ext_ft_core::ext(token)
                 .with_attached_deposit(NearToken::from_yoctonear(1))
                 .with_unused_gas_weight(1)
-                .with_static_gas(FT_TRANSFER_CALL_GAS)
+                .with_static_gas(FT_TRANSFER_CALL_MIN_GAS)
                 .ft_transfer_call(
                     receiver_id,
                     amount,
@@ -77,7 +78,7 @@ impl Contract {
                 )
                 .then(
                     Self::ext(env::current_account_id())
-                        .with_static_gas(FT_RESOLVE_TRANSFER_GAS)
+                        .with_static_gas(FT_RESOLVE_FORWARD_GAS)
                         .with_unused_gas_weight(0)
                         .resolve_ft_transfer(amount),
                 ),

@@ -4,10 +4,11 @@ use defuse_near_utils::{
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
 use near_sdk::{AccountId, Gas, NearToken, PromiseOrValue, env, json_types::U128, near};
 
-const MT_RESOLVE_TRANSFER_GAS: Gas = Gas::from_tgas(10);
-const MT_TRANSFER_CALL_GAS: Gas = Gas::from_tgas(50);
-const MT_CHECK_AND_FORWARD_GAS: Gas =
-    Gas::from_tgas(MT_RESOLVE_TRANSFER_GAS.as_tgas() + MT_TRANSFER_CALL_GAS.as_tgas());
+const MT_RESOLVE_FORWARD_GAS: Gas = Gas::from_tgas(5);
+const MT_TRANSFER_CALL_MIN_GAS: Gas = Gas::from_tgas(30);
+const MT_CHECK_AND_FORWARD_MIN_GAS: Gas = Gas::from_tgas(5)
+    .saturating_add(MT_TRANSFER_CALL_MIN_GAS)
+    .saturating_add(MT_RESOLVE_FORWARD_GAS);
 
 use crate::contract::{Contract, ContractExt};
 use crate::message::TransferMessage;
@@ -39,7 +40,7 @@ impl MultiTokenReceiver for Contract {
                 Self::ext(env::current_account_id())
                     .with_unused_gas_weight(1)
                     //NOTE: forward all gas, make sure that there is enough gas to resolve transfer
-                    .with_static_gas(MT_CHECK_AND_FORWARD_GAS)
+                    .with_static_gas(MT_CHECK_AND_FORWARD_MIN_GAS)
                     .check_authorization_and_forward_mt(
                         token,
                         transfer_message.receiver_id,
@@ -71,7 +72,7 @@ impl Contract {
             ext_mt_core::ext(token)
                 .with_attached_deposit(NearToken::from_yoctonear(1))
                 .with_unused_gas_weight(1)
-                .with_static_gas(MT_TRANSFER_CALL_GAS)
+                .with_static_gas(MT_TRANSFER_CALL_MIN_GAS)
                 .mt_batch_transfer_call(
                     receiver_id,
                     token_ids,
@@ -82,7 +83,7 @@ impl Contract {
                 )
                 .then(
                     Self::ext(env::current_account_id())
-                        .with_static_gas(MT_RESOLVE_TRANSFER_GAS)
+                        .with_static_gas(MT_RESOLVE_FORWARD_GAS)
                         .with_unused_gas_weight(0)
                         .resolve_mt_transfer(amounts),
                 ),
