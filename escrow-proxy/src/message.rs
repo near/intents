@@ -4,7 +4,7 @@ use near_sdk::{AccountId, near, serde_json};
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
-pub struct TransferMessage {
+pub struct ForwardRequest {
     pub receiver_id: AccountId,
     #[serde_as(as = "Option<near_sdk::serde_with::hex::Hex>")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -12,7 +12,7 @@ pub struct TransferMessage {
     pub msg: String,
 }
 
-impl FromStr for TransferMessage {
+impl FromStr for ForwardRequest {
     type Err = serde_json::Error;
 
     #[inline]

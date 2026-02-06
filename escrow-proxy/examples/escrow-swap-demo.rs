@@ -29,7 +29,7 @@ use defuse_core::Deadline;
 use defuse_core::amounts::Amounts;
 use defuse_core::intents::tokens::{NotifyOnTransfer, Transfer};
 use defuse_escrow_proxy::CondVarContext;
-use defuse_escrow_proxy::TransferMessage as ProxyTransferMessage;
+use defuse_escrow_proxy::ForwardRequest as ProxyForwardRequest;
 use defuse_escrow_swap::ContractStorage as EscrowContractStorage;
 use defuse_escrow_swap::Params;
 use defuse_escrow_swap::action::{
@@ -319,7 +319,7 @@ async fn main() -> Result<()> {
                 .receiver_id(taker_signing.id().clone()),
         }),
     };
-    let proxy_msg = ProxyTransferMessage {
+    let proxy_msg = ProxyForwardRequest {
         receiver_id: escrow_instance_id.clone(), // escrow instance id
         salt: rand::rng().random(),
         msg: serde_json::to_string(&escrow_fill_msg).unwrap(),

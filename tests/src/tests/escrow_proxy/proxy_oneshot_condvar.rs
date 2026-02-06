@@ -5,7 +5,7 @@ use crate::env::Env;
 use defuse_core::token_id::TokenId;
 use defuse_core::token_id::nep141::Nep141TokenId;
 use defuse_escrow_proxy::CondVarContext;
-use defuse_escrow_proxy::{ProxyConfig, TransferMessage};
+use defuse_escrow_proxy::{ForwardRequest, ProxyConfig};
 use defuse_oneshot_condvar::storage::{Config as CondVarConfig, ContractStorage};
 use defuse_sandbox::extensions::storage_management::StorageManagementExt;
 use defuse_sandbox::{
@@ -75,7 +75,7 @@ async fn test_proxy_returns_funds_on_timeout_of_authorization() {
         .await
         .unwrap();
 
-    let transfer_msg = TransferMessage {
+    let transfer_msg = ForwardRequest {
         receiver_id: mt_receiver_instance.clone(),
         salt: Some([1u8; 32]),
         msg: String::new(),
@@ -168,7 +168,7 @@ async fn test_transfer_authorized_by_relay() {
 
     let inner_msg_json = serde_json::to_string(&MTReceiverMode::AcceptAll).unwrap();
 
-    let transfer_msg = TransferMessage {
+    let transfer_msg = ForwardRequest {
         receiver_id: escrow_instance_id.clone(),
         salt: Some([2u8; 32]), // Different salt from timeout test
         msg: inner_msg_json,
@@ -309,7 +309,7 @@ async fn test_ft_transfer_authorized_by_relay() {
 
     let inner_msg_json = serde_json::to_string(&FTReceiverMode::AcceptAll).unwrap();
 
-    let transfer_msg = TransferMessage {
+    let transfer_msg = ForwardRequest {
         receiver_id: escrow_instance_id.clone(),
         salt: Some([3u8; 32]), // Different salt from other tests
         msg: inner_msg_json,
@@ -494,7 +494,7 @@ async fn test_proxy_with_ft_transfer() {
         "Escrow should have src tokens"
     );
 
-    let proxy_msg = TransferMessage {
+    let proxy_msg = ForwardRequest {
         receiver_id: escrow_instance_id.clone(),
         salt: Some([4u8; 32]),
         msg: serde_json::to_string(&fill_escrow_msg).unwrap(),

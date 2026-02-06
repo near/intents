@@ -18,7 +18,7 @@ use defuse_core::intents::tokens::{NotifyOnTransfer, Transfer};
 use defuse_core::token_id::TokenId;
 use defuse_core::token_id::nep245::Nep245TokenId;
 use defuse_escrow_proxy::CondVarContext;
-use defuse_escrow_proxy::{ProxyConfig, TransferMessage as ProxyTransferMessage};
+use defuse_escrow_proxy::{ForwardRequest as ProxyForwardRequest, ProxyConfig};
 use defuse_escrow_swap::action::{FillAction, TransferAction, TransferMessage};
 use defuse_escrow_swap::decimal::UD128;
 use defuse_escrow_swap::{OverrideSend, Pips, ProtocolFees};
@@ -129,7 +129,7 @@ async fn test_proxy_fill_gas_benchmark() {
         .await
         .unwrap();
 
-    let proxy_msg = ProxyTransferMessage {
+    let proxy_msg = ProxyForwardRequest {
         receiver_id: escrow_instance_id.clone(),
         salt: Some([2u8; 32]),
         msg: serde_json::to_string(&fill_escrow_msg).unwrap(),

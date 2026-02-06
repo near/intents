@@ -11,7 +11,7 @@ const MT_CHECK_AND_FORWARD_MIN_GAS: Gas = Gas::from_tgas(5)
     .saturating_add(MT_RESOLVE_FORWARD_GAS);
 
 use crate::contract::{Contract, ContractExt};
-use crate::message::TransferMessage;
+use crate::message::ForwardRequest;
 
 #[near]
 impl MultiTokenReceiver for Contract {
@@ -26,14 +26,14 @@ impl MultiTokenReceiver for Contract {
     ) -> PromiseOrValue<Vec<U128>> {
         let _ = previous_owner_ids;
         let token = env::predecessor_account_id();
-        let transfer_message: TransferMessage = msg.parse().unwrap_or_panic_display();
+        let forward_request: ForwardRequest = msg.parse().unwrap_or_panic_display();
 
         PromiseOrValue::Promise(
             self.wait_for_authorization(
                 &sender_id,
                 &token_ids,
                 &amounts,
-                transfer_message.salt.unwrap_or_default(),
+                forward_request.salt.unwrap_or_default(),
                 &msg,
             )
             .then(
@@ -43,10 +43,10 @@ impl MultiTokenReceiver for Contract {
                     .with_unused_gas_weight(1)
                     .check_authorization_and_forward_mt(
                         token,
-                        transfer_message.receiver_id,
+                        forward_request.receiver_id,
                         token_ids,
                         amounts,
-                        transfer_message.msg,
+                        forward_request.msg,
                     ),
             ),
         )

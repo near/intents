@@ -20,7 +20,7 @@ use defuse_core::intents::tokens::{NotifyOnTransfer, Transfer};
 use defuse_core::token_id::TokenId;
 use defuse_core::token_id::nep245::Nep245TokenId;
 use defuse_escrow_proxy::CondVarContext;
-use defuse_escrow_proxy::{ProxyConfig, TransferMessage as ProxyTransferMessage};
+use defuse_escrow_proxy::{ForwardRequest as ProxyForwardRequest, ProxyConfig};
 use defuse_oneshot_condvar::storage::{Config as CondVarConfig, ContractStorage as CondVarStorage};
 use defuse_sandbox::{EscrowProxyExt, EscrowSwapExt, MtExt, MtViewExt, OneshotCondVarExt};
 use near_sdk::serde_json;
@@ -108,7 +108,7 @@ async fn test_escrow_swap_with_proxy_full_flow() {
         .await
         .unwrap();
 
-    let proxy_msg = ProxyTransferMessage {
+    let proxy_msg = ProxyForwardRequest {
         receiver_id: escrow_instance_id.clone(),
         salt: Some([2u8; 32]),
         msg: serde_json::to_string(&fill_escrow_msg).unwrap(),

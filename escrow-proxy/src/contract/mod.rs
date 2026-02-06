@@ -10,7 +10,7 @@ use near_sdk::{
 };
 
 use crate::EscrowProxy;
-use crate::message::TransferMessage;
+use crate::message::ForwardRequest;
 use crate::state::{ContractStorage, ProxyConfig};
 
 #[near(contract_state(key = ContractStorage::STATE_KEY))]
@@ -62,12 +62,12 @@ impl EscrowProxy for Contract {
         msg: String,
     ) -> AccountId {
         use std::borrow::Cow;
-        let transfer_message: TransferMessage = msg.parse().unwrap_or_panic_display();
+        let forward_request: ForwardRequest = msg.parse().unwrap_or_panic_display();
         let context_hash = CondVarContext {
             sender_id: Cow::Owned(taker_id),
             token_ids: Cow::Owned(token_ids),
             amounts: Cow::Owned(amounts),
-            salt: transfer_message.salt.unwrap_or_default(),
+            salt: forward_request.salt.unwrap_or_default(),
             msg: Cow::Borrowed(&msg),
         }
         .hash();
