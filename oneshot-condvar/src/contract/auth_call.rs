@@ -9,7 +9,6 @@ const ERR_WRONG_AUTH_CALLER: &str = "unauthorized on_auth_caller";
 
 #[near]
 impl AuthCallee for Contract {
-    #[payable]
     fn on_auth(&mut self, signer_id: AccountId, msg: String) -> PromiseOrValue<()> {
         require!(msg.is_empty(), ERR_MSG_NOT_EMPTY);
 

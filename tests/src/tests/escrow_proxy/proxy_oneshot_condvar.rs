@@ -221,7 +221,6 @@ async fn test_transfer_authorized_by_relay() {
                             "msg": "",
                         }))
                         .with_gas(Gas::from_tgas(50))
-                        .with_deposit(NearToken::from_yoctonear(1)),
                 )
                 .await
                 .unwrap();
@@ -361,7 +360,6 @@ async fn test_ft_transfer_authorized_by_relay() {
                             "msg": "",
                         }))
                         .with_gas(Gas::from_tgas(50))
-                        .with_deposit(NearToken::from_yoctonear(1)),
                 )
                 .await
                 .unwrap();
@@ -538,7 +536,6 @@ async fn test_proxy_with_ft_transfer() {
                             "msg": "",
                         }))
                         .with_gas(Gas::from_tgas(50))
-                        .with_deposit(NearToken::from_yoctonear(1)),
                 )
                 .await
                 .unwrap();
