@@ -215,6 +215,15 @@ impl SigningAccount {
         ))
     }
 
+    pub async fn deploy_global_contract(
+        &self,
+        code: impl Into<Vec<u8>>,
+        mode: GlobalContractDeployMode,
+    ) -> anyhow::Result<()> {
+        self.tx(self.id()).deploy_global(code, mode).await?;
+        Ok(())
+    }
+
     pub async fn deploy_sub_contract_use_global(
         &self,
         name: impl AsRef<str>,
