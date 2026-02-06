@@ -489,6 +489,56 @@ where
 
 pub struct Or<T1: ?Sized, T2: ?Sized>(PhantomData<T1>, PhantomData<T2>);
 
+/// Reads/writes all remaining bytes without a length prefix.
+///
+/// Useful for fields that should consume the remainder of the input.
+///
+/// # Example
+/// ```
+/// use defuse_borsh_utils::adapters::{As, Remainder};
+/// use near_sdk::borsh::{BorshSerialize, BorshDeserialize};
+/// #[derive(BorshSerialize, BorshDeserialize)]
+/// #[borsh(crate = "::near_sdk::borsh")]
+/// struct S {
+///     #[borsh(
+///         serialize_with = "As::<Remainder>::serialize",
+///         deserialize_with = "As::<Remainder>::deserialize"
+///     )]
+///     pub data: Vec<u8>,
+/// }
+/// ```
+pub struct Remainder;
+
+impl<T> BorshSerializeAs<T> for Remainder
+where
+    T: AsRef<[u8]>,
+{
+    #[inline]
+    fn serialize_as<W>(source: &T, writer: &mut W) -> io::Result<()>
+    where
+        W: io::Write,
+    {
+        writer.write_all(source.as_ref())
+    }
+}
+
+impl<T> BorshDeserializeAs<T> for Remainder
+where
+    T: TryFrom<Vec<u8>>,
+    T::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
+{
+    #[inline]
+    fn deserialize_as<R>(reader: &mut R) -> io::Result<T>
+    where
+        R: io::Read,
+    {
+        let mut buf = Vec::new();
+        reader.read_to_end(&mut buf)?;
+        buf.try_into()
+            .map_err(|err: T::Error| io::Error::new(io::ErrorKind::InvalidData, err))
+    }
+}
+
 impl<T, As1, As2> BorshDeserializeAs<T> for Or<As1, As2>
 where
     As1: BorshDeserializeAs<T> + ?Sized,
