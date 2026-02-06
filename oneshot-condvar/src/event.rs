@@ -6,7 +6,7 @@ use near_sdk::near;
 pub enum Event {
     /// Emitted when the notifier successfully authorizes the contract.
     #[event_version("1.0.0")]
-    Authorized,
+    Notified,
     /// Emitted when the yield promise times out.
     #[event_version("1.0.0")]
     Timeout,

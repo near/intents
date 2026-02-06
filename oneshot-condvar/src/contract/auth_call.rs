@@ -18,7 +18,7 @@ impl AuthCallee for Contract {
             env::predecessor_account_id() == state.config.on_auth_caller,
             ERR_WRONG_ON_AUTH_CALLER
         );
-        Self::verify_caller_and_authorize_contract(&signer_id, state);
+        Self::verify_caller_and_notify_contract(&signer_id, state);
         PromiseOrValue::Value(())
     }
 }

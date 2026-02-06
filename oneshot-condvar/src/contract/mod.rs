@@ -11,7 +11,8 @@ use crate::{
     storage::{ContractStorage, State, Status},
 };
 
-const ERR_UNAUTHORIZED_CALLER: &str = "unauthorized caller";
+const ERR_UNAUTHORIZED_NOTIFIER_ID: &str = "unauthorized notifier_id";
+const ERR_UNAUTHORIZED_AUTHORIZEE: &str = "unauthorized authorizee";
 
 #[near(contract_state(key = ContractStorage::STATE_KEY))]
 #[derive(Debug, PanicOnDefault)]
@@ -39,13 +40,13 @@ impl Contract {
         state.state = match state.state {
             // The yield promise timed out while we were waiting for a notification.
             // Reset to Idle state so the caller can retry cv_wait() if desired.
-            // This is the normal timeout path when no authorization arrives in time.
+            // This is the normal timeout path when no notification arrives in time.
             Status::WaitingForNotification(_yield_id) => {
                 Event::Timeout.emit();
                 Status::Idle
             }
-            // Authorization arrived before or (in corner case) after timeout
-            // in either case we want to transition from Authorized to Done
+            // Notification arrived before or (in corner case) after timeout
+            // in either case we want to transition from Notification to Done
             Status::Notified => Status::Done,
             // This callback is only scheduled by Promise::new_yield in cv_wait(),
             // which transitions state to WaitingForNotification. We should never
@@ -58,18 +59,18 @@ impl Contract {
 }
 
 impl Contract {
-    pub(crate) fn verify_caller_and_authorize_contract(
+    pub(crate) fn verify_caller_and_notify_contract(
         caller: &near_sdk::AccountId,
         state: &mut State,
     ) {
-        require!(*caller == state.config.notifier_id, ERR_UNAUTHORIZED_CALLER);
+        require!(*caller == state.config.notifier_id, ERR_UNAUTHORIZED_NOTIFIER_ID);
 
         state.state = match state.state {
             Status::Idle => Status::Notified,
             Status::WaitingForNotification(yield_id) => {
                 let _ = yield_id.resume(&[]);
-                // set state to authorized despite the status of yield resume.
-                // in both cases we want to keep the state machine in Authorized state
+                // set state to notified despite the status of yield resume.
+                // in both cases we want to keep the state machine in Notified state
                 // - if yield succeeded - state will be changed to Done in callback
                 // - if yield failed (timeout) - state will be changed to done on next `cv_wait`
                 // call
@@ -80,7 +81,7 @@ impl Contract {
             }
         };
 
-        Event::Authorized.emit();
+        Event::Notified.emit();
     }
 }
 
@@ -106,7 +107,7 @@ impl OneshotCondVar for Contract {
 
         require!(
             env::predecessor_account_id() == state.config.authorizee,
-            "Unauthorized authorizee"
+            ERR_UNAUTHORIZED_AUTHORIZEE
         );
 
         match state.state {
@@ -134,6 +135,6 @@ impl OneshotCondVar for Contract {
     fn cv_notify_one(&mut self) {
         let mut guard = self.cleanup_guard();
         let state = guard.try_as_alive_mut().unwrap_or_panic_display();
-        Self::verify_caller_and_authorize_contract(&env::predecessor_account_id(), state);
+        Self::verify_caller_and_notify_contract(&env::predecessor_account_id(), state);
     }
 }

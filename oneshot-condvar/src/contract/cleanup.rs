@@ -15,11 +15,6 @@ pub struct CleanupGuard<'a>(&'a mut ContractStorage);
 
 impl<'a> CleanupGuard<'a> {
     #[inline]
-    pub const fn as_alive(&self) -> Option<&State> {
-        self.0.0.as_ref()
-    }
-
-    #[inline]
     pub const fn as_alive_mut(&mut self) -> Option<&mut State> {
         self.0.0.as_mut()
     }
