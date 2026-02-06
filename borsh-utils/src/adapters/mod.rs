@@ -17,6 +17,11 @@ mod chrono;
 #[cfg(feature = "chrono")]
 pub use self::chrono::*;
 
+#[cfg(feature = "schema")]
+mod schema;
+#[cfg(feature = "schema")]
+pub use self::schema::*;
+
 pub trait BorshSerializeAs<T: ?Sized> {
     fn serialize_as<W>(source: &T, writer: &mut W) -> io::Result<()>
     where

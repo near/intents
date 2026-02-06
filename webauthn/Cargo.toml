@@ -13,5 +13,6 @@ defuse-crypto = { workspace = true, features = ["serde"] }
 defuse-serde-utils.workspace = true
 
 near-sdk.workspace = true
-serde_with.workspace = true
 
+[features]
+abi = ["defuse-crypto/abi", "defuse-serde-utils/abi"]

@@ -23,6 +23,7 @@ dependencies = [
     "add-cache-dir-tag",
     "build-defuse",
     "build-escrow-swap",
+    "build-wallet",
     "build-poa-factory",
     "build-poa-token-no-registration",
     "contract-stats",
@@ -58,6 +59,24 @@ args = [
     "./escrow-swap/Cargo.toml",
     "--features",
     "abi,contract",
+    "--out-dir",
+    "${TARGET_DIR}",
+    "--no-embed-abi",
+]
+
+[tasks.build-wallet]
+dependencies = ["add-cache-dir-tag"]
+command = "cargo"
+args = [
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--locked",
+    "--manifest-path",
+    "./wallet/Cargo.toml",
+    "--no-default-features",
+    "--features",
+    "abi,contract,webauthn",
     "--out-dir",
     "${TARGET_DIR}",
     "--no-embed-abi",

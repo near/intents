@@ -1,3 +1,6 @@
+#[cfg(feature = "ed25519")]
+pub mod ed25519;
+
 use core::{
     fmt::{self, Debug, Display},
     str::FromStr,
@@ -5,9 +8,7 @@ use core::{
 
 use near_sdk::{AccountId, AccountIdRef, bs58, env, near};
 
-use crate::{
-    Curve, CurveType, Ed25519, P256, ParseCurveError, Secp256k1, parse::checked_base58_decode_array,
-};
+use crate::{Curve, CurveType, ParseCurveError, parse::checked_base58_decode_array};
 
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh(use_discriminant = true)])]
@@ -18,17 +19,23 @@ use crate::{
 )]
 #[repr(u8)]
 pub enum PublicKey {
-    Ed25519(<Ed25519 as Curve>::PublicKey) = 0,
-    Secp256k1(<Secp256k1 as Curve>::PublicKey) = 1,
-    P256(<P256 as Curve>::PublicKey) = 2,
+    #[cfg(feature = "ed25519")]
+    Ed25519(<crate::Ed25519 as Curve>::PublicKey) = 0,
+    #[cfg(feature = "secp256k1")]
+    Secp256k1(<crate::Secp256k1 as Curve>::PublicKey) = 1,
+    #[cfg(feature = "p256")]
+    P256(<crate::P256 as Curve>::PublicKey) = 2,
 }
 
 impl PublicKey {
     #[inline]
     pub const fn curve_type(&self) -> CurveType {
         match self {
+            #[cfg(feature = "ed25519")]
             Self::Ed25519(_) => CurveType::Ed25519,
+            #[cfg(feature = "secp256k1")]
             Self::Secp256k1(_) => CurveType::Secp256k1,
+            #[cfg(feature = "p256")]
             Self::P256(_) => CurveType::P256,
         }
     }
@@ -37,8 +44,11 @@ impl PublicKey {
     const fn data(&self) -> &[u8] {
         #[allow(clippy::match_same_arms)]
         match self {
+            #[cfg(feature = "ed25519")]
             Self::Ed25519(data) => data,
+            #[cfg(feature = "secp256k1")]
             Self::Secp256k1(data) => data,
+            #[cfg(feature = "p256")]
             Self::P256(data) => data,
         }
     }
@@ -46,14 +56,17 @@ impl PublicKey {
     #[inline]
     pub fn to_implicit_account_id(&self) -> AccountId {
         match self {
+            #[cfg(feature = "ed25519")]
             Self::Ed25519(pk) => {
                 // https://docs.near.org/concepts/protocol/account-id#implicit-address
                 hex::encode(pk)
             }
+            #[cfg(feature = "secp256k1")]
             Self::Secp256k1(pk) => {
                 // https://ethereum.org/en/developers/docs/accounts/#account-creation
                 format!("0x{}", hex::encode(&env::keccak256_array(pk)[12..32]))
             }
+            #[cfg(feature = "p256")]
             Self::P256(pk) => {
                 // In order to keep compatibility with all existing standards
                 // within Near ecosystem (e.g. NEP-245), we need our implicit
@@ -78,6 +91,7 @@ impl PublicKey {
         .unwrap_or_else(|_| unreachable!())
     }
 
+    #[cfg(feature = "ed25519")]
     #[inline]
     pub fn from_implicit_account_id(account_id: &AccountIdRef) -> Option<Self> {
         let mut pk = [0; 32];
@@ -120,8 +134,11 @@ impl FromStr for PublicKey {
         };
 
         match curve {
+            #[cfg(feature = "ed25519")]
             CurveType::Ed25519 => checked_base58_decode_array(data).map(Self::Ed25519),
+            #[cfg(feature = "secp256k1")]
             CurveType::Secp256k1 => checked_base58_decode_array(data).map(Self::Secp256k1),
+            #[cfg(feature = "p256")]
             CurveType::P256 => checked_base58_decode_array(data).map(Self::P256),
         }
     }
@@ -156,10 +173,15 @@ const _: () = {
                     .collect(),
                 metadata: Some(
                     Metadata {
-                        examples: [Self::example_ed25519(), Self::example_secp256k1()]
-                            .map(serde_json::to_value)
-                            .map(Result::unwrap)
-                            .into(),
+                        examples: [
+                            #[cfg(feature = "ed25519")]
+                            Self::example_ed25519(),
+                            #[cfg(feature = "secp256k1")]
+                            Self::example_secp256k1(),
+                        ]
+                        .map(serde_json::to_value)
+                        .map(Result::unwrap)
+                        .into(),
                         ..Default::default()
                     }
                     .into(),
@@ -171,12 +193,14 @@ const _: () = {
     }
 
     impl PublicKey {
+        #[cfg(feature = "ed25519")]
         pub(super) fn example_ed25519() -> Self {
             "ed25519:5TagutioHgKLh7KZ1VEFBYfgRkPtqnKm9LoMnJMJugxm"
                 .parse()
                 .unwrap()
         }
 
+        #[cfg(feature = "secp256k1")]
         pub(super) fn example_secp256k1() -> Self {
             "secp256k1:3aMVMxsoAnHUbweXMtdKaN1uJaNwsfKv7wnc97SDGjXhyK62VyJwhPUPLZefKVthcoUcuWK6cqkSU4M542ipNxS3"
                 .parse()
@@ -194,7 +218,9 @@ const _: () = {
     impl From<NearPublicKey> for PublicKey {
         fn from(pk: NearPublicKey) -> Self {
             match pk {
+                #[cfg(feature = "ed25519")]
                 NearPublicKey::ED25519(pk) => pk.into(),
+                #[cfg(feature = "secp256k1")]
                 NearPublicKey::SECP256K1(pk) => pk.into(),
             }
         }

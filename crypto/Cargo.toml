@@ -6,22 +6,31 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-ed25519-dalek.workspace = true
-generic-array = { workspace = true, features = ["compat-0_14"] }
 hex.workspace = true
 near-sdk = { workspace = true, features = ["unstable"] }
-p256.workspace = true
 strum.workspace = true
 thiserror.workspace = true
+
+ed25519-dalek = { workspace = true, optional = true }
+p256 = { workspace = true, optional = true }
+generic-array = { workspace = true, features = [
+    "compat-0_14",
+], optional = true }
 
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 near-api-types = { workspace = true, optional = true }
 serde_with = { workspace = true, optional = true }
 
 [features]
+default = ["ed25519", "secp256k1", "p256"]
+
+ed25519 = ["dep:ed25519-dalek"]
+secp256k1 = []
+p256 = ["dep:p256", "dep:generic-array"]
+
 abi = ["serde", "serde_with/schemars_0_8"]
 arbitrary = ["dep:arbitrary"]
-near-api-types = ["dep:near-api-types"]
+near-api-types = ["dep:near-api-types", "ed25519", "secp256k1"]
 serde = ["dep:serde_with"]
 
 [lints]

@@ -1,0 +1,41 @@
+[package]
+name = "defuse-wallet"
+edition.workspace = true
+version = "0.1.0"
+rust-version.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+defuse-borsh-utils.workspace = true
+defuse-deadline.workspace = true
+
+near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
+thiserror.workspace = true
+
+defuse-webauthn = { workspace = true, optional = true }
+
+
+[features]
+default = ["webauthn"]
+
+abi = ["defuse-deadline/abi", "defuse-webauthn?/abi"]
+contract = []
+
+webauthn = ["dep:defuse-webauthn"]
+
+[dev-dependencies]
+defuse-tests.workspace = true
+
+impl-tools.workspace = true
+near-sdk = { workspace = true, features = [
+    "deterministic-account-ids",
+    "unit-testing",
+] }
+rstest.workspace = true
+tokio = { workspace = true, features = ["macros"] }

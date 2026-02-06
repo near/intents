@@ -147,6 +147,76 @@ where
     }
 }
 
+#[cfg(feature = "schema")]
+const _: () = {
+    use near_sdk::borsh::{
+        BorshSchema,
+        schema::{Declaration, Definition},
+    };
+
+    use crate::adapters::schema::BorshSchemaAs;
+
+    impl<I> BorshSchemaAs<DateTime<Utc>> for TimestampSeconds<I>
+    where
+        I: BorshSchema,
+    {
+        fn add_definitions_recursively_as(
+            definitions: &mut std::collections::BTreeMap<Declaration, Definition>,
+        ) {
+            I::add_definitions_recursively(definitions)
+        }
+
+        fn declaration_as() -> Declaration {
+            I::declaration()
+        }
+    }
+
+    impl<I> BorshSchemaAs<DateTime<Utc>> for TimestampMilliSeconds<I>
+    where
+        I: BorshSchema,
+    {
+        fn add_definitions_recursively_as(
+            definitions: &mut std::collections::BTreeMap<Declaration, Definition>,
+        ) {
+            I::add_definitions_recursively(definitions)
+        }
+
+        fn declaration_as() -> Declaration {
+            I::declaration()
+        }
+    }
+
+    impl<I> BorshSchemaAs<DateTime<Utc>> for TimestampMicroSeconds<I>
+    where
+        I: BorshSchema,
+    {
+        fn add_definitions_recursively_as(
+            definitions: &mut std::collections::BTreeMap<Declaration, Definition>,
+        ) {
+            I::add_definitions_recursively(definitions)
+        }
+
+        fn declaration_as() -> Declaration {
+            I::declaration()
+        }
+    }
+
+    impl<I> BorshSchemaAs<DateTime<Utc>> for TimestampNanoSeconds<I>
+    where
+        I: BorshSchema,
+    {
+        fn add_definitions_recursively_as(
+            definitions: &mut std::collections::BTreeMap<Declaration, Definition>,
+        ) {
+            I::add_definitions_recursively(definitions)
+        }
+
+        fn declaration_as() -> Declaration {
+            I::declaration()
+        }
+    }
+};
+
 #[cfg(test)]
 mod tests {
     use crate::adapters::tests::roundtrip_as;

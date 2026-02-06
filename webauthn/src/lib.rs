@@ -1,22 +1,39 @@
 use defuse_crypto::{Curve, Ed25519, P256, PublicKey, serde::AsCurve};
 use defuse_serde_utils::base64::{Base64, Unpadded, UrlSafe};
-use near_sdk::{env, near, serde_json};
-use serde_with::serde_as;
+use near_sdk::{
+    env, near,
+    serde::{Serialize, de::DeserializeOwned},
+    serde_json,
+};
 
-#[near(serializers = [json])]
+// TODO: field ordering (borsh)
+#[near(serializers = [borsh, json])]
+#[serde(bound(
+    serialize = "<A as Algorithm>::Signature: Serialize",
+    deserialize = "<A as Algorithm>::Signature: DeserializeOwned",
+))]
 #[derive(Debug, Clone)]
-pub struct PayloadSignature {
+pub struct PayloadSignature<A: Algorithm = Any> {
     /// Base64Url-encoded [authenticatorData](https://w3c.github.io/webauthn/#authenticator-data)
+    #[cfg_attr(
+        all(feature = "abi", not(target_arch = "wasm32")),
+        schemars(with = "String")
+    )]
     #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
     pub authenticator_data: Vec<u8>,
     /// Serialized [clientDataJSON](https://w3c.github.io/webauthn/#dom-authenticatorresponse-clientdatajson)
     pub client_data_json: String,
 
-    #[serde(flatten)]
-    pub signature: Signature,
+    #[cfg_attr(
+        all(feature = "abi", not(target_arch = "wasm32")),
+        schemars(with = "String"),
+        borsh(schema(params = "A => <A as Algorithm>::Signature"))
+    )]
+    // TODO: serde_as?
+    pub signature: A::Signature,
 }
 
-impl PayloadSignature {
+impl<A: Algorithm> PayloadSignature<A> {
     /// <https://w3c.github.io/webauthn/#sctn-verifying-assertion>
     ///
     /// Credits to:
@@ -25,19 +42,22 @@ impl PayloadSignature {
     pub fn verify(
         &self,
         message: impl AsRef<[u8]>,
+        public_key: &A::PublicKey,
         require_user_verification: bool,
-    ) -> Option<PublicKey> {
+    ) -> bool {
         // verify authData flags
         if self.authenticator_data.len() < 37
             || !Self::verify_flags(self.authenticator_data[32], require_user_verification)
         {
-            return None;
+            return false;
         }
 
         // 10. Verify that the value of C.type is the string webauthn.get.
-        let c: CollectedClientData = serde_json::from_str(&self.client_data_json).ok()?;
+        let Ok(c) = serde_json::from_str::<CollectedClientData>(&self.client_data_json) else {
+            return false;
+        };
         if c.typ != ClientDataType::Get {
-            return None;
+            return false;
         }
 
         // 11. Verify that the value of C.challenge equals the base64url
@@ -45,7 +65,7 @@ impl PayloadSignature {
         //
         // In our case, challenge is a hash of the payload
         if c.challenge != message.as_ref() {
-            return None;
+            return false;
         }
 
         // 20. Let hash be the result of computing a hash over the cData using
@@ -54,8 +74,11 @@ impl PayloadSignature {
 
         // 21. Using credentialRecord.publicKey, verify that sig is a valid
         // signature over the binary concatenation of authData and hash.
-        self.signature
-            .verify(&[self.authenticator_data.as_slice(), hash.as_slice()].concat())
+        A::verify(
+            &[self.authenticator_data.as_slice(), hash.as_slice()].concat(),
+            public_key,
+            &self.signature,
+        )
     }
 
     #[allow(clippy::identity_op)]
@@ -123,41 +146,91 @@ pub enum ClientDataType {
 pub enum Signature {
     /// [COSE EdDSA (-8) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
     /// ed25519 curve
-    Ed25519 {
-        #[serde_as(as = "AsCurve<Ed25519>")]
-        public_key: <Ed25519 as Curve>::PublicKey,
-        #[serde_as(as = "AsCurve<Ed25519>")]
-        signature: <Ed25519 as Curve>::Signature,
-    },
+    Ed25519(#[serde_as(as = "AsCurve<Ed25519>")] <Ed25519 as Curve>::Signature),
     /// [COSE ES256 (-7) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms): NIST P-256 curve (a.k.a secp256r1) over SHA-256
-    P256 {
-        #[serde_as(as = "AsCurve<P256>")]
-        public_key: <P256 as Curve>::PublicKey,
-        #[serde_as(as = "AsCurve<P256>")]
-        signature: <P256 as Curve>::Signature,
-    },
+    P256(#[serde_as(as = "AsCurve<P256>")] <P256 as Curve>::Signature),
 }
 
-impl Signature {
+// impl Signature {
+//     #[inline]
+//     pub fn verify(&self, message: &[u8], public_key: &PublicKey) -> bool {
+//         match (self, public_key) {
+//             // [COSE EdDSA (-8) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
+//             // ed25519 curve
+//             (Self::Ed25519(signature), PublicKey::Ed25519(public_key)) => {
+//                 Ed25519::verify(signature, message, public_key).is_some()
+//             }
+//             // [COSE ES256 (-7) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
+//             // P256 (a.k.a secp256r1) over SHA-256
+//             (Self::P256(signature), PublicKey::P256(public_key)) => {
+//                 // Use host impl of SHA-256 here to reduce gas consumption
+//                 let prehashed = env::sha256_array(message);
+//                 P256::verify(signature, &prehashed, public_key).is_some()
+//             }
+//             _ => false,
+//         }
+//     }
+// }
+
+/// https://www.iana.org/assignments/cose/cose.xhtml#algorithms
+pub trait Algorithm {
+    type PublicKey;
+    type Signature;
+
+    fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool;
+}
+
+/// [COSE EdDSA (-8) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
+/// ed25519 curve
+#[derive(Debug, Clone)]
+pub struct EdDSA;
+
+impl Algorithm for EdDSA {
+    type PublicKey = <Ed25519 as Curve>::PublicKey;
+    type Signature = <Ed25519 as Curve>::Signature;
+
     #[inline]
-    pub fn verify(&self, message: &[u8]) -> Option<PublicKey> {
-        match self {
-            // [COSE EdDSA (-8) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
-            // ed25519 curve
-            Self::Ed25519 {
-                public_key,
-                signature,
-            } => Ed25519::verify(signature, message, public_key).map(PublicKey::Ed25519),
-            // [COSE ES256 (-7) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
-            // P256 (a.k.a secp256r1) over SHA-256
-            Self::P256 {
-                public_key,
-                signature,
-            } => {
-                // Use host impl of SHA-256 here to reduce gas consumption
-                let prehashed = env::sha256_array(message);
-                P256::verify(signature, &prehashed, public_key).map(PublicKey::P256)
+    fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool {
+        Ed25519::verify(signature, msg, public_key).is_some()
+    }
+}
+
+/// [COSE ES256 (-7) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
+/// P256 (a.k.a secp256r1) over SHA-256
+pub struct ES256;
+
+impl Algorithm for ES256 {
+    type PublicKey = <P256 as Curve>::PublicKey;
+    type Signature = <P256 as Curve>::Signature;
+
+    #[inline]
+    fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool {
+        // Use host impl of SHA-256 here to reduce gas consumption
+        let prehashed = env::sha256_array(msg);
+        P256::verify(signature, &prehashed, public_key).is_some()
+    }
+}
+
+// TODO: rename
+#[derive(Debug, Clone)]
+pub struct Any;
+
+impl Algorithm for Any {
+    type PublicKey = PublicKey;
+
+    type Signature = Signature;
+
+    #[inline]
+    fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool {
+        match (public_key, signature) {
+            (PublicKey::Ed25519(public_key), Signature::Ed25519(signature)) => {
+                EdDSA::verify(msg, public_key, signature)
             }
+
+            (PublicKey::P256(public_key), Signature::P256(signature)) => {
+                ES256::verify(msg, public_key, signature)
+            }
+            _ => false,
         }
     }
 }

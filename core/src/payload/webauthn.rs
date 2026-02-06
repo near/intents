@@ -8,6 +8,7 @@ use super::{DefusePayload, ExtractDefusePayload};
 #[derive(Debug, Clone)]
 pub struct SignedWebAuthnPayload {
     pub payload: String,
+    pub public_key: PublicKey,
     #[serde(flatten)]
     pub signature: PayloadSignature,
 }
@@ -24,7 +25,10 @@ impl SignedPayload for SignedWebAuthnPayload {
 
     #[inline]
     fn verify(&self) -> Option<Self::PublicKey> {
-        self.signature.verify(self.hash(), false)
+        self.signature
+            .verify(self.hash(), &self.public_key, false)
+            .then_some(&self.public_key)
+            .copied()
     }
 }
 

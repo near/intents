@@ -337,6 +337,7 @@ impl State for Contract {
                                 .and_then(|g| g.checked_add(auth_call.min_gas()))
                                 .ok_or(DefuseError::GasOverflow)?,
                         )
+                        .with_unused_gas_weight(0)
                         .do_auth_call(signer_id.to_owned(), auth_call),
                 )
         }

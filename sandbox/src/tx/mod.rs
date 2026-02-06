@@ -6,7 +6,8 @@ use near_api::{
         transaction::{
             actions::{
                 AddKeyAction, CreateAccountAction, DeployContractAction,
-                DeployGlobalContractAction, FunctionCallAction, GlobalContractDeployMode,
+                DeployGlobalContractAction, DeterministicAccountStateInit,
+                DeterministicStateInitAction, FunctionCallAction, GlobalContractDeployMode,
                 GlobalContractIdentifier, TransferAction, UseGlobalContractAction,
             },
             result::{ExecutionFinalResult, ExecutionSuccess},
@@ -38,6 +39,17 @@ impl TxBuilder {
             receiver_id: receiver_id.into(),
             actions: Vec::new(),
         }
+    }
+
+    #[must_use]
+    pub fn state_init(self, state_init: DeterministicAccountStateInit, deposit: NearToken) -> Self {
+        self.add_action(Action::DeterministicStateInit(
+            DeterministicStateInitAction {
+                state_init,
+                deposit,
+            }
+            .into(),
+        ))
     }
 
     #[must_use]

@@ -1,10 +1,19 @@
+#[cfg(feature = "ed25519")]
 mod ed25519;
-mod p256;
+#[cfg(feature = "ed25519")]
+pub use self::ed25519::*;
+
+#[cfg(feature = "secp256k1")]
 mod secp256k1;
+#[cfg(feature = "secp256k1")]
+pub use self::secp256k1::*;
+
+#[cfg(feature = "p256")]
+mod p256;
+#[cfg(feature = "p256")]
+pub use self::p256::*;
 
 use crate::{ParseCurveError, parse::checked_base58_decode_array};
-
-pub use self::{ed25519::*, p256::*, secp256k1::*};
 
 use near_sdk::bs58;
 use strum::{Display, EnumString, IntoStaticStr};
@@ -30,8 +39,11 @@ pub trait Curve {
 #[strum(serialize_all = "snake_case", ascii_case_insensitive)]
 #[repr(u8)]
 pub enum CurveType {
+    #[cfg(feature = "ed25519")]
     Ed25519 = 0,
+    #[cfg(feature = "secp256k1")]
     Secp256k1 = 1,
+    #[cfg(feature = "p256")]
     P256 = 2,
 }
 
