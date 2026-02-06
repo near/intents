@@ -65,10 +65,6 @@ impl ContractStorage {
 
     pub fn init_state(config: Config) -> Result<BTreeMap<Vec<u8>, Vec<u8>>, Error> {
         let storage = Self::init(config);
-        Ok([(
-            Self::STATE_KEY.to_vec(),
-            borsh::to_vec(&storage).map_err(Error::Borsh)?,
-        )]
-        .into())
+        Ok([(Self::STATE_KEY.to_vec(), borsh::to_vec(&storage)?)].into())
     }
 }
