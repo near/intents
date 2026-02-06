@@ -12,11 +12,12 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [dependencies]
-defuse-escrow-swap = { workspace = true, optional = true }
 defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
-defuse-token-id = { workspace = true, optional=true }
 defuse-oneshot-condvar = { workspace = true }
+
+defuse-escrow-swap = { workspace = true, optional = true }
+defuse-token-id = { workspace = true, optional=true }
 
 near-contract-standards.workspace = true
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
@@ -24,7 +25,6 @@ serde_with = { workspace = true, features = ["hex"] }
 thiserror.workspace = true
 
 [dev-dependencies]
-# Dependencies needed for examples only
 defuse = { workspace = true, features = ["sandbox"] }
 defuse-core.workspace = true
 defuse-crypto.workspace = true
