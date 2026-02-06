@@ -38,9 +38,9 @@ impl MultiTokenReceiver for Contract {
             )
             .then(
                 Self::ext(env::current_account_id())
-                    .with_unused_gas_weight(1)
                     //NOTE: forward all gas, make sure that there is enough gas to resolve transfer
                     .with_static_gas(MT_CHECK_AND_FORWARD_MIN_GAS)
+                    .with_unused_gas_weight(1)
                     .check_authorization_and_forward_mt(
                         token,
                         transfer_message.receiver_id,
@@ -71,8 +71,8 @@ impl Contract {
         PromiseOrValue::Promise(
             ext_mt_core::ext(token)
                 .with_attached_deposit(NearToken::from_yoctonear(1))
-                .with_unused_gas_weight(1)
                 .with_static_gas(MT_TRANSFER_CALL_MIN_GAS)
+                .with_unused_gas_weight(1)
                 .mt_batch_transfer_call(
                     receiver_id,
                     token_ids,
