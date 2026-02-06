@@ -19,7 +19,7 @@ defuse-token-id = { workspace = true, optional=true }
 defuse-oneshot-condvar = { workspace = true }
 
 near-contract-standards.workspace = true
-near-sdk = { workspace = true, features = ["unstable", "deterministic-account-ids"] }
+near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 serde_with = { workspace = true, features = ["hex"] }
 thiserror.workspace = true
 
