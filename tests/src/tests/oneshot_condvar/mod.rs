@@ -115,7 +115,7 @@ async fn oneshot_condvar_early_notification() {
         .function_call(
             FnCallBuilder::new("cv_wait")
                 .json_args(json!({}))
-                .with_gas(Gas::from_tgas(300)),
+                .with_gas(defuse_oneshot_condvar::CV_WAIT_GAS),
         )
         .await
         .unwrap();
@@ -130,7 +130,7 @@ async fn oneshot_condvar_early_notification() {
 }
 
 #[tokio::test]
-async fn oneshot_condvar_async_notification() {
+async fn oneshot_condvar_async_notification_with_promise_resume() {
     let sandbox = Sandbox::new("test".parse::<AccountId>().unwrap()).await;
     let root = sandbox.root();
 
@@ -162,9 +162,7 @@ async fn oneshot_condvar_async_notification() {
             proxy
                 .tx(condvar_instance.clone())
                 .function_call(
-                    FnCallBuilder::new("cv_wait")
-                        .json_args(json!({}))
-                        .with_gas(Gas::from_tgas(300)),
+                    FnCallBuilder::new("cv_wait").with_gas(defuse_oneshot_condvar::CV_WAIT_GAS),
                 )
                 .await
                 .unwrap()
@@ -190,7 +188,7 @@ async fn oneshot_condvar_async_notification() {
         .await
         .unwrap();
 
-    authorized.await.unwrap();
+    assert!(authorized.await.unwrap().json::<bool>().unwrap());
 
     sandbox.fast_forward(5).await;
     assert!(
@@ -230,7 +228,7 @@ async fn oneshot_condvar_async_notification_timeout() {
     let cv_wait = proxy.tx(condvar_instance.clone()).function_call(
         FnCallBuilder::new("cv_wait")
             .json_args(json!({}))
-            .with_gas(Gas::from_tgas(300)),
+            .with_gas(defuse_oneshot_condvar::CV_WAIT_GAS),
     );
 
     let forward_time = sandbox.fast_forward(200);
@@ -277,7 +275,7 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth() {
     let cv_wait = proxy.tx(condvar_instance.clone()).function_call(
         FnCallBuilder::new("cv_wait")
             .json_args(json!({}))
-            .with_gas(Gas::from_tgas(300)),
+            .with_gas(defuse_oneshot_condvar::CV_WAIT_GAS),
     );
 
     let forward_time = sandbox.fast_forward(200);
@@ -285,7 +283,7 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth() {
     let (authorized, ()) = futures::join!(async { cv_wait.await }, forward_time);
 
     // First attempt should timeout and return false
-    assert!(authorized.unwrap().json::<bool>().is_ok());
+    assert!(!authorized.unwrap().json::<bool>().unwrap());
 
     // Now call on_auth before second cv_wait
     auth_contract
@@ -304,7 +302,7 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth() {
         .function_call(
             FnCallBuilder::new("cv_wait")
                 .json_args(json!({}))
-                .with_gas(Gas::from_tgas(300)),
+                .with_gas(defuse_oneshot_condvar::CV_WAIT_GAS),
         )
         .await
         .unwrap();
@@ -349,17 +347,17 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth2() {
     let cv_wait = proxy.tx(condvar_instance.clone()).function_call(
         FnCallBuilder::new("cv_wait")
             .json_args(json!({}))
-            .with_gas(Gas::from_tgas(300)),
+            .with_gas(defuse_oneshot_condvar::CV_WAIT_GAS),
     );
     let forward_time = sandbox.fast_forward(200);
     let (authorized, ()) = futures::join!(async { cv_wait.await }, forward_time);
     // First attempt should timeout and return false
-    assert!(authorized.unwrap().json::<bool>().is_ok());
+    assert!(!authorized.unwrap().json::<bool>().unwrap());
 
     let cv_wait = proxy.tx(condvar_instance.clone()).function_call(
         FnCallBuilder::new("cv_wait")
             .json_args(json!({}))
-            .with_gas(Gas::from_tgas(300)),
+            .with_gas(defuse_oneshot_condvar::CV_WAIT_GAS),
     );
 
     let (authorized, ()) = futures::join!(async { cv_wait.await }, async {
@@ -421,7 +419,7 @@ async fn test_cv_wait_gas_benchmark() {
         .function_call(
             FnCallBuilder::new("cv_wait")
                 .json_args(json!({}))
-                .with_gas(Gas::from_tgas(300)),
+                .with_gas(defuse_oneshot_condvar::CV_WAIT_GAS),
         )
         .exec_transaction();
 
