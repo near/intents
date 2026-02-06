@@ -134,7 +134,6 @@ impl OneshotCondVar for Contract {
         PromiseOrValue::Value(matches!(state.state, Status::Done))
     }
 
-    #[payable]
     fn cv_notify_one(&mut self) {
         let mut guard = self.cleanup_guard();
         let state = guard.try_as_alive_mut().unwrap_or_panic_display();
