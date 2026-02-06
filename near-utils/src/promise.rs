@@ -49,17 +49,20 @@ impl MaxJsonLength for U128 {
     }
 }
 
-impl MaxJsonLength for Vec<U128> {
-    type Args = usize; // expected length
+impl<T> MaxJsonLength for Vec<T>
+where
+    T: MaxJsonLength<Args = ()>,
+{
+    type Args = usize;
 
     fn max_json_length(length: usize) -> usize {
-        // Per item: indentation + quoted u128 + comma + newline
-        const MAX_U128_LEN: usize = "+340282366920938463463374607431768211455".len();
-        const MAX_ITEM_LEN: usize = "        \"\",\n".len() + MAX_U128_LEN;
+        // account for ',' '\n' and identation in prettified format
+        const PER_ITEM_OVERHEAED: usize = "        ,\n".len();
+        let single_elem_max_length = T::max_json_length(()).saturating_add(PER_ITEM_OVERHEAED);
 
         length
-            .saturating_mul(MAX_ITEM_LEN)
-            .saturating_add("[\n]".len())
+            .saturating_mul(single_elem_max_length)
+            .saturating_add("\n[\n]".len())
     }
 }
 
