@@ -1086,7 +1086,6 @@ dependencies = [
  "defuse-near-utils",
  "impl-tools",
  "near-sdk",
- "serde_with",
  "thiserror 2.0.18",
 ]
 
