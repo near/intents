@@ -16,7 +16,7 @@ defuse-escrow-swap = { workspace = true, optional = true }
 defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-token-id = { workspace = true, optional=true }
-defuse-oneshot-condvar = { workspace = true, features = ["auth-call"] }
+defuse-oneshot-condvar = { workspace = true }
 
 near-contract-standards.workspace = true
 near-sdk = { workspace = true, features = ["unstable", "deterministic-account-ids"] }
@@ -35,16 +35,15 @@ rand.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
 
 [features]
-default = ["nep141", "nep245", "escrow-swap"]
+default = ["nep141", "nep245", "escrow-swap", "auth-call"]
 
+abi = ["defuse-oneshot-condvar/abi", "defuse-escrow-swap?/abi"]
+auth-call = ["defuse-oneshot-condvar/auth-call"]
 contract = []
 escrow-swap = ["dep:defuse-escrow-swap"]
 nep141 = ["dep:defuse-token-id"]
 nep245 = []
-# Feature to enable example that requires test utilities (currently broken due to refactoring)
-test-utils = []
 
-abi = ["defuse-oneshot-condvar/abi", "defuse-escrow-swap?/abi"]
 
 [[example]]
 name = "escrow-swap-demo"

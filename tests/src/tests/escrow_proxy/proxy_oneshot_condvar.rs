@@ -220,7 +220,7 @@ async fn test_transfer_authorized_by_relay() {
                             "signer_id": relay.id(),
                             "msg": "",
                         }))
-                        .with_gas(Gas::from_tgas(50))
+                        .with_gas(Gas::from_tgas(50)),
                 )
                 .await
                 .unwrap();
@@ -359,7 +359,7 @@ async fn test_ft_transfer_authorized_by_relay() {
                             "signer_id": relay.id(),
                             "msg": "",
                         }))
-                        .with_gas(Gas::from_tgas(50))
+                        .with_gas(Gas::from_tgas(50)),
                 )
                 .await
                 .unwrap();
@@ -535,7 +535,7 @@ async fn test_proxy_with_ft_transfer() {
                             "signer_id": relay.id(),
                             "msg": "",
                         }))
-                        .with_gas(Gas::from_tgas(50))
+                        .with_gas(Gas::from_tgas(50)),
                 )
                 .await
                 .unwrap();
