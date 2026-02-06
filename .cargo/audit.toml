@@ -15,4 +15,11 @@ ignore = [
     # and affects RFC 2822 date parsing only, which does not affect our usage
     # in build scripts. Upgrading to the patched version (>=0.3.47) requires
     #  Rust >=1.88, which is incompatible with the NEAR VM toolchain (1.86.0)
-    "RUSTSEC-2026-0009"]
+    "RUSTSEC-2026-0009",
+    
+    # Ignore git2 unsound advisory - it comes from cargo-near-build (0.9.0)
+    # which depends on git2 0.19, and related to the undefined behavior
+    # after dereferencing an empty buffer, which does not affect
+    # our usage in build scripts. 
+    "RUSTSEC-2026-0008"
+    ]
