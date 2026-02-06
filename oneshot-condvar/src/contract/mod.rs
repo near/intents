@@ -3,7 +3,9 @@ mod auth_call;
 mod cleanup;
 
 use defuse_near_utils::UnwrapOrPanicError;
-use near_sdk::{Gas, GasWeight, PanicOnDefault, Promise, PromiseOrValue, env, near, require};
+use near_sdk::{
+    AccountIdRef, Gas, GasWeight, PanicOnDefault, Promise, PromiseOrValue, env, near, require,
+};
 
 use crate::{
     Error, OneshotCondVar,
@@ -59,11 +61,11 @@ impl Contract {
 }
 
 impl Contract {
-    pub(crate) fn verify_caller_and_notify_contract(
-        caller: &near_sdk::AccountId,
-        state: &mut State,
-    ) {
-        require!(*caller == state.config.notifier_id, ERR_UNAUTHORIZED_NOTIFIER_ID);
+    pub(crate) fn verify_caller_and_notify_contract(caller: &AccountIdRef, state: &mut State) {
+        require!(
+            *caller == state.config.notifier_id,
+            ERR_UNAUTHORIZED_NOTIFIER_ID
+        );
 
         state.state = match state.state {
             Status::Idle => Status::Notified,
