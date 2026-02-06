@@ -5,7 +5,7 @@ use near_sdk::{AccountId, PromiseOrValue, env, near, require};
 use super::{Contract, ContractExt};
 
 const ERR_MSG_NOT_EMPTY: &str = "message must be empty";
-const ERR_WRONG_AUTH_CALLER: &str = "unauthorized on_auth_caller";
+const ERR_WRONG_ON_AUTH_CALLER: &str = "unauthorized on_auth_caller";
 
 #[near]
 impl AuthCallee for Contract {
@@ -16,7 +16,7 @@ impl AuthCallee for Contract {
         let state = guard.try_as_alive_mut().unwrap_or_panic_display();
         require!(
             env::predecessor_account_id() == state.config.on_auth_caller,
-            ERR_WRONG_AUTH_CALLER
+            ERR_WRONG_ON_AUTH_CALLER
         );
         Self::verify_caller_and_authorize_contract(&signer_id, state);
         PromiseOrValue::Value(())
