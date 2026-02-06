@@ -156,7 +156,7 @@ async fn oneshot_condvar_async_notification_with_promise_resume() {
         .deploy_oneshot_condvar_instance(condvar_global.clone(), state)
         .await;
 
-    let authorized = tokio::spawn({
+    let cv_wait = tokio::spawn({
         let condvar_instance = condvar_instance.clone();
         async move {
             proxy
@@ -188,7 +188,7 @@ async fn oneshot_condvar_async_notification_with_promise_resume() {
         .await
         .unwrap();
 
-    assert!(authorized.await.unwrap().json::<bool>().unwrap());
+    assert!(cv_wait.await.unwrap().json::<bool>().unwrap());
 
     sandbox.fast_forward(5).await;
     assert!(
@@ -233,8 +233,8 @@ async fn oneshot_condvar_async_notification_timeout() {
 
     let forward_time = sandbox.fast_forward(200);
 
-    let (authorized, ()) = futures::join!(async { cv_wait.await }, forward_time);
-    assert!(!authorized.unwrap().json::<bool>().unwrap());
+    let (cv_wait, ()) = futures::join!(async { cv_wait.await }, forward_time);
+    assert!(!cv_wait.unwrap().json::<bool>().unwrap());
 
     sandbox.fast_forward(5).await;
     assert!(
@@ -280,10 +280,10 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth() {
 
     let forward_time = sandbox.fast_forward(200);
 
-    let (authorized, ()) = futures::join!(async { cv_wait.await }, forward_time);
+    let (cv_wait, ()) = futures::join!(async { cv_wait.await }, forward_time);
 
     // First attempt should timeout and return false
-    assert!(!authorized.unwrap().json::<bool>().unwrap());
+    assert!(!cv_wait.unwrap().json::<bool>().unwrap());
 
     // Now call on_auth before second cv_wait
     auth_contract
@@ -350,9 +350,9 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth2() {
             .with_gas(defuse_oneshot_condvar::CV_WAIT_GAS),
     );
     let forward_time = sandbox.fast_forward(200);
-    let (authorized, ()) = futures::join!(async { cv_wait.await }, forward_time);
+    let (cv_wait, ()) = futures::join!(async { cv_wait.await }, forward_time);
     // First attempt should timeout and return false
-    assert!(!authorized.unwrap().json::<bool>().unwrap());
+    assert!(!cv_wait.unwrap().json::<bool>().unwrap());
 
     let cv_wait = proxy.tx(condvar_instance.clone()).function_call(
         FnCallBuilder::new("cv_wait")
@@ -360,7 +360,7 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth2() {
             .with_gas(defuse_oneshot_condvar::CV_WAIT_GAS),
     );
 
-    let (authorized, ()) = futures::join!(async { cv_wait.await }, async {
+    let (cv_wait, ()) = futures::join!(async { cv_wait.await }, async {
         tokio::time::sleep(Duration::from_secs(3)).await;
         auth_contract
             .tx(condvar_instance.clone())
@@ -373,7 +373,7 @@ async fn oneshot_condvar_retry_after_timeout_with_on_auth2() {
             .unwrap();
     });
 
-    assert!(authorized.unwrap().json::<bool>().unwrap());
+    assert!(cv_wait.unwrap().json::<bool>().unwrap());
 
     sandbox.fast_forward(5).await;
     assert!(
@@ -486,7 +486,7 @@ async fn test_verify_cv_notify_gas_cost() {
         .deploy_oneshot_condvar_instance(condvar_global.clone(), state)
         .await;
 
-    let authorized = tokio::spawn({
+    let cv_wait = tokio::spawn({
         let condvar_instance = condvar_instance.clone();
         async move {
             proxy
@@ -522,5 +522,5 @@ async fn test_verify_cv_notify_gas_cost() {
 
     // NOTE: make sure that promise was actually resumed (timeout did not happen)
     assert!(!cv_notify_one.logs().contains(&"timeout"));
-    assert!(authorized.await.unwrap().json::<bool>().unwrap());
+    assert!(cv_wait.await.unwrap().json::<bool>().unwrap());
 }
