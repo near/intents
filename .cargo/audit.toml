@@ -9,7 +9,6 @@ ignore = [
     # The advisory relates to IterMut's Stacked Borrows violation, which does
     # not affect our usage as we don't use IterMut directly.
     # Tracked: https://github.com/near/nearcore/issues/XXXXX (upstream)
-
     "RUSTSEC-2026-0002",
 
     # Ignore time unsound advisory - it comes from cargo-near-build

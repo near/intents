@@ -77,7 +77,7 @@ jobs:
           mkdir -p target res
           echo 'Signature: 8a477f597d28d172789f06886806bc55' | tee target/CACHEDIR.TAG res/CACHEDIR.TAG > /dev/null
       - name: Install Cargo Plugins
-        run: cargo install cargo-near --ignore-rust-version --locked
+        run: cargo install cargo-near --version 0.17.0 --locked
       - name: Build
         env:
           DEFUSE_OUT_DIR: "res"
@@ -116,7 +116,7 @@ jobs:
           mkdir -p target res
           echo 'Signature: 8a477f597d28d172789f06886806bc55' | tee target/CACHEDIR.TAG res/CACHEDIR.TAG > /dev/null
       - name: Install Cargo Plugins
-        run: cargo install cargo-near --ignore-rust-version --locked
+        run: cargo install cargo-near --version 0.17.0 --locked
       - name: Build Reproducible WASM and calculate checksum
         env:
           DEFUSE_OUT_DIR: "res"
