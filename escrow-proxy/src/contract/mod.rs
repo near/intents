@@ -29,7 +29,7 @@ impl Contract {
 #[near]
 impl EscrowProxy for Contract {
     /// Returns proxy configuration
-    fn config(&self) -> &ProxyConfig {
+    fn ep_config(&self) -> &ProxyConfig {
         self.0.config()
     }
 

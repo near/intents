@@ -34,7 +34,7 @@ impl CondVarContext<'_> {
 
 #[ext_contract(ext_escrow_proxy)]
 pub trait EscrowProxy {
-    fn config(&self) -> &ProxyConfig;
+    fn ep_config(&self) -> &ProxyConfig;
     fn ep_approve_account_id(
         &self,
         sender_id: AccountId,
