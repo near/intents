@@ -61,24 +61,23 @@ impl Contract {
             near_sdk::env::panic_str("Authorization failed or timed out, refunding");
         }
 
-        PromiseOrValue::Promise(
-            ext_ft_core::ext(token)
-                .with_attached_deposit(NearToken::from_yoctonear(1))
-                .with_static_gas(FT_TRANSFER_CALL_MIN_GAS)
-                .with_unused_gas_weight(1)
-                .ft_transfer_call(
-                    receiver_id,
-                    amount,
-                    Some(super::PROXY_MEMO.to_string()),
-                    msg,
-                )
-                .then(
-                    Self::ext(env::current_account_id())
-                        .with_static_gas(FT_RESOLVE_FORWARD_GAS)
-                        .with_unused_gas_weight(0)
-                        .ft_resolve_forward(amount),
-                ),
-        )
+        ext_ft_core::ext(token)
+            .with_attached_deposit(NearToken::from_yoctonear(1))
+            .with_static_gas(FT_TRANSFER_CALL_MIN_GAS)
+            .with_unused_gas_weight(1)
+            .ft_transfer_call(
+                receiver_id,
+                amount,
+                Some(super::PROXY_MEMO.to_string()),
+                msg,
+            )
+            .then(
+                Self::ext(env::current_account_id())
+                    .with_static_gas(FT_RESOLVE_FORWARD_GAS)
+                    .with_unused_gas_weight(0)
+                    .ft_resolve_forward(amount),
+            )
+            .into()
     }
 
     #[private]
