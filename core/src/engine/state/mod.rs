@@ -20,7 +20,10 @@ use near_sdk::{AccountId, AccountIdRef};
 use std::borrow::Cow;
 
 #[cfg(feature = "imt")]
-use crate::tokens::imt::ImtTokens;
+use crate::{
+    DefuseError,
+    tokens::{MT_ON_TRANSFER_GAS_DEFAULT, MT_ON_TRANSFER_GAS_MIN, imt::ImtTokens},
+};
 
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>)]
 pub trait StateView {
@@ -150,15 +153,13 @@ pub trait State: StateView {
         notification: Option<NotifyOnTransfer>,
     ) -> Result<()> {
         if tokens.is_empty() {
-            return Err(crate::DefuseError::InvalidIntent);
+            return Err(DefuseError::InvalidIntent);
         }
 
         let tokens = tokens.into_generic_tokens(owner_id)?;
         self.mint(receiver_id.clone(), tokens.clone(), memo)?;
 
         if let Some(mut notification) = notification {
-            use crate::tokens::{MT_ON_TRANSFER_GAS_DEFAULT, MT_ON_TRANSFER_GAS_MIN};
-
             notification.min_gas = Some(
                 notification
                     .min_gas
