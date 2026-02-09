@@ -4,7 +4,7 @@ use near_sdk::near;
 #[near(event_json(standard = "oneshot_condvar"))]
 #[derive(Debug, Clone)]
 pub enum Event {
-    /// Emitted when the notifier successfully authorizes the contract.
+    /// Emitted when the notifier successfully notifies the contract.
     #[event_version("1.0.0")]
     Notified,
     /// Emitted when the yield promise times out.

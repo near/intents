@@ -31,9 +31,8 @@ impl EscrowProxy for Contract {
         self.0.config()
     }
 
-    /// Calculates oneshot condvar contract instance address, helper function for integration
-    /// purposes, and easy calculation of oneshot condvar contract instance address in case of
-    /// need for direct authorization using OneshotCondvar::cv_notify_one
+    /// Returns the OneshotCondvar instance address for a given transfer.
+    /// Useful for direct approval via `OneshotCondvar::cv_notify_one`.
     /// sender_id: The account id of the sender
     /// token_ids: The token ids of the tokens being transferred
     /// amounts: The amounts of the tokens being transferred

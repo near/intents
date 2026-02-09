@@ -34,7 +34,7 @@ async fn on_auth_call() {
         .deploy_oneshot_condvar_instance(condvar_global.clone(), state)
         .await;
 
-    // unauthorized contract (relay vs auth_contract)
+    // unauthorized on_auth_caller (relay vs auth_contract)
     relay
         .tx(condvar_instance.clone())
         .function_call(
@@ -444,7 +444,6 @@ async fn test_cv_wait_gas_benchmark() {
     let total_gas = Gas::from_gas(result.total_gas_burnt.as_gas());
     eprintln!("cv_wait total gas consumed: {total_gas:?}");
 
-    // Verify authorization succeeded
     assert!(result.into_result().unwrap().json::<bool>().unwrap());
 
     // Verify contract was cleaned up

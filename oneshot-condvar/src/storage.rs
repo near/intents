@@ -21,7 +21,7 @@ pub struct Config {
     pub on_auth_caller: AccountId,
     /// Account ID that is permitted to call [`cv_notify_one`] on oneshot condvar
     pub notifier_id: AccountId,
-    /// Account ID that becomes authorized upon successful notification.
+    /// Account ID that becomes approved upon successful notification.
     pub waiter: AccountId,
     /// Unique salt used for deterministic account derivation.
     #[serde_as(as = "Hex")]

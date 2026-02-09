@@ -37,7 +37,7 @@ pub fn derive_oneshot_condvar_account_id(
 
 #[tokio::test]
 #[allow(clippy::too_many_lines)]
-async fn test_proxy_returns_funds_on_timeout_of_authorization() {
+async fn test_proxy_returns_funds_on_timeout_of_approval() {
     let env = Env::builder().build().await;
     let (condvar_global, mt_receiver_global, escrow_proxy_global) = futures::join!(
         env.root().deploy_oneshot_condvar("global_transfer_auth"),
@@ -111,10 +111,9 @@ async fn test_proxy_returns_funds_on_timeout_of_authorization() {
     );
 }
 
-/// Test that transfer succeeds when relay authorizes via on_auth call
 #[tokio::test]
 #[allow(clippy::too_many_lines)]
-async fn test_transfer_authorized_by_relay() {
+async fn test_transfer_approved_by_relay_using_on_auth() {
     let env = Env::builder().build().await;
 
     let (condvar_global, mt_receiver_global, escrow_proxy_global) = futures::join!(
@@ -260,10 +259,9 @@ async fn test_transfer_authorized_by_relay() {
     );
 }
 
-/// Test that FT transfer succeeds when relay authorizes via on_auth call
 #[tokio::test]
 #[allow(clippy::too_many_lines)]
-async fn test_ft_transfer_authorized_by_relay() {
+async fn test_ft_transfer_approved_by_relay_using_on_auth() {
     let env = Env::builder().build().await;
 
     let (condvar_global, ft_receiver_global, escrow_proxy_global) = futures::join!(
