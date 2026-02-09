@@ -17,7 +17,6 @@ use crate::state::{ContractStorage, ProxyConfig};
 #[derive(PanicOnDefault)]
 pub struct Contract(ContractStorage);
 
-#[near]
 impl Contract {
     fn assert_owner(&self) {
         require!(
