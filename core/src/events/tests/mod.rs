@@ -12,7 +12,7 @@ use crate::{
     Salt,
     accounts::{AccountEvent, NonceEvent, PublicKeyEvent, SaltRotationEvent},
     amounts::Amounts,
-    events::{DefuseEvent, MaybeIntentEvent, tests::v0_4_1::DefuseEvent0_4_1},
+    events::{DefuseEvent, MaybeIntentEvent, tests::v0_4_1::DefuseEventV0_4_1},
     fees::{FeeChangedEvent, FeeCollectorChangedEvent},
     intents::{
         IntentEvent,
@@ -45,7 +45,7 @@ impl DefuseEventVersion {
                         // These events were added in v0.4.2, so they are not expected to be compatible with v0.4.1
                         return;
                     }
-                    _ => serde_json::from_str::<DefuseEvent0_4_1>(&json)
+                    _ => serde_json::from_str::<DefuseEventV0_4_1>(&json)
                         .expect("deserialize with old event version"),
                 }
             }
@@ -72,7 +72,7 @@ fn tokens() -> Amounts {
     )
 }
 
-pub fn pk_added_direct_event<'a>() -> DefuseEvent<'a> {
+fn pk_added_direct_event<'a>() -> DefuseEvent<'a> {
     DefuseEvent::PublicKeyAdded(MaybeIntentEvent::direct(AccountEvent {
         account_id: account(),
         event: PublicKeyEvent {
@@ -81,7 +81,7 @@ pub fn pk_added_direct_event<'a>() -> DefuseEvent<'a> {
     }))
 }
 
-pub fn pk_added_intent_event<'a>() -> DefuseEvent<'a> {
+fn pk_added_intent_event<'a>() -> DefuseEvent<'a> {
     DefuseEvent::PublicKeyAdded(MaybeIntentEvent::intent(
         AccountEvent {
             account_id: account(),
@@ -93,21 +93,21 @@ pub fn pk_added_intent_event<'a>() -> DefuseEvent<'a> {
     ))
 }
 
-pub fn fee_changed_event<'a>() -> DefuseEvent<'a> {
+fn fee_changed_event<'a>() -> DefuseEvent<'a> {
     DefuseEvent::FeeChanged(FeeChangedEvent {
         old_fee: Pips::from_pips(100).unwrap(),
         new_fee: Pips::from_pips(200).unwrap(),
     })
 }
 
-pub fn fee_collector_changed_event<'a>() -> DefuseEvent<'a> {
+fn fee_collector_changed_event<'a>() -> DefuseEvent<'a> {
     DefuseEvent::FeeCollectorChanged(FeeCollectorChangedEvent {
         old_fee_collector: account(),
         new_fee_collector: account(),
     })
 }
 
-pub fn transfer_intent_event<'a>() -> DefuseEvent<'a> {
+fn transfer_intent_event<'a>() -> DefuseEvent<'a> {
     DefuseEvent::Transfer(Cow::Owned(vec![IntentEvent::new(
         AccountEvent {
             account_id: account(),
@@ -121,7 +121,7 @@ pub fn transfer_intent_event<'a>() -> DefuseEvent<'a> {
     )]))
 }
 
-pub fn token_diff_intent_event<'a>() -> DefuseEvent<'a> {
+fn token_diff_intent_event<'a>() -> DefuseEvent<'a> {
     DefuseEvent::TokenDiff(Cow::Owned(vec![IntentEvent::new(
         AccountEvent {
             account_id: account(),
@@ -314,13 +314,10 @@ fn set_auth_by_predecessor_id_intent_event<'a>() -> DefuseEvent<'a> {
 }
 
 fn set_auth_by_predecessor_id_direct_event<'a>() -> DefuseEvent<'a> {
-    DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::intent(
-        AccountEvent {
-            account_id: account(),
-            event: Cow::Owned(SetAuthByPredecessorId { enabled: true }),
-        },
-        [0; 32],
-    ))
+    DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::direct(AccountEvent {
+        account_id: account(),
+        event: Cow::Owned(SetAuthByPredecessorId { enabled: true }),
+    }))
 }
 
 fn salt_rotation_event<'a>() -> DefuseEvent<'a> {

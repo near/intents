@@ -18,7 +18,7 @@ use crate::{
 #[must_use = "make sure to `.emit()` this event"]
 #[near(event_json(standard = "dip4"))]
 #[derive(Debug, Clone, Deserialize, From)]
-pub enum DefuseEvent0_4_1<'a> {
+pub enum DefuseEventV0_4_1<'a> {
     #[event_version("0.3.0")]
     #[from(skip)]
     PublicKeyAdded(AccountEvent<'a, PublicKeyEvent<'a>>),

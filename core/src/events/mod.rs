@@ -23,8 +23,8 @@ use crate::{intents::tokens::imt::ImtBurn, tokens::imt::ImtMintEvent};
 #[serde(untagged)]
 #[derive(Debug, Clone)]
 pub enum ContractEvent<T> {
-    Direct(T),
     Intent(IntentEvent<T>),
+    Direct(T),
 }
 
 /// Event that can be emitted either from a
