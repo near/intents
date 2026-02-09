@@ -7,14 +7,16 @@ use near_api::{
             actions::{
                 AddKeyAction, CreateAccountAction, DeployContractAction,
                 DeployGlobalContractAction, DeterministicAccountStateInit,
-                DeterministicStateInitAction, FunctionCallAction, GlobalContractDeployMode,
-                GlobalContractIdentifier, TransferAction, UseGlobalContractAction,
+                DeterministicAccountStateInitV1, DeterministicStateInitAction, FunctionCallAction,
+                GlobalContractDeployMode, GlobalContractIdentifier, TransferAction,
+                UseGlobalContractAction,
             },
             result::{ExecutionFinalResult, ExecutionSuccess},
         },
     },
 };
-use near_sdk::{AccountId, NearToken};
+use near_sdk::state_init::{StateInit, StateInitV1};
+use near_sdk::{AccountId, GlobalContractId, NearToken};
 
 mod fn_call;
 mod wrappers;
@@ -39,17 +41,6 @@ impl TxBuilder {
             receiver_id: receiver_id.into(),
             actions: Vec::new(),
         }
-    }
-
-    #[must_use]
-    pub fn state_init(self, state_init: DeterministicAccountStateInit, deposit: NearToken) -> Self {
-        self.add_action(Action::DeterministicStateInit(
-            DeterministicStateInitAction {
-                state_init,
-                deposit,
-            }
-            .into(),
-        ))
     }
 
     #[must_use]
@@ -89,6 +80,32 @@ impl TxBuilder {
             }
             .into(),
         ))
+    }
+
+    #[must_use]
+    pub fn state_init(self, state_init: StateInit, deposit: NearToken) -> Self {
+        self.add_action(Action::DeterministicStateInit(Box::new(
+            DeterministicStateInitAction {
+                state_init: match state_init {
+                    StateInit::V1(StateInitV1 { code, data }) => {
+                        DeterministicAccountStateInit::V1(DeterministicAccountStateInitV1 {
+                            code: match code {
+                                GlobalContractId::CodeHash(hash) => {
+                                    GlobalContractIdentifier::CodeHash(near_api::CryptoHash(
+                                        *hash.as_ref(),
+                                    ))
+                                }
+                                GlobalContractId::AccountId(account) => {
+                                    GlobalContractIdentifier::AccountId(account)
+                                }
+                            },
+                            data,
+                        })
+                    }
+                },
+                deposit,
+            },
+        )))
     }
 
     #[must_use]

@@ -203,7 +203,7 @@ mod tests {
     #[cfg_attr(
         feature = "ed25519",
         case("ed25519:5TagutioHgKLh7KZ1VEFBYfgRkPtqnKm9LoMnJMJ"),
-        case("ed5519:")
+        case("ed25519:")
     )]
     #[cfg_attr(
         feature = "secp256k1",

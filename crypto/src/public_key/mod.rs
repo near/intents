@@ -254,22 +254,32 @@ const _: () = {
 
 #[cfg(test)]
 mod tests {
+    use near_sdk::AccountIdRef;
     use rstest::rstest;
 
     use super::*;
 
     #[rstest]
-    #[case(
-        "ed25519:5TagutioHgKLh7KZ1VEFBYfgRkPtqnKm9LoMnJMJugxm",
-        "423df0a6640e9467769c55a573f15b9ee999dc8970048959c72890abf5cc3a8e"
+    #[cfg_attr(
+        feature = "ed25519",
+        case(
+            "ed25519:5TagutioHgKLh7KZ1VEFBYfgRkPtqnKm9LoMnJMJugxm",
+            "423df0a6640e9467769c55a573f15b9ee999dc8970048959c72890abf5cc3a8e"
+        )
     )]
-    #[case(
-        "secp256k1:3aMVMxsoAnHUbweXMtdKaN1uJaNwsfKv7wnc97SDGjXhyK62VyJwhPUPLZefKVthcoUcuWK6cqkSU4M542ipNxS3",
-        "0xbff77166b39599e54e391156eef7b8191e02be92"
+    #[cfg_attr(
+        feature = "secp256k1",
+        case(
+            "secp256k1:3aMVMxsoAnHUbweXMtdKaN1uJaNwsfKv7wnc97SDGjXhyK62VyJwhPUPLZefKVthcoUcuWK6cqkSU4M542ipNxS3",
+            "0xbff77166b39599e54e391156eef7b8191e02be92"
+        )
     )]
-    #[case(
-        "p256:3aMVMxsoAnHUbweXMtdKaN1uJaNwsfKv7wnc97SDGjXhyK62VyJwhPUPLZefKVthcoUcuWK6cqkSU4M542ipNxS3",
-        "0x7edf07ede58238026db3f90fc8032633b69b8de5"
+    #[cfg_attr(
+        feature = "p256",
+        case(
+            "p256:3aMVMxsoAnHUbweXMtdKaN1uJaNwsfKv7wnc97SDGjXhyK62VyJwhPUPLZefKVthcoUcuWK6cqkSU4M542ipNxS3",
+            "0x7edf07ede58238026db3f90fc8032633b69b8de5"
+        )
     )]
     fn to_implicit_account_id(#[case] pk: &str, #[case] expected: &str) {
         assert_eq!(
@@ -279,17 +289,22 @@ mod tests {
     }
 
     #[rstest]
-    fn parse_invalid_length(
-        #[values(
-            "ed25519:5TagutioHgKLh7KZ1VEFBYfgRkPtqnKm9LoMnJMJ",
-            "ed25519:",
-            "secp256k1:p3UPfBR3kWxE2C8wF1855eguaoRvoW6jV5ZXbu3sTTCs",
-            "secp256k1:",
-            "p256:p3UPfBR3kWxE2C8wF1855eguaoRvoW6jV5ZXbu3sTTCs",
-            "p256:"
-        )]
-        pk: &str,
-    ) {
+    #[cfg_attr(
+        feature = "ed25519",
+        case("ed25519:5TagutioHgKLh7KZ1VEFBYfgRkPtqnKm9LoMnJMJ"),
+        case("ed25519:")
+    )]
+    #[cfg_attr(
+        feature = "secp256k1",
+        case("secp256k1:p3UPfBR3kWxE2C8wF1855eguaoRvoW6jV5ZXbu3sTTCs"),
+        case("secp256k1:")
+    )]
+    #[cfg_attr(
+        feature = "p256",
+        case("p256:p3UPfBR3kWxE2C8wF1855eguaoRvoW6jV5ZXbu3sTTCs"),
+        case("p256:")
+    )]
+    fn parse_invalid_length(#[case] pk: &str) {
         assert_eq!(pk.parse::<PublicKey>(), Err(ParseCurveError::InvalidLength));
     }
 }

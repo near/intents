@@ -2,7 +2,7 @@
 
 ## What is NEAR Intents?
 
-NEAR Intents is a smart contract developed for the NEAR blockchain. It facilitates atomic P2P transactions among peers, by allow trustless transactions in the smart contract.
+NEAR Intents is a smart contract developed for the NEAR blockchain. It facilitates atomic P2P transactions among peers, by allowing trustless transactions in the smart contract.
 
 Please note that the main smart contract in the repository, under the directory `defuse`, is referred to as the "Verifier" in the ecosystem. Near Intents contains more components that work in tandem to achieve its purpose. Nevertheless, this smart contract, the Verifier, can be used independently without needing anything else.
 
@@ -45,17 +45,35 @@ You can obtain a working copy of the smart contract and the ABI from [the releas
 
 Alternatively, you can build this smart contract yourself.
 
-Build the smart contracts:
+Build smart contract separately:
 
 ```shell
-cargo make build
+cargo build-contract <contract_name>
+```
+
+Build all contracts at once:
+
+```shell
+cargo build-all
 ```
 
 Run integration tests:
 
 ```shell
-cargo make test
+cargo integration-tests <defuse|poa|escrow-swap>
 ```
+
+Or run all tests:
+
+```shell
+cargo test --workspace --all-targets
+```
+
+NOTE:
+1. To specify the destination of wasms, set the `DEFUSE_OUT_DIR` environment variable.
+2. To build in reproducible mode set `DEFUSE_BUILD_REPRODUCIBLE` environment variable.
+3. To skip wasm build during testing set `DEFUSE_SKIP_CONTRACTS_BUILD` environment variable.
+4. To specify wasms destination for tests set `DEFUSE_USE_OUT_DIR`environment variable.
 
 For state migration testing set environmental var `DEFUSE_MIGRATE_FROM_LEGACY=1`
 State migrations will be applied before all tests.
@@ -64,7 +82,7 @@ The tests will use data created prior to migration combined with newly created d
 Run clippy linter:
 
 ```shell
-cargo make clippy
+cargo clippy --workspace --all-targets --no-deps
 ```
 
 After building, the artifacts of the build will be in the `res` directory.

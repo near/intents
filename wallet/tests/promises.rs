@@ -66,7 +66,7 @@ async fn test_signed(#[future] env: Env) {
 
     env.tx(wallet.id())
         .state_init(
-            sdk2api_state_init(wallet_state_init.clone()),
+            wallet_state_init.clone(),
             NearToken::ZERO,
         )
         .transfer(NearToken::from_near(1))
@@ -116,7 +116,7 @@ async fn test_extension(#[future] env: Env) {
     extension
         .tx(wallet.id())
         .state_init(
-            sdk2api_state_init(wallet_state_init.clone()),
+            wallet_state_init.clone(),
             NearToken::ZERO,
         )
         .function_call(
@@ -199,25 +199,5 @@ fn sign_passkey(secret_key: SecretKey, msg: &[u8]) -> PayloadSignature<Ed25519> 
         authenticator_data,
         client_data_json,
         signature: Ed25519Signature(signature),
-    }
-}
-
-fn sdk2api_state_init(state_init: StateInit) -> DeterministicAccountStateInit {
-    match state_init {
-        StateInit::V1(state_init) => {
-            DeterministicAccountStateInit::V1(DeterministicAccountStateInitV1 {
-                code: sdk2api_global_contract_id(state_init.code),
-                data: state_init.data,
-            })
-        }
-    }
-}
-
-fn sdk2api_global_contract_id(global_contract_id: GlobalContractId) -> GlobalContractIdentifier {
-    match global_contract_id {
-        GlobalContractId::CodeHash(hash) => {
-            GlobalContractIdentifier::CodeHash(CryptoHash(hash.into()))
-        }
-        GlobalContractId::AccountId(account_id) => GlobalContractIdentifier::AccountId(account_id),
     }
 }
