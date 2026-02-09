@@ -63,7 +63,7 @@ impl Inspector for SimulateInspector {
         intent_hash: CryptoHash,
         nonce: Nonce,
     ) {
-        self.intents_executed.push(MaybeIntentEvent::new_with_meta(
+        self.intents_executed.push(MaybeIntentEvent::new_with_hash(
             AccountEvent::new(signer_id.to_owned(), NonceEvent::new(nonce)),
             intent_hash,
         ));

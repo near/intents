@@ -77,7 +77,7 @@ impl ExecutableIntent for TokenDiff {
         }
 
         engine.inspector.on_event(DefuseEvent::TokenDiff(
-            [MaybeIntentEvent::new_with_meta(
+            [MaybeIntentEvent::new_with_hash(
                 AccountEvent::new(
                     signer_id,
                     TokenDiffEvent {

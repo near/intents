@@ -78,7 +78,7 @@ async fn mt_mint_intent() {
         .to_nep297_event()
         .to_event_log(),
         DefuseEvent::ImtMint(
-            vec![MaybeIntentEvent::new_with_meta(
+            vec![MaybeIntentEvent::new_with_hash(
                 AccountEvent {
                     account_id: user.id().clone().into(),
                     event: ImtMintEvent {

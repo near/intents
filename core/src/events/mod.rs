@@ -24,30 +24,26 @@ use crate::{intents::tokens::imt::ImtBurn, tokens::imt::ImtMintEvent};
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct MaybeIntentEvent<T> {
-    #[serde(flatten)]
-    pub meta: Option<IntentMeta>,
+    #[serde_as(as = "Option<Base58>")]
+    pub intent_hash: Option<CryptoHash>,
 
     #[serde(flatten)]
     pub event: T,
 }
 
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
-pub struct IntentMeta {
-    #[serde_as(as = "Base58")]
-    pub intent_hash: CryptoHash,
-}
-
 impl<T> MaybeIntentEvent<T> {
     #[inline]
     pub const fn new(event: T) -> Self {
-        Self { meta: None, event }
+        Self {
+            intent_hash: None,
+            event,
+        }
     }
 
     #[inline]
-    pub const fn new_with_meta(event: T, intent_hash: CryptoHash) -> Self {
+    pub const fn new_with_hash(event: T, intent_hash: CryptoHash) -> Self {
         Self {
-            meta: Some(IntentMeta { intent_hash }),
+            intent_hash: Some(intent_hash),
             event,
         }
     }

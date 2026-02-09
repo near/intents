@@ -84,7 +84,7 @@ async fn imt_burn_intent() {
         }]))
         .to_nep297_event()
         .to_event_log(),
-        DefuseEvent::ImtBurn(Cow::Owned(vec![MaybeIntentEvent::new_with_meta(
+        DefuseEvent::ImtBurn(Cow::Owned(vec![MaybeIntentEvent::new_with_hash(
             AccountEvent {
                 account_id: other_user.id().clone().into(),
                 event: Cow::Owned(intent),

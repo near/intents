@@ -28,7 +28,7 @@ impl Inspector for ExecuteInspector {
         intent_hash: CryptoHash,
         nonce: Nonce,
     ) {
-        self.intents_executed.push(MaybeIntentEvent::new_with_meta(
+        self.intents_executed.push(MaybeIntentEvent::new_with_hash(
             AccountEvent::new(Cow::Owned(signer_id.to_owned()), NonceEvent::new(nonce)),
             intent_hash,
         ));

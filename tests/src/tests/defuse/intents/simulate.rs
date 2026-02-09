@@ -85,7 +85,7 @@ async fn simulate_transfer_intent() {
 
     let events = vec![
         DefuseEvent::Transfer(
-            vec![MaybeIntentEvent::new_with_meta(
+            vec![MaybeIntentEvent::new_with_hash(
                 AccountEvent {
                     account_id: user1.id().clone().into(),
                     event: TransferEvent {
@@ -159,7 +159,7 @@ async fn simulate_ft_withdraw_intent() {
     assert_eq!(
         result.report.logs,
         vec![
-            DefuseEvent::FtWithdraw(Cow::Owned(vec![MaybeIntentEvent::new_with_meta(
+            DefuseEvent::FtWithdraw(Cow::Owned(vec![MaybeIntentEvent::new_with_hash(
                 AccountEvent {
                     account_id: user1.id().clone().into(),
                     event: Cow::Owned(ft_withdraw_intent),
@@ -237,7 +237,7 @@ async fn simulate_native_withdraw_intent() {
     assert_eq!(
         result.report.logs,
         vec![
-            DefuseEvent::NativeWithdraw(Cow::Owned(vec![MaybeIntentEvent::new_with_meta(
+            DefuseEvent::NativeWithdraw(Cow::Owned(vec![MaybeIntentEvent::new_with_hash(
                 AccountEvent {
                     account_id: user1.id().clone().into(),
                     event: Cow::Owned(native_withdraw_intent),
@@ -347,7 +347,7 @@ async fn simulate_nft_withdraw_intent() {
     assert_eq!(
         result.report.logs,
         vec![
-            DefuseEvent::NftWithdraw(Cow::Owned(vec![MaybeIntentEvent::new_with_meta(
+            DefuseEvent::NftWithdraw(Cow::Owned(vec![MaybeIntentEvent::new_with_hash(
                 AccountEvent {
                     account_id: user1.id().clone().into(),
                     event: Cow::Owned(nft_withdraw_intent),
@@ -472,7 +472,7 @@ async fn simulate_mt_withdraw_intent() {
     assert_eq!(
         result.report.logs,
         vec![
-            DefuseEvent::MtWithdraw(Cow::Owned(vec![MaybeIntentEvent::new_with_meta(
+            DefuseEvent::MtWithdraw(Cow::Owned(vec![MaybeIntentEvent::new_with_hash(
                 AccountEvent {
                     account_id: user1.id().clone().into(),
                     event: Cow::Owned(mt_withdraw_intent),
@@ -551,7 +551,7 @@ async fn simulate_storage_deposit_intent() {
     assert_eq!(
         result.report.logs,
         vec![
-            DefuseEvent::StorageDeposit(Cow::Owned(vec![MaybeIntentEvent::new_with_meta(
+            DefuseEvent::StorageDeposit(Cow::Owned(vec![MaybeIntentEvent::new_with_hash(
                 AccountEvent {
                     account_id: user1.id().clone().into(),
                     event: Cow::Owned(storage_deposit_intent),
@@ -652,7 +652,7 @@ async fn simulate_token_diff_intent() {
     assert_eq!(
         result.report.logs,
         vec![
-            DefuseEvent::TokenDiff(Cow::Owned(vec![MaybeIntentEvent::new_with_meta(
+            DefuseEvent::TokenDiff(Cow::Owned(vec![MaybeIntentEvent::new_with_hash(
                 AccountEvent {
                     account_id: user1.id().clone().into(),
                     event: TokenDiffEvent {
@@ -664,7 +664,7 @@ async fn simulate_token_diff_intent() {
             )]))
             .to_nep297_event()
             .to_event_log(),
-            DefuseEvent::TokenDiff(Cow::Owned(vec![MaybeIntentEvent::new_with_meta(
+            DefuseEvent::TokenDiff(Cow::Owned(vec![MaybeIntentEvent::new_with_hash(
                 AccountEvent {
                     account_id: user2.id().clone().into(),
                     event: TokenDiffEvent {
@@ -678,11 +678,11 @@ async fn simulate_token_diff_intent() {
             .to_event_log(),
             DefuseEvent::IntentsExecuted(
                 vec![
-                    MaybeIntentEvent::new_with_meta(
+                    MaybeIntentEvent::new_with_hash(
                         AccountEvent::new(user1.id(), NonceEvent::new(nonce1)),
                         user1_payload.hash()
                     ),
-                    MaybeIntentEvent::new_with_meta(
+                    MaybeIntentEvent::new_with_hash(
                         AccountEvent::new(user2.id(), NonceEvent::new(nonce2)),
                         user2_payload.hash()
                     ),
@@ -722,7 +722,7 @@ async fn simulate_add_public_key_intent(public_key: PublicKey) {
         .unwrap();
 
     let events = vec![
-        DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new_with_meta(
+        DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new_with_hash(
             AccountEvent::new(
                 user1.id(),
                 PublicKeyEvent {
@@ -782,7 +782,7 @@ async fn simulate_remove_public_key_intent(public_key: PublicKey) {
         .unwrap();
 
     let events = vec![
-        DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::new_with_meta(
+        DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::new_with_hash(
             AccountEvent::new(
                 user1.id(),
                 PublicKeyEvent {
@@ -825,7 +825,7 @@ async fn simulate_set_auth_by_predecessor_id_intent() {
         .unwrap();
 
     let events = vec![
-        DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new_with_meta(
+        DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new_with_hash(
             AccountEvent::new(user1.id(), Cow::Borrowed(&set_auth_intent)),
             set_auth_payload.hash(),
         ))
@@ -944,7 +944,7 @@ async fn simulate_mint_intent() {
         .unwrap();
 
     let events = vec![
-        DefuseEvent::ImtMint(Cow::Owned(vec![MaybeIntentEvent::new_with_meta(
+        DefuseEvent::ImtMint(Cow::Owned(vec![MaybeIntentEvent::new_with_hash(
             AccountEvent {
                 account_id: user.id().clone().into(),
                 event: ImtMintEvent {
@@ -1016,7 +1016,7 @@ async fn simulate_burn_intent() {
     assert_eq!(
         result.report.logs,
         vec![
-            DefuseEvent::ImtBurn(Cow::Owned(vec![MaybeIntentEvent::new_with_meta(
+            DefuseEvent::ImtBurn(Cow::Owned(vec![MaybeIntentEvent::new_with_hash(
                 AccountEvent {
                     account_id: user.id().clone().into(),
                     event: Cow::Owned(burn_intent)
