@@ -17,13 +17,6 @@ pub struct Contract(ContractStorage);
 
 #[near]
 impl Contract {
-    #[init]
-    #[must_use]
-    #[allow(clippy::use_self)]
-    pub fn new(config: ProxyConfig) -> Contract {
-        Self(ContractStorage::init(config))
-    }
-
     fn assert_owner(&self) {
         require!(
             env::predecessor_account_id() == self.0.config().owner_id,
