@@ -37,13 +37,8 @@ impl DefuseEventVersion {
     fn assert_compatible(&self, event: &DefuseEvent) {
         let json = serde_json::to_string(event).expect("serialize new event");
 
-        println!(
-            "Testing compatibility of event version {:?} with event: {}",
-            self, json
-        );
-
         let _ = match self {
-            DefuseEventVersion::V0_4_1 => {
+            Self::V0_4_1 => {
                 match event {
                     #[cfg(feature = "imt")]
                     DefuseEvent::ImtMint(_) | DefuseEvent::ImtBurn(_) => {
@@ -66,21 +61,12 @@ fn pub_key<'a>() -> Cow<'a, PublicKey> {
     Cow::Owned("ed25519:11111111111111111111111111111111".parse().unwrap())
 }
 
-fn tokens<'a, T>() -> Amounts<BTreeMap<TokenId, T>>
-where
-    T: From<u64>,
-{
+fn tokens() -> Amounts {
     Amounts::new(
         [
-            (TokenId::Nep141("token.near".parse().unwrap()), T::from(100)),
-            (
-                TokenId::Nep245("token.near:abcd".parse().unwrap()),
-                T::from(200),
-            ),
-            (
-                TokenId::Nep171("token.near:abcd".parse().unwrap()),
-                T::from(1),
-            ),
+            (TokenId::Nep141("token.near".parse().unwrap()), 100),
+            (TokenId::Nep245("token.near:abcd".parse().unwrap()), 200),
+            (TokenId::Nep171("token.near:abcd".parse().unwrap()), 1),
         ]
         .into(),
     )
@@ -103,7 +89,7 @@ pub fn pk_added_intent_event<'a>() -> DefuseEvent<'a> {
                 public_key: pub_key(),
             },
         },
-        [1; 32].into(),
+        [1; 32],
     ))
 }
 
@@ -127,11 +113,11 @@ pub fn transfer_intent_event<'a>() -> DefuseEvent<'a> {
             account_id: account(),
             event: TransferEvent {
                 receiver_id: account(),
-                tokens: tokens::<u128>(),
+                tokens: tokens(),
                 memo: Cow::Owned(Some("test transfer".to_string())),
             },
         },
-        [0; 32].into(),
+        [0; 32],
     )]))
 }
 
@@ -140,15 +126,21 @@ pub fn token_diff_intent_event<'a>() -> DefuseEvent<'a> {
         AccountEvent {
             account_id: account(),
             event: TokenDiffEvent {
-                fees_collected: tokens::<u128>(),
+                fees_collected: tokens(),
                 diff: Cow::Owned(TokenDiff {
-                    diff: tokens::<i128>(),
+                    diff: Amounts::new(
+                        [
+                            (TokenId::Nep141("token.near".parse().unwrap()), 100),
+                            (TokenId::Nep245("token.near:abcd".parse().unwrap()), -200),
+                        ]
+                        .into(),
+                    ),
                     memo: Some("test token diff".to_string()),
                     referral: Some(account().into()),
                 }),
             },
         },
-        [0; 32].into(),
+        [0; 32],
     )]))
 }
 
@@ -158,7 +150,7 @@ fn intents_executed_event<'a>() -> DefuseEvent<'a> {
             account_id: account(),
             event: NonceEvent { nonce: [0; 32] },
         },
-        [0; 32].into(),
+        [0; 32],
     )]))
 }
 
@@ -169,19 +161,19 @@ fn ft_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
             event: Cow::Owned(FtWithdraw {
                 token: "token.near".parse().unwrap(),
                 amount: 100.into(),
-                memo: Some("test ft withdraw".to_string()).into(),
+                memo: Some("test ft withdraw".to_string()),
                 receiver_id: account().into(),
-                msg: Some("test message".to_string()).into(),
+                msg: Some("test message".to_string()),
                 storage_deposit: Some(NearToken::from_yoctonear(100)),
                 min_gas: Some(Gas::from_tgas(10)),
             }),
         },
-        [0; 32].into(),
+        [0; 32],
     )]))
 }
 
 fn mt_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
-    let (token_ids, amounts): (Vec<_>, Vec<_>) = tokens::<u128>()
+    let (token_ids, amounts): (Vec<_>, Vec<_>) = tokens()
         .into_iter()
         .map(|(token_id, amount)| (token_id.to_string(), U128::from(amount)))
         .unzip();
@@ -193,14 +185,14 @@ fn mt_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
                 token: account().into(),
                 token_ids,
                 amounts,
-                memo: Some("test mt withdraw".to_string()).into(),
+                memo: Some("test mt withdraw".to_string()),
                 receiver_id: account().into(),
-                msg: Some("test message".to_string()).into(),
+                msg: Some("test message".to_string()),
                 storage_deposit: Some(NearToken::from_yoctonear(100)),
                 min_gas: Some(Gas::from_tgas(10)),
             }),
         },
-        [0; 32].into(),
+        [0; 32],
     )]))
 }
 
@@ -211,14 +203,14 @@ fn nft_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
             event: Cow::Owned(NftWithdraw {
                 token: account().into(),
                 token_id: "token_id1".to_string(),
-                memo: Some("test nft withdraw".to_string()).into(),
+                memo: Some("test nft withdraw".to_string()),
                 receiver_id: account().into(),
-                msg: Some("test message".to_string()).into(),
+                msg: Some("test message".to_string()),
                 storage_deposit: Some(NearToken::from_yoctonear(100)),
                 min_gas: Some(Gas::from_tgas(10)),
             }),
         },
-        [0; 32].into(),
+        [0; 32],
     )]))
 }
 
@@ -231,7 +223,7 @@ fn native_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
                 receiver_id: account().into(),
             }),
         },
-        [0; 32].into(),
+        [0; 32],
     )]))
 }
 
@@ -245,7 +237,7 @@ fn storage_deposit_intent_event<'a>() -> DefuseEvent<'a> {
                 deposit_for_account_id: account().into(),
             }),
         },
-        [0; 32].into(),
+        [0; 32],
     )]))
 }
 
@@ -254,7 +246,7 @@ fn imt_mint_intent_event<'a>() -> DefuseEvent<'a> {
     use crate::tokens::imt::ImtMintEvent;
 
     let tokens = Amounts::new(
-        tokens::<u128>()
+        tokens()
             .into_iter()
             .map(|(token_id, amount)| (token_id.to_string(), amount))
             .collect::<BTreeMap<_, _>>(),
@@ -269,7 +261,7 @@ fn imt_mint_intent_event<'a>() -> DefuseEvent<'a> {
                 memo: Cow::Owned(Some("test imt mint".to_string())),
             },
         },
-        [0; 32].into(),
+        [0; 32],
     )]))
 }
 
@@ -278,7 +270,7 @@ fn imt_burn_intent_event<'a>() -> DefuseEvent<'a> {
     use crate::intents::tokens::imt::ImtBurn;
 
     let tokens = Amounts::new(
-        tokens::<u128>()
+        tokens()
             .into_iter()
             .map(|(token_id, amount)| (token_id.to_string(), amount))
             .collect::<BTreeMap<_, _>>(),
@@ -290,10 +282,10 @@ fn imt_burn_intent_event<'a>() -> DefuseEvent<'a> {
             event: Cow::Owned(ImtBurn {
                 minter_id: account().into(),
                 tokens,
-                memo: Some("test imt burn".to_string()).into(),
+                memo: Some("test imt burn".to_string()),
             }),
         },
-        [0; 32].into(),
+        [0; 32],
     )]))
 }
 
@@ -317,7 +309,7 @@ fn set_auth_by_predecessor_id_intent_event<'a>() -> DefuseEvent<'a> {
             account_id: account(),
             event: Cow::Owned(SetAuthByPredecessorId { enabled: true }),
         },
-        [0; 32].into(),
+        [0; 32],
     ))
 }
 
@@ -327,7 +319,7 @@ fn set_auth_by_predecessor_id_direct_event<'a>() -> DefuseEvent<'a> {
             account_id: account(),
             event: Cow::Owned(SetAuthByPredecessorId { enabled: true }),
         },
-        [0; 32].into(),
+        [0; 32],
     ))
 }
 
