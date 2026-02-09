@@ -12,8 +12,9 @@ pub struct ProxyConfig {
     /// Global contract ID for oneshot condvar
     pub oneshot_condvar_global_id: GlobalContractId,
     /// Contract that will call `on_auth` on condvar instances.
+    #[cfg(feature = "auth-call")]
     pub on_auth_caller: AccountId,
-    /// Account to notify on authorization events.
+    /// Account to notify on condvar instances
     pub notifier_id: AccountId,
 }
 

@@ -1,3 +1,5 @@
+#[cfg(all(feature = "auth-call", feature = "escrow-swap"))]
+mod auth_call;
 mod tokens;
 mod utils;
 
@@ -68,9 +70,9 @@ impl EscrowProxy for Contract {
 #[cfg(feature = "escrow-swap")]
 #[near]
 impl Contract {
-    pub fn es_cancel(&self, escrow_address: AccountId, params: EscrowParams) -> Promise {
+    pub fn es_cancel(&self, contract_id: AccountId, params: EscrowParams) -> Promise {
         self.assert_owner();
-        ext_escrow::ext(escrow_address)
+        ext_escrow::ext(contract_id)
             .with_static_gas(Gas::from_tgas(50))
             .es_close(params)
     }

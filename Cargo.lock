@@ -964,6 +964,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "defuse",
+ "defuse-auth-call",
  "defuse-core",
  "defuse-crypto",
  "defuse-escrow-swap",

@@ -16,6 +16,7 @@ defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-oneshot-condvar = { workspace = true }
 
+defuse-auth-call = { workspace = true, optional = true }
 defuse-escrow-swap = { workspace = true, optional = true }
 defuse-token-id = { workspace = true, optional=true }
 
@@ -38,7 +39,7 @@ tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
 default = ["nep141", "nep245", "escrow-swap", "auth-call"]
 
 abi = ["defuse-oneshot-condvar/abi", "defuse-escrow-swap?/abi"]
-auth-call = ["defuse-oneshot-condvar/auth-call"]
+auth-call = ["dep:defuse-auth-call", "defuse-oneshot-condvar/auth-call"]
 contract = []
 escrow-swap = ["dep:defuse-escrow-swap"]
 nep141 = ["dep:defuse-token-id"]
