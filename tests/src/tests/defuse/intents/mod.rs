@@ -11,7 +11,6 @@ use crate::extensions::defuse::{
     intents::{ExecuteIntentsExt, SimulateIntents},
     signer::DefuseSignerExt,
 };
-use defuse::core::events::MaybeIntentEvent;
 use defuse_randomness::Rng;
 use near_sdk::{AccountId, AccountIdRef, AsNep297Event, CryptoHash, serde_json};
 use rstest::rstest;
@@ -100,8 +99,9 @@ async fn simulate_is_view_method(#[notrace] mut rng: impl Rng) {
     assert_eq!(result.report.intents_executed.len(), 1);
 
     // Prepare expected transfer event
-    let expected_log = DefuseEvent::Transfer(Cow::Owned(vec![MaybeIntentEvent::intent(
-        AccountEvent {
+    let expected_log = DefuseEvent::Transfer(Cow::Owned(vec![IntentEvent {
+        intent_hash: transfer_intent_payload.hash(),
+        event: AccountEvent {
             account_id: user.id().clone().into(),
             event: TransferEvent {
                 receiver_id: Cow::Borrowed(&transfer_intent.receiver_id),
@@ -109,8 +109,7 @@ async fn simulate_is_view_method(#[notrace] mut rng: impl Rng) {
                 memo: Cow::Borrowed(&transfer_intent.memo),
             },
         },
-        transfer_intent_payload.hash(),
-    )]))
+    }]))
     .to_nep297_event()
     .to_event_log();
 

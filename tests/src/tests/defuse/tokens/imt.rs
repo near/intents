@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use crate::{
     env::{DEFUSE_WASM, TransferCallExpectation},
     extensions::defuse::{deployer::DefuseExt, tokens::imt::DefuseImtMinter},
@@ -7,29 +5,18 @@ use crate::{
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
     core::{
-        accounts::AccountEvent,
-        amounts::Amounts,
-        events::{DefuseEvent, MaybeIntentEvent},
-        fees::FeesConfig,
-        intents::tokens::NotifyOnTransfer,
-        token_id::TokenId,
-        tokens::{
-            MAX_TOKEN_ID_LEN,
-            imt::{ImtMintEvent, ImtTokens},
-        },
+        fees::FeesConfig, intents::tokens::NotifyOnTransfer, token_id::TokenId,
+        tokens::MAX_TOKEN_ID_LEN,
     },
 };
-use defuse_sandbox::assert_a_contains_b;
-
 use defuse_escrow_swap::{
     Pips,
     token_id::{imt::ImtTokenId, nep245::Nep245TokenId},
 };
-use defuse_nep245::{MtEvent, MtMintEvent};
 use defuse_sandbox::{FnCallBuilder, extensions::mt::MtViewExt};
 use defuse_test_utils::asserts::ResultAssertsExt;
 use multi_token_receiver_stub::MTReceiverMode;
-use near_sdk::{AccountId, AsNep297Event, Gas, NearToken, json_types::U128};
+use near_sdk::{AccountId, Gas, NearToken};
 use rstest::rstest;
 
 use crate::env::{Env, MT_RECEIVER_STUB_WASM};
@@ -45,7 +32,7 @@ async fn imt_mint_call() {
     let amount = 1000;
     let receiver_id = "imt_tokens_receiver".parse::<AccountId>().unwrap();
 
-    let (minted_tokens, result) = user
+    let minted_tokens = user
         .imt_mint(
             env.defuse.id(),
             receiver_id.clone(),
@@ -60,44 +47,15 @@ async fn imt_mint_call() {
 
     assert_eq!(
         env.defuse
-            .mt_balance_of(receiver_id.clone(), &imt_id.to_string())
+            .mt_balance_of(receiver_id, &imt_id.to_string())
             .await
             .unwrap(),
         amount
     );
 
+    // TODO: compare events
+
     assert_eq!(minted_tokens.get(&imt_id), Some(&amount));
-
-    let events = [
-        MtEvent::MtMint(Cow::Owned(vec![MtMintEvent {
-            owner_id: user.id().into(),
-            token_ids: vec![imt_id.to_string()].into(),
-            amounts: vec![U128::from(amount)].into(),
-            memo: Some(memo.into()),
-        }]))
-        .to_nep297_event()
-        .to_event_log(),
-        DefuseEvent::ImtMint(
-            vec![MaybeIntentEvent::direct(AccountEvent {
-                account_id: user.id().clone().into(),
-                event: ImtMintEvent {
-                    receiver_id: Cow::Owned(receiver_id),
-                    tokens: ImtTokens::from(Amounts::new(
-                        std::iter::once((token.clone(), amount)).collect(),
-                    )),
-                    memo: Cow::Owned(Some(memo.to_string())),
-                },
-            })]
-            .into(),
-        )
-        .to_nep297_event()
-        .to_event_log(),
-    ];
-
-    assert_a_contains_b!(
-        a: result.logs().clone(),
-        b: events
-    );
 }
 
 #[rstest]

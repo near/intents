@@ -69,7 +69,7 @@ pub(super) mod tests {
     use defuse_core::{
         Result,
         accounts::{AccountEvent, PublicKeyEvent},
-        events::{DefuseEvent, MaybeIntentEvent},
+        events::DefuseEvent,
     };
     use std::borrow::Cow;
 
@@ -100,12 +100,12 @@ pub(super) mod tests {
                 return false;
             }
 
-            DefuseEvent::PublicKeyAdded(MaybeIntentEvent::direct(AccountEvent::new(
+            DefuseEvent::PublicKeyAdded(AccountEvent::new(
                 Cow::Borrowed(me),
                 PublicKeyEvent {
                     public_key: Cow::Borrowed(&public_key),
                 },
-            )))
+            ))
             .emit();
 
             true
@@ -130,12 +130,12 @@ pub(super) mod tests {
                 return false;
             }
 
-            DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::direct(AccountEvent::new(
+            DefuseEvent::PublicKeyRemoved(AccountEvent::new(
                 Cow::Borrowed(me),
                 PublicKeyEvent {
                     public_key: Cow::Borrowed(public_key),
                 },
-            )))
+            ))
             .emit();
 
             true

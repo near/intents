@@ -5,7 +5,6 @@ use crate::extensions::defuse::contract::core::{
     crypto::PublicKey,
     events::DefuseEvent,
 };
-use defuse::core::events::MaybeIntentEvent;
 use near_sdk::{AsNep297Event, NearToken, serde_json::json};
 use rstest::rstest;
 
@@ -46,16 +45,17 @@ async fn test_add_public_key(public_key: PublicKey) {
         .into_result()
         .unwrap();
 
-    let event = DefuseEvent::PublicKeyAdded(MaybeIntentEvent::direct(AccountEvent::new(
-        user.id(),
-        PublicKeyEvent {
-            public_key: Cow::Borrowed(&public_key),
-        },
-    )))
-    .to_nep297_event()
-    .to_event_log();
-
-    assert_eq_event_logs!(result.logs().clone(), [event]);
+    assert_eq_event_logs!(
+        result.logs().clone(),
+        [DefuseEvent::PublicKeyAdded(AccountEvent::new(
+            user.id(),
+            PublicKeyEvent {
+                public_key: Cow::Borrowed(&public_key),
+            },
+        ))
+        .to_nep297_event()
+        .to_event_log(),]
+    );
 
     assert!(
         env.defuse
@@ -99,16 +99,17 @@ async fn test_add_and_remove_public_key(public_key: PublicKey) {
         .into_result()
         .unwrap();
 
-    let event = DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::direct(AccountEvent::new(
-        user.id(),
-        PublicKeyEvent {
-            public_key: Cow::Borrowed(&public_key),
-        },
-    )))
-    .to_nep297_event()
-    .to_event_log();
-
-    assert_eq_event_logs!(result.logs().clone(), [event]);
+    assert_eq_event_logs!(
+        result.logs().clone(),
+        [DefuseEvent::PublicKeyRemoved(AccountEvent::new(
+            user.id(),
+            PublicKeyEvent {
+                public_key: Cow::Borrowed(&public_key),
+            },
+        ))
+        .to_nep297_event()
+        .to_event_log(),]
+    );
 
     assert!(
         !env.defuse

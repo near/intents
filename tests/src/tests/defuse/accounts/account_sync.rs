@@ -8,7 +8,7 @@ use defuse::{
     core::{
         accounts::{AccountEvent, PublicKeyEvent},
         crypto::PublicKey,
-        events::{DefuseEvent, MaybeIntentEvent},
+        events::DefuseEvent,
     },
 };
 use defuse_randomness::Rng;
@@ -94,19 +94,16 @@ async fn test_force_add_public_keys(#[notrace] mut rng: impl Rng) {
                     "Public key {public_key:?} not found for account {account_id}",
                 );
 
-                let event =
-                    DefuseEvent::PublicKeyAdded(MaybeIntentEvent::direct(AccountEvent::new(
+                assert_a_contains_b!(
+                    a: result.logs().clone(),
+                    b: [DefuseEvent::PublicKeyAdded(AccountEvent::new(
                         *account_id,
                         PublicKeyEvent {
                             public_key: Cow::Borrowed(public_key),
                         },
-                    )))
+                    ))
                     .to_nep297_event()
-                    .to_event_log();
-
-                assert_a_contains_b!(
-                    a: result.logs().clone(),
-                    b: [event]
+                    .to_event_log(),]
                 );
             }
         }
@@ -211,18 +208,16 @@ async fn test_force_add_and_remove_public_keys(#[notrace] mut rng: impl Rng) {
                     "Public key {public_key:?} found for account {account_id}",
                 );
 
-                let event =
-                    DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::direct(AccountEvent::new(
+                assert_a_contains_b!(
+                    a: result.logs().clone(),
+                    b: [DefuseEvent::PublicKeyRemoved(AccountEvent::new(
                         *account_id,
                         PublicKeyEvent {
                             public_key: Cow::Borrowed(public_key),
                         },
-                    )))
+                    ))
                     .to_nep297_event()
-                    .to_event_log();
-                assert_a_contains_b!(
-                    a: result.logs().clone(),
-                    b: [event]
+                    .to_event_log(),]
                 );
             }
         }

@@ -1,12 +1,5 @@
-use std::borrow::Cow;
-
 use defuse_core::{
-    accounts::AccountEvent,
-    amounts::Amounts,
-    engine::State,
-    events::{DefuseEvent, MaybeIntentEvent},
-    intents::tokens::NotifyOnTransfer,
-    tokens::imt::{ImtMintEvent, ImtTokens},
+    amounts::Amounts, engine::State, intents::tokens::NotifyOnTransfer, tokens::imt::ImtTokens,
 };
 
 use defuse_near_utils::UnwrapOrPanic;
@@ -31,23 +24,19 @@ impl ImtMinter for Contract {
 
         let owner_id = self.ensure_auth_predecessor_id();
 
-        DefuseEvent::ImtMint(
-            vec![MaybeIntentEvent::direct(AccountEvent::new(
-                owner_id.clone(),
-                ImtMintEvent {
-                    receiver_id: Cow::Owned(receiver_id.clone()),
-                    tokens: tokens.clone(),
-                    memo: Cow::Owned(memo.clone()),
-                },
-            ))]
-            .into(),
-        )
-        .emit();
-
-        let minted_tokens = self
+        let tokens = self
             .imt_mint_with_notification(&owner_id, receiver_id, tokens, memo, notification)
             .unwrap_or_panic();
 
-        PromiseOrValue::Value(minted_tokens)
+        // DefuseEvent::ImtMint(Cow::Borrowed(
+        //     [IntentEvent::new(
+        //         AccountEvent::new(signer_id, Cow::Borrowed(&self)),
+        //         intent_hash,
+        //     )]
+        //     .as_slice(),
+        // ))
+        // .emit();
+
+        PromiseOrValue::Value(tokens)
     }
 }
