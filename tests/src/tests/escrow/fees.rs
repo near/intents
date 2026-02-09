@@ -10,7 +10,8 @@ use defuse_core::token_id::TokenId;
 use defuse_core::token_id::nep245::Nep245TokenId;
 use defuse_escrow_swap::decimal::UD128;
 use defuse_escrow_swap::{Pips, ProtocolFees};
-use defuse_sandbox::{EscrowSwapExt, MtExt, MtViewExt};
+use crate::extensions::escrow::EscrowSwapExt;
+use defuse_sandbox::{MtExt, MtViewExt};
 use near_sdk::serde_json;
 
 /// Test escrow with 1% protocol fee

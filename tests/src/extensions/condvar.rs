@@ -1,21 +1,16 @@
-use std::{fs, path::Path, sync::LazyLock};
-
 use defuse_oneshot_condvar::storage::{ContractStorage, State as OneshotCondVarState};
 use near_sdk::{
     AccountId, GlobalContractId, NearToken,
     state_init::{StateInit, StateInitV1},
 };
-use serde_json::json;
+use near_sdk::serde_json::json;
 
-use crate::{Account, SigningAccount, api::types::transaction::actions::GlobalContractDeployMode};
+use defuse_sandbox::{Account, SigningAccount, api::types::transaction::actions::GlobalContractDeployMode};
+
+use crate::env::ONESHOT_CONDVAR_WASM;
 
 // Re-export Config type for convenience (used to deploy oneshot-condvar instances)
 pub use defuse_oneshot_condvar::storage::Config;
-
-pub static ONESHOT_CONDVAR_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
-    let filename = Path::new(env!("CARGO_MANIFEST_DIR")).join("../res/defuse_oneshot_condvar.wasm");
-    fs::read(filename.clone()).unwrap_or_else(|_| panic!("file {filename:?} should exist"))
-});
 
 pub trait OneshotCondVarExt {
     async fn deploy_oneshot_condvar(&self, name: impl AsRef<str>) -> AccountId;

@@ -1,18 +1,13 @@
 use std::collections::BTreeMap;
-use std::{fs, path::Path, sync::LazyLock};
 
 use near_sdk::{
     AccountId, GlobalContractId, NearToken,
     state_init::{StateInit, StateInitV1},
 };
 
-use crate::{SigningAccount, api::types::transaction::actions::GlobalContractDeployMode};
+use defuse_sandbox::{SigningAccount, api::types::transaction::actions::GlobalContractDeployMode};
 
-pub static MT_RECEIVER_STUB_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
-    let filename = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../res/multi-token-receiver-stub/multi_token_receiver_stub.wasm");
-    fs::read(filename.clone()).unwrap_or_else(|_| panic!("file {filename:?} should exist"))
-});
+use crate::env::MT_RECEIVER_STUB_WASM;
 
 pub trait MtReceiverStubExt {
     /// Deploy as global contract (code only)

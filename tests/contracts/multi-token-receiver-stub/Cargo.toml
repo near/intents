@@ -16,14 +16,6 @@ defuse-nep245.workspace = true
 near-contract-standards.workspace = true
 near-sdk.workspace = true
 
-[dev-dependencies]
-defuse-sandbox.workspace = true
-near-sdk = { workspace = true, features = ["unit-testing"] }
-near-workspaces.workspace = true
-tokio.workspace = true
-serde_json.workspace = true
-futures.workspace = true
-
 [features]
 default = ["auth-call"]
 abi = ["defuse/abi"]

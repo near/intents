@@ -277,7 +277,8 @@ async fn test_partial_fill_funds_returned_after_timeout() {
     use crate::utils::escrow_builders::ParamsBuilder;
     use crate::utils::escrow_builders::{FillMessageBuilder, FundMessageBuilder};
     use defuse_escrow_swap::decimal::UD128;
-    use defuse_sandbox::{EscrowSwapExt, MtExt, MtViewExt};
+    use crate::extensions::escrow::EscrowSwapExt;
+    use defuse_sandbox::{MtExt, MtViewExt};
 
     let env = DefuseEnv::builder().build().await;
     let escrow_swap_global = env.root().deploy_escrow_swap_global("escrow_swap").await;

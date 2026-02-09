@@ -8,20 +8,10 @@ repository.workspace = true
 [lints]
 workspace = true
 
-[features]
-default = ["condvar", "escrow-proxy", "escrow-swap"]
-condvar = ["dep:defuse-oneshot-condvar"]
-escrow-proxy = ["dep:defuse-escrow-proxy"]
-escrow-swap = ["escrow-proxy", "defuse-escrow-proxy/escrow-swap", "dep:defuse-escrow-swap"]
-
 [dependencies]
 defuse-crypto = { workspace = true, features = ["near-api-types"] }
-defuse-escrow-proxy = { workspace = true, optional = true }
-defuse-escrow-swap = { workspace = true, optional = true }
 defuse-nep413 = { workspace = true, features = ["near-api"] }
 defuse-nep245.workspace = true
-defuse-oneshot-condvar = { workspace = true, optional = true }
-defuse-randomness.workspace = true
 tokio.workspace = true
 rstest.workspace = true
 
@@ -30,12 +20,9 @@ futures.workspace = true
 libc = "0.2"
 impl-tools.workspace = true
 near-api.workspace = true
-near-openapi-client.workspace = true
 near-openapi-types.workspace = true
 near-sandbox.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing", "deterministic-account-ids"] }
-serde_json.workspace = true
-thiserror.workspace = true
 tracing.workspace = true
 
 near-contract-standards.workspace = true

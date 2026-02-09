@@ -8,10 +8,10 @@ use defuse_escrow_proxy::CondVarContext;
 use defuse_escrow_proxy::{ForwardRequest, ProxyConfig};
 use defuse_oneshot_condvar::storage::{Config as CondVarConfig, ContractStorage};
 use defuse_sandbox::extensions::storage_management::StorageManagementExt;
-use defuse_sandbox::{
-    EscrowProxyExt, FnCallBuilder, FtExt, FtViewExt, MtExt, MtReceiverStubExt, MtViewExt,
-    OneshotCondVarExt,
-};
+use crate::extensions::condvar::OneshotCondVarExt;
+use crate::extensions::escrow_proxy::EscrowProxyExt;
+use crate::extensions::mt_receiver::MtReceiverStubExt;
+use defuse_sandbox::{FnCallBuilder, FtExt, FtViewExt, MtExt, MtViewExt};
 use multi_token_receiver_stub::{FTReceiverMode, MTReceiverMode};
 use near_sdk::AccountId;
 use near_sdk::serde_json;
@@ -396,7 +396,7 @@ async fn test_proxy_with_ft_transfer() {
     use std::time::Duration;
 
     use crate::utils::escrow_builders::{FillMessageBuilder, FundMessageBuilder, ParamsBuilder};
-    use defuse_sandbox::EscrowSwapExt;
+    use crate::extensions::escrow::EscrowSwapExt;
 
     let env = Env::builder().build().await;
 

@@ -9,12 +9,15 @@ repository.workspace = true
 workspace = true
 
 [features]
-default = ["defuse", "poa", "escrow", "long"]
+default = ["defuse", "poa", "escrow", "escrow-proxy", "condvar", "mt-receiver", "long"]
 
 long = []
 poa = ["dep:defuse-poa-factory"]
 defuse = ["dep:defuse"]
 escrow = ["dep:defuse-escrow-swap"]
+escrow-proxy = ["dep:defuse-escrow-proxy"]
+condvar = ["dep:defuse-oneshot-condvar"]
+mt-receiver = []
 
 [dependencies]
 defuse-sandbox = { workspace = true }
@@ -24,10 +27,10 @@ defuse-escrow-swap = { workspace = true, features = ["auth_call"],  optional = t
 defuse-poa-factory = {workspace = true, features = ["contract"], optional = true }
 
 defuse-core.workspace = true
-defuse-escrow-proxy = { workspace = true, features = ["escrow-swap"] }
+defuse-escrow-proxy = { workspace = true, features = ["escrow-swap"], optional = true }
 defuse-near-utils = { workspace = true }
 defuse-nep245.workspace = true
-defuse-oneshot-condvar.workspace = true
+defuse-oneshot-condvar = { workspace = true, optional = true }
 defuse-randomness.workspace = true
 defuse-serde-utils = { workspace = true }
 defuse-test-utils.workspace = true

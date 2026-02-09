@@ -1,28 +1,23 @@
-use std::{fs, path::Path, sync::LazyLock};
-
 use defuse_escrow_proxy::ProxyConfig;
-#[cfg(feature = "escrow-swap")]
+#[cfg(feature = "escrow")]
 use defuse_escrow_swap::Params as EscrowParams;
 use near_sdk::{
     AccountId, Gas, GlobalContractId, NearToken,
     state_init::{StateInit, StateInitV1},
 };
-use serde_json::json;
+use near_sdk::serde_json::json;
 
-use crate::{
+use defuse_sandbox::{
     FnCallBuilder, SigningAccount, api::types::transaction::actions::GlobalContractDeployMode,
 };
 
-pub static ESCROW_PROXY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
-    let filename = Path::new(env!("CARGO_MANIFEST_DIR")).join("../res/defuse_escrow_proxy.wasm");
-    fs::read(filename.clone()).unwrap_or_else(|_| panic!("file {filename:?} should exist"))
-});
+use crate::env::ESCROW_PROXY_WASM;
 
 pub trait EscrowProxyExt {
     async fn deploy_escrow_proxy(&self, config: ProxyConfig) -> anyhow::Result<()>;
     async fn get_escrow_proxy_config(&self) -> anyhow::Result<ProxyConfig>;
     /// Call `es_cancel` on proxy contract. Requires caller to be owner.
-    #[cfg(feature = "escrow-swap")]
+    #[cfg(feature = "escrow")]
     async fn es_cancel(
         &self,
         proxy_contract: &AccountId,
@@ -60,7 +55,7 @@ impl EscrowProxyExt for SigningAccount {
         self.call_view_function_json("config", json!({})).await
     }
 
-    #[cfg(feature = "escrow-swap")]
+    #[cfg(feature = "escrow")]
     async fn es_cancel(
         &self,
         proxy_contract: &AccountId,

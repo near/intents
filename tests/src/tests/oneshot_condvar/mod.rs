@@ -2,7 +2,8 @@ use std::time::Duration;
 
 use defuse_oneshot_condvar::storage::Config as CondVarConfig;
 use defuse_oneshot_condvar::{CV_NOTIFY_ONE_GAS, CV_WAIT_GAS};
-use defuse_sandbox::{Account, FnCallBuilder, OneshotCondVarExt, Sandbox};
+use crate::extensions::condvar::OneshotCondVarExt;
+use defuse_sandbox::{Account, FnCallBuilder, Sandbox};
 use near_sdk::{AccountId, Gas, NearToken, serde_json::json};
 
 const INIT_BALANCE: NearToken = NearToken::from_near(100);

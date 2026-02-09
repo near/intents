@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
-use defuse_sandbox::{MtExt, MtReceiverStubExt, sandbox};
+use crate::extensions::mt_receiver::MtReceiverStubExt;
+use defuse_sandbox::{MtExt, sandbox};
 use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::serde_json;
 use rstest::rstest;

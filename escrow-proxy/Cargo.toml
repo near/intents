@@ -25,16 +25,6 @@ near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 serde_with = { workspace = true, features = ["hex"] }
 thiserror.workspace = true
 
-[dev-dependencies]
-defuse = { workspace = true, features = ["sandbox"] }
-defuse-core.workspace = true
-defuse-crypto.workspace = true
-defuse-sandbox = { workspace = true, features = ["escrow-swap"] }
-anyhow.workspace = true
-futures.workspace = true
-rand.workspace = true
-tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
-
 [features]
 default = ["nep141", "nep245", "escrow-swap", "auth-call"]
 
