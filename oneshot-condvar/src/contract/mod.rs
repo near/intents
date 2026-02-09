@@ -115,7 +115,7 @@ impl OneshotCondVar for Contract {
         match state.state {
             Status::Idle => {
                 let (promise, yield_id) =
-                    Promise::new_yield("cv_wait_resume", vec![], CV_WAIT_RESUME_GAS, GasWeight(1));
+                    Promise::new_yield("cv_wait_resume", [], CV_WAIT_RESUME_GAS, GasWeight(1));
                 state.state = Status::WaitingForNotification(yield_id);
                 return promise.into();
             }
