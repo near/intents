@@ -20,7 +20,7 @@ impl Contract {
     fn assert_owner(&self) {
         require!(
             env::predecessor_account_id() == self.0.config().owner_id,
-            "Only owner can call this method"
+            "only owner can call this method"
         );
     }
 }
