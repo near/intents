@@ -104,15 +104,15 @@ impl EscrowProxyExt for SigningAccount {
     ) -> AccountId {
         let raw_state = defuse_escrow_proxy::ContractStorage::init_state(config);
         let state_init = StateInit::V1(StateInitV1 {
-            code: GlobalContractId::AccountId(global_contract_id.clone()),
-            data: raw_state.clone(),
+            code: GlobalContractId::AccountId(global_contract_id),
+            data: raw_state,
         });
         let account_id = state_init.derive_account_id();
 
         // Note: RPC may error but contract deploys successfully
         let _ = self
             .tx(account_id.clone())
-            .state_init(global_contract_id, raw_state)
+            .state_init(state_init)
             .transfer(NearToken::from_yoctonear(1))
             .await;
         account_id

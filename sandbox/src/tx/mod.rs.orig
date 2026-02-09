@@ -1,4 +1,6 @@
-	use futures::{FutureExt, future::BoxFuture};
+use std::collections::BTreeMap;
+
+use futures::{FutureExt, future::BoxFuture};
 use near_api::{
     PublicKey, Transaction,
     types::{
@@ -17,7 +19,6 @@ use near_api::{
 };
 use near_sdk::state_init::{StateInit, StateInitV1};
 use near_sdk::{AccountId, GlobalContractId, NearToken};
-
 
 mod fn_call;
 pub mod gas;
@@ -86,6 +87,15 @@ impl TxBuilder {
     }
 
     #[must_use]
+<<<<<<< HEAD
+    pub fn state_init(self, global_contract: AccountId, state: BTreeMap<Vec<u8>, Vec<u8>>) -> Self {
+        self.add_action(Action::DeterministicStateInit(Box::new(
+            DeterministicStateInitAction {
+                state_init: DeterministicAccountStateInit::V1(DeterministicAccountStateInitV1 {
+                    code: GlobalContractIdentifier::AccountId(global_contract),
+                    data: state,
+                }),
+=======
     pub fn state_init(self, state_init: StateInit) -> Self {
         self.add_action(Action::DeterministicStateInit(Box::new(
             DeterministicStateInitAction {
@@ -107,6 +117,7 @@ impl TxBuilder {
                     }
                 },
 
+>>>>>>> origin/main
                 deposit: NearToken::from_near(0),
             },
         )))

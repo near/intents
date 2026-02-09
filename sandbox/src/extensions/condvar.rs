@@ -54,14 +54,14 @@ impl OneshotCondVarExt for SigningAccount {
     ) -> AccountId {
         let raw_state = ContractStorage::init_state(config.clone()).unwrap();
         let solver1_state_init = StateInit::V1(StateInitV1 {
-            code: GlobalContractId::AccountId(global_contract_id.clone()),
-            data: raw_state.clone(),
+            code: GlobalContractId::AccountId(global_contract_id),
+            data: raw_state,
         });
 
         let account = solver1_state_init.derive_account_id();
 
         self.tx(account.clone())
-            .state_init(global_contract_id, raw_state)
+            .state_init(solver1_state_init)
             .transfer(NearToken::from_yoctonear(1))
             .await
             .unwrap();

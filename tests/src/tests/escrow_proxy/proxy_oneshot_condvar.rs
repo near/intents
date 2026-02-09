@@ -40,8 +40,7 @@ async fn test_proxy_returns_funds_on_timeout_of_authorization() {
     let env = Env::builder().build().await;
     let (condvar_global, mt_receiver_global, escrow_proxy_global) = futures::join!(
         env.root().deploy_oneshot_condvar("global_transfer_auth"),
-        env.root()
-            .deploy_mt_receiver_stub_global("mt_receiver_global"),
+        env.root().deploy_mt_receiver_stub_global("mt_receiver_global"),
         env.root().deploy_escrow_proxy_global("escrow_proxy_global"),
     );
     let mt_receiver_instance = env
@@ -118,8 +117,7 @@ async fn test_transfer_authorized_by_relay() {
 
     let (condvar_global, mt_receiver_global, escrow_proxy_global) = futures::join!(
         env.root().deploy_oneshot_condvar("global_transfer_auth"),
-        env.root()
-            .deploy_mt_receiver_stub_global("mt_receiver_global"),
+        env.root().deploy_mt_receiver_stub_global("mt_receiver_global"),
         env.root().deploy_escrow_proxy_global("escrow_proxy_global"),
     );
 
@@ -148,11 +146,8 @@ async fn test_transfer_authorized_by_relay() {
     let escrow_instance_id = escrow_state_init.derive_account_id();
 
     env.root()
-        .tx(escrow_instance_id.clone())
-        .state_init(mt_receiver_global.clone(), BTreeMap::new())
-        .transfer(NearToken::from_yoctonear(1))
-        .await
-        .unwrap();
+        .deploy_mt_receiver_stub_instance(mt_receiver_global.clone(), BTreeMap::new())
+        .await;
 
     let initial_balance: u128 = 1_000_000;
     let (_, token_id) = env
@@ -213,7 +208,10 @@ async fn test_transfer_authorized_by_relay() {
         async {
             env.root()
                 .tx(condvar_instance_id.clone())
-                .state_init(condvar_global.clone(), raw_state)
+                .state_init(StateInit::V1(StateInitV1 {
+                    code: GlobalContractId::AccountId(condvar_global.clone()),
+                    data: raw_state,
+                }))
                 .function_call(
                     FnCallBuilder::new("on_auth")
                         .json_args(serde_json::json!({
@@ -292,7 +290,10 @@ async fn test_ft_transfer_authorized_by_relay() {
 
     env.root()
         .tx(escrow_instance_id.clone())
-        .state_init(ft_receiver_global.clone(), BTreeMap::new())
+        .state_init(StateInit::V1(StateInitV1 {
+            code: GlobalContractId::AccountId(ft_receiver_global.clone()),
+            data: BTreeMap::new(),
+        }))
         .transfer(NearToken::from_yoctonear(1))
         .await
         .unwrap();
@@ -352,7 +353,10 @@ async fn test_ft_transfer_authorized_by_relay() {
         async {
             env.root()
                 .tx(condvar_instance_id.clone())
-                .state_init(condvar_global.clone(), raw_state)
+                .state_init(StateInit::V1(StateInitV1 {
+                    code: GlobalContractId::AccountId(condvar_global.clone()),
+                    data: raw_state,
+                }))
                 .function_call(
                     FnCallBuilder::new("on_auth")
                         .json_args(serde_json::json!({
@@ -456,7 +460,10 @@ async fn test_proxy_with_ft_transfer() {
 
     env.root()
         .tx(escrow_instance_id.clone())
-        .state_init(escrow_swap_global.clone(), escrow_raw_state)
+        .state_init(StateInit::V1(StateInitV1 {
+            code: GlobalContractId::AccountId(escrow_swap_global.clone()),
+            data: escrow_raw_state,
+        }))
         .transfer(NearToken::from_yoctonear(1))
         .await
         .unwrap();
@@ -528,7 +535,10 @@ async fn test_proxy_with_ft_transfer() {
         async {
             env.root()
                 .tx(condvar_instance_id.clone())
-                .state_init(condvar_global.clone(), raw_state)
+                .state_init(StateInit::V1(StateInitV1 {
+                    code: GlobalContractId::AccountId(condvar_global.clone()),
+                    data: raw_state,
+                }))
                 .function_call(
                     FnCallBuilder::new("on_auth")
                         .json_args(serde_json::json!({

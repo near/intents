@@ -10,6 +10,8 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 defuse = { workspace = true }
+defuse-auth-call = { workspace = true, optional = true }
+defuse-borsh-utils.workspace = true
 defuse-nep245.workspace = true
 near-contract-standards.workspace = true
 near-sdk.workspace = true
@@ -23,4 +25,6 @@ serde_json.workspace = true
 futures.workspace = true
 
 [features]
+default = ["auth-call"]
 abi = ["defuse/abi"]
+auth-call = ["dep:defuse-auth-call"]

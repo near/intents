@@ -19,7 +19,11 @@ pub use extensions::escrow_swap::{ESCROW_SWAP_WASM, EscrowSwapExt};
 pub use extensions::{
     ft::{FtExt, FtViewExt},
     mt::{MtExt, MtViewExt},
+<<<<<<< HEAD
+    mt_receiver::{MT_RECEIVER_STUB_WASM, MtReceiverStubExt},
+=======
     mt_receiver::MtReceiverStubExt,
+>>>>>>> origin/main
     storage_management::{StorageManagementExt, StorageViewExt},
     wnear::{WNearDeployerExt, WNearExt},
 };
