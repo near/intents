@@ -2,6 +2,8 @@ use defuse_near_utils::{
     UnwrapOrPanicError, promise_result_checked_json, promise_result_checked_json_with_args,
 };
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
+use defuse_token_id::TokenId;
+use defuse_token_id::nep245::Nep245TokenId;
 use near_sdk::{AccountId, Gas, NearToken, PromiseOrValue, env, json_types::U128, near};
 
 const MT_RESOLVE_FORWARD_GAS: Gas = Gas::from_tgas(5);
@@ -28,10 +30,16 @@ impl MultiTokenReceiver for Contract {
         let token = env::predecessor_account_id();
         let forward_request: ForwardRequest = msg.parse().unwrap_or_panic_display();
 
+        let wrapped_token_ids: Vec<String> = token_ids
+            .iter()
+            .cloned()
+            .map(|id| TokenId::from(Nep245TokenId::new(token.clone(), id)).to_string())
+            .collect();
+
         PromiseOrValue::Promise(
             self.wait_for_authorization(
                 &sender_id,
-                &token_ids,
+                &wrapped_token_ids,
                 &amounts,
                 &forward_request.receiver_id,
                 &forward_request.msg,

@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 use crate::env::Env;
 use defuse_core::token_id::TokenId;
 use defuse_core::token_id::nep141::Nep141TokenId;
+use defuse_core::token_id::nep245::Nep245TokenId;
 use defuse_escrow_proxy::CondVarContext;
 use defuse_escrow_proxy::{ForwardRequest, ProxyConfig};
 use defuse_oneshot_condvar::storage::{Config as CondVarConfig, ContractStorage};
@@ -176,7 +177,10 @@ async fn test_transfer_authorized_by_relay() {
 
     let context_hash = CondVarContext {
         sender_id: Cow::Borrowed(solver.id()),
-        token_ids: Cow::Owned(vec![token_id.to_string()]),
+        token_ids: Cow::Owned(vec![
+            TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), token_id.to_string()))
+                .to_string(),
+        ]),
         amounts: Cow::Owned(vec![U128(proxy_transfer_amount)]),
         receiver_id: Cow::Borrowed(transfer_msg.receiver_id.as_ref()),
         msg: Cow::Borrowed(&transfer_msg.msg),

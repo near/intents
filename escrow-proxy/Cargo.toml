@@ -33,7 +33,7 @@ auth-call = ["dep:defuse-auth-call", "defuse-oneshot-condvar/auth-call"]
 contract = []
 escrow-swap = ["dep:defuse-escrow-swap"]
 nep141 = ["dep:defuse-token-id"]
-nep245 = []
+nep245 = ["dep:defuse-token-id"]
 
 
 [[example]]
