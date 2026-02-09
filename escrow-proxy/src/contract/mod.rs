@@ -68,7 +68,7 @@ impl EscrowProxy for Contract {
 #[cfg(feature = "escrow-swap")]
 #[near]
 impl Contract {
-    pub fn cancel_escrow(&self, escrow_address: AccountId, params: EscrowParams) -> Promise {
+    pub fn es_cancel(&self, escrow_address: AccountId, params: EscrowParams) -> Promise {
         self.assert_owner();
         ext_escrow::ext(escrow_address)
             .with_static_gas(Gas::from_tgas(50))

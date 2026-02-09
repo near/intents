@@ -203,7 +203,7 @@ async fn test_escrow_proxy_can_cancel_before_deadline() {
     let (_, token_a_defuse_id) = token_a_result.unwrap();
     let (_, token_b_defuse_id) = token_b_result.unwrap();
 
-    // Deploy proxy with root as owner (can call cancel_escrow)
+    // Deploy proxy with root as owner (can call es_cancel)
     let config = ProxyConfig {
         owner_id: env.root().id().clone(),
         // NOTE: oneshot_condvar_global_id is only used for fill operations.
@@ -271,7 +271,7 @@ async fn test_escrow_proxy_can_cancel_before_deadline() {
 
     // Root (super_admin) cancels the escrow via proxy
     env.root()
-        .cancel_escrow(&proxy_id, &escrow_instance_id, &escrow_params)
+        .es_cancel(&proxy_id, &escrow_instance_id, &escrow_params)
         .await
         .unwrap();
 

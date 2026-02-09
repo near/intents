@@ -21,9 +21,9 @@ pub static ESCROW_PROXY_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
 pub trait EscrowProxyExt {
     async fn deploy_escrow_proxy(&self, config: ProxyConfig) -> anyhow::Result<()>;
     async fn get_escrow_proxy_config(&self) -> anyhow::Result<ProxyConfig>;
-    /// Call `cancel_escrow` on proxy contract. Requires caller to be owner.
+    /// Call `es_cancel` on proxy contract. Requires caller to be owner.
     #[cfg(feature = "escrow-swap")]
-    async fn cancel_escrow(
+    async fn es_cancel(
         &self,
         proxy_contract: &AccountId,
         escrow_address: &AccountId,
@@ -61,7 +61,7 @@ impl EscrowProxyExt for SigningAccount {
     }
 
     #[cfg(feature = "escrow-swap")]
-    async fn cancel_escrow(
+    async fn es_cancel(
         &self,
         proxy_contract: &AccountId,
         escrow_address: &AccountId,
@@ -69,7 +69,7 @@ impl EscrowProxyExt for SigningAccount {
     ) -> anyhow::Result<()> {
         self.tx(proxy_contract.clone())
             .function_call(
-                FnCallBuilder::new("cancel_escrow")
+                FnCallBuilder::new("es_cancel")
                     .json_args(json!({
                         "escrow_address": escrow_address,
                         "params": params,
