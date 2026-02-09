@@ -1,11 +1,13 @@
 use defuse_oneshot_condvar::storage::{ContractStorage, State as OneshotCondVarState};
+use near_sdk::serde_json::json;
 use near_sdk::{
     AccountId, GlobalContractId, NearToken,
     state_init::{StateInit, StateInitV1},
 };
-use near_sdk::serde_json::json;
 
-use defuse_sandbox::{Account, SigningAccount, api::types::transaction::actions::GlobalContractDeployMode};
+use defuse_sandbox::{
+    Account, SigningAccount, api::types::transaction::actions::GlobalContractDeployMode,
+};
 
 use crate::env::ONESHOT_CONDVAR_WASM;
 

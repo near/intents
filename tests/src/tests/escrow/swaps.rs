@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::time::Duration;
 
 use crate::env::Env;
+use crate::extensions::escrow::EscrowSwapExt;
 use crate::utils::escrow_builders::ParamsBuilder;
 use crate::utils::escrow_builders::{FillMessageBuilder, FundMessageBuilder};
 use defuse_core::Deadline;
@@ -11,7 +12,6 @@ use defuse_core::token_id::TokenId;
 use defuse_core::token_id::nep245::Nep245TokenId;
 use defuse_escrow_swap::OverrideSend;
 use defuse_escrow_swap::decimal::UD128;
-use crate::extensions::escrow::EscrowSwapExt;
 use defuse_sandbox::{MtExt, MtViewExt};
 use near_sdk::serde_json;
 use rstest::rstest;

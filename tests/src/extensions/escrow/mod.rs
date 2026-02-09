@@ -1,7 +1,14 @@
 pub use defuse_escrow_swap as contract;
 
-use defuse_sandbox::{Account, SigningAccount, anyhow, api::types::transaction::actions::GlobalContractDeployMode, tx::FnCallBuilder};
-use near_sdk::{AccountId, GlobalContractId, NearToken, serde_json::json, state_init::{StateInit, StateInitV1}};
+use defuse_sandbox::{
+    Account, SigningAccount, anyhow, api::types::transaction::actions::GlobalContractDeployMode,
+    tx::FnCallBuilder,
+};
+use near_sdk::{
+    AccountId, GlobalContractId, NearToken,
+    serde_json::json,
+    state_init::{StateInit, StateInitV1},
+};
 
 use crate::env::ESCROW_SWAP_WASM;
 

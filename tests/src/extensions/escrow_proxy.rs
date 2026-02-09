@@ -1,11 +1,11 @@
 use defuse_escrow_proxy::ProxyConfig;
 #[cfg(feature = "escrow")]
 use defuse_escrow_swap::Params as EscrowParams;
+use near_sdk::serde_json::json;
 use near_sdk::{
     AccountId, Gas, GlobalContractId, NearToken,
     state_init::{StateInit, StateInitV1},
 };
-use near_sdk::serde_json::json;
 
 use defuse_sandbox::{
     FnCallBuilder, SigningAccount, api::types::transaction::actions::GlobalContractDeployMode,

@@ -1,4 +1,3 @@
-
 use futures::{FutureExt, future::BoxFuture};
 use near_api::{
     PublicKey, Transaction,

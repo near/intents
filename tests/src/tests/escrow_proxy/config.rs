@@ -1,5 +1,5 @@
-use defuse_escrow_proxy::ProxyConfig;
 use crate::extensions::escrow_proxy::EscrowProxyExt;
+use defuse_escrow_proxy::ProxyConfig;
 use defuse_sandbox::Sandbox;
 use near_sdk::serde_json::json;
 use near_sdk::{AccountId, GlobalContractId};

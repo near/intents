@@ -2,6 +2,9 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use crate::env::Env;
+use crate::extensions::condvar::OneshotCondVarExt;
+use crate::extensions::escrow_proxy::EscrowProxyExt;
+use crate::extensions::mt_receiver::MtReceiverStubExt;
 use defuse_core::token_id::TokenId;
 use defuse_core::token_id::nep141::Nep141TokenId;
 use defuse_core::token_id::nep245::Nep245TokenId;
@@ -9,9 +12,6 @@ use defuse_escrow_proxy::CondVarContext;
 use defuse_escrow_proxy::{ForwardRequest, ProxyConfig};
 use defuse_oneshot_condvar::storage::{Config as CondVarConfig, ContractStorage};
 use defuse_sandbox::extensions::storage_management::StorageManagementExt;
-use crate::extensions::condvar::OneshotCondVarExt;
-use crate::extensions::escrow_proxy::EscrowProxyExt;
-use crate::extensions::mt_receiver::MtReceiverStubExt;
 use defuse_sandbox::{FnCallBuilder, FtExt, FtViewExt, MtExt, MtViewExt};
 use multi_token_receiver_stub::{FTReceiverMode, MTReceiverMode};
 use near_sdk::AccountId;
@@ -178,8 +178,11 @@ async fn test_transfer_authorized_by_relay() {
     let context_hash = CondVarContext {
         sender_id: Cow::Borrowed(solver.id()),
         token_ids: Cow::Owned(vec![
-            TokenId::from(Nep245TokenId::new(env.defuse.id().clone(), token_id.to_string()))
-                .to_string(),
+            TokenId::from(Nep245TokenId::new(
+                env.defuse.id().clone(),
+                token_id.to_string(),
+            ))
+            .to_string(),
         ]),
         amounts: Cow::Owned(vec![U128(proxy_transfer_amount)]),
         receiver_id: Cow::Borrowed(transfer_msg.receiver_id.as_ref()),
@@ -399,8 +402,8 @@ async fn test_ft_transfer_authorized_by_relay() {
 async fn test_proxy_with_ft_transfer() {
     use std::time::Duration;
 
-    use crate::utils::escrow_builders::{FillMessageBuilder, FundMessageBuilder, ParamsBuilder};
     use crate::extensions::escrow::EscrowSwapExt;
+    use crate::utils::escrow_builders::{FillMessageBuilder, FundMessageBuilder, ParamsBuilder};
 
     let env = Env::builder().build().await;
 
