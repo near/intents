@@ -42,10 +42,12 @@ jobs:
         with:
           save-if: ${{ github.ref == 'refs/heads/main' }}
           cache-all-crates: "true" # Yes, it's a string
-      - name: Install cargo-make
-        run: cargo install cargo-make --locked
+      - name: Add CACHEDIR.TAG
+        run: |
+          mkdir -p target res
+          echo 'Signature: 8a477f597d28d172789f06886806bc55' | tee target/CACHEDIR.TAG res/CACHEDIR.TAG > /dev/null
       - name: Run clippy
-        run: cargo make clippy
+        run: cargo clippy --workspace --all-targets --no-deps
 
   build:
     name: Build
@@ -70,10 +72,16 @@ jobs:
         with:
           save-if: ${{ github.ref == 'refs/heads/main' }}
           cache-all-crates: "true" # Yes, it's a string
+      - name: Add CACHEDIR.TAG
+        run: |
+          mkdir -p target res
+          echo 'Signature: 8a477f597d28d172789f06886806bc55' | tee target/CACHEDIR.TAG res/CACHEDIR.TAG > /dev/null
       - name: Install Cargo Plugins
-        run: cargo install cargo-make cargo-near@0.17.0 --locked
+        run: cargo install cargo-near --version 0.17.0 --locked
       - name: Build
-        run: cargo make build
+        env:
+          DEFUSE_OUT_DIR: "res"
+        run: cargo build-all
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -103,10 +111,16 @@ jobs:
         with:
           save-if: ${{ github.ref == 'refs/heads/main' }}
           cache-all-crates: "true" # Yes, it's a string
+      - name: Add CACHEDIR.TAG
+        run: |
+          mkdir -p target res
+          echo 'Signature: 8a477f597d28d172789f06886806bc55' | tee target/CACHEDIR.TAG res/CACHEDIR.TAG > /dev/null
       - name: Install Cargo Plugins
-        run: cargo install cargo-make cargo-near@0.17.0 --locked
+        run: cargo install cargo-near --version 0.17.0 --locked
       - name: Build Reproducible WASM and calculate checksum
-        run: cargo make build-reproducible
+        env:
+          DEFUSE_OUT_DIR: "res"
+        run: cargo build-all --reproducible --checksum
       - name: Upload Reproducible Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -117,7 +131,7 @@ jobs:
   tests:
     name: Tests
     runs-on: ubuntu-latest
-    needs: build
+    needs: build_reproducible
     steps:
       - name: Install Dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1
@@ -137,17 +151,17 @@ jobs:
         with:
           save-if: ${{ github.ref == 'refs/heads/main' }}
           cache-all-crates: "true" # Yes, it's a string
-      - name: Install cargo-make
-        run: cargo install cargo-make --locked
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
-          name: res
+          name: res_reproducible
           path: ./res
       - name: Run Tests
         env:
           DEFUSE_MIGRATE_FROM_LEGACY: "true"
-        run: cargo make run-tests-long -- --show-output
+          DEFUSE_SKIP_CONTRACTS_BUILD: "true"
+          DEFUSE_USE_OUT_DIR: "res"
+        run: cargo test --workspace --all-targets -- --show-output
 
   security_audit_report:
     name: Security Audit - report
@@ -189,8 +203,7 @@ jobs:
       - name: Install Cargo Plugins
         run: cargo install cargo-audit --locked
       - name: Run security audit
-        # TODO: ignoring lru vulnerability in near-sdk, remove when fixed
-        run: cargo audit --deny unsound --deny yanked --ignore RUSTSEC-2026-0002
+        run: cargo audit --deny unsound --deny yanked
         # run: cargo audit --deny warnings  # Warnings include: unmaintained, unsound and yanked
 
   contract_analysis:
