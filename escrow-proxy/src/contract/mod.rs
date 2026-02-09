@@ -33,11 +33,11 @@ impl EscrowProxy for Contract {
         self.0.config()
     }
 
-    /// Calculates oneshot condvar context hash that is required to derive condvar contract
-    /// instance address
-    fn context_hash(&self, context: CondVarContext<'static>) -> CryptoHash {
-        context.hash()
-    }
+    // /// Calculates oneshot condvar context hash that is required to derive condvar contract
+    // /// instance address
+    // fn context_hash(&self, context: CondVarContext<'static>) -> CryptoHash {
+    //     context.hash()
+    // }
 
     /// Calculates oneshot condvar contract instance address, helper function for integration
     /// purposes, and easy calculation of oneshot condvar contract instance address in case of
