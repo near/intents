@@ -26,7 +26,7 @@ use crate::extensions::defuse::{
 };
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
-    core::{events::MaybeIntentEvent, tokens::imt::ImtMintEvent},
+    core::{intents::MaybeIntentEvent, tokens::imt::ImtMintEvent},
 };
 use defuse_sandbox::extensions::{
     ft::FtExt,

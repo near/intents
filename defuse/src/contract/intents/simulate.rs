@@ -4,7 +4,8 @@ use defuse_core::{
     Deadline, Nonce,
     accounts::{AccountEvent, NonceEvent},
     engine::Inspector,
-    events::{DefuseEvent, MaybeIntentEvent},
+    events::DefuseEvent,
+    intents::MaybeIntentEvent,
 };
 use near_sdk::{AccountIdRef, CryptoHash, serde_json::Value as JsonValue};
 

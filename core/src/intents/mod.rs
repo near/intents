@@ -3,8 +3,10 @@ pub mod auth;
 pub mod token_diff;
 pub mod tokens;
 
+use defuse_serde_utils::base58::Base58;
 use derive_more::derive::From;
 use near_sdk::{AccountIdRef, CryptoHash, near};
+use serde_with::serde_as;
 use tokens::{NativeWithdraw, StorageDeposit};
 
 #[cfg(feature = "imt")]
@@ -138,6 +140,37 @@ impl ExecutableIntent for Intent {
             Self::ImtMint(intent) => intent.execute_intent(signer_id, engine, intent_hash),
             #[cfg(feature = "imt")]
             Self::ImtBurn(intent) => intent.execute_intent(signer_id, engine, intent_hash),
+        }
+    }
+}
+
+/// Event that can be emitted either from a
+/// function call or after intent execution
+#[must_use = "make sure to `.emit()` this event"]
+#[near(serializers = [json])]
+#[derive(Debug, Clone)]
+pub struct MaybeIntentEvent<T> {
+    #[serde_as(as = "Option<Base58>")]
+    pub intent_hash: Option<CryptoHash>,
+
+    #[serde(flatten)]
+    pub event: T,
+}
+
+impl<T> MaybeIntentEvent<T> {
+    #[inline]
+    pub const fn new(event: T) -> Self {
+        Self {
+            intent_hash: None,
+            event,
+        }
+    }
+
+    #[inline]
+    pub const fn new_with_hash(event: T, intent_hash: CryptoHash) -> Self {
+        Self {
+            intent_hash: Some(intent_hash),
+            event,
         }
     }
 }

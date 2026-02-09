@@ -12,7 +12,7 @@ use crate::extensions::defuse::{
     intents::{ExecuteIntentsExt, SimulateIntents},
     signer::DefuseSignerExt,
 };
-use defuse::core::events::MaybeIntentEvent;
+use defuse::core::intents::MaybeIntentEvent;
 use defuse_randomness::Rng;
 use near_sdk::{AccountId, AccountIdRef, AsNep297Event, CryptoHash, serde_json};
 use rstest::rstest;

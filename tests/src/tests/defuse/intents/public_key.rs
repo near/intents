@@ -7,7 +7,7 @@ use crate::extensions::defuse::contract::core::{
 use crate::extensions::defuse::{
     intents::ExecuteIntentsExt, nonce::ExtractNonceExt, signer::DefaultDefuseSignerExt,
 };
-use defuse::core::{crypto::Payload, events::MaybeIntentEvent};
+use defuse::core::{crypto::Payload, intents::MaybeIntentEvent};
 use near_sdk::AsNep297Event;
 use rstest::rstest;
 use std::borrow::Cow;

@@ -7,7 +7,8 @@ use crate::{
     Result,
     accounts::{AccountEvent, PublicKeyEvent},
     engine::{Engine, Inspector, State},
-    events::{DefuseEvent, MaybeIntentEvent},
+    events::DefuseEvent,
+    intents::MaybeIntentEvent,
 };
 
 use super::ExecutableIntent;

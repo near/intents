@@ -5,7 +5,7 @@ use crate::extensions::defuse::contract::core::{
     crypto::PublicKey,
     events::DefuseEvent,
 };
-use defuse::core::events::MaybeIntentEvent;
+use defuse::core::intents::MaybeIntentEvent;
 use near_sdk::{AsNep297Event, NearToken, serde_json::json};
 use rstest::rstest;
 

@@ -5,8 +5,11 @@ use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
 use defuse::core::accounts::AccountEvent;
 use defuse::core::amounts::Amounts;
 use defuse::core::crypto::Payload;
-use defuse::core::events::{DefuseEvent, MaybeIntentEvent};
-use defuse::core::intents::tokens::imt::{ImtBurn, ImtMint};
+use defuse::core::events::DefuseEvent;
+use defuse::core::intents::{
+    MaybeIntentEvent,
+    tokens::imt::{ImtBurn, ImtMint},
+};
 use defuse::core::token_id::TokenId;
 use defuse::nep245::{MtBurnEvent, MtEvent};
 use defuse_escrow_swap::token_id::imt::ImtTokenId;

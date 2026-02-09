@@ -4,8 +4,9 @@ use crate::{
     accounts::AccountEvent,
     amounts::Amounts,
     engine::{Engine, Inspector, State, StateView},
-    events::{DefuseEvent, MaybeIntentEvent},
+    events::DefuseEvent,
     fees::Pips,
+    intents::MaybeIntentEvent,
     token_id::{TokenId, TokenIdType},
 };
 use defuse_num_utils::CheckedMulDiv;

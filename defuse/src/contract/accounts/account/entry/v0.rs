@@ -69,7 +69,8 @@ pub(super) mod tests {
     use defuse_core::{
         Result,
         accounts::{AccountEvent, PublicKeyEvent},
-        events::{DefuseEvent, MaybeIntentEvent},
+        events::DefuseEvent,
+        intents::MaybeIntentEvent,
     };
     use std::borrow::Cow;
 

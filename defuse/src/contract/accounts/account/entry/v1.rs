@@ -62,8 +62,8 @@ pub(super) mod tests {
     use defuse_core::{
         Result,
         accounts::{AccountEvent, PublicKeyEvent},
-        events::{DefuseEvent, MaybeIntentEvent},
-        intents::account::SetAuthByPredecessorId,
+        events::DefuseEvent,
+        intents::{MaybeIntentEvent, account::SetAuthByPredecessorId},
     };
     use std::borrow::Cow;
 

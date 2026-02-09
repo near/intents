@@ -4,9 +4,12 @@ use defuse::contract::config::{DefuseConfig, RolesConfig};
 use defuse::core::accounts::AccountEvent;
 use defuse::core::amounts::Amounts;
 use defuse::core::crypto::Payload;
-use defuse::core::events::{DefuseEvent, MaybeIntentEvent};
+use defuse::core::events::DefuseEvent;
 use defuse::core::fees::FeesConfig;
-use defuse::core::intents::tokens::{NotifyOnTransfer, imt::ImtMint};
+use defuse::core::intents::{
+    MaybeIntentEvent,
+    tokens::{NotifyOnTransfer, imt::ImtMint},
+};
 use defuse::core::token_id::TokenId;
 use defuse::core::tokens::MAX_TOKEN_ID_LEN;
 use defuse::core::tokens::imt::ImtMintEvent;

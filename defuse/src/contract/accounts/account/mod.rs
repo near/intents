@@ -8,11 +8,8 @@ use std::borrow::Cow;
 use bitflags::bitflags;
 use defuse_bitmap::U256;
 use defuse_core::{
-    NoncePrefix, Result,
-    accounts::AccountEvent,
-    crypto::PublicKey,
-    events::{DefuseEvent, MaybeIntentEvent},
-    intents::account::SetAuthByPredecessorId,
+    NoncePrefix, Result, accounts::AccountEvent, crypto::PublicKey, events::DefuseEvent,
+    intents::MaybeIntentEvent, intents::account::SetAuthByPredecessorId,
 };
 
 use defuse_near_utils::NestPrefix;

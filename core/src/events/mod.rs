@@ -1,13 +1,12 @@
-use defuse_serde_utils::base58::Base58;
 use derive_more::derive::From;
-use near_sdk::{CryptoHash, near, serde::Deserialize};
-use serde_with::serde_as;
+use near_sdk::{near, serde::Deserialize};
 use std::borrow::Cow;
 
 use crate::{
     accounts::{AccountEvent, NonceEvent, PublicKeyEvent, SaltRotationEvent},
     fees::{FeeChangedEvent, FeeCollectorChangedEvent},
     intents::{
+        MaybeIntentEvent,
         account::SetAuthByPredecessorId,
         token_diff::TokenDiffEvent,
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
@@ -17,37 +16,6 @@ use crate::{
 
 #[cfg(feature = "imt")]
 use crate::{intents::tokens::imt::ImtBurn, tokens::imt::ImtMintEvent};
-
-/// Event that can be emitted either from a
-/// function call or after intent execution
-#[must_use = "make sure to `.emit()` this event"]
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
-pub struct MaybeIntentEvent<T> {
-    #[serde_as(as = "Option<Base58>")]
-    pub intent_hash: Option<CryptoHash>,
-
-    #[serde(flatten)]
-    pub event: T,
-}
-
-impl<T> MaybeIntentEvent<T> {
-    #[inline]
-    pub const fn new(event: T) -> Self {
-        Self {
-            intent_hash: None,
-            event,
-        }
-    }
-
-    #[inline]
-    pub const fn new_with_hash(event: T, intent_hash: CryptoHash) -> Self {
-        Self {
-            intent_hash: Some(intent_hash),
-            event,
-        }
-    }
-}
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(event_json(standard = "dip4"))]

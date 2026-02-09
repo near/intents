@@ -2,8 +2,8 @@ use defuse_core::{
     Deadline, Result, Salt,
     accounts::{AccountEvent, NonceEvent},
     engine::deltas::InvariantViolated,
-    events::MaybeIntentEvent,
     fees::Pips,
+    intents::MaybeIntentEvent,
 };
 
 use near_sdk::near;

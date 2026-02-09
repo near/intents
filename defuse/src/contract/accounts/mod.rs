@@ -11,7 +11,8 @@ use defuse_core::{
     accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
     engine::{State, StateView},
-    events::{DefuseEvent, MaybeIntentEvent},
+    events::DefuseEvent,
+    intents::MaybeIntentEvent,
 };
 
 use defuse_near_utils::{Lock, NestPrefix, UnwrapOrPanic};

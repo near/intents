@@ -12,9 +12,10 @@ use crate::{
     Salt,
     accounts::{AccountEvent, NonceEvent, PublicKeyEvent, SaltRotationEvent},
     amounts::Amounts,
-    events::{DefuseEvent, MaybeIntentEvent, tests::v0_4_1::DefuseEventV0_4_1},
+    events::{DefuseEvent, tests::v0_4_1::DefuseEventV0_4_1},
     fees::{FeeChangedEvent, FeeCollectorChangedEvent},
     intents::{
+        MaybeIntentEvent,
         account::SetAuthByPredecessorId,
         token_diff::{TokenDiff, TokenDiffEvent},
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},

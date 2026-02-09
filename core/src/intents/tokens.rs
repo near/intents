@@ -12,8 +12,8 @@ use crate::{
     accounts::AccountEvent,
     amounts::Amounts,
     engine::{Engine, Inspector, State},
-    events::{DefuseEvent, MaybeIntentEvent},
-    intents::ExecutableIntent,
+    events::DefuseEvent,
+    intents::{ExecutableIntent, MaybeIntentEvent},
     tokens::{MT_ON_TRANSFER_GAS_DEFAULT, MT_ON_TRANSFER_GAS_MIN, TransferEvent},
 };
 
@@ -510,7 +510,7 @@ impl ExecutableIntent for StorageDeposit {
 pub mod imt {
     use crate::{
         Result,
-        events::MaybeIntentEvent,
+        intents::MaybeIntentEvent,
         tokens::{
             MT_ON_TRANSFER_GAS_DEFAULT, MT_ON_TRANSFER_GAS_MIN,
             imt::{ImtMintEvent, ImtTokens},

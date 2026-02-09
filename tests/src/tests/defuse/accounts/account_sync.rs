@@ -8,7 +8,8 @@ use defuse::{
     core::{
         accounts::{AccountEvent, PublicKeyEvent},
         crypto::PublicKey,
-        events::{DefuseEvent, MaybeIntentEvent},
+        events::DefuseEvent,
+        intents::MaybeIntentEvent,
     },
 };
 use defuse_randomness::Rng;
