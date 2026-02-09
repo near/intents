@@ -1,42 +1,47 @@
+use std::borrow::Cow;
+
 use defuse_core::{
-    amounts::Amounts, engine::State, intents::tokens::NotifyOnTransfer, tokens::imt::ImtTokens,
+    accounts::AccountEvent,
+    engine::State,
+    events::DefuseEvent,
+    intents::{IntentEvent, imt::ImtBurn},
+    tokens::imt::ImtTokens,
 };
 
 use defuse_near_utils::UnwrapOrPanic;
-use near_sdk::{AccountId, PromiseOrValue, assert_one_yocto, near};
+use near_sdk::{AccountId, assert_one_yocto, near};
 
 use crate::{
     contract::{Contract, ContractExt},
-    tokens::imt::ImtMinter,
+    tokens::imt::ImtBurner,
 };
 
+// TODO: should we return burned tokens and amounts?
 #[near]
-impl ImtMinter for Contract {
+impl ImtBurner for Contract {
     #[payable]
-    fn imt_mint(
-        &mut self,
-        receiver_id: AccountId,
-        tokens: ImtTokens,
-        memo: Option<String>,
-        notification: Option<NotifyOnTransfer>,
-    ) -> PromiseOrValue<Amounts> {
+    fn imt_burn(&mut self, minter_id: AccountId, tokens: ImtTokens, memo: Option<String>) {
         assert_one_yocto();
 
         let owner_id = self.ensure_auth_predecessor_id();
 
-        let tokens = self
-            .imt_mint_with_notification(&owner_id, receiver_id, tokens, memo, notification)
+        self.internal_imt_burn(&minter_id, &owner_id, tokens.clone(), memo.clone())
             .unwrap_or_panic();
 
-        // DefuseEvent::ImtMint(Cow::Borrowed(
-        //     [IntentEvent::new(
-        //         AccountEvent::new(signer_id, Cow::Borrowed(&self)),
-        //         intent_hash,
-        //     )]
-        //     .as_slice(),
-        // ))
-        // .emit();
-
-        PromiseOrValue::Value(tokens)
+        DefuseEvent::ImtBurn(Cow::Borrowed(
+            [IntentEvent::new(
+                AccountEvent::new(
+                    owner_id,
+                    Cow::Owned(ImtBurn {
+                        minter_id,
+                        tokens,
+                        memo,
+                    }),
+                ),
+                [0; 32], // TODO: fix when MaybeIntentEvent is merged
+            )]
+            .as_slice(),
+        ))
+        .emit();
     }
 }

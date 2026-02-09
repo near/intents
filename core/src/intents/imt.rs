@@ -60,15 +60,13 @@ impl ExecutableIntent for ImtMint {
                 .as_slice(),
             )));
 
-        engine.state.imt_mint_with_notification(
+        engine.state.internal_imt_mint(
             signer_id,
             self.receiver_id,
             self.tokens,
             self.memo,
             self.notification,
-        )?;
-
-        Ok(())
+        )
     }
 }
 
@@ -114,6 +112,6 @@ impl ExecutableIntent for ImtBurn {
 
         engine
             .state
-            .imt_burn(&self.minter_id, signer_id, self.tokens, self.memo)
+            .internal_imt_burn(&self.minter_id, signer_id, self.tokens, self.memo)
     }
 }

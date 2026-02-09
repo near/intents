@@ -141,17 +141,41 @@ pub trait State: StateView {
     ) -> Result<()>;
 
     #[cfg(feature = "imt")]
-    fn imt_mint_with_notification(
+    fn internal_imt_mint(
         &mut self,
         owner_id: &AccountIdRef,
         receiver_id: AccountId,
         tokens: ImtTokens,
         memo: Option<String>,
         notification: Option<NotifyOnTransfer>,
-    ) -> Result<Amounts>;
+    ) -> Result<()> {
+        if tokens.is_empty() {
+            use crate::DefuseError;
+
+            return Err(DefuseError::InvalidIntent);
+        }
+
+        let tokens = tokens.into_generic_tokens(owner_id)?;
+        self.mint(receiver_id.clone(), tokens.clone(), memo)?;
+
+        if let Some(mut notification) = notification {
+            use crate::tokens::{MT_ON_TRANSFER_GAS_DEFAULT, MT_ON_TRANSFER_GAS_MIN};
+
+            notification.min_gas = Some(
+                notification
+                    .min_gas
+                    .unwrap_or(MT_ON_TRANSFER_GAS_DEFAULT)
+                    .max(MT_ON_TRANSFER_GAS_MIN),
+            );
+
+            self.notify_on_transfer(owner_id, receiver_id, tokens, notification);
+        }
+
+        Ok(())
+    }
 
     #[cfg(feature = "imt")]
-    fn imt_burn(
+    fn internal_imt_burn(
         &mut self,
         minter_id: &AccountIdRef,
         owner_id: &AccountIdRef,
@@ -163,6 +187,7 @@ pub trait State: StateView {
         }
 
         let tokens = tokens.into_generic_tokens(minter_id)?;
+
         self.burn(owner_id, tokens, memo)
     }
 }

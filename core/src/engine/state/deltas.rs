@@ -25,9 +25,6 @@ use std::{
 
 use super::{State, StateView};
 
-#[cfg(feature = "imt")]
-use crate::tokens::imt::ImtTokens;
-
 pub struct Deltas<S> {
     state: S,
     deltas: TransferMatcher,
@@ -230,20 +227,6 @@ where
         memo: Option<String>,
     ) -> Result<()> {
         self.state.burn(owner_id, tokens, memo)
-    }
-
-    #[cfg(feature = "imt")]
-    #[inline]
-    fn imt_mint_with_notification(
-        &mut self,
-        owner_id: &AccountIdRef,
-        receiver_id: AccountId,
-        tokens: ImtTokens,
-        memo: Option<String>,
-        notification: Option<NotifyOnTransfer>,
-    ) -> Result<Amounts> {
-        self.state
-            .imt_mint_with_notification(owner_id, receiver_id, tokens, memo, notification)
     }
 }
 

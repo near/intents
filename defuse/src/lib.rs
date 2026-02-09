@@ -70,8 +70,8 @@ pub trait DefaultDefuse:
 pub trait Defuse: DefaultDefuse {}
 
 #[cfg(feature = "imt")]
-use self::tokens::imt::ImtMinter;
+use self::tokens::imt::ImtBurner;
 
 #[cfg(feature = "imt")]
 #[ext_contract(ext_defuse)]
-pub trait Defuse: DefaultDefuse + ImtMinter {}
+pub trait Defuse: DefaultDefuse + ImtBurner {}

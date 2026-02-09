@@ -19,9 +19,6 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
-#[cfg(feature = "imt")]
-use crate::tokens::imt::ImtTokens;
-
 use super::{State, StateView};
 
 #[derive(Debug)]
@@ -391,25 +388,6 @@ where
         _memo: Option<String>,
     ) -> Result<()> {
         self.internal_sub_balance(owner_id, tokens)
-    }
-
-    #[cfg(feature = "imt")]
-    fn imt_mint_with_notification(
-        &mut self,
-        owner_id: &AccountIdRef,
-        receiver_id: AccountId,
-        tokens: ImtTokens,
-        memo: Option<String>,
-        _notification: Option<NotifyOnTransfer>,
-    ) -> Result<Amounts> {
-        if tokens.is_empty() {
-            return Err(DefuseError::InvalidIntent);
-        }
-
-        let tokens = tokens.into_generic_tokens(owner_id)?;
-        self.mint(receiver_id, tokens.clone(), memo)?;
-
-        Ok(tokens)
     }
 }
 
