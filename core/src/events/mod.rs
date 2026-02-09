@@ -33,35 +33,35 @@ pub enum DefuseEvent<'a> {
     #[event_version("0.3.0")]
     FeeCollectorChanged(FeeCollectorChangedEvent<'a>),
 
-    #[event_version("0.3.0")]
+    #[event_version("0.4.2")]
     Transfer(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, TransferEvent<'a>>>]>),
 
-    #[event_version("0.3.0")]
+    #[event_version("0.4.2")]
     TokenDiff(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, TokenDiffEvent<'a>>>]>),
 
-    #[event_version("0.3.1")]
+    #[event_version("0.4.2")]
     IntentsExecuted(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, NonceEvent>>]>),
 
-    #[event_version("0.3.0")]
+    #[event_version("0.4.2")]
     FtWithdraw(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, Cow<'a, FtWithdraw>>>]>),
 
-    #[event_version("0.3.0")]
+    #[event_version("0.4.2")]
     NftWithdraw(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, Cow<'a, NftWithdraw>>>]>),
 
-    #[event_version("0.3.0")]
+    #[event_version("0.4.2")]
     MtWithdraw(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, Cow<'a, MtWithdraw>>>]>),
 
-    #[event_version("0.3.0")]
+    #[event_version("0.4.2")]
     NativeWithdraw(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, Cow<'a, NativeWithdraw>>>]>),
 
-    #[event_version("0.3.0")]
+    #[event_version("0.4.2")]
     StorageDeposit(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, Cow<'a, StorageDeposit>>>]>),
 
     #[cfg(feature = "imt")]
     #[event_version("0.4.2")]
     ImtMint(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, ImtMintEvent<'a>>>]>),
     #[cfg(feature = "imt")]
-    #[event_version("0.3.0")]
+    #[event_version("0.4.2")]
     ImtBurn(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, Cow<'a, ImtBurn>>>]>),
 
     #[event_version("0.3.0")]

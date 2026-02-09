@@ -107,7 +107,7 @@ async fn simulate_is_view_method(#[notrace] mut rng: impl Rng) {
             event: TransferEvent {
                 receiver_id: Cow::Borrowed(&transfer_intent.receiver_id),
                 tokens: transfer_intent.tokens,
-                memo: Cow::Borrowed(&transfer_intent.memo),
+                memo: transfer_intent.memo.as_deref().map(Cow::Borrowed),
             },
         },
         transfer_intent_payload.hash(),

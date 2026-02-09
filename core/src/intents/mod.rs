@@ -151,6 +151,7 @@ impl ExecutableIntent for Intent {
 #[derive(Debug, Clone)]
 pub struct MaybeIntentEvent<T> {
     #[serde_as(as = "Option<Base58>")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub intent_hash: Option<CryptoHash>,
 
     #[serde(flatten)]

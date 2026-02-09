@@ -87,7 +87,7 @@ async fn mt_mint_intent() {
                     event: ImtMintEvent {
                         receiver_id: Cow::Borrowed(&intent.receiver_id),
                         tokens: intent.tokens.clone(),
-                        memo: Cow::Borrowed(&intent.memo),
+                        memo: intent.memo.as_deref().map(Cow::Borrowed),
                     },
                 },
                 mint_payload.hash(),

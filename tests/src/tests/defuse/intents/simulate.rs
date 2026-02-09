@@ -91,7 +91,7 @@ async fn simulate_transfer_intent() {
                     event: TransferEvent {
                         receiver_id: Cow::Borrowed(&transfer_intent.receiver_id),
                         tokens: transfer_intent.tokens,
-                        memo: Cow::Borrowed(&transfer_intent.memo),
+                        memo: transfer_intent.memo.as_deref().map(Cow::Borrowed),
                     },
                 },
                 transfer_intent_payload.hash(),
@@ -950,7 +950,7 @@ async fn simulate_mint_intent() {
                 event: ImtMintEvent {
                     receiver_id: Cow::Borrowed(&mint_intent.receiver_id),
                     tokens: mint_intent.tokens.clone(),
-                    memo: Cow::Borrowed(&mint_intent.memo),
+                    memo: mint_intent.memo.as_deref().map(Cow::Borrowed),
                 },
             },
             mint_payload.hash(),

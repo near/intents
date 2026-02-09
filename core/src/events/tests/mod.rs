@@ -114,7 +114,7 @@ fn transfer_intent_event<'a>() -> DefuseEvent<'a> {
             event: TransferEvent {
                 receiver_id: account(),
                 tokens: tokens(),
-                memo: Cow::Owned(Some("test transfer".to_string())),
+                memo: Some(Cow::Borrowed("test transfer")),
             },
         },
         [0; 32],
@@ -258,7 +258,7 @@ fn imt_mint_intent_event<'a>() -> DefuseEvent<'a> {
             event: ImtMintEvent {
                 receiver_id: account(),
                 tokens,
-                memo: Cow::Owned(Some("test imt mint".to_string())),
+                memo: Some(Cow::Borrowed("test imt mint")),
             },
         },
         [0; 32],

@@ -55,7 +55,7 @@ pub mod imt {
         pub tokens: ImtTokens,
 
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        pub memo: Cow<'a, Option<String>>,
+        pub memo: Option<Cow<'a, str>>,
     }
 
     impl<'a> From<&'a ImtMint> for ImtMintEvent<'a> {
@@ -64,7 +64,7 @@ pub mod imt {
             Self {
                 receiver_id: Cow::Borrowed(&intent.receiver_id),
                 tokens: intent.tokens.clone(),
-                memo: Cow::Borrowed(&intent.memo),
+                memo: intent.memo.as_deref().map(Cow::Borrowed),
             }
         }
     }
@@ -79,7 +79,7 @@ pub struct TransferEvent<'a> {
     pub tokens: Amounts,
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub memo: Cow<'a, Option<String>>,
+    pub memo: Option<Cow<'a, str>>,
 }
 
 impl<'a> From<&'a Transfer> for TransferEvent<'a> {
@@ -88,7 +88,7 @@ impl<'a> From<&'a Transfer> for TransferEvent<'a> {
         Self {
             receiver_id: Cow::Borrowed(&intent.receiver_id),
             tokens: intent.tokens.clone(),
-            memo: Cow::Borrowed(&intent.memo),
+            memo: intent.memo.as_deref().map(Cow::Borrowed),
         }
     }
 }
