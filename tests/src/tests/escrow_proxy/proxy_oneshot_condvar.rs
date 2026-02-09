@@ -181,7 +181,8 @@ async fn test_transfer_authorized_by_relay() {
         sender_id: Cow::Borrowed(solver.id()),
         token_ids: Cow::Owned(vec![token_id.to_string()]),
         amounts: Cow::Owned(vec![U128(proxy_transfer_amount)]),
-        msg: Cow::Borrowed(&msg_json),
+        receiver_id: Cow::Borrowed(transfer_msg.receiver_id.as_ref()),
+        msg: Cow::Borrowed(&transfer_msg.msg),
     }
     .hash();
 
@@ -323,7 +324,8 @@ async fn test_ft_transfer_authorized_by_relay() {
         sender_id: Cow::Borrowed(solver.id()),
         token_ids: Cow::Owned(vec![token_id.to_string()]),
         amounts: Cow::Owned(vec![U128(proxy_transfer_amount)]),
-        msg: Cow::Borrowed(&msg_json),
+        receiver_id: Cow::Borrowed(transfer_msg.receiver_id.as_ref()),
+        msg: Cow::Borrowed(&transfer_msg.msg),
     }
     .hash();
 
@@ -503,7 +505,8 @@ async fn test_proxy_with_ft_transfer() {
         sender_id: Cow::Borrowed(solver.id()),
         token_ids: Cow::Owned(vec![dst_token.to_string()]), // "nep141:<contract_id>"
         amounts: Cow::Owned(vec![U128(swap_amount)]),
-        msg: Cow::Borrowed(&proxy_msg_json),
+        receiver_id: Cow::Borrowed(proxy_msg.receiver_id.as_ref()),
+        msg: Cow::Borrowed(&proxy_msg.msg),
     }
     .hash();
 

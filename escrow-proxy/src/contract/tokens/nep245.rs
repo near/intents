@@ -29,7 +29,7 @@ impl MultiTokenReceiver for Contract {
         let forward_request: ForwardRequest = msg.parse().unwrap_or_panic_display();
 
         PromiseOrValue::Promise(
-            self.wait_for_authorization(&sender_id, &token_ids, &amounts, &msg)
+            self.wait_for_authorization(&sender_id, &token_ids, &amounts, &forward_request.receiver_id, &forward_request.msg)
                 .then(
                     Self::ext(env::current_account_id())
                         //NOTE: forward all gas, make sure that there is enough gas to resolve transfer

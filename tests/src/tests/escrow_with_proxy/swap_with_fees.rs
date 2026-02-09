@@ -140,7 +140,8 @@ async fn test_proxy_fill_gas_benchmark() {
         sender_id: Cow::Borrowed(solver.id().as_ref()),
         token_ids: Cow::Owned(vec![token_b_defuse_id.to_string()]),
         amounts: Cow::Owned(vec![U128(solver_amount)]), // 2x for price 2.0
-        msg: Cow::Borrowed(&proxy_msg_json),
+        receiver_id: Cow::Borrowed(proxy_msg.receiver_id.as_ref()),
+        msg: Cow::Borrowed(&proxy_msg.msg),
     }
     .hash();
 

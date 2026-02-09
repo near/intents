@@ -7,7 +7,7 @@ use crate::CondVarContext;
 #[cfg(feature = "escrow-swap")]
 use defuse_escrow_swap::{Params as EscrowParams, ext_escrow};
 use near_sdk::{
-    AccountId, CryptoHash, Gas, PanicOnDefault, Promise, env, json_types::U128, near, require,
+    AccountId, Gas, PanicOnDefault, Promise, env, json_types::U128, near, require,
 };
 
 use crate::EscrowProxy;
@@ -51,6 +51,7 @@ impl EscrowProxy for Contract {
         sender_id: AccountId,
         token_ids: Vec<defuse_nep245::TokenId>,
         amounts: Vec<U128>,
+        receiver_id: AccountId,
         msg: String,
     ) -> AccountId {
         use std::borrow::Cow;
@@ -58,6 +59,7 @@ impl EscrowProxy for Contract {
             sender_id: Cow::Owned(sender_id),
             token_ids: Cow::Owned(token_ids),
             amounts: Cow::Owned(amounts),
+            receiver_id: Cow::Owned(receiver_id),
             msg: Cow::Borrowed(&msg),
         }
         .hash();

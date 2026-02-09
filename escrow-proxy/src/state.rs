@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
 
-use crate::Error;
 use near_sdk::{AccountId, GlobalContractId, borsh, near};
 
 /// Configuration for the escrow proxy contract.
@@ -30,9 +29,12 @@ impl ContractStorage {
         Self(config)
     }
 
-    pub fn init_state(config: ProxyConfig) -> Result<BTreeMap<Vec<u8>, Vec<u8>>, Error> {
-        let storage = Self::init(config);
-        Ok([(Self::STATE_KEY.to_vec(), borsh::to_vec(&storage)?)].into())
+    pub fn init_state(config: ProxyConfig) -> BTreeMap<Vec<u8>, Vec<u8>> {
+        [
+            (Self::STATE_KEY.to_vec(), 
+                borsh::to_vec(&Self::init(config)).unwrap_or_else(|_| unreachable!()),
+            )
+        ].into()
     }
 
     #[inline]

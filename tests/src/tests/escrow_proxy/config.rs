@@ -28,7 +28,7 @@ async fn escrow_proxy_deployment_and_config() {
         .await;
     let actual_config: ProxyConfig = sandbox
         .account(&proxy_id)
-        .call_view_function_json("config", json!({}))
+        .call_view_function_json("ep_config", json!({}))
         .await
         .unwrap();
 

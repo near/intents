@@ -340,7 +340,8 @@ async fn main() -> Result<()> {
         token_ids: Cow::Owned(vec![dst_token.to_string()]),
         amounts: Cow::Owned(vec![U128(1)]),
         // NOTE: authorizes particular notification from taker(solver)
-        msg: Cow::Borrowed(&proxy_msg_json),
+        receiver_id: Cow::Borrowed(proxy_msg.receiver_id.as_ref()),
+        msg: Cow::Borrowed(&proxy_msg.msg),
     };
 
     // CondVarConfig defines the state for the oneshot-condvar instance.

@@ -71,7 +71,7 @@ impl EscrowProxyExt for SigningAccount {
             .function_call(
                 FnCallBuilder::new("es_cancel")
                     .json_args(json!({
-                        "escrow_address": escrow_address,
+                        "contract_id": escrow_address,
                         "params": params,
                     }))
                     .with_gas(Gas::from_tgas(100))
@@ -102,7 +102,7 @@ impl EscrowProxyExt for SigningAccount {
         global_contract_id: AccountId,
         config: ProxyConfig,
     ) -> AccountId {
-        let raw_state = defuse_escrow_proxy::ContractStorage::init_state(config).unwrap();
+        let raw_state = defuse_escrow_proxy::ContractStorage::init_state(config);
         let state_init = StateInit::V1(StateInitV1 {
             code: GlobalContractId::AccountId(global_contract_id.clone()),
             data: raw_state.clone(),
