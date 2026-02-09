@@ -14,7 +14,7 @@ use near_sdk::{
 use super::Contract;
 
 impl Contract {
-    pub(crate) fn transfer_auth_state_init(&self, salt: [u8; 32]) -> StateInit {
+    pub(crate) fn forward_approval_state_init(&self, salt: [u8; 32]) -> StateInit {
         let config = self.0.config();
         let state = CondVarConfig {
             #[cfg(feature = "auth-call")]
@@ -49,7 +49,7 @@ impl Contract {
         }
         .hash();
 
-        let auth_contract_state_init = self.transfer_auth_state_init(context_hash);
+        let auth_contract_state_init = self.forward_approval_state_init(context_hash);
         let auth_contract_id = auth_contract_state_init.derive_account_id();
 
         ext_oneshot_condvar::ext_on(
