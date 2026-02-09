@@ -68,13 +68,6 @@ contract = [
 ]
 imt = ["defuse-core/imt"]
 
-sandbox = [
-    "arbitrary",
-    "contract",
-    "dep:defuse-sandbox",
-    "dep:defuse-test-utils",
-]
-
 [dev-dependencies]
 defuse-core = { workspace = true, features = ["arbitrary"] }
 defuse-randomness.workspace = true
