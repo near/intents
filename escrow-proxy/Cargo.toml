@@ -16,14 +16,14 @@ defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-oneshot-condvar = { workspace = true }
 
-defuse-auth-call = { workspace = true, optional = true }
-defuse-escrow-swap = { workspace = true, optional = true }
-defuse-token-id = { workspace = true, optional=true }
-
 near-contract-standards.workspace = true
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 serde_with = { workspace = true, features = ["hex"] }
 thiserror.workspace = true
+
+defuse-auth-call = { workspace = true, optional = true }
+defuse-escrow-swap = { workspace = true, optional = true }
+defuse-token-id = { workspace = true, optional=true }
 
 [features]
 default = ["nep141", "nep245", "escrow-swap", "auth-call"]
