@@ -20,7 +20,7 @@ use defuse_core::intents::auth::AuthCall;
 use defuse_core::intents::tokens::{NotifyOnTransfer, Transfer};
 use defuse_core::token_id::TokenId;
 use defuse_core::token_id::nep245::Nep245TokenId;
-use defuse_escrow_proxy::CondVarContext;
+use defuse_escrow_proxy::ForwardContext;
 use defuse_escrow_proxy::{ForwardRequest as ProxyForwardRequest, ProxyConfig};
 use defuse_escrow_swap::action::{FillAction, TransferAction, TransferMessage};
 use defuse_escrow_swap::decimal::UD128;
@@ -139,13 +139,15 @@ async fn test_proxy_fill_gas_benchmark() {
     };
     let proxy_msg_json = serde_json::to_string(&proxy_msg).unwrap();
 
-    let context_hash = CondVarContext {
+    let context_hash = ForwardContext {
         sender_id: Cow::Borrowed(solver.id().as_ref()),
-        token_ids: Cow::Owned(vec![TokenId::from(Nep245TokenId::new(
-            env.defuse.id().clone(),
-            token_b_defuse_id.to_string(),
-        ))
-        .to_string()]),
+        token_ids: Cow::Owned(vec![
+            TokenId::from(Nep245TokenId::new(
+                env.defuse.id().clone(),
+                token_b_defuse_id.to_string(),
+            ))
+            .to_string(),
+        ]),
         amounts: Cow::Owned(vec![U128(solver_amount)]), // 2x for price 2.0
         receiver_id: Cow::Borrowed(proxy_msg.receiver_id.as_ref()),
         msg: Cow::Borrowed(&proxy_msg.msg),

@@ -8,7 +8,7 @@ use crate::extensions::mt_receiver::MtReceiverStubExt;
 use defuse_core::token_id::TokenId;
 use defuse_core::token_id::nep141::Nep141TokenId;
 use defuse_core::token_id::nep245::Nep245TokenId;
-use defuse_escrow_proxy::CondVarContext;
+use defuse_escrow_proxy::ForwardContext;
 use defuse_escrow_proxy::{ForwardRequest, ProxyConfig};
 use defuse_oneshot_condvar::storage::{Config as CondVarConfig, ContractStorage};
 use defuse_sandbox::extensions::storage_management::StorageManagementExt;
@@ -175,7 +175,7 @@ async fn test_transfer_authorized_by_relay() {
 
     let proxy_transfer_amount: u128 = 100_000;
 
-    let context_hash = CondVarContext {
+    let context_hash = ForwardContext {
         sender_id: Cow::Borrowed(solver.id()),
         token_ids: Cow::Owned(vec![
             TokenId::from(Nep245TokenId::new(
@@ -330,7 +330,7 @@ async fn test_ft_transfer_authorized_by_relay() {
 
     // Use canonical TokenId::Nep141 format to match what the proxy computes
     let token_id = TokenId::from(Nep141TokenId::new(ft_token.id().clone()));
-    let context_hash = CondVarContext {
+    let context_hash = ForwardContext {
         sender_id: Cow::Borrowed(solver.id()),
         token_ids: Cow::Owned(vec![token_id.to_string()]),
         amounts: Cow::Owned(vec![U128(proxy_transfer_amount)]),
@@ -517,7 +517,7 @@ async fn test_proxy_with_ft_transfer() {
     };
     let proxy_msg_json = serde_json::to_string(&proxy_msg).unwrap();
 
-    let context_hash = CondVarContext {
+    let context_hash = ForwardContext {
         sender_id: Cow::Borrowed(solver.id()),
         token_ids: Cow::Owned(vec![dst_token.to_string()]), // "nep141:<contract_id>"
         amounts: Cow::Owned(vec![U128(swap_amount)]),

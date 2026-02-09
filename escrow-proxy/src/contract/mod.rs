@@ -3,7 +3,7 @@ mod auth_call;
 mod tokens;
 mod utils;
 
-use crate::CondVarContext;
+use crate::ForwardContext;
 #[cfg(feature = "escrow-swap")]
 use defuse_escrow_swap::{Params as EscrowParams, ext_escrow};
 use near_sdk::{AccountId, Gas, PanicOnDefault, Promise, env, json_types::U128, near, require};
@@ -47,7 +47,7 @@ impl EscrowProxy for Contract {
         msg: String,
     ) -> AccountId {
         use std::borrow::Cow;
-        let context_hash = CondVarContext {
+        let context_hash = ForwardContext {
             sender_id: Cow::Owned(sender_id),
             token_ids: Cow::Owned(token_ids),
             amounts: Cow::Owned(amounts),

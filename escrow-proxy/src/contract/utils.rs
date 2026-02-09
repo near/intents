@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use crate::CondVarContext;
+use crate::ForwardContext;
 use defuse_oneshot_condvar::{
     CV_WAIT_GAS, ext_oneshot_condvar,
     storage::{Config as CondVarConfig, ContractStorage},
@@ -40,7 +40,7 @@ impl Contract {
         receiver_id: &AccountId,
         msg: &str,
     ) -> Promise {
-        let context_hash = CondVarContext {
+        let context_hash = ForwardContext {
             sender_id: Cow::Borrowed(sender_id),
             token_ids: Cow::Borrowed(token_ids),
             amounts: Cow::Borrowed(amounts),

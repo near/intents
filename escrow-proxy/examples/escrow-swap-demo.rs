@@ -28,7 +28,7 @@ use anyhow::Result;
 use defuse_core::Deadline;
 use defuse_core::amounts::Amounts;
 use defuse_core::intents::tokens::{NotifyOnTransfer, Transfer};
-use defuse_escrow_proxy::CondVarContext;
+use defuse_escrow_proxy::ForwardContext;
 use defuse_escrow_proxy::ForwardRequest as ProxyForwardRequest;
 use defuse_escrow_swap::ContractStorage as EscrowContractStorage;
 use defuse_escrow_swap::Params;
@@ -335,7 +335,7 @@ async fn main() -> Result<()> {
     // RELAY AUTH CALL INTENT
     // The relay approves the taker's transfer by signing an AuthCall intent
     // that deploys the oneshot-condvar instance with state matching the transfer context
-    let condvar_context = CondVarContext {
+    let condvar_context = ForwardContext {
         sender_id: Cow::Borrowed(taker_signing.id().as_ref()),
         token_ids: Cow::Owned(vec![dst_token.to_string()]),
         amounts: Cow::Owned(vec![U128(1)]),

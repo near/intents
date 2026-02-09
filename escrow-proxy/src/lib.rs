@@ -10,9 +10,10 @@ use near_sdk::{AccountId, AccountIdRef, borsh, env, ext_contract, json_types::U1
 pub use self::message::*;
 pub use state::{ContractStorage, ProxyConfig};
 
+/// Context used to compute a unique identifier (hash) for a token transfer forwarded by the proxy.
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone)]
-pub struct CondVarContext<'a> {
+pub struct ForwardContext<'a> {
     pub sender_id: Cow<'a, AccountIdRef>,
     pub token_ids: Cow<'a, [defuse_nep245::TokenId]>,
     pub amounts: Cow<'a, [U128]>,
@@ -20,9 +21,9 @@ pub struct CondVarContext<'a> {
     pub msg: Cow<'a, str>,
 }
 
-impl CondVarContext<'_> {
+impl ForwardContext<'_> {
     pub fn hash(&self) -> [u8; 32] {
-        let serialized = borsh::to_vec(&self).expect("CondVarContext is always serializable");
+        let serialized = borsh::to_vec(&self).expect("ForwardContext is always serializable");
         env::keccak256(&serialized)
             .try_into()
             .unwrap_or_else(|_| unreachable!())

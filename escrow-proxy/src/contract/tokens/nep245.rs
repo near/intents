@@ -36,7 +36,7 @@ impl MultiTokenReceiver for Contract {
             .map(|id| TokenId::from(Nep245TokenId::new(token.clone(), id)).to_string())
             .collect();
 
-        self.wait_for_authorization(
+        self.wait_for_approval(
             &sender_id,
             &wrapped_token_ids,
             &amounts,

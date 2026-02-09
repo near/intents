@@ -25,7 +25,7 @@ impl FungibleTokenReceiver for Contract {
         let token = env::predecessor_account_id();
         let forward_request: ForwardRequest = msg.parse().unwrap_or_panic_display();
 
-        self.wait_for_authorization(
+        self.wait_for_approval(
             &sender_id,
             &[TokenId::from(Nep141TokenId::new(token.clone())).to_string()],
             &vec![amount],
