@@ -18,31 +18,26 @@ use crate::{
 #[cfg(feature = "imt")]
 use crate::{intents::tokens::imt::ImtBurn, tokens::imt::ImtMintEvent};
 
+/// Event that can be emitted either from a
+/// function call or after intent execution
 #[must_use]
 #[near(serializers = [json])]
 #[serde(untagged)]
 #[derive(Debug, Clone)]
-pub enum ContractEvent<T> {
+pub enum MaybeIntentEvent<T> {
     Intent(IntentEvent<T>),
     Direct(T),
 }
 
-/// Event that can be emitted either from a
-/// function call or after intent execution
-#[must_use = "make sure to `.emit()` this event"]
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
-pub struct MaybeIntentEvent<T>(pub ContractEvent<T>);
-
 impl<T> MaybeIntentEvent<T> {
     #[inline]
     pub const fn direct(event: T) -> Self {
-        Self(ContractEvent::Direct(event))
+        Self::Direct(event)
     }
 
     #[inline]
     pub const fn intent(event: T, intent_hash: CryptoHash) -> Self {
-        Self(ContractEvent::Intent(IntentEvent::new(event, intent_hash)))
+        Self::Intent(IntentEvent::new(event, intent_hash))
     }
 }
 
