@@ -103,7 +103,7 @@ async fn imt_burn_intent() {
 #[rstest]
 #[trace]
 #[tokio::test]
-async fn failed_to_burn_tokens() {
+async fn failed_to_burn_tokens_with_intent() {
     let env = Env::builder().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());

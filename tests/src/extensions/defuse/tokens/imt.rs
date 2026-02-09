@@ -1,31 +1,29 @@
 use std::collections::BTreeMap;
 
-use defuse::core::{amounts::Amounts, intents::tokens::NotifyOnTransfer, tokens::imt::ImtTokens};
+use defuse::core::{amounts::Amounts, tokens::imt::ImtTokens};
 use defuse_sandbox::{SigningAccount, anyhow, tx::FnCallBuilder};
 use near_sdk::{AccountIdRef, NearToken, serde_json::json};
 
-pub trait DefuseImtMinter {
-    async fn imt_mint(
+pub trait DefuseImtBurner {
+    async fn imt_burn(
         &self,
         defuse_id: impl AsRef<AccountIdRef>,
-        receiver_id: impl AsRef<AccountIdRef>,
-        token_ids: impl IntoIterator<Item = (impl Into<String>, u128)>,
+        minter_id: impl AsRef<AccountIdRef>,
+        tokens: impl IntoIterator<Item = (impl Into<String>, u128)>,
         memo: Option<String>,
-        notification: Option<NotifyOnTransfer>,
-    ) -> anyhow::Result<Amounts>;
+    ) -> anyhow::Result<()>;
 }
 
-impl DefuseImtMinter for SigningAccount {
-    async fn imt_mint(
+impl DefuseImtBurner for SigningAccount {
+    async fn imt_burn(
         &self,
         defuse_id: impl AsRef<AccountIdRef>,
-        receiver_id: impl AsRef<AccountIdRef>,
-        token_ids: impl IntoIterator<Item = (impl Into<String>, u128)>,
+        minter_id: impl AsRef<AccountIdRef>,
+        tokens: impl IntoIterator<Item = (impl Into<String>, u128)>,
         memo: Option<String>,
-        notification: Option<NotifyOnTransfer>,
-    ) -> anyhow::Result<Amounts> {
+    ) -> anyhow::Result<()> {
         let token_ids: ImtTokens = Amounts::new(
-            token_ids
+            tokens
                 .into_iter()
                 .map(|(token, amount)| (token.into(), amount))
                 .collect::<BTreeMap<String, u128>>(),
@@ -33,17 +31,16 @@ impl DefuseImtMinter for SigningAccount {
 
         self.tx(defuse_id.as_ref())
             .function_call(
-                FnCallBuilder::new("imt_mint")
+                FnCallBuilder::new("imt_burn")
                     .with_deposit(NearToken::from_yoctonear(1))
                     .json_args(json!({
-                        "receiver_id": receiver_id.as_ref(),
+                        "minter_id": minter_id.as_ref(),
                         "tokens": token_ids,
                         "memo": memo,
-                        "notification": notification
                     })),
             )
-            .await?
-            .json()
-            .map_err(Into::into)
+            .await?;
+
+        Ok(())
     }
 }
