@@ -6,9 +6,7 @@ mod utils;
 use crate::CondVarContext;
 #[cfg(feature = "escrow-swap")]
 use defuse_escrow_swap::{Params as EscrowParams, ext_escrow};
-use near_sdk::{
-    AccountId, Gas, PanicOnDefault, Promise, env, json_types::U128, near, require,
-};
+use near_sdk::{AccountId, Gas, PanicOnDefault, Promise, env, json_types::U128, near, require};
 
 use crate::EscrowProxy;
 use crate::state::{ContractStorage, ProxyConfig};

@@ -29,9 +29,10 @@ impl FungibleTokenReceiver for Contract {
                 &sender_id,
                 &[TokenId::from(Nep141TokenId::new(token.clone())).to_string()],
                 &vec![amount],
-                &forward_request.receiver_id, 
+                &forward_request.receiver_id,
                 &forward_request.msg,
-            ).then(
+            )
+            .then(
                 Self::ext(env::current_account_id())
                     //NOTE: forward all gas, make sure that there is enough gas to resolve transfer
                     .with_static_gas(FT_CHECK_AND_FORWARD_MIN_GAS)

@@ -1,4 +1,5 @@
-	use futures::{FutureExt, future::BoxFuture};
+
+use futures::{FutureExt, future::BoxFuture};
 use near_api::{
     PublicKey, Transaction,
     types::{
@@ -17,7 +18,6 @@ use near_api::{
 };
 use near_sdk::state_init::{StateInit, StateInitV1};
 use near_sdk::{AccountId, GlobalContractId, NearToken};
-
 
 mod fn_call;
 pub mod gas;

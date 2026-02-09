@@ -30,11 +30,11 @@ impl ContractStorage {
     }
 
     pub fn init_state(config: ProxyConfig) -> BTreeMap<Vec<u8>, Vec<u8>> {
-        [
-            (Self::STATE_KEY.to_vec(), 
-                borsh::to_vec(&Self::init(config)).unwrap_or_else(|_| unreachable!()),
-            )
-        ].into()
+        [(
+            Self::STATE_KEY.to_vec(),
+            borsh::to_vec(&Self::init(config)).unwrap_or_else(|_| unreachable!()),
+        )]
+        .into()
     }
 
     #[inline]

@@ -40,7 +40,8 @@ async fn test_proxy_returns_funds_on_timeout_of_authorization() {
     let env = Env::builder().build().await;
     let (condvar_global, mt_receiver_global, escrow_proxy_global) = futures::join!(
         env.root().deploy_oneshot_condvar("global_transfer_auth"),
-        env.root().deploy_mt_receiver_stub_global("mt_receiver_global"),
+        env.root()
+            .deploy_mt_receiver_stub_global("mt_receiver_global"),
         env.root().deploy_escrow_proxy_global("escrow_proxy_global"),
     );
     let mt_receiver_instance = env
@@ -117,7 +118,8 @@ async fn test_transfer_authorized_by_relay() {
 
     let (condvar_global, mt_receiver_global, escrow_proxy_global) = futures::join!(
         env.root().deploy_oneshot_condvar("global_transfer_auth"),
-        env.root().deploy_mt_receiver_stub_global("mt_receiver_global"),
+        env.root()
+            .deploy_mt_receiver_stub_global("mt_receiver_global"),
         env.root().deploy_escrow_proxy_global("escrow_proxy_global"),
     );
 
