@@ -150,9 +150,7 @@ pub trait State: StateView {
         notification: Option<NotifyOnTransfer>,
     ) -> Result<()> {
         if tokens.is_empty() {
-            use crate::DefuseError;
-
-            return Err(DefuseError::InvalidIntent);
+            return Err(crate::DefuseError::InvalidIntent);
         }
 
         let tokens = tokens.into_generic_tokens(owner_id)?;
