@@ -6,25 +6,26 @@ use core::{
     str::FromStr,
 };
 
-use near_sdk::{AccountId, AccountIdRef, bs58, env, near};
+use near_sdk::{
+    AccountId, bs58, near,
+    serde_with::{DeserializeFromStr, SerializeDisplay},
+};
 
-use crate::{Curve, CurveType, ParseCurveError, parse::checked_base58_decode_array};
+use crate::{CurveType, ParseCurveError, parse::checked_base58_decode_array};
 
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh(use_discriminant = true)])]
-#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde_with::SerializeDisplay, serde_with::DeserializeFromStr)
+#[derive(
+    Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, SerializeDisplay, DeserializeFromStr,
 )]
 #[repr(u8)]
 pub enum PublicKey {
     #[cfg(feature = "ed25519")]
-    Ed25519(<crate::Ed25519 as Curve>::PublicKey) = 0,
+    Ed25519(<crate::Ed25519 as crate::Curve>::PublicKey) = 0,
     #[cfg(feature = "secp256k1")]
-    Secp256k1(<crate::Secp256k1 as Curve>::PublicKey) = 1,
+    Secp256k1(<crate::Secp256k1 as crate::Curve>::PublicKey) = 1,
     #[cfg(feature = "p256")]
-    P256(<crate::P256 as Curve>::PublicKey) = 2,
+    P256(crate::P256UncompressedPublicKey) = 2,
 }
 
 impl PublicKey {
@@ -49,7 +50,7 @@ impl PublicKey {
             #[cfg(feature = "secp256k1")]
             Self::Secp256k1(data) => data,
             #[cfg(feature = "p256")]
-            Self::P256(data) => data,
+            Self::P256(data) => &data.0,
         }
     }
 
@@ -64,10 +65,13 @@ impl PublicKey {
             #[cfg(feature = "secp256k1")]
             Self::Secp256k1(pk) => {
                 // https://ethereum.org/en/developers/docs/accounts/#account-creation
-                format!("0x{}", hex::encode(&env::keccak256_array(pk)[12..32]))
+                format!(
+                    "0x{}",
+                    hex::encode(&::near_sdk::env::keccak256_array(pk)[12..32])
+                )
             }
             #[cfg(feature = "p256")]
-            Self::P256(pk) => {
+            Self::P256(crate::P256UncompressedPublicKey(pk)) => {
                 // In order to keep compatibility with all existing standards
                 // within Near ecosystem (e.g. NEP-245), we need our implicit
                 // account_ids to be fully backwards-compatible with Near's
@@ -83,7 +87,10 @@ impl PublicKey {
                 // "0x" .. hex(keccak256("p256" .. pk)[12..32])
                 format!(
                     "0x{}",
-                    hex::encode(&env::keccak256_array([b"p256".as_slice(), pk].concat())[12..32])
+                    hex::encode(
+                        &::near_sdk::env::keccak256_array([b"p256".as_slice(), pk].concat())
+                            [12..32]
+                    )
                 )
             }
         }
@@ -93,7 +100,7 @@ impl PublicKey {
 
     #[cfg(feature = "ed25519")]
     #[inline]
-    pub fn from_implicit_account_id(account_id: &AccountIdRef) -> Option<Self> {
+    pub fn from_implicit_account_id(account_id: &near_sdk::AccountIdRef) -> Option<Self> {
         let mut pk = [0; 32];
         // Only NearImplicitAccount can be reversed
         hex::decode_to_slice(account_id.as_str(), &mut pk).ok()?;
@@ -130,6 +137,10 @@ impl FromStr for PublicKey {
                 data,
             )
         } else {
+            #[cfg(not(feature = "ed25519"))]
+            return Err(ParseCurveError::WrongCurveType);
+
+            #[cfg(feature = "ed25519")]
             (CurveType::Ed25519, s)
         };
 
@@ -139,7 +150,9 @@ impl FromStr for PublicKey {
             #[cfg(feature = "secp256k1")]
             CurveType::Secp256k1 => checked_base58_decode_array(data).map(Self::Secp256k1),
             #[cfg(feature = "p256")]
-            CurveType::P256 => checked_base58_decode_array(data).map(Self::P256),
+            CurveType::P256 => checked_base58_decode_array(data)
+                .map(crate::P256UncompressedPublicKey)
+                .map(Self::P256),
         }
     }
 }

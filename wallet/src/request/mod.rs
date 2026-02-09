@@ -4,12 +4,14 @@ mod signed;
 
 pub use self::{ops::*, promise::*, signed::*};
 
-use near_sdk::near;
+use near_sdk::{borsh, env, near};
 
 // TODO: versioned? or support versioned via different contract methods?
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Request {
+    // TODO: query_id? + emit?
+    // TODO: what about extensions? maybe make query_id optional?
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub ops: Vec<WalletOp>,
 
@@ -27,6 +29,12 @@ pub struct Request {
     // #[serde_as(as = "Option<Base64>")]
     // #[serde(default, skip_serializing_if = "Option::is_none")]
     // pub custom: Option<Vec<u8>>,
+}
+
+impl Request {
+    pub fn hash(&self) -> [u8; 32] {
+        env::keccak256_array(borsh::to_vec(self).unwrap_or_else(|_| unreachable!()))
+    }
 }
 
 // TODO

@@ -954,7 +954,6 @@ dependencies = [
  "impl-tools",
  "near-sdk",
  "rstest",
- "serde_with",
 ]
 
 [[package]]
@@ -1040,7 +1039,6 @@ dependencies = [
  "impl-tools",
  "near-api",
  "near-sdk",
- "serde_with",
 ]
 
 [[package]]
@@ -1121,7 +1119,6 @@ dependencies = [
  "near-crypto",
  "near-sdk",
  "rstest",
- "serde_with",
  "stellar-strkey",
 ]
 
@@ -1193,7 +1190,6 @@ dependencies = [
  "impl-tools",
  "near-sdk",
  "rstest",
- "serde_with",
 ]
 
 [[package]]
@@ -1236,7 +1232,9 @@ dependencies = [
 name = "defuse-wallet"
 version = "0.1.0"
 dependencies = [
+ "arbitrary",
  "defuse-borsh-utils",
+ "defuse-crypto",
  "defuse-deadline",
  "defuse-tests",
  "defuse-webauthn",

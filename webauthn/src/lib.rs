@@ -1,4 +1,13 @@
-use defuse_crypto::{Curve, Ed25519, P256, PublicKey, serde::AsCurve};
+#[cfg(feature = "ed25519")]
+mod ed25519;
+#[cfg(feature = "ed25519")]
+pub use self::ed25519::*;
+
+#[cfg(feature = "p256")]
+mod p256;
+#[cfg(feature = "p256")]
+pub use self::p256::*;
+
 use defuse_serde_utils::base64::{Base64, Unpadded, UrlSafe};
 use near_sdk::{
     env, near,
@@ -8,12 +17,16 @@ use near_sdk::{
 
 // TODO: field ordering (borsh)
 #[near(serializers = [borsh, json])]
+#[cfg_attr(
+    all(feature = "abi", not(target_arch = "wasm32")),
+    schemars(bound = "<A as Algorithm>::Signature: ::near_sdk::schemars::JsonSchema")
+)]
 #[serde(bound(
     serialize = "<A as Algorithm>::Signature: Serialize",
     deserialize = "<A as Algorithm>::Signature: DeserializeOwned",
 ))]
 #[derive(Debug, Clone)]
-pub struct PayloadSignature<A: Algorithm = Any> {
+pub struct PayloadSignature<A: Algorithm> {
     /// Base64Url-encoded [authenticatorData](https://w3c.github.io/webauthn/#authenticator-data)
     #[cfg_attr(
         all(feature = "abi", not(target_arch = "wasm32")),
@@ -26,9 +39,9 @@ pub struct PayloadSignature<A: Algorithm = Any> {
 
     #[cfg_attr(
         all(feature = "abi", not(target_arch = "wasm32")),
-        schemars(with = "String"),
         borsh(schema(params = "A => <A as Algorithm>::Signature"))
     )]
+    // #[serde_as(as = "AsCurve<A::CURVE_TYPE>")]
     // TODO: serde_as?
     pub signature: A::Signature,
 }
@@ -43,11 +56,11 @@ impl<A: Algorithm> PayloadSignature<A> {
         &self,
         message: impl AsRef<[u8]>,
         public_key: &A::PublicKey,
-        require_user_verification: bool,
+        user_verification: UserVerification,
     ) -> bool {
         // verify authData flags
         if self.authenticator_data.len() < 37
-            || !Self::verify_flags(self.authenticator_data[32], require_user_verification)
+            || !Self::verify_flags(self.authenticator_data[32], user_verification)
         {
             return false;
         }
@@ -88,7 +101,7 @@ impl<A: Algorithm> PayloadSignature<A> {
     const AUTH_DATA_FLAGS_BS: u8 = 1 << 4;
 
     /// <https://w3c.github.io/webauthn/#sctn-verifying-assertion>
-    const fn verify_flags(flags: u8, require_user_verification: bool) -> bool {
+    const fn verify_flags(flags: u8, user_verification: UserVerification) -> bool {
         // 16. Verify that the UP bit of the flags in authData is set.
         if flags & Self::AUTH_DATA_FLAGS_UP != Self::AUTH_DATA_FLAGS_UP {
             return false;
@@ -97,7 +110,7 @@ impl<A: Algorithm> PayloadSignature<A> {
         // 17. If user verification was determined to be required, verify that
         // the UV bit of the flags in authData is set. Otherwise, ignore the
         // value of the UV flag.
-        if require_user_verification
+        if user_verification.is_required()
             && (flags & Self::AUTH_DATA_FLAGS_UV != Self::AUTH_DATA_FLAGS_UV)
         {
             return false;
@@ -113,6 +126,27 @@ impl<A: Algorithm> PayloadSignature<A> {
 
         true
     }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum UserVerification {
+    Ignore,
+    Require,
+}
+
+impl UserVerification {
+    #[inline]
+    pub const fn is_required(&self) -> bool {
+        matches!(self, Self::Require)
+    }
+}
+
+/// See <https://www.iana.org/assignments/cose/cose.xhtml#algorithms>
+pub trait Algorithm {
+    type PublicKey;
+    type Signature;
+
+    fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool;
 }
 
 /// For more details, refer to [WebAuthn specification](https://w3c.github.io/webauthn/#dictdef-collectedclientdata).
@@ -138,99 +172,4 @@ pub enum ClientDataType {
     /// Serializes to the string `"webauthn.get"`
     #[serde(rename = "webauthn.get")]
     Get,
-}
-
-#[near(serializers = [json])]
-#[serde(untagged)]
-#[derive(Debug, Clone)]
-pub enum Signature {
-    /// [COSE EdDSA (-8) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
-    /// ed25519 curve
-    Ed25519(#[serde_as(as = "AsCurve<Ed25519>")] <Ed25519 as Curve>::Signature),
-    /// [COSE ES256 (-7) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms): NIST P-256 curve (a.k.a secp256r1) over SHA-256
-    P256(#[serde_as(as = "AsCurve<P256>")] <P256 as Curve>::Signature),
-}
-
-// impl Signature {
-//     #[inline]
-//     pub fn verify(&self, message: &[u8], public_key: &PublicKey) -> bool {
-//         match (self, public_key) {
-//             // [COSE EdDSA (-8) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
-//             // ed25519 curve
-//             (Self::Ed25519(signature), PublicKey::Ed25519(public_key)) => {
-//                 Ed25519::verify(signature, message, public_key).is_some()
-//             }
-//             // [COSE ES256 (-7) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
-//             // P256 (a.k.a secp256r1) over SHA-256
-//             (Self::P256(signature), PublicKey::P256(public_key)) => {
-//                 // Use host impl of SHA-256 here to reduce gas consumption
-//                 let prehashed = env::sha256_array(message);
-//                 P256::verify(signature, &prehashed, public_key).is_some()
-//             }
-//             _ => false,
-//         }
-//     }
-// }
-
-/// https://www.iana.org/assignments/cose/cose.xhtml#algorithms
-pub trait Algorithm {
-    type PublicKey;
-    type Signature;
-
-    fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool;
-}
-
-/// [COSE EdDSA (-8) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
-/// ed25519 curve
-#[derive(Debug, Clone)]
-pub struct EdDSA;
-
-impl Algorithm for EdDSA {
-    type PublicKey = <Ed25519 as Curve>::PublicKey;
-    type Signature = <Ed25519 as Curve>::Signature;
-
-    #[inline]
-    fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool {
-        Ed25519::verify(signature, msg, public_key).is_some()
-    }
-}
-
-/// [COSE ES256 (-7) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
-/// P256 (a.k.a secp256r1) over SHA-256
-pub struct ES256;
-
-impl Algorithm for ES256 {
-    type PublicKey = <P256 as Curve>::PublicKey;
-    type Signature = <P256 as Curve>::Signature;
-
-    #[inline]
-    fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool {
-        // Use host impl of SHA-256 here to reduce gas consumption
-        let prehashed = env::sha256_array(msg);
-        P256::verify(signature, &prehashed, public_key).is_some()
-    }
-}
-
-// TODO: rename
-#[derive(Debug, Clone)]
-pub struct Any;
-
-impl Algorithm for Any {
-    type PublicKey = PublicKey;
-
-    type Signature = Signature;
-
-    #[inline]
-    fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool {
-        match (public_key, signature) {
-            (PublicKey::Ed25519(public_key), Signature::Ed25519(signature)) => {
-                EdDSA::verify(msg, public_key, signature)
-            }
-
-            (PublicKey::P256(public_key), Signature::P256(signature)) => {
-                ES256::verify(msg, public_key, signature)
-            }
-            _ => false,
-        }
-    }
 }

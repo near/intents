@@ -1,32 +1,30 @@
 use std::time::Duration;
 
+use defuse_crypto::{Ed25519PublicKey, Ed25519Signature};
 use defuse_deadline::Deadline;
 use defuse_tests::{
     crypto::{KeyType, SecretKey},
-    env::WALLET_WASM,
+    env::WALLET_WEBAUTHN_ED25519_WASM,
     sandbox::{
-        FnCallBuilder, Sandbox, SigningAccount,
+        FnCallBuilder, Sandbox,
         api::{
             CryptoHash,
-            signer::generate_secret_key,
             types::transaction::actions::{
                 DeterministicAccountStateInit, DeterministicAccountStateInitV1,
-                GlobalContractDeployMode, GlobalContractIdentifier,
+                GlobalContractIdentifier,
             },
         },
         sandbox,
     },
 };
 use defuse_wallet::{
-    self, FunctionCallAction, PromiseDAG, PromiseSingle, Request, SignedRequest, SignedRequestBody,
-    State, webauthn::Webauthn,
+    self, PromiseDAG, PromiseSingle, Request, SignedRequest, State, webauthn::Webauthn,
 };
-use defuse_webauthn::{ClientDataType, CollectedClientData, ES256, EdDSA, PayloadSignature};
+use defuse_webauthn::{ClientDataType, CollectedClientData, Ed25519, PayloadSignature};
 use impl_tools::autoimpl;
 use near_sdk::{
-    AccountIdRef, GlobalContractId, NearToken, borsh,
+    GlobalContractId, NearToken, borsh,
     env::sha256_array,
-    json_types::Base58CryptoHash,
     serde_json::{self, json},
     state_init::{StateInit, StateInitV1},
 };
@@ -40,8 +38,10 @@ async fn test_signed(#[future] env: Env) {
 
     let wallet_state_init = StateInit::V1(StateInitV1 {
         code: env.wallet_global_id.clone(),
-        data: State::<Webauthn<EdDSA>>::new(secret_key.public_key().unwrap_as_ed25519().0)
-            .init_state(),
+        data: State::<Webauthn<Ed25519>>::new(Ed25519PublicKey(
+            secret_key.public_key().unwrap_as_ed25519().0,
+        ))
+        .init_state(),
     });
 
     let wallet = env.account(wallet_state_init.derive_account_id());
@@ -56,7 +56,7 @@ async fn test_signed(#[future] env: Env) {
         // ),
     };
 
-    let signed_request_body = SignedRequestBody {
+    let signed_request_body = SignedRequest {
         signer_id: wallet.id().clone(),
         chain_id: "mainnet".to_string(),
         valid_until: Deadline::timeout(Duration::from_secs(60 * 60)), // 1h
@@ -73,9 +73,8 @@ async fn test_signed(#[future] env: Env) {
         .function_call(
             FnCallBuilder::new("w_execute_signed")
                 .json_args(json!({
-                    "signed": SignedRequest {
-                        proof: borsh::to_vec(&sign_request(secret_key, &signed_request_body)).unwrap(),
-                        body: signed_request_body}
+                    "proof": serde_json::to_string(&sign_request(secret_key, &signed_request_body)).unwrap(),
+                    "signed": signed_request_body,
                 }))
                 .with_deposit(NearToken::from_near(1)),
         )
@@ -106,7 +105,7 @@ async fn test_extension(#[future] env: Env) {
 
     let wallet_state_init = StateInit::V1(StateInitV1 {
         code: env.wallet_global_id.clone(),
-        data: State::<Webauthn<EdDSA>>::new([0; 32])
+        data: State::<Webauthn<Ed25519>>::new(Ed25519PublicKey([0; 32]))
             .extensions([extension.id()])
             .init_state(),
     });
@@ -150,12 +149,14 @@ struct Env {
 #[fixture]
 #[awt]
 async fn env(#[future] sandbox: Sandbox) -> Env {
-    let root = sandbox.root();
-
     // wallet.0.test
     let wallet_contract = sandbox
         .root()
-        .deploy_global_sub_contract("wallet", NearToken::from_near(1000), WALLET_WASM.clone())
+        .deploy_global_sub_contract(
+            "wallet",
+            NearToken::from_near(1000),
+            WALLET_WEBAUTHN_ED25519_WASM.clone(),
+        )
         .await
         .unwrap();
 
@@ -165,13 +166,13 @@ async fn env(#[future] sandbox: Sandbox) -> Env {
     }
 }
 
-fn sign_request(secret_key: SecretKey, body: &SignedRequestBody) -> PayloadSignature<EdDSA> {
+fn sign_request(secret_key: SecretKey, body: &SignedRequest) -> PayloadSignature<Ed25519> {
     let serialized = borsh::to_vec(&body).unwrap();
     let hash = sha256_array(serialized);
     sign_passkey(secret_key, &hash)
 }
 
-fn sign_passkey(secret_key: SecretKey, msg: &[u8]) -> PayloadSignature<EdDSA> {
+fn sign_passkey(secret_key: SecretKey, msg: &[u8]) -> PayloadSignature<Ed25519> {
     let authenticator_data = {
         let mut buf = [0; 37];
         buf[32] = 0b0000_0001;
@@ -191,13 +192,13 @@ fn sign_passkey(secret_key: SecretKey, msg: &[u8]) -> PayloadSignature<EdDSA> {
     let signature =
         match secret_key.sign(&[authenticator_data.as_slice(), hash.as_slice()].concat()) {
             defuse_tests::crypto::Signature::ED25519(signature) => signature.to_bytes(),
-            defuse_tests::crypto::Signature::SECP256K1(secp256_k1_signature) => todo!(),
+            defuse_tests::crypto::Signature::SECP256K1(_) => unimplemented!(),
         };
 
     PayloadSignature {
         authenticator_data,
         client_data_json,
-        signature,
+        signature: Ed25519Signature(signature),
     }
 }
 

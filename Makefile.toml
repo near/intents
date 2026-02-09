@@ -76,10 +76,11 @@ args = [
     "./wallet/Cargo.toml",
     "--no-default-features",
     "--features",
-    "abi,contract,webauthn",
+    "abi,contract,webauthn-ed25519",
     "--out-dir",
-    "${TARGET_DIR}",
+    "${TARGET_DIR}/defuse_wallet_webauthn_25519",
     "--no-embed-abi",
+    "--no-abi",                      # TODO: remove
 ]
 
 [tasks.build-poa-factory]

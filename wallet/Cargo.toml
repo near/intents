@@ -13,25 +13,32 @@ workspace = true
 
 [dependencies]
 defuse-borsh-utils.workspace = true
+defuse-crypto.workspace = true
 defuse-deadline.workspace = true
 
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 thiserror.workspace = true
 
-defuse-webauthn = { workspace = true, optional = true }
+arbitrary = { workspace = true, features = ["derive"], optional = true }
+defuse-webauthn = { workspace = true, default-features = false, optional = true }
 
 
 [features]
 default = ["webauthn"]
 
-abi = ["defuse-deadline/abi", "defuse-webauthn?/abi"]
+webauthn = ["dep:defuse-webauthn"]
+webauthn-ed25519 = ["webauthn", "defuse-webauthn/ed25519"]
+webauthn-p256 = ["webauthn", "defuse-webauthn/p256"]
+
+abi = ["defuse-crypto/abi", "defuse-deadline/abi", "defuse-webauthn?/abi"]
+arbitrary = ["dep:arbitrary", "near-sdk/arbitrary"]
 contract = []
 
-webauthn = ["dep:defuse-webauthn"]
 
 [dev-dependencies]
 defuse-tests.workspace = true
 
+arbitrary = { workspace = true, features = ["derive"] }
 impl-tools.workspace = true
 near-sdk = { workspace = true, features = [
     "deterministic-account-ids",

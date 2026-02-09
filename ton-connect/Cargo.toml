@@ -9,7 +9,9 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-defuse-crypto = { workspace = true, features = ["serde"] }
+defuse-crypto = { workspace = true, default-features = false, features = [
+    "ed25519",
+] }
 defuse-near-utils = { workspace = true, features = ["digest"] }
 defuse-serde-utils = { workspace = true, features = ["tlb"] }
 

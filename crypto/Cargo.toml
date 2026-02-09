@@ -19,7 +19,7 @@ generic-array = { workspace = true, features = [
 
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 near-api-types = { workspace = true, optional = true }
-serde_with = { workspace = true, optional = true }
+serde_with.workspace = true
 
 [features]
 default = ["ed25519", "secp256k1", "p256"]
@@ -28,14 +28,15 @@ ed25519 = ["dep:ed25519-dalek"]
 secp256k1 = []
 p256 = ["dep:p256", "dep:generic-array"]
 
-abi = ["serde", "serde_with/schemars_0_8"]
+abi = []
 arbitrary = ["dep:arbitrary"]
 near-api-types = ["dep:near-api-types", "ed25519", "secp256k1"]
-serde = ["dep:serde_with"]
+
 
 [lints]
 workspace = true
 
 [dev-dependencies]
+arbitrary = { workspace = true, features = ["derive"] }
 near-sdk = { workspace = true, features = ["unstable", "unit-testing"] }
 rstest.workspace = true

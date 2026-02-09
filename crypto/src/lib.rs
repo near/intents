@@ -6,6 +6,15 @@
 //! companion crates like `tip191`, `erc191`, or `bip322` and are primarily
 //! intended for internal use.
 
+#[cfg(not(any(feature = "ed25519", feature = "secp256k1", feature = "p256")))]
+compile_error!(
+    r#"At least one of these features should be enabled:
+- "ed25519"
+- "secp256k1"
+- "p256"
+"#
+);
+
 mod curve;
 mod parse;
 mod payload;
@@ -14,5 +23,4 @@ mod signature;
 
 pub use self::{curve::*, parse::ParseCurveError, payload::*, public_key::*, signature::*};
 
-#[cfg(feature = "serde")]
 pub mod serde;

@@ -7,19 +7,21 @@ use near_sdk::{AccountId, FunctionError, PanicOnDefault, Promise, borsh, env, ne
 
 use crate::{Error, Request, Result, SignedRequest, SigningStandard, State, Wallet, WalletOp};
 
-// TODO: features for standards
-#[cfg(feature = "webauthn")]
-type SS = crate::webauthn::Webauthn<crate::webauthn::EdDSA>;
-
-#[near(contract_state(key = State::<SS>::STATE_KEY))]
-#[derive(PanicOnDefault)]
+#[near(
+    contract_state(key = State::<SS>::STATE_KEY),
+    contract_metadata(
+        standard(standard = "wallet", version = "1.0.0"),
+        // TODO: signing-standard-specific standard
+    ),
+)]
+#[derive(Debug, PanicOnDefault)]
 pub struct Contract(State<SS>);
 
 #[near]
 impl Wallet for Contract {
     #[payable]
-    fn w_execute_signed(&mut self, signed: SignedRequest) {
-        self.execute_signed(signed)
+    fn w_execute_signed(&mut self, signed: SignedRequest, proof: String) {
+        self.execute_signed(signed, proof)
             .unwrap_or_else(|err| err.panic())
     }
 
@@ -42,9 +44,7 @@ impl Wallet for Contract {
     }
 
     fn w_public_key(&self) -> String {
-        // TODO
-        // self.public_key
-        todo!()
+        self.public_key.to_string()
     }
 
     fn w_is_extension_enabled(&self, account_id: AccountId) -> bool {
@@ -62,24 +62,24 @@ impl Wallet for Contract {
 }
 
 impl<S: SigningStandard> State<S> {
-    fn execute_signed(&mut self, signed: SignedRequest) -> Result<()> {
-        // check signer_id
-        if signed.body.signer_id != env::current_account_id() {
-            return Err(Error::InvalidSignerId(signed.body.signer_id));
-        }
-
+    fn execute_signed(&mut self, signed: SignedRequest, proof: String) -> Result<()> {
         // check chain_id
-        if signed.body.chain_id != utils::chain_id() {
+        if signed.chain_id != utils::chain_id() {
             return Err(Error::InvalidChainId {
-                got: signed.body.chain_id,
+                got: signed.chain_id,
                 expected: utils::chain_id(),
             });
         }
 
+        // check signer_id
+        if signed.signer_id != env::current_account_id() {
+            return Err(Error::InvalidSignerId(signed.signer_id));
+        }
+
         // check seqno
-        if signed.body.seqno != self.seqno {
+        if signed.seqno != self.seqno {
             return Err(Error::InvalidSeqno {
-                got: signed.body.seqno,
+                got: signed.seqno,
                 expected: self.seqno,
             });
         }
@@ -88,20 +88,20 @@ impl<S: SigningStandard> State<S> {
         self.seqno += 1;
 
         // check valid_until
-        if signed.body.valid_until.has_expired() {
+        if signed.valid_until.has_expired() {
             return Err(Error::Expired);
         }
 
         // check signature
         {
-            let msg = borsh::to_vec(&signed.body).unwrap_or_else(|_| unreachable!());
+            let msg = borsh::to_vec(&signed).unwrap_or_else(|_| unreachable!());
 
-            if !S::verify(&msg, &self.public_key, &signed.proof) {
+            if !S::verify(&msg, &self.public_key, &proof) {
                 return Err(Error::InvalidSignature);
             }
         }
 
-        self.execute_request(signed.body.request)
+        self.execute_request(signed.request)
     }
 
     fn execute_extension(&mut self, request: Request) -> Result<()> {
@@ -181,3 +181,8 @@ impl DerefMut for Contract {
         &mut self.0
     }
 }
+
+#[cfg(feature = "webauthn-ed25519")]
+type SS = crate::webauthn::Webauthn<crate::webauthn::Ed25519>;
+#[cfg(feature = "webauthn-p256")]
+type SS = crate::webauthn::Webauthn<crate::webauthn::P256>;

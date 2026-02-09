@@ -4,13 +4,21 @@ use near_sdk::{
     AccountId, AccountIdRef,
     borsh::{self, BorshSerialize},
     near,
+    serde::{Serialize, de::DeserializeOwned},
 };
 
 use crate::SigningStandard;
 
 #[near(serializers = [borsh, json])]
+#[serde(bound(
+    serialize = "<S as SigningStandard>::PublicKey: Serialize",
+    deserialize = "<S as SigningStandard>::PublicKey: DeserializeOwned",
+))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct State<S: SigningStandard> {
+    // TODO: field ordering & versioning?
+    // having bool first is good, because we can introduce versioning later
+    // TODO: versioning even make sense for deterministic account_ids?
     pub signature_enabled: bool,
     pub seqno: u32,
     pub wallet_id: u32,
@@ -19,7 +27,6 @@ pub struct State<S: SigningStandard> {
         schemars(with = "String"),
         borsh(schema(params = "S => <S as SigningStandard>::PublicKey"))
     )]
-    // TODO: serde_as?
     pub public_key: S::PublicKey,
     #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
     pub extensions: BTreeSet<AccountId>,

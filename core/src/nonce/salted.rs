@@ -15,7 +15,7 @@ use std::{
 
 use crate::{DefuseError, Result};
 
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[derive(PartialEq, PartialOrd, Ord, Eq, Copy, Clone, SerializeDisplay, DeserializeFromStr)]
 #[near(serializers = [borsh])]
 pub struct Salt([u8; 4]);

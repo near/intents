@@ -17,7 +17,7 @@ pub trait Wallet {
     /// Executes signed request.
     ///
     /// TODO: The wallet-contract MIGHT have some whitelists
-    fn w_execute_signed(&mut self, signed: SignedRequest);
+    fn w_execute_signed(&mut self, signed: SignedRequest, proof: String);
 
     // TODO: accept query_id?
     /// Execute request from an enabled extension.
