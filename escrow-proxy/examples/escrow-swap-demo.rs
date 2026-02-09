@@ -333,7 +333,7 @@ async fn main() -> Result<()> {
     };
 
     // RELAY AUTH CALL INTENT
-    // The relay authorizes the taker's transfer by signing an AuthCall intent
+    // The relay approves the taker's transfer by signing an AuthCall intent
     // that deploys the oneshot-condvar instance with state matching the transfer context
     let condvar_context = CondVarContext {
         sender_id: Cow::Borrowed(taker_signing.id().as_ref()),
@@ -363,7 +363,7 @@ async fn main() -> Result<()> {
     let condvar_instance_id = condvar_state_init.derive_account_id();
     println!("OneshotCondVar instance ID: {condvar_instance_id}");
 
-    // Create AuthCall intent that deploys oneshot-condvar and authorizes the transfer
+    // Create AuthCall intent that deploys oneshot-condvar and approves the transfer
     let relay_auth_call = defuse_core::intents::auth::AuthCall {
         contract_id: condvar_instance_id.clone(),
         state_init: Some(condvar_state_init),

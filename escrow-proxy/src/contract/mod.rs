@@ -37,7 +37,7 @@ impl EscrowProxy for Contract {
     /// sender_id: The account id of the sender
     /// token_ids: The token ids of the tokens being transferred
     /// amounts: The amounts of the tokens being transferred
-    /// msg: escrow proxy transfer message
+    /// msg: escrow proxy forward message
     fn ep_approve_account_id(
         &self,
         sender_id: AccountId,
