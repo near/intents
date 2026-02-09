@@ -55,12 +55,17 @@ async fn test_signed(#[future] env: Env) {
                 account_id: env.root().id().clone(),
             },
         ],
-        out: PromiseDAG::default(),
-        // out: PromiseDAG::new(
-        //     PromiseSingle::new(wallet.id())
-        //         .state_init(wallet_state_init.clone(), NearToken::ZERO)
-        //         .transfer(NearToken::from_near(1)),
-        // ),
+        out: dbg!(
+            PromiseSingle::new(wallet.id())
+                .transfer(NearToken::from_yoctonear(1))
+                .then(PromiseSingle::new(wallet.id()).transfer(NearToken::from_yoctonear(2)))
+                .and(PromiseSingle::new(wallet.id()).transfer(NearToken::from_yoctonear(3)))
+                .then_concurrent([
+                    PromiseSingle::new(wallet.id()).transfer(NearToken::from_yoctonear(4)),
+                    PromiseSingle::new(wallet.id()).transfer(NearToken::from_yoctonear(5))
+                ])
+                .then(PromiseSingle::new(wallet.id()).transfer(NearToken::from_yoctonear(6)))
+        ),
     };
 
     let signed_request_body = SignedRequest {

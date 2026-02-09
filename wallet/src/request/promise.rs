@@ -10,15 +10,12 @@ use near_sdk::{
 
 use crate::utils::is_default;
 
-// TODO: remove
-// p1.then(p2).and(p3).then_concurrent([p4, p5]).join().then(p6)
-
-// TODO: deserialize as either [promises..], or {"after": [...], "promises": [...]}
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct PromiseDAG {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub after: Vec<Self>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub promises: Vec<PromiseSingle>,
 }
 
@@ -30,21 +27,64 @@ impl PromiseDAG {
         }
     }
 
+    pub fn and(mut self, other: impl Into<Self>) -> Self {
+        let other = other.into();
+        if self.after.is_empty() && other.after.is_empty() {
+            self.promises.extend(other.promises);
+            return self;
+        }
+
+        Self {
+            after: vec![self, other],
+            promises: vec![],
+        }
+    }
+
+    pub fn then(self, then: PromiseSingle) -> Self {
+        self.then_concurrent([then])
+    }
+
+    pub fn then_concurrent(mut self, then: impl IntoIterator<Item = PromiseSingle>) -> Self {
+        if self.promises.is_empty() {
+            self.promises.extend(then);
+            return self;
+        }
+
+        Self {
+            after: vec![self],
+            promises: then.into_iter().collect(),
+        }
+    }
+
     pub fn is_empty(&self) -> bool {
         self.after.is_empty() && self.promises.is_empty()
     }
 
-    // TODO:
-    pub fn and(mut self, other: PromiseSingle) -> Self {
-        self.promises.push(other);
-        self
+    /// Returns the length of the longest chain of subsequent action
+    /// receipts to be created.
+    pub fn depth(&self) -> usize {
+        self.after
+            .iter()
+            .map(Self::depth)
+            .max()
+            .unwrap_or(0)
+            .saturating_add(self.promises.len().min(1))
     }
 
-    pub fn then(self, then: PromiseSingle) -> Self {
-        Self {
-            after: vec![self],
-            promises: vec![then],
-        }
+    /// Returns the total number of action receipts to be created.
+    pub fn total_count(&self) -> usize {
+        self.after
+            .iter()
+            .map(Self::total_count)
+            .sum::<usize>()
+            .saturating_add(self.promises.len())
+    }
+
+    pub(crate) fn normalize(&mut self) {
+        self.after.retain_mut(|after| {
+            after.normalize();
+            !after.is_empty()
+        });
     }
 
     pub fn build(self) -> Option<Promise> {
@@ -64,6 +104,7 @@ impl PromiseDAG {
             return Some(after);
         }
 
+        // `.then_concurrent([single])` is equivalent to `.then(single)`
         Some(after.then_concurrent(promises).join())
     }
 }
@@ -74,15 +115,20 @@ impl From<PromiseSingle> for PromiseDAG {
     }
 }
 
+/// A single outgoing receipt
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PromiseSingle {
     // TODO: check that not self, otherise callbacks would be allowed to be
     // executed
     pub receiver_id: AccountId,
+
+    /// Receiver for refunds of failed or unused deposits.
+    /// By default, it's the wallet-contract itself.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub refund_to: Option<AccountId>,
 
+    /// Empty actions is no-op.
     pub actions: Vec<PromiseAction>,
 }
 
@@ -120,6 +166,14 @@ impl PromiseSingle {
         self
     }
 
+    pub fn and(self, other: impl Into<PromiseDAG>) -> PromiseDAG {
+        PromiseDAG::from(self).and(other)
+    }
+
+    pub fn then(self, then: Self) -> PromiseDAG {
+        PromiseDAG::from(self).then(then)
+    }
+
     pub fn build(self) -> Option<Promise> {
         if self.actions.is_empty() {
             return None;
@@ -142,7 +196,7 @@ impl PromiseSingle {
 /// NOTE: there is no support for other actions, since they operate on the
 /// account itself (e.g. DeployContract, AddKey and etc...) or its on children
 /// (e.g. CreateAccount). Wallet-contracts are not self-upgradable and do
-/// nor allow creating subaccounts.
+/// not allow creating subaccounts.
 #[near(serializers = [borsh, json])]
 #[serde(tag = "action", content = "args", rename_all = "snake_case")]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -260,60 +314,35 @@ use near_sdk::serde;
 #[cfg(test)]
 mod tests {
     use near_sdk::serde_json;
+    use rstest::rstest;
 
     use super::*;
 
-    #[test]
-    fn print_json() {
-        println!(
-            "{}",
-            serde_json::to_string_pretty(&PromiseDAG {
-                after: vec![PromiseDAG {
-                    after: vec![
-                        PromiseDAG {
-                            after: vec![PromiseDAG {
-                                after: vec![],
-                                promises: vec![PromiseSingle {
-                                    receiver_id: "p1".parse().unwrap(),
-                                    refund_to: None,
-                                    actions: vec![],
-                                }],
-                            }],
-                            promises: vec![PromiseSingle {
-                                receiver_id: "p2".parse().unwrap(),
-                                refund_to: None,
-                                actions: vec![],
-                            }],
-                        },
-                        PromiseDAG {
-                            after: vec![],
-                            promises: vec![PromiseSingle {
-                                receiver_id: "p3".parse().unwrap(),
-                                refund_to: None,
-                                actions: vec![],
-                            }]
-                        }
-                    ],
-                    promises: vec![
-                        PromiseSingle {
-                            receiver_id: "p4".parse().unwrap(),
-                            refund_to: None,
-                            actions: vec![],
-                        },
-                        PromiseSingle {
-                            receiver_id: "p5".parse().unwrap(),
-                            refund_to: None,
-                            actions: vec![],
-                        }
-                    ]
-                }],
-                promises: vec![PromiseSingle {
-                    receiver_id: "p6".parse().unwrap(),
-                    refund_to: None,
-                    actions: vec![],
-                }]
-            })
-            .unwrap()
-        );
+    #[rstest]
+    #[case(PromiseDAG::default(), 0)]
+    #[case(p(1), 1)]
+    #[case(p(1).then(p(2)).and(p(3)).then_concurrent([p(4), p(5)]).then(p(6)), 4)]
+    fn test_depth(#[case] p: impl Into<PromiseDAG>, #[case] depth: usize) {
+        assert_eq!(p.into().depth(), depth);
+    }
+
+    #[rstest]
+    #[case(PromiseDAG::default(), 0)]
+    #[case(p(1), 1)]
+    #[case(p(1).then(p(2)).and(p(3)).then_concurrent([p(4), p(5)]).then(p(6)), 6)]
+    fn test_total_count(#[case] p: impl Into<PromiseDAG>, #[case] total_count: usize) {
+        assert_eq!(p.into().total_count(), total_count);
+    }
+
+    #[rstest]
+    #[case(PromiseDAG::default())]
+    #[case(p(1))]
+    #[case(p(1).then(p(2)).and(p(3)).then_concurrent([p(4), p(5)]).then(p(6)))]
+    fn check_json(#[case] p: impl Into<PromiseDAG>) {
+        println!("{}", serde_json::to_string_pretty(&p.into()).unwrap());
+    }
+
+    fn p(n: usize) -> PromiseSingle {
+        PromiseSingle::new(format!("p{n}").parse::<AccountId>().unwrap())
     }
 }
