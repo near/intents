@@ -33,6 +33,7 @@ near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 thiserror.workspace = true
 
 [features]
+default = ["auth-call"]
 contract = []
 abi = []
 auth-call = ["dep:defuse-auth-call"]

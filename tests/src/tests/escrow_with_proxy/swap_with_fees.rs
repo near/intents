@@ -141,7 +141,11 @@ async fn test_proxy_fill_gas_benchmark() {
 
     let context_hash = CondVarContext {
         sender_id: Cow::Borrowed(solver.id().as_ref()),
-        token_ids: Cow::Owned(vec![token_b_defuse_id.to_string()]),
+        token_ids: Cow::Owned(vec![TokenId::from(Nep245TokenId::new(
+            env.defuse.id().clone(),
+            token_b_defuse_id.to_string(),
+        ))
+        .to_string()]),
         amounts: Cow::Owned(vec![U128(solver_amount)]), // 2x for price 2.0
         receiver_id: Cow::Borrowed(proxy_msg.receiver_id.as_ref()),
         msg: Cow::Borrowed(&proxy_msg.msg),

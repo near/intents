@@ -120,7 +120,11 @@ async fn test_escrow_swap_with_proxy_full_flow() {
 
     let context_hash = CondVarContext {
         sender_id: Cow::Borrowed(solver.id().as_ref()),
-        token_ids: Cow::Owned(vec![token_b_defuse_id.to_string()]),
+        token_ids: Cow::Owned(vec![TokenId::from(Nep245TokenId::new(
+            env.defuse.id().clone(),
+            token_b_defuse_id.to_string(),
+        ))
+        .to_string()]),
         amounts: Cow::Owned(vec![U128(swap_amount)]),
         receiver_id: Cow::Borrowed(proxy_msg.receiver_id.as_ref()),
         msg: Cow::Borrowed(&proxy_msg.msg),
