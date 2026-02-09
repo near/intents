@@ -511,7 +511,6 @@ impl ExecutableIntent for StorageDeposit {
 pub mod imt {
     use crate::{
         Result,
-        events::MaybeIntentEvent,
         tokens::{
             MT_ON_TRANSFER_GAS_DEFAULT, MT_ON_TRANSFER_GAS_MIN,
             imt::{ImtMintEvent, ImtTokens},
@@ -576,7 +575,7 @@ pub mod imt {
             engine
                 .inspector
                 .on_event(DefuseEvent::ImtMint(Cow::Borrowed(
-                    [MaybeIntentEvent::intent(
+                    [IntentEvent::new(
                         AccountEvent::new(signer_id, ImtMintEvent::from(&self)),
                         intent_hash,
                     )]

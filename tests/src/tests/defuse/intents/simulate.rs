@@ -944,7 +944,7 @@ async fn simulate_mint_intent() {
         .unwrap();
 
     let events = vec![
-        DefuseEvent::ImtMint(Cow::Owned(vec![MaybeIntentEvent::intent(
+        DefuseEvent::ImtMint(Cow::Owned(vec![IntentEvent::new(
             AccountEvent {
                 account_id: user.id().clone().into(),
                 event: ImtMintEvent {

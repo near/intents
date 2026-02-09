@@ -1,0 +1,376 @@
+mod v0_4_1;
+
+use std::{borrow::Cow, collections::BTreeMap};
+
+use defuse_crypto::PublicKey;
+use defuse_fees::Pips;
+use defuse_token_id::TokenId;
+use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, json_types::U128, serde_json};
+use rstest::rstest;
+
+use crate::{
+    Salt,
+    accounts::{AccountEvent, NonceEvent, PublicKeyEvent, SaltRotationEvent},
+    amounts::Amounts,
+    events::{DefuseEvent, MaybeIntentEvent, tests::v0_4_1::DefuseEvent0_4_1},
+    fees::{FeeChangedEvent, FeeCollectorChangedEvent},
+    intents::{
+        IntentEvent,
+        account::SetAuthByPredecessorId,
+        token_diff::{TokenDiff, TokenDiffEvent},
+        tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
+    },
+    tokens::TransferEvent,
+};
+
+// NOTE:
+// 1. Adding a new event does not require backward compatibility
+// 2. Modifying an existing event requires a backward compatibility test
+#[derive(Debug)]
+enum DefuseEventVersion {
+    V0_4_1,
+}
+
+impl DefuseEventVersion {
+    /// Ensures that events emitted by the current contract version
+    /// can still be deserialized by older client versions
+    fn assert_compatible(&self, event: &DefuseEvent) {
+        let json = serde_json::to_string(event).expect("serialize new event");
+
+        println!(
+            "Testing compatibility of event version {:?} with event: {}",
+            self, json
+        );
+
+        let _ = match self {
+            DefuseEventVersion::V0_4_1 => {
+                match event {
+                    #[cfg(feature = "imt")]
+                    DefuseEvent::ImtMint(_) | DefuseEvent::ImtBurn(_) => {
+                        // These events were added in v0.4.2, so they are not expected to be compatible with v0.4.1
+                        return;
+                    }
+                    _ => serde_json::from_str::<DefuseEvent0_4_1>(&json)
+                        .expect("deserialize with old event version"),
+                }
+            }
+        };
+    }
+}
+
+fn account<'a>() -> Cow<'a, AccountIdRef> {
+    Cow::Owned("alice.near".parse::<AccountId>().unwrap())
+}
+
+fn pub_key<'a>() -> Cow<'a, PublicKey> {
+    Cow::Owned("ed25519:11111111111111111111111111111111".parse().unwrap())
+}
+
+fn tokens<'a, T>() -> Amounts<BTreeMap<TokenId, T>>
+where
+    T: From<u64>,
+{
+    Amounts::new(
+        [
+            (TokenId::Nep141("token.near".parse().unwrap()), T::from(100)),
+            (
+                TokenId::Nep245("token.near:abcd".parse().unwrap()),
+                T::from(200),
+            ),
+            (
+                TokenId::Nep171("token.near:abcd".parse().unwrap()),
+                T::from(1),
+            ),
+        ]
+        .into(),
+    )
+}
+
+pub fn pk_added_direct_event<'a>() -> DefuseEvent<'a> {
+    DefuseEvent::PublicKeyAdded(MaybeIntentEvent::direct(AccountEvent {
+        account_id: account(),
+        event: PublicKeyEvent {
+            public_key: pub_key(),
+        },
+    }))
+}
+
+pub fn pk_added_intent_event<'a>() -> DefuseEvent<'a> {
+    DefuseEvent::PublicKeyAdded(MaybeIntentEvent::intent(
+        AccountEvent {
+            account_id: account(),
+            event: PublicKeyEvent {
+                public_key: pub_key(),
+            },
+        },
+        [1; 32].into(),
+    ))
+}
+
+pub fn fee_changed_event<'a>() -> DefuseEvent<'a> {
+    DefuseEvent::FeeChanged(FeeChangedEvent {
+        old_fee: Pips::from_pips(100).unwrap(),
+        new_fee: Pips::from_pips(200).unwrap(),
+    })
+}
+
+pub fn fee_collector_changed_event<'a>() -> DefuseEvent<'a> {
+    DefuseEvent::FeeCollectorChanged(FeeCollectorChangedEvent {
+        old_fee_collector: account(),
+        new_fee_collector: account(),
+    })
+}
+
+pub fn transfer_intent_event<'a>() -> DefuseEvent<'a> {
+    DefuseEvent::Transfer(Cow::Owned(vec![IntentEvent::new(
+        AccountEvent {
+            account_id: account(),
+            event: TransferEvent {
+                receiver_id: account(),
+                tokens: tokens::<u128>(),
+                memo: Cow::Owned(Some("test transfer".to_string())),
+            },
+        },
+        [0; 32].into(),
+    )]))
+}
+
+pub fn token_diff_intent_event<'a>() -> DefuseEvent<'a> {
+    DefuseEvent::TokenDiff(Cow::Owned(vec![IntentEvent::new(
+        AccountEvent {
+            account_id: account(),
+            event: TokenDiffEvent {
+                fees_collected: tokens::<u128>(),
+                diff: Cow::Owned(TokenDiff {
+                    diff: tokens::<i128>(),
+                    memo: Some("test token diff".to_string()),
+                    referral: Some(account().into()),
+                }),
+            },
+        },
+        [0; 32].into(),
+    )]))
+}
+
+fn intents_executed_event<'a>() -> DefuseEvent<'a> {
+    DefuseEvent::IntentsExecuted(Cow::Owned(vec![IntentEvent::new(
+        AccountEvent {
+            account_id: account(),
+            event: NonceEvent { nonce: [0; 32] },
+        },
+        [0; 32].into(),
+    )]))
+}
+
+fn ft_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
+    DefuseEvent::FtWithdraw(Cow::Owned(vec![IntentEvent::new(
+        AccountEvent {
+            account_id: account(),
+            event: Cow::Owned(FtWithdraw {
+                token: "token.near".parse().unwrap(),
+                amount: 100.into(),
+                memo: Some("test ft withdraw".to_string()).into(),
+                receiver_id: account().into(),
+                msg: Some("test message".to_string()).into(),
+                storage_deposit: Some(NearToken::from_yoctonear(100)),
+                min_gas: Some(Gas::from_tgas(10)),
+            }),
+        },
+        [0; 32].into(),
+    )]))
+}
+
+fn mt_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
+    let (token_ids, amounts): (Vec<_>, Vec<_>) = tokens::<u128>()
+        .into_iter()
+        .map(|(token_id, amount)| (token_id.to_string(), U128::from(amount)))
+        .unzip();
+
+    DefuseEvent::MtWithdraw(Cow::Owned(vec![IntentEvent::new(
+        AccountEvent {
+            account_id: account(),
+            event: Cow::Owned(MtWithdraw {
+                token: account().into(),
+                token_ids,
+                amounts,
+                memo: Some("test mt withdraw".to_string()).into(),
+                receiver_id: account().into(),
+                msg: Some("test message".to_string()).into(),
+                storage_deposit: Some(NearToken::from_yoctonear(100)),
+                min_gas: Some(Gas::from_tgas(10)),
+            }),
+        },
+        [0; 32].into(),
+    )]))
+}
+
+fn nft_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
+    DefuseEvent::NftWithdraw(Cow::Owned(vec![IntentEvent::new(
+        AccountEvent {
+            account_id: account(),
+            event: Cow::Owned(NftWithdraw {
+                token: account().into(),
+                token_id: "token_id1".to_string(),
+                memo: Some("test nft withdraw".to_string()).into(),
+                receiver_id: account().into(),
+                msg: Some("test message".to_string()).into(),
+                storage_deposit: Some(NearToken::from_yoctonear(100)),
+                min_gas: Some(Gas::from_tgas(10)),
+            }),
+        },
+        [0; 32].into(),
+    )]))
+}
+
+fn native_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
+    DefuseEvent::NativeWithdraw(Cow::Owned(vec![IntentEvent::new(
+        AccountEvent {
+            account_id: account(),
+            event: Cow::Owned(NativeWithdraw {
+                amount: NearToken::from_near(100),
+                receiver_id: account().into(),
+            }),
+        },
+        [0; 32].into(),
+    )]))
+}
+
+fn storage_deposit_intent_event<'a>() -> DefuseEvent<'a> {
+    DefuseEvent::StorageDeposit(Cow::Owned(vec![IntentEvent::new(
+        AccountEvent {
+            account_id: account(),
+            event: Cow::Owned(StorageDeposit {
+                contract_id: account().into(),
+                amount: NearToken::from_yoctonear(100),
+                deposit_for_account_id: account().into(),
+            }),
+        },
+        [0; 32].into(),
+    )]))
+}
+
+#[cfg(feature = "imt")]
+fn imt_mint_intent_event<'a>() -> DefuseEvent<'a> {
+    use crate::tokens::imt::ImtMintEvent;
+
+    let tokens = Amounts::new(
+        tokens::<u128>()
+            .into_iter()
+            .map(|(token_id, amount)| (token_id.to_string(), amount))
+            .collect::<BTreeMap<_, _>>(),
+    );
+
+    DefuseEvent::ImtMint(Cow::Owned(vec![IntentEvent::new(
+        AccountEvent {
+            account_id: account(),
+            event: ImtMintEvent {
+                receiver_id: account(),
+                tokens,
+                memo: Cow::Owned(Some("test imt mint".to_string())),
+            },
+        },
+        [0; 32].into(),
+    )]))
+}
+
+#[cfg(feature = "imt")]
+fn imt_burn_intent_event<'a>() -> DefuseEvent<'a> {
+    use crate::intents::tokens::imt::ImtBurn;
+
+    let tokens = Amounts::new(
+        tokens::<u128>()
+            .into_iter()
+            .map(|(token_id, amount)| (token_id.to_string(), amount))
+            .collect::<BTreeMap<_, _>>(),
+    );
+
+    DefuseEvent::ImtBurn(Cow::Owned(vec![IntentEvent::new(
+        AccountEvent {
+            account_id: account(),
+            event: Cow::Owned(ImtBurn {
+                minter_id: account().into(),
+                tokens,
+                memo: Some("test imt burn".to_string()).into(),
+            }),
+        },
+        [0; 32].into(),
+    )]))
+}
+
+fn account_locked_event<'a>() -> DefuseEvent<'a> {
+    DefuseEvent::AccountLocked(AccountEvent {
+        account_id: account(),
+        event: (),
+    })
+}
+
+fn account_unlocked_event<'a>() -> DefuseEvent<'a> {
+    DefuseEvent::AccountUnlocked(AccountEvent {
+        account_id: account(),
+        event: (),
+    })
+}
+
+fn set_auth_by_predecessor_id_intent_event<'a>() -> DefuseEvent<'a> {
+    DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::intent(
+        AccountEvent {
+            account_id: account(),
+            event: Cow::Owned(SetAuthByPredecessorId { enabled: true }),
+        },
+        [0; 32].into(),
+    ))
+}
+
+fn set_auth_by_predecessor_id_direct_event<'a>() -> DefuseEvent<'a> {
+    DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::intent(
+        AccountEvent {
+            account_id: account(),
+            event: Cow::Owned(SetAuthByPredecessorId { enabled: true }),
+        },
+        [0; 32].into(),
+    ))
+}
+
+fn salt_rotation_event<'a>() -> DefuseEvent<'a> {
+    DefuseEvent::SaltRotation(SaltRotationEvent {
+        current: Salt::derive(3),
+        invalidated: [Salt::derive(2), Salt::derive(1)].into_iter().collect(),
+    })
+}
+
+fn get_all_events<'a>() -> Vec<DefuseEvent<'a>> {
+    let mut all_events = vec![
+        pk_added_direct_event(),
+        pk_added_intent_event(),
+        fee_changed_event(),
+        fee_collector_changed_event(),
+        transfer_intent_event(),
+        token_diff_intent_event(),
+        intents_executed_event(),
+        ft_withdraw_intent_event(),
+        mt_withdraw_intent_event(),
+        nft_withdraw_intent_event(),
+        native_withdraw_intent_event(),
+        storage_deposit_intent_event(),
+        account_locked_event(),
+        account_unlocked_event(),
+        set_auth_by_predecessor_id_intent_event(),
+        set_auth_by_predecessor_id_direct_event(),
+        salt_rotation_event(),
+    ];
+
+    #[cfg(feature = "imt")]
+    {
+        all_events.extend([imt_mint_intent_event(), imt_burn_intent_event()]);
+    }
+
+    all_events
+}
+
+#[rstest]
+#[case(DefuseEventVersion::V0_4_1)]
+fn event_backward_compatibility_test(#[case] event_version: DefuseEventVersion) {
+    get_all_events()
+        .iter()
+        .for_each(|event| event_version.assert_compatible(event));
+}
