@@ -36,6 +36,7 @@ const DEFUSE_WASM_VAR: &str = "DEFUSE_WASM";
 const POA_FACTORY_WASM_VAR: &str = "DEFUSE_POA_FACTORY_WASM";
 const POA_TOKEN_WASM_VAR: &str = "DEFUSE_POA_TOKEN_WASM";
 const ESCROW_SWAP_WASM_VAR: &str = "DEFUSE_ESCROW_SWAP_WASM";
+const WALLET_WASM_VAR: &str = "DEFUSE_WALLET_WASM";
 const MULTI_TOKEN_RECEIVER_STUB_WASM_VAR: &str = "DEFUSE_MULTI_TOKEN_RECEIVER_STUB_WASM";
 
 #[derive(Clone, ValueEnum, Default, Debug)]
@@ -45,6 +46,7 @@ pub enum Contract {
     PoaToken,
     PoaFactory,
     EscrowSwap,
+    Wallet,
     MultiTokenReceiverStub,
 }
 
@@ -55,6 +57,7 @@ impl Contract {
             Self::PoaFactory => POA_FACTORY_WASM_VAR,
             Self::PoaToken => POA_TOKEN_WASM_VAR,
             Self::EscrowSwap => ESCROW_SWAP_WASM_VAR,
+            Self::Wallet => WALLET_WASM_VAR,
             Self::MultiTokenReceiverStub => MULTI_TOKEN_RECEIVER_STUB_WASM_VAR,
         }
     }
@@ -81,6 +84,11 @@ impl Contract {
                 path: "escrow-swap",
                 features: "contract",
             },
+            Self::Wallet => ContractSpec {
+                name: "wallet",
+                path: "wallet",
+                features: "contract,webauthn-ed25519",
+            },
             Self::MultiTokenReceiverStub => ContractSpec {
                 name: "multi-token-receiver-stub",
                 path: "tests/contracts/multi-token-receiver-stub",
@@ -95,6 +103,7 @@ impl Contract {
             Self::PoaToken,
             Self::PoaFactory,
             Self::EscrowSwap,
+            Self::Wallet,
             Self::MultiTokenReceiverStub,
         ]
     }

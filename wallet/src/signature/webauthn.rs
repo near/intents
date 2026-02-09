@@ -1,7 +1,7 @@
 use core::marker::PhantomData;
 
 pub use defuse_webauthn::*;
-use near_sdk::{env, serde::de::DeserializeOwned, serde_json};
+use near_sdk::{serde::de::DeserializeOwned, serde_json};
 
 use crate::SigningStandard;
 
@@ -19,7 +19,6 @@ where
             return false;
         };
 
-        let hash = env::sha256_array(msg); // TODO: or keccak256?
-        signature.verify(hash, public_key, UserVerification::Ignore)
+        signature.verify(msg, public_key, UserVerification::Ignore)
     }
 }

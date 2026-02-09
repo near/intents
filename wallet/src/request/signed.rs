@@ -1,28 +1,8 @@
 use defuse_borsh_utils::adapters::{As, TimestampSeconds};
 use defuse_deadline::Deadline;
-use near_sdk::{
-    AccountId,
-    borsh,
-    env,
-    near,
-    // serde_with::{base64::Base64, hex::Hex},
-};
+use near_sdk::{AccountId, borsh, env, near};
 
 use crate::Request;
-
-// #[near(serializers = [borsh, json])]
-// #[derive(Debug, Clone, PartialEq, Eq)]
-// pub struct SignedRequest {
-//     #[serde(flatten)]
-//     pub body: SignedRequest,
-
-//     #[cfg_attr(
-//         all(feature = "abi", not(target_arch = "wasm32")),
-//         schemars(with = "String")
-//     )]
-//     #[serde_as(as = "Base64")]
-//     pub signature: Vec<u8>,
-// }
 
 // TODO: versioned?
 #[near(serializers = [borsh, json])]
@@ -65,29 +45,30 @@ pub struct SignedRequest {
 
 impl SignedRequest {
     const DOMAIN_PREFIX: &[u8] = b"NEAR_WALLET_CONTRACT";
+    const DOMAIN_VERSION: &[u8] = b"1.0.0";
 
     pub fn hash(&self) -> [u8; 32] {
-        // TOD: sha256 or keccak 256?
+        // TODO: sha256 or keccak 256?
         env::keccak256_array(self.prehash())
     }
 
     fn prehash(&self) -> Vec<u8> {
         // TODO: Add NEP-461 tag prefix? - that should be a part of `proof`
         // envelope
-        let mut buf = [
-            // TODO: since domain prefixes can vary in length, we need to include length in the bytes payload
-            "NEAR_WALLET\0/V1".as_bytes(),
-        ]
-        .concat();
         // TODO: hash `request` first, so that it might be possible to sign
         // for very limited-memory devices to sign at least hash
         // TODO: hashing the request is also better, because the request
         // hash becomes request_id...
         // TODO: should we include query_id in the request?...
-        borsh::to_writer(&mut buf, self).unwrap_or_else(|_| unreachable!());
-        buf
+        borsh::to_vec(&(Self::DOMAIN_PREFIX, Self::DOMAIN_VERSION, self))
+            .unwrap_or_else(|_| unreachable!())
     }
 }
+
+// pub struct Domain<'a> {
+//     pub name: Cow<'a, str>,
+//     pub version: Cow<'a, str>,
+// }
 
 // pub trait Domain {}
 

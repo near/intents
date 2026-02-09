@@ -3,7 +3,7 @@ mod utils;
 use core::ops::{Deref, DerefMut};
 use std::collections::BTreeSet;
 
-use near_sdk::{AccountId, FunctionError, PanicOnDefault, Promise, borsh, env, near};
+use near_sdk::{AccountId, FunctionError, PanicOnDefault, Promise, env, near};
 
 use crate::{Error, Request, Result, SignedRequest, SigningStandard, State, Wallet, WalletOp};
 
@@ -98,12 +98,8 @@ impl<S: SigningStandard> State<S> {
         }
 
         // check signature
-        {
-            let msg = borsh::to_vec(&signed).unwrap_or_else(|_| unreachable!());
-
-            if !S::verify(&msg, &self.public_key, &proof) {
-                return Err(Error::InvalidSignature);
-            }
+        if !S::verify(&signed.hash(), &self.public_key, &proof) {
+            return Err(Error::InvalidSignature);
         }
 
         self.execute_request(signed.request)

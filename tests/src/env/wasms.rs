@@ -50,12 +50,8 @@ pub static DEFUSE_LEGACY_WASM: LazyLock<Vec<u8>> =
 pub static ESCROW_SWAP_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse_escrow_swap.wasm"));
 
-pub static WALLET_WEBAUTHN_ED25519_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
-    read_wasm(
-        &ReadWasmMode::BuildArtifact,
-        "res/defuse_wallet_webauthn_25519/defuse_wallet",
-    )
-});
+pub static WALLET_WEBAUTHN_ED25519_WASM: LazyLock<Vec<u8>> =
+    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse_wallet.wasm"));
 
 pub static POA_FACTORY_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse_poa_factory.wasm"));

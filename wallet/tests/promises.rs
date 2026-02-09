@@ -115,10 +115,7 @@ async fn test_extension(#[future] env: Env) {
 
     extension
         .tx(wallet.id())
-        .state_init(
-            wallet_state_init.clone(),
-            NearToken::ZERO,
-        )
+        .state_init(wallet_state_init.clone(), NearToken::ZERO)
         .function_call(
             FnCallBuilder::new("w_execute_extension")
                 .json_args(json!({
@@ -167,9 +164,7 @@ async fn env(#[future] sandbox: Sandbox) -> Env {
 }
 
 fn sign_request(secret_key: SecretKey, body: &SignedRequest) -> PayloadSignature<Ed25519> {
-    let serialized = borsh::to_vec(&body).unwrap();
-    let hash = sha256_array(serialized);
-    sign_passkey(secret_key, &hash)
+    sign_passkey(secret_key, &body.hash())
 }
 
 fn sign_passkey(secret_key: SecretKey, msg: &[u8]) -> PayloadSignature<Ed25519> {

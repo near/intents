@@ -72,8 +72,6 @@ impl<A: Algorithm> PayloadSignature<A> {
 
         // 11. Verify that the value of C.challenge equals the base64url
         // encoding of pkOptions.challenge
-        //
-        // In our case, challenge is a hash of the payload
         if c.challenge != message.as_ref() {
             return false;
         }
