@@ -1,6 +1,7 @@
 #[cfg(feature = "contract")]
 mod contract;
 mod error;
+mod events;
 mod request;
 mod signature;
 mod state;
@@ -10,7 +11,7 @@ use std::collections::BTreeSet;
 
 use near_sdk::{AccountId, ext_contract};
 
-pub use self::{error::*, request::*, signature::*, state::*};
+pub use self::{error::*, events::*, request::*, signature::*, state::*};
 
 #[ext_contract(ext_wallet)]
 pub trait Wallet {

@@ -18,7 +18,7 @@ use defuse_tests::{
     },
 };
 use defuse_wallet::{
-    self, PromiseDAG, PromiseSingle, Request, SignedRequest, State, webauthn::Webauthn,
+    self, PromiseDAG, PromiseSingle, Request, SignedRequest, State, WalletOp, webauthn::Webauthn,
 };
 use defuse_webauthn::{ClientDataType, CollectedClientData, Ed25519, PayloadSignature};
 use impl_tools::autoimpl;
@@ -47,7 +47,14 @@ async fn test_signed(#[future] env: Env) {
     let wallet = env.account(wallet_state_init.derive_account_id());
 
     let request = Request {
-        ops: vec![],
+        ops: vec![
+            WalletOp::AddExtension {
+                account_id: env.root().id().clone(),
+            },
+            WalletOp::RemoveExtension {
+                account_id: env.root().id().clone(),
+            },
+        ],
         out: PromiseDAG::default(),
         // out: PromiseDAG::new(
         //     PromiseSingle::new(wallet.id())

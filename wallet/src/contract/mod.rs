@@ -5,7 +5,9 @@ use std::collections::BTreeSet;
 
 use near_sdk::{AccountId, FunctionError, PanicOnDefault, Promise, env, near};
 
-use crate::{Error, Request, Result, SignedRequest, SigningStandard, State, Wallet, WalletOp};
+use crate::{
+    Error, Request, Result, SignedRequest, SigningStandard, State, Wallet, WalletEvent, WalletOp,
+};
 
 #[cfg(feature = "webauthn-ed25519")]
 type SS = crate::webauthn::Webauthn<crate::webauthn::Ed25519>;
@@ -88,6 +90,7 @@ impl<S: SigningStandard> State<S> {
                 expected: self.seqno,
             });
         }
+
         // bump seqno
         // NOTE: this will panic on overflow due to `overflow-checks = true`
         self.seqno += 1;
@@ -106,6 +109,7 @@ impl<S: SigningStandard> State<S> {
     }
 
     fn execute_extension(&mut self, request: Request) -> Result<()> {
+        // TODO: require 1yN?
         self.check_extension_enabled(env::predecessor_account_id())?;
 
         self.execute_request(request)
@@ -134,7 +138,10 @@ impl<S: SigningStandard> State<S> {
             return Err(Error::ThisSignatureModeAlreadySet);
         }
         self.signature_enabled = enable;
-        // TODO: emit events
+        WalletEvent::SignatureModeSet {
+            enable: self.signature_enabled,
+        }
+        .emit();
 
         self.check_lockout()
     }
@@ -143,6 +150,12 @@ impl<S: SigningStandard> State<S> {
         if !self.extensions.insert(account_id.clone()) {
             return Err(Error::ExtensionExists(account_id));
         }
+
+        WalletEvent::ExtensionAdded {
+            account_id: account_id.into(),
+        }
+        .emit();
+
         Ok(())
     }
 
@@ -150,6 +163,11 @@ impl<S: SigningStandard> State<S> {
         if !self.extensions.remove(&account_id) {
             return Err(Error::ExtensionNotExist(account_id));
         }
+
+        WalletEvent::ExtensionRemoved {
+            account_id: account_id.into(),
+        }
+        .emit();
 
         self.check_lockout()
     }
