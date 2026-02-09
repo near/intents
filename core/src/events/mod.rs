@@ -115,3 +115,6 @@ pub trait DefuseIntentEmit<'a>: Into<DefuseEvent<'a>> {
 }
 
 impl<'a, T> DefuseIntentEmit<'a> for T where T: Into<DefuseEvent<'a>> {}
+
+#[cfg(test)]
+mod tests;
