@@ -43,20 +43,20 @@ impl EscrowProxy for Contract {
     /// Calculates oneshot condvar contract instance address, helper function for integration
     /// purposes, and easy calculation of oneshot condvar contract instance address in case of
     /// need for direct authorization using OneshotCondvar::cv_notify_one
-    /// taker_id: The account id of the taker
+    /// sender_id: The account id of the sender
     /// token_ids: The token ids of the tokens being transferred
     /// amounts: The amounts of the tokens being transferred
     /// msg: escrow proxy transfer message
-    fn oneshot_address(
+    fn ep_approve_account_id(
         &self,
-        taker_id: AccountId,
+        sender_id: AccountId,
         token_ids: Vec<defuse_nep245::TokenId>,
         amounts: Vec<U128>,
         msg: String,
     ) -> AccountId {
         use std::borrow::Cow;
         let context_hash = CondVarContext {
-            sender_id: Cow::Owned(taker_id),
+            sender_id: Cow::Owned(sender_id),
             token_ids: Cow::Owned(token_ids),
             amounts: Cow::Owned(amounts),
             msg: Cow::Borrowed(&msg),

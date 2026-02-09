@@ -36,9 +36,9 @@ impl CondVarContext<'_> {
 pub trait EscrowProxy {
     fn config(&self) -> &ProxyConfig;
     fn context_hash(&self, context: CondVarContext<'static>) -> CryptoHash;
-    fn oneshot_address(
+    fn ep_approve_account_id(
         &self,
-        taker_id: AccountId,
+        sender_id: AccountId,
         token_ids: Vec<defuse_nep245::TokenId>,
         amounts: Vec<U128>,
         msg: String,
