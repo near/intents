@@ -24,27 +24,27 @@ impl FungibleTokenReceiver for Contract {
         // For FT, the token is identified by the predecessor (FT contract)
         let token = env::predecessor_account_id();
         let forward_request: ForwardRequest = msg.parse().unwrap_or_panic_display();
-        PromiseOrValue::Promise(
-            self.wait_for_authorization(
-                &sender_id,
-                &[TokenId::from(Nep141TokenId::new(token.clone())).to_string()],
-                &vec![amount],
-                &forward_request.receiver_id,
-                &forward_request.msg,
-            )
-            .then(
-                Self::ext(env::current_account_id())
-                    //NOTE: forward all gas, make sure that there is enough gas to resolve transfer
-                    .with_static_gas(FT_CHECK_AND_FORWARD_MIN_GAS)
-                    .with_unused_gas_weight(1)
-                    .ft_forward_checked(
-                        token,
-                        forward_request.receiver_id,
-                        amount,
-                        forward_request.msg,
-                    ),
-            ),
+
+        self.wait_for_authorization(
+            &sender_id,
+            &[TokenId::from(Nep141TokenId::new(token.clone())).to_string()],
+            &vec![amount],
+            &forward_request.receiver_id,
+            &forward_request.msg,
         )
+        .then(
+            Self::ext(env::current_account_id())
+                //NOTE: forward all gas, make sure that there is enough gas to resolve transfer
+                .with_static_gas(FT_CHECK_AND_FORWARD_MIN_GAS)
+                .with_unused_gas_weight(1)
+                .ft_forward_checked(
+                    token,
+                    forward_request.receiver_id,
+                    amount,
+                    forward_request.msg,
+                ),
+        )
+        .into()
     }
 }
 
