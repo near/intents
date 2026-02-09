@@ -69,9 +69,9 @@ mod build {
 
     pub fn run() -> Result<()> {
         // Use cargo OUT_DIR in case if custom DEFUSE_OUT_DIR is not set
+        // at least one of these variables is set during script execution
         let out_dir = env::var(DEFUSE_OUT_DIR_ENV_VAR)
-            .or_else(|_| env::var(CARGO_OUT_DIR_ENV_VAR))
-            .unwrap_or_else(|_| unreachable!());
+            .unwrap_or_else(|_| env::var(CARGO_OUT_DIR_ENV_VAR).unwrap());
 
         register_rebuild_triggers(&out_dir)?;
 
