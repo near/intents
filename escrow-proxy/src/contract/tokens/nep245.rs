@@ -99,7 +99,7 @@ impl Contract {
         amounts
             .iter()
             .zip(used.iter())
-            .map(|(original, transferred)| U128(original.0.saturating_sub(transferred.0)))
+            .map(|(original, used)| U128(original.0.saturating_sub(used.0)))
             .collect()
     }
 }
