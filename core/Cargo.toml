@@ -51,6 +51,7 @@ abi = [
     "defuse-serde-utils/abi",
     "defuse-token-id/abi",
     "defuse-ton-connect/abi",
+    "defuse-webauthn/abi",
 ]
 arbitrary = [
     "dep:arbitrary",

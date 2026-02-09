@@ -17,10 +17,6 @@ use near_sdk::{
 
 // TODO: field ordering (borsh)
 #[near(serializers = [borsh, json])]
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    schemars(bound = "<A as Algorithm>::Signature: ::near_sdk::schemars::JsonSchema")
-)]
 #[serde(bound(
     serialize = "<A as Algorithm>::Signature: Serialize",
     deserialize = "<A as Algorithm>::Signature: DeserializeOwned",
@@ -39,10 +35,11 @@ pub struct PayloadSignature<A: Algorithm> {
 
     #[cfg_attr(
         all(feature = "abi", not(target_arch = "wasm32")),
-        borsh(schema(params = "A => <A as Algorithm>::Signature"))
+        borsh(schema(params = "A => <A as Algorithm>::Signature")),
+        // schemars@0.8 does not respect it's `schemars(bound = "...")`
+        // attribute: https://github.com/GREsau/schemars/blob/104b0fd65055d4b46f8dcbe38cdd2ef2c4098fe2/schemars_derive/src/lib.rs#L193-L206
+        schemars(with = "String"),
     )]
-    // #[serde_as(as = "AsCurve<A::CURVE_TYPE>")]
-    // TODO: serde_as?
     pub signature: A::Signature,
 }
 

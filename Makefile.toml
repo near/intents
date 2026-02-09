@@ -80,7 +80,6 @@ args = [
     "--out-dir",
     "${TARGET_DIR}/defuse_wallet_webauthn_25519",
     "--no-embed-abi",
-    "--no-abi",                      # TODO: remove
 ]
 
 [tasks.build-poa-factory]

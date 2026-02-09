@@ -36,6 +36,7 @@ pub trait Wallet {
     // TODO: view-method to get supported signing standard?
     // TODO: answer: it can be retrieved via contract_source_metadata
 
+    // TODO: OAuth 2.0, off-chain multisig, TEE
     /// Returns whether authentication by signature is allowed.
     fn w_public_key(&self) -> String;
 

@@ -7,6 +7,11 @@ use near_sdk::{AccountId, FunctionError, PanicOnDefault, Promise, borsh, env, ne
 
 use crate::{Error, Request, Result, SignedRequest, SigningStandard, State, Wallet, WalletOp};
 
+#[cfg(feature = "webauthn-ed25519")]
+type SS = crate::webauthn::Webauthn<crate::webauthn::Ed25519>;
+#[cfg(feature = "webauthn-p256")]
+type SS = crate::webauthn::Webauthn<crate::webauthn::P256>;
+
 #[near(
     contract_state(key = State::<SS>::STATE_KEY),
     contract_metadata(
@@ -181,8 +186,3 @@ impl DerefMut for Contract {
         &mut self.0
     }
 }
-
-#[cfg(feature = "webauthn-ed25519")]
-type SS = crate::webauthn::Webauthn<crate::webauthn::Ed25519>;
-#[cfg(feature = "webauthn-p256")]
-type SS = crate::webauthn::Webauthn<crate::webauthn::P256>;

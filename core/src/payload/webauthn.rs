@@ -12,6 +12,9 @@ use super::{DefusePayload, ExtractDefusePayload};
 pub struct SignedWebAuthnPayload {
     pub payload: String,
     pub public_key: PublicKey,
+    // schemars@0.8 does not respect it's `schemars(bound = "...")`
+    // attribute: https://github.com/GREsau/schemars/blob/104b0fd65055d4b46f8dcbe38cdd2ef2c4098fe2/schemars_derive/src/lib.rs#L193-L206
+    #[cfg_attr(all(feature = "abi", not(target_arch = "wasm32")), schemars(skip))]
     #[serde(flatten)]
     pub signature: PayloadSignature<Ed25519OrP256>,
 }
