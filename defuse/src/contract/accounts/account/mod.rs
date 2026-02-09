@@ -151,7 +151,7 @@ impl Account {
             self.flags
                 .toggle(AccountFlags::AUTH_BY_PREDECESSOR_ID_DISABLED);
 
-            DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::direct(AccountEvent::new(
+            DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new(AccountEvent::new(
                 Cow::Borrowed(me),
                 Cow::Owned(SetAuthByPredecessorId { enabled: enable }),
             )))

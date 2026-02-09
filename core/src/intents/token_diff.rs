@@ -1,10 +1,10 @@
-use super::{ExecutableIntent, IntentEvent};
+use super::ExecutableIntent;
 use crate::{
     DefuseError, Result,
     accounts::AccountEvent,
     amounts::Amounts,
     engine::{Engine, Inspector, State, StateView},
-    events::DefuseEvent,
+    events::{DefuseEvent, MaybeIntentEvent},
     fees::Pips,
     token_id::{TokenId, TokenIdType},
 };
@@ -77,7 +77,7 @@ impl ExecutableIntent for TokenDiff {
         }
 
         engine.inspector.on_event(DefuseEvent::TokenDiff(
-            [IntentEvent::new(
+            [MaybeIntentEvent::new_with_meta(
                 AccountEvent::new(
                     signer_id,
                     TokenDiffEvent {

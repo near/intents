@@ -2,8 +2,8 @@ use defuse_core::{
     Deadline, Result, Salt,
     accounts::{AccountEvent, NonceEvent},
     engine::deltas::InvariantViolated,
+    events::MaybeIntentEvent,
     fees::Pips,
-    intents::IntentEvent,
 };
 
 use near_sdk::near;
@@ -11,7 +11,7 @@ use near_sdk::near;
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
 pub struct SimulationReport {
-    pub intents_executed: Vec<IntentEvent<AccountEvent<'static, NonceEvent>>>,
+    pub intents_executed: Vec<MaybeIntentEvent<AccountEvent<'static, NonceEvent>>>,
     pub logs: Vec<String>,
     pub min_deadline: Deadline,
 }

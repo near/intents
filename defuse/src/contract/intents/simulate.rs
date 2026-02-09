@@ -4,15 +4,14 @@ use defuse_core::{
     Deadline, Nonce,
     accounts::{AccountEvent, NonceEvent},
     engine::Inspector,
-    events::DefuseEvent,
-    intents::IntentEvent,
+    events::{DefuseEvent, MaybeIntentEvent},
 };
 use near_sdk::{AccountIdRef, CryptoHash, serde_json::Value as JsonValue};
 
 use crate::simulation_output::SimulationReport;
 
 pub struct SimulateInspector {
-    intents_executed: Vec<IntentEvent<AccountEvent<'static, NonceEvent>>>,
+    intents_executed: Vec<MaybeIntentEvent<AccountEvent<'static, NonceEvent>>>,
     recorded_events: Vec<JsonValue>,
     min_deadline: Deadline,
 }
@@ -64,7 +63,7 @@ impl Inspector for SimulateInspector {
         intent_hash: CryptoHash,
         nonce: Nonce,
     ) {
-        self.intents_executed.push(IntentEvent::new(
+        self.intents_executed.push(MaybeIntentEvent::new_with_meta(
             AccountEvent::new(signer_id.to_owned(), NonceEvent::new(nonce)),
             intent_hash,
         ));

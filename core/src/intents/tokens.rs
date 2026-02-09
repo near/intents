@@ -12,10 +12,9 @@ use crate::{
     accounts::AccountEvent,
     amounts::Amounts,
     engine::{Engine, Inspector, State},
-    events::DefuseEvent,
-    intents::{ExecutableIntent, IntentEvent},
-    tokens::TransferEvent,
-    tokens::{MT_ON_TRANSFER_GAS_DEFAULT, MT_ON_TRANSFER_GAS_MIN},
+    events::{DefuseEvent, MaybeIntentEvent},
+    intents::ExecutableIntent,
+    tokens::{MT_ON_TRANSFER_GAS_DEFAULT, MT_ON_TRANSFER_GAS_MIN, TransferEvent},
 };
 
 #[must_use]
@@ -98,7 +97,7 @@ impl ExecutableIntent for Transfer {
         engine
             .inspector
             .on_event(DefuseEvent::Transfer(Cow::Borrowed(
-                [IntentEvent::new(
+                [MaybeIntentEvent::new_with_meta(
                     AccountEvent::new(sender_id, TransferEvent::from(&self)),
                     intent_hash,
                 )]
@@ -213,7 +212,7 @@ impl ExecutableIntent for FtWithdraw {
         engine
             .inspector
             .on_event(DefuseEvent::FtWithdraw(Cow::Borrowed(
-                [IntentEvent::new(
+                [MaybeIntentEvent::new_with_meta(
                     AccountEvent::new(owner_id, Cow::Borrowed(&self)),
                     intent_hash,
                 )]
@@ -308,7 +307,7 @@ impl ExecutableIntent for NftWithdraw {
         engine
             .inspector
             .on_event(DefuseEvent::NftWithdraw(Cow::Borrowed(
-                [IntentEvent::new(
+                [MaybeIntentEvent::new_with_meta(
                     AccountEvent::new(owner_id, Cow::Borrowed(&self)),
                     intent_hash,
                 )]
@@ -409,7 +408,7 @@ impl ExecutableIntent for MtWithdraw {
         engine
             .inspector
             .on_event(DefuseEvent::MtWithdraw(Cow::Borrowed(
-                [IntentEvent::new(
+                [MaybeIntentEvent::new_with_meta(
                     AccountEvent::new(owner_id, Cow::Borrowed(&self)),
                     intent_hash,
                 )]
@@ -446,7 +445,7 @@ impl ExecutableIntent for NativeWithdraw {
         engine
             .inspector
             .on_event(DefuseEvent::NativeWithdraw(Cow::Borrowed(
-                [IntentEvent::new(
+                [MaybeIntentEvent::new_with_meta(
                     AccountEvent::new(owner_id, Cow::Borrowed(&self)),
                     intent_hash,
                 )]
@@ -496,7 +495,7 @@ impl ExecutableIntent for StorageDeposit {
         engine
             .inspector
             .on_event(DefuseEvent::StorageDeposit(Cow::Borrowed(
-                [IntentEvent::new(
+                [MaybeIntentEvent::new_with_meta(
                     AccountEvent::new(owner_id, Cow::Borrowed(&self)),
                     intent_hash,
                 )]
@@ -511,6 +510,7 @@ impl ExecutableIntent for StorageDeposit {
 pub mod imt {
     use crate::{
         Result,
+        events::MaybeIntentEvent,
         tokens::{
             MT_ON_TRANSFER_GAS_DEFAULT, MT_ON_TRANSFER_GAS_MIN,
             imt::{ImtMintEvent, ImtTokens},
@@ -527,7 +527,7 @@ pub mod imt {
         amounts::Amounts,
         engine::{Engine, Inspector, State},
         events::DefuseEvent,
-        intents::{ExecutableIntent, IntentEvent, tokens::NotifyOnTransfer},
+        intents::{ExecutableIntent, tokens::NotifyOnTransfer},
     };
 
     #[near(serializers = [borsh, json])]
@@ -575,7 +575,7 @@ pub mod imt {
             engine
                 .inspector
                 .on_event(DefuseEvent::ImtMint(Cow::Borrowed(
-                    [IntentEvent::new(
+                    [MaybeIntentEvent::new_with_meta(
                         AccountEvent::new(signer_id, ImtMintEvent::from(&self)),
                         intent_hash,
                     )]
@@ -641,7 +641,7 @@ pub mod imt {
             engine
                 .inspector
                 .on_event(DefuseEvent::ImtBurn(Cow::Borrowed(
-                    [IntentEvent::new(
+                    [MaybeIntentEvent::new_with_meta(
                         AccountEvent::new(signer_id, Cow::Borrowed(&self)),
                         intent_hash,
                     )]

@@ -94,15 +94,14 @@ async fn test_force_add_public_keys(#[notrace] mut rng: impl Rng) {
                     "Public key {public_key:?} not found for account {account_id}",
                 );
 
-                let event =
-                    DefuseEvent::PublicKeyAdded(MaybeIntentEvent::direct(AccountEvent::new(
-                        *account_id,
-                        PublicKeyEvent {
-                            public_key: Cow::Borrowed(public_key),
-                        },
-                    )))
-                    .to_nep297_event()
-                    .to_event_log();
+                let event = DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new(AccountEvent::new(
+                    *account_id,
+                    PublicKeyEvent {
+                        public_key: Cow::Borrowed(public_key),
+                    },
+                )))
+                .to_nep297_event()
+                .to_event_log();
 
                 assert_a_contains_b!(
                     a: result.logs().clone(),
@@ -212,7 +211,7 @@ async fn test_force_add_and_remove_public_keys(#[notrace] mut rng: impl Rng) {
                 );
 
                 let event =
-                    DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::direct(AccountEvent::new(
+                    DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::new(AccountEvent::new(
                         *account_id,
                         PublicKeyEvent {
                             public_key: Cow::Borrowed(public_key),

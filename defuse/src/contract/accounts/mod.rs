@@ -86,7 +86,7 @@ impl Contract {
     ) {
         State::add_public_key(self, account_id.into(), public_key).unwrap_or_panic();
 
-        DefuseEvent::PublicKeyAdded(MaybeIntentEvent::direct(AccountEvent::new(
+        DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new(AccountEvent::new(
             Cow::Borrowed(account_id),
             PublicKeyEvent {
                 public_key: Cow::Borrowed(&public_key),
@@ -102,7 +102,7 @@ impl Contract {
     ) {
         State::remove_public_key(self, account_id.into(), public_key).unwrap_or_panic();
 
-        DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::direct(AccountEvent::new(
+        DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::new(AccountEvent::new(
             Cow::Borrowed(account_id),
             PublicKeyEvent {
                 public_key: Cow::Borrowed(&public_key),

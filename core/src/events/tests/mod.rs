@@ -15,7 +15,6 @@ use crate::{
     events::{DefuseEvent, MaybeIntentEvent, tests::v0_4_1::DefuseEventV0_4_1},
     fees::{FeeChangedEvent, FeeCollectorChangedEvent},
     intents::{
-        IntentEvent,
         account::SetAuthByPredecessorId,
         token_diff::{TokenDiff, TokenDiffEvent},
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
@@ -73,7 +72,7 @@ fn tokens() -> Amounts {
 }
 
 fn pk_added_direct_event<'a>() -> DefuseEvent<'a> {
-    DefuseEvent::PublicKeyAdded(MaybeIntentEvent::direct(AccountEvent {
+    DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new(AccountEvent {
         account_id: account(),
         event: PublicKeyEvent {
             public_key: pub_key(),
@@ -82,7 +81,7 @@ fn pk_added_direct_event<'a>() -> DefuseEvent<'a> {
 }
 
 fn pk_added_intent_event<'a>() -> DefuseEvent<'a> {
-    DefuseEvent::PublicKeyAdded(MaybeIntentEvent::intent(
+    DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new_with_meta(
         AccountEvent {
             account_id: account(),
             event: PublicKeyEvent {
@@ -108,7 +107,7 @@ fn fee_collector_changed_event<'a>() -> DefuseEvent<'a> {
 }
 
 fn transfer_intent_event<'a>() -> DefuseEvent<'a> {
-    DefuseEvent::Transfer(Cow::Owned(vec![IntentEvent::new(
+    DefuseEvent::Transfer(Cow::Owned(vec![MaybeIntentEvent::new_with_meta(
         AccountEvent {
             account_id: account(),
             event: TransferEvent {
@@ -122,7 +121,7 @@ fn transfer_intent_event<'a>() -> DefuseEvent<'a> {
 }
 
 fn token_diff_intent_event<'a>() -> DefuseEvent<'a> {
-    DefuseEvent::TokenDiff(Cow::Owned(vec![IntentEvent::new(
+    DefuseEvent::TokenDiff(Cow::Owned(vec![MaybeIntentEvent::new_with_meta(
         AccountEvent {
             account_id: account(),
             event: TokenDiffEvent {
@@ -145,7 +144,7 @@ fn token_diff_intent_event<'a>() -> DefuseEvent<'a> {
 }
 
 fn intents_executed_event<'a>() -> DefuseEvent<'a> {
-    DefuseEvent::IntentsExecuted(Cow::Owned(vec![IntentEvent::new(
+    DefuseEvent::IntentsExecuted(Cow::Owned(vec![MaybeIntentEvent::new_with_meta(
         AccountEvent {
             account_id: account(),
             event: NonceEvent { nonce: [0; 32] },
@@ -155,7 +154,7 @@ fn intents_executed_event<'a>() -> DefuseEvent<'a> {
 }
 
 fn ft_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
-    DefuseEvent::FtWithdraw(Cow::Owned(vec![IntentEvent::new(
+    DefuseEvent::FtWithdraw(Cow::Owned(vec![MaybeIntentEvent::new_with_meta(
         AccountEvent {
             account_id: account(),
             event: Cow::Owned(FtWithdraw {
@@ -178,7 +177,7 @@ fn mt_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
         .map(|(token_id, amount)| (token_id.to_string(), U128::from(amount)))
         .unzip();
 
-    DefuseEvent::MtWithdraw(Cow::Owned(vec![IntentEvent::new(
+    DefuseEvent::MtWithdraw(Cow::Owned(vec![MaybeIntentEvent::new_with_meta(
         AccountEvent {
             account_id: account(),
             event: Cow::Owned(MtWithdraw {
@@ -197,7 +196,7 @@ fn mt_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
 }
 
 fn nft_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
-    DefuseEvent::NftWithdraw(Cow::Owned(vec![IntentEvent::new(
+    DefuseEvent::NftWithdraw(Cow::Owned(vec![MaybeIntentEvent::new_with_meta(
         AccountEvent {
             account_id: account(),
             event: Cow::Owned(NftWithdraw {
@@ -215,7 +214,7 @@ fn nft_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
 }
 
 fn native_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
-    DefuseEvent::NativeWithdraw(Cow::Owned(vec![IntentEvent::new(
+    DefuseEvent::NativeWithdraw(Cow::Owned(vec![MaybeIntentEvent::new_with_meta(
         AccountEvent {
             account_id: account(),
             event: Cow::Owned(NativeWithdraw {
@@ -228,7 +227,7 @@ fn native_withdraw_intent_event<'a>() -> DefuseEvent<'a> {
 }
 
 fn storage_deposit_intent_event<'a>() -> DefuseEvent<'a> {
-    DefuseEvent::StorageDeposit(Cow::Owned(vec![IntentEvent::new(
+    DefuseEvent::StorageDeposit(Cow::Owned(vec![MaybeIntentEvent::new_with_meta(
         AccountEvent {
             account_id: account(),
             event: Cow::Owned(StorageDeposit {
@@ -252,7 +251,7 @@ fn imt_mint_intent_event<'a>() -> DefuseEvent<'a> {
             .collect::<BTreeMap<_, _>>(),
     );
 
-    DefuseEvent::ImtMint(Cow::Owned(vec![IntentEvent::new(
+    DefuseEvent::ImtMint(Cow::Owned(vec![MaybeIntentEvent::new_with_meta(
         AccountEvent {
             account_id: account(),
             event: ImtMintEvent {
@@ -276,7 +275,7 @@ fn imt_burn_intent_event<'a>() -> DefuseEvent<'a> {
             .collect::<BTreeMap<_, _>>(),
     );
 
-    DefuseEvent::ImtBurn(Cow::Owned(vec![IntentEvent::new(
+    DefuseEvent::ImtBurn(Cow::Owned(vec![MaybeIntentEvent::new_with_meta(
         AccountEvent {
             account_id: account(),
             event: Cow::Owned(ImtBurn {
@@ -304,7 +303,7 @@ fn account_unlocked_event<'a>() -> DefuseEvent<'a> {
 }
 
 fn set_auth_by_predecessor_id_intent_event<'a>() -> DefuseEvent<'a> {
-    DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::intent(
+    DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new_with_meta(
         AccountEvent {
             account_id: account(),
             event: Cow::Owned(SetAuthByPredecessorId { enabled: true }),
@@ -314,7 +313,7 @@ fn set_auth_by_predecessor_id_intent_event<'a>() -> DefuseEvent<'a> {
 }
 
 fn set_auth_by_predecessor_id_direct_event<'a>() -> DefuseEvent<'a> {
-    DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::direct(AccountEvent {
+    DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new(AccountEvent {
         account_id: account(),
         event: Cow::Owned(SetAuthByPredecessorId { enabled: true }),
     }))

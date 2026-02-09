@@ -1,18 +1,30 @@
+use defuse_serde_utils::base58::Base58;
 use derive_more::derive::From;
-use near_sdk::{near, serde::Deserialize};
+use near_sdk::{CryptoHash, near, serde::Deserialize};
+use serde_with::serde_as;
 use std::borrow::Cow;
 
 use crate::{
     accounts::{AccountEvent, NonceEvent, PublicKeyEvent, SaltRotationEvent},
     fees::{FeeChangedEvent, FeeCollectorChangedEvent},
     intents::{
-        IntentEvent,
         account::SetAuthByPredecessorId,
         token_diff::TokenDiffEvent,
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
     },
     tokens::TransferEvent,
 };
+
+#[must_use = "make sure to `.emit()` this event"]
+#[near(serializers = [json])]
+#[derive(Debug, Clone)]
+pub struct IntentEvent<T> {
+    #[serde_as(as = "Base58")]
+    pub intent_hash: CryptoHash,
+
+    #[serde(flatten)]
+    pub event: T,
+}
 
 // Defuse events according to defuse v0.4.1,
 #[must_use = "make sure to `.emit()` this event"]

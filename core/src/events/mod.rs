@@ -1,13 +1,13 @@
-use std::borrow::Cow;
-
+use defuse_serde_utils::base58::Base58;
 use derive_more::derive::From;
 use near_sdk::{CryptoHash, near, serde::Deserialize};
+use serde_with::serde_as;
+use std::borrow::Cow;
 
 use crate::{
     accounts::{AccountEvent, NonceEvent, PublicKeyEvent, SaltRotationEvent},
     fees::{FeeChangedEvent, FeeCollectorChangedEvent},
     intents::{
-        IntentEvent,
         account::SetAuthByPredecessorId,
         token_diff::TokenDiffEvent,
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
@@ -20,24 +20,36 @@ use crate::{intents::tokens::imt::ImtBurn, tokens::imt::ImtMintEvent};
 
 /// Event that can be emitted either from a
 /// function call or after intent execution
-#[must_use]
+#[must_use = "make sure to `.emit()` this event"]
 #[near(serializers = [json])]
-#[serde(untagged)]
 #[derive(Debug, Clone)]
-pub enum MaybeIntentEvent<T> {
-    Intent(IntentEvent<T>),
-    Direct(T),
+pub struct MaybeIntentEvent<T> {
+    #[serde(flatten)]
+    pub meta: Option<IntentMeta>,
+
+    #[serde(flatten)]
+    pub event: T,
+}
+
+#[near(serializers = [json])]
+#[derive(Debug, Clone)]
+pub struct IntentMeta {
+    #[serde_as(as = "Base58")]
+    pub intent_hash: CryptoHash,
 }
 
 impl<T> MaybeIntentEvent<T> {
     #[inline]
-    pub const fn direct(event: T) -> Self {
-        Self::Direct(event)
+    pub const fn new(event: T) -> Self {
+        Self { meta: None, event }
     }
 
     #[inline]
-    pub const fn intent(event: T, intent_hash: CryptoHash) -> Self {
-        Self::Intent(IntentEvent::new(event, intent_hash))
+    pub const fn new_with_meta(event: T, intent_hash: CryptoHash) -> Self {
+        Self {
+            meta: Some(IntentMeta { intent_hash }),
+            event,
+        }
     }
 }
 
@@ -58,35 +70,35 @@ pub enum DefuseEvent<'a> {
     FeeCollectorChanged(FeeCollectorChangedEvent<'a>),
 
     #[event_version("0.3.0")]
-    Transfer(Cow<'a, [IntentEvent<AccountEvent<'a, TransferEvent<'a>>>]>),
+    Transfer(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, TransferEvent<'a>>>]>),
 
     #[event_version("0.3.0")]
-    TokenDiff(Cow<'a, [IntentEvent<AccountEvent<'a, TokenDiffEvent<'a>>>]>),
+    TokenDiff(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, TokenDiffEvent<'a>>>]>),
 
     #[event_version("0.3.1")]
-    IntentsExecuted(Cow<'a, [IntentEvent<AccountEvent<'a, NonceEvent>>]>),
+    IntentsExecuted(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, NonceEvent>>]>),
 
     #[event_version("0.3.0")]
-    FtWithdraw(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, FtWithdraw>>>]>),
+    FtWithdraw(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, Cow<'a, FtWithdraw>>>]>),
 
     #[event_version("0.3.0")]
-    NftWithdraw(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, NftWithdraw>>>]>),
+    NftWithdraw(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, Cow<'a, NftWithdraw>>>]>),
 
     #[event_version("0.3.0")]
-    MtWithdraw(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, MtWithdraw>>>]>),
+    MtWithdraw(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, Cow<'a, MtWithdraw>>>]>),
 
     #[event_version("0.3.0")]
-    NativeWithdraw(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, NativeWithdraw>>>]>),
+    NativeWithdraw(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, Cow<'a, NativeWithdraw>>>]>),
 
     #[event_version("0.3.0")]
-    StorageDeposit(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, StorageDeposit>>>]>),
+    StorageDeposit(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, Cow<'a, StorageDeposit>>>]>),
 
     #[cfg(feature = "imt")]
     #[event_version("0.4.2")]
-    ImtMint(Cow<'a, [IntentEvent<AccountEvent<'a, ImtMintEvent<'a>>>]>),
+    ImtMint(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, ImtMintEvent<'a>>>]>),
     #[cfg(feature = "imt")]
     #[event_version("0.3.0")]
-    ImtBurn(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, ImtBurn>>>]>),
+    ImtBurn(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, Cow<'a, ImtBurn>>>]>),
 
     #[event_version("0.3.0")]
     #[from(skip)]

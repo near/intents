@@ -5,8 +5,7 @@ use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
 use defuse::core::accounts::AccountEvent;
 use defuse::core::amounts::Amounts;
 use defuse::core::crypto::Payload;
-use defuse::core::events::DefuseEvent;
-use defuse::core::intents::IntentEvent;
+use defuse::core::events::{DefuseEvent, MaybeIntentEvent};
 use defuse::core::intents::tokens::imt::{ImtBurn, ImtMint};
 use defuse::core::token_id::TokenId;
 use defuse::nep245::{MtBurnEvent, MtEvent};
@@ -75,29 +74,31 @@ async fn imt_burn_intent() {
         0
     );
 
+    let events = [
+        MtEvent::MtBurn(Cow::Owned(vec![MtBurnEvent {
+            owner_id: other_user.id().into(),
+            token_ids: vec![mt_id.to_string()].into(),
+            amounts: vec![U128::from(amount)].into(),
+            memo: Some(memo.into()),
+            authorized_id: None,
+        }]))
+        .to_nep297_event()
+        .to_event_log(),
+        DefuseEvent::ImtBurn(Cow::Owned(vec![MaybeIntentEvent::new_with_meta(
+            AccountEvent {
+                account_id: other_user.id().clone().into(),
+                event: Cow::Owned(intent),
+            },
+            burn_payload.hash(),
+        )]))
+        .to_nep297_event()
+        .to_event_log(),
+    ];
+
     assert_a_contains_b!(
-            a: result.logs().clone(),
-            b: [
-                MtEvent::MtBurn(Cow::Owned(vec![MtBurnEvent {
-                owner_id: other_user.id().into(),
-                token_ids: vec![mt_id.to_string()].into(),
-                amounts: vec![U128::from(amount)].into(),
-                memo: Some(memo.into()),
-                authorized_id: None,
-            }]))
-            .to_nep297_event()
-            .to_event_log(),
-                DefuseEvent::ImtBurn(Cow::Owned(vec![IntentEvent {
-                intent_hash: burn_payload.hash(),
-                event: AccountEvent {
-                    account_id: other_user.id().clone().into(),
-                    event: Cow::Owned(intent),
-                },
-            }]))
-            .to_nep297_event()
-            .to_event_log(),
-    ]
-        );
+        a: result.logs().clone(),
+        b: events
+    );
 }
 
 #[rstest]

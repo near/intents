@@ -46,7 +46,7 @@ async fn test_add_public_key(public_key: PublicKey) {
         .into_result()
         .unwrap();
 
-    let event = DefuseEvent::PublicKeyAdded(MaybeIntentEvent::direct(AccountEvent::new(
+    let event = DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new(AccountEvent::new(
         user.id(),
         PublicKeyEvent {
             public_key: Cow::Borrowed(&public_key),
@@ -99,7 +99,7 @@ async fn test_add_and_remove_public_key(public_key: PublicKey) {
         .into_result()
         .unwrap();
 
-    let event = DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::direct(AccountEvent::new(
+    let event = DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::new(AccountEvent::new(
         user.id(),
         PublicKeyEvent {
             public_key: Cow::Borrowed(&public_key),

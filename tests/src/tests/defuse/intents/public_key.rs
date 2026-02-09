@@ -43,7 +43,7 @@ async fn execute_add_public_key_intent(public_key: PublicKey) {
         .unwrap();
 
     let events = vec![
-        DefuseEvent::PublicKeyAdded(MaybeIntentEvent::intent(
+        DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new_with_meta(
             AccountEvent::new(
                 user.id(),
                 PublicKeyEvent {
@@ -104,7 +104,7 @@ async fn execute_remove_public_key_intent(public_key: PublicKey) {
         .unwrap();
 
     let events = vec![
-        DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::intent(
+        DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::new_with_meta(
             AccountEvent::new(
                 user.id(),
                 PublicKeyEvent {
