@@ -6,7 +6,8 @@ use std::collections::BTreeSet;
 use near_sdk::{AccountId, FunctionError, PanicOnDefault, Promise, env, near};
 
 use crate::{
-    Error, Request, Result, SignedRequest, SigningStandard, State, Wallet, WalletEvent, WalletOp,
+    AddExtensionOp, Error, RemoveExtensionOp, Request, Result, SetSignatureModeOp, SignedRequest,
+    SigningStandard, State, Wallet, WalletEvent, WalletOp,
 };
 
 #[cfg(feature = "webauthn-ed25519")]
@@ -132,9 +133,14 @@ impl<S: SigningStandard> State<S> {
 
     fn execute_op(&mut self, op: WalletOp) -> Result<()> {
         match op {
-            WalletOp::SetSignatureMode { enable } => self.set_signature_mode(enable),
-            WalletOp::AddExtension { account_id } => self.add_extension(account_id),
-            WalletOp::RemoveExtension { account_id } => self.remove_extension(account_id),
+            WalletOp::SetSignatureMode(SetSignatureModeOp { enable }) => {
+                self.set_signature_mode(enable)
+            }
+            WalletOp::AddExtension(AddExtensionOp { account_id }) => self.add_extension(account_id),
+            WalletOp::RemoveExtension(RemoveExtensionOp { account_id }) => {
+                self.remove_extension(account_id)
+            }
+            WalletOp::Custom(_op) => env::panic_str("custom ops are not supported"),
         }
     }
 
