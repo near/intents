@@ -1399,6 +1399,7 @@ dependencies = [
  "chrono",
  "defuse",
  "defuse-escrow-swap",
+ "defuse-fees",
  "defuse-near-utils",
  "defuse-nep245",
  "defuse-poa-factory",

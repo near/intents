@@ -12,11 +12,11 @@ use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_sdk::json_types::U128;
 
 use crate::tests::defuse::env::Env;
-use crate::wasms::MT_RECEIVER_STUB_WASM;
 use defuse_sandbox::extensions::defuse::contract::{
     core::intents::tokens::NotifyOnTransfer,
     tokens::{DepositAction, DepositMessage, ExecuteIntents},
 };
+use defuse_test_utils::wasms::MT_RECEIVER_STUB_WASM;
 
 use defuse_sandbox::extensions::{
     acl::AclExt,

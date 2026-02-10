@@ -33,7 +33,7 @@ use super::{
     Env,
     state::{AccountWithTokens, PersistentState},
 };
-use crate::wasms::DEFUSE_WASM;
+use defuse_test_utils::wasms::DEFUSE_WASM;
 
 impl Env {
     pub async fn upgrade_legacy(&self, reuse_accounts: bool) {

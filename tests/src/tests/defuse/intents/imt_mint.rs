@@ -26,10 +26,10 @@ use near_sdk::{AccountId, AsNep297Event, Gas, NearToken};
 
 use crate::tests::defuse::env::Env;
 use crate::tests::defuse::intents::transfer::TransferCallExpectation;
-use crate::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 use defuse_sandbox::extensions::defuse::deployer::DefuseExt;
 use defuse_sandbox::extensions::defuse::intents::ExecuteIntentsExt;
 use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
+use defuse_test_utils::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 
 #[rstest]
 #[trace]

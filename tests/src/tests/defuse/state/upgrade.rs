@@ -17,7 +17,6 @@ use crate::{
         near_sandbox::FetchData,
     },
     utils::fixtures::{ed25519_pk, p256_pk, secp256k1_pk},
-    wasms::DEFUSE_WASM,
 };
 use defuse_sandbox::extensions::defuse::{
     account_manager::{AccountManagerExt, AccountViewExt},
@@ -25,6 +24,7 @@ use defuse_sandbox::extensions::defuse::{
     signer::DefaultDefuseSignerExt,
     state::{FeesManagerExt, FeesManagerViewExt, SaltManagerExt, SaltViewExt},
 };
+use defuse_test_utils::wasms::DEFUSE_WASM;
 use itertools::Itertools;
 use near_sdk::AccountId;
 use rstest::rstest;

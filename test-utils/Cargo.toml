@@ -8,6 +8,11 @@ repository.workspace = true
 [lints]
 workspace = true
 
+[features]
+poa = []
+defuse = ["poa"]
+escrow = ["defuse"]
+
 [dependencies]
 defuse-randomness.workspace = true
 defuse-crypto ={ workspace = true, features = ["arbitrary"] }

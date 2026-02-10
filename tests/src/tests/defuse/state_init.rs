@@ -1,5 +1,4 @@
 use crate::tests::defuse::env::Env;
-use crate::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 use defuse::contract::Contract as DefuseContract;
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
@@ -13,6 +12,7 @@ use defuse_sandbox::extensions::defuse::contract::core::intents::auth::AuthCall;
 use defuse_sandbox::extensions::defuse::intents::ExecuteIntentsExt;
 use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
 use defuse_test_utils::random::rng;
+use defuse_test_utils::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 use futures::stream::{self, StreamExt};
 use near_sdk::Gas;
 use near_sdk::{

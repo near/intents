@@ -23,11 +23,8 @@ use near_contract_standards::non_fungible_token::{Token, metadata::TokenMetadata
 use near_sdk::NearToken;
 use rstest::rstest;
 
-use crate::{
-    tests::defuse::env::Env,
-    wasms::{MT_RECEIVER_STUB_WASM, NON_FUNGIBLE_TOKEN_WASM},
-};
-
+use crate::tests::defuse::env::Env;
+use defuse_test_utils::wasms::{MT_RECEIVER_STUB_WASM, NON_FUNGIBLE_TOKEN_WASM};
 const DUMMY_REFERENCE_HASH: [u8; 32] = [33; 32];
 const DUMMY_NFT1_ID: &str = "thisisdummynftid1";
 const DUMMY_NFT2_ID: &str = "thisisdummythisisdummynnthisisdummynftid2";

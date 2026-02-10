@@ -10,7 +10,7 @@ use futures::try_join;
 use near_sdk::NearToken;
 use rstest::rstest;
 
-use crate::wasms::POA_FACTORY_WASM;
+use defuse_test_utils::wasms::POA_FACTORY_WASM;
 
 #[rstest]
 #[tokio::test]

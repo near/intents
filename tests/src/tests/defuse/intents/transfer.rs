@@ -1,8 +1,5 @@
 use crate::sandbox::extensions::mt::MtViewExt;
-use crate::{
-    tests::defuse::env::Env,
-    wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM},
-};
+use crate::tests::defuse::env::Env;
 use defuse_sandbox::extensions::defuse::contract::contract::config::{DefuseConfig, RolesConfig};
 use defuse_sandbox::extensions::defuse::contract::core::fees::FeesConfig;
 use defuse_sandbox::extensions::defuse::contract::core::fees::Pips;
@@ -10,6 +7,7 @@ use defuse_sandbox::extensions::defuse::contract::core::intents::tokens::{
     NotifyOnTransfer, Transfer,
 };
 use defuse_sandbox::extensions::defuse::intents::ExecuteIntentsExt;
+use defuse_test_utils::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 
 use defuse_sandbox::extensions::defuse::contract::core::token_id::{
     TokenId, nep141::Nep141TokenId,

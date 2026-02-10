@@ -16,12 +16,12 @@ use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
 use near_sdk::{AccountId, Gas, NearToken};
 use rstest::rstest;
 
-use crate::wasms::DEFUSE_WASM;
 use crate::{
     sandbox::extensions::{ft::FtViewExt, mt::MtViewExt, wnear::WNearExt},
     tests::defuse::env::Env,
     utils::asserts::ResultAssertsExt,
 };
+use defuse_test_utils::wasms::DEFUSE_WASM;
 
 #[rstest]
 #[trace]

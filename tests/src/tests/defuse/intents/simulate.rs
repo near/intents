@@ -36,8 +36,8 @@ use crate::{
     tests::defuse::env::Env,
     tests::defuse::intents::AccountNonceIntentEvent,
     utils::fixtures::public_key,
-    wasms::{DEFUSE_WASM, NON_FUNGIBLE_TOKEN_WASM},
 };
+use defuse_test_utils::wasms::{DEFUSE_WASM, NON_FUNGIBLE_TOKEN_WASM};
 use near_contract_standards::non_fungible_token::metadata::{NFT_METADATA_SPEC, TokenMetadata};
 use near_sdk::{AsNep297Event, NearToken};
 use rstest::rstest;
