@@ -1,7 +1,7 @@
 use near_sdk::{
     AccountId, Gas, GasWeight, NearToken, Promise,
     borsh::{self, BorshSerialize, io},
-    near,
+    env, near, require,
     serde::Serialize,
     serde_json,
     serde_with::base64::Base64,
@@ -207,6 +207,12 @@ impl PromiseSingle {
     }
 
     pub fn build(self) -> Option<Promise> {
+        // assert here instead of returning an error to reduce complexity
+        require!(
+            self.receiver_id != env::current_account_id(),
+            "self-calls are prohibited",
+        );
+
         if self.actions.is_empty() {
             return None;
         }
