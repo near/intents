@@ -1474,6 +1474,7 @@ dependencies = [
  "defuse-crypto",
  "defuse-deadline",
  "defuse-tests",
+ "defuse-wallet",
  "defuse-webauthn",
  "impl-tools",
  "near-sdk",

@@ -6,6 +6,7 @@ use defuse_tests::{
     crypto::{KeyType, SecretKey},
     env::WALLET_WEBAUTHN_ED25519_WASM,
     sandbox::{FnCallBuilder, Sandbox, sandbox},
+    utils::random::make_arbitrary,
 };
 use defuse_wallet::{
     self, AddExtensionOp, PromiseSingle, RemoveExtensionOp, Request, SignedRequest, State,
@@ -141,6 +142,53 @@ async fn test_extension(#[future] env: Env) {
         .unwrap();
 
     assert!(receiver.view().await.unwrap().amount >= NearToken::from_near(1));
+}
+
+#[rstest]
+#[awt]
+#[tokio::test]
+async fn test_arbitrary(#[future] env: Env, #[from(make_arbitrary)] request: Request) {
+    let secret_key = SecretKey::from_random(KeyType::ED25519);
+
+    let wallet_state_init = StateInit::V1(StateInitV1 {
+        code: env.wallet_global_id.clone(),
+        data: State::<Webauthn<Ed25519>>::new(Ed25519PublicKey(
+            secret_key.public_key().unwrap_as_ed25519().0,
+        ))
+        .init_state(),
+    });
+
+    let wallet = env.account(wallet_state_init.derive_account_id());
+
+    let receiver = env
+        .generate_subaccount("receiver", NearToken::ZERO)
+        .await
+        .unwrap();
+
+    let signed_request_body = SignedRequest {
+        signer_id: wallet.id().clone(),
+        chain_id: "mainnet".to_string(),
+        valid_until: Deadline::timeout(Duration::from_secs(60 * 60)), // 1h
+        seqno: 0,
+        request: dbg!(request),
+    };
+
+    env.tx(wallet.id())
+        .state_init(
+            wallet_state_init.clone(),
+            NearToken::ZERO,
+        )
+        .transfer(NearToken::from_near(1))
+        .function_call(
+            FnCallBuilder::new("w_execute_signed")
+                .json_args(json!({
+                    "proof": serde_json::to_string(&sign_request(&secret_key, &signed_request_body)).unwrap(),
+                    "signed": signed_request_body,
+                }))
+                .with_deposit(NearToken::from_near(1)),
+        )
+        .await
+        .unwrap();
 }
 
 #[autoimpl(Deref using self.sandbox)]

@@ -42,6 +42,7 @@ contract = []
 
 
 [dev-dependencies]
+defuse-wallet = { workspace = true, features = ["arbitrary"] }
 defuse-crypto.workspace = true
 defuse-tests.workspace = true
 

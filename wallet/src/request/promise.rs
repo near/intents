@@ -126,6 +126,7 @@ impl IntoIterator for PromiseDAG {
     type Item = PromiseSingle;
     type IntoIter = IntoIter;
 
+    /// Returns an iterator over all single promises in arbitrary order
     fn into_iter(self) -> Self::IntoIter {
         IntoIter(vec![self])
     }
@@ -157,6 +158,9 @@ impl Iterator for IntoIter {
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PromiseSingle {
+    /// Receiver of the receipt to be created.
+    ///
+    /// NOTE: self-calls are prohibited.
     pub receiver_id: AccountId,
 
     /// Receiver for refunds of failed or unused deposits.
@@ -252,13 +256,14 @@ impl PromiseSingle {
 /// (e.g. CreateAccount). Wallet-contracts are not self-upgradable and do
 /// not allow creating subaccounts.
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh, json])]
+#[near(serializers = [borsh(use_discriminant = true), json])]
 #[serde(tag = "action", content = "args", rename_all = "snake_case")]
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[repr(u8)] // matches nearcore `Action` just in case
 pub enum PromiseAction {
-    Transfer(TransferAction),
-    StateInit(StateInitAction),
-    FunctionCall(FunctionCallAction),
+    FunctionCall(FunctionCallAction) = 2,
+    Transfer(TransferAction) = 3,
+    StateInit(StateInitAction) = 11,
 }
 
 impl PromiseAction {
