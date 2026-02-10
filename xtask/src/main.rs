@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Ok, Result};
 use clap::{Parser, Subcommand};
 use xtask::{BuildOptions, Contract, build_contracts, cargo_warning};
 

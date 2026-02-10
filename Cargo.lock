@@ -1384,7 +1384,6 @@ dependencies = [
  "defuse-randomness",
  "derive_more",
  "hex",
- "near-sdk",
  "rand_chacha 0.9.0",
  "rstest",
 ]

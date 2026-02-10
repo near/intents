@@ -28,11 +28,11 @@ impl Default for BuildMode {
 
 #[derive(Args, Clone, Default)]
 pub struct BuildOptions {
-    #[command(subcommand)]
-    pub mode: BuildMode,
-
     #[arg(short, long)]
     pub outdir: Option<String>,
+
+    #[command(subcommand)]
+    pub mode: BuildMode,
 }
 
 #[derive(Args, Clone, Default, Debug)]
