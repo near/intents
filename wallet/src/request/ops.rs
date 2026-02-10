@@ -27,9 +27,6 @@ pub struct SetSignatureModeOp {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub struct AddExtensionOp {
-    // TODO: check not self?
-    // TODO: but was if it originally was in state_init?
-    // this can never happen due to recursive hashing
     pub account_id: AccountId,
 }
 

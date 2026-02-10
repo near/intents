@@ -1,6 +1,7 @@
+#[cfg(feature = "no-sign")]
+pub mod no_sign;
 #[cfg(feature = "webauthn")]
 pub mod webauthn;
-// TODO: implmenet other standards
 
 pub trait SigningStandard {
     type PublicKey;

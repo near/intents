@@ -30,19 +30,20 @@ pub trait Wallet {
     // TODO: accept query_id?
     fn w_execute_extension(&mut self, request: Request);
 
-    /// Returns subwallet_id
+    /// Returns subwallet_id.
     fn w_subwallet_id(&self) -> u32;
 
-    /// Returns whether authentication by signature is allowed.
+    /// Returns whether authentication by signature is currently allowed.
     fn w_is_signature_allowed(&self) -> bool;
 
     // TODO: view-method to get supported signing standard?
     // TODO: answer: it can be retrieved via contract_source_metadata
 
     // TODO: OAuth 2.0, off-chain multisig, TEE
-    /// Returns whether authentication by signature is allowed.
+    /// Returns public key.
     fn w_public_key(&self) -> String;
 
+    /// Current `seqno` to be used for signed requests.
     fn w_seqno(&self) -> u32;
 
     /// Returns whether extension with given `account_id` is enabled.
@@ -51,6 +52,6 @@ pub trait Wallet {
     /// Returns a set of enabled extensions.
     fn w_extensions(&self) -> BTreeSet<AccountId>;
 
-    /// Returns chain_id of the network
+    /// Helper method to get chain_id of the network
     fn w_chain_id(&self) -> String;
 }

@@ -37,8 +37,3 @@ impl Request {
         env::keccak256_array(borsh::to_vec(self).unwrap_or_else(|_| unreachable!()))
     }
 }
-
-// TODO
-// fix JsonSchema macro bug
-// #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
-// use near_sdk::serde;

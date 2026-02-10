@@ -1,8 +1,13 @@
-#[cfg(not(any(feature = "webauthn-ed25519", feature = "webauthn-p256")))]
+#[cfg(not(any(
+    feature = "webauthn-ed25519",
+    feature = "webauthn-p256",
+    feature = "no-sign",
+)))]
 compile_error!(
     r#"Exactly one of following features MUST be enabled:
 - `webauthn-ed25519`
 - `webauthn-p256`
+- `no-sign`
 "#
 );
 
@@ -22,6 +27,8 @@ use crate::{
 type SS = crate::webauthn::Webauthn<crate::webauthn::Ed25519>;
 #[cfg(feature = "webauthn-p256")]
 type SS = crate::webauthn::Webauthn<crate::webauthn::P256>;
+#[cfg(feature = "no-sign")]
+type SS = crate::no_sign::NoSign;
 
 #[cfg_attr(feature = "webauthn-ed25519", near(
     contract_state(key = <Self as Deref>::Target::STATE_KEY),
@@ -35,6 +42,13 @@ type SS = crate::webauthn::Webauthn<crate::webauthn::P256>;
     contract_metadata(
         standard(standard = "wallet", version = "1.0.0"),
         standard(standard = "wallet-webauthn-p256", version = "1.0.0"),
+    ),
+))]
+#[cfg_attr(feature = "no-sign", near(
+    contract_state(key = <Self as Deref>::Target::STATE_KEY),
+    contract_metadata(
+        standard(standard = "wallet", version = "1.0.0"),
+        standard(standard = "wallet-no-sign", version = "1.0.0"),
     ),
 ))]
 #[derive(Debug, PanicOnDefault)]
@@ -86,6 +100,10 @@ impl Wallet for Contract {
 
 impl<S: SigningStandard> State<S> {
     fn execute_signed(&mut self, signed: SignedRequest, proof: String) -> Result<()> {
+        if !self.is_signature_allowed() {
+            return Err(Error::SignatureDisabled);
+        }
+
         // check chain_id
         if signed.chain_id != utils::chain_id() {
             return Err(Error::InvalidChainId {

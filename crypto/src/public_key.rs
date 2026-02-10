@@ -1,5 +1,4 @@
-#[cfg(feature = "ed25519")]
-pub mod ed25519;
+#![cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
 
 use core::{
     fmt::{self, Debug, Display},

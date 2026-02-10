@@ -13,22 +13,28 @@ workspace = true
 
 [dependencies]
 defuse-borsh-utils.workspace = true
-defuse-crypto.workspace = true
 defuse-deadline.workspace = true
 
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 thiserror.workspace = true
 
-arbitrary = { workspace = true, features = ["derive"], optional = true }
+defuse-crypto = { workspace = true, default-features = false, optional = true }
 defuse-webauthn = { workspace = true, default-features = false, optional = true }
 
+arbitrary = { workspace = true, features = ["derive"], optional = true }
 
 [features]
-default = ["webauthn"]
+default = ["webauthn", "no-sign"]
 
 webauthn = ["dep:defuse-webauthn"]
 webauthn-ed25519 = ["webauthn", "defuse-webauthn/ed25519"]
 webauthn-p256 = ["webauthn", "defuse-webauthn/p256"]
+
+# Always reject the signature.
+# This can be useful to deploy "1-of-M multisig"/"fan-out" wallet, where
+# extensions are pre-defined at the initialization stage (i.e. state_init).
+# So only extensions can execute requests via `w_execute_extension()`.
+no-sign = []
 
 abi = ["defuse-crypto/abi", "defuse-deadline/abi", "defuse-webauthn?/abi"]
 arbitrary = ["dep:arbitrary", "near-sdk/arbitrary"]
@@ -36,6 +42,7 @@ contract = []
 
 
 [dev-dependencies]
+defuse-crypto.workspace = true
 defuse-tests.workspace = true
 
 arbitrary = { workspace = true, features = ["derive"] }
