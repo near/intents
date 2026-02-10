@@ -9,12 +9,13 @@ repository.workspace = true
 workspace = true
 
 [features]
-default = ["defuse", "poa", "escrow", "escrow-proxy", "condvar", "mt-receiver", "long"]
+default = ["defuse", "poa", "escrow-swap", "escrow-proxy", "condvar", "mt-receiver"]
 
+# NOTE: features used in integration tests
+poa = []
+defuse = []
+escrow-swap = []
 long = []
-poa = ["dep:defuse-poa-factory"]
-defuse = ["dep:defuse"]
-escrow = ["dep:defuse-escrow-swap"]
 escrow-proxy = ["dep:defuse-escrow-proxy"]
 condvar = ["dep:defuse-oneshot-condvar"]
 mt-receiver = []
@@ -22,15 +23,14 @@ mt-receiver = []
 [dependencies]
 defuse-sandbox = { workspace = true }
 
-defuse = { workspace = true, features = ["contract", "arbitrary", "imt"],  optional = true}
-defuse-escrow-swap = { workspace = true, features = ["auth_call"],  optional = true }
-defuse-poa-factory = {workspace = true, features = ["contract"], optional = true }
+# TODO: make dependencies optional after splitting env for each contract
+defuse = { workspace = true, features = ["contract", "arbitrary", "imt"]}
+defuse-escrow-swap = { workspace = true, features = ["auth_call"] }
+defuse-poa-factory = {workspace = true, features = ["contract"] }
 
 defuse-core.workspace = true
-defuse-escrow-proxy = { workspace = true, features = ["escrow-swap"], optional = true }
 defuse-near-utils = { workspace = true }
 defuse-nep245.workspace = true
-defuse-oneshot-condvar = { workspace = true, optional = true }
 defuse-randomness.workspace = true
 defuse-serde-utils = { workspace = true }
 defuse-test-utils.workspace = true
@@ -53,3 +53,11 @@ rstest.workspace = true
 strum.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 tlb-ton = { workspace = true, features = ["arbitrary"] }
+
+defuse-escrow-proxy = { workspace = true, features = ["escrow-swap"], optional = true }
+defuse-oneshot-condvar = { workspace = true, optional = true }
+
+[build-dependencies]
+xtask.workspace = true
+cargo_metadata.workspace = true
+anyhow.workspace = true

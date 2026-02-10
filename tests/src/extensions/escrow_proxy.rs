@@ -1,5 +1,5 @@
 use defuse_escrow_proxy::ProxyConfig;
-#[cfg(feature = "escrow")]
+#[cfg(feature = "escrow-swap")]
 use defuse_escrow_swap::Params as EscrowParams;
 use near_sdk::serde_json::json;
 use near_sdk::{
@@ -17,7 +17,7 @@ pub trait EscrowProxyExt {
     async fn deploy_escrow_proxy(&self, config: ProxyConfig) -> anyhow::Result<()>;
     async fn get_escrow_proxy_config(&self) -> anyhow::Result<ProxyConfig>;
     /// Call `es_cancel` on proxy contract. Requires caller to be owner.
-    #[cfg(feature = "escrow")]
+    #[cfg(feature = "escrow-swap")]
     async fn es_cancel(
         &self,
         proxy_contract: &AccountId,
@@ -55,7 +55,7 @@ impl EscrowProxyExt for SigningAccount {
         self.call_view_function_json("config", json!({})).await
     }
 
-    #[cfg(feature = "escrow")]
+    #[cfg(feature = "escrow-swap")]
     async fn es_cancel(
         &self,
         proxy_contract: &AccountId,

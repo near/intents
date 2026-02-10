@@ -333,7 +333,7 @@ fn generate_random_account_id(parent_id: &AccountId) -> Result<AccountId> {
         &mut Unstructured::new(&rng.random::<[u8; 64]>()),
         Some(parent_id),
     )
-    .map_err(|e| anyhow::anyhow!("Failed to generate account ID : {e}"))
+    .map_err(|e| anyhow::anyhow!("failed to generate account ID : {e}"))
 }
 
 fn generate_legacy_user_account_id(
@@ -343,12 +343,12 @@ fn generate_legacy_user_account_id(
 ) -> Result<AccountId> {
     let bytes = sha256((seed.as_u64() + u64::try_from(index)?).to_be_bytes())[..8]
         .try_into()
-        .map_err(|_| anyhow::anyhow!("Failed to create new account seed"))?;
+        .map_err(|_| anyhow::anyhow!("failed to create new account seed"))?;
     let seed = Seed::from_u64(u64::from_be_bytes(bytes));
     let mut rng = rng(seed);
     ArbitraryNamedAccountId::arbitrary_subaccount(
         &mut Unstructured::new(&rng.random::<[u8; 64]>()),
         Some(parent_id.id()),
     )
-    .map_err(|e| anyhow::anyhow!("Failed to generate account ID : {e}"))
+    .map_err(|e| anyhow::anyhow!("failed to generate account ID : {e}"))
 }

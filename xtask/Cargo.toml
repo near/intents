@@ -1,0 +1,17 @@
+[package]
+name = "xtask"
+edition.workspace = true
+repository.workspace = true
+version.workspace = true
+rust-version.workspace = true
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+cargo-near-build = { workspace = true, features = ["docker", "build_internal"] }
+clap.workspace = true
+anyhow.workspace = true
+
+[lints]
+workspace = true
