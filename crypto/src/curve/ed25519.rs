@@ -50,7 +50,7 @@ impl Debug for Ed25519PublicKey {
 
 impl Display for Ed25519PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&<Ed25519 as TypedCurve>::to_base58(&self.0))
+        f.write_str(&<Ed25519 as TypedCurve>::to_base58(self.0))
     }
 }
 
@@ -68,6 +68,6 @@ impl Debug for Ed25519Signature {
 
 impl Display for Ed25519Signature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&<Ed25519 as TypedCurve>::to_base58(&self.0))
+        f.write_str(&<Ed25519 as TypedCurve>::to_base58(self.0))
     }
 }

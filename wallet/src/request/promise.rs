@@ -28,6 +28,7 @@ impl PromiseDAG {
         }
     }
 
+    #[must_use]
     pub fn and(mut self, other: impl Into<Self>) -> Self {
         let other = other.into();
         if self.after.is_empty() && other.after.is_empty() {
@@ -41,10 +42,12 @@ impl PromiseDAG {
         }
     }
 
+    #[must_use]
     pub fn then(self, then: PromiseSingle) -> Self {
         self.then_concurrent([then])
     }
 
+    #[must_use]
     pub fn then_concurrent(mut self, then: impl IntoIterator<Item = PromiseSingle>) -> Self {
         if self.promises.is_empty() {
             self.promises.extend(then);
@@ -145,7 +148,7 @@ impl Iterator for IntoIter {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.0.last().map(|d| d.promises.len()).unwrap_or(0), None)
+        (self.0.last().map_or(0, |d| d.promises.len()), None)
     }
 }
 
@@ -166,6 +169,7 @@ pub struct PromiseSingle {
 }
 
 impl PromiseSingle {
+    #[must_use]
     pub fn new(receiver_id: impl Into<AccountId>) -> Self {
         Self {
             receiver_id: receiver_id.into(),
@@ -174,15 +178,18 @@ impl PromiseSingle {
         }
     }
 
+    #[must_use]
     pub fn refund_to(mut self, account_id: impl Into<AccountId>) -> Self {
         self.refund_to = Some(account_id.into());
         self
     }
 
+    #[must_use]
     pub fn transfer(self, amount: NearToken) -> Self {
         self.add_action(PromiseAction::Transfer(TransferAction { amount }))
     }
 
+    #[must_use]
     pub fn state_init(self, state_init: StateInit, amount: NearToken) -> Self {
         self.add_action(PromiseAction::StateInit(StateInitAction {
             state_init,
@@ -190,6 +197,7 @@ impl PromiseSingle {
         }))
     }
 
+    #[must_use]
     pub fn function_call(self, action: FunctionCallAction) -> Self {
         self.add_action(PromiseAction::FunctionCall(action))
     }
@@ -203,14 +211,17 @@ impl PromiseSingle {
         self.actions.is_empty()
     }
 
+    #[must_use]
     pub fn and(self, other: impl Into<PromiseDAG>) -> PromiseDAG {
         PromiseDAG::from(self).and(other)
     }
 
+    #[must_use]
     pub fn then(self, then: Self) -> PromiseDAG {
         PromiseDAG::from(self).then(then)
     }
 
+    #[must_use]
     pub fn build(self) -> Option<Promise> {
         // assert here instead of returning an error to reduce complexity
         require!(
@@ -324,6 +335,7 @@ pub struct FunctionCallAction {
 }
 
 impl FunctionCallAction {
+    #[must_use]
     pub fn new(function_name: impl Into<String>) -> Self {
         Self {
             function_name: function_name.into(),
@@ -334,6 +346,7 @@ impl FunctionCallAction {
         }
     }
 
+    #[must_use]
     pub fn args(mut self, args: impl Into<Vec<u8>>) -> Self {
         self.args = args.into();
         self
@@ -353,22 +366,26 @@ impl FunctionCallAction {
         borsh::to_vec(&args).map(|args| self.args(args))
     }
 
-    pub fn attached_deposit(mut self, amount: NearToken) -> Self {
+    #[must_use]
+    pub const fn attached_deposit(mut self, amount: NearToken) -> Self {
         self.amount = amount;
         self
     }
 
-    pub fn min_gas(mut self, min_gas: Gas) -> Self {
+    #[must_use]
+    pub const fn min_gas(mut self, min_gas: Gas) -> Self {
         self.min_gas = min_gas;
         self
     }
 
-    pub fn unused_gas_weight(mut self, gas_weight: u64) -> Self {
+    #[must_use]
+    pub const fn unused_gas_weight(mut self, gas_weight: u64) -> Self {
         self.gas_weight = gas_weight;
         self
     }
 
-    pub fn exact_gas(self, gas: Gas) -> Self {
+    #[must_use]
+    pub const fn exact_gas(self, gas: Gas) -> Self {
         self.min_gas(gas).unused_gas_weight(0)
     }
 }

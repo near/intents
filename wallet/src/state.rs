@@ -48,12 +48,14 @@ impl<S: SigningStandard> State<S> {
         }
     }
 
+    #[must_use]
     #[inline]
-    pub fn wallet_id(mut self, wallet_id: u32) -> Self {
+    pub const fn wallet_id(mut self, wallet_id: u32) -> Self {
         self.wallet_id = wallet_id;
         self
     }
 
+    #[must_use]
     #[inline]
     pub fn extensions(
         mut self,
@@ -65,7 +67,7 @@ impl<S: SigningStandard> State<S> {
     }
 
     /// Allow contract to work if it was mistakenly deployed with
-    /// auth_by_signature_disabled and empty extensions.
+    /// `!signature_enabled` and empty extensions.
     #[inline]
     pub fn is_signature_allowed(&self) -> bool {
         self.signature_enabled || self.extensions.is_empty()

@@ -1,3 +1,11 @@
+#[cfg(not(any(feature = "webauthn-ed25519", feature = "webauthn-p256")))]
+compile_error!(
+    r#"Exactly one of following features MUST be enabled:
+- `webauthn-ed25519`
+- `webauthn-p256`
+"#
+);
+
 mod utils;
 
 use core::ops::{Deref, DerefMut};
@@ -15,13 +23,20 @@ type SS = crate::webauthn::Webauthn<crate::webauthn::Ed25519>;
 #[cfg(feature = "webauthn-p256")]
 type SS = crate::webauthn::Webauthn<crate::webauthn::P256>;
 
-#[near(
-    contract_state(key = State::<SS>::STATE_KEY),
+#[cfg_attr(feature = "webauthn-ed25519", near(
+    contract_state(key = <Self as Deref>::Target::STATE_KEY),
     contract_metadata(
         standard(standard = "wallet", version = "1.0.0"),
-        // TODO: signing-standard-specific standard
+        standard(standard = "wallet-webauthn-ed25519", version = "1.0.0"),
     ),
-)]
+))]
+#[cfg_attr(feature = "webauthn-p256", near(
+    contract_state(key = <Self as Deref>::Target::STATE_KEY),
+    contract_metadata(
+        standard(standard = "wallet", version = "1.0.0"),
+        standard(standard = "wallet-webauthn-p256", version = "1.0.0"),
+    ),
+))]
 #[derive(Debug, PanicOnDefault)]
 pub struct Contract(State<SS>);
 

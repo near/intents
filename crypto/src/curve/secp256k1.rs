@@ -60,7 +60,7 @@ impl Debug for Secp256k1PublicKey {
 
 impl Display for Secp256k1PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&<Secp256k1 as TypedCurve>::to_base58(&self.0))
+        f.write_str(&<Secp256k1 as TypedCurve>::to_base58(self.0))
     }
 }
 
@@ -80,6 +80,6 @@ impl Debug for Secp256k1Signature {
 
 impl Display for Secp256k1Signature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&<Secp256k1 as TypedCurve>::to_base58(&self.0))
+        f.write_str(&<Secp256k1 as TypedCurve>::to_base58(self.0))
     }
 }

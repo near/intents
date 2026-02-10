@@ -8,7 +8,8 @@ use defuse_tests::{
     sandbox::{FnCallBuilder, Sandbox, sandbox},
 };
 use defuse_wallet::{
-    self, PromiseSingle, Request, SignedRequest, State, WalletOp, webauthn::Webauthn,
+    self, AddExtensionOp, PromiseSingle, RemoveExtensionOp, Request, SignedRequest, State,
+    WalletOp, webauthn::Webauthn,
 };
 use defuse_webauthn::{ClientDataType, CollectedClientData, Ed25519, PayloadSignature};
 use impl_tools::autoimpl;
@@ -43,12 +44,12 @@ async fn test_signed(#[future] env: Env) {
 
     let request = Request {
         ops: vec![
-            WalletOp::AddExtension {
+            WalletOp::AddExtension(AddExtensionOp {
                 account_id: env.root().id().clone(),
-            },
-            WalletOp::RemoveExtension {
+            }),
+            WalletOp::RemoveExtension(RemoveExtensionOp {
                 account_id: env.root().id().clone(),
-            },
+            }),
         ],
         out: dbg!(
             PromiseSingle::new(receiver.id())
@@ -80,7 +81,7 @@ async fn test_signed(#[future] env: Env) {
         .function_call(
             FnCallBuilder::new("w_execute_signed")
                 .json_args(json!({
-                    "proof": serde_json::to_string(&sign_request(secret_key, &signed_request_body)).unwrap(),
+                    "proof": serde_json::to_string(&sign_request(&secret_key, &signed_request_body)).unwrap(),
                     "signed": signed_request_body,
                 }))
                 .with_deposit(NearToken::from_near(1)),
@@ -169,11 +170,11 @@ async fn env(#[future] sandbox: Sandbox) -> Env {
     }
 }
 
-fn sign_request(secret_key: SecretKey, body: &SignedRequest) -> PayloadSignature<Ed25519> {
+fn sign_request(secret_key: &SecretKey, body: &SignedRequest) -> PayloadSignature<Ed25519> {
     sign_passkey(secret_key, &body.hash())
 }
 
-fn sign_passkey(secret_key: SecretKey, msg: &[u8]) -> PayloadSignature<Ed25519> {
+fn sign_passkey(secret_key: &SecretKey, msg: &[u8]) -> PayloadSignature<Ed25519> {
     let authenticator_data = {
         let mut buf = [0; 37];
         buf[32] = 0b0000_0001;

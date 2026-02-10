@@ -71,7 +71,7 @@ impl Debug for P256CompressedPublicKey {
 
 impl Display for P256CompressedPublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&<P256 as TypedCurve>::to_base58(&self.0))
+        f.write_str(&<P256 as TypedCurve>::to_base58(self.0))
     }
 }
 
@@ -90,7 +90,7 @@ impl Debug for P256UncompressedPublicKey {
 
 impl Display for P256UncompressedPublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&<P256 as TypedCurve>::to_base58(&self.0))
+        f.write_str(&<P256 as TypedCurve>::to_base58(self.0))
     }
 }
 
@@ -108,7 +108,7 @@ impl Debug for P256Signature {
 
 impl Display for P256Signature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&<P256 as TypedCurve>::to_base58(&self.0))
+        f.write_str(&<P256 as TypedCurve>::to_base58(self.0))
     }
 }
 
@@ -120,6 +120,5 @@ pub fn compress_public_key(public_key: P256UncompressedPublicKey) -> P256Compres
         .compress()
         .as_bytes()
         .try_into()
-        .map(P256CompressedPublicKey)
-        .unwrap_or_else(|_| unreachable!())
+        .map_or_else(|_| unreachable!(), P256CompressedPublicKey)
 }

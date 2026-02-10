@@ -17,10 +17,10 @@ pub mod nep245;
 )))]
 compile_error!(
     r#"At least one of these features should be enabled:
-- "nep141"
-- "nep171"
-- "nep245"
-- "imt"
+- `nep141`
+- `nep171`
+- `nep245`
+- `imt`
 "#
 );
 
