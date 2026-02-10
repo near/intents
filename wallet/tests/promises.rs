@@ -5,25 +5,15 @@ use defuse_deadline::Deadline;
 use defuse_tests::{
     crypto::{KeyType, SecretKey},
     env::WALLET_WEBAUTHN_ED25519_WASM,
-    sandbox::{
-        FnCallBuilder, Sandbox,
-        api::{
-            CryptoHash,
-            types::transaction::actions::{
-                DeterministicAccountStateInit, DeterministicAccountStateInitV1,
-                GlobalContractIdentifier,
-            },
-        },
-        sandbox,
-    },
+    sandbox::{FnCallBuilder, Sandbox, sandbox},
 };
 use defuse_wallet::{
-    self, PromiseDAG, PromiseSingle, Request, SignedRequest, State, WalletOp, webauthn::Webauthn,
+    self, PromiseSingle, Request, SignedRequest, State, WalletOp, webauthn::Webauthn,
 };
 use defuse_webauthn::{ClientDataType, CollectedClientData, Ed25519, PayloadSignature};
 use impl_tools::autoimpl;
 use near_sdk::{
-    GlobalContractId, NearToken, borsh,
+    GlobalContractId, NearToken,
     env::sha256_array,
     serde_json::{self, json},
     state_init::{StateInit, StateInitV1},
@@ -46,6 +36,11 @@ async fn test_signed(#[future] env: Env) {
 
     let wallet = env.account(wallet_state_init.derive_account_id());
 
+    let receiver = env
+        .generate_subaccount("receiver", NearToken::ZERO)
+        .await
+        .unwrap();
+
     let request = Request {
         ops: vec![
             WalletOp::AddExtension {
@@ -56,15 +51,15 @@ async fn test_signed(#[future] env: Env) {
             },
         ],
         out: dbg!(
-            PromiseSingle::new(wallet.id())
+            PromiseSingle::new(receiver.id())
                 .transfer(NearToken::from_yoctonear(1))
-                .then(PromiseSingle::new(wallet.id()).transfer(NearToken::from_yoctonear(2)))
-                .and(PromiseSingle::new(wallet.id()).transfer(NearToken::from_yoctonear(3)))
+                .then(PromiseSingle::new(receiver.id()).transfer(NearToken::from_yoctonear(2)))
+                .and(PromiseSingle::new(receiver.id()).transfer(NearToken::from_yoctonear(3)))
                 .then_concurrent([
-                    PromiseSingle::new(wallet.id()).transfer(NearToken::from_yoctonear(4)),
-                    PromiseSingle::new(wallet.id()).transfer(NearToken::from_yoctonear(5))
+                    PromiseSingle::new(receiver.id()).transfer(NearToken::from_yoctonear(4)),
+                    PromiseSingle::new(receiver.id()).transfer(NearToken::from_yoctonear(5))
                 ])
-                .then(PromiseSingle::new(wallet.id()).transfer(NearToken::from_yoctonear(6)))
+                .then(PromiseSingle::new(receiver.id()).transfer(NearToken::from_yoctonear(6)))
         ),
     };
 
@@ -105,16 +100,6 @@ async fn test_extension(#[future] env: Env) {
         .await
         .unwrap();
 
-    let other = env
-        .generate_subaccount("other", NearToken::ZERO)
-        .await
-        .unwrap();
-
-    let refund_to = env
-        .generate_subaccount("refund_to", NearToken::ZERO)
-        .await
-        .unwrap();
-
     let wallet_state_init = StateInit::V1(StateInitV1 {
         code: env.wallet_global_id.clone(),
         data: State::<Webauthn<Ed25519>>::new(Ed25519PublicKey([0; 32]))
@@ -125,6 +110,16 @@ async fn test_extension(#[future] env: Env) {
     // 0s123445
     let wallet = env.account(wallet_state_init.derive_account_id());
 
+    let receiver = env
+        .generate_subaccount("receiver", NearToken::ZERO)
+        .await
+        .unwrap();
+
+    let refund_to = env
+        .generate_subaccount("refund_to", NearToken::ZERO)
+        .await
+        .unwrap();
+
     extension
         .tx(wallet.id())
         .state_init(wallet_state_init.clone(), NearToken::ZERO)
@@ -133,11 +128,10 @@ async fn test_extension(#[future] env: Env) {
                 .json_args(json!({
                     "request": Request {
                         ops: vec![],
-                        out: PromiseDAG::new(
-                            PromiseSingle::new(wallet.id())
-                                .state_init(wallet_state_init, NearToken::ZERO)
+                        out: PromiseSingle::new(receiver.id())
+                                .refund_to(refund_to.id())
                                 .transfer(NearToken::from_near(1))
-                        ),
+                                .into(),
                     }
                 }))
                 .with_deposit(NearToken::from_near(1)),
@@ -145,7 +139,7 @@ async fn test_extension(#[future] env: Env) {
         .await
         .unwrap();
 
-    assert!(wallet.view().await.unwrap().amount >= NearToken::from_near(1));
+    assert!(receiver.view().await.unwrap().amount >= NearToken::from_near(1));
 }
 
 #[autoimpl(Deref using self.sandbox)]

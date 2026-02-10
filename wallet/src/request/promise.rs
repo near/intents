@@ -81,11 +81,12 @@ impl PromiseDAG {
             .saturating_add(self.promises.len())
     }
 
-    pub(crate) fn normalize(&mut self) {
+    pub fn normalize(&mut self) {
         self.after.retain_mut(|after| {
             after.normalize();
             !after.is_empty()
         });
+        self.promises.retain(|p| !p.is_empty());
     }
 
     // TODO: check that not self, otherise callbacks would be allowed to be
@@ -196,6 +197,10 @@ impl PromiseSingle {
     fn add_action(mut self, action: PromiseAction) -> Self {
         self.actions.push(action);
         self
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.actions.is_empty()
     }
 
     pub fn and(self, other: impl Into<PromiseDAG>) -> PromiseDAG {
@@ -374,8 +379,6 @@ use near_sdk::serde;
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
-
     use defuse_tests::utils::random::make_arbitrary;
     use near_sdk::{env, serde_json};
     use rstest::rstest;
@@ -418,9 +421,7 @@ mod tests {
     #[rstest]
     fn test_normalize(#[from(make_arbitrary)] mut d: PromiseDAG) {
         d.normalize();
-        let is_empty = d.is_empty();
         check_json(d);
-        assert!(is_empty);
     }
 
     #[rstest]
