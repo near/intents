@@ -22,7 +22,8 @@ use near_sdk::{AsNep297Event, NearToken};
 use rstest::rstest;
 use serde_json::json;
 
-use crate::{env::Env, utils::fixtures::public_key};
+use crate::tests::defuse::env::Env;
+use defuse_test_utils::fixtures::public_key;
 
 #[rstest]
 #[trace]

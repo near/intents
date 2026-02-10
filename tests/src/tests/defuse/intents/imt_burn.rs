@@ -19,7 +19,7 @@ use rstest::rstest;
 
 use near_sdk::AsNep297Event;
 
-use crate::env::Env;
+use crate::tests::defuse::env::Env;
 
 #[rstest]
 #[trace]

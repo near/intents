@@ -12,7 +12,8 @@ use rstest::rstest;
 use std::borrow::Cow;
 
 use crate::{
-    env::Env, tests::defuse::intents::AccountNonceIntentEvent, utils::fixtures::public_key,
+    tests::defuse::env::Env, tests::defuse::intents::AccountNonceIntentEvent,
+    utils::fixtures::public_key,
 };
 
 #[rstest]

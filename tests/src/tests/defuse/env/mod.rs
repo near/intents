@@ -3,11 +3,8 @@
 mod builder;
 mod state;
 mod storage;
-mod wasms;
 
-pub use wasms::*;
-
-use crate::env::builder::EnvBuilder;
+use builder::EnvBuilder;
 
 use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;

@@ -1396,7 +1396,6 @@ dependencies = [
  "anyhow",
  "arbitrary",
  "bnum",
- "cargo_metadata 0.23.1",
  "chrono",
  "defuse",
  "defuse-escrow-swap",
@@ -1422,7 +1421,6 @@ dependencies = [
  "strum 0.27.2",
  "tlb-ton",
  "tokio",
- "xtask",
 ]
 
 [[package]]

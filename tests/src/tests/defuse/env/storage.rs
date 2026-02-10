@@ -29,11 +29,11 @@ use futures::{
     future::{join_all, try_join_all},
 };
 
-use crate::env::{
+use super::{
     Env,
     state::{AccountWithTokens, PersistentState},
-    wasms::DEFUSE_WASM,
 };
+use crate::wasms::DEFUSE_WASM;
 
 impl Env {
     pub async fn upgrade_legacy(&self, reuse_accounts: bool) {

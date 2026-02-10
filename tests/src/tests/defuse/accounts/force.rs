@@ -10,11 +10,11 @@ use defuse_sandbox::extensions::defuse::contract::{
 use defuse_test_utils::fixtures::public_key;
 
 use crate::{
-    env::Env,
     sandbox::extensions::{
         acl::AclExt,
         mt::{MtExt, MtViewExt},
     },
+    tests::defuse::env::Env,
     utils::asserts::ResultAssertsExt,
 };
 use defuse_sandbox::extensions::defuse::{

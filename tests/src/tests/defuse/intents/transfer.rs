@@ -1,5 +1,8 @@
-use crate::env::{DEFUSE_WASM, Env, MT_RECEIVER_STUB_WASM};
 use crate::sandbox::extensions::mt::MtViewExt;
+use crate::{
+    tests::defuse::env::Env,
+    wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM},
+};
 use defuse_sandbox::extensions::defuse::contract::contract::config::{DefuseConfig, RolesConfig};
 use defuse_sandbox::extensions::defuse::contract::core::fees::FeesConfig;
 use defuse_sandbox::extensions::defuse::contract::core::fees::Pips;

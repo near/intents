@@ -9,8 +9,8 @@ use near_sdk::{AsNep297Event, NearToken, serde_json::json};
 use rstest::rstest;
 
 use crate::{
-    env::Env,
     sandbox::{assert_eq_event_logs, tx::FnCallBuilder},
+    tests::defuse::env::Env,
     utils::fixtures::public_key,
 };
 use defuse_sandbox::extensions::defuse::account_manager::{AccountManagerExt, AccountViewExt};

@@ -14,8 +14,8 @@ use near_sdk::NearToken;
 use rstest::rstest;
 
 use crate::{
-    env::Env,
     sandbox::extensions::{mt::MtViewExt, wnear::WNearExt},
+    tests::defuse::env::Env,
     utils::fixtures::{ed25519_pk, secp256k1_pk},
 };
 

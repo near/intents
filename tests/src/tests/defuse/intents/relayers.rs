@@ -4,12 +4,12 @@ use defuse_sandbox::extensions::defuse::{
 use rstest::rstest;
 
 use crate::{
-    env::Env,
     sandbox::{
         SigningAccount,
         api::{Signer, signer::generate_secret_key},
         extensions::acl::{AclExt, AclViewExt},
     },
+    tests::defuse::env::Env,
     utils::asserts::ResultAssertsExt,
 };
 

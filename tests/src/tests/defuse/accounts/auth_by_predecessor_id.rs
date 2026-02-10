@@ -8,8 +8,8 @@ use near_sdk::AccountId;
 use rstest::rstest;
 
 use crate::{
-    env::Env,
     sandbox::extensions::mt::{MtExt, MtViewExt},
+    tests::defuse::env::Env,
     utils::asserts::ResultAssertsExt,
 };
 use defuse_sandbox::extensions::defuse::{

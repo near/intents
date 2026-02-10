@@ -16,7 +16,7 @@ use near_sdk::{AccountId, AccountIdRef, AsNep297Event, CryptoHash, serde_json};
 use rstest::rstest;
 use std::borrow::Cow;
 
-use crate::{env::Env, sandbox::extensions::mt::MtViewExt, utils::random::rng};
+use crate::{sandbox::extensions::mt::MtViewExt, tests::defuse::env::Env, utils::random::rng};
 
 pub struct AccountNonceIntentEvent(AccountId, Nonce, CryptoHash);
 

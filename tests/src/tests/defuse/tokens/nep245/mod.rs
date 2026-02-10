@@ -32,8 +32,8 @@ where
 
 use std::borrow::Cow;
 
-use crate::env::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 use crate::sandbox::assert_a_contains_b;
+use crate::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 use defuse_near_utils::REFUND_MEMO;
 use defuse_sandbox::extensions::defuse::account_manager::AccountManagerExt;
 use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
@@ -60,8 +60,8 @@ use near_sdk::json_types::U128;
 use near_sdk::{AsNep297Event, NearToken};
 
 use crate::{
-    env::Env,
     sandbox::extensions::mt::{MtExt, MtViewExt},
+    tests::defuse::env::Env,
 };
 use rstest::rstest;
 

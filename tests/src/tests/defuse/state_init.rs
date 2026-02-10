@@ -1,4 +1,5 @@
-use crate::env::{Env, MT_RECEIVER_STUB_WASM};
+use crate::tests::defuse::env::Env;
+use crate::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 use defuse::contract::Contract as DefuseContract;
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
@@ -206,7 +207,7 @@ async fn benchmark_gas_used_by_do_auth_call_callback(mut rng: impl Rng, #[case] 
                 },
                 roles: RolesConfig::default(),
             },
-            crate::env::DEFUSE_WASM.clone(),
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();
@@ -406,7 +407,7 @@ async fn test_auth_call_state_init_via_do_auth_call(
                 },
                 roles: RolesConfig::default(),
             },
-            crate::env::DEFUSE_WASM.clone(),
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();

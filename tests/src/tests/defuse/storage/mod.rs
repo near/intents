@@ -1,9 +1,9 @@
 use crate::{
-    env::Env,
     sandbox::extensions::{
         storage_management::{StorageManagementExt, StorageViewExt},
         wnear::WNearExt,
     },
+    tests::defuse::env::Env,
 };
 use defuse_sandbox::extensions::defuse::contract::core::intents::tokens::StorageDeposit;
 use defuse_sandbox::extensions::defuse::{

@@ -10,7 +10,7 @@ use defuse_sandbox::extensions::defuse::{
     signer::DefaultDefuseSignerExt,
 };
 
-use crate::{env::Env, sandbox::SigningAccount, sandbox::extensions::mt::MtViewExt};
+use crate::{sandbox::SigningAccount, sandbox::extensions::mt::MtViewExt, tests::defuse::env::Env};
 use near_sdk::{AccountId, serde_json};
 use rstest::rstest;
 use std::collections::BTreeMap;

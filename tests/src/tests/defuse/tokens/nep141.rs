@@ -11,7 +11,8 @@ use defuse_sandbox::extensions::{
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_sdk::json_types::U128;
 
-use crate::env::{Env, MT_RECEIVER_STUB_WASM};
+use crate::tests::defuse::env::Env;
+use crate::wasms::MT_RECEIVER_STUB_WASM;
 use defuse_sandbox::extensions::defuse::contract::{
     core::intents::tokens::NotifyOnTransfer,
     tokens::{DepositAction, DepositMessage, ExecuteIntents},

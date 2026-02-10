@@ -32,10 +32,11 @@ use defuse_sandbox::extensions::{
 };
 
 use crate::{
-    env::{DEFUSE_WASM, Env, NON_FUNGIBLE_TOKEN_WASM},
     sandbox::api::types::{json::Base64VecU8, nft::NFTContractMetadata},
+    tests::defuse::env::Env,
     tests::defuse::intents::AccountNonceIntentEvent,
     utils::fixtures::public_key,
+    wasms::{DEFUSE_WASM, NON_FUNGIBLE_TOKEN_WASM},
 };
 use near_contract_standards::non_fungible_token::metadata::{NFT_METADATA_SPEC, TokenMetadata};
 use near_sdk::{AsNep297Event, NearToken};

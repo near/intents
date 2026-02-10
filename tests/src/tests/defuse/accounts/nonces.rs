@@ -17,8 +17,8 @@ use near_sdk::AccountId;
 use rstest::rstest;
 
 use crate::{
-    env::Env,
     sandbox::extensions::acl::AclExt,
+    tests::defuse::env::Env,
     utils::{
         asserts::ResultAssertsExt,
         random::{Rng, random_bytes, rng},

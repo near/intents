@@ -13,7 +13,7 @@ use near_sdk::{
     env::{keccak512, sha256},
 };
 
-use crate::env::generate_legacy_user_account_id;
+use crate::tests::defuse::env::generate_legacy_user_account_id;
 
 const MAX_PUBLIC_KEYS: usize = 10;
 const MAX_ACCOUNTS: usize = 5;

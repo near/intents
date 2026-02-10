@@ -11,13 +11,13 @@ use defuse_sandbox::extensions::defuse::contract::{
 };
 
 use crate::{
-    env::DEFUSE_WASM,
     sandbox::{
         Sandbox, SigningAccount,
         extensions::{acl::AclExt, mt::MtViewExt},
         near_sandbox::FetchData,
     },
     utils::fixtures::{ed25519_pk, p256_pk, secp256k1_pk},
+    wasms::DEFUSE_WASM,
 };
 use defuse_sandbox::extensions::defuse::{
     account_manager::{AccountManagerExt, AccountViewExt},
@@ -31,7 +31,7 @@ use rstest::rstest;
 
 use futures::future::try_join_all;
 
-use crate::env::Env;
+use crate::tests::defuse::env::Env;
 
 #[ignore = "only for simple upgrades"]
 #[rstest]

@@ -11,7 +11,9 @@ use defuse_sandbox::extensions::defuse::{
 use defuse_sandbox::extensions::defuse::signer::DefuseSignerExt;
 use rstest::rstest;
 
-use crate::{env::Env, sandbox::extensions::mt::MtViewExt, utils::random::make_arbitrary};
+use crate::{
+    sandbox::extensions::mt::MtViewExt, tests::defuse::env::Env, utils::random::make_arbitrary,
+};
 
 #[rstest]
 #[trace]
