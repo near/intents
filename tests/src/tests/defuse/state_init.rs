@@ -340,7 +340,10 @@ async fn test_auth_call_state_init_via_execute_intents(
                 }
             });
 
-    let results: Vec<bool> = futures::stream::iter(futures).buffer_unordered(10).collect().await;
+    let results: Vec<bool> = futures::stream::iter(futures)
+        .buffer_unordered(10)
+        .collect()
+        .await;
     let success = results.contains(&true);
     assert_eq!(success, expect_success);
 }
@@ -454,7 +457,10 @@ async fn test_auth_call_state_init_via_do_auth_call(
             }
         });
 
-    let results: Vec<bool> = futures::stream::iter(futures).buffer_unordered(10).collect().await;
+    let results: Vec<bool> = futures::stream::iter(futures)
+        .buffer_unordered(10)
+        .collect()
+        .await;
     let success = results.contains(&true);
     assert_eq!(success, expect_success);
 }

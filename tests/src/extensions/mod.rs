@@ -10,4 +10,3 @@ pub mod escrow_proxy;
 #[cfg(feature = "mt-receiver")]
 pub mod mt_receiver;
 pub mod poa;
-
