@@ -23,20 +23,16 @@ fn main() -> Result<()> {
 
     let artifacts = match cli.command {
         Commands::BuildAll(options) => {
-            let contracts = Contract::all()
-                .into_iter()
-                .map(|c| (c, options.clone()))
-                .collect();
-
-            build_contracts(contracts)?
+            build_contracts(Contract::all().into_iter().map(|c| (c, options.clone())))?
         }
+
         Commands::Build { contract, options } => build_contracts(vec![(contract, options)])?,
     };
 
-    cargo_warning!("Built {} contracts", artifacts.len());
+    cargo_warning!("xtask build: built {} contracts", artifacts.len());
 
     for a in artifacts {
-        cargo_warning!("Built {:?} at: {:?}", a.contract, a.wasm_path);
+        cargo_warning!("xtask build: built {:?} at: {:?}", a.contract, a.wasm_path);
     }
 
     Ok(())

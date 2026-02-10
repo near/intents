@@ -145,7 +145,7 @@ impl ContractBuilder {
             .map_err(|e| anyhow!("failed to compute checksum: {e}"))?;
 
         let checksum_hex = checksum.to_hex_string();
-        cargo_warning!("Computed checksum: {checksum_hex}",);
+        cargo_warning!("xtask build: computed checksum: {checksum_hex}",);
 
         let checksum_path = ctx.outdir.join(format!("{name}.sha256"));
         std::fs::write(checksum_path.as_str(), &checksum_hex)?;
@@ -162,9 +162,10 @@ impl ContractBuilder {
         let manifest = ctx.repo_root.join(spec.path).join("Cargo.toml");
 
         cargo_warning!(
-            "Building contract: {} in reproducible mode with {:?} variant",
+            "xtask build: reproducible {} variant={} outdir={}",
             spec.name,
-            options.variant.as_deref().unwrap_or("default")
+            options.variant.as_deref().unwrap_or("default"),
+            ctx.outdir
         );
 
         let build_opts = DockerBuildOpts::builder()
@@ -200,9 +201,9 @@ impl ContractBuilder {
             .unwrap_or_else(|| spec.features.to_string());
 
         cargo_warning!(
-            "Building contract: {} in non-reproducible mode with features: {}",
+            "xtask build: non-reproducible {} features={features} outdir={}",
             spec.name,
-            features
+            ctx.outdir
         );
 
         let build_opts = BuildOpts::builder()

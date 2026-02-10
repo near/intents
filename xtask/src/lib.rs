@@ -39,7 +39,10 @@ macro_rules! cargo_rustc_env {
     };
 }
 
-pub fn build_contracts(contracts: Vec<(Contract, BuildOptions)>) -> Result<Vec<BuildArtifact>> {
+pub fn build_contracts<I>(contracts: I) -> Result<Vec<BuildArtifact>>
+where
+    I: IntoIterator<Item = (Contract, BuildOptions)>,
+{
     contracts
         .into_iter()
         .map(|(contract, opts)| {

@@ -10,12 +10,6 @@ use defuse_sandbox::extensions::defuse::contract::{
     nep245::Token,
 };
 
-use defuse_sandbox::extensions::defuse::{
-    account_manager::{AccountManagerExt, AccountViewExt},
-    intents::ExecuteIntentsExt,
-    signer::DefaultDefuseSignerExt,
-    state::{FeesManagerExt, FeesManagerViewExt, SaltManagerExt, SaltViewExt},
-};
 use crate::{
     env::DEFUSE_WASM,
     sandbox::{
@@ -24,6 +18,12 @@ use crate::{
         near_sandbox::FetchData,
     },
     utils::fixtures::{ed25519_pk, p256_pk, secp256k1_pk},
+};
+use defuse_sandbox::extensions::defuse::{
+    account_manager::{AccountManagerExt, AccountViewExt},
+    intents::ExecuteIntentsExt,
+    signer::DefaultDefuseSignerExt,
+    state::{FeesManagerExt, FeesManagerViewExt, SaltManagerExt, SaltViewExt},
 };
 use itertools::Itertools;
 use near_sdk::AccountId;

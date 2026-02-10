@@ -1,4 +1,6 @@
-use defuse_sandbox::extensions::defuse::contract::core::token_id::{TokenId, nep141::Nep141TokenId};
+use defuse_sandbox::extensions::defuse::contract::core::token_id::{
+    TokenId, nep141::Nep141TokenId,
+};
 use defuse_sandbox::extensions::defuse::contract::core::{
     fees::Pips,
     intents::token_diff::{TokenDeltas, TokenDiff},

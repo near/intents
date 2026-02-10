@@ -1,3 +1,4 @@
+use defuse_randomness::Rng;
 use defuse_sandbox::extensions::defuse::contract::core::{
     Deadline, Nonce,
     accounts::{AccountEvent, NonceEvent, TransferEvent},
@@ -11,7 +12,6 @@ use defuse_sandbox::extensions::defuse::{
     intents::{ExecuteIntentsExt, SimulateIntents},
     signer::DefuseSignerExt,
 };
-use defuse_randomness::Rng;
 use near_sdk::{AccountId, AccountIdRef, AsNep297Event, CryptoHash, serde_json};
 use rstest::rstest;
 use std::borrow::Cow;

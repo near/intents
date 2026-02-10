@@ -1,3 +1,4 @@
+use defuse::contract::config::{DefuseConfig, RolesConfig};
 use defuse_sandbox::extensions::defuse::{
     account_manager::{AccountManagerExt, AccountViewExt},
     contract::core::{
@@ -23,7 +24,6 @@ use defuse_sandbox::extensions::defuse::{
     nonce::ExtractNonceExt,
     signer::DefaultDefuseSignerExt,
 };
-use defuse::contract::config::{DefuseConfig, RolesConfig};
 use defuse_sandbox::extensions::{
     ft::FtExt,
     mt::{MtExt, MtViewExt},

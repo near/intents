@@ -28,7 +28,9 @@ use near_sdk::NearToken;
 use near_sdk::serde_json;
 use rstest::rstest;
 
-use defuse_sandbox::extensions::defuse::contract::core::{amounts::Amounts, intents::tokens::Transfer};
+use defuse_sandbox::extensions::defuse::contract::core::{
+    amounts::Amounts, intents::tokens::Transfer,
+};
 
 #[rstest]
 #[trace]

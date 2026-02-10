@@ -340,7 +340,9 @@ struct NftTransferCallExpectation {
 async fn nft_transfer_call_calls_mt_on_transfer_variants(
     #[case] expectation: NftTransferCallExpectation,
 ) {
-    use defuse_sandbox::extensions::defuse::contract::core::{amounts::Amounts, intents::tokens::Transfer};
+    use defuse_sandbox::extensions::defuse::contract::core::{
+        amounts::Amounts, intents::tokens::Transfer,
+    };
     use defuse_sandbox::{api::types::json::Base64VecU8, tx::FnCallBuilder};
 
     let env = Env::builder().deployer_as_super_admin().build().await;

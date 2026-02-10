@@ -1,12 +1,16 @@
 use crate::env::{DEFUSE_WASM, Env, MT_RECEIVER_STUB_WASM};
+use crate::sandbox::extensions::mt::MtViewExt;
 use defuse_sandbox::extensions::defuse::contract::contract::config::{DefuseConfig, RolesConfig};
 use defuse_sandbox::extensions::defuse::contract::core::fees::FeesConfig;
 use defuse_sandbox::extensions::defuse::contract::core::fees::Pips;
-use defuse_sandbox::extensions::defuse::contract::core::intents::tokens::{NotifyOnTransfer, Transfer};
+use defuse_sandbox::extensions::defuse::contract::core::intents::tokens::{
+    NotifyOnTransfer, Transfer,
+};
 use defuse_sandbox::extensions::defuse::intents::ExecuteIntentsExt;
-use crate::sandbox::extensions::mt::MtViewExt;
 
-use defuse_sandbox::extensions::defuse::contract::core::token_id::{TokenId, nep141::Nep141TokenId};
+use defuse_sandbox::extensions::defuse::contract::core::token_id::{
+    TokenId, nep141::Nep141TokenId,
+};
 
 use defuse_sandbox::extensions::defuse::deployer::DefuseExt;
 use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
