@@ -1,4 +1,4 @@
-use crate::extensions::defuse::{
+use defuse_sandbox::extensions::defuse::{
     contract::core::{
         Deadline, Nonce,
         amounts::Amounts,
@@ -8,7 +8,7 @@ use crate::extensions::defuse::{
     intents::ExecuteIntentsExt,
 };
 
-use crate::extensions::defuse::signer::DefuseSignerExt;
+use defuse_sandbox::extensions::defuse::signer::DefuseSignerExt;
 use rstest::rstest;
 
 use crate::{env::Env, sandbox::extensions::mt::MtViewExt, utils::random::make_arbitrary};

@@ -1,4 +1,4 @@
-use crate::extensions::defuse::contract::core::{
+use defuse_sandbox::extensions::defuse::contract::core::{
     Deadline, Nonce,
     accounts::{AccountEvent, NonceEvent, TransferEvent},
     amounts::Amounts,
@@ -7,7 +7,7 @@ use crate::extensions::defuse::contract::core::{
     intents::{DefuseIntents, IntentEvent, tokens::Transfer},
     token_id::{TokenId, nep141::Nep141TokenId},
 };
-use crate::extensions::defuse::{
+use defuse_sandbox::extensions::defuse::{
     intents::{ExecuteIntentsExt, SimulateIntents},
     signer::DefuseSignerExt,
 };

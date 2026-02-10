@@ -12,13 +12,18 @@ workspace = true
 default = ["defuse", "poa", "escrow-swap", "long"]
 
 # NOTE: features used in integration tests
+# poa = ["defuse-sandbox/poa"]
+# defuse = ["defuse-sandbox/defuse", "poa"]
+# escrow-swap = ["defuse-sandbox/escrow"]
+# long = []
+
 poa = []
 defuse = []
 escrow-swap = []
 long = []
 
 [dependencies]
-defuse-sandbox = { workspace = true }
+defuse-sandbox = { workspace = true, features = ["defuse", "poa", "escrow"] }
 
 # TODO: make dependencies optional after splitting env for each contract
 defuse = { workspace = true, features = ["contract", "arbitrary", "imt"]}

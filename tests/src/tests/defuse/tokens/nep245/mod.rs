@@ -33,9 +33,9 @@ where
 use std::borrow::Cow;
 
 use crate::env::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
-use crate::extensions::defuse::account_manager::AccountManagerExt;
-use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
-use crate::extensions::defuse::{
+use defuse_sandbox::extensions::defuse::account_manager::AccountManagerExt;
+use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
+use defuse_sandbox::extensions::defuse::{
     contract::{
         contract::config::{DefuseConfig, RolesConfig},
         core::{
@@ -68,7 +68,7 @@ use rstest::rstest;
 #[rstest]
 #[tokio::test]
 async fn multitoken_enumeration() {
-    use crate::extensions::defuse::contract::core::token_id::nep141::Nep141TokenId;
+    use defuse_sandbox::extensions::defuse::contract::core::token_id::nep141::Nep141TokenId;
 
     let env = Env::builder().create_unique_users().build().await;
 
@@ -336,7 +336,7 @@ async fn multitoken_enumeration() {
 #[rstest]
 #[tokio::test]
 async fn multitoken_enumeration_with_ranges() {
-    use crate::extensions::defuse::contract::core::token_id::nep141::Nep141TokenId;
+    use defuse_sandbox::extensions::defuse::contract::core::token_id::nep141::Nep141TokenId;
 
     let env = Env::builder().create_unique_users().build().await;
 
@@ -969,7 +969,7 @@ struct MtTransferCallExpectation {
 async fn mt_transfer_call_calls_mt_on_transfer_single_token(
     #[case] expectation: MtTransferCallExpectation,
 ) {
-    use crate::extensions::defuse::contract::core::{amounts::Amounts, intents::tokens::Transfer};
+    use defuse_sandbox::extensions::defuse::contract::core::{amounts::Amounts, intents::tokens::Transfer};
 
     let env = Env::builder().deployer_as_super_admin().build().await;
 
@@ -1330,7 +1330,7 @@ async fn mt_transfer_call_calls_mt_on_transfer_multi_token(
 
 #[tokio::test]
 async fn mt_transfer_call_circullar_callback() {
-    use crate::extensions::defuse::contract::tokens::DepositMessage;
+    use defuse_sandbox::extensions::defuse::contract::tokens::DepositMessage;
 
     let env = Env::builder().deployer_as_super_admin().build().await;
 
@@ -1443,7 +1443,7 @@ async fn mt_transfer_call_circullar_callback() {
 
 #[tokio::test]
 async fn mt_transfer_call_circullar_deposit() {
-    use crate::extensions::defuse::contract::tokens::DepositMessage;
+    use defuse_sandbox::extensions::defuse::contract::tokens::DepositMessage;
 
     let env = Env::builder().deployer_as_super_admin().build().await;
 

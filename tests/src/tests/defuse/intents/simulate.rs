@@ -1,4 +1,4 @@
-use crate::extensions::defuse::{
+use defuse_sandbox::extensions::defuse::{
     account_manager::{AccountManagerExt, AccountViewExt},
     contract::core::{
         accounts::{AccountEvent, NonceEvent, PublicKeyEvent, TransferEvent},

@@ -1,4 +1,4 @@
-use crate::extensions::defuse::contract::{
+use defuse_sandbox::extensions::defuse::contract::{
     core::{
         crypto::PublicKey,
         intents::tokens::NativeWithdraw,
@@ -7,7 +7,7 @@ use crate::extensions::defuse::contract::{
     tokens::DepositMessage,
 };
 
-use crate::extensions::defuse::{
+use defuse_sandbox::extensions::defuse::{
     intents::ExecuteIntentsExt, signer::DefaultDefuseSignerExt, tokens::nep141::DefuseFtDepositor,
 };
 use near_sdk::NearToken;

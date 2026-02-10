@@ -1,10 +1,10 @@
-use crate::extensions::defuse::contract::core::{
+use defuse_sandbox::extensions::defuse::contract::core::{
     accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
     events::DefuseEvent,
     intents::account::{AddPublicKey, RemovePublicKey},
 };
-use crate::extensions::defuse::{
+use defuse_sandbox::extensions::defuse::{
     intents::ExecuteIntentsExt, nonce::ExtractNonceExt, signer::DefaultDefuseSignerExt,
 };
 use near_sdk::AsNep297Event;

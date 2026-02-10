@@ -1,9 +1,9 @@
-use crate::extensions::defuse::contract::core::token_id::{TokenId, nep141::Nep141TokenId};
-use crate::extensions::defuse::contract::core::{
+use defuse_sandbox::extensions::defuse::contract::core::token_id::{TokenId, nep141::Nep141TokenId};
+use defuse_sandbox::extensions::defuse::contract::core::{
     fees::Pips,
     intents::token_diff::{TokenDeltas, TokenDiff},
 };
-use crate::extensions::defuse::{
+use defuse_sandbox::extensions::defuse::{
     intents::{ExecuteIntentsExt, SimulateIntents},
     signer::DefaultDefuseSignerExt,
 };
@@ -17,7 +17,7 @@ use std::collections::BTreeMap;
 #[trace]
 #[tokio::test]
 async fn swap_p2p(#[values(Pips::ZERO, Pips::ONE_BIP, Pips::ONE_PERCENT)] fee: Pips) {
-    use crate::extensions::defuse::contract::core::token_id::nep141::Nep141TokenId;
+    use defuse_sandbox::extensions::defuse::contract::core::token_id::nep141::Nep141TokenId;
 
     let env = Env::builder().fee(fee).build().await;
 

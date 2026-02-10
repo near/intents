@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::extensions::defuse::{
+use defuse_sandbox::extensions::defuse::{
     contract::core::{
         intents::tokens::NftWithdraw, token_id::TokenId as DefuseTokenId,
         token_id::nep171::Nep171TokenId,
@@ -340,7 +340,7 @@ struct NftTransferCallExpectation {
 async fn nft_transfer_call_calls_mt_on_transfer_variants(
     #[case] expectation: NftTransferCallExpectation,
 ) {
-    use crate::extensions::defuse::contract::core::{amounts::Amounts, intents::tokens::Transfer};
+    use defuse_sandbox::extensions::defuse::contract::core::{amounts::Amounts, intents::tokens::Transfer};
     use defuse_sandbox::{api::types::json::Base64VecU8, tx::FnCallBuilder};
 
     let env = Env::builder().deployer_as_super_admin().build().await;
@@ -422,7 +422,7 @@ async fn nft_transfer_call_calls_mt_on_transfer_variants(
     };
 
     let deposit_message = if intents.is_empty() {
-        use crate::extensions::defuse::contract::core::intents::tokens::NotifyOnTransfer;
+        use defuse_sandbox::extensions::defuse::contract::core::intents::tokens::NotifyOnTransfer;
 
         DepositMessage {
             receiver_id: receiver.id().clone(),

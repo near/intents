@@ -1,4 +1,6 @@
-use crate::extensions::poa::{PoAFactoryDeployerExt, PoAFactoryExt, contract::contract::Role};
+use defuse_sandbox::extensions::poa::{
+    PoAFactoryDeployerExt, PoAFactoryExt, contract::contract::Role,
+};
 use defuse_sandbox::{
     Sandbox,
     extensions::{ft::FtViewExt, storage_management::StorageManagementExt},

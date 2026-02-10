@@ -1,4 +1,4 @@
-use crate::extensions::defuse::contract::{
+use defuse_sandbox::extensions::defuse::contract::{
     contract::Role,
     core::{
         amounts::Amounts,
@@ -10,7 +10,7 @@ use crate::extensions::defuse::contract::{
     nep245::Token,
 };
 
-use crate::extensions::defuse::{
+use defuse_sandbox::extensions::defuse::{
     account_manager::{AccountManagerExt, AccountViewExt},
     intents::ExecuteIntentsExt,
     signer::DefaultDefuseSignerExt,

@@ -1,4 +1,4 @@
-use defuse_sandbox::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
+use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use near_sdk::{AccountId, AccountIdRef, NearToken, serde_json::json};
 
 pub trait ForceAccountManagerExt {

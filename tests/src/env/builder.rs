@@ -1,13 +1,13 @@
 use std::sync::atomic::AtomicUsize;
 
-use crate::extensions::defuse::contract::{
+use defuse_sandbox::extensions::defuse::contract::{
     contract::{
         Role,
         config::{DefuseConfig, RolesConfig},
     },
     core::fees::{FeesConfig, Pips},
 };
-use crate::extensions::{
+use defuse_sandbox::extensions::{
     defuse::deployer::DefuseExt,
     poa::{PoAFactoryDeployerExt, contract::contract::Role as POAFactoryRole},
 };

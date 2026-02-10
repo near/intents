@@ -1329,9 +1329,14 @@ name = "defuse-sandbox"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "defuse",
  "defuse-crypto",
+ "defuse-escrow-swap",
  "defuse-nep245",
  "defuse-nep413",
+ "defuse-poa-factory",
+ "defuse-serde-utils",
+ "defuse-test-utils",
  "futures",
  "impl-tools",
  "libc",

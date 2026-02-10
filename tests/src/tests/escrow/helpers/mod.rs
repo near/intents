@@ -1,4 +1,4 @@
-use crate::extensions::{
+use defuse_sandbox::extensions::{
     defuse::{
         contract::{
             contract::config::{DefuseConfig, RolesConfig},

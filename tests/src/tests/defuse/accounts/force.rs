@@ -1,4 +1,4 @@
-use crate::extensions::defuse::contract::{
+use defuse_sandbox::extensions::defuse::contract::{
     contract::Role,
     core::{
         DefuseError,
@@ -9,14 +9,6 @@ use crate::extensions::defuse::contract::{
 };
 use defuse_test_utils::fixtures::public_key;
 
-use crate::extensions::defuse::{
-    account_manager::{AccountManagerExt, AccountViewExt},
-    force_manager::{ForceAccountManagerExt, ForceAccountViewExt},
-    intents::ExecuteIntentsExt,
-    nonce::ExtractNonceExt,
-    signer::DefaultDefuseSignerExt,
-    tokens::nep141::DefuseFtWithdrawer,
-};
 use crate::{
     env::Env,
     sandbox::extensions::{
@@ -24,6 +16,14 @@ use crate::{
         mt::{MtExt, MtViewExt},
     },
     utils::asserts::ResultAssertsExt,
+};
+use defuse_sandbox::extensions::defuse::{
+    account_manager::{AccountManagerExt, AccountViewExt},
+    force_manager::{ForceAccountManagerExt, ForceAccountViewExt},
+    intents::ExecuteIntentsExt,
+    nonce::ExtractNonceExt,
+    signer::DefaultDefuseSignerExt,
+    tokens::nep141::DefuseFtWithdrawer,
 };
 use rstest::rstest;
 

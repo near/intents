@@ -1,5 +1,5 @@
-use crate::extensions::defuse::contract::core::intents::tokens::StorageDeposit;
-use crate::extensions::defuse::{intents::ExecuteIntentsExt, signer::DefaultDefuseSignerExt};
+use defuse_sandbox::extensions::defuse::contract::core::intents::tokens::StorageDeposit;
+use defuse_sandbox::extensions::defuse::{intents::ExecuteIntentsExt, signer::DefaultDefuseSignerExt};
 use crate::{
     env::Env,
     sandbox::extensions::{
