@@ -13,9 +13,9 @@ use defuse_sandbox::extensions::defuse::contract::core::token_id::{
     TokenId, nep141::Nep141TokenId,
 };
 
+use defuse::core::token_id::nep245::Nep245TokenId;
 use defuse_sandbox::extensions::defuse::deployer::DefuseExt;
 use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
-use defuse_sandbox::extensions::escrow::contract::token_id::nep245::Nep245TokenId;
 use defuse_sandbox::extensions::ft::FtViewExt;
 use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::{AccountId, Gas};

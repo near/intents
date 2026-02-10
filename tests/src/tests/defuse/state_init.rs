@@ -4,7 +4,7 @@ use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
     core::fees::FeesConfig,
 };
-use defuse_escrow_swap::Pips;
+use defuse_fees::Pips;
 use defuse_randomness::Rng;
 use defuse_sandbox::FnCallBuilder;
 use defuse_sandbox::api::types::transaction::actions::GlobalContractDeployMode;
