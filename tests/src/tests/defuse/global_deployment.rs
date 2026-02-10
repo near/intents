@@ -1,10 +1,10 @@
 use std::collections::BTreeMap;
 
-use defuse_sandbox::{MtExt, MtReceiverStubExt, sandbox};
+use crate::extensions::mt_receiver::MtReceiverStubExt;
+use defuse_sandbox::{MtExt, sandbox};
 use multi_token_receiver_stub::MTReceiverMode;
+use near_sdk::serde_json;
 use rstest::rstest;
-
-use crate::env::MT_RECEIVER_STUB_WASM;
 
 #[rstest]
 #[tokio::test]
@@ -13,9 +13,9 @@ async fn different_states_produce_different_addresses(
 ) -> anyhow::Result<()> {
     let root = sandbox.root();
 
-    let global_contract = root
-        .deploy_mt_receiver_stub_global("mt-receiver-global", MT_RECEIVER_STUB_WASM.clone())
-        .await?;
+    let global_contract_id = root
+        .deploy_mt_receiver_stub_global("mt-receiver-global")
+        .await;
 
     let mut state_a = BTreeMap::new();
     state_a.insert(b"key".to_vec(), b"value_a".to_vec());
@@ -24,12 +24,12 @@ async fn different_states_produce_different_addresses(
     state_b.insert(b"key".to_vec(), b"value_b".to_vec());
 
     let account_a = root
-        .deploy_mt_receiver_stub_instance(global_contract.id().clone(), state_a)
-        .await?;
+        .deploy_mt_receiver_stub_instance(global_contract_id.clone(), state_a)
+        .await;
 
     let account_b = root
-        .deploy_mt_receiver_stub_instance(global_contract.id().clone(), state_b)
-        .await?;
+        .deploy_mt_receiver_stub_instance(global_contract_id.clone(), state_b)
+        .await;
 
     assert_ne!(
         account_a, account_b,

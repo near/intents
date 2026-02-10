@@ -37,6 +37,8 @@ const POA_FACTORY_WASM_VAR: &str = "DEFUSE_POA_FACTORY_WASM";
 const POA_TOKEN_WASM_VAR: &str = "DEFUSE_POA_TOKEN_WASM";
 const ESCROW_SWAP_WASM_VAR: &str = "DEFUSE_ESCROW_SWAP_WASM";
 const MULTI_TOKEN_RECEIVER_STUB_WASM_VAR: &str = "DEFUSE_MULTI_TOKEN_RECEIVER_STUB_WASM";
+const ESCROW_PROXY_WASM_VAR: &str = "DEFUSE_ESCROW_PROXY_WASM";
+const ONESHOT_CONDVAR_WASM_VAR: &str = "DEFUSE_ONESHOT_CONDVAR_WASM";
 
 #[derive(Clone, ValueEnum, Default, Debug)]
 pub enum Contract {
@@ -46,6 +48,8 @@ pub enum Contract {
     PoaFactory,
     EscrowSwap,
     MultiTokenReceiverStub,
+    EscrowProxy,
+    OneshotCondvar,
 }
 
 impl Contract {
@@ -56,6 +60,8 @@ impl Contract {
             Self::PoaToken => POA_TOKEN_WASM_VAR,
             Self::EscrowSwap => ESCROW_SWAP_WASM_VAR,
             Self::MultiTokenReceiverStub => MULTI_TOKEN_RECEIVER_STUB_WASM_VAR,
+            Self::EscrowProxy => ESCROW_PROXY_WASM_VAR,
+            Self::OneshotCondvar => ONESHOT_CONDVAR_WASM_VAR,
         }
     }
 
@@ -86,6 +92,16 @@ impl Contract {
                 path: "tests/contracts/multi-token-receiver-stub",
                 features: "",
             },
+            Self::EscrowProxy => ContractSpec {
+                name: "escrow-proxy",
+                path: "escrow-proxy",
+                features: "contract",
+            },
+            Self::OneshotCondvar => ContractSpec {
+                name: "oneshot-condvar",
+                path: "oneshot-condvar",
+                features: "contract",
+            },
         }
     }
 
@@ -96,6 +112,8 @@ impl Contract {
             Self::PoaFactory,
             Self::EscrowSwap,
             Self::MultiTokenReceiverStub,
+            Self::EscrowProxy,
+            Self::OneshotCondvar,
         ]
     }
 }

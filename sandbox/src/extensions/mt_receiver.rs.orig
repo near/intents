@@ -1,3 +1,26 @@
+<<<<<<< HEAD
+use std::{collections::BTreeMap, fs, path::Path, sync::LazyLock};
+
+use near_sdk::{
+    AccountId, NearToken,
+    state_init::{StateInit, StateInitV1},
+};
+
+use crate::{Account, SigningAccount, api::types::transaction::actions::GlobalContractDeployMode};
+
+pub static MT_RECEIVER_STUB_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
+    let filename = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../res/multi-token-receiver-stub/multi_token_receiver_stub.wasm");
+    fs::read(filename.clone()).unwrap_or_else(|_| panic!("file {filename:?} should exists"))
+});
+
+pub trait MtReceiverStubExt {
+    /// Deploy as regular contract
+    async fn deploy_mt_receiver_stub(&self, name: impl AsRef<str>) -> Account;
+    /// Deploy as global contract (code only)
+    async fn deploy_mt_receiver_stub_global(&self, name: impl AsRef<str>) -> AccountId;
+    /// Deploy instance referencing global contract with arbitrary raw state
+=======
 use std::collections::BTreeMap;
 
 use near_api::types::transaction::result::ExecutionFinalResult;
@@ -26,10 +49,44 @@ pub trait MtReceiverStubExt {
 
     /// Deploy an instance using `DeterministicStateInit` with the given raw state.
     /// Returns the deterministic account ID derived from the state.
+>>>>>>> origin/main
     async fn deploy_mt_receiver_stub_instance(
         &self,
         global_contract_id: AccountId,
         raw_state: BTreeMap<Vec<u8>, Vec<u8>>,
+<<<<<<< HEAD
+    ) -> AccountId;
+}
+
+impl MtReceiverStubExt for SigningAccount {
+    async fn deploy_mt_receiver_stub(&self, name: impl AsRef<str>) -> Account {
+        let account = self.sub_account(name).unwrap();
+
+        self.tx(account.id().clone())
+            .create_account()
+            .transfer(NearToken::from_near(20))
+            .deploy(MT_RECEIVER_STUB_WASM.clone())
+            .await
+            .unwrap();
+
+        account
+    }
+
+    async fn deploy_mt_receiver_stub_global(&self, name: impl AsRef<str>) -> AccountId {
+        let account = self.sub_account(name).unwrap();
+
+        self.tx(account.id().clone())
+            .create_account()
+            .transfer(NearToken::from_near(100))
+            .deploy_global(
+                MT_RECEIVER_STUB_WASM.clone(),
+                GlobalContractDeployMode::AccountId,
+            )
+            .await
+            .unwrap();
+
+        account.id().clone()
+=======
     ) -> anyhow::Result<AccountId>;
 
     /// Deploy an instance and return the full execution result for gas analysis.
@@ -58,12 +115,18 @@ impl MtReceiverStubExt for SigningAccount {
     ) -> anyhow::Result<Self> {
         self.deploy_global_sub_contract(name, NearToken::from_near(100), wasm.into())
             .await
+>>>>>>> origin/main
     }
 
     async fn deploy_mt_receiver_stub_instance(
         &self,
         global_contract_id: AccountId,
         raw_state: BTreeMap<Vec<u8>, Vec<u8>>,
+<<<<<<< HEAD
+    ) -> AccountId {
+        let state_init = StateInit::V1(StateInitV1 {
+            code: near_sdk::GlobalContractId::AccountId(global_contract_id.clone()),
+=======
     ) -> anyhow::Result<AccountId> {
         let (account, _) = self
             .deploy_mt_receiver_stub_instance_raw(global_contract_id, raw_state)
@@ -78,11 +141,23 @@ impl MtReceiverStubExt for SigningAccount {
     ) -> anyhow::Result<(AccountId, ExecutionFinalResult)> {
         let state_init = StateInit::V1(StateInitV1 {
             code: GlobalContractId::AccountId(global_contract_id.clone()),
+>>>>>>> origin/main
             data: raw_state.clone(),
         });
 
         let account = state_init.derive_account_id();
 
+<<<<<<< HEAD
+        // NOTE: there is rpc error on state_init action but the contract itself is successfully
+        // deployed, so lets ignore error for now
+        let _ = self
+            .tx(account.clone())
+            .state_init(global_contract_id, raw_state)
+            .transfer(NearToken::from_yoctonear(1))
+            .await;
+
+        account
+=======
         let result = self
             .tx(account.clone())
             .state_init(state_init)
@@ -90,5 +165,6 @@ impl MtReceiverStubExt for SigningAccount {
             .await?;
 
         Ok((account, result))
+>>>>>>> origin/main
     }
 }

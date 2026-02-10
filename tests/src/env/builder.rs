@@ -154,7 +154,7 @@ impl EnvBuilder {
         let defuse = self.deploy_defuse(root, &wnear, deploy_legacy).await;
 
         let env = Env {
-            defuse: defuse.into(),
+            defuse,
             wnear: wnear.into(),
             poa_factory: poa_factory.into(),
             sandbox,

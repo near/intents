@@ -23,6 +23,7 @@ use crate::extensions::{
 };
 use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;
+use defuse_core::token_id::{TokenId, nep141::Nep141TokenId};
 use defuse_randomness::{Rng, make_true_rng};
 use defuse_sandbox::extensions::storage_management::StorageManagementExt;
 use defuse_sandbox::{Account, Sandbox, SigningAccount};
@@ -43,7 +44,7 @@ pub struct Env {
 
     pub wnear: Account,
 
-    pub defuse: Account,
+    pub defuse: SigningAccount,
 
     pub poa_factory: Account,
 
@@ -111,6 +112,73 @@ impl Env {
             .trim_end_matches(&format!(".{}", self.poa_factory.id()));
 
         self.create_named_token(name).await
+    }
+
+    pub async fn create_ft_token_with_initial_balances(
+        &self,
+        balances: impl IntoIterator<Item = (AccountId, u128)>,
+    ) -> anyhow::Result<(Account, TokenId)> {
+        let account_id = generate_random_account_id(self.poa_factory.id())
+            .expect("Failed to generate random account ID");
+        let name = account_id
+            .as_str()
+            .trim_end_matches(&format!(".{}", self.poa_factory.id()));
+
+        let token = self.create_named_token(name).await;
+        let balances = balances.into_iter().collect::<Vec<_>>();
+
+        // First: storage deposits concurrently
+        self.ft_storage_deposit_for_accounts(token.id(), balances.iter().map(|(user, _)| user))
+            .await?;
+
+        // Then: token minting concurrently
+        let token_name = self.poa_ft_name(token.id());
+        try_join_all(
+            balances
+                .iter()
+                .filter(|(_, amount)| *amount > 0)
+                .map(|(user, amount)| {
+                    self.root().poa_factory_ft_deposit(
+                        self.poa_factory.id(),
+                        &token_name,
+                        user,
+                        *amount,
+                        None,
+                        None,
+                    )
+                }),
+        )
+        .await?;
+
+        let token_id = TokenId::from(Nep141TokenId::new(token.id().clone()));
+        Ok((token, token_id))
+    }
+
+    pub async fn create_mt_token_with_initial_balances(
+        &self,
+        balances: impl IntoIterator<Item = (AccountId, u128)>,
+    ) -> anyhow::Result<(Account, TokenId)> {
+        let token = self.create_token().await;
+        let balances = balances.into_iter().collect::<Vec<_>>();
+
+        // Storage deposit only for defuse and root
+        self.ft_storage_deposit_for_accounts(token.id(), [self.defuse.id(), self.root().id()])
+            .await?;
+
+        // Mint tokens to root (so root can transfer to defuse)
+        self.ft_deposit_to_root(token.id()).await?;
+
+        // Deposit to defuse for each user concurrently
+        try_join_all(
+            balances
+                .iter()
+                .filter(|(_, amount)| *amount > 0)
+                .map(|(user, amount)| self.defuse_ft_deposit_to(token.id(), *amount, user, None)),
+        )
+        .await?;
+
+        let token_id = TokenId::from(Nep141TokenId::new(token.id().clone()));
+        Ok((token, token_id))
     }
 
     pub async fn create_named_user(&self, name: &str) -> SigningAccount {

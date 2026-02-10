@@ -26,6 +26,16 @@ pub trait MtExt {
         msg: impl AsRef<str>,
     ) -> anyhow::Result<u128>;
 
+    async fn mt_transfer_call_exec(
+        &self,
+        contract_id: impl Into<AccountId>,
+        receiver_id: impl AsRef<AccountIdRef>,
+        token_id: impl AsRef<str>,
+        amount: u128,
+        memo: impl Into<Option<String>>,
+        msg: impl AsRef<str>,
+    ) -> anyhow::Result<ExecutionFinalResult>;
+
     async fn mt_batch_transfer_call(
         &self,
         contract_id: impl Into<AccountId>,
@@ -127,6 +137,31 @@ impl MtExt for SigningAccount {
             .json::<[U128; 1]>()
             .map(|v| v[0].0)
             .map_err(Into::into)
+    }
+
+    async fn mt_transfer_call_exec(
+        &self,
+        contract_id: impl Into<AccountId>,
+        receiver_id: impl AsRef<AccountIdRef>,
+        token_id: impl AsRef<str>,
+        amount: u128,
+        memo: impl Into<Option<String>>,
+        msg: impl AsRef<str>,
+    ) -> anyhow::Result<ExecutionFinalResult> {
+        self.tx(contract_id)
+            .function_call(
+                FnCallBuilder::new("mt_transfer_call")
+                    .json_args(json!({
+                        "receiver_id": receiver_id.as_ref(),
+                        "token_id": token_id.as_ref(),
+                        "amount": U128(amount),
+                        "memo": memo.into(),
+                        "msg": msg.as_ref(),
+                    }))
+                    .with_deposit(NearToken::from_yoctonear(1)),
+            )
+            .exec_transaction()
+            .await
     }
 
     async fn mt_batch_transfer_call(

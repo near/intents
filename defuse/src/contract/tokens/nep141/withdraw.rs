@@ -9,7 +9,7 @@ use defuse_core::{
     DefuseError, Result, engine::StateView, intents::tokens::FtWithdraw,
     token_id::nep141::Nep141TokenId,
 };
-use defuse_near_utils::{REFUND_MEMO, UnwrapOrPanic};
+use defuse_near_utils::{MaxJsonLength, REFUND_MEMO, UnwrapOrPanic};
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::{
     fungible_token::core::ext_ft_core, storage_management::ext_storage_management,
@@ -156,9 +156,7 @@ impl FungibleTokenWithdrawResolver for Contract {
         amount: U128,
         is_call: bool,
     ) -> U128 {
-        const MAX_RESULT_LENGTH: usize = "\"+340282366920938463463374607431768211455\"".len(); // u128::MAX
-
-        let used = env::promise_result_checked(0, MAX_RESULT_LENGTH).map_or(
+        let used = env::promise_result_checked(0, U128::max_json_length(())).map_or(
             if is_call {
                 // do not refund on failed `ft_transfer_call` due to
                 // NEP-141 vulnerability: `ft_resolve_transfer` fails to

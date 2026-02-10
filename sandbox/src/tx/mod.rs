@@ -19,9 +19,11 @@ use near_sdk::state_init::{StateInit, StateInitV1};
 use near_sdk::{AccountId, GlobalContractId, NearToken};
 
 mod fn_call;
+pub mod gas;
 mod wrappers;
 
 pub use fn_call::FnCallBuilder;
+pub use gas::{ExecutionResultExt, GasInfo};
 
 use crate::SigningAccount;
 use wrappers::TxOutcome;

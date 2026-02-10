@@ -38,6 +38,7 @@ strum.workspace = true
 thiserror.workspace = true
 
 arbitrary = {workspace = true, optional = true}
+defuse-sandbox = {workspace = true, optional = true}
 defuse-test-utils = {workspace = true, optional = true}
 
 [package.metadata.near.reproducible_build]

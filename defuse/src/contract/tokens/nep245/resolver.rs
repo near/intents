@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use defuse_near_utils::{Lock, REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError};
+use defuse_near_utils::{Lock, MaxJsonLength, REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::{
     ClearedApproval, MtEvent, MtTransferEvent, TokenId, resolver::MultiTokenResolver,
 };
@@ -28,7 +28,7 @@ impl MultiTokenResolver for Contract {
         );
 
         let mut refunds =
-            env::promise_result_checked(0, Self::mt_on_transfer_max_result_len(amounts.len()))
+            env::promise_result_checked(0, Vec::<U128>::max_json_length(amounts.len()))
                 .ok()
                 .and_then(|value| serde_json::from_slice::<Vec<U128>>(&value).ok())
                 .filter(|refund| refund.len() == amounts.len())

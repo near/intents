@@ -22,7 +22,7 @@ use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::json_types::U128;
 use rstest::rstest;
 
-use near_sdk::{AccountId, AsNep297Event, Gas, NearToken};
+use near_sdk::{AccountId, AsNep297Event, Gas, NearToken, serde_json};
 
 use crate::env::{DEFUSE_WASM, Env, MT_RECEIVER_STUB_WASM};
 use crate::extensions::defuse::deployer::DefuseExt;

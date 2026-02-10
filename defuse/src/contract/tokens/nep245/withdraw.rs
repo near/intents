@@ -12,7 +12,7 @@ use defuse_core::{
     intents::tokens::MtWithdraw,
     token_id::{nep141::Nep141TokenId, nep245::Nep245TokenId},
 };
-use defuse_near_utils::{REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError};
+use defuse_near_utils::{MaxJsonLength, REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError};
 use defuse_nep245::ext_mt_core;
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::storage_management::ext_storage_management;
@@ -208,34 +208,33 @@ impl MultiTokenWithdrawResolver for Contract {
             "invalid args"
         );
 
-        let mut used =
-            env::promise_result_checked(0, Self::mt_on_transfer_max_result_len(amounts.len()))
-                .map_or_else(
-                    |_err| {
-                        if is_call {
-                            // do not refund on failed `mt_batch_transfer_call` due to
-                            // NEP-141 vulnerability: `mt_resolve_transfer` fails to
-                            // read result of `mt_on_transfer` due to insufficient gas
-                            amounts.clone()
-                        } else {
-                            vec![U128(0); amounts.len()]
-                        }
-                    },
-                    |value| {
-                        if is_call {
-                            // `mt_batch_transfer_call` returns successfully transferred amounts
-                            serde_json::from_slice::<Vec<U128>>(&value)
-                                .ok()
-                                .filter(|used| used.len() == amounts.len())
-                                .unwrap_or_else(|| vec![U128(0); amounts.len()])
-                        } else if value.is_empty() {
-                            // `mt_batch_transfer` returns empty result on success
-                            amounts.clone()
-                        } else {
-                            vec![U128(0); amounts.len()]
-                        }
-                    },
-                );
+        let mut used = env::promise_result_checked(0, Vec::<U128>::max_json_length(amounts.len()))
+            .map_or_else(
+                |_err| {
+                    if is_call {
+                        // do not refund on failed `mt_batch_transfer_call` due to
+                        // NEP-141 vulnerability: `mt_resolve_transfer` fails to
+                        // read result of `mt_on_transfer` due to insufficient gas
+                        amounts.clone()
+                    } else {
+                        vec![U128(0); amounts.len()]
+                    }
+                },
+                |value| {
+                    if is_call {
+                        // `mt_batch_transfer_call` returns successfully transferred amounts
+                        serde_json::from_slice::<Vec<U128>>(&value)
+                            .ok()
+                            .filter(|used| used.len() == amounts.len())
+                            .unwrap_or_else(|| vec![U128(0); amounts.len()])
+                    } else if value.is_empty() {
+                        // `mt_batch_transfer` returns empty result on success
+                        amounts.clone()
+                    } else {
+                        vec![U128(0); amounts.len()]
+                    }
+                },
+            );
 
         self.deposit(
             sender_id,

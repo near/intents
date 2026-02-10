@@ -3,7 +3,6 @@
 pub mod acl;
 pub mod ft;
 pub mod mt;
-pub mod mt_receiver;
 pub mod nft;
 pub mod storage_management;
 pub mod wnear;

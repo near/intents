@@ -12,7 +12,8 @@ use defuse_randomness::Rng;
 use defuse_sandbox::FnCallBuilder;
 use defuse_sandbox::api::types::transaction::actions::GlobalContractDeployMode;
 use defuse_test_utils::random::rng;
-use futures::stream::{self, StreamExt};
+#[cfg(feature = "long")]
+use futures::stream::StreamExt;
 use near_sdk::Gas;
 use near_sdk::{
     AccountId, GlobalContractId, NearToken, serde_json::json, state_init::StateInit,
@@ -106,11 +107,13 @@ fn auth_call_with_max_possible_state_init(
     generate_auth_intent(global_contract_id, 1, max_payload, rng, min_gas)
 }
 
+#[cfg(feature = "long")]
 #[derive(Clone, Copy)]
 enum StateInitExpectation {
     ExpectStateInitSucceedsForZeroBalanceAccount(u128),
     ExpectStateInitExceedsZeroBalanceAccountStorageLimit(u128),
 }
+#[cfg(feature = "long")]
 use StateInitExpectation::*;
 
 #[rstest]
@@ -337,7 +340,10 @@ async fn test_auth_call_state_init_via_execute_intents(
                 }
             });
 
-    let results: Vec<bool> = stream::iter(futures).buffer_unordered(10).collect().await;
+    let results: Vec<bool> = futures::stream::iter(futures)
+        .buffer_unordered(10)
+        .collect()
+        .await;
     let success = results.contains(&true);
     assert_eq!(success, expect_success);
 }
@@ -451,7 +457,10 @@ async fn test_auth_call_state_init_via_do_auth_call(
             }
         });
 
-    let results: Vec<bool> = stream::iter(futures).buffer_unordered(10).collect().await;
+    let results: Vec<bool> = futures::stream::iter(futures)
+        .buffer_unordered(10)
+        .collect()
+        .await;
     let success = results.contains(&true);
     assert_eq!(success, expect_success);
 }

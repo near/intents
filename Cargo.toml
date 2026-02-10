@@ -13,6 +13,7 @@ members = [
     "defuse",
     "erc191",
     "escrow-swap",
+    "escrow-proxy",
     "fees",
     "io-utils",
     "map-utils",
@@ -33,6 +34,7 @@ members = [
     "tip191",
     "token-id",
     "ton-connect",
+    "oneshot-condvar",
     "wnear", 
     "xtask",
 ]
@@ -57,6 +59,7 @@ defuse-deadline.path = "deadline"
 defuse-decimal.path = "decimal"
 defuse-erc191.path = "erc191"
 defuse-escrow-swap.path = "escrow-swap"
+defuse-escrow-proxy.path = "escrow-proxy"
 defuse-fees.path = "fees"
 defuse-io-utils.path = "io-utils"
 defuse-map-utils.path = "map-utils"
@@ -71,6 +74,7 @@ defuse-poa-token.path = "poa-token"
 defuse-sandbox.path = "sandbox"
 defuse-sep53.path = "sep53"
 defuse-serde-utils.path = "serde-utils"
+defuse-oneshot-condvar.path = "oneshot-condvar"
 defuse-tip191.path = "tip191"
 defuse-token-id = { path = "token-id", default-features = false }
 defuse-ton-connect = { path = "ton-connect", default-features = false, features = [
@@ -87,6 +91,7 @@ cargo-near-build = "0.9.0"
 near-account-id = "2.4.0"
 near-api = "0.8.3"
 near-api-types = "0.8.3"
+near-openapi-client = "0.7"
 near-openapi-types = "0.6.0"
 near-contract-standards = "5.24"
 near-crypto = "0.34.1"

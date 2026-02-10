@@ -2,6 +2,7 @@ use defuse::core::payload::multi::MultiPayload;
 use defuse::intents::ext_intents;
 use defuse_borsh_utils::adapters::{As, Remainder};
 use defuse_nep245::{TokenId, receiver::MultiTokenReceiver};
+use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 use near_sdk::{
     AccountId, Gas, GasWeight, NearToken, Promise, PromiseOrValue, env, json_types::U128, near,
     serde_json,
@@ -84,12 +85,11 @@ impl MultiTokenReceiver for Contract {
         amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
-        let _ = sender_id;
-        let _ = previous_owner_ids;
-        let _ = token_ids;
-        let mode = serde_json::from_str(&msg).unwrap_or_default();
+        near_sdk::env::log_str(&format!(
+            "STUB::mt_on_transfer: sender_id={sender_id}, previous_owner_ids={previous_owner_ids:?}, token_ids={token_ids:?}, amounts={amounts:?}, msg={msg}"
+        ));
 
-        match mode {
+        match serde_json::from_str(&msg).unwrap_or_default() {
             MTReceiverMode::AcceptAll => PromiseOrValue::Value(vec![U128(0); amounts.len()]),
             MTReceiverMode::RefundAll => PromiseOrValue::Value(amounts),
             MTReceiverMode::MaliciousRefund => {
@@ -110,6 +110,36 @@ impl MultiTokenReceiver for Contract {
             MTReceiverMode::ReturnBytes(len) => Promise::new(env::current_account_id())
                 .stub_return_bytes(len.0.try_into().unwrap())
                 .into(),
+        }
+    }
+}
+
+/// FT receiver mode for testing
+#[derive(Debug, Clone, Default)]
+#[near(serializers = [json])]
+pub enum FTReceiverMode {
+    #[default]
+    AcceptAll,
+    ReturnValue(U128),
+    Panic,
+}
+
+#[near]
+impl FungibleTokenReceiver for Contract {
+    fn ft_on_transfer(
+        &mut self,
+        sender_id: AccountId,
+        amount: U128,
+        msg: String,
+    ) -> PromiseOrValue<U128> {
+        near_sdk::env::log_str(&format!(
+            "STUB::ft_on_transfer: sender_id={sender_id}, amount={amount:?}, msg={msg}"
+        ));
+
+        match serde_json::from_str(&msg).unwrap_or_default() {
+            FTReceiverMode::AcceptAll => PromiseOrValue::Value(U128(0)),
+            FTReceiverMode::ReturnValue(value) => PromiseOrValue::Value(value),
+            FTReceiverMode::Panic => env::panic_str("FTReceiverMode::Panic"),
         }
     }
 }
