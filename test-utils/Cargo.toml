@@ -10,8 +10,8 @@ workspace = true
 
 [features]
 poa = []
-defuse = ["poa"]
-escrow = ["defuse"]
+defuse = []
+escrow = []
 
 [dependencies]
 defuse-randomness.workspace = true
