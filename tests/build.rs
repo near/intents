@@ -20,8 +20,8 @@ mod build {
     };
 
     use xtask::{
-        DEFUSE_BUILD_REPRODUCIBLE_ENV_VAR, DEFUSE_OUT_DIR_ENV_VAR, cargo_rerun_env_trigger,
-        cargo_rerun_trigger, cargo_warning,
+        Contract, DEFUSE_BUILD_REPRODUCIBLE_ENV_VAR, DEFUSE_OUT_DIR_ENV_VAR,
+        cargo_rerun_env_trigger, cargo_rerun_trigger, cargo_warning,
     };
 
     const SKIP_CONTRACTS_BUILD_VAR: &str = "DEFUSE_SKIP_CONTRACTS_BUILD";
@@ -31,12 +31,12 @@ mod build {
         cargo_rerun_env_trigger!("{SKIP_CONTRACTS_BUILD_VAR}");
         cargo_rerun_env_trigger!("{DEFUSE_BUILD_REPRODUCIBLE_ENV_VAR}");
 
-        for member in get_workspace_members()? {
-            cargo_rerun_trigger!("{member}");
-        }
+        // for member in get_workspace_members()? {
+        //     cargo_rerun_trigger!("{member}");
+        // }
 
-        cargo_rerun_trigger!("{out_dir}");
-        cargo_rerun_trigger!("../Cargo.lock");
+        // cargo_rerun_trigger!("{out_dir}");
+        // cargo_rerun_trigger!("../Cargo.lock");
 
         Ok(())
     }
@@ -85,13 +85,16 @@ mod build {
 
         cargo_warning!("Building contracts into: {out_dir}");
 
-        xtask::build_contracts(
-            xtask::ContractOptions::all_without_features(),
-            xtask::BuildOptions {
-                outdir: Some(out_dir),
-                ..Default::default()
-            },
-        )?;
+        let opts = xtask::BuildOptions {
+            outdir: Some(out_dir),
+            ..Default::default()
+        };
+        let contracts = Contract::all()
+            .into_iter()
+            .map(|c| (c, opts.clone()))
+            .collect();
+
+        xtask::build_contracts(contracts)?;
 
         Ok(())
     }
