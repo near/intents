@@ -21,6 +21,8 @@ pub enum Error {
     InvalidSignature,
     #[error("invalid signer_id: {0}")]
     InvalidSignerId(AccountId),
+    #[error("insufficient attached deposit")]
+    InsufficientDeposit,
     #[error("lockout: signature is disabled and extensions are empty")]
     Lockout,
     #[error("signature is disabled")]

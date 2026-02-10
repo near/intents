@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use defuse_borsh_utils::adapters::{As, TimestampSeconds};
 use defuse_deadline::Deadline;
 use near_sdk::{AccountId, borsh, env, near};
@@ -37,18 +39,17 @@ pub struct SignedRequest {
     )]
     pub valid_until: Deadline,
 
-    // TODO: hash request or entire SignedRequestBody??? or both???
+    // TODO: or hash of Request?
     // TODO: is it a request_id?
     // #[serde_as(as = "Hex")] // TODO: or base58?
     pub request: Request,
 }
 
 impl SignedRequest {
-    const DOMAIN_PREFIX: &[u8] = b"NEAR_WALLET_CONTRACT";
-    const DOMAIN_VERSION: &[u8] = b"1.0.0";
+    pub const DOMAIN_PREFIX: &str = "NEAR_WALLET_CONTRACT";
 
     pub fn hash(&self) -> [u8; 32] {
-        // TODO: sha256 or keccak 256?
+        // TODO: sha256 or keccak256?
         env::keccak256_array(self.prehash())
     }
 
@@ -60,7 +61,34 @@ impl SignedRequest {
         // TODO: hashing the request is also better, because the request
         // hash becomes request_id...
         // TODO: should we include query_id in the request?...
-        borsh::to_vec(&(Self::DOMAIN_PREFIX, Self::DOMAIN_VERSION, self))
-            .unwrap_or_else(|_| unreachable!())
+        borsh::to_vec(&self.to_domain()).unwrap_or_else(|_| unreachable!())
     }
+
+    pub fn to_domain(&self) -> SignatureDomain<'static, WalletDomain<'_>> {
+        SignatureDomain::new(Self::DOMAIN_PREFIX, WalletDomain::V1(Cow::Borrowed(self)))
+    }
+}
+
+#[near(serializers = [borsh])]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SignatureDomain<'a, T> {
+    pub name: Cow<'a, str>,
+    pub domain: T,
+}
+
+impl<'a, T> SignatureDomain<'a, T> {
+    pub fn new(name: impl Into<Cow<'a, str>>, domain: T) -> Self {
+        Self {
+            name: name.into(),
+            domain,
+        }
+    }
+}
+
+#[near(serializers = [borsh(use_discriminant = true)])]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[repr(u8)]
+pub enum WalletDomain<'a> {
+    // TODO: or hash of Signed Request?
+    V1(Cow<'a, SignedRequest>) = 0,
 }

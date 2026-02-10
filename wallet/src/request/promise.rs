@@ -10,6 +10,7 @@ use near_sdk::{
 
 use crate::utils::is_default;
 
+#[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct PromiseDAG {
@@ -87,6 +88,8 @@ impl PromiseDAG {
         });
     }
 
+    // TODO: check that not self, otherise callbacks would be allowed to be
+    // executed
     pub fn build(self) -> Option<Promise> {
         let promises = self.promises.into_iter().filter_map(PromiseSingle::build);
 
@@ -115,12 +118,41 @@ impl From<PromiseSingle> for PromiseDAG {
     }
 }
 
+impl IntoIterator for PromiseDAG {
+    type Item = PromiseSingle;
+    type IntoIter = IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter(vec![self])
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct IntoIter(Vec<PromiseDAG>);
+
+impl Iterator for IntoIter {
+    type Item = PromiseSingle;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if let Some(p) = self.0.last_mut()?.promises.pop() {
+                return Some(p);
+            }
+            let d = self.0.pop()?;
+            self.0.extend(d.after);
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.0.last().map(|d| d.promises.len()).unwrap_or(0), None)
+    }
+}
+
+#[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 /// A single outgoing receipt
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PromiseSingle {
-    // TODO: check that not self, otherise callbacks would be allowed to be
-    // executed
     pub receiver_id: AccountId,
 
     /// Receiver for refunds of failed or unused deposits.
@@ -197,6 +229,7 @@ impl PromiseSingle {
 /// account itself (e.g. DeployContract, AddKey and etc...) or its on children
 /// (e.g. CreateAccount). Wallet-contracts are not self-upgradable and do
 /// not allow creating subaccounts.
+#[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh, json])]
 #[serde(tag = "action", content = "args", rename_all = "snake_case")]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -222,25 +255,37 @@ impl PromiseAction {
     }
 }
 
+#[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TransferAction {
+    #[cfg_attr(
+        any(feature = "arbitrary", test),
+        arbitrary(with = crate::utils::arbitrary::near_token),
+    )]
     pub amount: NearToken,
 }
 
+#[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StateInitAction {
     #[serde(flatten)]
     pub state_init: StateInit,
+    #[cfg_attr(
+        any(feature = "arbitrary", test),
+        arbitrary(with = crate::utils::arbitrary::near_token),
+    )]
     #[serde(default, skip_serializing_if = "NearToken::is_zero")]
     pub amount: NearToken,
 }
 
+#[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FunctionCallAction {
     pub function_name: String,
+
     #[cfg_attr(
         all(feature = "abi", not(target_arch = "wasm32")),
         schemars(with = "String")
@@ -248,10 +293,21 @@ pub struct FunctionCallAction {
     #[serde_as(as = "Base64")]
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub args: Vec<u8>,
+
+    #[cfg_attr(
+        any(feature = "arbitrary", test),
+        arbitrary(with = crate::utils::arbitrary::near_token),
+    )]
     #[serde(default, skip_serializing_if = "NearToken::is_zero")]
     pub amount: NearToken,
+
+    #[cfg_attr(
+        any(feature = "arbitrary", test),
+        arbitrary(with = crate::utils::arbitrary::gas),
+    )]
     #[serde(default, skip_serializing_if = "Gas::is_zero")]
     pub min_gas: Gas,
+
     #[serde(default, skip_serializing_if = "is_default")]
     pub gas_weight: u64,
 }
@@ -310,10 +366,12 @@ impl FunctionCallAction {
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
 use near_sdk::serde;
 
-// TODO: remove
 #[cfg(test)]
 mod tests {
-    use near_sdk::serde_json;
+    use std::collections::HashSet;
+
+    use defuse_tests::utils::random::make_arbitrary;
+    use near_sdk::{env, serde_json};
     use rstest::rstest;
 
     use super::*;
@@ -335,11 +393,41 @@ mod tests {
     }
 
     #[rstest]
+    #[case(PromiseDAG::default(), vec![])]
+    #[case(p(1), vec![p(1)])]
+    #[case(
+        p(1).then(p(2)).and(p(3)).then_concurrent([p(4), p(5)]).then(p(6)),
+        vec![p(1), p(2), p(3), p(4), p(5), p(6)],
+    )]
+    fn test_iter(#[case] d: impl Into<PromiseDAG>, #[case] mut expected: Vec<PromiseSingle>) {
+        let mut ps = d.into().into_iter().collect::<Vec<_>>();
+
+        // sort by hashes
+        ps.sort_by_key(|p| env::sha256(borsh::to_vec(p).unwrap()));
+        expected.sort_by_key(|p| env::sha256(borsh::to_vec(p).unwrap()));
+
+        assert_eq!(ps, expected);
+    }
+
+    #[rstest]
+    fn test_normalize(#[from(make_arbitrary)] mut d: PromiseDAG) {
+        d.normalize();
+        let is_empty = d.is_empty();
+        check_json(d);
+        assert!(is_empty);
+    }
+
+    #[rstest]
     #[case(PromiseDAG::default())]
     #[case(p(1))]
     #[case(p(1).then(p(2)).and(p(3)).then_concurrent([p(4), p(5)]).then(p(6)))]
-    fn check_json(#[case] p: impl Into<PromiseDAG>) {
-        println!("{}", serde_json::to_string_pretty(&p.into()).unwrap());
+    fn check_json(#[case] d: impl Into<PromiseDAG>) {
+        println!("{}", serde_json::to_string_pretty(&d.into()).unwrap());
+    }
+
+    #[rstest]
+    fn arbitrary_json(#[from(make_arbitrary)] d: PromiseDAG) {
+        check_json(d);
     }
 
     fn p(n: usize) -> PromiseSingle {

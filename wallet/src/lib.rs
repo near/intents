@@ -17,15 +17,17 @@ pub use self::{error::*, events::*, request::*, signature::*, state::*};
 pub trait Wallet {
     /// Executes signed request.
     ///
-    /// TODO: The wallet-contract MIGHT have some whitelists
+    /// * MUST be `#[payable]` and accept ANY attached deposit
+    // TODO: The wallet-contract MIGHT have some whitelists
     fn w_execute_signed(&mut self, signed: SignedRequest, proof: String);
 
-    // TODO: accept query_id?
     /// Execute request from an enabled extension.
     ///
     /// * MUST panic if [`predecessor_account_id`](near_sdk::env::predecessor_account_id)
-    /// is not an enabled extension.
-    /// * MUST be `#[payable]` and accept ANY attached deposit
+    ///   is not an enabled extension
+    /// * MUST panic if zero deposit was attached
+    /// * MUST be `#[payable]` and accept ANY non-zero attached deposit
+    // TODO: accept query_id?
     fn w_execute_extension(&mut self, request: Request);
 
     /// Returns subwallet_id

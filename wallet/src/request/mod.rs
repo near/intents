@@ -7,6 +7,7 @@ pub use self::{ops::*, promise::*, signed::*};
 use near_sdk::{borsh, env, near};
 
 // TODO: versioned? or support versioned via different contract methods?
+#[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Request {

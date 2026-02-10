@@ -109,7 +109,10 @@ impl<S: SigningStandard> State<S> {
     }
 
     fn execute_extension(&mut self, request: Request) -> Result<()> {
-        // TODO: require 1yN?
+        if env::attached_deposit().is_zero() {
+            return Err(Error::InsufficientDeposit);
+        }
+
         self.check_extension_enabled(env::predecessor_account_id())?;
 
         self.execute_request(request)
@@ -121,6 +124,8 @@ impl<S: SigningStandard> State<S> {
         }
 
         request.out.build().map(Promise::detach);
+
+        // TODO: emit request_id?
 
         Ok(())
     }
