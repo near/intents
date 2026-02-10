@@ -176,6 +176,18 @@ impl<T> MaybeIntentEvent<T> {
     }
 }
 
+impl<T> From<T> for MaybeIntentEvent<T> {
+    fn from(event: T) -> Self {
+        Self::new(event)
+    }
+}
+
+impl<T> From<(T, CryptoHash)> for MaybeIntentEvent<T> {
+    fn from((event, intent_hash): (T, CryptoHash)) -> Self {
+        Self::new_with_hash(event, intent_hash)
+    }
+}
+
 // fix JsonSchema macro bug
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
 use near_sdk::serde;
