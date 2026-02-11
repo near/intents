@@ -1,4 +1,4 @@
-use crate::extensions::defuse::contract::{
+use defuse_sandbox::extensions::defuse::contract::{
     contract::Role,
     core::{
         amounts::Amounts,
@@ -10,14 +10,7 @@ use crate::extensions::defuse::contract::{
     nep245::Token,
 };
 
-use crate::extensions::defuse::{
-    account_manager::{AccountManagerExt, AccountViewExt},
-    intents::ExecuteIntentsExt,
-    signer::DefaultDefuseSignerExt,
-    state::{FeesManagerExt, FeesManagerViewExt, SaltManagerExt, SaltViewExt},
-};
 use crate::{
-    env::DEFUSE_WASM,
     sandbox::{
         Sandbox, SigningAccount,
         extensions::{acl::AclExt, mt::MtViewExt},
@@ -25,13 +18,20 @@ use crate::{
     },
     utils::fixtures::{ed25519_pk, p256_pk, secp256k1_pk},
 };
+use defuse_sandbox::extensions::defuse::{
+    account_manager::{AccountManagerExt, AccountViewExt},
+    intents::ExecuteIntentsExt,
+    signer::DefaultDefuseSignerExt,
+    state::{FeesManagerExt, FeesManagerViewExt, SaltManagerExt, SaltViewExt},
+};
+use defuse_test_utils::wasms::DEFUSE_WASM;
 use itertools::Itertools;
 use near_sdk::AccountId;
 use rstest::rstest;
 
 use futures::future::try_join_all;
 
-use crate::env::Env;
+use crate::tests::defuse::env::Env;
 
 #[ignore = "only for simple upgrades"]
 #[rstest]

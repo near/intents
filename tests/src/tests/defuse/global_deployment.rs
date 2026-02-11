@@ -4,7 +4,7 @@ use defuse_sandbox::{MtExt, MtReceiverStubExt, sandbox};
 use multi_token_receiver_stub::MTReceiverMode;
 use rstest::rstest;
 
-use crate::env::MT_RECEIVER_STUB_WASM;
+use defuse_test_utils::wasms::MT_RECEIVER_STUB_WASM;
 
 #[rstest]
 #[tokio::test]

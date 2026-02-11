@@ -399,7 +399,7 @@ use near_sdk::serde;
 
 #[cfg(test)]
 mod tests {
-    use defuse_tests::utils::random::make_arbitrary;
+    use defuse_test_utils::random::make_arbitrary;
     use near_sdk::{env, serde_json};
     use rstest::rstest;
 

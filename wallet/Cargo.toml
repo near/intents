@@ -44,7 +44,8 @@ contract = []
 [dev-dependencies]
 defuse-wallet = { workspace = true, features = ["arbitrary"] }
 defuse-crypto.workspace = true
-defuse-tests.workspace = true
+defuse-sandbox.workspace = true
+defuse-test-utils = { workspace = true, features = ["wallet"] }
 
 arbitrary = { workspace = true, features = ["derive"] }
 impl-tools.workspace = true
@@ -52,5 +53,6 @@ near-sdk = { workspace = true, features = [
     "deterministic-account-ids",
     "unit-testing",
 ] }
+near-crypto.workspace = true
 rstest.workspace = true
 tokio = { workspace = true, features = ["macros"] }

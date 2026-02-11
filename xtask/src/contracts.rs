@@ -1,43 +1,10 @@
-use clap::{Args, ValueEnum};
-
-#[derive(Args, Clone, Default, Debug)]
-pub struct ContractOptions {
-    #[arg(short, long)]
-    pub contract: Contract,
-    pub features: Option<String>,
-}
-
-impl ContractOptions {
-    pub const fn new_without_features(contract: Contract) -> Self {
-        Self {
-            contract,
-            features: None,
-        }
-    }
-
-    pub fn all_without_features() -> Vec<Self> {
-        Contract::all()
-            .into_iter()
-            .map(|c| Self {
-                contract: c,
-                features: None,
-            })
-            .collect()
-    }
-}
+use clap::ValueEnum;
 
 pub struct ContractSpec {
     pub name: &'static str,
     pub path: &'static str,
     pub features: &'static str,
 }
-
-const DEFUSE_WASM_VAR: &str = "DEFUSE_WASM";
-const POA_FACTORY_WASM_VAR: &str = "DEFUSE_POA_FACTORY_WASM";
-const POA_TOKEN_WASM_VAR: &str = "DEFUSE_POA_TOKEN_WASM";
-const ESCROW_SWAP_WASM_VAR: &str = "DEFUSE_ESCROW_SWAP_WASM";
-const WALLET_WASM_VAR: &str = "DEFUSE_WALLET_WASM";
-const MULTI_TOKEN_RECEIVER_STUB_WASM_VAR: &str = "DEFUSE_MULTI_TOKEN_RECEIVER_STUB_WASM";
 
 #[derive(Clone, ValueEnum, Default, Debug)]
 pub enum Contract {
@@ -46,22 +13,11 @@ pub enum Contract {
     PoaToken,
     PoaFactory,
     EscrowSwap,
-    Wallet,
+    WalletWebauthnEd25519,
     MultiTokenReceiverStub,
 }
 
 impl Contract {
-    pub const fn default_env(&self) -> &'static str {
-        match self {
-            Self::Defuse => DEFUSE_WASM_VAR,
-            Self::PoaFactory => POA_FACTORY_WASM_VAR,
-            Self::PoaToken => POA_TOKEN_WASM_VAR,
-            Self::EscrowSwap => ESCROW_SWAP_WASM_VAR,
-            Self::Wallet => WALLET_WASM_VAR,
-            Self::MultiTokenReceiverStub => MULTI_TOKEN_RECEIVER_STUB_WASM_VAR,
-        }
-    }
-
     pub const fn spec(&self) -> ContractSpec {
         match self {
             Self::Defuse => ContractSpec {
@@ -84,7 +40,7 @@ impl Contract {
                 path: "escrow-swap",
                 features: "contract",
             },
-            Self::Wallet => ContractSpec {
+            Self::WalletWebauthnEd25519 => ContractSpec {
                 name: "wallet",
                 path: "wallet",
                 features: "contract,webauthn-ed25519",
@@ -103,7 +59,7 @@ impl Contract {
             Self::PoaToken,
             Self::PoaFactory,
             Self::EscrowSwap,
-            Self::Wallet,
+            Self::WalletWebauthnEd25519,
             Self::MultiTokenReceiverStub,
         ]
     }

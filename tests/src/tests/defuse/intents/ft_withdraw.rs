@@ -1,6 +1,8 @@
-use crate::extensions::defuse::contract::core::intents::tokens::FtWithdraw;
-use crate::extensions::defuse::contract::core::token_id::{TokenId, nep141::Nep141TokenId};
-use crate::extensions::defuse::{
+use defuse_sandbox::extensions::defuse::contract::core::intents::tokens::FtWithdraw;
+use defuse_sandbox::extensions::defuse::contract::core::token_id::{
+    TokenId, nep141::Nep141TokenId,
+};
+use defuse_sandbox::extensions::defuse::{
     contract::{
         contract::config::{DefuseConfig, RolesConfig},
         core::fees::{FeesConfig, Pips},
@@ -10,16 +12,16 @@ use crate::extensions::defuse::{
     tokens::nep141::DefuseFtDepositor,
 };
 
-use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
+use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
 use near_sdk::{AccountId, Gas, NearToken};
 use rstest::rstest;
 
-use crate::env::DEFUSE_WASM;
 use crate::{
-    env::Env,
     sandbox::extensions::{ft::FtViewExt, mt::MtViewExt, wnear::WNearExt},
+    tests::defuse::env::Env,
     utils::asserts::ResultAssertsExt,
 };
+use defuse_test_utils::wasms::DEFUSE_WASM;
 
 #[rstest]
 #[trace]

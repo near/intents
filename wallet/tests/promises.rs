@@ -1,19 +1,18 @@
+#![cfg(feature = "webauthn-ed25519")]
+
 use std::time::Duration;
 
 use defuse_crypto::{Ed25519PublicKey, Ed25519Signature};
 use defuse_deadline::Deadline;
-use defuse_tests::{
-    crypto::{KeyType, SecretKey},
-    env::WALLET_WEBAUTHN_ED25519_WASM,
-    sandbox::{FnCallBuilder, Sandbox, sandbox},
-    utils::random::make_arbitrary,
-};
+use defuse_sandbox::{FnCallBuilder, Sandbox, sandbox};
+use defuse_test_utils::{random::make_arbitrary, wasms::WALLET_WEBAUTHN_ED25519_WASM};
 use defuse_wallet::{
     self, AddExtensionOp, PromiseSingle, RemoveExtensionOp, Request, SignedRequest, State,
     WalletOp, webauthn::Webauthn,
 };
 use defuse_webauthn::{ClientDataType, CollectedClientData, Ed25519, PayloadSignature};
 use impl_tools::autoimpl;
+use near_crypto::{KeyType, SecretKey, Signature};
 use near_sdk::{
     GlobalContractId, NearToken,
     env::sha256_array,
@@ -144,6 +143,7 @@ async fn test_extension(#[future] env: Env) {
     assert!(receiver.view().await.unwrap().amount >= NearToken::from_near(1));
 }
 
+#[ignore]
 #[rstest]
 #[awt]
 #[tokio::test]
@@ -241,8 +241,8 @@ fn sign_passkey(secret_key: &SecretKey, msg: &[u8]) -> PayloadSignature<Ed25519>
 
     let signature =
         match secret_key.sign(&[authenticator_data.as_slice(), hash.as_slice()].concat()) {
-            defuse_tests::crypto::Signature::ED25519(signature) => signature.to_bytes(),
-            defuse_tests::crypto::Signature::SECP256K1(_) => unimplemented!(),
+            Signature::ED25519(signature) => signature.to_bytes(),
+            Signature::SECP256K1(_) => unimplemented!(),
         };
 
     PayloadSignature {

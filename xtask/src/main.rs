@@ -1,6 +1,6 @@
-use anyhow::Result;
+use anyhow::{Ok, Result};
 use clap::{Parser, Subcommand};
-use xtask::{BuildOptions, Contract, ContractOptions, build_contracts, cargo_warning};
+use xtask::{BuildOptions, Contract, build_contracts, cargo_warning};
 
 #[derive(Parser)]
 struct Cli {
@@ -23,18 +23,16 @@ fn main() -> Result<()> {
 
     let artifacts = match cli.command {
         Commands::BuildAll(options) => {
-            build_contracts(ContractOptions::all_without_features(), options)?
+            build_contracts(Contract::all().into_iter().map(|c| (c, options.clone())))?
         }
-        Commands::Build { contract, options } => build_contracts(
-            vec![ContractOptions::new_without_features(contract)],
-            options,
-        )?,
+
+        Commands::Build { contract, options } => build_contracts(vec![(contract, options)])?,
     };
 
-    cargo_warning!("Built {} contracts", artifacts.len());
+    cargo_warning!("xtask build: built {} contracts", artifacts.len());
 
     for a in artifacts {
-        cargo_warning!("Built {:?} at: {:?}", a.contract, a.wasm_path);
+        cargo_warning!("xtask build: built {:?} at: {:?}", a.contract, a.wasm_path);
     }
 
     Ok(())

@@ -1,4 +1,4 @@
-use defuse_sandbox::{SigningAccount, anyhow, tx::FnCallBuilder};
+use crate::{SigningAccount, anyhow, tx::FnCallBuilder};
 use near_sdk::{AccountId, NearToken, PublicKey, serde_json::json};
 
 pub trait RelayerKeysExt {
