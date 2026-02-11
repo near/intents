@@ -10,10 +10,10 @@ use defuse::core::intents::IntentEvent;
 use defuse::core::intents::tokens::MAX_TOKEN_ID_LEN;
 use defuse::core::intents::tokens::{NotifyOnTransfer, imt::ImtMint};
 use defuse::core::token_id::TokenId;
+use defuse::core::token_id::imt::ImtTokenId;
+use defuse::core::token_id::nep245::Nep245TokenId;
 use defuse::nep245::{MtEvent, MtMintEvent};
-use defuse_escrow_swap::Pips;
-use defuse_escrow_swap::token_id::imt::ImtTokenId;
-use defuse_escrow_swap::token_id::nep245::Nep245TokenId;
+use defuse_fees::Pips;
 use defuse_sandbox::assert_a_contains_b;
 use defuse_sandbox::extensions::mt::MtViewExt;
 use defuse_sandbox::tx::FnCallBuilder;
@@ -24,11 +24,12 @@ use rstest::rstest;
 
 use near_sdk::{AccountId, AsNep297Event, Gas, NearToken};
 
-use crate::env::{DEFUSE_WASM, Env, MT_RECEIVER_STUB_WASM};
-use crate::extensions::defuse::deployer::DefuseExt;
-use crate::extensions::defuse::intents::ExecuteIntentsExt;
-use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
+use crate::tests::defuse::env::Env;
 use crate::tests::defuse::intents::transfer::TransferCallExpectation;
+use defuse_sandbox::extensions::defuse::deployer::DefuseExt;
+use defuse_sandbox::extensions::defuse::intents::ExecuteIntentsExt;
+use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
+use defuse_test_utils::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 
 #[rstest]
 #[trace]

@@ -1,10 +1,10 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::extensions::defuse::contract::core::{
-    Nonce, crypto::PublicKey, token_id::nep141::Nep141TokenId,
-};
 use arbitrary::{Arbitrary, Unstructured};
 use defuse_randomness::Rng;
+use defuse_sandbox::extensions::defuse::contract::core::{
+    Nonce, crypto::PublicKey, token_id::nep141::Nep141TokenId,
+};
 use defuse_sandbox::{Account, SigningAccount};
 use defuse_test_utils::random::{Seed, TestRng};
 use itertools::Itertools;
@@ -13,7 +13,7 @@ use near_sdk::{
     env::{keccak512, sha256},
 };
 
-use crate::env::generate_legacy_user_account_id;
+use crate::tests::defuse::env::generate_legacy_user_account_id;
 
 const MAX_PUBLIC_KEYS: usize = 10;
 const MAX_ACCOUNTS: usize = 5;

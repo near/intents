@@ -1,7 +1,5 @@
 use std::borrow::Cow;
 
-use crate::extensions::defuse::intents::ExecuteIntentsExt;
-use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
 use defuse::core::accounts::AccountEvent;
 use defuse::core::amounts::Amounts;
 use defuse::core::crypto::Payload;
@@ -9,17 +7,19 @@ use defuse::core::events::DefuseEvent;
 use defuse::core::intents::IntentEvent;
 use defuse::core::intents::tokens::imt::{ImtBurn, ImtMint};
 use defuse::core::token_id::TokenId;
+use defuse::core::token_id::imt::ImtTokenId;
+use defuse::core::token_id::nep141::Nep141TokenId;
 use defuse::nep245::{MtBurnEvent, MtEvent};
-use defuse_escrow_swap::token_id::imt::ImtTokenId;
-use defuse_escrow_swap::token_id::nep141::Nep141TokenId;
 use defuse_sandbox::assert_a_contains_b;
+use defuse_sandbox::extensions::defuse::intents::ExecuteIntentsExt;
+use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
 use defuse_sandbox::extensions::mt::MtViewExt;
 use near_sdk::json_types::U128;
 use rstest::rstest;
 
 use near_sdk::AsNep297Event;
 
-use crate::env::Env;
+use crate::tests::defuse::env::Env;
 
 #[rstest]
 #[trace]

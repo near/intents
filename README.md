@@ -48,13 +48,13 @@ Alternatively, you can build this smart contract yourself.
 Build smart contract separately:
 
 ```shell
-cargo build-contract <contract_name>
+cargo build-contract <contract_name> <reproducible|non-reproducible>
 ```
 
 Build all contracts at once:
 
 ```shell
-cargo build-all
+cargo build-all <reproducible|non-reproducible>
 ```
 
 Run integration tests:
@@ -71,9 +71,7 @@ cargo test --workspace --all-targets
 
 NOTE:
 1. To specify the destination of wasms, set the `DEFUSE_OUT_DIR` environment variable.
-2. To build in reproducible mode set `DEFUSE_BUILD_REPRODUCIBLE` environment variable.
-3. To skip wasm build during testing set `DEFUSE_SKIP_CONTRACTS_BUILD` environment variable.
-4. To specify wasms destination for tests set `DEFUSE_USE_OUT_DIR`environment variable.
+2. To specify wasms destination for tests set `DEFUSE_USE_OUT_DIR`environment variable.
 
 For state migration testing set environmental var `DEFUSE_MIGRATE_FROM_LEGACY=1`
 State migrations will be applied before all tests.

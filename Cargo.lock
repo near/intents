@@ -1329,9 +1329,14 @@ name = "defuse-sandbox"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "defuse",
  "defuse-crypto",
+ "defuse-escrow-swap",
  "defuse-nep245",
  "defuse-nep413",
+ "defuse-poa-factory",
+ "defuse-serde-utils",
+ "defuse-test-utils",
  "futures",
  "impl-tools",
  "libc",
@@ -1379,7 +1384,6 @@ dependencies = [
  "defuse-randomness",
  "derive_more",
  "hex",
- "near-sdk",
  "rand_chacha 0.9.0",
  "rstest",
 ]
@@ -1391,10 +1395,10 @@ dependencies = [
  "anyhow",
  "arbitrary",
  "bnum",
- "cargo_metadata 0.23.1",
  "chrono",
  "defuse",
  "defuse-escrow-swap",
+ "defuse-fees",
  "defuse-near-utils",
  "defuse-nep245",
  "defuse-poa-factory",
@@ -1417,7 +1421,6 @@ dependencies = [
  "strum 0.27.2",
  "tlb-ton",
  "tokio",
- "xtask",
 ]
 
 [[package]]
