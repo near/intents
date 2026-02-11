@@ -17,17 +17,20 @@ pub use self::{error::*, events::*, request::*, signature::*, state::*};
 pub trait Wallet {
     /// Executes signed request.
     ///
-    /// * MUST be `#[payable]` and accept ANY attached deposit
-    // TODO: The wallet-contract MIGHT have some whitelists
+    /// * SHOULD accept ANY attached deposit.
+    /// * MUST fail in any case where the `signed.request` is not executed
+    ///   due to various reasons, including:
+    ///   * `signed` data is invalid
+    ///   * `proof` is invalid
+    ///   * signature is disabled
     fn w_execute_signed(&mut self, signed: SignedRequest, proof: String);
 
     /// Execute request from an enabled extension.
     ///
-    /// * MUST panic if [`predecessor_account_id`](near_sdk::env::predecessor_account_id)
-    ///   is not an enabled extension
+    /// * SHOULD accept ANY non-zero attached deposit
     /// * MUST panic if zero deposit was attached
-    /// * MUST be `#[payable]` and accept ANY non-zero attached deposit
-    // TODO: accept query_id?
+    /// * MUST panic if [`predecessor_account_id`](near_sdk::env::predecessor_account_id)
+    ///   extension is not enabled
     fn w_execute_extension(&mut self, request: Request);
 
     /// Returns subwallet_id.
@@ -36,11 +39,8 @@ pub trait Wallet {
     /// Returns whether authentication by signature is currently allowed.
     fn w_is_signature_allowed(&self) -> bool;
 
-    // TODO: view-method to get supported signing standard?
-    // TODO: answer: it can be retrieved via contract_source_metadata
-
-    // TODO: OAuth 2.0, off-chain multisig, TEE
-    /// Returns public key.
+    /// Returns a string representation of the public key or authentication
+    /// identity associated with this wallet's singing standard.
     fn w_public_key(&self) -> String;
 
     /// Current `seqno` to be used for signed requests.

@@ -10,7 +10,9 @@ pub enum WalletOp {
     AddExtension(AddExtensionOp) = 1,
     RemoveExtension(RemoveExtensionOp) = 2,
 
-    /// Custom op for third-party implementations
+    /// Custom op for third-party implementations.
+    /// TODO: do we even this variant? Or custom implementations
+    /// can just add their own wariants?
     Custom(CustomOp) = u8::MAX,
 }
 

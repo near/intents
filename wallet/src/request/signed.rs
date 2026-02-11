@@ -13,9 +13,11 @@ pub struct SignedRequest {
     /// is deployed.
     pub chain_id: String,
 
-    /// MUST be equal to the account_id of the wallet-contract.
+    /// MUST be equal to the AccountId of the wallet-contract executing
+    /// this signed request.
     pub signer_id: AccountId,
 
+    /// MUST be equal to the current seqno on the contract.
     pub seqno: u32,
 
     #[cfg_attr(
@@ -38,9 +40,6 @@ pub struct SignedRequest {
     )]
     pub valid_until: Deadline,
 
-    // TODO: or hash of Request?
-    // TODO: is it a request_id?
-    // #[serde_as(as = "Hex")] // TODO: or base58?
     pub request: Request,
 }
 
@@ -53,13 +52,8 @@ impl SignedRequest {
     }
 
     fn prehash(&self) -> Vec<u8> {
-        // TODO: Add NEP-461 tag prefix? - that should be a part of `proof`
-        // envelope
         // TODO: hash `request` first, so that it might be possible to sign
-        // for very limited-memory devices to sign at least hash
-        // TODO: hashing the request is also better, because the request
-        // hash becomes request_id...
-        // TODO: should we include query_id in the request?...
+        // for very limited-memory devices to sign at least the hash?
         borsh::to_vec(&self.to_domain()).unwrap_or_else(|_| unreachable!())
     }
 
@@ -68,23 +62,25 @@ impl SignedRequest {
     }
 }
 
-#[near(serializers = [borsh])]
+#[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SignatureDomain<'a, T> {
-    pub name: Cow<'a, str>,
-    pub domain: T,
+    pub domain: Cow<'a, str>,
+    #[serde(flatten)]
+    pub data: T,
 }
 
 impl<'a, T> SignatureDomain<'a, T> {
-    pub fn new(name: impl Into<Cow<'a, str>>, domain: T) -> Self {
+    pub fn new(domain: impl Into<Cow<'a, str>>, data: T) -> Self {
         Self {
-            name: name.into(),
-            domain,
+            domain: domain.into(),
+            data,
         }
     }
 }
 
-#[near(serializers = [borsh(use_discriminant = true)])]
+#[near(serializers = [borsh(use_discriminant = true), json])]
+#[serde(tag = "version", content = "message", rename_all = "snake_case")]
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(u8)]
 pub enum WalletDomain<'a> {

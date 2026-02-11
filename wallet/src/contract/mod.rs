@@ -173,7 +173,8 @@ impl<S: SigningStandard> State<S> {
             WalletOp::RemoveExtension(RemoveExtensionOp { account_id }) => {
                 self.remove_extension(account_id)
             }
-            WalletOp::Custom(_op) => env::panic_str("custom ops are not supported"),
+            // custom ops are not supported and, thus, skipped
+            WalletOp::Custom(_op) => Ok(()),
         }
     }
 
