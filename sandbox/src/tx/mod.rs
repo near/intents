@@ -6,14 +6,17 @@ use near_api::{
         transaction::{
             actions::{
                 AddKeyAction, CreateAccountAction, DeployContractAction,
-                DeployGlobalContractAction, FunctionCallAction, GlobalContractDeployMode,
-                GlobalContractIdentifier, TransferAction, UseGlobalContractAction,
+                DeployGlobalContractAction, DeterministicAccountStateInit,
+                DeterministicAccountStateInitV1, DeterministicStateInitAction, FunctionCallAction,
+                GlobalContractDeployMode, GlobalContractIdentifier, TransferAction,
+                UseGlobalContractAction,
             },
             result::{ExecutionFinalResult, ExecutionSuccess},
         },
     },
 };
-use near_sdk::{AccountId, NearToken};
+use near_sdk::state_init::{StateInit, StateInitV1};
+use near_sdk::{AccountId, GlobalContractId, NearToken};
 
 mod fn_call;
 mod wrappers;
@@ -77,6 +80,33 @@ impl TxBuilder {
             }
             .into(),
         ))
+    }
+
+    #[must_use]
+    pub fn state_init(self, state_init: StateInit) -> Self {
+        self.add_action(Action::DeterministicStateInit(Box::new(
+            DeterministicStateInitAction {
+                state_init: match state_init {
+                    StateInit::V1(StateInitV1 { code, data }) => {
+                        DeterministicAccountStateInit::V1(DeterministicAccountStateInitV1 {
+                            code: match code {
+                                GlobalContractId::CodeHash(hash) => {
+                                    GlobalContractIdentifier::CodeHash(near_api::CryptoHash(
+                                        *hash.as_ref(),
+                                    ))
+                                }
+                                GlobalContractId::AccountId(account) => {
+                                    GlobalContractIdentifier::AccountId(account)
+                                }
+                            },
+                            data,
+                        })
+                    }
+                },
+
+                deposit: NearToken::from_near(0),
+            },
+        )))
     }
 
     #[must_use]

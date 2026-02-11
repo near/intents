@@ -78,7 +78,7 @@ impl Env {
         let tokens = state.get_tokens();
         try_join_all(tokens.iter().map(|token| self.apply_token(token)))
             .await
-            .map_err(|e| anyhow::anyhow!("Failed to apply tokens: {e}"))?;
+            .map_err(|e| anyhow::anyhow!("failed to apply tokens: {e}"))?;
 
         Ok(())
     }
@@ -86,7 +86,7 @@ impl Env {
     async fn apply_accounts(&self, state: &PersistentState) -> Result<()> {
         try_join_all(state.accounts.iter().map(|data| self.apply_account(data)))
             .await
-            .map_err(|e| anyhow::anyhow!("Failed to apply accounts: {e}"))?;
+            .map_err(|e| anyhow::anyhow!("failed to apply accounts: {e}"))?;
 
         Ok(())
     }
