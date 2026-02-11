@@ -1,6 +1,13 @@
-use core::fmt::{self, Display};
+use core::{
+    fmt::{self, Display},
+    str::FromStr,
+};
 
-use near_sdk::near;
+use near_sdk::{
+    near,
+    serde_with::{DeserializeFromStr, SerializeDisplay},
+};
+use thiserror::Error as ThisError;
 
 use crate::SigningStandard;
 
@@ -20,12 +27,30 @@ impl SigningStandard for NoSign {
     }
 }
 
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    all(feature = "abi", not(target_arch = "wasm32")),
+    derive(near_sdk::schemars::JsonSchema),
+    schemars(crate = "::near_sdk::schemars", with = "String")
+)]
+#[near(serializers = [borsh])]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, SerializeDisplay, DeserializeFromStr)]
+#[serde_with(crate = "::near_sdk::serde_with")]
 pub struct NoPublicKey;
 
 impl Display for NoPublicKey {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "no-sign")
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        Ok(())
     }
 }
+
+impl FromStr for NoPublicKey {
+    type Err = NotEmptyError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.is_empty().then_some(Self).ok_or(NotEmptyError)
+    }
+}
+
+#[derive(Debug, Clone, Copy, ThisError, PartialEq, Eq)]
+#[error("must be empty")]
+pub struct NotEmptyError;

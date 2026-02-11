@@ -92,8 +92,6 @@ impl PromiseDAG {
         self.promises.retain(|p| !p.is_empty());
     }
 
-    // TODO: check that not self, otherise callbacks would be allowed to be
-    // executed
     pub fn build(self) -> Option<Promise> {
         let promises = self.promises.into_iter().filter_map(PromiseSingle::build);
 

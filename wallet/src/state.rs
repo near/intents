@@ -16,9 +16,6 @@ use crate::SigningStandard;
 ))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct State<S: SigningStandard> {
-    // TODO: field ordering & versioning?
-    // having bool first is good, because we can introduce versioning later
-    // TODO: versioning even make sense for deterministic account_ids?
     pub signature_enabled: bool,
     pub seqno: u32,
     pub wallet_id: u32,

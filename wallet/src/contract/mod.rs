@@ -182,6 +182,7 @@ impl<S: SigningStandard> State<S> {
             return Err(Error::ThisSignatureModeAlreadySet);
         }
         self.signature_enabled = enable;
+
         WalletEvent::SignatureModeSet {
             enable: self.signature_enabled,
         }

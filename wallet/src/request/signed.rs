@@ -6,7 +6,6 @@ use near_sdk::{AccountId, borsh, env, near};
 
 use crate::Request;
 
-// TODO: versioned?
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SignedRequest {
@@ -27,7 +26,7 @@ pub struct SignedRequest {
             schema(with_funcs(
                 definitions = "As::<TimestampSeconds<u32>>::add_definitions_recursively",
                 declaration = "As::<TimestampSeconds<u32>>::declaration",
-            ),)
+            ))
         )
     )]
     #[cfg_attr(
@@ -89,6 +88,5 @@ impl<'a, T> SignatureDomain<'a, T> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(u8)]
 pub enum WalletDomain<'a> {
-    // TODO: or hash of Signed Request?
     V1(Cow<'a, SignedRequest>) = 0,
 }
