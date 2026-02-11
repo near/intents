@@ -1,4 +1,6 @@
-use crate::extensions::defuse::contract::core::{
+use defuse::core::intents::MaybeIntentEvent;
+use defuse_randomness::Rng;
+use defuse_sandbox::extensions::defuse::contract::core::{
     Deadline, Nonce,
     accounts::{AccountEvent, NonceEvent},
     amounts::Amounts,
@@ -8,17 +10,15 @@ use crate::extensions::defuse::contract::core::{
     token_id::{TokenId, nep141::Nep141TokenId},
     tokens::TransferEvent,
 };
-use crate::extensions::defuse::{
+use defuse_sandbox::extensions::defuse::{
     intents::{ExecuteIntentsExt, SimulateIntents},
     signer::DefuseSignerExt,
 };
-use defuse::core::intents::MaybeIntentEvent;
-use defuse_randomness::Rng;
 use near_sdk::{AccountId, AccountIdRef, AsNep297Event, CryptoHash, serde_json};
 use rstest::rstest;
 use std::borrow::Cow;
 
-use crate::{env::Env, sandbox::extensions::mt::MtViewExt, utils::random::rng};
+use crate::{sandbox::extensions::mt::MtViewExt, tests::defuse::env::Env, utils::random::rng};
 
 pub struct AccountNonceIntentEvent(AccountId, Nonce, CryptoHash);
 

@@ -13,15 +13,18 @@ use defuse::{
     },
 };
 use defuse_randomness::Rng;
-use defuse_sandbox::{assert_a_contains_b, extensions::acl::AclExt, tx::FnCallBuilder};
+use defuse_sandbox::{
+    assert_a_contains_b,
+    extensions::{acl::AclExt, defuse::account_manager::AccountViewExt},
+    tx::FnCallBuilder,
+};
 use defuse_test_utils::{asserts::ResultAssertsExt, random::rng};
 use near_sdk::{AsNep297Event, NearToken};
 use rstest::rstest;
 use serde_json::json;
 
-use crate::{
-    env::Env, extensions::defuse::account_manager::AccountViewExt, utils::fixtures::public_key,
-};
+use crate::tests::defuse::env::Env;
+use defuse_test_utils::fixtures::public_key;
 
 #[rstest]
 #[trace]

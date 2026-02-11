@@ -1,17 +1,18 @@
-use crate::env::{Env, MT_RECEIVER_STUB_WASM};
-use crate::extensions::defuse::contract::core::intents::auth::AuthCall;
-use crate::extensions::defuse::intents::ExecuteIntentsExt;
-use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
+use crate::tests::defuse::env::Env;
 use defuse::contract::Contract as DefuseContract;
 use defuse::{
     contract::config::{DefuseConfig, RolesConfig},
     core::fees::FeesConfig,
 };
-use defuse_escrow_swap::Pips;
+use defuse_fees::Pips;
 use defuse_randomness::Rng;
 use defuse_sandbox::FnCallBuilder;
 use defuse_sandbox::api::types::transaction::actions::GlobalContractDeployMode;
+use defuse_sandbox::extensions::defuse::contract::core::intents::auth::AuthCall;
+use defuse_sandbox::extensions::defuse::intents::ExecuteIntentsExt;
+use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
 use defuse_test_utils::random::rng;
+use defuse_test_utils::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 use futures::stream::{self, StreamExt};
 use near_sdk::Gas;
 use near_sdk::{
@@ -21,7 +22,7 @@ use near_sdk::{
 use rstest::rstest;
 use std::collections::BTreeMap;
 
-use crate::extensions::defuse::deployer::DefuseExt;
+use defuse_sandbox::extensions::defuse::deployer::DefuseExt;
 
 mod helpers {
     use super::*;
@@ -206,7 +207,7 @@ async fn benchmark_gas_used_by_do_auth_call_callback(mut rng: impl Rng, #[case] 
                 },
                 roles: RolesConfig::default(),
             },
-            crate::env::DEFUSE_WASM.clone(),
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();
@@ -406,7 +407,7 @@ async fn test_auth_call_state_init_via_do_auth_call(
                 },
                 roles: RolesConfig::default(),
             },
-            crate::env::DEFUSE_WASM.clone(),
+            DEFUSE_WASM.clone(),
         )
         .await
         .unwrap();

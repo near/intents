@@ -1,4 +1,4 @@
-use crate::extensions::defuse::contract::core::{
+use defuse_sandbox::extensions::defuse::contract::core::{
     DefuseError,
     amounts::Amounts,
     intents::{account::SetAuthByPredecessorId, tokens::Transfer},
@@ -7,16 +7,14 @@ use crate::extensions::defuse::contract::core::{
 use near_sdk::AccountId;
 use rstest::rstest;
 
-use crate::extensions::defuse::{
+use crate::tests::defuse::env::Env;
+use defuse_sandbox::extensions::defuse::{
     account_manager::{AccountManagerExt, AccountViewExt},
     intents::ExecuteIntentsExt,
     signer::DefaultDefuseSignerExt,
 };
-use crate::{
-    env::Env,
-    sandbox::extensions::mt::{MtExt, MtViewExt},
-    utils::asserts::ResultAssertsExt,
-};
+use defuse_sandbox::extensions::mt::{MtExt, MtViewExt};
+use defuse_test_utils::asserts::ResultAssertsExt;
 
 #[rstest]
 #[tokio::test]

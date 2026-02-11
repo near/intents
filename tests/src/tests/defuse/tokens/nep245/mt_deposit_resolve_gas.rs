@@ -1,5 +1,5 @@
 use super::binary_search_max;
-use crate::env::{Env, MT_RECEIVER_STUB_WASM};
+use crate::tests::defuse::env::Env;
 use crate::tests::defuse::tokens::nep245::letter_gen::LetterCombinations;
 use anyhow::Context;
 use defuse::{
@@ -12,6 +12,7 @@ use defuse_near_utils::TOTAL_LOG_LENGTH_LIMIT;
 use defuse_randomness::Rng;
 use defuse_sandbox::{SigningAccount, extensions::mt::MtExt};
 use defuse_test_utils::random::{gen_random_string, rng};
+use defuse_test_utils::wasms::MT_RECEIVER_STUB_WASM;
 use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::{AccountId, AsNep297Event, Gas, json_types::U128};
 use rstest::rstest;

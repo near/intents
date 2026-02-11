@@ -1,4 +1,4 @@
-use crate::extensions::{
+use defuse_sandbox::extensions::{
     defuse::{
         contract::contract::Role,
         contract::core::token_id::nep141::Nep141TokenId,
@@ -11,11 +11,12 @@ use crate::extensions::{
 use multi_token_receiver_stub::MTReceiverMode as StubAction;
 use near_sdk::json_types::U128;
 
-use crate::env::{Env, MT_RECEIVER_STUB_WASM};
-use crate::extensions::defuse::contract::{
+use crate::tests::defuse::env::Env;
+use defuse_sandbox::extensions::defuse::contract::{
     core::intents::tokens::NotifyOnTransfer,
     tokens::{DepositAction, DepositMessage, ExecuteIntents},
 };
+use defuse_test_utils::wasms::MT_RECEIVER_STUB_WASM;
 
 use defuse_sandbox::extensions::{
     acl::AclExt,
@@ -28,7 +29,9 @@ use near_sdk::NearToken;
 use near_sdk::serde_json;
 use rstest::rstest;
 
-use crate::extensions::defuse::contract::core::{amounts::Amounts, intents::tokens::Transfer};
+use defuse_sandbox::extensions::defuse::contract::core::{
+    amounts::Amounts, intents::tokens::Transfer,
+};
 
 #[rstest]
 #[trace]
@@ -255,7 +258,7 @@ async fn deposit_withdraw_intent_refund() {
 #[rstest]
 #[tokio::test]
 async fn ft_force_withdraw() {
-    use crate::extensions::defuse::contract::core::token_id::nep141::Nep141TokenId;
+    use defuse_sandbox::extensions::defuse::contract::core::token_id::nep141::Nep141TokenId;
 
     let env = Env::builder().deployer_as_super_admin().build().await;
 

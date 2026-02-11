@@ -1,4 +1,6 @@
-use crate::extensions::defuse::{
+use defuse::contract::config::{DefuseConfig, RolesConfig};
+use defuse::core::{intents::MaybeIntentEvent, tokens::imt::ImtMintEvent};
+use defuse_sandbox::extensions::defuse::{
     account_manager::{AccountManagerExt, AccountViewExt},
     contract::core::{
         accounts::{AccountEvent, NonceEvent, PublicKeyEvent},
@@ -24,10 +26,6 @@ use crate::extensions::defuse::{
     nonce::ExtractNonceExt,
     signer::DefaultDefuseSignerExt,
 };
-use defuse::{
-    contract::config::{DefuseConfig, RolesConfig},
-    core::{intents::MaybeIntentEvent, tokens::imt::ImtMintEvent},
-};
 use defuse_sandbox::extensions::{
     ft::FtExt,
     mt::{MtExt, MtViewExt},
@@ -36,11 +34,12 @@ use defuse_sandbox::extensions::{
 };
 
 use crate::{
-    env::{DEFUSE_WASM, Env, NON_FUNGIBLE_TOKEN_WASM},
     sandbox::api::types::{json::Base64VecU8, nft::NFTContractMetadata},
+    tests::defuse::env::Env,
     tests::defuse::intents::AccountNonceIntentEvent,
     utils::fixtures::public_key,
 };
+use defuse_test_utils::wasms::{DEFUSE_WASM, NON_FUNGIBLE_TOKEN_WASM};
 use near_contract_standards::non_fungible_token::metadata::{NFT_METADATA_SPEC, TokenMetadata};
 use near_sdk::{AsNep297Event, NearToken};
 use rstest::rstest;
