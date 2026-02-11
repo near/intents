@@ -23,6 +23,9 @@ use crate::{
     tokens::TransferEvent,
 };
 
+#[cfg(feature = "imt")]
+use crate::{intents::tokens::imt::ImtBurn, tokens::imt::ImtMintEvent};
+
 // NOTE:
 // 1. Adding a new event does not require backward compatibility
 // 2. Modifying an existing event requires a backward compatibility test
@@ -243,8 +246,6 @@ fn storage_deposit_intent_event<'a>() -> DefuseEvent<'a> {
 
 #[cfg(feature = "imt")]
 fn imt_mint_intent_event<'a>() -> DefuseEvent<'a> {
-    use crate::tokens::imt::ImtMintEvent;
-
     let tokens = Amounts::new(
         tokens()
             .into_iter()
@@ -267,8 +268,6 @@ fn imt_mint_intent_event<'a>() -> DefuseEvent<'a> {
 
 #[cfg(feature = "imt")]
 fn imt_burn_intent_event<'a>() -> DefuseEvent<'a> {
-    use crate::intents::tokens::imt::ImtBurn;
-
     let tokens = Amounts::new(
         tokens()
             .into_iter()
