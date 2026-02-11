@@ -1,4 +1,5 @@
 use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
+use near_api::types::transaction::result::ExecutionSuccess;
 use near_sdk::{AccountId, AccountIdRef, NearToken, serde_json::json};
 
 pub trait ForceAccountManagerExt {
@@ -6,25 +7,25 @@ pub trait ForceAccountManagerExt {
         &self,
         contract_id: impl Into<AccountId>,
         account_id: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<bool>;
+    ) -> anyhow::Result<(ExecutionSuccess, bool)>;
 
     async fn force_unlock_account(
         &self,
         contract_id: impl Into<AccountId>,
         account_id: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<bool>;
+    ) -> anyhow::Result<(ExecutionSuccess, bool)>;
 
     async fn force_disable_auth_by_predecessor_ids(
         &self,
         contract_id: impl Into<AccountId>,
         account_ids: impl IntoIterator<Item = AccountId>,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<ExecutionSuccess>;
 
     async fn force_enable_auth_by_predecessor_ids(
         &self,
         contract_id: impl Into<AccountId>,
         account_ids: impl IntoIterator<Item = AccountId>,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<ExecutionSuccess>;
 }
 
 pub trait ForceAccountViewExt {
@@ -37,8 +38,9 @@ impl ForceAccountManagerExt for SigningAccount {
         &self,
         contract_id: impl Into<AccountId>,
         account_id: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<bool> {
-        self.tx(contract_id)
+    ) -> anyhow::Result<(ExecutionSuccess, bool)> {
+        let res = self
+            .tx(contract_id)
             .function_call(
                 FnCallBuilder::new("force_lock_account")
                     .json_args(json!({
@@ -46,17 +48,20 @@ impl ForceAccountManagerExt for SigningAccount {
                     }))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await?
-            .json()
-            .map_err(Into::into)
+            .await?;
+
+        let locked = res.json()?;
+
+        Ok((res, locked))
     }
 
     async fn force_unlock_account(
         &self,
         contract_id: impl Into<AccountId>,
         account_id: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<bool> {
-        self.tx(contract_id)
+    ) -> anyhow::Result<(ExecutionSuccess, bool)> {
+        let res = self
+            .tx(contract_id)
             .function_call(
                 FnCallBuilder::new("force_unlock_account")
                     .json_args(json!({
@@ -64,16 +69,18 @@ impl ForceAccountManagerExt for SigningAccount {
                     }))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await?
-            .json()
-            .map_err(Into::into)
+            .await?;
+
+        let unlocked = res.json()?;
+
+        Ok((res, unlocked))
     }
 
     async fn force_disable_auth_by_predecessor_ids(
         &self,
         contract_id: impl Into<AccountId>,
         account_ids: impl IntoIterator<Item = AccountId>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(contract_id)
             .function_call(
                 FnCallBuilder::new("force_disable_auth_by_predecessor_ids")
@@ -82,16 +89,14 @@ impl ForceAccountManagerExt for SigningAccount {
                     }))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await?;
-
-        Ok(())
+            .await
     }
 
     async fn force_enable_auth_by_predecessor_ids(
         &self,
         contract_id: impl Into<AccountId>,
         account_ids: impl IntoIterator<Item = AccountId>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(contract_id)
             .function_call(
                 FnCallBuilder::new("force_enable_auth_by_predecessor_ids")
@@ -100,9 +105,7 @@ impl ForceAccountManagerExt for SigningAccount {
                     }))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await?;
-
-        Ok(())
+            .await
     }
 }
 

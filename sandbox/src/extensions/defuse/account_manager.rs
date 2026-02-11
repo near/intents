@@ -1,6 +1,7 @@
 use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use defuse::core::{Nonce, crypto::PublicKey};
 use defuse_serde_utils::base64::AsBase64;
+use near_api::types::transaction::result::ExecutionSuccess;
 use near_sdk::{AccountId, AccountIdRef, Gas, NearToken, serde_json::json};
 
 pub trait AccountManagerExt {
@@ -8,18 +9,18 @@ pub trait AccountManagerExt {
         &self,
         defuse_contract_id: impl Into<AccountId>,
         public_key: &PublicKey,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<ExecutionSuccess>;
 
     async fn remove_public_key(
         &self,
         defuse_contract_id: impl Into<AccountId>,
         public_key: &PublicKey,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<ExecutionSuccess>;
 
     async fn disable_auth_by_predecessor_id(
         &self,
         defuse_contract_id: impl Into<AccountId>,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<ExecutionSuccess>;
 }
 
 impl AccountManagerExt for SigningAccount {
@@ -27,7 +28,7 @@ impl AccountManagerExt for SigningAccount {
         &self,
         defuse_contract_id: impl Into<AccountId>,
         public_key: &PublicKey,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(defuse_contract_id)
             .function_call(
                 FnCallBuilder::new("add_public_key")
@@ -36,16 +37,14 @@ impl AccountManagerExt for SigningAccount {
                         "public_key": public_key,
                     })),
             )
-            .await?;
-
-        Ok(())
+            .await
     }
 
     async fn remove_public_key(
         &self,
         defuse_contract_id: impl Into<AccountId>,
         public_key: &PublicKey,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(defuse_contract_id)
             .function_call(
                 FnCallBuilder::new("remove_public_key")
@@ -54,24 +53,20 @@ impl AccountManagerExt for SigningAccount {
                         "public_key": public_key,
                     })),
             )
-            .await?;
-
-        Ok(())
+            .await
     }
 
     async fn disable_auth_by_predecessor_id(
         &self,
         defuse_contract_id: impl Into<AccountId>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(defuse_contract_id)
             .function_call(
                 FnCallBuilder::new("disable_auth_by_predecessor_id")
                     .with_deposit(NearToken::from_yoctonear(1))
                     .with_gas(Gas::from_tgas(10)),
             )
-            .await?;
-
-        Ok(())
+            .await
     }
 }
 
