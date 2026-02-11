@@ -7,12 +7,12 @@ pub use self::{account::*, state::*};
 use std::{borrow::Cow, collections::HashSet};
 
 use defuse_core::{
-    DefuseError, Nonce,
+    DefuseError, Nonce, Result,
     accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
     engine::{State, StateView},
     events::DefuseEvent,
-    intents::MaybeIntentEvent,
+    intents::{MaybeIntentEvent, account::SetAuthByPredecessorId},
 };
 
 use defuse_near_utils::{Lock, NestPrefix, UnwrapOrPanic};
@@ -65,7 +65,9 @@ impl AccountManager for Contract {
     #[payable]
     fn disable_auth_by_predecessor_id(&mut self) {
         assert_one_yocto();
-        State::set_auth_by_predecessor_id(self, self.ensure_auth_predecessor_id(), false)
+        let signer = self.ensure_auth_predecessor_id();
+
+        self.set_auth_by_predecessor_id_and_emit_event(&signer, false, false)
             .unwrap_or_panic();
     }
 }
@@ -78,6 +80,42 @@ impl Contract {
             DefuseError::AuthByPredecessorIdDisabled(predecessor_account_id).panic();
         }
         predecessor_account_id
+    }
+
+    pub fn set_auth_by_predecessor_id_and_emit_event(
+        &mut self,
+        account_id: &AccountId,
+        enable: bool,
+        force: bool,
+    ) -> Result<bool> {
+        DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new(AccountEvent::new(
+            Cow::Borrowed(account_id.as_ref()),
+            Cow::Owned(SetAuthByPredecessorId { enabled: enable }),
+        )))
+        .emit();
+
+        self.internal_set_auth_by_predecessor_id(account_id, enable, force)
+    }
+
+    pub(crate) fn internal_set_auth_by_predecessor_id(
+        &mut self,
+        account_id: &AccountId,
+        enable: bool,
+        force: bool,
+    ) -> Result<bool> {
+        if enable {
+            let Some(account) = self.accounts.get_mut(account_id) else {
+                // no need to create an account: not-yet-existing accounts
+                // have auth by PREDECESSOR_ID enabled by default
+                return Ok(true);
+            };
+            account
+        } else {
+            self.accounts.get_or_create(account_id.clone())
+        }
+        .get_mut_maybe_forced(force)
+        .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))
+        .map(|account| account.set_auth_by_predecessor_id(enable))
     }
 
     pub fn add_public_key_and_emit_event(
