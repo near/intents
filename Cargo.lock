@@ -1400,6 +1400,7 @@ dependencies = [
  "defuse-sandbox",
  "defuse-serde-utils",
  "defuse-test-utils",
+ "defuse-wallet",
  "derive_more",
  "futures",
  "hex",
@@ -1472,17 +1473,12 @@ dependencies = [
  "defuse-borsh-utils",
  "defuse-crypto",
  "defuse-deadline",
- "defuse-sandbox",
  "defuse-serde-utils",
  "defuse-test-utils",
- "defuse-wallet",
  "defuse-webauthn",
- "impl-tools",
- "near-crypto",
  "near-sdk",
  "rstest",
  "thiserror 2.0.17",
- "tokio",
 ]
 
 [[package]]

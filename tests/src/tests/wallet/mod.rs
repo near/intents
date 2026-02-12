@@ -1,16 +1,11 @@
-#![cfg(feature = "webauthn-ed25519")]
-
 use std::time::Duration;
 
-use defuse_crypto::{Ed25519PublicKey, Ed25519Signature};
-use defuse_deadline::Deadline;
 use defuse_sandbox::{FnCallBuilder, Sandbox, sandbox};
 use defuse_test_utils::{random::make_arbitrary, wasms::WALLET_WEBAUTHN_ED25519_WASM};
 use defuse_wallet::{
     self, AddExtensionOp, PromiseSingle, RemoveExtensionOp, Request, State, WalletOp,
-    signature::{Borsh, RequestMessage, Sha256, SigningStandard, webauthn::Webauthn},
+    signature::{Borsh, Deadline, RequestMessage, Sha256, SigningStandard, webauthn::*},
 };
-use defuse_webauthn::{ClientDataType, CollectedClientData, Ed25519, PayloadSignature};
 use impl_tools::autoimpl;
 use near_crypto::{KeyType, SecretKey, Signature};
 use near_sdk::{
@@ -163,10 +158,10 @@ async fn test_arbitrary(#[future] env: Env, #[from(make_arbitrary)] request: Req
 
     let wallet = env.account(wallet_state_init.derive_account_id());
 
-    let receiver = env
-        .generate_subaccount("receiver", NearToken::ZERO)
-        .await
-        .unwrap();
+    // let receiver = env
+    //     .generate_subaccount("receiver", NearToken::ZERO)
+    //     .await
+    //     .unwrap();
 
     let signed_request_body = RequestMessage {
         signer_id: wallet.id().clone(),

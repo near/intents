@@ -1,4 +1,6 @@
-use defuse_crypto::{Curve, Ed25519PublicKey, Ed25519Signature};
+use defuse_crypto::Curve;
+
+pub use defuse_crypto::{Ed25519PublicKey, Ed25519Signature};
 
 use crate::Algorithm;
 

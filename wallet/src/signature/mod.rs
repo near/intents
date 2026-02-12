@@ -9,7 +9,7 @@ pub mod webauthn;
 use std::borrow::Cow;
 
 use defuse_borsh_utils::adapters::{As, TimestampSeconds};
-use defuse_deadline::Deadline;
+pub use defuse_deadline::Deadline;
 use near_sdk::{AccountId, CryptoHash, env, near};
 
 use crate::Request;

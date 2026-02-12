@@ -1,4 +1,5 @@
-use defuse_crypto::{Curve, P256CompressedPublicKey, P256Signature};
+use defuse_crypto::Curve;
+pub use defuse_crypto::{P256CompressedPublicKey, P256Signature};
 use near_sdk::env;
 
 use crate::Algorithm;
