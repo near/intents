@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use near_sdk::{
     AccountId, CryptoHash, NearToken, PanicOnDefault, Promise, borsh, env, near, require,
 };
-use serde_with::{hex::Hex, serde_as};
+use near_sdk::serde_with::{hex::Hex, serde_as};
 
 pub const ERR_UNAUTHORIZED: &str = "unauthorized";
 pub const ERR_SELF_TRANSFER: &str = "self-transfer";
@@ -31,7 +31,7 @@ pub struct Contract(State);
 
 pub const STATE_KEY: &[u8] = b"";
 
-#[serde_as]
+#[serde_as(crate = "near_sdk::serde_with")]
 #[near(event_json(standard = "global-deployer"))]
 pub enum Event {
     #[event_version("1.0.0")]

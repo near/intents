@@ -1233,7 +1233,6 @@ name = "defuse-global-deployer"
 version = "0.1.0"
 dependencies = [
  "near-sdk",
- "serde_with",
 ]
 
 [[package]]

@@ -28,4 +28,4 @@ use-me = []
 
 [dependencies]
 near-sdk = { workspace = true, features = ["global-contracts", "deterministic-account-ids"] }
-serde_with = { workspace = true }
+
