@@ -49,9 +49,12 @@ pub trait Wallet {
     fn w_seqno(&self) -> u32;
 
     /// Returns whether extension with given `account_id` is enabled.
+    /// If true, this `account_id` SHOULD be allowed to call
+    /// `w_execute_extension()`.
     fn w_is_extension_enabled(&self, account_id: AccountId) -> bool;
 
-    /// Returns a set of enabled extensions.
+    /// Returns a set of enabled extensions. Each returned account
+    /// SHOULD be allowed to call `w_execute_extensions()`.
     fn w_extensions(&self) -> BTreeSet<AccountId>;
 
     /// Helper method to get chain_id of the network

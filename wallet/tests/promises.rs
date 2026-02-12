@@ -222,7 +222,7 @@ async fn env(#[future] sandbox: Sandbox) -> Env {
 }
 
 fn sign_request(secret_key: &SecretKey, body: &RequestMessage) -> PayloadSignature<Ed25519> {
-    let domain = body.to_domain();
+    let domain = body.wrap_domain();
     let serialized = borsh::to_vec(&domain).unwrap();
     let hash = near_sdk::env::sha256_array(serialized);
     sign_passkey(secret_key, &hash)

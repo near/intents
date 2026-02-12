@@ -1,5 +1,4 @@
 pub mod borsh;
-pub mod domain;
 #[cfg(feature = "ed25519")]
 pub mod ed25519;
 pub mod hash;
@@ -15,8 +14,9 @@ use near_sdk::{AccountId, CryptoHash, env, near};
 
 use crate::Request;
 
-pub use self::{borsh::*, domain::*, hash::*};
+pub use self::{borsh::*, hash::*};
 
+/// Signing standard, which defines how `signature` on `msg` is verified.
 pub trait SigningStandard<M> {
     type PublicKey;
 
@@ -63,14 +63,32 @@ pub struct RequestMessage {
 impl RequestMessage {
     pub const DOMAIN_PREFIX: &str = "NEAR_WALLET_CONTRACT";
 
+    /// Request hash
     pub fn hash(&self) -> CryptoHash {
         let serialized = ::near_sdk::borsh::to_vec(&self).unwrap_or_else(|_| unreachable!());
 
         env::sha256_array(serialized)
     }
 
-    pub fn to_domain(&self) -> SignatureDomain<'static, WalletDomain<'_>> {
+    pub fn wrap_domain(&self) -> SignatureDomain<'static, WalletDomain<'_>> {
         SignatureDomain::new(Self::DOMAIN_PREFIX, WalletDomain::V1(Cow::Borrowed(self)))
+    }
+}
+
+#[near(serializers = [borsh, json])]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SignatureDomain<'a, T> {
+    pub domain: Cow<'a, str>,
+    #[serde(flatten)]
+    pub data: T,
+}
+
+impl<'a, T> SignatureDomain<'a, T> {
+    pub fn new(domain: impl Into<Cow<'a, str>>, data: T) -> Self {
+        Self {
+            domain: domain.into(),
+            data,
+        }
     }
 }
 

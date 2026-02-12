@@ -1,7 +1,6 @@
 mod implementation;
 mod utils;
 
-use core::ops::{Deref, DerefMut};
 use std::collections::BTreeSet;
 
 use near_sdk::{AccountId, FunctionError, Promise, env, near};
@@ -11,7 +10,7 @@ use crate::{
     Wallet, WalletEvent, WalletOp, signature::SigningStandard,
 };
 
-use self::implementation::*;
+use self::implementation::{Contract, ContractExt, ContractImpl};
 
 #[near]
 impl Wallet for Contract {
@@ -106,7 +105,7 @@ impl Contract {
 
         // verify signature
         if !<Self as ContractImpl>::SigningStandard::verify(
-            &signed.to_domain(),
+            &signed.wrap_domain(),
             &self.public_key,
             &proof,
         ) {
@@ -202,19 +201,5 @@ impl Contract {
             return Err(Error::Lockout);
         }
         Ok(())
-    }
-}
-
-impl Deref for Contract {
-    type Target = State;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for Contract {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
     }
 }
