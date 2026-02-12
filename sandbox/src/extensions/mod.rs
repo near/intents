@@ -10,9 +10,9 @@ pub mod wnear;
 
 #[cfg(feature = "defuse")]
 pub mod defuse;
-#[cfg(feature = "deployer")]
-pub mod global_deployer;
 #[cfg(feature = "escrow")]
 pub mod escrow;
+#[cfg(feature = "deployer")]
+pub mod global_deployer;
 #[cfg(feature = "poa")]
 pub mod poa;
