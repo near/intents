@@ -43,6 +43,67 @@ webauthn-p256 = ["webauthn", "defuse-webauthn/p256"]
 # Raw ed25519 signature:
 ed25519 = ["defuse-crypto/ed25519"]
 
+[package.metadata.near.reproducible_build]
+image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
+image_digest = "sha256:772638e343baeeea24e49062c7d424274f3441452cc06ce97fc4e5695b19fecc"
+passed_env = []
+container_build_command = [
+    "cargo",
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--locked",
+    "--no-default-features",
+    # TODO: change default to `ed25519`
+    "--features=abi,contract,webauthn-ed25519",
+    "--no-embed-abi",
+]
+
+[package.metadata.near.reproducible_build.variant.webauthn-ed25519]
+image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
+image_digest = "sha256:772638e343baeeea24e49062c7d424274f3441452cc06ce97fc4e5695b19fecc"
+passed_env = []
+container_build_command = [
+    "cargo",
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--locked",
+    "--no-default-features",
+    "--features=abi,contract,webauthn-ed25519",
+    "--no-embed-abi",
+]
+
+[package.metadata.near.reproducible_build.variant.webauthn-p256]
+image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
+image_digest = "sha256:772638e343baeeea24e49062c7d424274f3441452cc06ce97fc4e5695b19fecc"
+passed_env = []
+container_build_command = [
+    "cargo",
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--locked",
+    "--no-default-features",
+    "--features=abi,contract,webauthn-p256",
+    "--no-embed-abi",
+]
+
+[package.metadata.near.reproducible_build.variant.no-auth]
+image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
+image_digest = "sha256:772638e343baeeea24e49062c7d424274f3441452cc06ce97fc4e5695b19fecc"
+passed_env = []
+container_build_command = [
+    "cargo",
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--locked",
+    "--no-default-features",
+    "--features=abi,contract",
+    "--no-embed-abi",
+]
+
 [dev-dependencies]
 defuse-wallet = { workspace = true, features = ["arbitrary"] }
 defuse-crypto.workspace = true
