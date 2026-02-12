@@ -1,25 +1,23 @@
 use defuse::contract::config::{DefuseConfig, RolesConfig};
-use defuse::core::{intents::MaybeIntentEvent, tokens::imt::ImtMintEvent};
+use defuse_sandbox::assert_eq_defuse_event_logs;
+use defuse_sandbox::extensions::defuse::event::ToEventLog;
 use defuse_sandbox::extensions::defuse::{
     account_manager::{AccountManagerExt, AccountViewExt},
     contract::core::{
-        accounts::{AccountEvent, NonceEvent, PublicKeyEvent},
         amounts::Amounts,
-        crypto::{Payload, PublicKey},
-        events::DefuseEvent,
+        crypto::PublicKey,
         fees::{FeesConfig, Pips},
         intents::{
             Intent,
             account::{AddPublicKey, RemovePublicKey, SetAuthByPredecessorId},
             auth::AuthCall,
-            token_diff::{TokenDeltas, TokenDiff, TokenDiffEvent},
+            token_diff::{TokenDeltas, TokenDiff},
             tokens::{
                 FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer,
                 imt::{ImtBurn, ImtMint},
             },
         },
         token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
-        tokens::TransferEvent,
     },
     deployer::DefuseExt,
     intents::{ExecuteIntentsExt, SimulateIntents},
@@ -36,14 +34,12 @@ use defuse_sandbox::extensions::{
 use crate::{
     sandbox::api::types::{json::Base64VecU8, nft::NFTContractMetadata},
     tests::defuse::env::Env,
-    tests::defuse::intents::AccountNonceIntentEvent,
     utils::fixtures::public_key,
 };
 use defuse_test_utils::wasms::{DEFUSE_WASM, NON_FUNGIBLE_TOKEN_WASM};
 use near_contract_standards::non_fungible_token::metadata::{NFT_METADATA_SPEC, TokenMetadata};
-use near_sdk::{AsNep297Event, NearToken};
+use near_sdk::NearToken;
 use rstest::rstest;
-use std::borrow::Cow;
 
 #[rstest]
 #[trace]
@@ -74,7 +70,6 @@ async fn simulate_transfer_intent() {
         .sign_defuse_payload_default(&env.defuse, [transfer_intent.clone()])
         .await
         .unwrap();
-    let nonce = transfer_intent_payload.extract_nonce().unwrap();
 
     let result = env
         .defuse
@@ -82,29 +77,7 @@ async fn simulate_transfer_intent() {
         .await
         .unwrap();
 
-    let events = vec![
-        DefuseEvent::Transfer(
-            vec![MaybeIntentEvent::new_with_hash(
-                AccountEvent {
-                    account_id: user1.id().clone().into(),
-                    event: TransferEvent {
-                        receiver_id: Cow::Borrowed(&transfer_intent.receiver_id),
-                        tokens: transfer_intent.tokens,
-                        memo: transfer_intent.memo.as_deref().map(Cow::Borrowed),
-                    },
-                },
-                transfer_intent_payload.hash(),
-            )]
-            .into(),
-        )
-        .to_nep297_event()
-        .to_event_log(),
-        AccountNonceIntentEvent::new(&user1.id(), nonce, &transfer_intent_payload)
-            .into_event()
-            .to_nep297_event()
-            .to_event_log(),
-    ];
-    assert_eq!(result.report.logs, events);
+    assert_eq_defuse_event_logs!(transfer_intent_payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]
@@ -147,7 +120,6 @@ async fn simulate_ft_withdraw_intent() {
         .sign_defuse_payload_default(&env.defuse, [ft_withdraw_intent.clone()])
         .await
         .unwrap();
-    let nonce = ft_withdraw_payload.extract_nonce().unwrap();
 
     let result = env
         .defuse
@@ -155,24 +127,7 @@ async fn simulate_ft_withdraw_intent() {
         .await
         .unwrap();
 
-    assert_eq!(
-        result.report.logs,
-        vec![
-            DefuseEvent::FtWithdraw(Cow::Owned(vec![MaybeIntentEvent::new_with_hash(
-                AccountEvent {
-                    account_id: user1.id().clone().into(),
-                    event: Cow::Owned(ft_withdraw_intent),
-                },
-                ft_withdraw_payload.hash(),
-            )]))
-            .to_nep297_event()
-            .to_event_log(),
-            AccountNonceIntentEvent::new(&user1.id(), nonce, &ft_withdraw_payload)
-                .into_event()
-                .to_nep297_event()
-                .to_event_log(),
-        ]
-    );
+    assert_eq_defuse_event_logs!(ft_withdraw_payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]
@@ -225,7 +180,6 @@ async fn simulate_native_withdraw_intent() {
         .sign_defuse_payload_default(&env.defuse, [native_withdraw_intent.clone()])
         .await
         .unwrap();
-    let nonce = native_withdraw_payload.extract_nonce().unwrap();
 
     let result = env
         .defuse
@@ -233,24 +187,7 @@ async fn simulate_native_withdraw_intent() {
         .await
         .unwrap();
 
-    assert_eq!(
-        result.report.logs,
-        vec![
-            DefuseEvent::NativeWithdraw(Cow::Owned(vec![MaybeIntentEvent::new_with_hash(
-                AccountEvent {
-                    account_id: user1.id().clone().into(),
-                    event: Cow::Owned(native_withdraw_intent),
-                },
-                native_withdraw_payload.hash(),
-            )]))
-            .to_nep297_event()
-            .to_event_log(),
-            AccountNonceIntentEvent::new(&user1.id(), nonce, &native_withdraw_payload)
-                .into_event()
-                .to_nep297_event()
-                .to_event_log(),
-        ]
-    );
+    assert_eq_defuse_event_logs!(native_withdraw_payload.to_event_log(), result.report.logs);
 }
 
 pub const DUMMY_NFT_URL: &str = "http://example.com/nft/";
@@ -335,7 +272,6 @@ async fn simulate_nft_withdraw_intent() {
         .sign_defuse_payload_default(&env.defuse, [nft_withdraw_intent.clone()])
         .await
         .unwrap();
-    let nonce = nft_withdraw_payload.extract_nonce().unwrap();
 
     let result = env
         .defuse
@@ -343,24 +279,7 @@ async fn simulate_nft_withdraw_intent() {
         .await
         .unwrap();
 
-    assert_eq!(
-        result.report.logs,
-        vec![
-            DefuseEvent::NftWithdraw(Cow::Owned(vec![MaybeIntentEvent::new_with_hash(
-                AccountEvent {
-                    account_id: user1.id().clone().into(),
-                    event: Cow::Owned(nft_withdraw_intent),
-                },
-                nft_withdraw_payload.hash()
-            )]))
-            .to_nep297_event()
-            .to_event_log(),
-            AccountNonceIntentEvent::new(&user1.id(), nonce, &nft_withdraw_payload)
-                .into_event()
-                .to_nep297_event()
-                .to_event_log(),
-        ]
-    );
+    assert_eq_defuse_event_logs!(nft_withdraw_payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]
@@ -460,7 +379,6 @@ async fn simulate_mt_withdraw_intent() {
         .sign_defuse_payload_default(&defuse2, [mt_withdraw_intent.clone()])
         .await
         .unwrap();
-    let nonce = mt_withdraw_payload.extract_nonce().unwrap();
 
     // Simulate the intent on defuse2 (which has the tokens)
     let result = defuse2
@@ -468,24 +386,7 @@ async fn simulate_mt_withdraw_intent() {
         .await
         .unwrap();
 
-    assert_eq!(
-        result.report.logs,
-        vec![
-            DefuseEvent::MtWithdraw(Cow::Owned(vec![MaybeIntentEvent::new_with_hash(
-                AccountEvent {
-                    account_id: user1.id().clone().into(),
-                    event: Cow::Owned(mt_withdraw_intent),
-                },
-                mt_withdraw_payload.hash(),
-            )]))
-            .to_nep297_event()
-            .to_event_log(),
-            AccountNonceIntentEvent::new(&user1.id(), nonce, &mt_withdraw_payload)
-                .into_event()
-                .to_nep297_event()
-                .to_event_log(),
-        ]
-    );
+    assert_eq_defuse_event_logs!(mt_withdraw_payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]
@@ -539,7 +440,6 @@ async fn simulate_storage_deposit_intent() {
         .sign_defuse_payload_default(&env.defuse, [storage_deposit_intent.clone()])
         .await
         .unwrap();
-    let nonce = storage_deposit_payload.extract_nonce().unwrap();
 
     let result = env
         .defuse
@@ -547,24 +447,7 @@ async fn simulate_storage_deposit_intent() {
         .await
         .unwrap();
 
-    assert_eq!(
-        result.report.logs,
-        vec![
-            DefuseEvent::StorageDeposit(Cow::Owned(vec![MaybeIntentEvent::new_with_hash(
-                AccountEvent {
-                    account_id: user1.id().clone().into(),
-                    event: Cow::Owned(storage_deposit_intent),
-                },
-                storage_deposit_payload.hash(),
-            )]))
-            .to_nep297_event()
-            .to_event_log(),
-            AccountNonceIntentEvent::new(&user1.id(), nonce, &storage_deposit_payload)
-                .into_event()
-                .to_nep297_event()
-                .to_event_log(),
-        ]
-    );
+    assert_eq_defuse_event_logs!(storage_deposit_payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]
@@ -634,64 +517,16 @@ async fn simulate_token_diff_intent() {
         .sign_defuse_payload_default(&env.defuse, [user1_token_diff.clone()])
         .await
         .unwrap();
-    let nonce1 = user1_payload.extract_nonce().unwrap();
 
     let user2_payload = user2
         .sign_defuse_payload_default(&env.defuse, [user2_token_diff.clone()])
         .await
         .unwrap();
-    let nonce2 = user2_payload.extract_nonce().unwrap();
 
-    let result = env
-        .defuse
-        .simulate_intents([user1_payload.clone(), user2_payload.clone()])
-        .await
-        .unwrap();
+    let payload = [user1_payload, user2_payload];
+    let result = env.defuse.simulate_intents(payload.clone()).await.unwrap();
 
-    assert_eq!(
-        result.report.logs,
-        vec![
-            DefuseEvent::TokenDiff(Cow::Owned(vec![MaybeIntentEvent::new_with_hash(
-                AccountEvent {
-                    account_id: user1.id().clone().into(),
-                    event: TokenDiffEvent {
-                        diff: Cow::Owned(user1_token_diff),
-                        fees_collected: Amounts::default(),
-                    },
-                },
-                user1_payload.hash(),
-            )]))
-            .to_nep297_event()
-            .to_event_log(),
-            DefuseEvent::TokenDiff(Cow::Owned(vec![MaybeIntentEvent::new_with_hash(
-                AccountEvent {
-                    account_id: user2.id().clone().into(),
-                    event: TokenDiffEvent {
-                        diff: Cow::Owned(user2_token_diff),
-                        fees_collected: Amounts::default(),
-                    },
-                },
-                user2_payload.hash(),
-            )]))
-            .to_nep297_event()
-            .to_event_log(),
-            DefuseEvent::IntentsExecuted(
-                vec![
-                    MaybeIntentEvent::new_with_hash(
-                        AccountEvent::new(user1.id(), NonceEvent::new(nonce1)),
-                        user1_payload.hash()
-                    ),
-                    MaybeIntentEvent::new_with_hash(
-                        AccountEvent::new(user2.id(), NonceEvent::new(nonce2)),
-                        user2_payload.hash()
-                    ),
-                ]
-                .into()
-            )
-            .to_nep297_event()
-            .to_event_log(),
-        ]
-    );
+    assert_eq_defuse_event_logs!(payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]
@@ -712,7 +547,6 @@ async fn simulate_add_public_key_intent(public_key: PublicKey) {
         .sign_defuse_payload_default(&env.defuse, [add_public_key_intent])
         .await
         .unwrap();
-    let nonce = add_public_key_payload.extract_nonce().unwrap();
 
     let result = env
         .defuse
@@ -720,25 +554,7 @@ async fn simulate_add_public_key_intent(public_key: PublicKey) {
         .await
         .unwrap();
 
-    let events = vec![
-        DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new_with_hash(
-            AccountEvent::new(
-                user1.id(),
-                PublicKeyEvent {
-                    public_key: Cow::Borrowed(&new_public_key),
-                },
-            ),
-            add_public_key_payload.hash(),
-        ))
-        .to_nep297_event()
-        .to_event_log(),
-        AccountNonceIntentEvent::new(&user1.id(), nonce, &add_public_key_payload)
-            .into_event()
-            .to_nep297_event()
-            .to_event_log(),
-    ];
-
-    assert_eq!(result.report.logs, events);
+    assert_eq_defuse_event_logs!(add_public_key_payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]
@@ -772,7 +588,6 @@ async fn simulate_remove_public_key_intent(public_key: PublicKey) {
         .sign_defuse_payload_default(&env.defuse, [remove_public_key_intent])
         .await
         .unwrap();
-    let remove_nonce = remove_public_key_payload.extract_nonce().unwrap();
 
     let result = env
         .defuse
@@ -780,25 +595,7 @@ async fn simulate_remove_public_key_intent(public_key: PublicKey) {
         .await
         .unwrap();
 
-    let events = vec![
-        DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::new_with_hash(
-            AccountEvent::new(
-                user1.id(),
-                PublicKeyEvent {
-                    public_key: Cow::Borrowed(&new_public_key),
-                },
-            ),
-            remove_public_key_payload.hash(),
-        ))
-        .to_nep297_event()
-        .to_event_log(),
-        AccountNonceIntentEvent::new(&user1.id(), remove_nonce, &remove_public_key_payload)
-            .into_event()
-            .to_nep297_event()
-            .to_event_log(),
-    ];
-
-    assert_eq!(result.report.logs, events);
+    assert_eq_defuse_event_logs!(remove_public_key_payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]
@@ -815,7 +612,6 @@ async fn simulate_set_auth_by_predecessor_id_intent() {
         .sign_defuse_payload_default(&env.defuse, [set_auth_intent.clone()])
         .await
         .unwrap();
-    let nonce = set_auth_payload.extract_nonce().unwrap();
 
     let result = env
         .defuse
@@ -823,20 +619,7 @@ async fn simulate_set_auth_by_predecessor_id_intent() {
         .await
         .unwrap();
 
-    let events = vec![
-        DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new_with_hash(
-            AccountEvent::new(user1.id(), Cow::Borrowed(&set_auth_intent)),
-            set_auth_payload.hash(),
-        ))
-        .to_nep297_event()
-        .to_event_log(),
-        AccountNonceIntentEvent::new(&user1.id(), nonce, &set_auth_payload)
-            .into_event()
-            .to_nep297_event()
-            .to_event_log(),
-    ];
-
-    assert_eq!(result.report.logs, events);
+    assert_eq_defuse_event_logs!(set_auth_payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]
@@ -891,23 +674,13 @@ async fn simulate_auth_call_intent() {
         .await
         .unwrap();
 
-    let nonce = auth_call_payload.extract_nonce().unwrap();
-
     let result = env
         .defuse
         .simulate_intents([auth_call_payload.clone()])
         .await
         .unwrap();
 
-    assert_eq!(
-        result.report.logs,
-        vec![
-            AccountNonceIntentEvent::new(&user1.id(), nonce, &auth_call_payload)
-                .into_event()
-                .to_nep297_event()
-                .to_event_log(),
-        ]
-    );
+    assert_eq_defuse_event_logs!(auth_call_payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]
@@ -934,35 +707,13 @@ async fn simulate_mint_intent() {
         .await
         .unwrap();
 
-    let nonce = mint_payload.extract_nonce().unwrap();
-
     let result = env
         .defuse
         .simulate_intents([mint_payload.clone()])
         .await
         .unwrap();
 
-    let events = vec![
-        DefuseEvent::ImtMint(Cow::Owned(vec![MaybeIntentEvent::new_with_hash(
-            AccountEvent {
-                account_id: user.id().clone().into(),
-                event: ImtMintEvent {
-                    receiver_id: Cow::Borrowed(&mint_intent.receiver_id),
-                    tokens: mint_intent.tokens.clone(),
-                    memo: mint_intent.memo.as_deref().map(Cow::Borrowed),
-                },
-            },
-            mint_payload.hash(),
-        )]))
-        .to_nep297_event()
-        .to_event_log(),
-        AccountNonceIntentEvent::new(&user.id(), nonce, &mint_payload)
-            .into_event()
-            .to_nep297_event()
-            .to_event_log(),
-    ];
-
-    assert_eq!(result.report.logs, events);
+    assert_eq_defuse_event_logs!(mint_payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]
@@ -1004,7 +755,6 @@ async fn simulate_burn_intent() {
         .sign_defuse_payload_default(&env.defuse, [burn_intent.clone()])
         .await
         .unwrap();
-    let nonce = burn_payload.extract_nonce().unwrap();
 
     let result = env
         .defuse
@@ -1012,24 +762,7 @@ async fn simulate_burn_intent() {
         .await
         .unwrap();
 
-    assert_eq!(
-        result.report.logs,
-        vec![
-            DefuseEvent::ImtBurn(Cow::Owned(vec![MaybeIntentEvent::new_with_hash(
-                AccountEvent {
-                    account_id: user.id().clone().into(),
-                    event: Cow::Owned(burn_intent)
-                },
-                burn_payload.hash(),
-            )]))
-            .to_nep297_event()
-            .to_event_log(),
-            AccountNonceIntentEvent::new(&user.id(), nonce, &burn_payload)
-                .into_event()
-                .to_nep297_event()
-                .to_event_log(),
-        ]
-    );
+    assert_eq_defuse_event_logs!(burn_payload.to_event_log(), result.report.logs);
 }
 
 #[rstest]

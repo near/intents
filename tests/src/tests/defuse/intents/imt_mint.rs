@@ -1,34 +1,24 @@
-use std::borrow::Cow;
-
 use defuse::contract::config::{DefuseConfig, RolesConfig};
-use defuse::core::accounts::AccountEvent;
 use defuse::core::amounts::Amounts;
-use defuse::core::crypto::Payload;
-use defuse::core::events::DefuseEvent;
 use defuse::core::fees::FeesConfig;
-use defuse::core::intents::{
-    MaybeIntentEvent,
-    tokens::{NotifyOnTransfer, imt::ImtMint},
-};
+use defuse::core::intents::tokens::{NotifyOnTransfer, imt::ImtMint};
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::imt::ImtTokenId;
 use defuse::core::token_id::nep245::Nep245TokenId;
 use defuse::core::tokens::MAX_TOKEN_ID_LEN;
-use defuse::core::tokens::imt::ImtMintEvent;
-use defuse::nep245::{MtEvent, MtMintEvent};
 use defuse_fees::Pips;
-use defuse_sandbox::assert_a_contains_b;
+use defuse_sandbox::extensions::defuse::event::ToEventLog;
 use defuse_sandbox::extensions::mt::MtViewExt;
 use defuse_sandbox::tx::FnCallBuilder;
 use defuse_test_utils::asserts::ResultAssertsExt;
 use multi_token_receiver_stub::MTReceiverMode;
-use near_sdk::json_types::U128;
 use rstest::rstest;
 
-use near_sdk::{AccountId, AsNep297Event, Gas, NearToken};
+use near_sdk::{AccountId, Gas, NearToken};
 
 use crate::tests::defuse::env::Env;
 use crate::tests::defuse::intents::transfer::TransferCallExpectation;
+use defuse_sandbox::assert_eq_defuse_event_logs;
 use defuse_sandbox::extensions::defuse::deployer::DefuseExt;
 use defuse_sandbox::extensions::defuse::intents::ExecuteIntentsExt;
 use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
@@ -72,37 +62,7 @@ async fn mt_mint_intent() {
         amount
     );
 
-    let events = [
-        MtEvent::MtMint(Cow::Owned(vec![MtMintEvent {
-            owner_id: user.id().into(),
-            token_ids: vec![mt_id.to_string()].into(),
-            amounts: vec![U128::from(amount)].into(),
-            memo: Some(memo.into()),
-        }]))
-        .to_nep297_event()
-        .to_event_log(),
-        DefuseEvent::ImtMint(
-            vec![MaybeIntentEvent::new_with_hash(
-                AccountEvent {
-                    account_id: user.id().clone().into(),
-                    event: ImtMintEvent {
-                        receiver_id: Cow::Borrowed(&intent.receiver_id),
-                        tokens: intent.tokens.clone(),
-                        memo: intent.memo.as_deref().map(Cow::Borrowed),
-                    },
-                },
-                mint_payload.hash(),
-            )]
-            .into(),
-        )
-        .to_nep297_event()
-        .to_event_log(),
-    ];
-
-    assert_a_contains_b!(
-        a: result.logs().clone(),
-        b: events
-    );
+    assert_eq_defuse_event_logs!(mint_payload.to_event_log(), result.logs());
 }
 
 #[rstest]
@@ -191,16 +151,19 @@ async fn mt_mint_intent_to_defuse() {
                 .into(),
         };
 
-        let transfer_payload = user
+        let mint_payload = user
             .sign_defuse_payload_default(&env.defuse, [mint_intent])
             .await
             .unwrap();
 
         assert!(defuse2.mt_tokens(..).await.unwrap().is_empty());
 
-        env.simulate_and_execute_intents(env.defuse.id(), [transfer_payload])
+        let res = env
+            .simulate_and_execute_intents(env.defuse.id(), [mint_payload.clone()])
             .await
             .unwrap();
+
+        assert_eq_defuse_event_logs!(mint_payload.to_event_log(), res.logs());
 
         let mt_token = TokenId::from(ImtTokenId::new(user.id().clone(), ft.to_string()));
 
@@ -297,14 +260,17 @@ async fn mt_mint_intent_with_msg_to_receiver_smc(#[case] expectation: TransferCa
         notification: NotifyOnTransfer::new(msg).into(),
     };
 
-    let transfer_payload = user
+    let mint_payload = user
         .sign_defuse_payload_default(&env.defuse, [mint_intent])
         .await
         .unwrap();
 
-    env.simulate_and_execute_intents(env.defuse.id(), [transfer_payload])
+    let res = env
+        .simulate_and_execute_intents(env.defuse.id(), [mint_payload.clone()])
         .await
         .unwrap();
+
+    assert_eq_defuse_event_logs!(mint_payload.to_event_log(), res.logs());
 
     let mt_token = TokenId::from(ImtTokenId::new(user.id().clone(), ft1.to_string()));
 

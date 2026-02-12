@@ -1,11 +1,13 @@
 use crate::sandbox::extensions::mt::MtViewExt;
 use crate::tests::defuse::env::Env;
+use defuse_sandbox::assert_eq_defuse_event_logs;
 use defuse_sandbox::extensions::defuse::contract::contract::config::{DefuseConfig, RolesConfig};
 use defuse_sandbox::extensions::defuse::contract::core::fees::FeesConfig;
 use defuse_sandbox::extensions::defuse::contract::core::fees::Pips;
 use defuse_sandbox::extensions::defuse::contract::core::intents::tokens::{
     NotifyOnTransfer, Transfer,
 };
+use defuse_sandbox::extensions::defuse::event::ToEventLog;
 use defuse_sandbox::extensions::defuse::intents::ExecuteIntentsExt;
 use defuse_test_utils::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 
@@ -51,11 +53,12 @@ async fn transfer_intent() {
     };
 
     let initial_transfer_payload = user
-        .sign_defuse_payload_default(&env.defuse, [transfer_intent])
+        .sign_defuse_payload_default(&env.defuse, [transfer_intent.clone()])
         .await
         .unwrap();
 
-    env.simulate_and_execute_intents(env.defuse.id(), [initial_transfer_payload])
+    let res = env
+        .simulate_and_execute_intents(env.defuse.id(), [initial_transfer_payload.clone()])
         .await
         .unwrap();
 
@@ -74,6 +77,8 @@ async fn transfer_intent() {
             .unwrap(),
         1000
     );
+
+    assert_eq_defuse_event_logs!(initial_transfer_payload.to_event_log(), res.logs());
 }
 
 #[derive(Debug, Clone)]
@@ -163,9 +168,12 @@ async fn transfer_intent_to_defuse() {
 
         assert!(defuse2.mt_tokens(..).await.unwrap().is_empty());
 
-        env.simulate_and_execute_intents(env.defuse.id(), [transfer_payload])
+        let res = env
+            .simulate_and_execute_intents(env.defuse.id(), [transfer_payload.clone()])
             .await
             .unwrap();
+
+        assert_eq_defuse_event_logs!(transfer_payload.to_event_log(), res.logs());
 
         assert_eq!(
             env.defuse
@@ -295,9 +303,12 @@ async fn transfer_intent_with_msg_to_receiver_smc(#[case] expectation: TransferC
         .await
         .unwrap();
 
-    env.simulate_and_execute_intents(env.defuse.id(), [transfer_payload])
+    let res = env
+        .simulate_and_execute_intents(env.defuse.id(), [transfer_payload.clone()])
         .await
         .unwrap();
+
+    assert_eq_defuse_event_logs!(transfer_payload.to_event_log(), res.logs());
 
     assert_eq!(
         env.defuse

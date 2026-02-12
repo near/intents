@@ -1,6 +1,12 @@
-use defuse_sandbox::extensions::defuse::{
-    contract::contract::Role, intents::ExecuteIntentsExt, relayer::RelayerKeysExt,
+use defuse::core::payload::multi::MultiPayload;
+use defuse_sandbox::{
+    assert_eq_defuse_event_logs,
+    extensions::defuse::{
+        contract::contract::Role, event::ToEventLog, intents::ExecuteIntentsExt,
+        relayer::RelayerKeysExt,
+    },
 };
+
 use rstest::rstest;
 
 use crate::{
@@ -58,10 +64,13 @@ async fn relayer_keys() {
         .assert_err_contains("key already exists");
 
     // Create a Function-call Key, then use it to execute an (empty) intent
-    new_relayer_signer
+    let res = new_relayer_signer
         .simulate_and_execute_intents(env.defuse.id(), []) // Empty because it's just to ensure that authorization works/doesn't work
         .await
         .unwrap();
+
+    let payload: [MultiPayload; 0] = [];
+    assert_eq_defuse_event_logs!(payload.to_event_log(), res.logs());
 
     // Attempt to delete the key by an unauthorized user
     other_user

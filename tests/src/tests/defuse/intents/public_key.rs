@@ -1,12 +1,16 @@
 use defuse::core::{crypto::Payload, intents::MaybeIntentEvent};
-use defuse_sandbox::extensions::defuse::contract::core::{
-    accounts::{AccountEvent, PublicKeyEvent},
-    crypto::PublicKey,
-    events::DefuseEvent,
-    intents::account::{AddPublicKey, RemovePublicKey},
-};
+use defuse_sandbox::extensions::defuse::event::ToEventLog;
 use defuse_sandbox::extensions::defuse::{
     intents::ExecuteIntentsExt, nonce::ExtractNonceExt, signer::DefaultDefuseSignerExt,
+};
+use defuse_sandbox::{
+    assert_eq_defuse_event_logs,
+    extensions::defuse::contract::core::{
+        accounts::{AccountEvent, PublicKeyEvent},
+        crypto::PublicKey,
+        events::DefuseEvent,
+        intents::account::{AddPublicKey, RemovePublicKey},
+    },
 };
 use near_sdk::AsNep297Event;
 use rstest::rstest;
@@ -97,30 +101,11 @@ async fn execute_remove_public_key_intent(public_key: PublicKey) {
         )
         .await
         .unwrap();
-    let remove_nonce = remove_public_key_payload.extract_nonce().unwrap();
 
     let result = env
         .simulate_and_execute_intents(env.defuse.id(), [remove_public_key_payload.clone()])
         .await
         .unwrap();
 
-    let events = vec![
-        DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::new_with_hash(
-            AccountEvent::new(
-                user.id(),
-                PublicKeyEvent {
-                    public_key: Cow::Borrowed(&new_public_key),
-                },
-            ),
-            remove_public_key_payload.hash(),
-        ))
-        .to_nep297_event()
-        .to_event_log(),
-        AccountNonceIntentEvent::new(&user.id(), remove_nonce, &remove_public_key_payload)
-            .into_event()
-            .to_nep297_event()
-            .to_event_log(),
-    ];
-
-    assert_eq!(result.logs().clone(), events);
+    assert_eq_defuse_event_logs!(remove_public_key_payload.to_event_log(), result.logs());
 }
