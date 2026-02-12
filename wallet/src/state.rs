@@ -7,20 +7,11 @@ use near_sdk::{
 };
 
 #[near(serializers = [borsh, json])]
-// // #[serde(bound(
-// //     serialize = "<S as SigningStandard>::PublicKey: Serialize",
-// //     deserialize = "<S as SigningStandard>::PublicKey: DeserializeOwned",
-// ))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct State<P> {
     pub signature_enabled: bool,
     pub seqno: u32,
     pub wallet_id: u32,
-    // #[cfg_attr(
-    //     all(feature = "abi", not(target_arch = "wasm32")),
-    //     // schemars(with = "String"),
-    //     // borsh(schema(params = "S => <S as SigningStandard>::PublicKey"))
-    // )]
     pub public_key: P,
     #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
     pub extensions: BTreeSet<AccountId>,

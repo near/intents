@@ -54,7 +54,7 @@ pub trait Wallet {
     fn w_is_extension_enabled(&self, account_id: AccountId) -> bool;
 
     /// Returns a set of enabled extensions. Each returned account
-    /// SHOULD be allowed to call `w_execute_extensions()`.
+    /// SHOULD be allowed to call `w_execute_extension()`.
     fn w_extensions(&self) -> BTreeSet<AccountId>;
 
     /// Helper method to get chain_id of the network

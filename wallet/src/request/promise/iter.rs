@@ -1,4 +1,15 @@
-use crate::{PromiseDAG, PromiseDAGRef, PromiseSingle};
+use crate::{PromiseDAG, PromiseSingle};
+
+#[derive(Debug, Clone)]
+pub struct IntoIter {
+    stack: Vec<PromiseDAG>,
+}
+
+impl IntoIter {
+    fn new(d: PromiseDAG) -> Self {
+        Self { stack: vec![d] }
+    }
+}
 
 impl IntoIterator for PromiseDAG {
     type Item = PromiseSingle;
@@ -6,13 +17,8 @@ impl IntoIterator for PromiseDAG {
 
     /// Returns an iterator over all single promises in arbitrary order
     fn into_iter(self) -> Self::IntoIter {
-        IntoIter { stack: vec![self] }
+        IntoIter::new(self)
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct IntoIter {
-    stack: Vec<PromiseDAG>,
 }
 
 impl Iterator for IntoIter {
@@ -33,20 +39,26 @@ impl Iterator for IntoIter {
     }
 }
 
+pub struct Iter<'a> {
+    stack: Vec<PromiseDAGRef<'a>>,
+}
+
+impl<'a> Iter<'a> {
+    fn new(d: &'a PromiseDAG) -> Self {
+        Self {
+            stack: vec![PromiseDAGRef::from(d)],
+        }
+    }
+}
+
 impl<'a> IntoIterator for &'a PromiseDAG {
     type Item = &'a PromiseSingle;
 
     type IntoIter = Iter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
-        Iter {
-            stack: vec![self.as_ref()],
-        }
+        Iter::new(self)
     }
-}
-
-pub struct Iter<'a> {
-    stack: Vec<PromiseDAGRef<'a>>,
 }
 
 impl<'a> Iterator for Iter<'a> {
@@ -61,11 +73,25 @@ impl<'a> Iterator for Iter<'a> {
             }
 
             let d = self.stack.pop()?;
-            self.stack.extend(d.after.iter().map(PromiseDAG::as_ref));
+            self.stack.extend(d.after.iter().map(PromiseDAGRef::from));
         }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         (self.stack.last().map_or(0, |d| d.promises.len()), None)
+    }
+}
+
+struct PromiseDAGRef<'a> {
+    after: &'a [PromiseDAG],
+    promises: &'a [PromiseSingle],
+}
+
+impl<'a> From<&'a PromiseDAG> for PromiseDAGRef<'a> {
+    fn from(d: &'a PromiseDAG) -> Self {
+        Self {
+            after: &d.after,
+            promises: &d.promises,
+        }
     }
 }

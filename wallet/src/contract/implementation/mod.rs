@@ -17,6 +17,9 @@ type PublicKey = <SS as SigningStandard<&'static RequestMessage>>::PublicKey;
 /// State of the contract.
 type State = crate::State<PublicKey>;
 
+/// `#[near(contract_metadata(standard(...)))]` macro doesn't support
+/// adding more standards in separate attributes. So, we have to combine
+/// them all depending on a specific feature enabled.
 macro_rules! contract {
     ($(
         #[cfg_attr(
@@ -30,6 +33,8 @@ macro_rules! contract {
             mod $mod;
         )+
 
+        /// By default, the contract implements `no-sign`, i.e. always
+        /// rejects signature.
         #[cfg(not(any($(feature = $feature),+)))]
         const _: () = {
             use crate::signature::no_sign::NoSign;

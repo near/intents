@@ -60,14 +60,6 @@ impl PromiseDAG {
         self.after.is_empty() && self.promises.is_empty()
     }
 
-    #[allow(clippy::missing_const_for_fn)]
-    pub fn as_ref(&self) -> PromiseDAGRef<'_> {
-        PromiseDAGRef {
-            after: &self.after,
-            promises: &self.promises,
-        }
-    }
-
     pub fn iter(&self) -> Iter<'_> {
         <&Self as IntoIterator>::into_iter(self)
     }
@@ -75,22 +67,26 @@ impl PromiseDAG {
     /// Returns the length of the longest chain of subsequent action
     /// receipts to be created.
     pub fn depth(&self) -> usize {
-        // TODO: avoid recursion
-        self.after
-            .iter()
-            .map(Self::depth)
-            .max()
-            .unwrap_or(0)
-            .saturating_add(self.promises.len().min(1))
+        let mut max_depth = 0;
+        // store (node, node_depth)
+        let mut stack = vec![(self, 0usize)];
+
+        while let Some((d, mut depth)) = stack.pop() {
+            depth = depth.saturating_add(d.promises.len().min(1));
+            max_depth = max_depth.max(depth);
+            stack.extend(d.after.iter().map(|d| (d, depth)));
+        }
+
+        max_depth
     }
 
     /// Returns the total number of action receipts to be created.
     pub fn total_count(&self) -> usize {
-        let mut stack = vec![self.as_ref()];
+        let mut stack = vec![self];
         let mut total: usize = 0;
         while let Some(d) = stack.pop() {
             total = total.saturating_add(d.promises.len());
-            stack.extend(d.after.iter().map(Self::as_ref));
+            stack.extend(&d.after);
         }
         total
     }
@@ -133,18 +129,24 @@ impl From<PromiseSingle> for PromiseDAG {
     }
 }
 
-pub struct PromiseDAGRef<'a> {
-    pub after: &'a [PromiseDAG],
-    pub promises: &'a [PromiseSingle],
-}
-
 #[cfg(test)]
 mod tests {
+
     use defuse_test_utils::random::make_arbitrary;
     use near_sdk::{AccountId, borsh, env, serde_json};
     use rstest::rstest;
 
     use super::*;
+
+    #[test]
+    fn and_assosiative() {
+        assert_eq!(p(1).and(p(2)).and(p(3)), p(1).and(p(2).and(p(3))));
+    }
+
+    #[test]
+    fn then_non_assosiative() {
+        assert_ne!(p(1).and(p(2)).then(p(3)), p(1).and(p(2).then(p(3))));
+    }
 
     #[rstest]
     #[case(PromiseDAG::default(), 0)]
@@ -163,14 +165,18 @@ mod tests {
     }
 
     #[rstest]
-    #[case(PromiseDAG::default(), vec![])]
-    #[case(p(1), vec![p(1)])]
+    #[case(PromiseDAG::default(), [])]
+    #[case(p(1), [p(1)])]
     #[case(
         p(1).then(p(2)).and(p(3)).then_concurrent([p(4), p(5)]).then(p(6)),
-        vec![p(1), p(2), p(3), p(4), p(5), p(6)],
+        [p(1), p(2), p(3), p(4), p(5), p(6)],
     )]
-    fn test_iter(#[case] d: impl Into<PromiseDAG>, #[case] mut expected: Vec<PromiseSingle>) {
+    fn test_iter(
+        #[case] d: impl Into<PromiseDAG>,
+        #[case] expected: impl Into<Vec<PromiseSingle>>,
+    ) {
         let mut ps = d.into().into_iter().collect::<Vec<_>>();
+        let mut expected = expected.into();
 
         // sort by hashes
         ps.sort_by_key(|p| env::sha256(borsh::to_vec(p).unwrap()));
