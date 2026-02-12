@@ -147,7 +147,7 @@ where
     }
 }
 
-#[cfg(feature = "schema")]
+#[cfg(all(feature = "schema", not(target_arch = "wasm32")))]
 const _: () = {
     use near_sdk::borsh::{
         BorshSchema,

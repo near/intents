@@ -17,9 +17,9 @@ mod chrono;
 #[cfg(feature = "chrono")]
 pub use self::chrono::*;
 
-#[cfg(feature = "schema")]
+#[cfg(all(feature = "schema", not(target_arch = "wasm32")))]
 mod schema;
-#[cfg(feature = "schema")]
+#[cfg(all(feature = "schema", not(target_arch = "wasm32")))]
 pub use self::schema::*;
 
 pub trait BorshSerializeAs<T: ?Sized> {
