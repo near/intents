@@ -11,6 +11,7 @@ workspace = true
 [features]
 defuse = ["dep:defuse", "dep:defuse-test-utils", "dep:defuse-serde-utils"]
 poa = ["dep:defuse-poa-factory"]
+deployer = ["dep:defuse-global-deployer"]
 escrow = ["dep:defuse-escrow-swap"]
 
 [dependencies]
@@ -33,6 +34,7 @@ tracing.workspace = true
 near-contract-standards.workspace = true
 
 defuse-poa-factory = {workspace = true, optional = true, features = ["contract"] }
+defuse-global-deployer = { workspace = true, optional = true }
 defuse-escrow-swap = { workspace = true, optional = true, features = ["auth_call"] }
 
 defuse = { workspace = true, optional = true, features = ["contract", "imt"] }

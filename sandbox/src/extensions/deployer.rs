@@ -1,0 +1,91 @@
+use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
+use defuse_global_deployer::Storage as DeployerStorage;
+use near_sdk::{
+    AccountId, GlobalContractId, NearToken,
+    serde_json::json,
+    state_init::{StateInit, StateInitV1},
+};
+
+#[allow(async_fn_in_trait)]
+pub trait DeployerExt {
+    async fn deploy_instance(
+        &self,
+        deployer_code_hash_id: GlobalContractId,
+        state: DeployerStorage,
+    ) -> anyhow::Result<Account>;
+
+    async fn gd_deploy(&self, target: &AccountId, wasm: &[u8]) -> anyhow::Result<()>;
+
+    async fn gd_use_me(&self, target: &AccountId) -> anyhow::Result<()>;
+    async fn gd_transfer_ownership(
+        &self,
+        target: &AccountId,
+        new_owner: &AccountId,
+    ) -> anyhow::Result<()>;
+}
+
+#[allow(async_fn_in_trait)]
+pub trait DeployerViewExt {
+    async fn deployer_state(&self) -> anyhow::Result<DeployerStorage>;
+}
+
+impl DeployerExt for SigningAccount {
+    async fn deploy_instance(
+        &self,
+        global_contract_id: GlobalContractId,
+        state: DeployerStorage,
+    ) -> anyhow::Result<Account> {
+        let account_id = self
+            .state_init(StateInit::V1(StateInitV1 {
+                code: global_contract_id,
+                data: state.state_init(),
+            }))
+            .await
+            .unwrap();
+
+        Ok(Account::new(account_id, self.network_config().clone()))
+    }
+
+    async fn gd_deploy(&self, target: &AccountId, wasm: &[u8]) -> anyhow::Result<()> {
+        self.tx(target)
+            .function_call(
+                FnCallBuilder::new("gd_deploy")
+                    .borsh_args(&wasm)
+                    .with_deposit(NearToken::from_near(50)),
+            )
+            .await?;
+        Ok(())
+    }
+
+    async fn gd_use_me(&self, target: &AccountId) -> anyhow::Result<()> {
+        self.tx(target)
+            .function_call(
+                FnCallBuilder::new("gd_use_me")
+                    .json_args(json!({}))
+                    .with_deposit(NearToken::from_yoctonear(1)),
+            )
+            .await?;
+        Ok(())
+    }
+
+    async fn gd_transfer_ownership(
+        &self,
+        target: &AccountId,
+        new_owner: &AccountId,
+    ) -> anyhow::Result<()> {
+        self.tx(target)
+            .function_call(
+                FnCallBuilder::new("gd_transfer_ownership")
+                    .json_args(json!({"receiver_id": new_owner.clone()}))
+                    .with_deposit(NearToken::from_yoctonear(1)),
+            )
+            .await?;
+        Ok(())
+    }
+}
+
+impl DeployerViewExt for Account {
+    async fn deployer_state(&self) -> anyhow::Result<DeployerStorage> {
+        self.call_view_function_json("gd_state", ()).await
+    }
+}
