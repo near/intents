@@ -6,7 +6,7 @@ pub struct ContractSpec {
     pub features: &'static str,
 }
 
-#[derive(Clone, Copy, ValueEnum, Default, Debug)]
+#[derive(Clone, ValueEnum, Default, Debug)]
 pub enum Contract {
     #[default]
     Defuse,
@@ -15,7 +15,6 @@ pub enum Contract {
     EscrowSwap,
     MultiTokenReceiverStub,
     Deployer,
-    DeployerWithUseMe,
 }
 
 impl Contract {
@@ -51,11 +50,6 @@ impl Contract {
                 path: "deployer",
                 features: "",
             },
-            Self::DeployerWithUseMe => ContractSpec {
-                name: "global-deployer-with-use-me",
-                path: "deployer",
-                features: "use-me",
-            },
         }
     }
 
@@ -66,16 +60,7 @@ impl Contract {
             Self::PoaFactory,
             Self::EscrowSwap,
             Self::MultiTokenReceiverStub,
-            Self::DeployerWithUseMe,
             Self::Deployer,
         ]
-    }
-
-    pub const fn wasm_name(&self) -> Option<&'static str> {
-        match self {
-            Self::Deployer => Some("global_deployer.wasm"),
-            Self::DeployerWithUseMe => Some("global_deployer_with_use_me.wasm"),
-            _ => None,
-        }
     }
 }

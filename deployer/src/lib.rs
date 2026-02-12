@@ -54,14 +54,6 @@ impl Contract {
             .deploy_global_contract_by_account_id(code)
     }
 
-    #[cfg(feature = "use-me")]
-    #[payable]
-    pub fn gd_use_me(&mut self) -> Promise {
-        self.require_owner();
-        Promise::new(env::current_account_id())
-            .use_global_contract_by_account_id(env::current_account_id())
-    }
-
     pub fn gd_owner_id(&self) -> AccountId {
         self.0.owner_id.clone()
     }

@@ -216,18 +216,9 @@ impl ContractBuilder {
         let artifact = build_non_reproducible_wasm(build_opts)
             .map_err(|e| anyhow!("failed to build wasm: {e}"))?;
 
-        let wasm_path = if let Some(name) = contract.wasm_name() {
-            let dest = ctx.outdir.join(name);
-            std::fs::rename(artifact.path.as_str(), dest.as_str())?;
-            Utf8PathBuf::try_from(std::fs::canonicalize(dest.as_str())?)
-                .map_err(|e| anyhow!("non-UTF8 path: {e}"))?
-        } else {
-            artifact.path
-        };
-
         Ok(BuildArtifact {
             contract,
-            wasm_path,
+            wasm_path: artifact.path,
             checksum_hex: None,
             checksum_path: None,
         })

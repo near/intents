@@ -23,8 +23,6 @@ container_build_command = [
 ]
 
 [features]
-immutable_controller = []
-use-me = []
 
 [dependencies]
 near-sdk = { workspace = true, features = ["global-contracts", "deterministic-account-ids"] }

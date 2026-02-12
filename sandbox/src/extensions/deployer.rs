@@ -16,7 +16,6 @@ pub trait DeployerExt {
 
     async fn gd_deploy(&self, target: &AccountId, wasm: &[u8]) -> anyhow::Result<()>;
 
-    // async fn gd_use_me(&self, target: &AccountId) -> anyhow::Result<()>;
     async fn gd_transfer_ownership(
         &self,
         target: &AccountId,
@@ -56,17 +55,6 @@ impl DeployerExt for SigningAccount {
             .await?;
         Ok(())
     }
-
-    // async fn gd_use_me(&self, target: &AccountId) -> anyhow::Result<()> {
-    //     self.tx(target)
-    //         .function_call(
-    //             FnCallBuilder::new("gd_use_me")
-    //                 .json_args(json!({}))
-    //                 .with_deposit(NearToken::from_yoctonear(1)),
-    //         )
-    //         .await?;
-    //     Ok(())
-    // }
 
     async fn gd_transfer_ownership(
         &self,
