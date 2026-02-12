@@ -63,8 +63,12 @@ impl Contract {
             .use_global_contract_by_account_id(env::current_account_id())
     }
 
-    pub fn gd_state(&self) -> Storage {
-        self.0.clone()
+    pub fn gd_owner_id(&self) -> AccountId {
+        self.0.owner_id.clone()
+    }
+
+    pub fn gd_index(&self) -> u32 {
+        self.0.index
     }
 
     #[payable]

@@ -102,7 +102,8 @@ async fn test_deploy_controller_instance(
         .await
         .assert_err_contains(ERR_UNAUTHORIZED);
 
-    assert_eq!(controller_instance.deployer_state().await.unwrap(), storage);
+    assert_eq!(controller_instance.gd_owner_id().await.unwrap(), storage.owner_id);
+    assert_eq!(controller_instance.gd_index().await.unwrap(), storage.index);
     assert_eq!(
         controller_instance.global_contract_id().await.unwrap(),
         deployer_code_hash_id
@@ -116,7 +117,8 @@ async fn test_deploy_controller_instance(
         .await
         .unwrap();
 
-    assert_eq!(controller_instance.deployer_state().await.unwrap(), storage);
+    assert_eq!(controller_instance.gd_owner_id().await.unwrap(), storage.owner_id);
+    assert_eq!(controller_instance.gd_index().await.unwrap(), storage.index);
     assert_eq!(
         controller_instance.global_contract_id().await.unwrap(),
         deployer_code_hash_id
@@ -128,7 +130,8 @@ async fn test_deploy_controller_instance(
 
     root.gd_use_me(controller_instance.id()).await.unwrap();
 
-    assert_eq!(controller_instance.deployer_state().await.unwrap(), storage);
+    assert_eq!(controller_instance.gd_owner_id().await.unwrap(), storage.owner_id);
+    assert_eq!(controller_instance.gd_index().await.unwrap(), storage.index);
     assert_eq!(
         controller_instance.global_contract_id().await.unwrap(),
         GlobalContractId::AccountId(controller_instance.id().clone())
@@ -351,7 +354,8 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
         .await
         .unwrap();
 
-    assert_eq!(controller_instance.deployer_state().await.unwrap(), storage);
+    assert_eq!(controller_instance.gd_owner_id().await.unwrap(), storage.owner_id);
+    assert_eq!(controller_instance.gd_index().await.unwrap(), storage.index);
     bob.gd_deploy(controller_instance.id(), &DEPLOYER_WASM)
         .await
         .assert_err_contains(ERR_UNAUTHORIZED);
@@ -368,7 +372,7 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
         .unwrap();
 
     assert_eq!(
-        controller_instance.deployer_state().await.unwrap().owner_id,
+        controller_instance.gd_owner_id().await.unwrap(),
         bob.id().clone()
     );
     alice

@@ -6,6 +6,7 @@ use near_sdk::{
     state_init::{StateInit, StateInitV1},
 };
 
+
 #[allow(async_fn_in_trait)]
 pub trait DeployerExt {
     async fn deploy_instance(
@@ -26,7 +27,8 @@ pub trait DeployerExt {
 
 #[allow(async_fn_in_trait)]
 pub trait DeployerViewExt {
-    async fn deployer_state(&self) -> anyhow::Result<DeployerStorage>;
+    async fn gd_owner_id(&self) -> anyhow::Result<AccountId>;
+    async fn gd_index(&self) -> anyhow::Result<u32>;
 }
 
 impl DeployerExt for SigningAccount {
@@ -85,7 +87,11 @@ impl DeployerExt for SigningAccount {
 }
 
 impl DeployerViewExt for Account {
-    async fn deployer_state(&self) -> anyhow::Result<DeployerStorage> {
-        self.call_view_function_json("gd_state", ()).await
+    async fn gd_owner_id(&self) -> anyhow::Result<AccountId> {
+        self.call_view_function_json("gd_owner_id", ()).await
+    }
+
+    async fn gd_index(&self) -> anyhow::Result<u32> {
+        self.call_view_function_json("gd_index", ()).await
     }
 }
