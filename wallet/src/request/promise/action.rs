@@ -94,7 +94,7 @@ pub struct FunctionCallAction {
     #[serde(default, skip_serializing_if = "Gas::is_zero")]
     pub min_gas: Gas,
 
-    #[serde(default, skip_serializing_if = "is_default")]
+    #[serde(default = "default_gas_weight", skip_serializing_if = "is_default")]
     pub gas_weight: u64,
 }
 
@@ -152,6 +152,10 @@ impl FunctionCallAction {
     pub const fn exact_gas(self, gas: Gas) -> Self {
         self.min_gas(gas).unused_gas_weight(0)
     }
+}
+
+fn default_gas_weight() -> u64 {
+    GasWeight::default().0
 }
 
 // fix JsonSchema macro bug
