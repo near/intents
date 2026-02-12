@@ -184,7 +184,7 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
         .await
         .unwrap();
     alice
-        .gd_deploy(&upgradable_controller_instance.id(), &DEPLOYER_WASM)
+        .gd_deploy(upgradable_controller_instance.id(), &DEPLOYER_WASM)
         .await
         .unwrap();
 
@@ -198,7 +198,7 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
         )
         .await
         .unwrap();
-    bob.gd_deploy(&escrow_controller_instance.id(), &ESCROW_SWAP_WASM)
+    bob.gd_deploy(escrow_controller_instance.id(), &ESCROW_SWAP_WASM)
         .await
         .unwrap();
 
@@ -265,7 +265,7 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
         .await
         .unwrap();
     alice
-        .gd_deploy(&upgradable_controller_instance.id(), &DEPLOYER_WASM)
+        .gd_deploy(upgradable_controller_instance.id(), &DEPLOYER_WASM)
         .await
         .unwrap();
 
@@ -280,7 +280,7 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
         .await
         .unwrap();
 
-    bob.gd_deploy(&escrow_controller_instance.id(), &MT_RECEIVER_STUB_WASM)
+    bob.gd_deploy(escrow_controller_instance.id(), &MT_RECEIVER_STUB_WASM)
         .await
         .unwrap();
 
@@ -305,7 +305,7 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
         .await
         .expect("escrow should have `dummy_method` method");
 
-    bob.gd_deploy(&escrow_controller_instance.id(), &ESCROW_SWAP_WASM)
+    bob.gd_deploy(escrow_controller_instance.id(), &ESCROW_SWAP_WASM)
         .await
         .unwrap();
     let storage = escrow_instance
