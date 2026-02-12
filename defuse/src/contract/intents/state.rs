@@ -330,7 +330,6 @@ impl State for Contract {
                             Self::auth_call_callback_gas(&auth_call)
                                 .ok_or(DefuseError::GasOverflow)?,
                         )
-                        .with_unused_gas_weight(0)
                         .do_auth_call(signer_id.to_owned(), auth_call),
                 )
         }
