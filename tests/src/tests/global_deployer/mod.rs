@@ -6,7 +6,7 @@ use std::time::Duration;
 use crate::utils::wasms::DEPLOYER_WASM;
 use defuse_escrow_swap::{ContractStorage, Deadline, OverrideSend, Params};
 use defuse_global_deployer::{ERR_UNAUTHORIZED, State as DeployerState};
-use defuse_sandbox::extensions::deployer::{DeployerExt, DeployerViewExt};
+use defuse_sandbox::extensions::global_deployer::{DeployerExt, DeployerViewExt};
 use defuse_sandbox::extensions::escrow::EscrowExtView;
 use defuse_sandbox::extensions::mt_receiver::MtReceiverStubExtView;
 use defuse_sandbox::{

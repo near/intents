@@ -8,6 +8,6 @@ mod poa;
 mod escrow;
 
 #[cfg(feature = "deployer")]
-mod deployer;
+mod global_deployer;
 
 mod utils;

@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use near_sdk::serde_with::{hex::Hex, serde_as};
 use near_sdk::{
-    AccountId, CryptoHash, NearToken, PanicOnDefault, Promise, borsh, env, near, require,
+    borsh, env, ext_contract, near, require, AccountId, CryptoHash, NearToken, PanicOnDefault, Promise
 };
 
 pub const ERR_UNAUTHORIZED: &str = "unauthorized";
@@ -36,6 +36,12 @@ pub const STATE_KEY: &[u8] = b"";
 pub enum Event {
     #[event_version("1.0.0")]
     Deploy(#[serde_as(as = "Hex")] CryptoHash),
+}
+
+
+#[ext_contract(ext_global_deployer)]
+pub trait GlobalDeployer {
+
 }
 
 #[near]
