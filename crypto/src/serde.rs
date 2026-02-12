@@ -1,5 +1,3 @@
-#![cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
-
 use core::marker::PhantomData;
 
 use near_sdk::{

@@ -19,4 +19,5 @@ pub use self::{curve::*, parse::ParseCurveError, payload::*};
 #[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
 pub use self::{public_key::*, signature::*};
 
+#[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
 pub mod serde;
