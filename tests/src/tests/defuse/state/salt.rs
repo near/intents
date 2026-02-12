@@ -41,7 +41,7 @@ async fn update_current_salt() {
 
         let event = DefuseEvent::SaltRotation(SaltRotationEvent {
             invalidated: BTreeSet::new(),
-            current: new_salt.into(),
+            current: new_salt,
         })
         .to_nep297_event()
         .to_event_log();
@@ -94,7 +94,7 @@ async fn invalidate_salts() {
 
         let event = DefuseEvent::SaltRotation(SaltRotationEvent {
             invalidated: std::iter::once(prev_salt).collect(),
-            current: current_salt.into(),
+            current: current_salt,
         })
         .to_nep297_event()
         .to_event_log();
@@ -117,7 +117,7 @@ async fn invalidate_salts() {
 
         let event = DefuseEvent::SaltRotation(SaltRotationEvent {
             invalidated: std::iter::once(prev_salt).collect(),
-            current: current_salt.into(),
+            current: current_salt,
         })
         .to_nep297_event()
         .to_event_log();

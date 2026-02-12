@@ -65,10 +65,13 @@ impl AccountManager for Contract {
     #[payable]
     fn disable_auth_by_predecessor_id(&mut self) {
         assert_one_yocto();
-        let signer = self.ensure_auth_predecessor_id();
 
-        self.set_auth_by_predecessor_id_and_emit_event(&signer, false, false)
-            .unwrap_or_panic();
+        self.set_auth_by_predecessor_id_and_emit_event(
+            &self.ensure_auth_predecessor_id(),
+            false,
+            false,
+        )
+        .unwrap_or_panic();
     }
 }
 
