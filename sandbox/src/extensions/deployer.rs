@@ -16,7 +16,7 @@ pub trait DeployerExt {
 
     async fn gd_deploy(&self, target: &AccountId, wasm: &[u8]) -> anyhow::Result<()>;
 
-    async fn gd_use_me(&self, target: &AccountId) -> anyhow::Result<()>;
+    // async fn gd_use_me(&self, target: &AccountId) -> anyhow::Result<()>;
     async fn gd_transfer_ownership(
         &self,
         target: &AccountId,
@@ -41,8 +41,7 @@ impl DeployerExt for SigningAccount {
                 code: global_contract_id,
                 data: state.state_init(),
             }))
-            .await
-            .unwrap();
+            .await?;
 
         Ok(Account::new(account_id, self.network_config().clone()))
     }
@@ -58,16 +57,16 @@ impl DeployerExt for SigningAccount {
         Ok(())
     }
 
-    async fn gd_use_me(&self, target: &AccountId) -> anyhow::Result<()> {
-        self.tx(target)
-            .function_call(
-                FnCallBuilder::new("gd_use_me")
-                    .json_args(json!({}))
-                    .with_deposit(NearToken::from_yoctonear(1)),
-            )
-            .await?;
-        Ok(())
-    }
+    // async fn gd_use_me(&self, target: &AccountId) -> anyhow::Result<()> {
+    //     self.tx(target)
+    //         .function_call(
+    //             FnCallBuilder::new("gd_use_me")
+    //                 .json_args(json!({}))
+    //                 .with_deposit(NearToken::from_yoctonear(1)),
+    //         )
+    //         .await?;
+    //     Ok(())
+    // }
 
     async fn gd_transfer_ownership(
         &self,

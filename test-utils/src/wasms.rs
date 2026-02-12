@@ -67,9 +67,9 @@ pub static WNEAR_WASM: LazyLock<Vec<u8>> =
 pub static DEPLOYER_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "global_deployer.wasm"));
 
-pub static DEPLOYER_WITH_USE_ME_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
-    read_wasm(
-        &ReadWasmMode::BuildArtifact,
-        "global_deployer_with_use_me.wasm",
-    )
-});
+// pub static DEPLOYER_WITH_USE_ME_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
+//     read_wasm(
+//         &ReadWasmMode::BuildArtifact,
+//         "global_deployer_with_use_me.wasm",
+//     )
+// });
