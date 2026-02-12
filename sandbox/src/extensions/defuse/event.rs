@@ -76,7 +76,9 @@ where
             })
             .collect();
 
-        events.push(DefuseEvent::IntentsExecuted(executed.into()));
+        if !executed.is_empty() {
+            events.push(DefuseEvent::IntentsExecuted(executed.into()));
+        }
 
         events
     }
