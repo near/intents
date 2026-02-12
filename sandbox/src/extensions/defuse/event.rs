@@ -50,70 +50,37 @@ where
     I: IntoIterator<Item = MultiPayload>,
 {
     fn to_defuse_events(self) -> Vec<DefuseEvent<'static>> {
-        let mut intent_events = Vec::new();
-        let mut nonce_events = Vec::new();
+        let mut executed = Vec::new();
 
-        for payload in self {
-            let hash = payload.hash();
+        let mut events: Vec<_> = self
+            .into_iter()
+            .flat_map(|payload| {
+                let hash = payload.hash();
 
-            let DefusePayload::<DefuseIntents> {
-                nonce,
-                message,
-                signer_id,
-                ..
-            } = payload
-                .extract_defuse_payload()
-                .expect("failed to extract payload");
+                let DefusePayload::<DefuseIntents> {
+                    signer_id,
+                    nonce,
+                    message,
+                    ..
+                } = payload.extract_defuse_payload().unwrap();
 
-            let events = message
-                .intents
-                .into_iter()
-                .flat_map(|intent| intent.into_defuse_events(signer_id.clone(), hash))
-                .collect::<Vec<_>>();
+                executed.push(MaybeIntentEvent::new_with_hash(
+                    AccountEvent::new(signer_id.clone(), NonceEvent::new(nonce)),
+                    hash,
+                ));
 
-            intent_events.extend(events);
+                message
+                    .intents
+                    .into_iter()
+                    .flat_map(move |i| i.into_defuse_events(signer_id.clone(), hash))
+            })
+            .collect();
 
-            nonce_events.push(MaybeIntentEvent::new_with_hash(
-                AccountEvent::new(signer_id, NonceEvent::new(nonce)),
-                hash,
-            ));
-        }
+        events.push(DefuseEvent::IntentsExecuted(executed.into()));
 
-        intent_events.push(DefuseEvent::IntentsExecuted(nonce_events.into()));
-
-        intent_events
+        events
     }
 }
-
-// impl PayloadToDefuseEvents for MultiPayload {
-//     fn to_defuse_events(self) -> Vec<DefuseEvent<'static>> {
-//         let hash = self.hash();
-//         let DefusePayload::<DefuseIntents> {
-//             nonce,
-//             message,
-//             signer_id,
-//             ..
-//         } = self
-//             .extract_defuse_payload()
-//             .expect("failed to extract payload");
-
-//         let mut intent_events = message
-//             .intents
-//             .into_iter()
-//             .flat_map(|intent| intent.into_defuse_events(signer_id.clone(), hash))
-//             .collect::<Vec<_>>();
-
-//         intent_events.push(DefuseEvent::IntentsExecuted(
-//             vec![MaybeIntentEvent::new_with_hash(
-//                 AccountEvent::new(signer_id, NonceEvent::new(nonce)),
-//                 hash,
-//             )]
-//             .into(),
-//         ));
-
-//         intent_events
-//     }
-// }
 
 trait IntoDefuseEvents<'a> {
     fn into_defuse_events(
