@@ -1151,7 +1151,6 @@ dependencies = [
  "near-sdk",
  "p256",
  "rstest",
- "serde_with",
  "strum 0.27.2",
  "thiserror 2.0.17",
 ]
@@ -1175,7 +1174,6 @@ dependencies = [
  "defuse-num-utils",
  "near-sdk",
  "rstest",
- "serde_with",
  "thiserror 2.0.17",
 ]
 
@@ -1368,7 +1366,6 @@ version = "0.1.0"
 dependencies = [
  "derive_more",
  "near-sdk",
- "serde_with",
  "tlb-ton",
 ]
 
@@ -1444,7 +1441,6 @@ dependencies = [
  "near-contract-standards",
  "near-sdk",
  "rstest",
- "serde_with",
  "strum 0.27.2",
  "thiserror 2.0.17",
 ]

@@ -1,8 +1,8 @@
 use near_sdk::{
     bs58,
     serde::{Deserialize, Deserializer, Serialize, Serializer, de},
+    serde_with::{DeserializeAs, SerializeAs},
 };
-use serde_with::{DeserializeAs, SerializeAs};
 
 pub struct Base58;
 
@@ -41,12 +41,14 @@ where
 
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
 const _: () = {
-    use near_sdk::schemars::{
-        JsonSchema,
-        r#gen::SchemaGenerator,
-        schema::{InstanceType, Schema, SchemaObject},
+    use near_sdk::{
+        schemars::{
+            JsonSchema,
+            r#gen::SchemaGenerator,
+            schema::{InstanceType, Schema, SchemaObject},
+        },
+        serde_with::schemars_0_8::JsonSchemaAs,
     };
-    use serde_with::schemars_0_8::JsonSchemaAs;
 
     impl<T> JsonSchemaAs<T> for Base58 {
         fn schema_name() -> String {

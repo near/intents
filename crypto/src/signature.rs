@@ -21,6 +21,7 @@ use crate::{Curve, CurveType, ParseCurveError, parse::checked_base58_decode_arra
 #[derive(
     Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, SerializeDisplay, DeserializeFromStr,
 )]
+#[serde_with(crate = "::near_sdk::serde_with")]
 #[repr(u8)]
 pub enum Signature {
     #[cfg(feature = "ed25519")]

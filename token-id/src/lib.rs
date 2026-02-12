@@ -28,8 +28,10 @@ use core::{
     fmt::{self, Debug, Display},
     str::FromStr,
 };
-use near_sdk::near;
-use serde_with::{DeserializeFromStr, SerializeDisplay};
+use near_sdk::{
+    near,
+    serde_with::{DeserializeFromStr, SerializeDisplay},
+};
 use strum::{EnumDiscriminants, EnumIter, EnumString};
 
 pub use self::error::TokenIdError;
@@ -62,9 +64,11 @@ pub use self::error::TokenIdError;
         derive(::near_sdk::NearSchema),
         schemars(with = "String"),
     ),
+    serde_with(crate = "::near_sdk::serde_with"),
     vis(pub)
 )]
 #[near(serializers = [borsh(use_discriminant=true)])]
+#[serde_with(crate = "::near_sdk::serde_with")]
 #[repr(u8)]
 // Private: Because we need construction to go through the TokenId struct to check for length
 pub enum TokenId {

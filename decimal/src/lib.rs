@@ -5,18 +5,24 @@ mod str;
 
 pub use self::str::*;
 
-use near_sdk::borsh::{BorshDeserialize, BorshSerialize, io};
-use serde_with::{DeserializeFromStr, SerializeDisplay};
+use near_sdk::{
+    borsh::{BorshDeserialize, BorshSerialize, io},
+    serde_with::{DeserializeFromStr, SerializeDisplay},
+};
 
 /// Floating point unsigned decimal price, i.e. dst per 1 src
 /// always reduced (i.e. normalized)
-#[derive(near_sdk::NearSchema)]
-#[abi(json, borsh)]
-#[schemars(with = "String")]
+#[cfg_attr(
+    all(feature = "abi", not(target_arch = "wasm32")),
+    derive(near_sdk::NearSchema),
+    abi(json, borsh),
+    schemars(with = "String")
+)]
 #[derive(
     Clone, Copy, PartialEq, Eq, Hash, BorshSerialize, SerializeDisplay, DeserializeFromStr,
 )]
 #[borsh(crate = "::near_sdk::borsh")]
+#[serde_with(crate = "::near_sdk::serde_with")]
 pub struct UD128(u8, u128);
 
 impl UD128 {
