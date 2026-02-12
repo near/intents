@@ -6,7 +6,6 @@ use near_sdk::{
     state_init::{StateInit, StateInitV1},
 };
 
-
 #[allow(async_fn_in_trait)]
 pub trait DeployerExt {
     async fn deploy_instance(
