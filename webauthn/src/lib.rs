@@ -22,7 +22,7 @@ use near_sdk::{
     deserialize = "<A as Algorithm>::Signature: DeserializeOwned",
 ))]
 #[derive(Debug, Clone)]
-pub struct PayloadSignature<A: Algorithm> {
+pub struct PayloadSignature<A: Algorithm + ?Sized> {
     /// Base64Url-encoded [authenticatorData](https://w3c.github.io/webauthn/#authenticator-data)
     #[cfg_attr(
         all(feature = "abi", not(target_arch = "wasm32")),
@@ -43,7 +43,7 @@ pub struct PayloadSignature<A: Algorithm> {
     pub signature: A::Signature,
 }
 
-impl<A: Algorithm> PayloadSignature<A> {
+impl<A: Algorithm + ?Sized> PayloadSignature<A> {
     /// <https://w3c.github.io/webauthn/#sctn-verifying-assertion>
     ///
     /// Credits to:

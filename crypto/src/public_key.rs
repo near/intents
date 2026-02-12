@@ -190,6 +190,8 @@ const _: () = {
                             Self::example_ed25519(),
                             #[cfg(feature = "secp256k1")]
                             Self::example_secp256k1(),
+                            #[cfg(feature = "p256")]
+                            Self::example_p256(),
                         ]
                         .map(serde_json::to_value)
                         .map(Result::unwrap)
@@ -215,6 +217,13 @@ const _: () = {
         #[cfg(feature = "secp256k1")]
         pub(super) fn example_secp256k1() -> Self {
             "secp256k1:3aMVMxsoAnHUbweXMtdKaN1uJaNwsfKv7wnc97SDGjXhyK62VyJwhPUPLZefKVthcoUcuWK6cqkSU4M542ipNxS3"
+                .parse()
+                .unwrap()
+        }
+
+        #[cfg(feature = "p256")]
+        pub(super) fn example_p256() -> Self {
+            "p256:3aMVMxsoAnHUbweXMtdKaN1uJaNwsfKv7wnc97SDGjXhyK62VyJwhPUPLZefKVthcoUcuWK6cqkSU4M542ipNxS3"
                 .parse()
                 .unwrap()
         }

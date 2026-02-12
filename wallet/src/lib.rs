@@ -3,7 +3,7 @@ mod contract;
 mod error;
 mod events;
 mod request;
-mod signature;
+pub mod signature;
 mod state;
 mod utils;
 
@@ -11,7 +11,9 @@ use std::collections::BTreeSet;
 
 use near_sdk::{AccountId, ext_contract};
 
-pub use self::{error::*, events::*, request::*, signature::*, state::*};
+use crate::signature::RequestMessage;
+
+pub use self::{error::*, events::*, request::*, state::*};
 
 #[ext_contract(ext_wallet)]
 pub trait Wallet {
@@ -23,7 +25,7 @@ pub trait Wallet {
     ///   * `signed` data is invalid
     ///   * `proof` is invalid
     ///   * signature is disabled
-    fn w_execute_signed(&mut self, signed: SignedRequest, proof: String);
+    fn w_execute_signed(&mut self, signed: RequestMessage, proof: String);
 
     /// Execute request from an enabled extension.
     ///

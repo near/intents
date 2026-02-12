@@ -9,7 +9,7 @@ use near_sdk::{
 };
 use thiserror::Error as ThisError;
 
-use crate::SigningStandard;
+use crate::signature::SigningStandard;
 
 /// Always rejects the signature.
 ///
@@ -19,10 +19,10 @@ use crate::SigningStandard;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NoSign;
 
-impl SigningStandard for NoSign {
+impl<M> SigningStandard<M> for NoSign {
     type PublicKey = NoPublicKey;
 
-    fn verify(_msg: &[u8], _public_key: &Self::PublicKey, _signature: &str) -> bool {
+    fn verify(_msg: M, _public_key: &Self::PublicKey, _signature: &str) -> bool {
         false
     }
 }

@@ -7,19 +7,22 @@ use defuse_deadline::Deadline;
 use defuse_sandbox::{FnCallBuilder, Sandbox, sandbox};
 use defuse_test_utils::{random::make_arbitrary, wasms::WALLET_WEBAUTHN_ED25519_WASM};
 use defuse_wallet::{
-    self, AddExtensionOp, PromiseSingle, RemoveExtensionOp, Request, SignedRequest, State,
-    WalletOp, webauthn::Webauthn,
+    self, AddExtensionOp, PromiseSingle, RemoveExtensionOp, Request, State, WalletOp,
+    signature::{Borsh, RequestMessage, Sha256, SigningStandard, webauthn::Webauthn},
 };
 use defuse_webauthn::{ClientDataType, CollectedClientData, Ed25519, PayloadSignature};
 use impl_tools::autoimpl;
 use near_crypto::{KeyType, SecretKey, Signature};
 use near_sdk::{
-    GlobalContractId, NearToken,
+    GlobalContractId, NearToken, borsh,
     env::sha256_array,
     serde_json::{self, json},
     state_init::{StateInit, StateInitV1},
 };
 use rstest::{fixture, rstest};
+
+type S = Borsh<Sha256<Webauthn<Ed25519>>>;
+type PublicKey = <S as SigningStandard<RequestMessage>>::PublicKey;
 
 #[rstest]
 #[awt]
@@ -29,7 +32,7 @@ async fn test_signed(#[future] env: Env) {
 
     let wallet_state_init = StateInit::V1(StateInitV1 {
         code: env.wallet_global_id.clone(),
-        data: State::<Webauthn<Ed25519>>::new(Ed25519PublicKey(
+        data: State::<PublicKey>::new(Ed25519PublicKey(
             secret_key.public_key().unwrap_as_ed25519().0,
         ))
         .init_state(),
@@ -64,7 +67,7 @@ async fn test_signed(#[future] env: Env) {
         ),
     };
 
-    let signed_request_body = SignedRequest {
+    let signed_request_body = RequestMessage {
         signer_id: wallet.id().clone(),
         chain_id: "mainnet".to_string(),
         valid_until: Deadline::timeout(Duration::from_secs(60 * 60)), // 1h
@@ -103,7 +106,7 @@ async fn test_extension(#[future] env: Env) {
 
     let wallet_state_init = StateInit::V1(StateInitV1 {
         code: env.wallet_global_id.clone(),
-        data: State::<Webauthn<Ed25519>>::new(Ed25519PublicKey([0; 32]))
+        data: State::<PublicKey>::new(Ed25519PublicKey([0; 32]))
             .extensions([extension.id()])
             .init_state(),
     });
@@ -152,7 +155,7 @@ async fn test_arbitrary(#[future] env: Env, #[from(make_arbitrary)] request: Req
 
     let wallet_state_init = StateInit::V1(StateInitV1 {
         code: env.wallet_global_id.clone(),
-        data: State::<Webauthn<Ed25519>>::new(Ed25519PublicKey(
+        data: State::<PublicKey>::new(Ed25519PublicKey(
             secret_key.public_key().unwrap_as_ed25519().0,
         ))
         .init_state(),
@@ -165,7 +168,7 @@ async fn test_arbitrary(#[future] env: Env, #[from(make_arbitrary)] request: Req
         .await
         .unwrap();
 
-    let signed_request_body = SignedRequest {
+    let signed_request_body = RequestMessage {
         signer_id: wallet.id().clone(),
         chain_id: "mainnet".to_string(),
         valid_until: Deadline::timeout(Duration::from_secs(60 * 60)), // 1h
@@ -218,8 +221,11 @@ async fn env(#[future] sandbox: Sandbox) -> Env {
     }
 }
 
-fn sign_request(secret_key: &SecretKey, body: &SignedRequest) -> PayloadSignature<Ed25519> {
-    sign_passkey(secret_key, &body.hash())
+fn sign_request(secret_key: &SecretKey, body: &RequestMessage) -> PayloadSignature<Ed25519> {
+    let domain = body.to_domain();
+    let serialized = borsh::to_vec(&domain).unwrap();
+    let hash = near_sdk::env::sha256_array(serialized);
+    sign_passkey(secret_key, &hash)
 }
 
 fn sign_passkey(secret_key: &SecretKey, msg: &[u8]) -> PayloadSignature<Ed25519> {

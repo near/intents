@@ -17,7 +17,7 @@ pub enum Error {
     #[error("extension '{0}' is not enabled")]
     ExtensionNotExist(AccountId),
 
-    #[error("invalid chain_id: '{got}', expected: {expected}")]
+    #[error("invalid chain_id: '{got}', expected: '{expected}'")]
     InvalidChainId { got: String, expected: String },
 
     #[error("invalid seqno: {got}, expected: {expected}")]

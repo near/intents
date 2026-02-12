@@ -4,38 +4,35 @@ use near_sdk::{
     AccountId, AccountIdRef,
     borsh::{self, BorshSerialize},
     near,
-    serde::{Serialize, de::DeserializeOwned},
 };
 
-use crate::SigningStandard;
-
 #[near(serializers = [borsh, json])]
-#[serde(bound(
-    serialize = "<S as SigningStandard>::PublicKey: Serialize",
-    deserialize = "<S as SigningStandard>::PublicKey: DeserializeOwned",
-))]
+// // #[serde(bound(
+// //     serialize = "<S as SigningStandard>::PublicKey: Serialize",
+// //     deserialize = "<S as SigningStandard>::PublicKey: DeserializeOwned",
+// ))]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct State<S: SigningStandard> {
+pub struct State<P> {
     pub signature_enabled: bool,
     pub seqno: u32,
     pub wallet_id: u32,
-    #[cfg_attr(
-        all(feature = "abi", not(target_arch = "wasm32")),
-        schemars(with = "String"),
-        borsh(schema(params = "S => <S as SigningStandard>::PublicKey"))
-    )]
-    pub public_key: S::PublicKey,
+    // #[cfg_attr(
+    //     all(feature = "abi", not(target_arch = "wasm32")),
+    //     // schemars(with = "String"),
+    //     // borsh(schema(params = "S => <S as SigningStandard>::PublicKey"))
+    // )]
+    pub public_key: P,
     #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
     pub extensions: BTreeSet<AccountId>,
 }
 
-impl<S: SigningStandard> State<S> {
+impl<P> State<P> {
     pub const DEFAULT_WALLET_ID: u32 = 0;
 
     pub(crate) const STATE_KEY: &[u8] = b"";
 
     #[inline]
-    pub const fn new(public_key: S::PublicKey) -> Self {
+    pub const fn new(public_key: P) -> Self {
         Self {
             signature_enabled: true,
             seqno: 0,
@@ -78,7 +75,7 @@ impl<S: SigningStandard> State<S> {
     #[inline]
     pub fn init_state(&self) -> BTreeMap<Vec<u8>, Vec<u8>>
     where
-        S::PublicKey: BorshSerialize,
+        P: BorshSerialize,
     {
         [(
             Self::STATE_KEY.to_vec(),

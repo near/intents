@@ -1477,6 +1477,7 @@ dependencies = [
  "defuse-crypto",
  "defuse-deadline",
  "defuse-sandbox",
+ "defuse-serde-utils",
  "defuse-test-utils",
  "defuse-wallet",
  "defuse-webauthn",

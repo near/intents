@@ -1,63 +1,22 @@
-#[cfg(not(any(
-    feature = "webauthn-ed25519",
-    feature = "webauthn-p256",
-    feature = "no-sign",
-)))]
-compile_error!(
-    r#"Exactly one of following features MUST be enabled:
-- `webauthn-ed25519`
-- `webauthn-p256`
-- `no-sign`
-"#
-);
-
+mod implementation;
 mod utils;
 
 use core::ops::{Deref, DerefMut};
 use std::collections::BTreeSet;
 
-use near_sdk::{AccountId, FunctionError, PanicOnDefault, Promise, env, near};
+use near_sdk::{AccountId, FunctionError, Promise, env, near};
 
 use crate::{
-    AddExtensionOp, Error, RemoveExtensionOp, Request, Result, SetSignatureModeOp, SignedRequest,
-    SigningStandard, State, Wallet, WalletEvent, WalletOp,
+    AddExtensionOp, Error, RemoveExtensionOp, Request, RequestMessage, Result, SetSignatureModeOp,
+    Wallet, WalletEvent, WalletOp, signature::SigningStandard,
 };
 
-#[cfg(feature = "webauthn-ed25519")]
-type SS = crate::webauthn::Webauthn<crate::webauthn::Ed25519>;
-#[cfg(feature = "webauthn-p256")]
-type SS = crate::webauthn::Webauthn<crate::webauthn::P256>;
-#[cfg(feature = "no-sign")]
-type SS = crate::no_sign::NoSign;
-
-#[cfg_attr(feature = "webauthn-ed25519", near(
-    contract_state(key = <Self as Deref>::Target::STATE_KEY),
-    contract_metadata(
-        standard(standard = "wallet", version = "1.0.0"),
-        standard(standard = "wallet-webauthn-ed25519", version = "1.0.0"),
-    ),
-))]
-#[cfg_attr(feature = "webauthn-p256", near(
-    contract_state(key = <Self as Deref>::Target::STATE_KEY),
-    contract_metadata(
-        standard(standard = "wallet", version = "1.0.0"),
-        standard(standard = "wallet-webauthn-p256", version = "1.0.0"),
-    ),
-))]
-#[cfg_attr(feature = "no-sign", near(
-    contract_state(key = <Self as Deref>::Target::STATE_KEY),
-    contract_metadata(
-        standard(standard = "wallet", version = "1.0.0"),
-        standard(standard = "wallet-no-sign", version = "1.0.0"),
-    ),
-))]
-#[derive(Debug, PanicOnDefault)]
-pub struct Contract(State<SS>);
+use self::implementation::*;
 
 #[near]
 impl Wallet for Contract {
     #[payable]
-    fn w_execute_signed(&mut self, signed: SignedRequest, proof: String) {
+    fn w_execute_signed(&mut self, signed: RequestMessage, proof: String) {
         self.execute_signed(signed, proof)
             .unwrap_or_else(|err| err.panic())
     }
@@ -98,8 +57,8 @@ impl Wallet for Contract {
     }
 }
 
-impl<S: SigningStandard> State<S> {
-    fn execute_signed(&mut self, signed: SignedRequest, proof: String) -> Result<()> {
+impl Contract {
+    fn execute_signed(&mut self, signed: RequestMessage, proof: String) -> Result<()> {
         if !self.is_signature_allowed() {
             return Err(Error::SignatureDisabled);
         }
@@ -117,6 +76,16 @@ impl<S: SigningStandard> State<S> {
             return Err(Error::InvalidSignerId(signed.signer_id));
         }
 
+        // It makes sense to emit here, since checks above ensure this request
+        // is intended to be relayed to this instance of wallet-contract.
+        // In case following checks or request execution fail, this would
+        // at least give relayers/indexers some observability on what exact
+        // request hash was it.
+        WalletEvent::SignedRequest {
+            hash: signed.hash(),
+        }
+        .emit();
+
         // check seqno
         if signed.seqno != self.seqno {
             return Err(Error::InvalidSeqno {
@@ -124,18 +93,23 @@ impl<S: SigningStandard> State<S> {
                 expected: self.seqno,
             });
         }
-
         // bump seqno
-        // NOTE: this will panic on overflow due to `overflow-checks = true`
-        self.seqno += 1;
+        self.seqno = self
+            .seqno
+            .checked_add(1)
+            .unwrap_or_else(|| env::panic_str("seqno overflow"));
 
         // check valid_until
         if signed.valid_until.has_expired() {
             return Err(Error::Expired);
         }
 
-        // check signature
-        if !S::verify(&signed.hash(), &self.public_key, &proof) {
+        // verify signature
+        if !<Self as ContractImpl>::SigningStandard::verify(
+            &signed.to_domain(),
+            &self.public_key,
+            &proof,
+        ) {
             return Err(Error::InvalidSignature);
         }
 
@@ -159,8 +133,6 @@ impl<S: SigningStandard> State<S> {
 
         request.out.build().map(Promise::detach);
 
-        // TODO: emit request_id?
-
         Ok(())
     }
 
@@ -173,7 +145,7 @@ impl<S: SigningStandard> State<S> {
             WalletOp::RemoveExtension(RemoveExtensionOp { account_id }) => {
                 self.remove_extension(account_id)
             }
-            // custom ops are not supported and, thus, skipped
+            // custom ops are not supported, so we just skip them
             WalletOp::Custom(_op) => Ok(()),
         }
     }
@@ -234,7 +206,7 @@ impl<S: SigningStandard> State<S> {
 }
 
 impl Deref for Contract {
-    type Target = State<SS>;
+    type Target = State;
 
     fn deref(&self) -> &Self::Target {
         &self.0
