@@ -8,7 +8,7 @@ pub struct Sha256<S>(PhantomData<S>)
 where
     S: SigningStandard<[u8; 32]> + ?Sized;
 
-impl<'a, M, S> SigningStandard<M> for Sha256<S>
+impl<M, S> SigningStandard<M> for Sha256<S>
 where
     S: SigningStandard<[u8; 32]> + ?Sized,
     M: AsRef<[u8]>,
@@ -24,7 +24,7 @@ pub struct Keccak256<S>(PhantomData<S>)
 where
     S: SigningStandard<[u8; 32]> + ?Sized;
 
-impl<'a, M, S> SigningStandard<M> for Keccak256<S>
+impl<M, S> SigningStandard<M> for Keccak256<S>
 where
     S: SigningStandard<[u8; 32]> + ?Sized,
     M: AsRef<[u8]>,

@@ -14,7 +14,7 @@ use crate::signature::SigningStandard;
 /// Always rejects the signature.
 ///
 /// This can be useful to deploy "1-of-M multisig"/"fan-out" wallet, where
-/// extensions are defined at the initialization stage (i.e. state_init).
+/// extensions are defined at the initialization stage (i.e. `state_init`).
 /// So only extensions can execute requests via `w_execute_extension()`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NoSign;
