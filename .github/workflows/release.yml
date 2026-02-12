@@ -25,16 +25,6 @@ jobs:
       - name: Build Reproducible WASM
         run: cargo make build-defuse-reproducible
 
-      - name: Build Deployer (reproducible)
-        env:
-          DEFUSE_OUT_DIR: "res"
-        run: cargo build-contract deployer reproducible --checksum
-
-      - name: Build Deployer with use-me (reproducible)
-        env:
-          DEFUSE_OUT_DIR: "res"
-        run: cargo build-contract deployer-with-use-me reproducible --checksum --variant use-me
-
       - name: Upload WASM to Release
         uses: svenstaro/upload-release-action@v2
         with:
