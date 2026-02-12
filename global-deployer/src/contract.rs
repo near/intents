@@ -12,6 +12,9 @@ impl GlobalDeployer for Contract {
 
         Event::Deploy(env::sha256_array(&code)).emit();
 
+        // On receipt failure, refund goes to the receipt's predecessor — which for a
+        // self-targeted promise is the contract itself. `.refund_to()` overrides this
+        // so the deposit is refunded to the original caller instead. (NEP-616)
         Promise::new(env::current_account_id())
             .refund_to(env::refund_to_account_id())
             .transfer(deposit)
