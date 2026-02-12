@@ -1,5 +1,5 @@
 use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
-use defuse_global_deployer::Storage as DeployerStorage;
+use defuse_global_deployer::State as DeployerState;
 use near_sdk::{
     AccountId, GlobalContractId, NearToken,
     serde_json::json,
@@ -11,7 +11,7 @@ pub trait DeployerExt {
     async fn deploy_instance(
         &self,
         deployer_code_hash_id: GlobalContractId,
-        state: DeployerStorage,
+        state: DeployerState,
     ) -> anyhow::Result<Account>;
 
     async fn gd_deploy(&self, target: &AccountId, wasm: &[u8]) -> anyhow::Result<()>;
@@ -34,7 +34,7 @@ impl DeployerExt for SigningAccount {
     async fn deploy_instance(
         &self,
         global_contract_id: GlobalContractId,
-        state: DeployerStorage,
+        state: DeployerState,
     ) -> anyhow::Result<Account> {
         let account_id = self
             .state_init(StateInit::V1(StateInitV1 {

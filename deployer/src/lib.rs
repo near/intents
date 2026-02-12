@@ -6,15 +6,16 @@ use near_sdk::{
 use serde_with::{hex::Hex, serde_as};
 
 pub const ERR_UNAUTHORIZED: &str = "unauthorized";
+pub const ERR_SELF_TRANSFER: &str = "self-transfer";
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Storage {
+pub struct State {
     pub owner_id: AccountId,
     pub index: u32,
 }
 
-impl Storage {
+impl State {
     pub fn state_init(&self) -> BTreeMap<Vec<u8>, Vec<u8>> {
         [(
             STATE_KEY.to_vec(),
@@ -26,12 +27,12 @@ impl Storage {
 
 #[near(contract_state(key = STATE_KEY), contract_metadata(standard(standard = "global-deployer", version = "1.0.0")))]
 #[derive(PanicOnDefault)]
-pub struct Contract(Storage);
+pub struct Contract(State);
 
 pub const STATE_KEY: &[u8] = b"";
 
 #[serde_as]
-#[near(event_json(standard = "controller"))]
+#[near(event_json(standard = "global-deployer"))]
 pub enum Event {
     #[event_version("1.0.0")]
     Deploy(#[serde_as(as = "Hex")] CryptoHash),
@@ -42,12 +43,10 @@ impl Contract {
     #[payable]
     pub fn gd_deploy(&mut self, #[serializer(borsh)] code: Vec<u8>) -> Promise {
         let deposit = env::attached_deposit();
-        require!(deposit >= NearToken::from_yoctonear(1));
+        require!(!deposit.is_zero());
         self.require_owner();
 
-        let hash = env::sha256_array(&code);
-
-        Event::Deploy(hash).emit();
+        Event::Deploy(env::sha256_array(&code)).emit();
 
         Promise::new(env::current_account_id())
             .refund_to(env::refund_to_account_id())
@@ -75,7 +74,7 @@ impl Contract {
     pub fn gd_transfer_ownership(&mut self, receiver_id: AccountId) {
         require!(env::attached_deposit() == NearToken::from_yoctonear(1));
         self.require_owner();
-        require!(self.0.owner_id != receiver_id, "same");
+        require!(self.0.owner_id != receiver_id, ERR_SELF_TRANSFER);
         self.0.owner_id = receiver_id;
     }
 }

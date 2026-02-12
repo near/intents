@@ -121,6 +121,14 @@ jobs:
         env:
           DEFUSE_OUT_DIR: "res"
         run: cargo build-all reproducible --checksum
+      - name: Build Deployer (reproducible)
+        env:
+          DEFUSE_OUT_DIR: "res"
+        run: cargo build-contract deployer reproducible --checksum
+      - name: Build Deployer with use-me (reproducible)
+        env:
+          DEFUSE_OUT_DIR: "res"
+        run: cargo build-contract deployer-with-use-me reproducible --checksum --variant use-me
       - name: Upload Reproducible Artifacts
         uses: actions/upload-artifact@v4
         with:
