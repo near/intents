@@ -26,7 +26,6 @@ impl Payload for SignedWebAuthnPayload {
     }
 }
 
-// TODO: rename
 #[derive(Debug, Clone)]
 pub struct Ed25519OrP256;
 
@@ -49,6 +48,7 @@ impl Algorithm for Ed25519OrP256 {
                 &compress_public_key(*public_key),
                 &P256Signature(*signature),
             ),
+
             _ => false,
         }
     }
