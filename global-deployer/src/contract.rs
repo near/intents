@@ -18,6 +18,7 @@ impl GlobalDeployer for Contract {
         require!(!env::attached_deposit().is_zero());
         self.require_owner();
         require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
+        let new_code_hash = env::sha256_array(&new_code);
 
         // On receipt failure, refund goes to the receipt's predecessor — which for a
         // self-targeted promise is the contract itself. `.refund_to()` overrides this
@@ -30,9 +31,9 @@ impl GlobalDeployer for Contract {
         Self::ext_on(p)
             .with_static_gas(GD_AT_DEPLOY_GAS)
             .with_unused_gas_weight(1)
-            .gd_at_deploy(
+            .gd_post_deploy(
                 old_hash,
-                env::sha256_array(&new_code),
+                new_code_hash,
                 env::account_balance().saturating_sub(env::attached_deposit()),
             )
     }
@@ -66,7 +67,7 @@ impl GlobalDeployer for Contract {
 #[near]
 impl Contract {
     #[private]
-    pub fn gd_at_deploy(
+    pub fn gd_post_deploy(
         &mut self,
         #[serializer(borsh)] old_hash: [u8; 32],
         #[serializer(borsh)] new_hash: [u8; 32],
