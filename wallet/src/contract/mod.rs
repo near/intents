@@ -1,4 +1,4 @@
-mod implementation;
+mod impl_;
 mod utils;
 
 use std::collections::BTreeSet;
@@ -10,7 +10,7 @@ use crate::{
     Wallet, WalletEvent, WalletOp, signature::SigningStandard,
 };
 
-use self::implementation::{Contract, ContractExt, ContractImpl};
+pub use self::impl_::*;
 
 #[near]
 impl Wallet for Contract {

@@ -1,5 +1,6 @@
 use crate::{PromiseDAG, PromiseSingle};
 
+/// DFS iterator over DAG nodes that emits single promises
 #[derive(Debug, Clone)]
 pub struct IntoIter {
     stack: Vec<PromiseDAG>,
@@ -15,7 +16,6 @@ impl IntoIterator for PromiseDAG {
     type Item = PromiseSingle;
     type IntoIter = IntoIter;
 
-    /// Returns an iterator over all single promises in arbitrary order
     fn into_iter(self) -> Self::IntoIter {
         IntoIter::new(self)
     }
@@ -39,6 +39,7 @@ impl Iterator for IntoIter {
     }
 }
 
+/// DFS iterator over DAG nodes that emits references to single promises
 pub struct Iter<'a> {
     stack: Vec<PromiseDAGRef<'a>>,
 }

@@ -13,12 +13,14 @@ use near_sdk::near;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[near(serializers = [json])]
-#[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
-    schemars(with = "String")
-)]
 #[repr(transparent)]
-pub struct Deadline(DateTime<Utc>);
+pub struct Deadline(
+    #[cfg_attr(
+        all(feature = "abi", not(target_arch = "wasm32")),
+        schemars(with = "String")
+    )]
+    DateTime<Utc>,
+);
 
 impl Deadline {
     pub const MAX: Self = Self(DateTime::<Utc>::MAX_UTC);
