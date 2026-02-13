@@ -11,6 +11,7 @@ impl GlobalDeployer for Contract {
     fn gd_deploy(&mut self, #[serializer(borsh)] code: Vec<u8>, #[serializer(borsh)] old_hash: [u8; 32]) -> Promise {
         require!(!env::attached_deposit().is_zero());
         self.require_owner();
+        require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
 
         // On receipt failure, refund goes to the receipt's predecessor — which for a
         // self-targeted promise is the contract itself. `.refund_to()` overrides this
