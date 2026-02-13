@@ -16,7 +16,6 @@ use crate::{
     tokens::imt::ImtBurner,
 };
 
-// TODO: should we return burned tokens and amounts?
 #[near]
 impl ImtBurner for Contract {
     #[payable]
@@ -38,7 +37,8 @@ impl ImtBurner for Contract {
                         memo,
                     }),
                 ),
-                [0; 32], // TODO: fix when MaybeIntentEvent is merged
+                // TODO: fix when multifunctional events are supported
+                [0; 32],
             )]
             .as_slice(),
         ))
