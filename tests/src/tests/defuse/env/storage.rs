@@ -6,7 +6,8 @@ use defuse_sandbox::{
 use near_sdk::AccountId;
 use std::{collections::HashSet, convert::Infallible, sync::atomic::Ordering};
 
-use crate::extensions::defuse::contract::{
+use defuse_randomness::{Rng, make_true_rng};
+use defuse_sandbox::extensions::defuse::contract::{
     contract::Role,
     core::{
         Deadline, Nonce,
@@ -16,24 +17,23 @@ use crate::extensions::defuse::contract::{
     },
     nep245::Token,
 };
-use crate::extensions::{
+use defuse_sandbox::extensions::{
     defuse::{
         account_manager::AccountViewExt, deployer::DefuseExt, intents::ExecuteIntentsExt,
         signer::DefuseSignerExt,
     },
     poa::PoAFactoryExt,
 };
-use defuse_randomness::{Rng, make_true_rng};
 use futures::{
     StreamExt, TryStreamExt,
     future::{join_all, try_join_all},
 };
 
-use crate::env::{
+use super::{
     Env,
     state::{AccountWithTokens, PersistentState},
-    wasms::DEFUSE_WASM,
 };
+use defuse_test_utils::wasms::DEFUSE_WASM;
 
 impl Env {
     pub async fn upgrade_legacy(&self, reuse_accounts: bool) {
@@ -78,7 +78,7 @@ impl Env {
         let tokens = state.get_tokens();
         try_join_all(tokens.iter().map(|token| self.apply_token(token)))
             .await
-            .map_err(|e| anyhow::anyhow!("Failed to apply tokens: {e}"))?;
+            .map_err(|e| anyhow::anyhow!("failed to apply tokens: {e}"))?;
 
         Ok(())
     }
@@ -86,7 +86,7 @@ impl Env {
     async fn apply_accounts(&self, state: &PersistentState) -> Result<()> {
         try_join_all(state.accounts.iter().map(|data| self.apply_account(data)))
             .await
-            .map_err(|e| anyhow::anyhow!("Failed to apply accounts: {e}"))?;
+            .map_err(|e| anyhow::anyhow!("failed to apply accounts: {e}"))?;
 
         Ok(())
     }

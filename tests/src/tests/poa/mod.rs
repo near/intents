@@ -1,4 +1,6 @@
-use crate::extensions::poa::{PoAFactoryDeployerExt, PoAFactoryExt, contract::contract::Role};
+use defuse_sandbox::extensions::poa::{
+    PoAFactoryDeployerExt, PoAFactoryExt, contract::contract::Role,
+};
 use defuse_sandbox::{
     Sandbox,
     extensions::{ft::FtViewExt, storage_management::StorageManagementExt},
@@ -8,7 +10,7 @@ use futures::try_join;
 use near_sdk::NearToken;
 use rstest::rstest;
 
-use crate::env::POA_FACTORY_WASM;
+use defuse_test_utils::wasms::POA_FACTORY_WASM;
 
 #[rstest]
 #[tokio::test]

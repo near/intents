@@ -1,12 +1,12 @@
-use crate::extensions::defuse::{
-    intents::ExecuteIntentsExt, signer::DefaultDefuseSignerExt, tokens::imt::DefuseImtBurner,
-};
 use defuse::core::{amounts::Amounts, intents::imt::ImtMint, token_id::TokenId};
 use defuse_escrow_swap::token_id::{imt::ImtTokenId, nep141::Nep141TokenId};
+use defuse_sandbox::extensions::defuse::{
+    intents::ExecuteIntentsExt, signer::DefaultDefuseSignerExt, tokens::imt::DefuseImtBurner,
+};
 use defuse_sandbox::extensions::mt::MtViewExt;
 use rstest::rstest;
 
-use crate::env::Env;
+use crate::tests::defuse::env::Env;
 
 #[rstest]
 #[tokio::test]

@@ -9,25 +9,49 @@ repository.workspace = true
 workspace = true
 
 [features]
-default = ["defuse", "poa", "escrow", "long"]
+default = ["defuse", "poa", "escrow-swap", "long"]
+
+poa = [
+    "dep:defuse-poa-factory",
+    "defuse-sandbox/poa",
+    "defuse-test-utils/poa"
+    ]
+defuse = [
+    "dep:defuse",
+    "defuse-sandbox/defuse",
+    "defuse-sandbox/poa",
+    "defuse-test-utils/defuse",
+    "defuse-test-utils/poa"
+    ]
+escrow-swap = [
+    "dep:defuse-escrow-swap",
+    "defuse-sandbox/escrow",
+    "defuse-sandbox/defuse",
+    "defuse-sandbox/poa",
+    "defuse-test-utils/escrow",
+    "defuse-test-utils/defuse",
+    "defuse-test-utils/poa"
+    ]
 
 long = []
-poa = ["dep:defuse-poa-factory"]
-defuse = ["dep:defuse"]
-escrow = ["dep:defuse-escrow-swap"]
 
 [dependencies]
 defuse-sandbox = { workspace = true }
-
-defuse = { workspace = true, features = ["contract", "arbitrary", "imt"],  optional = true}
-defuse-escrow-swap = { workspace = true, features = ["auth_call"],  optional = true }
+defuse = { workspace = true, features = ["contract", "arbitrary", "imt"], optional = true }
+defuse-escrow-swap = { workspace = true, features = ["auth_call"], optional = true }
 defuse-poa-factory = {workspace = true, features = ["contract"], optional = true }
+multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
 
 defuse-near-utils = { workspace = true }
 defuse-serde-utils = { workspace = true }
 defuse-randomness.workspace = true
 defuse-test-utils.workspace = true
+defuse-nep245.workspace = true
+defuse-fees.workspace = true
+
 near-sdk.workspace = true
+near-crypto.workspace = true
+near-contract-standards.workspace = true
 
 futures = "0.3"
 anyhow.workspace = true
@@ -39,12 +63,9 @@ hex-literal.workspace = true
 hex.workspace = true
 impl-tools.workspace = true
 itertools.workspace = true
-multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
-near-crypto.workspace = true
-near-contract-standards.workspace = true
+
 rstest.workspace = true
 serde_json.workspace = true
 strum.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 tlb-ton = { workspace = true, features = ["arbitrary"] }
-defuse-nep245.workspace = true

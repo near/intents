@@ -1,13 +1,13 @@
 use std::sync::atomic::AtomicUsize;
 
-use crate::extensions::defuse::contract::{
+use defuse_sandbox::extensions::defuse::contract::{
     contract::{
         Role,
         config::{DefuseConfig, RolesConfig},
     },
     core::fees::{FeesConfig, Pips},
 };
-use crate::extensions::{
+use defuse_sandbox::extensions::{
     defuse::deployer::DefuseExt,
     poa::{PoAFactoryDeployerExt, contract::contract::Role as POAFactoryRole},
 };
@@ -19,10 +19,8 @@ use defuse_sandbox::{
 use defuse_test_utils::random::Seed;
 use near_sdk::{AccountId, NearToken};
 
-use crate::env::{
-    Env,
-    wasms::{DEFUSE_LEGACY_WASM, DEFUSE_WASM, POA_FACTORY_WASM, WNEAR_WASM},
-};
+use super::Env;
+use defuse_test_utils::wasms::{DEFUSE_LEGACY_WASM, DEFUSE_WASM, POA_FACTORY_WASM, WNEAR_WASM};
 
 const MIGRATE_FROM_LEGACY_ENV_NAME: &str = "DEFUSE_MIGRATE_FROM_LEGACY";
 

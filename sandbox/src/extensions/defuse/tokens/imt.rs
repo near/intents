@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
+use crate::{SigningAccount, anyhow, tx::FnCallBuilder};
 use defuse::core::{amounts::Amounts, tokens::imt::ImtTokens};
-use defuse_sandbox::{SigningAccount, anyhow, tx::FnCallBuilder};
 use near_sdk::{AccountIdRef, NearToken, serde_json::json};
 
 pub trait DefuseImtBurner {

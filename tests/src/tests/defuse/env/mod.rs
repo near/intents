@@ -3,17 +3,18 @@
 mod builder;
 mod state;
 mod storage;
-mod wasms;
 
-pub use wasms::*;
+use builder::EnvBuilder;
 
-use crate::env::builder::EnvBuilder;
-
-use crate::extensions::defuse::contract::{
+use anyhow::{Ok, Result, anyhow};
+use arbitrary::Unstructured;
+use defuse_randomness::{Rng, make_true_rng};
+use defuse_sandbox::extensions::defuse::contract::{
     core::{Deadline, Nonce},
     tokens::{DepositAction, DepositMessage},
 };
-use crate::extensions::{
+use defuse_sandbox::extensions::storage_management::StorageManagementExt;
+use defuse_sandbox::extensions::{
     defuse::{
         account_manager::{AccountManagerExt, AccountViewExt},
         nonce::generate_unique_nonce,
@@ -21,10 +22,6 @@ use crate::extensions::{
     },
     poa::PoAFactoryExt,
 };
-use anyhow::{Ok, Result, anyhow};
-use arbitrary::Unstructured;
-use defuse_randomness::{Rng, make_true_rng};
-use defuse_sandbox::extensions::storage_management::StorageManagementExt;
 use defuse_sandbox::{Account, Sandbox, SigningAccount};
 use defuse_test_utils::random::{Seed, rng};
 use futures::future::try_join_all;
@@ -265,7 +262,7 @@ fn generate_random_account_id(parent_id: &AccountId) -> Result<AccountId> {
         &mut Unstructured::new(&rng.random::<[u8; 64]>()),
         Some(parent_id),
     )
-    .map_err(|e| anyhow::anyhow!("Failed to generate account ID : {e}"))
+    .map_err(|e| anyhow::anyhow!("failed to generate account ID : {e}"))
 }
 
 fn generate_legacy_user_account_id(
@@ -275,12 +272,12 @@ fn generate_legacy_user_account_id(
 ) -> Result<AccountId> {
     let bytes = sha256((seed.as_u64() + u64::try_from(index)?).to_be_bytes())[..8]
         .try_into()
-        .map_err(|_| anyhow::anyhow!("Failed to create new account seed"))?;
+        .map_err(|_| anyhow::anyhow!("failed to create new account seed"))?;
     let seed = Seed::from_u64(u64::from_be_bytes(bytes));
     let mut rng = rng(seed);
     ArbitraryNamedAccountId::arbitrary_subaccount(
         &mut Unstructured::new(&rng.random::<[u8; 64]>()),
         Some(parent_id.id()),
     )
-    .map_err(|e| anyhow::anyhow!("Failed to generate account ID : {e}"))
+    .map_err(|e| anyhow::anyhow!("failed to generate account ID : {e}"))
 }

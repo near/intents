@@ -45,17 +45,33 @@ You can obtain a working copy of the smart contract and the ABI from [the releas
 
 Alternatively, you can build this smart contract yourself.
 
-Build the smart contracts:
+Build smart contract separately:
 
 ```shell
-cargo make build
+cargo build-contract <contract_name> <reproducible|non-reproducible>
+```
+
+Build all contracts at once:
+
+```shell
+cargo build-all <reproducible|non-reproducible>
 ```
 
 Run integration tests:
 
 ```shell
-cargo make test
+cargo integration-tests <defuse|poa|escrow-swap>
 ```
+
+Or run all tests:
+
+```shell
+cargo test --workspace --all-targets
+```
+
+NOTE:
+1. To specify the destination of wasms, set the `DEFUSE_OUT_DIR` environment variable.
+2. To specify wasms destination for tests set `DEFUSE_USE_OUT_DIR`environment variable.
 
 For state migration testing set environmental var `DEFUSE_MIGRATE_FROM_LEGACY=1`
 State migrations will be applied before all tests.
@@ -64,7 +80,7 @@ The tests will use data created prior to migration combined with newly created d
 Run clippy linter:
 
 ```shell
-cargo make clippy
+cargo clippy --workspace --all-targets --no-deps
 ```
 
 After building, the artifacts of the build will be in the `res` directory.

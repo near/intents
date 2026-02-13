@@ -1,2 +1,13 @@
 [target.'cfg(target_family="wasm")']
 rustflags = ["--remap-path-prefix=.=src", "--remap-path-prefix=${HOME}=/"]
+
+[env]
+DEFUSE_USE_OUT_DIR = { value = "res", relative = true }
+DEFUSE_OUT_DIR = { value = "res", relative = true }
+
+[alias]
+xtask = "run --package xtask --"
+
+build-all = "run --package xtask -- build-all"
+build-contract = "run --package xtask -- build"
+integration-tests = "test -p defuse-tests --no-default-features --features"

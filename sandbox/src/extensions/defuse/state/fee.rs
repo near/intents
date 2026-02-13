@@ -1,5 +1,5 @@
+use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use defuse::core::fees::Pips;
-use defuse_sandbox::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use near_sdk::{AccountId, AccountIdRef, NearToken, serde_json::json};
 
 #[allow(async_fn_in_trait)]
