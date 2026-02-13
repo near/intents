@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use near_sdk::serde_with::{hex::Hex, serde_as};
-use near_sdk::{AccountId, CryptoHash, PanicOnDefault, Promise, borsh, ext_contract, near};
+use near_sdk::{AccountId, PanicOnDefault, Promise, borsh, ext_contract, near};
 
 #[cfg(feature = "contract")]
 mod contract;
@@ -22,9 +22,9 @@ pub enum Event {
     #[event_version("1.0.0")]
     Deploy {
         #[serde_as(as = "Hex")]
-        old_hash: CryptoHash,
+        old_hash: [u8; 32],
         #[serde_as(as = "Hex")]
-        new_hash: CryptoHash,
+        new_hash: [u8; 32],
     },
 
     #[event_version("1.0.0")]
