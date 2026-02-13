@@ -50,14 +50,13 @@ impl DeployerExt for SigningAccount {
     }
 
     async fn gd_deploy(&self, target: &AccountId, wasm: &[u8]) -> anyhow::Result<ExecutionSuccess> {
-        Ok(self
-            .tx(target)
+        self.tx(target)
             .function_call(
                 FnCallBuilder::new("gd_deploy")
                     .borsh_args(&wasm)
                     .with_deposit(NearToken::from_near(50)),
             )
-            .await?)
+            .await
     }
 
     async fn gd_transfer_ownership(
@@ -65,14 +64,13 @@ impl DeployerExt for SigningAccount {
         target: &AccountId,
         new_owner: &AccountId,
     ) -> anyhow::Result<ExecutionSuccess> {
-        Ok(self
-            .tx(target)
+        self.tx(target)
             .function_call(
                 FnCallBuilder::new("gd_transfer_ownership")
                     .json_args(json!({"receiver_id": new_owner.clone()}))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await?)
+            .await
     }
 }
 

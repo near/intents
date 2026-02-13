@@ -21,6 +21,7 @@ pub struct Contract(State);
 pub enum Event {
     #[event_version("1.0.0")]
     Deploy(#[serde_as(as = "Hex")] CryptoHash),
+
     #[event_version("1.0.0")]
     Transfer {
         old_owner_id: AccountId,
