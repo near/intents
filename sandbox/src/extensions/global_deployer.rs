@@ -2,7 +2,7 @@ use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use defuse_global_deployer::State as DeployerState;
 use near_api::types::transaction::result::ExecutionSuccess;
 use near_sdk::{
-    AccountId, GlobalContractId, NearToken,
+    AccountId, CryptoHash, GlobalContractId, NearToken,
     serde_json::json,
     state_init::{StateInit, StateInitV1},
 };
@@ -33,6 +33,7 @@ pub trait DeployerExt {
 pub trait DeployerViewExt {
     async fn gd_owner_id(&self) -> anyhow::Result<AccountId>;
     async fn gd_index(&self) -> anyhow::Result<u32>;
+    async fn gd_code_hash(&self) -> anyhow::Result<CryptoHash>;
 }
 
 impl DeployerExt for SigningAccount {
@@ -91,5 +92,9 @@ impl DeployerViewExt for Account {
 
     async fn gd_index(&self) -> anyhow::Result<u32> {
         self.call_view_function_json("gd_index", ()).await
+    }
+
+    async fn gd_code_hash(&self) -> anyhow::Result<CryptoHash> {
+        self.call_view_function_json("gd_code_hash", ()).await
     }
 }

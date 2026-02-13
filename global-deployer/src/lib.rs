@@ -53,6 +53,9 @@ pub trait GlobalDeployer {
 
     /// Returns the deployer instance index (used for deterministic account derivation).
     fn gd_index(&self) -> u32;
+
+    /// Returns the SHA-256 hash of the currently deployed code, or `[0; 32]` if none.
+    fn gd_code_hash(&self) -> CryptoHash;
 }
 
 #[near(serializers = [borsh, json])]

@@ -43,6 +43,10 @@ impl GlobalDeployer for Contract {
         self.0.index
     }
 
+    fn gd_code_hash(&self) -> near_sdk::CryptoHash {
+        self.0.code_hash
+    }
+
     #[payable]
     fn gd_transfer_ownership(&mut self, receiver_id: AccountId) {
         assert_one_yocto();

@@ -112,6 +112,11 @@ async fn test_deploy_controller_instance(
     .await
     .assert_err_contains("GlobalContractDoesNotExist");
 
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap(),
+        DeployerState::DEFAULT_HASH,
+    );
+
     root.gd_deploy(
         controller_instance.id(),
         &DEPLOYER_WASM,
@@ -119,6 +124,12 @@ async fn test_deploy_controller_instance(
     )
     .await
     .unwrap();
+
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap(),
+        sha256_array(&*DEPLOYER_WASM),
+    );
+
     let mutable_controller_instance = root
         .deploy_instance(
             GlobalContractId::AccountId(controller_instance.id().clone()),
@@ -188,6 +199,10 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
     )
     .await
     .unwrap();
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap(),
+        sha256_array(&*DEPLOYER_WASM),
+    );
 
     let upgradable_controller_instance = root
         .deploy_instance(
@@ -208,6 +223,10 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
         )
         .await
         .unwrap();
+    assert_eq!(
+        upgradable_controller_instance.gd_code_hash().await.unwrap(),
+        sha256_array(&*DEPLOYER_WASM),
+    );
 
     let escrow_controller_instance = root
         .deploy_instance(
@@ -227,6 +246,10 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
     )
     .await
     .unwrap();
+    assert_eq!(
+        escrow_controller_instance.gd_code_hash().await.unwrap(),
+        sha256_array(&*ESCROW_SWAP_WASM),
+    );
 
     let escrow_instance_params = dummy_escrow_params(root);
     let escrow_instance = {
@@ -287,6 +310,10 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
     )
     .await
     .unwrap();
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap(),
+        sha256_array(&*DEPLOYER_WASM),
+    );
 
     let upgradable_controller_instance = root
         .deploy_instance(
@@ -307,6 +334,10 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
         )
         .await
         .unwrap();
+    assert_eq!(
+        upgradable_controller_instance.gd_code_hash().await.unwrap(),
+        sha256_array(&*DEPLOYER_WASM),
+    );
 
     let escrow_controller_instance = root
         .deploy_instance(
@@ -327,6 +358,10 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
     )
     .await
     .unwrap();
+    assert_eq!(
+        escrow_controller_instance.gd_code_hash().await.unwrap(),
+        sha256_array(&*MT_RECEIVER_STUB_WASM),
+    );
 
     let escrow_instance_params = dummy_escrow_params(root);
     let escrow_instance = {
@@ -359,6 +394,10 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
     )
     .await
     .unwrap();
+    assert_eq!(
+        escrow_controller_instance.gd_code_hash().await.unwrap(),
+        sha256_array(&*ESCROW_SWAP_WASM),
+    );
     let storage = escrow_instance
         .es_view()
         .await
@@ -506,6 +545,10 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
     )
     .await
     .unwrap();
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap(),
+        sha256_array(&*DEPLOYER_WASM),
+    );
     bob.gd_transfer_ownership(controller_instance.id(), alice.id())
         .await
         .unwrap();
@@ -543,6 +586,10 @@ async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, 
             .logs()
             .contains(&expected_event.to_nep297_event().to_event_log().as_str())
     );
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap(),
+        sha256_array(&*DEPLOYER_WASM),
+    );
 }
 
 #[rstest]
@@ -574,6 +621,10 @@ async fn test_concurrent_upgrades_only_one_succeeds(
     )
     .await
     .unwrap();
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap(),
+        sha256_array(&*DEPLOYER_WASM),
+    );
 
     let old_hash = sha256_array(&*DEPLOYER_WASM);
 
@@ -599,5 +650,9 @@ async fn test_concurrent_upgrades_only_one_succeeds(
     assert_eq!(
         wrong_hash_failures, 9,
         "remaining 9 should fail with wrong code hash"
+    );
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap(),
+        sha256_array(&*ESCROW_SWAP_WASM),
     );
 }
