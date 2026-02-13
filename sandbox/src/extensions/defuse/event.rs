@@ -31,6 +31,7 @@ impl ToEventLog for MultiPayload {
     }
 }
 
+// TODO: add emitted mt event logs
 impl<const N: usize> ToEventLog for [MultiPayload; N] {
     #[inline]
     fn to_event_log(self) -> Vec<String> {
