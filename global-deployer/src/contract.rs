@@ -22,7 +22,6 @@ impl GlobalDeployer for Contract {
         // On receipt failure, refund goes to the receipt's predecessor — which for a
         // self-targeted promise is the contract itself. `.refund_to()` overrides this
         // so the deposit is refunded to the original caller instead. (NEP-616)
-        let new_hash = env::sha256_array(&new_code);
         let p = Promise::new(env::current_account_id())
             .refund_to(env::refund_to_account_id())
             .transfer(env::attached_deposit())
@@ -33,7 +32,7 @@ impl GlobalDeployer for Contract {
             .with_unused_gas_weight(1)
             .gd_at_deploy(
                 old_hash,
-                new_hash,
+                env::sha256_array(&new_code),
                 env::account_balance().saturating_sub(env::attached_deposit()),
             )
     }
