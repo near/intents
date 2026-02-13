@@ -16,7 +16,7 @@ use crate::{
 
 #[near]
 impl ImtBurner for Contract {
-    #[pause(name = "imt")]
+    #[pause]
     #[payable]
     fn imt_burn(&mut self, minter_id: AccountId, tokens: ImtTokens, memo: Option<String>) {
         assert_one_yocto();

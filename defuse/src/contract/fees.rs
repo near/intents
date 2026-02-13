@@ -14,7 +14,7 @@ use super::{Contract, ContractExt, Role};
 
 #[near]
 impl FeesManager for Contract {
-    #[pause(name = "imt")]
+    #[pause(name = "intents")]
     #[access_control_any(roles(Role::DAO, Role::FeesManager))]
     #[payable]
     fn set_fee(&mut self, #[allow(unused_mut)] mut fee: Pips) {
