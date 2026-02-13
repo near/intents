@@ -38,3 +38,5 @@ defuse-escrow-swap = { workspace = true, optional = true, features = ["auth_call
 defuse = { workspace = true, optional = true, features = ["contract", "imt"] }
 defuse-serde-utils = { workspace = true, optional = true }
 defuse-test-utils = { workspace = true, optional = true }
+
+tracing-subscriber = "0.3.22"

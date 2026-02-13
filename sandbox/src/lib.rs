@@ -115,6 +115,9 @@ pub async fn sandbox(#[default(NearToken::from_near(100_000))] amount: NearToken
 
     let mutex = SHARED_SANDBOX
         .get_or_init(|| async {
+            tracing_subscriber::fmt()
+                .with_max_level(tracing::Level::DEBUG)
+                .init();
             unsafe {
                 libc::atexit(cleanup_sandbox);
             }
