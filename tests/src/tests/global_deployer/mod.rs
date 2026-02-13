@@ -1,31 +1,22 @@
-use near_sdk::AsNep297Event;
-use std::collections::{BTreeMap, BTreeSet};
 use std::sync::atomic::{AtomicU32, Ordering};
-use std::time::Duration;
 
-use crate::utils::wasms::DEPLOYER_WASM;
-use defuse_escrow_swap::{ContractStorage, Deadline, OverrideSend, Params};
 use defuse_global_deployer::{
     Event, State as DeployerState,
     error::{ERR_UNAUTHORIZED, ERR_WRONG_CODE_HASH},
 };
-use defuse_sandbox::extensions::escrow::EscrowExtView;
-use defuse_sandbox::extensions::global_deployer::{DeployerExt, DeployerViewExt};
-use defuse_sandbox::extensions::mt_receiver::MtReceiverStubExtView;
 use defuse_sandbox::{
-    Sandbox, SigningAccount, api::types::transaction::actions::GlobalContractDeployMode, sandbox,
+    Sandbox,
+    api::types::transaction::actions::GlobalContractDeployMode,
+    extensions::global_deployer::{DeployerExt, DeployerViewExt},
+    sandbox,
     tx::FnCallBuilder,
 };
-use defuse_test_utils::asserts::ResultAssertsExt;
-use defuse_test_utils::wasms::{ESCROW_SWAP_WASM, MT_RECEIVER_STUB_WASM};
+use defuse_test_utils::{asserts::ResultAssertsExt, wasms::MT_RECEIVER_STUB_WASM};
 use futures::future::join_all;
-use near_sdk::{
-    GlobalContractId, NearToken,
-    env::sha256_array,
-    state_init::{StateInit, StateInitV1},
-};
-
+use near_sdk::{AsNep297Event, GlobalContractId, NearToken, env::sha256_array};
 use rstest::{fixture, rstest};
+
+use crate::utils::wasms::DEPLOYER_WASM;
 
 static SUB_COUNTER: AtomicU32 = AtomicU32::new(0);
 
@@ -51,28 +42,6 @@ pub async fn deployer_env() -> DeployerEnv {
 #[fixture]
 pub fn unique_index() -> u32 {
     SUB_COUNTER.fetch_add(1, Ordering::Relaxed)
-}
-
-fn dummy_escrow_params(root: &SigningAccount) -> Params {
-    let maker = root.sub_account("maker").unwrap();
-    let src_token = root.sub_account("src_token").unwrap();
-    let dst_token = root.sub_account("dst_token").unwrap();
-
-    Params {
-        maker: maker.id().clone(),
-        src_token: format!("nep141:{}", src_token.id()).parse().unwrap(),
-        dst_token: format!("nep141:{}", dst_token.id()).parse().unwrap(),
-        price: "1".parse().unwrap(),
-        deadline: Deadline::timeout(Duration::from_secs(3600)),
-        partial_fills_allowed: false,
-        refund_src_to: OverrideSend::default(),
-        receive_dst_to: OverrideSend::default(),
-        taker_whitelist: BTreeSet::new(),
-        protocol_fees: None,
-        integrator_fees: BTreeMap::new(),
-        auth_caller: None,
-        salt: [0u8; 32],
-    }
 }
 
 #[rstest]
@@ -160,225 +129,6 @@ async fn test_deploy_controller_instance(
 
 #[rstest]
 #[tokio::test]
-async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, unique_index: u32) {
-    let root = deployer_env.sandbox.root();
-    let alice = root
-        .generate_subaccount("alice", NearToken::from_near(100))
-        .await
-        .unwrap();
-    let bob = root
-        .generate_subaccount("bob", NearToken::from_near(100))
-        .await
-        .unwrap();
-    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
-
-    let controller_instance = root
-        .deploy_instance(
-            deployer_code_hash_id.clone(),
-            DeployerState::new(root.id().clone(), unique_index),
-        )
-        .await
-        .unwrap();
-
-    root.gd_deploy(
-        controller_instance.id(),
-        DeployerState::DEFAULT_HASH,
-        &DEPLOYER_WASM,
-    )
-    .await
-    .unwrap();
-    assert_eq!(
-        controller_instance.gd_code_hash().await.unwrap(),
-        sha256_array(&*DEPLOYER_WASM),
-    );
-
-    let upgradable_controller_instance = root
-        .deploy_instance(
-            deployer_code_hash_id.clone(),
-            DeployerState::new(alice.id().clone(), 0u32),
-        )
-        .await
-        .unwrap();
-    alice
-        .gd_deploy(
-            upgradable_controller_instance.id(),
-            DeployerState::DEFAULT_HASH,
-            &DEPLOYER_WASM,
-        )
-        .await
-        .unwrap();
-    assert_eq!(
-        upgradable_controller_instance.gd_code_hash().await.unwrap(),
-        sha256_array(&*DEPLOYER_WASM),
-    );
-
-    let escrow_controller_instance = root
-        .deploy_instance(
-            GlobalContractId::AccountId(upgradable_controller_instance.id().clone()),
-            DeployerState::new(bob.id().clone(), 0u32),
-        )
-        .await
-        .unwrap();
-    bob.gd_deploy(
-        escrow_controller_instance.id(),
-        DeployerState::DEFAULT_HASH,
-        &ESCROW_SWAP_WASM,
-    )
-    .await
-    .unwrap();
-    assert_eq!(
-        escrow_controller_instance.gd_code_hash().await.unwrap(),
-        sha256_array(&*ESCROW_SWAP_WASM),
-    );
-
-    let escrow_instance_params = dummy_escrow_params(root);
-    let escrow_instance = {
-        let escrow_account_id = root
-            .state_init(
-                StateInit::V1(StateInitV1 {
-                    code: GlobalContractId::AccountId(escrow_controller_instance.id().clone()),
-                    data: ContractStorage::init_state(&escrow_instance_params).unwrap(),
-                }),
-                NearToken::ZERO,
-            )
-            .await
-            .unwrap();
-        defuse_sandbox::Account::new(escrow_account_id, root.network_config().clone())
-    };
-
-    // call escrow instance method
-    let storage = escrow_instance
-        .es_view()
-        .await
-        .expect("escrow should have `es_view` method");
-    storage.verify(&escrow_instance_params).unwrap();
-}
-
-#[rstest]
-#[tokio::test]
-async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_using_controller(
-    #[future(awt)] deployer_env: DeployerEnv,
-    unique_index: u32,
-) {
-    let root = deployer_env.sandbox.root();
-    let alice = root
-        .generate_subaccount("alice", NearToken::from_near(100))
-        .await
-        .unwrap();
-    let bob = root
-        .generate_subaccount("bob", NearToken::from_near(500))
-        .await
-        .unwrap();
-    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
-
-    let controller_instance = root
-        .deploy_instance(
-            deployer_code_hash_id.clone(),
-            DeployerState::new(root.id().clone(), unique_index),
-        )
-        .await
-        .unwrap();
-
-    root.gd_deploy(
-        controller_instance.id(),
-        DeployerState::DEFAULT_HASH,
-        &DEPLOYER_WASM,
-    )
-    .await
-    .unwrap();
-    assert_eq!(
-        controller_instance.gd_code_hash().await.unwrap(),
-        sha256_array(&*DEPLOYER_WASM),
-    );
-
-    let upgradable_controller_instance = root
-        .deploy_instance(
-            deployer_code_hash_id.clone(),
-            DeployerState::new(alice.id().clone(), 0u32),
-        )
-        .await
-        .unwrap();
-    alice
-        .gd_deploy(
-            upgradable_controller_instance.id(),
-            DeployerState::DEFAULT_HASH,
-            &DEPLOYER_WASM,
-        )
-        .await
-        .unwrap();
-    assert_eq!(
-        upgradable_controller_instance.gd_code_hash().await.unwrap(),
-        sha256_array(&*DEPLOYER_WASM),
-    );
-
-    let escrow_controller_instance = root
-        .deploy_instance(
-            GlobalContractId::AccountId(upgradable_controller_instance.id().clone()),
-            DeployerState::new(bob.id().clone(), 0u32),
-        )
-        .await
-        .unwrap();
-
-    bob.gd_deploy(
-        escrow_controller_instance.id(),
-        DeployerState::DEFAULT_HASH,
-        &MT_RECEIVER_STUB_WASM,
-    )
-    .await
-    .unwrap();
-    assert_eq!(
-        escrow_controller_instance.gd_code_hash().await.unwrap(),
-        sha256_array(&*MT_RECEIVER_STUB_WASM),
-    );
-
-    let escrow_instance_params = dummy_escrow_params(root);
-    let escrow_instance = {
-        let escrow_account_id = root
-            .state_init(
-                StateInit::V1(StateInitV1 {
-                    code: GlobalContractId::AccountId(escrow_controller_instance.id().clone()),
-                    data: ContractStorage::init_state(&escrow_instance_params).unwrap(),
-                }),
-                NearToken::ZERO,
-            )
-            .await
-            .unwrap();
-        defuse_sandbox::Account::new(escrow_account_id, root.network_config().clone())
-    };
-
-    escrow_instance
-        .es_view()
-        .await
-        .expect_err("escrow should not have `es_view` method");
-    escrow_instance
-        .dummy_method()
-        .await
-        .expect("escrow should have `dummy_method` method");
-
-    bob.gd_deploy(
-        escrow_controller_instance.id(),
-        sha256_array(&*MT_RECEIVER_STUB_WASM),
-        &ESCROW_SWAP_WASM,
-    )
-    .await
-    .unwrap();
-    assert_eq!(
-        escrow_controller_instance.gd_code_hash().await.unwrap(),
-        sha256_array(&*ESCROW_SWAP_WASM),
-    );
-    let storage = escrow_instance
-        .es_view()
-        .await
-        .expect("escrow should have `es_view` method");
-    storage.verify(&escrow_instance_params).unwrap();
-    escrow_instance
-        .dummy_method()
-        .await
-        .expect_err("escrow should not have `dummy_method` method");
-}
-
-#[rstest]
-#[tokio::test]
 async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
     #[future(awt)] deployer_env: DeployerEnv,
     unique_index: u32,
@@ -427,7 +177,6 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
         "Storage deposit should be refunded (minus spent gas)"
     );
 }
-
 #[rstest]
 #[tokio::test]
 async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, unique_index: u32) {
@@ -473,8 +222,8 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
         result.logs(),
         vec![
             Event::Transfer {
-                old_owner_id: alice.id().clone(),
-                new_owner_id: bob.id().clone(),
+                old_owner_id: alice.id().into(),
+                new_owner_id: bob.id().into(),
             }
             .to_nep297_event()
             .to_event_log()
@@ -585,7 +334,7 @@ async fn test_concurrent_upgrades_only_one_succeeds(
 
     // Fire 10 concurrent upgrade calls all using the same old_hash
     let results = join_all(
-        (0..10).map(|_| root.gd_deploy(controller_instance.id(), old_hash, &ESCROW_SWAP_WASM)),
+        (0..10).map(|_| root.gd_deploy(controller_instance.id(), old_hash, &MT_RECEIVER_STUB_WASM)),
     )
     .await;
 
@@ -608,7 +357,7 @@ async fn test_concurrent_upgrades_only_one_succeeds(
     );
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap(),
-        sha256_array(&*ESCROW_SWAP_WASM),
+        sha256_array(&*MT_RECEIVER_STUB_WASM),
     );
 }
 
@@ -648,4 +397,263 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
 
     let controller_instance_balance = controller_instance.view().await.unwrap().amount;
     assert!(controller_instance_balance < NearToken::from_millinear(900));
+}
+
+#[cfg(feature = "escrow-swap")]
+mod escrow {
+    use super::*;
+
+    use std::{
+        collections::{BTreeMap, BTreeSet},
+        time::Duration,
+    };
+
+    use defuse_escrow_swap::{ContractStorage, Deadline, OverrideSend, Params};
+    use defuse_sandbox::{
+        SigningAccount,
+        extensions::{escrow::EscrowExtView, mt_receiver::MtReceiverStubExtView},
+    };
+    use defuse_test_utils::wasms::ESCROW_SWAP_WASM;
+    use near_sdk::state_init::{StateInit, StateInitV1};
+
+    fn dummy_escrow_params(root: &SigningAccount) -> Params {
+        let maker = root.sub_account("maker").unwrap();
+        let src_token = root.sub_account("src_token").unwrap();
+        let dst_token = root.sub_account("dst_token").unwrap();
+
+        Params {
+            maker: maker.id().clone(),
+            src_token: format!("nep141:{}", src_token.id()).parse().unwrap(),
+            dst_token: format!("nep141:{}", dst_token.id()).parse().unwrap(),
+            price: "1".parse().unwrap(),
+            deadline: Deadline::timeout(Duration::from_secs(3600)),
+            partial_fills_allowed: false,
+            refund_src_to: OverrideSend::default(),
+            receive_dst_to: OverrideSend::default(),
+            taker_whitelist: BTreeSet::new(),
+            protocol_fees: None,
+            integrator_fees: BTreeMap::new(),
+            auth_caller: None,
+            salt: [0u8; 32],
+        }
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, unique_index: u32) {
+        let root = deployer_env.sandbox.root();
+        let alice = root
+            .generate_subaccount("alice", NearToken::from_near(100))
+            .await
+            .unwrap();
+        let bob = root
+            .generate_subaccount("bob", NearToken::from_near(100))
+            .await
+            .unwrap();
+        let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+
+        let controller_instance = root
+            .deploy_instance(
+                deployer_code_hash_id.clone(),
+                DeployerState::new(root.id().clone(), unique_index),
+            )
+            .await
+            .unwrap();
+
+        root.gd_deploy(
+            controller_instance.id(),
+            DeployerState::DEFAULT_HASH,
+            &DEPLOYER_WASM,
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            controller_instance.gd_code_hash().await.unwrap(),
+            sha256_array(&*DEPLOYER_WASM),
+        );
+
+        let upgradable_controller_instance = root
+            .deploy_instance(
+                deployer_code_hash_id.clone(),
+                DeployerState::new(alice.id().clone(), 0u32),
+            )
+            .await
+            .unwrap();
+        alice
+            .gd_deploy(
+                upgradable_controller_instance.id(),
+                DeployerState::DEFAULT_HASH,
+                &DEPLOYER_WASM,
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            upgradable_controller_instance.gd_code_hash().await.unwrap(),
+            sha256_array(&*DEPLOYER_WASM),
+        );
+
+        let escrow_controller_instance = root
+            .deploy_instance(
+                GlobalContractId::AccountId(upgradable_controller_instance.id().clone()),
+                DeployerState::new(bob.id().clone(), 0u32),
+            )
+            .await
+            .unwrap();
+        bob.gd_deploy(
+            escrow_controller_instance.id(),
+            DeployerState::DEFAULT_HASH,
+            &ESCROW_SWAP_WASM,
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            escrow_controller_instance.gd_code_hash().await.unwrap(),
+            sha256_array(&*ESCROW_SWAP_WASM),
+        );
+
+        let escrow_instance_params = dummy_escrow_params(root);
+        let escrow_instance = {
+            let escrow_account_id = root
+                .state_init(
+                    StateInit::V1(StateInitV1 {
+                        code: GlobalContractId::AccountId(escrow_controller_instance.id().clone()),
+                        data: ContractStorage::init_state(&escrow_instance_params).unwrap(),
+                    }),
+                    NearToken::ZERO,
+                )
+                .await
+                .unwrap();
+            defuse_sandbox::Account::new(escrow_account_id, root.network_config().clone())
+        };
+
+        // call escrow instance method
+        let storage = escrow_instance
+            .es_view()
+            .await
+            .expect("escrow should have `es_view` method");
+        storage.verify(&escrow_instance_params).unwrap();
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_using_controller(
+        #[future(awt)] deployer_env: DeployerEnv,
+        unique_index: u32,
+    ) {
+        let root = deployer_env.sandbox.root();
+        let alice = root
+            .generate_subaccount("alice", NearToken::from_near(100))
+            .await
+            .unwrap();
+        let bob = root
+            .generate_subaccount("bob", NearToken::from_near(500))
+            .await
+            .unwrap();
+        let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+
+        let controller_instance = root
+            .deploy_instance(
+                deployer_code_hash_id.clone(),
+                DeployerState::new(root.id().clone(), unique_index),
+            )
+            .await
+            .unwrap();
+
+        root.gd_deploy(
+            controller_instance.id(),
+            DeployerState::DEFAULT_HASH,
+            &DEPLOYER_WASM,
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            controller_instance.gd_code_hash().await.unwrap(),
+            sha256_array(&*DEPLOYER_WASM),
+        );
+
+        let upgradable_controller_instance = root
+            .deploy_instance(
+                deployer_code_hash_id.clone(),
+                DeployerState::new(alice.id().clone(), 0u32),
+            )
+            .await
+            .unwrap();
+        alice
+            .gd_deploy(
+                upgradable_controller_instance.id(),
+                DeployerState::DEFAULT_HASH,
+                &DEPLOYER_WASM,
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            upgradable_controller_instance.gd_code_hash().await.unwrap(),
+            sha256_array(&*DEPLOYER_WASM),
+        );
+
+        let escrow_controller_instance = root
+            .deploy_instance(
+                GlobalContractId::AccountId(upgradable_controller_instance.id().clone()),
+                DeployerState::new(bob.id().clone(), 0u32),
+            )
+            .await
+            .unwrap();
+
+        bob.gd_deploy(
+            escrow_controller_instance.id(),
+            DeployerState::DEFAULT_HASH,
+            &MT_RECEIVER_STUB_WASM,
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            escrow_controller_instance.gd_code_hash().await.unwrap(),
+            sha256_array(&*MT_RECEIVER_STUB_WASM),
+        );
+
+        let escrow_instance_params = dummy_escrow_params(root);
+        let escrow_instance = {
+            let escrow_account_id = root
+                .state_init(
+                    StateInit::V1(StateInitV1 {
+                        code: GlobalContractId::AccountId(escrow_controller_instance.id().clone()),
+                        data: ContractStorage::init_state(&escrow_instance_params).unwrap(),
+                    }),
+                    NearToken::ZERO,
+                )
+                .await
+                .unwrap();
+            defuse_sandbox::Account::new(escrow_account_id, root.network_config().clone())
+        };
+
+        escrow_instance
+            .es_view()
+            .await
+            .expect_err("escrow should not have `es_view` method");
+        escrow_instance
+            .dummy_method()
+            .await
+            .expect("escrow should have `dummy_method` method");
+
+        bob.gd_deploy(
+            escrow_controller_instance.id(),
+            sha256_array(&*MT_RECEIVER_STUB_WASM),
+            &ESCROW_SWAP_WASM,
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            escrow_controller_instance.gd_code_hash().await.unwrap(),
+            sha256_array(&*ESCROW_SWAP_WASM),
+        );
+        let storage = escrow_instance
+            .es_view()
+            .await
+            .expect("escrow should have `es_view` method");
+        storage.verify(&escrow_instance_params).unwrap();
+        escrow_instance
+            .dummy_method()
+            .await
+            .expect_err("escrow should not have `dummy_method` method");
+    }
 }

@@ -8,6 +8,17 @@ repository.workspace = true
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[lints]
+workspace = true
+
+[features]
+abi = ["defuse-serde-utils/abi"]
+contract = []
+
+[dependencies]
+defuse-serde-utils.workspace = true
+near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
+
 [package.metadata.near.reproducible_build]
 image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
 image_digest = "sha256:772638e343baeeea24e49062c7d424274f3441452cc06ce97fc4e5695b19fecc"
@@ -18,15 +29,6 @@ container_build_command = [
     "build",
     "non-reproducible-wasm",
     "--locked",
-    "--features=abi,contract",
+    "--features=contract,abi",
     "--no-embed-abi",
 ]
-
-[features]
-abi = ["defuse-serde-utils/abi"]
-contract = []
-
-[dependencies]
-defuse-serde-utils.workspace = true
-near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
-
