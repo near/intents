@@ -85,7 +85,7 @@ impl MtReceiverStubExt for SigningAccount {
 
         let result = self
             .tx(account.clone())
-            .state_init(state_init)
+            .state_init(state_init, NearToken::ZERO)
             .exec_transaction()
             .await?;
 

@@ -191,8 +191,7 @@ impl SigningAccount {
     ) -> anyhow::Result<AccountId> {
         let deterministic_account_id = state_init.derive_account_id();
         self.tx(deterministic_account_id.clone())
-            .state_init(state_init)
-            .transfer(deposit)
+            .state_init(state_init, deposit)
             .await?;
         Ok(deterministic_account_id)
     }
