@@ -134,8 +134,7 @@ impl Account {
     }
 
     /// Sets whether authentication by `PREDECESSOR_ID` is enabled.
-    /// Returns whether authentication by `PREDECESSOR_ID` was enabled
-    /// before.
+    /// Returns whether authentication by `PREDECESSOR_ID` was toggled.
     pub fn set_auth_by_predecessor_id(&mut self, enable: bool) -> bool {
         let was_enabled = self.is_auth_by_predecessor_id_enabled();
         let toggle = was_enabled ^ enable;
@@ -143,7 +142,8 @@ impl Account {
             self.flags
                 .toggle(AccountFlags::AUTH_BY_PREDECESSOR_ID_DISABLED);
         }
-        was_enabled
+
+        toggle
     }
 }
 

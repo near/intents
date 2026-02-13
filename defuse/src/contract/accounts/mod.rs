@@ -87,22 +87,26 @@ impl Contract {
 
     pub fn set_auth_by_predecessor_id_and_emit_event(
         &mut self,
-        account_id: &AccountId,
+        account_id: &AccountIdRef,
         enable: bool,
         force: bool,
     ) -> Result<bool> {
-        DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new(AccountEvent::new(
-            Cow::Borrowed(account_id.as_ref()),
-            Cow::Owned(SetAuthByPredecessorId { enabled: enable }),
-        )))
-        .emit();
+        let toggled = self.internal_set_auth_by_predecessor_id(account_id, enable, force)?;
 
-        self.internal_set_auth_by_predecessor_id(account_id, enable, force)
+        if toggled {
+            DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new(AccountEvent::new(
+                Cow::Borrowed(account_id.as_ref()),
+                Cow::Owned(SetAuthByPredecessorId { enabled: enable }),
+            )))
+            .emit();
+        }
+
+        Ok(toggled)
     }
 
     pub(crate) fn internal_set_auth_by_predecessor_id(
         &mut self,
-        account_id: &AccountId,
+        account_id: &AccountIdRef,
         enable: bool,
         force: bool,
     ) -> Result<bool> {
@@ -114,10 +118,10 @@ impl Contract {
             };
             account
         } else {
-            self.accounts.get_or_create(account_id.clone())
+            self.accounts.get_or_create(account_id.into())
         }
         .get_mut_maybe_forced(force)
-        .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))
+        .ok_or_else(|| DefuseError::AccountLocked(account_id.into()))
         .map(|account| account.set_auth_by_predecessor_id(enable))
     }
 
