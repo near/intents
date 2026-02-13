@@ -16,14 +16,11 @@ jobs:
         with:
           ref: ${{ github.event.release.tag_name }}
 
-      - name: Install cargo-make
-        run: cargo install --debug cargo-make@0.37.24 --locked
-
       - name: Install cargo-near
         run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/download/cargo-near-v0.17.0/cargo-near-installer.sh | sh
         
       - name: Build Reproducible WASM
-        run: cargo make build-defuse-reproducible
+        run: cargo build-all reproducible
 
       - name: Upload WASM to Release
         uses: svenstaro/upload-release-action@v2
