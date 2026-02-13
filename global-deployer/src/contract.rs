@@ -1,11 +1,11 @@
-use near_sdk::{AccountId, Gas, NearToken, Promise, assert_one_yocto, borsh, env, near, require};
+use near_sdk::{AccountId, Gas, NearToken, Promise, assert_one_yocto, env, near, require};
 
 use crate::{
     Contract, ContractExt, Event, GlobalDeployer,
     error::{ERR_SELF_TRANSFER, ERR_UNAUTHORIZED, ERR_WRONG_CODE_HASH},
 };
 
-const GD_AT_DEPLOY_GAS: Gas = Gas::from_tgas(5);
+const GD_AT_DEPLOY_GAS: Gas = Gas::from_tgas(15);
 
 #[near]
 impl GlobalDeployer for Contract {
@@ -23,15 +23,18 @@ impl GlobalDeployer for Contract {
         // self-targeted promise is the contract itself. `.refund_to()` overrides this
         // so the deposit is refunded to the original caller instead. (NEP-616)
         let new_hash = env::sha256_array(&code);
-        Promise::new(env::current_account_id())
+        let p = Promise::new(env::current_account_id())
             .refund_to(env::refund_to_account_id())
             .transfer(env::attached_deposit())
-            .deploy_global_contract_by_account_id(code)
-            .function_call(
-                "gd_at_deploy".to_string(),
-                borsh::to_vec(&(old_hash, new_hash)).unwrap_or_else(|_| unreachable!()),
-                NearToken::ZERO,
-                GD_AT_DEPLOY_GAS,
+            .deploy_global_contract_by_account_id(code);
+
+        Self::ext_on(p)
+            .with_static_gas(GD_AT_DEPLOY_GAS)
+            .with_unused_gas_weight(1)
+            .gd_at_deploy(
+                old_hash,
+                new_hash,
+                env::account_balance().saturating_sub(env::attached_deposit()),
             )
     }
 
@@ -68,10 +71,18 @@ impl Contract {
         &mut self,
         #[serializer(borsh)] old_hash: [u8; 32],
         #[serializer(borsh)] new_hash: [u8; 32],
+        #[serializer(borsh)] initial_balance: NearToken,
     ) {
         require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
         self.0.code_hash = new_hash;
         Event::Deploy(new_hash).emit();
+
+        let refund = env::account_balance().saturating_sub(initial_balance);
+        if !refund.is_zero() {
+            Promise::new(env::refund_to_account_id())
+                .transfer(refund)
+                .detach();
+        }
     }
 }
 

@@ -656,3 +656,45 @@ async fn test_concurrent_upgrades_only_one_succeeds(
         sha256_array(&*ESCROW_SWAP_WASM),
     );
 }
+
+#[rstest]
+#[tokio::test]
+async fn test_refund_excessive_deposit_attached_to_deploy(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    let root = deployer_env.sandbox.root();
+    let initial_balance = NearToken::from_near(200);
+    let owner = root.fund_implicit(initial_balance).await.unwrap();
+
+    assert_eq!(owner.view().await.unwrap().amount, initial_balance);
+    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+    let storage = DeployerState {
+        owner_id: owner.id().clone(),
+        index: unique_index,
+        code_hash: DeployerState::DEFAULT_HASH,
+    };
+
+    let controller_instance = root
+        .deploy_instance(deployer_code_hash_id.clone(), storage.clone())
+        .await
+        .unwrap();
+
+    assert_eq!(
+        controller_instance.view().await.unwrap().amount,
+        NearToken::from_near(0)
+    );
+
+    owner
+        .tx(controller_instance.id())
+        .function_call(
+            FnCallBuilder::new("gd_deploy")
+                .borsh_args(&(&*DEPLOYER_WASM, DeployerState::DEFAULT_HASH))
+                .with_deposit(NearToken::from_near(100)),
+        )
+        .await
+        .unwrap();
+
+    let controller_instance_balance = controller_instance.view().await.unwrap().amount;
+    assert!(controller_instance_balance < NearToken::from_millinear(900));
+}
