@@ -1226,6 +1226,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-global-deployer"
+version = "0.1.0"
+dependencies = [
+ "defuse-serde-utils",
+ "near-sdk",
+]
+
+[[package]]
 name = "defuse-io-utils"
 version = "0.1.0"
 
@@ -1328,6 +1336,7 @@ dependencies = [
  "defuse",
  "defuse-crypto",
  "defuse-escrow-swap",
+ "defuse-global-deployer",
  "defuse-nep245",
  "defuse-nep413",
  "defuse-poa-factory",
@@ -1366,6 +1375,7 @@ version = "0.1.0"
 dependencies = [
  "derive_more",
  "near-sdk",
+ "serde_with",
  "tlb-ton",
 ]
 
@@ -1393,6 +1403,7 @@ dependencies = [
  "defuse",
  "defuse-escrow-swap",
  "defuse-fees",
+ "defuse-global-deployer",
  "defuse-near-utils",
  "defuse-nep245",
  "defuse-poa-factory",

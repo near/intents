@@ -13,8 +13,9 @@ pub enum Contract {
     PoaToken,
     PoaFactory,
     EscrowSwap,
-    WalletWebauthnEd25519,
     MultiTokenReceiverStub,
+    Deployer,
+    WalletEd25519,
 }
 
 impl Contract {
@@ -23,7 +24,7 @@ impl Contract {
             Self::Defuse => ContractSpec {
                 name: "defuse",
                 path: "defuse",
-                features: "contract,imt",
+                features: "contract,imt,abi",
             },
             Self::PoaFactory => ContractSpec {
                 name: "poa-factory",
@@ -38,17 +39,22 @@ impl Contract {
             Self::EscrowSwap => ContractSpec {
                 name: "escrow-swap",
                 path: "escrow-swap",
-                features: "contract",
-            },
-            Self::WalletWebauthnEd25519 => ContractSpec {
-                name: "wallet",
-                path: "wallet",
-                features: "contract,ed25519",
+                features: "contract,abi",
             },
             Self::MultiTokenReceiverStub => ContractSpec {
                 name: "multi-token-receiver-stub",
                 path: "tests/contracts/multi-token-receiver-stub",
-                features: "",
+                features: "abi",
+            },
+            Self::Deployer => ContractSpec {
+                name: "global-deployer",
+                path: "global-deployer",
+                features: "abi,contract",
+            },
+            Self::WalletEd25519 => ContractSpec {
+                name: "wallet",
+                path: "wallet",
+                features: "contract,abi,ed25519",
             },
         }
     }
@@ -59,8 +65,9 @@ impl Contract {
             Self::PoaToken,
             Self::PoaFactory,
             Self::EscrowSwap,
-            Self::WalletWebauthnEd25519,
             Self::MultiTokenReceiverStub,
+            Self::Deployer,
+            Self::WalletEd25519,
         ]
     }
 }

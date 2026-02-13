@@ -210,7 +210,7 @@ impl ContractBuilder {
             .manifest_path(manifest)
             .features(features)
             .out_dir(ctx.outdir.as_str())
-            .no_abi(true)
+            .no_embed_abi(true)
             .build();
 
         let artifact = build_non_reproducible_wasm(build_opts)

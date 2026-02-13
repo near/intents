@@ -5,7 +5,7 @@ use near_sdk::{
     AccountId, GlobalContractId, NearToken, state_init::StateInit, state_init::StateInitV1,
 };
 
-use crate::SigningAccount;
+use crate::{Account, SigningAccount};
 
 pub trait MtReceiverStubExt {
     /// Deploy MT receiver stub as a regular contract (subaccount of self)
@@ -90,5 +90,17 @@ impl MtReceiverStubExt for SigningAccount {
             .await?;
 
         Ok((account, result))
+    }
+}
+
+#[allow(async_fn_in_trait)]
+pub trait MtReceiverStubExtView {
+    async fn dummy_method(&self) -> anyhow::Result<()>;
+}
+
+impl MtReceiverStubExtView for Account {
+    async fn dummy_method(&self) -> anyhow::Result<()> {
+        self.call_view_function_raw("dummy_method", ()).await?;
+        Ok(())
     }
 }
