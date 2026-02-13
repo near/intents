@@ -88,17 +88,9 @@ async fn test_deploy_controller_instance(
         .unwrap();
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
-    let state = DeployerState {
-        owner_id: root.id().clone(),
-        index: unique_index,
-        code_hash: DeployerState::DEFAULT_HASH,
-    };
+    let state = DeployerState::new(root.id().clone(), unique_index);
 
-    let upgradeable_instance_state = DeployerState {
-        owner_id: alice.id().clone(),
-        index: 0,
-        code_hash: DeployerState::DEFAULT_HASH,
-    };
+    let upgradeable_instance_state = DeployerState::new(alice.id().clone(), 0);
 
     let controller_instance = root
         .deploy_instance(deployer_code_hash_id.clone(), state.clone())
@@ -183,11 +175,7 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
     let controller_instance = root
         .deploy_instance(
             deployer_code_hash_id.clone(),
-            DeployerState {
-                owner_id: root.id().clone(),
-                index: unique_index,
-                code_hash: DeployerState::DEFAULT_HASH,
-            },
+            DeployerState::new(root.id().clone(), unique_index),
         )
         .await
         .unwrap();
@@ -207,11 +195,7 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
     let upgradable_controller_instance = root
         .deploy_instance(
             deployer_code_hash_id.clone(),
-            DeployerState {
-                owner_id: alice.id().clone(),
-                index: 0u32,
-                code_hash: DeployerState::DEFAULT_HASH,
-            },
+            DeployerState::new(alice.id().clone(), 0u32),
         )
         .await
         .unwrap();
@@ -231,11 +215,7 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
     let escrow_controller_instance = root
         .deploy_instance(
             GlobalContractId::AccountId(upgradable_controller_instance.id().clone()),
-            DeployerState {
-                owner_id: bob.id().clone(),
-                index: 0u32,
-                code_hash: DeployerState::DEFAULT_HASH,
-            },
+            DeployerState::new(bob.id().clone(), 0u32),
         )
         .await
         .unwrap();
@@ -294,11 +274,7 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
     let controller_instance = root
         .deploy_instance(
             deployer_code_hash_id.clone(),
-            DeployerState {
-                owner_id: root.id().clone(),
-                index: unique_index,
-                code_hash: DeployerState::DEFAULT_HASH,
-            },
+            DeployerState::new(root.id().clone(), unique_index),
         )
         .await
         .unwrap();
@@ -318,11 +294,7 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
     let upgradable_controller_instance = root
         .deploy_instance(
             deployer_code_hash_id.clone(),
-            DeployerState {
-                owner_id: alice.id().clone(),
-                index: 0u32,
-                code_hash: DeployerState::DEFAULT_HASH,
-            },
+            DeployerState::new(alice.id().clone(), 0u32),
         )
         .await
         .unwrap();
@@ -342,11 +314,7 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
     let escrow_controller_instance = root
         .deploy_instance(
             GlobalContractId::AccountId(upgradable_controller_instance.id().clone()),
-            DeployerState {
-                owner_id: bob.id().clone(),
-                index: 0u32,
-                code_hash: DeployerState::DEFAULT_HASH,
-            },
+            DeployerState::new(bob.id().clone(), 0u32),
         )
         .await
         .unwrap();
@@ -426,11 +394,7 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
 
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
-    let storage = DeployerState {
-        owner_id: owner.id().clone(),
-        index: unique_index,
-        code_hash: DeployerState::DEFAULT_HASH,
-    };
+    let storage = DeployerState::new(owner.id().clone(), unique_index);
     let controller_instance = root
         .deploy_instance(deployer_code_hash_id.clone(), storage.clone())
         .await
@@ -476,11 +440,7 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
     .unwrap();
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
-    let storage = DeployerState {
-        owner_id: alice.id().clone(),
-        index: unique_index,
-        code_hash: DeployerState::DEFAULT_HASH,
-    };
+    let storage = DeployerState::new(alice.id().clone(), unique_index);
 
     let controller_instance = root
         .deploy_instance(deployer_code_hash_id.clone(), storage.clone())
@@ -559,11 +519,7 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
 async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, unique_index: u32) {
     let root = deployer_env.sandbox.root();
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
-    let storage = DeployerState {
-        owner_id: root.id().clone(),
-        index: unique_index,
-        code_hash: DeployerState::DEFAULT_HASH,
-    };
+    let storage = DeployerState::new(root.id().clone(), unique_index);
 
     let controller_instance = root
         .deploy_instance(deployer_code_hash_id.clone(), storage.clone())
@@ -604,11 +560,7 @@ async fn test_concurrent_upgrades_only_one_succeeds(
     let controller_instance = root
         .deploy_instance(
             deployer_code_hash_id.clone(),
-            DeployerState {
-                owner_id: root.id().clone(),
-                index: unique_index,
-                code_hash: DeployerState::DEFAULT_HASH,
-            },
+            DeployerState::new(root.id().clone(), unique_index),
         )
         .await
         .unwrap();
@@ -669,11 +621,7 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
 
     assert_eq!(owner.view().await.unwrap().amount, initial_balance);
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
-    let storage = DeployerState {
-        owner_id: owner.id().clone(),
-        index: unique_index,
-        code_hash: DeployerState::DEFAULT_HASH,
-    };
+    let storage = DeployerState::new(owner.id().clone(), unique_index);
 
     let controller_instance = root
         .deploy_instance(deployer_code_hash_id.clone(), storage.clone())

@@ -71,6 +71,14 @@ impl State {
     pub const STATE_KEY: &[u8] = b"";
     pub const DEFAULT_HASH: CryptoHash = [0; 32];
 
+    pub fn new(owner: impl Into<AccountId>, index: u32) -> Self {
+        Self {
+            owner_id: owner.into(),
+            index,
+            code_hash: Self::DEFAULT_HASH,
+        }
+    }
+
     pub fn state_init(&self) -> BTreeMap<Vec<u8>, Vec<u8>> {
         [(
             Self::STATE_KEY.to_vec(),
