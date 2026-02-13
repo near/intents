@@ -1,4 +1,4 @@
-use near_sdk::{AccountId, NearToken, Promise, env, near, require};
+use near_sdk::{AccountId, Promise, assert_one_yocto, env, near, require};
 
 use crate::{Contract, ContractExt, Event, GlobalDeployer};
 
@@ -31,7 +31,7 @@ impl GlobalDeployer for Contract {
 
     #[payable]
     fn gd_transfer_ownership(&mut self, receiver_id: AccountId) {
-        require!(env::attached_deposit() == NearToken::from_yoctonear(1));
+        assert_one_yocto();
         self.require_owner();
         require!(
             self.0.owner_id != receiver_id,
