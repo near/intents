@@ -50,11 +50,9 @@ where
     I: IntoIterator<Item = MultiPayload>,
 {
     fn to_defuse_events(self) -> Vec<DefuseEvent<'static>> {
-        let mut executed = Vec::new();
-
-        let mut events: Vec<_> = self
+        let (nonce_events, intent_events): (Vec<_>, Vec<Vec<_>>) = self
             .into_iter()
-            .flat_map(|payload| {
+            .map(|payload| {
                 let hash = payload.hash();
 
                 let DefusePayload::<DefuseIntents> {
@@ -62,25 +60,35 @@ where
                     nonce,
                     message,
                     ..
-                } = payload.extract_defuse_payload().unwrap();
+                } = payload
+                    .extract_defuse_payload()
+                    .unwrap_or_else(|_| unreachable!("invalid payload in tests"));
 
-                executed.push(MaybeIntentEvent::new_with_hash(
+                let nonce_event = MaybeIntentEvent::new_with_hash(
                     AccountEvent::new(signer_id.clone(), NonceEvent::new(nonce)),
                     hash,
-                ));
+                );
 
-                message
+                let intent_events = message
                     .intents
                     .into_iter()
-                    .flat_map(move |i| i.into_defuse_events(signer_id.clone(), hash))
+                    .flat_map(|i| i.into_defuse_events(signer_id.clone(), hash))
+                    .collect();
+
+                (nonce_event, intent_events)
             })
-            .collect();
+            .collect::<Vec<_>>()
+            .into_iter()
+            .unzip();
 
-        if !executed.is_empty() {
-            events.push(DefuseEvent::IntentsExecuted(executed.into()));
-        }
+        let final_event =
+            (!nonce_events.is_empty()).then(|| DefuseEvent::IntentsExecuted(nonce_events.into()));
 
-        events
+        intent_events
+            .into_iter()
+            .flatten()
+            .chain(final_event)
+            .collect()
     }
 }
 
