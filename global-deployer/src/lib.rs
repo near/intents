@@ -41,11 +41,17 @@ pub trait GlobalDeployer {
     /// - code: WASM code to deploy.
     /// - old_hash: hash of the currently deployed code or `[State::DEFAULT_HASH]` on first use.
     /// Requires attached deposit for storage and owner-only access.
-    /// Emits [`Event::Deploy`]. Refunds deposit on failure.
+    /// Emits [`Event::Deploy`].
+    /// If a returned promise succeeds, then it means the new code was successfully
+    /// deployed globally on the account_id of this deployer contract.
+    /// If current or returned promise fails, then it means that the new code was not deployed.
+    /// Refunds
+    /// - excessive deposit on success
+    /// - attached deposit on failure
     fn gd_deploy(
         &mut self,
-        #[serializer(borsh)] code: Vec<u8>,
         #[serializer(borsh)] old_hash: [u8; 32],
+        #[serializer(borsh)] new_code: Vec<u8>,
     ) -> Promise;
 
     /// Transfers contract ownership to `receiver_id`.
@@ -60,21 +66,24 @@ pub trait GlobalDeployer {
     fn gd_index(&self) -> u32;
 
     /// Returns the SHA-256 hash of the currently deployed code, or `[0; 32]` if none.
-    fn gd_code_hash(&self) -> CryptoHash;
+    fn gd_code_hash(&self) -> [u8; 32];
 }
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct State {
+    /// Owner's account ID.
     pub owner_id: AccountId,
+    /// Deployed instance index
     pub index: u32,
+    /// Currently deployed code hash, or zeros otherwise.
     #[serde_as(as = "Hex")]
-    pub code_hash: CryptoHash,
+    pub code_hash: [u8; 32],
 }
 
 impl State {
     pub const STATE_KEY: &[u8] = b"";
-    pub const DEFAULT_HASH: CryptoHash = [0; 32];
+    pub const DEFAULT_HASH: [u8; 32] = [0; 32];
 
     pub fn new(owner: impl Into<AccountId>, index: u32) -> Self {
         Self {

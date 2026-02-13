@@ -12,8 +12,8 @@ impl GlobalDeployer for Contract {
     #[payable]
     fn gd_deploy(
         &mut self,
-        #[serializer(borsh)] code: Vec<u8>,
         #[serializer(borsh)] old_hash: [u8; 32],
+        #[serializer(borsh)] new_code: Vec<u8>,
     ) -> Promise {
         require!(!env::attached_deposit().is_zero());
         self.require_owner();
@@ -22,11 +22,11 @@ impl GlobalDeployer for Contract {
         // On receipt failure, refund goes to the receipt's predecessor — which for a
         // self-targeted promise is the contract itself. `.refund_to()` overrides this
         // so the deposit is refunded to the original caller instead. (NEP-616)
-        let new_hash = env::sha256_array(&code);
+        let new_hash = env::sha256_array(&new_code);
         let p = Promise::new(env::current_account_id())
             .refund_to(env::refund_to_account_id())
             .transfer(env::attached_deposit())
-            .deploy_global_contract_by_account_id(code);
+            .deploy_global_contract_by_account_id(new_code);
 
         Self::ext_on(p)
             .with_static_gas(GD_AT_DEPLOY_GAS)
@@ -46,7 +46,7 @@ impl GlobalDeployer for Contract {
         self.0.index
     }
 
-    fn gd_code_hash(&self) -> near_sdk::CryptoHash {
+    fn gd_code_hash(&self) -> [u8; 32] {
         self.0.code_hash
     }
 

@@ -111,8 +111,8 @@ async fn test_deploy_controller_instance(
 
     root.gd_deploy(
         controller_instance.id(),
-        &DEPLOYER_WASM,
         DeployerState::DEFAULT_HASH,
+        &DEPLOYER_WASM,
     )
     .await
     .unwrap();
@@ -182,8 +182,8 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
 
     root.gd_deploy(
         controller_instance.id(),
-        &DEPLOYER_WASM,
         DeployerState::DEFAULT_HASH,
+        &DEPLOYER_WASM,
     )
     .await
     .unwrap();
@@ -202,8 +202,8 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
     alice
         .gd_deploy(
             upgradable_controller_instance.id(),
-            &DEPLOYER_WASM,
             DeployerState::DEFAULT_HASH,
+            &DEPLOYER_WASM,
         )
         .await
         .unwrap();
@@ -221,8 +221,8 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
         .unwrap();
     bob.gd_deploy(
         escrow_controller_instance.id(),
-        &ESCROW_SWAP_WASM,
         DeployerState::DEFAULT_HASH,
+        &ESCROW_SWAP_WASM,
     )
     .await
     .unwrap();
@@ -281,8 +281,8 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
 
     root.gd_deploy(
         controller_instance.id(),
-        &DEPLOYER_WASM,
         DeployerState::DEFAULT_HASH,
+        &DEPLOYER_WASM,
     )
     .await
     .unwrap();
@@ -301,8 +301,8 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
     alice
         .gd_deploy(
             upgradable_controller_instance.id(),
-            &DEPLOYER_WASM,
             DeployerState::DEFAULT_HASH,
+            &DEPLOYER_WASM,
         )
         .await
         .unwrap();
@@ -321,8 +321,8 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
 
     bob.gd_deploy(
         escrow_controller_instance.id(),
-        &MT_RECEIVER_STUB_WASM,
         DeployerState::DEFAULT_HASH,
+        &MT_RECEIVER_STUB_WASM,
     )
     .await
     .unwrap();
@@ -357,8 +357,8 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
 
     bob.gd_deploy(
         escrow_controller_instance.id(),
-        &ESCROW_SWAP_WASM,
         sha256_array(&*MT_RECEIVER_STUB_WASM),
+        &ESCROW_SWAP_WASM,
     )
     .await
     .unwrap();
@@ -410,7 +410,7 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
         .tx(controller_instance.id())
         .function_call(
             FnCallBuilder::new("gd_deploy")
-                .borsh_args(&(&*DEPLOYER_WASM, DeployerState::DEFAULT_HASH))
+                .borsh_args(&(DeployerState::DEFAULT_HASH, &*DEPLOYER_WASM))
                 .with_deposit(storage_deposit),
         )
         .await
@@ -454,8 +454,8 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
     assert_eq!(controller_instance.gd_index().await.unwrap(), storage.index);
     bob.gd_deploy(
         controller_instance.id(),
-        &DEPLOYER_WASM,
         DeployerState::DEFAULT_HASH,
+        &DEPLOYER_WASM,
     )
     .await
     .assert_err_contains(ERR_UNAUTHORIZED);
@@ -488,8 +488,8 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
     alice
         .gd_deploy(
             controller_instance.id(),
-            &DEPLOYER_WASM,
             DeployerState::DEFAULT_HASH,
+            &DEPLOYER_WASM,
         )
         .await
         .assert_err_contains(ERR_UNAUTHORIZED);
@@ -500,8 +500,8 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
 
     bob.gd_deploy(
         controller_instance.id(),
-        &DEPLOYER_WASM,
         DeployerState::DEFAULT_HASH,
+        &DEPLOYER_WASM,
     )
     .await
     .unwrap();
@@ -530,7 +530,7 @@ async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, 
         .tx(controller_instance.id())
         .function_call(
             FnCallBuilder::new("gd_deploy")
-                .borsh_args(&(&*DEPLOYER_WASM, DeployerState::DEFAULT_HASH))
+                .borsh_args(&(DeployerState::DEFAULT_HASH, &*DEPLOYER_WASM))
                 .with_deposit(NearToken::from_near(50)),
         )
         .await
@@ -571,8 +571,8 @@ async fn test_concurrent_upgrades_only_one_succeeds(
     // Initial deploy so controller has code
     root.gd_deploy(
         controller_instance.id(),
-        &DEPLOYER_WASM,
         DeployerState::DEFAULT_HASH,
+        &DEPLOYER_WASM,
     )
     .await
     .unwrap();
@@ -585,7 +585,7 @@ async fn test_concurrent_upgrades_only_one_succeeds(
 
     // Fire 10 concurrent upgrade calls all using the same old_hash
     let results = join_all(
-        (0..10).map(|_| root.gd_deploy(controller_instance.id(), &ESCROW_SWAP_WASM, old_hash)),
+        (0..10).map(|_| root.gd_deploy(controller_instance.id(), old_hash, &ESCROW_SWAP_WASM)),
     )
     .await;
 
@@ -640,7 +640,7 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
         .tx(controller_instance.id())
         .function_call(
             FnCallBuilder::new("gd_deploy")
-                .borsh_args(&(&*DEPLOYER_WASM, DeployerState::DEFAULT_HASH))
+                .borsh_args(&(DeployerState::DEFAULT_HASH, &*DEPLOYER_WASM))
                 .with_deposit(NearToken::from_near(100)),
         )
         .await

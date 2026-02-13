@@ -2,7 +2,7 @@ use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use defuse_global_deployer::State as DeployerState;
 use near_api::types::transaction::result::ExecutionSuccess;
 use near_sdk::{
-    AccountId, CryptoHash, GlobalContractId, NearToken,
+    AccountId, GlobalContractId, NearToken,
     serde_json::json,
     state_init::{StateInit, StateInitV1},
 };
@@ -18,8 +18,8 @@ pub trait DeployerExt {
     async fn gd_deploy(
         &self,
         target: &AccountId,
-        wasm: &[u8],
         old_hash: [u8; 32],
+        new_code: &[u8],
     ) -> anyhow::Result<ExecutionSuccess>;
 
     async fn gd_transfer_ownership(
@@ -33,7 +33,7 @@ pub trait DeployerExt {
 pub trait DeployerViewExt {
     async fn gd_owner_id(&self) -> anyhow::Result<AccountId>;
     async fn gd_index(&self) -> anyhow::Result<u32>;
-    async fn gd_code_hash(&self) -> anyhow::Result<CryptoHash>;
+    async fn gd_code_hash(&self) -> anyhow::Result<[u8; 32]>;
 }
 
 impl DeployerExt for SigningAccount {
@@ -58,13 +58,13 @@ impl DeployerExt for SigningAccount {
     async fn gd_deploy(
         &self,
         target: &AccountId,
-        wasm: &[u8],
         old_hash: [u8; 32],
+        new_code: &[u8],
     ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
             .function_call(
                 FnCallBuilder::new("gd_deploy")
-                    .borsh_args(&(wasm, old_hash))
+                    .borsh_args(&(old_hash, new_code))
                     .with_deposit(NearToken::from_near(50)),
             )
             .await
@@ -94,7 +94,7 @@ impl DeployerViewExt for Account {
         self.call_view_function_json("gd_index", ()).await
     }
 
-    async fn gd_code_hash(&self) -> anyhow::Result<CryptoHash> {
+    async fn gd_code_hash(&self) -> anyhow::Result<[u8; 32]> {
         self.call_view_function_json("gd_code_hash", ()).await
     }
 }
