@@ -20,7 +20,12 @@ pub struct Contract(State);
 #[near(event_json(standard = "global-deployer"))]
 pub enum Event {
     #[event_version("1.0.0")]
-    Deploy(#[serde_as(as = "Hex")] CryptoHash),
+    Deploy {
+        #[serde_as(as = "Hex")]
+        old_hash: CryptoHash,
+        #[serde_as(as = "Hex")]
+        new_hash: CryptoHash,
+    },
 
     #[event_version("1.0.0")]
     Transfer {

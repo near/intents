@@ -75,7 +75,7 @@ impl Contract {
     ) {
         require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
         self.0.code_hash = new_hash;
-        Event::Deploy(new_hash).emit();
+        Event::Deploy { old_hash, new_hash }.emit();
 
         let refund = env::account_balance().saturating_sub(initial_balance);
         if !refund.is_zero() {

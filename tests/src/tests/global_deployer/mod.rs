@@ -536,7 +536,10 @@ async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, 
         .await
         .unwrap();
 
-    let expected_event = defuse_global_deployer::Event::Deploy(sha256_array(&*DEPLOYER_WASM));
+    let expected_event = defuse_global_deployer::Event::Deploy {
+        old_hash: DeployerState::DEFAULT_HASH,
+        new_hash: sha256_array(&*DEPLOYER_WASM),
+    };
     assert!(
         result
             .logs()
