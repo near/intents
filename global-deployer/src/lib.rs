@@ -33,6 +33,8 @@ pub enum Event {
 #[ext_contract(ext_global_deployer)]
 pub trait GlobalDeployer {
     /// Deploys WASM code as a global contract on this account.
+    /// - code: WASM code to deploy.
+    /// - old_hash: hash of the currently deployed code or `[State::DEFAULT_HASH]` on first use.
     /// Requires attached deposit for storage and owner-only access.
     /// Emits [`Event::Deploy`]. Refunds deposit on failure.
     fn gd_deploy(

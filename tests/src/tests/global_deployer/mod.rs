@@ -5,7 +5,10 @@ use std::time::Duration;
 
 use crate::utils::wasms::DEPLOYER_WASM;
 use defuse_escrow_swap::{ContractStorage, Deadline, OverrideSend, Params};
-use defuse_global_deployer::{Event, State as DeployerState, error::ERR_UNAUTHORIZED};
+use defuse_global_deployer::{
+    Event, State as DeployerState,
+    error::{ERR_UNAUTHORIZED, ERR_WRONG_CODE_HASH},
+};
 use defuse_sandbox::extensions::escrow::EscrowExtView;
 use defuse_sandbox::extensions::global_deployer::{DeployerExt, DeployerViewExt};
 use defuse_sandbox::extensions::mt_receiver::MtReceiverStubExtView;
@@ -15,6 +18,7 @@ use defuse_sandbox::{
 };
 use defuse_test_utils::asserts::ResultAssertsExt;
 use defuse_test_utils::wasms::{ESCROW_SWAP_WASM, MT_RECEIVER_STUB_WASM};
+use futures::future::join_all;
 use near_sdk::{
     GlobalContractId, NearToken,
     env::sha256_array,
@@ -108,9 +112,13 @@ async fn test_deploy_controller_instance(
     .await
     .assert_err_contains("GlobalContractDoesNotExist");
 
-    root.gd_deploy(controller_instance.id(), &DEPLOYER_WASM, DeployerState::DEFAULT_HASH)
-        .await
-        .unwrap();
+    root.gd_deploy(
+        controller_instance.id(),
+        &DEPLOYER_WASM,
+        DeployerState::DEFAULT_HASH,
+    )
+    .await
+    .unwrap();
     let mutable_controller_instance = root
         .deploy_instance(
             GlobalContractId::AccountId(controller_instance.id().clone()),
@@ -173,9 +181,13 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
         .await
         .unwrap();
 
-    root.gd_deploy(controller_instance.id(), &DEPLOYER_WASM, DeployerState::DEFAULT_HASH)
-        .await
-        .unwrap();
+    root.gd_deploy(
+        controller_instance.id(),
+        &DEPLOYER_WASM,
+        DeployerState::DEFAULT_HASH,
+    )
+    .await
+    .unwrap();
 
     let upgradable_controller_instance = root
         .deploy_instance(
@@ -189,7 +201,11 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
         .await
         .unwrap();
     alice
-        .gd_deploy(upgradable_controller_instance.id(), &DEPLOYER_WASM, DeployerState::DEFAULT_HASH)
+        .gd_deploy(
+            upgradable_controller_instance.id(),
+            &DEPLOYER_WASM,
+            DeployerState::DEFAULT_HASH,
+        )
         .await
         .unwrap();
 
@@ -204,9 +220,13 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
         )
         .await
         .unwrap();
-    bob.gd_deploy(escrow_controller_instance.id(), &ESCROW_SWAP_WASM, DeployerState::DEFAULT_HASH)
-        .await
-        .unwrap();
+    bob.gd_deploy(
+        escrow_controller_instance.id(),
+        &ESCROW_SWAP_WASM,
+        DeployerState::DEFAULT_HASH,
+    )
+    .await
+    .unwrap();
 
     let escrow_instance_params = dummy_escrow_params(root);
     let escrow_instance = {
@@ -260,9 +280,13 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
         .await
         .unwrap();
 
-    root.gd_deploy(controller_instance.id(), &DEPLOYER_WASM, DeployerState::DEFAULT_HASH)
-        .await
-        .unwrap();
+    root.gd_deploy(
+        controller_instance.id(),
+        &DEPLOYER_WASM,
+        DeployerState::DEFAULT_HASH,
+    )
+    .await
+    .unwrap();
 
     let upgradable_controller_instance = root
         .deploy_instance(
@@ -276,7 +300,11 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
         .await
         .unwrap();
     alice
-        .gd_deploy(upgradable_controller_instance.id(), &DEPLOYER_WASM, DeployerState::DEFAULT_HASH)
+        .gd_deploy(
+            upgradable_controller_instance.id(),
+            &DEPLOYER_WASM,
+            DeployerState::DEFAULT_HASH,
+        )
         .await
         .unwrap();
 
@@ -292,9 +320,13 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
         .await
         .unwrap();
 
-    bob.gd_deploy(escrow_controller_instance.id(), &MT_RECEIVER_STUB_WASM, DeployerState::DEFAULT_HASH)
-        .await
-        .unwrap();
+    bob.gd_deploy(
+        escrow_controller_instance.id(),
+        &MT_RECEIVER_STUB_WASM,
+        DeployerState::DEFAULT_HASH,
+    )
+    .await
+    .unwrap();
 
     let escrow_instance_params = dummy_escrow_params(root);
     let escrow_instance = {
@@ -320,9 +352,13 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
         .await
         .expect("escrow should have `dummy_method` method");
 
-    bob.gd_deploy(escrow_controller_instance.id(), &ESCROW_SWAP_WASM, sha256_array(&*MT_RECEIVER_STUB_WASM))
-        .await
-        .unwrap();
+    bob.gd_deploy(
+        escrow_controller_instance.id(),
+        &ESCROW_SWAP_WASM,
+        sha256_array(&*MT_RECEIVER_STUB_WASM),
+    )
+    .await
+    .unwrap();
     let storage = escrow_instance
         .es_view()
         .await
@@ -417,9 +453,13 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
         storage.owner_id
     );
     assert_eq!(controller_instance.gd_index().await.unwrap(), storage.index);
-    bob.gd_deploy(controller_instance.id(), &DEPLOYER_WASM, DeployerState::DEFAULT_HASH)
-        .await
-        .assert_err_contains(ERR_UNAUTHORIZED);
+    bob.gd_deploy(
+        controller_instance.id(),
+        &DEPLOYER_WASM,
+        DeployerState::DEFAULT_HASH,
+    )
+    .await
+    .assert_err_contains(ERR_UNAUTHORIZED);
 
     bob.gd_transfer_ownership(controller_instance.id(), alice.id())
         .await
@@ -447,7 +487,11 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
         bob.id().clone()
     );
     alice
-        .gd_deploy(controller_instance.id(), &DEPLOYER_WASM, DeployerState::DEFAULT_HASH)
+        .gd_deploy(
+            controller_instance.id(),
+            &DEPLOYER_WASM,
+            DeployerState::DEFAULT_HASH,
+        )
         .await
         .assert_err_contains(ERR_UNAUTHORIZED);
     alice
@@ -455,9 +499,13 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
         .await
         .assert_err_contains(ERR_UNAUTHORIZED);
 
-    bob.gd_deploy(controller_instance.id(), &DEPLOYER_WASM, DeployerState::DEFAULT_HASH)
-        .await
-        .unwrap();
+    bob.gd_deploy(
+        controller_instance.id(),
+        &DEPLOYER_WASM,
+        DeployerState::DEFAULT_HASH,
+    )
+    .await
+    .unwrap();
     bob.gd_transfer_ownership(controller_instance.id(), alice.id())
         .await
         .unwrap();
@@ -494,5 +542,62 @@ async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, 
         result
             .logs()
             .contains(&expected_event.to_nep297_event().to_event_log().as_str())
+    );
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_concurrent_upgrades_only_one_succeeds(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    let root = deployer_env.sandbox.root();
+    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+
+    let controller_instance = root
+        .deploy_instance(
+            deployer_code_hash_id.clone(),
+            DeployerState {
+                owner_id: root.id().clone(),
+                index: unique_index,
+                code_hash: DeployerState::DEFAULT_HASH,
+            },
+        )
+        .await
+        .unwrap();
+
+    // Initial deploy so controller has code
+    root.gd_deploy(
+        controller_instance.id(),
+        &DEPLOYER_WASM,
+        DeployerState::DEFAULT_HASH,
+    )
+    .await
+    .unwrap();
+
+    let old_hash = sha256_array(&*DEPLOYER_WASM);
+
+    // Fire 10 concurrent upgrade calls all using the same old_hash
+    let results = join_all(
+        (0..10).map(|_| root.gd_deploy(controller_instance.id(), &ESCROW_SWAP_WASM, old_hash)),
+    )
+    .await;
+
+    let successes = results.iter().filter(|r| r.is_ok()).count();
+    let wrong_hash_failures = results
+        .iter()
+        .filter(|r| {
+            r.as_ref()
+                .is_err_and(|e| e.to_string().contains(ERR_WRONG_CODE_HASH))
+        })
+        .count();
+
+    assert_eq!(
+        successes, 1,
+        "exactly one concurrent upgrade should succeed"
+    );
+    assert_eq!(
+        wrong_hash_failures, 9,
+        "remaining 9 should fail with wrong code hash"
     );
 }
