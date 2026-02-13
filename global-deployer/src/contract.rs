@@ -8,7 +8,11 @@ use crate::{
 #[near]
 impl GlobalDeployer for Contract {
     #[payable]
-    fn gd_deploy(&mut self, #[serializer(borsh)] code: Vec<u8>, #[serializer(borsh)] old_hash: [u8; 32]) -> Promise {
+    fn gd_deploy(
+        &mut self,
+        #[serializer(borsh)] code: Vec<u8>,
+        #[serializer(borsh)] old_hash: [u8; 32],
+    ) -> Promise {
         require!(!env::attached_deposit().is_zero());
         self.require_owner();
         require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
@@ -54,13 +58,16 @@ impl GlobalDeployer for Contract {
 #[near]
 impl Contract {
     #[private]
-    pub fn gd_at_deploy(&mut self, #[serializer(borsh)] old_hash: [u8; 32], #[serializer(borsh)] new_hash: [u8; 32]) {
+    pub fn gd_at_deploy(
+        &mut self,
+        #[serializer(borsh)] old_hash: [u8; 32],
+        #[serializer(borsh)] new_hash: [u8; 32],
+    ) {
         require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
         self.0.code_hash = new_hash;
         Event::Deploy(new_hash).emit();
     }
 }
-
 
 impl Contract {
     fn require_owner(&self) {

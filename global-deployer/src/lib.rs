@@ -35,7 +35,11 @@ pub trait GlobalDeployer {
     /// Deploys WASM code as a global contract on this account.
     /// Requires attached deposit for storage and owner-only access.
     /// Emits [`Event::Deploy`]. Refunds deposit on failure.
-    fn gd_deploy(&mut self, #[serializer(borsh)] code: Vec<u8>, #[serializer(borsh)] old_hash: [u8; 32]) -> Promise;
+    fn gd_deploy(
+        &mut self,
+        #[serializer(borsh)] code: Vec<u8>,
+        #[serializer(borsh)] old_hash: [u8; 32],
+    ) -> Promise;
 
     /// Transfers contract ownership to `receiver_id`.
     /// Requires 1 yoctoNEAR, owner-only, no self-transfer.
