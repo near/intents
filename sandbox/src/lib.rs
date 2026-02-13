@@ -4,7 +4,7 @@ pub mod helpers;
 pub mod tx;
 
 use std::sync::{
-    Arc, Mutex, Once,
+    Arc, Mutex,
     atomic::{AtomicUsize, Ordering},
 };
 use tokio::sync::OnceCell;
@@ -99,8 +99,6 @@ impl Sandbox {
 /// Using `OnceCell<Mutex<Option<...>>>` allows async init and taking ownership in atexit.
 static SHARED_SANDBOX: OnceCell<Mutex<Option<Sandbox>>> = OnceCell::const_new();
 
-static TRACING_SUBSCRIBER: Once = Once::new();
-
 extern "C" fn cleanup_sandbox() {
     if let Some(mutex) = SHARED_SANDBOX.get() {
         if let Ok(mut guard) = mutex.lock() {
@@ -109,26 +107,11 @@ extern "C" fn cleanup_sandbox() {
     }
 }
 
-pub fn init_tracing_for_tests() {
-    TRACING_SUBSCRIBER.call_once(|| {
-        let (writer, guard) = tracing_appender::non_blocking(std::io::stdout());
-
-        tracing_subscriber::fmt()
-            .with_writer(writer)
-            .with_max_level(tracing::Level::DEBUG)
-            .init();
-
-        std::mem::forget(guard);
-    });
-}
-
 #[fixture]
 #[instrument]
 pub async fn sandbox(#[default(NearToken::from_near(100_000))] amount: NearToken) -> Sandbox {
     const SHARED_ROOT: &AccountIdRef = AccountIdRef::new_or_panic("test");
     static SUB_COUNTER: AtomicUsize = AtomicUsize::new(0);
-
-    init_tracing_for_tests();
 
     let mutex = SHARED_SANDBOX
         .get_or_init(|| async {
