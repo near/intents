@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use crate::utils::wasms::DEPLOYER_WASM;
 use defuse_escrow_swap::{ContractStorage, Deadline, OverrideSend, Params};
-use defuse_global_deployer::{State as DeployerState, error::ERR_UNAUTHORIZED};
+use defuse_global_deployer::{Event, State as DeployerState, error::ERR_UNAUTHORIZED};
 use defuse_sandbox::extensions::escrow::EscrowExtView;
 use defuse_sandbox::extensions::global_deployer::{DeployerExt, DeployerViewExt};
 use defuse_sandbox::extensions::mt_receiver::MtReceiverStubExtView;
@@ -20,6 +20,7 @@ use near_sdk::{
     env::sha256_array,
     state_init::{StateInit, StateInitV1},
 };
+
 use rstest::{fixture, rstest};
 
 static SUB_COUNTER: AtomicU32 = AtomicU32::new(0);
@@ -205,10 +206,13 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
     let escrow_instance_params = dummy_escrow_params(root);
     let escrow_instance = {
         let escrow_account_id = root
-            .state_init(StateInit::V1(StateInitV1 {
-                code: GlobalContractId::AccountId(escrow_controller_instance.id().clone()),
-                data: ContractStorage::init_state(&escrow_instance_params).unwrap(),
-            }))
+            .state_init(
+                StateInit::V1(StateInitV1 {
+                    code: GlobalContractId::AccountId(escrow_controller_instance.id().clone()),
+                    data: ContractStorage::init_state(&escrow_instance_params).unwrap(),
+                }),
+                NearToken::ZERO,
+            )
             .await
             .unwrap();
         defuse_sandbox::Account::new(escrow_account_id, root.network_config().clone())
@@ -287,10 +291,13 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
     let escrow_instance_params = dummy_escrow_params(root);
     let escrow_instance = {
         let escrow_account_id = root
-            .state_init(StateInit::V1(StateInitV1 {
-                code: GlobalContractId::AccountId(escrow_controller_instance.id().clone()),
-                data: ContractStorage::init_state(&escrow_instance_params).unwrap(),
-            }))
+            .state_init(
+                StateInit::V1(StateInitV1 {
+                    code: GlobalContractId::AccountId(escrow_controller_instance.id().clone()),
+                    data: ContractStorage::init_state(&escrow_instance_params).unwrap(),
+                }),
+                NearToken::ZERO,
+            )
             .await
             .unwrap();
         defuse_sandbox::Account::new(escrow_account_id, root.network_config().clone())
@@ -408,10 +415,22 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
         .await
         .assert_err_contains(ERR_UNAUTHORIZED);
 
-    alice
+    let result = alice
         .gd_transfer_ownership(controller_instance.id(), bob.id())
         .await
         .unwrap();
+
+    assert_eq!(
+        result.logs(),
+        vec![
+            Event::TransferOwnership {
+                old_owner_id: alice.id().clone(),
+                new_owner_id: bob.id().clone(),
+            }
+            .to_nep297_event()
+            .to_event_log()
+        ]
+    );
 
     assert_eq!(
         controller_instance.gd_owner_id().await.unwrap(),

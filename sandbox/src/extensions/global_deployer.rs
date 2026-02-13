@@ -1,5 +1,6 @@
 use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use defuse_global_deployer::State as DeployerState;
+use near_api::types::transaction::result::ExecutionSuccess;
 use near_sdk::{
     AccountId, GlobalContractId, NearToken,
     serde_json::json,
@@ -14,13 +15,13 @@ pub trait DeployerExt {
         state: DeployerState,
     ) -> anyhow::Result<Account>;
 
-    async fn gd_deploy(&self, target: &AccountId, wasm: &[u8]) -> anyhow::Result<()>;
+    async fn gd_deploy(&self, target: &AccountId, wasm: &[u8]) -> anyhow::Result<ExecutionSuccess>;
 
     async fn gd_transfer_ownership(
         &self,
         target: &AccountId,
         new_owner: &AccountId,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<ExecutionSuccess>;
 }
 
 #[allow(async_fn_in_trait)]
@@ -36,39 +37,42 @@ impl DeployerExt for SigningAccount {
         state: DeployerState,
     ) -> anyhow::Result<Account> {
         let account_id = self
-            .state_init(StateInit::V1(StateInitV1 {
-                code: global_contract_id,
-                data: state.state_init(),
-            }))
+            .state_init(
+                StateInit::V1(StateInitV1 {
+                    code: global_contract_id,
+                    data: state.state_init(),
+                }),
+                NearToken::ZERO,
+            )
             .await?;
 
         Ok(Account::new(account_id, self.network_config().clone()))
     }
 
-    async fn gd_deploy(&self, target: &AccountId, wasm: &[u8]) -> anyhow::Result<()> {
-        self.tx(target)
+    async fn gd_deploy(&self, target: &AccountId, wasm: &[u8]) -> anyhow::Result<ExecutionSuccess> {
+        Ok(self
+            .tx(target)
             .function_call(
                 FnCallBuilder::new("gd_deploy")
                     .borsh_args(&wasm)
                     .with_deposit(NearToken::from_near(50)),
             )
-            .await?;
-        Ok(())
+            .await?)
     }
 
     async fn gd_transfer_ownership(
         &self,
         target: &AccountId,
         new_owner: &AccountId,
-    ) -> anyhow::Result<()> {
-        self.tx(target)
+    ) -> anyhow::Result<ExecutionSuccess> {
+        Ok(self
+            .tx(target)
             .function_call(
                 FnCallBuilder::new("gd_transfer_ownership")
                     .json_args(json!({"receiver_id": new_owner.clone()}))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await?;
-        Ok(())
+            .await?)
     }
 }
 

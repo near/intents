@@ -184,10 +184,15 @@ impl SigningAccount {
     }
 
     #[inline]
-    pub async fn state_init(&self, state_init: StateInit) -> anyhow::Result<AccountId> {
+    pub async fn state_init(
+        &self,
+        state_init: StateInit,
+        deposit: NearToken,
+    ) -> anyhow::Result<AccountId> {
         let deterministic_account_id = state_init.derive_account_id();
         self.tx(deterministic_account_id.clone())
             .state_init(state_init)
+            .transfer(deposit)
             .await?;
         Ok(deterministic_account_id)
     }

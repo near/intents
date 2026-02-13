@@ -26,5 +26,5 @@ container_build_command = [
 contract = []
 
 [dependencies]
-near-sdk = { workspace = true, features = ["global-contracts", "deterministic-account-ids"] }
+near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 

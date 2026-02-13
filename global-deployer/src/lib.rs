@@ -21,14 +21,20 @@ pub struct Contract(State);
 pub enum Event {
     #[event_version("1.0.0")]
     Deploy(#[serde_as(as = "Hex")] CryptoHash),
+    #[event_version("1.0.0")]
+    TransferOwnership {
+        old_owner_id: AccountId,
+        new_owner_id: AccountId,
+    },
 }
 
 #[ext_contract(ext_global_deployer)]
 pub trait GlobalDeployer {
+    //TODO: add docs
     fn gd_deploy(&mut self, #[serializer(borsh)] code: Vec<u8>) -> Promise;
+    fn gd_transfer_ownership(&mut self, receiver_id: AccountId);
     fn gd_owner_id(&self) -> AccountId;
     fn gd_index(&self) -> u32;
-    fn gd_transfer_ownership(&mut self, receiver_id: AccountId);
 }
 
 #[near(serializers = [borsh, json])]
