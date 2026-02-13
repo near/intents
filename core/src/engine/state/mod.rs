@@ -144,7 +144,7 @@ pub trait State: StateView {
     ) -> Result<()>;
 
     #[cfg(feature = "imt")]
-    fn internal_imt_mint(
+    fn imt_mint(
         &mut self,
         owner_id: &AccountIdRef,
         receiver_id: AccountId,
@@ -174,10 +174,10 @@ pub trait State: StateView {
     }
 
     #[cfg(feature = "imt")]
-    fn internal_imt_burn(
+    fn imt_burn(
         &mut self,
-        minter_id: &AccountIdRef,
         owner_id: &AccountIdRef,
+        minter_id: &AccountIdRef,
         tokens: ImtTokens,
         memo: Option<String>,
     ) -> Result<()> {

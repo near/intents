@@ -60,7 +60,7 @@ impl ExecutableIntent for ImtMint {
                 .as_slice(),
             )));
 
-        engine.state.internal_imt_mint(
+        engine.state.imt_mint(
             signer_id,
             self.receiver_id,
             self.tokens,
@@ -94,7 +94,7 @@ impl ExecutableIntent for ImtBurn {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        intent_hash: CryptoHash,
+        _intent_hash: CryptoHash,
     ) -> Result<()>
     where
         S: State,
@@ -103,15 +103,11 @@ impl ExecutableIntent for ImtBurn {
         engine
             .inspector
             .on_event(DefuseEvent::ImtBurn(Cow::Borrowed(
-                [IntentEvent::new(
-                    AccountEvent::new(signer_id, Cow::Borrowed(&self)),
-                    intent_hash,
-                )]
-                .as_slice(),
+                [AccountEvent::new(signer_id, Cow::Borrowed(&self))].as_slice(),
             )));
 
         engine
             .state
-            .internal_imt_burn(&self.minter_id, signer_id, self.tokens, self.memo)
+            .imt_burn(signer_id, &self.minter_id, self.tokens, self.memo)
     }
 }

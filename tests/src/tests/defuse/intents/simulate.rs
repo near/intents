@@ -1006,13 +1006,10 @@ async fn simulate_burn_intent() {
     assert_eq!(
         result.report.logs,
         vec![
-            DefuseEvent::ImtBurn(Cow::Owned(vec![IntentEvent {
-                intent_hash: burn_payload.hash(),
-                event: AccountEvent {
-                    account_id: user.id().clone().into(),
-                    event: Cow::Owned(burn_intent)
-                },
-            }]))
+            DefuseEvent::ImtBurn(Cow::Owned(vec![AccountEvent {
+                account_id: user.id().clone().into(),
+                event: Cow::Owned(burn_intent)
+            },]))
             .to_nep297_event()
             .to_event_log(),
             AccountNonceIntentEvent::new(&user.id(), nonce, &burn_payload)

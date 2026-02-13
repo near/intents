@@ -1,5 +1,3 @@
-#![allow(clippy::too_many_arguments)]
-
 use defuse_core::tokens::imt::ImtTokens;
 use near_sdk::{AccountId, ext_contract};
 

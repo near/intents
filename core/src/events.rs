@@ -63,7 +63,7 @@ pub enum DefuseEvent<'a> {
 
     #[cfg(feature = "imt")]
     #[event_version("0.3.0")]
-    ImtBurn(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, ImtBurn>>>]>),
+    ImtBurn(Cow<'a, [AccountEvent<'a, Cow<'a, ImtBurn>>]>),
     #[event_version("0.3.0")]
     #[from(skip)]
     AccountLocked(AccountEvent<'a, ()>),

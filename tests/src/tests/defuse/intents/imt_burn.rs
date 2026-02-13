@@ -2,9 +2,7 @@ use std::borrow::Cow;
 
 use defuse::core::accounts::AccountEvent;
 use defuse::core::amounts::Amounts;
-use defuse::core::crypto::Payload;
 use defuse::core::events::DefuseEvent;
-use defuse::core::intents::IntentEvent;
 use defuse::core::intents::imt::{ImtBurn, ImtMint};
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::imt::ImtTokenId;
@@ -87,13 +85,12 @@ async fn imt_burn_intent() {
             }]))
             .to_nep297_event()
             .to_event_log(),
-                DefuseEvent::ImtBurn(Cow::Owned(vec![IntentEvent {
-                intent_hash: burn_payload.hash(),
-                event: AccountEvent {
+                DefuseEvent::ImtBurn(Cow::Owned(vec![
+                AccountEvent {
                     account_id: other_user.id().clone().into(),
                     event: Cow::Owned(intent),
                 },
-            }]))
+            ]))
             .to_nep297_event()
             .to_event_log(),
     ]

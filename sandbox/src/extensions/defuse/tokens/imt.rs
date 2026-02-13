@@ -10,7 +10,7 @@ pub trait DefuseImtBurner {
         defuse_id: impl AsRef<AccountIdRef>,
         minter_id: impl AsRef<AccountIdRef>,
         tokens: impl IntoIterator<Item = (impl Into<String>, u128)>,
-        memo: Option<String>,
+        memo: impl Into<Option<String>>,
     ) -> anyhow::Result<()>;
 }
 
@@ -20,7 +20,7 @@ impl DefuseImtBurner for SigningAccount {
         defuse_id: impl AsRef<AccountIdRef>,
         minter_id: impl AsRef<AccountIdRef>,
         tokens: impl IntoIterator<Item = (impl Into<String>, u128)>,
-        memo: Option<String>,
+        memo: impl Into<Option<String>>,
     ) -> anyhow::Result<()> {
         let token_ids: ImtTokens = Amounts::new(
             tokens
@@ -36,7 +36,7 @@ impl DefuseImtBurner for SigningAccount {
                     .json_args(json!({
                         "minter_id": minter_id.as_ref(),
                         "tokens": token_ids,
-                        "memo": memo,
+                        "memo": memo.into(),
                     })),
             )
             .await?;

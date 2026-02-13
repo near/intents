@@ -1,14 +1,12 @@
 use std::borrow::Cow;
 
 use defuse_core::{
-    accounts::AccountEvent,
-    engine::State,
-    events::DefuseEvent,
-    intents::{IntentEvent, imt::ImtBurn},
+    accounts::AccountEvent, engine::State, events::DefuseEvent, intents::imt::ImtBurn,
     tokens::imt::ImtTokens,
 };
 
 use defuse_near_utils::UnwrapOrPanic;
+use near_plugins::{Pausable, pause};
 use near_sdk::{AccountId, assert_one_yocto, near};
 
 use crate::{
@@ -18,27 +16,24 @@ use crate::{
 
 #[near]
 impl ImtBurner for Contract {
+    #[pause(name = "imt")]
     #[payable]
     fn imt_burn(&mut self, minter_id: AccountId, tokens: ImtTokens, memo: Option<String>) {
         assert_one_yocto();
 
         let owner_id = self.ensure_auth_predecessor_id();
 
-        self.internal_imt_burn(&minter_id, &owner_id, tokens.clone(), memo.clone())
+        State::imt_burn(self, &owner_id, &minter_id, tokens.clone(), memo.clone())
             .unwrap_or_panic();
 
         DefuseEvent::ImtBurn(Cow::Borrowed(
-            [IntentEvent::new(
-                AccountEvent::new(
-                    owner_id,
-                    Cow::Owned(ImtBurn {
-                        minter_id,
-                        tokens,
-                        memo,
-                    }),
-                ),
-                // TODO: fix when multifunctional events are supported
-                [0; 32],
+            [AccountEvent::new(
+                owner_id,
+                Cow::Owned(ImtBurn {
+                    minter_id,
+                    tokens,
+                    memo,
+                }),
             )]
             .as_slice(),
         ))
