@@ -1,3 +1,5 @@
+#[cfg(any(feature = "arbitrary", test))]
+mod arbitrary;
 #[cfg(feature = "contract")]
 mod contract;
 mod error;
@@ -5,7 +7,6 @@ mod events;
 mod request;
 pub mod signature;
 mod state;
-mod utils;
 
 use std::collections::BTreeSet;
 

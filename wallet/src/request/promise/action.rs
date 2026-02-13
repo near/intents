@@ -4,11 +4,9 @@ use near_sdk::{
     near,
     serde::Serialize,
     serde_json,
-    serde_with::base64::Base64,
+    serde_with::{DisplayFromStr, base64::Base64},
     state_init::StateInit,
 };
-
-use crate::utils::is_default;
 
 /// NOTE: there is no support for other actions, since they operate on the
 /// account itself (e.g. DeployContract, AddKey and etc...) or its on children
@@ -47,7 +45,7 @@ impl PromiseAction {
 pub struct TransferAction {
     #[cfg_attr(
         any(feature = "arbitrary", test),
-        arbitrary(with = crate::utils::arbitrary::near_token),
+        arbitrary(with = crate::arbitrary::near_token),
     )]
     pub amount: NearToken,
 }
@@ -60,7 +58,7 @@ pub struct StateInitAction {
     pub state_init: StateInit,
     #[cfg_attr(
         any(feature = "arbitrary", test),
-        arbitrary(with = crate::utils::arbitrary::near_token),
+        arbitrary(with = crate::arbitrary::near_token),
     )]
     #[serde(default, skip_serializing_if = "NearToken::is_zero")]
     pub amount: NearToken,
@@ -82,19 +80,23 @@ pub struct FunctionCallAction {
 
     #[cfg_attr(
         any(feature = "arbitrary", test),
-        arbitrary(with = crate::utils::arbitrary::near_token),
+        arbitrary(with = crate::arbitrary::near_token),
     )]
     #[serde(default, skip_serializing_if = "NearToken::is_zero")]
     pub amount: NearToken,
 
     #[cfg_attr(
         any(feature = "arbitrary", test),
-        arbitrary(with = crate::utils::arbitrary::gas),
+        arbitrary(with = crate::arbitrary::gas),
     )]
     #[serde(default, skip_serializing_if = "Gas::is_zero")]
     pub min_gas: Gas,
 
-    #[serde(default = "default_gas_weight", skip_serializing_if = "is_default")]
+    #[serde_as(as = "DisplayFromStr")]
+    #[serde(
+        default = "default_gas_weight",
+        skip_serializing_if = "is_default_gas_weight"
+    )]
     pub gas_weight: u64,
 }
 
@@ -156,6 +158,11 @@ impl FunctionCallAction {
 
 fn default_gas_weight() -> u64 {
     GasWeight::default().0
+}
+
+#[allow(clippy::trivially_copy_pass_by_ref)]
+fn is_default_gas_weight(gas_weight: &u64) -> bool {
+    *gas_weight == default_gas_weight()
 }
 
 // fix JsonSchema macro bug

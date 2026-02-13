@@ -134,8 +134,8 @@ contract_impl! {
         };
 
         impl ContractImpl for Contract {
-            /// Webauthn [COSE EdDSA (-8) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
-            /// ed25519 curve.
+            /// [COSE ES256 (-7) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
+            /// P256 (a.k.a secp256r1) over SHA-256
             ///
             /// We use `hash(borsh(...))` for webauthn, since:
             /// 1. Authenticators are general-purpose signers and they usually implement

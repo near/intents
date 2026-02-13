@@ -11,7 +11,6 @@ workspace = true
 [features]
 default = ["defuse", "poa", "escrow-swap", "long", "deployer", "wallet"]
 
-
 poa = ["dep:defuse-poa-factory", "defuse-sandbox/poa", "defuse-test-utils/poa"]
 defuse = [
     "dep:defuse",
@@ -29,7 +28,7 @@ escrow-swap = [
     "defuse-test-utils/defuse",
     "defuse-test-utils/poa",
 ]
-wallet = ["dep:defuse-wallet", "defuse-test-utils/wallet"]
+wallet = ["dep:defuse-wallet", "defuse-test-utils/wallet", "deployer"]
 
 deployer = ["dep:defuse-global-deployer", "defuse-sandbox/deployer"]
 
@@ -60,7 +59,7 @@ defuse-randomness.workspace = true
 defuse-test-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-fees.workspace = true
-defuse-global-deployer = {workspace = true, optional = true}
+defuse-global-deployer = { workspace = true, optional = true }
 
 near-sdk.workspace = true
 near-crypto.workspace = true
