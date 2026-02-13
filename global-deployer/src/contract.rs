@@ -5,6 +5,8 @@ use crate::{
     error::{ERR_SELF_TRANSFER, ERR_UNAUTHORIZED, ERR_WRONG_CODE_HASH},
 };
 
+const GD_AT_DEPLOY_GAS: Gas = Gas::from_tgas(5);
+
 #[near]
 impl GlobalDeployer for Contract {
     #[payable]
@@ -28,8 +30,8 @@ impl GlobalDeployer for Contract {
             .function_call(
                 "gd_at_deploy".to_string(),
                 borsh::to_vec(&(old_hash, new_hash)).unwrap_or_else(|_| unreachable!()),
-                NearToken::from_yoctonear(0),
-                Gas::from_tgas(5),
+                NearToken::ZERO,
+                GD_AT_DEPLOY_GAS,
             )
     }
 
