@@ -7,9 +7,13 @@ use near_sdk::{AccountId, CryptoHash, PanicOnDefault, Promise, borsh, ext_contra
 mod contract;
 pub mod error;
 
-pub const STATE_KEY: &[u8] = b"";
 
-#[near(contract_state(key = STATE_KEY), contract_metadata(standard(standard = "global-deployer", version = "1.0.0")))]
+#[near(
+    contract_state(key = State::STATE_KEY), 
+    contract_metadata(
+        standard(standard = "global-deployer", version = "1.0.0")
+    )
+)]
 #[derive(PanicOnDefault)]
 pub struct Contract(State);
 
@@ -36,9 +40,12 @@ pub struct State {
 }
 
 impl State {
+
+    pub const STATE_KEY: &[u8] = b"";
+
     pub fn state_init(&self) -> BTreeMap<Vec<u8>, Vec<u8>> {
         [(
-            STATE_KEY.to_vec(),
+            Self::STATE_KEY.to_vec(),
             borsh::to_vec(&self).unwrap_or_else(|_| unreachable!()),
         )]
         .into()
