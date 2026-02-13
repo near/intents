@@ -36,7 +36,7 @@ impl GlobalDeployer for Contract {
         assert_one_yocto();
         self.require_owner();
         require!(self.0.owner_id != receiver_id, ERR_SELF_TRANSFER);
-        Event::TransferOwnership {
+        Event::Transfer {
             old_owner_id: self.0.owner_id.clone(),
             new_owner_id: receiver_id.clone(),
         }

@@ -423,7 +423,7 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
     assert_eq!(
         result.logs(),
         vec![
-            Event::TransferOwnership {
+            Event::Transfer {
                 old_owner_id: alice.id().clone(),
                 new_owner_id: bob.id().clone(),
             }
