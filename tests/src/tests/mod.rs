@@ -7,4 +7,7 @@ mod poa;
 #[cfg(feature = "escrow-swap")]
 mod escrow;
 
+#[cfg(feature = "deployer")]
+mod global_deployer;
+
 mod utils;

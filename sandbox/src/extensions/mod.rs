@@ -12,5 +12,7 @@ pub mod wnear;
 pub mod defuse;
 #[cfg(feature = "escrow")]
 pub mod escrow;
+#[cfg(feature = "deployer")]
+pub mod global_deployer;
 #[cfg(feature = "poa")]
 pub mod poa;

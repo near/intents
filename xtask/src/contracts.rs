@@ -14,6 +14,7 @@ pub enum Contract {
     PoaFactory,
     EscrowSwap,
     MultiTokenReceiverStub,
+    Deployer,
 }
 
 impl Contract {
@@ -44,6 +45,11 @@ impl Contract {
                 path: "tests/contracts/multi-token-receiver-stub",
                 features: "abi",
             },
+            Self::Deployer => ContractSpec {
+                name: "global-deployer",
+                path: "global-deployer",
+                features: "abi,contract",
+            },
         }
     }
 
@@ -54,6 +60,7 @@ impl Contract {
             Self::PoaFactory,
             Self::EscrowSwap,
             Self::MultiTokenReceiverStub,
+            Self::Deployer,
         ]
     }
 }
