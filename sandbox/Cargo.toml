@@ -11,7 +11,7 @@ workspace = true
 [features]
 defuse = ["dep:defuse", "dep:defuse-test-utils", "dep:defuse-serde-utils"]
 poa = ["dep:defuse-poa-factory"]
-deployer = ["dep:defuse-global-deployer"]
+deployer = ["dep:defuse-global-deployer", "dep:defuse-serde-utils"]
 escrow = ["dep:defuse-escrow-swap"]
 
 [dependencies]

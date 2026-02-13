@@ -1,5 +1,6 @@
 use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use defuse_global_deployer::State as DeployerState;
+use defuse_serde_utils::hex::AsHex;
 use near_api::types::transaction::result::ExecutionSuccess;
 use near_sdk::{
     AccountId, GlobalContractId, NearToken,
@@ -95,6 +96,7 @@ impl DeployerViewExt for Account {
     }
 
     async fn gd_code_hash(&self) -> anyhow::Result<[u8; 32]> {
-        self.call_view_function_json("gd_code_hash", ()).await
+        let hash: AsHex<[u8; 32]> = self.call_view_function_json("gd_code_hash", ()).await?;
+        Ok(hash.into_inner())
     }
 }

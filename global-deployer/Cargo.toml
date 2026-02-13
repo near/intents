@@ -18,13 +18,15 @@ container_build_command = [
     "build",
     "non-reproducible-wasm",
     "--locked",
-    "--features=contract",
+    "--features=abi,contract",
     "--no-embed-abi",
 ]
 
 [features]
+abi = ["defuse-serde-utils/abi"]
 contract = []
 
 [dependencies]
+defuse-serde-utils.workspace = true
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 

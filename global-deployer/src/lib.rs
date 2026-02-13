@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 
+use defuse_serde_utils::hex::AsHex;
 use near_sdk::serde_with::{hex::Hex, serde_as};
-use near_sdk::{AccountId, CryptoHash, PanicOnDefault, Promise, borsh, ext_contract, near};
+use near_sdk::{AccountId, PanicOnDefault, Promise, borsh, ext_contract, near};
 
 #[cfg(feature = "contract")]
 mod contract;
@@ -66,7 +67,7 @@ pub trait GlobalDeployer {
     fn gd_index(&self) -> u32;
 
     /// Returns the SHA-256 hash of the currently deployed code, or `[0; 32]` if none.
-    fn gd_code_hash(&self) -> CryptoHash;
+    fn gd_code_hash(&self) -> AsHex<[u8; 32]>;
 }
 
 #[near(serializers = [borsh, json])]

@@ -1232,6 +1232,7 @@ dependencies = [
 name = "defuse-global-deployer"
 version = "0.1.0"
 dependencies = [
+ "defuse-serde-utils",
  "near-sdk",
 ]
 

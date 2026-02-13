@@ -1,6 +1,5 @@
-use near_sdk::{
-    AccountId, CryptoHash, Gas, NearToken, Promise, assert_one_yocto, env, near, require,
-};
+use defuse_serde_utils::hex::AsHex;
+use near_sdk::{AccountId, Gas, NearToken, Promise, assert_one_yocto, env, near, require};
 
 use crate::{
     Contract, ContractExt, Event, GlobalDeployer,
@@ -45,8 +44,8 @@ impl GlobalDeployer for Contract {
         self.0.index
     }
 
-    fn gd_code_hash(&self) -> CryptoHash {
-        self.0.code_hash
+    fn gd_code_hash(&self) -> AsHex<[u8; 32]> {
+        AsHex(self.0.code_hash)
     }
 
     #[payable]

@@ -48,7 +48,7 @@ impl Contract {
             Self::Deployer => ContractSpec {
                 name: "global-deployer",
                 path: "global-deployer",
-                features: "contract",
+                features: "abi,contract",
             },
         }
     }
