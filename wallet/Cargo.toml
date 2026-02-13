@@ -54,8 +54,7 @@ container_build_command = [
     "non-reproducible-wasm",
     "--locked",
     "--no-default-features",
-    # TODO: change default to `ed25519`
-    "--features=abi,contract,webauthn-ed25519",
+    "--features=abi,contract,ed25519",
     "--no-embed-abi",
 ]
 

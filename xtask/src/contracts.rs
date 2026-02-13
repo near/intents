@@ -43,7 +43,7 @@ impl Contract {
             Self::WalletWebauthnEd25519 => ContractSpec {
                 name: "wallet",
                 path: "wallet",
-                features: "contract,webauthn-ed25519",
+                features: "contract,ed25519",
             },
             Self::MultiTokenReceiverStub => ContractSpec {
                 name: "multi-token-receiver-stub",

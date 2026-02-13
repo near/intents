@@ -47,7 +47,7 @@ defuse-poa-factory = { workspace = true, features = [
 ], optional = true }
 defuse-wallet = { workspace = true, features = [
     "arbitrary",
-    "webauthn-ed25519",
+    "ed25519",
 ], optional = true }
 multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
 

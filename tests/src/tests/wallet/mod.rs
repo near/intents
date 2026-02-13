@@ -1,22 +1,24 @@
 use std::time::Duration;
 
 use defuse_sandbox::{FnCallBuilder, Sandbox, sandbox};
-use defuse_test_utils::{random::make_arbitrary, wasms::WALLET_WEBAUTHN_ED25519_WASM};
+use defuse_test_utils::{random::make_arbitrary, wasms::WALLET_ED25519_WASM};
 use defuse_wallet::{
     self, AddExtensionOp, PromiseSingle, RemoveExtensionOp, Request, State, WalletOp,
-    signature::{Borsh, Deadline, RequestMessage, Sha256, SigningStandard, webauthn::*},
+    signature::{
+        Borsh, Deadline, RequestMessage, SigningStandard,
+        ed25519::{Ed25519, Ed25519PublicKey, Ed25519Signature},
+    },
 };
 use impl_tools::autoimpl;
 use near_crypto::{KeyType, SecretKey, Signature};
 use near_sdk::{
     GlobalContractId, NearToken, borsh,
-    env::sha256_array,
     serde_json::{self, json},
     state_init::{StateInit, StateInitV1},
 };
 use rstest::{fixture, rstest};
 
-type S = Borsh<Sha256<Webauthn<Ed25519>>>;
+type S = Borsh<Ed25519>;
 type PublicKey = <S as SigningStandard<RequestMessage>>::PublicKey;
 
 #[rstest]
@@ -71,17 +73,14 @@ async fn test_signed(#[future] env: Env) {
     };
 
     env.tx(wallet.id())
-        .state_init(
-            wallet_state_init.clone(),
-            NearToken::ZERO,
-        )
+        .state_init(wallet_state_init.clone(), NearToken::ZERO)
         .transfer(NearToken::from_near(1))
         .function_call(
             FnCallBuilder::new("w_execute_signed")
-                .json_args(json!({
-                    "proof": serde_json::to_string(&sign_request(&secret_key, &signed_request_body)).unwrap(),
+                .json_args(dbg!(json!({
+                    "proof": sign_request(&secret_key, &signed_request_body),
                     "signed": signed_request_body,
-                }))
+                })))
                 .with_deposit(NearToken::from_near(1)),
         )
         .await
@@ -205,7 +204,7 @@ async fn env(#[future] sandbox: Sandbox) -> Env {
         .deploy_global_sub_contract(
             "wallet",
             NearToken::from_near(1000),
-            WALLET_WEBAUTHN_ED25519_WASM.clone(),
+            WALLET_ED25519_WASM.clone(),
         )
         .await
         .unwrap();
@@ -216,39 +215,44 @@ async fn env(#[future] sandbox: Sandbox) -> Env {
     }
 }
 
-fn sign_request(secret_key: &SecretKey, body: &RequestMessage) -> PayloadSignature<Ed25519> {
+fn sign_request(secret_key: &SecretKey, body: &RequestMessage) -> String {
     let domain = body.wrap_domain();
     let serialized = borsh::to_vec(&domain).unwrap();
-    let hash = near_sdk::env::sha256_array(serialized);
-    sign_passkey(secret_key, &hash)
+    // let hash = near_sdk::env::sha256_array(serialized);
+    // sign_passkey(secret_key, &hash)
+    sign_ed25519(secret_key, serialized).to_string()
 }
 
-fn sign_passkey(secret_key: &SecretKey, msg: &[u8]) -> PayloadSignature<Ed25519> {
-    let authenticator_data = {
-        let mut buf = [0; 37];
-        buf[32] = 0b0000_0001;
-        buf.to_vec()
-    };
+// fn sign_passkey(secret_key: &SecretKey, msg: &[u8]) -> PayloadSignature<Ed25519> {
+//     let authenticator_data = {
+//         let mut buf = [0; 37];
+//         buf[32] = 0b0000_0001;
+//         buf.to_vec()
+//     };
 
-    let c = CollectedClientData {
-        typ: ClientDataType::Get,
-        challenge: msg.to_vec(),
-        origin: "example.com".to_string(),
-    };
+//     let c = CollectedClientData {
+//         typ: ClientDataType::Get,
+//         challenge: msg.to_vec(),
+//         origin: "example.com".to_string(),
+//     };
 
-    let client_data_json = serde_json::to_string(&c).unwrap();
+//     let client_data_json = serde_json::to_string(&c).unwrap();
 
-    let hash = sha256_array(client_data_json.as_bytes());
+//     let hash = sha256_array(client_data_json.as_bytes());
 
-    let signature =
-        match secret_key.sign(&[authenticator_data.as_slice(), hash.as_slice()].concat()) {
-            Signature::ED25519(signature) => signature.to_bytes(),
-            Signature::SECP256K1(_) => unimplemented!(),
-        };
+//     PayloadSignature {
+//         signature: sign_ed25519(
+//             secret_key,
+//             &[authenticator_data.as_slice(), hash.as_slice()].concat(),
+//         ),
+//         authenticator_data,
+//         client_data_json,
+//     }
+// }
 
-    PayloadSignature {
-        authenticator_data,
-        client_data_json,
-        signature: Ed25519Signature(signature),
+fn sign_ed25519(secret_key: &SecretKey, msg: impl AsRef<[u8]>) -> Ed25519Signature {
+    match secret_key.sign(msg.as_ref()) {
+        Signature::ED25519(signature) => Ed25519Signature(signature.to_bytes()),
+        Signature::SECP256K1(_) => unimplemented!(),
     }
 }

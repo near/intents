@@ -89,8 +89,7 @@ contract_impl! {
         near(contract_metadata(
             standard(standard = "wallet-ed25519", version = "1.0.0")
         ))
-    )]
-    {
+    )] {
         use defuse_crypto::Ed25519;
 
         use crate::signature::Borsh;
@@ -105,8 +104,7 @@ contract_impl! {
         near(contract_metadata(
             standard(standard = "wallet-webauthn-ed25519", version = "1.0.0")
         ))
-    )]
-    {
+    )] {
         use crate::signature::{
             Borsh, Sha256,
             webauthn::{Ed25519, Webauthn},
@@ -129,8 +127,7 @@ contract_impl! {
         near(contract_metadata(
             standard(standard = "wallet-webauthn-p256", version = "1.0.0")
         ))
-    )]
-    {
+    )] {
         use crate::signature::{
             Borsh, Sha256,
             webauthn::{P256, Webauthn},

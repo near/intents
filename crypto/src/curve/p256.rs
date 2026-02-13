@@ -1,14 +1,18 @@
 use core::fmt::{self, Debug, Display};
+use std::str::FromStr;
 
 use generic_array::GenericArray;
-use near_sdk::{CryptoHash, near};
+use near_sdk::{
+    CryptoHash, near,
+    serde_with::{DeserializeFromStr, SerializeDisplay},
+};
 use p256::{
     EncodedPoint,
     ecdsa::{Signature, VerifyingKey, signature::hazmat::PrehashVerifier},
     elliptic_curve::scalar::IsHigh,
 };
 
-use crate::{Curve, CurveType, TypedCurve, serde::AsCurve};
+use crate::{Curve, CurveType, ParseCurveError, TypedCurve};
 
 pub struct P256;
 
@@ -56,12 +60,13 @@ impl TypedCurve for P256 {
 
 /// Compressed public key, i.e. `x` coordinate with leading SEC1 tag byte
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh, json])]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[near(serializers = [borsh])]
+#[derive(
+    Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr,
+)]
+#[serde_with(crate = "::near_sdk::serde_with")]
 #[repr(transparent)]
-pub struct P256CompressedPublicKey(
-    #[serde_as(as = "AsCurve<P256>")] pub <P256 as Curve>::PublicKey,
-);
+pub struct P256CompressedPublicKey(pub <P256 as Curve>::PublicKey);
 
 impl Debug for P256CompressedPublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -75,12 +80,23 @@ impl Display for P256CompressedPublicKey {
     }
 }
 
+impl FromStr for P256CompressedPublicKey {
+    type Err = ParseCurveError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        P256::parse_base58(s).map(Self)
+    }
+}
+
 /// Concatenated `x || y` coordinates with no leading SEC1 tag byte
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh, json])]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[near(serializers = [borsh])]
+#[derive(
+    Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr,
+)]
+#[serde_with(crate = "::near_sdk::serde_with")]
 #[repr(transparent)]
-pub struct P256UncompressedPublicKey(#[serde_as(as = "AsCurve<P256>")] pub [u8; 64]);
+pub struct P256UncompressedPublicKey(pub [u8; 64]);
 
 impl Debug for P256UncompressedPublicKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -94,11 +110,22 @@ impl Display for P256UncompressedPublicKey {
     }
 }
 
+impl FromStr for P256UncompressedPublicKey {
+    type Err = ParseCurveError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        P256::parse_base58(s).map(Self)
+    }
+}
+
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh, json])]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[near(serializers = [borsh])]
+#[derive(
+    Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr,
+)]
+#[serde_with(crate = "::near_sdk::serde_with")]
 #[repr(transparent)]
-pub struct P256Signature(#[serde_as(as = "AsCurve<P256>")] pub <P256 as Curve>::Signature);
+pub struct P256Signature(pub <P256 as Curve>::Signature);
 
 impl Debug for P256Signature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -109,6 +136,14 @@ impl Debug for P256Signature {
 impl Display for P256Signature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&<P256 as TypedCurve>::to_base58(self.0))
+    }
+}
+
+impl FromStr for P256Signature {
+    type Err = ParseCurveError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        P256::parse_base58(s).map(Self)
     }
 }
 
