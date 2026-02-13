@@ -1,49 +1,8 @@
-#![allow(rustdoc::broken_intra_doc_links)]
-//! Helper for [`serde_with::hex::Hex`] to implement [`serde_with::schemars_0_8::JsonSchemaAs`] on it.
 pub use serde_with::formats::{Format, Lowercase, Uppercase};
 
 use derive_more::From;
-use near_sdk::serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_with::{DeserializeAs, SerializeAs, serde_as};
-
-pub struct Hex<FORMAT: Format = Lowercase>(::serde_with::hex::Hex<FORMAT>);
-
-impl<T> SerializeAs<T> for Hex<Lowercase>
-where
-    T: AsRef<[u8]>,
-{
-    fn serialize_as<S>(source: &T, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        ::serde_with::hex::Hex::<Lowercase>::serialize_as(source, serializer)
-    }
-}
-
-impl<T> SerializeAs<T> for Hex<Uppercase>
-where
-    T: AsRef<[u8]>,
-{
-    fn serialize_as<S>(source: &T, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        ::serde_with::hex::Hex::<Uppercase>::serialize_as(source, serializer)
-    }
-}
-
-impl<'de, T, FORMAT> DeserializeAs<'de, T> for Hex<FORMAT>
-where
-    T: TryFrom<Vec<u8>>,
-    FORMAT: Format,
-{
-    fn deserialize_as<D>(deserializer: D) -> Result<T, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        ::serde_with::hex::Hex::<FORMAT>::deserialize_as(deserializer)
-    }
-}
+use near_sdk::serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 
 /// Helper type to implement `#[derive(Serialize, Deserialize)]`,
 /// as `#[near_bindgen]` doesn't support `#[serde(...)]` attributes on method arguments
@@ -62,7 +21,7 @@ where
     crate = "::near_sdk::serde",
     bound(serialize = "T: AsRef<[u8]>", deserialize = "T: TryFrom<Vec<u8>>")
 )]
-pub struct AsHex<T>(#[serde_as(as = "Hex")] pub T);
+pub struct AsHex<T>(#[serde_as(as = "::serde_with::hex::Hex")] pub T);
 
 impl<T> AsHex<T> {
     #[inline]
@@ -70,37 +29,6 @@ impl<T> AsHex<T> {
         self.0
     }
 }
-
-#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
-const _: () = {
-    use near_sdk::schemars::{
-        JsonSchema,
-        r#gen::SchemaGenerator,
-        schema::{InstanceType, Schema, SchemaObject},
-    };
-    use serde_with::schemars_0_8::JsonSchemaAs;
-
-    impl<T, FORMAT> JsonSchemaAs<T> for Hex<FORMAT>
-    where
-        FORMAT: Format,
-    {
-        fn schema_name() -> String {
-            String::schema_name()
-        }
-
-        fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
-            SchemaObject {
-                instance_type: Some(InstanceType::String.into()),
-                ..Default::default()
-            }
-            .into()
-        }
-
-        fn is_referenceable() -> bool {
-            false
-        }
-    }
-};
 
 #[cfg(test)]
 mod tests {
