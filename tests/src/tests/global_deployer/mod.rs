@@ -87,11 +87,13 @@ async fn test_deploy_controller_instance(
     let state = DeployerState {
         owner_id: root.id().clone(),
         index: unique_index,
+        code_hash: DeployerState::DEFAULT_HASH,
     };
 
     let upgradeable_instance_state = DeployerState {
         owner_id: alice.id().clone(),
         index: 0,
+        code_hash: DeployerState::DEFAULT_HASH,
     };
 
     let controller_instance = root
@@ -106,7 +108,7 @@ async fn test_deploy_controller_instance(
     .await
     .assert_err_contains("GlobalContractDoesNotExist");
 
-    root.gd_deploy(controller_instance.id(), &DEPLOYER_WASM)
+    root.gd_deploy(controller_instance.id(), &DEPLOYER_WASM, DeployerState::DEFAULT_HASH)
         .await
         .unwrap();
     let mutable_controller_instance = root
@@ -165,12 +167,13 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
             DeployerState {
                 owner_id: root.id().clone(),
                 index: unique_index,
+                code_hash: DeployerState::DEFAULT_HASH,
             },
         )
         .await
         .unwrap();
 
-    root.gd_deploy(controller_instance.id(), &DEPLOYER_WASM)
+    root.gd_deploy(controller_instance.id(), &DEPLOYER_WASM, DeployerState::DEFAULT_HASH)
         .await
         .unwrap();
 
@@ -180,12 +183,13 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
             DeployerState {
                 owner_id: alice.id().clone(),
                 index: 0u32,
+                code_hash: DeployerState::DEFAULT_HASH,
             },
         )
         .await
         .unwrap();
     alice
-        .gd_deploy(upgradable_controller_instance.id(), &DEPLOYER_WASM)
+        .gd_deploy(upgradable_controller_instance.id(), &DEPLOYER_WASM, DeployerState::DEFAULT_HASH)
         .await
         .unwrap();
 
@@ -195,11 +199,12 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
             DeployerState {
                 owner_id: bob.id().clone(),
                 index: 0u32,
+                code_hash: DeployerState::DEFAULT_HASH,
             },
         )
         .await
         .unwrap();
-    bob.gd_deploy(escrow_controller_instance.id(), &ESCROW_SWAP_WASM)
+    bob.gd_deploy(escrow_controller_instance.id(), &ESCROW_SWAP_WASM, DeployerState::DEFAULT_HASH)
         .await
         .unwrap();
 
@@ -249,12 +254,13 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
             DeployerState {
                 owner_id: root.id().clone(),
                 index: unique_index,
+                code_hash: DeployerState::DEFAULT_HASH,
             },
         )
         .await
         .unwrap();
 
-    root.gd_deploy(controller_instance.id(), &DEPLOYER_WASM)
+    root.gd_deploy(controller_instance.id(), &DEPLOYER_WASM, DeployerState::DEFAULT_HASH)
         .await
         .unwrap();
 
@@ -264,12 +270,13 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
             DeployerState {
                 owner_id: alice.id().clone(),
                 index: 0u32,
+                code_hash: DeployerState::DEFAULT_HASH,
             },
         )
         .await
         .unwrap();
     alice
-        .gd_deploy(upgradable_controller_instance.id(), &DEPLOYER_WASM)
+        .gd_deploy(upgradable_controller_instance.id(), &DEPLOYER_WASM, DeployerState::DEFAULT_HASH)
         .await
         .unwrap();
 
@@ -279,12 +286,13 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
             DeployerState {
                 owner_id: bob.id().clone(),
                 index: 0u32,
+                code_hash: DeployerState::DEFAULT_HASH,
             },
         )
         .await
         .unwrap();
 
-    bob.gd_deploy(escrow_controller_instance.id(), &MT_RECEIVER_STUB_WASM)
+    bob.gd_deploy(escrow_controller_instance.id(), &MT_RECEIVER_STUB_WASM, DeployerState::DEFAULT_HASH)
         .await
         .unwrap();
 
@@ -312,7 +320,7 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
         .await
         .expect("escrow should have `dummy_method` method");
 
-    bob.gd_deploy(escrow_controller_instance.id(), &ESCROW_SWAP_WASM)
+    bob.gd_deploy(escrow_controller_instance.id(), &ESCROW_SWAP_WASM, sha256_array(&*MT_RECEIVER_STUB_WASM))
         .await
         .unwrap();
     let storage = escrow_instance
@@ -346,6 +354,7 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
     let storage = DeployerState {
         owner_id: owner.id().clone(),
         index: unique_index,
+        code_hash: DeployerState::DEFAULT_HASH,
     };
     let controller_instance = root
         .deploy_instance(deployer_code_hash_id.clone(), storage.clone())
@@ -362,7 +371,7 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
         .tx(controller_instance.id())
         .function_call(
             FnCallBuilder::new("gd_deploy")
-                .borsh_args(&*DEPLOYER_WASM)
+                .borsh_args(&(&*DEPLOYER_WASM, DeployerState::DEFAULT_HASH))
                 .with_deposit(storage_deposit),
         )
         .await
@@ -395,6 +404,7 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
     let storage = DeployerState {
         owner_id: alice.id().clone(),
         index: unique_index,
+        code_hash: DeployerState::DEFAULT_HASH,
     };
 
     let controller_instance = root
@@ -407,7 +417,7 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
         storage.owner_id
     );
     assert_eq!(controller_instance.gd_index().await.unwrap(), storage.index);
-    bob.gd_deploy(controller_instance.id(), &DEPLOYER_WASM)
+    bob.gd_deploy(controller_instance.id(), &DEPLOYER_WASM, DeployerState::DEFAULT_HASH)
         .await
         .assert_err_contains(ERR_UNAUTHORIZED);
 
@@ -437,7 +447,7 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
         bob.id().clone()
     );
     alice
-        .gd_deploy(controller_instance.id(), &DEPLOYER_WASM)
+        .gd_deploy(controller_instance.id(), &DEPLOYER_WASM, DeployerState::DEFAULT_HASH)
         .await
         .assert_err_contains(ERR_UNAUTHORIZED);
     alice
@@ -445,7 +455,7 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
         .await
         .assert_err_contains(ERR_UNAUTHORIZED);
 
-    bob.gd_deploy(controller_instance.id(), &DEPLOYER_WASM)
+    bob.gd_deploy(controller_instance.id(), &DEPLOYER_WASM, DeployerState::DEFAULT_HASH)
         .await
         .unwrap();
     bob.gd_transfer_ownership(controller_instance.id(), alice.id())
@@ -461,6 +471,7 @@ async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, 
     let storage = DeployerState {
         owner_id: root.id().clone(),
         index: unique_index,
+        code_hash: DeployerState::DEFAULT_HASH,
     };
 
     let controller_instance = root
@@ -472,7 +483,7 @@ async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, 
         .tx(controller_instance.id())
         .function_call(
             FnCallBuilder::new("gd_deploy")
-                .borsh_args(&*DEPLOYER_WASM)
+                .borsh_args(&(&*DEPLOYER_WASM, DeployerState::DEFAULT_HASH))
                 .with_deposit(NearToken::from_near(50)),
         )
         .await

@@ -1,26 +1,31 @@
-use near_sdk::{AccountId, Promise, assert_one_yocto, env, near, require};
+use near_sdk::{AccountId, Gas, NearToken, Promise, assert_one_yocto, borsh, env, near, require};
 
 use crate::{
     Contract, ContractExt, Event, GlobalDeployer,
-    error::{ERR_SELF_TRANSFER, ERR_UNAUTHORIZED},
+    error::{ERR_SELF_TRANSFER, ERR_UNAUTHORIZED, ERR_WRONG_CODE_HASH},
 };
 
 #[near]
 impl GlobalDeployer for Contract {
     #[payable]
-    fn gd_deploy(&mut self, #[serializer(borsh)] code: Vec<u8>) -> Promise {
+    fn gd_deploy(&mut self, #[serializer(borsh)] code: Vec<u8>, #[serializer(borsh)] old_hash: [u8; 32]) -> Promise {
         require!(!env::attached_deposit().is_zero());
         self.require_owner();
-
-        Event::Deploy(env::sha256_array(&code)).emit();
 
         // On receipt failure, refund goes to the receipt's predecessor — which for a
         // self-targeted promise is the contract itself. `.refund_to()` overrides this
         // so the deposit is refunded to the original caller instead. (NEP-616)
+        let new_hash = env::sha256_array(&code);
         Promise::new(env::current_account_id())
             .refund_to(env::refund_to_account_id())
             .transfer(env::attached_deposit())
             .deploy_global_contract_by_account_id(code)
+            .function_call(
+                "gd_at_deploy".to_string(),
+                borsh::to_vec(&(old_hash, new_hash)).unwrap_or_else(|_| unreachable!()),
+                NearToken::from_yoctonear(0),
+                Gas::from_tgas(5),
+            )
     }
 
     fn gd_owner_id(&self) -> AccountId {
@@ -44,6 +49,17 @@ impl GlobalDeployer for Contract {
         self.0.owner_id = receiver_id;
     }
 }
+
+#[near]
+impl Contract {
+    #[private]
+    pub fn gd_at_deploy(&mut self, #[serializer(borsh)] old_hash: [u8; 32], #[serializer(borsh)] new_hash: [u8; 32]) {
+        require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
+        self.0.code_hash = new_hash;
+        Event::Deploy(new_hash).emit();
+    }
+}
+
 
 impl Contract {
     fn require_owner(&self) {

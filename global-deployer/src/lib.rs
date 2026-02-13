@@ -35,7 +35,7 @@ pub trait GlobalDeployer {
     /// Deploys WASM code as a global contract on this account.
     /// Requires attached deposit for storage and owner-only access.
     /// Emits [`Event::Deploy`]. Refunds deposit on failure.
-    fn gd_deploy(&mut self, #[serializer(borsh)] code: Vec<u8>) -> Promise;
+    fn gd_deploy(&mut self, #[serializer(borsh)] code: Vec<u8>, #[serializer(borsh)] old_hash: [u8; 32]) -> Promise;
 
     /// Transfers contract ownership to `receiver_id`.
     /// Requires 1 yoctoNEAR, owner-only, no self-transfer.
@@ -54,10 +54,13 @@ pub trait GlobalDeployer {
 pub struct State {
     pub owner_id: AccountId,
     pub index: u32,
+    #[serde_as(as = "Hex")]
+    pub code_hash: CryptoHash,
 }
 
 impl State {
     pub const STATE_KEY: &[u8] = b"";
+    pub const DEFAULT_HASH: CryptoHash = [0; 32];
 
     pub fn state_init(&self) -> BTreeMap<Vec<u8>, Vec<u8>> {
         [(

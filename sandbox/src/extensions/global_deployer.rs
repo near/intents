@@ -15,7 +15,12 @@ pub trait DeployerExt {
         state: DeployerState,
     ) -> anyhow::Result<Account>;
 
-    async fn gd_deploy(&self, target: &AccountId, wasm: &[u8]) -> anyhow::Result<ExecutionSuccess>;
+    async fn gd_deploy(
+        &self,
+        target: &AccountId,
+        wasm: &[u8],
+        old_hash: [u8; 32],
+    ) -> anyhow::Result<ExecutionSuccess>;
 
     async fn gd_transfer_ownership(
         &self,
@@ -49,11 +54,16 @@ impl DeployerExt for SigningAccount {
         Ok(Account::new(account_id, self.network_config().clone()))
     }
 
-    async fn gd_deploy(&self, target: &AccountId, wasm: &[u8]) -> anyhow::Result<ExecutionSuccess> {
+    async fn gd_deploy(
+        &self,
+        target: &AccountId,
+        wasm: &[u8],
+        old_hash: [u8; 32],
+    ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
             .function_call(
                 FnCallBuilder::new("gd_deploy")
-                    .borsh_args(&wasm)
+                    .borsh_args(&(wasm, old_hash))
                     .with_deposit(NearToken::from_near(50)),
             )
             .await
