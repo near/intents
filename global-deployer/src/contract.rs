@@ -1,4 +1,6 @@
-use near_sdk::{AccountId, Gas, NearToken, Promise, assert_one_yocto, env, near, require};
+use near_sdk::{
+    AccountId, CryptoHash, Gas, NearToken, Promise, assert_one_yocto, env, near, require,
+};
 
 use crate::{
     Contract, ContractExt, Event, GlobalDeployer,
@@ -19,6 +21,7 @@ impl GlobalDeployer for Contract {
         self.require_owner();
         require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
         let new_code_hash = env::sha256_array(&new_code);
+        let initial_balance = env::account_balance().saturating_sub(env::attached_deposit());
 
         // On receipt failure, refund goes to the receipt's predecessor — which for a
         // self-targeted promise is the contract itself. `.refund_to()` overrides this
@@ -31,11 +34,7 @@ impl GlobalDeployer for Contract {
         )
         .with_static_gas(GD_AT_DEPLOY_GAS)
         .with_unused_gas_weight(1)
-        .gd_post_deploy(
-            old_hash,
-            new_code_hash,
-            env::account_balance().saturating_sub(env::attached_deposit()),
-        )
+        .gd_post_deploy(old_hash, new_code_hash, initial_balance)
     }
 
     fn gd_owner_id(&self) -> AccountId {
@@ -46,7 +45,7 @@ impl GlobalDeployer for Contract {
         self.0.index
     }
 
-    fn gd_code_hash(&self) -> [u8; 32] {
+    fn gd_code_hash(&self) -> CryptoHash {
         self.0.code_hash
     }
 
@@ -69,9 +68,9 @@ impl Contract {
     #[private]
     pub fn gd_post_deploy(
         &mut self,
-        #[serializer(borsh)] old_hash: [u8; 32],
-        #[serializer(borsh)] new_hash: [u8; 32],
-        #[serializer(borsh)] initial_balance: NearToken,
+        old_hash: [u8; 32],
+        new_hash: [u8; 32],
+        initial_balance: NearToken,
     ) {
         require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
         self.0.code_hash = new_hash;
