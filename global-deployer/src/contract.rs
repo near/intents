@@ -33,7 +33,7 @@ impl GlobalDeployer for Contract {
         )
         .with_static_gas(GD_AT_DEPLOY_GAS)
         .with_unused_gas_weight(1)
-        .gd_post_deploy(old_hash, new_hash, initial_balance)
+        .gd_post_deploy(old_hash.into(), new_hash.into(), initial_balance)
     }
 
     fn gd_owner_id(&self) -> AccountId {
@@ -45,7 +45,7 @@ impl GlobalDeployer for Contract {
     }
 
     fn gd_code_hash(&self) -> AsHex<[u8; 32]> {
-        AsHex(self.0.code_hash)
+        self.0.code_hash.into()
     }
 
     #[payable]
@@ -67,10 +67,12 @@ impl Contract {
     #[private]
     pub fn gd_post_deploy(
         &mut self,
-        old_hash: [u8; 32],
-        new_hash: [u8; 32],
+        old_hash: AsHex<[u8; 32]>,
+        new_hash: AsHex<[u8; 32]>,
         initial_balance: NearToken,
     ) {
+        let old_hash = old_hash.into_inner();
+        let new_hash = new_hash.into_inner();
         require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
         self.0.code_hash = new_hash;
         Event::Deploy { old_hash, new_hash }.emit();
