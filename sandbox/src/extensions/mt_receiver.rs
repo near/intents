@@ -100,6 +100,7 @@ pub trait MtReceiverStubExtView {
 
 impl MtReceiverStubExtView for Account {
     async fn dummy_method(&self) -> anyhow::Result<()> {
-        self.call_view_function_void("dummy_method", ()).await
+        self.call_view_function_raw("dummy_method", ()).await?;
+        Ok(())
     }
 }

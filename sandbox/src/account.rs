@@ -83,17 +83,17 @@ impl Account {
             .map_err(Into::into)
     }
 
-    pub async fn call_view_function_void(
+    pub async fn call_view_function_raw(
         &self,
         name: impl AsRef<str>,
         args: impl Serialize,
-    ) -> anyhow::Result<()> {
-        Contract(self.id().clone())
+    ) -> anyhow::Result<Vec<u8>> {
+        Ok(Contract(self.id().clone())
             .call_function(name.as_ref(), args)
             .read_only_raw()
             .fetch_from(&self.network_config)
-            .await?;
-        Ok(())
+            .await
+            .map(|d| d.data)?)
     }
 
     pub async fn global_contract_id(&self) -> anyhow::Result<GlobalContractId> {
