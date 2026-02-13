@@ -23,7 +23,6 @@ use near_contract_standards::{
     non_fungible_token::core::NonFungibleTokenReceiver,
 };
 use near_plugins::{AccessControllable, Pausable};
-use near_sdk::ext_contract;
 
 use crate::{accounts::ForceAccountManager, tokens::nep245::MultiTokenForcedCore};
 
@@ -37,7 +36,7 @@ use self::{
     },
 };
 
-pub trait DefaultDefuse:
+pub trait Defuse:
     Intents
     + RelayerKeys
     + AccountManager
@@ -64,14 +63,3 @@ pub trait DefaultDefuse:
     + FullAccessKeys
 {
 }
-
-#[cfg(not(feature = "imt"))]
-#[ext_contract(ext_defuse)]
-pub trait Defuse: DefaultDefuse {}
-
-#[cfg(feature = "imt")]
-use self::tokens::imt::ImtBurner;
-
-#[cfg(feature = "imt")]
-#[ext_contract(ext_defuse)]
-pub trait Defuse: DefaultDefuse + ImtBurner {}

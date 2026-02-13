@@ -25,7 +25,7 @@ use near_sdk::{
 };
 use versioned::MaybeVersionedContractStorage;
 
-use crate::{DefaultDefuse, Defuse, contract::events::PostponedMtBurnEvents};
+use crate::{Defuse, contract::events::PostponedMtBurnEvents};
 
 use self::{
     accounts::Accounts,
@@ -139,9 +139,6 @@ impl Contract {
         );
     }
 }
-
-#[near]
-impl DefaultDefuse for Contract {}
 
 #[near]
 impl Defuse for Contract {}
