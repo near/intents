@@ -95,7 +95,7 @@ impl Contract {
 
         if toggled {
             DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new(AccountEvent::new(
-                Cow::Borrowed(account_id.as_ref()),
+                Cow::Borrowed(account_id),
                 Cow::Owned(SetAuthByPredecessorId { enabled: enable }),
             )))
             .emit();
