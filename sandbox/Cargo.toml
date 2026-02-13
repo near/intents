@@ -40,3 +40,4 @@ defuse-serde-utils = { workspace = true, optional = true }
 defuse-test-utils = { workspace = true, optional = true }
 
 tracing-subscriber = "0.3.22"
+tracing-appender = "0.2.4"
