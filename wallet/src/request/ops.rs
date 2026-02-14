@@ -1,4 +1,4 @@
-use near_sdk::{AccountId, near};
+use near_sdk::{AccountId, near, serde_with::base64::Base64};
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh(use_discriminant = true), json])]
@@ -46,5 +46,10 @@ pub struct RemoveExtensionOp {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub struct CustomOp {
-    pub args: String,
+    #[cfg_attr(
+        all(feature = "abi", not(target_arch = "wasm32")),
+        schemars(with = "String")
+    )]
+    #[serde_as(as = "Base64")]
+    pub args: Vec<u8>,
 }
