@@ -98,7 +98,6 @@ pub struct FunctionCallAction {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub args: Vec<u8>,
 
-    // TODO: rename: deposit
     #[cfg_attr(
         any(feature = "arbitrary", test),
         arbitrary(with = crate::arbitrary::near_token),
