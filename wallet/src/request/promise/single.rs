@@ -1,4 +1,4 @@
-use near_sdk::{AccountId, NearToken, Promise, env, near, require, state_init::StateInit};
+use near_sdk::{AccountId, Gas, NearToken, Promise, env, near, require, state_init::StateInit};
 
 use crate::{FunctionCallAction, PromiseAction, PromiseDAG, StateInitAction, TransferAction};
 
@@ -43,10 +43,10 @@ impl PromiseSingle {
     }
 
     #[must_use]
-    pub fn state_init(self, state_init: StateInit, amount: NearToken) -> Self {
+    pub fn state_init(self, state_init: StateInit, deposit: NearToken) -> Self {
         self.add_action(PromiseAction::StateInit(StateInitAction {
             state_init,
-            amount,
+            deposit,
         }))
     }
 
@@ -62,6 +62,20 @@ impl PromiseSingle {
 
     pub fn is_empty(&self) -> bool {
         self.actions.is_empty()
+    }
+
+    pub fn total_deposit(&self) -> NearToken {
+        self.actions
+            .iter()
+            .map(PromiseAction::deposit)
+            .fold(NearToken::ZERO, NearToken::saturating_add)
+    }
+
+    pub fn estimate_gas(&self) -> Gas {
+        self.actions
+            .iter()
+            .map(PromiseAction::estimate_gas)
+            .fold(Gas::from_gas(0), Gas::saturating_add)
     }
 
     #[must_use]

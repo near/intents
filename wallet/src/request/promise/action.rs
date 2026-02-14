@@ -1,6 +1,6 @@
 use near_sdk::{
     Gas, GasWeight, NearToken, Promise,
-    borsh::{self, BorshSerialize, io},
+    borsh::{self, BorshSerialize},
     near,
     serde::Serialize,
     serde_json,
@@ -24,14 +24,34 @@ pub enum PromiseAction {
 }
 
 impl PromiseAction {
-    pub fn append(self, p: Promise) -> Promise {
+    pub const fn deposit(&self) -> NearToken {
+        #[allow(clippy::match_same_arms)]
+        match self {
+            Self::FunctionCall(FunctionCallAction { deposit, .. }) => *deposit,
+            Self::Transfer(TransferAction { amount }) => *amount,
+            Self::StateInit(StateInitAction { deposit, .. }) => *deposit,
+        }
+    }
+
+    pub const fn estimate_gas(&self) -> Gas {
+        match self {
+            Self::FunctionCall(FunctionCallAction { min_gas, .. }) => *min_gas,
+            // estimated for Near Implicit AccountId of receiver
+            // (most expensive one)
+            Self::Transfer(_) => Gas::from_tgas(12),
+            // estimated for state_init that fits in ZBA limits
+            Self::StateInit(_) => Gas::from_tgas(15),
+        }
+    }
+
+    pub(crate) fn append(self, p: Promise) -> Promise {
         match self {
             Self::Transfer(a) => p.transfer(a.amount),
-            Self::StateInit(a) => p.state_init(a.state_init, a.amount),
+            Self::StateInit(a) => p.state_init(a.state_init, a.deposit),
             Self::FunctionCall(a) => p.function_call_weight(
                 a.function_name,
                 a.args,
-                a.amount,
+                a.deposit,
                 a.min_gas,
                 GasWeight(a.gas_weight),
             ),
@@ -61,7 +81,7 @@ pub struct StateInitAction {
         arbitrary(with = crate::arbitrary::near_token),
     )]
     #[serde(default, skip_serializing_if = "NearToken::is_zero")]
-    pub amount: NearToken,
+    pub deposit: NearToken,
 }
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
@@ -78,12 +98,13 @@ pub struct FunctionCallAction {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub args: Vec<u8>,
 
+    // TODO: rename: deposit
     #[cfg_attr(
         any(feature = "arbitrary", test),
         arbitrary(with = crate::arbitrary::near_token),
     )]
     #[serde(default, skip_serializing_if = "NearToken::is_zero")]
-    pub amount: NearToken,
+    pub deposit: NearToken,
 
     #[cfg_attr(
         any(feature = "arbitrary", test),
@@ -106,7 +127,7 @@ impl FunctionCallAction {
         Self {
             function_name: function_name.into(),
             args: vec![],
-            amount: NearToken::ZERO,
+            deposit: NearToken::ZERO,
             min_gas: Gas::from_gas(0),
             gas_weight: 1,
         }
@@ -118,23 +139,25 @@ impl FunctionCallAction {
         self
     }
 
-    pub fn args_json<T>(self, args: T) -> serde_json::Result<Self>
+    #[must_use]
+    pub fn args_json<T>(self, args: T) -> Self
     where
         T: Serialize,
     {
-        serde_json::to_vec(&args).map(|args| self.args(args))
-    }
-
-    pub fn args_borsh<T>(self, args: T) -> io::Result<Self>
-    where
-        T: BorshSerialize,
-    {
-        borsh::to_vec(&args).map(|args| self.args(args))
+        self.args(serde_json::to_vec(&args).unwrap())
     }
 
     #[must_use]
-    pub const fn attached_deposit(mut self, amount: NearToken) -> Self {
-        self.amount = amount;
+    pub fn args_borsh<T>(self, args: T) -> Self
+    where
+        T: BorshSerialize,
+    {
+        self.args(borsh::to_vec(&args).unwrap())
+    }
+
+    #[must_use]
+    pub const fn attached_deposit(mut self, deposit: NearToken) -> Self {
+        self.deposit = deposit;
         self
     }
 

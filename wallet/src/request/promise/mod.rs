@@ -4,7 +4,7 @@ mod single;
 
 pub use self::{action::*, iter::*, single::*};
 
-use near_sdk::{Promise, near};
+use near_sdk::{Gas, NearToken, Promise, near};
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh, json])]
@@ -89,6 +89,18 @@ impl PromiseDAG {
             stack.extend(&d.after);
         }
         total
+    }
+
+    pub fn total_deposit(&self) -> NearToken {
+        self.iter()
+            .map(PromiseSingle::total_deposit)
+            .fold(NearToken::ZERO, NearToken::saturating_add)
+    }
+
+    pub fn estimate_gas(&self) -> Gas {
+        self.iter()
+            .map(PromiseSingle::estimate_gas)
+            .fold(Gas::from_gas(0), Gas::saturating_add)
     }
 
     pub fn normalize(&mut self) {
