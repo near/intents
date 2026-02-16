@@ -132,5 +132,4 @@ mod tests {
         let compact = serde_json::to_string(&vec).unwrap();
         assert!(compact.len() <= max_len);
     }
-
 }

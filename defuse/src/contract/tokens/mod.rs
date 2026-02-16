@@ -157,11 +157,10 @@ impl Contract {
         let tokens_iter = tokens.into_iter();
         let tokens_count = tokens_iter.len();
 
-        let requested_refunds =
-            promise_result_checked_json_with_args::<Vec<U128>>(0, tokens_count)
-                .ok()
-                .and_then(Result::ok)
-                .filter(|refunds| refunds.len() == tokens_count);
+        let requested_refunds = promise_result_checked_json_with_args::<Vec<U128>>(0, tokens_count)
+            .ok()
+            .and_then(Result::ok)
+            .filter(|refunds| refunds.len() == tokens_count);
 
         let mut burn_event = MtBurnEvent {
             owner_id: Cow::Borrowed(receiver_id),
@@ -220,5 +219,4 @@ impl Contract {
                 .emit();
         }
     }
-
 }

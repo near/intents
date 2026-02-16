@@ -170,13 +170,13 @@ impl NonFungibleTokenWithdrawResolver for Contract {
         is_call: bool,
     ) -> bool {
         let used = if is_call {
-            // `nft_transfer_call` returns true if token was successfully transferred.
-            // Do not refund on failure due to NEP-141 vulnerability:
-            // `nft_resolve_transfer` fails to read result of
-            // `nft_on_transfer` due to insufficient gas
+            // `nft_transfer_call` returns true if token was successfully transferred
             match promise_result_checked_json::<bool>(0) {
                 Ok(Ok(used)) => used,
                 Ok(Err(_deserialization_err)) => false,
+                // do not refund on failed `nft_transfer_call` due to
+                // NEP-141 vulnerability: `nft_resolve_transfer` fails to
+                // read result of `nft_on_transfer` due to insufficient gas
                 Err(_) => is_call,
             }
         } else {

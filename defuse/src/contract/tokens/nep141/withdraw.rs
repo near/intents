@@ -159,15 +159,14 @@ impl FungibleTokenWithdrawResolver for Contract {
         amount: U128,
         is_call: bool,
     ) -> U128 {
-
         let used = if is_call {
-            // `ft_transfer_call` returns successfully transferred amount.
-            // Do not refund on failure due to NEP-141 vulnerability:
-            // `ft_resolve_transfer` fails to read result of
-            // `ft_on_transfer` due to insufficient gas
+            // `ft_transfer_call` returns successfully transferred amount
             match promise_result_checked_json::<U128>(0) {
                 Ok(Ok(used)) => used.0.min(amount.0),
                 Ok(Err(_deserialize_err)) => 0,
+                // do not refund on failed `ft_transfer_call` due to
+                // NEP-141 vulnerability: `ft_resolve_transfer` fails to
+                // read result of `ft_on_transfer` due to insufficient gas
                 Err(_) => amount.0,
             }
         } else {

@@ -212,13 +212,13 @@ impl MultiTokenWithdrawResolver for Contract {
         );
 
         let mut used = if is_call {
-            // `mt_batch_transfer_call` returns successfully transferred amounts.
-            // Do not refund on failure due to NEP-141 vulnerability:
-            // `mt_resolve_transfer` fails to read result of
-            // `mt_on_transfer` due to insufficient gas
+            // `mt_batch_transfer_call` returns successfully transferred amounts
             match promise_result_checked_json_with_args::<Vec<U128>>(0, amounts.len()) {
                 Ok(Ok(used)) if used.len() == amounts.len() => used,
                 Ok(_) => vec![U128(0); amounts.len()],
+                // do not refund on failed `mt_batch_transfer_call` due to
+                // NEP-141 vulnerability: `mt_resolve_transfer` fails to
+                // read result of `mt_on_transfer` due to insufficient gas
                 Err(_) => amounts.clone(),
             }
         } else {
