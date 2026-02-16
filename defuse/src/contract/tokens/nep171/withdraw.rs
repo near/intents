@@ -177,7 +177,7 @@ impl NonFungibleTokenWithdrawResolver for Contract {
                 // do not refund on failed `nft_transfer_call` due to
                 // NEP-141 vulnerability: `nft_resolve_transfer` fails to
                 // read result of `nft_on_transfer` due to insufficient gas
-                Err(_) => is_call,
+                Err(_) => true,
             }
         } else {
             // `nft_transfer` returns empty result on success
