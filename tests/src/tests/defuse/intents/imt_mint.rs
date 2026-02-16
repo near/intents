@@ -7,11 +7,11 @@ use defuse::core::crypto::Payload;
 use defuse::core::events::DefuseEvent;
 use defuse::core::fees::FeesConfig;
 use defuse::core::intents::IntentEvent;
-use defuse::core::intents::tokens::MAX_TOKEN_ID_LEN;
-use defuse::core::intents::tokens::{NotifyOnTransfer, imt::ImtMint};
+use defuse::core::intents::{imt::ImtMint, tokens::NotifyOnTransfer};
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::imt::ImtTokenId;
 use defuse::core::token_id::nep245::Nep245TokenId;
+use defuse::core::tokens::MAX_TOKEN_ID_LEN;
 use defuse::nep245::{MtEvent, MtMintEvent};
 use defuse_fees::Pips;
 use defuse_sandbox::assert_a_contains_b;
@@ -34,7 +34,7 @@ use defuse_test_utils::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 #[rstest]
 #[trace]
 #[tokio::test]
-async fn mt_mint_intent() {
+async fn imt_mint_intent() {
     let env = Env::builder().build().await;
 
     let user = env.create_user().await;
@@ -122,7 +122,7 @@ async fn failed_imt_mint_intent() {
 #[rstest]
 #[trace]
 #[tokio::test]
-async fn mt_mint_intent_to_defuse() {
+async fn imt_mint_intent_to_defuse() {
     let env = Env::builder().build().await;
 
     let user = env.create_user().await;
@@ -224,7 +224,7 @@ async fn mt_mint_intent_to_defuse() {
 
 #[rstest]
 #[trace]
-#[case::nothing_to_refund(TransferCallExpectation {
+#[case::nothing_to_refund(TransferCallExpectation{
     mode: MTReceiverMode::AcceptAll,
     intent_transfer_amount: Some(1_000),
     expected_sender_balance: 0,
@@ -255,7 +255,7 @@ async fn mt_mint_intent_to_defuse() {
     expected_receiver_balance: 0,
 })]
 #[tokio::test]
-async fn mt_mint_intent_with_msg_to_receiver_smc(#[case] expectation: TransferCallExpectation) {
+async fn imt_mint_intent_with_msg_to_receiver_smc(#[case] expectation: TransferCallExpectation) {
     let initial_amount = expectation
         .intent_transfer_amount
         .expect("Transfer amount should be specified");

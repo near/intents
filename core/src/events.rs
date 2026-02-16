@@ -15,7 +15,7 @@ use crate::{
 };
 
 #[cfg(feature = "imt")]
-use crate::intents::tokens::imt::{ImtBurn, ImtMint};
+use crate::intents::imt::{ImtBurn, ImtMint};
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(event_json(standard = "dip4"))]
@@ -63,7 +63,7 @@ pub enum DefuseEvent<'a> {
 
     #[cfg(feature = "imt")]
     #[event_version("0.3.0")]
-    ImtBurn(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, ImtBurn>>>]>),
+    ImtBurn(Cow<'a, [AccountEvent<'a, Cow<'a, ImtBurn>>]>),
     #[event_version("0.3.0")]
     #[from(skip)]
     AccountLocked(AccountEvent<'a, ()>),

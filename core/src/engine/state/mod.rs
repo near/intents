@@ -19,6 +19,12 @@ use impl_tools::autoimpl;
 use near_sdk::{AccountId, AccountIdRef};
 use std::borrow::Cow;
 
+#[cfg(feature = "imt")]
+use crate::{
+    DefuseError,
+    tokens::{MT_ON_TRANSFER_GAS_DEFAULT, MT_ON_TRANSFER_GAS_MIN, imt::ImtTokens},
+};
+
 #[autoimpl(for<T: trait + ?Sized> &T, &mut T, Box<T>)]
 pub trait StateView {
     fn verifying_contract(&self) -> Cow<'_, AccountIdRef>;
@@ -136,4 +142,51 @@ pub trait State: StateView {
         tokens: Amounts,
         memo: Option<String>,
     ) -> Result<()>;
+
+    #[cfg(feature = "imt")]
+    fn imt_mint(
+        &mut self,
+        minter_id: &AccountIdRef,
+        receiver_id: AccountId,
+        tokens: ImtTokens,
+        memo: Option<String>,
+        notification: Option<NotifyOnTransfer>,
+    ) -> Result<()> {
+        if tokens.is_empty() {
+            return Err(DefuseError::InvalidIntent);
+        }
+
+        let tokens = tokens.into_generic_tokens(minter_id)?;
+        self.mint(receiver_id.clone(), tokens.clone(), memo)?;
+
+        if let Some(mut notification) = notification {
+            notification.min_gas = Some(
+                notification
+                    .min_gas
+                    .unwrap_or(MT_ON_TRANSFER_GAS_DEFAULT)
+                    .max(MT_ON_TRANSFER_GAS_MIN),
+            );
+
+            self.notify_on_transfer(minter_id, receiver_id, tokens, notification);
+        }
+
+        Ok(())
+    }
+
+    #[cfg(feature = "imt")]
+    fn imt_burn(
+        &mut self,
+        owner_id: &AccountIdRef,
+        minter_id: &AccountIdRef,
+        tokens: ImtTokens,
+        memo: Option<String>,
+    ) -> Result<()> {
+        if tokens.is_empty() {
+            return Err(crate::DefuseError::InvalidIntent);
+        }
+
+        let tokens = tokens.into_generic_tokens(minter_id)?;
+
+        self.burn(owner_id, tokens, memo)
+    }
 }

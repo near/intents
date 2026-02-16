@@ -5,8 +5,8 @@ use anyhow::Context;
 use arbitrary::Arbitrary;
 use defuse::{
     core::{
-        intents::tokens::MAX_TOKEN_ID_LEN,
         token_id::{TokenId, nep245::Nep245TokenId},
+        tokens::MAX_TOKEN_ID_LEN,
     },
     nep245::{MtEvent, MtTransferEvent},
 };
