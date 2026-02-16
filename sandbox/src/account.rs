@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use anyhow::anyhow;
+use anyhow::{Context, Result, anyhow};
 use defuse_nep413::{Nep413Payload, SignedNep413Payload};
 use impl_tools::autoimpl;
 use near_api::{
@@ -156,16 +156,37 @@ impl SigningAccount {
         Self { account, signer }
     }
 
-    pub fn generate_implicit(network_config: NetworkConfig) -> Self {
-        let secret_key = generate_secret_key().unwrap();
+    pub async fn extend_signer(&self, pk_num: usize) -> Result<()> {
+        let pks = (0..pk_num)
+            .map(|_| generate_secret_key().context("failed to generate secret key"))
+            .collect::<Result<Vec<_>>>()?;
 
-        Self::new(
+        pks.iter()
+            .fold(self.tx(self.id()), |tx, secret_key| {
+                let public_key = secret_key.public_key();
+                tx.add_full_access_key(public_key)
+            })
+            .await?;
+
+        futures::future::join_all(
+            pks.into_iter()
+                .map(|secret_key| self.signer.add_secret_key_to_pool(secret_key)),
+        )
+        .await;
+
+        Ok(())
+    }
+
+    pub fn generate_implicit(network_config: NetworkConfig) -> Result<Self> {
+        let secret_key = generate_secret_key().context("failed to generate secret key")?;
+
+        Ok(Self::new(
             Account::new(
                 defuse_crypto::PublicKey::from(secret_key.public_key()).to_implicit_account_id(),
                 network_config,
             ),
-            Signer::from_secret_key(secret_key).unwrap(),
-        )
+            Signer::from_secret_key(secret_key).context("failed to create signer")?,
+        ))
     }
 
     #[inline]
@@ -197,7 +218,7 @@ impl SigningAccount {
     }
 
     pub async fn fund_implicit(&self, deposit: NearToken) -> anyhow::Result<Self> {
-        let account = Self::generate_implicit(self.network_config.clone());
+        let account = Self::generate_implicit(self.network_config.clone())?;
 
         self.tx(account.id().clone()).transfer(deposit).await?;
 

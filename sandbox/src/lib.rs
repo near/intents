@@ -107,6 +107,8 @@ extern "C" fn cleanup_sandbox() {
     }
 }
 
+const ROOT_PK_POOL_SIZE: usize = 3;
+
 #[fixture]
 #[instrument]
 pub async fn sandbox(#[default(NearToken::from_near(100_000))] amount: NearToken) -> Sandbox {
@@ -129,14 +131,18 @@ pub async fn sandbox(#[default(NearToken::from_near(100_000))] amount: NearToken
         .map(|shared| (shared.sandbox.clone(), shared.root.clone()))
         .unwrap();
 
+    let child_root = root_account
+        .generate_subaccount(
+            SUB_COUNTER.fetch_add(1, Ordering::Relaxed).to_string(),
+            amount,
+        )
+        .await
+        .unwrap();
+
+    child_root.extend_signer(ROOT_PK_POOL_SIZE).await.unwrap();
+
     Sandbox {
-        root: root_account
-            .generate_subaccount(
-                SUB_COUNTER.fetch_add(1, Ordering::Relaxed).to_string(),
-                amount,
-            )
-            .await
-            .unwrap(),
+        root: child_root,
         sandbox: sandbox_arc,
     }
 }
