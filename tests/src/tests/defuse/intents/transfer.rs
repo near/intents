@@ -23,6 +23,14 @@ use rstest::rstest;
 
 use defuse_sandbox::extensions::defuse::contract::core::amounts::Amounts;
 
+#[derive(Debug, Clone)]
+pub struct TransferCallExpectation {
+    pub mode: MTReceiverMode,
+    pub intent_transfer_amount: Option<u128>,
+    pub expected_sender_balance: u128,
+    pub expected_receiver_balance: u128,
+}
+
 #[rstest]
 #[trace]
 #[tokio::test]
@@ -74,14 +82,6 @@ async fn transfer_intent() {
             .unwrap(),
         1000
     );
-}
-
-#[derive(Debug, Clone)]
-pub struct TransferCallExpectation {
-    pub mode: MTReceiverMode,
-    pub intent_transfer_amount: Option<u128>,
-    pub expected_sender_balance: u128,
-    pub expected_receiver_balance: u128,
 }
 
 #[rstest]
