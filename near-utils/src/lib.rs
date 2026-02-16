@@ -13,7 +13,7 @@ pub mod time;
 
 pub use self::{
     gas::*, lock::*, panic::*, panic_on_clone::*, prefix::*,
-    promise::{promise_result_checked_json, promise_result_checked_json_with_args, promise_result_checked_void},
+    promise::{PromiseJsonResult, promise_result_checked_json, promise_result_checked_json_with_args, promise_result_checked_void},
 };
 
 #[macro_export]

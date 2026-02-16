@@ -219,8 +219,8 @@ impl MultiTokenWithdrawResolver for Contract {
             // `mt_resolve_transfer` fails to read result of
             // `mt_on_transfer` due to insufficient gas
             match promise_result_checked_json_with_args::<Vec<U128>>(0, amounts.len()) {
-                Ok(used) if used.len() == amounts.len() => used,
-                Ok(_) | Err(PromiseError::DeserializationFailed) => {
+                Ok(Ok(used)) if used.len() == amounts.len() => used,
+                Ok(_) => {
                     vec![U128(0); amounts.len()]
                 }
                 Err(PromiseError::FailedPromise | PromiseError::ResultTooLong(_)) => {

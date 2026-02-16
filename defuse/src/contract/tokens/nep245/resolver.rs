@@ -33,6 +33,7 @@ impl MultiTokenResolver for Contract {
         let mut refunds =
             promise_result_checked_json_with_args::<Vec<U128>>(0, amounts.len())
                 .ok()
+                .and_then(Result::ok)
                 .filter(|refund| refund.len() == amounts.len())
                 .unwrap_or_else(|| amounts.clone());
 

@@ -15,6 +15,7 @@ use defuse_near_utils::{
     REFUND_MEMO, UnwrapOrPanic,
     promise::{PromiseError, promise_result_checked_json, promise_result_checked_void},
 };
+
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::{
     non_fungible_token::{self, core::ext_nft_core},
@@ -174,10 +175,11 @@ impl NonFungibleTokenWithdrawResolver for Contract {
             // Do not refund on failure due to NEP-141 vulnerability:
             // `nft_resolve_transfer` fails to read result of
             // `nft_on_transfer` due to insufficient gas
-            promise_result_checked_json::<bool>(0).unwrap_or_else(|err| match err {
-                PromiseError::FailedPromise | PromiseError::ResultTooLong(_) => is_call,
-                PromiseError::DeserializationFailed => false,
-            })
+            match promise_result_checked_json::<bool>(0) {
+                Ok(Ok(used)) => used,
+                Err(PromiseError::FailedPromise | PromiseError::ResultTooLong(_)) => is_call,
+                Ok(Err(_deserialization_err)) => false,
+            }
         } else {
             // `nft_transfer` returns empty result on success
             promise_result_checked_void(0).is_ok()

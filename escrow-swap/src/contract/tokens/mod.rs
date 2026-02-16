@@ -7,6 +7,7 @@ use defuse_near_utils::promise::{
     PromiseError, promise_result_checked_json, promise_result_checked_json_with_args,
     promise_result_checked_void,
 };
+
 use near_sdk::{AccountId, Gas, Promise, PromiseOrValue, json_types::U128, near};
 use serde_with::{DisplayFromStr, serde_as};
 
@@ -164,22 +165,22 @@ impl Sent {
                 TokenIdType::Nep141 => {
                     // `ft_transfer_call` returns successfully transferred amount
                     match promise_result_checked_json::<U128>(result_idx) {
-                        Ok(used) => used.0,
+                        Ok(Ok(used)) => used.0,
                         Err(PromiseError::FailedPromise | PromiseError::ResultTooLong(_)) => {
                             self.amount
                         }
-                        Err(PromiseError::DeserializationFailed) => 0,
+                        Ok(Err(_deserialize_err)) => 0,
                     }
                 }
                 #[cfg(feature = "nep245")]
                 TokenIdType::Nep245 => {
                     // `mt_transfer_call` returns successfully transferred amounts
-                    match promise_result_checked_json::<[U128; 1]>(result_idx) {
-                        Ok(used) => used[0].0,
+                    match promise_result_checked_json_with_args::<Vec<U128>>(result_idx, 1) {
+                        Ok(Ok(used)) if used.len() == 1 => used[0].0,
+                        Ok(_deserialize_err) => 0,
                         Err(PromiseError::FailedPromise | PromiseError::ResultTooLong(_)) => {
                             self.amount
                         }
-                        Err(PromiseError::DeserializationFailed) => 0,
                     }
                 }
             }
