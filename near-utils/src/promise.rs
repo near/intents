@@ -11,16 +11,8 @@ impl PromiseExt for Promise {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum PromiseError {
-    #[error("promise failed")]
-    FailedPromise,
-    #[error("promise result too long: {0} bytes")]
-    ResultTooLong(usize),
-}
-
-pub type PromiseResult<T> = Result<T, PromiseError>;
-pub type PromiseJsonResult<T> = Result<Result<T, serde_json::Error>, PromiseError>;
+pub type PromiseResult<T> = Result<T, near_sdk::PromiseError>;
+pub type PromiseJsonResult<T> = Result<Result<T, serde_json::Error>, near_sdk::PromiseError>;
 
 pub trait MaxJsonLength: DeserializeOwned {
     type Args;
@@ -32,12 +24,7 @@ pub fn promise_result_checked_json_with_args<T: MaxJsonLength>(
     result_idx: u64,
     args: T::Args,
 ) -> PromiseJsonResult<T> {
-    let value = env::promise_result_checked(result_idx, T::max_json_length(args)).map_err(
-        |e| match e {
-            near_sdk::PromiseError::TooLong(len) => PromiseError::ResultTooLong(len),
-            _ => PromiseError::FailedPromise,
-        },
-    )?;
+    let value = env::promise_result_checked(result_idx, T::max_json_length(args))?;
     Ok(serde_json::from_slice::<T>(&value))
 }
 
@@ -53,10 +40,7 @@ pub fn promise_result_checked_json<T: MaxJsonLength<Args = ()>>(
 /// (e.g. `ft_transfer`, `nft_transfer`, `mt_batch_transfer`).
 #[inline]
 pub fn promise_result_checked_void(result_idx: u64) -> PromiseResult<()> {
-    let data = env::promise_result_checked(result_idx, 0).map_err(|e| match e {
-        near_sdk::PromiseError::TooLong(len) => PromiseError::ResultTooLong(len),
-        _ => PromiseError::FailedPromise,
-    })?;
+    let data = env::promise_result_checked(result_idx, 0)?;
     if data.is_empty() {
         Ok(())
     } else {

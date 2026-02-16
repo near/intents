@@ -5,8 +5,7 @@ mod nep245;
 use super::Contract;
 use defuse_core::{DefuseError, Result, token_id::TokenId};
 use defuse_near_utils::{
-    Lock, REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError,
-    promise::promise_result_checked_json_with_args,
+    Lock, REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError, promise_result_checked_json_with_args,
 };
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
 use itertools::{Either, Itertools};

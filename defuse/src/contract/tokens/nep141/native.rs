@@ -1,5 +1,5 @@
 use defuse_core::intents::tokens::NativeWithdraw;
-use defuse_near_utils::promise::promise_result_checked_void;
+use defuse_near_utils::promise_result_checked_void;
 use near_sdk::{Gas, Promise, near, require};
 
 use crate::contract::{Contract, ContractExt};

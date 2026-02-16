@@ -7,14 +7,11 @@ mod lock;
 mod panic;
 mod panic_on_clone;
 mod prefix;
-pub mod promise;
+mod promise;
 #[cfg(feature = "time")]
 pub mod time;
 
-pub use self::{
-    gas::*, lock::*, panic::*, panic_on_clone::*, prefix::*,
-    promise::{PromiseJsonResult, promise_result_checked_json, promise_result_checked_json_with_args, promise_result_checked_void},
-};
+pub use self::{gas::*, lock::*, panic::*, panic_on_clone::*, prefix::*, promise::*};
 
 #[macro_export]
 macro_rules! method_name {

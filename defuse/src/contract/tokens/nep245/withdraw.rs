@@ -13,10 +13,8 @@ use defuse_core::{
     token_id::{nep141::Nep141TokenId, nep245::Nep245TokenId},
 };
 use defuse_near_utils::{
-    REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError,
-    promise::{
-        PromiseError, promise_result_checked_json_with_args, promise_result_checked_void,
-    },
+    REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError, promise_result_checked_json_with_args,
+    promise_result_checked_void,
 };
 use defuse_nep245::ext_mt_core;
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
@@ -220,12 +218,8 @@ impl MultiTokenWithdrawResolver for Contract {
             // `mt_on_transfer` due to insufficient gas
             match promise_result_checked_json_with_args::<Vec<U128>>(0, amounts.len()) {
                 Ok(Ok(used)) if used.len() == amounts.len() => used,
-                Ok(_) => {
-                    vec![U128(0); amounts.len()]
-                }
-                Err(PromiseError::FailedPromise | PromiseError::ResultTooLong(_)) => {
-                    amounts.clone()
-                }
+                Ok(_) => vec![U128(0); amounts.len()],
+                Err(_) => amounts.clone(),
             }
         } else {
             // `mt_batch_transfer` returns empty result on success

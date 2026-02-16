@@ -10,8 +10,7 @@ use defuse_core::{
     token_id::nep141::Nep141TokenId,
 };
 use defuse_near_utils::{
-    REFUND_MEMO, UnwrapOrPanic,
-    promise::{PromiseError, promise_result_checked_json, promise_result_checked_void},
+    REFUND_MEMO, UnwrapOrPanic, promise_result_checked_json, promise_result_checked_void,
 };
 
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
@@ -168,8 +167,8 @@ impl FungibleTokenWithdrawResolver for Contract {
             // `ft_on_transfer` due to insufficient gas
             match promise_result_checked_json::<U128>(0) {
                 Ok(Ok(used)) => used.0.min(amount.0),
-                Err(PromiseError::FailedPromise | PromiseError::ResultTooLong(_)) => amount.0,
                 Ok(Err(_deserialize_err)) => 0,
+                Err(_) => amount.0,
             }
         } else {
             // `ft_transfer` returns empty result on success

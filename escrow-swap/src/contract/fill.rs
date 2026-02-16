@@ -1,6 +1,6 @@
 use std::{borrow::Cow, collections::BTreeMap};
 
-use defuse_near_utils::{UnwrapOrPanic, promise::PromiseExt};
+use defuse_near_utils::{UnwrapOrPanic, PromiseExt};
 use defuse_num_utils::{CheckedDiv, CheckedMul};
 use near_sdk::{AccountId, AccountIdRef, Promise, PromiseOrValue};
 

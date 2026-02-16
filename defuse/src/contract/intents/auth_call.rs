@@ -1,6 +1,6 @@
 use defuse_auth_call::ext_auth_callee;
 use defuse_core::intents::auth::AuthCall;
-use defuse_near_utils::promise::promise_result_checked_void;
+use defuse_near_utils::promise_result_checked_void;
 use near_sdk::{AccountId, Gas, NearToken, Promise, near, require};
 
 use crate::contract::{Contract, ContractExt};
