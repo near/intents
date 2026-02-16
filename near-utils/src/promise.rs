@@ -72,8 +72,8 @@ where
 
     fn max_json_length(length: usize) -> usize {
         // account for ',' '\n' and identation in prettified format
-        const PER_ITEM_OVERHEAED: usize = "        ,\n".len();
-        let single_elem_max_length = T::max_json_length(()).saturating_add(PER_ITEM_OVERHEAED);
+        const PER_ITEM_OVERHEAD: usize = "        ,\n".len();
+        let single_elem_max_length = T::max_json_length(()).saturating_add(PER_ITEM_OVERHEAD);
 
         length
             .saturating_mul(single_elem_max_length)
