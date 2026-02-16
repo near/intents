@@ -1260,6 +1260,7 @@ dependencies = [
  "impl-tools",
  "near-sdk",
  "rstest",
+ "thiserror 2.0.17",
 ]
 
 [[package]]

@@ -1,10 +1,13 @@
 use std::borrow::Cow;
 
-use defuse_near_utils::{Lock, REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError};
+use defuse_near_utils::{
+    Lock, REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError,
+    promise::promise_result_checked_json_with_args,
+};
 use defuse_nep245::{
     ClearedApproval, MtEvent, MtTransferEvent, TokenId, resolver::MultiTokenResolver,
 };
-use near_sdk::{AccountId, env, json_types::U128, near, require, serde_json};
+use near_sdk::{AccountId, json_types::U128, near, require};
 
 use crate::contract::{Contract, ContractExt};
 
@@ -28,9 +31,8 @@ impl MultiTokenResolver for Contract {
         );
 
         let mut refunds =
-            env::promise_result_checked(0, Self::mt_on_transfer_max_result_len(amounts.len()))
+            promise_result_checked_json_with_args::<Vec<U128>>(0, amounts.len())
                 .ok()
-                .and_then(|value| serde_json::from_slice::<Vec<U128>>(&value).ok())
                 .filter(|refund| refund.len() == amounts.len())
                 .unwrap_or_else(|| amounts.clone());
 

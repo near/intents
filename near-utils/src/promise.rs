@@ -11,26 +11,58 @@ impl PromiseExt for Promise {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum PromiseError {
+    #[error("promise failed")]
+    FailedPromise,
+    #[error("promise result too long: {0} bytes")]
+    ResultTooLong(usize),
+    #[error("deserialization failed")]
+    DeserializationFailed,
+}
+
+pub type PromiseResult<T> = Result<T, PromiseError>;
+
 pub trait MaxJsonLength: DeserializeOwned {
     type Args;
     fn max_json_length(args: Self::Args) -> usize;
 }
 
 #[inline]
-#[must_use]
 pub fn promise_result_checked_json_with_args<T: MaxJsonLength>(
     result_idx: u64,
     args: T::Args,
-) -> Option<T> {
-    env::promise_result_checked(result_idx, T::max_json_length(args))
-        .ok()
-        .and_then(|value| serde_json::from_slice::<T>(&value).ok())
+) -> PromiseResult<T> {
+    let value = env::promise_result_checked(result_idx, T::max_json_length(args)).map_err(
+        |e| match e {
+            near_sdk::PromiseError::TooLong(len) => PromiseError::ResultTooLong(len),
+            _ => PromiseError::FailedPromise,
+        },
+    )?;
+    serde_json::from_slice::<T>(&value).map_err(|_| PromiseError::DeserializationFailed)
 }
 
 #[inline]
-#[must_use]
-pub fn promise_result_checked_json<T: MaxJsonLength<Args = ()>>(result_idx: u64) -> Option<T> {
+pub fn promise_result_checked_json<T: MaxJsonLength<Args = ()>>(
+    result_idx: u64,
+) -> PromiseResult<T> {
     promise_result_checked_json_with_args::<T>(result_idx, ())
+}
+
+/// Returns `Ok(())` if the promise at `result_idx` succeeded with an empty result.
+/// This is the expected outcome for void-returning cross-contract calls
+/// (e.g. `ft_transfer`, `nft_transfer`, `mt_batch_transfer`).
+#[inline]
+pub fn promise_result_checked_void(result_idx: u64) -> PromiseResult<()> {
+    let data = env::promise_result_checked(result_idx, 0).map_err(|e| match e {
+        near_sdk::PromiseError::TooLong(len) => PromiseError::ResultTooLong(len),
+        _ => PromiseError::FailedPromise,
+    })?;
+    if data.is_empty() {
+        Ok(())
+    } else {
+        Err(PromiseError::DeserializationFailed)
+    }
 }
 
 impl MaxJsonLength for bool {
@@ -48,6 +80,30 @@ impl MaxJsonLength for U128 {
         " \"\" ".len() + "+340282366920938463463374607431768211455".len()
     }
 }
+
+macro_rules! impl_max_json_length_for_array {
+    ($($n:expr),+ $(,)?) => {
+        $(
+            impl<T> MaxJsonLength for [T; $n]
+            where
+                T: MaxJsonLength<Args = ()>,
+            {
+                type Args = ();
+
+                fn max_json_length(_args: ()) -> usize {
+                    const PER_ITEM_OVERHEAD: usize = "        ,\n".len();
+                    let single_elem_max_length =
+                        T::max_json_length(()).saturating_add(PER_ITEM_OVERHEAD);
+                    $n
+                        .saturating_mul(single_elem_max_length)
+                        .saturating_add("\n[\n]".len())
+                }
+            }
+        )+
+    };
+}
+
+impl_max_json_length_for_array!(1_usize, 2_usize, 3_usize, 4_usize, 5_usize, 6_usize, 7_usize, 8_usize);
 
 impl<T> MaxJsonLength for Vec<T>
 where
@@ -115,6 +171,18 @@ mod tests {
         assert!(prettified.len() <= max_len);
 
         let compact = serde_json::to_string(&vec).unwrap();
+        assert!(compact.len() <= max_len);
+    }
+
+    #[test]
+    fn test_max_array_u128_1_json_len() {
+        let max_len = <[U128; 1]>::max_json_length(());
+
+        let arr = [U128(u128::MAX)];
+        let prettified = serde_json::to_string_pretty(&arr).unwrap();
+        assert!(prettified.len() <= max_len);
+
+        let compact = serde_json::to_string(&arr).unwrap();
         assert!(compact.len() <= max_len);
     }
 }

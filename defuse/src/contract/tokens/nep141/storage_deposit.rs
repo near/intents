@@ -1,6 +1,7 @@
 use defuse_core::intents::tokens::StorageDeposit;
+use defuse_near_utils::promise::promise_result_checked_void;
 use near_contract_standards::storage_management::ext_storage_management;
-use near_sdk::{Gas, Promise, env, near, require};
+use near_sdk::{Gas, Promise, near, require};
 
 use crate::contract::{Contract, ContractExt, tokens::STORAGE_DEPOSIT_GAS};
 
@@ -12,7 +13,7 @@ impl Contract {
     #[private]
     pub fn do_storage_deposit(storage_deposit: StorageDeposit) -> Promise {
         require!(
-            matches!(env::promise_result_checked(0, 0), Ok(data) if data.is_empty()),
+            promise_result_checked_void(0).is_ok(),
             "near_withdraw failed",
         );
 

@@ -9,7 +9,10 @@ use defuse_core::{
     DefuseError, Result, engine::StateView, intents::tokens::FtWithdraw,
     token_id::nep141::Nep141TokenId,
 };
-use defuse_near_utils::{REFUND_MEMO, UnwrapOrPanic};
+use defuse_near_utils::{
+    REFUND_MEMO, UnwrapOrPanic,
+    promise::{PromiseError, promise_result_checked_json, promise_result_checked_void},
+};
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::{
     fungible_token::core::ext_ft_core, storage_management::ext_storage_management,
@@ -17,7 +20,7 @@ use near_contract_standards::{
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
 use near_sdk::{
     AccountId, Gas, NearToken, Promise, PromiseOrValue, assert_one_yocto, env, json_types::U128,
-    near, require, serde_json,
+    near, require,
 };
 
 #[near]
@@ -119,7 +122,7 @@ impl Contract {
         let min_gas = withdraw.min_gas();
         let p = if let Some(storage_deposit) = withdraw.storage_deposit {
             require!(
-                matches!(env::promise_result_checked(0, 0), Ok(data) if data.is_empty()),
+                promise_result_checked_void(0).is_ok(),
                 "near_withdraw failed",
             );
 
@@ -156,32 +159,25 @@ impl FungibleTokenWithdrawResolver for Contract {
         amount: U128,
         is_call: bool,
     ) -> U128 {
-        const MAX_RESULT_LENGTH: usize = "\"+340282366920938463463374607431768211455\"".len(); // u128::MAX
 
-        let used = env::promise_result_checked(0, MAX_RESULT_LENGTH).map_or(
-            if is_call {
-                // do not refund on failed `ft_transfer_call` due to
-                // NEP-141 vulnerability: `ft_resolve_transfer` fails to
-                // read result of `ft_on_transfer` due to insufficient gas
+        let used = if is_call {
+            // `ft_transfer_call` returns successfully transferred amount.
+            // Do not refund on failure due to NEP-141 vulnerability:
+            // `ft_resolve_transfer` fails to read result of
+            // `ft_on_transfer` due to insufficient gas
+            match promise_result_checked_json::<U128>(0) {
+                Ok(used) => used.0.min(amount.0),
+                Err(PromiseError::FailedPromise | PromiseError::ResultTooLong(_)) => amount.0,
+                Err(PromiseError::DeserializationFailed) => 0,
+            }
+        } else {
+            // `ft_transfer` returns empty result on success
+            if promise_result_checked_void(0).is_ok() {
                 amount.0
             } else {
                 0
-            },
-            |value| {
-                if is_call {
-                    // `ft_transfer_call` returns successfully transferred amount
-                    serde_json::from_slice::<U128>(&value)
-                        .unwrap_or_default()
-                        .0
-                        .min(amount.0)
-                } else if value.is_empty() {
-                    // `ft_transfer` returns empty result on success
-                    amount.0
-                } else {
-                    0
-                }
-            },
-        );
+            }
+        };
 
         let refund = amount.0.saturating_sub(used);
         if refund > 0 {

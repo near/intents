@@ -3,9 +3,11 @@ mod nep141;
 #[cfg(feature = "nep245")]
 mod nep245;
 
-use near_sdk::{
-    AccountId, Gas, Promise, PromiseOrValue, PromiseResult, env, json_types::U128, near, serde_json,
+use defuse_near_utils::promise::{
+    PromiseError, promise_result_checked_json, promise_result_checked_json_with_args,
+    promise_result_checked_void,
 };
+use near_sdk::{AccountId, Gas, Promise, PromiseOrValue, json_types::U128, near};
 use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{
@@ -152,43 +154,38 @@ impl Sent {
 
     #[must_use]
     fn resolve_used(&self, result_idx: u64) -> u128 {
-        match env::promise_result(result_idx) {
-            PromiseResult::Successful(value) => self.parse_transfer_ok(value),
-            PromiseResult::Failed => self.parse_transfer_fail(),
-        }
-    }
-
-    #[inline]
-    fn parse_transfer_ok(&self, value: Vec<u8>) -> u128 {
         if self.is_call {
+            // Do not refund on failure due to vulnerability in reference
+            // implementations of FT and MT: `{ft,mt}_resolve_transfer`
+            // can fail to read huge result returned by `{ft,mt}_on_transfer`
+            // due to insufficient gas
             match self.token_type {
                 #[cfg(feature = "nep141")]
                 TokenIdType::Nep141 => {
                     // `ft_transfer_call` returns successfully transferred amount
-                    serde_json::from_slice::<U128>(&value).unwrap_or_default().0
+                    match promise_result_checked_json::<U128>(result_idx) {
+                        Ok(used) => used.0,
+                        Err(PromiseError::FailedPromise | PromiseError::ResultTooLong(_)) => {
+                            self.amount
+                        }
+                        Err(PromiseError::DeserializationFailed) => 0,
+                    }
                 }
                 #[cfg(feature = "nep245")]
                 TokenIdType::Nep245 => {
                     // `mt_transfer_call` returns successfully transferred amounts
-                    serde_json::from_slice::<[U128; 1]>(&value).unwrap_or_default()[0].0
+                    match promise_result_checked_json::<[U128; 1]>(result_idx) {
+                        Ok(used) => used[0].0,
+                        Err(PromiseError::FailedPromise | PromiseError::ResultTooLong(_)) => {
+                            self.amount
+                        }
+                        Err(PromiseError::DeserializationFailed) => 0,
+                    }
                 }
             }
             .min(self.amount)
-        } else if value.is_empty() {
+        } else if promise_result_checked_void(result_idx).is_ok() {
             // `{ft,mt}_transfer` returns empty result on success
-            self.amount
-        } else {
-            0
-        }
-    }
-
-    #[inline]
-    fn parse_transfer_fail(&self) -> u128 {
-        if self.is_call {
-            // do not refund on failed `{ft,mt}_transfer_call` due to
-            // vulnerability in reference implementations of FT and MT:
-            // `{ft,mt}_resolve_transfer` can fail to huge read result
-            // returned by `{ft,mt}_on_transfer` due to insufficient gas
             self.amount
         } else {
             0
