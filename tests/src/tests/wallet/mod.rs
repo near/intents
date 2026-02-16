@@ -3,7 +3,7 @@ use std::time::Duration;
 use defuse_sandbox::{FnCallBuilder, Sandbox, sandbox};
 use defuse_test_utils::{random::make_arbitrary, wasms::WALLET_ED25519_WASM};
 use defuse_wallet::{
-    self, AddExtensionOp, PromiseSingle, RemoveExtensionOp, Request, State, WalletOp,
+    self, PromiseSingle, Request, State, WalletOp,
     signature::{
         Borsh, Deadline, RequestMessage, SigningStandard,
         ed25519::{Ed25519, Ed25519PublicKey, Ed25519Signature},
@@ -44,12 +44,12 @@ async fn test_signed(#[future] env: Env) {
 
     let request = Request {
         ops: vec![
-            WalletOp::AddExtension(AddExtensionOp {
+            WalletOp::AddExtension {
                 account_id: env.root().id().clone(),
-            }),
-            WalletOp::RemoveExtension(RemoveExtensionOp {
+            },
+            WalletOp::RemoveExtension {
                 account_id: env.root().id().clone(),
-            }),
+            },
         ],
         out: dbg!(
             PromiseSingle::new(receiver.id())
@@ -79,7 +79,7 @@ async fn test_signed(#[future] env: Env) {
             FnCallBuilder::new("w_execute_signed")
                 .json_args(dbg!(json!({
                     "proof": sign_request(&secret_key, &signed_request_body),
-                    "signed": signed_request_body,
+                    "msg": signed_request_body,
                 })))
                 .with_deposit(NearToken::from_near(1)),
         )
@@ -125,7 +125,9 @@ async fn test_extension(#[future] env: Env) {
             FnCallBuilder::new("w_execute_extension")
                 .json_args(json!({
                     "request": Request {
-                        ops: vec![],
+                        ops: vec![WalletOp::RemoveExtension{
+                            account_id: extension.id().clone()
+                        }],
                         out: PromiseSingle::new(receiver.id())
                                 .refund_to(refund_to.id())
                                 .transfer(NearToken::from_near(1))
@@ -216,7 +218,7 @@ async fn env(#[future] sandbox: Sandbox) -> Env {
 }
 
 fn sign_request(secret_key: &SecretKey, body: &RequestMessage) -> String {
-    let domain = body.wrap_domain();
+    let domain = body.with_domain();
     let serialized = borsh::to_vec(&domain).unwrap();
     // let hash = near_sdk::env::sha256_array(serialized);
     // sign_passkey(secret_key, &hash)

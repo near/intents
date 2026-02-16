@@ -25,7 +25,13 @@ defuse-webauthn = { workspace = true, default-features = false, optional = true 
 arbitrary = { workspace = true, features = ["derive"], optional = true }
 
 [features]
-abi = ["defuse-crypto?/abi", "defuse-deadline/abi", "defuse-webauthn?/abi"]
+abi = [
+    "defuse-deadline/abi",
+    "defuse-serde-utils/abi",
+    "defuse-borsh-utils/schema",
+    "defuse-crypto?/abi",
+    "defuse-webauthn?/abi",
+]
 arbitrary = ["dep:arbitrary", "near-sdk/arbitrary"]
 webauthn = ["dep:defuse-webauthn"]
 

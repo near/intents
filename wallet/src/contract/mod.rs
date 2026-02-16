@@ -3,11 +3,11 @@ mod utils;
 
 use std::collections::BTreeSet;
 
-use near_sdk::{AccountId, FunctionError, Promise, env, near};
+use near_sdk::{AccountId, AccountIdRef, FunctionError, Promise, env, near};
 
 use crate::{
-    AddExtensionOp, Error, RemoveExtensionOp, Request, RequestMessage, Result, SetSignatureModeOp,
-    Wallet, WalletEvent, WalletOp, signature::SigningStandard,
+    Actor, Error, Request, RequestMessage, Result, Wallet, WalletEvent, WalletOp,
+    signature::SigningStandard,
 };
 
 pub use self::impl_::*;
@@ -15,8 +15,8 @@ pub use self::impl_::*;
 #[near]
 impl Wallet for Contract {
     #[payable]
-    fn w_execute_signed(&mut self, signed: RequestMessage, proof: String) {
-        self.execute_signed(signed, proof)
+    fn w_execute_signed(&mut self, msg: RequestMessage, proof: String) {
+        self.execute_signed(msg, proof)
             .unwrap_or_else(|err| err.panic())
     }
 
@@ -51,28 +51,27 @@ impl Wallet for Contract {
     }
 
     fn w_chain_id(&self) -> String {
-        // TODO: change to `env::chain_id()` when NEP-638 lands
         utils::chain_id()
     }
 }
 
 impl Contract {
-    fn execute_signed(&mut self, signed: RequestMessage, proof: String) -> Result<()> {
+    fn execute_signed(&mut self, msg: RequestMessage, proof: String) -> Result<()> {
         if !self.is_signature_allowed() {
             return Err(Error::SignatureDisabled);
         }
 
         // check chain_id
-        if signed.chain_id != utils::chain_id() {
+        if msg.chain_id != utils::chain_id() {
             return Err(Error::InvalidChainId {
-                got: signed.chain_id,
+                got: msg.chain_id,
                 expected: utils::chain_id(),
             });
         }
 
         // check signer_id
-        if signed.signer_id != env::current_account_id() {
-            return Err(Error::InvalidSignerId(signed.signer_id));
+        if msg.signer_id != env::current_account_id() {
+            return Err(Error::InvalidSignerId(msg.signer_id));
         }
 
         // It makes sense to emit here, since checks above ensure this request
@@ -80,39 +79,40 @@ impl Contract {
         // In case following checks or request execution fail, this would
         // at least give relayers/indexers some observability on what exact
         // request hash was it.
-        WalletEvent::SignedRequest {
-            hash: signed.hash(),
-        }
-        .emit();
+        let hash = msg.hash();
+        WalletEvent::SignedRequest { hash }.emit();
 
         // check seqno
-        if signed.seqno != self.seqno {
+        if msg.seqno != self.seqno {
             return Err(Error::InvalidSeqno {
-                got: signed.seqno,
+                got: msg.seqno,
                 expected: self.seqno,
             });
         }
-        // bump seqno
-        self.seqno = self
-            .seqno
-            .checked_add(1)
-            .unwrap_or_else(|| env::panic_str("seqno overflow"));
 
         // check valid_until
-        if signed.valid_until.has_expired() {
+        if msg.valid_until.has_expired() {
             return Err(Error::Expired);
         }
 
         // verify signature
         if !<Self as ContractImpl>::SigningStandard::verify(
-            &signed.wrap_domain(),
+            &msg.with_domain(),
             &self.public_key,
             &proof,
         ) {
             return Err(Error::InvalidSignature);
         }
 
-        self.execute_request(signed.request)
+        self.execute_request(msg.request, Actor::Signed(hash))?;
+
+        // bump seqno
+        self.seqno = self
+            .seqno
+            .checked_add(1)
+            .unwrap_or_else(|| env::panic_str("seqno overflow"));
+
+        Ok(())
     }
 
     fn execute_extension(&mut self, request: Request) -> Result<()> {
@@ -120,14 +120,15 @@ impl Contract {
             return Err(Error::InsufficientDeposit);
         }
 
-        self.check_extension_enabled(env::predecessor_account_id())?;
+        let extension_id = env::predecessor_account_id();
+        self.check_extension_enabled(&extension_id)?;
 
-        self.execute_request(request)
+        self.execute_request(request, Actor::Extension(extension_id.into()))
     }
 
-    fn execute_request(&mut self, request: Request) -> Result<()> {
+    fn execute_request(&mut self, request: Request, actor: Actor<'_>) -> Result<()> {
         for op in request.ops {
-            self.execute_op(op)?;
+            self.execute_op(op, actor.as_ref())?;
         }
 
         request.out.build().map(Promise::detach);
@@ -135,63 +136,65 @@ impl Contract {
         Ok(())
     }
 
-    fn execute_op(&mut self, op: WalletOp) -> Result<()> {
+    fn execute_op(&mut self, op: WalletOp, actor: Actor<'_>) -> Result<()> {
         match op {
-            WalletOp::SetSignatureMode(SetSignatureModeOp { enable }) => {
-                self.set_signature_mode(enable)
-            }
-            WalletOp::AddExtension(AddExtensionOp { account_id }) => self.add_extension(account_id),
-            WalletOp::RemoveExtension(RemoveExtensionOp { account_id }) => {
-                self.remove_extension(account_id)
-            }
+            WalletOp::SetSignatureMode { enable } => self.set_signature_mode(enable, actor),
+            WalletOp::AddExtension { account_id } => self.add_extension(account_id, actor),
+            WalletOp::RemoveExtension { account_id } => self.remove_extension(account_id, actor),
             // custom ops are not supported, so we just skip them
-            WalletOp::Custom(_op) => Ok(()),
+            WalletOp::Custom { .. } => Ok(()),
         }
     }
 
-    fn set_signature_mode(&mut self, enable: bool) -> Result<()> {
+    fn set_signature_mode(&mut self, enable: bool, actor: Actor<'_>) -> Result<()> {
+        // emit first to help for debugging
+        WalletEvent::SignatureModeSet {
+            enabled: enable,
+            by: actor,
+        }
+        .emit();
+
         if self.signature_enabled == enable {
             return Err(Error::ThisSignatureModeAlreadySet);
         }
         self.signature_enabled = enable;
 
-        WalletEvent::SignatureModeSet {
-            enable: self.signature_enabled,
-        }
-        .emit();
-
         self.check_lockout()
     }
 
-    fn add_extension(&mut self, account_id: AccountId) -> Result<()> {
-        if !self.extensions.insert(account_id.clone()) {
-            return Err(Error::ExtensionExists(account_id));
-        }
-
+    fn add_extension(&mut self, account_id: AccountId, actor: Actor<'_>) -> Result<()> {
+        // emit first to help for debugging
         WalletEvent::ExtensionAdded {
-            account_id: account_id.into(),
+            account_id: (&account_id).into(),
+            by: actor,
         }
         .emit();
+
+        if !self.extensions.insert(account_id.clone()) {
+            return Err(Error::ExtensionEnabled(account_id));
+        }
 
         Ok(())
     }
 
-    fn remove_extension(&mut self, account_id: AccountId) -> Result<()> {
-        if !self.extensions.remove(&account_id) {
-            return Err(Error::ExtensionNotExist(account_id));
-        }
-
+    fn remove_extension(&mut self, account_id: AccountId, actor: Actor<'_>) -> Result<()> {
+        // emit first to help for debugging
         WalletEvent::ExtensionRemoved {
-            account_id: account_id.into(),
+            account_id: (&account_id).into(),
+            by: actor,
         }
         .emit();
+
+        if !self.extensions.remove(&account_id) {
+            return Err(Error::ExtensionNotEnabled(account_id.to_owned()));
+        }
 
         self.check_lockout()
     }
 
-    fn check_extension_enabled(&self, account_id: AccountId) -> Result<()> {
-        if !self.has_extension(&account_id) {
-            return Err(Error::ExtensionNotExist(account_id));
+    fn check_extension_enabled(&self, account_id: &AccountIdRef) -> Result<()> {
+        if !self.has_extension(account_id) {
+            return Err(Error::ExtensionNotEnabled(account_id.to_owned()));
         }
         Ok(())
     }

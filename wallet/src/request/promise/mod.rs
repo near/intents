@@ -6,58 +6,74 @@ pub use self::{action::*, iter::*, single::*};
 
 use near_sdk::{Gas, NearToken, Promise, near};
 
+/// DAG of promises to execute
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct PromiseDAG {
+    /// `PromiseDAG`s to be executed before `promises`, if any.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub after: Vec<Self>,
+
+    /// Promises to be executed concurrently after `after`, if any.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub promises: Vec<PromiseSingle>,
+    pub then: Vec<PromiseSingle>,
 }
 
 impl PromiseDAG {
     pub fn new(promise: PromiseSingle) -> Self {
         Self {
             after: Vec::new(),
-            promises: vec![promise],
+            then: vec![promise],
         }
     }
 
+    /// Schedule another promise(s) to be executed concurrently to this one
     #[must_use]
     pub fn and(mut self, other: impl Into<Self>) -> Self {
         let other = other.into();
-        if self.after.is_empty() && other.after.is_empty() {
-            self.promises.extend(other.promises);
+
+        if self.after.is_empty() && other.after.is_empty()
+            || self.then.is_empty() && other.then.is_empty()
+        {
+            self.after.extend(other.after);
+            self.then.extend(other.then);
             return self;
         }
 
         Self {
             after: vec![self, other],
-            promises: vec![],
+            then: vec![],
         }
     }
 
+    /// Schedule another promise to be executed right after this one
     #[must_use]
     pub fn then(self, then: PromiseSingle) -> Self {
         self.then_concurrent([then])
     }
 
+    /// Schedule given promises to be executed concurrently right after this one
     #[must_use]
     pub fn then_concurrent(mut self, then: impl IntoIterator<Item = PromiseSingle>) -> Self {
-        if self.promises.is_empty() {
-            self.promises.extend(then);
+        if self.then.is_empty() {
+            self.then.extend(then);
+            return self;
+        }
+
+        let then: Vec<_> = then.into_iter().collect();
+        if then.is_empty() {
             return self;
         }
 
         Self {
             after: vec![self],
-            promises: then.into_iter().collect(),
+            then,
         }
     }
 
     pub fn is_empty(&self) -> bool {
-        self.after.is_empty() && self.promises.is_empty()
+        self.after.is_empty() && self.then.is_empty()
     }
 
     pub fn iter(&self) -> Iter<'_> {
@@ -72,7 +88,7 @@ impl PromiseDAG {
         let mut stack = vec![(self, 0usize)];
 
         while let Some((d, mut depth)) = stack.pop() {
-            depth = depth.saturating_add(d.promises.len().min(1));
+            depth = depth.saturating_add(d.then.len().min(1));
             max_depth = max_depth.max(depth);
             stack.extend(d.after.iter().map(|d| (d, depth)));
         }
@@ -85,18 +101,20 @@ impl PromiseDAG {
         let mut stack = vec![self];
         let mut total: usize = 0;
         while let Some(d) = stack.pop() {
-            total = total.saturating_add(d.promises.len());
+            total = total.saturating_add(d.then.len());
             stack.extend(&d.after);
         }
         total
     }
 
+    /// Returns total NEAR deposit for all actions in all promises
     pub fn total_deposit(&self) -> NearToken {
         self.iter()
             .map(PromiseSingle::total_deposit)
             .fold(NearToken::ZERO, NearToken::saturating_add)
     }
 
+    /// Returns an esitmate of mininum gas required to execute all promises
     pub fn estimate_gas(&self) -> Gas {
         self.iter()
             .map(PromiseSingle::estimate_gas)
@@ -104,34 +122,40 @@ impl PromiseDAG {
     }
 
     pub fn normalize(&mut self) {
-        // TODO: avoid recursion
-        self.after.retain_mut(|after| {
-            after.normalize();
-            !after.is_empty()
+        // TODO: remove redundant nesting:
+        // { after: [{ after: [d1, d2, ...] }], then: [] } -> { after: [d1, d2, ...], then: [] }
+        self.after.retain_mut(|d| {
+            d.normalize();
+            !d.is_empty()
         });
-        self.promises.retain(|p| !p.is_empty());
+
+        self.then.retain(|p| !p.is_empty());
     }
 
+    /// Build promise DAG for execution
     pub fn build(self) -> Option<Promise> {
-        let promises = self.promises.into_iter().filter_map(PromiseSingle::build);
+        let then = self.then.into_iter().filter_map(PromiseSingle::build);
 
         let Some(after) = self
             .after
             .into_iter()
-            // TODO: avoid recursion
+            // We could have avoided the recusion here, but `Promise` is still
+            // constructed recursively in its `Drop` implementation. Moreover,
+            // both borsh and serde deserialize `PromiseDAG` recursively, too.
+            // So we would hit the stack overflow anyway.
             .filter_map(Self::build)
             .reduce(Promise::and)
         else {
-            return promises.reduce(Promise::and);
+            return then.reduce(Promise::and);
         };
 
-        let mut promises = promises.peekable();
-        if promises.peek().is_none() {
+        let mut then = then.peekable();
+        if then.peek().is_none() {
             return Some(after);
         }
 
         // `.then_concurrent([single])` is equivalent to `.then(single)`
-        Some(after.then_concurrent(promises).join())
+        Some(after.then_concurrent(then).join())
     }
 }
 
@@ -198,9 +222,10 @@ mod tests {
     }
 
     #[rstest]
-    fn test_normalize(#[from(make_arbitrary)] mut d: PromiseDAG) {
+    #[case(PromiseDAG::default().then_concurrent([]).then_concurrent([]))]
+    fn test_normalize(#[case] mut d: PromiseDAG) {
         d.normalize();
-        check_json(d);
+        assert!(d.is_empty());
     }
 
     #[rstest]
@@ -216,7 +241,7 @@ mod tests {
         check_json(d);
     }
 
-    fn p(n: usize) -> PromiseSingle {
+    pub fn p(n: usize) -> PromiseSingle {
         PromiseSingle::new(format!("p{n}").parse::<AccountId>().unwrap())
     }
 }

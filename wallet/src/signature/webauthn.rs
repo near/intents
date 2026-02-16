@@ -5,6 +5,7 @@ use near_sdk::{serde::de::DeserializeOwned, serde_json};
 
 use crate::signature::SigningStandard;
 
+/// [WebAuthn](`https://w3c.github.io/webauthn`) signing standard
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Webauthn<A: Algorithm + ?Sized>(PhantomData<A>);
 

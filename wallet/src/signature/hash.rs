@@ -4,6 +4,8 @@ use near_sdk::env;
 
 use crate::signature::SigningStandard;
 
+/// [`SigningStandard`] middleware that forwards SHA-256 hash of the message
+/// to the underlying signing standard `S`
 pub struct Sha256<S>(PhantomData<S>)
 where
     S: SigningStandard<[u8; 32]> + ?Sized;
@@ -20,6 +22,8 @@ where
     }
 }
 
+/// [`SigningStandard`] middleware that forwards keccak256 hash of the message
+/// to the underlying signing standard `S`
 pub struct Keccak256<S>(PhantomData<S>)
 where
     S: SigningStandard<[u8; 32]> + ?Sized;

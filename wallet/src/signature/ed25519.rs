@@ -9,6 +9,7 @@ where
 {
     type PublicKey = Ed25519PublicKey;
 
+    /// Verifies ed25519 signature over the passed data
     fn verify(msg: M, public_key: &Self::PublicKey, signature: &str) -> bool {
         let Ok(sig) = signature.parse::<Ed25519Signature>() else {
             return false;

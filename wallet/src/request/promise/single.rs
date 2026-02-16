@@ -2,8 +2,8 @@ use near_sdk::{AccountId, Gas, NearToken, Promise, env, near, require, state_ini
 
 use crate::{FunctionCallAction, PromiseAction, PromiseDAG, StateInitAction, TransferAction};
 
-#[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 /// A single outgoing receipt
+#[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PromiseSingle {
@@ -31,6 +31,8 @@ impl PromiseSingle {
         }
     }
 
+    /// Set an account where all failed/unused deposits should be refunded
+    /// instead of the wallet-contract itself.
     #[must_use]
     pub fn refund_to(mut self, account_id: impl Into<AccountId>) -> Self {
         self.refund_to = Some(account_id.into());
@@ -60,10 +62,12 @@ impl PromiseSingle {
         self
     }
 
+    /// Returns whether the promise is no-op, i.e. list of actions is empty
     pub fn is_empty(&self) -> bool {
         self.actions.is_empty()
     }
 
+    /// Returns total NEAR deposit for all actions in this promise
     pub fn total_deposit(&self) -> NearToken {
         self.actions
             .iter()
@@ -71,6 +75,8 @@ impl PromiseSingle {
             .fold(NearToken::ZERO, NearToken::saturating_add)
     }
 
+    /// Returns an esitmate of mininum gas required to execute all
+    /// actions in this promise
     pub fn estimate_gas(&self) -> Gas {
         self.actions
             .iter()
@@ -78,16 +84,25 @@ impl PromiseSingle {
             .fold(Gas::from_gas(0), Gas::saturating_add)
     }
 
+    /// Schedule another promise(s) to be executed concurrently to this one
     #[must_use]
     pub fn and(self, other: impl Into<PromiseDAG>) -> PromiseDAG {
         PromiseDAG::from(self).and(other)
     }
 
+    /// Schedule another promise to be executed right after this one
     #[must_use]
     pub fn then(self, then: Self) -> PromiseDAG {
         PromiseDAG::from(self).then(then)
     }
 
+    /// Schedule given promises to be executed concurrently right after this one
+    #[must_use]
+    pub fn then_concurrent(self, then: impl IntoIterator<Item = Self>) -> PromiseDAG {
+        PromiseDAG::from(self).then_concurrent(then)
+    }
+
+    /// Build promise for execution
     #[must_use]
     pub fn build(self) -> Option<Promise> {
         // assert here instead of returning an error to reduce complexity
@@ -111,5 +126,48 @@ impl PromiseSingle {
                 .into_iter()
                 .fold(p, |p, action| action.append(p)),
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use arbitrary::{Arbitrary, Unstructured};
+    use rstest::rstest;
+
+    use crate::request::promise::tests::p;
+
+    use super::*;
+
+    #[rstest]
+    #[case(p(0), Gas::from_gas(0))]
+    #[case(
+        p(0).function_call(
+                FunctionCallAction::new("foo")
+                .min_gas(Gas::from_tgas(123))
+        ).function_call(
+                FunctionCallAction::new("fbaro")
+                .min_gas(Gas::from_tgas(45))
+        ), Gas::from_tgas(123 + 45)
+    )]
+    fn estimate_gas(#[case] p: PromiseSingle, #[case] expected: Gas) {
+        assert_eq!(p.estimate_gas(), expected);
+    }
+
+    #[rstest]
+    #[case(p(0), NearToken::ZERO)]
+    #[case(
+        p(0)
+            .transfer(NearToken::from_yoctonear(1))
+            .state_init(
+                Arbitrary::arbitrary(&mut Unstructured::new(&[])).unwrap(),
+                NearToken::from_yoctonear(2)
+            ).function_call(
+                FunctionCallAction::new("foo")
+                .attached_deposit(NearToken::from_yoctonear(3))
+            ),
+        NearToken::from_yoctonear(6),
+    )]
+    fn total_deposit(#[case] p: PromiseSingle, #[case] expected: NearToken) {
+        assert_eq!(p.total_deposit(), expected);
     }
 }

@@ -4,6 +4,8 @@ use near_sdk::borsh::{self, BorshSerialize};
 
 use crate::signature::SigningStandard;
 
+/// [`SigningStandard`] middleware that forwards message serialized as borsh
+/// to the underlying signing standard `S`
 pub struct Borsh<S>(PhantomData<S>)
 where
     S: SigningStandard<Vec<u8>> + ?Sized;

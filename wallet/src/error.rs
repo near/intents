@@ -11,11 +11,11 @@ pub enum Error {
     #[error("signature expired")]
     Expired,
 
-    #[error("extension '{0}' already exists")]
-    ExtensionExists(AccountId),
+    #[error("extension '{0}' is already enabled")]
+    ExtensionEnabled(AccountId),
 
     #[error("extension '{0}' is not enabled")]
-    ExtensionNotExist(AccountId),
+    ExtensionNotEnabled(AccountId),
 
     #[error("invalid chain_id: '{got}', expected: '{expected}'")]
     InvalidChainId { got: String, expected: String },

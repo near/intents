@@ -6,50 +6,25 @@ use near_sdk::{AccountId, near, serde_with::base64::Base64};
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(u8)]
 pub enum WalletOp {
-    SetSignatureMode(SetSignatureModeOp) = 0,
-    AddExtension(AddExtensionOp) = 1,
-    RemoveExtension(RemoveExtensionOp) = 2,
+    SetSignatureMode {
+        enable: bool,
+    } = 0,
+    AddExtension {
+        account_id: AccountId,
+    } = 1,
+    RemoveExtension {
+        account_id: AccountId,
+    } = 2,
 
     /// Custom op for third-party implementations.
     /// TODO: do we even this variant? Or custom implementations
     /// can just add their own wariants?
-    Custom(CustomOp) = u8::MAX,
-}
-
-#[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-pub struct SetSignatureModeOp {
-    pub enable: bool,
-}
-
-#[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-pub struct AddExtensionOp {
-    pub account_id: AccountId,
-}
-
-#[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-pub struct RemoveExtensionOp {
-    pub account_id: AccountId,
-}
-
-/// Custom op for third-party implementations
-#[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-pub struct CustomOp {
-    #[cfg_attr(
-        all(feature = "abi", not(target_arch = "wasm32")),
-        schemars(with = "String")
-    )]
-    #[serde_as(as = "Base64")]
-    pub args: Vec<u8>,
+    Custom {
+        #[cfg_attr(
+            all(feature = "abi", not(target_arch = "wasm32")),
+            schemars(with = "String")
+        )]
+        #[serde_as(as = "Base64")]
+        args: Vec<u8>,
+    } = u8::MAX,
 }

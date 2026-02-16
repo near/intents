@@ -9,12 +9,12 @@ use near_sdk::{
 };
 
 /// NOTE: there is no support for other actions, since they operate on the
-/// account itself (e.g. DeployContract, AddKey and etc...) or its on children
+/// account itself (e.g. DeployContract, AddKey and etc...) or its on subaccounts
 /// (e.g. CreateAccount). Wallet-contracts are not self-upgradable and do
 /// not allow creating subaccounts.
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh(use_discriminant = true), json])]
-#[serde(tag = "action", content = "args", rename_all = "snake_case")]
+#[serde(tag = "action", rename_all = "snake_case")]
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(u8)] // matches nearcore `Action` just in case
 pub enum PromiseAction {
@@ -70,12 +70,14 @@ pub struct TransferAction {
     pub amount: NearToken,
 }
 
+/// `DeterministicStateInit` action as per NEP-616
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StateInitAction {
     #[serde(flatten)]
     pub state_init: StateInit,
+
     #[cfg_attr(
         any(feature = "arbitrary", test),
         arbitrary(with = crate::arbitrary::near_token),
@@ -128,7 +130,7 @@ impl FunctionCallAction {
             args: vec![],
             deposit: NearToken::ZERO,
             min_gas: Gas::from_gas(0),
-            gas_weight: 1,
+            gas_weight: default_gas_weight(),
         }
     }
 

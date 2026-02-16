@@ -16,6 +16,7 @@ use crate::signature::RequestMessage;
 
 pub use self::{error::*, events::*, request::*, state::*};
 
+/// Deterministic single-key Wallet Contract.
 #[ext_contract(ext_wallet)]
 pub trait Wallet {
     /// Executes signed request.
@@ -26,7 +27,7 @@ pub trait Wallet {
     ///   * `signed` data is invalid
     ///   * `proof` is invalid
     ///   * signature is disabled
-    fn w_execute_signed(&mut self, signed: RequestMessage, proof: String);
+    fn w_execute_signed(&mut self, msg: RequestMessage, proof: String);
 
     /// Execute request from an enabled extension.
     ///

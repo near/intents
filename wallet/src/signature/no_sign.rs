@@ -11,7 +11,7 @@ use thiserror::Error as ThisError;
 
 use crate::signature::SigningStandard;
 
-/// Always rejects the signature.
+/// [`SigningStandard`] which always rejects the signature.
 ///
 /// This can be useful to deploy "1-of-M multisig"/"fan-out" wallet, where
 /// extensions are defined at the initialization stage (i.e. `state_init`).
@@ -27,6 +27,7 @@ impl<M> SigningStandard<M> for NoSign {
     }
 }
 
+/// [`SigningStandard::PublicKey`] for `NoSign`
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
     derive(near_sdk::schemars::JsonSchema),

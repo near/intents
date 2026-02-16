@@ -16,7 +16,8 @@ use crate::Request;
 
 pub use self::{borsh::*, hash::*};
 
-/// Signing standard, which defines how `signature` on `msg` is verified.
+/// Signing standard, which defines the public key and how `signature` on
+/// `msg` is verified.
 pub trait SigningStandard<M> {
     type PublicKey;
 
@@ -37,6 +38,7 @@ pub struct RequestMessage {
     /// MUST be equal to the current seqno on the contract.
     pub seqno: u32,
 
+    /// The deadline for this signed request.
     #[cfg_attr(
         all(feature = "abi", not(target_arch = "wasm32")),
         borsh(
@@ -61,6 +63,7 @@ pub struct RequestMessage {
 }
 
 impl RequestMessage {
+    /// Domain prefix for the wallet-contract
     pub const DOMAIN_PREFIX: &str = "NEAR_WALLET_CONTRACT";
 
     /// Request hash
@@ -70,7 +73,8 @@ impl RequestMessage {
         env::sha256_array(serialized)
     }
 
-    pub fn wrap_domain(&self) -> SignatureDomain<'static, WalletDomain<'_>> {
+    /// Prefixes the request message with domain for signing/verification
+    pub fn with_domain(&self) -> SignatureDomain<'static, WalletDomain<'_>> {
         SignatureDomain::new(Self::DOMAIN_PREFIX, WalletDomain::V1(Cow::Borrowed(self)))
     }
 }
@@ -92,6 +96,7 @@ impl<'a, T> SignatureDomain<'a, T> {
     }
 }
 
+/// Version of wallet-contract domain
 #[near(serializers = [borsh(use_discriminant = true), json])]
 #[serde(tag = "version", content = "message", rename_all = "snake_case")]
 #[derive(Debug, Clone, PartialEq, Eq)]
