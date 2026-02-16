@@ -1,7 +1,7 @@
 use crate::{
     engine::deltas::InvariantViolated,
-    intents::tokens::MAX_TOKEN_ID_LEN,
     token_id::{TokenId, TokenIdError, nep171::Nep171TokenId},
+    tokens::MAX_TOKEN_ID_LEN,
 };
 use defuse_crypto::PublicKey;
 use defuse_nep245::ErrorLogTooLong;

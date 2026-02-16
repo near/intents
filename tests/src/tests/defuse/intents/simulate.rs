@@ -11,10 +11,10 @@ use defuse_sandbox::extensions::defuse::{
             Intent, IntentEvent,
             account::{AddPublicKey, RemovePublicKey, SetAuthByPredecessorId},
             auth::AuthCall,
+            imt::{ImtBurn, ImtMint},
             token_diff::{TokenDeltas, TokenDiff, TokenDiffEvent},
             tokens::{
                 FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer,
-                imt::{ImtBurn, ImtMint},
             },
         },
         token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},
@@ -1006,13 +1006,10 @@ async fn simulate_burn_intent() {
     assert_eq!(
         result.report.logs,
         vec![
-            DefuseEvent::ImtBurn(Cow::Owned(vec![IntentEvent {
-                intent_hash: burn_payload.hash(),
-                event: AccountEvent {
-                    account_id: user.id().clone().into(),
-                    event: Cow::Owned(burn_intent)
-                },
-            }]))
+            DefuseEvent::ImtBurn(Cow::Owned(vec![AccountEvent {
+                account_id: user.id().clone().into(),
+                event: Cow::Owned(burn_intent)
+            },]))
             .to_nep297_event()
             .to_event_log(),
             AccountNonceIntentEvent::new(&user.id(), nonce, &burn_payload)
