@@ -146,7 +146,7 @@ pub trait State: StateView {
     #[cfg(feature = "imt")]
     fn imt_mint(
         &mut self,
-        owner_id: &AccountIdRef,
+        minter_id: &AccountIdRef,
         receiver_id: AccountId,
         tokens: ImtTokens,
         memo: Option<String>,
@@ -156,7 +156,7 @@ pub trait State: StateView {
             return Err(DefuseError::InvalidIntent);
         }
 
-        let tokens = tokens.into_generic_tokens(owner_id)?;
+        let tokens = tokens.into_generic_tokens(minter_id)?;
         self.mint(receiver_id.clone(), tokens.clone(), memo)?;
 
         if let Some(mut notification) = notification {
@@ -167,7 +167,7 @@ pub trait State: StateView {
                     .max(MT_ON_TRANSFER_GAS_MIN),
             );
 
-            self.notify_on_transfer(owner_id, receiver_id, tokens, notification);
+            self.notify_on_transfer(minter_id, receiver_id, tokens, notification);
         }
 
         Ok(())
