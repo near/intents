@@ -20,7 +20,7 @@ jobs:
         run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/download/cargo-near-v0.17.0/cargo-near-installer.sh | sh
         
       - name: Build Reproducible WASM
-        run: scripts/build_all.sh
+        run: bash scripts/build_all.sh
 
       - name: Upload WASM to Release
         uses: svenstaro/upload-release-action@v2
