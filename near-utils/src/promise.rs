@@ -88,7 +88,7 @@ where
             .saturating_add(T::max_json_length_at_depth(depth + 1, inner_args))
             .saturating_add(",\n".len())
             .saturating_mul(length)
-            .saturating_add(" [\n ".len() + ident + "]".len())
+            .saturating_add(" [\n] ".len() + ident)
     }
 }
 
