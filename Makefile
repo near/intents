@@ -29,8 +29,7 @@ all-reproducible: \
 	build-poa-token-reproducible \
 	build-escrow-swap-reproducible \
 	build-global-deployer-reproducible \
-	build-multi-token-receiver-stub-reproducible \
-	sha256
+	build-multi-token-receiver-stub-reproducible
 
 # ============================================================================
 # Defuse
@@ -125,6 +124,7 @@ build-multi-token-receiver-stub-reproducible:
 .PHONY: sha256
 sha256:
 	@for wasm in $(DEFUSE_OUT_DIR)/*.wasm; do \
+		[ -f "$$wasm" ] || continue; \
 		echo "Generating SHA256 for $$wasm"; \
 		sha256sum $$wasm | awk '{print $$1}' > $${wasm%.wasm}.sha256; \
 	done
