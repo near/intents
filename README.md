@@ -60,11 +60,11 @@ scripts/build_all.sh
 NOTE:
 1. To specify build in reproducible mode, set the `DEFUSE_BUILD_REPRODUCIBLE` environment variable.
 2. To disable build of specific contract set:
- - SKIP_DEFUSE_BUILD - to disable defuse build
- - SKIP_POA_BUILD - to disable build of poa token and poa factory
- - SKIP_ESCROW_BUILD - to disable build of escrow swap
- - SKIP_GLOBAL_DEPLOYER_BUILD - to disable build of global deployer contract
- - SKIP_MULTI_TOKEN_RECEIVER_STUB_BUILD - to disable build of multi token receiver stub (used only in tests)
+ - `SKIP_DEFUSE_BUILD` - to disable defuse build
+ - `SKIP_POA_BUILD` - to disable build of poa token and poa factory
+ - `SKIP_ESCROW_BUILD` - to disable build of escrow swap
+ - `SKIP_GLOBAL_DEPLOYER_BUILD` - to disable build of global deployer contract
+ - `SKIP_MULTI_TOKEN_RECEIVER_STUB_BUILD` - to disable build of multi token receiver stub (used only in tests)
 
 
 Run integration tests:
