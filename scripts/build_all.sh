@@ -8,29 +8,7 @@ is_truthy() {
     esac
 }
 
-build_contract() {
-    local contract_name="$1"
-    local skip_build="$2"
-
-    if [ "$skip_build" -eq 1 ]; then
-        echo "Skipping build of ${contract_name}"
-    else
-        echo "Building ${contract_name}"
-        cargo build-$contract_name$BUILD_REPRODUCIBLE_FLAG
-    fi
-}
-
-compute_sha256() {
-     DEFUSE_OUT_DIR="${DEFUSE_OUT_DIR:-res}"
-
-    for wasm in "${DEFUSE_OUT_DIR}"/*.wasm; do
-        [ -e "$wasm" ] || continue
-        sha_file="${wasm%.wasm}.sha256"
-        echo "Generating SHA256 for $wasm -> $sha_file"
-        sha256sum "$wasm" | awk '{print $1}' > "$sha_file"
-    done
-}
-
+DEFUSE_OUT_DIR="${DEFUSE_OUT_DIR:-res}"
 BUILD_REPRODUCIBLE=$(is_truthy "${DEFUSE_BUILD_REPRODUCIBLE:-0}")
 
 SKIP_DEFUSE_BUILD=$(is_truthy "${SKIP_DEFUSE_BUILD:-0}")
@@ -44,6 +22,27 @@ if [ "${BUILD_REPRODUCIBLE}" -eq 1 ]; then
     echo "Building in reproducible mode"
     BUILD_REPRODUCIBLE_FLAG="-reproducible"
 fi
+
+build_contract() {
+    local contract_name="$1"
+    local skip_build="$2"
+
+    if [ "$skip_build" -eq 1 ]; then
+        echo "Skipping build of ${contract_name}"
+    else
+        echo "Building ${contract_name}"
+        cargo build-$contract_name$BUILD_REPRODUCIBLE_FLAG
+    fi
+}
+
+compute_sha256() {
+    for wasm in "${DEFUSE_OUT_DIR}"/*.wasm; do
+        [ -e "$wasm" ] || continue
+        sha_file="${wasm%.wasm}.sha256"
+        echo "Generating SHA256 for $wasm -> $sha_file"
+        sha256sum "$wasm" | awk '{print $1}' > "$sha_file"
+    done
+}
 
 build_contract "defuse" "${SKIP_DEFUSE_BUILD}"
 build_contract "poa-factory" "${SKIP_POA_BUILD}"

@@ -54,7 +54,7 @@ cargo build-<contract-name>
 Build all contracts at once:
 
 ```shell
-scripts/build_all.sh
+bash scripts/build_all.sh
 ```
 
 NOTE:

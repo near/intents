@@ -81,26 +81,10 @@ build-poa-token = [
     "contract",
 ]
 
-build-poa-token-no-registration = [
-    "build-non-reproducible",
-    "--manifest-path",
-    "poa-token/Cargo.toml",
-    "--features",
-    "contract,no-registration",
-]
-
 build-poa-token-reproducible = [
     "build-reproducible",
     "--manifest-path",
     "poa-token/Cargo.toml",
-]
-
-build-poa-token-no-registration-reproducible = [
-    "build-reproducible",
-    "--manifest-path",
-    "poa-token/Cargo.toml",
-    "--variant",
-    "no_registration",
 ]
 
 # ============================================================================
