@@ -107,7 +107,7 @@ extern "C" fn cleanup_sandbox() {
     }
 }
 
-const ROOT_PK_POOL_SIZE: usize = 3;
+const ROOT_PK_POOL_SIZE: usize = 5;
 
 #[fixture]
 #[instrument]
