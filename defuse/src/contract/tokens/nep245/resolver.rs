@@ -29,11 +29,12 @@ impl MultiTokenResolver for Contract {
             "invalid args"
         );
 
-        let mut refunds = promise_result_checked_json_with_args::<Vec<U128>>(0, (amounts.len(), ()))
-            .ok()
-            .and_then(Result::ok)
-            .filter(|refund| refund.len() == amounts.len())
-            .unwrap_or_else(|| amounts.clone());
+        let mut refunds =
+            promise_result_checked_json_with_args::<Vec<U128>>(0, (amounts.len(), ()))
+                .ok()
+                .and_then(Result::ok)
+                .filter(|refund| refund.len() == amounts.len())
+                .unwrap_or_else(|| amounts.clone());
 
         let sender_id = previous_owner_ids.first().cloned().unwrap_or_panic();
 
