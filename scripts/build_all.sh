@@ -33,23 +33,23 @@ compute_sha256() {
 
 BUILD_REPRODUCIBLE=$(is_truthy "${DEFUSE_BUILD_REPRODUCIBLE:-0}")
 
-# SKIP_DEFUSE_BUILD=$(is_truthy "${SKIP_DEFUSE_BUILD:-0}")
-# SKIP_POA_BUILD=$(is_truthy "${SKIP_POA_BUILD:-0}")
-# SKIP_ESCROW_BUILD=$(is_truthy "${SKIP_ESCROW_BUILD:-0}")
-# SKIP_GLOBAL_DEPLOYER_BUILD=$(is_truthy "${SKIP_GLOBAL_DEPLOYER_BUILD:-0}")
-# SKIP_MULTI_TOKEN_RECEIVER_STUB_BUILD=$(is_truthy "${SKIP_MULTI_TOKEN_RECEIVER_STUB_BUILD:-0}")
+SKIP_DEFUSE_BUILD=$(is_truthy "${SKIP_DEFUSE_BUILD:-0}")
+SKIP_POA_BUILD=$(is_truthy "${SKIP_POA_BUILD:-0}")
+SKIP_ESCROW_BUILD=$(is_truthy "${SKIP_ESCROW_BUILD:-0}")
+SKIP_GLOBAL_DEPLOYER_BUILD=$(is_truthy "${SKIP_GLOBAL_DEPLOYER_BUILD:-0}")
+SKIP_MULTI_TOKEN_RECEIVER_STUB_BUILD=$(is_truthy "${SKIP_MULTI_TOKEN_RECEIVER_STUB_BUILD:-0}")
 
-# BUILD_REPRODUCIBLE_FLAG=""
-# if [ "${BUILD_REPRODUCIBLE}" -eq 1 ]; then
-#     echo "Building in reproducible mode"
-#     BUILD_REPRODUCIBLE_FLAG="-reproducible"
-# fi
+BUILD_REPRODUCIBLE_FLAG=""
+if [ "${BUILD_REPRODUCIBLE}" -eq 1 ]; then
+    echo "Building in reproducible mode"
+    BUILD_REPRODUCIBLE_FLAG="-reproducible"
+fi
 
-# build_contract "defuse" "${SKIP_DEFUSE_BUILD}"
-# build_contract "poa-factory" "${SKIP_POA_BUILD}"
-# build_contract "escrow-swap" "${SKIP_ESCROW_BUILD}"
-# build_contract "global-deployer" "${SKIP_GLOBAL_DEPLOYER_BUILD}"
-# build_contract "multi-token-receiver-stub" "${SKIP_MULTI_TOKEN_RECEIVER_STUB_BUILD}"
+build_contract "defuse" "${SKIP_DEFUSE_BUILD}"
+build_contract "poa-factory" "${SKIP_POA_BUILD}"
+build_contract "escrow-swap" "${SKIP_ESCROW_BUILD}"
+build_contract "global-deployer" "${SKIP_GLOBAL_DEPLOYER_BUILD}"
+build_contract "multi-token-receiver-stub" "${SKIP_MULTI_TOKEN_RECEIVER_STUB_BUILD}"
 
 if [ "$BUILD_REPRODUCIBLE" -eq 1 ]; then
     compute_sha256
