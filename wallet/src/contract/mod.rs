@@ -96,15 +96,11 @@ impl Contract {
         }
 
         // verify signature
-        if !<Self as ContractImpl>::SigningStandard::verify(
-            &msg.with_domain(),
-            &self.public_key,
-            &proof,
-        ) {
+        if !<Self as ContractImpl>::SigningStandard::verify(&msg, &self.public_key, &proof) {
             return Err(Error::InvalidSignature);
         }
 
-        self.execute_request(msg.request, Actor::Signed(hash))?;
+        self.execute_request(msg.request, Actor::SignedRequest(hash))?;
 
         // bump seqno
         self.seqno = self

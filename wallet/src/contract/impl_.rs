@@ -92,10 +92,10 @@ contract_impl! {
     )] {
         use defuse_crypto::Ed25519;
 
-        use crate::signature::Borsh;
+        use crate::signature::{Borsh, DomainPrefix};
 
         impl ContractImpl for Contract {
-            type SigningStandard = Borsh<Ed25519>;
+            type SigningStandard = Borsh<DomainPrefix<Ed25519>>;
         }
     }
 
@@ -106,7 +106,7 @@ contract_impl! {
         ))
     )] {
         use crate::signature::{
-            Borsh, Sha256,
+            Borsh, Sha256, DomainPrefix,
             webauthn::{Ed25519, Webauthn},
         };
 
@@ -114,11 +114,11 @@ contract_impl! {
             /// Webauthn [COSE EdDSA (-8) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
             /// ed25519 curve.
             ///
-            /// We use `hash(borsh(...))` for webauthn, since:
+            /// We hash the payload for webauthn, since:
             /// 1. Authenticators are general-purpose signers and they usually implement
             ///   blind singing.
             /// 2. This reduces length of the `proof` submitted on-chain.
-            type SigningStandard = Borsh<Sha256<Webauthn<Ed25519>>>;
+            type SigningStandard = Borsh<WalletDomain<Sha256<Webauthn<Ed25519>>>>;
         }
     }
 
@@ -129,7 +129,7 @@ contract_impl! {
         ))
     )] {
         use crate::signature::{
-            Borsh, Sha256,
+            Borsh, Sha256, DomainPrefix,
             webauthn::{P256, Webauthn},
         };
 
@@ -137,11 +137,11 @@ contract_impl! {
             /// [COSE ES256 (-7) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
             /// P256 (a.k.a secp256r1) over SHA-256
             ///
-            /// We use `hash(borsh(...))` for webauthn, since:
+            /// We hash the payload for webauthn, since:
             /// 1. Authenticators are general-purpose signers and they usually implement
             ///   blind singing.
             /// 2. This reduces length of the `proof` submitted on-chain.
-            type SigningStandard = Borsh<Sha256<Webauthn<P256>>>;
+            type SigningStandard = Borsh<WalletDomain<Sha256<Webauthn<P256>>>>;
         }
 
     }

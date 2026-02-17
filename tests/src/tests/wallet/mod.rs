@@ -5,7 +5,7 @@ use defuse_test_utils::{random::make_arbitrary, wasms::WALLET_ED25519_WASM};
 use defuse_wallet::{
     self, PromiseSingle, Request, State, WalletOp,
     signature::{
-        Borsh, Deadline, RequestMessage, SigningStandard,
+        Borsh, Deadline, RequestMessage, SigningStandard, WALLET_DOMAIN,
         ed25519::{Ed25519, Ed25519PublicKey, Ed25519Signature},
     },
 };
@@ -218,11 +218,11 @@ async fn env(#[future] sandbox: Sandbox) -> Env {
 }
 
 fn sign_request(secret_key: &SecretKey, body: &RequestMessage) -> String {
-    let domain = body.with_domain();
-    let serialized = borsh::to_vec(&domain).unwrap();
+    let serialized = borsh::to_vec(&body).unwrap();
+    let msg = [WALLET_DOMAIN, &serialized].concat();
     // let hash = near_sdk::env::sha256_array(serialized);
     // sign_passkey(secret_key, &hash)
-    sign_ed25519(secret_key, serialized).to_string()
+    sign_ed25519(secret_key, msg).to_string()
 }
 
 // fn sign_passkey(secret_key: &SecretKey, msg: &[u8]) -> PayloadSignature<Ed25519> {

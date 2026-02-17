@@ -34,7 +34,6 @@ pub enum WalletEvent<'a> {
         by: Actor<'a>,
     },
 
-    // TODO: rename?
     #[event_version("1.0.0")]
     SignedRequest {
         /// Request hash
@@ -48,8 +47,8 @@ pub enum WalletEvent<'a> {
 #[serde(rename_all = "snake_case")]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Actor<'a> {
-    /// Executed by signed request via `w_execute_signed()`.
-    Signed(#[serde_as(as = "Base58")] CryptoHash),
+    /// Executed by signed request with given hash via `w_execute_signed()`.
+    SignedRequest(#[serde_as(as = "Base58")] CryptoHash),
 
     /// Extension with given `account_id`
     Extension(Cow<'a, AccountIdRef>),
@@ -58,7 +57,7 @@ pub enum Actor<'a> {
 impl Actor<'_> {
     pub fn as_ref(&self) -> Actor<'_> {
         match self {
-            Self::Signed(hash) => Actor::Signed(*hash),
+            Self::SignedRequest(hash) => Actor::SignedRequest(*hash),
             Self::Extension(account_id) => Actor::Extension(account_id.as_ref().into()),
         }
     }
