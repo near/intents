@@ -48,14 +48,24 @@ Alternatively, you can build this smart contract yourself.
 Build smart contract separately:
 
 ```shell
-cargo build-contract <contract_name> <reproducible|non-reproducible>
+cargo build-<contract-name>
 ```
 
 Build all contracts at once:
 
 ```shell
-cargo build-all <reproducible|non-reproducible>
+scripts/build_all.sh
 ```
+
+NOTE:
+1. To specify build in reproducible mode, set the `DEFUSE_BUILD_REPRODUCIBLE` environment variable.
+2. To disable build of specific contract set:
+ - SKIP_DEFUSE_BUILD - to disable defuse build
+ - SKIP_POA_BUILD - to disable build of poa token and poa factory
+ - SKIP_ESCROW_BUILD - to disable build of escrow swap
+ - SKIP_GLOBAL_DEPLOYER_BUILD - to disable build of global deployer contract
+ - SKIP_MULTI_TOKEN_RECEIVER_STUB_BUILD - to disable build of multi token receiver stub (used only in tests)
+
 
 Run integration tests:
 
@@ -68,10 +78,6 @@ Or run all tests:
 ```shell
 cargo test --workspace --all-targets
 ```
-
-NOTE:
-1. To specify the destination of wasms, set the `DEFUSE_OUT_DIR` environment variable.
-2. To specify wasms destination for tests set `DEFUSE_USE_OUT_DIR`environment variable.
 
 For state migration testing set environmental var `DEFUSE_MIGRATE_FROM_LEGACY=1`
 State migrations will be applied before all tests.

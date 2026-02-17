@@ -79,9 +79,7 @@ jobs:
       - name: Install Cargo Plugins
         run: cargo install cargo-near --version 0.17.0 --locked
       - name: Build
-        env:
-          DEFUSE_OUT_DIR: "res"
-        run: cargo build-all non-reproducible
+        run: scripts/build-all.sh
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -119,8 +117,8 @@ jobs:
         run: cargo install cargo-near --version 0.17.0 --locked
       - name: Build Reproducible WASM and calculate checksum
         env:
-          DEFUSE_OUT_DIR: "res"
-        run: cargo build-all reproducible --checksum
+          BUILD_REPRODUCIBLE: "true"
+        run: scripts/build-all.sh
       - name: Upload Reproducible Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -159,7 +157,6 @@ jobs:
       - name: Run Tests
         env:
           DEFUSE_MIGRATE_FROM_LEGACY: "true"
-          DEFUSE_USE_OUT_DIR: "res"
         run: cargo test --workspace --all-targets -- --show-output --test-threads=1
 
   security_audit_report:
