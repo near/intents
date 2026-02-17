@@ -48,24 +48,20 @@ Alternatively, you can build this smart contract yourself.
 Build smart contract separately:
 
 ```shell
-cargo build-<contract-name>
+make build-<contract-name>
 ```
 
 Build all contracts at once:
 
 ```shell
-bash scripts/build_all.sh
+make all
 ```
 
-NOTE:
-1. To specify build in reproducible mode, set the `DEFUSE_BUILD_REPRODUCIBLE` environment variable.
-2. To disable build of specific contract set:
- - `SKIP_DEFUSE_BUILD` - to disable defuse build
- - `SKIP_POA_BUILD` - to disable build of poa token and poa factory
- - `SKIP_ESCROW_BUILD` - to disable build of escrow swap
- - `SKIP_GLOBAL_DEPLOYER_BUILD` - to disable build of global deployer contract
- - `SKIP_MULTI_TOKEN_RECEIVER_STUB_BUILD` - to disable build of multi token receiver stub (used only in tests)
+Build all contracts at once in reproducible mode:
 
+```shell
+make all-reproducible
+```
 
 Run integration tests:
 

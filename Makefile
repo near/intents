@@ -12,7 +12,6 @@ define build_reproducible
 	$(CARGO_NEAR) $(REPRO_FLAGS) --manifest-path $(1)
 endef
 
-# TODO: add skip build
 .PHONY: all
 all: \
 	build-defuse \
