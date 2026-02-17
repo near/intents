@@ -78,17 +78,17 @@ where
     type Args = (usize, T::Args);
 
     fn max_json_length_at_depth(depth: usize, (length, inner_args): (usize, T::Args)) -> usize {
-        if depth > MAX_JSON_LENGTH_RECURSION_LIMIT {
+        if depth >= MAX_JSON_LENGTH_RECURSION_LIMIT {
             return usize::MAX;
         }
 
-        let indent = "          ".len(); // 10 spaces
+        let ident = "        ".len().saturating_mul(depth + 1);
 
-        indent
+        ident
             .saturating_add(T::max_json_length_at_depth(depth + 1, inner_args))
             .saturating_add(",\n".len())
             .saturating_mul(length)
-            .saturating_add(" [\n".len() + indent + "]\n".len())
+            .saturating_add(" [\n ".len() + ident + "]".len())
     }
 }
 
@@ -161,8 +161,7 @@ mod tests {
     #[case::outer_3_inner_5(3, 5)]
     #[case::outer_5_inner_10(5, 10)]
     fn test_max_nested_vec_u128_json_len(#[case] outer: usize, #[case] inner: usize) {
-        let max_len =
-            Vec::<Vec<U128>>::max_json_length_at_depth(0, (outer, (inner, ())));
+        let max_len = Vec::<Vec<U128>>::max_json_length_at_depth(0, (outer, (inner, ())));
 
         let vec: Vec<Vec<U128>> = vec![vec![U128(u128::MAX); inner]; outer];
         let prettified = serde_json::to_string_pretty(&vec).unwrap();
