@@ -168,11 +168,11 @@ impl SigningAccount {
             })
             .await?;
 
-        futures::future::join_all(
+        futures::future::try_join_all(
             pks.into_iter()
                 .map(|secret_key| self.signer.add_secret_key_to_pool(secret_key)),
         )
-        .await;
+        .await?;
 
         Ok(())
     }
