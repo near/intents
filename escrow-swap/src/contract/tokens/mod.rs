@@ -172,8 +172,11 @@ impl Sent {
                 TokenIdType::Nep245 => {
                     // `mt_transfer_call` returns successfully transferred amounts
                     match promise_result_checked_json_with_args::<Vec<U128>>(result_idx, (1, ())) {
-                        Ok(Ok(used)) if used.len() == 1 => used[0].0,
-                        Ok(_deserialize_err) => 0,
+                        Ok(Ok(v)) => match v.as_slice() {
+                            [used] => used.0,
+                            _ => 0,
+                        },
+                        Ok(Err(_deserialize_err)) => 0,
                         Err(_) => self.amount,
                     }
                 }
