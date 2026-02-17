@@ -171,12 +171,9 @@ impl Sent {
                 #[cfg(feature = "nep245")]
                 TokenIdType::Nep245 => {
                     // `mt_transfer_call` returns successfully transferred amounts
-                    match promise_result_checked_json_with_args::<Vec<U128>>(result_idx, (1, ())) {
-                        Ok(Ok(v)) => match v.as_slice() {
-                            [used] => used.0,
-                            _ => 0,
-                        },
-                        Ok(Err(_deserialize_err)) => 0,
+                    match promise_result_checked_json_with_args::<[U128; 1]>(result_idx, ()) {
+                        Ok(Ok([used])) => used.0,
+                        Ok(_deserialize_err) => 0,
                         Err(_) => self.amount,
                     }
                 }
