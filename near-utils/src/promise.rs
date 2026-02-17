@@ -19,10 +19,10 @@ pub trait MaxJsonLength: DeserializeOwned {
 
     /// Default: starts with remaining depth of 1 (sufficient for non-nested types)
     fn max_json_length(args: Self::Args) -> usize {
-        Self::max_json_length_at_depth(args, 1)
+        Self::max_json_length_at_depth(1, args)
     }
 
-    fn max_json_length_at_depth(args: Self::Args, remaining_depth: usize) -> usize;
+    fn max_json_length_at_depth(remaining_depth: usize, args: Self::Args) -> usize;
 }
 
 #[inline]
@@ -57,7 +57,7 @@ pub fn promise_result_checked_void(result_idx: u64) -> PromiseResult<()> {
 impl MaxJsonLength for bool {
     type Args = ();
 
-    fn max_json_length_at_depth(_args: (), _remaining_depth: usize) -> usize {
+    fn max_json_length_at_depth(_remaining_depth: usize, _args: ()) -> usize {
         " false ".len()
     }
 }
@@ -65,7 +65,7 @@ impl MaxJsonLength for bool {
 impl MaxJsonLength for U128 {
     type Args = ();
 
-    fn max_json_length_at_depth(_args: (), _remaining_depth: usize) -> usize {
+    fn max_json_length_at_depth(_remaining_depth: usize, _args: ()) -> usize {
         " \"\" ".len() + "+340282366920938463463374607431768211455".len()
     }
 }
@@ -76,19 +76,30 @@ where
 {
     type Args = (usize, T::Args);
 
-    fn max_json_length_at_depth((length, args): (usize, T::Args), remaining_depth: usize) -> usize {
+    fn max_json_length_at_depth(remaining_depth: usize, (length, inner_args): (usize, T::Args)) -> usize {
         if remaining_depth == 0 {
             return usize::MAX;
         }
 
-        let ident = "        ".len().saturating_mul(remaining_depth + 1);
+        let indent = "          ".len(); // 10 spaces
 
-      ident
-            .saturating_add(T::max_json_length_at_depth(args, remaining_depth + 1))
+        indent
+            .saturating_add(T::max_json_length_at_depth(remaining_depth - 1, inner_args))
             .saturating_add(",\n".len())
             .saturating_mul(length)
-            .saturating_add(" [\n ".len() + ident + "]".len())
+            .saturating_add(" [\n".len() + indent + "]\n".len())
+    }
+}
 
+impl<T, const N: usize> MaxJsonLength for [T; N]
+where
+    T: MaxJsonLength,
+    Self: DeserializeOwned,
+{
+    type Args = T::Args;
+
+    fn max_json_length_at_depth(remaining_depth: usize, args: Self::Args) -> usize {
+        <Vec<T>>::max_json_length_at_depth(remaining_depth, (N, args))
     }
 }
 
@@ -150,7 +161,7 @@ mod tests {
     #[case::outer_5_inner_10(5, 10)]
     fn test_max_nested_vec_u128_json_len(#[case] outer: usize, #[case] inner: usize) {
         let max_len =
-            Vec::<Vec<U128>>::max_json_length_at_depth((outer, (inner, ())), 2);
+            Vec::<Vec<U128>>::max_json_length_at_depth(2, (outer, (inner, ())));
 
         let vec: Vec<Vec<U128>> = vec![vec![U128(u128::MAX); inner]; outer];
         let prettified = serde_json::to_string_pretty(&vec).unwrap();
@@ -161,9 +172,21 @@ mod tests {
     }
 
     #[test]
+    fn test_max_array_u128_json_len() {
+        let max_len = <[U128; 5]>::max_json_length(());
+
+        let arr = [U128(u128::MAX); 5];
+        let prettified = serde_json::to_string_pretty(&arr).unwrap();
+        assert!(prettified.len() <= max_len);
+
+        let compact = serde_json::to_string(&arr).unwrap();
+        assert!(compact.len() <= max_len);
+    }
+
+    #[test]
     fn test_depth_zero_returns_max() {
         assert_eq!(
-            Vec::<U128>::max_json_length_at_depth((10, ()), 0),
+            Vec::<U128>::max_json_length_at_depth(0, (10, ())),
             usize::MAX,
         );
     }
