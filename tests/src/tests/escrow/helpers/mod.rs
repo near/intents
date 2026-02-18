@@ -24,7 +24,7 @@ use defuse_test_utils::wasms::{DEFUSE_WASM, ESCROW_SWAP_WASM, POA_FACTORY_WASM, 
 
 #[fixture]
 pub async fn env() -> Env {
-    Env::new().await
+    Box::pin(Env::new()).await
 }
 
 #[autoimpl(Deref using self.sandbox)]
