@@ -58,11 +58,8 @@ pub fn promise_result_checked_json_with_len<T: MaxJsonLength<Args = (usize, ())>
 #[inline]
 pub fn promise_result_checked_void(result_idx: u64) -> PromiseResult<()> {
     let data = env::promise_result_checked(result_idx, 0)?;
-    if data.is_empty() {
-        Ok(())
-    } else {
-        unreachable!()
-    }
+    debug_assert!(data.is_empty());
+    Ok(())
 }
 
 impl MaxJsonLength for bool {
