@@ -3,9 +3,7 @@ mod nep141;
 #[cfg(feature = "nep245")]
 mod nep245;
 
-use defuse_near_utils::{
-    promise_result_checked_json, promise_result_checked_json_with_args, promise_result_checked_void,
-};
+use defuse_near_utils::{promise_result_checked_json, promise_result_checked_void};
 use near_sdk::{AccountId, Gas, Promise, PromiseOrValue, json_types::U128, near, serde_json};
 use serde_with::{DisplayFromStr, serde_as};
 
@@ -171,7 +169,7 @@ impl Sent {
                 #[cfg(feature = "nep245")]
                 TokenIdType::Nep245 => {
                     // `mt_transfer_call` returns successfully transferred amounts
-                    match promise_result_checked_json_with_args::<[U128; 1]>(result_idx, ()) {
+                    match promise_result_checked_json::<[U128; 1]>(result_idx) {
                         Ok(Ok([used])) => used.0,
                         Ok(_deserialize_err) => 0,
                         Err(_) => self.amount,

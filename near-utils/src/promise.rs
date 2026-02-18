@@ -42,6 +42,16 @@ pub fn promise_result_checked_json<T: MaxJsonLength<Args = ()>>(
     promise_result_checked_json_with_args::<T>(result_idx, ())
 }
 
+#[inline]
+pub fn promise_result_checked_json_with_len<T: MaxJsonLength<Args = (usize, ())>>(
+    result_idx: u64,
+    length: usize,
+) -> PromiseJsonResult<T> {
+    let max_len = T::max_json_length((length, ()));
+    let value = env::promise_result_checked(result_idx, max_len)?;
+    Ok(serde_json::from_slice::<T>(&value))
+}
+
 /// Returns `Ok(())` if the promise at `result_idx` succeeded with an empty result.
 /// This is the expected outcome for void-returning cross-contract calls
 /// (e.g. `ft_transfer`, `nft_transfer`, `mt_batch_transfer`).

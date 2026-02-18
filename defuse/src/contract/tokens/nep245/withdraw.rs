@@ -13,7 +13,7 @@ use defuse_core::{
     token_id::{nep141::Nep141TokenId, nep245::Nep245TokenId},
 };
 use defuse_near_utils::{
-    REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError, promise_result_checked_json_with_args,
+    REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError, promise_result_checked_json_with_len,
     promise_result_checked_void,
 };
 use defuse_nep245::ext_mt_core;
@@ -213,7 +213,7 @@ impl MultiTokenWithdrawResolver for Contract {
 
         let mut used = if is_call {
             // `mt_batch_transfer_call` returns successfully transferred amounts
-            match promise_result_checked_json_with_args::<Vec<U128>>(0, (amounts.len(), ())) {
+            match promise_result_checked_json_with_len::<Vec<U128>>(0, amounts.len()) {
                 Ok(Ok(used)) if used.len() == amounts.len() => used,
                 Ok(_) => vec![U128(0); amounts.len()],
                 // do not refund on failed `mt_batch_transfer_call` due to

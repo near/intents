@@ -7,7 +7,7 @@ mod nep245;
 use super::Contract;
 use defuse_core::{DefuseError, Result, token_id::TokenId};
 use defuse_near_utils::{
-    Lock, REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError, promise_result_checked_json_with_args,
+    Lock, REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError, promise_result_checked_json_with_len,
 };
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
 use itertools::{Either, Itertools};
@@ -159,11 +159,10 @@ impl Contract {
         let tokens_iter = tokens.into_iter();
         let tokens_count = tokens_iter.len();
 
-        let requested_refunds =
-            promise_result_checked_json_with_args::<Vec<U128>>(0, (tokens_count, ()))
-                .ok()
-                .and_then(Result::ok)
-                .filter(|refunds| refunds.len() == tokens_count);
+        let requested_refunds = promise_result_checked_json_with_len::<Vec<U128>>(0, tokens_count)
+            .ok()
+            .and_then(Result::ok)
+            .filter(|refunds| refunds.len() == tokens_count);
 
         let mut burn_event = MtBurnEvent {
             owner_id: Cow::Borrowed(receiver_id),

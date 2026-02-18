@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use defuse_near_utils::{
-    Lock, REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError, promise_result_checked_json_with_args,
+    Lock, REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError, promise_result_checked_json_with_len,
 };
 use defuse_nep245::{
     ClearedApproval, MtEvent, MtTransferEvent, TokenId, resolver::MultiTokenResolver,
@@ -29,12 +29,11 @@ impl MultiTokenResolver for Contract {
             "invalid args"
         );
 
-        let mut refunds =
-            promise_result_checked_json_with_args::<Vec<U128>>(0, (amounts.len(), ()))
-                .ok()
-                .and_then(Result::ok)
-                .filter(|refund| refund.len() == amounts.len())
-                .unwrap_or_else(|| amounts.clone());
+        let mut refunds = promise_result_checked_json_with_len::<Vec<U128>>(0, amounts.len())
+            .ok()
+            .and_then(Result::ok)
+            .filter(|refund| refund.len() == amounts.len())
+            .unwrap_or_else(|| amounts.clone());
 
         let sender_id = previous_owner_ids.first().cloned().unwrap_or_panic();
 
