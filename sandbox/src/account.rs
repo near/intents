@@ -4,7 +4,7 @@ use anyhow::{Context, Result, anyhow};
 use defuse_nep413::{Nep413Payload, SignedNep413Payload};
 use impl_tools::autoimpl;
 use near_api::{
-    Account as NearApiAccount, Contract, CryptoHash, NetworkConfig, PublicKey, Signer,
+    Account as NearApiAccount, Contract, CryptoHash, NetworkConfig, PublicKey, SecretKey, Signer,
     signer::generate_secret_key,
     types::{
         Signature,
@@ -156,27 +156,6 @@ impl SigningAccount {
         Self { account, signer }
     }
 
-    pub async fn extend_signer(&self, pk_num: usize) -> Result<()> {
-        let pks = (0..pk_num)
-            .map(|_| generate_secret_key().context("failed to generate secret key"))
-            .collect::<Result<Vec<_>>>()?;
-
-        pks.iter()
-            .fold(self.tx(self.id()), |tx, secret_key| {
-                let public_key = secret_key.public_key();
-                tx.add_full_access_key(public_key)
-            })
-            .await?;
-
-        futures::future::try_join_all(
-            pks.into_iter()
-                .map(|secret_key| self.signer.add_secret_key_to_pool(secret_key)),
-        )
-        .await?;
-
-        Ok(())
-    }
-
     pub fn generate_implicit(network_config: NetworkConfig) -> Result<Self> {
         let secret_key = generate_secret_key().context("failed to generate secret key")?;
 
@@ -225,25 +204,85 @@ impl SigningAccount {
         Ok(account)
     }
 
+    fn generate_keys(pk_num: usize) -> Result<Vec<SecretKey>> {
+        if pk_num < 1 {
+            anyhow::bail!("pk_num must be at least 1");
+        }
+
+        (0..pk_num)
+            .map(|_| generate_secret_key().context("failed to generate secret key"))
+            .collect::<Result<Vec<_>>>()
+    }
+
+    async fn add_keys_to_signer_pool(
+        &self,
+        pks: impl IntoIterator<Item = SecretKey>,
+    ) -> Result<()> {
+        futures::future::try_join_all(
+            pks.into_iter()
+                .map(|secret_key| self.signer.add_secret_key_to_pool(secret_key)),
+        )
+        .await?;
+
+        Ok(())
+    }
+
+    pub async fn extend_signer(&self, pk_num: usize) -> Result<()> {
+        let pks = Self::generate_keys(pk_num)?;
+
+        pks.iter()
+            .fold(self.tx(self.id()), |tx, secret_key| {
+                let public_key = secret_key.public_key();
+                tx.add_full_access_key(public_key)
+            })
+            .await?;
+
+        self.add_keys_to_signer_pool(pks).await
+    }
+
+    #[instrument(skip_all, fields(name = name.as_ref()))]
+    pub async fn generate_subaccount_extended(
+        &self,
+        name: impl AsRef<str>,
+        pk_num: usize,
+        balance: impl Into<Option<NearToken>>,
+    ) -> anyhow::Result<Self> {
+        let subaccount = self.sub_account(name)?;
+        let pks = Self::generate_keys(pk_num)?;
+
+        let mut tx = self.tx(subaccount.id()).create_account();
+        if let Some(balance) = balance.into() {
+            tx = tx.transfer(balance);
+        }
+
+        pks.iter()
+            .fold(tx, |tx, secret_key| {
+                let public_key = secret_key.public_key();
+                tx.add_full_access_key(public_key)
+            })
+            .await?;
+
+        let signer = Self::new(
+            subaccount,
+            Signer::from_secret_key(
+                pks.first()
+                    .cloned()
+                    .context("generated key list is empty")?,
+            )?,
+        );
+
+        signer.add_keys_to_signer_pool(pks).await?;
+
+        Ok(signer)
+    }
+
     #[instrument(skip_all, fields(name = name.as_ref()))]
     pub async fn generate_subaccount(
         &self,
         name: impl AsRef<str>,
         balance: impl Into<Option<NearToken>>,
     ) -> anyhow::Result<Self> {
-        let secret_key = generate_secret_key().unwrap();
-        let subaccount = self.sub_account(name)?;
-
-        let mut tx = self.tx(subaccount.id()).create_account();
-        if let Some(balance) = balance.into() {
-            tx = tx.transfer(balance);
-        }
-        tx.add_full_access_key(secret_key.public_key()).await?;
-
-        Ok(Self::new(
-            subaccount,
-            Signer::from_secret_key(secret_key).unwrap(),
-        ))
+        self.generate_subaccount_extended(name, 1, balance).await
     }
 
     pub async fn deploy_sub_contract(
@@ -253,7 +292,7 @@ impl SigningAccount {
         code: impl Into<Vec<u8>>,
         init_call: impl Into<Option<FnCallBuilder>>,
     ) -> anyhow::Result<Self> {
-        let secret_key = generate_secret_key().unwrap();
+        let secret_key = generate_secret_key().context("Failed to generate secret key")?;
         let subaccount = self.sub_account(name)?;
 
         let mut tx = self
