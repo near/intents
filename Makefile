@@ -1,4 +1,5 @@
 DEFUSE_OUT_DIR ?= res
+CARGO_EXTRA_FLAGS?=
 
 CARGO_NEAR := cargo near build
 NON_REPRO_FLAGS := non-reproducible-wasm --locked --no-embed-abi --out-dir $(DEFUSE_OUT_DIR)
@@ -35,11 +36,12 @@ all-reproducible: \
 # ============================================================================
 
 DEFUSE_MANIFEST_PATH := defuse/Cargo.toml
-DEFUSE_FEATURES := abi,contract,imt
+DEFUSE_FEATURES := --features=abi,contract,imt
+DEFUSE_FLAGS ?= $(if $(CARGO_EXTRA_FLAGS),$(CARGO_EXTRA_FLAGS),$(DEFUSE_FEATURES))
 
 .PHONY: build-defuse
 build-defuse:
-	$(call build_non_reproducible,$(DEFUSE_MANIFEST_PATH),--features=$(DEFUSE_FEATURES))
+	$(call build_non_reproducible,$(DEFUSE_MANIFEST_PATH),$(DEFUSE_FLAGS))
 
 .PHONY: build-defuse-reproducible
 build-defuse-reproducible:
@@ -50,11 +52,13 @@ build-defuse-reproducible:
 # ============================================================================
 
 POA_FACTORY_MANIFEST_PATH := poa-factory/Cargo.toml
-POA_FACTORY_FEATURES := contract
+POA_FACTORY_FEATURES := --features=contract
+POA_FACTORY_FLAGS ?= $(if $(CARGO_EXTRA_FLAGS),$(CARGO_EXTRA_FLAGS),$(POA_FACTORY_FEATURES))
 
 .PHONY: build-poa-factory
 build-poa-factory:
-	$(call build_non_reproducible,$(POA_FACTORY_MANIFEST_PATH),--features=$(POA_FACTORY_FEATURES))
+	$(call build_non_reproducible,$(POA_FACTORY_MANIFEST_PATH),$(POA_FACTORY_FLAGS))
+	
 .PHONY: build-poa-factory-reproducible
 build-poa-factory-reproducible:
 	$(call build_reproducible,$(POA_FACTORY_MANIFEST_PATH))
@@ -64,11 +68,12 @@ build-poa-factory-reproducible:
 # ============================================================================
 
 POA_TOKEN_MANIFEST_PATH := poa-token/Cargo.toml
-POA_TOKEN_FEATURES := contract
+POA_TOKEN_FEATURES := --features=contract
+POA_TOKEN_FLAGS ?= $(if $(CARGO_EXTRA_FLAGS),$(CARGO_EXTRA_FLAGS),$(POA_TOKEN_FEATURES))
 
 .PHONY: build-poa-token
 build-poa-token:
-	$(call build_non_reproducible,$(POA_TOKEN_MANIFEST_PATH),--features=$(POA_TOKEN_FEATURES))
+	$(call build_non_reproducible,$(POA_TOKEN_MANIFEST_PATH),$(POA_TOKEN_FLAGS))
 .PHONY: build-poa-token-reproducible
 build-poa-token-reproducible:
 	$(call build_reproducible,$(POA_TOKEN_MANIFEST_PATH))
@@ -78,11 +83,13 @@ build-poa-token-reproducible:
 # ============================================================================
 
 ESCROW_SWAP_MANIFEST_PATH := escrow-swap/Cargo.toml
-ESCROW_SWAP_FEATURES := abi,contract
+ESCROW_SWAP_FEATURES := --features=abi,contract
+ESCROW_SWAP_FLAGS ?= $(if $(CARGO_EXTRA_FLAGS),$(CARGO_EXTRA_FLAGS),$(ESCROW_SWAP_FEATURES))
+
 
 .PHONY: build-escrow-swap
 build-escrow-swap:
-	$(call build_non_reproducible,$(ESCROW_SWAP_MANIFEST_PATH),--features=$(ESCROW_SWAP_FEATURES))
+	$(call build_non_reproducible,$(ESCROW_SWAP_MANIFEST_PATH),$(ESCROW_SWAP_FLAGS))
 .PHONY: build-escrow-swap-reproducible
 build-escrow-swap-reproducible:
 	$(call build_reproducible,$(ESCROW_SWAP_MANIFEST_PATH))
@@ -92,11 +99,12 @@ build-escrow-swap-reproducible:
 # ============================================================================
 
 GLOBAL_DEPLOYER_MANIFEST_PATH := global-deployer/Cargo.toml
-GLOBAL_DEPLOYER_FEATURES := abi,contract
+GLOBAL_DEPLOYER_FEATURES := --features=abi,contract
+GLOBAL_DEPLOYER_FLAGS ?= $(if $(CARGO_EXTRA_FLAGS),$(CARGO_EXTRA_FLAGS),$(GLOBAL_DEPLOYER_FEATURES))
 
 .PHONY: build-global-deployer
 build-global-deployer:
-	$(call build_non_reproducible,$(GLOBAL_DEPLOYER_MANIFEST_PATH),--features=$(GLOBAL_DEPLOYER_FEATURES))
+	$(call build_non_reproducible,$(GLOBAL_DEPLOYER_MANIFEST_PATH),$(GLOBAL_DEPLOYER_FLAGS))
 .PHONY: build-global-deployer-reproducible
 build-global-deployer-reproducible:
 	$(call build_reproducible,$(GLOBAL_DEPLOYER_MANIFEST_PATH))
@@ -106,12 +114,12 @@ build-global-deployer-reproducible:
 # ============================================================================
 
 MULTI_TOKEN_RECEIVER_STUB_MANIFEST_PATH := tests/contracts/multi-token-receiver-stub/Cargo.toml
-MULTI_TOKEN_RECEIVER_STUB_FEATURES := abi
+MULTI_TOKEN_RECEIVER_STUB_FEATURES := --features=abi
+MULTI_TOKEN_RECEIVER_STUB_FLAGS ?= $(if $(CARGO_EXTRA_FLAGS),$(CARGO_EXTRA_FLAGS),$(MULTI_TOKEN_RECEIVER_STUB_FEATURES))
 
 .PHONY: build-multi-token-receiver-stub
 build-multi-token-receiver-stub:
-	$(call build_non_reproducible,$(MULTI_TOKEN_RECEIVER_STUB_MANIFEST_PATH), \
-		--features=$(MULTI_TOKEN_RECEIVER_STUB_FEATURES))
+	$(call build_non_reproducible,$(MULTI_TOKEN_RECEIVER_STUB_MANIFEST_PATH),$(MULTI_TOKEN_RECEIVER_STUB_FLAGS))
 .PHONY: build-multi-token-receiver-stub-reproducible
 build-multi-token-receiver-stub-reproducible:
 	$(call build_reproducible,$(MULTI_TOKEN_RECEIVER_STUB_MANIFEST_PATH))
@@ -121,17 +129,17 @@ build-multi-token-receiver-stub-reproducible:
 # ============================================================================
 
 .PHONY: sha256
-sha256:
-	@for wasm in $(DEFUSE_OUT_DIR)/*.wasm; do \
-		[ -f "$$wasm" ] || continue; \
-		echo "Generating SHA256 for $$wasm"; \
-		sha256sum $$wasm | awk '{print $$1}' > $${wasm%.wasm}.sha256; \
-	done
+sha256: $(patsubst %.wasm,%.sha256,$(wildcard $(DEFUSE_OUT_DIR)/*.wasm))
+%.sha256: %.wasm
+	@sha256sum $< | tee /dev/stderr | cut -d' ' -f1 > $@
+
+.PHONY: clean-out-dir
+clean-out-dir:
+	rm -rf $(DEFUSE_OUT_DIR)
 
 .PHONY: clean
-clean:
+clean: clean-out-dir
 	cargo clean
-	rm -rf $(DEFUSE_OUT_DIR)
 
 # ============================================================================
 # Tests

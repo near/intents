@@ -57,6 +57,8 @@ Build all contracts at once:
 make all
 ```
 
+NOTE: Extra cargo flags can be specified with `CARGO_EXTRA_FLAGS` (will be applied on all contracts) or can be specified in `<CONTRACT_NAME>_FLAGS` var for each contract separately
+
 Build all contracts at once in reproducible mode:
 
 ```shell
