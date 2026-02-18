@@ -1,5 +1,5 @@
 use defuse::core::amounts::Amounts;
-use defuse::core::intents::tokens::imt::{ImtBurn, ImtMint};
+use defuse::core::intents::imt::{ImtBurn, ImtMint};
 use defuse::core::token_id::TokenId;
 use defuse::core::token_id::imt::ImtTokenId;
 use defuse::core::token_id::nep141::Nep141TokenId;
@@ -72,7 +72,7 @@ async fn imt_burn_intent() {
 #[rstest]
 #[trace]
 #[tokio::test]
-async fn failed_to_burn_tokens() {
+async fn failed_to_burn_tokens_with_intent() {
     let env = Env::builder().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());

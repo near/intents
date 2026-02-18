@@ -1021,7 +1021,7 @@ checksum = "26bf8fc351c5ed29b5c2f0cbbac1b209b74f60ecd62e675a998df72c49af5204"
 
 [[package]]
 name = "defuse"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "anyhow",
  "arbitrary",
@@ -1229,6 +1229,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-global-deployer"
+version = "0.1.0"
+dependencies = [
+ "defuse-serde-utils",
+ "near-sdk",
+]
+
+[[package]]
 name = "defuse-io-utils"
 version = "0.1.0"
 
@@ -1332,6 +1340,7 @@ dependencies = [
  "defuse",
  "defuse-crypto",
  "defuse-escrow-swap",
+ "defuse-global-deployer",
  "defuse-nep245",
  "defuse-nep413",
  "defuse-poa-factory",
@@ -1399,6 +1408,7 @@ dependencies = [
  "defuse",
  "defuse-escrow-swap",
  "defuse-fees",
+ "defuse-global-deployer",
  "defuse-near-utils",
  "defuse-nep245",
  "defuse-poa-factory",
@@ -2644,9 +2654,9 @@ dependencies = [
 
 [[package]]
 name = "keccak"
-version = "0.1.5"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ecc2af9a1119c51f12a14607e783cb977bde58bc069ff0c3da1095e635d70654"
+checksum = "cb26cec98cce3a3d96cbb7bced3c4b16e3d13f27ec56dbd62cbc8f39cfb9d653"
 dependencies = [
  "cpufeatures",
 ]

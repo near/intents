@@ -12,12 +12,16 @@ serde_with.workspace = true
 tlb-ton = { workspace = true, optional = true }
 
 [features]
-default = ["base58", "base64"]
+default = ["base58", "base64", "hex"]
 
 abi = []
 base58 = []
 base64 = ["serde_with/base64"]
+hex = []
 tlb = ["dep:tlb-ton"]
+
+[dev-dependencies]
+near-sdk = { workspace = true, features = ["unit-testing"] }
 
 [lints]
 workspace = true

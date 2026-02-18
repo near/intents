@@ -15,7 +15,7 @@ use crate::{
 };
 
 #[cfg(feature = "imt")]
-use crate::{intents::tokens::imt::ImtBurn, tokens::imt::ImtMintEvent};
+use crate::{intents::imt::ImtBurn, tokens::imt::ImtMintEvent};
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(event_json(standard = "dip4"))]

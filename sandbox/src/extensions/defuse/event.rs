@@ -16,7 +16,7 @@ use std::borrow::Cow;
 
 #[cfg(feature = "imt")]
 use defuse::core::{
-    intents::tokens::imt::{ImtBurn, ImtMint},
+    intents::imt::{ImtBurn, ImtMint},
     tokens::imt::ImtMintEvent,
 };
 

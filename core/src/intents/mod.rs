@@ -3,6 +3,9 @@ pub mod auth;
 pub mod token_diff;
 pub mod tokens;
 
+#[cfg(feature = "imt")]
+pub mod imt;
+
 use defuse_serde_utils::base58::Base58;
 use derive_more::derive::From;
 use near_sdk::{AccountIdRef, CryptoHash, near};
@@ -10,7 +13,7 @@ use serde_with::serde_as;
 use tokens::{NativeWithdraw, StorageDeposit};
 
 #[cfg(feature = "imt")]
-use crate::intents::tokens::imt::{ImtBurn, ImtMint};
+use crate::intents::imt::{ImtBurn, ImtMint};
 
 use crate::{
     Result,

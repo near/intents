@@ -13,9 +13,11 @@ use crate::{
     amounts::Amounts,
     engine::{Engine, Inspector, State},
     events::DefuseEvent,
-    intents::{ExecutableIntent, MaybeIntentEvent},
+    intents::MaybeIntentEvent,
     tokens::{MT_ON_TRANSFER_GAS_DEFAULT, MT_ON_TRANSFER_GAS_MIN, TransferEvent},
 };
+
+use super::ExecutableIntent;
 
 #[must_use]
 #[near(serializers = [borsh, json])]
@@ -503,154 +505,5 @@ impl ExecutableIntent for StorageDeposit {
             )));
 
         engine.state.storage_deposit(owner_id, self)
-    }
-}
-
-#[cfg(feature = "imt")]
-pub mod imt {
-    use crate::{
-        Result,
-        intents::MaybeIntentEvent,
-        tokens::{
-            MT_ON_TRANSFER_GAS_DEFAULT, MT_ON_TRANSFER_GAS_MIN,
-            imt::{ImtMintEvent, ImtTokens},
-        },
-    };
-    use near_sdk::{AccountId, AccountIdRef, CryptoHash, near};
-    use serde_with::{DisplayFromStr, serde_as};
-
-    use std::{borrow::Cow, collections::BTreeMap};
-
-    use crate::{
-        DefuseError,
-        accounts::AccountEvent,
-        amounts::Amounts,
-        engine::{Engine, Inspector, State},
-        events::DefuseEvent,
-        intents::{ExecutableIntent, tokens::NotifyOnTransfer},
-    };
-
-    #[near(serializers = [borsh, json])]
-    #[derive(Debug, Clone)]
-    /// Mint a set of tokens from the signer to a specified account id, within the intents contract.
-    pub struct ImtMint {
-        /// Receiver of the minted tokens
-        pub receiver_id: AccountId,
-
-        /// The token_ids will be wrapped to bind the token ID to the
-        /// minter authority (i.e. signer of this intent).
-        /// The final string representation of the token will be as follows:
-        /// `imt:<minter_id>:<token_id>`
-        #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
-        pub tokens: ImtTokens,
-
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        pub memo: Option<String>,
-
-        /// Optionally notify receiver_id via `mt_on_transfer()`
-        ///
-        /// NOTE: `min_gas` is adjusted with following values:
-        /// * minimum: 5TGas
-        /// * default: 30TGas
-        #[serde(flatten, default, skip_serializing_if = "Option::is_none")]
-        pub notification: Option<NotifyOnTransfer>,
-    }
-
-    impl ExecutableIntent for ImtMint {
-        #[inline]
-        fn execute_intent<S, I>(
-            self,
-            signer_id: &AccountIdRef,
-            engine: &mut Engine<S, I>,
-            intent_hash: CryptoHash,
-        ) -> Result<()>
-        where
-            S: State,
-            I: Inspector,
-        {
-            if self.tokens.is_empty() {
-                return Err(DefuseError::InvalidIntent);
-            }
-
-            engine
-                .inspector
-                .on_event(DefuseEvent::ImtMint(Cow::Borrowed(
-                    [MaybeIntentEvent::new_with_hash(
-                        AccountEvent::new(signer_id, ImtMintEvent::from(&self)),
-                        intent_hash,
-                    )]
-                    .as_slice(),
-                )));
-
-            let tokens = self.tokens.into_generic_tokens(signer_id)?;
-            engine
-                .state
-                .mint(self.receiver_id.clone(), tokens.clone(), self.memo)?;
-
-            if let Some(mut notification) = self.notification {
-                notification.min_gas = Some(
-                    notification
-                        .min_gas
-                        .unwrap_or(MT_ON_TRANSFER_GAS_DEFAULT)
-                        .max(MT_ON_TRANSFER_GAS_MIN),
-                );
-
-                engine
-                    .state
-                    .notify_on_transfer(signer_id, self.receiver_id, tokens, notification);
-            }
-
-            Ok(())
-        }
-    }
-
-    #[near(serializers = [borsh, json])]
-    #[derive(Debug, Clone)]
-    /// Burn a set of imt tokens, within the intents contract.
-    pub struct ImtBurn {
-        // The minter authority of the imt tokens
-        pub minter_id: AccountId,
-
-        /// The token_ids will be wrapped to bind the token ID to the
-        /// minter authority. The final string representation of the
-        /// token will be as follows:
-        /// `imt:<minter_id>:<token_id>`
-        #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
-        pub tokens: ImtTokens,
-
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        pub memo: Option<String>,
-    }
-
-    impl ExecutableIntent for ImtBurn {
-        #[inline]
-        fn execute_intent<S, I>(
-            self,
-            signer_id: &AccountIdRef,
-            engine: &mut Engine<S, I>,
-            intent_hash: CryptoHash,
-        ) -> Result<()>
-        where
-            S: State,
-            I: Inspector,
-        {
-            if self.tokens.is_empty() {
-                return Err(DefuseError::InvalidIntent);
-            }
-
-            engine
-                .inspector
-                .on_event(DefuseEvent::ImtBurn(Cow::Borrowed(
-                    [MaybeIntentEvent::new_with_hash(
-                        AccountEvent::new(signer_id, Cow::Borrowed(&self)),
-                        intent_hash,
-                    )]
-                    .as_slice(),
-                )));
-
-            let tokens = self.tokens.into_generic_tokens(&self.minter_id)?;
-
-            engine.state.burn(signer_id, tokens, self.memo)
-        }
     }
 }

@@ -1,4 +1,5 @@
 use defuse::contract::config::{DefuseConfig, RolesConfig};
+use defuse::core::intents::imt::{ImtBurn, ImtMint};
 use defuse_sandbox::assert_eq_defuse_event_logs;
 use defuse_sandbox::extensions::defuse::event::ToEventLog;
 use defuse_sandbox::extensions::defuse::{
@@ -14,7 +15,6 @@ use defuse_sandbox::extensions::defuse::{
             token_diff::{TokenDeltas, TokenDiff},
             tokens::{
                 FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit, Transfer,
-                imt::{ImtBurn, ImtMint},
             },
         },
         token_id::{TokenId, nep141::Nep141TokenId, nep171::Nep171TokenId, nep245::Nep245TokenId},

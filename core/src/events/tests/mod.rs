@@ -24,7 +24,7 @@ use crate::{
 };
 
 #[cfg(feature = "imt")]
-use crate::{intents::tokens::imt::ImtBurn, tokens::imt::ImtMintEvent};
+use crate::{intents::imt::ImtBurn, tokens::imt::ImtMintEvent};
 
 // NOTE:
 // 1. Adding a new event does not require backward compatibility

@@ -17,8 +17,7 @@ pub mod imt {
     use std::{borrow::Cow, collections::BTreeMap};
 
     use crate::{
-        DefuseError, Result, amounts::Amounts, intents::tokens::imt::ImtMint,
-        tokens::MAX_TOKEN_ID_LEN,
+        DefuseError, Result, amounts::Amounts, intents::imt::ImtMint, tokens::MAX_TOKEN_ID_LEN,
     };
 
     pub type ImtTokens = Amounts<BTreeMap<defuse_nep245::TokenId, u128>>;

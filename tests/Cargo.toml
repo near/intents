@@ -9,7 +9,7 @@ repository.workspace = true
 workspace = true
 
 [features]
-default = ["defuse", "poa", "escrow-swap", "long"]
+default = ["defuse", "poa", "escrow-swap", "long", "deployer"]
 
 poa = [
     "dep:defuse-poa-factory",
@@ -33,7 +33,7 @@ escrow-swap = [
     "defuse-test-utils/defuse",
     "defuse-test-utils/poa"
     ]
-
+deployer = ["dep:defuse-global-deployer", "defuse-sandbox/deployer"]
 long = []
 
 [dependencies]
@@ -49,6 +49,7 @@ defuse-randomness.workspace = true
 defuse-test-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-fees.workspace = true
+defuse-global-deployer = {workspace = true, optional = true}
 
 near-sdk.workspace = true
 near-crypto.workspace = true
