@@ -21,10 +21,10 @@ use crate::{intents::imt::ImtBurn, tokens::imt::ImtMintEvent};
 #[near(event_json(standard = "dip4"))]
 #[derive(Debug, Clone, Deserialize, From)]
 pub enum DefuseEvent<'a> {
-    #[event_version("0.4.2")]
+    #[event_version("0.4.3")]
     #[from(skip)]
     PublicKeyAdded(MaybeIntentEvent<AccountEvent<'a, PublicKeyEvent<'a>>>),
-    #[event_version("0.4.2")]
+    #[event_version("0.4.3")]
     #[from(skip)]
     PublicKeyRemoved(MaybeIntentEvent<AccountEvent<'a, PublicKeyEvent<'a>>>),
 
@@ -33,35 +33,35 @@ pub enum DefuseEvent<'a> {
     #[event_version("0.3.0")]
     FeeCollectorChanged(FeeCollectorChangedEvent<'a>),
 
-    #[event_version("0.4.2")]
+    #[event_version("0.4.3")]
     Transfer(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, TransferEvent<'a>>>]>),
 
-    #[event_version("0.4.2")]
+    #[event_version("0.4.3")]
     TokenDiff(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, TokenDiffEvent<'a>>>]>),
 
-    #[event_version("0.4.2")]
+    #[event_version("0.4.3")]
     IntentsExecuted(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, NonceEvent>>]>),
 
-    #[event_version("0.4.2")]
+    #[event_version("0.4.3")]
     FtWithdraw(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, Cow<'a, FtWithdraw>>>]>),
 
-    #[event_version("0.4.2")]
+    #[event_version("0.4.3")]
     NftWithdraw(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, Cow<'a, NftWithdraw>>>]>),
 
-    #[event_version("0.4.2")]
+    #[event_version("0.4.3")]
     MtWithdraw(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, Cow<'a, MtWithdraw>>>]>),
 
-    #[event_version("0.4.2")]
+    #[event_version("0.4.3")]
     NativeWithdraw(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, Cow<'a, NativeWithdraw>>>]>),
 
-    #[event_version("0.4.2")]
+    #[event_version("0.4.3")]
     StorageDeposit(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, Cow<'a, StorageDeposit>>>]>),
 
     #[cfg(feature = "imt")]
-    #[event_version("0.4.2")]
+    #[event_version("0.4.3")]
     ImtMint(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, ImtMintEvent<'a>>>]>),
     #[cfg(feature = "imt")]
-    #[event_version("0.4.2")]
+    #[event_version("0.4.3")]
     ImtBurn(Cow<'a, [MaybeIntentEvent<AccountEvent<'a, Cow<'a, ImtBurn>>>]>),
 
     #[event_version("0.3.0")]
@@ -71,7 +71,7 @@ pub enum DefuseEvent<'a> {
     #[from(skip)]
     AccountUnlocked(AccountEvent<'a, ()>),
 
-    #[event_version("0.4.2")]
+    #[event_version("0.4.3")]
     SetAuthByPredecessorId(MaybeIntentEvent<AccountEvent<'a, Cow<'a, SetAuthByPredecessorId>>>),
 
     #[event_version("0.4.0")]
