@@ -72,7 +72,7 @@ cargo integration-tests <defuse|poa|escrow-swap>
 Or run all tests:
 
 ```shell
-cargo test --workspace --all-targets
+make test
 ```
 
 For state migration testing set environmental var `DEFUSE_MIGRATE_FROM_LEGACY=1`
