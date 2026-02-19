@@ -1180,6 +1180,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-deployer-hash-proxy"
+version = "0.1.0"
+dependencies = [
+ "defuse-global-deployer",
+ "defuse-serde-utils",
+ "near-sdk",
+]
+
+[[package]]
 name = "defuse-erc191"
 version = "0.1.0"
 dependencies = [
@@ -1339,6 +1348,7 @@ dependencies = [
  "anyhow",
  "defuse",
  "defuse-crypto",
+ "defuse-deployer-hash-proxy",
  "defuse-escrow-swap",
  "defuse-global-deployer",
  "defuse-nep245",
@@ -1406,6 +1416,7 @@ dependencies = [
  "bnum",
  "chrono",
  "defuse",
+ "defuse-deployer-hash-proxy",
  "defuse-escrow-swap",
  "defuse-fees",
  "defuse-global-deployer",

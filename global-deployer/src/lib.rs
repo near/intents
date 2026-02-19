@@ -6,6 +6,7 @@ use std::{borrow::Cow, collections::BTreeMap};
 
 use defuse_serde_utils::hex::AsHex;
 use near_sdk::{
+    GlobalContractId,
     AccountId, AccountIdRef, Promise, borsh, ext_contract, near,
     serde_with::{hex::Hex, serde_as},
 };
@@ -73,6 +74,9 @@ pub struct State {
     /// Currently deployed code hash, or zeros otherwise.
     #[serde_as(as = "Hex")]
     pub code_hash: [u8; 32],
+    /// Deterministic (NEP-616) account ID derived from this contract are considered as the owner.
+    #[serde(flatten, default, skip_serializing_if = "Option::is_none")]
+    pub owner_contract_id: Option<GlobalContractId>,
 }
 
 impl State {
@@ -84,6 +88,54 @@ impl State {
             owner_id: owner.into(),
             index,
             code_hash: Self::DEFAULT_HASH,
+            owner_contract_id: None,
+        }
+    }
+
+    pub fn new_with_contract(owner: impl Into<AccountId>, owner_contract_id: GlobalContractId, index: u32) -> Self {
+        Self {
+            owner_id: owner.into(),
+            index,
+            code_hash: Self::DEFAULT_HASH,
+            owner_contract_id: Some(owner_contract_id),
+        }
+    }
+
+
+    pub fn state_init(&self) -> BTreeMap<Vec<u8>, Vec<u8>> {
+        [(
+            Self::STATE_KEY.to_vec(),
+            borsh::to_vec(self).unwrap_or_else(|_| unreachable!()),
+        )]
+        .into()
+    }
+}
+
+#[near(serializers = [borsh, json])]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OwnerProxyState {
+    pub owner_id: AccountId,
+    #[serde_as(as = "Hex")]
+    pub old_hash: [u8; 32],
+    #[serde_as(as = "Hex")]
+    pub new_hash: [u8; 32],
+    pub deployer_instance: AccountId,
+}
+
+impl OwnerProxyState {
+    pub const STATE_KEY: &[u8] = b"";
+
+    pub const fn new(
+        owner_id: AccountId,
+        old_hash: [u8; 32],
+        new_hash: [u8; 32],
+        deployer_instance: AccountId,
+    ) -> Self {
+        Self {
+            owner_id,
+            old_hash,
+            new_hash,
+            deployer_instance,
         }
     }
 

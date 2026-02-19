@@ -8,6 +8,8 @@ mod poa;
 mod escrow;
 
 #[cfg(feature = "deployer")]
+mod deployer_hash_proxy;
+#[cfg(feature = "deployer")]
 mod global_deployer;
 
 mod utils;

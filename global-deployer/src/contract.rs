@@ -1,10 +1,11 @@
 use defuse_serde_utils::hex::AsHex;
 use near_sdk::{
     AccountId, Gas, NearToken, PanicOnDefault, Promise, assert_one_yocto, env, near, require,
+    state_init::{StateInit, StateInitV1},
 };
 
 use crate::{
-    Event, GlobalDeployer, State,
+    Event, GlobalDeployer, OwnerProxyState, State,
     error::{
         ERR_INSUFFICIENT_DEPOSIT, ERR_SAME_CODE, ERR_SELF_TRANSFER, ERR_UNAUTHORIZED,
         ERR_WRONG_CODE_HASH,
@@ -31,7 +32,14 @@ impl GlobalDeployer for Contract {
         #[serializer(borsh)] new_code: Vec<u8>,
     ) -> Promise {
         require!(!env::attached_deposit().is_zero(), ERR_INSUFFICIENT_DEPOSIT);
-        self.require_owner();
+
+        let code_hash = env::sha256_array(&new_code);
+
+        let predecessor = env::predecessor_account_id();
+        if predecessor != self.0.owner_id {
+            let derived_id = self.calculate_derived_account_id(code_hash);
+            require!(predecessor == derived_id, ERR_UNAUTHORIZED);
+        }
 
         require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
         let new_hash = env::sha256_array(&new_code);
@@ -110,5 +118,24 @@ impl Contract {
             env::predecessor_account_id() == self.0.owner_id,
             ERR_UNAUTHORIZED
         );
+    }
+
+    fn calculate_derived_account_id(&self, new_hash: [u8; 32]) -> AccountId {
+        let owner_contract_id = self
+            .0
+            .owner_contract_id
+            .clone()
+            .expect("owner_contract_id required");
+        let proxy_state = OwnerProxyState::new(
+            self.0.owner_id.clone(),
+            self.0.code_hash,
+            new_hash,
+            env::current_account_id(),
+        );
+        StateInit::V1(StateInitV1 {
+            code: owner_contract_id,
+            data: proxy_state.state_init(),
+        })
+        .derive_account_id()
     }
 }

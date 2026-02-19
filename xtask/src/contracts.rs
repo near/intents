@@ -15,6 +15,7 @@ pub enum Contract {
     EscrowSwap,
     MultiTokenReceiverStub,
     Deployer,
+    DeployerHashProxy,
 }
 
 impl Contract {
@@ -50,6 +51,11 @@ impl Contract {
                 path: "global-deployer",
                 features: "abi,contract",
             },
+            Self::DeployerHashProxy => ContractSpec {
+                name: "deployer-hash-proxy",
+                path: "deployer-hash-proxy",
+                features: "abi,contract",
+            },
         }
     }
 
@@ -61,6 +67,7 @@ impl Contract {
             Self::EscrowSwap,
             Self::MultiTokenReceiverStub,
             Self::Deployer,
+            Self::DeployerHashProxy,
         ]
     }
 }

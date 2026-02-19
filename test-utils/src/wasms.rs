@@ -66,3 +66,7 @@ pub static WNEAR_WASM: LazyLock<Vec<u8>> =
 
 pub static DEPLOYER_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse_global_deployer.wasm"));
+
+#[cfg(feature = "deployer")]
+pub static DEPLOYER_HASH_PROXY_WASM: LazyLock<Vec<u8>> =
+    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse_deployer_hash_proxy.wasm"));

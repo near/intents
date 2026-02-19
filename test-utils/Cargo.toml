@@ -12,6 +12,7 @@ workspace = true
 poa = []
 defuse = []
 escrow = []
+deployer = []
 
 [dependencies]
 defuse-randomness.workspace = true

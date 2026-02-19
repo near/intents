@@ -32,7 +32,7 @@ escrow-swap = [
     "defuse-test-utils/defuse",
     "defuse-test-utils/poa"
     ]
-deployer = ["dep:defuse-global-deployer", "defuse-sandbox/deployer"]
+deployer = ["dep:defuse-global-deployer", "dep:defuse-deployer-hash-proxy", "defuse-sandbox/deployer", "defuse-test-utils/deployer"]
 long = []
 
 [dependencies]
@@ -49,6 +49,7 @@ defuse-test-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-fees.workspace = true
 defuse-global-deployer = {workspace = true, optional = true}
+defuse-deployer-hash-proxy = {workspace = true, optional = true}
 
 near-sdk.workspace = true
 near-crypto.workspace = true

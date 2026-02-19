@@ -11,6 +11,7 @@ members = [
     "deadline",
     "decimal",
     "defuse",
+    "deployer-hash-proxy",
     "global-deployer",
     "erc191",
     "escrow-swap",
@@ -51,6 +52,7 @@ defuse-auth-call.path = "auth-call"
 defuse-bitmap.path = "bitmap"
 defuse-borsh-utils.path = "borsh-utils"
 defuse-controller.path = "controller"
+defuse-deployer-hash-proxy.path = "deployer-hash-proxy"
 defuse-global-deployer.path = "global-deployer"
 defuse-core.path = "core"
 defuse-crypto.path = "crypto"
