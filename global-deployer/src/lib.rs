@@ -74,7 +74,7 @@ pub struct State {
     /// Currently deployed code hash, or zeros otherwise.
     #[serde_as(as = "Hex")]
     pub code_hash: [u8; 32],
-    /// Deterministic (NEP-616) account ID derived from this contract are considered as the owner.
+    /// Owner's contract ID derived from ([`Sate::owner_id`],[`OwnerProxyState`]).
     #[serde(flatten, default, skip_serializing_if = "Option::is_none")]
     pub owner_contract_id: Option<GlobalContractId>,
 }
@@ -114,11 +114,15 @@ impl State {
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OwnerProxyState {
+    /// Owner's account ID should match [`State::owner_id`].
     pub owner_id: AccountId,
+    /// Currently deployed code hash
     #[serde_as(as = "Hex")]
     pub old_hash: [u8; 32],
+    /// New deployed code hash
     #[serde_as(as = "Hex")]
     pub new_hash: [u8; 32],
+    /// Identifies exact deployer instance
     pub deployer_instance: AccountId,
 }
 

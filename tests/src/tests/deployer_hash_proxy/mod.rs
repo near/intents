@@ -1,10 +1,11 @@
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use defuse_global_deployer::{OwnerProxyState, State as DeployerState};
+use defuse_deployer_hash_proxy::error as hash_proxy_error;
 use defuse_sandbox::{
     api::types::transaction::actions::GlobalContractDeployMode, extensions::{deployer_hash_proxy::DeployerHashProxyExt, global_deployer::{DeployerExt, DeployerViewExt}}, sandbox, Sandbox
 };
-use defuse_test_utils::wasms::DEPLOYER_HASH_PROXY_WASM;
+use defuse_test_utils::{asserts::ResultAssertsExt, wasms::DEPLOYER_HASH_PROXY_WASM};
 use near_sdk::{GlobalContractId, NearToken, env::sha256_array};
 use rstest::{fixture, rstest};
 
@@ -52,7 +53,7 @@ const DUMMY_WASM: &[u8] = &[1u8; 1024];
 
 #[rstest]
 #[tokio::test]
-async fn test_hp_approve(
+async fn test_approve_upgrade_through_proxy_hash_and_execute_upgrade_from_any_account(
     #[future(awt)] hash_proxy_env: HashProxyEnv,
     unique_index: u32,
 ) {
@@ -88,45 +89,16 @@ async fn test_hp_approve(
 
     assert_eq!(deployer_instance.gd_code_hash().await.unwrap(), DeployerState::DEFAULT_HASH);
 
-    let hash_proxy_instance = alice.deploy_and_approve(hash_proxy_global_id.clone(),proxy_state.into())
-    .await
-    .unwrap();
+    let hash_proxy_instance = alice.deploy_hash_proxy_instance(hash_proxy_global_id.clone(), proxy_state.into())
+        .await
+        .unwrap();
+
+    bob.hp_exec(hash_proxy_instance.id(), DUMMY_WASM).await.assert_err_contains(hash_proxy_error::ERR_MISSING_APPROVAL);
+
+    bob.hp_approve(hash_proxy_instance.id()).await.assert_err_contains(hash_proxy_error::ERR_UNAUTHORIZED);
+    alice.hp_approve(hash_proxy_instance.id()).await.unwrap();
 
     bob.hp_exec(hash_proxy_instance.id(), DUMMY_WASM).await.unwrap();
 
     assert_eq!(deployer_instance.gd_code_hash().await.unwrap(), sha256_array(DUMMY_WASM));
-
-
-
-    // let dummy_hash = sha256_array(&*DEPLOYER_WASM);
-    //
-    // let proxy_state = OwnerProxyState::new(
-    //     root.id().clone(),
-    //     DeployerState::DEFAULT_HASH,
-    //     dummy_hash,
-    //     deployer_instance_id,
-    // );
-    // let hash_proxy_state = HashProxyState::new(proxy_state);
-    //
-    // let hash_proxy_instance = root
-    //     .deploy_hash_proxy_instance(hash_proxy_global_id, hash_proxy_state)
-    //     .await
-    //     .unwrap();
-    //
-    // let result = root
-    //     .hp_approve(hash_proxy_instance.id())
-    //     .await
-    //     .unwrap();
-    //
-    // let expected_event = Event::Approved {
-    //     old_hash: DeployerState::DEFAULT_HASH,
-    //     new_hash: dummy_hash,
-    // };
-    // assert!(
-    //     result
-    //         .logs()
-    //         .contains(&expected_event.to_nep297_event().to_event_log().as_str()),
-    //     "Expected Approved event in logs: {:?}",
-    //     result.logs(),
-    // );
 }
