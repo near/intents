@@ -98,13 +98,15 @@ where
             return usize::MAX;
         }
 
-        let ident = "        ".len().saturating_mul(depth + 1);
+        const INDENT_STEP: usize = "        ".len();
+        let inner_indent = INDENT_STEP.saturating_mul(depth + 1);
+        let closing_indent = INDENT_STEP.saturating_mul(depth);
 
-        ident
+        inner_indent
             .saturating_add(T::max_json_length_at(depth + 1, item_args))
             .saturating_add(",\n".len())
             .saturating_mul(length)
-            .saturating_add(" [\n] ".len() + ident)
+            .saturating_add(" [\n] ".len() + closing_indent)
     }
 }
 
