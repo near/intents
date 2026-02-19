@@ -14,7 +14,16 @@ impl PromiseExt for Promise {
 pub type PromiseResult<T> = Result<T, near_sdk::PromiseError>;
 pub type PromiseJsonResult<T> = Result<Result<T, serde_json::Error>, near_sdk::PromiseError>;
 
-pub const MAX_JSON_LENGTH_RECURSION_LIMIT: usize = 1024;
+/// NOTE: The NEAR runtime limits the Wasm operand stack height to 16,384 entries
+/// (`max_stack_height` genesis parameter). Each recursive call to
+/// [`MaxJsonLength::max_json_length_at`] consumes stack entries for params,
+/// locals, operand depth, and gas metering overhead — the exact amount
+/// depends on the monomorphized `Args` type. Since different trait
+/// implementations produce different frame sizes, we use a conservative
+/// limit that stays well within budget across all reasonable type nesting.
+/// See the NEAR specification on contract preparation for details:
+/// <https://nomicon.io/RuntimeSpec/Preparation>
+pub const MAX_JSON_LENGTH_RECURSION_LIMIT: usize = 32;
 
 pub trait MaxJsonLength: DeserializeOwned {
     type Args;
