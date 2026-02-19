@@ -94,11 +94,12 @@ where
     type Args = (usize, T::Args);
 
     fn max_json_length_at(depth: usize, (length, item_args): (usize, T::Args)) -> usize {
+        const INDENT_STEP: usize = "        ".len();
+
         if depth >= MAX_JSON_LENGTH_RECURSION_LIMIT {
             return usize::MAX;
         }
 
-        const INDENT_STEP: usize = "        ".len();
         let ident = INDENT_STEP.saturating_mul(depth);
         let item_indent = ident.saturating_add(INDENT_STEP);
 
