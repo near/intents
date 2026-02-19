@@ -12,7 +12,7 @@ impl PromiseExt for Promise {
 }
 
 pub type PromiseResult<T> = Result<T, near_sdk::PromiseError>;
-pub type PromiseJsonResult<T> = Result<Result<T, serde_json::Error>, near_sdk::PromiseError>;
+pub type PromiseJsonResult<T> = PromiseResult<Result<T, serde_json::Error>>;
 
 /// NOTE: The NEAR runtime limits the Wasm operand stack height to 16,384 entries
 /// (`max_stack_height` genesis parameter). Each recursive call to
