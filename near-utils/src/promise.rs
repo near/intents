@@ -99,14 +99,14 @@ where
         }
 
         const INDENT_STEP: usize = "        ".len();
-        let inner_indent = INDENT_STEP.saturating_mul(depth + 1);
-        let closing_indent = INDENT_STEP.saturating_mul(depth);
+        let ident = INDENT_STEP.saturating_mul(depth);
+        let item_indent = ident.saturating_add(INDENT_STEP);
 
-        inner_indent
+        item_indent
             .saturating_add(T::max_json_length_at(depth + 1, item_args))
             .saturating_add(",\n".len())
             .saturating_mul(length)
-            .saturating_add(" [\n] ".len() + closing_indent)
+            .saturating_add(" [\n] ".len() + ident)
     }
 }
 
