@@ -1,4 +1,5 @@
-DEFUSE_OUT_DIR ?= res
+ROOT_DIR := $(dir $(abspath $(firstword $(MAKEFILE_LIST))))
+DEFUSE_OUT_DIR ?= $(ROOT_DIR)res
 CARGO_EXTRA_FLAGS?=
 
 CARGO_NEAR := cargo near build
@@ -35,7 +36,7 @@ all-reproducible: \
 # Defuse
 # ============================================================================
 
-DEFUSE_MANIFEST_PATH := defuse/Cargo.toml
+DEFUSE_MANIFEST_PATH := $(ROOT_DIR)defuse/Cargo.toml
 DEFUSE_FEATURES := --features=abi,contract,imt
 DEFUSE_FLAGS ?= $(if $(CARGO_EXTRA_FLAGS),$(CARGO_EXTRA_FLAGS),$(DEFUSE_FEATURES))
 
@@ -51,7 +52,7 @@ build-defuse-reproducible:
 # Poa Factory
 # ============================================================================
 
-POA_FACTORY_MANIFEST_PATH := poa-factory/Cargo.toml
+POA_FACTORY_MANIFEST_PATH := $(ROOT_DIR)poa-factory/Cargo.toml
 POA_FACTORY_FEATURES := --features=contract
 POA_FACTORY_FLAGS ?= $(if $(CARGO_EXTRA_FLAGS),$(CARGO_EXTRA_FLAGS),$(POA_FACTORY_FEATURES))
 
@@ -67,7 +68,7 @@ build-poa-factory-reproducible:
 # Poa Token
 # ============================================================================
 
-POA_TOKEN_MANIFEST_PATH := poa-token/Cargo.toml
+POA_TOKEN_MANIFEST_PATH := $(ROOT_DIR)poa-token/Cargo.toml
 POA_TOKEN_FEATURES := --features=contract
 POA_TOKEN_FLAGS ?= $(if $(CARGO_EXTRA_FLAGS),$(CARGO_EXTRA_FLAGS),$(POA_TOKEN_FEATURES))
 
@@ -82,7 +83,7 @@ build-poa-token-reproducible:
 # Escrow Swap
 # ============================================================================
 
-ESCROW_SWAP_MANIFEST_PATH := escrow-swap/Cargo.toml
+ESCROW_SWAP_MANIFEST_PATH := $(ROOT_DIR)escrow-swap/Cargo.toml
 ESCROW_SWAP_FEATURES := --features=abi,contract
 ESCROW_SWAP_FLAGS ?= $(if $(CARGO_EXTRA_FLAGS),$(CARGO_EXTRA_FLAGS),$(ESCROW_SWAP_FEATURES))
 
@@ -98,7 +99,7 @@ build-escrow-swap-reproducible:
 # Global Deployer
 # ============================================================================
 
-GLOBAL_DEPLOYER_MANIFEST_PATH := global-deployer/Cargo.toml
+GLOBAL_DEPLOYER_MANIFEST_PATH := $(ROOT_DIR)global-deployer/Cargo.toml
 GLOBAL_DEPLOYER_FEATURES := --features=abi,contract
 GLOBAL_DEPLOYER_FLAGS ?= $(if $(CARGO_EXTRA_FLAGS),$(CARGO_EXTRA_FLAGS),$(GLOBAL_DEPLOYER_FEATURES))
 
@@ -113,7 +114,7 @@ build-global-deployer-reproducible:
 # Multi Token Receiver Stub
 # ============================================================================
 
-MULTI_TOKEN_RECEIVER_STUB_MANIFEST_PATH := tests/contracts/multi-token-receiver-stub/Cargo.toml
+MULTI_TOKEN_RECEIVER_STUB_MANIFEST_PATH := $(ROOT_DIR)tests/contracts/multi-token-receiver-stub/Cargo.toml
 MULTI_TOKEN_RECEIVER_STUB_FEATURES := --features=abi
 MULTI_TOKEN_RECEIVER_STUB_FLAGS ?= $(if $(CARGO_EXTRA_FLAGS),$(CARGO_EXTRA_FLAGS),$(MULTI_TOKEN_RECEIVER_STUB_FEATURES))
 
