@@ -102,3 +102,54 @@ async fn test_approve_upgrade_through_proxy_hash_and_execute_upgrade_from_any_ac
 
     assert_eq!(deployer_instance.gd_code_hash().await.unwrap(), sha256_array(DUMMY_WASM));
 }
+
+#[rstest]
+#[tokio::test]
+async fn test_deploy_approve_and_exec(
+    #[future(awt)] hash_proxy_env: HashProxyEnv,
+    unique_index: u32,
+) {
+    let HashProxyEnv { sandbox, deployer_global_id, hash_proxy_global_id } = hash_proxy_env;
+    let root = sandbox.root();
+
+    let alice = root
+        .generate_subaccount("alice", NearToken::from_near(1))
+        .await
+        .unwrap();
+
+    let bob = root
+        .generate_subaccount("bob", NearToken::from_near(100))
+        .await
+        .unwrap();
+
+    let deployer_state = DeployerState::new_with_contract(
+        alice.id().clone(),
+        hash_proxy_global_id.clone(),
+        unique_index,
+    );
+    let deployer_instance = root
+        .deploy_instance(deployer_global_id.clone(), deployer_state.clone())
+        .await
+        .unwrap();
+
+    let proxy_state = OwnerProxyState {
+        owner_id: alice.id().clone(),
+        old_hash: deployer_state.code_hash,
+        new_hash: sha256_array(DUMMY_WASM),
+        deployer_instance: deployer_instance.id().clone(),
+    };
+
+    let hash_proxy_instance = alice
+        .deploy_and_approve(hash_proxy_global_id.clone(), proxy_state.into())
+        .await
+        .unwrap();
+
+    bob.hp_exec(hash_proxy_instance.id(), DUMMY_WASM)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        deployer_instance.gd_code_hash().await.unwrap(),
+        sha256_array(DUMMY_WASM)
+    );
+}
