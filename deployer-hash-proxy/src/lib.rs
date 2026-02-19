@@ -14,10 +14,7 @@ use near_sdk::{
 pub trait DeployerProxyHash {
     fn hp_approve(&mut self);
 
-    fn hp_exec(
-        &mut self,
-        #[serializer(borsh)] new_code: Vec<u8>,
-    ) -> Promise;
+    fn hp_exec(&mut self, #[serializer(borsh)] new_code: Vec<u8>) -> Promise;
 }
 
 #[serde_as(crate = "near_sdk::serde_with")]

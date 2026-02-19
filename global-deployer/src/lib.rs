@@ -6,8 +6,7 @@ use std::{borrow::Cow, collections::BTreeMap};
 
 use defuse_serde_utils::hex::AsHex;
 use near_sdk::{
-    GlobalContractId,
-    AccountId, AccountIdRef, Promise, borsh, ext_contract, near,
+    AccountId, AccountIdRef, GlobalContractId, Promise, borsh, ext_contract, near,
     serde_with::{hex::Hex, serde_as},
 };
 
@@ -92,7 +91,11 @@ impl State {
         }
     }
 
-    pub fn new_with_contract(owner: impl Into<AccountId>, owner_contract_id: GlobalContractId, index: u32) -> Self {
+    pub fn new_with_contract(
+        owner: impl Into<AccountId>,
+        owner_contract_id: GlobalContractId,
+        index: u32,
+    ) -> Self {
         Self {
             owner_id: owner.into(),
             index,
@@ -100,7 +103,6 @@ impl State {
             owner_contract_id: Some(owner_contract_id),
         }
     }
-
 
     pub fn state_init(&self) -> BTreeMap<Vec<u8>, Vec<u8>> {
         [(

@@ -21,10 +21,7 @@ pub trait DeployerHashProxyExt {
         state: HashProxyState,
     ) -> anyhow::Result<Account>;
 
-    async fn hp_approve(
-        &self,
-        target: &near_sdk::AccountId,
-    ) -> anyhow::Result<ExecutionSuccess>;
+    async fn hp_approve(&self, target: &near_sdk::AccountId) -> anyhow::Result<ExecutionSuccess>;
 
     async fn hp_exec(
         &self,
@@ -80,10 +77,7 @@ impl DeployerHashProxyExt for SigningAccount {
         Ok(Account::new(account_id, self.network_config().clone()))
     }
 
-    async fn hp_approve(
-        &self,
-        target: &near_sdk::AccountId,
-    ) -> anyhow::Result<ExecutionSuccess> {
+    async fn hp_approve(&self, target: &near_sdk::AccountId) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
             .function_call(
                 FnCallBuilder::new("hp_approve")

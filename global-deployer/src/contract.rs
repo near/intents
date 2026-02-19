@@ -33,13 +33,13 @@ impl GlobalDeployer for Contract {
     ) -> Promise {
         require!(!env::attached_deposit().is_zero(), ERR_INSUFFICIENT_DEPOSIT);
 
-        let code_hash = env::sha256_array(&new_code);
-
-        let predecessor = env::predecessor_account_id();
-        if predecessor != self.0.owner_id {
-            let derived_id = self.calculate_derived_account_id(code_hash);
-            require!(predecessor == derived_id, ERR_UNAUTHORIZED);
-        }
+        let new_code_hash = env::sha256_array(&new_code);
+        require!(
+            self.0.owner_id == env::predecessor_account_id()
+                || self.calculate_derived_account_id(new_code_hash)
+                    == Some(env::predecessor_account_id()),
+            ERR_UNAUTHORIZED
+        );
 
         require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
         let new_hash = env::sha256_array(&new_code);
@@ -120,22 +120,23 @@ impl Contract {
         );
     }
 
-    fn calculate_derived_account_id(&self, new_hash: [u8; 32]) -> AccountId {
-        let owner_contract_id = self
-            .0
-            .owner_contract_id
-            .clone()
-            .expect("owner_contract_id required");
+    fn calculate_derived_account_id(&self, new_hash: [u8; 32]) -> Option<AccountId> {
+        let Some(owner_contract_id) = &self.0.owner_contract_id else {
+            return None;
+        };
+
         let proxy_state = OwnerProxyState::new(
             self.0.owner_id.clone(),
             self.0.code_hash,
             new_hash,
             env::current_account_id(),
         );
-        StateInit::V1(StateInitV1 {
-            code: owner_contract_id,
-            data: proxy_state.state_init(),
-        })
-        .derive_account_id()
+        Some(
+            StateInit::V1(StateInitV1 {
+                code: owner_contract_id.clone(),
+                data: proxy_state.state_init(),
+            })
+            .derive_account_id(),
+        )
     }
 }
