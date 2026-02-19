@@ -162,8 +162,8 @@ impl Sent {
                     // `ft_transfer_call` returns successfully transferred amount
                     match promise_result_checked_json::<U128>(result_idx) {
                         Ok(Ok(used)) => used.0,
-                        Err(_) => self.amount,
                         Ok(Err(_deserialize_err)) => 0,
+                        Err(_) => self.amount,
                     }
                 }
                 #[cfg(feature = "nep245")]
@@ -171,7 +171,7 @@ impl Sent {
                     // `mt_transfer_call` returns successfully transferred amounts
                     match promise_result_checked_json::<[U128; 1]>(result_idx) {
                         Ok(Ok([used])) => used.0,
-                        Ok(_deserialize_err) => 0,
+                        Ok(Err(_deserialize_err)) => 0,
                         Err(_) => self.amount,
                     }
                 }
