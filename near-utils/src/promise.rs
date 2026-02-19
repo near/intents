@@ -93,7 +93,7 @@ where
 {
     type Args = (usize, T::Args);
 
-    fn max_json_length_at(depth: usize, (length, inner_args): (usize, T::Args)) -> usize {
+    fn max_json_length_at(depth: usize, (length, item_args): (usize, T::Args)) -> usize {
         if depth >= MAX_JSON_LENGTH_RECURSION_LIMIT {
             return usize::MAX;
         }
@@ -101,7 +101,7 @@ where
         let ident = "        ".len().saturating_mul(depth + 1);
 
         ident
-            .saturating_add(T::max_json_length_at(depth + 1, inner_args))
+            .saturating_add(T::max_json_length_at(depth + 1, item_args))
             .saturating_add(",\n".len())
             .saturating_mul(length)
             .saturating_add(" [\n] ".len() + ident)
