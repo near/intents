@@ -109,18 +109,20 @@ impl ExecutableIntent for SetAuthByPredecessorId {
         S: State,
         I: Inspector,
     {
-        engine
+        let toggled = engine
             .state
             .set_auth_by_predecessor_id(signer_id.to_owned(), self.enabled)?;
 
-        engine
-            .inspector
-            .on_event(DefuseEvent::SetAuthByPredecessorId(
-                MaybeIntentEvent::new_with_hash(
-                    AccountEvent::new(Cow::Borrowed(signer_id), Cow::Borrowed(&self)),
-                    intent_hash,
-                ),
-            ));
+        if toggled {
+            engine
+                .inspector
+                .on_event(DefuseEvent::SetAuthByPredecessorId(
+                    MaybeIntentEvent::new_with_hash(
+                        AccountEvent::new(Cow::Borrowed(signer_id), Cow::Borrowed(&self)),
+                        intent_hash,
+                    ),
+                ));
+        }
 
         Ok(())
     }

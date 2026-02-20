@@ -85,6 +85,8 @@ impl Contract {
         predecessor_account_id
     }
 
+    /// Sets whether authentication by `PREDECESSOR_ID` is enabled.
+    /// Emits an event if the authentication status was toggled.
     pub fn set_auth_by_predecessor_id_and_emit_event(
         &mut self,
         account_id: &AccountIdRef,
@@ -104,6 +106,8 @@ impl Contract {
         Ok(toggled)
     }
 
+    /// Sets whether authentication by `PREDECESSOR_ID` is enabled.
+    /// Returns whether authentication by `PREDECESSOR_ID` was toggled.
     pub(crate) fn internal_set_auth_by_predecessor_id(
         &mut self,
         account_id: &AccountIdRef,
@@ -114,7 +118,7 @@ impl Contract {
             let Some(account) = self.accounts.get_mut(account_id) else {
                 // no need to create an account: not-yet-existing accounts
                 // have auth by PREDECESSOR_ID enabled by default
-                return Ok(true);
+                return Ok(false);
             };
             account
         } else {
