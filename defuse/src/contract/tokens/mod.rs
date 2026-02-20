@@ -6,10 +6,12 @@ mod nep245;
 
 use super::Contract;
 use defuse_core::{DefuseError, Result, token_id::TokenId};
-use defuse_near_utils::{Lock, REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError};
+use defuse_near_utils::{
+    Lock, REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError, promise_result_checked_json_with_len,
+};
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
 use itertools::{Either, Itertools};
-use near_sdk::{AccountId, AccountIdRef, Gas, env, json_types::U128, serde_json};
+use near_sdk::{AccountId, AccountIdRef, Gas, env, json_types::U128};
 use std::borrow::Cow;
 
 pub const STORAGE_DEPOSIT_GAS: Gas = Gas::from_tgas(10);
@@ -157,11 +159,10 @@ impl Contract {
         let tokens_iter = tokens.into_iter();
         let tokens_count = tokens_iter.len();
 
-        let requested_refunds =
-            env::promise_result_checked(0, Self::mt_on_transfer_max_result_len(tokens_count))
-                .ok()
-                .and_then(|value| serde_json::from_slice::<Vec<U128>>(&value).ok())
-                .filter(|refunds| refunds.len() == tokens_count);
+        let requested_refunds = promise_result_checked_json_with_len::<Vec<U128>>(0, tokens_count)
+            .ok()
+            .and_then(Result::ok)
+            .filter(|refunds| refunds.len() == tokens_count);
 
         let mut burn_event = MtBurnEvent {
             owner_id: Cow::Borrowed(receiver_id),
@@ -219,15 +220,5 @@ impl Contract {
                 .unwrap_or_panic_display()
                 .emit();
         }
-    }
-
-    const fn mt_on_transfer_max_result_len(amounts_count: usize) -> usize {
-        // we allow at most one newline char and up to 8 spaces/tabs if the JSON was prettified
-        const MAX_LEN_PER_AMOUNT: usize =
-            "        \"+340282366920938463463374607431768211455\",\n".len(); // u128::MAX
-
-        amounts_count
-            .saturating_mul(MAX_LEN_PER_AMOUNT)
-            .saturating_add("[\n]".len())
     }
 }
