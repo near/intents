@@ -48,13 +48,21 @@ Alternatively, you can build this smart contract yourself.
 Build smart contract separately:
 
 ```shell
-cargo build-contract <contract_name> <reproducible|non-reproducible>
+make build-<contract-name>
 ```
 
 Build all contracts at once:
 
 ```shell
-cargo build-all <reproducible|non-reproducible>
+make all
+```
+
+NOTE: Extra cargo flags can be specified with `CARGO_EXTRA_FLAGS` (will be applied on all contracts) or can be specified in `<CONTRACT_NAME>_FLAGS` var for each contract separately
+
+Build all contracts at once in reproducible mode:
+
+```shell
+make all-reproducible
 ```
 
 Run integration tests:
@@ -66,12 +74,8 @@ cargo integration-tests <defuse|poa|escrow-swap>
 Or run all tests:
 
 ```shell
-cargo test --workspace --all-targets
+make test
 ```
-
-NOTE:
-1. To specify the destination of wasms, set the `DEFUSE_OUT_DIR` environment variable.
-2. To specify wasms destination for tests set `DEFUSE_USE_OUT_DIR`environment variable.
 
 For state migration testing set environmental var `DEFUSE_MIGRATE_FROM_LEGACY=1`
 State migrations will be applied before all tests.
