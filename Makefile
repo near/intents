@@ -21,7 +21,8 @@ all: \
 	build-poa-token \
 	build-escrow-swap \
 	build-global-deployer \
-	build-multi-token-receiver-stub
+	build-multi-token-receiver-stub \
+	build-wallet-ed25519
 
 .PHONY: all-reproducible
 all-reproducible: \
@@ -30,7 +31,8 @@ all-reproducible: \
 	build-poa-token-reproducible \
 	build-escrow-swap-reproducible \
 	build-global-deployer-reproducible \
-	build-multi-token-receiver-stub-reproducible
+	build-multi-token-receiver-stub-reproducible \
+	build-wallet-ed25519-reproducible
 
 # ============================================================================
 # Defuse
@@ -124,6 +126,21 @@ build-multi-token-receiver-stub:
 .PHONY: build-multi-token-receiver-stub-reproducible
 build-multi-token-receiver-stub-reproducible:
 	$(call build_reproducible,$(MULTI_TOKEN_RECEIVER_STUB_MANIFEST_PATH))
+
+# ============================================================================
+# Wallet Contract
+# ============================================================================
+
+WALLET_MANIFEST_PATH := $(ROOT_DIR)wallet/Cargo.toml
+WALLET_FEATURES := --features=contract,abi,ed25519
+WALLET_FLAGS ?= $(if $(CARGO_EXTRA_FLAGS),$(CARGO_EXTRA_FLAGS),$(WALLET_FEATURES))
+
+.PHONY: build-multi-token-receiver-stub
+build-wallet-ed25519:
+	$(call build_non_reproducible,$(WALLET_MANIFEST_PATH),$(WALLET_FLAGS))
+.PHONY: build-multi-token-receiver-stub-reproducible
+build-wallet-ed25519-reproducible:
+	$(call build_reproducible,$(WALLET_MANIFEST_PATH))
 
 # ============================================================================
 # Utils

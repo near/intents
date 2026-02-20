@@ -1,0 +1,120 @@
+[package]
+name = "defuse-wallet"
+edition.workspace = true
+version = "0.1.0"
+rust-version.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+defuse-borsh-utils.workspace = true
+defuse-deadline.workspace = true
+defuse-serde-utils.workspace = true
+
+near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
+thiserror.workspace = true
+
+defuse-crypto = { workspace = true, default-features = false, optional = true }
+defuse-webauthn = { workspace = true, default-features = false, optional = true }
+
+arbitrary = { workspace = true, features = ["derive"], optional = true }
+
+[features]
+abi = [
+    "defuse-deadline/abi",
+    "defuse-serde-utils/abi",
+    "defuse-borsh-utils/schema",
+    "defuse-crypto?/abi",
+    "defuse-webauthn?/abi",
+]
+arbitrary = ["dep:arbitrary", "near-sdk/arbitrary"]
+webauthn = ["dep:defuse-webauthn"]
+
+########## Contract variants ##########
+# When no features enabled, by default, always reject the signature.
+# This can be useful to deploy "1-of-M multisig"/"fan-out" wallet, where
+# extensions are pre-defined at the initialization stage (i.e. state_init).
+# So only extensions can execute requests via `w_execute_extension()`.
+contract = []
+
+# Webauthn (a.k.a passkey) variants:
+webauthn-ed25519 = ["webauthn", "defuse-webauthn/ed25519"]
+webauthn-p256 = ["webauthn", "defuse-webauthn/p256"]
+
+# Raw ed25519 signature:
+ed25519 = ["defuse-crypto/ed25519"]
+
+[package.metadata.near.reproducible_build]
+image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
+image_digest = "sha256:772638e343baeeea24e49062c7d424274f3441452cc06ce97fc4e5695b19fecc"
+passed_env = []
+container_build_command = [
+    "cargo",
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--locked",
+    "--no-default-features",
+    "--features=abi,contract,ed25519",
+    "--no-embed-abi",
+]
+
+[package.metadata.near.reproducible_build.variant.webauthn-ed25519]
+image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
+image_digest = "sha256:772638e343baeeea24e49062c7d424274f3441452cc06ce97fc4e5695b19fecc"
+passed_env = []
+container_build_command = [
+    "cargo",
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--locked",
+    "--no-default-features",
+    "--features=abi,contract,webauthn-ed25519",
+    "--no-embed-abi",
+]
+
+[package.metadata.near.reproducible_build.variant.webauthn-p256]
+image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
+image_digest = "sha256:772638e343baeeea24e49062c7d424274f3441452cc06ce97fc4e5695b19fecc"
+passed_env = []
+container_build_command = [
+    "cargo",
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--locked",
+    "--no-default-features",
+    "--features=abi,contract,webauthn-p256",
+    "--no-embed-abi",
+]
+
+[package.metadata.near.reproducible_build.variant.no-auth]
+image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
+image_digest = "sha256:772638e343baeeea24e49062c7d424274f3441452cc06ce97fc4e5695b19fecc"
+passed_env = []
+container_build_command = [
+    "cargo",
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--locked",
+    "--no-default-features",
+    "--features=abi,contract",
+    "--no-embed-abi",
+]
+
+[dev-dependencies]
+defuse-test-utils.workspace = true
+arbitrary = { workspace = true, features = ["derive"] }
+near-sdk = { workspace = true, features = [
+    "arbitrary",
+    "deterministic-account-ids",
+    "unit-testing",
+] }
+rstest.workspace = true

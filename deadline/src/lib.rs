@@ -5,11 +5,14 @@ use core::{
 use std::io;
 
 use chrono::{DateTime, Utc};
-use defuse_borsh_utils::adapters::{BorshDeserializeAs, BorshSerializeAs, TimestampNanoSeconds};
+use defuse_borsh_utils::adapters::{
+    BorshDeserializeAs, BorshSerializeAs, TimestampMicroSeconds, TimestampMilliSeconds,
+    TimestampNanoSeconds, TimestampSeconds,
+};
 use near_sdk::near;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-#[near(serializers=[json])]
+#[near(serializers = [json])]
 #[repr(transparent)]
 pub struct Deadline(
     #[cfg_attr(
@@ -74,20 +77,33 @@ impl AddAssign<Duration> for Deadline {
     }
 }
 
-impl BorshSerializeAs<Deadline> for TimestampNanoSeconds {
-    fn serialize_as<W>(source: &Deadline, writer: &mut W) -> io::Result<()>
-    where
-        W: io::Write,
-    {
-        Self::serialize_as(&source.0, writer)
-    }
-}
+macro_rules! impl_borsh_serde_as {
+    ($($a:ident,)+) => {$(
+        impl<I> BorshSerializeAs<Deadline> for $a<I>
+        where
+            $a<I>: BorshSerializeAs<DateTime<Utc>>,
+        {
+            fn serialize_as<W>(source: &Deadline, writer: &mut W) -> io::Result<()>
+            where
+                W: io::Write,
+            {
+                Self::serialize_as(&source.0, writer)
+            }
+        }
 
-impl BorshDeserializeAs<Deadline> for TimestampNanoSeconds {
-    fn deserialize_as<R>(reader: &mut R) -> io::Result<Deadline>
-    where
-        R: io::Read,
-    {
-        Self::deserialize_as(reader).map(Deadline)
-    }
+        impl<I> BorshDeserializeAs<Deadline> for $a<I>
+        where
+            $a<I>: BorshDeserializeAs<DateTime<Utc>>,
+        {
+            fn deserialize_as<R>(reader: &mut R) -> io::Result<Deadline>
+            where
+                R: io::Read,
+            {
+                Self::deserialize_as(reader).map(Deadline)
+            }
+        }
+    )*};
+}
+impl_borsh_serde_as! {
+    TimestampSeconds, TimestampMilliSeconds, TimestampMicroSeconds, TimestampNanoSeconds,
 }

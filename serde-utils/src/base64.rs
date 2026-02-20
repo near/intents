@@ -1,16 +1,18 @@
 #![allow(rustdoc::broken_intra_doc_links)]
 //! Helper for [`serde_with::base64::Base64`] to implement [`serde_with::schemars_0_8::JsonSchemaAs`] on it.
-pub use serde_with::{
+pub use near_sdk::serde_with::{
     base64::{Alphabet, Standard, UrlSafe},
     formats::{Format, Padded, Unpadded},
 };
 
 use derive_more::From;
-use near_sdk::serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_with::{DeserializeAs, SerializeAs, serde_as};
+use near_sdk::{
+    serde::{Deserialize, Deserializer, Serialize, Serializer},
+    serde_with::{DeserializeAs, SerializeAs, serde_as},
+};
 
 pub struct Base64<ALPHABET: Alphabet = Standard, PADDING: Format = Padded>(
-    ::serde_with::base64::Base64<ALPHABET, PADDING>,
+    ::near_sdk::serde_with::base64::Base64<ALPHABET, PADDING>,
 );
 
 impl<T, ALPHABET> SerializeAs<T> for Base64<ALPHABET, Padded>
@@ -22,7 +24,7 @@ where
     where
         S: Serializer,
     {
-        ::serde_with::base64::Base64::<ALPHABET, Padded>::serialize_as(source, serializer)
+        ::near_sdk::serde_with::base64::Base64::<ALPHABET, Padded>::serialize_as(source, serializer)
     }
 }
 
@@ -35,7 +37,9 @@ where
     where
         S: Serializer,
     {
-        ::serde_with::base64::Base64::<ALPHABET, Unpadded>::serialize_as(source, serializer)
+        ::near_sdk::serde_with::base64::Base64::<ALPHABET, Unpadded>::serialize_as(
+            source, serializer,
+        )
     }
 }
 
@@ -49,7 +53,7 @@ where
     where
         D: Deserializer<'de>,
     {
-        ::serde_with::base64::Base64::<ALPHABET, FORMAT>::deserialize_as(deserializer)
+        ::near_sdk::serde_with::base64::Base64::<ALPHABET, FORMAT>::deserialize_as(deserializer)
     }
 }
 
@@ -57,13 +61,13 @@ where
 /// as `#[near_bindgen]` doesn't support `#[serde(...)]` attributes on method arguments
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
-    serde_as(schemars = true),
+    serde_as(crate = "::near_sdk::serde_with", schemars = true),
     derive(::near_sdk::schemars::JsonSchema),
     schemars(crate = "::near_sdk::schemars", transparent)
 )]
 #[cfg_attr(
     not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
+    serde_as(crate = "::near_sdk::serde_with", schemars = false)
 )]
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, From)]
 #[serde(
@@ -81,12 +85,14 @@ impl<T> AsBase64<T> {
 
 #[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
 const _: () = {
-    use near_sdk::schemars::{
-        JsonSchema,
-        r#gen::SchemaGenerator,
-        schema::{InstanceType, Schema, SchemaObject},
+    use near_sdk::{
+        schemars::{
+            JsonSchema,
+            r#gen::SchemaGenerator,
+            schema::{InstanceType, Schema, SchemaObject},
+        },
+        serde_with::schemars_0_8::JsonSchemaAs,
     };
-    use serde_with::schemars_0_8::JsonSchemaAs;
 
     impl<T, ALPHABET, FORMAT> JsonSchemaAs<T> for Base64<ALPHABET, FORMAT>
     where

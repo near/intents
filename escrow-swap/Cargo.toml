@@ -61,5 +61,10 @@ auth_call = ["dep:defuse-auth-call"]
 nep141 = ["defuse-token-id/nep141"]
 nep245 = ["defuse-token-id/nep245"]
 
-abi = ["defuse-deadline/abi", "defuse-token-id/abi", "serde_with/schemars_0_8"]
+abi = [
+    "defuse-deadline/abi",
+    "defuse-decimal/abi",
+    "defuse-token-id/abi",
+    "serde_with/schemars_0_8",
+]
 contract = ["dep:defuse-near-utils"]

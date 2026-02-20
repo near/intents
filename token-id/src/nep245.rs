@@ -2,14 +2,17 @@ pub use defuse_nep245::TokenId;
 
 use std::{fmt, str::FromStr};
 
-use near_sdk::{AccountId, near};
-use serde_with::{DeserializeFromStr, SerializeDisplay};
+use near_sdk::{
+    AccountId, near,
+    serde_with::{DeserializeFromStr, SerializeDisplay},
+};
 
 use crate::{TokenIdType, error::TokenIdError};
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(::arbitrary::Arbitrary))]
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr)]
 #[near(serializers = [borsh])]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr)]
+#[serde_with(crate = "::near_sdk::serde_with")]
 pub struct Nep245TokenId {
     pub contract_id: AccountId,
 

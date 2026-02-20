@@ -1,11 +1,7 @@
-pub use serde_with::formats::{Format, Lowercase, Uppercase};
-
 use derive_more::From;
 use near_sdk::serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-/// Helper type to implement `#[derive(Serialize, Deserialize)]`,
-/// as `#[near_bindgen]` doesn't support `#[serde(...)]` attributes on method arguments
 #[cfg_attr(
     all(feature = "abi", not(target_arch = "wasm32")),
     serde_as(schemars = true),
@@ -21,6 +17,8 @@ use serde_with::serde_as;
     crate = "::near_sdk::serde",
     bound(serialize = "T: AsRef<[u8]>", deserialize = "T: TryFrom<Vec<u8>>")
 )]
+/// Helper type to implement `#[derive(Serialize, Deserialize)]`,
+/// as `#[near_bindgen]` doesn't support `#[serde(...)]` attributes on method arguments
 pub struct AsHex<T>(#[serde_as(as = "::serde_with::hex::Hex")] pub T);
 
 impl<T> AsHex<T> {

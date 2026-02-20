@@ -12,10 +12,16 @@ workspace = true
 poa = []
 defuse = []
 escrow = []
+wallet = []
 
 [dependencies]
 defuse-randomness.workspace = true
-defuse-crypto ={ workspace = true, features = ["arbitrary"] }
+defuse-crypto = { workspace = true, features = [
+    "arbitrary",
+    "ed25519",
+    "secp256k1",
+    "p256",
+] }
 
 arbitrary.workspace = true
 derive_more = { workspace = true, features = ["full"] }

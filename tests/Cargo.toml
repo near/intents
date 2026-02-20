@@ -9,20 +9,16 @@ repository.workspace = true
 workspace = true
 
 [features]
-default = ["defuse", "poa", "escrow-swap", "long", "deployer"]
+default = ["defuse", "poa", "escrow-swap", "long", "deployer", "wallet"]
 
-poa = [
-    "dep:defuse-poa-factory",
-    "defuse-sandbox/poa",
-    "defuse-test-utils/poa"
-    ]
+poa = ["dep:defuse-poa-factory", "defuse-sandbox/poa", "defuse-test-utils/poa"]
 defuse = [
     "dep:defuse",
     "defuse-sandbox/defuse",
     "defuse-sandbox/poa",
     "defuse-test-utils/defuse",
-    "defuse-test-utils/poa"
-    ]
+    "defuse-test-utils/poa",
+]
 escrow-swap = [
     "dep:defuse-escrow-swap",
     "defuse-sandbox/escrow",
@@ -30,16 +26,31 @@ escrow-swap = [
     "defuse-sandbox/poa",
     "defuse-test-utils/escrow",
     "defuse-test-utils/defuse",
-    "defuse-test-utils/poa"
-    ]
+    "defuse-test-utils/poa",
+]
+wallet = ["dep:defuse-wallet", "defuse-test-utils/wallet", "deployer"]
+
 deployer = ["dep:defuse-global-deployer", "defuse-sandbox/deployer"]
+
 long = []
 
 [dependencies]
 defuse-sandbox = { workspace = true }
-defuse = { workspace = true, features = ["contract", "arbitrary", "imt"], optional = true }
-defuse-escrow-swap = { workspace = true, features = ["auth_call"], optional = true }
-defuse-poa-factory = {workspace = true, features = ["contract"], optional = true }
+defuse = { workspace = true, features = [
+    "contract",
+    "arbitrary",
+    "imt",
+], optional = true }
+defuse-escrow-swap = { workspace = true, features = [
+    "auth_call",
+], optional = true }
+defuse-poa-factory = { workspace = true, features = [
+    "contract",
+], optional = true }
+defuse-wallet = { workspace = true, features = [
+    "arbitrary",
+    "ed25519",
+], optional = true }
 multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
 
 defuse-near-utils = { workspace = true }
@@ -48,7 +59,7 @@ defuse-randomness.workspace = true
 defuse-test-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-fees.workspace = true
-defuse-global-deployer = {workspace = true, optional = true}
+defuse-global-deployer = { workspace = true, optional = true }
 
 near-sdk.workspace = true
 near-crypto.workspace = true

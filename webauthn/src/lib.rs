@@ -1,22 +1,47 @@
-use defuse_crypto::{Curve, Ed25519, P256, PublicKey, serde::AsCurve};
+#[cfg(feature = "ed25519")]
+mod ed25519;
+#[cfg(feature = "ed25519")]
+pub use self::ed25519::*;
+
+#[cfg(feature = "p256")]
+mod p256;
+#[cfg(feature = "p256")]
+pub use self::p256::*;
+
 use defuse_serde_utils::base64::{Base64, Unpadded, UrlSafe};
-use near_sdk::{env, near, serde_json};
-use serde_with::serde_as;
+use near_sdk::{
+    env, near,
+    serde::{Serialize, de::DeserializeOwned},
+    serde_json,
+};
 
 #[near(serializers = [json])]
+#[serde(bound(
+    serialize = "<A as Algorithm>::Signature: Serialize",
+    deserialize = "<A as Algorithm>::Signature: DeserializeOwned",
+))]
 #[derive(Debug, Clone)]
-pub struct PayloadSignature {
+pub struct PayloadSignature<A: Algorithm + ?Sized> {
     /// Base64Url-encoded [authenticatorData](https://w3c.github.io/webauthn/#authenticator-data)
+    #[cfg_attr(
+        all(feature = "abi", not(target_arch = "wasm32")),
+        schemars(with = "String")
+    )]
     #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
     pub authenticator_data: Vec<u8>,
     /// Serialized [clientDataJSON](https://w3c.github.io/webauthn/#dom-authenticatorresponse-clientdatajson)
     pub client_data_json: String,
 
-    #[serde(flatten)]
-    pub signature: Signature,
+    #[cfg_attr(
+        all(feature = "abi", not(target_arch = "wasm32")),
+        // schemars@0.8 does not respect it's `schemars(bound = "...")`
+        // attribute: https://github.com/GREsau/schemars/blob/104b0fd65055d4b46f8dcbe38cdd2ef2c4098fe2/schemars_derive/src/lib.rs#L193-L206
+        schemars(with = "String"),
+    )]
+    pub signature: A::Signature,
 }
 
-impl PayloadSignature {
+impl<A: Algorithm + ?Sized> PayloadSignature<A> {
     /// <https://w3c.github.io/webauthn/#sctn-verifying-assertion>
     ///
     /// Credits to:
@@ -25,27 +50,28 @@ impl PayloadSignature {
     pub fn verify(
         &self,
         message: impl AsRef<[u8]>,
-        require_user_verification: bool,
-    ) -> Option<PublicKey> {
+        public_key: &A::PublicKey,
+        user_verification: UserVerification,
+    ) -> bool {
         // verify authData flags
         if self.authenticator_data.len() < 37
-            || !Self::verify_flags(self.authenticator_data[32], require_user_verification)
+            || !Self::verify_flags(self.authenticator_data[32], user_verification)
         {
-            return None;
+            return false;
         }
 
         // 10. Verify that the value of C.type is the string webauthn.get.
-        let c: CollectedClientData = serde_json::from_str(&self.client_data_json).ok()?;
+        let Ok(c) = serde_json::from_str::<CollectedClientData>(&self.client_data_json) else {
+            return false;
+        };
         if c.typ != ClientDataType::Get {
-            return None;
+            return false;
         }
 
         // 11. Verify that the value of C.challenge equals the base64url
         // encoding of pkOptions.challenge
-        //
-        // In our case, challenge is a hash of the payload
         if c.challenge != message.as_ref() {
-            return None;
+            return false;
         }
 
         // 20. Let hash be the result of computing a hash over the cData using
@@ -54,8 +80,11 @@ impl PayloadSignature {
 
         // 21. Using credentialRecord.publicKey, verify that sig is a valid
         // signature over the binary concatenation of authData and hash.
-        self.signature
-            .verify(&[self.authenticator_data.as_slice(), hash.as_slice()].concat())
+        A::verify(
+            &[self.authenticator_data.as_slice(), hash.as_slice()].concat(),
+            public_key,
+            &self.signature,
+        )
     }
 
     #[allow(clippy::identity_op)]
@@ -65,7 +94,7 @@ impl PayloadSignature {
     const AUTH_DATA_FLAGS_BS: u8 = 1 << 4;
 
     /// <https://w3c.github.io/webauthn/#sctn-verifying-assertion>
-    const fn verify_flags(flags: u8, require_user_verification: bool) -> bool {
+    const fn verify_flags(flags: u8, user_verification: UserVerification) -> bool {
         // 16. Verify that the UP bit of the flags in authData is set.
         if flags & Self::AUTH_DATA_FLAGS_UP != Self::AUTH_DATA_FLAGS_UP {
             return false;
@@ -74,7 +103,7 @@ impl PayloadSignature {
         // 17. If user verification was determined to be required, verify that
         // the UV bit of the flags in authData is set. Otherwise, ignore the
         // value of the UV flag.
-        if require_user_verification
+        if user_verification.is_required()
             && (flags & Self::AUTH_DATA_FLAGS_UV != Self::AUTH_DATA_FLAGS_UV)
         {
             return false;
@@ -90,6 +119,27 @@ impl PayloadSignature {
 
         true
     }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum UserVerification {
+    Ignore,
+    Require,
+}
+
+impl UserVerification {
+    #[inline]
+    pub const fn is_required(&self) -> bool {
+        matches!(self, Self::Require)
+    }
+}
+
+/// See <https://www.iana.org/assignments/cose/cose.xhtml#algorithms>
+pub trait Algorithm {
+    type PublicKey;
+    type Signature;
+
+    fn verify(msg: &[u8], public_key: &Self::PublicKey, signature: &Self::Signature) -> bool;
 }
 
 /// For more details, refer to [WebAuthn specification](https://w3c.github.io/webauthn/#dictdef-collectedclientdata).
@@ -115,49 +165,4 @@ pub enum ClientDataType {
     /// Serializes to the string `"webauthn.get"`
     #[serde(rename = "webauthn.get")]
     Get,
-}
-
-#[near(serializers = [json])]
-#[serde(untagged)]
-#[derive(Debug, Clone)]
-pub enum Signature {
-    /// [COSE EdDSA (-8) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
-    /// ed25519 curve
-    Ed25519 {
-        #[serde_as(as = "AsCurve<Ed25519>")]
-        public_key: <Ed25519 as Curve>::PublicKey,
-        #[serde_as(as = "AsCurve<Ed25519>")]
-        signature: <Ed25519 as Curve>::Signature,
-    },
-    /// [COSE ES256 (-7) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms): NIST P-256 curve (a.k.a secp256r1) over SHA-256
-    P256 {
-        #[serde_as(as = "AsCurve<P256>")]
-        public_key: <P256 as Curve>::PublicKey,
-        #[serde_as(as = "AsCurve<P256>")]
-        signature: <P256 as Curve>::Signature,
-    },
-}
-
-impl Signature {
-    #[inline]
-    pub fn verify(&self, message: &[u8]) -> Option<PublicKey> {
-        match self {
-            // [COSE EdDSA (-8) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
-            // ed25519 curve
-            Self::Ed25519 {
-                public_key,
-                signature,
-            } => Ed25519::verify(signature, message, public_key).map(PublicKey::Ed25519),
-            // [COSE ES256 (-7) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
-            // P256 (a.k.a secp256r1) over SHA-256
-            Self::P256 {
-                public_key,
-                signature,
-            } => {
-                // Use host impl of SHA-256 here to reduce gas consumption
-                let prehashed = env::sha256_array(message);
-                P256::verify(signature, &prehashed, public_key).map(PublicKey::P256)
-            }
-        }
-    }
 }

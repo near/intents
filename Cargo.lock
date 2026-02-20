@@ -916,7 +916,6 @@ dependencies = [
  "near-sdk",
  "p256",
  "rstest",
- "serde_with",
  "strum 0.27.2",
  "thiserror 2.0.17",
 ]
@@ -940,7 +939,6 @@ dependencies = [
  "defuse-num-utils",
  "near-sdk",
  "rstest",
- "serde_with",
  "thiserror 2.0.17",
 ]
 
@@ -954,7 +952,6 @@ dependencies = [
  "impl-tools",
  "near-sdk",
  "rstest",
- "serde_with",
 ]
 
 [[package]]
@@ -1048,7 +1045,6 @@ dependencies = [
  "impl-tools",
  "near-api",
  "near-sdk",
- "serde_with",
 ]
 
 [[package]]
@@ -1135,7 +1131,6 @@ dependencies = [
  "near-crypto",
  "near-sdk",
  "rstest",
- "serde_with",
  "stellar-strkey",
 ]
 
@@ -1181,6 +1176,7 @@ dependencies = [
  "defuse-sandbox",
  "defuse-serde-utils",
  "defuse-test-utils",
+ "defuse-wallet",
  "derive_more",
  "futures",
  "hex",
@@ -1208,7 +1204,6 @@ dependencies = [
  "impl-tools",
  "near-sdk",
  "rstest",
- "serde_with",
 ]
 
 [[package]]
@@ -1223,7 +1218,6 @@ dependencies = [
  "near-contract-standards",
  "near-sdk",
  "rstest",
- "serde_with",
  "strum 0.27.2",
  "thiserror 2.0.17",
 ]
@@ -1248,13 +1242,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-wallet"
+version = "0.1.0"
+dependencies = [
+ "arbitrary",
+ "defuse-borsh-utils",
+ "defuse-crypto",
+ "defuse-deadline",
+ "defuse-serde-utils",
+ "defuse-test-utils",
+ "defuse-webauthn",
+ "near-sdk",
+ "rstest",
+ "thiserror 2.0.17",
+]
+
+[[package]]
 name = "defuse-webauthn"
 version = "0.1.0"
 dependencies = [
  "defuse-crypto",
  "defuse-serde-utils",
  "near-sdk",
- "serde_with",
 ]
 
 [[package]]
@@ -2687,9 +2696,9 @@ dependencies = [
 
 [[package]]
 name = "near-gas"
-version = "0.3.3"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1cecd5d9463587f34f2b7ff4c7104297483a543be8a68a4a04a8ac96c419d1a1"
+checksum = "919d705b6dab5a7c6cc4b9a60e3025ed2f7cf3d4c3c32ad1a47264a4190e6409"
 dependencies = [
  "borsh",
  "schemars 0.8.22",
@@ -2893,9 +2902,9 @@ dependencies = [
 
 [[package]]
 name = "near-sandbox"
-version = "0.3.4"
+version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "478a37f1c52dae2c8ac63a92ab4258401b79d99a881efd243cacd08b748ea7cf"
+checksum = "1f372402157a18cf9e98fa35ec3060219462ceae153687061ec98333959580c4"
 dependencies = [
  "binary-install",
  "fs4",

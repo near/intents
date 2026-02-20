@@ -9,10 +9,15 @@
 mod curve;
 mod parse;
 mod payload;
+#[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
 mod public_key;
+#[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
 mod signature;
 
-pub use self::{curve::*, parse::ParseCurveError, payload::*, public_key::*, signature::*};
+pub use self::{curve::*, parse::ParseCurveError, payload::*};
 
-#[cfg(feature = "serde")]
+#[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
+pub use self::{public_key::*, signature::*};
+
+#[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "p256"))]
 pub mod serde;

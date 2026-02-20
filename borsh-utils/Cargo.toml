@@ -18,3 +18,4 @@ chrono = { workspace = true, optional = true }
 
 [features]
 chrono = ["dep:chrono"]
+schema = []
