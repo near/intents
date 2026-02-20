@@ -34,8 +34,7 @@ members = [
     "tip191",
     "token-id",
     "ton-connect",
-    "wnear", 
-    "xtask",
+    "wnear"
 ]
 default-members = ["defuse"]
 
@@ -79,7 +78,6 @@ defuse-ton-connect = { path = "ton-connect", default-features = false, features 
     "text",
 ] }
 defuse-wnear.path = "wnear"
-xtask.path = "xtask"
 
 defuse-randomness.path = "randomness"
 defuse-test-utils.path = "test-utils"
