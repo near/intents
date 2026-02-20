@@ -15,7 +15,7 @@ use defuse_sandbox::{
     extensions::{storage_management::StorageManagementExt, wnear::WNearDeployerExt},
     sandbox,
 };
-use futures::{future::try_join_all, try_join};
+use futures::{FutureExt, future::try_join_all, try_join};
 use impl_tools::autoimpl;
 use near_sdk::{GlobalContractId, NearToken};
 use rstest::fixture;
@@ -24,7 +24,7 @@ use defuse_test_utils::wasms::{DEFUSE_WASM, ESCROW_SWAP_WASM, POA_FACTORY_WASM, 
 
 #[fixture]
 pub async fn env() -> Env {
-    Env::new().await
+    Env::new().boxed().await
 }
 
 #[autoimpl(Deref using self.sandbox)]
