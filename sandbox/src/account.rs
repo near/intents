@@ -156,16 +156,16 @@ impl SigningAccount {
         Self { account, signer }
     }
 
-    pub fn generate_implicit(network_config: NetworkConfig) -> Result<Self> {
-        let secret_key = generate_secret_key().context("failed to generate secret key")?;
+    pub fn generate_implicit(network_config: NetworkConfig) -> Self {
+        let secret_key = generate_secret_key().unwrap();
 
-        Ok(Self::new(
+        Self::new(
             Account::new(
                 defuse_crypto::PublicKey::from(secret_key.public_key()).to_implicit_account_id(),
                 network_config,
             ),
-            Signer::from_secret_key(secret_key).context("failed to create signer")?,
-        ))
+            Signer::from_secret_key(secret_key).unwrap(),
+        )
     }
 
     #[inline]
@@ -197,19 +197,19 @@ impl SigningAccount {
     }
 
     pub async fn fund_implicit(&self, deposit: NearToken) -> anyhow::Result<Self> {
-        let account = Self::generate_implicit(self.network_config.clone())?;
+        let account = Self::generate_implicit(self.network_config.clone());
 
         self.tx(account.id().clone()).transfer(deposit).await?;
 
         Ok(account)
     }
 
-    fn generate_keys(pk_num: usize) -> Result<Vec<SecretKey>> {
+    fn generate_keys(pk_num: usize) -> Vec<SecretKey> {
         let pk_num = pk_num.max(1);
 
         (0..pk_num)
-            .map(|_| generate_secret_key().context("failed to generate secret key"))
-            .collect::<Result<Vec<_>>>()
+            .map(|_| generate_secret_key().unwrap())
+            .collect::<Vec<_>>()
     }
 
     async fn add_keys_to_signer_pool(
@@ -232,7 +232,7 @@ impl SigningAccount {
     }
 
     pub async fn extend_signer(&self, pk_num: usize) -> Result<()> {
-        let pks = Self::generate_keys(pk_num)?;
+        let pks = Self::generate_keys(pk_num);
 
         self.add_keys_to_signer_pool(self.tx(self.id()), pks).await
     }
@@ -245,7 +245,7 @@ impl SigningAccount {
         balance: impl Into<Option<NearToken>>,
     ) -> anyhow::Result<Self> {
         let subaccount = self.sub_account(name)?;
-        let pks = Self::generate_keys(pk_num)?;
+        let pks = Self::generate_keys(pk_num);
 
         let mut tx = self.tx(subaccount.id()).create_account();
         if let Some(balance) = balance.into() {
