@@ -87,6 +87,7 @@ impl Contract {
 
     /// Sets whether authentication by `PREDECESSOR_ID` is enabled.
     /// Emits an event if the authentication status was toggled.
+    /// Returns whether authentication by `PREDECESSOR_ID` was toggled.
     pub fn set_auth_by_predecessor_id_and_emit_event(
         &mut self,
         account_id: &AccountIdRef,
