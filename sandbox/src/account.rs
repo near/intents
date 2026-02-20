@@ -205,9 +205,7 @@ impl SigningAccount {
     }
 
     fn generate_keys(pk_num: usize) -> Result<Vec<SecretKey>> {
-        if pk_num < 1 {
-            anyhow::bail!("pk_num must be at least 1");
-        }
+        let pk_num = pk_num.max(1);
 
         (0..pk_num)
             .map(|_| generate_secret_key().context("failed to generate secret key"))
@@ -226,11 +224,9 @@ impl SigningAccount {
             .fold(tx, TxBuilder::add_full_access_key)
             .await?;
 
-        futures::future::try_join_all(
-            pks.into_iter()
-                .map(|secret_key| self.signer.add_secret_key_to_pool(secret_key)),
-        )
-        .await?;
+        for secret_key in pks {
+            self.signer.add_secret_key_to_pool(secret_key).await?;
+        }
 
         Ok(())
     }
@@ -255,11 +251,6 @@ impl SigningAccount {
         if let Some(balance) = balance.into() {
             tx = tx.transfer(balance);
         }
-
-        // pks.iter()
-        //     .map(SecretKey::public_key)
-        //     .fold(tx, TxBuilder::add_full_access_key)
-        //     .await?;
 
         let signer = Self::new(
             subaccount,

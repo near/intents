@@ -132,7 +132,7 @@ pub async fn sandbox(#[default(NearToken::from_near(100_000))] amount: NearToken
         .unwrap();
 
     let child_root = root_account
-        .generate_subaccount_extended(
+        .generate_subaccount_highload(
             SUB_COUNTER.fetch_add(1, Ordering::Relaxed).to_string(),
             ROOT_PK_POOL_SIZE,
             amount,
