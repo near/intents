@@ -8,8 +8,8 @@ use crate::{
     amounts::Amounts,
     engine::{Engine, Inspector, State},
     events::DefuseEvent,
-    intents::{ExecutableIntent, IntentEvent, tokens::NotifyOnTransfer},
-    tokens::imt::ImtTokens,
+    intents::{ExecutableIntent, MaybeIntentEvent, tokens::NotifyOnTransfer},
+    tokens::imt::{ImtMintEvent, ImtTokens},
 };
 
 #[near(serializers = [borsh, json])]
@@ -53,8 +53,8 @@ impl ExecutableIntent for ImtMint {
         engine
             .inspector
             .on_event(DefuseEvent::ImtMint(Cow::Borrowed(
-                [IntentEvent::new(
-                    AccountEvent::new(signer_id, Cow::Borrowed(&self)),
+                [MaybeIntentEvent::new_with_hash(
+                    AccountEvent::new(signer_id, ImtMintEvent::from(&self)),
                     intent_hash,
                 )]
                 .as_slice(),
@@ -94,7 +94,7 @@ impl ExecutableIntent for ImtBurn {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        _intent_hash: CryptoHash,
+        intent_hash: CryptoHash,
     ) -> Result<()>
     where
         S: State,
@@ -103,7 +103,11 @@ impl ExecutableIntent for ImtBurn {
         engine
             .inspector
             .on_event(DefuseEvent::ImtBurn(Cow::Borrowed(
-                [AccountEvent::new(signer_id, Cow::Borrowed(&self))].as_slice(),
+                [MaybeIntentEvent::new_with_hash(
+                    AccountEvent::new(signer_id, Cow::Borrowed(&self)),
+                    intent_hash,
+                )]
+                .as_slice(),
             )));
 
         engine

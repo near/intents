@@ -1,4 +1,4 @@
-use super::{ExecutableIntent, IntentEvent};
+use super::ExecutableIntent;
 use crate::{
     DefuseError, Result,
     accounts::AccountEvent,
@@ -6,6 +6,7 @@ use crate::{
     engine::{Engine, Inspector, State, StateView},
     events::DefuseEvent,
     fees::Pips,
+    intents::MaybeIntentEvent,
     token_id::{TokenId, TokenIdType},
 };
 use defuse_num_utils::CheckedMulDiv;
@@ -77,7 +78,7 @@ impl ExecutableIntent for TokenDiff {
         }
 
         engine.inspector.on_event(DefuseEvent::TokenDiff(
-            [IntentEvent::new(
+            [MaybeIntentEvent::new_with_hash(
                 AccountEvent::new(
                     signer_id,
                     TokenDiffEvent {

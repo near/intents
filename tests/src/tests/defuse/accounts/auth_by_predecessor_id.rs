@@ -1,10 +1,19 @@
-use defuse_sandbox::extensions::defuse::contract::core::{
-    DefuseError,
-    amounts::Amounts,
-    intents::{account::SetAuthByPredecessorId, tokens::Transfer},
-    token_id::{TokenId, nep141::Nep141TokenId},
+use std::borrow::Cow;
+
+use defuse::core::{accounts::AccountEvent, events::DefuseEvent, intents::MaybeIntentEvent};
+use defuse_sandbox::{
+    assert_eq_event_logs,
+    extensions::defuse::{
+        contract::core::{
+            DefuseError,
+            amounts::Amounts,
+            intents::{account::SetAuthByPredecessorId, tokens::Transfer},
+            token_id::{TokenId, nep141::Nep141TokenId},
+        },
+        event::ToEventLog,
+    },
 };
-use near_sdk::AccountId;
+use near_sdk::{AccountId, AsNep297Event};
 use rstest::rstest;
 
 use crate::tests::defuse::env::Env;
@@ -52,9 +61,19 @@ async fn auth_by_predecessor_id() {
                 .unwrap()
         );
 
-        user.disable_auth_by_predecessor_id(env.defuse.id())
+        let result = user
+            .disable_auth_by_predecessor_id(env.defuse.id())
             .await
             .unwrap();
+
+        let event = DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new(AccountEvent::new(
+            user.id().clone(),
+            Cow::Owned(SetAuthByPredecessorId { enabled: false }),
+        )))
+        .to_nep297_event()
+        .to_event_log();
+
+        assert_eq_event_logs!(result.logs(), [event]);
 
         assert!(
             !env.defuse
@@ -140,14 +159,18 @@ async fn auth_by_predecessor_id() {
 
     // enable auth by PREDECESSOR_ID back (by intent)
     {
+        let intent = SetAuthByPredecessorId { enabled: true };
         let enable_auth_payload = user
-            .sign_defuse_payload_default(&env.defuse, [SetAuthByPredecessorId { enabled: true }])
+            .sign_defuse_payload_default(&env.defuse, [intent.clone()])
             .await
             .unwrap();
 
-        env.simulate_and_execute_intents(env.defuse.id(), [enable_auth_payload])
+        let result = env
+            .simulate_and_execute_intents(env.defuse.id(), [enable_auth_payload.clone()])
             .await
             .unwrap();
+
+        assert_eq!(result.logs(), enable_auth_payload.to_event_log());
 
         assert!(
             env.defuse

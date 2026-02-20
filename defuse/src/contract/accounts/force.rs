@@ -1,8 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use defuse_core::{
-    DefuseError, Result, accounts::AccountEvent, crypto::PublicKey, engine::StateView,
-    events::DefuseEvent,
+    accounts::AccountEvent, crypto::PublicKey, engine::StateView, events::DefuseEvent,
 };
 use defuse_near_utils::Lock;
 use near_plugins::{AccessControllable, access_control_any};
@@ -68,7 +67,7 @@ impl ForceAccountManager for Contract {
 
         for account_id in account_ids {
             // NOTE: omit errors
-            let _ = self.internal_set_auth_by_predecessor_id(&account_id, false, true);
+            let _ = self.set_auth_by_predecessor_id_and_emit_event(&account_id, false, true);
         }
     }
 
@@ -83,7 +82,7 @@ impl ForceAccountManager for Contract {
 
         for account_id in account_ids {
             // NOTE: omit errors
-            let _ = self.internal_set_auth_by_predecessor_id(&account_id, true, true);
+            let _ = self.set_auth_by_predecessor_id_and_emit_event(&account_id, true, true);
         }
     }
 
@@ -109,28 +108,5 @@ impl ForceAccountManager for Contract {
                 self.remove_public_key_and_emit_event(account_id.as_ref(), pk);
             }
         }
-    }
-}
-
-impl Contract {
-    pub(crate) fn internal_set_auth_by_predecessor_id(
-        &mut self,
-        account_id: &AccountId,
-        enable: bool,
-        force: bool,
-    ) -> Result<bool> {
-        if enable {
-            let Some(account) = self.accounts.get_mut(account_id) else {
-                // no need to create an account: not-yet-existing accounts
-                // have auth by PREDECESSOR_ID enabled by default
-                return Ok(true);
-            };
-            account
-        } else {
-            self.accounts.get_or_create(account_id.clone())
-        }
-        .get_mut_maybe_forced(force)
-        .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))
-        .map(|account| account.set_auth_by_predecessor_id(account_id, enable))
     }
 }

@@ -1,14 +1,17 @@
 use std::borrow::Cow;
 
 use defuse_core::{
-    Deadline, Nonce, accounts::AccountEvent, accounts::NonceEvent, engine::Inspector,
-    events::DefuseEvent, intents::IntentEvent,
+    Deadline, Nonce,
+    accounts::{AccountEvent, NonceEvent},
+    engine::Inspector,
+    events::DefuseEvent,
+    intents::MaybeIntentEvent,
 };
 use near_sdk::{AccountIdRef, CryptoHash};
 
 #[derive(Debug, Default)]
 pub struct ExecuteInspector {
-    pub intents_executed: Vec<IntentEvent<AccountEvent<'static, NonceEvent>>>,
+    pub intents_executed: Vec<MaybeIntentEvent<AccountEvent<'static, NonceEvent>>>,
 }
 
 impl Inspector for ExecuteInspector {
@@ -26,7 +29,7 @@ impl Inspector for ExecuteInspector {
         intent_hash: CryptoHash,
         nonce: Nonce,
     ) {
-        self.intents_executed.push(IntentEvent::new(
+        self.intents_executed.push(MaybeIntentEvent::new_with_hash(
             AccountEvent::new(Cow::Owned(signer_id.to_owned()), NonceEvent::new(nonce)),
             intent_hash,
         ));

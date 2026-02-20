@@ -219,7 +219,7 @@ async fn test_upgrade_with_persistence() {
             .await
             .expect("failed to grant role");
 
-        let new_salt = user1
+        let (_, new_salt) = user1
             .update_current_salt(env.defuse.id())
             .await
             .expect("unable to rotate salt");

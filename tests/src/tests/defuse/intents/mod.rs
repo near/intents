@@ -1,12 +1,14 @@
+use defuse::core::intents::MaybeIntentEvent;
 use defuse_randomness::Rng;
 use defuse_sandbox::extensions::defuse::contract::core::{
     Deadline, Nonce,
-    accounts::{AccountEvent, NonceEvent, TransferEvent},
+    accounts::{AccountEvent, NonceEvent},
     amounts::Amounts,
     crypto::Payload,
     events::DefuseEvent,
-    intents::{DefuseIntents, IntentEvent, tokens::Transfer},
+    intents::{DefuseIntents, tokens::Transfer},
     token_id::{TokenId, nep141::Nep141TokenId},
+    tokens::TransferEvent,
 };
 use defuse_sandbox::extensions::defuse::{
     intents::{ExecuteIntentsExt, SimulateIntents},
@@ -32,7 +34,7 @@ impl AccountNonceIntentEvent {
 
     pub fn into_event(self) -> DefuseEvent<'static> {
         DefuseEvent::IntentsExecuted(
-            vec![IntentEvent::new(
+            vec![MaybeIntentEvent::new_with_hash(
                 AccountEvent::new(self.0, NonceEvent::new(self.1)),
                 self.2,
             )]
@@ -99,17 +101,17 @@ async fn simulate_is_view_method(#[notrace] mut rng: impl Rng) {
     assert_eq!(result.report.intents_executed.len(), 1);
 
     // Prepare expected transfer event
-    let expected_log = DefuseEvent::Transfer(Cow::Owned(vec![IntentEvent {
-        intent_hash: transfer_intent_payload.hash(),
-        event: AccountEvent {
+    let expected_log = DefuseEvent::Transfer(Cow::Owned(vec![MaybeIntentEvent::new_with_hash(
+        AccountEvent {
             account_id: user.id().clone().into(),
             event: TransferEvent {
                 receiver_id: Cow::Borrowed(&transfer_intent.receiver_id),
                 tokens: transfer_intent.tokens,
-                memo: Cow::Borrowed(&transfer_intent.memo),
+                memo: transfer_intent.memo.as_deref().map(Cow::Borrowed),
             },
         },
-    }]))
+        transfer_intent_payload.hash(),
+    )]))
     .to_nep297_event()
     .to_event_log();
 

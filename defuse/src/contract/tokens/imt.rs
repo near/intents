@@ -1,7 +1,10 @@
 use std::borrow::Cow;
 
 use defuse_core::{
-    accounts::AccountEvent, engine::State, events::DefuseEvent, intents::imt::ImtBurn,
+    accounts::AccountEvent,
+    engine::State,
+    events::DefuseEvent,
+    intents::{MaybeIntentEvent, imt::ImtBurn},
     tokens::imt::ImtTokens,
 };
 
@@ -27,14 +30,14 @@ impl ImtBurner for Contract {
             .unwrap_or_panic();
 
         DefuseEvent::ImtBurn(Cow::Borrowed(
-            [AccountEvent::new(
+            [MaybeIntentEvent::new(AccountEvent::new(
                 owner_id,
                 Cow::Owned(ImtBurn {
                     minter_id,
                     tokens,
                     memo,
                 }),
-            )]
+            ))]
             .as_slice(),
         ))
         .emit();

@@ -1,5 +1,6 @@
 use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use defuse::core::fees::Pips;
+use near_api::types::transaction::result::ExecutionSuccess;
 use near_sdk::{AccountId, AccountIdRef, NearToken, serde_json::json};
 
 #[allow(async_fn_in_trait)]
@@ -8,13 +9,13 @@ pub trait FeesManagerExt {
         &self,
         defuse_contract_id: impl Into<AccountId>,
         fee: Pips,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<ExecutionSuccess>;
 
     async fn set_fee_collector(
         &self,
         defuse_contract_id: impl Into<AccountId>,
         fee_collector: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<ExecutionSuccess>;
 }
 
 #[allow(async_fn_in_trait)]
@@ -29,7 +30,7 @@ impl FeesManagerExt for SigningAccount {
         &self,
         defuse_contract_id: impl Into<AccountId>,
         fee: Pips,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(defuse_contract_id)
             .function_call(
                 FnCallBuilder::new("set_fee")
@@ -38,16 +39,14 @@ impl FeesManagerExt for SigningAccount {
                     }))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await?;
-
-        Ok(())
+            .await
     }
 
     async fn set_fee_collector(
         &self,
         defuse_contract_id: impl Into<AccountId>,
         fee_collector: impl AsRef<AccountIdRef>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(defuse_contract_id)
             .function_call(
                 FnCallBuilder::new("set_fee_collector")
@@ -56,9 +55,7 @@ impl FeesManagerExt for SigningAccount {
                         "fee_collector": fee_collector.as_ref(),
                     })),
             )
-            .await?;
-
-        Ok(())
+            .await
     }
 }
 

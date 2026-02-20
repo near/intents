@@ -7,6 +7,8 @@ use crate::{
     Result,
     accounts::{AccountEvent, PublicKeyEvent},
     engine::{Engine, Inspector, State},
+    events::DefuseEvent,
+    intents::MaybeIntentEvent,
 };
 
 use super::ExecutableIntent;
@@ -28,7 +30,7 @@ impl ExecutableIntent for AddPublicKey {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        _intent_hash: CryptoHash,
+        intent_hash: CryptoHash,
     ) -> Result<()>
     where
         S: State,
@@ -38,16 +40,17 @@ impl ExecutableIntent for AddPublicKey {
             .state
             .add_public_key(signer_id.to_owned(), self.public_key)?;
 
-        engine
-            .inspector
-            .on_event(crate::events::DefuseEvent::PublicKeyAdded(
+        engine.inspector.on_event(DefuseEvent::PublicKeyAdded(
+            MaybeIntentEvent::new_with_hash(
                 AccountEvent::new(
                     Cow::Borrowed(signer_id),
                     PublicKeyEvent {
                         public_key: Cow::Borrowed(&self.public_key),
                     },
                 ),
-            ));
+                intent_hash,
+            ),
+        ));
         Ok(())
     }
 }
@@ -65,7 +68,7 @@ impl ExecutableIntent for RemovePublicKey {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        _intent_hash: CryptoHash,
+        intent_hash: CryptoHash,
     ) -> crate::Result<()>
     where
         S: State,
@@ -74,16 +77,17 @@ impl ExecutableIntent for RemovePublicKey {
         engine
             .state
             .remove_public_key(signer_id.to_owned(), self.public_key)?;
-        engine
-            .inspector
-            .on_event(crate::events::DefuseEvent::PublicKeyRemoved(
+        engine.inspector.on_event(DefuseEvent::PublicKeyRemoved(
+            MaybeIntentEvent::new_with_hash(
                 AccountEvent::new(
                     Cow::Borrowed(signer_id),
                     PublicKeyEvent {
                         public_key: Cow::Borrowed(&self.public_key),
                     },
                 ),
-            ));
+                intent_hash,
+            ),
+        ));
         Ok(())
     }
 }
@@ -99,19 +103,26 @@ impl ExecutableIntent for SetAuthByPredecessorId {
         self,
         signer_id: &AccountIdRef,
         engine: &mut Engine<S, I>,
-        _intent_hash: CryptoHash,
+        intent_hash: CryptoHash,
     ) -> Result<()>
     where
         S: State,
         I: Inspector,
     {
-        engine
+        let toggled = engine
             .state
             .set_auth_by_predecessor_id(signer_id.to_owned(), self.enabled)?;
 
-        engine
-            .inspector
-            .on_event(AccountEvent::new(signer_id, self).into());
+        if toggled {
+            engine
+                .inspector
+                .on_event(DefuseEvent::SetAuthByPredecessorId(
+                    MaybeIntentEvent::new_with_hash(
+                        AccountEvent::new(Cow::Borrowed(signer_id), Cow::Borrowed(&self)),
+                        intent_hash,
+                    ),
+                ));
+        }
 
         Ok(())
     }

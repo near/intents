@@ -147,20 +147,44 @@ impl ExecutableIntent for Intent {
     }
 }
 
+/// Event that can be emitted either from a
+/// function call or after intent execution
 #[must_use = "make sure to `.emit()` this event"]
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
-pub struct IntentEvent<T> {
-    #[serde_as(as = "Base58")]
-    pub intent_hash: CryptoHash,
+pub struct MaybeIntentEvent<T> {
+    #[serde_as(as = "Option<Base58>")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub intent_hash: Option<CryptoHash>,
 
     #[serde(flatten)]
     pub event: T,
 }
 
-impl<T> IntentEvent<T> {
+impl<T> MaybeIntentEvent<T> {
     #[inline]
-    pub const fn new(event: T, intent_hash: CryptoHash) -> Self {
-        Self { intent_hash, event }
+    pub const fn new(event: T) -> Self {
+        Self {
+            intent_hash: None,
+            event,
+        }
+    }
+
+    #[inline]
+    pub const fn new_with_hash(event: T, intent_hash: CryptoHash) -> Self {
+        Self {
+            intent_hash: Some(intent_hash),
+            event,
+        }
     }
 }
+
+impl<T> From<T> for MaybeIntentEvent<T> {
+    fn from(event: T) -> Self {
+        Self::new(event)
+    }
+}
+
+// fix JsonSchema macro bug
+#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+use near_sdk::serde;

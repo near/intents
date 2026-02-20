@@ -1,6 +1,7 @@
 use crate::{SigningAccount, anyhow, tx::FnCallBuilder};
 use defuse::core::Nonce;
 use defuse_serde_utils::base64::AsBase64;
+use near_api::types::transaction::result::ExecutionSuccess;
 use near_sdk::{AccountId, NearToken, serde_json::json};
 
 pub trait GarbageCollectorExt {
@@ -8,7 +9,7 @@ pub trait GarbageCollectorExt {
         &self,
         defuse_contract_id: impl Into<AccountId>,
         data: impl IntoIterator<Item = (AccountId, impl IntoIterator<Item = Nonce>)>,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<ExecutionSuccess>;
 }
 
 impl GarbageCollectorExt for SigningAccount {
@@ -16,7 +17,7 @@ impl GarbageCollectorExt for SigningAccount {
         &self,
         defuse_contract_id: impl Into<AccountId>,
         data: impl IntoIterator<Item = (AccountId, impl IntoIterator<Item = Nonce>)>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<ExecutionSuccess> {
         let nonces = data
             .into_iter()
             .map(|(acc, nonces)| {
@@ -34,8 +35,6 @@ impl GarbageCollectorExt for SigningAccount {
                         "nonces": nonces,
                     })),
             )
-            .await?;
-
-        Ok(())
+            .await
     }
 }

@@ -7,11 +7,12 @@ pub use self::{account::*, state::*};
 use std::{borrow::Cow, collections::HashSet};
 
 use defuse_core::{
-    DefuseError, Nonce,
+    DefuseError, Nonce, Result,
     accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
     engine::{State, StateView},
     events::DefuseEvent,
+    intents::{MaybeIntentEvent, account::SetAuthByPredecessorId},
 };
 
 use defuse_near_utils::{Lock, NestPrefix, UnwrapOrPanic};
@@ -64,8 +65,13 @@ impl AccountManager for Contract {
     #[payable]
     fn disable_auth_by_predecessor_id(&mut self) {
         assert_one_yocto();
-        State::set_auth_by_predecessor_id(self, self.ensure_auth_predecessor_id(), false)
-            .unwrap_or_panic();
+
+        self.set_auth_by_predecessor_id_and_emit_event(
+            &self.ensure_auth_predecessor_id(),
+            false,
+            false,
+        )
+        .unwrap_or_panic();
     }
 }
 
@@ -79,6 +85,51 @@ impl Contract {
         predecessor_account_id
     }
 
+    /// Sets whether authentication by `PREDECESSOR_ID` is enabled.
+    /// Emits an event if the authentication status was toggled.
+    /// Returns whether authentication by `PREDECESSOR_ID` was toggled.
+    pub fn set_auth_by_predecessor_id_and_emit_event(
+        &mut self,
+        account_id: &AccountIdRef,
+        enable: bool,
+        force: bool,
+    ) -> Result<bool> {
+        let toggled = self.internal_set_auth_by_predecessor_id(account_id, enable, force)?;
+
+        if toggled {
+            DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new(AccountEvent::new(
+                Cow::Borrowed(account_id),
+                Cow::Owned(SetAuthByPredecessorId { enabled: enable }),
+            )))
+            .emit();
+        }
+
+        Ok(toggled)
+    }
+
+    /// Sets whether authentication by `PREDECESSOR_ID` is enabled.
+    /// Returns whether authentication by `PREDECESSOR_ID` was toggled.
+    pub(crate) fn internal_set_auth_by_predecessor_id(
+        &mut self,
+        account_id: &AccountIdRef,
+        enable: bool,
+        force: bool,
+    ) -> Result<bool> {
+        if enable {
+            let Some(account) = self.accounts.get_mut(account_id) else {
+                // no need to create an account: not-yet-existing accounts
+                // have auth by PREDECESSOR_ID enabled by default
+                return Ok(false);
+            };
+            account
+        } else {
+            self.accounts.get_or_create(account_id.into())
+        }
+        .get_mut_maybe_forced(force)
+        .ok_or_else(|| DefuseError::AccountLocked(account_id.into()))
+        .map(|account| account.set_auth_by_predecessor_id(enable))
+    }
+
     pub fn add_public_key_and_emit_event(
         &mut self,
         account_id: &AccountIdRef,
@@ -86,12 +137,12 @@ impl Contract {
     ) {
         State::add_public_key(self, account_id.into(), public_key).unwrap_or_panic();
 
-        DefuseEvent::PublicKeyAdded(AccountEvent::new(
+        DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new(AccountEvent::new(
             Cow::Borrowed(account_id),
             PublicKeyEvent {
                 public_key: Cow::Borrowed(&public_key),
             },
-        ))
+        )))
         .emit();
     }
 
@@ -102,12 +153,12 @@ impl Contract {
     ) {
         State::remove_public_key(self, account_id.into(), public_key).unwrap_or_panic();
 
-        DefuseEvent::PublicKeyRemoved(AccountEvent::new(
+        DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::new(AccountEvent::new(
             Cow::Borrowed(account_id),
             PublicKeyEvent {
                 public_key: Cow::Borrowed(&public_key),
             },
-        ))
+        )))
         .emit();
     }
 }

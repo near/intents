@@ -233,7 +233,9 @@ async fn test_ft_diffs(env: &Env, accounts: Vec<AccountFtDiff<'_>>) {
         .unwrap();
 
     // verify
-    env.execute_intents(env.defuse.id(), signed).await.unwrap();
+    env.execute_intents(env.defuse.id(), signed.clone())
+        .await
+        .unwrap();
 
     // check balances
     for account in accounts {
