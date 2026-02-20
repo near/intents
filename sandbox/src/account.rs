@@ -216,8 +216,16 @@ impl SigningAccount {
 
     async fn add_keys_to_signer_pool(
         &self,
+        tx: TxBuilder,
         pks: impl IntoIterator<Item = SecretKey>,
     ) -> Result<()> {
+        let pks: Vec<_> = pks.into_iter().collect();
+
+        pks.iter()
+            .map(SecretKey::public_key)
+            .fold(tx, TxBuilder::add_full_access_key)
+            .await?;
+
         futures::future::try_join_all(
             pks.into_iter()
                 .map(|secret_key| self.signer.add_secret_key_to_pool(secret_key)),
@@ -230,18 +238,11 @@ impl SigningAccount {
     pub async fn extend_signer(&self, pk_num: usize) -> Result<()> {
         let pks = Self::generate_keys(pk_num)?;
 
-        pks.iter()
-            .fold(self.tx(self.id()), |tx, secret_key| {
-                let public_key = secret_key.public_key();
-                tx.add_full_access_key(public_key)
-            })
-            .await?;
-
-        self.add_keys_to_signer_pool(pks).await
+        self.add_keys_to_signer_pool(self.tx(self.id()), pks).await
     }
 
     #[instrument(skip_all, fields(name = name.as_ref()))]
-    pub async fn generate_subaccount_extended(
+    pub async fn generate_subaccount_highload(
         &self,
         name: impl AsRef<str>,
         pk_num: usize,
@@ -255,12 +256,10 @@ impl SigningAccount {
             tx = tx.transfer(balance);
         }
 
-        pks.iter()
-            .fold(tx, |tx, secret_key| {
-                let public_key = secret_key.public_key();
-                tx.add_full_access_key(public_key)
-            })
-            .await?;
+        // pks.iter()
+        //     .map(SecretKey::public_key)
+        //     .fold(tx, TxBuilder::add_full_access_key)
+        //     .await?;
 
         let signer = Self::new(
             subaccount,
@@ -271,7 +270,7 @@ impl SigningAccount {
             )?,
         );
 
-        signer.add_keys_to_signer_pool(pks).await?;
+        signer.add_keys_to_signer_pool(tx, pks).await?;
 
         Ok(signer)
     }
@@ -282,7 +281,7 @@ impl SigningAccount {
         name: impl AsRef<str>,
         balance: impl Into<Option<NearToken>>,
     ) -> anyhow::Result<Self> {
-        self.generate_subaccount_extended(name, 1, balance).await
+        self.generate_subaccount_highload(name, 1, balance).await
     }
 
     pub async fn deploy_sub_contract(
