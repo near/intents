@@ -8,25 +8,23 @@ use defuse_borsh_utils::adapters::{As, TimestampNanoSeconds};
 pub use defuse_deadline::Deadline;
 use defuse_serde_utils::hex::AsHex;
 use near_sdk::{
-    AccountId, AccountIdRef, Promise, borsh,
-    borsh::{BorshDeserialize, BorshSerialize},
-    ext_contract, near,
+    AccountId, AccountIdRef, Promise, borsh, ext_contract, near,
     serde_with::{hex::Hex, serde_as},
 };
 use thiserror::Error as ThisError;
 
-#[derive(Debug, Clone, PartialEq, Eq, BorshSerialize, BorshDeserialize)]
-#[borsh(crate = "near_sdk::borsh")]
+#[near(serializers = [borsh])]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Upgrade {
     pub approved_by: AccountId,
     #[borsh(
-        serialize_with = "As::<TimestampNanoSeconds>::serialize",
-        deserialize_with = "As::<TimestampNanoSeconds>::deserialize",
+        serialize_with = "As::<Option<TimestampNanoSeconds>>::serialize",
+        deserialize_with = "As::<Option<TimestampNanoSeconds>>::deserialize",
     )]
-    pub valid_by: Deadline,
+    pub valid_by: Option<Deadline>,
     pub old_hashes: HashSet<[u8; 32]>,
-    pub whitelisted_executors: Option<HashSet<AccountId>>,
-    pub whitelisted_revokers: Option<HashSet<AccountId>>,
+    pub whitelisted_executors: HashSet<AccountId>,
+    pub whitelisted_revokers: HashSet<AccountId>,
 }
 
 #[near(serializers = [borsh])]
@@ -86,7 +84,7 @@ impl ExtraParams {
     fn cleanup(&mut self, owner: &AccountId) -> CleanupInfo {
         let mut info = CleanupInfo::default();
         self.approvals.retain(|_hash, upgrade| {
-            if upgrade.valid_by.has_expired() {
+            if upgrade.valid_by.is_some_and(Deadline::has_expired) {
                 info.expired_removed += 1;
                 return false;
             }
@@ -139,10 +137,7 @@ impl ExtraParams {
                 return Err(Error::HashNotFound(*hash));
             };
             let authorized = caller == owner
-                || upgrade
-                    .whitelisted_revokers
-                    .as_ref()
-                    .is_some_and(|set| set.contains(caller));
+                || upgrade.whitelisted_revokers.contains(caller);
             if !authorized {
                 return Err(Error::Unauthorized);
             }
@@ -169,17 +164,14 @@ impl ExtraParams {
             .ok_or(Error::HashNotFound(*new_hash))?;
 
         let authorized = caller == owner
-            || upgrade
-                .whitelisted_executors
-                .as_ref()
-                .is_some_and(|set| set.contains(caller));
+            || upgrade.whitelisted_executors.contains(caller);
         if !authorized {
             return Err(Error::Unauthorized);
         }
         if !upgrade.old_hashes.contains(current_code_hash) {
             return Err(Error::OldHashMismatch);
         }
-        if upgrade.valid_by.has_expired() {
+        if upgrade.valid_by.is_some_and(Deadline::has_expired) {
             return Err(Error::Expired);
         }
 
@@ -207,10 +199,10 @@ pub trait GlobalDeployer {
     fn gd_approve(
         &mut self,
         new_hash: AsHex<[u8; 32]>,
-        old_hashes: Vec<AsHex<[u8; 32]>>,
-        valid_by: Deadline,
-        whitelisted_executors: Option<HashSet<AccountId>>,
-        whitelisted_revokers: Option<HashSet<AccountId>>,
+        old_hashes: HashSet<AsHex<[u8; 32]>>,
+        valid_by: Option<Deadline>,
+        whitelisted_executors: HashSet<AccountId>,
+        whitelisted_revokers: HashSet<AccountId>,
     ) -> ApproveResult;
 
     /// Revokes previously approved upgrades by hash.

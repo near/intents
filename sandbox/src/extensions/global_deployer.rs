@@ -36,9 +36,9 @@ pub trait DeployerExt {
         target: &AccountId,
         new_hash: [u8; 32],
         old_hashes: HashSet<[u8; 32]>,
-        valid_by: Deadline,
-        whitelisted_executors: Option<HashSet<AccountId>>,
-        whitelisted_revokers: Option<HashSet<AccountId>>,
+        valid_by: Option<Deadline>,
+        whitelisted_executors: HashSet<AccountId>,
+        whitelisted_revokers: HashSet<AccountId>,
     ) -> anyhow::Result<ExecutionSuccess>;
 
     async fn gd_revoke(
@@ -115,12 +115,12 @@ impl DeployerExt for SigningAccount {
         target: &AccountId,
         new_hash: [u8; 32],
         old_hashes: HashSet<[u8; 32]>,
-        valid_by: Deadline,
-        whitelisted_executors: Option<HashSet<AccountId>>,
-        whitelisted_revokers: Option<HashSet<AccountId>>,
+        valid_by: Option<Deadline>,
+        whitelisted_executors: HashSet<AccountId>,
+        whitelisted_revokers: HashSet<AccountId>,
     ) -> anyhow::Result<ExecutionSuccess> {
         let new_hash_hex: AsHex<[u8; 32]> = new_hash.into();
-        let old_hashes_hex: Vec<AsHex<[u8; 32]>> =
+        let old_hashes_hex: HashSet<AsHex<[u8; 32]>> =
             old_hashes.into_iter().map(Into::into).collect();
 
         self.tx(target)

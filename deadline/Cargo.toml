@@ -9,7 +9,7 @@ repository.workspace = true
 workspace = true
 
 [features]
-abi = []
+abi = ["chrono/clock", "chrono/std"]
 
 [dependencies]
 defuse-borsh-utils = { workspace = true, features = ["chrono"] }

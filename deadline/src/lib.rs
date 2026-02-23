@@ -6,6 +6,11 @@ use std::io;
 
 use chrono::{DateTime, Utc};
 use defuse_borsh_utils::adapters::{BorshDeserializeAs, BorshSerializeAs, TimestampNanoSeconds};
+#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+use std::collections::BTreeMap;
+
+#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+use near_sdk::borsh::{self, BorshSchema, schema::Definition};
 use near_sdk::near;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -18,6 +23,25 @@ pub struct Deadline(
     )]
     DateTime<Utc>,
 );
+
+#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+impl BorshSchema for Deadline {
+    fn declaration() -> borsh::schema::Declaration {
+        "Deadline".to_string()
+    }
+
+    fn add_definitions_recursively(
+        definitions: &mut BTreeMap<borsh::schema::Declaration, Definition>,
+    ) {
+        <i64 as BorshSchema>::add_definitions_recursively(definitions);
+        let definition = Definition::Struct {
+            fields: borsh::schema::Fields::UnnamedFields(vec![
+                <i64 as BorshSchema>::declaration(),
+            ]),
+        };
+        borsh::schema::add_definition(Self::declaration(), definition, definitions);
+    }
+}
 
 impl Deadline {
     pub const MAX: Self = Self(DateTime::<Utc>::MAX_UTC);

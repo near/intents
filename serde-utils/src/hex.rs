@@ -16,7 +16,7 @@ use serde_with::serde_as;
     not(all(feature = "abi", not(target_arch = "wasm32"))),
     serde_as(schemars = false)
 )]
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, From)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize, From)]
 #[serde(
     crate = "::near_sdk::serde",
     bound(serialize = "T: AsRef<[u8]>", deserialize = "T: TryFrom<Vec<u8>>")

@@ -30,16 +30,16 @@ impl GlobalDeployer for Contract {
     fn gd_approve(
         &mut self,
         new_hash: AsHex<[u8; 32]>,
-        old_hashes: Vec<AsHex<[u8; 32]>>,
-        valid_by: Deadline,
-        whitelisted_executors: Option<HashSet<AccountId>>,
-        whitelisted_revokers: Option<HashSet<AccountId>>,
+        old_hash: HashSet<AsHex<[u8; 32]>>,
+        valid_by: Option<Deadline>,
+        whitelisted_executors: HashSet<AccountId>,
+        whitelisted_revokers: HashSet<AccountId>,
     ) -> ApproveResult {
         self.require_owner();
 
         let new_hash_raw = new_hash.into_inner();
         let old_hashes_raw: HashSet<[u8; 32]> =
-            old_hashes.into_iter().map(AsHex::into_inner).collect();
+            old_hash.into_iter().map(AsHex::into_inner).collect();
 
         let upgrade = Upgrade {
             approved_by: self.0.owner_id.clone(),

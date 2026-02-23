@@ -12,7 +12,7 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [features]
-abi = ["defuse-serde-utils/abi"]
+abi = ["defuse-serde-utils/abi", "defuse-deadline/abi"]
 contract = []
 
 [dependencies]
