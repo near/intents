@@ -140,7 +140,7 @@ impl GlobalDeployer for Contract {
     }
 
     fn gd_as_borsh(&self, deployment: Deployment) -> Vec<u8> {
-        borsh::to_vec(&deployment).unwrap_or_else(|_| unreachable!())
+        near_sdk::borsh::to_vec(&deployment).unwrap_or_else(|_| unreachable!())
     }
 }
 

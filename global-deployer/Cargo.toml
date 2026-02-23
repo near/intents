@@ -12,14 +12,14 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [features]
-abi = ["defuse-serde-utils/abi", "defuse-deadline/abi"]
+abi = ["defuse-serde-utils/abi"]
 contract = []
 
 [dependencies]
 defuse-borsh-utils = { workspace = true, features = ["chrono"] }
 defuse-near-utils.workspace = true
 defuse-serde-utils.workspace = true
-defuse-deadline.workspace = true
+# defuse-deadline.workspace = true
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 thiserror.workspace = true
 
