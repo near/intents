@@ -1,9 +1,12 @@
 use crate::{
     sandbox::extensions::acl::AclExt, tests::defuse::env::Env, utils::asserts::ResultAssertsExt,
 };
+use defuse::core::events::DefuseEvent;
+use defuse::core::fees::{FeeChangedEvent, FeeCollectorChangedEvent};
+use defuse_sandbox::assert_a_contains_b;
 use defuse_sandbox::extensions::defuse::contract::{contract::Role, core::fees::Pips};
 use defuse_sandbox::extensions::defuse::state::{FeesManagerExt, FeesManagerViewExt};
-use near_sdk::AccountId;
+use near_sdk::{AccountId, AsNep297Event};
 use rstest::rstest;
 
 #[rstest]
@@ -29,10 +32,22 @@ async fn set_fee() {
             .await
             .expect("failed to grant role");
 
-        user1
+        let res = user1
             .set_fee(env.defuse.id(), fee)
             .await
             .expect("unable to set fee");
+
+        let event = DefuseEvent::FeeChanged(FeeChangedEvent {
+            old_fee: prev_fee,
+            new_fee: fee,
+        })
+        .to_nep297_event()
+        .to_event_log();
+
+        assert_a_contains_b!(
+            a: res.logs().clone(),
+            b: [event]
+        );
 
         let current_fee = env.defuse.fee().await.unwrap();
 
@@ -63,10 +78,22 @@ async fn set_fee_collector() {
             .await
             .expect("failed to grant role");
 
-        user1
+        let res = user1
             .set_fee_collector(env.defuse.id(), &fee_collector)
             .await
             .expect("unable to set fee");
+
+        let event = DefuseEvent::FeeCollectorChanged(FeeCollectorChangedEvent {
+            old_fee_collector: env.root().id().into(),
+            new_fee_collector: fee_collector.clone().into(),
+        })
+        .to_nep297_event()
+        .to_event_log();
+
+        assert_a_contains_b!(
+            a: res.logs().clone(),
+            b: [event]
+        );
 
         let current_collector = env.defuse.fee_collector().await.unwrap();
 

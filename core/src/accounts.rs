@@ -1,12 +1,10 @@
-use std::collections::BTreeMap;
-
 use defuse_crypto::PublicKey;
 use defuse_serde_utils::base64::Base64;
 use near_sdk::{AccountIdRef, near};
-use serde_with::{DisplayFromStr, serde_as};
+use serde_with::serde_as;
 use std::{borrow::Cow, collections::BTreeSet};
 
-use crate::{Nonce, Salt, amounts::Amounts};
+use crate::{Nonce, Salt};
 
 #[must_use = "make sure to `.emit()` this event"]
 #[near(serializers = [json])]
@@ -64,16 +62,4 @@ impl NonceEvent {
 pub struct SaltRotationEvent {
     pub current: Salt,
     pub invalidated: BTreeSet<Salt>,
-}
-
-#[near(serializers = [json])]
-#[derive(Debug, Clone)]
-pub struct TransferEvent<'a> {
-    pub receiver_id: Cow<'a, AccountIdRef>,
-
-    #[serde_as(as = "Amounts<BTreeMap<_, DisplayFromStr>>")]
-    pub tokens: Amounts,
-
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub memo: Cow<'a, Option<String>>,
 }

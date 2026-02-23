@@ -1,26 +1,36 @@
+use defuse_serde_utils::base58::Base58;
+use derive_more::derive::From;
+use near_sdk::{CryptoHash, near, serde::Deserialize};
+use serde_with::serde_as;
 use std::borrow::Cow;
 
-use derive_more::derive::From;
-use near_sdk::{near, serde::Deserialize};
-
 use crate::{
-    accounts::{AccountEvent, NonceEvent, PublicKeyEvent, SaltRotationEvent, TransferEvent},
+    accounts::{AccountEvent, NonceEvent, PublicKeyEvent, SaltRotationEvent},
     fees::{FeeChangedEvent, FeeCollectorChangedEvent},
     intents::{
-        IntentEvent,
         account::SetAuthByPredecessorId,
         token_diff::TokenDiffEvent,
         tokens::{FtWithdraw, MtWithdraw, NativeWithdraw, NftWithdraw, StorageDeposit},
     },
+    tokens::TransferEvent,
 };
 
-#[cfg(feature = "imt")]
-use crate::intents::imt::{ImtBurn, ImtMint};
+#[must_use = "make sure to `.emit()` this event"]
+#[near(serializers = [json])]
+#[derive(Debug, Clone)]
+pub struct IntentEvent<T> {
+    #[serde_as(as = "Base58")]
+    pub intent_hash: CryptoHash,
 
+    #[serde(flatten)]
+    pub event: T,
+}
+
+// Defuse events according to defuse v0.4.1,
 #[must_use = "make sure to `.emit()` this event"]
 #[near(event_json(standard = "dip4"))]
 #[derive(Debug, Clone, Deserialize, From)]
-pub enum DefuseEvent<'a> {
+pub enum DefuseEventV0_4_1<'a> {
     #[event_version("0.3.0")]
     #[from(skip)]
     PublicKeyAdded(AccountEvent<'a, PublicKeyEvent<'a>>),
@@ -57,13 +67,6 @@ pub enum DefuseEvent<'a> {
     #[event_version("0.3.0")]
     StorageDeposit(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, StorageDeposit>>>]>),
 
-    #[cfg(feature = "imt")]
-    #[event_version("0.3.0")]
-    ImtMint(Cow<'a, [IntentEvent<AccountEvent<'a, Cow<'a, ImtMint>>>]>),
-
-    #[cfg(feature = "imt")]
-    #[event_version("0.3.0")]
-    ImtBurn(Cow<'a, [AccountEvent<'a, Cow<'a, ImtBurn>>]>),
     #[event_version("0.3.0")]
     #[from(skip)]
     AccountLocked(AccountEvent<'a, ()>),
@@ -77,12 +80,3 @@ pub enum DefuseEvent<'a> {
     #[event_version("0.4.0")]
     SaltRotation(SaltRotationEvent),
 }
-
-pub trait DefuseIntentEmit<'a>: Into<DefuseEvent<'a>> {
-    #[inline]
-    fn emit(self) {
-        DefuseEvent::emit(&self.into());
-    }
-}
-
-impl<'a, T> DefuseIntentEmit<'a> for T where T: Into<DefuseEvent<'a>> {}

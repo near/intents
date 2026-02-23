@@ -1,18 +1,19 @@
 use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use defuse::core::Salt;
+use near_api::types::transaction::result::ExecutionSuccess;
 use near_sdk::{AccountId, NearToken, serde_json::json};
 
 pub trait SaltManagerExt {
     async fn update_current_salt(
         &self,
         defuse_contract_id: impl Into<AccountId>,
-    ) -> anyhow::Result<Salt>;
+    ) -> anyhow::Result<(ExecutionSuccess, Salt)>;
 
     async fn invalidate_salts(
         &self,
         defuse_contract_id: impl Into<AccountId>,
         salts: impl IntoIterator<Item = Salt>,
-    ) -> anyhow::Result<Salt>;
+    ) -> anyhow::Result<(ExecutionSuccess, Salt)>;
 }
 
 pub trait SaltViewExt {
@@ -25,31 +26,37 @@ impl SaltManagerExt for SigningAccount {
     async fn update_current_salt(
         &self,
         defuse_contract_id: impl Into<AccountId>,
-    ) -> anyhow::Result<Salt> {
-        self.tx(defuse_contract_id)
+    ) -> anyhow::Result<(ExecutionSuccess, Salt)> {
+        let res = self
+            .tx(defuse_contract_id)
             .function_call(
                 FnCallBuilder::new("update_current_salt")
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await?
-            .json()
-            .map_err(Into::into)
+            .await?;
+
+        let salt = res.json()?;
+
+        Ok((res, salt))
     }
 
     async fn invalidate_salts(
         &self,
         defuse_contract_id: impl Into<AccountId>,
         salts: impl IntoIterator<Item = Salt>,
-    ) -> anyhow::Result<Salt> {
-        self.tx(defuse_contract_id)
+    ) -> anyhow::Result<(ExecutionSuccess, Salt)> {
+        let res = self
+            .tx(defuse_contract_id)
             .function_call(
                 FnCallBuilder::new("invalidate_salts")
                     .json_args(json!({ "salts": salts.into_iter().collect::<Vec<_>>() }))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await?
-            .json()
-            .map_err(Into::into)
+            .await?;
+
+        let salt = res.json()?;
+
+        Ok((res, salt))
     }
 }
 
