@@ -1,5 +1,7 @@
+use std::collections::HashSet;
+
 use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
-use defuse_global_deployer::State as DeployerState;
+use defuse_global_deployer::{Deadline, State as DeployerState};
 use defuse_serde_utils::hex::AsHex;
 use near_api::types::transaction::result::ExecutionSuccess;
 use near_sdk::{
@@ -27,6 +29,29 @@ pub trait DeployerExt {
         &self,
         target: &AccountId,
         new_owner: &AccountId,
+    ) -> anyhow::Result<ExecutionSuccess>;
+
+    async fn gd_approve(
+        &self,
+        target: &AccountId,
+        new_hash: [u8; 32],
+        old_hashes: HashSet<[u8; 32]>,
+        valid_by: Deadline,
+        whitelisted_executors: Option<HashSet<AccountId>>,
+        whitelisted_revokers: Option<HashSet<AccountId>>,
+    ) -> anyhow::Result<ExecutionSuccess>;
+
+    async fn gd_revoke(
+        &self,
+        target: &AccountId,
+        hashes: Vec<[u8; 32]>,
+    ) -> anyhow::Result<ExecutionSuccess>;
+
+    async fn gd_execute_upgrade(
+        &self,
+        target: &AccountId,
+        new_hash: [u8; 32],
+        new_code: &[u8],
     ) -> anyhow::Result<ExecutionSuccess>;
 }
 
@@ -81,6 +106,59 @@ impl DeployerExt for SigningAccount {
                 FnCallBuilder::new("gd_transfer_ownership")
                     .json_args(json!({"receiver_id": new_owner.clone()}))
                     .with_deposit(NearToken::from_yoctonear(1)),
+            )
+            .await
+    }
+
+    async fn gd_approve(
+        &self,
+        target: &AccountId,
+        new_hash: [u8; 32],
+        old_hashes: HashSet<[u8; 32]>,
+        valid_by: Deadline,
+        whitelisted_executors: Option<HashSet<AccountId>>,
+        whitelisted_revokers: Option<HashSet<AccountId>>,
+    ) -> anyhow::Result<ExecutionSuccess> {
+        let new_hash_hex: AsHex<[u8; 32]> = new_hash.into();
+        let old_hashes_hex: Vec<AsHex<[u8; 32]>> =
+            old_hashes.into_iter().map(Into::into).collect();
+
+        self.tx(target)
+            .function_call(FnCallBuilder::new("gd_approve").json_args(json!({
+                "new_hash": new_hash_hex,
+                "old_hashes": old_hashes_hex,
+                "valid_by": valid_by,
+                "whitelisted_executors": whitelisted_executors,
+                "whitelisted_revokers": whitelisted_revokers,
+            })))
+            .await
+    }
+
+    async fn gd_revoke(
+        &self,
+        target: &AccountId,
+        hashes: Vec<[u8; 32]>,
+    ) -> anyhow::Result<ExecutionSuccess> {
+        let hashes_hex: Vec<AsHex<[u8; 32]>> = hashes.into_iter().map(Into::into).collect();
+
+        self.tx(target)
+            .function_call(FnCallBuilder::new("gd_revoke").json_args(json!({
+                "hashes": hashes_hex,
+            })))
+            .await
+    }
+
+    async fn gd_execute_upgrade(
+        &self,
+        target: &AccountId,
+        new_hash: [u8; 32],
+        new_code: &[u8],
+    ) -> anyhow::Result<ExecutionSuccess> {
+        self.tx(target)
+            .function_call(
+                FnCallBuilder::new("gd_execute_upgrade")
+                    .borsh_args(&(new_hash, new_code))
+                    .with_deposit(NearToken::from_near(50)),
             )
             .await
     }

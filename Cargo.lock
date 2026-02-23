@@ -997,8 +997,12 @@ dependencies = [
 name = "defuse-global-deployer"
 version = "0.1.0"
 dependencies = [
+ "defuse-borsh-utils",
+ "defuse-deadline",
+ "defuse-near-utils",
  "defuse-serde-utils",
  "near-sdk",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -1104,6 +1108,7 @@ dependencies = [
  "anyhow",
  "defuse",
  "defuse-crypto",
+ "defuse-deadline",
  "defuse-escrow-swap",
  "defuse-global-deployer",
  "defuse-nep245",
