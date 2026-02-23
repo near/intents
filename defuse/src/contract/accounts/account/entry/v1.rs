@@ -96,7 +96,7 @@ pub(super) mod tests {
                 return false;
             }
 
-            DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new(AccountEvent::new(
+            DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new_fn_call(AccountEvent::new(
                 Cow::Borrowed(me),
                 PublicKeyEvent {
                     public_key: Cow::Borrowed(&public_key),
@@ -126,7 +126,7 @@ pub(super) mod tests {
                 return false;
             }
 
-            DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::new(AccountEvent::new(
+            DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::new_fn_call(AccountEvent::new(
                 Cow::Borrowed(me),
                 PublicKeyEvent {
                     public_key: Cow::Borrowed(public_key),
@@ -203,10 +203,12 @@ pub(super) mod tests {
                 self.flags
                     .toggle(AccountFlags::AUTH_BY_PREDECESSOR_ID_DISABLED);
 
-                DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new(AccountEvent::new(
-                    Cow::Borrowed(me),
-                    Cow::Owned(SetAuthByPredecessorId { enabled: enable }),
-                )))
+                DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new_fn_call(
+                    AccountEvent::new(
+                        Cow::Borrowed(me),
+                        Cow::Owned(SetAuthByPredecessorId { enabled: enable }),
+                    ),
+                ))
                 .emit();
             }
             was_enabled

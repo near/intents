@@ -65,7 +65,7 @@ where
                     .extract_defuse_payload()
                     .unwrap_or_else(|_| unreachable!("invalid payload in tests"));
 
-                let nonce_event = MaybeIntentEvent::new_with_hash(
+                let nonce_event = MaybeIntentEvent::new_intent(
                     AccountEvent::new(signer_id.clone(), NonceEvent::new(nonce)),
                     hash,
                 );
@@ -136,7 +136,7 @@ impl<'a> IntoDefuseEvents<'a> for SetAuthByPredecessorId {
         intent_hash: CryptoHash,
     ) -> Vec<DefuseEvent<'a>> {
         vec![DefuseEvent::SetAuthByPredecessorId(
-            MaybeIntentEvent::new_with_hash(
+            MaybeIntentEvent::new_intent(
                 AccountEvent::new(Cow::Owned(signer_id), Cow::Owned(self)),
                 intent_hash,
             ),
@@ -150,17 +150,15 @@ impl<'a> IntoDefuseEvents<'a> for RemovePublicKey {
         signer_id: AccountId,
         intent_hash: CryptoHash,
     ) -> Vec<DefuseEvent<'a>> {
-        vec![DefuseEvent::PublicKeyRemoved(
-            MaybeIntentEvent::new_with_hash(
-                AccountEvent::new(
-                    Cow::Owned(signer_id),
-                    PublicKeyEvent {
-                        public_key: Cow::Owned(self.public_key),
-                    },
-                ),
-                intent_hash,
+        vec![DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::new_intent(
+            AccountEvent::new(
+                Cow::Owned(signer_id),
+                PublicKeyEvent {
+                    public_key: Cow::Owned(self.public_key),
+                },
             ),
-        )]
+            intent_hash,
+        ))]
     }
 }
 
@@ -170,17 +168,15 @@ impl<'a> IntoDefuseEvents<'a> for AddPublicKey {
         signer_id: AccountId,
         intent_hash: CryptoHash,
     ) -> Vec<DefuseEvent<'a>> {
-        vec![DefuseEvent::PublicKeyAdded(
-            MaybeIntentEvent::new_with_hash(
-                AccountEvent::new(
-                    Cow::Owned(signer_id),
-                    PublicKeyEvent {
-                        public_key: Cow::Owned(self.public_key),
-                    },
-                ),
-                intent_hash,
+        vec![DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new_intent(
+            AccountEvent::new(
+                Cow::Owned(signer_id),
+                PublicKeyEvent {
+                    public_key: Cow::Owned(self.public_key),
+                },
             ),
-        )]
+            intent_hash,
+        ))]
     }
 }
 
@@ -191,7 +187,7 @@ impl<'a> IntoDefuseEvents<'a> for Transfer {
         intent_hash: CryptoHash,
     ) -> Vec<DefuseEvent<'a>> {
         vec![DefuseEvent::Transfer(Cow::Owned(
-            [MaybeIntentEvent::new_with_hash(
+            [MaybeIntentEvent::new_intent(
                 AccountEvent::new(
                     signer_id,
                     TransferEvent {
@@ -214,7 +210,7 @@ impl<'a> IntoDefuseEvents<'a> for FtWithdraw {
         intent_hash: CryptoHash,
     ) -> Vec<DefuseEvent<'a>> {
         vec![DefuseEvent::FtWithdraw(Cow::Owned(
-            [MaybeIntentEvent::new_with_hash(
+            [MaybeIntentEvent::new_intent(
                 AccountEvent::new(signer_id, Cow::Owned(self)),
                 intent_hash,
             )]
@@ -230,7 +226,7 @@ impl<'a> IntoDefuseEvents<'a> for NftWithdraw {
         intent_hash: CryptoHash,
     ) -> Vec<DefuseEvent<'a>> {
         vec![DefuseEvent::NftWithdraw(Cow::Owned(
-            [MaybeIntentEvent::new_with_hash(
+            [MaybeIntentEvent::new_intent(
                 AccountEvent::new(signer_id, Cow::Owned(self)),
                 intent_hash,
             )]
@@ -246,7 +242,7 @@ impl<'a> IntoDefuseEvents<'a> for MtWithdraw {
         intent_hash: CryptoHash,
     ) -> Vec<DefuseEvent<'a>> {
         vec![DefuseEvent::MtWithdraw(Cow::Owned(
-            [MaybeIntentEvent::new_with_hash(
+            [MaybeIntentEvent::new_intent(
                 AccountEvent::new(signer_id, Cow::Owned(self)),
                 intent_hash,
             )]
@@ -262,7 +258,7 @@ impl<'a> IntoDefuseEvents<'a> for StorageDeposit {
         intent_hash: CryptoHash,
     ) -> Vec<DefuseEvent<'a>> {
         vec![DefuseEvent::StorageDeposit(Cow::Owned(
-            [MaybeIntentEvent::new_with_hash(
+            [MaybeIntentEvent::new_intent(
                 AccountEvent::new(signer_id, Cow::Owned(self)),
                 intent_hash,
             )]
@@ -278,7 +274,7 @@ impl<'a> IntoDefuseEvents<'a> for NativeWithdraw {
         intent_hash: CryptoHash,
     ) -> Vec<DefuseEvent<'a>> {
         vec![DefuseEvent::NativeWithdraw(Cow::Owned(
-            [MaybeIntentEvent::new_with_hash(
+            [MaybeIntentEvent::new_intent(
                 AccountEvent::new(signer_id, Cow::Owned(self)),
                 intent_hash,
             )]
@@ -294,7 +290,7 @@ impl<'a> IntoDefuseEvents<'a> for TokenDiff {
         intent_hash: CryptoHash,
     ) -> Vec<DefuseEvent<'a>> {
         vec![DefuseEvent::TokenDiff(Cow::Owned(
-            [MaybeIntentEvent::new_with_hash(
+            [MaybeIntentEvent::new_intent(
                 AccountEvent::new(
                     signer_id,
                     TokenDiffEvent {
@@ -318,7 +314,7 @@ impl<'a> IntoDefuseEvents<'a> for ImtMint {
         intent_hash: CryptoHash,
     ) -> Vec<DefuseEvent<'a>> {
         vec![DefuseEvent::ImtMint(Cow::Owned(
-            [MaybeIntentEvent::new_with_hash(
+            [MaybeIntentEvent::new_intent(
                 AccountEvent::new(
                     signer_id,
                     ImtMintEvent {
@@ -342,7 +338,7 @@ impl<'a> IntoDefuseEvents<'a> for ImtBurn {
         intent_hash: CryptoHash,
     ) -> Vec<DefuseEvent<'a>> {
         vec![DefuseEvent::ImtBurn(Cow::Owned(vec![
-            MaybeIntentEvent::new_with_hash(
+            MaybeIntentEvent::new_intent(
                 AccountEvent {
                     account_id: signer_id.into(),
                     event: Cow::Owned(self),

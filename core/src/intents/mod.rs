@@ -163,7 +163,7 @@ pub struct MaybeIntentEvent<T> {
 
 impl<T> MaybeIntentEvent<T> {
     #[inline]
-    pub const fn new(event: T) -> Self {
+    pub const fn new_fn_call(event: T) -> Self {
         Self {
             intent_hash: None,
             event,
@@ -171,7 +171,7 @@ impl<T> MaybeIntentEvent<T> {
     }
 
     #[inline]
-    pub const fn new_with_hash(event: T, intent_hash: CryptoHash) -> Self {
+    pub const fn new_intent(event: T, intent_hash: CryptoHash) -> Self {
         Self {
             intent_hash: Some(intent_hash),
             event,
@@ -181,7 +181,7 @@ impl<T> MaybeIntentEvent<T> {
 
 impl<T> From<T> for MaybeIntentEvent<T> {
     fn from(event: T) -> Self {
-        Self::new(event)
+        Self::new_fn_call(event)
     }
 }
 

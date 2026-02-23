@@ -34,7 +34,7 @@ impl AccountNonceIntentEvent {
 
     pub fn into_event(self) -> DefuseEvent<'static> {
         DefuseEvent::IntentsExecuted(
-            vec![MaybeIntentEvent::new_with_hash(
+            vec![MaybeIntentEvent::new_intent(
                 AccountEvent::new(self.0, NonceEvent::new(self.1)),
                 self.2,
             )]
@@ -101,7 +101,7 @@ async fn simulate_is_view_method(#[notrace] mut rng: impl Rng) {
     assert_eq!(result.report.intents_executed.len(), 1);
 
     // Prepare expected transfer event
-    let expected_log = DefuseEvent::Transfer(Cow::Owned(vec![MaybeIntentEvent::new_with_hash(
+    let expected_log = DefuseEvent::Transfer(Cow::Owned(vec![MaybeIntentEvent::new_intent(
         AccountEvent {
             account_id: user.id().clone().into(),
             event: TransferEvent {

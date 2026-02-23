@@ -66,12 +66,13 @@ async fn auth_by_predecessor_id() {
             .await
             .unwrap();
 
-        let event = DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new(AccountEvent::new(
-            user.id().clone(),
-            Cow::Owned(SetAuthByPredecessorId { enabled: false }),
-        )))
-        .to_nep297_event()
-        .to_event_log();
+        let event =
+            DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new_fn_call(AccountEvent::new(
+                user.id().clone(),
+                Cow::Owned(SetAuthByPredecessorId { enabled: false }),
+            )))
+            .to_nep297_event()
+            .to_event_log();
 
         assert_eq_event_logs!(result.logs(), [event]);
 

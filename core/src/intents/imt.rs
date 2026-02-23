@@ -53,7 +53,7 @@ impl ExecutableIntent for ImtMint {
         engine
             .inspector
             .on_event(DefuseEvent::ImtMint(Cow::Borrowed(
-                [MaybeIntentEvent::new_with_hash(
+                [MaybeIntentEvent::new_intent(
                     AccountEvent::new(signer_id, ImtMintEvent::from(&self)),
                     intent_hash,
                 )]
@@ -103,7 +103,7 @@ impl ExecutableIntent for ImtBurn {
         engine
             .inspector
             .on_event(DefuseEvent::ImtBurn(Cow::Borrowed(
-                [MaybeIntentEvent::new_with_hash(
+                [MaybeIntentEvent::new_intent(
                     AccountEvent::new(signer_id, Cow::Borrowed(&self)),
                     intent_hash,
                 )]

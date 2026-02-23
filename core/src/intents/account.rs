@@ -40,8 +40,9 @@ impl ExecutableIntent for AddPublicKey {
             .state
             .add_public_key(signer_id.to_owned(), self.public_key)?;
 
-        engine.inspector.on_event(DefuseEvent::PublicKeyAdded(
-            MaybeIntentEvent::new_with_hash(
+        engine
+            .inspector
+            .on_event(DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new_intent(
                 AccountEvent::new(
                     Cow::Borrowed(signer_id),
                     PublicKeyEvent {
@@ -49,8 +50,7 @@ impl ExecutableIntent for AddPublicKey {
                     },
                 ),
                 intent_hash,
-            ),
-        ));
+            )));
         Ok(())
     }
 }
@@ -77,8 +77,9 @@ impl ExecutableIntent for RemovePublicKey {
         engine
             .state
             .remove_public_key(signer_id.to_owned(), self.public_key)?;
-        engine.inspector.on_event(DefuseEvent::PublicKeyRemoved(
-            MaybeIntentEvent::new_with_hash(
+        engine
+            .inspector
+            .on_event(DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::new_intent(
                 AccountEvent::new(
                     Cow::Borrowed(signer_id),
                     PublicKeyEvent {
@@ -86,8 +87,7 @@ impl ExecutableIntent for RemovePublicKey {
                     },
                 ),
                 intent_hash,
-            ),
-        ));
+            )));
         Ok(())
     }
 }
@@ -117,7 +117,7 @@ impl ExecutableIntent for SetAuthByPredecessorId {
             engine
                 .inspector
                 .on_event(DefuseEvent::SetAuthByPredecessorId(
-                    MaybeIntentEvent::new_with_hash(
+                    MaybeIntentEvent::new_intent(
                         AccountEvent::new(Cow::Borrowed(signer_id), Cow::Borrowed(&self)),
                         intent_hash,
                     ),

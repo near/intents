@@ -454,13 +454,14 @@ async fn test_force_set_auth_by_predecessor_id(public_key: PublicKey) {
                 .await
                 .unwrap();
 
-            let event =
-                DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new(AccountEvent::new(
+            let event = DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new_fn_call(
+                AccountEvent::new(
                     user_account.id().clone(),
                     Cow::Owned(SetAuthByPredecessorId { enabled: false }),
-                )))
-                .to_nep297_event()
-                .to_event_log();
+                ),
+            ))
+            .to_nep297_event()
+            .to_event_log();
 
             assert_eq_event_logs!(result.logs(), [event]);
 
@@ -523,13 +524,14 @@ async fn test_force_set_auth_by_predecessor_id(public_key: PublicKey) {
                 .await
                 .unwrap();
 
-            let event =
-                DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new(AccountEvent::new(
+            let event = DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new_fn_call(
+                AccountEvent::new(
                     user_account.id().clone(),
                     Cow::Owned(SetAuthByPredecessorId { enabled: true }),
-                )))
-                .to_nep297_event()
-                .to_event_log();
+                ),
+            ))
+            .to_nep297_event()
+            .to_event_log();
 
             assert_eq_event_logs!(result.logs(), [event]);
 

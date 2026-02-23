@@ -30,7 +30,7 @@ impl ImtBurner for Contract {
             .unwrap_or_panic();
 
         DefuseEvent::ImtBurn(Cow::Borrowed(
-            [MaybeIntentEvent::new(AccountEvent::new(
+            [MaybeIntentEvent::new_fn_call(AccountEvent::new(
                 owner_id,
                 Cow::Owned(ImtBurn {
                     minter_id,

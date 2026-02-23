@@ -97,7 +97,7 @@ impl Contract {
         let toggled = self.internal_set_auth_by_predecessor_id(account_id, enable, force)?;
 
         if toggled {
-            DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new(AccountEvent::new(
+            DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new_fn_call(AccountEvent::new(
                 Cow::Borrowed(account_id),
                 Cow::Owned(SetAuthByPredecessorId { enabled: enable }),
             )))
@@ -137,7 +137,7 @@ impl Contract {
     ) {
         State::add_public_key(self, account_id.into(), public_key).unwrap_or_panic();
 
-        DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new(AccountEvent::new(
+        DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new_fn_call(AccountEvent::new(
             Cow::Borrowed(account_id),
             PublicKeyEvent {
                 public_key: Cow::Borrowed(&public_key),
@@ -153,7 +153,7 @@ impl Contract {
     ) {
         State::remove_public_key(self, account_id.into(), public_key).unwrap_or_panic();
 
-        DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::new(AccountEvent::new(
+        DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::new_fn_call(AccountEvent::new(
             Cow::Borrowed(account_id),
             PublicKeyEvent {
                 public_key: Cow::Borrowed(&public_key),

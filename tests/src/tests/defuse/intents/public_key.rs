@@ -48,7 +48,7 @@ async fn execute_add_public_key_intent(public_key: PublicKey) {
         .unwrap();
 
     let events = vec![
-        DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new_with_hash(
+        DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new_intent(
             AccountEvent::new(
                 user.id(),
                 PublicKeyEvent {
