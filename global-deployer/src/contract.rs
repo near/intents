@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use defuse_near_utils::UnwrapOrPanicError;
 use defuse_serde_utils::hex::AsHex;
 use near_sdk::{
@@ -7,10 +5,10 @@ use near_sdk::{
 };
 
 use crate::{
-    ApproveResult, Deadline, Event, ExtraParams, GlobalDeployer, RevokeResult, State, Upgrade,
+    ApprovedDeployments, Deployment, Event, GlobalDeployer, State,
     error::{
-        ERR_INSUFFICIENT_DEPOSIT, ERR_NEW_CODE_HASH_MISMATCH, ERR_SAME_CODE, ERR_SELF_TRANSFER,
-        ERR_UNAUTHORIZED, ERR_WRONG_CODE_HASH,
+        ERR_INSUFFICIENT_DEPOSIT, ERR_SAME_CODE, ERR_SELF_TRANSFER, ERR_UNAUTHORIZED,
+        ERR_WRONG_CODE_HASH,
     },
 };
 
@@ -27,69 +25,49 @@ pub struct Contract(State);
 
 #[near]
 impl GlobalDeployer for Contract {
-    fn gd_approve(
-        &mut self,
-        new_hash: AsHex<[u8; 32]>,
-        old_hash: HashSet<AsHex<[u8; 32]>>,
-        valid_by: Option<Deadline>,
-        whitelisted_executors: HashSet<AccountId>,
-        whitelisted_revokers: HashSet<AccountId>,
-    ) -> ApproveResult {
+    fn gd_approve(&mut self, deployment: Deployment) {
         self.require_owner();
 
-        let new_hash_raw = new_hash.into_inner();
-        let old_hashes_raw: HashSet<[u8; 32]> =
-            old_hash.into_iter().map(AsHex::into_inner).collect();
+        ApprovedDeployments::approve(&deployment, &self.0.owner_id).unwrap_or_panic_display();
 
-        let upgrade = Upgrade {
-            approved_by: self.0.owner_id.clone(),
-            valid_by,
-            old_hashes: old_hashes_raw,
-            whitelisted_executors,
-            whitelisted_revokers,
-        };
-
-        let result =
-            ExtraParams::approve(new_hash_raw, upgrade, &self.0.owner_id).unwrap_or_panic_display();
-
-        Event::Approve {
-            new_hash: new_hash_raw,
+        Event::DeploymentApproved {
+            deployment_hash: deployment.hash(),
+            new_hash: deployment.new_hash,
         }
         .emit();
-
-        result
     }
 
-    fn gd_revoke(&mut self, hashes: Vec<AsHex<[u8; 32]>>) -> RevokeResult {
+    fn gd_revoke(&mut self, deployments: Vec<Deployment>) {
         let caller = env::predecessor_account_id();
-        let raw_hashes: Vec<[u8; 32]> = hashes.iter().map(|h| h.into_inner()).collect();
+        let hashes: Vec<[u8; 32]> = deployments.iter().map(|u| u.hash()).collect();
 
-        let result = ExtraParams::revoke(&raw_hashes, &caller, &self.0.owner_id)
+        ApprovedDeployments::revoke(&deployments, &caller, &self.0.owner_id)
             .unwrap_or_panic_display();
 
-        Event::Revoke {
-            hashes: raw_hashes,
-        }
-        .emit();
-
-        result
+        Event::DeploymentsRevoked { hashes }.emit();
     }
 
     #[payable]
-    fn gd_execute_upgrade(
+    fn gd_exec_approved_deployment(
         &mut self,
-        #[serializer(borsh)] new_hash: [u8; 32],
+        #[serializer(borsh)] deployment: Deployment,
         #[serializer(borsh)] new_code: Vec<u8>,
     ) -> Promise {
         require!(!env::attached_deposit().is_zero(), ERR_INSUFFICIENT_DEPOSIT);
 
-        let computed_hash = env::sha256_array(&new_code);
-        require!(computed_hash == new_hash, ERR_NEW_CODE_HASH_MISMATCH);
+        let actual_code_hash = env::sha256_array(&new_code);
 
         let caller = env::predecessor_account_id();
-        ExtraParams::check(&new_hash, &caller, &self.0.owner_id, &self.0.code_hash)
-            .unwrap_or_panic_display();
+        ApprovedDeployments::check(
+            &deployment,
+            &caller,
+            &self.0.owner_id,
+            &self.0.code_hash,
+            &actual_code_hash,
+        )
+        .unwrap_or_panic_display();
 
+        let deployment_hash = deployment.hash();
         let old_hash = self.0.code_hash;
         let initial_balance = env::account_balance().saturating_sub(env::attached_deposit());
 
@@ -101,7 +79,12 @@ impl GlobalDeployer for Contract {
         )
         .with_static_gas(GD_AT_DEPLOY_GAS)
         .with_unused_gas_weight(1)
-        .gd_post_deploy(old_hash.into(), new_hash.into(), initial_balance, true)
+        .gd_post_deploy(
+            old_hash.into(),
+            deployment.new_hash.into(),
+            initial_balance,
+            Some(deployment_hash.into()),
+        )
     }
 
     #[payable]
@@ -127,7 +110,7 @@ impl GlobalDeployer for Contract {
         )
         .with_static_gas(GD_AT_DEPLOY_GAS)
         .with_unused_gas_weight(1)
-        .gd_post_deploy(old_hash.into(), new_hash.into(), initial_balance, false)
+        .gd_post_deploy(old_hash.into(), new_hash.into(), initial_balance, None)
     }
 
     #[payable]
@@ -142,11 +125,6 @@ impl GlobalDeployer for Contract {
         }
         .emit();
         self.0.owner_id = receiver_id;
-
-        // Cleanup approvals from old owner
-        let mut params = ExtraParams::load();
-        params.cleanup(&self.0.owner_id);
-        params.save();
     }
 
     fn gd_owner_id(&self) -> AccountId {
@@ -160,6 +138,10 @@ impl GlobalDeployer for Contract {
     fn gd_code_hash(&self) -> AsHex<[u8; 32]> {
         self.0.code_hash.into()
     }
+
+    fn gd_as_borsh(&self, deployment: Deployment) -> Vec<u8> {
+        borsh::to_vec(&deployment).unwrap_or_else(|_| unreachable!())
+    }
 }
 
 #[near]
@@ -170,7 +152,7 @@ impl Contract {
         old_hash: AsHex<[u8; 32]>,
         new_hash: AsHex<[u8; 32]>,
         initial_balance: NearToken,
-        from_approval: bool,
+        approval_hash: Option<AsHex<[u8; 32]>>,
     ) {
         let [old_hash, new_hash] = [old_hash, new_hash].map(AsHex::into_inner);
 
@@ -178,9 +160,11 @@ impl Contract {
         self.0.code_hash = new_hash;
         Event::Deploy { old_hash, new_hash }.emit();
 
-        if from_approval {
-            // Remove the approval entry on successful deploy
-            let _ = ExtraParams::take(&new_hash);
+        if let Some(deployment_hash) = approval_hash {
+            let deployment_hash = deployment_hash.into_inner();
+            if ApprovedDeployments::take(&deployment_hash).is_ok() {
+                Event::ApprovedDeploymentExecuted { deployment_hash }.emit();
+            }
         }
 
         let refund = env::account_balance().saturating_sub(initial_balance);

@@ -1,7 +1,5 @@
-use std::collections::HashSet;
-
 use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
-use defuse_global_deployer::{Deadline, State as DeployerState};
+use defuse_global_deployer::{Deployment, State as DeployerState};
 use defuse_serde_utils::hex::AsHex;
 use near_api::types::transaction::result::ExecutionSuccess;
 use near_sdk::{
@@ -34,23 +32,19 @@ pub trait DeployerExt {
     async fn gd_approve(
         &self,
         target: &AccountId,
-        new_hash: [u8; 32],
-        old_hashes: HashSet<[u8; 32]>,
-        valid_by: Option<Deadline>,
-        whitelisted_executors: HashSet<AccountId>,
-        whitelisted_revokers: HashSet<AccountId>,
+        deployment: Deployment,
     ) -> anyhow::Result<ExecutionSuccess>;
 
     async fn gd_revoke(
         &self,
         target: &AccountId,
-        hashes: Vec<[u8; 32]>,
+        deployments: Vec<Deployment>,
     ) -> anyhow::Result<ExecutionSuccess>;
 
-    async fn gd_execute_upgrade(
+    async fn gd_exec_approved_deployment(
         &self,
         target: &AccountId,
-        new_hash: [u8; 32],
+        deployment: Deployment,
         new_code: &[u8],
     ) -> anyhow::Result<ExecutionSuccess>;
 }
@@ -113,23 +107,11 @@ impl DeployerExt for SigningAccount {
     async fn gd_approve(
         &self,
         target: &AccountId,
-        new_hash: [u8; 32],
-        old_hashes: HashSet<[u8; 32]>,
-        valid_by: Option<Deadline>,
-        whitelisted_executors: HashSet<AccountId>,
-        whitelisted_revokers: HashSet<AccountId>,
+        deployment: Deployment,
     ) -> anyhow::Result<ExecutionSuccess> {
-        let new_hash_hex: AsHex<[u8; 32]> = new_hash.into();
-        let old_hashes_hex: HashSet<AsHex<[u8; 32]>> =
-            old_hashes.into_iter().map(Into::into).collect();
-
         self.tx(target)
             .function_call(FnCallBuilder::new("gd_approve").json_args(json!({
-                "new_hash": new_hash_hex,
-                "old_hashes": old_hashes_hex,
-                "valid_by": valid_by,
-                "whitelisted_executors": whitelisted_executors,
-                "whitelisted_revokers": whitelisted_revokers,
+                "deployment": deployment,
             })))
             .await
     }
@@ -137,27 +119,25 @@ impl DeployerExt for SigningAccount {
     async fn gd_revoke(
         &self,
         target: &AccountId,
-        hashes: Vec<[u8; 32]>,
+        deployments: Vec<Deployment>,
     ) -> anyhow::Result<ExecutionSuccess> {
-        let hashes_hex: Vec<AsHex<[u8; 32]>> = hashes.into_iter().map(Into::into).collect();
-
         self.tx(target)
             .function_call(FnCallBuilder::new("gd_revoke").json_args(json!({
-                "hashes": hashes_hex,
+                "deployments": deployments,
             })))
             .await
     }
 
-    async fn gd_execute_upgrade(
+    async fn gd_exec_approved_deployment(
         &self,
         target: &AccountId,
-        new_hash: [u8; 32],
+        deployment: Deployment,
         new_code: &[u8],
     ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
             .function_call(
-                FnCallBuilder::new("gd_execute_upgrade")
-                    .borsh_args(&(new_hash, new_code))
+                FnCallBuilder::new("gd_exec_approved_deployment")
+                    .borsh_args(&(deployment, new_code))
                     .with_deposit(NearToken::from_near(50)),
             )
             .await

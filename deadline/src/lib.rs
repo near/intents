@@ -35,9 +35,7 @@ impl BorshSchema for Deadline {
     ) {
         <i64 as BorshSchema>::add_definitions_recursively(definitions);
         let definition = Definition::Struct {
-            fields: borsh::schema::Fields::UnnamedFields(vec![
-                <i64 as BorshSchema>::declaration(),
-            ]),
+            fields: borsh::schema::Fields::UnnamedFields(vec![<i64 as BorshSchema>::declaration()]),
         };
         borsh::schema::add_definition(Self::declaration(), definition, definitions);
     }

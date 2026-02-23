@@ -2,10 +2,11 @@
 mod contract;
 pub mod error;
 
-use std::{borrow::Cow, collections::{BTreeMap, HashSet}};
+use std::{
+    borrow::Cow,
+    collections::{BTreeMap, BTreeSet},
+};
 
-use defuse_borsh_utils::adapters::{As, TimestampNanoSeconds};
-pub use defuse_deadline::Deadline;
 use defuse_serde_utils::hex::AsHex;
 use near_sdk::{
     AccountId, AccountIdRef, Promise, borsh, ext_contract, near,
@@ -13,61 +14,50 @@ use near_sdk::{
 };
 use thiserror::Error as ThisError;
 
-#[near(serializers = [borsh])]
+#[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Upgrade {
-    pub approved_by: AccountId,
-    #[borsh(
-        serialize_with = "As::<Option<TimestampNanoSeconds>>::serialize",
-        deserialize_with = "As::<Option<TimestampNanoSeconds>>::deserialize",
-    )]
-    pub valid_by: Option<Deadline>,
-    pub old_hashes: HashSet<[u8; 32]>,
-    pub whitelisted_executors: HashSet<AccountId>,
-    pub whitelisted_revokers: HashSet<AccountId>,
+pub struct Deployment {
+    pub owner_id: AccountId,
+    #[serde_as(as = "Hex")]
+    pub new_hash: [u8; 32],
+    #[serde_as(as = "BTreeSet<Hex>")]
+    pub old_hashes: BTreeSet<[u8; 32]>,
+    pub whitelisted_executors: BTreeSet<AccountId>,
+    pub whitelisted_revokers: BTreeSet<AccountId>,
+}
+
+impl Deployment {
+    pub fn hash(&self) -> [u8; 32] {
+        near_sdk::env::sha256_array(borsh::to_vec(self).unwrap_or_else(|_| unreachable!()))
+    }
 }
 
 #[near(serializers = [borsh])]
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct ExtraParams {
-    pub approvals: BTreeMap<[u8; 32], Upgrade>,
-}
-
-#[near(serializers = [json])]
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct CleanupInfo {
-    pub expired_removed: u32,
-    pub stale_owner_removed: u32,
-}
-
-pub type ApproveResult = (AsHex<[u8; 32]>, CleanupInfo);
-
-pub type RevokeResult = (u32, CleanupInfo);
+pub struct ApprovedDeployments(pub BTreeSet<[u8; 32]>);
 
 #[derive(Debug, ThisError)]
 pub enum Error {
     #[error("HashIsAlreadyApproved {0:?}")]
     HashIsAlreadyApproved([u8; 32]),
-    #[error("ApprovedUpgradesCountExceeded {0}")]
-    ApprovedUpgradesCountExceeded(usize),
     #[error("HashNotFound {0:?}")]
     HashNotFound([u8; 32]),
     #[error("unauthorized")]
     Unauthorized,
-    #[error("approval expired")]
-    Expired,
     #[error("current code hash not in approved old_hashes")]
     OldHashMismatch,
     #[error("old_hashes must not be empty")]
     EmptyOldHashes,
     #[error("new_code hash does not match approved new_hash")]
     NewCodeHashMismatch,
+    #[error("deployment.owner_id does not match current contract owner")]
+    OwnerMismatch,
+    #[error("contract owner changed since approval")]
+    OwnerChanged,
 }
 
-impl ExtraParams {
-    pub const STORAGE_KEY: &[u8] = b"upgrade";
-    pub const MAX_PENDING_APPROVALS: usize = 32;
-
+impl ApprovedDeployments {
+    pub const STORAGE_KEY: &[u8] = b"approved";
     fn load() -> Self {
         near_sdk::env::storage_read(Self::STORAGE_KEY)
             .map(|bytes| borsh::from_slice(&bytes).unwrap_or_default())
@@ -81,141 +71,117 @@ impl ExtraParams {
         );
     }
 
-    fn cleanup(&mut self, owner: &AccountId) -> CleanupInfo {
-        let mut info = CleanupInfo::default();
-        self.approvals.retain(|_hash, upgrade| {
-            if upgrade.valid_by.is_some_and(Deadline::has_expired) {
-                info.expired_removed += 1;
-                return false;
-            }
-            if &upgrade.approved_by != owner {
-                info.stale_owner_removed += 1;
-                return false;
-            }
-            true
-        });
-        info
-    }
-
-    pub fn approve(
-        new_hash: [u8; 32],
-        upgrade: Upgrade,
-        owner: &AccountId,
-    ) -> Result<(AsHex<[u8; 32]>, CleanupInfo), Error> {
-        let mut params = Self::load();
-        let cleanup_info = params.cleanup(owner);
-
-        if params.approvals.contains_key(&new_hash) {
-            return Err(Error::HashIsAlreadyApproved(new_hash));
+    pub fn approve(deployment: &Deployment, current_owner_id: &AccountId) -> Result<(), Error> {
+        if deployment.owner_id != *current_owner_id {
+            return Err(Error::OwnerMismatch);
         }
-        if upgrade.old_hashes.is_empty() {
+        if deployment.old_hashes.is_empty() {
             return Err(Error::EmptyOldHashes);
         }
-        if params.approvals.len() >= Self::MAX_PENDING_APPROVALS {
-            return Err(Error::ApprovedUpgradesCountExceeded(
-                Self::MAX_PENDING_APPROVALS,
-            ));
-        }
 
-        params.approvals.insert(new_hash, upgrade);
+        let mut params = Self::load();
+        let deployment_hash = deployment.hash();
+
+        if !params.0.insert(deployment_hash) {
+            return Err(Error::HashIsAlreadyApproved(deployment_hash));
+        }
         params.save();
 
-        Ok((new_hash.into(), cleanup_info))
+        Ok(())
     }
 
     pub fn revoke(
-        hashes: &[[u8; 32]],
+        deployments: &[Deployment],
         caller: &AccountId,
-        owner: &AccountId,
-    ) -> Result<RevokeResult, Error> {
+        current_owner_id: &AccountId,
+    ) -> Result<(), Error> {
         let mut params = Self::load();
-        let cleanup_info = params.cleanup(owner);
-        let mut revoked = 0u32;
 
-        for hash in hashes {
-            let Some(upgrade) = params.approvals.get(hash) else {
-                return Err(Error::HashNotFound(*hash));
-            };
-            let authorized = caller == owner
-                || upgrade.whitelisted_revokers.contains(caller);
+        for deployment in deployments {
+            let deployment_hash = deployment.hash();
+
+            if !params.0.contains(&deployment_hash) {
+                return Err(Error::HashNotFound(deployment_hash));
+            }
+
+            let owner_changed = deployment.owner_id != *current_owner_id;
+            let authorized = owner_changed
+                || caller == current_owner_id
+                || caller == &deployment.owner_id
+                || deployment.whitelisted_revokers.contains(caller);
             if !authorized {
                 return Err(Error::Unauthorized);
             }
-            params.approvals.remove(hash);
-            revoked += 1;
+            params.0.remove(&deployment_hash);
         }
 
         params.save();
-        Ok((revoked, cleanup_info))
+        Ok(())
     }
 
     pub fn check(
-        new_hash: &[u8; 32],
+        deployment: &Deployment,
         caller: &AccountId,
-        owner: &AccountId,
+        current_owner_id: &AccountId,
         current_code_hash: &[u8; 32],
-    ) -> Result<CleanupInfo, Error> {
-        let mut params = Self::load();
-        let cleanup_info = params.cleanup(owner);
+        actual_code_hash: &[u8; 32],
+    ) -> Result<(), Error> {
+        if deployment.new_hash != *actual_code_hash {
+            return Err(Error::NewCodeHashMismatch);
+        }
 
-        let upgrade = params
-            .approvals
-            .get(new_hash)
-            .ok_or(Error::HashNotFound(*new_hash))?;
+        let params = Self::load();
+        let deployment_hash = deployment.hash();
 
-        let authorized = caller == owner
-            || upgrade.whitelisted_executors.contains(caller);
+        if !params.0.contains(&deployment_hash) {
+            return Err(Error::HashNotFound(deployment_hash));
+        }
+
+        if &deployment.owner_id != current_owner_id {
+            return Err(Error::OwnerChanged);
+        }
+
+        let authorized =
+            caller == &deployment.owner_id || deployment.whitelisted_executors.contains(caller);
         if !authorized {
             return Err(Error::Unauthorized);
         }
-        if !upgrade.old_hashes.contains(current_code_hash) {
+        if !deployment.old_hashes.contains(current_code_hash) {
             return Err(Error::OldHashMismatch);
         }
-        if upgrade.valid_by.is_some_and(Deadline::has_expired) {
-            return Err(Error::Expired);
-        }
 
-        params.save();
-        Ok(cleanup_info)
+        Ok(())
     }
 
-    pub fn take(new_hash: &[u8; 32]) -> Result<Upgrade, Error> {
+    pub fn take(deployment_hash: &[u8; 32]) -> Result<(), Error> {
         let mut params = Self::load();
-        let upgrade = params
-            .approvals
-            .remove(new_hash)
-            .ok_or(Error::HashNotFound(*new_hash))?;
+        if !params.0.remove(deployment_hash) {
+            return Err(Error::HashNotFound(*deployment_hash));
+        }
         params.save();
-        Ok(upgrade)
+        Ok(())
     }
 }
 
 /// Manages global contract code and ownership for deterministic (NEP-616) accounts.
 #[ext_contract(ext_global_deployer)]
 pub trait GlobalDeployer {
-    /// Approves a future upgrade by hash.
+    /// Approves a future deployment by hash.
     /// Owner-only. Returns the approved hash and cleanup info.
-    /// Emits [`Event::Approve`].
-    fn gd_approve(
-        &mut self,
-        new_hash: AsHex<[u8; 32]>,
-        old_hashes: HashSet<AsHex<[u8; 32]>>,
-        valid_by: Option<Deadline>,
-        whitelisted_executors: HashSet<AccountId>,
-        whitelisted_revokers: HashSet<AccountId>,
-    ) -> ApproveResult;
+    /// Emits [`Event::DeploymentApproved`].
+    fn gd_approve(&mut self, deployment: Deployment);
 
-    /// Revokes previously approved upgrades by hash.
+    /// Revokes previously approved deployments by hash.
     /// Caller must be owner or whitelisted revoker for each entry.
-    /// Emits [`Event::Revoke`].
-    fn gd_revoke(&mut self, hashes: Vec<AsHex<[u8; 32]>>) -> RevokeResult;
+    /// Emits [`Event::DeploymentsRevoked`].
+    fn gd_revoke(&mut self, deployments: Vec<Deployment>);
 
-    /// Executes a previously approved upgrade.
+    /// Executes a previously approved deployment.
     /// Caller must be owner or whitelisted executor.
     /// Requires attached deposit for storage.
-    fn gd_execute_upgrade(
+    fn gd_exec_approved_deployment(
         &mut self,
-        #[serializer(borsh)] new_hash: [u8; 32],
+        #[serializer(borsh)] deployment: Deployment,
         #[serializer(borsh)] new_code: Vec<u8>,
     ) -> Promise;
 
@@ -243,6 +209,10 @@ pub trait GlobalDeployer {
 
     /// Returns the SHA-256 hash of the currently deployed code, or `0000..000` if none.
     fn gd_code_hash(&self) -> AsHex<[u8; 32]>;
+
+    /// Converts a JSON-serialized Deployment to borsh. Useful for constructing
+    /// `gd_exec_approved_deployment` calls from Deployment data found in block explorers.
+    fn gd_as_borsh(&self, deployment: Deployment) -> Vec<u8>;
 }
 
 #[serde_as(crate = "near_sdk::serde_with")]
@@ -263,15 +233,23 @@ pub enum Event<'a> {
     },
 
     #[event_version("1.0.0")]
-    Approve {
+    DeploymentApproved {
+        #[serde_as(as = "Hex")]
+        deployment_hash: [u8; 32],
         #[serde_as(as = "Hex")]
         new_hash: [u8; 32],
     },
 
     #[event_version("1.0.0")]
-    Revoke {
+    DeploymentsRevoked {
         #[serde_as(as = "Vec<Hex>")]
         hashes: Vec<[u8; 32]>,
+    },
+
+    #[event_version("1.0.0")]
+    ApprovedDeploymentExecuted {
+        #[serde_as(as = "Hex")]
+        deployment_hash: [u8; 32],
     },
 }
 

@@ -1,7 +1,8 @@
+use std::collections::BTreeSet;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use defuse_global_deployer::{
-    Event, State as DeployerState,
+    Deployment, Event, State as DeployerState,
     error::{ERR_UNAUTHORIZED, ERR_WRONG_CODE_HASH},
 };
 use defuse_sandbox::{
@@ -359,6 +360,102 @@ async fn test_concurrent_upgrades_only_one_succeeds(
         controller_instance.gd_code_hash().await.unwrap(),
         sha256_array(&*MT_RECEIVER_STUB_WASM),
     );
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_concurrent_approved_upgrades_only_one_succeeds(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    let root = deployer_env.sandbox.root();
+    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+
+    let controller_instance = root
+        .deploy_instance(
+            deployer_code_hash_id.clone(),
+            DeployerState::new(root.id().clone(), unique_index),
+        )
+        .await
+        .unwrap();
+
+    // Initial deploy so controller has code
+    root.gd_deploy(
+        controller_instance.id(),
+        DeployerState::DEFAULT_HASH,
+        &DEPLOYER_WASM,
+    )
+    .await
+    .unwrap();
+
+    let old_hash = sha256_array(&*DEPLOYER_WASM);
+    assert_eq!(controller_instance.gd_code_hash().await.unwrap(), old_hash,);
+
+    // Prepare 10 distinct codes and their hashes
+    let codes: Vec<Vec<u8>> = (0u8..10).map(|i| vec![i + 1; 32]).collect();
+    let hashes: Vec<[u8; 32]> = codes.iter().map(sha256_array).collect();
+
+    // Fund the controller instance to cover storage for 10 approvals
+    root.tx(controller_instance.id().clone())
+        .transfer(NearToken::from_near(10))
+        .await
+        .unwrap();
+
+    // Build per-code deployment structs (each includes its new_hash)
+    let deployments: Vec<Deployment> = hashes
+        .iter()
+        .map(|&new_hash| Deployment {
+            owner_id: root.id().clone(),
+            new_hash,
+            old_hashes: BTreeSet::from([old_hash]),
+            whitelisted_executors: BTreeSet::new(),
+            whitelisted_revokers: BTreeSet::new(),
+        })
+        .collect();
+
+    // Approve all 10 sequentially (each approval increases storage)
+    for deployment in &deployments {
+        root.gd_approve(controller_instance.id(), deployment.clone())
+            .await
+            .unwrap();
+    }
+
+    // Execute all 10 approved deployments concurrently
+    let results = join_all(
+        codes
+            .iter()
+            .zip(deployments.iter())
+            .map(|(code, deployment)| {
+                root.gd_exec_approved_deployment(controller_instance.id(), deployment.clone(), code)
+            }),
+    )
+    .await;
+
+    let successes = results.iter().filter(|r| r.is_ok()).count();
+    let wrong_hash_failures = results
+        .iter()
+        .filter(|r| {
+            r.as_ref()
+                .is_err_and(|e| e.to_string().contains(ERR_WRONG_CODE_HASH))
+        })
+        .count();
+
+    assert_eq!(
+        successes, 1,
+        "exactly one concurrent approved upgrade should succeed"
+    );
+    assert_eq!(
+        wrong_hash_failures, 9,
+        "remaining 9 should fail with wrong code hash"
+    );
+
+    // The final code hash should match whichever upgrade won
+    let final_hash = controller_instance.gd_code_hash().await.unwrap();
+    let winner_idx = results
+        .iter()
+        .position(Result::is_ok)
+        .expect("should have a winner");
+    assert_eq!(final_hash, hashes[winner_idx]);
 }
 
 #[rstest]
