@@ -1,10 +1,16 @@
-use defuse_sandbox::extensions::defuse::contract::{
-    core::{
-        crypto::PublicKey,
-        intents::tokens::NativeWithdraw,
-        token_id::{TokenId, nep141::Nep141TokenId},
+use defuse_sandbox::{
+    assert_eq_defuse_event_logs,
+    extensions::defuse::{
+        contract::{
+            core::{
+                crypto::PublicKey,
+                intents::tokens::NativeWithdraw,
+                token_id::{TokenId, nep141::Nep141TokenId},
+            },
+            tokens::DepositMessage,
+        },
+        event::ToEventLog,
     },
-    tokens::DepositMessage,
 };
 
 use defuse_sandbox::extensions::defuse::{
@@ -94,9 +100,12 @@ async fn native_withdraw_intent(ed25519_pk: PublicKey, secp256k1_pk: PublicKey) 
         .await
         .unwrap();
 
-    env.simulate_and_execute_intents(env.defuse.id(), [withdraw_payload])
+    let res = env
+        .simulate_and_execute_intents(env.defuse.id(), [withdraw_payload.clone()])
         .await
         .expect("execute_intents: failed to withdraw native NEAR to receivers");
+
+    assert_eq_defuse_event_logs!(withdraw_payload.to_event_log(), res.logs());
 
     assert_eq!(
         env.defuse
