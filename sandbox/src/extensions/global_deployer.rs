@@ -1,5 +1,7 @@
+use std::fmt::Write;
+
 use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
-use defuse_global_deployer::{Deployment, State as DeployerState};
+use defuse_global_deployer::State as DeployerState;
 use defuse_serde_utils::hex::AsHex;
 use near_api::types::transaction::result::ExecutionSuccess;
 use near_sdk::{
@@ -32,20 +34,8 @@ pub trait DeployerExt {
     async fn gd_approve(
         &self,
         target: &AccountId,
-        deployment: Deployment,
-    ) -> anyhow::Result<ExecutionSuccess>;
-
-    async fn gd_revoke(
-        &self,
-        target: &AccountId,
-        deployments: Vec<Deployment>,
-    ) -> anyhow::Result<ExecutionSuccess>;
-
-    async fn gd_exec_approved_deployment(
-        &self,
-        target: &AccountId,
-        deployment: Deployment,
-        new_code: &[u8],
+        old_hash: [u8; 32],
+        new_hash: [u8; 32],
     ) -> anyhow::Result<ExecutionSuccess>;
 }
 
@@ -54,6 +44,7 @@ pub trait DeployerViewExt {
     async fn gd_owner_id(&self) -> anyhow::Result<AccountId>;
     async fn gd_index(&self) -> anyhow::Result<u32>;
     async fn gd_code_hash(&self) -> anyhow::Result<[u8; 32]>;
+    async fn gd_approved_hash(&self) -> anyhow::Result<[u8; 32]>;
 }
 
 impl DeployerExt for SigningAccount {
@@ -107,39 +98,14 @@ impl DeployerExt for SigningAccount {
     async fn gd_approve(
         &self,
         target: &AccountId,
-        deployment: Deployment,
+        old_hash: [u8; 32],
+        new_hash: [u8; 32],
     ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
             .function_call(FnCallBuilder::new("gd_approve").json_args(json!({
-                "deployment": deployment,
+                "old_hash": old_hash.iter().fold(String::new(), |mut s, b| { let _ = write!(s, "{b:02x}"); s }),
+                "new_hash": new_hash.iter().fold(String::new(), |mut s, b| { let _ = write!(s, "{b:02x}"); s }),
             })))
-            .await
-    }
-
-    async fn gd_revoke(
-        &self,
-        target: &AccountId,
-        deployments: Vec<Deployment>,
-    ) -> anyhow::Result<ExecutionSuccess> {
-        self.tx(target)
-            .function_call(FnCallBuilder::new("gd_revoke").json_args(json!({
-                "deployments": deployments,
-            })))
-            .await
-    }
-
-    async fn gd_exec_approved_deployment(
-        &self,
-        target: &AccountId,
-        deployment: Deployment,
-        new_code: &[u8],
-    ) -> anyhow::Result<ExecutionSuccess> {
-        self.tx(target)
-            .function_call(
-                FnCallBuilder::new("gd_exec_approved_deployment")
-                    .borsh_args(&(deployment, new_code))
-                    .with_deposit(NearToken::from_near(50)),
-            )
             .await
     }
 }
@@ -155,6 +121,11 @@ impl DeployerViewExt for Account {
 
     async fn gd_code_hash(&self) -> anyhow::Result<[u8; 32]> {
         let hash: AsHex<[u8; 32]> = self.call_view_function_json("gd_code_hash", ()).await?;
+        Ok(hash.into_inner())
+    }
+
+    async fn gd_approved_hash(&self) -> anyhow::Result<[u8; 32]> {
+        let hash: AsHex<[u8; 32]> = self.call_view_function_json("gd_approved_hash", ()).await?;
         Ok(hash.into_inner())
     }
 }

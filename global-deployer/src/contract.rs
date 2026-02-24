@@ -1,14 +1,13 @@
-use defuse_near_utils::UnwrapOrPanicError;
 use defuse_serde_utils::hex::AsHex;
 use near_sdk::{
     AccountId, Gas, NearToken, PanicOnDefault, Promise, assert_one_yocto, env, near, require,
 };
 
 use crate::{
-    ApprovedDeployments, Deployment, Event, GlobalDeployer, State,
+    Event, GlobalDeployer, State,
     error::{
-        ERR_INSUFFICIENT_DEPOSIT, ERR_SAME_CODE, ERR_SELF_TRANSFER, ERR_UNAUTHORIZED,
-        ERR_WRONG_CODE_HASH,
+        ERR_INSUFFICIENT_DEPOSIT, ERR_NEW_CODE_HASH_MISMATCH, ERR_SAME_CODE, ERR_SELF_TRANSFER,
+        ERR_UNAUTHORIZED, ERR_WRONG_CODE_HASH,
     },
 };
 
@@ -25,66 +24,15 @@ pub struct Contract(State);
 
 #[near]
 impl GlobalDeployer for Contract {
-    fn gd_approve(&mut self, deployment: Deployment) {
+    fn gd_approve(&mut self, old_hash: AsHex<[u8; 32]>, new_hash: AsHex<[u8; 32]>) {
         self.require_owner();
 
-        ApprovedDeployments::approve(&deployment, &self.0.owner_id).unwrap_or_panic_display();
+        let [old_hash, new_hash] = [old_hash, new_hash].map(AsHex::into_inner);
+        require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
 
-        Event::DeploymentApproved {
-            deployment_hash: deployment.hash(),
-            new_hash: deployment.new_hash,
-        }
-        .emit();
-    }
+        self.0.approved_hash = new_hash;
 
-    fn gd_revoke(&mut self, deployments: Vec<Deployment>) {
-        let caller = env::predecessor_account_id();
-        let hashes: Vec<[u8; 32]> = deployments.iter().map(|u| u.hash()).collect();
-
-        ApprovedDeployments::revoke(&deployments, &caller, &self.0.owner_id)
-            .unwrap_or_panic_display();
-
-        Event::DeploymentsRevoked { hashes }.emit();
-    }
-
-    #[payable]
-    fn gd_exec_approved_deployment(
-        &mut self,
-        #[serializer(borsh)] deployment: Deployment,
-        #[serializer(borsh)] new_code: Vec<u8>,
-    ) -> Promise {
-        require!(!env::attached_deposit().is_zero(), ERR_INSUFFICIENT_DEPOSIT);
-
-        let actual_code_hash = env::sha256_array(&new_code);
-
-        let caller = env::predecessor_account_id();
-        ApprovedDeployments::check(
-            &deployment,
-            &caller,
-            &self.0.owner_id,
-            &self.0.code_hash,
-            &actual_code_hash,
-        )
-        .unwrap_or_panic_display();
-
-        let deployment_hash = deployment.hash();
-        let old_hash = self.0.code_hash;
-        let initial_balance = env::account_balance().saturating_sub(env::attached_deposit());
-
-        Self::ext_on(
-            Promise::new(env::current_account_id())
-                .refund_to(env::refund_to_account_id())
-                .transfer(env::attached_deposit())
-                .deploy_global_contract_by_account_id(new_code),
-        )
-        .with_static_gas(GD_AT_DEPLOY_GAS)
-        .with_unused_gas_weight(1)
-        .gd_post_deploy(
-            old_hash.into(),
-            deployment.new_hash.into(),
-            initial_balance,
-            Some(deployment_hash.into()),
-        )
+        Event::DeploymentApproved { old_hash, new_hash }.emit();
     }
 
     #[payable]
@@ -94,11 +42,18 @@ impl GlobalDeployer for Contract {
         #[serializer(borsh)] new_code: Vec<u8>,
     ) -> Promise {
         require!(!env::attached_deposit().is_zero(), ERR_INSUFFICIENT_DEPOSIT);
-        self.require_owner();
 
         require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
         let new_hash = env::sha256_array(&new_code);
         require!(new_hash != old_hash, ERR_SAME_CODE);
+
+        let is_owner = env::predecessor_account_id() == self.0.owner_id;
+        if !is_owner {
+            require!(
+                new_hash == self.0.approved_hash,
+                ERR_NEW_CODE_HASH_MISMATCH
+            );
+        }
 
         let initial_balance = env::account_balance().saturating_sub(env::attached_deposit());
 
@@ -110,7 +65,7 @@ impl GlobalDeployer for Contract {
         )
         .with_static_gas(GD_AT_DEPLOY_GAS)
         .with_unused_gas_weight(1)
-        .gd_post_deploy(old_hash.into(), new_hash.into(), initial_balance, None)
+        .gd_post_deploy(old_hash.into(), new_hash.into(), initial_balance)
     }
 
     #[payable]
@@ -125,6 +80,7 @@ impl GlobalDeployer for Contract {
         }
         .emit();
         self.0.owner_id = receiver_id;
+        self.0.approved_hash = State::DEFAULT_HASH;
     }
 
     fn gd_owner_id(&self) -> AccountId {
@@ -139,8 +95,8 @@ impl GlobalDeployer for Contract {
         self.0.code_hash.into()
     }
 
-    fn gd_as_borsh(&self, deployment: Deployment) -> Vec<u8> {
-        near_sdk::borsh::to_vec(&deployment).unwrap_or_else(|_| unreachable!())
+    fn gd_approved_hash(&self) -> AsHex<[u8; 32]> {
+        self.0.approved_hash.into()
     }
 }
 
@@ -152,20 +108,13 @@ impl Contract {
         old_hash: AsHex<[u8; 32]>,
         new_hash: AsHex<[u8; 32]>,
         initial_balance: NearToken,
-        approval_hash: Option<AsHex<[u8; 32]>>,
     ) {
         let [old_hash, new_hash] = [old_hash, new_hash].map(AsHex::into_inner);
 
         require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
         self.0.code_hash = new_hash;
+        self.0.approved_hash = State::DEFAULT_HASH;
         Event::Deploy { old_hash, new_hash }.emit();
-
-        if let Some(deployment_hash) = approval_hash {
-            let deployment_hash = deployment_hash.into_inner();
-            if ApprovedDeployments::take(&deployment_hash).is_ok() {
-                Event::ApprovedDeploymentExecuted { deployment_hash }.emit();
-            }
-        }
 
         let refund = env::account_balance().saturating_sub(initial_balance);
         if !refund.is_zero() {
