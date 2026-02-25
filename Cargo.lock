@@ -999,7 +999,6 @@ version = "0.1.0"
 dependencies = [
  "defuse-serde-utils",
  "near-sdk",
- "thiserror 2.0.17",
 ]
 
 [[package]]
