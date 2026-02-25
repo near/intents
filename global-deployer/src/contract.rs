@@ -51,6 +51,9 @@ impl GlobalDeployer for Contract {
 
         let initial_balance = env::account_balance().saturating_sub(env::attached_deposit());
 
+        // On receipt failure, refund goes to the receipt's predecessor — which for a
+        // self-targeted promise is the contract itself. `.refund_to()` overrides this
+        // so the deposit is refunded to the original caller instead. (NEP-616)
         Self::ext_on(
             Promise::new(env::current_account_id())
                 .refund_to(env::refund_to_account_id())

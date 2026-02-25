@@ -997,8 +997,6 @@ dependencies = [
 name = "defuse-global-deployer"
 version = "0.1.0"
 dependencies = [
- "defuse-borsh-utils",
- "defuse-near-utils",
  "defuse-serde-utils",
  "near-sdk",
  "thiserror 2.0.17",
