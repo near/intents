@@ -81,13 +81,9 @@ async fn test_deploy_controller_instance(
         state.code_hash,
     );
 
-    root.gd_approve_and_deploy(
-        controller_instance.id(),
-        state.code_hash,
-        &DEPLOYER_WASM,
-    )
-    .await
-    .unwrap();
+    root.gd_approve_and_deploy(controller_instance.id(), state.code_hash, &DEPLOYER_WASM)
+        .await
+        .unwrap();
 
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap(),
@@ -267,11 +263,7 @@ async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, 
     .unwrap();
 
     let result = root
-        .gd_deploy(
-            controller_instance.id(),
-            storage.code_hash,
-            &DEPLOYER_WASM,
-        )
+        .gd_deploy(controller_instance.id(), storage.code_hash, &DEPLOYER_WASM)
         .await
         .unwrap();
 
@@ -661,9 +653,5 @@ async fn test_retry_approve_and_deploy_after_insufficient_deposit(
         .await
         .unwrap();
 
-    assert_eq!(
-        controller_instance.gd_code_hash().await.unwrap(),
-        new_hash,
-    );
+    assert_eq!(controller_instance.gd_code_hash().await.unwrap(), new_hash,);
 }
-
