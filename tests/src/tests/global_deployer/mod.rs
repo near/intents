@@ -571,3 +571,146 @@ async fn test_state_init_with_approved_hash_allows_immediate_deploy(
     );
 }
 
+#[rstest]
+#[tokio::test]
+async fn test_post_deploy_does_not_run_on_failed_deploy(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    let root = deployer_env.sandbox.root();
+    let initial_balance = NearToken::from_near(2);
+    let owner = root
+        .generate_subaccount("dummy2", initial_balance)
+        .await
+        .unwrap();
+
+    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+    let storage = DeployerState::new(owner.id().clone(), unique_index);
+
+    let controller_instance = root
+        .deploy_instance(deployer_code_hash_id.clone(), storage.clone())
+        .await
+        .unwrap();
+
+    // Instance has 0 balance
+    assert_eq!(
+        controller_instance.view().await.unwrap().amount,
+        NearToken::from_near(0)
+    );
+
+    let new_hash = sha256_array(&*DEPLOYER_WASM);
+
+    owner
+        .gd_approve(
+            controller_instance.id(),
+            DeployerState::DEFAULT_HASH,
+            new_hash,
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        controller_instance.gd_approved_hash().await.unwrap(),
+        new_hash,
+    );
+
+    // Deploy with insufficient deposit → LackBalanceForState
+    let result = owner
+        .tx(controller_instance.id())
+        .function_call(
+            FnCallBuilder::new("gd_deploy")
+                .borsh_args(&(DeployerState::DEFAULT_HASH, &*DEPLOYER_WASM))
+                .with_deposit(NearToken::from_near(1)),
+        )
+        .exec_transaction()
+        .await
+        .unwrap();
+
+    // No Deploy event should have been emitted
+    assert!(
+        !result.logs().iter().any(|log| log.contains("Deploy")),
+        "Deploy event should not be emitted on failed deploy"
+    );
+
+    // Verify the transaction actually failed
+    result.into_result().unwrap_err();
+
+    // code_hash must NOT have been updated by gd_post_deploy
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap(),
+        DeployerState::DEFAULT_HASH,
+    );
+
+    // approved_hash must NOT have been cleared by gd_post_deploy
+    assert_eq!(
+        controller_instance.gd_approved_hash().await.unwrap(),
+        new_hash,
+    );
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_retry_approve_and_deploy_after_insufficient_deposit(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    use near_sdk::Gas;
+
+    let root = deployer_env.sandbox.root();
+    let owner = root
+        .generate_subaccount("retry", NearToken::from_near(100))
+        .await
+        .unwrap();
+
+    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+    let storage = DeployerState::new(owner.id().clone(), unique_index);
+
+    let controller_instance = root
+        .deploy_instance(deployer_code_hash_id.clone(), storage.clone())
+        .await
+        .unwrap();
+
+    let new_hash = sha256_array(&*DEPLOYER_WASM);
+
+    // First attempt: gd_approve_and_deploy with insufficient deposit (1 NEAR)
+    owner
+        .tx(controller_instance.id())
+        .function_call(
+            FnCallBuilder::new("gd_approve")
+                .json_args(near_sdk::serde_json::json!({
+                    "old_hash": defuse_serde_utils::hex::AsHex(DeployerState::DEFAULT_HASH),
+                    "new_hash": defuse_serde_utils::hex::AsHex(new_hash),
+                }))
+                .with_gas(Gas::from_tgas(10)),
+        )
+        .function_call(
+            FnCallBuilder::new("gd_deploy")
+                .borsh_args(&(DeployerState::DEFAULT_HASH, &*DEPLOYER_WASM))
+                .with_deposit(NearToken::from_near(1))
+                .with_gas(Gas::from_tgas(290)),
+        )
+        .await
+        .assert_err_contains("LackBalanceForState");
+
+    // code_hash unchanged after failed deploy
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap(),
+        DeployerState::DEFAULT_HASH,
+    );
+
+    // Retry with sufficient deposit
+    owner
+        .gd_approve_and_deploy(
+            controller_instance.id(),
+            DeployerState::DEFAULT_HASH,
+            &DEPLOYER_WASM,
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap(),
+        new_hash,
+    );
+}
+
