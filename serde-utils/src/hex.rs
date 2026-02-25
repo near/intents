@@ -7,13 +7,13 @@ use serde_with::serde_as;
 /// Helper type to implement `#[derive(Serialize, Deserialize)]`,
 /// as `#[near_bindgen]` doesn't support `#[serde(...)]` attributes on method arguments
 #[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
+    feature = "abi",
     serde_as(schemars = true),
     derive(::near_sdk::schemars::JsonSchema),
     schemars(crate = "::near_sdk::schemars", transparent)
 )]
 #[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
+    not(feature = "abi"),
     serde_as(schemars = false)
 )]
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, From)]

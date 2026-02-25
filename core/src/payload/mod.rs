@@ -27,7 +27,7 @@ pub struct DefusePayload<T> {
     pub deadline: Deadline,
     #[serde_as(as = "Base64")]
     #[cfg_attr(
-        all(feature = "abi", not(target_arch = "wasm32")),
+        feature = "abi",
         schemars(example = "self::examples::nonce")
     )]
     pub nonce: Nonce,
@@ -51,7 +51,7 @@ impl<T> ExtractDefusePayload<T> for DefusePayload<T> {
     }
 }
 
-#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+#[cfg(feature = "abi")]
 mod examples {
     use super::*;
 

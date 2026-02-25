@@ -12,10 +12,7 @@ use near_sdk::near;
 #[near(serializers=[json])]
 #[repr(transparent)]
 pub struct Deadline(
-    #[cfg_attr(
-        all(feature = "abi", not(target_arch = "wasm32")),
-        schemars(with = "String")
-    )]
+    #[cfg_attr(feature = "abi", schemars(with = "String"))]
     DateTime<Utc>,
 );
 

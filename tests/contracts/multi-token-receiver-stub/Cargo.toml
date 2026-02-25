@@ -9,8 +9,7 @@ repository.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [package.metadata.near.reproducible_build]
-image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
-image_digest = "sha256:772638e343baeeea24e49062c7d424274f3441452cc06ce97fc4e5695b19fecc"
+image = "sourcescan/cargo-near:0.20.0-rust-1.86.0"
 passed_env = []
 container_build_command = [
     "cargo",
@@ -18,7 +17,7 @@ container_build_command = [
     "build",
     "non-reproducible-wasm",
     "--locked",
-    "--features=abi",
+    "--abi-features=abi",
     "--no-embed-abi",
 ]
 

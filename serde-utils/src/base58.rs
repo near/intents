@@ -39,7 +39,7 @@ where
     }
 }
 
-#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+#[cfg(feature = "abi")]
 const _: () = {
     use near_sdk::schemars::{
         JsonSchema,
