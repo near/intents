@@ -21,7 +21,6 @@ pub trait GlobalDeployer {
     /// Deploys WASM code as a global contract on this account.
     /// Permissionless: anyone can call if `old_hash` matches current `code_hash`
     /// and `sha256(new_code)` matches `approved_hash`.
-    /// Owner can deploy without prior approval.
     /// Requires attached deposit for storage.
     /// Emits [`Event::Deploy`].
     fn gd_deploy(

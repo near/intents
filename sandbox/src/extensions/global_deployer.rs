@@ -1,5 +1,3 @@
-use std::fmt::Write;
-
 use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use defuse_global_deployer::State as DeployerState;
 use defuse_serde_utils::hex::AsHex;
@@ -36,6 +34,13 @@ pub trait DeployerExt {
         target: &AccountId,
         old_hash: [u8; 32],
         new_hash: [u8; 32],
+    ) -> anyhow::Result<ExecutionSuccess>;
+
+    async fn gd_approve_and_deploy(
+        &self,
+        target: &AccountId,
+        old_hash: [u8; 32],
+        new_code: &[u8],
     ) -> anyhow::Result<ExecutionSuccess>;
 }
 
@@ -103,9 +108,35 @@ impl DeployerExt for SigningAccount {
     ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
             .function_call(FnCallBuilder::new("gd_approve").json_args(json!({
-                "old_hash": old_hash.iter().fold(String::new(), |mut s, b| { let _ = write!(s, "{b:02x}"); s }),
-                "new_hash": new_hash.iter().fold(String::new(), |mut s, b| { let _ = write!(s, "{b:02x}"); s }),
+                "old_hash": AsHex(old_hash),
+                "new_hash": AsHex(new_hash),
             })))
+            .await
+    }
+
+    async fn gd_approve_and_deploy(
+        &self,
+        target: &AccountId,
+        old_hash: [u8; 32],
+        new_code: &[u8],
+    ) -> anyhow::Result<ExecutionSuccess> {
+        use near_sdk::Gas;
+        let new_hash = near_sdk::env::sha256_array(new_code);
+        self.tx(target)
+            .function_call(
+                FnCallBuilder::new("gd_approve")
+                    .json_args(json!({
+                        "old_hash": AsHex(old_hash),
+                        "new_hash": AsHex(new_hash),
+                    }))
+                    .with_gas(Gas::from_tgas(10)),
+            )
+            .function_call(
+                FnCallBuilder::new("gd_deploy")
+                    .borsh_args(&(old_hash, new_code))
+                    .with_deposit(NearToken::from_near(50))
+                    .with_gas(Gas::from_tgas(290)),
+            )
             .await
     }
 }

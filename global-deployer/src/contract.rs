@@ -47,13 +47,7 @@ impl GlobalDeployer for Contract {
         let new_hash = env::sha256_array(&new_code);
         require!(new_hash != old_hash, ERR_SAME_CODE);
 
-        let is_owner = env::predecessor_account_id() == self.0.owner_id;
-        if !is_owner {
-            require!(
-                new_hash == self.0.approved_hash,
-                ERR_NEW_CODE_HASH_MISMATCH
-            );
-        }
+        require!(new_hash == self.0.approved_hash, ERR_NEW_CODE_HASH_MISMATCH);
 
         let initial_balance = env::account_balance().saturating_sub(env::attached_deposit());
 

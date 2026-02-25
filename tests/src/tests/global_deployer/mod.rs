@@ -78,7 +78,7 @@ async fn test_deploy_controller_instance(
         DeployerState::DEFAULT_HASH,
     );
 
-    root.gd_deploy(
+    root.gd_approve_and_deploy(
         controller_instance.id(),
         DeployerState::DEFAULT_HASH,
         &DEPLOYER_WASM,
@@ -155,6 +155,15 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
         NearToken::from_near(0)
     );
 
+    owner
+        .gd_approve(
+            controller_instance.id(),
+            DeployerState::DEFAULT_HASH,
+            sha256_array(&*DEPLOYER_WASM),
+        )
+        .await
+        .unwrap();
+
     let storage_deposit = NearToken::from_near(1);
     owner
         .tx(controller_instance.id())
@@ -211,65 +220,12 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
     .await
     .assert_err_contains(ERR_UNAUTHORIZED);
 
-    // Non-owner deploy without approval fails
-    bob.gd_deploy(
-        controller_instance.id(),
-        DeployerState::DEFAULT_HASH,
-        &DEPLOYER_WASM,
-    )
-    .await
-    .assert_err_contains(ERR_NEW_CODE_HASH_MISMATCH);
-
-    // Owner approves, then non-owner deploys successfully
-    alice
-        .gd_approve(
-            controller_instance.id(),
-            DeployerState::DEFAULT_HASH,
-            sha256_array(&*DEPLOYER_WASM),
-        )
-        .await
-        .unwrap();
-
-    assert_eq!(
-        controller_instance.gd_approved_hash().await.unwrap(),
-        sha256_array(&*DEPLOYER_WASM),
-    );
-
-    bob.gd_deploy(
-        controller_instance.id(),
-        DeployerState::DEFAULT_HASH,
-        &DEPLOYER_WASM,
-    )
-    .await
-    .unwrap();
-
-    assert_eq!(
-        controller_instance.gd_code_hash().await.unwrap(),
-        sha256_array(&*DEPLOYER_WASM),
-    );
-
-    // After deploy, approved_hash is reset
-    assert_eq!(
-        controller_instance.gd_approved_hash().await.unwrap(),
-        DeployerState::DEFAULT_HASH,
-    );
-
     // Non-owner cannot transfer ownership
-    bob.gd_transfer_ownership(controller_instance.id(), alice.id())
+    bob.gd_transfer_ownership(controller_instance.id(), bob.id())
         .await
         .assert_err_contains(ERR_UNAUTHORIZED);
 
-    // Transfer ownership resets approved_hash
-    let deployer_wasm_hash = sha256_array(&*DEPLOYER_WASM);
-    alice
-        .gd_approve(
-            controller_instance.id(),
-            deployer_wasm_hash,
-            sha256_array(&*MT_RECEIVER_STUB_WASM),
-        )
-        .await
-        .unwrap();
-
+    // Owner transfers ownership
     let result = alice
         .gd_transfer_ownership(controller_instance.id(), bob.id())
         .await
@@ -291,42 +247,6 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
         controller_instance.gd_owner_id().await.unwrap(),
         bob.id().clone()
     );
-
-    // approved_hash was reset by ownership transfer
-    assert_eq!(
-        controller_instance.gd_approved_hash().await.unwrap(),
-        DeployerState::DEFAULT_HASH,
-    );
-
-    // Old owner cannot deploy or transfer
-    alice
-        .gd_deploy(
-            controller_instance.id(),
-            deployer_wasm_hash,
-            &MT_RECEIVER_STUB_WASM,
-        )
-        .await
-        .assert_err_contains(ERR_NEW_CODE_HASH_MISMATCH);
-    alice
-        .gd_transfer_ownership(controller_instance.id(), bob.id())
-        .await
-        .assert_err_contains(ERR_UNAUTHORIZED);
-
-    // New owner can deploy directly
-    bob.gd_deploy(
-        controller_instance.id(),
-        deployer_wasm_hash,
-        &MT_RECEIVER_STUB_WASM,
-    )
-    .await
-    .unwrap();
-    assert_eq!(
-        controller_instance.gd_code_hash().await.unwrap(),
-        sha256_array(&*MT_RECEIVER_STUB_WASM),
-    );
-    bob.gd_transfer_ownership(controller_instance.id(), alice.id())
-        .await
-        .unwrap();
 }
 
 #[rstest]
@@ -341,12 +261,19 @@ async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, 
         .await
         .unwrap();
 
+    root.gd_approve(
+        controller_instance.id(),
+        DeployerState::DEFAULT_HASH,
+        sha256_array(&*DEPLOYER_WASM),
+    )
+    .await
+    .unwrap();
+
     let result = root
-        .tx(controller_instance.id())
-        .function_call(
-            FnCallBuilder::new("gd_deploy")
-                .borsh_args(&(DeployerState::DEFAULT_HASH, &*DEPLOYER_WASM))
-                .with_deposit(NearToken::from_near(50)),
+        .gd_deploy(
+            controller_instance.id(),
+            DeployerState::DEFAULT_HASH,
+            &DEPLOYER_WASM,
         )
         .await
         .unwrap();
@@ -384,7 +311,7 @@ async fn test_concurrent_upgrades_only_one_succeeds(
         .unwrap();
 
     // Initial deploy so controller has code
-    root.gd_deploy(
+    root.gd_approve_and_deploy(
         controller_instance.id(),
         DeployerState::DEFAULT_HASH,
         &DEPLOYER_WASM,
@@ -397,6 +324,15 @@ async fn test_concurrent_upgrades_only_one_succeeds(
     );
 
     let old_hash = sha256_array(&*DEPLOYER_WASM);
+
+    // Approve the upgrade before firing concurrent calls
+    root.gd_approve(
+        controller_instance.id(),
+        old_hash,
+        sha256_array(&*MT_RECEIVER_STUB_WASM),
+    )
+    .await
+    .unwrap();
 
     // Fire 10 concurrent upgrade calls all using the same old_hash
     let results = join_all(
@@ -424,6 +360,50 @@ async fn test_concurrent_upgrades_only_one_succeeds(
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap(),
         sha256_array(&*MT_RECEIVER_STUB_WASM),
+    );
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_second_approval_overwrites_first(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    let root = deployer_env.sandbox.root();
+    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+
+    let controller_instance = root
+        .deploy_instance(
+            deployer_code_hash_id.clone(),
+            DeployerState::new(root.id().clone(), unique_index),
+        )
+        .await
+        .unwrap();
+
+    // First approval
+    let first_hash = sha256_array(&*DEPLOYER_WASM);
+    root.gd_approve(
+        controller_instance.id(),
+        DeployerState::DEFAULT_HASH,
+        first_hash,
+    )
+    .await
+    .unwrap();
+
+    // Second approval with different new_hash overwrites the first
+    let second_hash = sha256_array(&*MT_RECEIVER_STUB_WASM);
+    root.gd_approve(
+        controller_instance.id(),
+        DeployerState::DEFAULT_HASH,
+        second_hash,
+    )
+    .await
+    .unwrap();
+
+    // The second approval should be persisted
+    assert_eq!(
+        controller_instance.gd_approved_hash().await.unwrap(),
+        second_hash,
     );
 }
 
@@ -521,6 +501,15 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
     );
 
     owner
+        .gd_approve(
+            controller_instance.id(),
+            DeployerState::DEFAULT_HASH,
+            sha256_array(&*DEPLOYER_WASM),
+        )
+        .await
+        .unwrap();
+
+    owner
         .tx(controller_instance.id())
         .function_call(
             FnCallBuilder::new("gd_deploy")
@@ -532,6 +521,54 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
 
     let controller_instance_balance = controller_instance.view().await.unwrap().amount;
     assert!(controller_instance_balance < NearToken::from_millinear(900));
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_state_init_with_approved_hash_allows_immediate_deploy(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    let root = deployer_env.sandbox.root();
+    let bob = root
+        .generate_subaccount("bob", NearToken::from_near(100))
+        .await
+        .unwrap();
+    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+
+    // Pre-set approved_hash so gd_deploy can be called immediately without gd_approve
+    let state = DeployerState {
+        owner_id: root.id().clone(),
+        index: unique_index,
+        code_hash: DeployerState::DEFAULT_HASH,
+        approved_hash: sha256_array(&*DEPLOYER_WASM),
+    };
+
+    let controller_instance = root
+        .deploy_instance(deployer_code_hash_id.clone(), state)
+        .await
+        .unwrap();
+
+    // Non-owner (bob) deploys immediately — no gd_approve needed
+    bob.gd_deploy(
+        controller_instance.id(),
+        DeployerState::DEFAULT_HASH,
+        &DEPLOYER_WASM,
+    )
+    .await
+    .unwrap();
+
+    // code_hash updated to deployed WASM hash
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap(),
+        sha256_array(&*DEPLOYER_WASM),
+    );
+
+    // approved_hash reset after deploy
+    assert_eq!(
+        controller_instance.gd_approved_hash().await.unwrap(),
+        DeployerState::DEFAULT_HASH,
+    );
 }
 
 #[cfg(feature = "escrow-swap")]
@@ -595,7 +632,7 @@ mod escrow {
             .await
             .unwrap();
 
-        root.gd_deploy(
+        root.gd_approve_and_deploy(
             controller_instance.id(),
             DeployerState::DEFAULT_HASH,
             &DEPLOYER_WASM,
@@ -614,8 +651,9 @@ mod escrow {
             )
             .await
             .unwrap();
+
         alice
-            .gd_deploy(
+            .gd_approve_and_deploy(
                 upgradable_controller_instance.id(),
                 DeployerState::DEFAULT_HASH,
                 &DEPLOYER_WASM,
@@ -634,7 +672,8 @@ mod escrow {
             )
             .await
             .unwrap();
-        bob.gd_deploy(
+
+        bob.gd_approve_and_deploy(
             escrow_controller_instance.id(),
             DeployerState::DEFAULT_HASH,
             &ESCROW_SWAP_WASM,
@@ -694,7 +733,7 @@ mod escrow {
             .await
             .unwrap();
 
-        root.gd_deploy(
+        root.gd_approve_and_deploy(
             controller_instance.id(),
             DeployerState::DEFAULT_HASH,
             &DEPLOYER_WASM,
@@ -713,8 +752,9 @@ mod escrow {
             )
             .await
             .unwrap();
+
         alice
-            .gd_deploy(
+            .gd_approve_and_deploy(
                 upgradable_controller_instance.id(),
                 DeployerState::DEFAULT_HASH,
                 &DEPLOYER_WASM,
@@ -734,7 +774,7 @@ mod escrow {
             .await
             .unwrap();
 
-        bob.gd_deploy(
+        bob.gd_approve_and_deploy(
             escrow_controller_instance.id(),
             DeployerState::DEFAULT_HASH,
             &MT_RECEIVER_STUB_WASM,
@@ -769,6 +809,14 @@ mod escrow {
             .dummy_method()
             .await
             .expect("escrow should have `dummy_method` method");
+
+        bob.gd_approve(
+            escrow_controller_instance.id(),
+            sha256_array(&*MT_RECEIVER_STUB_WASM),
+            sha256_array(&*ESCROW_SWAP_WASM),
+        )
+        .await
+        .unwrap();
 
         bob.gd_deploy(
             escrow_controller_instance.id(),
