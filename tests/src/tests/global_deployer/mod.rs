@@ -1,3 +1,6 @@
+#[cfg(feature = "escrow-swap")]
+mod deploy_escrow_swap;
+
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use defuse_global_deployer::{
@@ -549,7 +552,6 @@ async fn test_state_init_with_approved_hash_allows_immediate_deploy(
         .await
         .unwrap();
 
-    // Non-owner (bob) deploys immediately — no gd_approve needed
     bob.gd_deploy(
         controller_instance.id(),
         DeployerState::DEFAULT_HASH,
@@ -558,18 +560,14 @@ async fn test_state_init_with_approved_hash_allows_immediate_deploy(
     .await
     .unwrap();
 
-    // code_hash updated to deployed WASM hash
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap(),
         sha256_array(&*DEPLOYER_WASM),
     );
 
-    // approved_hash reset after deploy
     assert_eq!(
         controller_instance.gd_approved_hash().await.unwrap(),
         DeployerState::DEFAULT_HASH,
     );
 }
 
-#[cfg(feature = "escrow-swap")]
-mod deploy_escrow_swap;
