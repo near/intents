@@ -26,10 +26,7 @@ pub struct DefusePayload<T> {
     pub verifying_contract: AccountId,
     pub deadline: Deadline,
     #[serde_as(as = "Base64")]
-    #[cfg_attr(
-        feature = "abi",
-        schemars(example = "self::examples::nonce")
-    )]
+    #[cfg_attr(feature = "abi", schemars(example = "self::examples::nonce"))]
     pub nonce: Nonce,
 
     #[serde(flatten)]

@@ -11,10 +11,7 @@ use near_sdk::near;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[near(serializers=[json])]
 #[repr(transparent)]
-pub struct Deadline(
-    #[cfg_attr(feature = "abi", schemars(with = "String"))]
-    DateTime<Utc>,
-);
+pub struct Deadline(#[cfg_attr(feature = "abi", schemars(with = "String"))] DateTime<Utc>);
 
 impl Deadline {
     pub const MAX: Self = Self(DateTime::<Utc>::MAX_UTC);

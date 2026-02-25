@@ -61,10 +61,7 @@ where
     derive(::near_sdk::schemars::JsonSchema),
     schemars(crate = "::near_sdk::schemars", transparent)
 )]
-#[cfg_attr(
-    not(feature = "abi"),
-    serde_as(schemars = false)
-)]
+#[cfg_attr(not(feature = "abi"), serde_as(schemars = false))]
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, From)]
 #[serde(
     crate = "::near_sdk::serde",
