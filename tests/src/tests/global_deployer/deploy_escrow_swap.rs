@@ -49,38 +49,30 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
         .unwrap();
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
+    let state = DeployerState::new(root.id().clone()).with_index(unique_index);
     let controller_instance = root
-        .deploy_instance(
-            deployer_code_hash_id.clone(),
-            DeployerState::new(root.id().clone(), unique_index),
-        )
+        .deploy_instance(deployer_code_hash_id.clone(), state.clone())
         .await
         .unwrap();
 
-    root.gd_approve_and_deploy(
-        controller_instance.id(),
-        DeployerState::DEFAULT_HASH,
-        &DEPLOYER_WASM,
-    )
-    .await
-    .unwrap();
+    root.gd_approve_and_deploy(controller_instance.id(), state.code_hash, &DEPLOYER_WASM)
+        .await
+        .unwrap();
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap(),
         sha256_array(&*DEPLOYER_WASM),
     );
 
+    let upgradable_state = DeployerState::new(alice.id().clone());
     let upgradable_controller_instance = root
-        .deploy_instance(
-            deployer_code_hash_id.clone(),
-            DeployerState::new(alice.id().clone(), 0u32),
-        )
+        .deploy_instance(deployer_code_hash_id.clone(), upgradable_state.clone())
         .await
         .unwrap();
 
     alice
         .gd_approve_and_deploy(
             upgradable_controller_instance.id(),
-            DeployerState::DEFAULT_HASH,
+            upgradable_state.code_hash,
             &DEPLOYER_WASM,
         )
         .await
@@ -90,17 +82,18 @@ async fn test_deploy_escrow_swap(#[future(awt)] deployer_env: DeployerEnv, uniqu
         sha256_array(&*DEPLOYER_WASM),
     );
 
+    let escrow_state = DeployerState::new(bob.id().clone());
     let escrow_controller_instance = root
         .deploy_instance(
             GlobalContractId::AccountId(upgradable_controller_instance.id().clone()),
-            DeployerState::new(bob.id().clone(), 0u32),
+            escrow_state.clone(),
         )
         .await
         .unwrap();
 
     bob.gd_approve_and_deploy(
         escrow_controller_instance.id(),
-        DeployerState::DEFAULT_HASH,
+        escrow_state.code_hash,
         &ESCROW_SWAP_WASM,
     )
     .await
@@ -150,38 +143,30 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
         .unwrap();
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
+    let state = DeployerState::new(root.id().clone()).with_index(unique_index);
     let controller_instance = root
-        .deploy_instance(
-            deployer_code_hash_id.clone(),
-            DeployerState::new(root.id().clone(), unique_index),
-        )
+        .deploy_instance(deployer_code_hash_id.clone(), state.clone())
         .await
         .unwrap();
 
-    root.gd_approve_and_deploy(
-        controller_instance.id(),
-        DeployerState::DEFAULT_HASH,
-        &DEPLOYER_WASM,
-    )
-    .await
-    .unwrap();
+    root.gd_approve_and_deploy(controller_instance.id(), state.code_hash, &DEPLOYER_WASM)
+        .await
+        .unwrap();
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap(),
         sha256_array(&*DEPLOYER_WASM),
     );
 
+    let upgradable_state = DeployerState::new(alice.id().clone());
     let upgradable_controller_instance = root
-        .deploy_instance(
-            deployer_code_hash_id.clone(),
-            DeployerState::new(alice.id().clone(), 0u32),
-        )
+        .deploy_instance(deployer_code_hash_id.clone(), upgradable_state.clone())
         .await
         .unwrap();
 
     alice
         .gd_approve_and_deploy(
             upgradable_controller_instance.id(),
-            DeployerState::DEFAULT_HASH,
+            upgradable_state.code_hash,
             &DEPLOYER_WASM,
         )
         .await
@@ -191,17 +176,18 @@ async fn test_deploy_escrow_instance_on_dummy_wasm_then_upgrade_code_to_escrow_u
         sha256_array(&*DEPLOYER_WASM),
     );
 
+    let escrow_state = DeployerState::new(bob.id().clone());
     let escrow_controller_instance = root
         .deploy_instance(
             GlobalContractId::AccountId(upgradable_controller_instance.id().clone()),
-            DeployerState::new(bob.id().clone(), 0u32),
+            escrow_state.clone(),
         )
         .await
         .unwrap();
 
     bob.gd_approve_and_deploy(
         escrow_controller_instance.id(),
-        DeployerState::DEFAULT_HASH,
+        escrow_state.code_hash,
         &MT_RECEIVER_STUB_WASM,
     )
     .await

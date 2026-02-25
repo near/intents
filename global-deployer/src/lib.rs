@@ -38,9 +38,6 @@ pub trait GlobalDeployer {
     /// Returns the current owner's account ID.
     fn gd_owner_id(&self) -> AccountId;
 
-    /// Returns the deployer instance index (used for deterministic account derivation).
-    fn gd_index(&self) -> u32;
-
     /// Returns the SHA-256 hash of the currently deployed code, or `0000..000` if none.
     fn gd_code_hash(&self) -> AsHex<[u8; 32]>;
 
@@ -79,8 +76,6 @@ pub enum Event<'a> {
 pub struct State {
     /// Owner's account ID.
     pub owner_id: AccountId,
-    /// Deployed instance index
-    pub index: u32,
     /// Currently deployed code hash, or zeros otherwise.
     #[serde_as(as = "Hex")]
     pub code_hash: [u8; 32],
@@ -93,13 +88,40 @@ impl State {
     pub const STATE_KEY: &[u8] = b"";
     pub const DEFAULT_HASH: [u8; 32] = [0; 32];
 
-    pub fn new(owner: impl Into<AccountId>, index: u32) -> Self {
+    pub fn new(owner: impl Into<AccountId>) -> Self {
         Self {
             owner_id: owner.into(),
-            index,
             code_hash: Self::DEFAULT_HASH,
             approved_hash: Self::DEFAULT_HASH,
         }
+    }
+
+    #[must_use]
+    pub fn with_index(mut self, index: u32) -> Self {
+        assert!(
+            self.code_hash == Self::DEFAULT_HASH,
+            "code_hash already set"
+        );
+        let mut hash = [0u8; 32];
+        hash[..4].copy_from_slice(&index.to_le_bytes());
+        self.code_hash = hash;
+        self
+    }
+
+    #[must_use]
+    pub fn with_code_hash(mut self, hash: [u8; 32]) -> Self {
+        assert!(
+            self.code_hash == Self::DEFAULT_HASH,
+            "code_hash already set"
+        );
+        self.code_hash = hash;
+        self
+    }
+
+    #[must_use]
+    pub const fn with_approved_hash(mut self, hash: [u8; 32]) -> Self {
+        self.approved_hash = hash;
+        self
     }
 
     pub fn state_init(&self) -> BTreeMap<Vec<u8>, Vec<u8>> {

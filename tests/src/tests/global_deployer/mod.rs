@@ -60,9 +60,9 @@ async fn test_deploy_controller_instance(
         .unwrap();
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
-    let state = DeployerState::new(root.id().clone(), unique_index);
+    let state = DeployerState::new(root.id().clone()).with_index(unique_index);
 
-    let upgradeable_instance_state = DeployerState::new(alice.id().clone(), 0);
+    let upgradeable_instance_state = DeployerState::new(alice.id().clone());
 
     let controller_instance = root
         .deploy_instance(deployer_code_hash_id.clone(), state.clone())
@@ -78,12 +78,12 @@ async fn test_deploy_controller_instance(
 
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap(),
-        DeployerState::DEFAULT_HASH,
+        state.code_hash,
     );
 
     root.gd_approve_and_deploy(
         controller_instance.id(),
-        DeployerState::DEFAULT_HASH,
+        state.code_hash,
         &DEPLOYER_WASM,
     )
     .await
@@ -106,14 +106,9 @@ async fn test_deploy_controller_instance(
         controller_instance.gd_owner_id().await.unwrap(),
         state.owner_id
     );
-    assert_eq!(controller_instance.gd_index().await.unwrap(), state.index);
     assert_eq!(
         mutable_controller_instance.gd_owner_id().await.unwrap(),
         upgradeable_instance_state.owner_id
-    );
-    assert_eq!(
-        mutable_controller_instance.gd_index().await.unwrap(),
-        upgradeable_instance_state.index
     );
 
     assert_eq!(
@@ -147,7 +142,7 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
 
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
-    let storage = DeployerState::new(owner.id().clone(), unique_index);
+    let storage = DeployerState::new(owner.id().clone()).with_index(unique_index);
     let controller_instance = root
         .deploy_instance(deployer_code_hash_id.clone(), storage.clone())
         .await
@@ -161,7 +156,7 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
     owner
         .gd_approve(
             controller_instance.id(),
-            DeployerState::DEFAULT_HASH,
+            storage.code_hash,
             sha256_array(&*DEPLOYER_WASM),
         )
         .await
@@ -172,7 +167,7 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
         .tx(controller_instance.id())
         .function_call(
             FnCallBuilder::new("gd_deploy")
-                .borsh_args(&(DeployerState::DEFAULT_HASH, &*DEPLOYER_WASM))
+                .borsh_args(&(storage.code_hash, &*DEPLOYER_WASM))
                 .with_deposit(storage_deposit),
         )
         .await
@@ -201,7 +196,7 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
     .unwrap();
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
-    let storage = DeployerState::new(alice.id().clone(), unique_index);
+    let storage = DeployerState::new(alice.id().clone()).with_index(unique_index);
 
     let controller_instance = root
         .deploy_instance(deployer_code_hash_id.clone(), storage.clone())
@@ -212,12 +207,11 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
         controller_instance.gd_owner_id().await.unwrap(),
         storage.owner_id
     );
-    assert_eq!(controller_instance.gd_index().await.unwrap(), storage.index);
 
     // Non-owner cannot approve
     bob.gd_approve(
         controller_instance.id(),
-        DeployerState::DEFAULT_HASH,
+        storage.code_hash,
         sha256_array(&*DEPLOYER_WASM),
     )
     .await
@@ -257,7 +251,7 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
 async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, unique_index: u32) {
     let root = deployer_env.sandbox.root();
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
-    let storage = DeployerState::new(root.id().clone(), unique_index);
+    let storage = DeployerState::new(root.id().clone()).with_index(unique_index);
 
     let controller_instance = root
         .deploy_instance(deployer_code_hash_id.clone(), storage.clone())
@@ -266,7 +260,7 @@ async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, 
 
     root.gd_approve(
         controller_instance.id(),
-        DeployerState::DEFAULT_HASH,
+        storage.code_hash,
         sha256_array(&*DEPLOYER_WASM),
     )
     .await
@@ -275,14 +269,14 @@ async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, 
     let result = root
         .gd_deploy(
             controller_instance.id(),
-            DeployerState::DEFAULT_HASH,
+            storage.code_hash,
             &DEPLOYER_WASM,
         )
         .await
         .unwrap();
 
     let expected_event = defuse_global_deployer::Event::Deploy {
-        old_hash: DeployerState::DEFAULT_HASH,
+        old_hash: storage.code_hash,
         new_hash: sha256_array(&*DEPLOYER_WASM),
     };
     assert!(
@@ -305,22 +299,16 @@ async fn test_concurrent_upgrades_only_one_succeeds(
     let root = deployer_env.sandbox.root();
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
+    let state = DeployerState::new(root.id().clone()).with_index(unique_index);
     let controller_instance = root
-        .deploy_instance(
-            deployer_code_hash_id.clone(),
-            DeployerState::new(root.id().clone(), unique_index),
-        )
+        .deploy_instance(deployer_code_hash_id.clone(), state.clone())
         .await
         .unwrap();
 
     // Initial deploy so controller has code
-    root.gd_approve_and_deploy(
-        controller_instance.id(),
-        DeployerState::DEFAULT_HASH,
-        &DEPLOYER_WASM,
-    )
-    .await
-    .unwrap();
+    root.gd_approve_and_deploy(controller_instance.id(), state.code_hash, &DEPLOYER_WASM)
+        .await
+        .unwrap();
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap(),
         sha256_array(&*DEPLOYER_WASM),
@@ -375,33 +363,23 @@ async fn test_second_approval_overwrites_first(
     let root = deployer_env.sandbox.root();
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
+    let state = DeployerState::new(root.id().clone()).with_index(unique_index);
     let controller_instance = root
-        .deploy_instance(
-            deployer_code_hash_id.clone(),
-            DeployerState::new(root.id().clone(), unique_index),
-        )
+        .deploy_instance(deployer_code_hash_id.clone(), state.clone())
         .await
         .unwrap();
 
     // First approval
     let first_hash = sha256_array(&*DEPLOYER_WASM);
-    root.gd_approve(
-        controller_instance.id(),
-        DeployerState::DEFAULT_HASH,
-        first_hash,
-    )
-    .await
-    .unwrap();
+    root.gd_approve(controller_instance.id(), state.code_hash, first_hash)
+        .await
+        .unwrap();
 
     // Second approval with different new_hash overwrites the first
     let second_hash = sha256_array(&*MT_RECEIVER_STUB_WASM);
-    root.gd_approve(
-        controller_instance.id(),
-        DeployerState::DEFAULT_HASH,
-        second_hash,
-    )
-    .await
-    .unwrap();
+    root.gd_approve(controller_instance.id(), state.code_hash, second_hash)
+        .await
+        .unwrap();
 
     // The second approval should be persisted
     assert_eq!(
@@ -425,22 +403,16 @@ async fn test_permissionless_deploy_with_approval(
     .unwrap();
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
+    let state = DeployerState::new(alice.id().clone()).with_index(unique_index);
     let controller_instance = root
-        .deploy_instance(
-            deployer_code_hash_id.clone(),
-            DeployerState::new(alice.id().clone(), unique_index),
-        )
+        .deploy_instance(deployer_code_hash_id.clone(), state.clone())
         .await
         .unwrap();
 
     // Owner approves deployment
     let new_code_hash = sha256_array(&*DEPLOYER_WASM);
     alice
-        .gd_approve(
-            controller_instance.id(),
-            DeployerState::DEFAULT_HASH,
-            new_code_hash,
-        )
+        .gd_approve(controller_instance.id(), state.code_hash, new_code_hash)
         .await
         .unwrap();
 
@@ -450,13 +422,9 @@ async fn test_permissionless_deploy_with_approval(
     );
 
     // Non-owner (bob) deploys successfully with matching approved_hash
-    bob.gd_deploy(
-        controller_instance.id(),
-        DeployerState::DEFAULT_HASH,
-        &DEPLOYER_WASM,
-    )
-    .await
-    .unwrap();
+    bob.gd_deploy(controller_instance.id(), state.code_hash, &DEPLOYER_WASM)
+        .await
+        .unwrap();
 
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap(),
@@ -491,7 +459,7 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
 
     assert_eq!(owner.view().await.unwrap().amount, initial_balance);
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
-    let storage = DeployerState::new(owner.id().clone(), unique_index);
+    let storage = DeployerState::new(owner.id().clone()).with_index(unique_index);
 
     let controller_instance = root
         .deploy_instance(deployer_code_hash_id.clone(), storage.clone())
@@ -506,7 +474,7 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
     owner
         .gd_approve(
             controller_instance.id(),
-            DeployerState::DEFAULT_HASH,
+            storage.code_hash,
             sha256_array(&*DEPLOYER_WASM),
         )
         .await
@@ -516,7 +484,7 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
         .tx(controller_instance.id())
         .function_call(
             FnCallBuilder::new("gd_deploy")
-                .borsh_args(&(DeployerState::DEFAULT_HASH, &*DEPLOYER_WASM))
+                .borsh_args(&(storage.code_hash, &*DEPLOYER_WASM))
                 .with_deposit(NearToken::from_near(100)),
         )
         .await
@@ -540,25 +508,18 @@ async fn test_state_init_with_approved_hash_allows_immediate_deploy(
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
 
     // Pre-set approved_hash so gd_deploy can be called immediately without gd_approve
-    let state = DeployerState {
-        owner_id: root.id().clone(),
-        index: unique_index,
-        code_hash: DeployerState::DEFAULT_HASH,
-        approved_hash: sha256_array(&*DEPLOYER_WASM),
-    };
+    let state = DeployerState::new(root.id().clone())
+        .with_index(unique_index)
+        .with_approved_hash(sha256_array(&*DEPLOYER_WASM));
 
     let controller_instance = root
-        .deploy_instance(deployer_code_hash_id.clone(), state)
+        .deploy_instance(deployer_code_hash_id.clone(), state.clone())
         .await
         .unwrap();
 
-    bob.gd_deploy(
-        controller_instance.id(),
-        DeployerState::DEFAULT_HASH,
-        &DEPLOYER_WASM,
-    )
-    .await
-    .unwrap();
+    bob.gd_deploy(controller_instance.id(), state.code_hash, &DEPLOYER_WASM)
+        .await
+        .unwrap();
 
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap(),
@@ -585,7 +546,7 @@ async fn test_post_deploy_does_not_run_on_failed_deploy(
         .unwrap();
 
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
-    let storage = DeployerState::new(owner.id().clone(), unique_index);
+    let storage = DeployerState::new(owner.id().clone()).with_index(unique_index);
 
     let controller_instance = root
         .deploy_instance(deployer_code_hash_id.clone(), storage.clone())
@@ -601,11 +562,7 @@ async fn test_post_deploy_does_not_run_on_failed_deploy(
     let new_hash = sha256_array(&*DEPLOYER_WASM);
 
     owner
-        .gd_approve(
-            controller_instance.id(),
-            DeployerState::DEFAULT_HASH,
-            new_hash,
-        )
+        .gd_approve(controller_instance.id(), storage.code_hash, new_hash)
         .await
         .unwrap();
 
@@ -619,7 +576,7 @@ async fn test_post_deploy_does_not_run_on_failed_deploy(
         .tx(controller_instance.id())
         .function_call(
             FnCallBuilder::new("gd_deploy")
-                .borsh_args(&(DeployerState::DEFAULT_HASH, &*DEPLOYER_WASM))
+                .borsh_args(&(storage.code_hash, &*DEPLOYER_WASM))
                 .with_deposit(NearToken::from_near(1)),
         )
         .exec_transaction()
@@ -638,7 +595,7 @@ async fn test_post_deploy_does_not_run_on_failed_deploy(
     // code_hash must NOT have been updated by gd_post_deploy
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap(),
-        DeployerState::DEFAULT_HASH,
+        storage.code_hash,
     );
 
     // approved_hash must NOT have been cleared by gd_post_deploy
@@ -663,7 +620,7 @@ async fn test_retry_approve_and_deploy_after_insufficient_deposit(
         .unwrap();
 
     let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
-    let storage = DeployerState::new(owner.id().clone(), unique_index);
+    let storage = DeployerState::new(owner.id().clone()).with_index(unique_index);
 
     let controller_instance = root
         .deploy_instance(deployer_code_hash_id.clone(), storage.clone())
@@ -678,14 +635,14 @@ async fn test_retry_approve_and_deploy_after_insufficient_deposit(
         .function_call(
             FnCallBuilder::new("gd_approve")
                 .json_args(near_sdk::serde_json::json!({
-                    "old_hash": defuse_serde_utils::hex::AsHex(DeployerState::DEFAULT_HASH),
+                    "old_hash": defuse_serde_utils::hex::AsHex(storage.code_hash),
                     "new_hash": defuse_serde_utils::hex::AsHex(new_hash),
                 }))
                 .with_gas(Gas::from_tgas(10)),
         )
         .function_call(
             FnCallBuilder::new("gd_deploy")
-                .borsh_args(&(DeployerState::DEFAULT_HASH, &*DEPLOYER_WASM))
+                .borsh_args(&(storage.code_hash, &*DEPLOYER_WASM))
                 .with_deposit(NearToken::from_near(1))
                 .with_gas(Gas::from_tgas(290)),
         )
@@ -695,16 +652,12 @@ async fn test_retry_approve_and_deploy_after_insufficient_deposit(
     // code_hash unchanged after failed deploy
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap(),
-        DeployerState::DEFAULT_HASH,
+        storage.code_hash,
     );
 
     // Retry with sufficient deposit
     owner
-        .gd_approve_and_deploy(
-            controller_instance.id(),
-            DeployerState::DEFAULT_HASH,
-            &DEPLOYER_WASM,
-        )
+        .gd_approve_and_deploy(controller_instance.id(), storage.code_hash, &DEPLOYER_WASM)
         .await
         .unwrap();
 

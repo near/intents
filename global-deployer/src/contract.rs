@@ -81,10 +81,6 @@ impl GlobalDeployer for Contract {
         self.0.owner_id.clone()
     }
 
-    fn gd_index(&self) -> u32 {
-        self.0.index
-    }
-
     fn gd_code_hash(&self) -> AsHex<[u8; 32]> {
         self.0.code_hash.into()
     }

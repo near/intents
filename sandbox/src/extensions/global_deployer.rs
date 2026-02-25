@@ -47,7 +47,6 @@ pub trait DeployerExt {
 #[allow(async_fn_in_trait)]
 pub trait DeployerViewExt {
     async fn gd_owner_id(&self) -> anyhow::Result<AccountId>;
-    async fn gd_index(&self) -> anyhow::Result<u32>;
     async fn gd_code_hash(&self) -> anyhow::Result<[u8; 32]>;
     async fn gd_approved_hash(&self) -> anyhow::Result<[u8; 32]>;
 }
@@ -144,10 +143,6 @@ impl DeployerExt for SigningAccount {
 impl DeployerViewExt for Account {
     async fn gd_owner_id(&self) -> anyhow::Result<AccountId> {
         self.call_view_function_json("gd_owner_id", ()).await
-    }
-
-    async fn gd_index(&self) -> anyhow::Result<u32> {
-        self.call_view_function_json("gd_index", ()).await
     }
 
     async fn gd_code_hash(&self) -> anyhow::Result<[u8; 32]> {
