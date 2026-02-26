@@ -163,7 +163,7 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
         .tx(controller_instance.id())
         .function_call(
             FnCallBuilder::new("gd_deploy")
-                .borsh_args(&(storage.code_hash, &*DEPLOYER_WASM))
+                .borsh_args(&(&*DEPLOYER_WASM))
                 .with_deposit(storage_deposit),
         )
         .await
@@ -263,7 +263,7 @@ async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, 
     .unwrap();
 
     let result = root
-        .gd_deploy(controller_instance.id(), storage.code_hash, &DEPLOYER_WASM)
+        .gd_deploy(controller_instance.id(), &DEPLOYER_WASM)
         .await
         .unwrap();
 
@@ -318,10 +318,9 @@ async fn test_concurrent_upgrades_only_one_succeeds(
     .unwrap();
 
     // Fire 10 concurrent upgrade calls all using the same old_hash
-    let results = join_all(
-        (0..10).map(|_| root.gd_deploy(controller_instance.id(), old_hash, &MT_RECEIVER_STUB_WASM)),
-    )
-    .await;
+    let results =
+        join_all((0..10).map(|_| root.gd_deploy(controller_instance.id(), &MT_RECEIVER_STUB_WASM)))
+            .await;
 
     let successes = results.iter().filter(|r| r.is_ok()).count();
     let wrong_hash_failures = results
@@ -414,7 +413,7 @@ async fn test_permissionless_deploy_with_approval(
     );
 
     // Non-owner (bob) deploys successfully with matching approved_hash
-    bob.gd_deploy(controller_instance.id(), state.code_hash, &DEPLOYER_WASM)
+    bob.gd_deploy(controller_instance.id(), &DEPLOYER_WASM)
         .await
         .unwrap();
 
@@ -430,13 +429,9 @@ async fn test_permissionless_deploy_with_approval(
     );
 
     // Non-owner cannot deploy again without new approval
-    bob.gd_deploy(
-        controller_instance.id(),
-        new_code_hash,
-        &MT_RECEIVER_STUB_WASM,
-    )
-    .await
-    .assert_err_contains(ERR_NEW_CODE_HASH_MISMATCH);
+    bob.gd_deploy(controller_instance.id(), &MT_RECEIVER_STUB_WASM)
+        .await
+        .assert_err_contains(ERR_NEW_CODE_HASH_MISMATCH);
 }
 
 #[rstest]
@@ -476,7 +471,7 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
         .tx(controller_instance.id())
         .function_call(
             FnCallBuilder::new("gd_deploy")
-                .borsh_args(&(storage.code_hash, &*DEPLOYER_WASM))
+                .borsh_args(&(&*DEPLOYER_WASM))
                 .with_deposit(NearToken::from_near(100)),
         )
         .await
@@ -509,7 +504,7 @@ async fn test_state_init_with_approved_hash_allows_immediate_deploy(
         .await
         .unwrap();
 
-    bob.gd_deploy(controller_instance.id(), state.code_hash, &DEPLOYER_WASM)
+    bob.gd_deploy(controller_instance.id(), &DEPLOYER_WASM)
         .await
         .unwrap();
 
@@ -568,7 +563,7 @@ async fn test_post_deploy_does_not_run_on_failed_deploy(
         .tx(controller_instance.id())
         .function_call(
             FnCallBuilder::new("gd_deploy")
-                .borsh_args(&(storage.code_hash, &*DEPLOYER_WASM))
+                .borsh_args(&(&*DEPLOYER_WASM))
                 .with_deposit(NearToken::from_near(1)),
         )
         .exec_transaction()
@@ -634,7 +629,7 @@ async fn test_retry_approve_and_deploy_after_insufficient_deposit(
         )
         .function_call(
             FnCallBuilder::new("gd_deploy")
-                .borsh_args(&(storage.code_hash, &*DEPLOYER_WASM))
+                .borsh_args(&(&*DEPLOYER_WASM))
                 .with_deposit(NearToken::from_near(1))
                 .with_gas(Gas::from_tgas(290)),
         )

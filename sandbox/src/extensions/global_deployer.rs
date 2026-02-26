@@ -19,7 +19,6 @@ pub trait DeployerExt {
     async fn gd_deploy(
         &self,
         target: &AccountId,
-        old_hash: [u8; 32],
         new_code: &[u8],
     ) -> anyhow::Result<ExecutionSuccess>;
 
@@ -73,13 +72,12 @@ impl DeployerExt for SigningAccount {
     async fn gd_deploy(
         &self,
         target: &AccountId,
-        old_hash: [u8; 32],
         new_code: &[u8],
     ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
             .function_call(
                 FnCallBuilder::new("gd_deploy")
-                    .borsh_args(&(old_hash, new_code))
+                    .borsh_args(&new_code)
                     .with_deposit(NearToken::from_near(50)),
             )
             .await
@@ -132,7 +130,7 @@ impl DeployerExt for SigningAccount {
             )
             .function_call(
                 FnCallBuilder::new("gd_deploy")
-                    .borsh_args(&(old_hash, new_code))
+                    .borsh_args(&new_code)
                     .with_deposit(NearToken::from_near(50))
                     .with_gas(Gas::from_tgas(290)),
             )

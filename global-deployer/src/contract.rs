@@ -36,14 +36,10 @@ impl GlobalDeployer for Contract {
     }
 
     #[payable]
-    fn gd_deploy(
-        &mut self,
-        #[serializer(borsh)] old_hash: [u8; 32],
-        #[serializer(borsh)] new_code: Vec<u8>,
-    ) -> Promise {
+    fn gd_deploy(&mut self, #[serializer(borsh)] new_code: Vec<u8>) -> Promise {
         require!(!env::attached_deposit().is_zero(), ERR_INSUFFICIENT_DEPOSIT);
 
-        require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
+        let old_hash = self.0.code_hash;
         let new_hash = env::sha256_array(&new_code);
         require!(new_hash != old_hash, ERR_SAME_CODE);
 

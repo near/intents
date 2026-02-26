@@ -19,15 +19,10 @@ pub trait GlobalDeployer {
     fn gd_approve(&mut self, old_hash: AsHex<[u8; 32]>, new_hash: AsHex<[u8; 32]>);
 
     /// Deploys WASM code as a global contract on this account.
-    /// Permissionless: anyone can call if `old_hash` matches current `code_hash`
-    /// and `sha256(new_code)` matches `approved_hash`.
+    /// Permissionless: anyone can call if `sha256(new_code)` matches `approved_hash`.
     /// Requires attached deposit for storage.
     /// Emits [`Event::Deploy`].
-    fn gd_deploy(
-        &mut self,
-        #[serializer(borsh)] old_hash: [u8; 32],
-        #[serializer(borsh)] new_code: Vec<u8>,
-    ) -> Promise;
+    fn gd_deploy(&mut self, #[serializer(borsh)] new_code: Vec<u8>) -> Promise;
 
     /// Transfers contract ownership to `receiver_id`.
     /// Resets `approved_hash` to `DEFAULT_HASH`.
@@ -98,22 +93,8 @@ impl State {
 
     #[must_use]
     pub fn with_index(mut self, index: u32) -> Self {
-        assert!(
-            self.code_hash == Self::DEFAULT_HASH,
-            "code_hash already set"
-        );
         let mut hash = [0u8; 32];
         hash[..4].copy_from_slice(&index.to_le_bytes());
-        self.code_hash = hash;
-        self
-    }
-
-    #[must_use]
-    pub fn with_code_hash(mut self, hash: [u8; 32]) -> Self {
-        assert!(
-            self.code_hash == Self::DEFAULT_HASH,
-            "code_hash already set"
-        );
         self.code_hash = hash;
         self
     }
