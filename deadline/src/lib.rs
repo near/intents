@@ -1,5 +1,5 @@
 use core::{
-    ops::{Add, AddAssign},
+    ops::{Add, AddAssign, Sub, SubAssign},
     time::Duration,
 };
 use std::io;
@@ -70,10 +70,24 @@ impl Add<Duration> for Deadline {
     }
 }
 
+impl Sub<Duration> for Deadline {
+    type Output = Self;
+
+    fn sub(self, rhs: Duration) -> Self::Output {
+        Self(self.0 - rhs)
+    }
+}
+
 impl AddAssign<Duration> for Deadline {
     #[inline]
     fn add_assign(&mut self, rhs: Duration) {
         self.0 += rhs;
+    }
+}
+
+impl SubAssign<Duration> for Deadline {
+    fn sub_assign(&mut self, rhs: Duration) {
+        self.0 -= rhs
     }
 }
 

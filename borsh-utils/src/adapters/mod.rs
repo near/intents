@@ -22,6 +22,11 @@ mod schema;
 #[cfg(all(feature = "schema", not(target_arch = "wasm32")))]
 pub use self::schema::*;
 
+#[cfg(feature = "bits")]
+mod bits;
+#[cfg(feature = "bits")]
+pub use self::bits::*;
+
 pub trait BorshSerializeAs<T: ?Sized> {
     fn serialize_as<W>(source: &T, writer: &mut W) -> io::Result<()>
     where

@@ -14,8 +14,11 @@ defuse-io-utils.workspace = true
 array-util.workspace = true
 impl-tools.workspace = true
 near-sdk.workspace = true
+
 chrono = { workspace = true, optional = true }
+tlbits = { workspace = true, optional = true }
 
 [features]
+bits = ["dep:tlbits"]
 chrono = ["dep:chrono"]
 schema = []

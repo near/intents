@@ -842,10 +842,14 @@ version = "0.1.0"
 dependencies = [
  "arbitrary",
  "bnum",
+ "defuse-borsh-utils",
  "defuse-map-utils",
  "hex-literal",
  "near-sdk",
+ "num-traits",
+ "rand 0.9.2",
  "rstest",
+ "tlbits",
 ]
 
 [[package]]
@@ -857,6 +861,7 @@ dependencies = [
  "defuse-io-utils",
  "impl-tools",
  "near-sdk",
+ "tlbits",
 ]
 
 [[package]]
@@ -1246,6 +1251,7 @@ name = "defuse-wallet"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "defuse-bitmap",
  "defuse-borsh-utils",
  "defuse-crypto",
  "defuse-deadline",
@@ -4622,9 +4628,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tlb"
-version = "0.5.4"
+version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fdc025689fc2fd8b88fd53d112f865ffc84ac920dd06e88da3bde9afaa4a8bc3"
+checksum = "4989698593b2328a870f012a1207339fddc1ef21b25bdce0bd13e5016e83b93a"
 dependencies = [
  "arbitrary",
  "array-util",
@@ -4640,9 +4646,9 @@ dependencies = [
 
 [[package]]
 name = "tlb-ton"
-version = "0.5.6"
+version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "783a2fd0d92b0439b67e4f0f8ae2395edf91adc3bf5e188fb58b251d7a3ba3f9"
+checksum = "f17c58fe899909d37a3832a4a078c03d744d10973abf71f2cdd1927a2d1efc83"
 dependencies = [
  "arbitrary",
  "base64 0.21.7",
@@ -4662,9 +4668,9 @@ dependencies = [
 
 [[package]]
 name = "tlbits"
-version = "0.5.4"
+version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "037d1fa9c669c3adb766dc471691cfb6626ea9467dcac206f6473cf0dbcf3d4b"
+checksum = "d5a79a9558f4cb3614e0ce93b0a1b4d9b8384cc249cb7f6a487d61bd27bfd74e"
 dependencies = [
  "array-util",
  "bitvec",
