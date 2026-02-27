@@ -328,7 +328,7 @@ async fn test_concurrent_upgrades_only_one_succeeds(
         .iter()
         .filter(|r| {
             r.as_ref()
-                .is_err_and(|e| e.to_string().contains(ERR_WRONG_CODE_HASH))
+                .is_err_and(|e| e.to_string().contains(ERR_NEW_CODE_HASH_MISMATCH))
         })
         .count();
 
@@ -336,10 +336,7 @@ async fn test_concurrent_upgrades_only_one_succeeds(
         successes, 1,
         "exactly one concurrent upgrade should succeed"
     );
-    assert_eq!(
-        wrong_hash_failures, 9,
-        "remaining 9 should fail with wrong code hash"
-    );
+    assert_eq!(wrong_hash_failures, 9);
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap(),
         sha256_array(&*MT_RECEIVER_STUB_WASM),
