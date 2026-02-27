@@ -29,7 +29,7 @@ impl GlobalDeployer for Contract {
         let [old_hash, new_hash] = [old_hash, new_hash].map(AsHex::into_inner);
         require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
 
-        self.0.approved_hash = new_hash;
+        self.approve(new_hash);
 
         Event::DeploymentApproved { old_hash, new_hash }.emit();
     }
@@ -119,6 +119,10 @@ impl Contract {
 }
 
 impl Contract {
+    fn approve(&mut self, new_hash: [u8; 32]) {
+        self.0.approved_hash = new_hash;
+    }
+
     fn reset_approval(&mut self) {
         self.0.approved_hash = State::DEFAULT_HASH;
     }
