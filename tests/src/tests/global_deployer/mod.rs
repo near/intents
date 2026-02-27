@@ -285,6 +285,57 @@ async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, 
 
 #[rstest]
 #[tokio::test]
+async fn test_deploy_event_old_hash_after_upgrade(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    let root = deployer_env.sandbox.root();
+    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+    let storage = DeployerState::new(root.id().clone()).with_index(unique_index);
+
+    let controller_instance = root
+        .deploy_instance(deployer_code_hash_id.clone(), storage.clone())
+        .await
+        .unwrap();
+
+    // Step 1: Initial deploy of DEPLOYER_WASM
+    root.gd_approve_and_deploy(controller_instance.id(), storage.code_hash, &DEPLOYER_WASM)
+        .await
+        .unwrap();
+
+    let deployer_hash = sha256_array(&*DEPLOYER_WASM);
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap(),
+        deployer_hash,
+    );
+
+    // Step 2: Approve + deploy upgrade to MT_RECEIVER_STUB_WASM
+    let mt_stub_hash = sha256_array(&*MT_RECEIVER_STUB_WASM);
+    let result = root
+        .gd_approve_and_deploy(controller_instance.id(), deployer_hash, &MT_RECEIVER_STUB_WASM)
+        .await
+        .unwrap();
+
+    // Step 3: Assert Deploy event contains old_hash == sha256(DEPLOYER_WASM)
+    let expected_event = Event::Deploy {
+        old_hash: deployer_hash,
+        new_hash: mt_stub_hash,
+    };
+    assert!(
+        result
+            .logs()
+            .contains(&expected_event.to_nep297_event().to_event_log().as_str()),
+        "Deploy event should contain old_hash from the previously deployed code"
+    );
+
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap(),
+        mt_stub_hash,
+    );
+}
+
+#[rstest]
+#[tokio::test]
 async fn test_concurrent_upgrades_only_one_succeeds(
     #[future(awt)] deployer_env: DeployerEnv,
     unique_index: u32,
