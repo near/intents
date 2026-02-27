@@ -26,6 +26,7 @@ escrow-swap: build-escrow-swap
 global-deployer: build-global-deployer
 multi-token-receiver-stub: build-multi-token-receiver-stub
 
+# NOTE: Build defuse with imt feature by default
 build-all: \
 	build-defuse-imt \
 	build-poa-factory \
@@ -36,10 +37,13 @@ build-all: \
 
 METADATA_FILTER = .packages[] | select(.name == "$(CRATE_NAME)") | .metadata.near.reproducible_build
 VARIANT_FILTER = if .variant["$(VARIANT)"] then .variant["$(VARIANT)"] else . end | .container_build_command
+VAR_VALIDATION = [ -n "$(MANIFEST_PATH)" ] && [ -n "$(CRATE_NAME)" ] || { echo "MANIFEST_PATH and CRATE_NAME should be set"; exit 1; }
 
 build-%:
 ifndef REPRODUCIBLE
-	@BUILD_CMD=$$(cargo metadata --format-version=1 | jq -r '$(METADATA_FILTER) | $(VARIANT_FILTER) | join(" ")'); \
+
+	@$(VAR_VALIDATION) && \
+	BUILD_CMD=$$(cargo metadata --format-version=1 | jq -r '$(METADATA_FILTER) | $(VARIANT_FILTER) | join(" ")'); \
 	$$BUILD_CMD --manifest-path=$(MANIFEST_PATH) --out-dir=$(DEFUSE_OUT_DIR)
 else
 	cargo near build reproducible-wasm --manifest-path=$(MANIFEST_PATH) --out-dir=$(DEFUSE_OUT_DIR) $(REPRO_VARIANT)
