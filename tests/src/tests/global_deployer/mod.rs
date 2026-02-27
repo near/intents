@@ -382,6 +382,48 @@ async fn test_second_approval_overwrites_first(
 
 #[rstest]
 #[tokio::test]
+async fn test_approve_revoke_resets_to_code_hash(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    let root = deployer_env.sandbox.root();
+    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+
+    // State starts with both code_hash and approved_hash set to [0; 32]
+    let state = DeployerState::new(root.id().clone()).with_index(unique_index);
+    let controller_instance = root
+        .deploy_instance(deployer_code_hash_id.clone(), state.clone())
+        .await
+        .unwrap();
+
+    // Approve some arbitrary hash
+    let arbitrary_hash = sha256_array(&*DEPLOYER_WASM);
+    root.gd_approve(controller_instance.id(), state.code_hash, arbitrary_hash)
+        .await
+        .unwrap();
+    assert_eq!(
+        controller_instance.gd_approved_hash().await.unwrap(),
+        arbitrary_hash,
+    );
+
+    // Revoke the approval by resetting approved_hash back to code_hash ([0; 32]).
+    // This is a valid use case: the owner changed their mind and wants to cancel
+    // a previously approved deployment. Setting approved_hash equal to code_hash
+    // effectively disables `gd_deploy` since new code can never hash to [0; 32].
+    //
+    // NOTE: this also proves that approving a hash already stored as code_hash is
+    // allowed — the contract intentionally places no restriction on new_hash.
+    root.gd_approve(controller_instance.id(), state.code_hash, state.code_hash)
+        .await
+        .unwrap();
+    assert_eq!(
+        controller_instance.gd_approved_hash().await.unwrap(),
+        state.code_hash, // back to [0; 32]
+    );
+}
+
+#[rstest]
+#[tokio::test]
 async fn test_permissionless_deploy_with_approval(
     #[future(awt)] deployer_env: DeployerEnv,
     unique_index: u32,
