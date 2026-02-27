@@ -5,10 +5,7 @@ use near_sdk::{
 
 use crate::{
     Event, GlobalDeployer, State,
-    error::{
-        ERR_NEW_CODE_HASH_MISMATCH, ERR_SELF_TRANSFER, ERR_UNAUTHORIZED,
-        ERR_WRONG_CODE_HASH,
-    },
+    error::{ERR_NEW_CODE_HASH_MISMATCH, ERR_SELF_TRANSFER, ERR_UNAUTHORIZED, ERR_WRONG_CODE_HASH},
 };
 
 const GD_AT_DEPLOY_GAS: Gas = Gas::from_tgas(15);
@@ -56,7 +53,12 @@ impl GlobalDeployer for Contract {
         )
         .with_static_gas(GD_AT_DEPLOY_GAS)
         .with_unused_gas_weight(1)
-        .gd_post_deploy(old_hash.into(), new_hash.into(), initial_balance, env::attached_deposit())
+        .gd_post_deploy(
+            old_hash.into(),
+            new_hash.into(),
+            initial_balance,
+            env::attached_deposit(),
+        )
     }
 
     #[payable]
@@ -71,7 +73,7 @@ impl GlobalDeployer for Contract {
         }
         .emit();
         self.0.owner_id = receiver_id;
-        self.drop_approval();
+        self.reset_approval();
     }
 
     fn gd_owner_id(&self) -> AccountId {
@@ -102,7 +104,7 @@ impl Contract {
         require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
         require!(self.0.approved_hash == new_hash, ERR_NEW_CODE_HASH_MISMATCH);
         self.0.code_hash = new_hash;
-        self.drop_approval();
+        self.reset_approval();
         Event::Deploy { old_hash, new_hash }.emit();
 
         let refund = env::account_balance()
@@ -117,7 +119,7 @@ impl Contract {
 }
 
 impl Contract {
-    fn drop_approval(&mut self) {
+    fn reset_approval(&mut self) {
         self.0.approved_hash = State::DEFAULT_HASH;
     }
 
