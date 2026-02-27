@@ -87,7 +87,7 @@ impl Contract {
         old_hash: AsHex<[u8; 32]>,
         new_hash: AsHex<[u8; 32]>,
         initial_balance: NearToken,
-        attached_deposit: NearToken,
+        gd_deploy_attached_deposit: NearToken,
     ) {
         let [old_hash, new_hash] = [old_hash, new_hash].map(AsHex::into_inner);
         require!(self.is_approved(&new_hash), ERR_NEW_CODE_HASH_MISMATCH);
@@ -98,7 +98,7 @@ impl Contract {
 
         let refund = env::account_balance()
             .saturating_sub(initial_balance)
-            .min(attached_deposit);
+            .min(gd_deploy_attached_deposit);
         if !refund.is_zero() {
             Promise::new(env::refund_to_account_id())
                 .transfer(refund)
