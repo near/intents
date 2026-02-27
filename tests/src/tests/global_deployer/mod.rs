@@ -312,7 +312,11 @@ async fn test_deploy_event_old_hash_after_upgrade(
     // Step 2: Approve + deploy upgrade to MT_RECEIVER_STUB_WASM
     let mt_stub_hash = sha256_array(&*MT_RECEIVER_STUB_WASM);
     let result = root
-        .gd_approve_and_deploy(controller_instance.id(), deployer_hash, &MT_RECEIVER_STUB_WASM)
+        .gd_approve_and_deploy(
+            controller_instance.id(),
+            deployer_hash,
+            &MT_RECEIVER_STUB_WASM,
+        )
         .await
         .unwrap();
 
@@ -986,13 +990,11 @@ async fn test_concurrent_transfer_does_not_inflate_refund(
     // Create 50 accounts that will each transfer 4 NEAR (200 NEAR total)
     let num_senders = 50;
     let transfer_amount = NearToken::from_near(4);
-    let senders = join_all(
-        (0..num_senders).map(|_| root.fund_implicit(NearToken::from_near(10))),
-    )
-    .await
-    .into_iter()
-    .collect::<Result<Vec<_>, _>>()
-    .unwrap();
+    let senders = join_all((0..num_senders).map(|_| root.fund_implicit(NearToken::from_near(10))))
+        .await
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()
+        .unwrap();
 
     let owner_balance_before_deploy = owner.view().await.unwrap().amount;
 
@@ -1013,9 +1015,11 @@ async fn test_concurrent_transfer_does_not_inflate_refund(
                 .unwrap()
         }
     });
-    let transfer_futs = senders
-        .iter()
-        .map(|s| s.tx(controller_instance.id()).transfer(transfer_amount).into_future());
+    let transfer_futs = senders.iter().map(|s| {
+        s.tx(controller_instance.id())
+            .transfer(transfer_amount)
+            .into_future()
+    });
     join_all(transfer_futs).await;
 
     deploy_handle.await.unwrap();
