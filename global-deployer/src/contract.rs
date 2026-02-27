@@ -65,15 +65,8 @@ impl GlobalDeployer for Contract {
     fn gd_transfer_ownership(&mut self, receiver_id: AccountId) {
         assert_one_yocto();
         self.require_owner();
-
         require!(self.0.owner_id != receiver_id, ERR_SELF_TRANSFER);
-        Event::Transfer {
-            old_owner_id: (&self.0.owner_id).into(),
-            new_owner_id: (&receiver_id).into(),
-        }
-        .emit();
-        self.0.owner_id = receiver_id;
-        self.reset_approval();
+        self.transfer_ownership(receiver_id);
     }
 
     fn gd_owner_id(&self) -> AccountId {
@@ -121,6 +114,16 @@ impl Contract {
 impl Contract {
     fn approve(&mut self, new_hash: [u8; 32]) {
         self.0.approved_hash = new_hash;
+    }
+
+    fn transfer_ownership(&mut self, new_owner_id: AccountId) {
+        Event::Transfer {
+            old_owner_id: (&self.0.owner_id).into(),
+            new_owner_id: (&new_owner_id).into(),
+        }
+        .emit();
+        self.0.owner_id = new_owner_id;
+        self.reset_approval();
     }
 
     fn reset_approval(&mut self) {
