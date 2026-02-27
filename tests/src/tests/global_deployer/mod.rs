@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use defuse_global_deployer::{
     Event, State as DeployerState,
-    error::{ERR_NEW_CODE_HASH_MISMATCH, ERR_UNAUTHORIZED, ERR_WRONG_CODE_HASH},
+    error::{ERR_NEW_CODE_HASH_MISMATCH, ERR_UNAUTHORIZED},
 };
 use defuse_sandbox::{
     Sandbox,

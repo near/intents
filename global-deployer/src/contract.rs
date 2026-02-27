@@ -97,8 +97,7 @@ impl Contract {
         let [old_hash, new_hash] = [old_hash, new_hash].map(AsHex::into_inner);
         require!(self.is_approved(&new_hash), ERR_NEW_CODE_HASH_MISMATCH);
 
-        self.0.code_hash = new_hash;
-        self.reset_approval();
+        self.on_deploy(new_hash);
         Event::Deploy { old_hash, new_hash }.emit();
 
         let refund = env::account_balance()
@@ -113,6 +112,11 @@ impl Contract {
 }
 
 impl Contract {
+    fn on_deploy(&mut self, new_hash: [u8; 32]) {
+        self.0.code_hash = new_hash;
+        self.reset_approval();
+    }
+
     fn approve(&mut self, new_hash: [u8; 32]) {
         self.0.approved_hash = new_hash;
     }
