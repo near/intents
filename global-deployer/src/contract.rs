@@ -66,7 +66,7 @@ impl GlobalDeployer for Contract {
         self.transfer_ownership(receiver_id);
         Event::Transfer {
             old_owner_id: (&self.0.owner_id).into(),
-            new_owner_id: (&new_owner_id).into(),
+            new_owner_id: (&receiver_id).into(),
         }
         .emit();
     }
