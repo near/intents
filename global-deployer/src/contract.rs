@@ -38,7 +38,7 @@ impl GlobalDeployer for Contract {
     fn gd_deploy(&mut self, #[serializer(borsh)] new_code: Vec<u8>) -> Promise {
         let old_hash = self.0.code_hash;
         let new_hash = env::sha256_array(&new_code);
-        require!(new_hash == self.0.approved_hash, ERR_NEW_CODE_HASH_MISMATCH);
+        require!(self.is_approved(&new_hash), ERR_NEW_CODE_HASH_MISMATCH);
 
         let initial_balance = env::account_balance().saturating_sub(env::attached_deposit());
 
@@ -102,7 +102,7 @@ impl Contract {
         let [old_hash, new_hash] = [old_hash, new_hash].map(AsHex::into_inner);
 
         require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
-        require!(self.0.approved_hash == new_hash, ERR_NEW_CODE_HASH_MISMATCH);
+        require!(self.is_approved(&new_hash), ERR_NEW_CODE_HASH_MISMATCH);
         self.0.code_hash = new_hash;
         self.reset_approval();
         Event::Deploy { old_hash, new_hash }.emit();
@@ -125,6 +125,10 @@ impl Contract {
 
     fn reset_approval(&mut self) {
         self.0.approved_hash = State::DEFAULT_HASH;
+    }
+
+    fn is_approved(&self, hash: &[u8; 32]) -> bool {
+        self.0.approved_hash == *hash
     }
 
     fn require_owner(&self) {
