@@ -48,22 +48,16 @@ Alternatively, you can build this smart contract yourself.
 Build smart contract separately:
 
 ```shell
-make build-<contract-name>
+make <contract-name>
 ```
 
 Build all contracts at once:
 
 ```shell
-make all
+make
 ```
 
-NOTE: Extra cargo flags can be specified with `CARGO_EXTRA_FLAGS` (will be applied on all contracts) or can be specified in `<CONTRACT_NAME>_FLAGS` var for each contract separately
-
-Build all contracts at once in reproducible mode:
-
-```shell
-make all-reproducible
-```
+NOTE: Reproducible build can be specified by setting REPRODUCIBLE env var
 
 Run integration tests:
 
@@ -84,7 +78,7 @@ The tests will use data created prior to migration combined with newly created d
 Run clippy linter:
 
 ```shell
-cargo clippy --workspace --all-targets --no-deps
+make clippy
 ```
 
 After building, the artifacts of the build will be in the `res` directory.
