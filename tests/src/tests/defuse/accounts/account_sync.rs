@@ -134,7 +134,6 @@ async fn test_force_add_and_remove_public_keys(#[notrace] mut rng: impl Rng) {
 
     // Add public keys
     {
-        println!("ROOOT: {:#?}", env.root().id());
         env.acl_grant_role(
             env.defuse.id(),
             Role::UnrestrictedAccountManager,

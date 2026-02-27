@@ -227,15 +227,12 @@ impl SigningAccount {
             tx = tx.transfer(balance);
         }
 
-        let res = pks
-            .iter()
+        pks.iter()
             .map(SecretKey::public_key)
             .fold(tx, TxBuilder::add_full_access_key)
             .await?;
 
-        println!("RES: {:?}", res);
-
-        let signer = Self::new(
+        let account = Self::new(
             subaccount,
             Signer::from_secret_key(
                 pks.first()
@@ -245,10 +242,10 @@ impl SigningAccount {
         );
 
         for secret_key in pks {
-            self.signer.add_secret_key_to_pool(secret_key).await?;
+            account.signer.add_secret_key_to_pool(secret_key).await?;
         }
 
-        Ok(signer)
+        Ok(account)
     }
 
     #[instrument(skip_all, fields(name = name.as_ref()))]
