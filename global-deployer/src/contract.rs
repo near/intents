@@ -56,7 +56,7 @@ impl GlobalDeployer for Contract {
         )
         .with_static_gas(GD_AT_DEPLOY_GAS)
         .with_unused_gas_weight(1)
-        .gd_post_deploy(old_hash.into(), new_hash.into(), initial_balance)
+        .gd_post_deploy(old_hash.into(), new_hash.into(), initial_balance, env::attached_deposit())
     }
 
     #[payable]
@@ -95,6 +95,7 @@ impl Contract {
         old_hash: AsHex<[u8; 32]>,
         new_hash: AsHex<[u8; 32]>,
         initial_balance: NearToken,
+        attached_deposit: NearToken,
     ) {
         let [old_hash, new_hash] = [old_hash, new_hash].map(AsHex::into_inner);
 
@@ -104,7 +105,9 @@ impl Contract {
         self.drop_approval();
         Event::Deploy { old_hash, new_hash }.emit();
 
-        let refund = env::account_balance().saturating_sub(initial_balance);
+        let refund = env::account_balance()
+            .saturating_sub(initial_balance)
+            .min(attached_deposit);
         if !refund.is_zero() {
             Promise::new(env::refund_to_account_id())
                 .transfer(refund)

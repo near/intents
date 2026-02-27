@@ -1,6 +1,7 @@
 #[cfg(feature = "escrow-swap")]
 mod deploy_escrow_swap;
 
+use std::future::IntoFuture;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use defuse_global_deployer::{
@@ -853,5 +854,95 @@ async fn test_deploy_with_zero_deposit_and_prefunded_account(
     assert!(
         final_balance < NearToken::from_near(50),
         "some pre-funded balance should have been used for storage, got {final_balance:?}"
+    );
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_concurrent_transfer_does_not_inflate_refund(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    let root = deployer_env.sandbox.root();
+    let initial_balance = NearToken::from_near(200);
+    let owner = root.fund_implicit(initial_balance).await.unwrap();
+
+    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+    let storage = DeployerState::new(owner.id().clone()).with_index(unique_index);
+
+    let controller_instance = root
+        .deploy_instance(deployer_code_hash_id.clone(), storage.clone())
+        .await
+        .unwrap();
+
+    // Initial deploy so the controller has real code
+    owner
+        .gd_approve_and_deploy(controller_instance.id(), storage.code_hash, &DEPLOYER_WASM)
+        .await
+        .unwrap();
+    let deployer_hash = sha256_array(&*DEPLOYER_WASM);
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap(),
+        deployer_hash,
+    );
+
+    // Approve the upgrade to MT_RECEIVER_STUB_WASM
+    let mt_stub_hash = sha256_array(&*MT_RECEIVER_STUB_WASM);
+    owner
+        .gd_approve(controller_instance.id(), deployer_hash, mt_stub_hash)
+        .await
+        .unwrap();
+
+    // Create 50 accounts that will each transfer 4 NEAR (200 NEAR total)
+    let num_senders = 50;
+    let transfer_amount = NearToken::from_near(4);
+    let senders = join_all(
+        (0..num_senders).map(|_| root.fund_implicit(NearToken::from_near(10))),
+    )
+    .await
+    .into_iter()
+    .collect::<Result<Vec<_>, _>>()
+    .unwrap();
+
+    let owner_balance_before_deploy = owner.view().await.unwrap().amount;
+
+    let deploy_deposit = NearToken::from_near(50);
+
+    let deploy_handle = tokio::spawn({
+        let controller_id = controller_instance.id().clone();
+        let owner = owner.clone();
+        async move {
+            owner
+                .tx(&controller_id)
+                .function_call(
+                    FnCallBuilder::new("gd_deploy")
+                        .borsh_args(&(&*MT_RECEIVER_STUB_WASM))
+                        .with_deposit(deploy_deposit),
+                )
+                .await
+                .unwrap()
+        }
+    });
+    let transfer_futs = senders
+        .iter()
+        .map(|s| s.tx(controller_instance.id()).transfer(transfer_amount).into_future());
+    join_all(transfer_futs).await;
+
+    deploy_handle.await.unwrap();
+
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap(),
+        mt_stub_hash,
+    );
+
+    let owner_balance_after = owner.view().await.unwrap().amount;
+    // Some transfers land between gd_deploy and gd_post_deploy, inflating
+    // account_balance well above initial_balance + attached_deposit. The refund
+    // cap `min(excess, attached_deposit)` limits refund to 50 NEAR, so the
+    // owner only loses gas costs (< 1 NEAR) and cannot steal from transfers.
+    let owner_spent = owner_balance_before_deploy.saturating_sub(owner_balance_after);
+    assert!(
+        owner_spent < NearToken::from_near(1),
+        "owner should lose only gas costs (< 1 NEAR), but spent: {owner_spent:?}"
     );
 }
