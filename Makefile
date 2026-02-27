@@ -3,28 +3,19 @@ DEFUSE_OUT_DIR ?= $(ROOT_DIR)res
 
 .DEFAULT_GOAL := build-all 
 
-.PHONY: defuse \
-		defuse-imt \
-		poa-factory \
-		poa-token \
-		poa-token-no-registration \
-		escrow-swap \
-		global-deployer \
-		multi-token-receiver-stub \
+.PHONY: build-defuse \
+		build-defuse-imt \
+		build-poa-factory \
+		build-poa-token \
+		build-poa-token-no-registration \
+		build-escrow-swap \
+		build-global-deployer \
+		build-multi-token-receiver-stub \
 		build-all \
 		sha256 \
 		clean-out-dir \
 		clean \
 		test
-
-defuse: build-defuse
-defuse-imt: build-defuse-imt
-poa-factory: build-poa-factory
-poa-token: build-poa-token
-poa-token-no-registration: build-poa-token-no-registration
-escrow-swap: build-escrow-swap
-global-deployer: build-global-deployer
-multi-token-receiver-stub: build-multi-token-receiver-stub
 
 # NOTE: Build defuse with imt feature by default
 build-all: \
