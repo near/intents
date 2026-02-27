@@ -1,6 +1,7 @@
 use defuse_serde_utils::hex::AsHex;
 use near_sdk::{
-    AccountId, Gas, NearToken, PanicOnDefault, Promise, assert_one_yocto, env, near, require,
+    AccountId, AccountIdRef, Gas, NearToken, PanicOnDefault, Promise, assert_one_yocto, env, near,
+    require,
 };
 
 use crate::{
@@ -62,11 +63,15 @@ impl GlobalDeployer for Contract {
     fn gd_transfer_ownership(&mut self, receiver_id: AccountId) {
         assert_one_yocto();
         self.require_owner();
-        require!(self.0.owner_id != receiver_id, ERR_SELF_TRANSFER);
+        require!(!self.is_owner(&receiver_id), ERR_SELF_TRANSFER);
+
+        let old_owner_id = self.0.owner_id.clone().into();
+        let new_owner_id = receiver_id.clone().into();
+
         self.transfer_ownership(receiver_id);
         Event::Transfer {
-            old_owner_id: (&self.0.owner_id).into(),
-            new_owner_id: (&receiver_id).into(),
+            old_owner_id,
+            new_owner_id,
         }
         .emit();
     }
@@ -138,11 +143,14 @@ impl Contract {
         self.0.code_hash == *hash
     }
 
-    fn is_owner(&self) -> bool {
-        env::predecessor_account_id() == self.0.owner_id
+    fn is_owner(&self, account_id: &AccountIdRef) -> bool {
+        account_id == self.0.owner_id
     }
 
     fn require_owner(&self) {
-        require!(self.is_owner(), ERR_UNAUTHORIZED);
+        require!(
+            self.is_owner(&env::predecessor_account_id()),
+            ERR_UNAUTHORIZED
+        );
     }
 }
