@@ -36,15 +36,21 @@ build-all: \
 	build-multi-token-receiver-stub
 
 METADATA_FILTER = .packages[] | select(.name == "$(CRATE_NAME)") | .metadata.near.reproducible_build
-VARIANT_FILTER = if .variant["$(VARIANT)"] then .variant["$(VARIANT)"] else . end | .container_build_command
+VARIANT_FILTER = .variant["$(VARIANT)"] | .container_build_command
+DEFAULT_VARIANT_FILTER = .container_build_command
+
 VAR_VALIDATION = [ -n "$(MANIFEST_PATH)" ] && [ -n "$(CRATE_NAME)" ] || { echo "MANIFEST_PATH and CRATE_NAME should be set"; exit 1; }
 
 build-%:
 ifndef REPRODUCIBLE
 
 	@$(VAR_VALIDATION) && \
+	\
 	BUILD_CMD=$$(cargo metadata --format-version=1 | \
-	jq -r '$(METADATA_FILTER) | $(VARIANT_FILTER) | join(" ")'); \
+	jq -r '$(METADATA_FILTER) | \
+	$(if $(VARIANT),$(VARIANT_FILTER), $(DEFAULT_VARIANT_FILTER)) \
+	| join(" ")'); \
+	\
 	$$BUILD_CMD --manifest-path=$(MANIFEST_PATH) --out-dir=$(DEFUSE_OUT_DIR)
 else
 	cargo near build reproducible-wasm \
