@@ -42,7 +42,14 @@ DEFAULT_VARIANT_FILTER = .container_build_command
 VAR_VALIDATION = [ -n "$(MANIFEST_PATH)" ] && [ -n "$(CRATE_NAME)" ] || { echo "MANIFEST_PATH and CRATE_NAME should be set"; exit 1; }
 
 build-%:
-ifndef REPRODUCIBLE
+ifeq ($(REPRODUCIBLE), $(filter $(REPRODUCIBLE), 1 true))
+
+	cargo near build reproducible-wasm \
+	 --manifest-path=$(MANIFEST_PATH) \
+	 --out-dir=$(DEFUSE_OUT_DIR) \
+	$(if $(VARIANT),--variant=$(VARIANT))
+
+else
 
 	@$(VAR_VALIDATION) && \
 	\
@@ -52,11 +59,7 @@ ifndef REPRODUCIBLE
 	| join(" ")'); \
 	\
 	$$BUILD_CMD --manifest-path=$(MANIFEST_PATH) --out-dir=$(DEFUSE_OUT_DIR)
-else
-	cargo near build reproducible-wasm \
-	 --manifest-path=$(MANIFEST_PATH) \
-	 --out-dir=$(DEFUSE_OUT_DIR) \
-	$(if $(VARIANT),--variant=$(VARIANT))
+
 endif
 
 
