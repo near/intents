@@ -36,7 +36,6 @@ impl GlobalDeployer for Contract {
 
     #[payable]
     fn gd_deploy(&mut self, #[serializer(borsh)] new_code: Vec<u8>) -> Promise {
-        let old_hash = self.0.code_hash;
         let new_hash = env::sha256_array(&new_code);
         require!(self.is_approved(&new_hash), ERR_NEW_CODE_HASH_MISMATCH);
 
@@ -54,7 +53,6 @@ impl GlobalDeployer for Contract {
         .with_static_gas(GD_AT_DEPLOY_GAS)
         .with_unused_gas_weight(1)
         .gd_post_deploy(
-            old_hash.into(),
             new_hash.into(),
             initial_balance,
             env::attached_deposit(),
@@ -87,14 +85,13 @@ impl Contract {
     #[private]
     pub fn gd_post_deploy(
         &mut self,
-        old_hash: AsHex<[u8; 32]>,
         new_hash: AsHex<[u8; 32]>,
         initial_balance: NearToken,
         attached_deposit: NearToken,
     ) {
-        let [old_hash, new_hash] = [old_hash, new_hash].map(AsHex::into_inner);
+        let old_hash = self.0.code_hash;
+        let new_hash = new_hash.into_inner();
 
-        require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
         require!(self.is_approved(&new_hash), ERR_NEW_CODE_HASH_MISMATCH);
         self.0.code_hash = new_hash;
         self.reset_approval();
