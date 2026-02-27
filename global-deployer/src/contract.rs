@@ -30,7 +30,6 @@ impl GlobalDeployer for Contract {
         require!(self.is_current_code_hash(&old_hash), ERR_WRONG_CODE_HASH);
 
         self.approve(new_hash);
-
         Event::DeploymentApproved { old_hash, new_hash }.emit();
     }
 
@@ -38,8 +37,6 @@ impl GlobalDeployer for Contract {
     fn gd_deploy(&mut self, #[serializer(borsh)] new_code: Vec<u8>) -> Promise {
         let new_hash = env::sha256_array(&new_code);
         require!(self.is_approved(&new_hash), ERR_NEW_CODE_HASH_MISMATCH);
-
-        let old_hash = self.0.code_hash;
         let initial_balance = env::account_balance().saturating_sub(env::attached_deposit());
 
         // On receipt failure, refund goes to the receipt's predecessor — which for a
@@ -54,7 +51,7 @@ impl GlobalDeployer for Contract {
         .with_static_gas(GD_AT_DEPLOY_GAS)
         .with_unused_gas_weight(1)
         .gd_post_deploy(
-            old_hash.into(),
+            self.0.code_hash.into(),
             new_hash.into(),
             initial_balance,
             env::attached_deposit(),
