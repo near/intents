@@ -79,7 +79,7 @@ jobs:
       - name: Install Cargo Plugins
         run: cargo install cargo-near --version 0.17.0 --locked
       - name: Build
-        run: make all
+        run: make
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -116,7 +116,9 @@ jobs:
       - name: Install Cargo Plugins
         run: cargo install cargo-near --version 0.17.0 --locked
       - name: Build Reproducible WASM and calculate checksum
-        run: make all-reproducible
+        env:
+          REPRODUCIBLE: "true"
+        run: make
       - name: Upload Reproducible Artifacts
         uses: actions/upload-artifact@v4
         with:
