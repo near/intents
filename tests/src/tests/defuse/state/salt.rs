@@ -1,8 +1,15 @@
+use std::collections::BTreeSet;
+
 use crate::{
     sandbox::extensions::acl::AclExt, tests::defuse::env::Env, utils::asserts::ResultAssertsExt,
 };
+
+use defuse::core::accounts::SaltRotationEvent;
+use defuse::core::events::DefuseEvent;
+use defuse_sandbox::assert_a_contains_b;
 use defuse_sandbox::extensions::defuse::contract::contract::Role;
 use defuse_sandbox::extensions::defuse::state::{SaltManagerExt, SaltViewExt};
+use near_sdk::AsNep297Event;
 use rstest::rstest;
 
 #[rstest]
@@ -27,10 +34,22 @@ async fn update_current_salt() {
             .await
             .expect("failed to grant role");
 
-        let new_salt = user1
+        let (res, new_salt) = user1
             .update_current_salt(env.defuse.id())
             .await
             .expect("unable to rotate salt");
+
+        let event = DefuseEvent::SaltRotation(SaltRotationEvent {
+            invalidated: BTreeSet::new(),
+            current: new_salt,
+        })
+        .to_nep297_event()
+        .to_event_log();
+
+        assert_a_contains_b!(
+            a: res.logs().clone(),
+            b: [event]
+        );
 
         let current_salt = env.defuse.current_salt().await.unwrap();
 
@@ -63,15 +82,27 @@ async fn invalidate_salts() {
             .await
             .expect("failed to grant role");
 
-        current_salt = user1
+        (_, current_salt) = user1
             .update_current_salt(env.defuse.id())
             .await
             .expect("unable to rotate salt");
 
-        user1
+        let (res, current_salt) = user1
             .invalidate_salts(env.defuse.id(), [prev_salt])
             .await
             .expect("unable to rotate salt");
+
+        let event = DefuseEvent::SaltRotation(SaltRotationEvent {
+            invalidated: std::iter::once(prev_salt).collect(),
+            current: current_salt,
+        })
+        .to_nep297_event()
+        .to_event_log();
+
+        assert_a_contains_b!(
+            a: res.logs().clone(),
+            b: [event]
+        );
 
         assert!(!env.defuse.is_valid_salt(&prev_salt).await.unwrap());
     }
@@ -79,10 +110,22 @@ async fn invalidate_salts() {
     // invalidate current salt by salt manager
     {
         prev_salt = current_salt;
-        current_salt = user1
+        let (res, current_salt) = user1
             .invalidate_salts(env.defuse.id(), [current_salt])
             .await
             .expect("unable to rotate salt");
+
+        let event = DefuseEvent::SaltRotation(SaltRotationEvent {
+            invalidated: std::iter::once(prev_salt).collect(),
+            current: current_salt,
+        })
+        .to_nep297_event()
+        .to_event_log();
+
+        assert_a_contains_b!(
+            a: res.logs().clone(),
+            b: [event]
+        );
 
         assert!(!env.defuse.is_valid_salt(&prev_salt).await.unwrap());
         assert_ne!(prev_salt, current_salt);

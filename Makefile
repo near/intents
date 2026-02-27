@@ -142,6 +142,10 @@ clean-out-dir:
 clean: clean-out-dir
 	cargo clean
 
+.PHONY: clippy
+clippy:
+	cargo clippy --workspace --all-targets --no-deps
+
 # ============================================================================
 # Tests
 # ============================================================================

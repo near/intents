@@ -2,6 +2,7 @@
 
 pub mod account_manager;
 pub mod deployer;
+pub mod event;
 pub mod force_manager;
 pub mod intents;
 pub mod nonce;

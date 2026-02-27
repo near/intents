@@ -128,8 +128,7 @@ pub trait State: StateView {
     ) -> Result<()>;
 
     /// Sets whether authentication by `PREDECESSOR_ID` is enabled.
-    /// Returns whether authentication by `PREDECESSOR_ID` was enabled
-    /// before.
+    /// Returns whether authentication by `PREDECESSOR_ID` was toggled.
     fn set_auth_by_predecessor_id(&mut self, account_id: AccountId, enable: bool) -> Result<bool>;
 
     fn auth_call(&mut self, signer_id: &AccountIdRef, auth_call: AuthCall) -> Result<()>;
