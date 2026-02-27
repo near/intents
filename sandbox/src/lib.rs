@@ -107,7 +107,7 @@ extern "C" fn cleanup_sandbox() {
     }
 }
 
-const DEFAULT_CONCURRENCY_LIMIT: usize = 10;
+pub const DEFAULT_CONCURRENCY_LIMIT: usize = 10;
 
 #[fixture]
 #[instrument]
