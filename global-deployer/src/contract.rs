@@ -6,8 +6,8 @@ use near_sdk::{
 use crate::{
     Event, GlobalDeployer, State,
     error::{
-        ERR_INSUFFICIENT_DEPOSIT, ERR_NEW_CODE_HASH_MISMATCH, ERR_SAME_CODE, ERR_SELF_TRANSFER,
-        ERR_UNAUTHORIZED, ERR_WRONG_CODE_HASH,
+        ERR_INSUFFICIENT_DEPOSIT, ERR_NEW_CODE_HASH_MISMATCH, ERR_SELF_TRANSFER, ERR_UNAUTHORIZED,
+        ERR_WRONG_CODE_HASH,
     },
 };
 
@@ -24,7 +24,9 @@ pub struct Contract(State);
 
 #[near]
 impl GlobalDeployer for Contract {
+    #[payable]
     fn gd_approve(&mut self, old_hash: AsHex<[u8; 32]>, new_hash: AsHex<[u8; 32]>) {
+        assert_one_yocto();
         self.require_owner();
 
         let [old_hash, new_hash] = [old_hash, new_hash].map(AsHex::into_inner);
@@ -41,8 +43,6 @@ impl GlobalDeployer for Contract {
 
         let old_hash = self.0.code_hash;
         let new_hash = env::sha256_array(&new_code);
-        require!(new_hash != old_hash, ERR_SAME_CODE);
-
         require!(new_hash == self.0.approved_hash, ERR_NEW_CODE_HASH_MISMATCH);
 
         let initial_balance = env::account_balance().saturating_sub(env::attached_deposit());
@@ -73,7 +73,7 @@ impl GlobalDeployer for Contract {
         }
         .emit();
         self.0.owner_id = receiver_id;
-        self.0.approved_hash = State::DEFAULT_HASH;
+        self.drop_approval();
     }
 
     fn gd_owner_id(&self) -> AccountId {
@@ -101,8 +101,9 @@ impl Contract {
         let [old_hash, new_hash] = [old_hash, new_hash].map(AsHex::into_inner);
 
         require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
+        require!(self.0.approved_hash == new_hash, ERR_NEW_CODE_HASH_MISMATCH);
         self.0.code_hash = new_hash;
-        self.0.approved_hash = State::DEFAULT_HASH;
+        self.drop_approval();
         Event::Deploy { old_hash, new_hash }.emit();
 
         let refund = env::account_balance().saturating_sub(initial_balance);
@@ -115,6 +116,10 @@ impl Contract {
 }
 
 impl Contract {
+    fn drop_approval(&mut self) {
+        self.0.approved_hash = State::DEFAULT_HASH;
+    }
+
     fn require_owner(&self) {
         require!(
             env::predecessor_account_id() == self.0.owner_id,

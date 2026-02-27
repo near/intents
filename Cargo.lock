@@ -1104,7 +1104,6 @@ dependencies = [
  "anyhow",
  "defuse",
  "defuse-crypto",
- "defuse-deadline",
  "defuse-escrow-swap",
  "defuse-global-deployer",
  "defuse-nep245",

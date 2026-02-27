@@ -16,7 +16,7 @@ use defuse_sandbox::{
 };
 use defuse_test_utils::{asserts::ResultAssertsExt, wasms::MT_RECEIVER_STUB_WASM};
 use futures::future::join_all;
-use near_sdk::{AsNep297Event, GlobalContractId, NearToken, env::sha256_array};
+use near_sdk::{AsNep297Event, Gas, GlobalContractId, NearToken, env::sha256_array};
 use rstest::{fixture, rstest};
 
 use crate::utils::wasms::DEPLOYER_WASM;
@@ -483,7 +483,7 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
 
 #[rstest]
 #[tokio::test]
-async fn test_state_init_with_approved_hash_allows_immediate_deploy(
+async fn test_state_init_pre_approve_allows_immediate_deploy(
     #[future(awt)] deployer_env: DeployerEnv,
     unique_index: u32,
 ) {
@@ -497,13 +497,14 @@ async fn test_state_init_with_approved_hash_allows_immediate_deploy(
     // Pre-set approved_hash so gd_deploy can be called immediately without gd_approve
     let state = DeployerState::new(root.id().clone())
         .with_index(unique_index)
-        .with_approved_hash(sha256_array(&*DEPLOYER_WASM));
+        .pre_approve(sha256_array(&*DEPLOYER_WASM));
 
     let controller_instance = root
         .deploy_instance(deployer_code_hash_id.clone(), state.clone())
         .await
         .unwrap();
 
+    assert!(bob.id().clone() != controller_instance.gd_owner_id().await.unwrap());
     bob.gd_deploy(controller_instance.id(), &DEPLOYER_WASM)
         .await
         .unwrap();
@@ -513,6 +514,55 @@ async fn test_state_init_with_approved_hash_allows_immediate_deploy(
         sha256_array(&*DEPLOYER_WASM),
     );
 
+    assert_eq!(
+        controller_instance.gd_approved_hash().await.unwrap(),
+        DeployerState::DEFAULT_HASH,
+    );
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_state_init_same_code_hash_and_pre_approve_allows_deploy(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    let root = deployer_env.sandbox.root();
+    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+
+    let dummy_wasm: Vec<u8> = vec![1u8; 64];
+    let dummy_hash = sha256_array(&dummy_wasm);
+
+    // State where code_hash == approved_hash == hash(dummy_wasm)
+    let mut state = DeployerState::new(root.id().clone())
+        .with_index(unique_index)
+        .pre_approve(dummy_hash);
+    state.code_hash = dummy_hash;
+
+    let controller_instance = root
+        .deploy_instance(deployer_code_hash_id.clone(), state.clone())
+        .await
+        .unwrap();
+
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap(),
+        dummy_hash
+    );
+    assert_eq!(
+        controller_instance.gd_approved_hash().await.unwrap(),
+        dummy_hash,
+    );
+
+    // Deploy should succeed even though code_hash == approved_hash
+    root.gd_deploy(controller_instance.id(), &dummy_wasm)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap(),
+        dummy_hash,
+    );
+
+    // Approval should be cleared after deploy
     assert_eq!(
         controller_instance.gd_approved_hash().await.unwrap(),
         DeployerState::DEFAULT_HASH,
@@ -598,8 +648,6 @@ async fn test_retry_approve_and_deploy_after_insufficient_deposit(
     #[future(awt)] deployer_env: DeployerEnv,
     unique_index: u32,
 ) {
-    use near_sdk::Gas;
-
     let root = deployer_env.sandbox.root();
     let owner = root
         .generate_subaccount("retry", NearToken::from_near(100))
@@ -625,6 +673,7 @@ async fn test_retry_approve_and_deploy_after_insufficient_deposit(
                     "old_hash": defuse_serde_utils::hex::AsHex(storage.code_hash),
                     "new_hash": defuse_serde_utils::hex::AsHex(new_hash),
                 }))
+                .with_deposit(NearToken::from_yoctonear(1))
                 .with_gas(Gas::from_tgas(10)),
         )
         .function_call(
@@ -649,4 +698,88 @@ async fn test_retry_approve_and_deploy_after_insufficient_deposit(
         .unwrap();
 
     assert_eq!(controller_instance.gd_code_hash().await.unwrap(), new_hash,);
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_post_deploy_fails_when_approval_changed(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    let root = deployer_env.sandbox.root();
+    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+
+    let state = DeployerState::new(root.id().clone()).with_index(unique_index);
+    let controller_instance = root
+        .deploy_instance(deployer_code_hash_id.clone(), state.clone())
+        .await
+        .unwrap();
+
+    // Initial deploy so controller has real code
+    root.gd_approve_and_deploy(controller_instance.id(), state.code_hash, &DEPLOYER_WASM)
+        .await
+        .unwrap();
+
+    let deployer_hash = sha256_array(&*DEPLOYER_WASM);
+    let mt_stub_hash = sha256_array(&*MT_RECEIVER_STUB_WASM);
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap(),
+        deployer_hash,
+    );
+
+    // Approve re-deploying the same DEPLOYER_WASM code. This way, after the deploy
+    // promise succeeds, the controller still runs the deployer code and we can query state.
+    root.gd_approve(controller_instance.id(), deployer_hash, deployer_hash)
+        .await
+        .unwrap();
+
+    // Batch transaction:
+    //   Action 1: gd_deploy(DEPLOYER_WASM) — passes approved_hash check, creates deploy+callback
+    //   Action 2: gd_approve(deployer_hash, mt_stub_hash) — changes approved_hash to mt_stub_hash
+    //
+    // In NEAR, batch actions execute sequentially in the same receipt, but promise receipts
+    // from action 1 execute in later blocks — so action 2's state change is visible to the
+    // callback. The callback sees approved_hash == mt_stub_hash != deployer_hash and panics.
+    let result = root
+        .tx(controller_instance.id())
+        .function_call(
+            FnCallBuilder::new("gd_deploy")
+                .borsh_args(&(&*DEPLOYER_WASM))
+                .with_deposit(NearToken::from_near(50))
+                .with_gas(Gas::from_tgas(140)),
+        )
+        .function_call(
+            FnCallBuilder::new("gd_approve")
+                .json_args(near_sdk::serde_json::json!({
+                    "old_hash": defuse_serde_utils::hex::AsHex(deployer_hash),
+                    "new_hash": defuse_serde_utils::hex::AsHex(mt_stub_hash),
+                }))
+                .with_deposit(NearToken::from_yoctonear(1))
+                .with_gas(Gas::from_tgas(10)),
+        )
+        .exec_transaction()
+        .await
+        .unwrap();
+
+    // The callback (gd_post_deploy) should have failed because approved_hash was changed
+    // by the second action in the batch before the callback executed
+    assert!(
+        result
+            .outcomes()
+            .iter()
+            .any(|o| (*o).clone().into_result().is_err()),
+        "gd_post_deploy callback should have failed"
+    );
+
+    // code_hash should be unchanged — the callback was rejected so state was not updated
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap(),
+        deployer_hash,
+    );
+
+    // approved_hash should be mt_stub_hash (set by gd_approve in action 2)
+    assert_eq!(
+        controller_instance.gd_approved_hash().await.unwrap(),
+        mt_stub_hash,
+    );
 }

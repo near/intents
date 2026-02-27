@@ -14,7 +14,8 @@ use near_sdk::{
 #[ext_contract(ext_global_deployer)]
 pub trait GlobalDeployer {
     /// Approves a future deployment by setting the expected new code hash.
-    /// Owner-only. Verifies `old_hash` matches current `code_hash`.
+    /// If an approved hash was already set, it will be replaced.
+    /// Owner-only. Requires 1 yoctoNEAR. Verifies `old_hash` matches current `code_hash`.
     /// Emits [`Event::DeploymentApproved`].
     fn gd_approve(&mut self, old_hash: AsHex<[u8; 32]>, new_hash: AsHex<[u8; 32]>);
 
@@ -100,7 +101,7 @@ impl State {
     }
 
     #[must_use]
-    pub const fn with_approved_hash(mut self, hash: [u8; 32]) -> Self {
+    pub const fn pre_approve(mut self, hash: [u8; 32]) -> Self {
         self.approved_hash = hash;
         self
     }

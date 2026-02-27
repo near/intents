@@ -104,10 +104,14 @@ impl DeployerExt for SigningAccount {
         new_hash: [u8; 32],
     ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
-            .function_call(FnCallBuilder::new("gd_approve").json_args(json!({
-                "old_hash": AsHex(old_hash),
-                "new_hash": AsHex(new_hash),
-            })))
+            .function_call(
+                FnCallBuilder::new("gd_approve")
+                    .json_args(json!({
+                        "old_hash": AsHex(old_hash),
+                        "new_hash": AsHex(new_hash),
+                    }))
+                    .with_deposit(NearToken::from_yoctonear(1)),
+            )
             .await
     }
 
@@ -126,6 +130,7 @@ impl DeployerExt for SigningAccount {
                         "old_hash": AsHex(old_hash),
                         "new_hash": AsHex(new_hash),
                     }))
+                    .with_deposit(NearToken::from_yoctonear(1))
                     .with_gas(Gas::from_tgas(10)),
             )
             .function_call(
