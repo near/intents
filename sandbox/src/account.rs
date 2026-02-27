@@ -212,45 +212,28 @@ impl SigningAccount {
             .collect::<Vec<_>>()
     }
 
-    async fn add_keys_to_signer_pool(
-        &self,
-        tx: TxBuilder,
-        pks: impl IntoIterator<Item = SecretKey>,
-    ) -> Result<()> {
-        let pks: Vec<_> = pks.into_iter().collect();
-
-        pks.iter()
-            .map(SecretKey::public_key)
-            .fold(tx, TxBuilder::add_full_access_key)
-            .await?;
-
-        for secret_key in pks {
-            self.signer.add_secret_key_to_pool(secret_key).await?;
-        }
-
-        Ok(())
-    }
-
-    pub async fn extend_signer(&self, pk_num: usize) -> Result<()> {
-        let pks = Self::generate_keys(pk_num);
-
-        self.add_keys_to_signer_pool(self.tx(self.id()), pks).await
-    }
-
     #[instrument(skip_all, fields(name = name.as_ref()))]
     pub async fn generate_subaccount_highload(
         &self,
         name: impl AsRef<str>,
-        pk_num: usize,
+        concurrency_limit: usize,
         balance: impl Into<Option<NearToken>>,
     ) -> anyhow::Result<Self> {
         let subaccount = self.sub_account(name)?;
-        let pks = Self::generate_keys(pk_num);
+        let pks = Self::generate_keys(concurrency_limit);
 
         let mut tx = self.tx(subaccount.id()).create_account();
         if let Some(balance) = balance.into() {
             tx = tx.transfer(balance);
         }
+
+        let res = pks
+            .iter()
+            .map(SecretKey::public_key)
+            .fold(tx, TxBuilder::add_full_access_key)
+            .await?;
+
+        println!("RES: {:?}", res);
 
         let signer = Self::new(
             subaccount,
@@ -261,7 +244,9 @@ impl SigningAccount {
             )?,
         );
 
-        signer.add_keys_to_signer_pool(tx, pks).await?;
+        for secret_key in pks {
+            self.signer.add_secret_key_to_pool(secret_key).await?;
+        }
 
         Ok(signer)
     }

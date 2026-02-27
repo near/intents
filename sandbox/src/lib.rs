@@ -107,11 +107,14 @@ extern "C" fn cleanup_sandbox() {
     }
 }
 
-pub const ROOT_PK_POOL_SIZE: usize = 10;
+const DEFAULT_CONCURRENCY_LIMIT: usize = 10;
 
 #[fixture]
 #[instrument]
-pub async fn sandbox(#[default(NearToken::from_near(100_000))] amount: NearToken) -> Sandbox {
+pub async fn sandbox(
+    #[default(NearToken::from_near(100_000))] amount: NearToken,
+    #[default(DEFAULT_CONCURRENCY_LIMIT)] concurrency_limit: usize,
+) -> Sandbox {
     const SHARED_ROOT: &AccountIdRef = AccountIdRef::new_or_panic("test");
     static SUB_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
@@ -134,7 +137,7 @@ pub async fn sandbox(#[default(NearToken::from_near(100_000))] amount: NearToken
     let child_root = root_account
         .generate_subaccount_highload(
             SUB_COUNTER.fetch_add(1, Ordering::Relaxed).to_string(),
-            ROOT_PK_POOL_SIZE,
+            concurrency_limit,
             amount,
         )
         .await

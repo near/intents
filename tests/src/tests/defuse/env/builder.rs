@@ -39,6 +39,8 @@ pub struct EnvBuilder {
 
     // Create only unique users (no reusing from persistent state)
     create_unique_users: bool,
+
+    concurrency_limit: usize,
 }
 
 impl EnvBuilder {
@@ -92,6 +94,11 @@ impl EnvBuilder {
         self
     }
 
+    pub const fn concurrency_limit(mut self, limit: usize) -> Self {
+        self.concurrency_limit = limit;
+        self
+    }
+
     async fn deploy_defuse(
         &self,
         root: &SigningAccount,
@@ -138,7 +145,7 @@ impl EnvBuilder {
     }
 
     pub async fn build_env(&mut self, deploy_legacy: bool) -> Env {
-        let sandbox = sandbox(NearToken::from_near(100_000)).await;
+        let sandbox = sandbox(NearToken::from_near(100_000), self.concurrency_limit.min(1)).await;
         let root = sandbox.root();
 
         let poa_factory = deploy_poa_factory(root).await;

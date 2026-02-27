@@ -266,16 +266,18 @@ async fn test_auth_call_state_init_via_execute_intents(
     mut rng: impl Rng,
     #[case] expectation: StateInitExpectation,
 ) {
-    use defuse_sandbox::ROOT_PK_POOL_SIZE;
-
     let (num_keys, expect_success) = match expectation {
         ExpectStateInitSucceedsForZeroBalanceAccount(n) => (n, true),
         ExpectStateInitExceedsZeroBalanceAccountStorageLimit(n) => (n, false),
     };
 
     let num_keys: u8 = num_keys.try_into().unwrap();
+    let concurrency_limit = 10;
 
-    let env = Env::builder().build().await;
+    let env = Env::builder()
+        .concurrency_limit(concurrency_limit)
+        .build()
+        .await;
     env.root()
         .deploy_global_contract(
             MT_RECEIVER_STUB_WASM.clone(),
@@ -341,7 +343,7 @@ async fn test_auth_call_state_init_via_execute_intents(
             });
 
     let results: Vec<bool> = stream::iter(futures)
-        .buffer_unordered(ROOT_PK_POOL_SIZE)
+        .buffer_unordered(concurrency_limit)
         .collect()
         .await;
     let success = results.contains(&true);
@@ -376,8 +378,6 @@ async fn test_auth_call_state_init_via_do_auth_call(
     mut rng: impl Rng,
     #[case] expectation: StateInitExpectation,
 ) {
-    use defuse_sandbox::ROOT_PK_POOL_SIZE;
-
     // NOTE: when do_auth_call is scheduled as callback to withdraw (because of
     // AuthCall::storage_deposit > 0) it needs to check status of withdrawal. We can't trigger
     // it in this case so we need to subtract gas for promise read (it's around 0.1Tgas) with
@@ -390,8 +390,13 @@ async fn test_auth_call_state_init_via_do_auth_call(
     };
 
     let num_keys: u8 = num_keys.try_into().unwrap();
+    let concurrency_limit = 10;
 
-    let env = Env::builder().build().await;
+    let env = Env::builder()
+        .concurrency_limit(concurrency_limit)
+        .build()
+        .await;
+
     env.root()
         .deploy_global_contract(
             MT_RECEIVER_STUB_WASM.clone(),
@@ -460,7 +465,7 @@ async fn test_auth_call_state_init_via_do_auth_call(
         });
 
     let results: Vec<bool> = stream::iter(futures)
-        .buffer_unordered(ROOT_PK_POOL_SIZE)
+        .buffer_unordered(concurrency_limit)
         .collect()
         .await;
     let success = results.contains(&true);
