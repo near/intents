@@ -783,3 +783,75 @@ async fn test_post_deploy_fails_when_approval_changed(
         mt_stub_hash,
     );
 }
+
+#[rstest]
+#[tokio::test]
+async fn test_deploy_with_zero_deposit_and_prefunded_account(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    let root = deployer_env.sandbox.root();
+    let owner = root
+        .generate_subaccount("prefund", NearToken::from_near(100))
+        .await
+        .unwrap();
+
+    let deployer_code_hash_id = deployer_env.deployer_global_id.clone();
+    let storage = DeployerState::new(owner.id().clone()).with_index(unique_index);
+
+    let controller_instance = root
+        .deploy_instance(deployer_code_hash_id.clone(), storage.clone())
+        .await
+        .unwrap();
+
+    // Instance starts with 0 balance
+    assert_eq!(
+        controller_instance.view().await.unwrap().amount,
+        NearToken::from_near(0)
+    );
+
+    // Pre-fund the deterministic account so it has enough for storage
+    root.tx(controller_instance.id())
+        .transfer(NearToken::from_near(50))
+        .await
+        .unwrap();
+
+    assert_eq!(
+        controller_instance.view().await.unwrap().amount,
+        NearToken::from_near(50)
+    );
+
+    // Owner approves the new code hash
+    owner
+        .gd_approve(
+            controller_instance.id(),
+            storage.code_hash,
+            sha256_array(&*DEPLOYER_WASM),
+        )
+        .await
+        .unwrap();
+
+    // Deploy with zero deposit — account is pre-funded
+    owner
+        .tx(controller_instance.id())
+        .function_call(
+            FnCallBuilder::new("gd_deploy")
+                .borsh_args(&(&*DEPLOYER_WASM))
+                .with_deposit(NearToken::from_yoctonear(0)),
+        )
+        .await
+        .unwrap();
+
+    // Verify deployment succeeded
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap(),
+        sha256_array(&*DEPLOYER_WASM),
+    );
+
+    // Verify the controller instance balance is reasonable (pre-funded minus storage costs)
+    let final_balance = controller_instance.view().await.unwrap().amount;
+    assert!(
+        final_balance < NearToken::from_near(50),
+        "some pre-funded balance should have been used for storage, got {final_balance:?}"
+    );
+}

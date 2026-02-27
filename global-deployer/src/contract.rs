@@ -6,7 +6,7 @@ use near_sdk::{
 use crate::{
     Event, GlobalDeployer, State,
     error::{
-        ERR_INSUFFICIENT_DEPOSIT, ERR_NEW_CODE_HASH_MISMATCH, ERR_SELF_TRANSFER, ERR_UNAUTHORIZED,
+        ERR_NEW_CODE_HASH_MISMATCH, ERR_SELF_TRANSFER, ERR_UNAUTHORIZED,
         ERR_WRONG_CODE_HASH,
     },
 };
@@ -39,8 +39,6 @@ impl GlobalDeployer for Contract {
 
     #[payable]
     fn gd_deploy(&mut self, #[serializer(borsh)] new_code: Vec<u8>) -> Promise {
-        require!(!env::attached_deposit().is_zero(), ERR_INSUFFICIENT_DEPOSIT);
-
         let old_hash = self.0.code_hash;
         let new_hash = env::sha256_array(&new_code);
         require!(new_hash == self.0.approved_hash, ERR_NEW_CODE_HASH_MISMATCH);
