@@ -134,10 +134,11 @@ impl Contract {
         self.0.code_hash == *hash
     }
 
+    fn is_owner(&self) -> bool {
+        env::predecessor_account_id() == self.0.owner_id
+    }
+
     fn require_owner(&self) {
-        require!(
-            env::predecessor_account_id() == self.0.owner_id,
-            ERR_UNAUTHORIZED
-        );
+        require!(self.is_owner(), ERR_UNAUTHORIZED);
     }
 }
