@@ -43,10 +43,14 @@ build-%:
 ifndef REPRODUCIBLE
 
 	@$(VAR_VALIDATION) && \
-	BUILD_CMD=$$(cargo metadata --format-version=1 | jq -r '$(METADATA_FILTER) | $(VARIANT_FILTER) | join(" ")'); \
+	BUILD_CMD=$$(cargo metadata --format-version=1 | \
+	jq -r '$(METADATA_FILTER) | $(VARIANT_FILTER) | join(" ")'); \
 	$$BUILD_CMD --manifest-path=$(MANIFEST_PATH) --out-dir=$(DEFUSE_OUT_DIR)
 else
-	cargo near build reproducible-wasm --manifest-path=$(MANIFEST_PATH) --out-dir=$(DEFUSE_OUT_DIR) $(REPRO_VARIANT)
+	cargo near build reproducible-wasm \
+	 --manifest-path=$(MANIFEST_PATH) \
+	 --out-dir=$(DEFUSE_OUT_DIR) \
+	$(if $(VARIANT),--variant=$(VARIANT))
 endif
 
 
