@@ -3,19 +3,28 @@ DEFUSE_OUT_DIR ?= $(ROOT_DIR)res
 
 .DEFAULT_GOAL := build-all 
 
-.PHONY: build-defuse \
-		build-defuse-imt \
-		build-poa-factory \
-		build-poa-token \
-		build-poa-token-no-registration \
-		build-escrow-swap \
-		build-global-deployer \
-		build-multi-token-receiver-stub \
+.PHONY: defuse \
+		defuse-imt \
+		poa-factory \
+		poa-token \
+		poa-token-no-registration \
+		escrow-swap \
+		global-deployer \
+		multi-token-receiver-stub \
 		build-all \
 		sha256 \
 		clean-out-dir \
 		clean \
 		test
+
+defuse: build-defuse
+defuse-imt: build-defuse-imt
+poa-factory: build-poa-factory
+poa-token: build-poa-token
+poa-token-no-registration: build-poa-token-no-registration
+escrow-swap: build-escrow-swap
+global-deployer: build-global-deployer
+multi-token-receiver-stub: build-multi-token-receiver-stub
 
 # NOTE: Build defuse with imt feature by default
 build-all: \
@@ -33,8 +42,8 @@ DEFAULT_VARIANT_FILTER = .container_build_command
 VAR_VALIDATION = [ -n "$(MANIFEST_PATH)" ] && [ -n "$(CRATE_NAME)" ] || { echo "MANIFEST_PATH and CRATE_NAME should be set"; exit 1; }
 
 build-%:
-ifeq ($(REPRODUCIBLE), $(filter $(REPRODUCIBLE), 1 true))
-
+	@$(VAR_VALIDATION)
+ifneq (,$(filter $(REPRODUCIBLE),1 true))
 	cargo near build reproducible-wasm \
 	 --manifest-path=$(MANIFEST_PATH) \
 	 --out-dir=$(DEFUSE_OUT_DIR) \
@@ -42,9 +51,7 @@ ifeq ($(REPRODUCIBLE), $(filter $(REPRODUCIBLE), 1 true))
 
 else
 
-	@$(VAR_VALIDATION) && \
-	\
-	BUILD_CMD=$$(cargo metadata --format-version=1 | \
+	@BUILD_CMD=$$(cargo metadata --format-version=1 | \
 	jq -r '$(METADATA_FILTER) | \
 	$(if $(VARIANT),$(VARIANT_FILTER), $(DEFAULT_VARIANT_FILTER)) \
 	| join(" ")'); \
@@ -52,7 +59,6 @@ else
 	$$BUILD_CMD --manifest-path=$(MANIFEST_PATH) --out-dir=$(DEFUSE_OUT_DIR)
 
 endif
-
 
 build-defuse build-defuse-imt: CRATE_NAME=defuse
 build-defuse build-defuse-imt: MANIFEST_PATH=defuse/Cargo.toml

@@ -48,7 +48,7 @@ Alternatively, you can build this smart contract yourself.
 Build smart contract separately:
 
 ```shell
-make build-<contract-name>
+make <contract-name>
 ```
 
 Build all contracts at once:
