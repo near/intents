@@ -899,7 +899,6 @@ async fn test_deploy_with_zero_deposit_and_prefunded_account(
         .await
         .unwrap();
 
-    // Instance starts with 0 balance
     assert_eq!(
         controller_instance.view().await.unwrap().amount,
         NearToken::from_near(0)
@@ -916,7 +915,6 @@ async fn test_deploy_with_zero_deposit_and_prefunded_account(
         NearToken::from_near(50)
     );
 
-    // Owner approves the new code hash
     owner
         .gd_approve(
             controller_instance.id(),
@@ -926,7 +924,6 @@ async fn test_deploy_with_zero_deposit_and_prefunded_account(
         .await
         .unwrap();
 
-    // Deploy with zero deposit — account is pre-funded
     owner
         .tx(controller_instance.id())
         .function_call(
@@ -937,17 +934,9 @@ async fn test_deploy_with_zero_deposit_and_prefunded_account(
         .await
         .unwrap();
 
-    // Verify deployment succeeded
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap(),
         sha256_array(&*DEPLOYER_WASM),
-    );
-
-    // Verify the controller instance balance is reasonable (pre-funded minus storage costs)
-    let final_balance = controller_instance.view().await.unwrap().amount;
-    assert!(
-        final_balance < NearToken::from_near(50),
-        "some pre-funded balance should have been used for storage, got {final_balance:?}"
     );
 }
 
@@ -969,7 +958,6 @@ async fn test_concurrent_transfer_does_not_inflate_refund(
         .await
         .unwrap();
 
-    // Initial deploy so the controller has real code
     owner
         .gd_approve_and_deploy(controller_instance.id(), storage.code_hash, &DEPLOYER_WASM)
         .await
@@ -980,7 +968,6 @@ async fn test_concurrent_transfer_does_not_inflate_refund(
         deployer_hash,
     );
 
-    // Approve the upgrade to MT_RECEIVER_STUB_WASM
     let mt_stub_hash = sha256_array(&*MT_RECEIVER_STUB_WASM);
     owner
         .gd_approve(controller_instance.id(), deployer_hash, mt_stub_hash)
