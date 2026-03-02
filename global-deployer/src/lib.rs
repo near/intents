@@ -43,13 +43,19 @@ pub trait GlobalDeployer {
 
 #[serde_as(crate = "near_sdk::serde_with")]
 #[near(event_json(standard = "global-deployer"))]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Event<'a> {
+    #[event_version("1.0.0")]
+    Approve {
+        #[serde_as(as = "Hex")]
+        code_hash: [u8; 32],
+        reason: Reason<'a>,
+    },
+
     #[event_version("1.0.0")]
     Deploy {
         #[serde_as(as = "Hex")]
-        old_hash: [u8; 32],
-        #[serde_as(as = "Hex")]
-        new_hash: [u8; 32],
+        code_hash: [u8; 32],
     },
 
     #[event_version("1.0.0")]
@@ -58,13 +64,14 @@ pub enum Event<'a> {
         new_owner_id: Cow<'a, AccountIdRef>,
     },
 
-    #[event_version("1.0.0")]
-    DeploymentApproved {
-        #[serde_as(as = "Hex")]
-        old_hash: [u8; 32],
-        #[serde_as(as = "Hex")]
-        new_hash: [u8; 32],
-    },
+}
+
+#[near(serializers = [json])]
+#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Reason<'a> {
+    Deploy(#[serde_as(as = "Hex")] [u8; 32]),
+    By(Cow<'a, AccountIdRef>),
 }
 
 #[near(serializers = [borsh, json])]
