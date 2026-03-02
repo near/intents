@@ -3,6 +3,7 @@ mod deploy_escrow_swap;
 
 use std::future::IntoFuture;
 use std::sync::atomic::{AtomicU32, Ordering};
+use std::time::Duration;
 
 use defuse_global_deployer::{
     Event, Reason, State as DeployerState,
@@ -1031,6 +1032,8 @@ async fn test_concurrent_transfer_does_not_inflate_refund(
             .transfer(transfer_amount)
             .into_future()
     });
+
+    tokio::time::sleep(Duration::from_millis(50)).await;
     join_all(transfer_futs).await;
 
     deploy_handle.await.unwrap();

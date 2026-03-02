@@ -40,9 +40,9 @@ impl GlobalDeployer for Contract {
     }
 
     #[payable]
-    fn gd_deploy(&mut self, #[serializer(borsh)] new_code: Vec<u8>) -> Promise {
-        let new_hash = env::sha256_array(&new_code);
-        require!(self.is_approved(&new_hash), ERR_NEW_CODE_HASH_MISMATCH);
+    fn gd_deploy(&mut self, #[serializer(borsh)] code: Vec<u8>) -> Promise {
+        let code_hash = env::sha256_array(&code);
+        require!(self.is_approved(&code_hash), ERR_NEW_CODE_HASH_MISMATCH);
         let initial_balance = env::account_balance().saturating_sub(env::attached_deposit());
 
         // On receipt failure, refund goes to the receipt's predecessor — which for a
@@ -52,11 +52,11 @@ impl GlobalDeployer for Contract {
             Promise::new(env::current_account_id())
                 .refund_to(env::refund_to_account_id())
                 .transfer(env::attached_deposit())
-                .deploy_global_contract_by_account_id(new_code),
+                .deploy_global_contract_by_account_id(code),
         )
         .with_static_gas(GD_POST_DEPLOY_MIN_GAS)
         .with_unused_gas_weight(1)
-        .gd_post_deploy(new_hash.into(), initial_balance, env::attached_deposit())
+        .gd_post_deploy(code_hash.into(), initial_balance, env::attached_deposit())
     }
 
     #[payable]
@@ -88,14 +88,14 @@ impl Contract {
     #[private]
     pub fn gd_post_deploy(
         &mut self,
-        new_hash: AsHex<[u8; 32]>,
+        code_hash: AsHex<[u8; 32]>,
         initial_balance: NearToken,
         deploy_deposit: NearToken,
     ) {
-        let new_hash = new_hash.into_inner();
-        require!(self.is_approved(&new_hash), ERR_NEW_CODE_HASH_MISMATCH);
+        let code_hash = code_hash.into_inner();
+        require!(self.is_approved(&code_hash), ERR_NEW_CODE_HASH_MISMATCH);
 
-        self.on_deploy(new_hash);
+        self.on_deploy(code_hash);
 
         let refund = env::account_balance()
             .saturating_sub(initial_balance)
