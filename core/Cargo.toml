@@ -42,6 +42,7 @@ thiserror.workspace = true
 
 [features]
 abi = [
+    "near-sdk/__abi-generate",
     "defuse-crypto/abi",
     "defuse-deadline/abi",
     "defuse-serde-utils/abi",

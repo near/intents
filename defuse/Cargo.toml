@@ -56,7 +56,7 @@ container_build_command = [
 ]
 
 [features]
-abi = ["defuse-core/abi"]
+abi = ["defuse-core/abi", "near-sdk/__abi-generate"]
 arbitrary = ["defuse-core/arbitrary", "dep:arbitrary",]
 contract = [
     "dep:defuse-bitmap",

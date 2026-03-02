@@ -19,7 +19,11 @@ near-api-types = { workspace = true, optional = true }
 serde_with = { workspace = true, optional = true }
 
 [features]
-abi = ["serde", "serde_with/schemars_0_8"]
+abi = [
+  "near-sdk/__abi-generate",
+  "serde", 
+  "serde_with/schemars_0_8", 
+]
 arbitrary = ["dep:arbitrary"]
 near-api-types = ["dep:near-api-types"]
 serde = ["dep:serde_with"]
