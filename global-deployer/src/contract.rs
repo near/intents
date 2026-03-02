@@ -9,7 +9,7 @@ use crate::{
     error::{ERR_NEW_CODE_HASH_MISMATCH, ERR_SELF_TRANSFER, ERR_UNAUTHORIZED, ERR_WRONG_CODE_HASH},
 };
 
-const GD_AT_DEPLOY_GAS: Gas = Gas::from_tgas(15);
+const GD_POST_DEPLOY_MIN_GAS: Gas = Gas::from_tgas(15);
 
 #[near(
     contract_state(key = State::STATE_KEY),
@@ -54,7 +54,7 @@ impl GlobalDeployer for Contract {
                 .transfer(env::attached_deposit())
                 .deploy_global_contract_by_account_id(new_code),
         )
-        .with_static_gas(GD_AT_DEPLOY_GAS)
+        .with_static_gas(GD_POST_DEPLOY_MIN_GAS)
         .with_unused_gas_weight(1)
         .gd_post_deploy(new_hash.into(), initial_balance, env::attached_deposit())
     }

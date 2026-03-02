@@ -101,7 +101,7 @@ impl State {
     #[must_use]
     pub fn with_index(mut self, index: u32) -> Self {
         let mut hash = [0u8; 32];
-        hash[..4].copy_from_slice(&index.to_le_bytes());
+        hash[32-4..].copy_from_slice(&index.to_be_bytes());
         self.code_hash = hash;
         self
     }
