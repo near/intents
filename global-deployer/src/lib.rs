@@ -16,19 +16,19 @@ pub trait GlobalDeployer {
     /// Approves a future deployment by setting the expected new code hash.
     /// If an approved hash was already set, it will be replaced.
     /// Owner-only. Requires 1 yoctoNEAR. Verifies `old_hash` matches current `code_hash`.
-    /// Emits [`Event::DeploymentApproved`].
+    /// Emits [`Event::Approve`] with [`Reason::By`].
     fn gd_approve(&mut self, old_hash: AsHex<[u8; 32]>, new_hash: AsHex<[u8; 32]>);
 
     /// Deploys WASM code as a global contract on this account.
     /// Permissionless: anyone can call if `sha256(new_code)` matches `approved_hash`.
     /// Requires attached deposit for storage.
-    /// Emits [`Event::Deploy`].
+    /// Emits [`Event::Deploy`] and [`Event::Approve`] with [`Reason::Deploy`].
     fn gd_deploy(&mut self, #[serializer(borsh)] new_code: Vec<u8>) -> Promise;
 
     /// Transfers contract ownership to `receiver_id`.
     /// Resets `approved_hash` to `DEFAULT_HASH`.
     /// Requires 1 yoctoNEAR, owner-only, no self-transfer.
-    /// Emits [`Event::Transfer`].
+    /// Emits [`Event::Transfer`] and [`Event::Approve`] with [`Reason::By`].
     fn gd_transfer_ownership(&mut self, receiver_id: AccountId);
 
     /// Returns the current owner's account ID.
@@ -63,7 +63,6 @@ pub enum Event<'a> {
         old_owner_id: Cow<'a, AccountIdRef>,
         new_owner_id: Cow<'a, AccountIdRef>,
     },
-
 }
 
 #[near(serializers = [json])]

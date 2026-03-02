@@ -5,7 +5,7 @@ use std::future::IntoFuture;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use defuse_global_deployer::{
-    Event, State as DeployerState,
+    Event, Reason, State as DeployerState,
     error::{ERR_NEW_CODE_HASH_MISMATCH, ERR_UNAUTHORIZED},
 };
 use defuse_sandbox::{
@@ -233,7 +233,13 @@ async fn test_transfer_ownership(#[future(awt)] deployer_env: DeployerEnv, uniqu
                 new_owner_id: bob.id().into(),
             }
             .to_nep297_event()
-            .to_event_log()
+            .to_event_log(),
+            Event::Approve {
+                code_hash: DeployerState::DEFAULT_HASH,
+                reason: Reason::By(bob.id().into()),
+            }
+            .to_nep297_event()
+            .to_event_log(),
         ]
     );
 
@@ -268,18 +274,26 @@ async fn test_deploy_event_is_emitted(#[future(awt)] deployer_env: DeployerEnv, 
         .await
         .unwrap();
 
-    // let expected_event = defuse_global_deployer::Event::Deploy {
-    //     old_hash: storage.code_hash,
-    //     new_hash: sha256_array(&*DEPLOYER_WASM),
-    // };
-    // assert!(
-    //     result
-    //         .logs()
-    //         .contains(&expected_event.to_nep297_event().to_event_log().as_str())
-    // );
+    let deployed_hash = sha256_array(&*DEPLOYER_WASM);
+    assert_eq!(
+        result.logs(),
+        vec![
+            Event::Deploy {
+                code_hash: deployed_hash,
+            }
+            .to_nep297_event()
+            .to_event_log(),
+            Event::Approve {
+                code_hash: DeployerState::DEFAULT_HASH,
+                reason: Reason::Deploy(deployed_hash),
+            }
+            .to_nep297_event()
+            .to_event_log(),
+        ]
+    );
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap(),
-        sha256_array(&*DEPLOYER_WASM),
+        deployed_hash,
     );
 }
 
@@ -320,17 +334,28 @@ async fn test_deploy_event_old_hash_after_upgrade(
         .await
         .unwrap();
 
-    // let expected_event = Event::Deploy {
-    //     old_hash: deployer_hash,
-    //     new_hash: mt_stub_hash,
-    // };
-    // assert!(
-    //     result
-    //         .logs()
-    //         .contains(&expected_event.to_nep297_event().to_event_log().as_str()),
-    //     "Deploy event should contain old_hash from the previously deployed code"
-    // );
-    //
+    assert_eq!(
+        result.logs(),
+        vec![
+            Event::Approve {
+                code_hash: mt_stub_hash,
+                reason: Reason::By(root.id().into()),
+            }
+            .to_nep297_event()
+            .to_event_log(),
+            Event::Deploy {
+                code_hash: mt_stub_hash,
+            }
+            .to_nep297_event()
+            .to_event_log(),
+            Event::Approve {
+                code_hash: DeployerState::DEFAULT_HASH,
+                reason: Reason::Deploy(mt_stub_hash),
+            }
+            .to_nep297_event()
+            .to_event_log(),
+        ]
+    );
     assert_eq!(
         controller_instance.gd_code_hash().await.unwrap(),
         mt_stub_hash,

@@ -5,7 +5,7 @@ use near_sdk::{
 };
 
 use crate::{
-    Event, GlobalDeployer, State, Reason,
+    Event, GlobalDeployer, Reason, State,
     error::{ERR_NEW_CODE_HASH_MISMATCH, ERR_SELF_TRANSFER, ERR_UNAUTHORIZED, ERR_WRONG_CODE_HASH},
 };
 
@@ -29,7 +29,10 @@ impl GlobalDeployer for Contract {
             self.is_owner(&env::predecessor_account_id()),
             ERR_UNAUTHORIZED
         );
-        require!(self.is_current_code_hash(&old_hash.into_inner()), ERR_WRONG_CODE_HASH);
+        require!(
+            self.is_current_code_hash(&old_hash.into_inner()),
+            ERR_WRONG_CODE_HASH
+        );
         self.approve(
             new_hash.into_inner(),
             Reason::By(env::predecessor_account_id().into()),
@@ -118,7 +121,6 @@ impl Contract {
     }
 
     fn transfer_ownership(&mut self, new_owner_id: AccountId) {
-
         Event::Transfer {
             old_owner_id: (&self.0.owner_id).into(),
             new_owner_id: (&new_owner_id).into(),
@@ -126,8 +128,10 @@ impl Contract {
         .emit();
 
         self.0.owner_id = new_owner_id;
-        self.approve(State::DEFAULT_HASH, Reason::By(self.0.owner_id.clone().into()));
-
+        self.approve(
+            State::DEFAULT_HASH,
+            Reason::By(self.0.owner_id.clone().into()),
+        );
     }
 
     fn is_approved(&self, hash: &[u8; 32]) -> bool {
