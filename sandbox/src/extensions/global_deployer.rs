@@ -19,7 +19,6 @@ pub trait DeployerExt {
     async fn gd_deploy(
         &self,
         target: &AccountId,
-        old_hash: [u8; 32],
         new_code: &[u8],
     ) -> anyhow::Result<ExecutionSuccess>;
 
@@ -28,13 +27,27 @@ pub trait DeployerExt {
         target: &AccountId,
         new_owner: &AccountId,
     ) -> anyhow::Result<ExecutionSuccess>;
+
+    async fn gd_approve(
+        &self,
+        target: &AccountId,
+        old_hash: [u8; 32],
+        new_hash: [u8; 32],
+    ) -> anyhow::Result<ExecutionSuccess>;
+
+    async fn gd_approve_and_deploy(
+        &self,
+        target: &AccountId,
+        old_hash: [u8; 32],
+        new_code: &[u8],
+    ) -> anyhow::Result<ExecutionSuccess>;
 }
 
 #[allow(async_fn_in_trait)]
 pub trait DeployerViewExt {
     async fn gd_owner_id(&self) -> anyhow::Result<AccountId>;
-    async fn gd_index(&self) -> anyhow::Result<u32>;
     async fn gd_code_hash(&self) -> anyhow::Result<[u8; 32]>;
+    async fn gd_approved_hash(&self) -> anyhow::Result<[u8; 32]>;
 }
 
 impl DeployerExt for SigningAccount {
@@ -59,13 +72,12 @@ impl DeployerExt for SigningAccount {
     async fn gd_deploy(
         &self,
         target: &AccountId,
-        old_hash: [u8; 32],
         new_code: &[u8],
     ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
             .function_call(
                 FnCallBuilder::new("gd_deploy")
-                    .borsh_args(&(old_hash, new_code))
+                    .borsh_args(&new_code)
                     .with_deposit(NearToken::from_near(50)),
             )
             .await
@@ -84,6 +96,51 @@ impl DeployerExt for SigningAccount {
             )
             .await
     }
+
+    async fn gd_approve(
+        &self,
+        target: &AccountId,
+        old_hash: [u8; 32],
+        new_hash: [u8; 32],
+    ) -> anyhow::Result<ExecutionSuccess> {
+        self.tx(target)
+            .function_call(
+                FnCallBuilder::new("gd_approve")
+                    .json_args(json!({
+                        "old_hash": AsHex(old_hash),
+                        "new_hash": AsHex(new_hash),
+                    }))
+                    .with_deposit(NearToken::from_yoctonear(1)),
+            )
+            .await
+    }
+
+    async fn gd_approve_and_deploy(
+        &self,
+        target: &AccountId,
+        old_hash: [u8; 32],
+        new_code: &[u8],
+    ) -> anyhow::Result<ExecutionSuccess> {
+        use near_sdk::Gas;
+        let new_hash = near_sdk::env::sha256_array(new_code);
+        self.tx(target)
+            .function_call(
+                FnCallBuilder::new("gd_approve")
+                    .json_args(json!({
+                        "old_hash": AsHex(old_hash),
+                        "new_hash": AsHex(new_hash),
+                    }))
+                    .with_deposit(NearToken::from_yoctonear(1))
+                    .with_gas(Gas::from_tgas(10)),
+            )
+            .function_call(
+                FnCallBuilder::new("gd_deploy")
+                    .borsh_args(&new_code)
+                    .with_deposit(NearToken::from_near(50))
+                    .with_gas(Gas::from_tgas(290)),
+            )
+            .await
+    }
 }
 
 impl DeployerViewExt for Account {
@@ -91,12 +148,13 @@ impl DeployerViewExt for Account {
         self.call_view_function_json("gd_owner_id", ()).await
     }
 
-    async fn gd_index(&self) -> anyhow::Result<u32> {
-        self.call_view_function_json("gd_index", ()).await
-    }
-
     async fn gd_code_hash(&self) -> anyhow::Result<[u8; 32]> {
         let hash: AsHex<[u8; 32]> = self.call_view_function_json("gd_code_hash", ()).await?;
+        Ok(hash.into_inner())
+    }
+
+    async fn gd_approved_hash(&self) -> anyhow::Result<[u8; 32]> {
+        let hash: AsHex<[u8; 32]> = self.call_view_function_json("gd_approved_hash", ()).await?;
         Ok(hash.into_inner())
     }
 }
