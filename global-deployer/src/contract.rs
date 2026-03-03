@@ -1,17 +1,15 @@
 use defuse_serde_utils::hex::AsHex;
 use near_sdk::{
-    AccountId, Gas, NearToken, PanicOnDefault, Promise, assert_one_yocto, env, near, require,
+    AccountId, AccountIdRef, Gas, NearToken, PanicOnDefault, Promise, assert_one_yocto, env, near,
+    require,
 };
 
 use crate::{
-    Event, GlobalDeployer, State,
-    error::{
-        ERR_INSUFFICIENT_DEPOSIT, ERR_SAME_CODE, ERR_SELF_TRANSFER, ERR_UNAUTHORIZED,
-        ERR_WRONG_CODE_HASH,
-    },
+    Event, GlobalDeployer, Reason, State,
+    error::{ERR_NEW_CODE_HASH_MISMATCH, ERR_SELF_TRANSFER, ERR_UNAUTHORIZED, ERR_WRONG_CODE_HASH},
 };
 
-const GD_AT_DEPLOY_GAS: Gas = Gas::from_tgas(15);
+const GD_POST_DEPLOY_MIN_GAS: Gas = Gas::from_tgas(15);
 
 #[near(
     contract_state(key = State::STATE_KEY),
@@ -25,18 +23,26 @@ pub struct Contract(State);
 #[near]
 impl GlobalDeployer for Contract {
     #[payable]
-    fn gd_deploy(
-        &mut self,
-        #[serializer(borsh)] old_hash: [u8; 32],
-        #[serializer(borsh)] new_code: Vec<u8>,
-    ) -> Promise {
-        require!(!env::attached_deposit().is_zero(), ERR_INSUFFICIENT_DEPOSIT);
-        self.require_owner();
+    fn gd_approve(&mut self, old_hash: AsHex<[u8; 32]>, new_hash: AsHex<[u8; 32]>) {
+        assert_one_yocto();
+        require!(
+            self.is_owner(&env::predecessor_account_id()),
+            ERR_UNAUTHORIZED
+        );
+        require!(
+            self.is_current_code_hash(&old_hash.into_inner()),
+            ERR_WRONG_CODE_HASH
+        );
+        self.approve(
+            new_hash.into_inner(),
+            Reason::By(env::predecessor_account_id().into()),
+        );
+    }
 
-        require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
-        let new_hash = env::sha256_array(&new_code);
-        require!(new_hash != old_hash, ERR_SAME_CODE);
-
+    #[payable]
+    fn gd_deploy(&mut self, #[serializer(borsh)] code: Vec<u8>) -> Promise {
+        let code_hash = env::sha256_array(&code);
+        require!(self.is_approved(&code_hash), ERR_NEW_CODE_HASH_MISMATCH);
         let initial_balance = env::account_balance().saturating_sub(env::attached_deposit());
 
         // On receipt failure, refund goes to the receipt's predecessor — which for a
@@ -46,37 +52,34 @@ impl GlobalDeployer for Contract {
             Promise::new(env::current_account_id())
                 .refund_to(env::refund_to_account_id())
                 .transfer(env::attached_deposit())
-                .deploy_global_contract_by_account_id(new_code),
+                .deploy_global_contract_by_account_id(code),
         )
-        .with_static_gas(GD_AT_DEPLOY_GAS)
-        .with_unused_gas_weight(1) // forward all remaining gas here
-        .gd_post_deploy(old_hash.into(), new_hash.into(), initial_balance)
+        .with_static_gas(GD_POST_DEPLOY_MIN_GAS)
+        .with_unused_gas_weight(1)
+        .gd_post_deploy(code_hash.into(), initial_balance, env::attached_deposit())
     }
 
     #[payable]
     fn gd_transfer_ownership(&mut self, receiver_id: AccountId) {
         assert_one_yocto();
-        self.require_owner();
-
-        require!(self.0.owner_id != receiver_id, ERR_SELF_TRANSFER);
-        Event::Transfer {
-            old_owner_id: (&self.0.owner_id).into(),
-            new_owner_id: (&receiver_id).into(),
-        }
-        .emit();
-        self.0.owner_id = receiver_id;
+        require!(
+            self.is_owner(&env::predecessor_account_id()),
+            ERR_UNAUTHORIZED
+        );
+        require!(!self.is_owner(&receiver_id), ERR_SELF_TRANSFER);
+        self.transfer_ownership(receiver_id);
     }
 
     fn gd_owner_id(&self) -> AccountId {
         self.0.owner_id.clone()
     }
 
-    fn gd_index(&self) -> u32 {
-        self.0.index
-    }
-
     fn gd_code_hash(&self) -> AsHex<[u8; 32]> {
         self.0.code_hash.into()
+    }
+
+    fn gd_approved_hash(&self) -> AsHex<[u8; 32]> {
+        self.0.approved_hash.into()
     }
 }
 
@@ -85,17 +88,18 @@ impl Contract {
     #[private]
     pub fn gd_post_deploy(
         &mut self,
-        old_hash: AsHex<[u8; 32]>,
-        new_hash: AsHex<[u8; 32]>,
+        code_hash: AsHex<[u8; 32]>,
         initial_balance: NearToken,
+        deploy_deposit: NearToken,
     ) {
-        let [old_hash, new_hash] = [old_hash, new_hash].map(AsHex::into_inner);
+        let code_hash = code_hash.into_inner();
+        require!(self.is_approved(&code_hash), ERR_NEW_CODE_HASH_MISMATCH);
 
-        require!(self.0.code_hash == old_hash, ERR_WRONG_CODE_HASH);
-        self.0.code_hash = new_hash;
-        Event::Deploy { old_hash, new_hash }.emit();
+        self.on_deploy(code_hash);
 
-        let refund = env::account_balance().saturating_sub(initial_balance);
+        let refund = env::account_balance()
+            .saturating_sub(initial_balance)
+            .min(deploy_deposit);
         if !refund.is_zero() {
             Promise::new(env::refund_to_account_id())
                 .transfer(refund)
@@ -105,10 +109,40 @@ impl Contract {
 }
 
 impl Contract {
-    fn require_owner(&self) {
-        require!(
-            env::predecessor_account_id() == self.0.owner_id,
-            ERR_UNAUTHORIZED
+    fn approve(&mut self, code_hash: [u8; 32], reason: Reason<'_>) {
+        self.0.approved_hash = code_hash;
+        Event::Approve { code_hash, reason }.emit();
+    }
+
+    fn on_deploy(&mut self, code_hash: [u8; 32]) {
+        self.0.code_hash = code_hash;
+        Event::Deploy { code_hash }.emit();
+        self.approve(State::DEFAULT_HASH, Reason::Deploy(code_hash));
+    }
+
+    fn transfer_ownership(&mut self, new_owner_id: AccountId) {
+        Event::Transfer {
+            old_owner_id: (&self.0.owner_id).into(),
+            new_owner_id: (&new_owner_id).into(),
+        }
+        .emit();
+
+        self.0.owner_id = new_owner_id;
+        self.approve(
+            State::DEFAULT_HASH,
+            Reason::By(self.0.owner_id.clone().into()),
         );
+    }
+
+    fn is_approved(&self, hash: &[u8; 32]) -> bool {
+        self.0.approved_hash == *hash
+    }
+
+    fn is_current_code_hash(&self, hash: &[u8; 32]) -> bool {
+        self.0.code_hash == *hash
+    }
+
+    fn is_owner(&self, account_id: &AccountIdRef) -> bool {
+        account_id == self.0.owner_id
     }
 }
