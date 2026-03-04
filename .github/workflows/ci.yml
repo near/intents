@@ -77,7 +77,8 @@ jobs:
           mkdir -p target res
           echo 'Signature: 8a477f597d28d172789f06886806bc55' | tee target/CACHEDIR.TAG res/CACHEDIR.TAG > /dev/null
       - name: Install Cargo Plugins
-        run: cargo install cargo-near --version 0.17.0 --locked
+        # run: cargo install cargo-near --version 0.17.0 --locked
+        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/download/cargo-near-v0.19.2/cargo-near-installer.sh | sh
       - name: Build
         run: make
       - name: Upload Artifacts
