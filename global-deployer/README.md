@@ -112,6 +112,8 @@ sequenceDiagram
 
 ## Deployment Hierarchy
 
+The examples below use generic "Global Contract 1/2" names. In practice, these can be any global contracts — e.g. Escrow Swap, Oneshot Condvar, etc.
+
 ### How Global Contracts Work
 
 [NEP-591](https://github.com/near/NEPs/blob/master/neps/nep-0591.md) introduces a protocol-level **Global Contract Namespace** — a mapping from identifiers to WASM contract code. Instead of each account storing its own copy of contract code, accounts reference global contracts via `UseGlobalContractAction`. Two deployment modes are supported:
@@ -125,38 +127,53 @@ sequenceDiagram
 2. Instantiate Controller with `StateInit` referencing GD's code hash → deterministic address
 3. Controller calls `gd_approve` + `gd_deploy` of the same GD code under its own account ID
 4. Controller is now a **mutable** GD instance (can upgrade GD itself)
-5. Instantiate Escrow Controller referencing Controller's account ID + unique `code_hash` in `StateInit` (e.g. `0x...01`)
-6. `gd_approve` + `gd_deploy` escrow WASM on that instance
-7. From Escrow Controller, create individual Escrow Swap instances
-8. Repeat for MT Receiver with a different `code_hash` in `StateInit` (e.g. `0x...02`)
+5. Instantiate Global Contract 1 Controller referencing Controller's account ID + unique `code_hash` in `StateInit` (e.g. `0x...01`)
+6. `gd_approve` + `gd_deploy` Global Contract 1 WASM on that instance
+7. From Global Contract 1 Controller, create individual Global Contract 1 instances
+8. Repeat for Global Contract 2 with a different `code_hash` in `StateInit` (e.g. `0x...02`)
 
 ### Hierarchy Diagram
 
 ```mermaid
 %%{init: {"flowchart": {"wrappingWidth": 600}}}%%
 flowchart TD
-    GD["GLOBAL CONTRACT NAMESPACE<br/>CodeHash(0x123..123) => GLOBAL DEPLOYER WASM<br/>GlobalHash(0s..aaa) => GLOBAL DEPLOYER WASM<br/>GlobalAccountId(0s..bbb) => ESCROW SWAP WASM<br/>GlobalAccountId(0s..ccc) => ONESHOT CONDVAR WASM"]
+    GD["GLOBAL CONTRACT NAMESPACE<br/>CodeHash(0x123..123) => GLOBAL DEPLOYER WASM<br/>GlobalHash(0s..aaa) => GLOBAL DEPLOYER WASM<br/>GlobalAccountId(0s..bbb) => GLOBAL CONTRACT 1 WASM<br/>GlobalAccountId(0s..ccc) => GLOBAL CONTRACT 2 WASM"]
 
     C["MUTABLE CONTROLLER · 0s..aaa<br/>ref: CodeHash(0x123..123)<br/>state_init: {<br/>  owner: alice.near,<br/>  code_hash: 0x00..00,<br/>  approved_hash: 0x00..00<br/>}"]
 
-    C --> EC["ESCROW CONTROLLER · 0s..bbb<br/>ref: GlobalAccountId(0s..aaa)<br/>state_init: {<br/>  owner: alice.near,<br/>  code_hash: 0x00..01,<br/>  approved_hash: 0x00..00<br/>}"]
+    C --> GC1C["GLOBAL CONTRACT 1 CONTROLLER · 0s..bbb<br/>ref: GlobalAccountId(0s..aaa)<br/>state_init: {<br/>  owner: alice.near,<br/>  code_hash: 0x00..01,<br/>  approved_hash: 0x00..00<br/>}"]
 
-    C --> MTC["ONESHOT CONDVAR CONTROLLER · 0s..ccc<br/>ref: GlobalAccountId(0s..aaa)<br/>state_init: {<br/>  owner: alice.near,<br/>  code_hash: 0x00..02,<br/>  approved_hash: 0x00..00<br/>}"]
+    C --> GC2C["GLOBAL CONTRACT 2 CONTROLLER · 0s..ccc<br/>ref: GlobalAccountId(0s..aaa)<br/>state_init: {<br/>  owner: alice.near,<br/>  code_hash: 0x00..02,<br/>  approved_hash: 0x00..00<br/>}"]
 
-    EC --> ES1["ESCROW SWAP 1 · 0s..ddd<br/>ref: GlobalAccountId(0s..bbb)<br/>state_init: {<br/>  owner: alice.near,<br/>  code_hash: 0x00..01,<br/>  approved_hash: 0x00..00<br/>}"]
+    GC1C --> GC1I1["GLOBAL CONTRACT 1 · INSTANCE 1 · 0s..ddd<br/>ref: GlobalAccountId(0s..bbb)<br/>state_init: {<br/>  owner: alice.near,<br/>  code_hash: 0x00..01,<br/>  approved_hash: 0x00..00<br/>}"]
 
-    EC --> ES2["ESCROW SWAP 2 · 0s..eee<br/>ref: GlobalAccountId(0s..bbb)<br/>state_init: {<br/>  owner: alice.near,<br/>  code_hash: 0x00..02,<br/>  approved_hash: 0x00..00<br/>}"]
+    GC1C --> GC1I2["GLOBAL CONTRACT 1 · INSTANCE 2 · 0s..eee<br/>ref: GlobalAccountId(0s..bbb)<br/>state_init: {<br/>  owner: alice.near,<br/>  code_hash: 0x00..02,<br/>  approved_hash: 0x00..00<br/>}"]
 
-    MTC --> MT1["ONESHOT CONDVAR 1 · 0s..fff<br/>ref: GlobalAccountId(0s..ccc)<br/>state_init: {<br/>  owner: alice.near,<br/>  code_hash: 0x00..01,<br/>  approved_hash: 0x00..00<br/>}"]
+    GC2C --> GC2I1["GLOBAL CONTRACT 2 · INSTANCE 1 · 0s..fff<br/>ref: GlobalAccountId(0s..ccc)<br/>state_init: {<br/>  owner: alice.near,<br/>  code_hash: 0x00..01,<br/>  approved_hash: 0x00..00<br/>}"]
 
     style GD fill:#e0e0e0,stroke:#999,color:#000
     style C fill:#bbdefb,stroke:#1976d2,color:#000
-    style EC fill:#c8e6c9,stroke:#388e3c,color:#000
-    style MTC fill:#ffe0b2,stroke:#f57c00,color:#000
-    style ES1 fill:#c8e6c9,stroke:#388e3c,color:#000
-    style ES2 fill:#c8e6c9,stroke:#388e3c,color:#000
-    style MT1 fill:#ffe0b2,stroke:#f57c00,color:#000
+    style GC1C fill:#c8e6c9,stroke:#388e3c,color:#000
+    style GC2C fill:#ffe0b2,stroke:#f57c00,color:#000
+    style GC1I1 fill:#c8e6c9,stroke:#388e3c,color:#000
+    style GC1I2 fill:#c8e6c9,stroke:#388e3c,color:#000
+    style GC2I1 fill:#ffe0b2,stroke:#f57c00,color:#000
 ```
+
+### Deployed Instances
+
+The Global Deployer WASM is built from the [global-deployer/v0.1.0](https://github.com/near/intents/releases/tag/global-deployer%2Fv0.1.0) release. The code hash is the same on both networks:
+
+**Code hash:** `FaJXVgS82fXhrvvC8yXV4ibHujW63KvL7dVvJiZ9naga`
+
+| Network | Type | Account / Hash | Tx |
+|---------|------|----------------|-----|
+| Testnet | Immutable (by hash) | `FaJXVgS82fXhrvvC8yXV4ibHujW63KvL7dVvJiZ9naga` | [QHkBk5z...](https://testnet.nearblocks.io/txns/QHkBk5zqqkxoxfTSpiGL4g489VhmAKHqMba19YBoRTB) |
+| Testnet | Mutable (by account ID) | `0s49b604786a4a44077ef5a450ddf59e90ae3d95d0` | [HQdgzmp...](https://testnet.nearblocks.io/txns/HQdgzmpU6c3Vy25DPg1eTAgrLNuuV9BF8xuQXCkYuCMx) |
+| Mainnet | Immutable (by hash) | `FaJXVgS82fXhrvvC8yXV4ibHujW63KvL7dVvJiZ9naga` | [Bi3gzto...](https://nearblocks.io/txns/Bi3gztotMwA13hBocCMeUk8wYwS6oHbxh2t8YK7Ahx1s) |
+| Mainnet | Mutable (by account ID) | `0s7d8d547e78731dfc2a51fcf695d5a0ad806fb308` | [HSAnkje...](https://nearblocks.io/txns/HSAnkjeAu1c7NioP2XWnTSVhoBm7FZdv7ER5XA3p5gS7) |
+
+The mutable instances were created and deployed in a single transaction — `StateInit` pre-sets `approved_hash` to the GD code hash, so `gd_deploy` can be called immediately without owner action.
 
 ### Multi-Stage Deployment
 
