@@ -1,5 +1,3 @@
-use std::collections::{HashMap, HashSet};
-
 use defuse_core::{
     accounts::AccountEvent, crypto::PublicKey, engine::StateView, events::DefuseEvent,
 };
@@ -11,6 +9,7 @@ use crate::{
     accounts::ForceAccountManager,
     contract::{Contract, ContractExt, Role},
 };
+use std::collections::{HashMap, HashSet};
 
 #[near]
 impl ForceAccountManager for Contract {

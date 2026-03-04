@@ -56,6 +56,10 @@ pub enum Role {
 
     #[cfg(feature = "far")]
     UnrestrictedAccountManager,
+
+    #[cfg(not(feature = "far"))]
+    #[doc(hidden)]
+    __UnrestrictedAccountManager,
 }
 
 #[access_control(role_type(Role))]
