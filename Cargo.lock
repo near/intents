@@ -998,7 +998,9 @@ name = "defuse-global-deployer"
 version = "0.1.0"
 dependencies = [
  "defuse-serde-utils",
+ "hex",
  "near-sdk",
+ "sha2 0.10.9",
 ]
 
 [[package]]
