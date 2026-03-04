@@ -26,11 +26,12 @@ escrow-swap: build-escrow-swap
 global-deployer: build-global-deployer
 multi-token-receiver-stub: build-multi-token-receiver-stub
 
-# NOTE: Build defuse with imt feature by default
 build-all: \
+	build-defuse \
 	build-defuse-imt \
 	build-poa-factory \
 	build-poa-token \
+	build-poa-token-no-registration \
 	build-escrow-swap \
 	build-global-deployer \
 	build-multi-token-receiver-stub
@@ -46,7 +47,7 @@ build-%:
 ifneq (,$(filter $(REPRODUCIBLE),1 true))
 	cargo near build reproducible-wasm \
 	 --manifest-path=$(MANIFEST_PATH) \
-	 --out-dir=$(DEFUSE_OUT_DIR) \
+	 --out-dir="$(DEFUSE_OUT_DIR)/$(CONTRACT_OUT_DIR)" \
 	$(if $(VARIANT),--variant=$(VARIANT))
 
 else
@@ -56,12 +57,14 @@ else
 	$(if $(VARIANT),$(VARIANT_FILTER), $(DEFAULT_VARIANT_FILTER)) \
 	| join(" ")'); \
 	\
-	$$BUILD_CMD --manifest-path=$(MANIFEST_PATH) --out-dir=$(DEFUSE_OUT_DIR)
+	$$BUILD_CMD --manifest-path=$(MANIFEST_PATH) --out-dir="$(DEFUSE_OUT_DIR)/$(CONTRACT_OUT_DIR)"
 
 endif
 
 build-defuse build-defuse-imt: CRATE_NAME=defuse
 build-defuse build-defuse-imt: MANIFEST_PATH=defuse/Cargo.toml
+
+build-defuse-imt: CONTRACT_OUT_DIR=imt
 build-defuse-imt: VARIANT=imt
 
 # ============================================================================
@@ -71,6 +74,8 @@ build-poa-factory: MANIFEST_PATH=poa-factory/Cargo.toml
 
 build-poa-token build-poa-token-no-registration: CRATE_NAME=defuse-poa-token
 build-poa-token build-poa-token-no-registration: MANIFEST_PATH=poa-token/Cargo.toml
+
+build-poa-token-no-registration: CONTRACT_OUT_DIR=no-registration
 build-poa-token-no-registration: VARIANT=no_registration
 
 # ============================================================================
