@@ -14,7 +14,7 @@ workspace = true
 [features]
 abi = [
     "defuse-serde-utils/abi",
-    "near-sdk/__abi-generate"
+    "near-sdk/abi"
 ]
 contract = []
 

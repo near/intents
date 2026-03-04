@@ -39,7 +39,7 @@ serde_json.workspace = true
 default = ["auth-call"]
 abi = [
     "defuse/abi",
-    "near-sdk/__abi-generate"
+    "near-sdk/abi"
 ]
 
 auth-call = ["dep:defuse-auth-call"]

@@ -20,7 +20,7 @@ serde_with = { workspace = true, optional = true }
 
 [features]
 abi = [
-  "near-sdk/__abi-generate",
+  "near-sdk/abi",
   "serde", 
   "serde_with/schemars_0_8", 
 ]
