@@ -67,6 +67,7 @@ contract = [
     "dep:bitflags",
 ]
 imt = ["defuse-core/imt"]
+far = ["imt"]
 
 [dev-dependencies]
 defuse-core = { workspace = true, features = ["arbitrary"] }

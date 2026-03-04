@@ -18,11 +18,18 @@ impl ForceAccountManager for Contract {
         StateView::is_account_locked(self, account_id)
     }
 
-    #[access_control_any(roles(
-        Role::DAO,
-        Role::UnrestrictedAccountLocker,
-        Role::UnrestrictedAccountManager
-    ))]
+    #[cfg_attr(
+        not(feature = "far"),
+        access_control_any(roles(Role::DAO, Role::UnrestrictedAccountLocker))
+    )]
+    #[cfg_attr(
+        feature = "far",
+        access_control_any(roles(
+            Role::DAO,
+            Role::UnrestrictedAccountLocker,
+            Role::UnrestrictedAccountManager
+        ))
+    )]
     #[payable]
     fn force_lock_account(&mut self, account_id: AccountId) -> bool {
         assert_one_yocto();
@@ -37,11 +44,18 @@ impl ForceAccountManager for Contract {
         locked
     }
 
-    #[access_control_any(roles(
-        Role::DAO,
-        Role::UnrestrictedAccountUnlocker,
-        Role::UnrestrictedAccountManager
-    ))]
+    #[cfg_attr(
+        not(feature = "far"),
+        access_control_any(roles(Role::DAO, Role::UnrestrictedAccountUnlocker))
+    )]
+    #[cfg_attr(
+        feature = "far",
+        access_control_any(roles(
+            Role::DAO,
+            Role::UnrestrictedAccountUnlocker,
+            Role::UnrestrictedAccountManager
+        ))
+    )]
     #[payable]
     fn force_unlock_account(&mut self, account_id: &AccountId) -> bool {
         assert_one_yocto();
@@ -56,11 +70,18 @@ impl ForceAccountManager for Contract {
         unlocked
     }
 
-    #[access_control_any(roles(
-        Role::DAO,
-        Role::UnrestrictedAccountLocker,
-        Role::UnrestrictedAccountManager
-    ))]
+    #[cfg_attr(
+        not(feature = "far"),
+        access_control_any(roles(Role::DAO, Role::UnrestrictedAccountLocker))
+    )]
+    #[cfg_attr(
+        feature = "far",
+        access_control_any(roles(
+            Role::DAO,
+            Role::UnrestrictedAccountLocker,
+            Role::UnrestrictedAccountManager
+        ))
+    )]
     #[payable]
     fn force_disable_auth_by_predecessor_ids(&mut self, account_ids: Vec<AccountId>) {
         assert_one_yocto();
@@ -71,11 +92,18 @@ impl ForceAccountManager for Contract {
         }
     }
 
-    #[access_control_any(roles(
-        Role::DAO,
-        Role::UnrestrictedAccountUnlocker,
-        Role::UnrestrictedAccountManager
-    ))]
+    #[cfg_attr(
+        not(feature = "far"),
+        access_control_any(roles(Role::DAO, Role::UnrestrictedAccountUnlocker))
+    )]
+    #[cfg_attr(
+        feature = "far",
+        access_control_any(roles(
+            Role::DAO,
+            Role::UnrestrictedAccountUnlocker,
+            Role::UnrestrictedAccountManager
+        ))
+    )]
     #[payable]
     fn force_enable_auth_by_predecessor_ids(&mut self, account_ids: Vec<AccountId>) {
         assert_one_yocto();
@@ -86,6 +114,7 @@ impl ForceAccountManager for Contract {
         }
     }
 
+    #[cfg(feature = "far")]
     #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountManager))]
     #[payable]
     fn force_add_public_keys(&mut self, public_keys: HashMap<AccountId, HashSet<PublicKey>>) {
@@ -98,6 +127,7 @@ impl ForceAccountManager for Contract {
         }
     }
 
+    #[cfg(feature = "far")]
     #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountManager))]
     #[payable]
     fn force_remove_public_keys(&mut self, public_keys: HashMap<AccountId, HashSet<PublicKey>>) {
