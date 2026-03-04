@@ -18,7 +18,7 @@ container_build_command = [
     "build",
     "non-reproducible-wasm",
     "--locked",
-    "--features=abi",
+    "--abi-features=abi",
     "--no-embed-abi",
 ]
 
@@ -37,5 +37,9 @@ serde_json.workspace = true
 
 [features]
 default = ["auth-call"]
-abi = ["defuse/abi"]
+abi = [
+    "defuse/abi",
+    "near-sdk/abi"
+]
+
 auth-call = ["dep:defuse-auth-call"]
