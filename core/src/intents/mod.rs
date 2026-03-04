@@ -186,5 +186,5 @@ impl<T> From<T> for MaybeIntentEvent<T> {
 }
 
 // fix JsonSchema macro bug
-#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+#[cfg(feature = "abi")]
 use near_sdk::serde;

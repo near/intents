@@ -1,6 +1,6 @@
 [package]
 name = "defuse-global-deployer"
-version.workspace = true
+version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
 repository.workspace = true
@@ -12,7 +12,10 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [features]
-abi = ["defuse-serde-utils/abi"]
+abi = [
+    "defuse-serde-utils/abi",
+    "near-sdk/abi"
+]
 contract = []
 
 [dependencies]
@@ -32,6 +35,7 @@ container_build_command = [
     "build",
     "non-reproducible-wasm",
     "--locked",
-    "--features=contract,abi",
+    "--features=contract",
+    "--abi-features=abi,contract",
     "--no-embed-abi",
 ]
