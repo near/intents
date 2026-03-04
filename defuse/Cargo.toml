@@ -50,8 +50,8 @@ container_build_command = [
     "build",
     "non-reproducible-wasm",
     "--locked",
-    "--features=contract,imt",
-    "--abi-features=abi,contract,imt",
+    "--features=contract,far",
+    "--abi-features=abi,contract,far",
     "--no-embed-abi",
 ]
 
