@@ -7,16 +7,13 @@ use crate::{
     accounts::ForceAccountManager,
     contract::{Contract, ContractExt, Role},
 };
-use std::collections::HashSet;
 
-// #[cfg(feature = "far")]
-
-// #[cfg(any(feature = "far", feature = "abi"))]
-// #[cfg(feature = "far")]
+#[cfg(feature = "far")]
+use crate::accounts::ForcePublicKeyManager;
+#[cfg(feature = "far")]
 use defuse_core::crypto::PublicKey;
-// #[cfg(any(feature = "far", feature = "abi"))]
-// #[cfg(feature = "far")]
-use std::collections::HashMap;
+#[cfg(feature = "far")]
+use std::collections::{HashMap, HashSet};
 
 #[near]
 impl ForceAccountManager for Contract {
@@ -24,18 +21,11 @@ impl ForceAccountManager for Contract {
         StateView::is_account_locked(self, account_id)
     }
 
-    #[cfg_attr(
-        not(feature = "far"),
-        access_control_any(roles(Role::DAO, Role::UnrestrictedAccountLocker))
-    )]
-    #[cfg_attr(
-        feature = "far",
-        access_control_any(roles(
-            Role::DAO,
-            Role::UnrestrictedAccountLocker,
-            Role::UnrestrictedAccountManager
-        ))
-    )]
+    #[access_control_any(roles(
+        Role::DAO,
+        Role::UnrestrictedAccountLocker,
+        Role::UnrestrictedAccountManager
+    ))]
     #[payable]
     fn force_lock_account(&mut self, account_id: AccountId) -> bool {
         assert_one_yocto();
@@ -50,18 +40,11 @@ impl ForceAccountManager for Contract {
         locked
     }
 
-    #[cfg_attr(
-        not(feature = "far"),
-        access_control_any(roles(Role::DAO, Role::UnrestrictedAccountUnlocker))
-    )]
-    #[cfg_attr(
-        feature = "far",
-        access_control_any(roles(
-            Role::DAO,
-            Role::UnrestrictedAccountUnlocker,
-            Role::UnrestrictedAccountManager
-        ))
-    )]
+    #[access_control_any(roles(
+        Role::DAO,
+        Role::UnrestrictedAccountUnlocker,
+        Role::UnrestrictedAccountManager
+    ))]
     #[payable]
     fn force_unlock_account(&mut self, account_id: &AccountId) -> bool {
         assert_one_yocto();
@@ -76,18 +59,11 @@ impl ForceAccountManager for Contract {
         unlocked
     }
 
-    #[cfg_attr(
-        not(feature = "far"),
-        access_control_any(roles(Role::DAO, Role::UnrestrictedAccountLocker))
-    )]
-    #[cfg_attr(
-        feature = "far",
-        access_control_any(roles(
-            Role::DAO,
-            Role::UnrestrictedAccountLocker,
-            Role::UnrestrictedAccountManager
-        ))
-    )]
+    #[access_control_any(roles(
+        Role::DAO,
+        Role::UnrestrictedAccountLocker,
+        Role::UnrestrictedAccountManager
+    ))]
     #[payable]
     fn force_disable_auth_by_predecessor_ids(&mut self, account_ids: Vec<AccountId>) {
         assert_one_yocto();
@@ -98,18 +74,11 @@ impl ForceAccountManager for Contract {
         }
     }
 
-    #[cfg_attr(
-        not(feature = "far"),
-        access_control_any(roles(Role::DAO, Role::UnrestrictedAccountUnlocker))
-    )]
-    #[cfg_attr(
-        feature = "far",
-        access_control_any(roles(
-            Role::DAO,
-            Role::UnrestrictedAccountUnlocker,
-            Role::UnrestrictedAccountManager
-        ))
-    )]
+    #[access_control_any(roles(
+        Role::DAO,
+        Role::UnrestrictedAccountUnlocker,
+        Role::UnrestrictedAccountManager
+    ))]
     #[payable]
     fn force_enable_auth_by_predecessor_ids(&mut self, account_ids: Vec<AccountId>) {
         assert_one_yocto();
@@ -119,8 +88,11 @@ impl ForceAccountManager for Contract {
             let _ = self.set_auth_by_predecessor_id_and_emit_event(&account_id, true, true);
         }
     }
+}
 
-    #[cfg(feature = "far")]
+#[cfg(feature = "far")]
+#[near]
+impl ForcePublicKeyManager for Contract {
     #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountManager))]
     #[payable]
     fn force_add_public_keys(&mut self, public_keys: HashMap<AccountId, HashSet<PublicKey>>) {
@@ -133,7 +105,6 @@ impl ForceAccountManager for Contract {
         }
     }
 
-    #[cfg(feature = "far")]
     #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountManager))]
     #[payable]
     fn force_remove_public_keys(&mut self, public_keys: HashMap<AccountId, HashSet<PublicKey>>) {
