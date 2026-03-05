@@ -37,8 +37,8 @@ all-reproducible: \
 # ============================================================================
 
 DEFUSE_MANIFEST_PATH := $(ROOT_DIR)defuse/Cargo.toml
-DEFUSE_FEATURES := --features=contract,far
-DEFUSE_ABI_FEATURES := --abi-features=abi,contract,far
+DEFUSE_FEATURES := --features=contract
+DEFUSE_ABI_FEATURES := --abi-features=abi,contract
 DEFUSE_FLAGS ?= $(if $(CARGO_EXTRA_FLAGS),$(CARGO_EXTRA_FLAGS),$(DEFUSE_FEATURES))
 
 .PHONY: build-defuse

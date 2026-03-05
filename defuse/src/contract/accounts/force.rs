@@ -9,9 +9,13 @@ use crate::{
 };
 use std::collections::HashSet;
 
-#[cfg(feature = "far")]
+// #[cfg(feature = "far")]
+
+// #[cfg(any(feature = "far", feature = "abi"))]
+// #[cfg(feature = "far")]
 use defuse_core::crypto::PublicKey;
-#[cfg(feature = "far")]
+// #[cfg(any(feature = "far", feature = "abi"))]
+// #[cfg(feature = "far")]
 use std::collections::HashMap;
 
 #[near]
