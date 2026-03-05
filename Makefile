@@ -46,7 +46,7 @@ BUILD_ARGS=--manifest-path=$(MANIFEST_PATH) \
 build-%:
 	$(if $(MANIFEST_PATH),,$(error MANIFEST_PATH is not defined))
 	$(if $(CRATE_NAME),,$(error CRATE_NAME is not defined))
-	
+
 ifneq (,$(filter $(REPRODUCIBLE),1 true))
 	cargo near build reproducible-wasm \
 	$(if $(VARIANT),--variant=$(VARIANT)) \
@@ -60,6 +60,8 @@ else
 	\
 	$$BUILD_CMD $(BUILD_ARGS)
 endif
+
+# ============================================================================
 
 build-defuse build-defuse-imt: CRATE_NAME=defuse
 build-defuse build-defuse-imt: MANIFEST_PATH=defuse/Cargo.toml
