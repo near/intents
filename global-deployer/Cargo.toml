@@ -13,6 +13,7 @@ workspace = true
 
 [features]
 abi = [
+    "defuse-borsh-utils/abi",
     "defuse-serde-utils/abi",
     "near-sdk/abi"
 ]

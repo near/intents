@@ -4,8 +4,8 @@ pub mod error;
 
 use std::{borrow::Cow, collections::BTreeMap};
 
-use defuse_borsh_utils::adapters::{AsWrap, Remainder};
-use defuse_serde_utils::hex::AsHex;
+pub use defuse_borsh_utils::adapters::{AsWrap, Remainder};
+pub use defuse_serde_utils::hex::AsHex;
 use near_sdk::{
     AccountId, AccountIdRef, Promise, borsh, ext_contract, near,
     serde_with::{hex::Hex, serde_as},
