@@ -165,7 +165,7 @@ async fn test_refund_storage_deposit_when_its_not_enough_to_cover_storage_costs(
         .tx(controller_instance.id())
         .function_call(
             FnCallBuilder::new("gd_deploy")
-                .borsh_args(&(&*DEPLOYER_WASM))
+                .raw_args(DEPLOYER_WASM.to_vec())
                 .with_deposit(storage_deposit),
         )
         .await
@@ -591,7 +591,7 @@ async fn test_refund_excessive_deposit_attached_to_deploy(
         .tx(controller_instance.id())
         .function_call(
             FnCallBuilder::new("gd_deploy")
-                .borsh_args(&(&*DEPLOYER_WASM))
+                .raw_args(DEPLOYER_WASM.to_vec())
                 .with_deposit(NearToken::from_near(100)),
         )
         .await
@@ -733,7 +733,7 @@ async fn test_post_deploy_does_not_run_on_failed_deploy(
         .tx(controller_instance.id())
         .function_call(
             FnCallBuilder::new("gd_deploy")
-                .borsh_args(&(&*DEPLOYER_WASM))
+                .raw_args(DEPLOYER_WASM.to_vec())
                 .with_deposit(NearToken::from_near(1)),
         )
         .exec_transaction()
@@ -798,7 +798,7 @@ async fn test_retry_approve_and_deploy_after_insufficient_deposit(
         )
         .function_call(
             FnCallBuilder::new("gd_deploy")
-                .borsh_args(&(&*DEPLOYER_WASM))
+                .raw_args(DEPLOYER_WASM.to_vec())
                 .with_deposit(NearToken::from_near(1))
                 .with_gas(Gas::from_tgas(290)),
         )
@@ -864,7 +864,7 @@ async fn test_post_deploy_fails_when_approval_changed(
         .tx(controller_instance.id())
         .function_call(
             FnCallBuilder::new("gd_deploy")
-                .borsh_args(&(&*DEPLOYER_WASM))
+                .raw_args(DEPLOYER_WASM.to_vec())
                 .with_deposit(NearToken::from_near(50))
                 .with_gas(Gas::from_tgas(140)),
         )
@@ -953,7 +953,7 @@ async fn test_deploy_with_zero_deposit_and_prefunded_account(
         .tx(controller_instance.id())
         .function_call(
             FnCallBuilder::new("gd_deploy")
-                .borsh_args(&(&*DEPLOYER_WASM))
+                .raw_args(DEPLOYER_WASM.to_vec())
                 .with_deposit(NearToken::from_yoctonear(0)),
         )
         .await
@@ -1020,7 +1020,7 @@ async fn test_concurrent_transfer_does_not_inflate_refund(
                 .tx(&controller_id)
                 .function_call(
                     FnCallBuilder::new("gd_deploy")
-                        .borsh_args(&(&*MT_RECEIVER_STUB_WASM))
+                        .raw_args(MT_RECEIVER_STUB_WASM.to_vec())
                         .with_deposit(deploy_deposit),
                 )
                 .await
@@ -1052,5 +1052,45 @@ async fn test_concurrent_transfer_does_not_inflate_refund(
     assert!(
         owner_spent < NearToken::from_near(1),
         "owner should lose only gas costs (< 1 NEAR), but spent: {owner_spent:?}"
+    );
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_gd_deploy_accepts_raw_bytes(
+    #[future(awt)] deployer_env: DeployerEnv,
+    unique_index: u32,
+) {
+    let root = deployer_env.sandbox.root();
+    let owner = root.fund_implicit(NearToken::from_near(200)).await.unwrap();
+    let storage = DeployerState::new(owner.id().clone()).with_index(unique_index);
+
+    let controller_instance = root
+        .deploy_instance(deployer_env.deployer_global_id.clone(), storage.clone())
+        .await
+        .unwrap();
+
+    owner
+        .gd_approve(
+            controller_instance.id(),
+            storage.code_hash,
+            sha256_array(&*DEPLOYER_WASM),
+        )
+        .await
+        .unwrap();
+
+    owner
+        .tx(controller_instance.id())
+        .function_call(
+            FnCallBuilder::new("gd_deploy")
+                .raw_args(DEPLOYER_WASM.to_vec())
+                .with_deposit(NearToken::from_near(50)),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        controller_instance.gd_code_hash().await.unwrap(),
+        sha256_array(&*DEPLOYER_WASM),
     );
 }

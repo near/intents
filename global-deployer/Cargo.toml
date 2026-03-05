@@ -19,6 +19,7 @@ abi = [
 contract = []
 
 [dependencies]
+defuse-borsh-utils.workspace = true
 defuse-serde-utils.workspace = true
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 
