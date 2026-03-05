@@ -1,7 +1,7 @@
 ROOT_DIR := $(dir $(abspath $(firstword $(MAKEFILE_LIST))))
 DEFUSE_OUT_DIR ?= $(ROOT_DIR)res
 
-.DEFAULT_GOAL := build-all 
+.DEFAULT_GOAL := all
 
 .PHONY: defuse \
 		defuse-imt \
@@ -11,7 +11,7 @@ DEFUSE_OUT_DIR ?= $(ROOT_DIR)res
 		escrow-swap \
 		global-deployer \
 		multi-token-receiver-stub \
-		build-all \
+		all \
 		sha256 \
 		clean-out-dir \
 		clean \
@@ -26,7 +26,7 @@ escrow-swap: build-escrow-swap
 global-deployer: build-global-deployer
 multi-token-receiver-stub: build-multi-token-receiver-stub
 
-build-all: \
+all: \
 	build-defuse \
 	build-defuse-imt \
 	build-poa-factory \
@@ -40,25 +40,25 @@ METADATA_FILTER = .packages[] | select(.name == "$(CRATE_NAME)") | .metadata.nea
 VARIANT_FILTER = .variant["$(VARIANT)"] | .container_build_command
 DEFAULT_VARIANT_FILTER = .container_build_command
 
-VAR_VALIDATION = [ -n "$(MANIFEST_PATH)" ] && [ -n "$(CRATE_NAME)" ] || { echo "MANIFEST_PATH and CRATE_NAME should be set"; exit 1; }
+BUILD_ARGS=--manifest-path=$(MANIFEST_PATH) \
+           --out-dir="$(DEFUSE_OUT_DIR)/$(CONTRACT_OUT_DIR)"
 
 build-%:
-	@$(VAR_VALIDATION)
+	$(if $(MANIFEST_PATH),,$(error MANIFEST_PATH is not defined))
+	$(if $(CRATE_NAME),,$(error CRATE_NAME is not defined))
+	
 ifneq (,$(filter $(REPRODUCIBLE),1 true))
 	cargo near build reproducible-wasm \
-	 --manifest-path=$(MANIFEST_PATH) \
-	 --out-dir="$(DEFUSE_OUT_DIR)/$(CONTRACT_OUT_DIR)" \
-	$(if $(VARIANT),--variant=$(VARIANT))
+	$(if $(VARIANT),--variant=$(VARIANT)) \
+	$(BUILD_ARGS)
 
 else
-
 	@BUILD_CMD=$$(cargo metadata --format-version=1 | \
 	jq -r '$(METADATA_FILTER) | \
 	$(if $(VARIANT),$(VARIANT_FILTER), $(DEFAULT_VARIANT_FILTER)) \
 	| join(" ")'); \
 	\
-	$$BUILD_CMD --manifest-path=$(MANIFEST_PATH) --out-dir="$(DEFUSE_OUT_DIR)/$(CONTRACT_OUT_DIR)"
-
+	$$BUILD_CMD $(BUILD_ARGS)
 endif
 
 build-defuse build-defuse-imt: CRATE_NAME=defuse
@@ -75,7 +75,7 @@ build-poa-factory: MANIFEST_PATH=poa-factory/Cargo.toml
 build-poa-token build-poa-token-no-registration: CRATE_NAME=defuse-poa-token
 build-poa-token build-poa-token-no-registration: MANIFEST_PATH=poa-token/Cargo.toml
 
-build-poa-token-no-registration: CONTRACT_OUT_DIR=no-registration
+build-poa-token-no-registration: CONTRACT_OUT_DIR=poa-token-no-registration
 build-poa-token-no-registration: VARIANT=no_registration
 
 # ============================================================================

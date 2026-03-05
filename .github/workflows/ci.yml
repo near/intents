@@ -117,9 +117,7 @@ jobs:
       - name: Install Cargo Plugins
         run: cargo install cargo-near --version 0.17.0 --locked
       - name: Build Reproducible WASM and calculate checksum
-        env:
-          REPRODUCIBLE: "true"
-        run: make
+        run: make  REPRODUCIBLE=1
       - name: Upload Reproducible Artifacts
         uses: actions/upload-artifact@v4
         with:

@@ -57,7 +57,7 @@ Build all contracts at once:
 make
 ```
 
-NOTE: Reproducible build can be specified by setting REPRODUCIBLE env var
+NOTE: Reproducible build can be specified by setting `REPRODUCIBLE=1`
 
 Run integration tests:
 
