@@ -1,4 +1,6 @@
-use defuse_core::{accounts::AccountEvent, engine::StateView, events::DefuseEvent};
+use defuse_core::{
+    accounts::AccountEvent, crypto::PublicKey, engine::StateView, events::DefuseEvent,
+};
 use defuse_near_utils::Lock;
 use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{AccountId, assert_one_yocto, near};
@@ -7,16 +9,7 @@ use crate::{
     accounts::ForceAccountManager,
     contract::{Contract, ContractExt, Role},
 };
-use std::collections::HashSet;
-
-// #[cfg(feature = "far")]
-
-// #[cfg(any(feature = "far", feature = "abi"))]
-// #[cfg(feature = "far")]
-use defuse_core::crypto::PublicKey;
-// #[cfg(any(feature = "far", feature = "abi"))]
-// #[cfg(feature = "far")]
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[near]
 impl ForceAccountManager for Contract {
