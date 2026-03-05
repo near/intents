@@ -57,6 +57,7 @@ pub enum Role {
     #[cfg(feature = "far")]
     UnrestrictedAccountManager,
 
+    // Reserved space in case if far feature is not enabled to avoid breaking storage layout
     #[cfg(not(feature = "far"))]
     #[doc(hidden)]
     __UnrestrictedAccountManager,
