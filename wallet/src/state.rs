@@ -9,12 +9,9 @@ use near_sdk::{
 /// State of the wallet-contract.
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct State<P> {
+pub struct State<PubKey, Nonces> {
     /// Whether authentication by signature is allowed.
     pub signature_enabled: bool,
-
-    /// Next valid seqno (i.e. nonce).
-    pub seqno: u32,
 
     /// Subwallet id: enables a single public key to have multiple different
     /// wallet-contracts.
@@ -22,26 +19,32 @@ pub struct State<P> {
 
     /// Public key of the signer (depends on the signature scheme being
     /// being used by the implementation)
-    pub public_key: P,
+    pub public_key: PubKey,
+
+    #[serde(flatten)]
+    pub nonces: Nonces,
 
     /// A set of enabled extensions.
     #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
     pub extensions: BTreeSet<AccountId>,
 }
 
-impl<P> State<P> {
+impl<PubKey, Nonces> State<PubKey, Nonces> {
     pub const DEFAULT_WALLET_ID: u32 = 0;
 
     pub(crate) const STATE_KEY: &[u8] = b"";
 
     /// Create a default state with given public key.
     #[inline]
-    pub const fn new(public_key: P) -> Self {
+    pub fn new(public_key: PubKey) -> Self
+    where
+        Nonces: Default,
+    {
         Self {
             signature_enabled: true,
-            seqno: 0,
             wallet_id: Self::DEFAULT_WALLET_ID,
             public_key,
+            nonces: Default::default(),
             extensions: BTreeSet::new(),
         }
     }
@@ -66,10 +69,11 @@ impl<P> State<P> {
         self
     }
 
-    /// Allow contract to work if it was mistakenly deployed with
-    /// `!signature_enabled` and empty extensions.
+    /// Returns whether authentication by signature is allowed
     #[inline]
     pub fn is_signature_allowed(&self) -> bool {
+        // allow contract to work if it was mistakenly deployed with
+        // `!signature_enabled` and empty extensions.
         self.signature_enabled || self.extensions.is_empty()
     }
 
@@ -82,9 +86,10 @@ impl<P> State<P> {
     /// Returns initialization state for Deterministic `AccountId` derivation
     /// as per NEP-616.
     #[inline]
-    pub fn init_state(&self) -> BTreeMap<Vec<u8>, Vec<u8>>
+    pub fn as_storage(&self) -> BTreeMap<Vec<u8>, Vec<u8>>
     where
-        P: BorshSerialize,
+        PubKey: BorshSerialize,
+        Nonces: BorshSerialize,
     {
         [(
             Self::STATE_KEY.to_vec(),

@@ -1,15 +1,15 @@
 mod borsh;
-pub mod domain;
+mod domain;
 #[cfg(feature = "ed25519")]
 pub mod ed25519;
 mod hash;
 pub mod no_sign;
+
 #[cfg(feature = "webauthn")]
 pub mod webauthn;
 
-use defuse_borsh_utils::adapters::{As, TimestampSeconds};
 pub use defuse_deadline::Deadline;
-use near_sdk::{AccountId, CryptoHash, env, near};
+use near_sdk::{AccountId, CryptoHash, borsh::BorshSerialize, env, near};
 
 use crate::Request;
 
@@ -25,7 +25,7 @@ pub trait SigningStandard<M> {
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RequestMessage {
+pub struct RequestMessage<Nonce> {
     /// MUST be equal to `chain_id` of the network where the wallet-contract
     /// is deployed.
     pub chain_id: String,
@@ -34,34 +34,18 @@ pub struct RequestMessage {
     /// this signed request.
     pub signer_id: AccountId,
 
-    /// MUST be equal to the current seqno on the contract.
-    pub seqno: u32,
-
-    /// The deadline for this signed request.
-    #[cfg_attr(
-        all(feature = "abi", not(target_arch = "wasm32")),
-        borsh(
-            serialize_with = "As::<TimestampSeconds<u32>>::serialize",
-            deserialize_with = "As::<TimestampSeconds<u32>>::deserialize",
-            schema(with_funcs(
-                definitions = "As::<TimestampSeconds<u32>>::add_definitions_recursively",
-                declaration = "As::<TimestampSeconds<u32>>::declaration",
-            ))
-        )
-    )]
-    #[cfg_attr(
-        any(not(feature = "abi"), target_arch = "wasm32"),
-        borsh(
-            serialize_with = "As::<TimestampSeconds<u32>>::serialize",
-            deserialize_with = "As::<TimestampSeconds<u32>>::deserialize",
-        )
-    )]
-    pub valid_until: Deadline,
+    // TODO: docs
+    // TODO: serde/borsh?
+    #[serde(flatten)]
+    pub nonce: Nonce,
 
     pub request: Request,
 }
 
-impl RequestMessage {
+impl<Nonce> RequestMessage<Nonce>
+where
+    Nonce: BorshSerialize,
+{
     /// Request hash
     pub fn hash(&self) -> CryptoHash {
         let serialized = ::near_sdk::borsh::to_vec(&self).unwrap_or_else(|_| unreachable!());

@@ -1,10 +1,16 @@
 use std::{
     collections::BTreeMap,
+    fmt::Display,
     ops::{RangeInclusive, Shl},
+    str::FromStr,
 };
 
 use defuse_borsh_utils::adapters::{Bits, BorshDeserializeAs, BorshSerializeAs};
-use near_sdk::borsh::{BorshDeserialize, BorshSerialize, io};
+use near_sdk::{
+    borsh::{BorshDeserialize, BorshSerialize, io},
+    near,
+    serde_with::DisplayFromStr,
+};
 use num_traits::{PrimInt, Unsigned};
 use tlbits::{
     NBits, NoArgs, Same, VarLen,
@@ -14,12 +20,18 @@ use tlbits::{
 };
 
 /// Bitmap of values `T` stored inline.
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
-#[derive(Debug, Clone)]
+// #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[near(serializers = [json])]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
-pub struct CompactBitMap<T>(BTreeMap<T, T>)
-where
-    T: PrimInt + Unsigned;
+pub struct CompactBitMap<T>(
+    #[serde_as(as = "BTreeMap<DisplayFromStr, DisplayFromStr>")]
+    #[serde(bound(
+        serialize = "T: Display",
+        deserialize = "T: FromStr<Err: Display> + Ord",
+    ))]
+    BTreeMap<T, T>,
+);
 
 impl<T> CompactBitMap<T>
 where
@@ -28,7 +40,7 @@ where
     const BITS: usize = bits_of::<T>();
     const BITS_FOR_BIT_POS: usize = Self::BITS.ilog2() as usize;
     const BITS_FOR_WORD: usize = Self::BITS - Self::BITS_FOR_BIT_POS;
-    const MAX_LEN: usize = if Self::BITS_FOR_WORD < u32::BITS as usize {
+    const MAX_LEN_BITS: usize = if Self::BITS_FOR_WORD < u32::BITS as usize {
         // add one, since we also need to store zero-length
         Self::BITS_FOR_WORD + 1
     } else {
@@ -77,7 +89,7 @@ where
         old
     }
 
-    /// Set bit `n` to given value
+    /// Set bit `n` to given value and return old value
     #[inline]
     pub fn set_bit_to(&mut self, n: T, v: bool) -> bool {
         if v {
@@ -87,7 +99,7 @@ where
         }
     }
 
-    /// Iterate over set U256
+    /// Iterate over set bits
     pub fn as_iter(&self) -> impl Iterator<Item = T> + '_
     where
         RangeInclusive<T>: Iterator<Item = T>,
@@ -122,10 +134,7 @@ where
     }
 }
 
-impl<T> Default for CompactBitMap<T>
-where
-    T: PrimInt + Unsigned,
-{
+impl<T> Default for CompactBitMap<T> {
     fn default() -> Self {
         Self(Default::default())
     }
@@ -144,7 +153,7 @@ macro_rules! impl_tlbits_for_bitmap {
                 writer
                     .pack_as::<_, &VarLen<
                         BTreeMap<NBits<{ CompactBitMap::<$t>::BITS_FOR_WORD }>, Same>,
-                        { CompactBitMap::<$t>::MAX_LEN },
+                        { CompactBitMap::<$t>::MAX_LEN_BITS },
                     >>(
                         &self.0,
                         NoArgs::EMPTY,
@@ -163,7 +172,7 @@ macro_rules! impl_tlbits_for_bitmap {
                 reader
                     .unpack_as::<_, VarLen<
                         BTreeMap<NBits<{ CompactBitMap::<$t>::BITS_FOR_WORD }>, Same>,
-                        { CompactBitMap::<$t>::MAX_LEN },
+                        { CompactBitMap::<$t>::MAX_LEN_BITS },
                     >>(NoArgs::EMPTY)
                     .map(Self)
             }
@@ -174,7 +183,6 @@ impl_tlbits_for_bitmap!(u8, u16, u32, u64, u128);
 
 impl<T> BorshSerialize for CompactBitMap<T>
 where
-    T: PrimInt + Unsigned,
     Self: BitPack<Args: NoArgs>,
 {
     fn serialize<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
@@ -184,7 +192,6 @@ where
 
 impl<T> BorshDeserialize for CompactBitMap<T>
 where
-    T: PrimInt + Unsigned,
     Self: for<'de> BitUnpack<'de, Args: NoArgs>,
 {
     fn deserialize_reader<R: io::Read>(reader: &mut R) -> io::Result<Self> {
@@ -261,7 +268,7 @@ mod tests {
         ns: Range<T>,
     ) where
         Range<T>: Iterator<Item = T>,
-        T: PrimInt + Unsigned + Shl<T, Output = T> + BorshSerialize,
+        T: PrimInt + Unsigned + Shl<T, Output = T> + BorshSerialize + Debug,
         CompactBitMap<T>: BitPack<Args = ()> + for<'de> BitUnpack<'de, Args = ()>,
     {
         let mut m = CompactBitMap::<T>::default();
@@ -282,7 +289,7 @@ mod tests {
                     "inefficient serialization"
                 );
             }
-            m = borsh::from_slice(&serialized).unwrap();
+            assert_eq!(m, borsh::from_slice(&serialized).unwrap());
         }
     }
 }

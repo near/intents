@@ -1,3 +1,4 @@
+mod deploy_mainnet;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use defuse_global_deployer::{

@@ -16,8 +16,6 @@ num-traits = { workspace = true, optional = true }
 tlbits = { workspace = true, optional = true }
 
 [features]
-default = ["compact"] # TODO: remove
-
 arbitrary = ["dep:arbitrary"]
 compact = ["dep:defuse-borsh-utils", "dep:num-traits", "dep:tlbits"]
 

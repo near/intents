@@ -19,6 +19,7 @@ defuse-serde-utils.workspace = true
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 thiserror.workspace = true
 
+defuse-bitmap = { workspace = true, features = ["compact"], optional = true }
 defuse-crypto = { workspace = true, default-features = false, optional = true }
 defuse-webauthn = { workspace = true, default-features = false, optional = true }
 
@@ -34,6 +35,7 @@ abi = [
 ]
 arbitrary = ["dep:arbitrary", "near-sdk/arbitrary"]
 webauthn = ["dep:defuse-webauthn"]
+highload = ["dep:defuse-bitmap"]
 
 ########## Contract variants ##########
 # When no features enabled, by default, always reject the signature.

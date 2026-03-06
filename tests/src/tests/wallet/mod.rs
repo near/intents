@@ -32,7 +32,7 @@ async fn test_signed(#[future] env: Env) {
         data: State::<PublicKey>::new(Ed25519PublicKey(
             secret_key.public_key().unwrap_as_ed25519().0,
         ))
-        .init_state(),
+        .as_storage(),
     });
 
     let wallet = env.account(wallet_state_init.derive_account_id());
@@ -102,7 +102,7 @@ async fn test_extension(#[future] env: Env) {
         code: env.wallet_global_id.clone(),
         data: State::<PublicKey>::new(Ed25519PublicKey([0; 32]))
             .extensions([extension.id()])
-            .init_state(),
+            .as_storage(),
     });
 
     // 0s123445
@@ -154,7 +154,7 @@ async fn test_arbitrary(#[future] env: Env, #[from(make_arbitrary)] request: Req
         data: State::<PublicKey>::new(Ed25519PublicKey(
             secret_key.public_key().unwrap_as_ed25519().0,
         ))
-        .init_state(),
+        .as_storage(),
     });
 
     let wallet = env.account(wallet_state_init.derive_account_id());

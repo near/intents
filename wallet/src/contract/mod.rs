@@ -1,4 +1,5 @@
 mod impl_;
+
 mod utils;
 
 use std::collections::BTreeSet;
@@ -6,7 +7,7 @@ use std::collections::BTreeSet;
 use near_sdk::{AccountId, AccountIdRef, FunctionError, Promise, env, near};
 
 use crate::{
-    Actor, Error, Request, RequestMessage, Result, Wallet, WalletEvent, WalletOp,
+    Actor, Error, Request, RequestMessage, Result, SeqnoNonce, Wallet, WalletEvent, WalletOp,
     signature::SigningStandard,
 };
 
@@ -15,7 +16,7 @@ pub use self::impl_::*;
 #[near]
 impl Wallet for Contract {
     #[payable]
-    fn w_execute_signed(&mut self, msg: RequestMessage, proof: String) {
+    fn w_execute_signed(&mut self, msg: RequestMessage<SeqnoNonce>, proof: String) {
         self.execute_signed(msg, proof)
             .unwrap_or_else(|err| err.panic())
     }
@@ -56,7 +57,7 @@ impl Wallet for Contract {
 }
 
 impl Contract {
-    fn execute_signed(&mut self, msg: RequestMessage, proof: String) -> Result<()> {
+    fn execute_signed(&mut self, msg: RequestMessage<SeqnoNonce>, proof: String) -> Result<()> {
         if !self.is_signature_allowed() {
             return Err(Error::SignatureDisabled);
         }
@@ -138,6 +139,7 @@ impl Contract {
             WalletOp::AddExtension { account_id } => self.add_extension(account_id, actor),
             WalletOp::RemoveExtension { account_id } => self.remove_extension(account_id, actor),
             // custom ops are not supported, so we just skip them
+            // TODO: or panic?
             WalletOp::Custom { .. } => Ok(()),
         }
     }

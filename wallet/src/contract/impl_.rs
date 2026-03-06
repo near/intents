@@ -2,20 +2,26 @@ use core::ops::{Deref, DerefMut};
 
 use near_sdk::{PanicOnDefault, near};
 
-use crate::{RequestMessage, signature::SigningStandard};
+use crate::{RequestMessage, Seqno, signature::SigningStandard};
 
 pub trait ContractImpl {
-    type SigningStandard: SigningStandard<&'static RequestMessage>;
+    type SigningStandard: SigningStandard<&'static RequestMessage<Seqno>>;
+    // TODO: or + Highload?
 }
 
 /// Signing standard implemented by the contract.
 type SS = <Contract as ContractImpl>::SigningStandard;
 
 /// Public key used by the signing standard.
-type PublicKey = <SS as SigningStandard<&'static RequestMessage>>::PublicKey;
+type PubKey = <SS as SigningStandard<&'static RequestMessage<Seqno>>>::PublicKey;
+
+#[cfg(not(feature = "highload"))]
+type Nonces = crate::Seqno;
+#[cfg(feature = "highload")]
+type Nonces = crate::HighloadNonces;
 
 /// State of the contract.
-type State = crate::State<PublicKey>;
+type State = crate::State<PubKey, Nonces>;
 
 /// `#[near(contract_metadata(standard(...)))]` macro doesn't support
 /// adding more standards in separate attributes. So, we have to combine
@@ -92,10 +98,10 @@ contract_impl! {
     )] {
         use defuse_crypto::Ed25519;
 
-        use crate::signature::{Borsh, DomainPrefix};
+        use crate::signature::{Borsh, DomainPrefix, Sha256};
 
         impl ContractImpl for Contract {
-            type SigningStandard = Borsh<DomainPrefix<Ed25519>>;
+            type SigningStandard = Borsh<DomainPrefix<Sha256<Ed25519>>>;
         }
     }
 
@@ -106,7 +112,7 @@ contract_impl! {
         ))
     )] {
         use crate::signature::{
-            Borsh, Sha256, DomainPrefix,
+            Borsh, DomainPrefix, Sha256,
             webauthn::{Ed25519, Webauthn},
         };
 

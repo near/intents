@@ -11,7 +11,7 @@ use defuse_borsh_utils::adapters::{
 };
 use near_sdk::near;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[near(serializers = [json])]
 #[repr(transparent)]
 pub struct Deadline(

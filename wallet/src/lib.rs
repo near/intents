@@ -4,6 +4,7 @@ mod arbitrary;
 mod contract;
 mod error;
 mod events;
+mod nonce;
 mod request;
 pub mod signature;
 mod state;
@@ -14,7 +15,7 @@ use near_sdk::{AccountId, ext_contract};
 
 use crate::signature::RequestMessage;
 
-pub use self::{error::*, events::*, request::*, state::*};
+pub use self::{error::*, events::*, nonce::*, request::*, state::*};
 
 /// Deterministic single-key Wallet Contract.
 #[ext_contract(ext_wallet)]
@@ -27,7 +28,7 @@ pub trait Wallet {
     ///   * `signed` data is invalid
     ///   * `proof` is invalid
     ///   * signature is disabled
-    fn w_execute_signed(&mut self, msg: RequestMessage, proof: String);
+    fn w_execute_signed(&mut self, msg: RequestMessage<SeqnoNonce>, proof: String);
 
     /// Execute request from an enabled extension.
     ///
@@ -62,3 +63,24 @@ pub trait Wallet {
     /// Helper method to get chain_id of the network
     fn w_chain_id(&self) -> String;
 }
+
+#[ext_contract(ext_wallet_seqno)]
+pub trait WalletSeqno {
+    /// Executes signed request.
+    ///
+    /// * SHOULD accept ANY attached deposit.
+    /// * MUST fail in any case where the `signed.request` is not executed
+    ///   due to various reasons, including:
+    ///   * `signed` data is invalid
+    ///   * `proof` is invalid
+    ///   * signature is disabled
+    fn ws_execute_signed(&mut self, msg: RequestMessage<TimeoutNonce>, proof: String);
+
+    /// Current `seqno` to be used for signed requests.
+    fn w_seqno(&self) -> u32;
+}
+
+// #[ext_contract(ext_wallet_highload)]
+// pub trait WalletHighload {
+//     fn wh_execute_signed(&mut self, msg: RequestMessage, proof: String);
+// }
