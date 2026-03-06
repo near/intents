@@ -14,7 +14,8 @@ DEFUSE_OUT_DIR ?= $(ROOT_DIR)res
 		all \
 		clean-out-dir \
 		clean \
-		test
+		test \
+		clippy
 
 defuse defuse-imt poa-factory poa-token poa-token-no-registration escrow-swap global-deployer multi-token-receiver-stub: %: build-% 
 
