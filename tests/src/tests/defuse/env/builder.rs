@@ -1,12 +1,5 @@
 use std::sync::atomic::AtomicUsize;
 
-use defuse_sandbox::extensions::defuse::contract::{
-    contract::{
-        Role,
-        config::{DefuseConfig, RolesConfig},
-    },
-    core::fees::{FeesConfig, Pips},
-};
 use defuse_sandbox::extensions::{
     defuse::deployer::DefuseExt,
     poa::{PoAFactoryDeployerExt, contract::contract::Role as POAFactoryRole},
@@ -15,6 +8,16 @@ use defuse_sandbox::{
     Account, SigningAccount,
     extensions::wnear::{WNearDeployerExt, WNearExt},
     sandbox,
+};
+use defuse_sandbox::{
+    DEFAULT_CONCURRENCY_LIMIT,
+    extensions::defuse::contract::{
+        contract::{
+            Role,
+            config::{DefuseConfig, RolesConfig},
+        },
+        core::fees::{FeesConfig, Pips},
+    },
 };
 use defuse_test_utils::random::Seed;
 use near_sdk::{AccountId, NearToken};
@@ -39,6 +42,8 @@ pub struct EnvBuilder {
 
     // Create only unique users (no reusing from persistent state)
     create_unique_users: bool,
+
+    concurrency_limit: Option<usize>,
 }
 
 impl EnvBuilder {
@@ -92,6 +97,11 @@ impl EnvBuilder {
         self
     }
 
+    pub const fn concurrency_limit(mut self, limit: usize) -> Self {
+        self.concurrency_limit = Some(limit);
+        self
+    }
+
     async fn deploy_defuse(
         &self,
         root: &SigningAccount,
@@ -138,7 +148,11 @@ impl EnvBuilder {
     }
 
     pub async fn build_env(&mut self, deploy_legacy: bool) -> Env {
-        let sandbox = sandbox(NearToken::from_near(100_000)).await;
+        let sandbox = sandbox(
+            NearToken::from_near(100_000),
+            self.concurrency_limit.unwrap_or(DEFAULT_CONCURRENCY_LIMIT),
+        )
+        .await;
         let root = sandbox.root();
 
         let poa_factory = deploy_poa_factory(root).await;
