@@ -14,6 +14,11 @@ use impl_tools::autoimpl;
 use near_sdk::borsh::BorshSchema;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 
+#[cfg(feature = "abi")]
+mod schema;
+#[cfg(feature = "abi")]
+pub use self::schema::*;
+
 #[cfg(feature = "chrono")]
 mod chrono;
 #[cfg(feature = "chrono")]
