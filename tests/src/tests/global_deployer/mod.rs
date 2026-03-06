@@ -1052,8 +1052,8 @@ async fn test_concurrent_transfer_does_not_inflate_refund(
         "owner balance should not increase after deploy"
     );
 
-    let deploy_price = NearToken::from_micronear(100); // 0.001 NEAR per 1B
-    let contract_size = MT_RECEIVER_STUB_WASM.len() as u128;
+    let deploy_price = NearToken::from_micronear(100); // 0001 NEAR per 1B
+    let contract_size = MT_RECEIVER_STUB_WASM.len().try_into().unwrap();
     let deploy_cost = deploy_price.checked_mul(contract_size).unwrap();
 
     let owner_spent = owner_balance_before_deploy.saturating_sub(owner_balance_after);
@@ -1074,13 +1074,16 @@ async fn test_concurrent_transfer_does_not_inflate_refund(
         .saturating_sub(refund)
         .saturating_add(max_gas);
 
-    println!("Owner spent: {}", owner_spent);
-    println!("Expected outlay: {}", expected_outlay);
-    println!("Refund: {}", refund);
-    println!("Deploy cost: {}", deploy_cost);
-    println!("Contract balance after: {}", contract_balance_after);
+    println!("Owner spent: {owner_spent}");
+    println!("Expected outlay: {expected_outlay}");
+    println!("Refund: {refund}");
+    println!("Deploy cost: {deploy_cost}");
+    println!("Contract balance after: {contract_balance_after}");
 
-    assert!(owner_spent <= expected_outlay || owner_spent < max_gas);
+    let full_refund_case = owner_spent < max_gas;
+    let partial_refund_case = owner_spent <= expected_outlay;
+
+    assert!(full_refund_case || partial_refund_case);
 }
 
 #[rstest]
