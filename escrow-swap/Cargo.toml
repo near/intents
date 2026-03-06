@@ -21,7 +21,8 @@ container_build_command = [
     "build",
     "non-reproducible-wasm",
     "--locked",
-    "--features=abi,contract",
+    "--features=contract",
+    "--abi-features=abi,contract",
     "--no-embed-abi",
 ]
 
@@ -66,5 +67,6 @@ abi = [
     "defuse-decimal/abi",
     "defuse-token-id/abi",
     "serde_with/schemars_0_8",
+    "near-sdk/abi",
 ]
 contract = ["dep:defuse-near-utils"]

@@ -29,7 +29,7 @@ arbitrary = { workspace = true, features = ["derive"], optional = true }
 abi = [
     "defuse-deadline/abi",
     "defuse-serde-utils/abi",
-    "defuse-borsh-utils/schema",
+    "defuse-borsh-utils/abi",
     "defuse-crypto?/abi",
     "defuse-webauthn?/abi",
 ]

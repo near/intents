@@ -60,7 +60,7 @@ pub use self::error::TokenIdError;
     ),
     strum(serialize_all = "snake_case"),
     cfg_attr(
-        all(feature = "abi", not(target_arch = "wasm32")),
+        feature = "abi",
         derive(::near_sdk::NearSchema),
         schemars(with = "String"),
     ),
@@ -134,7 +134,7 @@ impl FromStr for TokenId {
     }
 }
 
-#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+#[cfg(feature = "abi")]
 const _: () = {
     use near_sdk::schemars::{
         JsonSchema,

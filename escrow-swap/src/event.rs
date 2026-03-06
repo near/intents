@@ -133,5 +133,5 @@ pub trait EscrowIntentEmit<'a>: Into<Event<'a>> {
 impl<'a, T> EscrowIntentEmit<'a> for T where T: Into<Event<'a>> {}
 
 // fix JsonSchema macro bug
-#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+#[cfg(feature = "abi")]
 use near_sdk::serde;

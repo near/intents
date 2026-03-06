@@ -1,4 +1,4 @@
-#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+#[cfg(feature = "abi")]
 mod abi;
 mod accounts;
 mod admin;

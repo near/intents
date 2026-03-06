@@ -52,6 +52,7 @@ abi = [
     "defuse-token-id/abi",
     "defuse-ton-connect/abi",
     "defuse-webauthn/abi",
+    "near-sdk/abi",
 ]
 arbitrary = [
     "dep:arbitrary",

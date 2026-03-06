@@ -19,6 +19,6 @@ chrono = { workspace = true, optional = true }
 tlbits = { workspace = true, optional = true }
 
 [features]
+abi = ["near-sdk/abi"]
 bits = ["dep:tlbits"]
 chrono = ["dep:chrono"]
-schema = []

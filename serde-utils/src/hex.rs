@@ -3,15 +3,12 @@ use near_sdk::serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
 #[cfg_attr(
-    all(feature = "abi", not(target_arch = "wasm32")),
+    feature = "abi",
     serde_as(schemars = true),
     derive(::near_sdk::schemars::JsonSchema),
     schemars(crate = "::near_sdk::schemars", transparent)
 )]
-#[cfg_attr(
-    not(all(feature = "abi", not(target_arch = "wasm32"))),
-    serde_as(schemars = false)
-)]
+#[cfg_attr(not(feature = "abi"), serde_as(schemars = false))]
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, From)]
 #[serde(
     crate = "::near_sdk::serde",

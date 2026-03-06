@@ -1,6 +1,7 @@
 use defuse_sandbox::extensions::defuse::{
     contract::contract::Role, intents::ExecuteIntentsExt, relayer::RelayerKeysExt,
 };
+
 use rstest::rstest;
 
 use crate::{

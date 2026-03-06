@@ -27,7 +27,7 @@ nep171 = []
 nep245 = []
 imt = []
 
-abi = []
+abi = ["near-sdk/abi"]
 arbitrary = ["dep:arbitrary", "near-sdk/arbitrary"]
 
 [dev-dependencies]

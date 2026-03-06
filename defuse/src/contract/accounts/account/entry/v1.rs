@@ -63,7 +63,7 @@ pub(super) mod tests {
         Result,
         accounts::{AccountEvent, PublicKeyEvent},
         events::DefuseEvent,
-        intents::account::SetAuthByPredecessorId,
+        intents::{MaybeIntentEvent, account::SetAuthByPredecessorId},
     };
     use std::borrow::Cow;
 
@@ -96,12 +96,12 @@ pub(super) mod tests {
                 return false;
             }
 
-            DefuseEvent::PublicKeyAdded(AccountEvent::new(
+            DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new_fn_call(AccountEvent::new(
                 Cow::Borrowed(me),
                 PublicKeyEvent {
                     public_key: Cow::Borrowed(&public_key),
                 },
-            ))
+            )))
             .emit();
 
             true
@@ -126,12 +126,12 @@ pub(super) mod tests {
                 return false;
             }
 
-            DefuseEvent::PublicKeyRemoved(AccountEvent::new(
+            DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::new_fn_call(AccountEvent::new(
                 Cow::Borrowed(me),
                 PublicKeyEvent {
                     public_key: Cow::Borrowed(public_key),
                 },
-            ))
+            )))
             .emit();
 
             true
@@ -203,9 +203,11 @@ pub(super) mod tests {
                 self.flags
                     .toggle(AccountFlags::AUTH_BY_PREDECESSOR_ID_DISABLED);
 
-                DefuseEvent::SetAuthByPredecessorId(AccountEvent::new(
-                    Cow::Borrowed(me),
-                    SetAuthByPredecessorId { enabled: enable },
+                DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new_fn_call(
+                    AccountEvent::new(
+                        Cow::Borrowed(me),
+                        Cow::Owned(SetAuthByPredecessorId { enabled: enable }),
+                    ),
                 ))
                 .emit();
             }
