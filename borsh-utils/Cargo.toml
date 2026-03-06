@@ -17,4 +17,5 @@ near-sdk.workspace = true
 chrono = { workspace = true, optional = true }
 
 [features]
+abi = ["near-sdk/abi"]
 chrono = ["dep:chrono"]

@@ -4,7 +4,8 @@ pub mod error;
 
 use std::{borrow::Cow, collections::BTreeMap};
 
-use defuse_serde_utils::hex::AsHex;
+pub use defuse_borsh_utils::adapters::{AsWrap, Remainder};
+pub use defuse_serde_utils::hex::AsHex;
 use near_sdk::{
     AccountId, AccountIdRef, Promise, borsh, ext_contract, near,
     serde_with::{hex::Hex, serde_as},
@@ -23,7 +24,12 @@ pub trait GlobalDeployer {
     /// Permissionless: anyone can call if `sha256(code)` matches `approved_hash`.
     /// Requires attached deposit for storage.
     /// Emits [`Event::Deploy`] and [`Event::Approve`] with [`Reason::Deploy`].
-    fn gd_deploy(&mut self, #[serializer(borsh)] code: Vec<u8>) -> Promise;
+    ///
+    /// The `code` argument accepts raw `.wasm` bytes directly — just pass the
+    /// binary contents of the file as the function call input. There is no need
+    /// to prepend a borsh length prefix; the [`AsWrap`]`<`[`Vec<u8>`]`,
+    /// `[`Remainder`]`>` adapter consumes all input bytes as-is.
+    fn gd_deploy(&mut self, #[serializer(borsh)] code: AsWrap<Vec<u8>, Remainder>) -> Promise;
 
     /// Transfers contract ownership to `receiver_id`.
     /// Resets `approved_hash` to `DEFAULT_HASH`.
