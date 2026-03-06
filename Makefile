@@ -4,7 +4,7 @@ DEFUSE_OUT_DIR ?= $(ROOT_DIR)res
 .DEFAULT_GOAL := all
 
 .PHONY: defuse \
-		defuse-imt \
+		defuse-far \
 		poa-factory \
 		poa-token \
 		poa-token-no-registration \
@@ -17,11 +17,11 @@ DEFUSE_OUT_DIR ?= $(ROOT_DIR)res
 		test \
 		clippy
 
-defuse defuse-imt poa-factory poa-token poa-token-no-registration escrow-swap global-deployer multi-token-receiver-stub: %: build-% 
+defuse defuse-far poa-factory poa-token poa-token-no-registration escrow-swap global-deployer multi-token-receiver-stub: %: build-% 
 
 all: \
 	build-defuse \
-	build-defuse-imt \
+	build-defuse-far \
 	build-poa-factory \
 	build-poa-token \
 	build-poa-token-no-registration \
@@ -51,9 +51,9 @@ build-%:
 
 # ============================================================================
 
-build-defuse build-defuse-imt: CRATE_NAME=defuse
-build-defuse-imt: CONTRACT_OUT_DIR=imt
-build-defuse-imt: VARIANT=imt
+build-defuse build-defuse-far: CRATE_NAME=defuse
+build-defuse-far: CONTRACT_OUT_DIR=far
+build-defuse-far: VARIANT=far
 
 # ============================================================================
 
