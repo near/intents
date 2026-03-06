@@ -77,7 +77,7 @@ impl DeployerExt for SigningAccount {
         self.tx(target)
             .function_call(
                 FnCallBuilder::new("gd_deploy")
-                    .borsh_args(&new_code)
+                    .raw_args(new_code.to_vec())
                     .with_deposit(NearToken::from_near(50)),
             )
             .await
@@ -135,7 +135,7 @@ impl DeployerExt for SigningAccount {
             )
             .function_call(
                 FnCallBuilder::new("gd_deploy")
-                    .borsh_args(&new_code)
+                    .raw_args(new_code.to_vec())
                     .with_deposit(NearToken::from_near(50))
                     .with_gas(Gas::from_tgas(290)),
             )

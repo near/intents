@@ -4,6 +4,8 @@ use near_sdk::{
     require,
 };
 
+use defuse_borsh_utils::adapters::{AsWrap, Remainder};
+
 use crate::{
     Event, GlobalDeployer, Reason, State,
     error::{ERR_NEW_CODE_HASH_MISMATCH, ERR_SELF_TRANSFER, ERR_UNAUTHORIZED, ERR_WRONG_CODE_HASH},
@@ -40,7 +42,8 @@ impl GlobalDeployer for Contract {
     }
 
     #[payable]
-    fn gd_deploy(&mut self, #[serializer(borsh)] code: Vec<u8>) -> Promise {
+    fn gd_deploy(&mut self, #[serializer(borsh)] code: AsWrap<Vec<u8>, Remainder>) -> Promise {
+        let code = code.into_inner();
         let code_hash = env::sha256_array(&code);
         require!(self.is_approved(&code_hash), ERR_NEW_CODE_HASH_MISMATCH);
         let initial_balance = env::account_balance().saturating_sub(env::attached_deposit());
