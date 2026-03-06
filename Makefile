@@ -57,7 +57,6 @@ BUILD_CMD = $(shell $(CARGO_METADATA) '$(METADATA_FILTER) | \
 endif
 
 build-%:
-	$(if $(MANIFEST_PATH),,$(error MANIFEST_PATH is not defined))
 	$(if $(CRATE_NAME),,$(error CRATE_NAME is not defined))
 	$(BUILD_CMD) $(BUILD_ARGS)
 
