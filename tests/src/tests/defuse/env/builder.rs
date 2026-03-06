@@ -16,11 +16,11 @@ use defuse_sandbox::{
     extensions::wnear::{WNearDeployerExt, WNearExt},
     sandbox,
 };
-use defuse_test_utils::random::Seed;
+use defuse_test_utils::{random::Seed, wasms::DEFUSE_IMT_WASM};
 use near_sdk::{AccountId, NearToken};
 
 use super::Env;
-use defuse_test_utils::wasms::{DEFUSE_LEGACY_WASM, DEFUSE_WASM, POA_FACTORY_WASM, WNEAR_WASM};
+use defuse_test_utils::wasms::{DEFUSE_LEGACY_WASM, POA_FACTORY_WASM, WNEAR_WASM};
 
 const MIGRATE_FROM_LEGACY_ENV_NAME: &str = "DEFUSE_MIGRATE_FROM_LEGACY";
 
@@ -118,7 +118,8 @@ impl EnvBuilder {
             if legacy {
                 DEFUSE_LEGACY_WASM.clone()
             } else {
-                DEFUSE_WASM.clone()
+                // imt feature enabled by default in tests
+                DEFUSE_IMT_WASM.clone()
             },
         )
         .await
