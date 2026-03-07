@@ -6,6 +6,8 @@ use near_sdk::{
     near,
 };
 
+pub const STATE_KEY: &[u8] = b"";
+
 /// State of the wallet-contract.
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -31,8 +33,6 @@ pub struct State<PubKey, Nonces> {
 
 impl<PubKey, Nonces> State<PubKey, Nonces> {
     pub const DEFAULT_WALLET_ID: u32 = 0;
-
-    pub(crate) const STATE_KEY: &[u8] = b"";
 
     /// Create a default state with given public key.
     #[inline]
@@ -92,7 +92,7 @@ impl<PubKey, Nonces> State<PubKey, Nonces> {
         Nonces: BorshSerialize,
     {
         [(
-            Self::STATE_KEY.to_vec(),
+            STATE_KEY.to_vec(),
             borsh::to_vec(self).unwrap_or_else(|_| unreachable!()),
         )]
         .into()

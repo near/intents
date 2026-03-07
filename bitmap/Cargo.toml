@@ -16,6 +16,7 @@ num-traits = { workspace = true, optional = true }
 tlbits = { workspace = true, optional = true }
 
 [features]
+abi = ["near-sdk/abi"]
 arbitrary = ["dep:arbitrary"]
 compact = ["dep:defuse-borsh-utils", "dep:num-traits", "dep:tlbits"]
 

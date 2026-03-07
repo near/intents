@@ -25,7 +25,7 @@ pub trait SigningStandard<M> {
 
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RequestMessage<Nonce> {
+pub struct RequestMessage<N> {
     /// MUST be equal to `chain_id` of the network where the wallet-contract
     /// is deployed.
     pub chain_id: String,
@@ -37,7 +37,7 @@ pub struct RequestMessage<Nonce> {
     // TODO: docs
     // TODO: serde/borsh?
     #[serde(flatten)]
-    pub nonce: Nonce,
+    pub nonce: N,
 
     pub request: Request,
 }

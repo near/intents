@@ -1,12 +1,12 @@
 use core::{mem, time::Duration};
 
 use defuse_bitmap::CompactBitMap;
-use defuse_borsh_utils::adapters::{As, TimestampSeconds};
+use defuse_borsh_utils::adapters::{As, DurationSeconds as BorshDurationSeconds, TimestampSeconds};
 use defuse_deadline::Deadline;
 use near_sdk::{near, serde_with::DurationSeconds};
 use thiserror::Error as ThisError;
 
-use crate::{Nonces, Result};
+use crate::Nonces;
 
 type Nonce = u32;
 type BitMap = CompactBitMap<Nonce>;
@@ -18,7 +18,7 @@ type BitMap = CompactBitMap<Nonce>;
 pub struct HighloadNonces {
     // TODO: can we make it deterministic?
     #[cfg_attr(
-        all(feature = "abi", not(target_arch = "wasm32")),
+        feature = "abi",
         borsh(
             serialize_with = "As::<TimestampSeconds<u32>>::serialize",
             deserialize_with = "As::<TimestampSeconds<u32>>::deserialize",
@@ -29,25 +29,42 @@ pub struct HighloadNonces {
         )
     )]
     #[cfg_attr(
-        any(not(feature = "abi"), target_arch = "wasm32"),
+        not(feature = "abi"),
         borsh(
             serialize_with = "As::<TimestampSeconds<u32>>::serialize",
             deserialize_with = "As::<TimestampSeconds<u32>>::deserialize",
         )
     )]
     last_cleaned_at: Deadline,
-    #[borsh(skip)] // schema
+
     old_nonces: BitMap, // corresponds to previous epoch?
-    #[borsh(skip)] // schema
-    nonces: BitMap, // corresponds to current epoch?
+    nonces: BitMap,     // corresponds to current epoch?
+
     #[serde(rename = "timeout_secs")]
     #[serde_as(as = "DurationSeconds")]
+    #[cfg_attr(
+        feature = "abi",
+        borsh(
+            serialize_with = "As::<BorshDurationSeconds<u32>>::serialize",
+            deserialize_with = "As::<BorshDurationSeconds<u32>>::deserialize",
+            schema(with_funcs(
+                definitions = "As::<BorshDurationSeconds<u32>>::add_definitions_recursively",
+                declaration = "As::<BorshDurationSeconds<u32>>::declaration",
+            ))
+        )
+    )]
+    #[cfg_attr(
+        not(feature = "abi"),
+        borsh(
+            serialize_with = "As::<BorshDurationSeconds<u32>>::serialize",
+            deserialize_with = "As::<BorshDurationSeconds<u32>>::deserialize",
+        )
+    )]
     timeout: Duration,
 }
 
 impl Nonces for HighloadNonces {
     type Nonce = TimeoutNonce;
-
     type Error = TimeoutNonceError;
 
     fn commit(&mut self, nonce: Self::Nonce) -> Result<(), Self::Error> {
@@ -88,7 +105,7 @@ impl Nonces for HighloadNonces {
 pub struct TimeoutNonce {
     pub nonce: Nonce,
     #[cfg_attr(
-        all(feature = "abi", not(target_arch = "wasm32")),
+        feature = "abi",
         borsh(
             serialize_with = "As::<TimestampSeconds<u32>>::serialize",
             deserialize_with = "As::<TimestampSeconds<u32>>::deserialize",
@@ -99,17 +116,35 @@ pub struct TimeoutNonce {
         )
     )]
     #[cfg_attr(
-        any(not(feature = "abi"), target_arch = "wasm32"),
+        not(feature = "abi"),
         borsh(
             serialize_with = "As::<TimestampSeconds<u32>>::serialize",
             deserialize_with = "As::<TimestampSeconds<u32>>::deserialize",
         )
     )]
     pub created_at: Deadline,
+    #[cfg_attr(
+        feature = "abi",
+        borsh(
+            serialize_with = "As::<BorshDurationSeconds<u32>>::serialize",
+            deserialize_with = "As::<BorshDurationSeconds<u32>>::deserialize",
+            schema(with_funcs(
+                definitions = "As::<BorshDurationSeconds<u32>>::add_definitions_recursively",
+                declaration = "As::<BorshDurationSeconds<u32>>::declaration",
+            ))
+        )
+    )]
+    #[cfg_attr(
+        not(feature = "abi"),
+        borsh(
+            serialize_with = "As::<BorshDurationSeconds<u32>>::serialize",
+            deserialize_with = "As::<BorshDurationSeconds<u32>>::deserialize",
+        )
+    )]
     pub timeout: Duration,
 }
 
-#[derive(Debug, ThisError)]
+#[derive(Debug, ThisError, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TimeoutNonceError {
     #[error("expired or from the future")]
     ExpiredOrFromFuture,

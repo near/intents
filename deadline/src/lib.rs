@@ -81,7 +81,7 @@ impl AddAssign<Duration> for Deadline {
 
 impl SubAssign<Duration> for Deadline {
     fn sub_assign(&mut self, rhs: Duration) {
-        self.0 -= rhs
+        self.0 -= rhs;
     }
 }
 

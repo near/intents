@@ -1,6 +1,6 @@
 use defuse_borsh_utils::adapters::{As, TimestampSeconds};
 use defuse_deadline::Deadline;
-use near_sdk::near;
+use near_sdk::{env, near};
 use thiserror::Error as ThisError;
 
 use crate::Nonces;
@@ -15,7 +15,6 @@ pub struct Seqno {
 
 impl Nonces for Seqno {
     type Nonce = SeqnoNonce;
-
     type Error = SeqnoError;
 
     fn commit(&mut self, nonce: Self::Nonce) -> Result<(), Self::Error> {
@@ -32,6 +31,11 @@ impl Nonces for Seqno {
             return Err(SeqnoError::Expired);
         }
 
+        self.seqno = self
+            .seqno
+            .checked_add(1)
+            .unwrap_or_else(|| env::panic_str("seqno overflow"));
+
         Ok(())
     }
 }
@@ -44,7 +48,7 @@ pub struct SeqnoNonce {
 
     /// The deadline for this signed request.
     #[cfg_attr(
-        all(feature = "abi", not(target_arch = "wasm32")),
+        all(feature = "abi"),
         borsh(
             serialize_with = "As::<TimestampSeconds<u32>>::serialize",
             deserialize_with = "As::<TimestampSeconds<u32>>::deserialize",
@@ -55,7 +59,7 @@ pub struct SeqnoNonce {
         )
     )]
     #[cfg_attr(
-        any(not(feature = "abi"), target_arch = "wasm32"),
+        not(feature = "abi"),
         borsh(
             serialize_with = "As::<TimestampSeconds<u32>>::serialize",
             deserialize_with = "As::<TimestampSeconds<u32>>::deserialize",
@@ -64,7 +68,7 @@ pub struct SeqnoNonce {
     pub valid_until: Deadline,
 }
 
-#[derive(Debug, ThisError)]
+#[derive(Debug, ThisError, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 
 pub enum SeqnoError {
     #[error("invalid seqno: {got}, expected: {expected}")]

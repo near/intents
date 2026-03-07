@@ -1,10 +1,8 @@
-use near_sdk::{AccountId, FunctionError, borsh};
+use near_sdk::{AccountId, borsh};
 use thiserror::Error as ThisError;
 
-pub type Result<T, E = Error> = ::core::result::Result<T, E>;
-
-#[derive(Debug, ThisError, FunctionError)]
-pub enum Error {
+#[derive(Debug, ThisError)]
+pub enum Error<Nonce> {
     #[error("borsh: {0}")]
     Borsh(#[from] borsh::io::Error),
 
@@ -34,6 +32,9 @@ pub enum Error {
 
     #[error("lockout: signature is disabled and extensions are empty")]
     Lockout,
+
+    #[error("nonce: {0}")]
+    Nonce(Nonce),
 
     #[error("signature is disabled")]
     SignatureDisabled,

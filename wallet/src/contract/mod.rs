@@ -1,38 +1,27 @@
 mod impl_;
-
 mod utils;
+
+pub use self::impl_::*;
 
 use std::collections::BTreeSet;
 
-use near_sdk::{AccountId, AccountIdRef, FunctionError, Promise, env, near};
+use near_sdk::{AccountId, AccountIdRef, env, near};
 
 use crate::{
-    Actor, Error, Request, RequestMessage, Result, SeqnoNonce, Wallet, WalletEvent, WalletOp,
+    Actor, Error, Nonces, Request, RequestMessage, Wallet, WalletEvent, WalletOp,
     signature::SigningStandard,
 };
-
-pub use self::impl_::*;
 
 #[near]
 impl Wallet for Contract {
     #[payable]
-    fn w_execute_signed(&mut self, msg: RequestMessage<SeqnoNonce>, proof: String) {
-        self.execute_signed(msg, proof)
-            .unwrap_or_else(|err| err.panic())
-    }
-
-    #[payable]
     fn w_execute_extension(&mut self, request: Request) {
         self.execute_extension(request)
-            .unwrap_or_else(|err| err.panic())
+            .unwrap_or_else(|err| utils::panic_msg(err));
     }
 
     fn w_subwallet_id(&self) -> u32 {
         self.wallet_id
-    }
-
-    fn w_seqno(&self) -> u32 {
-        self.seqno
     }
 
     fn w_is_signature_allowed(&self) -> bool {
@@ -56,8 +45,42 @@ impl Wallet for Contract {
     }
 }
 
+#[cfg(not(feature = "highload"))]
+const _: () = {
+    use crate::{SeqnoNonce, WalletSeqno};
+
+    #[near]
+    impl WalletSeqno for Contract {
+        #[payable]
+        fn w_execute_signed(&mut self, msg: RequestMessage<SeqnoNonce>, proof: String) {
+            self.execute_signed(msg, &proof)
+                .unwrap_or_else(|err| utils::panic_msg(err));
+        }
+
+        fn w_seqno(&self) -> u32 {
+            self.nonces.seqno
+        }
+    }
+};
+
+#[cfg(feature = "highload")]
+const _: () = {
+    use crate::{TimeoutNonce, WalletHighload};
+
+    #[near]
+    impl WalletHighload for Contract {
+        #[payable]
+        fn wh_execute_signed(&mut self, msg: RequestMessage<TimeoutNonce>, proof: String) {
+            self.execute_signed(msg, &proof)
+                .unwrap_or_else(|err| utils::panic_msg(err));
+        }
+    }
+};
+
+type Result<T> = ::core::result::Result<T, Error<ContractNonceError<Contract>>>;
+
 impl Contract {
-    fn execute_signed(&mut self, msg: RequestMessage<SeqnoNonce>, proof: String) -> Result<()> {
+    fn execute_signed(&mut self, msg: ContractRequestMessage<Self>, proof: &str) -> Result<()> {
         if !self.is_signature_allowed() {
             return Err(Error::SignatureDisabled);
         }
@@ -83,33 +106,15 @@ impl Contract {
         let hash = msg.hash();
         WalletEvent::SignedRequest { hash }.emit();
 
-        // check seqno
-        if msg.seqno != self.seqno {
-            return Err(Error::InvalidSeqno {
-                got: msg.seqno,
-                expected: self.seqno,
-            });
-        }
-
-        // check valid_until
-        if msg.valid_until.has_expired() {
-            return Err(Error::Expired);
-        }
-
         // verify signature
-        if !<Self as ContractImpl>::SigningStandard::verify(&msg, &self.public_key, &proof) {
+        if !<Self as SigningStandardImpl>::SigningStandard::verify(&msg, &self.public_key, proof) {
             return Err(Error::InvalidSignature);
         }
 
-        self.execute_request(msg.request, Actor::SignedRequest(hash))?;
+        // commit nonce
+        self.nonces.commit(msg.nonce).map_err(Error::Nonce)?;
 
-        // bump seqno
-        self.seqno = self
-            .seqno
-            .checked_add(1)
-            .unwrap_or_else(|| env::panic_str("seqno overflow"));
-
-        Ok(())
+        self.execute_request(msg.request, &Actor::SignedRequest(hash))
     }
 
     fn execute_extension(&mut self, request: Request) -> Result<()> {
@@ -120,15 +125,17 @@ impl Contract {
         let extension_id = env::predecessor_account_id();
         self.check_extension_enabled(&extension_id)?;
 
-        self.execute_request(request, Actor::Extension(extension_id.into()))
+        self.execute_request(request, &Actor::Extension(extension_id.into()))
     }
 
-    fn execute_request(&mut self, request: Request, actor: Actor<'_>) -> Result<()> {
+    fn execute_request(&mut self, request: Request, actor: &Actor<'_>) -> Result<()> {
         for op in request.ops {
             self.execute_op(op, actor.as_ref())?;
         }
 
-        request.out.build().map(Promise::detach);
+        if let Some(promise) = request.out.build() {
+            promise.detach();
+        }
 
         Ok(())
     }
@@ -184,7 +191,7 @@ impl Contract {
         .emit();
 
         if !self.extensions.remove(&account_id) {
-            return Err(Error::ExtensionNotEnabled(account_id.to_owned()));
+            return Err(Error::ExtensionNotEnabled(account_id));
         }
 
         self.check_lockout()

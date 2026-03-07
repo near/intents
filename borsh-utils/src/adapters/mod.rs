@@ -14,14 +14,17 @@ use impl_tools::autoimpl;
 use near_sdk::borsh::BorshSchema;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 
+mod duration;
+pub use self::duration::*;
+
 #[cfg(feature = "chrono")]
 mod chrono;
 #[cfg(feature = "chrono")]
 pub use self::chrono::*;
 
-#[cfg(all(feature = "schema", not(target_arch = "wasm32")))]
+#[cfg(feature = "abi")]
 mod schema;
-#[cfg(all(feature = "schema", not(target_arch = "wasm32")))]
+#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
 pub use self::schema::*;
 
 #[cfg(feature = "bits")]

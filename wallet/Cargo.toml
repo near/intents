@@ -27,11 +27,13 @@ arbitrary = { workspace = true, features = ["derive"], optional = true }
 
 [features]
 abi = [
+    "defuse-bitmap?/abi",
     "defuse-deadline/abi",
     "defuse-serde-utils/abi",
     "defuse-borsh-utils/abi",
     "defuse-crypto?/abi",
     "defuse-webauthn?/abi",
+    "near-sdk/abi",
 ]
 arbitrary = ["dep:arbitrary", "near-sdk/arbitrary"]
 webauthn = ["dep:defuse-webauthn"]

@@ -38,8 +38,10 @@ where
     T: PrimInt + Unsigned + Shl<T, Output = T>,
 {
     const BITS: usize = bits_of::<T>();
+    #[allow(clippy::as_conversions)]
     const BITS_FOR_BIT_POS: usize = Self::BITS.ilog2() as usize;
     const BITS_FOR_WORD: usize = Self::BITS - Self::BITS_FOR_BIT_POS;
+    #[allow(clippy::as_conversions)]
     const MAX_LEN_BITS: usize = if Self::BITS_FOR_WORD < u32::BITS as usize {
         // add one, since we also need to store zero-length
         Self::BITS_FOR_WORD + 1
@@ -136,7 +138,7 @@ where
 
 impl<T> Default for CompactBitMap<T> {
     fn default() -> Self {
-        Self(Default::default())
+        Self(BTreeMap::new())
     }
 }
 
@@ -198,6 +200,28 @@ where
         <Bits as BorshDeserializeAs<Self>>::deserialize_as(reader)
     }
 }
+
+#[cfg(feature = "abi")]
+const _: () = {
+    use near_sdk::borsh::{
+        BorshSchema,
+        schema::{Declaration, Definition},
+    };
+
+    impl<T> BorshSchema for CompactBitMap<T>
+    where
+        T: BorshSchema,
+        Self: BorshSerialize + BorshDeserialize,
+    {
+        fn add_definitions_recursively(_definitions: &mut BTreeMap<Declaration, Definition>) {
+            // TODO
+        }
+
+        fn declaration() -> Declaration {
+            format!("CompactBitMap<{}>", T::declaration())
+        }
+    }
+};
 
 #[cfg(test)]
 mod tests {
