@@ -1,10 +1,14 @@
 use std::time::Duration;
 
 use defuse_randomness::rng;
-use defuse_sandbox::{Sandbox, extensions::wallet::WalletExt, sandbox};
+use defuse_sandbox::{
+    Sandbox,
+    extensions::wallet::{WalletExt, WalletViewExt},
+    sandbox,
+};
 use defuse_test_utils::wasms::WALLET_WASM;
 use defuse_wallet::{
-    self, ConcurrentNonces, PromiseSingle, Request, State, WalletOp,
+    self, ConcurrentNonces, FunctionCallAction, PromiseSingle, Request, State, WalletOp,
     signature::{
         Borsh, Deadline, RequestMessage, SigningStandard, WALLET_DOMAIN,
         ed25519::{Ed25519, Ed25519PublicKey, Ed25519Signature},
@@ -17,6 +21,7 @@ use near_sdk::{
     state_init::{StateInit, StateInitV1},
 };
 use rstest::{fixture, rstest};
+use serde_json::json;
 
 type S = Borsh<Ed25519>;
 type PublicKey = <S as SigningStandard<RequestMessage>>::PublicKey;
@@ -67,8 +72,8 @@ async fn test_signed(#[future] env: Env) {
     };
 
     let signed_request_body = RequestMessage {
-        signer_id: wallet.id().clone(),
         chain_id: "mainnet".to_string(),
+        signer_id: wallet.id().clone(),
         nonce: nonces.next().unwrap(),
         created_at: Deadline::now() - Duration::from_secs(60),
         timeout: wallet_state.nonces.timeout(),
@@ -136,6 +141,91 @@ async fn test_extension(#[future] env: Env) {
         .unwrap();
 
     assert!(receiver.view().await.unwrap().amount >= NearToken::from_near(1));
+}
+
+#[rstest]
+#[awt]
+#[tokio::test]
+async fn test_rotate(#[future] env: Env) {
+    let [old_secret_key, new_secret_key] = [
+        SecretKey::from_random(KeyType::ED25519),
+        SecretKey::from_random(KeyType::ED25519),
+    ];
+
+    let [old_wallet_state, new_wallet_state] = [&old_secret_key, &new_secret_key]
+        .map(|sk| State::<PublicKey>::new(Ed25519PublicKey(sk.public_key().unwrap_as_ed25519().0)));
+
+    let [old_wallet_state_init, new_wallet_state_init] = [&old_wallet_state, &new_wallet_state]
+        .map(|s| {
+            StateInit::V1(StateInitV1 {
+                code: env.wallet_global_id.clone(),
+                data: s.as_storage(),
+            })
+        });
+
+    let [old_wallet, new_wallet] = [&old_wallet_state_init, &new_wallet_state_init]
+        .map(|s| env.account(s.derive_account_id()));
+
+    let old_signed_request_body = RequestMessage {
+        chain_id: "mainnet".to_string(),
+        signer_id: old_wallet.id().clone(),
+        nonce: 0,
+        created_at: Deadline::now() - Duration::from_secs(60),
+        timeout: old_wallet_state.nonces.timeout(),
+        request: Request {
+            ops: vec![WalletOp::AddExtension {
+                account_id: new_wallet.id().clone(),
+            }],
+            out: Default::default(),
+        },
+    };
+
+    env.w_execute_signed(
+        old_wallet.id(),
+        old_wallet_state_init.clone(),
+        old_signed_request_body.clone(),
+        sign_request(&old_secret_key, &old_signed_request_body),
+        NearToken::ZERO,
+    )
+    .await
+    .unwrap();
+
+    let new_signed_request_body = RequestMessage {
+        chain_id: "mainnet".to_string(),
+        signer_id: new_wallet.id().clone(),
+        nonce: 0,
+        created_at: Deadline::now() - Duration::from_secs(60),
+        timeout: new_wallet_state.nonces.timeout(),
+        request: Request {
+            ops: vec![],
+            out: PromiseSingle::new(old_wallet.id())
+                .function_call(
+                    FunctionCallAction::new("w_execute_extension")
+                        .args_json(json!({
+                            "request": Request {
+                                ops: vec![
+                                    WalletOp::SetSignatureMode { enable: false }
+                                ],
+                                out: Default::default()
+                            },
+                        }))
+                        .attached_deposit(NearToken::from_yoctonear(1)),
+                )
+                .into(),
+        },
+    };
+
+    env.w_execute_signed(
+        new_wallet.id(),
+        new_wallet_state_init.clone(),
+        new_signed_request_body.clone(),
+        sign_request(&new_secret_key, &new_signed_request_body),
+        NearToken::from_yoctonear(1),
+    )
+    .await
+    .unwrap();
+
+    assert!(!old_wallet.w_is_signature_allowed().await.unwrap());
 }
 
 #[autoimpl(Deref using self.sandbox)]
