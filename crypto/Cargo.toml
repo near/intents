@@ -11,6 +11,7 @@ generic-array = { workspace = true, features = ["compat-0_14"] }
 hex.workspace = true
 near-sdk = { workspace = true, features = ["unstable"] }
 p256.workspace = true
+schnorrkel.workspace = true
 strum.workspace = true
 thiserror.workspace = true
 
