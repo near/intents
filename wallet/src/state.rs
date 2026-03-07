@@ -1,4 +1,7 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    time::Duration,
+};
 
 use near_sdk::{
     AccountId, AccountIdRef,
@@ -6,12 +9,14 @@ use near_sdk::{
     near,
 };
 
+use crate::Nonces;
+
 pub const STATE_KEY: &[u8] = b"";
 
 /// State of the wallet-contract.
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct State<PubKey, Nonces> {
+pub struct State<PubKey> {
     /// Whether authentication by signature is allowed.
     pub signature_enabled: bool,
 
@@ -23,7 +28,6 @@ pub struct State<PubKey, Nonces> {
     /// being used by the implementation)
     pub public_key: PubKey,
 
-    #[serde(flatten)]
     pub nonces: Nonces,
 
     /// A set of enabled extensions.
@@ -31,20 +35,17 @@ pub struct State<PubKey, Nonces> {
     pub extensions: BTreeSet<AccountId>,
 }
 
-impl<PubKey, Nonces> State<PubKey, Nonces> {
+impl<PubKey> State<PubKey> {
     pub const DEFAULT_WALLET_ID: u32 = 0;
 
-    /// Create a default state with given public key.
+    /// Create a default state with given public key and nonce timeout.
     #[inline]
-    pub fn new(public_key: PubKey) -> Self
-    where
-        Nonces: Default,
-    {
+    pub const fn new(public_key: PubKey, nonce_timeout: Duration) -> Self {
         Self {
             signature_enabled: true,
             wallet_id: Self::DEFAULT_WALLET_ID,
             public_key,
-            nonces: Default::default(),
+            nonces: Nonces::new(nonce_timeout),
             extensions: BTreeSet::new(),
         }
     }

@@ -4,22 +4,25 @@ mod arbitrary;
 mod contract;
 mod error;
 mod events;
-mod nonce;
+mod nonces;
 mod request;
 pub mod signature;
 mod state;
 
 use std::collections::BTreeSet;
 
+use defuse_deadline::Deadline;
 use near_sdk::{AccountId, ext_contract};
 
 use crate::signature::RequestMessage;
 
-pub use self::{error::*, events::*, nonce::*, request::*, state::*};
+pub use self::{error::*, events::*, nonces::*, request::*, state::*};
 
 /// Deterministic single-key Wallet Contract.
 #[ext_contract(ext_wallet)]
 pub trait Wallet {
+    fn w_execute_signed(&mut self, msg: RequestMessage, proof: String);
+
     /// Execute request from an enabled extension.
     ///
     /// * SHOULD accept ANY non-zero attached deposit
@@ -38,6 +41,10 @@ pub trait Wallet {
     /// identity associated with this wallet's singing standard.
     fn w_public_key(&self) -> String;
 
+    // TODO: docs
+    fn w_timeout_sec(&self) -> u32;
+    fn w_last_cleaned_at(&self) -> Deadline;
+
     /// Returns whether extension with given `account_id` is enabled.
     /// If true, this `account_id` SHOULD be allowed to call
     /// `w_execute_extension()`.
@@ -49,29 +56,4 @@ pub trait Wallet {
 
     /// Helper method to get chain_id of the network
     fn w_chain_id(&self) -> String;
-}
-
-#[ext_contract(ext_wallet_seqno)]
-pub trait WalletSeqno: Wallet {
-    /// Executes signed request.
-    ///
-    /// * SHOULD accept ANY attached deposit.
-    /// * MUST fail in any case where the `signed.request` is not executed
-    ///   due to various reasons, including:
-    ///   * `signed` data is invalid
-    ///   * `proof` is invalid
-    ///   * signature is disabled
-    fn w_execute_signed(&mut self, msg: RequestMessage<SeqnoNonce>, proof: String);
-
-    /// Current `seqno` to be used for signed requests.
-    fn w_seqno(&self) -> u32;
-}
-
-#[cfg(feature = "highload")]
-#[ext_contract(ext_wallet_highload)]
-pub trait WalletHighload: Wallet {
-    fn wh_execute_signed(&mut self, msg: RequestMessage<TimeoutNonce>, proof: String);
-
-    // TODO: wh_timeout()
-    // TODO: wh_last_cleaned_at()
 }

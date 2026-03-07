@@ -5,19 +5,26 @@ pub use self::impl_::*;
 
 use std::collections::BTreeSet;
 
-use near_sdk::{AccountId, AccountIdRef, env, near};
+use defuse_deadline::Deadline;
+use near_sdk::{AccountId, AccountIdRef, FunctionError, env, near};
 
 use crate::{
-    Actor, Error, Nonces, Request, RequestMessage, Wallet, WalletEvent, WalletOp,
+    Actor, Error, Request, RequestMessage, Result, Wallet, WalletEvent, WalletOp,
     signature::SigningStandard,
 };
 
 #[near]
 impl Wallet for Contract {
     #[payable]
+    fn w_execute_signed(&mut self, msg: RequestMessage, proof: String) {
+        self.execute_signed(msg, &proof)
+            .unwrap_or_else(|err| err.panic());
+    }
+
+    #[payable]
     fn w_execute_extension(&mut self, request: Request) {
         self.execute_extension(request)
-            .unwrap_or_else(|err| utils::panic_msg(err));
+            .unwrap_or_else(|err| err.panic());
     }
 
     fn w_subwallet_id(&self) -> u32 {
@@ -30,6 +37,18 @@ impl Wallet for Contract {
 
     fn w_public_key(&self) -> String {
         self.public_key.to_string()
+    }
+
+    fn w_timeout_sec(&self) -> u32 {
+        self.nonces
+            .timeout()
+            .as_secs()
+            .try_into() // this is serialized as u32
+            .unwrap_or_else(|_| unreachable!())
+    }
+
+    fn w_last_cleaned_at(&self) -> Deadline {
+        self.nonces.last_cleaned_at()
     }
 
     fn w_is_extension_enabled(&self, account_id: AccountId) -> bool {
@@ -45,52 +64,15 @@ impl Wallet for Contract {
     }
 }
 
-#[cfg(not(feature = "highload"))]
-const _: () = {
-    use crate::{SeqnoNonce, WalletSeqno};
-
-    #[near]
-    impl WalletSeqno for Contract {
-        #[payable]
-        fn w_execute_signed(&mut self, msg: RequestMessage<SeqnoNonce>, proof: String) {
-            self.execute_signed(msg, &proof)
-                .unwrap_or_else(|err| utils::panic_msg(err));
-        }
-
-        fn w_seqno(&self) -> u32 {
-            self.nonces.seqno
-        }
-    }
-};
-
-#[cfg(feature = "highload")]
-const _: () = {
-    use crate::{TimeoutNonce, WalletHighload};
-
-    #[near]
-    impl WalletHighload for Contract {
-        #[payable]
-        fn wh_execute_signed(&mut self, msg: RequestMessage<TimeoutNonce>, proof: String) {
-            self.execute_signed(msg, &proof)
-                .unwrap_or_else(|err| utils::panic_msg(err));
-        }
-    }
-};
-
-type Result<T> = ::core::result::Result<T, Error<ContractNonceError<Contract>>>;
-
 impl Contract {
-    fn execute_signed(&mut self, msg: ContractRequestMessage<Self>, proof: &str) -> Result<()> {
+    fn execute_signed(&mut self, msg: RequestMessage, proof: &str) -> Result<()> {
         if !self.is_signature_allowed() {
             return Err(Error::SignatureDisabled);
         }
 
         // check chain_id
         if msg.chain_id != utils::chain_id() {
-            return Err(Error::InvalidChainId {
-                got: msg.chain_id,
-                expected: utils::chain_id(),
-            });
+            return Err(Error::InvalidChainId);
         }
 
         // check signer_id
@@ -107,12 +89,12 @@ impl Contract {
         WalletEvent::SignedRequest { hash }.emit();
 
         // verify signature
-        if !<Self as SigningStandardImpl>::SigningStandard::verify(&msg, &self.public_key, proof) {
+        if !<Self as ContractImpl>::SigningStandard::verify(&msg, &self.public_key, proof) {
             return Err(Error::InvalidSignature);
         }
 
         // commit nonce
-        self.nonces.commit(msg.nonce).map_err(Error::Nonce)?;
+        self.nonces.commit(msg.nonce, msg.created_at, msg.timeout)?;
 
         self.execute_request(msg.request, &Actor::SignedRequest(hash))
     }

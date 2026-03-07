@@ -34,21 +34,15 @@ build-global-deployer: CRATE_NAME=defuse-global-deployer
 
 # ============================================================================
 
-CONTRACTS += wallet wallet-highload \
-	wallet-webauthn-ed25519 wallet-highload-webauthn-ed25519 \
-	wallet-webauthn-p256 wallet-highload-webauthn-p256 \
+CONTRACTS += wallet \
+	wallet-webauthn-ed25519 \
+	wallet-webauthn-p256 \
 	wallet-no-sign
 build-wallet build-wallet-%: CRATE_NAME=defuse-wallet
-build-wallet-highload: CONTRACT_OUT_DIR=highload
-build-wallet-highload: VARIANT=highload
 build-wallet-webauthn-ed25519: CONTRACT_OUT_DIR=webauthn-ed25519
 build-wallet-webauthn-ed25519: VARIANT=webauthn-ed25519
-build-wallet-highload-webauthn-ed25519: CONTRACT_OUT_DIR=highload-webauthn-ed25519
-build-wallet-highload-webauthn-ed25519: VARIANT=highload-webauthn-ed25519
 build-wallet-webauthn-p256: CONTRACT_OUT_DIR=webauthn-p256
 build-wallet-webauthn-p256: VARIANT=webauthn-p256
-build-wallet-highload-webauthn-p256: CONTRACT_OUT_DIR=highload-webauthn-p256
-build-wallet-highload-webauthn-p256: VARIANT=highload-webauthn-p256
 build-wallet-no-sign: CONTRACT_OUT_DIR=no-sign
 build-wallet-no-sign: WARIANT=no-sign
 

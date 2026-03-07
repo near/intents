@@ -1,13 +1,15 @@
-use near_sdk::{AccountId, borsh};
+use near_sdk::{AccountId, FunctionError, borsh};
 use thiserror::Error as ThisError;
 
-#[derive(Debug, ThisError)]
-pub enum Error<Nonce> {
+pub type Result<T, E = Error> = ::core::result::Result<T, E>;
+
+#[derive(Debug, ThisError, FunctionError)]
+pub enum Error {
+    #[error("already executed")]
+    AlreadyExecuted,
+
     #[error("borsh: {0}")]
     Borsh(#[from] borsh::io::Error),
-
-    #[error("signature expired")]
-    Expired,
 
     #[error("extension '{0}' is already enabled")]
     ExtensionEnabled(AccountId),
@@ -15,11 +17,15 @@ pub enum Error<Nonce> {
     #[error("extension '{0}' is not enabled")]
     ExtensionNotEnabled(AccountId),
 
-    #[error("invalid chain_id: '{got}', expected: '{expected}'")]
-    InvalidChainId { got: String, expected: String },
+    #[error("invalid chain_id")]
+    InvalidChainId,
 
-    #[error("invalid seqno: {got}, expected: {expected}")]
-    InvalidSeqno { got: u32, expected: u32 },
+    // TODO
+    #[error("expired or from the future")]
+    InvalidCreatedAt,
+
+    #[error("invalid timeout")]
+    InvalidTimeout,
 
     #[error("invalid signature")]
     InvalidSignature,
@@ -32,9 +38,6 @@ pub enum Error<Nonce> {
 
     #[error("lockout: signature is disabled and extensions are empty")]
     Lockout,
-
-    #[error("nonce: {0}")]
-    Nonce(Nonce),
 
     #[error("signature is disabled")]
     SignatureDisabled,

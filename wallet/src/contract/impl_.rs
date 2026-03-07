@@ -3,58 +3,24 @@ use core::ops::{Deref, DerefMut};
 use near_sdk::{PanicOnDefault, near};
 
 use crate::{
-    Nonces, STATE_KEY,
+    STATE_KEY,
     signature::{RequestMessage, SigningStandard},
 };
 
-// #[cfg(not(feature = "highload"))]
-// type Nonces = crate::Seqno;
-// #[cfg(feature = "highload")]
-// type Nonces = crate::HighloadNonces;
-
-// pub type RequestMessage = crate::RequestMessage<Nonces>;
-
-pub trait NoncesImpl {
-    type Nonces: Nonces + 'static;
+pub trait ContractImpl {
+    /// Signing standard implementation of the contract
+    type SigningStandard: SigningStandard<&'static RequestMessage>;
 }
 
-#[cfg(not(feature = "highload"))]
-const _: () = {
-    use crate::Seqno;
+/// Signing standard implemented by the contract `C`
+type ContractSigningStandard<C> = <C as ContractImpl>::SigningStandard;
 
-    impl NoncesImpl for Contract {
-        type Nonces = Seqno;
-    }
-};
-
-#[cfg(feature = "highload")]
-const _: () = {
-    use crate::HighloadNonces;
-
-    impl NoncesImpl for Contract {
-        type Nonces = HighloadNonces;
-    }
-};
-
-/// Nonces implemented by the contract.
-type ContractNonces<C> = <C as NoncesImpl>::Nonces;
-pub type ContractNonce<C> = <ContractNonces<C> as Nonces>::Nonce;
-pub type ContractNonceError<C> = <ContractNonces<C> as Nonces>::Error;
-
-pub type ContractRequestMessage<C> = RequestMessage<ContractNonce<C>>;
-
-pub trait SigningStandardImpl: NoncesImpl {
-    type SigningStandard: SigningStandard<&'static ContractRequestMessage<Self>>;
-}
-/// Signing standard implemented by the contract
-type ContractSigningStandard<C> = <C as SigningStandardImpl>::SigningStandard;
-
-/// Public key used by the signing standard.
+/// Public key used by the signing standard for contract `C`
 type ContractPubKey<C> =
-    <ContractSigningStandard<C> as SigningStandard<&'static ContractRequestMessage<C>>>::PublicKey;
+    <ContractSigningStandard<C> as SigningStandard<&'static RequestMessage>>::PublicKey;
 
-/// State of the contract.
-type ContractState<C> = crate::State<ContractPubKey<C>, ContractNonces<C>>;
+/// State of the contract `C`
+type ContractState<C> = crate::State<ContractPubKey<C>>;
 
 /// `#[near(contract_metadata(standard(...)))]` macro doesn't support
 /// adding more standards in separate attributes. So, we have to combine
@@ -74,24 +40,12 @@ macro_rules! contract_impl {
         )+
 
         $(#[cfg_attr(
-            all(not(feature = "highload"), $meta),
+            $meta,
             near(
                 contract_state(key = STATE_KEY),
                 contract_metadata(
                     standard(standard = "wallet",       version = "1.0.0"),
-                    standard(standard = "wallet-seqno", version = "1.0.0"),
                     standard(standard = $s,             version = $v     ),
-                ),
-            )
-        )])+
-        $(#[cfg_attr(
-            all(feature = "highload", $meta),
-            near(
-                contract_state(key = STATE_KEY),
-                contract_metadata(
-                    standard(standard = "wallet",          version = "1.0.0"),
-                    standard(standard = "wallet-highload", version = "1.0.0"),
-                    standard(standard = $s,                version = $v     ),
                 ),
             )
         )])+
@@ -116,6 +70,11 @@ macro_rules! contract_impl {
                     ))
                 )] $block
             )+
+            // When no features enabled, the contract always reject the
+            // signature. This can be useful to deploy "1-of-M multisig"/
+            // "fan-out" wallet, where extensions are pre-defined at the
+            // initialization stage (i.e. state_init). So only extensions
+            // can execute requests via `w_execute_extension()`.
             #[cfg_attr(
                 not(any($(feature = $feature),+)),
                 near(contract_metadata(
@@ -125,8 +84,7 @@ macro_rules! contract_impl {
                 use crate::signature::no_sign::NoSign;
 
                 impl SigningStandardImpl for Contract {
-                    /// By default, the contract implements `no-sign`, i.e. always
-                    /// rejects signature.
+                    /// Always reject the signature.
                     type SigningStandard = NoSign;
                 }
             }
@@ -145,7 +103,7 @@ contract_impl! {
 
         use crate::signature::{Borsh, DomainPrefix, Sha256};
 
-        impl SigningStandardImpl for Contract {
+        impl ContractImpl for Contract {
             type SigningStandard = Borsh<DomainPrefix<Sha256<Ed25519>>>;
         }
     }
@@ -161,7 +119,7 @@ contract_impl! {
             webauthn::{Ed25519, Webauthn},
         };
 
-        impl SigningStandardImpl for Contract {
+        impl ContractImpl for Contract {
             /// Webauthn [COSE EdDSA (-8) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
             /// ed25519 curve.
             ///
@@ -180,11 +138,11 @@ contract_impl! {
         ))
     )] {
         use crate::signature::{
-            Borsh, Sha256, DomainPrefix,
+            Borsh, DomainPrefix, Sha256,
             webauthn::{P256, Webauthn},
         };
 
-        impl SigningStandardImpl for Contract {
+        impl ContractImpl for Contract {
             /// [COSE ES256 (-7) algorithm](https://www.iana.org/assignments/cose/cose.xhtml#algorithms):
             /// P256 (a.k.a secp256r1) over SHA-256
             ///

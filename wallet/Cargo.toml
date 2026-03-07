@@ -12,6 +12,7 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [dependencies]
+defuse-bitmap = { workspace = true, features = ["compact"] }
 defuse-borsh-utils.workspace = true
 defuse-deadline.workspace = true
 defuse-serde-utils.workspace = true
@@ -19,7 +20,6 @@ defuse-serde-utils.workspace = true
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 thiserror.workspace = true
 
-defuse-bitmap = { workspace = true, features = ["compact"], optional = true }
 defuse-crypto = { workspace = true, default-features = false, optional = true }
 defuse-webauthn = { workspace = true, default-features = false, optional = true }
 
@@ -27,7 +27,7 @@ arbitrary = { workspace = true, features = ["derive"], optional = true }
 
 [features]
 abi = [
-    "defuse-bitmap?/abi",
+    "defuse-bitmap/abi",
     "defuse-deadline/abi",
     "defuse-serde-utils/abi",
     "defuse-borsh-utils/abi",
@@ -37,7 +37,6 @@ abi = [
 ]
 arbitrary = ["dep:arbitrary", "near-sdk/arbitrary"]
 webauthn = ["dep:defuse-webauthn"]
-highload = ["dep:defuse-bitmap"]
 
 ########## Contract variants ##########
 # When no features enabled, by default, always reject the signature.

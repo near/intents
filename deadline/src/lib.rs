@@ -17,6 +17,7 @@ use near_sdk::near;
 pub struct Deadline(#[cfg_attr(feature = "abi", schemars(with = "String"))] DateTime<Utc>);
 
 impl Deadline {
+    pub const MIN: Self = Self(DateTime::UNIX_EPOCH);
     pub const MAX: Self = Self(DateTime::<Utc>::MAX_UTC);
 
     pub const fn new(d: DateTime<Utc>) -> Self {
