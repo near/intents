@@ -21,6 +21,7 @@ pub use self::{borsh::*, domain::*, hash::*};
 /// Signing standard, which defines the public key and how `signature` on
 /// `msg` is verified.
 pub trait SigningStandard<M> {
+    /// Public key used by the signing standard.
     type PublicKey;
 
     fn verify(msg: M, public_key: &Self::PublicKey, signature: &str) -> bool;
@@ -57,16 +58,6 @@ pub struct RequestMessage {
     /// [`ConcurrentNonces`](crate::ConcurrentNonces) implementation.
     pub nonce: u32,
 
-    /// Timestamp when this request was created (in RFC-3339 format).
-    ///
-    /// NOTE:
-    /// The contract ensures that `now() - timeout <= created_at <= now()`,
-    /// where `now()` is the current block timestamp. Due to the desentralized
-    /// nature of consensus in blockchains, block timestamps usually lag a
-    /// bit behind the actual time when it's produced. As a result, clients
-    /// are recommended to set `created_at` slightly (e.g. 60 seconds) before
-    /// the actual time of signing, so that it doesn't fail on-chain if it
-    /// arrives too fast.
     #[cfg_attr(
         not(feature = "abi"),
         borsh(
@@ -85,10 +76,18 @@ pub struct RequestMessage {
             ))
         )
     )]
+    /// Timestamp when this request was created (in RFC-3339 format).
+    ///
+    /// NOTE:
+    /// The contract ensures that `now() - timeout <= created_at <= now()`,
+    /// where `now()` is the current block timestamp. Due to the desentralized
+    /// nature of consensus in blockchains, block timestamps usually lag a
+    /// bit behind the actual time when it's produced. As a result, clients
+    /// are recommended to set `created_at` slightly (e.g. 60 seconds) before
+    /// the actual time of signing, so that it doesn't fail on-chain if it
+    /// arrives too fast.
     pub created_at: Deadline,
 
-    /// Timeout for validity of this request after `created_at`.
-    /// MUST match `w_timeout_sec()` set on the contract.
     #[cfg_attr(
         feature = "abi",
         borsh(
@@ -109,6 +108,9 @@ pub struct RequestMessage {
     )]
     #[serde(rename = "timeout_secs")]
     #[serde_as(as = "DurationSeconds")]
+    /// Timeout for validity of this request after `created_at`.
+    /// MUST match [`w_timeout_secs()`](crate::Wallet::w_timeout_secs)
+    /// set on the contract.
     pub timeout: Duration,
 
     /// Request to execute

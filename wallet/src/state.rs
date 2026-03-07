@@ -11,8 +11,6 @@ use near_sdk::{
 
 use crate::Nonces;
 
-pub const STATE_KEY: &[u8] = b"";
-
 /// State of the wallet-contract.
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -28,6 +26,7 @@ pub struct State<PubKey> {
     /// being used by the implementation)
     pub public_key: PubKey,
 
+    /// Set of used timeout-based nonces.
     pub nonces: Nonces,
 
     /// A set of enabled extensions.
@@ -36,25 +35,42 @@ pub struct State<PubKey> {
 }
 
 impl<PubKey> State<PubKey> {
-    pub const DEFAULT_WALLET_ID: u32 = 0;
+    pub(crate) const STATE_KEY: &[u8] = b"";
 
-    /// Create a default state with given public key and nonce timeout.
+    pub const DEFAULT_WALLET_ID: u32 = 0;
+    /// Recommended timeout to fit into ZBA limits with sending 1 tx/sec over
+    /// the timespan of `2 * timeout`.
+    pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(15 * 60); // 15m
+
+    /// Create a default state with given public key.
     #[inline]
-    pub const fn new(public_key: PubKey, nonce_timeout: Duration) -> Self {
+    pub const fn new(public_key: PubKey) -> Self {
         Self {
             signature_enabled: true,
             wallet_id: Self::DEFAULT_WALLET_ID,
             public_key,
-            nonces: Nonces::new(nonce_timeout),
+            nonces: Nonces::new(Self::DEFAULT_TIMEOUT),
             extensions: BTreeSet::new(),
         }
     }
 
-    /// Set `subwallet_id` instead of the [default](`State::DEFAULT_WALLET_ID`) one
+    /// Set given `subwallet_id` instead of the
+    /// [default](`State::DEFAULT_WALLET_ID`) one.
+    /// This can be used to derive multiple wallet-contract from a single
+    /// public key.
     #[must_use]
     #[inline]
     pub const fn wallet_id(mut self, wallet_id: u32) -> Self {
         self.wallet_id = wallet_id;
+        self
+    }
+
+    /// Set given `timeout` instead of default the
+    /// [default](`State::DEFAULT_TIMEOUT`) one.
+    #[must_use]
+    #[inline]
+    pub fn timeout(mut self, timeout: Duration) -> Self {
+        self.nonces = Nonces::new(timeout);
         self
     }
 
@@ -93,7 +109,7 @@ impl<PubKey> State<PubKey> {
         Nonces: BorshSerialize,
     {
         [(
-            STATE_KEY.to_vec(),
+            Self::STATE_KEY.to_vec(),
             borsh::to_vec(self).unwrap_or_else(|_| unreachable!()),
         )]
         .into()

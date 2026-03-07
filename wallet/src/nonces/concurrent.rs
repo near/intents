@@ -1,6 +1,6 @@
 use rand_core::Rng;
 
-/// [`Iterator`] for generating non-sequential nonces semi-sequentially,
+/// Endless [`Iterator`] for generating non-sequential nonces semi-sequentially,
 /// allowing for multiple concurrent clients while being optimized for storage.
 ///
 /// See [`crate::RequestMessage`].
@@ -49,14 +49,18 @@ mod tests {
     #[test]
     fn zba() {
         const TIMEOUT: Duration = Duration::from_secs(60 * 15); // 15 mins
-        const MAX_SIZE: usize = 240;
+        const MAX_SIZE: usize = 235;
 
         let mut ns = ConcurrentNonces::new(rng()).peekable();
 
         for _ in 0..1000 {
             let mut nonces = CompactBitMap::<u32>::new();
-            // 1 tx/s
-            for n in ns.by_ref().take(TIMEOUT.as_secs().try_into().unwrap()) {
+
+            for n in ns
+                .by_ref()
+                // 1 tx/s
+                .take(TIMEOUT.as_secs().try_into().unwrap())
+            {
                 assert!(!nonces.set_bit(n), "rand collision");
             }
             assert!(

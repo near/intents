@@ -39,24 +39,24 @@ impl Wallet for Contract {
         self.public_key.to_string()
     }
 
-    fn w_timeout_sec(&self) -> u32 {
-        self.nonces
-            .timeout()
-            .as_secs()
-            .try_into() // this is serialized as u32
-            .unwrap_or_else(|_| unreachable!())
-    }
-
-    fn w_last_cleaned_at(&self) -> Deadline {
-        self.nonces.last_cleaned_at()
-    }
-
     fn w_is_extension_enabled(&self, account_id: AccountId) -> bool {
         self.has_extension(account_id)
     }
 
     fn w_extensions(&self) -> BTreeSet<AccountId> {
         self.extensions.clone()
+    }
+
+    fn w_timeout_secs(&self) -> u32 {
+        self.nonces
+            .timeout()
+            .as_secs()
+            .try_into() // it's serialized as u32 in state
+            .unwrap_or_else(|_| unreachable!())
+    }
+
+    fn w_last_cleaned_at(&self) -> Deadline {
+        self.nonces.last_cleaned_at()
     }
 }
 
@@ -76,14 +76,6 @@ impl Contract {
             return Err(Error::InvalidSignerId(msg.signer_id));
         }
 
-        // It makes sense to emit here, since checks above ensure this request
-        // is intended to be relayed to this instance of wallet-contract.
-        // In case following checks or request execution fail, this would
-        // at least give relayers/indexers some observability on what exact
-        // request hash was it.
-        let hash = msg.hash();
-        WalletEvent::SignedRequest { hash }.emit();
-
         // verify signature
         if !<Self as ContractImpl>::SigningStandard::verify(&msg, &self.public_key, proof) {
             return Err(Error::InvalidSignature);
@@ -91,6 +83,9 @@ impl Contract {
 
         // commit nonce
         self.nonces.commit(msg.nonce, msg.created_at, msg.timeout)?;
+
+        let hash = msg.hash();
+        WalletEvent::SignedRequest { hash }.emit();
 
         self.execute_request(msg.request, &Actor::SignedRequest(hash))
     }

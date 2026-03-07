@@ -20,9 +20,8 @@ pub enum Error {
     #[error("invalid chain_id")]
     InvalidChainId,
 
-    // TODO
     #[error("expired or from the future")]
-    InvalidCreatedAt,
+    ExpiredOrFuture,
 
     #[error("invalid timeout")]
     InvalidTimeout,

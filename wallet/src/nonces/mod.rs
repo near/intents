@@ -12,8 +12,7 @@ use near_sdk::{near, serde_with::DurationSeconds};
 
 use crate::{Error, Result};
 
-// TODO: current now() % number of already submitted nonces
-// nonces are unbounded: BitVec?
+/// Dual-timeout window nonces
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Nonces {
@@ -37,12 +36,14 @@ pub struct Nonces {
             deserialize_with = "As::<BorshDurationSeconds<u32>>::deserialize",
         )
     )]
+    /// Timeout, i.e. validity timespan for each nonce.
     timeout: Duration,
 
-    old_nonces: CompactBitMap<u32>, // TODO: corresponds to previous epoch?
-    nonces: CompactBitMap<u32>,     // corresponds to current epoch?
+    /// Previous nonces (i.e. within `[now - 2*timeout, now - timeout)`)
+    old_nonces: CompactBitMap<u32>,
+    /// Current nonces (i.e. within `[now - timeout, now]`)
+    nonces: CompactBitMap<u32>,
 
-    // TODO: can we make it deterministic?
     #[cfg_attr(
         feature = "abi",
         borsh(
@@ -61,6 +62,7 @@ pub struct Nonces {
             deserialize_with = "As::<TimestampSeconds<u32>>::deserialize",
         )
     )]
+    /// The last timestamp when nonces were rotated
     last_cleaned_at: Deadline,
 }
 
@@ -84,7 +86,7 @@ impl Nonces {
 
         let now = Deadline::now();
         if !(now - self.timeout <= created_at && created_at <= now) {
-            return Err(Error::InvalidCreatedAt);
+            return Err(Error::ExpiredOrFuture);
         }
 
         if self.old_nonces.get_bit(nonce) || self.nonces.set_bit(nonce) {
@@ -94,6 +96,7 @@ impl Nonces {
         Ok(())
     }
 
+    /// Rotate and cleanup if it's time
     pub fn check_cleanup(&mut self) {
         let now = Deadline::now();
         let last_valid_nonce_at = now - self.timeout;

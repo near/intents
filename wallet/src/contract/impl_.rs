@@ -2,10 +2,7 @@ use core::ops::{Deref, DerefMut};
 
 use near_sdk::{PanicOnDefault, near};
 
-use crate::{
-    STATE_KEY,
-    signature::{RequestMessage, SigningStandard},
-};
+use crate::signature::{RequestMessage, SigningStandard};
 
 pub trait ContractImpl {
     /// Signing standard implementation of the contract
@@ -42,7 +39,7 @@ macro_rules! contract_impl {
         $(#[cfg_attr(
             $meta,
             near(
-                contract_state(key = STATE_KEY),
+                contract_state(key = ContractState::<Self>::STATE_KEY),
                 contract_metadata(
                     standard(standard = "wallet",       version = "1.0.0"),
                     standard(standard = $s,             version = $v     ),
