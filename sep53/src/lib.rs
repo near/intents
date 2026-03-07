@@ -1,7 +1,6 @@
 use defuse_crypto::{CryptoHash, Curve, Ed25519, Payload, SignedPayload, serde::AsCurve};
 use impl_tools::autoimpl;
-use near_sdk::{env, near};
-use serde_with::serde_as;
+use near_sdk::{env, near, serde_with::serde_as};
 
 /// See [SEP-53](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0053.md)
 #[near(serializers = [json])]

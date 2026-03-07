@@ -1,7 +1,6 @@
 use defuse_crypto::{CryptoHash, Curve, Payload, Secp256k1, SignedPayload, serde::AsCurve};
 use impl_tools::autoimpl;
-use near_sdk::{env, near};
-use serde_with::serde_as;
+use near_sdk::{env, near, serde_with::serde_as};
 
 /// See [TIP-191](https://github.com/tronprotocol/tips/blob/master/tip-191.md)
 #[near(serializers = [json])]

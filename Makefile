@@ -34,6 +34,20 @@ build-global-deployer: CRATE_NAME=defuse-global-deployer
 
 # ============================================================================
 
+CONTRACTS += wallet \
+	wallet-webauthn-ed25519 \
+	wallet-webauthn-p256 \
+	wallet-no-sign
+build-wallet build-wallet-%: CRATE_NAME=defuse-wallet
+build-wallet-webauthn-ed25519: CONTRACT_OUT_DIR=webauthn-ed25519
+build-wallet-webauthn-ed25519: VARIANT=webauthn-ed25519
+build-wallet-webauthn-p256: CONTRACT_OUT_DIR=webauthn-p256
+build-wallet-webauthn-p256: VARIANT=webauthn-p256
+build-wallet-no-sign: CONTRACT_OUT_DIR=no-sign
+build-wallet-no-sign: WARIANT=no-sign
+
+# ============================================================================
+
 CONTRACTS += multi-token-receiver-stub
 build-multi-token-receiver-stub: CRATE_NAME=multi-token-receiver-stub
 

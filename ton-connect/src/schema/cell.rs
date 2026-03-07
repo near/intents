@@ -6,9 +6,8 @@ use defuse_serde_utils::{base64::Base64, tlb::AsBoC};
 use near_sdk::near;
 use serde_with::serde_as;
 use tlb_ton::{
-    Cell, MsgAddress, StringError,
-    r#as::{Ref, SnakeData},
-    bits::ser::BitWriterExt,
+    Cell, MsgAddress, Ref, SnakeData, StringError,
+    bits::{NoArgs, ser::BitWriterExt},
     ser::{CellBuilder, CellBuilderError, CellSerialize, CellSerializeExt},
 };
 
@@ -44,22 +43,24 @@ const MESSAGE_TAG: u32 = 0x75569022;
 
 impl<T> CellSerialize for TonConnectCellMessage<'_, T>
 where
-    T: CellSerialize,
+    T: CellSerialize<Args: NoArgs>,
 {
-    fn store(&self, builder: &mut CellBuilder) -> Result<(), CellBuilderError> {
+    type Args = ();
+
+    fn store(&self, builder: &mut CellBuilder, _: Self::Args) -> Result<(), CellBuilderError> {
         builder
             // message#75569022
-            .pack(MESSAGE_TAG)?
+            .pack(MESSAGE_TAG, ())?
             // schema_hash:uint32
-            .pack(self.schema_crc)?
+            .pack(self.schema_crc, ())?
             // timestamp:uint64
-            .pack(self.timestamp)?
+            .pack(self.timestamp, ())?
             // userAddress:MsgAddress
-            .pack(&self.user_address)?
+            .pack(&self.user_address, ())?
             // {n:#} appDomain:^(SnakeData ~n)
-            .store_as::<_, Ref<SnakeData>>(self.app_domain.as_ref())?
+            .store_as::<_, Ref<SnakeData>>(self.app_domain.as_ref(), ())?
             // payload:^Cell
-            .store_as::<_, Ref>(&self.payload)?;
+            .store_as::<_, Ref>(&self.payload, NoArgs::EMPTY)?;
         Ok(())
     }
 }
@@ -76,7 +77,7 @@ impl PayloadSchema for CellPayload {
             app_domain: context.domain,
             payload: self.cell.clone(),
         }
-        .to_cell()?;
+        .to_cell(())?;
 
         // use host function for recursive hash calculation
         Ok(cell.hash_digest::<defuse_near_utils::digest::Sha256>())

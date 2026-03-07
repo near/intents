@@ -9,9 +9,15 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-defuse-crypto = { workspace = true, features = ["serde"] }
+defuse-crypto = { workspace = true, default-features = false }
 defuse-serde-utils.workspace = true
 
 near-sdk.workspace = true
-serde_with.workspace = true
 
+[features]
+default = ["ed25519", "p256"]
+
+ed25519 = ["defuse-crypto/ed25519"]
+p256 = ["defuse-crypto/p256"]
+
+abi = ["defuse-crypto/abi", "defuse-serde-utils/abi"]
