@@ -58,10 +58,6 @@ impl Wallet for Contract {
     fn w_extensions(&self) -> BTreeSet<AccountId> {
         self.extensions.clone()
     }
-
-    fn w_chain_id(&self) -> String {
-        utils::chain_id()
-    }
 }
 
 impl Contract {
@@ -106,6 +102,10 @@ impl Contract {
 
         let extension_id = env::predecessor_account_id();
         self.check_extension_enabled(&extension_id)?;
+
+        // TODO: are we sure?
+        // maybe cleanup nonces from storage
+        self.nonces.check_cleanup();
 
         self.execute_request(request, &Actor::Extension(extension_id.into()))
     }

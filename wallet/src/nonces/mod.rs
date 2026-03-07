@@ -1,3 +1,8 @@
+#[cfg(feature = "concurrent")]
+mod concurrent;
+#[cfg(feature = "concurrent")]
+pub use self::concurrent::*;
+
 use core::{mem, time::Duration};
 
 use defuse_bitmap::CompactBitMap;
@@ -12,30 +17,6 @@ use crate::{Error, Result};
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Nonces {
-    // TODO: can we make it deterministic?
-    #[cfg_attr(
-        feature = "abi",
-        borsh(
-            serialize_with = "As::<TimestampSeconds<u32>>::serialize",
-            deserialize_with = "As::<TimestampSeconds<u32>>::deserialize",
-            schema(with_funcs(
-                definitions = "As::<TimestampSeconds<u32>>::add_definitions_recursively",
-                declaration = "As::<TimestampSeconds<u32>>::declaration",
-            ))
-        )
-    )]
-    #[cfg_attr(
-        not(feature = "abi"),
-        borsh(
-            serialize_with = "As::<TimestampSeconds<u32>>::serialize",
-            deserialize_with = "As::<TimestampSeconds<u32>>::deserialize",
-        )
-    )]
-    last_cleaned_at: Deadline,
-
-    old_nonces: CompactBitMap<u32>, // TODO: corresponds to previous epoch?
-    nonces: CompactBitMap<u32>,     // corresponds to current epoch?
-
     #[serde(rename = "timeout_secs")]
     #[serde_as(as = "DurationSeconds")]
     #[cfg_attr(
@@ -57,36 +38,63 @@ pub struct Nonces {
         )
     )]
     timeout: Duration,
+
+    old_nonces: CompactBitMap<u32>, // TODO: corresponds to previous epoch?
+    nonces: CompactBitMap<u32>,     // corresponds to current epoch?
+
+    // TODO: can we make it deterministic?
+    #[cfg_attr(
+        feature = "abi",
+        borsh(
+            serialize_with = "As::<TimestampSeconds<u32>>::serialize",
+            deserialize_with = "As::<TimestampSeconds<u32>>::deserialize",
+            schema(with_funcs(
+                definitions = "As::<TimestampSeconds<u32>>::add_definitions_recursively",
+                declaration = "As::<TimestampSeconds<u32>>::declaration",
+            ))
+        )
+    )]
+    #[cfg_attr(
+        not(feature = "abi"),
+        borsh(
+            serialize_with = "As::<TimestampSeconds<u32>>::serialize",
+            deserialize_with = "As::<TimestampSeconds<u32>>::deserialize",
+        )
+    )]
+    last_cleaned_at: Deadline,
 }
 
 impl Nonces {
     #[inline]
     pub const fn new(timeout: Duration) -> Self {
         Self {
-            last_cleaned_at: Deadline::MIN,
+            timeout,
             old_nonces: CompactBitMap::new(),
             nonces: CompactBitMap::new(),
-            timeout,
+            last_cleaned_at: Deadline::MIN,
         }
     }
 
-    #[inline]
-    pub const fn timeout(&self) -> Duration {
-        self.timeout
-    }
-
-    #[inline]
-    pub const fn last_cleaned_at(&self) -> Deadline {
-        self.last_cleaned_at
-    }
-}
-
-impl Nonces {
     pub fn commit(&mut self, nonce: u32, created_at: Deadline, timeout: Duration) -> Result<()> {
         if timeout != self.timeout {
             return Err(Error::InvalidTimeout);
         }
 
+        self.check_cleanup();
+
+        let now = Deadline::now();
+        if !(now - self.timeout <= created_at && created_at <= now) {
+            return Err(Error::InvalidCreatedAt);
+        }
+
+        if self.old_nonces.get_bit(nonce) || self.nonces.set_bit(nonce) {
+            return Err(Error::AlreadyExecuted);
+        }
+
+        Ok(())
+    }
+
+    pub fn check_cleanup(&mut self) {
         let now = Deadline::now();
         let last_valid_nonce_at = now - self.timeout;
 
@@ -102,15 +110,15 @@ impl Nonces {
             // update last rotation time
             self.last_cleaned_at = now;
         }
+    }
 
-        if !(last_valid_nonce_at <= created_at && created_at <= now) {
-            return Err(Error::InvalidCreatedAt);
-        }
+    #[inline]
+    pub const fn timeout(&self) -> Duration {
+        self.timeout
+    }
 
-        if self.old_nonces.get_bit(nonce) || self.nonces.set_bit(nonce) {
-            return Err(Error::AlreadyExecuted);
-        }
-
-        Ok(())
+    #[inline]
+    pub const fn last_cleaned_at(&self) -> Deadline {
+        self.last_cleaned_at
     }
 }

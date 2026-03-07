@@ -26,5 +26,4 @@ defuse-crypto = { workspace = true, features = [
 arbitrary.workspace = true
 derive_more = { workspace = true, features = ["full"] }
 hex.workspace = true
-rand_chacha.workspace = true
 rstest.workspace = true

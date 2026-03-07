@@ -1,6 +1,12 @@
 use arbitrary::{Arbitrary, Unstructured};
-pub use defuse_randomness::{self as randomness, CryptoRng, Rng, SeedableRng, seq::IteratorRandom};
-use rand_chacha::{ChaChaRng, rand_core::RngCore};
+pub use defuse_randomness::{
+    self as randomness, CryptoRng, Rng, RngExt, SeedableRng, seq::IteratorRandom,
+};
+use defuse_randomness::{
+    TryCryptoRng, TryRng,
+    distr::{Alphanumeric, Distribution, StandardUniform},
+    rngs::ChaCha20Rng,
+};
 use rstest::fixture;
 use std::{fmt::Display, num::ParseIntError, ops::RangeBounds, str::FromStr};
 
@@ -62,20 +68,20 @@ impl From<u64> for Seed {
     }
 }
 
-impl randomness::distributions::Distribution<Seed> for randomness::distributions::StandardUniform {
+impl Distribution<Seed> for StandardUniform {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Seed {
         let new_seed = rng.next_u64();
         Seed::from_u64(new_seed)
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct TestRng(rand_chacha::ChaChaRng);
+#[derive(Debug)]
+pub struct TestRng(ChaCha20Rng);
 
 impl TestRng {
     #[must_use]
     pub fn new(seed: Seed) -> Self {
-        Self(ChaChaRng::seed_from_u64(seed.as_u64()))
+        Self(ChaCha20Rng::seed_from_u64(seed.as_u64()))
     }
 
     #[must_use]
@@ -88,21 +94,24 @@ impl TestRng {
     }
 }
 
-impl RngCore for TestRng {
-    fn next_u32(&mut self) -> u32 {
-        self.0.next_u32()
+impl TryRng for TestRng {
+    type Error = ::core::convert::Infallible;
+
+    fn try_next_u32(&mut self) -> Result<u32, Self::Error> {
+        Ok(self.0.next_u32())
     }
 
-    fn next_u64(&mut self) -> u64 {
-        self.0.next_u64()
+    fn try_next_u64(&mut self) -> Result<u64, Self::Error> {
+        Ok(self.0.next_u64())
     }
 
-    fn fill_bytes(&mut self, dest: &mut [u8]) {
-        self.0.fill_bytes(dest);
+    fn try_fill_bytes(&mut self, dst: &mut [u8]) -> Result<(), Self::Error> {
+        self.0.fill_bytes(dst);
+        Ok(())
     }
 }
 
-impl CryptoRng for TestRng {}
+impl TryCryptoRng for TestRng {}
 
 pub fn range_to_random_size(rng: &mut impl Rng, size: impl RangeBounds<usize>) -> usize {
     let start = match size.start_bound() {
@@ -120,7 +129,7 @@ pub fn range_to_random_size(rng: &mut impl Rng, size: impl RangeBounds<usize>) -
 
 pub fn gen_random_string<R: Rng>(rng: &mut R, size: impl RangeBounds<usize>) -> String {
     let size = range_to_random_size(rng, size);
-    rng.sample_iter(&randomness::distributions::Alphanumeric)
+    rng.sample_iter(&Alphanumeric)
         .take(size)
         .map(char::from)
         .collect()

@@ -12,7 +12,7 @@ use std::time::Duration;
 
 use defuse_borsh_utils::adapters::{As, DurationSeconds as BorshDurationSeconds, TimestampSeconds};
 pub use defuse_deadline::Deadline;
-use near_sdk::{AccountId, CryptoHash, env, near};
+use near_sdk::{AccountId, CryptoHash, env, near, serde_with::DurationSeconds};
 
 use crate::Request;
 
@@ -29,18 +29,51 @@ pub trait SigningStandard<M> {
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RequestMessage {
-    /// MUST be equal to `chain_id` of the network where the wallet-contract
-    /// is deployed.
+    /// Chain id (e.g. `mainnet`)
+    /// MUST be equal to `chain_id` of the network.
     pub chain_id: String,
 
-    /// MUST be equal to the AccountId of the wallet-contract executing
-    /// this signed request.
+    /// Signer id.
+    /// MUST be equal to the `AccountId` of the wallet-contract executing
+    /// this request.
     pub signer_id: AccountId,
 
+    /// A non-sequential `timeout`-bounded nonce for this request.
+    ///
+    /// NOTE:
+    ///
+    /// Since nonces are non-sequential, the contract needs to keep track of
+    /// used ones, which causes the storage to grow. Each nonce is stored for
+    /// at most `2 * timeout` and then cleaned up.
+    ///
+    /// Nonces are stored in bitmap represented as key-value mapping where
+    /// the key 27 is bits long and the value is 32 bits long. First 27 bits
+    /// of `nonce` are used as the key, while the last 5 bits denote the bit
+    /// position that needs to be set in the corresponding value.
+    ///
+    /// As a result, clients are recommended to use incrementing counter for
+    /// nonces or at least, generate them semi-sequentially to reduce storage
+    /// usage and, hopefully, fit into ZBA limits. See
+    /// [`ConcurrentNonces`](crate::ConcurrentNonces) implementation.
     pub nonce: u32,
 
-    // TODO: docs
-    // TODO: serde
+    /// Timestamp when this request was created (in RFC-3339 format).
+    ///
+    /// NOTE:
+    /// The contract ensures that `now() - timeout <= created_at <= now()`,
+    /// where `now()` is the current block timestamp. Due to the desentralized
+    /// nature of consensus in blockchains, block timestamps usually lag a
+    /// bit behind the actual time when it's produced. As a result, clients
+    /// are recommended to set `created_at` slightly (e.g. 60 seconds) before
+    /// the actual time of signing, so that it doesn't fail on-chain if it
+    /// arrives too fast.
+    #[cfg_attr(
+        not(feature = "abi"),
+        borsh(
+            serialize_with = "As::<TimestampSeconds<u32>>::serialize",
+            deserialize_with = "As::<TimestampSeconds<u32>>::deserialize",
+        )
+    )]
     #[cfg_attr(
         feature = "abi",
         borsh(
@@ -52,16 +85,10 @@ pub struct RequestMessage {
             ))
         )
     )]
-    #[cfg_attr(
-        not(feature = "abi"),
-        borsh(
-            serialize_with = "As::<TimestampSeconds<u32>>::serialize",
-            deserialize_with = "As::<TimestampSeconds<u32>>::deserialize",
-        )
-    )]
     pub created_at: Deadline,
 
-    // TODO: serde
+    /// Timeout for validity of this request after `created_at`.
+    /// MUST match `w_timeout_sec()` set on the contract.
     #[cfg_attr(
         feature = "abi",
         borsh(
@@ -73,7 +100,6 @@ pub struct RequestMessage {
             ))
         )
     )]
-    // TODO: docs
     #[cfg_attr(
         not(feature = "abi"),
         borsh(
@@ -81,6 +107,8 @@ pub struct RequestMessage {
             deserialize_with = "As::<BorshDurationSeconds<u32>>::deserialize",
         )
     )]
+    #[serde(rename = "timeout_secs")]
+    #[serde_as(as = "DurationSeconds")]
     pub timeout: Duration,
 
     /// Request to execute

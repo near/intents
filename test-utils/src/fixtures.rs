@@ -2,7 +2,7 @@ use arbitrary::Unstructured;
 use defuse_crypto::{P256UncompressedPublicKey, PublicKey};
 use rstest::fixture;
 
-use super::random::{Rng, rng};
+use super::random::{Rng, RngExt, rng};
 
 #[fixture]
 pub fn public_key(mut rng: impl Rng) -> PublicKey {

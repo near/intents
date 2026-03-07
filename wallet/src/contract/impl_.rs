@@ -83,7 +83,7 @@ macro_rules! contract_impl {
             )] {
                 use crate::signature::no_sign::NoSign;
 
-                impl SigningStandardImpl for Contract {
+                impl ContractImpl for Contract {
                     /// Always reject the signature.
                     type SigningStandard = NoSign;
                 }
