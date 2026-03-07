@@ -1,9 +1,6 @@
 use defuse_map_utils::{IterableMap, Map};
 use near_sdk::near;
 
-// 0000 0000 0000 0000
-// u12 + u4
-
 pub type U256 = [u8; 32];
 pub type U248 = [u8; 31];
 
