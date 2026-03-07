@@ -1133,6 +1133,7 @@ dependencies = [
  "defuse-poa-factory",
  "defuse-serde-utils",
  "defuse-test-utils",
+ "defuse-wallet",
  "futures",
  "impl-tools",
  "libc",
