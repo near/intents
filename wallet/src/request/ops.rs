@@ -17,8 +17,6 @@ pub enum WalletOp {
     } = 2,
 
     /// Custom op for third-party implementations.
-    /// TODO: do we even this variant? Or custom implementations
-    /// can just add their own wariants?
     Custom {
         #[cfg_attr(
             all(feature = "abi", not(target_arch = "wasm32")),
@@ -26,5 +24,5 @@ pub enum WalletOp {
         )]
         #[serde_as(as = "Base64")]
         args: Vec<u8>,
-    } = u8::MAX,
+    } = u8::MAX - 1,
 }

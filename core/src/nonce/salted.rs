@@ -181,7 +181,7 @@ mod tests {
     use super::*;
 
     use arbitrary::Unstructured;
-    use defuse_test_utils::random::{Rng, random_bytes, rng};
+    use defuse_test_utils::random::{Rng, RngExt, random_bytes, rng};
     use near_sdk::{test_utils::VMContextBuilder, testing_env};
 
     use rstest::rstest;

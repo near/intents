@@ -76,13 +76,13 @@ impl Contract {
             return Err(Error::InvalidSignerId(msg.signer_id));
         }
 
+        // commit the nonce
+        self.nonces.commit(msg.nonce, msg.created_at, msg.timeout)?;
+
         // verify signature
         if !<Self as ContractImpl>::SigningStandard::verify(&msg, &self.public_key, proof) {
             return Err(Error::InvalidSignature);
         }
-
-        // commit nonce
-        self.nonces.commit(msg.nonce, msg.created_at, msg.timeout)?;
 
         let hash = msg.hash();
         WalletEvent::SignedRequest { hash }.emit();
@@ -95,11 +95,12 @@ impl Contract {
             return Err(Error::InsufficientDeposit);
         }
 
+        // check whether extension is enabled
         let extension_id = env::predecessor_account_id();
         self.check_extension_enabled(&extension_id)?;
 
-        // TODO: are we sure?
-        // maybe cleanup nonces from storage
+        // maybe cleanup nonces from the storage as best-effort to make it
+        // available for further applying wallet-ops below
         self.nonces.check_cleanup();
 
         self.execute_request(request, &Actor::Extension(extension_id.into()))
@@ -122,9 +123,8 @@ impl Contract {
             WalletOp::SetSignatureMode { enable } => self.set_signature_mode(enable, actor),
             WalletOp::AddExtension { account_id } => self.add_extension(account_id, actor),
             WalletOp::RemoveExtension { account_id } => self.remove_extension(account_id, actor),
-            // custom ops are not supported, so we just skip them
-            // TODO: or panic?
-            WalletOp::Custom { .. } => Ok(()),
+
+            WalletOp::Custom { .. } => env::panic_str("custom ops are not supported"),
         }
     }
 

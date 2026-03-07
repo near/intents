@@ -67,7 +67,7 @@ macro_rules! contract_impl {
                     ))
                 )] $block
             )+
-            // When no features enabled, the contract always reject the
+            // When no signing features enabled, the contract always rejects the
             // signature. This can be useful to deploy "1-of-M multisig"/
             // "fan-out" wallet, where extensions are pre-defined at the
             // initialization stage (i.e. state_init). So only extensions

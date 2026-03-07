@@ -1,4 +1,4 @@
-use near_sdk::{AccountId, FunctionError, borsh};
+use near_sdk::{AccountId, FunctionError};
 use thiserror::Error as ThisError;
 
 pub type Result<T, E = Error> = ::core::result::Result<T, E>;
@@ -7,9 +7,6 @@ pub type Result<T, E = Error> = ::core::result::Result<T, E>;
 pub enum Error {
     #[error("already executed")]
     AlreadyExecuted,
-
-    #[error("borsh: {0}")]
-    Borsh(#[from] borsh::io::Error),
 
     #[error("extension '{0}' is already enabled")]
     ExtensionEnabled(AccountId),
