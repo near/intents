@@ -830,6 +830,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-adr36"
+version = "0.1.0"
+dependencies = [
+ "defuse-crypto",
+ "hex-literal",
+ "near-sdk",
+]
+
+[[package]]
 name = "defuse-auth-call"
 version = "0.1.0"
 dependencies = [
@@ -872,6 +881,7 @@ version = "0.1.0"
 dependencies = [
  "arbitrary",
  "chrono",
+ "defuse-adr36",
  "defuse-auth-call",
  "defuse-bitmap",
  "defuse-borsh-utils",
