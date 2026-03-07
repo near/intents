@@ -14,6 +14,7 @@ use defuse_wallet::{
         ed25519::{Ed25519, Ed25519PublicKey, Ed25519Signature},
     },
 };
+use futures::{TryStreamExt, stream::FuturesUnordered};
 use impl_tools::autoimpl;
 use near_crypto::{KeyType, SecretKey, Signature};
 use near_sdk::{
@@ -226,6 +227,60 @@ async fn test_rotate(#[future] env: Env) {
     .unwrap();
 
     assert!(!old_wallet.w_is_signature_allowed().await.unwrap());
+}
+
+#[rstest]
+#[awt]
+#[tokio::test]
+async fn test_zba(#[future] env: Env) {
+    let secret_key = SecretKey::from_random(KeyType::ED25519);
+
+    let wallet_state = State::<PublicKey>::new(Ed25519PublicKey(
+        secret_key.public_key().unwrap_as_ed25519().0,
+    ));
+
+    let wallet_state_init = StateInit::V1(StateInitV1 {
+        code: env.wallet_global_id.clone(),
+        data: wallet_state.as_storage(),
+    });
+
+    let wallet = env.account(wallet_state_init.derive_account_id());
+
+    ConcurrentNonces::new(rng())
+        .take(
+            (wallet_state.nonces.timeout().as_secs() * 2)
+                .try_into()
+                .unwrap(),
+        )
+        .map(|n| RequestMessage {
+            chain_id: "mainnet".to_string(),
+            signer_id: wallet.id().clone(),
+            nonce: n,
+            created_at: Deadline::now() - Duration::from_secs(60),
+            timeout: wallet_state.nonces.timeout(),
+            request: Request::default(),
+        })
+        .map(|msg| {
+            let secret_key = &secret_key;
+            let env = &env;
+            let wallet = &wallet;
+            let wallet_state_init = wallet_state_init.clone();
+            async move {
+                env.w_execute_signed(
+                    wallet.id(),
+                    wallet_state_init,
+                    msg.clone(),
+                    sign_request(secret_key, &msg),
+                    NearToken::ZERO,
+                )
+                .await
+                .map(|_| ())
+            }
+        })
+        .collect::<FuturesUnordered<_>>()
+        .try_collect::<()>()
+        .await
+        .unwrap();
 }
 
 #[autoimpl(Deref using self.sandbox)]
