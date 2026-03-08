@@ -68,8 +68,7 @@ mod tests {
             let serialized_len = borsh::to_vec(&nonces).unwrap().len();
             assert!(
                 serialized_len <= MAX_SIZE,
-                "state would not fit into ZBA limits: {} bytes",
-                serialized_len
+                "state would not fit into ZBA limits: {serialized_len} bytes",
             );
         }
     }
