@@ -49,7 +49,7 @@ mod tests {
 
     #[test]
     fn zba() {
-        const TIMEOUT: Duration = Duration::from_secs(60 * 15); // 15 mins
+        const ZBA_TIMEOUT: Duration = Duration::from_secs(15 * 60); // 15m
         const MAX_SIZE: usize = 236;
 
         let mut ns = ConcurrentNonces::new(rng());
@@ -60,7 +60,7 @@ mod tests {
             for n in ns
                 .by_ref()
                 // 1 tx/s
-                .take(TIMEOUT.as_secs().try_into().unwrap())
+                .take(ZBA_TIMEOUT.as_secs().try_into().unwrap())
             {
                 assert!(!nonces.set_bit(n), "rand collision");
             }

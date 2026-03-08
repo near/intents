@@ -221,21 +221,26 @@ async fn test_extension(#[future] env: Env) {
 #[rstest]
 #[awt]
 #[tokio::test]
-async fn test_zba(#[future] env: Env) {
+async fn test_no_storage_staking(#[future] env: Env) {
     let mut wallet = env.generate_wallet();
     let wallet_account = env.account(wallet.id());
 
     let wallet_id = wallet.id();
     let wallet_state_init = wallet.state_init();
 
+    // do state_init in advance
+    env.tx(wallet_id.clone())
+        .state_init(wallet_state_init.clone(), NearToken::ZERO)
+        .await
+        .unwrap();
+
     (0..wallet.init_state.nonces.timeout().as_secs() * 2)
         .map(|_n| wallet.sign(Request::new()))
         .map(|(msg, proof)| {
             let env = &env;
             let wallet_id = wallet_id.clone();
-            let wallet_state_init = wallet_state_init.clone();
             async move {
-                env.w_execute_signed(wallet_id, wallet_state_init, msg, proof, NearToken::ZERO)
+                env.w_execute_signed(wallet_id, None, msg, proof, NearToken::ZERO)
                     .await
                     .map(|_| ())
             }

@@ -35,7 +35,7 @@ pub struct Nonces {
             deserialize_with = "As::<BorshDurationSeconds<u32>>::deserialize",
         )
     )]
-    /// Timeout, i.e. validity timespan for each nonce.
+    /// Fixed timeout, i.e. validity timespan for each nonce.
     timeout: Duration,
 
     #[cfg_attr(
