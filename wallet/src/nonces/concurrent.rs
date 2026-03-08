@@ -4,6 +4,7 @@ use rand_core::Rng;
 /// allowing for multiple concurrent clients while being optimized for storage.
 ///
 /// See [`crate::RequestMessage`].
+#[derive(Debug)]
 pub struct ConcurrentNonces<R> {
     next: u32,
     rng: R,
@@ -51,7 +52,7 @@ mod tests {
         const TIMEOUT: Duration = Duration::from_secs(60 * 15); // 15 mins
         const MAX_SIZE: usize = 235;
 
-        let mut ns = ConcurrentNonces::new(rng()).peekable();
+        let mut ns = ConcurrentNonces::new(rng());
 
         for _ in 0..1000 {
             let mut nonces = CompactBitMap::<u32>::new();

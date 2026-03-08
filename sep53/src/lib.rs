@@ -63,7 +63,7 @@ mod tests {
     use crate::{Sep53Payload, SignedSep53Payload};
     use base64::{Engine, engine::general_purpose::STANDARD};
     use defuse_crypto::{Payload, SignedPayload};
-    use defuse_test_utils::random::{CryptoRng, Rng, gen_random_string, random_bytes, rng};
+    use defuse_test_utils::random::{CryptoRng, gen_random_string, random_bytes, rng};
     use defuse_test_utils::tamper::{tamper_bytes, tamper_string};
     use ed25519_dalek::Verifier;
     use ed25519_dalek::{SigningKey, ed25519::signature::SignerMut};
@@ -149,7 +149,7 @@ mod tests {
     }
 
     /// Decode our test seed into a NEAR ED25519 secret + public key
-    fn make_ed25519_key(rng: &mut (impl Rng + CryptoRng)) -> near_crypto::SecretKey {
+    fn make_ed25519_key(rng: &mut impl CryptoRng) -> near_crypto::SecretKey {
         // We have to use dalek because near interface doesn't support making keys from bytes
         // so we start from dalek, generate a random key, then use it in a new near_crypto key
         let key_len = ed25519_dalek::SECRET_KEY_LENGTH;
@@ -170,7 +170,7 @@ mod tests {
     }
 
     #[rstest]
-    fn tampered_message_fails(mut rng: impl Rng + CryptoRng) {
+    fn tampered_message_fails(mut rng: impl CryptoRng) {
         let sk = make_ed25519_key(&mut rng);
         let pk = sk.public_key();
 
@@ -209,7 +209,7 @@ mod tests {
     }
 
     #[rstest]
-    fn tampered_signature_fails(mut rng: impl Rng + CryptoRng) {
+    fn tampered_signature_fails(mut rng: impl CryptoRng) {
         let sk = make_ed25519_key(&mut rng);
         let pk = sk.public_key();
 

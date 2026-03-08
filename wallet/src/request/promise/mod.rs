@@ -21,10 +21,11 @@ pub struct PromiseDAG {
 }
 
 impl PromiseDAG {
-    pub fn new(promise: PromiseSingle) -> Self {
+    #[inline]
+    pub const fn new() -> Self {
         Self {
             after: Vec::new(),
-            then: vec![promise],
+            then: Vec::new(),
         }
     }
 
@@ -160,8 +161,28 @@ impl PromiseDAG {
 }
 
 impl From<PromiseSingle> for PromiseDAG {
+    #[inline]
     fn from(promise: PromiseSingle) -> Self {
-        Self::new(promise)
+        Self {
+            after: Vec::new(),
+            then: vec![promise],
+        }
+    }
+}
+
+impl Extend<PromiseSingle> for PromiseDAG {
+    #[inline]
+    fn extend<T: IntoIterator<Item = PromiseSingle>>(&mut self, iter: T) {
+        self.then.extend(iter);
+    }
+}
+
+impl FromIterator<PromiseSingle> for PromiseDAG {
+    #[inline]
+    fn from_iter<T: IntoIterator<Item = PromiseSingle>>(iter: T) -> Self {
+        let mut p = Self::new();
+        p.extend(iter);
+        p
     }
 }
 

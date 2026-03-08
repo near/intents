@@ -21,7 +21,7 @@ use crate::{
     tests::defuse::env::Env,
     utils::{
         asserts::ResultAssertsExt,
-        random::{Rng, random_bytes, rng},
+        random::{Rng, RngExt, random_bytes, rng},
     },
 };
 use defuse_sandbox::extensions::defuse::{

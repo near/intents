@@ -12,7 +12,7 @@ use defuse::{
         intents::MaybeIntentEvent,
     },
 };
-use defuse_randomness::Rng;
+use defuse_randomness::{Rng, RngExt};
 use defuse_sandbox::{
     assert_a_contains_b,
     extensions::{acl::AclExt, defuse::account_manager::AccountViewExt},

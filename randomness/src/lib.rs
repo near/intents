@@ -3,7 +3,7 @@ use rand::rngs::StdRng;
 pub use rand::*;
 
 #[must_use]
-pub fn make_true_rng() -> impl Rng + CryptoRng {
+pub fn make_true_rng() -> impl CryptoRng {
     make_rng::<StdRng>()
 }
 

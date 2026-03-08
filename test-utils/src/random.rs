@@ -85,7 +85,7 @@ impl TestRng {
     }
 
     #[must_use]
-    pub fn random(rng: &mut (impl Rng + CryptoRng)) -> Self {
+    pub fn random(rng: &mut impl CryptoRng) -> Self {
         Self::new(Seed(rng.next_u64()))
     }
     #[must_use]
@@ -144,7 +144,7 @@ pub fn random_seed() -> Seed {
 
 #[fixture]
 #[must_use]
-pub fn rng(random_seed: Seed) -> impl Rng + CryptoRng {
+pub fn rng(random_seed: Seed) -> impl CryptoRng {
     TestRng::new(random_seed)
 }
 

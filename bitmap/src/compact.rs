@@ -232,6 +232,7 @@ mod tests {
 
     use super::*;
 
+    #[allow(clippy::used_underscore_binding)]
     #[rstest]
     fn test<T>(#[values(0u8, 0u16, 0u32, 0u64, 0u128)] _n: T)
     where
@@ -296,7 +297,7 @@ mod tests {
         CompactBitMap<T>: BitPack<Args = ()> + for<'de> BitUnpack<'de, Args = ()>,
     {
         let mut m = CompactBitMap::<T>::default();
-        for n in ns.clone() {
+        for n in ns {
             let bit = if n & T::one() == T::zero() {
                 n
             } else {

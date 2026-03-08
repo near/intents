@@ -47,7 +47,7 @@ where
 {
     type Args = ();
 
-    fn store(&self, builder: &mut CellBuilder, _: Self::Args) -> Result<(), CellBuilderError> {
+    fn store(&self, builder: &mut CellBuilder, (): Self::Args) -> Result<(), CellBuilderError> {
         builder
             // message#75569022
             .pack(MESSAGE_TAG, ())?
