@@ -155,65 +155,29 @@ const _: () = {
         schema::{Declaration, Definition},
     };
 
-    impl<I> BorshSchemaAs<DateTime<Utc>> for TimestampSeconds<I>
-    where
-        I: BorshSchema,
-    {
-        fn declaration_as() -> Declaration {
-            I::declaration()
-        }
+    macro_rules! impl_borsh_schema_as_timestamp {
+        ($type:ident) => {
+            impl<I> BorshSchemaAs<DateTime<Utc>> for $type<I>
+            where
+                I: BorshSchema,
+            {
+                fn declaration_as() -> Declaration {
+                    I::declaration()
+                }
 
-        fn add_definitions_recursively_as(
-            definitions: &mut std::collections::BTreeMap<Declaration, Definition>,
-        ) {
-            I::add_definitions_recursively(definitions);
-        }
+                fn add_definitions_recursively_as(
+                    definitions: &mut std::collections::BTreeMap<Declaration, Definition>,
+                ) {
+                    I::add_definitions_recursively(definitions);
+                }
+            }
+        };
     }
 
-    impl<I> BorshSchemaAs<DateTime<Utc>> for TimestampMilliSeconds<I>
-    where
-        I: BorshSchema,
-    {
-        fn declaration_as() -> Declaration {
-            I::declaration()
-        }
-
-        fn add_definitions_recursively_as(
-            definitions: &mut std::collections::BTreeMap<Declaration, Definition>,
-        ) {
-            I::add_definitions_recursively(definitions);
-        }
-    }
-
-    impl<I> BorshSchemaAs<DateTime<Utc>> for TimestampMicroSeconds<I>
-    where
-        I: BorshSchema,
-    {
-        fn declaration_as() -> Declaration {
-            I::declaration()
-        }
-
-        fn add_definitions_recursively_as(
-            definitions: &mut std::collections::BTreeMap<Declaration, Definition>,
-        ) {
-            I::add_definitions_recursively(definitions);
-        }
-    }
-
-    impl<I> BorshSchemaAs<DateTime<Utc>> for TimestampNanoSeconds<I>
-    where
-        I: BorshSchema,
-    {
-        fn declaration_as() -> Declaration {
-            I::declaration()
-        }
-
-        fn add_definitions_recursively_as(
-            definitions: &mut std::collections::BTreeMap<Declaration, Definition>,
-        ) {
-            I::add_definitions_recursively(definitions);
-        }
-    }
+    impl_borsh_schema_as_timestamp!(TimestampSeconds);
+    impl_borsh_schema_as_timestamp!(TimestampMilliSeconds);
+    impl_borsh_schema_as_timestamp!(TimestampMicroSeconds);
+    impl_borsh_schema_as_timestamp!(TimestampNanoSeconds);
 };
 
 #[cfg(test)]
