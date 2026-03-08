@@ -18,7 +18,7 @@ use futures::{TryStreamExt, stream::FuturesUnordered};
 use impl_tools::autoimpl;
 use near_crypto::{KeyType, SecretKey, Signature};
 use near_sdk::{
-    GlobalContractId, NearToken, borsh,
+    Gas, GlobalContractId, NearToken, borsh,
     state_init::{StateInit, StateInitV1},
 };
 use rstest::{fixture, rstest};
@@ -90,6 +90,16 @@ async fn test_signed(#[future] env: Env) {
     )
     .await
     .unwrap();
+
+    env.w_execute_signed(
+        wallet.id(),
+        wallet_state_init.clone(),
+        signed_request_body.clone(),
+        sign_request(&secret_key, &signed_request_body),
+        NearToken::from_near(1),
+    )
+    .await
+    .expect_err("nonce should be already used");
 
     assert!(wallet.view().await.unwrap().amount >= NearToken::from_near(1));
 }
@@ -167,30 +177,6 @@ async fn test_rotate(#[future] env: Env) {
     let [old_wallet, new_wallet] = [&old_wallet_state_init, &new_wallet_state_init]
         .map(|s| env.account(s.derive_account_id()));
 
-    let old_signed_request_body = RequestMessage {
-        chain_id: "mainnet".to_string(),
-        signer_id: old_wallet.id().clone(),
-        nonce: 0,
-        created_at: Deadline::now() - Duration::from_secs(60),
-        timeout: old_wallet_state.nonces.timeout(),
-        request: Request {
-            ops: vec![WalletOp::AddExtension {
-                account_id: new_wallet.id().clone(),
-            }],
-            out: Default::default(),
-        },
-    };
-
-    env.w_execute_signed(
-        old_wallet.id(),
-        old_wallet_state_init.clone(),
-        old_signed_request_body.clone(),
-        sign_request(&old_secret_key, &old_signed_request_body),
-        NearToken::ZERO,
-    )
-    .await
-    .unwrap();
-
     let new_signed_request_body = RequestMessage {
         chain_id: "mainnet".to_string(),
         signer_id: new_wallet.id().clone(),
@@ -202,6 +188,8 @@ async fn test_rotate(#[future] env: Env) {
             out: PromiseSingle::new(old_wallet.id())
                 .function_call(
                     FunctionCallAction::new("w_execute_extension")
+                        .attached_deposit(NearToken::from_yoctonear(1))
+                        .min_gas(Gas::from_tgas(10))
                         .args_json(json!({
                             "request": Request {
                                 ops: vec![
@@ -209,18 +197,42 @@ async fn test_rotate(#[future] env: Env) {
                                 ],
                                 out: Default::default()
                             },
-                        }))
-                        .attached_deposit(NearToken::from_yoctonear(1)),
+                        })),
+                )
+                .into(),
+        },
+    };
+
+    let old_signed_request_body = RequestMessage {
+        chain_id: "mainnet".to_string(),
+        signer_id: old_wallet.id().clone(),
+        nonce: 0,
+        created_at: Deadline::now() - Duration::from_secs(60),
+        timeout: old_wallet_state.nonces.timeout(),
+        request: Request {
+            ops: vec![WalletOp::AddExtension {
+                account_id: new_wallet.id().clone(),
+            }],
+            out: PromiseSingle::new(new_wallet.id())
+                .state_init(new_wallet_state_init, NearToken::ZERO)
+                .function_call(
+                    FunctionCallAction::new("w_execute_signed")
+                        .attached_deposit(NearToken::from_yoctonear(1))
+                        .min_gas(Gas::from_tgas(20))
+                        .args_json(json!({
+                            "proof": sign_request(&new_secret_key, &new_signed_request_body),
+                            "msg": new_signed_request_body,
+                        })),
                 )
                 .into(),
         },
     };
 
     env.w_execute_signed(
-        new_wallet.id(),
-        new_wallet_state_init.clone(),
-        new_signed_request_body.clone(),
-        sign_request(&new_secret_key, &new_signed_request_body),
+        old_wallet.id(),
+        old_wallet_state_init.clone(),
+        old_signed_request_body.clone(),
+        sign_request(&old_secret_key, &old_signed_request_body),
         NearToken::from_yoctonear(1),
     )
     .await
@@ -281,6 +293,8 @@ async fn test_zba(#[future] env: Env) {
         .try_collect::<()>()
         .await
         .unwrap();
+
+    dbg!(wallet.view().await.unwrap());
 }
 
 #[autoimpl(Deref using self.sandbox)]
