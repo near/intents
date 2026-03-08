@@ -223,6 +223,7 @@ async fn test_extension(#[future] env: Env) {
 #[tokio::test]
 async fn test_zba(#[future] env: Env) {
     let mut wallet = env.generate_wallet();
+    // TODO: add one extension
     let wallet_account = env.account(wallet.id());
 
     let wallet_id = wallet.id();

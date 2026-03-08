@@ -9,16 +9,14 @@ use std::collections::BTreeMap;
 use defuse_bitmap::BitMap;
 use defuse_borsh_utils::adapters::{As, DurationSeconds as BorshDurationSeconds, TimestampSeconds};
 use defuse_deadline::Deadline;
-use near_sdk::{near, serde_with::DurationSeconds};
+use near_sdk::near;
 
 use crate::{Error, Result};
 
 /// Dual-timeout window nonces
-#[near(serializers = [borsh, json])]
+#[near(serializers = [borsh])]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Nonces {
-    #[serde(rename = "timeout_secs")]
-    #[serde_as(as = "DurationSeconds")]
     #[cfg_attr(
         feature = "abi",
         borsh(
@@ -40,11 +38,6 @@ pub struct Nonces {
     /// Timeout, i.e. validity timespan for each nonce.
     timeout: Duration,
 
-    /// Previous nonces (i.e. within `[now - 2*timeout, now - timeout)`)
-    old_nonces: BitMap<BTreeMap<u32, u32>>,
-    /// Current nonces (i.e. within `[now - timeout, now]`)
-    nonces: BitMap<BTreeMap<u32, u32>>,
-
     #[cfg_attr(
         feature = "abi",
         borsh(
@@ -65,6 +58,11 @@ pub struct Nonces {
     )]
     /// The last timestamp when nonces were rotated
     last_cleaned_at: Deadline,
+
+    /// Previous nonces, i.e. within `[now - 2*timeout, now - timeout)`
+    old_nonces: BitMap<BTreeMap<u32, u32>>,
+    /// Current nonces, i.e. within `[now - timeout, now]`
+    nonces: BitMap<BTreeMap<u32, u32>>,
 }
 
 impl Nonces {
@@ -72,9 +70,9 @@ impl Nonces {
     pub const fn new(timeout: Duration) -> Self {
         Self {
             timeout,
+            last_cleaned_at: Deadline::MIN,
             old_nonces: BitMap::new(BTreeMap::new()),
             nonces: BitMap::new(BTreeMap::new()),
-            last_cleaned_at: Deadline::MIN,
         }
     }
 

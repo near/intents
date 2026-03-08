@@ -12,7 +12,7 @@ use near_sdk::{
 use crate::Nonces;
 
 /// State of the wallet-contract.
-#[near(serializers = [borsh, json])]
+#[near(serializers = [borsh])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct State<PubKey> {
     /// Whether authentication by signature is allowed.
@@ -30,7 +30,6 @@ pub struct State<PubKey> {
     pub nonces: Nonces,
 
     /// A set of enabled extensions.
-    #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
     pub extensions: BTreeSet<AccountId>,
 }
 

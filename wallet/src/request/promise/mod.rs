@@ -11,7 +11,6 @@ use near_sdk::{Gas, NearToken, Promise, near};
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct PromiseDAG {
-    // TODO: reverse order?
     /// `PromiseDAG`s to be executed before `promises`, if any.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub after: Vec<Self>,

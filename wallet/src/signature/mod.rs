@@ -30,13 +30,12 @@ pub trait SigningStandard<M> {
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RequestMessage {
-    /// Chain id (e.g. `mainnet`)
+    /// Chain id (e.g. `mainnet`).
     /// MUST be equal to `chain_id` of the network.
     pub chain_id: String,
 
     /// Signer id.
-    /// MUST be equal to the `AccountId` of the wallet-contract executing
-    /// this request.
+    /// MUST be equal to the `AccountId` of the wallet-contract instance.
     pub signer_id: AccountId,
 
     /// A non-sequential `timeout`-bounded nonce for this request.

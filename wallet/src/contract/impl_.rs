@@ -1,12 +1,20 @@
 use core::ops::{Deref, DerefMut};
+use std::fmt::Display;
 
-use near_sdk::{PanicOnDefault, near};
+use near_sdk::{
+    PanicOnDefault,
+    borsh::{BorshDeserialize, BorshSerialize},
+    near,
+};
 
 use crate::signature::{RequestMessage, SigningStandard};
 
 pub trait ContractImpl {
     /// Signing standard implementation of the contract
-    type SigningStandard: SigningStandard<&'static RequestMessage>;
+    type SigningStandard: SigningStandard<
+            &'static RequestMessage,
+            PublicKey: BorshSerialize + BorshDeserialize + Display,
+        >;
 }
 
 /// Signing standard implemented by the contract
