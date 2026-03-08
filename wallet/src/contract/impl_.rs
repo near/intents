@@ -9,15 +9,14 @@ pub trait ContractImpl {
     type SigningStandard: SigningStandard<&'static RequestMessage>;
 }
 
-/// Signing standard implemented by the contract `C`
-type ContractSigningStandard<C> = <C as ContractImpl>::SigningStandard;
+/// Signing standard implemented by the contract
+type SS = <Contract as ContractImpl>::SigningStandard;
 
-/// Public key used by the signing standard for contract `C`
-type ContractPubKey<C> =
-    <ContractSigningStandard<C> as SigningStandard<&'static RequestMessage>>::PublicKey;
+/// Public key used by the signing standard
+type PublicKey = <SS as SigningStandard<&'static RequestMessage>>::PublicKey;
 
-/// State of the contract `C`
-type ContractState<C> = crate::State<ContractPubKey<C>>;
+/// State of the contract
+type State = crate::State<PublicKey>;
 
 /// `#[near(contract_metadata(standard(...)))]` macro doesn't support
 /// adding more standards in separate attributes. So, we have to combine
@@ -39,7 +38,7 @@ macro_rules! contract_impl {
         $(#[cfg_attr(
             $meta,
             near(
-                contract_state(key = ContractState::<Self>::STATE_KEY),
+                contract_state(key = State::STATE_KEY),
                 contract_metadata(
                     standard(standard = "wallet",       version = "1.0.0"),
                     standard(standard = $s,             version = $v     ),
@@ -48,7 +47,7 @@ macro_rules! contract_impl {
         )])+
         #[derive(Debug, PanicOnDefault)]
         #[repr(transparent)]
-        pub struct Contract(pub(crate) ContractState<Self>);
+        pub struct Contract(pub(crate) State);
     };
     ($(
         #[cfg_attr(
@@ -154,7 +153,7 @@ contract_impl! {
 }
 
 impl Deref for Contract {
-    type Target = ContractState<Self>;
+    type Target = State;
 
     fn deref(&self) -> &Self::Target {
         &self.0
