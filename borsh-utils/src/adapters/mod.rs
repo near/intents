@@ -24,6 +24,9 @@ mod chrono;
 #[cfg(feature = "chrono")]
 pub use self::chrono::*;
 
+mod duration;
+pub use self::duration::*;
+
 pub trait BorshSerializeAs<T: ?Sized> {
     fn serialize_as<W>(source: &T, writer: &mut W) -> io::Result<()>
     where

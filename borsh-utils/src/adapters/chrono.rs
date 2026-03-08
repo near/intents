@@ -149,35 +149,12 @@ where
 
 #[cfg(feature = "abi")]
 const _: () = {
-    use crate::adapters::schema::BorshSchemaAs;
-    use near_sdk::borsh::{
-        BorshSchema,
-        schema::{Declaration, Definition},
-    };
+    use crate::adapters::schema::impl_borsh_schema_as;
 
-    macro_rules! impl_borsh_schema_as_timestamp {
-        ($type:ident) => {
-            impl<I> BorshSchemaAs<DateTime<Utc>> for $type<I>
-            where
-                I: BorshSchema,
-            {
-                fn declaration_as() -> Declaration {
-                    I::declaration()
-                }
-
-                fn add_definitions_recursively_as(
-                    definitions: &mut std::collections::BTreeMap<Declaration, Definition>,
-                ) {
-                    I::add_definitions_recursively(definitions);
-                }
-            }
-        };
-    }
-
-    impl_borsh_schema_as_timestamp!(TimestampSeconds);
-    impl_borsh_schema_as_timestamp!(TimestampMilliSeconds);
-    impl_borsh_schema_as_timestamp!(TimestampMicroSeconds);
-    impl_borsh_schema_as_timestamp!(TimestampNanoSeconds);
+    impl_borsh_schema_as!(DateTime<Utc>, TimestampSeconds);
+    impl_borsh_schema_as!(DateTime<Utc>, TimestampMilliSeconds);
+    impl_borsh_schema_as!(DateTime<Utc>, TimestampMicroSeconds);
+    impl_borsh_schema_as!(DateTime<Utc>, TimestampNanoSeconds);
 };
 
 #[cfg(test)]
