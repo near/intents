@@ -68,7 +68,6 @@ container_build_command = [
     "--no-default-features",
     "--features=contract,ed25519",
     "--abi-features=abi,contract,ed25519",
-    "--no-embed-abi",
 ]
 
 [package.metadata.near.reproducible_build.variant.webauthn-ed25519]
@@ -84,7 +83,6 @@ container_build_command = [
     "--no-default-features",
     "--features=contract,webauthn-ed25519",
     "--abi-features=abi,contract,webauthn-ed25519",
-    "--no-embed-abi",
 ]
 
 [package.metadata.near.reproducible_build.variant.webauthn-p256]
@@ -100,7 +98,6 @@ container_build_command = [
     "--no-default-features",
     "--features=contract,webauthn-p256",
     "--abi-features=abi,contract,webauthn-p256",
-    "--no-embed-abi",
 ]
 
 [package.metadata.near.reproducible_build.variant.no-auth]
@@ -116,7 +113,6 @@ container_build_command = [
     "--no-default-features",
     "--features=contract",
     "--abi-features=abi,contract",
-    "--no-embed-abi",
 ]
 
 [dev-dependencies]
