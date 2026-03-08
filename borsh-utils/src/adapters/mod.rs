@@ -14,18 +14,18 @@ use impl_tools::autoimpl;
 use near_sdk::borsh::BorshSchema;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 
-mod duration;
-pub use self::duration::*;
+#[cfg(feature = "abi")]
+mod schema;
+#[cfg(feature = "abi")]
+pub use self::schema::*;
 
 #[cfg(feature = "chrono")]
 mod chrono;
 #[cfg(feature = "chrono")]
 pub use self::chrono::*;
 
-#[cfg(feature = "abi")]
-mod schema;
-#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
-pub use self::schema::*;
+mod duration;
+pub use self::duration::*;
 
 pub trait BorshSerializeAs<T: ?Sized> {
     fn serialize_as<W>(source: &T, writer: &mut W) -> io::Result<()>

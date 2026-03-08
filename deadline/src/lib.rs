@@ -116,3 +116,36 @@ macro_rules! impl_borsh_serde_as {
 impl_borsh_serde_as! {
     TimestampSeconds, TimestampMilliSeconds, TimestampMicroSeconds, TimestampNanoSeconds,
 }
+
+#[cfg(test)]
+mod tests {
+    #[cfg(feature = "abi")]
+    #[test]
+    fn schema_as_usage() {
+        use super::*;
+        use chrono::TimeZone;
+        use defuse_borsh_utils::adapters::As;
+        use near_sdk::borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
+
+        #[derive(BorshSerialize, BorshDeserialize, BorshSchema)]
+        #[borsh(crate = "::near_sdk::borsh")]
+        struct S {
+            #[borsh(
+                serialize_with = "As::<TimestampNanoSeconds>::serialize",
+                deserialize_with = "As::<TimestampNanoSeconds>::deserialize",
+                schema(with_funcs(
+                    declaration = "As::<TimestampNanoSeconds>::declaration",
+                    definitions = "As::<TimestampNanoSeconds>::add_definitions_recursively",
+                ))
+            )]
+            pub deadline: Deadline,
+        }
+
+        let val = S {
+            deadline: Deadline::new(Utc.timestamp_opt(1_600_000_000, 123_456_789).unwrap()),
+        };
+        let bytes = near_sdk::borsh::to_vec(&val).unwrap();
+        let decoded = S::try_from_slice(&bytes).unwrap();
+        assert_eq!(val.deadline, decoded.deadline);
+    }
+}

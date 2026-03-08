@@ -9,7 +9,7 @@ repository.workspace = true
 workspace = true
 
 [features]
-abi = ["defuse-borsh-utils/abi", "near-sdk/abi"]
+abi = ["near-sdk/abi", "defuse-borsh-utils/abi"]
 
 [dependencies]
 defuse-borsh-utils = { workspace = true, features = ["chrono"] }
@@ -21,3 +21,6 @@ near-sdk.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 chrono = { workspace = true, features = ["clock", "now", "serde"] }
+
+[dev-dependencies]
+near-sdk = { workspace = true, features = ["unit-testing"] }

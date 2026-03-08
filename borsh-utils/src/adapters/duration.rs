@@ -1,8 +1,6 @@
-use std::{fmt::Display, marker::PhantomData, time::Duration};
-
-use near_sdk::borsh::{BorshDeserialize, BorshSerialize, io};
-
 use crate::adapters::{BorshDeserializeAs, BorshSerializeAs};
+use near_sdk::borsh::{BorshDeserialize, BorshSerialize, io};
+use std::{fmt::Display, marker::PhantomData, time::Duration};
 
 pub struct DurationSeconds<I = u64>(PhantomData<I>);
 
@@ -138,37 +136,10 @@ where
 
 #[cfg(feature = "abi")]
 const _: () = {
-    use std::collections::BTreeMap;
+    use crate::adapters::schema::impl_borsh_schema_as;
 
-    use near_sdk::borsh::{
-        BorshSchema,
-        schema::{Declaration, Definition},
-    };
-
-    use crate::adapters::BorshSchemaAs;
-
-    macro_rules! impl_borsh_schema_as {
-        ($($ts:ident),*) => {$(
-            impl<I> BorshSchemaAs<Duration> for $ts<I>
-            where
-                I: BorshSchema,
-            {
-                fn add_definitions_recursively_as(definitions: &mut BTreeMap<Declaration, Definition>) {
-                    I::add_definitions_recursively(definitions);
-                }
-
-                fn declaration_as() -> Declaration {
-                    I::declaration()
-                }
-            })*
-        };
-
-    }
-
-    impl_borsh_schema_as!(
-        DurationSeconds,
-        DurationMilliSeconds,
-        DurationMicroSeconds,
-        DurationNanoSeconds
-    );
+    impl_borsh_schema_as!(Duration, DurationSeconds);
+    impl_borsh_schema_as!(Duration, DurationMilliSeconds);
+    impl_borsh_schema_as!(Duration, DurationMicroSeconds);
+    impl_borsh_schema_as!(Duration, DurationNanoSeconds);
 };
