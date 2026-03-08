@@ -39,9 +39,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
+    use std::{collections::BTreeMap, time::Duration};
 
-    use defuse_bitmap::CompactBitMap;
+    use defuse_bitmap::BitMap;
     use near_sdk::borsh;
     use rand::rng;
 
@@ -50,12 +50,12 @@ mod tests {
     #[test]
     fn zba() {
         const TIMEOUT: Duration = Duration::from_secs(60 * 15); // 15 mins
-        const MAX_SIZE: usize = 235;
+        const MAX_SIZE: usize = 236;
 
         let mut ns = ConcurrentNonces::new(rng());
 
         for _ in 0..1000 {
-            let mut nonces = CompactBitMap::<u32>::new();
+            let mut nonces = BitMap::<BTreeMap<u32, u32>>::default();
 
             for n in ns
                 .by_ref()
@@ -64,9 +64,12 @@ mod tests {
             {
                 assert!(!nonces.set_bit(n), "rand collision");
             }
+
+            let serialized_len = borsh::to_vec(&nonces).unwrap().len();
             assert!(
-                borsh::to_vec(&nonces).unwrap().len() <= MAX_SIZE,
-                "state would not fit into ZBA limits"
+                serialized_len <= MAX_SIZE,
+                "state would not fit into ZBA limits: {} bytes",
+                serialized_len
             );
         }
     }

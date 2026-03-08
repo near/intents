@@ -124,7 +124,6 @@ serde_with = "3.9"
 stellar-strkey = "0.0.13"
 strum = { version = "0.27", features = ["derive"] }
 thiserror = "2"
-tlbits = { version = "0.7.2", default-features = false }
 tlb-ton = { version = "0.7.2", default-features = false }
 tokio = { version = "1.45", default-features = false }
 tracing = "0.1"

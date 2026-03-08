@@ -11,6 +11,7 @@ use near_sdk::{Gas, NearToken, Promise, near};
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct PromiseDAG {
+    // TODO: reverse order?
     /// `PromiseDAG`s to be executed before `promises`, if any.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub after: Vec<Self>,
@@ -167,6 +168,22 @@ impl From<PromiseSingle> for PromiseDAG {
             after: Vec::new(),
             then: vec![promise],
         }
+    }
+}
+
+impl From<Vec<PromiseSingle>> for PromiseDAG {
+    #[inline]
+    fn from(promises: Vec<PromiseSingle>) -> Self {
+        Self {
+            after: Vec::new(),
+            then: promises,
+        }
+    }
+}
+
+impl<const N: usize> From<[PromiseSingle; N]> for PromiseDAG {
+    fn from(promises: [PromiseSingle; N]) -> Self {
+        Vec::from(promises).into()
     }
 }
 

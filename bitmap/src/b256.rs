@@ -9,6 +9,7 @@ pub type U248 = [u8; 31];
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, Default)]
+#[repr(transparent)]
 pub struct BitMap256<T: Map<K = U248, V = U256>>(T);
 
 impl<T> BitMap256<T>

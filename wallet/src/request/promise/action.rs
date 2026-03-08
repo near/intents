@@ -1,3 +1,4 @@
+use derive_more::From;
 use near_sdk::{
     Gas, GasWeight, NearToken, Promise,
     borsh::{self, BorshSerialize},
@@ -9,13 +10,13 @@ use near_sdk::{
 };
 
 /// NOTE: there is no support for other actions, since they operate on the
-/// account itself (e.g. DeployContract, AddKey and etc...) or its on subaccounts
+/// account itself (e.g. DeployContract, AddKey and etc...) or on its subaccounts
 /// (e.g. CreateAccount). Wallet-contracts are not self-upgradable and do
 /// not allow creating subaccounts.
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh(use_discriminant = true), json])]
 #[serde(tag = "action", rename_all = "snake_case")]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, From)]
 #[repr(u8)] // matches nearcore `Action` just in case
 pub enum PromiseAction {
     FunctionCall(FunctionCallAction) = 2,
@@ -25,11 +26,10 @@ pub enum PromiseAction {
 
 impl PromiseAction {
     pub const fn deposit(&self) -> NearToken {
-        #[allow(clippy::match_same_arms)]
         match self {
-            Self::FunctionCall(FunctionCallAction { deposit, .. }) => *deposit,
-            Self::Transfer(TransferAction { amount }) => *amount,
-            Self::StateInit(StateInitAction { deposit, .. }) => *deposit,
+            Self::FunctionCall(FunctionCallAction { deposit, .. })
+            | Self::Transfer(TransferAction { amount: deposit })
+            | Self::StateInit(StateInitAction { deposit, .. }) => *deposit,
         }
     }
 

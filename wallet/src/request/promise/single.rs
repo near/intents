@@ -41,24 +41,24 @@ impl PromiseSingle {
 
     #[must_use]
     pub fn transfer(self, amount: NearToken) -> Self {
-        self.add_action(PromiseAction::Transfer(TransferAction { amount }))
+        self.add_action(TransferAction { amount })
     }
 
     #[must_use]
     pub fn state_init(self, state_init: StateInit, deposit: NearToken) -> Self {
-        self.add_action(PromiseAction::StateInit(StateInitAction {
+        self.add_action(StateInitAction {
             state_init,
             deposit,
-        }))
+        })
     }
 
     #[must_use]
     pub fn function_call(self, action: FunctionCallAction) -> Self {
-        self.add_action(PromiseAction::FunctionCall(action))
+        self.add_action(action)
     }
 
-    fn add_action(mut self, action: PromiseAction) -> Self {
-        self.actions.push(action);
+    fn add_action(mut self, action: impl Into<PromiseAction>) -> Self {
+        self.actions.push(action.into());
         self
     }
 

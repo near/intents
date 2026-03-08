@@ -16,9 +16,7 @@ impl-tools.workspace = true
 near-sdk.workspace = true
 
 chrono = { workspace = true, optional = true }
-tlbits = { workspace = true, optional = true }
 
 [features]
 abi = ["near-sdk/abi"]
-bits = ["dep:tlbits"]
 chrono = ["dep:chrono"]

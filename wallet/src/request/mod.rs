@@ -9,7 +9,6 @@ use near_sdk::near;
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Request {
-    // TODO: reverse order?
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub ops: Vec<WalletOp>,
 
@@ -35,15 +34,8 @@ impl Request {
 
     #[must_use]
     #[inline]
-    pub fn out(mut self, out: PromiseDAG) -> Self {
-        self.out = out;
-        self
-    }
-
-    #[must_use]
-    #[inline]
-    pub fn out_flat(mut self, out: impl IntoIterator<Item = PromiseSingle>) -> Self {
-        self.extend(out);
+    pub fn out(mut self, out: impl Into<PromiseDAG>) -> Self {
+        self.out = out.into();
         self
     }
 }

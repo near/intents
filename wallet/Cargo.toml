@@ -12,11 +12,12 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [dependencies]
-defuse-bitmap = { workspace = true, features = ["compact"] }
+defuse-bitmap.workspace = true
 defuse-borsh-utils.workspace = true
 defuse-deadline.workspace = true
 defuse-serde-utils.workspace = true
 
+derive_more = { workspace = true, features = ["from"] }
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 thiserror.workspace = true
 

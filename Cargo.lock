@@ -862,14 +862,12 @@ version = "0.1.0"
 dependencies = [
  "arbitrary",
  "bnum",
- "defuse-borsh-utils",
  "defuse-map-utils",
  "hex-literal",
  "near-sdk",
  "num-traits",
  "rand 0.10.0",
  "rstest",
- "tlbits",
 ]
 
 [[package]]
@@ -881,7 +879,6 @@ dependencies = [
  "defuse-io-utils",
  "impl-tools",
  "near-sdk",
- "tlbits",
 ]
 
 [[package]]
@@ -1279,6 +1276,7 @@ dependencies = [
  "defuse-serde-utils",
  "defuse-test-utils",
  "defuse-webauthn",
+ "derive_more",
  "near-sdk",
  "rand 0.10.0",
  "rand_core 0.10.0",

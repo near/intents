@@ -9,16 +9,13 @@ repository.workspace = true
 defuse-map-utils.workspace = true
 
 near-sdk.workspace = true
+num-traits.workspace = true
 
 arbitrary = { workspace = true, optional = true }
-defuse-borsh-utils = { workspace = true, features = ["bits"], optional = true }
-num-traits = { workspace = true, optional = true }
-tlbits = { workspace = true, optional = true }
 
 [features]
 abi = ["near-sdk/abi"]
 arbitrary = ["dep:arbitrary"]
-compact = ["dep:defuse-borsh-utils", "dep:num-traits", "dep:tlbits"]
 
 [dev-dependencies]
 bnum.workspace = true

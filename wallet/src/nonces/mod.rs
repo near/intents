@@ -4,8 +4,9 @@ mod concurrent;
 pub use self::concurrent::*;
 
 use core::{mem, time::Duration};
+use std::collections::BTreeMap;
 
-use defuse_bitmap::CompactBitMap;
+use defuse_bitmap::BitMap;
 use defuse_borsh_utils::adapters::{As, DurationSeconds as BorshDurationSeconds, TimestampSeconds};
 use defuse_deadline::Deadline;
 use near_sdk::{near, serde_with::DurationSeconds};
@@ -40,9 +41,9 @@ pub struct Nonces {
     timeout: Duration,
 
     /// Previous nonces (i.e. within `[now - 2*timeout, now - timeout)`)
-    old_nonces: CompactBitMap<u32>,
+    old_nonces: BitMap<BTreeMap<u32, u32>>,
     /// Current nonces (i.e. within `[now - timeout, now]`)
-    nonces: CompactBitMap<u32>,
+    nonces: BitMap<BTreeMap<u32, u32>>,
 
     #[cfg_attr(
         feature = "abi",
@@ -71,8 +72,8 @@ impl Nonces {
     pub const fn new(timeout: Duration) -> Self {
         Self {
             timeout,
-            old_nonces: CompactBitMap::new(),
-            nonces: CompactBitMap::new(),
+            old_nonces: BitMap::new(BTreeMap::new()),
+            nonces: BitMap::new(BTreeMap::new()),
             last_cleaned_at: Deadline::MIN,
         }
     }
@@ -108,7 +109,7 @@ impl Nonces {
             // check if `2 * timeout` has passed since last rotation
             if self.last_cleaned_at < last_valid_nonce_at - self.timeout {
                 // cleanup old nonces
-                self.old_nonces = CompactBitMap::new();
+                self.old_nonces = BitMap::new(BTreeMap::new());
             }
             // update last rotation time
             self.last_cleaned_at = now;
