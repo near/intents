@@ -223,7 +223,7 @@ async fn test_zba(#[future] env: Env) {
 
     ConcurrentNonces::new(rng())
         .take(
-            (wallet.init_state.nonces.timeout().as_secs() * 3)
+            (wallet.init_state.nonces.timeout().as_secs() * 2)
                 .try_into()
                 .unwrap(),
         )
