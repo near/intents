@@ -1183,6 +1183,7 @@ dependencies = [
  "bnum",
  "chrono",
  "defuse",
+ "defuse-actions",
  "defuse-escrow-swap",
  "defuse-fees",
  "defuse-global-deployer",

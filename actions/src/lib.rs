@@ -10,8 +10,9 @@ use near_sdk::{
     serde_with::{DisplayFromStr, base64::Base64},
 };
 
-pub trait AppendAction {
+pub trait Action {
     fn append(self, p: Promise) -> Promise;
+    fn get_deposit(&self) -> NearToken;
 }
 
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
@@ -25,9 +26,13 @@ pub struct TransferAction {
     pub amount: NearToken,
 }
 
-impl AppendAction for TransferAction {
+impl Action for TransferAction {
     fn append(self, p: Promise) -> Promise {
         p.transfer(self.amount)
+    }
+
+    fn get_deposit(&self) -> NearToken {
+        self.amount
     }
 }
 
@@ -125,7 +130,7 @@ impl FunctionCallAction {
     }
 }
 
-impl AppendAction for FunctionCallAction {
+impl Action for FunctionCallAction {
     fn append(self, p: Promise) -> Promise {
         p.function_call_weight(
             self.function_name,
@@ -134,6 +139,10 @@ impl AppendAction for FunctionCallAction {
             self.min_gas,
             GasWeight(self.gas_weight),
         )
+    }
+
+    fn get_deposit(&self) -> NearToken {
+        self.deposit
     }
 }
 
