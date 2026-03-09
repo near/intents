@@ -1,4 +1,4 @@
-use ::arbitrary::{Result, Unstructured};
+use arbitrary::{Result, Unstructured};
 use near_sdk::{Gas, NearToken};
 
 pub fn near_token(u: &mut Unstructured<'_>) -> Result<NearToken> {

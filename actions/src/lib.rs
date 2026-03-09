@@ -1,5 +1,5 @@
 #[cfg(feature = "arbitrary")]
-mod arbitrary;
+mod arbitrary_helpers;
 
 use near_sdk::{
     Gas, GasWeight, NearToken, Promise,
@@ -21,7 +21,7 @@ pub trait Action {
 pub struct TransferAction {
     #[cfg_attr(
         feature = "arbitrary", 
-        arbitrary(with = crate::arbitrary::near_token),
+        arbitrary(with = crate::arbitrary_helpers::near_token),
     )]
     pub amount: NearToken,
 }
@@ -52,14 +52,14 @@ pub struct FunctionCallAction {
 
     #[cfg_attr(
         feature = "arbitrary",
-        arbitrary(with = crate::arbitrary::near_token),
+        arbitrary(with = crate::arbitrary_helpers::near_token),
     )]
     #[serde(default, skip_serializing_if = "NearToken::is_zero")]
     pub deposit: NearToken,
 
     #[cfg_attr(
         feature = "arbitrary", 
-        arbitrary(with = crate::arbitrary::gas),
+        arbitrary(with = crate::arbitrary_helpers::gas),
     )]
     #[serde(default, skip_serializing_if = "Gas::is_zero")]
     pub min_gas: Gas,
