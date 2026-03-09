@@ -823,6 +823,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-actions"
+version = "0.1.0"
+dependencies = [
+ "arbitrary",
+ "near-sdk",
+]
+
+[[package]]
 name = "defuse-admin-utils"
 version = "0.1.0"
 dependencies = [

@@ -1,4 +1,4 @@
-use near_sdk::{Gas, NearToken, ext_contract, near};
+use near_sdk::{AccountId, Gas, NearToken, Promise, ext_contract, near};
 
 #[near(serializers = [json])]
 pub enum ArbitraryAction {
@@ -18,5 +18,5 @@ pub enum ArbitraryAction {
 pub trait ArbitraryManager {
     /// Allows the caller to execute an arbitrary function call
     /// or transfer on the contract.
-    fn arbitrary_call(&mut self, action: ArbitraryAction);
+    fn arbitrary_call(&mut self, contract: AccountId, action: ArbitraryAction);
 }
