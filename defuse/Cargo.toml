@@ -25,6 +25,7 @@ defuse-nep245.workspace = true
 defuse-map-utils = { workspace = true, optional = true }
 defuse-serde-utils.workspace = true
 defuse-wnear = { workspace = true, optional = true }
+defuse-actions.workspace = true
 
 bitflags = { workspace = true, optional = true }
 bnum.workspace = true
@@ -71,7 +72,7 @@ container_build_command = [
 ]
 
 [features]
-abi = ["defuse-core/abi", "near-sdk/abi"]
+abi = ["defuse-core/abi", "near-sdk/abi", "defuse-actions/abi"]
 arbitrary = ["defuse-core/arbitrary", "dep:arbitrary",]
 contract = [
     "dep:defuse-bitmap",

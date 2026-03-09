@@ -793,6 +793,7 @@ dependencies = [
  "bitflags 2.10.0",
  "bnum",
  "chrono",
+ "defuse-actions",
  "defuse-admin-utils",
  "defuse-auth-call",
  "defuse-bitmap",
@@ -827,6 +828,8 @@ name = "defuse-actions"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
+ "defuse-borsh-utils",
+ "defuse-serde-utils",
  "near-sdk",
 ]
 
@@ -2697,9 +2700,9 @@ dependencies = [
 
 [[package]]
 name = "near-gas"
-version = "0.3.3"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1cecd5d9463587f34f2b7ff4c7104297483a543be8a68a4a04a8ac96c419d1a1"
+checksum = "919d705b6dab5a7c6cc4b9a60e3025ed2f7cf3d4c3c32ad1a47264a4190e6409"
 dependencies = [
  "borsh",
  "schemars 0.8.22",
