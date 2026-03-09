@@ -10,12 +10,22 @@ use std::{
 
 use defuse_io_utils::ReadExt;
 use impl_tools::autoimpl;
+#[cfg(feature = "abi")]
+use near_sdk::borsh::BorshSchema;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+
+#[cfg(feature = "abi")]
+mod schema;
+#[cfg(feature = "abi")]
+pub use self::schema::*;
 
 #[cfg(feature = "chrono")]
 mod chrono;
 #[cfg(feature = "chrono")]
 pub use self::chrono::*;
+
+mod duration;
+pub use self::duration::*;
 
 pub trait BorshSerializeAs<T: ?Sized> {
     fn serialize_as<W>(source: &T, writer: &mut W) -> io::Result<()>
@@ -138,6 +148,26 @@ where
     #[inline]
     fn serialize<W: io::Write>(&self, writer: &mut W) -> io::Result<()> {
         As::serialize_as(&self.value, writer)
+    }
+}
+
+#[cfg(feature = "abi")]
+impl<T, As> BorshSchema for AsWrap<T, As>
+where
+    T: BorshSchema,
+    As: ?Sized,
+{
+    fn declaration() -> borsh::schema::Declaration {
+        T::declaration()
+    }
+
+    fn add_definitions_recursively(
+        definitions: &mut std::collections::BTreeMap<
+            borsh::schema::Declaration,
+            borsh::schema::Definition,
+        >,
+    ) {
+        T::add_definitions_recursively(definitions);
     }
 }
 

@@ -147,6 +147,16 @@ where
     }
 }
 
+#[cfg(feature = "abi")]
+const _: () = {
+    use crate::adapters::schema::impl_borsh_schema_as;
+
+    impl_borsh_schema_as!(DateTime<Utc>, TimestampSeconds);
+    impl_borsh_schema_as!(DateTime<Utc>, TimestampMilliSeconds);
+    impl_borsh_schema_as!(DateTime<Utc>, TimestampMicroSeconds);
+    impl_borsh_schema_as!(DateTime<Utc>, TimestampNanoSeconds);
+};
+
 #[cfg(test)]
 mod tests {
     use crate::adapters::tests::roundtrip_as;
