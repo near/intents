@@ -23,8 +23,8 @@ pub const DEFAULT_WALLET_ID: u32 = 0;
 ///
 /// However, we should take into account that 30% of used gas is funnelled back
 /// to the contract's NEAR balance. Assuming that `w_execute_signed()` method
-/// uses at least 2TGas, at the time of writing this converts back to ~0.03
-/// milliNear, which is enough to cover storage staking fees for 3 bytes.
+/// uses at least 2TGas, at the time of writing this converts back to ~30
+/// microNear, which is enough to cover storage staking fees for 3 bytes.
 ///
 /// If nonces are generated optimally (i.e. at most
 /// [semi-sequentially](crate::ConcurrentNonces)), then each

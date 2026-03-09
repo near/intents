@@ -25,6 +25,11 @@ impl Request {
         }
     }
 
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.ops.is_empty() && self.out.is_empty()
+    }
+
     #[must_use]
     #[inline]
     pub fn ops(mut self, ops: impl IntoIterator<Item = WalletOp>) -> Self {

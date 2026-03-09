@@ -8,8 +8,7 @@ use defuse_map_utils::{IterableMap, Map};
 use near_sdk::near;
 use num_traits::{One, PrimInt, Unsigned, Zero};
 
-/// Bitmap of values `T` stored inline.
-// #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+/// Bitmap for primitive types
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
