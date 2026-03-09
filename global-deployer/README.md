@@ -162,7 +162,7 @@ flowchart TD
 
 ### Deployed Instances
 
-The Global Deployer WASM is built from the [global-deployer/v0.1.0](https://github.com/near/intents/releases/tag/global-deployer%2Fv0.1.0) release. The code hash is the same on both networks:
+The Global Deployer WASM is built from the [global-deployer/v0.2.0](https://github.com/near/intents/releases/tag/global-deployer%2Fv0.2.0) release. The code hash is the same on both networks:
 
 **Code hash:** `8JK2g3kr7qCbRDBmoLx7c9Zrz9TxPdANP7ocbQGE2fqP`
 
