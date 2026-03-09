@@ -5,10 +5,10 @@ DEFUSE_OUT_DIR ?= $(ROOT_DIR)res
 
 # ============================================================================
 
-CONTRACTS += defuse defuse-imt
-build-defuse build-defuse-imt: CRATE_NAME=defuse
-build-defuse-imt: CONTRACT_OUT_DIR=imt
-build-defuse-imt: VARIANT=imt
+CONTRACTS += defuse defuse-far
+build-defuse build-defuse-far: CRATE_NAME=defuse
+build-defuse-far: CONTRACT_OUT_DIR=far
+build-defuse-far: VARIANT=far
 
 # ============================================================================
 
