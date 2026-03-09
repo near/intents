@@ -52,7 +52,7 @@ Deploys WASM code as a global contract on this account.
 
 - **Access**: permissionless
 - **Deposit**: enough to cover storage delta
-- **Params**: `code` (borsh-serialized WASM binary) — `sha256(code)` must equal `approved_hash`
+- **Params**: `code` (raw WASM binary, passed directly without borsh length prefix) — `sha256(code)` must equal `approved_hash`
 - **State change**: `code_hash = sha256(code)`, `approved_hash = 0x000...000`
 - **Events**: [`Deploy { code_hash }`, `Approve { code_hash: 0x000...000, reason: Deploy(code_hash) }` ]
 - **Refund**: unused deposit is returned to the caller
