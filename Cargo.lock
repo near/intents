@@ -828,8 +828,6 @@ name = "defuse-actions"
 version = "0.1.0"
 dependencies = [
  "arbitrary",
- "defuse-borsh-utils",
- "defuse-serde-utils",
  "near-sdk",
 ]
 
