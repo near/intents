@@ -1074,16 +1074,7 @@ async fn test_concurrent_transfer_does_not_inflate_refund(
         .saturating_sub(refund)
         .saturating_add(max_gas);
 
-    println!("Owner spent: {owner_spent}");
-    println!("Expected outlay: {expected_outlay}");
-    println!("Refund: {refund}");
-    println!("Deploy cost: {deploy_cost}");
-    println!("Contract balance after: {contract_balance_after}");
-
-    let full_refund_case = owner_spent < max_gas;
-    let partial_refund_case = owner_spent <= expected_outlay;
-
-    assert!(full_refund_case || partial_refund_case);
+    assert!(owner_spent <= expected_outlay);
 }
 
 #[rstest]
