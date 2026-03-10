@@ -2,18 +2,18 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 use crate::tests::defuse::env::Env;
-use defuse_sandbox::extensions::condvar::OneshotCondVarExt;
-use defuse_sandbox::extensions::escrow_proxy::EscrowProxyExt;
-use defuse_sandbox::extensions::mt_receiver::MtReceiverStubExt;
-use defuse_test_utils::wasms::MT_RECEIVER_STUB_WASM;
 use defuse_core::token_id::TokenId;
 use defuse_core::token_id::nep141::Nep141TokenId;
 use defuse_core::token_id::nep245::Nep245TokenId;
 use defuse_escrow_proxy::ForwardContext;
 use defuse_escrow_proxy::{ForwardRequest, ProxyConfig};
 use defuse_oneshot_condvar::storage::{Config as CondVarConfig, ContractStorage};
+use defuse_sandbox::extensions::condvar::OneshotCondVarExt;
+use defuse_sandbox::extensions::escrow_proxy::EscrowProxyExt;
+use defuse_sandbox::extensions::mt_receiver::MtReceiverStubExt;
 use defuse_sandbox::extensions::storage_management::StorageManagementExt;
 use defuse_sandbox::{FnCallBuilder, FtExt, FtViewExt, MtExt, MtViewExt};
+use defuse_test_utils::wasms::MT_RECEIVER_STUB_WASM;
 use multi_token_receiver_stub::{FTReceiverMode, MTReceiverMode};
 use near_sdk::AccountId;
 use near_sdk::serde_json;
@@ -221,10 +221,13 @@ async fn test_transfer_approved_by_relay_using_on_auth() {
         async {
             env.root()
                 .tx(condvar_instance_id.clone())
-                .state_init(StateInit::V1(StateInitV1 {
-                    code: GlobalContractId::AccountId(condvar_global.clone()),
-                    data: raw_state,
-                }), NearToken::from_yoctonear(1))
+                .state_init(
+                    StateInit::V1(StateInitV1 {
+                        code: GlobalContractId::AccountId(condvar_global.clone()),
+                        data: raw_state,
+                    }),
+                    NearToken::from_yoctonear(1),
+                )
                 .function_call(
                     FnCallBuilder::new("on_auth")
                         .json_args(serde_json::json!({
@@ -303,10 +306,13 @@ async fn test_ft_transfer_approved_by_relay_using_on_auth() {
 
     env.root()
         .tx(escrow_instance_id.clone())
-        .state_init(StateInit::V1(StateInitV1 {
-            code: GlobalContractId::AccountId(ft_receiver_global.clone()),
-            data: BTreeMap::new(),
-        }), NearToken::from_yoctonear(1))
+        .state_init(
+            StateInit::V1(StateInitV1 {
+                code: GlobalContractId::AccountId(ft_receiver_global.clone()),
+                data: BTreeMap::new(),
+            }),
+            NearToken::from_yoctonear(1),
+        )
         .await
         .unwrap();
 
@@ -365,10 +371,13 @@ async fn test_ft_transfer_approved_by_relay_using_on_auth() {
         async {
             env.root()
                 .tx(condvar_instance_id.clone())
-                .state_init(StateInit::V1(StateInitV1 {
-                    code: GlobalContractId::AccountId(condvar_global.clone()),
-                    data: raw_state,
-                }), NearToken::from_yoctonear(1))
+                .state_init(
+                    StateInit::V1(StateInitV1 {
+                        code: GlobalContractId::AccountId(condvar_global.clone()),
+                        data: raw_state,
+                    }),
+                    NearToken::from_yoctonear(1),
+                )
                 .function_call(
                     FnCallBuilder::new("on_auth")
                         .json_args(serde_json::json!({
@@ -405,8 +414,8 @@ async fn test_ft_transfer_approved_by_relay_using_on_auth() {
 async fn test_proxy_with_ft_transfer() {
     use std::time::Duration;
 
-    use defuse_sandbox::extensions::escrow::EscrowSwapExt;
     use crate::utils::escrow_builders::{FillMessageBuilder, FundMessageBuilder, ParamsBuilder};
+    use defuse_sandbox::extensions::escrow::EscrowSwapExt;
 
     let env = Env::builder().build().await;
 
@@ -472,10 +481,13 @@ async fn test_proxy_with_ft_transfer() {
 
     env.root()
         .tx(escrow_instance_id.clone())
-        .state_init(StateInit::V1(StateInitV1 {
-            code: GlobalContractId::AccountId(escrow_swap_global.clone()),
-            data: escrow_raw_state,
-        }), NearToken::from_yoctonear(1))
+        .state_init(
+            StateInit::V1(StateInitV1 {
+                code: GlobalContractId::AccountId(escrow_swap_global.clone()),
+                data: escrow_raw_state,
+            }),
+            NearToken::from_yoctonear(1),
+        )
         .await
         .unwrap();
 
@@ -546,10 +558,13 @@ async fn test_proxy_with_ft_transfer() {
         async {
             env.root()
                 .tx(condvar_instance_id.clone())
-                .state_init(StateInit::V1(StateInitV1 {
-                    code: GlobalContractId::AccountId(condvar_global.clone()),
-                    data: raw_state,
-                }), NearToken::from_yoctonear(1))
+                .state_init(
+                    StateInit::V1(StateInitV1 {
+                        code: GlobalContractId::AccountId(condvar_global.clone()),
+                        data: raw_state,
+                    }),
+                    NearToken::from_yoctonear(1),
+                )
                 .function_call(
                     FnCallBuilder::new("on_auth")
                         .json_args(serde_json::json!({

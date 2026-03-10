@@ -8,6 +8,7 @@ use builder::EnvBuilder;
 
 use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;
+use defuse_core::token_id::{TokenId, nep141::Nep141TokenId};
 use defuse_randomness::{Rng, make_true_rng};
 use defuse_sandbox::extensions::defuse::contract::{
     core::{Deadline, Nonce},
@@ -22,7 +23,6 @@ use defuse_sandbox::extensions::{
     },
     poa::PoAFactoryExt,
 };
-use defuse_core::token_id::{TokenId, nep141::Nep141TokenId};
 use defuse_sandbox::{Account, Sandbox, SigningAccount};
 use defuse_test_utils::random::{Seed, rng};
 use futures::future::try_join_all;

@@ -21,7 +21,8 @@ container_build_command = [
     "build",
     "non-reproducible-wasm",
     "--locked",
-    "--features=abi,contract",
+    "--features=contract",
+    "--abi-features=abi,contract",
     "--no-embed-abi",
 ]
 
@@ -42,7 +43,7 @@ defuse-token-id = { workspace = true, optional=true }
 [features]
 default = ["nep141", "nep245", "escrow-swap", "auth-call"]
 
-abi = ["defuse-oneshot-condvar/abi", "defuse-escrow-swap?/abi"]
+abi = ["defuse-oneshot-condvar/abi", "defuse-escrow-swap?/abi", "near-sdk/abi"]
 auth-call = ["dep:defuse-auth-call", "defuse-oneshot-condvar/auth-call"]
 contract = []
 escrow-swap = ["dep:defuse-escrow-swap"]

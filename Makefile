@@ -39,6 +39,16 @@ build-multi-token-receiver-stub: CRATE_NAME=multi-token-receiver-stub
 
 # ============================================================================
 
+CONTRACTS += escrow-proxy
+build-escrow-proxy: CRATE_NAME=defuse-escrow-proxy
+
+# ============================================================================
+
+CONTRACTS += oneshot
+build-oneshot: CRATE_NAME=defuse-oneshot-condvar
+
+# ============================================================================
+
 .PHONY: all
 all: $(CONTRACTS)
 

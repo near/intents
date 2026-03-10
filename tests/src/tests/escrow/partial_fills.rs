@@ -273,11 +273,11 @@ async fn maybe_view_escrow(escrow: &Account) {
 #[tokio::test]
 async fn test_partial_fill_funds_returned_after_timeout() {
     use crate::tests::defuse::env::Env as DefuseEnv;
-    use defuse_sandbox::extensions::escrow::EscrowExt;
-    use defuse_sandbox::extensions::escrow::EscrowSwapExt;
     use crate::utils::escrow_builders::ParamsBuilder;
     use crate::utils::escrow_builders::{FillMessageBuilder, FundMessageBuilder};
     use defuse_escrow_swap::decimal::UD128;
+    use defuse_sandbox::extensions::escrow::EscrowExt;
+    use defuse_sandbox::extensions::escrow::EscrowSwapExt;
     use defuse_sandbox::{MtExt, MtViewExt};
 
     let env = DefuseEnv::builder().build().await;

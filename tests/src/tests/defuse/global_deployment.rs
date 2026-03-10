@@ -8,7 +8,6 @@ use rstest::rstest;
 
 use defuse_test_utils::wasms::MT_RECEIVER_STUB_WASM;
 
-
 #[rstest]
 #[tokio::test]
 async fn different_states_produce_different_addresses(

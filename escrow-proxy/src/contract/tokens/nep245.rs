@@ -1,5 +1,5 @@
 use defuse_near_utils::{
-    UnwrapOrPanicError, promise_result_checked_json, promise_result_checked_json_with_args,
+    UnwrapOrPanicError, promise_result_checked_json, promise_result_checked_json_with_len,
 };
 use defuse_nep245::{ext_mt_core, receiver::MultiTokenReceiver};
 use defuse_token_id::TokenId;
@@ -71,7 +71,11 @@ impl Contract {
         amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
-        if !promise_result_checked_json::<bool>(0).unwrap_or(false) {
+        let authorized = promise_result_checked_json::<bool>(0)
+            .ok()
+            .and_then(|inner| inner.ok())
+            .unwrap_or_default();
+        if !authorized {
             near_sdk::env::panic_str("Authorization failed or timed out, refunding");
         }
 
@@ -98,16 +102,14 @@ impl Contract {
 
     #[private]
     pub fn mt_resolve_forward(&self, amounts: Vec<U128>) -> Vec<U128> {
-        let used = promise_result_checked_json_with_args::<Vec<U128>>(0, amounts.len())
-            // Do not refund on failed `mt_transfer_call`. A known out-of-gas attack
-            // makes it impossible to distinguish whether the failure occurred in
-            // `mt_transfer_call` itself or in `mt_resolve_transfer` — the resolve
-            // function for the `mt_on_transfer` callback. Since `mt_resolve_transfer`
-            // is responsible for managing account balances and vulnerability allows for
-            // opting out from that logic we choose to lock funds on the
-            // proxy account instead of refunding them.
-            .filter(|v| v.len() == amounts.len())
-            .unwrap_or(amounts.clone());
+        let mut used = match promise_result_checked_json_with_len::<Vec<U128>>(0, amounts.len()) {
+            Ok(Ok(used)) if used.len() == amounts.len() => used,
+            Ok(_deserialize_err) => vec![U128(0); amounts.len()],
+            // do not refund on failed `mt_batch_transfer_call` due to
+            // NEP-141 vulnerability: `mt_resolve_transfer` fails to
+            // read result of `mt_on_transfer` due to insufficient gas
+            Err(_) => amounts.clone(),
+        };
 
         amounts
             .iter()

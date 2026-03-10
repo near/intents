@@ -7,11 +7,6 @@ use std::borrow::Cow;
 use std::time::Duration;
 
 use crate::tests::defuse::env::Env;
-use defuse_sandbox::extensions::condvar::OneshotCondVarExt;
-use defuse_sandbox::extensions::defuse::intents::ExecuteIntentsExt;
-use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
-use defuse_sandbox::extensions::escrow::EscrowSwapExt;
-use defuse_sandbox::extensions::escrow_proxy::EscrowProxyExt;
 use crate::utils::escrow_builders::FundMessageBuilder;
 use crate::utils::escrow_builders::ParamsBuilder;
 use defuse_core::Deadline;
@@ -26,6 +21,11 @@ use defuse_escrow_swap::action::{FillAction, TransferAction, TransferMessage};
 use defuse_escrow_swap::decimal::UD128;
 use defuse_escrow_swap::{OverrideSend, Pips, ProtocolFees};
 use defuse_oneshot_condvar::storage::{Config as CondVarConfig, ContractStorage as CondVarStorage};
+use defuse_sandbox::extensions::condvar::OneshotCondVarExt;
+use defuse_sandbox::extensions::defuse::intents::ExecuteIntentsExt;
+use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
+use defuse_sandbox::extensions::escrow::EscrowSwapExt;
+use defuse_sandbox::extensions::escrow_proxy::EscrowProxyExt;
 use defuse_sandbox::{MtExt, MtViewExt};
 use near_sdk::serde_json;
 

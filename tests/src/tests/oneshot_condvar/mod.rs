@@ -1,8 +1,8 @@
 use std::time::Duration;
 
-use defuse_sandbox::extensions::condvar::OneshotCondVarExt;
 use defuse_oneshot_condvar::storage::Config as CondVarConfig;
 use defuse_oneshot_condvar::{CV_NOTIFY_ONE_GAS, CV_WAIT_GAS};
+use defuse_sandbox::extensions::condvar::OneshotCondVarExt;
 use defuse_sandbox::{Account, FnCallBuilder, Sandbox};
 use near_sdk::{AccountId, Gas, NearToken, serde_json::json};
 

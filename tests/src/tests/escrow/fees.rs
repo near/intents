@@ -3,7 +3,6 @@
 use std::time::Duration;
 
 use crate::tests::defuse::env::Env;
-use defuse_sandbox::extensions::escrow::EscrowSwapExt;
 use crate::utils::escrow_builders::ParamsBuilder;
 use crate::utils::escrow_builders::{FillMessageBuilder, FundMessageBuilder};
 use defuse_core::Deadline;
@@ -11,6 +10,7 @@ use defuse_core::token_id::TokenId;
 use defuse_core::token_id::nep245::Nep245TokenId;
 use defuse_escrow_swap::decimal::UD128;
 use defuse_escrow_swap::{Pips, ProtocolFees};
+use defuse_sandbox::extensions::escrow::EscrowSwapExt;
 use defuse_sandbox::{MtExt, MtViewExt};
 use near_sdk::serde_json;
 

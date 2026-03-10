@@ -58,7 +58,11 @@ impl Contract {
         amount: U128,
         msg: String,
     ) -> PromiseOrValue<U128> {
-        if !promise_result_checked_json::<bool>(0).unwrap_or(false) {
+        let authorized = promise_result_checked_json::<bool>(0)
+            .ok()
+            .and_then(|inner| inner.ok())
+            .unwrap_or_default();
+        if !authorized {
             near_sdk::env::panic_str("Authorization failed or timed out, refunding");
         }
 
@@ -83,15 +87,14 @@ impl Contract {
 
     #[private]
     pub fn ft_resolve_forward(&self, amount: U128) -> U128 {
-        let used = promise_result_checked_json::<U128>(0)
-            // Do not refund on failed `ft_transfer_call`. A known out-of-gas attack
-            // makes it impossible to distinguish whether the failure occurred in
-            // `ft_transfer_call` itself or in `ft_resolve_transfer` — the resolve
-            // function for the `ft_on_transfer` callback. Since `ft_resolve_transfer`
-            // is responsible for managing account balances and vulnerability allows for
-            // opting out from that logic we choose to lock funds on the
-            // proxy account instead of refunding them.
-            .unwrap_or(amount);
-        U128(amount.0.saturating_sub(used.0))
+        let used = match promise_result_checked_json::<U128>(0) {
+            Ok(Ok(used)) => used.0.min(amount.0),
+            Ok(Err(_deserialize_err)) => 0,
+            // do not refund on failed `ft_transfer_call` due to
+            // NEP-141 vulnerability: `ft_resolve_transfer` fails to
+            // read result of `ft_on_transfer` due to insufficient gas
+            Err(_) => amount.0,
+        };
+        U128(amount.0.saturating_sub(used))
     }
 }

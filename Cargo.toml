@@ -144,6 +144,7 @@ must_use_candidate = "allow"
 unreadable_literal = "allow"
 similar_names = "allow"
 too_long_first_doc_paragraph = "allow"
+trivially_copy_pass_by_ref = "allow"
 
 [profile.release]
 codegen-units = 1
