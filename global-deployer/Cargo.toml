@@ -28,7 +28,6 @@ near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 clap.workspace = true
 hex.workspace = true
 serde_json.workspace = true
-sha2 = "0.10"
 near-sdk = { workspace = true, features = ["unit-testing"] }
 
 [package.metadata.near.reproducible_build]
