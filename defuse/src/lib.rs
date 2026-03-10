@@ -3,6 +3,8 @@
 pub mod contract;
 
 pub mod accounts;
+#[cfg(feature = "far")]
+pub mod far;
 pub mod fees;
 pub mod garbage_collector;
 pub mod intents;

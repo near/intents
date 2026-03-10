@@ -45,7 +45,7 @@ defuse-sandbox = { workspace = true }
 defuse = { workspace = true, features = [
     "contract",
     "arbitrary",
-    "imt",
+    "far",
 ], optional = true }
 defuse-escrow-swap = { workspace = true, features = [
     "auth_call",

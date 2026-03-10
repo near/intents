@@ -16,7 +16,7 @@ use defuse_sandbox::{
     extensions::wnear::{WNearDeployerExt, WNearExt},
     sandbox,
 };
-use defuse_test_utils::{random::Seed, wasms::DEFUSE_IMT_WASM};
+use defuse_test_utils::{random::Seed, wasms::DEFUSE_FAR_WASM};
 use near_sdk::{AccountId, NearToken};
 
 use super::Env;
@@ -118,8 +118,8 @@ impl EnvBuilder {
             if legacy {
                 DEFUSE_LEGACY_WASM.clone()
             } else {
-                // imt feature enabled by default in tests
-                DEFUSE_IMT_WASM.clone()
+                // far feature enabled by default in tests
+                DEFUSE_FAR_WASM.clone()
             },
         )
         .await
