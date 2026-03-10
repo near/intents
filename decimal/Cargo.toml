@@ -9,7 +9,7 @@ repository.workspace = true
 workspace = true
 
 [features]
-abi = []
+abi = ["near-sdk/abi"]
 arbitrary = ["dep:arbitrary"]
 
 [dependencies]

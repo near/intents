@@ -35,7 +35,7 @@ pub struct Nonces {
             deserialize_with = "As::<BorshDurationSeconds<u32>>::deserialize",
         )
     )]
-    /// Fixed timeout, i.e. validity timespan for each nonce.
+    /// Fixed timeout, i.e. maximum validity timespan for each nonce.
     timeout: Duration,
 
     #[cfg_attr(
@@ -70,21 +70,18 @@ impl Nonces {
     pub const fn new(timeout: Duration) -> Self {
         Self {
             timeout,
-            last_cleaned_at: Deadline::MIN,
+            last_cleaned_at: Deadline::UNIX_EPOCH,
             old_nonces: BitMap::new(BTreeMap::new()),
             nonces: BitMap::new(BTreeMap::new()),
         }
     }
 
     pub fn commit(&mut self, nonce: u32, created_at: Deadline, timeout: Duration) -> Result<()> {
-        if timeout != self.timeout {
-            return Err(Error::InvalidTimeout);
-        }
-
         self.check_cleanup();
 
-        let now = Deadline::now();
-        if !(now - self.timeout <= created_at && created_at <= now) {
+        let now = Self::now();
+        // check that `created_at` is in `[now - min(self.timeout, msg.timeout), now]`
+        if !(now - self.timeout.min(timeout) <= created_at && created_at <= now) {
             return Err(Error::ExpiredOrFuture);
         }
 
@@ -97,7 +94,7 @@ impl Nonces {
 
     /// Rotate and cleanup if it's time
     pub fn check_cleanup(&mut self) {
-        let now = Deadline::now();
+        let now = Self::now();
         let last_valid_nonce_at = now - self.timeout;
 
         // check if it's time to rotate
@@ -112,6 +109,16 @@ impl Nonces {
             // update last rotation time
             self.last_cleaned_at = now;
         }
+    }
+
+    #[inline]
+    fn now() -> Deadline {
+        // We need to truncate the current timestamp down to seconds, since
+        // `self.last_cleaned_at` is serialized as `TimestampSeconds<u32>`.
+        // As a result, `now()` might be (less than 1 second) behind the actual
+        // block timestamp, which is acceptable: we're just assuming the receipt
+        // arrived a bit faster.
+        Deadline::now().trunc_subsecs()
     }
 
     #[inline]

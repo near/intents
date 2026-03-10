@@ -1047,13 +1047,35 @@ async fn test_concurrent_transfer_does_not_inflate_refund(
     let owner_balance_after = owner.view().await.unwrap().amount;
     // Some transfers land between gd_deploy and gd_post_deploy, inflating
     // account_balance well above initial_balance + attached_deposit. The refund
-    // cap `min(excess, attached_deposit)` limits refund to 50 NEAR, so the
-    // owner only loses gas costs (< 1 NEAR) and cannot steal from transfers.
-    let owner_spent = owner_balance_before_deploy.saturating_sub(owner_balance_after);
+    // cap `min(excess, attached_deposit)` limits refund to 50 NEAR
     assert!(
-        owner_spent < NearToken::from_near(1),
-        "owner should lose only gas costs (< 1 NEAR), but spent: {owner_spent:?}"
+        owner_balance_after <= owner_balance_before_deploy,
+        "owner balance should not increase after deploy"
     );
+
+    let deploy_price = NearToken::from_micronear(100); // 0001 NEAR per 1B
+    let contract_size = MT_RECEIVER_STUB_WASM.len().try_into().unwrap();
+    let deploy_cost = deploy_price.checked_mul(contract_size).unwrap();
+
+    let owner_spent = owner_balance_before_deploy.saturating_sub(owner_balance_after);
+    let contract_balance_after = controller_instance.view().await.unwrap().amount;
+    let transferred_amount = transfer_amount.checked_mul(num_senders).unwrap();
+
+    // There can be 2 options:
+    // 1) If transfer amount equal or greater to deploy cost land before the post deploy,
+    // then owner gets a full refund and spends near only on gas
+    // 2) Otherwise, owner only gets a partial refund
+
+    let refund = deploy_deposit
+        .saturating_sub(deploy_cost)
+        .saturating_add(transferred_amount.saturating_sub(contract_balance_after));
+
+    let max_gas = NearToken::from_near(1);
+    let expected_outlay = deploy_deposit
+        .saturating_sub(refund)
+        .saturating_add(max_gas);
+
+    assert!(owner_spent <= expected_outlay);
 }
 
 #[rstest]

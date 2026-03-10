@@ -107,9 +107,10 @@ pub struct RequestMessage {
     )]
     #[serde(rename = "timeout_secs")]
     #[serde_as(as = "DurationSeconds")]
-    /// Timeout for validity of this request after `created_at`.
-    /// MUST match [`w_timeout_secs()`](crate::Wallet::w_timeout_secs)
-    /// set on the contract.
+    /// Maximum timeout for validity of this request after `created_at`.
+    /// The actual timeout for the request is `min(msg.timeout, contract.timeout)`
+    /// to prevent replay attacks.
+    /// See [`w_timeout_secs()`](crate::Wallet::w_timeout_secs).
     pub timeout: Duration,
 
     /// Request to execute

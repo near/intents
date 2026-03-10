@@ -4,7 +4,7 @@ use core::{
 };
 use std::io;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, SubsecRound, Utc};
 use defuse_borsh_utils::adapters::{
     BorshDeserializeAs, BorshSerializeAs, TimestampMicroSeconds, TimestampMilliSeconds,
     TimestampNanoSeconds, TimestampSeconds,
@@ -17,8 +17,8 @@ use near_sdk::near;
 pub struct Deadline(#[cfg_attr(feature = "abi", schemars(with = "String"))] DateTime<Utc>);
 
 impl Deadline {
-    pub const MIN: Self = Self(DateTime::UNIX_EPOCH);
-    pub const MAX: Self = Self(DateTime::<Utc>::MAX_UTC);
+    pub const UNIX_EPOCH: Self = Self::new(DateTime::UNIX_EPOCH);
+    pub const MAX: Self = Self::new(DateTime::<Utc>::MAX_UTC);
 
     pub const fn new(d: DateTime<Utc>) -> Self {
         Self(d)
@@ -47,6 +47,15 @@ impl Deadline {
     #[inline]
     pub fn has_expired(self) -> bool {
         Self::now() > self
+    }
+
+    /// Truncate `Deadline` down to seconds part.
+    /// E.g. `2026-03-10T09:32:16.123Z` would be truncated down to
+    /// `2026-03-10T09:32:16Z`
+    #[must_use]
+    #[inline]
+    pub fn trunc_subsecs(self) -> Self {
+        Self::new(self.into_timestamp().trunc_subsecs(0))
     }
 
     #[must_use]
