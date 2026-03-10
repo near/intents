@@ -2,11 +2,11 @@ mod b256;
 
 pub use self::b256::*;
 
-use std::ops::{RangeInclusive, Shl};
+use core::ops::{DerefMut, RangeInclusive, Shl};
 
-use defuse_map_utils::{IterableMap, Map};
+use defuse_map_utils::{IterableMap, Map, cleanup::DefaultMap};
 use near_sdk::near;
-use num_traits::{One, PrimInt, Unsigned, Zero};
+use num_traits::{One, PrimInt, Zero};
 
 /// Bitmap for primitive types
 #[near(serializers = [borsh, json])]
@@ -16,8 +16,8 @@ pub struct BitMap<M>(M);
 
 impl<M> BitMap<M>
 where
-    M: Map<K = <M as Map>::V>,
-    M::K: PrimInt + Unsigned + Shl<M::K, Output = M::K>,
+    M: DefaultMap<K = <M as Map>::V>,
+    M::K: PrimInt + Shl<M::K, Output = M::K>,
 {
     #[allow(clippy::as_conversions)]
     const BITS_FOR_BIT_POS: usize = (size_of::<M::K>() * 8).ilog2() as usize;
@@ -40,7 +40,7 @@ where
     /// Set the bit `n` and return old value
     #[inline]
     pub fn set_bit(&mut self, n: M::K) -> bool {
-        let (bitmap, mask) = self.get_mut_with_mask(n);
+        let (mut bitmap, mask) = self.get_mut_with_mask(n);
         let old = *bitmap & mask != M::V::zero();
         *bitmap = *bitmap | mask;
         old
@@ -49,7 +49,7 @@ where
     /// Clear the bit `n` and return old value
     #[inline]
     pub fn clear_bit(&mut self, n: M::K) -> bool {
-        let (bitmap, mask) = self.get_mut_with_mask(n);
+        let (mut bitmap, mask) = self.get_mut_with_mask(n);
         let old = *bitmap & mask != M::V::zero();
         *bitmap = *bitmap & !mask;
         old
@@ -58,7 +58,7 @@ where
     /// Toggle the bit `n` and return old value
     #[inline]
     pub fn toggle_bit(&mut self, n: M::K) -> bool {
-        let (bitmap, mask) = self.get_mut_with_mask(n);
+        let (mut bitmap, mask) = self.get_mut_with_mask(n);
         let old = *bitmap & mask != M::V::zero();
         *bitmap = *bitmap ^ mask;
         old
@@ -91,9 +91,9 @@ where
     }
 
     #[inline]
-    fn get_mut_with_mask(&mut self, n: M::K) -> (&mut M::V, M::V) {
+    fn get_mut_with_mask(&mut self, n: M::K) -> (impl DerefMut<Target = M::V>, M::V) {
         let (word, bit_mask) = Self::split_word_mask(n);
-        (self.0.entry(word).or_insert_with(M::V::zero), bit_mask)
+        (self.0.entry_or_default(word), bit_mask)
     }
 
     /// Returns `(word, bit_pos_mask)`
@@ -122,7 +122,7 @@ mod tests {
     #[rstest]
     fn test<T>(#[values(0u8, 0u16, 0u32, 0u64, 0u128)] _n: T)
     where
-        T: PrimInt + Unsigned + Shl<T, Output = T>,
+        T: PrimInt + Shl<T, Output = T> + Default,
     {
         let mut m = BitMap::<BTreeMap<T, T>>::default();
 
@@ -157,7 +157,7 @@ mod tests {
         mut ns: Vec<T>,
     ) where
         RangeInclusive<T>: Iterator<Item = T>,
-        T: PrimInt + Unsigned + Shl<T, Output = T> + Debug,
+        T: PrimInt + Shl<T, Output = T> + Debug + Default,
     {
         let mut m = BitMap::<BTreeMap<T, T>>::default();
         for n in &ns {

@@ -70,7 +70,7 @@ impl Nonces {
     pub const fn new(timeout: Duration) -> Self {
         Self {
             timeout,
-            last_cleaned_at: Deadline::MIN,
+            last_cleaned_at: Deadline::UNIX_EPOCH,
             old_nonces: BitMap::new(BTreeMap::new()),
             nonces: BitMap::new(BTreeMap::new()),
         }
@@ -83,7 +83,7 @@ impl Nonces {
 
         self.check_cleanup();
 
-        let now = Deadline::now();
+        let now = Self::now();
         if !(now - self.timeout <= created_at && created_at <= now) {
             return Err(Error::ExpiredOrFuture);
         }
@@ -97,7 +97,7 @@ impl Nonces {
 
     /// Rotate and cleanup if it's time
     pub fn check_cleanup(&mut self) {
-        let now = Deadline::now();
+        let now = Self::now();
         let last_valid_nonce_at = now - self.timeout;
 
         // check if it's time to rotate
@@ -112,6 +112,15 @@ impl Nonces {
             // update last rotation time
             self.last_cleaned_at = now;
         }
+    }
+
+    fn now() -> Deadline {
+        // We need to truncate the current timestamp down to seconds, since
+        // `self.last_cleaned_at` is serialized as `TimestampSeconds<u32>`.
+        // As a result, `now()` might be (less than 1 second) behind the actual
+        // block timestamp, which is acceptable: we're just assuming the receipt
+        // arrived a bit faster.
+        Deadline::now().trunc_subsecs()
     }
 
     #[inline]
