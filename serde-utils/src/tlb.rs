@@ -60,7 +60,7 @@ where
     }
 }
 
-#[cfg(all(feature = "abi", not(target_arch = "wasm32")))]
+#[cfg(feature = "abi")]
 const _: () = {
     use near_sdk::schemars::{SchemaGenerator, schema::Schema};
     use serde_with::schemars_0_8::JsonSchemaAs;

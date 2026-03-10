@@ -3,6 +3,8 @@
 pub mod contract;
 
 pub mod accounts;
+#[cfg(feature = "far")]
+pub mod far;
 pub mod fees;
 pub mod garbage_collector;
 pub mod intents;
@@ -23,7 +25,6 @@ use near_contract_standards::{
     non_fungible_token::core::NonFungibleTokenReceiver,
 };
 use near_plugins::{AccessControllable, Pausable};
-use near_sdk::ext_contract;
 
 use crate::{accounts::ForceAccountManager, tokens::nep245::MultiTokenForcedCore};
 
@@ -37,7 +38,6 @@ use self::{
     },
 };
 
-#[ext_contract(ext_defuse)]
 pub trait Defuse:
     Intents
     + RelayerKeys

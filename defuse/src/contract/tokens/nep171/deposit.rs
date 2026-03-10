@@ -1,7 +1,7 @@
 use defuse_core::{
     DefuseError,
-    intents::tokens::MAX_TOKEN_ID_LEN,
     token_id::{TokenId, nep171::Nep171TokenId},
+    tokens::MAX_TOKEN_ID_LEN,
 };
 use defuse_near_utils::{PanicError, UnwrapOrPanic, UnwrapOrPanicError};
 use near_contract_standards::non_fungible_token::core::NonFungibleTokenReceiver;

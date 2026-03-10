@@ -4,17 +4,19 @@ use anyhow::anyhow;
 use defuse_nep413::{Nep413Payload, SignedNep413Payload};
 use impl_tools::autoimpl;
 use near_api::{
-    Account as NearApiAccount, Contract, NetworkConfig, PublicKey, Signer,
+    Account as NearApiAccount, Contract, CryptoHash, NetworkConfig, PublicKey, Signer,
     signer::generate_secret_key,
     types::{
         Signature,
+        account::ContractState,
         transaction::actions::{GlobalContractDeployMode, GlobalContractIdentifier},
     },
 };
 use near_sdk::{
-    AccountId, AccountIdRef, NearToken,
+    AccountId, AccountIdRef, GlobalContractId, NearToken,
     account_id::ParseAccountError,
     serde::{Serialize, de::DeserializeOwned},
+    state_init::StateInit,
 };
 use tracing::instrument;
 
@@ -80,6 +82,50 @@ impl Account {
             .map(|d| d.data)
             .map_err(Into::into)
     }
+
+    pub async fn call_view_function_raw(
+        &self,
+        name: impl AsRef<str>,
+        args: impl Serialize,
+    ) -> anyhow::Result<Vec<u8>> {
+        Ok(Contract(self.id().clone())
+            .call_function(name.as_ref(), args)
+            .read_only_raw()
+            .fetch_from(&self.network_config)
+            .await
+            .map(|d| d.data)?)
+    }
+
+    pub async fn global_contract_id(&self) -> anyhow::Result<GlobalContractId> {
+        let account = self.view().await?;
+        match account.contract_state {
+            ContractState::GlobalHash(hash) => Ok(GlobalContractId::CodeHash(hash.0.into())),
+            ContractState::GlobalAccountId(id) => Ok(GlobalContractId::AccountId(id)),
+            other => anyhow::bail!("unexpected contract state: {other:?}"),
+        }
+    }
+
+    pub async fn global_contract_wasm(&self) -> anyhow::Result<Vec<u8>> {
+        use near_sdk::base64::{Engine as _, engine::general_purpose::STANDARD};
+        let id = self.global_contract_id().await?;
+        let code_view = match &id {
+            GlobalContractId::CodeHash(hash) => {
+                Contract::global_wasm()
+                    .by_hash(CryptoHash(*hash.as_ref()))
+                    .fetch_from(&self.network_config)
+                    .await?
+            }
+            GlobalContractId::AccountId(account_id) => {
+                Contract::global_wasm()
+                    .by_account_id(account_id.clone())
+                    .fetch_from(&self.network_config)
+                    .await?
+            }
+        };
+        STANDARD
+            .decode(&code_view.data.code_base64)
+            .map_err(Into::into)
+    }
 }
 
 impl AsRef<AccountIdRef> for Account {
@@ -135,6 +181,19 @@ impl SigningAccount {
     #[inline]
     pub fn tx(&self, receiver_id: impl Into<AccountId>) -> TxBuilder {
         TxBuilder::new(self.clone(), receiver_id.into())
+    }
+
+    #[inline]
+    pub async fn state_init(
+        &self,
+        state_init: StateInit,
+        deposit: NearToken,
+    ) -> anyhow::Result<AccountId> {
+        let deterministic_account_id = state_init.derive_account_id();
+        self.tx(deterministic_account_id.clone())
+            .state_init(state_init, deposit)
+            .await?;
+        Ok(deterministic_account_id)
     }
 
     pub async fn fund_implicit(&self, deposit: NearToken) -> anyhow::Result<Self> {

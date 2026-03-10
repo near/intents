@@ -11,7 +11,10 @@ use defuse_core::{
     intents::tokens::NftWithdraw,
     token_id::{nep141::Nep141TokenId, nep171::Nep171TokenId},
 };
-use defuse_near_utils::{REFUND_MEMO, UnwrapOrPanic};
+use defuse_near_utils::{
+    REFUND_MEMO, UnwrapOrPanic, promise_result_checked_json, promise_result_checked_void,
+};
+
 use defuse_wnear::{NEAR_WITHDRAW_GAS, ext_wnear};
 use near_contract_standards::{
     non_fungible_token::{self, core::ext_nft_core},
@@ -20,7 +23,7 @@ use near_contract_standards::{
 use near_plugins::{AccessControllable, Pausable, access_control_any, pause};
 use near_sdk::{
     AccountId, Gas, NearToken, Promise, PromiseOrValue, assert_one_yocto, env, json_types::U128,
-    near, require, serde_json,
+    near, require,
 };
 use std::iter;
 
@@ -123,7 +126,7 @@ impl Contract {
         let min_gas = withdraw.min_gas();
         let p = if let Some(storage_deposit) = withdraw.storage_deposit {
             require!(
-                matches!(env::promise_result_checked(0, 0), Ok(data) if data.is_empty()),
+                promise_result_checked_void(0).is_ok(),
                 "near_withdraw failed",
             );
 
@@ -166,22 +169,20 @@ impl NonFungibleTokenWithdrawResolver for Contract {
         token_id: non_fungible_token::TokenId,
         is_call: bool,
     ) -> bool {
-        const MAX_RESULT_LENGTH: usize = "false".len(); // `true` is shorter
-        let used = env::promise_result_checked(0, MAX_RESULT_LENGTH).map_or(
-            // do not refund on failed `nft_transfer_call` due to
-            // NEP-141 vulnerability: `nft_resolve_transfer` fails to
-            // read result of `nft_on_transfer` due to insufficient gas
-            is_call,
-            |value| {
-                if is_call {
-                    // `nft_transfer_call` returns true if token was successfully transferred
-                    serde_json::from_slice::<bool>(&value).unwrap_or_default()
-                } else {
-                    // `nft_transfer` returns empty result on success
-                    value.is_empty()
-                }
-            },
-        );
+        let used = if is_call {
+            // `nft_transfer_call` returns true if token was successfully transferred
+            match promise_result_checked_json::<bool>(0) {
+                Ok(Ok(used)) => used,
+                Ok(Err(_deserialization_err)) => false,
+                // do not refund on failed `nft_transfer_call` due to
+                // NEP-141 vulnerability: `nft_resolve_transfer` fails to
+                // read result of `nft_on_transfer` due to insufficient gas
+                Err(_) => true,
+            }
+        } else {
+            // `nft_transfer` returns empty result on success
+            promise_result_checked_void(0).is_ok()
+        };
 
         if !used {
             self.deposit(

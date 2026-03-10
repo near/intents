@@ -146,6 +146,11 @@ impl FungibleTokenReceiver for Contract {
 
 #[near]
 impl Contract {
+    pub fn dummy_method(&self) {}
+}
+
+#[near]
+impl Contract {
     #[private]
     pub fn return_refunds(&self, refund_amounts: Vec<U128>) -> Vec<U128> {
         refund_amounts

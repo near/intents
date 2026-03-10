@@ -8,6 +8,15 @@ repository.workspace = true
 [lints]
 workspace = true
 
+[features]
+defuse = ["dep:defuse", "dep:defuse-serde-utils"]
+poa = ["dep:defuse-poa-factory"]
+deployer = ["dep:defuse-global-deployer", "dep:defuse-serde-utils"]
+escrow = ["dep:defuse-escrow-swap"]
+escrow-proxy = ["dep:defuse-escrow-proxy", "escrow"]
+condvar = ["dep:defuse-oneshot-condvar"]
+imt = ["defuse", "defuse/imt"]
+
 [dependencies]
 defuse-crypto = { workspace = true, features = ["near-api-types"] }
 defuse-nep413 = { workspace = true, features = ["near-api"] }
@@ -26,3 +35,13 @@ near-sdk = { workspace = true, features = ["unit-testing", "deterministic-accoun
 tracing.workspace = true
 
 near-contract-standards.workspace = true
+
+defuse-poa-factory = {workspace = true, optional = true, features = ["contract"] }
+defuse-global-deployer = { workspace = true, optional = true }
+defuse-escrow-swap = { workspace = true, optional = true, features = ["auth_call"] }
+
+defuse = { workspace = true, optional = true, features = ["contract"] }
+defuse-escrow-proxy = { workspace = true, optional = true, features = ["escrow-swap"] }
+defuse-oneshot-condvar = { workspace = true, optional = true }
+defuse-serde-utils = { workspace = true, optional = true }
+defuse-test-utils = { workspace = true }

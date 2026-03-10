@@ -1,10 +1,11 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
-use crate::env::Env;
-use crate::extensions::condvar::OneshotCondVarExt;
-use crate::extensions::escrow_proxy::EscrowProxyExt;
-use crate::extensions::mt_receiver::MtReceiverStubExt;
+use crate::tests::defuse::env::Env;
+use defuse_sandbox::extensions::condvar::OneshotCondVarExt;
+use defuse_sandbox::extensions::escrow_proxy::EscrowProxyExt;
+use defuse_sandbox::extensions::mt_receiver::MtReceiverStubExt;
+use defuse_test_utils::wasms::MT_RECEIVER_STUB_WASM;
 use defuse_core::token_id::TokenId;
 use defuse_core::token_id::nep141::Nep141TokenId;
 use defuse_core::token_id::nep245::Nep245TokenId;
@@ -42,13 +43,15 @@ async fn test_proxy_returns_funds_on_timeout_of_approval() {
     let (condvar_global, mt_receiver_global, escrow_proxy_global) = futures::join!(
         env.root().deploy_oneshot_condvar("global_transfer_auth"),
         env.root()
-            .deploy_mt_receiver_stub_global("mt_receiver_global"),
+            .deploy_mt_receiver_stub_global("mt_receiver_global", MT_RECEIVER_STUB_WASM.clone()),
         env.root().deploy_escrow_proxy_global("escrow_proxy_global"),
     );
+    let mt_receiver_global = mt_receiver_global.unwrap().id().clone();
     let mt_receiver_instance = env
         .root()
         .deploy_mt_receiver_stub_instance(mt_receiver_global.clone(), BTreeMap::default())
-        .await;
+        .await
+        .unwrap();
 
     let (solver, relay) = futures::join!(
         env.create_named_user("solver"),
@@ -119,9 +122,10 @@ async fn test_transfer_approved_by_relay_using_on_auth() {
     let (condvar_global, mt_receiver_global, escrow_proxy_global) = futures::join!(
         env.root().deploy_oneshot_condvar("global_transfer_auth"),
         env.root()
-            .deploy_mt_receiver_stub_global("mt_receiver_global"),
+            .deploy_mt_receiver_stub_global("mt_receiver_global", MT_RECEIVER_STUB_WASM.clone()),
         env.root().deploy_escrow_proxy_global("escrow_proxy_global"),
     );
+    let mt_receiver_global = mt_receiver_global.unwrap().id().clone();
 
     let (solver, relay) = futures::join!(
         env.create_named_user("solver"),
@@ -149,7 +153,8 @@ async fn test_transfer_approved_by_relay_using_on_auth() {
 
     env.root()
         .deploy_mt_receiver_stub_instance(mt_receiver_global.clone(), BTreeMap::new())
-        .await;
+        .await
+        .unwrap();
 
     let initial_balance: u128 = 1_000_000;
     let (_, token_id) = env
@@ -219,7 +224,7 @@ async fn test_transfer_approved_by_relay_using_on_auth() {
                 .state_init(StateInit::V1(StateInitV1 {
                     code: GlobalContractId::AccountId(condvar_global.clone()),
                     data: raw_state,
-                }))
+                }), NearToken::from_yoctonear(1))
                 .function_call(
                     FnCallBuilder::new("on_auth")
                         .json_args(serde_json::json!({
@@ -267,9 +272,10 @@ async fn test_ft_transfer_approved_by_relay_using_on_auth() {
     let (condvar_global, ft_receiver_global, escrow_proxy_global) = futures::join!(
         env.root().deploy_oneshot_condvar("global_transfer_auth"),
         env.root()
-            .deploy_mt_receiver_stub_global("ft_receiver_global"),
+            .deploy_mt_receiver_stub_global("ft_receiver_global", MT_RECEIVER_STUB_WASM.clone()),
         env.root().deploy_escrow_proxy_global("escrow_proxy_global"),
     );
+    let ft_receiver_global = ft_receiver_global.unwrap().id().clone();
 
     let (solver, relay) = futures::join!(
         env.create_named_user("solver"),
@@ -300,8 +306,7 @@ async fn test_ft_transfer_approved_by_relay_using_on_auth() {
         .state_init(StateInit::V1(StateInitV1 {
             code: GlobalContractId::AccountId(ft_receiver_global.clone()),
             data: BTreeMap::new(),
-        }))
-        .transfer(NearToken::from_yoctonear(1))
+        }), NearToken::from_yoctonear(1))
         .await
         .unwrap();
 
@@ -363,7 +368,7 @@ async fn test_ft_transfer_approved_by_relay_using_on_auth() {
                 .state_init(StateInit::V1(StateInitV1 {
                     code: GlobalContractId::AccountId(condvar_global.clone()),
                     data: raw_state,
-                }))
+                }), NearToken::from_yoctonear(1))
                 .function_call(
                     FnCallBuilder::new("on_auth")
                         .json_args(serde_json::json!({
@@ -400,7 +405,7 @@ async fn test_ft_transfer_approved_by_relay_using_on_auth() {
 async fn test_proxy_with_ft_transfer() {
     use std::time::Duration;
 
-    use crate::extensions::escrow::EscrowSwapExt;
+    use defuse_sandbox::extensions::escrow::EscrowSwapExt;
     use crate::utils::escrow_builders::{FillMessageBuilder, FundMessageBuilder, ParamsBuilder};
 
     let env = Env::builder().build().await;
@@ -470,8 +475,7 @@ async fn test_proxy_with_ft_transfer() {
         .state_init(StateInit::V1(StateInitV1 {
             code: GlobalContractId::AccountId(escrow_swap_global.clone()),
             data: escrow_raw_state,
-        }))
-        .transfer(NearToken::from_yoctonear(1))
+        }), NearToken::from_yoctonear(1))
         .await
         .unwrap();
 
@@ -545,7 +549,7 @@ async fn test_proxy_with_ft_transfer() {
                 .state_init(StateInit::V1(StateInitV1 {
                     code: GlobalContractId::AccountId(condvar_global.clone()),
                     data: raw_state,
-                }))
+                }), NearToken::from_yoctonear(1))
                 .function_call(
                     FnCallBuilder::new("on_auth")
                         .json_args(serde_json::json!({

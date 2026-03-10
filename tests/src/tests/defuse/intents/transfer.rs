@@ -1,22 +1,37 @@
-use crate::env::{DEFUSE_WASM, Env, MT_RECEIVER_STUB_WASM};
-use crate::extensions::defuse::contract::contract::config::{DefuseConfig, RolesConfig};
-use crate::extensions::defuse::contract::core::fees::FeesConfig;
-use crate::extensions::defuse::contract::core::fees::Pips;
-use crate::extensions::defuse::contract::core::intents::tokens::{NotifyOnTransfer, Transfer};
-use crate::extensions::defuse::intents::ExecuteIntentsExt;
 use crate::sandbox::extensions::mt::MtViewExt;
+use crate::tests::defuse::env::Env;
+use defuse_sandbox::assert_eq_defuse_event_logs;
+use defuse_sandbox::extensions::defuse::contract::contract::config::{DefuseConfig, RolesConfig};
+use defuse_sandbox::extensions::defuse::contract::core::fees::FeesConfig;
+use defuse_sandbox::extensions::defuse::contract::core::fees::Pips;
+use defuse_sandbox::extensions::defuse::contract::core::intents::tokens::{
+    NotifyOnTransfer, Transfer,
+};
+use defuse_sandbox::extensions::defuse::event::ToEventLog;
+use defuse_sandbox::extensions::defuse::intents::ExecuteIntentsExt;
+use defuse_test_utils::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 
-use crate::extensions::defuse::contract::core::token_id::{TokenId, nep141::Nep141TokenId};
+use defuse_sandbox::extensions::defuse::contract::core::token_id::{
+    TokenId, nep141::Nep141TokenId,
+};
 
-use crate::extensions::defuse::deployer::DefuseExt;
-use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
-use crate::extensions::escrow::contract::token_id::nep245::Nep245TokenId;
+use defuse::core::token_id::nep245::Nep245TokenId;
+use defuse_sandbox::extensions::defuse::deployer::DefuseExt;
+use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
 use defuse_sandbox::extensions::ft::FtViewExt;
 use multi_token_receiver_stub::MTReceiverMode;
 use near_sdk::{AccountId, Gas, serde_json};
 use rstest::rstest;
 
-use crate::extensions::defuse::contract::core::amounts::Amounts;
+use defuse_sandbox::extensions::defuse::contract::core::amounts::Amounts;
+
+#[derive(Debug, Clone)]
+pub struct TransferCallExpectation {
+    pub mode: MTReceiverMode,
+    pub intent_transfer_amount: Option<u128>,
+    pub expected_sender_balance: u128,
+    pub expected_receiver_balance: u128,
+}
 
 #[rstest]
 #[trace]
@@ -46,11 +61,12 @@ async fn transfer_intent() {
     };
 
     let initial_transfer_payload = user
-        .sign_defuse_payload_default(&env.defuse, [transfer_intent])
+        .sign_defuse_payload_default(&env.defuse, [transfer_intent.clone()])
         .await
         .unwrap();
 
-    env.simulate_and_execute_intents(env.defuse.id(), [initial_transfer_payload])
+    let res = env
+        .simulate_and_execute_intents(env.defuse.id(), [initial_transfer_payload.clone()])
         .await
         .unwrap();
 
@@ -69,14 +85,8 @@ async fn transfer_intent() {
             .unwrap(),
         1000
     );
-}
 
-#[derive(Debug, Clone)]
-pub struct TransferCallExpectation {
-    pub mode: MTReceiverMode,
-    pub intent_transfer_amount: Option<u128>,
-    pub expected_sender_balance: u128,
-    pub expected_receiver_balance: u128,
+    assert_eq_defuse_event_logs!(initial_transfer_payload.to_event_log(), res.logs());
 }
 
 #[rstest]
@@ -158,9 +168,12 @@ async fn transfer_intent_to_defuse() {
 
         assert!(defuse2.mt_tokens(..).await.unwrap().is_empty());
 
-        env.simulate_and_execute_intents(env.defuse.id(), [transfer_payload])
+        let res = env
+            .simulate_and_execute_intents(env.defuse.id(), [transfer_payload.clone()])
             .await
             .unwrap();
+
+        assert_eq_defuse_event_logs!(transfer_payload.to_event_log(), res.logs());
 
         assert_eq!(
             env.defuse
@@ -240,7 +253,7 @@ async fn transfer_intent_to_defuse() {
 })]
 #[tokio::test]
 async fn transfer_intent_with_msg_to_receiver_smc(#[case] expectation: TransferCallExpectation) {
-    use crate::extensions::defuse::intents::ExecuteIntentsExt;
+    use defuse_sandbox::extensions::defuse::intents::ExecuteIntentsExt;
     use defuse_sandbox::tx::FnCallBuilder;
     use near_sdk::NearToken;
 
@@ -290,9 +303,12 @@ async fn transfer_intent_with_msg_to_receiver_smc(#[case] expectation: TransferC
         .await
         .unwrap();
 
-    env.simulate_and_execute_intents(env.defuse.id(), [transfer_payload])
+    let res = env
+        .simulate_and_execute_intents(env.defuse.id(), [transfer_payload.clone()])
         .await
         .unwrap();
+
+    assert_eq_defuse_event_logs!(transfer_payload.to_event_log(), res.logs());
 
     assert_eq!(
         env.defuse

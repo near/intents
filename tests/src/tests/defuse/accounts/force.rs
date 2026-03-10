@@ -1,4 +1,12 @@
-use crate::extensions::defuse::contract::{
+use std::borrow::Cow;
+
+use defuse::core::{
+    accounts::AccountEvent,
+    events::DefuseEvent,
+    intents::{MaybeIntentEvent, account::SetAuthByPredecessorId},
+};
+use defuse_sandbox::assert_eq_event_logs;
+use defuse_sandbox::extensions::defuse::contract::{
     contract::Role,
     core::{
         DefuseError,
@@ -8,22 +16,23 @@ use crate::extensions::defuse::contract::{
     },
 };
 use defuse_test_utils::fixtures::public_key;
+use near_sdk::AsNep297Event;
 
-use crate::extensions::defuse::{
+use crate::{
+    sandbox::extensions::{
+        acl::AclExt,
+        mt::{MtExt, MtViewExt},
+    },
+    tests::defuse::env::Env,
+    utils::asserts::ResultAssertsExt,
+};
+use defuse_sandbox::extensions::defuse::{
     account_manager::{AccountManagerExt, AccountViewExt},
     force_manager::{ForceAccountManagerExt, ForceAccountViewExt},
     intents::ExecuteIntentsExt,
     nonce::ExtractNonceExt,
     signer::DefaultDefuseSignerExt,
     tokens::nep141::DefuseFtWithdrawer,
-};
-use crate::{
-    env::Env,
-    sandbox::extensions::{
-        acl::AclExt,
-        mt::{MtExt, MtViewExt},
-    },
-    utils::asserts::ResultAssertsExt,
 };
 use rstest::rstest;
 
@@ -85,12 +94,18 @@ async fn test_lock_account(public_key: PublicKey) {
 
         // force lock account
         {
-            assert!(
-                account_locker
-                    .force_lock_account(env.defuse.id(), locked_account.id())
-                    .await
-                    .expect("user2 should be able to lock an account")
-            );
+            let (res, locked) = account_locker
+                .force_lock_account(env.defuse.id(), locked_account.id())
+                .await
+                .expect("user2 should be able to lock an account");
+
+            assert!(locked);
+
+            let event =
+                DefuseEvent::AccountLocked(AccountEvent::new(locked_account.id().clone(), ()))
+                    .to_nep297_event()
+                    .to_event_log();
+            assert_eq_event_logs!(res.logs(), [event]);
 
             assert!(
                 env.defuse
@@ -103,12 +118,12 @@ async fn test_lock_account(public_key: PublicKey) {
 
         // force lock account, second attempt
         {
-            assert!(
-                !account_locker
-                    .force_lock_account(env.defuse.id(), locked_account.id())
-                    .await
-                    .expect("locking already locked account shouldn't fail")
-            );
+            let (_, locked) = account_locker
+                .force_lock_account(env.defuse.id(), locked_account.id())
+                .await
+                .expect("locking already locked account shouldn't fail");
+            assert!(!locked);
+
             assert!(
                 env.defuse
                     .is_account_locked(locked_account.id())
@@ -342,12 +357,19 @@ async fn test_lock_account(public_key: PublicKey) {
 
         // force unlock account
         {
-            assert!(
-                account_locker
-                    .force_unlock_account(env.defuse.id(), locked_account.id())
-                    .await
-                    .expect("user2 should be able to lock an account")
-            );
+            let (res, unlocked) = account_locker
+                .force_unlock_account(env.defuse.id(), locked_account.id())
+                .await
+                .expect("user2 should be able to lock an account");
+
+            assert!(unlocked);
+
+            let event =
+                DefuseEvent::AccountUnlocked(AccountEvent::new(locked_account.id().clone(), ()))
+                    .to_nep297_event()
+                    .to_event_log();
+
+            assert_eq_event_logs!(res.logs(), [event]);
 
             assert!(
                 !env.defuse
@@ -427,10 +449,22 @@ async fn test_force_set_auth_by_predecessor_id(public_key: PublicKey) {
 
         // permisson granted
         {
-            account_locker
+            let result = account_locker
                 .force_disable_auth_by_predecessor_ids(env.defuse.id(), [user_account.id().clone()])
                 .await
                 .unwrap();
+
+            let event = DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new_fn_call(
+                AccountEvent::new(
+                    user_account.id().clone(),
+                    Cow::Owned(SetAuthByPredecessorId { enabled: false }),
+                ),
+            ))
+            .to_nep297_event()
+            .to_event_log();
+
+            assert_eq_event_logs!(result.logs(), [event]);
+
             assert!(
                 !env.defuse
                     .is_auth_by_predecessor_id_enabled(user_account.id())
@@ -485,10 +519,22 @@ async fn test_force_set_auth_by_predecessor_id(public_key: PublicKey) {
 
         // permisson granted
         {
-            account_unlocker
+            let result = account_unlocker
                 .force_enable_auth_by_predecessor_ids(env.defuse.id(), [user_account.id().clone()])
                 .await
                 .unwrap();
+
+            let event = DefuseEvent::SetAuthByPredecessorId(MaybeIntentEvent::new_fn_call(
+                AccountEvent::new(
+                    user_account.id().clone(),
+                    Cow::Owned(SetAuthByPredecessorId { enabled: true }),
+                ),
+            ))
+            .to_nep297_event()
+            .to_event_log();
+
+            assert_eq_event_logs!(result.logs(), [event]);
+
             assert!(
                 env.defuse
                     .is_auth_by_predecessor_id_enabled(user_account.id())

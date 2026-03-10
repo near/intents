@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::extensions::condvar::OneshotCondVarExt;
+use defuse_sandbox::extensions::condvar::OneshotCondVarExt;
 use defuse_oneshot_condvar::storage::Config as CondVarConfig;
 use defuse_oneshot_condvar::{CV_NOTIFY_ONE_GAS, CV_WAIT_GAS};
 use defuse_sandbox::{Account, FnCallBuilder, Sandbox};

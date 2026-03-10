@@ -9,24 +9,42 @@ repository.workspace = true
 workspace = true
 
 [features]
-default = ["defuse", "poa", "escrow-swap", "escrow-proxy", "condvar", "mt-receiver"]
+default = ["defuse", "poa", "escrow-swap", "escrow-proxy", "condvar", "mt-receiver", "long", "deployer"]
 
-# NOTE: features used in integration tests
-poa = []
-defuse = []
-escrow-swap = []
+poa = [
+    "dep:defuse-poa-factory",
+    "defuse-sandbox/poa",
+    "defuse-test-utils/poa"
+    ]
+defuse = [
+    "dep:defuse",
+    "defuse-sandbox/defuse",
+    "defuse-sandbox/poa",
+    "defuse-sandbox/imt",
+    "defuse-test-utils/defuse",
+    "defuse-test-utils/poa"
+    ]
+escrow-swap = [
+    "dep:defuse-escrow-swap",
+    "defuse-sandbox/escrow",
+    "defuse-sandbox/defuse",
+    "defuse-sandbox/poa",
+    "defuse-test-utils/escrow",
+    "defuse-test-utils/defuse",
+    "defuse-test-utils/poa"
+    ]
+deployer = ["dep:defuse-global-deployer", "defuse-sandbox/deployer"]
 long = []
-escrow-proxy = ["dep:defuse-escrow-proxy"]
-condvar = ["dep:defuse-oneshot-condvar"]
+escrow-proxy = ["dep:defuse-escrow-proxy", "defuse-sandbox/escrow-proxy", "defuse-test-utils/escrow-proxy"]
+condvar = ["dep:defuse-oneshot-condvar", "defuse-sandbox/condvar", "defuse-test-utils/oneshot"]
 mt-receiver = []
 
 [dependencies]
 defuse-sandbox = { workspace = true }
-
-# TODO: make dependencies optional after splitting env for each contract
-defuse = { workspace = true, features = ["contract", "arbitrary", "imt"]}
-defuse-escrow-swap = { workspace = true, features = ["auth_call"] }
-defuse-poa-factory = {workspace = true, features = ["contract"] }
+defuse = { workspace = true, features = ["contract", "arbitrary", "far"], optional = true }
+defuse-escrow-swap = { workspace = true, features = ["auth_call"], optional = true }
+defuse-poa-factory = {workspace = true, features = ["contract"], optional = true }
+multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
 
 defuse-core.workspace = true
 defuse-near-utils = { workspace = true }
@@ -34,7 +52,12 @@ defuse-nep245.workspace = true
 defuse-randomness.workspace = true
 defuse-serde-utils = { workspace = true }
 defuse-test-utils.workspace = true
+defuse-fees.workspace = true
+defuse-global-deployer = {workspace = true, optional = true}
+
 near-sdk = { workspace = true, features = ["unit-testing", "deterministic-account-ids"] }
+near-crypto.workspace = true
+near-contract-standards.workspace = true
 
 futures = "0.3"
 anyhow.workspace = true
@@ -46,9 +69,7 @@ hex-literal.workspace = true
 hex.workspace = true
 impl-tools.workspace = true
 itertools.workspace = true
-multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
-near-crypto.workspace = true
-near-contract-standards.workspace = true
+
 rstest.workspace = true
 strum.workspace = true
 tokio = { workspace = true, features = ["macros"] }
@@ -56,8 +77,3 @@ tlb-ton = { workspace = true, features = ["arbitrary"] }
 
 defuse-escrow-proxy = { workspace = true, features = ["escrow-swap"], optional = true }
 defuse-oneshot-condvar = { workspace = true, optional = true }
-
-[build-dependencies]
-xtask.workspace = true
-cargo_metadata.workspace = true
-anyhow.workspace = true

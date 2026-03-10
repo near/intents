@@ -9,17 +9,37 @@ use defuse::{
         accounts::{AccountEvent, PublicKeyEvent},
         crypto::PublicKey,
         events::DefuseEvent,
+        intents::MaybeIntentEvent,
     },
 };
 use defuse_randomness::Rng;
-use defuse_sandbox::{assert_a_contains_b, extensions::acl::AclExt, tx::FnCallBuilder};
+use defuse_sandbox::{
+    assert_a_contains_b,
+    extensions::{acl::AclExt, defuse::account_manager::AccountViewExt},
+    tx::FnCallBuilder,
+};
 use defuse_test_utils::{asserts::ResultAssertsExt, random::rng};
-use near_sdk::{AsNep297Event, NearToken, serde_json::json};
+use near_sdk::{AccountId, AsNep297Event, NearToken, serde_json::json};
 use rstest::rstest;
 
-use crate::{
-    env::Env, extensions::defuse::account_manager::AccountViewExt, utils::fixtures::public_key,
-};
+use crate::tests::defuse::env::Env;
+use defuse_test_utils::fixtures::public_key;
+
+fn generate_public_keys(
+    mut rng: &mut impl Rng,
+    users: impl IntoIterator<Item = impl Into<AccountId>>,
+) -> HashMap<AccountId, HashSet<PublicKey>> {
+    users
+        .into_iter()
+        .map(|u| {
+            let pubkeys = (0..rng.random_range(0..10))
+                .map(|_| public_key(&mut rng))
+                .collect();
+
+            (u.into(), pubkeys)
+        })
+        .collect()
+}
 
 #[rstest]
 #[trace]
@@ -29,16 +49,7 @@ async fn test_force_add_public_keys(#[notrace] mut rng: impl Rng) {
 
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
 
-    let public_keys = vec![&user1, &user2]
-        .into_iter()
-        .map(|u| {
-            let pubkeys = (0..rng.random_range(0..10))
-                .map(|_| public_key(&mut rng))
-                .collect::<HashSet<_>>();
-
-            (u.account().id(), pubkeys)
-        })
-        .collect::<HashMap<_, HashSet<PublicKey>>>();
+    let public_keys = generate_public_keys(&mut rng, vec![user1.id(), user2.id()]);
 
     // only DAO or pubkey synchronizer can add public keys to accounts
     {
@@ -83,6 +94,12 @@ async fn test_force_add_public_keys(#[notrace] mut rng: impl Rng) {
             .into_result()
             .unwrap();
 
+        // the number of emitted events should be equal to the number of added public keys
+        assert_eq!(
+            result.logs().len(),
+            public_keys.values().map(HashSet::len).sum::<usize>()
+        );
+
         for (account_id, keys) in &public_keys {
             for public_key in keys {
                 assert!(
@@ -93,16 +110,19 @@ async fn test_force_add_public_keys(#[notrace] mut rng: impl Rng) {
                     "Public key {public_key:?} not found for account {account_id}",
                 );
 
-                assert_a_contains_b!(
-                    a: result.logs().clone(),
-                    b: [DefuseEvent::PublicKeyAdded(AccountEvent::new(
-                        *account_id,
+                let event =
+                    DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new_fn_call(AccountEvent::new(
+                        account_id,
                         PublicKeyEvent {
                             public_key: Cow::Borrowed(public_key),
                         },
-                    ))
+                    )))
                     .to_nep297_event()
-                    .to_event_log(),]
+                    .to_event_log();
+
+                assert_a_contains_b!(
+                    a: result.logs().clone(),
+                    b: [event]
                 );
             }
         }
@@ -117,16 +137,7 @@ async fn test_force_add_and_remove_public_keys(#[notrace] mut rng: impl Rng) {
 
     let (user1, user2) = futures::join!(env.create_user(), env.create_user());
 
-    let public_keys = vec![&user1, &user2]
-        .into_iter()
-        .map(|u| {
-            let pubkeys = (0..rng.random_range(0..10))
-                .map(|_| public_key(&mut rng))
-                .collect::<HashSet<_>>();
-
-            (u.account().id(), pubkeys)
-        })
-        .collect::<HashMap<_, HashSet<PublicKey>>>();
+    let public_keys = generate_public_keys(&mut rng, vec![user1.id(), user2.id()]);
 
     // Add public keys
     {
@@ -197,6 +208,12 @@ async fn test_force_add_and_remove_public_keys(#[notrace] mut rng: impl Rng) {
             .into_result()
             .unwrap();
 
+        // the number of emitted events should be equal to the number of removed public keys
+        assert_eq!(
+            result.logs().len(),
+            public_keys.values().map(HashSet::len).sum::<usize>()
+        );
+
         for (account_id, keys) in &public_keys {
             for public_key in keys {
                 assert!(
@@ -207,16 +224,20 @@ async fn test_force_add_and_remove_public_keys(#[notrace] mut rng: impl Rng) {
                     "Public key {public_key:?} found for account {account_id}",
                 );
 
-                assert_a_contains_b!(
-                    a: result.logs().clone(),
-                    b: [DefuseEvent::PublicKeyRemoved(AccountEvent::new(
-                        *account_id,
+                let event = DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::new_fn_call(
+                    AccountEvent::new(
+                        account_id,
                         PublicKeyEvent {
                             public_key: Cow::Borrowed(public_key),
                         },
-                    ))
-                    .to_nep297_event()
-                    .to_event_log(),]
+                    ),
+                ))
+                .to_nep297_event()
+                .to_event_log();
+
+                assert_a_contains_b!(
+                    a: result.logs().clone(),
+                    b: [event]
                 );
             }
         }

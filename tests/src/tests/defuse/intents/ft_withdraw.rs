@@ -1,25 +1,31 @@
-use crate::extensions::defuse::contract::core::intents::tokens::FtWithdraw;
-use crate::extensions::defuse::contract::core::token_id::{TokenId, nep141::Nep141TokenId};
-use crate::extensions::defuse::{
-    contract::{
-        contract::config::{DefuseConfig, RolesConfig},
-        core::fees::{FeesConfig, Pips},
+use defuse_sandbox::extensions::defuse::contract::core::intents::tokens::FtWithdraw;
+use defuse_sandbox::extensions::defuse::contract::core::token_id::{
+    TokenId, nep141::Nep141TokenId,
+};
+use defuse_sandbox::extensions::defuse::event::ToEventLog;
+use defuse_sandbox::{
+    assert_eq_defuse_event_logs,
+    extensions::defuse::{
+        contract::{
+            contract::config::{DefuseConfig, RolesConfig},
+            core::fees::{FeesConfig, Pips},
+        },
+        deployer::DefuseExt,
+        intents::ExecuteIntentsExt,
+        tokens::nep141::DefuseFtDepositor,
     },
-    deployer::DefuseExt,
-    intents::ExecuteIntentsExt,
-    tokens::nep141::DefuseFtDepositor,
 };
 
-use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
+use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
 use near_sdk::{AccountId, Gas, NearToken};
 use rstest::rstest;
 
-use crate::env::DEFUSE_WASM;
 use crate::{
-    env::Env,
     sandbox::extensions::{ft::FtViewExt, mt::MtViewExt, wnear::WNearExt},
+    tests::defuse::env::Env,
     utils::asserts::ResultAssertsExt,
 };
+use defuse_test_utils::wasms::DEFUSE_WASM;
 
 #[rstest]
 #[trace]
@@ -68,9 +74,12 @@ async fn ft_withdraw_intent() {
         .await
         .unwrap();
 
-    env.simulate_and_execute_intents(env.defuse.id(), [initial_withdraw_payload])
+    let res = env
+        .simulate_and_execute_intents(env.defuse.id(), [initial_withdraw_payload.clone()])
         .await
         .unwrap();
+
+    assert_eq_defuse_event_logs!(initial_withdraw_payload.to_event_log(), res.logs());
 
     assert_eq!(
         env.defuse
@@ -160,9 +169,13 @@ async fn ft_withdraw_intent() {
         .await
         .unwrap();
 
-    env.simulate_and_execute_intents(env.defuse.id(), [valid_payload])
+    let res = env
+        .simulate_and_execute_intents(env.defuse.id(), [valid_payload.clone()])
         .await
         .unwrap();
+
+    assert_eq_defuse_event_logs!(valid_payload.to_event_log(), res.logs());
+
     let new_defuse_balance = env.defuse.view().await.unwrap().amount;
 
     assert!(
@@ -246,9 +259,12 @@ async fn ft_withdraw_intent_msg() {
             .await
             .unwrap();
 
-        env.simulate_and_execute_intents(env.defuse.id(), [low_min_gas_payload])
+        let res = env
+            .simulate_and_execute_intents(env.defuse.id(), [low_min_gas_payload.clone()])
             .await
             .unwrap();
+
+        assert_eq_defuse_event_logs!(low_min_gas_payload.to_event_log(), res.logs());
 
         assert_eq!(
             env.defuse
@@ -286,9 +302,12 @@ async fn ft_withdraw_intent_msg() {
         .await
         .unwrap();
 
-    env.simulate_and_execute_intents(env.defuse.id(), [remaining_withdraw_payload])
+    let res = env
+        .simulate_and_execute_intents(env.defuse.id(), [remaining_withdraw_payload.clone()])
         .await
         .unwrap();
+
+    assert_eq_defuse_event_logs!(remaining_withdraw_payload.to_event_log(), res.logs());
 
     assert_eq!(
         env.defuse

@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
-use crate::extensions::defuse::contract::core::{
+use defuse::core::intents::MaybeIntentEvent;
+use defuse_sandbox::extensions::defuse::contract::core::{
     accounts::{AccountEvent, PublicKeyEvent},
     crypto::PublicKey,
     events::DefuseEvent,
@@ -8,12 +9,12 @@ use crate::extensions::defuse::contract::core::{
 use near_sdk::{AsNep297Event, NearToken, serde_json::json};
 use rstest::rstest;
 
-use crate::extensions::defuse::account_manager::{AccountManagerExt, AccountViewExt};
 use crate::{
-    env::Env,
     sandbox::{assert_eq_event_logs, tx::FnCallBuilder},
+    tests::defuse::env::Env,
     utils::fixtures::public_key,
 };
+use defuse_sandbox::extensions::defuse::account_manager::{AccountManagerExt, AccountViewExt};
 
 #[rstest]
 #[trace]
@@ -45,17 +46,16 @@ async fn test_add_public_key(public_key: PublicKey) {
         .into_result()
         .unwrap();
 
-    assert_eq_event_logs!(
-        result.logs().clone(),
-        [DefuseEvent::PublicKeyAdded(AccountEvent::new(
-            user.id(),
-            PublicKeyEvent {
-                public_key: Cow::Borrowed(&public_key),
-            },
-        ))
-        .to_nep297_event()
-        .to_event_log(),]
-    );
+    let event = DefuseEvent::PublicKeyAdded(MaybeIntentEvent::new_fn_call(AccountEvent::new(
+        user.id(),
+        PublicKeyEvent {
+            public_key: Cow::Borrowed(&public_key),
+        },
+    )))
+    .to_nep297_event()
+    .to_event_log();
+
+    assert_eq_event_logs!(result.logs().clone(), [event]);
 
     assert!(
         env.defuse
@@ -99,17 +99,16 @@ async fn test_add_and_remove_public_key(public_key: PublicKey) {
         .into_result()
         .unwrap();
 
-    assert_eq_event_logs!(
-        result.logs().clone(),
-        [DefuseEvent::PublicKeyRemoved(AccountEvent::new(
-            user.id(),
-            PublicKeyEvent {
-                public_key: Cow::Borrowed(&public_key),
-            },
-        ))
-        .to_nep297_event()
-        .to_event_log(),]
-    );
+    let event = DefuseEvent::PublicKeyRemoved(MaybeIntentEvent::new_fn_call(AccountEvent::new(
+        user.id(),
+        PublicKeyEvent {
+            public_key: Cow::Borrowed(&public_key),
+        },
+    )))
+    .to_nep297_event()
+    .to_event_log();
+
+    assert_eq_event_logs!(result.logs().clone(), [event]);
 
     assert!(
         !env.defuse

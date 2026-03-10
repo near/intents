@@ -1,9 +1,4 @@
-use std::collections::{HashMap, HashSet};
-
-use defuse_core::{
-    DefuseError, Result, accounts::AccountEvent, crypto::PublicKey, engine::StateView,
-    events::DefuseEvent,
-};
+use defuse_core::{accounts::AccountEvent, engine::StateView, events::DefuseEvent};
 use defuse_near_utils::Lock;
 use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{AccountId, assert_one_yocto, near};
@@ -68,7 +63,7 @@ impl ForceAccountManager for Contract {
 
         for account_id in account_ids {
             // NOTE: omit errors
-            let _ = self.internal_set_auth_by_predecessor_id(&account_id, false, true);
+            let _ = self.set_auth_by_predecessor_id_and_emit_event(&account_id, false, true);
         }
     }
 
@@ -83,54 +78,44 @@ impl ForceAccountManager for Contract {
 
         for account_id in account_ids {
             // NOTE: omit errors
-            let _ = self.internal_set_auth_by_predecessor_id(&account_id, true, true);
-        }
-    }
-
-    #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountManager))]
-    #[payable]
-    fn force_add_public_keys(&mut self, public_keys: HashMap<AccountId, HashSet<PublicKey>>) {
-        assert_one_yocto();
-
-        for (account_id, pks) in public_keys {
-            for pk in pks {
-                self.add_public_key_and_emit_event(account_id.as_ref(), pk);
-            }
-        }
-    }
-
-    #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountManager))]
-    #[payable]
-    fn force_remove_public_keys(&mut self, public_keys: HashMap<AccountId, HashSet<PublicKey>>) {
-        assert_one_yocto();
-
-        for (account_id, pks) in public_keys {
-            for pk in pks {
-                self.remove_public_key_and_emit_event(account_id.as_ref(), pk);
-            }
+            let _ = self.set_auth_by_predecessor_id_and_emit_event(&account_id, true, true);
         }
     }
 }
 
-impl Contract {
-    pub(crate) fn internal_set_auth_by_predecessor_id(
-        &mut self,
-        account_id: &AccountId,
-        enable: bool,
-        force: bool,
-    ) -> Result<bool> {
-        if enable {
-            let Some(account) = self.accounts.get_mut(account_id) else {
-                // no need to create an account: not-yet-existing accounts
-                // have auth by PREDECESSOR_ID enabled by default
-                return Ok(true);
-            };
-            account
-        } else {
-            self.accounts.get_or_create(account_id.clone())
+#[cfg(feature = "far")]
+const _: () = {
+    use crate::far::ForcePublicKeyManager;
+    use defuse_core::crypto::PublicKey;
+    use std::collections::{HashMap, HashSet};
+
+    #[near]
+    impl ForcePublicKeyManager for Contract {
+        #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountManager))]
+        #[payable]
+        fn force_add_public_keys(&mut self, public_keys: HashMap<AccountId, HashSet<PublicKey>>) {
+            assert_one_yocto();
+
+            for (account_id, pks) in public_keys {
+                for pk in pks {
+                    self.add_public_key_and_emit_event(account_id.as_ref(), pk);
+                }
+            }
         }
-        .get_mut_maybe_forced(force)
-        .ok_or_else(|| DefuseError::AccountLocked(account_id.clone()))
-        .map(|account| account.set_auth_by_predecessor_id(account_id, enable))
+
+        #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountManager))]
+        #[payable]
+        fn force_remove_public_keys(
+            &mut self,
+            public_keys: HashMap<AccountId, HashSet<PublicKey>>,
+        ) {
+            assert_one_yocto();
+
+            for (account_id, pks) in public_keys {
+                for pk in pks {
+                    self.remove_public_key_and_emit_event(account_id.as_ref(), pk);
+                }
+            }
+        }
     }
-}
+};

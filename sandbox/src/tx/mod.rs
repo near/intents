@@ -85,7 +85,7 @@ impl TxBuilder {
     }
 
     #[must_use]
-    pub fn state_init(self, state_init: StateInit) -> Self {
+    pub fn state_init(self, state_init: StateInit, deposit: NearToken) -> Self {
         self.add_action(Action::DeterministicStateInit(Box::new(
             DeterministicStateInitAction {
                 state_init: match state_init {
@@ -106,7 +106,7 @@ impl TxBuilder {
                     }
                 },
 
-                deposit: NearToken::from_near(0),
+                deposit,
             },
         )))
     }

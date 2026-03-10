@@ -3,6 +3,9 @@ pub mod auth;
 pub mod token_diff;
 pub mod tokens;
 
+#[cfg(feature = "imt")]
+pub mod imt;
+
 use defuse_serde_utils::base58::Base58;
 use derive_more::derive::From;
 use near_sdk::{AccountIdRef, CryptoHash, near};
@@ -10,7 +13,7 @@ use serde_with::serde_as;
 use tokens::{NativeWithdraw, StorageDeposit};
 
 #[cfg(feature = "imt")]
-use crate::intents::tokens::imt::{ImtBurn, ImtMint};
+use crate::intents::imt::{ImtBurn, ImtMint};
 
 use crate::{
     Result,
@@ -144,20 +147,44 @@ impl ExecutableIntent for Intent {
     }
 }
 
+/// Event that can be emitted either from a
+/// function call or after intent execution
 #[must_use = "make sure to `.emit()` this event"]
 #[near(serializers = [json])]
 #[derive(Debug, Clone)]
-pub struct IntentEvent<T> {
-    #[serde_as(as = "Base58")]
-    pub intent_hash: CryptoHash,
+pub struct MaybeIntentEvent<T> {
+    #[serde_as(as = "Option<Base58>")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub intent_hash: Option<CryptoHash>,
 
     #[serde(flatten)]
     pub event: T,
 }
 
-impl<T> IntentEvent<T> {
+impl<T> MaybeIntentEvent<T> {
     #[inline]
-    pub const fn new(event: T, intent_hash: CryptoHash) -> Self {
-        Self { intent_hash, event }
+    pub const fn new_fn_call(event: T) -> Self {
+        Self {
+            intent_hash: None,
+            event,
+        }
+    }
+
+    #[inline]
+    pub const fn new_intent(event: T, intent_hash: CryptoHash) -> Self {
+        Self {
+            intent_hash: Some(intent_hash),
+            event,
+        }
     }
 }
+
+impl<T> From<T> for MaybeIntentEvent<T> {
+    fn from(event: T) -> Self {
+        Self::new_fn_call(event)
+    }
+}
+
+// fix JsonSchema macro bug
+#[cfg(feature = "abi")]
+use near_sdk::serde;

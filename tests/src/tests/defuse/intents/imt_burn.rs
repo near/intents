@@ -1,25 +1,16 @@
-use std::borrow::Cow;
-
-use crate::extensions::defuse::intents::ExecuteIntentsExt;
-use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
-use defuse::core::accounts::AccountEvent;
 use defuse::core::amounts::Amounts;
-use defuse::core::crypto::Payload;
-use defuse::core::events::DefuseEvent;
-use defuse::core::intents::IntentEvent;
-use defuse::core::intents::tokens::imt::{ImtBurn, ImtMint};
+use defuse::core::intents::imt::{ImtBurn, ImtMint};
 use defuse::core::token_id::TokenId;
-use defuse::nep245::{MtBurnEvent, MtEvent};
-use defuse_escrow_swap::token_id::imt::ImtTokenId;
-use defuse_escrow_swap::token_id::nep141::Nep141TokenId;
-use defuse_sandbox::assert_a_contains_b;
+use defuse::core::token_id::imt::ImtTokenId;
+use defuse::core::token_id::nep141::Nep141TokenId;
+use defuse_sandbox::assert_eq_defuse_event_logs;
+use defuse_sandbox::extensions::defuse::event::ToEventLog;
+use defuse_sandbox::extensions::defuse::intents::ExecuteIntentsExt;
+use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
 use defuse_sandbox::extensions::mt::MtViewExt;
-use near_sdk::json_types::U128;
 use rstest::rstest;
 
-use near_sdk::AsNep297Event;
-
-use crate::env::Env;
+use crate::tests::defuse::env::Env;
 
 #[rstest]
 #[trace]
@@ -75,35 +66,13 @@ async fn imt_burn_intent() {
         0
     );
 
-    assert_a_contains_b!(
-            a: result.logs().clone(),
-            b: [
-                MtEvent::MtBurn(Cow::Owned(vec![MtBurnEvent {
-                owner_id: other_user.id().into(),
-                token_ids: vec![mt_id.to_string()].into(),
-                amounts: vec![U128::from(amount)].into(),
-                memo: Some(memo.into()),
-                authorized_id: None,
-            }]))
-            .to_nep297_event()
-            .to_event_log(),
-                DefuseEvent::ImtBurn(Cow::Owned(vec![IntentEvent {
-                intent_hash: burn_payload.hash(),
-                event: AccountEvent {
-                    account_id: other_user.id().clone().into(),
-                    event: Cow::Owned(intent),
-                },
-            }]))
-            .to_nep297_event()
-            .to_event_log(),
-    ]
-        );
+    assert_eq_defuse_event_logs!(burn_payload.to_event_log(), result.logs());
 }
 
 #[rstest]
 #[trace]
 #[tokio::test]
-async fn failed_to_burn_tokens() {
+async fn failed_to_burn_tokens_with_intent() {
     let env = Env::builder().build().await;
 
     let (user, ft) = futures::join!(env.create_user(), env.create_token());

@@ -1,4 +1,4 @@
-use crate::extensions::escrow::contract::{
+use defuse_sandbox::extensions::escrow::contract::{
     ContractStorage, Deadline, OverrideSend, Params,
     token_id::{TokenId, nep141::Nep141TokenId},
 };

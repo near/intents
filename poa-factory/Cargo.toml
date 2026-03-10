@@ -23,7 +23,6 @@ container_build_command = [
     "--locked",
     "--features=contract",
     "--no-embed-abi"
-
 ]
 
 [dependencies]

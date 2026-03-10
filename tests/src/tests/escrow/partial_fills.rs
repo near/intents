@@ -1,9 +1,9 @@
-use crate::extensions::escrow::contract::{
+use defuse_sandbox::extensions::escrow::contract::{
     ContractStorage, Deadline, OverrideSend, Params, Pips, ProtocolFees,
     action::{FillAction, TransferAction, TransferMessage},
     token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId},
 };
-use crate::extensions::{
+use defuse_sandbox::extensions::{
     defuse::contract::{
         core::intents::tokens::NotifyOnTransfer,
         tokens::{DepositAction, DepositMessage},
@@ -272,9 +272,9 @@ async fn maybe_view_escrow(escrow: &Account) {
 /// Test partial fill with dust: verifies remaining funds returned to maker after timeout
 #[tokio::test]
 async fn test_partial_fill_funds_returned_after_timeout() {
-    use crate::env::Env as DefuseEnv;
-    use crate::extensions::escrow::EscrowExt;
-    use crate::extensions::escrow::EscrowSwapExt;
+    use crate::tests::defuse::env::Env as DefuseEnv;
+    use defuse_sandbox::extensions::escrow::EscrowExt;
+    use defuse_sandbox::extensions::escrow::EscrowSwapExt;
     use crate::utils::escrow_builders::ParamsBuilder;
     use crate::utils::escrow_builders::{FillMessageBuilder, FundMessageBuilder};
     use defuse_escrow_swap::decimal::UD128;

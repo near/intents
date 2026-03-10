@@ -8,12 +8,12 @@
 use std::borrow::Cow;
 use std::time::Duration;
 
-use crate::env::Env;
-use crate::extensions::condvar::OneshotCondVarExt;
-use crate::extensions::defuse::intents::ExecuteIntentsExt;
-use crate::extensions::defuse::signer::DefaultDefuseSignerExt;
-use crate::extensions::escrow::EscrowSwapExt;
-use crate::extensions::escrow_proxy::EscrowProxyExt;
+use crate::tests::defuse::env::Env;
+use defuse_sandbox::extensions::condvar::OneshotCondVarExt;
+use defuse_sandbox::extensions::defuse::intents::ExecuteIntentsExt;
+use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
+use defuse_sandbox::extensions::escrow::EscrowSwapExt;
+use defuse_sandbox::extensions::escrow_proxy::EscrowProxyExt;
 use crate::utils::escrow_builders::ParamsBuilder;
 use crate::utils::escrow_builders::{FillMessageBuilder, FundMessageBuilder};
 use defuse_core::Deadline;

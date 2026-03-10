@@ -2,8 +2,8 @@
 
 use std::time::Duration;
 
-use crate::env::Env;
-use crate::extensions::escrow::EscrowSwapExt;
+use crate::tests::defuse::env::Env;
+use defuse_sandbox::extensions::escrow::EscrowSwapExt;
 use crate::utils::escrow_builders::ParamsBuilder;
 use crate::utils::escrow_builders::{FillMessageBuilder, FundMessageBuilder};
 use defuse_core::Deadline;

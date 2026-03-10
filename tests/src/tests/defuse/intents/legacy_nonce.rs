@@ -1,17 +1,23 @@
-use crate::extensions::defuse::{
-    contract::core::{
-        Deadline, Nonce,
-        amounts::Amounts,
-        intents::{DefuseIntents, tokens::Transfer},
-        token_id::{TokenId, nep141::Nep141TokenId},
+use defuse_sandbox::{
+    assert_eq_defuse_event_logs,
+    extensions::defuse::{
+        contract::core::{
+            Deadline, Nonce,
+            amounts::Amounts,
+            intents::{DefuseIntents, tokens::Transfer},
+            token_id::{TokenId, nep141::Nep141TokenId},
+        },
+        event::ToEventLog,
+        intents::ExecuteIntentsExt,
     },
-    intents::ExecuteIntentsExt,
 };
 
-use crate::extensions::defuse::signer::DefuseSignerExt;
+use defuse_sandbox::extensions::defuse::signer::DefuseSignerExt;
 use rstest::rstest;
 
-use crate::{env::Env, sandbox::extensions::mt::MtViewExt, utils::random::make_arbitrary};
+use crate::{
+    sandbox::extensions::mt::MtViewExt, tests::defuse::env::Env, utils::random::make_arbitrary,
+};
 
 #[rstest]
 #[trace]
@@ -64,10 +70,12 @@ async fn execute_intent_with_legacy_nonce(#[from(make_arbitrary)] legacy_nonce: 
         )
         .await;
 
-    let _ = env
-        .simulate_and_execute_intents(env.defuse.id(), [transfer_intent_payload])
+    let res = env
+        .simulate_and_execute_intents(env.defuse.id(), [transfer_intent_payload.clone()])
         .await
         .unwrap();
+
+    assert_eq_defuse_event_logs!(transfer_intent_payload.to_event_log(), res.logs());
 
     assert_eq!(
         env.defuse

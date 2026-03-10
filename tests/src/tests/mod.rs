@@ -11,6 +11,9 @@ pub mod escrow_with_proxy;
 #[cfg(feature = "condvar")]
 pub mod oneshot_condvar;
 
+#[cfg(feature = "deployer")]
+mod global_deployer;
+
 #[cfg(feature = "poa")]
 pub mod poa;
 
