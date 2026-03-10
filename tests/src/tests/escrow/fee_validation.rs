@@ -46,7 +46,7 @@ fn test_excessive_protocol_fee_does_not_pass_validation() {
         receive_dst_to: OverrideSend::default(),
         taker_whitelist: BTreeSet::default(),
         protocol_fees: Some(ProtocolFees {
-            fee: ContractStorage::MAX_FEE + Pips::ONE_PERCENT,
+            fee: Params::MAX_FEE + Pips::ONE_PERCENT,
             surplus: Pips::ZERO,
             collector: COLLECTOR1.parse().unwrap(),
         }),
@@ -77,7 +77,7 @@ fn test_excessive_integrator_fee_does_not_pass_validation() {
         protocol_fees: None,
         integrator_fees: [(
             COLLECTOR1.parse::<AccountId>().unwrap(),
-            ContractStorage::MAX_FEE + Pips::ONE_PERCENT,
+            Params::MAX_FEE + Pips::ONE_PERCENT,
         )]
         .into(),
         auth_caller: None,
@@ -105,10 +105,7 @@ fn test_excessive_integrator_fees_sum_does_not_pass_validation() {
         taker_whitelist: BTreeSet::default(),
         protocol_fees: None,
         integrator_fees: [
-            (
-                COLLECTOR1.parse::<AccountId>().unwrap(),
-                ContractStorage::MAX_FEE,
-            ),
+            (COLLECTOR1.parse::<AccountId>().unwrap(), Params::MAX_FEE),
             (
                 COLLECTOR2.parse::<AccountId>().unwrap(),
                 Pips::from_percent(1).unwrap(),
@@ -139,7 +136,7 @@ fn test_combined_protocol_and_integrator_fees_does_not_pass_validation() {
         receive_dst_to: OverrideSend::default(),
         taker_whitelist: BTreeSet::default(),
         protocol_fees: Some(ProtocolFees {
-            fee: ContractStorage::MAX_FEE,
+            fee: Params::MAX_FEE,
             surplus: Pips::ZERO,
             collector: COLLECTOR1.parse().unwrap(),
         }),
@@ -172,7 +169,7 @@ fn test_valid_combined_fees_within_cap() {
         receive_dst_to: OverrideSend::default(),
         taker_whitelist: BTreeSet::default(),
         protocol_fees: Some(ProtocolFees {
-            fee: ContractStorage::MAX_FEE - Pips::ONE_PERCENT,
+            fee: Params::MAX_FEE - Pips::ONE_PERCENT,
             surplus: Pips::ZERO,
             collector: COLLECTOR1.parse().unwrap(),
         }),
@@ -300,6 +297,6 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
 
     assert_eq!(collector_balance, EXPECTED_COLLECTOR_FEE);
 
-    let max_capped_fee = ContractStorage::MAX_FEE.fee(TAKER_AMOUNT);
+    let max_capped_fee = Params::MAX_FEE.fee(TAKER_AMOUNT);
     assert!(collector_balance > max_capped_fee);
 }

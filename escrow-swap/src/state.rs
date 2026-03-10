@@ -18,8 +18,6 @@ pub struct ContractStorage(
 );
 
 impl ContractStorage {
-    pub const MAX_FEE: Pips = Pips::from_percent(25).unwrap();
-
     pub(crate) const STATE_KEY: &[u8] = b"";
 
     #[inline]
@@ -147,6 +145,8 @@ pub struct Params {
 }
 
 impl Params {
+    pub const MAX_FEE: Pips = Pips::from_percent(25).unwrap();
+
     #[inline]
     pub fn hash(&self) -> CryptoHash {
         env::keccak256_array(borsh::to_vec(self).unwrap_or_else(|_| unreachable!()))
@@ -187,7 +187,7 @@ impl Params {
 
     fn validate_fees(&self) -> Result<()> {
         self.total_fee()
-            .is_some_and(|total| total <= ContractStorage::MAX_FEE)
+            .is_some_and(|total| total <= Self::MAX_FEE)
             .then_some(())
             .ok_or(Error::ExcessiveFees)
     }
