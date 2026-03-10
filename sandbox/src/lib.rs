@@ -13,6 +13,7 @@ pub use account::{Account, SigningAccount};
 pub use extensions::{
     ft::{FtExt, FtViewExt},
     mt::{MtExt, MtViewExt},
+    mt_receiver::MtReceiverStubExt,
     storage_management::{StorageManagementExt, StorageViewExt},
     wnear::{WNearDeployerExt, WNearExt},
 };

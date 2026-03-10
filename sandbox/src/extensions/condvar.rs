@@ -5,9 +5,7 @@ use near_sdk::{
     state_init::{StateInit, StateInitV1},
 };
 
-use crate::{
-    Account, SigningAccount, api::types::transaction::actions::GlobalContractDeployMode,
-};
+use crate::{Account, SigningAccount, api::types::transaction::actions::GlobalContractDeployMode};
 
 use defuse_test_utils::wasms::ONESHOT_CONDVAR_WASM;
 
