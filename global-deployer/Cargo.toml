@@ -25,7 +25,9 @@ defuse-serde-utils.workspace = true
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 
 [dev-dependencies]
+clap.workspace = true
 hex.workspace = true
+serde_json.workspace = true
 sha2 = "0.10"
 near-sdk = { workspace = true, features = ["unit-testing"] }
 
