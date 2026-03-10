@@ -866,7 +866,6 @@ dependencies = [
  "hex-literal",
  "near-sdk",
  "num-traits",
- "rand 0.10.0",
  "rstest",
 ]
 
