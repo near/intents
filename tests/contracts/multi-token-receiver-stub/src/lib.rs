@@ -85,11 +85,12 @@ impl MultiTokenReceiver for Contract {
         amounts: Vec<U128>,
         msg: String,
     ) -> PromiseOrValue<Vec<U128>> {
-        near_sdk::env::log_str(&format!(
-            "STUB::mt_on_transfer: sender_id={sender_id}, previous_owner_ids={previous_owner_ids:?}, token_ids={token_ids:?}, amounts={amounts:?}, msg={msg}"
-        ));
+        let _ = sender_id;
+        let _ = previous_owner_ids;
+        let _ = token_ids;
+        let mode = serde_json::from_str(&msg).unwrap_or_default();
 
-        match serde_json::from_str(&msg).unwrap_or_default() {
+        match mode {
             MTReceiverMode::AcceptAll => PromiseOrValue::Value(vec![U128(0); amounts.len()]),
             MTReceiverMode::RefundAll => PromiseOrValue::Value(amounts),
             MTReceiverMode::MaliciousRefund => {
