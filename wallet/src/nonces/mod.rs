@@ -114,6 +114,7 @@ impl Nonces {
         }
     }
 
+    #[inline]
     fn now() -> Deadline {
         // We need to truncate the current timestamp down to seconds, since
         // `self.last_cleaned_at` is serialized as `TimestampSeconds<u32>`.
