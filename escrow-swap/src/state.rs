@@ -145,16 +145,23 @@ pub struct Params {
 }
 
 impl Params {
+    pub const MAX_FEE: Pips = Pips::from_percent(25).unwrap();
+
     #[inline]
     pub fn hash(&self) -> CryptoHash {
         env::keccak256_array(borsh::to_vec(self).unwrap_or_else(|_| unreachable!()))
     }
 
     pub fn total_fee(&self) -> Option<Pips> {
+        let protocol = self
+            .protocol_fees
+            .as_ref()
+            .map(|pf| pf.fee)
+            .unwrap_or_default();
         self.integrator_fees
             .values()
             .copied()
-            .try_fold(Pips::ZERO, Pips::checked_add)
+            .try_fold(protocol, Pips::checked_add)
     }
 
     pub fn validate(&self) -> Result<()> {
@@ -179,11 +186,8 @@ impl Params {
     }
 
     fn validate_fees(&self) -> Result<()> {
-        const MAX_FEE_PERCENT: u32 = 25;
-        const MAX_FEE: Pips = Pips::ONE_PERCENT.checked_mul(MAX_FEE_PERCENT).unwrap();
-
         self.total_fee()
-            .is_some_and(|total| total <= MAX_FEE)
+            .is_some_and(|total| total <= Self::MAX_FEE)
             .then_some(())
             .ok_or(Error::ExcessiveFees)
     }

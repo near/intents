@@ -38,7 +38,7 @@ long = []
 
 [dependencies]
 defuse-sandbox = { workspace = true }
-defuse = { workspace = true, features = ["contract", "arbitrary", "imt"], optional = true }
+defuse = { workspace = true, features = ["contract", "arbitrary", "far"], optional = true }
 defuse-escrow-swap = { workspace = true, features = ["auth_call"], optional = true }
 defuse-poa-factory = {workspace = true, features = ["contract"], optional = true }
 multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }

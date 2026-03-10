@@ -1,8 +1,4 @@
-use std::collections::{HashMap, HashSet};
-
-use defuse_core::{
-    accounts::AccountEvent, crypto::PublicKey, engine::StateView, events::DefuseEvent,
-};
+use defuse_core::{accounts::AccountEvent, engine::StateView, events::DefuseEvent};
 use defuse_near_utils::Lock;
 use near_plugins::{AccessControllable, access_control_any};
 use near_sdk::{AccountId, assert_one_yocto, near};
@@ -85,28 +81,41 @@ impl ForceAccountManager for Contract {
             let _ = self.set_auth_by_predecessor_id_and_emit_event(&account_id, true, true);
         }
     }
-
-    #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountManager))]
-    #[payable]
-    fn force_add_public_keys(&mut self, public_keys: HashMap<AccountId, HashSet<PublicKey>>) {
-        assert_one_yocto();
-
-        for (account_id, pks) in public_keys {
-            for pk in pks {
-                self.add_public_key_and_emit_event(account_id.as_ref(), pk);
-            }
-        }
-    }
-
-    #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountManager))]
-    #[payable]
-    fn force_remove_public_keys(&mut self, public_keys: HashMap<AccountId, HashSet<PublicKey>>) {
-        assert_one_yocto();
-
-        for (account_id, pks) in public_keys {
-            for pk in pks {
-                self.remove_public_key_and_emit_event(account_id.as_ref(), pk);
-            }
-        }
-    }
 }
+
+#[cfg(feature = "far")]
+const _: () = {
+    use crate::far::ForcePublicKeyManager;
+    use defuse_core::crypto::PublicKey;
+    use std::collections::{HashMap, HashSet};
+
+    #[near]
+    impl ForcePublicKeyManager for Contract {
+        #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountManager))]
+        #[payable]
+        fn force_add_public_keys(&mut self, public_keys: HashMap<AccountId, HashSet<PublicKey>>) {
+            assert_one_yocto();
+
+            for (account_id, pks) in public_keys {
+                for pk in pks {
+                    self.add_public_key_and_emit_event(account_id.as_ref(), pk);
+                }
+            }
+        }
+
+        #[access_control_any(roles(Role::DAO, Role::UnrestrictedAccountManager))]
+        #[payable]
+        fn force_remove_public_keys(
+            &mut self,
+            public_keys: HashMap<AccountId, HashSet<PublicKey>>,
+        ) {
+            assert_one_yocto();
+
+            for (account_id, pks) in public_keys {
+                for pk in pks {
+                    self.remove_public_key_and_emit_event(account_id.as_ref(), pk);
+                }
+            }
+        }
+    }
+};
