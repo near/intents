@@ -20,9 +20,6 @@ pub enum Error {
     #[error("expired or from the future")]
     ExpiredOrFuture,
 
-    #[error("invalid timeout")]
-    InvalidTimeout,
-
     #[error("invalid signature")]
     InvalidSignature,
 
