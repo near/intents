@@ -33,6 +33,9 @@ pub fn read_wasm(mode: &ReadWasmMode, path: impl AsRef<Path>) -> Vec<u8> {
 }
 
 #[cfg(feature = "defuse")]
+pub static DEFUSE_FAR_WASM: LazyLock<Vec<u8>> =
+    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "far/defuse.wasm"));
+#[cfg(feature = "defuse")]
 pub static DEFUSE_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse.wasm"));
 #[cfg(feature = "defuse")]

@@ -46,8 +46,11 @@ jobs:
         run: |
           mkdir -p target res
           echo 'Signature: 8a477f597d28d172789f06886806bc55' | tee target/CACHEDIR.TAG res/CACHEDIR.TAG > /dev/null
-      - name: Run clippy
+      - name: Run clippy for workspace
         run: cargo clippy --workspace --all-targets --no-deps
+      - name: Run clippy for defuse 
+        # Run clippy only on the main contract feature
+        run: cargo clippy --manifest-path ./defuse/Cargo.toml --features=contract --features=near-sdk/non-contract-usage --no-deps
 
   build:
     name: Build
@@ -80,7 +83,7 @@ jobs:
         # run: cargo install cargo-near --version 0.17.0 --locked
         run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/download/cargo-near-v0.19.2/cargo-near-installer.sh | sh
       - name: Build
-        run: make all
+        run: make
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -117,7 +120,7 @@ jobs:
       - name: Install Cargo Plugins
         run: cargo install cargo-near --version 0.17.0 --locked
       - name: Build Reproducible WASM and calculate checksum
-        run: make all-reproducible
+        run: make  REPRODUCIBLE=1
       - name: Upload Reproducible Artifacts
         uses: actions/upload-artifact@v4
         with:

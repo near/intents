@@ -50,8 +50,23 @@ container_build_command = [
     "build",
     "non-reproducible-wasm",
     "--locked",
-    "--features=contract,imt",
-    "--abi-features=abi,contract,imt",
+    "--features=contract",
+    "--abi-features=abi,contract",
+    "--no-embed-abi",
+]
+
+[package.metadata.near.reproducible_build.variant.far]
+image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
+image_digest = "sha256:772638e343baeeea24e49062c7d424274f3441452cc06ce97fc4e5695b19fecc"
+passed_env = []
+container_build_command = [
+    "cargo",
+    "near",
+    "build",
+    "non-reproducible-wasm",
+    "--locked",
+    "--features=contract,far",
+    "--abi-features=abi,contract,far",
     "--no-embed-abi",
 ]
 
@@ -67,6 +82,7 @@ contract = [
     "dep:bitflags",
 ]
 imt = ["defuse-core/imt"]
+far = ["imt"]
 
 [dev-dependencies]
 defuse-core = { workspace = true, features = ["arbitrary"] }

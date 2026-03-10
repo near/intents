@@ -19,11 +19,11 @@ use defuse_sandbox::{
         core::fees::{FeesConfig, Pips},
     },
 };
-use defuse_test_utils::random::Seed;
+use defuse_test_utils::{random::Seed, wasms::DEFUSE_FAR_WASM};
 use near_sdk::{AccountId, NearToken};
 
 use super::Env;
-use defuse_test_utils::wasms::{DEFUSE_LEGACY_WASM, DEFUSE_WASM, POA_FACTORY_WASM, WNEAR_WASM};
+use defuse_test_utils::wasms::{DEFUSE_LEGACY_WASM, POA_FACTORY_WASM, WNEAR_WASM};
 
 const MIGRATE_FROM_LEGACY_ENV_NAME: &str = "DEFUSE_MIGRATE_FROM_LEGACY";
 
@@ -128,7 +128,8 @@ impl EnvBuilder {
             if legacy {
                 DEFUSE_LEGACY_WASM.clone()
             } else {
-                DEFUSE_WASM.clone()
+                // far feature enabled by default in tests
+                DEFUSE_FAR_WASM.clone()
             },
         )
         .await

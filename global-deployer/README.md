@@ -162,16 +162,16 @@ flowchart TD
 
 ### Deployed Instances
 
-The Global Deployer WASM is built from the [global-deployer/v0.1.0](https://github.com/near/intents/releases/tag/global-deployer%2Fv0.1.0) release. The code hash is the same on both networks:
+The Global Deployer WASM is built from the [global-deployer/v0.2.0](https://github.com/near/intents/releases/tag/global-deployer%2Fv0.2.0) release. The code hash is the same on both networks:
 
-**Code hash:** `FaJXVgS82fXhrvvC8yXV4ibHujW63KvL7dVvJiZ9naga`
+**Code hash:** `8JK2g3kr7qCbRDBmoLx7c9Zrz9TxPdANP7ocbQGE2fqP`
 
 | Network | Type | Account / Hash | Tx |
 |---------|------|----------------|-----|
-| Testnet | Immutable (by hash) | `FaJXVgS82fXhrvvC8yXV4ibHujW63KvL7dVvJiZ9naga` | [QHkBk5z...](https://testnet.nearblocks.io/txns/QHkBk5zqqkxoxfTSpiGL4g489VhmAKHqMba19YBoRTB) |
-| Testnet | Mutable (by account ID) | `0s49b604786a4a44077ef5a450ddf59e90ae3d95d0` | [HQdgzmp...](https://testnet.nearblocks.io/txns/HQdgzmpU6c3Vy25DPg1eTAgrLNuuV9BF8xuQXCkYuCMx) |
-| Mainnet | Immutable (by hash) | `FaJXVgS82fXhrvvC8yXV4ibHujW63KvL7dVvJiZ9naga` | [Bi3gzto...](https://nearblocks.io/txns/Bi3gztotMwA13hBocCMeUk8wYwS6oHbxh2t8YK7Ahx1s) |
-| Mainnet | Mutable (by account ID) | `0s7d8d547e78731dfc2a51fcf695d5a0ad806fb308` | [HSAnkje...](https://nearblocks.io/txns/HSAnkjeAu1c7NioP2XWnTSVhoBm7FZdv7ER5XA3p5gS7) |
+| Mainnet | Immutable (by hash) | `8JK2g3kr7qCbRDBmoLx7c9Zrz9TxPdANP7ocbQGE2fqP` | [4RB52Rr...](https://nearblocks.io/txns/4RB52RrkSd8BVaAAUAV1okHWmDe2BRFm6tzva4HhY9Uy) |
+| Mainnet | Mutable (by account ID) | [0s384bfa53f1718c7f53eaaa1b43c55e2aea3ef309](https://nearblocks.io/address/0s384bfa53f1718c7f53eaaa1b43c55e2aea3ef309) | [6o1ffgK...](https://nearblocks.io/txns/6o1ffgKv1fe6mLR2vtRDzMAdYJdunQRfzaLH5oZ8dwcz) |
+| Testnet | Immutable (by hash) | `8JK2g3kr7qCbRDBmoLx7c9Zrz9TxPdANP7ocbQGE2fqP` | [HJrtRP1...](https://testnet.nearblocks.io/txns/HJrtRP1o3Hfv9Y42xUtECr2RqFafS1L3BM4J9Lgw4jTr) |
+| Testnet | Mutable (by account ID) | [0s29e346108955b88c2d180a4ba17662b1f2cc1028](https://testnet.nearblocks.io/address/0s29e346108955b88c2d180a4ba17662b1f2cc1028) | [Bx2LLQV...](https://testnet.nearblocks.io/txns/Bx2LLQVrVyyGFc4natbJUGtotxSn1iJHe1GWNE5JnXCk) |
 
 The mutable instances were created and deployed in a single transaction — `StateInit` pre-sets `approved_hash` to the GD code hash, so `gd_deploy` can be called immediately without owner action.
 
