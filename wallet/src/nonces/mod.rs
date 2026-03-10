@@ -35,7 +35,7 @@ pub struct Nonces {
             deserialize_with = "As::<BorshDurationSeconds<u32>>::deserialize",
         )
     )]
-    /// Fixed timeout, i.e. validity timespan for each nonce.
+    /// Fixed timeout, i.e. maximum validity timespan for each nonce.
     timeout: Duration,
 
     #[cfg_attr(
@@ -77,14 +77,11 @@ impl Nonces {
     }
 
     pub fn commit(&mut self, nonce: u32, created_at: Deadline, timeout: Duration) -> Result<()> {
-        if timeout != self.timeout {
-            return Err(Error::InvalidTimeout);
-        }
-
         self.check_cleanup();
 
         let now = Self::now();
-        if !(now - self.timeout <= created_at && created_at <= now) {
+        // check that `created_at` is in `[now - min(self.timeout, msg.timeout), now]`
+        if !(now - self.timeout.min(timeout) <= created_at && created_at <= now) {
             return Err(Error::ExpiredOrFuture);
         }
 
