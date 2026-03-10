@@ -793,6 +793,7 @@ dependencies = [
  "defuse-nep245",
  "defuse-randomness",
  "defuse-serde-utils",
+ "defuse-test-utils",
  "defuse-tests",
  "defuse-wnear",
  "futures",
