@@ -4,10 +4,6 @@ MAKE_OUT_DIR_PREFIX ?= $(ROOT_DIR)target/makenear
 MAKE_OUT_DIR = $(eval MAKE_OUT_DIR := $(shell mkdir -p $(MAKE_OUT_DIR_PREFIX) $(DEFUSE_OUT_DIR) && mktemp -d -p $(MAKE_OUT_DIR_PREFIX)))$(MAKE_OUT_DIR)
 
 
-
-init: 
-    $(eval MAKE_OUT_DIR := $(shell mkdir -p $(MAKE_OUT_DIR_PREFIX) $(DEFUSE_OUT_DIR) && mktemp -d -p $(MAKE_OUT_DIR_PREFIX)))
-
 .DEFAULT_GOAL := all
 CONTRACT_CRATES := \
     defuse \
@@ -22,7 +18,7 @@ ALL_TARGETS :=
 
 # Generate all build targets from cargo metadata, filtered to CONTRACT_CRATES
 $(eval $(shell cargo metadata --format-version=1 | jq -rn \
-    --arg outdir '$(DEFUSE_OUT_DIR)' --arg reproducible '$(REPRODUCIBLE)' \
+    --arg outdir '$(DEFUSE_OUT_DIR)' --arg reproducible '$(REPRODUCIBLE)' --arg makedir '$$$$(MAKE_OUT_DIR)' \
     --arg crates '$(CONTRACT_CRATES)' ' \
     ($$crates | split(" ") | map(select(length > 0))) as $$allowed | \
     [inputs][0].packages[] | select(.metadata.near.reproducible_build) | select(.name as $$n | $$allowed | any(. == $$n)) | \
@@ -30,21 +26,21 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
     (if $$reproducible != "" then "cargo near build reproducible-wasm" else ($$b.container_build_command | join(" ")) end) as $$base_cmd | \
     ($$name | gsub("-"; "_")) as $$wasm_base | \
     ([$$b.variant // {} | to_entries[] | "\($$name)/\(.key)"] | join(" ")) as $$variant_targets | \
-    "$(MAKE_OUT_DIR)/\($$name)" as $$default_outdir | \
+    "\($$makedir)/\($$name)" as $$default_outdir | \
     "$$(eval .PHONY: \($$name))", \
     "$$(eval ALL_TARGETS += \($$name))", \
-    ("$$(eval .\($$name): init;  \($$base_cmd) --manifest-path=\($$mp) --out-dir=\($$default_outdir))",  \
+    ("$$(eval .\($$name):;  \($$base_cmd) --manifest-path=\($$mp) --out-dir=\($$default_outdir))",  \
     ("$$(eval \($$name): .\($$name); " + \
          "-@(mv -v \($$default_outdir)/\($$wasm_base).wasm \($$outdir)/\($$wasm_base).wasm" + \
          ";mv -v \($$default_outdir)/\($$wasm_base)_abi.json \($$outdir)/\($$wasm_base).abi.json) 2>/dev/null)") \
     ), \
     ($$b.variant // {} | to_entries[] | \
      "\($$name)/\(.key)" as $$vname | \
-     "$(MAKE_OUT_DIR)/\($$name)/\(.key)" as $$variant_outdir | \
+     "\($$makedir)/\($$name)/\(.key)" as $$variant_outdir | \
      (if $$reproducible != "" then "cargo near build reproducible-wasm --variant=\(.key)" else (.value.container_build_command | join(" ")) end) as $$vcmd | \
      "$$(eval .PHONY: \($$vname))", \
      "$$(eval ALL_TARGETS += \($$vname))", \
-     "$$(eval .\($$vname): init;  \($$vcmd) --manifest-path=\($$mp) --out-dir=\($$variant_outdir))",  \
+     "$$(eval .\($$vname):;  \($$vcmd) --manifest-path=\($$mp) --out-dir=\($$variant_outdir))",  \
      ("$$(eval \($$vname): .\($$vname); " + \
          "-@(mv -v \($$variant_outdir)/\($$wasm_base).wasm \($$outdir)/\($$wasm_base).\(.key).wasm" + \
          ";mv -v \($$variant_outdir)/\($$wasm_base)_abi.json \($$outdir)/\($$wasm_base).\(.key).abi.json) 2>/dev/null )") \
