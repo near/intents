@@ -34,6 +34,7 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
      "$$(eval \($$vname):; \($$vcmd) --manifest-path=\($$mp) --out-dir=\($$crate_outdir)/\(.key))" \
     ), \
     "$$(eval .PHONY: \($$name)/all)", \
+    "$$(eval ALL_TARGETS +=  \($$name)/all)", \
     "$$(eval \($$name)/all: \($$name) \($$variant_targets))" \
     '))
 
@@ -53,7 +54,6 @@ help:
 	@echo "  clean-out-dir    Remove output directory only"
 	@echo "  test             Run all workspace tests"
 	@echo "  clippy           Run clippy lints"
-	@echo "  metadata         Print cargo metadata JSON"
 	@echo "  help             Show this help"
 
 .PHONY: clean-out-dir
