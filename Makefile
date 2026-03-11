@@ -19,28 +19,26 @@ ALL_TARGETS :=
 # Generate all build targets from cargo metadata, filtered to CONTRACT_CRATES
 $(eval $(shell cargo metadata --format-version=1 | jq -rn \
     --arg outdir '$(DEFUSE_OUT_DIR)' --arg reproducible '$(REPRODUCIBLE)' --arg makedir '$$$$(MAKE_OUT_DIR)' \
-    --arg crates '$(CONTRACT_CRATES)' ' \
+    --arg crates '$(CONTRACT_CRATES)' --arg reproducible_cmd 'cargo near build reproducible-wasm' ' \
     ($$crates | split(" ") | map(select(length > 0))) as $$allowed | \
     [inputs][0].packages[] | select(.metadata.near.reproducible_build) | select(.name as $$n | $$allowed | any(. == $$n)) | \
     .name as $$name | .manifest_path as $$mp | .metadata.near.reproducible_build as $$b | \
-    (if $$reproducible != "" then "cargo near build reproducible-wasm" else ($$b.container_build_command | join(" ")) end) as $$base_cmd | \
     ($$name | gsub("-"; "_")) as $$wasm_base | \
     ([$$b.variant // {} | to_entries[] | "\($$name)/\(.key)"] | join(" ")) as $$variant_targets | \
-    "\($$makedir)/\($$name)" as $$default_outdir | \
-    "$$(eval .PHONY: \($$name))", \
-    "$$(eval ALL_TARGETS += \($$name))", \
-    "$$(eval \($$name)::;  \($$base_cmd) --manifest-path=\($$mp) --out-dir=\($$default_outdir))",  \
-    "$$(eval \($$name)::; -@cp -v \($$default_outdir)/\($$wasm_base).wasm \($$outdir)/\($$wasm_base).wasm)", \
-    "$$(eval \($$name)::; -@cp -v \($$default_outdir)/\($$wasm_base)_abi.json \($$outdir)/\($$wasm_base).abi.json)", \
-    ($$b.variant // {} | to_entries[] | \
-     "\($$name)/\(.key)" as $$vname | \
-     "\($$makedir)/\($$name)/\(.key)" as $$variant_outdir | \
-     (if $$reproducible != "" then "cargo near build reproducible-wasm --variant=\(.key)" else (.value.container_build_command | join(" ")) end) as $$vcmd | \
-     "$$(eval .PHONY: \($$vname))", \
-     "$$(eval ALL_TARGETS += \($$vname))", \
-     "$$(eval \($$vname)::;  \($$vcmd) --manifest-path=\($$mp) --out-dir=\($$variant_outdir))",  \
-     "$$(eval \($$vname)::; -@cp -v \($$variant_outdir)/\($$wasm_base).wasm \($$outdir)/\($$wasm_base).\(.key).wasm)", \
-     "$$(eval \($$vname)::; -@cp -v \($$variant_outdir)/\($$wasm_base)_abi.json \($$outdir)/\($$wasm_base).\(.key).abi.json)" \
+    ({"": $$b} + ($$b.variant // {}) | to_entries[] | \
+     .key as $$vkey | .value as $$vval | \
+     ("\($$name)/\($$vkey)" | rtrimstr("/")) as $$tname | \
+     "\($$makedir)/\($$tname)" as $$tout | \
+     (if $$vkey != "" then " --variant=\($$vkey)" else "" end) as $$variant | \
+     ($$reproducible_cmd + $$variant) as $$reproducible_cmd | \
+     ($$vval.container_build_command | join(" ")) as $$non_reproducible_cmd | \
+     (if $$reproducible != "" then $$reproducible_cmd else $$non_reproducible_cmd end) as $$cmd | \
+     (if $$vkey == "" then "" else ".\($$vkey)" end) as $$suffix | \
+     "$$(eval .PHONY: \($$tname))", \
+     "$$(eval ALL_TARGETS += \($$tname))", \
+     "$$(eval \($$tname)::;  \($$cmd) --manifest-path=\($$mp) --out-dir=\($$tout))", \
+     "$$(eval \($$tname)::; -@cp -v \($$tout)/\($$wasm_base).wasm \($$outdir)/\($$wasm_base)\($$suffix).wasm)", \
+     "$$(eval \($$tname)::; -@cp -v \($$tout)/\($$wasm_base)_abi.json \($$outdir)/\($$wasm_base)\($$suffix).abi.json)" \
     ), \
     "$$(eval .PHONY: \($$name)/all)", \
     "$$(eval ALL_TARGETS +=  \($$name)/all)", \
