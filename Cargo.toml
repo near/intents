@@ -15,6 +15,7 @@ members = [
     "erc191",
     "escrow-swap",
     "fees",
+    "sr25519",
     "io-utils",
     "map-utils",
     "near-utils",
@@ -59,6 +60,7 @@ defuse-decimal.path = "decimal"
 defuse-erc191.path = "erc191"
 defuse-escrow-swap.path = "escrow-swap"
 defuse-fees.path = "fees"
+defuse-sr25519.path = "sr25519"
 defuse-io-utils.path = "io-utils"
 defuse-map-utils.path = "map-utils"
 defuse-near-utils.path = "near-utils"
@@ -116,6 +118,7 @@ rand = "0.9"
 rand_chacha = "0.9"
 rstest = "0.25"
 schemars = "0.8"
+schnorrkel = { version = "0.11.5", default-features = false }
 serde_json = "1"
 serde_with = "3.9"
 stellar-strkey = "0.0.13"
