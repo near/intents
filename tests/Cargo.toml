@@ -50,6 +50,7 @@ defuse-test-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-fees.workspace = true
 defuse-global-deployer = {workspace = true, optional = true}
+defuse-actions.workspace = true
 
 near-sdk.workspace = true
 near-crypto.workspace = true

@@ -12,6 +12,8 @@ pub mod salts;
 pub mod simulation_output;
 pub mod tokens;
 
+pub mod arbitrary;
+
 pub use defuse_core as core;
 pub use defuse_nep245 as nep245;
 

@@ -1,6 +1,7 @@
 #![allow(async_fn_in_trait)]
 
 pub mod account_manager;
+pub mod arbitrary;
 pub mod deployer;
 pub mod event;
 pub mod force_manager;
