@@ -15,7 +15,7 @@ use defuse_sandbox::{
     extensions::{storage_management::StorageManagementExt, wnear::WNearDeployerExt},
     sandbox,
 };
-use futures::{future::try_join_all, try_join};
+use futures::{FutureExt, future::try_join_all, try_join};
 use impl_tools::autoimpl;
 use near_sdk::{GlobalContractId, NearToken};
 use rstest::fixture;
@@ -23,8 +23,8 @@ use rstest::fixture;
 use defuse_test_utils::wasms::{DEFUSE_WASM, ESCROW_SWAP_WASM, POA_FACTORY_WASM, WNEAR_WASM};
 
 #[fixture]
-pub async fn env() -> Env {
-    Env::new().await
+pub async fn env(#[future(awt)] sandbox: Sandbox) -> Env {
+    Env::new(sandbox).boxed().await
 }
 
 #[autoimpl(Deref using self.sandbox)]
@@ -44,8 +44,7 @@ pub struct Env {
 }
 
 impl Env {
-    pub async fn new() -> Self {
-        let sandbox = sandbox(NearToken::from_near(100_000)).await;
+    pub async fn new(sandbox: Sandbox) -> Self {
         let root = sandbox.root();
 
         let (
