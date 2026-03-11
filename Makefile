@@ -29,21 +29,18 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
     "\($$makedir)/\($$name)" as $$default_outdir | \
     "$$(eval .PHONY: \($$name))", \
     "$$(eval ALL_TARGETS += \($$name))", \
-    ("$$(eval .\($$name):;  \($$base_cmd) --manifest-path=\($$mp) --out-dir=\($$default_outdir))",  \
-    ("$$(eval \($$name): .\($$name); " + \
-         "-@(mv -v \($$default_outdir)/\($$wasm_base).wasm \($$outdir)/\($$wasm_base).wasm" + \
-         ";mv -v \($$default_outdir)/\($$wasm_base)_abi.json \($$outdir)/\($$wasm_base).abi.json) 2>/dev/null)") \
-    ), \
+    "$$(eval \($$name)::;  \($$base_cmd) --manifest-path=\($$mp) --out-dir=\($$default_outdir))",  \
+    "$$(eval \($$name)::; -@cp -v \($$default_outdir)/\($$wasm_base).wasm \($$outdir)/\($$wasm_base).wasm)", \
+    "$$(eval \($$name)::; -@cp -v \($$default_outdir)/\($$wasm_base)_abi.json \($$outdir)/\($$wasm_base).abi.json)", \
     ($$b.variant // {} | to_entries[] | \
      "\($$name)/\(.key)" as $$vname | \
      "\($$makedir)/\($$name)/\(.key)" as $$variant_outdir | \
      (if $$reproducible != "" then "cargo near build reproducible-wasm --variant=\(.key)" else (.value.container_build_command | join(" ")) end) as $$vcmd | \
      "$$(eval .PHONY: \($$vname))", \
      "$$(eval ALL_TARGETS += \($$vname))", \
-     "$$(eval .\($$vname):;  \($$vcmd) --manifest-path=\($$mp) --out-dir=\($$variant_outdir))",  \
-     ("$$(eval \($$vname): .\($$vname); " + \
-         "-@(mv -v \($$variant_outdir)/\($$wasm_base).wasm \($$outdir)/\($$wasm_base).\(.key).wasm" + \
-         ";mv -v \($$variant_outdir)/\($$wasm_base)_abi.json \($$outdir)/\($$wasm_base).\(.key).abi.json) 2>/dev/null )") \
+     "$$(eval \($$vname)::;  \($$vcmd) --manifest-path=\($$mp) --out-dir=\($$variant_outdir))",  \
+     "$$(eval \($$vname)::; -@cp -v \($$variant_outdir)/\($$wasm_base).wasm \($$outdir)/\($$wasm_base).\(.key).wasm)", \
+     "$$(eval \($$vname)::; -@cp -v \($$variant_outdir)/\($$wasm_base)_abi.json \($$outdir)/\($$wasm_base).\(.key).abi.json)" \
     ), \
     "$$(eval .PHONY: \($$name)/all)", \
     "$$(eval ALL_TARGETS +=  \($$name)/all)", \
