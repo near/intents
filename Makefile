@@ -1,6 +1,12 @@
 ROOT_DIR := $(dir $(abspath $(firstword $(MAKEFILE_LIST))))
 DEFUSE_OUT_DIR ?= $(ROOT_DIR)res
-MAKE_OUT_DIR ?= $(ROOT_DIR)target/makenear
+MAKE_OUT_DIR_PREFIX ?= $(ROOT_DIR)target/makenear
+MAKE_OUT_DIR = $(eval MAKE_OUT_DIR := $(shell mkdir -p $(MAKE_OUT_DIR_PREFIX) $(DEFUSE_OUT_DIR) && mktemp -d -p $(MAKE_OUT_DIR_PREFIX)))$(MAKE_OUT_DIR)
+
+
+
+init: 
+    $(eval MAKE_OUT_DIR := $(shell mkdir -p $(MAKE_OUT_DIR_PREFIX) $(DEFUSE_OUT_DIR) && mktemp -d -p $(MAKE_OUT_DIR_PREFIX)))
 
 .DEFAULT_GOAL := all
 CONTRACT_CRATES := \
@@ -27,24 +33,21 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
     "$(MAKE_OUT_DIR)/\($$name)" as $$default_outdir | \
     "$$(eval .PHONY: \($$name))", \
     "$$(eval ALL_TARGETS += \($$name))", \
-    ("$$(eval \($$name):;" + \
-        " rm -rf \($$default_outdir)" + \
-        " && mkdir -p \($$outdir)" + \
-        " && \($$base_cmd) --manifest-path=\($$mp) --out-dir=\($$default_outdir)" + \
-        " && cp \($$default_outdir)/\($$wasm_base).wasm \($$outdir)/\($$wasm_base).wasm" + \
-        " && cp \($$default_outdir)/\($$wasm_base)_abi.json \($$outdir)/\($$wasm_base)_abi.json)"), \
+    ("$$(eval .\($$name): init;  \($$base_cmd) --manifest-path=\($$mp) --out-dir=\($$default_outdir))",  \
+    ("$$(eval \($$name): .\($$name); " + \
+         "-@(mv -v \($$default_outdir)/\($$wasm_base).wasm \($$outdir)/\($$wasm_base).wasm" + \
+         ";mv -v \($$default_outdir)/\($$wasm_base)_abi.json \($$outdir)/\($$wasm_base).abi.json) 2>/dev/null)") \
+    ), \
     ($$b.variant // {} | to_entries[] | \
      "\($$name)/\(.key)" as $$vname | \
-     "$(MAKE_OUT_DIR)/\($$name)____\(.key)" as $$variant_outdir | \
+     "$(MAKE_OUT_DIR)/\($$name)/\(.key)" as $$variant_outdir | \
      (if $$reproducible != "" then "cargo near build reproducible-wasm --variant=\(.key)" else (.value.container_build_command | join(" ")) end) as $$vcmd | \
      "$$(eval .PHONY: \($$vname))", \
      "$$(eval ALL_TARGETS += \($$vname))", \
-     ("$$(eval \($$vname):;" + \
-         " rm -rf \($$variant_outdir)" + \
-         " && mkdir -p \($$outdir)" + \
-         " && \($$vcmd) --manifest-path=\($$mp) --out-dir=\($$variant_outdir)" + \
-         " && cp \($$variant_outdir)/\($$wasm_base).wasm \($$outdir)/\($$wasm_base).\(.key).wasm" + \
-         " && cp \($$variant_outdir)/\($$wasm_base)_abi.json \($$outdir)/\($$wasm_base).\(.key)_abi.json)") \
+     "$$(eval .\($$vname): init;  \($$vcmd) --manifest-path=\($$mp) --out-dir=\($$variant_outdir))",  \
+     ("$$(eval \($$vname): .\($$vname); " + \
+         "-@(mv -v \($$variant_outdir)/\($$wasm_base).wasm \($$outdir)/\($$wasm_base).\(.key).wasm" + \
+         ";mv -v \($$variant_outdir)/\($$wasm_base)_abi.json \($$outdir)/\($$wasm_base).\(.key).abi.json) 2>/dev/null )") \
     ), \
     "$$(eval .PHONY: \($$name)/all)", \
     "$$(eval ALL_TARGETS +=  \($$name)/all)", \
@@ -71,7 +74,7 @@ help:
 
 .PHONY: clean-out-dir
 clean-out-dir:
-	rm -rf $(DEFUSE_OUT_DIR)
+	rm -rf $(DEFUSE_OUT_DIR) $(MAKE_OUT_DIR_PREFIX)
 
 .PHONY: clean
 clean: clean-out-dir
