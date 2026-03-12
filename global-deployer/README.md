@@ -192,22 +192,22 @@ The `state_init` CLI tool computes the `StateInit` for a global-deployer contrac
 ### Usage
 
 ```
-cargo run -p defuse-global-deployer --example state_init -- [OPTIONS] --owner-id <OWNER_ID>
+cargo run -p defuse-global-deployer --example state_init -- [OPTIONS] --owner-id <AccountId>
 ```
 
 ```
 Compute StateInit for a global-deployer contract
 
-Usage: state_init [OPTIONS] --owner-id <OWNER_ID>
+Usage: state_init [OPTIONS] --owner-id <AccountId>
 
 Options:
-      --owner-id <OWNER_ID>  Owner account ID
-      --index <INDEX>        Unique index for the deployer instance. Can be used to derive multiple
-                             deployers for a single owner [default: 0]
-      --approve <APPROVE>    Pre-approve SHA-256 code hash (hex): first `gd_deploy()` won't require
-                             `gd_approve()`
-  -q, --quiet                Output single-line JSON with base64-encoded keys/values
-  -h, --help                 Print help
+      --owner-id <AccountId>  Owner account ID
+  -i, --index <N>             Unique index for the deployer instance. Can be used to derive multiple
+                              deployers for a single owner [default: 0]
+      --approve <HASH>        Pre-approve SHA-256 code hash (hex): first `gd_deploy()` won't require
+                              `gd_approve()`
+  -q, --quiet                 Output single-line JSON with base64-encoded keys/values
+  -h, --help                  Print help
 ```
 
 ### Example
