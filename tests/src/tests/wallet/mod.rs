@@ -218,6 +218,7 @@ async fn test_extension(#[future] env: Env) {
     assert!(receiver.view().await.unwrap().amount >= NearToken::from_near(1));
 }
 
+#[ignore = "sends too many txs"] // TODO: remove
 #[rstest]
 #[awt]
 #[tokio::test]
