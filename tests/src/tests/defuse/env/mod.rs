@@ -34,6 +34,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 const TOKEN_STORAGE_DEPOSIT: NearToken = NearToken::from_near(1);
 const INITIAL_USER_BALANCE: NearToken = NearToken::from_near(10);
 
+// TODO: implement it as a fixture
 #[autoimpl(Deref using self.sandbox)]
 pub struct Env {
     sandbox: Sandbox,

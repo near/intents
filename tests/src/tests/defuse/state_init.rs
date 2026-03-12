@@ -272,8 +272,12 @@ async fn test_auth_call_state_init_via_execute_intents(
     };
 
     let num_keys: u8 = num_keys.try_into().unwrap();
+    let concurrency_limit = 10;
 
-    let env = Env::builder().build().await;
+    let env = Env::builder()
+        .concurrency_limit(concurrency_limit)
+        .build()
+        .await;
     env.root()
         .deploy_global_contract(
             MT_RECEIVER_STUB_WASM.clone(),
@@ -338,7 +342,10 @@ async fn test_auth_call_state_init_via_execute_intents(
                 }
             });
 
-    let results: Vec<bool> = stream::iter(futures).buffer_unordered(10).collect().await;
+    let results: Vec<bool> = stream::iter(futures)
+        .buffer_unordered(concurrency_limit)
+        .collect()
+        .await;
     let success = results.contains(&true);
     assert_eq!(success, expect_success);
 }
@@ -383,8 +390,13 @@ async fn test_auth_call_state_init_via_do_auth_call(
     };
 
     let num_keys: u8 = num_keys.try_into().unwrap();
+    let concurrency_limit = 10;
 
-    let env = Env::builder().build().await;
+    let env = Env::builder()
+        .concurrency_limit(concurrency_limit)
+        .build()
+        .await;
+
     env.root()
         .deploy_global_contract(
             MT_RECEIVER_STUB_WASM.clone(),
@@ -452,7 +464,10 @@ async fn test_auth_call_state_init_via_do_auth_call(
             }
         });
 
-    let results: Vec<bool> = stream::iter(futures).buffer_unordered(10).collect().await;
+    let results: Vec<bool> = stream::iter(futures)
+        .buffer_unordered(concurrency_limit)
+        .collect()
+        .await;
     let success = results.contains(&true);
     assert_eq!(success, expect_success);
 }
