@@ -1,5 +1,5 @@
 use defuse::core::intents::MaybeIntentEvent;
-use defuse_randomness::Rng;
+use defuse_randomness::{Rng, RngExt};
 use defuse_sandbox::extensions::defuse::contract::core::{
     Deadline, Nonce,
     accounts::{AccountEvent, NonceEvent},

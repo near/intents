@@ -8,7 +8,7 @@ use builder::EnvBuilder;
 
 use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;
-use defuse_randomness::{Rng, make_true_rng};
+use defuse_randomness::{RngExt, make_true_rng};
 use defuse_sandbox::extensions::defuse::contract::{
     core::{Deadline, Nonce},
     tokens::{DepositAction, DepositMessage},

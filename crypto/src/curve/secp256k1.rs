@@ -1,6 +1,12 @@
-use near_sdk::{CryptoHash, env};
+use core::fmt::{self, Debug, Display};
+use std::str::FromStr;
 
-use super::{Curve, CurveType, TypedCurve};
+use near_sdk::{
+    CryptoHash, env, near,
+    serde_with::{DeserializeFromStr, SerializeDisplay},
+};
+
+use crate::{Curve, CurveType, ParseCurveError, TypedCurve};
 
 pub struct Secp256k1;
 
@@ -40,4 +46,62 @@ impl Curve for Secp256k1 {
 
 impl TypedCurve for Secp256k1 {
     const CURVE_TYPE: CurveType = CurveType::Secp256k1;
+}
+
+#[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
+#[near(serializers = [borsh])]
+#[derive(
+    Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr,
+)]
+#[serde_with(crate = "::near_sdk::serde_with")]
+#[repr(transparent)]
+pub struct Secp256k1PublicKey(pub <Secp256k1 as Curve>::PublicKey);
+
+impl Debug for Secp256k1PublicKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        Display::fmt(self, f)
+    }
+}
+
+impl Display for Secp256k1PublicKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&<Secp256k1 as TypedCurve>::to_base58(self.0))
+    }
+}
+
+impl FromStr for Secp256k1PublicKey {
+    type Err = ParseCurveError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Secp256k1::parse_base58(s).map(Self)
+    }
+}
+
+#[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
+#[near(serializers = [borsh])]
+#[derive(
+    Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr,
+)]
+#[serde_with(crate = "::near_sdk::serde_with")]
+#[repr(transparent)]
+pub struct Secp256k1Signature(pub <Secp256k1 as Curve>::Signature);
+
+impl Debug for Secp256k1Signature {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        Display::fmt(self, f)
+    }
+}
+
+impl Display for Secp256k1Signature {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&<Secp256k1 as TypedCurve>::to_base58(self.0))
+    }
+}
+
+impl FromStr for Secp256k1Signature {
+    type Err = ParseCurveError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Secp256k1::parse_base58(s).map(Self)
+    }
 }
