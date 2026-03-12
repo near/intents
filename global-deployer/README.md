@@ -192,7 +192,7 @@ The `state_init` CLI tool computes the `StateInit` for a global-deployer contrac
 ### Usage
 
 ```
-cargo run -p defuse-global-deployer --example state_init -- [OPTIONS] --owner-id <AccountId>
+cargo gds [OPTIONS] --owner-id <AccountId>
 ```
 
 ```
@@ -213,8 +213,7 @@ Options:
 ### Example
 
 ```bash
-cargo run -p defuse-global-deployer --example state_init -- \
-  --owner-id test.near --index 1
+cargo gds --owner-id test.near --index 1
 ```
 ```
 owner_id:       test.near
@@ -227,9 +226,9 @@ Use `-q` / `--quiet` to suppress stderr and emit only JSON, useful for piping in
 
 ```bash
 near contract state-init \
-  use-global-account-id 0s29e346108955b88c2d180a4ba17662b1f2cc1028 \
-  data-from-json "$(cargo run --quiet -p defuse-global-deployer --example state_init -- \
-    --owner-id intents.sputnik-dao.near --index 44 \
+  use-global-account-id 0s384bfa53f1718c7f53eaaa1b43c55e2aea3ef309 \
+  data-from-json "$(cargo gds \
+    --owner-id intents.sputnik-dao.near --index 42 \
     --approve 6c71114931fe91153b868f2cb29c5db70e59677d6d2e40404b3b9044d8052266 \
     --quiet)"
 ```

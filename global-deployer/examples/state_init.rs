@@ -1,14 +1,18 @@
 use clap::Parser;
 use defuse_global_deployer::State;
-use near_sdk::{AccountId, base64::prelude::*};
+use near_sdk::{AccountId, base64::prelude::*, bs58};
 use std::collections::BTreeMap;
 
 fn parse_hex_hash(s: &str) -> Result<[u8; 32], String> {
-    let s = s.strip_prefix("0x").unwrap_or(s);
-    let bytes = hex::decode(s).map_err(|e| format!("invalid hex: {e}"))?;
-    bytes
-        .try_into()
-        .map_err(|_| "hash must be exactly 32 bytes".to_string())
+    if let Some(s) = s.strip_prefix("0x") {
+        hex::decode(s).map_err(|err| format!("hex: {err}"))?
+    } else {
+        bs58::decode(s)
+            .into_vec()
+            .map_err(|err| format!("base58: {err}"))?
+    }
+    .try_into()
+    .map_err(|_| "hash must be 32 bytes encoded via hex or base58".to_string())
 }
 
 #[derive(Parser)]
@@ -23,7 +27,8 @@ struct Args {
     #[arg(long, short, default_value_t = 0, value_name = "N")]
     index: u32,
 
-    /// Pre-approve SHA-256 code hash (hex): first `gd_deploy()` won't require `gd_approve()`
+    /// Pre-approve SHA-256 code hash: first `gd_deploy()` won't require `gd_approve()`.
+    /// Hash can be encoded as base58 or hex with `0x` prefix
     #[arg(long, value_parser = parse_hex_hash, value_name = "HASH")]
     approve: Option<[u8; 32]>,
 
