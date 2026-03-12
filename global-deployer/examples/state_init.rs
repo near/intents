@@ -11,16 +11,39 @@ fn parse_hex_hash(s: &str) -> Result<[u8; 32], String> {
         .map_err(|_| "hash must be exactly 32 bytes".to_string())
 }
 
+#[derive(clap::Args)]
+#[group(required = true, multiple = false)]
+struct CodeHashArg {
+    #[arg(long, value_parser = parse_hex_hash)]
+    code_hash: Option<[u8; 32]>,
+
+    #[arg(long)]
+    index: Option<u128>,
+}
+
+impl CodeHashArg {
+    fn into_hash(self) -> [u8; 32] {
+        self.code_hash
+            .or_else(|| {
+                self.index.map(|idx| {
+                    let mut hash = [0u8; 32];
+                    hash[16..].copy_from_slice(&idx.to_be_bytes());
+                    hash
+                })
+            })
+            .unwrap_or_else(|| unreachable!())
+    }
+}
+
 #[derive(Parser)]
 #[command(about = "Compute StateInit for a global-deployer contract")]
 struct Args {
     /// Owner account ID
     #[arg(long)]
-    owner: AccountId,
+    owner_id: AccountId,
 
-    /// Hex-encoded 32-byte code hash
-    #[arg(long, value_parser = parse_hex_hash)]
-    code_hash: [u8; 32],
+    #[command(flatten)]
+    code_hash: CodeHashArg,
 
     /// Hex-encoded 32-byte approved hash
     #[arg(long, value_parser = parse_hex_hash)]
@@ -34,9 +57,11 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
+    let code_hash = args.code_hash.into_hash();
+
     let state = State {
-        owner_id: args.owner,
-        code_hash: args.code_hash,
+        owner_id: args.owner_id,
+        code_hash,
         approved_hash: args.approved_hash,
     };
 
@@ -45,9 +70,9 @@ fn main() {
     if !args.quiet {
         eprintln!("State:");
         eprintln!("  {:<15} {}", "owner_id:", state.owner_id);
-        eprintln!("  {:<15} 0x{}", "code_hash:", hex::encode(state.code_hash));
+        eprintln!("  {:<15} {}", "code_hash:", hex::encode(state.code_hash));
         eprintln!(
-            "  {:<15} 0x{}",
+            "  {:<15} {}",
             "approved_hash:",
             hex::encode(state.approved_hash),
         );
