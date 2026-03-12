@@ -20,7 +20,7 @@ struct Args {
 
     /// Unique index for the deployer instance.
     /// Can be used to derive multiple deployers for a single owner
-    #[arg(long, default_value_t = 0)]
+    #[arg(long, short, default_value_t = 0, value_name = "N")]
     index: u32,
 
     /// Pre-approve SHA-256 code hash (hex): first `gd_deploy()` won't require `gd_approve()`
