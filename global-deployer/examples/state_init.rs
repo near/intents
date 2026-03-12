@@ -11,32 +11,6 @@ fn parse_hex_hash(s: &str) -> Result<[u8; 32], String> {
         .map_err(|_| "hash must be exactly 32 bytes".to_string())
 }
 
-#[derive(clap::Args)]
-#[group(required = true, multiple = false)]
-struct CodeHashArg {
-    /// Hex-encoded 32-byte code hash
-    #[arg(long, value_parser = parse_hex_hash)]
-    code_hash: Option<[u8; 32]>,
-
-    /// Code hash index (to be serialized as code hash)
-    #[arg(long)]
-    index: Option<u32>,
-}
-
-impl CodeHashArg {
-    fn into_hash(self) -> [u8; 32] {
-        self.code_hash
-            .or_else(|| {
-                self.index.map(|idx| {
-                    let mut hash = [0u8; 32];
-                    hash[32 - 4..].copy_from_slice(&idx.to_be_bytes());
-                    hash
-                })
-            })
-            .unwrap_or_else(|| unreachable!())
-    }
-}
-
 #[derive(Parser)]
 #[command(about = "Compute StateInit for a global-deployer contract")]
 struct Args {
@@ -44,12 +18,14 @@ struct Args {
     #[arg(long)]
     owner_id: AccountId,
 
-    #[command(flatten)]
-    code_hash: CodeHashArg,
+    /// Unique index for the deployer instance.
+    /// Can be used to derive multiple deployers for a single owner
+    #[arg(long, default_value_t = 0)]
+    index: u32,
 
-    /// Hex-encoded 32-byte approved hash
+    /// Pre-approve SHA-256 code hash (hex): first `gd_deploy()` won't require `gd_approve()`
     #[arg(long, value_parser = parse_hex_hash)]
-    approved_hash: Option<[u8; 32]>,
+    approve: Option<[u8; 32]>,
 
     /// Output single-line JSON with base64-encoded keys/values
     #[arg(short, long)]
@@ -59,8 +35,9 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    let code_hash = args.code_hash.into_hash();
-    let approved_hash = args.approved_hash.unwrap_or([0u8; 32]);
+    let mut code_hash = [0u8; 32];
+    code_hash[32 - 4..].copy_from_slice(&args.index.to_be_bytes());
+    let approved_hash = args.approve.unwrap_or([0u8; 32]);
 
     let state = State {
         owner_id: args.owner_id,
