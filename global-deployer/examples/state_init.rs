@@ -15,7 +15,7 @@ fn parse_hex_hash(s: &str) -> Result<[u8; 32], String> {
 #[command(about = "Compute StateInit for a global-deployer contract")]
 struct Args {
     /// Owner account ID
-    #[arg(long)]
+    #[arg(long, value_name = "AccountId")]
     owner_id: AccountId,
 
     /// Unique index for the deployer instance.
