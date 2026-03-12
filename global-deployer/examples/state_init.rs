@@ -20,7 +20,7 @@ struct CodeHashArg {
 
     /// Code hash index (to be serialized as code hash)
     #[arg(long)]
-    index: Option<u128>,
+    index: Option<u32>,
 }
 
 impl CodeHashArg {
@@ -29,7 +29,7 @@ impl CodeHashArg {
             .or_else(|| {
                 self.index.map(|idx| {
                     let mut hash = [0u8; 32];
-                    hash[16..].copy_from_slice(&idx.to_be_bytes());
+                    hash[32 - 4..].copy_from_slice(&idx.to_be_bytes());
                     hash
                 })
             })
