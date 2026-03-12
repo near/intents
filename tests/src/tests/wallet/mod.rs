@@ -15,7 +15,7 @@ use defuse_wallet::{
         ed25519::{Ed25519, Ed25519PublicKey, Ed25519Signature},
     },
 };
-use futures::{TryStreamExt, stream::FuturesUnordered};
+use futures::{StreamExt, TryStreamExt, stream};
 use impl_tools::autoimpl;
 use near_crypto::{KeyType, SecretKey, Signature};
 use near_sdk::{
@@ -234,21 +234,23 @@ async fn test_no_storage_staking(#[future] env: Env) {
         .await
         .unwrap();
 
-    (0..wallet.init_state.nonces.timeout().as_secs() * 2)
-        .map(|_n| wallet.sign(Request::new()))
-        .map(|(msg, proof)| {
-            let env = &env;
-            let wallet_id = wallet_id.clone();
-            async move {
-                env.w_execute_signed(wallet_id, None, msg, proof, NearToken::ZERO)
-                    .await
-                    .map(|_| ())
-            }
-        })
-        .collect::<FuturesUnordered<_>>()
-        .try_collect::<()>()
-        .await
-        .unwrap();
+    stream::iter(
+        (0..wallet.init_state.nonces.timeout().as_secs() * 2)
+            .map(|_n| wallet.sign(Request::new()))
+            .map(|(msg, proof)| {
+                let env = &env;
+                let wallet_id = wallet_id.clone();
+                async move {
+                    env.w_execute_signed(wallet_id, None, msg, proof, NearToken::ZERO)
+                        .await
+                        .map(|_| ())
+                }
+            }),
+    )
+    .buffer_unordered(100)
+    .try_collect::<()>()
+    .await
+    .unwrap();
 
     dbg!(wallet_account.view().await.unwrap());
 }
