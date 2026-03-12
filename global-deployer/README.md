@@ -184,3 +184,51 @@ If consecutive upgrades are needed (e.g. H1 → H2 → H3), they can be prepared
 - A deterministic account ID is derived from `StateInit` at creation. After `gd_approve` mutates state, on-chain state diverges from what the address was derived from.
 - Upgrading Controller code propagates to all future instances (deploy-by-account-id).
 - The GD deployed by hash once is the **immutable foundation** for the whole hierarchy.
+
+## `state_init` CLI
+
+The `state_init` CLI tool computes the `StateInit` for a global-deployer contract, outputting a JSON map of base64-encoded key-value pairs.
+
+### Usage
+
+```
+cargo run -p defuse-global-deployer --example state_init -- [OPTIONS] --owner-id <OWNER_ID> <--code-hash <CODE_HASH>|--index <INDEX>>
+```
+
+```
+Compute StateInit for a global-deployer contract
+
+Usage: state_init [OPTIONS] --owner-id <OWNER_ID> <--code-hash <CODE_HASH>|--index <INDEX>>
+
+Options:
+      --owner-id <OWNER_ID>            Owner account ID
+      --code-hash <CODE_HASH>          Hex-encoded 32-byte code hash
+      --index <INDEX>                  Code hash index (to be serialized as code hash)
+      --approved-hash <APPROVED_HASH>  Hex-encoded 32-byte approved hash
+  -q, --quiet                          Output single-line JSON with base64-encoded keys/values
+  -h, --help                           Print help
+```
+
+### Example
+
+```bash
+cargo run -p defuse-global-deployer --example state_init -- \
+  --owner-id test.near --index 1
+```
+```
+owner_id:       test.near
+code_hash:      0000000000000000000000000000000000000000000000000000000000000001
+approved_hash:  0000000000000000000000000000000000000000000000000000000000000000
+{"":"CQAAAHRlc3QubmVhcgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}
+```
+
+Use `-q` / `--quiet` to suppress stderr and emit only JSON, useful for piping into other tools like `near-cli` (supported after [near-cli-rs#560](https://github.com/near/near-cli-rs/pull/560) is released):
+
+```bash
+near contract state-init \
+  use-global-account-id 0s29e346108955b88c2d180a4ba17662b1f2cc1028 \
+  data-from-json "$(cargo run --quiet -p defuse-global-deployer --example state_init -- \
+    --owner-id intents.sputnik-dao.near --index 44 \
+    --approved-hash 6c71114931fe91153b868f2cb29c5db70e59677d6d2e40404b3b9044d8052266 \
+    --quiet)"
+```
