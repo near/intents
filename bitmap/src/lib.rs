@@ -1,81 +1,72 @@
-use defuse_map_utils::{IterableMap, Map};
+mod b256;
+
+pub use self::b256::*;
+
+use core::ops::{DerefMut, RangeInclusive, Shl};
+
+use defuse_map_utils::{IterableMap, Map, cleanup::DefaultMap};
 use near_sdk::near;
+use num_traits::{One, PrimInt, Zero};
 
-pub type U256 = [u8; 32];
-pub type U248 = [u8; 31];
-
-/// 256-bit map.  
-/// See [permit2 nonce schema](https://docs.uniswap.org/contracts/permit2/reference/signature-transfer#nonce-schema)
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+/// Bitmap for primitive types
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, Default)]
-pub struct BitMap256<T: Map<K = U248, V = U256>>(T);
+#[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(transparent)]
+pub struct BitMap<M>(M);
 
-impl<T> BitMap256<T>
+impl<M> BitMap<M>
 where
-    T: Map<K = U248, V = U256>,
+    M: DefaultMap<K = <M as Map>::V>,
+    M::K: PrimInt + Shl<M::K, Output = M::K>,
 {
+    #[allow(clippy::as_conversions)]
+    const BITS_FOR_BIT_POS: usize = (size_of::<M::K>() * 8).ilog2() as usize;
+
     #[inline]
-    pub const fn new(map: T) -> Self {
+    pub const fn new(map: M) -> Self {
         Self(map)
     }
 
     /// Get the bit `n`
     #[inline]
-    pub fn get_bit(&self, n: U256) -> bool {
-        let [word_pos @ .., bit_pos] = n;
-        let Some(bitmap) = self.0.get(&word_pos) else {
+    pub fn get_bit(&self, n: M::K) -> bool {
+        let (word, bit_mask) = Self::split_word_mask(n);
+        let Some(bitmap) = self.0.get(&word) else {
             return false;
         };
-        let byte = bitmap[usize::from(bit_pos / 8)];
-        let byte_mask = 1 << (bit_pos % 8);
-        byte & byte_mask != 0
-    }
-
-    #[inline]
-    fn get_mut_byte_with_mask(&mut self, n: U256) -> (&mut u8, u8) {
-        let [word_pos @ .., bit_pos] = n;
-        let bitmap = self.0.entry(word_pos).or_default();
-        let byte = &mut bitmap[usize::from(bit_pos / 8)];
-        let byte_mask = 1 << (bit_pos % 8);
-        (byte, byte_mask)
-    }
-
-    #[inline]
-    pub fn cleanup_by_prefix(&mut self, prefix: U248) -> bool {
-        self.0.remove(&prefix).is_some()
+        *bitmap & bit_mask != M::V::zero()
     }
 
     /// Set the bit `n` and return old value
     #[inline]
-    pub fn set_bit(&mut self, n: U256) -> bool {
-        let (byte, mask) = self.get_mut_byte_with_mask(n);
-        let old = *byte & mask != 0;
-        *byte |= mask;
+    pub fn set_bit(&mut self, n: M::K) -> bool {
+        let (mut bitmap, mask) = self.get_mut_with_mask(n);
+        let old = *bitmap & mask != M::V::zero();
+        *bitmap = *bitmap | mask;
         old
     }
 
     /// Clear the bit `n` and return old value
     #[inline]
-    pub fn clear_bit(&mut self, n: U256) -> bool {
-        let (byte, mask) = self.get_mut_byte_with_mask(n);
-        let old = *byte & mask != 0;
-        *byte &= !mask;
+    pub fn clear_bit(&mut self, n: M::K) -> bool {
+        let (mut bitmap, mask) = self.get_mut_with_mask(n);
+        let old = *bitmap & mask != M::V::zero();
+        *bitmap = *bitmap & !mask;
         old
     }
 
     /// Toggle the bit `n` and return old value
     #[inline]
-    pub fn toggle_bit(&mut self, n: U256) -> bool {
-        let (byte, mask) = self.get_mut_byte_with_mask(n);
-        let old = *byte & mask != 0;
-        *byte ^= mask;
+    pub fn toggle_bit(&mut self, n: M::K) -> bool {
+        let (mut bitmap, mask) = self.get_mut_with_mask(n);
+        let old = *bitmap & mask != M::V::zero();
+        *bitmap = *bitmap ^ mask;
         old
     }
 
-    /// Set bit `n` to given value
+    /// Set bit `n` to given value and return old value
     #[inline]
-    pub fn set_bit_to(&mut self, n: U256, v: bool) -> bool {
+    pub fn set_bit_to(&mut self, n: M::K, v: bool) -> bool {
         if v {
             self.set_bit(n)
         } else {
@@ -83,46 +74,64 @@ where
         }
     }
 
-    /// Iterate over set U256
-    #[inline]
-    pub fn as_iter(&self) -> impl Iterator<Item = U256> + '_
+    /// Iterate over set bits
+    pub fn as_iter(&self) -> impl Iterator<Item = M::V> + '_
     where
-        T: IterableMap,
+        M: IterableMap,
+        RangeInclusive<M::V>: Iterator<Item = M::V>,
     {
         self.0.iter().flat_map(|(prefix, bitmap)| {
-            (0..=u8::MAX)
+            (M::V::zero()..=Self::bit_pos_mask())
                 .filter(|&bit_pos| {
-                    let byte = bitmap[usize::from(bit_pos / 8)];
-                    let byte_mask = 1 << (bit_pos % 8);
-                    byte & byte_mask != 0
+                    let bit_mask = M::V::one() << bit_pos;
+                    *bitmap & bit_mask != M::V::zero()
                 })
-                .map(|bit_pos| {
-                    let mut nonce: U256 = [0; 32];
-                    nonce[..prefix.len()].copy_from_slice(prefix);
-                    nonce[prefix.len()..].copy_from_slice(&[bit_pos]);
-                    nonce
-                })
+                .map(|bit_pos| (*prefix << Self::BITS_FOR_BIT_POS) | bit_pos)
         })
+    }
+
+    #[inline]
+    fn get_mut_with_mask(&mut self, n: M::K) -> (impl DerefMut<Target = M::V>, M::V) {
+        let (word, bit_mask) = Self::split_word_mask(n);
+        (self.0.entry_or_default(word), bit_mask)
+    }
+
+    /// Returns `(word, bit_pos_mask)`
+    #[inline]
+    fn split_word_mask(n: M::K) -> (M::K, M::V) {
+        let word = n >> Self::BITS_FOR_BIT_POS;
+        let bit_mask = M::V::one() << (n & Self::bit_pos_mask());
+        (word, bit_mask)
+    }
+
+    #[inline]
+    fn bit_pos_mask() -> M::V {
+        (M::V::one() << Self::BITS_FOR_BIT_POS) - M::V::one()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::collections::{HashMap, HashSet};
+    use std::{collections::BTreeMap, fmt::Debug};
 
-    use bnum::BUintD8;
-    use hex_literal::hex;
     use rstest::rstest;
 
     use super::*;
 
-    #[test]
-    fn test() {
-        type N = BUintD8<32>;
+    #[allow(clippy::used_underscore_binding)]
+    #[rstest]
+    fn test<T>(#[values(0u8, 0u16, 0u32, 0u64, 0u128)] _n: T)
+    where
+        T: PrimInt + Shl<T, Output = T> + Default,
+    {
+        let mut m = BitMap::<BTreeMap<T, T>>::default();
 
-        let mut m = BitMap256::<HashMap<U248, U256>>::default();
-
-        for n in [N::ZERO, N::ONE, N::MAX - N::ONE, N::MAX].map(Into::into) {
+        for n in [
+            T::zero(),
+            T::one(),
+            T::max_value() - T::one(),
+            T::max_value(),
+        ] {
             assert!(!m.get_bit(n));
 
             assert!(!m.set_bit(n));
@@ -138,18 +147,23 @@ mod tests {
     }
 
     #[rstest]
-    #[case(&[])]
-    #[case(&[hex!("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")])]
-    #[case(&[hex!("0000000000000000000000000000000000000000000000000000000000000000"), hex!("0000000000000000000000000000000000000000000000000000000000000001")])]
-    #[case(&[hex!("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00"), hex!("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")])]
-    #[case(&[hex!("0000000000000000000000000000000000000000000000000000000000000000"), hex!("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")])]
-    fn iter(#[case] nonces: &[U256]) {
-        let mut m = BitMap256::<HashMap<U248, U256>>::default();
-        for n in nonces {
+    fn as_iter<T>(
+        #[values(
+            Vec::<u8>::new(),
+            vec![0u8],
+            vec![3u16, 0, 2, 7, u16::MAX],
+            vec![1000u32, 15, 23, 717, 999, u32::MAX],
+        )]
+        mut ns: Vec<T>,
+    ) where
+        RangeInclusive<T>: Iterator<Item = T>,
+        T: PrimInt + Shl<T, Output = T> + Debug + Default,
+    {
+        let mut m = BitMap::<BTreeMap<T, T>>::default();
+        for n in &ns {
             assert!(!m.set_bit(*n));
         }
-
-        let all: HashSet<_> = m.as_iter().collect();
-        assert_eq!(all, nonces.iter().copied().collect());
+        ns.sort();
+        assert_eq!(m.as_iter().collect::<Vec<_>>(), ns);
     }
 }

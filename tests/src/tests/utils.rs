@@ -1,5 +1,5 @@
 use defuse_fees::Pips;
-use defuse_randomness::Rng;
+use defuse_randomness::{Rng, RngExt};
 use defuse_test_utils::random::rng;
 use near_sdk::borsh;
 use rstest::rstest;

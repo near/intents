@@ -9,14 +9,15 @@ repository.workspace = true
 near-api = ["dep:near-api"]
 
 [dependencies]
-defuse-crypto = { workspace = true, features = ["serde"] }
+defuse-crypto = { workspace = true, default-features = false, features = [
+    "ed25519",
+] }
 defuse-near-utils.workspace = true
 defuse-nep461.workspace = true
 defuse-serde-utils.workspace = true
 
 impl-tools.workspace = true
 near-sdk.workspace = true
-serde_with.workspace = true
 
 near-api = { workspace = true, optional = true }
 

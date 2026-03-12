@@ -1,4 +1,4 @@
-use defuse_randomness::Rng;
+use defuse_randomness::{Rng, RngExt};
 
 /// Returns a new String where one character in `s` is replaced by a random lowercase ASCII letter.
 pub fn tamper_string(rng: &mut impl Rng, s: &str) -> String {

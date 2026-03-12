@@ -1,7 +1,6 @@
 use defuse_crypto::{CryptoHash, Curve, Payload, Secp256k1, SignedPayload, serde::AsCurve};
 use impl_tools::autoimpl;
-use near_sdk::{env, near};
-use serde_with::serde_as;
+use near_sdk::{env, near, serde_with::serde_as};
 
 /// See [ERC-191](https://github.com/ethereum/ercs/blob/master/ERCS/erc-191.md)
 #[near(serializers = [json])]

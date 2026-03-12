@@ -16,3 +16,5 @@ pub mod escrow;
 pub mod global_deployer;
 #[cfg(feature = "poa")]
 pub mod poa;
+#[cfg(feature = "wallet")]
+pub mod wallet;

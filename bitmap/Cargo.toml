@@ -8,10 +8,13 @@ repository.workspace = true
 [dependencies]
 defuse-map-utils.workspace = true
 
-arbitrary = { workspace = true, optional = true }
 near-sdk.workspace = true
+num-traits.workspace = true
+
+arbitrary = { workspace = true, optional = true }
 
 [features]
+abi = ["near-sdk/abi"]
 arbitrary = ["dep:arbitrary"]
 
 [dev-dependencies]
