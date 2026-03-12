@@ -14,9 +14,11 @@ fn parse_hex_hash(s: &str) -> Result<[u8; 32], String> {
 #[derive(clap::Args)]
 #[group(required = true, multiple = false)]
 struct CodeHashArg {
+    /// Hex-encoded 32-byte code hash
     #[arg(long, value_parser = parse_hex_hash)]
     code_hash: Option<[u8; 32]>,
 
+    /// Code hash index (to be serialized as code hash)
     #[arg(long)]
     index: Option<u128>,
 }
