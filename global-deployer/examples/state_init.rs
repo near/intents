@@ -49,7 +49,7 @@ struct Args {
 
     /// Hex-encoded 32-byte approved hash
     #[arg(long, value_parser = parse_hex_hash)]
-    approved_hash: [u8; 32],
+    approved_hash: Option<[u8; 32]>,
 
     /// Output single-line JSON with base64-encoded keys/values
     #[arg(short, long)]
@@ -60,21 +60,21 @@ fn main() {
     let args = Args::parse();
 
     let code_hash = args.code_hash.into_hash();
+    let approved_hash = args.approved_hash.unwrap_or([0u8; 32]);
 
     let state = State {
         owner_id: args.owner_id,
         code_hash,
-        approved_hash: args.approved_hash,
+        approved_hash,
     };
 
     let state_init = state.state_init();
 
     if !args.quiet {
-        eprintln!("State:");
-        eprintln!("  {:<15} {}", "owner_id:", state.owner_id);
-        eprintln!("  {:<15} {}", "code_hash:", hex::encode(state.code_hash));
+        eprintln!("{:<15} {}", "owner_id:", state.owner_id);
+        eprintln!("{:<15} {}", "code_hash:", hex::encode(state.code_hash));
         eprintln!(
-            "  {:<15} {}",
+            "{:<15} {}",
             "approved_hash:",
             hex::encode(state.approved_hash),
         );
