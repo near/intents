@@ -12,7 +12,7 @@ fn parse_hex_hash(s: &str) -> Result<[u8; 32], String> {
 }
 
 #[derive(Parser)]
-#[command(about = "Compute StateInit for a global-deployer contract", term_width = 0)]
+#[command(about = "Compute StateInit for a global-deployer contract")]
 struct Args {
     /// Owner account ID
     #[arg(long, value_name = "AccountId")]
