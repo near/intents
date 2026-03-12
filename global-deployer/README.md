@@ -192,21 +192,22 @@ The `state_init` CLI tool computes the `StateInit` for a global-deployer contrac
 ### Usage
 
 ```
-cargo run -p defuse-global-deployer --example state_init -- [OPTIONS] --owner-id <OWNER_ID> <--code-hash <CODE_HASH>|--index <INDEX>>
+cargo run -p defuse-global-deployer --example state_init -- [OPTIONS] --owner-id <OWNER_ID>
 ```
 
 ```
 Compute StateInit for a global-deployer contract
 
-Usage: state_init [OPTIONS] --owner-id <OWNER_ID> <--code-hash <CODE_HASH>|--index <INDEX>>
+Usage: state_init [OPTIONS] --owner-id <OWNER_ID>
 
 Options:
-      --owner-id <OWNER_ID>            Owner account ID
-      --code-hash <CODE_HASH>          Hex-encoded 32-byte code hash
-      --index <INDEX>                  Code hash index (to be serialized as code hash)
-      --approved-hash <APPROVED_HASH>  Hex-encoded 32-byte approved hash
-  -q, --quiet                          Output single-line JSON with base64-encoded keys/values
-  -h, --help                           Print help
+      --owner-id <OWNER_ID>  Owner account ID
+      --index <INDEX>        Unique index for the deployer instance. Can be used to derive multiple
+                             deployers for a single owner [default: 0]
+      --approve <APPROVE>    Pre-approve SHA-256 code hash (hex): first `gd_deploy()` won't require
+                             `gd_approve()`
+  -q, --quiet                Output single-line JSON with base64-encoded keys/values
+  -h, --help                 Print help
 ```
 
 ### Example
@@ -229,6 +230,6 @@ near contract state-init \
   use-global-account-id 0s29e346108955b88c2d180a4ba17662b1f2cc1028 \
   data-from-json "$(cargo run --quiet -p defuse-global-deployer --example state_init -- \
     --owner-id intents.sputnik-dao.near --index 44 \
-    --approved-hash 6c71114931fe91153b868f2cb29c5db70e59677d6d2e40404b3b9044d8052266 \
+    --approve 6c71114931fe91153b868f2cb29c5db70e59677d6d2e40404b3b9044d8052266 \
     --quiet)"
 ```

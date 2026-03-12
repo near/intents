@@ -25,7 +25,7 @@ defuse-serde-utils.workspace = true
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 
 [dev-dependencies]
-clap.workspace = true
+clap = { workspace = true, features = ["wrap_help"] }
 hex.workspace = true
 serde_json.workspace = true
 near-sdk = { workspace = true, features = ["non-contract-usage"] }
