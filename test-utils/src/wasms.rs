@@ -34,7 +34,7 @@ pub fn read_wasm(mode: &ReadWasmMode, path: impl AsRef<Path>) -> Vec<u8> {
 
 #[cfg(feature = "defuse")]
 pub static DEFUSE_FAR_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "far/defuse.wasm"));
+    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse.far.wasm"));
 #[cfg(feature = "defuse")]
 pub static DEFUSE_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse.wasm"));
@@ -44,15 +44,15 @@ pub static DEFUSE_LEGACY_WASM: LazyLock<Vec<u8>> =
 
 #[cfg(feature = "escrow")]
 pub static ESCROW_SWAP_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse_escrow_swap.wasm"));
+    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse-escrow-swap.wasm"));
 
 #[cfg(feature = "wallet")]
 pub static WALLET_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse_wallet.wasm"));
+    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse-wallet.wasm"));
 
 #[cfg(feature = "poa")]
 pub static POA_FACTORY_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse_poa_factory.wasm"));
+    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse-poa-factory.wasm"));
 
 pub static NON_FUNGIBLE_TOKEN_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
     read_wasm(
@@ -64,7 +64,7 @@ pub static NON_FUNGIBLE_TOKEN_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
 pub static MT_RECEIVER_STUB_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
     read_wasm(
         &ReadWasmMode::BuildArtifact,
-        "multi_token_receiver_stub.wasm",
+        "multi-token-receiver-stub.wasm",
     )
 });
 
@@ -72,4 +72,4 @@ pub static WNEAR_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm(&ReadWasmMode::WorkspaceRoot, "releases/wnear.wasm"));
 
 pub static DEPLOYER_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse_global_deployer.wasm"));
+    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse-global-deployer.wasm"));
