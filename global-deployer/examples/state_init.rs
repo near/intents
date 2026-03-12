@@ -24,7 +24,7 @@ struct Args {
     index: u32,
 
     /// Pre-approve SHA-256 code hash (hex): first `gd_deploy()` won't require `gd_approve()`
-    #[arg(long, value_parser = parse_hex_hash)]
+    #[arg(long, value_parser = parse_hex_hash, value_name = "HASH")]
     approve: Option<[u8; 32]>,
 
     /// Output single-line JSON with base64-encoded keys/values
