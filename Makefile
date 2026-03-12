@@ -1,4 +1,4 @@
-ROOT_DIR := $(dir $(abspath $(firstword $(MAKEFILE_LIST))))
+ROOT_DIR := $(dir $(firstword $(MAKEFILE_LIST)))
 DEFUSE_OUT_DIR ?= $(ROOT_DIR)res
 MAKE_OUT_DIR_PREFIX ?= $(ROOT_DIR)target/makenear
 MAKE_OUT_DIR = $(eval MAKE_OUT_DIR := $(shell mkdir -p $(MAKE_OUT_DIR_PREFIX) $(DEFUSE_OUT_DIR) && mktemp -d -p $(MAKE_OUT_DIR_PREFIX)))$(MAKE_OUT_DIR)
@@ -22,11 +22,13 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
     --arg crates '$(CONTRACT_CRATES)' --arg reproducible_cmd 'cargo near build reproducible-wasm' ' \
     ($$crates | split(" ") | map(select(length > 0))) as $$allowed | \
     [inputs][0].packages[] | select(.metadata.near.reproducible_build) | select(.name as $$n | $$allowed | any(. == $$n)) | \
-    .name as $$name | .manifest_path as $$mp | .metadata.near.reproducible_build as $$b | \
+    . as {$$name, manifest_path: $$mp} | .metadata.near.reproducible_build as $$b | \
     ($$name | gsub("-"; "_")) as $$wasm_base | \
-    ([$$b.variant // {} | to_entries[] | "\($$name)/\(.key)"] | join(" ")) as $$variant_targets | \
+    "$$(eval .PHONY: \($$name)/all)", \
+    "$$(eval ALL_TARGETS +=  \($$name)/all)", \
+    "$$(eval \($$name)/all:: \($$name))", \
     ({"": $$b} + ($$b.variant // {}) | to_entries[] | \
-     .key as $$vkey | .value as $$vval | \
+     . as {key: $$vkey, value: $$vval} | \
      ("\($$name)/\($$vkey)" | rtrimstr("/")) as $$tname | \
      "\($$makedir)/\($$tname)" as $$tout | \
      (if $$vkey != "" then " --variant=\($$vkey)" else "" end) as $$variant | \
@@ -36,14 +38,11 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
      (if $$vkey == "" then "" else ".\($$vkey)" end) as $$suffix | \
      "$$(eval .PHONY: \($$tname))", \
      "$$(eval ALL_TARGETS += \($$tname))", \
+     "$$(eval \($$name)/all:: \($$tname))", \
      "$$(eval \($$tname)::;  \($$cmd) --manifest-path=\($$mp) --out-dir=\($$tout))", \
-     "$$(eval \($$tname)::; -@cp -v \($$tout)/\($$wasm_base).wasm \($$outdir)/\($$wasm_base)\($$suffix).wasm)", \
-     "$$(eval \($$tname)::; -@cp -v \($$tout)/\($$wasm_base)_abi.json \($$outdir)/\($$wasm_base)\($$suffix).abi.json)" \
-    ), \
-    "$$(eval .PHONY: \($$name)/all)", \
-    "$$(eval ALL_TARGETS +=  \($$name)/all)", \
-    "$$(eval \($$name)/all: \($$name) \($$variant_targets))" \
-    '))
+     "$$(eval \($$tname)::; -@cp -v \($$tout)/\($$wasm_base).wasm \($$outdir)/\($$name)\($$suffix).wasm)", \
+     "$$(eval \($$tname)::; -@cp -v \($$tout)/\($$wasm_base)_abi.json \($$outdir)/\($$name)\($$suffix).abi.json)" \
+    )'))
 
 .PHONY: all
 all: $(ALL_TARGETS)
@@ -65,7 +64,7 @@ help:
 
 .PHONY: clean-out-dir
 clean-out-dir:
-	rm -rf $(DEFUSE_OUT_DIR) $(MAKE_OUT_DIR_PREFIX)
+	rm -rf $(DEFUSE_OUT_DIR)
 
 .PHONY: clean
 clean: clean-out-dir
