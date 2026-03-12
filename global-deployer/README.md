@@ -192,20 +192,18 @@ The `state_init` CLI tool computes the `StateInit` for a global-deployer contrac
 ### Usage
 
 ```
-cargo gds [OPTIONS] --owner-id <AccountId>
-```
-
-```
+$ cargo gds --help
 Compute StateInit for a global-deployer contract
 
 Usage: state_init [OPTIONS] --owner-id <AccountId>
 
 Options:
       --owner-id <AccountId>  Owner account ID
-  -i, --index <N>             Unique index for the deployer instance. Can be used to derive multiple
-                              deployers for a single owner [default: 0]
-      --approve <HASH>        Pre-approve SHA-256 code hash (hex): first `gd_deploy()` won't require
-                              `gd_approve()`
+  -i, --index <N>             Unique index for the deployer instance. Can be used to derive
+                              multiple deployers for a single owner [default: 0]
+      --approve <HASH>        Pre-approve SHA-256 code hash: first `gd_deploy()` won't require
+                              `gd_approve()`. Hash can be encoded as base58 or hex with `0x`
+                              prefix
   -q, --quiet                 Output single-line JSON with base64-encoded keys/values
   -h, --help                  Print help
 ```
@@ -229,6 +227,6 @@ near contract state-init \
   use-global-account-id 0s384bfa53f1718c7f53eaaa1b43c55e2aea3ef309 \
   data-from-json "$(cargo gds \
     --owner-id intents.sputnik-dao.near --index 42 \
-    --approve 6c71114931fe91153b868f2cb29c5db70e59677d6d2e40404b3b9044d8052266 \
+    --approve 0x6c71114931fe91153b868f2cb29c5db70e59677d6d2e40404b3b9044d8052266 \
     --quiet)"
 ```
