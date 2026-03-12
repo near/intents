@@ -8,5 +8,5 @@ DEFUSE_USE_OUT_DIR = { value = "res", relative = true }
 DEFUSE_OUT_DIR = { value = "res", relative = true }
 
 [alias]
-
+gds = "run -p defuse-global-deployer --example state_init --"
 integration-tests = "test -p defuse-tests --no-default-features --features"
