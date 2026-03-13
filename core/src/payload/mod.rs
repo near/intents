@@ -1,3 +1,4 @@
+pub mod adr36;
 pub mod erc191;
 pub mod multi;
 pub mod nep413;
