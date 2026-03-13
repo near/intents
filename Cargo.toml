@@ -1,32 +1,34 @@
 [workspace]
 resolver = "3"
 members = [
-    "contracts/admin-utils",
-    "contracts/auth-call",
-    "contracts/controller",
     "contracts/defuse",
     "contracts/defuse/core",
     "contracts/global-deployer",
     "contracts/escrow-swap",
-    "contracts/nep245",
     "contracts/poa/factory",
     "contracts/poa/token",
     "contracts/wallet",
-    "contracts/wnear",
 
     "crates/bitmap",
     "crates/borsh-utils",
     "crates/crypto",
-    "crates/deadline",
-    "crates/decimal",
-    "crates/fees",
     "crates/io-utils",
     "crates/map-utils",
-    "crates/near-utils",
     "crates/num-utils",
-    "crates/randomness",
-    "crates/sandbox",
     "crates/serde-utils",
+
+    "crates/near/admin-utils",
+    "crates/near/auth-call",
+    "crates/near/controller",
+    "crates/near/nep245",
+    "crates/near/utils",
+    "crates/near/wnear",
+
+    "crates/primitives/deadline",
+    "crates/primitives/decimal",
+    "crates/primitives/fees",
+    "crates/primitives/token-id",
+
     "crates/signatures/erc191",
     "crates/signatures/nep413",
     "crates/signatures/nep461",
@@ -34,8 +36,10 @@ members = [
     "crates/signatures/sep53",
     "crates/signatures/tip191",
     "crates/signatures/ton-connect",
-    "crates/test-utils",
-    "crates/token-id",
+
+    "crates/testing/utils",
+    "crates/testing/randomness",
+    "crates/testing/sandbox",
 
     "tests",
 ]
@@ -48,32 +52,34 @@ version = "0.1.0"
 rust-version = "1.86.0"
 
 [workspace.dependencies]
-defuse-admin-utils.path = "contracts/admin-utils"
-defuse-auth-call.path = "contracts/auth-call"
-defuse-controller.path = "contracts/controller"
 defuse.path = "contracts/defuse"
 defuse-core.path = "contracts/defuse/core"
 defuse-global-deployer.path = "contracts/global-deployer"
 defuse-escrow-swap.path = "contracts/escrow-swap"
-defuse-nep245.path = "contracts/nep245"
 defuse-poa-factory.path = "contracts/poa/factory"
 defuse-poa-token.path = "contracts/poa/token"
 defuse-wallet.path = "contracts/wallet"
-defuse-wnear.path = "contracts/wnear"
 
 defuse-bitmap.path = "crates/bitmap"
 defuse-borsh-utils.path = "crates/borsh-utils"
 defuse-crypto = { path = "crates/crypto", default-features = false }
-defuse-deadline.path = "crates/deadline"
-defuse-decimal.path = "crates/decimal"
-defuse-fees.path = "crates/fees"
 defuse-io-utils.path = "crates/io-utils"
 defuse-map-utils.path = "crates/map-utils"
-defuse-near-utils.path = "crates/near-utils"
 defuse-num-utils.path = "crates/num-utils"
-defuse-randomness.path = "crates/randomness"
-defuse-sandbox.path = "crates/sandbox"
 defuse-serde-utils.path = "crates/serde-utils"
+
+defuse-admin-utils.path = "crates/near/admin-utils"
+defuse-auth-call.path = "crates/near/auth-call"
+defuse-controller.path = "crates/near/controller"
+defuse-nep245.path = "crates/near/nep245"
+defuse-near-utils.path = "crates/near/utils"
+defuse-wnear.path = "crates/near/wnear"
+
+defuse-deadline.path = "crates/primitives/deadline"
+defuse-decimal.path = "crates/primitives/decimal"
+defuse-fees.path = "crates/primitives/fees"
+defuse-token-id = { path = "crates/primitives/token-id", default-features = false }
+
 defuse-erc191.path = "crates/signatures/erc191"
 defuse-nep413.path = "crates/signatures/nep413"
 defuse-nep461.path = "crates/signatures/nep461"
@@ -83,8 +89,11 @@ defuse-tip191.path = "crates/signatures/tip191"
 defuse-ton-connect = { path = "crates/signatures/ton-connect", default-features = false, features = [
     "text",
 ] }
-defuse-test-utils.path = "crates/test-utils"
-defuse-token-id = { path = "crates/token-id", default-features = false }
+
+defuse-randomness.path = "crates/testing/randomness"
+defuse-sandbox.path = "crates/testing/sandbox"
+defuse-test-utils.path = "crates/testing/utils"
+
 defuse-tests.path = "tests"
 
 cargo-near-build = "0.9.0"
