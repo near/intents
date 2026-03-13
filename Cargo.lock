@@ -1252,7 +1252,7 @@ dependencies = [
  "libc",
  "near-api",
  "near-contract-standards",
- "near-openapi-types 0.6.0",
+ "near-openapi-types 0.8.0",
  "near-sandbox",
  "near-sdk",
  "rstest",
@@ -2795,10 +2795,11 @@ dependencies = [
 
 [[package]]
 name = "near-openapi-types"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a8d5398e4fa9931e9d1639e36f80b3f0a365a93773d5e92b6094c6d6198d24b"
+checksum = "7e0c9eaf432ddedd9409d6b1477b49e94679c077adbadce173292f759454afc7"
 dependencies = [
+ "bs58 0.5.1",
  "chrono",
  "near-account-id",
  "near-gas",
@@ -2811,9 +2812,9 @@ dependencies = [
 
 [[package]]
 name = "near-openapi-types"
-version = "0.7.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e0c9eaf432ddedd9409d6b1477b49e94679c077adbadce173292f759454afc7"
+checksum = "33e29423e4795f7733d7c431ec7c4edcd6e199cc8a5ea4843834660f13bbfa8a"
 dependencies = [
  "bs58 0.5.1",
  "chrono",
