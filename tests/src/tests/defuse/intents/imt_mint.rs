@@ -14,7 +14,7 @@ use defuse_test_utils::asserts::ResultAssertsExt;
 use multi_token_receiver_stub::MTReceiverMode;
 use rstest::rstest;
 
-use near_sdk::{AccountId, Gas, NearToken};
+use near_sdk::{AccountId, Gas, NearToken, serde_json};
 
 use crate::tests::defuse::env::Env;
 use crate::tests::defuse::intents::transfer::TransferCallExpectation;

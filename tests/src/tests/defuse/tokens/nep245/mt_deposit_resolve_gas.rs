@@ -14,7 +14,7 @@ use defuse_sandbox::{SigningAccount, extensions::mt::MtExt};
 use defuse_test_utils::random::{gen_random_string, rng};
 use defuse_test_utils::wasms::MT_RECEIVER_STUB_WASM;
 use multi_token_receiver_stub::MTReceiverMode;
-use near_sdk::{AccountId, AsNep297Event, Gas, json_types::U128};
+use near_sdk::{AccountId, AsNep297Event, Gas, json_types::U128, serde_json};
 use rstest::rstest;
 use std::borrow::Cow;
 use std::sync::Arc;

@@ -13,7 +13,8 @@ use defuse_sandbox::extensions::defuse::intents::ExecuteIntentsExt;
 use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
 use defuse_test_utils::random::rng;
 use defuse_test_utils::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
-use futures::stream::{self, StreamExt};
+#[cfg(feature = "long")]
+use futures::{stream, stream::StreamExt};
 use near_sdk::Gas;
 use near_sdk::{
     AccountId, GlobalContractId, NearToken, serde_json::json, state_init::StateInit,
@@ -107,11 +108,13 @@ fn auth_call_with_max_possible_state_init(
     generate_auth_intent(global_contract_id, 1, max_payload, rng, min_gas)
 }
 
+#[cfg(feature = "long")]
 #[derive(Clone, Copy)]
 enum StateInitExpectation {
     ExpectStateInitSucceedsForZeroBalanceAccount(u128),
     ExpectStateInitExceedsZeroBalanceAccountStorageLimit(u128),
 }
+#[cfg(feature = "long")]
 use StateInitExpectation::*;
 
 #[rstest]

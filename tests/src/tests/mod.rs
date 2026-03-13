@@ -1,11 +1,15 @@
 #[cfg(feature = "defuse")]
-mod defuse;
-
-#[cfg(feature = "poa")]
-mod poa;
+pub mod defuse;
 
 #[cfg(feature = "escrow-swap")]
-mod escrow;
+pub mod escrow;
+
+#[cfg(feature = "escrow-proxy")]
+pub mod escrow_proxy;
+#[cfg(all(feature = "escrow-swap", feature = "escrow-proxy"))]
+pub mod escrow_with_proxy;
+#[cfg(feature = "condvar")]
+pub mod oneshot_condvar;
 
 #[cfg(feature = "wallet")]
 mod wallet;
@@ -13,4 +17,7 @@ mod wallet;
 #[cfg(feature = "deployer")]
 mod global_deployer;
 
-mod utils;
+#[cfg(feature = "poa")]
+pub mod poa;
+
+pub mod utils;

@@ -7,8 +7,10 @@ MAKE_OUT_DIR = $(eval MAKE_OUT_DIR := $(shell mkdir -p $(MAKE_OUT_DIR_PREFIX) $(
 .DEFAULT_GOAL := all
 CONTRACT_CRATES := \
     defuse \
+    defuse-escrow-proxy \
     defuse-escrow-swap \
     defuse-global-deployer \
+    defuse-oneshot-condvar \
     defuse-poa-factory \
     defuse-poa-token \
     defuse-wallet \
