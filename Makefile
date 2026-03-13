@@ -1,43 +1,48 @@
-ROOT_DIR := $(dir $(abspath $(firstword $(MAKEFILE_LIST))))
+ROOT_DIR := $(dir $(firstword $(MAKEFILE_LIST)))
 DEFUSE_OUT_DIR ?= $(ROOT_DIR)res
+MAKE_OUT_DIR_PREFIX ?= $(ROOT_DIR)target/makenear
+MAKE_OUT_DIR = $(eval MAKE_OUT_DIR := $(shell mkdir -p $(MAKE_OUT_DIR_PREFIX) $(DEFUSE_OUT_DIR) && mktemp -d -p $(MAKE_OUT_DIR_PREFIX)))$(MAKE_OUT_DIR)
+
 
 .DEFAULT_GOAL := all
+CONTRACT_CRATES := \
+    defuse \
+    defuse-escrow-swap \
+    defuse-global-deployer \
+    defuse-poa-factory \
+    defuse-poa-token \
+    defuse-wallet \
+    multi-token-receiver-stub
 
-# ============================================================================
+ALL_TARGETS :=
 
-CONTRACTS += defuse defuse-far
-build-defuse build-defuse-far: CRATE_NAME=defuse
-build-defuse-far: CONTRACT_OUT_DIR=far
-build-defuse-far: VARIANT=far
-
-# ============================================================================
-
-CONTRACTS += poa-factory
-build-poa-factory: CRATE_NAME=defuse-poa-factory
-
-# ============================================================================
-
-CONTRACTS += poa-token poa-token-no-registration
-build-poa-token build-poa-token-no-registration: CRATE_NAME=defuse-poa-token
-build-poa-token-no-registration: CONTRACT_OUT_DIR=poa-token-no-registration
-build-poa-token-no-registration: VARIANT=no_registration
-
-# ============================================================================
-
-CONTRACTS += escrow-swap
-build-escrow-swap: CRATE_NAME=defuse-escrow-swap
-
-# ============================================================================
-
-CONTRACTS += global-deployer
-build-global-deployer: CRATE_NAME=defuse-global-deployer
-
-# ============================================================================
-
-CONTRACTS += multi-token-receiver-stub
-build-multi-token-receiver-stub: CRATE_NAME=multi-token-receiver-stub
-
-# ============================================================================
+# Generate all build targets from cargo metadata, filtered to CONTRACT_CRATES
+$(eval $(shell cargo metadata --format-version=1 | jq -rn \
+    --arg outdir '$(DEFUSE_OUT_DIR)' --arg reproducible '$(REPRODUCIBLE)' --arg makedir '$$$$(MAKE_OUT_DIR)' \
+    --arg crates '$(CONTRACT_CRATES)' --arg reproducible_cmd 'cargo near build reproducible-wasm' ' \
+    ($$crates | split(" ") | map(select(length > 0))) as $$allowed | \
+    [inputs][0].packages[] | select(.metadata.near.reproducible_build) | select(.name as $$n | $$allowed | any(. == $$n)) | \
+    . as {$$name, manifest_path: $$mp} | .metadata.near.reproducible_build as $$b | \
+    ($$name | gsub("-"; "_")) as $$wasm_base | \
+    "$$(eval .PHONY: \($$name)/all)", \
+    "$$(eval ALL_TARGETS +=  \($$name)/all)", \
+    "$$(eval \($$name)/all:: \($$name))", \
+    ({"": $$b} + ($$b.variant // {}) | to_entries[] | \
+     . as {key: $$vkey, value: $$vval} | \
+     ("\($$name)/\($$vkey)" | rtrimstr("/")) as $$tname | \
+     "\($$makedir)/\($$tname)" as $$tout | \
+     (if $$vkey != "" then " --variant=\($$vkey)" else "" end) as $$variant | \
+     ($$reproducible_cmd + $$variant) as $$reproducible_cmd | \
+     ($$vval.container_build_command | join(" ")) as $$non_reproducible_cmd | \
+     (if $$reproducible != "" then $$reproducible_cmd else $$non_reproducible_cmd end) as $$cmd | \
+     (if $$vkey == "" then "" else ".\($$vkey)" end) as $$suffix | \
+     "$$(eval .PHONY: \($$tname))", \
+     "$$(eval ALL_TARGETS += \($$tname))", \
+     "$$(eval \($$name)/all:: \($$tname))", \
+     "$$(eval \($$tname)::;  \($$cmd) --manifest-path=\($$mp) --out-dir=\($$tout))", \
+     "$$(eval \($$tname)::; -@cp -v \($$tout)/\($$wasm_base).wasm \($$outdir)/\($$name)\($$suffix).wasm)", \
+     "$$(eval \($$tname)::; -@cp -v \($$tout)/\($$wasm_base)_abi.json \($$outdir)/\($$name)\($$suffix).abi.json)" \
+    )'))
 
 CONTRACTS += escrow-proxy
 build-escrow-proxy: CRATE_NAME=defuse-escrow-proxy
@@ -50,30 +55,22 @@ build-oneshot: CRATE_NAME=defuse-oneshot-condvar
 # ============================================================================
 
 .PHONY: all
-all: $(CONTRACTS)
+all: $(ALL_TARGETS)
 
-.PHONY: $(CONTRACTS)
-$(CONTRACTS): %: build-%
-
-CARGO_METADATA = cargo metadata --format-version=1 | jq -r
-CRATE_FILTER = .packages[] | select(.name == "$(CRATE_NAME)")
-
-MANIFEST_PATH = $(shell $(CARGO_METADATA) '$(CRATE_FILTER) | .manifest_path')
-
-ifneq (,$(filter $(shell printf '%s' $(REPRODUCIBLE) | tr '[:upper:]' '[:lower:]'), 1 true on))
-BUILD_CMD = cargo near build reproducible-wasm $(if $(VARIANT),--variant=$(VARIANT))
-else
-BUILD_CMD = $(shell $(CARGO_METADATA) \
-			'$(CRATE_FILTER) | .metadata.near.reproducible_build | \
-			$(if $(VARIANT),.variant["$(VARIANT)"] |,) \
-			.container_build_command | join(" ")')
-endif
-
-build-%:
-	$(if $(CRATE_NAME),,$(error CRATE_NAME is not defined))
-	$(BUILD_CMD) \
-		--manifest-path=$(MANIFEST_PATH) \
-		--out-dir="$(DEFUSE_OUT_DIR)/$(CONTRACT_OUT_DIR)"
+.PHONY: help
+help:
+	@echo "Usage: make [target] [REPRODUCIBLE=1]"
+	@echo ""
+	@echo "Build targets (use REPRODUCIBLE=1 for reproducible builds):"
+	@$(foreach t,$(ALL_TARGETS),echo "  $(t)";)
+	@echo ""
+	@echo "Other targets:"
+	@echo "  all              Build all contracts (default)"
+	@echo "  clean            Remove build artifacts and cargo clean"
+	@echo "  clean-out-dir    Remove output directory only"
+	@echo "  test             Run all workspace tests"
+	@echo "  clippy           Run clippy lints"
+	@echo "  help             Show this help"
 
 .PHONY: clean-out-dir
 clean-out-dir:

@@ -2,14 +2,17 @@ pub use near_contract_standards::non_fungible_token::TokenId;
 
 use std::{fmt, str::FromStr};
 
-use near_sdk::{AccountId, near};
-use serde_with::{DeserializeFromStr, SerializeDisplay};
+use near_sdk::{
+    AccountId, near,
+    serde_with::{DeserializeFromStr, SerializeDisplay},
+};
 
 use crate::{TokenIdError, TokenIdType};
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(::arbitrary::Arbitrary))]
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr)]
 #[near(serializers = [borsh])]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr)]
+#[serde_with(crate = "::near_sdk::serde_with")]
 pub struct Nep171TokenId {
     pub contract_id: AccountId,
 

@@ -1,22 +1,21 @@
 use std::marker::PhantomData;
 
-use near_sdk::serde::{self, Deserializer, Serializer};
-use serde_with::{DeserializeAs, SerializeAs};
+use near_sdk::{
+    serde::{self, Deserializer, Serializer},
+    serde_with::{DeserializeAs, SerializeAs},
+};
 use tlb_ton::{
-    BagOfCellsArgs, BoC, Context,
-    r#as::Same,
-    de::r#as::CellDeserializeAsOwned,
-    ser::{
-        CellSerializeExt,
-        r#as::{CellSerializeAs, CellSerializeWrapAsExt},
-    },
+    BagOfCellsArgs, BoC, Context, Same,
+    bits::NoArgs,
+    de::CellDeserializeAsOwned,
+    ser::{CellSerializeAs, CellSerializeExt, CellSerializeWrapAsExt},
 };
 
 pub struct AsBoC<As: ?Sized, CellAs: ?Sized = Same>(PhantomData<As>, PhantomData<CellAs>);
 
 impl<T, As, CellAs> SerializeAs<T> for AsBoC<As, CellAs>
 where
-    CellAs: CellSerializeAs<T>,
+    CellAs: CellSerializeAs<T, Args: NoArgs>,
     for<'a> As: SerializeAs<&'a [u8]>,
 {
     fn serialize_as<S>(source: &T, serializer: S) -> Result<S::Ok, S::Error>
@@ -25,7 +24,7 @@ where
     {
         let bytes = source
             .wrap_as::<CellAs>()
-            .to_cell()
+            .to_cell(NoArgs::EMPTY)
             .map(BoC::from_root)
             .and_then(|boc| {
                 boc.serialize(BagOfCellsArgs {
@@ -43,7 +42,7 @@ where
 
 impl<'de, T, As, CellAs> DeserializeAs<'de, T> for AsBoC<As, CellAs>
 where
-    CellAs: CellDeserializeAsOwned<T>,
+    CellAs: CellDeserializeAsOwned<T, Args: NoArgs>,
     As: DeserializeAs<'de, Vec<u8>>,
 {
     fn deserialize_as<D>(deserializer: D) -> Result<T, D::Error>
@@ -54,7 +53,7 @@ where
         BoC::deserialize(bytes)
             .and_then(|boc| boc.into_single_root().context("multiple roots"))
             .context("BoC")
-            .and_then(|root| root.parse_fully_as::<T, CellAs>())
+            .and_then(|root| root.parse_fully_as::<T, CellAs>(NoArgs::EMPTY))
             .context("TL-B")
             .map_err(serde::de::Error::custom)
     }
@@ -62,8 +61,10 @@ where
 
 #[cfg(feature = "abi")]
 const _: () = {
-    use near_sdk::schemars::{SchemaGenerator, schema::Schema};
-    use serde_with::schemars_0_8::JsonSchemaAs;
+    use near_sdk::{
+        schemars::{SchemaGenerator, schema::Schema},
+        serde_with::schemars_0_8::JsonSchemaAs,
+    };
 
     impl<T, As, CellAs> JsonSchemaAs<T> for AsBoC<As, CellAs>
     where

@@ -20,3 +20,5 @@ pub mod global_deployer;
 pub mod mt_receiver;
 #[cfg(feature = "poa")]
 pub mod poa;
+#[cfg(feature = "wallet")]
+pub mod wallet;

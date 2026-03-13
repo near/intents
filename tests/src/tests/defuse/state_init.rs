@@ -14,7 +14,7 @@ use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
 use defuse_test_utils::random::rng;
 use defuse_test_utils::wasms::{DEFUSE_WASM, MT_RECEIVER_STUB_WASM};
 #[cfg(feature = "long")]
-use futures::stream::StreamExt;
+use futures::{stream, stream::StreamExt};
 use near_sdk::Gas;
 use near_sdk::{
     AccountId, GlobalContractId, NearToken, serde_json::json, state_init::StateInit,
@@ -275,8 +275,12 @@ async fn test_auth_call_state_init_via_execute_intents(
     };
 
     let num_keys: u8 = num_keys.try_into().unwrap();
+    let concurrency_limit = 10;
 
-    let env = Env::builder().build().await;
+    let env = Env::builder()
+        .concurrency_limit(concurrency_limit)
+        .build()
+        .await;
     env.root()
         .deploy_global_contract(
             MT_RECEIVER_STUB_WASM.clone(),
@@ -341,8 +345,8 @@ async fn test_auth_call_state_init_via_execute_intents(
                 }
             });
 
-    let results: Vec<bool> = futures::stream::iter(futures)
-        .buffer_unordered(10)
+    let results: Vec<bool> = stream::iter(futures)
+        .buffer_unordered(concurrency_limit)
         .collect()
         .await;
     let success = results.contains(&true);
@@ -389,8 +393,13 @@ async fn test_auth_call_state_init_via_do_auth_call(
     };
 
     let num_keys: u8 = num_keys.try_into().unwrap();
+    let concurrency_limit = 10;
 
-    let env = Env::builder().build().await;
+    let env = Env::builder()
+        .concurrency_limit(concurrency_limit)
+        .build()
+        .await;
+
     env.root()
         .deploy_global_contract(
             MT_RECEIVER_STUB_WASM.clone(),
@@ -458,8 +467,8 @@ async fn test_auth_call_state_init_via_do_auth_call(
             }
         });
 
-    let results: Vec<bool> = futures::stream::iter(futures)
-        .buffer_unordered(10)
+    let results: Vec<bool> = stream::iter(futures)
+        .buffer_unordered(concurrency_limit)
         .collect()
         .await;
     let success = results.contains(&true);

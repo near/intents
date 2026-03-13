@@ -9,21 +9,17 @@ repository.workspace = true
 workspace = true
 
 [features]
-default = ["defuse", "poa", "escrow-swap", "escrow-proxy", "condvar", "mt-receiver", "long", "deployer"]
+default = ["defuse", "poa", "escrow-swap", "long", "deployer", "wallet"]
 
-poa = [
-    "dep:defuse-poa-factory",
-    "defuse-sandbox/poa",
-    "defuse-test-utils/poa"
-    ]
+poa = ["dep:defuse-poa-factory", "defuse-sandbox/poa", "defuse-test-utils/poa"]
 defuse = [
     "dep:defuse",
     "defuse-sandbox/defuse",
     "defuse-sandbox/poa",
     "defuse-sandbox/imt",
     "defuse-test-utils/defuse",
-    "defuse-test-utils/poa"
-    ]
+    "defuse-test-utils/poa",
+]
 escrow-swap = [
     "dep:defuse-escrow-swap",
     "defuse-sandbox/escrow",
@@ -31,9 +27,17 @@ escrow-swap = [
     "defuse-sandbox/poa",
     "defuse-test-utils/escrow",
     "defuse-test-utils/defuse",
-    "defuse-test-utils/poa"
-    ]
+    "defuse-test-utils/poa",
+]
+wallet = [
+    "dep:defuse-wallet",
+    "defuse-sandbox/wallet",
+    "defuse-test-utils/wallet",
+    "deployer",
+]
+
 deployer = ["dep:defuse-global-deployer", "defuse-sandbox/deployer"]
+
 long = []
 escrow-proxy = ["dep:defuse-escrow-proxy", "defuse-sandbox/escrow-proxy", "defuse-test-utils/escrow-proxy"]
 condvar = ["dep:defuse-oneshot-condvar", "defuse-sandbox/condvar", "defuse-test-utils/oneshot"]
@@ -41,9 +45,22 @@ mt-receiver = []
 
 [dependencies]
 defuse-sandbox = { workspace = true }
-defuse = { workspace = true, features = ["contract", "arbitrary", "far"], optional = true }
-defuse-escrow-swap = { workspace = true, features = ["auth_call"], optional = true }
-defuse-poa-factory = {workspace = true, features = ["contract"], optional = true }
+defuse = { workspace = true, features = [
+    "contract",
+    "arbitrary",
+    "far",
+], optional = true }
+defuse-escrow-swap = { workspace = true, features = [
+    "auth_call",
+], optional = true }
+defuse-poa-factory = { workspace = true, features = [
+    "contract",
+], optional = true }
+defuse-wallet = { workspace = true, features = [
+    "arbitrary",
+    "concurrent",
+    "ed25519",
+], optional = true }
 multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
 
 defuse-core.workspace = true
@@ -53,7 +70,7 @@ defuse-randomness.workspace = true
 defuse-serde-utils = { workspace = true }
 defuse-test-utils.workspace = true
 defuse-fees.workspace = true
-defuse-global-deployer = {workspace = true, optional = true}
+defuse-global-deployer = { workspace = true, optional = true }
 
 near-sdk = { workspace = true, features = ["unit-testing", "deterministic-account-ids"] }
 near-crypto.workspace = true

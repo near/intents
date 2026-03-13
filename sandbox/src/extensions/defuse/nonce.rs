@@ -3,7 +3,7 @@ use crate::{Account, anyhow};
 use defuse::core::payload::{DefusePayload, ExtractDefusePayload};
 use defuse::core::{Deadline, ExpirableNonce, Salt, SaltedNonce, VersionedNonce};
 use defuse::core::{Nonce, intents::DefuseIntents, payload::multi::MultiPayload};
-use defuse_test_utils::random::{Rng, TestRng};
+use defuse_test_utils::random::{Rng, RngExt, TestRng};
 use near_sdk::serde_json;
 
 pub trait ExtractNonceExt {

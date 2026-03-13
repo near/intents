@@ -15,7 +15,7 @@ use std::{
 
 use crate::{DefuseError, Result};
 
-#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[derive(PartialEq, PartialOrd, Ord, Eq, Copy, Clone, SerializeDisplay, DeserializeFromStr)]
 #[near(serializers = [borsh])]
 pub struct Salt([u8; 4]);
@@ -181,7 +181,7 @@ mod tests {
     use super::*;
 
     use arbitrary::Unstructured;
-    use defuse_test_utils::random::{Rng, random_bytes, rng};
+    use defuse_test_utils::random::{Rng, RngExt, random_bytes, rng};
     use near_sdk::{test_utils::VMContextBuilder, testing_env};
 
     use rstest::rstest;

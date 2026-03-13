@@ -2,6 +2,7 @@
 mod deploy_escrow_swap;
 
 use std::future::IntoFuture;
+
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
 
@@ -31,8 +32,7 @@ pub struct DeployerEnv {
 }
 
 #[fixture]
-pub async fn deployer_env() -> DeployerEnv {
-    let sandbox = sandbox(NearToken::from_near(100_000)).await;
+pub async fn deployer_env(#[future(awt)] sandbox: Sandbox) -> DeployerEnv {
     let root = sandbox.root();
 
     root.deploy_global_contract(DEPLOYER_WASM.clone(), GlobalContractDeployMode::CodeHash)

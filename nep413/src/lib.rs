@@ -5,8 +5,7 @@ use defuse_near_utils::UnwrapOrPanicError;
 use defuse_nep461::{OffchainMessage, SignedMessageNep};
 use defuse_serde_utils::base64::Base64;
 use impl_tools::autoimpl;
-use near_sdk::{borsh, env, near};
-use serde_with::serde_as;
+use near_sdk::{borsh, env, near, serde_with::serde_as};
 
 /// See [NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md)
 #[near(serializers = [borsh, json])]

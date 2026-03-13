@@ -184,3 +184,49 @@ If consecutive upgrades are needed (e.g. H1 → H2 → H3), they can be prepared
 - A deterministic account ID is derived from `StateInit` at creation. After `gd_approve` mutates state, on-chain state diverges from what the address was derived from.
 - Upgrading Controller code propagates to all future instances (deploy-by-account-id).
 - The GD deployed by hash once is the **immutable foundation** for the whole hierarchy.
+
+## `state_init` CLI
+
+The `state_init` CLI tool computes the `StateInit` for a global-deployer contract, outputting a JSON map of base64-encoded key-value pairs.
+
+### Usage
+
+```
+$ cargo gds --help
+Compute StateInit for a global-deployer contract
+
+Usage: state_init [OPTIONS] --owner-id <AccountId>
+
+Options:
+      --owner-id <AccountId>  Owner account ID
+  -i, --index <N>             Unique index for the deployer instance. Can be used to derive
+                              multiple deployers for a single owner [default: 0]
+      --approve <HASH>        Pre-approve SHA-256 code hash: first `gd_deploy()` won't require
+                              `gd_approve()`. Hash can be encoded as base58 or hex with `0x`
+                              prefix
+  -q, --quiet                 Output single-line JSON with base64-encoded keys/values
+  -h, --help                  Print help
+```
+
+### Example
+
+```bash
+cargo gds --owner-id test.near --index 1
+```
+```
+owner_id:       test.near
+code_hash:      0000000000000000000000000000000000000000000000000000000000000001
+approved_hash:  0000000000000000000000000000000000000000000000000000000000000000
+{"":"CQAAAHRlc3QubmVhcgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}
+```
+
+Use `-q` / `--quiet` to suppress stderr and emit only JSON, useful for piping into other tools like `near-cli` (supported after [near-cli-rs#560](https://github.com/near/near-cli-rs/pull/560) is released):
+
+```bash
+near contract state-init \
+  use-global-account-id 0s384bfa53f1718c7f53eaaa1b43c55e2aea3ef309 \
+  data-from-json "$(cargo gds \
+    --owner-id intents.sputnik-dao.near --index 42 \
+    --approve 0x6c71114931fe91153b868f2cb29c5db70e59677d6d2e40404b3b9044d8052266 \
+    --quiet)"
+```

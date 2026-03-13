@@ -9,7 +9,7 @@ use builder::EnvBuilder;
 use anyhow::{Ok, Result, anyhow};
 use arbitrary::Unstructured;
 use defuse_core::token_id::{TokenId, nep141::Nep141TokenId};
-use defuse_randomness::{Rng, make_true_rng};
+use defuse_randomness::{RngExt, make_true_rng};
 use defuse_sandbox::extensions::defuse::contract::{
     core::{Deadline, Nonce},
     tokens::{DepositAction, DepositMessage},
@@ -35,6 +35,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 const TOKEN_STORAGE_DEPOSIT: NearToken = NearToken::from_near(1);
 const INITIAL_USER_BALANCE: NearToken = NearToken::from_near(10);
 
+// TODO: implement it as a fixture
 #[autoimpl(Deref using self.sandbox)]
 pub struct Env {
     sandbox: Sandbox,

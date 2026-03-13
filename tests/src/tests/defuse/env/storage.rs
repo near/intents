@@ -6,7 +6,7 @@ use defuse_sandbox::{
 use near_sdk::AccountId;
 use std::{collections::HashSet, convert::Infallible, sync::atomic::Ordering};
 
-use defuse_randomness::{Rng, make_true_rng};
+use defuse_randomness::{RngExt, make_true_rng};
 use defuse_sandbox::extensions::defuse::contract::{
     contract::Role,
     core::{

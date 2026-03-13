@@ -12,11 +12,7 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [features]
-abi = [
-    "defuse-borsh-utils/abi",
-    "defuse-serde-utils/abi",
-    "near-sdk/abi"
-]
+abi = ["defuse-borsh-utils/abi", "defuse-serde-utils/abi", "near-sdk/abi"]
 contract = []
 
 [dependencies]
@@ -25,7 +21,10 @@ defuse-serde-utils.workspace = true
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 
 [dev-dependencies]
-near-sdk = { workspace = true, features = ["unit-testing"] }
+clap = { workspace = true, features = ["wrap_help"] }
+hex.workspace = true
+serde_json.workspace = true
+near-sdk = { workspace = true, features = ["non-contract-usage"] }
 
 [package.metadata.near.reproducible_build]
 image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"

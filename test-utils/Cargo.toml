@@ -14,16 +14,21 @@ defuse = []
 escrow = []
 escrow-proxy = []
 oneshot = []
+wallet = []
 
 [dependencies]
-defuse-crypto ={ workspace = true, features = ["arbitrary"] }
 defuse-escrow-swap.workspace = true
 defuse-randomness.workspace = true
 defuse-token-id.workspace = true
+defuse-crypto = { workspace = true, features = [
+    "arbitrary",
+    "ed25519",
+    "secp256k1",
+    "p256",
+] }
 
 near-sdk.workspace = true
 arbitrary.workspace = true
 derive_more = { workspace = true, features = ["full"] }
 hex.workspace = true
-rand_chacha.workspace = true
 rstest.workspace = true
