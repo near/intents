@@ -1,43 +1,48 @@
 [workspace]
 resolver = "3"
 members = [
-    "admin-utils",
-    "auth-call",
-    "bitmap",
-    "borsh-utils",
-    "controller",
-    "core",
-    "crypto",
-    "deadline",
-    "decimal",
-    "defuse",
-    "global-deployer",
-    "erc191",
-    "escrow-swap",
-    "fees",
-    "io-utils",
-    "map-utils",
-    "near-utils",
-    "nep245",
-    "nep413",
-    "nep461",
-    "num-utils",
-    "webauthn",
-    "poa-factory",
-    "poa-token",
-    "randomness",
-    "sandbox",
-    "sep53",
-    "serde-utils",
-    "tests",
-    "test-utils",
-    "tip191",
-    "token-id",
-    "ton-connect",
-    "wallet",
-    "wnear",
+    "contracts/admin-utils",
+    "contracts/auth-call",
+    "contracts/controller",
+    "contracts/defuse",
+    "contracts/defuse/core",
+    "contracts/global-deployer",
+    "contracts/escrow-swap",
+    "contracts/near-utils",
+    "contracts/nep245",
+    "contracts/poa/factory",
+    "contracts/poa/token",
+    "contracts/wallet",
+    "contracts/wnear",
+
+    "core/bitmap",
+    "core/crypto",
+    "core/deadline",
+    "core/decimal",
+    "core/fees",
+    "core/token-id",
+
+    "utils/borsh-utils",
+    "utils/serde-utils",
+    "utils/io-utils",
+    "utils/map-utils",
+    "utils/num-utils",
+
+
+    "signatures/erc191",
+    "signatures/nep413",
+    "signatures/nep461",
+    "signatures/webauthn",
+    "signatures/sep53",
+    "signatures/tip191",
+    "signatures/ton-connect",
+
+    "tests/randomness",
+    "tests/sandbox",
+    "tests/tests",
+    "tests/test-utils",
 ]
-default-members = ["defuse"]
+default-members = ["contracts/defuse"]
 
 [workspace.package]
 edition = "2024"
@@ -46,44 +51,48 @@ version = "0.1.0"
 rust-version = "1.86.0"
 
 [workspace.dependencies]
-defuse-admin-utils.path = "admin-utils"
-defuse-auth-call.path = "auth-call"
-defuse-bitmap.path = "bitmap"
-defuse-borsh-utils.path = "borsh-utils"
-defuse-controller.path = "controller"
-defuse-global-deployer.path = "global-deployer"
-defuse-core.path = "core"
-defuse-crypto = { path = "crypto", default-features = false }
-defuse.path = "defuse"
-defuse-deadline.path = "deadline"
-defuse-decimal.path = "decimal"
-defuse-erc191.path = "erc191"
-defuse-escrow-swap.path = "escrow-swap"
-defuse-fees.path = "fees"
-defuse-io-utils.path = "io-utils"
-defuse-map-utils.path = "map-utils"
-defuse-near-utils.path = "near-utils"
-defuse-nep245.path = "nep245"
-defuse-nep413.path = "nep413"
-defuse-nep461.path = "nep461"
-defuse-num-utils.path = "num-utils"
-defuse-webauthn = { path = "webauthn", default-features = false }
-defuse-poa-factory.path = "poa-factory"
-defuse-poa-token.path = "poa-token"
-defuse-sandbox.path = "sandbox"
-defuse-sep53.path = "sep53"
-defuse-serde-utils.path = "serde-utils"
-defuse-tip191.path = "tip191"
-defuse-token-id = { path = "token-id", default-features = false }
-defuse-ton-connect = { path = "ton-connect", default-features = false, features = [
+defuse-admin-utils.path = "contracts/admin-utils"
+defuse-auth-call.path = "contracts/auth-call"
+defuse-controller.path = "contracts/controller"
+defuse-core.path = "contracts/defuse/core"
+defuse.path = "contracts/defuse"
+defuse-global-deployer.path = "contracts/global-deployer"
+defuse-escrow-swap.path = "contracts/escrow-swap"
+defuse-near-utils.path = "contracts/near-utils"
+defuse-nep245.path = "contracts/nep245"
+defuse-poa-factory.path = "contracts/poa/factory"
+defuse-poa-token.path = "contracts/poa/token"
+defuse-wallet.path = "contracts/wallet"
+defuse-wnear.path = "contracts/wnear"
+
+defuse-bitmap.path = "core/bitmap"
+defuse-crypto = { path = "core/crypto", default-features = false }
+defuse-deadline.path = "core/deadline"
+defuse-decimal.path = "core/decimal"
+defuse-fees.path = "core/fees"
+defuse-token-id = { path = "core/token-id", default-features = false }
+
+defuse-borsh-utils.path = "utils/borsh-utils"
+defuse-io-utils.path = "utils/io-utils"
+defuse-map-utils.path = "utils/map-utils"
+defuse-num-utils.path = "utils/num-utils"
+defuse-serde-utils.path = "utils/serde-utils"
+
+
+defuse-erc191.path = "signatures/erc191"
+defuse-nep413.path = "signatures/nep413"
+defuse-nep461.path = "signatures/nep461"
+defuse-webauthn = { path = "signatures/webauthn", default-features = false }
+defuse-sep53.path = "signatures/sep53"
+defuse-tip191.path = "signatures/tip191"
+defuse-ton-connect = { path = "signatures/ton-connect", default-features = false, features = [
     "text",
 ] }
-defuse-wallet.path = "wallet"
-defuse-wnear.path = "wnear"
 
-defuse-randomness.path = "randomness"
-defuse-test-utils.path = "test-utils"
-defuse-tests.path = "tests"
+defuse-sandbox.path = "tests/sandbox"
+defuse-randomness.path = "tests/randomness"
+defuse-test-utils.path = "tests/test-utils"
+defuse-tests.path = "tests/tests"
 
 cargo-near-build = "0.9.0"
 near-account-id = "2.4.0"
