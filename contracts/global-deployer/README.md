@@ -187,7 +187,7 @@ If consecutive upgrades are needed (e.g. H1 → H2 → H3), they can be prepared
 
 ## `near gds` extension
 
-The `near gds` tool is an extension for [near-cli-rs](https://github.com/near/near-cli-rs) that computes the `StateInit` for a global-deployer contract, outputting a JSON map of base64-encoded key-value pairs.
+The `near-gds` command is an extension for [near-cli-rs](https://github.com/near/near-cli-rs) that computes the `StateInit` for a global-deployer contract, outputting a JSON map of base64-encoded key-value pairs.
 
 ### Install
 
