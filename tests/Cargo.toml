@@ -9,7 +9,16 @@ repository.workspace = true
 workspace = true
 
 [features]
-default = ["defuse", "poa", "escrow-swap", "long", "deployer", "wallet"]
+default = [
+    "defuse",
+    "poa",
+    "escrow-proxy",
+    "escrow-swap",
+    "condvar",
+    "long",
+    "deployer",
+    "wallet",
+]
 
 poa = ["dep:defuse-poa-factory", "defuse-sandbox/poa", "defuse-test-utils/poa"]
 defuse = [
@@ -39,8 +48,16 @@ wallet = [
 deployer = ["dep:defuse-global-deployer", "defuse-sandbox/deployer"]
 
 long = []
-escrow-proxy = ["dep:defuse-escrow-proxy", "defuse-sandbox/escrow-proxy", "defuse-test-utils/escrow-proxy"]
-condvar = ["dep:defuse-oneshot-condvar", "defuse-sandbox/condvar", "defuse-test-utils/oneshot"]
+escrow-proxy = [
+    "dep:defuse-escrow-proxy",
+    "defuse-sandbox/escrow-proxy",
+    "defuse-test-utils/escrow-proxy",
+]
+condvar = [
+    "dep:defuse-oneshot-condvar",
+    "defuse-sandbox/condvar",
+    "defuse-test-utils/oneshot",
+]
 mt-receiver = []
 
 [dependencies]
@@ -72,7 +89,10 @@ defuse-test-utils.workspace = true
 defuse-fees.workspace = true
 defuse-global-deployer = { workspace = true, optional = true }
 
-near-sdk = { workspace = true, features = ["unit-testing", "deterministic-account-ids"] }
+near-sdk = { workspace = true, features = [
+    "unit-testing",
+    "deterministic-account-ids",
+] }
 near-crypto.workspace = true
 near-contract-standards.workspace = true
 
@@ -92,5 +112,7 @@ strum.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 tlb-ton = { workspace = true, features = ["arbitrary"] }
 
-defuse-escrow-proxy = { workspace = true, features = ["escrow-swap"], optional = true }
+defuse-escrow-proxy = { workspace = true, features = [
+    "escrow-swap",
+], optional = true }
 defuse-oneshot-condvar = { workspace = true, optional = true }

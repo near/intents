@@ -52,11 +52,11 @@ pub static WALLET_WASM: LazyLock<Vec<u8>> =
 
 #[cfg(feature = "escrow-proxy")]
 pub static ESCROW_PROXY_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse_escrow_proxy.wasm"));
+    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse-escrow-proxy.wasm"));
 
 #[cfg(feature = "oneshot")]
 pub static ONESHOT_CONDVAR_WASM: LazyLock<Vec<u8>> =
-    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse_oneshot_condvar.wasm"));
+    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse-oneshot-condvar.wasm"));
 pub static POA_FACTORY_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse-poa-factory.wasm"));
 

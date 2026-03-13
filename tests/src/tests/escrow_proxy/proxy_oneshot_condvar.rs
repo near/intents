@@ -1,3 +1,4 @@
+#![cfg(feature = "condvar")]
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
