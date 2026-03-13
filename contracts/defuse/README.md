@@ -26,18 +26,16 @@ The initial idea behind its creation was to enabling new nonce formats which can
 
 Versioned nonce also consists of 32 bytes but has a specific structure:
 
-1. Prefix (5 bytes): 
-To distinguish between legacy and versioned nonces we use a specific prefix individual for each version consisting of 2 parts:
-- Magic prefix for all versioned nonces: first 4 bytes of `sha256(<versioned_nonce>)` which is `"5628f6c6"` as hex string.
-- 1 byte nonce version index.
+1. Prefix (5 bytes):
+   To distinguish between legacy and versioned nonces we use a specific prefix individual for each version consisting of 2 parts:
+   - Magic prefix for all versioned nonces: first 4 bytes of `sha256(<versioned_nonce>)` which is `"5628f6c6"` as hex string.
+   - 1 byte nonce version index.
 
-2. Body (27 bytes): specific for each nonce version.
-
-Supported nonce versions:
-- V1:  
-**Body**: salt (4 bytes) + deadline in nanoseconds (8 bytes) + nonce (15 random bytes).  
-**Validity**: A nonce is considered valid if its salt is one of the valid salts in the contract salt registry and if **the deadline of the intent does not exceed nonce deadline** (which cannot be less than the current time). Accordingly, a nonce becomes invalid and can be cleaned up if the deadline passes or if its salt is no longer considered as valid.  
-**NOTE**: The deadline for nonce may be greater than the deadline for intent — it is important to take this into account in order to allow for the possibility of invalidating nonces in case of intent cancellation.
+2. Body (27 bytes): specific for each nonce version. Supported nonce versions:
+   - V1:  
+     **Body**: salt (4 bytes) + deadline in nanoseconds (8 bytes) + nonce (15 random bytes).  
+     **Validity**: A nonce is considered valid if its salt is one of the valid salts in the contract salt registry and if **the deadline of the intent does not exceed nonce deadline** (which cannot be less than the current time). Accordingly, a nonce becomes invalid and can be cleaned up if the deadline passes or if its salt is no longer considered as valid.  
+     **NOTE**: The deadline for nonce may be greater than the deadline for intent — it is important to take this into account in order to allow for the possibility of invalidating nonces in case of intent cancellation.
 
 ---
 
