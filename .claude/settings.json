@@ -1,0 +1,16 @@
+{
+  "spinnerVerbs": {
+    "mode": "append",
+    "verbs": [
+      "Building contracts",
+      "Deploying contracts",
+      "Relaying transactions",
+      "Hashing payloads",
+      "Verifying signatures",
+      "Executing intents",
+      "Settling swaps",
+      "Bridging tokens",
+      "Optimizing gas usage"
+    ]
+  }
+}
