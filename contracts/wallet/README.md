@@ -44,9 +44,9 @@ A wallet contract has two main entrypoints for executing requests:
   enabled extensions, no signature is required.
 
 Each `request` contains:
-* `ops`: (optional) list of wallet operations: enable/disable signature,
+* `ops`: *(optional)* list of wallet operations: enable/disable signature,
   add/remove extension
-* `out`: (optional) Promise DAG of cross-contract calls to execute.
+* `out`: *(optional)* Promise DAG of cross-contract calls to execute.
 
 ### Signing Standards
 
@@ -149,6 +149,8 @@ Supported actions within promises are:
 | `FunctionCall` | Call a contract method |
 | `Transfer` | Send NEAR tokens |
 | `StateInit` | Deploy a new contract at a [deterministic AccountId](https://github.com/near/NEPs/blob/master/neps/nep-0616.md) |
+
+For security reasons, self-calls are **not** supported.
 
 Other actions (e.g. `DeployContract`, `AddKey`, etc.) are intentionally **not**
 supported: wallet contracts are not self-upgradable and do not allow creating
