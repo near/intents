@@ -1,0 +1,14 @@
+[package]
+name = "defuse-wallet-relayer"
+edition.workspace = true
+version = "0.1.0"
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+near-sdk = { workspace = true, features = ["non-contract-usage"] }
+defuse-wallet.workspace = true
+near-kit.workspace = true

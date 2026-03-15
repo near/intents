@@ -37,6 +37,8 @@ members = [
     "crates/signatures/tip191",
     "crates/signatures/ton-connect",
 
+    "crates/wallet-relayer",
+
     "crates/testing/utils",
     "crates/testing/randomness",
     "crates/testing/sandbox",
@@ -90,6 +92,8 @@ defuse-ton-connect = { path = "crates/signatures/ton-connect", default-features 
     "text",
 ] }
 
+defuse-wallet-relayer.path = "crates/wallet-relayer"
+
 defuse-randomness.path = "crates/testing/randomness"
 defuse-sandbox.path = "crates/testing/sandbox"
 defuse-test-utils.path = "crates/testing/utils"
@@ -103,6 +107,7 @@ near-api-types = "0.8.3"
 near-openapi-types = "0.6.0"
 near-contract-standards = "5.24"
 near-crypto = "0.34.1"
+near-kit = { version = "0.4.3", default-features = false }
 near-plugins = { git = "https://github.com/Near-One/near-plugins", tag = "v0.5.0" }
 near-sandbox = "0.3.5"
 near-sdk = "5.24"
