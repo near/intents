@@ -77,8 +77,8 @@ whole request fails.
 ### Nonces
 
 Wallet contract implements **non-sequential** double-timeout window nonces for
-replay protection, enabling concurrent request submission from multiple
-non-coordinated clients.
+replay protection, enabling *concurrent* request submission from multiple
+*non-coordinated* clients.
 
 * Each signed request message includes a 32-bit `msg.nonce`, `msg.created_at`
   and a corresponding `msg.timeout` which is the *maximum* validity of this
@@ -105,16 +105,14 @@ Despite nonces are stored efficiently and cleaned up every `2 * timeout`, it's
 still important to generate them efficiently to reduce the storage usage. The
 more sequential nonces are, the less space they consume.
 
-* For **non-concurrent** signers, it's recommended to generate nonces
-  *incrementally*:
+* For a **single** signer, it's recommended to generate nonces *incrementally*:
   ```rust
   let nonce = self.next_nonce;
   self.next_nonce += 1;
   ```
-* For **concurrent** signers (e.g. when the user might sign two requests
-  concurrently with the same key from different devices), it's recommended to 
-  generate nonces *semi-sequentially* where each 32 nonces are generated
-  sequentially but then a new random nonce is selected:
+* For *concurrent* **non-coordinated** signers (e.g. when a user might sign two
+  requests concurrently with the same key from different devices), it's
+  recommended to generate nonces *semi-sequentially*, i.e. where the nonce is randomized after each 32 sequential ones:
   ```rust
   const BIT_POS_MASK: u32 = 0b11111;
 
