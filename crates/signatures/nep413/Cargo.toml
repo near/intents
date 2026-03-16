@@ -6,7 +6,7 @@ rust-version.workspace = true
 repository.workspace = true
 
 [features]
-near-api = ["dep:near-api"]
+near-kit = ["dep:near-kit"]
 
 [dependencies]
 defuse-crypto = { workspace = true, default-features = false, features = [
@@ -19,7 +19,7 @@ defuse-serde-utils.workspace = true
 impl-tools.workspace = true
 near-sdk.workspace = true
 
-near-api = { workspace = true, optional = true }
+near-kit = { workspace = true, optional = true }
 
 [lints]
 workspace = true

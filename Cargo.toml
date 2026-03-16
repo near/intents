@@ -107,6 +107,7 @@ near-plugins = { git = "https://github.com/Near-One/near-plugins", tag = "v0.5.0
 near-sandbox = "0.3.5"
 near-sdk = "5.24"
 near-workspaces = "0.22"
+near-kit = { git = "https://github.com/r-near/near-kit-rs.git"}
 
 anyhow = "1"
 arbitrary = "1"

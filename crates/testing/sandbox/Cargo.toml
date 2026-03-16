@@ -17,8 +17,8 @@ imt = ["defuse", "defuse/imt"]
 wallet = ["dep:defuse-wallet"]
 
 [dependencies]
-defuse-crypto = { workspace = true, features = ["near-api-types"] }
-defuse-nep413 = { workspace = true, features = ["near-api"] }
+defuse-crypto = { workspace = true, features = ["near-kit"] }
+defuse-nep413 = { workspace = true, features = ["near-kit"] }
 defuse-nep245.workspace = true
 tokio.workspace = true
 rstest.workspace = true

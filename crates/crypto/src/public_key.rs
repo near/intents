@@ -229,32 +229,26 @@ const _: () = {
     }
 };
 
-#[cfg(feature = "near-api-types")]
+#[cfg(feature = "near-kit")]
 const _: () = {
-    use near_api_types::crypto::public_key::{
-        ED25519PublicKey, PublicKey as NearPublicKey, Secp256K1PublicKey,
-    };
+    use near_kit::{KeyType, PublicKey as NearPublicKey};
 
     impl From<NearPublicKey> for PublicKey {
         fn from(pk: NearPublicKey) -> Self {
-            match pk {
+            match pk.key_type() {
                 #[cfg(feature = "ed25519")]
-                NearPublicKey::ED25519(pk) => pk.into(),
+                KeyType::Ed25519 => {
+                    let bytes = pk
+                        .as_ed25519_bytes()
+                        .expect("near-kit invariant: ed25519 key is always 32 bytes");
+
+                    Self::Ed25519(*bytes)
+                }
                 #[cfg(feature = "secp256k1")]
-                NearPublicKey::SECP256K1(pk) => pk.into(),
+                KeyType::Secp256k1 => {
+                    unimplemented!("secp256k1 keys are not fully supported in near-kit yet")
+                }
             }
-        }
-    }
-
-    impl From<ED25519PublicKey> for PublicKey {
-        fn from(pk: ED25519PublicKey) -> Self {
-            Self::Ed25519(pk.0)
-        }
-    }
-
-    impl From<Secp256K1PublicKey> for PublicKey {
-        fn from(pk: Secp256K1PublicKey) -> Self {
-            Self::Secp256k1(pk.0)
         }
     }
 };

@@ -18,7 +18,7 @@ generic-array = { workspace = true, features = [
 ], optional = true }
 
 arbitrary = { workspace = true, features = ["derive"], optional = true }
-near-api-types = { workspace = true, optional = true }
+near-kit = { workspace = true, optional = true }
 
 [features]
 default = ["ed25519", "secp256k1", "p256"]
@@ -30,7 +30,7 @@ p256 = ["dep:p256", "dep:generic-array"]
 abi = ["near-sdk/abi"]
 
 arbitrary = ["dep:arbitrary"]
-near-api-types = ["dep:near-api-types", "ed25519", "secp256k1"]
+near-kit = ["dep:near-kit", "ed25519", "secp256k1"]
 
 
 [lints]

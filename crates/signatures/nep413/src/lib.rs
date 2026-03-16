@@ -103,16 +103,17 @@ impl SignedPayload for SignedNep413Payload {
     }
 }
 
-#[cfg(feature = "near-api")]
-const _: () = {
-    impl From<Nep413Payload> for near_api::signer::NEP413Payload {
-        fn from(payload: Nep413Payload) -> Self {
-            Self {
-                message: payload.message,
-                nonce: payload.nonce,
-                recipient: payload.recipient,
-                callback_url: payload.callback_url,
-            }
-        }
-    }
-};
+// TODO: do we need that?
+// #[cfg(feature = "near-kit")]
+// const _: () = {
+//     impl From<Nep413Payload> for near_kit::nep413::N {
+//         fn from(payload: Nep413Payload) -> Self {
+//             Self {
+//                 message: payload.message,
+//                 nonce: payload.nonce,
+//                 recipient: payload.recipient,
+//                 callback_url: payload.callback_url,
+//             }
+//         }
+//     }
+// };
