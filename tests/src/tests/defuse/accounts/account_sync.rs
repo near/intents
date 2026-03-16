@@ -19,9 +19,8 @@ use defuse_sandbox::{
     tx::FnCallBuilder,
 };
 use defuse_test_utils::{asserts::ResultAssertsExt, random::rng};
-use near_sdk::{AccountId, AsNep297Event, NearToken};
+use near_sdk::{AccountId, AsNep297Event, NearToken, serde_json::json};
 use rstest::rstest;
-use serde_json::json;
 
 use crate::tests::defuse::env::Env;
 use defuse_test_utils::fixtures::public_key;

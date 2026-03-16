@@ -18,13 +18,13 @@ use defuse_wallet::{
 use futures::{StreamExt, TryStreamExt, stream};
 use impl_tools::autoimpl;
 use near_crypto::{KeyType, SecretKey, Signature};
+use near_sdk::serde_json::json;
 use near_sdk::{
     AccountId, Gas, GlobalContractId, NearToken, borsh,
     env::sha256_array,
     state_init::{StateInit, StateInitV1},
 };
 use rstest::{fixture, rstest};
-use serde_json::json;
 
 type S = Borsh<Ed25519>;
 type PublicKey = <S as SigningStandard<RequestMessage>>::PublicKey;

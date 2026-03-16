@@ -20,7 +20,7 @@ use defuse_sandbox::extensions::defuse::deployer::DefuseExt;
 use defuse_sandbox::extensions::defuse::signer::DefaultDefuseSignerExt;
 use defuse_sandbox::extensions::ft::FtViewExt;
 use multi_token_receiver_stub::MTReceiverMode;
-use near_sdk::{AccountId, Gas};
+use near_sdk::{AccountId, Gas, serde_json};
 use rstest::rstest;
 
 use defuse_sandbox::extensions::defuse::contract::core::amounts::Amounts;

@@ -6,4 +6,4 @@ mod state_init;
 mod storage;
 mod tokens;
 
-mod env;
+pub mod env;
