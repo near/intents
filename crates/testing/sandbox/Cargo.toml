@@ -27,14 +27,11 @@ anyhow.workspace = true
 futures.workspace = true
 libc = "0.2"
 impl-tools.workspace = true
-near-api.workspace = true
-near-openapi-types.workspace = true
-near-sandbox.workspace = true
 near-sdk = { workspace = true, features = [
-    "unit-testing",
-    "deterministic-account-ids",
+    "non-contract-usage",
 ] }
 tracing.workspace = true
+near-kit = { workspace = true, features = ["sandbox"] }
 
 near-contract-standards.workspace = true
 
@@ -50,3 +47,5 @@ defuse-wallet = { workspace = true, optional = true }
 defuse = { workspace = true, optional = true, features = ["contract"] }
 defuse-serde-utils = { workspace = true, optional = true }
 defuse-test-utils = { workspace = true, optional = true }
+
+serde_json.workspace = true

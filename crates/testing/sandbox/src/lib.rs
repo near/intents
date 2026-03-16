@@ -1,150 +1,193 @@
-mod account;
-pub mod extensions;
-pub mod helpers;
-pub mod tx;
-
-use std::sync::{
-    Arc, Mutex,
-    atomic::{AtomicUsize, Ordering},
-};
-use tokio::sync::OnceCell;
-
-pub use account::{Account, SigningAccount};
-pub use extensions::{
-    ft::{FtExt, FtViewExt},
-    mt::{MtExt, MtViewExt},
-    mt_receiver::MtReceiverStubExt,
-    storage_management::{StorageManagementExt, StorageViewExt},
-    wnear::{WNearDeployerExt, WNearExt},
-};
-pub use helpers::*;
-pub use tx::{FnCallBuilder, TxBuilder};
-
-pub use anyhow;
+use anyhow::{Result, anyhow};
+use defuse::contract::config::DefuseConfig;
+use defuse_poa_factory::contract::Role;
 use impl_tools::autoimpl;
-pub use near_api as api;
-// NOTE: that is not ok - errors should be separated to another mod
-pub use near_openapi_types as openapi_types;
-pub use near_sandbox;
-
-use near_api::{NetworkConfig, RPCEndpoint, Signer, signer::generate_secret_key};
-use near_sandbox::{GenesisAccount, SandboxConfig};
-use near_sdk::{AccountId, AccountIdRef, NearToken};
+use near_kit::{AccountId, InMemorySigner, KeyPair, Near, NearToken, sandbox::SandboxConfig};
 use rstest::fixture;
-use tracing::instrument;
+use serde_json::json;
+use std::{
+    collections::{HashMap, HashSet},
+    sync::atomic::{AtomicUsize, Ordering},
+};
+
+pub mod extensions;
+
+pub use near_kit;
+
+#[fixture]
+pub async fn sandbox(#[default(NearToken::from_near(100_000))] amount: NearToken) -> Sandbox {
+    static SUB_COUNTER: AtomicUsize = AtomicUsize::new(0);
+
+    let near = SandboxConfig::shared().await.client();
+    let parent_id = near
+        .account_id()
+        .expect("Parent account id should be present");
+
+    let key_pair = KeyPair::random();
+    let child_id = format!(
+        "{}.{}",
+        SUB_COUNTER.fetch_add(1, Ordering::SeqCst),
+        parent_id
+    );
+
+    near.transaction(&child_id)
+        .create_account()
+        .transfer(amount)
+        .add_full_access_key(key_pair.public_key)
+        .send()
+        .await
+        .expect("Failed to create account");
+
+    Sandbox {
+        root: near.with_signer(InMemorySigner::from_secret_key(
+            child_id.parse().unwrap(),
+            key_pair.secret_key,
+        )),
+    }
+}
 
 #[autoimpl(Deref using self.root)]
 pub struct Sandbox {
-    root: SigningAccount,
-    sandbox: Arc<near_sandbox::Sandbox>,
+    root: Near,
 }
 
 impl Sandbox {
-    pub async fn new(root_id: impl Into<AccountId>) -> Self {
-        let root_id = root_id.into();
+    pub fn sub_account(&self, name: impl AsRef<str>) -> anyhow::Result<AccountId> {
+        let parent_id = self.account_id().ok_or(anyhow!("Account should exist"))?;
 
-        // FIXME: why does test.ner exist in genesis cfg????
-        let root_secret_key = generate_secret_key().unwrap();
-
-        let root_genesis = GenesisAccount {
-            account_id: root_id.clone(),
-            public_key: root_secret_key.public_key().to_string(),
-            private_key: root_secret_key.to_string(),
-            // half of total supply
-            balance: NearToken::MAX.saturating_div(2),
-        };
-
-        let sandbox = near_sandbox::Sandbox::start_sandbox_with_config(SandboxConfig {
-            additional_accounts: vec![root_genesis],
-            ..SandboxConfig::default()
-        })
-        .await
-        .unwrap();
-
-        let network_config = NetworkConfig {
-            network_name: "sandbox".to_string(),
-            rpc_endpoints: vec![RPCEndpoint::new(sandbox.rpc_addr.parse().unwrap())],
-            ..NetworkConfig::testnet()
-        };
-
-        let root = SigningAccount::new(
-            Account::new(root_id, network_config),
-            Signer::from_secret_key(root_secret_key).unwrap(),
-        );
-
-        Self {
-            root,
-            sandbox: sandbox.into(),
-        }
+        let child_id = format!("{}.{}", name.as_ref(), parent_id);
+        Ok(child_id.parse()?)
     }
 
-    pub const fn root(&self) -> &SigningAccount {
-        &self.root
+    pub async fn generate_subaccount(
+        &self,
+        name: impl AsRef<str>,
+        amount: NearToken,
+    ) -> Result<Near> {
+        let key_pair = KeyPair::random();
+        let child_id = self.sub_account(name)?;
+
+        self.transaction(&child_id)
+            .create_account()
+            .transfer(amount)
+            .add_full_access_key(key_pair.public_key)
+            .send()
+            .await?;
+
+        Ok(self.with_signer(InMemorySigner::from_secret_key(
+            child_id,
+            key_pair.secret_key,
+        )))
     }
 
-    pub fn account(&self, account_id: impl Into<AccountId>) -> Account {
-        Account::new(account_id, self.root().network_config().clone())
+    pub async fn deploy_poa_factory(
+        &self,
+        name: impl AsRef<str>,
+        super_admins: impl IntoIterator<Item = AccountId>,
+        admins: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
+        grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
+        wasm: impl Into<Vec<u8>>,
+    ) -> anyhow::Result<Near> {
+        let key_pair = KeyPair::random();
+        let subaccount = self.sub_account(name)?;
+
+        self.transaction(&subaccount)
+            .create_account()
+            .transfer(NearToken::from_near(100))
+            .add_full_access_key(key_pair.public_key)
+            .deploy(wasm.into())
+            .call("new")
+            .args(json!({
+                "super_admins": super_admins.into_iter().collect::<HashSet<_>>(),
+                "admins": admins
+                    .into_iter()
+                    .map(|(role, admins)| (role, admins.into_iter().collect::<HashSet<_>>()))
+                    .collect::<HashMap<_, _>>(),
+                "grantees": grantees
+                    .into_iter()
+                    .map(|(role, grantees)| (role, grantees.into_iter().collect::<HashSet<_>>()))
+                    .collect::<HashMap<_, _>>(),
+            }))
+            .await?;
+
+        Ok(self.with_signer(InMemorySigner::from_secret_key(
+            subaccount,
+            key_pair.secret_key,
+        )))
     }
 
-    pub fn sandbox(&self) -> &near_sandbox::Sandbox {
-        self.sandbox.as_ref()
+    pub async fn deploy_wrap_near(
+        &self,
+        name: impl AsRef<str>,
+        wasm: impl Into<Vec<u8>>,
+    ) -> anyhow::Result<Near> {
+        let key_pair = KeyPair::random();
+        let subaccount = self.sub_account(name)?;
+
+        self.transaction(&subaccount)
+            .create_account()
+            .transfer(NearToken::from_near(100))
+            .add_full_access_key(key_pair.public_key)
+            .deploy(wasm.into())
+            .call("new")
+            .await?;
+
+        Ok(self.with_signer(InMemorySigner::from_secret_key(
+            subaccount,
+            key_pair.secret_key,
+        )))
     }
 
-    pub async fn fast_forward(&self, blocks: u64) {
-        self.sandbox.fast_forward(blocks).await.unwrap();
+    pub async fn deploy_defuse(
+        &self,
+        name: impl AsRef<str>,
+        config: DefuseConfig,
+        wasm: impl Into<Vec<u8>>,
+    ) -> anyhow::Result<Near> {
+        let key_pair = KeyPair::random();
+        let subaccount = self.sub_account(name)?;
+
+        self.transaction(&subaccount)
+            .create_account()
+            .transfer(NearToken::from_near(100))
+            .add_full_access_key(key_pair.public_key)
+            .deploy(wasm.into())
+            .call("new")
+            .args(json!({
+                "config": config,
+            }))
+            .await?;
+
+        Ok(self.with_signer(InMemorySigner::from_secret_key(
+            subaccount,
+            key_pair.secret_key,
+        )))
     }
-}
 
-/// Shared sandbox instance for test fixtures.
-/// Using `OnceCell<Mutex<Option<...>>>` allows async init and taking ownership in atexit.
-static SHARED_SANDBOX: OnceCell<Mutex<Option<Sandbox>>> = OnceCell::const_new();
+    // pub async fn deploy_sub_contract(
+    //     &self,
+    //     name: impl AsRef<str>,
+    //     balance: NearToken,
+    //     code: impl Into<Vec<u8>>,
+    //     // init_call: impl Into<Option<FnCallBuilder>>,
+    // ) -> anyhow::Result<Near> {
+    //     let key_pair = KeyPair::random();
+    //     let subaccount = self.sub_account(name)?;
 
-extern "C" fn cleanup_sandbox() {
-    if let Some(mutex) = SHARED_SANDBOX.get() {
-        if let Ok(mut guard) = mutex.lock() {
-            drop(guard.take());
-        }
-    }
-}
+    //     // self.transaction(&subaccount)
+    //     //     .create_account()
+    //     //     .transfer(balance)
+    //     //     .add_full_access_key(key_pair.public_key)
+    //     //     .deploy(code)
 
-pub const DEFAULT_CONCURRENCY_LIMIT: usize = 10;
+    //     // if let Some(init_call) = init_call.into() {
+    //     //     tx = tx.call(method)
+    //     // }
+    //     // tx.await?;
 
-#[fixture]
-#[instrument]
-pub async fn sandbox(
-    #[default(NearToken::from_near(100_000))] amount: NearToken,
-    #[default(DEFAULT_CONCURRENCY_LIMIT)] concurrency_limit: usize,
-) -> Sandbox {
-    const SHARED_ROOT: &AccountIdRef = AccountIdRef::new_or_panic("test");
-    static SUB_COUNTER: AtomicUsize = AtomicUsize::new(0);
-
-    let mutex = SHARED_SANDBOX
-        .get_or_init(|| async {
-            unsafe {
-                libc::atexit(cleanup_sandbox);
-            }
-            Mutex::new(Some(Sandbox::new(SHARED_ROOT).await))
-        })
-        .await;
-
-    let (sandbox_arc, root_account) = mutex
-        .lock()
-        .unwrap()
-        .as_ref()
-        .map(|shared| (shared.sandbox.clone(), shared.root.clone()))
-        .unwrap();
-
-    let child_root = root_account
-        .generate_subaccount_highload(
-            SUB_COUNTER.fetch_add(1, Ordering::Relaxed).to_string(),
-            concurrency_limit,
-            amount,
-        )
-        .await
-        .unwrap();
-
-    Sandbox {
-        root: child_root,
-        sandbox: sandbox_arc,
-    }
+    //     // Ok(Self::new(
+    //     //     subaccount,
+    //     //     Signer::from_secret_key(secret_key).unwrap(),
+    //     // ))
+    // }
 }
