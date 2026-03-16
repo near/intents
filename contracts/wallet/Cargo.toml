@@ -4,6 +4,7 @@ edition.workspace = true
 version = "0.1.0"
 rust-version.workspace = true
 repository.workspace = true
+readme = "../README.md"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

@@ -48,9 +48,9 @@ jobs:
           echo 'Signature: 8a477f597d28d172789f06886806bc55' | tee target/CACHEDIR.TAG res/CACHEDIR.TAG > /dev/null
       - name: Run clippy for workspace
         run: cargo clippy --workspace --all-targets --no-deps
-      - name: Run clippy for defuse 
+      - name: Run clippy for defuse
         # Run clippy only on the main contract feature
-        run: cargo clippy --manifest-path ./defuse/Cargo.toml --features=contract --features=near-sdk/non-contract-usage --no-deps
+        run: cargo clippy --manifest-path ./contracts/defuse/Cargo.toml --features=contract --features=near-sdk/non-contract-usage --no-deps
 
   build:
     name: Build
@@ -204,9 +204,3 @@ jobs:
       - name: Run security audit
         run: cargo audit --deny unsound --deny yanked
         # run: cargo audit --deny warnings  # Warnings include: unmaintained, unsound and yanked
-
-  contract_analysis:
-    name: Shared security analysis
-    uses: aurora-is-near/.github/.github/workflows/security_analysis.yml@master
-    secrets:
-      DD_API_KEY: ${{ secrets.DD_API_KEY }}

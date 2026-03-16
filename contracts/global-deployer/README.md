@@ -185,17 +185,23 @@ If consecutive upgrades are needed (e.g. H1 → H2 → H3), they can be prepared
 - Upgrading Controller code propagates to all future instances (deploy-by-account-id).
 - The GD deployed by hash once is the **immutable foundation** for the whole hierarchy.
 
-## `state_init` CLI
+## `near gds` extension
 
-The `state_init` CLI tool computes the `StateInit` for a global-deployer contract, outputting a JSON map of base64-encoded key-value pairs.
+The `near-gds` command is an extension for [near-cli-rs](https://github.com/near/near-cli-rs) that computes the `StateInit` for a global-deployer contract, outputting a JSON map of base64-encoded key-value pairs.
+
+### Install
+
+```sh
+cargo install --path . --example near-gds
+```
 
 ### Usage
 
-```
-$ cargo gds --help
+```sh
+$ near gds --help
 Compute StateInit for a global-deployer contract
 
-Usage: state_init [OPTIONS] --owner-id <AccountId>
+Usage: near-gds [OPTIONS] --owner-id <AccountId>
 
 Options:
       --owner-id <AccountId>  Owner account ID
@@ -211,7 +217,7 @@ Options:
 ### Example
 
 ```bash
-cargo gds --owner-id test.near --index 1
+near gds --owner-id test.near --index 1
 ```
 ```
 owner_id:       test.near
@@ -225,7 +231,7 @@ Use `-q` / `--quiet` to suppress stderr and emit only JSON, useful for piping in
 ```bash
 near contract state-init \
   use-global-account-id 0s384bfa53f1718c7f53eaaa1b43c55e2aea3ef309 \
-  data-from-json "$(cargo gds \
+  data-from-json "$(near gds \
     --owner-id intents.sputnik-dao.near --index 42 \
     --approve 0x6c71114931fe91153b868f2cb29c5db70e59677d6d2e40404b3b9044d8052266 \
     --quiet)"

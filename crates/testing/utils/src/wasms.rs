@@ -17,7 +17,7 @@ fn get_out_dir() -> PathBuf {
 }
 
 pub fn read_wasm(mode: &ReadWasmMode, path: impl AsRef<Path>) -> Vec<u8> {
-    let mut base = Path::new(env!("CARGO_MANIFEST_DIR")).join("../");
+    let mut base = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../");
 
     if matches!(mode, ReadWasmMode::BuildArtifact) {
         // if out dir path is absolute - base is ignored during join

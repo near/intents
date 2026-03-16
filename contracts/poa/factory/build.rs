@@ -6,7 +6,7 @@ use cargo_near_build::{
 use std::str::FromStr;
 
 fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
-    let workdir = "../poa-token";
+    let workdir = "../token";
     let env_var_key = "POA_TOKEN_WASM";
     let manifest = Utf8PathBuf::from_str(workdir)?.join("Cargo.toml");
 
