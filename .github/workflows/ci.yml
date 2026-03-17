@@ -20,7 +20,9 @@ jobs:
         uses: actions-rust-lang/rustfmt@v1
       - name: Install Taplo
         uses: uncenter/setup-taplo@v1
-      - name: Taplo Format Check
+        with: 
+          version: "0.10.0"
+      - name: Check cargo manifests formatting
         run: taplo format --check
 
   check:
