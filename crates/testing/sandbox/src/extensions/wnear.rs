@@ -1,72 +1,33 @@
-use near_sdk::{AccountId, NearToken, serde_json::json};
+use anyhow::Result;
+use near_kit::{FunctionCallAction, Gas, Near, NearToken};
 
-use super::ft::FtExt;
-use crate::{SigningAccount, tx::FnCallBuilder};
+use crate::{DEFAULT_DEPOSIT, Sandbox};
 
-pub trait WNearExt: FtExt {
-    async fn near_deposit(
-        &self,
-        wnear_id: impl Into<AccountId>,
-        amount: NearToken,
-    ) -> anyhow::Result<()>;
-    async fn near_withdraw(
-        &self,
-        wnear_id: impl Into<AccountId>,
-        amount: NearToken,
-    ) -> anyhow::Result<()>;
+#[near_kit::contract]
+pub trait WNear {
+    #[call]
+    fn near_deposit(&mut self, amount: NearToken);
+
+    #[call]
+    fn near_withdraw(&mut self, amount: NearToken);
 }
 
-impl WNearExt for SigningAccount {
-    async fn near_deposit(
-        &self,
-        wnear_id: impl Into<AccountId>,
-        amount: NearToken,
-    ) -> anyhow::Result<()> {
-        self.tx(wnear_id)
-            .function_call(FnCallBuilder::new("near_deposit").with_deposit(amount))
-            .await?;
-
-        Ok(())
-    }
-
-    async fn near_withdraw(
-        &self,
-        wnear_id: impl Into<AccountId>,
-        amount: NearToken,
-    ) -> anyhow::Result<()> {
-        self.tx(wnear_id)
-            .function_call(
-                FnCallBuilder::new("near_withdraw")
-                    .json_args(json!({
-                        "amount": amount,
-                    }))
-                    .with_deposit(NearToken::from_yoctonear(1)),
-            )
-            .await?;
-
-        Ok(())
-    }
-}
-
-pub trait WNearDeployerExt {
-    async fn deploy_wrap_near(
+impl Sandbox {
+    pub async fn deploy_wrap_near(
         &self,
         name: impl AsRef<str>,
         wasm: impl Into<Vec<u8>>,
-    ) -> anyhow::Result<SigningAccount>;
-}
-
-impl WNearDeployerExt for SigningAccount {
-    async fn deploy_wrap_near(
-        &self,
-        name: impl AsRef<str>,
-        wasm: impl Into<Vec<u8>>,
-    ) -> anyhow::Result<Self> {
+    ) -> Result<Near> {
         self.deploy_sub_contract(
             name,
             NearToken::from_near(100),
-            wasm.into(),
-            FnCallBuilder::new("new"),
+            wasm,
+            Some(FunctionCallAction {
+                method_name: "new".to_string(),
+                args: vec![],
+                gas: Gas::DEFAULT,
+                deposit: DEFAULT_DEPOSIT,
+            }),
         )
         .await
     }

@@ -1,160 +1,31 @@
-use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
-use defuse_global_deployer::State as DeployerState;
-use defuse_serde_utils::hex::AsHex;
-use near_api::types::transaction::result::ExecutionSuccess;
 use near_sdk::{
-    AccountId, GlobalContractId, NearToken,
-    serde_json::json,
-    state_init::{StateInit, StateInitV1},
+    AccountId,
+    json_types::U128,
+    serde::{Deserialize, Serialize},
 };
 
-#[allow(async_fn_in_trait)]
-pub trait DeployerExt {
-    async fn deploy_instance(
-        &self,
-        deployer_code_hash_id: GlobalContractId,
-        state: DeployerState,
-    ) -> anyhow::Result<Account>;
-
-    async fn gd_deploy(
-        &self,
-        target: &AccountId,
-        new_code: &[u8],
-    ) -> anyhow::Result<ExecutionSuccess>;
-
-    async fn gd_transfer_ownership(
-        &self,
-        target: &AccountId,
-        new_owner: &AccountId,
-    ) -> anyhow::Result<ExecutionSuccess>;
-
-    async fn gd_approve(
-        &self,
-        target: &AccountId,
-        old_hash: [u8; 32],
-        new_hash: [u8; 32],
-    ) -> anyhow::Result<ExecutionSuccess>;
-
-    async fn gd_approve_and_deploy(
-        &self,
-        target: &AccountId,
-        old_hash: [u8; 32],
-        new_code: &[u8],
-    ) -> anyhow::Result<ExecutionSuccess>;
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct GDApproveArgs {
+    pub token: String,
+    pub owner_id: AccountId,
+    pub amount: U128,
+    pub msg: Option<String>,
+    pub memo: Option<String>,
 }
 
-#[allow(async_fn_in_trait)]
-pub trait DeployerViewExt {
-    async fn gd_owner_id(&self) -> anyhow::Result<AccountId>;
-    async fn gd_code_hash(&self) -> anyhow::Result<[u8; 32]>;
-    async fn gd_approved_hash(&self) -> anyhow::Result<[u8; 32]>;
-}
+#[near_kit::contract]
+pub trait GlobalDeployer {
+    #[call]
+    fn gd_approve(&mut self, args: GDApproveArgs) -> bool;
 
-impl DeployerExt for SigningAccount {
-    async fn deploy_instance(
-        &self,
-        global_contract_id: GlobalContractId,
-        state: DeployerState,
-    ) -> anyhow::Result<Account> {
-        let account_id = self
-            .state_init(
-                StateInit::V1(StateInitV1 {
-                    code: global_contract_id,
-                    data: state.state_init(),
-                }),
-                NearToken::ZERO,
-            )
-            .await?;
+    #[call]
+    fn gd_deploy(&mut self, code: &[u8]) -> bool;
 
-        Ok(Account::new(account_id, self.network_config().clone()))
-    }
+    #[call]
+    fn gd_transfer_ownership(&mut self, receiver_id: AccountId);
 
-    async fn gd_deploy(
-        &self,
-        target: &AccountId,
-        new_code: &[u8],
-    ) -> anyhow::Result<ExecutionSuccess> {
-        self.tx(target)
-            .function_call(
-                FnCallBuilder::new("gd_deploy")
-                    .raw_args(new_code.to_vec())
-                    .with_deposit(NearToken::from_near(50)),
-            )
-            .await
-    }
-
-    async fn gd_transfer_ownership(
-        &self,
-        target: &AccountId,
-        new_owner: &AccountId,
-    ) -> anyhow::Result<ExecutionSuccess> {
-        self.tx(target)
-            .function_call(
-                FnCallBuilder::new("gd_transfer_ownership")
-                    .json_args(json!({"receiver_id": new_owner.clone()}))
-                    .with_deposit(NearToken::from_yoctonear(1)),
-            )
-            .await
-    }
-
-    async fn gd_approve(
-        &self,
-        target: &AccountId,
-        old_hash: [u8; 32],
-        new_hash: [u8; 32],
-    ) -> anyhow::Result<ExecutionSuccess> {
-        self.tx(target)
-            .function_call(
-                FnCallBuilder::new("gd_approve")
-                    .json_args(json!({
-                        "old_hash": AsHex(old_hash),
-                        "new_hash": AsHex(new_hash),
-                    }))
-                    .with_deposit(NearToken::from_yoctonear(1)),
-            )
-            .await
-    }
-
-    async fn gd_approve_and_deploy(
-        &self,
-        target: &AccountId,
-        old_hash: [u8; 32],
-        new_code: &[u8],
-    ) -> anyhow::Result<ExecutionSuccess> {
-        use near_sdk::Gas;
-        let new_hash = near_sdk::env::sha256_array(new_code);
-        self.tx(target)
-            .function_call(
-                FnCallBuilder::new("gd_approve")
-                    .json_args(json!({
-                        "old_hash": AsHex(old_hash),
-                        "new_hash": AsHex(new_hash),
-                    }))
-                    .with_deposit(NearToken::from_yoctonear(1))
-                    .with_gas(Gas::from_tgas(10)),
-            )
-            .function_call(
-                FnCallBuilder::new("gd_deploy")
-                    .raw_args(new_code.to_vec())
-                    .with_deposit(NearToken::from_near(50))
-                    .with_gas(Gas::from_tgas(290)),
-            )
-            .await
-    }
-}
-
-impl DeployerViewExt for Account {
-    async fn gd_owner_id(&self) -> anyhow::Result<AccountId> {
-        self.call_view_function_json("gd_owner_id", ()).await
-    }
-
-    async fn gd_code_hash(&self) -> anyhow::Result<[u8; 32]> {
-        let hash: AsHex<[u8; 32]> = self.call_view_function_json("gd_code_hash", ()).await?;
-        Ok(hash.into_inner())
-    }
-
-    async fn gd_approved_hash(&self) -> anyhow::Result<[u8; 32]> {
-        let hash: AsHex<[u8; 32]> = self.call_view_function_json("gd_approved_hash", ()).await?;
-        Ok(hash.into_inner())
-    }
+    fn gd_owner_id(&self) -> AccountId;
+    fn gd_code_hash(&self) -> [u8; 32];
+    fn gd_approved_hash(&self) -> [u8; 32];
 }

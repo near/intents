@@ -6,15 +6,16 @@
 // pub mod mt_receiver;
 // pub mod nft;
 // pub mod storage_management;
-// pub mod wnear;
 
-// #[cfg(feature = "defuse")]
-// pub mod defuse;
-// #[cfg(feature = "escrow")]
-// pub mod escrow;
-// #[cfg(feature = "deployer")]
-// pub mod global_deployer;
+pub mod wnear;
+
+#[cfg(feature = "defuse")]
+pub mod defuse;
+#[cfg(feature = "escrow")]
+pub mod escrow;
+#[cfg(feature = "deployer")]
+pub mod global_deployer;
 #[cfg(feature = "poa")]
 pub mod poa;
-// #[cfg(feature = "wallet")]
-// pub mod wallet;
+#[cfg(feature = "wallet")]
+pub mod wallet;

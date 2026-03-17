@@ -28,7 +28,7 @@ futures.workspace = true
 libc = "0.2"
 impl-tools.workspace = true
 near-sdk = { workspace = true, features = [
-    "non-contract-usage",
+    "unit-testing",
 ] }
 tracing.workspace = true
 near-kit = { workspace = true, features = ["sandbox"] }
@@ -39,9 +39,7 @@ defuse-poa-factory = { workspace = true, optional = true, features = [
     "contract",
 ] }
 defuse-global-deployer = { workspace = true, optional = true }
-defuse-escrow-swap = { workspace = true, optional = true, features = [
-    "auth_call",
-] }
+defuse-escrow-swap = { workspace = true, optional = true }
 defuse-wallet = { workspace = true, optional = true }
 
 defuse = { workspace = true, optional = true, features = ["contract"] }

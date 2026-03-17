@@ -1,34 +1,26 @@
 use anyhow::{Result, anyhow};
-use defuse::contract::config::DefuseConfig;
-use defuse_poa_factory::contract::Role;
 use impl_tools::autoimpl;
-use near_kit::{AccountId, InMemorySigner, KeyPair, Near, NearToken, sandbox::SandboxConfig};
-use rstest::fixture;
-use serde_json::json;
-use std::{
-    collections::{HashMap, HashSet},
-    sync::atomic::{AtomicUsize, Ordering},
+use near_kit::{
+    AccountId, Action, FunctionCallAction, InMemorySigner, KeyPair, Near, NearToken,
+    sandbox::SandboxConfig,
 };
-
+use rstest::fixture;
+use std::sync::atomic::{AtomicUsize, Ordering};
 pub mod extensions;
 
 pub use near_kit;
+
+pub const DEFAULT_DEPOSIT: NearToken = NearToken::from_near(100);
 
 #[fixture]
 pub async fn sandbox(#[default(NearToken::from_near(100_000))] amount: NearToken) -> Sandbox {
     static SUB_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
     let near = SandboxConfig::shared().await.client();
-    let parent_id = near
-        .account_id()
-        .expect("Parent account id should be present");
-
+    let child_id = near
+        .sub_account(SUB_COUNTER.fetch_add(1, Ordering::SeqCst).to_string())
+        .unwrap();
     let key_pair = KeyPair::random();
-    let child_id = format!(
-        "{}.{}",
-        SUB_COUNTER.fetch_add(1, Ordering::SeqCst),
-        parent_id
-    );
 
     near.transaction(&child_id)
         .create_account()
@@ -40,7 +32,7 @@ pub async fn sandbox(#[default(NearToken::from_near(100_000))] amount: NearToken
 
     Sandbox {
         root: near.with_signer(InMemorySigner::from_secret_key(
-            child_id.parse().unwrap(),
+            child_id,
             key_pair.secret_key,
         )),
     }
@@ -48,18 +40,11 @@ pub async fn sandbox(#[default(NearToken::from_near(100_000))] amount: NearToken
 
 #[autoimpl(Deref using self.root)]
 pub struct Sandbox {
-    root: Near,
+    pub root: Near,
 }
 
 impl Sandbox {
-    pub fn sub_account(&self, name: impl AsRef<str>) -> anyhow::Result<AccountId> {
-        let parent_id = self.account_id().ok_or(anyhow!("Account should exist"))?;
-
-        let child_id = format!("{}.{}", name.as_ref(), parent_id);
-        Ok(child_id.parse()?)
-    }
-
-    pub async fn generate_subaccount(
+    pub async fn generate_sub_account(
         &self,
         name: impl AsRef<str>,
         amount: NearToken,
@@ -80,114 +65,83 @@ impl Sandbox {
         )))
     }
 
-    pub async fn deploy_poa_factory(
+    pub async fn deploy_sub_contract(
         &self,
         name: impl AsRef<str>,
-        super_admins: impl IntoIterator<Item = AccountId>,
-        admins: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
-        grantees: impl IntoIterator<Item = (Role, impl IntoIterator<Item = AccountId>)>,
-        wasm: impl Into<Vec<u8>>,
+        balance: NearToken,
+        code: impl Into<Vec<u8>>,
+        init_call: impl Into<Option<FunctionCallAction>>,
     ) -> anyhow::Result<Near> {
         let key_pair = KeyPair::random();
         let subaccount = self.sub_account(name)?;
 
-        self.transaction(&subaccount)
+        let mut tx = self
+            .transaction(&subaccount)
             .create_account()
-            .transfer(NearToken::from_near(100))
+            .transfer(balance)
             .add_full_access_key(key_pair.public_key)
-            .deploy(wasm.into())
-            .call("new")
-            .args(json!({
-                "super_admins": super_admins.into_iter().collect::<HashSet<_>>(),
-                "admins": admins
-                    .into_iter()
-                    .map(|(role, admins)| (role, admins.into_iter().collect::<HashSet<_>>()))
-                    .collect::<HashMap<_, _>>(),
-                "grantees": grantees
-                    .into_iter()
-                    .map(|(role, grantees)| (role, grantees.into_iter().collect::<HashSet<_>>()))
-                    .collect::<HashMap<_, _>>(),
-            }))
-            .await?;
+            .deploy(code);
+
+        if let Some(init_call) = init_call.into() {
+            tx = tx.add_action(Action::FunctionCall(init_call));
+        }
+        tx.await?;
 
         Ok(self.with_signer(InMemorySigner::from_secret_key(
             subaccount,
             key_pair.secret_key,
         )))
     }
+}
 
-    pub async fn deploy_wrap_near(
-        &self,
-        name: impl AsRef<str>,
-        wasm: impl Into<Vec<u8>>,
-    ) -> anyhow::Result<Near> {
-        let key_pair = KeyPair::random();
-        let subaccount = self.sub_account(name)?;
+// TODO: this is hacky
+pub trait ToNearKit {
+    fn to_kit(&self) -> near_kit::AccountId;
+}
 
-        self.transaction(&subaccount)
-            .create_account()
-            .transfer(NearToken::from_near(100))
-            .add_full_access_key(key_pair.public_key)
-            .deploy(wasm.into())
-            .call("new")
-            .await?;
+pub trait ToNearSdk {
+    fn to_sdk(&self) -> near_sdk::AccountId;
+}
 
-        Ok(self.with_signer(InMemorySigner::from_secret_key(
-            subaccount,
-            key_pair.secret_key,
-        )))
+impl ToNearKit for near_sdk::AccountId {
+    fn to_kit(&self) -> near_kit::AccountId {
+        self.as_str().parse().unwrap()
     }
+}
 
-    pub async fn deploy_defuse(
-        &self,
-        name: impl AsRef<str>,
-        config: DefuseConfig,
-        wasm: impl Into<Vec<u8>>,
-    ) -> anyhow::Result<Near> {
-        let key_pair = KeyPair::random();
-        let subaccount = self.sub_account(name)?;
-
-        self.transaction(&subaccount)
-            .create_account()
-            .transfer(NearToken::from_near(100))
-            .add_full_access_key(key_pair.public_key)
-            .deploy(wasm.into())
-            .call("new")
-            .args(json!({
-                "config": config,
-            }))
-            .await?;
-
-        Ok(self.with_signer(InMemorySigner::from_secret_key(
-            subaccount,
-            key_pair.secret_key,
-        )))
+impl ToNearSdk for near_kit::AccountId {
+    fn to_sdk(&self) -> near_sdk::AccountId {
+        self.as_str().parse().unwrap()
     }
+}
 
-    // pub async fn deploy_sub_contract(
-    //     &self,
-    //     name: impl AsRef<str>,
-    //     balance: NearToken,
-    //     code: impl Into<Vec<u8>>,
-    //     // init_call: impl Into<Option<FnCallBuilder>>,
-    // ) -> anyhow::Result<Near> {
-    //     let key_pair = KeyPair::random();
-    //     let subaccount = self.sub_account(name)?;
+// TODO: total shit
+pub trait IntoAccountId<T>: Sized {
+    fn into_account_id(self) -> T;
+}
 
-    //     // self.transaction(&subaccount)
-    //     //     .create_account()
-    //     //     .transfer(balance)
-    //     //     .add_full_access_key(key_pair.public_key)
-    //     //     .deploy(code)
+impl IntoAccountId<near_sdk::AccountId> for &Near {
+    fn into_account_id(self) -> near_sdk::AccountId {
+        self.account_id().unwrap().as_str().parse().unwrap()
+    }
+}
 
-    //     // if let Some(init_call) = init_call.into() {
-    //     //     tx = tx.call(method)
-    //     // }
-    //     // tx.await?;
+pub trait SubAcount {
+    fn sub_account(&self, name: impl AsRef<str>) -> Result<AccountId>;
+}
 
-    //     // Ok(Self::new(
-    //     //     subaccount,
-    //     //     Signer::from_secret_key(secret_key).unwrap(),
-    //     // ))
-    // }
+impl SubAcount for AccountId {
+    fn sub_account(&self, name: impl AsRef<str>) -> Result<AccountId> {
+        format!("{}.{}", name.as_ref(), self)
+            .parse()
+            .map_err(Into::into)
+    }
+}
+
+impl SubAcount for Near {
+    fn sub_account(&self, name: impl AsRef<str>) -> Result<AccountId> {
+        let parent_id = self.account_id().ok_or(anyhow!("Account should exist"))?;
+
+        parent_id.sub_account(name)
+    }
 }
