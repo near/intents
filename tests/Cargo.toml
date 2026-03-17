@@ -9,70 +9,60 @@ repository.workspace = true
 workspace = true
 
 [features]
-default = ["defuse", "poa", "escrow-swap", "long", "deployer", "wallet"]
+default = ["defuse", "deployer", "escrow-swap", "long", "poa", "wallet"]
 
 poa = ["defuse-sandbox/poa", "defuse-test-utils/poa"]
 defuse = [
-    "dep:defuse",
-    "defuse-sandbox/defuse",
-    "defuse-sandbox/poa",
-    "defuse-sandbox/imt",
-    "defuse-test-utils/defuse",
-    "defuse-test-utils/poa",
+  "defuse-sandbox/defuse",
+  "defuse-sandbox/imt",
+  "defuse-sandbox/poa",
+  "defuse-test-utils/defuse",
+  "defuse-test-utils/poa",
+  "dep:defuse",
 ]
 escrow-swap = [
-    "dep:defuse-escrow-swap",
-    "defuse-sandbox/escrow",
-    "defuse-sandbox/defuse",
-    "defuse-sandbox/poa",
-    "defuse-test-utils/escrow",
-    "defuse-test-utils/defuse",
-    "defuse-test-utils/poa",
+  "defuse-sandbox/defuse",
+  "defuse-sandbox/escrow",
+  "defuse-sandbox/poa",
+  "defuse-test-utils/defuse",
+  "defuse-test-utils/escrow",
+  "defuse-test-utils/poa",
+  "dep:defuse-escrow-swap",
 ]
 wallet = [
-    "dep:defuse-wallet",
-    "defuse-sandbox/wallet",
-    "defuse-test-utils/wallet",
-    "deployer",
+  "defuse-sandbox/wallet",
+  "defuse-test-utils/wallet",
+  "dep:defuse-wallet",
+  "deployer",
 ]
 
-deployer = ["dep:defuse-global-deployer", "defuse-sandbox/deployer"]
+deployer = ["defuse-sandbox/deployer", "dep:defuse-global-deployer"]
 
 long = []
 
 [dependencies]
+defuse = { workspace = true, features = ["contract", "arbitrary", "far"], optional = true }
+defuse-escrow-swap = { workspace = true, features = ["auth_call"], optional = true }
 defuse-sandbox = { workspace = true }
-defuse = { workspace = true, features = [
-    "contract",
-    "arbitrary",
-    "far",
-], optional = true }
-defuse-escrow-swap = { workspace = true, features = [
-    "auth_call",
-], optional = true }
-defuse-wallet = { workspace = true, features = [
-    "arbitrary",
-    "concurrent",
-    "ed25519",
-], optional = true }
+defuse-wallet = { workspace = true, features = ["arbitrary", "concurrent", "ed25519"], optional = true }
 multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
 
-defuse-near-utils = { workspace = true }
-defuse-serde-utils = { workspace = true }
-defuse-randomness.workspace = true
-defuse-test-utils.workspace = true
 defuse-fees.workspace = true
 defuse-global-deployer = { workspace = true, optional = true }
+defuse-near-utils = { workspace = true }
+defuse-randomness.workspace = true
+defuse-serde-utils = { workspace = true }
+defuse-test-utils.workspace = true
 
-near-sdk.workspace = true
-near-crypto.workspace = true
 near-contract-standards.workspace = true
+near-crypto.workspace = true
+near-sdk.workspace = true
 
-futures = "0.3"
 anyhow.workspace = true
 arbitrary.workspace = true
 chrono.workspace = true
 derive_more.workspace = true
+futures = "0.3"
 impl-tools.workspace = true
 itertools.workspace = true
 

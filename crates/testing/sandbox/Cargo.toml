@@ -9,7 +9,7 @@ repository.workspace = true
 workspace = true
 
 [features]
-defuse = ["dep:defuse", "dep:defuse-test-utils", "dep:defuse-serde-utils"]
+defuse = ["dep:defuse", "dep:defuse-serde-utils", "dep:defuse-test-utils"]
 poa = ["dep:defuse-poa-factory"]
 deployer = ["dep:defuse-global-deployer", "dep:defuse-serde-utils"]
 escrow = ["dep:defuse-escrow-swap"]
@@ -18,33 +18,26 @@ wallet = ["dep:defuse-wallet"]
 
 [dependencies]
 defuse-crypto = { workspace = true, features = ["near-api-types"] }
-defuse-nep413 = { workspace = true, features = ["near-api"] }
 defuse-nep245.workspace = true
-tokio.workspace = true
+defuse-nep413 = { workspace = true, features = ["near-api"] }
 rstest.workspace = true
+tokio.workspace = true
 
 anyhow.workspace = true
 futures.workspace = true
-libc = "0.2"
 impl-tools.workspace = true
+libc = "0.2"
 near-api.workspace = true
 near-openapi-types.workspace = true
 near-sandbox.workspace = true
-near-sdk = { workspace = true, features = [
-    "unit-testing",
-    "deterministic-account-ids",
-] }
+near-sdk = { workspace = true, features = ["unit-testing", "deterministic-account-ids"] }
 tracing.workspace = true
 
 near-contract-standards.workspace = true
 
-defuse-poa-factory = { workspace = true, optional = true, features = [
-    "contract",
-] }
+defuse-escrow-swap = { workspace = true, optional = true, features = ["auth_call"] }
 defuse-global-deployer = { workspace = true, optional = true }
-defuse-escrow-swap = { workspace = true, optional = true, features = [
-    "auth_call",
-] }
+defuse-poa-factory = { workspace = true, optional = true, features = ["contract"] }
 defuse-wallet = { workspace = true, optional = true }
 
 defuse = { workspace = true, optional = true, features = ["contract"] }

@@ -1,6 +1,6 @@
 use clap::Parser;
 use defuse_global_deployer::State;
-use near_sdk::{AccountId, base64::prelude::*, bs58};
+use near_sdk::{AccountId, base64::prelude::*, bs58, serde_json};
 use std::collections::BTreeMap;
 
 fn parse_hex_hash(s: &str) -> Result<[u8; 32], String> {

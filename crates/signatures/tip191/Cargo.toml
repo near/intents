@@ -6,9 +6,7 @@ version.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-defuse-crypto = { workspace = true, default-features = false, features = [
-    "secp256k1",
-] }
+defuse-crypto = { workspace = true, default-features = false, features = ["secp256k1"] }
 
 impl-tools.workspace = true
 near-sdk.workspace = true

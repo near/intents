@@ -11,9 +11,9 @@ workspace = true
 [dependencies]
 defuse-nep245.workspace = true
 
+derive_more = { workspace = true, features = ["from"] }
 near-contract-standards.workspace = true
 near-sdk.workspace = true
-derive_more = { workspace = true, features = ["from"] }
 strum.workspace = true
 thiserror.workspace = true
 

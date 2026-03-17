@@ -20,8 +20,8 @@ time = ["dep:chrono"]
 [dev-dependencies]
 defuse-test-utils.workspace = true
 
-rstest.workspace = true
 near-sdk = { workspace = true, features = ["unit-testing"] }
+rstest.workspace = true
 
 [lints]
 workspace = true

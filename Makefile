@@ -60,6 +60,7 @@ help:
 	@echo "  clean-out-dir    Remove output directory only"
 	@echo "  test             Run all workspace tests"
 	@echo "  clippy           Run clippy lints"
+	@echo "  fmt              Format Rust files and Cargo.toml manifests"
 	@echo "  help             Show this help"
 
 .PHONY: clean-out-dir
@@ -81,3 +82,8 @@ clippy:
 .PHONY: machete
 machete:
 	cargo machete
+
+.PHONY: fmt
+fmt:
+	cargo fmt --all
+	taplo format
