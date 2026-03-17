@@ -80,14 +80,14 @@ help:
 	@$(foreach t,$(ALL_TARGETS),echo "  $(t)";)
 	@echo ""
 	@echo "Other targets:"
-	@echo "  all              Build all contracts (default)"
-	@echo "  clean            Remove build artifacts and cargo clean"
-	@echo "  clean-out-dir    Remove output directory only"
-	@echo "  test             Run all workspace tests"
-	@echo "  clippy           Run clippy lints"
+	@echo "  all                 Build all contracts (default)"
+	@echo "  clean               Remove build artifacts and cargo clean"
+	@echo "  clean-out-dir       Remove output directory only"
+	@echo "  test                Run all workspace tests"
+	@echo "  clippy              Run clippy lints"
 	@echo "  check-all-features  Check all feature combos with cargo-hack"
-	@echo "  fmt              Format Rust files and Cargo.toml manifests"
-	@echo "  help             Show this help"
+	@echo "  fmt                 Format Rust files and Cargo.toml manifests"
+	@echo "  help                Show this help"
 
 .PHONY: clean-out-dir
 clean-out-dir:
@@ -108,7 +108,8 @@ clippy:
 
 .PHONY: check check-all-features-host check-all-features-wasm check-examples
 
-check: check-all-features-host check-all-features-wasm check-examples
+check: check-all-features check-examples
+check-all-features: check-all-features-host check-all-features-wasm
 
 check-examples:
 	RUSTFLAGS='$(RUSTFLAGS_CHECK)' cargo clippy --workspace --examples

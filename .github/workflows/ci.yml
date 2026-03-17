@@ -59,6 +59,8 @@ jobs:
         uses: taiki-e/install-action@cargo-hack
       - name: Check all feature combinations
         run: make check-all-features
+      - name: Check all examples
+        run: make check-examples
 
   build:
     name: Build
