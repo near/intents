@@ -18,12 +18,10 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Rustfmt Check
         uses: actions-rust-lang/rustfmt@v1
-      - name: Install Taplo
-        uses: uncenter/setup-taplo@v1
-        with: 
-          version: "0.10.0"
+      - name: Download taplo
+        run: curl -fsSL https://github.com/tamasfe/taplo/releases/download/0.10.0/taplo-linux-x86_64.gz | gzip -d - > ./taplo && chmod +x ./taplo
       - name: Check cargo manifests formatting
-        run: taplo format --check
+        run: ./taplo format --check
 
   check:
     name: Check
