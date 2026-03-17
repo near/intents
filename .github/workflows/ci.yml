@@ -18,6 +18,10 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Rustfmt Check
         uses: actions-rust-lang/rustfmt@v1
+      - name: Taplo Format Check
+        uses: tamasfe/taplo-action@v1
+        with:
+          args: format --check
 
   check:
     name: Check
