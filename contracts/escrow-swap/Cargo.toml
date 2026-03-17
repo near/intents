@@ -16,14 +16,14 @@ image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
 image_digest = "sha256:772638e343baeeea24e49062c7d424274f3441452cc06ce97fc4e5695b19fecc"
 passed_env = []
 container_build_command = [
-    "cargo",
-    "near",
-    "build",
-    "non-reproducible-wasm",
-    "--locked",
-    "--features=contract",
-    "--abi-features=abi,contract",
-    "--no-embed-abi",
+  "cargo",
+  "near",
+  "build",
+  "non-reproducible-wasm",
+  "--locked",
+  "--features=contract",
+  "--abi-features=abi,contract",
+  "--no-embed-abi",
 ]
 
 [dependencies]
@@ -51,8 +51,8 @@ defuse-near-utils = { workspace = true, optional = true }
 defuse-sandbox = { workspace = true }
 
 futures.workspace = true
-rstest.workspace = true
 itertools.workspace = true
+rstest.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 
 [features]
@@ -63,10 +63,10 @@ nep141 = ["defuse-token-id/nep141"]
 nep245 = ["defuse-token-id/nep245"]
 
 abi = [
-    "defuse-deadline/abi",
-    "defuse-decimal/abi",
-    "defuse-token-id/abi",
-    "serde_with/schemars_0_8",
-    "near-sdk/abi",
+  "defuse-deadline/abi",
+  "defuse-decimal/abi",
+  "defuse-token-id/abi",
+  "near-sdk/abi",
+  "serde_with/schemars_0_8",
 ]
 contract = ["dep:defuse-near-utils"]

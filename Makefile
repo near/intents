@@ -86,6 +86,7 @@ help:
 	@echo "  test             Run all workspace tests"
 	@echo "  clippy           Run clippy lints"
 	@echo "  check-all-features  Check all feature combos with cargo-hack"
+	@echo "  fmt              Format Rust files and Cargo.toml manifests"
 	@echo "  help             Show this help"
 
 .PHONY: clean-out-dir
@@ -124,3 +125,7 @@ check-all-features-wasm:
 	    $(addprefix --exclude ,$(CRATES_HOST_ONLY))
 	$(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),\
 	    $(CARGO_CHECK_WASM) -p $(call crate_name,$c) --feature-powerset --at-least-one-of $(call crate_features,$c) &&) true
+.PHONY: fmt
+fmt:
+	cargo fmt --all
+	taplo format

@@ -15,13 +15,8 @@ escrow = []
 wallet = []
 
 [dependencies]
+defuse-crypto = { workspace = true, features = ["arbitrary", "ed25519", "secp256k1", "p256"] }
 defuse-randomness.workspace = true
-defuse-crypto = { workspace = true, features = [
-    "arbitrary",
-    "ed25519",
-    "secp256k1",
-    "p256",
-] }
 
 arbitrary.workspace = true
 derive_more = { workspace = true, features = ["full"] }

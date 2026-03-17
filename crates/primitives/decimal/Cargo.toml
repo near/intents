@@ -21,5 +21,5 @@ thiserror.workspace = true
 arbitrary = { workspace = true, optional = true }
 
 [dev-dependencies]
-rstest.workspace = true
 near-sdk = { workspace = true, features = ["non-contract-usage"] }
+rstest.workspace = true

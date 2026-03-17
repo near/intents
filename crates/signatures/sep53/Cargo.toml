@@ -6,10 +6,7 @@ version.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-defuse-crypto = { workspace = true, default-features = false, features = [
-    "ed25519",
-    "secp256k1",
-] }
+defuse-crypto = { workspace = true, default-features = false, features = ["ed25519", "secp256k1"] }
 
 impl-tools.workspace = true
 near-sdk.workspace = true
@@ -18,9 +15,9 @@ near-sdk.workspace = true
 defuse-test-utils.workspace = true
 ed25519-dalek.workspace = true
 near-crypto.workspace = true
+near-sdk = { workspace = true, features = ["unit-testing"] }
 rstest.workspace = true
 stellar-strkey.workspace = true
-near-sdk = { workspace = true, features = ["unit-testing"] }
 
 [lints]
 workspace = true
