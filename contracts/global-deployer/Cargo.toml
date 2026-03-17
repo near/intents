@@ -24,7 +24,6 @@ near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 clap = { workspace = true, features = ["wrap_help"] }
 hex.workspace = true
 near-sdk = { workspace = true, features = ["non-contract-usage"] }
-serde_json.workspace = true
 
 [package.metadata.near.reproducible_build]
 image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"

@@ -1117,7 +1117,6 @@ dependencies = [
  "defuse-serde-utils",
  "hex",
  "near-sdk",
- "serde_json",
 ]
 
 [[package]]
