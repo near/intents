@@ -6,9 +6,9 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
+defuse-near-utils.workspace = true
 derive_more = { workspace = true, features = ["from"] }
 near-sdk.workspace = true
-defuse-near-utils.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]

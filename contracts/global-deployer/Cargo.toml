@@ -23,20 +23,20 @@ near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 [dev-dependencies]
 clap = { workspace = true, features = ["wrap_help"] }
 hex.workspace = true
-serde_json.workspace = true
 near-sdk = { workspace = true, features = ["non-contract-usage"] }
+serde_json.workspace = true
 
 [package.metadata.near.reproducible_build]
 image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
 image_digest = "sha256:772638e343baeeea24e49062c7d424274f3441452cc06ce97fc4e5695b19fecc"
 passed_env = []
 container_build_command = [
-    "cargo",
-    "near",
-    "build",
-    "non-reproducible-wasm",
-    "--locked",
-    "--features=contract",
-    "--abi-features=abi,contract",
-    "--no-embed-abi",
+  "cargo",
+  "near",
+  "build",
+  "non-reproducible-wasm",
+  "--locked",
+  "--features=contract",
+  "--abi-features=abi,contract",
+  "--no-embed-abi",
 ]

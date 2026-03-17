@@ -1,0 +1,35 @@
+[formatting]
+reorder_keys = false   # safe default — don't sort anything
+reorder_arrays = false # same
+align_comments = true  # harmless globally
+
+# [package] — don't reorder (name/version/edition have a natural order)
+[[rule]]
+include = ["**/Cargo.toml"]
+keys = ["package", "workspace.package"]
+[rule.formatting]
+reorder_keys = false
+align_comments = true
+
+# sort deps alphabetically + align their comments
+[[rule]]
+include = ["**/Cargo.toml"]
+keys = ["dependencies", "*-dependencies", "workspace"]
+[rule.formatting]
+reorder_keys = true
+align_comments = true
+
+# sort feature lists
+[[rule]]
+include = ["**/Cargo.toml"]
+keys = ["features"]
+[rule.formatting]
+reorder_arrays = true
+
+# keep inline deps inline
+[[rule]]
+include = ["**/Cargo.toml"]
+keys = ["dependencies", "*-dependencies", "workspace.dependencies"]
+[rule.formatting]
+array_auto_expand = false
+inline_table_expand = false
