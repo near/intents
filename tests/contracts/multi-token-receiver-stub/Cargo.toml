@@ -13,13 +13,13 @@ image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
 image_digest = "sha256:772638e343baeeea24e49062c7d424274f3441452cc06ce97fc4e5695b19fecc"
 passed_env = []
 container_build_command = [
-    "cargo",
-    "near",
-    "build",
-    "non-reproducible-wasm",
-    "--locked",
-    "--abi-features=abi",
-    "--no-embed-abi",
+  "cargo",
+  "near",
+  "build",
+  "non-reproducible-wasm",
+  "--locked",
+  "--abi-features=abi",
+  "--no-embed-abi",
 ]
 
 [dependencies]
@@ -32,14 +32,11 @@ near-sdk.workspace = true
 [dev-dependencies]
 near-sdk = { workspace = true, features = ["unit-testing"] }
 near-workspaces.workspace = true
-tokio.workspace = true
 serde_json.workspace = true
+tokio.workspace = true
 
 [features]
 default = ["auth-call"]
-abi = [
-    "defuse/abi",
-    "near-sdk/abi"
-]
+abi = ["defuse/abi", "near-sdk/abi"]
 
 auth-call = ["dep:defuse-auth-call"]
