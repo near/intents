@@ -3,11 +3,7 @@ use std::borrow::Cow;
 use std::fmt::Debug;
 
 use near_sdk::near;
-#[cfg(any(feature = "binary", feature = "text"))]
-use near_sdk::env;
 use tlb_ton::{MsgAddress, StringError};
-#[cfg(any(feature = "binary", feature = "text"))]
-use tlb_ton::Error;
 
 #[cfg(feature = "binary")]
 mod binary;
@@ -30,10 +26,12 @@ impl TonConnectPayloadContext<'_> {
         payload_prefix: &[u8],
         payload: &[u8],
     ) -> Result<near_sdk::CryptoHash, StringError> {
+
+
         let domain_len =
-            u32::try_from(self.domain.len()).map_err(|_| Error::custom("domain: overflow"))?;
+            u32::try_from(self.domain.len()).map_err(|_| tlb_ton::Error::custom("domain: overflow"))?;
         let payload_len =
-            u32::try_from(payload.len()).map_err(|_| Error::custom("payload: overflow"))?;
+            u32::try_from(payload.len()).map_err(|_| tlb_ton::Error::custom("payload: overflow"))?;
 
         let bytes = [
             [0xff, 0xff].as_slice(),
@@ -49,7 +47,7 @@ impl TonConnectPayloadContext<'_> {
         ]
         .concat();
 
-        Ok(env::sha256_array(&bytes))
+        Ok(near_sdk::env::sha256_array(&bytes))
     }
 }
 
