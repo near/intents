@@ -54,7 +54,7 @@ jobs:
         run: cargo clippy --workspace --all-targets --no-deps
       - name: Run clippy for defuse
         # Run clippy only on the main contract feature
-        run: cargo clippy --manifest-path ./contracts/defuse/Cargo.toml --features=contract --features=near-sdk/non-contract-usage --no-deps
+        run: cargo clippy --manifest-path ./contracts/defuse/Cargo.toml --features=contract --target wasm32-unknown-unknown
       - name: Install cargo-hack
         uses: taiki-e/install-action@cargo-hack
       - name: Check all feature combinations
