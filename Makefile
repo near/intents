@@ -24,9 +24,10 @@ CRATES_HOST_ONLY := \
 crate_name = $(firstword $(subst =, ,$1))
 crate_features = $(lastword $(subst =, ,$1))
 
+RUSTFLAGS_CHECK = -D warnings
 # --cfg clippy: near-sdk compile_error!s on host unless one of its allowed cfgs is set
-CARGO_CHECK_HOST = RUSTFLAGS='--cfg clippy -D warnings' cargo hack check --exclude-features contract --no-dev-deps
-CARGO_CHECK_WASM = RUSTFLAGS='-D warnings' cargo hack check --target wasm32-unknown-unknown --exclude-features abi --exclude-features near-api-types --exclude-features near-api --no-dev-deps
+CARGO_CHECK_HOST = RUSTFLAGS='$(RUSTFLAGS_CHECK) --cfg clippy' cargo hack check --exclude-features contract --no-dev-deps
+CARGO_CHECK_WASM = RUSTFLAGS='$(RUSTFLAGS_CHECK)' cargo hack check --target wasm32-unknown-unknown --exclude-features abi --exclude-features near-api-types --exclude-features near-api --no-dev-deps
 
 .DEFAULT_GOAL := all
 CONTRACT_CRATES := \
@@ -104,9 +105,12 @@ clippy:
 	cargo clippy --workspace --all-targets --no-deps
 
 
-.PHONY: check check-all-features-host check-all-features-wasm
+.PHONY: check check-all-features-host check-all-features-wasm check-examples
 
-check: check-all-features-host check-all-features-wasm
+check: check-all-features-host check-all-features-wasm check-examples
+
+check-examples:
+	RUSTFLAGS='$(RUSTFLAGS_CHECK)' cargo check --workspace --examples
 
 check-all-features-host:
 	$(CARGO_CHECK_HOST) --workspace --each-feature --exclude-no-default-features \
