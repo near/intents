@@ -111,7 +111,7 @@ clippy:
 check: check-all-features-host check-all-features-wasm check-examples
 
 check-examples:
-	RUSTFLAGS='$(RUSTFLAGS_CHECK)' cargo check --workspace --examples
+	RUSTFLAGS='$(RUSTFLAGS_CHECK)' cargo clippy --workspace --examples
 
 check-all-features-host:
 	$(CARGO_CHECK_HOST) --workspace --each-feature --exclude-no-default-features \
