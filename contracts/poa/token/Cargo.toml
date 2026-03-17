@@ -40,7 +40,6 @@ container_build_command = [
 
 [dependencies]
 defuse-admin-utils.workspace = true
-defuse-near-utils.workspace = true
 
 near-contract-standards.workspace = true
 near-plugins.workspace = true

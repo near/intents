@@ -19,7 +19,6 @@ defuse-bitmap = { workspace = true, optional = true }
 defuse-borsh-utils = { workspace = true, optional = true }
 defuse-controller.workspace = true
 defuse-core.workspace = true
-defuse-io-utils = { workspace = true, optional = true }
 defuse-near-utils.workspace = true
 defuse-nep245.workspace = true
 defuse-map-utils = { workspace = true, optional = true }
@@ -27,18 +26,14 @@ defuse-serde-utils.workspace = true
 defuse-wnear = { workspace = true, optional = true }
 
 bitflags = { workspace = true, optional = true }
-bnum.workspace = true
 impl-tools.workspace = true
 itertools.workspace = true
 near-contract-standards.workspace = true
 near-plugins.workspace = true
 near-sdk.workspace = true
-serde_with.workspace = true
-strum.workspace = true
 thiserror.workspace = true
 
 arbitrary = {workspace = true, optional = true}
-defuse-test-utils = {workspace = true, optional = true}
 
 [package.metadata.near.reproducible_build]
 image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
@@ -76,7 +71,6 @@ arbitrary = ["defuse-core/arbitrary", "dep:arbitrary",]
 contract = [
     "dep:defuse-bitmap",
     "dep:defuse-borsh-utils",
-    "dep:defuse-io-utils",
     "dep:defuse-map-utils",
     "dep:defuse-wnear",
     "dep:bitflags",

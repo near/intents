@@ -24,6 +24,4 @@ defuse-crypto = { workspace = true, features = [
 ] }
 
 arbitrary.workspace = true
-derive_more = { workspace = true, features = ["full"] }
-hex.workspace = true
 rstest.workspace = true

@@ -51,6 +51,10 @@ jobs:
       - name: Run clippy for defuse
         # Run clippy only on the main contract feature
         run: cargo clippy --manifest-path ./contracts/defuse/Cargo.toml --features=contract --features=near-sdk/non-contract-usage --no-deps
+      - name: Install cargo-machete
+        run: cargo install cargo-machete --locked
+      - name: Check for unused dependencies
+        run: cargo machete
 
   build:
     name: Build

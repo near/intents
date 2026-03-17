@@ -77,3 +77,7 @@ test:
 .PHONY: clippy
 clippy:
 	cargo clippy --workspace --all-targets --no-deps
+
+.PHONY: machete
+machete:
+	cargo machete

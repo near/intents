@@ -30,6 +30,9 @@ binary = []
 cell = []
 text = []
 
+[package.metadata.cargo-machete]
+ignored = ["schemars"] # used by #[near] macro for ABI generation
+
 [dev-dependencies]
 defuse-test-utils.workspace = true
 
