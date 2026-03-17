@@ -2,8 +2,12 @@ use core::str;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
-use near_sdk::{env, near};
-use tlb_ton::{Error, MsgAddress, StringError};
+use near_sdk::near;
+#[cfg(any(feature = "binary", feature = "text"))]
+use near_sdk::env;
+use tlb_ton::{MsgAddress, StringError};
+#[cfg(any(feature = "binary", feature = "text"))]
+use tlb_ton::Error;
 
 #[cfg(feature = "binary")]
 mod binary;
@@ -20,6 +24,7 @@ pub struct TonConnectPayloadContext<'a> {
 
 impl TonConnectPayloadContext<'_> {
     // See https://docs.tonconsole.com/academy/sign-data#how-the-signature-is-built
+    #[cfg(any(feature = "binary", feature = "text"))]
     pub fn create_payload_hash(
         &self,
         payload_prefix: &[u8],

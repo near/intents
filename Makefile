@@ -3,6 +3,30 @@ DEFUSE_OUT_DIR ?= $(ROOT_DIR)res
 MAKE_OUT_DIR_PREFIX ?= $(ROOT_DIR)target/makenear
 MAKE_OUT_DIR = $(eval MAKE_OUT_DIR := $(shell mkdir -p $(MAKE_OUT_DIR_PREFIX) $(DEFUSE_OUT_DIR) && mktemp -d -p $(MAKE_OUT_DIR_PREFIX)))$(MAKE_OUT_DIR)
 
+# Crates where every enum variant is feature-gated, requiring at least one
+# variant feature. These need --feature-powerset + --at-least-one-of instead
+# of --each-feature (which tests features in isolation).
+# Format: crate=feature1,feature2,...
+CRATES_AT_LEAST_ONE_VARIANT := \
+    defuse-token-id=nep141,nep171,nep245,imt \
+    defuse-ton-connect=text,binary,cell \
+    defuse-escrow-swap=nep141,nep245
+
+# Testing crates that cannot compile for wasm32-unknown-unknown.
+# defuse-randomness uses rand/getrandom which lacks wasm32 support;
+# it only reaches the defuse contract via dev-dependencies, never in the WASM binary.
+CRATES_HOST_ONLY := \
+    defuse-test-utils \
+    defuse-sandbox \
+    defuse-randomness \
+    defuse-tests
+
+crate_name = $(firstword $(subst =, ,$1))
+crate_features = $(lastword $(subst =, ,$1))
+
+# --cfg clippy: near-sdk compile_error!s on host unless one of its allowed cfgs is set
+CARGO_CHECK_HOST = RUSTFLAGS='--cfg clippy -D warnings' cargo hack check --exclude-features contract --no-dev-deps
+CARGO_CHECK_WASM = RUSTFLAGS='-D warnings' cargo hack check --target wasm32-unknown-unknown --exclude-features abi --exclude-features near-api-types --exclude-features near-api --no-dev-deps
 
 .DEFAULT_GOAL := all
 CONTRACT_CRATES := \
@@ -79,29 +103,20 @@ test:
 clippy:
 	cargo clippy --workspace --all-targets --no-deps
 
-# Crates where every enum variant is feature-gated, requiring at least one
-# variant feature. These need --feature-powerset + --at-least-one-of instead
-# of --each-feature (which tests features in isolation).
-CRATES_AT_LEAST_ONE_VARIANT := \
-    defuse-token-id \
-    defuse-ton-connect \
-    defuse-escrow-swap
 
-CARGO_HACK_HOST = RUSTFLAGS='--cfg clippy' cargo hack check --exclude-features contract --no-dev-deps
-CARGO_HACK_WASM = cargo hack check --target wasm32-unknown-unknown --exclude-features abi --exclude-features near-api-types --exclude-features near-api --no-dev-deps
+.PHONY: check check-all-features-host check-all-features-wasm
 
-.PHONY: check-all-features
-check-all-features:
-	# Host compiler pass (exclude contract feature)
-	$(CARGO_HACK_HOST) --workspace --each-feature --exclude-no-default-features \
-	    $(addprefix --exclude ,$(CRATES_AT_LEAST_ONE_VARIANT))
-	$(CARGO_HACK_HOST) -p defuse-token-id   --feature-powerset --at-least-one-of nep141,nep171,nep245,imt
-	$(CARGO_HACK_HOST) -p defuse-ton-connect --feature-powerset --at-least-one-of text,binary,cell
-	$(CARGO_HACK_HOST) -p defuse-escrow-swap --feature-powerset --at-least-one-of nep141,nep245
-	# WASM compiler pass (exclude abi feature, skip testing crates)
-	$(CARGO_HACK_WASM) --workspace --each-feature --exclude-no-default-features \
-	    $(addprefix --exclude ,$(CRATES_AT_LEAST_ONE_VARIANT)) \
-	    --exclude defuse-test-utils --exclude defuse-sandbox --exclude defuse-randomness --exclude defuse-tests
-	$(CARGO_HACK_WASM) -p defuse-token-id   --feature-powerset --at-least-one-of nep141,nep171,nep245,imt
-	$(CARGO_HACK_WASM) -p defuse-ton-connect --feature-powerset --at-least-one-of text,binary,cell
-	$(CARGO_HACK_WASM) -p defuse-escrow-swap --feature-powerset --at-least-one-of nep141,nep245
+check: check-all-features-host check-all-features-wasm
+
+check-all-features-host:
+	$(CARGO_CHECK_HOST) --workspace --each-feature --exclude-no-default-features \
+	    $(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),--exclude $(call crate_name,$c))
+	$(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),\
+	    $(CARGO_CHECK_HOST) -p $(call crate_name,$c) --feature-powerset --at-least-one-of $(call crate_features,$c) &&) true
+
+check-all-features-wasm:
+	$(CARGO_CHECK_WASM) --workspace --each-feature --exclude-no-default-features \
+	    $(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),--exclude $(call crate_name,$c)) \
+	    $(addprefix --exclude ,$(CRATES_HOST_ONLY))
+	$(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),\
+	    $(CARGO_CHECK_WASM) -p $(call crate_name,$c) --feature-powerset --at-least-one-of $(call crate_features,$c) &&) true
