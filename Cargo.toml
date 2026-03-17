@@ -109,7 +109,9 @@ near-sdk = "5.24"
 near-workspaces = "0.22"
 
 anyhow = "1"
-arbitrary = "1"
+# TODO: `features = ["derive"]` needed because near-sdk uses `derive(Arbitrary)`
+# but doesn't enable the feature itself. Remove once fixed upstream in near-sdk.
+arbitrary = { version = "1", features = ["derive"] }
 array-util = "1"
 bitflags = "2.9.1"
 bnum = { version = "0.13", features = ["borsh"] }

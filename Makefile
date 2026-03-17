@@ -60,6 +60,7 @@ help:
 	@echo "  clean-out-dir    Remove output directory only"
 	@echo "  test             Run all workspace tests"
 	@echo "  clippy           Run clippy lints"
+	@echo "  check-all-features  Check all feature combos with cargo-hack"
 	@echo "  help             Show this help"
 
 .PHONY: clean-out-dir
@@ -77,3 +78,30 @@ test:
 .PHONY: clippy
 clippy:
 	cargo clippy --workspace --all-targets --no-deps
+
+# Crates where every enum variant is feature-gated, requiring at least one
+# variant feature. These need --feature-powerset + --at-least-one-of instead
+# of --each-feature (which tests features in isolation).
+CRATES_AT_LEAST_ONE_VARIANT := \
+    defuse-token-id \
+    defuse-ton-connect \
+    defuse-escrow-swap
+
+CARGO_HACK_HOST = RUSTFLAGS='--cfg clippy' cargo hack check --exclude-features contract --no-dev-deps
+CARGO_HACK_WASM = cargo hack check --target wasm32-unknown-unknown --exclude-features abi --exclude-features near-api-types --exclude-features near-api --no-dev-deps
+
+.PHONY: check-all-features
+check-all-features:
+	# Host compiler pass (exclude contract feature)
+	$(CARGO_HACK_HOST) --workspace --each-feature --exclude-no-default-features \
+	    $(addprefix --exclude ,$(CRATES_AT_LEAST_ONE_VARIANT))
+	$(CARGO_HACK_HOST) -p defuse-token-id   --feature-powerset --at-least-one-of nep141,nep171,nep245,imt
+	$(CARGO_HACK_HOST) -p defuse-ton-connect --feature-powerset --at-least-one-of text,binary,cell
+	$(CARGO_HACK_HOST) -p defuse-escrow-swap --feature-powerset --at-least-one-of nep141,nep245
+	# WASM compiler pass (exclude abi feature, skip testing crates)
+	$(CARGO_HACK_WASM) --workspace --each-feature --exclude-no-default-features \
+	    $(addprefix --exclude ,$(CRATES_AT_LEAST_ONE_VARIANT)) \
+	    --exclude defuse-test-utils --exclude defuse-sandbox --exclude defuse-randomness --exclude defuse-tests
+	$(CARGO_HACK_WASM) -p defuse-token-id   --feature-powerset --at-least-one-of nep141,nep171,nep245,imt
+	$(CARGO_HACK_WASM) -p defuse-ton-connect --feature-powerset --at-least-one-of text,binary,cell
+	$(CARGO_HACK_WASM) -p defuse-escrow-swap --feature-powerset --at-least-one-of nep141,nep245

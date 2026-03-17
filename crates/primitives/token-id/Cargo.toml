@@ -28,7 +28,7 @@ nep245 = []
 imt = []
 
 abi = ["near-sdk/abi"]
-arbitrary = ["dep:arbitrary", "near-sdk/arbitrary"]
+arbitrary = ["dep:arbitrary", "near-sdk/arbitrary", "nep245"]
 
 [dev-dependencies]
 defuse-test-utils.workspace = true

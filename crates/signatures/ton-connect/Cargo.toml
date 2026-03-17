@@ -24,7 +24,7 @@ tlb-ton = { workspace = true, features = ["serde"] }
 
 [features]
 default = ["text", "binary", "cell"]
-abi = [ "near-sdk/abi", "tlb-ton/schemars_0_8" ]
+abi = [ "near-sdk/abi", "tlb-ton/schemars_0_8", "defuse-crypto/abi", "defuse-serde-utils/abi" ]
 arbitrary = ["tlb-ton/arbitrary"]
 binary = []
 cell = []
