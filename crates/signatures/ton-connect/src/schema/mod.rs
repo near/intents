@@ -26,12 +26,10 @@ impl TonConnectPayloadContext<'_> {
         payload_prefix: &[u8],
         payload: &[u8],
     ) -> Result<near_sdk::CryptoHash, StringError> {
-
-
-        let domain_len =
-            u32::try_from(self.domain.len()).map_err(|_| tlb_ton::Error::custom("domain: overflow"))?;
-        let payload_len =
-            u32::try_from(payload.len()).map_err(|_| tlb_ton::Error::custom("payload: overflow"))?;
+        let domain_len = u32::try_from(self.domain.len())
+            .map_err(|_| tlb_ton::Error::custom("domain: overflow"))?;
+        let payload_len = u32::try_from(payload.len())
+            .map_err(|_| tlb_ton::Error::custom("payload: overflow"))?;
 
         let bytes = [
             [0xff, 0xff].as_slice(),
