@@ -1,6 +1,9 @@
-use defuse_sandbox::extensions::escrow::contract::{
-    ContractStorage, Deadline, OverrideSend, Params,
-    token_id::{TokenId, nep141::Nep141TokenId},
+use defuse_sandbox::{
+    IntoAccountId,
+    extensions::escrow::contract::{
+        ContractStorage, Deadline, OverrideSend, Params,
+        token_id::{TokenId, nep141::Nep141TokenId},
+    },
 };
 use rstest::rstest;
 use std::{
@@ -13,11 +16,11 @@ use crate::tests::escrow::helpers::{Env, env};
 #[rstest]
 #[tokio::test]
 async fn init_state_has_single_empty_key(#[future(awt)] env: Env) {
-    let src_token: TokenId = Nep141TokenId::new(env.src_ft.id().clone()).into();
-    let dst_token: TokenId = Nep141TokenId::new(env.dst_ft.id().clone()).into();
+    let src_token: TokenId = Nep141TokenId::new(env.src_ft.contract_id()).into();
+    let dst_token: TokenId = Nep141TokenId::new(env.dst_ft.contract_id()).into();
 
     let params = Params {
-        maker: env.maker.id().clone(),
+        maker: env.maker.into_account_id(),
         src_token,
         dst_token,
         price: "1".parse().unwrap(),

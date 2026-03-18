@@ -1,16 +1,23 @@
-use defuse_sandbox::extensions::escrow::contract::{
-    ContractStorage, Deadline, Error, OverrideSend, Params, Pips, ProtocolFees,
-    action::{FillAction, TransferAction, TransferMessage},
-    token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId},
-};
-use defuse_sandbox::extensions::ft::FtExt;
-use defuse_sandbox::extensions::{
-    defuse::contract::{
-        core::intents::tokens::NotifyOnTransfer,
-        tokens::{DepositAction, DepositMessage},
+use defuse_sandbox::{
+    IntoAccountId,
+    extensions::{
+        defuse::{
+            MtBalanceArgs,
+            contract::{
+                core::intents::tokens::NotifyOnTransfer,
+                tokens::{DepositAction, DepositMessage},
+            },
+        },
+        escrow::{
+            Escrow,
+            contract::{
+                ContractStorage, Deadline, Error, OverrideSend, Params, Pips, ProtocolFees,
+                action::{FillAction, TransferAction, TransferMessage},
+                token_id::{TokenId, nep141::Nep141TokenId, nep245::Nep245TokenId},
+            },
+        },
+        poa::FtCall,
     },
-    escrow::EscrowExtView,
-    mt::MtViewExt,
 };
 use near_sdk::{
     AccountId, serde_json,
@@ -193,17 +200,19 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
     const TAKER_AMOUNT: u128 = 20_000;
     const EXPECTED_COLLECTOR_FEE: u128 = 10_200;
 
-    let [src_verifier_asset, dst_verifier_asset] = [env.src_ft.id(), env.dst_ft.id()]
-        .map(Clone::clone)
-        .map(Nep141TokenId::new)
-        .map(TokenId::from);
+    let [src_verifier_asset, dst_verifier_asset] =
+        [env.src_ft.contract_id(), env.dst_ft.contract_id()]
+            .map(Nep141TokenId::new)
+            .map(TokenId::from);
 
     let [src_token, dst_token] = [&src_verifier_asset, &dst_verifier_asset]
-        .map(|token_id| Nep245TokenId::new(env.verifier.id().clone(), token_id.to_string()))
+        .map(|token_id| {
+            Nep245TokenId::new(env.verifier.contract_id().clone(), token_id.to_string())
+        })
         .map(Into::<TokenId>::into);
 
     let params = Params {
-        maker: env.maker.id().clone(),
+        maker: env.maker.into_account_id(),
         src_token: src_token.clone(),
         dst_token: dst_token.clone(),
         price: "1".parse().unwrap(),
@@ -211,15 +220,15 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
         partial_fills_allowed: true,
         refund_src_to: OverrideSend::default(),
         receive_dst_to: OverrideSend::default(),
-        taker_whitelist: env.takers.iter().map(|a| a.id()).cloned().collect(),
+        taker_whitelist: env.takers.iter().map(|a| a.into_account_id()).collect(),
         protocol_fees: ProtocolFees {
             fee: Pips::from_percent(1).unwrap(),
             surplus: Pips::from_percent(100).unwrap(),
-            collector: env.fee_collectors[0].id().clone(),
+            collector: env.fee_collectors[0].into_account_id(),
         }
         .into(),
         integrator_fees: BTreeMap::default(),
-        auth_caller: Some(env.verifier.id().clone()),
+        auth_caller: Some(env.verifier.contract_id().clone()),
         salt: [0; 32],
     };
 
@@ -228,31 +237,35 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
         data: ContractStorage::init_state(&params).unwrap(),
     });
 
-    let escrow = env.account(state_init.derive_account_id());
+    let escrow = env
+        .root
+        .contract::<dyn Escrow>(state_init.derive_account_id());
 
     let deposited = env
         .maker
         .ft_transfer_call(
-            env.src_ft.id(),
-            env.verifier.id(),
+            &env.src_ft,
+            env.verifier.contract_id(),
             MAKER_AMOUNT,
-            None,
             serde_json::to_string(
-                &DepositMessage::new(escrow.id().clone()).with_action(DepositAction::Notify(
-                    NotifyOnTransfer::new(
-                        serde_json::to_string(&TransferMessage {
-                            params: params.clone(),
-                            action: TransferAction::Fund,
-                        })
-                        .unwrap(),
-                    )
-                    .with_state_init(state_init.clone()),
-                )),
+                &DepositMessage::new(escrow.contract_id().clone()).with_action(
+                    DepositAction::Notify(
+                        NotifyOnTransfer::new(
+                            serde_json::to_string(&TransferMessage {
+                                params: params.clone(),
+                                action: TransferAction::Fund,
+                            })
+                            .unwrap(),
+                        )
+                        .with_state_init(state_init.clone()),
+                    ),
+                ),
             )
             .unwrap(),
         )
         .await
         .unwrap();
+
     assert_eq!(deposited, MAKER_AMOUNT);
 
     let escrow_state = escrow.es_view().await;
@@ -262,13 +275,12 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
     // surplus = taker_dst_used - src_out * maker_price = 20,000 - 10,000 = 10,000
     let deposited_on_fill = env.takers[0]
         .ft_transfer_call(
-            env.dst_ft.id(),
-            env.verifier.id(),
+            &env.dst_ft,
+            env.verifier.contract_id(),
             TAKER_AMOUNT,
-            None,
             serde_json::to_string(
-                &DepositMessage::new(escrow.id().clone()).with_action(DepositAction::Notify(
-                    NotifyOnTransfer::new(
+                &DepositMessage::new(escrow.contract_id().clone()).with_action(
+                    DepositAction::Notify(NotifyOnTransfer::new(
                         serde_json::to_string(&TransferMessage {
                             params: params.clone(),
                             action: FillAction {
@@ -279,8 +291,8 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
                             .into(),
                         })
                         .unwrap(),
-                    ),
-                )),
+                    )),
+                ),
             )
             .unwrap(),
         )
@@ -291,12 +303,46 @@ async fn test_surplus_fee_is_uncapped(#[future(awt)] env: Env) {
 
     let collector_balance = env
         .verifier
-        .mt_balance_of(env.fee_collectors[0].id(), &dst_verifier_asset.to_string())
+        .mt_balance_of(MtBalanceArgs {
+            account_id: env.fee_collectors[0].into_account_id(),
+            token_id: dst_verifier_asset.to_string(),
+        })
         .await
-        .unwrap();
+        .unwrap()
+        .0;
 
     assert_eq!(collector_balance, EXPECTED_COLLECTOR_FEE);
 
     let max_capped_fee = Params::MAX_FEE.fee(TAKER_AMOUNT);
     assert!(collector_balance > max_capped_fee);
+
+    let deposited = env
+        .maker
+        .ft_transfer_call(
+            &env.src_ft,
+            env.verifier.contract_id(),
+            MAKER_AMOUNT,
+            serde_json::to_string(
+                &DepositMessage::new(escrow.contract_id().clone()).with_action(
+                    DepositAction::Notify(
+                        NotifyOnTransfer::new(
+                            serde_json::to_string(&TransferMessage {
+                                params: params.clone(),
+                                action: TransferAction::Fund,
+                            })
+                            .unwrap(),
+                        )
+                        .with_state_init(state_init.clone()),
+                    ),
+                ),
+            )
+            .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(deposited, MAKER_AMOUNT);
+
+    let escrow_state = escrow.es_view().await;
+    assert!(escrow_state.is_ok());
 }
