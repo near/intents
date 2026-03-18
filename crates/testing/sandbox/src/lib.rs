@@ -4,16 +4,21 @@ use near_kit::{
     AccountId, Action, FunctionCallAction, InMemorySigner, KeyPair, Near, NearToken,
     sandbox::SandboxConfig,
 };
+use near_sdk::Gas;
 use rstest::fixture;
 use std::sync::atomic::{AtomicUsize, Ordering};
 pub mod extensions;
 
 pub use near_kit;
 
-pub const DEFAULT_DEPOSIT: NearToken = NearToken::from_near(100);
+pub const DEFAULT_GAS: Gas = Gas::from_tgas(300);
+// pub const DEFAULT_DEPOSIT: NearToken = NearToken::from_near(100);
 
+pub const MAX_NONCE_RETRIES: u32 = 1000;
+
+// TODO: why sandbox has only 10000.00 NEAR?
 #[fixture]
-pub async fn sandbox(#[default(NearToken::from_near(100_000))] amount: NearToken) -> Sandbox {
+pub async fn sandbox(#[default(NearToken::from_near(1_000))] amount: NearToken) -> Sandbox {
     static SUB_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
     let near = SandboxConfig::shared().await.client();
@@ -30,13 +35,45 @@ pub async fn sandbox(#[default(NearToken::from_near(100_000))] amount: NearToken
         .await
         .expect("Failed to create account");
 
-    Sandbox {
-        root: near.with_signer(InMemorySigner::from_secret_key(
-            child_id,
-            key_pair.secret_key,
-        )),
-    }
+    let mut root = near.with_signer(InMemorySigner::from_secret_key(
+        child_id,
+        key_pair.secret_key,
+    ));
+
+    root.set_max_nonce_retries(MAX_NONCE_RETRIES);
+
+    Sandbox { root }
 }
+
+// pub async fn generate_rotating_sub_account(
+//     parent: &Near,
+//     name: impl AsRef<str>,
+//     amount: NearToken,
+//     signer_count: usize,
+// ) -> Result<Near> {
+//     let child_id = parent.sub_account(name)?;
+//     let keys = (0..signer_count)
+//         .map(|_| KeyPair::random())
+//         .collect::<Vec<_>>();
+
+//     let signer = RotatingSigner::new(
+//         &child_id,
+//         keys.iter().map(|key| key.secret_key.clone()).collect(),
+//     )?;
+
+//     keys.iter()
+//         .fold(
+//             parent
+//                 .transaction(child_id)
+//                 .create_account()
+//                 .transfer(amount),
+//             |tx, key| tx.add_full_access_key(key.public_key.clone()),
+//         )
+//         .send()
+//         .await?;
+
+//     Ok(parent.with_signer(signer))
+// }
 
 #[autoimpl(Deref using self.root)]
 pub struct Sandbox {
@@ -71,15 +108,14 @@ impl Sandbox {
         balance: NearToken,
         code: impl Into<Vec<u8>>,
         init_call: impl Into<Option<FunctionCallAction>>,
-    ) -> anyhow::Result<Near> {
-        let key_pair = KeyPair::random();
+    ) -> anyhow::Result<AccountId> {
         let subaccount = self.sub_account(name)?;
 
         let mut tx = self
             .transaction(&subaccount)
             .create_account()
             .transfer(balance)
-            .add_full_access_key(key_pair.public_key)
+            .add_full_access_key(self.public_key().expect("Public key should be present"))
             .deploy(code);
 
         if let Some(init_call) = init_call.into() {
@@ -87,31 +123,7 @@ impl Sandbox {
         }
         tx.await?;
 
-        Ok(self.with_signer(InMemorySigner::from_secret_key(
-            subaccount,
-            key_pair.secret_key,
-        )))
-    }
-}
-
-// TODO: this is hacky
-pub trait ToNearKit {
-    fn to_kit(&self) -> near_kit::AccountId;
-}
-
-pub trait ToNearSdk {
-    fn to_sdk(&self) -> near_sdk::AccountId;
-}
-
-impl ToNearKit for near_sdk::AccountId {
-    fn to_kit(&self) -> near_kit::AccountId {
-        self.as_str().parse().unwrap()
-    }
-}
-
-impl ToNearSdk for near_kit::AccountId {
-    fn to_sdk(&self) -> near_sdk::AccountId {
-        self.as_str().parse().unwrap()
+        Ok(subaccount)
     }
 }
 
@@ -122,7 +134,7 @@ pub trait IntoAccountId<T>: Sized {
 
 impl IntoAccountId<near_sdk::AccountId> for &Near {
     fn into_account_id(self) -> near_sdk::AccountId {
-        self.account_id().unwrap().as_str().parse().unwrap()
+        self.account_id().unwrap().clone()
     }
 }
 

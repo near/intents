@@ -1,5 +1,3 @@
-#![allow(async_fn_in_trait)]
-
 use anyhow::Result;
 pub use defuse as contract;
 
@@ -9,13 +7,14 @@ use defuse::{
 };
 use defuse_nep245::TokenId;
 use defuse_serde_utils::base64::AsBase64;
-use near_kit::{AccountId, FunctionCallAction, Gas, Near, NearToken, PublicKey};
+use near_kit::{AccountId, FunctionCallAction, NearToken, PublicKey};
 use near_sdk::{
     json_types::U128,
     serde::{Deserialize, Serialize},
 };
+use serde_json::json;
 
-use crate::{DEFAULT_DEPOSIT, Sandbox};
+use crate::{DEFAULT_GAS, Sandbox};
 
 #[near_kit::contract]
 pub trait Defuse {
@@ -90,10 +89,82 @@ pub trait Defuse {
     fn nft_force_withdraw(&mut self, args: NftForceWithdrawArgs);
 
     // Mt
+
     #[call]
     fn mt_withdraw(&mut self, args: MtWithdrawArgs);
     #[call]
     fn mt_force_withdraw(&mut self, args: MtForceWithdrawArgs);
+
+    // nep245
+    #[call]
+    fn mt_transfer(&mut self, args: MtTransferArgs);
+    #[call]
+    fn mt_batch_transfer(&mut self, args: MtBatchTransferArgs);
+    #[call]
+    fn mt_transfer_call(&mut self, args: MtTransferCallArgs);
+    #[call]
+    fn mt_batch_transfer_call(&mut self, args: MtBatchTransferCallArgs);
+
+    fn mt_balance_of(&self, args: MtBalanceArgs) -> U128;
+    fn mt_batch_balance_of(&self, args: MtBatchBalanceArgs) -> Vec<U128>;
+
+    // Mt
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct MtTransferArgs {
+    pub receiver_id: AccountId,
+    pub token_id: defuse_nep245::TokenId,
+    pub amount: U128,
+    pub approval: Option<(AccountId, u64)>,
+    pub memo: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct MtBatchTransferArgs {
+    pub receiver_id: AccountId,
+    pub token_ids: Vec<defuse_nep245::TokenId>,
+    pub amounts: Vec<U128>,
+    pub approvals: Option<Vec<Option<(AccountId, u64)>>>,
+    pub memo: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct MtTransferCallArgs {
+    pub receiver_id: AccountId,
+    pub token_id: defuse_nep245::TokenId,
+    pub amount: U128,
+    pub approval: Option<(AccountId, u64)>,
+    pub memo: Option<String>,
+    pub msg: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct MtBatchTransferCallArgs {
+    pub receiver_id: AccountId,
+    pub token_ids: Vec<defuse_nep245::TokenId>,
+    pub amounts: Vec<U128>,
+    pub approvals: Option<Vec<Option<(AccountId, u64)>>>,
+    pub memo: Option<String>,
+    pub msg: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct MtBalanceArgs {
+    pub account_id: AccountId,
+    pub token_id: defuse_nep245::TokenId,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct MtBatchBalanceArgs {
+    pub account_id: AccountId,
+    pub token_ids: Vec<defuse_nep245::TokenId>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -188,24 +259,25 @@ impl Sandbox {
         name: impl AsRef<str>,
         config: defuse::contract::config::DefuseConfig,
         wasm: impl Into<Vec<u8>>,
-    ) -> Result<Near> {
-        use serde_json::json;
+    ) -> Result<DefuseClient> {
+        let contract_id = self
+            .deploy_sub_contract(
+                name,
+                NearToken::from_near(100),
+                wasm,
+                Some(FunctionCallAction {
+                    method_name: "new".to_string(),
+                    args: json!({
+                        "config": config,
+                    })
+                    .to_string()
+                    .into_bytes(),
+                    gas: DEFAULT_GAS,
+                    deposit: NearToken::from_near(0),
+                }),
+            )
+            .await?;
 
-        self.deploy_sub_contract(
-            name,
-            NearToken::from_near(100),
-            wasm,
-            Some(FunctionCallAction {
-                method_name: "new".to_string(),
-                args: json!({
-                    "config": config,
-                })
-                .to_string()
-                .into_bytes(),
-                gas: Gas::DEFAULT,
-                deposit: DEFAULT_DEPOSIT,
-            }),
-        )
-        .await
+        Ok(self.contract::<dyn Defuse>(contract_id))
     }
 }

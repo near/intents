@@ -2,7 +2,10 @@ use anyhow::Result;
 pub use defuse_poa_factory as contract;
 
 use near_contract_standards::fungible_token::metadata::FungibleTokenMetadata;
-use near_kit::{AccountId, FunctionCallAction, FungibleToken, Gas, NearToken, NonFungibleToken};
+use near_kit::{
+    AccountId, FunctionCallAction, FungibleToken, Near, NearToken, NonFungibleToken,
+    TryIntoAccountId,
+};
 use near_sdk::{
     json_types::U128,
     serde::{Deserialize, Serialize},
@@ -10,7 +13,9 @@ use near_sdk::{
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
 
-use crate::{DEFAULT_DEPOSIT, Sandbox, SubAcount};
+use crate::{DEFAULT_GAS, Sandbox, SubAcount};
+
+pub const POA_TOKEN_INIT_BALANCE: NearToken = NearToken::from_near(3);
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
@@ -50,6 +55,36 @@ pub trait PoaFactory {
     fn tokens(&self) -> HashMap<String, AccountId>;
 }
 
+pub trait FtCall {
+    async fn ft_transfer_call(
+        &self,
+        token: &FungibleToken,
+        receiver_id: impl TryIntoAccountId,
+        amount: impl Into<u128>,
+        msg: impl Into<String>,
+    ) -> anyhow::Result<u128>;
+}
+
+impl FtCall for Near {
+    async fn ft_transfer_call(
+        &self,
+        token: &FungibleToken,
+        receiver_id: impl TryIntoAccountId,
+        amount: impl Into<u128>,
+        msg: impl Into<String>,
+    ) -> anyhow::Result<u128> {
+        token
+            // takers[0]
+            .transfer_call(receiver_id, amount, msg)
+            .sign_with(self.signer().unwrap())
+            .await?
+            .success_value_json::<String>()
+            .ok_or(anyhow::anyhow!("failed to parse success value"))?
+            .parse::<u128>()
+            .map_err(Into::into)
+    }
+}
+
 impl Sandbox {
     pub async fn deploy_poa_factory(
         &self,
@@ -68,8 +103,8 @@ impl Sandbox {
             ),
         >,
         wasm: impl Into<Vec<u8>>,
-    ) -> Result<PoaFactoryClient<'_>> {
-        let signer = self.deploy_sub_contract(
+    ) -> Result<PoaFactoryClient> {
+        let contract_id = self.deploy_sub_contract(
             name,
             NearToken::from_near(100),
             wasm,
@@ -88,20 +123,16 @@ impl Sandbox {
         })
                 .to_string()
                 .into_bytes(),
-                gas: Gas::DEFAULT,
-                deposit: DEFAULT_DEPOSIT,
+                gas: DEFAULT_GAS,
+                deposit: NearToken::from_near(0),
             })).await?;
 
-        // TODO: this wold not work because of &Near
-        Ok(PoaFactoryClient::new(
-            &self,
-            signer.account_id().unwrap().clone(),
-        ))
+        Ok(self.contract::<dyn PoaFactory>(contract_id))
     }
 
     pub async fn deploy_ft(
         &self,
-        factory: &PoaFactoryClient<'_>,
+        factory: &PoaFactoryClient,
         token: impl AsRef<str>,
     ) -> anyhow::Result<FungibleToken> {
         factory
@@ -109,6 +140,8 @@ impl Sandbox {
                 token: token.as_ref().to_string(),
                 metadata: None,
             })
+            .deposit(POA_TOKEN_INIT_BALANCE)
+            .gas(DEFAULT_GAS)
             .await?;
 
         let token_id = factory.contract_id().sub_account(token.as_ref())?;
@@ -118,7 +151,7 @@ impl Sandbox {
 
     pub async fn deploy_nft(
         &self,
-        factory: &PoaFactoryClient<'_>,
+        factory: &PoaFactoryClient,
         token: impl AsRef<str>,
         metadata: impl Into<Option<FungibleTokenMetadata>>,
     ) -> anyhow::Result<NonFungibleToken> {
