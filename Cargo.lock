@@ -984,7 +984,6 @@ version = "0.1.0"
 dependencies = [
  "arbitrary",
  "chrono",
- "defuse-auth-call",
  "defuse-bitmap",
  "defuse-borsh-utils",
  "defuse-crypto",
