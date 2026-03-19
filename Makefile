@@ -79,10 +79,6 @@ test:
 clippy:
 	cargo clippy --workspace --all-targets --no-deps
 
-.PHONY: machete
-machete:
-	cargo machete
-
 .PHONY: fmt
 fmt:
 	cargo fmt --all
