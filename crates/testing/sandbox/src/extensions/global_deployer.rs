@@ -23,6 +23,12 @@ fn serialize_code_remainder<W: std::io::Write>(v: &Vec<u8>, w: &mut W) -> std::i
     w.write_all(v)
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct GDTransferOwnershipArgs {
+    pub receiver_id: AccountId,
+}
+
 // TODO: remove this after near kit fix (passing raw data)
 #[derive(BorshSerialize)]
 #[borsh(crate = "near_sdk::borsh")]
@@ -41,7 +47,7 @@ pub trait GlobalDeployer {
     fn gd_deploy(&mut self, args: GDDeployArgs) -> bool;
 
     #[call]
-    fn gd_transfer_ownership(&mut self, receiver_id: AccountId);
+    fn gd_transfer_ownership(&mut self, args: GDTransferOwnershipArgs);
 
     fn gd_owner_id(&self) -> AccountId;
     fn gd_code_hash(&self) -> AsHex<[u8; 32]>;

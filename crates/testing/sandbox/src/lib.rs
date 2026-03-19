@@ -15,12 +15,22 @@ pub const DEFAULT_GAS: Gas = Gas::from_tgas(300);
 
 pub const MAX_NONCE_RETRIES: u32 = 1000;
 
-// TODO: why sandbox has only 10000.00 NEAR?
 #[fixture]
-pub async fn sandbox(#[default(NearToken::from_near(1_000))] amount: NearToken) -> Sandbox {
+pub async fn sandbox(#[default(NearToken::from_near(10_000))] amount: NearToken) -> Sandbox {
     static SUB_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
-    let near = SandboxConfig::shared().await.client();
+    let cfg = SandboxConfig::shared().await;
+    let near = cfg.client();
+    // Set a large fixed balance so concurrent test fixtures don't race with each other.
+    // set_balance overwrites (not adds), so using amount+small would be exhausted by
+    // parallel tests. 100_000_000 NEAR gives plenty of headroom.
+    cfg.set_balance(
+        near.account_id().unwrap(),
+        NearToken::from_near(100_000_000),
+    )
+    .await
+    .expect("Failed to boost sandbox root balance");
+
     let child_id = near
         .sub_account(SUB_COUNTER.fetch_add(1, Ordering::SeqCst).to_string())
         .unwrap();
