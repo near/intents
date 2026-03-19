@@ -24,6 +24,7 @@ CRATES_HOST_ONLY := \
 crate_name = $(firstword $(subst =, ,$1))
 crate_features = $(lastword $(subst =, ,$1))
 
+
 RUSTFLAGS_CHECK = -D warnings
 # --cfg clippy: near-sdk compile_error!s on host unless one of its allowed cfgs is set
 CARGO_CHECK_HOST = RUSTFLAGS='$(RUSTFLAGS_CHECK) --cfg clippy' cargo hack check --exclude-features contract --no-dev-deps
@@ -85,7 +86,7 @@ help:
 	@echo "  clean-out-dir       Remove output directory only"
 	@echo "  test                Run all workspace tests"
 	@echo "  clippy              Run clippy lints"
-	@echo "  check-all-features  Check all feature combos with cargo-hack"
+	@echo "  check               Run full checks (all features + examples)"
 	@echo "  fmt                 Format Rust files and Cargo.toml manifests"
 	@echo "  help                Show this help"
 
@@ -114,18 +115,22 @@ check-all-features: check-all-features-host check-all-features-wasm
 check-examples:
 	RUSTFLAGS='$(RUSTFLAGS_CHECK)' cargo clippy --workspace --examples
 
-check-all-features-host:
+check-all-features-host::
 	$(CARGO_CHECK_HOST) --workspace --each-feature --exclude-no-default-features \
 	    $(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),--exclude $(call crate_name,$c))
-	$(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),\
-	    $(CARGO_CHECK_HOST) -p $(call crate_name,$c) --feature-powerset --at-least-one-of $(call crate_features,$c) &&) true
 
-check-all-features-wasm:
+$(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),\
+  $(eval check-all-features-host::; \
+    $(CARGO_CHECK_HOST) -p $(call crate_name,$c) --feature-powerset --at-least-one-of $(call crate_features,$c)))
+
+check-all-features-wasm::
 	$(CARGO_CHECK_WASM) --workspace --each-feature --exclude-no-default-features \
 	    $(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),--exclude $(call crate_name,$c)) \
 	    $(addprefix --exclude ,$(CRATES_HOST_ONLY))
-	$(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),\
-	    $(CARGO_CHECK_WASM) -p $(call crate_name,$c) --feature-powerset --at-least-one-of $(call crate_features,$c) &&) true
+
+$(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),\
+  $(eval check-all-features-wasm::; \
+    $(CARGO_CHECK_WASM) -p $(call crate_name,$c) --feature-powerset --at-least-one-of $(call crate_features,$c)))
 .PHONY: fmt
 fmt:
 	cargo fmt --all
