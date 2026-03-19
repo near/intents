@@ -97,17 +97,13 @@ defuse-test-utils.path = "crates/testing/utils"
 defuse-tests.path = "tests"
 
 cargo-near-build = "0.9.0"
-near-account-id = "2.4.0"
-near-api = "0.8.3"
-near-api-types = "0.8.3"
-near-openapi-types = "0.6.0"
 near-contract-standards = "5.24"
 near-crypto = "0.34.1"
 near-plugins = { git = "https://github.com/Near-One/near-plugins", tag = "v0.5.0" }
-near-sandbox = "0.3.5"
 near-sdk = "5.24"
-near-workspaces = "0.22"
-near-kit = { git = "https://github.com/r-near/near-kit-rs.git"}
+
+# TODO: update to main repo after fixes are merged
+near-kit = { git = "https://github.com/hlgltvnnk/near-kit-rs.git", branch = "feat/chores"}
 
 anyhow = "1"
 arbitrary = "1"

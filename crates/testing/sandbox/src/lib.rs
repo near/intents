@@ -12,7 +12,6 @@ pub mod extensions;
 pub use near_kit;
 
 pub const DEFAULT_GAS: Gas = Gas::from_tgas(300);
-// pub const DEFAULT_DEPOSIT: NearToken = NearToken::from_near(100);
 
 pub const MAX_NONCE_RETRIES: u32 = 1000;
 
@@ -45,36 +44,6 @@ pub async fn sandbox(#[default(NearToken::from_near(1_000))] amount: NearToken) 
     Sandbox { root }
 }
 
-// pub async fn generate_rotating_sub_account(
-//     parent: &Near,
-//     name: impl AsRef<str>,
-//     amount: NearToken,
-//     signer_count: usize,
-// ) -> Result<Near> {
-//     let child_id = parent.sub_account(name)?;
-//     let keys = (0..signer_count)
-//         .map(|_| KeyPair::random())
-//         .collect::<Vec<_>>();
-
-//     let signer = RotatingSigner::new(
-//         &child_id,
-//         keys.iter().map(|key| key.secret_key.clone()).collect(),
-//     )?;
-
-//     keys.iter()
-//         .fold(
-//             parent
-//                 .transaction(child_id)
-//                 .create_account()
-//                 .transfer(amount),
-//             |tx, key| tx.add_full_access_key(key.public_key.clone()),
-//         )
-//         .send()
-//         .await?;
-
-//     Ok(parent.with_signer(signer))
-// }
-
 #[autoimpl(Deref using self.root)]
 pub struct Sandbox {
     pub root: Near,
@@ -93,6 +62,7 @@ impl Sandbox {
             .create_account()
             .transfer(amount)
             .add_full_access_key(key_pair.public_key)
+            .wait_until(near_kit::TxExecutionStatus::Final)
             .send()
             .await?;
 
@@ -125,6 +95,32 @@ impl Sandbox {
 
         Ok(subaccount)
     }
+
+    pub async fn deploy_global_contract_by_hash(
+        &self,
+        code: impl Into<Vec<u8>>,
+    ) -> anyhow::Result<()> {
+        self.transaction(self.account_id().unwrap())
+            .publish_contract(code, true)
+            .send()
+            .await?;
+
+        Ok(())
+    }
+
+    // pub async fn deploy_global_contract_by_account_id(
+    //     &self,
+    //     account_id: impl Into<AccountId>,
+    //     code: impl Into<Vec<u8>>,
+    //     mode: GlobalContractDeployMode,
+    // ) -> anyhow::Result<()> {
+    //     self.transaction(account_id.into())
+    //         .publish_contract(code, by_hash)
+    //         .send()
+    //         .await?;
+
+    //     Ok(())
+    // }
 }
 
 // TODO: total shit

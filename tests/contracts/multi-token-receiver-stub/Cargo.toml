@@ -31,7 +31,6 @@ near-sdk.workspace = true
 
 [dev-dependencies]
 near-sdk = { workspace = true, features = ["unit-testing"] }
-near-workspaces.workspace = true
 tokio.workspace = true
 serde_json.workspace = true
 

@@ -16,7 +16,6 @@ defuse = [
     "dep:defuse",
     "defuse-sandbox/defuse",
     "defuse-sandbox/poa",
-    "defuse-sandbox/imt",
     "defuse-test-utils/defuse",
     "defuse-test-utils/poa",
 ]
