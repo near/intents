@@ -9,6 +9,10 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-near-sdk = { workspace = true, features = ["non-contract-usage"] }
+chrono.workspace = true
 defuse-wallet.workspace = true
+futures.workspace = true
 near-kit.workspace = true
+near-sdk = { workspace = true, features = ["non-contract-usage"] }
+thiserror.workspace = true
+tokio.workspace = true
