@@ -79,6 +79,17 @@ test:
 clippy:
 	cargo clippy --workspace --all-targets --no-deps
 
+.PHONY: check
+check:
+	@true
+
+.PHONY: check-unused-deps
+check-unused-deps:
+	cargo machete
+
+.PHONY: check-all
+check-all: check check-unused-deps
+
 .PHONY: fmt
 fmt:
 	cargo fmt --all
