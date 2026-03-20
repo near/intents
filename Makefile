@@ -86,7 +86,7 @@ check-fmt:
 
 .PHONY: check-unused-deps
 check-unused-deps:
-	cargo machete
+	cargo machete 2>/dev/null
 
 .PHONY: check-all
 check-all: check-fmt check check-unused-deps
