@@ -81,7 +81,7 @@ check:
 
 .PHONY: check-fmt
 check-fmt:
-	cargo fmt --check
+	cargo fmt --all --check
 
 .PHONY: check-unused-deps
 check-unused-deps:
