@@ -49,7 +49,7 @@ jobs:
           mkdir -p target res
           echo 'Signature: 8a477f597d28d172789f06886806bc55' | tee target/CACHEDIR.TAG res/CACHEDIR.TAG > /dev/null
       - name: Run clippy for workspace
-        run: cargo clippy --workspace --all-targets --no-deps
+        run: make check
       - name: Run clippy for defuse
         # Run clippy only on the main contract feature
         run: cargo clippy --manifest-path ./contracts/defuse/Cargo.toml --features=contract --features=near-sdk/non-contract-usage --no-deps
