@@ -70,6 +70,30 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
      "$$(eval \($$tname)::; -@cp -v \($$tout)/\($$wasm_base)_abi.json \($$outdir)/\($$name)\($$suffix).abi.json)" \
     )'))
 
+.PHONY: check-all-features-host
+check-all-features-host::
+	$(CARGO_CHECK_HOST) --workspace --each-feature --exclude-no-default-features \
+	    $(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),--exclude $(call crate_name,$c))
+
+$(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),\
+  $(eval check-all-features-host::; \
+    $(CARGO_CHECK_HOST) -p $(call crate_name,$c) --feature-powerset --at-least-one-of $(call crate_features,$c)))
+
+.PHONY: check-all-features-wasm
+check-all-features-wasm::
+	$(CARGO_CHECK_WASM) --workspace --each-feature --exclude-no-default-features \
+	    $(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),--exclude $(call crate_name,$c)) \
+	    $(addprefix --exclude ,$(CRATES_HOST_ONLY))
+
+$(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),\
+  $(eval check-all-features-wasm::; \
+    $(CARGO_CHECK_WASM) -p $(call crate_name,$c) --feature-powerset --at-least-one-of $(call crate_features,$c)))
+
+.PHONY: check-all-features
+check-all-features: check-all-features-host check-all-features-wasm
+
+.PHONY: fmt
+
 .PHONY: all
 all: $(ALL_TARGETS)
 
@@ -106,32 +130,13 @@ test:
 clippy:
 	cargo clippy --workspace --all-targets --no-deps
 
-
-.PHONY: check check-all-features-host check-all-features-wasm check-examples
-
-check: check-all-features check-examples
-check-all-features: check-all-features-host check-all-features-wasm
-
+.PHONY: check-examples
 check-examples:
 	RUSTFLAGS='$(RUSTFLAGS_CHECK)' cargo clippy --workspace --examples
 
-check-all-features-host::
-	$(CARGO_CHECK_HOST) --workspace --each-feature --exclude-no-default-features \
-	    $(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),--exclude $(call crate_name,$c))
+.PHONY: check
+check: check-all-features check-examples
 
-$(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),\
-  $(eval check-all-features-host::; \
-    $(CARGO_CHECK_HOST) -p $(call crate_name,$c) --feature-powerset --at-least-one-of $(call crate_features,$c)))
-
-check-all-features-wasm::
-	$(CARGO_CHECK_WASM) --workspace --each-feature --exclude-no-default-features \
-	    $(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),--exclude $(call crate_name,$c)) \
-	    $(addprefix --exclude ,$(CRATES_HOST_ONLY))
-
-$(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),\
-  $(eval check-all-features-wasm::; \
-    $(CARGO_CHECK_WASM) -p $(call crate_name,$c) --feature-powerset --at-least-one-of $(call crate_features,$c)))
-.PHONY: fmt
 fmt:
 	cargo fmt --all
 	taplo format
