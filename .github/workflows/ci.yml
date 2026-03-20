@@ -58,7 +58,7 @@ jobs:
       - name: Install cargo-machete
         run: curl -fsSL https://github.com/bnjbvr/cargo-machete/releases/download/v0.9.1/cargo-machete-v0.9.1-x86_64-unknown-linux-musl.tar.gz | tar xz --strip-components=1 -C /usr/local/bin
       - name: Check for unused dependencies
-        run: cargo machete
+        run: make check-unused-deps
 
   build:
     name: Build

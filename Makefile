@@ -75,13 +75,9 @@ clean: clean-out-dir
 test:
 	cargo test --workspace --all-targets
 
-.PHONY: clippy
-clippy:
-	cargo clippy --workspace --all-targets --no-deps
-
 .PHONY: check
 check:
-	@true
+	cargo clippy --workspace --all-targets --no-deps
 
 .PHONY: check-unused-deps
 check-unused-deps:
