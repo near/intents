@@ -82,6 +82,7 @@ check:
 .PHONY: check-fmt
 check-fmt:
 	cargo fmt --all --check
+	taplo format --check
 
 .PHONY: check-unused-deps
 check-unused-deps:
