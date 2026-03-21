@@ -311,7 +311,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "119771309b95163ec7aaf79810da82f7cd0599c19722d48b9c03894dca833966"
 dependencies = [
  "borsh",
- "rand 0.8.5",
 ]
 
 [[package]]
@@ -908,7 +907,6 @@ dependencies = [
  "anyhow",
  "arbitrary",
  "bitflags 2.10.0",
- "bnum",
  "chrono",
  "defuse-admin-utils",
  "defuse-auth-call",
@@ -916,13 +914,11 @@ dependencies = [
  "defuse-borsh-utils",
  "defuse-controller",
  "defuse-core",
- "defuse-io-utils",
  "defuse-map-utils",
  "defuse-near-utils",
  "defuse-nep245",
  "defuse-randomness",
  "defuse-serde-utils",
- "defuse-test-utils",
  "defuse-tests",
  "defuse-wnear",
  "futures",
@@ -933,8 +929,6 @@ dependencies = [
  "near-sdk",
  "proptest",
  "rstest",
- "serde_with",
- "strum 0.27.2",
  "thiserror 2.0.17",
  "tokio",
 ]
@@ -990,7 +984,6 @@ version = "0.1.0"
 dependencies = [
  "arbitrary",
  "chrono",
- "defuse-auth-call",
  "defuse-bitmap",
  "defuse-borsh-utils",
  "defuse-crypto",
@@ -1018,7 +1011,6 @@ dependencies = [
  "near-sdk",
  "rstest",
  "serde_with",
- "strum 0.27.2",
  "thiserror 2.0.17",
 ]
 
@@ -1045,7 +1037,6 @@ dependencies = [
  "chrono",
  "defuse-borsh-utils",
  "defuse-near-utils",
- "defuse-num-utils",
  "near-sdk",
 ]
 
@@ -1139,7 +1130,6 @@ dependencies = [
  "defuse-borsh-utils",
  "defuse-test-utils",
  "digest 0.10.7",
- "hex",
  "impl-tools",
  "near-sdk",
  "rstest",
@@ -1201,7 +1191,6 @@ name = "defuse-poa-token"
 version = "0.1.0"
 dependencies = [
  "defuse-admin-utils",
- "defuse-near-utils",
  "near-contract-standards",
  "near-plugins",
  "near-sdk",
@@ -1273,8 +1262,6 @@ dependencies = [
  "arbitrary",
  "defuse-crypto",
  "defuse-randomness",
- "derive_more",
- "hex",
  "rstest",
 ]
 
@@ -1284,15 +1271,12 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "arbitrary",
- "bnum",
  "chrono",
  "defuse",
  "defuse-escrow-swap",
  "defuse-fees",
  "defuse-global-deployer",
  "defuse-near-utils",
- "defuse-nep245",
- "defuse-poa-factory",
  "defuse-randomness",
  "defuse-sandbox",
  "defuse-serde-utils",
@@ -1300,8 +1284,6 @@ dependencies = [
  "defuse-wallet",
  "derive_more",
  "futures",
- "hex",
- "hex-literal",
  "impl-tools",
  "itertools",
  "multi-token-receiver-stub",
@@ -1311,7 +1293,6 @@ dependencies = [
  "rstest",
  "serde_json",
  "strum 0.27.2",
- "tlb-ton",
  "tokio",
 ]
 

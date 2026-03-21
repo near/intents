@@ -75,9 +75,21 @@ clean: clean-out-dir
 test:
 	cargo test --workspace --all-targets
 
-.PHONY: clippy
-clippy:
+.PHONY: check
+check:
 	cargo clippy --workspace --all-targets --no-deps
+
+.PHONY: check-fmt
+check-fmt:
+	cargo fmt --all --check
+	RUST_LOG=warn taplo format --check
+
+.PHONY: check-unused-deps
+check-unused-deps:
+	cargo machete 2>/dev/null
+
+.PHONY: check-all
+check-all: check-fmt check check-unused-deps
 
 .PHONY: fmt
 fmt:

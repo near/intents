@@ -11,7 +11,7 @@ workspace = true
 [features]
 default = ["defuse", "deployer", "escrow-swap", "long", "poa", "wallet"]
 
-poa = ["defuse-sandbox/poa", "defuse-test-utils/poa", "dep:defuse-poa-factory"]
+poa = ["defuse-sandbox/poa", "defuse-test-utils/poa"]
 defuse = [
   "defuse-sandbox/defuse",
   "defuse-sandbox/imt",
@@ -43,7 +43,6 @@ long = []
 [dependencies]
 defuse = { workspace = true, features = ["contract", "arbitrary", "far"], optional = true }
 defuse-escrow-swap = { workspace = true, features = ["auth_call"], optional = true }
-defuse-poa-factory = { workspace = true, features = ["contract"], optional = true }
 defuse-sandbox = { workspace = true }
 defuse-wallet = { workspace = true, features = ["arbitrary", "concurrent", "ed25519"], optional = true }
 multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
@@ -51,7 +50,6 @@ multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
 defuse-fees.workspace = true
 defuse-global-deployer = { workspace = true, optional = true }
 defuse-near-utils = { workspace = true }
-defuse-nep245.workspace = true
 defuse-randomness.workspace = true
 defuse-serde-utils = { workspace = true }
 defuse-test-utils.workspace = true
@@ -62,17 +60,13 @@ near-sdk.workspace = true
 
 anyhow.workspace = true
 arbitrary.workspace = true
-bnum = { workspace = true, features = ["rand"] }
 chrono.workspace = true
 derive_more.workspace = true
 futures = "0.3"
-hex.workspace = true
-hex-literal.workspace = true
 impl-tools.workspace = true
 itertools.workspace = true
 
 rstest.workspace = true
 serde_json.workspace = true
 strum.workspace = true
-tlb-ton = { workspace = true, features = ["arbitrary"] }
 tokio = { workspace = true, features = ["macros"] }
