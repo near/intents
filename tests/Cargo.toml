@@ -31,6 +31,7 @@ escrow-swap = [
 ]
 wallet = [
     "dep:defuse-wallet",
+    "dep:defuse-wallet-client",
     "defuse-sandbox/wallet",
     "defuse-test-utils/wallet",
     "deployer",
@@ -56,6 +57,9 @@ defuse-poa-factory = { workspace = true, features = [
 defuse-wallet = { workspace = true, features = [
     "arbitrary",
     "concurrent",
+    "ed25519",
+], optional = true }
+defuse-wallet-client = { workspace = true, features = [
     "ed25519",
 ], optional = true }
 multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }

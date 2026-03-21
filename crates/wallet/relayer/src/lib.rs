@@ -1,13 +1,23 @@
 mod adapters;
+mod contract;
 
-use std::time::Duration;
+use std::{fmt::Display, time::Duration};
+
+pub use defuse_wallet as wallet;
+pub use near_kit;
 
 use chrono::{TimeDelta, Utc};
-use defuse_wallet::signature::RequestMessage;
-use futures::TryFutureExt;
-use near_kit::{Near, NearToken, Signer, TransactionOutcome, TxExecutionStatus};
-use near_sdk::{Gas, near, serde_json::json, state_init::StateInit};
+use near_kit::{
+    ActionErrorKind, ExecutionStatus, FinalExecutionOutcome, Gas, InvalidTxError, Near, NearToken,
+    Signer, TxExecutionError, TxExecutionStatus,
+};
+use near_sdk::{bs58, near, state_init::StateInit};
 use thiserror::Error as ThisError;
+use tracing::{field, instrument};
+
+use crate::contract::{WExecuteSignedArgs, WalletContract};
+
+use self::wallet::signature::RequestMessage;
 
 #[derive(Debug)]
 pub struct Relayer {
@@ -28,6 +38,7 @@ pub struct RelayRequest {
 }
 
 impl Relayer {
+    #[allow(clippy::doc_markdown)]
     /// Only assist with at most 1yN: it's enough for a single permissioned
     /// action on Near: most contracts require 1yN of attached deposit to
     /// ensure predecessor is not using FunctionCall access key
@@ -42,7 +53,6 @@ impl Relayer {
         Self {
             client: Near::custom(rpc_url)
                 .max_nonce_retries(MAX_NONCE_RETRIES)
-                // TODO: derive multiple access keys?
                 .signer(signer)
                 .build(),
             max_assist_deposit: Self::MAX_ASSIST_DEPOSIT_DEFAULT,
@@ -50,29 +60,40 @@ impl Relayer {
         }
     }
 
+    #[must_use]
     pub const fn max_assist_deposit(mut self, deposit: NearToken) -> Self {
         self.max_assist_deposit = deposit;
         self
     }
 
+    #[must_use]
     pub const fn gas(mut self, gas: Gas) -> Self {
         self.gas = gas;
         self
     }
 
+    pub fn client(&self) -> Near {
+        self.client.clone()
+    }
+
     /// Relay signed request with optional attached deposit.
     /// If no additional deposit is needed then pass `NearToken::ZERO`.
     // TODO: return request hash?
+    #[instrument(skip_all, fields(
+        signer_id = %request.msg.signer_id,
+        request_hash = b58(request.msg.hash()),
+        deposit = Some(deposit).filter(|d| !d.is_zero()).map(field::display),
+    ))]
     pub async fn relay(
         &self,
         request: RelayRequest,
         deposit: NearToken,
         max_gas: impl Into<Option<Gas>>,
-        wait_until: TxExecutionStatus,
-    ) -> Result<TransactionOutcome> {
-        if request.msg.chain_id != self.client.network().as_str() {
-            return Err(Error::InvalidChainId);
-        }
+    ) -> Result<WalletResult> {
+        // TODO
+        // if request.msg.chain_id != self.client.chain_id().as_str() {
+        //     return Err(Error::InvalidChainId);
+        // }
 
         let mut tx = self.client.transaction(request.msg.signer_id.clone());
 
@@ -95,8 +116,11 @@ impl Relayer {
             NearToken::ZERO
         };
 
-        tx = tx
-            .call("w_execute_signed")
+        tx = tx.add_action(
+            WalletContract::w_execute_signed(WExecuteSignedArgs {
+                msg: request.msg.clone(),
+                proof: request.proof,
+            })
             .deposit(
                 needs_deposit
                     // assist with deposit, but capped so the relayer will not get drained
@@ -104,24 +128,42 @@ impl Relayer {
                     // attach optional given deposit, too
                     .saturating_add(deposit),
             )
-            .gas(self.tx_gas(&request.msg, request.min_gas, max_gas)?)
-            .args(json!({ // TODO: contract trait
-                "msg": request.msg,
-                "proof": request.proof,
-            }))
-            .finish();
+            .gas(self.tx_gas(&request.msg, request.min_gas, max_gas)?),
+        );
 
-        tokio::time::timeout(
+        let outcome = tokio::time::timeout(
             Self::tx_timeout(&request.msg)?,
-            tx.wait_until(wait_until)
-                .send()
-                .into_future()
-                .map_err(Error::Transaction),
+            // wait for execution, so we have an access to wallet's receipt later
+            tx.wait_until(TxExecutionStatus::ExecutedOptimistic).send(),
         )
         .await
-        .map_err(|_| Error::ExpiredOrFuture)
-        // TODO: replace with `.flatten()` from rust 1.89
-        .and_then(::core::convert::identity)
+        .map_err(|_| Error::Expired)?
+        .map_err(Error::Transaction)?;
+
+        let Some(wallet_outcome) = outcome.receipts_outcome.first() else {
+            // TODO
+            return Err(Error::custom("empty receipts"));
+        };
+
+        if wallet_outcome.outcome.executor_id != request.msg.signer_id {
+            return Err(Error::custom("invalid first receipt"));
+        }
+
+        match &wallet_outcome.outcome.status {
+            ExecutionStatus::Failure(TxExecutionError::InvalidTxError(err)) => {
+                Err(err.clone().into())
+            }
+            ExecutionStatus::Failure(TxExecutionError::ActionError(err)) => {
+                // TODO: are we sure we need to return Result<Result<_>>?
+                Ok(Err(FailedReceipt {
+                    error: err.kind.clone(),
+                    logs: wallet_outcome.outcome.logs.clone(),
+                }))
+            }
+            ExecutionStatus::Unknown
+            | ExecutionStatus::SuccessValue(_)
+            | ExecutionStatus::SuccessReceiptId(_) => Ok(Ok(outcome)),
+        }
     }
 
     fn tx_gas(
@@ -145,30 +187,47 @@ impl Relayer {
         /// in block timestamps.
         const SIGNER_LAG: TimeDelta = TimeDelta::seconds(60);
 
-        let msg_timeout = TimeDelta::from_std(msg.timeout).map_err(|_| Error::InvalidTimeout)?;
+        let timeout = TimeDelta::from_std(msg.timeout).map_err(|_| Error::InvalidTimeout)?;
+
+        if !msg.created_at.has_expired() {
+            return Err(Error::FromTheFuture);
+        }
 
         let deadline = msg
             .created_at
             .into_timestamp()
-            .checked_add_signed(msg_timeout)
+            .checked_add_signed(timeout)
             .ok_or(Error::InvalidTimeout)?
             // add more buffer for short-living requests
             .checked_add_signed(SIGNER_LAG)
-            .ok_or(Error::ExpiredOrFuture)?;
+            .ok_or(Error::InvalidTimeout)?;
 
         deadline
             .signed_duration_since(Utc::now())
             .to_std()
-            .map_err(|_| Error::ExpiredOrFuture)
+            .map_err(|_| Error::Expired)
     }
+}
+
+pub type WalletResult = Result<FinalExecutionOutcome, FailedReceipt>;
+
+// TODO: serialize
+#[derive(Debug, Clone)]
+pub struct FailedReceipt {
+    pub error: ActionErrorKind,
+    pub logs: Vec<String>,
 }
 
 pub type Result<T, E = Error> = ::core::result::Result<T, E>;
 
 #[derive(Debug, ThisError)]
 pub enum Error {
-    #[error("expired or from the future")]
-    ExpiredOrFuture,
+    #[error("{0}")]
+    Custom(String),
+    #[error("expired")]
+    Expired,
+    #[error("from the future")]
+    FromTheFuture,
     #[error("gas limit exceeded")]
     GasLimit,
     #[error("invalid chain_id")]
@@ -179,4 +238,24 @@ pub enum Error {
     InvalidStateInit,
     #[error("transaction: {0}")]
     Transaction(#[from] near_kit::Error),
+    #[error("wallet contract: {0}")]
+    Wallet(ActionErrorKind),
+}
+
+impl Error {
+    #[inline]
+    pub fn custom(msg: impl Display) -> Self {
+        Self::Custom(msg.to_string())
+    }
+}
+
+impl From<InvalidTxError> for Error {
+    #[inline]
+    fn from(err: InvalidTxError) -> Self {
+        Self::Transaction(near_kit::Error::InvalidTx(err.into()))
+    }
+}
+
+fn b58(bytes: impl AsRef<[u8]>) -> String {
+    bs58::encode(bytes).into_string()
 }

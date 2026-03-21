@@ -1,0 +1,21 @@
+[package]
+name = "defuse-wallet-client"
+edition.workspace = true
+version = "0.1.0"
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+defuse-wallet = { workspace = true, features = ["concurrent"] }
+near-sdk = { workspace = true, features = ["non-contract-usage"] }
+rand.workspace = true
+
+ed25519-dalek = { workspace = true, optional = true }
+
+[features]
+default = ["ed25519"]
+
+ed25519 = ["dep:ed25519-dalek", "defuse-wallet/ed25519"]

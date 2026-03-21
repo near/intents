@@ -1,4 +1,4 @@
-use rand_core::Rng;
+use rand_core::{Rng, SeedableRng};
 
 /// Endless [`Iterator`] for generating non-sequential nonces semi-sequentially,
 /// allowing for multiple concurrent clients while being optimized for storage.
@@ -18,6 +18,14 @@ where
 
     pub const fn new(rng: R) -> Self {
         Self { next: 0, rng }
+    }
+
+    #[must_use]
+    pub fn fork(&mut self) -> Self
+    where
+        R: SeedableRng,
+    {
+        Self::new(self.rng.fork())
     }
 }
 

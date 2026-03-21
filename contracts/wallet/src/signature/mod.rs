@@ -124,10 +124,4 @@ impl RequestMessage {
 
         env::sha256_array(serialized)
     }
-
-    /// Returns maximum deadline for validity of the request.
-    /// The actual deadline depends on the contract's timeout, too.
-    pub fn deadline(&self) -> Deadline {
-        self.created_at + self.timeout
-    }
 }

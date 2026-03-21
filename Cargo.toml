@@ -37,7 +37,8 @@ members = [
     "crates/signatures/tip191",
     "crates/signatures/ton-connect",
 
-    "crates/wallet-relayer",
+    "crates/wallet/client",
+    "crates/wallet/relayer",
 
     "crates/testing/utils",
     "crates/testing/randomness",
@@ -92,7 +93,8 @@ defuse-ton-connect = { path = "crates/signatures/ton-connect", default-features 
     "text",
 ] }
 
-defuse-wallet-relayer.path = "crates/wallet-relayer"
+defuse-wallet-client.path = "crates/wallet/client"
+defuse-wallet-relayer.path = "crates/wallet/relayer"
 
 defuse-randomness.path = "crates/testing/randomness"
 defuse-sandbox.path = "crates/testing/sandbox"
@@ -143,6 +145,7 @@ thiserror = "2"
 tlb-ton = { version = "0.7.2", default-features = false }
 tokio = { version = "1.45", default-features = false }
 tracing = "0.1"
+tracing-subscriber = "0.3"
 clap = { version = "4.5.55", features = ["derive"] }
 
 [workspace.lints.clippy]
@@ -167,3 +170,7 @@ debug = false
 strip = "symbols"
 panic = "abort"
 overflow-checks = true
+
+[patch.crates-io]
+near-kit = { git = "https://github.com/r-near/near-kit-rs" }
+near-sdk = { git = "https://github.com/near/near-sdk-rs" }

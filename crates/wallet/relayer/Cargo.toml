@@ -16,3 +16,12 @@ near-kit.workspace = true
 near-sdk = { workspace = true, features = ["non-contract-usage"] }
 thiserror.workspace = true
 tokio.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+defuse-wallet-client.workspace = true
+ed25519-dalek = { workspace = true, features = ["rand_core"] }
+hex.workspace = true
+near-kit = { workspace = true, features = ["sandbox"] }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+rand.workspace = true
