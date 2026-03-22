@@ -9,20 +9,79 @@ use defuse_wallet::{
     ConcurrentNonces, Request, State,
     signature::{Deadline, RequestMessage},
 };
-use near_sdk::{
-    AccountId, GlobalContractId,
-    borsh::BorshSerialize,
-    state_init::{StateInit, StateInitV1},
-};
+use impl_tools::autoimpl;
+use near_sdk::{AccountId, GlobalContractId, borsh::BorshSerialize, state_init::StateInit};
 use rand::{make_rng, rngs::SmallRng};
 
 pub const MAINNET: &str = "mainnet";
 
+pub struct WalletBuilder<S: Signer> {
+    code: GlobalContractId,
+    state: State<S::PublicKey>,
+    signer: S,
+}
+
+impl<S: Signer> WalletBuilder<S> {
+    #[inline]
+    pub fn new(code: GlobalContractId, signer: S) -> Self {
+        Self {
+            code,
+            state: State::new(signer.public_key()),
+            signer,
+        }
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn wallet_id(mut self, wallet_id: u32) -> Self {
+        self.state = self.state.wallet_id(wallet_id);
+        self
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn timeout(mut self, timeout: Duration) -> Self {
+        self.state = self.state.timeout(timeout);
+        self
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn extensions(
+        mut self,
+        account_ids: impl IntoIterator<Item = impl Into<AccountId>>,
+    ) -> Self {
+        self.state = self.state.extensions(account_ids);
+        self
+    }
+
+    #[inline]
+    fn state_init(&self) -> StateInit {
+        self.state.state_init(self.code.clone())
+    }
+
+    pub fn build(self) -> WalletClient<S> {
+        WalletClient {
+            chain_id: MAINNET.to_string(),
+            account_id: self.state_init().derive_account_id(),
+            code: self.code,
+            state: self.state,
+            nonces: ConcurrentNonces::new(make_rng()),
+            signer: self.signer,
+        }
+    }
+}
+
 #[derive(Debug)]
+#[autoimpl(Deref using self.state)]
 pub struct WalletClient<S: Signer> {
     chain_id: String,
-    global_contract_id: GlobalContractId,
-    init_state: State<S::PublicKey>,
+
+    code: GlobalContractId,
+    state: State<S::PublicKey>,
+
+    account_id: AccountId,
+
     nonces: ConcurrentNonces<SmallRng>,
     signer: S,
 }
@@ -31,14 +90,14 @@ impl<S> WalletClient<S>
 where
     S: Signer,
 {
-    pub fn new(global_contract_id: GlobalContractId, signer: S) -> Self {
-        Self {
-            chain_id: MAINNET.to_string(),
-            global_contract_id,
-            init_state: State::new(signer.public_key()),
-            nonces: ConcurrentNonces::new(make_rng()),
-            signer,
-        }
+    #[inline]
+    pub fn builder(code: GlobalContractId, signer: S) -> WalletBuilder<S> {
+        WalletBuilder::new(code, signer)
+    }
+
+    #[inline]
+    pub fn new(code: GlobalContractId, signer: S) -> Self {
+        Self::builder(code, signer).build()
     }
 
     #[must_use]
@@ -47,68 +106,40 @@ where
         self
     }
 
-    #[must_use]
-    pub fn with_wallet_id(mut self, wallet_id: u32) -> Self {
-        self.init_state = self.init_state.wallet_id(wallet_id);
-        self
-    }
-
-    #[must_use]
-    pub fn with_timeout(mut self, timeout: Duration) -> Self {
-        self.init_state = self.init_state.timeout(timeout);
-        self
-    }
-
-    #[must_use]
-    pub fn with_extensions(mut self, account_ids: impl IntoIterator<Item = AccountId>) -> Self {
-        self.init_state = self.init_state.extensions(account_ids);
-        self
-    }
-
     pub fn chain_id(&self) -> &str {
         self.chain_id.as_str()
     }
 
-    pub const fn global_contract_id(&self) -> &GlobalContractId {
-        &self.global_contract_id
+    pub fn state_init(&self) -> StateInit {
+        self.state.state_init(self.code.clone())
     }
 
-    pub const fn wallet_id(&self) -> u32 {
-        self.init_state.wallet_id
-    }
-
-    pub const fn timeout(&self) -> Duration {
-        self.init_state.nonces.timeout()
+    pub const fn account_id(&self) -> &AccountId {
+        &self.account_id
     }
 
     pub const fn signer(&self) -> &S {
         &self.signer
     }
 
-    pub fn state_init(&self) -> StateInit {
-        StateInit::V1(StateInitV1 {
-            code: self.global_contract_id.clone(),
-            data: self.init_state.as_storage(),
-        })
-    }
-
-    pub fn account_id(&self) -> AccountId {
-        self.state_init().derive_account_id()
-    }
-
-    pub fn sign(&mut self, request: Request) -> (RequestMessage, Signature) {
+    pub fn sign(&mut self, request: Request) -> Result<(RequestMessage, Proof), S::Error> {
         let msg = self.wrap_request_msg(request);
-        let signature = self.signer.sign(&msg);
-        (msg, signature)
+        let signature = self.signer.sign(&msg)?;
+        Ok((msg, signature))
     }
 
     fn wrap_request_msg(&mut self, request: Request) -> RequestMessage {
         RequestMessage {
             chain_id: self.chain_id.clone(),
-            signer_id: self.account_id(),
-            nonce: self.nonces.next().expect("failed to get next nonce"),
-            created_at: Deadline::now() - Duration::from_secs(60),
-            timeout: self.init_state.nonces.timeout(),
+            signer_id: self.account_id().clone(),
+            nonce: self.nonces.next(),
+            // set `created_at` slightly before the actual time of signing,
+            // so it doesn't fail on-chain if arrives too fast.
+            created_at: Deadline::now()
+                - Duration::from_secs(60)
+                    //
+                    .min(self.state.nonces.timeout() / 10),
+            timeout: self.state.nonces.timeout(),
             request,
         }
     }
@@ -122,20 +153,23 @@ where
     fn clone(&self) -> Self {
         Self {
             chain_id: self.chain_id.clone(),
-            global_contract_id: self.global_contract_id.clone(),
-            init_state: self.init_state.clone(),
+            code: self.code.clone(),
+            state: self.state.clone(),
+            account_id: self.account_id.clone(),
             nonces: ConcurrentNonces::new(make_rng()),
             signer: self.signer.clone(),
         }
     }
 }
 
-type Signature = String;
+/// Generic siagnature
+pub type Proof = String;
 
 pub trait Signer {
     type PublicKey: BorshSerialize;
+    type Error;
 
     fn public_key(&self) -> Self::PublicKey;
-    // TODO: async? return Result<_>?
-    fn sign(&self, msg: &RequestMessage) -> Signature;
+    // TODO: async?
+    fn sign(&self, msg: &RequestMessage) -> Result<Proof, Self::Error>;
 }

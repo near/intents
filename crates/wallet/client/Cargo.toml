@@ -10,6 +10,7 @@ workspace = true
 
 [dependencies]
 defuse-wallet = { workspace = true, features = ["concurrent"] }
+impl-tools.workspace = true
 near-sdk = { workspace = true, features = ["non-contract-usage"] }
 rand.workspace = true
 

@@ -1,21 +1,18 @@
 mod adapters;
 mod contract;
 
-use std::{fmt::Display, time::Duration};
+use std::time::Duration;
 
 pub use defuse_wallet as wallet;
 pub use near_kit;
 
 use chrono::{TimeDelta, Utc};
-use near_kit::{
-    ActionErrorKind, ExecutionStatus, FinalExecutionOutcome, Gas, InvalidTxError, Near, NearToken,
-    Signer, TxExecutionError, TxExecutionStatus,
-};
+use near_kit::{FinalExecutionOutcome, Gas, InvalidTxError, Near, NearToken, TxExecutionStatus};
 use near_sdk::{bs58, near, state_init::StateInit};
 use thiserror::Error as ThisError;
 use tracing::{field, instrument};
 
-use crate::contract::{WExecuteSignedArgs, WalletContract};
+use crate::contract::{WExecuteSignedArgs, Wallet};
 
 use self::wallet::signature::RequestMessage;
 
@@ -46,15 +43,9 @@ impl Relayer {
 
     const GAS_DEFAULT: Gas = Gas::from_tgas(300);
 
-    pub fn new(rpc_url: impl Into<String>, signer: impl Signer + 'static) -> Self {
-        // rely on timeouts instead of number of retry attempts
-        const MAX_NONCE_RETRIES: u32 = u32::MAX;
-
+    pub const fn new(client: Near) -> Self {
         Self {
-            client: Near::custom(rpc_url)
-                .max_nonce_retries(MAX_NONCE_RETRIES)
-                .signer(signer)
-                .build(),
+            client,
             max_assist_deposit: Self::MAX_ASSIST_DEPOSIT_DEFAULT,
             gas: Self::GAS_DEFAULT,
         }
@@ -89,7 +80,7 @@ impl Relayer {
         request: RelayRequest,
         deposit: NearToken,
         max_gas: impl Into<Option<Gas>>,
-    ) -> Result<WalletResult> {
+    ) -> Result<FinalExecutionOutcome> {
         // TODO
         // if request.msg.chain_id != self.client.chain_id().as_str() {
         //     return Err(Error::InvalidChainId);
@@ -117,9 +108,9 @@ impl Relayer {
         };
 
         tx = tx.add_action(
-            WalletContract::w_execute_signed(WExecuteSignedArgs {
-                msg: request.msg.clone(),
-                proof: request.proof,
+            Wallet::w_execute_signed(WExecuteSignedArgs {
+                msg: &request.msg,
+                proof: &request.proof,
             })
             .deposit(
                 needs_deposit
@@ -131,39 +122,17 @@ impl Relayer {
             .gas(self.tx_gas(&request.msg, request.min_gas, max_gas)?),
         );
 
-        let outcome = tokio::time::timeout(
+        tokio::time::timeout(
             Self::tx_timeout(&request.msg)?,
             // wait for execution, so we have an access to wallet's receipt later
-            tx.wait_until(TxExecutionStatus::ExecutedOptimistic).send(),
+            tx.wait_until(TxExecutionStatus::ExecutedOptimistic)
+                // rely on timeouts instead of number of retry attempts
+                .max_nonce_retries(u32::MAX)
+                .send(),
         )
         .await
         .map_err(|_| Error::Expired)?
-        .map_err(Error::Transaction)?;
-
-        let Some(wallet_outcome) = outcome.receipts_outcome.first() else {
-            // TODO
-            return Err(Error::custom("empty receipts"));
-        };
-
-        if wallet_outcome.outcome.executor_id != request.msg.signer_id {
-            return Err(Error::custom("invalid first receipt"));
-        }
-
-        match &wallet_outcome.outcome.status {
-            ExecutionStatus::Failure(TxExecutionError::InvalidTxError(err)) => {
-                Err(err.clone().into())
-            }
-            ExecutionStatus::Failure(TxExecutionError::ActionError(err)) => {
-                // TODO: are we sure we need to return Result<Result<_>>?
-                Ok(Err(FailedReceipt {
-                    error: err.kind.clone(),
-                    logs: wallet_outcome.outcome.logs.clone(),
-                }))
-            }
-            ExecutionStatus::Unknown
-            | ExecutionStatus::SuccessValue(_)
-            | ExecutionStatus::SuccessReceiptId(_) => Ok(Ok(outcome)),
-        }
+        .map_err(Error::Transaction)
     }
 
     fn tx_gas(
@@ -209,21 +178,10 @@ impl Relayer {
     }
 }
 
-pub type WalletResult = Result<FinalExecutionOutcome, FailedReceipt>;
-
-// TODO: serialize
-#[derive(Debug, Clone)]
-pub struct FailedReceipt {
-    pub error: ActionErrorKind,
-    pub logs: Vec<String>,
-}
-
 pub type Result<T, E = Error> = ::core::result::Result<T, E>;
 
 #[derive(Debug, ThisError)]
 pub enum Error {
-    #[error("{0}")]
-    Custom(String),
     #[error("expired")]
     Expired,
     #[error("from the future")]
@@ -238,15 +196,6 @@ pub enum Error {
     InvalidStateInit,
     #[error("transaction: {0}")]
     Transaction(#[from] near_kit::Error),
-    #[error("wallet contract: {0}")]
-    Wallet(ActionErrorKind),
-}
-
-impl Error {
-    #[inline]
-    pub fn custom(msg: impl Display) -> Self {
-        Self::Custom(msg.to_string())
-    }
 }
 
 impl From<InvalidTxError> for Error {

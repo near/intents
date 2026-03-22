@@ -14,10 +14,20 @@ impl<R> ConcurrentNonces<R>
 where
     R: Rng,
 {
-    const BIT_POS_MASK: u32 = 0b11111;
+    const BIT_POS_MASK: u32 = (1 << u32::BITS.ilog2()) - 1;
 
+    #[inline]
     pub const fn new(rng: R) -> Self {
         Self { next: 0, rng }
+    }
+
+    pub fn next(&mut self) -> u32 {
+        if self.next & Self::BIT_POS_MASK == 0 {
+            self.next = self.rng.next_u32() & !Self::BIT_POS_MASK;
+        }
+        let n = self.next;
+        self.next = self.next.wrapping_add(1);
+        n
     }
 
     #[must_use]
@@ -36,12 +46,7 @@ where
     type Item = u32;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.next & Self::BIT_POS_MASK == 0 {
-            self.next = self.rng.next_u32() & !Self::BIT_POS_MASK;
-        }
-        let n = self.next;
-        self.next = self.next.wrapping_add(1);
-        Some(n)
+        Some(self.next())
     }
 }
 

@@ -1,15 +1,14 @@
 use defuse_wallet::signature::RequestMessage;
-use near_sdk::near;
+use near_sdk::serde::Serialize;
 
 #[near_kit::contract]
-pub trait WalletContract {
+pub trait Wallet {
     #[call]
-    fn w_execute_signed(&mut self, args: WExecuteSignedArgs);
+    fn w_execute_signed(&mut self, args: WExecuteSignedArgs<'_>);
 }
 
-#[near(serializers = [json])]
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct WExecuteSignedArgs {
-    pub msg: RequestMessage,
-    pub proof: String,
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct WExecuteSignedArgs<'a> {
+    pub msg: &'a RequestMessage,
+    pub proof: &'a str,
 }

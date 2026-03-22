@@ -14,6 +14,7 @@ defuse-wallet.workspace = true
 futures.workspace = true
 near-kit.workspace = true
 near-sdk = { workspace = true, features = ["non-contract-usage"] }
+serde.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 tracing.workspace = true
