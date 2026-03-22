@@ -5,7 +5,7 @@ use defuse_wallet_client::WalletClient;
 use defuse_wallet_relayer::{RelayRequest, Relayer};
 use ed25519_dalek::ed25519::signature::rand_core::OsRng;
 use futures::{TryFutureExt, TryStreamExt, stream::FuturesUnordered};
-use near_kit::{InMemorySigner, Near, SecretKey, sandbox::SandboxConfig};
+use near_kit::{InMemorySigner, Near, SecretKey, TxExecutionStatus, sandbox::SandboxConfig};
 use near_sdk::{GlobalContractId, NearToken, env::sha256_array};
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -49,7 +49,7 @@ async fn main() {
             )
             .map_ok(|_| ())
     })
-    .take(10000)
+    .take(100)
     .collect::<FuturesUnordered<_>>()
     .try_collect::<()>()
     .await
@@ -75,8 +75,12 @@ async fn publish_global_contract(client: &Near) -> GlobalContractId {
 
 async fn make_relayer(client: &Near) -> Relayer {
     let relayer = Relayer::new(client.with_signer(generate_implicit_signer()));
+    // Wait until Final so the implicit account's access key is visible
+    // to subsequent view_access_key queries (which use Finality::Final).
     client
         .transfer(relayer.client().account_id(), NearToken::from_near(100))
+        .wait_until(TxExecutionStatus::Final)
+        .send()
         .await
         .unwrap();
     relayer
