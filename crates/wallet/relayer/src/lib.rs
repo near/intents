@@ -125,10 +125,10 @@ impl Relayer {
         tokio::time::timeout(
             Self::tx_timeout(&request.msg)?,
             // wait for execution, so we have an access to wallet's receipt later
-            tx.wait_until(TxExecutionStatus::ExecutedOptimistic)
+            tx.send()
+                .wait_until(TxExecutionStatus::ExecutedOptimistic)
                 // rely on timeouts instead of number of retry attempts
-                .max_nonce_retries(u32::MAX)
-                .send(),
+                .max_nonce_retries(u32::MAX),
         )
         .await
         .map_err(|_| Error::Expired)?
