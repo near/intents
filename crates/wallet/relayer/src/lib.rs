@@ -7,8 +7,10 @@ pub use defuse_wallet as wallet;
 pub use near_kit;
 
 use chrono::{TimeDelta, Utc};
-use near_kit::{FinalExecutionOutcome, Gas, InvalidTxError, Near, NearToken, TxExecutionStatus};
-use near_sdk::{bs58, near, state_init::StateInit};
+use near_kit::{
+    CryptoHash, FinalExecutionOutcome, Gas, InvalidTxError, Near, NearToken, TxExecutionStatus,
+};
+use near_sdk::{near, state_init::StateInit};
 use thiserror::Error as ThisError;
 use tracing::{field, instrument};
 
@@ -72,7 +74,7 @@ impl Relayer {
     // TODO: return request hash?
     #[instrument(skip_all, fields(
         signer_id = %request.msg.signer_id,
-        request_hash = b58(request.msg.hash()),
+        request_hash = %CryptoHash::from_bytes(request.msg.hash()),
         deposit = Some(deposit).filter(|d| !d.is_zero()).map(field::display),
     ))]
     pub async fn relay(
@@ -124,8 +126,8 @@ impl Relayer {
 
         tokio::time::timeout(
             Self::tx_timeout(&request.msg)?,
-            // wait for execution, so we have an access to wallet's receipt later
             tx.send()
+                // wait for execution, so we have an access to wallet's receipt
                 .wait_until(TxExecutionStatus::ExecutedOptimistic)
                 // rely on timeouts instead of number of retry attempts
                 .max_nonce_retries(u32::MAX),
@@ -203,8 +205,4 @@ impl From<InvalidTxError> for Error {
     fn from(err: InvalidTxError) -> Self {
         Self::Transaction(near_kit::Error::InvalidTx(err.into()))
     }
-}
-
-fn b58(bytes: impl AsRef<[u8]>) -> String {
-    bs58::encode(bytes).into_string()
 }

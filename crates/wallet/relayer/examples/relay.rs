@@ -29,10 +29,15 @@ async fn main() {
 
     let sandbox = SandboxConfig::builder().fresh().await;
     let near = sandbox.client();
-    near.publish(WALLET_WASM.clone(), PublishMode::Immutable)
-        .await
-        .unwrap();
-    let global_contract_id = GlobalContractId::CodeHash(sha256_array(&*WALLET_WASM).into());
+
+    let global_contract_id = {
+        near.publish(WALLET_WASM.clone(), PublishMode::Immutable)
+            .wait_until(near_kit::TxExecutionStatus::Final)
+            .await
+            .unwrap();
+        GlobalContractId::CodeHash(sha256_array(&*WALLET_WASM).into())
+    };
+
     let relayer = Relayer::new(near);
 
     let mut wallet = WalletClient::new(
@@ -42,7 +47,9 @@ async fn main() {
     // .chain_id(relayer.client().chain_id().as_str())
     ;
 
-    stream::iter(
+    let txs_count = 10_000;
+
+    let txs = stream::iter(
         iter::repeat_with(|| {
             let (msg, proof) = wallet.sign(Request::new()).unwrap();
             relayer
@@ -58,12 +65,15 @@ async fn main() {
                 )
                 .map_ok(|_| ())
         })
-        .take(10_000),
+        .take(txs_count),
     )
-    .buffer_unordered(1000)
-    .try_collect::<()>()
-    .await
-    .unwrap();
+    .buffer_unordered(1000);
 
-    // println!("{r:#?}");
+    let started_at = tokio::time::Instant::now();
+    txs.try_collect::<()>().await.unwrap();
+
+    println!(
+        "avg: {} TPS",
+        txs_count as f32 / started_at.elapsed().as_secs_f32()
+    );
 }
