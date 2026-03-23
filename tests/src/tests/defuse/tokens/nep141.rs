@@ -345,35 +345,35 @@ struct TransferCallExpectation {
     intent_transfer_amount: None,
     refund_if_fails: true,
     expected_sender_ft_balance: 0,
-    expected_receiver_mt_balance: 1_000,
+    expected_receiver_mt_balance: 1_500,
 })]
 #[case::partial_refund(TransferCallExpectation {
     action: StubAction::ReturnValue(300.into()),
     intent_transfer_amount: None,
     refund_if_fails: true,
     expected_sender_ft_balance: 300,
-    expected_receiver_mt_balance: 700,
+    expected_receiver_mt_balance: 1_200,
 })]
 #[case::malicious_refund(TransferCallExpectation {
     action: StubAction::ReturnValue(2_000.into()),
     intent_transfer_amount: None,
     refund_if_fails: true,
     expected_sender_ft_balance: 1_000,
-    expected_receiver_mt_balance: 0,
+    expected_receiver_mt_balance: 500,
 })]
 #[case::receiver_panics_results_with_no_refund(TransferCallExpectation {
     action: StubAction::Panic,
     intent_transfer_amount: None,
     refund_if_fails: true,
     expected_sender_ft_balance: 1000,
-    expected_receiver_mt_balance: 0,
+    expected_receiver_mt_balance: 500,
 })]
 #[case::malicious_receiver(TransferCallExpectation {
     action: StubAction::MaliciousReturn,
     intent_transfer_amount: None,
     refund_if_fails: true,
     expected_sender_ft_balance: 1000,
-    expected_receiver_mt_balance: 0,
+    expected_receiver_mt_balance: 500,
 })]
 #[tokio::test]
 async fn ft_transfer_call_calls_mt_on_transfer_variants(
@@ -400,6 +400,10 @@ async fn ft_transfer_call_calls_mt_on_transfer_variants(
         vec![ft.id()],
     )
     .await;
+
+    env.defuse_ft_deposit_to(ft.id(), 500, receiver.id(), None)
+        .await
+        .unwrap();
 
     let root = env.sandbox().root();
 
