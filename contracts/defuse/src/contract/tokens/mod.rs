@@ -215,6 +215,8 @@ impl Contract {
         }
 
         if !burn_event.amounts.is_empty() {
+            // NOTE: No need for `check_refund()` here since this IS the refund.
+            // The refund memo size was already accounted for in the original mint.
             MtEvent::MtBurn([burn_event].as_slice().into()).emit();
         }
     }
