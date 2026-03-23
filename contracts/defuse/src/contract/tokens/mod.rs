@@ -188,10 +188,10 @@ impl Contract {
                 |v| Either::Left(v.into_iter().map(|elem| Some(elem.0))),
             ))
         {
-            //NOTE: refunds are capped by deposited amounts
             let requested_refund = requested_refund.unwrap_or(*deposited);
             let balance_left = receiver.token_balances.amount_for(&token_id);
-            let refund_amount = balance_left.min(requested_refund);
+            // NOTE: refunds are capped by deposited amounts and balance left on the receiver
+            let refund_amount = requested_refund.min(*deposited).min(balance_left);
             *deposited = refund_amount;
             if refund_amount == 0 {
                 continue;
