@@ -215,10 +215,7 @@ impl Contract {
         }
 
         if !burn_event.amounts.is_empty() {
-            MtEvent::MtBurn([burn_event].as_slice().into())
-                .check_refund()
-                .unwrap_or_panic_display()
-                .emit();
+            MtEvent::MtBurn([burn_event].as_slice().into()).emit();
         }
     }
 }
