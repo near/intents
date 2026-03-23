@@ -1,4 +1,4 @@
-mod adapters;
+pub mod adapters; // TODO: rm pub
 mod contract;
 
 use std::time::Duration;

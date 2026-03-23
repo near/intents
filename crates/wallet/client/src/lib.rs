@@ -137,7 +137,7 @@ where
             // so it doesn't fail on-chain if arrives too fast.
             created_at: Deadline::now()
                 - Duration::from_secs(60)
-                    //
+                    // TODO
                     .min(self.state.nonces.timeout() / 10),
             timeout: self.state.nonces.timeout(),
             request,

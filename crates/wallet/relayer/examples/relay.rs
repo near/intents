@@ -2,7 +2,7 @@ use std::{env, fs, iter, path::Path, sync::LazyLock};
 
 use defuse_wallet::Request;
 use defuse_wallet_client::WalletClient;
-use defuse_wallet_relayer::{RelayRequest, Relayer};
+use defuse_wallet_relayer::{RelayRequest, Relayer, adapters};
 use ed25519_dalek::ed25519::signature::rand_core::OsRng;
 use futures::{StreamExt, TryFutureExt, TryStreamExt, stream};
 use near_kit::{PublishMode, sandbox::SandboxConfig};
@@ -16,7 +16,7 @@ static WALLET_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
 });
 
 #[tokio::test]
-async fn main() {
+async fn relay() {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::fmt::layer()
@@ -38,7 +38,7 @@ async fn main() {
         GlobalContractId::CodeHash(sha256_array(&*WALLET_WASM).into())
     };
 
-    let relayer = Relayer::new(near);
+    let relayer = Relayer::new(near.clone());
 
     let mut wallet = WalletClient::new(
         global_contract_id,
@@ -46,6 +46,10 @@ async fn main() {
     )
     // .chain_id(relayer.client().chain_id().as_str())
     ;
+
+    near.state_init(adapters::state_init(wallet.state_init()), NearToken::ZERO)
+        .await
+        .unwrap();
 
     let txs_count = 10_000;
 
@@ -55,7 +59,8 @@ async fn main() {
             relayer
                 .relay(
                     RelayRequest {
-                        state_init: Some(wallet.state_init()),
+                        state_init: None,
+                        // state_init: Some(wallet.state_init()),
                         msg,
                         proof,
                         min_gas: None,
@@ -63,6 +68,7 @@ async fn main() {
                     NearToken::ZERO,
                     None,
                 )
+                .inspect_ok(|r| tracing::info!(tx.hash = %r.transaction_hash(), tx.gas_used = %r.total_gas_used()))
                 .map_ok(|_| ())
         })
         .take(txs_count),
