@@ -3,6 +3,11 @@ DEFUSE_OUT_DIR ?= $(ROOT_DIR)res
 MAKE_OUT_DIR_PREFIX ?= $(ROOT_DIR)target/makenear
 MAKE_OUT_DIR = $(eval MAKE_OUT_DIR := $(shell mkdir -p $(MAKE_OUT_DIR_PREFIX) $(DEFUSE_OUT_DIR) && mktemp -d -p $(MAKE_OUT_DIR_PREFIX)))$(MAKE_OUT_DIR)
 
+RUSTFLAGS_CHECK = -D warnings
+# --cfg clippy: near-sdk compile_error!s on host unless one of its allowed cfgs is set
+CARGO_CHECK_HOST = RUSTFLAGS='$(RUSTFLAGS_CHECK) --cfg clippy' cargo hack check --exclude-features contract
+CARGO_CHECK_WASM = RUSTFLAGS='$(RUSTFLAGS_CHECK)' cargo hack check --target wasm32-unknown-unknown --exclude-features abi --exclude-features near-api-types --exclude-features near-api --no-dev-deps
+
 # Crates where every enum variant is feature-gated, requiring at least one
 # variant feature. These need --feature-powerset + --at-least-one-of instead
 # of --each-feature (which tests features in isolation).
@@ -21,14 +26,6 @@ CRATES_HOST_ONLY := \
     defuse-randomness \
     defuse-tests
 
-crate_name = $(firstword $(subst =, ,$1))
-crate_features = $(lastword $(subst =, ,$1))
-
-
-RUSTFLAGS_CHECK = -D warnings
-# --cfg clippy: near-sdk compile_error!s on host unless one of its allowed cfgs is set
-CARGO_CHECK_HOST = RUSTFLAGS='$(RUSTFLAGS_CHECK) --cfg clippy' cargo hack check --exclude-features contract
-CARGO_CHECK_WASM = RUSTFLAGS='$(RUSTFLAGS_CHECK)' cargo hack check --target wasm32-unknown-unknown --exclude-features abi --exclude-features near-api-types --exclude-features near-api --no-dev-deps
 
 .DEFAULT_GOAL := all
 CONTRACT_CRATES := \
@@ -41,56 +38,6 @@ CONTRACT_CRATES := \
     multi-token-receiver-stub
 
 ALL_TARGETS :=
-
-# Generate all build targets from cargo metadata, filtered to CONTRACT_CRATES
-$(eval $(shell cargo metadata --format-version=1 | jq -rn \
-    --arg outdir '$(DEFUSE_OUT_DIR)' --arg reproducible '$(REPRODUCIBLE)' --arg makedir '$$$$(MAKE_OUT_DIR)' \
-    --arg crates '$(CONTRACT_CRATES)' --arg reproducible_cmd 'cargo near build reproducible-wasm' ' \
-    ($$crates | split(" ") | map(select(length > 0))) as $$allowed | \
-    [inputs][0].packages[] | select(.metadata.near.reproducible_build) | select(.name as $$n | $$allowed | any(. == $$n)) | \
-    . as {$$name, manifest_path: $$mp} | .metadata.near.reproducible_build as $$b | \
-    ($$name | gsub("-"; "_")) as $$wasm_base | \
-    "$$(eval .PHONY: \($$name)/all)", \
-    "$$(eval ALL_TARGETS +=  \($$name)/all)", \
-    "$$(eval \($$name)/all:: \($$name))", \
-    ({"": $$b} + ($$b.variant // {}) | to_entries[] | \
-     . as {key: $$vkey, value: $$vval} | \
-     ("\($$name)/\($$vkey)" | rtrimstr("/")) as $$tname | \
-     "\($$makedir)/\($$tname)" as $$tout | \
-     (if $$vkey != "" then " --variant=\($$vkey)" else "" end) as $$variant | \
-     ($$reproducible_cmd + $$variant) as $$reproducible_cmd | \
-     ($$vval.container_build_command | join(" ")) as $$non_reproducible_cmd | \
-     (if $$reproducible != "" then $$reproducible_cmd else $$non_reproducible_cmd end) as $$cmd | \
-     (if $$vkey == "" then "" else ".\($$vkey)" end) as $$suffix | \
-     "$$(eval .PHONY: \($$tname))", \
-     "$$(eval ALL_TARGETS += \($$tname))", \
-     "$$(eval \($$name)/all:: \($$tname))", \
-     "$$(eval \($$tname)::;  \($$cmd) --manifest-path=\($$mp) --out-dir=\($$tout))", \
-     "$$(eval \($$tname)::; -@cp -v \($$tout)/\($$wasm_base).wasm \($$outdir)/\($$name)\($$suffix).wasm)", \
-     "$$(eval \($$tname)::; -@cp -v \($$tout)/\($$wasm_base)_abi.json \($$outdir)/\($$name)\($$suffix).abi.json)" \
-    )'))
-
-.PHONY: check-all-features-host
-check-all-features-host::
-	$(CARGO_CHECK_HOST) --workspace --each-feature --exclude-no-default-features \
-	    $(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),--exclude $(call crate_name,$c))
-
-$(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),\
-  $(eval check-all-features-host::; \
-    $(CARGO_CHECK_HOST) -p $(call crate_name,$c) --feature-powerset --at-least-one-of $(call crate_features,$c)))
-
-.PHONY: check-all-features-wasm
-check-all-features-wasm::
-	$(CARGO_CHECK_WASM) --workspace --each-feature --exclude-no-default-features \
-	    $(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),--exclude $(call crate_name,$c)) \
-	    $(addprefix --exclude ,$(CRATES_HOST_ONLY))
-
-$(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),\
-  $(eval check-all-features-wasm::; \
-    $(CARGO_CHECK_WASM) -p $(call crate_name,$c) --feature-powerset --at-least-one-of $(call crate_features,$c)))
-
-.PHONY: check-all-features
-check-all-features: check-all-features-host check-all-features-wasm
 
 .PHONY: all
 all: $(ALL_TARGETS)
@@ -141,9 +88,62 @@ check-examples:
 	RUSTFLAGS='$(RUSTFLAGS_CHECK)' cargo clippy --workspace --examples
 
 .PHONY: check-all
-check-all: check-fmt check check-examples check-unused-deps
+check-all: check-fmt check check-examples check-all-features check-unused-deps
 
 .PHONY: fmt
 fmt:
 	cargo fmt --all
 	taplo format
+
+crate_name = $(firstword $(subst =, ,$1))
+crate_features = $(lastword $(subst =, ,$1))
+
+# Generate all build targets from cargo metadata, filtered to CONTRACT_CRATES
+$(eval $(shell cargo metadata --format-version=1 | jq -rn \
+    --arg outdir '$(DEFUSE_OUT_DIR)' --arg reproducible '$(REPRODUCIBLE)' --arg makedir '$$$$(MAKE_OUT_DIR)' \
+    --arg crates '$(CONTRACT_CRATES)' --arg reproducible_cmd 'cargo near build reproducible-wasm' ' \
+    ($$crates | split(" ") | map(select(length > 0))) as $$allowed | \
+    [inputs][0].packages[] | select(.metadata.near.reproducible_build) | select(.name as $$n | $$allowed | any(. == $$n)) | \
+    . as {$$name, manifest_path: $$mp} | .metadata.near.reproducible_build as $$b | \
+    ($$name | gsub("-"; "_")) as $$wasm_base | \
+    "$$(eval .PHONY: \($$name)/all)", \
+    "$$(eval ALL_TARGETS +=  \($$name)/all)", \
+    "$$(eval \($$name)/all:: \($$name))", \
+    ({"": $$b} + ($$b.variant // {}) | to_entries[] | \
+     . as {key: $$vkey, value: $$vval} | \
+     ("\($$name)/\($$vkey)" | rtrimstr("/")) as $$tname | \
+     "\($$makedir)/\($$tname)" as $$tout | \
+     (if $$vkey != "" then " --variant=\($$vkey)" else "" end) as $$variant | \
+     ($$reproducible_cmd + $$variant) as $$reproducible_cmd | \
+     ($$vval.container_build_command | join(" ")) as $$non_reproducible_cmd | \
+     (if $$reproducible != "" then $$reproducible_cmd else $$non_reproducible_cmd end) as $$cmd | \
+     (if $$vkey == "" then "" else ".\($$vkey)" end) as $$suffix | \
+     "$$(eval .PHONY: \($$tname))", \
+     "$$(eval ALL_TARGETS += \($$tname))", \
+     "$$(eval \($$name)/all:: \($$tname))", \
+     "$$(eval \($$tname)::;  \($$cmd) --manifest-path=\($$mp) --out-dir=\($$tout))", \
+     "$$(eval \($$tname)::; -@cp -v \($$tout)/\($$wasm_base).wasm \($$outdir)/\($$name)\($$suffix).wasm)", \
+     "$$(eval \($$tname)::; -@cp -v \($$tout)/\($$wasm_base)_abi.json \($$outdir)/\($$name)\($$suffix).abi.json)" \
+    )'))
+
+.PHONY: check-all-features-host
+check-all-features-host::
+	$(CARGO_CHECK_HOST) --workspace --each-feature --exclude-no-default-features \
+	    $(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),--exclude $(call crate_name,$c))
+
+$(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),\
+  $(eval check-all-features-host::; \
+    $(CARGO_CHECK_HOST) -p $(call crate_name,$c) --feature-powerset --at-least-one-of $(call crate_features,$c)))
+
+.PHONY: check-all-features-wasm
+check-all-features-wasm::
+	$(CARGO_CHECK_WASM) --workspace --each-feature --exclude-no-default-features \
+	    $(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),--exclude $(call crate_name,$c)) \
+	    $(addprefix --exclude ,$(CRATES_HOST_ONLY))
+
+$(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),\
+  $(eval check-all-features-wasm::; \
+    $(CARGO_CHECK_WASM) -p $(call crate_name,$c) --feature-powerset --at-least-one-of $(call crate_features,$c)))
+
+.PHONY: check-all-features
+check-all-features: check-all-features-host check-all-features-wasm
