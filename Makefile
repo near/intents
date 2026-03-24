@@ -92,8 +92,6 @@ $(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),\
 .PHONY: check-all-features
 check-all-features: check-all-features-host check-all-features-wasm
 
-.PHONY: fmt
-
 .PHONY: all
 all: $(ALL_TARGETS)
 
@@ -107,10 +105,9 @@ help:
 	@echo "Other targets:"
 	@echo "  all                 Build all contracts (default)"
 	@echo "  clean               Remove build artifacts and cargo clean"
-	@echo "  clean-out-dir       Remove output directory only"
 	@echo "  test                Run all workspace tests"
-	@echo "  clippy              Run clippy lints"
-	@echo "  check               Run full checks (all features + examples)"
+	@echo "  check               Run clippy on codebase"
+	@echo "  check-all           Run all checks"
 	@echo "  fmt                 Format Rust files and Cargo.toml manifests"
 	@echo "  help                Show this help"
 
@@ -126,17 +123,27 @@ clean: clean-out-dir
 test:
 	cargo test --workspace --all-targets
 
-.PHONY: clippy
-clippy:
+.PHONY: check
+check:
 	cargo clippy --workspace --all-targets --no-deps
+
+.PHONY: check-fmt
+check-fmt:
+	cargo fmt --all --check
+	RUST_LOG=warn taplo format --check
+
+.PHONY: check-unused-deps
+check-unused-deps:
+	cargo machete 2>/dev/null
 
 .PHONY: check-examples
 check-examples:
 	RUSTFLAGS='$(RUSTFLAGS_CHECK)' cargo clippy --workspace --examples
 
-.PHONY: check
-check: check-all-features check-examples
+.PHONY: check-all
+check-all: check-fmt check check-examples check-unused-deps
 
+.PHONY: fmt
 fmt:
 	cargo fmt --all
 	taplo format
