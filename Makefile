@@ -27,7 +27,7 @@ crate_features = $(lastword $(subst =, ,$1))
 
 RUSTFLAGS_CHECK = -D warnings
 # --cfg clippy: near-sdk compile_error!s on host unless one of its allowed cfgs is set
-CARGO_CHECK_HOST = RUSTFLAGS='$(RUSTFLAGS_CHECK) --cfg clippy' cargo hack check --exclude-features contract --no-dev-deps
+CARGO_CHECK_HOST = RUSTFLAGS='$(RUSTFLAGS_CHECK) --cfg clippy' cargo hack check --exclude-features contract
 CARGO_CHECK_WASM = RUSTFLAGS='$(RUSTFLAGS_CHECK)' cargo hack check --target wasm32-unknown-unknown --exclude-features abi --exclude-features near-api-types --exclude-features near-api --no-dev-deps
 
 .DEFAULT_GOAL := all
