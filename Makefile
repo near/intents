@@ -53,7 +53,8 @@ help:
 	@echo "  all                 Build all contracts (default)"
 	@echo "  clean               Remove build artifacts and cargo clean"
 	@echo "  test                Run all workspace tests"
-	@echo "  check               Run clippy on codebase"
+	@echo "  check               Run clippy on codebase (host + per-contract wasm)"
+	@echo "  check-contracts     Run clippy per contract (wasm32, --features contract)"
 	@echo "  check-all           Run all checks"
 	@echo "  fmt                 Format Rust files and Cargo.toml manifests"
 	@echo "  help                Show this help"
@@ -71,8 +72,10 @@ test:
 	cargo test --workspace --all-targets
 
 .PHONY: check
-check:
+check: check-contracts
 	cargo clippy --workspace --all-targets --no-deps
+
+.PHONY: check-contracts
 
 .PHONY: check-fmt
 check-fmt:
@@ -106,6 +109,10 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
     [inputs][0].packages[] | select(.metadata.near.reproducible_build) | select(.name as $$n | $$allowed | any(. == $$n)) | \
     . as {$$name, manifest_path: $$mp} | .metadata.near.reproducible_build as $$b | \
     ($$name | gsub("-"; "_")) as $$wasm_base | \
+    (if .features | has("contract") then " --features contract" else "" end) as $$contract_flag | \
+    "$$(eval .PHONY: check-contract/\($$name))", \
+    "$$(eval check-contracts:: check-contract/\($$name))", \
+    "$$(eval check-contract/\($$name):; cargo clippy -p \($$name) --no-deps --target wasm32-unknown-unknown\($$contract_flag))", \
     "$$(eval .PHONY: \($$name)/all)", \
     "$$(eval ALL_TARGETS +=  \($$name)/all)", \
     "$$(eval \($$name)/all:: \($$name))", \
