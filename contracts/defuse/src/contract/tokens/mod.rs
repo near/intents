@@ -6,9 +6,7 @@ mod nep245;
 
 use super::Contract;
 use defuse_core::{DefuseError, Result, token_id::TokenId};
-use defuse_near_utils::{
-    Lock, REFUND_MEMO, UnwrapOrPanic, UnwrapOrPanicError, promise_result_checked_json_with_len,
-};
+use defuse_near_utils::{Lock, REFUND_MEMO, UnwrapOrPanic, promise_result_checked_json_with_len};
 use defuse_nep245::{MtBurnEvent, MtEvent, MtMintEvent};
 use itertools::{Either, Itertools};
 use near_sdk::{AccountId, AccountIdRef, Gas, env, json_types::U128};
@@ -215,10 +213,9 @@ impl Contract {
         }
 
         if !burn_event.amounts.is_empty() {
-            MtEvent::MtBurn([burn_event].as_slice().into())
-                .check_refund()
-                .unwrap_or_panic_display()
-                .emit();
+            // NOTE: No need for `check_refund()` here since this IS the refund.
+            // The refund memo size was already accounted for in the original mint.
+            MtEvent::MtBurn([burn_event].as_slice().into()).emit();
         }
     }
 }
