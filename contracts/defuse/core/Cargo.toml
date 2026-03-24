@@ -6,7 +6,6 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
-defuse-auth-call.workspace = true
 defuse-bitmap.workspace = true
 defuse-crypto = { workspace = true, features = ["ed25519", "secp256k1", "p256"] }
 defuse-deadline.workspace = true
@@ -33,7 +32,6 @@ impl-tools.workspace = true
 near-contract-standards.workspace = true
 near-sdk = { workspace = true, features = ["deterministic-account-ids"] }
 serde_with.workspace = true
-strum.workspace = true
 thiserror.workspace = true
 
 [features]

@@ -10,7 +10,6 @@ cargo-fuzz = true
 [dependencies]
 defuse-decimal = { workspace = true, features = ["arbitrary"] }
 libfuzzer-sys = "0.4"
-near-sdk = { workspace = true, features = ["non-contract-usage"] }
 
 
 [[bin]]
