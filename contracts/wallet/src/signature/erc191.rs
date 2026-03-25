@@ -1,16 +1,13 @@
 use crate::signature::SigningStandard;
 use defuse_crypto::{Secp256k1PublicKey, SignedPayload};
 use defuse_erc191::SignedErc191Payload;
-use near_sdk::{
-    serde::{Serialize, de::DeserializeOwned},
-    serde_json,
-};
+use near_sdk::{serde::de::DeserializeOwned, serde_json};
 
 pub struct Erc191;
 
 impl<M> SigningStandard<&M> for Erc191
 where
-    M: Serialize + DeserializeOwned + PartialEq,
+    M: DeserializeOwned + PartialEq,
 {
     type PublicKey = Secp256k1PublicKey;
 
