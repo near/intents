@@ -3,42 +3,6 @@ DEFUSE_OUT_DIR ?= $(ROOT_DIR)res
 MAKE_OUT_DIR_PREFIX ?= $(ROOT_DIR)target/makenear
 MAKE_OUT_DIR = $(eval MAKE_OUT_DIR := $(shell mkdir -p $(MAKE_OUT_DIR_PREFIX) $(DEFUSE_OUT_DIR) && mktemp -d -p $(MAKE_OUT_DIR_PREFIX)))$(MAKE_OUT_DIR)
 
-RUSTFLAGS_CHECK = -D warnings
-# --cfg clippy: near-sdk compile_error!s on host unless one of its allowed cfgs is set
-CARGO_CHECK_HOST = RUSTFLAGS='$(RUSTFLAGS_CHECK) --cfg clippy' cargo hack check --exclude-features contract
-CARGO_CHECK_WASM = RUSTFLAGS='$(RUSTFLAGS_CHECK)' cargo hack check --target wasm32-unknown-unknown --exclude-features abi --exclude-features near-api-types --exclude-features near-api --no-dev-deps
-
-# Crates where every enum variant is feature-gated, requiring at least one
-# variant feature. These need --feature-powerset + --at-least-one-of instead
-# of --each-feature (which tests features in isolation).
-# Format: crate=feature1,feature2,...
-CRATES_AT_LEAST_ONE_VARIANT := \
-    defuse-token-id=nep141,nep171,nep245,imt \
-    defuse-ton-connect=text,binary,cell \
-    defuse-escrow-swap=nep141,nep245
-
-# Testing crates that cannot compile for wasm32-unknown-unknown.
-# defuse-randomness uses rand/getrandom which lacks wasm32 support;
-# it only reaches the defuse contract via dev-dependencies, never in the WASM binary.
-CRATES_HOST_ONLY := \
-    defuse-test-utils \
-    defuse-sandbox \
-    defuse-randomness \
-    defuse-tests
-
-
-.DEFAULT_GOAL := all
-CONTRACT_CRATES := \
-    defuse \
-    defuse-escrow-swap \
-    defuse-global-deployer \
-    defuse-poa-factory \
-    defuse-poa-token \
-    defuse-wallet \
-    multi-token-receiver-stub
-
-ALL_TARGETS :=
-
 .PHONY: help
 help:
 	@echo "Usage: make [target] [REPRODUCIBLE=1]"
@@ -93,6 +57,46 @@ check-all: check-fmt check check-examples check-all-features check-unused-deps
 fmt:
 	cargo fmt --all
 	taplo format
+
+RUSTFLAGS_CHECK = -D warnings
+# --cfg clippy: cargo clippy only sets cfg(clippy) for workspace crates, not dependencies.
+# near-sdk compile_error!s on host unless one of its allowed cfgs is set, so we must set it via RUSTFLAGS.
+# --include-features near-sdk/non-contract-usage would be cleaner, but cargo-hack's
+# --ignore-unknown-features is not implemented for --include-features, so it fails
+# on crates that don't depend on near-sdk.
+CARGO_CHECK_HOST = RUSTFLAGS='$(RUSTFLAGS_CHECK) --cfg clippy' cargo hack clippy --exclude-features contract
+CARGO_CHECK_WASM = RUSTFLAGS='$(RUSTFLAGS_CHECK)' cargo hack clippy --target wasm32-unknown-unknown --exclude-features abi --exclude-features near-api-types --exclude-features near-api --no-dev-deps
+
+# Crates where every enum variant is feature-gated, requiring at least one
+# variant feature. These need --feature-powerset + --at-least-one-of instead
+# of --each-feature (which tests features in isolation).
+# Format: crate=feature1,feature2,...
+CRATES_AT_LEAST_ONE_VARIANT := \
+    defuse-token-id=nep141,nep171,nep245,imt \
+    defuse-ton-connect=text,binary,cell \
+    defuse-escrow-swap=nep141,nep245
+
+# Testing crates that cannot compile for wasm32-unknown-unknown.
+# defuse-randomness uses rand/getrandom which lacks wasm32 support;
+# it only reaches the defuse contract via dev-dependencies, never in the WASM binary.
+CRATES_HOST_ONLY := \
+    defuse-test-utils \
+    defuse-sandbox \
+    defuse-randomness \
+    defuse-tests
+
+
+.DEFAULT_GOAL := all
+CONTRACT_CRATES := \
+    defuse \
+    defuse-escrow-swap \
+    defuse-global-deployer \
+    defuse-poa-factory \
+    defuse-poa-token \
+    defuse-wallet \
+    multi-token-receiver-stub
+
+ALL_TARGETS :=
 
 crate_name = $(firstword $(subst =, ,$1))
 crate_features = $(lastword $(subst =, ,$1))
