@@ -159,7 +159,19 @@ contract_impl! {
             /// 2. This reduces length of the `proof` submitted on-chain.
             type SigningStandard = Borsh<DomainPrefix<Sha256<Webauthn<P256>>>>;
         }
+    }
 
+    #[cfg_attr(
+        feature = "erc191",
+        near(contract_metadata(
+            standard(standard = "wallet-erc191", version = "1.0.0")
+        ))
+    )] {
+        use crate::signature::erc191::Erc191;
+
+        impl ContractImpl for Contract {
+            type SigningStandard = Erc191;
+        }
     }
 }
 
