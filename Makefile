@@ -39,9 +39,6 @@ CONTRACT_CRATES := \
 
 ALL_TARGETS :=
 
-.PHONY: all
-all: $(ALL_TARGETS)
-
 .PHONY: help
 help:
 	@echo "Usage: make [target] [REPRODUCIBLE=1]"
@@ -131,6 +128,9 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
      "$$(eval \($$tname)::; -@cp -v \($$tout)/\($$wasm_base).wasm \($$outdir)/\($$name)\($$suffix).wasm)", \
      "$$(eval \($$tname)::; -@cp -v \($$tout)/\($$wasm_base)_abi.json \($$outdir)/\($$name)\($$suffix).abi.json)" \
     )'))
+
+.PHONY: all
+all: $(ALL_TARGETS)
 
 .PHONY: check-all-features-host
 check-all-features-host::
