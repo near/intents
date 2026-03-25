@@ -152,25 +152,25 @@ const _: () = {
 
             SchemaObject {
                 instance_type: Some(InstanceType::String.into()),
-                extensions: [(
+                extensions: std::iter::once((
                     "examples",
                     [
                         #[cfg(feature = "nep141")]
-                        TokenId::Nep141(crate::nep141::Nep141TokenId::new(
+                        Self::Nep141(crate::nep141::Nep141TokenId::new(
                             "ft.near".parse::<AccountId>().unwrap(),
                         )),
                         #[cfg(feature = "nep171")]
-                        TokenId::Nep171(crate::nep171::Nep171TokenId::new(
+                        Self::Nep171(crate::nep171::Nep171TokenId::new(
                             "nft.near".parse::<AccountId>().unwrap(),
                             "token_id1",
                         )),
                         #[cfg(feature = "nep245")]
-                        TokenId::Nep245(crate::nep245::Nep245TokenId::new(
+                        Self::Nep245(crate::nep245::Nep245TokenId::new(
                             "mt.near".parse::<AccountId>().unwrap(),
                             "token_id1",
                         )),
                         #[cfg(feature = "imt")]
-                        TokenId::Imt(crate::imt::ImtTokenId::new(
+                        Self::Imt(crate::imt::ImtTokenId::new(
                             "imt.near".parse::<AccountId>().unwrap(),
                             "token_id1",
                         )),
@@ -178,8 +178,7 @@ const _: () = {
                     .map(|s| s.to_string())
                     .to_vec()
                     .into(),
-                )]
-                .into_iter()
+                ))
                 .map(|(k, v)| (k.to_string(), v))
                 .collect(),
                 ..Default::default()

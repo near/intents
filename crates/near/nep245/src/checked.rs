@@ -24,11 +24,11 @@ impl RefundLogDelta {
         }
     }
 
-    pub const fn overhead(&self) -> usize {
+    pub const fn overhead(self) -> usize {
         self.overhead
     }
 
-    pub const fn savings(&self) -> usize {
+    pub const fn savings(self) -> usize {
         self.savings
     }
 

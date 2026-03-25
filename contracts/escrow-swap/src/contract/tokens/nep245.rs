@@ -31,7 +31,7 @@ impl MultiTokenReceiver for Contract {
         let token_id: TokenId = Nep245TokenId::new(env::predecessor_account_id(), token_id).into();
 
         match self
-            .on_receive(sender_id, token_id, amount.0, &msg)
+            .on_receive(sender_id, &token_id, amount.0, &msg)
             .unwrap_or_panic()
         {
             PromiseOrValue::Promise(p) => PromiseOrValue::Promise(p),

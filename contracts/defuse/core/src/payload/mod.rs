@@ -50,7 +50,7 @@ impl<T> ExtractDefusePayload<T> for DefusePayload<T> {
 
 #[cfg(feature = "abi")]
 mod examples {
-    use super::*;
+    use super::Nonce;
 
     use near_sdk::base64::{self, Engine};
 

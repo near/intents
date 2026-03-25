@@ -129,8 +129,7 @@ const _: () = {
         fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
             SchemaObject {
                 instance_type: Some(InstanceType::String.into()),
-                extensions: [("contentEncoding", "base58".into())]
-                    .into_iter()
+                extensions: std::iter::once(("contentEncoding", "base58".into()))
                     .map(|(k, v)| (k.to_string(), v))
                     .collect(),
                 metadata: Some(

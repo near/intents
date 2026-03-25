@@ -16,7 +16,7 @@ impl Contract {
         Ok(guard
             .try_as_alive_mut()?
             .verify_mut(&params)?
-            .lost_found(params)?
+            .lost_found(params)
             .map_or_else(
                 || PromiseOrValue::Value(guard.maybe_cleanup().is_some()),
                 PromiseOrValue::Promise,
@@ -25,7 +25,7 @@ impl Contract {
 }
 
 impl State {
-    pub(super) fn lost_found(&mut self, params: Params) -> Result<Option<Promise>> {
+    pub(super) fn lost_found(&mut self, params: Params) -> Option<Promise> {
         let (sent_src, send_src_p) = self
             .closed
             .then(|| mem::take(&mut self.maker_src_remaining))
@@ -59,18 +59,13 @@ impl State {
             })
             .unzip();
 
-        let Some(send) = send_src_p
+        let send = send_src_p
             .into_iter()
             .chain(send_dst_p)
-            .reduce(Promise::and)
-        else {
-            return Ok(None);
-        };
+            .reduce(Promise::and)?;
 
         Event::MakerRefunded(MakerSent::from_sent(sent_src, sent_dst)).emit();
 
-        Ok(send
-            .then(self.callback_resolve_transfers(sent_src, sent_dst))
-            .into())
+        Some(send.then(self.callback_resolve_transfers(sent_src, sent_dst)))
     }
 }

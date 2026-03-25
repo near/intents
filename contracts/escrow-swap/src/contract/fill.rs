@@ -191,13 +191,13 @@ impl ProtocolFees {
     ) -> Result<ProtocolFeesCollected<'static>> {
         Ok(ProtocolFeesCollected {
             fee: self.fee.fee_ceil(taker_dst_used),
-            surplus: if !self.surplus.is_zero() {
+            surplus: if self.surplus.is_zero() {
+                0
+            } else {
                 let maker_want_dst = <u128 as CheckedMul<UD128>>::checked_mul(src_out, maker_price)
                     .ok_or(Error::IntegerOverflow)?;
                 let surplus = taker_dst_used.saturating_sub(maker_want_dst);
                 self.surplus.fee_ceil(surplus)
-            } else {
-                0
             },
             collector: self.collector.into(),
         })

@@ -25,7 +25,7 @@ thiserror.workspace = true
 defuse-crypto = { workspace = true, default-features = false, optional = true }
 defuse-webauthn = { workspace = true, default-features = false, optional = true }
 
-arbitrary = { workspace = true, features = ["derive"], optional = true }
+arbitrary = { workspace = true, optional = true }
 rand_core = { workspace = true, optional = true }
 
 [features]
