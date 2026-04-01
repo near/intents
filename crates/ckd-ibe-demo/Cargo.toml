@@ -1,0 +1,17 @@
+[package]
+name = "ckd-ibe-demo"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+blstrs = "0.7.1"
+elliptic-curve = { version = "0.13.8", features = ["hash2curve"] }
+hex = "0.4"
+hkdf = "0.12"
+pairing = "0.23"
+rand_core = { version = "0.6", features = ["getrandom"] }
+sha2 = "0.10"
+sha3 = "0.10"
+
+[lints]
+workspace = true

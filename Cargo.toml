@@ -41,6 +41,8 @@ members = [
   "crates/testing/randomness",
   "crates/testing/sandbox",
 
+  "crates/ckd-ibe-demo",
+
   "tests",
 ]
 resolver = "3"
