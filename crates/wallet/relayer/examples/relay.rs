@@ -2,7 +2,7 @@ use std::{env, fs, iter, path::Path, sync::LazyLock};
 
 use defuse_wallet::Request;
 use defuse_wallet_client::WalletClient;
-use defuse_wallet_relayer::{RelayRequest, Relayer, adapters};
+use defuse_wallet_relayer::{RelayRequest, Relayer};
 use ed25519_dalek::ed25519::signature::rand_core::OsRng;
 use futures::{StreamExt, TryFutureExt, TryStreamExt, stream};
 use near_kit::{PublishMode, sandbox::SandboxConfig};
@@ -44,12 +44,9 @@ async fn relay() {
         global_contract_id,
         ed25519_dalek::SigningKey::generate(&mut OsRng),
     )
+    // TODO
     // .chain_id(relayer.client().chain_id().as_str())
     ;
-
-    near.state_init(adapters::state_init(wallet.state_init()), NearToken::ZERO)
-        .await
-        .unwrap();
 
     let txs_count = 10_000;
 
@@ -57,10 +54,9 @@ async fn relay() {
         iter::repeat_with(|| {
             let (msg, proof) = wallet.sign(Request::new()).unwrap();
             relayer
-                .relay(
+                .w_execute_signed(
                     RelayRequest {
-                        state_init: None,
-                        // state_init: Some(wallet.state_init()),
+                        state_init: Some(wallet.state_init()),
                         msg,
                         proof,
                         min_gas: None,

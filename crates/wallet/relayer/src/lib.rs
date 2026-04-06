@@ -1,4 +1,4 @@
-pub mod adapters; // TODO: rm pub
+mod adapters;
 mod contract;
 
 use std::time::Duration;
@@ -74,10 +74,10 @@ impl Relayer {
     // TODO: return request hash?
     #[instrument(skip_all, fields(
         signer_id = %request.msg.signer_id,
-        request_hash = %CryptoHash::from_bytes(request.msg.hash()),
+        request.hash = %CryptoHash::from_bytes(request.msg.hash()),
         deposit = Some(deposit).filter(|d| !d.is_zero()).map(field::display),
     ))]
-    pub async fn relay(
+    pub async fn w_execute_signed(
         &self,
         request: RelayRequest,
         deposit: NearToken,
@@ -95,7 +95,10 @@ impl Relayer {
                 return Err(Error::InvalidStateInit);
             }
 
-            tx = tx.state_init(adapters::state_init(state_init), NearToken::ZERO);
+            tx = tx.state_init(
+                adapters::state_init(state_init),
+                NearToken::ZERO, // wallet-contract should fit into ZBA limits
+            );
 
             // Here we're not sure if the contract was initialized already or not,
             // so we assist with the deposit if needed.
@@ -125,7 +128,7 @@ impl Relayer {
         );
 
         tokio::time::timeout(
-            Self::tx_timeout(&request.msg)?,
+            Self::request_timeout(&request.msg)?,
             tx.send()
                 // wait for execution, so we have an access to wallet's receipt
                 .wait_until(TxExecutionStatus::ExecutedOptimistic)
@@ -152,7 +155,7 @@ impl Relayer {
         Ok(max_gas)
     }
 
-    fn tx_timeout(msg: &RequestMessage) -> Result<Duration> {
+    fn request_timeout(msg: &RequestMessage) -> Result<Duration> {
         /// Signers are recommended to set `created_at` a bit in the past,
         /// so that transaction doesn't fail on-chain due to possible lag
         /// in block timestamps.
