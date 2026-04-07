@@ -1170,6 +1170,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-outlayer-sys"
+version = "0.1.0"
+
+[[package]]
 name = "defuse-poa-factory"
 version = "0.1.0"
 dependencies = [

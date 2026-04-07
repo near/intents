@@ -41,6 +41,8 @@ members = [
   "crates/testing/randomness",
   "crates/testing/sandbox",
 
+  "crates/outlayer/outlayer-sys",
+
   "tests",
 ]
 resolver = "3"
@@ -91,6 +93,8 @@ defuse-webauthn = { path = "crates/signatures/webauthn", default-features = fals
 defuse-randomness.path = "crates/testing/randomness"
 defuse-sandbox.path = "crates/testing/sandbox"
 defuse-test-utils.path = "crates/testing/utils"
+
+defuse-outlayer-sys.path = "crates/outlayer/outlayer-sys"
 
 defuse-tests.path = "tests"
 
