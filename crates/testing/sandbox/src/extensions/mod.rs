@@ -15,7 +15,7 @@ pub mod escrow;
 #[cfg(feature = "deployer")]
 pub mod global_deployer;
 #[cfg(feature = "outlayer")]
-pub mod outlayer_project;
+pub mod outlayer_app;
 #[cfg(feature = "poa")]
 pub mod poa;
 #[cfg(feature = "wallet")]

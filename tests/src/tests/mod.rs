@@ -16,4 +16,4 @@ mod global_deployer;
 mod utils;
 
 #[cfg(feature = "outlayer")]
-mod outlayer_project;
+mod outlayer_app;

@@ -1170,7 +1170,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-outlayer-project"
+name = "defuse-outlayer-app"
 version = "0.1.0"
 dependencies = [
  "clap",
@@ -1225,7 +1225,7 @@ dependencies = [
  "defuse-global-deployer",
  "defuse-nep245",
  "defuse-nep413",
- "defuse-outlayer-project",
+ "defuse-outlayer-app",
  "defuse-poa-factory",
  "defuse-serde-utils",
  "defuse-test-utils",
@@ -1289,7 +1289,7 @@ dependencies = [
  "defuse-fees",
  "defuse-global-deployer",
  "defuse-near-utils",
- "defuse-outlayer-project",
+ "defuse-outlayer-app",
  "defuse-randomness",
  "defuse-sandbox",
  "defuse-serde-utils",

@@ -1,5 +1,5 @@
 use clap::Parser;
-use defuse_outlayer_project::State;
+use defuse_outlayer_app::State;
 use near_sdk::{AccountId, base64::prelude::*, serde_json};
 use std::collections::BTreeMap;
 
@@ -14,14 +14,14 @@ fn parse_hex_hash(s: &str) -> Result<[u8; 32], String> {
 }
 
 #[derive(Parser)]
-#[command(about = "Compute StateInit for an outlayer-project contract instance")]
+#[command(about = "Compute StateInit for an outlayer-app contract instance")]
 struct Args {
-    /// Updater account ID (controls WASM approval and env vars)
+    /// Admin account ID (controls code approval and env vars)
     #[arg(long, value_name = "AccountId")]
-    updater_id: AccountId,
+    admin_id: AccountId,
 
-    /// Pre-approve a SHA-256 WASM hash (hex, with or without 0x prefix).
-    /// When set, the first `op_upload_wasm()` won't require a prior `op_approve()`.
+    /// Pre-approve a SHA-256 code hash (hex, with or without 0x prefix).
+    /// When set, the first `op_upload_code()` won't require a prior `op_approve()`.
     #[arg(long, value_parser = parse_hex_hash, value_name = "HASH")]
     approve: Option<[u8; 32]>,
 
@@ -33,14 +33,14 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    let mut state = State::new(args.updater_id.clone());
+    let mut state = State::new(args.admin_id.clone());
     if let Some(hash) = args.approve {
         state = state.pre_approve(hash);
     }
 
     if !args.quiet {
-        eprintln!("{:<20} {}", "updater_id:", state.updater_id);
-        eprintln!("{:<20} {}", "wasm_hash:", hex::encode(state.wasm_hash));
+        eprintln!("{:<20} {}", "admin_id:", state.admin_id);
+        eprintln!("{:<20} {}", "code_hash:", hex::encode(state.code_hash));
     }
 
     let state_init = state.state_init();

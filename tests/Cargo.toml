@@ -49,7 +49,7 @@ deployer = ["defuse-sandbox/deployer", "dep:defuse-global-deployer"]
 outlayer = [
   "defuse-sandbox/outlayer",
   "defuse-test-utils/outlayer",
-  "dep:defuse-outlayer-project",
+  "dep:defuse-outlayer-app",
 ]
 
 long = []
@@ -64,7 +64,7 @@ multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
 defuse-fees.workspace = true
 defuse-global-deployer = { workspace = true, optional = true }
 defuse-near-utils = { workspace = true }
-defuse-outlayer-project = { workspace = true, optional = true }
+defuse-outlayer-app = { workspace = true, optional = true }
 defuse-randomness.workspace = true
 defuse-serde-utils = { workspace = true }
 defuse-test-utils.workspace = true
