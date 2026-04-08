@@ -19,6 +19,7 @@ contract = []
 defuse-borsh-utils.workspace = true
 defuse-serde-utils.workspace = true
 near-sdk.workspace = true
+url.workspace = true
 
 [dev-dependencies]
 clap = { workspace = true, features = ["wrap_help"] }

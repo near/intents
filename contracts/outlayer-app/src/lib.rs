@@ -1,6 +1,9 @@
 #[cfg(feature = "contract")]
 mod contract;
 pub mod error;
+pub mod utils;
+
+pub use utils::Url;
 
 use std::{borrow::Cow, collections::BTreeMap};
 
@@ -11,11 +14,6 @@ use near_sdk::{
     serde::Serialize,
     serde_with::{hex::Hex, serde_as},
 };
-
-/// A URL string (e.g. `https://...` or `data:application/wasm;base64,...`).
-#[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Url(pub String);
 
 /// Per-app code configuration, deployed as a global contract instance per app.
 #[ext_contract(ext_outlayer_app)]

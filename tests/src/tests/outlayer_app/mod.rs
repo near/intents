@@ -9,6 +9,8 @@ use defuse_test_utils::wasms::OUTLAYER_APP_WASM;
 use near_sdk::{AsNep297Event, GlobalContractId, NearToken, env::sha256_array};
 use rstest::{fixture, rstest};
 
+const EXAMPLE_URL: &str = "https://example.com/contract.wasm";
+
 pub struct OutlayerAppEnv {
     pub sandbox: Sandbox,
     pub global_id: GlobalContractId,
@@ -29,6 +31,10 @@ pub async fn outlayer_app_env(#[future(awt)] sandbox: Sandbox) -> OutlayerAppEnv
     }
 }
 
+fn example_url() -> Url {
+    Url::parse(EXAMPLE_URL).unwrap()
+}
+
 #[rstest]
 #[tokio::test]
 async fn test_deploy(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
@@ -38,7 +44,7 @@ async fn test_deploy(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
         .await
         .unwrap();
 
-    let code_url = Url("https://example.com/contract.wasm".to_string());
+    let code_url = example_url();
     let state = OutlayerState::new(alice.id().clone(), code_url.clone());
     let instance = root
         .deploy_outlayer_app(outlayer_app_env.global_id.clone(), state)
@@ -55,6 +61,20 @@ async fn test_deploy(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
 
 #[rstest]
 #[tokio::test]
+async fn test_deploy_with_pre_approve(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
+    let root = outlayer_app_env.sandbox.root();
+    let code_hash = sha256_array(b"some-wasm-bytes");
+    let state = OutlayerState::new(root.id().clone(), example_url()).pre_approve(code_hash);
+    let instance = root
+        .deploy_outlayer_app(outlayer_app_env.global_id.clone(), state)
+        .await
+        .unwrap();
+
+    assert_eq!(instance.op_code_hash().await.unwrap(), code_hash);
+}
+
+#[rstest]
+#[tokio::test]
 async fn test_non_admin_cannot_approve(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
     let root = outlayer_app_env.sandbox.root();
     let alice = root
@@ -62,10 +82,7 @@ async fn test_non_admin_cannot_approve(#[future(awt)] outlayer_app_env: Outlayer
         .await
         .unwrap();
 
-    let state = OutlayerState::new(
-        alice.id().clone(),
-        Url("https://example.com/contract.wasm".to_string()),
-    );
+    let state = OutlayerState::new(alice.id().clone(), example_url());
     let instance = root
         .deploy_outlayer_app(outlayer_app_env.global_id.clone(), state)
         .await
@@ -81,10 +98,7 @@ async fn test_non_admin_cannot_approve(#[future(awt)] outlayer_app_env: Outlayer
 #[tokio::test]
 async fn test_event_approve(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
     let root = outlayer_app_env.sandbox.root();
-    let state = OutlayerState::new(
-        root.id().clone(),
-        Url("https://example.com/contract.wasm".to_string()),
-    );
+    let state = OutlayerState::new(root.id().clone(), example_url());
     let instance = root
         .deploy_outlayer_app(outlayer_app_env.global_id.clone(), state)
         .await
@@ -113,10 +127,7 @@ async fn test_event_set_admin_id(#[future(awt)] outlayer_app_env: OutlayerAppEnv
         .generate_subaccount("alice", NearToken::from_near(100))
         .await
         .unwrap();
-    let state = OutlayerState::new(
-        root.id().clone(),
-        Url("https://example.com/contract.wasm".to_string()),
-    );
+    let state = OutlayerState::new(root.id().clone(), example_url());
     let instance = root
         .deploy_outlayer_app(outlayer_app_env.global_id.clone(), state)
         .await
@@ -144,16 +155,13 @@ async fn test_event_set_admin_id(#[future(awt)] outlayer_app_env: OutlayerAppEnv
 #[tokio::test]
 async fn test_event_set_code_uri(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
     let root = outlayer_app_env.sandbox.root();
-    let state = OutlayerState::new(
-        root.id().clone(),
-        Url("https://example.com/contract.wasm".to_string()),
-    );
+    let state = OutlayerState::new(root.id().clone(), example_url());
     let instance = root
         .deploy_outlayer_app(outlayer_app_env.global_id.clone(), state)
         .await
         .unwrap();
 
-    let new_url = Url("https://new.example.com/contract.wasm".to_string());
+    let new_url = Url::parse("https://new.example.com/contract.wasm").unwrap();
     let result = root
         .op_set_code_uri(instance.id(), new_url.clone())
         .await

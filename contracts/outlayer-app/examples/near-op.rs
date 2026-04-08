@@ -38,7 +38,8 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    let mut state = State::new(args.admin_id.clone(), Url(args.code_url));
+    let url = Url::parse(&args.code_url).unwrap_or_else(|e| panic!("invalid --code-url: {e}"));
+    let mut state = State::new(args.admin_id.clone(), url);
     if let Some(hash) = args.approve {
         state = state.pre_approve(hash);
     }
