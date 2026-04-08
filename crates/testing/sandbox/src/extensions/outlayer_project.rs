@@ -1,6 +1,7 @@
 use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
 use defuse_outlayer_project::{State as OutlayerState, WasmLocation};
 use defuse_serde_utils::hex::AsHex;
+use near_api::types::transaction::result::ExecutionSuccess;
 use near_sdk::{
     AccountId, GlobalContractId, NearToken,
     serde_json::json,
@@ -16,21 +17,36 @@ pub trait OutlayerProjectExt {
         state: OutlayerState,
     ) -> anyhow::Result<Account>;
 
-    async fn oc_approve(&self, target: &AccountId, new_hash: [u8; 32]) -> anyhow::Result<()>;
+    /// Deploy a new `outlayer-project` instance and upload its WASM in a single transaction.
+    async fn deploy_outlayer_project_with_inline_wasm(
+        &self,
+        global_contract_id: GlobalContractId,
+        wasm: &[u8],
+    ) -> anyhow::Result<(Account, ExecutionSuccess)>;
 
-    async fn oc_upload_wasm(&self, target: &AccountId, code: &[u8]) -> anyhow::Result<()>;
+    async fn oc_approve(
+        &self,
+        target: &AccountId,
+        new_hash: [u8; 32],
+    ) -> anyhow::Result<ExecutionSuccess>;
+
+    async fn oc_upload_wasm(
+        &self,
+        target: &AccountId,
+        code: &[u8],
+    ) -> anyhow::Result<ExecutionSuccess>;
 
     async fn oc_set_updater_id(
         &self,
         target: &AccountId,
         new_updater_id: &AccountId,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<ExecutionSuccess>;
 
     async fn oc_set_location(
         &self,
         target: &AccountId,
         location: WasmLocation,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<ExecutionSuccess>;
 }
 
 #[allow(async_fn_in_trait)]
@@ -59,56 +75,92 @@ impl OutlayerProjectExt for SigningAccount {
         Ok(Account::new(account_id, self.network_config().clone()))
     }
 
-    async fn oc_approve(&self, target: &AccountId, new_hash: [u8; 32]) -> anyhow::Result<()> {
+    async fn deploy_outlayer_project_with_inline_wasm(
+        &self,
+        global_contract_id: GlobalContractId,
+        wasm: &[u8],
+    ) -> anyhow::Result<(Account, ExecutionSuccess)> {
+        use near_sdk::{Gas, env::sha256_array};
+        let wasm_hash = sha256_array(wasm);
+
+        let state_init = StateInit::V1(StateInitV1 {
+            code: global_contract_id,
+            data: OutlayerState::new(self.id().clone())
+                .pre_approve(wasm_hash)
+                .state_init(),
+        });
+
+        let account_id = state_init.derive_account_id();
+        let result = self
+            .tx(account_id.clone())
+            .state_init(state_init, NearToken::ZERO)
+            .function_call(
+                FnCallBuilder::new("oc_upload_wasm")
+                    .raw_args(wasm.to_vec())
+                    .with_deposit(NearToken::from_near(10))
+                    .with_gas(Gas::from_tgas(290)),
+            )
+            .await?;
+        Ok((
+            Account::new(account_id, self.network_config().clone()),
+            result,
+        ))
+    }
+
+    async fn oc_approve(
+        &self,
+        target: &AccountId,
+        new_hash: [u8; 32],
+    ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
             .function_call(
                 FnCallBuilder::new("oc_approve")
                     .json_args(json!({"new_hash": AsHex(new_hash)}))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await?;
-        Ok(())
+            .await
     }
 
-    async fn oc_upload_wasm(&self, target: &AccountId, code: &[u8]) -> anyhow::Result<()> {
+    async fn oc_upload_wasm(
+        &self,
+        target: &AccountId,
+        code: &[u8],
+    ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
             .function_call(
                 FnCallBuilder::new("oc_upload_wasm")
                     .raw_args(code.to_vec())
                     .with_deposit(NearToken::from_near(10)),
             )
-            .await?;
-        Ok(())
+            .await
     }
 
     async fn oc_set_updater_id(
         &self,
         target: &AccountId,
         new_updater_id: &AccountId,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
             .function_call(
                 FnCallBuilder::new("oc_set_updater_id")
                     .json_args(json!({"new_updater_id": new_updater_id}))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await?;
-        Ok(())
+            .await
     }
 
     async fn oc_set_location(
         &self,
         target: &AccountId,
         location: WasmLocation,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
             .function_call(
                 FnCallBuilder::new("oc_set_location")
                     .json_args(json!({"location": location}))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
-            .await?;
-        Ok(())
+            .await
     }
 }
 

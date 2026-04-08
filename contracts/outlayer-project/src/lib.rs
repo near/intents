@@ -104,6 +104,7 @@ pub struct State {
     pub wasm_hash: [u8; 32],
     #[serde(skip_serializing)]
     pub wasm: LazyOption<Vec<u8>>,
+    /// TODO:maybe it should be set of `WasmLocation` to have backup ?
     pub location: Option<WasmLocation>,
 }
 

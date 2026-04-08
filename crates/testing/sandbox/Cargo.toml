@@ -38,9 +38,9 @@ near-contract-standards.workspace = true
 
 defuse-escrow-swap = { workspace = true, optional = true, features = ["auth_call"] }
 defuse-global-deployer = { workspace = true, optional = true }
+defuse-outlayer-project = { workspace = true, optional = true }
 defuse-poa-factory = { workspace = true, optional = true, features = ["contract"] }
 defuse-wallet = { workspace = true, optional = true }
-defuse-outlayer-project = { workspace = true, optional = true }
 
 defuse = { workspace = true, optional = true, features = ["contract"] }
 defuse-serde-utils = { workspace = true, optional = true }

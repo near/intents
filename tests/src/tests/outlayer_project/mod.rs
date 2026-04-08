@@ -1,5 +1,4 @@
-use defuse_outlayer_project::{State as OutlayerState, WasmLocation};
-use near_sdk::{base64::{Engine as _, engine::general_purpose::STANDARD}, borsh};
+use defuse_outlayer_project::{Event, State as OutlayerState, WasmLocation};
 use defuse_sandbox::{
     Sandbox,
     api::types::transaction::actions::GlobalContractDeployMode,
@@ -7,7 +6,11 @@ use defuse_sandbox::{
     sandbox,
 };
 use defuse_test_utils::wasms::OUTLAYER_PROJECT_WASM;
-use near_sdk::{GlobalContractId, NearToken, env::sha256_array};
+use near_sdk::{AsNep297Event, GlobalContractId, NearToken, env::sha256_array};
+use near_sdk::{
+    base64::{Engine as _, engine::general_purpose::STANDARD},
+    borsh,
+};
 use rstest::{fixture, rstest};
 
 pub struct OutlayerProjectEnv {
@@ -57,7 +60,8 @@ async fn test_deploy_and_upload(#[future(awt)] outlayer_project_env: OutlayerPro
     assert!(instance.oc_location().await.unwrap().is_none());
 
     // Updater (alice) uploads the code
-    alice.oc_upload_wasm(instance.id(), &dummy_wasm)
+    alice
+        .oc_upload_wasm(instance.id(), &dummy_wasm)
         .await
         .unwrap();
 
@@ -65,6 +69,33 @@ async fn test_deploy_and_upload(#[future(awt)] outlayer_project_env: OutlayerPro
     assert_eq!(instance.oc_wasm_hash().await.unwrap(), wasm_hash);
     let stored = instance.oc_wasm().await.unwrap();
     assert_eq!(stored, Some(dummy_wasm.clone()));
+    assert_eq!(
+        instance.oc_location().await.unwrap(),
+        Some(WasmLocation::OnChain {
+            account: instance.id().clone(),
+            storage_prefix: OutlayerState::WASM_PREFIX.to_vec(),
+        })
+    );
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_deploy_with_inline_wasm(#[future(awt)] outlayer_project_env: OutlayerProjectEnv) {
+    let root = outlayer_project_env.sandbox.root();
+    let dummy_wasm: Vec<u8> = (0u8..100).collect();
+    let wasm_hash = sha256_array(&dummy_wasm);
+
+    let (instance, _) = root
+        .deploy_outlayer_project_with_inline_wasm(
+            outlayer_project_env.global_id.clone(),
+            &dummy_wasm,
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(instance.oc_updater_id().await.unwrap(), *root.id());
+    assert_eq!(instance.oc_wasm_hash().await.unwrap(), wasm_hash);
+    assert_eq!(instance.oc_wasm().await.unwrap(), Some(dummy_wasm));
     assert_eq!(
         instance.oc_location().await.unwrap(),
         Some(WasmLocation::OnChain {
@@ -142,8 +173,14 @@ async fn test_location_onchain_storage(#[future(awt)] outlayer_project_env: Outl
         .unwrap();
 
     // Confirm location is OnChain pointing at the instance itself
-    let WasmLocation::OnChain { account, storage_prefix } =
-        instance.oc_location().await.unwrap().expect("location should be set")
+    let WasmLocation::OnChain {
+        account,
+        storage_prefix,
+    } = instance
+        .oc_location()
+        .await
+        .unwrap()
+        .expect("location should be set")
     else {
         panic!("expected OnChain location");
     };
@@ -190,4 +227,168 @@ async fn test_non_updater_cannot_approve(#[future(awt)] outlayer_project_env: Ou
     root.oc_approve(instance.id(), new_hash)
         .await
         .expect_err("non-updater should not be able to call oc_approve");
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_event_approve(#[future(awt)] outlayer_project_env: OutlayerProjectEnv) {
+    let root = outlayer_project_env.sandbox.root();
+    let state = OutlayerState::new(root.id().clone());
+    let instance = root
+        .deploy_outlayer_project(outlayer_project_env.global_id.clone(), state)
+        .await
+        .unwrap();
+
+    let new_hash = [42u8; 32];
+    let result = root.oc_approve(instance.id(), new_hash).await.unwrap();
+
+    assert_eq!(
+        result.logs(),
+        vec![
+            Event::Approve {
+                code_hash: new_hash
+            }
+            .to_nep297_event()
+            .to_event_log()
+        ]
+    );
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_event_upload_wasm(#[future(awt)] outlayer_project_env: OutlayerProjectEnv) {
+    let root = outlayer_project_env.sandbox.root();
+    let dummy_wasm: Vec<u8> = (0u8..100).collect();
+    let wasm_hash = sha256_array(&dummy_wasm);
+    let state = OutlayerState::new(root.id().clone()).pre_approve(wasm_hash);
+    let instance = root
+        .deploy_outlayer_project(outlayer_project_env.global_id.clone(), state)
+        .await
+        .unwrap();
+
+    let result = root
+        .oc_upload_wasm(instance.id(), &dummy_wasm)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        result.logs(),
+        vec![
+            Event::Upload {
+                code_hash: wasm_hash
+            }
+            .to_nep297_event()
+            .to_event_log(),
+            Event::SetLocation {
+                location: WasmLocation::OnChain {
+                    account: instance.id().clone(),
+                    storage_prefix: OutlayerState::WASM_PREFIX.to_vec(),
+                },
+            }
+            .to_nep297_event()
+            .to_event_log(),
+        ]
+    );
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_event_set_updater_id(#[future(awt)] outlayer_project_env: OutlayerProjectEnv) {
+    let root = outlayer_project_env.sandbox.root();
+    let alice = root
+        .generate_subaccount("alice", NearToken::from_near(100))
+        .await
+        .unwrap();
+    let state = OutlayerState::new(root.id().clone());
+    let instance = root
+        .deploy_outlayer_project(outlayer_project_env.global_id.clone(), state)
+        .await
+        .unwrap();
+
+    let result = root
+        .oc_set_updater_id(instance.id(), alice.id())
+        .await
+        .unwrap();
+
+    assert_eq!(
+        result.logs(),
+        vec![
+            Event::Transfer {
+                old_updater_id: root.id().into(),
+                new_updater_id: alice.id().into(),
+            }
+            .to_nep297_event()
+            .to_event_log(),
+            Event::Approve {
+                code_hash: OutlayerState::DEFAULT_HASH
+            }
+            .to_nep297_event()
+            .to_event_log(),
+        ]
+    );
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_event_set_location(#[future(awt)] outlayer_project_env: OutlayerProjectEnv) {
+    let root = outlayer_project_env.sandbox.root();
+    let state = OutlayerState::new(root.id().clone());
+    let instance = root
+        .deploy_outlayer_project(outlayer_project_env.global_id.clone(), state)
+        .await
+        .unwrap();
+
+    let location = WasmLocation::HttpUrl {
+        url: "https://example.com/contract.wasm".to_string(),
+    };
+    let result = root
+        .oc_set_location(instance.id(), location.clone())
+        .await
+        .unwrap();
+
+    assert_eq!(
+        result.logs(),
+        vec![
+            Event::SetLocation { location }
+                .to_nep297_event()
+                .to_event_log()
+        ]
+    );
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_event_deploy_with_inline_wasm(
+    #[future(awt)] outlayer_project_env: OutlayerProjectEnv,
+) {
+    let root = outlayer_project_env.sandbox.root();
+    let dummy_wasm: Vec<u8> = (0u8..100).collect();
+    let wasm_hash = sha256_array(&dummy_wasm);
+
+    let (instance, result) = root
+        .deploy_outlayer_project_with_inline_wasm(
+            outlayer_project_env.global_id.clone(),
+            &dummy_wasm,
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        result.logs(),
+        vec![
+            Event::Upload {
+                code_hash: wasm_hash
+            }
+            .to_nep297_event()
+            .to_event_log(),
+            Event::SetLocation {
+                location: WasmLocation::OnChain {
+                    account: instance.id().clone(),
+                    storage_prefix: OutlayerState::WASM_PREFIX.to_vec(),
+                },
+            }
+            .to_nep297_event()
+            .to_event_log(),
+        ]
+    );
 }

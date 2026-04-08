@@ -40,11 +40,7 @@ fn main() {
 
     if !args.quiet {
         eprintln!("{:<20} {}", "updater_id:", state.updater_id);
-        eprintln!(
-            "{:<20} {}",
-            "wasm_hash:",
-            hex::encode(state.wasm_hash)
-        );
+        eprintln!("{:<20} {}", "wasm_hash:", hex::encode(state.wasm_hash));
     }
 
     let state_init = state.state_init();
