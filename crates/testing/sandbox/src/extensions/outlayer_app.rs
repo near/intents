@@ -17,11 +17,11 @@ pub trait OutlayerAppExt {
         state: OutlayerState,
     ) -> anyhow::Result<Account>;
 
-    async fn oa_set_code(
+    async fn oa_set_code_hash(
         &self,
         target: &AccountId,
-        new_hash: [u8; 32],
-        url: Url,
+        code_hash: [u8; 32],
+        code_url: Url,
     ) -> anyhow::Result<ExecutionSuccess>;
 
     async fn oa_transfer_admin(
@@ -35,7 +35,7 @@ pub trait OutlayerAppExt {
 pub trait OutlayerAppViewExt {
     async fn oa_admin_id(&self) -> anyhow::Result<AccountId>;
     async fn oa_code_hash(&self) -> anyhow::Result<[u8; 32]>;
-    async fn oa_code_uri(&self) -> anyhow::Result<Url>;
+    async fn oa_code_url(&self) -> anyhow::Result<Url>;
 }
 
 impl OutlayerAppExt for SigningAccount {
@@ -56,16 +56,16 @@ impl OutlayerAppExt for SigningAccount {
         Ok(Account::new(account_id, self.network_config().clone()))
     }
 
-    async fn oa_set_code(
+    async fn oa_set_code_hash(
         &self,
         target: &AccountId,
-        new_hash: [u8; 32],
-        url: Url,
+        code_hash: [u8; 32],
+        code_url: Url,
     ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
             .function_call(
-                FnCallBuilder::new("oa_set_code")
-                    .json_args(json!({"new_hash": AsHex(new_hash), "url": url}))
+                FnCallBuilder::new("oa_set_code_hash")
+                    .json_args(json!({"code_hash": AsHex(code_hash), "code_url": code_url}))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
             .await
@@ -96,7 +96,7 @@ impl OutlayerAppViewExt for Account {
         Ok(hash.into_inner())
     }
 
-    async fn oa_code_uri(&self) -> anyhow::Result<Url> {
-        self.call_view_function_json("oa_code_uri", ()).await
+    async fn oa_code_url(&self) -> anyhow::Result<Url> {
+        self.call_view_function_json("oa_code_url", ()).await
     }
 }

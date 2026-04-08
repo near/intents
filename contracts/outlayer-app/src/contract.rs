@@ -21,7 +21,7 @@ pub struct Contract(State);
 #[near]
 impl OutlayerApp for Contract {
     #[payable]
-    fn oa_set_code(&mut self, new_hash: AsHex<[u8; 32]>, url: Url) {
+    fn oa_set_code_hash(&mut self, code_hash: AsHex<[u8; 32]>, code_url: Url) {
         require!(
             env::attached_deposit() >= NearToken::from_yoctonear(1),
             "requires at least 1 yoctoNEAR"
@@ -30,7 +30,7 @@ impl OutlayerApp for Contract {
             self.is_admin(&env::predecessor_account_id()),
             ERR_UNAUTHORIZED
         );
-        self.set_code(new_hash.into_inner(), url);
+        self.set_code(code_hash.into_inner(), code_url);
     }
 
     #[payable]
@@ -52,7 +52,7 @@ impl OutlayerApp for Contract {
         self.0.code_hash.into()
     }
 
-    fn oa_code_uri(&self) -> Url {
+    fn oa_code_url(&self) -> Url {
         self.0.code_url.clone()
     }
 }
@@ -61,7 +61,11 @@ impl Contract {
     fn set_code(&mut self, code_hash: [u8; 32], url: Url) {
         self.0.code_hash = code_hash;
         self.0.code_url = url.clone();
-        Event::SetCodeHash { url, code_hash }.emit();
+        Event::SetCode {
+            hash: code_hash,
+            url,
+        }
+        .emit();
     }
 
     fn transfer_admin(&mut self, new_admin_id: AccountId) {

@@ -28,8 +28,8 @@ Use the [`near-oa`](#near-oa-cli-tool) tool to compute the `StateInit` JSON for 
 
 ## Public API
 
-### `oa_set_code(new_hash, url)`
-Atomically sets the approved SHA-256 hash and the code URL. Admin-only, requires at least 1 yoctoNEAR. Emits `SetCodeHash`.
+### `oa_set_code_hash(code_hash, code_url)`
+Atomically sets the approved SHA-256 hash and the code URL. Admin-only, requires at least 1 yoctoNEAR. Emits `SetCode`.
 
 ### `oa_transfer_admin(new_admin_id)`
 Transfers control to a new admin. Admin-only, requires 1 yoctoNEAR. Emits `TransferAdmin`.
@@ -37,7 +37,7 @@ Transfers control to a new admin. Admin-only, requires 1 yoctoNEAR. Emits `Trans
 ### View methods
 - `oa_admin_id()` — current admin
 - `oa_code_hash()` — approved hash (hex)
-- `oa_code_uri()` — current code URL
+- `oa_code_url()` — current code URL
 
 ## Events
 
@@ -45,7 +45,7 @@ All events follow [NEP-297](https://github.com/near/NEPs/blob/master/neps/nep-02
 
 | Event           | Fields                         | Description                       |
 |-----------------|--------------------------------|-----------------------------------|
-| `SetCodeHash`   | `url`, `code_hash`             | Code URL and approved hash updated |
+| `SetCode`       | `hash`, `url`                  | Code URL and approved hash updated |
 | `TransferAdmin` | `old_admin_id`, `new_admin_id` | Admin transferred                 |
 
 

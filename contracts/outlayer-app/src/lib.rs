@@ -19,9 +19,9 @@ use near_sdk::{
 #[ext_contract(ext_outlayer_app)]
 pub trait OutlayerApp {
     /// Approves a new code hash and sets the code URL atomically.
-    /// Admin-only. Requires at least 1 yoctoNEAR.
-    /// Emits [`Event::SetCodeHash`].
-    fn oa_set_code(&mut self, new_hash: AsHex<[u8; 32]>, url: Url);
+    /// Admin-only. Must attach at least 1yN.
+    /// Emits [`Event::SetCode`].
+    fn oa_set_code_hash(&mut self, code_hash: AsHex<[u8; 32]>, code_url: Url);
 
     /// Sets a new admin.
     /// Admin-only. Requires 1 yoctoNEAR. No self-transfer.
@@ -35,7 +35,7 @@ pub trait OutlayerApp {
     fn oa_code_hash(&self) -> AsHex<[u8; 32]>;
 
     /// Returns where the code binary can be found.
-    fn oa_code_uri(&self) -> Url;
+    fn oa_code_url(&self) -> Url;
 }
 
 use near_sdk::ext_contract;
@@ -45,10 +45,10 @@ use near_sdk::ext_contract;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Event<'a> {
     #[event_version("1.0.0")]
-    SetCodeHash {
-        url: Url,
+    SetCode {
         #[serde_as(as = "Hex")]
-        code_hash: [u8; 32],
+        hash: [u8; 32],
+        url: Url,
     },
 
     #[event_version("1.0.0")]
