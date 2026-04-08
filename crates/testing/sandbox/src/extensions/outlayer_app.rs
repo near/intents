@@ -17,30 +17,25 @@ pub trait OutlayerAppExt {
         state: OutlayerState,
     ) -> anyhow::Result<Account>;
 
-    async fn op_approve(
+    async fn oa_set_code(
         &self,
         target: &AccountId,
         new_hash: [u8; 32],
+        url: Url,
     ) -> anyhow::Result<ExecutionSuccess>;
 
-    async fn op_set_admin_id(
+    async fn oa_transfer_admin(
         &self,
         target: &AccountId,
         new_admin_id: &AccountId,
-    ) -> anyhow::Result<ExecutionSuccess>;
-
-    async fn op_set_code_uri(
-        &self,
-        target: &AccountId,
-        url: Url,
     ) -> anyhow::Result<ExecutionSuccess>;
 }
 
 #[allow(async_fn_in_trait)]
 pub trait OutlayerAppViewExt {
-    async fn op_admin_id(&self) -> anyhow::Result<AccountId>;
-    async fn op_code_hash(&self) -> anyhow::Result<[u8; 32]>;
-    async fn op_code_uri(&self) -> anyhow::Result<Url>;
+    async fn oa_admin_id(&self) -> anyhow::Result<AccountId>;
+    async fn oa_code_hash(&self) -> anyhow::Result<[u8; 32]>;
+    async fn oa_code_uri(&self) -> anyhow::Result<Url>;
 }
 
 impl OutlayerAppExt for SigningAccount {
@@ -61,43 +56,30 @@ impl OutlayerAppExt for SigningAccount {
         Ok(Account::new(account_id, self.network_config().clone()))
     }
 
-    async fn op_approve(
+    async fn oa_set_code(
         &self,
         target: &AccountId,
         new_hash: [u8; 32],
+        url: Url,
     ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
             .function_call(
-                FnCallBuilder::new("op_approve")
-                    .json_args(json!({"new_hash": AsHex(new_hash)}))
+                FnCallBuilder::new("oa_set_code")
+                    .json_args(json!({"new_hash": AsHex(new_hash), "url": url}))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
             .await
     }
 
-    async fn op_set_admin_id(
+    async fn oa_transfer_admin(
         &self,
         target: &AccountId,
         new_admin_id: &AccountId,
     ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
             .function_call(
-                FnCallBuilder::new("op_set_admin_id")
+                FnCallBuilder::new("oa_transfer_admin")
                     .json_args(json!({"new_admin_id": new_admin_id}))
-                    .with_deposit(NearToken::from_yoctonear(1)),
-            )
-            .await
-    }
-
-    async fn op_set_code_uri(
-        &self,
-        target: &AccountId,
-        url: Url,
-    ) -> anyhow::Result<ExecutionSuccess> {
-        self.tx(target)
-            .function_call(
-                FnCallBuilder::new("op_set_code_uri")
-                    .json_args(json!({"url": url}))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
             .await
@@ -105,16 +87,16 @@ impl OutlayerAppExt for SigningAccount {
 }
 
 impl OutlayerAppViewExt for Account {
-    async fn op_admin_id(&self) -> anyhow::Result<AccountId> {
-        self.call_view_function_json("op_admin_id", ()).await
+    async fn oa_admin_id(&self) -> anyhow::Result<AccountId> {
+        self.call_view_function_json("oa_admin_id", ()).await
     }
 
-    async fn op_code_hash(&self) -> anyhow::Result<[u8; 32]> {
-        let hash: AsHex<[u8; 32]> = self.call_view_function_json("op_code_hash", ()).await?;
+    async fn oa_code_hash(&self) -> anyhow::Result<[u8; 32]> {
+        let hash: AsHex<[u8; 32]> = self.call_view_function_json("oa_code_hash", ()).await?;
         Ok(hash.into_inner())
     }
 
-    async fn op_code_uri(&self) -> anyhow::Result<Url> {
-        self.call_view_function_json("op_code_uri", ()).await
+    async fn oa_code_uri(&self) -> anyhow::Result<Url> {
+        self.call_view_function_json("oa_code_uri", ()).await
     }
 }
