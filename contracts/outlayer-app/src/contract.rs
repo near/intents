@@ -21,7 +21,7 @@ pub struct Contract(State);
 #[near]
 impl OutlayerApp for Contract {
     #[payable]
-    fn oa_set_code_hash(&mut self, code_hash: AsHex<[u8; 32]>, code_url: Url) {
+    fn oa_set_code(&mut self, code_hash: AsHex<[u8; 32]>, code_url: Url) {
         require!(
             env::attached_deposit() >= NearToken::from_yoctonear(1),
             "requires at least 1 yoctoNEAR"

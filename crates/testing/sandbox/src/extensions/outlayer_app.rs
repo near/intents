@@ -17,7 +17,7 @@ pub trait OutlayerAppExt {
         state: OutlayerState,
     ) -> anyhow::Result<Account>;
 
-    async fn oa_set_code_hash(
+    async fn oa_set_code(
         &self,
         target: &AccountId,
         code_hash: [u8; 32],
@@ -56,7 +56,7 @@ impl OutlayerAppExt for SigningAccount {
         Ok(Account::new(account_id, self.network_config().clone()))
     }
 
-    async fn oa_set_code_hash(
+    async fn oa_set_code(
         &self,
         target: &AccountId,
         code_hash: [u8; 32],
@@ -64,7 +64,7 @@ impl OutlayerAppExt for SigningAccount {
     ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
             .function_call(
-                FnCallBuilder::new("oa_set_code_hash")
+                FnCallBuilder::new("oa_set_code")
                     .json_args(json!({"code_hash": AsHex(code_hash), "code_url": code_url}))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )

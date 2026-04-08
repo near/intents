@@ -86,9 +86,9 @@ async fn test_non_admin_cannot_set_code(#[future(awt)] outlayer_app_env: Outlaye
         .unwrap();
 
     let new_hash = [1u8; 32];
-    root.oa_set_code_hash(instance.id(), new_hash, example_url())
+    root.oa_set_code(instance.id(), new_hash, example_url())
         .await
-        .expect_err("non-admin should not be able to call oa_set_code_hash");
+        .expect_err("non-admin should not be able to call oa_set_code");
 }
 
 #[rstest]
@@ -104,7 +104,7 @@ async fn test_event_set_code(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
     let new_hash = [42u8; 32];
     let new_url = Url::parse("https://new.example.com/contract.wasm").unwrap();
     let result = root
-        .oa_set_code_hash(instance.id(), new_hash, new_url.clone())
+        .oa_set_code(instance.id(), new_hash, new_url.clone())
         .await
         .unwrap();
 

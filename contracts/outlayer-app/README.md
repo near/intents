@@ -28,7 +28,7 @@ Use the [`near-oa`](#near-oa-cli-tool) tool to compute the `StateInit` JSON for 
 
 ## Public API
 
-### `oa_set_code_hash(code_hash, code_url)`
+### `oa_set_code(code_hash, code_url)`
 Atomically sets the approved SHA-256 hash and the code URL. Admin-only, requires at least 1 yoctoNEAR. Emits `SetCode`.
 
 ### `oa_transfer_admin(new_admin_id)`
