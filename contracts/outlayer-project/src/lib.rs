@@ -20,35 +20,35 @@ pub trait OutlayerProject {
     /// Approves a new WASM hash.
     /// Updater-only. Requires 1 yoctoNEAR.
     /// Emits [`Event::Approve`].
-    fn oc_approve(&mut self, new_hash: AsHex<[u8; 32]>);
+    fn op_approve(&mut self, new_hash: AsHex<[u8; 32]>);
 
     /// Uploads the WASM binary. Updater-only.
     /// Requires `sha256(wasm)` to match `wasm_hash`.
     /// Sets `location` to `OnChain { account: current_account_id, storage_prefix: WASM_PREFIX }`.
     /// Emits [`Event::Upload`].
-    fn oc_upload_wasm(&mut self, #[serializer(borsh)] wasm: AsWrap<Vec<u8>, Remainder>);
+    fn op_upload_wasm(&mut self, #[serializer(borsh)] wasm: AsWrap<Vec<u8>, Remainder>);
 
     /// Sets a new updater. Resets `wasm_hash` to zeros.
     /// Updater-only. Requires 1 yoctoNEAR. No self-transfer.
     /// Emits [`Event::Transfer`] and [`Event::Approve`].
-    fn oc_set_updater_id(&mut self, new_updater_id: AccountId);
+    fn op_set_updater_id(&mut self, new_updater_id: AccountId);
 
     /// Sets the WASM location. Updater-only. Requires 1 yoctoNEAR.
     /// Emits [`Event::SetLocation`].
-    fn oc_set_location(&mut self, location: WasmLocation);
+    fn op_set_location(&mut self, location: WasmLocation);
 
     /// Returns the current updater's account ID.
-    fn oc_updater_id(&self) -> &AccountId;
+    fn op_updater_id(&self) -> &AccountId;
 
     /// Returns the approved WASM has
     /// or `0000..000` if none.
-    fn oc_wasm_hash(&self) -> AsHex<[u8; 32]>;
+    fn op_wasm_hash(&self) -> AsHex<[u8; 32]>;
 
     /// Returns the uploaded WASM bytes, or `None` if not yet uploaded.
-    fn oc_wasm(&self) -> Option<AsBase64<Vec<u8>>>;
+    fn op_wasm(&self) -> Option<AsBase64<Vec<u8>>>;
 
     /// Returns where the WASM binary can be found, or `None` if not set.
-    fn oc_location(&self) -> Option<WasmLocation>;
+    fn op_location(&self) -> Option<WasmLocation>;
 }
 
 use near_sdk::ext_contract;
@@ -57,7 +57,7 @@ use near_sdk::ext_contract;
 #[near(serializers = [borsh, json])]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WasmLocation {
-    /// WASM is stored on-chain at `account`; fetch via `oc_wasm()` view call
+    /// WASM is stored on-chain at `account`; fetch via `op_wasm()` view call
     /// using `storage_prefix` as the storage key.
     OnChain {
         account: AccountId,

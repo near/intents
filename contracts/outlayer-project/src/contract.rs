@@ -19,7 +19,7 @@ pub struct Contract(State);
 #[near]
 impl OutlayerProject for Contract {
     #[payable]
-    fn oc_approve(&mut self, new_hash: AsHex<[u8; 32]>) {
+    fn op_approve(&mut self, new_hash: AsHex<[u8; 32]>) {
         assert_one_yocto();
         require!(
             self.is_updater(&env::predecessor_account_id()),
@@ -29,7 +29,7 @@ impl OutlayerProject for Contract {
     }
 
     #[payable]
-    fn oc_upload_wasm(&mut self, #[serializer(borsh)] wasm: AsWrap<Vec<u8>, Remainder>) {
+    fn op_upload_wasm(&mut self, #[serializer(borsh)] wasm: AsWrap<Vec<u8>, Remainder>) {
         require!(
             self.is_updater(&env::predecessor_account_id()),
             ERR_UNAUTHORIZED
@@ -44,7 +44,7 @@ impl OutlayerProject for Contract {
     }
 
     #[payable]
-    fn oc_set_updater_id(&mut self, new_updater_id: AccountId) {
+    fn op_set_updater_id(&mut self, new_updater_id: AccountId) {
         assert_one_yocto();
         require!(
             self.is_updater(&env::predecessor_account_id()),
@@ -55,7 +55,7 @@ impl OutlayerProject for Contract {
     }
 
     #[payable]
-    fn oc_set_location(&mut self, location: WasmLocation) {
+    fn op_set_location(&mut self, location: WasmLocation) {
         assert_one_yocto();
         require!(
             self.is_updater(&env::predecessor_account_id()),
@@ -64,19 +64,19 @@ impl OutlayerProject for Contract {
         self.set_location(location);
     }
 
-    fn oc_updater_id(&self) -> &AccountId {
+    fn op_updater_id(&self) -> &AccountId {
         &self.0.updater_id
     }
 
-    fn oc_wasm_hash(&self) -> AsHex<[u8; 32]> {
+    fn op_wasm_hash(&self) -> AsHex<[u8; 32]> {
         self.0.wasm_hash.into()
     }
 
-    fn oc_wasm(&self) -> Option<crate::AsBase64<Vec<u8>>> {
+    fn op_wasm(&self) -> Option<crate::AsBase64<Vec<u8>>> {
         self.wasm().map(|b| crate::AsBase64(b.to_vec()))
     }
 
-    fn oc_location(&self) -> Option<WasmLocation> {
+    fn op_location(&self) -> Option<WasmLocation> {
         self.0.location.clone()
     }
 }

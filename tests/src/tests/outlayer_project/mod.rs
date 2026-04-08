@@ -54,23 +54,23 @@ async fn test_deploy_and_upload(#[future(awt)] outlayer_project_env: OutlayerPro
         .unwrap();
 
     // Verify initial state
-    assert_eq!(instance.oc_updater_id().await.unwrap(), *alice.id());
-    assert_eq!(instance.oc_wasm_hash().await.unwrap(), wasm_hash);
-    assert!(instance.oc_wasm().await.unwrap().is_none());
-    assert!(instance.oc_location().await.unwrap().is_none());
+    assert_eq!(instance.op_updater_id().await.unwrap(), *alice.id());
+    assert_eq!(instance.op_wasm_hash().await.unwrap(), wasm_hash);
+    assert!(instance.op_wasm().await.unwrap().is_none());
+    assert!(instance.op_location().await.unwrap().is_none());
 
     // Updater (alice) uploads the code
     alice
-        .oc_upload_wasm(instance.id(), &dummy_wasm)
+        .op_upload_wasm(instance.id(), &dummy_wasm)
         .await
         .unwrap();
 
     // Verify code is now stored and location auto-set to OnChain
-    assert_eq!(instance.oc_wasm_hash().await.unwrap(), wasm_hash);
-    let stored = instance.oc_wasm().await.unwrap();
+    assert_eq!(instance.op_wasm_hash().await.unwrap(), wasm_hash);
+    let stored = instance.op_wasm().await.unwrap();
     assert_eq!(stored, Some(dummy_wasm.clone()));
     assert_eq!(
-        instance.oc_location().await.unwrap(),
+        instance.op_location().await.unwrap(),
         Some(WasmLocation::OnChain {
             account: instance.id().clone(),
             storage_prefix: OutlayerState::WASM_PREFIX.to_vec(),
@@ -93,11 +93,11 @@ async fn test_deploy_with_inline_wasm(#[future(awt)] outlayer_project_env: Outla
         .await
         .unwrap();
 
-    assert_eq!(instance.oc_updater_id().await.unwrap(), *root.id());
-    assert_eq!(instance.oc_wasm_hash().await.unwrap(), wasm_hash);
-    assert_eq!(instance.oc_wasm().await.unwrap(), Some(dummy_wasm));
+    assert_eq!(instance.op_updater_id().await.unwrap(), *root.id());
+    assert_eq!(instance.op_wasm_hash().await.unwrap(), wasm_hash);
+    assert_eq!(instance.op_wasm().await.unwrap(), Some(dummy_wasm));
     assert_eq!(
-        instance.oc_location().await.unwrap(),
+        instance.op_location().await.unwrap(),
         Some(WasmLocation::OnChain {
             account: instance.id().clone(),
             storage_prefix: OutlayerState::WASM_PREFIX.to_vec(),
@@ -125,7 +125,7 @@ async fn test_upload_rejects_wrong_hash(#[future(awt)] outlayer_project_env: Out
 
     // Upload wrong bytes (different from approved hash)
     let wrong_wasm: Vec<u8> = vec![1u8; 64];
-    root.oc_upload_wasm(instance.id(), &wrong_wasm)
+    root.op_upload_wasm(instance.id(), &wrong_wasm)
         .await
         .expect_err("should reject code that doesn't match approved hash");
 }
@@ -149,7 +149,7 @@ async fn test_upload_rejects_when_no_approved_hash(
         .unwrap();
 
     let dummy_wasm: Vec<u8> = (0u8..100).collect();
-    root.oc_upload_wasm(instance.id(), &dummy_wasm)
+    root.op_upload_wasm(instance.id(), &dummy_wasm)
         .await
         .expect_err("should reject upload when wasm_hash is zeros");
 }
@@ -168,7 +168,7 @@ async fn test_location_onchain_storage(#[future(awt)] outlayer_project_env: Outl
         .await
         .unwrap();
 
-    root.oc_upload_wasm(instance.id(), &dummy_wasm)
+    root.op_upload_wasm(instance.id(), &dummy_wasm)
         .await
         .unwrap();
 
@@ -177,7 +177,7 @@ async fn test_location_onchain_storage(#[future(awt)] outlayer_project_env: Outl
         account,
         storage_prefix,
     } = instance
-        .oc_location()
+        .op_location()
         .await
         .unwrap()
         .expect("location should be set")
@@ -224,9 +224,9 @@ async fn test_non_updater_cannot_approve(#[future(awt)] outlayer_project_env: Ou
 
     let new_hash = [1u8; 32];
     // root is not the updater, should fail
-    root.oc_approve(instance.id(), new_hash)
+    root.op_approve(instance.id(), new_hash)
         .await
-        .expect_err("non-updater should not be able to call oc_approve");
+        .expect_err("non-updater should not be able to call op_approve");
 }
 
 #[rstest]
@@ -240,7 +240,7 @@ async fn test_event_approve(#[future(awt)] outlayer_project_env: OutlayerProject
         .unwrap();
 
     let new_hash = [42u8; 32];
-    let result = root.oc_approve(instance.id(), new_hash).await.unwrap();
+    let result = root.op_approve(instance.id(), new_hash).await.unwrap();
 
     assert_eq!(
         result.logs(),
@@ -267,7 +267,7 @@ async fn test_event_upload_wasm(#[future(awt)] outlayer_project_env: OutlayerPro
         .unwrap();
 
     let result = root
-        .oc_upload_wasm(instance.id(), &dummy_wasm)
+        .op_upload_wasm(instance.id(), &dummy_wasm)
         .await
         .unwrap();
 
@@ -306,7 +306,7 @@ async fn test_event_set_updater_id(#[future(awt)] outlayer_project_env: Outlayer
         .unwrap();
 
     let result = root
-        .oc_set_updater_id(instance.id(), alice.id())
+        .op_set_updater_id(instance.id(), alice.id())
         .await
         .unwrap();
 
@@ -342,7 +342,7 @@ async fn test_event_set_location(#[future(awt)] outlayer_project_env: OutlayerPr
         url: "https://example.com/contract.wasm".to_string(),
     };
     let result = root
-        .oc_set_location(instance.id(), location.clone())
+        .op_set_location(instance.id(), location.clone())
         .await
         .unwrap();
 

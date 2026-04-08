@@ -24,25 +24,25 @@ pub trait OutlayerProjectExt {
         wasm: &[u8],
     ) -> anyhow::Result<(Account, ExecutionSuccess)>;
 
-    async fn oc_approve(
+    async fn op_approve(
         &self,
         target: &AccountId,
         new_hash: [u8; 32],
     ) -> anyhow::Result<ExecutionSuccess>;
 
-    async fn oc_upload_wasm(
+    async fn op_upload_wasm(
         &self,
         target: &AccountId,
         code: &[u8],
     ) -> anyhow::Result<ExecutionSuccess>;
 
-    async fn oc_set_updater_id(
+    async fn op_set_updater_id(
         &self,
         target: &AccountId,
         new_updater_id: &AccountId,
     ) -> anyhow::Result<ExecutionSuccess>;
 
-    async fn oc_set_location(
+    async fn op_set_location(
         &self,
         target: &AccountId,
         location: WasmLocation,
@@ -51,10 +51,10 @@ pub trait OutlayerProjectExt {
 
 #[allow(async_fn_in_trait)]
 pub trait OutlayerProjectViewExt {
-    async fn oc_updater_id(&self) -> anyhow::Result<AccountId>;
-    async fn oc_wasm_hash(&self) -> anyhow::Result<[u8; 32]>;
-    async fn oc_wasm(&self) -> anyhow::Result<Option<Vec<u8>>>;
-    async fn oc_location(&self) -> anyhow::Result<Option<WasmLocation>>;
+    async fn op_updater_id(&self) -> anyhow::Result<AccountId>;
+    async fn op_wasm_hash(&self) -> anyhow::Result<[u8; 32]>;
+    async fn op_wasm(&self) -> anyhow::Result<Option<Vec<u8>>>;
+    async fn op_location(&self) -> anyhow::Result<Option<WasmLocation>>;
 }
 
 impl OutlayerProjectExt for SigningAccount {
@@ -95,7 +95,7 @@ impl OutlayerProjectExt for SigningAccount {
             .tx(account_id.clone())
             .state_init(state_init, NearToken::ZERO)
             .function_call(
-                FnCallBuilder::new("oc_upload_wasm")
+                FnCallBuilder::new("op_upload_wasm")
                     .raw_args(wasm.to_vec())
                     .with_deposit(NearToken::from_near(10))
                     .with_gas(Gas::from_tgas(290)),
@@ -107,56 +107,56 @@ impl OutlayerProjectExt for SigningAccount {
         ))
     }
 
-    async fn oc_approve(
+    async fn op_approve(
         &self,
         target: &AccountId,
         new_hash: [u8; 32],
     ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
             .function_call(
-                FnCallBuilder::new("oc_approve")
+                FnCallBuilder::new("op_approve")
                     .json_args(json!({"new_hash": AsHex(new_hash)}))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
             .await
     }
 
-    async fn oc_upload_wasm(
+    async fn op_upload_wasm(
         &self,
         target: &AccountId,
         code: &[u8],
     ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
             .function_call(
-                FnCallBuilder::new("oc_upload_wasm")
+                FnCallBuilder::new("op_upload_wasm")
                     .raw_args(code.to_vec())
                     .with_deposit(NearToken::from_near(10)),
             )
             .await
     }
 
-    async fn oc_set_updater_id(
+    async fn op_set_updater_id(
         &self,
         target: &AccountId,
         new_updater_id: &AccountId,
     ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
             .function_call(
-                FnCallBuilder::new("oc_set_updater_id")
+                FnCallBuilder::new("op_set_updater_id")
                     .json_args(json!({"new_updater_id": new_updater_id}))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
             .await
     }
 
-    async fn oc_set_location(
+    async fn op_set_location(
         &self,
         target: &AccountId,
         location: WasmLocation,
     ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
             .function_call(
-                FnCallBuilder::new("oc_set_location")
+                FnCallBuilder::new("op_set_location")
                     .json_args(json!({"location": location}))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
@@ -165,22 +165,22 @@ impl OutlayerProjectExt for SigningAccount {
 }
 
 impl OutlayerProjectViewExt for Account {
-    async fn oc_updater_id(&self) -> anyhow::Result<AccountId> {
-        self.call_view_function_json("oc_updater_id", ()).await
+    async fn op_updater_id(&self) -> anyhow::Result<AccountId> {
+        self.call_view_function_json("op_updater_id", ()).await
     }
 
-    async fn oc_wasm_hash(&self) -> anyhow::Result<[u8; 32]> {
-        let hash: AsHex<[u8; 32]> = self.call_view_function_json("oc_wasm_hash", ()).await?;
+    async fn op_wasm_hash(&self) -> anyhow::Result<[u8; 32]> {
+        let hash: AsHex<[u8; 32]> = self.call_view_function_json("op_wasm_hash", ()).await?;
         Ok(hash.into_inner())
     }
 
-    async fn oc_wasm(&self) -> anyhow::Result<Option<Vec<u8>>> {
+    async fn op_wasm(&self) -> anyhow::Result<Option<Vec<u8>>> {
         let result: Option<defuse_outlayer_project::AsBase64<Vec<u8>>> =
-            self.call_view_function_json("oc_wasm", ()).await?;
+            self.call_view_function_json("op_wasm", ()).await?;
         Ok(result.map(|b| b.0))
     }
 
-    async fn oc_location(&self) -> anyhow::Result<Option<WasmLocation>> {
-        self.call_view_function_json("oc_location", ()).await
+    async fn op_location(&self) -> anyhow::Result<Option<WasmLocation>> {
+        self.call_view_function_json("op_location", ()).await
     }
 }

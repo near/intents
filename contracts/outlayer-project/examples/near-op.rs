@@ -21,7 +21,7 @@ struct Args {
     updater_id: AccountId,
 
     /// Pre-approve a SHA-256 WASM hash (hex, with or without 0x prefix).
-    /// When set, the first `oc_upload_code()` won't require a prior `oc_approve()`.
+    /// When set, the first `op_upload_wasm()` won't require a prior `op_approve()`.
     #[arg(long, value_parser = parse_hex_hash, value_name = "HASH")]
     approve: Option<[u8; 32]>,
 
