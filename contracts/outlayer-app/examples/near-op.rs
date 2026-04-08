@@ -1,5 +1,5 @@
 use clap::Parser;
-use defuse_outlayer_app::State;
+use defuse_outlayer_app::{State, Url};
 use near_sdk::{AccountId, base64::prelude::*, serde_json};
 use std::collections::BTreeMap;
 
@@ -20,8 +20,13 @@ struct Args {
     #[arg(long, value_name = "AccountId")]
     admin_id: AccountId,
 
+    /// URL where the code binary can be fetched from
+    /// (e.g. `https://...` or `data:application/wasm;base64,...`)
+    #[arg(long, value_name = "URL")]
+    code_url: String,
+
     /// Pre-approve a SHA-256 code hash (hex, with or without 0x prefix).
-    /// When set, the first `op_upload_code()` won't require a prior `op_approve()`.
+    /// When set, the first `op_set_code_uri()` won't require a prior `op_approve()`.
     #[arg(long, value_parser = parse_hex_hash, value_name = "HASH")]
     approve: Option<[u8; 32]>,
 
@@ -33,7 +38,7 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    let mut state = State::new(args.admin_id.clone());
+    let mut state = State::new(args.admin_id.clone(), Url(args.code_url));
     if let Some(hash) = args.approve {
         state = state.pre_approve(hash);
     }
@@ -41,6 +46,7 @@ fn main() {
     if !args.quiet {
         eprintln!("{:<20} {}", "admin_id:", state.admin_id);
         eprintln!("{:<20} {}", "code_hash:", hex::encode(state.code_hash));
+        eprintln!("{:<20} {}", "code_url:", state.code_url.0);
     }
 
     let state_init = state.state_init();

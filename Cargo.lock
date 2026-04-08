@@ -1300,7 +1300,6 @@ dependencies = [
  "impl-tools",
  "itertools",
  "multi-token-receiver-stub",
- "near-api",
  "near-contract-standards",
  "near-crypto",
  "near-sdk",

@@ -69,7 +69,6 @@ defuse-randomness.workspace = true
 defuse-serde-utils = { workspace = true }
 defuse-test-utils.workspace = true
 
-near-api.workspace = true
 near-contract-standards.workspace = true
 near-crypto.workspace = true
 near-sdk.workspace = true
