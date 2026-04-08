@@ -1,5 +1,7 @@
 use defuse_serde_utils::hex::AsHex;
-use near_sdk::{AccountId, AccountIdRef, NearToken, PanicOnDefault, assert_one_yocto, env, near, require};
+use near_sdk::{
+    AccountId, AccountIdRef, NearToken, PanicOnDefault, assert_one_yocto, env, near, require,
+};
 
 use crate::{
     Event, OutlayerApp, State, Url,
