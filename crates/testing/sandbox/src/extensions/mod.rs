@@ -18,3 +18,5 @@ pub mod global_deployer;
 pub mod poa;
 #[cfg(feature = "wallet")]
 pub mod wallet;
+#[cfg(feature = "outlayer")]
+pub mod outlayer_project;

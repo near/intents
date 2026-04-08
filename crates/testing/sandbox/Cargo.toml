@@ -15,6 +15,7 @@ deployer = ["dep:defuse-global-deployer", "dep:defuse-serde-utils"]
 escrow = ["dep:defuse-escrow-swap"]
 imt = ["defuse", "defuse/imt"]
 wallet = ["dep:defuse-wallet"]
+outlayer = ["dep:defuse-outlayer-project", "dep:defuse-serde-utils"]
 
 [dependencies]
 defuse-crypto = { workspace = true, features = ["near-api-types"] }
@@ -39,6 +40,7 @@ defuse-escrow-swap = { workspace = true, optional = true, features = ["auth_call
 defuse-global-deployer = { workspace = true, optional = true }
 defuse-poa-factory = { workspace = true, optional = true, features = ["contract"] }
 defuse-wallet = { workspace = true, optional = true }
+defuse-outlayer-project = { workspace = true, optional = true }
 
 defuse = { workspace = true, optional = true, features = ["contract"] }
 defuse-serde-utils = { workspace = true, optional = true }

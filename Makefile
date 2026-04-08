@@ -9,6 +9,7 @@ CONTRACT_CRATES := \
     defuse \
     defuse-escrow-swap \
     defuse-global-deployer \
+    defuse-outlayer-project \
     defuse-poa-factory \
     defuse-poa-token \
     defuse-wallet \

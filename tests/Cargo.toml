@@ -9,7 +9,7 @@ repository.workspace = true
 workspace = true
 
 [features]
-default = ["defuse", "deployer", "escrow-swap", "long", "poa", "wallet"]
+default = ["defuse", "deployer", "escrow-swap", "long", "outlayer", "poa", "wallet"]
 
 poa = ["defuse-sandbox/poa", "defuse-test-utils/poa"]
 defuse = [
@@ -38,6 +38,12 @@ wallet = [
 
 deployer = ["defuse-sandbox/deployer", "dep:defuse-global-deployer"]
 
+outlayer = [
+  "defuse-sandbox/outlayer",
+  "defuse-test-utils/outlayer",
+  "dep:defuse-outlayer-project",
+]
+
 long = []
 
 [dependencies]
@@ -49,11 +55,13 @@ multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
 
 defuse-fees.workspace = true
 defuse-global-deployer = { workspace = true, optional = true }
+defuse-outlayer-project = { workspace = true, optional = true }
 defuse-near-utils = { workspace = true }
 defuse-randomness.workspace = true
 defuse-serde-utils = { workspace = true }
 defuse-test-utils.workspace = true
 
+near-api.workspace = true
 near-contract-standards.workspace = true
 near-crypto.workspace = true
 near-sdk.workspace = true

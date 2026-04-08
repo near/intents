@@ -14,3 +14,6 @@ mod wallet;
 mod global_deployer;
 
 mod utils;
+
+#[cfg(feature = "outlayer")]
+mod outlayer_project;
