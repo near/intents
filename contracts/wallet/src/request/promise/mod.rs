@@ -9,7 +9,7 @@ use near_sdk::{Gas, NearToken, Promise, near};
 /// DAG of promises to execute
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PromiseDAG {
     /// `PromiseDAG`s to be executed before `promises`, if any.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
