@@ -41,7 +41,7 @@ members = [
   "crates/testing/randomness",
   "crates/testing/sandbox",
 
-  "crates/outlayer/outlayer-sys",
+  "crates/outlayer/sdk",
 
   "tests",
 ]
@@ -94,7 +94,7 @@ defuse-randomness.path = "crates/testing/randomness"
 defuse-sandbox.path = "crates/testing/sandbox"
 defuse-test-utils.path = "crates/testing/utils"
 
-defuse-outlayer-sys.path = "crates/outlayer/outlayer-sys"
+defuse-outlayer-sdk.path = "crates/outlayer/sdk"
 
 defuse-tests.path = "tests"
 
@@ -141,6 +141,8 @@ thiserror = "2"
 tlb-ton = { version = "0.7.2", default-features = false }
 tokio = { version = "1.45", default-features = false }
 tracing = "0.1"
+
+wit-bindgen = "0.49.0"
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }

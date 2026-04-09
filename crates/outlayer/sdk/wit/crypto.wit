@@ -1,0 +1,29 @@
+package outlayer:host@0.1.0;
+
+interface ed25519 {
+    record ed25519-public-key {
+        bytes: list<u8>,
+    }
+
+    record ed25519-signature {
+        bytes: list<u8>,
+    }
+
+    get-root-public-key: func() -> result<ed25519-public-key, string>;
+    derive-public-key: func(path: string) -> result<ed25519-public-key, string>;
+    sign: func(path: string, msg: list<u8>) -> result<ed25519-signature, string>;
+}
+
+interface secp256k1 {
+    record secp256k1-public-key {
+        bytes: list<u8>,
+    }
+
+    record secp256k1-signature {
+        bytes: list<u8>,
+    }
+
+    get-root-public-key: func() -> result<secp256k1-public-key, string>;
+    derive-public-key: func(path: string) -> result<secp256k1-public-key, string>;
+    sign: func(path: string, msg: list<u8>) -> result<secp256k1-signature, string>;
+}
