@@ -3343,8 +3343,8 @@ dependencies = [
 
 [[package]]
 name = "near-plugins"
-version = "0.6.0"
-source = "git+https://github.com/Near-One/near-plugins?branch=master#0d68553bdae38c194cf1791b44ec3148b48348a2"
+version = "0.5.1"
+source = "git+https://github.com/Near-One/near-plugins?tag=v0.5.1#312e016e0574d5756f6eba37acc82d9a237b2e3e"
 dependencies = [
  "bitflags 1.3.2",
  "near-plugins-derive",
@@ -3354,8 +3354,8 @@ dependencies = [
 
 [[package]]
 name = "near-plugins-derive"
-version = "0.6.0"
-source = "git+https://github.com/Near-One/near-plugins?branch=master#0d68553bdae38c194cf1791b44ec3148b48348a2"
+version = "0.5.1"
+source = "git+https://github.com/Near-One/near-plugins?tag=v0.5.1#312e016e0574d5756f6eba37acc82d9a237b2e3e"
 dependencies = [
  "darling 0.20.11",
  "proc-macro-crate 0.1.5",
@@ -3561,9 +3561,9 @@ checksum = "5b61eccf333a27e5dc076290f9eb59b18fc848188377bf3e99e0fe0a93627e18"
 
 [[package]]
 name = "near-sdk"
-version = "5.26.0"
+version = "5.26.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfa4a4e046f1cad96619cff36fdde803a81907f7bef0f7b13e2b063dac513025"
+checksum = "68f78c9d9392f3a0c5acba9e1dd3ea89554804a2c1b533170cc5cce00e483a4e"
 dependencies = [
  "arbitrary",
  "base64 0.22.1",
@@ -3596,9 +3596,9 @@ dependencies = [
 
 [[package]]
 name = "near-sdk-macros"
-version = "5.26.0"
+version = "5.26.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "605b3e27c2b05861a5888f9293f355143f2580aad27c1b3a3c3d81e6ec6c4546"
+checksum = "4b0bdc1666723a140e41ec8a14cf0b11b5e3ecf8ab55ed7e66d995c962fbac77"
 dependencies = [
  "Inflector",
  "darling 0.20.11",
