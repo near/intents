@@ -42,6 +42,7 @@ members = [
   "crates/testing/sandbox",
 
   "crates/outlayer/sdk",
+  "crates/outlayer/vm-runner",
 
   "tests",
 ]
@@ -95,6 +96,7 @@ defuse-sandbox.path = "crates/testing/sandbox"
 defuse-test-utils.path = "crates/testing/utils"
 
 defuse-outlayer-sdk.path = "crates/outlayer/sdk"
+defuse-outlayer-vm-runner.path = "crates/outlayer/vm-runner"
 
 defuse-tests.path = "tests"
 
@@ -111,6 +113,7 @@ near-sdk = "5.24"
 near-workspaces = "0.22"
 
 anyhow = "1"
+
 arbitrary = "1"
 array-util = "1"
 bitflags = "2.9.1"
@@ -143,6 +146,8 @@ tokio = { version = "1.45", default-features = false }
 tracing = "0.1"
 
 wit-bindgen = "0.49.0"
+wasmtime = { version = "43", features = ["component-model"] }
+wasmtime-wasi = "43"
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }
