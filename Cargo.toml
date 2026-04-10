@@ -169,6 +169,3 @@ debug = false
 strip = "symbols"
 panic = "abort"
 overflow-checks = true
-
-[patch.crates-io]
-near-sdk = { git = "https://github.com/near/near-sdk-rs" }
