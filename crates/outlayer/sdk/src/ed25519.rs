@@ -1,5 +1,5 @@
 use crate::SysHost;
-use defuse_outlayer_host::{ed25519::Ed25519Curve, CryptoHost, Curve};
+use defuse_outlayer_host::{CryptoHost, Curve, ed25519::Ed25519Curve};
 use outlayer::host::ed25519;
 
 // TODO: may be make symlink?

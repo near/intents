@@ -1,6 +1,5 @@
 use crate::{CryptoHost, Curve, DefaultHost};
 
-// TODO: use defuse crypto?
 pub struct Secp256k1Curve;
 
 impl Curve for Secp256k1Curve {

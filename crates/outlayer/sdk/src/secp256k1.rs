@@ -1,4 +1,4 @@
-use defuse_outlayer_host::{secp256k1::Secp256k1Curve, CryptoHost, Curve};
+use defuse_outlayer_host::{CryptoHost, Curve, secp256k1::Secp256k1Curve};
 use outlayer::host::secp256k1;
 
 use crate::SysHost;

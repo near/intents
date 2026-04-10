@@ -3,6 +3,7 @@ pub mod ed25519;
 #[cfg(feature = "secp256k1")]
 pub mod secp256k1;
 
+// TODO: use defuse crypto?
 pub trait Curve {
     type PublicKey;
     type Signature;
