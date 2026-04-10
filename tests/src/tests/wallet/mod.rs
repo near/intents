@@ -1,7 +1,5 @@
 #![allow(clippy::future_not_send)]
-use std::time::Duration;
 
-use defuse_randomness::{rng, rngs::ThreadRng};
 use defuse_sandbox::{
     Sandbox,
     extensions::wallet::{WalletExt, WalletViewExt},
@@ -9,22 +7,21 @@ use defuse_sandbox::{
 };
 use defuse_test_utils::wasms::WALLET_WASM;
 use defuse_wallet::{
-    self, ConcurrentNonces, FunctionCallAction, PromiseSingle, Request, State, WalletOp,
+    self, FunctionCallAction, PromiseSingle, Request, State, WalletOp,
     signature::{
-        Borsh, Deadline, RequestMessage, SigningStandard, WALLET_DOMAIN,
-        ed25519::{Ed25519, Ed25519PublicKey, Ed25519Signature},
+        Borsh, RequestMessage, SigningStandard,
+        ed25519::{Ed25519, Ed25519PublicKey},
     },
 };
-use defuse_wallet_client::{
-    WalletClient,
+use defuse_wallet_sdk::{
+    WalletSigner,
     ed25519::ed25519_dalek::{self, ed25519::signature::rand_core::OsRng},
 };
 use futures::{StreamExt, TryStreamExt, stream};
 use impl_tools::autoimpl;
-use near_crypto::{KeyType, SecretKey, Signature};
+
 use near_sdk::{
-    AccountId, Gas, GlobalContractId, NearToken, borsh,
-    env::sha256_array,
+    Gas, GlobalContractId, NearToken,
     state_init::{StateInit, StateInitV1},
 };
 use rstest::{fixture, rstest};
@@ -45,28 +42,41 @@ async fn test_signed(#[future] env: Env) {
         .await
         .unwrap();
 
-    let (msg, proof) = wallet.sign(
-        Request::new()
-            .ops([
-                WalletOp::AddExtension {
-                    account_id: env.root().id().clone(),
-                },
-                WalletOp::RemoveExtension {
-                    account_id: env.root().id().clone(),
-                },
-            ])
-            .out(
-                PromiseSingle::new(receiver.id())
-                    .transfer(NearToken::from_yoctonear(1))
-                    .then(PromiseSingle::new(receiver.id()).transfer(NearToken::from_yoctonear(2)))
-                    .and(PromiseSingle::new(receiver.id()).transfer(NearToken::from_yoctonear(3)))
-                    .then_concurrent([
-                        PromiseSingle::new(receiver.id()).transfer(NearToken::from_yoctonear(4)),
-                        PromiseSingle::new(receiver.id()).transfer(NearToken::from_yoctonear(5)),
-                    ])
-                    .then(PromiseSingle::new(receiver.id()).transfer(NearToken::from_yoctonear(6))),
-            ),
-    );
+    let (msg, proof) = wallet
+        .sign(
+            Request::new()
+                .ops([
+                    WalletOp::AddExtension {
+                        account_id: env.root().id().clone(),
+                    },
+                    WalletOp::RemoveExtension {
+                        account_id: env.root().id().clone(),
+                    },
+                ])
+                .out(
+                    PromiseSingle::new(receiver.id())
+                        .transfer(NearToken::from_yoctonear(1))
+                        .then(
+                            PromiseSingle::new(receiver.id())
+                                .transfer(NearToken::from_yoctonear(2)),
+                        )
+                        .and(
+                            PromiseSingle::new(receiver.id())
+                                .transfer(NearToken::from_yoctonear(3)),
+                        )
+                        .then_concurrent([
+                            PromiseSingle::new(receiver.id())
+                                .transfer(NearToken::from_yoctonear(4)),
+                            PromiseSingle::new(receiver.id())
+                                .transfer(NearToken::from_yoctonear(5)),
+                        ])
+                        .then(
+                            PromiseSingle::new(receiver.id())
+                                .transfer(NearToken::from_yoctonear(6)),
+                        ),
+                ),
+        )
+        .unwrap();
 
     env.w_execute_signed(
         wallet.account_id(),
@@ -101,41 +111,44 @@ async fn test_rotate(#[future] env: Env) {
         [old_wallet.account_id(), new_wallet.account_id()]
             .map(|account_id| env.account(account_id));
 
-    let (msg, proof) = old_wallet.sign(
-        Request::new()
-            .ops([WalletOp::AddExtension {
-                account_id: new_wallet.account_id(),
-            }])
-            .out(
-                PromiseSingle::new(new_wallet.account_id())
-                    .state_init(new_wallet.state_init(), NearToken::ZERO)
-                    .function_call(
-                        FunctionCallAction::new("w_execute_signed")
-                            .attached_deposit(NearToken::from_yoctonear(1))
-                            .min_gas(Gas::from_tgas(20))
-                            .args_json({
-                                let (msg, proof) = new_wallet.sign(
-                                    Request::new().out(
-                                        PromiseSingle::new(old_wallet.account_id()).function_call(
-                                            FunctionCallAction::new("w_execute_extension")
-                                                .attached_deposit(NearToken::from_yoctonear(1))
-                                                .min_gas(Gas::from_tgas(10))
-                                                .args_json(json!({
-                                                    "request": Request::new().ops([
-                                                        WalletOp::SetSignatureMode { enable: false }
-                                                    ])
-                                                })),
+    let (msg, proof) = old_wallet
+        .sign(
+            Request::new()
+                .ops([WalletOp::AddExtension {
+                    account_id: new_wallet.account_id().clone(),
+                }])
+                .out(
+                    PromiseSingle::new(new_wallet.account_id())
+                        .state_init(new_wallet.state_init(), NearToken::ZERO)
+                        .function_call(
+                            FunctionCallAction::new("w_execute_signed")
+                                .attached_deposit(NearToken::from_yoctonear(1))
+                                .min_gas(Gas::from_tgas(20))
+                                .args_json({
+                                    let (msg, proof) = new_wallet.sign(
+                                        Request::new().out(
+                                            PromiseSingle::new(old_wallet.account_id()).function_call(
+                                                FunctionCallAction::new("w_execute_extension")
+                                                    .attached_deposit(NearToken::from_yoctonear(1))
+                                                    .min_gas(Gas::from_tgas(10))
+                                                    .args_json(json!({
+                                                        "request": Request::new().ops([
+                                                            WalletOp::SetSignatureMode { enable: false }
+                                                        ])
+                                                    })),
+                                            ),
                                         ),
-                                    ),
-                                );
-                                json!({
-                                    "msg": msg,
-                                    "proof": proof,
-                                })
-                            }),
-                    ),
-            ),
-    );
+                                    ).unwrap();
+
+                                    json!({
+                                        "msg": msg,
+                                        "proof": proof,
+                                    })
+                                }),
+                        ),
+                ),
+        )
+        .unwrap();
 
     env.w_execute_signed(
         old_wallet.account_id(),
@@ -150,23 +163,25 @@ async fn test_rotate(#[future] env: Env) {
     assert!(!old_wallet_account.w_is_signature_allowed().await.unwrap());
 
     {
-        let (msg, proof) = old_wallet.sign(Request::default());
+        let (msg, proof) = old_wallet.sign(Request::default()).unwrap();
         env.w_execute_signed(old_wallet.account_id(), None, msg, proof, NearToken::ZERO)
             .await
             .expect_err("signature should be disabled");
     }
 
-    let (msg, proof) = new_wallet.sign(
-        Request::new().out(
-            PromiseSingle::new(old_wallet.account_id()).function_call(
-                FunctionCallAction::new("w_execute_extension")
-                    .attached_deposit(NearToken::from_yoctonear(1))
-                    .args_json(json!({
-                        "request": Request::new(),
-                    })),
+    let (msg, proof) = new_wallet
+        .sign(
+            Request::new().out(
+                PromiseSingle::new(old_wallet.account_id()).function_call(
+                    FunctionCallAction::new("w_execute_extension")
+                        .attached_deposit(NearToken::from_yoctonear(1))
+                        .args_json(json!({
+                            "request": Request::new(),
+                        })),
+                ),
             ),
-        ),
-    );
+        )
+        .unwrap();
 
     env.w_execute_signed(new_wallet.account_id(), None, msg, proof, NearToken::ZERO)
         .await
@@ -231,7 +246,7 @@ async fn test_no_storage_staking(#[future] env: Env) {
     let mut wallet = env.generate_wallet();
     let wallet_account = env.account(wallet.account_id());
 
-    let wallet_id = wallet.account_id();
+    let wallet_id = wallet.account_id().clone();
     let wallet_state_init = wallet.state_init();
 
     // do state_init in advance
@@ -241,8 +256,8 @@ async fn test_no_storage_staking(#[future] env: Env) {
         .unwrap();
 
     stream::iter(
-        (0..wallet.timeout().as_secs() * 2)
-            .map(|_n| wallet.sign(Request::new()))
+        (0..wallet.nonces.timeout().as_secs() * 2)
+            .map(|_n| wallet.sign(Request::new()).unwrap())
             .map(|(msg, proof)| {
                 let env = &env;
                 let wallet_id = wallet_id.clone();
@@ -269,8 +284,8 @@ struct Env {
 }
 
 impl Env {
-    pub fn generate_wallet(&self) -> WalletClient<ed25519_dalek::SigningKey> {
-        WalletClient::new(
+    pub fn generate_wallet(&self) -> WalletSigner<ed25519_dalek::SigningKey> {
+        WalletSigner::new(
             self.wallet_global_id.clone(),
             ed25519_dalek::SigningKey::generate(&mut OsRng),
         )

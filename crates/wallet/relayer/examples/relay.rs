@@ -1,3 +1,5 @@
+#![allow(clippy::cast_precision_loss, clippy::as_conversions)]
+
 use std::{env, fs, iter, path::Path, sync::LazyLock};
 
 use defuse_wallet::Request;
@@ -15,8 +17,8 @@ static WALLET_WASM: LazyLock<Vec<u8>> = LazyLock::new(|| {
     fs::read(wasm).expect("failed to read WASM")
 });
 
-#[tokio::test]
-async fn relay() {
+#[tokio::main]
+async fn main() {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::fmt::layer()
