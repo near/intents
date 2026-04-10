@@ -11,7 +11,7 @@ workspace = true
 [features]
 default = ["defuse", "deployer", "escrow-swap", "long", "poa", "wallet"]
 
-poa = ["defuse-sandbox/poa", "defuse-test-utils/poa", "dep:defuse-poa-factory"]
+poa = ["defuse-sandbox/poa", "defuse-test-utils/poa"]
 defuse = [
   "defuse-sandbox/defuse",
   "defuse-sandbox/imt",
