@@ -9,9 +9,7 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-defuse-crypto = { workspace = true, default-features = false, features = [
-    "ed25519",
-] }
+defuse-crypto = { workspace = true, default-features = false, features = ["ed25519"] }
 defuse-near-utils = { workspace = true, features = ["digest"] }
 defuse-serde-utils = { workspace = true, features = ["tlb"] }
 
@@ -23,12 +21,15 @@ serde_with = { workspace = true, features = ["chrono_0_4"] }
 tlb-ton = { workspace = true, features = ["serde"] }
 
 [features]
-default = ["text", "binary", "cell"]
-abi = [ "near-sdk/abi", "tlb-ton/schemars_0_8" ]
+default = ["binary", "cell", "text"]
+abi = ["near-sdk/abi", "tlb-ton/schemars_0_8"]
 arbitrary = ["tlb-ton/arbitrary"]
 binary = []
 cell = []
 text = []
+
+[package.metadata.cargo-machete]
+ignored = ["schemars"] # used by #[near] macro for ABI generation
 
 [dev-dependencies]
 defuse-test-utils.workspace = true

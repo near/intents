@@ -64,7 +64,6 @@ near-sdk.workspace = true
 
 anyhow.workspace = true
 arbitrary.workspace = true
-bnum = { workspace = true, features = ["rand"] }
 chrono.workspace = true
 derive_more.workspace = true
 futures = "0.3"

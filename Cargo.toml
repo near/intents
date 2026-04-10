@@ -108,9 +108,9 @@ near-contract-standards = "5.24"
 near-crypto = "0.34.1"
 near-kit = { version = "0.7.1", default-features = false }
 near-openapi-types = "0.6.0"
-near-plugins = { git = "https://github.com/Near-One/near-plugins", tag = "v0.5.0" }
+near-plugins = { git = "https://github.com/Near-One/near-plugins", tag = "v0.5.1" }
 near-sandbox = "0.3.5"
-near-sdk = "5.24"
+near-sdk = "5.26.1"
 near-workspaces = "0.22"
 
 anyhow = "1"

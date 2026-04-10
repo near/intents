@@ -60,6 +60,7 @@ help:
 	@echo "  clean-out-dir    Remove output directory only"
 	@echo "  test             Run all workspace tests"
 	@echo "  clippy           Run clippy lints"
+	@echo "  fmt              Format Rust files and Cargo.toml manifests"
 	@echo "  help             Show this help"
 
 .PHONY: clean-out-dir
@@ -74,6 +75,23 @@ clean: clean-out-dir
 test:
 	cargo test --workspace --all-targets
 
-.PHONY: clippy
-clippy:
+.PHONY: check
+check:
 	cargo clippy --workspace --all-targets --no-deps
+
+.PHONY: check-fmt
+check-fmt:
+	cargo fmt --all --check
+	RUST_LOG=warn taplo format --check
+
+.PHONY: check-unused-deps
+check-unused-deps:
+	cargo machete 2>/dev/null
+
+.PHONY: check-all
+check-all: check-fmt check check-unused-deps
+
+.PHONY: fmt
+fmt:
+	cargo fmt --all
+	taplo format

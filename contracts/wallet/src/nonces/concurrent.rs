@@ -21,6 +21,7 @@ where
         Self { next: 0, rng }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> u32 {
         if self.next & Self::BIT_POS_MASK == 0 {
             self.next = self.rng.next_u32() & !Self::BIT_POS_MASK;

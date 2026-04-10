@@ -9,12 +9,11 @@ repository.workspace = true
 workspace = true
 
 [features]
-abi = ["near-sdk/abi", "defuse-borsh-utils/abi"]
+abi = ["defuse-borsh-utils/abi", "near-sdk/abi"]
 
 [dependencies]
 defuse-borsh-utils = { workspace = true, features = ["chrono"] }
 defuse-near-utils = { workspace = true, features = ["time"] }
-defuse-num-utils.workspace = true
 
 chrono = { workspace = true, features = ["serde"] }
 near-sdk.workspace = true
