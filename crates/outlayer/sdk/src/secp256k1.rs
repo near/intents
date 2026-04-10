@@ -1,34 +1,39 @@
+use defuse_outlayer_host::{secp256k1::Secp256k1Curve, CryptoHost, Curve};
+use outlayer::host::secp256k1;
+
+use crate::SysHost;
+
 wit_bindgen::generate!({
     path: "../wit",
     world: "secp256k1-world",
 });
 
-use crate::{OutlayerError, OutlayerResult};
-use outlayer::host::secp256k1;
+impl CryptoHost<Secp256k1Curve> for SysHost {
+    fn get_project_public_key(&self) -> <Secp256k1Curve as Curve>::PublicKey {
+        secp256k1::get_project_public_key()
+            .expect("failed to get project public key")
+            .bytes
+            .try_into()
+            .expect("public key must be 32 bytes")
+    }
 
-pub type Secp256k1PublicKey = [u8; 64];
-pub type Secp256k1Signature = [u8; 65];
+    fn derive_public_key(&self, path: impl AsRef<str>) -> <Secp256k1Curve as Curve>::PublicKey {
+        secp256k1::derive_public_key(path.as_ref())
+            .expect("failed to derive public key")
+            .bytes
+            .try_into()
+            .expect("public key must be 32 bytes")
+    }
 
-pub fn get_root_public_key() -> OutlayerResult<Secp256k1PublicKey> {
-    secp256k1::get_root_public_key()
-        .map_err(OutlayerError::FailedToGetPublicKey)?
-        .bytes
-        .try_into()
-        .map_err(|_| OutlayerError::InvalidPublicKeyLength)
-}
-
-pub fn derive_public_key(path: impl AsRef<str>) -> OutlayerResult<Secp256k1PublicKey> {
-    secp256k1::derive_public_key(path.as_ref())
-        .map_err(OutlayerError::FailedToGetPublicKey)?
-        .bytes
-        .try_into()
-        .map_err(|_| OutlayerError::InvalidPublicKeyLength)
-}
-
-pub fn sign(path: impl AsRef<str>, msg: impl AsRef<[u8]>) -> OutlayerResult<Secp256k1Signature> {
-    secp256k1::sign(path.as_ref(), msg.as_ref())
-        .map_err(OutlayerError::FailedToSign)?
-        .bytes
-        .try_into()
-        .map_err(|_| OutlayerError::InvalidSignatureLength)
+    fn sign(
+        &self,
+        path: impl AsRef<str>,
+        msg: impl AsRef<[u8]>,
+    ) -> <Secp256k1Curve as Curve>::Signature {
+        secp256k1::sign(path.as_ref(), msg.as_ref())
+            .expect("failed to sign message")
+            .bytes
+            .try_into()
+            .expect("signature must be 64 bytes")
+    }
 }

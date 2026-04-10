@@ -1,6 +1,7 @@
 [workspace]
 members = [
   "sdk",
+  "host",
 ]
 resolver = "3"
 
@@ -12,10 +13,10 @@ repository = "https://github.com/near/intents"
 
 [workspace.dependencies]
 defuse-outlayer-sdk.path = "sdk"
+defuse-outlayer-host.path = "host"
 
 anyhow = "1"
 serde_json = "1"
-thiserror = "2"
 wit-bindgen = "0.55.0"
 wasmtime = { version = "43.0.1", features = ["component-model"] }
 wasmtime-wasi = "43.0.1"
@@ -33,3 +34,4 @@ must_use_candidate = "allow"
 similar_names = "allow"
 too_long_first_doc_paragraph = "allow"
 unreadable_literal = "allow"
+same_length_and_capacity = "allow"
