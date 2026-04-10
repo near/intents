@@ -16,7 +16,7 @@ use near_sdk::{
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh(use_discriminant = true), json])]
 #[serde(tag = "action", rename_all = "snake_case")]
-#[derive(Debug, Clone, PartialEq, Eq, From)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, From)]
 #[repr(u8)] // matches nearcore `Action` just in case
 pub enum PromiseAction {
     FunctionCall(FunctionCallAction) = 2,
@@ -61,7 +61,7 @@ impl PromiseAction {
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TransferAction {
     #[cfg_attr(
         any(feature = "arbitrary", test),
@@ -73,7 +73,7 @@ pub struct TransferAction {
 /// `DeterministicStateInit` action as per NEP-616
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct StateInitAction {
     #[serde(flatten)]
     pub state_init: StateInit,
@@ -88,7 +88,7 @@ pub struct StateInitAction {
 
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FunctionCallAction {
     pub function_name: String,
 
