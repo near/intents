@@ -1654,7 +1654,6 @@ dependencies = [
  "defuse-fees",
  "defuse-global-deployer",
  "defuse-near-utils",
- "defuse-poa-factory",
  "defuse-randomness",
  "defuse-sandbox",
  "defuse-serde-utils",
@@ -1663,8 +1662,6 @@ dependencies = [
  "defuse-wallet-sdk",
  "derive_more",
  "futures",
- "hex",
- "hex-literal",
  "impl-tools",
  "itertools",
  "multi-token-receiver-stub",
@@ -1674,7 +1671,6 @@ dependencies = [
  "rstest",
  "serde_json",
  "strum 0.27.2",
- "tlb-ton",
  "tokio",
 ]
 
