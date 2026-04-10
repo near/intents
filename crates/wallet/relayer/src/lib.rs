@@ -8,7 +8,7 @@ pub use near_kit;
 
 use chrono::{TimeDelta, Utc};
 use near_kit::{
-    CryptoHash, FinalExecutionOutcome, Gas, InvalidTxError, Near, NearToken, TxExecutionStatus,
+    CryptoHash, ExecutedOptimistic, FinalExecutionOutcome, Gas, InvalidTxError, Near, NearToken,
 };
 use near_sdk::state_init::StateInit;
 use serde::{Deserialize, Serialize};
@@ -60,8 +60,8 @@ impl Relayer {
         self
     }
 
-    pub fn client(&self) -> Near {
-        self.client.clone()
+    pub const fn client(&self) -> &Near {
+        &self.client
     }
 
     /// Relay signed request with optional attached deposit.
@@ -126,7 +126,7 @@ impl Relayer {
             Self::request_timeout(&request.msg)?,
             tx.send()
                 // wait for execution, so we have an access to wallet's receipt
-                .wait_until(TxExecutionStatus::ExecutedOptimistic)
+                .wait_until(ExecutedOptimistic)
                 // rely on timeouts instead of number of retry attempts
                 .max_nonce_retries(u32::MAX),
         )

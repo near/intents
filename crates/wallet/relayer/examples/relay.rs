@@ -7,7 +7,7 @@ use defuse_wallet_relayer::{RelayRequest, Relayer};
 use defuse_wallet_sdk::WalletSigner;
 use ed25519_dalek::ed25519::signature::rand_core::OsRng;
 use futures::{StreamExt, TryFutureExt, TryStreamExt, stream};
-use near_kit::{PublishMode, sandbox::SandboxConfig};
+use near_kit::{Final, PublishMode, sandbox::SandboxConfig};
 use near_sdk::{GlobalContractId, NearToken, env::sha256_array};
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -34,7 +34,7 @@ async fn main() {
 
     let global_contract_id = {
         near.publish(WALLET_WASM.clone(), PublishMode::Immutable)
-            .wait_until(near_kit::TxExecutionStatus::Final)
+            .wait_until(Final)
             .await
             .unwrap();
         GlobalContractId::CodeHash(sha256_array(&*WALLET_WASM).into())
