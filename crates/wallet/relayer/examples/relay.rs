@@ -1,8 +1,8 @@
 use std::{env, fs, iter, path::Path, sync::LazyLock};
 
 use defuse_wallet::Request;
-use defuse_wallet_client::WalletClient;
 use defuse_wallet_relayer::{RelayRequest, Relayer};
+use defuse_wallet_sdk::WalletSigner;
 use ed25519_dalek::ed25519::signature::rand_core::OsRng;
 use futures::{StreamExt, TryFutureExt, TryStreamExt, stream};
 use near_kit::{PublishMode, sandbox::SandboxConfig};
@@ -40,7 +40,7 @@ async fn relay() {
 
     let relayer = Relayer::new(near.clone());
 
-    let mut wallet = WalletClient::new(
+    let mut wallet = WalletSigner::new(
         global_contract_id,
         ed25519_dalek::SigningKey::generate(&mut OsRng),
     )

@@ -37,7 +37,7 @@ members = [
   "crates/signatures/tip191",
   "crates/signatures/ton-connect",
 
-  "crates/wallet/client",
+  "crates/wallet/sdk",
   "crates/wallet/relayer",
 
   "crates/testing/utils",
@@ -91,8 +91,8 @@ defuse-tip191.path = "crates/signatures/tip191"
 defuse-ton-connect = { path = "crates/signatures/ton-connect", default-features = false, features = ["text"] }
 defuse-webauthn = { path = "crates/signatures/webauthn", default-features = false }
 
-defuse-wallet-client.path = "crates/wallet/client"
 defuse-wallet-relayer.path = "crates/wallet/relayer"
+defuse-wallet-sdk.path = "crates/wallet/sdk"
 
 defuse-randomness.path = "crates/testing/randomness"
 defuse-sandbox.path = "crates/testing/sandbox"

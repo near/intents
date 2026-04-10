@@ -1661,7 +1661,7 @@ dependencies = [
  "defuse-serde-utils",
  "defuse-test-utils",
  "defuse-wallet",
- "defuse-wallet-client",
+ "defuse-wallet-sdk",
  "derive_more",
  "futures",
  "hex",
@@ -1747,23 +1747,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-wallet-client"
-version = "0.1.0"
-dependencies = [
- "defuse-wallet",
- "ed25519-dalek",
- "impl-tools",
- "near-sdk",
- "rand 0.10.0",
-]
-
-[[package]]
 name = "defuse-wallet-relayer"
 version = "0.1.0"
 dependencies = [
  "chrono",
  "defuse-wallet",
- "defuse-wallet-client",
+ "defuse-wallet-sdk",
  "ed25519-dalek",
  "futures",
  "hex",
@@ -1775,6 +1764,17 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "defuse-wallet-sdk"
+version = "0.1.0"
+dependencies = [
+ "defuse-wallet",
+ "ed25519-dalek",
+ "impl-tools",
+ "near-sdk",
+ "rand 0.10.0",
 ]
 
 [[package]]

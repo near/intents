@@ -33,7 +33,7 @@ wallet = [
   "defuse-sandbox/wallet",
   "defuse-test-utils/wallet",
   "dep:defuse-wallet",
-  "dep:defuse-wallet-client",
+  "dep:defuse-wallet-sdk",
   "deployer",
 ]
 
@@ -47,7 +47,7 @@ defuse-escrow-swap = { workspace = true, features = ["auth_call"], optional = tr
 defuse-poa-factory = { workspace = true, features = ["contract"], optional = true }
 defuse-sandbox = { workspace = true }
 defuse-wallet = { workspace = true, features = ["arbitrary", "concurrent", "ed25519"], optional = true }
-defuse-wallet-client = { workspace = true, features = ["ed25519"], optional = true }
+defuse-wallet-sdk = { workspace = true, features = ["ed25519"], optional = true }
 multi-token-receiver-stub = { path = "contracts/multi-token-receiver-stub" }
 
 defuse-fees.workspace = true

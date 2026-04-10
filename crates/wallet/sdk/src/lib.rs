@@ -15,13 +15,13 @@ use rand::{make_rng, rngs::SmallRng};
 
 pub const MAINNET: &str = "mainnet";
 
-pub struct WalletBuilder<S: Signer> {
+pub struct WalletSignerBuilder<S: Signer> {
     code: GlobalContractId,
     state: State<S::PublicKey>,
     signer: S,
 }
 
-impl<S: Signer> WalletBuilder<S> {
+impl<S: Signer> WalletSignerBuilder<S> {
     #[inline]
     pub fn new(code: GlobalContractId, signer: S) -> Self {
         Self {
@@ -60,8 +60,8 @@ impl<S: Signer> WalletBuilder<S> {
         self.state.state_init(self.code.clone())
     }
 
-    pub fn build(self) -> WalletClient<S> {
-        WalletClient {
+    pub fn build(self) -> WalletSigner<S> {
+        WalletSigner {
             chain_id: MAINNET.to_string(),
             account_id: self.state_init().derive_account_id(),
             code: self.code,
@@ -74,7 +74,7 @@ impl<S: Signer> WalletBuilder<S> {
 
 #[derive(Debug)]
 #[autoimpl(Deref using self.state)]
-pub struct WalletClient<S: Signer> {
+pub struct WalletSigner<S: Signer> {
     chain_id: String,
 
     code: GlobalContractId,
@@ -86,13 +86,13 @@ pub struct WalletClient<S: Signer> {
     signer: S,
 }
 
-impl<S> WalletClient<S>
+impl<S> WalletSigner<S>
 where
     S: Signer,
 {
     #[inline]
-    pub fn builder(code: GlobalContractId, signer: S) -> WalletBuilder<S> {
-        WalletBuilder::new(code, signer)
+    pub fn builder(code: GlobalContractId, signer: S) -> WalletSignerBuilder<S> {
+        WalletSignerBuilder::new(code, signer)
     }
 
     #[inline]
@@ -128,6 +128,7 @@ where
         Ok((msg, signature))
     }
 
+    /// Wraps [`Request`] in [`RequestMessage`] for signing
     fn wrap_request_msg(&mut self, request: Request) -> RequestMessage {
         RequestMessage {
             chain_id: self.chain_id.clone(),
@@ -135,17 +136,19 @@ where
             nonce: self.nonces.next(),
             // set `created_at` slightly before the actual time of signing,
             // so it doesn't fail on-chain if arrives too fast.
-            created_at: Deadline::now()
-                - Duration::from_secs(60)
-                    // TODO
-                    .min(self.state.nonces.timeout() / 10),
+            created_at: Deadline::now() - self.optimal_lag(),
             timeout: self.state.nonces.timeout(),
             request,
         }
     }
+
+    /// Returns an optimal lag for `created_at`, so it doesn't fail on-chain.
+    fn optimal_lag(&self) -> Duration {
+        Duration::from_secs(60).min(self.state.nonces.timeout() / 5)
+    }
 }
 
-impl<S> Clone for WalletClient<S>
+impl<S> Clone for WalletSigner<S>
 where
     S: Signer + Clone,
     S::PublicKey: Clone,
@@ -170,6 +173,6 @@ pub trait Signer {
     type Error;
 
     fn public_key(&self) -> Self::PublicKey;
-    // TODO: async?
+    // TODO: async
     fn sign(&self, msg: &RequestMessage) -> Result<Proof, Self::Error>;
 }

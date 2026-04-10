@@ -20,7 +20,7 @@ tokio.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]
-defuse-wallet-client.workspace = true
+defuse-wallet-sdk.workspace = true
 ed25519-dalek = { workspace = true, features = ["rand_core"] }
 hex.workspace = true
 near-kit = { workspace = true, features = ["sandbox"] }
