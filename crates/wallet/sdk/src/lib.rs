@@ -165,7 +165,7 @@ where
     }
 }
 
-/// Generic siagnature
+/// Generic signature
 pub type Proof = String;
 
 pub trait Signer {
