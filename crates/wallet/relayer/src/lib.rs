@@ -10,7 +10,8 @@ use chrono::{TimeDelta, Utc};
 use near_kit::{
     CryptoHash, FinalExecutionOutcome, Gas, InvalidTxError, Near, NearToken, TxExecutionStatus,
 };
-use near_sdk::{near, state_init::StateInit};
+use near_sdk::state_init::StateInit;
+use serde::{Deserialize, Serialize};
 use thiserror::Error as ThisError;
 use tracing::{field, instrument};
 
@@ -21,12 +22,10 @@ use self::wallet::signature::RequestMessage;
 #[derive(Debug)]
 pub struct Relayer {
     client: Near,
-    max_assist_deposit: NearToken,
     gas: Gas,
 }
 
-#[near(serializers = [json])] // TODO: get rid of `#[near]`?
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RelayRequest {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub state_init: Option<StateInit>,
@@ -38,25 +37,21 @@ pub struct RelayRequest {
 
 impl Relayer {
     #[allow(clippy::doc_markdown)]
+    // TODO: remove once https://github.com/near/nearcore/pull/15461 is on mainnet
     /// Only assist with at most 1yN: it's enough for a single permissioned
     /// action on Near: most contracts require 1yN of attached deposit to
     /// ensure predecessor is not using FunctionCall access key
-    const MAX_ASSIST_DEPOSIT_DEFAULT: NearToken = NearToken::from_yoctonear(1);
+    const MAX_ASSIST_DEPOSIT: NearToken = NearToken::from_yoctonear(1);
 
+    // TODO: change to 1PGas once protocol version 83 is on mainnet
+    // https://github.com/near/nearcore/releases/tag/2.11.0
     const GAS_DEFAULT: Gas = Gas::from_tgas(300);
 
     pub const fn new(client: Near) -> Self {
         Self {
             client,
-            max_assist_deposit: Self::MAX_ASSIST_DEPOSIT_DEFAULT,
             gas: Self::GAS_DEFAULT,
         }
-    }
-
-    #[must_use]
-    pub const fn max_assist_deposit(mut self, deposit: NearToken) -> Self {
-        self.max_assist_deposit = deposit;
-        self
     }
 
     #[must_use]
@@ -83,10 +78,10 @@ impl Relayer {
         deposit: NearToken,
         max_gas: impl Into<Option<Gas>>,
     ) -> Result<FinalExecutionOutcome> {
-        // TODO
-        // if request.msg.chain_id != self.client.chain_id().as_str() {
-        //     return Err(Error::InvalidChainId);
-        // }
+        // TODO: replace with `self.client.chain_id().as_str()`
+        if request.msg.chain_id != near_kit::ChainId::mainnet().as_str() {
+            return Err(Error::InvalidChainId);
+        }
 
         let mut tx = self.client.transaction(request.msg.signer_id.clone());
 
@@ -120,7 +115,7 @@ impl Relayer {
             .deposit(
                 needs_deposit
                     // assist with deposit, but capped so the relayer will not get drained
-                    .min(self.max_assist_deposit)
+                    .min(Self::MAX_ASSIST_DEPOSIT)
                     // attach optional given deposit, too
                     .saturating_add(deposit),
             )
