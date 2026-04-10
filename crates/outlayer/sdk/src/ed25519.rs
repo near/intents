@@ -1,11 +1,13 @@
+// TODO: may be make symlink?
 wit_bindgen::generate!({
-    path: "wit",
+    path: "../wit",
     world: "ed25519-world",
 });
 
 use crate::{OutlayerError, OutlayerResult};
 use outlayer::host::ed25519;
 
+// TODO: should we use defuse crypto?
 pub type Ed25519PublicKey = [u8; 32];
 pub type Ed25519Signature = [u8; 64];
 
