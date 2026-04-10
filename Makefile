@@ -4,7 +4,7 @@ MAKE_OUT_DIR_PREFIX ?= $(ROOT_DIR)target/makenear
 MAKE_OUT_DIR = $(eval MAKE_OUT_DIR := $(shell mkdir -p $(MAKE_OUT_DIR_PREFIX) $(DEFUSE_OUT_DIR) && mktemp -d -p $(MAKE_OUT_DIR_PREFIX)))$(MAKE_OUT_DIR)
 
 OUTLAYER_DIR := $(ROOT_DIR)crates/outlayer
-OUTLAYER_CARGO := cd $(OUTLAYER_DIR) && cargo
+OUTLAYER_CARGO := cd "$(OUTLAYER_DIR)" && cargo
 
 .DEFAULT_GOAL := all
 CONTRACT_CRATES := \
