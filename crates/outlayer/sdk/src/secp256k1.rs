@@ -1,5 +1,6 @@
-use defuse_outlayer_host::{CryptoHost, Curve, secp256k1::Secp256k1Curve};
 use outlayer::host::secp256k1;
+
+pub use defuse_outlayer_host::secp256k1::{Secp256k1Host, Secp256k1PublicKey, Secp256k1Signature};
 
 use crate::SysHost;
 
@@ -8,8 +9,8 @@ wit_bindgen::generate!({
     world: "secp256k1-world",
 });
 
-impl CryptoHost<Secp256k1Curve> for SysHost {
-    fn get_project_public_key(&self) -> <Secp256k1Curve as Curve>::PublicKey {
+impl Secp256k1Host for SysHost {
+    fn secp256k1_get_project_public_key() -> Secp256k1PublicKey {
         secp256k1::get_project_public_key()
             .expect("failed to get project public key")
             .bytes
@@ -17,7 +18,7 @@ impl CryptoHost<Secp256k1Curve> for SysHost {
             .expect("public key must be 64 bytes")
     }
 
-    fn derive_public_key(&self, path: impl AsRef<str>) -> <Secp256k1Curve as Curve>::PublicKey {
+    fn secp256k1_derive_public_key(path: impl AsRef<str>) -> Secp256k1PublicKey {
         secp256k1::derive_public_key(path.as_ref())
             .expect("failed to derive public key")
             .bytes
@@ -25,11 +26,7 @@ impl CryptoHost<Secp256k1Curve> for SysHost {
             .expect("public key must be 64 bytes")
     }
 
-    fn sign(
-        &self,
-        path: impl AsRef<str>,
-        msg: impl AsRef<[u8]>,
-    ) -> <Secp256k1Curve as Curve>::Signature {
+    fn secp256k1_sign(path: impl AsRef<str>, msg: impl AsRef<[u8]>) -> Secp256k1Signature {
         secp256k1::sign(path.as_ref(), msg.as_ref())
             .expect("failed to sign message")
             .bytes

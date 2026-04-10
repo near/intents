@@ -1,26 +1,25 @@
-use crate::{CryptoHost, Curve, DefaultHost};
+use crate::DefaultHost;
 
-pub struct Secp256k1Curve;
+// TODO: use defuse crypto?
+pub type Secp256k1PublicKey = [u8; 64];
+pub type Secp256k1Signature = [u8; 65];
 
-impl Curve for Secp256k1Curve {
-    type PublicKey = [u8; 64];
-    type Signature = [u8; 65];
+pub trait Secp256k1Host {
+    fn secp256k1_get_project_public_key() -> Secp256k1PublicKey;
+    fn secp256k1_derive_public_key(_path: impl AsRef<str>) -> Secp256k1PublicKey;
+    fn secp256k1_sign(_path: impl AsRef<str>, _msg: impl AsRef<[u8]>) -> Secp256k1Signature;
 }
 
-impl CryptoHost<Secp256k1Curve> for DefaultHost {
-    fn get_project_public_key(&self) -> <Secp256k1Curve as Curve>::PublicKey {
-        unimplemented!("get_project_public_key is not implemented for DefaultHost");
+impl Secp256k1Host for DefaultHost {
+    fn secp256k1_get_project_public_key() -> Secp256k1PublicKey {
+        unimplemented!("secp256k1_get_project_public_key is not implemented for DefaultHost");
     }
 
-    fn derive_public_key(&self, _path: impl AsRef<str>) -> <Secp256k1Curve as Curve>::PublicKey {
-        unimplemented!("derive_public_key is not implemented for DefaultHost");
+    fn secp256k1_derive_public_key(_path: impl AsRef<str>) -> Secp256k1PublicKey {
+        unimplemented!("secp256k1_derive_public_key is not implemented for DefaultHost");
     }
 
-    fn sign(
-        &self,
-        _path: impl AsRef<str>,
-        _msg: impl AsRef<[u8]>,
-    ) -> <Secp256k1Curve as Curve>::Signature {
-        unimplemented!("sign is not implemented for DefaultHost");
+    fn secp256k1_sign(_path: impl AsRef<str>, _msg: impl AsRef<[u8]>) -> Secp256k1Signature {
+        unimplemented!("secp256k1_sign is not implemented for DefaultHost");
     }
 }
