@@ -14,7 +14,7 @@ impl CryptoHost<Secp256k1Curve> for SysHost {
             .expect("failed to get project public key")
             .bytes
             .try_into()
-            .expect("public key must be 32 bytes")
+            .expect("public key must be 64 bytes")
     }
 
     fn derive_public_key(&self, path: impl AsRef<str>) -> <Secp256k1Curve as Curve>::PublicKey {
@@ -22,7 +22,7 @@ impl CryptoHost<Secp256k1Curve> for SysHost {
             .expect("failed to derive public key")
             .bytes
             .try_into()
-            .expect("public key must be 32 bytes")
+            .expect("public key must be 64 bytes")
     }
 
     fn sign(
@@ -34,6 +34,6 @@ impl CryptoHost<Secp256k1Curve> for SysHost {
             .expect("failed to sign message")
             .bytes
             .try_into()
-            .expect("signature must be 64 bytes")
+            .expect("signature must be 65 bytes")
     }
 }
