@@ -1,5 +1,5 @@
 use defuse_wallet::signature::RequestMessage;
-use near_sdk::serde::Serialize;
+use serde::Serialize;
 
 #[near_kit::contract]
 pub trait Wallet {
