@@ -10,12 +10,6 @@ wit_bindgen::generate!({
 });
 
 impl Ed25519Host for SysHost {
-    fn ed25519_get_project_public_key() -> Ed25519PublicKey {
-        ed25519::get_project_public_key()
-            .try_into()
-            .expect("public key must be 32 bytes")
-    }
-
     fn ed25519_derive_public_key(path: impl AsRef<str>) -> Ed25519PublicKey {
         ed25519::derive_public_key(path.as_ref())
             .try_into()
