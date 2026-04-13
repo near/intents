@@ -1549,6 +1549,9 @@ dependencies = [
 [[package]]
 name = "defuse-outlayer-host"
 version = "0.1.0"
+dependencies = [
+ "defuse-outlayer-types",
+]
 
 [[package]]
 name = "defuse-outlayer-sdk"
@@ -1556,6 +1559,7 @@ version = "0.1.0"
 dependencies = [
  "defuse-outlayer-host",
  "defuse-outlayer-sys",
+ "defuse-outlayer-types",
 ]
 
 [[package]]
@@ -1564,6 +1568,10 @@ version = "0.1.0"
 dependencies = [
  "wit-bindgen 0.49.0",
 ]
+
+[[package]]
+name = "defuse-outlayer-types"
+version = "0.1.0"
 
 [[package]]
 name = "defuse-poa-factory"

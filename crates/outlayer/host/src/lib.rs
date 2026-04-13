@@ -13,7 +13,7 @@ pub mod secp256k1;
 
 pub struct WorkerHost {
     #[cfg(feature = "ed25519")]
-    _ed25519: ed25519::Ed25519Host,
+    ed25519: ed25519::WorkerEd25519Host,
     #[cfg(feature = "secp256k1")]
-    _secp256k1: secp256k1::Secp256k1Host,
+    secp256k1: secp256k1::WorkerSecp256k1Host,
 }

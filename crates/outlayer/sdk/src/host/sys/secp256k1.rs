@@ -1,5 +1,5 @@
-use defuse_outlayer_host::secp256k1::{Secp256k1Host, Secp256k1PublicKey, Secp256k1Signature};
 use defuse_outlayer_sys::crypto::secp256k1;
+use defuse_outlayer_types::secp256k1::{Secp256k1Host, Secp256k1PublicKey, Secp256k1Signature};
 
 use super::SysHost;
 

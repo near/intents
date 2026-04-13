@@ -45,6 +45,7 @@ members = [
   "crates/testing/sandbox",
 
   "crates/outlayer/sys",
+  "crates/outlayer/types",
   "crates/outlayer/host",
   "crates/outlayer/sdk",
 
@@ -103,6 +104,7 @@ defuse-sandbox.path = "crates/testing/sandbox"
 defuse-test-utils.path = "crates/testing/utils"
 
 defuse-outlayer-sys.path = "crates/outlayer/sys"
+defuse-outlayer-types.path = "crates/outlayer/types"
 defuse-outlayer-host.path = "crates/outlayer/host"
 defuse-outlayer-sdk.path = "crates/outlayer/sdk"
 
