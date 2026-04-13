@@ -1,9 +1,0 @@
-package outlayer:host@0.1.0;
-
-world ed25519-world {
-    import ed25519;
-}
-
-world secp256k1-world {
-    import secp256k1;
-}

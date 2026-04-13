@@ -9,3 +9,11 @@ interface secp256k1 {
     derive-public-key: func(path: string) -> list<u8>;
     sign: func(path: string, msg: list<u8>) -> list<u8>;
 }
+
+world ed25519-world {
+    import ed25519;
+}
+
+world secp256k1-world {
+    import secp256k1;
+}

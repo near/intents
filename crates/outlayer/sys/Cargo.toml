@@ -1,0 +1,21 @@
+[package]
+name = "defuse-outlayer-sys"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["rlib"]
+
+[features]
+default = ["ed25519", "secp256k1"]
+
+ed25519 = []
+secp256k1 = []
+
+[dependencies]
+wit-bindgen.workspace = true

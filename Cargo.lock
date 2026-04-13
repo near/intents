@@ -1555,6 +1555,13 @@ name = "defuse-outlayer-sdk"
 version = "0.1.0"
 dependencies = [
  "defuse-outlayer-host",
+ "defuse-outlayer-sys",
+]
+
+[[package]]
+name = "defuse-outlayer-sys"
+version = "0.1.0"
+dependencies = [
  "wit-bindgen 0.49.0",
 ]
 

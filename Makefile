@@ -3,9 +3,6 @@ DEFUSE_OUT_DIR ?= $(ROOT_DIR)res
 MAKE_OUT_DIR_PREFIX ?= $(ROOT_DIR)target/makenear
 MAKE_OUT_DIR = $(eval MAKE_OUT_DIR := $(shell mkdir -p $(MAKE_OUT_DIR_PREFIX) $(DEFUSE_OUT_DIR) && mktemp -d -p $(MAKE_OUT_DIR_PREFIX)))$(MAKE_OUT_DIR)
 
-OUTLAYER_DIR := $(ROOT_DIR)crates/outlayer
-OUTLAYER_CARGO := cd "$(OUTLAYER_DIR)" && cargo
-
 .DEFAULT_GOAL := all
 CONTRACT_CRATES := \
     defuse \
@@ -47,7 +44,7 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
     )'))
 
 .PHONY: all
-all: $(ALL_TARGETS) outlayer
+all: $(ALL_TARGETS)
 
 .PHONY: help
 help:
@@ -63,7 +60,6 @@ help:
 	@echo "  test             Run all workspace tests"
 	@echo "  clippy           Run clippy lints"
 	@echo "  fmt              Format Rust files and Cargo.toml manifests"
-	@echo "  outlayer         Build outlayer workspace"
 	@echo "  help             Show this help"
 
 .PHONY: clean-out-dir
@@ -73,22 +69,18 @@ clean-out-dir:
 .PHONY: clean
 clean: clean-out-dir
 	cargo clean
-	$(OUTLAYER_CARGO) clean
 
 .PHONY: test
 test:
 	cargo test --workspace --all-targets
-	$(OUTLAYER_CARGO) test --workspace --all-targets
 
 .PHONY: check
 check:
 	cargo clippy --workspace --all-targets --no-deps
-	$(OUTLAYER_CARGO) clippy --workspace --all-targets --no-deps
 
 .PHONY: check-fmt
 check-fmt:
 	cargo fmt --all --check
-	$(OUTLAYER_CARGO) fmt --all --check
 	RUST_LOG=warn taplo format --check
 
 .PHONY: check-unused-deps
@@ -101,9 +93,4 @@ check-all: check-fmt check check-unused-deps
 .PHONY: fmt
 fmt:
 	cargo fmt --all
-	$(OUTLAYER_CARGO) fmt --all
 	taplo format
-
-.PHONY: outlayer
-outlayer:
-	$(OUTLAYER_CARGO) build --workspace --all-targets

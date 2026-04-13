@@ -1,4 +1,2 @@
 /target
 /res
-# TODO: remove after outlayer is moved to root workspace
-/crates/outlayer/target
