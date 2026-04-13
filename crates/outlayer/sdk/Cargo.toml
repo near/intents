@@ -14,14 +14,22 @@ crate-type = ["rlib"]
 [features]
 default = ["ed25519", "secp256k1"]
 
-ed25519 = ["defuse-outlayer-types/ed25519"]
-secp256k1 = ["defuse-outlayer-types/secp256k1"]
+ed25519 = [
+  "defuse-outlayer-host/ed25519",
+  "defuse-outlayer-sys/ed25519",
+  "defuse-outlayer-types/ed25519",
+]
+secp256k1 = [
+  "defuse-outlayer-host/secp256k1",
+  "defuse-outlayer-sys/secp256k1",
+  "defuse-outlayer-types/secp256k1",
+]
 
 [dependencies]
 defuse-outlayer-types.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-defuse-outlayer-sys = { workspace = true }
+defuse-outlayer-sys = { workspace = true, optional = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-defuse-outlayer-host.workspace = true
+defuse-outlayer-host = { workspace = true, optional = true }
