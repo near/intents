@@ -103,10 +103,10 @@ defuse-randomness.path = "crates/testing/randomness"
 defuse-sandbox.path = "crates/testing/sandbox"
 defuse-test-utils.path = "crates/testing/utils"
 
-defuse-outlayer-sys.path = "crates/outlayer/sys"
-defuse-outlayer-types.path = "crates/outlayer/types"
 defuse-outlayer-host.path = "crates/outlayer/host"
 defuse-outlayer-sdk.path = "crates/outlayer/sdk"
+defuse-outlayer-sys.path = "crates/outlayer/sys"
+defuse-outlayer-types.path = "crates/outlayer/types"
 
 defuse-tests.path = "tests"
 
