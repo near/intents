@@ -6,8 +6,6 @@ mod sys;
 use std::sync::OnceLock;
 
 pub use defuse_outlayer_host as host;
-#[cfg(not(target_family = "wasm"))]
-pub use native::HOST_SEED_ENV;
 
 #[cfg(target_family = "wasm")]
 type Host = sys::SysHost;

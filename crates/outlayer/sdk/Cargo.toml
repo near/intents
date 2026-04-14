@@ -15,14 +15,14 @@ crate-type = ["rlib"]
 default = ["ed25519", "secp256k1"]
 
 ed25519 = [
-  "defuse-outlayer-worker-host/ed25519",
-  "defuse-outlayer-sys/ed25519",
   "defuse-outlayer-host/ed25519",
+  "defuse-outlayer-sys/ed25519",
+  "defuse-outlayer-worker-host/ed25519",
 ]
 secp256k1 = [
-  "defuse-outlayer-worker-host/secp256k1",
-  "defuse-outlayer-sys/secp256k1",
   "defuse-outlayer-host/secp256k1",
+  "defuse-outlayer-sys/secp256k1",
+  "defuse-outlayer-worker-host/secp256k1",
 ]
 
 [dependencies]

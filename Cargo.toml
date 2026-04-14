@@ -104,9 +104,9 @@ defuse-sandbox.path = "crates/testing/sandbox"
 defuse-test-utils.path = "crates/testing/utils"
 
 defuse-outlayer-host.path = "crates/outlayer/host"
+defuse-outlayer-sdk.path = "crates/outlayer/sdk"
 defuse-outlayer-sys.path = "crates/outlayer/sys"
 defuse-outlayer-worker-host.path = "crates/outlayer/worker-host"
-defuse-outlayer-sdk.path = "crates/outlayer/sdk"
 
 defuse-tests.path = "tests"
 

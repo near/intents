@@ -17,14 +17,3 @@ pub struct WorkerHost {
     #[cfg(feature = "secp256k1")]
     secp256k1: secp256k1::WorkerSecp256k1Host,
 }
-
-impl WorkerHost {
-    pub const fn from_seed(_seed: &[u8]) -> Self {
-        Self {
-            #[cfg(feature = "ed25519")]
-            ed25519: ed25519::WorkerEd25519Host,
-            #[cfg(feature = "secp256k1")]
-            secp256k1: secp256k1::WorkerSecp256k1Host,
-        }
-    }
-}
