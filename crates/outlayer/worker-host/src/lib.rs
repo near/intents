@@ -19,7 +19,7 @@ pub struct WorkerHost {
 }
 
 impl WorkerHost {
-    pub fn from_seed(_seed: &[u8]) -> Self {
+    pub const fn from_seed(_seed: &[u8]) -> Self {
         Self {
             #[cfg(feature = "ed25519")]
             ed25519: ed25519::WorkerEd25519Host,
