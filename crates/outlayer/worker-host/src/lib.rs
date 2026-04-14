@@ -1,11 +1,7 @@
-#[cfg(feature = "ed25519")]
-pub mod ed25519;
-#[cfg(feature = "secp256k1")]
-pub mod secp256k1;
+#[cfg(feature = "crypto")]
+pub mod crypto;
 
 pub struct WorkerHost {
-    #[cfg(feature = "ed25519")]
-    ed25519: ed25519::WorkerEd25519Host,
-    #[cfg(feature = "secp256k1")]
-    secp256k1: secp256k1::WorkerSecp256k1Host,
+    #[cfg(feature = "crypto")]
+    crypto: crypto::CryptoHost,
 }
