@@ -5,7 +5,7 @@ use crate::{FunctionCallAction, PromiseAction, PromiseDAG, StateInitAction, Tran
 /// A single outgoing receipt
 #[cfg_attr(any(feature = "arbitrary", test), derive(arbitrary::Arbitrary))]
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PromiseSingle {
     /// Receiver of the receipt to be created.
     ///

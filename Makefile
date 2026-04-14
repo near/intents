@@ -83,7 +83,13 @@ CRATES_HOST_ONLY := \
     defuse-test-utils \
     defuse-sandbox \
     defuse-randomness \
-    defuse-tests
+    defuse-tests \
+    defuse-wallet-relayer
+
+# Crates excluded from check-all-features-host (still covered by `make check`).
+# defuse-wallet-relayer: aws-lc-sys build script breaks with --cfg clippy in RUSTFLAGS.
+CRATES_SKIP_HOST_FEATURES := \
+    defuse-wallet-relayer
 
 
 .DEFAULT_GOAL := all
@@ -139,7 +145,8 @@ all: $(ALL_TARGETS)
 .PHONY: check-all-features-host
 check-all-features-host::
 	$(CARGO_CHECK_HOST) --workspace --each-feature --exclude-no-default-features \
-	    $(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),--exclude $(call crate_name,$c))
+	    $(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),--exclude $(call crate_name,$c)) \
+	    $(addprefix --exclude ,$(CRATES_SKIP_HOST_FEATURES))
 
 $(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),\
   $(eval check-all-features-host::; \
