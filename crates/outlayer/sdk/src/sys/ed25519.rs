@@ -1,5 +1,5 @@
+use defuse_outlayer_host::ed25519::{Ed25519Host, Ed25519PublicKey, Ed25519Signature};
 use defuse_outlayer_sys::crypto::ed25519;
-use defuse_outlayer_types::ed25519::{Ed25519Host, Ed25519PublicKey, Ed25519Signature};
 
 use super::SysHost;
 

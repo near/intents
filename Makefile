@@ -54,7 +54,7 @@ help:
 	@$(foreach t,$(ALL_TARGETS),echo "  $(t)";)
 	@echo ""
 	@echo "Other targets:"
-	@echo "  all              Build all contracts and outlayer (default)"
+	@echo "  all              Build all contracts (default)"
 	@echo "  clean            Remove build artifacts and cargo clean"
 	@echo "  clean-out-dir    Remove output directory only"
 	@echo "  test             Run all workspace tests"
