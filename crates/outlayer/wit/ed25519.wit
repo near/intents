@@ -1,0 +1,10 @@
+package outlayer:host@0.1.0;
+
+interface ed25519 {
+    derive-public-key: func(path: string) -> list<u8>;
+    sign: func(path: string, msg: list<u8>) -> list<u8>;
+}
+
+world imports {
+    import ed25519;
+}

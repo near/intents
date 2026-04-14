@@ -1,6 +1,6 @@
 wit_bindgen::generate!({
-    path: "../wit/crypto.wit",
-    world: "ed25519-world",
+    path: "../wit/ed25519.wit",
+    world: "imports",
 });
 
 pub use outlayer::host::ed25519;
