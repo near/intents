@@ -79,12 +79,14 @@ CRATES_AT_LEAST_ONE_VARIANT := \
 # Testing crates that cannot compile for wasm32-unknown-unknown.
 # defuse-randomness uses rand/getrandom which lacks wasm32 support;
 # it only reaches the defuse contract via dev-dependencies, never in the WASM binary.
+# defuse-wallet-sdk uses getrandom (via rand) without a wasm backend feature.
 CRATES_HOST_ONLY := \
     defuse-test-utils \
     defuse-sandbox \
     defuse-randomness \
     defuse-tests \
-    defuse-wallet-relayer
+    defuse-wallet-relayer \
+    defuse-wallet-sdk
 
 # Crates excluded from check-all-features-host (still covered by `make check`).
 # defuse-wallet-relayer: aws-lc-sys build script breaks with --cfg clippy in RUSTFLAGS.

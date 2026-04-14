@@ -36,12 +36,12 @@ impl Contract {
     pub fn new(owner_id: Option<AccountId>, metadata: Option<FungibleTokenMetadata>) -> Self {
         let metadata = metadata.unwrap_or_else(|| FungibleTokenMetadata {
             spec: FT_METADATA_SPEC.to_string(),
-            name: String::default(),
-            symbol: String::default(),
-            icon: Option::default(),
-            reference: Option::default(),
-            reference_hash: Option::default(),
-            decimals: u8::default(),
+            name: String::new(),
+            symbol: String::new(),
+            icon: None,
+            reference: None,
+            reference_hash: None,
+            decimals: 0,
         });
         metadata.assert_valid();
 
