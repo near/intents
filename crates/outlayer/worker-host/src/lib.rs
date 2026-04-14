@@ -1,11 +1,3 @@
-#[cfg(target_family = "wasm")]
-compile_error!(
-    r#"The `host` crate is only meant to be used in a non-WebAssembly environment.
-    If you want to use host functionality in a WebAssembly environment,
-    please use the `defuse_outlayer_sdk` crate instead.
-"#
-);
-
 #[cfg(feature = "ed25519")]
 pub mod ed25519;
 #[cfg(feature = "secp256k1")]
