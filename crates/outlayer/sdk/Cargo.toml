@@ -8,20 +8,11 @@ repository.workspace = true
 [lints]
 workspace = true
 
-[features]
-default = ["crypto"]
-
-crypto = [
-  "defuse-outlayer-host/crypto",
-  "defuse-outlayer-sys/crypto",
-  "defuse-outlayer-worker-host/crypto",
-]
-
 [dependencies]
 defuse-outlayer-host.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-defuse-outlayer-sys = { workspace = true, optional = true }
+defuse-outlayer-sys.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-defuse-outlayer-worker-host = { workspace = true, optional = true }
+defuse-outlayer-worker-host.workspace = true
