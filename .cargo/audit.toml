@@ -23,14 +23,15 @@ ignore = [
   # our usage in build scripts.
   "RUSTSEC-2026-0008",
 
+  # rand 0.8.5 is pulled in transitively via zeropool-bn -> near-vm-runner ->
+  # near-sdk (already at latest 5.26.1). No 0.8.x fix exists for this advisory;
+  # it is fixed in 0.9.3+ and 0.10.1+ (both updated above). We do not use any
+  # custom logger that calls rand::rng(), so this cannot be triggered.
+  "RUSTSEC-2026-0097",
+
   # tokio-tar parses PAX extended headers incorrectly - no fix available.
   # Used only via testcontainers -> near-kit -> defuse-wallet-relayer (dev/test dep).
   # Not reachable in production contract code.
   "RUSTSEC-2025-0111",
 
-  # Rand is unsound when a custom logger that itself calls rand::rng() is
-  # installed - no fix available. We do not use any such logger, so this
-  # unsoundness cannot be triggered. Affects rand 0.8.x/0.9.x/0.10.x and
-  # transitive users (slipped10).
-  "RUSTSEC-2026-0097",
 ]
