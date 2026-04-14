@@ -1,12 +1,9 @@
-mod host;
+mod hosts;
 
-pub use defuse_outlayer_types as types;
-
-#[cfg(not(target_family = "wasm"))]
-pub use defuse_outlayer_host as workers;
+pub use defuse_outlayer_host as host;
 
 #[cfg(target_family = "wasm")]
 pub type Host = host::sys::SysHost;
 
 #[cfg(not(target_family = "wasm"))]
-pub type Host = defuse_outlayer_host::WorkerHost;
+pub type Host = defuse_outlayer_worker_host::WorkerHost;

@@ -1549,9 +1549,6 @@ dependencies = [
 [[package]]
 name = "defuse-outlayer-host"
 version = "0.1.0"
-dependencies = [
- "defuse-outlayer-types",
-]
 
 [[package]]
 name = "defuse-outlayer-sdk"
@@ -1559,7 +1556,7 @@ version = "0.1.0"
 dependencies = [
  "defuse-outlayer-host",
  "defuse-outlayer-sys",
- "defuse-outlayer-types",
+ "defuse-outlayer-worker-host",
 ]
 
 [[package]]
@@ -1570,8 +1567,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "defuse-outlayer-types"
+name = "defuse-outlayer-worker-host"
 version = "0.1.0"
+dependencies = [
+ "defuse-outlayer-host",
+]
 
 [[package]]
 name = "defuse-poa-factory"
