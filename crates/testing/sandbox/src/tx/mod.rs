@@ -148,6 +148,7 @@ impl TxBuilder {
             .with_signer(self.signer.signer().clone())
             .send_to(self.signer.network_config())
             .await
+            .map(|r| r.into_full().unwrap())
             .inspect(|r| eprintln!("{:#?}", TxOutcome::from(r)))
             .map_err(Into::into)
     }
