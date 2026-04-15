@@ -4,12 +4,8 @@ use near_sdk::{AccountId, base64::prelude::*, serde_json};
 use std::collections::BTreeMap;
 
 fn parse_hex_hash(s: &str) -> Result<[u8; 32], String> {
-    if let Some(s) = s.strip_prefix("0x") {
-        hex::decode(s).map_err(|err| format!("hex: {err}"))?
-    } else {
-        hex::decode(s).map_err(|err| format!("hex: {err}"))?
-    }
-    .try_into()
+    let s = s.strip_prefix("0x").unwrap_or(s);
+    hex::decode(s).map_err(|err| format!("hex: {err}"))?.try_into()
     .map_err(|_| "hash must be 32 bytes encoded as hex (with or without 0x prefix)".to_string())
 }
 
