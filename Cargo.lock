@@ -1547,6 +1547,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "defuse-outlayer-app"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "defuse-serde-utils",
+ "hex",
+ "near-sdk",
+ "url",
+]
+
+[[package]]
 name = "defuse-poa-factory"
 version = "0.1.0"
 dependencies = [
@@ -1591,6 +1602,7 @@ dependencies = [
  "defuse-global-deployer",
  "defuse-nep245",
  "defuse-nep413",
+ "defuse-outlayer-app",
  "defuse-poa-factory",
  "defuse-serde-utils",
  "defuse-test-utils",
@@ -1654,6 +1666,7 @@ dependencies = [
  "defuse-fees",
  "defuse-global-deployer",
  "defuse-near-utils",
+ "defuse-outlayer-app",
  "defuse-randomness",
  "defuse-sandbox",
  "defuse-serde-utils",
