@@ -117,10 +117,6 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
     [inputs][0].packages[] | select(.metadata.near.reproducible_build) | select(.name as $$n | $$allowed | any(. == $$n)) | \
     . as {$$name, manifest_path: $$mp} | .metadata.near.reproducible_build as $$b | \
     ($$name | gsub("-"; "_")) as $$wasm_base | \
-    (if .features | has("contract") then " --features contract" else "" end) as $$contract_flag | \
-    "$$(eval .PHONY: check-contract/\($$name))", \
-    "$$(eval check-contracts:: check-contract/\($$name))", \
-    "$$(eval check-contract/\($$name):; cargo clippy -p \($$name) --no-deps --target wasm32-unknown-unknown\($$contract_flag))", \
     "$$(eval .PHONY: \($$name)/all)", \
     "$$(eval ALL_TARGETS +=  \($$name)/all)", \
     "$$(eval \($$name)/all:: \($$name))", \
@@ -133,6 +129,10 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
      ($$vval.container_build_command | join(" ")) as $$non_reproducible_cmd | \
      (if $$reproducible != "" then $$reproducible_cmd else $$non_reproducible_cmd end) as $$cmd | \
      (if $$vkey == "" then "" else ".\($$vkey)" end) as $$suffix | \
+     ($$vval.container_build_command | map(select(startswith("--features="))) | if length > 0 then " " + first else "" end) as $$features_flag | \
+     "$$(eval .PHONY: check-contract/\($$tname))", \
+     "$$(eval check-contracts:: check-contract/\($$tname))", \
+     "$$(eval check-contract/\($$tname):; cargo clippy -p \($$name) --no-deps --target wasm32-unknown-unknown\($$features_flag))", \
      "$$(eval .PHONY: \($$tname))", \
      "$$(eval ALL_TARGETS += \($$tname))", \
      "$$(eval \($$name)/all:: \($$tname))", \
