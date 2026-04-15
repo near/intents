@@ -1,7 +1,7 @@
 use defuse_outlayer_host::crypto::ed25519::{Ed25519Host, Ed25519PublicKey, Ed25519Signature};
 use defuse_outlayer_sys::crypto::ed25519;
 
-use crate::sys::SysHost;
+use crate::host::sys::SysHost;
 
 impl Ed25519Host for SysHost {
     fn ed25519_derive_public_key(&self, path: impl AsRef<str>) -> Ed25519PublicKey {
