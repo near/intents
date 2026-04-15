@@ -53,6 +53,12 @@ All events follow [NEP-297](https://github.com/near/NEPs/blob/master/neps/nep-02
 
 `near-oa` computes the `StateInit` JSON for a new Outlayer App instance.
 
+### Install
+
+```sh
+cargo install --path contracts/outlayer-app --example near-oa
+```
+
 ### Running
 
 ```sh
