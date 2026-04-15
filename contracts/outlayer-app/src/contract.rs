@@ -5,7 +5,7 @@ use near_sdk::{
 
 use crate::{
     Event, OutlayerApp, State,
-    error::{ERR_SELF_TRANSFER, ERR_UNAUTHORIZED, ERR_REQUIRE_AT_LEAST_ONE_YOCTO},
+    error::{ERR_SELF_TRANSFER, ERR_UNAUTHORIZED, ERR_REQUIRE_AT_LEAST_ONE_YOCTO, ERR_WRONG_CODE_HASH},
 };
 
 #[near(
@@ -21,7 +21,7 @@ pub struct Contract(State);
 #[near]
 impl OutlayerApp for Contract {
     #[payable]
-    fn oa_set_code(&mut self, code_hash: AsHex<[u8; 32]>, code_url: String) {
+    fn oa_set_code(&mut self, old_code_hash: AsHex<[u8; 32]>, code_hash: AsHex<[u8; 32]>, code_url: String) {
         require!(
             env::attached_deposit() >= NearToken::from_yoctonear(1),
             ERR_REQUIRE_AT_LEAST_ONE_YOCTO
@@ -29,6 +29,10 @@ impl OutlayerApp for Contract {
         require!(
             self.is_admin(&env::predecessor_account_id()),
             ERR_UNAUTHORIZED
+        );
+        require!(
+            self.is_current_code_hash(&old_code_hash.into_inner()),
+            ERR_WRONG_CODE_HASH
         );
         self.set_code(code_hash.into_inner(), code_url);
     }
@@ -75,6 +79,10 @@ impl Contract {
         }
         .emit();
         self.0.admin_id = new_admin_id;
+    }
+
+    fn is_current_code_hash(&self, hash: &[u8; 32]) -> bool {
+        self.0.code_hash == *hash
     }
 
     fn is_admin(&self, account_id: &AccountIdRef) -> bool {
