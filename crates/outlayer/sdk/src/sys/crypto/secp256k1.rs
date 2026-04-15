@@ -1,7 +1,9 @@
-use defuse_outlayer_host::secp256k1::{Secp256k1Host, Secp256k1PublicKey, Secp256k1Signature};
+use defuse_outlayer_host::crypto::secp256k1::{
+    Secp256k1Host, Secp256k1PublicKey, Secp256k1Signature,
+};
 use defuse_outlayer_sys::crypto::secp256k1;
 
-use crate::SysHost;
+use crate::sys::SysHost;
 
 impl Secp256k1Host for SysHost {
     fn secp256k1_derive_public_key(&self, path: impl AsRef<str>) -> Secp256k1PublicKey {
