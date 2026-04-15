@@ -3,6 +3,8 @@ mod sys;
 
 use std::sync::LazyLock;
 
+pub use defuse_outlayer_host::*;
+
 #[cfg(target_family = "wasm")]
 type Host = sys::SysHost;
 
