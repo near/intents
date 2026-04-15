@@ -75,7 +75,7 @@ Usage: near-oa [OPTIONS] --admin-id <AccountId> --code-url <URL>
 Options:
       --admin-id <AccountId>  Admin account ID (controls code approval)
       --code-url <URL>        URL where the code binary can be fetched
-      --approve <HASH>        Pre-approve a SHA-256 code hash (hex, with or without 0x prefix)
+      --code-hash <HASH>      SHA-256 hash of the approved code (hex, with or without 0x prefix)
   -q, --quiet                 Output single-line JSON only (no human-readable annotations)
   -h, --help                  Print help
 ```
@@ -83,7 +83,7 @@ Options:
 ### Example
 
 ```bash
-cargo run -p defuse-outlayer-app --example near-oa -- \
+near-oa \
   --admin-id alice.near \
   --code-url https://example.com/contract.wasm
 ```
@@ -102,7 +102,7 @@ near transaction construct-transaction <admin-id> \
   data-from-json "$(near-oa \
     --admin-id <admin-id> \
     --code-url <url> \
-    --approve <code-sha256-hex> \
+    --code-hash <code-sha256-hex> \
     --quiet)" \
   deposit 0NEAR \
   skip \
