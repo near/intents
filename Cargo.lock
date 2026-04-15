@@ -1551,10 +1551,10 @@ name = "defuse-outlayer-app"
 version = "0.1.0"
 dependencies = [
  "clap",
- "defuse-borsh-utils",
  "defuse-serde-utils",
  "hex",
  "near-sdk",
+ "url",
 ]
 
 [[package]]

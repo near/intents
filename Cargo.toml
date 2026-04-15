@@ -148,6 +148,7 @@ tlb-ton = { version = "0.7.2", default-features = false }
 tokio = { version = "1.45", default-features = false }
 tracing = "0.1"
 tracing-subscriber = "0.3"
+url = "2"
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }

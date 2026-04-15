@@ -49,9 +49,9 @@ All events follow [NEP-297](https://github.com/near/NEPs/blob/master/neps/nep-02
 | `TransferAdmin` | `old_admin_id`, `new_admin_id` | Admin transferred                 |
 
 
-## `near-oa` CLI tool
+## `near oa` extension
 
-`near-oa` computes the `StateInit` JSON for a new Outlayer App instance.
+The `near-oa` command is an extension for [near-cli-rs](https://github.com/near/near-cli-rs) that computes the `StateInit` for a outlayer-app contract, outputting a JSON map of base64-encoded key-value pairs.
 
 ### Install
 
@@ -62,7 +62,7 @@ cargo install --path contracts/outlayer-app --example near-oa
 ### Running
 
 ```sh
-near-oa [OPTIONS] --admin-id <AccountId> --code-url <URL>
+near oa [OPTIONS] --admin-id <AccountId> --code-url <URL>
 ```
 
 ### Usage
@@ -83,13 +83,14 @@ Options:
 ### Example
 
 ```bash
-near-oa \
+near oa \
   --admin-id alice.near \
+  --code-hash faf9e8500fdf8021ed8b3390580bbc86faf9e8500fdf8021ed8b3390580bbc86 \
   --code-url https://example.com/contract.wasm
 ```
 ```
 admin_id:            alice.near
-code_hash:           0000000000000000000000000000000000000000000000000000000000000000
+code_hash:           faf9e8500fdf8021ed8b3390580bbc86faf9e8500fdf8021ed8b3390580bbc86
 code_url:            https://example.com/contract.wasm
 {"":"..."}
 ```

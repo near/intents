@@ -4,7 +4,6 @@ pub mod error;
 
 use std::{borrow::Cow, collections::BTreeMap};
 
-pub use defuse_borsh_utils::adapters::{AsWrap, Remainder};
 pub use defuse_serde_utils::hex::AsHex;
 use near_sdk::{
     AccountId, AccountIdRef, borsh, near,
@@ -21,8 +20,8 @@ pub trait OutlayerApp {
     fn oa_set_code(
         &mut self,
         old_code_hash: AsHex<[u8; 32]>,
-        code_hash: AsHex<[u8; 32]>,
-        code_url: String,
+        new_code_hash: AsHex<[u8; 32]>,
+        new_code_url: String,
     );
 
     /// Sets a new admin.
@@ -31,7 +30,7 @@ pub trait OutlayerApp {
     fn oa_transfer_admin(&mut self, new_admin_id: AccountId);
 
     /// Returns the current admin's account ID.
-    fn oa_admin_id(&self) -> &AccountId;
+    fn oa_admin_id(&self) -> AccountId;
 
     /// Returns the approved code hash
     fn oa_code_hash(&self) -> AsHex<[u8; 32]>;

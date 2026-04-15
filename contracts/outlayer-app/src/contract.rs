@@ -1,19 +1,18 @@
 use defuse_serde_utils::hex::AsHex;
-use near_sdk::{
-    AccountId, AccountIdRef, NearToken, PanicOnDefault, assert_one_yocto, env, near, require,
-};
+use near_sdk::{AccountId, AccountIdRef, NearToken, PanicOnDefault, env, near, require};
 
 use crate::{
     Event, OutlayerApp, State,
     error::{
-        ERR_REQUIRE_AT_LEAST_ONE_YOCTO, ERR_SELF_TRANSFER, ERR_UNAUTHORIZED, ERR_WRONG_CODE_HASH,
+        ERR_INSUFFICIENT_DEPOSIT, ERR_REQUIRE_ONE_YOCTO, ERR_SELF_TRANSFER, ERR_UNAUTHORIZED,
+        ERR_WRONG_CODE_HASH,
     },
 };
 
 #[near(
     contract_state(key = State::STATE_KEY),
     contract_metadata(
-        standard(standard = "near-outlayer-app", version = "1.0.0")
+        standard(standard = "outlayer-app", version = "1.0.0")
     )
 )]
 #[derive(PanicOnDefault)]
@@ -26,12 +25,12 @@ impl OutlayerApp for Contract {
     fn oa_set_code(
         &mut self,
         old_code_hash: AsHex<[u8; 32]>,
-        code_hash: AsHex<[u8; 32]>,
-        code_url: String,
+        new_code_hash: AsHex<[u8; 32]>,
+        new_code_url: String,
     ) {
         require!(
             env::attached_deposit() >= NearToken::from_yoctonear(1),
-            ERR_REQUIRE_AT_LEAST_ONE_YOCTO
+            ERR_INSUFFICIENT_DEPOSIT
         );
         require!(
             self.is_admin(&env::predecessor_account_id()),
@@ -41,12 +40,16 @@ impl OutlayerApp for Contract {
             self.is_current_code_hash(&old_code_hash.into_inner()),
             ERR_WRONG_CODE_HASH
         );
-        self.set_code(code_hash.into_inner(), code_url);
+        self.set_code(new_code_hash.into_inner(), new_code_url);
     }
 
     #[payable]
     fn oa_transfer_admin(&mut self, new_admin_id: AccountId) {
-        assert_one_yocto();
+        require!(
+            env::attached_deposit() == NearToken::from_yoctonear(1),
+            ERR_REQUIRE_ONE_YOCTO
+        );
+
         require!(
             self.is_admin(&env::predecessor_account_id()),
             ERR_UNAUTHORIZED
@@ -55,8 +58,8 @@ impl OutlayerApp for Contract {
         self.transfer_admin(new_admin_id);
     }
 
-    fn oa_admin_id(&self) -> &AccountId {
-        &self.0.admin_id
+    fn oa_admin_id(&self) -> AccountId {
+        self.0.admin_id.clone()
     }
 
     fn oa_code_hash(&self) -> AsHex<[u8; 32]> {
