@@ -109,9 +109,9 @@ near-api-types = "0.8.6"
 near-contract-standards = "5.24"
 near-crypto = "0.34.1"
 near-kit = { version = "0.9.0", default-features = false }
-near-openapi-types = "0.6.0"
+near-openapi-types = "0.8.0"
 near-plugins = "0.5.1"
-near-sandbox = "0.3.5"
+near-sandbox = "0.3.9"
 near-sdk = "5.26.1"
 near-workspaces = "0.22"
 
