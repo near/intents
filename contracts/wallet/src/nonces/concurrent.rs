@@ -1,4 +1,4 @@
-use rand_core::Rng;
+use rand_core::{Rng, SeedableRng};
 
 /// Endless [`Iterator`] for generating non-sequential nonces semi-sequentially,
 /// allowing for multiple concurrent clients while being optimized for storage.
@@ -14,10 +14,29 @@ impl<R> ConcurrentNonces<R>
 where
     R: Rng,
 {
-    const BIT_POS_MASK: u32 = 0b11111;
+    const BIT_POS_MASK: u32 = (1 << u32::BITS.ilog2()) - 1;
 
+    #[inline]
     pub const fn new(rng: R) -> Self {
         Self { next: 0, rng }
+    }
+
+    #[allow(clippy::should_implement_trait)]
+    pub fn next(&mut self) -> u32 {
+        if self.next & Self::BIT_POS_MASK == 0 {
+            self.next = self.rng.next_u32() & !Self::BIT_POS_MASK;
+        }
+        let n = self.next;
+        self.next = self.next.wrapping_add(1);
+        n
+    }
+
+    #[must_use]
+    pub fn fork(&mut self) -> Self
+    where
+        R: SeedableRng,
+    {
+        Self::new(self.rng.fork())
     }
 }
 
@@ -28,12 +47,7 @@ where
     type Item = u32;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.next & Self::BIT_POS_MASK == 0 {
-            self.next = self.rng.next_u32() & !Self::BIT_POS_MASK;
-        }
-        let n = self.next;
-        self.next = self.next.wrapping_add(1);
-        Some(n)
+        Some(self.next())
     }
 }
 

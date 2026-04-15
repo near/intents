@@ -28,7 +28,7 @@ pub trait SigningStandard<M> {
 }
 
 #[near(serializers = [borsh, json])]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct RequestMessage {
     /// Chain id (e.g. `mainnet`).
     /// MUST be equal to `chain_id` of the network.

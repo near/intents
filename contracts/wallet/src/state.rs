@@ -4,9 +4,10 @@ use std::{
 };
 
 use near_sdk::{
-    AccountId, AccountIdRef,
+    AccountId, AccountIdRef, GlobalContractId,
     borsh::{self, BorshSerialize},
     near,
+    state_init::{StateInit, StateInitV1},
 };
 
 use crate::Nonces;
@@ -117,18 +118,28 @@ impl<PubKey> State<PubKey> {
         self.extensions.contains(account_id.as_ref())
     }
 
-    /// Returns initialization state for Deterministic `AccountId` derivation
-    /// as per NEP-616.
+    /// Returns `data` for [`StateInit`] of Deterministic `AccountId` (NEP-616)
     #[inline]
     pub fn as_storage(&self) -> BTreeMap<Vec<u8>, Vec<u8>>
     where
         PubKey: BorshSerialize,
-        Nonces: BorshSerialize,
     {
         [(
             STATE_KEY.to_vec(),
             borsh::to_vec(self).unwrap_or_else(|_| unreachable!()),
         )]
         .into()
+    }
+
+    /// Returns [`StateInit`] of Deterministic `AccountId` (NEP-616).
+    #[inline]
+    pub fn state_init(&self, code: GlobalContractId) -> StateInit
+    where
+        PubKey: BorshSerialize,
+    {
+        StateInit::V1(StateInitV1 {
+            code,
+            data: self.as_storage(),
+        })
     }
 }
