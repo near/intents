@@ -62,7 +62,7 @@ cargo install --path contracts/outlayer-app --example near-oa
 ### Running
 
 ```sh
-cargo run -p defuse-outlayer-app --example near-oa
+near-oa [OPTIONS] --admin-id <AccountId> --code-url <URL>
 ```
 
 ### Usage

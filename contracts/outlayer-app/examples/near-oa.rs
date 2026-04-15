@@ -21,9 +21,10 @@ struct Args {
     #[arg(long, value_name = "URL")]
     code_url: String,
 
-    /// Pre-approve a SHA-256 code hash (hex, with or without 0x prefix).
+    /// SHA-256 hash of the approved code (hex, with or without 0x prefix).
+    /// Defaults to all-zeros if omitted.
     #[arg(long, value_parser = parse_hex_hash, value_name = "HASH")]
-    approve: Option<[u8; 32]>,
+    code_hash: Option<[u8; 32]>,
 
     /// Output single-line JSON only (no human-readable annotations)
     #[arg(short, long)]
@@ -33,7 +34,7 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    let code_hash = args.approve.unwrap_or([0u8; 32]);
+    let code_hash = args.code_hash.unwrap_or([0u8; 32]);
     let state = State::new(args.admin_id.clone(), code_hash, args.code_url.clone());
 
     if !args.quiet {
