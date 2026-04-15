@@ -20,15 +20,17 @@ ignore = [
   # Ignore git2 unsound advisory - it comes from cargo-near-build (0.9.0)
   # which depends on git2 0.19, and related to the undefined behavior
   # after dereferencing an empty buffer, which does not affect
-  # our usage in build scripts. 
+  # our usage in build scripts.
   "RUSTSEC-2026-0008",
 
-  # Ignore tokio-tar advisory - its usage there would only be triggered
-  # when extracting tar archives from Docker image layers during test execution
-  "RUSTSEC-2025-0111",
-
-  # Ignore rand soundness advisory - it only manifests with a custom 
-  # global logger that calls rand::rng() during initialization, 
-  # which is not applicable to our usage.
+  # rand 0.8.5 is pulled in transitively via zeropool-bn -> near-vm-runner ->
+  # near-sdk (already at latest 5.26.1). No 0.8.x fix exists for this advisory;
+  # it is fixed in 0.9.3+ and 0.10.1+ (both updated above). We do not use any
+  # custom logger that calls rand::rng(), so this cannot be triggered.
   "RUSTSEC-2026-0097",
+
+  # tokio-tar parses PAX extended headers incorrectly - no fix available.
+  # Used only via testcontainers -> near-kit -> defuse-wallet-relayer (dev/test dep).
+  # Not reachable in production contract code.
+  "RUSTSEC-2025-0111",
 ]
