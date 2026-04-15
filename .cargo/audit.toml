@@ -24,6 +24,11 @@ ignore = [
   "RUSTSEC-2026-0008",
 
   # Ignore tokio-tar advisory - its usage there would only be triggered
-  # when extracting tar archives from Docker image layers during test execution 
+  # when extracting tar archives from Docker image layers during test execution
   "RUSTSEC-2025-0111",
+
+  # Ignore rand soundness advisory - it only manifests with a custom 
+  # global logger that calls rand::rng() during initialization, 
+  # which is not applicable to our usage.
+  "RUSTSEC-2026-0097",
 ]

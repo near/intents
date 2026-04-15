@@ -115,7 +115,7 @@ near-account-id = "2.4.0"
 near-api = "0.8.3"
 near-api-types = "0.8.3"
 near-contract-standards = "5.24"
-near-crypto = "0.34.1"
+near-crypto = "0.35.0"
 near-kit = { version = "0.8.0", default-features = false }
 near-openapi-types = "0.6.0"
 near-plugins = "0.5.1"
