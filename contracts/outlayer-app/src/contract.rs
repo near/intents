@@ -14,8 +14,8 @@ use crate::{
         standard(standard = "near-outlayer-app", version = "1.0.0")
     )
 )]
-#[repr(transparent)]
 #[derive(PanicOnDefault)]
+#[repr(transparent)]
 pub struct Contract(State);
 
 #[near]
