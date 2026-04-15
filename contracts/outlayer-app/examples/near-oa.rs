@@ -5,8 +5,10 @@ use std::collections::BTreeMap;
 
 fn parse_hex_hash(s: &str) -> Result<[u8; 32], String> {
     let s = s.strip_prefix("0x").unwrap_or(s);
-    hex::decode(s).map_err(|err| format!("hex: {err}"))?.try_into()
-    .map_err(|_| "hash must be 32 bytes encoded as hex (with or without 0x prefix)".to_string())
+    hex::decode(s)
+        .map_err(|err| format!("hex: {err}"))?
+        .try_into()
+        .map_err(|_| "hash must be 32 bytes encoded as hex (with or without 0x prefix)".to_string())
 }
 
 #[derive(Parser)]

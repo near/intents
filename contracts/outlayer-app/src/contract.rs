@@ -5,7 +5,9 @@ use near_sdk::{
 
 use crate::{
     Event, OutlayerApp, State,
-    error::{ERR_SELF_TRANSFER, ERR_UNAUTHORIZED, ERR_REQUIRE_AT_LEAST_ONE_YOCTO, ERR_WRONG_CODE_HASH},
+    error::{
+        ERR_REQUIRE_AT_LEAST_ONE_YOCTO, ERR_SELF_TRANSFER, ERR_UNAUTHORIZED, ERR_WRONG_CODE_HASH,
+    },
 };
 
 #[near(
@@ -21,7 +23,12 @@ pub struct Contract(State);
 #[near]
 impl OutlayerApp for Contract {
     #[payable]
-    fn oa_set_code(&mut self, old_code_hash: AsHex<[u8; 32]>, code_hash: AsHex<[u8; 32]>, code_url: String) {
+    fn oa_set_code(
+        &mut self,
+        old_code_hash: AsHex<[u8; 32]>,
+        code_hash: AsHex<[u8; 32]>,
+        code_url: String,
+    ) {
         require!(
             env::attached_deposit() >= NearToken::from_yoctonear(1),
             ERR_REQUIRE_AT_LEAST_ONE_YOCTO

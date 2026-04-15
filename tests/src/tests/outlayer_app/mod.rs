@@ -31,7 +31,6 @@ pub async fn outlayer_app_env(#[future(awt)] sandbox: Sandbox) -> OutlayerAppEnv
     }
 }
 
-
 #[rstest]
 #[tokio::test]
 async fn test_deploy(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
@@ -49,7 +48,10 @@ async fn test_deploy(#[future(awt)] outlayer_app_env: OutlayerAppEnv) {
 
     assert_eq!(instance.oa_admin_id().await.unwrap(), *alice.id());
     assert_eq!(instance.oa_code_hash().await.unwrap(), [0u8; 32]);
-    assert_eq!(instance.oa_code_url().await.unwrap(), EXAMPLE_URL.to_string());
+    assert_eq!(
+        instance.oa_code_url().await.unwrap(),
+        EXAMPLE_URL.to_string()
+    );
 }
 
 #[rstest]

@@ -18,7 +18,12 @@ pub trait OutlayerApp {
     /// Approves a new code hash and sets the code URL atomically.
     /// Admin-only. Must attach at least 1yN.
     /// Emits [`Event::SetCode`].
-    fn oa_set_code(&mut self, old_code_hash: AsHex<[u8; 32]>, code_hash: AsHex<[u8; 32]>, code_url: String);
+    fn oa_set_code(
+        &mut self,
+        old_code_hash: AsHex<[u8; 32]>,
+        code_hash: AsHex<[u8; 32]>,
+        code_url: String,
+    );
 
     /// Sets a new admin.
     /// Admin-only. Requires 1 yoctoNEAR. No self-transfer.
