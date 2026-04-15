@@ -61,13 +61,17 @@ impl OutlayerAppExt for SigningAccount {
         &self,
         target: &AccountId,
         old_code_hash: [u8; 32],
-        code_hash: [u8; 32],
-        code_url: String,
+        new_code_hash: [u8; 32],
+        new_code_url: String,
     ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
             .function_call(
                 FnCallBuilder::new("oa_set_code")
-                    .json_args(json!({"old_code_hash": AsHex(old_code_hash), "code_hash": AsHex(code_hash), "code_url": code_url}))
+                    .json_args(json!({
+                        "old_code_hash": AsHex(old_code_hash),
+                        "new_code_hash": AsHex(new_code_hash),
+                        "new_code_url": new_code_url,
+                    }))
                     .with_deposit(NearToken::from_yoctonear(1)),
             )
             .await
