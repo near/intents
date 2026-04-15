@@ -22,4 +22,8 @@ ignore = [
   # after dereferencing an empty buffer, which does not affect
   # our usage in build scripts. 
   "RUSTSEC-2026-0008",
+
+  # Ignore tokio-tar advisory - its usage there would only be triggered
+  # when extracting tar archives from Docker image layers during test execution 
+  "RUSTSEC-2025-0111"
 ]
