@@ -1,9 +1,6 @@
 #[cfg(feature = "contract")]
 mod contract;
 pub mod error;
-pub mod utils;
-
-pub use utils::Url;
 
 use std::{borrow::Cow, collections::BTreeMap};
 
@@ -21,7 +18,7 @@ pub trait OutlayerApp {
     /// Approves a new code hash and sets the code URL atomically.
     /// Admin-only. Must attach at least 1yN.
     /// Emits [`Event::SetCode`].
-    fn oa_set_code(&mut self, code_hash: AsHex<[u8; 32]>, code_url: Url);
+    fn oa_set_code(&mut self, code_hash: AsHex<[u8; 32]>, code_url: String);
 
     /// Sets a new admin.
     /// Admin-only. Requires 1 yoctoNEAR. No self-transfer.
@@ -35,7 +32,7 @@ pub trait OutlayerApp {
     fn oa_code_hash(&self) -> AsHex<[u8; 32]>;
 
     /// Returns where the code binary can be found.
-    fn oa_code_url(&self) -> Url;
+    fn oa_code_url(&self) -> String;
 }
 
 use near_sdk::ext_contract;
@@ -48,7 +45,7 @@ pub enum Event<'a> {
     SetCode {
         #[serde_as(as = "Hex")]
         hash: [u8; 32],
-        url: Url,
+        url: String,
     },
 
     #[event_version("1.0.0")]
@@ -66,13 +63,13 @@ pub struct State {
     pub admin_id: AccountId,
     #[serde_as(as = "Hex")]
     pub code_hash: [u8; 32],
-    pub code_url: Url,
+    pub code_url: String,
 }
 
 impl State {
     pub const STATE_KEY: &[u8] = b"";
 
-    pub fn new(admin_id: impl Into<AccountId>, code_hash: [u8; 32], code_url: Url) -> Self {
+    pub fn new(admin_id: impl Into<AccountId>, code_hash: [u8; 32], code_url: String) -> Self {
         Self {
             admin_id: admin_id.into(),
             code_hash,

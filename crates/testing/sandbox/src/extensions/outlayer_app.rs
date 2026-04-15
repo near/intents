@@ -1,5 +1,5 @@
 use crate::{Account, SigningAccount, anyhow, tx::FnCallBuilder};
-use defuse_outlayer_app::{State as OutlayerState, Url};
+use defuse_outlayer_app::State as OutlayerState;
 use defuse_serde_utils::hex::AsHex;
 use near_api::types::transaction::result::ExecutionSuccess;
 use near_sdk::{
@@ -21,7 +21,7 @@ pub trait OutlayerAppExt {
         &self,
         target: &AccountId,
         code_hash: [u8; 32],
-        code_url: Url,
+        code_url: String,
     ) -> anyhow::Result<ExecutionSuccess>;
 
     async fn oa_transfer_admin(
@@ -35,7 +35,7 @@ pub trait OutlayerAppExt {
 pub trait OutlayerAppViewExt {
     async fn oa_admin_id(&self) -> anyhow::Result<AccountId>;
     async fn oa_code_hash(&self) -> anyhow::Result<[u8; 32]>;
-    async fn oa_code_url(&self) -> anyhow::Result<Url>;
+    async fn oa_code_url(&self) -> anyhow::Result<String>;
 }
 
 impl OutlayerAppExt for SigningAccount {
@@ -60,7 +60,7 @@ impl OutlayerAppExt for SigningAccount {
         &self,
         target: &AccountId,
         code_hash: [u8; 32],
-        code_url: Url,
+        code_url: String,
     ) -> anyhow::Result<ExecutionSuccess> {
         self.tx(target)
             .function_call(
@@ -96,7 +96,7 @@ impl OutlayerAppViewExt for Account {
         Ok(hash.into_inner())
     }
 
-    async fn oa_code_url(&self) -> anyhow::Result<Url> {
+    async fn oa_code_url(&self) -> anyhow::Result<String> {
         self.call_view_function_json("oa_code_url", ()).await
     }
 }

@@ -4,8 +4,8 @@ use near_sdk::{
 };
 
 use crate::{
-    Event, OutlayerApp, State, Url,
-    error::{ERR_SELF_TRANSFER, ERR_UNAUTHORIZED},
+    Event, OutlayerApp, State,
+    error::{ERR_SELF_TRANSFER, ERR_UNAUTHORIZED, ERR_REQUIRE_AT_LEAST_ONE_YOCTO},
 };
 
 #[near(
@@ -21,10 +21,10 @@ pub struct Contract(State);
 #[near]
 impl OutlayerApp for Contract {
     #[payable]
-    fn oa_set_code(&mut self, code_hash: AsHex<[u8; 32]>, code_url: Url) {
+    fn oa_set_code(&mut self, code_hash: AsHex<[u8; 32]>, code_url: String) {
         require!(
             env::attached_deposit() >= NearToken::from_yoctonear(1),
-            "requires at least 1 yoctoNEAR"
+            ERR_REQUIRE_AT_LEAST_ONE_YOCTO
         );
         require!(
             self.is_admin(&env::predecessor_account_id()),
@@ -52,13 +52,13 @@ impl OutlayerApp for Contract {
         self.0.code_hash.into()
     }
 
-    fn oa_code_url(&self) -> Url {
+    fn oa_code_url(&self) -> String {
         self.0.code_url.clone()
     }
 }
 
 impl Contract {
-    fn set_code(&mut self, code_hash: [u8; 32], url: Url) {
+    fn set_code(&mut self, code_hash: [u8; 32], url: String) {
         self.0.code_hash = code_hash;
         self.0.code_url = url.clone();
         Event::SetCode {

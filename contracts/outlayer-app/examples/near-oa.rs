@@ -1,5 +1,5 @@
 use clap::Parser;
-use defuse_outlayer_app::{State, Url};
+use defuse_outlayer_app::State;
 use near_sdk::{AccountId, base64::prelude::*, serde_json};
 use std::collections::BTreeMap;
 
@@ -33,14 +33,13 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    let url = Url::parse(&args.code_url).unwrap_or_else(|e| panic!("invalid --code-url: {e}"));
     let code_hash = args.approve.unwrap_or([0u8; 32]);
-    let state = State::new(args.admin_id.clone(), code_hash, url);
+    let state = State::new(args.admin_id.clone(), code_hash, args.code_url.clone());
 
     if !args.quiet {
         eprintln!("{:<20} {}", "admin_id:", state.admin_id);
         eprintln!("{:<20} {}", "code_hash:", hex::encode(state.code_hash));
-        eprintln!("{:<20} {}", "code_url:", state.code_url.0);
+        eprintln!("{:<20} {}", "code_url:", state.code_url);
     }
 
     let state_init = state.state_init();
