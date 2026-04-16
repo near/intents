@@ -33,5 +33,4 @@ ignore = [
   # Used only via testcontainers -> near-kit -> defuse-wallet-relayer (dev/test dep).
   # Not reachable in production contract code.
   "RUSTSEC-2025-0111",
-
 ]
