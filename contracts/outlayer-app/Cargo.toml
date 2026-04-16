@@ -1,0 +1,41 @@
+[package]
+name = "defuse-outlayer-app"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[lints]
+workspace = true
+
+[features]
+abi = ["defuse-serde-utils/abi", "near-sdk/abi"]
+contract = []
+
+[dependencies]
+defuse-serde-utils.workspace = true
+near-sdk.workspace = true
+
+[dev-dependencies]
+clap = { workspace = true, features = ["wrap_help"] }
+hex.workspace = true
+near-sdk = { workspace = true, features = ["non-contract-usage"] }
+url.workspace = true
+
+[package.metadata.near.reproducible_build]
+image = "sourcescan/cargo-near:0.19.0-rust-1.86.0"
+image_digest = "sha256:772638e343baeeea24e49062c7d424274f3441452cc06ce97fc4e5695b19fecc"
+passed_env = []
+container_build_command = [
+  "cargo",
+  "near",
+  "build",
+  "non-reproducible-wasm",
+  "--locked",
+  "--features=contract",
+  "--abi-features=abi,contract",
+  "--no-embed-abi",
+]

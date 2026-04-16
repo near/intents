@@ -4,6 +4,7 @@ members = [
   "contracts/defuse",
   "contracts/defuse/core",
   "contracts/global-deployer",
+  "contracts/outlayer-app",
   "contracts/escrow-swap",
   "contracts/poa/factory",
   "contracts/poa/token",
@@ -64,6 +65,7 @@ defuse.path = "contracts/defuse"
 defuse-core.path = "contracts/defuse/core"
 defuse-escrow-swap.path = "contracts/escrow-swap"
 defuse-global-deployer.path = "contracts/global-deployer"
+defuse-outlayer-app.path = "contracts/outlayer-app"
 defuse-poa-factory.path = "contracts/poa/factory"
 defuse-poa-token.path = "contracts/poa/token"
 defuse-wallet.path = "contracts/wallet"
@@ -112,14 +114,14 @@ defuse-tests.path = "tests"
 
 cargo-near-build = "0.9.0"
 near-account-id = "2.4.0"
-near-api = "0.8.3"
-near-api-types = "0.8.3"
+near-api = "0.8.6"
+near-api-types = "0.8.6"
 near-contract-standards = "5.24"
 near-crypto = "0.35.0"
-near-kit = { version = "0.8.0", default-features = false }
-near-openapi-types = "0.6.0"
+near-kit = { version = "0.9.0", default-features = false }
+near-openapi-types = "0.8.0"
 near-plugins = "0.5.1"
-near-sandbox = "0.3.5"
+near-sandbox = "0.3.9"
 near-sdk = "5.26.1"
 near-workspaces = "0.22"
 
@@ -157,6 +159,7 @@ tlb-ton = { version = "0.7.2", default-features = false }
 tokio = { version = "1.45", default-features = false }
 tracing = "0.1"
 tracing-subscriber = "0.3"
+url = "2"
 
 wasmtime = { version = ">=36.0.7", features = ["component-model"] }
 wasmtime-wasi = ">=36.0.7"
