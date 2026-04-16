@@ -51,7 +51,7 @@ check-examples:
 	RUSTFLAGS='$(RUSTFLAGS_CHECK)' cargo clippy --workspace --examples
 
 .PHONY: check-all
-check-all: check-fmt check check-examples check-all-features check-unused-deps
+check-all: check-fmt check-unused-deps check check-examples check-all-features
 
 .PHONY: fmt
 fmt:
@@ -99,6 +99,7 @@ CONTRACT_CRATES := \
     defuse \
     defuse-escrow-swap \
     defuse-global-deployer \
+    defuse-outlayer-app \
     defuse-poa-factory \
     defuse-poa-token \
     defuse-wallet \

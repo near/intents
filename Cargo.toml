@@ -4,6 +4,7 @@ members = [
   "contracts/defuse",
   "contracts/defuse/core",
   "contracts/global-deployer",
+  "contracts/outlayer-app",
   "contracts/escrow-swap",
   "contracts/poa/factory",
   "contracts/poa/token",
@@ -44,6 +45,11 @@ members = [
   "crates/testing/randomness",
   "crates/testing/sandbox",
 
+  "crates/outlayer/host",
+  "crates/outlayer/sys",
+  "crates/outlayer/worker-host",
+  "crates/outlayer/sdk",
+
   "tests",
 ]
 resolver = "3"
@@ -59,6 +65,7 @@ defuse.path = "contracts/defuse"
 defuse-core.path = "contracts/defuse/core"
 defuse-escrow-swap.path = "contracts/escrow-swap"
 defuse-global-deployer.path = "contracts/global-deployer"
+defuse-outlayer-app.path = "contracts/outlayer-app"
 defuse-poa-factory.path = "contracts/poa/factory"
 defuse-poa-token.path = "contracts/poa/token"
 defuse-wallet.path = "contracts/wallet"
@@ -98,18 +105,23 @@ defuse-randomness.path = "crates/testing/randomness"
 defuse-sandbox.path = "crates/testing/sandbox"
 defuse-test-utils.path = "crates/testing/utils"
 
+defuse-outlayer-host.path = "crates/outlayer/host"
+defuse-outlayer-sdk.path = "crates/outlayer/sdk"
+defuse-outlayer-sys.path = "crates/outlayer/sys"
+defuse-outlayer-worker-host.path = "crates/outlayer/worker-host"
+
 defuse-tests.path = "tests"
 
 cargo-near-build = "0.9.0"
 near-account-id = "2.4.0"
-near-api = "0.8.3"
-near-api-types = "0.8.3"
+near-api = "0.8.6"
+near-api-types = "0.8.6"
 near-contract-standards = "5.24"
-near-crypto = "0.34.1"
-near-kit = { version = "0.8.0", default-features = false }
-near-openapi-types = "0.6.0"
+near-crypto = "0.35.0"
+near-kit = { version = "0.9.0", default-features = false }
+near-openapi-types = "0.8.0"
 near-plugins = "0.5.1"
-near-sandbox = "0.3.5"
+near-sandbox = "0.3.9"
 near-sdk = "5.26.1"
 near-workspaces = "0.22"
 
@@ -148,6 +160,11 @@ tlb-ton = { version = "0.7.2", default-features = false }
 tokio = { version = "1.45", default-features = false }
 tracing = "0.1"
 tracing-subscriber = "0.3"
+url = "2"
+
+wasmtime = { version = ">=36.0.7", features = ["component-model"] }
+wasmtime-wasi = ">=36.0.7"
+wit-bindgen = "0.49.0"
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }

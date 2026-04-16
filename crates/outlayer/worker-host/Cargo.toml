@@ -1,0 +1,12 @@
+[package]
+name = "defuse-outlayer-worker-host"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+defuse-outlayer-host.workspace = true

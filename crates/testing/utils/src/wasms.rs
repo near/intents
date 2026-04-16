@@ -74,3 +74,7 @@ pub static WNEAR_WASM: LazyLock<Vec<u8>> =
 
 pub static DEPLOYER_WASM: LazyLock<Vec<u8>> =
     LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse-global-deployer.wasm"));
+
+#[cfg(feature = "outlayer")]
+pub static OUTLAYER_APP_WASM: LazyLock<Vec<u8>> =
+    LazyLock::new(|| read_wasm(&ReadWasmMode::BuildArtifact, "defuse-outlayer-app.wasm"));
