@@ -12,7 +12,7 @@ workspace = true
 defuse-outlayer-host.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-defuse-outlayer-sys.workspace = true
+defuse-outlayer-sys = {workspace = true, features = ["guest"]}
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 defuse-outlayer-worker-host.workspace = true

@@ -49,6 +49,8 @@ members = [
   "crates/outlayer/sys",
   "crates/outlayer/worker-host",
   "crates/outlayer/sdk",
+  "crates/outlayer/vm-runner",
+  "crates/outlayer/state",
 
   "tests",
 ]
@@ -109,6 +111,8 @@ defuse-outlayer-host.path = "crates/outlayer/host"
 defuse-outlayer-sdk.path = "crates/outlayer/sdk"
 defuse-outlayer-sys.path = "crates/outlayer/sys"
 defuse-outlayer-worker-host.path = "crates/outlayer/worker-host"
+defuse-outlayer-vm-runner.path = "crates/outlayer/vm-runner"
+defuse-outlayer-state.path = "crates/outlayer/state"
 
 defuse-tests.path = "tests"
 

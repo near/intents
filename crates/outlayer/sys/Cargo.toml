@@ -8,5 +8,10 @@ repository.workspace = true
 [lints]
 workspace = true
 
+[features]
+host = ["dep:wasmtime"]
+guest = ["dep:wit-bindgen"]
+
 [dependencies]
-wit-bindgen.workspace = true
+wit-bindgen = {workspace = true, optional = true}
+wasmtime = { workspace = true, optional = true }
