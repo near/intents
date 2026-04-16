@@ -2,6 +2,8 @@ mod borsh;
 mod domain;
 #[cfg(feature = "ed25519")]
 pub mod ed25519;
+#[cfg(feature = "erc191")]
+pub mod erc191;
 mod hash;
 pub mod no_sign;
 

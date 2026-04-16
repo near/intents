@@ -1744,6 +1744,7 @@ dependencies = [
  "defuse-borsh-utils",
  "defuse-crypto",
  "defuse-deadline",
+ "defuse-erc191",
  "defuse-serde-utils",
  "defuse-test-utils",
  "defuse-webauthn",
