@@ -18,6 +18,7 @@ anyhow.workspace = true
 impl-tools.workspace = true
 serde_json.workspace = true
 serde.workspace = true
+thiserror.workspace = true
 
 wasmtime.workspace = true
 wasmtime-wasi.workspace = true

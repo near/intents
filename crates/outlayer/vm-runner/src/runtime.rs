@@ -1,13 +1,12 @@
 use anyhow::Result;
-
 use defuse_outlayer_sys::host::{Host, outlayer};
-
 use wasmtime::component::{Component, HasSelf, Linker};
 use wasmtime::{Config, Engine, Store, Trap};
+use wasmtime_wasi::WasiCtx;
 use wasmtime_wasi::p2::bindings::Command;
 use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
-use wasmtime_wasi::WasiCtx;
 
+use crate::error::{ExecutionError, VmError};
 use crate::host::{HostCtx, WasiP2State};
 use crate::outcome::ExecutionOutcome;
 
@@ -80,19 +79,24 @@ impl VmRuntime {
         Ok(linker)
     }
 
+    pub fn load(&self, wasm_path: &str) -> Result<Component> {
+        Component::from_file(&self.engine, wasm_path)
+    }
+
     pub async fn execute<T, I>(
         &self,
-        wasm_path: &str,
+        component: &Component,
         host_state: T,
         input: I,
-    ) -> Result<ExecutionOutcome>
+    ) -> Result<ExecutionOutcome, VmError>
     where
         T: Host + 'static,
         I: serde::Serialize,
     {
         let linker = self.create_linker::<T>()?;
 
-        let stdin = MemoryInputPipe::new(serde_json::to_vec(&input)?);
+        let stdin =
+            MemoryInputPipe::new(serde_json::to_vec(&input).map_err(ExecutionError::InvalidInput)?);
         let stdout = MemoryOutputPipe::new(STDOUT_MAX_SIZE);
         let stderr = MemoryOutputPipe::new(STDERR_MAX_SIZE);
 
@@ -108,32 +112,42 @@ impl VmRuntime {
         let mut store = Store::new(&self.engine, ctx);
         store.set_fuel(self.fuel_limit)?;
 
-        let component = Component::from_file(&self.engine, wasm_path)?;
-        let command = Command::instantiate_async(&mut store, &component, &linker).await?;
+        let command = Command::instantiate_async(&mut store, component, &linker).await?;
+
         let program_result = command.wasi_cli_run().call_run(&mut store).await;
 
-        let fuel_consumed = store.get_fuel().unwrap_or(0);
-        let stderr_output = stderr.contents();
-        let stderr_str = String::from_utf8_lossy(&stderr_output);
+        let fuel_consumed = self
+            .fuel_limit
+            .saturating_sub(store.get_fuel().unwrap_or(0));
+
+        let stderr = String::from_utf8_lossy(&stderr.contents()).into_owned();
 
         match program_result {
             Ok(_) => Ok(ExecutionOutcome {
                 output: stdout.contents().to_vec(),
-                stderr: stderr_str.into_owned(),
+                stderr,
                 fuel_consumed,
             }),
             Err(trap) => {
-                if let Some(exit) = trap.downcast_ref::<wasmtime_wasi::I32Exit>() {
-                    anyhow::bail!("{stderr_str}\nComponent exited with code {}", exit.0);
-                }
-                match trap.downcast_ref::<Trap>() {
-                    Some(Trap::UnreachableCodeReached) => {
-                        anyhow::bail!("{stderr_str}\nComponent panicked")
+                let err = if let Some(exit) = trap.downcast_ref::<wasmtime_wasi::I32Exit>() {
+                    ExecutionError::NonZeroExit {
+                        code: exit.0,
+                        stderr,
                     }
-                    Some(Trap::OutOfFuel) => anyhow::bail!("fuel exhausted"),
-                    Some(t) => anyhow::bail!("{stderr_str}\nTrap: {t}"),
-                    None => anyhow::bail!("{stderr_str}\nComponent trapped: {trap}"),
-                }
+                } else {
+                    let trap_code = trap.downcast_ref::<Trap>();
+                    match trap_code {
+                        Some(code) => ExecutionError::Trap {
+                            code: *code,
+                            stderr,
+                        },
+                        None => ExecutionError::Unknown {
+                            source: trap,
+                            stderr,
+                        },
+                    }
+                };
+                Err(err.into())
             }
         }
     }
