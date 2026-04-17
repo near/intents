@@ -17,4 +17,12 @@ pub mod host {
     });
 
     pub use self::outlayer::*;
+
+    pub trait Host: Send {
+        type Ed25519: self::crypto::ed25519::Host + Send;
+        type Secp256k1: self::crypto::secp256k1::Host + Send;
+
+        fn ed25519(&mut self) -> &mut Self::Ed25519;
+        fn secp256k1(&mut self) -> &mut Self::Secp256k1;
+    }
 }

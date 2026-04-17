@@ -1,0 +1,241 @@
+VM Runner — Design Document
+===========================
+
+Goal
+----
+A reusable Rust crate that runs WASM components (wasm32-wasip2) with typed I/O
+and host function extensions backed by feature flags — not runtime plugins.
+
+
+File Layout
+-----------
+
+vm-runner/
+  Cargo.toml
+  src/
+    lib.rs                  <- public API: VmRunner, VmRunnerBuilder, providers
+    host_state.rs           <- HostState struct (holds wasi + all extension providers)
+    runner.rs               <- VmRunner impl: build_linker(), run()
+    wasi.rs                 <- WASI p2 setup (add_to_linker, build_ctx)
+    extensions/
+      mod.rs                <- re-exports, #[cfg(feature)] guards
+      ed25519.rs            <- Ed25519Provider trait + Host impl for HostState
+      secp256k1.rs          <- Secp256k1Provider trait + Host impl for HostState
+  src/main.rs               <- thin binary: builds VmRunner, calls run()
+
+
+Cargo.toml Features
+-------------------
+
+[features]
+default = ["wasi-p2"]
+wasi-p2 = ["wasmtime-wasi/p2"]
+wasi-p1 = []                    # future, not yet implemented
+ext-ed25519 = ["defuse-outlayer-sdk/ed25519"]
+ext-secp256k1 = ["defuse-outlayer-sdk/secp256k1"]
+
+
+HostState
+---------
+Contains all per-instance state. Fields are feature-gated — zero cost when
+a feature is disabled.
+
+  pub struct HostState {
+      wasi_ctx: WasiCtx,
+      resource_table: ResourceTable,
+
+      #[cfg(feature = "ext-ed25519")]
+      ed25519: Box<dyn Ed25519Provider>,
+
+      #[cfg(feature = "ext-secp256k1")]
+      secp256k1: Box<dyn Secp256k1Provider>,
+  }
+
+WasiView is implemented for HostState directly (no wrapper struct needed).
+
+
+Provider Traits
+---------------
+Simple object-safe traits. The caller supplies a concrete implementation.
+The vm-runner crate does not care about MPC, local keys, or mocks — that
+is the caller's concern.
+
+  pub trait Ed25519Provider: Send + Sync + 'static {
+      fn get_root_public_key(&self) -> Result<[u8; 32], String>;
+      fn derive_public_key(&self, path: &str) -> Result<[u8; 32], String>;
+      fn sign(&self, path: &str, msg: &[u8]) -> Result<[u8; 64], String>;
+  }
+
+  pub trait Secp256k1Provider: Send + Sync + 'static {
+      fn get_root_public_key(&self) -> Result<[u8; 64], String>;
+      fn derive_public_key(&self, path: &str) -> Result<[u8; 64], String>;
+      fn sign(&self, path: &str, msg: &[u8]) -> Result<[u8; 65], String>;
+  }
+
+
+Host Trait Impls
+----------------
+Each extension module implements the bindgen!-generated Host trait for HostState.
+The impl simply delegates to the stored provider — one line per method.
+
+  // extensions/ed25519.rs
+  bindgen!({ path: "../../sdk/wit", world: "ed25519-world" });
+
+  #[cfg(feature = "ext-ed25519")]
+  impl outlayer::host::ed25519::Host for HostState {
+      fn get_root_public_key(&mut self) -> Result<Ed25519PublicKey, String> {
+          self.ed25519
+              .get_root_public_key()
+              .map(|b| Ed25519PublicKey { bytes: b.to_vec() })
+      }
+      // derive_public_key, sign — same pattern
+  }
+
+
+VmRunner and Builder
+--------------------
+The Linker is built once in build() and reused across all run() calls.
+This is important: registering host functions into a Linker is expensive.
+
+  pub struct VmRunner {
+      engine: Engine,
+      linker: Linker<HostState>,
+
+      #[cfg(feature = "ext-ed25519")]
+      ed25519: Box<dyn Ed25519Provider>,
+
+      #[cfg(feature = "ext-secp256k1")]
+      secp256k1: Box<dyn Secp256k1Provider>,
+  }
+
+  pub struct VmRunnerBuilder {
+      #[cfg(feature = "ext-ed25519")]
+      ed25519: Option<Box<dyn Ed25519Provider>>,
+
+      #[cfg(feature = "ext-secp256k1")]
+      secp256k1: Option<Box<dyn Secp256k1Provider>>,
+  }
+
+  impl VmRunnerBuilder {
+      #[cfg(feature = "ext-ed25519")]
+      pub fn ed25519(mut self, p: impl Ed25519Provider) -> Self {
+          self.ed25519 = Some(Box::new(p));
+          self
+      }
+
+      pub fn build(self) -> Result<VmRunner> {
+          // validate: if ext-ed25519 feature is on, provider must be set
+          #[cfg(feature = "ext-ed25519")]
+          let ed25519 = self.ed25519.ok_or(anyhow!("ed25519 provider required"))?;
+
+          let engine = Engine::default();
+          let mut linker = Linker::new(&engine);
+
+          wasmtime_wasi::p2::add_to_linker_sync(&mut linker)?;
+
+          #[cfg(feature = "ext-ed25519")]
+          Ed25519World::add_to_linker::<_, HasSelf<_>>(&mut linker, |s| s)?;
+
+          #[cfg(feature = "ext-secp256k1")]
+          Secp256k1World::add_to_linker::<_, HasSelf<_>>(&mut linker, |s| s)?;
+
+          Ok(VmRunner { engine, linker, ed25519, ... })
+      }
+  }
+
+
+Typed I/O
+---------
+run() is generic over input/output types. Serialization is serde_json.
+The WASM component reads JSON from stdin, writes JSON to stdout.
+
+  impl VmRunner {
+      pub fn run<I, O>(&self, component: &Component, input: &I) -> Result<O>
+      where
+          I: serde::Serialize,
+          O: serde::de::DeserializeOwned,
+      {
+          let stdin = MemoryInputPipe::new(serde_json::to_vec(input)?);
+          let stdout = MemoryOutputPipe::new(MAX_OUTPUT_SIZE);
+
+          let state = HostState {
+              wasi_ctx: WasiCtx::builder()
+                  .stdin(stdin)
+                  .stdout(stdout.clone())
+                  .build(),
+              resource_table: ResourceTable::new(),
+              #[cfg(feature = "ext-ed25519")]
+              ed25519: self.ed25519.as_ref(),   // shared ref, not clone
+              ...
+          };
+
+          let mut store = Store::new(&self.engine, state);
+          let command = Command::instantiate(&mut store, component, &self.linker)?;
+          command.wasi_cli_run().call_run(&mut store)?
+              .map_err(|()| anyhow!("component exited with error"))?;
+
+          Ok(serde_json::from_slice(&stdout.contents())?)
+      }
+  }
+
+  NOTE: HostState needs to hold &dyn Provider (borrow from VmRunner) not
+  Box<dyn Provider> (owned). This requires a lifetime on HostState or
+  using Arc<dyn Provider> to avoid lifetime complexity.
+  Recommended: Arc<dyn Provider> stored in both VmRunner and HostState.
+
+
+Usage Example (caller)
+----------------------
+
+  struct MyMpcClient { ... }
+
+  impl Ed25519Provider for MyMpcClient {
+      fn sign(&self, path: &str, msg: &[u8]) -> Result<[u8; 64], String> {
+          // call MPC, local key, whatever
+      }
+      ...
+  }
+
+  let runner = VmRunner::builder()
+      .ed25519(MyMpcClient::new())
+      .build()?;
+
+  let component = Component::from_file(runner.engine(), "my.wasm")?;
+
+  let output: MyOutput = runner.run(&component, &MyInput { ... })?;
+
+
+WASI P1 Support (future)
+------------------------
+Add feature "wasi-p1". In wasi.rs, select the backend:
+
+  #[cfg(feature = "wasi-p2")]
+  fn add_wasi_to_linker(linker: &mut Linker<HostState>) -> Result<()> {
+      wasmtime_wasi::p2::add_to_linker_sync(linker)
+  }
+
+  #[cfg(feature = "wasi-p1")]
+  fn add_wasi_to_linker(linker: &mut Linker<HostState>) -> Result<()> {
+      wasmtime_wasi_p1::add_to_linker(linker)
+  }
+
+HostState gains a cfg-gated field for each WASI variant's context type.
+The two features should be mutually exclusive (enforce with compile_error!).
+
+
+Key Design Decisions
+--------------------
+
+1. Arc<dyn Provider> — shared between VmRunner and each Store's HostState.
+   No clone of provider state, no lifetime on HostState.
+
+2. Linker built once — expensive operation done at startup, not per-call.
+
+3. Component loaded by caller — VmRunner does not own the Component.
+   Caller can cache it (Component::from_file is also expensive).
+
+4. No dyn Extension trait — eliminates AnyMap, runtime lookup, and
+   the circular dependency between Extension and HostState.
+
+5. feature = "ext-*" gates both the provider field and the linker registration.
+   Disabling a feature removes ALL related code, not just an empty Vec slot.

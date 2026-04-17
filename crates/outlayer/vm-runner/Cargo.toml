@@ -1,0 +1,31 @@
+[package]
+name = "defuse-outlayer-vm-runner"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["rlib"]
+
+[lints]
+workspace = true
+
+[features]
+
+[dependencies]
+anyhow.workspace = true
+impl-tools.workspace = true
+serde_json.workspace = true
+serde.workspace = true
+
+wasmtime.workspace = true
+wasmtime-wasi.workspace = true
+
+defuse-outlayer-worker-host = { workspace = true }
+defuse-outlayer-sys = { workspace = true }
+
+
+# TODO: remove this
+defuse-outlayer-state = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
