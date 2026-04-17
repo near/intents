@@ -9,7 +9,7 @@ use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
 use crate::host::HostCtx;
 
 #[allow(async_fn_in_trait)]
-pub trait WasiBackend: Send + Sync + 'static {
+pub trait WasiBackend: Send + 'static {
     type State: Send + 'static;
 
     fn setup_linker<H: Host + 'static>(linker: &mut Linker<HostCtx<Self::State, H>>) -> Result<()>;

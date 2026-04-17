@@ -12,7 +12,8 @@ use crate::host::HostCtx;
 use crate::outcome::ExecutionOutcome;
 
 const MEMORY_GUARD_SIZE: u64 = 64 * 1024 * 1024;
-const DEFAULT_FUEL_LIMIT: u64 = 10_000;
+// TODO: calculate proper fuel limit
+const DEFAULT_FUEL_LIMIT: u64 = 100_000;
 const STDOUT_MAX_SIZE: usize = 4 * 1024 * 1024;
 const STDERR_MAX_SIZE: usize = 64 * 1024;
 
@@ -107,59 +108,57 @@ impl<W: WasiBackend> VmRuntime<W> {
         let wasi_state = W::build_state(stdin, stdout.clone(), stderr.clone())?;
 
         let mut store = Store::new(&self.engine, HostCtx::new(wasi_state, host_state));
-        store.set_fuel(self.fuel_limit)?;
+        store
+            .set_fuel(self.fuel_limit)
+            .expect("Fuel consumption is not enabled on engine");
 
         let program_result = W::call_run(&mut store, component, &linker).await;
 
-        self.process_execution_result(&store, &stdout, &stderr, program_result)
-    }
-
-    fn process_execution_result<H>(
-        &self,
-        store: &Store<HostCtx<W::State, H>>,
-        stdout: &MemoryOutputPipe,
-        stderr: &MemoryOutputPipe,
-        program_result: anyhow::Result<()>,
-    ) -> Result<ExecutionOutcome, VmError>
-    where
-        H: Host + 'static,
-    {
         let fuel_consumed = self
             .fuel_limit
             .saturating_sub(store.get_fuel().unwrap_or(0));
 
-        let stderr = String::from_utf8_lossy(&stderr.contents()).into_owned();
+        process_execution_result(fuel_consumed, &stdout, &stderr, program_result)
+    }
+}
 
-        match program_result {
-            Ok(()) => {
-                tracing::debug!(fuel_consumed = fuel_consumed, "execution succeeded");
-                Ok(ExecutionOutcome {
-                    output: stdout.contents().to_vec(),
+fn process_execution_result(
+    fuel_consumed: u64,
+    stdout: &MemoryOutputPipe,
+    stderr: &MemoryOutputPipe,
+    program_result: anyhow::Result<()>,
+) -> Result<ExecutionOutcome, VmError> {
+    let stderr = String::from_utf8_lossy(&stderr.contents()).into_owned();
+
+    match program_result {
+        Ok(()) => {
+            tracing::debug!(fuel_consumed, "execution succeeded");
+            Ok(ExecutionOutcome {
+                output: stdout.contents().to_vec(),
+                stderr,
+                fuel_consumed,
+            })
+        }
+        Err(trap) => {
+            let err = if let Some(exit) = trap.downcast_ref::<wasmtime_wasi::I32Exit>() {
+                ExecutionError::NonZeroExit {
+                    code: exit.0,
                     stderr,
-                    fuel_consumed,
-                })
-            }
-            Err(trap) => {
-                let err = if let Some(exit) = trap.downcast_ref::<wasmtime_wasi::I32Exit>() {
-                    ExecutionError::NonZeroExit {
-                        code: exit.0,
+                }
+            } else {
+                let trap_code = trap.chain().find_map(|e| e.downcast_ref::<Trap>().copied());
+                match trap_code {
+                    Some(code) => ExecutionError::Trap { code, stderr },
+                    None => ExecutionError::Unknown {
+                        source: trap,
                         stderr,
-                    }
-                } else {
-                    let trap_code = trap.chain().find_map(|e| e.downcast_ref::<Trap>().copied());
-                    match trap_code {
-                        Some(code) => ExecutionError::Trap { code, stderr },
-                        None => ExecutionError::Unknown {
-                            source: trap,
-                            stderr,
-                        },
-                    }
-                };
+                    },
+                }
+            };
 
-                tracing::debug!(error = ?err, fuel_consumed = fuel_consumed, "execution failed");
+            tracing::debug!(error = ?err, fuel_consumed, "execution failed");
 
-                Err(err.into())
-            }
+            Err(err.into())
         }
     }
 }

@@ -10,8 +10,8 @@ use crate::backend::WasiBackend;
 use crate::host::HostCtx;
 
 pub struct WasiP2State {
-    pub wasi_ctx: WasiCtx,
-    pub resource_table: wasmtime_wasi::ResourceTable,
+    wasi_ctx: WasiCtx,
+    resource_table: wasmtime_wasi::ResourceTable,
 }
 
 impl WasiP2State {

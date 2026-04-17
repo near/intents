@@ -109,10 +109,10 @@ defuse-test-utils.path = "crates/testing/utils"
 
 defuse-outlayer-host.path = "crates/outlayer/host"
 defuse-outlayer-sdk.path = "crates/outlayer/sdk"
-defuse-outlayer-sys.path = "crates/outlayer/sys"
-defuse-outlayer-worker-host.path = "crates/outlayer/worker-host"
-defuse-outlayer-vm-runner.path = "crates/outlayer/vm-runner"
 defuse-outlayer-state.path = "crates/outlayer/state"
+defuse-outlayer-sys.path = "crates/outlayer/sys"
+defuse-outlayer-vm-runner.path = "crates/outlayer/vm-runner"
+defuse-outlayer-worker-host.path = "crates/outlayer/worker-host"
 
 defuse-tests.path = "tests"
 

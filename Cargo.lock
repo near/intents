@@ -1669,14 +1669,12 @@ name = "defuse-outlayer-vm-runner"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "defuse-outlayer-state",
  "defuse-outlayer-sys",
  "defuse-outlayer-worker-host",
  "impl-tools",
  "serde",
  "serde_json",
  "thiserror 2.0.17",
- "tokio",
  "tracing",
  "wasmtime",
  "wasmtime-wasi",
