@@ -26,6 +26,8 @@ wasmtime-wasi.workspace = true
 defuse-outlayer-worker-host = { workspace = true }
 defuse-outlayer-sys = { workspace = true }
 
+tracing = { workspace = true }
+
 
 # TODO: remove this
 defuse-outlayer-state = { workspace = true }

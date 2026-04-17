@@ -1,6 +1,7 @@
 use anyhow::Result;
 use defuse_outlayer_sys::host::{Host, outlayer};
 use std::marker::PhantomData;
+use tracing::instrument;
 use wasmtime::component::{Component, HasSelf, Linker};
 use wasmtime::{Config, Engine, Store, Trap};
 use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
@@ -82,10 +83,11 @@ impl<W: WasiBackend> VmRuntime<W> {
         Ok(linker)
     }
 
-    pub fn load(&self, wasm_path: &str) -> Result<Component> {
-        Component::from_file(&self.engine, wasm_path)
+    pub fn load(&self, binary: impl AsRef<[u8]>) -> Result<Component> {
+        Component::from_binary(&self.engine, binary.as_ref())
     }
 
+    #[instrument(skip_all)]
     pub async fn execute<H, I>(
         &self,
         component: &Component,
@@ -129,11 +131,14 @@ impl<W: WasiBackend> VmRuntime<W> {
         let stderr = String::from_utf8_lossy(&stderr.contents()).into_owned();
 
         match program_result {
-            Ok(()) => Ok(ExecutionOutcome {
-                output: stdout.contents().to_vec(),
-                stderr,
-                fuel_consumed,
-            }),
+            Ok(()) => {
+                tracing::debug!(fuel_consumed = fuel_consumed, "execution succeeded");
+                Ok(ExecutionOutcome {
+                    output: stdout.contents().to_vec(),
+                    stderr,
+                    fuel_consumed,
+                })
+            }
             Err(trap) => {
                 let err = if let Some(exit) = trap.downcast_ref::<wasmtime_wasi::I32Exit>() {
                     ExecutionError::NonZeroExit {
@@ -150,6 +155,9 @@ impl<W: WasiBackend> VmRuntime<W> {
                         },
                     }
                 };
+
+                tracing::debug!(error = ?err, fuel_consumed = fuel_consumed, "execution failed");
+
                 Err(err.into())
             }
         }
