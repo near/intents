@@ -1,13 +1,13 @@
 use anyhow::Result;
 use defuse_outlayer_sys::host::{Host, outlayer};
+use std::marker::PhantomData;
 use wasmtime::component::{Component, HasSelf, Linker};
 use wasmtime::{Config, Engine, Store, Trap};
-use wasmtime_wasi::WasiCtx;
-use wasmtime_wasi::p2::bindings::Command;
 use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
 
+use crate::backend::WasiBackend;
 use crate::error::{ExecutionError, VmError};
-use crate::host::{HostCtx, WasiP2State};
+use crate::host::HostCtx;
 use crate::outcome::ExecutionOutcome;
 
 const MEMORY_GUARD_SIZE: u64 = 64 * 1024 * 1024;
@@ -15,12 +15,13 @@ const DEFAULT_FUEL_LIMIT: u64 = 10_000;
 const STDOUT_MAX_SIZE: usize = 4 * 1024 * 1024;
 const STDERR_MAX_SIZE: usize = 64 * 1024;
 
-pub struct VmRuntimeBuilder {
+pub struct VmRuntimeBuilder<W: WasiBackend> {
     config: Config,
     fuel_limit: Option<u64>,
+    _backend: PhantomData<W>,
 }
 
-impl VmRuntimeBuilder {
+impl<W: WasiBackend> VmRuntimeBuilder<W> {
     pub fn new() -> Self {
         let mut config = Config::new();
         config.guard_before_linear_memory(true);
@@ -32,6 +33,7 @@ impl VmRuntimeBuilder {
         Self {
             config,
             fuel_limit: None,
+            _backend: PhantomData,
         }
     }
 
@@ -40,40 +42,41 @@ impl VmRuntimeBuilder {
         self
     }
 
-    pub fn build(&self) -> Result<VmRuntime> {
+    pub fn build(&self) -> Result<VmRuntime<W>> {
         Ok(VmRuntime {
             engine: Engine::new(&self.config)?,
             fuel_limit: self.fuel_limit.unwrap_or(DEFAULT_FUEL_LIMIT),
+            _backend: PhantomData,
         })
     }
 }
 
-impl Default for VmRuntimeBuilder {
+impl<W: WasiBackend> Default for VmRuntimeBuilder<W> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-pub struct VmRuntime {
+pub struct VmRuntime<W: WasiBackend> {
     engine: Engine,
     fuel_limit: u64,
+    _backend: PhantomData<W>,
 }
 
-impl VmRuntime {
-    fn create_linker<T: Host>(&self) -> Result<Linker<HostCtx<T>>> {
+impl<W: WasiBackend> VmRuntime<W> {
+    fn create_linker<H: Host + 'static>(&self) -> Result<Linker<HostCtx<W::State, H>>> {
         let mut linker = Linker::new(&self.engine);
 
-        // NOTE: currently only wasip2 is supported
-        wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
+        W::setup_linker(&mut linker)?;
 
-        outlayer::crypto::ed25519::add_to_linker::<HostCtx<T>, HasSelf<T::Ed25519>>(
+        outlayer::crypto::ed25519::add_to_linker::<HostCtx<W::State, H>, HasSelf<H::Ed25519>>(
             &mut linker,
-            |state: &mut HostCtx<T>| state.host_state.ed25519(),
+            |ctx: &mut HostCtx<W::State, H>| ctx.host_state.ed25519(),
         )?;
 
-        outlayer::crypto::secp256k1::add_to_linker::<HostCtx<T>, HasSelf<T::Secp256k1>>(
+        outlayer::crypto::secp256k1::add_to_linker::<HostCtx<W::State, H>, HasSelf<H::Secp256k1>>(
             &mut linker,
-            |state: &mut HostCtx<T>| state.host_state.secp256k1(),
+            |ctx: &mut HostCtx<W::State, H>| ctx.host_state.secp256k1(),
         )?;
 
         Ok(linker)
@@ -83,39 +86,42 @@ impl VmRuntime {
         Component::from_file(&self.engine, wasm_path)
     }
 
-    pub async fn execute<T, I>(
+    pub async fn execute<H, I>(
         &self,
         component: &Component,
-        host_state: T,
+        host_state: H,
         input: I,
     ) -> Result<ExecutionOutcome, VmError>
     where
-        T: Host + 'static,
+        H: Host + 'static,
         I: serde::Serialize,
     {
-        let linker = self.create_linker::<T>()?;
+        let linker = self.create_linker::<H>()?;
 
-        let stdin =
-            MemoryInputPipe::new(serde_json::to_vec(&input).map_err(ExecutionError::InvalidInput)?);
+        let input_bytes = serde_json::to_vec(&input).map_err(ExecutionError::InvalidInput)?;
+        let stdin = MemoryInputPipe::new(input_bytes);
         let stdout = MemoryOutputPipe::new(STDOUT_MAX_SIZE);
         let stderr = MemoryOutputPipe::new(STDERR_MAX_SIZE);
+        let wasi_state = W::build_state(stdin, stdout.clone(), stderr.clone())?;
 
-        let wasi_ctx = WasiP2State::new(
-            WasiCtx::builder()
-                .stdin(stdin)
-                .stdout(stdout.clone())
-                .stderr(stderr.clone())
-                .build(),
-        );
-        let ctx = HostCtx::new(wasi_ctx, host_state);
-
-        let mut store = Store::new(&self.engine, ctx);
+        let mut store = Store::new(&self.engine, HostCtx::new(wasi_state, host_state));
         store.set_fuel(self.fuel_limit)?;
 
-        let command = Command::instantiate_async(&mut store, component, &linker).await?;
+        let program_result = W::call_run(&mut store, component, &linker).await;
 
-        let program_result = command.wasi_cli_run().call_run(&mut store).await;
+        self.process_execution_result(&store, &stdout, &stderr, program_result)
+    }
 
+    fn process_execution_result<H>(
+        &self,
+        store: &Store<HostCtx<W::State, H>>,
+        stdout: &MemoryOutputPipe,
+        stderr: &MemoryOutputPipe,
+        program_result: anyhow::Result<()>,
+    ) -> Result<ExecutionOutcome, VmError>
+    where
+        H: Host + 'static,
+    {
         let fuel_consumed = self
             .fuel_limit
             .saturating_sub(store.get_fuel().unwrap_or(0));
@@ -123,7 +129,7 @@ impl VmRuntime {
         let stderr = String::from_utf8_lossy(&stderr.contents()).into_owned();
 
         match program_result {
-            Ok(_) => Ok(ExecutionOutcome {
+            Ok(()) => Ok(ExecutionOutcome {
                 output: stdout.contents().to_vec(),
                 stderr,
                 fuel_consumed,
@@ -135,12 +141,9 @@ impl VmRuntime {
                         stderr,
                     }
                 } else {
-                    let trap_code = trap.downcast_ref::<Trap>();
+                    let trap_code = trap.chain().find_map(|e| e.downcast_ref::<Trap>().copied());
                     match trap_code {
-                        Some(code) => ExecutionError::Trap {
-                            code: *code,
-                            stderr,
-                        },
+                        Some(code) => ExecutionError::Trap { code, stderr },
                         None => ExecutionError::Unknown {
                             source: trap,
                             stderr,
