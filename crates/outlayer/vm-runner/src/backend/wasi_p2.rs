@@ -45,14 +45,14 @@ impl WasiBackend for WasiP2Backend {
         stdin: MemoryInputPipe,
         stdout: MemoryOutputPipe,
         stderr: MemoryOutputPipe,
-    ) -> Result<WasiP2State> {
-        Ok(WasiP2State::new(
+    ) -> WasiP2State {
+        WasiP2State::new(
             WasiCtx::builder()
                 .stdin(stdin)
                 .stdout(stdout)
                 .stderr(stderr)
                 .build(),
-        ))
+        )
     }
 
     async fn call_run<H: Host + 'static>(

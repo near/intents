@@ -18,7 +18,7 @@ pub trait WasiBackend: Send + 'static {
         stdin: MemoryInputPipe,
         stdout: MemoryOutputPipe,
         stderr: MemoryOutputPipe,
-    ) -> Result<Self::State>;
+    ) -> Self::State;
 
     async fn call_run<H: Host + 'static>(
         store: &mut Store<HostCtx<Self::State, H>>,

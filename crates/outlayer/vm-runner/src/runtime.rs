@@ -105,7 +105,7 @@ impl<W: WasiBackend> VmRuntime<W> {
         let stdin = MemoryInputPipe::new(input_bytes);
         let stdout = MemoryOutputPipe::new(STDOUT_MAX_SIZE);
         let stderr = MemoryOutputPipe::new(STDERR_MAX_SIZE);
-        let wasi_state = W::build_state(stdin, stdout.clone(), stderr.clone())?;
+        let wasi_state = W::build_state(stdin, stdout.clone(), stderr.clone());
 
         let mut store = Store::new(&self.engine, HostCtx::new(wasi_state, host_state));
         store

@@ -21,8 +21,8 @@ pub enum ExecutionError {
 
 #[derive(thiserror::Error, Debug)]
 pub enum VmError {
-    #[error("setup failed: {0}")]
-    Setup(#[from] anyhow::Error),
+    #[error("linker failed: {0}")]
+    Linker(#[from] anyhow::Error),
 
     #[error(transparent)]
     Execution(#[from] ExecutionError),
