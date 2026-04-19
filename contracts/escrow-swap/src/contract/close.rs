@@ -45,6 +45,6 @@ impl State {
             self.close_unchecked(reason);
         }
 
-        self.lost_found(params)
+        Ok(self.lost_found(params))
     }
 }

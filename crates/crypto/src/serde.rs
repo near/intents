@@ -54,8 +54,7 @@ const _: () = {
                     }
                     .into(),
                 ),
-                extensions: [("contentEncoding", "base58".into())]
-                    .into_iter()
+                extensions: std::iter::once(("contentEncoding", "base58".into()))
                     .map(|(k, v)| (k.to_string(), v))
                     .collect(),
                 ..Default::default()
