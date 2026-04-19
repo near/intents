@@ -10,14 +10,18 @@ help:
 	@echo "Build targets (use REPRODUCIBLE=1 for reproducible builds):"
 	@$(foreach t,$(ALL_TARGETS),echo "  $(t)";)
 	@echo ""
+	@echo "Check targets:"
+	@$(foreach t,$(CHECK_TARGETS),echo "  $(t)";)
+	@echo ""
 	@echo "Other targets:"
-	@echo "  all                 Build all contracts (default)"
-	@echo "  clean               Remove build artifacts and cargo clean"
-	@echo "  test                Run all workspace tests"
-	@echo "  check               Run clippy on codebase (codebase + per-contract wasm)"
-	@echo "  check-all           Run all checks"
-	@echo "  fmt                 Format Rust files and Cargo.toml manifests"
-	@echo "  help                Show this help"
+	@echo "  all                               Build all contracts (default)"
+	@echo "  clean                             Remove build artifacts and cargo clean"
+	@echo "  test                              Run all workspace tests"
+	@echo "  check                             Run clippy on codebase (codebase + per-contract wasm)"
+	@echo "  check-contracts                   Run clippy on all contracts for wasm target"
+	@echo "  check-all                         Run all checks"
+	@echo "  fmt                               Format Rust files and Cargo.toml manifests"
+	@echo "  help                              Show this help"
 
 .PHONY: clean-out-dir
 clean-out-dir:
@@ -106,6 +110,7 @@ CONTRACT_CRATES := \
     multi-token-receiver-stub
 
 ALL_TARGETS :=
+CHECK_TARGETS := check-contracts
 
 crate_name = $(firstword $(subst =, ,$1))
 crate_features = $(lastword $(subst =, ,$1))
@@ -121,6 +126,9 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
     "$$(eval .PHONY: \($$name)/all)", \
     "$$(eval ALL_TARGETS +=  \($$name)/all)", \
     "$$(eval \($$name)/all:: \($$name))", \
+    "$$(eval .PHONY: check-contract/\($$name)/all)", \
+    "$$(eval check-contract/\($$name)/all::)", \
+    "$$(eval CHECK_TARGETS += check-contract/\($$name)/all)", \
     ({"": $$b} + ($$b.variant // {}) | to_entries[] | \
      . as {key: $$vkey, value: $$vval} | \
      ("\($$name)/\($$vkey)" | rtrimstr("/")) as $$tname | \
@@ -132,8 +140,10 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
      (if $$vkey == "" then "" else ".\($$vkey)" end) as $$suffix | \
      ($$vval.container_build_command | map(select(startswith("--features="))) | if length > 0 then " " + first else "" end) as $$features_flag | \
      "$$(eval .PHONY: check-contract/\($$tname))", \
+     "$$(eval CHECK_TARGETS += check-contract/\($$tname))", \
      "$$(eval check-contracts:: check-contract/\($$tname))", \
      "$$(eval check-contract/\($$tname):; cargo clippy -p \($$name) --no-deps --target wasm32-unknown-unknown\($$features_flag))", \
+     "$$(eval check-contract/\($$name)/all:: check-contract/\($$tname))", \
      "$$(eval .PHONY: \($$tname))", \
      "$$(eval ALL_TARGETS += \($$tname))", \
      "$$(eval \($$name)/all:: \($$tname))", \
