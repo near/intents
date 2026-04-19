@@ -757,7 +757,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "117725a109d387c937a1533ce01b450cbde6b88abceea8473c4d7a85853cda3c"
 dependencies = [
  "lazy_static",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -1534,6 +1534,9 @@ dependencies = [
 [[package]]
 name = "defuse-outlayer-host"
 version = "0.1.0"
+dependencies = [
+ "impl-tools",
+]
 
 [[package]]
 name = "defuse-outlayer-sdk"
@@ -1542,6 +1545,7 @@ dependencies = [
  "defuse-outlayer-host",
  "defuse-outlayer-sys",
  "defuse-outlayer-worker-host",
+ "hex",
 ]
 
 [[package]]
@@ -1556,6 +1560,9 @@ name = "defuse-outlayer-worker-host"
 version = "0.1.0"
 dependencies = [
  "defuse-outlayer-host",
+ "hkdf",
+ "near-account-id",
+ "sha2 0.11.0",
 ]
 
 [[package]]
@@ -2592,6 +2599,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e712f64ec3850b98572bffac52e2c6f282b29fe6c5fa6d42334b30be438d95c1"
 
 [[package]]
+name = "hkdf"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4aaa26c720c68b866f2c96ef5c1264b3e6f473fe5d4ce61cd44bbe913e553018"
+dependencies = [
+ "hmac 0.13.0",
+]
+
+[[package]]
 name = "hmac"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2783,7 +2799,7 @@ dependencies = [
  "libc",
  "percent-encoding",
  "pin-project-lite",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "system-configuration",
  "tokio",
  "tower-service",
@@ -4924,7 +4940,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash",
  "rustls",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "thiserror 2.0.17",
  "tokio",
  "tracing",
@@ -4962,7 +4978,7 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "tracing",
  "windows-sys 0.60.2",
 ]
