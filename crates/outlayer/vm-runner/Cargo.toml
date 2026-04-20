@@ -5,9 +5,6 @@ version.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 
-[lib]
-crate-type = ["rlib"]
-
 [lints]
 workspace = true
 

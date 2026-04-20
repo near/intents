@@ -6,7 +6,7 @@ pub struct HostCtx<W, T: Host> {
 }
 
 impl<W, T: Host> HostCtx<W, T> {
-    pub fn new(wasi_state: W, host_state: T) -> Self {
+    pub const fn new(wasi_state: W, host_state: T) -> Self {
         Self {
             wasi_state,
             host_state,

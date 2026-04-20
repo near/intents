@@ -39,7 +39,8 @@ impl<W: WasiBackend> VmRuntimeBuilder<W> {
         }
     }
 
-    pub fn fuel_limit(mut self, fuel_limit: u64) -> Self {
+    #[must_use]
+    pub const fn fuel_limit(mut self, fuel_limit: u64) -> Self {
         self.fuel_limit = Some(fuel_limit);
         self
     }
