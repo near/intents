@@ -3,7 +3,7 @@ use defuse_outlayer_sys::host::{Host, outlayer};
 use std::marker::PhantomData;
 use tracing::instrument;
 use wasmtime::component::{Component, HasSelf, Linker};
-use wasmtime::{Config, Engine, Store, Trap};
+use wasmtime::{Config, Engine, Store, StoreLimitsBuilder, Trap};
 use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
 
 use crate::backend::WasiBackend;
@@ -12,7 +12,7 @@ use crate::host::HostCtx;
 use crate::outcome::ExecutionOutcome;
 
 const MEMORY_GUARD_SIZE: u64 = 64 * 1024 * 1024; // 64 MiB
-const MEMORY_RESERVATION_SIZE: u64 = 64 * 1024 * 1024; // 64 MiB
+const DEFAULT_MEMORY_LIMIT: usize = 100 * 1024 * 1024; // 100 MiB
 const DEFAULT_FUEL_LIMIT: u64 = 1_000_000_000;
 
 const STDOUT_MAX_SIZE: usize = 4 * 1024 * 1024; // 4 MiB
@@ -21,24 +21,23 @@ const STDERR_MAX_SIZE: usize = 64 * 1024; // 64 KiB
 pub struct VmRuntimeBuilder<B: WasiBackend> {
     config: Config,
     fuel_limit: Option<u64>,
+    memory_limit: Option<usize>,
     _backend: PhantomData<B>,
 }
 
 impl<B: WasiBackend> VmRuntimeBuilder<B> {
     pub fn new() -> Self {
         let mut config = Config::new();
-        config.memory_reservation(MEMORY_RESERVATION_SIZE);
         config.guard_before_linear_memory(true);
         config.memory_guard_size(MEMORY_GUARD_SIZE);
-
         // NOTE: this is required for async host functions
         config.async_support(true);
-
         config.consume_fuel(true);
 
         Self {
             config,
             fuel_limit: None,
+            memory_limit: None,
             _backend: PhantomData,
         }
     }
@@ -49,10 +48,21 @@ impl<B: WasiBackend> VmRuntimeBuilder<B> {
         self
     }
 
-    pub fn build(self) -> Result<VmRuntime<B>> {
+    #[must_use]
+    pub const fn memory_limit(mut self, memory_limit: usize) -> Self {
+        self.memory_limit = Some(memory_limit);
+        self
+    }
+
+    pub fn build(mut self) -> Result<VmRuntime<B>> {
+        let memory_limit = self.memory_limit.unwrap_or(DEFAULT_MEMORY_LIMIT);
+        self.config
+            .memory_reservation(memory_limit.try_into().unwrap());
+
         Ok(VmRuntime {
             engine: Engine::new(&self.config)?,
             fuel_limit: self.fuel_limit.unwrap_or(DEFAULT_FUEL_LIMIT),
+            memory_limit,
             _backend: PhantomData,
         })
     }
@@ -67,6 +77,7 @@ impl<B: WasiBackend> Default for VmRuntimeBuilder<B> {
 pub struct VmRuntime<B: WasiBackend> {
     engine: Engine,
     fuel_limit: u64,
+    memory_limit: usize,
     _backend: PhantomData<B>,
 }
 
@@ -112,7 +123,12 @@ impl<B: WasiBackend> VmRuntime<B> {
         let stderr = MemoryOutputPipe::new(STDERR_MAX_SIZE);
         let wasi_state = B::build_state(stdin, stdout.clone(), stderr.clone());
 
-        let mut store = Store::new(&self.engine, HostCtx::new(wasi_state, host_state));
+        let limits = StoreLimitsBuilder::new()
+            .memory_size(self.memory_limit)
+            .build();
+        let mut store = Store::new(&self.engine, HostCtx::new(wasi_state, host_state, limits));
+
+        store.limiter(|ctx| &mut ctx.limits);
         store
             .set_fuel(self.fuel_limit)
             .expect("Fuel consumption is not enabled on engine");
@@ -167,7 +183,7 @@ fn classify_result(
         } else {
             Err(ExecutionError::NonZeroExit {
                 code: exit.0,
-                stderr: stderr.clone(),
+                stderr,
             })
         };
     }
