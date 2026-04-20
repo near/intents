@@ -7,7 +7,7 @@ pub fn derive_public_key(path: impl AsRef<str>) -> Ed25519PublicKey {
         .expect("ed25519 public key must be 32 bytes");
 
     #[cfg(not(target_family = "wasm"))]
-    return crate::host::mock::HOST.with_borrow(|h| h.ed25519_derive_public_key(path));
+    return crate::host::mock::HOST.with_borrow(|h| h.ed25519_derive_public_key(path.as_ref()));
 }
 
 pub fn sign(path: impl AsRef<str>, msg: impl AsRef<[u8]>) -> Ed25519Signature {
@@ -17,5 +17,5 @@ pub fn sign(path: impl AsRef<str>, msg: impl AsRef<[u8]>) -> Ed25519Signature {
         .expect("ed25519 signature must be 64 bytes");
 
     #[cfg(not(target_family = "wasm"))]
-    return crate::host::mock::HOST.with_borrow(|h| h.ed25519_sign(path, msg));
+    return crate::host::mock::HOST.with_borrow(|h| h.ed25519_sign(path.as_ref(), msg.as_ref()));
 }

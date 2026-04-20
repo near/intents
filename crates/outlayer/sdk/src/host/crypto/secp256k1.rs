@@ -9,7 +9,7 @@ pub fn derive_public_key(path: impl AsRef<str>) -> Secp256k1PublicKey {
         .expect("secp256k1 public key must be 64 bytes");
 
     #[cfg(not(target_family = "wasm"))]
-    return crate::host::mock::HOST.with_borrow(|h| h.secp256k1_derive_public_key(path));
+    return crate::host::mock::HOST.with_borrow(|h| h.secp256k1_derive_public_key(path.as_ref()));
 }
 
 pub fn sign(path: impl AsRef<str>, msg: impl AsRef<[u8]>) -> Secp256k1Signature {
@@ -19,5 +19,5 @@ pub fn sign(path: impl AsRef<str>, msg: impl AsRef<[u8]>) -> Secp256k1Signature 
         .expect("secp256k1 signature must be 65 bytes");
 
     #[cfg(not(target_family = "wasm"))]
-    return crate::host::mock::HOST.with_borrow(|h| h.secp256k1_sign(path, msg));
+    return crate::host::mock::HOST.with_borrow(|h| h.secp256k1_sign(path.as_ref(), msg.as_ref()));
 }
