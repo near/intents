@@ -3,6 +3,7 @@ use defuse_outlayer_host::crypto::secp256k1::{
     Secp256k1Host, Secp256k1PublicKey, Secp256k1Signature,
 };
 
+#[derive(Debug, Default)]
 pub struct WorkerSecp256k1Host;
 
 impl Secp256k1Host for WorkerSecp256k1Host {

@@ -3,14 +3,9 @@ use defuse_outlayer_sys::host::outlayer;
 use defuse_outlayer_worker_host::crypto::ed25519::WorkerEd25519Host;
 use impl_tools::autoimpl;
 
+#[derive(Debug, Default)]
 #[autoimpl(Deref using self.0)]
 pub struct Ed25519HostState(WorkerEd25519Host);
-
-impl Ed25519HostState {
-    pub fn new() -> Self {
-        Self(WorkerEd25519Host)
-    }
-}
 
 impl outlayer::crypto::ed25519::Host for Ed25519HostState {
     fn derive_public_key(&mut self, path: String) -> Vec<u8> {

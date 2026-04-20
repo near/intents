@@ -3,14 +3,9 @@ use defuse_outlayer_sys::host::outlayer;
 use defuse_outlayer_worker_host::crypto::secp256k1::WorkerSecp256k1Host;
 use impl_tools::autoimpl;
 
+#[derive(Debug, Default)]
 #[autoimpl(Deref using self.0)]
 pub struct Secp256k1HostState(WorkerSecp256k1Host);
-
-impl Secp256k1HostState {
-    pub fn new() -> Self {
-        Self(WorkerSecp256k1Host)
-    }
-}
 
 impl outlayer::crypto::secp256k1::Host for Secp256k1HostState {
     fn derive_public_key(&mut self, path: String) -> Vec<u8> {

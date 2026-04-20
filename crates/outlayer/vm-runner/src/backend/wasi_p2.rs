@@ -15,7 +15,7 @@ pub struct WasiP2State {
 }
 
 impl WasiP2State {
-    pub fn new(wasi_ctx: WasiCtx) -> Self {
+    fn new(wasi_ctx: WasiCtx) -> Self {
         Self {
             wasi_ctx,
             resource_table: wasmtime_wasi::ResourceTable::new(),

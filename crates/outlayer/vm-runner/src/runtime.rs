@@ -18,13 +18,13 @@ const DEFAULT_FUEL_LIMIT: u64 = 1_000_000_000;
 const STDOUT_MAX_SIZE: usize = 4 * 1024 * 1024; // 4 MiB
 const STDERR_MAX_SIZE: usize = 64 * 1024; // 64 KiB
 
-pub struct VmRuntimeBuilder<W: WasiBackend> {
+pub struct VmRuntimeBuilder<B: WasiBackend> {
     config: Config,
     fuel_limit: Option<u64>,
-    _backend: PhantomData<W>,
+    _backend: PhantomData<B>,
 }
 
-impl<W: WasiBackend> VmRuntimeBuilder<W> {
+impl<B: WasiBackend> VmRuntimeBuilder<B> {
     pub fn new() -> Self {
         let mut config = Config::new();
         config.memory_reservation(MEMORY_RESERVATION_SIZE);
@@ -49,7 +49,7 @@ impl<W: WasiBackend> VmRuntimeBuilder<W> {
         self
     }
 
-    pub fn build(&self) -> Result<VmRuntime<W>> {
+    pub fn build(self) -> Result<VmRuntime<B>> {
         Ok(VmRuntime {
             engine: Engine::new(&self.config)?,
             fuel_limit: self.fuel_limit.unwrap_or(DEFAULT_FUEL_LIMIT),
@@ -58,32 +58,32 @@ impl<W: WasiBackend> VmRuntimeBuilder<W> {
     }
 }
 
-impl<W: WasiBackend> Default for VmRuntimeBuilder<W> {
+impl<B: WasiBackend> Default for VmRuntimeBuilder<B> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-pub struct VmRuntime<W: WasiBackend> {
+pub struct VmRuntime<B: WasiBackend> {
     engine: Engine,
     fuel_limit: u64,
-    _backend: PhantomData<W>,
+    _backend: PhantomData<B>,
 }
 
-impl<W: WasiBackend> VmRuntime<W> {
-    fn create_linker<H: Host + 'static>(&self) -> Result<Linker<HostCtx<W::State, H>>> {
+impl<B: WasiBackend> VmRuntime<B> {
+    fn create_linker<H: Host + 'static>(&self) -> Result<Linker<HostCtx<B::State, H>>> {
         let mut linker = Linker::new(&self.engine);
 
-        W::setup_linker(&mut linker)?;
+        B::setup_linker(&mut linker)?;
 
-        outlayer::crypto::ed25519::add_to_linker::<HostCtx<W::State, H>, HasSelf<H::Ed25519>>(
+        outlayer::crypto::ed25519::add_to_linker::<HostCtx<B::State, H>, HasSelf<H::Ed25519>>(
             &mut linker,
-            |ctx: &mut HostCtx<W::State, H>| ctx.host_state.ed25519(),
+            |ctx: &mut HostCtx<B::State, H>| ctx.host_state.ed25519(),
         )?;
 
-        outlayer::crypto::secp256k1::add_to_linker::<HostCtx<W::State, H>, HasSelf<H::Secp256k1>>(
+        outlayer::crypto::secp256k1::add_to_linker::<HostCtx<B::State, H>, HasSelf<H::Secp256k1>>(
             &mut linker,
-            |ctx: &mut HostCtx<W::State, H>| ctx.host_state.secp256k1(),
+            |ctx: &mut HostCtx<B::State, H>| ctx.host_state.secp256k1(),
         )?;
 
         Ok(linker)
@@ -102,7 +102,7 @@ impl<W: WasiBackend> VmRuntime<W> {
     ) -> Result<ExecutionOutcome, VmError>
     where
         H: Host + 'static,
-        I: serde::Serialize,
+        I: serde::Serialize + Send,
     {
         let linker = self.create_linker::<H>()?;
 
@@ -110,18 +110,18 @@ impl<W: WasiBackend> VmRuntime<W> {
         let stdin = MemoryInputPipe::new(input_bytes);
         let stdout = MemoryOutputPipe::new(STDOUT_MAX_SIZE);
         let stderr = MemoryOutputPipe::new(STDERR_MAX_SIZE);
-        let wasi_state = W::build_state(stdin, stdout.clone(), stderr.clone());
+        let wasi_state = B::build_state(stdin, stdout.clone(), stderr.clone());
 
         let mut store = Store::new(&self.engine, HostCtx::new(wasi_state, host_state));
         store
             .set_fuel(self.fuel_limit)
             .expect("Fuel consumption is not enabled on engine");
 
-        let program_result = W::call_run(&mut store, component, &linker).await;
+        let program_result = B::call_run(&mut store, component, &linker).await;
 
         let fuel_consumed = self
             .fuel_limit
-            .saturating_sub(store.get_fuel().unwrap_or(0));
+            .saturating_sub(store.get_fuel().unwrap_or(self.fuel_limit));
 
         process_execution_result(fuel_consumed, &stdout, &stderr, program_result)
     }
@@ -135,7 +135,7 @@ fn process_execution_result(
 ) -> Result<ExecutionOutcome, VmError> {
     let stderr = String::from_utf8_lossy(&stderr.contents()).into_owned();
 
-    match program_result {
+    match classify_result(program_result, &stderr) {
         Ok(()) => {
             tracing::debug!(fuel_consumed, "execution succeeded");
             Ok(ExecutionOutcome {
@@ -144,26 +144,44 @@ fn process_execution_result(
                 fuel_consumed,
             })
         }
-        Err(trap) => {
-            let err = if let Some(exit) = trap.downcast_ref::<wasmtime_wasi::I32Exit>() {
-                ExecutionError::NonZeroExit {
-                    code: exit.0,
-                    stderr,
-                }
-            } else {
-                let trap_code = trap.chain().find_map(|e| e.downcast_ref::<Trap>().copied());
-                match trap_code {
-                    Some(code) => ExecutionError::Trap { code, stderr },
-                    None => ExecutionError::Unknown {
-                        source: trap,
-                        stderr,
-                    },
-                }
-            };
-
+        Err(err) => {
             tracing::debug!(error = ?err, fuel_consumed, "execution failed");
-
             Err(err.into())
         }
     }
+}
+
+fn classify_result(
+    program_result: anyhow::Result<()>,
+    stderr: &impl ToString,
+) -> Result<(), ExecutionError> {
+    let trap = match program_result {
+        Ok(()) => return Ok(()),
+        Err(e) => e,
+    };
+
+    if let Some(exit) = trap.downcast_ref::<wasmtime_wasi::I32Exit>() {
+        // exit(0) is equivalent to a clean return from main
+        return if exit.0 == 0 {
+            Ok(())
+        } else {
+            Err(ExecutionError::NonZeroExit {
+                code: exit.0,
+                stderr: stderr.to_string(),
+            })
+        };
+    }
+
+    let trap_code = trap.chain().find_map(|e| e.downcast_ref::<Trap>().copied());
+
+    Err(trap_code.map_or_else(
+        || ExecutionError::Unknown {
+            source: trap,
+            stderr: stderr.to_string(),
+        },
+        |code| ExecutionError::Trap {
+            code,
+            stderr: stderr.to_string(),
+        },
+    ))
 }

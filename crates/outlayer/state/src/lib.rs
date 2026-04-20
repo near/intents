@@ -7,7 +7,7 @@ pub struct HostState {
 }
 
 impl HostState {
-    pub fn new(crypto: crypto::CryptoHostState) -> Self {
+    pub const fn new(crypto: crypto::CryptoHostState) -> Self {
         Self { crypto }
     }
 }
