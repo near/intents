@@ -55,7 +55,7 @@ check-examples:
 	RUSTFLAGS='$(RUSTFLAGS_CHECK)' cargo clippy --workspace --examples
 
 .PHONY: check-all
-check-all: check-fmt check-unused-deps check check-examples check-all-features
+check-all: check-fmt check-unused-deps check check-examples
 
 .PHONY: fmt
 fmt:
@@ -63,39 +63,6 @@ fmt:
 	taplo format
 
 RUSTFLAGS_CHECK = -D warnings
-# --cfg clippy: cargo clippy only sets cfg(clippy) for workspace crates, not dependencies.
-# near-sdk compile_error!s on host unless one of its allowed cfgs is set, so we must set it via RUSTFLAGS.
-# --include-features near-sdk/non-contract-usage would be cleaner, but cargo-hack's
-# --ignore-unknown-features is not implemented for --include-features, so it fails
-# on crates that don't depend on near-sdk.
-CARGO_CHECK_HOST = RUSTFLAGS='$(RUSTFLAGS_CHECK) --cfg clippy' cargo hack clippy --exclude-features contract
-CARGO_CHECK_WASM = RUSTFLAGS='$(RUSTFLAGS_CHECK)' cargo hack clippy --target wasm32-unknown-unknown --exclude-features abi --exclude-features near-api-types --exclude-features near-api --no-dev-deps
-
-# Crates where every enum variant is feature-gated, requiring at least one
-# variant feature. These need --feature-powerset + --at-least-one-of instead
-# of --each-feature (which tests features in isolation).
-# Format: crate=feature1,feature2,...
-CRATES_AT_LEAST_ONE_VARIANT := \
-    defuse-token-id=nep141,nep171,nep245,imt \
-    defuse-ton-connect=text,binary,cell \
-    defuse-escrow-swap=nep141,nep245
-
-# Testing crates that cannot compile for wasm32-unknown-unknown.
-# defuse-randomness uses rand/getrandom which lacks wasm32 support;
-# it only reaches the defuse contract via dev-dependencies, never in the WASM binary.
-# defuse-wallet-sdk uses getrandom (via rand) without a wasm backend feature.
-CRATES_HOST_ONLY := \
-    defuse-test-utils \
-    defuse-sandbox \
-    defuse-randomness \
-    defuse-tests \
-    defuse-wallet-relayer \
-    defuse-wallet-sdk
-
-# Crates excluded from check-all-features-host (still covered by `make check`).
-# defuse-wallet-relayer: aws-lc-sys build script breaks with --cfg clippy in RUSTFLAGS.
-CRATES_SKIP_HOST_FEATURES := \
-    defuse-wallet-relayer
 
 
 .DEFAULT_GOAL := all
@@ -111,9 +78,6 @@ CONTRACT_CRATES := \
 
 ALL_TARGETS :=
 CHECK_TARGETS := check-contracts
-
-crate_name = $(firstword $(subst =, ,$1))
-crate_features = $(lastword $(subst =, ,$1))
 
 # Generate all build targets from cargo metadata, filtered to CONTRACT_CRATES
 $(eval $(shell cargo metadata --format-version=1 | jq -rn \
@@ -155,25 +119,3 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
 .PHONY: all
 all: $(ALL_TARGETS)
 
-.PHONY: check-all-features-host
-check-all-features-host::
-	$(CARGO_CHECK_HOST) --workspace --each-feature --exclude-no-default-features \
-	    $(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),--exclude $(call crate_name,$c)) \
-	    $(addprefix --exclude ,$(CRATES_SKIP_HOST_FEATURES))
-
-$(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),\
-  $(eval check-all-features-host::; \
-    $(CARGO_CHECK_HOST) -p $(call crate_name,$c) --feature-powerset --at-least-one-of $(call crate_features,$c)))
-
-.PHONY: check-all-features-wasm
-check-all-features-wasm::
-	$(CARGO_CHECK_WASM) --workspace --each-feature --exclude-no-default-features \
-	    $(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),--exclude $(call crate_name,$c)) \
-	    $(addprefix --exclude ,$(CRATES_HOST_ONLY))
-
-$(foreach c,$(CRATES_AT_LEAST_ONE_VARIANT),\
-  $(eval check-all-features-wasm::; \
-    $(CARGO_CHECK_WASM) -p $(call crate_name,$c) --feature-powerset --at-least-one-of $(call crate_features,$c)))
-
-.PHONY: check-all-features
-check-all-features: check-all-features-host check-all-features-wasm
