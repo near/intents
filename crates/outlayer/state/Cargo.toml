@@ -12,5 +12,3 @@ workspace = true
 defuse-outlayer-host.workspace = true
 defuse-outlayer-sys = { workspace = true, features = ["host"] }
 defuse-outlayer-worker-host.workspace = true
-
-impl-tools.workspace = true

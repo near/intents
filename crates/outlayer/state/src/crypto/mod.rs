@@ -1,20 +1,12 @@
 mod ed25519;
 mod secp256k1;
 
-pub use self::{ed25519::Ed25519HostState, secp256k1::Secp256k1HostState};
+use defuse_outlayer_worker_host::crypto::{
+    ed25519::WorkerEd25519Host, secp256k1::WorkerSecp256k1Host,
+};
 
 #[derive(Debug, Default)]
 pub struct CryptoHostState {
-    ed25519: Ed25519HostState,
-    secp256k1: Secp256k1HostState,
-}
-
-impl CryptoHostState {
-    pub const fn ed25519(&mut self) -> &mut Ed25519HostState {
-        &mut self.ed25519
-    }
-
-    pub const fn secp256k1(&mut self) -> &mut Secp256k1HostState {
-        &mut self.secp256k1
-    }
+    ed25519: WorkerEd25519Host,
+    secp256k1: WorkerSecp256k1Host,
 }

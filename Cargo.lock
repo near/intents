@@ -1653,7 +1653,6 @@ dependencies = [
  "defuse-outlayer-host",
  "defuse-outlayer-sys",
  "defuse-outlayer-worker-host",
- "impl-tools",
 ]
 
 [[package]]

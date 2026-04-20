@@ -1,5 +1,6 @@
 use anyhow::Result;
-use defuse_outlayer_sys::host::{Host, outlayer};
+use defuse_outlayer_sys::host::Host;
+use defuse_outlayer_sys::host::Imports;
 use std::marker::PhantomData;
 use tracing::instrument;
 use wasmtime::component::{Component, HasSelf, Linker};
@@ -87,14 +88,9 @@ impl<B: WasiBackend> VmRuntime<B> {
 
         B::setup_linker(&mut linker)?;
 
-        outlayer::crypto::ed25519::add_to_linker::<HostCtx<B::State, H>, HasSelf<H::Ed25519>>(
+        Imports::add_to_linker::<HostCtx<B::State, H>, HasSelf<H>>(
             &mut linker,
-            |ctx: &mut HostCtx<B::State, H>| ctx.host_state.ed25519(),
-        )?;
-
-        outlayer::crypto::secp256k1::add_to_linker::<HostCtx<B::State, H>, HasSelf<H::Secp256k1>>(
-            &mut linker,
-            |ctx: &mut HostCtx<B::State, H>| ctx.host_state.secp256k1(),
+            |ctx: &mut HostCtx<B::State, H>| &mut ctx.host_state,
         )?;
 
         Ok(linker)
