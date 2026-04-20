@@ -11,11 +11,12 @@ use crate::error::{ExecutionError, VmError};
 use crate::host::HostCtx;
 use crate::outcome::ExecutionOutcome;
 
-const MEMORY_GUARD_SIZE: u64 = 64 * 1024 * 1024;
-// TODO: calculate proper fuel limit
-const DEFAULT_FUEL_LIMIT: u64 = 100_000;
-const STDOUT_MAX_SIZE: usize = 4 * 1024 * 1024;
-const STDERR_MAX_SIZE: usize = 64 * 1024;
+const MEMORY_GUARD_SIZE: u64 = 64 * 1024 * 1024; // 64 MiB
+const MEMORY_RESERVATION_SIZE: u64 = 64 * 1024 * 1024; // 64 MiB
+const DEFAULT_FUEL_LIMIT: u64 = 1_000_000_000;
+
+const STDOUT_MAX_SIZE: usize = 4 * 1024 * 1024; // 4 MiB
+const STDERR_MAX_SIZE: usize = 64 * 1024; // 64 KiB
 
 pub struct VmRuntimeBuilder<W: WasiBackend> {
     config: Config,
@@ -26,10 +27,13 @@ pub struct VmRuntimeBuilder<W: WasiBackend> {
 impl<W: WasiBackend> VmRuntimeBuilder<W> {
     pub fn new() -> Self {
         let mut config = Config::new();
+        config.memory_reservation(MEMORY_RESERVATION_SIZE);
         config.guard_before_linear_memory(true);
         config.memory_guard_size(MEMORY_GUARD_SIZE);
+
         // NOTE: this is required for async host functions
         config.async_support(true);
+
         config.consume_fuel(true);
 
         Self {
