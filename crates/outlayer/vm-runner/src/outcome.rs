@@ -1,6 +1,6 @@
 #[derive(Debug)]
 pub struct ExecutionOutcome {
     pub output: Vec<u8>,
-    pub stderr: String,
+    pub stderr: Vec<u8>,
     pub fuel_consumed: u64,
 }

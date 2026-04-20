@@ -133,14 +133,12 @@ fn process_execution_result(
     stderr: &MemoryOutputPipe,
     program_result: anyhow::Result<()>,
 ) -> Result<ExecutionOutcome, VmError> {
-    let stderr = String::from_utf8_lossy(&stderr.contents()).into_owned();
-
-    match classify_result(program_result, &stderr) {
+    match classify_result(program_result, stderr) {
         Ok(()) => {
             tracing::debug!(fuel_consumed, "execution succeeded");
             Ok(ExecutionOutcome {
                 output: stdout.contents().to_vec(),
-                stderr,
+                stderr: stderr.contents().to_vec(),
                 fuel_consumed,
             })
         }
@@ -153,8 +151,10 @@ fn process_execution_result(
 
 fn classify_result(
     program_result: anyhow::Result<()>,
-    stderr: &impl ToString,
+    stderr: &MemoryOutputPipe,
 ) -> Result<(), ExecutionError> {
+    let stderr = String::from_utf8_lossy(&stderr.contents()).into_owned();
+
     let trap = match program_result {
         Ok(()) => return Ok(()),
         Err(e) => e,
@@ -167,7 +167,7 @@ fn classify_result(
         } else {
             Err(ExecutionError::NonZeroExit {
                 code: exit.0,
-                stderr: stderr.to_string(),
+                stderr: stderr.clone(),
             })
         };
     }
@@ -177,11 +177,11 @@ fn classify_result(
     Err(trap_code.map_or_else(
         || ExecutionError::Unknown {
             source: trap,
-            stderr: stderr.to_string(),
+            stderr: stderr.clone(),
         },
         |code| ExecutionError::Trap {
             code,
-            stderr: stderr.to_string(),
+            stderr: stderr.clone(),
         },
     ))
 }
