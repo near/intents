@@ -89,7 +89,7 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
     ($$name | gsub("-"; "_")) as $$wasm_base | \
     "$$(eval .PHONY: \($$name)/all)", \
     "$$(eval ALL_TARGETS +=  \($$name)/all)", \
-    "$$(eval \($$name)/all:: \($$name))", \
+    "$$(eval \($$name)/all::)", \
     "$$(eval .PHONY: check-contract/\($$name)/all)", \
     "$$(eval check-contract/\($$name)/all::)", \
     "$$(eval CHECK_TARGETS += check-contract/\($$name)/all)", \
