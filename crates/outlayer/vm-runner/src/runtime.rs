@@ -106,7 +106,7 @@ impl<B: WasiBackend> VmRuntime<B> {
     {
         let linker = self.create_linker::<H>()?;
 
-        let input_bytes = serde_json::to_vec(&input).map_err(ExecutionError::InvalidInput)?;
+        let input_bytes = serde_json::to_vec(&input).map_err(VmError::InvalidInput)?;
         let stdin = MemoryInputPipe::new(input_bytes);
         let stdout = MemoryOutputPipe::new(STDOUT_MAX_SIZE);
         let stderr = MemoryOutputPipe::new(STDERR_MAX_SIZE);
