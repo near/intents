@@ -133,7 +133,6 @@ bitflags = "2.9.1"
 bnum = { version = "0.13", features = ["borsh"] }
 chrono = { version = "0.4", default-features = false }
 clap = { version = "4.5.55", features = ["derive"] }
-curve25519-dalek = { version = "4.1", default-features = false }
 derive_more = "2.0"
 digest = { version = "0.10", default-features = false }
 ed25519-dalek = { version = "2.1", default-features = false }
@@ -141,10 +140,8 @@ futures = "0.3"
 generic-array = "1"
 hex = "0.4"
 hex-literal = "1.0"
-hkdf = "0.13"
 impl-tools = "0.11"
 itertools = "0.14"
-k256 = { version = "0.13", default-features = false, features = ["arithmetic", "ecdsa"] }
 num-traits = "0.2.19"
 p256 = { version = "0.13.2", default-features = false, features = ["ecdsa"] }
 proptest = "1.5"
@@ -155,8 +152,6 @@ schemars = "0.8"
 serde = "1"
 serde_json = "1"
 serde_with = "3.9"
-sha2 = "0.11"
-sha3 = { version = "0.10", default-features = false }
 stellar-strkey = "0.0.13"
 strum = { version = "0.27", features = ["derive"] }
 thiserror = "2"
