@@ -1,5 +1,5 @@
 use anyhow::Result;
-use defuse_outlayer_host_functions::Host;
+use defuse_outlayer_host_functions::HostFunctions;
 use wasmtime::Store;
 use wasmtime::component::{Component, Linker};
 use wasmtime_wasi::p2::bindings::Command;
@@ -23,7 +23,7 @@ impl WasiP2State {
     }
 }
 
-impl<T: Host> WasiView for HostCtx<WasiP2State, T> {
+impl<T: HostFunctions> WasiView for HostCtx<WasiP2State, T> {
     fn ctx(&mut self) -> WasiCtxView<'_> {
         WasiCtxView {
             ctx: &mut self.wasi_state.wasi_ctx,
@@ -37,7 +37,7 @@ pub struct WasiP2Backend;
 impl WasiBackend for WasiP2Backend {
     type State = WasiP2State;
 
-    fn setup_linker<H: Host>(linker: &mut Linker<HostCtx<WasiP2State, H>>) -> Result<()> {
+    fn setup_linker<H: HostFunctions>(linker: &mut Linker<HostCtx<WasiP2State, H>>) -> Result<()> {
         wasmtime_wasi::p2::add_to_linker_async(linker)
     }
 
@@ -55,7 +55,7 @@ impl WasiBackend for WasiP2Backend {
         )
     }
 
-    async fn call_run<H: Host>(
+    async fn run<H: HostFunctions>(
         store: &mut Store<HostCtx<WasiP2State, H>>,
         component: &Component,
         linker: &Linker<HostCtx<WasiP2State, H>>,

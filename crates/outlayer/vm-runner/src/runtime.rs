@@ -1,5 +1,5 @@
 use anyhow::Result;
-use defuse_outlayer_host_functions::{Host, Imports};
+use defuse_outlayer_host_functions::{HostFunctions, Imports};
 use std::marker::PhantomData;
 use tracing::instrument;
 use wasmtime::component::{Component, HasSelf, Linker};
@@ -82,7 +82,7 @@ pub struct VmRuntime<B: WasiBackend> {
 }
 
 impl<B: WasiBackend> VmRuntime<B> {
-    fn create_linker<H: Host + 'static>(&self) -> Result<Linker<HostCtx<B::State, H>>> {
+    fn create_linker<H: HostFunctions + 'static>(&self) -> Result<Linker<HostCtx<B::State, H>>> {
         let mut linker = Linker::new(&self.engine);
 
         B::setup_linker(&mut linker)?;
@@ -99,6 +99,17 @@ impl<B: WasiBackend> VmRuntime<B> {
         Component::from_binary(&self.engine, binary.as_ref())
     }
 
+    /// Executes the `run` function of the given component with the
+    /// provided host state and input.
+    ///
+    /// Example:
+    /// ```rust
+    /// let host_state = HostState::new(CryptoHostState::default());
+    /// let runner = VmRuntimeBuilder::<WasiP2Backend>::new().build()?;
+    /// let component = runner.load(&wasm_binary)?;
+    ///
+    /// runner.execute(&component, host_state, "Hello").await?;
+    /// ```
     #[instrument(skip_all)]
     pub async fn execute<H, I>(
         &self,
@@ -107,7 +118,7 @@ impl<B: WasiBackend> VmRuntime<B> {
         input: I,
     ) -> Result<ExecutionOutcome, VmError>
     where
-        H: Host + 'static,
+        H: HostFunctions + 'static,
         I: serde::Serialize + Send,
     {
         let linker = self.create_linker::<H>()?;
@@ -128,7 +139,7 @@ impl<B: WasiBackend> VmRuntime<B> {
             .set_fuel(self.fuel_limit)
             .expect("Fuel consumption is not enabled on engine");
 
-        let program_result = B::call_run(&mut store, component, &linker).await;
+        let program_result = B::run(&mut store, component, &linker).await;
 
         let fuel_consumed = self
             .fuel_limit
@@ -164,12 +175,12 @@ fn classify_result(
     program_result: anyhow::Result<()>,
     stderr: &MemoryOutputPipe,
 ) -> Result<(), ExecutionError> {
-    let stderr = String::from_utf8_lossy(&stderr.contents()).into_owned();
-
     let trap = match program_result {
         Ok(()) => return Ok(()),
         Err(e) => e,
     };
+
+    let stderr = String::from_utf8_lossy(&stderr.contents()).into_owned();
 
     if let Some(exit) = trap.downcast_ref::<wasmtime_wasi::I32Exit>() {
         // exit(0) is equivalent to a clean return from main
