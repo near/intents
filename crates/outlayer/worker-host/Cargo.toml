@@ -10,8 +10,3 @@ workspace = true
 
 [dependencies]
 defuse-outlayer-host.workspace = true
-
-near-account-id.workspace = true
-
-hkdf.workspace = true
-sha2.workspace = true

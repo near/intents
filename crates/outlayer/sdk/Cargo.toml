@@ -16,4 +16,3 @@ defuse-outlayer-sys.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 defuse-outlayer-worker-host.workspace = true
-hex.workspace = true
