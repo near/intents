@@ -1,5 +1,5 @@
 use defuse_outlayer_host::crypto::secp256k1::Secp256k1Host;
-use defuse_outlayer_sys::host::outlayer;
+use defuse_outlayer_host_functions::outlayer;
 
 use crate::HostState;
 

@@ -1,5 +1,5 @@
 use defuse_outlayer_host::crypto::ed25519::Ed25519Host;
-use defuse_outlayer_sys::host::outlayer;
+use defuse_outlayer_host_functions::outlayer;
 
 use crate::HostState;
 

@@ -1,6 +1,5 @@
 use anyhow::Result;
-use defuse_outlayer_sys::host::Host;
-use defuse_outlayer_sys::host::Imports;
+use defuse_outlayer_host_functions::{Host, Imports};
 use std::marker::PhantomData;
 use tracing::instrument;
 use wasmtime::component::{Component, HasSelf, Linker};

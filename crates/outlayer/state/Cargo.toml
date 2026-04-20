@@ -10,5 +10,5 @@ workspace = true
 
 [dependencies]
 defuse-outlayer-host.workspace = true
-defuse-outlayer-sys = { workspace = true, features = ["host"] }
+defuse-outlayer-host-functions = { workspace = true }
 defuse-outlayer-worker-host.workspace = true

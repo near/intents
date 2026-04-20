@@ -1,4 +1,4 @@
-use defuse_outlayer_sys::host::Host;
+use defuse_outlayer_host_functions::Host;
 use wasmtime::StoreLimits;
 
 pub struct HostCtx<W, T: Host> {

@@ -1638,6 +1638,13 @@ name = "defuse-outlayer-host"
 version = "0.1.0"
 
 [[package]]
+name = "defuse-outlayer-host-functions"
+version = "0.1.0"
+dependencies = [
+ "wasmtime",
+]
+
+[[package]]
 name = "defuse-outlayer-sdk"
 version = "0.1.0"
 dependencies = [
@@ -1651,7 +1658,7 @@ name = "defuse-outlayer-state"
 version = "0.1.0"
 dependencies = [
  "defuse-outlayer-host",
- "defuse-outlayer-sys",
+ "defuse-outlayer-host-functions",
  "defuse-outlayer-worker-host",
 ]
 
@@ -1659,7 +1666,6 @@ dependencies = [
 name = "defuse-outlayer-sys"
 version = "0.1.0"
 dependencies = [
- "wasmtime",
  "wit-bindgen 0.49.0",
 ]
 
@@ -1668,7 +1674,7 @@ name = "defuse-outlayer-vm-runner"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "defuse-outlayer-sys",
+ "defuse-outlayer-host-functions",
  "serde",
  "serde_json",
  "thiserror 2.0.17",

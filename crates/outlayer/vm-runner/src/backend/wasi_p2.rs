@@ -1,5 +1,5 @@
 use anyhow::Result;
-use defuse_outlayer_sys::host::Host;
+use defuse_outlayer_host_functions::Host;
 use wasmtime::Store;
 use wasmtime::component::{Component, Linker};
 use wasmtime_wasi::p2::bindings::Command;
