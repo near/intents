@@ -12,7 +12,6 @@ workspace = true
 
 [dependencies]
 anyhow.workspace = true
-impl-tools.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
@@ -21,6 +20,5 @@ wasmtime.workspace = true
 wasmtime-wasi.workspace = true
 
 defuse-outlayer-sys = { workspace = true, features = ["host"] }
-defuse-outlayer-worker-host = { workspace = true }
 
 tracing = { workspace = true }
