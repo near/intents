@@ -1,4 +1,6 @@
-use defuse_outlayer_host::crypto::secp256k1::*;
+use defuse_outlayer_host::crypto::secp256k1::{
+    Secp256k1Host, Secp256k1PublicKey, Secp256k1Signature,
+};
 
 pub fn derive_public_key(path: impl AsRef<str>) -> Secp256k1PublicKey {
     #[cfg(target_family = "wasm")]
