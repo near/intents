@@ -37,7 +37,7 @@ pub struct WasiP2Backend;
 impl WasiBackend for WasiP2Backend {
     type State = WasiP2State;
 
-    fn setup_linker<H: Host + 'static>(linker: &mut Linker<HostCtx<WasiP2State, H>>) -> Result<()> {
+    fn setup_linker<H: Host>(linker: &mut Linker<HostCtx<WasiP2State, H>>) -> Result<()> {
         wasmtime_wasi::p2::add_to_linker_async(linker)
     }
 
@@ -55,7 +55,7 @@ impl WasiBackend for WasiP2Backend {
         )
     }
 
-    async fn call_run<H: Host + 'static>(
+    async fn call_run<H: Host>(
         store: &mut Store<HostCtx<WasiP2State, H>>,
         component: &Component,
         linker: &Linker<HostCtx<WasiP2State, H>>,

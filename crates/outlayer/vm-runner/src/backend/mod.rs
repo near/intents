@@ -12,7 +12,7 @@ use crate::host::HostCtx;
 pub trait WasiBackend: Send + Sync {
     type State: Send + 'static;
 
-    fn setup_linker<H: Host + 'static>(linker: &mut Linker<HostCtx<Self::State, H>>) -> Result<()>;
+    fn setup_linker<H: Host>(linker: &mut Linker<HostCtx<Self::State, H>>) -> Result<()>;
 
     fn build_state(
         stdin: MemoryInputPipe,
@@ -20,7 +20,7 @@ pub trait WasiBackend: Send + Sync {
         stderr: MemoryOutputPipe,
     ) -> Self::State;
 
-    async fn call_run<H: Host + 'static>(
+    async fn call_run<H: Host>(
         store: &mut Store<HostCtx<Self::State, H>>,
         component: &Component,
         linker: &Linker<HostCtx<Self::State, H>>,
