@@ -15,7 +15,7 @@ ed25519-dalek = { workspace = true, optional = true }
 generic-array = { workspace = true, features = ["compat-0_14"], optional = true }
 p256 = { workspace = true, optional = true }
 
-arbitrary = { workspace = true, features = ["derive"], optional = true }
+arbitrary = { workspace = true, optional = true }
 near-api-types = { workspace = true, optional = true }
 
 [features]
@@ -35,6 +35,6 @@ near-api-types = ["dep:near-api-types", "ed25519", "secp256k1"]
 workspace = true
 
 [dev-dependencies]
-arbitrary = { workspace = true, features = ["derive"] }
+arbitrary.workspace = true
 near-sdk = { workspace = true, features = ["unstable", "unit-testing"] }
 rstest.workspace = true

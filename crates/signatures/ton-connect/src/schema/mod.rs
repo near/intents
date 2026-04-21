@@ -2,8 +2,8 @@ use core::str;
 use std::borrow::Cow;
 use std::fmt::Debug;
 
-use near_sdk::{env, near};
-use tlb_ton::{Error, MsgAddress, StringError};
+use near_sdk::near;
+use tlb_ton::{MsgAddress, StringError};
 
 #[cfg(feature = "binary")]
 mod binary;
@@ -20,15 +20,16 @@ pub struct TonConnectPayloadContext<'a> {
 
 impl TonConnectPayloadContext<'_> {
     // See https://docs.tonconsole.com/academy/sign-data#how-the-signature-is-built
+    #[cfg(any(feature = "binary", feature = "text"))]
     pub fn create_payload_hash(
         &self,
         payload_prefix: &[u8],
         payload: &[u8],
     ) -> Result<near_sdk::CryptoHash, StringError> {
-        let domain_len =
-            u32::try_from(self.domain.len()).map_err(|_| Error::custom("domain: overflow"))?;
-        let payload_len =
-            u32::try_from(payload.len()).map_err(|_| Error::custom("payload: overflow"))?;
+        let domain_len = u32::try_from(self.domain.len())
+            .map_err(|_| tlb_ton::Error::custom("domain: overflow"))?;
+        let payload_len = u32::try_from(payload.len())
+            .map_err(|_| tlb_ton::Error::custom("payload: overflow"))?;
 
         let bytes = [
             [0xff, 0xff].as_slice(),
@@ -44,7 +45,7 @@ impl TonConnectPayloadContext<'_> {
         ]
         .concat();
 
-        Ok(env::sha256_array(&bytes))
+        Ok(near_sdk::env::sha256_array(&bytes))
     }
 }
 

@@ -50,9 +50,6 @@ jobs:
           echo 'Signature: 8a477f597d28d172789f06886806bc55' | tee target/CACHEDIR.TAG res/CACHEDIR.TAG > /dev/null
       - name: Run clippy for workspace
         run: make check
-      - name: Run clippy for defuse
-        # Run clippy only on the main contract feature
-        run: cargo clippy --manifest-path ./contracts/defuse/Cargo.toml --features=contract --features=near-sdk/non-contract-usage --no-deps
       - name: Install cargo-machete
         run: curl -fsSL https://github.com/bnjbvr/cargo-machete/releases/download/v0.9.1/cargo-machete-v0.9.1-x86_64-unknown-linux-musl.tar.gz | tar xz --strip-components=1 -C /usr/local/bin
       - name: Check for unused dependencies

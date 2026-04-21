@@ -18,7 +18,7 @@ impl FungibleTokenReceiver for Contract {
         let token_id: TokenId = Nep141TokenId::new(env::predecessor_account_id()).into();
 
         match self
-            .on_receive(sender_id, token_id, amount.0, &msg)
+            .on_receive(sender_id, &token_id, amount.0, &msg)
             .unwrap_or_panic()
         {
             PromiseOrValue::Promise(p) => PromiseOrValue::Promise(p),
