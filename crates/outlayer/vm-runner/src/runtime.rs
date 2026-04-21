@@ -111,8 +111,8 @@ impl<B: WasiBackend, H: HostFunctions + 'static> VmRuntime<B, H> {
     ///
     /// Example:
     /// ```rust
-    /// let host_state = HostState::new(CryptoHostState::default());
-    /// let runner = VmRuntimeBuilder::<WasiP2Backend>::new().build()?;
+    /// let host_state = HostState::default();
+    /// let runner = VmRuntimeBuilder::<WasiP2Backend, HostState>::new().build()?;
     /// let component = runner.load(&wasm_binary)?;
     ///
     /// runner.execute(&component, host_state, "Hello").await?;
