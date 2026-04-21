@@ -25,9 +25,10 @@ impl WasiP2State {
 
 impl<T: HostFunctions> WasiView for HostCtx<WasiP2State, T> {
     fn ctx(&mut self) -> WasiCtxView<'_> {
+        let state = self.wasi_state_mut();
         WasiCtxView {
-            ctx: &mut self.wasi_state.wasi_ctx,
-            table: &mut self.wasi_state.resource_table,
+            ctx: &mut state.wasi_ctx,
+            table: &mut state.resource_table,
         }
     }
 }
@@ -65,7 +66,7 @@ impl WasiBackend for WasiP2Backend {
         command
             .wasi_cli_run()
             .call_run(&mut *store)
-            .await
-            .map(|_| ())
+            .await?
+            .map_err(|()| anyhow::anyhow!("component run() returned Err(())"))
     }
 }

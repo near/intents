@@ -2,9 +2,9 @@ use defuse_outlayer_host_functions::HostFunctions;
 use wasmtime::StoreLimits;
 
 pub struct HostCtx<W, T: HostFunctions> {
-    pub wasi_state: W,
-    pub host_state: T,
-    pub limits: StoreLimits,
+    wasi_state: W,
+    host_state: T,
+    limits: StoreLimits,
 }
 
 impl<W, T: HostFunctions> HostCtx<W, T> {
@@ -14,5 +14,17 @@ impl<W, T: HostFunctions> HostCtx<W, T> {
             host_state,
             limits,
         }
+    }
+
+    pub const fn host_state_mut(&mut self) -> &mut T {
+        &mut self.host_state
+    }
+
+    pub const fn wasi_state_mut(&mut self) -> &mut W {
+        &mut self.wasi_state
+    }
+
+    pub(crate) const fn limits_mut(&mut self) -> &mut StoreLimits {
+        &mut self.limits
     }
 }

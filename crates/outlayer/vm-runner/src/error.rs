@@ -21,9 +21,6 @@ pub enum VmError {
     #[error("failed to serialize input: {0}")]
     InvalidInput(#[from] serde_json::Error),
 
-    #[error("setup failed: {0}")]
-    Setup(#[from] anyhow::Error),
-
     #[error(transparent)]
     Execution(#[from] ExecutionError),
 }

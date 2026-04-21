@@ -82,7 +82,7 @@ fn create_linker<B: WasiBackend, H: HostFunctions + 'static>(
 
     Imports::add_to_linker::<HostCtx<B::State, H>, HasSelf<H>>(
         &mut linker,
-        |ctx: &mut HostCtx<B::State, H>| &mut ctx.host_state,
+        |ctx: &mut HostCtx<B::State, H>| ctx.host_state_mut(),
     )?;
 
     Ok(linker)
@@ -111,6 +111,9 @@ impl<B: WasiBackend, H: HostFunctions + 'static> VmRuntime<B, H> {
     ///
     /// Example:
     /// ```rust
+    /// use defuse_outlayer_state::HostState;
+    /// use defuse_outlayer_vm_runner::{VmRuntimeBuilder, WasiP2Backend};
+    ///
     /// let host_state = HostState::default();
     /// let runner = VmRuntimeBuilder::<WasiP2Backend, HostState>::new().build()?;
     /// let component = runner.load(&wasm_binary)?;
@@ -138,7 +141,7 @@ impl<B: WasiBackend, H: HostFunctions + 'static> VmRuntime<B, H> {
             .build();
         let mut store = Store::new(&self.engine, HostCtx::new(wasi_state, host_state, limits));
 
-        store.limiter(|ctx| &mut ctx.limits);
+        store.limiter(|ctx| ctx.limits_mut());
         store
             .set_fuel(self.fuel_limit)
             .expect("Fuel consumption is not enabled on engine");
@@ -200,14 +203,11 @@ fn classify_result(
 
     let trap_code = trap.chain().find_map(|e| e.downcast_ref::<Trap>().copied());
 
-    Err(trap_code.map_or_else(
-        || ExecutionError::Unknown {
+    Err(match trap_code {
+        Some(code) => ExecutionError::Trap { code, stderr },
+        None => ExecutionError::Unknown {
             source: trap,
-            stderr: stderr.clone(),
+            stderr,
         },
-        |code| ExecutionError::Trap {
-            code,
-            stderr: stderr.clone(),
-        },
-    ))
+    })
 }
