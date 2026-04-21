@@ -85,9 +85,9 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
     "$$(eval .PHONY: \($$name)/all)", \
     "$$(eval ALL_TARGETS +=  \($$name)/all)", \
     "$$(eval \($$name)/all::)", \
-    "$$(eval .PHONY: check-contract/\($$name)/all)", \
-    "$$(eval check-contract/\($$name)/all::)", \
-    "$$(eval CHECK_TARGETS += check-contract/\($$name)/all)", \
+    "$$(eval .PHONY: check-contracts/\($$name)/all)", \
+    "$$(eval check-contracts/\($$name)/all::)", \
+    "$$(eval CHECK_TARGETS += check-contracts/\($$name)/all)", \
     ({"": $$b} + ($$b.variant // {}) | to_entries[] | \
      . as {key: $$vkey, value: $$vval} | \
      ("\($$name)/\($$vkey)" | rtrimstr("/")) as $$tname | \
@@ -98,11 +98,11 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
      (if $$reproducible != "" then $$reproducible_cmd else $$non_reproducible_cmd end) as $$cmd | \
      (if $$vkey == "" then "" else ".\($$vkey)" end) as $$suffix | \
      ($$vval.container_build_command | map(select(startswith("--features="))) | if length > 0 then " " + first else "" end) as $$features_flag | \
-     "$$(eval .PHONY: check-contract/\($$tname))", \
-     "$$(eval CHECK_TARGETS += check-contract/\($$tname))", \
-     "$$(eval check-contracts:: check-contract/\($$tname))", \
-     "$$(eval check-contract/\($$tname):; cargo clippy -p \($$name) --no-deps --target wasm32-unknown-unknown\($$features_flag))", \
-     "$$(eval check-contract/\($$name)/all:: check-contract/\($$tname))", \
+     "$$(eval .PHONY: check-contracts/\($$tname))", \
+     "$$(eval CHECK_TARGETS += check-contracts/\($$tname))", \
+     "$$(eval check-contracts:: check-contracts/\($$tname))", \
+     "$$(eval check-contracts/\($$tname):; cargo clippy -p \($$name) --no-deps --target wasm32-unknown-unknown\($$features_flag))", \
+     "$$(eval check-contracts/\($$name)/all:: check-contracts/\($$tname))", \
      "$$(eval .PHONY: \($$tname))", \
      "$$(eval ALL_TARGETS += \($$tname))", \
      "$$(eval \($$name)/all:: \($$tname))", \
