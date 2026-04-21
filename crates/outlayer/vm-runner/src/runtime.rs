@@ -18,14 +18,15 @@ const DEFAULT_FUEL_LIMIT: u64 = 1_000_000_000;
 const STDOUT_MAX_SIZE: usize = 4 * 1024 * 1024; // 4 MiB
 const STDERR_MAX_SIZE: usize = 64 * 1024; // 64 KiB
 
-pub struct VmRuntimeBuilder<B: WasiBackend> {
+pub struct VmRuntimeBuilder<B: WasiBackend, H: HostFunctions + 'static> {
     config: Config,
     fuel_limit: Option<u64>,
     memory_limit: Option<usize>,
     _backend: PhantomData<B>,
+    _host: PhantomData<H>,
 }
 
-impl<B: WasiBackend> VmRuntimeBuilder<B> {
+impl<B: WasiBackend, H: HostFunctions + 'static> VmRuntimeBuilder<B, H> {
     pub fn new() -> Self {
         let mut config = Config::new();
         config.guard_before_linear_memory(true);
@@ -39,6 +40,7 @@ impl<B: WasiBackend> VmRuntimeBuilder<B> {
             fuel_limit: None,
             memory_limit: None,
             _backend: PhantomData,
+            _host: PhantomData,
         }
     }
 
@@ -54,47 +56,52 @@ impl<B: WasiBackend> VmRuntimeBuilder<B> {
         self
     }
 
-    pub fn build(mut self) -> Result<VmRuntime<B>> {
+    pub fn build(mut self) -> Result<VmRuntime<B, H>> {
         let memory_limit = self.memory_limit.unwrap_or(DEFAULT_MEMORY_LIMIT);
         self.config
             .memory_reservation(memory_limit.try_into().unwrap());
 
+        let engine = Engine::new(&self.config)?;
+        let linker = create_linker::<B, H>(&engine)?;
+
         Ok(VmRuntime {
-            engine: Engine::new(&self.config)?,
+            engine,
             fuel_limit: self.fuel_limit.unwrap_or(DEFAULT_FUEL_LIMIT),
             memory_limit,
-            _backend: PhantomData,
+            linker,
         })
     }
 }
 
-impl<B: WasiBackend> Default for VmRuntimeBuilder<B> {
+fn create_linker<B: WasiBackend, H: HostFunctions + 'static>(
+    engine: &Engine,
+) -> Result<Linker<HostCtx<B::State, H>>> {
+    let mut linker = Linker::new(engine);
+
+    B::setup_linker(&mut linker)?;
+
+    Imports::add_to_linker::<HostCtx<B::State, H>, HasSelf<H>>(
+        &mut linker,
+        |ctx: &mut HostCtx<B::State, H>| &mut ctx.host_state,
+    )?;
+
+    Ok(linker)
+}
+
+impl<B: WasiBackend, H: HostFunctions + 'static> Default for VmRuntimeBuilder<B, H> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-pub struct VmRuntime<B: WasiBackend> {
+pub struct VmRuntime<B: WasiBackend, H: HostFunctions + 'static> {
     engine: Engine,
     fuel_limit: u64,
     memory_limit: usize,
-    _backend: PhantomData<B>,
+    linker: Linker<HostCtx<B::State, H>>,
 }
 
-impl<B: WasiBackend> VmRuntime<B> {
-    fn create_linker<H: HostFunctions + 'static>(&self) -> Result<Linker<HostCtx<B::State, H>>> {
-        let mut linker = Linker::new(&self.engine);
-
-        B::setup_linker(&mut linker)?;
-
-        Imports::add_to_linker::<HostCtx<B::State, H>, HasSelf<H>>(
-            &mut linker,
-            |ctx: &mut HostCtx<B::State, H>| &mut ctx.host_state,
-        )?;
-
-        Ok(linker)
-    }
-
+impl<B: WasiBackend, H: HostFunctions + 'static> VmRuntime<B, H> {
     pub fn load(&self, binary: impl AsRef<[u8]>) -> Result<Component> {
         Component::from_binary(&self.engine, binary.as_ref())
     }
@@ -111,18 +118,15 @@ impl<B: WasiBackend> VmRuntime<B> {
     /// runner.execute(&component, host_state, "Hello").await?;
     /// ```
     #[instrument(skip_all)]
-    pub async fn execute<H, I>(
+    pub async fn execute<I>(
         &self,
         component: &Component,
         host_state: H,
         input: I,
     ) -> Result<ExecutionOutcome, VmError>
     where
-        H: HostFunctions + 'static,
         I: serde::Serialize + Send,
     {
-        let linker = self.create_linker::<H>()?;
-
         let input_bytes = serde_json::to_vec(&input).map_err(VmError::InvalidInput)?;
         let stdin = MemoryInputPipe::new(input_bytes);
         let stdout = MemoryOutputPipe::new(STDOUT_MAX_SIZE);
@@ -139,7 +143,7 @@ impl<B: WasiBackend> VmRuntime<B> {
             .set_fuel(self.fuel_limit)
             .expect("Fuel consumption is not enabled on engine");
 
-        let program_result = B::run(&mut store, component, &linker).await;
+        let program_result = B::run(&mut store, component, &self.linker).await;
 
         let fuel_consumed = self
             .fuel_limit
