@@ -186,7 +186,7 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         store.limiter(|ctx| ctx.limits_mut());
         store
             .set_fuel(self.fuel_limit)
-            .expect("Fuel consumption is not enabled on engine");
+            .expect("fuel consumption is not enabled on engine");
 
         let program_result = self.run_command(&mut store, component).await;
 
@@ -247,13 +247,9 @@ fn classify_result(
 
     if let Some(exit) = trap.downcast_ref::<wasmtime_wasi::I32Exit>() {
         // exit(0) is equivalent to a clean return from main
-        return if exit.0 == 0 {
-            Ok(())
-        } else {
-            Err(ExecutionError::NonZeroExit {
-                code: exit.0,
-                stderr,
-            })
+        return match exit.0 {
+            0 => Ok(()),
+            code => Err(ExecutionError::NonZeroExit { code, stderr }),
         };
     }
 
