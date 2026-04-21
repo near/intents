@@ -88,6 +88,7 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
     "$$(eval .PHONY: check-contracts/\($$name)/all)", \
     "$$(eval check-contracts/\($$name)/all::)", \
     "$$(eval CHECK_TARGETS += check-contracts/\($$name)/all)", \
+    "$$(eval check-contracts:: check-contracts/\($$name)/all)", \
     ({"": $$b} + ($$b.variant // {}) | to_entries[] | \
      . as {key: $$vkey, value: $$vval} | \
      ("\($$name)/\($$vkey)" | rtrimstr("/")) as $$tname | \
@@ -100,7 +101,6 @@ $(eval $(shell cargo metadata --format-version=1 | jq -rn \
      ($$vval.container_build_command | map(select(startswith("--features="))) | if length > 0 then " " + first else "" end) as $$features_flag | \
      "$$(eval .PHONY: check-contracts/\($$tname))", \
      "$$(eval CHECK_TARGETS += check-contracts/\($$tname))", \
-     "$$(eval check-contracts:: check-contracts/\($$tname))", \
      "$$(eval check-contracts/\($$tname):; cargo clippy -p \($$name) --no-deps --target wasm32-unknown-unknown\($$features_flag))", \
      "$$(eval check-contracts/\($$name)/all:: check-contracts/\($$tname))", \
      "$$(eval .PHONY: \($$tname))", \
