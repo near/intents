@@ -1,5 +1,7 @@
 use wasmtime::Trap;
 
+/// Errors that can occur during execution of
+/// a component in the VM runtime
 #[derive(thiserror::Error, Debug)]
 pub enum ExecutionError {
     #[error("component exited with code {code}\n{stderr}")]

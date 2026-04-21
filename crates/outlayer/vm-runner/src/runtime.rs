@@ -19,6 +19,8 @@ const DEFAULT_FUEL_LIMIT: u64 = 1_000_000_000;
 const STDOUT_MAX_SIZE: usize = 4 * 1024 * 1024; // 4 MiB
 const STDERR_MAX_SIZE: usize = 64 * 1024; // 64 KiB
 
+/// A builder for configuring and creating a `VmRuntime`
+/// with a custom host environment.
 pub struct VmRuntimeBuilder<H: HostFunctions + 'static> {
     config: Config,
     fuel_limit: Option<u64>,
@@ -31,7 +33,7 @@ impl<H: HostFunctions + 'static> VmRuntimeBuilder<H> {
         let mut config = Config::new();
         config.guard_before_linear_memory(true);
         config.memory_guard_size(MEMORY_GUARD_SIZE);
-        // NOTE: this is required for async host functions
+        // NOTE: this is enabling async in host-defined functions
         config.async_support(true);
         config.consume_fuel(true);
 
@@ -43,20 +45,29 @@ impl<H: HostFunctions + 'static> VmRuntimeBuilder<H> {
         }
     }
 
+    /// Sets the fuel limit for the runtime
+    /// If not set, a default value will be used
     #[must_use]
     pub const fn fuel_limit(mut self, fuel_limit: u64) -> Self {
         self.fuel_limit = Some(fuel_limit);
         self
     }
 
+    /// Sets the memory limit for the runtime
+    /// If not set, a default value will be used
     #[must_use]
     pub const fn memory_limit(mut self, memory_limit: usize) -> Self {
         self.memory_limit = Some(memory_limit);
         self
     }
 
+    /// Builds the `VmRuntime` with the specified configuration
+    /// If fuel limit or memory limit are not set, default values will be used
     pub fn build(mut self) -> Result<VmRuntime<H>> {
         let memory_limit = self.memory_limit.unwrap_or(DEFAULT_MEMORY_LIMIT);
+        // NOTE: set initial chunk of virtual memory that a linear memory
+        // may grow into limited to allow multiple linear memories to be
+        // instantiated without exhausting host resources
         self.config
             .memory_reservation(memory_limit.try_into().unwrap());
 
@@ -75,8 +86,10 @@ impl<H: HostFunctions + 'static> VmRuntimeBuilder<H> {
 fn create_linker<H: HostFunctions + 'static>(engine: &Engine) -> Result<Linker<HostCtx<H>>> {
     let mut linker = Linker::new(engine);
 
+    // Add WASI imports to the linker
     wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
 
+    // Add host function imports to the linker
     Imports::add_to_linker::<HostCtx<H>, HasSelf<H>>(&mut linker, |ctx: &mut HostCtx<H>| {
         ctx.host_state_mut()
     })?;
@@ -90,6 +103,12 @@ impl<H: HostFunctions + 'static> Default for VmRuntimeBuilder<H> {
     }
 }
 
+/// A runtime for executing wasip2 components with a custom host
+/// environment.
+///
+/// The host environment is defined by the `HostFunctions` trait,
+/// which must be implemented by the user and provided as a type
+/// parameter to the builder.
 pub struct VmRuntime<H: HostFunctions + 'static> {
     engine: Engine,
     fuel_limit: u64,
@@ -98,7 +117,8 @@ pub struct VmRuntime<H: HostFunctions + 'static> {
 }
 
 impl<H: HostFunctions + 'static> VmRuntime<H> {
-    pub fn load(&self, binary: impl AsRef<[u8]>) -> Result<Component> {
+    /// Compile wasip2 component from the given binary data
+    pub fn compile(&self, binary: impl AsRef<[u8]>) -> Result<Component> {
         Component::from_binary(&self.engine, binary.as_ref())
     }
 
@@ -112,7 +132,7 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     ///
     /// let host_state = HostState::default();
     /// let runner = VmRuntimeBuilder::<HostState>::new().build()?;
-    /// let component = runner.load(&wasm_binary)?;
+    /// let component = runner.compile(&wasm_binary)?;
     ///
     /// runner.execute(&component, host_state, b"Hello").await?;
     /// ```
