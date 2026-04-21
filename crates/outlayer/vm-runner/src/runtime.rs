@@ -98,7 +98,6 @@ impl<H: HostFunctions + 'static> VmRuntimeBuilder<H> {
         let linker = create_linker::<H>(&engine)?;
 
         Ok(VmRuntime {
-            engine,
             fuel_limit: self.fuel_limit.unwrap_or(DEFAULT_FUEL_LIMIT),
             memory_limit,
             linker,
@@ -133,7 +132,6 @@ impl<H: HostFunctions + 'static> Default for VmRuntimeBuilder<H> {
 /// which must be implemented by the user and provided as a type
 /// parameter to the builder.
 pub struct VmRuntime<H: HostFunctions + 'static> {
-    engine: Engine,
     fuel_limit: u64,
     memory_limit: usize,
     linker: Linker<HostCtx<H>>,
@@ -142,7 +140,7 @@ pub struct VmRuntime<H: HostFunctions + 'static> {
 impl<H: HostFunctions + 'static> VmRuntime<H> {
     /// Compile wasip2 component from the given binary data
     pub fn compile(&self, binary: impl AsRef<[u8]>) -> Result<Component> {
-        Component::from_binary(&self.engine, binary.as_ref())
+        Component::from_binary(self.linker.engine(), binary.as_ref())
     }
 
     /// Executes the `wasi:cli/run` function of the given component.
@@ -185,7 +183,10 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         let limits = StoreLimitsBuilder::new()
             .memory_size(self.memory_limit)
             .build();
-        let mut store = Store::new(&self.engine, HostCtx::new(wasi_ctx, host_state, limits));
+        let mut store = Store::new(
+            self.linker.engine(),
+            HostCtx::new(wasi_ctx, host_state, limits),
+        );
 
         store.limiter(|ctx| ctx.limits_mut());
         store
