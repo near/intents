@@ -4,9 +4,13 @@ use std::marker::PhantomData;
 use tracing::instrument;
 use wasmtime::component::{Component, HasSelf, Linker};
 use wasmtime::{Config, Engine, Store, StoreLimitsBuilder, Trap};
-use wasmtime_wasi::WasiCtx;
-use wasmtime_wasi::p2::bindings::Command;
-use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
+use wasmtime_wasi::{
+    WasiCtx,
+    p2::{
+        bindings::Command,
+        pipe::{MemoryInputPipe, MemoryOutputPipe},
+    },
+};
 
 use crate::error::ExecutionError;
 use crate::host::HostCtx;
