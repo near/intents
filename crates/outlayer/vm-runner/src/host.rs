@@ -1,16 +1,17 @@
 use defuse_outlayer_host_functions::HostFunctions;
 use wasmtime::StoreLimits;
+use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
 
-pub struct HostCtx<W, T: HostFunctions> {
-    wasi_state: W,
+pub struct HostCtx<T: HostFunctions> {
+    wasi_state: WasiP2State,
     host_state: T,
     limits: StoreLimits,
 }
 
-impl<W, T: HostFunctions> HostCtx<W, T> {
-    pub const fn new(wasi_state: W, host_state: T, limits: StoreLimits) -> Self {
+impl<T: HostFunctions> HostCtx<T> {
+    pub fn new(wasi_state: WasiCtx, host_state: T, limits: StoreLimits) -> Self {
         Self {
-            wasi_state,
+            wasi_state: WasiP2State::new(wasi_state),
             host_state,
             limits,
         }
@@ -20,11 +21,35 @@ impl<W, T: HostFunctions> HostCtx<W, T> {
         &mut self.host_state
     }
 
-    pub const fn wasi_state_mut(&mut self) -> &mut W {
+    const fn wasi_state_mut(&mut self) -> &mut WasiP2State {
         &mut self.wasi_state
     }
 
     pub(crate) const fn limits_mut(&mut self) -> &mut StoreLimits {
         &mut self.limits
+    }
+}
+
+impl<T: HostFunctions> WasiView for HostCtx<T> {
+    fn ctx(&mut self) -> WasiCtxView<'_> {
+        let state = self.wasi_state_mut();
+        WasiCtxView {
+            ctx: &mut state.wasi_ctx,
+            table: &mut state.resource_table,
+        }
+    }
+}
+
+struct WasiP2State {
+    wasi_ctx: WasiCtx,
+    resource_table: wasmtime_wasi::ResourceTable,
+}
+
+impl WasiP2State {
+    pub fn new(wasi_ctx: WasiCtx) -> Self {
+        Self {
+            wasi_ctx,
+            resource_table: wasmtime_wasi::ResourceTable::new(),
+        }
     }
 }

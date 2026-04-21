@@ -15,12 +15,3 @@ pub enum ExecutionError {
         stderr: String,
     },
 }
-
-#[derive(thiserror::Error, Debug)]
-pub enum VmError {
-    #[error("failed to serialize input: {0}")]
-    InvalidInput(#[from] serde_json::Error),
-
-    #[error(transparent)]
-    Execution(#[from] ExecutionError),
-}
