@@ -2,6 +2,11 @@ use defuse_outlayer_host_functions::HostFunctions;
 use wasmtime::StoreLimits;
 use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
 
+/// The host context passed to the component, containing both
+/// the WASI state and the custom host state
+///
+/// Used as the context for the linker when instantiating the component, and
+/// passed to host functions when called by the component
 pub struct HostCtx<T: HostFunctions> {
     wasi_state: WasiP2State,
     host_state: T,
