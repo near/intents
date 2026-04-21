@@ -12,15 +12,24 @@ use crate::error::ExecutionError;
 use crate::host::HostCtx;
 use crate::outcome::ExecutionOutcome;
 
+/// Size of the guard region placed before linear memory to
+/// catch out-of-bounds accesses
 const MEMORY_GUARD_SIZE: u64 = 64 * 1024 * 1024; // 64 MiB
-const DEFAULT_MEMORY_LIMIT: usize = 100 * 1024 * 1024; // 100 MiB
-const DEFAULT_FUEL_LIMIT: u64 = 1_000_000_000;
 
+/// Default maximum physical memory for a single component
+/// execution (100 MiB)
+pub const DEFAULT_MEMORY_LIMIT: usize = 100 * 1024 * 1024;
+
+/// Default fuel budget for a single component execution
+/// (~1 billion wasm instructions)
+pub const DEFAULT_FUEL_LIMIT: u64 = 1_000_000_000;
+
+/// Maximum size of stdout and stderr buffers for component execution
 const STDOUT_MAX_SIZE: usize = 4 * 1024 * 1024; // 4 MiB
 const STDERR_MAX_SIZE: usize = 64 * 1024; // 64 KiB
 
 /// A builder for configuring and creating a `VmRuntime`
-/// with a custom host environment.
+/// with a custom host environment
 pub struct VmRuntimeBuilder<H: HostFunctions + 'static> {
     config: Config,
     fuel_limit: Option<u64>,
@@ -29,6 +38,11 @@ pub struct VmRuntimeBuilder<H: HostFunctions + 'static> {
 }
 
 impl<H: HostFunctions + 'static> VmRuntimeBuilder<H> {
+    /// Creates a new builder with default configuration.
+    ///
+    /// Async support and fuel metering are always enabled and cannot be
+    /// disabled. Use [`fuel_limit`](Self::fuel_limit) and
+    /// [`memory_limit`](Self::memory_limit) to override the defaults
     pub fn new() -> Self {
         let mut config = Config::new();
         config.guard_before_linear_memory(true);
@@ -45,16 +59,21 @@ impl<H: HostFunctions + 'static> VmRuntimeBuilder<H> {
         }
     }
 
-    /// Sets the fuel limit for the runtime
-    /// If not set, a default value will be used
+    /// Sets the maximum fuel the component may consume per execution
+    ///
+    /// Fuel roughly corresponds to the number of WebAssembly instructions
+    /// executed. Exceeding the limit raises [`ExecutionError::Trap`].
+    /// Defaults to [`DEFAULT_FUEL_LIMIT`] if not set
     #[must_use]
     pub const fn fuel_limit(mut self, fuel_limit: u64) -> Self {
         self.fuel_limit = Some(fuel_limit);
         self
     }
 
-    /// Sets the memory limit for the runtime
-    /// If not set, a default value will be used
+    /// Sets the maximum physical memory the components linear memory may use
+    ///
+    /// Attempts to grow beyond this limit will trap. Defaults to
+    /// [`DEFAULT_MEMORY_LIMIT`] if not set
     #[must_use]
     pub const fn memory_limit(mut self, memory_limit: usize) -> Self {
         self.memory_limit = Some(memory_limit);
@@ -122,19 +141,26 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         Component::from_binary(&self.engine, binary.as_ref())
     }
 
-    /// Executes the `run` function of the given component with the
-    /// provided host state and input.
+    /// Executes the `wasi:cli/run` function of the given component.
     ///
-    /// Example:
-    /// ```rust, no_run
+    /// `input` is written to the components stdin as raw bytes. The
+    /// component's stdout is returned in [`ExecutionOutcome::output`] on
+    /// success.
+    /// Execution is limited by the fuel and memory limits
+    /// configured on the builder
+    ///
+    /// # Example
+    /// ```rust,no_run
     /// use defuse_outlayer_state::HostState;
     /// use defuse_outlayer_vm_runner::VmRuntimeBuilder;
     ///
-    /// let host_state = HostState::default();
-    /// let runner = VmRuntimeBuilder::<HostState>::new().build()?;
-    /// let component = runner.compile(&wasm_binary)?;
-    ///
-    /// runner.execute(&component, host_state, b"Hello").await?;
+    ///  async fn example() -> anyhow::Result<()> {
+    ///     let wasm_binary = std::fs::read("component.wasm")?;
+    ///     let runner = VmRuntimeBuilder::<HostState>::new().build()?;
+    ///     let component = runner.compile(&wasm_binary)?;
+    ///     let outcome = runner.execute(&component, HostState::default(), b"input").await?;
+    ///    Ok(())
+    /// }
     /// ```
     #[instrument(skip_all)]
     pub async fn execute(
