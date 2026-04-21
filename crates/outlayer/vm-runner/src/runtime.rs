@@ -118,20 +118,16 @@ impl<B: WasiBackend, H: HostFunctions + 'static> VmRuntime<B, H> {
     /// let runner = VmRuntimeBuilder::<WasiP2Backend, HostState>::new().build()?;
     /// let component = runner.load(&wasm_binary)?;
     ///
-    /// runner.execute(&component, host_state, "Hello").await?;
+    /// runner.execute(&component, host_state, b"Hello").await?;
     /// ```
     #[instrument(skip_all)]
-    pub async fn execute<I>(
+    pub async fn execute(
         &self,
         component: &Component,
         host_state: H,
-        input: I,
-    ) -> Result<ExecutionOutcome, VmError>
-    where
-        I: serde::Serialize + Send,
-    {
-        let input_bytes = serde_json::to_vec(&input).map_err(VmError::InvalidInput)?;
-        let stdin = MemoryInputPipe::new(input_bytes);
+        input: impl AsRef<[u8]>,
+    ) -> Result<ExecutionOutcome, VmError> {
+        let stdin = MemoryInputPipe::new(input.as_ref().to_vec());
         let stdout = MemoryOutputPipe::new(STDOUT_MAX_SIZE);
         let stderr = MemoryOutputPipe::new(STDERR_MAX_SIZE);
         let wasi_state = B::build_state(stdin, stdout.clone(), stderr.clone());
