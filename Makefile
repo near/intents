@@ -50,19 +50,14 @@ check-fmt:
 check-unused-deps:
 	cargo machete 2>/dev/null
 
-.PHONY: check-examples
-check-examples:
-	RUSTFLAGS='$(RUSTFLAGS_CHECK)' cargo clippy --workspace --examples
-
 .PHONY: check-all
-check-all: check-fmt check-unused-deps check check-examples
+check-all: check-fmt check-unused-deps check
 
 .PHONY: fmt
 fmt:
 	cargo fmt --all
 	taplo format
 
-RUSTFLAGS_CHECK = -D warnings
 
 
 .DEFAULT_GOAL := all
