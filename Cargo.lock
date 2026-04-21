@@ -1636,6 +1636,9 @@ dependencies = [
 [[package]]
 name = "defuse-outlayer-host"
 version = "0.1.0"
+dependencies = [
+ "impl-tools",
+]
 
 [[package]]
 name = "defuse-outlayer-host-functions"
