@@ -132,6 +132,7 @@ arbitrary = { version = "1", features = ["derive"] }
 array-util = "1"
 bitflags = "2.9.1"
 bnum = { version = "0.13", features = ["borsh"] }
+borsh = "1.6.1"
 chrono = { version = "0.4", default-features = false }
 clap = { version = "4.5.55", features = ["derive"] }
 derive_more = "2.0"
@@ -141,8 +142,10 @@ futures = "0.3"
 generic-array = "1"
 hex = "0.4"
 hex-literal = "1.0"
+hkdf = "0.13"
 impl-tools = "0.11"
 itertools = "0.14"
+k256 = { version = "0.13.4", default-features = false }
 num-traits = "0.2.19"
 p256 = { version = "0.13.2", default-features = false, features = ["ecdsa"] }
 proptest = "1.5"
@@ -153,6 +156,7 @@ schemars = "0.8"
 serde = "1"
 serde_json = "1"
 serde_with = "3.9"
+sha3 = "0.11"
 stellar-strkey = "0.0.13"
 strum = { version = "0.27", features = ["derive"] }
 thiserror = "2"
@@ -161,6 +165,7 @@ tokio = { version = "1.45", default-features = false }
 tracing = "0.1"
 tracing-subscriber = "0.3"
 url = "2"
+zeroize = "1.8.2"
 
 wasmtime = { version = ">=36.0.7", features = ["component-model"] }
 wasmtime-wasi = ">=36.0.7"
