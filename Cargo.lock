@@ -1561,6 +1561,7 @@ version = "0.1.0"
 dependencies = [
  "borsh",
  "defuse-outlayer-host",
+ "hex-literal",
  "hkdf",
  "k256",
  "near-account-id",

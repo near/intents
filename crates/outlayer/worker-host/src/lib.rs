@@ -1,4 +1,5 @@
 use borsh::BorshSerialize;
+use hex_literal::hex;
 use hkdf::Hkdf;
 use k256::SecretKey as Secp256k1SecretKey;
 use near_account_id::AccountId;
@@ -31,20 +32,6 @@ impl WorkerHost {
             },
         }
     }
-
-    fn derive_tweak(&self, path: &str) -> [u8; 32] {
-        let hk = Hkdf::<sha3::Sha3_256>::new(None, b"TODO");
-        let mut tweak = [0u8; 32];
-
-        let app_id = borsh::to_vec(&self.app_id).unwrap();
-
-        hk.expand_multi_info(
-            &[&app_id, path.as_bytes()], // TODO: maybe join with `,`?
-            &mut tweak,
-        )
-        .unwrap();
-        tweak
-    }
 }
 
 #[derive(BorshSerialize)]
@@ -52,4 +39,21 @@ impl WorkerHost {
 #[repr(u8)]
 pub enum AppId {
     NearAccount(AccountId) = 0,
+}
+
+impl AppId {
+    // TODO: hash of something?
+    const SALT: &[u8] = &hex!("0000000000000000000000000000000000000000000000000000000000000000");
+
+    // TODO: maybe different per-curve tweaks?
+    pub fn derive_tweak(&self, path: impl AsRef<[u8]>) -> [u8; 32] {
+        let hk = Hkdf::<sha3::Sha3_256>::new(
+            Some(Self::SALT), // TODO: is salt needed?
+            // TODO: does it make sense to put app_id in ikm?
+            &borsh::to_vec(self).unwrap(),
+        );
+        let mut tweak = [0u8; 32];
+        hk.expand(path.as_ref(), &mut tweak).unwrap();
+        tweak
+    }
 }
