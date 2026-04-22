@@ -175,24 +175,37 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
 
     /// Executes the `wasi:cli/run` function of the given component.
     ///
-    /// `input` is written to the components stdin as raw bytes. The
-    /// component's stdout is returned in [`ExecutionOutcome::output`] on
-    /// success.
-    /// Execution is limited by the fuel and memory limits
-    /// configured on the builder
+    /// stdin, stdout, stderr, and the host state are provided via [`Context`].
+    /// The caller is responsible for reading output from the stdout/stderr
+    /// streams after execution (e.g. by keeping a clone of [`MemoryOutputPipe`]
+    /// before passing it into the context)
+    ///
+    /// Execution is bounded by the fuel and memory limits configured on the
+    /// builder. Fuel exhaustion is reported as [`ExecutionError::Trap`]
     ///
     /// # Example
     /// ```rust,no_run
     /// use defuse_outlayer_state::HostState;
-    /// use defuse_outlayer_vm_runner::VmRuntimeBuilder;
+    /// use defuse_outlayer_vm_runner::{Context, VmRuntimeBuilder};
+    /// use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
     ///
-    ///  async fn example() -> anyhow::Result<()> {
-    ///     let wasm_binary = std::fs::read("component.wasm")?;
-    ///     let runner = VmRuntimeBuilder::<HostState>::new().build()?;
-    ///     let component = runner.compile(&wasm_binary)?;
-    ///     let outcome = runner.execute(&component, HostState::default(), b"input").await?;
-    ///    Ok(())
-    /// }
+    /// # async fn example() -> anyhow::Result<()> {
+    /// let stdout = MemoryOutputPipe::new(4 * 1024 * 1024);
+    /// let stderr = MemoryOutputPipe::new(64 * 1024);
+    /// let ctx = Context::new(
+    ///     MemoryInputPipe::new(b"input".to_vec()),
+    ///     stdout.clone(),
+    ///     stderr.clone(),
+    ///     HostState::default(),
+    /// );
+    ///
+    /// let runner = VmRuntimeBuilder::<HostState>::new().build()?;
+    /// let wasm = std::fs::read("component.wasm")?;
+    /// let component = runner.compile(&wasm)?;
+    /// runner.execute(ctx, &component).await?;
+    ///
+    /// println!("{}", String::from_utf8_lossy(&stdout.contents()));
+    /// # Ok(()) }
     /// ```
     #[instrument(skip_all)]
     pub async fn execute<I, O, E>(
