@@ -2,7 +2,7 @@ use defuse_outlayer_host::crypto::secp256k1::{
     Secp256k1Host, Secp256k1PublicKey, Secp256k1Signature,
 };
 use k256::{
-    Secp256k1,
+    Secp256k1, SecretKey as Secp256k1SecretKey,
     elliptic_curve::{CurveArithmetic, PrimeField},
 };
 
@@ -10,7 +10,7 @@ use crate::WorkerHost;
 
 impl Secp256k1Host for WorkerHost {
     fn secp256k1_derive_public_key(&self, path: &str) -> Secp256k1PublicKey {
-        let tweak = [0u8; 32]; // TODO
+        let tweak = self.derive_tweak(path);
         let tweak = k256::Scalar::from_repr(tweak.into()).unwrap();
 
         let pk = (<Secp256k1 as CurveArithmetic>::ProjectivePoint::GENERATOR * tweak
@@ -25,7 +25,7 @@ impl Secp256k1Host for WorkerHost {
             .unwrap()
     }
 
-    fn secp256k1_sign(&self, _path: &str, _msg: &[u8]) -> Secp256k1Signature {
+    fn secp256k1_sign(&self, path: &str, msg: &[u8]) -> Secp256k1Signature {
         unimplemented!()
     }
 }

@@ -1,5 +1,5 @@
 use borsh::BorshSerialize;
-use hkdf::{Hkdf, HkdfExtract, Kdf};
+use hkdf::Hkdf;
 use k256::SecretKey as Secp256k1SecretKey;
 use near_account_id::AccountId;
 
@@ -30,6 +30,20 @@ impl WorkerHost {
                     .unwrap()
             },
         }
+    }
+
+    fn derive_tweak(&self, path: &str) -> [u8; 32] {
+        let hk = Hkdf::<sha3::Sha3_256>::new(None, b"TODO");
+        let mut tweak = [0u8; 32];
+
+        let app_id = borsh::to_vec(&self.app_id).unwrap();
+
+        hk.expand_multi_info(
+            &[&app_id, path.as_bytes()], // TODO: maybe join with `,`?
+            &mut tweak,
+        )
+        .unwrap();
+        tweak
     }
 }
 
