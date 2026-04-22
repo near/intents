@@ -32,9 +32,9 @@ async fn main() -> Result<()> {
     let args = Args::parse();
 
     let ctx = Context::new(
-        std::io::stdin(),
-        std::io::stdout(),
-        std::io::stderr(),
+        tokio::io::stdin(),
+        tokio::io::stdout(),
+        tokio::io::stderr(),
         HostState::default(),
     );
 
