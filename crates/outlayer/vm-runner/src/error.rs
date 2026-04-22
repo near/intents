@@ -4,18 +4,17 @@ use wasmtime::Trap;
 #[derive(thiserror::Error, Debug)]
 pub enum ExecutionError {
     /// The component called `process::exit` with a non-zero exit code
-    #[error("component exited with code {code}\n{stderr}")]
-    NonZeroExit { code: i32, stderr: String },
+    #[error("component exited with code {code}")]
+    NonZeroExit { code: i32 },
 
     /// The component raised a WebAssembly trap
-    #[error("wasm trap: {code}\n{stderr}")]
-    Trap { code: Trap, stderr: String },
+    #[error("wasm trap: {code}")]
+    Trap { code: Trap },
 
     /// An error that does not map to a known trap code
-    #[error("component trapped: {source}\n{stderr}")]
+    #[error("component trapped: {source}")]
     Unknown {
         #[source]
         source: anyhow::Error,
-        stderr: String,
     },
 }

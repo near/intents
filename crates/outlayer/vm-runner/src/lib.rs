@@ -5,4 +5,4 @@ mod runtime;
 
 pub use error::ExecutionError;
 pub use outcome::ExecutionOutcome;
-pub use runtime::{DEFAULT_FUEL_LIMIT, DEFAULT_MEMORY_LIMIT, VmRuntime, VmRuntimeBuilder};
+pub use runtime::{Context, DEFAULT_FUEL_LIMIT, DEFAULT_MEMORY_LIMIT, VmRuntime, VmRuntimeBuilder};

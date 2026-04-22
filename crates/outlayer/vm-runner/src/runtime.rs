@@ -4,13 +4,8 @@ use std::marker::PhantomData;
 use tracing::instrument;
 use wasmtime::component::{Component, HasSelf, Linker};
 use wasmtime::{Config, Engine, Store, StoreLimitsBuilder, Trap};
-use wasmtime_wasi::{
-    WasiCtx,
-    p2::{
-        bindings::Command,
-        pipe::{MemoryInputPipe, MemoryOutputPipe},
-    },
-};
+use wasmtime_wasi::cli::{StdinStream, StdoutStream};
+use wasmtime_wasi::{WasiCtx, p2::bindings::Command};
 
 use crate::error::ExecutionError;
 use crate::host::HostCtx;
@@ -28,9 +23,34 @@ pub const DEFAULT_MEMORY_LIMIT: usize = 100 * 1024 * 1024;
 /// (~1 billion wasm instructions)
 pub const DEFAULT_FUEL_LIMIT: u64 = 1_000_000_000;
 
-/// Maximum size of stdout and stderr buffers for component execution
-const STDOUT_MAX_SIZE: usize = 4 * 1024 * 1024; // 4 MiB
-const STDERR_MAX_SIZE: usize = 64 * 1024; // 64 KiB
+pub struct Context<
+    I: StdinStream + 'static,
+    O: StdoutStream + 'static,
+    E: StdoutStream + 'static,
+    H: HostFunctions,
+> {
+    stdin: I,
+    stdout: O,
+    stderr: E,
+    host_state: H,
+}
+
+impl<
+    I: StdinStream + 'static,
+    O: StdoutStream + 'static,
+    E: StdoutStream + 'static,
+    H: HostFunctions,
+> Context<I, O, E, H>
+{
+    pub fn new(stdin: I, stdout: O, stderr: E, host_state: H) -> Self {
+        Self {
+            stdin,
+            stdout,
+            stderr,
+            host_state,
+        }
+    }
+}
 
 /// A builder for configuring and creating a `VmRuntime`
 /// with a custom host environment
@@ -175,19 +195,27 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     /// }
     /// ```
     #[instrument(skip_all)]
-    pub async fn execute(
+    pub async fn execute<I, O, E>(
         &self,
+        ctx: Context<I, O, E, H>,
         component: &Component,
-        host_state: H,
-        input: impl AsRef<[u8]>,
-    ) -> Result<ExecutionOutcome, ExecutionError> {
-        let stdin = MemoryInputPipe::new(input.as_ref().to_vec());
-        let stdout = MemoryOutputPipe::new(STDOUT_MAX_SIZE);
-        let stderr = MemoryOutputPipe::new(STDERR_MAX_SIZE);
+    ) -> Result<ExecutionOutcome, ExecutionError>
+    where
+        I: StdinStream + 'static,
+        O: StdoutStream + 'static,
+        E: StdoutStream + 'static,
+    {
+        let Context {
+            stdin,
+            stdout,
+            stderr,
+            host_state,
+        } = ctx;
+
         let wasi_ctx = WasiCtx::builder()
             .stdin(stdin)
-            .stdout(stdout.clone())
-            .stderr(stderr.clone())
+            .stdout(stdout)
+            .stderr(stderr)
             .build();
 
         let limits = StoreLimitsBuilder::new()
@@ -209,7 +237,7 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
             .fuel_limit
             .saturating_sub(store.get_fuel().unwrap_or(self.fuel_limit));
 
-        process_execution_result(fuel_consumed, &stdout, &stderr, program_result)
+        process_execution_result(fuel_consumed, program_result)
     }
 
     async fn run_command(
@@ -229,18 +257,12 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
 
 fn process_execution_result(
     fuel_consumed: u64,
-    stdout: &MemoryOutputPipe,
-    stderr: &MemoryOutputPipe,
     program_result: anyhow::Result<()>,
 ) -> Result<ExecutionOutcome, ExecutionError> {
-    match classify_result(program_result, stderr) {
+    match classify_result(program_result) {
         Ok(()) => {
             tracing::debug!(fuel_consumed, "execution succeeded");
-            Ok(ExecutionOutcome {
-                output: stdout.contents().to_vec(),
-                stderr: stderr.contents().to_vec(),
-                fuel_consumed,
-            })
+            Ok(ExecutionOutcome { fuel_consumed })
         }
         Err(err) => {
             tracing::debug!(error = ?err, fuel_consumed, "execution failed");
@@ -249,32 +271,24 @@ fn process_execution_result(
     }
 }
 
-fn classify_result(
-    program_result: anyhow::Result<()>,
-    stderr: &MemoryOutputPipe,
-) -> Result<(), ExecutionError> {
+fn classify_result(program_result: anyhow::Result<()>) -> Result<(), ExecutionError> {
     let trap = match program_result {
         Ok(()) => return Ok(()),
         Err(e) => e,
     };
 
-    let stderr = String::from_utf8_lossy(&stderr.contents()).into_owned();
-
     if let Some(exit) = trap.downcast_ref::<wasmtime_wasi::I32Exit>() {
         // exit(0) is equivalent to a clean return from main
         return match exit.0 {
             0 => Ok(()),
-            code => Err(ExecutionError::NonZeroExit { code, stderr }),
+            code => Err(ExecutionError::NonZeroExit { code }),
         };
     }
 
     let trap_code = trap.chain().find_map(|e| e.downcast_ref::<Trap>().copied());
 
     Err(match trap_code {
-        Some(code) => ExecutionError::Trap { code, stderr },
-        None => ExecutionError::Unknown {
-            source: trap,
-            stderr,
-        },
+        Some(code) => ExecutionError::Trap { code },
+        None => ExecutionError::Unknown { source: trap },
     })
 }
