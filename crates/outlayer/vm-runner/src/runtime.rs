@@ -28,9 +28,9 @@ pub struct Context<
     E: StdoutStream + 'static,
     H: HostFunctions,
 > {
-    stdin: I,
-    stdout: O,
-    stderr: E,
+    input: I,
+    output: O,
+    error: E,
     host_state: H,
 }
 
@@ -41,11 +41,11 @@ impl<
     H: HostFunctions,
 > Context<I, O, E, H>
 {
-    pub const fn new(stdin: I, stdout: O, stderr: E, host_state: H) -> Self {
+    pub const fn new(input: I, output: O, error: E, host_state: H) -> Self {
         Self {
-            stdin,
-            stdout,
-            stderr,
+            input,
+            output,
+            error,
             host_state,
         }
     }
@@ -274,16 +274,16 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         E: StdoutStream + 'static,
     {
         let Context {
-            stdin,
-            stdout,
-            stderr,
+            input,
+            output,
+            error,
             host_state,
         } = ctx;
 
         let wasi_ctx = WasiCtx::builder()
-            .stdin(stdin)
-            .stdout(stdout)
-            .stderr(stderr)
+            .stdin(input)
+            .stdout(output)
+            .stderr(error)
             .build();
 
         let limits = StoreLimitsBuilder::new()
