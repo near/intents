@@ -11,10 +11,10 @@ use crate::WorkerHost;
 
 impl WorkerHost {
     /// Derives the additive tweak for a given `path`, reduced modulo
-    /// the curve order so that any 32-byte HKDF output yields a valid
+    /// the curve order so that any 32-byte digest yields a valid
     /// scalar (rejection-free; bias is negligible since `n ≈ 2^256`).
     fn secp256k1_tweak(&self, path: &str) -> Scalar {
-        <Scalar as Reduce<k256::U256>>::reduce_bytes(&self.app_id.derive_tweak(path).into())
+        <Scalar as Reduce<k256::U256>>::reduce_bytes(&self.derive_tweak(path).into())
     }
 }
 
@@ -54,14 +54,7 @@ impl Secp256k1Host for WorkerHost {
             .expect("uncompressed SEC1 point is 65 bytes")
     }
 
-    fn secp256k1_sign(&self, path: &str, msg: &[u8]) -> Secp256k1Signature {
-        // `msg` is expected to be a 32-byte pre-hash, consistent with
-        // `defuse_crypto::Secp256k1::Message = CryptoHash` and with
-        // `near_sdk::env::ecrecover` used on the verifying side.
-        let prehash: &[u8; 32] = msg
-            .try_into()
-            .expect("secp256k1 message must be a 32-byte prehash");
-
+    fn secp256k1_sign(&self, path: &str, prehash: &[u8; 32]) -> Secp256k1Signature {
         // Signing is the only operation that needs `root_sk`. The derived
         // secret key is
         //

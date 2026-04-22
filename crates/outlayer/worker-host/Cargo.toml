@@ -14,6 +14,7 @@ defuse-outlayer-host.workspace = true
 near-account-id = { workspace = true, features = ["borsh"] }
 
 borsh = { workspace = true, features = ["derive"] }
+digest-io.workspace = true
 hex-literal.workspace = true
 hkdf = { workspace = true, features = ["kdf"] }
 k256 = { workspace = true, features = ["arithmetic", "ecdsa"] }
