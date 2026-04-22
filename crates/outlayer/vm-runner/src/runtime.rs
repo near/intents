@@ -36,8 +36,8 @@ const STDERR_MAX_SIZE: usize = 64 * 1024; // 64 KiB
 /// with a custom host environment
 pub struct VmRuntimeBuilder<H: HostFunctions + 'static> {
     config: Config,
-    fuel_limit: Option<u64>,
-    memory_limit: Option<usize>,
+    fuel_limit: u64,
+    memory_limit: usize,
     _host: PhantomData<H>,
 }
 
@@ -57,8 +57,8 @@ impl<H: HostFunctions + 'static> VmRuntimeBuilder<H> {
 
         Self {
             config,
-            fuel_limit: None,
-            memory_limit: None,
+            fuel_limit: DEFAULT_FUEL_LIMIT,
+            memory_limit: DEFAULT_MEMORY_LIMIT,
             _host: PhantomData,
         }
     }
@@ -70,7 +70,7 @@ impl<H: HostFunctions + 'static> VmRuntimeBuilder<H> {
     /// Defaults to [`DEFAULT_FUEL_LIMIT`] if not set
     #[must_use]
     pub const fn fuel_limit(mut self, fuel_limit: u64) -> Self {
-        self.fuel_limit = Some(fuel_limit);
+        self.fuel_limit = fuel_limit;
         self
     }
 
@@ -80,43 +80,43 @@ impl<H: HostFunctions + 'static> VmRuntimeBuilder<H> {
     /// [`DEFAULT_MEMORY_LIMIT`] if not set
     #[must_use]
     pub const fn memory_limit(mut self, memory_limit: usize) -> Self {
-        self.memory_limit = Some(memory_limit);
+        self.memory_limit = memory_limit;
         self
     }
 
     /// Builds the `VmRuntime` with the specified configuration
     /// If fuel limit or memory limit are not set, default values will be used
-    pub fn build(mut self) -> Result<VmRuntime<H>> {
-        let memory_limit = self.memory_limit.unwrap_or(DEFAULT_MEMORY_LIMIT);
-        // NOTE: set initial chunk of virtual memory that a linear memory
-        // may grow into limited to allow multiple linear memories to be
-        // instantiated without exhausting host resources
-        self.config
-            .memory_reservation(memory_limit.try_into().unwrap());
+    pub fn build(self) -> Result<VmRuntime<H>> {
+        // TODO: uncomment in corresponding pr
+        // // NOTE: set initial chunk of virtual memory that a linear memory
+        // // may grow into limited to allow multiple linear memories to be
+        // // instantiated without exhausting host resources
+        // self.config
+        //     .memory_reservation(self.memory_limit.try_into().unwrap());
 
         let engine = Engine::new(&self.config)?;
-        let linker = create_linker::<H>(&engine)?;
+        let linker = Self::create_linker(&engine)?;
 
         Ok(VmRuntime {
-            fuel_limit: self.fuel_limit.unwrap_or(DEFAULT_FUEL_LIMIT),
-            memory_limit,
+            fuel_limit: self.fuel_limit,
+            memory_limit: self.memory_limit,
             linker,
         })
     }
-}
 
-fn create_linker<H: HostFunctions + 'static>(engine: &Engine) -> Result<Linker<HostCtx<H>>> {
-    let mut linker = Linker::new(engine);
+    fn create_linker(engine: &Engine) -> Result<Linker<HostCtx<H>>> {
+        let mut linker = Linker::new(engine);
 
-    // Add WASI imports to the linker
-    wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
+        // Add WASI imports to the linker
+        wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
 
-    // Add host function imports to the linker
-    Imports::add_to_linker::<HostCtx<H>, HasSelf<H>>(&mut linker, |ctx: &mut HostCtx<H>| {
-        ctx.host_state_mut()
-    })?;
+        // Add host function imports to the linker
+        Imports::add_to_linker::<HostCtx<H>, HasSelf<H>>(&mut linker, |ctx: &mut HostCtx<H>| {
+            ctx.host_state_mut()
+        })?;
 
-    Ok(linker)
+        Ok(linker)
+    }
 }
 
 impl<H: HostFunctions + 'static> Default for VmRuntimeBuilder<H> {
@@ -138,6 +138,16 @@ pub struct VmRuntime<H: HostFunctions + 'static> {
 }
 
 impl<H: HostFunctions + 'static> VmRuntime<H> {
+    /// Creates a new `VmRuntime` with the default configuration
+    pub fn new() -> Result<Self> {
+        Self::builder().build()
+    }
+
+    /// Creates a new builder for `VmRuntime`
+    pub fn builder() -> VmRuntimeBuilder<H> {
+        VmRuntimeBuilder::new()
+    }
+
     /// Compile wasip2 component from the given binary data
     pub fn compile(&self, binary: impl AsRef<[u8]>) -> Result<Component> {
         Component::from_binary(self.linker.engine(), binary.as_ref())
