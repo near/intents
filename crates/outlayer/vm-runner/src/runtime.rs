@@ -184,6 +184,9 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     /// builder. Fuel exhaustion is reported as [`ExecutionError::Trap`]
     ///
     /// # Example
+    ///
+    /// Using [`HostState`] directly:
+    ///
     /// ```rust,no_run
     /// use defuse_outlayer_state::HostState;
     /// use defuse_outlayer_vm_runner::{Context, VmRuntimeBuilder};
@@ -200,6 +203,59 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     /// );
     ///
     /// let runner = VmRuntimeBuilder::<HostState>::new().build()?;
+    /// let wasm = std::fs::read("component.wasm")?;
+    /// let component = runner.compile(&wasm)?;
+    /// runner.execute(ctx, &component).await?;
+    ///
+    /// println!("{}", String::from_utf8_lossy(&stdout.contents()));
+    /// # Ok(()) }
+    /// ```
+    ///
+    /// You can also wrap [`HostState`] to share it across concurrent executions
+    /// or inject additional context. Implement each host-function trait on your
+    /// wrapper and delegate to the inner state:
+    ///
+    /// ```rust,no_run
+    /// use std::sync::Arc;
+    /// use defuse_outlayer_state::HostState;
+    /// use defuse_outlayer_vm_runner::{Context, VmRuntimeBuilder};
+    /// use tokio::sync::Mutex;
+    /// use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
+    ///
+    /// struct Wrapper {
+    ///     inner: Arc<Mutex<HostState>>,
+    /// }
+    ///
+    /// impl defuse_outlayer_host_functions::crypto::ed25519::Host for Wrapper {
+    ///     async fn derive_public_key(&mut self, path: String) -> Vec<u8> {
+    ///         self.inner.lock().await.derive_public_key(path).await
+    ///     }
+    ///     async fn sign(&mut self, path: String, msg: Vec<u8>) -> Vec<u8> {
+    ///         self.inner.lock().await.sign(path, msg).await
+    ///     }
+    /// }
+    ///
+    /// impl defuse_outlayer_host_functions::crypto::secp256k1::Host for Wrapper {
+    ///     async fn derive_public_key(&mut self, path: String) -> Vec<u8> {
+    ///         self.inner.lock().await.derive_public_key(path).await
+    ///     }
+    ///     async fn sign(&mut self, path: String, msg: Vec<u8>) -> Vec<u8> {
+    ///         self.inner.lock().await.sign(path, msg).await
+    ///     }
+    /// }
+    ///
+    /// # async fn example() -> anyhow::Result<()> {
+    /// let shared = Arc::new(Mutex::new(HostState::default()));
+    /// let stdout = MemoryOutputPipe::new(4 * 1024 * 1024);
+    /// let stderr = MemoryOutputPipe::new(64 * 1024);
+    /// let ctx = Context::new(
+    ///     MemoryInputPipe::new(b"input".to_vec()),
+    ///     stdout.clone(),
+    ///     stderr.clone(),
+    ///     Wrapper { inner: shared.clone() },
+    /// );
+    ///
+    /// let runner = VmRuntimeBuilder::<Wrapper>::new().build()?;
     /// let wasm = std::fs::read("component.wasm")?;
     /// let component = runner.compile(&wasm)?;
     /// runner.execute(ctx, &component).await?;
