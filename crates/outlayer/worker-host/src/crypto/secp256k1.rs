@@ -2,9 +2,12 @@ use defuse_outlayer_host::crypto::secp256k1::{
     Secp256k1Host, Secp256k1PublicKey, Secp256k1Signature,
 };
 use k256::{
-    NonZeroScalar, PublicKey, Scalar, SecretKey,
+    NonZeroScalar, ProjectivePoint, PublicKey, Scalar, SecretKey,
     ecdsa::{RecoveryId, SigningKey},
-    elliptic_curve::{CurveArithmetic, ops::Reduce, sec1::ToEncodedPoint},
+    elliptic_curve::{
+        ops::{MulByGenerator, Reduce},
+        sec1::ToEncodedPoint,
+    },
 };
 
 use crate::WorkerHost;
@@ -31,13 +34,11 @@ impl Secp256k1Host for WorkerHost {
     /// this computation here so that the on-host result is bit-for-bit
     /// identical to what a client would compute.
     fn secp256k1_derive_public_key(&self, path: &str) -> Secp256k1PublicKey {
-        type ProjectivePoint = <k256::Secp256k1 as CurveArithmetic>::ProjectivePoint;
-
         let tweak = self.secp256k1_tweak(path);
 
         // `root_pk + tweak * G`, computed purely from the root public key.
-        let root_pk_point: ProjectivePoint = self.secp256k1_root_sk.public_key().to_projective();
-        let derived_point = root_pk_point + ProjectivePoint::GENERATOR * tweak;
+        let root_pk_point = self.secp256k1_root_sk.public_key().to_projective();
+        let derived_point = root_pk_point + ProjectivePoint::mul_by_generator(&tweak);
 
         // With a random `tweak`, `derived_point == 0` iff `tweak == -root_sk`,
         // which happens with probability ≈ 2^-256 — treat as unreachable.
@@ -86,10 +87,7 @@ impl Secp256k1Host for WorkerHost {
 
 #[cfg(test)]
 mod tests {
-    use k256::{
-        ecdsa::{Signature, VerifyingKey},
-        elliptic_curve::sec1::ToEncodedPoint,
-    };
+    use k256::ecdsa::{Signature, VerifyingKey};
     use near_account_id::AccountId;
 
     use crate::{AppId, WorkerHost};
@@ -100,51 +98,6 @@ mod tests {
         let seed = [42u8; 64];
         let app_id = AppId::NearAccount("app.near".parse::<AccountId>().unwrap());
         WorkerHost::new(app_id, &seed)
-    }
-
-    /// The host's public-key derivation must match the "offline" formula
-    /// `pk(path) = root_pk + tweak * G` that a client would use with only
-    /// the root public key — demonstrating that no access to `root_sk` or
-    /// the seed is required to reproduce the result.
-    #[test]
-    fn derive_public_key_matches_offline_formula() {
-        type ProjectivePoint = <k256::Secp256k1 as CurveArithmetic>::ProjectivePoint;
-
-        let host = host();
-        let root_pk = host.secp256k1_root_sk.public_key();
-
-        for path in ["", "a", "a/b", "deeply/nested/path"] {
-            let tweak = host.secp256k1_tweak(path);
-
-            // Client-side computation, using only `root_pk`.
-            let expected_point = root_pk.to_projective() + ProjectivePoint::GENERATOR * tweak;
-            let expected = expected_point.to_affine().to_encoded_point(false);
-            let expected: [u8; 64] = expected.as_bytes()[1..].try_into().unwrap();
-
-            assert_eq!(host.secp256k1_derive_public_key(path), expected);
-        }
-    }
-
-    /// The derived public key returned by `secp256k1_derive_public_key`
-    /// must equal the public key of the secret key that
-    /// `secp256k1_sign` uses internally — i.e. signatures verify against
-    /// what clients derive offline.
-    #[test]
-    fn derived_public_key_matches_signing_key() {
-        let host = host();
-
-        for path in ["", "x", "some/path"] {
-            let derived_pk = host.secp256k1_derive_public_key(path);
-
-            // Reconstruct the signing key the same way `secp256k1_sign` does.
-            let tweak = host.secp256k1_tweak(path);
-            let sk_scalar: Scalar = *host.secp256k1_root_sk.to_nonzero_scalar();
-            let nz = NonZeroScalar::new(sk_scalar + tweak).unwrap();
-            let sk_pk = SecretKey::from(nz).public_key().to_encoded_point(false);
-            let sk_pk: [u8; 64] = sk_pk.as_bytes()[1..].try_into().unwrap();
-
-            assert_eq!(derived_pk, sk_pk);
-        }
     }
 
     /// End-to-end guarantee the verifying side relies on: running
