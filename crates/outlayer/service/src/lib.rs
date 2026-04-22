@@ -9,10 +9,15 @@ pub mod types;
 
 use std::future::Ready;
 use std::num::NonZeroUsize;
+use std::sync::Arc;
 use std::time::Duration;
 
+use bytes::Bytes;
 use tower::retry::Policy;
 use tower::{BoxError, Service, ServiceBuilder};
+
+use defuse_outlayer_host_functions::HostFunctions;
+use defuse_outlayer_vm_runner::VmRuntime;
 
 pub use error::ExecutionStackError;
 pub use executor::WasmExecutor;
@@ -62,26 +67,44 @@ where
 /// Stack: `map_err` → `timeout(total)` → `map_response(sign)` → `TeeWorkerService`
 ///
 /// `TeeWorkerService` fans out in parallel:
-///   - resolver: `CacheLayer` → `map_err` → `RetryLayer` → `timeout(per-attempt)` → `Steer[Http, Inline]`
+///   - wasm:    `CacheLayer` → `and_then(compile)` → `map_err` → `RetryLayer` → `timeout` → `ResolverService`
 ///   - env:     `map_err` → `RetryLayer` → `TimeoutLayer` → `EnvFetchService`
 ///   - storage: `map_err` → `RetryLayer` → `TimeoutLayer` → `StorageFetchService`
-pub fn build_stack(
+pub fn build_stack<H>(
     signing_key: WorkerSigningKey,
     total_timeout: Duration,
     fetch_timeout: Duration,
     env_storage_timeout: Duration,
     retry_attempts: usize,
+    runtime: Arc<VmRuntime<H>>,
 ) -> impl Service<Request, Response = SignedExecutionResponse, Error = ExecutionStackError>
        + Send
-       + 'static {
-    let resolver = ServiceBuilder::new()
+       + 'static
+where
+    H: HostFunctions + Default + Send + Sync + 'static,
+{
+    let executor = WasmExecutor::new(Arc::clone(&runtime));
+
+    let wasm = ServiceBuilder::new()
         .layer(cache::CacheLayer::new(
             NonZeroUsize::new(DEFAULT_CACHE_CAPACITY).unwrap(),
         ))
+        .and_then(move |bytes: Arc<Bytes>| {
+            let rt = Arc::clone(&runtime);
+            async move {
+                tokio::task::spawn_blocking(move || {
+                    rt.compile(&*bytes).map_err(ExecutionStackError::Compile)
+                })
+                .await
+                .map_err(|e| ExecutionStackError::Compile(anyhow::anyhow!(e)))?
+            }
+        })
         .map_err(timeout_err::<resolver::ResolveError>)
         .retry(Attempts(retry_attempts))
         .timeout(fetch_timeout)
-        .service(resolver::build_resolver(DEFAULT_MAX_FETCH_BYTES));
+        .service(resolver::ResolverService::new(
+            resolver::build_resolver(DEFAULT_MAX_FETCH_BYTES),
+        ));
 
     let env = ServiceBuilder::new()
         .map_err(timeout_err::<env_fetch::EnvFetchError>)
@@ -99,5 +122,5 @@ pub fn build_stack(
         .map_err(timeout_err::<ExecutionStackError>)
         .timeout(total_timeout)
         .map_response(move |r| signing_key.sign(r))
-        .service(TeeWorkerService::new(WasmExecutor::new(), resolver, env, storage))
+        .service(TeeWorkerService::new(executor, wasm, env, storage))
 }

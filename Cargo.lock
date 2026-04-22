@@ -560,6 +560,9 @@ name = "bytes"
 version = "1.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e748733b7cbc798e1434b6ac524f0c1ff2ab456fe201501e6497c8417a4fc33"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "bytesize"
@@ -1660,13 +1663,19 @@ dependencies = [
 name = "defuse-outlayer-service"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "base64 0.22.1",
  "bytes",
+ "clap",
+ "defuse-outlayer-host-functions",
+ "defuse-outlayer-state",
+ "defuse-outlayer-vm-runner",
  "ed25519-dalek",
  "futures-util",
  "lru 0.12.5",
  "reqwest 0.12.25",
  "serde",
+ "serde_json",
  "serde_with",
  "sha2 0.10.9",
  "thiserror 2.0.17",
@@ -1674,6 +1683,9 @@ dependencies = [
  "tokio-util",
  "tower",
  "url",
+ "uuid",
+ "wasmtime",
+ "wasmtime-wasi",
 ]
 
 [[package]]
@@ -7275,7 +7287,9 @@ version = "1.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ddd74a9687298c6858e9b88ec8935ec45d22e8fd5e6394fa1bd4e99a87789c76"
 dependencies = [
+ "getrandom 0.4.2",
  "js-sys",
+ "serde_core",
  "wasm-bindgen",
 ]
 

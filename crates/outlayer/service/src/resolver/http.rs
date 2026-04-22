@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use bytes::Bytes;
@@ -22,9 +23,9 @@ impl HttpResolver {
 }
 
 impl Service<String> for HttpResolver {
-    type Response = Bytes;
+    type Response = Arc<Bytes>;
     type Error = ResolveError;
-    type Future = BoxFuture<'static, Result<Bytes, ResolveError>>;
+    type Future = BoxFuture<'static, Result<Arc<Bytes>, ResolveError>>;
 
     fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), ResolveError>> {
         Poll::Ready(Ok(()))
@@ -57,7 +58,7 @@ impl Service<String> for HttpResolver {
                 return Err(ResolveError::TooLarge { size: buf.len() + 1, limit: max_bytes });
             }
 
-            Ok(Bytes::from(buf))
+            Ok(Arc::new(Bytes::from(buf)))
         })
     }
 }

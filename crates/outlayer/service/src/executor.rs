@@ -1,40 +1,46 @@
+use std::sync::Arc;
 use std::task::{Context, Poll};
 
-use bytes::Bytes;
 use futures_util::future::BoxFuture;
 use thiserror::Error;
 use tower::Service;
+use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
+
+use defuse_outlayer_host_functions::HostFunctions;
+use defuse_outlayer_vm_runner::{self as vm_runner, VmRuntime};
 
 use crate::types::{
     ExecutionMetrics, ExecutionResponse, OnChainDestination, ProjectStorage, WasmExecutionRequest,
 };
 
+const STDOUT_LIMIT: usize = 4 * 1024 * 1024; // 4 MiB
+const STDERR_LIMIT: usize = 64 * 1024;       // 64 KiB
+
 #[derive(Debug, Error)]
 pub enum WasmExecutorError {
-    #[error("not implemented")]
-    NotImplemented,
+    #[error(transparent)]
+    Execution(#[from] vm_runner::ExecutionError),
 }
 
-/// Innermost Tower service. Executes the WASM module and captures stdout.
-///
-/// `Error = Infallible`: all WASM-level failures (traps, resource limits,
-/// compilation) are represented in `ExecutionResponse::output: Err(ExecutionError)`.
-#[derive(Clone)]
-pub struct WasmExecutor;
+pub struct WasmExecutor<H: HostFunctions + Default + 'static> {
+    runtime: Arc<VmRuntime<H>>,
+}
 
-impl WasmExecutor {
-    pub const fn new() -> Self {
-        Self
+impl<H: HostFunctions + Default + 'static> WasmExecutor<H> {
+    pub const fn new(runtime: Arc<VmRuntime<H>>) -> Self {
+        Self { runtime }
     }
 }
 
-impl Default for WasmExecutor {
-    fn default() -> Self {
-        Self::new()
+impl<H: HostFunctions + Default + 'static> Clone for WasmExecutor<H> {
+    fn clone(&self) -> Self {
+        Self { runtime: Arc::clone(&self.runtime) }
     }
 }
 
-impl Service<WasmExecutionRequest> for WasmExecutor {
+impl<H: HostFunctions + Default + Send + 'static> Service<WasmExecutionRequest>
+    for WasmExecutor<H>
+{
     type Response = ExecutionResponse;
     type Error = WasmExecutorError;
     type Future = BoxFuture<'static, Result<ExecutionResponse, WasmExecutorError>>;
@@ -44,12 +50,27 @@ impl Service<WasmExecutionRequest> for WasmExecutor {
     }
 
     fn call(&mut self, req: WasmExecutionRequest) -> Self::Future {
+        let runtime = Arc::clone(&self.runtime);
         Box::pin(async move {
+            let stdout = MemoryOutputPipe::new(STDOUT_LIMIT);
+            let stderr = MemoryOutputPipe::new(STDERR_LIMIT);
+            let ctx = vm_runner::Context::new(
+                MemoryInputPipe::new(req.request.input),
+                stdout.clone(),
+                stderr.clone(),
+                H::default(),
+            );
+
+            let outcome = runtime.execute(ctx, &req.component).await?;
+
             Ok(ExecutionResponse {
-                respond_to: OnChainDestination { contract_id: req.request.project_id.clone() },
-                request: req.request,
-                output: Ok(Bytes::new()),
-                metrics: ExecutionMetrics::default(),
+                request_id: req.request.id,
+                respond_to: OnChainDestination { contract_id: req.request.project_id },
+                result: Ok(stdout.contents()),
+                metrics: ExecutionMetrics {
+                    instructions_used: outcome.fuel_consumed,
+                    ..ExecutionMetrics::default()
+                },
                 storage: ProjectStorage,
             })
         })

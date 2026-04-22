@@ -18,6 +18,8 @@ pub enum ExecutionStackError {
     StorageFetch(#[from] StorageFetchError),
     #[error(transparent)]
     Executor(#[from] WasmExecutorError),
+    #[error("wasm compilation failed: {0}")]
+    Compile(anyhow::Error),
     #[error("execution timed out")]
     Timeout,
 }
