@@ -1,4 +1,3 @@
-use anyhow::Result;
 use defuse_outlayer_host_functions::{HostFunctions, Imports};
 use std::marker::PhantomData;
 use tracing::instrument;
@@ -7,7 +6,7 @@ use wasmtime::{Config, Engine, Store, StoreLimitsBuilder, Trap};
 use wasmtime_wasi::cli::{StdinStream, StdoutStream};
 use wasmtime_wasi::{WasiCtx, p2::bindings::Command};
 
-use crate::error::ExecutionError;
+use crate::error::{Result, VmError};
 use crate::host::HostCtx;
 use crate::outcome::ExecutionOutcome;
 
@@ -42,7 +41,7 @@ impl<
     H: HostFunctions,
 > Context<I, O, E, H>
 {
-    pub fn new(stdin: I, stdout: O, stderr: E, host_state: H) -> Self {
+    pub const fn new(stdin: I, stdout: O, stderr: E, host_state: H) -> Self {
         Self {
             stdin,
             stdout,
@@ -114,8 +113,8 @@ impl<H: HostFunctions + 'static> VmRuntimeBuilder<H> {
         // self.config
         //     .memory_reservation(self.memory_limit.try_into().unwrap());
 
-        let engine = Engine::new(&self.config)?;
-        let linker = Self::create_linker(&engine)?;
+        let engine = Engine::new(&self.config).map_err(VmError::Init)?;
+        let linker = Self::create_linker(&engine).map_err(VmError::Init)?;
 
         Ok(VmRuntime {
             fuel_limit: self.fuel_limit,
@@ -124,7 +123,7 @@ impl<H: HostFunctions + 'static> VmRuntimeBuilder<H> {
         })
     }
 
-    fn create_linker(engine: &Engine) -> Result<Linker<HostCtx<H>>> {
+    fn create_linker(engine: &Engine) -> anyhow::Result<Linker<HostCtx<H>>> {
         let mut linker = Linker::new(engine);
 
         // Add WASI imports to the linker
@@ -170,7 +169,7 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
 
     /// Compile wasip2 component from the given binary data
     pub fn compile(&self, binary: impl AsRef<[u8]>) -> Result<Component> {
-        Component::from_binary(self.linker.engine(), binary.as_ref())
+        Component::from_binary(self.linker.engine(), binary.as_ref()).map_err(VmError::Compile)
     }
 
     /// Executes the `wasi:cli/run` function of the given component.
@@ -268,7 +267,7 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         &self,
         ctx: Context<I, O, E, H>,
         component: &Component,
-    ) -> Result<ExecutionOutcome, ExecutionError>
+    ) -> Result<ExecutionOutcome>
     where
         I: StdinStream + 'static,
         O: StdoutStream + 'static,
@@ -298,15 +297,40 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         store.limiter(|ctx| ctx.limits_mut());
         store
             .set_fuel(self.fuel_limit)
-            .expect("fuel consumption is not enabled on engine");
+            .expect("fuel must be enabled");
 
         let program_result = self.run_command(&mut store, component).await;
 
         let fuel_consumed = self
             .fuel_limit
-            .saturating_sub(store.get_fuel().unwrap_or(self.fuel_limit));
+            .saturating_sub(store.get_fuel().expect("fuel must be enabled"));
 
-        process_execution_result(fuel_consumed, program_result)
+        match classify_result(program_result) {
+            Ok(()) => {
+                tracing::debug!(fuel_consumed, "execution succeeded");
+                Ok(ExecutionOutcome { fuel_consumed })
+            }
+            Err(err) => {
+                tracing::debug!(error = ?err, fuel_consumed, "execution failed");
+                Err(err)
+            }
+        }
+    }
+
+    /// Convenience method to compile and execute a component in one step. See
+    /// [`execute`](Self::execute) for details and examples.
+    pub async fn run<I, O, E>(
+        &self,
+        ctx: Context<I, O, E, H>,
+        binary: impl AsRef<[u8]>,
+    ) -> Result<ExecutionOutcome>
+    where
+        I: StdinStream + 'static,
+        O: StdoutStream + 'static,
+        E: StdoutStream + 'static,
+    {
+        let component = self.compile(binary)?;
+        self.execute(ctx, &component).await
     }
 
     async fn run_command(
@@ -324,23 +348,7 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     }
 }
 
-fn process_execution_result(
-    fuel_consumed: u64,
-    program_result: anyhow::Result<()>,
-) -> Result<ExecutionOutcome, ExecutionError> {
-    match classify_result(program_result) {
-        Ok(()) => {
-            tracing::debug!(fuel_consumed, "execution succeeded");
-            Ok(ExecutionOutcome { fuel_consumed })
-        }
-        Err(err) => {
-            tracing::debug!(error = ?err, fuel_consumed, "execution failed");
-            Err(err)
-        }
-    }
-}
-
-fn classify_result(program_result: anyhow::Result<()>) -> Result<(), ExecutionError> {
+fn classify_result(program_result: anyhow::Result<()>) -> Result<()> {
     let trap = match program_result {
         Ok(()) => return Ok(()),
         Err(e) => e,
@@ -350,14 +358,11 @@ fn classify_result(program_result: anyhow::Result<()>) -> Result<(), ExecutionEr
         // exit(0) is equivalent to a clean return from main
         return match exit.0 {
             0 => Ok(()),
-            code => Err(ExecutionError::NonZeroExit { code }),
+            code => Err(VmError::NonZeroExit(code)),
         };
     }
 
     let trap_code = trap.chain().find_map(|e| e.downcast_ref::<Trap>().copied());
 
-    Err(match trap_code {
-        Some(code) => ExecutionError::Trap { code },
-        None => ExecutionError::Unknown { source: trap },
-    })
+    Err(trap_code.map_or_else(|| VmError::Unknown(trap), VmError::Trap))
 }
