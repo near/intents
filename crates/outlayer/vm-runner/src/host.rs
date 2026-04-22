@@ -33,10 +33,7 @@ impl<T: HostFunctions> HostCtx<T> {
 
 impl<T: HostFunctions> WasiView for HostCtx<T> {
     fn ctx(&mut self) -> WasiCtxView<'_> {
-        WasiCtxView {
-            ctx: &mut self.wasi_state.ctx,
-            table: &mut self.wasi_state.table,
-        }
+        self.wasi_state.ctx()
     }
 }
 
@@ -50,6 +47,15 @@ impl WasiP2State {
         Self {
             ctx,
             table: wasmtime_wasi::ResourceTable::new(),
+        }
+    }
+}
+
+impl WasiView for WasiP2State {
+    fn ctx(&mut self) -> WasiCtxView<'_> {
+        WasiCtxView {
+            ctx: &mut self.ctx,
+            table: &mut self.table,
         }
     }
 }
