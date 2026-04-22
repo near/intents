@@ -1,8 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use std::io::IsTerminal;
 use std::path::PathBuf;
-use wasmtime_wasi::cli::{InputFile, StdinStream};
 
 use defuse_outlayer_state::HostState;
 use defuse_outlayer_vm_runner::{Context, VmRuntime};
@@ -20,10 +18,6 @@ struct Args {
     /// Path to the WebAssembly component to execute
     path: PathBuf,
 
-    /// Optional path to a file whose contents will be passed to the components stdin
-    #[clap(long)]
-    input_file: Option<PathBuf>,
-
     /// Maximum number of WebAssembly instructions the component may execute
     #[clap(long, short)]
     fuel_limit: Option<u64>,
@@ -37,14 +31,8 @@ struct Args {
 async fn main() -> Result<()> {
     let args = Args::parse();
 
-    let stdin: Box<dyn StdinStream + Sync> = match args.input_file {
-        Some(path) => Box::new(InputFile::new(std::fs::File::open(path)?)),
-        None if !std::io::stdin().is_terminal() => Box::new(std::io::stdin()),
-        None => Box::new(std::io::empty()),
-    };
-
     let ctx = Context::new(
-        stdin,
+        std::io::stdin(),
         std::io::stdout(),
         std::io::stderr(),
         HostState::default(),

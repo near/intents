@@ -1642,7 +1642,6 @@ dependencies = [
  "defuse-outlayer-state",
  "defuse-outlayer-vm-runner",
  "tokio",
- "wasmtime-wasi",
 ]
 
 [[package]]
