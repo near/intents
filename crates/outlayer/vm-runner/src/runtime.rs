@@ -6,7 +6,7 @@ use wasmtime::{Config, Engine, Store, StoreLimitsBuilder, Trap};
 use wasmtime_wasi::cli::{StdinStream, StdoutStream};
 use wasmtime_wasi::{WasiCtx, p2::bindings::Command};
 
-use crate::error::{Result, VmError};
+use crate::error::{ExecutionError, Result, VmError};
 use crate::host::HostCtx;
 use crate::outcome::ExecutionOutcome;
 
@@ -105,7 +105,7 @@ impl<H: HostFunctions + 'static> VmRuntimeBuilder<H> {
 
     /// Builds the `VmRuntime` with the specified configuration
     /// If fuel limit or memory limit are not set, default values will be used
-    pub fn build(self) -> Result<VmRuntime<H>> {
+    pub fn build(self) -> anyhow::Result<VmRuntime<H>> {
         // TODO: uncomment in corresponding pr
         // // NOTE: set initial chunk of virtual memory that a linear memory
         // // may grow into limited to allow multiple linear memories to be
@@ -113,8 +113,8 @@ impl<H: HostFunctions + 'static> VmRuntimeBuilder<H> {
         // self.config
         //     .memory_reservation(self.memory_limit.try_into().unwrap());
 
-        let engine = Engine::new(&self.config).map_err(VmError::Init)?;
-        let linker = Self::create_linker(&engine).map_err(VmError::Init)?;
+        let engine = Engine::new(&self.config)?;
+        let linker = Self::create_linker(&engine)?;
 
         Ok(VmRuntime {
             fuel_limit: self.fuel_limit,
@@ -158,7 +158,7 @@ pub struct VmRuntime<H: HostFunctions + 'static> {
 
 impl<H: HostFunctions + 'static> VmRuntime<H> {
     /// Creates a new `VmRuntime` with the default configuration
-    pub fn new() -> Result<Self> {
+    pub fn new() -> anyhow::Result<Self> {
         Self::builder().build()
     }
 
@@ -355,14 +355,19 @@ fn classify_result(program_result: anyhow::Result<()>) -> Result<()> {
     };
 
     if let Some(exit) = trap.downcast_ref::<wasmtime_wasi::I32Exit>() {
+        println!("Program exited with code {}", exit.0);
+
         // exit(0) is equivalent to a clean return from main
         return match exit.0 {
             0 => Ok(()),
-            code => Err(VmError::NonZeroExit(code)),
+            code => Err(ExecutionError::NonZeroExit(code).into()),
         };
     }
 
     let trap_code = trap.chain().find_map(|e| e.downcast_ref::<Trap>().copied());
 
-    Err(trap_code.map_or_else(|| VmError::Unknown(trap), VmError::Trap))
+    let err = trap_code.map_or_else(|| ExecutionError::Unknown(trap), ExecutionError::Trap);
+    println!("Program trapped: {err}");
+
+    Err(err.into())
 }
