@@ -1,3 +1,4 @@
+use anyhow::Result;
 use defuse_outlayer_host_functions::{HostFunctions, Imports};
 use std::marker::PhantomData;
 use tracing::instrument;
@@ -6,7 +7,7 @@ use wasmtime::{Config, Engine, Store, StoreLimitsBuilder, Trap};
 use wasmtime_wasi::cli::{StdinStream, StdoutStream};
 use wasmtime_wasi::{WasiCtx, p2::bindings::Command};
 
-use crate::error::{ExecutionError, Result, VmError};
+use crate::error::ExecutionError;
 use crate::host::HostCtx;
 use crate::outcome::ExecutionOutcome;
 
@@ -22,24 +23,19 @@ pub const DEFAULT_MEMORY_LIMIT: usize = 100 * 1024 * 1024;
 /// (~1 billion wasm instructions)
 pub const DEFAULT_FUEL_LIMIT: u64 = 1_000_000_000;
 
-pub struct Context<
-    I: StdinStream + 'static,
-    O: StdoutStream + 'static,
-    E: StdoutStream + 'static,
-    H: HostFunctions,
-> {
+pub struct Context<I, O, E, H> {
     input: I,
     output: O,
     error: E,
     host_state: H,
 }
 
-impl<
+impl<I, O, E, H> Context<I, O, E, H>
+where
     I: StdinStream + 'static,
     O: StdoutStream + 'static,
     E: StdoutStream + 'static,
     H: HostFunctions,
-> Context<I, O, E, H>
 {
     pub const fn new(input: I, output: O, error: E, host_state: H) -> Self {
         Self {
@@ -169,7 +165,7 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
 
     /// Compile wasip2 component from the given binary data
     pub fn compile(&self, binary: impl AsRef<[u8]>) -> Result<Component> {
-        Component::from_binary(self.linker.engine(), binary.as_ref()).map_err(VmError::Compile)
+        Component::from_binary(self.linker.engine(), binary.as_ref())
     }
 
     /// Executes the `wasi:cli/run` function of the given component.
@@ -299,22 +295,23 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
             .set_fuel(self.fuel_limit)
             .expect("fuel must be enabled");
 
-        let program_result = self.run_command(&mut store, component).await;
+        let command = Command::instantiate_async(&mut store, component, &self.linker).await?;
+        let run_result = command.wasi_cli_run().call_run(&mut store).await;
+
+        let guest_error = match run_result {
+            Ok(Ok(())) => None,
+            Ok(Err(())) => Some(ExecutionError::Failed),
+            Err(trap) => classify_error(trap),
+        };
 
         let fuel_consumed = self
             .fuel_limit
             .saturating_sub(store.get_fuel().expect("fuel must be enabled"));
 
-        match classify_result(program_result) {
-            Ok(()) => {
-                tracing::debug!(fuel_consumed, "execution succeeded");
-                Ok(ExecutionOutcome { fuel_consumed })
-            }
-            Err(err) => {
-                tracing::debug!(error = ?err, fuel_consumed, "execution failed");
-                Err(err)
-            }
-        }
+        Ok(ExecutionOutcome {
+            fuel_consumed,
+            guest_error,
+        })
     }
 
     /// Convenience method to compile and execute a component in one step. See
@@ -332,39 +329,25 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         let component = self.compile(binary)?;
         self.execute(ctx, &component).await
     }
-
-    async fn run_command(
-        &self,
-        store: &mut Store<HostCtx<H>>,
-        component: &Component,
-    ) -> anyhow::Result<()> {
-        let command = Command::instantiate_async(&mut *store, component, &self.linker).await?;
-
-        command
-            .wasi_cli_run()
-            .call_run(&mut *store)
-            .await?
-            .map_err(|()| anyhow::anyhow!("component run() returned Err(())"))
-    }
 }
 
-fn classify_result(program_result: anyhow::Result<()>) -> Result<()> {
-    let trap = match program_result {
-        Ok(()) => return Ok(()),
-        Err(e) => e,
-    };
+fn classify_error(err: anyhow::Error) -> Option<ExecutionError> {
+    if let Some(exit) = err.downcast_ref::<wasmtime_wasi::I32Exit>() {
+        tracing::debug!("Program exited with code {}", exit.0);
 
-    if let Some(exit) = trap.downcast_ref::<wasmtime_wasi::I32Exit>() {
         // exit(0) is equivalent to a clean return from main
         return match exit.0 {
-            0 => Ok(()),
-            code => Err(ExecutionError::NonZeroExit(code).into()),
+            0 => None,
+            code => Some(ExecutionError::NonZeroExit(code)),
         };
     }
 
-    let trap_code = trap.chain().find_map(|e| e.downcast_ref::<Trap>().copied());
+    let err = err
+        .downcast_ref::<Trap>()
+        .copied()
+        .map_or_else(|| ExecutionError::Unknown(err), ExecutionError::Trap);
 
-    let err = trap_code.map_or_else(|| ExecutionError::Unknown(trap), ExecutionError::Trap);
+    tracing::debug!("Program trapped: {err}");
 
-    Err(err.into())
+    Some(err)
 }

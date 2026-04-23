@@ -50,7 +50,18 @@ async fn main() -> Result<()> {
     let wasm_binary = std::fs::read(args.path)?;
     let component = runner.compile(&wasm_binary)?;
 
-    runner.execute(ctx, &component).await?;
+    let outcome = runner.execute(ctx, &component).await?;
+
+    println!("-------------------------------------------");
+    println!(
+        "Execution completed. Fuel consumed: {}",
+        outcome.fuel_consumed
+    );
+    if let Some(error) = outcome.guest_error {
+        eprintln!("Failed with error: {error:?}");
+    } else {
+        println!("Succeeded without errors");
+    }
 
     Ok(())
 }

@@ -11,21 +11,10 @@ pub enum ExecutionError {
     #[error("wasm trap: {0}")]
     Trap(Trap),
 
+    #[error("component execution failed")]
+    Failed,
+
     /// An error that does not map to a known trap code
     #[error("component trapped: {0}")]
     Unknown(#[source] anyhow::Error),
 }
-
-/// Errors that can occur in `VmRuntime`
-#[derive(thiserror::Error, Debug)]
-pub enum VmError {
-    /// An error that occurred during compilation of the component
-    #[error("compilation error: {0}")]
-    Compile(#[source] anyhow::Error),
-
-    /// An error that occurred during execution of the component
-    #[error("execution error: {0}")]
-    Execution(#[from] ExecutionError),
-}
-
-pub type Result<T> = std::result::Result<T, VmError>;
