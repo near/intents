@@ -355,8 +355,6 @@ fn classify_result(program_result: anyhow::Result<()>) -> Result<()> {
     };
 
     if let Some(exit) = trap.downcast_ref::<wasmtime_wasi::I32Exit>() {
-        println!("Program exited with code {}", exit.0);
-
         // exit(0) is equivalent to a clean return from main
         return match exit.0 {
             0 => Ok(()),
@@ -367,7 +365,6 @@ fn classify_result(program_result: anyhow::Result<()>) -> Result<()> {
     let trap_code = trap.chain().find_map(|e| e.downcast_ref::<Trap>().copied());
 
     let err = trap_code.map_or_else(|| ExecutionError::Unknown(trap), ExecutionError::Trap);
-    println!("Program trapped: {err}");
 
     Err(err.into())
 }
