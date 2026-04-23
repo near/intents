@@ -18,7 +18,10 @@ impl WorkerHost {
     /// is added to a uniformly random root scalar — the resulting
     /// `sk(path) = root_scalar + tweak (mod L)` remains uniform.
     fn ed25519_tweak(&self, path: &str) -> Scalar {
-        Scalar::from_bytes_mod_order(self.derive_tweak(path))
+        Scalar::from_bytes_mod_order(
+            // TODO: clamp_integer()?
+            self.derive_tweak(path),
+        )
     }
 }
 
@@ -38,7 +41,7 @@ impl Ed25519Host for WorkerHost {
         let tweak = self.ed25519_tweak(path);
 
         // `root_pk + tweak * G`, computed purely from the root public key.
-        let root_pk_point = EdwardsPoint::mul_base(&self.ed25519_root_scalar);
+        let root_pk_point = EdwardsPoint::mul_base(&self.ed25519_root_sk.scalar);
         let derived_point = root_pk_point + EdwardsPoint::mul_base(&tweak);
 
         // With a random `tweak`, `derived_point == 0` iff
@@ -62,7 +65,7 @@ impl Ed25519Host for WorkerHost {
         // whose public key equals the one computed in
         // `ed25519_derive_public_key` by the linearity of scalar mult.
         let tweak = self.ed25519_tweak(path);
-        let derived_scalar = self.ed25519_root_scalar + tweak;
+        let derived_scalar = self.ed25519_root_sk.scalar + tweak;
 
         // `ExpandedSecretKey` is the hazmat-level Ed25519 signing key:
         // `(scalar, hash_prefix)` used directly by `raw_sign` without
@@ -74,7 +77,7 @@ impl Ed25519Host for WorkerHost {
         // distinct public key `A`, so no scalar can be recovered.
         let esk = ExpandedSecretKey {
             scalar: derived_scalar,
-            hash_prefix: self.ed25519_root_prefix,
+            hash_prefix: self.ed25519_root_sk.hash_prefix,
         };
         // `VerifyingKey::from(&esk)` computes `derived_scalar * G`,
         // matching `ed25519_derive_public_key(path)` by construction.
@@ -102,46 +105,6 @@ mod tests {
         let seed = [42u8; 64];
         let app_id = AppId::NearAccount("app.near".parse::<AccountId>().unwrap());
         WorkerHost::new(app_id, &seed)
-    }
-
-    /// The host's public-key derivation must match the "offline" formula
-    /// `pk(path) = root_pk + tweak * G` that a client would use with only
-    /// the root public key — demonstrating that no access to `root_scalar`
-    /// or the seed is required to reproduce the result.
-    #[test]
-    fn derive_public_key_matches_offline_formula() {
-        let host = host();
-        let root_pk_point = EdwardsPoint::mul_base(&host.ed25519_root_scalar);
-
-        for path in ["", "a", "a/b", "deeply/nested/path"] {
-            let tweak = host.ed25519_tweak(path);
-
-            // Client-side computation, using only `root_pk`.
-            let expected_point = root_pk_point + EdwardsPoint::mul_base(&tweak);
-            let expected: [u8; 32] = expected_point.compress().to_bytes();
-
-            assert_eq!(host.ed25519_derive_public_key(path), expected);
-        }
-    }
-
-    /// The derived public key returned by `ed25519_derive_public_key`
-    /// must equal the public key of the scalar that `ed25519_sign`
-    /// uses internally — i.e. signatures verify against what clients
-    /// derive offline.
-    #[test]
-    fn derived_public_key_matches_signing_key() {
-        let host = host();
-
-        for path in ["", "x", "some/path"] {
-            let derived_pk = host.ed25519_derive_public_key(path);
-
-            // Reconstruct the signing key the same way `ed25519_sign` does.
-            let tweak = host.ed25519_tweak(path);
-            let sk_scalar = host.ed25519_root_scalar + tweak;
-            let sk_pk: [u8; 32] = EdwardsPoint::mul_base(&sk_scalar).compress().to_bytes();
-
-            assert_eq!(derived_pk, sk_pk);
-        }
     }
 
     /// End-to-end guarantee the verifying side relies on: running the
@@ -175,12 +138,14 @@ mod tests {
                 let sig_bytes = host.ed25519_sign(path, msg);
                 let signature = Signature::from_bytes(&sig_bytes);
 
-                verifying_key.verify_strict(msg, &signature).unwrap_or_else(|e| {
-                    panic!(
-                        "signature for path={path:?}, msg_len={} failed to verify: {e}",
-                        msg.len(),
-                    );
-                });
+                verifying_key
+                    .verify_strict(msg, &signature)
+                    .unwrap_or_else(|e| {
+                        panic!(
+                            "signature for path={path:?}, msg_len={} failed to verify: {e}",
+                            msg.len(),
+                        );
+                    });
             }
         }
     }

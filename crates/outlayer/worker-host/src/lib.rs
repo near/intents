@@ -8,20 +8,22 @@ pub mod crypto;
 
 pub struct WorkerHost {
     app_id: AppId,
-    secp256k1_root_sk: Secp256k1SecretKey, // TODO: zeroize?
-    /// Ed25519 root signing scalar (uniformly distributed in `[1, L)`).
-    ///
-    /// Unlike RFC 8032 signing keys, this scalar is NOT clamped: it is
-    /// used as-is for the additive non-hardened derivation scheme in
-    /// [`crypto::ed25519`]. Clamping is only relevant for X25519 and
-    /// does not affect the correctness or security of Ed25519 signing.
-    ed25519_root_scalar: Ed25519Scalar, // TODO: zeroize?
-    /// Ed25519 "hash prefix" — the domain separator mixed into the
-    /// deterministic nonce `r = H(prefix || msg) mod L` during
-    /// signing. Shared across every derived path; uniqueness of `r`
-    /// per `(path, msg)` is instead ensured by `A = sk(path) * G`
-    /// being included in the challenge `c = H(R || A || msg)`.
-    ed25519_root_prefix: [u8; 32], // TODO: zeroize?
+    // TODO: zeroize secrets?
+    secp256k1_root_sk: Secp256k1SecretKey,
+    ed25519_root_sk: ed25519_dalek::hazmat::ExpandedSecretKey,
+    // /// Ed25519 root signing scalar (uniformly distributed in `[1, L)`).
+    // ///
+    // /// Unlike RFC 8032 signing keys, this scalar is NOT clamped: it is
+    // /// used as-is for the additive non-hardened derivation scheme in
+    // /// [`crypto::ed25519`]. Clamping is only relevant for X25519 and
+    // /// does not affect the correctness or security of Ed25519 signing.
+    // ed25519_root_scalar: Ed25519Scalar, // TODO: zeroize?
+    // /// Ed25519 "hash prefix" — the domain separator mixed into the
+    // /// deterministic nonce `r = H(prefix || msg) mod L` during
+    // /// signing. Shared across every derived path; uniqueness of `r`
+    // /// per `(path, msg)` is instead ensured by `A = sk(path) * G`
+    // /// being included in the challenge `c = H(R || A || msg)`.
+    // ed25519_root_prefix: [u8; 32], // TODO: zeroize?
 }
 
 impl WorkerHost {
@@ -43,21 +45,14 @@ impl WorkerHost {
                     // TODO: handle zero
                     .unwrap()
             },
-            ed25519_root_scalar: {
-                // 64 bytes → wide modular reduction gives a uniform
-                // scalar in `[0, L)` (`L ≈ 2^252`, so a naive 32-byte
-                // reduction would introduce a measurable ~2^-4 bias).
-                let mut wide = [0u8; 64];
-                hk.expand(b"ed25519/scalar", &mut wide).unwrap();
-                let scalar = Ed25519Scalar::from_bytes_mod_order_wide(&wide);
-                // Zero has probability ≈ 2^-252; treat as unreachable.
-                assert_ne!(scalar, Ed25519Scalar::ZERO, "ed25519 root scalar is zero");
-                scalar
-            },
-            ed25519_root_prefix: {
-                let mut prefix = [0u8; 32];
-                hk.expand(b"ed25519/prefix", &mut prefix).unwrap();
-                prefix
+            ed25519_root_sk: {
+                let mut sk = ed25519_dalek::SecretKey::default();
+                hk.expand(
+                    b"ed25519", // TODO
+                    &mut sk,
+                )
+                .unwrap();
+                ed25519_dalek::hazmat::ExpandedSecretKey::from(&sk)
             },
         }
     }
