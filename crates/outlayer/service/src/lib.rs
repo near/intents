@@ -1,11 +1,11 @@
 pub mod config;
-pub mod env_fetch;
+pub mod env;
 pub mod error;
 pub mod executor;
 pub mod resolver;
 pub mod service;
 pub mod sign;
-pub mod storage_fetch;
+pub mod storage;
 pub mod types;
 pub mod utils;
 
@@ -61,16 +61,16 @@ where
         )));
 
     let env = ServiceBuilder::new()
-        .map_err(timeout_err::<env_fetch::EnvFetchError>)
+        .map_err(timeout_err::<env::EnvFetchError>)
         .retry(Attempts(config.fetch.retry_attempts))
         .timeout(config.fetch.timeout)
-        .service(env_fetch::EnvFetchService);
+        .service(env::EnvFetchService);
 
     let storage = ServiceBuilder::new()
-        .map_err(timeout_err::<storage_fetch::StorageFetchError>)
+        .map_err(timeout_err::<storage::StorageFetchError>)
         .retry(Attempts(config.fetch.retry_attempts))
         .timeout(config.fetch.timeout)
-        .service(storage_fetch::StorageFetchService);
+        .service(storage::StorageFetchService);
 
     ServiceBuilder::new()
         .map_err(timeout_err::<ExecutionStackError>)
