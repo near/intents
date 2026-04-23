@@ -1,6 +1,6 @@
+use std::future::{Ready, ready};
 use std::task::{Context, Poll};
 
-use futures_util::future::BoxFuture;
 use thiserror::Error;
 use tower::Service;
 
@@ -25,13 +25,13 @@ pub struct StorageFetchService;
 impl Service<AccountId> for StorageFetchService {
     type Response = ProjectStorage;
     type Error = StorageFetchError;
-    type Future = BoxFuture<'static, Result<ProjectStorage, StorageFetchError>>;
+    type Future = Ready<Result<ProjectStorage, StorageFetchError>>;
 
     fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), StorageFetchError>> {
         Poll::Ready(Ok(()))
     }
 
     fn call(&mut self, _project_id: AccountId) -> Self::Future {
-        Box::pin(async move { Ok(ProjectStorage) })
+        ready(Ok(ProjectStorage))
     }
 }

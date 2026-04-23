@@ -1,6 +1,6 @@
+use std::future::{Ready, ready};
 use std::task::{Context, Poll};
 
-use futures_util::future::BoxFuture;
 use thiserror::Error;
 use tower::Service;
 
@@ -24,13 +24,13 @@ pub struct EnvFetchService;
 impl Service<AccountId> for EnvFetchService {
     type Response = ProjectEnv;
     type Error = EnvFetchError;
-    type Future = BoxFuture<'static, Result<ProjectEnv, EnvFetchError>>;
+    type Future = Ready<Result<ProjectEnv, EnvFetchError>>;
 
     fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), EnvFetchError>> {
         Poll::Ready(Ok(()))
     }
 
     fn call(&mut self, _project_id: AccountId) -> Self::Future {
-        Box::pin(async move { Ok(ProjectEnv) })
+        ready(Ok(ProjectEnv))
     }
 }
