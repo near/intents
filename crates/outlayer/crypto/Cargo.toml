@@ -12,6 +12,7 @@ workspace = true
 borsh = { workspace = true, features = ["derive"] }
 # TODO: precomputed-tables?
 curve25519-dalek = { workspace = true, features = ["alloc", "zeroize"] }
+digest.workspace = true
 digest-io.workspace = true
 ed25519-dalek = { workspace = true, features = ["std", "fast", "hazmat", "zeroize"] }
 hex-literal.workspace = true

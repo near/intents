@@ -1481,7 +1481,7 @@ dependencies = [
  "chrono",
  "defuse-borsh-utils",
  "defuse-test-utils",
- "digest 0.10.7",
+ "digest 0.11.2",
  "impl-tools",
  "near-sdk",
  "rstest",
@@ -1538,6 +1538,7 @@ version = "0.1.0"
 dependencies = [
  "borsh",
  "curve25519-dalek",
+ "digest 0.11.2",
  "digest-io",
  "ed25519-dalek",
  "hex-literal",

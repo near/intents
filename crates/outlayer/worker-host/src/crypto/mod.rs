@@ -8,7 +8,7 @@ use crate::WorkerHost;
 
 impl WorkerHost {
     pub(crate) fn derive_tweak(&self, path: impl AsRef<[u8]>) -> [u8; 32] {
-        let mut hasher = IoWrapper(Sha3_256::new().clone());
+        let mut hasher = IoWrapper(Sha3_256::new());
 
         borsh::to_writer(&mut hasher, &(&self.app_id, path.as_ref()))
             .unwrap_or_else(|_| unreachable!());
