@@ -7,34 +7,55 @@ use tower::Service;
 use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
 
 use defuse_outlayer_host_functions::HostFunctions;
-use defuse_outlayer_vm_runner::{self as vm_runner, VmRuntime};
+use defuse_outlayer_vm_runner::{self as vm_runner, ExecutionError, VmRuntime};
 
 use crate::types::{
-    ExecutionMetrics, ExecutionResponse, OnChainDestination, ProjectStorage, WasmExecutionRequest,
+    AccountId, ExecutionMetrics, ExecutionResponse, OnChainRequest, ProjectEnv, ProjectStorage,
 };
 
-const STDOUT_LIMIT: usize = 4 * 1024 * 1024; // 4 MiB
-const STDERR_LIMIT: usize = 64 * 1024;       // 64 KiB
-
-#[derive(Debug, Error)]
-pub enum WasmExecutorError {
-    #[error(transparent)]
-    Execution(#[from] vm_runner::ExecutionError),
+#[derive(Debug, Clone)]
+pub struct WasmExecutorConfig {
+    pub stdout_limit: usize,
+    pub stderr_limit: usize,
 }
+
+impl Default for WasmExecutorConfig {
+    fn default() -> Self {
+        Self {
+            stdout_limit: 4 * 1024 * 1024, // 4 MiB
+            stderr_limit: 64 * 1024,        // 64 KiB
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct WasmExecutionRequest {
+    pub request: OnChainRequest,
+    pub component: wasmtime::component::Component,
+    pub storage: ProjectStorage,
+    pub env: ProjectEnv,
+    pub caller: Option<AccountId>,
+}
+
+/// Infrastructure-level failure: the VM itself couldn't run, not the WASM.
+#[derive(Debug, Error)]
+#[error("vm infrastructure error: {0}")]
+pub struct WasmEnvironmentInternalError(#[from] anyhow::Error);
 
 pub struct WasmExecutor<H: HostFunctions + Default + 'static> {
     runtime: Arc<VmRuntime<H>>,
+    config: WasmExecutorConfig,
 }
 
 impl<H: HostFunctions + Default + 'static> WasmExecutor<H> {
-    pub const fn new(runtime: Arc<VmRuntime<H>>) -> Self {
-        Self { runtime }
+    pub fn new(runtime: Arc<VmRuntime<H>>, config: WasmExecutorConfig) -> Self {
+        Self { runtime, config }
     }
 }
 
 impl<H: HostFunctions + Default + 'static> Clone for WasmExecutor<H> {
     fn clone(&self) -> Self {
-        Self { runtime: Arc::clone(&self.runtime) }
+        Self { runtime: Arc::clone(&self.runtime), config: self.config.clone() }
     }
 }
 
@@ -42,18 +63,19 @@ impl<H: HostFunctions + Default + Send + 'static> Service<WasmExecutionRequest>
     for WasmExecutor<H>
 {
     type Response = ExecutionResponse;
-    type Error = WasmExecutorError;
-    type Future = BoxFuture<'static, Result<ExecutionResponse, WasmExecutorError>>;
+    type Error = WasmEnvironmentInternalError;
+    type Future = BoxFuture<'static, Result<ExecutionResponse, WasmEnvironmentInternalError>>;
 
-    fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), WasmExecutorError>> {
+    fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         Poll::Ready(Ok(()))
     }
 
     fn call(&mut self, req: WasmExecutionRequest) -> Self::Future {
         let runtime = Arc::clone(&self.runtime);
+        let config = self.config.clone();
         Box::pin(async move {
-            let stdout = MemoryOutputPipe::new(STDOUT_LIMIT);
-            let stderr = MemoryOutputPipe::new(STDERR_LIMIT);
+            let stdout = MemoryOutputPipe::new(config.stdout_limit);
+            let stderr = MemoryOutputPipe::new(config.stderr_limit);
             let ctx = vm_runner::Context::new(
                 MemoryInputPipe::new(req.request.input),
                 stdout.clone(),
@@ -61,14 +83,24 @@ impl<H: HostFunctions + Default + Send + 'static> Service<WasmExecutionRequest>
                 H::default(),
             );
 
-            let outcome = runtime.execute(ctx, &req.component).await?;
+            // TODO: vm-runner should ideally return `Result<Result<Outcome, WasmError>, VmError>` so
+            // the separation between an execution-environment failure (linker, instantiation,
+            // internal wasmtime error) and a WASM-level failure (trap, non-zero exit) is
+            // expressed in the type rather than by matching on a single flat enum here.
+            let (result, instructions_used) = match runtime.execute(ctx, &req.component).await {
+                Ok(outcome) => (Ok(stdout.contents()), outcome.fuel_consumed),
+                Err(ExecutionError::Unknown { source }) => return Err(WasmEnvironmentInternalError(source)),
+                Err(e) => (Err(e.into()), 0),
+            };
 
             Ok(ExecutionResponse {
-                request_id: req.request.id,
-                respond_to: OnChainDestination { contract_id: req.request.project_id },
-                result: Ok(stdout.contents()),
+                nonce: req.request.nonce,
+                wasm_hash: req.request.wasm_hash,
+                project_id: req.request.project_id,
+                result,
+                logs: stderr.contents(),
                 metrics: ExecutionMetrics {
-                    instructions_used: outcome.fuel_consumed,
+                    instructions_used,
                     ..ExecutionMetrics::default()
                 },
                 storage: ProjectStorage,

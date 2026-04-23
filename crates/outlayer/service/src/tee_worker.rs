@@ -6,11 +6,8 @@ use wasmtime::component::Component;
 
 use crate::{
     error::ExecutionStackError,
-    executor,
-    types::{
-        AccountId, ExecutionResponse, ProjectEnv,
-        ProjectStorage, Request, ResourceLimits, WasmExecutionRequest,
-    },
+    executor::{self, WasmExecutionRequest},
+    types::{AccountId, ExecutionResponse, ProjectEnv, ProjectStorage, Request},
 };
 
 pub struct TeeWorkerService<E, W, Env, St> {
@@ -28,7 +25,7 @@ impl<E, W, Env, St> TeeWorkerService<E, W, Env, St> {
 
 impl<E, W, Env, St> Service<Request> for TeeWorkerService<E, W, Env, St>
 where
-    E: Service<WasmExecutionRequest, Response = ExecutionResponse, Error = executor::WasmExecutorError>
+    E: Service<WasmExecutionRequest, Response = ExecutionResponse, Error = executor::WasmEnvironmentInternalError>
         + Send
         + Clone
         + 'static,
@@ -84,7 +81,6 @@ where
                 env: env_res?,
                 storage: storage_res?,
                 caller: None,
-                limits: ResourceLimits,
             };
 
             let response = executor.call(wasm_req).await?;

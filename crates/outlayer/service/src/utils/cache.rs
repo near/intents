@@ -7,6 +7,21 @@ use futures_util::future::BoxFuture;
 use lru::LruCache;
 use tower::{Layer, Service};
 
+#[derive(Debug, Clone)]
+pub struct CacheConfig {
+    pub capacity: NonZeroUsize,
+    pub max_fetch_bytes: usize,
+}
+
+impl Default for CacheConfig {
+    fn default() -> Self {
+        Self {
+            capacity: NonZeroUsize::new(100).unwrap(),
+            max_fetch_bytes: 10 * 1024 * 1024, // 10 MiB
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct CacheLayer<K, V> {
     cache: Arc<Mutex<LruCache<K, V>>>,

@@ -14,10 +14,6 @@ pub enum EnvFetchError {
     Decryption(String),
 }
 
-/// Fetches and decrypts the project's environment variables / secrets.
-///
-/// TODO: query NEAR RPC for the encrypted env blob keyed by `project_id`,
-/// then decrypt using the TEE-held key. Currently returns an empty placeholder.
 #[derive(Clone)]
 pub struct EnvFetchService;
 
