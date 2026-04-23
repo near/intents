@@ -11,7 +11,10 @@ pub struct FetchConfig {
 
 impl Default for FetchConfig {
     fn default() -> Self {
-        Self { timeout: Duration::from_secs(10), retry_attempts: 2 }
+        Self {
+            timeout: Duration::from_secs(10),
+            retry_attempts: 2,
+        }
     }
 }
 

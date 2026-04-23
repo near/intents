@@ -2,7 +2,6 @@ use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 use serde_with::{hex::Hex, serde_as};
 
-
 /// Opaque NEAR account identifier. Wraps a validated string.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct AccountId(pub String);

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
-use base64::{engine::general_purpose::STANDARD, Engine};
+use base64::{Engine, engine::general_purpose::STANDARD};
 use bytes::Bytes;
 use futures_util::future::BoxFuture;
 use tower::Service;
@@ -25,9 +25,9 @@ impl Service<String> for InlineResolver {
 
     fn call(&mut self, url: String) -> Self::Future {
         Box::pin(async move {
-            let data = url
-                .strip_prefix(DATA_URL_PREFIX)
-                .ok_or_else(|| ResolveError::InlineDecode(format!("expected prefix `{DATA_URL_PREFIX}`")))?;
+            let data = url.strip_prefix(DATA_URL_PREFIX).ok_or_else(|| {
+                ResolveError::InlineDecode(format!("expected prefix `{DATA_URL_PREFIX}`"))
+            })?;
             let bytes = STANDARD
                 .decode(data)
                 .map(|b| Arc::new(Bytes::from(b)))

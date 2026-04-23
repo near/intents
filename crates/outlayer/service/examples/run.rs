@@ -5,9 +5,8 @@ use std::sync::Arc;
 use bytes::Bytes;
 use clap::Parser;
 use defuse_outlayer_service::{
-    build_stack, Config,
+    Config, WorkerSigningKey, build_stack,
     types::{AccountId, OnChainRequest, Request},
-    WorkerSigningKey,
 };
 use defuse_outlayer_state::HostState;
 use defuse_outlayer_vm_runner::VmRuntime;
@@ -31,6 +30,9 @@ struct Args {
     #[arg(long)]
     wasm_hash: String,
 
+    /// Print the full signed response (JSON + signature) to stderr.
+    #[arg(long, short)]
+    verbose: bool,
 }
 
 fn parse_hash_hex(hex: &str) -> anyhow::Result<[u8; 32]> {
@@ -67,23 +69,16 @@ async fn main() -> anyhow::Result<()> {
     let signing_key = WorkerSigningKey(Arc::new(SigningKey::from_bytes(&[1u8; 32])));
     let runtime = Arc::new(VmRuntime::<HostState>::new()?);
 
-    let signed = build_stack(
-        signing_key,
-        runtime,
-        Config::default(),
-    )
-    .oneshot(request)
-    .await?;
+    let signed = build_stack(signing_key, runtime, Config::default())
+        .oneshot(request)
+        .await?;
+
+    if args.verbose {
+        eprintln!("{}", serde_json::to_string_pretty(&signed)?);
+    }
 
     std::io::stderr().write_all(&signed.response.logs)?;
-
-    match signed.response.result {
-        Ok(stdout) => std::io::stdout().write_all(&stdout)?,
-        Err(e) => {
-            eprintln!("execution error: {e}");
-            std::process::exit(1);
-        }
-    }
+    std::io::stdout().write_all(&signed.response.result?)?;
 
     Ok(())
 }

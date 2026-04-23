@@ -13,7 +13,7 @@ use sha2::{Digest, Sha256};
 use thiserror::Error;
 use tower::steer::Steer;
 use tower::util::BoxCloneService;
-use tower::{service_fn, Service};
+use tower::{Service, service_fn};
 use url::Url;
 
 #[derive(Debug, Error)]
@@ -70,7 +70,7 @@ impl Service<(String, [u8; 32])> for ResolverService {
             if actual != expected_hash {
                 return Err(ResolveError::HashMismatch {
                     expected: hex_encode(&expected_hash),
-                    actual:   hex_encode(&actual),
+                    actual: hex_encode(&actual),
                 });
             }
 
@@ -112,8 +112,10 @@ pub fn build_resolver(max_bytes: usize) -> BoxCloneService<String, Arc<Bytes>, R
 
 fn hex_encode(bytes: &[u8]) -> String {
     use std::fmt::Write;
-    bytes.iter().fold(String::with_capacity(bytes.len() * 2), |mut s, b| {
-        write!(s, "{b:02x}").unwrap();
-        s
-    })
+    bytes
+        .iter()
+        .fold(String::with_capacity(bytes.len() * 2), |mut s, b| {
+            write!(s, "{b:02x}").unwrap();
+            s
+        })
 }

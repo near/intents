@@ -17,13 +17,13 @@ use tower::{Service, ServiceBuilder};
 use defuse_outlayer_host_functions::HostFunctions;
 use defuse_outlayer_vm_runner::VmRuntime;
 
+pub use config::{Config, FetchConfig};
 pub use error::ExecutionStackError;
 pub use executor::{WasmExecutor, WasmExecutorConfig};
 pub use resolver::HttpResolver;
-pub use tee_worker::TeeWorkerService;
 pub use sign::{SignedExecutionResponse, WorkerSigningKey};
+pub use tee_worker::TeeWorkerService;
 pub use types::{ExecutionResponse, Request};
-pub use config::{Config, FetchConfig};
 pub use utils::cache::CacheConfig;
 
 use utils::cache::CacheLayer;
@@ -34,8 +34,8 @@ pub fn build_stack<H>(
     runtime: Arc<VmRuntime<H>>,
     config: Config,
 ) -> impl Service<Request, Response = SignedExecutionResponse, Error = ExecutionStackError>
-       + Send
-       + 'static
++ Send
++ 'static
 where
     H: HostFunctions + Default + Send + Sync + 'static,
 {
@@ -56,9 +56,9 @@ where
         .map_err(timeout_err::<resolver::ResolveError>)
         .retry(Attempts(config.fetch.retry_attempts))
         .timeout(config.fetch.timeout)
-        .service(resolver::ResolverService::new(
-            resolver::build_resolver(config.cache.max_fetch_bytes),
-        ));
+        .service(resolver::ResolverService::new(resolver::build_resolver(
+            config.cache.max_fetch_bytes,
+        )));
 
     let env = ServiceBuilder::new()
         .map_err(timeout_err::<env_fetch::EnvFetchError>)

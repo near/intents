@@ -1,4 +1,4 @@
-use std::task::{ready, Context, Poll};
+use std::task::{Context, Poll, ready};
 
 use futures_util::future::BoxFuture;
 use tower::Service;
@@ -12,21 +12,29 @@ use crate::{
 
 pub struct TeeWorkerService<E, W, Env, St> {
     executor: E,
-    wasm:     W,
-    env:      Env,
-    storage:  St,
+    wasm: W,
+    env: Env,
+    storage: St,
 }
 
 impl<E, W, Env, St> TeeWorkerService<E, W, Env, St> {
     pub const fn new(executor: E, wasm: W, env: Env, storage: St) -> Self {
-        Self { executor, wasm, env, storage }
+        Self {
+            executor,
+            wasm,
+            env,
+            storage,
+        }
     }
 }
 
 impl<E, W, Env, St> Service<Request> for TeeWorkerService<E, W, Env, St>
 where
-    E: Service<WasmExecutionRequest, Response = ExecutionResponse, Error = executor::WasmEnvironmentInternalError>
-        + Send
+    E: Service<
+            WasmExecutionRequest,
+            Response = ExecutionResponse,
+            Error = executor::WasmEnvironmentInternalError,
+        > + Send
         + Clone
         + 'static,
     E::Future: Send,
@@ -60,8 +68,8 @@ where
 
     fn call(&mut self, req: Request) -> Self::Future {
         let mut executor = self.executor.clone();
-        let mut wasm    = self.wasm.clone();
-        let mut env     = self.env.clone();
+        let mut wasm = self.wasm.clone();
+        let mut env = self.env.clone();
         let mut storage = self.storage.clone();
 
         Box::pin(async move {

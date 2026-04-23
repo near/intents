@@ -2,8 +2,8 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use bytes::Bytes;
-use futures_util::future::BoxFuture;
 use futures_util::TryStreamExt;
+use futures_util::future::BoxFuture;
 use tokio::io::AsyncReadExt;
 use tokio_util::io::StreamReader;
 use tower::Service;
@@ -12,7 +12,7 @@ use super::ResolveError;
 
 #[derive(Clone)]
 pub struct HttpResolver {
-    client:    reqwest::Client,
+    client: reqwest::Client,
     max_bytes: usize,
 }
 
@@ -41,21 +41,28 @@ impl Service<String> for HttpResolver {
                 .await
                 .map_err(|e| ResolveError::Http(e.to_string()))?;
 
-            let stream = response
-                .bytes_stream()
-                .map_err(std::io::Error::other);
+            let stream = response.bytes_stream().map_err(std::io::Error::other);
             let mut reader = StreamReader::new(stream);
 
             let mut buf = Vec::new();
             let limit = u64::try_from(max_bytes).unwrap_or(u64::MAX);
-            (&mut reader).take(limit).read_to_end(&mut buf).await
+            (&mut reader)
+                .take(limit)
+                .read_to_end(&mut buf)
+                .await
                 .map_err(|e| ResolveError::Http(e.to_string()))?;
 
-            if reader.into_inner().try_next().await
+            if reader
+                .into_inner()
+                .try_next()
+                .await
                 .map_err(|e| ResolveError::Http(e.to_string()))?
                 .is_some()
             {
-                return Err(ResolveError::TooLarge { size: buf.len() + 1, limit: max_bytes });
+                return Err(ResolveError::TooLarge {
+                    size: buf.len() + 1,
+                    limit: max_bytes,
+                });
             }
 
             Ok(Arc::new(Bytes::from(buf)))

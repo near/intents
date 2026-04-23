@@ -39,7 +39,10 @@ impl<S, K: Hash + Eq, V> Layer<S> for CacheLayer<K, V> {
     type Service = CacheService<S, K, V>;
 
     fn layer(&self, inner: S) -> Self::Service {
-        CacheService { inner, cache: self.cache.clone() }
+        CacheService {
+            inner,
+            cache: self.cache.clone(),
+        }
     }
 }
 

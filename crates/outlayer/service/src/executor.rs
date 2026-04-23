@@ -23,7 +23,7 @@ impl Default for WasmExecutorConfig {
     fn default() -> Self {
         Self {
             stdout_limit: 4 * 1024 * 1024, // 4 MiB
-            stderr_limit: 64 * 1024,        // 64 KiB
+            stderr_limit: 64 * 1024,       // 64 KiB
         }
     }
 }
@@ -55,7 +55,10 @@ impl<H: HostFunctions + Default + 'static> WasmExecutor<H> {
 
 impl<H: HostFunctions + Default + 'static> Clone for WasmExecutor<H> {
     fn clone(&self) -> Self {
-        Self { runtime: Arc::clone(&self.runtime), config: self.config.clone() }
+        Self {
+            runtime: Arc::clone(&self.runtime),
+            config: self.config.clone(),
+        }
     }
 }
 
@@ -89,7 +92,9 @@ impl<H: HostFunctions + Default + Send + 'static> Service<WasmExecutionRequest>
             // expressed in the type rather than by matching on a single flat enum here.
             let (result, instructions_used) = match runtime.execute(ctx, &req.component).await {
                 Ok(outcome) => (Ok(stdout.contents()), outcome.fuel_consumed),
-                Err(ExecutionError::Unknown { source }) => return Err(WasmEnvironmentInternalError(source)),
+                Err(ExecutionError::Unknown { source }) => {
+                    return Err(WasmEnvironmentInternalError(source));
+                }
                 Err(e) => (Err(e.into()), 0),
             };
 

@@ -1,9 +1,7 @@
 use thiserror::Error;
 
 use crate::{
-    env_fetch::EnvFetchError,
-    executor::WasmEnvironmentInternalError,
-    resolver::ResolveError,
+    env_fetch::EnvFetchError, executor::WasmEnvironmentInternalError, resolver::ResolveError,
     storage_fetch::StorageFetchError,
 };
 
