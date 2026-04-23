@@ -1,0 +1,14 @@
+[package]
+name = "defuse-outlayer-state"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+defuse-outlayer-host.workspace = true
+defuse-outlayer-host-functions = { workspace = true }
+defuse-outlayer-worker-host.workspace = true

@@ -1,0 +1,17 @@
+[package]
+name = "defuse-outlayer-cli"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace = true
+clap = { workspace = true, features = ["derive"] }
+
+defuse-outlayer-state = { workspace = true }
+defuse-outlayer-vm-runner = { workspace = true }
+tokio = { workspace = true, features = ["full"] }

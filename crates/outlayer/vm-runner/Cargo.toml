@@ -1,0 +1,20 @@
+[package]
+name = "defuse-outlayer-vm-runner"
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace = true
+thiserror.workspace = true
+
+wasmtime.workspace = true
+wasmtime-wasi.workspace = true
+
+defuse-outlayer-host-functions = { workspace = true }
+
+tracing = { workspace = true }

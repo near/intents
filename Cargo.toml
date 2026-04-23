@@ -49,6 +49,10 @@ members = [
   "crates/outlayer/sys",
   "crates/outlayer/worker-host",
   "crates/outlayer/sdk",
+  "crates/outlayer/vm-runner",
+  "crates/outlayer/state",
+  "crates/outlayer/host-functions",
+  "crates/outlayer/cli",
 
   "tests",
 ]
@@ -105,9 +109,13 @@ defuse-randomness.path = "crates/testing/randomness"
 defuse-sandbox.path = "crates/testing/sandbox"
 defuse-test-utils.path = "crates/testing/utils"
 
+defuse-outlayer-cli.path = "crates/outlayer/cli"
 defuse-outlayer-host.path = "crates/outlayer/host"
+defuse-outlayer-host-functions.path = "crates/outlayer/host-functions"
 defuse-outlayer-sdk.path = "crates/outlayer/sdk"
+defuse-outlayer-state.path = "crates/outlayer/state"
 defuse-outlayer-sys.path = "crates/outlayer/sys"
+defuse-outlayer-vm-runner.path = "crates/outlayer/vm-runner"
 defuse-outlayer-worker-host.path = "crates/outlayer/worker-host"
 
 defuse-tests.path = "tests"
