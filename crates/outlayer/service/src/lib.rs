@@ -3,9 +3,9 @@ pub mod env_fetch;
 pub mod error;
 pub mod executor;
 pub mod resolver;
+pub mod service;
 pub mod sign;
 pub mod storage_fetch;
-pub mod tee_worker;
 pub mod types;
 pub mod utils;
 
@@ -21,8 +21,8 @@ pub use config::{Config, FetchConfig};
 pub use error::ExecutionStackError;
 pub use executor::{WasmExecutor, WasmExecutorConfig};
 pub use resolver::HttpResolver;
+pub use service::OutlayerService;
 pub use sign::{SignedExecutionResponse, WorkerSigningKey};
-pub use tee_worker::TeeWorkerService;
 pub use types::{ExecutionResponse, Request};
 pub use utils::cache::CacheConfig;
 
@@ -76,5 +76,5 @@ where
         .map_err(timeout_err::<ExecutionStackError>)
         .timeout(config.total_timeout)
         .map_response(move |r| signing_key.sign(r))
-        .service(TeeWorkerService::new(executor, wasm, env, storage))
+        .service(OutlayerService::new(executor, wasm, env, storage))
 }

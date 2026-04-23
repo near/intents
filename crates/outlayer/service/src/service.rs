@@ -10,14 +10,14 @@ use crate::{
     types::{AccountId, ExecutionResponse, ProjectEnv, ProjectStorage, Request},
 };
 
-pub struct TeeWorkerService<E, W, Env, St> {
+pub struct OutlayerService<E, W, Env, St> {
     executor: E,
     wasm: W,
     env: Env,
     storage: St,
 }
 
-impl<E, W, Env, St> TeeWorkerService<E, W, Env, St> {
+impl<E, W, Env, St> OutlayerService<E, W, Env, St> {
     pub const fn new(executor: E, wasm: W, env: Env, storage: St) -> Self {
         Self {
             executor,
@@ -28,7 +28,7 @@ impl<E, W, Env, St> TeeWorkerService<E, W, Env, St> {
     }
 }
 
-impl<E, W, Env, St> Service<Request> for TeeWorkerService<E, W, Env, St>
+impl<E, W, Env, St> Service<Request> for OutlayerService<E, W, Env, St>
 where
     E: Service<
             WasmExecutionRequest,
