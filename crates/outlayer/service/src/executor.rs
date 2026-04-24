@@ -7,7 +7,7 @@ use tower::Service;
 use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
 
 use defuse_outlayer_host_functions::HostFunctions;
-use defuse_outlayer_vm_runner::{self as vm_runner, ExecutionError, VmRuntime};
+use defuse_outlayer_vm_runner::{self as vm_runner, VmRuntime};
 
 use crate::types::{
     AccountId, ExecutionMetrics, ExecutionResponse, OnChainRequest, ProjectEnv, ProjectStorage,
@@ -86,17 +86,14 @@ impl<H: HostFunctions + Default + Send + 'static> Service<WasmExecutionRequest>
                 H::default(),
             );
 
-            // TODO: vm-runner should ideally return `Result<Result<Outcome, WasmError>, VmError>` so
-            // the separation between an execution-environment failure (linker, instantiation,
-            // internal wasmtime error) and a WASM-level failure (trap, non-zero exit) is
-            // expressed in the type rather than by matching on a single flat enum here.
-            let (result, instructions_used) = match runtime.execute(ctx, &req.component).await {
-                Ok(outcome) => (Ok(stdout.contents()), outcome.fuel_consumed),
-                Err(ExecutionError::Unknown { source }) => {
-                    return Err(WasmEnvironmentInternalError(source));
-                }
-                Err(e) => (Err(e.into()), 0),
-            };
+            let outcome = runtime
+                .execute(ctx, &req.component)
+                .await
+                .map_err(WasmEnvironmentInternalError)?;
+            let result = outcome
+                .guest_error
+                .map_or_else(|| Ok(stdout.contents()), |e| Err(anyhow::Error::from(e)));
+            let instructions_used = outcome.fuel_consumed;
 
             Ok(ExecutionResponse {
                 nonce: req.request.nonce,

@@ -1,6 +1,9 @@
 wasmtime::component::bindgen!({
     path: "../wit",
     world: "imports",
+    imports: {
+        default: async
+    }
 });
 
 pub use self::outlayer::*;

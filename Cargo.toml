@@ -45,6 +45,7 @@ members = [
   "crates/testing/randomness",
   "crates/testing/sandbox",
 
+  "crates/outlayer/cli",
   "crates/outlayer/host",
   "crates/outlayer/sys",
   "crates/outlayer/worker-host",
@@ -109,6 +110,7 @@ defuse-randomness.path = "crates/testing/randomness"
 defuse-sandbox.path = "crates/testing/sandbox"
 defuse-test-utils.path = "crates/testing/utils"
 
+defuse-outlayer-cli.path = "crates/outlayer/cli"
 defuse-outlayer-host.path = "crates/outlayer/host"
 defuse-outlayer-host-functions.path = "crates/outlayer/host-functions"
 defuse-outlayer-sdk.path = "crates/outlayer/sdk"

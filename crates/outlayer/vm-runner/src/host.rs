@@ -26,10 +26,6 @@ impl<T: HostFunctions> HostCtx<T> {
         &mut self.host_state
     }
 
-    const fn wasi_state_mut(&mut self) -> &mut WasiP2State {
-        &mut self.wasi_state
-    }
-
     pub(crate) const fn limits_mut(&mut self) -> &mut StoreLimits {
         &mut self.limits
     }
@@ -37,24 +33,29 @@ impl<T: HostFunctions> HostCtx<T> {
 
 impl<T: HostFunctions> WasiView for HostCtx<T> {
     fn ctx(&mut self) -> WasiCtxView<'_> {
-        let state = self.wasi_state_mut();
-        WasiCtxView {
-            ctx: &mut state.wasi_ctx,
-            table: &mut state.resource_table,
-        }
+        self.wasi_state.ctx()
     }
 }
 
 struct WasiP2State {
-    wasi_ctx: WasiCtx,
-    resource_table: wasmtime_wasi::ResourceTable,
+    ctx: WasiCtx,
+    table: wasmtime_wasi::ResourceTable,
 }
 
 impl WasiP2State {
-    fn new(wasi_ctx: WasiCtx) -> Self {
+    fn new(ctx: WasiCtx) -> Self {
         Self {
-            wasi_ctx,
-            resource_table: wasmtime_wasi::ResourceTable::new(),
+            ctx,
+            table: wasmtime_wasi::ResourceTable::new(),
+        }
+    }
+}
+
+impl WasiView for WasiP2State {
+    fn ctx(&mut self) -> WasiCtxView<'_> {
+        WasiCtxView {
+            ctx: &mut self.ctx,
+            table: &mut self.table,
         }
     }
 }

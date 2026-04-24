@@ -23,30 +23,25 @@ pub const DEFAULT_MEMORY_LIMIT: usize = 100 * 1024 * 1024;
 /// (~1 billion wasm instructions)
 pub const DEFAULT_FUEL_LIMIT: u64 = 1_000_000_000;
 
-pub struct Context<
-    I: StdinStream + 'static,
-    O: StdoutStream + 'static,
-    E: StdoutStream + 'static,
-    H: HostFunctions,
-> {
-    stdin: I,
-    stdout: O,
-    stderr: E,
+pub struct Context<I, O, E, H> {
+    input: I,
+    output: O,
+    error: E,
     host_state: H,
 }
 
-impl<
+impl<I, O, E, H> Context<I, O, E, H>
+where
     I: StdinStream + 'static,
     O: StdoutStream + 'static,
     E: StdoutStream + 'static,
     H: HostFunctions,
-> Context<I, O, E, H>
 {
-    pub fn new(stdin: I, stdout: O, stderr: E, host_state: H) -> Self {
+    pub const fn new(input: I, output: O, error: E, host_state: H) -> Self {
         Self {
-            stdin,
-            stdout,
-            stderr,
+            input,
+            output,
+            error,
             host_state,
         }
     }
@@ -106,7 +101,7 @@ impl<H: HostFunctions + 'static> VmRuntimeBuilder<H> {
 
     /// Builds the `VmRuntime` with the specified configuration
     /// If fuel limit or memory limit are not set, default values will be used
-    pub fn build(self) -> Result<VmRuntime<H>> {
+    pub fn build(self) -> anyhow::Result<VmRuntime<H>> {
         // TODO: uncomment in corresponding pr
         // // NOTE: set initial chunk of virtual memory that a linear memory
         // // may grow into limited to allow multiple linear memories to be
@@ -124,7 +119,7 @@ impl<H: HostFunctions + 'static> VmRuntimeBuilder<H> {
         })
     }
 
-    fn create_linker(engine: &Engine) -> Result<Linker<HostCtx<H>>> {
+    fn create_linker(engine: &Engine) -> anyhow::Result<Linker<HostCtx<H>>> {
         let mut linker = Linker::new(engine);
 
         // Add WASI imports to the linker
@@ -159,7 +154,7 @@ pub struct VmRuntime<H: HostFunctions + 'static> {
 
 impl<H: HostFunctions + 'static> VmRuntime<H> {
     /// Creates a new `VmRuntime` with the default configuration
-    pub fn new() -> Result<Self> {
+    pub fn new() -> anyhow::Result<Self> {
         Self::builder().build()
     }
 
@@ -184,6 +179,9 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     /// builder. Fuel exhaustion is reported as [`ExecutionError::Trap`]
     ///
     /// # Example
+    ///
+    /// Using [`HostState`] directly:
+    ///
     /// ```rust,no_run
     /// use defuse_outlayer_state::HostState;
     /// use defuse_outlayer_vm_runner::{Context, VmRuntimeBuilder};
@@ -207,28 +205,81 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
     /// println!("{}", String::from_utf8_lossy(&stdout.contents()));
     /// # Ok(()) }
     /// ```
+    ///
+    /// You can also wrap [`HostState`] to share it across concurrent executions
+    /// or inject additional context. Implement each host-function trait on your
+    /// wrapper and delegate to the inner state:
+    ///
+    /// ```rust,no_run
+    /// use std::sync::Arc;
+    /// use defuse_outlayer_state::HostState;
+    /// use defuse_outlayer_vm_runner::{Context, VmRuntimeBuilder};
+    /// use tokio::sync::Mutex;
+    /// use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
+    ///
+    /// struct Wrapper {
+    ///     inner: Arc<Mutex<HostState>>,
+    /// }
+    ///
+    /// impl defuse_outlayer_host_functions::crypto::ed25519::Host for Wrapper {
+    ///     async fn derive_public_key(&mut self, path: String) -> Vec<u8> {
+    ///         self.inner.lock().await.derive_public_key(path).await
+    ///     }
+    ///     async fn sign(&mut self, path: String, msg: Vec<u8>) -> Vec<u8> {
+    ///         self.inner.lock().await.sign(path, msg).await
+    ///     }
+    /// }
+    ///
+    /// impl defuse_outlayer_host_functions::crypto::secp256k1::Host for Wrapper {
+    ///     async fn derive_public_key(&mut self, path: String) -> Vec<u8> {
+    ///         self.inner.lock().await.derive_public_key(path).await
+    ///     }
+    ///     async fn sign(&mut self, path: String, msg: Vec<u8>) -> Vec<u8> {
+    ///         self.inner.lock().await.sign(path, msg).await
+    ///     }
+    /// }
+    ///
+    /// # async fn example() -> anyhow::Result<()> {
+    /// let shared = Arc::new(Mutex::new(HostState::default()));
+    /// let stdout = MemoryOutputPipe::new(4 * 1024 * 1024);
+    /// let stderr = MemoryOutputPipe::new(64 * 1024);
+    /// let ctx = Context::new(
+    ///     MemoryInputPipe::new(b"input".to_vec()),
+    ///     stdout.clone(),
+    ///     stderr.clone(),
+    ///     Wrapper { inner: shared.clone() },
+    /// );
+    ///
+    /// let runner = VmRuntimeBuilder::<Wrapper>::new().build()?;
+    /// let wasm = std::fs::read("component.wasm")?;
+    /// let component = runner.compile(&wasm)?;
+    /// runner.execute(ctx, &component).await?;
+    ///
+    /// println!("{}", String::from_utf8_lossy(&stdout.contents()));
+    /// # Ok(()) }
+    /// ```
     #[instrument(skip_all)]
     pub async fn execute<I, O, E>(
         &self,
         ctx: Context<I, O, E, H>,
         component: &Component,
-    ) -> Result<ExecutionOutcome, ExecutionError>
+    ) -> Result<ExecutionOutcome>
     where
         I: StdinStream + 'static,
         O: StdoutStream + 'static,
         E: StdoutStream + 'static,
     {
         let Context {
-            stdin,
-            stdout,
-            stderr,
+            input,
+            output,
+            error,
             host_state,
         } = ctx;
 
         let wasi_ctx = WasiCtx::builder()
-            .stdin(stdin)
-            .stdout(stdout)
-            .stderr(stderr)
+            .stdin(input)
+            .stdout(output)
+            .stderr(error)
             .build();
 
         let limits = StoreLimitsBuilder::new()
@@ -242,66 +293,61 @@ impl<H: HostFunctions + 'static> VmRuntime<H> {
         store.limiter(|ctx| ctx.limits_mut());
         store
             .set_fuel(self.fuel_limit)
-            .expect("fuel consumption is not enabled on engine");
+            .expect("fuel must be enabled");
 
-        let program_result = self.run_command(&mut store, component).await;
+        let command = Command::instantiate_async(&mut store, component, &self.linker).await?;
+        let run_result = command.wasi_cli_run().call_run(&mut store).await;
+
+        let guest_error = match run_result {
+            Ok(Ok(())) => None,
+            Ok(Err(())) => Some(ExecutionError::Failed),
+            Err(trap) => classify_error(trap),
+        };
 
         let fuel_consumed = self
             .fuel_limit
-            .saturating_sub(store.get_fuel().unwrap_or(self.fuel_limit));
+            .saturating_sub(store.get_fuel().expect("fuel must be enabled"));
 
-        process_execution_result(fuel_consumed, program_result)
+        Ok(ExecutionOutcome {
+            fuel_consumed,
+            guest_error,
+        })
     }
 
-    async fn run_command(
+    /// Convenience method to compile and execute a component in one step. See
+    /// [`execute`](Self::execute) for details and examples.
+    pub async fn run<I, O, E>(
         &self,
-        store: &mut Store<HostCtx<H>>,
-        component: &Component,
-    ) -> anyhow::Result<()> {
-        let command = Command::instantiate_async(&mut *store, component, &self.linker).await?;
-
-        command
-            .wasi_cli_run()
-            .call_run(&mut *store)
-            .await?
-            .map_err(|()| anyhow::anyhow!("component run() returned Err(())"))
+        ctx: Context<I, O, E, H>,
+        binary: impl AsRef<[u8]>,
+    ) -> Result<ExecutionOutcome>
+    where
+        I: StdinStream + 'static,
+        O: StdoutStream + 'static,
+        E: StdoutStream + 'static,
+    {
+        let component = self.compile(binary)?;
+        self.execute(ctx, &component).await
     }
 }
 
-fn process_execution_result(
-    fuel_consumed: u64,
-    program_result: anyhow::Result<()>,
-) -> Result<ExecutionOutcome, ExecutionError> {
-    match classify_result(program_result) {
-        Ok(()) => {
-            tracing::debug!(fuel_consumed, "execution succeeded");
-            Ok(ExecutionOutcome { fuel_consumed })
-        }
-        Err(err) => {
-            tracing::debug!(error = ?err, fuel_consumed, "execution failed");
-            Err(err)
-        }
-    }
-}
+fn classify_error(err: anyhow::Error) -> Option<ExecutionError> {
+    if let Some(exit) = err.downcast_ref::<wasmtime_wasi::I32Exit>() {
+        tracing::debug!("Program exited with code {}", exit.0);
 
-fn classify_result(program_result: anyhow::Result<()>) -> Result<(), ExecutionError> {
-    let trap = match program_result {
-        Ok(()) => return Ok(()),
-        Err(e) => e,
-    };
-
-    if let Some(exit) = trap.downcast_ref::<wasmtime_wasi::I32Exit>() {
         // exit(0) is equivalent to a clean return from main
         return match exit.0 {
-            0 => Ok(()),
-            code => Err(ExecutionError::NonZeroExit { code }),
+            0 => None,
+            code => Some(ExecutionError::NonZeroExit(code)),
         };
     }
 
-    let trap_code = trap.chain().find_map(|e| e.downcast_ref::<Trap>().copied());
+    let err = err
+        .downcast_ref::<Trap>()
+        .copied()
+        .map_or_else(|| ExecutionError::Unknown(err), ExecutionError::Trap);
 
-    Err(match trap_code {
-        Some(code) => ExecutionError::Trap { code },
-        None => ExecutionError::Unknown { source: trap },
-    })
+    tracing::debug!("Program trapped: {err}");
+
+    Some(err)
 }
