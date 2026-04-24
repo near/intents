@@ -19,7 +19,6 @@ pub trait DerivableCurve {
     }
 }
 
-// TODO: rename
 pub trait DerivablePublicKey: Sized {
     type Curve: DerivableCurve;
 
@@ -36,28 +35,20 @@ pub trait DerivableSigningKey {
 
     fn public_key(&self) -> Self::PublicKey;
 
-    fn sign_derive(
+    fn sign_derive_from_tweak(
         &self,
         tweak: <Self::Curve as DerivableCurve>::Tweak,
         msg: &[u8],
     ) -> <Self::Curve as DerivableCurve>::Signature;
+
+    fn sign_derive_from_borsh(
+        &self,
+        path: impl BorshSerialize,
+        msg: &[u8],
+    ) -> <Self::Curve as DerivableCurve>::Signature {
+        self.sign_derive_from_tweak(Self::Curve::derive_tweak(path), msg)
+    }
 }
-
-// pub trait DerivableKey {
-//     type PublicKey;
-//     // TODO: type Message?
-//     type Signature;
-//     type Tweak;
-
-//     fn root_public_key(&self) -> Self::PublicKey;
-
-//     fn tweak(hash: [u8; 32]) -> Self::Tweak;
-//     fn derive_public_key(root: Self::PublicKey, tweak: Self::Tweak) -> Self::PublicKey;
-
-//     fn sign_derive(&self, tweak: Self::Tweak, msg: &[u8]) -> Self::Signature;
-
-//     fn verify(public_key: Self::PublicKey, msg: &[u8], sig: Self::Signature) -> bool;
-// }
 
 #[cfg(test)]
 mod tests {
@@ -75,12 +66,11 @@ mod tests {
         let tweak = <K::Curve as DerivableCurve>::derive_tweak(());
         let derived_pk = root_sk.public_key().derive_from_tweak(tweak);
 
+        // TODO: type-safe msg or prehash?
         let msg: [u8; 32] = Sha256::digest(b"message").into();
 
-        let signature = root_sk.sign_derive(tweak, &msg);
+        let signature = root_sk.sign_derive_from_tweak(tweak, &msg);
 
         verify(derived_pk, &msg, signature);
-
-        // assert!(K::verify(derived_pk, &msg, sig), "invalid signature");
     }
 }

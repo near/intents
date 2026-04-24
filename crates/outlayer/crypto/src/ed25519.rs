@@ -7,44 +7,6 @@ use sha2::Sha512;
 
 use crate::{DerivableCurve, DerivablePublicKey, DerivableSigningKey};
 
-// impl DerivableKey for SigningKey {
-//     type PublicKey = VerifyingKey;
-//     type Signature = Signature;
-//     type Tweak = Scalar;
-
-//     fn root_public_key(&self) -> Self::PublicKey {
-//         self.verifying_key()
-//     }
-
-//     fn tweak(hash: [u8; 32]) -> Self::Tweak {
-//         // TODO: use Scalar::from_hash?
-//         Scalar::from_bytes_mod_order(hash)
-//     }
-
-//     fn derive_public_key(root: Self::PublicKey, tweak: Self::Tweak) -> Self::PublicKey {
-//         let derived_point = root.to_edwards() + EdwardsPoint::mul_base(&tweak);
-//         VerifyingKey::from(derived_point)
-//     }
-
-//     fn sign_derive(&self, tweak: Self::Tweak, msg: &[u8]) -> Self::Signature {
-//         let root_sk = ExpandedSecretKey::from(self.as_bytes());
-
-//         let esk = ExpandedSecretKey {
-//             scalar: root_sk.scalar + tweak,
-//             // TODO: is it ok to reuse root hash_prefix?
-//             hash_prefix: root_sk.hash_prefix,
-//         };
-
-//         let verifying_key = VerifyingKey::from(&esk);
-
-//         raw_sign::<Sha512>(&esk, msg, &verifying_key)
-//     }
-
-//     fn verify(public_key: Self::PublicKey, msg: &[u8], sig: Self::Signature) -> bool {
-//         public_key.verify_strict(msg, &sig).is_ok()
-//     }
-// }
-
 pub struct Ed25519;
 
 impl DerivableCurve for Ed25519 {
@@ -73,7 +35,7 @@ impl DerivableSigningKey for SigningKey {
         self.verifying_key()
     }
 
-    fn sign_derive(
+    fn sign_derive_from_tweak(
         &self,
         tweak: <Self::Curve as DerivableCurve>::Tweak,
         msg: &[u8],
@@ -81,9 +43,13 @@ impl DerivableSigningKey for SigningKey {
         let root_sk = ExpandedSecretKey::from(self.as_bytes());
 
         let esk = ExpandedSecretKey {
-            // TODO: clamp_integer()?
+            // TODO: are we sure we don't need to clamp_integer() here?
+            // On the other hand, it seems as it would break the verification,
+            // since following equation will no longer hold:
+            //   pk = sk * G
             scalar: root_sk.scalar + tweak,
-            // TODO: is it ok to reuse root hash_prefix?
+            // TODO: is it ok to reuse root hash_prefix? or should we
+            // deterministically derive it from (root_sk.hash_prefix, tweak)?
             hash_prefix: root_sk.hash_prefix,
         };
 
